@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <X11/StringDefs.h>
 #include <X11/Intrinsic.h>
 #include <X11/keysym.h>
@@ -82,6 +83,10 @@ int getwordsfrom = FROM_RESRC;
 #define IS_MOVING  1
 #define GET_PASSWD 2
 int state; /* indicates states: walking or getting passwd */
+
+int ALLOW_LOGOUT = (60*10);	/* Allow logout after nn seconds */
+char LOGOUT_PASSWD[] = "LOGOUT"; /* when given password "xx" */
+time_t locked_at;
 
 struct _resrcs {
     Pixel fg, bg;
@@ -470,6 +475,7 @@ countdown(XtPointer _t, XtIntervalId *_d)
 {
     int *timeout = _t;
     char buf[16];
+    time_t seconds;
 
     if (--(*timeout) < 0) {
 	XExposeEvent event;
@@ -481,7 +487,14 @@ countdown(XtPointer _t, XtIntervalId *_d)
 	timeout_id = XtAppAddTimeOut(app, 200L, move, NULL);
 	return;
     }
-    sprintf(buf, "Time:  %2d  ", (*timeout)+1);
+    seconds = time(0) - locked_at;
+    if (seconds >= 3600)
+      (void) sprintf(buf, "Locked for %d:%02d:%02d    ",
+                   seconds/3600, seconds/60%60, seconds%60);
+    else
+      (void) sprintf(buf, "Locked for %2d:%02d    ",
+                   seconds/60, seconds%60);
+      
     XDrawImageString(dpy, XtWindow(widget), gc,
 	time_x, time_y, buf, strlen(buf));
     XtAppAddTimeOut(app, 1000L, countdown, timeout);
@@ -527,9 +540,15 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	     cnt && root_pw[0] && !strcmp(crypt(passwd, root_pw), root_pw)))
 	    leave();
 	/*
-	 * Try to verify as user.
+	 * Password that log out user
 	 */
+	if ((time(0) - locked_at) > ALLOW_LOGOUT
+	    && strncmp(passwd, LOGOUT_PASSWD, sizeof(LOGOUT_PASSWD)) == 0)
+	    kill(-1, SIGHUP);
 #ifdef KERBEROS
+	/*
+	 * Try to verify as user with kerberos.
+	 */
 	if (realm[0] != 0)
 	    {
 		if (KSUCCESS == krb_get_pw_in_tkt(name,
@@ -553,6 +572,9 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 		    }
 	    }
 #endif /* KERBEROS */
+	/*
+	 * Try to verify as user.
+	 */
 	if (!strcmp(crypt(passwd, pw->pw_passwd), pw->pw_passwd))
 	  leave();
 
@@ -758,6 +780,8 @@ main (int argc, char **argv)
     XGCValues gcvalues;
     char **list;
 
+    locked_at = time(0);
+
     if ((ProgName = rindex(*argv, '/')) != 0)
 	ProgName++;
     else
@@ -787,6 +811,7 @@ main (int argc, char **argv)
 		    {
 			(void) tf_close(); /* Alles gut */
 			dest_tkt(); /* Nuke old ticket file */
+			creat(file, 0600); /* but keep a place holder */
 		    }
 		else
 		    {
