@@ -1147,7 +1147,8 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
     if (rc == LDAP_SUCCESS) {
 	ret = 0;
     } else {
-	krb5_set_error_string(context, "%s: %s", errfn, ldap_err2string(rc));
+	krb5_set_error_string(context, "%s: %s (dn=%s) %s", 
+			      errfn, name, dn, ldap_err2string(rc));
 	ret = HDB_ERR_CANT_LOCK_DB;
     }
 
