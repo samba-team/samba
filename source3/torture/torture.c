@@ -2792,8 +2792,8 @@ static BOOL run_oplock3(int dummy)
  */
 static BOOL run_deletetest(int dummy)
 {
-	struct cli_state *cli1;
-	struct cli_state *cli2;
+	struct cli_state *cli1 = NULL;
+	struct cli_state *cli2 = NULL;
 	const char *fname = "\\delete.file";
 	int fnum1 = -1;
 	int fnum2 = -1;
@@ -3201,15 +3201,15 @@ static BOOL run_deletetest(int dummy)
 	 * intialized, because these functions don't handle
 	 * uninitialized connections. */
 		
-	cli_close(cli1, fnum1);
-	cli_close(cli1, fnum2);
+	if (fnum1 != -1) cli_close(cli1, fnum1);
+	if (fnum2 != -1) cli_close(cli1, fnum2);
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
 
-	if (!torture_close_connection(cli1)) {
+	if (cli1 && !torture_close_connection(cli1)) {
 		correct = False;
 	}
-	if (!torture_close_connection(cli2)) {
+	if (cli2 && !torture_close_connection(cli2)) {
 		correct = False;
 	}
 	return correct;
