@@ -1,3 +1,10 @@
+2002-06-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/klist.c (display_tokens): don't bail out before we get
+	EDOM (signaling the end of the tokens), the kernel can also return
+	ENOTCONN, meaning that the index does not exist anymore (for
+	example if the token has expired)
+
 2002-06-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/changepw.c: make sure we return an error if there are
