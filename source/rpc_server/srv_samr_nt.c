@@ -106,44 +106,50 @@ static NTSTATUS get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 		pdb_free_sam(pwd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
+	
 	while (((not_finished = pdb_getsampwent(pwd)) != False) 
-		&& (*num_entries) < max_num_entries) 
+	       && (*num_entries) < max_num_entries) 
 	{
 	        int user_name_len;
-
+		
 	        if (start_idx > 0) {
-	            /* skip the requested number of entries.
-	               not very efficient, but hey...  */
-		start_idx--;
-		continue;
-        }
 
-	user_name_len = strlen(pdb_get_username(pwd))+1;
-	init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pdb_get_username(pwd), user_name_len);
-	init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
-	pw_buf[(*num_entries)].user_rid = pwd->user_rid;
-	memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
+			pdb_reset_sam(pwd);
 
-        /* Now check if the NT compatible password is available. */
-        if (pdb_get_nt_passwd(pwd))
-		memcpy( pw_buf[(*num_entries)].nt_pwd , pdb_get_nt_passwd(pwd), 16);
-
-        pw_buf[(*num_entries)].acb_info = pdb_get_acct_ctrl(pwd);
-
-        DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
-                  (*num_entries), pdb_get_username(pwd), pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd) ));
-
-        if (acb_mask == 0 || (pwd->acct_ctrl & acb_mask)) {
-		DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
-		(*num_entries)++;
-        }
-        else
-		DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
+			/* skip the requested number of entries.
+			   not very efficient, but hey...  */
+			start_idx--;
+			continue;
+		}
+		
+		user_name_len = strlen(pdb_get_username(pwd))+1;
+		init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pdb_get_username(pwd), user_name_len);
+		init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
+		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
+		memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
+		
+		/* Now check if the NT compatible password is available. */
+		if (pdb_get_nt_passwd(pwd))
+			memcpy( pw_buf[(*num_entries)].nt_pwd , pdb_get_nt_passwd(pwd), 16);
+		
+		pw_buf[(*num_entries)].acb_info = pdb_get_acct_ctrl(pwd);
+		
+		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
+			  (*num_entries), pdb_get_username(pwd), pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd) ));
+		
+		if (acb_mask == 0 || (pwd->acct_ctrl & acb_mask)) {
+			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
+			(*num_entries)++;
+		} else {
+			DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
+		}
 
 		(*total_entries)++;
-	}
+		
+		pdb_reset_sam(pwd);
 
+	}
+	
 	pdb_endsampwent();
 	pdb_free_sam(pwd);
 
@@ -807,17 +813,18 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
 		
 		enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ALL_MAPPED);
-	
-		*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
-		if (*d_grp==NULL)
-			return NT_STATUS_NO_MEMORY;
 		
-		for(i=0; i<num_entries && i<max_entries; i++) {
-			fstrcpy((*d_grp)[i].name, map[i+start_idx].nt_name);
-			sid_split_rid(&map[i].sid, &(*d_grp)[i].rid);
-
+		if (num_entries != 0) {
+			*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
+			if (*d_grp==NULL)
+				return NT_STATUS_NO_MEMORY;
+			
+			for(i=0; i<num_entries && i<max_entries; i++) {
+				fstrcpy((*d_grp)[i].name, map[i+start_idx].nt_name);
+				sid_split_rid(&map[i].sid, &(*d_grp)[i].rid);
+				
+			}
 		}
-		
 		SAFE_FREE(map);
 		
 	} else if (sid_equal(sid, &global_sam_sid) && !lp_hide_local_users()) {
@@ -1343,7 +1350,7 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
     r_u->status = NT_STATUS_OK;
 
     rpcstr_pull(user_name, q_u->uni_user_name.buffer, sizeof(user_name), q_u->uni_user_name.uni_str_len*2, 0);
-    rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len,0);
+    rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len*2,0);
 
     DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
