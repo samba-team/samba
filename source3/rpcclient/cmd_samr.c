@@ -106,11 +106,11 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 
 	if (res)
 	{
-		DEBUG(5,("cmd_sam_ntpasswd_chg: succeeded\n"));
+		fprintf(out_hnd, "NT Password changed OK\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_sam_ntpasswd_chg: failed\n"));
+		fprintf(out_hnd, "NT Password change FAILED\n"));
 	}
 }
 
