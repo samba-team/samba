@@ -726,7 +726,7 @@ main (int argc, char **argv)
 	}
     } else {
 #if defined(KRB5)
-	port = krb5_getportbyname(NULL, "kx", "tcp", htons(KX_PORT));
+	port = krb5_getportbyname(NULL, "kx", "tcp", KX_PORT);
 #elif defined(KRB4)
 	port = k_getportbyname ("kx", "tcp", htons(KX_PORT));
 #else
