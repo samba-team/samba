@@ -43,7 +43,11 @@ int ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope,
 
 	while (count--) {
 		rc = ads_do_search(ads, bind_path, scope, exp, attrs, res);
-		if (rc == 0) return rc;
+		if (rc == 0) {
+			DEBUG(5,("Search for %s gave %d replies\n",
+				 exp, ads_count_replies(ads, *res)));
+			return rc;
+		}
 
 		if (*res) ads_msgfree(ads, *res);
 		*res = NULL;
@@ -144,7 +148,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", "primaryGroupID", 
-			       "userAccountControl", NULL};
+			       "sAMAccountType", NULL};
 	int rc, i, count;
 	void *res = NULL;
 	void *msg = NULL;
@@ -185,11 +189,13 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		char *name, *gecos;
 		DOM_SID sid;
 		uint32 rid, group;
-		uint32 account_control;
+		uint32 atype;
 
-		if (!ads_pull_uint32(ads, msg, "userAccountControl", 
-				     &account_control) ||
-		    !(account_control & UF_NORMAL_ACCOUNT)) continue;
+		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype) ||
+		    ads_atype_map(atype) != SID_NAME_USER) {
+			DEBUG(1,("Not a user account? atype=0x%x\n", atype));
+			continue;
+		}
 
 		name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
@@ -216,6 +222,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	(*num_entries) = i;
 	status = NT_STATUS_OK;
+
+	DEBUG(3,("ads query_user_list gave %d entries\n", (*num_entries)));
 
 done:
 	if (res) ads_msgfree(ads, res);
@@ -300,6 +308,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	status = NT_STATUS_OK;
 
+	DEBUG(3,("ads enum_dom_groups gave %d entries\n", (*num_entries)));
+
 done:
 	if (res) ads_msgfree(ads, res);
 
@@ -360,6 +370,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	status = NT_STATUS_OK;
 
+	DEBUG(3,("ads name_to_sid mapped %s\n", name));
+
 done:
 	if (res) ads_msgfree(ads, res);
 
@@ -407,6 +419,9 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	*type = ads_atype_map(atype);
 
 	status = NT_STATUS_OK;
+
+	DEBUG(3,("ads sid_to_name mapped %s\n", *name));
+
 done:
 	if (msg) ads_msgfree(ads, msg);
 
@@ -421,8 +436,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			   WINBIND_USERINFO *info)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"sAMAccountName", "name", "objectSid", "primaryGroupID", 
-			       "userAccountControl", NULL};
+	const char *attrs[] = {"sAMAccountName", "name", "objectSid", 
+			       "primaryGroupID", NULL};
 	int rc, count;
 	void *msg = NULL;
 	char *exp;
@@ -471,6 +486,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	status = NT_STATUS_OK;
 
+	DEBUG(3,("ads query_user gave %s\n", info->acct_name));
 done:
 	if (msg) ads_msgfree(ads, msg);
 
@@ -544,6 +560,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 	status = NT_STATUS_OK;
+	DEBUG(3,("ads lookup_usergroups for rid=%d\n", user_rid));
 done:
 	if (msg) ads_msgfree(ads, msg);
 
@@ -616,6 +633,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	}	
 
 	status = NT_STATUS_OK;
+	DEBUG(3,("ads lookup_groupmem for rid=%d\n", group_rid));
 done:
 	if (res) ads_msgfree(ads, res);
 
