@@ -739,7 +739,7 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 	}
 
 	if (req == NULL) {
-		DEBUG(2,("dcerpc_request: unmatched call_id in response packet\n"));
+		DEBUG(2,("dcerpc_request: unmatched call_id %u in response packet\n", pkt.call_id));
 		return;
 	}
 
