@@ -940,7 +940,11 @@ close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
 
 	p = strrchr(directory,'/');
 	if(p == NULL) {
-		pstrcpy(mask,directory);
+		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
+		if((directory[0] == '.') && (directory[1] == '\0'))
+			pstrcpy(mask,"*");
+		else
+			pstrcpy(mask,directory);
 		pstrcpy(directory,"./");
 	} else {
 		pstrcpy(mask,p+1);
