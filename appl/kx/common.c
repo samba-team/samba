@@ -37,36 +37,36 @@ int
 copy_encrypted (int fd1, int fd2, des_cblock *iv,
 		des_key_schedule schedule)
 {
-  des_cblock iv1, iv2;
-  int num1 = 0, num2 = 0;
+     des_cblock iv1, iv2;
+     int num1 = 0, num2 = 0;
 
-  memcpy (&iv1, iv, sizeof(iv1));
-  memcpy (&iv2, iv, sizeof(iv2));
-  for (;;) {
-    fd_set fdset;
-    int ret;
-    char buf[BUFSIZ];
+     memcpy (&iv1, iv, sizeof(iv1));
+     memcpy (&iv2, iv, sizeof(iv2));
+     for (;;) {
+	  fd_set fdset;
+	  int ret;
+	  char buf[BUFSIZ];
 
-    FD_ZERO(&fdset);
-    FD_SET(fd1, &fdset);
-    FD_SET(fd2, &fdset);
+	  FD_ZERO(&fdset);
+	  FD_SET(fd1, &fdset);
+	  FD_SET(fd2, &fdset);
 
-    ret = select (max(fd1, fd2)+1, &fdset, NULL, NULL, NULL);
-    if (ret < 0 && errno != EINTR) {
-      fprintf (stderr, "%s: select: %s\n", prog, strerror (errno));
-      return 1;
-    }
-    if (FD_ISSET(fd1, &fdset)) {
-      ret = do_enccopy (fd1, fd2, DES_ENCRYPT, &iv1, schedule, &num1);
-      if (ret <= 0)
-	return ret;
-    }
-    if (FD_ISSET(fd2, &fdset)) {
-      ret = do_enccopy (fd2, fd1, DES_DECRYPT, &iv2, schedule, &num2);
-      if (ret <= 0)
-	return ret;
-    }
-  }
+	  ret = select (max(fd1, fd2)+1, &fdset, NULL, NULL, NULL);
+	  if (ret < 0 && errno != EINTR) {
+	       fprintf (stderr, "%s: select: %s\n", prog, strerror (errno));
+	       return 1;
+	  }
+	  if (FD_ISSET(fd1, &fdset)) {
+	       ret = do_enccopy (fd1, fd2, DES_ENCRYPT, &iv1, schedule, &num1);
+	       if (ret <= 0)
+		    return ret;
+	  }
+	  if (FD_ISSET(fd2, &fdset)) {
+	       ret = do_enccopy (fd2, fd1, DES_DECRYPT, &iv2, schedule, &num2);
+	       if (ret <= 0)
+		    return ret;
+	  }
+     }
 }
 
 /*
@@ -76,13 +76,13 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
 RETSIGTYPE
 childhandler (int sig)
 {
-  pid_t pid;
-  int status;
+     pid_t pid;
+     int status;
 
-  do { 
-    pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
-  } while(pid > 0);
-  signal (SIGCHLD, childhandler);
+     do { 
+       pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
+     } while(pid > 0);
+     signal (SIGCHLD, childhandler);
 }
 
 /*
