@@ -47,6 +47,10 @@ Changes
 
 Changes since 3.0.3rc1
 ----------------------
+
+commits
+-------
+
 o   Timur Bakeyev <timur@com.bat.ru>
     * BUG 1141: Fix nss*.so names on FreeBSD 5.x.
 
