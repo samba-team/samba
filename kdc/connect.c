@@ -97,7 +97,8 @@ add_standard_ports (int family)
     if(enable_http)
 	add_port(family, "http", "tcp");
 #ifdef KASERVER
-    add_port(family, "7004", "udp");
+    if (enable_kaserver)
+	add_port(family, "7004", "udp");
 #endif
 }
 
@@ -298,7 +299,7 @@ process_request(unsigned char *buf,
     }
 #endif
 #ifdef KASERVER
-    else {
+    else if (enable_kaserver) {
 	ret = do_kaserver (buf, len, reply, from, (struct sockaddr_in*)addr);
 	return ret;
     }
