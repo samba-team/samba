@@ -125,8 +125,7 @@
 	} spoolss_PrinterInfo2;
 
 	typedef struct {
-		uint32 flags;
-		[subcontext(0)] security_descriptor secdesc;
+		[relative,subcontext(0)] security_descriptor *secdesc;
 	} spoolss_PrinterInfo3;
 
 	typedef struct {
