@@ -683,11 +683,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	uint32_t new_pass_len;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
-	session_key = data_blob(NULL,0);
-
-	if (dce_call->conn->auth_state.session_info) {	
-		session_key = dce_call->conn->auth_state.session_info->session_key;
-	}
+	session_key = dce_call->conn->transport_session_key;
 
 	if (session_key.length == 0) {
 		DEBUG(3,("Bad session key in samr_set_password\n"));
@@ -731,11 +727,7 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	struct MD5Context ctx;
 
-	session_key = data_blob(NULL,0);
-
-	if (dce_call->conn->auth_state.session_info) {	
-		session_key = dce_call->conn->auth_state.session_info->session_key;
-	}
+	session_key = dce_call->conn->transport_session_key;
 
 	if (session_key.length == 0) {
 		DEBUG(3,("Bad session key in samr_set_password\n"));
