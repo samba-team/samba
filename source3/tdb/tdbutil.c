@@ -807,7 +807,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	
 	return list;
 
-};
+}
 
 
 /**
@@ -825,6 +825,6 @@ void tdb_search_list_free(TDB_LIST_NODE* node)
 		SAFE_FREE(node);
 		node = next_node;
 	};
-};
+}
 
 
