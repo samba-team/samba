@@ -3263,7 +3263,6 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	int final_num_sids = 0;
 	int i;
 	DOM_SID group_sid;
-	uint32 group_rid;
 	fstring group_sid_str;
 	DOM_SID *sids=NULL;
 	
@@ -3282,17 +3281,14 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 		return r_u->status;
 	}
 		
-	/* todo: change to use sid_compare_front */
-
-	sid_split_rid(&group_sid, &group_rid);
 	sid_to_string(group_sid_str, &group_sid);
 	DEBUG(10, ("sid is %s\n", group_sid_str));
 
-	/* can we get a query for an SID outside our domain ? */
-	if (!sid_equal(&group_sid, get_global_sam_sid()))
+	if (!sid_check_is_in_our_domain(&group_sid)) {
+		DEBUG(3, ("sid %s is not in our domain\n", group_sid_str));
 		return NT_STATUS_NO_SUCH_GROUP;
+	}
 
-	sid_append_rid(&group_sid, group_rid);
 	DEBUG(10, ("lookup on Domain SID\n"));
 
 	if(!get_domain_group_from_sid(group_sid, &map))
