@@ -117,7 +117,7 @@ void	restart (int, char **);
 void	rmthelp (int, char **);
 void	rmtstatus (int, char **);
 int	ruserpass (char *, char **, char **, char **);
-void    sendrequest (char *, char *, char *, int);
+void    sendrequest (char *, char *, char *, char *, int);
 void	setascii (int, char **);
 void	setbell (int, char **);
 void	setbinary (int, char **);
