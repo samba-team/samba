@@ -883,6 +883,12 @@ krb5_principal_set_component(krb5_context,
 			     size_t);
 
 krb5_error_code
+krb5_make_principal(krb5_context context,
+		    krb5_principal *pruincipal,
+		    krb5_realm realm,
+		    ...);
+
+krb5_error_code
 krb5_build_principal(krb5_context context,
 		     krb5_principal *principal,
 		     int rlen,
