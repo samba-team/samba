@@ -360,8 +360,12 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	
 	if (*lp_force_user(snum)) {
 		struct passwd *pass2;
-		fstring fuser;
-		fstrcpy(fuser,lp_force_user(snum));
+		pstring fuser;
+		pstrcpy(fuser,lp_force_user(snum));
+
+		/* Allow %S to be used by force user. */
+		string_sub(fuser,"%S",service);
+
 		pass2 = (struct passwd *)Get_Pwnam(fuser,True);
 		if (pass2) {
 			conn->uid = pass2->pw_uid;
