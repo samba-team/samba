@@ -252,7 +252,7 @@ show_file(const char *file, int code)
 int
 main(int argc, char **argv)
 {
-    int his_addr_len, ctrl_addr_len, on = 1, tos;
+    int his_addr_len, ctrl_addr_len, on = 1;
     int port;
     struct servent *sp;
 
@@ -350,10 +350,13 @@ main(int argc, char **argv)
 	exit(1);
     }
 #if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
-    tos = IPTOS_LOWDELAY;
-    if (setsockopt(STDIN_FILENO, IPPROTO_IP, IP_TOS,
-		   (void *)&tos, sizeof(int)) < 0)
-	syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
+    {
+	int tos = IPTOS_LOWDELAY;
+
+	if (setsockopt(STDIN_FILENO, IPPROTO_IP, IP_TOS,
+		       (void *)&tos, sizeof(int)) < 0)
+	    syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
+    }
 #endif
     data_source->sa_family = ctrl_addr->sa_family;
     socket_set_port (data_source,
@@ -875,7 +878,7 @@ krb5_verify(struct passwd *pwd, char *passwd)
       return ret;
   return 0;
 }
-#endif /* KRB5 *
+#endif /* KRB5 */
 
 void
 pass(char *passwd)
