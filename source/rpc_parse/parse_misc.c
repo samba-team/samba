@@ -934,7 +934,7 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 	if (buf) {
 		rpcstr_push((char *)str->buffer, buf, len, STR_TERMINATE);
 		num_chars = strlen_w(str->buffer);
-		if (flags == STR_TERMINATE || flags == UNI_MAXLEN_TERMINATE) {
+		if (flags == UNI_STR_TERMINATE || flags == UNI_MAXLEN_TERMINATE) {
 			num_chars++;
 		}
 	}
