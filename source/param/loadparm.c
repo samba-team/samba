@@ -1481,8 +1481,10 @@ void lp_talloc_free(void)
 
 static char *lp_string(const char *s)
 {
+#if 0  /* until REWRITE done to make thread-safe */
 	size_t len = s ? strlen(s) : 0;
 	char *ret;
+#endif
 
 	/* The follow debug is useful for tracking down memory problems
 	   especially if you have an inner loop that is calling a lp_*()
@@ -1492,6 +1494,7 @@ static char *lp_string(const char *s)
 #if 0
 	DEBUG(10, ("lp_string(%s)\n", s));
 #endif
+
 #if 0  /* until REWRITE done to make thread-safe */
 	if (!lp_talloc)
 		lp_talloc = talloc_init("lp_talloc");
