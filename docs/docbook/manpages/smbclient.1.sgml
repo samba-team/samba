@@ -128,7 +128,7 @@
 
 
 		<varlistentry>
-		<term>name resolve order (G)</term> 
+		<term>-R &lt;name resolve order&gt;</term> 
 		<listitem><para>This option is used by the programs in the Samba 
 		suite to determine what naming services and in what order to resolve 
 		host names to IP addresses. The option takes a space separated 
