@@ -471,7 +471,7 @@ BOOL pass_check_smb(char *user, char *domain,
 		pass = Get_Pwnam(user,True);
 	}
 
-	if (pass != NULL)
+	if (pass == NULL)
 	{
 		DEBUG(3,("Couldn't find user %s\n",user));
 		return(False);
@@ -479,7 +479,7 @@ BOOL pass_check_smb(char *user, char *domain,
 
 	smb_pass = getsmbpwnam(user);
 
-	if (smb_pass != NULL)
+	if (smb_pass == NULL)
 	{
 		DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
 		return(False);
