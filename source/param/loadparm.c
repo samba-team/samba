@@ -288,6 +288,7 @@ typedef struct
 	BOOL bDisableNetbios;
 	BOOL bKernelChangeNotify;
 	BOOL bUseKerberosKeytab;
+	BOOL bDeferSharingViolations;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -417,7 +418,6 @@ typedef struct
 	BOOL bMap_acl_inherit;
 	BOOL bAfs_Share;
 	BOOL bEASupport;
-	BOOL bDeferSharingViolations;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -541,7 +541,6 @@ static service sDefault = {
 	False,			/* bMap_acl_inherit */
 	False,			/* bAfs_Share */
 	False,			/* bEASupport */
-	True,			/* bDeferSharingViolations */
 	
 	NULL,			/* Parametric options */
 
@@ -894,7 +893,7 @@ static struct parm_struct parm_table[] = {
 	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, handle_acl_compatibility,  NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{ "defer sharing violations", P_BOOL, P_LOCAL, &sDefault.bDeferSharingViolations, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL},
+	{ "defer sharing violations", P_BOOL, P_GLOBAL, &Globals.bDeferSharingViolations, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL},
 	{"ea support", P_BOOL, P_LOCAL, &sDefault.bEASupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt acl support", P_BOOL, P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, FLAG_ADVANCED}, 
@@ -1540,6 +1539,7 @@ static void init_globals(void)
 	Globals.client_signing = Auto;
 	Globals.server_signing = False;
 
+	Globals.bDeferSharingViolations = True;
 	string_set(&Globals.smb_ports, SMB_PORTS);
 }
 
@@ -1774,6 +1774,7 @@ FN_GLOBAL_BOOL(lp_client_use_spnego, &Globals.bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_GLOBAL_BOOL(lp_kernel_change_notify, &Globals.bKernelChangeNotify)
 FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
+FN_GLOBAL_BOOL(lp_defer_sharing_violations, &Globals.bDeferSharingViolations)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
@@ -1893,7 +1894,6 @@ FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 FN_LOCAL_BOOL(lp_ea_support, bEASupport)
-FN_LOCAL_BOOL(lp_defer_sharing_violations, bDeferSharingViolations)
 FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
