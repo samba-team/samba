@@ -314,19 +314,15 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	struct ldb_message **msgs;
 	struct ldb_message **msgs_domain;
 	NTSTATUS nt_status;
-	struct ldb_message mod, *msg_set_pw = &mod;
-	const char *domain_dn;
+	struct ldb_message *mod;
 	const char *domain_sid;
 
 	const char *attrs[] = {"objectSid", NULL };
 
 	const char **domain_attrs = attrs;
-	ZERO_STRUCT(mod);
 
 	nt_status = netr_creds_server_step_check(pipe_state, &r->in.credential, &r->out.return_authenticator);
-	if (NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	sam_ctx = samdb_connect(mem_ctx);
 	if (sam_ctx == NULL) {
@@ -336,6 +332,9 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	num_records = samdb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
 				   pipe_state->creds->account_name);
+	if (num_records == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+ 	}
 
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
@@ -360,6 +359,9 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 					  &msgs_domain, domain_attrs,
 					  "(&(objectSid=%s)(objectclass=domain))", 
 					  domain_sid);
+	if (num_records_domain == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	if (num_records_domain == 0) {
 		DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
@@ -373,30 +375,25 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	domain_dn = msgs_domain[0]->dn;
-	
-	mod.dn = talloc_strdup(mem_ctx, msgs[0]->dn);
-	if (!mod.dn) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
+	mod = talloc_zero(mem_ctx, struct ldb_message);
+	NT_STATUS_HAVE_NO_MEMORY(mod);
+	mod->dn = talloc_reference(mod, msgs[0]->dn);
+    
 	creds_des_decrypt(pipe_state->creds, &r->in.new_password);
 
 	/* set the password - samdb needs to know both the domain and user DNs,
 	   so the domain password policy can be used */
-	nt_status = samdb_set_password(sam_ctx, mem_ctx,
-				       msgs[0]->dn, domain_dn,
-				       msg_set_pw, 
+	nt_status = samdb_set_password(sam_ctx, mod,
+				       msgs[0]->dn,
+				       msgs_domain[0]->dn,
+				       mod,
 				       NULL, /* Don't have plaintext */
 				       NULL, &r->in.new_password,
 				       False /* This is not considered a password change */,
 				       NULL);
-	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	ret = samdb_replace(sam_ctx, mem_ctx, msg_set_pw);
+	ret = samdb_replace(sam_ctx, mem_ctx, mod);
 	if (ret != 0) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
@@ -651,7 +648,6 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	r->out.validation		= r2.out.validation;
 	r->out.authoritative		= r2.out.authoritative;
 	r->out.flags			= r2.out.flags;
-	r->out.flags = r2.out.flags;
 
 	return nt_status;
 }
