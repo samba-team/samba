@@ -1201,17 +1201,17 @@ this is the receive function of the background lpq updater
 ****************************************************************************/
 static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t len)
 {
-	struct print_queue_update_context *ctx;
+	struct print_queue_update_context ctx;
 
 	if (len != sizeof(struct print_queue_update_context)) {
 		DEBUG(1, ("Got invalid print queue update message\n"));
 		return;
 	}
 
-	ctx = (struct print_queue_update_context*)buf;
-	print_queue_update_internal(ctx->sharename, 
-		get_printer_fns_from_type(ctx->printing_type),
-		ctx->lpqcommand );
+	memcpy(&ctx, buf, sizeof(struct print_queue_update_context));
+	print_queue_update_internal(ctx.sharename, 
+		get_printer_fns_from_type(ctx.printing_type),
+		ctx.lpqcommand );
 }
 
 static pid_t background_lpq_updater_pid = -1;
