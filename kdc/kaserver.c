@@ -264,6 +264,7 @@ create_reply_ticket (struct rx_header *hdr,
     struct rx_header reply_hdr;
     des_cblock zero;
     size_t pad;
+    unsigned fyrtiosjuelva;
 
     /* create the ticket */
 
@@ -276,7 +277,12 @@ create_reply_ticket (struct rx_header *hdr,
 
     /* create the encrypted part of the reply */
     sp = krb5_storage_emem ();
+    krb5_generate_random_block(&fyrtiosjuelva, sizeof(fyrtiosjuelva));
+    fyrtiosjuelva &= 0xffffffff;
+    krb5_store_int32 (sp, fyrtiosjuelva);
+#if 0
     krb5_store_int32 (sp, 4711); /* XXX */
+#endif
     krb5_store_int32 (sp, challenge);
     sp->store  (sp, session, 8);
     memset (&session, 0, sizeof(session));
