@@ -62,11 +62,9 @@ install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	$(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB)
 	@install_symlink_command@
-@el_yes@	$(INSTALL_DATA) -m 0555 $(LIB2) $(DESTDIR)$(libdir)/$(LIB2)
-@el_yes@	@install_symlink_command2@
 
 uninstall:
-	for i in $(LIBS); do rm -f $(DESTDIR)$(libdir)/$$i; done
+	rm -f $(DESTDIR)$(libdir)/$(LIB)
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
