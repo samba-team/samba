@@ -808,6 +808,8 @@ FILE *sys_fopen(const char *path, const char *type);
 SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
+int sys_symlink(const char *oldpath, const char *newpath);
+int sys_readlink(const char *path, char *buf, size_t bufsiz);
 int sys_chown(const char *fname,uid_t uid,gid_t gid);
 int sys_chroot(const char *dname);
 struct hostent *sys_gethostbyname(const char *name);
@@ -1272,15 +1274,11 @@ BOOL is_msdfs_link(connection_struct* conn, char* path);
 BOOL get_referred_path(struct junction_map* junction);
 BOOL dfs_redirect(char* pathname, connection_struct* conn);
 BOOL dfs_findfirst_redirect(char* pathname, connection_struct* conn);
-int setup_dfs_referral(char* pathname, int max_referral_level, 
-			char** ppdata);
+int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata);
 int dfs_path_error(char* inbuf, char* outbuf);
 BOOL create_msdfs_link(struct junction_map* jn, BOOL exists);
 BOOL remove_msdfs_link(struct junction_map* jn);
 int enum_msdfs_links(struct junction_map* jn);
-int setup_dfs_referral(char* pathname, int max_referral_level, 
-		       char** ppdata);
-BOOL is_msdfs_link(connection_struct* conn, char* path);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
@@ -4323,8 +4321,7 @@ void sys_utmp_claim(const char *username, const char *hostname,
 
 /*The following definitions come from  smbd/vfs.c  */
 
-int vfs_init_default(connection_struct *conn);
-BOOL vfs_init_custom(connection_struct *conn);
+BOOL vfs_init(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
 int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
 char *vfs_getwd(connection_struct *conn, char *unix_path);
@@ -4371,6 +4368,8 @@ char *vfswrap_getwd(connection_struct *conn, char *path);
 int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times);
 int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len);
 BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+int vfswrap_symlink(connection_struct *conn, const char *oldpath, const char *newpath);
+int vfswrap_readlink(connection_struct *conn, const char *path, char *buf, size_t bufsiz);
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
 size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
 BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);

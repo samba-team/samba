@@ -86,6 +86,8 @@ struct vfs_ops {
     int (*utime)(struct connection_struct *conn, char *path, struct utimbuf *times);
 	int (*ftruncate)(struct files_struct *fsp, int fd, SMB_OFF_T offset);
 	BOOL (*lock)(struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+	int (*symlink)(struct connection_struct *conn, const char *oldpath, const char *newpath);
+	int (*readlink)(struct connection_struct *conn, const char *path, char *buf, size_t bufsiz);
 
 	/* NT ACL operations. */
 

@@ -72,6 +72,9 @@ struct vfs_ops default_vfs_ops = {
 	vfswrap_utime,
 	vfswrap_ftruncate,
 	vfswrap_lock,
+	vfswrap_symlink,
+	vfswrap_readlink,
+
 	vfswrap_fget_nt_acl,
 	vfswrap_get_nt_acl,
 	vfswrap_fset_nt_acl,
@@ -89,7 +92,8 @@ struct vfs_ops default_vfs_ops = {
 /****************************************************************************
   initialise default vfs hooks
 ****************************************************************************/
-int vfs_init_default(connection_struct *conn)
+
+static BOOL vfs_init_default(connection_struct *conn)
 {
     DEBUG(3, ("Initialising default vfs hooks\n"));
 
@@ -102,7 +106,7 @@ int vfs_init_default(connection_struct *conn)
 ****************************************************************************/
 
 #ifdef HAVE_LIBDL
-BOOL vfs_init_custom(connection_struct *conn)
+static BOOL vfs_init_custom(connection_struct *conn)
 {
 	int vfs_version = -1;
     struct vfs_ops *ops, *(*init_fptr)(int *);
@@ -146,144 +150,145 @@ BOOL vfs_init_custom(connection_struct *conn)
 
     memcpy(&conn->vfs_ops, ops, sizeof(struct vfs_ops));
 
-    if (conn->vfs_ops.connect == NULL) {
-	conn->vfs_ops.connect = default_vfs_ops.connect;
-    }
+    if (conn->vfs_ops.connect == NULL)
+		conn->vfs_ops.connect = default_vfs_ops.connect;
 
-    if (conn->vfs_ops.disconnect == NULL) {
-	conn->vfs_ops.disconnect = default_vfs_ops.disconnect;
-    }
+    if (conn->vfs_ops.disconnect == NULL)
+		conn->vfs_ops.disconnect = default_vfs_ops.disconnect;
 
-    if (conn->vfs_ops.disk_free == NULL) {
-	conn->vfs_ops.disk_free = default_vfs_ops.disk_free;
-    }
+    if (conn->vfs_ops.disk_free == NULL)
+		conn->vfs_ops.disk_free = default_vfs_ops.disk_free;
 
-    if (conn->vfs_ops.opendir == NULL) {
-	conn->vfs_ops.opendir = default_vfs_ops.opendir;
-    }
+    if (conn->vfs_ops.opendir == NULL)
+		conn->vfs_ops.opendir = default_vfs_ops.opendir;
 
-    if (conn->vfs_ops.readdir == NULL) {
-	conn->vfs_ops.readdir = default_vfs_ops.readdir;
-    }
+    if (conn->vfs_ops.readdir == NULL)
+		conn->vfs_ops.readdir = default_vfs_ops.readdir;
 
-    if (conn->vfs_ops.mkdir == NULL) {
-	conn->vfs_ops.mkdir = default_vfs_ops.mkdir;
-    }
+    if (conn->vfs_ops.mkdir == NULL)
+		conn->vfs_ops.mkdir = default_vfs_ops.mkdir;
 
-    if (conn->vfs_ops.rmdir == NULL) {
-	conn->vfs_ops.rmdir = default_vfs_ops.rmdir;
-    }
+    if (conn->vfs_ops.rmdir == NULL)
+		conn->vfs_ops.rmdir = default_vfs_ops.rmdir;
 
-    if (conn->vfs_ops.closedir == NULL) {
-	conn->vfs_ops.closedir = default_vfs_ops.closedir;
-    }
+    if (conn->vfs_ops.closedir == NULL)
+		conn->vfs_ops.closedir = default_vfs_ops.closedir;
 
-    if (conn->vfs_ops.open == NULL) {
-	conn->vfs_ops.open = default_vfs_ops.open;
-    }
+    if (conn->vfs_ops.open == NULL)
+		conn->vfs_ops.open = default_vfs_ops.open;
 
-    if (conn->vfs_ops.close == NULL) {
-	conn->vfs_ops.close = default_vfs_ops.close;
-    }
+    if (conn->vfs_ops.close == NULL)
+		conn->vfs_ops.close = default_vfs_ops.close;
 
-    if (conn->vfs_ops.read == NULL) {
-	conn->vfs_ops.read = default_vfs_ops.read;
-    }
+    if (conn->vfs_ops.read == NULL)
+		conn->vfs_ops.read = default_vfs_ops.read;
 
-    if (conn->vfs_ops.write == NULL) {
-	conn->vfs_ops.write = default_vfs_ops.write;
-    }
+    if (conn->vfs_ops.write == NULL)
+		conn->vfs_ops.write = default_vfs_ops.write;
 
-    if (conn->vfs_ops.lseek == NULL) {
-	conn->vfs_ops.lseek = default_vfs_ops.lseek;
-    }
+    if (conn->vfs_ops.lseek == NULL)
+		conn->vfs_ops.lseek = default_vfs_ops.lseek;
 
-    if (conn->vfs_ops.rename == NULL) {
-	conn->vfs_ops.rename = default_vfs_ops.rename;
-    }
+    if (conn->vfs_ops.rename == NULL)
+		conn->vfs_ops.rename = default_vfs_ops.rename;
 
-    if (conn->vfs_ops.fsync == NULL) {
-	conn->vfs_ops.fsync = default_vfs_ops.fsync;
-    }
+    if (conn->vfs_ops.fsync == NULL)
+		conn->vfs_ops.fsync = default_vfs_ops.fsync;
 
-    if (conn->vfs_ops.stat == NULL) {
-	conn->vfs_ops.stat = default_vfs_ops.stat;
-    }
+    if (conn->vfs_ops.stat == NULL)
+		conn->vfs_ops.stat = default_vfs_ops.stat;
 
-    if (conn->vfs_ops.fstat == NULL) {
-	conn->vfs_ops.fstat = default_vfs_ops.fstat;
-    }
+    if (conn->vfs_ops.fstat == NULL)
+		conn->vfs_ops.fstat = default_vfs_ops.fstat;
 
-    if (conn->vfs_ops.lstat == NULL) {
-	conn->vfs_ops.lstat = default_vfs_ops.lstat;
-    }
+    if (conn->vfs_ops.lstat == NULL)
+		conn->vfs_ops.lstat = default_vfs_ops.lstat;
 
-    if (conn->vfs_ops.unlink == NULL) {
-	conn->vfs_ops.unlink = default_vfs_ops.unlink;
-    }
+    if (conn->vfs_ops.unlink == NULL)
+		conn->vfs_ops.unlink = default_vfs_ops.unlink;
 
-    if (conn->vfs_ops.chmod == NULL) {
-	conn->vfs_ops.chmod = default_vfs_ops.chmod;
-    }
+    if (conn->vfs_ops.chmod == NULL)
+		conn->vfs_ops.chmod = default_vfs_ops.chmod;
 
-    if (conn->vfs_ops.fchmod == NULL) {
-	conn->vfs_ops.fchmod = default_vfs_ops.fchmod;
-    }
+    if (conn->vfs_ops.fchmod == NULL)
+		conn->vfs_ops.fchmod = default_vfs_ops.fchmod;
 
-    if (conn->vfs_ops.chown == NULL) {
-	conn->vfs_ops.chown = default_vfs_ops.chown;
-    }
+    if (conn->vfs_ops.chown == NULL)
+		conn->vfs_ops.chown = default_vfs_ops.chown;
 
-    if (conn->vfs_ops.fchown == NULL) {
-	conn->vfs_ops.fchown = default_vfs_ops.fchown;
-    }
+    if (conn->vfs_ops.fchown == NULL)
+		conn->vfs_ops.fchown = default_vfs_ops.fchown;
 
-    if (conn->vfs_ops.chdir == NULL) {
-	conn->vfs_ops.chdir = default_vfs_ops.chdir;
-    }
+    if (conn->vfs_ops.chdir == NULL)
+		conn->vfs_ops.chdir = default_vfs_ops.chdir;
 
-    if (conn->vfs_ops.getwd == NULL) {
-	conn->vfs_ops.getwd = default_vfs_ops.getwd;
-    }
+    if (conn->vfs_ops.getwd == NULL)
+		conn->vfs_ops.getwd = default_vfs_ops.getwd;
 
-    if (conn->vfs_ops.utime == NULL) {
-	conn->vfs_ops.utime = default_vfs_ops.utime;
-    }
+    if (conn->vfs_ops.utime == NULL)
+		conn->vfs_ops.utime = default_vfs_ops.utime;
 
-    if (conn->vfs_ops.ftruncate == NULL) {
-	conn->vfs_ops.ftruncate = default_vfs_ops.ftruncate;
-    }
+    if (conn->vfs_ops.ftruncate == NULL)
+		conn->vfs_ops.ftruncate = default_vfs_ops.ftruncate;
 
-    if (conn->vfs_ops.lock == NULL) {
-	conn->vfs_ops.lock = default_vfs_ops.lock;
-    }
+    if (conn->vfs_ops.lock == NULL)
+		conn->vfs_ops.lock = default_vfs_ops.lock;
 
-    if (conn->vfs_ops.fget_nt_acl == NULL) {
-	conn->vfs_ops.fget_nt_acl = default_vfs_ops.fget_nt_acl;
-    }
+    if (conn->vfs_ops.symlink == NULL)
+		conn->vfs_ops.symlink = default_vfs_ops.symlink;
 
-    if (conn->vfs_ops.get_nt_acl == NULL) {
-	conn->vfs_ops.get_nt_acl = default_vfs_ops.get_nt_acl;
-    }
+    if (conn->vfs_ops.readlink == NULL)
+		conn->vfs_ops.readlink = default_vfs_ops.readlink;
 
-    if (conn->vfs_ops.fset_nt_acl == NULL) {
-	conn->vfs_ops.fset_nt_acl = default_vfs_ops.fset_nt_acl;
-    }
+    if (conn->vfs_ops.fget_nt_acl == NULL)
+		conn->vfs_ops.fget_nt_acl = default_vfs_ops.fget_nt_acl;
 
-    if (conn->vfs_ops.set_nt_acl == NULL) {
-	conn->vfs_ops.set_nt_acl = default_vfs_ops.set_nt_acl;
-    }
+    if (conn->vfs_ops.get_nt_acl == NULL)
+		conn->vfs_ops.get_nt_acl = default_vfs_ops.get_nt_acl;
 
-    if (conn->vfs_ops.chmod_acl == NULL) {
-	conn->vfs_ops.chmod_acl = default_vfs_ops.chmod_acl;
-    }
+    if (conn->vfs_ops.fset_nt_acl == NULL)
+		conn->vfs_ops.fset_nt_acl = default_vfs_ops.fset_nt_acl;
 
-    if (conn->vfs_ops.fchmod_acl == NULL) {
-	conn->vfs_ops.fchmod_acl = default_vfs_ops.fchmod_acl;
-    }
+    if (conn->vfs_ops.set_nt_acl == NULL)
+		conn->vfs_ops.set_nt_acl = default_vfs_ops.set_nt_acl;
+
+    if (conn->vfs_ops.chmod_acl == NULL)
+		conn->vfs_ops.chmod_acl = default_vfs_ops.chmod_acl;
+
+    if (conn->vfs_ops.fchmod_acl == NULL)
+		conn->vfs_ops.fchmod_acl = default_vfs_ops.fchmod_acl;
+
     return True;
 }
 #endif
+
+/*****************************************************************
+ Generic VFS init.
+******************************************************************/
+
+BOOL vfs_init(connection_struct *conn)
+{
+	if (*lp_vfsobj(SNUM(conn))) {
+#ifdef HAVE_LIBDL
+ 
+		/* Loadable object file */
+ 
+		if (!vfs_init_custom(conn)) {
+			DEBUG(0, ("vfs_init: vfs_init_custom failed\n"));
+			return False;
+		}
+
+		return True;
+#else
+		DEBUG(0, ("vfs_init: No libdl present - cannot use VFS objects\n"));
+		return False;
+#endif
+	}
+ 
+	/* Normal share - initialise with disk access functions */
+ 
+	return vfs_init_default(conn);
+}
 
 /*******************************************************************
  Check if directory exists.

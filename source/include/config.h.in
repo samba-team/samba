@@ -629,6 +629,9 @@
 /* Define if you have the readdir64 function.  */
 #undef HAVE_READDIR64
 
+/* Define if you have the readlink function.  */
+#undef HAVE_READLINK
+
 /* Define if you have the rename function.  */
 #undef HAVE_RENAME
 
@@ -706,6 +709,9 @@
 
 /* Define if you have the strtoul function.  */
 #undef HAVE_STRTOUL
+
+/* Define if you have the symlink function.  */
+#undef HAVE_SYMLINK
 
 /* Define if you have the syscall function.  */
 #undef HAVE_SYSCALL
