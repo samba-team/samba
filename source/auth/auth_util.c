@@ -140,7 +140,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 		return False;
 	}
 
-	DEBUG(5,("makeing blobs for %s's user_info struct\n", internal_username));
+	DEBUG(5,("making blobs for %s's user_info struct\n", internal_username));
 
 	(*user_info)->lm_resp = data_blob(lm_pwd.data, lm_pwd.length);
 	(*user_info)->nt_resp = data_blob(nt_pwd.data, nt_pwd.length);
