@@ -1077,6 +1077,7 @@
 	/* Function    0x3d     */
 	NTSTATUS samr_Connect3(
 		[in] unistr *system_name,
+		/* this unknown value seems to be completely ignored by w2k3 */
 		[in] uint32 unknown,
 		[in] uint32 access_mask,
 		[out,ref]  policy_handle *handle
@@ -1108,18 +1109,22 @@
 
 	/************************/
 	/* Function    0x40      */
+
+	typedef struct {
+		uint32         unknown1; /* w2k3 gives 3 */
+		uint32         unknown2; /* w2k3 gives 0 */
+	} samr_ConnectInfo1;
+
+	typedef union {
+		[case(1)]  samr_ConnectInfo1 info1;
+	} samr_ConnectInfo;
+
 	NTSTATUS samr_Connect5(
-		[in]       unistr        *system_name,
-		[in]       uint32         access_mask,
-		[in]       uint32         unknown0,
-		[in]       uint32         unknown1,
-		[in]       uint32         unknown2,
-		[in]       uint32         unknown3,
-		[out]      uint32         unknown4,
-		[out]      uint32         unknown5,
-		[out]      uint32         unknown6,
-		[out]      uint32         unknown7,
-		[out,ref]  policy_handle *handle
+		[in]       unistr             *system_name,
+		[in]       uint32             access_mask,
+		[in,out]   uint32             level,
+		[in,out,switch_is(level),ref] samr_ConnectInfo *info,
+		[out,ref]  policy_handle      *handle
 		);
 
 	/************************/
