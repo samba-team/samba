@@ -211,7 +211,6 @@ int lookup(nsd_file_t *rq)
 		    len -= size;
 		    strncat(response,key,size);
 		    strncat(response,"\t",1);
-nsd_logprintf(NSD_LOG_MIN, "lookup (wins hosts.byaddr) %s\n",response);
 		    for (i = 0; i < count; i++) {
 			/* ignore group names */
 			if (status[i].flags & 0x80) continue;
@@ -224,7 +223,6 @@ nsd_logprintf(NSD_LOG_MIN, "lookup (wins hosts.byaddr) %s\n",response);
 				len -= size;
 				strncat(response, status[i].name, size);
 				strncat(response, " ", 1);
-nsd_logprintf(NSD_LOG_MIN, "lookup (wins hosts.byaddr) %s\n",response);
 				found = True;
 			}
 		    }
@@ -233,12 +231,8 @@ nsd_logprintf(NSD_LOG_MIN, "lookup (wins hosts.byaddr) %s\n",response);
 		}
 	} else if (strcasecmp(map,"hosts.byname") == 0) {
 	    if (ip_list = lookup_byname_backend(key, &count)) {
-		nsd_logprintf(NSD_LOG_LOW, 
-			"lookup (wins %s) %d addresses returned\n",
-			map,count);
 		for (i = count; i ; i--) {
 		    addr = inet_ntoa(ip_list[i-1]);
-		    nsd_logprintf(NSD_LOG_LOW, "lookup (wins) %s\n",addr);
 		    size = strlen(addr) + 1;
 		    if (size > len) {
 			free(ip_list);
