@@ -45,7 +45,7 @@ BOOL getgroups_user(const char *user, gid_t primary_gid, gid_t **ret_groups, int
 	int i;
 
 	max_grp = groups_max();
-	temp_groups = SMB_MALLOC_P(gid_t, max_grp);
+	temp_groups = SMB_MALLOC_ARRAY(gid_t, max_grp);
 	if (! temp_groups) {
 		return False;
 	}
