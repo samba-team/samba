@@ -233,17 +233,12 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 		fprintf(f, "DACL:");
 		print_ace(f, ace);
 	}
-
 	for (i = 0; sd->sacl && i < sd->sacl->num_aces; i++) {
 		SEC_ACE *ace = &sd->sacl->ace[i];
-		fstring sidstr;
-
-		SidToString(sidstr, &ace->sid);
-
-		fprintf(f, "SACL:%s:%x:%x:%08x\n", sidstr, 
-			ace->type, ace->flags,
-			ace->info.mask);
+		fprintf(f, "SACL:");
+		print_ace(f, ace);
 	}
+
 }
 
 
