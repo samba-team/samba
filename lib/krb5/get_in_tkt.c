@@ -366,7 +366,7 @@ krb5_get_in_tkt(krb5_context context,
 		fprintf (stderr,
 			 "get_in_tkt: KRB_ERROR: %s\n", *(error.e_text));
 	    free_KRB_ERROR (&error);
-	    return error.error_code;
+	    return error.error_code + KRB5KDC_ERR_NONE;
 	}
 	return ret;
     }
