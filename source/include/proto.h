@@ -345,6 +345,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		   uint16 *mode, size_t *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino);
+BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdata);
 
 /*The following definitions come from  libsmb/clireadwrite.c  */
 
@@ -745,27 +746,6 @@ int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
 int sys_acl_delete_def_file(const char *name);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T acl_d) ;
-int sys_acl_free_qualifier(void *qual) ;
-int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
-SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(int fd);
-char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
-int sys_acl_valid( SMB_ACL_T theacl );
-int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
-int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
-int sys_acl_create_entry( SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
-int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
-int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
-void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
-int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
-int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
-int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
-SMB_ACL_T sys_acl_init( int count);
-int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
-int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry_d, void *qual_p);
-int sys_acl_set_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
-int sys_acl_free_text(char *text);
-int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 int sys_acl_free_qualifier(void *qual) ;
 int sys_acl_get_entry( SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
@@ -3089,8 +3069,7 @@ void init_sam_user_info11(SAM_USER_INFO_11 * usr,
 			  NTTIME * expiry,
 			  char *mach_acct,
 			  uint32 rid_user, uint32 rid_group, uint16 acct_ctrl);
-void init_sam_user_info24(SAM_USER_INFO_24 * usr,
-			  char newpass[516], uint16 passlen);
+void init_sam_user_info24(SAM_USER_INFO_24 * usr, char newpass[516]);
 void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all zeros */
 			NTTIME * logoff_time,	/* all zeros */
 			NTTIME * kickoff_time,	/* all zeros */
@@ -4532,6 +4511,7 @@ void nb_create(char *fname, int size);
 
 /*The following definitions come from  utils/torture.c  */
 
+void new_trans(struct cli_state *pcli, int fnum, int level);
 
 /*The following definitions come from  web/cgi.c  */
 
