@@ -1,5 +1,7 @@
 2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
 
+	* mod.c: allow setting kvno
+
 	* kadmind.c: if stdin is not a socket create and listen to sockets
 
 	* kadm_conn.c: socket creation functions
