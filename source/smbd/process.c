@@ -737,11 +737,167 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
-  process commands from the client
+ Process any timeout housekeeping. Return False if the caler should exit.
 ****************************************************************************/
-void smbd_process(void)
+
+static BOOL timeout_processing(int *counter, int deadtime, 
+                               int *last_keepalive, int *service_load_counter)
 {
   extern int Client;
+
+  time_t t;
+  BOOL allidle = True;
+  extern int keepalive;
+
+  if (*counter > 365 * 3600) /* big number of seconds. */
+  {
+    *counter = 0;
+    *service_load_counter = 0;
+  }
+
+  if (smb_read_error == READ_EOF) 
+  {
+    DEBUG(3,("end of file from client\n"));
+    return False;
+  }
+
+  if (smb_read_error == READ_ERROR) 
+  {
+    DEBUG(3,("receive_smb error (%s) exiting\n",
+              strerror(errno)));
+    return False;
+  }
+
+  t = time(NULL);
+
+  /* become root again if waiting */
+  unbecome_user();
+
+  /* check for smb.conf reload */
+  if (*counter >= *service_load_counter + SMBD_RELOAD_CHECK)
+  {
+    *service_load_counter = *counter;
+
+    /* reload services, if files have changed. */
+    reload_services(True);
+  }
+
+  /*
+   * If reload_after_sighup == True then we got a SIGHUP
+   * and are being asked to reload. Fix from <branko.cibej@hermes.si>
+   */
+
+  if (reload_after_sighup)
+  {
+    DEBUG(0,("Reloading services after SIGHUP\n"));
+    reload_services(False);
+    reload_after_sighup = False;
+    /*
+     * Use this as an excuse to print some stats.
+     */
+    print_stat_cache_statistics();
+  }
+
+  /* automatic timeout if all connections are closed */      
+  if (conn_num_open()==0 && *counter >= IDLE_CLOSED_TIMEOUT) 
+  {
+    DEBUG( 2, ( "Closing idle connection\n" ) );
+    return False;
+  }
+
+  if (keepalive && (*counter-*last_keepalive)>keepalive) 
+  {
+    struct cli_state *cli = server_client();
+    if (!send_keepalive(Client)) {
+      DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+      return False;
+    }	    
+    /* also send a keepalive to the password server if its still
+       connected */
+    if (cli && cli->initialised)
+      send_keepalive(cli->fd);
+    *last_keepalive = *counter;
+  }
+
+  /* check for connection timeouts */
+  allidle = conn_idle_all(t, deadtime);
+
+  if (allidle && conn_num_open()>0) {
+    DEBUG(2,("Closing idle connection 2.\n"));
+    return False;
+  }
+
+  if(global_machine_password_needs_changing)
+  {
+    unsigned char trust_passwd_hash[16];
+    time_t lct;
+    pstring remote_machine_list;
+
+    /*
+     * We're in domain level security, and the code that
+     * read the machine password flagged that the machine
+     * password needs changing.
+     */
+
+    /*
+     * First, open the machine password file with an exclusive lock.
+     */
+
+    if(!trust_password_lock( global_myworkgroup, global_myname, True)) {
+      DEBUG(0,("process: unable to open the machine account password file for \
+machine %s in domain %s.\n", global_myname, global_myworkgroup ));
+      return True;
+    }
+
+    if(!get_trust_account_password( trust_passwd_hash, &lct)) {
+      DEBUG(0,("process: unable to read the machine account password for \
+machine %s in domain %s.\n", global_myname, global_myworkgroup ));
+      trust_password_unlock();
+      return True;
+    }
+
+    /*
+     * Make sure someone else hasn't already done this.
+     */
+
+    if(t < lct + lp_machine_password_timeout()) {
+      trust_password_unlock();
+      global_machine_password_needs_changing = False;
+      return True;
+    }
+
+    pstrcpy(remote_machine_list, lp_passwordserver());
+
+    change_trust_account_password( global_myworkgroup, remote_machine_list);
+    trust_password_unlock();
+    global_machine_password_needs_changing = False;
+  }
+
+  /*
+   * Check to see if we have any blocking locks
+   * outstanding on the queue.
+   */
+  process_blocking_lock_queue(t);
+
+  /*
+   * Check to see if we have any change notifies 
+   * outstanding on the queue.
+   */
+  process_pending_change_notify_queue(t);
+
+  return True;
+}
+
+/****************************************************************************
+  process commands from the client
+****************************************************************************/
+
+void smbd_process(void)
+{
+  extern int smb_echo_count;
+  int counter = SMBD_SELECT_LOOP;
+  int service_load_counter = 0;
+  int last_keepalive=0;
 
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -771,9 +927,6 @@ void smbd_process(void)
   while (True)
   {
     int deadtime = lp_deadtime()*60;
-    int counter;
-    int last_keepalive=0;
-    int service_load_counter = 0;
     BOOL got_smb = False;
 
     if (deadtime <= 0)
@@ -786,154 +939,33 @@ void smbd_process(void)
 
     errno = 0;      
 
-    for (counter=SMBD_SELECT_LOOP; 
-          !receive_message_or_smb(InBuffer,BUFFER_SIZE,
-                                  SMBD_SELECT_LOOP*1000,&got_smb); 
-          counter += SMBD_SELECT_LOOP)
+    while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,SMBD_SELECT_LOOP*1000,&got_smb))
     {
-      time_t t;
-      BOOL allidle = True;
-      extern int keepalive;
-
-      if (counter > 365 * 3600) /* big number of seconds. */
-      {
-        counter = 0;
-        service_load_counter = 0;
-      }
-
-      if (smb_read_error == READ_EOF) 
-      {
-        DEBUG(3,("end of file from client\n"));
+      if(!timeout_processing(&counter, deadtime, &last_keepalive, &service_load_counter))
         return;
-      }
-
-      if (smb_read_error == READ_ERROR) 
-      {
-        DEBUG(3,("receive_smb error (%s) exiting\n",
-                  strerror(errno)));
-        return;
-      }
-
-      t = time(NULL);
-
-      /* become root again if waiting */
-      unbecome_user();
-
-      /* check for smb.conf reload */
-      if (counter >= service_load_counter + SMBD_RELOAD_CHECK)
-      {
-        service_load_counter = counter;
-
-        /* reload services, if files have changed. */
-        reload_services(True);
-      }
-
-      /*
-       * If reload_after_sighup == True then we got a SIGHUP
-       * and are being asked to reload. Fix from <branko.cibej@hermes.si>
-       */
-
-      if (reload_after_sighup)
-      {
-        DEBUG(0,("Reloading services after SIGHUP\n"));
-        reload_services(False);
-        reload_after_sighup = False;
-        /*
-         * Use this as an excuse to print some stats.
-         */
-        print_stat_cache_statistics();
-      }
-
-      /* automatic timeout if all connections are closed */      
-      if (conn_num_open()==0 && counter >= IDLE_CLOSED_TIMEOUT) 
-      {
-        DEBUG( 2, ( "Closing idle connection\n" ) );
-        return;
-      }
-
-      if (keepalive && (counter-last_keepalive)>keepalive) 
-      {
-	      struct cli_state *cli = server_client();
-	      if (!send_keepalive(Client)) {
-		      DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
-		      return;
-	      }	    
-	      /* also send a keepalive to the password server if its still
-		 connected */
-	      if (cli && cli->initialised)
-		      send_keepalive(cli->fd);
-	      last_keepalive = counter;
-      }
-
-      /* check for connection timeouts */
-      allidle = conn_idle_all(t, deadtime);
-
-      if (allidle && conn_num_open()>0) {
-	      DEBUG(2,("Closing idle connection 2.\n"));
-	      return;
-      }
-
-      if(global_machine_password_needs_changing)
-      {
-        unsigned char trust_passwd_hash[16];
-        time_t lct;
-        pstring remote_machine_list;
-
-        /*
-         * We're in domain level security, and the code that
-         * read the machine password flagged that the machine
-         * password needs changing.
-         */
-
-        /*
-         * First, open the machine password file with an exclusive lock.
-         */
-
-        if(!trust_password_lock( global_myworkgroup, global_myname, True)) {
-          DEBUG(0,("process: unable to open the machine account password file for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-          continue;
-        }
-
-        if(!get_trust_account_password( trust_passwd_hash, &lct)) {
-          DEBUG(0,("process: unable to read the machine account password for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-          trust_password_unlock();
-          continue;
-        }
-
-        /*
-         * Make sure someone else hasn't already done this.
-         */
-
-        if(t < lct + lp_machine_password_timeout()) {
-          trust_password_unlock();
-          global_machine_password_needs_changing = False;
-          continue;
-        }
-
-        pstrcpy(remote_machine_list, lp_passwordserver());
-
-        change_trust_account_password( global_myworkgroup, remote_machine_list);
-        trust_password_unlock();
-        global_machine_password_needs_changing = False;
-      }
-
-      /*
-       * Check to see if we have any blocking locks
-       * outstanding on the queue.
-       */
-      process_blocking_lock_queue(t);
-
-      /*
-       * Check to see if we have any change notifies 
-       * outstanding on the queue.
-       */
-      process_pending_change_notify_queue(t);
+      counter += SMBD_SELECT_LOOP;
     }
 
-    if(got_smb)
+    if(got_smb) {
+      /*
+       * Ensure we do timeout processing if the SMB we just got was
+       * only an echo request. This allows us to set the select
+       * timeout in 'receive_message_or_smb()' to any value we like
+       * without worrying that the client will send echo requests
+       * faster than the select timeout, thus starving out the
+       * essential processing (change notify, blocking locks) that
+       * the timeout code does. JRA.
+       */ 
+      int num_echos = smb_echo_count;
+
       process_smb(InBuffer, OutBuffer);
+
+      if(smb_echo_count != num_echos) {
+        if(!timeout_processing(&counter, deadtime, &last_keepalive, &service_load_counter))
+          return;
+        counter += SMBD_SELECT_LOOP;
+      }
+    }
     else
       process_local_message(InBuffer, BUFFER_SIZE);
   }

@@ -126,7 +126,7 @@
 /* the following control timings of various actions. Don't change 
    them unless you know what you are doing. These are all in seconds */
 #define DEFAULT_SMBD_TIMEOUT (60*60*24*7)
-#define SMBD_RELOAD_CHECK (120)
+#define SMBD_RELOAD_CHECK (180)
 #define IDLE_CLOSED_TIMEOUT (60)
 #define DPTR_IDLE_TIMEOUT (120)
 #define SMBD_SELECT_LOOP (60)

@@ -42,7 +42,7 @@ extern fstring global_myworkgroup;
 extern int Client;
 extern int global_oplock_break;
 uint32 global_client_caps = 0;
-
+unsigned int smb_echo_count = 0;
 
 /****************************************************************************
 report a possible attack via the password buffer overflow bug
@@ -2832,6 +2832,8 @@ int reply_echo(connection_struct *conn,
 	}
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
+
+	smb_echo_count++;
 
 	return -1;
 }
