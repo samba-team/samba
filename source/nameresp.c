@@ -118,12 +118,6 @@ static void dead_netbios_entry(struct subnet_record *d,
       add_name_respond(d,n->fd,d->myip, n->reply_id ,&n->name,
 		       n->nb_flags, GET_TTL(0),
 		       n->reply_to_ip, True, n->reply_to_ip);
-      
-      if (!n->bcast && n->num_msgs == 0)
-	{
-	  DEBUG(1,("WINS server did not respond to name registration!\n"));
-	  /* XXXX whoops. we have problems. must deal with this */
-	}
       break;
     }
   
