@@ -318,10 +318,8 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	ctx_p->ngroups = ngroups;
 
 	safe_free(ctx_p->groups);
-#if 1 /* JRATEST */
 	if (token && (token == ctx_p->token))
 		smb_panic("DUPLICATE_TOKEN");
-#endif
 
 	delete_nt_token(&ctx_p->token);
 	
