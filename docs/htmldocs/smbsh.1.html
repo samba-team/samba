@@ -27,13 +27,13 @@ not specified is zero.</p><p>The higher this value, the more detail will be
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
-day to day running - it generates a small amount of 
+day-to-day running - it generates a small amount of 
 information about operations carried out.</p><p>Levels above 1 will generate considerable 
 amounts of log data, and should only be used when 
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2796897"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
+override the <a class="indexterm" name="id2802555"></a><i class="parameter"><tt>log level</tt></i> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-R &lt;name resolve order&gt;</span></dt><dd><p>This option is used to determine what naming 
 services and in what order to resolve 
 host names to IP addresses. The option takes a space-separated 
@@ -66,9 +66,9 @@ resolution methods as it depends on the target host
 being on a locally connected subnet.
 </p></li></ul></div><p>If this parameter is not set then the name resolve order 
 defined in the <tt class="filename">smb.conf</tt> file parameter  
-(<a class="indexterm" name="id2797172"></a><a href="#"><i class="parameter"><tt>name resolve order</tt></i></a>) will be used.
+(<a class="indexterm" name="id2796612"></a><i class="parameter"><tt>name resolve order</tt></i>) will be used.
 </p><p>The default order is lmhosts, host, wins, bcast. Without 
-this parameter or any entry in the <a class="indexterm" name="id2797198"></a><a href="#"><i class="parameter"><tt>name resolve order</tt></i></a> parameter of the <tt class="filename">smb.conf</tt> file, the name 
+this parameter or any entry in the <a class="indexterm" name="id2796631"></a><i class="parameter"><tt>name resolve order</tt></i> parameter of the <tt class="filename">smb.conf</tt> file, the name 
 resolution methods will be attempted in this order. </p></dd><dt><span class="term">-L libdir</span></dt><dd><p>This parameter specifies the location of the 
 		shared libraries used by <b class="command">smbsh</b>. The default
 		value is specified at compile time.
@@ -101,8 +101,8 @@ resolution methods will be attempted in this order. </p></dd><dt><span class="te
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">
-	ftp://ftp.icce.rug.nl/pub/unix/</a>) and updated for the Samba 2.0 
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
 	for Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>

@@ -42,14 +42,14 @@
 		</p></dd><dt><span class="term">-S</span></dt><dd><p>If specified, this parameter causes
 		<b class="command">smbd</b> to log to standard output rather
 		than a file.</p></dd><dt><span class="term">-i</span></dt><dd><p>If this parameter is specified it causes the
-		server to run &quot;interactively&quot;, not as a daemon, even if the
+		server to run "interactively", not as a daemon, even if the
 		server is executed on the command line of a shell. Setting this
 		parameter negates the implicit deamon mode when run from the
 		command line. <b class="command">smbd</b> also logs to standard
 		output, as if the <b class="command">-S</b> parameter had been
 		given.
-		</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
-<b class="command">smbd</b>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
+		</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the program version number.
+</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
 information such as what printcap file to use, as well 
@@ -62,26 +62,26 @@ not specified is zero.</p><p>The higher this value, the more detail will be
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
-day to day running - it generates a small amount of 
+day-to-day running - it generates a small amount of 
 information about operations carried out.</p><p>Levels above 1 will generate considerable 
 amounts of log data, and should only be used when 
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2796921"></a><i class="parameter"><tt>log level</tt></i> parameter
+override the <a class="indexterm" name="id2802583"></a><i class="parameter"><tt>log level</tt></i> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
 </p></dd><dt><span class="term">-b</span></dt><dd><p>Prints information about how 
 		Samba was built.</p></dd><dt><span class="term">-l &lt;log directory&gt;</span></dt><dd><p>If specified,
 		<i class="replaceable"><tt>log directory</tt></i> 
-		specifies a log directory into which the &quot;log.smbd&quot; log
+		specifies a log directory into which the "log.smbd" log
 		file will be created for informational and debug 
 		messages from the running server. The log 
 		file generated is never removed by the server although 
 		its size may be controlled by the 
-		<a class="indexterm" name="id2797022"></a><i class="parameter"><tt>max log size</tt></i>
+		<a class="indexterm" name="id2802678"></a><i class="parameter"><tt>max log size</tt></i>
 		option in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file. <span class="emphasis"><em>Beware:</em></span>
 		If the directory specified does not exist, <b class="command">smbd</b>
 		will log to the default debug log location defined at compile time.
@@ -127,7 +127,7 @@ never removed by the client.
 		is not specific to the server, however.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>PAM INTERACTION</h2><p>Samba uses PAM for authentication (when presented with a plaintext 
 	password), for account checking (is this account disabled?) and for
 	session management.  The degree too which samba supports PAM is restricted
-	by the limitations of the SMB protocol and the <a class="indexterm" name="id2797347"></a><i class="parameter"><tt>obey pam restrictions</tt></i> <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> paramater.  When this is set, the following restrictions apply:
+	by the limitations of the SMB protocol and the <a class="indexterm" name="id2799315"></a><i class="parameter"><tt>obey pam restrictions</tt></i> <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> paramater.  When this is set, the following restrictions apply:
 	</p><div class="itemizedlist"><ul type="disc"><li><p><span class="emphasis"><em>Account Validation</em></span>:  All accesses to a 
 	samba server are checked 
 	against PAM to see if the account is vaild, not disabled and is permitted to 
@@ -165,14 +165,14 @@ never removed by the client.
 	them after, however this would affect performance.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="hosts_access.5.html"><span class="citerefentry"><span class="refentrytitle">hosts_access</span>(5)</span></a>, <a href="inetd.8.html"><span class="citerefentry"><span class="refentrytitle">inetd</span>(8)</span></a>, <a href="nmbd.8.html"><span class="citerefentry"><span class="refentrytitle">nmbd</span>(8)</span></a>, <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>, <a href="smbclient.1.html"><span class="citerefentry"><span class="refentrytitle">smbclient</span>(1)</span></a>, <a href="testparm.1.html"><span class="citerefentry"><span class="refentrytitle">testparm</span>(1)</span></a>, <a href="testprns.1.html"><span class="citerefentry"><span class="refentrytitle">testprns</span>(1)</span></a>, and the 
 	Internet RFC's	<tt class="filename">rfc1001.txt</tt>, <tt class="filename">rfc1002.txt</tt>. 
 	In addition the CIFS (formerly SMB) specification is available 
-	as a link from the Web page <a href="http://samba.org/cifs/" target="_top"> 
-	http://samba.org/cifs/</a>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
+	as a link from the Web page <ulink url="http://samba.org/cifs/"> 
+	http://samba.org/cifs/</ulink>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">
-	ftp://ftp.icce.rug.nl/pub/unix/</a>) and updated for the Samba 2.0 
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
 	Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>
