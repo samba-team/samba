@@ -319,7 +319,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		set_message(outbuf,2,strlen(devicename)+1,True);
 		pstrcpy(smb_buf(outbuf),devicename);
 	} else {
-		char *fsname = FSTYPE_STRING;
+		char *fsname = lp_fstype(SNUM(conn));
 
 		set_message(outbuf,3,3,True);
 
@@ -329,7 +329,9 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		
 		set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
 		
-		SSVAL(outbuf, smb_vwv2, 0x0); /* optional support */
+		/* what does setting this bit do? It is set by NT4 and
+		   may affect the ability to autorun mounted cdroms */
+		SSVAL(outbuf, smb_vwv2, SMB_SUPPORT_SEARCH_BITS); 
 	}
   
 	DEBUG(3,("tconX service=%s user=%s\n",

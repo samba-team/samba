@@ -1068,6 +1068,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
   SMB_STRUCT_STAT st;
   char *vname = volume_label(SNUM(conn));
   int snum = SNUM(conn);
+  char *fstype = lp_fstype(SNUM(conn));
  
   DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
@@ -1113,14 +1114,14 @@ static int call_trans2qfsinfo(connection_struct *conn,
       break;
     }
     case SMB_QUERY_FS_ATTRIBUTE_INFO:
-      data_len = 12 + 2*strlen(FSTYPE_STRING);
+      data_len = 12 + 2*strlen(fstype);
       SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
 #endif /* Old code. */
       SIVAL(pdata,4,128); /* Max filename component length */
-      SIVAL(pdata,8,2*strlen(FSTYPE_STRING));
-      PutUniCode(pdata+12,FSTYPE_STRING);
+      SIVAL(pdata,8,2*strlen(fstype));
+      PutUniCode(pdata+12,fstype);
       SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
       break;
     case SMB_QUERY_FS_LABEL_INFO:
@@ -1130,20 +1131,22 @@ static int call_trans2qfsinfo(connection_struct *conn,
       break;
     case SMB_QUERY_FS_VOLUME_INFO:      
 
-      /*
-       * NB: The earlier CIFS spec that says this always  
-       * uses UNICODE is incorrect ! JRA.
+      /* NT4 always serves this up as unicode. JRA had noted this was
+       * not the case in an earlier comment. What is going on? I
+       * tested with Win95 -> NT and a sniff definately showed
+       * unicode. The volume label now shows up correctly under Win95
+       * with unicode here (tridge, Sep98)
        */
 
-      data_len = 18 + strlen(vname);
+      data_len = 18 + 2*strlen(vname);
 
       /* 
        * Add volume serial number - hash of a combination of
        * the called hostname and the service name.
        */
       SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
-      SIVAL(pdata,12,strlen(vname));
-      pstrcpy(pdata+18,vname);      
+      SIVAL(pdata,12,strlen(vname)*2);
+      PutUniCode(pdata+18,vname);      
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", strlen(vname),
 	       vname));
       break;
