@@ -375,7 +375,7 @@ done
 #ln -s make_smbpasswd $DESTDIR/usr/bin/mksmbpasswd
 #ln -sf convert_smbpasswd $DESTDIR/usr/bin/convertsmbpasswd
 
-ln -s ../usr/bin/smbmnt $DESTDIR/sbin/mount.smbfs
+ln -s ../usr/bin/smbmount $DESTDIR/sbin/mount.smbfs
 
 
 cat <<-'EoH' > $DESTDIR%{EtcSamba}/lmhosts
