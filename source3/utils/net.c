@@ -302,6 +302,22 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 }
 
 
+static int net_join(int argc, const char **argv)
+{
+	if (lp_security() < SEC_DOMAIN) {
+		d_printf("Error: security setting must be DOMAIN or ADS to "\
+			 "joing a domain\n\n");
+		return -1;
+	}
+	if (lp_security() == SEC_ADS) {
+		if (net_ads_join(argc, argv) == 0)
+			return 0;
+		else
+			d_printf("ADS join did not work, trying RPC...\n");
+	}
+	return net_rpc_join(argc, argv);
+}
+
 static int net_usage(int argc, const char **argv)
 {
 	d_printf("  net time\t\t to view or set time information\n"\
@@ -335,7 +351,7 @@ static int net_help(int argc, const char **argv)
 	struct functable func[] = {
 		{"ADS", net_ads_usage},	
 		{"RAP", net_rap_help},
-		{"RPC", net_rpc_usage},
+		{"RPC", net_rpc_help},
 
 		{"FILE", net_rap_file_usage},
 		{"SHARE", net_rap_share_usage},
@@ -381,6 +397,7 @@ static struct functable net_func[] = {
 	{"PASSWORD", net_rap_password},
 	{"TIME", net_time},
 	{"LOOKUP", net_lookup},
+	{"JOIN", net_join},
 
 	{"HELP", net_help},
 	{NULL, NULL}
