@@ -343,6 +343,7 @@ static int join_domain_byuser(char *domain, char *remote,
 			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
 			return 1;
 		}
+		dest_ip = ip_list[0];
 	}
 
 	make_nmb_name(&called, pdc_name, 0x20);
