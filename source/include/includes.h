@@ -154,7 +154,7 @@ extern int errno;
 /* Lists, trees, caching, database... */
 #include "version.h"
 #include "xfile.h"
-#include "talloc.h"
+#include "lib/talloc/talloc.h"
 #include "nt_status.h"
 #include "structs.h"
 #include "lib/tdb/include/tdb.h"
@@ -291,8 +291,10 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define strlen(x) valgrind_strlen(x)
 #endif
 
+#if 0
+/* darn, we can't do this now that we don't link the ldb tools to all the smb libs */
 #define TALLOC_ABORT(reason) smb_panic(reason)
-
+#endif
 
 /*
   this is a warning hack. The idea is to use this everywhere that we

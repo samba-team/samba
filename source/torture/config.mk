@@ -133,7 +133,7 @@ REQUIRED_SUBSYSTEMS = \
 [SUBSYSTEM::TORTURE_LOCAL]
 ADD_OBJ_FILES = \
 		torture/local/iconv.o \
-		torture/local/talloc.o \
+		lib/talloc/testsuite.o \
 		torture/local/messaging.o \
 		torture/local/binding_string.o \
 		torture/local/idtree.o

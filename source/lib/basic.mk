@@ -56,7 +56,6 @@ ADD_OBJ_FILES = \
 		lib/data_blob.o \
 		lib/util.o \
 		lib/util_sock.o \
-		lib/talloc.o \
 		lib/substitute.o \
 		lib/fsusage.o \
 		lib/ms_fnmatch.o \
@@ -71,6 +70,6 @@ ADD_OBJ_FILES = \
 		lib/db_wrap.o \
 		lib/gencache.o
 REQUIRED_SUBSYSTEMS = \
-		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO LIB_SECURITY EXT_LIB_DL
+		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO LIB_SECURITY EXT_LIB_DL LIBTALLOC
 # End SUBSYSTEM LIBBASIC
 ##############################

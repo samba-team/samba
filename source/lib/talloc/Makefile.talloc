@@ -1,0 +1,16 @@
+OPT = -g -ftest-coverage -fprofile-arcs 
+LIBS = -lgcov
+#OPT = -g
+
+CFLAGS = $(OPT) -Wall
+
+all: testsuite
+
+testsuite: talloc.o testsuite.o
+	$(CC) $(CFLAGS) -o testsuite testsuite.o talloc.o $(LIBS)
+
+clean:
+	rm -f *~ *.o testsuite *.gc??
+
+gcov:
+	gcov talloc.c
