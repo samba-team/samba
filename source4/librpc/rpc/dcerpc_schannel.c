@@ -178,7 +178,7 @@ NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct schannel_state *schannel_state;
 	const char *workgroup, *workstation;
-	struct dcerpc_bind_schannel bind_schannel;
+	struct schannel_bind bind_schannel;
 
 	workstation = username;
 	workgroup = domain;
@@ -206,14 +206,22 @@ NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
 	p->auth_info->auth_context_id = random();
 	p->security_state = NULL;
 
-	/* TODO: what are these?? */
 	bind_schannel.unknown1 = 0;
-	bind_schannel.unknown2 = 3;
-	bind_schannel.domain = workgroup;
-	bind_schannel.hostname = workstation;
+#if 0
+	/* to support this we'd need to have access to the full domain name */
+	bind_schannel.bind_type = 23;
+	bind_schannel.u.info23.domain = domain;
+	bind_schannel.u.info23.account_name = username;
+	bind_schannel.u.info23.dnsdomain = str_format_nbt_domain(p->mem_ctx, fulldomainname);
+	bind_schannel.u.info23.workstation = str_format_nbt_domain(p->mem_ctx, username);
+#else
+	bind_schannel.bind_type = 3;
+	bind_schannel.u.info3.domain = domain;
+	bind_schannel.u.info3.account_name = username;
+#endif
 
 	status = ndr_push_struct_blob(&p->auth_info->credentials, p->mem_ctx, &bind_schannel,
-				      (ndr_push_flags_fn_t)ndr_push_dcerpc_bind_schannel);
+				      (ndr_push_flags_fn_t)ndr_push_schannel_bind);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

@@ -39,6 +39,9 @@ sub gen_dispatch_switch($)
 		pidl "\t\tif (DEBUGLEVEL > 10 && dce_call->fault_code == 0) {\n";
 		pidl "\t\t\tNDR_PRINT_OUT_DEBUG($d->{NAME}, r2);\n";
 		pidl "\t\t}\n";
+		pidl "\t\tif (dce_call->fault_code != 0) {\n";
+		pidl "\t\t\tDEBUG(2,(\"dcerpc_fault 0x%x in $d->{NAME}\\n\", dce_call->fault_code));\n";
+		pidl "\t\t}\n";
 		pidl "\t\tbreak;\n\t}\n";
 		$count++; 
 	}
