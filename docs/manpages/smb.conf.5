@@ -1155,6 +1155,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBpreexec\fP
 .IP 
 .IP o 
+\fBpreexec close\fP
+.IP 
+.IP o 
 \fBpreserve case\fP
 .IP 
 .IP o 
@@ -1207,6 +1210,9 @@ parameter for details\&. Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBsecurity mask\fP
+.IP 
+.IP o 
+\fBroot preexec close\fP
 .IP 
 .IP o 
 \fBset directory\fP
@@ -4650,13 +4656,24 @@ time they log in\&. Maybe a message of the day? Here is an example:
 .IP 
 Of course, this could get annoying after a while :-)
 .IP 
-See also \fBpostexec\fP\&.
+See also \fBpreexec close\fP and \fBpostexec\fP\&.
 .IP 
 \fBDefault:\fP
 \f(CW	none (no command executed)\fP
 .IP 
 \fBExample:\fP
 \f(CW        preexec = echo \e"%u connected to %S from %m (%I)\e" >> /tmp/log\fP
+.IP 
+.IP "\fBpreexec close (S)\fP" 
+.IP 
+This boolean option controls whether a non-zero return code from
+\fB"preexec"\fP should close the service being connected to\&.
+.IP 
+\fBDefault:\fP
+\f(CW 	preexec close = no\fP
+.IP 
+\fBExample:\fP
+\f(CW 	preexec close = yes\fP
 .IP 
 .IP "\fBpreferred master (G)\fP" 
 .IP 
@@ -5291,7 +5308,15 @@ This is the same as the \fB"preexec"\fP parameter except
 that the command is run as root\&. This is useful for mounting
 filesystems (such as cdroms) before a connection is finalized\&.
 .IP 
-See also \fB"preexec"\fP\&.
+See also \fB"preexec"\fP
+and \fB"root preexec close"\fP\&.
+.IP 
+.IP "\fBroot preexec close (S)\fP" 
+.IP 
+This is the same as the \fB"preexec close"\fP parameter
+except that the command is run as root\&.
+.IP 
+See also \fB"preexec"\fP, \fB"preexec close"\fP\&.
 .IP 
 .IP "\fBsecurity (G)\fP" 
 .IP 

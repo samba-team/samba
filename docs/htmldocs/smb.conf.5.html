@@ -627,6 +627,7 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>
 <p><br><li > <a href="smb.conf.5.html#postscript"><strong>postscript</strong></a>
 <p><br><li > <a href="smb.conf.5.html#preexec"><strong>preexec</strong></a>
+<p><br><li > <a href="smb.conf.5.html#preexecclose"><strong>preexec close</strong></a>
 <p><br><li > <a href="smb.conf.5.html#preservecase"><strong>preserve case</strong></a>
 <p><br><li > <a href="smb.conf.5.html#printcommand"><strong>print command</strong></a>
 <p><br><li > <a href="smb.conf.5.html#printok"><strong>print ok</strong></a>
@@ -645,6 +646,7 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#rootpostexec"><strong>root postexec</strong></a>
 <p><br><li > <a href="smb.conf.5.html#rootpreexec"><strong>root preexec</strong></a>
 <p><br><li > <a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>
+<p><br><li > <a href="smb.conf.5.html#rootpreexecclose"><strong>root preexec close</strong></a>
 <p><br><li > <a href="smb.conf.5.html#setdirectory"><strong>set directory</strong></a>
 <p><br><li > <a href="smb.conf.5.html#sharemodes"><strong>share modes</strong></a>
 <p><br><li > <a href="smb.conf.5.html#shortpreservecase"><strong>short preserve case</strong></a>
@@ -3241,11 +3243,19 @@ time they log in. Maybe a message of the day? Here is an example:
 </pre>
 
 <p><br>Of course, this could get annoying after a while :-)
-<p><br>See also <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>.
+<p><br>See also <a href="smb.conf.5.html#preexecclose"><strong>preexec close</strong></a> and <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>.
 <p><br><strong>Default:</strong>
 <code>	none (no command executed)</code>
 <p><br><strong>Example:</strong>
 <code>        preexec = echo \"%u connected to %S from %m (%I)\" &gt;&gt; /tmp/log</code>
+<p><br><a name="preexecclose"></a>
+<li><strong><strong>preexec close (S)</strong></strong>
+<p><br>This boolean option controls whether a non-zero return code from
+<a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a> should close the service being connected to.
+<p><br><strong>Default:</strong>
+<code> 	preexec close = no</code>
+<p><br><strong>Example:</strong>
+<code> 	preexec close = yes</code>
 <p><br><a name="preferredmaster"></a>
 <li><strong><strong>preferred master (G)</strong></strong>
 <p><br>This boolean parameter controls if <a href="nmbd.8.html"><strong>nmbd</strong></a> is a
@@ -3725,7 +3735,13 @@ filesystems (such as cdroms) after a connection is closed.
 <p><br>This is the same as the <a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a> parameter except
 that the command is run as root. This is useful for mounting
 filesystems (such as cdroms) before a connection is finalized.
-<p><br>See also <a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a>.
+<p><br>See also <a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a>
+and <a href="smb.conf.5.html#rootpreexecclose"><strong>"root preexec close"</strong></a>.
+<p><br><a name="rootpreexecclose"></a>
+<li><strong><strong>root preexec close (S)</strong></strong>
+<p><br>This is the same as the <a href="smb.conf.5.html#preexecclose"><strong>"preexec close"</strong></a> parameter
+except that the command is run as root.
+<p><br>See also <a href="smb.conf.5.html#preexec"><strong>"preexec"</strong></a>, <a href="smb.conf.5.html#preexecclose"><strong>"preexec close"</strong></a>.
 <p><br><a name="security"></a>
 <li><strong><strong>security (G)</strong></strong>
 <p><br>This option affects how clients respond to Samba and is one of the most
