@@ -559,7 +559,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 							SEC_ACL *dacl)
 {
 	extern DOM_SID global_sid_World;
-	extern struct generic_mapping *file_generic_mapping;
+	extern struct generic_mapping file_generic_mapping;
 	BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
