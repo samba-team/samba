@@ -176,6 +176,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 	DOM_SID *psids;
 	int i, psid_ndx = 0;
 	size_t num_sids = 0;
+	fstring sid_str;
 
 	if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
 		return NULL;
@@ -228,6 +229,13 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 		sid_copy( &psids[psid_ndx++], &global_sid_Authenticated_Users);
 
 	token->num_sids = psid_ndx;
+
+	/* Dump list of sids in token */
+
+	for (i = 0; i < token->num_sids; i++) {
+		DEBUG(5, ("user token sid %s\n", 
+			  sid_to_string(sid_str, &token->user_sids[i])));
+	}
 
 	return token;
 }

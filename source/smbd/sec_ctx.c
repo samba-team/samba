@@ -305,10 +305,22 @@ BOOL push_sec_ctx(void)
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN *token)
 {
 	struct sec_ctx *ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
-
+	
 	/* Set the security context */
 
 	DEBUG(3, ("setting sec ctx (%d, %d) - sec_ctx_stack_ndx = %d\n", uid, gid, sec_ctx_stack_ndx));
+
+	if (ngroups) {
+		int i;
+
+		DEBUG(3, ("%d user groups: \n", ngroups));
+		for (i = 0; i < ngroups; i++) {
+			DEBUGADD(3, ("%d ", groups[i]));
+		}
+
+		DEBUG(3, ("\n"));
+	}
+	
 
 	gain_root();
 

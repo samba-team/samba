@@ -35,6 +35,15 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define DATABASE_VERSION 1
 
+/* Map generic permissions to printer object specific permissions */
+
+struct generic_mapping printer_generic_mapping = {
+	PRINTER_READ,
+	PRINTER_WRITE,
+	PRINTER_EXECUTE,
+	PRINTER_ALL_ACCESS
+};
+
 /* We need one default form to support our default printer. Msoft adds the
 forms it wants and in the ORDER it wants them (note: DEVMODE papersize is an
 array index). Letter is always first, so (for the current code) additions
@@ -2833,10 +2842,15 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
+	char *temp;
 
 	mem_ctx = talloc_init();
 	if (mem_ctx == NULL)
 		return False;
+
+	if ((temp = strchr(printername + 2, '\\'))) {
+		printername = temp + 1;
+	}
 
 	/* Fetch security descriptor from tdb */
 
@@ -2910,8 +2924,9 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 
 			sid_to_string(sid_str, &acl->ace[i].sid);
 
-			DEBUG(10, ("%s 0x%08x\n", sid_str, 
-				  acl->ace[i].info.mask));
+			DEBUG(10, ("%s %d %d 0x%08x\n", sid_str,
+				   acl->ace[i].type, acl->ace[i].flags, 
+				   acl->ace[i].info.mask)); 
 		}
 	}
 
@@ -2956,6 +2971,20 @@ jfm: I should use this comment for the text file to explain
 
 */
 
+/* Convert generic access rights to printer object specific access rights.
+   It turns out that NT4 security descriptors use generic access rights and
+   NT5 the object specific ones. */
+
+void map_printer_permissions(SEC_DESC *sd)
+{
+	int i;
+
+	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
+		se_map_generic(&sd->dacl->ace[i].info.mask,
+			       &printer_generic_mapping);
+	}
+}
+
 /****************************************************************************
  Check a user has permissions to perform the given operation.  We use some
  constants defined in include/rpc_spoolss.h that look relevant to check
@@ -2969,7 +2998,7 @@ jfm: I should use this comment for the text file to explain
    PRINTER_ACCESS_USE:
        print_job_start
 
-   JOB_ACCESS_ADMINISTER:
+   PRINTER_ACCESS_ADMINISTER (should really be JOB_ACCESS_ADMINISTER):
        print_job_delete, print_job_pause, print_job_resume,
        print_queue_purge
 
@@ -2977,7 +3006,7 @@ jfm: I should use this comment for the text file to explain
 BOOL print_access_check(struct current_user *user, int snum, int access_type)
 {
 	SEC_DESC_BUF *secdesc = NULL;
-	uint32 access_granted, status, required_access = 0;
+	uint32 access_granted, status;
 	BOOL result;
 	char *pname;
 	extern struct current_user current_user;
@@ -3008,77 +3037,14 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	/* Get printer security descriptor */
 
 	nt_printing_getsec(pname, &secdesc);
-
-	/* Check against NT4 ACE mask values.  From observation these
-	   values are:
-
-	       Access Type       ACE Mask    Constant
-	       -------------------------------------
-	       Full Control      0x10000000  PRINTER_ACE_FULL_CONTROL
-	       Print             0xe0000000  PRINTER_ACE_PRINT
-	       Manage Documents  0x00020000  PRINTER_ACE_MANAGE_DOCUMENTS
-	*/
-
-    switch (access_type) {
-    case PRINTER_ACCESS_USE:
-	    required_access = PRINTER_ACE_PRINT;
-	    break;
-    case PRINTER_ACCESS_ADMINISTER:
-		/* 
-		 * This should be set to PRINTER_ACE_FULL_CONTROL, not to
-		 * (PRINTER_ACE_PRINT | PRINTER_ACE_MANAGE_DOCUMENTS).
-		 * Doing the latter gives anyone with both PRINTER_ACE_PRINT
-		 * and PRINTER_ACE_MANAGE_DOCUMENTS (in any combination of ACLs)
-		 * full control over all printer functions.  This isn't what 
-		 * we want.
-		 */
-		required_access = PRINTER_ACE_FULL_CONTROL; 
-		break;
-	case JOB_ACCESS_ADMINISTER:
-		required_access = PRINTER_ACE_MANAGE_DOCUMENTS;
-		break;
-	default:
-		DEBUG(0, ("invalid value passed to print_access_check()\n"));
-		result = False;
-		goto done;
-	}	
 	
-	if ((result = se_access_check(secdesc->sec, user, required_access,
-				      &access_granted, &status))) {
-		goto done;
-	}
+	map_printer_permissions(secdesc->sec);
 
-	/* Check against NT5 ACE mask values.  From observation these
-	   values are:
-
-	       Access Type       ACE Mask    Constant
-	       -------------------------------------
-	       Full Control      0x000f000c  PRINTER_ACE_NT5_FULL_CONTROL
-	       Print             0x00020008  PRINTER_ACE_NT5_PRINT
-	       Manage Documents  0x00020000  PRINTER_ACE_NT5_MANAGE_DOCUMENTS
-
-	   NT5 likes to rewrite the security descriptor and change the ACE
-	   masks from NT4 format to NT5 format making them unreadable by
-	   NT4 clients. */
-
-	switch (access_type) {
-	case PRINTER_ACCESS_USE:
-		required_access = PRINTER_ACE_NT5_PRINT;
-		break;
-	case PRINTER_ACCESS_ADMINISTER:
-		required_access = PRINTER_ACE_NT5_FULL_CONTROL;
-		break;
-	case JOB_ACCESS_ADMINISTER:
-		required_access = PRINTER_ACE_NT5_MANAGE_DOCUMENTS;
-		break;
-	}	
-
-	result = se_access_check(secdesc->sec, user, required_access,
+	result = se_access_check(secdesc->sec, user, access_type,
 				 &access_granted, &status);
 
 	/* Check access */
 	
- done:
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
 	
 	/* Free mallocated memory */
