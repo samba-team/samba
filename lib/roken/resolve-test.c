@@ -35,6 +35,7 @@
 #include <config.h>
 #endif
 #include "roken.h"
+#include "getarg.h"
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
@@ -45,13 +46,53 @@
 
 RCSID("$Id$");
 
-int 
+static int version_flag = 0;
+static int help_flag	= 0;
+
+static struct getargs args[] = {
+    {"version",	0,	arg_flag,	&version_flag,
+     "print version", NULL },
+    {"help",	0,	arg_flag,	&help_flag,
+     NULL, NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "dns-record resource-record-type");
+    exit (ret);
+}
+
+int
 main(int argc, char **argv)
 {
     struct dns_reply *r;
     struct resource_record *rr;
+    int optind = 0;
 
-    r = dns_lookup(argv[1], argv[2]);
+    setprogname (argv[0]);
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	printf("some version\n");
+	exit(0);
+    }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 2)
+	usage(1);
+
+    r = dns_lookup(argv[0], argv[1]);
     if(r == NULL){
 	printf("No reply.\n");
 	return 1;
