@@ -36,16 +36,16 @@
 #ifndef _SAMBA_BUILD_
 typedef enum {False=0,True=1} BOOL;
 
-static struct timeval current_time(void)
+static struct timeval timeval_current(void)
 {
 	struct timeval tv;
-	GetTimeOfDay(&tv);
+	gettimeofday(&tv, NULL);
 	return tv;
 }
 
-static double elapsed_time(struct timeval *tv)
+static double timeval_elapsed(struct timeval *tv)
 {
-	struct timeval tv2 = current_time();
+	struct timeval tv2 = timeval_current();
 	return (tv2.tv_sec - tv->tv_sec) + 
 	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
 }
@@ -564,6 +564,40 @@ static BOOL test_realloc(void)
 	return True;
 }
 
+
+/*
+  test realloc with a child
+*/
+static BOOL test_realloc_child(void)
+{
+	void *root;
+	struct el1 {
+		int count;
+		struct el2 {
+			const char *name;
+		} **list;
+	} *el1;
+	struct el2 *el2;
+
+	printf("TESTING REALLOC WITH CHILD\n");
+
+	root = talloc(NULL, 0);
+
+	el1 = talloc_p(root, struct el1);
+	el1->list = talloc_p(el1, struct el2 *);
+	el1->list[0] = talloc_p(el1->list, struct el2);
+	el1->list[0]->name = talloc_strdup(el1->list[0], "testing");
+	
+	el2 = talloc_p(el1->list, struct el2);
+
+	el1->list = talloc_realloc_p(el1, el1->list, struct el2 *, 2);
+	el1->list[1] = el2;
+
+	talloc_free(root);
+
+	return True;
+}
+
 /*
   test steal
 */
@@ -645,6 +679,31 @@ static BOOL test_ldb(void)
 	return True;
 }
 
+
+static BOOL test_unref_reparent(void)
+{
+	void *root, *p1, *p2, *c1;
+
+	printf("TESTING UNREFERENCE AFTER PARENT FREED\n");
+
+	root = talloc_named_const(NULL, 0, "root");
+	p1 = talloc_named_const(root, 1, "orig parent");
+	p2 = talloc_named_const(root, 1, "parent by reference");
+
+	c1 = talloc_named_const(p1, 1, "child");
+	talloc_reference(p2, c1);
+
+	talloc_free(p1);
+	talloc_unlink(p2, c1);
+
+	CHECK_SIZE(root, 1);
+
+	talloc_free(p2);
+	talloc_free(root);
+
+	return True;
+}
+
 /*
   measure the speed of talloc versus malloc
 */
@@ -701,7 +760,9 @@ BOOL torture_local_talloc(void)
 	ret &= test_unlink1();
 	ret &= test_misc();
 	ret &= test_realloc();
+	ret &= test_realloc_child();
 	ret &= test_steal();
+	ret &= test_unref_reparent();
 	ret &= test_ldb();
 	if (ret) {
 		ret &= test_speed();
@@ -713,9 +774,9 @@ BOOL torture_local_talloc(void)
 
 
 #ifndef _SAMBA_BUILD_
-int main(void)
+ int main(void)
 {
-	if (!torture_local_talloc(0)) {
+	if (!torture_local_talloc()) {
 		printf("ERROR: TESTSUIE FAILED\n");
 		return -1;
 	}
