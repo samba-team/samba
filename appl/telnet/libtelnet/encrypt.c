@@ -498,6 +498,15 @@ EncryptAutoDec(on)
 	return(1);
 }
 
+/* Called when we receive a WONT or a DONT ENCRYPT after we sent a DO
+   encrypt */
+void
+encrypt_not(void)
+{
+  if(encrypt_verbose)
+    printf("[ Connection is NOT encrypted ]\r\n");
+}
+
 /*
  * Called when ENCRYPT SUPPORT is received.
  */

@@ -69,6 +69,7 @@ Encryptions *findencryption P((int));
 void encrypt_send_supprt P((void));
 void encrypt_auto P((int));
 void decrypt_auto P((int));
+void encrypt_not P((void));
 void encrypt_is P((unsigned char *, int));
 void encrypt_reply P((unsigned char *, int));
 void encrypt_start_input P((int));

@@ -376,9 +376,8 @@ willoption(option)
 #endif
 }
 
-	void
-wontoption(option)
-	int option;
+void
+wontoption(int option)
 {
 	if (do_dont_resp[option]) {
 	    --do_dont_resp[option];
@@ -407,6 +406,11 @@ wontoption(option)
 		set_my_state_dont(option);
 		return;		/* Never reply to TM will's/wont's */
 
+#ifdef ENCRYPTION
+  	    case TELOPT_ENCRYPT:
+	      encrypt_not();
+	      break;
+#endif
 	    default:
 		break;
 	    }
@@ -535,9 +539,8 @@ dooption(option)
 	set_my_state_will(option);
 }
 
-	static void
-dontoption(option)
-	int option;
+static void
+dontoption(int option)
 {
 
 	if (will_wont_resp[option]) {
@@ -560,6 +563,11 @@ dontoption(option)
 		send_will(TELOPT_OLD_ENVIRON, 1);
 		telopt_environ = TELOPT_OLD_ENVIRON;
 		break;
+#endif
+#ifdef ENCRYPTION
+	    case TELOPT_ENCRYPT:
+	      encrypt_not();
+	      break;
 #endif
 	    }
 	    /* we always accept a DONT */
