@@ -935,7 +935,7 @@ will be able to do anything they like on the share, irrespective of
 file permissions.
 
   bf(Default:) nl()
-          no admin users
+	no admin users
 
   bf(Example:) nl()
 	admin users = jason
@@ -996,10 +996,10 @@ See utl(bf(testparm (1)))(testparm.1.html) for a way of testing your
 host access to see if it does what you expect.
 
   bf(Default:)
- 	none (i.e., all hosts permitted access)
+	none (i.e., all hosts permitted access)
 
   bf(Example:)
- 	allow hosts = 150.203.5. localhost myhost.mynet.edu.au
+	allow hosts = 150.203.5. localhost myhost.mynet.edu.au
 
 label(alternatepermissions)
 dit(bf(alternate permissions (S)))
@@ -1022,10 +1022,10 @@ need to stop Samba appearing as an NT server as this may prevent Samba
 servers from participating as browser servers correctly.
 
   bf(Default:)
-    announce as = NT
+	announce as = NT
 
   bf(Example)
-    announce as = Win95
+	announce as = Win95
 
 label(announceversion)
 dit(bf(announce version (G)))
@@ -1036,10 +1036,10 @@ this parameter unless you have a specific need to set a Samba server
 to be a downlevel server.
 
   bf(Default:)
-   announce version = 4.2
+	announce version = 4.2
 
   bf(Example:)
-   announce version = 2.0
+	announce version = 2.0
 
 
 label(autoservices)
@@ -1066,10 +1066,10 @@ then em(ALL) attempts to connect to the service will fail. Such failures
 are logged.
 
   bf(Default:)
- 	available = yes
+	available = yes
 
   bf(Example:)
- 	available = no
+	available = no
 
 label(bindinterfacesonly)
 dit(bf(bind interfaces only (G)))
@@ -1116,10 +1116,10 @@ bf("remote machine") set to the IP name of the primary interface
 of the local host.
 
   bf(Default:)
-       bind interfaces only = False
+	bind interfaces only = False
 
   bf(Example:)
-       bind interfaces only = True
+	bind interfaces only = True
 
 label(blockinglocks)
 dit(bf(blocking locks (S)))
@@ -1140,10 +1140,10 @@ request immediately if the lock range cannot be obtained.
 This parameter can be set per share.
 
   bf(Default:)
-          blocking locks = True
+	blocking locks = True
 
   bf(Example:)
-          blocking locks = False
+	blocking locks = False
 
 label(browsable)
 dit(bf(broweable (S)))
@@ -1196,12 +1196,12 @@ requested directory once every bf(change notify timeout) seconds.
 bf(change notify timeout) is specified in units of seconds.
 
   bf(Default:)
-     change notify timeout = 60
+	change notify timeout = 60
 
   bf(Example:)
-     change notify timeout = 300
+	change notify timeout = 300
 
-     Would change the scan time to every 5 minutes.
+Would change the scan time to every 5 minutes.
 
 label(characterset)
 dit(bf(character set (G)))
@@ -1314,11 +1314,9 @@ If not set, bf("client code page") defaults to 850.
 See also : link(bf("valid chars"))(validchars)
 
   bf(Default:)
-
 	client code page = 850
 
   bf(Example:)
-
 	client code page = 936
 
 label(codingsystem)
@@ -1369,11 +1367,9 @@ If you want to set the string that is displayed next to the machine
 name then see the server string command.
 
   bf(Default:)
-
 	No comment string
 
   bf(Example:)
-
 	comment = Fred's Files
 
 label(configfile)
@@ -1393,7 +1389,6 @@ If the config file doesn't exist then it won't be loaded (allowing you
 to special case the config files of just a few clients).
 
   bf(Example:)
-
 tt(	config file = /usr/local/samba/lib/smb.conf.%m)
 
 label(copy)
@@ -1409,10 +1404,10 @@ services easily. Note that the service being copied must occur earlier
 in the configuration file than the service doing the copying.
 
   bf(Default:)
- 	none
+	none
 
   bf(Example:)
- 	copy = otherservice
+	copy = otherservice
 
 label(createmode)
 dit(bf(create mask (S)))
@@ -1442,10 +1437,10 @@ the link(bf("directory mode"))(directorymode) parameter for masking
 mode bits on created directories.
 
   bf(Default:)
- 	create mask = 0744
+	create mask = 0744
 
   bf(Example:)
- 	create mask = 0775
+	create mask = 0775
 
 label(createmode)
 dit(bf(create mode (S)))
@@ -1473,10 +1468,10 @@ A deadtime of zero indicates that no auto-disconnection should be
 performed.
 
   bf(Default:)
- 	deadtime = 0
+	deadtime = 0
 
   bf(Example:)
- 	deadtime = 15
+	deadtime = 15
 
 label(debug timestamp (G))
 
@@ -1486,10 +1481,10 @@ distracting. This boolean parameter allows them to be turned
 off.
 
   bf(Default:)
-         debug timestamp = Yes
+	debug timestamp = Yes
 
   bf(Example:)
-         debug timestamp = No
+	debug timestamp = No
 
 label(debuglevel)
 dit(bf(debug level (G)))
@@ -1502,7 +1497,7 @@ The default will be the debug level specified on the command line
 or level zero if none was specified.
 
   bf(Example:)
- 	debug level = 3
+	debug level = 3
 
 label(default)
 dit(bf(default (G)))
@@ -1540,12 +1535,11 @@ interesting things.
 
 
   bf(Example:)
-
 verb(
- 	default service = pub
+	default service = pub
         
-        [pub]
-             path = /%S
+	[pub]
+		path = /%S
 )
 
 label(deletereadonly)
@@ -1559,10 +1553,10 @@ UNIX file ownership prevents changing file permissions, and DOS
 semantics prevent deletion of a read only file.
 
   bf(Default:)
- 	delete readonly = No
+	delete readonly = No
 
   bf(Example:)
- 	delete readonly = Yes
+	delete readonly = Yes
 
 label(deletevetofiles)
 dit(bf(delete veto files (S)))
@@ -1587,10 +1581,10 @@ as the user has permissions to do so).
 See also the link(bf(veto files))(vetofiles) parameter.
 
   bf(Default:)
-    delete veto files = False
+	delete veto files = False
 
   bf(Example:)
-    delete veto files = True
+	delete veto files = True
 
 label(denyhosts)
 dit(bf(deny hosts (S)))
@@ -1601,10 +1595,10 @@ services have their own lists to override this one. Where the lists
 conflict, the link(bf('allow'))(allowhosts) list takes precedence.
 
   bf(Default:)
- 	none (i.e., no hosts specifically excluded)
+	none (i.e., no hosts specifically excluded)
 
   bf(Example:)
-  	deny hosts = 150.203.4. badhost.mynet.edu.au
+	deny hosts = 150.203.4. badhost.mynet.edu.au
 
 label(dfreecommand)
 dit(bf(dfree command (G)))
@@ -1632,20 +1626,20 @@ Note: Your script should em(NOT) be setuid or setgid and should be
 owned by (and writable only by) root!
 
   bf(Default:)
- 	By default internal routines for determining the disk capacity
+	By default internal routines for determining the disk capacity
 and remaining space will be used.
 
   bf(Example:)
- 	dfree command = /usr/local/samba/bin/dfree
+	dfree command = /usr/local/samba/bin/dfree
 
-	Where the script dfree (which must be made executable) could be:
+Where the script dfree (which must be made executable) could be:
 
 verb(
 	#!/bin/sh
 	df $1 | tail -1 | awk '{print $2" "$4}'
 )
 
-	or perhaps (on Sys V based systems):
+or perhaps (on Sys V based systems):
 
 verb(
 	#!/bin/sh
@@ -1689,10 +1683,10 @@ See also the link(bf("create mode"))(createmode) parameter for masking
 mode bits on created files.
 
   bf(Default:)
- 	directory mask = 0755
+	directory mask = 0755
 
   bf(Example:)
- 	directory mask = 0775
+	directory mask = 0775
 
 label(directorymode)
 dit(bf(directory mode (S)))
@@ -1718,7 +1712,7 @@ DNS name lookup requests, as doing a name lookup is a blocking action.
 See also the parameter link(bf(wins support))(winssupport).
 
   bf(Default:)
-	 dns proxy = yes
+	dns proxy = yes
 
 label(domainadmingroup)
 bf(domain admin group (G))
@@ -1792,7 +1786,7 @@ will be able to provide this functionality for Windows NT clients
 also.
 
   bf(Default:)
-	 domain logons = no
+	domain logons = no
 
 label(domainmaster)
 dit(bf(domain master (G)))
@@ -1820,8 +1814,7 @@ PDC is able to do so then cross subnet browsing will behave strangely
 and may fail.
 
   bf(Default:)
- 	domain master = no
-
+	domain master = no
 
 label(dont descend)
 dit(bf(dont descend (S)))
@@ -1837,10 +1830,10 @@ descend" entries. For example you may need tt("./proc") instead of
 just tt("/proc"). Experimentation is the best policy :-)
 
   bf(Default:)
- 	none (i.e., all directories are OK to descend)
+	none (i.e., all directories are OK to descend)
 
   bf(Example:)
-  	dont descend = /proc,/dev
+	dont descend = /proc,/dev
 
 label(dosfiletimeresolution)
 dit(bf(dos filetime resolution (S)))
@@ -1863,10 +1856,10 @@ this option causes the two timestamps to match, and Visual C++ is
 happy.
 
   bf(Default:)
-        dos filetime resolution = False
+	dos filetime resolution = False
 
   bf(Example:)
-        dos filetime resolution = True
+	dos filetime resolution = True
 
 label(dos filetimes)
 dit(bf(dos filetimes (S)))
@@ -1880,10 +1873,10 @@ to True allows DOS semantics and smbd will change the file timstamp as
 DOS requires.
 
   bf(Default:)
-        dos filetimes = False
+	dos filetimes = False
 
   bf(Example:)
-        dos filetimes = True
+	dos filetimes = True
 
 label(encryptpasswords)
 dit(bf(encrypt passwords (G)))
@@ -1938,10 +1931,10 @@ always predate their contents and an NMAKE build will proceed as
 expected.
 
   bf(Default:)
-        fake directory create times = False
+	fake directory create times = False
 
   bf(Example:)
-        fake directory create times = True
+	fake directory create times = True
 
 label(fakeoplocks)
 dit(bf(fake oplocks (S)))
@@ -1997,10 +1990,10 @@ See also the parameter link(bf("create mask"))(createmask) for details
 on masking mode bits on created files.
 
   bf(Default:)
-       force create mode = 000
+	force create mode = 000
 
   bf(Example:)
-       force create mode = 0755
+	force create mode = 0755
 
 would force all created files to have read and execute permissions set
 for 'group' and 'other' as well as the read/write/execute bits set for
@@ -2021,10 +2014,10 @@ See also the parameter link(bf("directory mask"))(directorymask) for
 details on masking mode bits on created directories.
 
   bf(Default:)
-       force directory mode = 000
+	force directory mode = 000
 
   bf(Example:)
-       force directory mode = 0755
+	force directory mode = 0755
 
 would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
@@ -2042,10 +2035,10 @@ service the Samba administrator can restrict or allow sharing of these
 files.
 
   bf(Default:)
-       no forced group
+	no forced group
 
   bf(Example:)
-       force group = agroup
+	force group = agroup
 
 label(forceuser)
 dit(bf(force user (S)))
@@ -2060,12 +2053,13 @@ clients still need to connect as a valid user and supply a valid
 password. Once connected, all file operations will be performed as the
 tt("forced user"), no matter what username the client connected as.
 
-This can be very useful 
+This can be very useful.
+
   bf(Default:)
-       no forced user
+	no forced user
 
   bf(Example:)
-       force user = auser
+	force user = auser
 
 label(fstype)
 dit(bf(fstype (S)))
@@ -2078,10 +2072,10 @@ Windows NT but this can be changed to other strings such as "Samba" or
 "FAT" if required.
 
   bf(Default:)
-      fstype = NTFS
+	fstype = NTFS
 
   bf(Example:)
-      fstype = Samba
+	fstype = Samba
 
 label(getwdcache)
 dit(bf(getwd cache (G)))
@@ -2092,10 +2086,10 @@ a significant impact on performance, especially when the
 link(bf(widelinks))(widelinks) parameter is set to False.
 
   bf(Default:)
- 	getwd cache = No
+	getwd cache = No
 
   bf(Example:)
- 	getwd cache = Yes
+	getwd cache = Yes
 
 label(group)
 dit(bf(group (S)))
@@ -2120,10 +2114,10 @@ command) and trying to print using the system print command such as
 bf(lpr (1)) or bf(lp (1)).
 
   bf(Default:)
- 	specified at compile time, usually "nobody"
+	specified at compile time, usually "nobody"
 
   bf(Example:)
- 	guest account = ftp
+	guest account = ftp
 
 label(guestok)
 dit(bf(guest ok (S)))
@@ -2136,10 +2130,10 @@ See the section below on link(bf(security))(security) for more
 information about this option.
 
   bf(Default:)
- 	guest ok = no
+	guest ok = no
 
   bf(Example:)
- 	guest ok = yes
+	guest ok = yes
 
 label(guestonly)
 dit(bf(guest only (S)))
@@ -2153,271 +2147,436 @@ See the section below on link(bf(security))(security) for more
 information about this option.
 
   bf(Default:)
- 	guest only = no
+	guest only = no
 
   bf(Example:)
- 	guest only = yes
+	guest only = yes
 
-.SS hide dot files (S)
+label(hidedotfiles)
+dit(bf(hide dot files (S)))
+
 This is a boolean parameter that controls whether files starting with
 a dot appear as hidden files.
 
-.B Default:
+  bf(Default:)
 	hide dot files = yes
 
-.B Example:
+  bf(Example:)
 	hide dot files = no
 
 
-.SS hide files(S)
+label(hidefiles)
+dit(bf(hide files(S)))
+
 This is a list of files or directories that are not visible but are
 accessible.  The DOS 'hidden' attribute is applied to any files or
 directories that match.
 
-Each entry in the list must be separated by a "/", which allows spaces
-to be included in the entry.  '*' and '?' can be used to specify multiple 
-files or directories as in DOS wildcards.
+Each entry in the list must be separated by a tt('/'), which allows
+spaces to be included in the entry.  tt('*') and tt('?') can be used
+to specify multiple files or directories as in DOS wildcards.
 
 Each entry must be a unix path, not a DOS path and must not include the 
-unix directory separator "/".
+unix directory separator tt('/').
 
 Note that the case sensitivity option is applicable in hiding files.
 
-Setting this parameter will affect the performance of Samba, as
-it will be forced to check all files and directories for a match
-as they are scanned.
+Setting this parameter will affect the performance of Samba, as it
+will be forced to check all files and directories for a match as they
+are scanned.
 
-See also "hide dot files", "veto files" and "case sensitive"
+See also link(bf("hide dot files"))(hidedotfiles), link(bf("veto
+files"))(vetofiles) and link(bf("case sensitive"))(casesensitive).
 
-.B Default
+  bf(Default)
 	No files or directories are hidden by this option (dot files are
-    hidden by default because of the "hide dot files" option).
+	hidden by default because of the "hide dot files" option).
 
-.B Example
-	hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/
+  bf(Example)
+tt(	hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/)
 
-The above example is based on files that the Macintosh client (DAVE)
-creates for internal use, and also still hides all files beginning with
-a dot.
+The above example is based on files that the Macintosh SMB client
+(DAVE) available from url(bf(Thursby))(www.thursby.com) creates for
+internal use, and also still hides all files beginning with a dot.
 
-.SS homedir map (G)
-If "nis homedir" is true, this parameter specifies the NIS (or YP) map
-from which the server for the user's home directory should be extracted.
-At present, only the Sun auto.home map format is understood. The form of
-the map is:
+label(homedirmap)
+dit(bf(homedir map (G)))
 
-username	server:/some/file/system
+If link(bf("nis homedir"))(nishomedir) is true, and
+link(bf(smbd))(smbd.8.html) is also acting as a Win95/98 link(bf(logon
+server))(domainlogons) then this parameter specifies the NIS (or YP)
+map from which the server for the user's home directory should be
+extracted.  At present, only the Sun auto.home map format is
+understood. The form of the map is:
 
-and the program will extract the servername from before the first ':'.
-There should probably be a better parsing system that copes with different
-map formats and also Amd (another automounter) maps.
+tt(username	server:/some/file/system)
 
-NB: The -DNETGROUP option is required in the Makefile for option to work
-and on some architectures the line -lrpcsvc needs to be added to the
-LIBSM variable. This is required for Solaris 2, FreeBSD and HPUX.
+and the program will extract the servername from before the first
+tt(':').  There should probably be a better parsing system that copes
+with different map formats and also Amd (another automounter) maps.
 
-See also "nis homedir"
+NB: A working NIS is required on the system for this option to work.
 
-.B Default:
+See also link(bf("nis homedir"))(nishomedir), link(bf(domain
+logons))(domainlogons).
+
+  bf(Default:)
 	homedir map = auto.home
 
-.B Example:
+  bf(Example:)
 	homedir map = amd.homedir
-.SS hosts allow (S)
-See
-.B allow hosts.
-.SS hosts deny (S)
-See
-.B deny hosts.
 
-.SS hosts equiv (G)
-If this global parameter is a non-null string, it specifies the name of
-a file to read for the names of hosts and users who will be allowed access
-without specifying a password.
+label(hostsallow)
+dit(bf(hosts allow (S)))
 
-This is not be confused with 
-.B allow hosts
-which is about hosts access to services and is more useful for guest services.
-.B hosts equiv
-may be useful for NT clients which will not supply passwords to samba.
+Synonym for link(bf(allow hosts))(allowhosts).
 
-NOTE: The use of hosts.equiv can be a major security hole. This is
+label(hostsdeny)
+dit(bf(hosts deny (S)))
+
+Synonym for link(bf(denyhosts))(denyhosts).
+
+label(hostsequiv)
+dit(bf(hosts equiv (G)))
+
+If this global parameter is a non-null string, it specifies the name
+of a file to read for the names of hosts and users who will be allowed
+access without specifying a password.
+
+This is not be confused with link(bf(allow hosts))(allowhosts) which
+is about hosts access to services and is more useful for guest
+services. bf(hosts equiv) may be useful for NT clients which will not
+supply passwords to samba.
+
+NOTE: The use of bf(hosts equiv) can be a major security hole. This is
 because you are trusting the PC to supply the correct username. It is
 very easy to get a PC to supply a false username. I recommend that the
-hosts.equiv option be only used if you really know what you are doing,
-or perhaps on a home network where you trust your wife and kids :-)
+bf(hosts equiv) option be only used if you really know what you are
+doing, or perhaps on a home network where you trust your spouse and
+kids. And only if you em(really) trust them :-).
 
-.B Default
+  bf(Default)
 	No host equivalences
 
-.B Example
+  bf(Example)
 	hosts equiv = /etc/hosts.equiv
 
-.SS include (G)
+label(include)
+dit(bf(include (G)))
 
-This allows you to include one config file inside another.  The file is
-included literally, as though typed in place.
+This allows you to include one config file inside another.  The file
+is included literally, as though typed in place.
 
-It takes the standard substitutions, except %u, %P and %S
+It takes the standard substitutions, except link(bf(%u))(percentu),
+link(bf(%P))(percentP) and link(bf(%S))(percentS).
 
-.SS interfaces (G)
+label(interfaces)
+dit(bf(interfaces (G)))
 
 This option allows you to setup multiple network interfaces, so that
 Samba can properly handle browsing on all interfaces.
 
 The option takes a list of ip/netmask pairs. The netmask may either be
-a bitmask, or a bitlength. 
+a bitmask, or a bitlength.
 
 For example, the following line:
 
-interfaces = 192.168.2.10/24 192.168.3.10/24
+tt(interfaces = 192.168.2.10/24 192.168.3.10/24)
 
 would configure two network interfaces with IP addresses 192.168.2.10
 and 192.168.3.10. The netmasks of both interfaces would be set to
-255.255.255.0. 
+255.255.255.0.
 
 You could produce an equivalent result by using:
 
-interfaces = 192.168.2.10/255.255.255.0 192.168.3.10/255.255.255.0
+tt(interfaces = 192.168.2.10/255.255.255.0 192.168.3.10/255.255.255.0)
 
 if you prefer that format.
 
 If this option is not set then Samba will attempt to find a primary
 interface, but won't attempt to configure more than one interface.
 
-.SS invalid users (S)
+See also link(bf("bind interfaces only"))(bindinterfacesonly).
+
+label(invalidusers)
+dit(bf(invalid users (S)))
+
 This is a list of users that should not be allowed to login to this
-service. This is really a "paranoid" check to absolutely ensure an
+service. This is really a em("paranoid") check to absolutely ensure an
 improper setting does not breach your security.
 
-A name starting with @ is interpreted as a yp netgroup first (if this
-has been compiled into Samba), and then as a UNIX group if the name
-was not found in the yp netgroup database.
+A name starting with a tt('@') is interpreted as an NIS netgroup first
+(if your system supports NIS), and then as a UNIX group if the name
+was not found in the NIS netgroup database.
 
-A name starting with + is interpreted only by looking in the UNIX
-group database. A name starting with & is interpreted only by looking
-in the yp netgroup database (this has no effect if Samba is compiled
-without netgroup support).
+A name starting with tt('+') is interpreted only by looking in the
+UNIX group database. A name starting with tt('&') is interpreted only
+by looking in the NIS netgroup database (this requires NIS to be
+working on your system). The characters tt('+') and tt('&') may be
+used at the start of the name in either order so the value
+tt("+&group") means check the UNIX group database, followed by the NIS
+netgroup database, and the value tt("&+group") means check the NIS
+netgroup database, followed by the UNIX group database (the same as
+the tt('@') prefix).
 
-The current servicename is substituted for %S. This is useful in the
-[homes] section.
+The current servicename is substituted for
+link(bf(%S))(percentS). This is useful in the link(bf([homes]))(homes)
+section.
 
-See also "valid users"
+See also link(bf("valid users"))(validusers).
 
-.B Default
+  bf(Default:)
 	No invalid users
 
-.B Example
-	invalid users = root fred admin @wheel
+  bf(Example:)
+tt(	invalid users = root fred admin @wheel)
 
-.SS keepalive (G)
-The value of the parameter (an integer) represents the number of seconds 
-between 'keepalive' packets. If this parameter is zero, no keepalive packets
-will be sent. Keepalive packets, if sent, allow the server to tell whether a
-client is still present and responding.
+label(keepalive)
+dit(bf(keepalive (G)))
+
+The value of the parameter (an integer) represents the number of
+seconds between bf('keepalive') packets. If this parameter is zero, no
+keepalive packets will be sent. Keepalive packets, if sent, allow the
+server to tell whether a client is still present and responding.
 
 Keepalives should, in general, not be needed if the socket being used
-has the SO_KEEPALIVE attribute set on it (see "socket
-options"). Basically you should only use this option if you strike
-difficulties.
+has the SO_KEEPALIVE attribute set on it (see link(bf("socket
+options"))(socketoptions)). Basically you should only use this option
+if you strike difficulties.
 
-.B Default:
- 	keep alive = 0
+  bf(Default:)
+	keep alive = 0
 
-.B Example:
- 	keep alive = 60
+  bf(Example:)
+	keep alive = 60
 
-.SS lm announce (G)
+label(kerneloplocks)
+dit(bf(kernel oplocks (G)))
 
-This parameter determines if Samba will produce Lanman announce
-broadcasts that are needed by OS/2 clients in order for them to
-see the Samba server in their browse list. This parameter can
-have three values, true, false, or auto. The default is auto.
-If set to False Samba will never produce these broadcasts. If
-set to true Samba will produce Lanman announce broadcasts at
-a frequency set by the parameter 'lm interval'. If set to auto
-Samba will not send Lanman announce broadcasts by default but
-will listen for them. If it hears such a broadcast on the wire
-it will then start sending them at a frequency set by the parameter 
-'lm interval'.
+For UNIXs that support kernel based oplocks (currently only IRIX but
+hopefully also Linux and FreeBSD soon) this parameter allows the use
+of them to be turned on or off. 
 
-See also "lm interval".
+Kernel oplocks support allows Samba oplocks to be broken whenever a
+local UNIX process or NFS operation accesses a file that
+link(bf(smbd))(smbd.8.html) has oplocked. This allows complete data
+consistancy between SMB/CIFS, NFS and local file access (and is a 
+em(very) cool feature :-).
 
-.B Default:
-       lm announce = auto
+This parameter defaults to em("On") on systems that have the support,
+and em("off") on systems that don't. You should never need to touch
+this parameter.
 
-.B Example:
-       lm announce = true
+label(ldapfilter)
+dit(bf(ldap filter (G)))
 
-.SS lm interval (G)
+This parameter is part of the em(EXPERIMENTAL) Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
 
-If Samba is set to produce Lanman announce broadcasts needed
-by OS/2 clients (see the "lm announce" parameter) this parameter
-defines the frequency in seconds with which they will be made.
-If this is set to zero then no Lanman announcements will be
-made despite the setting of the "lm announce" parameter.
+This parameter specifies an LDAP search filter used to search for a
+user name in the LDAP database. It must contain the string
+link(bf(%u))(percentU) which will be replaced with the user being
+searched for.
 
-See also "lm announce".
+  bf(Default:)
+	empty string.
 
-.B Default:
-        lm interval = 60
+label(ldapport)
+dit(bf(ldap port (G)))
 
-.B Example:
-        lm interval = 120
+This parameter is part of the em(EXPERIMENTAL) Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
 
-.SS load printers (G)
+This parameter specifies the TCP port number to use to contact
+the LDAP server on.
+
+  bf(Default:)
+	ldap port = 389.
+
+label(ldaproot)
+dit(bf(ldap root (G)))
+
+This parameter is part of the em(EXPERIMENTAL) Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
+
+This parameter specifies the entity to bind to the LDAP server
+as (essentially the LDAP username) in order to be able to perform
+queries and modifications on the LDAP database.
+
+See also link(bf(ldap root passwd))(ldaprootpasswd).
+
+  bf(Default:)
+	empty string (no user defined)
+
+label(ldaprootpasswd)
+dit(bf(ldap root passwd (G)))
+
+This parameter is part of the em(EXPERIMENTAL) Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
+
+This parameter specifies the password for the entity to bind to the
+LDAP server as (the password for this LDAP username) in order to be
+able to perform queries and modifications on the LDAP database.
+
+em(BUGS:) This parameter should em(NOT) be a readable parameter
+in the bf(smb.conf) file and will be removed once a correct
+storage place is found.
+
+See also link(bf(ldap root))(ldaproot).
+
+  bf(Default:)
+	empty string.
+
+label(ldapserver)
+dit(bf(ldap server (G)))
+
+This parameter is part of the em(EXPERIMENTAL) Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
+
+This parameter specifies the DNS name of the LDAP server to use
+for SMB/CIFS authentication purposes.
+
+  bf(Default:)
+	ldap server = localhost
+
+label(ldapsuffix)
+dit(bf(ldap suffix (G)))
+
+This parameter is part of the em(EXPERIMENTAL) Samba support for a
+password database stored on an LDAP server back-end. These options
+are only available if your version of Samba was configured with
+the bf(--with-ldap) option.
+
+This parameter specifies the tt("dn") or LDAP em("distinguished name")
+that tells link(bf(smbd))(smbd.8.html) to start from when searching
+for an entry in the LDAP password database.
+
+  bf(Default:)
+	empty string.
+
+label(lmannounce)
+dit(bf(lm announce (G)))
+
+This parameter determines if link(bf(nmbd))(nmbd.8.html) will produce
+Lanman announce broadcasts that are needed by bf(OS/2) clients in order
+for them to see the Samba server in their browse list. This parameter
+can have three values, tt("true"), tt("false"), or tt("auto"). The
+default is tt("auto").  If set to tt("false") Samba will never produce
+these broadcasts. If set to tt("true") Samba will produce Lanman
+announce broadcasts at a frequency set by the parameter link(bf("lm
+interval"))(lminterval). If set to tt("auto") Samba will not send Lanman
+announce broadcasts by default but will listen for them. If it hears
+such a broadcast on the wire it will then start sending them at a
+frequency set by the parameter link(bf("lm interval"))(lminterval).
+
+See also link(bf("lm interval"))(lminterval).
+
+  bf(Default:)
+	lm announce = auto
+
+  bf(Example:)
+	lm announce = true
+
+label(lminterval)
+dit(bf(lm interval (G)))
+
+If Samba is set to produce Lanman announce broadcasts needed by
+bf(OS/2) clients (see the link(bf("lm announce"))(lmannounce)
+parameter) then this parameter defines the frequency in seconds with
+which they will be made.  If this is set to zero then no Lanman
+announcements will be made despite the setting of the link(bf("lm
+announce"))(lmannounce) parameter.
+
+See also link(bf("lm announce"))(lmannounce).
+
+  bf(Default:)
+	lm interval = 60
+
+  bf(Example:)
+	lm interval = 120
+
+label(loadprinters)
+dit(bf(load printers (G)))
+
 A boolean variable that controls whether all printers in the printcap
-will be loaded for browsing by default. 
+will be loaded for browsing by default. See the
+link(bf("printers"))(printers) section for more details.
 
-.B Default:
+  bf(Default:)
 	load printers = yes
 
-.B Example:
+  bg(Example:)
 	load printers = no
 
-.SS local master (G)
-This option allows the nmbd to become a local master browser on a
-subnet. If set to False then nmbd will not attempt to become a local
-master browser on a subnet and will also lose in all browsing elections. 
-By default this value is set to true. Setting this value to true doesn't 
-mean that Samba will become the local master browser on a subnet, just 
-that the nmbd will participate in elections for local master browser.
+label(localmaster)
+dit(bf(local master (G)))
 
-.B Default:
+This option allows link(bf(nmbd))(nmbd.8.html) to try and become a
+local master browser on a subnet. If set to False then
+link(bf(nmbd))(nmbd.8.html) will not attempt to become a local master
+browser on a subnet and will also lose in all browsing elections. By
+default this value is set to true. Setting this value to true doesn't
+mean that Samba will em(become) the local master browser on a subnet,
+just that link(bf(nmbd))(nmbd.8.html) will em(participate) in
+elections for local master browser.
+
+Setting this value to False will cause link(bf(nmbd))(nmbd.8.html)
+em(never) to become a local master browser.
+
+  bf(Default:)
 	local master = yes
 
-.SS lock directory (G)
-This option specifies the directory where lock files will be placed.
-The lock files are used to implement the "max connections" option.
+label(lockdirectory)
+dit(bf(lock directory (G)))
 
-.B Default:
+This option specifies the directory where lock files will be placed.
+The lock files are used to implement the link(bf("max
+connections"))(maxconnections) option.
+
+  bf(Default:)
 	lock directory = /tmp/samba
 
-.B Example: 
+  bf(Example:)
 	lock directory = /usr/local/samba/var/locks
 
-.SS locking (S)
-This controls whether or not locking will be performed by the server in 
-response to lock requests from the client.
+label(locking)
+dit(bf(locking (S)))
 
-If "locking = no", all lock and unlock requests will appear to succeed and 
-all lock queries will indicate that the queried lock is clear.
+This controls whether or not locking will be performed by the server
+in response to lock requests from the client.
 
-If "locking = yes", real locking will be performed by the server.
+If tt("locking = no"), all lock and unlock requests will appear to
+succeed and all lock queries will indicate that the queried lock is
+clear.
 
-This option may be particularly useful for read-only filesystems which
-do not need locking (such as cdrom drives).
+If tt("locking = yes"), real locking will be performed by the server.
+
+This option em(may) be useful for read-only filesystems which em(may)
+not need locking (such as cdrom drives), although setting this
+parameter of tt("no") is not really recommended even in this case.
 
 Be careful about disabling locking either globally or in a specific
-service, as lack of locking may result in data corruption.
+service, as lack of locking may result in data corruption. You should
+never need to set this parameter.
 
-.B Default:
+  bf(Default:)
  	locking = yes
 
-.B Example:
+  bf(Example:)
  	locking = no
 
-.SS log file (G)
+label(logfile)
+dit(bf(log file (G)))
 
 This options allows you to override the name of the Samba log file
 (also known as the debug file).
@@ -2425,244 +2584,313 @@ This options allows you to override the name of the Samba log file
 This option takes the standard substitutions, allowing you to have
 separate log files for each user or machine.
 
-.B Example:
-	log file = /usr/local/samba/var/log.%m
+  bf(Example:)
+tt(	log file = /usr/local/samba/var/log.%m)
 
-.SS log level (G)
-see "debug level"
+label(loglevel)
+dit(bf(log level (G)))
 
-.SS logon drive (G)
+Synonym for link(bf("debug level"))(debuglevel).
+
+label(logondrive)
+dit(bf(logon drive (G)))
 
 This parameter specifies the local path to which the home directory
-will be connected (see "logon home") and is only used by NT Workstations.
+will be connected (see link(bf("logon home"))(logonhome)) and is only
+used by NT Workstations. 
 
-.B Example:
+Note that this option is only useful if Samba is set up as a
+link(bf(logon server))(domainlogons).
+
+  bf(Example:)
 	logon drive = h:
 
-.SS logon home (G)
+label(logonhome)
+dit(bf(logon home (G)))
 
-This parameter specifies the home directory location when a Win95 or
-NT Workstation logs into a Samba PDC.  It allows you to do "NET USE
-H: /HOME" from a command prompt, for example.
+This parameter specifies the home directory location when a Win95/98 or
+NT Workstation logs into a Samba PDC.  It allows you to do 
 
-.B
+tt("NET USE H: /HOME")
+
+from a command prompt, for example.
+
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.
 
-.B Example:
-	logon home = "\\\\remote_smb_server\\%U"
+Note that this option is only useful if Samba is set up as a
+link(bf(logon server))(domainlogons).
 
-.B Default:
-	logon home = "\\\\%N\\%U"
+  bf(Example:)
+tt(	logon home = "\\remote_smb_server\%U")
 
-.SS logon path (G)
+  bf(Default:)
+tt(	logon home = "\\%N\%U")
 
-This parameter specifies the home directory where roaming profiles 
-(USER.DAT / USER.MAN files for Windows 95) are stored.
+label(logonpath)
+dit(bf(logon path (G)))
+
+This parameter specifies the home directory where roaming profiles
+(USER.DAT / USER.MAN files for Windows 95/98) are stored.
 
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.  It also specifies
-the directory from which the "desktop", "start menu", "nethood" and
-"programs" folders, and their contents, are loaded and displayed
-on your Windows 95 client.
+the directory from which the tt("desktop"), tt("start menu"),
+tt("network neighborhood") and tt("programs") folders, and their
+contents, are loaded and displayed on your Windows 95/98 client.
 
-The share and the path must be readable by the user for the preferences
-and directories to be loaded onto the Windows 95 client.  The share
-must be writeable when the logs in for the first time, in order that
-the Windows 95 client can create the user.dat and other directories.
+The share and the path must be readable by the user for the
+preferences and directories to be loaded onto the Windows 95/98
+client.  The share must be writeable when the logs in for the first
+time, in order that the Windows 95/98 client can create the user.dat
+and other directories.
 
-Thereafter, the directories and any of contents can, if required,
-be made read-only.  It is not adviseable that the USER.DAT file be made
-read-only - rename it to USER.MAN to achieve the desired effect
-(a MANdatory profile).
+Thereafter, the directories and any of contents can, if required, be
+made read-only.  It is not adviseable that the USER.DAT file be made
+read-only - rename it to USER.MAN to achieve the desired effect (a
+em(MAN)datory profile).
 
 Windows clients can sometimes maintain a connection to the [homes]
-share, even though there is no user logged in.  Therefore, it is
-vital that the logon path does not include a reference to the
-homes share (i.e \\\\%N\\HOMES\profile_path will cause problems).
+share, even though there is no user logged in.  Therefore, it is vital
+that the logon path does not include a reference to the homes share
+(i.e setting this parameter to tt(\\%N\HOMES\profile_path) will cause
+problems).
 
-.B
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.
 
-.B Default:
- 	logon path = \\\\%N\\%U\\profile
+Note that this option is only useful if Samba is set up as a
+link(bf(logon server))(domainlogons).
 
-.B Example:
-	logon path = \\\\PROFILESERVER\\HOME_DIR\\%U\\PROFILE
+  bf(Default:)
+tt( 	logon path = \\%N\%U\profile)
 
-.SS logon script (G)
+  bf(Example:)
+tt(	logon path = \\PROFILESERVER\HOME_DIR\%U\PROFILE)
 
-This parameter specifies the batch file (.bat) or NT command file (.cmd)
-to be downloaded and run on a machine when a user successfully logs in.
-The file must contain the DOS style cr/lf line endings.  Using a DOS-style
-editor to create the file is recommended.
+label(logonscript)
+dit(bf(logon script (G)))
 
-The script must be a relative path to the [netlogon] service.  If the
-[netlogon] service specifies a path of /usr/local/samba/netlogon, and
-logon script = STARTUP.BAT, then file that will be downloaded is:
+This parameter specifies the batch file (.bat) or NT command file
+(.cmd) to be downloaded and run on a machine when a user successfully
+logs in.  The file must contain the DOS style cr/lf line endings.
+Using a DOS-style editor to create the file is recommended.
 
-.B /usr/local/samba/netlogon/STARTUP.BAT
+The script must be a relative path to the tt([netlogon]) service.  If
+the tt([netlogon]) service specifies a link(bf(path))(path) of
+/usr/local/samba/netlogon, and logon script = STARTUP.BAT, then the
+file that will be downloaded is:
+
+tt(/usr/local/samba/netlogon/STARTUP.BAT)
 
 The contents of the batch file is entirely your choice.  A suggested
-command would be to add NET TIME \\\\SERVER /SET /YES, to force every
+command would be to add tt(NET TIME \\SERVER /SET /YES), to force every
 machine to synchronise clocks with the same time server.  Another use
-would be to add NET USE U: \\\\SERVER\\UTILS for commonly used utilities,
-or NET USE Q: \\\\SERVER\\ISO9001_QA.
+would be to add tt(NET USE U: \\SERVER\UTILS) for commonly used
+utilities, or tt(NET USE Q: \\SERVER\ISO9001_QA) for example.
 
 Note that it is particularly important not to allow write access to
-the [netlogon] share, or to grant users write permission on the
+the tt([netlogon]) share, or to grant users write permission on the
 batch files in a secure environment, as this would allow the batch
-files to be arbitrarily modified.
+files to be arbitrarily modified and security to be breached.
 
-.B
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.
 
-.B Example:
-	logon script = scripts\\%U.bat
+Note that this option is only useful if Samba is set up as a
+link(bf(logon server))(domainlogons).
 
-.SS lppause command (S)
-This parameter specifies the command to be executed on the server host in
-order to stop printing or spooling a specific print job.
+  bf(Example:)
+tt(	logon script = scripts\%U.bat)
 
-This command should be a program or script which takes a printer name and
-job number to pause the print job. Currently I don't know of any print
-spooler system that can do this with a simple option, except for the PPR
-system from Trinity College (ppr\-dist.trincoll.edu/pub/ppr). One way
-of implementing this is by using job priorities, where jobs having a too
-low priority won't be sent to the printer. See also the
-.B lppause
-command.
+label(lppausecommand)
+dit(bf(lppause command (S)))
 
-If a %p is given then the printername is put in its place. A %j is
-replaced with the job number (an integer).
-On HPUX (see printing=hpux), if the -p%p option is added to the lpq
-command, the job will show up with the correct status, i.e. if the job
-priority is lower than the set fence priority it will have the PAUSED
-status, whereas if the priority is equal or higher it will have the
-SPOOLED or PRINTING status.
+This parameter specifies the command to be executed on the server host
+in order to stop printing or spooling a specific print job.
 
-Note that it is good practice to include the absolute path in the lppause
-command as the PATH may not be available to the server.
+This command should be a program or script which takes a printer name
+and job number to pause the print job. One way of implementing this is
+by using job priorities, where jobs having a too low priority won't be
+sent to the printer.
 
-.B Default:
-        Currently no default value is given to this string
+If a tt("%p") is given then the printername is put in its place. A
+tt("%j") is replaced with the job number (an integer).  On HPUX (see
+link(bf(printing=hpux))(printing)), if the tt("-p%p") option is added
+to the lpq command, the job will show up with the correct status,
+i.e. if the job priority is lower than the set fence priority it will
+have the PAUSED status, whereas if the priority is equal or higher it
+will have the SPOOLED or PRINTING status.
 
-.B Example for HPUX:
+Note that it is good practice to include the absolute path in the
+lppause command as the PATH may not be available to the server.
+
+See also the link(bf("printing"))(printing) parameter.
+
+  bf(Default:)
+        Currently no default value is given to this string, unless the
+value of the link(bf("printing"))(printing) parameter is tt(SYSV), in
+which case the default is :
+
+tt(	lp -i %p-%j -H hold)
+
+or if the value of the link(bf("printing"))(printing) parameter is tt(HPUX),
+then the default is:
+
+tt(	disable %p)
+
+or if the value of the link(bf("printing"))(printing) parameter is tt(softq),
+then the default is:
+
+tt(	qstat -s -j%j -h)
+ 
+  bf(Example for HPUX:)
         lppause command = /usr/bin/lpalt %p-%j -p0
 
-.SS lpq cache time (G)
+label(lpqcachetime)
+dit(bf(lpq cache time (G)))
 
-This controls how long lpq info will be cached for to prevent the lpq
-command being called too often. A separate cache is kept for each
-variation of the lpq command used by the system, so if you use
-different lpq commands for different users then they won't share cache
-information.
+This controls how long lpq info will be cached for to prevent the
+bf(lpq) command being called too often. A separate cache is kept for
+each variation of the bf(lpq) command used by the system, so if you
+use different bf(lpq) commands for different users then they won't
+share cache information.
 
-The cache files are stored in /tmp/lpq.xxxx where xxxx is a hash
-of the lpq command in use.
+The cache files are stored in tt(/tmp/lpq.xxxx) where xxxx is a hash of
+the bf(lpq) command in use.
 
 The default is 10 seconds, meaning that the cached results of a
-previous identical lpq command will be used if the cached data is less
-than 10 seconds old. A large value may be advisable if your lpq
-command is very slow.
+previous identical bf(lpq) command will be used if the cached data is
+less than 10 seconds old. A large value may be advisable if your
+bf(lpq) command is very slow.
 
 A value of 0 will disable cacheing completely.
 
-.B Default:
+See also the link(bf("printing"))(printing) parameter.
+
+  bf(Default:)
 	lpq cache time = 10
 
-.B Example:
+  bf(Example:)
 	lpq cache time = 30
 
-.SS lpq command (S)
-This parameter specifies the command to be executed on the server host in
-order to obtain "lpq"-style printer status information. 
+label(lpqcommand)
+dit(bf(lpq command (S)))
+
+This parameter specifies the command to be executed on the server host
+in order to obtain tt("lpq")-style printer status information.
 
 This command should be a program or script which takes a printer name
-as its only parameter and outputs printer status information. 
+as its only parameter and outputs printer status information.
 
-Currently six styles of printer status information are supported; BSD,
-SYSV, AIX, HPUX, QNX, LPRNG and PLP. This covers most UNIX systems. You
-control which type is expected using the "printing =" option.
+Currently eight styles of printer status information are supported;
+BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. This covers most UNIX
+systems. You control which type is expected using the
+link(bf("printing ="))(printing) option.
 
-Some clients (notably Windows for Workgroups) may not correctly send the
-connection number for the printer they are requesting status information
-about. To get around this, the server reports on the first printer service
-connected to by the client. This only happens if the connection number sent
-is invalid.
+Some clients (notably Windows for Workgroups) may not correctly send
+the connection number for the printer they are requesting status
+information about. To get around this, the server reports on the first
+printer service connected to by the client. This only happens if the
+connection number sent is invalid.
 
-If a %p is given then the printername is put in its place. Otherwise
+If a tt(%p) is given then the printername is put in its place. Otherwise
 it is placed at the end of the command.
 
-Note that it is good practice to include the absolute path in the lpq
-command as the PATH may not be available to the server.
+Note that it is good practice to include the absolute path in the bf(lpq
+command) as the PATH may not be available to the server.
 
-.B Default:
-        depends on the setting of "printing ="
+See also the link(bf("printing"))(printing) parameter.
 
-.B Example:
- 	lpq command = /usr/bin/lpq %p
+  bf(Default:)
+        depends on the setting of link(bf("printing ="))(printing)
 
-.SS lpresume command (S)
-This parameter specifies the command to be executed on the server host in
-order to restart or continue printing or spooling a specific print job.
+  bf(Example:)
+tt( 	lpq command = /usr/bin/lpq %p)
 
-This command should be a program or script which takes a printer name and
-job number to resume the print job. See also the lppause command.
+label(lpresumecommand)
+dit(bf(lpresume command (S)))
 
-If a %p is given then the printername is put in its place. A %j is
-replaced with the job number (an integer).
+This parameter specifies the command to be executed on the server host
+in order to restart or continue printing or spooling a specific print
+job.
 
-Note that it is good practice to include the absolute path in the lpresume
-command as the PATH may not be available to the server.
+This command should be a program or script which takes a printer name
+and job number to resume the print job. See also the link(bf("lppause
+command"))(lppausecommand) parameter.
 
-.B Default:
-        Currently no default value is given to this string
+If a tt(%p) is given then the printername is put in its place. A
+tt(%j) is replaced with the job number (an integer).
 
-.B Example for HPUX:
-        lpresume command = /usr/bin/lpalt %p-%j -p2
+Note that it is good practice to include the absolute path in the bf(lpresume
+command) as the PATH may not be available to the server.
 
-.SS lprm command (S)
-This parameter specifies the command to be executed on the server host in
-order to delete a print job.
+See also the link(bf("printing"))(printing) parameter.
+
+  bf(Default:)
+
+        Currently no default value is given to this string, unless the
+value of the link(bf("printing"))(printing) parameter is tt(SYSV), in
+which case the default is :
+
+tt(	lpc start %p)
+
+or if the value of the link(bf("printing"))(printing) parameter is tt(HPUX),
+then the default is:
+
+tt(	enable %p)
+
+or if the value of the link(bf("printing"))(printing) parameter is tt(softq),
+then the default is:
+
+tt(	qstat -s -j%j -r)
+ 
+  bf(Example for HPUX:)
+tt(        lpresume command = /usr/bin/lpalt %p-%j -p2)
+
+label(lprmcommand)
+dit(bf(lprm command (S)))
+
+This parameter specifies the command to be executed on the server host
+in order to delete a print job.
 
 This command should be a program or script which takes a printer name
 and job number, and deletes the print job.
 
-Currently seven styles of printer control are supported; BSD, SYSV, AIX
-HPUX, QNX, LPRNG and PLP. This covers most UNIX systems. You control
-which type is expected using the "printing =" option.
+If a tt(%p) is given then the printername is put in its place. A
+tt(%j) is replaced with the job number (an integer).
 
-If a %p is given then the printername is put in its place. A %j is
-replaced with the job number (an integer).
+Note that it is good practice to include the absolute path in the
+bf(lprm command) as the PATH may not be available to the server.
 
-Note that it is good practice to include the absolute path in the lprm
-command as the PATH may not be available to the server.
+See also the link(bf("printing"))(printing) parameter.
 
 .B Default:
         depends on the setting of "printing ="
 
-.B Example 1:
- 	lprm command = /usr/bin/lprm -P%p %j
+  bf(Example 1:)
+tt( 	lprm command = /usr/bin/lprm -P%p %j)
 
-.B Example 2:
- 	lprm command = /usr/bin/cancel %p-%j
+  bf(Example 2:)
+tt( 	lprm command = /usr/bin/cancel %p-%j)
 
-.SS magic output (S)
+label(magicoutput)
+dit(bf(magic output (S)))
+
 This parameter specifies the name of a file which will contain output
-created by a magic script (see
-.I magic script
-below).
+created by a magic script (see the link(bf("magic
+script"))(magicscript) parameter below).
 
-Warning: If two clients use the same magic script in the same directory the
-output file content is undefined.
-.B Default:
+Warning: If two clients use the same link(bf("magic
+script"))(magicscript) in the same directory the output file content
+is undefined.
+
+  bf(Default:)
  	magic output = <magic script name>.out
 
-.B Example:
+  bf(Example:)
  	magic output = myfile.txt
+
 .SS magic script (S)
 This parameter specifies the name of a file which, if opened, will be
 executed by the server when the file is closed. This allows a UNIX script
