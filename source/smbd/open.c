@@ -791,6 +791,12 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
         fname, share_mode, ofun, (int)mode,  oplock_request ));
 
+
+  /* ignore any oplock requests if oplocks are disabled */
+  if (!lp_oplocks(SNUM(conn)) {
+	  oplock_request = 0;
+  }
+
   /* this is for OS/2 EAs - try and say we don't support them */
   if (strstr(fname,".+,;=[].")) 
   {
@@ -1039,7 +1045,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
        * file structs.
        */
 
-      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(conn)) && 
+      if(oplock_request && (num_share_modes == 0) && 
 	      !IS_VETO_OPLOCK_PATH(conn,fname) && set_file_oplock(fsp, oplock_request) ) {
         port = global_oplock_port;
       } else if (oplock_request && all_current_opens_are_level_II) {
