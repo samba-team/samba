@@ -173,7 +173,7 @@ AC_ARG_ENABLE(experimental, [  --enable-experimental Turn on experimental featur
         experimental=yes
     fi])
 
-SMB_INCLUDE_M4(build/m4/rewrite.m4)
+sinclude(build/m4/rewrite.m4)
 
 dnl exclude these modules 
 AC_ARG_WITH(exclude-modules,
