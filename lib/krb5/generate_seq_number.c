@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -57,6 +57,6 @@ krb5_generate_seq_number(krb5_context context,
 	q = (q << 8) | *p;
     q &= 0xffffffff;
     *seqno = q;
-    krb5_free_keyblock_contents (context, subkey);
+    krb5_free_keyblock (context, subkey);
     return 0;
 }
