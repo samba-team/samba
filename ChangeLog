@@ -1,3 +1,10 @@
+Wed Sep  3 16:01:07 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kdc/connect.c: Allow run time port specification.
+
+	* kdc/config.c: Add flags for http support, and port
+ 	specifications.
+
 Tue Sep  2 02:00:03 1997  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: test for sigaction
