@@ -55,7 +55,7 @@ fi
 #################################################
 # set codepage directory location
 AC_ARG_WITH(codepagedir,
-[  --with-codepagedir=DIR     Where to put codepage files (\$libdir/codepages)],
+[  --with-codepagedir=DIR  Where to put codepage files (\$libdir/codepages)],
 [ case "$withval" in
   yes|no)
   #
@@ -420,8 +420,7 @@ test "${with_readline+set}" != "set" && with_readline=yes
 # test for where we get readline() from
 AC_MSG_CHECKING(whether to use readline)
 AC_ARG_WITH(readline,
-[  --with-readline[=DIR]   Look for readline include/libs in DIR
-  --without-readline      Don't include readline support],
+[  --with-readline[=DIR]   Look for readline include/libs in DIR (default=auto) ],
 [  case "$with_readline" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1035,8 +1034,7 @@ fi
 # check for libiconv support
 AC_MSG_CHECKING(whether to use libiconv)
 AC_ARG_WITH(libiconv,
-[  --with-libiconv=BASEDIR     use libiconv in BASEDIR/lib and BASEDIR/include
-  --without-libiconv          Don't use libiconv library],
+[  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto) ],
 [ case "$withval" in
   no)
     AC_MSG_RESULT(no)
@@ -1502,8 +1500,7 @@ fi
 # check for smbwrapper support
 AC_MSG_CHECKING(whether to use smbwrapper)
 AC_ARG_WITH(smbwrapper,
-[  --with-smbwrapper     Include SMB wrapper support
-  --without-smbwrapper  Don't include SMB wrapper support (default)],
+[  --with-smbwrapper       Include SMB wrapper support (default=no) ],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1539,8 +1536,7 @@ AC_ARG_WITH(smbwrapper,
 # check for the AFS filesystem
 AC_MSG_CHECKING(whether to use AFS)
 AC_ARG_WITH(afs,
-[  --with-afs     Include AFS support
-  --without-afs  Don't include AFS support (default)],
+[  --with-afs              Include AFS support (default=no) ],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1558,8 +1554,7 @@ AC_ARG_WITH(afs,
 # check for the DFS auth system
 AC_MSG_CHECKING(whether to use DFS auth)
 AC_ARG_WITH(dfs,
-[  --with-dfs     Include DFS support
-  --without-dfs  Don't include DFS support (default)],
+[  --with-dce-dfs          Include DCE/DFS support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1576,8 +1571,7 @@ AC_ARG_WITH(dfs,
 # check for Kerberos IV auth system
 AC_MSG_CHECKING(whether to use Kerberos IV)
 AC_ARG_WITH(krb4,
-[  --with-krb4=base-dir     Include Kerberos IV support
-  --without-krb4          Don't include Kerberos IV support (default)],
+[  --with-krb4=base-dir    Include Kerberos IV support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1598,8 +1592,7 @@ AC_ARG_WITH(krb4,
 # check for Kerberos 5 auth system
 AC_MSG_CHECKING(whether to use Kerberos 5)
 AC_ARG_WITH(krb5,
-[  --with-krb5=base-dir     Include Kerberos 5 support
-  --without-krb5          Don't include Kerberos 5 support (default)],
+[  --with-krb5=base-dir    Include Kerberos 5 support (defualt=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1619,8 +1612,7 @@ AC_ARG_WITH(krb5,
 # check for automount support
 AC_MSG_CHECKING(whether to use AUTOMOUNT)
 AC_ARG_WITH(automount,
-[  --with-automount     Include AUTOMOUNT support
-  --without-automount  Don't include AUTOMOUNT support (default)],
+[  --with-automount        Include AUTOMOUNT support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1637,8 +1629,7 @@ AC_ARG_WITH(automount,
 # check for smbmount support
 AC_MSG_CHECKING(whether to use SMBMOUNT)
 AC_ARG_WITH(smbmount,
-[  --with-smbmount     Include SMBMOUNT (Linux only) support
-  --without-smbmount  Don't include SMBMOUNT support (default)],
+[  --with-smbmount         Include SMBMOUNT (Linux only) support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1660,8 +1651,7 @@ AC_ARG_WITH(smbmount,
 with_pam_for_crypt=no
 AC_MSG_CHECKING(whether to use PAM password database)
 AC_ARG_WITH(pam,
-[  --with-pam     Include PAM password database support
-  --without-pam  Don't include PAM password database support (default)],
+[  --with-pam              Include PAM password database support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1683,8 +1673,7 @@ AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM)])
 # check for pam_smbpass support
 AC_MSG_CHECKING(whether to use pam_smbpass)
 AC_ARG_WITH(pam_smbpass,
-[  --with-pam_smbpass     Include the smbpass PAM module
-  --without-pam_smbpass  Don't include the smbpass PAM module (default)],
+[  --with-pam_smbpass      Include the smbpass PAM module (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1741,8 +1730,7 @@ fi
 # check for a TDB password database
 AC_MSG_CHECKING(whether to use TDB password database)
 AC_ARG_WITH(tdbsam,
-[  --with-tdbsam   Include experimental TDB password database
-  --without-tdbsam  Don't include experimental TDB password database (default)],
+[  --with-tdbsam           Include experimental TDB password database (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1760,8 +1748,7 @@ AC_ARG_WITH(tdbsam,
 # check for a LDAP password database
 AC_MSG_CHECKING(whether to use LDAP password database)
 AC_ARG_WITH(ldap,
-[  --with-ldap     Include LDAP support
-  --without-ldap  Don't include LDAP support (default)],
+[  --with-ldapsam          Include Experimental LDAP-Sam support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1776,29 +1763,28 @@ AC_ARG_WITH(ldap,
 )
 
 #################################################
+# commented out by --jerry
 # check for a NISPLUS password database
-AC_MSG_CHECKING(whether to use NISPLUS password database)
-AC_ARG_WITH(nisplus,
-[  --with-nisplus     Include NISPLUS password database support
-  --without-nisplus  Don't include NISPLUS password database support (default)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NISPLUS)
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
+#AC_MSG_CHECKING(whether to use NISPLUS password database)
+#AC_ARG_WITH(nisplus,
+#[  --with-nisplus     Include NISPLUS password database support
+#[ case "$withval" in
+#  yes)
+#    AC_MSG_RESULT(yes)
+#    AC_DEFINE(WITH_NISPLUS)
+#    ;;
+#  *)
+#    AC_MSG_RESULT(no)
+#    ;;
+#  esac ],
+#  AC_MSG_RESULT(no)
+#)
 
 #################################################
 # check for a NISPLUS_HOME support 
 AC_MSG_CHECKING(whether to use NISPLUS_HOME)
 AC_ARG_WITH(nisplus-home,
-[  --with-nisplus-home     Include NISPLUS_HOME support
-  --without-nisplus-home  Don't include NISPLUS_HOME support (default)],
+[  --with-nisplus-home     Include NISPLUS_HOME support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1815,9 +1801,8 @@ AC_ARG_WITH(nisplus-home,
 # check for the secure socket layer
 AC_MSG_CHECKING(whether to use SSL)
 AC_ARG_WITH(ssl,
-[  --with-ssl     Include SSL support
-  --without-ssl  Don't include SSL support (default)
-  --with-sslinc=DIR Where the SSL includes are (defaults to /usr/local/ssl)],
+[  --with-ssl              Include SSL support (default=no)],
+  --with-sslinc=DIR       Where the SSL includes are (defaults to /usr/local/ssl)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1868,8 +1853,7 @@ AC_ARG_WITH(ssl,
 # check for syslog logging
 AC_MSG_CHECKING(whether to use syslog logging)
 AC_ARG_WITH(syslog,
-[  --with-syslog     Include experimental SYSLOG support
-  --without-syslog  Don't include SYSLOG support (default)],
+[  --with-syslog           Include experimental SYSLOG support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1886,8 +1870,7 @@ AC_ARG_WITH(syslog,
 # check for a shared memory profiling support
 AC_MSG_CHECKING(whether to use profiling)
 AC_ARG_WITH(profile,
-[  --with-profiling-data     Include gathering source code profile information
-  --without-profiling-data  Don't include support for gathering source code profile information (default)],
+[  --with-profiling-data   Include gathering source code profile information (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1902,31 +1885,12 @@ AC_ARG_WITH(profile,
 
 
 #################################################
-# check for experimental netatalk resource fork support
-AC_MSG_CHECKING(whether to support netatalk)
-AC_ARG_WITH(netatalk,
-[  --with-netatalk     Include experimental Netatalk support
-  --without-netatalk  Don't include experimental Netatalk support (default)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NETATALK)
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-#################################################
 # check for experimental disk-quotas support
 QUOTAOBJS=smbd/noquotas.o
 
 AC_MSG_CHECKING(whether to support disk-quotas)
 AC_ARG_WITH(quotas,
-[  --with-quotas     Include experimental disk-quota support
-  --without-quotas  Don't include experimental disk-quota support (default)],
+[  --with-quotas           Include experimental disk-quota support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1945,8 +1909,7 @@ AC_SUBST(QUOTAOBJS)
 
 AC_MSG_CHECKING(whether to support utmp accounting)
 AC_ARG_WITH(utmp,
-[  --with-utmp     Include experimental utmp accounting
-  --without-utmp  Don't include experimental utmp accounting (default)],
+[  --with-utmp             Include experimental utmp accounting (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1964,8 +1927,7 @@ AC_ARG_WITH(utmp,
 
 AC_MSG_CHECKING(whether to support Microsoft Dfs)
 AC_ARG_WITH(msdfs,
-[  --with-msdfs		Include MS Dfs support
-  --without-msdfs	Don't include MS Dfs support (default)],
+[  --with-msdfs            Include MS Dfs support (default=no)],
 [ case "$withval" in
   yes)
      AC_MSG_RESULT(yes)
@@ -1981,7 +1943,7 @@ AC_ARG_WITH(msdfs,
 #################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
-[  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)],
+[  --with-privatedir=DIR   Where to put smbpasswd ($ac_default_prefix/private)],
 [ case "$withval" in
   yes|no)
   #
@@ -2002,7 +1964,7 @@ AC_ARG_WITH(privatedir,
 #################################################
 # set lock directory location
 AC_ARG_WITH(lockdir,
-[  --with-lockdir=DIR     Where to put lock files ($ac_default_prefix/var/locks)],
+[  --with-lockdir=DIR      Where to put lock files ($ac_default_prefix/var/locks)],
 [ case "$withval" in
   yes|no)
   #
@@ -2023,7 +1985,7 @@ AC_ARG_WITH(lockdir,
 #################################################
 # set SWAT directory location
 AC_ARG_WITH(swatdir,
-[  --with-swatdir=DIR     Where to put SWAT files ($ac_default_prefix/swat)],
+[  --with-swatdir=DIR      Where to put SWAT files ($ac_default_prefix/swat)],
 [ case "$withval" in
   yes|no)
   #
@@ -2248,7 +2210,8 @@ if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
 fi
 AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 
-AC_ARG_WITH(spinlocks, [  --with-spinlocks        use spin locks instead of fcntl locks ])
+AC_ARG_WITH(spinlocks, 
+[  --with-spinlocks        Use spin locks instead of fcntl locks (default=no) ])
 if test "x$with_spinlocks" = "xyes"; then
     AC_DEFINE(USE_SPINLOCKS)
 
@@ -2276,8 +2239,7 @@ fi
 
 AC_MSG_CHECKING(whether to support ACLs)
 AC_ARG_WITH(acl-support,
-[  --with-acl-support        Include ACL support
-  --without-acl-support  Don't include ACL support (default)],
+[  --with-acl-support      Include ACL support (default=no)],
 [ case "$withval" in
   yes)
 
@@ -2356,8 +2318,7 @@ esac
 # Check the setting of --with-winbindd
 
 AC_ARG_WITH(winbind,
-[  --with-winbind   	Build winbind (default, if supported by OS)
-  --without-winbind 	Don't build winbind],
+[  --with-winbind          Build winbind (default, if supported by OS)],
 [ 
   case "$withval" in
 	yes)
