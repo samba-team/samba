@@ -892,7 +892,23 @@ static WERROR srvsvc_NetShareDelSticky(struct dcesrv_call_state *dce_call, TALLO
 static WERROR srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareCheck *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	ZERO_STRUCT(r->out);
+
+	/* TODO: - access check
+	 */
+
+	if (strcmp("", r->in.device_name) == 0) {
+		r->out.type = STYPE_IPC;
+		return WERR_OK;
+	}
+
+	if (strcmp("C:\\", r->in.device_name) == 0) {
+		r->out.type = STYPE_DISKTREE;
+		return WERR_OK;
+	}
+
+	/* TODO: - lookup the share be devicename (path) */
+	return WERR_DEVICE_NOT_SHARED;
 }
 
 
@@ -1203,13 +1219,13 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	/* TODO: - paging of results 
 	 *       - access check
-	 *	 - filter out hidden shares
 	 */
 
 	switch (r->in.level) {
 	case 0:
 	{
 		int i;
+		uint32_t count;
 		struct srvsvc_NetShareCtr0 *ctr0;
 
 		ctr0 = talloc_p(mem_ctx, struct srvsvc_NetShareCtr0);
@@ -1226,11 +1242,17 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		ctr0->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo0, ctr0->count);
 		W_ERROR_HAVE_NO_MEMORY(ctr0->array);
 
-		for (i=0; i < ctr0->count; i++) {
+		count		= ctr0->count;
+		ctr0->count	= 0;
+		for (i=0; i < count; i++) {
 			WERROR status;
 			union srvsvc_NetShareInfo info;
 
-			info.info0 = &ctr0->array[i];
+			if (!lp_browseable(i)){
+				continue;
+			}
+
+			info.info0 = &ctr0->array[ctr0->count++];
 			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, i, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
@@ -1244,6 +1266,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	case 1:
 	{
 		int i;
+		uint32_t count;
 		struct srvsvc_NetShareCtr1 *ctr1;
 
 		ctr1 = talloc_p(mem_ctx, struct srvsvc_NetShareCtr1);
@@ -1260,11 +1283,17 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		ctr1->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo1, ctr1->count);
 		W_ERROR_HAVE_NO_MEMORY(ctr1->array);
 
-		for (i=0; i < ctr1->count; i++) {
+		count		= ctr1->count;
+		ctr1->count	= 0;
+		for (i=0; i < count; i++) {
 			WERROR status;
 			union srvsvc_NetShareInfo info;
 
-			info.info1 = &ctr1->array[i];
+			if (!lp_browseable(i)){
+				continue;
+			}
+
+			info.info1 = &ctr1->array[ctr1->count++];
 			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, i, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
@@ -1278,6 +1307,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	case 2:
 	{
 		int i;
+		uint32_t count;
 		struct srvsvc_NetShareCtr2 *ctr2;
 
 		ctr2 = talloc_p(mem_ctx, struct srvsvc_NetShareCtr2);
@@ -1294,11 +1324,17 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		ctr2->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo2, ctr2->count);
 		W_ERROR_HAVE_NO_MEMORY(ctr2->array);
 
-		for (i=0; i < ctr2->count; i++) {
+		count		= ctr2->count;
+		ctr2->count	= 0;
+		for (i=0; i < count; i++) {
 			WERROR status;
 			union srvsvc_NetShareInfo info;
 
-			info.info2 = &ctr2->array[i];
+			if (!lp_browseable(i)){
+				continue;
+			}
+
+			info.info2 = &ctr2->array[ctr2->count++];
 			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, i, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
@@ -1312,6 +1348,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	case 501:
 	{
 		int i;
+		uint32_t count;
 		struct srvsvc_NetShareCtr501 *ctr501;
 
 		ctr501 = talloc_p(mem_ctx, struct srvsvc_NetShareCtr501);
@@ -1328,11 +1365,17 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		ctr501->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo501, ctr501->count);
 		W_ERROR_HAVE_NO_MEMORY(ctr501->array);
 
-		for (i=0; i < ctr501->count; i++) {
+		count		= ctr501->count;
+		ctr501->count	= 0;
+		for (i=0; i < count; i++) {
 			WERROR status;
 			union srvsvc_NetShareInfo info;
 
-			info.info501 = &ctr501->array[i];
+			if (!lp_browseable(i)){
+				continue;
+			}
+
+			info.info501 = &ctr501->array[ctr501->count++];
 			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, i, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
@@ -1346,6 +1389,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	case 502:
 	{
 		int i;
+		uint32_t count;
 		struct srvsvc_NetShareCtr502 *ctr502;
 
 		ctr502 = talloc_p(mem_ctx, struct srvsvc_NetShareCtr502);
@@ -1362,11 +1406,17 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		ctr502->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo502, ctr502->count);
 		W_ERROR_HAVE_NO_MEMORY(ctr502->array);
 
-		for (i=0; i < ctr502->count; i++) {
+		count		= ctr502->count;
+		ctr502->count	= 0;
+		for (i=0; i < count; i++) {
 			WERROR status;
 			union srvsvc_NetShareInfo info;
 
-			info.info502 = &ctr502->array[i];
+			if (!lp_browseable(i)){
+				continue;
+			}
+
+			info.info502 = &ctr502->array[ctr502->count++];
 			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, i, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
