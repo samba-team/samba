@@ -2386,8 +2386,6 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
-	update_server_announce_as_printserver();
-
 	return (True);
 }
 
@@ -2737,56 +2735,6 @@ static BOOL handle_netbios_aliases(const char *pszParmValue, char **ptr)
 {
 	Globals.szNetbiosAliases = str_list_make(pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
-}
-
-/***************************************************************************
- Do the work of sourcing in environment variable/value pairs.
-***************************************************************************/
-
-static BOOL source_env(char **lines)
-{
-	char *varval;
-	size_t len;
-	int i;
-	char *p;
-
-	for (i = 0; lines[i]; i++) {
-		char *line = lines[i];
-
-		if ((len = strlen(line)) == 0)
-			continue;
-
-		if (line[len - 1] == '\n')
-			line[--len] = '\0';
-
-		if ((varval = malloc(len + 1)) == NULL) {
-			DEBUG(0, ("source_env: Not enough memory!\n"));
-			return (False);
-		}
-
-		DEBUG(4, ("source_env: Adding to environment: %s\n", line));
-		strncpy(varval, line, len);
-		varval[len] = '\0';
-
-		p = strchr_m(line, (int)'=');
-		if (p == NULL) {
-			DEBUG(4, ("source_env: missing '=': %s\n", line));
-			continue;
-		}
-
-		if (putenv(varval)) {
-			DEBUG(0, ("source_env: Failed to put environment variable %s\n",
-			       varval));
-			continue;
-		}
-
-		*p = '\0';
-		p++;
-		DEBUG(4, ("source_env: getting var %s = %s\n", line, getenv(line)));
-	}
-
-	DEBUG(4, ("source_env: returning successfully\n"));
-	return (True);
 }
 
 /***************************************************************************
@@ -3669,15 +3617,6 @@ void lp_add_one_printer(char *name, char *comment)
 }
 
 /***************************************************************************
- Announce ourselves as a print server.
-***************************************************************************/
-
-void update_server_announce_as_printserver(void)
-{
-	default_server_announce |= SV_TYPE_PRINTQ_SERVER;	
-}
-
-/***************************************************************************
  Have we loaded a services file yet?
 ***************************************************************************/
 
@@ -4040,6 +3979,12 @@ static void set_default_server_announce_type(void)
 	default_server_announce |= SV_TYPE_WORKSTATION;
 	default_server_announce |= SV_TYPE_SERVER;
 	default_server_announce |= SV_TYPE_SERVER_UNIX;
+
+	/* note that the flag should be set only if we have a 
+	   printer service but nmbd doesn't actually load the 
+	   services so we can't tell   --jerry */
+
+	default_server_announce |= SV_TYPE_PRINTQ_SERVER;
 
 	switch (lp_announce_as()) {
 		case ANNOUNCE_AS_NT_SERVER:

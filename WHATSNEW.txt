@@ -77,6 +77,11 @@ o   Volker Lendecke <vl@samba.org>
       over users with getpwent().  This broke on glibc 2.3.2.
 
 
+o   Jianliang Lu <j.lu@tiesse.com>
+    * BUG 101: set the SV_TYPE_PRINTQ_SERVER flag in host announcement 
+      packet.
+
+
 o   Stefan Metzmacher <metze@samba.org>
     * Add SIGABRT to fault handling in order to catch got a 
       backtrace if an error occurs the OpenLDAP client libs.
