@@ -58,7 +58,7 @@ generate_2int (const Symbol *s)
 	     s->gen_name, s->gen_name);
 
     for (m = t->members; m && m->val != tag; m = m->next) {
-	fprintf (codefile, "if(f.%s) r |= (1 << %d);\n",
+	fprintf (codefile, "if(f.%s) r |= (1U << %d);\n",
 		 m->gen_name, m->val);
 	
 	if (tag == -1)
@@ -118,7 +118,7 @@ generate_units (const Symbol *s)
     if(t->members)
 	for (m = t->members->prev; m && m->val != tag; m = m->prev) {
 	    fprintf (codefile,
-		     "\t{\"%s\",\t1 << %d},\n", m->gen_name, m->val);
+		     "\t{\"%s\",\t1U << %d},\n", m->gen_name, m->val);
 	    
 	    if (tag == -1)
 		tag = m->val;
