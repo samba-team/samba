@@ -3158,14 +3158,23 @@ int reply_mv(char *inbuf,char *outbuf)
 
 	    error = ERRnoaccess;
 	    sprintf(fname,"%s/%s",directory,dname);
-	    if (!can_rename(fname,cnum)) continue;
+	    if (!can_rename(fname,cnum)) {
+		    DEBUG(6,("rename %s refused\n", fname));
+		    continue;
+	    }
 	    pstrcpy(destname,newname);
 
-	    if (!resolve_wildcards(fname,destname)) continue;
+	    if (!resolve_wildcards(fname,destname)) {
+		    DEBUG(6,("resolve_wildcards %s %s failed\n", 
+			     fname, destname));
+		    continue;
+	    }
 
 	    if (file_exist(destname,NULL)) {
-	      error = 183;
-	      continue;
+		    DEBUG(6,("file_exist %s\n", 
+			     destname));
+		    error = 183;
+		    continue;
 	    }
 	    if (!sys_rename(fname,destname)) count++;
 	    DEBUG(3,("reply_mv : doing rename on %s -> %s\n",fname,destname));
