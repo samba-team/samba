@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -372,6 +372,8 @@ static struct key_type {
     { KEYTYPE_NULL,	NULL,			ETYPE_NULL,
       CKSUMTYPE_NONE,		"null" },
     { KEYTYPE_DES,	DES_random_key,		ETYPE_DES_CBC_MD5,
+      CKSUMTYPE_RSA_MD5_DES,	"des" },
+    { KEYTYPE_DES_AFS3,	DES_random_key,		ETYPE_DES_CBC_MD5,
       CKSUMTYPE_RSA_MD5_DES,	"des" },
     { KEYTYPE_DES3,	DES3_random_key,	ETYPE_DES3_CBC_SHA1,
       CKSUMTYPE_HMAC_SHA1_DES3, "des3" }
