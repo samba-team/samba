@@ -122,6 +122,7 @@ if ($PKG eq "samba_irix") {
   print IDB "f 0644 root sys usr/relnotes/samba_irix/TC build/TC $PKG.man.relnotes\n";
   print IDB "f 0644 root sys usr/relnotes/samba_irix/ch1.z build/ch1.z $PKG.man.relnotes\n";
   print IDB "f 0644 root sys usr/relnotes/samba_irix/ch2.z build/ch2.z $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba_irix/ch3.z build/ch3.z $PKG.man.relnotes\n";
 }
 else {
   @copyfile = grep (/^COPY/,@allfiles);
