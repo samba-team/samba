@@ -379,12 +379,13 @@ alias|alias|alias|alias...
 		<varlistentry>
 		<term>%a</term>
 		<listitem><para>the architecture of the remote
-		machine. Only some are recognized, and those may not be 
-		100% reliable. It currently recognizes Samba, Windows for Workgroups, Windows 95,
-		Windows NT and Windows 2000. Anything else will be known as 
-		<quote>UNKNOWN</quote>. If it gets it wrong sending a level 
-		3 log to <ulink url="mailto:samba@samba.org">samba@samba.org
-		</ulink> should allow it to be fixed.</para></listitem>
+		machine.  It currently recognizes Samba (<constant>Samba</constant>, 
+		the Linux CIFS file system (<constant>CIFSFS</constant>, OS/2, (<constant>OS2</constant>),
+		Windows for Workgroups (<constant>WfWg</constant>, Windows 9x/ME 
+		(<constant>Win95</constant>), Windows NT (<constant>WinNT</constant>),
+		Windows 2000 (<constant>Win2K</constant>), Windows XP (<constant>WinXP</constant>),
+		and Windows 2003 (<constant>Win2K3</constant>).  Anything else will be known as 
+		<quote>UNKNOWN</quote>.</para> 
 		</varlistentry>
 		
 		<varlistentry>
