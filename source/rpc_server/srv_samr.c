@@ -766,6 +766,22 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	}
 	else if (strequal(sid_str, sam_sid_str))
 	{
+#ifdef _DISABLED_BECAUSE_THERE_IS_AN_API_TO_CALL_TO_OBTAIN_ALIASES
+
+		/*
+		 * this code has been disabled because there is an API
+		 * to call to enumerate NT aliases.
+		 *
+		 * it is the job of this API to decide which unix groups
+		 * should be mapped to NT aliases and which should be
+		 * mapped to NT groups.
+		 *
+		 * putting *all* unix groups as aliases is not the correct
+		 * thing to do, just as it is not the correct thing to
+		 * do to return all unix users as NT users (as is done
+		 * by the disabled function, get_passwd_entries())
+		 */
+
 		char *name;
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */
@@ -782,6 +798,7 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		}
 
 		endgrent();
+#endif
 	}
 		
 	init_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
