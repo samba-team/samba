@@ -39,6 +39,7 @@ static DATA_BLOB unwrap_pac(DATA_BLOB *auth_data)
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
+	asn1_free(&data);
 	return pac_contents;
 }
 
@@ -602,6 +603,8 @@ PAC_DATA *decode_pac_data(DATA_BLOB *auth_data, TALLOC_CTX *ctx)
 	prs_init(&ps, pac_data_blob.length, ctx, UNMARSHALL);
 	prs_copy_data_in(&ps, pac_data_blob.data, pac_data_blob.length);
 	prs_set_offset(&ps, 0);
+
+	data_blob_free(&pac_data_blob);
 
 	pac_data = (PAC_DATA *) talloc_zero(ctx, sizeof(PAC_DATA));
 	pac_io_pac_data("pac data", pac_data, &ps, 0);

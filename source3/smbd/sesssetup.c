@@ -171,6 +171,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	data_blob_free(&auth_data);
+	data_blob_free(&ticket);
 
 	DEBUG(3,("Ticket name is [%s]\n", client));
 
@@ -178,6 +179,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (!p) {
 		DEBUG(3,("Doesn't look like a valid principal\n"));
 		data_blob_free(&ap_rep);
+		SAFE_FREE(client);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -186,6 +188,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
 			data_blob_free(&ap_rep);
+			SAFE_FREE(client);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 		foreign = True;
@@ -201,6 +204,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		SAFE_FREE(user);
 		user = smb_xstrdup(client);
 	}
+
+	SAFE_FREE(client);
 
 	/* setup the string used by %U */
 	sub_set_smb_name(user);

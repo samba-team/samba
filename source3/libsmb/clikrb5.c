@@ -97,7 +97,9 @@
 		return ret;
 	}
 	krb5_use_enctype(context, &eblock, enctype);
-	return krb5_string_to_key(context, &eblock, key, password, &salt);
+	ret = krb5_string_to_key(context, &eblock, key, password, &salt);
+	SAFE_FREE(salt.data);
+	return ret;
 }
 #elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
  int create_kerberos_key_from_string(krb5_context context,

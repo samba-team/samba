@@ -128,11 +128,6 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 
 	/* CIFS doesn't use addresses in tickets. This would breat NAT. JRA */
 
-	if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
-		sret = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-	
 	if ((ret = get_kerberos_allowed_etypes(context, &enctypes))) {
 		DEBUG(1,("ads_verify_ticket: krb5_get_permitted_enctypes failed (%s)\n", 
 			 error_message(ret)));
@@ -151,11 +146,18 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 
 	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
+		if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
+			sret = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	
 		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i])) {
 			continue;
 		}
 
 		krb5_auth_con_setuseruserkey(context, auth_context, key);
+
+		krb5_free_keyblock(context, key);
 
 		packet.length = ticket->length;
 		packet.data = (krb5_pointer)ticket->data;
@@ -164,7 +166,6 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 				       NULL, keytab, NULL, &tkt))) {
 			DEBUG(10,("ads_verify_ticket: enc type [%u] decrypted message !\n",
 				(unsigned int)enctypes[i] ));
-			free_kerberos_etypes(context, enctypes);
 			auth_ok = True;
 			break;
 		}
@@ -237,8 +238,11 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	if (!NT_STATUS_IS_OK(sret))
 		data_blob_free(ap_rep);
 
-	SAFE_FREE(host_princ_s);
+	krb5_free_principal(context, host_princ);
+	krb5_free_ticket(context, tkt);
+	free_kerberos_etypes(context, enctypes);
 	SAFE_FREE(password_s);
+	SAFE_FREE(host_princ_s);
 
 	if (auth_context)
 		krb5_auth_con_free(context, auth_context);
