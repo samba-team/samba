@@ -1192,7 +1192,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 #endif
 	if (!(mods = ads_init_mods(ctx))) return ADS_ERROR(LDAP_NO_MEMORY);
 
-	ads_mod_repl_len(ctx, &mods, attrs[0], sd_size, ps_wire.data_p);
+	ads_mod_repl_len(ctx, &mods, attrs[0], sd_size, prs_data_p(&ps_wire));
 	ret = ads_gen_mod(ads, dn, mods);
 
 	prs_mem_free(&ps);
