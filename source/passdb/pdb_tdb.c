@@ -277,7 +277,7 @@ done:
  Intialize a BYTE buffer from a SAM_ACCOUNT struct
  *********************************************************************/
 static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
-				    uint8 **buf, SAM_ACCOUNT *sampass)
+				    uint8 **buf, const SAM_ACCOUNT *sampass)
 {
 	size_t		len, buflen;
 
@@ -668,6 +668,13 @@ static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 	return tdbsam_getsampwnam (my_methods, user, name);
 }
 
+static BOOL tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+{
+	uint32 rid;
+	sid_peek_rid(sid, &rid);
+	return tdbsam_getsampwrid(my_methods, user, rid);
+}
+
 /***************************************************************************
  Delete a SAM_ACCOUNT
 ****************************************************************************/
@@ -910,7 +917,7 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	(*pdb_method)->endsampwent = tdbsam_endsampwent;
 	(*pdb_method)->getsampwent = tdbsam_getsampwent;
 	(*pdb_method)->getsampwnam = tdbsam_getsampwnam;
-	(*pdb_method)->getsampwrid = tdbsam_getsampwrid;
+	(*pdb_method)->getsampwsid = tdbsam_getsampwsid;
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;

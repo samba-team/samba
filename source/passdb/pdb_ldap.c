@@ -1270,6 +1270,13 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	}
 }
 
+static BOOL ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+{
+	uint32 rid;
+	sid_peek_rid(sid, &rid);
+	return ldapsam_getsampwrid(my_methods, user, rid);
+}	
+
 /**********************************************************************
 Delete entry from LDAP for username 
 *********************************************************************/
@@ -1537,7 +1544,7 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	(*pdb_method)->endsampwent = ldapsam_endsampwent;
 	(*pdb_method)->getsampwent = ldapsam_getsampwent;
 	(*pdb_method)->getsampwnam = ldapsam_getsampwnam;
-	(*pdb_method)->getsampwrid = ldapsam_getsampwrid;
+	(*pdb_method)->getsampwsid = ldapsam_getsampwsid;
 	(*pdb_method)->add_sam_account = ldapsam_add_sam_account;
 	(*pdb_method)->update_sam_account = ldapsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = ldapsam_delete_sam_account;

@@ -65,6 +65,13 @@ static BOOL unixsam_getsampwrid (struct pdb_methods *methods,
 	return ret;
 }
 
+static BOOL unixsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+{
+	uint32 rid;
+	sid_peek_rid(sid, &rid);
+	return unixsam_getsampwrid(my_methods, user, rid);
+}
+
 /***************************************************************************
   Adds an existing SAM_ACCOUNT
  ****************************************************************************/
@@ -109,7 +116,7 @@ NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	(*pdb_method)->endsampwent = NULL;
 	(*pdb_method)->getsampwent = NULL;
 	(*pdb_method)->getsampwnam = unixsam_getsampwnam;
-	(*pdb_method)->getsampwrid = unixsam_getsampwrid;
+	(*pdb_method)->getsampwsid = unixsam_getsampwsid;
 	(*pdb_method)->add_sam_account = unixsam_add_sam_account;
 	(*pdb_method)->update_sam_account = unixsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = NULL;

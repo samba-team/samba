@@ -618,7 +618,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	}
 		
 	/* This now does the 'generic' mapping in pdb_unix */
-	if (pdb_getsampwrid(sam_account, rid)) {
+	if (pdb_getsampwsid(sam_account, sid)) {
 		fstrcpy(name, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
 
@@ -852,7 +852,7 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user)))
 		return False;
 	
-	if (pdb_getsampwrid(sam_user, rid)) {
+	if (pdb_getsampwsid(sam_user, psid)) {
 		*puid = pdb_get_uid(sam_user);
 		if (*puid == -1) {
 			pdb_free_sam(&sam_user);

@@ -1030,7 +1030,15 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT * user, const char *sname)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
+
+BOOL pdb_getsampwsid(SAM_ACCOUNT * user, DOM_SID *sid)
+{
+	uint32 rid;
+	sid_peek_rid(sid, &rid);
+	return pdb_getsampwrid(user, rid);
+}
+
+static BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 {
 	nis_result *result;
 	char *nisname;

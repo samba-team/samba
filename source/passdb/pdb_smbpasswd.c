@@ -1411,7 +1411,6 @@ static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 	return True;
 }
 
-
 static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_acct,uint32 rid)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
@@ -1454,6 +1453,13 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 
 	/* success */
 	return True;
+}
+
+static BOOL smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+{
+	uint32 rid;
+	sid_peek_rid(sid, &rid);
+	return smbpasswd_getsampwrid(my_methods, user, rid);
 }
 
 static BOOL smbpasswd_add_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
@@ -1529,7 +1535,7 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 	(*pdb_method)->endsampwent = smbpasswd_endsampwent;
 	(*pdb_method)->getsampwent = smbpasswd_getsampwent;
 	(*pdb_method)->getsampwnam = smbpasswd_getsampwnam;
-	(*pdb_method)->getsampwrid = smbpasswd_getsampwrid;
+	(*pdb_method)->getsampwsid = smbpasswd_getsampwsid;
 	(*pdb_method)->add_sam_account = smbpasswd_add_sam_account;
 	(*pdb_method)->update_sam_account = smbpasswd_update_sam_account;
 	(*pdb_method)->delete_sam_account = smbpasswd_delete_sam_account;

@@ -122,7 +122,7 @@ static BOOL context_getsampwnam(struct pdb_context *context, SAM_ACCOUNT *sam_ac
 	return False;
 }
 
-static BOOL context_getsampwrid(struct pdb_context *context, SAM_ACCOUNT *sam_acct, uint32 rid)
+static BOOL context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sam_acct, DOM_SID *sid)
 {
 	struct pdb_methods *curmethods;
 	if ((!context)) {
@@ -133,7 +133,7 @@ static BOOL context_getsampwrid(struct pdb_context *context, SAM_ACCOUNT *sam_ac
 	curmethods = context->pdb_methods;
 
 	while (curmethods){
-		if (curmethods->getsampwrid && curmethods->getsampwrid(curmethods, sam_acct, rid) == True){
+		if (curmethods->getsampwsid && curmethods->getsampwsid(curmethods, sam_acct, sid) == True){
 			sam_acct->methods = curmethods;
 			return True;
 		}
@@ -299,7 +299,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_endsampwent = context_endsampwent;
 	(*context)->pdb_getsampwent = context_getsampwent;
 	(*context)->pdb_getsampwnam = context_getsampwnam;
-	(*context)->pdb_getsampwrid = context_getsampwrid;
+	(*context)->pdb_getsampwsid = context_getsampwsid;
 	(*context)->pdb_add_sam_account = context_add_sam_account;
 	(*context)->pdb_update_sam_account = context_update_sam_account;
 	(*context)->pdb_delete_sam_account = context_delete_sam_account;
@@ -431,7 +431,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 	return pdb_context->pdb_getsampwnam(pdb_context, sam_acct, username);
 }
 
-BOOL pdb_getsampwrid(SAM_ACCOUNT *sam_acct, uint32 rid) 
+BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, DOM_SID *sid) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -439,7 +439,7 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT *sam_acct, uint32 rid)
 		return False;
 	}
 
-	return pdb_context->pdb_getsampwrid(pdb_context, sam_acct, rid);
+	return pdb_context->pdb_getsampwsid(pdb_context, sam_acct, sid);
 }
 
 BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
