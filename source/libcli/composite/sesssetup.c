@@ -30,6 +30,7 @@
 struct sesssetup_state {
 	union smb_sesssetup setup;
 	NTSTATUS session_key_err;
+	struct smb_composite_sesssetup *io;
 };
 
 
@@ -93,7 +94,6 @@ static void request_handler(struct smbcli_request *req)
 {
 	struct smbcli_composite *c = req->async.private;
 	struct sesssetup_state *state = c->private;
-	struct smb_composite_sesssetup *io = c->composite_parms;
 	struct smbcli_session *session = req->session;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
@@ -102,15 +102,15 @@ static void request_handler(struct smbcli_request *req)
 
 	switch (state->setup.old.level) {
 	case RAW_SESSSETUP_OLD:
-		io->out.vuid = state->setup.old.out.vuid;
+		state->io->out.vuid = state->setup.old.out.vuid;
 		break;
 
 	case RAW_SESSSETUP_NT1:
-		io->out.vuid = state->setup.nt1.out.vuid;
+		state->io->out.vuid = state->setup.nt1.out.vuid;
 		break;
 
 	case RAW_SESSSETUP_SPNEGO:
-		session->vuid = io->out.vuid = state->setup.spnego.out.vuid;
+		session->vuid = state->io->out.vuid = state->setup.spnego.out.vuid;
 		if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
 		    !NT_STATUS_IS_OK(c->status)) {
 			break;
@@ -142,7 +142,7 @@ static void request_handler(struct smbcli_request *req)
 	}
 
 	/* enforce the local signing required flag */
-	if (NT_STATUS_IS_OK(c->status) && io->in.user && io->in.user[0]) {
+	if (NT_STATUS_IS_OK(c->status) && state->io->in.user && state->io->in.user[0]) {
 		if (!session->transport->negotiate.sign_info.doing_signing 
 		    && session->transport->negotiate.sign_info.mandatory_signing) {
 			DEBUG(0, ("SMB signing required, but server does not support it\n"));
@@ -346,11 +346,11 @@ struct smbcli_composite *smb_composite_sesssetup_send(struct smbcli_session *ses
 	state = talloc(c, struct sesssetup_state);
 	if (state == NULL) goto failed;
 
+	state->io = io;
+
 	c->state = SMBCLI_REQUEST_SEND;
-	c->req_parms = io;
 	c->private = state;
 	c->event_ctx = session->transport->socket->event.ctx;
-	c->composite_parms = io;
 
 	/* no session setup at all in earliest protocol varients */
 	if (session->transport->negotiate.protocol < PROTOCOL_LANMAN1) {
