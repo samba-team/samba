@@ -156,8 +156,8 @@ typedef struct net_user_info_3
 	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
 	uint8 padding[40];    /* unused padding bytes.  expansion room */
 
-	uint32 num_other_sids; /* 0 - num_sids */
-	uint32 buffer_other_sids; /* NULL - undocumented pointer to SIDs. */
+	uint32 num_other_sids; /* number of foreign/trusted domain sids */
+	uint32 buffer_other_sids;
 	
 	UNISTR2 uni_user_name;    /* username unicode string */
 	UNISTR2 uni_full_name;    /* user's full name unicode string */
@@ -176,7 +176,7 @@ typedef struct net_user_info_3
 
 	uint32 num_other_groups;        /* other groups */
 	DOM_GID *other_gids; /* group info */
-	DOM_SID2 *other_sids; /* undocumented - domain SIDs */
+	DOM_SID2 *other_sids; /* foreign/trusted domain SIDs */
 
 } NET_USER_INFO_3;
 

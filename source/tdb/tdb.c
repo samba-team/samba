@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <signal.h>
 #include "tdb.h"
 #include "spinlock.h"
 #else
@@ -160,6 +161,18 @@ struct list_struct {
 	*/
 };
 
+/***************************************************************
+ Allow a caller to set a "alarm" flag that tdb can check to abort
+ a blocking lock on SIGALRM.
+***************************************************************/
+
+static sig_atomic_t *palarm_fired;
+
+void tdb_set_lock_alarm(sig_atomic_t *palarm)
+{
+	palarm_fired = palarm;
+}
+
 /* a byte range locking function - return 0 on success
    this functions locks/unlocks 1 byte at the specified offset.
 
@@ -186,6 +199,8 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 
 	do {
 		ret = fcntl(tdb->fd,lck_type,&fl);
+		if (ret == -1 && errno == EINTR && palarm_fired && *palarm_fired)
+			break;
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
@@ -193,6 +208,10 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
 				 tdb->fd, offset, rw_type, lck_type));
 		}
+		/* Was it an alarm timeout ? */
+		if (errno == EINTR && palarm_fired && *palarm_fired)
+			return TDB_ERRCODE(TDB_ERR_LOCK_TIMEOUT, -1);
+		/* Otherwise - generic lock error. */
 		/* errno set by fcntl */
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	}
@@ -517,17 +536,20 @@ int tdb_printfreelist(TDB_CONTEXT *tdb)
 
 	/* read in the freelist top */
 	if (ofs_read(tdb, offset, &rec_ptr) == -1) {
+		tdb_unlock(tdb, -1, F_WRLCK);
 		return 0;
 	}
 
 	printf("freelist top=[0x%08x]\n", rec_ptr );
 	while (rec_ptr) {
 		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec), DOCONV()) == -1) {
+			tdb_unlock(tdb, -1, F_WRLCK);
 			return -1;
 		}
 
 		if (rec.magic != TDB_FREE_MAGIC) {
 			printf("bad magic 0x%08x in free list\n", rec.magic);
+			tdb_unlock(tdb, -1, F_WRLCK);
 			return -1;
 		}
 
@@ -1030,6 +1052,12 @@ static int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 }
 
 /* find an entry in the database given a key */
+/* If an entry doesn't exist tdb_err will be set to
+ * TDB_ERR_NOEXIST. If a key has no data attached
+ * tdb_err will not be set. Both will return a
+ * zero pptr and zero dsize.
+ */
+
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 {
 	tdb_off rec_ptr;
@@ -1040,8 +1068,11 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 	if (!(rec_ptr = tdb_find_lock(tdb,key,F_RDLCK,&rec)))
 		return tdb_null;
 
-	ret.dptr = tdb_alloc_read(tdb, rec_ptr + sizeof(rec) + rec.key_len,
-				  rec.data_len);
+	if (rec.data_len)
+		ret.dptr = tdb_alloc_read(tdb, rec_ptr + sizeof(rec) + rec.key_len,
+					  rec.data_len);
+	else
+		ret.dptr = NULL;
 	ret.dsize = rec.data_len;
 	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
 	return ret;

@@ -247,10 +247,11 @@ must be in DOS codepage.
 The xxx_printername_ok functions need fixing to understand they are being
 given a DOS codepage. FIXME !! JRA.
 ***************************************************************************/
-BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
+
+BOOL pcap_printername_ok(char *pszPrintername, const char *pszPrintcapname)
 {
   char *line=NULL;
-  char *psz;
+  const char *psz;
   char *p,*q;
   FILE *pfile;
 

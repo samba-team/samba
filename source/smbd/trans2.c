@@ -940,7 +940,11 @@ close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
 
 	p = strrchr(directory,'/');
 	if(p == NULL) {
-		pstrcpy(mask,directory);
+		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
+		if((directory[0] == '.') && (directory[1] == '\0'))
+			pstrcpy(mask,"*");
+		else
+			pstrcpy(mask,directory);
 		pstrcpy(directory,"./");
 	} else {
 		pstrcpy(mask,p+1);
@@ -2437,7 +2441,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
-		case SMB_INFO_QUERY_EA_SIZE:
 		{
 			if (total_data < l1_cbFile+4)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
@@ -2452,6 +2455,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			size = IVAL(pdata,l1_cbFile);
 			break;
 		}
+
+		case SMB_INFO_SET_EA:
+			return(ERROR_DOS(ERRDOS,ERReasnotsupported));
 
 		/* XXXX um, i don't think this is right.
 		it's also not in the cifs6.txt spec.

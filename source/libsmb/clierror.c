@@ -81,6 +81,33 @@ char *cli_errstr(struct cli_state *cli)
 		return cli_error_message;
 	}
 		
+	/* Was it server socket error ? */
+	if (cli->fd == -1 && cli->smb_rw_error) {
+		switch(cli->smb_rw_error) {
+			case READ_TIMEOUT:
+				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
+					"Call timed out: server did not respond after %d milliseconds", 
+					cli->timeout);
+				break;
+			case READ_EOF:
+				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
+					"Call returned zero bytes (EOF)\n" );
+				break;
+			case READ_ERROR:
+				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
+					"Read error: %s\n", strerror(errno) );
+				break;
+			case WRITE_ERROR:
+				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
+					"Write error: %s\n", strerror(errno) );
+				break;
+			default:
+				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
+					"Unknown error code %d\n", cli->smb_rw_error );
+				break;
+		}
+		return cli_error_message;
+	}
 
         /* Case #1: RAP error */
 	if (cli->rap_error) {

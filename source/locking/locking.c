@@ -143,7 +143,7 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 }
 
 /****************************************************************************
- Utility function called by locking requests. This is *DISGISTING*. It also
+ Utility function called by locking requests. This is *DISGUSTING*. It also
  appears to be "What Windows Does" (tm). Andrew, ever wonder why Windows 2000
  is so slow on the locking tests...... ? This is the reason. Much though I hate
  it, we need this. JRA.

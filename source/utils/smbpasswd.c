@@ -34,7 +34,7 @@ extern int optind;
 
 /* forced running in root-mode */
 static BOOL local_mode;
-static BOOL joining_domain = False, got_pass = False, got_username = False, changing_trust_pw = FALSE; 
+static BOOL joining_domain = False, got_pass = False, got_username = False, changing_trust_pw = False; 
 static int local_flags = 0;
 static BOOL stdin_passwd_get = False;
 static fstring user_name, user_password;
@@ -75,6 +75,7 @@ static void usage(void)
 	printf("otherwise:\n");
 	printf("    smbpasswd [options] [password]\n\n");
 
+	printf("Version: %s\n", VERSION);
 	printf("options:\n");
 	printf("  -L                   local mode (must be first option)\n");
 	printf("  -h                   print this usage message\n");
@@ -702,23 +703,23 @@ static int set_domain_sid_from_dc( char *domain, char *remote )
 *************************************************************/
 static char *stdin_new_passwd(void)
 {
-	static fstring new_passwd;
+	static fstring new_pwd;
 	size_t len;
 
-	ZERO_ARRAY(new_passwd);
+	ZERO_ARRAY(new_pwd);
 
 	/*
 	 * if no error is reported from fgets() and string at least contains
 	 * the newline that ends the password, then replace the newline with
 	 * a null terminator.
 	 */
-	if ( fgets(new_passwd, sizeof(new_passwd), stdin) != NULL) {
-		if ((len = strlen(new_passwd)) > 0) {
-			if(new_passwd[len-1] == '\n')
-				new_passwd[len - 1] = 0; 
+	if ( fgets(new_pwd, sizeof(new_pwd), stdin) != NULL) {
+		if ((len = strlen(new_pwd)) > 0) {
+			if(new_pwd[len-1] == '\n')
+				new_pwd[len - 1] = 0; 
 		}
 	}
-	return(new_passwd);
+	return(new_pwd);
 }
 
 
@@ -744,20 +745,20 @@ static char *get_pass( char *prompt, BOOL stdin_get)
 static char *prompt_for_new_password(BOOL stdin_get)
 {
 	char *p;
-	fstring new_passwd;
+	fstring new_pwd;
 
-	ZERO_ARRAY(new_passwd);
+	ZERO_ARRAY(new_pwd);
  
 	p = get_pass("New SMB password:", stdin_get);
 
-	fstrcpy(new_passwd, p);
+	fstrcpy(new_pwd, p);
 	safe_free(p);
 
 	p = get_pass("Retype new SMB password:", stdin_get);
 
-	if (strcmp(p, new_passwd)) {
+	if (strcmp(p, new_pwd)) {
 		fprintf(stderr, "Mismatch - password unchanged.\n");
-		ZERO_ARRAY(new_passwd);
+		ZERO_ARRAY(new_pwd);
 		safe_free(p);
 		return NULL;
 	}
@@ -770,27 +771,27 @@ static char *prompt_for_new_password(BOOL stdin_get)
  Change a password either locally or remotely.
 *************************************************************/
 
-static BOOL password_change(const char *remote_machine, char *user_name, 
-			    char *old_passwd, char *new_passwd, int local_flags)
+static BOOL password_change(const char *rem_machine, char *usr_name, 
+			    char *old_pwd, char *new_pwd, int loc_flags)
 {
 	BOOL ret;
 	pstring err_str;
 	pstring msg_str;
 
-	if (remote_machine != NULL) {
-		if (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
+	if (rem_machine != NULL) {
+		if (loc_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
 							LOCAL_TRUST_ACCOUNT|LOCAL_SET_NO_PASSWORD)) {
 			/* these things can't be done remotely yet */
 			return False;
 		}
-		ret = remote_password_change(remote_machine, user_name, 
-					 old_passwd, new_passwd, err_str, sizeof(err_str));
+		ret = remote_password_change(rem_machine, usr_name, 
+					 old_pwd, new_pwd, err_str, sizeof(err_str));
 		if(*err_str)
 			fprintf(stderr, err_str);
 		return ret;
 	}
 	
-	ret = local_password_change(user_name, local_flags, new_passwd, 
+	ret = local_password_change(usr_name, loc_flags, new_pwd, 
 				     err_str, sizeof(err_str), msg_str, sizeof(msg_str));
 
 	if(*msg_str)
@@ -859,6 +860,13 @@ static int process_root(void)
 	/* Join a domain */
 
 	if (joining_domain) {
+
+		/* smb.conf must specify both security = domain and encrypt passwords = yes */
+
+		if (!lp_encrypted_passwords() || lp_security() != SEC_DOMAIN) {
+			DEBUG(0,("ERROR: Must have both SECURITY = DOMAIN and ENCRYPT PASSWORDS = YES!\n"));
+			return 1;
+		} 
 
 		/* Are we joining by specifing an admin username and
 		   password? */

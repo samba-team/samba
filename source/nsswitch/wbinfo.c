@@ -451,9 +451,10 @@ static BOOL wbinfo_auth(char *username)
         printf("plaintext password authentication %s\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-	printf("error code was %s (0x%x)\n", 
-		 response.data.auth.nt_status_string, 
-		 response.data.auth.nt_status);
+	if (response.data.auth.nt_status)
+		printf("error code was %s (0x%x)\n", 
+		       response.data.auth.nt_status_string, 
+		       response.data.auth.nt_status);
 
         return result == NSS_STATUS_SUCCESS;
 }
@@ -507,9 +508,10 @@ static BOOL wbinfo_auth_crap(char *username)
         printf("challenge/response password authentication %s\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-	printf("error code was %s (0x%x)\n", 
-	       response.data.auth.nt_status_string, 
-	       response.data.auth.nt_status);
+	if (response.data.auth.nt_status)
+		printf("error code was %s (0x%x)\n", 
+		       response.data.auth.nt_status_string, 
+		       response.data.auth.nt_status);
 
         return result == NSS_STATUS_SUCCESS;
 }
@@ -535,7 +537,7 @@ static BOOL print_domain_users(void)
 	/* Look through extra data */
 
 	if (!response.extra_data)
-		return False;
+		goto done;
 
 	extra_data = (char *)response.extra_data;
 
@@ -543,6 +545,10 @@ static BOOL print_domain_users(void)
 		printf("%s\n", name);
 	
 	SAFE_FREE(response.extra_data);
+
+done:
+	if (response.nt_status)
+		printf("0x%08x\n", response.nt_status);
 
 	return True;
 }
@@ -564,7 +570,7 @@ static BOOL print_domain_groups(void)
 	/* Look through extra data */
 
 	if (!response.extra_data)
-		return False;
+		goto done;
 
 	extra_data = (char *)response.extra_data;
 
@@ -572,6 +578,10 @@ static BOOL print_domain_groups(void)
 		printf("%s\n", name);
 
 	SAFE_FREE(response.extra_data);
+
+done:
+	if (response.nt_status)
+		printf("0x%08x\n", response.nt_status);
 	
 	return True;
 }
@@ -632,6 +642,7 @@ static void usage(void)
 {
 	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
                "| -[aA] user%%password\n");
+	printf("Version: %s\n", VERSION);
 	printf("\t-u\t\t\tlists all domain users\n");
 	printf("\t-g\t\t\tlists all domain groups\n");
 	printf("\t-n name\t\t\tconverts name to sid\n");
@@ -647,8 +658,9 @@ static void usage(void)
 	printf("\t-r user\t\t\tget user groups\n");
 	printf("\t-a user%%password\tauthenticate user\n");
 	printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
-	printf("\t-p 'ping' winbindd to see if it is alive\n");
+	printf("\t-p\t\t\t'ping' winbindd to see if it is alive\n");
 	printf("\t--sequence\t\tshow sequence numbers of all domains\n");
+	printf("\t--set-auth-user DOMAIN\\user%%password\tset password for restrict anonymous\n");
 }
 
 /* Main program */

@@ -286,7 +286,7 @@ BOOL nt_printing_init(void)
 	local_pid = sys_getpid();
  
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb_drivers, vstring);
+	tdb_lock_bystring(tdb_drivers, vstring,0);
 	{
 		int32 vers_id;
 
@@ -352,7 +352,7 @@ uint32 update_c_setprinter(BOOL initialize)
 	int32 c_setprinter;
 	int32 printer_count = 0;
  
-	tdb_lock_bystring(tdb_printers, GLOBAL_C_SETPRINTER);
+	tdb_lock_bystring(tdb_printers, GLOBAL_C_SETPRINTER,0);
  
 	/* Traverse the tdb, counting the printers */
 	tdb_traverse(tdb_printers, traverse_counting_printers, (void *)&printer_count);
@@ -1763,11 +1763,9 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	kbuf.dsize = strlen(key)+1;
 	
 	dbuf = tdb_fetch(tdb_drivers, kbuf);
-#if 0
-	if (!dbuf.dptr) return get_a_printer_driver_3_default(info_ptr, in_prt, in_arch);
-#else
-	if (!dbuf.dptr) return WERR_ACCESS_DENIED;
-#endif
+	if (!dbuf.dptr) 
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+
 	len += tdb_unpack(dbuf.dptr, dbuf.dsize, "dffffffff",
 			  &driver.cversion,
 			  driver.name,
@@ -3373,17 +3371,31 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 /****************************************************************************
 ****************************************************************************/
 WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
-                            fstring printername, fstring architecture, uint32 version)
+                            fstring drivername, fstring architecture, uint32 version)
 {
 	WERROR result;
 	
 	switch (level)
 	{
 		case 3:
-		{
-			result=get_a_printer_driver_3(&driver->info_3, printername, architecture, version);
+			/* Sometime we just want any version of the driver */
+			
+			if ( version == DRIVER_ANY_VERSION ) {
+				/* look for Win2k first and then for NT4 */
+				result = get_a_printer_driver_3(&driver->info_3, drivername, 
+						architecture, 3);
+						
+				if ( !W_ERROR_IS_OK(result) ) {
+					result = get_a_printer_driver_3( &driver->info_3, 
+							drivername, architecture, 2 );
+				}
+			}
+			else {
+				result = get_a_printer_driver_3(&driver->info_3, drivername, 
+					architecture, version);				
+			}
 			break;
-		}
+			
 		default:
 			result=W_ERROR(1);
 			break;
@@ -3391,6 +3403,7 @@ WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 	
 	if (W_ERROR_IS_OK(result))
 		dump_a_printer_driver(*driver, level);
+		
 	return result;
 }
 
@@ -3449,77 +3462,40 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
   Determine whether or not a particular driver is currently assigned
   to a printer
 ****************************************************************************/
-BOOL printer_driver_in_use (char *arch, char *driver)
+
+BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 )
 {
-	TDB_DATA kbuf, newkey, dbuf;
-	NT_PRINTER_INFO_LEVEL_2 info;
-	int ret;
+	int snum;
+	int n_services = lp_numservices();
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
-	if (!tdb_printers)
-		if (!nt_printing_init())
-			return False;
+	if ( !info_3 ) 
+		return False;
 
-	DEBUG(5,("printer_driver_in_use: Beginning search through printers.tdb...\n"));
+	DEBUG(5,("printer_driver_in_use: Beginning search through ntprinters.tdb...\n"));
 	
 	/* loop through the printers.tdb and check for the drivername */
-	for (kbuf = tdb_firstkey(tdb_printers); kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_printers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	
+	for (snum=0; snum<n_services; snum++) 
 	{
-
-		dbuf = tdb_fetch(tdb_printers, kbuf);
-		if (!dbuf.dptr) 
+		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
-
-		if (strncmp(kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) != 0) 
+		
+		if ( !W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))) )
 			continue;
-
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddddddfffffPfffff",
-			&info.attributes,
-			&info.priority,
-			&info.default_priority,
-			&info.starttime,
-			&info.untiltime,
-			&info.status,
-			&info.cjobs,
-			&info.averageppm,
-			&info.changeid,
-			&info.c_setprinter,
-			&info.setuptime,
-			info.servername,
-			info.printername,
-			info.sharename,
-			info.portname,
-			info.drivername,
-			info.comment,
-			info.location,
-			info.sepfile,
-			info.printprocessor,
-			info.datatype,
-			info.parameters);
-
-		SAFE_FREE(dbuf.dptr);
-
-		if (ret == -1) {
-			DEBUG (0,("printer_driver_in_use: tdb_unpack failed for printer %s\n",
-					info.printername));
-			continue;
+		
+		if ( !StrCaseCmp(info_3->name, printer->info_2->drivername) ) {
+			free_a_printer( &printer, 2 );
+			return True;
 		}
 		
-		DEBUG (10,("printer_driver_in_use: Printer - %s (%s)\n",
-			info.printername, info.drivername));
-			
-		if (strcmp(info.drivername, driver) == 0) 
-		{
-			DEBUG(5,("printer_driver_in_use: Printer %s using %s\n",
-				info.printername, driver));
-			return True;
-		}	
+		free_a_printer( &printer, 2 );
 	}
-	DEBUG(5,("printer_driver_in_use: Completed search through printers.tdb...\n"));
 	
+	DEBUG(5,("printer_driver_in_use: Completed search through ntprinters.tdb...\n"));
 	
+	/* report that the driver is not in use by default */
 	
-	/* report that the driver is in use by default */
 	return False;
 }
 
@@ -3528,7 +3504,7 @@ BOOL printer_driver_in_use (char *arch, char *driver)
  previously looked up.
  ***************************************************************************/
 
-static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user,
+WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user,
                               uint32 version, BOOL delete_files )
 {
 	pstring 	key;
@@ -3538,24 +3514,24 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 
 	/* delete the tdb data first */
 
-	get_short_archi(arch, i->environment);
+	get_short_archi(arch, info_3->environment);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
-		arch, version, i->name);
+		arch, version, info_3->name);
 
 	DEBUG(5,("delete_printer_driver: key = [%s] delete_files = %s\n",
 		key, delete_files ? "TRUE" : "FALSE" ));
 
-	ctr.info_3 = i;
+	ctr.info_3 = info_3;
 	dump_a_printer_driver( ctr, 3 );
 
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
-
+	
 	/* check if the driver actually exists for this environment */
 	
 	dbuf = tdb_fetch( tdb_drivers, kbuf );
 	if ( !dbuf.dptr ) {
-		DEBUG(8,("delete_printer_driver_internal: Driver unknown [%s]\n", key));
+		DEBUG(8,("delete_printer_driver: Driver unknown [%s]\n", key));
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 		
@@ -3564,7 +3540,7 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 	/* ok... the driver exists so the delete should return success */
 		
 	if (tdb_delete(tdb_drivers, kbuf) == -1) {
-		DEBUG (0,("delete_printer_driver_internal: fail to delete %s!\n", key));
+		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -3580,47 +3556,9 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 
 #endif
 
-	DEBUG(5,("delete_printer_driver_internal: driver delete successful [%s]\n", key));
+	DEBUG(5,("delete_printer_driver: driver delete successful [%s]\n", key));
 
 	return WERR_OK;
-}
-
-/****************************************************************************
- Remove a printer driver from the TDB.  This assumes that the the driver was
- previously looked up.
- ***************************************************************************/
-
-WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user,
-                              uint32 version, BOOL delete_files )
-
-{
-	WERROR err;
-
-	/*
-	 * see if we should delete all versions of this driver 
-	 * (DRIVER_ANY_VERSION uis only set for "Windows NT x86")
-	 */
-
-	if ( version == DRIVER_ANY_VERSION ) 
-	{
-		/* Windows NT 4.0 */
-		
-		err = delete_printer_driver_internal(i, user, 2, delete_files );
-		if ( !W_ERROR_IS_OK(err) && (W_ERROR_V(err) != ERRunknownprinterdriver ) )
-			return err;
-			
-		/* Windows 2000/XP  */
-		
-		err = delete_printer_driver_internal(i, user, 3, delete_files );
-		if ( !W_ERROR_IS_OK(err) && (W_ERROR_V(err) != ERRunknownprinterdriver ) )
-				return err;
-
-	return WERR_OK;
-	}
-	
-	/* just delete what they asked for */
-	
-	return delete_printer_driver_internal(i, user, version, delete_files );
 }
 
 /****************************************************************************

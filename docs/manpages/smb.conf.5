@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "28 August 2002" "" ""
+.TH "SMB.CONF" "5" "09 October 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -94,7 +94,7 @@ The share is accessed via the share name "foo":
 .nf
 	 	[foo]
  		path = /home/bar
- 		writeable = true
+ 		read only = no
 	
 	
 .sp
@@ -110,9 +110,9 @@ elsewhere):
 .nf
 	 	[aprinter]
  		path = /usr/spool/public
- 		writeable = false
- 		printable = true
- 		guest ok = true
+ 		read only = yes
+ 		printable = yes
+ 		guest ok = yes
 	
 	
 .sp
@@ -180,7 +180,7 @@ section:
 .sp
 .nf
 			 	[homes]
- 			writeable = yes
+ 			read only = no
 		
 		
 .sp
@@ -1342,6 +1342,9 @@ each parameter for details. Note that some are synonyms.
 \fIprinting\fR
 .TP 0.2i
 \(bu
+\fIprofile acls\fR
+.TP 0.2i
+\(bu
 \fIpublic\fR
 .TP 0.2i
 \(bu
@@ -1394,6 +1397,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIuse client driver\fR
+.TP 0.2i
+\(bu
+\fIuse sendfile\fR
 .TP 0.2i
 \(bu
 \fIuser\fR
@@ -1754,7 +1760,7 @@ cannot be immediately satisfied, Samba 2.2 will internally
 queue the lock request, and periodically attempt to obtain 
 the lock until the timeout period expires.
 
-If this parameter is set to false, then 
+If this parameter is set to no, then 
 Samba 2.2 will behave as previous versions of Samba would and 
 will fail the lock request immediately if the lock range 
 cannot be obtained.
@@ -1767,7 +1773,7 @@ See the \fI browseable\fR.
 \fBbrowse list (G)\fR
 This controls whether  \fBsmbd(8)\fR will serve a browse list to 
 a client doing a \fBNetServerEnum\fR call. Normally 
-set to true. You should never need to change 
+set to yes. You should never need to change 
 this.
 
 Default: \fBbrowse list = yes\fR
@@ -2416,11 +2422,11 @@ Example: \fBdelete user script = /usr/local/samba/bin/del_user
 This option is used when Samba is attempting to 
 delete a directory that contains one or more vetoed directories 
 (see the \fIveto files\fR
-option). If this option is set to false (the default) then if a vetoed 
+option). If this option is set to no (the default) then if a vetoed 
 directory contains any non-vetoed files or directories then the 
 directory delete will fail. This is usually what you want.
 
-If this option is set to true, then Samba 
+If this option is set to yes, then Samba 
 will attempt to recursively delete any files and directories within 
 the vetoed directory. This can be useful for integration with file 
 serving systems such as NetAtalk which create meta-files within 
@@ -2642,7 +2648,7 @@ Default: \fBno domain guests\fR
 Example: \fBdomain guest group = nobody @guest\fR
 .TP
 \fBdomain logons (G)\fR
-If set to true, the Samba server will serve 
+If set to yes, the Samba server will serve 
 Windows 95/98 Domain logons for the  \fIworkgroup\fR it is in. Samba 2.2 also 
 has limited capability to act as a domain controller for Windows 
 NT 4 Domains. For more details on setting up this feature see 
@@ -2739,7 +2745,7 @@ file they can change the timestamp on it. Under POSIX semantics,
 only the owner of the file or root may change the timestamp. By 
 default, Samba runs with POSIX semantics and refuses to change the 
 timestamp on a file if the user \fBsmbd\fR is acting 
-on behalf of is not the file owner. Setting this option to  true allows DOS semantics and smbd will change the file 
+on behalf of is not the file owner. Setting this option to  yes allows DOS semantics and smbd will change the file 
 timestamp as DOS requires.
 
 Default: \fBdos filetimes = no\fR
@@ -3080,7 +3086,7 @@ This is a tuning option. When this is enabled a
 caching algorithm will be used to reduce the time taken for getwd() 
 calls. This can have a significant impact on performance, especially 
 when the \fIwide links\fR
-parameter is set to false.
+parameter is set to no.
 
 Default: \fBgetwd cache = yes\fR
 .TP
@@ -3179,7 +3185,7 @@ Default: \fBhide unreadable = no\fR
 .TP
 \fBhomedir map (G)\fR
 If\fInis homedir
-\fRis true, and \fBsmbd(8)\fR is also acting 
+\fRis yes, and \fBsmbd(8)\fR is also acting 
 as a Win95/98 \fIlogon server\fR then this parameter 
 specifies the NIS (or YP) map from which the server for the user's 
 home directory should be extracted. At present, only the Sun 
@@ -3616,7 +3622,7 @@ Currently, if \fIkernel
 oplocks\fR are supported then level2 oplocks are 
 not granted (even if this parameter is set to yes). 
 Note also, the \fIoplocks\fR
-parameter must be set to true on this share in order for 
+parameter must be set to yes on this share in order for 
 this parameter to have any effect.
 
 See also the \fIoplocks\fR
@@ -3629,10 +3635,10 @@ Default: \fBlevel2 oplocks = yes\fR
 This parameter determines if  \fBnmbd(8)\fR will produce Lanman announce 
 broadcasts that are needed by OS/2 clients in order for them to see 
 the Samba server in their browse list. This parameter can have three 
-values, true, false, or
+values, yes, no, or
 auto. The default is auto. 
-If set to false Samba will never produce these 
-broadcasts. If set to true Samba will produce 
+If set to no Samba will never produce these 
+broadcasts. If set to yes Samba will produce 
 Lanman announce broadcasts at a frequency set by the parameter 
 \fIlm interval\fR. If set to auto 
 Samba will not send Lanman announce broadcasts by default but will 
@@ -3672,13 +3678,13 @@ Default: \fBload printers = yes\fR
 .TP
 \fBlocal master (G)\fR
 This option allows \fB nmbd(8)\fR to try and become a local master browser 
-on a subnet. If set to false then \fB nmbd\fR will not attempt to become a local master browser 
+on a subnet. If set to no then \fB nmbd\fR will not attempt to become a local master browser 
 on a subnet and will also lose in all browsing elections. By
-default this value is set to true. Setting this value to true doesn't
+default this value is set to yes. Setting this value to yes doesn't
 mean that Samba will \fBbecome\fR the local master 
 browser on a subnet, just that \fBnmbd\fR will \fB participate\fR in elections for local master browser.
 
-Setting this value to false will cause \fBnmbd\fR
+Setting this value to no will cause \fBnmbd\fR
 \fBnever\fR to become a local master browser.
 
 Default: \fBlocal master = yes\fR
@@ -5023,7 +5029,7 @@ is a full stop ".", then no string is sent. Similarly,
 if the expect string is a full stop then no string is expected.
 
 If the \fIpam
-password change\fR parameter is set to true, the chat pairs
+password change\fR parameter is set to yes, the chat pairs
 may be matched in any order, and success is determined by the PAM result, 
 not any particular output. The \\n macro is ignored for PAM conversions.
 
@@ -5071,7 +5077,7 @@ of mixed case chars and digits. This can pose a problem as some clients
 it.
 
 \fBNote\fR that if the \fIunix 
-password sync\fR parameter is set to true
+password sync\fR parameter is set to yes
 then this program is called \fBAS ROOT\fR 
 before the SMB password in the smbpasswd(5)
  file is changed. If this UNIX password change fails, then 
@@ -5082,7 +5088,7 @@ If the \fIunix password sync\fR parameter
 is set this parameter \fBMUST USE ABSOLUTE PATHS\fR 
 for \fBALL\fR programs called, and must be examined 
 for security implications. Note that by default \fIunix 
-password sync\fR is set to false.
+password sync\fR is set to no.
 
 See also \fIunix 
 password sync\fR.
@@ -5324,7 +5330,7 @@ Default: \fBpreexec close = no\fR
 This boolean parameter controls if nmbd(8) is a preferred master browser 
 for its workgroup.
 
-If this is set to true, on startup, \fBnmbd\fR 
+If this is set to yes, on startup, \fBnmbd\fR 
 will force an election, and it will have a slight advantage in 
 winning the election. It is recommended that this parameter is 
 used in conjunction with \fB\fI domain master\fB = yes\fR, so that \fB nmbd\fR can guarantee becoming a domain master.
@@ -5463,7 +5469,7 @@ specified for the service.
 
 Note that a printable service will ALWAYS allow writing 
 to the service path (user privileges permitting) via the spooling 
-of print data. The \fIwriteable
+of print data. The \fIread only
 \fRparameter controls only non-printing access to 
 the resource.
 
@@ -5647,6 +5653,34 @@ This option can be set on a per printer basis
 
 See also the discussion in the  [printers] section.
 .TP
+\fBprofile acls (S)\fR
+This boolean parameter was added to fix the problems that people have been
+having with storing user profiles on Samba shares from Windows 2000 or
+Windows XP clients. New versions of Windows 2000 or Windows XP service
+packs do security ACL checking on the owner and ability to write of the
+profile directory stored on a local workstation when copied from a Samba
+share. When not in domain mode with winbindd then the security info copied
+onto the local workstation has no meaning to the logged in user (SID) on
+that workstation so the profile storing fails. Adding this parameter
+onto a share used for profile storage changes two things about the
+returned Windows ACL. Firstly it changes the owner and group owner
+of all reported files and directories to be BUILTIN\\Administrators,
+BUILTIN\\Users respectively (SIDs S-1-5-32-544, S-1-5-32-545). Secondly
+it adds an ACE entry of "Full Control" to the SID BUILTIN\\Users to
+every returned ACL. This will allow any Windows 2000 or XP workstation
+user to access the profile. Note that if you have multiple users logging
+on to a workstation then in order to prevent them from being able to access
+each others profiles you must remove the "Bypass traverse checking" advanced
+user right. This will prevent access to other users profile directories as
+the top level profile directory (named after the user) is created by the
+workstation profile code and has an ACL restricting entry to the directory
+tree to the owning user.
+
+If you didn't understand the above text, you probably should not set
+this parameter :-).
+
+Default \fBprofile acls = no\fR
+.TP
 \fBprotocol (G)\fR
 Synonym for  \fImax protocol\fR.
 .TP
@@ -5714,7 +5748,7 @@ Default: \fBread bmpx = no\fR
 \fBread list (S)\fR
 This is a list of users that are given read-only 
 access to a service. If the connecting user is in this list then 
-they will not be given write access, no matter what the \fIwriteable\fR
+they will not be given write access, no matter what the \fIread only\fR
 option is set to. The list can include group names using the 
 syntax described in the \fI invalid users\fR parameter.
 
@@ -5726,7 +5760,17 @@ Default: \fBread list = <empty string>\fR
 Example: \fBread list = mary, @students\fR
 .TP
 \fBread only (S)\fR
-Note that this is an inverted synonym for \fIwriteable\fR.
+An inverted synonym is  \fIwriteable\fR.
+
+If this parameter is yes, then users 
+of a service may not create or modify files in the service's 
+directory.
+
+Note that a printable service (\fBprintable = yes\fR)
+will \fBALWAYS\fR allow writing to the directory 
+(user privileges permitting), but only via spooling operations.
+
+Default: \fBread only = yes\fR
 .TP
 \fBread raw (G)\fR
 This parameter controls whether or not the server 
@@ -5828,10 +5872,10 @@ is in fact the browse master on its segment.
 Default: \fBremote browse sync = <empty string>
 \fR.TP
 \fBrestrict anonymous (G)\fR
-This is a boolean parameter. If it is true, then 
+This is a boolean parameter. If it is yes, then 
 anonymous access to the server will be restricted, namely in the 
 case where the server is expecting the client to send a username, 
-but it doesn't. Setting it to true will force these anonymous 
+but it doesn't. Setting it to yes will force these anonymous 
 connections to be denied, and the client will be required to always 
 supply a username and password when connecting. Use of this parameter 
 is only recommended for homogeneous NT client environments.
@@ -5841,7 +5885,7 @@ on the username (%U, %G, etc) consistent. NT 4.0
 likes to use anonymous connections when refreshing the share list, 
 and this is a way to work around that.
 
-When restrict anonymous is true, all anonymous connections 
+When restrict anonymous is yes, all anonymous connections 
 are denied no matter what they are for. This can effect the ability 
 of a machine to access the Samba Primary Domain Controller to revalidate 
 its machine account after someone else has logged on the client 
@@ -6098,7 +6142,7 @@ parameter.
 .PP
 This mode will only work correctly if smbpasswd(8) has been used to add this 
 machine into a Windows NT Domain. It expects the \fIencrypted passwords\fR
-parameter to be set to true. In this 
+parameter to be set to yes. In this 
 mode Samba will try to validate the username/password by passing
 it to a Windows NT Primary or Backup Domain Controller, in exactly 
 the same way that a Windows NT Server would do.
@@ -6743,10 +6787,10 @@ Default: \fBstrip dot = no\fR
 \fBsync always (S)\fR
 This is a boolean parameter that controls 
 whether writes will always be written to stable storage before 
-the write call returns. If this is false then the server will be 
+the write call returns. If this is no then the server will be 
 guided by the client's request in each write call (clients can 
 set a bit indicating that a particular write should be synchronous). 
-If this is true then every write will be followed by a \fBfsync()
+If this is yes then every write will be followed by a \fBfsync()
 \fRcall to ensure the data is written to disk. Note that 
 the \fIstrict sync\fR parameter must be set to
 yes in order for this parameter to have 
@@ -6845,7 +6889,7 @@ Default: \fBunix extensions = no\fR
 This boolean parameter controls whether Samba 
 attempts to synchronize the UNIX password with the SMB password 
 when the encrypted SMB password in the smbpasswd file is changed. 
-If this is set to true the program specified in the \fIpasswd
+If this is set to yes the program specified in the \fIpasswd
 program\fRparameter is called \fBAS ROOT\fR - 
 to allow the new UNIX password to be set without access to the 
 old UNIX password (as the SMB password change code has no 
@@ -6918,7 +6962,7 @@ Default: \fBuse client driver = no\fR
 This global parameter determines if the tdb internals of Samba can
 depend on mmap working correctly on the running system. Samba requires a coherent
 mmap/read-write system memory cache. Currently only HPUX does not have such a
-coherent cache, and so this parameter is set to false by
+coherent cache, and so this parameter is set to no by
 default on HPUX. On all other systems this parameter should be left alone. This
 parameter is provided to help the Samba developers track down problems with
 the tdb internal code.
@@ -6926,7 +6970,7 @@ the tdb internal code.
 Default: \fBuse mmap = yes\fR
 .TP
 \fBuse rhosts (G)\fR
-If this global parameter is true, it specifies 
+If this global parameter is yes, it specifies 
 that the UNIX user's \fI.rhosts\fR file in their home directory 
 will be read to find the names of hosts and users who will be allowed 
 access without specifying a password.
@@ -6976,7 +7020,7 @@ To restrict a service to a particular set of users you
 can use the \fIvalid users
 \fRparameter.
 
-If any of the usernames begin with a '@' then the name 
+If any of the usernames begin with a '@' then the name
 will be looked up first in the NIS netgroups list (if Samba 
 is compiled with netgroup support), followed by a lookup in 
 the UNIX groups database and will expand to a list of all users 
@@ -7111,9 +7155,20 @@ Default: \fBno username map\fR
 
 Example: \fBusername map = /usr/local/samba/lib/users.map
 \fR.TP
+\fBuse sendfile (S)\fR
+If this parameter is yes, and Samba
+was built with the --with-sendfile-support option, and the underlying operating
+system supports sendfile system call, then some SMB read calls (mainly ReadAndX
+and ReadRaw) will use the more efficient sendfile system call for files that
+are exclusively oplocked. This may make more efficient use of the system CPU's
+and cause Samba to be faster. This is off by default as it's effects are unknown
+as yet.
+
+Default: \fBuse sendfile = no\fR
+.TP
 \fButmp (G)\fR
 This boolean parameter is only available if 
-Samba has been configured and compiled with the option \fB --with-utmp\fR. If set to true then Samba will attempt
+Samba has been configured and compiled with the option \fB --with-utmp\fR. If set to yes then Samba will attempt
 to add utmp or utmpx records (depending on the UNIX system) whenever a
 connection is made to a Samba server. Sites may use this to record the
 user connecting to a Samba share.
@@ -7329,7 +7384,7 @@ necessary to suppress the enumeration of users through the
 \fBgetpwent()\fR and
 \fBendpwent()\fR group of system calls. If
 the \fIwinbind enum users\fR parameter is
-false, calls to the \fBgetpwent\fR system call
+no, calls to the \fBgetpwent\fR system call
 will not return any data. 
 
 \fBWarning:\fR Turning off user
@@ -7348,7 +7403,7 @@ necessary to suppress the enumeration of groups through the
 \fBgetgrent()\fR and
 \fBendgrent()\fR group of system calls. If
 the \fIwinbind enum groups\fR parameter is
-false, calls to the \fBgetgrent()\fR system
+no, calls to the \fBgetgrent()\fR system
 call will not return any data. 
 
 \fBWarning:\fR Turning off group
@@ -7400,9 +7455,9 @@ Users without a domain component are treated as is part of the winbindd server's
 own domain. While this does not benifit Windows users, it makes SSH, FTP and e-mail 
 function in a way much closer to the way they would in a native unix system.
 
-Default: \fBwinbind use default domain = <falseg> 
+Default: \fBwinbind use default domain = <no> 
 \fR
-Example: \fBwinbind use default domain = true\fR
+Example: \fBwinbind use default domain = yes\fR
 .TP
 \fBwins hook (G)\fR
 When Samba is running as a WINS server this 
@@ -7479,9 +7534,9 @@ Example: \fBwins server = 192.9.200.1\fR
 \fBwins support (G)\fR
 This boolean controls if the  
 nmbd(8) process in Samba will act as a WINS server. You should 
-not set this to true unless you have a multi-subnetted network and 
+not set this to yes unless you have a multi-subnetted network and 
 you wish a particular \fBnmbd\fR to be your WINS server. 
-Note that you should \fBNEVER\fR set this to true
+Note that you should \fBNEVER\fR set this to yes
 on more than one machine in your network.
 
 Default: \fBwins support = no\fR
@@ -7528,7 +7583,7 @@ for a 256k cache size per file.
 \fBwrite list (S)\fR
 This is a list of users that are given read-write 
 access to a service. If the connecting user is in this list then 
-they will be given write access, no matter what the \fIwriteable\fR
+they will be given write access, no matter what the \fIread only\fR
 option is set to. The list can include group names using the 
 @group syntax.
 
@@ -7543,7 +7598,7 @@ Default: \fBwrite list = <empty string>
 Example: \fBwrite list = admin, root, @staff
 \fR.TP
 \fBwrite ok (S)\fR
-Synonym for \fI writeable\fR.
+Inverted synonym for \fI read only\fR.
 .TP
 \fBwrite raw (G)\fR
 This parameter controls whether or not the server 
@@ -7553,17 +7608,7 @@ You should never need to change this parameter.
 Default: \fBwrite raw = yes\fR
 .TP
 \fBwriteable (S)\fR
-An inverted synonym is  \fIread only\fR.
-
-If this parameter is no, then users 
-of a service may not create or modify files in the service's 
-directory.
-
-Note that a printable service (\fBprintable = yes\fR)
-will \fBALWAYS\fR allow writing to the directory 
-(user privileges permitting), but only via spooling operations.
-
-Default: \fBwriteable = no\fR
+Inverted synonym for \fI read only\fR.
 .SH "WARNINGS"
 .PP
 Although the configuration file permits service names 

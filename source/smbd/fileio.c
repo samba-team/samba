@@ -256,6 +256,18 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 
 		if ((pos >= wcp->offset) && (pos <= wcp->offset + wcp->data_size)) {
       
+			/* ASCII art.... JRA.
+
+      +--------------+-----
+      | Cached data  | Rest of allocated cache buffer....
+      +--------------+-----
+
+            +-------------------+
+            | Data to write     |
+            +-------------------+
+
+	    		*/
+
 			/*
 			 * Start of write overlaps or abutts the existing data.
 			 */
@@ -305,6 +317,18 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 		} else if ((pos < wcp->offset) && (pos + n > wcp->offset) && 
 					(pos + n <= wcp->offset + wcp->alloc_size)) {
 
+			/* ASCII art.... JRA.
+
+                        +---------------+
+                        | Cache buffer  |
+                        +---------------+
+
+            +-------------------+
+            | Data to write     |
+            +-------------------+
+
+	    		*/
+
 			/*
 			 * End of write overlaps the existing data.
 			 */
@@ -349,6 +373,20 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 					(wcp->offset + wcp->data_size == wcp->file_size) &&
 					(pos > wcp->offset + wcp->data_size) && 
 					(pos < wcp->offset + wcp->alloc_size) ) {
+
+			/* ASCII art.... JRA.
+
+                       End of file ---->|
+
+                        +---------------+---------------+
+                        | Cached data   | Cache buffer  |
+                        +---------------+---------------+
+
+                                              +-------------------+
+                                              | Data to write     |
+                                              +-------------------+
+
+	    		*/
 
 			/*
 			 * Non-contiguous write part of which fits within
@@ -413,7 +451,41 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 
 		} else {
 
-			/*
+			/* ASCII art..... JRA.
+
+   Case 1).
+
+                        +---------------+---------------+
+                        | Cached data   | Cache buffer  |
+                        +---------------+---------------+
+
+                                                              +-------------------+
+                                                              | Data to write     |
+                                                              +-------------------+
+
+   Case 2).
+
+                           +---------------+---------------+
+                           | Cached data   | Cache buffer  |
+                           +---------------+---------------+
+
+   +-------------------+
+   | Data to write     |
+   +-------------------+
+
+    Case 3).
+
+                           +---------------+---------------+
+                           | Cached data   | Cache buffer  |
+                           +---------------+---------------+
+
+                  +-----------------------------------------------------+
+                  | Data to write                                       |
+                  +-----------------------------------------------------+
+
+		  */
+
+ 			/*
 			 * Write is bigger than buffer, or there is no overlap on the
 			 * low or high ends.
 			 */
@@ -439,6 +511,19 @@ len = %u\n",fsp->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigne
 				cache_flush_needed = True;
 			} else {
 				ssize_t ret = real_write_file(fsp, data, pos, n);
+
+				/*
+				 * If the write overlaps the entire cache, then
+				 * discard the current contents of the cache.
+				 * Fix from Rasmus Borup Hansen rbh@math.ku.dk.
+				 */
+
+				if ((pos <= wcp->offset) &&
+						(pos + n >= wcp->offset + wcp->data_size) ) {
+					DEBUG(9,("write_file: discarding overwritten write \
+cache: fd = %d, off=%.0f, size=%u\n", fsp->fd, (double)wcp->offset, (unsigned int)wcp->data_size ));
+					wcp->data_size = 0;
+				}
 
 				DO_PROFILE_INC(writecache_direct_writes);
 				if (ret == -1)

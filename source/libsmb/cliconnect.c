@@ -25,26 +25,24 @@
 
 
 static const struct {
-    int prot;
-    const char *name;
-  }
-prots[] = 
-    {
-      {PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},
-      {PROTOCOL_COREPLUS,"MICROSOFT NETWORKS 1.03"},
-      {PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
-      {PROTOCOL_LANMAN1,"LANMAN1.0"},
-      {PROTOCOL_LANMAN2,"LM1.2X002"},
-      {PROTOCOL_LANMAN2,"Samba"},
-      {PROTOCOL_NT1,"NT LANMAN 1.0"},
-      {PROTOCOL_NT1,"NT LM 0.12"},
-      {-1,NULL}
-    };
-
+	int prot;
+	const char *name;
+} prots[] = {
+	{PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},
+	{PROTOCOL_COREPLUS,"MICROSOFT NETWORKS 1.03"},
+	{PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
+	{PROTOCOL_LANMAN1,"LANMAN1.0"},
+	{PROTOCOL_LANMAN2,"LM1.2X002"},
+	{PROTOCOL_LANMAN2,"Samba"},
+	{PROTOCOL_NT1,"NT LANMAN 1.0"},
+	{PROTOCOL_NT1,"NT LM 0.12"},
+	{-1,NULL}
+};
 
 /****************************************************************************
-do an old lanman2 style session setup
+ Do an old lanman2 style session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user, 
 				      char *pass, int passlen)
 {
@@ -109,10 +107,10 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 	return True;
 }
 
-
 /****************************************************************************
-work out suitable capabilities to offer the server
+ Work out suitable capabilities to offer the server.
 ****************************************************************************/
+
 static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 {
 	uint32 capabilities = CAP_NT_SMBS;
@@ -132,10 +130,10 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 	return capabilities;
 }
 
-
 /****************************************************************************
-do a NT1 guest session setup
+ Do a NT1 guest session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_guest(struct cli_state *cli)
 {
 	char *p;
@@ -182,10 +180,10 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 	return True;
 }
 
-
 /****************************************************************************
-do a NT1 plaintext session setup
+ Do a NT1 plaintext session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user, 
 					char *pass, char *workgroup)
 {
@@ -239,8 +237,9 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 
 
 /****************************************************************************
-do a NT1 NTLM/LM encrypted session setup
+ Do a NT1 NTLM/LM encrypted session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user, 
 				  char *pass, int passlen,
 				  char *ntpass, int ntpasslen,
@@ -319,6 +318,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
  format and must be converted to DOS codepage format before sending. If the
  password is in plaintext, the same should be done.
 ****************************************************************************/
+
 BOOL cli_session_setup(struct cli_state *cli, 
 		       char *user, 
 		       char *pass, int passlen,
@@ -394,8 +394,9 @@ BOOL cli_ulogoff(struct cli_state *cli)
 }
 
 /****************************************************************************
-send a tconX
+ Send a tconX.
 ****************************************************************************/
+
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen)
 {
@@ -484,8 +485,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 
 /****************************************************************************
-send a tree disconnect
+ Send a tree disconnect.
 ****************************************************************************/
+
 BOOL cli_tdis(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
@@ -503,8 +505,9 @@ BOOL cli_tdis(struct cli_state *cli)
 
 
 /****************************************************************************
-send a negprot command
+ Send a negprot command.
 ****************************************************************************/
+
 void cli_negprot_send(struct cli_state *cli)
 {
 	char *p;
@@ -534,8 +537,9 @@ void cli_negprot_send(struct cli_state *cli)
 
 
 /****************************************************************************
-send a negprot command
+ Send a negprot command.
 ****************************************************************************/
+
 BOOL cli_negprot(struct cli_state *cli)
 {
 	char *p;
@@ -629,8 +633,9 @@ BOOL cli_negprot(struct cli_state *cli)
 
 
 /****************************************************************************
-  send a session request.  see rfc1002.txt 4.3 and 4.3.2
+ Send a session request.  see rfc1002.txt 4.3 and 4.3.2.
 ****************************************************************************/
+
 BOOL cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called)
 {
@@ -733,8 +738,9 @@ retry:
 }
 
 /****************************************************************************
-open the client sockets
+ Open the client sockets.
 ****************************************************************************/
+
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
 	extern pstring user_socket_options;
@@ -789,8 +795,9 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 }
 
 /****************************************************************************
-establishes a connection right up to doing tconX, reading in a password.
+ Establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
+
 BOOL cli_establish_connection(struct cli_state *cli, 
 				char *dest_host, struct in_addr *dest_ip,
 				struct nmb_name *calling, struct nmb_name *called,
@@ -804,49 +811,39 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	/* establish connection */
 
 	if ((!cli->initialised))
-	{
 		return False;
-	}
 
-	if (cli->fd == -1)
-	{
-		if (!cli_connect(cli, dest_host, dest_ip))
-		{
+	if (cli->fd == -1) {
+		if (!cli_connect(cli, dest_host, dest_ip)) {
 			DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
 					  nmb_namestr(called), inet_ntoa(*dest_ip)));
 			return False;
 		}
 	}
 
-	if (!cli_session_request(cli, calling, called))
-	{
+	if (!cli_session_request(cli, calling, called)) {
 		DEBUG(1,("failed session request\n"));
 		if (do_shutdown)
 			cli_shutdown(cli);
 		return False;
 	}
 
-	if (!cli_negprot(cli))
-	{
+	if (!cli_negprot(cli)) {
 		DEBUG(1,("failed negprot\n"));
 		if (do_shutdown)
           		cli_shutdown(cli);
 		return False;
 	}
 
-	if (cli->pwd.cleartext || cli->pwd.null_pwd)
-	{
+	if (cli->pwd.cleartext || cli->pwd.null_pwd) {
 		fstring passwd;
 		int pass_len;
 
-		if (cli->pwd.null_pwd)
-		{
+		if (cli->pwd.null_pwd) {
 			/* attempt null session */
 			passwd[0] = 0;
 			pass_len = 1;
-		}
-		else
-		{
+		} else {
 			/* attempt clear-text session */
 			pwd_get_cleartext(&(cli->pwd), passwd);
 			pass_len = strlen(passwd);
@@ -856,31 +853,22 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (!cli_session_setup(cli, cli->user_name,
 	                       passwd, pass_len,
 	                       NULL, 0,
-	                       cli->domain))
-		{
+	                       cli->domain)) {
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
-			{
 				cli_shutdown(cli);
-			}
 			return False;
 		}
-		if (do_tcon)
-		{
+		if (do_tcon) {
 			if (!cli_send_tconX(cli, service, service_type,
-			                    (char*)passwd, strlen(passwd)))
-			{
+			                    (char*)passwd, strlen(passwd))) {
 				DEBUG(1,("failed tcon_X\n"));
 				if (do_shutdown)
-				{
 					cli_shutdown(cli);
-				}
 				return False;
 			}
 		}
-	}
-	else
-	{
+	} else {
 		/* attempt encrypted session */
 		unsigned char nt_sess_pwd[24];
 		unsigned char lm_sess_pwd[24];
@@ -893,8 +881,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (!cli_session_setup(cli, cli->user_name,
 	                       (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
 	                       (char*)nt_sess_pwd, sizeof(nt_sess_pwd),
-	                       cli->domain))
-		{
+	                       cli->domain)) {
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
 		              cli_shutdown(cli);
@@ -903,22 +890,19 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
     		DEBUG(1,("session setup ok\n"));
     
-    		if (*cli->server_domain || *cli->server_os || *cli->server_type)
-    		{
+    		if (*cli->server_domain || *cli->server_os || *cli->server_type) {
     			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
 				 cli->server_domain,
 				 cli->server_os,
 				 cli->server_type));
     		}
 		
-		if (do_tcon)
-		{
+		if (do_tcon) {
 			if (!cli_send_tconX(cli, service, service_type,
-			                    (char*)nt_sess_pwd, sizeof(nt_sess_pwd)))
-			{
+			                    (char*)nt_sess_pwd, sizeof(nt_sess_pwd))) {
 				DEBUG(1,("failed tcon_X\n"));
 				if (do_shutdown)
-                  cli_shutdown(cli);
+					cli_shutdown(cli);
 				return False;
 			}
 		}
@@ -930,7 +914,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	return True;
 }
 
-/* Initialise client credentials for authenticated pipe access */
+/****************************************************************************
+ Initialise client credentials for authenticated pipe access.
+****************************************************************************/
 
 static void init_creds(struct ntuser_creds *creds, char* username,
 		       char* domain, char* password, int pass_len)
@@ -948,8 +934,9 @@ static void init_creds(struct ntuser_creds *creds, char* username,
 }
 
 /****************************************************************************
-establishes a connection right up to doing tconX, password specified.
+ Establishes a connection right up to doing tconX, password specified.
 ****************************************************************************/
+
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
 			     const char *my_name, const char *dest_host, 
 			     struct in_addr *dest_ip, int port,
@@ -1085,18 +1072,21 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char 
 
 			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER with error %s.\n", 
 				desthost, cli_errstr(cli) ));
-			cli_shutdown(cli);
 			return False;
 		}
 
-		cli_shutdown(cli);
+		/*
+		 * We need to close the connection here but can't call cli_shutdown as
+		 * will free an allocated cli struct. cli_close_connection was invented
+		 * for this purpose. JRA. Based on work by "Kim R. Pedersen" <krp@filanet.dk>.
+		 */
+
+		cli_close_connection(cli);
 
 		if (!cli_initialise(cli) || !cli_connect(cli, desthost, pdest_ip) ||
-       			!cli_session_request(cli, &calling, &smbservername)) 
-		{
+       			!cli_session_request(cli, &calling, &smbservername)) {
 			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER with error %s\n", 
 				desthost, cli_errstr(cli) ));
-			cli_shutdown(cli);
 			return False;
 		}
 	}

@@ -44,7 +44,7 @@ extern "C" {
 
 /* error codes */
 enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
-		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOEXIST, TDB_ERR_NOLOCK };
+		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOEXIST, TDB_ERR_NOLOCK, TDB_ERR_LOCK_TIMEOUT };
 
 #ifndef u32
 #define u32 unsigned
@@ -126,6 +126,7 @@ int tdb_lockall(TDB_CONTEXT *tdb);
 void tdb_unlockall(TDB_CONTEXT *tdb);
 
 /* Low level locking functions: use with care */
+void tdb_set_lock_alarm(sig_atomic_t *palarm);
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 

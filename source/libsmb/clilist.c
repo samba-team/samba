@@ -59,7 +59,6 @@ static int interpret_long_filename(struct cli_state *cli,
 				    sizeof(finfo->name),
 				    len, 
 				    STR_TERMINATE);
-			p += 1; /* Skip the trailing \0 too */
 			return PTR_DIFF(p, base);
 
 		case 2: /* this is what OS/2 uses mostly */

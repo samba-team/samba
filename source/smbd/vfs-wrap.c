@@ -168,6 +168,17 @@ ssize_t vfswrap_write(files_struct *fsp, int fd, const void *data, size_t n)
     return result;
 }
 
+ssize_t vfswrap_sendfile(int tofd, struct files_struct *fsp, int fromfd, const DATA_BLOB *hdr,
+			SMB_OFF_T offset, size_t n)
+{
+	ssize_t result;
+
+	START_PROFILE_BYTES(syscall_sendfile, n);
+	result = sys_sendfile(tofd, fromfd, hdr, offset, n);
+	END_PROFILE(syscall_sendfile);
+	return result;
+}
+
 SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
 {
 	SMB_OFF_T result = 0;

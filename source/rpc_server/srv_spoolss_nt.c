@@ -298,11 +298,19 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_BADFID;
 	}
 
-	if (del_a_printer(Printer->dev.handlename) != 0) {
-		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
-		return WERR_BADFID;
+	/* 
+	 * It turns out that Windows allows delete printer on a handle
+	 * opened by an admin user, then used on a pipe handle created
+	 * by an anonymous user..... but they're working on security.... riiight !
+	 * JRA.
+	 */
+
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("delete_printer_handle: denied by handle\n"));
+		return WERR_ACCESS_DENIED;
 	}
 
+#if 0
 	/* Check calling user has permission to delete printer.  Note that
 	   since we set the snum parameter to -1 only administrators can
 	   delete the printer.  This stops people with the Full Control
@@ -311,6 +319,12 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 	if (!print_access_check(NULL, -1, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("printer delete denied by security descriptor\n"));
 		return WERR_ACCESS_DENIED;
+	}
+#endif
+
+	if (del_a_printer(Printer->dev.handlename) != 0) {
+		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
+		return WERR_BADFID;
 	}
 
 	if (*lp_deleteprinter_cmd()) {
@@ -335,10 +349,10 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		/* Send SIGHUP to process group... is there a better way? */
 		kill(0, SIGHUP);
 
-		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
-			lp_killservice( i );
-			return WERR_OK;
-		} else
+		/* go ahead and re-read the services immediately */
+		reload_services( False );
+
+		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) < 0 )
 			return WERR_ACCESS_DENIED;
 	}
 
@@ -1422,34 +1436,71 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	fstring				driver;
 	fstring				arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
+	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
+	struct current_user		user;
+	WERROR				status;
+	WERROR				status_win2k = WERR_ACCESS_DENIED;
 	 
 	unistr2_to_dos(driver, &q_u->driver, sizeof(driver)-1 );
 	unistr2_to_dos(arch,   &q_u->arch,   sizeof(arch)-1   );
+	get_current_user(&user, p);
+	 
+	unistr2_to_dos(arch,   &q_u->arch,   sizeof(arch)-1   );
 	
 	/* check that we have a valid driver name first */
-	if ((version=get_version_id(arch)) == -1) {
-		/* this is what NT returns */
+	
+	if ((version=get_version_id(arch)) == -1) 
 		return WERR_INVALID_ENVIRONMENT;
-	}
-		
-	/* if they said "Windows NT x86", then try for version 2 & 3 */
-	
-	if ( version == 2 )
-		version = DRIVER_ANY_VERSION;
-		
+				
 	ZERO_STRUCT(info);
-	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
-		return WERR_UNKNOWN_PRINTER_DRIVER;
+	ZERO_STRUCT(info_win2k);
+	
+	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) 
+	{
+		/* try for Win2k driver if "Windows NT x86" */
+		
+		if ( version == 2 ) {
+			version = 3;
+			if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
+				status = WERR_UNKNOWN_PRINTER_DRIVER;
+				goto done;
+			}
+		}
 	}
 	
-
-	if (printer_driver_in_use(arch, driver))
-	{
-		return WERR_PRINTER_DRIVER_IN_USE;
+	if (printer_driver_in_use(info.info_3)) {
+		status = WERR_PRINTER_DRIVER_IN_USE;
+		goto done;
 	}
-
-	return delete_printer_driver(info.info_3, NULL, version, False);
+		
+	if ( version == 2 )
+	{		
+		if (W_ERROR_IS_OK(get_a_printer_driver(&info_win2k, 3, driver, arch, 3)))
+		{
+			/* if we get to here, we now have 2 driver info structures to remove */
+			/* remove the Win2k driver first*/
+		
+			status_win2k = delete_printer_driver(info_win2k.info_3, &user, 3, False );
+			free_a_printer_driver( info_win2k, 3 );
+			
+			/* this should not have failed---if it did, report to client */
+			if ( !W_ERROR_IS_OK(status_win2k) )
+				goto done;
+		}
+	}
+	
+	status = delete_printer_driver(info.info_3, &user, version, False);
+	
+	/* if at least one of the deletes succeeded return OK */
+	
+	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
+		status = WERR_OK;
+	
+done:
+	free_a_printer_driver( info, 3 );
+	
+	return status;
 }
 
 /********************************************************************
@@ -4872,7 +4923,9 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 		/* Send SIGHUP to process group... is there a better way? */
 		kill(0, SIGHUP);
-		add_all_printers();
+		
+		/* reload our services immediately */
+		reload_services( False );
 	}
 
 	file_lines_free(qlines);
@@ -5194,6 +5247,13 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			result =  WERR_NOMEM;
 			goto done;
 		}
+
+		/* 
+		 * make sure we actually reload the services after 
+		 * this as smb.conf could have a new section in it 
+		 * .... shouldn't .... but could
+		 */
+		reload_services(False);	
 	}
 
 	/* Do sanity check on the requested changes for Samba */
@@ -5529,11 +5589,9 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 		goto done;
 	}
 		
-	if (!(devmode = construct_dev_mode(snum))) {
-		*returned = 0;
-		result = WERR_NOMEM;
-		goto done;
-	}
+	/* this should not be a failure condition if the devmode is NULL */
+	
+	devmode = construct_dev_mode(snum);
 
 	for (i=0; i<*returned; i++)
 		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter,
@@ -6453,15 +6511,17 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		return WERR_PRINTER_ALREADY_EXISTS;
 	}
 
-	if (*lp_addprinter_cmd() )
+	if (*lp_addprinter_cmd() ) {
 		if ( !add_printer_hook(printer) ) {
 			free_a_printer(&printer,2);
 			return WERR_ACCESS_DENIED;
+	}
 	}
 
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", get_called_name(),
              printer->info_2->sharename);
 
+	
 	if ((snum = print_queue_snum(printer->info_2->sharename)) == -1) {
 		free_a_printer(&printer,2);
 		return WERR_ACCESS_DENIED;
@@ -7603,10 +7663,10 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	ret = get_a_printer(&ntprinter, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(ret))
 		goto done;
-	if (construct_dev_mode(snum) == NULL) {
-		ret = WERR_NOMEM;
-		goto done;
-	}
+		
+	/* not a failure condition if devmode == NULL */
+	
+	construct_dev_mode(snum);
 
 	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter, devmode);
 	
@@ -8060,6 +8120,7 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 	case 1:
 		result = getprintprocessordirectory_level_1
 		  (&q_u->name, &q_u->environment, buffer, offered, needed);
+		break;
 	default:
 		result = WERR_UNKNOWN_LEVEL;
 	}

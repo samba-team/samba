@@ -23,9 +23,10 @@
 
 #include "includes.h"
 
-/*
- * Change the port number used to call on 
- */
+/****************************************************************************
+ Change the port number used to call on.
+****************************************************************************/
+
 int cli_set_port(struct cli_state *cli, int port)
 {
 	cli->port = port;
@@ -33,14 +34,17 @@ int cli_set_port(struct cli_state *cli, int port)
 }
 
 /****************************************************************************
-recv an smb
+ Recv an smb.
 ****************************************************************************/
+
 BOOL cli_receive_smb(struct cli_state *cli)
 {
+	extern int smb_read_error;
 	BOOL ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
-	if (cli->fd == -1) return False; 
+	if (cli->fd == -1)
+		return False; 
 
  again:
 	ret = client_receive_smb(cli->fd,cli->inbuf,abs(cli->timeout));
@@ -63,17 +67,17 @@ BOOL cli_receive_smb(struct cli_state *cli)
 	}
 
         /* If the server is not responding, note that now */
-
-        if (!ret && cli->timeout > 0) {
-                close(cli->fd);
-                cli->fd = -1;
-        }
+	if (!ret) {
+		cli->smb_rw_error = smb_read_error;
+		close(cli->fd);
+		cli->fd = -1;
+	}
 
 	return ret;
 }
 
 /****************************************************************************
-  send an smb to a fd.
+ Send an smb to a fd.
 ****************************************************************************/
 
 BOOL cli_send_smb(struct cli_state *cli)
@@ -83,7 +87,8 @@ BOOL cli_send_smb(struct cli_state *cli)
 	ssize_t ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
-	if (cli->fd == -1) return False;
+	if (cli->fd == -1)
+		return False;
 
 	len = smb_len(cli->outbuf) + 4;
 
@@ -92,8 +97,9 @@ BOOL cli_send_smb(struct cli_state *cli)
 		if (ret <= 0) {
                         close(cli->fd);
                         cli->fd = -1;
-			DEBUG(0,("Error writing %d bytes to client. %d\n",
-				 (int)len,(int)ret));
+			cli->smb_rw_error = WRITE_ERROR;
+			DEBUG(0,("Error writing %d bytes to client. %d (%s)\n",
+				 (int)len,(int)ret, strerror(errno) ));
 			return False;
 		}
 		nwritten += ret;
@@ -103,8 +109,9 @@ BOOL cli_send_smb(struct cli_state *cli)
 }
 
 /****************************************************************************
-setup basics in a outgoing packet
+ Setup basics in a outgoing packet.
 ****************************************************************************/
+
 void cli_setup_packet(struct cli_state *cli)
 {
         cli->rap_error = 0;
@@ -126,18 +133,18 @@ void cli_setup_packet(struct cli_state *cli)
 }
 
 /****************************************************************************
-setup the bcc length of the packet from a pointer to the end of the data
+ Setup the bcc length of the packet from a pointer to the end of the data.
 ****************************************************************************/
+
 void cli_setup_bcc(struct cli_state *cli, void *p)
 {
 	set_message_bcc(cli->outbuf, PTR_DIFF(p, smb_buf(cli->outbuf)));
 }
 
-
-
 /****************************************************************************
-initialise a client structure
+ Initialise a client structure.
 ****************************************************************************/
+
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 {
         /* copy_nt_creds(&cli->usr, usr); */
@@ -152,10 +159,10 @@ void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
                cli->ntlmssp_flags,cli->ntlmssp_cli_flgs));
 }
 
-
 /****************************************************************************
-initialise a client structure
+ Initialise a client structure.
 ****************************************************************************/
+
 struct cli_state *cli_initialise(struct cli_state *cli)
 {
         BOOL alloced_cli = False;
@@ -174,9 +181,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
                 alloced_cli = True;
 	}
 
-	if (cli->initialised) {
-		cli_shutdown(cli);
-	}
+	if (cli->initialised)
+		cli_close_connection(cli);
 
 	ZERO_STRUCTP(cli);
 
@@ -196,9 +202,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
 	   ones.  This intended only as a temporary hack. */	
-	if (getenv("CLI_FORCE_DOSERR")) {
+	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = True;
-	}
 
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
@@ -230,16 +235,18 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 }
 
 /****************************************************************************
-shutdown a client structure
+ Close a client connection and free the memory without destroying cli itself.
 ****************************************************************************/
-void cli_shutdown(struct cli_state *cli)
+
+void cli_close_connection(struct cli_state *cli)
 {
-	BOOL allocated;
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
-	if (cli->mem_ctx)
+	if (cli->mem_ctx) {
 		talloc_destroy(cli->mem_ctx);
+		cli->mem_ctx = NULL;
+	}
 
 #ifdef WITH_SSL
 	if (cli->fd != -1)
@@ -247,25 +254,36 @@ void cli_shutdown(struct cli_state *cli)
 #endif /* WITH_SSL */
 	if (cli->fd != -1) 
 		close(cli->fd);
-	allocated = cli->allocated;
-	ZERO_STRUCTP(cli);
-	if (allocated) {
-		SAFE_FREE(cli);
-	} 
+	cli->fd = -1;
+	cli->smb_rw_error = 0;
 }
 
+/****************************************************************************
+ Shutdown a client structure.
+****************************************************************************/
+
+void cli_shutdown(struct cli_state *cli)
+{
+	BOOL allocated = cli->allocated;
+	cli_close_connection(cli);
+	ZERO_STRUCTP(cli);
+	if (allocated)
+		SAFE_FREE(cli);
+}
 
 /****************************************************************************
-set socket options on a open connection
+ Set socket options on a open connection.
 ****************************************************************************/
+
 void cli_sockopt(struct cli_state *cli, char *options)
 {
 	set_socket_options(cli->fd, options);
 }
 
 /****************************************************************************
-set the PID to use for smb messages. Return the old pid.
+ Set the PID to use for smb messages. Return the old pid.
 ****************************************************************************/
+
 uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 {
 	uint16 ret = cli->pid;
@@ -274,8 +292,9 @@ uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 }
 
 /****************************************************************************
-Send a keepalive packet to the server
+ Send a keepalive packet to the server.
 ****************************************************************************/
+
 BOOL cli_send_keepalive(struct cli_state *cli)
 {
         if (cli->fd == -1) {
@@ -285,7 +304,8 @@ BOOL cli_send_keepalive(struct cli_state *cli)
         if (!send_keepalive(cli->fd)) {
                 close(cli->fd);
                 cli->fd = -1;
-                DEBUG(0,("Error sending keepalive packet to client.\n"));
+                DEBUG(0,("Error sending keepalive packet to client. (%s)\n",
+					strerror(errno) ));
                 return False;
         }
         return True;

@@ -286,6 +286,7 @@ typedef struct
 	BOOL bHideLocalUsers;
 	BOOL bUseMmap;
 	BOOL bUnixExtensions;
+	int name_cache_timeout;
 }
 global;
 
@@ -411,6 +412,10 @@ typedef struct
 	BOOL bDefaultDevmode;
 	BOOL bNTAclSupport;
 	BOOL bForceUnknownAclUser;
+#ifdef WITH_SENDFILE
+	BOOL bUseSendfile;
+#endif
+	BOOL bProfileAcls;
 
 	char dummy[3];		/* for alignment */
 }
@@ -532,6 +537,10 @@ static service sDefault = {
 	False,			/* bDefaultDevmode */
 	True,			/* bNTAclSupport */
 	False,			/* bForceUnknownAclUser */
+#ifdef WITH_SENDFILE
+	False,                  /* bUseSendfile */
+#endif
+	False,			/* bProfileAcls */
 
 	""			/* dummy */
 };
@@ -640,11 +649,11 @@ static struct enum_list enum_case[] = {
 };
 
 static struct enum_list enum_bool_auto[] = {
-	{False, "False"},
 	{False, "No"},
+	{False, "False"},
 	{False, "0"},
-	{True, "True"},
 	{True, "Yes"},
+	{True, "True"},
 	{True, "1"},
 	{Auto, "Auto"},
 	{-1, NULL}
@@ -854,6 +863,7 @@ static struct parm_struct parm_table[] = {
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, 0},
 	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE },
 	{"nt status support", P_BOOL,  P_GLOBAL, &Globals.bNTStatusSupport, NULL, NULL, 0 },
+	{"profile acls", P_BOOL,  P_LOCAL, &sDefault.bProfileAcls, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE },
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, 0},
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, 0},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, 0},
@@ -882,6 +892,7 @@ static struct parm_struct parm_table[] = {
 	{"max disk size", P_INTEGER, P_GLOBAL, &Globals.maxdisksize, NULL, NULL, 0},
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, 0},
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_PRINT},
+	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, 0},
 	{"read size", P_INTEGER, P_GLOBAL, &Globals.ReadSize, NULL, NULL, 0},
 	
 	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, 0},
@@ -890,6 +901,9 @@ static struct parm_struct parm_table[] = {
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_SHARE},
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_SHARE},
 	{"use mmap", P_BOOL, P_GLOBAL, &Globals.bUseMmap, NULL, NULL, 0},
+#ifdef WITH_SENDFILE
+	{"use sendfile", P_BOOL, P_LOCAL, &sDefault.bUseSendfile, NULL, NULL, FLAG_SHARE},
+#endif
 	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_SHARE},
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
@@ -1447,6 +1461,8 @@ static void init_globals(void)
 
 	Globals.bHostMSDfs = False;
 
+	 Globals.name_cache_timeout = 660; /* In seconds */
+
 	/*
 	 * This must be done last as it checks the value in 
 	 * client_code_page.
@@ -1694,6 +1710,7 @@ FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
 FN_GLOBAL_INTEGER(lp_lock_sleep_time, &Globals.iLockSpinTime)
+FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)
@@ -1784,6 +1801,10 @@ FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 FN_LOCAL_BOOL(lp_force_unknown_acl_user, bForceUnknownAclUser)
+#ifdef WITH_SENDFILE
+FN_LOCAL_BOOL(lp_use_sendfile, bUseSendfile)
+#endif
+FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
@@ -1795,7 +1816,6 @@ FN_LOCAL_INTEGER(lp_force_dir_security_mode, iDir_Security_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections, iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase, iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace, iMinPrintSpace)
-FN_LOCAL_INTEGER(lp_maxprintjobs, iMaxPrintJobs)
 FN_LOCAL_INTEGER(lp_printing, iPrinting)
 FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
 FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
@@ -1941,12 +1961,6 @@ from service ifrom. homename must be in DOS codepage.
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 {
 	int i;
-	SMB_STRUCT_STAT buf;
-	
-	/* if the user's home directory doesn't exist, then don't 
-	   add it to the list of available shares */
-	if (sys_stat(pszHomedir, &buf))
-		return False;
 	
 	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
@@ -2855,6 +2869,7 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 		case P_SEP:
 			break;
 	}
+
 
 	return (True);
 }
@@ -3866,4 +3881,17 @@ const char *get_called_name(void)
 	}
 
 	return local_machine;
+}
+
+/*******************************************************************
+ Return the max print jobs per queue.
+********************************************************************/
+
+int lp_maxprintjobs(int snum)
+{
+	int maxjobs = LP_SNUM_OK(snum) ? ServicePtrs[snum]->iMaxPrintJobs : sDefault.iMaxPrintJobs;
+	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
+		maxjobs = PRINT_MAX_JOBID - 1;
+
+	return maxjobs;
 }

@@ -55,6 +55,7 @@ struct vfs_ops default_vfs_ops = {
 	vfswrap_read,
 	vfswrap_write,
 	vfswrap_lseek,
+	 vfswrap_sendfile,
 	vfswrap_rename,
 	vfswrap_fsync,
 	vfswrap_stat,

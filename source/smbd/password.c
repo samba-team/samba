@@ -1056,8 +1056,10 @@ struct cli_state *server_cryptkey(void)
 		return NULL;
 	}
 
-	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip))
+	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip)) {
+		cli_shutdown(cli);
 		return NULL;
+	}
 
 	DEBUG(3,("got session\n"));
 
@@ -1195,7 +1197,7 @@ static BOOL grab_server_mutex(const char *name)
 		DEBUG(0,("grab_server_mutex: malloc failed for %s\n", name));
 		return False;
 	}
-	if (!message_named_mutex(name, 20)) {
+	if (!secrets_named_mutex(name, 10)) {
 		DEBUG(10,("grab_server_mutex: failed for %s\n", name));
 		SAFE_FREE(mutex_server_name);
 		return False;
@@ -1207,7 +1209,7 @@ static BOOL grab_server_mutex(const char *name)
 static void release_server_mutex(void)
 {
 	if (mutex_server_name) {
-		message_named_mutex_release(mutex_server_name);
+		secrets_named_mutex_release(mutex_server_name);
 		SAFE_FREE(mutex_server_name);
 	}
 }
@@ -1237,11 +1239,13 @@ static BOOL connect_to_domain_password_server(struct cli_state **ppcli,
 		/* we shouldn't have 255.255.255.255 forthe IP address of a password server anyways */
 		if ((to_ip.s_addr=inet_addr(server)) == 0xFFFFFFFF) {
 			DEBUG (0,("connect_to_domain_password_server: inet_addr(%s) returned 0xFFFFFFFF!\n", server));
+			cli_shutdown(pcli);
 			return False;
 		}
 
 		if (!name_status_find("*", 0, 0x20, to_ip, remote_machine)) {
 			DEBUG(1, ("connect_to_domain_password_server: Can't " "resolve name for IP %s\n", server));
+			cli_shutdown(pcli);
 			return False;
 		}
 	} else {
@@ -1268,8 +1272,10 @@ static BOOL connect_to_domain_password_server(struct cli_state **ppcli,
 		two connections where one hasn't completed a negprot yet it will send a
 		TCP reset to the first connection (tridge) */
 
-	if (!grab_server_mutex(server))
+	if (!grab_server_mutex(server)) {
+		cli_shutdown(pcli);
 		return False;
+	}
 
 	if (!cli_connect(pcli, remote_machine, &dest_ip)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \
@@ -1282,6 +1288,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
 	if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
 		DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
 session request. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
+		cli_shutdown(pcli);
 		release_server_mutex();
 		return False;
 	}
@@ -1551,8 +1558,13 @@ BOOL domain_client_validate( char *user, char *domain,
 	}
 
 	/* Test if machine password is expired and need to be changed */
-	if (time(NULL) > last_change_time + lp_machine_password_timeout())
+	if (time(NULL) > last_change_time + lp_machine_password_timeout()) {
+		DEBUG(10,("domain_client_validate: machine account password needs changing. \
+Last change time = (%u) %s. Machine password timeout = %u seconds\n",
+			(unsigned int)last_change_time, http_timestring(last_change_time),
+			(unsigned int)lp_machine_password_timeout() ));
 		global_machine_password_needs_changing = True;
+	}
 
 	/*
 	 * At this point, smb_apasswd points to the lanman response to
@@ -1635,7 +1647,7 @@ BOOL domain_client_validate( char *user, char *domain,
 			return False;
 		}
  
-		ptok->num_sids = (size_t)info3.num_groups2;
+		ptok->num_sids = (size_t)info3.num_groups2 + info3.num_other_sids;
 		if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
 			DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
 			SAFE_FREE(ptok);
@@ -1643,10 +1655,22 @@ BOOL domain_client_validate( char *user, char *domain,
 			return False;
 		}
  
-		for (i = 0; i < ptok->num_sids; i++) {
+		/* Group membership (including nested groups) is
+		   stored here. */
+
+		for (i = 0; i < info3.num_groups2; i++) {
 			sid_copy(&ptok->user_sids[i], &info3.dom_sid.sid);
 			sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
 		}
+
+		/* Universal group memberships for other domains are
+		   stored in the info3.other_sids field.  We also need to
+		   do sid filtering here. */
+
+		for (i = 0; i < info3.num_other_sids; i++)
+			sid_copy(&ptok->user_sids[info3.num_groups2 + i], 
+				 &info3.other_sids[i].sid);
+
 		*pptoken = ptok;
 	}
 

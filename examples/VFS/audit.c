@@ -88,6 +88,7 @@ struct vfs_ops audit_ops = {
 	NULL,                     /* read  */
 	NULL,                     /* write */
 	NULL,                     /* lseek */
+	NULL,			  /* sendfile */
 	audit_rename,
 	NULL,                     /* fsync */
 	NULL,                     /* stat  */

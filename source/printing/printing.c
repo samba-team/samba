@@ -64,7 +64,7 @@ BOOL print_backend_init(void)
 	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb, sversion);
+	tdb_lock_bystring(tdb, sversion, 0);
 	if (tdb_fetch_int32(tdb, sversion) != PRINT_DATABASE_VERSION) {
 		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
 		tdb_store_int32(tdb, sversion, PRINT_DATABASE_VERSION);
@@ -378,7 +378,11 @@ static void print_queue_update(int snum)
 	/* Lock the queue for the database update */
 
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
-	tdb_lock_bystring(tdb, keystr);
+	/* Only wait 10 seconds for this. */
+	if (tdb_lock_bystring(tdb, keystr, 10) == -1) {
+		DEBUG(0,("print_queue_update: Failed to lock printing database\n" ));
+		return;
+	}
 
 	/*
 	 * Ensure that no one else got in here.
@@ -1000,8 +1004,11 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 
 	fstrcpy(pjob.queuename, lp_servicename(snum));
 
-	/* lock the database */
-	tdb_lock_bystring(tdb, "INFO/nextjob");
+	/* Lock the database - only wait 20 seconds. */
+	if (tdb_lock_bystring(tdb, "INFO/nextjob", 20) == -1) {
+		DEBUG(0,("print_job_start: failed to lock printing database.\n"));
+		return -1;
+	}
 
 	next_jobid = tdb_fetch_int32(tdb, "INFO/nextjob");
 	if (next_jobid == -1)

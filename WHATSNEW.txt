@@ -1,8 +1,55 @@
-            WHAT'S NEW IN Samba 2.2.6pre2  - 29th August 2002
-            =================================================
+            WHAT'S NEW IN Samba 2.2.6rc1  - 30th Sept. 2002
+            ===============================================
 
 This is a prelease snapshot of SAMBA_2_2 cvs branch.  This is a non-production
 release provided for testing purposes only.
+
+Changes since 2.2.6pre2
+-----------------------
+1)  Merge in freelist unlock on error fix
+2)  Correctly fail opens with mismatching SYSTEM or HIDDEN attributes
+    if we are mapping system or hidden
+3)  Fix bug with stat mode open being done on read-only open with truncate
+4)  Fix crashbug discovered where cli struct was being deallocated in a
+    called function
+5)  Ensure we open UNIX fifo's non-blocking
+6)  Fix DeletePrinterDriver() (hopefully for the last time...yeah right....)
+7)  only lowercase global_myname in the %L substitution, not the whole string
+8)  Merged Steve French's fix for OS/2 EA return error being removed
+9)  Patch from Steve French to fix difference in responses to smbclient
+    //server/share ls / on Samba and Windows 2000
+10) Print error and exit if smb.conf doesn't have security=domain and 
+    encrypt passwords=yes when joining domain
+11) Added final Steve French patch for "required" attributes with old dir 
+    listings
+12) Initialise user_rid value in WINBIND_USERINFO structure returned by 
+    the rpc version of query_user()
+13) Ensure we've failed a lock with a lock denied message before automatically 
+    pushing it onto the	blocking queue
+14) Add experiemental --with-sendfile code
+15) alignment fix in printing code merged from HEAD
+16) Merge fix for other sids in token from HEAD
+17) Merge winbindd with current (more advanced) state of play in APPLIANCE_HEAD
+18) fix smbclient / Win98 off by one bug
+19) Never, *ever* hold a mutex lock in the message database where there may be
+    traversals being attempted
+20) Add LDAP hack for retrieving the SAM sequence number whe a member of a 
+    Windows 2000 native mode domain
+21) Fix race condition when changing a machine acount password as we were 
+    no longer locking the secrets entry
+22) Allow '@' as a valid character in domain names
+23) remove jobs from the spool directory when using cups
+24) removed -lresolv for --enable-ldapsam
+25) Memory leak fix and correct use of negative caching in winbindd
+26) Updated spoolss parsing code with known good state of APPLIANCE_HEAD
+27) Delete printer security check was reversed
+28) Windows allows delete printer on a handle opened by an admin user, then 
+    used on a pipe handle created by an anonymous user...We do to now...
+29) Make explicit the difference between a tdb key with no data attached, and 
+    a non existent entry
+30)
+
+
 
 
 Changes since 2.2.6pre1

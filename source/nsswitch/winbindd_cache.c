@@ -215,11 +215,29 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 
 	status = wcache->backend->sequence_number(domain, &domain->sequence_number);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status))
+		DEBUG(10, ("refresh_sequence_number: backend returned 0x%08x\n", 
+			   NT_STATUS_V(status)));
+	
+	/* Convert a NT_STATUS_UNSUCCESSFUL error to a
+	   NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND.  The former is
+	   returned when we can't make an initial connection to
+	   the domain controller.  The latter is returned when we
+	   can't fetch the sequence number on an already open
+	   connection. */
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL))
+		status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+
+	domain->last_status = status;
+
+	if (!NT_STATUS_IS_OK(status))
 		domain->sequence_number = DOM_SEQUENCE_NONE;
-	}
 
 	domain->last_seq_check = time(NULL);
+
+	DEBUG(10, ("refresh_sequence_number: seq number is now %d\n", 
+		   domain->sequence_number));
 }
 
 /*
@@ -486,7 +504,18 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	}
 
 do_cached:	
-	status = centry->status;
+
+	/* If we are returning cached data and the domain controller
+	   is down then we don't know whether the data is up to date
+	   or not.  Return NT_STATUS_MORE_PROCESSING_REQUIRED to
+	   indicate this. */
+
+	if (wcache_server_down(domain)) {
+		DEBUG(10, ("query_user_list: returning cached user list and server was down\n"));
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	} else
+		status = centry->status;
+
 	centry_free(centry);
 	return status;
 
@@ -494,9 +523,10 @@ do_query:
 	*num_entries = 0;
 	*info = NULL;
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
 
 	status = cache->backend->query_user_list(domain, mem_ctx, num_entries, info);
 
@@ -559,7 +589,18 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	}
 
 do_cached:	
-	status = centry->status;
+
+	/* If we are returning cached data and the domain controller
+	   is down then we don't know whether the data is up to date
+	   or not.  Return NT_STATUS_MORE_PROCESSING_REQUIRED to
+	   indicate this. */
+
+	if (wcache_server_down(domain)) {
+		DEBUG(10, ("query_user_list: returning cached user list and server was down\n"));
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	} else
+		status = centry->status;
+
 	centry_free(centry);
 	return status;
 
@@ -567,9 +608,10 @@ do_query:
 	*num_entries = 0;
 	*info = NULL;
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
 
 	status = cache->backend->enum_dom_groups(domain, mem_ctx, num_entries, info);
 
@@ -618,9 +660,11 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 do_query:
 	ZERO_STRUCTP(sid);
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+
 	status = cache->backend->name_to_sid(domain, name, sid, type);
 
 	/* and save it */
@@ -662,9 +706,11 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 do_query:
 	*name = NULL;
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+
 	status = cache->backend->sid_to_name(domain, mem_ctx, sid, name, type);
 
 	/* and save it */
@@ -702,10 +748,11 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 do_query:
 	ZERO_STRUCTP(info);
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
-	
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+
 	status = cache->backend->query_user(domain, mem_ctx, user_rid, info);
 
 	/* and save it */
@@ -751,9 +798,11 @@ do_query:
 	(*num_groups) = 0;
 	(*user_gids) = NULL;
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+
 	status = cache->backend->lookup_usergroups(domain, mem_ctx, user_rid, num_groups, user_gids);
 
 	/* and save it */
@@ -817,10 +866,11 @@ do_query:
 	(*names) = NULL;
 	(*name_types) = NULL;
 	
+	/* Return status value returned by seq number check */
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+
 	status = cache->backend->lookup_groupmem(domain, mem_ctx, group_rid, num_names, 
 						 rid_mem, names, name_types);
 

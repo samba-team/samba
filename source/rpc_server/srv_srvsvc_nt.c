@@ -137,7 +137,7 @@ BOOL share_info_db_init(void)
 	local_pid = sys_getpid();
  
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(share_tdb, vstring);
+	tdb_lock_bystring(share_tdb, vstring,0);
 
 	/* Cope with byte-reversed older versions of the db. */
 	vers_id = tdb_fetch_int32(share_tdb, vstring);

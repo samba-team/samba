@@ -115,7 +115,7 @@ done:
 	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
-	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authenticaion for user %s returned %s (PAM: %d)\n", 
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authentication for user %s returned %s (PAM: %d)\n", 
 	      state->request.data.auth.user, 
 	      state->response.data.auth.nt_status_string,
 	      state->response.data.auth.pam_error));	      
@@ -146,7 +146,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5d]: pam auth crap domain: %s user: %s\n", state->pid,
 		  state->request.data.auth_crap.domain, state->request.data.auth_crap.user));
 
-	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for %s", state->request.data.auth.user))) {
+	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for %s", state->request.data.auth_crap.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -157,7 +157,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	} else if (lp_winbind_use_default_domain()) {
 		domain = talloc_strdup(mem_ctx, lp_workgroup());
 	} else {
-		DEBUG(5,("no domain specified with username (%s) - failing auth\n", state->request.data.auth.user));
+		DEBUG(5,("no domain specified with username (%s) - failing auth\n", state->request.data.auth_crap.user));
 		result = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
@@ -206,7 +206,7 @@ done:
 	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
-	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("NTLM CRAP authenticaion for user [%s]\\[%s] returned %s (PAM: %d)\n", 
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("NTLM CRAP authentication for user [%s]\\[%s] returned %s (PAM: %d)\n", 
 	      state->request.data.auth_crap.domain, 
 	      state->request.data.auth_crap.user, 
 	      state->response.data.auth.nt_status_string,
@@ -250,9 +250,8 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	/* Get sam handle */
 
-	if (!(hnd = cm_get_sam_handle(domain))) {
+	if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain, &hnd))) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		goto done;
 	}
 
@@ -260,9 +259,8 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		DEBUG(1, ("password change failed for user %s/%s\n", domain, 
 			  user));
 		result = NT_STATUS_WRONG_PASSWORD;
-	} else {
+	} else
 		result = NT_STATUS_OK;
-	}
 
 done:    
 	state->response.data.auth.nt_status = NT_STATUS_V(result);

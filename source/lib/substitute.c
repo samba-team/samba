@@ -202,15 +202,11 @@ void standard_sub_basic(char *str, int len)
 			if (*local_machine)
 				string_sub(p,"%L", local_machine,l); 
 			else {
-				char *ns = p;
+				pstring temp_name;
 
-				string_sub(p,"%L", global_myname,l); 
-				while (*ns)
-				{
-					if (isupper(*ns))
-						*ns = tolower(*ns);
-					ns++;
-				}
+				pstrcpy(temp_name, global_myname);
+				strlower(temp_name);
+				string_sub(p,"%L", temp_name,l); 
 			}
 			break;
 		case 'M' : string_sub(p,"%M", client_name(),l); break;

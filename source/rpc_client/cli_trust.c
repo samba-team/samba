@@ -76,6 +76,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
   if (!attempt_netbios_session_request(&cli, global_myname, remote_machine, &cli.dest_ip)) {
     DEBUG(0,("modify_trust_password: machine %s rejected the NetBIOS session request.\n", 
       remote_machine ));
+    cli_shutdown(&cli);
     return False;
   }
 

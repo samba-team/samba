@@ -164,9 +164,6 @@ BOOL init_domain_list(void)
 			DEBUG(1,("Added domain %s (%s)\n", 
 				 domain->name, 
 				 sid_string_static(&domain->sid)));
-
-			/* this primes the connection */
-			cache_methods.domain_sid(domain, &domain->sid);
 		}
 	}
 

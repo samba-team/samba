@@ -34,42 +34,47 @@ void set_first_token(char *ptr)
 Based on a routine by GJC@VILLAGE.COM. 
 Extensively modified by Andrew.Tridgell@anu.edu.au
 ****************************************************************************/
-BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
+
+BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 {
-  char *s;
-  BOOL quoted;
-  size_t len=1;
+	char *s;
+	BOOL quoted;
+	size_t len=1;
 
-  if (!ptr) ptr = &last_ptr;
-  if (!ptr) return(False);
+	if (!ptr)
+		ptr = &last_ptr;
+	if (!ptr)
+		return(False);
 
-  s = *ptr;
+	s = *ptr;
 
-  /* default to simple separators */
-  if (!sep) sep = " \t\n\r";
+	/* default to simple separators */
+	if (!sep)
+		sep = " \t\n\r";
 
-  /* find the first non sep char */
-  while(*s && strchr(sep,*s)) s++;
+	/* find the first non sep char */
+	while(*s && strchr(sep,*s))
+		s++;
 
-  /* nothing left? */
-  if (! *s) return(False);
+	/* nothing left? */
+	if (! *s)
+		return(False);
 
-  /* copy over the token */
-  for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++)
-    {
-	    if (*s == '\"') {
-		    quoted = !quoted;
-	    } else {
-		    len++;
-		    *buff++ = *s;
-	    }
-    }
+	/* copy over the token */
+	for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
+		if (*s == '\"') {
+			quoted = !quoted;
+		} else {
+			len++;
+			*buff++ = *s;
+		}
+	}
 
-  *ptr = (*s) ? s+1 : s;  
-  *buff = 0;
-  last_ptr = *ptr;
+	*ptr = (*s) ? s+1 : s;  
+	*buff = 0;
+	last_ptr = *ptr;
 
-  return(True);
+	return(True);
 }
 
 /****************************************************************************
@@ -268,7 +273,7 @@ int StrnCaseCmp(const char *s, const char *t, size_t n)
 }
 
 /*******************************************************************
-  compare 2 strings 
+  compare 2 strings - DOS codepage.
 ********************************************************************/
 BOOL strequal(const char *s1, const char *s2)
 {
@@ -276,6 +281,20 @@ BOOL strequal(const char *s1, const char *s2)
   if (!s1 || !s2) return(False);
   
   return(StrCaseCmp(s1,s2)==0);
+}
+
+/*******************************************************************
+  compare 2 strings - UNIX codepage.
+********************************************************************/
+BOOL strequal_unix(const char *s1, const char *s2)
+{
+  pstring dos_s1, dos_s2;
+  if (s1 == s2) return(True);
+  if (!s1 || !s2) return(False);
+  
+  pstrcpy(dos_s1, unix_to_dos_static(s1));
+  pstrcpy(dos_s2, unix_to_dos_static(s2));
+  return(StrCaseCmp(dos_s1,dos_s2)==0);
 }
 
 /*******************************************************************
@@ -435,6 +454,18 @@ void strupper(char *s)
       }
     }
   }
+}
+
+/* Convert a string to upper case, but don't modify it */
+
+char *strupper_static(const char *s)
+{
+	static pstring str;
+
+	pstrcpy(str, s);
+	strupper(str);
+
+	return str;
 }
 
 /*******************************************************************

@@ -139,8 +139,6 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 		      const void *buf, size_t len,
 		      BOOL duplicates_allowed,
 		      int *n_sent);
-BOOL message_named_mutex(const char *name, unsigned int timeout);
-void message_named_mutex_release(char *name);
 
 /* The following definitions come from lib/ms_fnmatch.c  */
 
@@ -173,6 +171,15 @@ char *rep_inet_ntoa(struct in_addr ip);
 void sys_select_signal(void);
 int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
 int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
+
+/* The following definitions come from lib/sendfile.c  */
+
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 
 /* The following definitions come from lib/signal.c  */
 
@@ -249,6 +256,7 @@ void cli_setup_packet(struct cli_state *cli);
 void cli_setup_bcc(struct cli_state *cli, void *p);
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
+void cli_close_connection(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
@@ -388,10 +396,10 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                  SAM_DELTA_HDR **hdr_deltas, 
                                  SAM_DELTA_CTR **deltas);
 NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                char *username, char *password,
-                                int logon_type);
+				const char *unix_username, const char *unix_password,
+				int logon_type);
 NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					const char *username, const char *domain, const char *workstation, 
+					const char *unix_username, const char *unix_domain, const char *workstation, 
 					const uint8 chal[8],
 					DATA_BLOB lm_response, DATA_BLOB nt_response,
 					NET_USER_INFO_3 *info3);
@@ -686,6 +694,15 @@ NTSTATUS dos_to_ntstatus(int eclass, int ecode);
 void ntstatus_to_dos(NTSTATUS ntstatus, uint8 *eclass, uint32 *ecode);
 NTSTATUS werror_to_ntstatus(WERROR error);
 WERROR ntstatus_to_werror(NTSTATUS error);
+
+/* The following definitions come from libsmb/namecache.c  */
+
+BOOL namecache_enable(void);
+void namecache_store(const char *name, int name_type,
+		     int num_names, struct in_addr *ip_list);
+BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
+		     int *num_names);
+void namecache_flush(void);
 
 /* The following definitions come from libsmb/namequery.c  */
 
@@ -1303,16 +1320,18 @@ int sock_exec(const char *prog);
 /* The following definitions come from lib/util_str.c  */
 
 void set_first_token(char *ptr);
-BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize);
+BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize);
 char **toktocliplist(int *ctok, char *sep);
 int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(const char *s, const char *t, size_t n);
 BOOL strequal(const char *s1, const char *s2);
+BOOL strequal_unix(const char *s1, const char *s2);
 BOOL strnequal(const char *s1,const char *s2,size_t n);
 BOOL strcsequal(const char *s1,const char *s2);
 int strwicmp(char *psz1, char *psz2);
 void strlower(char *s);
 void strupper(char *s);
+char *strupper_static(const char *s);
 void strnorm(char *s);
 BOOL strisnormal(char *s);
 void string_replace(char *s,char oldc,char newc);
@@ -2041,6 +2060,7 @@ int lp_min_passwd_length(void);
 int lp_oplock_break_wait_time(void);
 int lp_lock_spin_count(void);
 int lp_lock_sleep_time(void);
+int lp_name_cache_timeout(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
@@ -2128,6 +2148,8 @@ BOOL lp_use_client_driver(int );
 BOOL lp_default_devmode(int );
 BOOL lp_nt_acl_support(int );
 BOOL lp_force_unknown_acl_user(int );
+BOOL lp_use_sendfile(int );
+BOOL lp_profile_acls(int );
 int lp_create_mask(int );
 int lp_force_create_mode(int );
 int lp_security_mask(int );
@@ -2139,7 +2161,6 @@ int lp_force_dir_security_mode(int );
 int lp_max_connections(int );
 int lp_defaultcase(int );
 int lp_minprintspace(int );
-int lp_maxprintjobs(int );
 int lp_printing(int );
 int lp_oplock_contention_limit(int );
 int lp_csc_policy(int );
@@ -2185,6 +2206,7 @@ char *lp_printername(int snum);
 void get_private_directory(pstring priv_dir);
 void lp_set_logfile(const char *name);
 const char *get_called_name(void);
+int lp_maxprintjobs(int snum);
 
 /* The following definitions come from param/params.c  */
 
@@ -2361,6 +2383,7 @@ BOOL secrets_delete(char *key);
 BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid);
 BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid);
 char *trust_keystr(char *domain);
+BOOL secrets_lock_trust_account_password(char *domain, BOOL dolock);
 BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time);
 BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
@@ -2368,6 +2391,8 @@ BOOL trust_password_delete(char *domain);
 void reset_globals_after_fork(void);
 BOOL secrets_store_ldap_pw(char* dn, char* pw);
 BOOL fetch_ldap_pw(char *dn, char* pw, int len);
+BOOL secrets_named_mutex(const char *name, unsigned int timeout);
+void secrets_named_mutex_release(char *name);
 
 /* The following definitions come from passdb/smbpassfile.c  */
 
@@ -2420,10 +2445,10 @@ WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
-                            fstring printername, fstring architecture, uint32 version);
+                            fstring drivername, fstring architecture, uint32 version);
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
-BOOL printer_driver_in_use (char *arch, char *driver);
-WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user,
+BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 );
+WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user,
                               uint32 version, BOOL delete_files );
 BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
                                  fstring value, uint8 **data, uint32 *type, uint32 *len);
@@ -2438,7 +2463,7 @@ WERROR printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 
 /* The following definitions come from printing/pcap.c  */
 
-BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
+BOOL pcap_printername_ok(char *pszPrintername, const char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)(char *, char *));
 
 /* The following definitions come from printing/print_cups.c  */
@@ -2492,13 +2517,13 @@ BOOL profile_setup(BOOL rdonly);
 
 NTSTATUS cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16]);
 BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd);
-NTSTATUS cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
-                              uint32 smb_userid_low, char *password,
-                              NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
-NTSTATUS cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
-							uint32 smb_userid_low, const char lm_chal[8], 
-							const char *lm_chal_resp, const char *nt_chal_resp,
-							NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
+NTSTATUS cli_nt_login_interactive(struct cli_state *cli, char *unix_domain, char *unix_username, 
+				uint32 smb_userid_low, char *unix_password,
+				NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
+NTSTATUS cli_nt_login_network(struct cli_state *cli, char *unix_domain, char *unix_username, 
+				uint32 smb_userid_low, const char lm_chal[8], 
+				const char *lm_chal_resp, const char *nt_chal_resp,
+				NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 
 /* The following definitions come from rpc_client/cli_netlogon.c  */
@@ -2891,6 +2916,7 @@ BOOL prs_append_data(prs_struct *dst, char *src, uint32 len);
 void prs_set_endian_data(prs_struct *ps, BOOL endian);
 BOOL prs_align(prs_struct *ps);
 BOOL prs_align_uint16(prs_struct *ps);
+BOOL prs_align_uint64(prs_struct *ps);
 BOOL prs_align_needed(prs_struct *ps, uint32 needed);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
 void prs_switch_type(prs_struct *ps, BOOL io);
@@ -4630,9 +4656,13 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name);
 int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 void fail_readraw(void);
+void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T startpos, size_t nread,
+		ssize_t mincount, char *outbuf);
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
 int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length, int dum_buffsiz);
 int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, 
+		files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt);
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
@@ -4797,6 +4827,8 @@ int vfswrap_open(connection_struct *conn, const char *fname, int flags, mode_t m
 int vfswrap_close(files_struct *fsp, int fd);
 ssize_t vfswrap_read(files_struct *fsp, int fd, void *data, size_t n);
 ssize_t vfswrap_write(files_struct *fsp, int fd, const void *data, size_t n);
+ssize_t vfswrap_sendfile(int tofd, struct files_struct *fsp, int fromfd, const DATA_BLOB *hdr,
+			SMB_OFF_T offset, size_t n);
 SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
 int vfswrap_rename(connection_struct *conn, const char *oldname, const char *newname);
 int vfswrap_fsync(files_struct *fsp, int fd);
@@ -4937,6 +4969,7 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 
 /* The following definitions come from tdb/tdb.c  */
 
+void tdb_set_lock_alarm(sig_atomic_t *palarm);
 void tdb_dump_all(TDB_CONTEXT *tdb);
 int tdb_printfreelist(TDB_CONTEXT *tdb);
 enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
@@ -4966,7 +4999,8 @@ int tdb_reopen_all(void);
 
 /* The following definitions come from tdb/tdbutil.c  */
 
-int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval);
+int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout);
+int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout);
 void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval);
 int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int32 tdb_fetch_int32(TDB_CONTEXT *tdb, char *keystr);

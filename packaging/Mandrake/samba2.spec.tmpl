@@ -1,5 +1,5 @@
 %define ver 2.2.5
-%define rel 16mdk
+%define rel 17mdk
 %define vscanver 0.2.5c
 
 # 2.2.4 and 1 replace by samba-team at release
@@ -12,6 +12,14 @@
 #Check to see if p(version|release) has been replaced (1 if replaced)
 %define have_pversion %(if [ "%pversion" = `echo "pversion" |tr '[:lower:]' '[:upper:]'` ];then echo 0; else echo 1; fi)
 %define have_prelease %(if [ "%prelease" = `echo "prelease" |tr '[:lower:]' '[:upper:]'` ];then echo 0; else echo 1; fi)
+
+# We might have a prerelease:
+%define have_pre %(echo %pversion|awk '{p=0} /pre/ {p=1} {print p}')
+%if %have_pre
+%define pre_ver %(echo %pversion|sed -e 's/pre[0-9]//')
+%define pre_pre %(echo %pversion|sed -e 's/[0-9].[0-9].[0-9]//')
+%endif
+
 
 # Check to see if we are running a build from a tarball release from samba.org
 # (%have_pversion) If so, disable vscan, unless explicitly requested
@@ -117,19 +125,30 @@
 
 Summary: Samba SMB server.
 Name: samba
-%if %have_pversion
-Version: %{pversion}
-%else
-Version: %{ver}
+%if %have_pversion && %have_pre
+Version: %{pre_ver}
+%define source_ver %{pversion}
 %endif
-%if %have_prelease
+%if %have_pversion && !%have_pre
+Version: %{pversion}
+%define source_ver %{pversion}
+%endif
+%if !%have_pversion
+Version: %{ver}
+%define source_ver %{ver}
+%endif
+%if %have_prelease && !%have_pre
 Release: 1.%{prelease}mdk
-%else
+%endif
+%if %have_prelease && %have_pre
+Release: 1.0.%{pre_pre}.%{prelease}mdk
+%endif
+%if !%have_prelease
 Release: %{rel}
 %endif
 License: GPL
 Group: System/Servers
-Source: ftp://samba.org/pub/samba/samba-%{version}.tar.bz2
+Source: ftp://samba.org/pub/samba/samba-%{source_ver}.tar.bz2
 Source1: samba.log
 Source2: mount.smb
 Source3: samba.xinetd
@@ -210,7 +229,7 @@ docs directory for implementation details.
 
 %if %build_non_default
 WARNING: This RPM was built with command-line options. Please
-see README.samba-%{ver}-%{rel} in the documentation for
+see README.samba-%{version}-%{release} in the documentation for
 more information.
 %endif
 
@@ -491,9 +510,9 @@ echo "This rpm was built with default options">%{SOURCE7}
 %endif
 
 %if %build_vscan
-%setup -q -a 8
+%setup -q -a 8 -n %{name}-%{source_ver}
 %else
-%setup -q
+%setup -q -n %{name}-%{source_ver}
 %endif
 #%patch111 -p1
 %patch1 -p1 -b .smbw
@@ -1102,7 +1121,7 @@ fi
 %defattr(-,root,root)
 %doc README COPYING Manifest Read-Manifest-Now
 %doc WHATSNEW.txt Roadmap
-%doc README.samba-%{ver}-%{rel}
+%doc README.samba-%{version}-%{release}
 %doc docs
 %doc examples
 %doc swat/README
@@ -1263,6 +1282,10 @@ fi
 %endif
 
 %changelog
+* Thu Sep 05 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.5-17mdk
+- changed localhost entry in /etc/xinetd.d/swat to 127.0.0.1
+  for resolving issue.
+
 * Thu Aug 15 2002 Buchan Milne <bgmilne@linux-mandrake.com> 2.2.5-16mdk
 - Don't remove swat xinetd config (that's what RPM is for!)
 - Don't clean menus twice

@@ -1205,6 +1205,12 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 	if (!prs_uint32("size", ps, depth, &r_u->size))
 		return False;
 	
+	if (UNMARSHALLING(ps) && r_u->size) {
+		r_u->data = prs_alloc_mem(ps, r_u->size);
+		if(!r_u->data)
+			return False;
+	}
+
 	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
 		return False;
 		
@@ -2282,7 +2288,7 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 {
 	prs_struct *ps=&buffer->prs;
 	uint32 dm_offset, sd_offset, current_offset;
-	uint32 dummy_value = 0;
+	uint32 dummy_value = 0, has_secdesc = 0;
 	
 	prs_debug(ps, depth, desc, "smb_io_printer_info_2");
 	depth++;	
@@ -2320,9 +2326,8 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 
 	/* save current offset for the sec_desc */
 	sd_offset = prs_offset(ps);
-	if (!prs_uint32("sec_desc", ps, depth, &dummy_value))
+	if (!prs_uint32("sec_desc", ps, depth, &has_secdesc))
 		return False;
-
 	
 	/* save current location so we can pick back up here */
 	current_offset = prs_offset(ps);
@@ -2334,10 +2339,12 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 		return False;
 	
 	/* parse the sec_desc */
-	if (!prs_set_offset(ps, sd_offset))
-		return False;
-	if (!smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
-		return False;
+	if (has_secdesc) {
+		if (!prs_set_offset(ps, sd_offset))
+			return False;
+		if (!smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
+			return False;
+	}
 		
 	/* pick up where we left off */
 	if (!prs_set_offset(ps, current_offset))
@@ -2360,13 +2367,6 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 	if (!prs_uint32("averageppm", ps, depth, &info->averageppm))
 		return False;
 
-#if 0 /* JFMTEST */
-	if (!prs_uint32_post("secdesc_ptr", ps, depth, NULL, sec_offset, info->secdesc ? prs_offset(ps)-buffer->struct_start : 0 ))
-		return False;
-
-	if (!sec_io_desc("secdesc", &info->secdesc, ps, depth)) 
-		return False;
-#endif
 	return True;
 }
 
@@ -3152,7 +3152,8 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	 * it is easier to maintain the calculation here and
 	 * not place the burden on the caller to remember.   --jerry
 	 */
-	size += size % 4;
+	if ((size % 4) != 0) 
+		size += 4 - (size % 4);
 	
 	return size;
 }
@@ -4861,60 +4862,56 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 	if(!prs_align(ps))
 		return False;
 
+	/* 
+	 * I know this seems weird, but I have no other explanation.
+	 * This is observed behavior on both NT4 and 2K servers.
+	 * --jerry
+	 */
+	 
+	if (!prs_align_uint64(ps))
+		return False;
 
 	/* parse the main elements the packet */
 
-	if(!prs_uint32("version", ps, depth, &il->version))
+	if(!prs_uint32("cversion       ", ps, depth, &il->version))
 		return False;
-
-	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
+	if(!prs_uint32("name           ", ps, depth, &il->name_ptr))
 		return False;	
-	/*
-	 * If name_ptr is NULL then the next 4 bytes are the name_ptr. A driver 
-	 * with a NULL name just isn't a driver For example: "HP LaserJet 4si"
-	 * from W2K CDROM (which uses unidriver). JohnR 010205
-	 */
-	if (!il->name_ptr) {
-		DEBUG(5,("spool_io_printer_driver_info_level_6: name_ptr is NULL! Get next value\n"));
-		if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
+	if(!prs_uint32("environment    ", ps, depth, &il->environment_ptr))
 			return False;	
-	}
-	
-	if(!prs_uint32("environment_ptr", ps, depth, &il->environment_ptr))
+	if(!prs_uint32("driverpath     ", ps, depth, &il->driverpath_ptr))
 		return False;
-	if(!prs_uint32("driverpath_ptr", ps, depth, &il->driverpath_ptr))
+	if(!prs_uint32("datafile       ", ps, depth, &il->datafile_ptr))
 		return False;
-	if(!prs_uint32("datafile_ptr", ps, depth, &il->datafile_ptr))
+	if(!prs_uint32("configfile     ", ps, depth, &il->configfile_ptr))
 		return False;
-	if(!prs_uint32("configfile_ptr", ps, depth, &il->configfile_ptr))
+	if(!prs_uint32("helpfile       ", ps, depth, &il->helpfile_ptr))
 		return False;
-	if(!prs_uint32("helpfile_ptr", ps, depth, &il->helpfile_ptr))
+	if(!prs_uint32("monitorname    ", ps, depth, &il->monitorname_ptr))
 		return False;
-	if(!prs_uint32("monitorname_ptr", ps, depth, &il->monitorname_ptr))
+	if(!prs_uint32("defaultdatatype", ps, depth, &il->defaultdatatype_ptr))
 		return False;
-	if(!prs_uint32("defaultdatatype_ptr", ps, depth, &il->defaultdatatype_ptr))
+	if(!prs_uint32("dependentfiles ", ps, depth, &il->dependentfiles_len))
 		return False;
-	if(!prs_uint32("dependentfiles_len", ps, depth, &il->dependentfiles_len))
+	if(!prs_uint32("dependentfiles ", ps, depth, &il->dependentfiles_ptr))
 		return False;
-	if(!prs_uint32("dependentfiles_ptr", ps, depth, &il->dependentfiles_ptr))
+	if(!prs_uint32("previousnames  ", ps, depth, &il->previousnames_len))
 		return False;
-	if(!prs_uint32("previousnames_len", ps, depth, &il->previousnames_len))
+	if(!prs_uint32("previousnames  ", ps, depth, &il->previousnames_ptr))
 		return False;
-	if(!prs_uint32("previousnames_ptr", ps, depth, &il->previousnames_ptr))
+	if(!smb_io_time("driverdate    ", &il->driverdate, ps, depth))
 		return False;
-	if(!smb_io_time("driverdate", &il->driverdate, ps, depth))
+	if(!prs_uint32("dummy4         ", ps, depth, &il->dummy4))
 		return False;
-	if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
+	if(!prs_uint64("driverversion  ", ps, depth, &il->driverversion))
 		return False;
-	if(!prs_uint64("driverversion", ps, depth, &il->driverversion))
+	if(!prs_uint32("mfgname        ", ps, depth, &il->mfgname_ptr))
 		return False;
-	if(!prs_uint32("mfgname_ptr", ps, depth, &il->mfgname_ptr))
+	if(!prs_uint32("oemurl         ", ps, depth, &il->oemurl_ptr))
 		return False;
-	if(!prs_uint32("oemurl_ptr", ps, depth, &il->oemurl_ptr))
+	if(!prs_uint32("hardwareid     ", ps, depth, &il->hardwareid_ptr))
 		return False;
-	if(!prs_uint32("hardwareid_ptr", ps, depth, &il->hardwareid_ptr))
-		return False;
-	if(!prs_uint32("provider_ptr", ps, depth, &il->provider_ptr))
+	if(!prs_uint32("provider       ", ps, depth, &il->provider_ptr))
 		return False;
 
 	/* parse the structures in the packet */
@@ -5746,6 +5743,14 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 	if(!prs_uint32("valuesize", ps, depth, &r_u->valuesize))
 		return False;
 
+	if (UNMARSHALLING(ps) && r_u->valuesize) {
+		r_u->value = (uint16 *)prs_alloc_mem(ps, r_u->valuesize * 2);
+		if (!r_u->value) {
+			DEBUG(0, ("spoolss_io_r_enumprinterdata: out of memory for printerdata value\n"));
+			return False;
+		}
+	}
+
 	if(!prs_uint16uni(False, "value", ps, depth, r_u->value, r_u->valuesize ))
 		return False;
 
@@ -5760,6 +5765,15 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 
 	if(!prs_uint32("datasize", ps, depth, &r_u->datasize))
 		return False;
+
+	if (UNMARSHALLING(ps) && r_u->datasize) {
+		r_u->data = (uint8 *)prs_alloc_mem(ps, r_u->datasize);
+		if (!r_u->data) {
+			DEBUG(0, ("spoolss_io_r_enumprinterdata: out of memory for printerdata data\n"));
+			return False;
+		}
+	}
+
 	if(!prs_uint8s(False, "data", ps, depth, r_u->data, r_u->datasize))
 		return False;
 	if(!prs_align(ps))
@@ -6648,6 +6662,12 @@ BOOL spoolss_io_r_getprinterdataex(char *desc, SPOOL_R_GETPRINTERDATAEX *r_u, pr
 	if (!prs_uint32("size", ps, depth, &r_u->size))
 		return False;
 	
+	if (UNMARSHALLING(ps) && r_u->size) {
+		r_u->data = prs_alloc_mem(ps, r_u->size);
+		if(!r_u->data)
+			return False;
+	}
+
 	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
 		return False;
 		
@@ -6818,6 +6838,7 @@ BOOL spoolss_io_q_enumprinterdataex(char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, 
 
 /*******************************************************************
 ********************************************************************/  
+
 static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps, 
 				PRINTER_ENUM_VALUES_CTR *ctr, int depth)
 {
@@ -6830,9 +6851,6 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	prs_debug(ps, depth, desc, "spoolss_io_printer_enum_values_ctr");
 	depth++;	
 	
-	if (!prs_uint32("size", ps, depth, &ctr->size))
-		return False;
-	
 	/* 
 	 * offset data begins at 20 bytes per structure * size_of_array.
 	 * Don't forget the uint32 at the beginning 
@@ -6842,8 +6860,14 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	
 	/* first loop to write basic enum_value information */
 	
-	for (i=0; i<ctr->size_of_array; i++) 
-	{
+	if (UNMARSHALLING(ps)) {
+		ctr->values = (PRINTER_ENUM_VALUES *)prs_alloc_mem(
+			ps, ctr->size_of_array * sizeof(PRINTER_ENUM_VALUES));
+		if (!ctr->values)
+			return False;
+	}
+
+	for (i=0; i<ctr->size_of_array; i++) {
 		valuename_offset = current_offset;
 		if (!prs_uint32("valuename_offset", ps, depth, &valuename_offset))
 			return False;
@@ -6872,12 +6896,18 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	 * attention to 2-byte alignment here....
 	 */
 	
-	for (i=0; i<ctr->size_of_array; i++) 
-	{
+	for (i=0; i<ctr->size_of_array; i++) {
 	
 		if (!prs_unistr("valuename", ps, depth, &ctr->values[i].valuename))
 			return False;
 		
+		if (UNMARSHALLING(ps)) {
+			ctr->values[i].data = (uint8 *)prs_alloc_mem(
+				ps, ctr->values[i].data_len);
+			if (!ctr->values[i].data)
+				return False;
+		}
+
 		if (!prs_uint8s(False, "data", ps, depth, ctr->values[i].data, ctr->values[i].data_len))
 			return False;
 			
@@ -6888,37 +6918,54 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	return True;	
 }
 
-
 /*******************************************************************
  * write a structure.
  ********************************************************************/  
 
 BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, prs_struct *ps, int depth)
 {
+	uint32 data_offset, end_offset;
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdataex");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
-		
-	if (!spoolss_io_printer_enum_values_ctr("", ps, &r_u->ctr, depth ))
+
+	if (!prs_uint32("size", ps, depth, &r_u->ctr.size))
 		return False;
-	
+
+	data_offset = prs_offset(ps);
+
+	if (!prs_set_offset(ps, data_offset + r_u->ctr.size))
+		return False;
+
 	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
 		return False;
-		
+
 	if(!prs_uint32("returned",   ps, depth, &r_u->returned))
 		return False;
 
 	if(!prs_werror("status",     ps, depth, &r_u->status))
 		return False;
 
-	return True;
-}
+	r_u->ctr.size_of_array = r_u->returned;
 
+	end_offset = prs_offset(ps);
+
+	if (!prs_set_offset(ps, data_offset))
+		return False;
+
+	if (r_u->ctr.size)
+		if (!spoolss_io_printer_enum_values_ctr("", ps, &r_u->ctr, depth ))
+			return False;
+
+	if (!prs_set_offset(ps, end_offset))
+		return False;
+																	        	return True;
+}
 
 /*******************************************************************
  * write a structure.
