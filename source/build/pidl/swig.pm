@@ -71,8 +71,15 @@ sub XFromPython($$)
 	    $result .= DebugElement($e);
 	}
     } else {
-	# Non-scalar type
-	$result .= DebugElement($e);
+	if ($e->{POINTERS} == 0) {
+	    # Non-scalar type, no pointer
+	    $result .= DebugElement($e);
+	} elsif ($e->{POINTERS} == 1) {
+	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python(mem_ctx, $obj);\n";
+	} else {
+	    # Non-scalar type, multiple pointers
+	    $result .= DebugElement($e);
+	}
     }
 
     return $result;
@@ -111,8 +118,15 @@ sub XToPython($$)
 	    $result .= DebugElement($e);
 	}
     } else {
-	# Non-scalar type
-	$result .= DebugElement($e);
+	if ($e->{POINTERS} == 0) {
+	    # Non-scalar type, no pointer
+	    $result .= DebugElement($e);
+	} elsif ($e->{POINTERS} == 1) {
+	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python(mem_ctx, $obj);\n";
+	} else {
+	    # Non-scalar type, multiple pointers
+	    $result .= DebugElement($e);
+	}
     }
 
     return $result;
@@ -126,28 +140,32 @@ sub ParseFunction($)
 
     $res .= "/* Convert Python dict to struct $fn->{NAME}.in */\n\n";
 
-    $res .= "int $fn->{NAME}_from_python(TALLOC_CTX *mem_ctx, struct $fn->{NAME} *s, PyObject *obj)\n";
+    $res .= "struct $fn->{NAME} *$fn->{NAME}_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)\n";
     $res .= "{\n";
+
+    $res .= "\tstruct $fn->{NAME} *s = talloc(mem_ctx, sizeof(struct $fn->{NAME}));\n\n";
 
     foreach my $e (@{$fn->{DATA}}) {
 	$res .= XFromPython($e, "in.") if util::has_property($e, "in")
     }
 
     $res .= "\n";
-    $res .= "\treturn True;\n";
+    $res .= "\treturn s;\n";
     $res .= "}\n\n";
 
     $res .= "/* Convert struct $fn->{NAME}.out to Python dict */\n\n";
 
-    $res .= "int $fn->{NAME}_to_python(TALLOC_CTX *mem_ctx, PyObject *obj, struct $fn->{NAME} *s)\n";
+    $res .= "PyObject *$fn->{NAME}_to_python(TALLOC_CTX *mem_ctx, struct $fn->{NAME} *s)\n";
     $res .= "{\n";
+
+    $res .= "\tPyObject *obj = PyDict_New();\n\n";
 
     foreach my $e (@{$fn->{DATA}}) {
 	$res .= XToPython($e, "out.") if util::has_property($e, "out")
     }
 
     $res .= "\n";
-    $res .= "\treturn True;\n";
+    $res .= "\treturn obj;\n";
     $res .= "}\n\n";
 
     $res .= "%}\n\n";
@@ -192,28 +210,31 @@ sub ParseStruct($)
     $res .= "%{\n\n";
     $res .= "/* Convert Python dict to struct $s->{NAME} */\n\n";
     
-    $res .= "int python_to_$s->{NAME}(TALLOC_CTX *mem_ctx, struct $s->{NAME} *s, PyObject *obj)\n";
+    $res .= "struct $s->{NAME} *$s->{NAME}_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)\n";
     $res .= "{\n";
+    $res .= "\tstruct $s->{NAME} *s = talloc(mem_ctx, sizeof(struct $s->{NAME}));\n\n";
 
     foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
 	$res .= XFromPython($e, "");
     }
 
     $res .= "\n";
-    $res .= "\treturn TRUE;\n";
+    $res .= "\treturn s;\n";
     $res .= "}\n\n";
 
     $res .= "/* Convert struct $s->{NAME} to Python dict */\n\n";
 
-    $res .= "int $s->{NAME}_to_python(TALLOC_CTX *mem_ctx, PyObject *obj, struct $s->{NAME} *s)\n";
+    $res .= "PyObject *$s->{NAME}_to_python(TALLOC_CTX *mem_ctx, struct $s->{NAME} *s)\n";
     $res .= "{\n";
+    
+    $res .= "\tPyObject *obj = PyDict_New();\n\n";
 
     foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
 	$res .= XToPython($e, "");
     }
 
     $res .= "\n";
-    $res .= "\treturn TRUE;\n";
+    $res .= "\treturn obj;\n";
     $res .= "}\n";
 
     $res .= "\n%}\n\n";    
