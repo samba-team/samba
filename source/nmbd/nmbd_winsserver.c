@@ -150,8 +150,8 @@ BOOL initialise_wins(void)
     pstring name;
     struct in_addr *ip_list;
     int type = 0;
-    int nb_flags;
-    int ttl;
+    uint16 nb_flags;
+    time_t ttl;
     enum name_source source;
     char *ptr;
     char *p;
@@ -262,8 +262,8 @@ BOOL initialise_wins(void)
     }
       
     /* Decode the netbios flags (hex) and the time-to-live (in seconds). */
-    sscanf(nb_flags_str,"%x",&nb_flags);
-    sscanf(ttl_str,"%d",&ttl);
+    sscanf(nb_flags_str,"%hx",&nb_flags);
+    sscanf(ttl_str,"%ld",&ttl);
 
     /* add all entries that have 60 seconds or more to live */
     if ((ttl - 60) > time_now || ttl == PERMANENT_TTL)
@@ -273,7 +273,7 @@ BOOL initialise_wins(void)
       if(ttl != PERMANENT_TTL)
         ttl -= time_now;
     
-      DEBUG(4, ("initialise_wins: add name: %s#%02x ttl = %d first IP %s flags = %2x\n",
+      DEBUG(4, ("initialise_wins: add name: %s#%02x ttl = %ld first IP %s flags = %2hx\n",
            name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
 
       namerec = add_name_to_subnet(wins_server_subnet, name, type, nb_flags, 
@@ -282,7 +282,7 @@ BOOL initialise_wins(void)
     }
     else
     {
-      DEBUG(4, ("initialise_wins: not adding name (ttl problem) %s#%02x ttl = %d first IP %s flags = %2x\n",
+      DEBUG(4, ("initialise_wins: not adding name (ttl problem) %s#%02x ttl = %ld first IP %s flags = %2hx\n",
              name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
     }
 
@@ -1549,9 +1549,9 @@ void wins_write_database(void)
 
     if (namerec->source == REGISTER_NAME)
     {
-      fprintf(fp, "%s#%02x %d ",
-	      namerec->name.name,namerec->name.name_type, /* Ignore scope. */
-	      (int)namerec->death_time);
+      fprintf(fp, "%s#%02x %ld ",
+               namerec->name.name,namerec->name.name_type, /* Ignore scope. */
+               namerec->death_time);
 
       for (i = 0; i < namerec->num_ips; i++)
         fprintf(fp, "%s ", inet_ntoa(namerec->ip[i]));

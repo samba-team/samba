@@ -41,7 +41,8 @@ static struct subnet_record *call_subrec;
   This is the NetServerEnum callback.
   ******************************************************************/
 
-static void callback(char *sname, uint32 stype, char *comment)
+static void callback(FILE *hnd, enum display_type display, enum action_type action,
+				char *sname, uint32 stype, char *comment)
 {
   struct work_record *work;
 
@@ -99,6 +100,7 @@ static void sync_browse_lists(struct subnet_record *subrec, struct work_record *
 {
   extern fstring local_machine;
   static struct cli_state cli;
+  static int t_idx;
   uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 
   DEBUG(2,("%s: sync_browse_lists: Sync browse lists with server %s<%02x> at IP %s for workgroup %s\n",
@@ -119,7 +121,7 @@ Do not sync with ourselves.\n", work->work_group ));
     return;
   }
 
-  if (!cli_session_request(&cli, name, nm_type, local_machine))
+  if (!cli_session_request(&cli, name, nm_type, local_machine, 0x0))
   {
     DEBUG(0,("sync_browse_lists: %s rejected the browse sync session\n",name));
     cli_shutdown(&cli);
@@ -133,7 +135,7 @@ Do not sync with ourselves.\n", work->work_group ));
     return;
   }
 
-  if (!cli_session_setup(&cli, "", "", 1, "", 0, work->work_group))
+  if (!cli_session_setup(&cli, "", "", 1, NULL, 0, work->work_group))
   {
     DEBUG(0,("sync_browse_lists: %s rejected the browse sync sessionsetup\n", 
              name));
@@ -141,7 +143,7 @@ Do not sync with ourselves.\n", work->work_group ));
     return;
   }
 
-  if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1))
+  if (!cli_send_tconX(&cli, &t_idx, "IPC$", "IPC", "", 1))
   {
     DEBUG(0,("sync_browse_lists: %s refused browse sync IPC$ connect\n", name));
     cli_shutdown(&cli);
@@ -152,13 +154,15 @@ Do not sync with ourselves.\n", work->work_group ));
   call_subrec = subrec;
 
   /* Fetch a workgroup list. */
-  cli_NetServerEnum(&cli, work->work_group, 
-                    local_type|SV_TYPE_DOMAIN_ENUM,
+  cli_NetServerEnum(&cli, t_idx,
+	                NULL, DISPLAY_NONE, ACTION_ENUMERATE,
+	                work->work_group, local_type|SV_TYPE_DOMAIN_ENUM,
                     callback);
 
   /* Now fetch a server list. */
-  cli_NetServerEnum(&cli, work->work_group, 
-                    local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
+  cli_NetServerEnum(&cli, t_idx,
+	                NULL, DISPLAY_NONE, ACTION_ENUMERATE,
+	                work->work_group, local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
                     callback);
 
   cli_shutdown(&cli);
