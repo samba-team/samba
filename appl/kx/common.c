@@ -53,10 +53,6 @@ size_t cookie_len = sizeof(cookie);
 #define X_PIPE_PATH "/tmp/.X11-pipe/X"
 #endif
 
-#ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK 0x7f000001
-#endif
-
 /*
  * Allocate a unix domain socket in `s' for display `dpy' and with
  * filename `pattern'
