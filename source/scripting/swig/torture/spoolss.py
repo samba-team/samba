@@ -36,6 +36,30 @@ def test_ClosePrinter(pipe, handle):
     dcerpc.spoolss_ClosePrinter(pipe, r)
 
 
+def test_GetPrinter(pipe, handle):
+
+    r = {}
+    r['handle'] = handle
+
+    for level in [1, 2, 3]:
+
+        r['level'] = level
+        r['buffer'] = None
+        r['buf_size'] = 0
+
+        result = dcerpc.spoolss_GetPrinter(pipe, r)
+
+        print result
+
+        if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
+            r['buffer'] = result['buf_size'] * '\x00'
+            r['buf_size'] = result['buf_size']
+
+            result = dcerpc.spoolss_GetPrinter(pipe, r)
+
+            print result
+
+
 def test_EnumPrinters(pipe):
 
     print 'testing spoolss_EnumPrinters'
@@ -70,6 +94,8 @@ def test_EnumPrinters(pipe):
     for printer in printer_names:
 
         handle = test_OpenPrinterEx(pipe, printer)
+
+        test_GetPrinter(pipe, handle)
 
         test_ClosePrinter(pipe, handle)
         
