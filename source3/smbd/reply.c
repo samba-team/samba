@@ -2239,7 +2239,9 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	set_message(outbuf,12,0,True);
 
 	if (global_client_caps & CAP_LARGE_READX) {
-		smb_maxcnt |= ((((size_t)SVAL(inbuf,smb_vwv7)) & 1 )<<16);
+		if (SVAL(inbuf,smb_vwv7) == 1) {
+			smb_maxcnt |= (1<<16);
+		}
 		if (smb_maxcnt > BUFFER_SIZE) {
 			DEBUG(0,("reply_read_and_X - read too large (%u) for reply buffer %u\n",
 				(unsigned int)smb_maxcnt, (unsigned int)BUFFER_SIZE));
