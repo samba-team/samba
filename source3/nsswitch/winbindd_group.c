@@ -802,7 +802,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		/* skip remainder of loop if we idn;t retrieve any groups */
 		
 		if (num_domain_entries == 0) 
-			goto next_group;
+			continue;
 
 		/* setup the groups struct to contain all the groups 
 		   retrieved for this domain */
@@ -849,8 +849,6 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 			extra_data[extra_data_len++] = ',';
 		}
-
-        next_group:
 	}
 
 	/* Assign extra_data fields in response structure */
