@@ -59,6 +59,7 @@
 
 typedef struct kadm5_server_context {
     krb5_context context;
+    krb5_boolean my_context;
     kadm5_config_params config;
     HDB *db;
     krb5_principal caller;
@@ -67,7 +68,14 @@ typedef struct kadm5_server_context {
 kadm5_ret_t
 _kadm5_s_init_context __P((
 	kadm5_server_context **ctx,
-	kadm5_config_params *params));
+	kadm5_config_params *params,
+	krb5_context context));
+
+kadm5_ret_t
+_kadm5_set_keys __P((
+	kadm5_server_context *context,
+	hdb_entry *ent,
+	const char *password));
 
 kadm5_ret_t
 _kadm5_set_modifier __P((
