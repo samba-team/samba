@@ -1,3 +1,9 @@
+2004-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rc2.c: handle non blocksized cbc messages
+
+	* aes.[ch]: add AES_cbc_encrypt
+
 2004-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rc2test.c: test vectors from RFC2268
