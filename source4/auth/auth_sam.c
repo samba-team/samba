@@ -332,19 +332,19 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		if (group_ret > 0 && 
 		    !(groupSIDs = talloc_realloc_p(groupSIDs, 
 						   struct dom_sid *, group_ret))) {
-			talloc_destroy((*server_info)->mem_ctx);
+			talloc_free(*server_info);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* Need to unroll some nested groups, but not aliases */
 		for (i = 0; i < group_ret; i++) {
 			sidstr = ldb_msg_find_string(group_msgs[i], "objectSid", NULL);
-			groupSIDs[i] = dom_sid_parse_talloc((*server_info)->mem_ctx, sidstr);
+			groupSIDs[i] = dom_sid_parse_talloc(*server_info, sidstr);
 		}
 		
 		sidstr = ldb_msg_find_string(msgs[0], "objectSid", NULL);
-		user_sid = dom_sid_parse_talloc((*server_info)->mem_ctx, sidstr);
-		primary_group_sid = dom_sid_parse_talloc((*server_info)->mem_ctx, sidstr);
+		user_sid = dom_sid_parse_talloc(*server_info, sidstr);
+		primary_group_sid = dom_sid_parse_talloc(*server_info, sidstr);
 		primary_group_sid->sub_auths[primary_group_sid->num_auths-1] 
 			= samdb_result_uint(msgs[0], "primaryGroupID", 0);
 
@@ -356,29 +356,29 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	}
 
 	(*server_info)->account_name 
-		= talloc_strdup((*server_info)->mem_ctx, 
+		= talloc_strdup(*server_info, 
 				samdb_result_string(msgs[0], "sAMAccountName", ""));
 
 	(*server_info)->domain
-		= talloc_strdup((*server_info)->mem_ctx, 
+		= talloc_strdup(*server_info, 
 				samdb_result_string(msgs_domain[0], "name", ""));
 
 	(*server_info)->full_name 
-		= talloc_strdup((*server_info)->mem_ctx, 
+		= talloc_strdup(*server_info, 
 				samdb_result_string(msgs[0], "displayName", ""));
 
 	(*server_info)->logon_script 
-		= talloc_strdup((*server_info)->mem_ctx, 
+		= talloc_strdup(*server_info, 
 				samdb_result_string(msgs[0], "scriptPath", ""));
 	(*server_info)->profile_path 
-		= talloc_strdup((*server_info)->mem_ctx, 
+		= talloc_strdup(*server_info, 
 				samdb_result_string(msgs[0], "profilePath", ""));
 	(*server_info)->home_directory 
-		= talloc_strdup((*server_info)->mem_ctx, 
+		= talloc_strdup(*server_info, 
 				samdb_result_string(msgs[0], "homeDirectory", ""));
 
 	(*server_info)->home_drive 
-		= talloc_strdup((*server_info)->mem_ctx, 
+		= talloc_strdup(*server_info, 
 				samdb_result_string(msgs[0], "homeDrive", ""));
 
 	(*server_info)->last_logon = samdb_result_nttime(msgs[0], "lastLogon", 0);
@@ -408,7 +408,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	    || !(*server_info)->profile_path
 	    || !(*server_info)->home_directory
 	    || !(*server_info)->home_drive) {
-		talloc_destroy((*server_info)->mem_ctx);
+		talloc_destroy(*server_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
