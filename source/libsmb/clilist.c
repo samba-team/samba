@@ -104,7 +104,7 @@ static int interpret_long_filename(struct cli_state *cli,
 		case 260: /* NT uses this, but also accepts 2 */
 			if (finfo) {
 				int ret = SVAL(p,0);
-				int namelen, slen;
+				int namelen;
 				p += 4; /* next entry offset */
 				p += 4; /* fileindex */
 				
@@ -131,7 +131,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				finfo->mode = CVAL(p,0); p += 4;
 				namelen = IVAL(p,0); p += 4;
 				p += 4; /* EA size */
-				slen = SVAL(p, 0);
+				/* slen = SVAL(p, 0); */
 				p += 2; 
 				{
 					/* stupid NT bugs. grr */
