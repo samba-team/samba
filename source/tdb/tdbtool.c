@@ -363,6 +363,8 @@ int main(int argc, char *argv[])
         } else if (strcmp(tok,"dump") == 0) {
             bIterate = 0;
             tdb_traverse(tdb, print_rec, NULL);
+        } else if (strcmp(tok,"list") == 0) {
+            tdb_dump_all(tdb);
         } else if (strcmp(tok,"info") == 0) {
             info_tdb();
         } else if (strcmp(tok, "free") == 0) {
