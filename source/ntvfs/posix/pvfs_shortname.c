@@ -22,6 +22,7 @@
 
 #include "include/includes.h"
 #include "vfs_posix.h"
+#include "system/iconv.h"
 
 /*
   this mangling scheme uses the following format

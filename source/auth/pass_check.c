@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+#include "system/iconv.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

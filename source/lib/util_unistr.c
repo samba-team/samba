@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/iconv.h"
 
 /* these 2 tables define the unicode case handling.  They are loaded
    at startup either via mmap() or read() from the lib directory */

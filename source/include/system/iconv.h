@@ -29,3 +29,7 @@
 #endif
 #endif
 
+#ifdef HAVE_CTYPE_H
+#include <ctype.h>
+#endif
+

@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   database wrap headers
+   resource system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -20,18 +20,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct ldb_wrap {
-	struct ldb_context *ldb;
-
-	const char *url;
-	struct ldb_wrap *next, *prev;
-};
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 
 
-struct tdb_wrap {
-	TDB_CONTEXT *tdb;
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
 
-	const char *name;
-	struct tdb_wrap *next, *prev;
-};
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
 

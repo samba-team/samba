@@ -38,6 +38,7 @@
 #include "includes.h"
 #include "clitar.h"
 #include "system/time.h"
+#include "system/iconv.h"
 
 /**
  Convert list of tokens to array; dependent on above routine.
