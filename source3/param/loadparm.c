@@ -1878,6 +1878,11 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
        return(True);
      }
 
+   if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
+	   DEBUG(1,("WARNING: The \"%s\"option is deprecated\n",
+		    pszParmName));
+   }
+
    def_ptr = parm_table[parmnum].ptr;
 
    /* we might point at a service, the default service or a global */
