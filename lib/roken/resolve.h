@@ -36,6 +36,62 @@
 #ifndef __RESOLVE_H__
 #define __RESOLVE_H__
 
+typedef enum {
+	rk_ns_t_invalid = 0,	/* Cookie. */
+	rk_ns_t_a = 1,		/* Host address. */
+	rk_ns_t_ns = 2,		/* Authoritative server. */
+	rk_ns_t_md = 3,		/* Mail destination. */
+	rk_ns_t_mf = 4,		/* Mail forwarder. */
+	rk_ns_t_cname = 5,	/* Canonical name. */
+	rk_ns_t_soa = 6,	/* Start of authority zone. */
+	rk_ns_t_mb = 7,		/* Mailbox domain name. */
+	rk_ns_t_mg = 8,		/* Mail group member. */
+	rk_ns_t_mr = 9,		/* Mail rename name. */
+	rk_ns_t_null = 10,	/* Null resource record. */
+	rk_ns_t_wks = 11,	/* Well known service. */
+	rk_ns_t_ptr = 12,	/* Domain name pointer. */
+	rk_ns_t_hinfo = 13,	/* Host information. */
+	rk_ns_t_minfo = 14,	/* Mailbox information. */
+	rk_ns_t_mx = 15,	/* Mail routing information. */
+	rk_ns_t_txt = 16,	/* Text strings. */
+	rk_ns_t_rp = 17,	/* Responsible person. */
+	rk_ns_t_afsdb = 18,	/* AFS cell database. */
+	rk_ns_t_x25 = 19,	/* X_25 calling address. */
+	rk_ns_t_isdn = 20,	/* ISDN calling address. */
+	rk_ns_t_rt = 21,	/* Router. */
+	rk_ns_t_nsap = 22,	/* NSAP address. */
+	rk_ns_t_nsap_ptr = 23,	/* Reverse NSAP lookup (deprecated). */
+	rk_ns_t_sig = 24,	/* Security signature. */
+	rk_ns_t_key = 25,	/* Security key. */
+	rk_ns_t_px = 26,	/* X.400 mail mapping. */
+	rk_ns_t_gpos = 27,	/* Geographical position (withdrawn). */
+	rk_ns_t_aaaa = 28,	/* Ip6 Address. */
+	rk_ns_t_loc = 29,	/* Location Information. */
+	rk_ns_t_nxt = 30,	/* Next domain (security). */
+	rk_ns_t_eid = 31,	/* Endpoint identifier. */
+	rk_ns_t_nimloc = 32,	/* Nimrod Locator. */
+	rk_ns_t_srv = 33,	/* Server Selection. */
+	rk_ns_t_atma = 34,	/* ATM Address */
+	rk_ns_t_naptr = 35,	/* Naming Authority PoinTeR */
+	rk_ns_t_kx = 36,	/* Key Exchange */
+	rk_ns_t_cert = 37,	/* Certification record */
+	rk_ns_t_a6 = 38,	/* IPv6 address (deprecates AAAA) */
+	rk_ns_t_dname = 39,	/* Non-terminal DNAME (for IPv6) */
+	rk_ns_t_sink = 40,	/* Kitchen sink (experimentatl) */
+	rk_ns_t_opt = 41,	/* EDNS0 option (meta-RR) */
+	rk_ns_t_apl = 42,	/* Address prefix list (RFC 3123) */
+	rk_ns_t_sshfp = 44,	/* SSH fingerprint */
+	rk_ns_t_tkey = 249,	/* Transaction key */
+	rk_ns_t_tsig = 250,	/* Transaction signature. */
+	rk_ns_t_ixfr = 251,	/* Incremental zone transfer. */
+	rk_ns_t_axfr = 252,	/* Transfer zone of authority. */
+	rk_ns_t_mailb = 253,	/* Transfer mailbox records. */
+	rk_ns_t_maila = 254,	/* Transfer mail agent records. */
+	rk_ns_t_any = 255,	/* Wildcard match. */
+	rk_ns_t_zxfr = 256,	/* BIND-specific, nonstandard. */
+	rk_ns_t_max = 65536
+} rk_ns_type;
+
 /* We use these, but they are not always present in <arpa/nameser.h> */
 
 #ifndef C_IN

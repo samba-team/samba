@@ -53,26 +53,26 @@ RCSID("$Id$");
 
 #if (defined(HAVE_RES_SEARCH) || defined(HAVE_RES_NSEARCH)) && defined(HAVE_DN_EXPAND)
 
-#define DECL(X) {#X, T_##X}
+#define DECL(X) {#X, rk_ns_t_##X}
 
 static struct stot{
     const char *name;
     int type;
 }stot[] = {
-    DECL(A),
-    DECL(AAAA),
-    DECL(NS),
-    DECL(CNAME),
-    DECL(SOA),
-    DECL(PTR),
-    DECL(MX),
-    DECL(TXT),
-    DECL(AFSDB),
-    DECL(SIG),
-    DECL(KEY),
-    DECL(SRV),
-    DECL(NAPTR),
-    DECL(SSHFP),
+    DECL(a),
+    DECL(aaaa),
+    DECL(ns),
+    DECL(cname),
+    DECL(soa),
+    DECL(ptr),
+    DECL(mx),
+    DECL(txt),
+    DECL(afsdb),
+    DECL(sig),
+    DECL(key),
+    DECL(srv),
+    DECL(naptr),
+    DECL(sshfp),
     {NULL, 	0}
 };
 
@@ -155,9 +155,9 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
     (*rr)->ttl = ttl;
     (*rr)->size = size;
     switch(type){
-    case T_NS:
-    case T_CNAME:
-    case T_PTR:
+    case rk_ns_t_ns:
+    case rk_ns_t_cname:
+    case rk_ns_t_ptr:
 	status = dn_expand(data, end_data, p, host, sizeof(host));
 	if(status < 0) {
 	    free(*rr);
@@ -169,8 +169,8 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	    return -1;
 	}
 	break;
-    case T_MX:
-    case T_AFSDB:{
+    case rk_ns_t_mx:
+    case rk_ns_t_afsdb:{
 	size_t hostlen;
 
 	status = dn_expand(data, end_data, p + 2, host, sizeof(host));
@@ -194,7 +194,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	strlcpy((*rr)->u.mx->domain, host, hostlen + 1);
 	break;
     }
-    case T_SRV:{
+    case rk_ns_t_srv:{
 	size_t hostlen;
 	status = dn_expand(data, end_data, p + 6, host, sizeof(host));
 	if(status < 0){
@@ -220,7 +220,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	strlcpy((*rr)->u.srv->target, host, hostlen + 1);
 	break;
     }
-    case T_TXT:{
+    case rk_ns_t_txt:{
 	if(size == 0 || size < *p + 1) {
 	    free(*rr);
 	    return -1;
@@ -234,7 +234,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	(*rr)->u.txt[*p] = '\0';
 	break;
     }
-    case T_KEY : {
+    case rk_ns_t_key : {
 	size_t key_len;
 
 	if (size < 4) {
@@ -256,7 +256,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	memcpy ((*rr)->u.key->key_data, p + 4, key_len);
 	break;
     }
-    case T_SIG : {
+    case rk_ns_t_sig : {
 	size_t sig_len, hostlen;
 
 	if(size <= 18) {
@@ -303,7 +303,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	break;
     }
 
-    case T_CERT : {
+    case rk_ns_t_cert : {
 	size_t cert_len;
 
 	if (size < 5) {
@@ -325,7 +325,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	memcpy ((*rr)->u.cert->cert_data, p + 5, cert_len);
 	break;
     }
-    case T_SSHFP : {
+    case rk_ns_t_sshfp : {
 	size_t sshfp_len;
 	unsigned type;
 
@@ -552,7 +552,7 @@ dns_srv_order(struct dns_reply *r)
 #endif
 
     for(rr = r->head; rr; rr = rr->next) 
-	if(rr->type == T_SRV)
+	if(rr->type == rk_ns_t_srv)
 	    num_srv++;
 
     if(num_srv == 0)
@@ -565,7 +565,7 @@ dns_srv_order(struct dns_reply *r)
     /* unlink all srv-records from the linked list and put them in
        a vector */
     for(ss = srvs, headp = &r->head; *headp; )
-	if((*headp)->type == T_SRV) {
+	if((*headp)->type == rk_ns_t_srv) {
 	    *ss = *headp;
 	    *headp = (*headp)->next;
 	    (*ss)->next = NULL;
@@ -659,36 +659,36 @@ main(int argc, char **argv)
 	printf("No reply.\n");
 	return 1;
     }
-    if(r->q.type == T_SRV)
+    if(r->q.type == rk_ns_t_srv)
 	dns_srv_order(r);
 
     for(rr = r->head; rr;rr=rr->next){
 	printf("%-30s %-5s %-6d ", rr->domain, dns_type_to_string(rr->type), rr->ttl);
 	switch(rr->type){
-	case T_NS:
-	case T_CNAME:
-	case T_PTR:
+	case rk_ns_t_ns:
+	case rk_ns_t_cname:
+	case rk_ns_t_ptr:
 	    printf("%s\n", (char*)rr->u.data);
 	    break;
-	case T_A:
+	case rk_ns_t_a:
 	    printf("%s\n", inet_ntoa(*rr->u.a));
 	    break;
-	case T_MX:
-	case T_AFSDB:{
+	case rk_ns_t_mx:
+	case rk_ns_t_afsdb:{
 	    printf("%d %s\n", rr->u.mx->preference, rr->u.mx->domain);
 	    break;
 	}
-	case T_SRV:{
+	case rk_ns_t_srv:{
 	    struct srv_record *srv = rr->u.srv;
 	    printf("%d %d %d %s\n", srv->priority, srv->weight, 
 		   srv->port, srv->target);
 	    break;
 	}
-	case T_TXT: {
+	case rk_ns_t_txt: {
 	    printf("%s\n", rr->u.txt);
 	    break;
 	}
-	case T_SIG : {
+	case rk_ns_t_sig : {
 	    struct sig_record *sig = rr->u.sig;
 	    const char *type_string = dns_type_to_string (sig->type);
 
@@ -699,14 +699,14 @@ main(int argc, char **argv)
 		    sig->signer);
 	    break;
 	}
-	case T_KEY : {
+	case rk_ns_t_key : {
 	    struct key_record *key = rr->u.key;
 
 	    printf ("flags %u, protocol %u, algorithm %u\n",
 		    key->flags, key->protocol, key->algorithm);
 	    break;
 	}
-	case T_SSHFP : {
+	case rk_ns_t_sshfp : {
 	    struct sshfp_record *sshfp = rr->u.sshfp;
 	    int i;
 
