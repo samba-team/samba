@@ -113,12 +113,23 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 **********************************************************/
 static int print_user_info (char *username, BOOL verbosity, BOOL smbpwdstyle)
 {
-	SAM_ACCOUNT *sam_pwent;
+	SAM_ACCOUNT *sam_pwent=NULL;
+	BOOL ret;
 	
-	sam_pwent = pdb_getsampwnam (username);
-	if (sam_pwent) return print_sam_info (sam_pwent, verbosity, smbpwdstyle);
-	else fprintf (stderr, "Username not found!\n");
-	return -1;
+	pdb_init_sam(&sam_pwent);
+	
+	ret = pdb_getsampwnam (sam_pwent, username);
+
+	if (ret==False) {
+		fprintf (stderr, "Username not found!\n");
+		pdb_clear_sam(sam_pwent);
+		return -1;
+	}
+	
+	ret=print_sam_info (sam_pwent, verbosity, smbpwdstyle);
+	pdb_clear_sam(sam_pwent);
+	
+	return ret;
 }
 	
 /*********************************************************
@@ -126,22 +137,26 @@ static int print_user_info (char *username, BOOL verbosity, BOOL smbpwdstyle)
 **********************************************************/
 static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 {
-	SAM_ACCOUNT *sam_pwent;
+	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
 	
+	pdb_init_sam(&sam_pwent);
+
 	ret = pdb_setsampwent(False);
 	if (ret && errno == ENOENT) {
 		fprintf (stderr,"Password database not found!\n");
+		pdb_clear_sam(sam_pwent);
 		exit(1);
 	}
 
-	while ((sam_pwent = pdb_getsampwent ()))
+	while ((ret = pdb_getsampwent (sam_pwent)))
 	{
 		if (verbosity) printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
 	}
 	
 	pdb_endsampwent ();
+	pdb_clear_sam(sam_pwent);
 	return 0;
 }
 
@@ -150,27 +165,33 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 **********************************************************/
 static int set_user_info (char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
 {
-	SAM_ACCOUNT *sam_pwent;
+	SAM_ACCOUNT *sam_pwent=NULL;
+	BOOL ret;
 	
-	sam_pwent = pdb_getsampwnam (username);
-	if (!sam_pwent)
+	pdb_init_sam(&sam_pwent);
+	
+	ret = pdb_getsampwnam (sam_pwent, username);
+	if (ret==False)
 	{
 		fprintf (stderr, "Username not found!\n");
+		pdb_clear_sam(sam_pwent);
 		return -1;
 	}
 	
-	if (fullname) sam_pwent->full_name = fullname;
-	if (homedir) sam_pwent->home_dir = homedir;
-	if (drive) sam_pwent->dir_drive = drive;
-	if (script) sam_pwent->logon_script = script;
-	if (profile) sam_pwent->profile_path = profile;
+	if (fullname) pdb_set_fullname(sam_pwent, fullname);
+	if (homedir) pdb_set_homedir(sam_pwent, homedir);
+	if (drive) pdb_set_dir_drive(sam_pwent,drive);
+	if (script) pdb_set_logon_script(sam_pwent, script);
+	if (profile) pdb_set_profile_path (sam_pwent, profile);
 	
 	if (pdb_update_sam_account (sam_pwent, TRUE)) print_user_info (username, TRUE, FALSE);
 	else
 	{
 		fprintf (stderr, "Unable to modify entry!\n");
+		pdb_clear_sam(sam_pwent);
 		return -1;
 	}
+	pdb_clear_sam(sam_pwent);
 	return 0;
 }
 
@@ -180,6 +201,7 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 static int new_user (char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
 {
 	SAM_ACCOUNT sam_pwent;
+	BOOL ret;
 	struct passwd  *pwd = NULL;
 	uchar new_p16[16];
 	uchar new_nt_p16[16];
@@ -187,7 +209,7 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	
 	ZERO_STRUCT(sam_pwent);
 
-	if (pdb_getsampwnam (username))
+	if (pdb_getsampwnam (&sam_pwent, username))
 	{
 		fprintf (stderr, "Username already exist in database!\n");
 		return -1;
@@ -208,12 +230,12 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	}
 	nt_lm_owf_gen (password1, new_nt_p16, new_p16);
 	
-	sam_pwent.username = username;
-	if (fullname) sam_pwent.full_name = fullname;
-	if (homedir) sam_pwent.home_dir = homedir;
-	if (drive) sam_pwent.dir_drive = drive;
-	if (script) sam_pwent.logon_script = script;
-	if (profile) sam_pwent.profile_path = profile;
+	pdb_set_username(&sam_pwent, username);
+	if (fullname) pdb_set_fullname(&sam_pwent, fullname);
+	if (homedir) pdb_set_homedir (&sam_pwent, homedir);
+	if (drive) pdb_set_dir_drive (&sam_pwent, drive);
+	if (script) pdb_set_logon_script(&sam_pwent, script);
+	if (profile) pdb_set_profile_path (&sam_pwent, profile);
 	
 	/* TODO: Check uid not being in MACHINE UID range!! */
 	sam_pwent.uid = pwd->pw_uid;
@@ -239,6 +261,7 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 static int new_machine (char *machinename)
 {
 	SAM_ACCOUNT sam_pwent;
+	SAM_ACCOUNT sam_trust;
 	uchar new_p16[16];
 	uchar new_nt_p16[16];
 	char name[16];
@@ -254,14 +277,17 @@ static int new_machine (char *machinename)
 	strlower(password);
 	nt_lm_owf_gen (password, new_nt_p16, new_p16);
 	
-	sam_pwent.username = name;
+	pdb_set_username(&sam_pwent, name);
+	
+	for (uid=BASE_MACHINE_UID; uid<=MAX_MACHINE_UID; uid++)
+		if (!(pdb_getsampwuid (&sam_trust, uid)))
+			break;
 
-	for (uid=BASE_MACHINE_UID; uid<=MAX_MACHINE_UID; uid++) if (!(pdb_getsampwuid (uid))) break;
-	if (uid>MAX_MACHINE_UID)
-	{
+	if (uid>MAX_MACHINE_UID) {
 		fprintf (stderr, "No more free UIDs available to Machine accounts!\n");
 		return -1;
 	}
+
 	sam_pwent.uid = uid;
 	sam_pwent.gid = BASE_MACHINE_UID; /* TODO: set there more appropriate value!! */
 	sam_pwent.user_rid = pdb_uid_to_user_rid (uid);
@@ -270,9 +296,9 @@ static int new_machine (char *machinename)
 	sam_pwent.nt_pw = new_nt_p16;
 	sam_pwent.acct_ctrl = ACB_WSTRUST;
 	
-	if (pdb_add_sam_account (&sam_pwent)) print_user_info (name, TRUE, FALSE);
-	else
-	{
+	if (pdb_add_sam_account (&sam_pwent))
+		print_user_info (name, TRUE, FALSE);
+	else {
 		fprintf (stderr, "Unable to add machine!\n");
 		return -1;
 	}
@@ -309,6 +335,7 @@ static int import_users (char *filename)
 {
 	FILE *fp = NULL;
 	SAM_ACCOUNT sam_pwent;
+	SAM_ACCOUNT sam_test;
 	static pstring  user_name;
 	static unsigned char smbpwd[16];
 	static unsigned char smbntpwd[16];
@@ -360,7 +387,7 @@ static int import_users (char *filename)
 		line++;
 		if (linebuf[0] == '#' || linebuf[0] == '\0') continue;
 		
-		pdb_init_sam (&sam_pwent);
+		/*pdb_init_sam (&sam_pwent);*/
 		sam_pwent.acct_ctrl = ACB_NORMAL;
 		
 		/* Get user name */
@@ -393,8 +420,8 @@ static int import_users (char *filename)
 			continue;
 		}
 
-		sam_pwent.username = user_name;
-		sam_pwent.uid = uidval;
+		pdb_set_username(&sam_pwent, user_name);
+		pdb_set_uid (&sam_pwent, uidval);
 		
 		/* Get passwords */
 		p++;
@@ -503,7 +530,7 @@ static int import_users (char *filename)
 		{
 			struct passwd  *pwd = NULL;
 
-			if (pdb_getsampwnam (user_name))
+			if (pdb_getsampwnam (&sam_test,user_name))
 			{
 				fprintf (stderr, "Error: Username already exist in database!\n");
 				continue;

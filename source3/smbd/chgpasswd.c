@@ -557,37 +557,36 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	SAM_ACCOUNT *sampass = NULL;
 	uint16 acct_ctrl;
 	uint8 *lanman_pw;
-
+	BOOL ret;
+	
 	become_root();
-	sampass = pdb_getsampwnam(user);
+	ret = pdb_getsampwnam(sampass, user);
 	unbecome_root();
 
-	if (sampass == NULL)
-	{
+	if (ret == False) {
 		DEBUG(0,("check_lanman_password: getsampwnam returned NULL\n"));
+		pdb_clear_sam(sampass);
 		return False;
 	}
 	
 	acct_ctrl = pdb_get_acct_ctrl     (sampass);
 	lanman_pw = pdb_get_lanman_passwd (sampass);
 
-	if (acct_ctrl & ACB_DISABLED)
-	{
-		DEBUG(0,("check_lanman_password: account %s disabled.\n",
-		       user));
+	if (acct_ctrl & ACB_DISABLED) {
+		DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
+		pdb_clear_sam(sampass);
 		return False;
 	}
 
-	if ((lanman_pw == NULL) && (acct_ctrl & ACB_PWNOTREQ))
-	{
+	if ((lanman_pw == NULL) && (acct_ctrl & ACB_PWNOTREQ)) {
 		uchar no_pw[14];
 		memset(no_pw, '\0', 14);
 		E_P16(no_pw, null_pw);
 		pdb_set_lanman_passwd (sampass, null_pw);
 	}
-	else if (lanman_pw == NULL)
-	{
+	else if (lanman_pw == NULL) {
 		DEBUG(0, ("check_lanman_password: no lanman password !\n"));
+		pdb_clear_sam(sampass);
 		return False;
 	}
 
@@ -598,9 +597,9 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	D_P16(unenc_new_pw, pass1, unenc_old_pw);
 
 	/* Check that the two old passwords match. */
-	if (memcmp(lanman_pw, unenc_old_pw, 16))
-	{
+	if (memcmp(lanman_pw, unenc_old_pw, 16)) {
 		DEBUG(0,("check_lanman_password: old password doesn't match.\n"));
+		pdb_clear_sam(sampass);
 		return False;
 	}
 
@@ -625,30 +624,27 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 	uint16 acct_ctrl;
 	uint8 *pwd;
 
-	if (sampass == NULL)
-	{
+	if (sampass == NULL) {
 		DEBUG(0,("change_lanman_password: no smb password entry.\n"));
 		return False;
 	}
+	
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	pwd = pdb_get_lanman_passwd(sampass);
 
-	if (acct_ctrl & ACB_DISABLED)
-	{
+	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(0,("change_lanman_password: account %s disabled.\n",
 		       pdb_get_username(sampass)));
 		return False;
 	}
 
-	if ((pwd == NULL) && (acct_ctrl & ACB_PWNOTREQ))
-	{
+	if ((pwd == NULL) && (acct_ctrl & ACB_PWNOTREQ)) {
 		uchar no_pw[14];
 		memset(no_pw, '\0', 14);
 		E_P16(no_pw, null_pw);
 		pdb_set_lanman_passwd(sampass, null_pw);
 	}
-	else if (pwd == NULL)
-	{
+	else if (pwd == NULL) {
 		DEBUG(0,("change_lanman_password: no lanman password !\n"));
 		return False;
 	}
@@ -689,16 +685,14 @@ BOOL pass_oem_change(char *user,
 	 */
 
 	if (ret && lp_unix_password_sync())
-	{
 		ret = chgpasswd(user, "", new_passwd, True);
-	}
 
 	if (ret)
-	{
 		ret = change_oem_password(sampass, new_passwd, False);
-	}
 
 	memset(new_passwd, 0, sizeof(new_passwd));
+
+	pdb_clear_sam(sampass);
 
 	return ret;
 }
@@ -727,22 +721,26 @@ BOOL check_oem_password(char *user,
 	uchar new_p16[16];
 	uchar unenc_old_pw[16];
 	char no_pw[2];
+	BOOL ret;
 
 	BOOL nt_pass_set = (ntdata != NULL && nthash != NULL);
 
+	pdb_init_sam(&sampass);
+
 	become_root();
-	*hnd = sampass = pdb_getsampwnam(user);
+	ret = pdb_getsampwnam(sampass, user);
 	unbecome_root();
 
-	if (sampass == NULL)
-	{
+	if (ret == False) {
 		DEBUG(0, ("check_oem_password: getsmbpwnam returned NULL\n"));
 		return False;
 	}
+
+	*hnd = sampass;
+	
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	
-	if (acct_ctrl & ACB_DISABLED)
-	{
+	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
 		return False;
 	}
@@ -757,27 +755,19 @@ BOOL check_oem_password(char *user,
 	nt_pw     = pdb_get_nt_passwd    (sampass);
 
 	/* check for null passwords */
-	if (lanman_pw == NULL)
-	{
+	if (lanman_pw == NULL) {
 		if (acct_ctrl & ACB_PWNOTREQ)
-		{
 			pdb_set_lanman_passwd(sampass, null_pw);
-		}
-		else
-		{
+		else {
 			DEBUG(0,("check_oem_password: no lanman password !\n"));
 			return False;
 		}
 	}
 
-	if (pdb_get_nt_passwd(sampass) == NULL && nt_pass_set)
-	{
+	if (pdb_get_nt_passwd(sampass) == NULL && nt_pass_set) {
 		if (acct_ctrl & ACB_PWNOTREQ)
-		{
 			pdb_set_nt_passwd(sampass, null_pw);
-		}
-		else
-		{
+		else {
 			DEBUG(0,("check_oem_password: no ntlm password !\n"));
 			return False;
 		}
@@ -794,15 +784,12 @@ BOOL check_oem_password(char *user,
 	 */
 
 	new_pw_len = IVAL(lmdata, 512);
-	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1)
-	{
-		DEBUG(0,("check_oem_password: incorrect password length (%d).\n",
-		       new_pw_len));
+	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1) {
+		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
 		return False;
 	}
 
-	if (nt_pass_set)
-	{
+	if (nt_pass_set) {
 		/*
 		 * nt passwords are in unicode
 		 */
@@ -811,9 +798,7 @@ BOOL check_oem_password(char *user,
 		new_pw_len /= 2;
 		pw = dos_unistrn2((uint16 *)(&lmdata[512 - uni_pw_len]),new_pw_len);
 		memcpy(new_passwd, pw, new_pw_len + 1);
-	}
-	else
-	{
+	} else {
 		memcpy(new_passwd, &lmdata[512 - new_pw_len], new_pw_len);
 		new_passwd[new_pw_len] = '\0';
 	}
@@ -908,12 +893,17 @@ BOOL check_plaintext_password(char *user, char *old_passwd,
 {
 	SAM_ACCOUNT  *sampass = NULL;
 	uchar old_pw[16], old_ntpw[16];
+	BOOL ret;
+
+	pdb_init_sam(&sampass);
 
 	become_root();
-	*hnd = sampass = pdb_getsampwnam(user);
+	ret = pdb_getsampwnam(sampass, user);
 	unbecome_root();
 
-	if (sampass == NULL)
+	*hnd = sampass;
+
+	if (ret == False)
 	{
 		DEBUG(0,("check_plaintext_password: getsmbpwnam returned NULL\n"));
 		return False;

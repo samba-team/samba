@@ -48,7 +48,8 @@ static void usage(void)
 	printf("    -n group           NT group name\n");
 	printf("    -p privilege       only local\n");
 	printf("  -v                   list groups\n");
-	printf("  -c SID             change group\n");
+	printf("  -c SID               change group\n");
+	printf("     -u unix group\n");
 	printf("  -x group             delete this group\n");
 	printf("\n");
 	printf("    -t[b|d|l]          type: builtin, domain, local \n");
@@ -68,7 +69,7 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 
 /*	convert_priv_from_text(&se_priv, privilege);*/
 
-	se_priv=0xff;
+	se_priv=0x0;
 
 	gid=nametogid(group);
 	if (gid==-1)
@@ -87,7 +88,7 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 	else
 		fstrcpy(comment, ntcomment);
 
-	if(!add_initial_entry(gid, string_sid, sid_type, group, comment, se_priv))
+	if(!add_initial_entry(gid, string_sid, sid_type, name, comment, se_priv))
 		return -1;
 
 	return 0;
@@ -176,7 +177,7 @@ int listgroup(enum SID_NAME_USE sid_type)
 
 	printf("Unix\tSID\ttype\tnt name\tnt comment\tprivilege\n");
 		
-	if (!enum_group_mapping(sid_type, &map, &entries))
+	if (!enum_group_mapping(sid_type, &map, &entries, ENUM_ALL_MAPPED))
 		return -1;
 	
 	for (i=0; i<entries; i++) {

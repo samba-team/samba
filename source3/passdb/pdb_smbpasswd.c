@@ -56,7 +56,7 @@ static void 	*global_vp;
 
 /* static memory area used by all passdb search functions
    in this module */
-static SAM_ACCOUNT 	global_sam_pass;
+/*static SAM_ACCOUNT 	global_sam_pass;*/
 
 
 enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
@@ -1163,16 +1163,16 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
         if (sampass == NULL) 
 		return False;
 
-        ZERO_STRUCTP (smb_pw);
+        ZERO_STRUCTP(smb_pw);
 
-        smb_pw->smb_userid = pdb_get_uid(sampass);
-        smb_pw->smb_name = pdb_get_username(sampass);
+        smb_pw->smb_userid=pdb_get_uid(sampass);
+        smb_pw->smb_name=pdb_get_username(sampass);
 
-	smb_pw->smb_passwd = pdb_get_lanman_passwd(sampass);
-	smb_pw->smb_nt_passwd = pdb_get_nt_passwd(sampass);
+	smb_pw->smb_passwd=pdb_get_lanman_passwd(sampass);
+	smb_pw->smb_nt_passwd=pdb_get_nt_passwd(sampass);
 
-        smb_pw->acct_ctrl          = pdb_get_acct_ctrl(sampass);
-        smb_pw->pass_last_set_time = pdb_get_pass_last_set_time(sampass);
+        smb_pw->acct_ctrl=pdb_get_acct_ctrl(sampass);
+        smb_pw->pass_last_set_time=pdb_get_pass_last_set_time(sampass);
 
         return True;
 
@@ -1181,23 +1181,21 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
 /*********************************************************************
  Create a SAM_ACCOUNT from a smb_passwd struct
  ********************************************************************/
-static BOOL build_sam_account (SAM_ACCOUNT *sam_pass, 
-			       struct smb_passwd *pw_buf)
+static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 {
-	struct passwd 		*pwfile;
+	struct passwd *pwfile;
 	
-	if (!sam_pass)
-		return (False);
-	
-	pdb_clear_sam (sam_pass);
+	if (sam_pass==NULL) {
+		DEBUG(5,("build_sam_account: SAM_ACCOUNT is NULL\n"));
+		return False;
+	}
 		
 	/* Verify in system password file...
 	   FIXME!!!  This is where we should look up an internal
 	   mapping of allocated uid for machine accounts as well 
 	   --jerry */ 
 	pwfile = sys_getpwnam(pw_buf->smb_name);
-	if (pwfile == NULL)
-	{
+	if (pwfile == NULL) {
 		DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s not in unix passwd database!\n", pw_buf->smb_name));
 		return False;
 	}
@@ -1206,17 +1204,25 @@ static BOOL build_sam_account (SAM_ACCOUNT *sam_pass,
 	   --jerry */
 	pstrcpy(samlogon_user, pw_buf->smb_name);
 	
-	pdb_set_uid           (sam_pass, pwfile->pw_uid);
-	pdb_set_gid           (sam_pass, pwfile->pw_gid);
-	pdb_set_user_rid      (sam_pass, pdb_uid_to_user_rid (pdb_get_uid(sam_pass)) );
-	pdb_set_username      (sam_pass, pw_buf->smb_name);
-	pdb_set_nt_passwd     (sam_pass, pw_buf->smb_nt_passwd);
+	pdb_set_uid (sam_pass, pwfile->pw_uid);
+	pdb_set_gid (sam_pass, pwfile->pw_gid);
+	pdb_set_fullname(sam_pass, pwfile->pw_gecos);		
+	
+	pdb_set_user_rid(sam_pass, pdb_uid_to_user_rid (pwfile->pw_uid));
+
+	/* should check the group mapping here instead of static mappig. JFM */
+	pdb_set_group_rid(sam_pass, pdb_gid_to_group_rid(pwfile->pw_gid)); 
+	
+	pdb_set_username (sam_pass, pw_buf->smb_name);
+	pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd);
 	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd);			
-	pdb_set_acct_ctrl     (sam_pass, pw_buf->acct_ctrl);
+	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl);
 	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time);
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time);
-	pdb_set_domain        (sam_pass, lp_workgroup());
+	pdb_set_domain (sam_pass, lp_workgroup());
 	
+	pdb_set_dir_drive     (sam_pass, lp_logon_drive());
+
 	/* FIXME!!  What should this be set to?  New smb.conf parameter maybe?
 	   max password age?   For now, we'll use the current time + 21 days. 
 	   --jerry */
@@ -1241,17 +1247,9 @@ static BOOL build_sam_account (SAM_ACCOUNT *sam_pass,
 	        pstrcpy(str, lp_logon_home());
         	standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
 		pdb_set_homedir(sam_pass, str);
-        
-		pdb_set_fullname(sam_pass, pwfile->pw_gecos);		
-
-		/* set other user information that we have */
-		pdb_set_group_rid     (sam_pass, pdb_gid_to_group_rid(pdb_get_gid(&global_sam_pass)) ); 
-		pdb_set_dir_drive     (sam_pass, lp_logon_drive());
-		
+ 		
 		sam_logon_in_ssb = False;
-	}
-	else
-	{
+	} else {
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
 		pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); 
 	}
@@ -1295,31 +1293,34 @@ void pdb_endsampwent (void)
 }
  
 /*****************************************************************
- pdb_getsampwent() uses a static memory ares (returning a pointer
- to this) for all instances.  This is identical behavior to the
- getpwnam() call.  If the caller wishes to save the SAM_ACCOUNT
- struct, it should make a copy immediately after calling this
- function.
  ****************************************************************/
-SAM_ACCOUNT* pdb_getsampwent (void)
+BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 {
-	struct smb_passwd 	*pw_buf;
-	
-	
+	struct smb_passwd *pw_buf=NULL;
+
 	DEBUG(5,("pdb_getsampwent\n"));
+
+	if (user==NULL) {
+		DEBUG(5,("pdb_getsampwent: user is NULL\n"));
+#if 0
+		smb_panic("NULL pointer passed to pdb_getsampwent\n");
+#endif
+		return False;
+	}
 
 	/* do we have an entry? */
 	pw_buf = getsmbfilepwent(global_vp);
 	if (pw_buf == NULL) 
-		return NULL;
+		return False;
 
-	/* build the SAM_ACCOUNT entry from the smb_passwd struct.
-	   This will also clear out the previous SAM_ACCOUNT fields */
-	if (!build_sam_account (&global_sam_pass, pw_buf))
-		return NULL;
+	/* build the SAM_ACCOUNT entry from the smb_passwd struct. */
+	if (!build_sam_account(user, pw_buf))
+		return False;
+
+	DEBUG(5,("pdb_getsampwent:done\n"));
 
 	/* success */
-	return &global_sam_pass;
+	return True;
 }
 
 
@@ -1328,13 +1329,13 @@ SAM_ACCOUNT* pdb_getsampwent (void)
  call getpwnam() for unix account information until we have found
  the correct entry
  ***************************************************************/
-SAM_ACCOUNT* pdb_getsampwnam (char *username)
+BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, char *username)
 {
-	struct smb_passwd	*smb_pw;
-	void 			*fp = NULL;
-	char			*domain = NULL;
-	char			*user = NULL;
-	fstring			name;
+	struct smb_passwd *smb_pw;
+	void *fp = NULL;
+	char *domain = NULL;
+	char *user = NULL;
+	fstring name;
 
 	DEBUG(10, ("pdb_getsampwnam: search by name: %s\n", username));
 
@@ -1345,8 +1346,7 @@ SAM_ACCOUNT* pdb_getsampwnam (char *username)
 	/* break the username from the domain if we have 
 	   been given a string in the form 'DOMAIN\user' */
 	fstrcpy (name, username);
-	if ((user=strchr(name, '\\')) != NULL)
-	{
+	if ((user=strchr(name, '\\')) != NULL) {
 		domain = name;
 		*user = '\0';
 		user++;
@@ -1354,18 +1354,17 @@ SAM_ACCOUNT* pdb_getsampwnam (char *username)
 	
 	/* if a domain was specified and it wasn't ours
 	   then there is no chance of matching */
-	if ( (domain) && (!StrCaseCmp(domain, lp_workgroup())) )
-		return (NULL);
+	if ( domain && !StrCaseCmp(domain, lp_workgroup()) )
+		return False;
 
 	/* startsmbfilepwent() is used here as we don't want to lookup
 	   the UNIX account in the local system password file until
 	   we have a match.  */
 	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
 
-	if (fp == NULL)
-	{
+	if (fp == NULL) {
 		DEBUG(0, ("unable to open passdb database.\n"));
-		return NULL;
+		return False;
 	}
 
 	/* if we have a domain name, then we should map it to a UNIX 
@@ -1381,35 +1380,40 @@ SAM_ACCOUNT* pdb_getsampwnam (char *username)
 
 	/* did we locate the username in smbpasswd  */
 	if (smb_pw == NULL)
-	{
-		return (NULL);
-	}
+		return False;
 	
 	DEBUG(10, ("pdb_getsampwnam: found by name: %s\n", smb_pw->smb_name));
+
+	if (!sam_acct) {
+		DEBUG(10,("pdb_getsampwnam:SAM_ACCOUNT is NULL\n"));
+#if 0
+		smb_panic("NULL pointer passed to pdb_getsampwnam\n");
+#endif
+		return False;
+	}
 		
 	/* now build the SAM_ACCOUNT */
-	if (!build_sam_account (&global_sam_pass, smb_pw))
-			return NULL;
+	if (!build_sam_account(sam_acct, smb_pw))
+		return False;
 
 	/* success */
-	return (&global_sam_pass);
+	return True;
 }
 
 
-SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
+BOOL pdb_getsampwuid (SAM_ACCOUNT *sam_acct, uid_t uid)
 {
-	struct smb_passwd	*smb_pw;
-	void 			*fp = NULL;
+	struct smb_passwd *smb_pw;
+	void *fp = NULL;
 
 	DEBUG(10, ("pdb_getsampwuid: search by uid: %d\n", uid));
 
 	/* Open the sam password file - not for update. */
 	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
 
-	if (fp == NULL)
-	{
+	if (fp == NULL) {
 		DEBUG(0, ("unable to open passdb database.\n"));
-		return NULL;
+		return False;
 	}
 
 	while ( ((smb_pw=getsmbfilepwent(fp)) != NULL) && (smb_pw->smb_userid != uid) )
@@ -1417,37 +1421,41 @@ SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
 
 	endsmbfilepwent(fp, &pw_file_lock_depth);
 
-
 	/* did we locate the username in smbpasswd  */
 	if (smb_pw == NULL)
-	{
-		return (NULL);
-	}
+		return False;
 	
 	DEBUG(10, ("pdb_getsampwuid: found by name: %s\n", smb_pw->smb_name));
 		
+	if (!sam_acct) {
+		DEBUG(10,("pdb_getsampwuid:SAM_ACCOUNT is NULL\n"));
+#if 0
+		smb_panic("NULL pointer passed to pdb_getsampwuid\n");
+#endif
+		return False;
+	}
+
 	/* now build the SAM_ACCOUNT */
-	if (!build_sam_account (&global_sam_pass, smb_pw))
-			return NULL;
+	if (!build_sam_account(sam_acct, smb_pw))
+		return False;
 
 	/* success */
-	return (&global_sam_pass);
+	return True;
 }
 
-SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
+BOOL pdb_getsampwrid(SAM_ACCOUNT *sam_acct,uint32 rid)
 {
-	struct smb_passwd	*smb_pw;
-	void 			*fp = NULL;
+	struct smb_passwd *smb_pw;
+	void *fp = NULL;
 
 	DEBUG(10, ("pdb_getsampwrid: search by rid: %d\n", rid));
 
 	/* Open the sam password file - not for update. */
 	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
 
-	if (fp == NULL)
-	{
+	if (fp == NULL) {
 		DEBUG(0, ("unable to open passdb database.\n"));
-		return NULL;
+		return False;
 	}
 
 	while ( ((smb_pw=getsmbfilepwent(fp)) != NULL) && (pdb_uid_to_user_rid(smb_pw->smb_userid) != rid) )
@@ -1458,51 +1466,57 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 
 	/* did we locate the username in smbpasswd  */
 	if (smb_pw == NULL)
-	{
-		return (NULL);
-	}
+		return False;
 	
 	DEBUG(10, ("pdb_getsampwrid: found by name: %s\n", smb_pw->smb_name));
 		
+	if (!sam_acct) {
+		DEBUG(10,("pdb_getsampwrid:SAM_ACCOUNT is NULL\n"));
+#if 0
+		smb_panic("NULL pointer passed to pdb_getsampwrid\n");
+#endif
+		return False;
+	}
+
 	/* now build the SAM_ACCOUNT */
-	if (!build_sam_account (&global_sam_pass, smb_pw))
-			return NULL;
+	if (!build_sam_account (sam_acct, smb_pw))
+		return False;
 
 	/* success */
-	return (&global_sam_pass);
+	return True;
 }
 
-BOOL pdb_add_sam_account (SAM_ACCOUNT *sampass)
+BOOL pdb_add_sam_account(SAM_ACCOUNT *sampass)
 {
-	struct smb_passwd	smb_pw;
-	BOOL			ret;
+	struct smb_passwd smb_pw;
 	
 	/* convert the SAM_ACCOUNT */
 	build_smb_pass(&smb_pw, sampass);
 	
 	/* add the entry */
-	ret = add_smbfilepwd_entry(&smb_pw);
+	if(!add_smbfilepwd_entry(&smb_pw))
+		return False;
 	
-	return (ret);
+	return True;
 }
 
-BOOL pdb_update_sam_account (SAM_ACCOUNT *sampass, BOOL override)
+BOOL pdb_update_sam_account(SAM_ACCOUNT *sampass, BOOL override)
 {
-	struct smb_passwd	smb_pw;
-	BOOL			ret;
+	struct smb_passwd smb_pw;
 	
 	/* convert the SAM_ACCOUNT */
 	build_smb_pass(&smb_pw, sampass);
 	
 	/* update the entry */
-	ret = mod_smbfilepwd_entry(&smb_pw, override);
+	if(!mod_smbfilepwd_entry(&smb_pw, override))
+		return False;
 		
-	return (ret);
+	return True;
 }
 
 BOOL pdb_delete_sam_account (char* username)
 {
-	return ( del_smbfilepwd_entry(username) );
+	return del_smbfilepwd_entry(username);
 }
 
 #else

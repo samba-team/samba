@@ -29,7 +29,8 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map);
 BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map);
 BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map);
 BOOL group_map_remove(DOM_SID sid);
-BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap, int *num_entries);
+BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
+			int *num_entries, BOOL unix_only);
 void convert_priv_from_text(uint32 *se_priv, char *privilege);
 void convert_priv_to_text(uint32 se_priv, char *privilege);
 BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map);
@@ -2051,8 +2052,8 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 /*The following definitions come from  passdb/passdb.c  */
 
 BOOL initialize_password_db(BOOL reload);
-void pdb_init_sam(SAM_ACCOUNT *user);
-void pdb_clear_sam(SAM_ACCOUNT *user);
+BOOL pdb_init_sam(SAM_ACCOUNT **user);
+BOOL pdb_clear_sam(SAM_ACCOUNT *user);
 struct sam_disp_info *pdb_sam_to_dispinfo(SAM_ACCOUNT *user);
 char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pdb_decode_acct_ctrl(const char *p);
@@ -2120,11 +2121,11 @@ BOOL pdb_set_uid (SAM_ACCOUNT *sampass, uid_t uid);
 BOOL pdb_set_gid (SAM_ACCOUNT *sampass, gid_t gid);
 BOOL pdb_set_user_rid (SAM_ACCOUNT *sampass, uint32 rid);
 BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid);
-BOOL pdb_set_username (SAM_ACCOUNT *sampass, char *username);
-BOOL pdb_set_domain (SAM_ACCOUNT *sampass, char *domain);
-BOOL pdb_set_nt_username (SAM_ACCOUNT *sampass, char *nt_username);
-BOOL pdb_set_fullname (SAM_ACCOUNT *sampass, char *fullname);
-BOOL pdb_set_logon_script (SAM_ACCOUNT *sampass, char *logon_script);
+BOOL pdb_set_username(SAM_ACCOUNT *sampass, char *username);
+BOOL pdb_set_domain(SAM_ACCOUNT *sampass, char *domain);
+BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, char *nt_username);
+BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, char *fullname);
+BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script);
 BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path);
 BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive);
 BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir);
@@ -2142,22 +2143,22 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours);
 
 BOOL pdb_setsampwent (BOOL update);
 void pdb_endsampwent (void);
-SAM_ACCOUNT* pdb_getsampwent (void);
-SAM_ACCOUNT* pdb_getsampwnam (char *username);
-SAM_ACCOUNT* pdb_getsampwuid (uid_t uid);
-SAM_ACCOUNT* pdb_getsampwrid (uint32 rid);
-BOOL pdb_add_sam_account (SAM_ACCOUNT *sampass);
-BOOL pdb_update_sam_account (SAM_ACCOUNT *sampass, BOOL override);
+BOOL pdb_getsampwent(SAM_ACCOUNT *user);
+BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, char *username);
+BOOL pdb_getsampwuid (SAM_ACCOUNT *sam_acct, uid_t uid);
+BOOL pdb_getsampwrid(SAM_ACCOUNT *sam_acct,uint32 rid);
+BOOL pdb_add_sam_account(SAM_ACCOUNT *sampass);
+BOOL pdb_update_sam_account(SAM_ACCOUNT *sampass, BOOL override);
 BOOL pdb_delete_sam_account (char* username);
 
 /*The following definitions come from  passdb/pdb_tdb.c  */
 
 BOOL pdb_setsampwent(BOOL update);
 void pdb_endsampwent(void);
-SAM_ACCOUNT* pdb_getsampwent(void);
-SAM_ACCOUNT* pdb_getsampwnam (char *sname);
-SAM_ACCOUNT* pdb_getsampwuid (uid_t uid);
-SAM_ACCOUNT* pdb_getsampwrid (uint32 rid);
+BOOL pdb_getsampwent(SAM_ACCOUNT *user);
+BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname);
+BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid);
+BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid);
 BOOL pdb_delete_sam_account(char *sname);
 BOOL pdb_update_sam_account (SAM_ACCOUNT *newpwd, BOOL override);
 BOOL pdb_add_sam_account (SAM_ACCOUNT *newpwd);

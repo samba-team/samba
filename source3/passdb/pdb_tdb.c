@@ -40,7 +40,7 @@ struct tdb_enum_info
 };
 
 static struct tdb_enum_info 	global_tdb_ent;
-static SAM_ACCOUNT 		global_sam_pass;
+/*static SAM_ACCOUNT 		global_sam_pass;*/
 
 /**********************************************************************
  Intialize a SAM_ACCOUNT struct from a BYTE buffer of size len
@@ -79,7 +79,6 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf,
 			*nt_pw_ptr;
 	uint32		len = 0;
 	uint32		lmpwlen, ntpwlen, hourslen;
-	
 									
 	/* unpack the buffer into variables */
 	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
@@ -376,7 +375,7 @@ void pdb_endsampwent(void)
 /*****************************************************************
  Get one SAM_ACCOUNT from the TDB (next in line)
 *****************************************************************/
-SAM_ACCOUNT* pdb_getsampwent(void)
+BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 {
 	TDB_DATA 	data;
 	struct passwd	*pw;
@@ -384,6 +383,11 @@ SAM_ACCOUNT* pdb_getsampwent(void)
 	gid_t		gid;
 	char *prefix = USERPREFIX;
 	int  prefixlen = strlen (prefix);
+
+	if (user==NULL) {
+		DEBUG(0,("pdb_get_sampwent: SAM_ACCOUNT is NULL.\n"));
+		return False;
+	}
 
 	/* skip all RID entries */
 	while ((global_tdb_ent.key.dsize != 0) && (strncmp (global_tdb_ent.key.dptr, prefix, prefixlen)))
@@ -394,56 +398,55 @@ SAM_ACCOUNT* pdb_getsampwent(void)
 	if(global_tdb_ent.passwd_tdb == NULL) 
 	{
 		DEBUG(0,("pdb_get_sampwent: Bad TDB Context pointer.\n"));
-		return NULL;
+		return False;
 	}
 
 	data = tdb_fetch (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
 	if (!data.dptr)
 	{
 		DEBUG(5,("pdb_getsampwent: database entry not found.\n"));
-		return NULL;
+		return False;
 	}
   
   	/* unpack the buffer */
-	pdb_clear_sam (&global_sam_pass);
-	if (!init_sam_from_buffer (&global_sam_pass, data.dptr, data.dsize))
+	if (!init_sam_from_buffer (user, data.dptr, data.dsize))
 	{
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
-		return NULL;
+		return False;
 	}
 	
 	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
 	   is used instaed of Get_Pwnam() as we do not need to try case
 	   permutations */
-	if ((pw=sys_getpwnam(pdb_get_username(&global_sam_pass))) == NULL)
+	if ((pw=sys_getpwnam(pdb_get_username(user))) == NULL)
 	{
 		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 
-		          pdb_get_username(&global_sam_pass)));
-		return NULL;
+		          pdb_get_username(user)));
+		return False;
 	}
 
 	uid = pw->pw_uid;
 	gid = pw->pw_gid;
-	pdb_set_uid (&global_sam_pass, uid);
-	pdb_set_gid (&global_sam_pass, gid);
+	pdb_set_uid (user, uid);
+	pdb_set_gid (user, gid);
 
 	/* 21 days from present */
-	pdb_set_pass_must_change_time(&global_sam_pass, time(NULL)+1814400);	
+	pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
 
-	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_logon_script(&global_sam_pass));
-	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_profile_path(&global_sam_pass));
-	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_homedir(&global_sam_pass));
+	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
+	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
+	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
 
 	/* increment to next in line */
 	global_tdb_ent.key = tdb_nextkey (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
 
-	return (&global_sam_pass);
+	return True;
 }
 
 /******************************************************************
  Lookup a name in the SAM TDB
 ******************************************************************/
-SAM_ACCOUNT* pdb_getsampwnam (char *sname)
+BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 {
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	data, key;
@@ -453,7 +456,13 @@ SAM_ACCOUNT* pdb_getsampwnam (char *sname)
 	fstring		name;
 	uid_t		uid;
 	gid_t		gid;
-	
+
+
+	if (user==NULL) {
+		DEBUG(0,("pdb_getsampwnam: SAM_ACCOUNT is NULL.\n"));
+		return False;
+	}
+
 	fstrcpy (name, sname);
 	strlower (name);
 	pstrcpy (tdbfile, lp_private_dir());
@@ -478,52 +487,57 @@ SAM_ACCOUNT* pdb_getsampwnam (char *sname)
 		DEBUG(5,("pdb_getsampwnam (TDB): error fetching database.\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
-		return NULL;
+		return False;
 	}
   
   	/* unpack the buffer */
-	pdb_clear_sam (&global_sam_pass);
-	if (!init_sam_from_buffer (&global_sam_pass, data.dptr, data.dsize))
+	/*pdb_clear_sam (&global_sam_pass);*/
+	if (!init_sam_from_buffer (user, data.dptr, data.dsize))
 	{
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
-		return NULL;
+		return False;
 	}
 	
 	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
 	   is used instaed of Get_Pwnam() as we do not need to try case
 	   permutations */
-	if ((pw=sys_getpwnam(pdb_get_username(&global_sam_pass))) == NULL)
+	if ((pw=sys_getpwnam(pdb_get_username(user))) == NULL)
 	{
 		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 
-		          pdb_get_username(&global_sam_pass)));
-		return NULL;
+		          pdb_get_username(user)));
+		return False;
 	}
 	
 	uid = pw->pw_uid;
 	gid = pw->pw_gid;
-	pdb_set_uid (&global_sam_pass, uid);
-	pdb_set_gid (&global_sam_pass, gid);
+	pdb_set_uid (user, uid);
+	pdb_set_gid (user, gid);
 	
 	/* 21 days from present */
-	pdb_set_pass_must_change_time(&global_sam_pass, time(NULL)+1814400);	
+	pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
 	
-	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_logon_script(&global_sam_pass));
-	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_profile_path(&global_sam_pass));
-	standard_sub_advanced(-1, pdb_get_username(&global_sam_pass), "", gid, pdb_get_homedir(&global_sam_pass));
+	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
+	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
+	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
 
 	/* cleanup */
 	tdb_close (pwd_tdb);
 
-	return (&global_sam_pass);
+	return True;
 }
 
 /***************************************************************************
  Search by uid
  **************************************************************************/
-SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
+BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid)
 {
 	struct passwd	*pw;
 	fstring		name;
+
+	if (user==NULL) {
+		DEBUG(0,("pdb_getsampwuid: SAM_ACCOUNT is NULL.\n"));
+		return False;
+	}
 
 	pw = sys_getpwuid(uid);
 	if (pw == NULL)
@@ -533,14 +547,14 @@ SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
 	}
 	fstrcpy (name, pw->pw_name);
 
-	return pdb_getsampwnam (name);
+	return pdb_getsampwnam (user, name);
 
 }
 
 /***************************************************************************
  Search by rid
  **************************************************************************/
-SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
+BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
 {
 	TDB_CONTEXT 		*pwd_tdb;
 	TDB_DATA 		data, key;
@@ -548,6 +562,11 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 	pstring			tdbfile;
 	fstring			name;
 	
+	if (user==NULL) {
+		DEBUG(0,("pdb_getsampwrid: SAM_ACCOUNT is NULL.\n"));
+		return False;
+	}
+
 	pstrcpy (tdbfile, lp_private_dir());
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
@@ -570,14 +589,14 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 		DEBUG(5,("pdb_getsampwrid (TDB): error fetching database.\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
-		return NULL;
+		return False;
 	}
 
 	fstrcpy (name, data.dptr);
 	
 	tdb_close (pwd_tdb);
 	
-	return pdb_getsampwnam (name);
+	return pdb_getsampwnam (user, name);
 }
 
 

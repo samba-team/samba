@@ -98,49 +98,66 @@ static void pdb_init_dispinfo(struct sam_disp_info *user)
 }
 
 /*************************************************************
- initialises a struct sam_passwd.
+ alloc memory and initialises a struct sam_passwd.
  ************************************************************/
-void pdb_init_sam(SAM_ACCOUNT *user)
+BOOL pdb_init_sam(SAM_ACCOUNT **user)
 {
-	if (user == NULL) 
-		return;
+	if (*user != NULL) {
+		DEBUG(0,("pdb_init_sam: SAM_ACCOUNT was non NULL\n"));
+#if 0
+		smb_panic("NULL pointer passed to pdb_init_sam\n");
+#endif
+		return False;
+	}
 	
-	ZERO_STRUCTP(user);
+	*user=(SAM_ACCOUNT *)malloc(sizeof(SAM_ACCOUNT));
+	
+	if (*user==NULL) {
+		DEBUG(0,("pdb_init_sam: error while allocating memory\n"));
+		return False;
+	}
+	
+	ZERO_STRUCTP(*user);
 
-	user->mem_ctx = talloc_init();
-	DEBUG(10, ("pdb_init_sam: obtained a talloc context of 0x%x\n", 
-		   (unsigned)user->mem_ctx));
+	(*user)->logon_time            = (time_t)0;
+	(*user)->logoff_time           = (time_t)-1;
+	(*user)->kickoff_time          = (time_t)-1;
+	(*user)->pass_last_set_time    = (time_t)-1;
+	(*user)->pass_can_change_time  = (time_t)-1;
+	(*user)->pass_must_change_time = (time_t)-1;
 
-	user->logon_time            = (time_t)0;
-	user->logoff_time           = (time_t)-1;
-	user->kickoff_time          = (time_t)-1;
-	user->pass_last_set_time    = (time_t)-1;
-	user->pass_can_change_time  = (time_t)-1;
-	user->pass_must_change_time = (time_t)-1;
-
-	user->unknown_3 = 0x00ffffff; 	/* don't know */
-	user->logon_divs = 168; 	/* hours per week */
-	user->hours_len = 21; 		/* 21 times 8 bits = 168 */
-	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
-	user->unknown_5 = 0x00000000; /* don't know */
-	user->unknown_6 = 0x000004ec; /* don't know */
+	(*user)->unknown_3 = 0x00ffffff; 	/* don't know */
+	(*user)->logon_divs = 168; 	/* hours per week */
+	(*user)->hours_len = 21; 		/* 21 times 8 bits = 168 */
+	memset((*user)->hours, 0xff, (*user)->hours_len); /* available at all hours */
+	(*user)->unknown_5 = 0x00000000; /* don't know */
+	(*user)->unknown_6 = 0x000004ec; /* don't know */
+	
+	return True;
 }
 
 /************************************************************
- free all pointer members and then reinit the SAM_ACCOUNT
+ free the SAM_ACCOUNT and the NT/LM hashes.
  ***********************************************************/
-void pdb_clear_sam(SAM_ACCOUNT *user)
+BOOL pdb_clear_sam(SAM_ACCOUNT *user)
 {
-	if (user == NULL)
-		return;
+	if (user == NULL) {
+		DEBUG(0,("pdb_clear_sam: SAM_ACCOUNT was NULL\n"));
+#if 0
+		smb_panic("NULL pointer passed to pdb_clear_sam\n");
+#endif
+		return False;
+	}
 
-	/* free upany memory used */
-	DEBUG(10, ("pdb_clear_sam: releasing memory.  talloc context is 0x%x\n",(unsigned)user->mem_ctx));
-	talloc_destroy (user->mem_ctx);
-		
-	/* now initialize */
-	pdb_init_sam(user);
+	if (user->nt_pw)
+		free(user->nt_pw);
+
+	if (user->lm_pw)
+		free(user->lm_pw);
+
+	free(user);
 	
+	return True;	
 }
 
 
@@ -455,9 +472,10 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		}
 
 	} else {
-		gid_t gid;
+		gid_t gid=-1;
 		struct group *gr; 
-
+		GROUP_MAP map;
+		DOM_SID sid;
 		/* 
 		 * Don't try to convert the rid to a name if running
 		 * in appliance mode
@@ -466,11 +484,30 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		if (lp_hide_local_users()) 
 			return False;
 		
-		gid = pdb_user_rid_to_gid(rid);
-		gr = getgrgid(gid);
+		/*
+		 * First try the TDB. If the RID exists and is mapped to a unix group,
+		 * return the NT name and the type.
+		 */
+		
+		sid_copy(&sid, &global_sam_sid);
+		sid_append_rid(&sid, rid);
+		if (get_group_map_from_sid(sid, &map) && map.gid!=-1) {
+			*psid_name_use = map.sid_name_use;
+			fstrcpy(name, map.nt_name);
+
+			DEBUG(5,("local_lookup_rid: found NT group %s mapped to Unix gid %u for rid %u\n",
+			          name, (unsigned int)map.gid, (unsigned int)rid ));
+
+			if(!getgrgid(gid))
+				return False;
+			else
+				return True;
+		}
 
 		*psid_name_use = SID_NAME_ALIAS;
-
+		gid = pdb_user_rid_to_gid(rid);
+		
+		gr = getgrgid(gid);
 		DEBUG(5,("local_local_rid: looking up gid %u %s\n", (unsigned int)gid,
 			gr ? "succeeded" : "failed" ));
 
@@ -481,8 +518,7 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 
 		fstrcpy( name, gr->gr_name);
 
-		DEBUG(5,("local_lookup_rid: found group %s for rid %u\n", name,
-			(unsigned int)rid ));
+		DEBUG(5,("local_lookup_rid: found group %s for rid %u\n", name, (unsigned int)rid ));
 	}
 
 	return True;
@@ -529,21 +565,34 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 
 	(void)map_username(user);
 
-	if(!(pass = Get_Pwnam(user, True))) {
+	if((pass = Get_Pwnam(user, True))) {
+		sid_append_rid( &local_sid, pdb_uid_to_user_rid(pass->pw_uid));
+		*psid_name_use = SID_NAME_USER;
+	} else {
 		/*
 		 * Maybe it was a group ?
 		 */
-		struct group *grp = getgrnam(user);
+		GROUP_MAP map;
+		struct group *grp = NULL;
 
-		if(!grp)
-			return False;
+		/* It can be a mapped group */
+		if (get_group_map_from_ntname(user, &map) && map.gid!=-1) {
 
-		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
-		*psid_name_use = SID_NAME_ALIAS;
-	} else {
+			grp=getgrgid(map.gid);
+			if (!grp)
+				return False;
 
-		sid_append_rid( &local_sid, pdb_uid_to_user_rid(pass->pw_uid));
-		*psid_name_use = SID_NAME_USER;
+			sid_copy(&local_sid, &map.sid);
+			*psid_name_use = map.sid_name_use;
+		} else {
+			/* It wasn't mapped, it can be a Unix group */
+			grp=getgrnam(user);
+			if(!grp)
+				return False;
+
+			sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
+			*psid_name_use = SID_NAME_ALIAS;
+		}
 	}
 
 	sid_copy( psid, &local_sid);
@@ -661,13 +710,10 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	return True;
 }
 
-static void select_name(fstring *string, char **name, const UNISTR2 *from)
+static void select_name(pstring string, const UNISTR2 *from)
 {
 	if (from->buffer != 0)
-	{
-		unistr2_to_ascii(*string, from, sizeof(*string));
-		*name = *string;
-	}
+		unistr2_to_ascii(string, from, sizeof(*string));
 }
 
 /*************************************************************
@@ -675,16 +721,6 @@ static void select_name(fstring *string, char **name, const UNISTR2 *from)
  **************************************************************/
 void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 {
-	static fstring smb_name;
-	static fstring full_name;
-	static fstring home_dir;
-	static fstring dir_drive;
-	static fstring logon_script;
-	static fstring profile_path;
-	static fstring acct_desc;
-	static fstring workstations;
-	static fstring unknown_str;
-	static fstring munged_dial;
 
 	if (from == NULL || to == NULL) 
 		return;
@@ -696,16 +732,16 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
 	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
 
-	select_name(&smb_name    , &to->username    , &from->uni_user_name   );
-	select_name(&full_name   , &to->full_name   , &from->uni_full_name   );
-	select_name(&home_dir    , &to->home_dir    , &from->uni_home_dir    );
-	select_name(&dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
-	select_name(&logon_script, &to->logon_script, &from->uni_logon_script);
-	select_name(&profile_path, &to->profile_path, &from->uni_profile_path);
-	select_name(&acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
-	select_name(&workstations, &to->workstations, &from->uni_workstations);
-	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
-	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
+	select_name(to->username    , &from->uni_user_name   );
+	select_name(to->full_name   , &from->uni_full_name   );
+	select_name(to->home_dir    , &from->uni_home_dir    );
+	select_name(to->dir_drive   , &from->uni_dir_drive   );
+	select_name(to->logon_script, &from->uni_logon_script);
+	select_name(to->profile_path, &from->uni_profile_path);
+	select_name(to->acct_desc   , &from->uni_acct_desc   );
+	select_name(to->workstations, &from->uni_workstations);
+	select_name(to->unknown_str , &from->uni_unknown_str );
+	select_name(to->munged_dial , &from->uni_munged_dial );
 
 	to->user_rid = from->user_rid;
 	to->group_rid = from->group_rid;
@@ -726,17 +762,6 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
  **************************************************************/
 void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 {
-	static fstring smb_name;
-	static fstring full_name;
-	static fstring home_dir;
-	static fstring dir_drive;
-	static fstring logon_script;
-	static fstring profile_path;
-	static fstring acct_desc;
-	static fstring workstations;
-	static fstring unknown_str;
-	static fstring munged_dial;
-
 	if (from == NULL || to == NULL) 
 		return;
 
@@ -747,16 +772,16 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
 	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
 
-	select_name(&smb_name    , &to->username    , &from->uni_user_name   );
-	select_name(&full_name   , &to->full_name   , &from->uni_full_name   );
-	select_name(&home_dir    , &to->home_dir    , &from->uni_home_dir    );
-	select_name(&dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
-	select_name(&logon_script, &to->logon_script, &from->uni_logon_script);
-	select_name(&profile_path, &to->profile_path, &from->uni_profile_path);
-	select_name(&acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
-	select_name(&workstations, &to->workstations, &from->uni_workstations);
-	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
-	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
+	select_name(to->username    , &from->uni_user_name   );
+	select_name(to->full_name   , &from->uni_full_name   );
+	select_name(to->home_dir    , &from->uni_home_dir    );
+	select_name(to->dir_drive   , &from->uni_dir_drive   );
+	select_name(to->logon_script, &from->uni_logon_script);
+	select_name(to->profile_path, &from->uni_profile_path);
+	select_name(to->acct_desc   , &from->uni_acct_desc   );
+	select_name(to->workstations, &from->uni_workstations);
+	select_name(to->unknown_str , &from->uni_unknown_str );
+	select_name(to->munged_dial , &from->uni_munged_dial );
 
 	to->user_rid = from->user_rid;
 	to->group_rid = from->group_rid;
@@ -781,93 +806,9 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
  **************************************************************/
 void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
 {
-	int len;
-	
 	if (!from || !to) return;
 
-	pdb_clear_sam (to);
-
-	/* copy all non-pointers */
-	memcpy(to, from, sizeof(*from));
-
-	if (from->username) {
-		len=strlen(from->username)+1;
-		to->username = talloc(to->mem_ctx, len);
-		StrnCpy (to->username, from->username, len-1);
-	}
-
-	if (from->full_name) {
-		len=strlen(from->full_name)+1;
-		to->full_name = talloc(to->mem_ctx, len);
-		StrnCpy (to->full_name, from->full_name, len-1);
-	}
-
-	if (from->nt_username) {
-		len=strlen(from->nt_username)+1;
-		to->nt_username = talloc(to->mem_ctx, len);
-		StrnCpy (to->nt_username, from->nt_username, len-1);
-	}
-
-	if (from->profile_path) {
-		len=strlen(from->profile_path)+1;
-		to->profile_path = talloc(to->mem_ctx, len);
-		StrnCpy (to->profile_path, from->profile_path, len-1);
-	}
-
-	if (from->logon_script) {
-		len=strlen(from->logon_script)+1;
-		to->logon_script = talloc(to->mem_ctx, len);
-		StrnCpy (to->logon_script, from->logon_script, len-1);
-	}
-
-	if (from->home_dir) {
-		len=strlen(from->home_dir)+1;
- 		to->home_dir = talloc(to->mem_ctx, len);
-		StrnCpy (to->home_dir, from->home_dir, len-1);
-	}
-	
-	if (from->dir_drive) {
-		len=strlen(from->dir_drive)+1;
-		to->dir_drive = talloc(to->mem_ctx, len);
-		StrnCpy (to->dir_drive, from->dir_drive, len-1);
-	}
-	
-	if (from->workstations) {
-		len=strlen(from->workstations)+1;
-		to->workstations = talloc(to->mem_ctx, len);
-		StrnCpy (to->workstations, from->workstations, len-1);
-	}
-	
-	if (from->acct_desc) {
-		len=strlen(from->acct_desc)+1;
-		to->acct_desc = talloc(to->mem_ctx, len);
-		StrnCpy (to->acct_desc, from->acct_desc, len-1);
-	}
-	
-	if (from->munged_dial) {
-		len=strlen(from->munged_dial)+1;
-		to->munged_dial = talloc(to->mem_ctx, len);
-		StrnCpy (to->munged_dial, from->munged_dial, len);
-	}
-	
-	if (from->unknown_str) {
-		len=strlen(from->unknown_str)+1;
-		to->unknown_str = talloc(to->mem_ctx, len);
-		StrnCpy (to->unknown_str, from->unknown_str, len-1);
-	}
-
-
-	if (from->nt_pw) {
-		to->nt_pw = talloc(to->mem_ctx, 16);
-		memcpy (to->nt_pw, from->nt_pw, 16);
-	}
-	
-	if (from->lm_pw) {
-		to->lm_pw = talloc(to->mem_ctx, 16);
-		memcpy (to->lm_pw, from->lm_pw, 16);
-	}
-
-	return;
+	memcpy(to, from, sizeof(SAM_ACCOUNT));
 }
 
 /*************************************************************
@@ -886,8 +827,8 @@ BOOL local_password_change(char *user_name, int local_flags,
 			   char *msg_str, size_t msg_str_len)
 {
 	struct passwd  *pwd = NULL;
-	SAM_ACCOUNT 	*sam_pass;
-	SAM_ACCOUNT	new_sam_acct;
+	SAM_ACCOUNT 	*sam_pass=NULL;
+	SAM_ACCOUNT	*new_sam_acct=NULL;
 	uchar           new_p16[16];
 	uchar           new_nt_p16[16];
 
@@ -912,62 +853,60 @@ account without a valid local system user.\n", user_name);
 	nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
 
 	/* Get the smb passwd entry for this user */
-	sam_pass = pdb_getsampwnam(user_name);
-	if (sam_pass == NULL) 
-	{
-		if(!(local_flags & LOCAL_ADD_USER)) 
-		{
+	pdb_init_sam(&sam_pass);
+	if(!pdb_getsampwnam(sam_pass, user_name)) {
+		pdb_clear_sam(sam_pass);
+		return False;
+	}
+	
+	if (sam_pass == NULL) {
+		if(!(local_flags & LOCAL_ADD_USER)) {
 			slprintf(err_str, err_str_len-1,"Failed to find entry for user %s.\n", user_name);
+			pdb_clear_sam(sam_pass);
 			return False;
 		}
 
 		/* create the SAM_ACCOUNT struct and call pdb_add_sam_account.
 		   Because the new_sam_pwd only exists in the scope of this function
 		   we will not allocate memory for members */
-		pdb_init_sam 	      (&new_sam_acct);
-		pdb_set_username      (&new_sam_acct, user_name);
-		pdb_set_fullname      (&new_sam_acct, pwd->pw_gecos);
-		pdb_set_uid	      (&new_sam_acct, pwd->pw_uid);
-		pdb_set_gid	      (&new_sam_acct, pwd->pw_gid);
-		pdb_set_pass_last_set_time(&new_sam_acct, time(NULL));
-		pdb_set_profile_path  (&new_sam_acct, lp_logon_path());
-		pdb_set_homedir       (&new_sam_acct, lp_logon_home());
-		pdb_set_dir_drive     (&new_sam_acct, lp_logon_drive());
-		pdb_set_logon_script  (&new_sam_acct, lp_logon_script());
+		pdb_init_sam(&new_sam_acct);
+		pdb_set_username(new_sam_acct, user_name);
+		pdb_set_fullname(new_sam_acct, pwd->pw_gecos);
+		pdb_set_uid(new_sam_acct, pwd->pw_uid);
+		pdb_set_gid(new_sam_acct, pwd->pw_gid);
+		pdb_set_pass_last_set_time(new_sam_acct, time(NULL));
+		pdb_set_profile_path(new_sam_acct, lp_logon_path());
+		pdb_set_homedir(new_sam_acct, lp_logon_home());
+		pdb_set_dir_drive(new_sam_acct, lp_logon_drive());
+		pdb_set_logon_script(new_sam_acct, lp_logon_script());
 
 		/* set account flags */
-		pdb_set_acct_ctrl(&new_sam_acct,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) );
+		pdb_set_acct_ctrl(new_sam_acct,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) );
+
 		if (local_flags & LOCAL_DISABLE_USER)
-		{
-			pdb_set_acct_ctrl (&new_sam_acct, pdb_get_acct_ctrl(&new_sam_acct)|ACB_DISABLED);
-		}
+			pdb_set_acct_ctrl (new_sam_acct, pdb_get_acct_ctrl(new_sam_acct)|ACB_DISABLED);
+
 		if (local_flags & LOCAL_SET_NO_PASSWORD)
-		{
-			pdb_set_acct_ctrl (&new_sam_acct, pdb_get_acct_ctrl(&new_sam_acct)|ACB_PWNOTREQ);
-		}
-		else
-		{
+			pdb_set_acct_ctrl (new_sam_acct, pdb_get_acct_ctrl(new_sam_acct)|ACB_PWNOTREQ);
+		else {
 			/* set the passwords here.  if we get to here it means
 			   we have a valid, active account */
-			pdb_set_lanman_passwd (&new_sam_acct, new_p16);
-			pdb_set_nt_passwd     (&new_sam_acct, new_nt_p16);
+			pdb_set_lanman_passwd (new_sam_acct, new_p16);
+			pdb_set_nt_passwd     (new_sam_acct, new_nt_p16);
 		}
-		
-			
-		if (pdb_add_sam_account(&new_sam_acct)) 
-		{
+
+		pdb_clear_sam(sam_pass);
+
+		if (pdb_add_sam_account(new_sam_acct)) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
-			pdb_clear_sam (&new_sam_acct);
+			pdb_clear_sam(new_sam_acct);
 			return True;
-		} 
-		else 
-		{
+		} else {
 			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
+			pdb_clear_sam(new_sam_acct);
 			return False;
 		}
-	} 
-	else 
-	{
+	} else {
 		/* the entry already existed */
 		local_flags &= ~LOCAL_ADD_USER;
 	}
@@ -978,25 +917,21 @@ account without a valid local system user.\n", user_name);
 	 */
 
 	if(local_flags & LOCAL_DISABLE_USER) 
-	{
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED);
-	}
 	else if (local_flags & LOCAL_ENABLE_USER) 
-	{
-		if(pdb_get_lanman_passwd(sam_pass) == NULL) 
 		{
+		if(pdb_get_lanman_passwd(sam_pass) == NULL) {
 			pdb_set_lanman_passwd (sam_pass, new_p16);
 			pdb_set_nt_passwd     (sam_pass, new_nt_p16);
 		}
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
-	} else if (local_flags & LOCAL_SET_NO_PASSWORD) 
-	{
+	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ);
 		
 		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
 		pdb_set_lanman_passwd (sam_pass, NULL);
 		pdb_set_nt_passwd     (sam_pass, NULL);
-	} 
+		} 
 	else 
 	{
 		/*
@@ -1015,20 +950,19 @@ account without a valid local system user.\n", user_name);
 		pdb_set_nt_passwd     (sam_pass, new_nt_p16);
 	}
 	
-	if(local_flags & LOCAL_DELETE_USER) 
-	{
-		if (!pdb_delete_sam_account(user_name)) 
-		{
+	if(local_flags & LOCAL_DELETE_USER) {
+		if (!pdb_delete_sam_account(user_name)) {
 			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
+			pdb_clear_sam(sam_pass);
 			return False;
 		}
 		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
 	} 
 	else 
 	{
-		if(!pdb_update_sam_account(sam_pass, True)) 
-		{
+		if(!pdb_update_sam_account(sam_pass, True)) {
 			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
+			pdb_clear_sam(sam_pass);
 			return False;
 		}
 		if(local_flags & LOCAL_DISABLE_USER)
@@ -1039,6 +973,7 @@ account without a valid local system user.\n", user_name);
 			slprintf(msg_str, msg_str_len-1, "User %s password set to none.\n", user_name);
 	}
 
+	pdb_clear_sam(sam_pass);
 	return True;
 }
 
@@ -1412,333 +1347,182 @@ BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid)
 	return True;
 }
 
-BOOL pdb_set_username (SAM_ACCOUNT *sampass, char *username)
-{
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!username) 
-	{
-		sampass->username = NULL;
-		return True;
-	}
-
-	len = strlen(username)+1;
-	sampass->username = (char*)talloc(sampass->mem_ctx, len);
-
-	if (sampass->username == NULL )
-	{
-		DEBUG (0,("pdb_set_username: ERROR - Unable to talloc memory for [%s]\n", username));
+/*********************************************************************
+ set the user's UNIX name
+ ********************************************************************/
+BOOL pdb_set_username(SAM_ACCOUNT *sampass, char *username)
+{	
+	if (!sampass || !username)
 		return False;
-	}
-	
-	StrnCpy (sampass->username, username, len-1);
+
+	StrnCpy (sampass->username, username, strlen(username));
 
 	return True;
 }
 
-BOOL pdb_set_domain (SAM_ACCOUNT *sampass, char *domain)
-{
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!domain) 
-	{
-		sampass->domain = NULL;
-		return True;
-	}
-
-	len = strlen(domain)+1;
-	sampass->domain = talloc (sampass->mem_ctx, len);
-
-	if (sampass->domain == NULL )
-	{
-		DEBUG (0,("pdb_set_domain: ERROR - Unable to talloc memory for [%s]\n", domain));
+/*********************************************************************
+ set the domain name
+ ********************************************************************/
+BOOL pdb_set_domain(SAM_ACCOUNT *sampass, char *domain)
+{	
+	if (!sampass || !domain)
 		return False;
-	}
-	
-	StrnCpy (sampass->domain, domain, len-1);
+
+	StrnCpy (sampass->domain, domain, strlen(domain));
 
 	return True;
 }
 
-BOOL pdb_set_nt_username (SAM_ACCOUNT *sampass, char *nt_username)
+/*********************************************************************
+ set the user's NT name
+ ********************************************************************/
+BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, char *nt_username)
 {
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!nt_username) 
-	{
-		sampass->nt_username = NULL;
-		return True;
-	}
-
-	len = strlen(nt_username)+1;
-	sampass->nt_username = talloc (sampass->mem_ctx, len);
-
-	if (sampass->nt_username == NULL )
-	{
-		DEBUG (0,("pdb_set_nt_username: ERROR - Unable to talloc memory for [%s]\n", nt_username));
+	if (!sampass || !nt_username)
 		return False;
-	}
-	
-	StrnCpy (sampass->nt_username, nt_username, len-1);
+
+	StrnCpy (sampass->nt_username, nt_username, strlen(nt_username));
 
 	return True;
 }
 
-BOOL pdb_set_fullname (SAM_ACCOUNT *sampass, char *fullname)
+/*********************************************************************
+ set the user's full name
+ ********************************************************************/
+BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, char *fullname)
 {
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!fullname) 
-	{
-		sampass->full_name = NULL;
-		return True;
-	}
-
-	len = strlen(fullname)+1;
-	sampass->full_name = talloc (sampass->mem_ctx, len);
-
-	if (sampass->full_name == NULL )
-	{
-		DEBUG (0,("pdb_set_fullname: ERROR - Unable to talloc memory for [%s]\n", fullname));
+	if (!sampass || !fullname)
 		return False;
-	}
-	
-	StrnCpy (sampass->full_name, fullname, len-1);
+
+	StrnCpy (sampass->full_name, fullname, strlen(fullname));
 
 	return True;
 }
 
-BOOL pdb_set_logon_script (SAM_ACCOUNT *sampass, char *logon_script)
+/*********************************************************************
+ set the user's logon script
+ ********************************************************************/
+BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
 {
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!logon_script) 
-	{
-		sampass->logon_script = NULL;
-		return True;
-	}
-
-	len = strlen(logon_script)+1;
-	sampass->logon_script = talloc (sampass->mem_ctx, len);
-
-	if (sampass->logon_script == NULL )
-	{
-		DEBUG (0,("pdb_set_logon_script: ERROR - Unable to talloc memory for [%s]\n", logon_script));
+	if (!sampass || !logon_script)
 		return False;
-	}
-	
-	StrnCpy (sampass->logon_script, logon_script, len-1);
+
+	StrnCpy (sampass->logon_script, logon_script, strlen(logon_script));
 
 	return True;
 }
 
+/*********************************************************************
+ set the user's profile path
+ ********************************************************************/
 BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
 {
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!profile_path) 
-	{
-		sampass->profile_path = NULL;
-		return True;
-	}
-
-	len = strlen(profile_path)+1;
-	sampass->profile_path = talloc (sampass->mem_ctx, len);
-
-	if (!sampass->profile_path)
-	{
-		DEBUG (0,("pdb_set_profile_path: ERROR - Unable to talloc memory for [%s]\n", profile_path));
+	if (!sampass || !profile_path)
 		return False;
-	}
 	
-	StrnCpy (sampass->profile_path, profile_path, len-1);
+	StrnCpy (sampass->profile_path, profile_path, strlen(profile_path));
 	
 	return True;
 }
 
+/*********************************************************************
+ set the user's directory drive
+ ********************************************************************/
 BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
 {
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!dir_drive) 
-	{
-		sampass->dir_drive = NULL;
-		return True;
-	}
-
-	len = strlen(dir_drive)+1;
-	sampass->dir_drive = talloc (sampass->mem_ctx, len);
-
-	if (sampass->dir_drive == NULL )
-	{
-		DEBUG (0,("pdb_set_dir_drive: ERROR - Unable to talloc memory for [%s]\n", dir_drive));
+	if (!sampass || !dir_drive)
 		return False;
-	}
-	
-	StrnCpy (sampass->dir_drive, dir_drive, len-1);
+
+	StrnCpy (sampass->dir_drive, dir_drive, strlen(dir_drive));
 
 	return True;
 }
 
+/*********************************************************************
+ set the user's home directory
+ ********************************************************************/
 BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
 {
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!homedir) 
-	{
-		sampass->home_dir = NULL;
-		return True;
-	}
-
-	len = strlen(homedir)+1;
-	sampass->home_dir = talloc (sampass->mem_ctx, len);
-
-	if (sampass->home_dir == NULL )
-	{
-		DEBUG (0,("pdb_set_homedir: ERROR - Unable to talloc memory for [%s]\n", homedir));
+	if (!sampass || !homedir)
 		return False;
-	}
 	
-	StrnCpy (sampass->home_dir, homedir, len-1);
+	StrnCpy (sampass->home_dir, homedir, strlen(homedir));
 
 	return True;
 }
 
+/*********************************************************************
+ set the user's account description
+ ********************************************************************/
 BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc)
 {
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!acct_desc) 
-	{
-		sampass->acct_desc = NULL;
-		return True;
-	}
-
-	len = strlen(acct_desc)+1;
-	sampass->acct_desc = talloc (sampass->mem_ctx, len);
-
-	if (sampass->acct_desc == NULL )
-	{
-		DEBUG (0,("pdb_set_acct_desc: ERROR - Unable to talloc memory for [%s]\n", acct_desc));
+	if (!sampass || !acct_desc)
 		return False;
-	}
 	
-	StrnCpy (sampass->acct_desc, acct_desc, len-1);
+	StrnCpy (sampass->acct_desc, acct_desc, strlen(acct_desc));
 
 	return True;
 }
 
+/*********************************************************************
+ set the user's workstation allowed list
+ ********************************************************************/
 BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations)
 {
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
+	if (!sampass || !workstations) return False;
 
-	if (!workstations) 
-	{
-		sampass->workstations = NULL;
-		return True;
-	}
-
-	len = strlen(workstations)+1;
-	sampass->workstations = talloc (sampass->mem_ctx, len);
-
-	if (sampass->workstations == NULL )
-	{
-		DEBUG (0,("pdb_set_workstations: ERROR - Unable to talloc memory for [%s]\n", workstations));
-		return False;
-	}
-	
-	StrnCpy (sampass->workstations, workstations, len-1);
+	StrnCpy (sampass->workstations, workstations, strlen(workstations));
 
 	return True;
 }
 
+/*********************************************************************
+ set the user's dial string
+ ********************************************************************/
 BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
 {
-	int len;
-	
-	if (!sampass || !sampass->mem_ctx) return False;
+	if (!sampass || !munged_dial) return False;
 
-	if (!munged_dial) 
-	{
-		sampass->munged_dial = NULL;
-		return True;
-	}
-
-	len = strlen(munged_dial)+1;
-	sampass->munged_dial = talloc (sampass->mem_ctx, len);
-
-	if (sampass->munged_dial == NULL )
-	{
-		DEBUG (0,("pdb_set_munged_dial: ERROR - Unable to talloc memory for [%s]\n", munged_dial));
-		return False;
-	}
-	
-	StrnCpy (sampass->munged_dial, munged_dial, len-1);
+	StrnCpy (sampass->munged_dial, munged_dial, strlen(munged_dial));
 
 	return True;
 }
 
+/*********************************************************************
+ set the user's NT hash
+ ********************************************************************/
 BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
-	if (!sampass || !sampass->mem_ctx) return False;
-
-	if (!pwd) 
-	{
-		sampass->nt_pw = NULL;
-		return True;
-	}
+	if (!sampass || !pwd) return False;
 	
-	sampass->nt_pw = talloc (sampass->mem_ctx, 16);
-
-	if (sampass->nt_pw == NULL )
-	{
-		DEBUG (0,("pdb_set_nt_passwd: ERROR - Unable to talloc memory for [%s]\n", pwd));
+	if (sampass->nt_pw!=NULL)
+		DEBUG(0,("pdb_set_nt_passwd: NT hash non NULL overwritting ?\n"));
+	else
+		sampass->nt_pw=(unsigned char *)malloc(sizeof(unsigned char)*16);
+	
+	if (sampass->nt_pw==NULL)
 		return False;
-	}
-	
+
 	memcpy (sampass->nt_pw, pwd, 16);
 
 	return True;
 }
 
+/*********************************************************************
+ set the user's LM hash
+ ********************************************************************/
 BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
-	if (!sampass || !sampass->mem_ctx) return False;
+	if (!sampass || !*pwd) return False;
 	
-	if (!pwd)
-	{
-		sampass->lm_pw = NULL;
-		return True;
-	}
-
-	sampass->lm_pw = talloc (sampass->mem_ctx, 16);
-
-	if (sampass->lm_pw == NULL )
-	{
-		DEBUG (0,("pdb_set_lanman_passwd: ERROR - Unable to talloc memory for [%s]\n", pwd));
+	if (sampass->lm_pw!=NULL)
+		DEBUG(0,("pdb_set_nt_passwd: LM hash non NULL overwritting ?\n"));
+	else
+		sampass->lm_pw=(unsigned char *)malloc(sizeof(unsigned char)*16);
+	
+	if (sampass->lm_pw==NULL)
 		return False;
-	}
-	
+
 	memcpy (sampass->lm_pw, pwd, 16);
 
 	return True;
@@ -1773,7 +1557,7 @@ BOOL pdb_set_unknown_6 (SAM_ACCOUNT *sampass, uint32 unkn)
 
 BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours)
 {
-	if (!sampass || !sampass->mem_ctx) return False;
+	if (!sampass) return False;
 
 	if (!hours) 
 	{
@@ -1785,4 +1569,3 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours)
 
 	return True;
 }
-

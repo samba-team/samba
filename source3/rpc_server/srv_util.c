@@ -247,8 +247,10 @@ uint32 local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
  ********************************************************************/
 uint32 local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 {
-	SAM_ACCOUNT *sampwd;
+	SAM_ACCOUNT *sampwd=NULL;
 	int i = 0;
+	BOOL ret;
+	
 	(*type) = SID_NAME_USER;
 
 	DEBUG(5,("lookup_user_name: rid: %d", rid));
@@ -259,26 +261,28 @@ uint32 local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 		i++;
 	}
 
-	if (domain_user_rids[i].rid != 0)
-	{
+	if (domain_user_rids[i].rid != 0) {
 		fstrcpy(user_name, domain_user_rids[i].name);
 		DEBUG(5,(" = %s\n", user_name));
 		return 0x0;
 	}
 
+	pdb_init_sam(&sampwd);
+
 	/* ok, it's a user.  find the user account */
 	become_root();
-	sampwd = pdb_getsampwrid(rid);
+	ret = pdb_getsampwrid(sampwd, rid);
 	unbecome_root();
 
-	if (sampwd != NULL)
-	{
+	if (ret == True) {
 		fstrcpy(user_name, pdb_get_username(sampwd) );
 		DEBUG(5,(" = %s\n", user_name));
+		pdb_clear_sam(sampwd);
 		return 0x0;
 	}
 
 	DEBUG(5,(" none mapped\n"));
+	pdb_clear_sam(sampwd);
 	return NT_STATUS_NONE_MAPPED;
 }
 
@@ -325,19 +329,24 @@ uint32 local_lookup_alias_rid(char *alias_name, uint32 *rid)
  ********************************************************************/
 uint32 local_lookup_user_rid(char *user_name, uint32 *rid)
 {
-	SAM_ACCOUNT *sampass;
+	SAM_ACCOUNT *sampass=NULL;
+	BOOL ret;
+
 	(*rid) = 0;
+
+	pdb_init_sam(&sampass);
 
 	/* find the user account */
 	become_root();
-	sampass = pdb_getsampwnam(user_name);
+	ret = pdb_getsampwnam(sampass, user_name);
 	unbecome_root();
 
-	if (sampass != NULL)
-	{
+	if (ret == True) {
 		(*rid) = pdb_get_user_rid(sampass);
+		pdb_clear_sam(sampass);
 		return 0x0;
 	}
 
+	pdb_clear_sam(sampass);
 	return NT_STATUS_NONE_MAPPED;
 }
