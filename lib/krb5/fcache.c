@@ -49,8 +49,12 @@ typedef struct krb5_fcache{
     int version;
 }krb5_fcache;
 
+#define KRB5_FCC_FVNO_1 0x501
+#define KRB5_FCC_FVNO_2 0x502
 #define KRB5_FCC_FVNO_3 0x503
 #define KRB5_FCC_FVNO_4 0x504
+
+#define BYTESWAP(F) ((F)->version == KRB5_FCC_FVNO_1 || (F)->version == KRB5_FCC_FVNO_2)
 
 #define FCC_TAG_DELTATIME 1
 
@@ -157,15 +161,18 @@ fcc_initialize(krb5_context context,
 	sp = krb5_storage_from_fd(fd);
 	f->version = KRB5_FCC_FVNO_4;
 	krb5_store_int16(sp, f->version);
-	/* V4 stuff */
-	if (context->kdc_sec_offset) {
-	    krb5_store_int16 (sp, 12); /* length */
-	    krb5_store_int16 (sp, FCC_TAG_DELTATIME); /* Tag */
-	    krb5_store_int16 (sp, 8); /* length of data */
-	    krb5_store_int32 (sp, context->kdc_sec_offset);
-	    krb5_store_int32 (sp, context->kdc_usec_offset);
-	} else {
-	    krb5_store_int16 (sp, 0);
+	krb5_storage_set_host_byteorder(sp, BYTESWAP(f));
+	if(f->version == KRB5_FCC_FVNO_4) {
+	    /* V4 stuff */
+	    if (context->kdc_sec_offset) {
+		krb5_store_int16 (sp, 12); /* length */
+		krb5_store_int16 (sp, FCC_TAG_DELTATIME); /* Tag */
+		krb5_store_int16 (sp, 8); /* length of data */
+		krb5_store_int32 (sp, context->kdc_sec_offset);
+		krb5_store_int32 (sp, context->kdc_usec_offset);
+	    } else {
+		krb5_store_int16 (sp, 0);
+	    }
 	}
 	krb5_store_principal(sp, primary_principal);
 	krb5_storage_free(sp);
@@ -212,17 +219,8 @@ fcc_store_cred(krb5_context context,
     {
 	krb5_storage *sp;
 	sp = krb5_storage_from_fd(fd);
-	krb5_store_principal(sp, creds->client);
-	krb5_store_principal(sp, creds->server);
-	krb5_store_keyblock(sp, creds->session);
-	krb5_store_times(sp, creds->times);
-	krb5_store_int8(sp, 0);  /* this is probably the
-				    enc-tkt-in-skey bit from KDCOptions */
-	krb5_store_int32(sp, creds->flags.i);
-	krb5_store_addrs(sp, creds->addresses);
-	krb5_store_authdata(sp, creds->authdata);
-	krb5_store_data(sp, creds->ticket);
-	krb5_store_data(sp, creds->second_ticket);
+	krb5_storage_set_host_byteorder(sp, BYTESWAP(FCACHE(id)));
+	krb5_store_creds(sp, creds);
 	krb5_storage_free(sp);
     }
     close(fd);
@@ -230,38 +228,20 @@ fcc_store_cred(krb5_context context,
 }
 
 static krb5_error_code
-fcc_read_cred (int fd,
+fcc_read_cred (krb5_fcache *fc,
+	       int fd,
 	       krb5_creds *creds)
 {
-    int ret = 0;
-    int8_t dummy8;
-    int32_t dummy32;
+    krb5_error_code ret;
     krb5_storage *sp;
 
     sp = krb5_storage_from_fd(fd);
+    if(sp == NULL)
+	return ENOMEM;
+    
+    krb5_storage_set_host_byteorder(sp, BYTESWAP(fc));
 
-    ret = krb5_ret_principal (sp,  &creds->client);
-    if(ret) goto cleanup;
-    ret = krb5_ret_principal (sp,  &creds->server);
-    if(ret) goto cleanup;
-    ret = krb5_ret_keyblock (sp,  &creds->session);
-    if(ret) goto cleanup;
-    ret = krb5_ret_times (sp,  &creds->times);
-    if(ret) goto cleanup;
-    ret = krb5_ret_int8 (sp,  &dummy8);
-    if(ret) goto cleanup;
-    ret = krb5_ret_int32 (sp,  &dummy32);
-    if(ret) goto cleanup;
-    creds->flags.i = dummy32;
-    ret = krb5_ret_addrs (sp,  &creds->addresses);
-    if(ret) goto cleanup;
-    ret = krb5_ret_authdata (sp,  &creds->authdata);
-    if(ret) goto cleanup;
-    ret = krb5_ret_data (sp,  &creds->ticket);
-    if(ret) goto cleanup;
-    ret = krb5_ret_data (sp,  &creds->second_ticket);
-
-cleanup:
+    ret = krb5_ret_creds(sp, creds);
     krb5_storage_free(sp);
     return ret;
 }
@@ -280,10 +260,11 @@ init_fcc (krb5_context context,
     if(fd < 0)
 	return errno;
     sp = krb5_storage_from_fd(fd);
-    krb5_ret_int16(sp, &tag);
+    krb5_ret_int16(sp, &tag); /* should not be host byte order */
     fcache->version = tag;
+    krb5_storage_set_host_byteorder(sp, BYTESWAP(fcache));
     switch (tag) {
-    case KRB5_FCC_FVNO_4 : {
+    case KRB5_FCC_FVNO_4: {
 	int16_t length;
 
 	krb5_ret_int16 (sp, &length);
@@ -308,7 +289,9 @@ init_fcc (krb5_context context,
 	}
 	break;
     }
-    case KRB5_FCC_FVNO_3 :
+    case KRB5_FCC_FVNO_3:
+    case KRB5_FCC_FVNO_2:
+    case KRB5_FCC_FVNO_1:
 	break;
     default :
 	krb5_storage_free (sp);
@@ -364,7 +347,7 @@ fcc_get_next (krb5_context context,
 	      krb5_cc_cursor *cursor,
 	      krb5_creds *creds)
 {
-    return fcc_read_cred (cursor->u.fd, creds);
+    return fcc_read_cred (FCACHE(id), cursor->u.fd, creds);
 }
 
 static krb5_error_code
