@@ -539,6 +539,35 @@ static nt_err_code_struct nt_errs[] =
 	{ NULL, NT_STATUS(0) }
 };
 
+nt_err_code_struct nt_err_desc[] =
+{
+	{ "Success", NT_STATUS_OK },
+	{ "Undetermined error", NT_STATUS_UNSUCCESSFUL },
+	{ "Access denied", NT_STATUS_ACCESS_DENIED },
+	{ "Account locked out", NT_STATUS_ACCOUNT_LOCKED_OUT },
+	{ "Password is too short", NT_STATUS_PWD_TOO_SHORT },
+	{ "Password is too recent", NT_STATUS_PWD_TOO_RECENT },
+	{ "Password history conflict", NT_STATUS_PWD_HISTORY_CONFLICT },
+	{ "No logon servers", NT_STATUS_NO_LOGON_SERVERS },
+	{ "Invalid account name", NT_STATUS_INVALID_ACCOUNT_NAME },
+	{ "User exists", NT_STATUS_USER_EXISTS },
+	{ "No such user", NT_STATUS_NO_SUCH_USER },
+	{ "Group exists", NT_STATUS_GROUP_EXISTS },
+	{ "No such group", NT_STATUS_NO_SUCH_GROUP },
+	{ "Member not in group", NT_STATUS_MEMBER_NOT_IN_GROUP },
+	{ "Wrong Password", NT_STATUS_WRONG_PASSWORD },
+	{ "Ill formed password", NT_STATUS_ILL_FORMED_PASSWORD },
+	{ "Password restriction", NT_STATUS_PASSWORD_RESTRICTION },
+	{ "Logon failure", NT_STATUS_LOGON_FAILURE },
+	{ "Account restruction", NT_STATUS_ACCOUNT_RESTRICTION },
+	{ "Invalid logon hours", NT_STATUS_INVALID_LOGON_HOURS },
+	{ "Invalid workstation", NT_STATUS_INVALID_WORKSTATION },
+	{ "Password expired", NT_STATUS_PASSWORD_EXPIRED },
+	{ "Account Disabled", NT_STATUS_ACCOUNT_DISABLED },
+	{ NULL, NT_STATUS(0) }
+};
+
+
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
@@ -558,6 +587,27 @@ char *nt_errstr(NTSTATUS nt_code)
 	}
 
         return msg;
+}
+
+/************************************************************************
+ Print friendler version fo NT error code
+ ***********************************************************************/
+ 
+char *get_friendly_nt_error_msg(NTSTATUS nt_code)
+{
+        int idx = 0;
+
+	while (nt_err_desc[idx].nt_errstr != NULL) {
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == NT_STATUS_V(nt_code)) 
+		{
+                        return nt_errs[idx].nt_errstr;
+		}
+		idx++;
+	}
+	
+	/* fall back to NT_STATUS_XXX string */
+	
+	return get_nt_error_msg(nt_code);
 }
 
 /*****************************************************************************
