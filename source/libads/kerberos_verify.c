@@ -36,8 +36,6 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	krb5_keytab keytab = NULL;
 	krb5_data packet;
 	krb5_ticket *tkt = NULL;
-	krb5_data salt;
-	krb5_encrypt_block eblock;
 	int ret;
 	krb5_keyblock * key;
 	krb5_principal host_princ;
@@ -91,24 +89,15 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	ret = krb5_principal2salt(context, host_princ, &salt);
-	if (ret) {
-		DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
-		return NT_STATUS_LOGON_FAILURE;
-	}
-    
 	if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	krb5_use_enctype(context, &eblock, ENCTYPE_DES_CBC_MD5);
-	
-	ret = krb5_string_to_key(context, &eblock, key, &password, &salt);
-	if (ret) {
-		DEBUG(1,("krb5_string_to_key failed (%s)\n", error_message(ret)));
+	if (create_kerberos_key_from_string(context, host_princ, &password, key)) {
+		SAFE_FREE(key);
 		return NT_STATUS_LOGON_FAILURE;
 	}
-
+    
 	krb5_auth_con_setuseruserkey(context, auth_context, key);
 
 	packet.length = ticket->length;

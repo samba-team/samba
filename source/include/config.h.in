@@ -555,8 +555,20 @@
 /* Whether KRB5 is available */
 #undef HAVE_KRB5
 
+/* Whether krb5_auth_con_setkey is available */
+#undef HAVE_KRB5_AUTH_CON_SETKEY
+
+/* Whether krb5_auth_con_setuseruserkey is available */
+#undef HAVE_KRB5_AUTH_CON_SETUSERUSERKEY
+
+/* Whether krb5_get_pw_salt is available */
+#undef HAVE_KRB5_GET_PW_SALT
+
 /* Define to 1 if you have the <krb5.h> header file. */
 #undef HAVE_KRB5_H
+
+/* Whether krb5_principal2salt is available */
+#undef HAVE_KRB5_PRINCIPAL2SALT
 
 /* Whether krb5_set_default_in_tkt_etypes, is available */
 #undef HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES
@@ -566,6 +578,15 @@
 
 /* Whether krb5_set_real_time is available */
 #undef HAVE_KRB5_SET_REAL_TIME
+
+/* Whether krb5_string_to_key is available */
+#undef HAVE_KRB5_STRING_TO_KEY
+
+/* Whether krb5_string_to_key_salt is available */
+#undef HAVE_KRB5_STRING_TO_KEY_SALT
+
+/* Whether krb5_use_enctype is available */
+#undef HAVE_KRB5_USE_ENCTYPE
 
 /* Define to 1 if you have the <lastlog.h> header file. */
 #undef HAVE_LASTLOG_H

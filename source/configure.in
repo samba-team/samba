@@ -2045,6 +2045,14 @@ fi
   AC_CHECK_LIB(krb5, krb5_set_default_in_tkt_etypes, [AC_DEFINE(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES,1,[Whether krb5_set_default_in_tkt_etypes, is available])])
   AC_CHECK_LIB(krb5, krb5_set_default_tgs_ktypes, [AC_DEFINE(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES,1,[Whether krb5_set_default_tgs_ktypes is available])])
 
+  AC_CHECK_LIB(krb5, krb5_principal2salt, [AC_DEFINE(HAVE_KRB5_PRINCIPAL2SALT,1,[Whether krb5_principal2salt is available])])
+  AC_CHECK_LIB(krb5, krb5_use_enctype, [AC_DEFINE(HAVE_KRB5_USE_ENCTYPE,1,[Whether krb5_use_enctype is available])])
+  AC_CHECK_LIB(krb5, krb5_string_to_key, [AC_DEFINE(HAVE_KRB5_STRING_TO_KEY,1,[Whether krb5_string_to_key is available])])
+  AC_CHECK_LIB(krb5, krb5_get_pw_salt, [AC_DEFINE(HAVE_KRB5_GET_PW_SALT,1,[Whether krb5_get_pw_salt is available])])
+  AC_CHECK_LIB(krb5, krb5_string_to_key_salt, [AC_DEFINE(HAVE_KRB5_STRING_TO_KEY_SALT,1,[Whether krb5_string_to_key_salt is available])])
+  AC_CHECK_LIB(krb5, krb5_auth_con_setkey, [AC_DEFINE(HAVE_KRB5_AUTH_CON_SETKEY,1,[Whether krb5_auth_con_setkey is available])])
+  AC_CHECK_LIB(krb5, krb5_auth_con_setuseruserkey, [AC_DEFINE(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY,1,[Whether krb5_auth_con_setuseruserkey is available])])
+
 AC_CACHE_CHECK([for addrtype in krb5_address],samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS,[
 AC_TRY_COMPILE([#include <krb5.h>],
 [krb5_address kaddr; kaddr.addrtype = ADDRTYPE_INET;],

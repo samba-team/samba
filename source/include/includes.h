@@ -1214,8 +1214,18 @@ krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_
 krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc);
 #endif
 
-/* Samba wrapper function for krb5 functionality. */
+#if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
+krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context,
+				krb5_auth_context auth_context,
+				krb5_keyblock *keyblock);
+#endif
+
+/* Samba wrapper functions for krb5 functionality. */
 void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
+int create_kerberos_key_from_string(krb5_context context,
+				krb5_principal host_princ,
+				krb5_data *password,
+				krb5_keyblock *key);
 
 #endif /* HAVE_KRB5 */
 
