@@ -182,7 +182,10 @@ krb5_sendto_kdc (krb5_context context,
 
      port = krb5_getportbyname (context, "kerberos", "udp", 88);
 
-     ret = krb5_get_krbhst (context, realm, &hostlist);
+     if (context->use_admin_kdc)
+	 ret = krb5_get_krb_admin_hst (context, realm, &hostlist);
+     else
+	 ret = krb5_get_krbhst (context, realm, &hostlist);
      if (ret)
 	  return ret;
 
