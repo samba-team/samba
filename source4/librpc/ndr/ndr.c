@@ -639,11 +639,11 @@ NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size,
 		return NT_STATUS_OK;
 	}
 	ndr_pull_save(ndr, &save);
-        /* the old way of handling relative pointers appears to be
-	   wrong, and there doesn't seem to be anything relying on it,
-	   but I am keeping the code around in case I missed a
-	   critical use for it (tridge, august 2004) */
-	NDR_CHECK(ndr_pull_set_offset(ndr, ofs));
+	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
+		NDR_CHECK(ndr_pull_set_offset(ndr, ofs + ndr->offset - 4));
+	} else {
+		NDR_CHECK(ndr_pull_set_offset(ndr, ofs));
+	}
 	NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, ndr->data_size - ndr->offset));
 	/* strings must be allocated by the backend functions */
 	if (ndr->flags & LIBNDR_STRING_FLAGS) {
@@ -748,7 +748,11 @@ NTSTATUS ndr_push_relative2(struct ndr_push *ndr, const void *p)
 	if (ndr->offset == 0) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	NDR_CHECK(ndr_push_uint32(ndr, save.offset));
+	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
+		NDR_CHECK(ndr_push_uint32(ndr, save.offset - ndr->offset));
+	} else {
+		NDR_CHECK(ndr_push_uint32(ndr, save.offset));
+	}
 	ndr_push_restore(ndr, &save);
 	return NT_STATUS_OK;
 }
