@@ -1987,7 +1987,7 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 
 	if (mods == NULL) {
 		DEBUG(4, ("ldapsam_update_group_mapping_entry: mods is empty: nothing to do\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_OK;
 	}
 
 	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
