@@ -31,6 +31,8 @@ extern int Protocol;
 /* users from session setup */
 static pstring session_users="";
 
+extern pstring myname;
+
 /* these are kept here to keep the string_combinations function simple */
 static char this_user[100]="";
 static char this_salt[100]="";
@@ -1860,3 +1862,74 @@ use this machine as the password server.\n"));
 
 	return(True);
 }
+
+#ifdef DOMAIN_CLIENT
+BOOL domain_client_validate( char *user, char *domain, 
+                             char *smb_apasswd, int smb_apasslen, 
+                             char *smb_ntpasswd, int smb_ntpasslen)
+{
+  unsigned char local_lm_hash[21];
+  unsigned char local_nt_hash[21];
+  unsigned char local_challenge[8];
+  unsigned char local_lm_response[24];
+  unsigned char local_nt_reponse[24];
+  BOOL encrypted = True;
+
+  /* 
+   * Check that the requested domain is not our own machine name.
+   * If it is, we should never check the PDC here, we use our own local
+   * password file.
+   */
+
+  if(strequal( domain, myname)) {
+    DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
+    return False;
+  }
+
+  /*
+   * Next, check that the passwords given were encrypted.
+   */
+
+  if(smb_apasslen != 24 || smb_ntpasslen != 24) {
+
+    /*
+     * Not encrypted - do so.
+     */
+
+    DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
+    encrypted = False;
+    memset(local_lm_hash, '\0', sizeof(local_lm_hash));
+    E_P16((uchar *) smb_apasswd, local_lm_hash);
+    memset(local_nt_hash, '\0', sizeof(local_nt_hash));
+    E_md4hash((uchar *) smb_ntpasswd, local_nt_hash);
+    generate_random_buffer( local_challenge, 8, False);
+    E_P24(local_lm_hash, local_challenge, local_lm_response);
+    E_P24(local_nt_hash, local_challenge, local_nt_reponse);
+    smb_apasslen = 24;
+    smb_ntpasslen = 24;
+    smb_apasswd = (char *)local_lm_response;
+    smb_ntpasswd = (char *)local_nt_reponse;
+  } else {
+
+    /*
+     * Encrypted - get the challenge we sent for these
+     * responses.
+     */
+
+    if (!last_challenge(local_challenge)) {
+      DEBUG(0,("domain_client_validate: no challenge done - password failed\n"));
+      return False;
+    }
+  }
+
+  /*
+   * At this point, smb_apasswd points to the lanman response to
+   * the challenge in local_challenge, and smb_ntpasswd points to
+   * the NT response to the challenge in local_challenge. Ship
+   * these over the secure channel to a domain controller and
+   * see if they were valid.
+   */
+
+  return False;
+}
+#endif /* DOMAIN_CLIENT */
