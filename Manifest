@@ -1,4 +1,4 @@
-Copyright (C) 1997-1998 - Samba-Team
+Copyright (C) 1997-2003 - Samba-Team
 
 The Samba package you have just unpacked contains the following:
 
@@ -8,36 +8,19 @@ Directory	Notes:
 docs		(Samba Documentation):
 ----		----------------------
 
-	The Samba documentation for the 2.0 release has had all the man pages
-	converted to YODL source format. Because of this the man pages
-	are now available in both traditional man page format (in
-	the doc/manpages directory) and in HTML format (in the 
-	docs/htmldocs directory).
+	All the Samba documentation for the 3.0 release have been converted to
+	docbook format. Because of this the man pages are now available 
+	in both traditional man page format (in the docs/manpages directory) 
+	and in HTML format (in the docs/htmldocs directory).
 
-	The text documentation files have been moved into a
-	docs/textdocs directory and are in the (slow) process
-	of being converted to YODL source format to allow them
-	to be easily converted to HTML/SGML.
-    
-	Note in particular two files - docs/textdocs/<your OS>_INSTALL.txt 
-	and docs/textdocs/DIAGNOSIS.txt.
+	The Samba HOWTO Collection has undergone some rather large changes 
+	and covers all parts of configuration now. It is available 
+	as PDF (docs/Samba-HOWTO-Collection.pdf) or in HTML format (in 
+	the docs/htmldocs directory). Those with the docbook utilities installed 
+	can generate PostScript and text versions of the HOWTO as well.
 
-	There is the potential for there to be many *INSTALL.txt files, one
-	for each OS that Samba supports. However we are moving all this into
-	the new structure. For now, most people will be using UNIX_INSTALL.txt.
-
-	Please pay close attention to all the files with a .txt extension
-	in the docs/textdocs directory. Most problems can be solved by reference
-	to the two files mentioned.
-
-	The FAQ documentation can be accessed starting from Samba-meta-FAQ.html,
-	in the docs/faq directory. This is incomplete, but to quote from the 
-	abstract, it:
-	
-	"contains overview information for the Samba suite of programs, 
-	a quick-start guide, and pointers to all other Samba documentation. 
-	Other FAQs exist for specific client and server issues, and HOWTO 
-	documents for more extended topics to do with Samba software."
+	The Samba FAQ is still a work in progress, but can be found in 
+	HTML format in docs/htmldocs.
 
 
 examples	(Example configuration files):
@@ -71,7 +54,7 @@ source		(The official Samba source files - expect more of these!):
 	To build your own binary files you will need a suitable ansi C
 	compiler.
 
-	For Samba 2.0 the GNU autoconf system has been adopted. In
+	Samba uses the GNU autoconf system. In
 	order to build a default Samba for your platform cd into
 	the source/ directory and then type :
 
