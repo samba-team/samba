@@ -98,6 +98,7 @@ WERROR reg_open(const char *backend, const char *location, const char *credentia
 	ret = talloc(mem_ctx, sizeof(REG_HANDLE));
 	ZERO_STRUCTP(ret);	
 	ret->location = location?talloc_strdup(mem_ctx, location):NULL;
+	ret->credentials = credentials?talloc_strdup(mem_ctx, credentials):NULL;
 	ret->functions = entry->functions;
 	ret->backend_data = NULL;
 	ret->mem_ctx = mem_ctx;

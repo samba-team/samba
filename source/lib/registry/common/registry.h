@@ -121,6 +121,7 @@ struct reg_handle_s {
 	struct registry_ops *functions;
 	REG_SUBTREE *subtrees;
 	char *location;
+	char *credentials;
 	void *backend_data;
 	TALLOC_CTX *mem_ctx;
 };
