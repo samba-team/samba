@@ -303,6 +303,8 @@ static int net_rpc_oldjoin(int argc, const char **argv)
 	if (rc) {
 		d_printf("Failed to join domain\n");
 	}
+
+	return rc;
 }
 
 /** 
