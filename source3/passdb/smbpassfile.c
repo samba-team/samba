@@ -22,8 +22,8 @@
 extern int DEBUGLEVEL;
 
 BOOL global_machine_password_needs_changing = False;
-static int mach_passwd_lock_depth;
-static FILE *mach_passwd_fp;
+static int mach_passwd_lock_depth = 0;
+static FILE *mach_passwd_fp = NULL;
 
 /************************************************************************
  Routine to get the name for a trust account file.

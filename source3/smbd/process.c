@@ -778,7 +778,6 @@ void smbd_process(void)
   {
     extern fstring remote_machine;
     extern fstring local_machine;
-    char *s;
 
     fstrcpy(remote_machine, dns_to_netbios_name(client_name(Client)));
     fstrcpy(local_machine, global_myname);

@@ -493,7 +493,7 @@ void make_q_query_secret(LSA_Q_QUERY_SECRET *q_q, POLICY_HND *pol)
 {
 	if (q_q == NULL) return;
 
-	DEBUG(5,("make_q_query_secret"));
+	DEBUG(5,("make_q_query_secret\n"));
 
 	memcpy(&(q_q->pol), pol, sizeof(q_q->pol));
 

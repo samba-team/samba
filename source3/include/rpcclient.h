@@ -24,6 +24,8 @@
 #ifndef _RPCCLIENT_H
 #define _RPCCLIENT_H
 
+#define report fprintf
+
 struct tar_client_info
 {
     int blocksize;
