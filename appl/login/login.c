@@ -588,7 +588,7 @@ main(int argc, char **argv)
     }
 	
     if (geteuid() != 0)
-	err(1, "only root may use login, use su");
+	errx(1, "only root may use login, use su");
 
     /* Default tty settings. */
     stty_default();
