@@ -66,6 +66,8 @@ static pid_t local_pid;
 #define PRINT_SPOOL_PREFIX "smbprn."
 #define PRINT_DATABASE_VERSION 2
 
+#define MAX_CACHE_VALID_TIME 3600
+
 static int get_queue_status(int, print_status_struct *);
 
 /****************************************************************************
@@ -886,15 +888,27 @@ int print_job_write(int jobid, const char *buf, int size)
 static BOOL print_cache_expired(int snum)
 {
 	fstring key;
-	time_t t2, t = time(NULL);
+	time_t last_qscan_time, time_now = time(NULL);
 
 	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
 	dos_to_unix(key, True);                /* Convert key to unix-codepage */
-	t2 = tdb_fetch_int(tdb, key);
-	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
+	last_qscan_time = tdb_fetch_int(tdb, key);
+
+	/*
+	 * Invalidate the queue for 3 reasons. 
+	 * (1). last queue scan time == -1.
+	 * (2). Current time - last queue scan time > allowed cache time.
+	 * (3). last queue scan time > current time + MAX_CACHE_VALID_TIME (1 hour by default).
+	 * This last test picks up machines for which the clock has been moved
+	 * forward, an lpq scan done and then the clock moved back. Otherwise
+	 * that last lpq scan would stay around for a loooong loooong time... :-). JRA.
+	 */
+
+	if (last_qscan_time == ((time_t)-1) || (time_now - last_qscan_time) >= lp_lpqcachetime() ||
+			last_qscan_time > (time_now + MAX_CACHE_VALID_TIME)) {
 		DEBUG(3, ("print cache expired for queue %s \
-(last_cache = %d, time now = %d, qcachetime = %d)\n", lp_servicename(snum),
-			(int)t2, (int)t, (int)lp_lpqcachetime() ));
+(last_qscan_time = %d, time now = %d, qcachetime = %d)\n", lp_servicename(snum),
+			(int)last_qscan_time, (int)time_now, (int)lp_lpqcachetime() ));
 		return True;
 	}
 	return False;
@@ -960,8 +974,9 @@ static int get_total_jobs(int snum)
 }
 
 /***************************************************************************
-start spooling a job - return the jobid
+ Start spooling a job - return the jobid.
 ***************************************************************************/
+
 int print_job_start(struct current_user *user, int snum, char *jobname)
 {
 	int jobid;
@@ -989,6 +1004,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		SMB_BIG_UINT dspace, dsize;
 		if (sys_fsusage(path, &dspace, &dsize) == 0 &&
 		    dspace < 2*(SMB_BIG_UINT)lp_minprintspace(snum)) {
+			DEBUG(3, ("print_job_start: job start denied by space check\n"));
 			errno = ENOSPC;
 			return -1;
 		}
@@ -996,18 +1012,21 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 
 	/* for autoloaded printers, check that the printcap entry still exists */
 	if (lp_autoloaded(snum) && !pcap_printername_ok(lp_servicename(snum), NULL)) {
+		DEBUG(3, ("print_job_start: job start denied by printcap check\n"));
 		errno = ENOENT;
 		return -1;
 	}
 
 	/* Insure the maximum queue size is not violated */
 	if (lp_maxprintjobs(snum) && print_queue_length(snum, NULL) > lp_maxprintjobs(snum)) {
+		DEBUG(3, ("print_job_start: job start denied by max queue size check\n"));
 		errno = ENOSPC;
 		return -1;
 	}
 
 	/* Insure the maximum print jobs in the system is not violated */
 	if (lp_totalprintjobs() && get_total_jobs(snum) > lp_totalprintjobs()) {
+		DEBUG(3, ("print_job_start: job start denied by max total jobs check\n"));
 		errno = ENOSPC;
 		return -1;
 	}
@@ -1038,12 +1057,16 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 
  next_jobnum:
 	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
-	if (next_jobid == -1) next_jobid = 1;
+	if (next_jobid == -1)
+		next_jobid = 1;
 
 	for (jobid = NEXT_JOBID(next_jobid); jobid != next_jobid; jobid = NEXT_JOBID(jobid)) {
-		if (!print_job_exists(jobid)) break;
+		if (!print_job_exists(jobid))
+			break;
 	}
 	if (jobid == next_jobid || !print_job_store(jobid, &pjob)) {
+		DEBUG(3, ("print_job_start: job start failed due to %s fail\n",
+			(jobid == next_jobid ? "jobid" : "store" ) ));
 		jobid = -1;
 		goto fail;
 	}
@@ -1062,7 +1085,11 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		goto next_jobnum;
 	}
 	pjob.fd = sys_open(pjob.filename,O_WRONLY|O_CREAT|O_EXCL,0600);
-	if (pjob.fd == -1) goto fail;
+	if (pjob.fd == -1) {
+		DEBUG(3, ("print_job_start: job start failed due to file open of %s fail (%s)\n",
+			pjob.filename, strerror(errno) ));
+		goto fail;
+	}
 
 	print_job_store(jobid, &pjob);
 
