@@ -236,11 +236,13 @@ connect_local_xsocket (unsigned dnr)
 
 int
 create_and_write_cookie (char *xauthfile,
+			 size_t size,
 			 u_char *cookie,
 			 size_t sz)
 {
      Xauth auth;
      char tmp[64];
+     int fd;
      FILE *f;
      char hostname[MaxHostNameLen];
      struct in_addr loopback;
@@ -261,9 +263,16 @@ create_and_write_cookie (char *xauthfile,
      auth.data = (char*)cookie;
      des_rand_data (cookie, sz);
 
-     f = fopen(xauthfile, "w");
-     if (f == NULL)
-          return 1;
+     strncpy(xauthfile, "/tmp/AXXXXX", size);
+     xauthfile[size-1] = 0;
+     fd = mkstemp(xauthfile);
+     if(fd < 0)
+	 return 1;
+     f = fdopen(fd, "r+");
+     if(f == NULL){
+	 close(fd);
+	 return 1;
+     }
      if(XauWriteAuth(f, &auth) == 0) {
 	  fclose(f);
 	  return 1;
