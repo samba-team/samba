@@ -169,11 +169,20 @@ implemented */
 #define ERRnotconnected 233 /* No process on other end of named pipe */
 #define ERRmoredata 234 /* More data to be returned */
 #define ERRbaddirectory 267 /* Invalid directory name in a path. */
-#define ERROR_EAS_DIDNT_FIT 275 /* Extended attributes didn't fit */
-#define ERROR_EAS_NOT_SUPPORTED 282 /* Extended attributes not supported */
-#define ERROR_NOTIFY_ENUM_DIR 1022 /* Buffer too small to return change notify. */
 #define ERRunknownipc 2142
 
+#define ERROR_ACCESS_DENIED		  (5)
+#define ERROR_INVALID_HANDLE		  (6)
+#define ERROR_INVALID_PARAMETER		 (87)
+#define ERROR_INSUFFICIENT_BUFFER	(122)
+#define ERROR_INVALID_NAME		(123)
+#define ERROR_INVALID_LEVEL		(124)
+#define ERROR_NO_MORE_ITEMS		(259)
+#define ERROR_EAS_DIDNT_FIT		(275) /* Extended attributes didn't fit */
+#define ERROR_EAS_NOT_SUPPORTED		(282) /* Extended attributes not supported */
+#define ERROR_NOTIFY_ENUM_DIR	       (1022) /* Buffer too small to return change notify. */
+#define ERROR_INVALID_PRINTER_NAME     (1801)
+#define ERROR_INVALID_DATATYPE	       (1804)
 
 /* here's a special one from observing NT */
 #define ERRnoipc 66 /* don't support ipc */

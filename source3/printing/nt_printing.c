@@ -1,3 +1,25 @@
+/* 
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
+ *  RPC Pipe client / server routines
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Jean François Micouleau      1998-2000.
+ *  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include "includes.h"
 #include "nterr.h"
 
@@ -397,7 +419,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 		v=strncpyn(p, line, sizeof(p), ':');
 		if (v==NULL)
 		{
-			DEBUG(1, ("malformed printer entry (no :)\n"));
+			DEBUG(1, ("malformed printer driver entry (no :)\n"));
 			continue;
 		}
 		
@@ -444,7 +466,6 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 			StrnCpy(dependentfiles[i], v, strlen(v) );
 			i++;
 		}
-
 	}
 	
 	free(line);
@@ -478,12 +499,8 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 		case 3: 
 		{
 			if (driver.info_3 == NULL)
-			{
-				DEBUGADD(103,("NULL pointer, memory not alloced ?\n"));
 				success=5;
-			}
-			else
-			{
+			else {
 				info3=driver.info_3;
 			
 				DEBUGADD(106,("version:[%d]\n",         info3->cversion));
@@ -619,6 +636,9 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	fprintf(f, "status: %d\n", info->status);
 	fprintf(f, "cjobs: %d\n", info->cjobs);
 	fprintf(f, "averageppm: %d\n", info->averageppm);
+	fprintf(f, "changeid: %d\n", info->changeid);
+	fprintf(f, "c_setprinter: %d\n", info->c_setprinter);
+	fprintf(f, "setuptime: %d\n", (int)info->setuptime);
 
 	/* 
 	 * in addprinter: no servername and the printer is the name
@@ -641,7 +661,6 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	fprintf(f, "sharename: %s\n", info->sharename);
 	fprintf(f, "portname: %s\n", info->portname);
 	fprintf(f, "drivername: %s\n", info->drivername);
-	fprintf(f, "comment: %s\n", info->comment);
 	fprintf(f, "location: %s\n", info->location);
 	fprintf(f, "sepfile: %s\n", info->sepfile);
 	fprintf(f, "printprocessor: %s\n", info->printprocessor);
@@ -865,6 +884,15 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 		if (!strncmp(p, "averageppm", strlen("averageppm")))
 			info->averageppm=atoi(v);
 		
+		if (!strncmp(p, "changeid", strlen("changeid")))
+			info->changeid=atoi(v);
+		
+		if (!strncmp(p, "c_setprinter", strlen("c_setprinter")))
+			info->c_setprinter=atoi(v);
+		
+		if (!strncmp(p, "setuptime", strlen("setuptime")))
+			info->setuptime=atoi(v);
+		
 		if (!strncmp(p, "servername", strlen("servername")))
 			StrnCpy(info->servername, v, strlen(v));
 
@@ -879,9 +907,6 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 
 		if (!strncmp(p, "drivername", strlen("drivername")))
 			StrnCpy(info->drivername, v, strlen(v));
-
-		if (!strncmp(p, "comment", strlen("comment")))
-			StrnCpy(info->comment, v, strlen(v));
 
 		if (!strncmp(p, "location", strlen("location")))
 			StrnCpy(info->location, v, strlen(v));
@@ -1015,34 +1040,33 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 		case 2: 
 		{
 			if (printer.info_2 == NULL)
-			{
-				DEBUGADD(3,("NULL pointer, memory not alloced ?\n"));
 				success=5;
-			}
 			else
 			{
 				info2=printer.info_2;
 			
-				DEBUGADD(106,("attributes:[%d]\n",       info2->attributes));
-				DEBUGADD(106,("priority:[%d]\n",         info2->priority));
+				DEBUGADD(106,("attributes:[%d]\n", info2->attributes));
+				DEBUGADD(106,("priority:[%d]\n", info2->priority));
 				DEBUGADD(106,("default_priority:[%d]\n", info2->default_priority));
-				DEBUGADD(106,("starttime:[%d]\n",        info2->starttime));
-				DEBUGADD(106,("untiltime:[%d]\n",        info2->untiltime));
-				DEBUGADD(106,("status:[%d]\n",           info2->status));
-				DEBUGADD(106,("cjobs:[%d]\n",            info2->cjobs));
-				DEBUGADD(106,("averageppm:[%d]\n",       info2->averageppm));
+				DEBUGADD(106,("starttime:[%d]\n", info2->starttime));
+				DEBUGADD(106,("untiltime:[%d]\n", info2->untiltime));
+				DEBUGADD(106,("status:[%d]\n", info2->status));
+				DEBUGADD(106,("cjobs:[%d]\n", info2->cjobs));
+				DEBUGADD(106,("averageppm:[%d]\n", info2->averageppm));
+				DEBUGADD(106,("changeid:[%d]\n", info2->changeid));
+				DEBUGADD(106,("c_setprinter:[%d]\n", info2->c_setprinter));
+				DEBUGADD(106,("setuptime:[%d]\n", (int)info2->setuptime));
 
-				DEBUGADD(106,("servername:[%s]\n",       info2->servername));
-				DEBUGADD(106,("printername:[%s]\n",      info2->printername));
-				DEBUGADD(106,("sharename:[%s]\n",        info2->sharename));
-				DEBUGADD(106,("portname:[%s]\n",         info2->portname));
-				DEBUGADD(106,("drivername:[%s]\n",       info2->drivername));
-				DEBUGADD(106,("comment:[%s]\n",          info2->comment));
-				DEBUGADD(106,("location:[%s]\n",         info2->location));
-				DEBUGADD(106,("sepfile:[%s]\n",          info2->sepfile));
-				DEBUGADD(106,("printprocessor:[%s]\n",   info2->printprocessor));
-				DEBUGADD(106,("datatype:[%s]\n",         info2->datatype));
-				DEBUGADD(106,("parameters:[%s]\n",       info2->parameters));
+				DEBUGADD(106,("servername:[%s]\n", info2->servername));
+				DEBUGADD(106,("printername:[%s]\n", info2->printername));
+				DEBUGADD(106,("sharename:[%s]\n", info2->sharename));
+				DEBUGADD(106,("portname:[%s]\n", info2->portname));
+				DEBUGADD(106,("drivername:[%s]\n", info2->drivername));
+				DEBUGADD(106,("location:[%s]\n", info2->location));
+				DEBUGADD(106,("sepfile:[%s]\n", info2->sepfile));
+				DEBUGADD(106,("printprocessor:[%s]\n", info2->printprocessor));
+				DEBUGADD(106,("datatype:[%s]\n", info2->datatype));
+				DEBUGADD(106,("parameters:[%s]\n", info2->parameters));
 				success=0;
 			}
 			break;

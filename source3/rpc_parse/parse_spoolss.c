@@ -633,7 +633,7 @@ static BOOL spoolss_io_printer_default(char *desc, PRINTER_DEFAULT *pd, prs_stru
  * init a structure.
  ********************************************************************/
 BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, fstring printername, fstring datatype, 
-					uint32 access_required, fstring client_name, fstring user_name)
+					uint32 access_required, fstring clientname, fstring user_name)
 {
 	DEBUG(5,("make_spoolss_q_open_printer_ex\n"));
 	q_u->printername_ptr = (printername!=NULL)?1:0;
@@ -651,14 +651,14 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, fstring printe
 	q_u->user_switch=1;
 	q_u->user_ctr.level=1;
 	q_u->user_ctr.ptr=1;
-	q_u->user_ctr.user1.size=strlen(client_name)+strlen(user_name)+8;
-	q_u->user_ctr.user1.client_name_ptr = (client_name!=NULL)?1:0;
+	q_u->user_ctr.user1.size=strlen(clientname)+strlen(user_name)+8;
+	q_u->user_ctr.user1.client_name_ptr = (clientname!=NULL)?1:0;
 	q_u->user_ctr.user1.user_name_ptr = (user_name!=NULL)?1:0;
 	q_u->user_ctr.user1.build=1381;
 	q_u->user_ctr.user1.major=2;
 	q_u->user_ctr.user1.minor=0;
 	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&(q_u->user_ctr.user1.client_name), client_name, strlen(client_name));
+	init_unistr2(&(q_u->user_ctr.user1.client_name), clientname, strlen(clientname));
 	init_unistr2(&(q_u->user_ctr.user1.user_name), user_name, strlen(user_name));
 	
 	return True;
@@ -1145,13 +1145,20 @@ BOOL spoolss_io_r_rfnpcnex(char *desc, SPOOL_R_RFNPCNEX *r_u, prs_struct *ps, in
 }
 
 /*******************************************************************
+ * return the length of a uint16 (obvious, but the code is clean)
+ ********************************************************************/
+static uint32 size_of_uint16(uint16 *value)
+{
+	return (sizeof(*value));
+}
+
+/*******************************************************************
  * return the length of a uint32 (obvious, but the code is clean)
  ********************************************************************/
 static uint32 size_of_uint32(uint32 *value)
 {
 	return (sizeof(*value));
 }
-
 /*******************************************************************
  * return the length of a UNICODE string in number of char, includes:
  * - the leading zero
@@ -1405,26 +1412,36 @@ BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *i
 	
 	if(!prs_uint32("cjobs", ps, depth, &info->cjobs))
 		return False;
-	if(!prs_uint32("attributes", ps, depth, &info->attributes))
+	if(!prs_uint32("total_jobs", ps, depth, &info->total_jobs))
+		return False;
+	if(!prs_uint32("total_bytes", ps, depth, &info->total_bytes))
 		return False;
 
-	if(!prs_uint32("unknown0", ps, depth, &info->unknown0))
+	if(!prs_uint16("year", ps, depth, &info->year))
 		return False;
-	if(!prs_uint32("unknown1", ps, depth, &info->unknown1))
+	if(!prs_uint16("month", ps, depth, &info->month))
 		return False;
-	if(!prs_uint32("unknown2", ps, depth, &info->unknown2))
+	if(!prs_uint16("dayofweek", ps, depth, &info->dayofweek))
 		return False;
-	if(!prs_uint32("unknown3", ps, depth, &info->unknown3))
+	if(!prs_uint16("day", ps, depth, &info->day))
 		return False;
-	if(!prs_uint32("unknown4", ps, depth, &info->unknown4))
+	if(!prs_uint16("hour", ps, depth, &info->hour))
 		return False;
-	if(!prs_uint32("unknown5", ps, depth, &info->unknown5))
+	if(!prs_uint16("minute", ps, depth, &info->minute))
 		return False;
-	if(!prs_uint32("unknown6", ps, depth, &info->unknown6))
+	if(!prs_uint16("second", ps, depth, &info->second))
 		return False;
-	if(!prs_uint16("majorversion", ps, depth, &info->majorversion))
+	if(!prs_uint16("milliseconds", ps, depth, &info->milliseconds))
 		return False;
-	if(!prs_uint16("buildversion", ps, depth, &info->buildversion))
+
+	if(!prs_uint32("global_counter", ps, depth, &info->global_counter))
+		return False;
+	if(!prs_uint32("total_pages", ps, depth, &info->total_pages))
+		return False;
+
+	if(!prs_uint16("major_version", ps, depth, &info->major_version))
+		return False;
+	if(!prs_uint16("build_version", ps, depth, &info->build_version))
 		return False;
 	if(!prs_uint32("unknown7", ps, depth, &info->unknown7))
 		return False;
@@ -1432,11 +1449,11 @@ BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *i
 		return False;
 	if(!prs_uint32("unknown9", ps, depth, &info->unknown9))
 		return False;
-	if(!prs_uint32("unknown10", ps, depth, &info->unknown10))
+	if(!prs_uint32("session_counter", ps, depth, &info->session_counter))
 		return False;
 	if(!prs_uint32("unknown11", ps, depth, &info->unknown11))
 		return False;
-	if(!prs_uint32("unknown12", ps, depth, &info->unknown12))
+	if(!prs_uint32("printer_errors", ps, depth, &info->printer_errors))
 		return False;
 	if(!prs_uint32("unknown13", ps, depth, &info->unknown13))
 		return False;
@@ -1446,7 +1463,7 @@ BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *i
 		return False;
 	if(!prs_uint32("unknown16", ps, depth, &info->unknown16))
 		return False;
-	if(!prs_uint32("unknown17", ps, depth, &info->unknown17))
+	if(!prs_uint32("change_id", ps, depth, &info->change_id))
 		return False;
 	if(!prs_uint32("unknown18", ps, depth, &info->unknown18))
 		return False;
@@ -1454,11 +1471,23 @@ BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *i
 		return False;
 	if(!prs_uint32("unknown20", ps, depth, &info->unknown20))
 		return False;
-	if(!prs_uint32("unknown21", ps, depth, &info->unknown21))
+	if(!prs_uint32("c_setprinter", ps, depth, &info->c_setprinter))
 		return False;
 	if(!prs_uint16("unknown22", ps, depth, &info->unknown22))
 		return False;
-	if(!prs_uint32("unknown23", ps, depth, &info->unknown23))
+	if(!prs_uint16("unknown23", ps, depth, &info->unknown23))
+		return False;
+	if(!prs_uint16("unknown24", ps, depth, &info->unknown24))
+		return False;
+	if(!prs_uint16("unknown25", ps, depth, &info->unknown25))
+		return False;
+	if(!prs_uint16("unknown26", ps, depth, &info->unknown26))
+		return False;
+	if(!prs_uint16("unknown27", ps, depth, &info->unknown27))
+		return False;
+	if(!prs_uint16("unknown28", ps, depth, &info->unknown28))
+		return False;
+	if(!prs_uint16("unknown29", ps, depth, &info->unknown29))
 		return False;
 
 	return True;
@@ -2034,13 +2063,53 @@ uint32 spoolss_size_printer_info_0(PRINTER_INFO_0 *info)
 {
 	int size=0;
 	
-	size+=24*4;
-	size+=6;
-	
-	size+=size_of_uint32( &(info->attributes) );	
-	size+=size_of_relative_string( &(info->printername) );
-	size+=size_of_relative_string( &(info->servername) );
+	size+=size_of_relative_string( &info->printername );
+	size+=size_of_relative_string( &info->servername );
 
+	size+=size_of_uint32( &info->cjobs);
+	size+=size_of_uint32( &info->total_jobs);
+	size+=size_of_uint32( &info->total_bytes);
+
+	size+=size_of_uint16( &info->year);
+	size+=size_of_uint16( &info->month);
+	size+=size_of_uint16( &info->dayofweek);
+	size+=size_of_uint16( &info->day);
+	size+=size_of_uint16( &info->hour);
+	size+=size_of_uint16( &info->minute);
+	size+=size_of_uint16( &info->second);
+	size+=size_of_uint16( &info->milliseconds);
+
+	size+=size_of_uint32( &info->global_counter);
+	size+=size_of_uint32( &info->total_pages);
+
+	size+=size_of_uint16( &info->major_version);
+	size+=size_of_uint16( &info->build_version);
+
+	size+=size_of_uint32( &info->unknown7);
+	size+=size_of_uint32( &info->unknown8);
+	size+=size_of_uint32( &info->unknown9);
+	size+=size_of_uint32( &info->session_counter);
+	size+=size_of_uint32( &info->unknown11);
+	size+=size_of_uint32( &info->printer_errors);
+	size+=size_of_uint32( &info->unknown13);
+	size+=size_of_uint32( &info->unknown14);
+	size+=size_of_uint32( &info->unknown15);
+	size+=size_of_uint32( &info->unknown16);
+	size+=size_of_uint32( &info->change_id);
+	size+=size_of_uint32( &info->unknown18);
+	size+=size_of_uint32( &info->status);
+	size+=size_of_uint32( &info->unknown20);
+	size+=size_of_uint32( &info->c_setprinter);
+	
+	size+=size_of_uint16( &info->unknown22);
+	size+=size_of_uint16( &info->unknown23);
+	size+=size_of_uint16( &info->unknown24);
+	size+=size_of_uint16( &info->unknown25);
+	size+=size_of_uint16( &info->unknown26);
+	size+=size_of_uint16( &info->unknown27);
+	size+=size_of_uint16( &info->unknown28);
+	size+=size_of_uint16( &info->unknown29);
+	
 	return size;
 }
 
@@ -3432,8 +3501,11 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
                               NT_PRINTER_INFO_LEVEL_2  **asc)
 {
 	NT_PRINTER_INFO_LEVEL_2 *d;
+	NTTIME time_nt;
+	time_t time_unix;
 	
 	DEBUG(7,("Converting from UNICODE to ASCII\n"));
+	time_unix=time(NULL);
 	
 	if (*asc==NULL)
 	{
@@ -3441,6 +3513,12 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 
 		*asc=(NT_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(NT_PRINTER_INFO_LEVEL_2));
 		ZERO_STRUCTP(*asc);
+		
+		/* we allocate memory iff called from 
+		 * addprinter(ex) so we can do one time stuff here.
+		 */
+		(*asc)->setuptime=time_unix;
+
 	}	
 	DEBUGADD(8,("start converting\n"));
 
@@ -3454,17 +3532,21 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 	d->status=uni->status;
 	d->cjobs=uni->cjobs;
 
-	unistr2_to_ascii(d->servername,     &(uni->servername),     sizeof(d->servername)-1);
-	unistr2_to_ascii(d->printername,    &(uni->printername),    sizeof(d->printername)-1);
-	unistr2_to_ascii(d->sharename,      &(uni->sharename),      sizeof(d->sharename)-1);
-	unistr2_to_ascii(d->portname,       &(uni->portname),       sizeof(d->portname)-1);
-	unistr2_to_ascii(d->drivername,     &(uni->drivername),     sizeof(d->drivername)-1);
-	unistr2_to_ascii(d->comment,        &(uni->comment),        sizeof(d->comment)-1);
-	unistr2_to_ascii(d->location,       &(uni->location),       sizeof(d->location)-1);
-	unistr2_to_ascii(d->sepfile,        &(uni->sepfile),        sizeof(d->sepfile)-1);
-	unistr2_to_ascii(d->printprocessor, &(uni->printprocessor), sizeof(d->printprocessor)-1);
-	unistr2_to_ascii(d->datatype,       &(uni->datatype),       sizeof(d->datatype)-1);
-	unistr2_to_ascii(d->parameters,     &(uni->parameters),     sizeof(d->parameters)-1);
+	unix_to_nt_time(&time_nt, time_unix);
+	d->changeid=time_nt.low;
+	
+	d->c_setprinter++;
+
+	unistr2_to_ascii(d->servername, &uni->servername, sizeof(d->servername)-1);
+	unistr2_to_ascii(d->printername, &uni->printername, sizeof(d->printername)-1);
+	unistr2_to_ascii(d->sharename, &uni->sharename, sizeof(d->sharename)-1);
+	unistr2_to_ascii(d->portname, &uni->portname, sizeof(d->portname)-1);
+	unistr2_to_ascii(d->drivername, &uni->drivername, sizeof(d->drivername)-1);
+	unistr2_to_ascii(d->location, &uni->location, sizeof(d->location)-1);
+	unistr2_to_ascii(d->sepfile, &uni->sepfile, sizeof(d->sepfile)-1);
+	unistr2_to_ascii(d->printprocessor, &uni->printprocessor, sizeof(d->printprocessor)-1);
+	unistr2_to_ascii(d->datatype, &uni->datatype, sizeof(d->datatype)-1);
+	unistr2_to_ascii(d->parameters, &uni->parameters, sizeof(d->parameters)-1);
 
 	return True;
 }
@@ -3790,10 +3872,10 @@ BOOL spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_
 
 /*******************************************************************
 ********************************************************************/  
-BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, POLICY_HND *hnd, uint32 index, uint32 valuelen, uint32 datalen)
+BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, POLICY_HND *hnd, uint32 idx, uint32 valuelen, uint32 datalen)
 {
 	memcpy(&(q_u->handle), hnd, sizeof(q_u->handle));
-	q_u->index=index;
+	q_u->index=idx;
 	q_u->valuesize=valuelen;
 	q_u->datasize=datalen;
 

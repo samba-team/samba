@@ -72,7 +72,17 @@ typedef struct _Printer{
 	} client;
 } Printer_entry;
 
+typedef struct _counter_printer_0 {
+	ubi_dlNode Next;
+	ubi_dlNode Prev;
+	
+	int snum;
+	uint32 counter;
+} counter_printer_0;
+
 static ubi_dlList Printer_list;
+static ubi_dlList counter_list;
+
 
 #define OPEN_HANDLE(pnum)    ((pnum!=NULL) && (pnum->open!=False))
 
@@ -82,6 +92,7 @@ static ubi_dlList Printer_list;
 void init_printer_hnd(void)
 {
 	ubi_dlInitList(&Printer_list);
+	ubi_dlInitList(&counter_list);
 }
 
 /****************************************************************************
@@ -1485,22 +1496,50 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
  * construct_printer_info_0
  * fill a printer_info_1 struct
  ********************************************************************/
-static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring servername)
+static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, pstring servername)
 {
 	pstring chaine;
 	int count;
 	NT_PRINTER_INFO_LEVEL ntprinter;
-	
+	counter_printer_0 *session_counter;
+	uint32 global_counter;
+	struct tm *t;
+
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
+	
 	memset(&status, 0, sizeof(status));	
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0)
-	{
-		return (False);
-	}
+		return False;
 
 	count=get_printqueue(snum, NULL, &queue, &status);
+
+	/* check if we already have a counter for this printer */	
+	session_counter = (counter_printer_0 *)ubi_dlFirst(&counter_list);
+
+	for(; session_counter; session_counter = (counter_printer_0 *)ubi_dlNext(session_counter)) {
+		if (session_counter->snum == snum)
+			break;
+	}
+
+	/* it's the first time, add it to the list */
+	if (session_counter==NULL) {
+		session_counter=(counter_printer_0 *)malloc(sizeof(counter_printer_0));
+		ZERO_STRUCTP(session_counter);
+		session_counter->snum=snum;
+		session_counter->counter=0;
+		ubi_dlAddHead( &counter_list, (ubi_dlNode *)session_counter);
+	}
+	
+	/* increment it */
+	session_counter->counter++;
+	
+	/* JFM:
+	 * the global_counter should be stored in a TDB as it's common to all the clients
+	 * and should be zeroed on samba startup
+	 */
+	global_counter=session_counter->counter;
 	
 	/* the description and the name are of the form \\server\share */
 	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s",servername, ntprinter.info_2->printername);
@@ -1511,36 +1550,48 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
 	init_unistr(&(printer->servername), chaine);
 	
 	printer->cjobs = count;
-	printer->attributes =   PRINTER_ATTRIBUTE_SHARED   \
-	                      | PRINTER_ATTRIBUTE_NETWORK  \
-			      | PRINTER_ATTRIBUTE_RAW_ONLY ;
-	printer->unknown0     = 0x1; /* pointer */
-	printer->unknown1     = 0x000A07CE; /* don't known */
-	printer->unknown2     = 0x00020005;
-	printer->unknown3     = 0x0006000D;
-	printer->unknown4     = 0x02180026;
-	printer->unknown5     = 0x09;
-	printer->unknown6     = 0x36;
-	printer->majorversion = 0x0004; /* NT 4 */
-	printer->buildversion = 0x0565; /* build 1381 */
-	printer->unknown7     = 0x1;
-	printer->unknown8     = 0x0;
-	printer->unknown9     = 0x2;
-	printer->unknown10    = 0x3;
-	printer->unknown11    = 0x0;
-	printer->unknown12    = 0x0;
-	printer->unknown13    = 0x0;
-	printer->unknown14    = 0x1;
-	printer->unknown15    = 0x024a; /*586 Pentium ? */
-	printer->unknown16    = 0x0;
-	printer->unknown17    = 0x423ed444; /* CacheChangeID */
-	printer->unknown18    = 0x0;
-	printer->status       = status.status;
-	printer->unknown20    = 0x0;
-	printer->unknown21    = 0x0648;
-	printer->unknown22    = 0x0;
-	printer->unknown23    = 0x5;
+	printer->total_jobs = 0;
+	printer->total_bytes = 0;
 
+	t=gmtime(&ntprinter.info_2->setuptime);
+
+	printer->year = t->tm_year+1900;
+	printer->month = t->tm_mon+1;
+	printer->dayofweek = t->tm_wday;
+	printer->day = t->tm_mday;
+	printer->hour = t->tm_hour;
+	printer->minute = t->tm_min;
+	printer->second = t->tm_sec;
+	printer->milliseconds = 0;
+
+	printer->global_counter = global_counter;
+	printer->total_pages = 0;
+	printer->major_version = 0x0004; 	/* NT 4 */
+	printer->build_version = 0x0565; 	/* build 1381 */
+	printer->unknown7 = 0x1;
+	printer->unknown8 = 0x0;
+	printer->unknown9 = 0x2;
+	printer->session_counter = session_counter->counter;
+	printer->unknown11 = 0x0;
+	printer->printer_errors = 0x0;		/* number of print failure */
+	printer->unknown13 = 0x0;
+	printer->unknown14 = 0x1;
+	printer->unknown15 = 0x024a;		/* 586 Pentium ? */
+	printer->unknown16 = 0x0;
+	printer->change_id = ntprinter.info_2->changeid; /* ChangeID in milliseconds*/
+	printer->unknown18 = 0x0;
+	printer->status = status.status;
+	printer->unknown20 = 0x0;
+	printer->c_setprinter = ntprinter.info_2->c_setprinter; /* how many times setprinter has been called */
+	printer->unknown22 = 0x0;
+	printer->unknown23 = 0x6; 		/* 6  ???*/
+	printer->unknown24 = 0; 		/* unknown 24 to 26 are always 0 */
+	printer->unknown25 = 0;
+	printer->unknown26 = 0;
+	printer->unknown27 = 0;
+	printer->unknown28 = 0;
+	printer->unknown29 = 0;
+	
 	safe_free(queue);
 
 	free_a_printer(ntprinter, 2);
@@ -1640,52 +1691,57 @@ static void construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
  * construct_printer_info_2
  * fill a printer_info_2 struct
  ********************************************************************/
-static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring servername)
+static BOOL construct_printer_info_2(pstring servername, PRINTER_INFO_2 *printer, int snum)
 {
 	pstring chaine;
+	pstring chaine2;
+	pstring sl;
 	int count;
 	DEVICEMODE *devmode;
 	NT_PRINTER_INFO_LEVEL ntprinter;
-	
+
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
 	memset(&status, 0, sizeof(status));	
-	count=get_printqueue(snum, NULL, &queue, &status);
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
-	{
-		return (False);
-	}	
-
-	snprintf(chaine, sizeof(chaine)-1, "\\\\%s", servername);
-	init_unistr(&(printer->servername), chaine);			/* servername*/
-	
-	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", servername, ntprinter.info_2->printername);
-	init_unistr(&(printer->printername), chaine);			/* printername*/
-
-	init_unistr(&(printer->sharename),      lp_servicename(snum));	/* sharename */
-
-	init_unistr(&(printer->portname),       lp_servicename(snum));		/* port */	
-	init_unistr(&(printer->drivername),     ntprinter.info_2->drivername);	/* drivername */
+		return False;
 		
-	init_unistr(&(printer->comment),        ntprinter.info_2->comment);	/* comment */	
-	init_unistr(&(printer->location),       ntprinter.info_2->location);	/* location */	
-	init_unistr(&(printer->sepfile),        ntprinter.info_2->sepfile);	/* separator file */
-	init_unistr(&(printer->printprocessor), ntprinter.info_2->printprocessor);/* print processor */
-	init_unistr(&(printer->datatype),       ntprinter.info_2->datatype);	/* datatype */	
-	init_unistr(&(printer->parameters),     ntprinter.info_2->parameters);	/* parameters (of print processor) */	
+	memset(&status, 0, sizeof(status));		
+	count=get_printqueue(snum, NULL, &queue, &status);
+
+	snprintf(chaine, sizeof(chaine)-1, "%s", servername);
+
+	if (strlen(servername)!=0)
+		fstrcpy(sl, "\\");
+	else
+		fstrcpy(sl, '\0');
+
+	snprintf(chaine2, sizeof(chaine)-1, "%s%s%s", servername, sl, ntprinter.info_2->printername);
+
+	init_unistr(&printer->servername, chaine);				/* servername*/
+	init_unistr(&printer->printername, chaine2);				/* printername*/
+	init_unistr(&printer->sharename, lp_servicename(snum));			/* sharename */
+	init_unistr(&printer->portname, lp_servicename(snum));			/* port */	
+	init_unistr(&printer->drivername, ntprinter.info_2->drivername);	/* drivername */
+	init_unistr(&printer->comment, lp_comment(snum));			/* comment */	
+	init_unistr(&printer->location, ntprinter.info_2->location);		/* location */	
+	init_unistr(&printer->sepfile, ntprinter.info_2->sepfile);		/* separator file */
+	init_unistr(&printer->printprocessor, ntprinter.info_2->printprocessor);/* print processor */
+	init_unistr(&printer->datatype, ntprinter.info_2->datatype);		/* datatype */	
+	init_unistr(&printer->parameters, ntprinter.info_2->parameters);	/* parameters (of print processor) */	
 
 	printer->attributes =   PRINTER_ATTRIBUTE_SHARED   \
-	                      | PRINTER_ATTRIBUTE_NETWORK  \
-			      | PRINTER_ATTRIBUTE_RAW_ONLY ;		/* attributes */
+	                      | PRINTER_ATTRIBUTE_LOCAL  \
+			      | PRINTER_ATTRIBUTE_RAW_ONLY ;			/* attributes */
 
-	printer->priority        = ntprinter.info_2->priority;		/* priority */	
-	printer->defaultpriority = ntprinter.info_2->default_priority;	/* default priority */
-	printer->starttime       = ntprinter.info_2->starttime;		/* starttime */
-	printer->untiltime       = ntprinter.info_2->untiltime;		/* untiltime */
-	printer->status          = status.status;			/* status */
-	printer->cjobs           = count;				/* jobs */
-	printer->averageppm      = ntprinter.info_2->averageppm;	/* average pages per minute */
+	printer->priority = ntprinter.info_2->priority;				/* priority */	
+	printer->defaultpriority = ntprinter.info_2->default_priority;		/* default priority */
+	printer->starttime = ntprinter.info_2->starttime;			/* starttime */
+	printer->untiltime = ntprinter.info_2->untiltime;			/* untiltime */
+	printer->status = status.status;					/* status */
+	printer->cjobs = count;							/* jobs */
+	printer->averageppm = ntprinter.info_2->averageppm;			/* average pages per minute */
 			
 	devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE));
 	ZERO_STRUCTP(devmode);	
@@ -1694,29 +1750,7 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring 
 	
 	safe_free(queue);
 	free_a_printer(ntprinter, 2);
-	return (True);
-}
-
-/********************************************************************
- * enum_printer_info_2
- * glue between spoolss_enumprinters and construct_printer_info_2
- ********************************************************************/
-static BOOL get_printer_info_2(PRINTER_INFO_2 **printer, int snum, int number)
-{
-	pstring servername;
-
-	*printer=(PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));
-	DEBUG(4,("Allocated memory for ONE PRINTER_INFO_2 at [%p]\n", *printer));	
-	pstrcpy(servername, global_myname);
-	if (!construct_printer_info_2(*printer, snum, servername))
-	{
-		free(*printer);
-		return (False);
-	}
-	else
-	{
-		return (True);
-	}
+	return True;
 }
 
 /********************************************************************
@@ -1736,8 +1770,7 @@ static BOOL enum_all_printers_info_1(fstring server, uint32 flags, NEW_BUFFER *b
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
-			if (construct_printer_info_1(server, flags, &current_prt, snum))
-			{
+			if (construct_printer_info_1(server, flags, &current_prt, snum)) {
 				printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1));
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *returned));		
 				memcpy(&(printers[*returned]), &current_prt, sizeof(PRINTER_INFO_1));
@@ -1781,10 +1814,10 @@ static BOOL enum_all_printers_info_1_local(fstring name, NEW_BUFFER *buffer, uin
 
 	if (!strcmp(name, temp)) {
 		fstrcat(temp, "\\");
-		enum_all_printers_info_1(temp, PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
+		return enum_all_printers_info_1(temp, PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
 	}
 	else
-		enum_all_printers_info_1("", PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
+		return enum_all_printers_info_1("", PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
 }
 
 /********************************************************************
@@ -1800,7 +1833,7 @@ static BOOL enum_all_printers_info_1_name(fstring name, NEW_BUFFER *buffer, uint
 
 	if (!strcmp(name, temp)) {
 		fstrcat(temp, "\\");
-		enum_all_printers_info_1(temp, PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
+		return enum_all_printers_info_1(temp, PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
 	}
 	else
 		return ERROR_INVALID_NAME;
@@ -1840,8 +1873,10 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_1(printer);
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(printer);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	new_smb_io_printer_info_1("", buffer, printer, 0);	
@@ -1868,7 +1903,7 @@ static BOOL enum_all_printers_info_1_network(fstring name, NEW_BUFFER *buffer, u
 	fstrcpy(temp, "\\\\");
 	fstrcat(temp, global_myname);
 	fstrcat(temp, "\\");
-	enum_all_printers_info_1(temp, PRINTER_ENUM_UNKNOWN_8, buffer, offered, needed, returned);
+	return enum_all_printers_info_1(temp, PRINTER_ENUM_UNKNOWN_8, buffer, offered, needed, returned);
 }
 
 /********************************************************************
@@ -1876,38 +1911,40 @@ static BOOL enum_all_printers_info_1_network(fstring name, NEW_BUFFER *buffer, u
  *
  * called from api_spoolss_enumprinters (see this to understand)
  ********************************************************************/
-static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static BOOL enum_all_printers_info_2(fstring servername, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int snum;
 	int i;
 	int n_services=lp_numservices();
-	PRINTER_INFO_2 **printers=NULL;
+	PRINTER_INFO_2 *printers=NULL;
+	PRINTER_INFO_2 current_prt;
 
 	for (snum=0; snum<n_services; snum++) {
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
-		
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
-			printers=Realloc(printers, ((*returned)+1)*sizeof(PRINTER_INFO_2 *));
-			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2 pointers\n", (*returned)+1));			
-			if (get_printer_info_2( &(printers[*returned]), snum, *returned) )
+				
+			if (construct_printer_info_2(servername, &current_prt, snum)) {
+				printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2));
+				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *returned));		
+				memcpy(&(printers[*returned]), &current_prt, sizeof(PRINTER_INFO_2));
 				(*returned)++;
+			}
 		}
 	}
 	
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
-		(*needed) += spoolss_size_printer_info_2(printers[i]);
-
-	DEBUG(4,("we need [%d] bytes\n", *needed));
+		(*needed) += spoolss_size_printer_info_2(&(printers[i]));
 
 	if (!alloc_buffer_size(buffer, *needed))
 		return ERROR_INSUFFICIENT_BUFFER;
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
-		new_smb_io_printer_info_2("", buffer, printers[i], 0);	
+		new_smb_io_printer_info_2("", buffer, &(printers[i]), 0);	
 	
 	/* clear memory */
+	safe_free(printers);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -1948,7 +1985,33 @@ static uint32 enumprinters_level2( uint32 flags, fstring servername,
 			         NEW_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
 {
-	return enum_all_printers_info_2(buffer, offered, needed, returned);
+	fstring temp;
+	
+	fstrcpy(temp, "\\\\");
+	fstrcat(temp, global_myname);
+
+	if (flags & PRINTER_ENUM_LOCAL) {
+		if (!strcmp(servername, temp)) {
+			fstrcat(temp, "\\");
+			return enum_all_printers_info_2(temp, buffer, offered, needed, returned);
+		}
+		else
+			return enum_all_printers_info_2("", buffer, offered, needed, returned);
+	}
+
+	if (flags & PRINTER_ENUM_NAME) {
+		if (!strcmp(servername, temp)) {
+			fstrcat(temp, "\\");
+			return enum_all_printers_info_2(temp, buffer, offered, needed, returned);
+		}
+		else
+			return ERROR_INVALID_NAME;
+	}
+
+	if (flags & PRINTER_ENUM_REMOTE)
+		return ERROR_INVALID_LEVEL;
+
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /********************************************************************
@@ -2018,13 +2081,16 @@ static uint32 getprinter_level_0(pstring servername, int snum, NEW_BUFFER *buffe
 	PRINTER_INFO_0 *printer=NULL;
 
 	printer=(PRINTER_INFO_0*)malloc(sizeof(PRINTER_INFO_0));
+
 	construct_printer_info_0(printer, snum, servername);
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_0(printer);
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(printer);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	new_smb_io_printer_info_0("", buffer, printer, 0);	
@@ -2051,8 +2117,10 @@ static uint32 getprinter_level_1(pstring servername, int snum, NEW_BUFFER *buffe
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_1(printer);
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(printer);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	new_smb_io_printer_info_1("", buffer, printer, 0);	
@@ -2072,15 +2140,21 @@ static uint32 getprinter_level_1(pstring servername, int snum, NEW_BUFFER *buffe
 static uint32 getprinter_level_2(pstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_2 *printer=NULL;
+	fstring temp;
 
-	printer=(PRINTER_INFO_2*)malloc(sizeof(PRINTER_INFO_2));	
-	construct_printer_info_2(printer, snum, servername);
+	printer=(PRINTER_INFO_2*)malloc(sizeof(PRINTER_INFO_2));
+	
+	fstrcpy(temp, "\\\\");
+	fstrcat(temp, servername);
+	construct_printer_info_2(temp, printer, snum);
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_2(printer);
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(printer);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	new_smb_io_printer_info_2("", buffer, printer, 0);	
@@ -2108,9 +2182,7 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 	pstrcpy(servername, global_myname);
 
 	if (!get_printer_snum(handle, &snum))
-	{
 		return NT_STATUS_INVALID_HANDLE;
-	}
 
 	switch (level) {
 	case 0:
@@ -2123,7 +2195,7 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 		return getprinter_level_2(servername,snum, buffer, offered, needed);
 		break;
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }	
@@ -3617,11 +3689,11 @@ uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environmen
 	
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
+uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
 				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
 				uint32 *out_type,
-				uint32 *out_max_data_len, uint8  **out_data, uint32 *out_data_len)
+				uint32 *out_max_data_len, uint8  **data_out, uint32 *out_data_len)
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	
@@ -3645,7 +3717,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
 	*out_type=0;
 
 	*out_max_data_len=0;
-	*out_data=NULL;
+	*data_out=NULL;
 	*out_data_len=0;
 
 	DEBUG(5,("spoolss_enumprinterdata\n"));
@@ -3696,7 +3768,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
 	 * that's the number of bytes not the number of unicode chars
 	 */
  
-	if (!get_specific_param_by_index(printer, 2, index, value, &data, &type, &data_len)) {
+	if (!get_specific_param_by_index(printer, 2, idx, value, &data, &type, &data_len)) {
 		free_a_printer(printer, 2);
 		return ERROR_NO_MORE_ITEMS;
 	}
@@ -3719,7 +3791,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
 
 	/* the data is counted in bytes */
 	*out_max_data_len=in_data_len;
-	*out_data=(uint8 *)malloc(in_data_len*sizeof(uint8));
+	*data_out=(uint8 *)malloc(in_data_len*sizeof(uint8));
 	memcpy(*out_data, data, data_len);
 	*out_data_len=data_len;
 
