@@ -117,7 +117,7 @@ krb5_build_authenticator (krb5_context context,
 	      u_char *tmp;
 
 	      buf_size *= 2;
-	      tmp = realloc (tmp, buf_size);
+	      tmp = realloc (buf, buf_size);
 	      if (tmp == NULL) {
 		  ret = ENOMEM;
 		  goto fail;
