@@ -251,6 +251,7 @@ typedef struct
 	BOOL bNullPasswords;
 	BOOL bObeyPamRestrictions;
 	BOOL bLoadPrinters;
+	int PrintcapCacheTime;
 	BOOL bLargeReadwrite;
 	BOOL bReadRaw;
 	BOOL bWriteRaw;
@@ -949,6 +950,7 @@ static struct parm_struct parm_table[] = {
 	{"max reported print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxReportedPrintJobs, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"max print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxPrintJobs, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"load printers", P_BOOL, P_GLOBAL, &Globals.bLoadPrinters, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
+	{"printcap cache time", P_INTEGER, P_GLOBAL, &Globals.PrintcapCacheTime, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"printcap name", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"printcap", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_HIDE}, 
 	{"printable", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
@@ -1368,6 +1370,7 @@ static void init_globals(void)
 	Globals.AlgorithmicRidBase = BASE_RID;
 
 	Globals.bLoadPrinters = True;
+	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
@@ -1622,6 +1625,7 @@ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
+FN_GLOBAL_INTEGER(lp_printcap_cache_time, &Globals.PrintcapCacheTime)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
 FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
