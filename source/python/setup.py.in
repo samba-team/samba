@@ -141,5 +141,14 @@ setup(
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
               extra_objects = obj_list),
+
+    # tdb module
+
+    Extension(name = "tdb",
+              sources = [samba_srcdir + "python/py_tdb.c"],
+              libraries = lib_list,
+              library_dirs = ["/usr/kerberos/lib"],
+              extra_objects = obj_list),
+
     ],
 )
