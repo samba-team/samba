@@ -520,7 +520,6 @@ struct name_record *dns_name_search(struct nmb_name *question, int Time)
 	BOOL dns_type = (name_type == 0x20 || name_type == 0);
 	struct in_addr dns_ip;
 	struct subnet_record *d = find_subnet(ipgrp);
-    pstring dns_name;
 
 	if (d == NULL) return NULL;
 
@@ -533,27 +532,8 @@ struct name_record *dns_name_search(struct nmb_name *question, int Time)
 		return NULL;
 	}
 
-    StrnCpy(dns_name, qname, sizeof(dns_name));
-	if ((r = strchr(dns_name,'.')) == NULL)
-	{
-		/* append a dot to the name, hopefully to stop DNS recursing */
-		strcat(dns_name, ".");
-
-#ifdef NETGROUP
-	{
-		char domainname[255];
-
-		if (getdomainname(domainname, sizeof(domainname)) == 0)
-		{
-			/* we have a domain name - append it to the dns name */
-			strcat(dns_name, domainname);
-		}
-	}
-#endif
-	}
-
 	/* look it up with DNS */      
-	dns_ip.s_addr = interpret_addr(dns_name);
+	dns_ip.s_addr = interpret_addr(qname);
 
 	if (!dns_ip.s_addr)
 	{
