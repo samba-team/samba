@@ -494,6 +494,8 @@ exit(1);
        AC_TRY_RUN([
 #include <unistd.h>
 #include <sys/utsname.h>
+#include <string.h>
+#include <stdlib.h>
 main() {
 #if _LFS64_LARGEFILE == 1
        struct utsname uts;
