@@ -1,5 +1,11 @@
 2002-10-21  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kdc/connect.c: check that %-quotes are followed by two hex
+	digits
+
+	* lib/krb5/keytab_any.c: properly close the open keytabs (from
+	Larry Greenfield)
+
 	* kdc/kaserver.c: make sure life is positive (from John Godehn)
 
 2002-10-17  Johan Danielsson  <joda@pdc.kth.se>
