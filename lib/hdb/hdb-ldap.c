@@ -806,8 +806,8 @@ LDAP__lookup_princ(krb5_context context,
 	*msg = NULL;
 	
 	rc = asprintf(&filter,
-		      "(&(objectclass=sambaSamAccount)(uid=%s))",
-		      userid);
+	    "(&(|(objectclass=sambaSamAccount)(objectclass=%s))(uid=%s))",
+		      structural_object, userid);
 	if (rc < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
 	    ret = ENOMEM;
