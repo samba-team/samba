@@ -556,7 +556,6 @@ static int default_server_announce;
 /* prototypes for the special type handlers */
 static BOOL handle_include(const char *pszParmValue, char **ptr);
 static BOOL handle_copy(const char *pszParmValue, char **ptr);
-static BOOL handle_source_env(const char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
 static BOOL handle_idmap_uid(const char *pszParmValue, char **ptr);
 static BOOL handle_idmap_gid(const char *pszParmValue, char **ptr);
@@ -2803,6 +2802,8 @@ static BOOL source_env(char **lines)
 	return (True);
 }
 
+#if 0
+/* Doesn't seem to be used anymore. JRA */
 /***************************************************************************
  Handle the source environment operation.
 ***************************************************************************/
@@ -2842,6 +2843,7 @@ static BOOL handle_source_env(const char *pszParmValue, char **ptr)
 
 	return (result);
 }
+#endif
 
 /***************************************************************************
  Handle the include operation.
