@@ -1,6 +1,6 @@
 @c $Id$
 
-@node Windows 2000 compatability, Acknowledgments, Migration, Top
+@node Windows 2000 compatability, Programming with Kerberos, Kerberos 4 issues, Top
 @comment  node-name,  next,  previous,  up
 @chapter Windows 2000 compatability
 

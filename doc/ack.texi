@@ -1,6 +1,6 @@
 @c $Id$
 
-@node  Acknowledgments, , Windows 2000 compatability, Top
+@node  Acknowledgments, , Migration, Top
 @comment  node-name,  next,  previous,  up
 @appendix Acknowledgments
 

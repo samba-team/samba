@@ -227,6 +227,7 @@ to the following restrictions:
 * Things in search for a better place::  
 * Kerberos 4 issues::           
 * Windows 2000 compatability::
+* Programming with Kerberos::
 * Migration::
 * Acknowledgments::             
 
@@ -238,8 +239,9 @@ to the following restrictions:
 @include setup.texi
 @include misc.texi
 @include kerberos4.texi
-@include migration.texi
 @include win2k.texi
+@include programming.texi
+@include migration.texi
 @include ack.texi
 
 @c @shortcontents
