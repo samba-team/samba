@@ -763,9 +763,10 @@ static int ldapsam_retry_open(struct ldapsam_privates *ldap_state, int *attempts
 		
 	if (*attempts != 0) {
 		unsigned int sleep_time;
-		uint8 rand_byte = 128; /* a reasonable place to start */
+		uint8 rand_byte;
 
-		generate_random_buffer(&rand_byte, 1, False);
+		/* Sleep for a random timeout */
+		rand_byte = (char)(sys_random());
 
 		sleep_time = (((*attempts)*(*attempts))/2)*rand_byte*2; 
 		/* we retry after (0.5, 1, 2, 3, 4.5, 6) seconds
@@ -1989,8 +1990,16 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 		} else {
 			uint32 group_rid;
+			
 			group_rid = (uint32)atol(temp);
-			pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
+			
+			/* for some reason, we often have 0 as a primary group RID.
+			   Make sure that we treat this just as a 'default' value */
+			   
+			if ( group_rid > 0 )
+				pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
+			else
+				pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 		}
 	}
 
@@ -2007,7 +2016,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	 * If so configured, try and get the values from LDAP 
 	 */
 
-	if (!lp_ldap_trust_ids() && (get_unix_attributes(ldap_state, sampass, entry, &gid))) 
+	if (lp_ldap_trust_ids() && (get_unix_attributes(ldap_state, sampass, entry, &gid))) 
 	{	
 		if (pdb_get_init_flags(sampass,PDB_GROUPSID) == PDB_DEFAULT) 
 		{
@@ -2280,14 +2289,15 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	{
 		fstring sid_string;
 		fstring dom_sid_string;
-		const DOM_SID *user_sid;
-		user_sid = pdb_get_user_sid(sampass);
+		const DOM_SID *user_sid = pdb_get_user_sid(sampass);
 		
 		switch ( ldap_state->schema_ver )
 		{
 			case SCHEMAVER_SAMBAACCOUNT:
 				if (!sid_peek_check_rid(get_global_sam_sid(), user_sid, &rid)) {
-					DEBUG(1, ("User's SID (%s) is not for this domain (%s), cannot add to LDAP!\n", sid_to_string(sid_string, user_sid), sid_to_string(dom_sid_string, get_global_sam_sid())));
+					DEBUG(1, ("User's SID (%s) is not for this domain (%s), cannot add to LDAP!\n", 
+						sid_to_string(sid_string, user_sid), 
+						sid_to_string(dom_sid_string, get_global_sam_sid())));
 					return False;
 				}
 				slprintf(temp, sizeof(temp) - 1, "%i", rid);
@@ -2313,23 +2323,30 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 	if (need_update(sampass, PDB_GROUPSID)) 
 	{
+		fstring sid_string;
+		fstring dom_sid_string;
+		const DOM_SID *group_sid = pdb_get_group_sid(sampass);
+		
 		switch ( ldap_state->schema_ver )
 		{
 			case SCHEMAVER_SAMBAACCOUNT:
-				rid = pdb_get_group_rid(sampass);
+				if (!sid_peek_check_rid(get_global_sam_sid(), group_sid, &rid)) {
+					DEBUG(1, ("User's Primary Group SID (%s) is not for this domain (%s), cannot add to LDAP!\n",
+						sid_to_string(sid_string, group_sid),
+						sid_to_string(dom_sid_string, get_global_sam_sid())));
+					return False;
+				}
+
 				slprintf(temp, sizeof(temp) - 1, "%i", rid);
 				make_ldap_mod(ldap_state->ldap_struct, existing, mods,
-					      get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_RID), 
-					      temp);
+					get_userattr_key2string(ldap_state->schema_ver, 
+					LDAP_ATTR_PRIMARY_GROUP_RID), temp);
 				break;
 				
 			case SCHEMAVER_SAMBASAMACCOUNT:
-				rid = pdb_get_group_rid(sampass);
-				slprintf(temp, sizeof(temp) - 1, "%s-%i", 
-					sid_string_static(get_global_sam_sid()), rid);
 				make_ldap_mod(ldap_state->ldap_struct, existing, mods,
-					      get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_SID), 
-					      temp);
+					get_userattr_key2string(ldap_state->schema_ver, 
+					LDAP_ATTR_PRIMARY_GROUP_SID), sid_to_string(sid_string, group_sid));
 				break;
 				
 			default:
@@ -3646,7 +3663,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 		ldap_state->uri = "ldap://localhost";
 	}
 
-	ldap_state->domain_name = talloc_strdup(pdb_context->mem_ctx, lp_workgroup());
+	ldap_state->domain_name = talloc_strdup(pdb_context->mem_ctx, get_global_sam_name());
 	if (!ldap_state->domain_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
