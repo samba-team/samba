@@ -1,4 +1,19 @@
+2001-07-06  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kinit.c: re-do some of the v4 fallbacks: look at
+	get-tokens flag do not print extra errors do not try to do 524 if
+	we got tickets from a v4 server
+
 2001-07-03  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/replay.c (krb5_get_server_rcache): cast argument to
+	printf
+
+	* lib/krb5/get_addrs.c (find_all_addresses): call free_addresses
+	on ignore_addresses correctly
+	* lib/krb5/init_creds.c
+	(krb5_get_init_creds_opt_set_default_flags): change to take a
+	const realm
 
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): set version to 17:0:0
 	* lib/hdb/Makefile.am (libhdb_la_LDFLAGS): set version to 7:2:0
@@ -34,6 +49,10 @@
 	(wasn't much left there)
 
 	* lib/krb5/krb5.h: add list of ignored addresses to context
+
+2001-07-03  Assar Westerlund  <assar@sics.se>
+
+	* Release 0.4b
 
 2001-07-03  Assar Westerlund  <assar@sics.se>
 
