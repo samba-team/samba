@@ -3667,9 +3667,9 @@ program"))(passwdprogram).
 label(passwdprogram)
 dit(bf(passwd program (G)))
 
-The name of a program that can be used to set user passwords.  Any
-occurrences of link(bf(%u))(percentu) will be replaced with the user
-name. The user name is checked for existance before calling the
+The name of a program that can be used to set UNIX user passwords.
+Any occurrences of link(bf(%u))(percentu) will be replaced with the
+user name. The user name is checked for existance before calling the
 password changing program.
 
 Also note that many passwd programs insist in em("reasonable")
@@ -3677,13 +3677,18 @@ passwords, such as a minimum length, or the inclusion of mixed case
 chars and digits. This can pose a problem as some clients (such as
 Windows for Workgroups) uppercase the password before sending it.
 
-Note that if the link(bf("unix password sync"))(unixpasswordsync)
-parameter is set to true, then this sequence is called em(*AS ROOT*)
-when the SMB password in the smbpasswd file is being changed. If the
-link(bf("unix password sync"))(unixpasswordsync) parameter is set this
-parameter em(MUST USE ABSOLUTE PATHS) for em(ALL) programs called, and
-must be examined for security implications. Note that by default
-link(bf("unix password sync"))(unixpasswordsync) is set to False.
+em(Note) that if the link(bf("unix password sync"))(unixpasswordsync)
+parameter is set to tt("True") then this program is called em(*AS
+ROOT*) before the SMB password in the
+url(bf(smbpassswd))(smbpasswd.5.html) file is changed. If this UNIX
+password change fails, then url(bf(smbd))(smbd.8.html) will fail to
+change the SMB password also (this is by design).
+
+If the link(bf("unix password sync"))(unixpasswordsync) parameter is
+set this parameter em(MUST USE ABSOLUTE PATHS) for em(ALL) programs
+called, and must be examined for security implications. Note that by
+default link(bf("unix password sync"))(unixpasswordsync) is set to
+tt("False").
 
 See also link(bf("unix password sync"))(unixpasswordsync).
 
@@ -3882,7 +3887,7 @@ An interesting example is to send the users a welcome message every
 time they log in. Maybe a message of the day? Here is an example:
 
 verb(
-	preexec = csh -c 'echo "Welcome to %S!" | \
+	preexec = csh -c 'echo \"Welcome to %S!\" | \
 		/usr/local/samba/bin/smbclient -M %m -I %I' &
 )
 
@@ -3894,7 +3899,7 @@ See also link(bf(postexec))(postexec).
 	none (no command executed)
 
   bf(Example:)
-tt(        preexec = echo "%u connected to %S from %m (%I)" >> /tmp/log)
+tt(        preexec = echo \"%u connected to %S from %m (%I)\" >> /tmp/log)
 
 label(preferredmaster)
 dit(bf(preferred master (G)))
@@ -3943,254 +3948,319 @@ client passes, or if they are forced to be the tt("default") case.
 See the section on link(bf("NAME MANGLING"))(NAMEMANGLING) for a
 fuller discussion.
 
-.SS print command (S)
-After a print job has finished spooling to a service, this command will be
-used via a system() call to process the spool file. Typically the command 
-specified will submit the spool file to the host's printing subsystem, but
-there is no requirement that this be the case. The server will not remove the
-spool file, so whatever command you specify should remove the spool file when
-it has been processed, otherwise you will need to manually remove old spool
-files.
+label(printcommand)
+dit(bf(print command (S)))
+
+After a print job has finished spooling to a service, this command
+will be used via a tt(system()) call to process the spool
+file. Typically the command specified will submit the spool file to
+the host's printing subsystem, but there is no requirement that this
+be the case. The server will not remove the spool file, so whatever
+command you specify should remove the spool file when it has been
+processed, otherwise you will need to manually remove old spool files.
 
 The print command is simply a text string. It will be used verbatim,
-with two exceptions: All occurrences of "%s" will be replaced by the
-appropriate spool file name, and all occurrences of "%p" will be
-replaced by the appropriate printer name. The spool file name is
+with two exceptions: All occurrences of tt("%s") will be replaced by
+the appropriate spool file name, and all occurrences of tt("%p") will
+be replaced by the appropriate printer name. The spool file name is
 generated automatically by the server, the printer name is discussed
 below.
 
-The full path name will be used for the filename if %s is not preceded
-by a /. If you don't like this (it can stuff up some lpq output) then
-use %f instead. Any occurrences of %f get replaced by the spool
-filename without the full path at the front.
+The full path name will be used for the filename if tt("%s") is not
+preceded by a tt('/'). If you don't like this (it can stuff up some
+lpq output) then use tt("%f") instead. Any occurrences of tt("%f") get
+replaced by the spool filename without the full path at the front.
 
-The print command MUST contain at least one occurrence of "%s" or %f -
-the "%p" is optional. At the time a job is submitted, if no printer
-name is supplied the "%p" will be silently removed from the printer
-command.
+The print command em(MUST) contain at least one occurrence of tt("%s")
+or tt("%f") - the tt("%p") is optional. At the time a job is
+submitted, if no printer name is supplied the tt("%p") will be
+silently removed from the printer command.
 
-If specified in the [global] section, the print command given will be used
-for any printable service that does not have its own print command specified.
+If specified in the link(bf("[global]")(global) section, the print
+command given will be used for any printable service that does not
+have its own print command specified.
 
-If there is neither a specified print command for a printable service nor a 
-global print command, spool files will be created but not processed and (most
-importantly) not removed.
+If there is neither a specified print command for a printable service
+nor a global print command, spool files will be created but not
+processed and (most importantly) not removed.
 
-Note that printing may fail on some UNIXes from the "nobody"
+Note that printing may fail on some UNIXes from the tt("nobody")
 account. If this happens then create an alternative guest account that
-can print and set the "guest account" in the [global] section.
+can print and set the link(bf("guest account"))(guestaccount) in the
+link(bf("[global]")(global) section.
 
 You can form quite complex print commands by realising that they are
 just passed to a shell. For example the following will log a print
-job, print the file, then remove it. Note that ; is the usual
+job, print the file, then remove it. Note that tt(';') is the usual
 separator for command in shell scripts.
 
-print command = echo Printing %s >> /tmp/print.log; lpr -P %p %s; rm %s
+tt(print command = echo Printing %s >> /tmp/print.log; lpr -P %p %s; rm %s)
 
 You may have to vary this command considerably depending on how you
-normally print files on your system.
+normally print files on your system. The default for the parameter
+varies depending on the setting of the link(bf("printing="))(printing)
+parameter.
 
-.B Default:
-	print command = lpr -r -P %p %s
+  bf(Default:)
+	For link(bf("printing="))(printing) BSD, AIX, QNX, LPRNG or PLP :
+tt(	print command = lpr -r -P%p %s)
 
-.B Example:
- 	print command = /usr/local/samba/bin/myprintscript %p %s
-.SS print ok (S)
-See
-.B printable.
-.SS printable (S)
-A synonym for this parameter is 'print ok'.
+	For link(bf("printing="))(printing) SYS or HPUX :
+tt(	print command = lp -c -d%p %s; rm %s)
 
-If this parameter is 'yes', then clients may open, write to and submit spool 
-files on the directory specified for the service.
+	For link(bf("printing="))(printing) SOFTQ :
+tt(	print command = lp -d%p -s %s; rm %s)
 
-Note that a printable service will ALWAYS allow writing to the service path
-(user privileges permitting) via the spooling of print data. The 'read only'
-parameter controls only non-printing access to the resource.
+  bf(Example:)
+tt( 	print command = /usr/local/samba/bin/myprintscript %p %s)
 
-.B Default:
+label(printok)
+dit(bf(print ok (S)))
+
+Synonym for link(bf(printable))(printable).
+
+label(printable)
+dit(bf(printable (S)))
+
+If this parameter is tt("yes"), then clients may open, write to and
+submit spool files on the directory specified for the service.
+
+Note that a printable service will ALWAYS allow writing to the service
+path (user privileges permitting) via the spooling of print data. The
+link(bf("read only"))(readonly) parameter controls only non-printing
+access to the resource.
+
+  bf(Default:)
  	printable = no
 
-.B Example:
+  bf(Example:)
  	printable = yes
 
-.SS printcap name (G)
-This parameter may be used to override the compiled-in default printcap
-name used by the server (usually /etc/printcap). See the discussion of the
-[printers] section above for reasons why you might want to do this.
+label(printcap)
+dit(bf(printcap (G)))
 
-On SystemV systems that use lpstat to list available printers you
-can use "printcap name = lpstat" to automatically obtain lists of
-available printers. This is the default for systems that define 
-SYSV at compile time in Samba (this includes most SystemV based
-systems). If "printcap name" is set to lpstat on these systems then
-Samba will launch "lpstat -v" and attempt to parse the output to
-obtain a printer list.
+Synonym for link(bf(printcapname))(printcapname).
+
+label(printcapname)
+dit(bf(printcap name (G)))
+
+This parameter may be used to override the compiled-in default
+printcap name used by the server (usually /etc/printcap). See the
+discussion of the link(bf([printers]))(printers) section above for
+reasons why you might want to do this.
+
+On System V systems that use bf(lpstat) to list available printers you
+can use tt("printcap name = lpstat") to automatically obtain lists of
+available printers. This is the default for systems that define SYSV
+at configure time in Samba (this includes most System V based
+systems). If bf("printcap name") is set to bf(lpstat) on these systems
+then Samba will launch tt("lpstat -v") and attempt to parse the output
+to obtain a printer list.
 
 A minimal printcap file would look something like this:
 
-print1|My Printer 1
-.br
-print2|My Printer 2
-.br
-print3|My Printer 3
-.br
-print4|My Printer 4
-.br
-print5|My Printer 5
+verb(
+	print1|My Printer 1
+	print2|My Printer 2
+	print3|My Printer 3
+	print4|My Printer 4
+	print5|My Printer 5
+)
 
-where the | separates aliases of a printer. The fact that the second
-alias has a space in it gives a hint to Samba that it's a comment.
+where the tt('|') separates aliases of a printer. The fact that the
+second alias has a space in it gives a hint to Samba that it's a
+comment.
 
-NOTE: Under AIX the default printcap name is "/etc/qconfig". Samba
-will assume the file is in AIX "qconfig" format if the string
-"/qconfig" appears in the printcap filename.
+em(NOTE): Under AIX the default printcap name is
+tt("/etc/qconfig"). Samba will assume the file is in AIX tt("qconfig")
+format if the string tt("/qconfig") appears in the printcap filename.
 
-.B Default:
- 	printcap name = /etc/printcap
+  bf(Default:)
+tt( 	printcap name = /etc/printcap)
 
-.B Example:
- 	printcap name = /etc/myprintcap
+  bf(Example:)
+tt( 	printcap name = /etc/myprintcap)
 
-.SS printer (S)
-A synonym for this parameter is 'printer name'.
+label(printer)
+dit(bf(printer (S)))
 
-This parameter specifies the name of the printer to which print jobs spooled
-through a printable service will be sent.
+This parameter specifies the name of the printer to which print jobs
+spooled through a printable service will be sent.
 
-If specified in the [global] section, the printer name given will be used
-for any printable service that does not have its own printer name specified.
+If specified in the link(bf([global]))(global) section, the printer
+name given will be used for any printable service that does not have
+its own printer name specified.
 
-.B Default:
- 	none (but may be 'lp' on many systems)
+  bf(Default:)
+	none (but may be tt("lp") on many systems)
 
-.B Example:
+  bf(Example:)
  	printer name = laserwriter
 
-.SS printer driver (S)
+label(printerdriver)
+dit(bf(printer driver (S)))
+
 This option allows you to control the string that clients receive when
 they ask the server for the printer driver associated with a
 printer. If you are using Windows95 or WindowsNT then you can use this
 to automate the setup of printers on your system.
 
 You need to set this parameter to the exact string (case sensitive)
-that describes the appropriate printer driver for your system. 
-If you don't know the exact string to use then you should first try
-with no "printer driver" option set and the client will give you a
-list of printer drivers. The appropriate strings are shown in a
-scrollbox after you have chosen the printer manufacturer.
+that describes the appropriate printer driver for your system. If you
+don't know the exact string to use then you should first try with no
+bf("printer driver") option set and the client will give you a list of
+printer drivers. The appropriate strings are shown in a scrollbox
+after you have chosen the printer manufacturer.
 
-.B Example:
+See also link(bf("printer driver file"))(printerdriverfile).
+
+  bf(Example:)
 	printer driver = HP LaserJet 4L
 
-.SS printer name (S)
-See
-.B printer.
+label(printerdriverfile)
+dit(bf(printer driver file (G)))
 
-.SS printer driver file (G)
 This parameter tells Samba where the printer driver definition file,
 used when serving drivers to Windows 95 clients, is to be found. If
 this is not set, the default is :
 
-SAMBA_INSTALL_DIRECTORY/lib/printers.def
+tt(SAMBA_INSTALL_DIRECTORY/lib/printers.def)
 
-This file is created from Windows 95 'msprint.def' files found on the
-Windows 95 client system. For more details on setting up serving of
-printer drivers to Windows 95 clients, see the documentation file
-docs/PRINTER_DRIVER.txt.
+This file is created from Windows 95 tt("msprint.def") files found on
+the Windows 95 client system. For more details on setting up serving
+of printer drivers to Windows 95 clients, see the documentation file
+in the docs/ directory, PRINTER_DRIVER.txt.
 
-.B Default:
-    None (set in compile).
+  bf(Default:)
+	None (set in compile).
 
-.B Example:
-    printer driver file = /usr/local/samba/printers/drivers.def
+  bf(Example:)
+tt(	printer driver file = /usr/local/samba/printers/drivers.def)
 
-Related parameters.
-.B printer driver location
+See also link(bf("printer driver location"))(printerdriverlocation).
 
-.SS printer driver location (S)
-This parameter tells clients of a particular printer share where
-to find the printer driver files for the automatic installation
-of drivers for Windows 95 machines. If Samba is set up to serve
-printer drivers to Windows 95 machines, this should be set to
+label(printerdriverlocation)
+dit(bf(printer driver location (S)))
 
-\e\eMACHINE\ePRINTER$
+This parameter tells clients of a particular printer share where to
+find the printer driver files for the automatic installation of
+drivers for Windows 95 machines. If Samba is set up to serve printer
+drivers to Windows 95 machines, this should be set to
 
-Where MACHINE is the NetBIOS name of your Samba server, and PRINTER$ 
-is a share you set up for serving printer driver files. For more 
-details on setting this up see the documentation file 
-docs/PRINTER_DRIVER.txt.
+tt(\\MACHINE\aPRINTER$)
 
-.B Default:
-    None
+Where MACHINE is the NetBIOS name of your Samba server, and PRINTER$
+is a share you set up for serving printer driver files. For more
+details on setting this up see the documentation file in the docs/
+directory, PRINTER_DRIVER.txt.
 
-.B Example:
-    printer driver location = \e\eMACHINE\ePRINTER$
+  bf(Default:)
+	None
 
-Related paramerers.
-.B printer driver file
+  bf(Example:)
+tt(	printer driver location = \\MACHINE\PRINTER$)
 
+See also link(bf("printer driver file"))(printerdriverfile).
 
-.SS printing (S)
+label(printername)
+dit(bf(printer name (S)))
+
+Synonym for link(bf(printer))(printer).
+
+label(printing)
+dit(bf(printing (S)))
+
 This parameters controls how printer status information is interpreted
-on your system, and also affects the default values for the "print
-command", "lpq command" and "lprm command".
+on your system, and also affects the default values for the
+link(bf("print command"))(printcommand), link(bf("lpq
+command"))(lpqcommand) link(bf("lppause command"))(lppausecommand),
+link(bf("lpresume command"))(lpresumecommand), and link(bf("lprm
+command"))(lprmcommand).
 
-Currently six printing styles are supported. They are "printing =
-bsd", "printing = sysv", "printing = hpux", "printing = aix",
-"printing = qnx" and "printing = plp".
+Currently eight printing styles are supported. They are
+bf("printing=BSD"), bf("printing=AIX"), bf("printing=LPRNG"),
+bf("printing=PLP"),
+bf("printing=SYSV"),bf("printing="HPUX"),bf("printing=QNX") and
+bf("printing=SOFTQ").
 
 To see what the defaults are for the other print commands when using
-these three options use the "testparm" program.
+these three options use the url(bf("testparm"))(testparm) program.
 
-As of version 1.9.18 of Samba this option can be set on a per printer basis
+This option can be set on a per printer basis
 
-.SS protocol (G)
-The value of the parameter (a string) is the highest protocol level that will
-be supported by the server. 
+See also the discussion in the link(bf([printers]))(printers) section.
 
-Possible values are CORE, COREPLUS, LANMAN1, LANMAN2 and NT1. The relative
-merits of each are discussed in the README file.
+label(protocol)
+dit(bf(protocol (G)))
+
+The value of the parameter (a string) is the highest protocol level
+that will be supported by the server.
+
+Possible values are :
+
+startit()
+
+it() CORE: Earliest version. No concept of user names.
+
+it() COREPLUS: Slight improvements on CORE for efficiency.
+
+it() LANMAN1: First em("modern") version of the protocol. Long
+filename support.
+
+it() LANMAN2: Updates to Lanman1 protocol.
+
+it() NT1: Current up to date version of the protocol. Used by Windows
+NT. Known as CIFS.
+
+endit()
 
 Normally this option should not be set as the automatic negotiation
-phase in the SMB protocol takes care of choosing the appropriate protocol.
+phase in the SMB protocol takes care of choosing the appropriate
+protocol.
 
-.B Default:
+  bf(Default:)
 	protocol = NT1
 
-.B Example:
+  bf(Example:)
 	protocol = LANMAN1
 
-.SS public (S)
-A synonym for this parameter is 'guest ok'.
+label(public)
+dit(bf(public (S)))
 
-.SS queuepause command (S)
-This parameter specifies the command to be executed on the server host in
-order to pause the printerqueue.
+Synonym for link(bf("guest ok"))(guestok).
+
+label(queuepausecommand)
+dit(bf(queuepause command (S)))
+
+This parameter specifies the command to be executed on the server host
+in order to pause the printerqueue.
 
 This command should be a program or script which takes a printer name
-as its only parameter and stops the printerqueue, such that no longer 
+as its only parameter and stops the printerqueue, such that no longer
 jobs are submitted to the printer.
 
 This command is not supported by Windows for Workgroups, but can be
 issued from the Printer's window under Windows 95 & NT.
 
-If a %p is given then the printername is put in its place. Otherwise
-it is placed at the end of the command. 
+If a tt("%p") is given then the printername is put in its
+place. Otherwise it is placed at the end of the command.
 
-Note that it is good practice to include the absolute path in the 
+Note that it is good practice to include the absolute path in the
 command as the PATH may not be available to the server.
 
-.B Default:
+  bf(Default:)
         depends on the setting of "printing ="
 
-.B Example:
-      queuepause command = disable %p
+  bf(Example:)
+tt(      queuepause command = disable %p)
 
-.SS queueresume command (S)
-This parameter specifies the command to be executed on the server host in
-order to resume the printerqueue. It is the command to undo the behaviour
-that is caused by the previous parameter (queuepause command).
+label(queueresumecommand)
+dit(bf(queueresume command (S)))
+
+This parameter specifies the command to be executed on the server host
+in order to resume the printerqueue. It is the command to undo the
+behaviour that is caused by the previous parameter
+(link(bf("queuepause command))(queuepausecommand)).
  
 This command should be a program or script which takes a printer name
 as its only parameter and resumes the printerqueue, such that queued
@@ -4199,73 +4269,94 @@ jobs are resubmitted to the printer.
 This command is not supported by Windows for Workgroups, but can be
 issued from the Printer's window under Windows 95 & NT.
 
-If a %p is given then the printername is put in its place. Otherwise
-it is placed at the end of the command.
+If a tt("%p") is given then the printername is put in its
+place. Otherwise it is placed at the end of the command.
 
-Note that it is good practice to include the absolute path in the 
+Note that it is good practice to include the absolute path in the
 command as the PATH may not be available to the server.
 
-.B Default:
+  bf(Default:)
         depends on the setting of "printing ="
 
-.B Example:
-      queuepause command = enable %p
+  bf(Example:)
+tt(      queuepause command = enable %p)
 
-.SS read list (S)
+label(read bmpx)
+dit(bf(read bmpx (G)))
+
+This boolean parameter controls whether url(bf(smbd))(smbd.8.html)
+will support the "Read Block Multiplex" SMB. This is now rarely used
+and defaults to off. You should never need to set this parameter.
+
+  bf(Default:)
+	read bmpx = No
+
+label(readlist)
+dit(bf(read list (S)))
+
 This is a list of users that are given read-only access to a
-service. If the connecting user is in this list then they will
-not be given write access, no matter what the "read only" option
-is set to. The list can include group names using the @group syntax.
+service. If the connecting user is in this list then they will not be
+given write access, no matter what the link(bf("read only"))(readonly)
+option is set to. The list can include group names using the syntax
+described in the link(bf("invalid users"))(invalidusers) parameter.
 
-See also the "write list" option
+See also the link(bf("write list"))(writelist) parameter and
+the link(bf("invalid users"))(invalidusers) parameter.
 
-.B Default:
-     read list =
+  bf(Default:)
+tt(	read list = <empty string>)
 
-.B Example:
-     read list = mary, @students
+  bf(Example:)
+tt(	read list = mary, @students)
 
-.SS read only (S)
-See
-.B writable
-and
-.B write ok.
-Note that this is an inverted synonym for writable and write ok.
-.SS read prediction (G)
+label(readonly)
+dit(bf(read only (S)))
+
+Note that this is an inverted synonym for
+link(bf("writable"))(writable) and link(bf("write ok"))(writeok).
+
+See also link(bf("writable"))(writable) and link(bf("write
+ok"))(writeok).
+
+label(readprediction)
+dit(bf(read prediction (G)))
+
+em(NOTE): This code is currently disabled in Samba2.0 and
+may be removed at a later date. Hence this parameter has
+no effect.
+
 This options enables or disables the read prediction code used to
 speed up reads from the server. When enabled the server will try to
 pre-read data from the last accessed file that was opened read-only
 while waiting for packets.
 
-.SS Default:
+  bf(Default:)
 	read prediction = False
 
-.SS Example:
-	read prediction = True
-.SS read raw (G)
-This parameter controls whether or not the server will support raw reads when
-transferring data to clients.
+label(readraw)
+dit(bf(read raw (G)))
+
+This parameter controls whether or not the server will support the raw
+read SMB requests when transferring data to clients.
 
 If enabled, raw reads allow reads of 65535 bytes in one packet. This
 typically provides a major performance benefit.
 
-However, some clients either negotiate the allowable block size incorrectly
-or are incapable of supporting larger block sizes, and for these clients you
-may need to disable raw reads.
+However, some clients either negotiate the allowable block size
+incorrectly or are incapable of supporting larger block sizes, and for
+these clients you may need to disable raw reads.
 
 In general this parameter should be viewed as a system tuning tool and left
-severely alone. See also
-.B write raw.
+severely alone. See also link(bf("write raw"))(writeraw).
 
-.B Default:
+  bf(Default:)
  	read raw = yes
 
-.B Example:
- 	read raw = no
-.SS read size (G)
+label(readsize)
+dit(bf(read size (G)))
 
-The option "read size" affects the overlap of disk reads/writes with
-network reads/writes. If the amount of data being transferred in
+The option bf("read size") affects the overlap of disk reads/writes
+with network reads/writes. If the amount of data being transferred in
 several of the SMB commands (currently SMBwrite, SMBwriteX and
 SMBreadbraw) is larger than this value then the server begins writing
 the data before it has received the whole packet from the network, or
@@ -4277,20 +4368,22 @@ are similar, having very little effect when the speed of one is much
 greater than the other.
 
 The default value is 2048, but very little experimentation has been
-done yet to determine the optimal value, and it is likely that the best
-value will vary greatly between systems anyway. A value over 65536 is
-pointless and will cause you to allocate memory unnecessarily.
+done yet to determine the optimal value, and it is likely that the
+best value will vary greatly between systems anyway. A value over
+65536 is pointless and will cause you to allocate memory
+unnecessarily.
 
-.B Default:
+  bf(Default:)
 	read size = 2048
 
-.B Example:
+  bf(Example:)
 	read size = 8192
 
-.SS remote announce (G)
+label(remoteannounce)
+dit(bf(remote announce (G)))
 
 This option allows you to setup nmbd to periodically announce itself
-to arbitrary IP addresses with an arbitrary workgroup name. 
+to arbitrary IP addresses with an arbitrary workgroup name.
 
 This is useful if you want your Samba server to appear in a remote
 workgroup for which the normal browse propagation rules don't
@@ -4299,18 +4392,17 @@ packets to.
 
 For example:
 
-       remote announce = 192.168.2.255/SERVERS 192.168.4.255/STAFF
+tt(	remote announce = 192.168.2.255/SERVERS 192.168.4.255/STAFF)
 
 the above line would cause nmbd to announce itself to the two given IP
 addresses using the given workgroup names. If you leave out the
-workgroup name then the one given in the "workgroup" option is used
-instead. 
+workgroup name then the one given in the
+link(bf("workgroup"))(workgroup) parameter is used instead.
 
 The IP addresses you choose would normally be the broadcast addresses
 of the remote networks, but can also be the IP addresses of known
 browse masters if your network config is that stable.
 
-This option replaces similar functionality from the nmbd lmhosts file.
 
 .SS remote browse sync (G)
 
