@@ -364,14 +364,70 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	return NT_STATUS_OK;
 }
 
+/*
+  return DomInfo2
+*/
+static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *mem_ctx,
+				   struct samr_DomInfo2 *info)
+{
+	const char * const attrs[] = { "comment", "name", NULL };
+	int ret;
+	struct ldb_message **res;
+
+	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
+			   "dn=%s", state->domain_dn);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* where is this supposed to come from? is it settable? */
+	info->force_logoff_time = 0x8000000000000000LL;
+
+	info->comment.name = samdb_result_string(res[0], "comment", NULL);
+	info->domain.name  = samdb_result_string(res[0], "name", NULL);
+
+	info->primary.name = lp_netbios_name();
+	info->sequence_num = 0;
+	info->role = ROLE_DOMAIN_PDC;
+	info->num_users = samdb_search_count(state->sam_ctx, mem_ctx, NULL, "(objectClass=user)");
+	info->num_groups = samdb_search_count(state->sam_ctx, mem_ctx, NULL,
+					      "(&(objectClass=group)(sAMAccountType=%u))",
+					      ATYPE_GLOBAL_GROUP);
+	info->num_aliases = samdb_search_count(state->sam_ctx, mem_ctx, NULL,
+					       "(&(objectClass=group)(sAMAccountType=%u))",
+					       ATYPE_LOCAL_GROUP);
+
+	return NT_STATUS_OK;
+}
 
 /* 
   samr_QueryDomainInfo 
 */
 static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_QueryDomainInfo *r)
+				     struct samr_QueryDomainInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_domain_state *d_state;
+
+	r->out.info = NULL;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	r->out.info = talloc_p(mem_ctx, union samr_DomainInfo);
+	if (!r->out.info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCTP(r->out.info);
+
+	switch (r->in.level) {
+	case 2:
+		return samr_info_DomInfo2(d_state, mem_ctx, &r->out.info->info2);
+	}
+
+	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
 

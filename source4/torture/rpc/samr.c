@@ -2562,7 +2562,8 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return True;
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_GROUP_EXISTS)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_GROUP_EXISTS) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		if (!test_DeleteGroup_byname(p, mem_ctx, domain_handle, r.in.name->name)) {
 			return False;
 		}
@@ -2639,6 +2640,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (!test_QuerySecurity(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
 	if (!test_RemoveMemberFromForeignDomain(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
@@ -2656,10 +2661,6 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_CreateDomainGroup(p, mem_ctx, &domain_handle, &group_handle)) {
-		ret = False;
-	}
-
-	if (!test_QuerySecurity(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 

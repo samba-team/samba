@@ -953,15 +953,13 @@ static void init_globals(void)
 	string_set(&sDefault.fstype, FSTYPE_STRING);
 	string_set(&sDefault.ntvfs_handler, "default");
 
-	Globals.dcerpc_ep_servers = str_list_make("epmapper srvsvc wkssvc rpcecho samr netlogon", NULL);
+	Globals.dcerpc_ep_servers = str_list_make("epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc", NULL);
 
 	Globals.AuthMethods = str_list_make("guest sam_ignoredomain", NULL);
 
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 	asprintf(&Globals.szSAM_URL, "tdb://%s/sam.ldb", dyn_PRIVATE_DIR);
-
-	/* use the new 'hash2' method by default, with a prefix of 1 */
 
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
 
