@@ -1638,7 +1638,7 @@ static BOOL spoolss_smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int d
  *
  ********************************************************************/
 
-static BOOL new_smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR *string)
+static BOOL smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR *string)
 {
 	prs_struct *ps=&buffer->prs;
 	
@@ -1691,7 +1691,7 @@ static BOOL new_smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR 
  * used by 2 RPC structs
  ********************************************************************/
 
-static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16 **string)
+static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16 **string)
 {
 	UNISTR chaine;
 	
@@ -1814,11 +1814,11 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
  Parse a DEVMODE structure and its relative pointer.
 ********************************************************************/
 
-static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth, SEC_DESC **secdesc)
+static BOOL smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth, SEC_DESC **secdesc)
 {
 	prs_struct *ps= &buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_relsecdesc");
+	prs_debug(ps, depth, desc, "smb_io_relsecdesc");
 	depth++;
 
 	if (MARSHALLING(ps)) {
@@ -1875,11 +1875,11 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth, SEC
  Parse a DEVMODE structure and its relative pointer.
 ********************************************************************/
 
-static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEVICEMODE **devmode)
+static BOOL smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEVICEMODE **devmode)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_reldevmode");
+	prs_debug(ps, depth, desc, "smb_io_reldevmode");
 	depth++;
 
 	if (MARSHALLING(ps)) {
@@ -1939,7 +1939,7 @@ static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEV
  Parse a PRINTER_INFO_0 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *info, int depth)
+BOOL smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -1948,9 +1948,9 @@ BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *i
 	
 	buffer->struct_start=prs_offset(ps);
 
-	if (!new_smb_io_relstr("printername", buffer, depth, &info->printername))
+	if (!smb_io_relstr("printername", buffer, depth, &info->printername))
 		return False;
-	if (!new_smb_io_relstr("servername", buffer, depth, &info->servername))
+	if (!smb_io_relstr("servername", buffer, depth, &info->servername))
 		return False;
 	
 	if(!prs_uint32("cjobs", ps, depth, &info->cjobs))
@@ -2040,22 +2040,22 @@ BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *i
  Parse a PRINTER_INFO_1 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info, int depth)
+BOOL smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_printer_info_1");
+	prs_debug(ps, depth, desc, "smb_io_printer_info_1");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
 
 	if (!prs_uint32("flags", ps, depth, &info->flags))
 		return False;
-	if (!new_smb_io_relstr("description", buffer, depth, &info->description))
+	if (!smb_io_relstr("description", buffer, depth, &info->description))
 		return False;
-	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (!smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
-	if (!new_smb_io_relstr("comment", buffer, depth, &info->comment))
+	if (!smb_io_relstr("comment", buffer, depth, &info->comment))
 		return False;	
 
 	return True;
@@ -2065,44 +2065,44 @@ BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *i
  Parse a PRINTER_INFO_2 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
+BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_printer_info_2");
+	prs_debug(ps, depth, desc, "smb_io_printer_info_2");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
 	
-	if (!new_smb_io_relstr("servername", buffer, depth, &info->servername))
+	if (!smb_io_relstr("servername", buffer, depth, &info->servername))
 		return False;
-	if (!new_smb_io_relstr("printername", buffer, depth, &info->printername))
+	if (!smb_io_relstr("printername", buffer, depth, &info->printername))
 		return False;
-	if (!new_smb_io_relstr("sharename", buffer, depth, &info->sharename))
+	if (!smb_io_relstr("sharename", buffer, depth, &info->sharename))
 		return False;
-	if (!new_smb_io_relstr("portname", buffer, depth, &info->portname))
+	if (!smb_io_relstr("portname", buffer, depth, &info->portname))
 		return False;
-	if (!new_smb_io_relstr("drivername", buffer, depth, &info->drivername))
+	if (!smb_io_relstr("drivername", buffer, depth, &info->drivername))
 		return False;
-	if (!new_smb_io_relstr("comment", buffer, depth, &info->comment))
+	if (!smb_io_relstr("comment", buffer, depth, &info->comment))
 		return False;
-	if (!new_smb_io_relstr("location", buffer, depth, &info->location))
+	if (!smb_io_relstr("location", buffer, depth, &info->location))
 		return False;
 
 	/* NT parses the DEVMODE at the end of the struct */
-	if (!new_smb_io_reldevmode("devmode", buffer, depth, &info->devmode))
+	if (!smb_io_reldevmode("devmode", buffer, depth, &info->devmode))
 		return False;
 	
-	if (!new_smb_io_relstr("sepfile", buffer, depth, &info->sepfile))
+	if (!smb_io_relstr("sepfile", buffer, depth, &info->sepfile))
 		return False;
-	if (!new_smb_io_relstr("printprocessor", buffer, depth, &info->printprocessor))
+	if (!smb_io_relstr("printprocessor", buffer, depth, &info->printprocessor))
 		return False;
-	if (!new_smb_io_relstr("datatype", buffer, depth, &info->datatype))
+	if (!smb_io_relstr("datatype", buffer, depth, &info->datatype))
 		return False;
-	if (!new_smb_io_relstr("parameters", buffer, depth, &info->parameters))
+	if (!smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
-	if (!new_smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
+	if (!smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
 		return False;
 
 	if (!prs_uint32("attributes", ps, depth, &info->attributes))
@@ -2136,11 +2136,11 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
  Parse a PRINTER_INFO_3 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info, int depth)
+BOOL smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_printer_info_3");
+	prs_debug(ps, depth, desc, "smb_io_printer_info_3");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
@@ -2157,16 +2157,16 @@ BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *i
  Parse a PORT_INFO_1 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_port_info_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
+BOOL smb_io_port_info_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_port_info_1");
+	prs_debug(ps, depth, desc, "smb_io_port_info_1");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
 	
-	if (!new_smb_io_relstr("port_name", buffer, depth, &info->port_name))
+	if (!smb_io_relstr("port_name", buffer, depth, &info->port_name))
 		return False;
 
 	return True;
@@ -2176,20 +2176,20 @@ BOOL new_smb_io_port_info_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, i
  Parse a PORT_INFO_2 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
+BOOL smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_port_info_2");
+	prs_debug(ps, depth, desc, "smb_io_port_info_2");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
 	
-	if (!new_smb_io_relstr("port_name", buffer, depth, &info->port_name))
+	if (!smb_io_relstr("port_name", buffer, depth, &info->port_name))
 		return False;
-	if (!new_smb_io_relstr("monitor_name", buffer, depth, &info->monitor_name))
+	if (!smb_io_relstr("monitor_name", buffer, depth, &info->monitor_name))
 		return False;
-	if (!new_smb_io_relstr("description", buffer, depth, &info->description))
+	if (!smb_io_relstr("description", buffer, depth, &info->description))
 		return False;
 	if (!prs_uint32("port_type", ps, depth, &info->port_type))
 		return False;
@@ -2203,16 +2203,16 @@ BOOL new_smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, i
  Parse a DRIVER_INFO_1 structure.
 ********************************************************************/
 
-BOOL new_smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 *info, int depth) 
+BOOL smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 *info, int depth) 
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_printer_driver_info_1");
+	prs_debug(ps, depth, desc, "smb_io_printer_driver_info_1");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
 
-	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (!smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
 
 	return True;
@@ -2222,26 +2222,26 @@ BOOL new_smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INF
  Parse a DRIVER_INFO_2 structure.
 ********************************************************************/
 
-BOOL new_smb_io_printer_driver_info_2(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_2 *info, int depth) 
+BOOL smb_io_printer_driver_info_2(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_2 *info, int depth) 
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_printer_driver_info_2");
+	prs_debug(ps, depth, desc, "smb_io_printer_driver_info_2");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
 
 	if (!prs_uint32("version", ps, depth, &info->version))
 		return False;
-	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (!smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
-	if (!new_smb_io_relstr("architecture", buffer, depth, &info->architecture))
+	if (!smb_io_relstr("architecture", buffer, depth, &info->architecture))
 		return False;
-	if (!new_smb_io_relstr("driverpath", buffer, depth, &info->driverpath))
+	if (!smb_io_relstr("driverpath", buffer, depth, &info->driverpath))
 		return False;
-	if (!new_smb_io_relstr("datafile", buffer, depth, &info->datafile))
+	if (!smb_io_relstr("datafile", buffer, depth, &info->datafile))
 		return False;
-	if (!new_smb_io_relstr("configfile", buffer, depth, &info->configfile))
+	if (!smb_io_relstr("configfile", buffer, depth, &info->configfile))
 		return False;
 
 	return True;
@@ -2251,36 +2251,36 @@ BOOL new_smb_io_printer_driver_info_2(char *desc, NEW_BUFFER *buffer, DRIVER_INF
  Parse a DRIVER_INFO_3 structure.
 ********************************************************************/
 
-BOOL new_smb_io_printer_driver_info_3(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_3 *info, int depth)
+BOOL smb_io_printer_driver_info_3(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_3 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_printer_driver_info_3");
+	prs_debug(ps, depth, desc, "smb_io_printer_driver_info_3");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
 
 	if (!prs_uint32("version", ps, depth, &info->version))
 		return False;
-	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (!smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
-	if (!new_smb_io_relstr("architecture", buffer, depth, &info->architecture))
+	if (!smb_io_relstr("architecture", buffer, depth, &info->architecture))
 		return False;
-	if (!new_smb_io_relstr("driverpath", buffer, depth, &info->driverpath))
+	if (!smb_io_relstr("driverpath", buffer, depth, &info->driverpath))
 		return False;
-	if (!new_smb_io_relstr("datafile", buffer, depth, &info->datafile))
+	if (!smb_io_relstr("datafile", buffer, depth, &info->datafile))
 		return False;
-	if (!new_smb_io_relstr("configfile", buffer, depth, &info->configfile))
+	if (!smb_io_relstr("configfile", buffer, depth, &info->configfile))
 		return False;
-	if (!new_smb_io_relstr("helpfile", buffer, depth, &info->helpfile))
-		return False;
-
-	if (!new_smb_io_relarraystr("dependentfiles", buffer, depth, &info->dependentfiles))
+	if (!smb_io_relstr("helpfile", buffer, depth, &info->helpfile))
 		return False;
 
-	if (!new_smb_io_relstr("monitorname", buffer, depth, &info->monitorname))
+	if (!smb_io_relarraystr("dependentfiles", buffer, depth, &info->dependentfiles))
 		return False;
-	if (!new_smb_io_relstr("defaultdatatype", buffer, depth, &info->defaultdatatype))
+
+	if (!smb_io_relstr("monitorname", buffer, depth, &info->monitorname))
+		return False;
+	if (!smb_io_relstr("defaultdatatype", buffer, depth, &info->defaultdatatype))
 		return False;
 
 	return True;
@@ -2290,39 +2290,39 @@ BOOL new_smb_io_printer_driver_info_3(char *desc, NEW_BUFFER *buffer, DRIVER_INF
  Parse a DRIVER_INFO_6 structure.
 ********************************************************************/
 
-BOOL new_smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_6 *info, int depth)
+BOOL smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_6 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_printer_driver_info_6");
+	prs_debug(ps, depth, desc, "smb_io_printer_driver_info_6");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
 
 	if (!prs_uint32("version", ps, depth, &info->version))
 		return False;
-	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (!smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
-	if (!new_smb_io_relstr("architecture", buffer, depth, &info->architecture))
+	if (!smb_io_relstr("architecture", buffer, depth, &info->architecture))
 		return False;
-	if (!new_smb_io_relstr("driverpath", buffer, depth, &info->driverpath))
+	if (!smb_io_relstr("driverpath", buffer, depth, &info->driverpath))
 		return False;
-	if (!new_smb_io_relstr("datafile", buffer, depth, &info->datafile))
+	if (!smb_io_relstr("datafile", buffer, depth, &info->datafile))
 		return False;
-	if (!new_smb_io_relstr("configfile", buffer, depth, &info->configfile))
+	if (!smb_io_relstr("configfile", buffer, depth, &info->configfile))
 		return False;
-	if (!new_smb_io_relstr("helpfile", buffer, depth, &info->helpfile))
-		return False;
-
-	if (!new_smb_io_relarraystr("dependentfiles", buffer, depth, &info->dependentfiles))
+	if (!smb_io_relstr("helpfile", buffer, depth, &info->helpfile))
 		return False;
 
-	if (!new_smb_io_relstr("monitorname", buffer, depth, &info->monitorname))
-		return False;
-	if (!new_smb_io_relstr("defaultdatatype", buffer, depth, &info->defaultdatatype))
+	if (!smb_io_relarraystr("dependentfiles", buffer, depth, &info->dependentfiles))
 		return False;
 
-	if (!new_smb_io_relarraystr("previousdrivernames", buffer, depth, &info->previousdrivernames))
+	if (!smb_io_relstr("monitorname", buffer, depth, &info->monitorname))
+		return False;
+	if (!smb_io_relstr("defaultdatatype", buffer, depth, &info->defaultdatatype))
+		return False;
+
+	if (!smb_io_relarraystr("previousdrivernames", buffer, depth, &info->previousdrivernames))
 		return False;
 
 	if (!prs_uint32("date.low", ps, depth, &info->driver_date.low))
@@ -2339,13 +2339,13 @@ BOOL new_smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INF
 	if (!prs_uint32("driver_version_high", ps, depth, &info->driver_version_high))
 		return False;
 
-	if (!new_smb_io_relstr("mfgname", buffer, depth, &info->mfgname))
+	if (!smb_io_relstr("mfgname", buffer, depth, &info->mfgname))
 		return False;
-	if (!new_smb_io_relstr("oem_url", buffer, depth, &info->oem_url))
+	if (!smb_io_relstr("oem_url", buffer, depth, &info->oem_url))
 		return False;
-	if (!new_smb_io_relstr("hardware_id", buffer, depth, &info->hardware_id))
+	if (!smb_io_relstr("hardware_id", buffer, depth, &info->hardware_id))
 		return False;
-	if (!new_smb_io_relstr("provider", buffer, depth, &info->provider))
+	if (!smb_io_relstr("provider", buffer, depth, &info->provider))
 		return False;
 	
 	return True;
@@ -2355,28 +2355,28 @@ BOOL new_smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INF
  Parse a JOB_INFO_1 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int depth)
+BOOL smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_job_info_1");
+	prs_debug(ps, depth, desc, "smb_io_job_info_1");
 	depth++;	
 	
 	buffer->struct_start=prs_offset(ps);
 
 	if (!prs_uint32("jobid", ps, depth, &info->jobid))
 		return False;
-	if (!new_smb_io_relstr("printername", buffer, depth, &info->printername))
+	if (!smb_io_relstr("printername", buffer, depth, &info->printername))
 		return False;
-	if (!new_smb_io_relstr("machinename", buffer, depth, &info->machinename))
+	if (!smb_io_relstr("machinename", buffer, depth, &info->machinename))
 		return False;
-	if (!new_smb_io_relstr("username", buffer, depth, &info->username))
+	if (!smb_io_relstr("username", buffer, depth, &info->username))
 		return False;
-	if (!new_smb_io_relstr("document", buffer, depth, &info->document))
+	if (!smb_io_relstr("document", buffer, depth, &info->document))
 		return False;
-	if (!new_smb_io_relstr("datatype", buffer, depth, &info->datatype))
+	if (!smb_io_relstr("datatype", buffer, depth, &info->datatype))
 		return False;
-	if (!new_smb_io_relstr("text_status", buffer, depth, &info->text_status))
+	if (!smb_io_relstr("text_status", buffer, depth, &info->text_status))
 		return False;
 	if (!prs_uint32("status", ps, depth, &info->status))
 		return False;
@@ -2398,40 +2398,40 @@ BOOL new_smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int
  Parse a JOB_INFO_2 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth)
+BOOL smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth)
 {	
 	uint pipo=0;
 	prs_struct *ps=&buffer->prs;
 	
-	prs_debug(ps, depth, desc, "new_smb_io_job_info_2");
+	prs_debug(ps, depth, desc, "smb_io_job_info_2");
 	depth++;	
 
 	buffer->struct_start=prs_offset(ps);
 	
 	if (!prs_uint32("jobid",ps, depth, &info->jobid))
 		return False;
-	if (!new_smb_io_relstr("printername", buffer, depth, &info->printername))
+	if (!smb_io_relstr("printername", buffer, depth, &info->printername))
 		return False;
-	if (!new_smb_io_relstr("machinename", buffer, depth, &info->machinename))
+	if (!smb_io_relstr("machinename", buffer, depth, &info->machinename))
 		return False;
-	if (!new_smb_io_relstr("username", buffer, depth, &info->username))
+	if (!smb_io_relstr("username", buffer, depth, &info->username))
 		return False;
-	if (!new_smb_io_relstr("document", buffer, depth, &info->document))
+	if (!smb_io_relstr("document", buffer, depth, &info->document))
 		return False;
-	if (!new_smb_io_relstr("notifyname", buffer, depth, &info->notifyname))
+	if (!smb_io_relstr("notifyname", buffer, depth, &info->notifyname))
 		return False;
-	if (!new_smb_io_relstr("datatype", buffer, depth, &info->datatype))
+	if (!smb_io_relstr("datatype", buffer, depth, &info->datatype))
 		return False;
 
-	if (!new_smb_io_relstr("printprocessor", buffer, depth, &info->printprocessor))
+	if (!smb_io_relstr("printprocessor", buffer, depth, &info->printprocessor))
 		return False;
-	if (!new_smb_io_relstr("parameters", buffer, depth, &info->parameters))
+	if (!smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
-	if (!new_smb_io_relstr("drivername", buffer, depth, &info->drivername))
+	if (!smb_io_relstr("drivername", buffer, depth, &info->drivername))
 		return False;
-	if (!new_smb_io_reldevmode("devmode", buffer, depth, &info->devmode))
+	if (!smb_io_reldevmode("devmode", buffer, depth, &info->devmode))
 		return False;
-	if (!new_smb_io_relstr("text_status", buffer, depth, &info->text_status))
+	if (!smb_io_relstr("text_status", buffer, depth, &info->text_status))
 		return False;
 
 /*	SEC_DESC sec_desc;*/
@@ -2465,11 +2465,11 @@ BOOL new_smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int
 /*******************************************************************
 ********************************************************************/  
 
-BOOL new_smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth)
+BOOL smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 	
-	prs_debug(ps, depth, desc, "new_smb_io_form_1");
+	prs_debug(ps, depth, desc, "smb_io_form_1");
 	depth++;
 		
 	buffer->struct_start=prs_offset(ps);
@@ -2477,7 +2477,7 @@ BOOL new_smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth)
 	if (!prs_uint32("flag", ps, depth, &info->flag))
 		return False;
 		
-	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (!smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
 
 	if (!prs_uint32("width", ps, depth, &info->width))
@@ -2611,11 +2611,11 @@ uint32 new_get_buffer_size(NEW_BUFFER *buffer)
  Parse a DRIVER_DIRECTORY_1 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info, int depth)
+BOOL smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_driverdir_1");
+	prs_debug(ps, depth, desc, "smb_io_driverdir_1");
 	depth++;
 
 	buffer->struct_start=prs_offset(ps);
@@ -2630,16 +2630,16 @@ BOOL new_smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *
  Parse a PORT_INFO_1 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_port_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
+BOOL smb_io_port_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_port_1");
+	prs_debug(ps, depth, desc, "smb_io_port_1");
 	depth++;
 
 	buffer->struct_start=prs_offset(ps);
 
-	if(!new_smb_io_relstr("port_name", buffer, depth, &info->port_name))
+	if(!smb_io_relstr("port_name", buffer, depth, &info->port_name))
 		return False;
 
 	return True;
@@ -2649,20 +2649,20 @@ BOOL new_smb_io_port_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int de
  Parse a PORT_INFO_2 structure.
 ********************************************************************/  
 
-BOOL new_smb_io_port_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
+BOOL smb_io_port_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
-	prs_debug(ps, depth, desc, "new_smb_io_port_2");
+	prs_debug(ps, depth, desc, "smb_io_port_2");
 	depth++;
 
 	buffer->struct_start=prs_offset(ps);
 
-	if(!new_smb_io_relstr("port_name", buffer, depth, &info->port_name))
+	if(!smb_io_relstr("port_name", buffer, depth, &info->port_name))
 		return False;
-	if(!new_smb_io_relstr("monitor_name", buffer, depth, &info->monitor_name))
+	if(!smb_io_relstr("monitor_name", buffer, depth, &info->monitor_name))
 		return False;
-	if(!new_smb_io_relstr("description", buffer, depth, &info->description))
+	if(!smb_io_relstr("description", buffer, depth, &info->description))
 		return False;
 	if(!prs_uint32("port_type", ps, depth, &info->port_type))
 		return False;
@@ -2684,7 +2684,7 @@ BOOL smb_io_printprocessor_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR
 
 	buffer->struct_start=prs_offset(ps);
 	
-	if (new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
 
 	return True;
@@ -2702,7 +2702,7 @@ BOOL smb_io_printprocdatatype_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCDA
 
 	buffer->struct_start=prs_offset(ps);
 	
-	if (new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
 
 	return True;
@@ -2720,7 +2720,7 @@ BOOL smb_io_printmonitor_info_1(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_1 *
 
 	buffer->struct_start=prs_offset(ps);
 
-	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (!smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
 
 	return True;
@@ -2738,11 +2738,11 @@ BOOL smb_io_printmonitor_info_2(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_2 *
 
 	buffer->struct_start=prs_offset(ps);
 
-	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
+	if (!smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
-	if (!new_smb_io_relstr("environment", buffer, depth, &info->environment))
+	if (!smb_io_relstr("environment", buffer, depth, &info->environment))
 		return False;
-	if (!new_smb_io_relstr("dll_name", buffer, depth, &info->dll_name))
+	if (!smb_io_relstr("dll_name", buffer, depth, &info->dll_name))
 		return False;
 
 	return True;
