@@ -170,7 +170,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 		if (!ads_pull_uint32(ads, msg, "sAMAccountType", 
 				     &account_type) ||
-		    !(account_type & ATYPE_NORMAL_GROUP)) continue;
+		    !(account_type & ATYPE_GROUP)) continue;
 
 		name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
@@ -198,10 +198,84 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 }
 
 
+/* convert a single name to a sid in a domain */
+static NTSTATUS name_to_sid(struct winbindd_domain *domain,
+			    const char *name,
+			    DOM_SID *sid,
+			    enum SID_NAME_USE *type)
+{
+	ADS_STRUCT *ads;
+	const char *attrs[] = {"objectSid", "sAMAccountType", NULL};
+	int rc, count;
+	void *res;
+	char *exp;
+	uint32 t;
+	fstring name2, dom2;
+	
+	/* sigh. Need to fix interface to give us a raw name */
+	parse_domain_user(name, dom2, name2);
+
+	DEBUG(3,("ads: name_to_sid\n"));
+
+	ads = ads_init(NULL, NULL, NULL);
+	if (!ads) {
+		DEBUG(1,("ads_init failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = ads_connect(ads);
+	if (rc) {
+		DEBUG(1,("name_to_sid ads_connect: %s\n", ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	asprintf(&exp, "(sAMAccountName=%s)", name2);
+	rc = ads_search(ads, &res, exp, attrs);
+	free(exp);
+	if (rc) {
+		DEBUG(1,("name_to_sid ads_search: %s\n", ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	count = ads_count_replies(ads, res);
+	if (count != 1) {
+		DEBUG(1,("name_to_sid: %s not found\n", name));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!ads_pull_sid(ads, res, "objectSid", sid)) {
+		DEBUG(1,("No sid for %s !?\n", name));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!ads_pull_uint32(ads, res, "sAMAccountType", &t)) {
+		DEBUG(1,("No sAMAccountType for %s !?\n", name));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	switch (t & 0xF0000000) {
+	case ATYPE_GROUP:
+		*type = SID_NAME_DOM_GRP;
+		break;
+	case ATYPE_USER:
+		*type = SID_NAME_USER;
+		break;
+	default:
+		DEBUG(1,("hmm, need to map account type 0x%x\n", t));
+		*type = SID_NAME_UNKNOWN;
+		break;
+	}
+
+	ads_destroy(&ads);
+
+	return NT_STATUS_OK;
+}
+
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	query_dispinfo,
-	enum_dom_groups
+	enum_dom_groups,
+	name_to_sid
 };
 
 #endif

@@ -121,10 +121,43 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	return status;
 }
 
+/* convert a single name to a sid in a domain */
+static NTSTATUS name_to_sid(struct winbindd_domain *domain,
+			    const char *name,
+			    DOM_SID *sid,
+			    enum SID_NAME_USE *type)
+{
+	TALLOC_CTX *mem_ctx;
+	CLI_POLICY_HND *hnd;
+	NTSTATUS status;
+	DOM_SID *sids = NULL;
+	uint32 *types = NULL;
+	int num_sids;
+
+	if (!(mem_ctx = talloc_init()))
+		return NT_STATUS_NO_MEMORY;
+        
+	if (!(hnd = cm_get_lsa_handle(domain->name)))
+		return NT_STATUS_UNSUCCESSFUL;
+        
+	status = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 1, &name, 
+				      &sids, &types, &num_sids);
+        
+	/* Return rid and type if lookup successful */        
+	if (NT_STATUS_IS_OK(status)) {
+		sid_copy(sid, &sids[0]);
+		*type = types[0];
+	}
+
+	talloc_destroy(mem_ctx);
+	return status;
+}
+
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
 	query_dispinfo,
-	enum_dom_groups
+	enum_dom_groups,
+	name_to_sid
 };
 

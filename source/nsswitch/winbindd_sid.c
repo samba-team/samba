@@ -70,7 +70,7 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	enum SID_NAME_USE type;
 	fstring sid_str, name_domain, name_user, name;
 	DOM_SID sid;
-	
+	struct winbindd_domain *domain;
 	DEBUG(3, ("[%5d]: lookupname %s\n", state->pid,
 		  state->request.data.name));
 
@@ -78,9 +78,14 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 
 	snprintf(name, sizeof(name), "%s\\%s", name_domain, name_user);
 
-	/* Lookup name from PDC using lsa_lookup_names() */
+	if ((domain = find_domain_from_name(name_domain)) == NULL) {
+		DEBUG(0, ("could not find domain entry for domain %s\n", 
+			  name_domain));
+		return WINBINDD_ERROR;
+	}
 
-	if (!winbindd_lookup_sid_by_name(name, &sid, &type)) {
+	/* Lookup name from PDC using lsa_lookup_names() */
+	if (!winbindd_lookup_sid_by_name(domain, name, &sid, &type)) {
 		return WINBINDD_ERROR;
 	}
 

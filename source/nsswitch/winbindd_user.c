@@ -140,7 +140,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 	
 	/* Get rid and name type from name */
 
-	if (!winbindd_lookup_sid_by_name(name, &user_sid, &name_type)) {
+	if (!winbindd_lookup_sid_by_name(domain, name, &user_sid, &name_type)) {
 		DEBUG(1, ("user '%s' does not exist\n", name_user));
 		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
