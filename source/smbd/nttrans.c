@@ -1166,6 +1166,34 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 }
 
 /****************************************************************************
+ Read a list of EA names and data from an incoming data buffer. Create an ea_list with them.
+****************************************************************************/
+                                                                                                                             
+static struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
+{
+	struct ea_list *ea_list_head = NULL;
+	size_t offset = 0;
+
+	if (data_size < 4) {
+		return NULL;
+	}
+
+	while (offset + 4 <= data_size) {
+		size_t next_offset = IVAL(pdata,offset);
+		struct ea_list *tmp;
+		struct ea_list *eal = read_ea_list_entry(ctx, pdata + offset + 4, data_size - offset - 4, NULL);
+
+		DLIST_ADD_END(ea_list_head, eal, tmp);
+		if (next_offset == 0) {
+			break;
+		}
+		offset += next_offset;
+	}
+                                                                                                                             
+	return ea_list_head;
+}
+
+/****************************************************************************
  Reply to a NT_TRANSACT_CREATE call (needs to process SD's).
 ****************************************************************************/
 
@@ -1194,11 +1222,15 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	uint32 create_disposition;
 	uint32 create_options;
 	uint32 sd_len;
+	uint32 ea_len;
 	uint16 root_dir_fid;
 	SMB_BIG_UINT allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
 	time_t c_time;
+	struct ea_list *ea_list = NULL;
+	TALLOC_CTX *ctx = NULL;
+	char *pdata = NULL;
 	NTSTATUS status;
 
 	DEBUG(5,("call_nt_transact_create\n"));
@@ -1224,7 +1256,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	if(parameter_count < 54) {
 		DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)parameter_count));
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	flags = IVAL(params,0);
@@ -1234,7 +1266,23 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	create_disposition = IVAL(params,28);
 	create_options = IVAL(params,32);
 	sd_len = IVAL(params,36);
+	ea_len = IVAL(params,40);
 	root_dir_fid = (uint16)IVAL(params,4);
+
+	/* Ensure the data_len is correct for the sd and ea values given. */
+	if ((ea_len + sd_len > data_count) ||
+			(ea_len > data_count) || (sd_len > data_count) ||
+			(ea_len + sd_len < ea_len) || (ea_len + sd_len < sd_len)) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	if (ea_len && !lp_ea_support(SNUM(conn))) {
+		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
+	}
+
+	if (ea_len < 10) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
@@ -1368,6 +1416,23 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		}
 	}
 
+	ctx = talloc_init("NTTRANS_CREATE_EA");
+	if (!ctx) {
+		talloc_destroy(ctx);
+		restore_case_semantics(conn, file_attributes);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
+	pdata = data + sd_len;
+
+	/* We have already checked that ea_len <= data_count here. */
+	ea_list = read_nttrans_ea_list(ctx, pdata, ea_len);
+	if (!ea_list ) {
+		talloc_destroy(ctx);
+		restore_case_semantics(conn, file_attributes);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
 	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -1376,6 +1441,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+			talloc_destroy(ctx);
+			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
@@ -1390,6 +1457,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
 
 		if(!fsp) {
+			talloc_destroy(ctx);
 			restore_case_semantics(conn, file_attributes);
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 		}
@@ -1422,10 +1490,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
 				
 				if(!fsp) {
+					talloc_destroy(ctx);
 					restore_case_semantics(conn, file_attributes);
 					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 				}
 			} else {
+				talloc_destroy(ctx);
 				restore_case_semantics(conn, file_attributes);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
@@ -1442,9 +1512,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			fmode = FILE_ATTRIBUTE_NORMAL;
 
 		if (fmode & aDIR) {
+			talloc_destroy(ctx);
 			close_file(fsp,False);
 			restore_case_semantics(conn, file_attributes);
-			return ERROR_DOS(ERRDOS,ERRnoaccess);
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 		} 
 
 		/* 
@@ -1453,11 +1524,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * correct bit for extended oplock reply.
 		 */
     
-		if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+		if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 			extended_oplock_granted = True;
+		}
   
-		if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+		if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 			extended_oplock_granted = True;
+		}
 	}
 
 	/*
@@ -1474,9 +1547,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	if (lp_nt_acl_support(SNUM(conn)) && sd_len && smb_action == FILE_WAS_CREATED) {
 		uint32 saved_access = fsp->desired_access;
 
+		/* We have already checked that sd_len <= data_count here. */
+
 		fsp->desired_access = FILE_GENERIC_ALL;
 
 		if (!NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
+			talloc_destroy(ctx);
 			close_file(fsp,False);
 			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(status);
@@ -1484,6 +1560,16 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		fsp->desired_access = saved_access;
  	}
 	
+	if (ea_len && smb_action == FILE_WAS_CREATED) {
+		status = set_ea(conn, fsp, fname, ea_list);
+		talloc_destroy(ctx);
+		if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK)) {
+			close_file(fsp,False);
+			restore_case_semantics(conn, file_attributes);
+			return ERROR_NT(status);
+		}
+	}
+
 	restore_case_semantics(conn, file_attributes);
 
 	/* Save the requested allocation size. */
