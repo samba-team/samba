@@ -1,5 +1,9 @@
 Changes in release 0.2e:
 
+ * get{addr,name}info added to roken and used in the other code
+   (this makes things work much better with hosts with both v4 and v6
+    addresses, among other things)
+ * do pre-auth for both password and key-based get_in_tkt
  * support for having several databases
  * new command `del_enctype' in kadmin
  * strptime (and new strftime) add to roken
