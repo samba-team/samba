@@ -257,6 +257,8 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
 	int ret;
 	TDB_DATA tdb_key, tdb_data, tdb_data2;
 
+	memset(msg, 0, sizeof(*msg));
+
 	/* form the key */
 	tdb_key = ltdb_key(ldb, dn);
 	if (!tdb_key.dptr) {
