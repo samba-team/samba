@@ -495,7 +495,11 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 
 	prs_set_offset(ps, old_offset);
 
+#if 0 /* JRATEST */
+	buffer->string_at_end = buffer_size;
+#else
 	buffer->string_at_end=prs_data_size(ps);
+#endif
 
 	return True;
 }
@@ -3240,12 +3244,12 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;	
-	init_unistr(&(job_info->printername), lp_servicename(snum));
-	init_unistr(&(job_info->machinename), temp_name);
-	init_unistr(&(job_info->username), queue->user);
-	init_unistr(&(job_info->document), queue->file);
-	init_unistr(&(job_info->datatype), "RAW");
-	init_unistr(&(job_info->text_status), "");
+	init_unistr(&job_info->printername, lp_servicename(snum));
+	init_unistr(&job_info->machinename, temp_name);
+	init_unistr(&job_info->username, queue->user);
+	init_unistr(&job_info->document, queue->file);
+	init_unistr(&job_info->datatype, "RAW");
+	init_unistr(&job_info->text_status, "");
 	job_info->status=nt_printj_status(queue->status);
 	job_info->priority=queue->priority;
 	job_info->position=position;
@@ -3279,14 +3283,14 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 
 	init_unistr(&(job_info->printername), chaine);
 	
-	init_unistr(&(job_info->machinename), temp_name);
-	init_unistr(&(job_info->username), queue->user);
-	init_unistr(&(job_info->document), queue->file);
-	init_unistr(&(job_info->notifyname), queue->user);
-	init_unistr(&(job_info->datatype), "RAW");
-	init_unistr(&(job_info->printprocessor), "winprint");
-	init_unistr(&(job_info->parameters), "");
-	init_unistr(&(job_info->text_status), "");
+	init_unistr(&job_info->machinename, temp_name);
+	init_unistr(&job_info->username, queue->user);
+	init_unistr(&job_info->document, queue->file);
+	init_unistr(&job_info->notifyname, queue->user);
+	init_unistr(&job_info->datatype, "RAW");
+	init_unistr(&job_info->printprocessor, "winprint");
+	init_unistr(&job_info->parameters, "");
+	init_unistr(&job_info->text_status, "");
 	
 /* and here the security descriptor */
 
@@ -3328,13 +3332,13 @@ static uint32 enumjobs_level1(print_queue_struct *queue, int snum,
 	}
 	
 	for (i=0; i<*returned; i++)
-		fill_job_info_1(&(info[i]), &(queue[i]), i, snum);
+		fill_job_info_1(&info[i], &queue[i], i, snum);
 
 	safe_free(queue);
 
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
-		(*needed) += spoolss_size_job_info_1(&(info[i]));
+		(*needed) += spoolss_size_job_info_1(&info[i]);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info);
@@ -3343,7 +3347,7 @@ static uint32 enumjobs_level1(print_queue_struct *queue, int snum,
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
-		new_smb_io_job_info_1("", buffer, &(info[i]), 0);	
+		new_smb_io_job_info_1("", buffer, &info[i], 0);	
 
 	/* clear memory */
 	safe_free(info);
@@ -3374,13 +3378,13 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 	}
 	
 	for (i=0; i<*returned; i++)
-		fill_job_info_2(&(info[i]), &(queue[i]), i, snum);
+		fill_job_info_2(&(info[i]), &queue[i], i, snum);
 
 	safe_free(queue);
 
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
-		(*needed) += spoolss_size_job_info_2(&(info[i]));
+		(*needed) += spoolss_size_job_info_2(&info[i]);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info);
@@ -3389,7 +3393,7 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
-		new_smb_io_job_info_2("", buffer, &(info[i]), 0);	
+		new_smb_io_job_info_2("", buffer, &info[i], 0);	
 
 	/* clear memory */
 	safe_free(info);
