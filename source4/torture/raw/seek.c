@@ -136,7 +136,7 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
 
-	printf("trying read to update offset\n");
+	printf("trying write to update offset\n");
 	ZERO_STRUCT(c);
 	if (cli_write(cli, fnum, 0, c, 0, 2) != 2) {
 		printf("Write failed - %s\n", cli_errstr(cli));

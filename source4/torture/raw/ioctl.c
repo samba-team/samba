@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    ioctl individual test suite
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) James J Myers 2003 <myersjj@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,7 +35,7 @@
 /* test some ioctls */
 static BOOL test_ioctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	struct smb_ioctl ctl;
+	union smb_ioctl ctl;
 	int fnum;
 	NTSTATUS status;
 	BOOL ret = True;
@@ -50,14 +51,15 @@ static BOOL test_ioctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
  	printf("Trying QUERY_JOB_INFO\n");
-	ctl.in.fnum = fnum;
-	ctl.in.request = IOCTL_QUERY_JOB_INFO;
+ 	ctl.ioctl.level = RAW_IOCTL_IOCTL;
+	ctl.ioctl.in.fnum = fnum;
+	ctl.ioctl.in.request = IOCTL_QUERY_JOB_INFO;
 
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &ctl);
 	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
 
  	printf("Trying bad handle\n");
-	ctl.in.fnum = fnum+1;
+	ctl.ioctl.in.fnum = fnum+1;
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &ctl);
 	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
 
@@ -73,7 +75,7 @@ static BOOL test_fsctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	const char *fname = BASEDIR "\\test.dat";
-	struct smb_ntioctl nt;
+	union smb_ioctl nt;
 
 	printf("\nTESTING FSCTL FUNCTIONS\n");
 
@@ -85,24 +87,25 @@ static BOOL test_fsctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("trying sparse file\n");
-	nt.in.function = FSCTL_SET_SPARSE;
-	nt.in.fnum = fnum;
-	nt.in.fsctl = True;
-	nt.in.filter = 0;
+	nt.ioctl.level = RAW_IOCTL_NTIOCTL;
+	nt.ntioctl.in.function = FSCTL_SET_SPARSE;
+	nt.ntioctl.in.fnum = fnum;
+	nt.ntioctl.in.fsctl = True;
+	nt.ntioctl.in.filter = 0;
 
-	status = smb_raw_ntioctl(cli->tree, &nt);
+	status = smb_raw_ioctl(cli->tree, mem_ctx, &nt);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
  	printf("Trying bad handle\n");
-	nt.in.fnum = fnum+1;
-	status = smb_raw_ntioctl(cli->tree, &nt);
+	nt.ntioctl.in.fnum = fnum+1;
+	status = smb_raw_ioctl(cli->tree, mem_ctx, &nt);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 #if 0
-	nt.in.fnum = fnum;
+	nt.ntioctl.in.fnum = fnum;
 	for (i=0;i<100;i++) {
-		nt.in.function = FSCTL_FILESYSTEM + (i<<2);
-		status = smb_raw_ntioctl(cli->tree, &nt);
+		nt.ntioctl.in.function = FSCTL_FILESYSTEM + (i<<2);
+		status = smb_raw_ioctl(cli->tree, mem_ctx, &nt);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
 			printf("filesystem fsctl 0x%x - %s\n",
 			       i, nt_errstr(status));

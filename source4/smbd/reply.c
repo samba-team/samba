@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Main SMB reply routines
    Copyright (C) Andrew Tridgell 1992-2003
+   Copyright (C) James J Myers 2003 <myersjj@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -226,17 +227,17 @@ void reply_unknown(struct request_context *req)
 ****************************************************************************/
 static void reply_ioctl_send(struct request_context *req)
 {
-	struct smb_ioctl *io = req->async.private;
+	union smb_ioctl *io = req->async.private;
 
 	CHECK_ASYNC_STATUS;
 
 	/* the +1 is for nicer alignment */
-	req_setup_reply(req, 8, io->out.blob.length+1);
-	SSVAL(req->out.vwv, VWV(1), io->out.blob.length);
-	SSVAL(req->out.vwv, VWV(5), io->out.blob.length);
+	req_setup_reply(req, 8, io->ioctl.out.blob.length+1);
+	SSVAL(req->out.vwv, VWV(1), io->ioctl.out.blob.length);
+	SSVAL(req->out.vwv, VWV(5), io->ioctl.out.blob.length);
 	SSVAL(req->out.vwv, VWV(6), PTR_DIFF(req->out.data, req->out.hdr) + 1);
 
-	memcpy(req->out.data+1, io->out.blob.data, io->out.blob.length);
+	memcpy(req->out.data+1, io->ioctl.out.blob.data, io->ioctl.out.blob.length);
 
 	req_send_reply(req);
 }
@@ -246,14 +247,15 @@ static void reply_ioctl_send(struct request_context *req)
 ****************************************************************************/
 void reply_ioctl(struct request_context *req)
 {
-	struct smb_ioctl *io;
+	union smb_ioctl *io;
 
 	/* parse requst */
 	REQ_CHECK_WCT(req, 3);
 	REQ_TALLOC(io, sizeof(*io));
 
-	io->in.fnum     = req_fnum(req, req->in.vwv, VWV(0));
-	io->in.request  = IVAL(req->in.vwv, VWV(1));
+	io->ioctl.level = RAW_IOCTL_IOCTL;
+	io->ioctl.in.fnum     = req_fnum(req, req->in.vwv, VWV(0));
+	io->ioctl.in.request  = IVAL(req->in.vwv, VWV(1));
 
 	req->async.send_fn = reply_ioctl_send;
 	req->async.private = io;
@@ -1627,6 +1629,40 @@ void reply_mv(struct request_context *req)
 	REQ_ASYNC_TAIL;
 }
 
+
+/****************************************************************************
+ Reply to an NT rename.
+****************************************************************************/
+void reply_ntrename(struct request_context *req)
+{
+	union smb_rename *io;
+	char *p;
+ 
+	/* parse the request */
+	REQ_CHECK_WCT(req, 4);
+	REQ_TALLOC(io, sizeof(*io));
+
+	io->generic.level = RAW_RENAME_NTRENAME;
+	io->ntrename.in.attrib  = SVAL(req->in.vwv, VWV(0));
+	io->ntrename.in.flags   = SVAL(req->in.vwv, VWV(1));
+	io->ntrename.in.cluster_size = IVAL(req->in.vwv, VWV(2));
+
+	p = req->in.data;
+	p += req_pull_ascii4(req, &io->ntrename.in.old_name, p, STR_TERMINATE);
+	p += req_pull_ascii4(req, &io->ntrename.in.new_name, p, STR_TERMINATE);
+
+	if (!io->ntrename.in.old_name || !io->ntrename.in.new_name) {
+		req_reply_error(req, NT_STATUS_FOOBAR);
+		return;
+	}
+
+	req->async.send_fn = reply_simple_send;
+
+	/* call backend */
+	req->async.status = req->conn->ntvfs_ops->rename(req, io);
+
+	REQ_ASYNC_TAIL;
+}
 
 /****************************************************************************
  Reply to a file copy (async reply)

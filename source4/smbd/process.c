@@ -320,7 +320,7 @@ static const struct smb_message_struct
 /* 0xa2 */ { "SMBntcreateX", reply_ntcreate_and_X, AS_USER | CAN_IPC },
 /* 0xa3 */ { NULL, NULL, 0 },
 /* 0xa4 */ { "SMBntcancel", reply_ntcancel, 0 },
-/* 0xa5 */ { NULL, NULL, 0 },
+/* 0xa5 */ { "SMBntrename", reply_ntrename, 0 },
 /* 0xa6 */ { NULL, NULL, 0 },
 /* 0xa7 */ { NULL, NULL, 0 },
 /* 0xa8 */ { NULL, NULL, 0 },
