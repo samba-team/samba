@@ -261,6 +261,10 @@ static void create_procs(int nprocs, int numops)
 
 	get_myname(myname,NULL);
 
+	if (*username == 0 && getenv("LOGNAME")) {
+	  strcpy(username,getenv("LOGNAME"));
+	}
+
 	argc--;
 	argv++;
 

@@ -214,9 +214,6 @@ Here come some platform specific sections
 #include <string.h>
 #include <sys/vfs.h>
 #include <netinet/in.h>
-#ifndef NO_ASMSIGNALH
-#include <asm/signal.h>
-#endif
 #ifdef GLIBC2
 #define _LINUX_C_LIB_VERSION_MAJOR     6
 #include <termios.h>
