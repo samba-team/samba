@@ -719,7 +719,7 @@ NTSTATUS ntvfs_ipc_init(void)
 	ops.chkpath = ipc_chkpath;
 	ops.qpathinfo = ipc_qpathinfo;
 	ops.setpathinfo = ipc_setpathinfo;
-	ops.open = ipc_open;
+	ops.openfile = ipc_open;
 	ops.mkdir = ipc_mkdir;
 	ops.rmdir = ipc_rmdir;
 	ops.rename = ipc_rename;

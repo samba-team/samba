@@ -51,7 +51,7 @@ struct ntvfs_ops {
 				struct smbsrv_request *req, union smb_fileinfo *st);
 	NTSTATUS (*setpathinfo)(struct ntvfs_module_context *ntvfs, 
 				struct smbsrv_request *req, union smb_setfileinfo *st);
-	NTSTATUS (*open)(struct ntvfs_module_context *ntvfs, 
+	NTSTATUS (*openfile)(struct ntvfs_module_context *ntvfs, 
 				struct smbsrv_request *req, union smb_open *oi);
 	NTSTATUS (*mkdir)(struct ntvfs_module_context *ntvfs, 
 				struct smbsrv_request *req, union smb_mkdir *md);

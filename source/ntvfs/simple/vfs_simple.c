@@ -961,7 +961,7 @@ NTSTATUS ntvfs_simple_init(void)
 	ops.chkpath = svfs_chkpath;
 	ops.qpathinfo = svfs_qpathinfo;
 	ops.setpathinfo = svfs_setpathinfo;
-	ops.open = svfs_open;
+	ops.openfile = svfs_open;
 	ops.mkdir = svfs_mkdir;
 	ops.rmdir = svfs_rmdir;
 	ops.rename = svfs_rename;

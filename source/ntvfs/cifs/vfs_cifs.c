@@ -829,7 +829,7 @@ NTSTATUS ntvfs_cifs_init(void)
 	ops.chkpath = cvfs_chkpath;
 	ops.qpathinfo = cvfs_qpathinfo;
 	ops.setpathinfo = cvfs_setpathinfo;
-	ops.open = cvfs_open;
+	ops.openfile = cvfs_open;
 	ops.mkdir = cvfs_mkdir;
 	ops.rmdir = cvfs_rmdir;
 	ops.rename = cvfs_rename;

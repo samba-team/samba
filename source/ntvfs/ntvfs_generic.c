@@ -156,7 +156,7 @@ NTSTATUS ntvfs_map_open_openx(struct smbsrv_request *req,
 	io2->generic.in.file_attr = io->openx.in.file_attrs;
 	io2->generic.in.fname = io->openx.in.fname;
 	
-	status = ntvfs->ops->open(ntvfs, req, io2);
+	status = ntvfs->ops->openfile(ntvfs, req, io2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -285,7 +285,7 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		DEBUG(9,("ntvfs_map_open(OPEN): mapped flags=0x%x to access_mask=0x%x and share_access=0x%x\n",
 			io->openold.in.flags, io2->generic.in.access_mask, io2->generic.in.share_access));
 
-		status = ntvfs->ops->open(ntvfs, req, io2);
+		status = ntvfs->ops->openfile(ntvfs, req, io2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

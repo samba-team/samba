@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/time.h"
+#include "system/wait.h"
 
 #endif
 

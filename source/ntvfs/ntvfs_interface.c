@@ -77,13 +77,13 @@ NTSTATUS ntvfs_setpathinfo(struct smbsrv_request *req, union smb_setfileinfo *st
 	return ntvfs->ops->setpathinfo(ntvfs, req, st);
 }
 
-NTSTATUS ntvfs_open(struct smbsrv_request *req, union smb_open *oi)
+NTSTATUS ntvfs_openfile(struct smbsrv_request *req, union smb_open *oi)
 {
 	struct ntvfs_module_context *ntvfs = req->tcon->ntvfs_ctx->modules;
-	if (!ntvfs->ops->open) {
+	if (!ntvfs->ops->openfile) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->open(ntvfs, req, oi);
+	return ntvfs->ops->openfile(ntvfs, req, oi);
 }
 
 NTSTATUS ntvfs_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
@@ -360,13 +360,13 @@ NTSTATUS ntvfs_next_setpathinfo(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->setpathinfo(ntvfs->next, req, st);
 }
 
-NTSTATUS ntvfs_next_open(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_openfile(struct ntvfs_module_context *ntvfs, 
 			 struct smbsrv_request *req, union smb_open *oi)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->open) {
+	if (!ntvfs->next || !ntvfs->next->ops->openfile) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->open(ntvfs->next, req, oi);
+	return ntvfs->next->ops->openfile(ntvfs->next, req, oi);
 }
 
 NTSTATUS ntvfs_next_mkdir(struct ntvfs_module_context *ntvfs, 

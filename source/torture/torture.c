@@ -22,6 +22,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
+#include "system/wait.h"
 
 int torture_nprocs=4;
 int torture_numops=100;
