@@ -154,8 +154,8 @@ if test "$with_krb4" != "no"; then
 	CFLAGS="$save_CFLAGS"
 	LIB_kdb="-lkdb -lkrb"
 	if test "$krb4_libdir"; then
-		LIB_krb4="-Wl,-rpath $krb4_libdir $LIB_krb4"
-		LIB_kdb="-Wl,-rpath $krb4_libdir -L$krb4_libdir $LIB_kdb"
+		LIB_krb4="-Wl,-rpath -Wl,$krb4_libdir $LIB_krb4"
+		LIB_kdb="-Wl,-rpath -Wl,$krb4_libdir -L$krb4_libdir $LIB_kdb"
 	fi
 fi
 AM_CONDITIONAL(KRB4, test "$with_krb4" != "no")
@@ -561,7 +561,7 @@ if test "$ac_cv_func_des_cbc_encrypt" = "yes" -a \
 \( "$ac_cv_func_SHA1Init" = "yes" -o "$ac_cv_func_SHA1_Init" = "yes" \) -a \
 "$ac_cv_func_RC4" = "yes"; then
   DIR_des=''
-  LIB_des="$ac_cv_funclib_MD4Init"
+  LIB_des="-Wl,-rpath -Wl,$krb4_libdir -L$krb4_libdir $ac_cv_funclib_MD4Init"
 else
   DIR_des='des'
   LIB_des='$(top_builddir)/lib/des/libdes.la'
