@@ -1,3 +1,10 @@
+2000-09-19  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): bump version to
+	13:1:0
+
+	* lib/hdb/Makefile.am (libhdb_la_LDFLAGS): bump version to 6:2:0
+
 2000-09-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/log.c: use DEFAULT_LOG_DEST
