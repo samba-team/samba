@@ -235,6 +235,54 @@ ssize_t write_socket(int fd, char *buf, size_t len)
 	return (ret);
 }
 
+/*******************************************************************
+ checks if write data is outstanding.
+ ********************************************************************/
+int write_data_outstanding(int fd, unsigned int time_out)
+{
+	int selrtn;
+	fd_set fds;
+	struct timeval timeout;
+
+	FD_ZERO(&fds);
+	FD_SET(fd, &fds);
+
+	timeout.tv_sec = (time_t) (time_out / 1000);
+	timeout.tv_usec = (long)(1000 * (time_out % 1000));
+
+	selrtn = sys_select(fd + 1, NULL, &fds, &timeout);
+
+	if (selrtn <= 0)
+	{
+		return selrtn;
+	}
+	return FD_ISSET(fd, &fds) ? 1 : 0;
+}
+
+/*******************************************************************
+ checks if read data is outstanding.
+ ********************************************************************/
+int read_data_outstanding(int fd, unsigned int time_out)
+{
+	int selrtn;
+	fd_set fds;
+	struct timeval timeout;
+
+	FD_ZERO(&fds);
+	FD_SET(fd, &fds);
+
+	timeout.tv_sec = (time_t) (time_out / 1000);
+	timeout.tv_usec = (long)(1000 * (time_out % 1000));
+
+	selrtn = sys_select(fd + 1, &fds, NULL, &timeout);
+
+	if (selrtn <= 0)
+	{
+		return selrtn;
+	}
+	return FD_ISSET(fd, &fds) ? 1 : 0;
+}
+
 /****************************************************************************
 read from a socket
 ****************************************************************************/
@@ -275,11 +323,8 @@ time_out = timeout in milliseconds
 ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 			  unsigned int time_out)
 {
-	fd_set fds;
-	int selrtn;
 	ssize_t readret;
 	size_t nread = 0;
-	struct timeval timeout;
 
 	/* just checking .... */
 	if (maxcnt <= 0)
@@ -333,16 +378,9 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 	   system performance will suffer severely as 
 	   select always returns true on disk files */
 
-	/* Set initial timeout */
-	timeout.tv_sec = (time_t) (time_out / 1000);
-	timeout.tv_usec = (long)(1000 * (time_out % 1000));
-
 	for (nread = 0; nread < mincnt;)
 	{
-		FD_ZERO(&fds);
-		FD_SET(fd, &fds);
-
-		selrtn = sys_select(fd + 1, &fds, NULL, &timeout);
+		int selrtn = read_data_outstanding(fd, time_out);
 
 		/* Check if error */
 		if (selrtn == -1)

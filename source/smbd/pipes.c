@@ -239,7 +239,7 @@ int reply_pipe_read_and_X(char *inbuf, char *outbuf, int length, int bufsize)
 	set_message(outbuf, 12, 0, True);
 	data = smb_buf(outbuf);
 
-	nread = read_pipe(p, data, smb_maxcnt);
+	nread = read_pipe(p, data, smb_mincnt, smb_maxcnt);
 
 	if (nread < 0)
 		return (UNIXERROR(ERRDOS, ERRnoaccess));

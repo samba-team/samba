@@ -35,13 +35,11 @@ extern int DEBUGLEVEL;
 BOOL readwrite_pipe(pipes_struct * p, char *data, int len,
 		    char **rdata, int *rlen, BOOL *pipe_outstanding)
 {
-	fd_set fds;
 	int selrtn;
-	struct timeval timeout;
 
 	DEBUG(10, ("rpc_to_smb_readwrite: len %d\n", len));
 
-	if (write_socket(p->m->fd, data, len) != len)
+	if (write_pipe(p, data, len) != len)
 	{
 		return False;
 	}
@@ -57,9 +55,10 @@ BOOL readwrite_pipe(pipes_struct * p, char *data, int len,
 		return False;
 	}
 
-	/* compromise.  MUST read a minimum of an rpc header.
-	 * timeout waiting for the rest for 10 seconds */
-	(*rlen) = read_with_timeout(p->m->fd, (*rdata), 16, (*rlen), 10000);
+	/*
+	 * timeout waiting for the rest for 10 seconds
+	 */
+	(*rlen) = read_pipe(p, (*rdata), 1, (*rlen));
 	if ((*rlen) < 0)
 	{
 		return False;
@@ -77,23 +76,16 @@ BOOL readwrite_pipe(pipes_struct * p, char *data, int len,
 	 * response.  *dur*!  what's msrpc got to do with smb, ANYWAY!!
 	 */
 
-	FD_ZERO(&fds);
-	FD_SET(p->m->fd, &fds);
-
-	/* Set initial timeout to zero */
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 0;
-
-	selrtn = sys_select(p->m->fd + 1, &fds, NULL, &timeout);
+	selrtn = read_data_outstanding(p->m->fd, 0);
 
 	/* Check if error */
 	if (selrtn == -1)
 	{
 		/* something is wrong. Maybe the socket is dead? */
-		return -1;
+		return False;
 	}
 
-	*pipe_outstanding = FD_ISSET(p->m->fd, &fds);
+	*pipe_outstanding = (selrtn > 0);
 
 	return True;
 }
@@ -120,9 +112,9 @@ ssize_t write_pipe(pipes_struct * p, char *data, size_t n)
  read by an SMBtrans (file_offset != 0).
 
  ****************************************************************************/
-int read_pipe(pipes_struct * p, char *data, int n)
+int read_pipe(pipes_struct * p, char *data, int min_len, int max_len)
 {
-	DEBUG(6, ("read_pipe: %x name: %s len: %d", p->pnum, p->name, n));
+	DEBUG(6, ("read_pipe: %x name: %s len: %d", p->pnum, p->name, max_len));
 
 	if (!p)
 	{
@@ -130,6 +122,5 @@ int read_pipe(pipes_struct * p, char *data, int n)
 		return -1;
 	}
 
-	/* read a minimum of 1 byte! :-) */
-	return read_with_timeout(p->m->fd, data, 1, n, 10000);
+	return read_with_timeout(p->m->fd, data, min_len, max_len, 10000);
 }

@@ -51,13 +51,9 @@ extern int max_send;
 static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 				     int timeout, BOOL *got_msrpc)
 {
-	fd_set fds;
 	int selrtn;
-	struct timeval to;
-	int maxfd;
 
-	DEBUG(10,
-	      ("receive_message_or_msrpc: timeout %d fd %d\n", timeout, c));
+	DEBUG(10, ("receive_message_or_msrpc: timeout %d fd %d\n", timeout, c));
 
 	smb_read_error = 0;
 
@@ -68,19 +64,7 @@ static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 	 * If so - copy and return it.
 	 */
 
-	/*
-	 * Setup the select read fd set.
-	 */
-
-	FD_ZERO(&fds);
-	FD_SET(c, &fds);
-	maxfd = 0;
-
-	to.tv_sec = timeout / 1000;
-	to.tv_usec = (timeout % 1000) * 1000;
-
-	selrtn = sys_select(MAX(maxfd, c) + 1, &fds, NULL,
-			   timeout > 0 ? &to : NULL);
+	selrtn = read_data_outstanding(c, timeout);
 
 	/* Check if error */
 	if (selrtn == -1)
@@ -99,12 +83,8 @@ static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 		return False;
 	}
 
-	if (FD_ISSET(c, &fds))
-	{
-		*got_msrpc = True;
-		return receive_msrpc(c, ps, 0);
-	}
-	return False;
+	*got_msrpc = True;
+	return receive_msrpc(c, ps, 0);
 }
 
 
@@ -158,23 +138,12 @@ static void process_msrpc(rpcsrv_struct * l, const char *name,
 
 		while (rpc_local(l, NULL, 0, name))
 		{
-			fd_set fds;
 			int selrtn;
-			struct timeval to;
-			int maxfd;
 			int timeout = SMBD_SELECT_TIMEOUT * 1000;
 
 			smb_read_error = 0;
 
-			FD_ZERO(&fds);
-			FD_SET(l->c, &fds);
-			maxfd = 0;
-
-			to.tv_sec = timeout / 1000;
-			to.tv_usec = (timeout % 1000) * 1000;
-
-			selrtn = sys_select(MAX(maxfd, l->c) + 1, NULL, &fds,
-					   timeout > 0 ? &to : NULL);
+			selrtn = write_data_outstanding(l->c, timeout);
 
 			/* Check if error */
 			if (selrtn == -1)
@@ -190,11 +159,9 @@ static void process_msrpc(rpcsrv_struct * l, const char *name,
 				return;
 			}
 
-			if (FD_ISSET(l->c, &fds))
+			if (!msrpc_send(l->c, &l->rsmb_pdu))
 			{
-				if (!msrpc_send(l->c, &l->rsmb_pdu))
-					prs_free_data(&l->rsmb_pdu);
-				break;
+				DEBUG(1,("msrpc_send: failed\n"));
 			}
 			prs_free_data(&l->rsmb_pdu);
 		}
