@@ -76,10 +76,10 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,10, 0, True);
-	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 	
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,cli->max_xmit);
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,1);
@@ -142,10 +142,10 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 
 	set_message(cli->outbuf,13,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
@@ -197,10 +197,10 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE|STR_ASCII);
 
 	set_message(cli->outbuf,13,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
@@ -273,10 +273,10 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	memset(cli->outbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,13,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
@@ -335,10 +335,10 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 	memset(cli->outbuf,'\0',smb_size);
 
 	set_message(cli->outbuf,12,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,1);
@@ -633,7 +633,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
 {
         memset(cli->outbuf,'\0',smb_size);
         set_message(cli->outbuf,2,0,True);
-        CVAL(cli->outbuf,smb_com) = SMBulogoffX;
+        SCVAL(cli->outbuf,smb_com,SMBulogoffX);
         cli_setup_packet(cli);
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
@@ -691,7 +691,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	}
 
 	set_message(cli->outbuf,4, 0, True);
-	CVAL(cli->outbuf,smb_com) = SMBtconX;
+	SCVAL(cli->outbuf,smb_com,SMBtconX);
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
@@ -737,7 +737,7 @@ BOOL cli_tdis(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBtdis;
+	SCVAL(cli->outbuf,smb_com,SMBtdis);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	
@@ -770,11 +770,11 @@ void cli_negprot_send(struct cli_state *cli)
 		p += clistr_push(cli, p, prots[numprots].name, -1, STR_TERMINATE);
 	}
 
-	CVAL(cli->outbuf,smb_com) = SMBnegprot;
+	SCVAL(cli->outbuf,smb_com,SMBnegprot);
 	cli_setup_bcc(cli, p);
 	cli_setup_packet(cli);
 
-	CVAL(smb_buf(cli->outbuf),0) = 2;
+	SCVAL(smb_buf(cli->outbuf),0,2);
 
 	cli_send_smb(cli);
 }
@@ -807,10 +807,10 @@ BOOL cli_negprot(struct cli_state *cli)
 		p += clistr_push(cli, p, prots[numprots].name, -1, STR_TERMINATE);
 	}
 
-	CVAL(cli->outbuf,smb_com) = SMBnegprot;
+	SCVAL(cli->outbuf,smb_com,SMBnegprot);
 	cli_setup_packet(cli);
 
-	CVAL(smb_buf(cli->outbuf),0) = 2;
+	SCVAL(smb_buf(cli->outbuf),0,2);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))
@@ -905,7 +905,7 @@ BOOL cli_session_request(struct cli_state *cli,
 
 	/* setup the packet length */
 	_smb_setlen(cli->outbuf,len);
-	CVAL(cli->outbuf,0) = 0x81;
+	SCVAL(cli->outbuf,0,0x81);
 
 #ifdef WITH_SSL
 retry:

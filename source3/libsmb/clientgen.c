@@ -57,7 +57,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 				if (!cli->oplock_handler(cli, fnum, level)) return False;
 			}
 			/* try to prevent loops */
-			CVAL(cli->inbuf,smb_com) = 0xFF;
+			SCVAL(cli->inbuf,smb_com,0xFF);
 			goto again;
 		}
 	}

@@ -35,11 +35,11 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 
 	set_message(cli->outbuf,10,0,True);
 		
-	CVAL(cli->outbuf,smb_com) = SMBreadX;
+	SCVAL(cli->outbuf,smb_com,SMBreadX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 	SIVAL(cli->outbuf,smb_vwv3,offset);
 	SSVAL(cli->outbuf,smb_vwv5,size);
@@ -61,7 +61,7 @@ static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset,
 
 	set_message(cli->outbuf,10,0,True);
 		
-	CVAL(cli->outbuf,smb_com) = SMBreadbraw;
+	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
@@ -232,11 +232,11 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	else
 		set_message(cli->outbuf,12,0,True);
 	
-	CVAL(cli->outbuf,smb_com) = SMBwriteX;
+	SCVAL(cli->outbuf,smb_com,SMBwriteX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 
 	SIVAL(cli->outbuf,smb_vwv3,offset);
@@ -327,7 +327,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 
 		set_message(cli->outbuf,5, 0,True);
 
-		CVAL(cli->outbuf,smb_com) = SMBwrite;
+		SCVAL(cli->outbuf,smb_com,SMBwrite);
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
 		

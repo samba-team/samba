@@ -37,7 +37,7 @@ BOOL cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level)
         memset(buf,'\0',smb_size);
         set_message(buf,8,0,True);
 
-        CVAL(buf,smb_com) = SMBlockingX;
+        SCVAL(buf,smb_com,SMBlockingX);
 	SSVAL(buf,smb_tid, cli->cnum);
         cli_setup_packet(cli);
 	SSVAL(buf,smb_vwv0,0xFF);

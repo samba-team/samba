@@ -35,7 +35,7 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	/* send a SMBsendstrt command */
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsendstrt;
+	SCVAL(cli->outbuf,smb_com,SMBsendstrt);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	
@@ -70,7 +70,7 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,1,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsendtxt;
+	SCVAL(cli->outbuf,smb_com,SMBsendtxt);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
@@ -101,7 +101,7 @@ BOOL cli_message_end(struct cli_state *cli, int grp)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,1,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsendend;
+	SCVAL(cli->outbuf,smb_com,SMBsendend);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 
 	SSVAL(cli->outbuf,smb_vwv0,grp);
