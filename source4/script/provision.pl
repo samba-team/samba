@@ -358,7 +358,7 @@ if (!$opt_users) {
 
 $opt_nobody || die "Unable to determine a user for 'nobody'\n";
 $opt_nogroup || die "Unable to determine a group for 'nogroup'\n";
-$opt_users || die "Unable to determine a group for 'user'\n";
+$opt_users || die "Unable to determine a group for 'users'\n";
 $opt_wheel || die "Unable to determine a group for 'wheel'\n";
 
 print "Using nobody='$opt_nobody'  nogroup='$opt_nogroup'  wheel='$opt_wheel'  users='$opt_users'\n";
