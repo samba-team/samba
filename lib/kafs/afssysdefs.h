@@ -1,3 +1,5 @@
+/* $Id$ */
+
 /*
  * This section is for machines using single entry point AFS syscalls!
  * and/or
@@ -43,5 +45,6 @@
 #endif
 
 #ifdef SYS_afs_syscall
+#undef  AFS_SYSCALL
 #define AFS_SYSCALL	SYS_afs_syscall
 #endif
