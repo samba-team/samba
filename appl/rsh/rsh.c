@@ -467,8 +467,13 @@ proto (int s, int errsock,
 	return 1;
     } 
 
-    if (net_read (s, &reply, 1) != 1) {
+    ret = net_read (s, &reply, 1);
+    if (ret < 0) {
 	warn ("read");
+	close (errsock2);
+	return 1;
+    } else if (ret == 0) {
+	warnx ("unexpected EOF from %s", hostname);
 	close (errsock2);
 	return 1;
     }
