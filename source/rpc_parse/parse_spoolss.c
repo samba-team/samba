@@ -5494,12 +5494,14 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 		case 0x3:
 		case 0x4:
 		case 0x7:
-			if (UNMARSHALLING(ps))
-				q_u->data=(uint8 *)prs_alloc_mem(ps, q_u->max_len * sizeof(uint8));
-			if(q_u->data == NULL)
-				return False;
-			if(!prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len))
-				return False;
+            if (q_u->max_len) {
+                if (UNMARSHALLING(ps))
+    				q_u->data=(uint8 *)prs_alloc_mem(ps, q_u->max_len * sizeof(uint8));
+    			if(q_u->data == NULL)
+    				return False;
+    			if(!prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len))
+    				return False;
+            }
 			if(!prs_align(ps))
 				return False;
 			break;

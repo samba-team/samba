@@ -292,7 +292,10 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 			len = 4;
 			if (bufsize < len) goto no_space;
 			*i = IVAL(buf, 0);
-			if (! *i) break;
+			if (! *i) {
+				*b = NULL;
+				break;
+			}
 			len += *i;
 			if (bufsize < len) goto no_space;
 			*b = (char *)malloc(*i);
