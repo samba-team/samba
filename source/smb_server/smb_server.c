@@ -749,6 +749,8 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 	   good performance */
 	smb->negotiate.max_recv = lp_max_xmit();
 
+	smb->negotiate.zone_offset = get_time_zone(time(NULL));
+
 	smb->users.next_vuid = VUID_OFFSET;
 	
 	smb->events = ev;

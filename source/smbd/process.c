@@ -88,9 +88,6 @@ void smbd_process_init(void)
 	if (!dcesrv_init())
 		exit(1);
 
-	/* re-initialise the timezone */
-	TimeInit();
-	
 	talloc_destroy(mem_ctx);
 }
 

@@ -90,7 +90,7 @@ char *ldb_base64_encode(const char *buf, int len)
 {
 	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bit_offset, byte_offset, idx, i;
-	unsigned char *d = (unsigned char *)buf;
+	const unsigned char *d = (const unsigned char *)buf;
 	int bytes = (len*8 + 5)/6;
 	char *out;
 
@@ -222,6 +222,23 @@ int ldif_write(int (*fprintf_fn)(void *, const char *, ...),
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
+		if (ldif->changetype == LDB_CHANGETYPE_MODIFY) {
+			switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
+			case LDB_FLAG_MOD_ADD:
+				fprintf_fn(private, "add: %s\n", 
+					   msg->elements[i].name);
+				break;
+			case LDB_FLAG_MOD_DELETE:
+				fprintf_fn(private, "delete: %s\n", 
+					   msg->elements[i].name);
+				break;
+			case LDB_FLAG_MOD_REPLACE:
+				fprintf_fn(private, "replace: %s\n", 
+					   msg->elements[i].name);
+				break;
+			}
+		}
+
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			if (ldb_should_b64_encode(&msg->elements[i].values[j])) {
 				ret = fprintf_fn(private, "%s:: ", 
@@ -245,6 +262,9 @@ int ldif_write(int (*fprintf_fn)(void *, const char *, ...),
 				ret = fprintf_fn(private, "\n");
 				CHECK_RET;
 			}
+		}
+		if (ldif->changetype == LDB_CHANGETYPE_MODIFY) {
+			fprintf_fn(private, "-\n");
 		}
 	}
 	ret = fprintf_fn(private,"\n");

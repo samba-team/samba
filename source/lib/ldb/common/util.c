@@ -77,11 +77,11 @@ int list_find(const void *needle,
 		int r;
 
 		test_i = (min_i + max_i) / 2;
-		r = comp_fn(needle, *(void **)(base_p + (size * test_i)));
+		r = comp_fn(needle, *(void * const *)(base_p + (size * test_i)));
 		if (r == 0) {
 			/* scan back for first element */
 			while (test_t > 0 &&
-			       comp_fn(needle, *(void **)(base_p + (size * (test_i-1)))) == 0) {
+			       comp_fn(needle, *(void * const *)(base_p + (size * (test_i-1)))) == 0) {
 				test_i--;
 			}
 			return test_i;
@@ -94,7 +94,7 @@ int list_find(const void *needle,
 		}
 	}
 
-	if (comp_fn(needle, *(void **)(base_p + (size * min_i))) == 0) {
+	if (comp_fn(needle, *(void * const *)(base_p + (size * min_i))) == 0) {
 		return min_i;
 	}
 

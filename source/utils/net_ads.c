@@ -107,7 +107,7 @@ static int net_ads_info(int argc, const char **argv)
 	d_printf("Realm: %s\n", ads->config.realm);
 	d_printf("Bind Path: %s\n", ads->config.bind_path);
 	d_printf("LDAP port: %d\n", ads->ldap_port);
-	d_printf("Server time: %s\n", http_timestring(ads->config.current_time));
+	d_printf("Server time: %s\n", timestring(ads->config.current_time));
 
 	return 0;
 }

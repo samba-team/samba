@@ -680,6 +680,7 @@ extern int errno;
 #include "xfile.h"
 #include "dlinklist.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_parse.h"
 #include "lib/tdb/tdb.h"
 #include "lib/tdb/spinlock.h"
 #include "lib/tdb/tdbutil.h"
@@ -748,8 +749,6 @@ struct functable {
 #ifndef HAVE_COMPARISON_FN_T
 typedef int (*comparison_fn_t)(const void *, const void *);
 #endif
-
-#include "lib/ldb/include/ldb_parse.h"
 
 #include "nsswitch/nss.h"
 

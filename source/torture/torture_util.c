@@ -114,13 +114,14 @@ int create_complex_file(struct cli_state *cli, TALLOC_CTX *mem_ctx, const char *
 		printf("Failed to setup EAs\n");
 	}
 
-	/* make sure all the timestamps aren't the same */
+	/* make sure all the timestamps aren't the same, and are also 
+	   in different DST zones*/
 	setfile.generic.level = RAW_SFILEINFO_SETATTRE;
 	setfile.generic.file.fnum = fnum;
 
-	setfile.setattre.in.create_time = t + 60;
-	setfile.setattre.in.access_time = t + 120;
-	setfile.setattre.in.write_time  = t + 180;
+	setfile.setattre.in.create_time = t + 9*30*24*60*60;
+	setfile.setattre.in.access_time = t + 6*30*24*60*60;
+	setfile.setattre.in.write_time  = t + 3*30*24*60*60;
 
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -209,14 +210,6 @@ BOOL wire_bad_flags(WIRE_STRING *str, int flags)
 		return True;
 	}
 	return False;
-}
-
-/*
-  return a talloced string representing a time_t for human consumption
-*/
-const char *time_string(TALLOC_CTX *mem_ctx, time_t t)
-{
-	return talloc_strdup(mem_ctx, http_timestring(mem_ctx, t));
 }
 
 /*
