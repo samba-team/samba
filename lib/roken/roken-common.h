@@ -69,10 +69,6 @@
 #define min(a,b) (((a)<(b))?(a):(b))
 #endif
 
-#ifndef abs
-#define abs(x) (((x) < 0) ? (-x) : (x))
-#endif
-
 #ifndef TRUE
 #define TRUE 1
 #endif
