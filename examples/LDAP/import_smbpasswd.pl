@@ -41,7 +41,7 @@ while ( $string = <STDIN> ) {
 	@getpwinfo = getpwnam($smbentry[0]);
 	if (! @getpwinfo ) {
 	    print STDERR "**$smbentry[0] does not have a system account... \n";
-	    ## next;
+	    next;
         }
 	## Calculate RID = uid*2 +1000
 	$rid=@getpwinfo[2]*2+1000;
