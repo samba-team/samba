@@ -156,6 +156,37 @@ DES_schedule(krb5_context context,
     des_set_key(key->key->keyvalue.data, key->schedule->data);
 }
 
+static void
+DES_string_to_key_int(unsigned char *data, size_t length, des_cblock *key)
+{
+    des_key_schedule schedule;
+    int i;
+    int reverse = 0;
+    unsigned char *p;
+
+    unsigned char swap[] = { 0x0, 0x8, 0x4, 0xc, 0x2, 0xa, 0x6, 0xe, 
+			     0x1, 0x9, 0x5, 0xd, 0x3, 0xb, 0x7, 0xf };
+    memset(key, 0, 8);
+    
+    p = (unsigned char*)key;
+    for (i = 0; i < length; i++) {
+	unsigned char tmp = data[i];
+	if (!reverse)
+	    *p++ ^= (tmp << 1);
+	else
+	    *--p ^= (swap[tmp & 0xf] << 4) | swap[(tmp & 0xf0) >> 4];
+	if((i % 8) == 7)
+	    reverse = !reverse;
+    }
+    des_set_odd_parity(key);
+    if(des_is_weak_key(key))
+	(*key)[7] ^= 0xF0;
+    des_set_key(key, schedule);
+    des_cbc_cksum((void*)data, key, length, schedule, key);
+    memset(schedule, 0, sizeof(schedule));
+    des_set_odd_parity(key);
+}
+
 static krb5_error_code
 DES_string_to_key(krb5_context context,
 		  krb5_enctype enctype,
@@ -163,20 +194,19 @@ DES_string_to_key(krb5_context context,
 		  krb5_salt salt,
 		  krb5_keyblock *key)
 {
-    char *s;
+    unsigned char *s;
     size_t len;
     des_cblock tmp;
 
-    len = password.length + salt.saltvalue.length + 1;
+    len = password.length + salt.saltvalue.length;
     s = malloc(len);
-    if(s == NULL) {
+    if(len > 0 && s == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
     memcpy(s, password.data, password.length);
     memcpy(s + password.length, salt.saltvalue.data, salt.saltvalue.length);
-    s[len - 1] = '\0';
-    des_string_to_key(s, &tmp);
+    DES_string_to_key_int(s, len, &tmp);
     key->keytype = enctype;
     krb5_data_copy(&key->keyvalue, tmp, sizeof(tmp));
     memset(&tmp, 0, sizeof(tmp));
