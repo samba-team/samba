@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -74,7 +74,7 @@ append_hex(char *str, krb5_data *data)
     free(p);
 }
 
-char *
+static char *
 time2str(time_t t)
 {
     static char buf[128];
@@ -82,7 +82,7 @@ time2str(time_t t)
     return buf;
 }
 
-void
+static void
 event2string(Event *ev, char **str)
 {
     char *p;
