@@ -628,7 +628,7 @@
 		<listitem><para><link linkend="DFREECOMMAND"><parameter>dfree command</parameter></link></para></listitem>
 		<listitem><para><link linkend="DISABLENETBIOS"><parameter>disable netbios</parameter></link></para></listitem>
 		<listitem><para><link linkend="DISABLESPOOLSS"><parameter>disable spoolss</parameter></link></para></listitem>
-		<listitem><para><link linkend="DISPLAYCHARSET"><parameter>disable charset</parameter></link></para></listitem>
+		<listitem><para><link linkend="DISPLAYCHARSET"><parameter>display charset</parameter></link></para></listitem>
 		<listitem><para><link linkend="DNSPROXY"><parameter>dns proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINADMINGROUP"><parameter>domain admin group</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINGUESTGROUP"><parameter>domain guest group</parameter></link></para></listitem>
