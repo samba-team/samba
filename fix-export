@@ -60,7 +60,7 @@ make_proto () {
 	(top=`pwd`
 	cd $1
 	b=`basename $1`
-	perl $top/cf/make-proto.pl -o $2 -p $3 `(sed 's/^include/##include/' Makefile.am; 
+	perl $top/cf/make-proto.pl -o $2 -p $3 `(perl -p -e 's/^(include|if|else|endif)\b/##$1/' Makefile.am; 
 		echo 'print-sources:; @if test "$(proto_opts)"; then echo $(proto_opts); else echo -q -P comment; fi; echo '$4 | sort -u ) | make -f - print-sources `)
 }
 
