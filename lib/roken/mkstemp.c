@@ -56,34 +56,32 @@ RCSID("$Id$");
 int
 mkstemp(char *template)
 {
-    int i, j;
-    unsigned long val;
+    int start, i;
+    pid_t val;
     val = getpid();
-    i = strlen(template) - 1;
-    while(template[i] == 'X') {
-	template[i] = '0' + val % 10;
+    start = strlen(template) - 1;
+    while(template[start] == 'X') {
+	template[start] = '0' + val % 10;
 	val /= 10;
-	i--;
+	start--;
     }
     
     do{
 	int fd;
 	fd = open(template, O_RDWR | O_CREAT | O_EXCL, 0600);
-	if(fd >= 0)
+	if(fd >= 0 || errno != EEXIST)
 	    return fd;
-	if(fd < 0 && errno != EEXIST)
-	    return -1;
-	j = i + 1;
+	i = start + 1;
 	do{
-	    if(template[j] == 0)
+	    if(template[i] == 0)
 		return -1;
-	    template[j]++;
-	    if(template[j] == '9' + 1)
-		template[j] = 'a';
-	    if(template[j] <= 'z')
+	    template[i]++;
+	    if(template[i] == '9' + 1)
+		template[i] = 'a';
+	    if(template[i] <= 'z')
 		break;
-	    template[j] = 'a';
-	    j++;
+	    template[i] = 'a';
+	    i++;
 	}while(1);
     }while(1);
 }
