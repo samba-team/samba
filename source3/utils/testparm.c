@@ -47,13 +47,24 @@ extern pstring myhostname;
 
 void do_global_checks(void)
 {
-  if(lp_security() > SEC_SHARE && lp_revalidate(-1))
-    printf("WARNING: the 'revalidate' parameter is ignored in all but \
+	struct stat st;
+	if (lp_security() > SEC_SHARE && lp_revalidate(-1)) {
+		printf("WARNING: the 'revalidate' parameter is ignored in all but \
 'security=share' mode.\n");
+	}
 
-  if( lp_wins_support() && *lp_wins_server() )
-    printf("ERROR: both 'wins support = true' and 'wins server = <server>' \
+	if (lp_wins_support() && *lp_wins_server()) {
+		printf("ERROR: both 'wins support = true' and 'wins server = <server>' \
 cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
+	}
+
+	if (!directory_exist(lp_lockdir(), &st)) {
+		printf("ERROR: lock directory %s does not exist\n",
+		       lp_lockdir());
+	} else if ((st.st_mode & 0666) != 0644) {
+		printf("WARNING: lock directory %s should have permissions 0644 for browsing to work\n",
+		       lp_lockdir());
+	}
 }   
 
  int main(int argc, char *argv[])
