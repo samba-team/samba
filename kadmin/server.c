@@ -419,52 +419,17 @@ v5_loop (krb5_context context,
 	 int fd)
 {
     krb5_error_code ret;
-    ssize_t n;
-    unsigned long len;
-    u_char tmp[4];
-    struct iovec iov[2];
-    krb5_data in, out, msg, reply;
+    krb5_data in, out;
 
     for (;;) {
-	n = krb5_net_read(context, &fd, tmp, 4);
-	if (n < 0)
-	    krb5_err (context, 1, errno, "krb5_net_read");
-	if (n == 0)
-	    exit (0);
-	_krb5_get_int (tmp, &len, 4);
-
-	ret = krb5_data_alloc(&in, len);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_data_alloc");
-
-	n = krb5_net_read(context, &fd, in.data, in.length);
-	if (n == 0)
-	    exit (0);
-	if(n < 0)
-	    krb5_errx(context, 1, "read error: %d", errno);
-	ret = krb5_rd_priv(context, ac, &in, &out, NULL);
-	if (ret)
-	    krb5_err(context, 1, ret, "krb5_rd_priv");
+	ret = krb5_read_priv_message(context, ac, &fd, &in);
+	if(ret)
+	    krb5_err(context, 1, ret, "krb5_read_priv_message");
+	kadmind_dispatch(kadm_handle, initial, &in, &out);
 	krb5_data_free(&in);
-	kadmind_dispatch(kadm_handle, initial, &out, &msg);
-	krb5_data_free(&out);
-	ret = krb5_mk_priv(context, ac, &msg, &reply, NULL);
-	krb5_data_free(&msg);
-	if(ret) 
-	    krb5_err(context, 1, ret, "krb5_mk_priv");
-
-	_krb5_put_int(tmp, reply.length, 4);
-
-	iov[0].iov_base = tmp;
-	iov[0].iov_len  = 4;
-	iov[1].iov_base = reply.data;
-	iov[1].iov_len  = reply.length;
-	n = writev(fd, iov, 2);
-	krb5_data_free(&reply);
-	if(n < 0)
-	    krb5_err(context, 1, errno, "writev");
-	if(n < iov[0].iov_len + iov[1].iov_len)
-	    krb5_errx(context, 1, "short write");
+	ret = krb5_write_priv_message(context, ac, &fd, &out);
+	if(ret)
+	    krb5_err(context, 1, ret, "krb5_write_priv_message");
     }
 }
 
