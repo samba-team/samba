@@ -483,7 +483,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 			break;
     
 	if ( known_nt_pipes[i] == NULL )
-		return(ERROR_DOS(ERRSRV,ERRaccess));
+		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
     
 	/* Strip \\ off the name. */
 	fname++;
