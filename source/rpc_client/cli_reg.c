@@ -34,7 +34,9 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL do_reg_connect(struct cli_state *cli, uint16 fnum, char *full_keyname, char *key_name,
+BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
+				const char *full_keyname,
+				char *key_name,
 				POLICY_HND *reg_hnd)
 {
 	BOOL res = True;

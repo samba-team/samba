@@ -59,10 +59,6 @@ struct nt_client_info
     NET_ID_INFO_CTR ctr;
     NET_USER_INFO_3 user_info3;
 
-    /************** \PIPE\winreg stuff ********************/
-
-    POLICY_HND reg_pol_connect;
-
     /************** \PIPE\lsarpc stuff ********************/
 
     POLICY_HND lsa_info_pol;
