@@ -224,16 +224,15 @@ This allows users to utilize the metacharacters
 .Dq Li \&*?[]{}~ .
 .Pp
 .Nm Ftpd
-authenticates users according to five rules. 
+authenticates users according to these rules. 
 .Pp
 .Bl -enum -offset indent
 .It
 If Kerberos authentication is used, the user must pass valid tickets
 and the principal must be allowed to login as the remote user.
 .It
-The login name must be in the password data base,
-.Pa /etc/pwd.db ,
-and not have a null password.
+The login name must be in the password data base, and not have a null
+password (if kerberos is used the password field is not checked).
 In this case a password must be provided by the client before any
 file operations may be performed.
 If the user has an S/Key key, the response from a successful USER
