@@ -25,30 +25,84 @@
 #ifdef HAVE_ZLIB
 #include <zlib.h>
 
+static NTSTATUS ndr_pull_compression_zlib_chunk(struct ndr_pull *ndrpull,
+						struct ndr_push *ndrpush,
+						struct z_stream_s *zs, int i)
+{
+	uint8_t *comp_chunk;
+	uint32_t comp_chunk_offset;
+	uint32_t comp_chunk_size;
+	uint8_t *plain_chunk;
+	uint32_t plain_chunk_offset;
+	uint32_t plain_chunk_size;
+	uint16_t unknown_marker;
+	int ret;
+
+	/* I don't know why, this is needed... --metze */
+	if (i == 5) ndrpull->offset -=4;
+
+	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &plain_chunk_size));
+	if (plain_chunk_size > 0x00008000) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad ZLIB plain chunk size %08X > 0x00008000 (PULL)", 
+				      plain_chunk_size);	
+	}
+
+	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &comp_chunk_size));
+
+	NDR_CHECK(ndr_pull_uint16(ndrpull, NDR_SCALARS, &unknown_marker));
+
+	DEBUG(10,("plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u) unknown_marker: %04X (%u)\n",
+		  plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size, unknown_marker, unknown_marker));
+
+	comp_chunk_offset = ndrpull->offset;
+	NDR_CHECK(ndr_pull_advance(ndrpull, comp_chunk_size));
+	comp_chunk = ndrpull->data + comp_chunk_offset;
+
+	plain_chunk_offset = ndrpush->offset;
+	NDR_CHECK(ndr_push_zero(ndrpush, plain_chunk_size));
+	plain_chunk = ndrpush->data + plain_chunk_offset;
+
+	zs->avail_in = comp_chunk_size;
+	zs->next_in = comp_chunk;
+	zs->next_out = plain_chunk;
+	zs->avail_out = plain_chunk_size;
+
+	while (True) {
+		ret = inflate(zs, Z_BLOCK);
+		if (ret == Z_STREAM_END) {
+			DEBUG(0,("comp_chunk_size: %u avail_in: %d, plain_chunk_size: %u, avail_out: %d\n",
+				comp_chunk_size, zs->avail_in, plain_chunk_size, zs->avail_out));
+			break;
+		}
+		if (ret != Z_OK) {
+			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad ZLIB (PULL) inflate error %d", 
+				      ret);
+		}
+	}
+
+	if ((plain_chunk_size < 0x00008000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
+		/* this is the last chunk */
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
+
 static NTSTATUS ndr_pull_compression_zlib(struct ndr_pull *subndr,
 					  struct ndr_pull *comndr,
 					  ssize_t decompressed_len)
 {
-	DATA_BLOB inbuf;
-	DATA_BLOB outbuf = data_blob_talloc(comndr, NULL, decompressed_len);
-	uint32_t outbuf_len = outbuf.length;
+	NTSTATUS status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	struct ndr_push *ndrpush;
+	DATA_BLOB uncompressed;
 	struct z_stream_s zs;
 	int ret;
+	int i = 0;
 
 	ZERO_STRUCT(zs);
 
-	if (subndr->data_size < 10) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad ZLIB compressed header (PULL) subcontext size %d", 
-				      subndr->data_size);
-	}
-
-	inbuf.data = subndr->data+10;
-	inbuf.length = subndr->data_size-10;
-
-	zs.avail_in = inbuf.length;
-	zs.next_in = inbuf.data;
-	zs.next_out = outbuf.data;
-	zs.avail_out = outbuf.length;
+	ndrpush = ndr_push_init_ctx(subndr);
+	NT_STATUS_HAVE_NO_MEMORY(ndrpush);
 
 	ret = inflateInit2(&zs, -15);
 	if (ret != Z_OK) {
@@ -56,36 +110,17 @@ static NTSTATUS ndr_pull_compression_zlib(struct ndr_pull *subndr,
 				      ret);
 	}
 
-	while(1) {
-		ret = inflate(&zs, Z_SYNC_FLUSH);
-		if (ret == Z_STREAM_END) {
-			
-			DEBUG(0,("inbuf.length: %d avail_in: %d, avail_out: %d\n", inbuf.length, zs.avail_in, zs.avail_out));
-			break;
-		}
-		if (ret != Z_OK) {
-			return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad ZLIB (PULL) inflate error %d", 
-				      ret);
-		}
+	while (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
+		status = ndr_pull_compression_zlib_chunk(subndr, ndrpush, &zs, i++);
 	}
-
 	inflateEnd(&zs);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	/* TODO: check if the decompressed_len == outbuf_len */
-	outbuf.length = outbuf_len - zs.avail_out;
+	uncompressed = ndr_push_blob(ndrpush);
 
-	if (outbuf.length < 16) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad ZLIB uncompressed header (PULL) uncompressed size %d", 
-				      outbuf.length);
-	}
-
-	outbuf.data	+= 16;
-	outbuf.length	-= 16;
-
-	/* TODO: really decompress the data here */
 	*comndr = *subndr;
-	comndr->data		= outbuf.data;
-	comndr->data_size	= outbuf.length;
+	comndr->data		= uncompressed.data;
+	comndr->data_size	= uncompressed.length;
 	comndr->offset		= 0;
 
 	return NT_STATUS_OK;
