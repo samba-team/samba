@@ -27,6 +27,9 @@
 #define OID_SPNEGO "1 3 6 1 5 5 2"
 #define OID_KERBEROS5 "1 2 840 113554 1 2 2"
 
+/*
+  we can't use krb5_mk_req because w2k wants the service to be in a particular format
+*/
 static krb5_error_code krb5_mk_req2(krb5_context context, 
 				    krb5_auth_context *auth_context, 
 				    const krb5_flags ap_req_options,
@@ -113,11 +116,12 @@ static DATA_BLOB krb5_get_ticket(char *service)
 	}
 
 	ret = data_blob(packet.data, packet.length);
-	/* XXX  need to free up a bunch of krb5 stuff here */
-
+	krb5_free_data_contents(context, &packet);
+	krb5_free_context(context);
 	return ret;
 
 failed:
+	krb5_free_context(context);
 	return data_blob(NULL, 0);
 }
 
@@ -162,7 +166,6 @@ ASN1_DATA spnego_gen_negTokenInit(uint8 guid[16],
 
 	asn1_pop_tag(&data);
 
-	asn1_check_empty(&data);
 	return data;
 }
 
@@ -199,7 +202,6 @@ static ASN1_DATA gen_negTokenTarg(const char *OIDs[], ASN1_DATA blob)
 
 	asn1_pop_tag(&data);
 
-	asn1_check_empty(&data);
 	return data;
 }
 
