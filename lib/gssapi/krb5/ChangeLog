@@ -1,3 +1,9 @@
+2004-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* inquire_cred.c: Reverse order of HEIMDAL_MUTEX_unlock and
+	gss_release_cred to avoid deadlock, from Luke Howard
+	<lukeh@padl.com>.
+
 2004-09-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss_acquire_cred.3: gss_krb5_extract_authz_data_from_sec_context
