@@ -36,129 +36,95 @@
  * SUCH DAMAGE. 
  */
 
-#include "admin_locl.h"
+#include "kadmin_locl.h"
+#include <kadm5/private.h>
 
 RCSID("$Id$");
+
+static kadm5_ret_t
+create_random_entry(krb5_principal princ, time_t max_life, time_t max_rlife,
+		    u_int32_t attributes)
+{
+    kadm5_principal_ent_rec ent;
+    kadm5_ret_t ret;
+    int mask = 0;
+    krb5_keyblock *keys;
+    int n_keys, i;
+
+    memset(&ent, 0, sizeof(ent));
+    ent.principal = princ;
+    mask |= KADM5_PRINCIPAL;
+    ent.max_life = max_life;
+    mask |= KADM5_MAX_LIFE;
+    ent.max_renewable_life = max_rlife;
+    mask |= KADM5_MAX_RLIFE;
+    ent.attributes |= attributes | KRB5_KDB_DISALLOW_ALL_TIX;
+    mask |= KADM5_ATTRIBUTES;
+
+    ret = kadm5_create_principal(kadm_handle, &ent, mask, "hemlig");
+    if(ret)
+	return ret;
+    ret = kadm5_randkey_principal(kadm_handle, princ, &keys, &n_keys);
+    if(ret)
+	return ret;
+    for(i = 0; i < n_keys; i++)
+	krb5_free_keyblock_contents(context, &keys[i]);
+    free(keys);
+    ret = kadm5_get_principal(kadm_handle, princ, &ent, 
+			      KADM5_PRINCIPAL | KADM5_ATTRIBUTES);
+    if(ret)
+	return ret;
+    ent.attributes &= (~KRB5_KDB_DISALLOW_ALL_TIX);
+    ent.kvno = 1;
+    ret = kadm5_modify_principal(kadm_handle, &ent, 
+				 KADM5_ATTRIBUTES|KADM5_KVNO);
+    if(ret)
+	return ret;
+    return 0;
+}
 
 int
 init(int argc, char **argv)
 {
-    krb5_error_code ret;
+    kadm5_ret_t ret;
     int i;
 
-    int default_life = 86400;
-    int default_renew = 5 * 86400;
-    int max_life = 0;
-    int max_renew = 0;
-    
-    hdb_entry ent;
+    HDB *db = _kadm5_s_get_db(kadm_handle);
 
     ret = db->open(context, db, O_RDWR | O_CREAT, 0600);
     if(ret){
 	krb5_warn(context, ret, "hdb_open");
 	return 0;
     }
-    memset(&ent, 0, sizeof(ent));
-    for(i = 1; i < argc; i++){
-	krb5_build_principal(context, &ent.principal, 
-			     strlen(argv[i]), argv[i], 
-			     "krbtgt",
-			     argv[i],
-			     NULL);
-	ret = db->fetch(context, db, &ent);
-	switch(ret){
-	case 0:
-	    krb5_warnx(context, "Entry already exists");
-	    krb5_free_principal(context, ent.principal);
-	    continue;
-	case HDB_ERR_NOENTRY:
-	    break;
-	default:
-	    krb5_warn(context, ret, "hdb_fetch");
-	    db->close(context, db);
-	    return 0;
-	}
-	
-	max_life = getlife("Realm max ticket life", "infinite");
-	max_renew = getlife("Realm max renewable ticket life", "infinite");
-	default_life = getlife("Default ticket life", "1 day");
-	default_renew = getlife("Default renewable ticket life", "7 days");
-	
-	/* Create `krbtgt/REALM' */
-	init_des_key(&ent);
-	ent.kvno = 1;
-	if(max_life){
-	    ent.max_life = malloc(sizeof(*ent.max_life));
-	    *ent.max_life = max_life;
-	}
-	if(max_renew){
-	    ent.max_renew = malloc(sizeof(*ent.max_renew));
-	    *ent.max_renew = max_renew;
-	}
-	ent.created_by.time = time(NULL);
-	krb5_build_principal(context, &ent.created_by.principal,
-			     strlen(argv[i]), argv[i],
-			     "kadmin",
-			     NULL);
-	ent.flags.forwardable = 1;
-	ent.flags.proxiable = 1;
-	ent.flags.renewable = 1;
-	ent.flags.postdate = 1;
-	ent.flags.server = 1;
-	db->store(context, db, 1, &ent);
-	hdb_free_entry(context, &ent);
-
-	/* Create `default' */
-	memset(&ent, 0, sizeof(ent));
-	krb5_build_principal(context, &ent.principal,
-			     strlen(argv[i]), argv[i],
-			     "default",
-			     NULL);
-	if(default_life){
-	    ent.max_life = malloc(sizeof(*ent.max_life));
-	    *ent.max_life = default_life;
-	}
-	if(default_renew){
-	    ent.max_renew = malloc(sizeof(*ent.max_renew));
-	    *ent.max_renew = default_renew;
-	}
-	ent.created_by.time = time(NULL);
-	krb5_build_principal(context, &ent.created_by.principal, 
-			     strlen(argv[i]), argv[i],
-			     "kadmin",
-			     NULL);
-	ent.flags.invalid = 1;
-	db->store(context, db, 1, &ent);
-	hdb_free_entry(context, &ent);
-
-	/* Create `kadmin/changepw' */
-	memset(&ent, 0, sizeof(ent));
-	init_des_key(&ent);
-	ent.kvno = 1;
-	krb5_build_principal(context, &ent.principal,
-			     strlen(argv[i]), argv[i],
-			     "kadmin",
-			     "changepw",
-			     NULL);
-	if(default_life){
-	    ent.max_life = malloc(sizeof(*ent.max_life));
-	    *ent.max_life = default_life;
-	}
-	if(default_renew){
-	    ent.max_renew = malloc(sizeof(*ent.max_renew));
-	    *ent.max_renew = default_renew;
-	}
-	ent.created_by.time = time(NULL);
-	krb5_build_principal(context, &ent.created_by.principal, 
-			     strlen(argv[i]), argv[i],
-			     "kadmin",
-			     NULL);
-	ent.flags.initial   = 1;
-	ent.flags.server    = 1;
-	ent.flags.change_pw = 1;
-	db->store(context, db, 1, &ent);
-	hdb_free_entry(context, &ent);
-    }
     db->close(context, db);
+    for(i = 1; i < argc; i++){
+	krb5_principal princ;
+	time_t max_life, max_rlife;
+	/* Create `krbtgt/REALM' */
+	krb5_make_principal(context, &princ, argv[i], "krbtgt", argv[i], NULL);
+	max_life = get_deltat("Realm max ticket life", 
+				  "unlimited");
+	max_rlife = get_deltat("Realm max renewable ticket life", 
+					    "unlimited");
+	create_random_entry(princ, max_life, max_rlife, 0);
+	krb5_free_principal(context, princ);
+	/* Create `kadmin/changepw' */
+	krb5_make_principal(context, &princ, argv[i], 
+			    "kadmin", "changepw", NULL);
+	create_random_entry(princ, 5*60, 5*60, 
+			    KRB5_KDB_DISALLOW_TGT_BASED|
+			    KRB5_KDB_PWCHANGE_SERVICE|
+			    KRB5_KDB_DISALLOW_POSTDATED|
+			    KRB5_KDB_DISALLOW_FORWARDABLE|
+			    KRB5_KDB_DISALLOW_RENEWABLE|
+			    KRB5_KDB_DISALLOW_PROXIABLE|
+			    KRB5_KDB_REQUIRES_PRE_AUTH);
+	krb5_free_principal(context, princ);
+	/* Create `kadmin/admin' */
+	krb5_make_principal(context, &princ, argv[i], 
+			    "kadmin", "admin", NULL);
+	create_random_entry(princ, 60*60, 60*60, KRB5_KDB_REQUIRES_PRE_AUTH);
+	krb5_free_principal(context, princ);
+    }
     return 0;
 }
