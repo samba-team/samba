@@ -72,11 +72,33 @@
 
 	/************************/
 	/* Function    0x07     */
-	NTSTATUS samr_OPEN_DOMAIN();
+	NTSTATUS samr_OpenDomain(
+		[in,ref]      policy_handle *handle,
+		[in]          uint32 access_mask,
+		[in,ref]      dom_sid2 *sid,
+		[out,ref]     policy_handle *domain_handle
+		);
 
 	/************************/
 	/* Function    0x08     */
-	NTSTATUS samr_QUERY_DOMAIN_INFO();
+
+	typedef struct {
+		uint16 min_length_password;
+		uint16 password_history;
+		uint32 flag;
+		NTTIME expire;
+		NTTIME min_passwordage;
+	} samr_DomInfo1;
+
+	typedef union {
+		case(1) samr_DomInfo1 info1;
+	} samr_DomainInfo;
+
+	NTSTATUS samr_QueryDomainInfo(
+		[in,ref]      policy_handle *handle,
+		[in]          uint16 level,
+		[out,switch_is(level)] samr_DomainInfo *info
+		);
 
 	/************************/
 	/* Function    0x09     */
