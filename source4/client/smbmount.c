@@ -396,7 +396,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 
 			/* here we are no longer interactive */
 			set_remote_machine_name("smbmount");	/* sneaky ... */
-			setup_logging("mount.smbfs", False);
+			setup_logging("mount.smbfs", DEBUG_STDERR);
 			reopen_logs();
 			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", the_service, sys_getpid()));
 
@@ -857,7 +857,7 @@ static void parse_mount_smb(int argc, char **argv)
 	DEBUGLEVEL = 1;
 
 	/* here we are interactive, even if run from autofs */
-	setup_logging("mount.smbfs",True);
+	setup_logging("mount.smbfs",DEBUG_STDERR);
 
 #if 0 /* JRA - Urban says not needed ? */
 	/* CLI_FORCE_ASCII=false makes smbmount negotiate unicode. The default

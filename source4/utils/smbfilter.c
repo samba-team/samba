@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
 	char *desthost;
 	pstring configfile;
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
   
 	pstrcpy(configfile,dyn_CONFIGFILE);
  

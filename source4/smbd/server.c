@@ -259,7 +259,7 @@ static void setup_process_model(struct event_context *events,
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
 	}
-	setup_logging(argv[0], log_stdout);
+	setup_logging(argv[0], log_stdout?DEBUG_STDOUT:DEBUG_FILE);
 
 	fault_setup((void (*)(void *))exit_server);
 	

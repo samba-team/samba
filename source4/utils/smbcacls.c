@@ -789,7 +789,7 @@ You can string acls together with spaces, commas or newlines\n\
 		exit(EXIT_PARSE_ERROR);
 	}
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	share = argv[1];
 	pstrcpy(filename, argv[2]);

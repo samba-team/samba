@@ -34,11 +34,11 @@ static BOOL cli_link_internal(struct cli_state *cli,
 	NTSTATUS status;
 
 	if (hard_link) {
-		parms.generic.level = SMB_SFILEINFO_UNIX_HLINK;
+		parms.generic.level = RAW_SFILEINFO_UNIX_HLINK;
 		parms.unix_hlink.file.fname = fname_src;
 		parms.unix_hlink.in.link_dest = fname_dst;
 	} else {
-		parms.generic.level = SMB_SFILEINFO_UNIX_LINK;
+		parms.generic.level = RAW_SFILEINFO_UNIX_LINK;
 		parms.unix_link.file.fname = fname_src;
 		parms.unix_link.in.link_dest = fname_dst;
 	}

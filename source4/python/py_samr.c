@@ -492,6 +492,6 @@ void initsamr(void)
 
 	py_samba_init();
 
-	setup_logging("samr", True);
+	setup_logging("samr", DEBUG_STDOUT);
 	DEBUGLEVEL = 10;
 }

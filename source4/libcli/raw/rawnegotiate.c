@@ -22,7 +22,7 @@
 #include "includes.h"
 
 static const struct {
-	int prot;
+	enum protocol_types prot;
 	const char *name;
 } prots[] = {
 	{PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},

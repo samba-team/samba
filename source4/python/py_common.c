@@ -104,11 +104,11 @@ PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw)
 	}
 
 	if (interactive)
-		setup_logging("spoolss", True);
+		setup_logging("spoolss", DEBUG_STDOUT);
 
 	if (logfilename) {
 		lp_set_logfile(logfilename);
-		setup_logging(logfilename, False);
+		setup_logging(logfilename, DEBUG_FILE );
 		reopen_logs();
 	}
 

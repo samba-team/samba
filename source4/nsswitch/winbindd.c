@@ -892,7 +892,7 @@ static void usage(void)
 
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
 	lp_set_logfile(logfile);
-	setup_logging("winbindd", log_stdout);
+	setup_logging("winbindd", log_stdout?DEBUG_STDOUT:DEBUG_FILE);
 	reopen_logs();
 
 	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );

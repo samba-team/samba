@@ -658,7 +658,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
     exit(1);
   }
 
-  setup_logging( argv[0], log_stdout );
+  setup_logging( argv[0], log_stdout?DEBUG_STDOUT : DEBUG_FILE );
 
   reopen_logs();
 

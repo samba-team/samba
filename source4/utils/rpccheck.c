@@ -35,7 +35,7 @@ main()
 	
 	ZERO_STRUCT(rpc_stub);
 
-	setup_logging("", True);
+	setup_logging("", DEBUG_STDOUT);
 	DEBUGLEVEL=10;
 
 	ctx=talloc_init("main");

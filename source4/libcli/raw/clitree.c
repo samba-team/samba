@@ -121,7 +121,6 @@ NTSTATUS smb_tree_connect_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, uni
 
 	case RAW_TCON_TCONX:
 		ZERO_STRUCT(parms->tconx.out);
-		CLI_CHECK_MIN_WCT(req, 0);  /* this depends on the protocol level */
 		parms->tconx.out.cnum = SVAL(req->in.hdr, HDR_TID);
 		if (req->in.wct >= 4) {
 			parms->tconx.out.options = SVAL(req->in.vwv, VWV(3));
@@ -245,7 +244,6 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 
 	mem_ctx = talloc_init("tcon");
 	if (!mem_ctx) {
-		cli_tree_close(tree);
 		return NT_STATUS_NO_MEMORY;
 	}
 

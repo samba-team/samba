@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 {
    const char *pszTemp;
 
-   setup_logging(argv[0],True);
+   setup_logging(argv[0], DEBUG_STDOUT);
 
    if (argc < 2 || argc > 3)
       printf("Usage: testprns printername [printcapfile]\n");

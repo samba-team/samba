@@ -222,7 +222,7 @@ int main(int argc,char *argv[])
 
   *lookup = 0;
 
-  setup_logging(argv[0],True);
+  setup_logging(argv[0], DEBUG_STDOUT);
 
   while ((opt = getopt(argc, argv, "d:fB:U:i:s:SMrhART")) != EOF)
     switch (opt)

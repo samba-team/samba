@@ -463,6 +463,6 @@ void initlsa(void)
 
 	py_samba_init();
 
-	setup_logging("lsa", True);
+	setup_logging("lsa", DEBUG_STDOUT);
 	DEBUGLEVEL = 10;
 }

@@ -99,7 +99,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     NTSTATUS nt_status;
 
     /* Samba initialization. */
-    setup_logging( "pam_smbpass", False );
+    setup_logging( "pam_smbpass", DEBUG_FILE );
     in_client = True;
 
     ctrl = set_ctrl(flags, argc, argv);

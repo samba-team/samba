@@ -182,7 +182,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   * Setup the SAMBA server state...
   */
 
-  setup_logging("smbspool", True);
+  setup_logging("smbspool", DEBUG_STDOUT);
 
   in_client = True;   /* Make sure that we tell lp_load we are */
 

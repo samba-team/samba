@@ -146,7 +146,6 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 
 	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
-		FINFO_CHECK_MIN_SIZE(0);
 		ofs = 0;
 		parms->stream_info.out.num_streams = 0;
 		parms->stream_info.out.streams = NULL;
@@ -228,7 +227,6 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_UNIX_LINK:
-		FINFO_CHECK_MIN_SIZE(0);
 		cli_blob_pull_string(session, mem_ctx, blob, 
 				     &parms->unix_link_info.out.link_dest, 0, 4, STR_UNICODE);
 		return NT_STATUS_OK;

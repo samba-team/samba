@@ -39,7 +39,7 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 	int i, n;
 	char buf[12];
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 	
 	lp_load(dyn_CONFIGFILE,False,False,False);
 
