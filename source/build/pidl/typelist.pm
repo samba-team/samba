@@ -126,6 +126,7 @@ sub mapType($)
 	return mapScalarType($e->{TYPE}) if ($dt->{DATA}->{TYPE} eq "SCALAR");
 	return "enum $dt->{NAME}" if ($dt->{DATA}->{TYPE} eq "ENUM");
 	return "struct $dt->{NAME}" if ($dt->{DATA}->{TYPE} eq "STRUCT");
+	return "struct $dt->{NAME}" if ($dt->{DATA}->{TYPE} eq "INTERFACE");
 	return "union $dt->{NAME}" if ($dt->{DATA}->{TYPE} eq "UNION");
 	return mapScalarType(bitmap_type_fn($dt->{DATA})) if ($dt->{DATA}->{TYPE} eq "BITMAP");
 
@@ -138,7 +139,14 @@ sub LoadIdl($)
 
 	foreach my $x (@{$idl}) {
 		next if $x->{TYPE} ne "INTERFACE";
-		addType($x);
+
+		# DCOM interfaces can be types as well
+		addType({
+			NAME => $x->{NAME},
+			TYPE => "TYPEDEF",
+			DATA => $x
+			}) if (util::has_property($x, "object"));
+
 		foreach my $y (@{$x->{DATA}}) {
 			addType($y) if (
 				$y->{TYPE} eq "TYPEDEF" 

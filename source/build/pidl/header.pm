@@ -212,18 +212,14 @@ sub HeaderTypedefProto($)
 {
     my($d) = shift;
 
+	my $tf = NdrParser::get_typefamily($d->{DATA}{TYPE});
+
     if (needed::is_needed("ndr_size_$d->{NAME}")) {
-	    if ($d->{DATA}{TYPE} eq "STRUCT") {
-		    pidl "size_t ndr_size_$d->{NAME}(const struct $d->{NAME} *r, int flags);\n";
-	    }
-	    if ($d->{DATA}{TYPE} eq "UNION") {
-		    pidl "size_t ndr_size_$d->{NAME}(const union $d->{NAME} *r, uint32_t level, int flags);\n";
-	    }
+		my $size_args = $tf->{SIZE_FN_ARGS}->($d);
+		pidl "size_t ndr_size_$d->{NAME}($size_args);\n";
     }
 
     return unless util::has_property($d, "public");
-
-	my $tf = NdrParser::get_typefamily($d->{DATA}{TYPE});
 
 	my $pull_args = $tf->{PULL_FN_ARGS}->($d);
 	my $push_args = $tf->{PUSH_FN_ARGS}->($d);
@@ -280,7 +276,6 @@ sub HeaderFunctionInOut_needed($$)
 
     return undef;
 }
-
 
 #####################################################################
 # parse a function
@@ -347,7 +342,6 @@ sub HeaderFnProto($$)
     pidl "\n";
 }
 
-
 #####################################################################
 # generate vtable structure for DCOM interface
 sub HeaderVTable($)
@@ -364,7 +358,6 @@ sub HeaderVTable($)
 	}
 	pidl "};\n\n";
 }
-
 
 #####################################################################
 # parse the interface definitions

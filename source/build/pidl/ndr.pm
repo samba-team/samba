@@ -719,11 +719,6 @@ sub ParseElementPullSwitch($$$$)
 		my $type_decl = typelist::mapType($e2);
 		pidl "if (($ndr_flags) & NDR_SCALARS) {";
 		indent;
-		if (typelist::getType($e2->{TYPE})->{DATA}->{TYPE} eq "ENUM") {
-			$type_decl = typelist::mapType($e2);
-		} elsif (typelist::getType($e2->{TYPE})->{DATA}->{TYPE} eq "BITMAP") {
-			$type_decl = typelist::mapType($e2);
-		}
 		pidl "$type_decl _level;";
 		pidl "NDR_CHECK(ndr_pull_$e2->{TYPE}(ndr, NDR_SCALARS, &_level));";
 		if ($switch_var =~ /r->in/) {
@@ -1303,16 +1298,10 @@ sub ParseStructNdrSize($)
 	my $static = fn_prefix($t);
 	my $sizevar;
 
-	pidl "size_t ndr_size_$t->{NAME}(const struct $t->{NAME} *r, int flags)";
-	pidl "{";
-	indent;
 	if (my $flags = util::has_property($t, "flag")) {
 		pidl "flags |= $flags;";
 	}
 	pidl "return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_$t->{NAME});";
-	deindent;
-	pidl "}";
-	pidl "";
 }
 
 sub ArgsStructPush($)
@@ -1333,6 +1322,12 @@ sub ArgsStructPull($)
 	return "struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r";
 }
 
+sub ArgsStructNdrSize($)
+{
+	my $d = shift;
+	return "const struct $d->{NAME} *r, int flags";
+}
+
 $typefamily{STRUCT} = {
 	PUSH_FN_BODY => \&ParseStructPush,
 	PUSH_FN_ARGS => \&ArgsStructPush,
@@ -1340,7 +1335,8 @@ $typefamily{STRUCT} = {
 	PULL_FN_ARGS => \&ArgsStructPull,
 	PRINT_FN_BODY => \&ParseStructPrint,
 	PRINT_FN_ARGS => \&ArgsStructPrint,
-	SIZE_FN => \&ParseStructNdrSize,
+	SIZE_FN_BODY => \&ParseStructNdrSize,
+	SIZE_FN_ARGS => \&ArgsStructNdrSize,
 	ALIGN => \&find_largest_alignment
 };
 
@@ -1352,16 +1348,10 @@ sub ParseUnionNdrSize($)
 	my $static = fn_prefix($t);
 	my $sizevar;
 
-	pidl "size_t ndr_size_$t->{NAME}(const union $t->{NAME} *r, int level, int flags)";
-	pidl "{";
-	indent;
 	if (my $flags = util::has_property($t, "flag")) {
 		pidl "flags |= $flags;";
 	}
 	pidl "return ndr_size_union(r, flags, level, (ndr_push_union_fn_t)ndr_push_$t->{NAME});";
-	deindent;
-	pidl "}";
-	pidl "";;
 }
 
 #####################################################################
@@ -1560,6 +1550,12 @@ sub ArgsUnionPull($)
 	return "struct ndr_pull *ndr, int ndr_flags, int level, union $e->{NAME} *r";
 }
 
+sub ArgsUnionNdrSize($)
+{
+	my $d = shift;
+	return "const union $d->{NAME} *r, uint32_t level, int flags";
+}
+
 $typefamily{UNION} = {
 	PUSH_FN_BODY => \&ParseUnionPush,
 	PUSH_FN_ARGS => \&ArgsUnionPush,
@@ -1567,7 +1563,8 @@ $typefamily{UNION} = {
 	PULL_FN_ARGS => \&ArgsUnionPull,
 	PRINT_FN_BODY => \&ParseUnionPrint,
 	PRINT_FN_ARGS => \&ArgsUnionPrint,
-	SIZE_FN => \&ParseUnionNdrSize,
+	SIZE_FN_ARGS => \&ArgsUnionNdrSize,
+	SIZE_FN_BODY => \&ParseUnionNdrSize,
 	ALIGN => \&find_largest_alignment
 };
 	
@@ -1639,7 +1636,16 @@ sub ParseTypedefNdrSize($)
 
 	return unless needed::is_needed("ndr_size_$t->{NAME}");
 
-	$typefamily{$t->{DATA}->{TYPE}}->{SIZE_FN}->($t);
+	my $tf = $typefamily{$t->{DATA}->{TYPE}};
+	my $args = $tf->{SIZE_FN_ARGS}->($t);
+
+	pidl "size_t ndr_size_$t->{NAME}($args)";
+	pidl "{";
+	indent;
+	$typefamily{$t->{DATA}->{TYPE}}->{SIZE_FN_BODY}->($t);
+	deindent;
+	pidl "}";
+	pidl "";
 }
 
 #####################################################################
