@@ -2430,8 +2430,8 @@ static void cmd_p_queue_4(char *inbuf,char *outbuf )
   p = skip_string(p,1);
 
   DEBUG(1,("Calling DosPrintJobEnum()...\n"));
-  if( cli_call_api(PIPE_LANMAN, 0,PTR_DIFF(p,param), 0,
-               10, 0, 4096,
+  if( cli_call_api(PIPE_LANMAN, 0,PTR_DIFF(p,param), 0, 0,
+               10, 4096,
                &rprcnt, &rdrcnt,
                param, NULL, NULL,
                &rparam, &rdata) )
