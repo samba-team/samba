@@ -2008,6 +2008,8 @@ void file_sync_all(connection_struct *conn);
 void file_free(files_struct *fsp);
 files_struct *file_fsp(char *buf, int where);
 void file_chain_reset(void);
+void file_chain_save(void);
+void file_chain_restore(void);
 
 /*The following definitions come from  smbd/groupname.c  */
 
@@ -2210,7 +2212,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
 
 /*The following definitions come from  smbd/server.c  */
 
-void  *dflt_sig(void);
+void *dflt_sig(void);
 void  killkids(void);
 BOOL reload_services(BOOL test);
 void exit_server(char *reason);

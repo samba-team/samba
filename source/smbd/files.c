@@ -37,7 +37,8 @@ static files_struct *Files;
 
 /* a fsp to use when chaining */
 static files_struct *chain_fsp = NULL;
-
+/* a fsp to use to save when breaking an oplock. */
+static files_struct *oplock_save_chain_fsp = NULL;
 
 /*
  * Indirection for file fd's. Needed as POSIX locking
@@ -386,4 +387,21 @@ reset the chained fsp - done at the start of a packet reply
 void file_chain_reset(void)
 {
 	chain_fsp = NULL;
+}
+
+/****************************************************************************
+Save the chained fsp - done when about to do an oplock break.
+****************************************************************************/
+
+void file_chain_save(void)
+{
+	oplock_save_chain_fsp = chain_fsp;
+}
+
+/****************************************************************************
+Restore the chained fsp - done after an oplock break.
+****************************************************************************/
+void file_chain_restore(void)
+{
+	chain_fsp = oplock_save_chain_fsp;
 }

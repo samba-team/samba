@@ -447,166 +447,186 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	fname[fname_len] = '\0';
 	
 	/* If it's an IPC, use the pipe handler. */
+
 	if (IS_IPC(conn)) {
+
 		int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum);
 		if(ret != 0)
 			return ret;
-		smb_action = FILE_WAS_OPENED;
-	} else {
 
 		/*
-		 * Ordinary file or directory.
-		 */
+		 * Deal with pipe return.
+		 */  
+
+		set_message(outbuf,34,0,True);
+	
+		p = outbuf + smb_vwv2;
+		p++;
+		SSVAL(p,0,pnum);
+		p += 2;
+		SIVAL(p,0,FILE_WAS_OPENED);
+		p += 4;
+		p += 32;
+		SIVAL(p,0,FILE_ATTRIBUTE_NORMAL); /* File Attributes. */
+		p += 20;
+		/* File type. */
+		SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
+		/* Device state. */
+		SSVAL(p,2, 0x5FF); /* ? */
+	}
+
+	/*
+	 * Ordinary file or directory.
+	 */
 		
-		/*
-		 * Check if POSIX semantics are wanted.
-		 */
+	/*
+	 * Check if POSIX semantics are wanted.
+	 */
 		
-		set_posix_case_semantics(file_attributes);
+	set_posix_case_semantics(file_attributes);
 		
-		unix_convert(fname,conn,0,&bad_path);
+	unix_convert(fname,conn,0,&bad_path);
 		
-		fsp = file_new();
-		if (!fsp) {
-			restore_case_semantics(file_attributes);
-			return(ERROR(ERRSRV,ERRnofids));
+	fsp = file_new();
+	if (!fsp) {
+		restore_case_semantics(file_attributes);
+		return(ERROR(ERRSRV,ERRnofids));
+	}
+		
+	if (!check_name(fname,conn)) { 
+		if((errno == ENOENT) && bad_path) {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadpath;
 		}
-		
-		if (!check_name(fname,conn)) { 
-			if((errno == ENOENT) && bad_path) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
-			}
-			file_free(fsp);
-			
-			restore_case_semantics(file_attributes);
-			
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
-		} 
-		
-		unixmode = unix_mode(conn,smb_attr | aARCH);
-    
-		oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-		oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
-
-		/* 
-		 * If it's a request for a directory open, deal with it separately.
-		 */
-
-		if(flags & OPEN_DIRECTORY) {
-			oplock_request = 0;
-			
-			open_directory(fsp, conn, fname, smb_ofun, 
-				       unixmode, &smb_action);
-			
-			restore_case_semantics(file_attributes);
-
-			if(!fsp->open) {
-				file_free(fsp);
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			}
-		} else {
-			/*
-			 * Ordinary file case.
-			 */
-
-			/* NB. We have a potential bug here. If we
-			 * cause an oplock break to ourselves, then we
-			 * could end up processing filename related
-			 * SMB requests whilst we await the oplock
-			 * break response. As we may have changed the
-			 * filename case semantics to be POSIX-like,
-			 * this could mean a filename request could
-			 * fail when it should succeed. This is a rare
-			 * condition, but eventually we must arrange
-			 * to restore the correct case semantics
-			 * before issuing an oplock break request to
-			 * our client. JRA.  */
-
-			open_file_shared(fsp,conn,fname,smb_open_mode,
-					 smb_ofun,unixmode,
-					 oplock_request,&rmode,&smb_action);
-
-			if (!fsp->open) { 
-				/* We cheat here. The only case we
-				 * care about is a directory rename,
-				 * where the NT client will attempt to
-				 * open the source directory for
-				 * DELETE access. Note that when the
-				 * NT client does this it does *not*
-				 * set the directory bit in the *
-				 * request packet. This is translated
-				 * into a read/write open *
-				 * request. POSIX states that any open
-				 * for write request on a directory *
-				 * will generate an EISDIR error, so
-				 * we can catch this here and open * a
-				 * pseudo handle that is flagged as a
-				 * directory. JRA.  */
-
-				if(errno == EISDIR) {
-					oplock_request = 0;
-					
-					open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
-					
-					if(!fsp->open) {
-						file_free(fsp);
-						restore_case_semantics(file_attributes);
-						return(UNIXERROR(ERRDOS,ERRnoaccess));
-					}
-				} else {
-					if((errno == ENOENT) && bad_path) {
-						unix_ERR_class = ERRDOS;
-						unix_ERR_code = ERRbadpath;
-					}
-					
-					file_free(fsp);
-					
-					restore_case_semantics(file_attributes);
-					
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
-				}
-			} 
-		}
-		
-		if(fsp->is_directory) {
-			if(sys_stat(fsp->fsp_name, &sbuf) != 0) {
-				close_directory(fsp);
-				restore_case_semantics(file_attributes);
-				return(ERROR(ERRDOS,ERRnoaccess));
-			}
-		} else {
-			if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-				close_file(fsp,False);
-				restore_case_semantics(file_attributes);
-				return(ERROR(ERRDOS,ERRnoaccess));
-			} 
-		}
+		file_free(fsp);
 		
 		restore_case_semantics(file_attributes);
 		
-		file_len = sbuf.st_size;
-		fmode = dos_mode(conn,fname,&sbuf);
-		if(fmode == 0)
-			fmode = FILE_ATTRIBUTE_NORMAL;
-		mtime = sbuf.st_mtime;
-		if (!fsp->is_directory && (fmode & aDIR)) {
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	} 
+		
+	unixmode = unix_mode(conn,smb_attr | aARCH);
+    
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+
+	/* 
+	 * If it's a request for a directory open, deal with it separately.
+	 */
+
+	if(flags & OPEN_DIRECTORY) {
+		oplock_request = 0;
+		
+		open_directory(fsp, conn, fname, smb_ofun, 
+			       unixmode, &smb_action);
+			
+		restore_case_semantics(file_attributes);
+
+		if(!fsp->open) {
+			file_free(fsp);
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
+	} else {
+		/*
+		 * Ordinary file case.
+		 */
+
+		/* NB. We have a potential bug here. If we
+		 * cause an oplock break to ourselves, then we
+		 * could end up processing filename related
+		 * SMB requests whilst we await the oplock
+		 * break response. As we may have changed the
+		 * filename case semantics to be POSIX-like,
+		 * this could mean a filename request could
+		 * fail when it should succeed. This is a rare
+		 * condition, but eventually we must arrange
+		 * to restore the correct case semantics
+		 * before issuing an oplock break request to
+		 * our client. JRA.  */
+
+		open_file_shared(fsp,conn,fname,smb_open_mode,
+				 smb_ofun,unixmode,
+				 oplock_request,&rmode,&smb_action);
+
+		if (!fsp->open) { 
+			/* We cheat here. The only case we
+			 * care about is a directory rename,
+			 * where the NT client will attempt to
+			 * open the source directory for
+			 * DELETE access. Note that when the
+			 * NT client does this it does *not*
+			 * set the directory bit in the
+			 * request packet. This is translated
+			 * into a read/write open
+			 * request. POSIX states that any open
+			 * for write request on a directory
+			 * will generate an EISDIR error, so
+			 * we can catch this here and open a
+			 * pseudo handle that is flagged as a
+			 * directory. JRA.  */
+
+			if(errno == EISDIR) {
+				oplock_request = 0;
+				
+				open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
+				
+				if(!fsp->open) {
+					file_free(fsp);
+					restore_case_semantics(file_attributes);
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
+			} else {
+				if((errno == ENOENT) && bad_path) {
+					unix_ERR_class = ERRDOS;
+					unix_ERR_code = ERRbadpath;
+				}
+				
+				file_free(fsp);
+				
+				restore_case_semantics(file_attributes);
+				
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+		} 
+	}
+		
+	if(fsp->is_directory) {
+		if(sys_stat(fsp->fsp_name, &sbuf) != 0) {
+			close_directory(fsp);
+			restore_case_semantics(file_attributes);
+			return(ERROR(ERRDOS,ERRnoaccess));
+		}
+	} else {
+		if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
 			close_file(fsp,False);
+			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		} 
-		
-		/* 
-		 * If the caller set the extended oplock request bit
-		 * and we granted one (by whatever means) - set the
-		 * correct bit for extended oplock reply.
-		 */
-		
-		if (oplock_request && lp_fake_oplocks(SNUM(conn)))
-			smb_action |= EXTENDED_OPLOCK_GRANTED;
-		
-		if(oplock_request && fsp->granted_oplock)
-			smb_action |= EXTENDED_OPLOCK_GRANTED;
 	}
+		
+	restore_case_semantics(file_attributes);
+		
+	file_len = sbuf.st_size;
+	fmode = dos_mode(conn,fname,&sbuf);
+	if(fmode == 0)
+		fmode = FILE_ATTRIBUTE_NORMAL;
+	mtime = sbuf.st_mtime;
+	if (!fsp->is_directory && (fmode & aDIR)) {
+		close_file(fsp,False);
+		return(ERROR(ERRDOS,ERRnoaccess));
+	} 
+	
+	/* 
+	 * If the caller set the extended oplock request bit
+	 * and we granted one (by whatever means) - set the
+	 * correct bit for extended oplock reply.
+	 */
+	
+	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+		smb_action |= EXTENDED_OPLOCK_GRANTED;
+	
+	if(oplock_request && fsp->granted_oplock)
+		smb_action |= EXTENDED_OPLOCK_GRANTED;
 	
 	set_message(outbuf,34,0,True);
 	
@@ -619,53 +639,32 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	
 	SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
 	p++;
-	if (IS_IPC(conn)) {
-		SSVAL(p,0,pnum);
-	} else {
-		SSVAL(p,0,fsp->fnum);
-	}
+	SSVAL(p,0,fsp->fnum);
 	p += 2;
 	SIVAL(p,0,smb_action);
 	p += 4;
 	
-	if (IS_IPC(conn)) {
-		/*
-		 * Deal with pipe return.
-		 */  
-		p += 32;
-		SIVAL(p,0,FILE_ATTRIBUTE_NORMAL); /* File Attributes. */
-		p += 20;
-		/* File type. */
-		SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
-		/* Device state. */
-		SSVAL(p,2, 0x5FF); /* ? */
-	} else {
-		/*
-		 * Deal with file return.
-		 */  
-		/* Create time. */  
-		put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
-		p += 8;
-		put_long_date(p,sbuf.st_atime); /* access time */
-		p += 8;
-		put_long_date(p,sbuf.st_mtime); /* write time */
-		p += 8;
-		put_long_date(p,sbuf.st_mtime); /* change time */
-		p += 8;
-		SIVAL(p,0,fmode); /* File Attributes. */
-		p += 12;
+	/* Create time. */  
+	put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+	p += 8;
+	put_long_date(p,sbuf.st_atime); /* access time */
+	p += 8;
+	put_long_date(p,sbuf.st_mtime); /* write time */
+	p += 8;
+	put_long_date(p,sbuf.st_mtime); /* change time */
+	p += 8;
+	SIVAL(p,0,fmode); /* File Attributes. */
+	p += 12;
 #if OFF_T_IS_64_BITS
-		SIVAL(p,0, file_len & 0xFFFFFFFF);
-		SIVAL(p,4, file_len >> 32);
+	SIVAL(p,0, file_len & 0xFFFFFFFF);
+	SIVAL(p,4, file_len >> 32);
 #else /* OFF_T_IS_64_BITS */
-		SIVAL(p,0,file_len);
+	SIVAL(p,0,file_len);
 #endif /* OFF_T_IS_64_BITS */
-		p += 12;
-		SCVAL(p,0,fsp->is_directory ? 1 : 0);
-	}
+	p += 12;
+	SCVAL(p,0,fsp->is_directory ? 1 : 0);
 	
-	DEBUG(5,("reply_ntcreate_and_X: open name = %s\n",
-		 fsp?fsp->fsp_name:"NULL"));
+	DEBUG(5,("reply_ntcreate_and_X: open name = %s\n", fsp->fsp_name));
 
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -700,7 +699,7 @@ static int call_nt_transact_create(connection_struct *conn,
   struct stat sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
-  files_struct *fsp;
+  files_struct *fsp = NULL;
   char *p = NULL;
 
   /* 
