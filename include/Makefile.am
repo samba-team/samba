@@ -11,8 +11,8 @@ INCLUDES = -DHOST=\"$(CANONICAL_HOST)\"
 
 include_HEADERS = krb5-types.h
 
-krb5-types.h: bits
-	./bits krb5-types.h
+krb5-types.h: bits$(EXEEXT)
+	./bits$(EXEEXT) krb5-types.h
 
 CLEANFILES =		\
 	asn1.h		\
