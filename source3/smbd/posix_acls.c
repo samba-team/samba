@@ -3178,6 +3178,48 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 }
 
 /****************************************************************************
+ Get the actual group bits stored on a file with an ACL. Has no effect if
+ the file has no ACL. Needed in dosmode code where the stat() will return
+ the mask bits, not the real group bits, for a file with an ACL.
+****************************************************************************/
+
+int get_acl_group_bits( connection_struct *conn, char *fname, mode_t *mode )
+{
+	int entry_id = SMB_ACL_FIRST_ENTRY;
+	SMB_ACL_ENTRY_T entry;
+	SMB_ACL_T posix_acl;
+
+	posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS);
+	if (posix_acl == (SMB_ACL_T)NULL)
+		return -1;
+
+	while (SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
+		SMB_ACL_TAG_T tagtype;
+		SMB_ACL_PERMSET_T permset;
+
+		/* get_next... */
+		if (entry_id == SMB_ACL_FIRST_ENTRY)
+			entry_id = SMB_ACL_NEXT_ENTRY;
+
+		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) ==-1)
+			return -1;
+
+		if (tagtype == SMB_ACL_GROUP_OBJ) {
+			if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
+				return -1;
+			} else {
+				*mode &= ~(S_IRGRP|S_IWGRP|S_IXGRP);
+				*mode |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_READ) ? S_IRGRP : 0);
+				*mode |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE) ? S_IWGRP : 0);
+				*mode |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_EXECUTE) ? S_IXGRP : 0);
+				return 0;;
+			}
+		}
+	}
+	return -1;
+}
+
+/****************************************************************************
  Do a chmod by setting the ACL USER_OBJ, GROUP_OBJ and OTHER bits in an ACL
  and set the mask to rwx. Needed to preserve complex ACLs set by NT.
 ****************************************************************************/
