@@ -10,7 +10,9 @@ RCSID("$Id$");
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
+#ifdef HAVE_SYS_SYSCALL_H
 #include <sys/syscall.h>
+#endif
 
 #include <signal.h>
 #include <setjmp.h>
@@ -305,6 +307,7 @@ k_pioctl(char *a_path,
 	 struct ViceIoctl *a_paramsP,
 	 int a_followSymlinks)
 {
+#ifndef NO_AFS
 #ifdef AFS_SYSCALL
   if (afs_entry_point == SINGLE_ENTRY_POINT)
     return syscall(AFS_SYSCALL, AFSCALL_PIOCTL,
@@ -332,6 +335,7 @@ k_pioctl(char *a_path,
 #ifdef SIGSYS
   kill(getpid(), SIGSYS);	/* You loose! */
 #endif
+#endif /* NO_AFS */
   return -1;
 }
 
@@ -346,6 +350,7 @@ k_unlog(void)
 int
 k_setpag(void)
 {
+#ifndef NO_AFS
 #ifdef AFS_SYSCALL
   if (afs_entry_point == SINGLE_ENTRY_POINT)
     return syscall(AFS_SYSCALL, AFSCALL_SETPAG);
@@ -370,6 +375,7 @@ k_setpag(void)
 #ifdef SIGSYS
   kill(getpid(), SIGSYS);	/* You loose! */
 #endif
+#endif /* NO_AFS */
   return -1;
 }
 
@@ -409,6 +415,7 @@ k_hasafs(void)
   memset(&parms, 0, sizeof(parms));
   
   saved_errno = errno;
+#ifndef NO_AFS
 #ifdef SIGSYS
   saved_func = signal(SIGSYS, SIGSYS_handler);
 #endif
@@ -468,6 +475,7 @@ k_hasafs(void)
 #ifdef SIGSYS
   (void) signal(SIGSYS, saved_func);
 #endif
+#endif /* NO_AFS */
   errno = saved_errno;
   return afs_entry_point != NO_ENTRY_POINT;
 }
