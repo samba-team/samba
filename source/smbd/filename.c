@@ -397,7 +397,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
  a valid one for the user to access.
 ****************************************************************************/
 
-BOOL check_name(pstring name,connection_struct *conn)
+BOOL check_name(const pstring name,connection_struct *conn)
 {
 	BOOL ret = True;
 
