@@ -4,7 +4,6 @@
 #	solve build problems) introduced in Samba 2.2.1a-5. These
 #	modification were made by Steve Langasek <vorlon@netexpress.net>.
 #
-# $Id: rules,v 1.1.2.5 2002/10/15 17:20:02 jerry Exp $
 #
 
 # Uncomment this to turn on verbose mode. 

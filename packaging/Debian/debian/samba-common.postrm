@@ -1,6 +1,5 @@
 #!/bin/sh
 #
-# $Id: samba-common.postrm,v 1.1.2.4 2002/10/15 17:20:02 jerry Exp $
 #
 
 if [ "$1" = purge ]; then
