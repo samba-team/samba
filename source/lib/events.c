@@ -79,11 +79,8 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
 	struct event_context *ev;
 
-	ev = talloc_p(mem_ctx, struct event_context);
+	ev = talloc_zero(mem_ctx, struct event_context);
 	if (!ev) return NULL;
-
-	/* start off with no events */
-	ZERO_STRUCTP(ev);
 
 	ev->events = talloc_new(ev);
 
