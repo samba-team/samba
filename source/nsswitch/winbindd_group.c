@@ -888,6 +888,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 		for (i = 0; i < info3->num_other_sids; i++) {
 			fstring name;
+			fstring dom_name;
 			enum SID_NAME_USE sid_type;
 			uint32 other_rid;
 
@@ -896,7 +897,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 			if (!winbindd_lookup_name_by_sid(
 				    &info3->other_sids[i].sid,
-				    domain->name, name, &sid_type)) {
+				    dom_name, name, &sid_type)) {
 				DEBUG(10, ("winbindd_getgroups: could not "
 					   "lookup name for %s\n", 
 					   sid_string_static(
@@ -927,7 +928,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			}
 
 			if (!winbindd_idmap_get_gid_from_rid(
-				    domain->name, other_rid, &gid_list[num_gids])) {
+				    dom_name, other_rid, &gid_list[num_gids])) {
 				DEBUG(10, ("winbindd_getgroups: could not "
 					   "map rid %d from sid %s to gid\n",
 					   other_rid,
