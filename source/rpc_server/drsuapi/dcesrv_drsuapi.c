@@ -200,10 +200,10 @@ static WERROR (*drsuapi_DsCrackNames)(struct dcesrv_call_state *dce_call, TALLOC
 		       struct drsuapi_DsCrackNames *r) = dcesrv_drsuapi_DsCrackNames;
 
 /* 
-  DRSUAPI_WRITE_SPN 
+  drsuapi_DsWriteAccountSpn 
 */
-static WERROR DRSUAPI_WRITE_SPN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_WRITE_SPN *r)
+static WERROR drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsWriteAccountSpn *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

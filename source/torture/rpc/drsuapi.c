@@ -26,6 +26,7 @@
 
 struct DsPrivate {
 	struct policy_handle bind_handle;
+	struct GUID bind_guid;
 	const char *domain_guid_str;
 	struct drsuapi_DsGetDCInfo2 dcinfo;
 };
@@ -37,7 +38,9 @@ static BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct drsuapi_DsBind r;
 	BOOL ret = True;
 
-	r.in.server_guid = NULL;
+	GUID_from_string(DRSUAPI_DS_BIND_GUID, &priv->bind_guid);
+
+	r.in.bind_guid = &priv->bind_guid;
 	r.in.bind_info = NULL;
 	r.out.bind_handle = &priv->bind_handle;
 
@@ -366,6 +369,8 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = GUID_string2(mem_ctx, &priv->dcinfo.server_guid);
 
 	printf("testing DsCrackNames with Server GUID '%s' desired format:%d\n",
@@ -388,7 +393,33 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = GUID_string2(mem_ctx, &priv->dcinfo.ntds_guid);
+
+	printf("testing DsCrackNames with NTDS GUID '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = GUID_string2(mem_ctx, &priv->bind_guid);
 
 	printf("testing DsCrackNames with NTDS GUID '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
@@ -543,6 +574,59 @@ static BOOL test_DsGetDCInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			struct DsPrivate *priv)
+{
+	NTSTATUS status;
+	struct drsuapi_DsWriteAccountSpn r;
+	struct drsuapi_DsNameString names[2];
+	BOOL ret = True;
+
+	r.in.bind_handle		= &priv->bind_handle;
+	r.in.level			= 1;
+
+	printf("testing DsWriteAccountSpn\n");
+
+	r.in.req.req1.operation	= DRSUAPI_DS_SPN_OPERATION_ADD;
+	r.in.req.req1.unknown1	= 0;
+	r.in.req.req1.object_dn	= priv->dcinfo.computer_dn;
+	r.in.req.req1.count	= 2;
+	r.in.req.req1.spn_names	= names;
+	names[0].str = talloc_asprintf(mem_ctx, "smbtortureSPN/%s",priv->dcinfo.netbios_name);
+	names[1].str = talloc_asprintf(mem_ctx, "smbtortureSPN/%s",priv->dcinfo.dns_name);
+
+	status = dcerpc_drsuapi_DsWriteAccountSpn(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsWriteAccountSpn failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsWriteAccountSpn failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	}
+
+	r.in.req.req1.operation	= DRSUAPI_DS_SPN_OPERATION_DELETE;
+	r.in.req.req1.unknown1	= 0;
+
+	status = dcerpc_drsuapi_DsWriteAccountSpn(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsWriteAccountSpn failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsWriteAccountSpn failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			struct DsPrivate *priv)
 {
@@ -602,6 +686,10 @@ BOOL torture_rpc_drsuapi(void)
 	}
 
 	if (!test_DsCrackNames(p, mem_ctx, &priv)) {
+		ret = False;
+	}
+
+	if (!test_DsWriteAccountSpn(p, mem_ctx, &priv)) {
 		ret = False;
 	}
 
