@@ -673,6 +673,7 @@ extern int errno;
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "registry.h"
+#include "gtk/common/gtk-smb.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)

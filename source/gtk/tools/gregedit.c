@@ -41,27 +41,11 @@ GtkWidget *tree_keys;
 GtkWidget *aboutwin;
 GtkWidget *mainwin;
 
-GtkWidget *rpcwin;
-GtkWidget *rpcwin_host;
-GtkWidget *rpcwin_user;
-GtkWidget *rpcwin_password;
 GtkWidget *save;
 GtkWidget *save_as;
 static GtkWidget* create_openfilewin (void);
 static GtkWidget* create_savefilewin (void);
-static GtkWidget* create_aboutwin (void);
 REG_HANDLE *registry = NULL;
-
-static void gtk_show_werror(WERROR err) 
-{
-	GtkWidget *dialog = gtk_message_dialog_new( GTK_WINDOW(mainwin), 
-		 GTK_DIALOG_DESTROY_WITH_PARENT,
-         GTK_MESSAGE_ERROR,
-         GTK_BUTTONS_CLOSE,
-		 "Registry error: %s\n", win_errstr(err));
-	gtk_dialog_run (GTK_DIALOG (dialog));
- 	gtk_widget_destroy (dialog);
-}
 
 static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *arg2)
 {
@@ -108,7 +92,7 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 			gtk_tree_store_append(store_keys, &tmpiter, &iter);
 	}
 
-	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(error);
+	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(mainwin, error);
 }
 
 static void registry_load_root() 
@@ -127,7 +111,7 @@ static void registry_load_root()
 			return;
 		}
 		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(error);
+			gtk_show_werror(mainwin, error);
 			return;
 		}
 
@@ -149,84 +133,6 @@ static void registry_load_root()
   	gtk_widget_set_sensitive( save_as, True );
 }
 
-static GtkWidget* create_rpcwin (void)
-{
-  GtkWidget *dialog_vbox1;
-  GtkWidget *table1;
-  GtkWidget *label1;
-  GtkWidget *label2;
-  GtkWidget *label3;
-  GtkWidget *dialog_action_area1;
-  GtkWidget *cancelbutton1;
-  GtkWidget *okbutton1;
-
-  rpcwin = gtk_dialog_new ();
-  gtk_window_set_title (GTK_WINDOW (rpcwin), "Connect to remote server");
-
-  dialog_vbox1 = GTK_DIALOG (rpcwin)->vbox;
-  gtk_widget_show (dialog_vbox1);
-
-  table1 = gtk_table_new (3, 2, FALSE);
-  gtk_widget_show (table1);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), table1, TRUE, TRUE, 0);
-
-  label1 = gtk_label_new ("Host:");
-  gtk_widget_show (label1);
-  gtk_table_attach (GTK_TABLE (table1), label1, 0, 1, 0, 1,
-                    (GtkAttachOptions) (GTK_FILL),
-                    (GtkAttachOptions) (0), 0, 0);
-  gtk_misc_set_alignment (GTK_MISC (label1), 0, 0.5);
-
-  label2 = gtk_label_new ("User:");
-  gtk_widget_show (label2);
-  gtk_table_attach (GTK_TABLE (table1), label2, 0, 1, 1, 2,
-                    (GtkAttachOptions) (GTK_FILL),
-                    (GtkAttachOptions) (0), 0, 0);
-  gtk_misc_set_alignment (GTK_MISC (label2), 0, 0.5);
-
-  label3 = gtk_label_new ("Password:");
-  gtk_widget_show (label3);
-  gtk_table_attach (GTK_TABLE (table1), label3, 0, 1, 2, 3,
-                    (GtkAttachOptions) (GTK_FILL),
-                    (GtkAttachOptions) (0), 0, 0);
-  gtk_misc_set_alignment (GTK_MISC (label3), 0, 0.5);
-
-  rpcwin_host = gtk_entry_new ();
-  gtk_widget_show (rpcwin_host);
-  gtk_table_attach (GTK_TABLE (table1), rpcwin_host, 1, 2, 0, 1,
-                    (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-                    (GtkAttachOptions) (0), 0, 0);
-
-  rpcwin_user = gtk_entry_new ();
-  gtk_widget_show (rpcwin_user);
-  gtk_table_attach (GTK_TABLE (table1), rpcwin_user, 1, 2, 1, 2,
-                    (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-                    (GtkAttachOptions) (0), 0, 0);
-
-  rpcwin_password = gtk_entry_new ();
-  gtk_widget_show (rpcwin_password);
-  gtk_table_attach (GTK_TABLE (table1), rpcwin_password, 1, 2, 2, 3,
-                    (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-                    (GtkAttachOptions) (0), 0, 0);
-  gtk_entry_set_visibility (GTK_ENTRY (rpcwin_password), FALSE);
-
-  dialog_action_area1 = GTK_DIALOG (rpcwin)->action_area;
-  gtk_widget_show (dialog_action_area1);
-  gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
-
-  cancelbutton1 = gtk_button_new_from_stock ("gtk-cancel");
-  gtk_widget_show (cancelbutton1);
-  gtk_dialog_add_action_widget (GTK_DIALOG (rpcwin), cancelbutton1, GTK_RESPONSE_CANCEL);
-  GTK_WIDGET_SET_FLAGS (cancelbutton1, GTK_CAN_DEFAULT);
-
-  okbutton1 = gtk_button_new_from_stock ("gtk-ok");
-  gtk_widget_show (okbutton1);
-  gtk_dialog_add_action_widget (GTK_DIALOG (rpcwin), okbutton1, GTK_RESPONSE_OK);
-  GTK_WIDGET_SET_FLAGS (okbutton1, GTK_CAN_DEFAULT);
-
-  return rpcwin;
-}
-
 static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	gint result = gtk_dialog_run(GTK_DIALOG(create_openfilewin()));
@@ -237,7 +143,7 @@ static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 		filename = strdup(gtk_file_selection_get_filename(GTK_FILE_SELECTION(openfilewin)));
 		error = reg_open(user_data, filename, NULL, &registry);
 		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(error);
+			gtk_show_werror(mainwin, error);
 			break;
 		}
 		registry_load_root();
@@ -254,29 +160,30 @@ static void on_open_gconf_activate                       (GtkMenuItem     *menui
 {
 	WERROR error = reg_open("gconf", NULL, NULL, &registry);
 	if(!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(error);
+		gtk_show_werror(mainwin, error);
 		return;
 	}
 
 	registry_load_root();
 }
 
-static void on_open_remote_activate                (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	char *location, *credentials;
-	gint result = gtk_dialog_run(GTK_DIALOG(create_rpcwin()));
+	char *credentials;
+	const char *location;
+	GtkWidget *rpcwin = GTK_WIDGET(gtk_rpc_binding_dialog_new(TRUE));
+	gint result = gtk_dialog_run(GTK_DIALOG(rpcwin));
 	WERROR error;
 	switch(result) {
-	case GTK_RESPONSE_OK:
-		asprintf(&location, "ncacn_np:%s", gtk_entry_get_text(GTK_ENTRY(rpcwin_host)));
-		asprintf(&credentials, "%s%%%s", gtk_entry_get_text(GTK_ENTRY(rpcwin_user)), gtk_entry_get_text(GTK_ENTRY(rpcwin_password)));
+	case GTK_RESPONSE_ACCEPT:
+		location = gtk_rpc_binding_dialog_get_binding(GTK_RPC_BINDING_DIALOG(rpcwin), NULL);
+		asprintf(&credentials, "%s%%%s", gtk_rpc_binding_dialog_get_username(GTK_RPC_BINDING_DIALOG(rpcwin)), gtk_rpc_binding_dialog_get_password(GTK_RPC_BINDING_DIALOG(rpcwin)));
 		error = reg_open("rpc", location, credentials, &registry);
 		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(error);
+			gtk_show_werror(mainwin, error);
 			break;
 		}
-		free(location); free(credentials);
+		free(credentials);
 		registry_load_root();
 		break;
 	default:
@@ -292,7 +199,7 @@ static void on_save_activate                       (GtkMenuItem     *menuitem,
 {
 	WERROR error = reg_save(registry, NULL);
 	if(!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(error);
+		gtk_show_werror(mainwin, error);
 	}
 }
 
@@ -308,7 +215,7 @@ static void on_save_as_activate                    (GtkMenuItem     *menuitem,
 	case GTK_RESPONSE_OK:
 		error = reg_save(registry, gtk_file_selection_get_filename(GTK_FILE_SELECTION(savefilewin)));
 		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(error);
+			gtk_show_werror(mainwin, error);
 		}
 		break;
 
@@ -358,8 +265,9 @@ static void on_delete_activate                     (GtkMenuItem     *menuitem,
 static void on_about_activate                      (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
-	gtk_dialog_run(GTK_DIALOG(create_aboutwin()));
-	gtk_widget_destroy(aboutwin);
+        GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog());
+        gtk_dialog_run(aboutwin);
+        gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
 
 static void on_key_activate (GtkTreeView *treeview,
@@ -395,7 +303,7 @@ static void on_key_activate (GtkTreeView *treeview,
 						-1);
 	}
 
-	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(error);
+	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(mainwin, error);
 }
 
 static GtkWidget* create_mainwin (void)
@@ -651,50 +559,6 @@ static GtkWidget* create_mainwin (void)
   return mainwin;
 }
 
-static GtkWidget* create_aboutwin (void)
-{
-  GtkWidget *dialog_vbox1;
-  GtkWidget *image1;
-  GtkWidget *label1;
-  GtkWidget *label2;
-  GtkWidget *dialog_action_area1;
-  GtkWidget *closebutton1;
-
-  aboutwin = gtk_dialog_new ();
-  gtk_window_set_title (GTK_WINDOW (aboutwin), "About GRegEdit");
-  gtk_window_set_resizable (GTK_WINDOW (aboutwin), FALSE);
-
-  dialog_vbox1 = GTK_DIALOG (aboutwin)->vbox;
-  gtk_widget_show (dialog_vbox1);
-
-  /* FIXME: Samba logo ? 
-  image1 = create_pixmap (aboutwin, "samba.png");
-  gtk_widget_show (image1);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), image1, FALSE, TRUE, 0); */
-
-  label1 = gtk_label_new ("GRegEdit 0.1");
-  gtk_widget_show (label1);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), label1, FALSE, FALSE, 0);
-  gtk_label_set_use_markup (GTK_LABEL (label1), TRUE);
-
-  label2 = gtk_label_new_with_mnemonic ("(C) 2004 Jelmer Vernooij <jelmer@samba.org>\nPart of Samba\nhttp://www.samba.org/\n");
-  gtk_widget_show (label2);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), label2, TRUE, FALSE, 0);
-  gtk_label_set_use_markup (GTK_LABEL (label2), TRUE);
-
-  dialog_action_area1 = GTK_DIALOG (aboutwin)->action_area;
-  gtk_widget_show (dialog_action_area1);
-  gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
-
-  closebutton1 = gtk_button_new_from_stock ("gtk-close");
-  gtk_widget_show (closebutton1);
-  gtk_dialog_add_action_widget (GTK_DIALOG (aboutwin), closebutton1, GTK_RESPONSE_CLOSE);
-  GTK_WIDGET_SET_FLAGS (closebutton1, GTK_CAN_DEFAULT);
-
-  return aboutwin;
-}
-
-
 static GtkWidget* create_openfilewin (void)
 {
   GtkWidget *ok_button;
@@ -766,7 +630,7 @@ static GtkWidget* create_savefilewin (void)
 		
 		error = reg_open(backend, location, credentials, &registry);
 		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(error);
+			gtk_show_werror(mainwin, error);
 			return -1;
 		}
 		mainwin = create_mainwin ();

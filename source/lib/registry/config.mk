@@ -118,15 +118,3 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG LIBCMDLINE REGISTRY
 # End BINARY regtree
 ################################################
-
-################################################
-# Start BINARY gregedit
-[BINARY::gregedit]
-OBJ_FILES= \
-		lib/registry/tools/gregedit.o
-REQUIRED_LIBRARIES = \
-		gtk
-REQUIRED_SUBSYSTEMS = \
-		CONFIG LIBCMDLINE REGISTRY
-# End BINARY gregedit
-################################################
