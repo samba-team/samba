@@ -131,6 +131,12 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 		con->msrpc.local = ncalrpc_l_use_add(pipe_name, user_key,
 						     reuse,
 						     &is_new_connection);
+		/*
+		 * XXX - this rebinds on the same pipe,
+		 * only necessary, when the loopback connection
+		 * was first iniated as a forward
+		 */
+		is_new_connection = True;
 		unbecome_root(False);
 	}
 	else
