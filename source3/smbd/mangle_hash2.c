@@ -201,22 +201,24 @@ static const char *cache_lookup(u32 hash)
    In this algorithm, mangled names use only pure ascii characters (no
    multi-byte) so we can avoid doing a UCS2 conversion 
  */
-static BOOL is_mangled_component(const char *name)
+static BOOL is_mangled_component(const char *name, size_t len)
 {
-	unsigned int len, i;
+	unsigned int i;
 
 	M_DEBUG(10,("is_mangled_component %s ?\n", name));
 
 	/* check the length */
-	len = strlen(name);
-	if (len > 12 || len < 8) return False;
+	if (len > 12 || len < 8)
+		return False;
 
 	/* the best distinguishing characteristic is the ~ */
-	if (name[6] != '~') return False;
+	if (name[6] != '~')
+		return False;
 
 	/* check extension */
 	if (len > 8) {
-		if (name[8] != '.') return False;
+		if (name[8] != '.')
+			return False;
 		for (i=9; name[i]; i++) {
 			if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
 				return False;
@@ -241,7 +243,7 @@ static BOOL is_mangled_component(const char *name)
 		}
 	}
 
-	M_DEBUG(10,("is_mangled %s -> yes\n", name));
+	M_DEBUG(10,("is_mangled_component %s (len %u) -> yes\n", name, (unsigned int)len));
 
 	return True;
 }
@@ -267,16 +269,13 @@ static BOOL is_mangled(const char *name)
 	M_DEBUG(10,("is_mangled %s ?\n", name));
 
 	for (s=name; (p=strchr(s, '/')); s=p+1) {
-		char *component = strndup(s, PTR_DIFF(p, s));
-		if (is_mangled_component(component)) {
-			free(component);
+		if (is_mangled_component(s, PTR_DIFF(p, s))) {
 			return True;
 		}
-		free(component);
 	}
 	
 	/* and the last part ... */
-	return is_mangled_component(s);
+	return is_mangled_component(s,strlen(s));
 }
 
 
