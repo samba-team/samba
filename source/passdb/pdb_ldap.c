@@ -883,6 +883,8 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		}
 	}
 
+	pwHistLen = 0;
+
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen > 0){
 		uint8 *pwhist = NULL;
