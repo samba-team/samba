@@ -2783,6 +2783,11 @@ static const void *lt_preloaded_setup() {
 	$rm $output
 	trap "$rm $output; exit 1" 1 2 15
 
+	# quick and dirty hack by Elrond <Elrond@Wunder-Nett.org>
+	# to get libtool work with paths in its
+	# output names.
+	relink_curdir="`pwd`"
+
 	$echo > $output "\
 #! $SHELL
 
@@ -2804,6 +2809,7 @@ sed_quote_subst='$sed_quote_subst'
 # if CDPATH is set.
 if test \"\${CDPATH+set}\" = set; then CDPATH=:; export CDPATH; fi
 
+relink_curdir=\"$relink_curdir\"
 relink_command=\"$relink_command\"
 
 # This environment variable determines our operation mode.
@@ -2877,7 +2883,7 @@ else
 
     # relink executable if necessary
     if test -n \"\$relink_command\"; then
-      if (cd \"\$thisdir\" && eval \$relink_command); then :
+      if (cd \"\$relink_curdir\" && eval \$relink_command); then :
       else
 	$rm \"\$progdir/\$file\"
 	exit 1
