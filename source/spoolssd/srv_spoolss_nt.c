@@ -3858,7 +3858,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
  Modify internal driver heirarchy.
 ****************************************************************************/
 
-#if RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
+#ifdef RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
 static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level)
 {
 	pstring path_old;
@@ -3915,7 +3915,7 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 	if (add_a_printer_driver(driver, level)!=0)
 		return ERROR_ACCESS_DENIED;
 
-#if RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
+#ifdef  RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
 	if ((err = modify_driver_heirarchy(&driver, level)) != 0) {
 		safe_free(driver.info_3);
 		safe_free(driver.info_6);
@@ -3951,7 +3951,7 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 	get_short_archi(short_archi, long_archi);
 		
-#if RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
+#ifdef  RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
 	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s\\TMP_%u", global_myname, short_archi,
 		(unsigned int)sys_getpid());
 #else
