@@ -226,6 +226,9 @@ Byte offset   Type     name                description
 #define SMB_QUERY_FILE_STREAM_INFO	0x109
 #define SMB_QUERY_COMPRESSION_INFO	0x10b
 
+#define SMB_FIND_INFO_STANDARD			1
+#define SMB_FIND_EA_SIZE			2
+#define SMB_FIND_EA_LIST			3
 #define SMB_FIND_FILE_DIRECTORY_INFO		0x101
 #define SMB_FIND_FILE_FULL_DIRECTORY_INFO	0x102
 #define SMB_FIND_FILE_NAMES_INFO		0x103
