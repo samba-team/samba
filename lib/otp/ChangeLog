@@ -1,3 +1,7 @@
+2001-01-29  Assar Westerlund  <assar@sics.se>
+
+	* otp_md.c: update to new md4/md5/sha API
+
 2000-12-11  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (INCLUDES): add krb4 includes here, which are
