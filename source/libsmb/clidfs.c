@@ -37,10 +37,10 @@ static pstring password;
 static BOOL use_kerberos;
 static BOOL got_pass;
 static int signing_state;
+int max_protocol = PROTOCOL_NT1;
 
 static int port;
 static int name_type = 0x20;
-static int max_protocol = PROTOCOL_NT1;
 static BOOL have_ip;
 static struct in_addr dest_ip;
 
