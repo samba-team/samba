@@ -129,7 +129,7 @@ char *get_path(GtkWidget *item)
 
 struct tree_data *make_tree_data(guint32 type, const char *name)
 {
-  struct tree_data *p = (struct tree_data *)malloc(sizeof(struct tree_data));
+  struct tree_data *p = SMB_MALLOC_P(struct tree_data);
 
   if (p) {
 

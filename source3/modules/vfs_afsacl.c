@@ -85,7 +85,7 @@ static void free_afs_acl(struct afs_acl *acl)
 
 static struct afs_ace *clone_afs_ace(TALLOC_CTX *mem_ctx, struct afs_ace *ace)
 {
-	struct afs_ace *result = talloc(mem_ctx, sizeof(struct afs_ace));
+	struct afs_ace *result = TALLOC_P(mem_ctx, struct afs_ace);
 
 	if (result == NULL)
 		return NULL;
@@ -169,7 +169,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	result = talloc(mem_ctx, sizeof(struct afs_ace));
+	result = TALLOC_P(mem_ctx, struct afs_ace);
 
 	if (result == NULL) {
 		DEBUG(0, ("Could not talloc AFS ace\n"));
@@ -619,7 +619,7 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 	uid_to_sid(&owner_sid, sbuf.st_uid);
 	gid_to_sid(&group_sid, sbuf.st_gid);
 
-	nt_ace_list = (SEC_ACE *)malloc(afs_acl->num_aces * sizeof(SEC_ACE));
+	nt_ace_list = SMB_MALLOC_ARRAY(SEC_ACE, afs_acl->num_aces);
 
 	if (nt_ace_list == NULL)
 		return 0;
