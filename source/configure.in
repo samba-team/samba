@@ -251,7 +251,7 @@ echo $ac_n "checking for netmask ifconf ... $ac_c"
 AC_TRY_RUN([
 #define HAVE_NETMASK_IFCONF 1
 #define AUTOCONF 1
-#include "netmask.c"],
+#include "lib/netmask.c"],
            echo yes;netmask=yes;AC_DEFINE(HAVE_NETMASK_IFCONF),
 	   echo no)
 
@@ -260,7 +260,7 @@ echo $ac_n "checking for netmask ifreq ... $ac_c"
 AC_TRY_RUN([
 #define HAVE_NETMASK_IFREQ 1
 #define AUTOCONF 1
-#include "netmask.c"],
+#include "lib/netmask.c"],
            echo yes;netmask=yes;AC_DEFINE(HAVE_NETMASK_IFREQ),
 	   echo no)
 fi
@@ -270,7 +270,7 @@ echo $ac_n "checking for netmask AIX ... $ac_c"
 AC_TRY_RUN([
 #define HAVE_NETMASK_AIX 1
 #define AUTOCONF 1
-#include "netmask.c"],
+#include "lib/netmask.c"],
            echo yes;netmask=yes;AC_DEFINE(HAVE_NETMASK_AIX),
 	   echo no)
 fi
