@@ -195,7 +195,11 @@ static BOOL test_DRSBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	status = dcerpc_DRSUAPI_BIND(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("DRSUAPI_BIND level failed - %s\n", nt_errstr(status));
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(p->last_fault_code);
+		}
+		printf("DRSUAPI_BIND level failed - %s\n", errstr);
 		ret = False;
 	}
 

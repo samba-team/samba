@@ -139,7 +139,11 @@ void *torture_join_domain(const char *machine_name,
 
 	status = dcerpc_samr_Connect(join->p, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("samr_Connect failed - %s\n", nt_errstr(status));
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(join->p->last_fault_code);
+		}
+		printf("samr_Connect failed - %s\n", errstr);
 		goto failed;
 	}
 
