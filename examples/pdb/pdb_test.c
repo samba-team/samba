@@ -114,8 +114,8 @@ NTSTATUS testsam_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const 
 
 	(*pdb_method)->name = "testsam";
 
-	/* Functions your pdb module doesn't provide should be set 
-	 * to NULL */
+	/* Functions your pdb module doesn't provide should not be
+	   set, make_pdb_methods() already provide suitable defaults for missing functions */
 
 	(*pdb_method)->setsampwent = testsam_setsampwent;
 	(*pdb_method)->endsampwent = testsam_endsampwent;
