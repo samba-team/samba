@@ -1,4 +1,4 @@
-.\" Copyright (c) 1999 - 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1999 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -35,7 +35,7 @@
 .Dt KRB5.CONF 5
 .Os HEIMDAL
 .Sh NAME
-.Nm /etc/krb5.conf
+.Nm krb5.conf
 .Nd configuration file for Kerberos 5
 .Sh SYNOPSIS
 .In krb5.h
@@ -420,6 +420,11 @@ and is only left for backwards compatibility.
 .Sh ENVIRONMENT
 .Ev KRB5_CONFIG
 points to the configuration file to read.
+.Sh FILES
+.Bl -tag -width "/etc/krb5.conf"
+.It Pa /etc/krb5.conf
+configuration file for Kerberos 5.
+.El
 .Sh EXAMPLES
 .Bd -literal -offset indent
 [libdefaults]
