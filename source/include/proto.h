@@ -28,7 +28,7 @@ char *quotedup(char *s);
 char *urlquote(char *s);
 char *quotequotes(char *s);
 void quote_spaces(char *buf);
-void cgi_setup(char *rootdir);
+void cgi_setup(char *rootdir, int auth_required);
 char *cgi_baseurl(void);
 
 /*The following definitions come from  charcnv.c  */
