@@ -120,6 +120,7 @@ void delete_ftp_command (void);
 void new_ftp_command (char *);
 int sec_userok (char *);
 int secure_command (void);
+enum protection_level get_command_prot(void);
 #else
 void sec_end (void);
 int sec_login (char *);
