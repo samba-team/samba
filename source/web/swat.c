@@ -345,6 +345,8 @@ static int save_reload(int snum)
 {
 	FILE *f;
 
+	umask(022);
+
 	f = sys_fopen(servicesf,"w");
 	if (!f) {
 		printf("failed to open %s for writing\n", servicesf);
