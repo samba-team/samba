@@ -33,6 +33,7 @@ static const char *filechars = "abcdefghijklm.";
 static int verbose;
 static int die_on_error;
 static int NumLoops = 0;
+static int ignore_dot_errors = 0;
 
 /* a test fn for LANMAN mask support */
 int ms_fnmatch_lanman_core(const char *pattern, const char *string)
@@ -324,7 +325,9 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 
 	res2 = reg_test(cli, mask, long_name, short_name);
 
-	if (showall || strcmp(res1, res2)) {
+	if (showall || 
+	    ((strcmp(res1, res2) && !ignore_dot_errors) ||
+	     (strcmp(res1+2, res2+2) && ignore_dot_errors))) {
 		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
 			 res1, res2, count, mask, file, long_name, short_name));
 		if (die_on_error) exit(1);
@@ -409,6 +412,7 @@ static void usage(void)
 	-v                             verbose mode\n\
 	-E                             die on error\n\
         -a                             show all tests\n\
+        -i                             ignore . and .. errors\n\
 \n\
   This program tests wildcard matching between two servers. It generates\n\
   random pairs of filenames/masks and tests that they match in the same\n\
@@ -461,7 +465,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vE")) != EOF) {
+	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vEi")) != EOF) {
 		switch (opt) {
 		case 'n':
 			NumLoops = atoi(optarg);
@@ -471,6 +475,9 @@ static void usage(void)
 			break;
 		case 'E':
 			die_on_error = 1;
+			break;
+		case 'i':
+			ignore_dot_errors = 1;
 			break;
 		case 'v':
 			verbose++;

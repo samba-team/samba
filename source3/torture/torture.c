@@ -499,18 +499,21 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 		if (cli_write(c1, fnum1, 0, buf, 0, buf_size) != buf_size) {
 			printf("write failed (%s)\n", cli_errstr(c1));
 			correct = False;
+			break;
 		}
 
 		if ((bytes_read = cli_read(c2, fnum2, buf_rd, 0, buf_size)) != buf_size) {
 			printf("read failed (%s)\n", cli_errstr(c2));
 			printf("read %d, expected %d\n", bytes_read, buf_size); 
 			correct = False;
+			break;
 		}
 
 		if (memcmp(buf_rd, buf, buf_size) != 0)
 		{
 			printf("read/write compare failed\n");
 			correct = False;
+			break;
 		}
 	}
 
@@ -547,8 +550,10 @@ static BOOL run_readwritetest(int dummy)
 	test1 = rw_torture2(cli1, cli2);
 	printf("Passed readwritetest v1: %s\n", BOOLSTR(test1));
 
-	test2 = rw_torture2(cli1, cli1);
-	printf("Passed readwritetest v2: %s\n", BOOLSTR(test2));
+	if (test1) {
+		test2 = rw_torture2(cli1, cli1);
+		printf("Passed readwritetest v2: %s\n", BOOLSTR(test2));
+	}
 
 	if (!torture_close_connection(cli1)) {
 		test1 = False;
@@ -568,12 +573,12 @@ static BOOL run_readwritemulti(int dummy)
 
 	cli = current_cli;
 
-	cli_sockopt(&cli, sockops);
+	cli_sockopt(cli, sockops);
 
 	printf("run_readwritemulti: fname %s\n", randomfname);
-	test = rw_torture3(&cli, randomfname);
+	test = rw_torture3(cli, randomfname);
 
-	if (!torture_close_connection(&cli)) {
+	if (!torture_close_connection(cli)) {
 		test = False;
 	}
 	
@@ -692,7 +697,7 @@ static BOOL run_netbench(int client)
 	pstring line;
 	char cname[20];
 	FILE *f;
-	char *params[20];
+	const char *params[20];
 	BOOL correct = True;
 
 	cli = current_cli;
@@ -4076,6 +4081,60 @@ static void del_fn(file_info *finfo, const char *mask, void *state)
 
 
 /*
+  sees what IOCTLs are supported
+ */
+BOOL torture_ioctl_test(int dummy)
+{
+	static struct cli_state *cli;
+	uint16 device, function;
+	int fnum;
+	const char *fname = "\\ioctl.dat";
+	DATA_BLOB blob;
+	NTSTATUS status;
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	printf("starting ioctl test\n");
+
+	cli_unlink(cli, fname);
+
+	fnum = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(cli));
+		return False;
+	}
+
+	status = cli_raw_ioctl(cli, fnum, 0x2d0000 | (0x0420<<2), &blob);
+	printf("ioctl device info: %s\n", cli_errstr(cli));
+
+	status = cli_raw_ioctl(cli, fnum, IOCTL_QUERY_JOB_INFO, &blob);
+	printf("ioctl job info: %s\n", cli_errstr(cli));
+
+	for (device=0;device<0x100;device++) {
+		printf("testing device=0x%x\n", device);
+		for (function=0;function<0x100;function++) {
+			uint32 code = (device<<16) | function;
+
+			status = cli_raw_ioctl(cli, fnum, code, &blob);
+
+			if (NT_STATUS_IS_OK(status)) {
+				printf("ioctl 0x%x OK : %d bytes\n", code, blob.length);
+				data_blob_free(&blob);
+			}
+		}
+	}
+
+	if (!torture_close_connection(cli)) {
+		return False;
+	}
+
+	return True;
+}
+
+
+/*
   tries varients of chkpath
  */
 BOOL torture_chkpath_test(int dummy)
@@ -4494,6 +4553,7 @@ static struct {
 	{"ERRMAPEXTRACT", run_error_map_extract, 0},
 	{"PIPE_NUMBER", run_pipe_number, 0},
 	{"TCON2",  run_tcon2_test, 0},
+	{"IOCTL",  torture_ioctl_test, 0},
 	{"CHKPATH",  torture_chkpath_test, 0},
 	{"FDSESS", run_fdsesstest, 0},
 	{NULL, NULL, 0}};
