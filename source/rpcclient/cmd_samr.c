@@ -2986,7 +2986,7 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 	BOOL res1 = True;
 
-	char *alias_name;
+	fstring alias_name;
 	char *names[1];
 	uint32 num_rids;
 	uint32 *rids;
@@ -2998,8 +2998,22 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	fstrcpy(domain, info->dom.level5_dom);
-	sid_copy(&sid, &info->dom.level5_sid);
+	if (argc < 2)
+	{
+		report(out_hnd, "samaliasmem [DOMAIN\\]<name>\n");
+		return;
+	}
+
+	if (!split_domain_name(argv[1], domain, alias_name))
+	{
+		safe_strcpy(alias_name, argv[1], sizeof(alias_name)-1);
+		fstrcpy(domain, info->dom.level5_dom);
+		sid_copy(&sid, &info->dom.level5_sid);
+	}
+	else
+	{
+		sid.num_auths = 0;
+	}
 
 	if (sid.num_auths == 0)
 	{
@@ -3010,14 +3024,6 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 			return;
 		}
 	}
-
-	if (argc < 2)
-	{
-		report(out_hnd, "samaliasmem <name>\n");
-		return;
-	}
-
-	alias_name = argv[1];
 
 	sid_to_string(sid_str, &sid);
 
