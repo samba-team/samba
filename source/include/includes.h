@@ -437,6 +437,23 @@
 #include <com_err.h>
 #endif
 
+/* Special macros that are no-ops except when run under Valgrind on
+ * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
+#if HAVE_VALGRIND_MEMCHECK_H
+        /* memcheck.h includes valgrind.h */
+#include <valgrind/memcheck.h>
+#elif HAVE_VALGRIND_H
+#include <valgrind.h>
+#endif
+
+/* If we have --enable-developer and the valgrind header is present,
+ * then we're OK to use it.  Set a macro so this logic can be done only
+ * once. */
+#if defined(DEVELOPER) && (HAVE_VALGRIND_H || HAVE_VALGRIND_VALGRIND_H)
+#define VALGRIND
+#endif
+
+
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
@@ -1210,10 +1227,6 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 
 #ifndef HAVE_TIMEGM
 time_t timegm(struct tm *tm);
-#endif
-
-#if defined(VALGRIND)
-#define strlen(x) valgrind_strlen(x)
 #endif
 
 /*
