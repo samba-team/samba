@@ -1838,12 +1838,14 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	
 	rc = ldapsam_search_one_user_by_name(ldap_state, pdb_get_username(newpwd), &result);
 	if (rc != LDAP_SUCCESS) {
+		ldap_mods_free(mods, 1);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (ldap_count_entries(ldap_state->ldap_struct, result) == 0) {
 		DEBUG(0, ("No user to modify!\n"));
 		ldap_msgfree(result);
+		ldap_mods_free(mods, 1);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
