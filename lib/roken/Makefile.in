@@ -145,7 +145,7 @@ check:
 
 clean:
 	rm -f $(LIB) *.o *.a roken.h make-roken$(EXECSUFFIX) make-roken.c \
-		make-print-version$(EXESUFFIX) print_version.h
+		make-print-version$(EXECSUFFIC) print_version.h
 
 mostlyclean: clean
 
@@ -183,8 +183,8 @@ make-roken.c: roken.h.in roken.awk
 
 print_version.o: print_version.h
 
-print_version.h: make-print-version$(EXESUFFIX)
-	@./make-print-version$(EXESUFFIX) print_version.h
+print_version.h: make-print-version$(EXECSUFFIC)
+	@./make-print-version$(EXECSUFFIC) print_version.h
 
 make-print-version$(EXECSUFFIX): make-print-version.o
 	$(LINK) $(CFLAGS) -o $@ make-print-version.o
