@@ -877,6 +877,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	    netsamlogon_cache_have(&domain->sid, user_rid)) {
 		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
 		domain->last_status = NT_STATUS_OK;
+		centry_free(centry);
 		goto do_query;
 	}
 
@@ -931,6 +932,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	    netsamlogon_cache_have(&domain->sid, user_rid)) {
 		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
 		domain->last_status = NT_STATUS_OK;
+		centry_free(centry);
 		goto do_query;
 	}
 
