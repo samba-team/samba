@@ -3,6 +3,9 @@
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): bump version to
 	18:0:1
 
+	* lib/krb5/get_for_creds.c (krb5_fwd_tgt_creds): make it behave
+	the same way as the MIT function
+
 	* lib/hdb/Makefile.am (libhdb_la_LDFLAGS): update to 7:3:0
 	* lib/krb5/sock_principal.c (krb5_sock_to_principal): use
 	getnameinfo
