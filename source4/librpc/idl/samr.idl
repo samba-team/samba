@@ -1,0 +1,317 @@
+/*
+  samr interface definition
+*/
+
+[ uuid(12345778-1234-abcd-ef00-0123456789ac),
+  version(1.0),
+  pointer_default(unique)
+] interface lsarpc
+{
+	/******************/
+	/* Function: 0x00 */
+	NTSTATUS samr_Connect (
+		/* notice the lack of [string] */
+		[in]       uint16 *system_name,
+		[in]       uint32 access_mask,
+		[out,ref]  policy_handle *handle
+		);
+
+
+	/******************/
+	/* Function: 0x01 */
+	NTSTATUS samr_Close ();
+
+	/******************/
+	/* Function: 0x02 */
+	NTSTATUS samr_SetSecurity ();
+
+	/******************/
+	/* Function: 0x03 */
+	NTSTATUS samr_QuerySecurity ();
+
+	/******************/
+	/* Function: 0x04 */
+	NTSTATUS samr_Shutdown ();
+
+	/******************/
+	/* Function: 0x05 */
+	NTSTATUS samr_LookupDomain ();
+
+	/******************/
+	/* Function: 0x06 */
+
+	typedef struct {
+		uint16 name_len;
+		uint16 name_size;
+		unistr_noterm *name;
+	} samr_Name;	
+
+	typedef struct {
+		uint32 rid;
+		samr_Name name;
+	} samr_SamEntry;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] samr_SamEntry *entries;
+	} samr_SamArray;
+
+	NTSTATUS samr_EnumDomains (
+		[in,ref]      policy_handle *handle,
+		[in,out,ref]  uint32 *resume_handle,
+		[in]          uint32 buf_size,
+		[out]         samr_SamArray *sam,
+		[out,ref]     uint32 *num_entries
+		);
+
+
+	/************************/
+	/* Function    0x07     */
+	NTSTATUS samr_OPEN_DOMAIN();
+
+	/************************/
+	/* Function    0x08     */
+	NTSTATUS samr_QUERY_DOMAIN_INFO();
+
+	/************************/
+	/* Function    0x09     */
+	NTSTATUS samr_SET_DOMAIN_INFO();
+
+	/************************/
+	/* Function    0x0a     */
+	NTSTATUS samr_CREATE_DOM_GROUP();
+
+	/************************/
+	/* Function    0x0b     */
+	NTSTATUS samr_ENUM_DOM_GROUPS();
+
+	/************************/
+	/* Function    0x0c     */
+	NTSTATUS samr_CREATE_USER_IN_DOMAIN();
+
+	/************************/
+	/* Function    0x0d     */
+	NTSTATUS samr_ENUM_DOM_USERS();
+
+	/************************/
+	/* Function    0x0e     */
+	NTSTATUS samr_CREATE_DOM_ALIAS();
+
+	/************************/
+	/* Function    0x0f     */
+	NTSTATUS samr_ENUM_DOM_ALIASES();
+
+	/************************/
+	/* Function    0x10     */
+	NTSTATUS samr_GET_ALIAS_MEMBERSHIP();
+
+	/************************/
+	/* Function    0x11     */
+	NTSTATUS samr_LOOKUP_NAMES();
+
+	/************************/
+	/* Function    0x12     */
+	NTSTATUS samr_LOOKUP_RIDS();
+
+	/************************/
+	/* Function    0x13     */
+	NTSTATUS samr_OPEN_GROUP();
+
+	/************************/
+	/* Function    0x14     */
+	NTSTATUS samr_QUERY_GROUPINFO();
+
+	/************************/
+	/* Function    0x15     */
+	NTSTATUS samr_SET_GROUPINFO();
+
+	/************************/
+	/* Function    0x16     */
+	NTSTATUS samr_ADD_GROUPMEM();
+
+	/************************/
+	/* Function    0x17     */
+	NTSTATUS samr_DELETE_DOM_GROUP();
+
+	/************************/
+	/* Function    0x18     */
+	NTSTATUS samr_DEL_GROUPMEM();
+
+	/************************/
+	/* Function    0x19     */
+	NTSTATUS samr_QUERY_GROUPMEM();
+
+	/************************/
+	/* Function    0x1a     */
+	NTSTATUS samr_SET_MEMBER_ATTRIBUTES_OF_GROUP();
+
+	/************************/
+	/* Function    0x1b     */
+	NTSTATUS samr_OPEN_ALIAS();
+
+	/************************/
+	/* Function    0x1c     */
+	NTSTATUS samr_QUERY_ALIASINFO();
+
+	/************************/
+	/* Function    0x1d     */
+	NTSTATUS samr_SET_ALIASINFO();
+
+	/************************/
+	/* Function    0x1e     */
+	NTSTATUS samr_DELETE_DOM_ALIAS();
+
+	/************************/
+	/* Function    0x1f     */
+	NTSTATUS samr_ADD_ALIASMEM();
+
+	/************************/
+	/* Function    0x20     */
+	NTSTATUS samr_DEL_ALIASMEM();
+
+	/************************/
+	/* Function    0x21     */
+	NTSTATUS samr_GET_MEMBERS_IN_ALIAS();
+
+	/************************/
+	/* Function    0x22     */
+	NTSTATUS samr_OPEN_USER();
+
+	/************************/
+	/* Function    0x23     */
+	NTSTATUS samr_DELETE_DOM_USER();
+
+	/************************/
+	/* Function    0x24     */
+	NTSTATUS samr_QUERY_USERINFO();
+
+	/************************/
+	/* Function    0x25     */
+	NTSTATUS samr_SET_USERINFO();
+
+	/************************/
+	/* Function    0x26     */
+	NTSTATUS samr_CHANGE_PASSWORD_USER();
+
+	/************************/
+	/* Function    0x27     */
+	NTSTATUS samr_GET_GROUPS_FOR_USER();
+
+	/************************/
+	/* Function    0x28     */
+	NTSTATUS samr_QUERY_DISPINFO();
+
+	/************************/
+	/* Function    0x29     */
+	NTSTATUS samr_GET_DISPLAY_ENUMERATION_INDEX();
+
+	/************************/
+	/* Function    0x2a     */
+	NTSTATUS samr_TEST_PRIVATE_FUNCTIONS_DOMAIN();
+
+	/************************/
+	/* Function    0x2b     */
+	NTSTATUS samr_TEST_PRIVATE_FUNCTIONS_USER();
+
+	/************************/
+	/* Function    0x2c     */
+	NTSTATUS samr_GET_USRDOM_PWINFO();
+
+	/************************/
+	/* Function    0x2d     */
+	NTSTATUS samr_REMOVE_MEMBER_FROM_FOREIGN_DOMAIN();
+
+	/************************/
+	/* Function    0x2e     */
+	NTSTATUS samr_QUERY_INFORMATION_DOMAIN2();
+
+	/************************/
+	/* Function    0x2f     */
+	NTSTATUS samr_QUERY_INFORMATION_USER2();
+
+	/************************/
+	/* Function    0x30     */
+	NTSTATUS samr_QUERY_DISPINFO2();
+
+	/************************/
+	/* Function    0x31     */
+	NTSTATUS samr_GET_DISPLAY_ENUMERATION_INDEX2();
+
+	/************************/
+	/* Function    0x32     */
+	NTSTATUS samr_CREATE_USER2_IN_DOMAIN();
+
+	/************************/
+	/* Function    0x33     */
+	NTSTATUS samr_QUERY_DISPINFO3();
+
+	/************************/
+	/* Function    0x34     */
+	NTSTATUS samr_ADD_MULTIPLE_MEMBERS_TO_ALIAS();
+
+	/************************/
+	/* Function    0x35     */
+	NTSTATUS samr_REMOVE_MULTIPLE_MEMBERS_FROM_ALIAS();
+
+	/************************/
+	/* Function    0x36     */
+	NTSTATUS samr_OEM_CHANGE_PASSWORD_USER2();
+
+	/************************/
+	/* Function    0x37     */
+	NTSTATUS samr_UNICODE_CHANGE_PASSWORD_USER2();
+
+	/************************/
+	/* Function    0x38     */
+	NTSTATUS samr_GET_DOM_PWINFO();
+
+	/************************/
+	/* Function    0x39     */
+	NTSTATUS samr_CONNECT2();
+
+	/************************/
+	/* Function    0x3a     */
+	NTSTATUS samr_SET_USERINFO2();
+
+	/************************/
+	/* Function    0x3b     */
+	NTSTATUS samr_SET_BOOT_KEY_INFORMATION();
+
+	/************************/
+	/* Function    0x3c     */
+	NTSTATUS samr_GET_BOOT_KEY_INFORMATION();
+
+	/************************/
+	/* Function    0x3d     */
+	NTSTATUS samr_CONNECT3();
+
+	/************************/
+	/* Function    0x3e     */
+	NTSTATUS samr_CONNECT4(
+		[in] unistr *system_name,
+		[in] uint32 unknown,
+		[in] uint32 access_mask,
+		[out,ref]  policy_handle *handle
+		);
+
+	/************************/
+	/* Function    0x3f     */
+	NTSTATUS samr_UNICODE_CHANGE_PASSWORD_USER3();
+
+	/************************/
+	/* Function    0x40      */
+	NTSTATUS samr_CONNECT5();
+
+	/************************/
+	/* Function    0x41     */
+	NTSTATUS samr_RID_TO_SID();
+
+	/************************/
+	/* Function    0x42     */
+	NTSTATUS samr_SET_DSRM_PASSWORD();
+
+	/************************/
+	/* Function    0x43     */
+	NTSTATUS samr_VALIDATE_PASSWORD();
+
+}
