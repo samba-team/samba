@@ -1,3 +1,8 @@
+2002-09-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/context.c (krb5_set_config_files): return ENXIO instead
+	of ENOENT when "unconfigured"
+
 2002-09-16  Jacques Vidrine  <nectar@kth.se>
 
 	* lib/krb5/kuserok.c, lib/krb5/prompter_posix.c: use strcspn
