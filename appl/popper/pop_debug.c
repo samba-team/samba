@@ -69,25 +69,46 @@ loop(int s)
 }
 
 static int
-get_socket (char *host, int port)
+get_socket (const char *hostname, int port)
 {
-    struct sockaddr_in sa;
-    struct hostent *hp;
-    int s;
+    struct hostent *hostent = NULL;
+    char **h;
+    int error;
+    int af;
 
-    hp = roken_gethostbyname(host);
-    if(hp == NULL)
-	err(1, "%s", host);
-    s = socket(AF_INET, SOCK_STREAM, 0);
-    if (s < 0)
-	err(1, "socket");
-    memset(&sa, 0, sizeof(sa));
-    sa.sin_family = AF_INET;
-    sa.sin_port = port;
-    memcpy(&sa.sin_addr, hp->h_addr, sizeof(sa.sin_addr));
-    if(connect(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
-	err(1, "connect");
-    return s;
+#ifdef HAVE_IPV6    
+    if (hostent == NULL)
+	hostent = getipnodebyname (hostname, AF_INET6, 0, &error);
+#endif
+    if (hostent == NULL)
+	hostent = getipnodebyname (hostname, AF_INET, 0, &error);
+
+    if (hostent == NULL)
+	errx(1, "gethostbyname '%s' failed: %s", hostname, hstrerror(error));
+
+    af = hostent->h_addrtype;
+
+    for (h = hostent->h_addr_list; *h != NULL; ++h) {
+	struct sockaddr_storage sa_ss;
+	struct sockaddr *sa = (struct sockaddr *)&sa_ss;
+	int s;
+
+	sa->sa_family = af;
+	socket_set_address_and_port (sa, *h, port);
+
+	s = socket (af, SOCK_STREAM, 0);
+	if (s < 0)
+	    err (1, "socket");
+	if (connect (s, sa, socket_sockaddr_size(sa)) < 0) {
+	    warn ("connect(%s)", hostname);
+	    close (s);
+	    continue;
+	}
+	freehostent (hostent);
+	return s;
+    }
+    freehostent (hostent);
+    exit (1);
 }
 
 #ifdef KRB4
