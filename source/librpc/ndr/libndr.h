@@ -72,6 +72,7 @@ struct ndr_print {
 
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
+#define NDR_PRINT_UNION_DEBUG(type, level, p) ndr_print_union_debug((ndr_print_union_fn_t)ndr_print_ ##type, #p, level, p)
 
 
 
@@ -112,6 +113,7 @@ typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
 typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, void *);
 typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
+typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint16, void *);
 
 /* now pull in the individual parsers */
 #include "librpc/ndr/ndr_sec.h"

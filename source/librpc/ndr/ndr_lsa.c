@@ -69,7 +69,7 @@ done:
 
 void ndr_print_lsa_Name(struct ndr_print *ndr, const char *name, struct lsa_Name *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_Name");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "name_len", r->name_len);
 	ndr_print_uint16(ndr, "name_size", r->name_size);
@@ -97,7 +97,7 @@ done:
 
 void ndr_print_lsa_PrivEntry(struct ndr_print *ndr, const char *name, struct lsa_PrivEntry *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_PrivEntry");
 	ndr->depth++;
 	ndr_print_lsa_Name(ndr, "name", &r->name);
 	ndr_print_uint32(ndr, "luid_low", r->luid_low);
@@ -128,7 +128,7 @@ done:
 
 void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, struct lsa_PrivArray *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_PrivArray");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_ptr(ndr, "privs", r->privs);
@@ -220,7 +220,7 @@ done:
 
 void ndr_print_lsa_QosInfo(struct ndr_print *ndr, const char *name, struct lsa_QosInfo *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_QosInfo");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "impersonation_level", r->impersonation_level);
 	ndr_print_uint8(ndr, "context_mode", r->context_mode);
@@ -265,7 +265,7 @@ done:
 
 void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *name, struct lsa_ObjectAttribute *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_ObjectAttribute");
 	ndr->depth++;
 	ndr_print_ptr(ndr, "root_dir", r->root_dir);
 	ndr->depth++;
@@ -333,7 +333,7 @@ done:
 
 void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name, struct lsa_AuditLogInfo *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_AuditLogInfo");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "percent_full", r->percent_full);
 	ndr_print_uint32(ndr, "log_size", r->log_size);
@@ -357,7 +357,7 @@ done:
 
 void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, struct lsa_AuditEventsInfo *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_AuditEventsInfo");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "auditing_mode", r->auditing_mode);
 	ndr->depth--;
@@ -399,6 +399,19 @@ done:
 
 void ndr_print_lsa_PolicyInformation(struct ndr_print *ndr, const char *name, uint16 level, union lsa_PolicyInformation *r)
 {
+	ndr_print_union(ndr, name, level, "lsa_PolicyInformation");
+	switch (level) {
+	case 1:
+	ndr_print_lsa_AuditLogInfo(ndr, "audit_log", &r->audit_log);
+	break;
+
+	case 2:
+	ndr_print_lsa_AuditEventsInfo(ndr, "audit_events", &r->audit_events);
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
 }
 
 NTSTATUS ndr_push_lsa_QueryInfoPolicy(struct ndr_push *ndr, struct lsa_QueryInfoPolicy *r)
@@ -502,7 +515,7 @@ done:
 
 void ndr_print_lsa_SidPtr(struct ndr_print *ndr, const char *name, struct lsa_SidPtr *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_SidPtr");
 	ndr->depth++;
 	ndr_print_ptr(ndr, "sid", r->sid);
 	ndr->depth++;
@@ -550,7 +563,7 @@ done:
 
 void ndr_print_lsa_SidArray(struct ndr_print *ndr, const char *name, struct lsa_SidArray *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_SidArray");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "num_sids", r->num_sids);
 	ndr_print_ptr(ndr, "sids", r->sids);
@@ -616,7 +629,7 @@ done:
 
 void ndr_print_lsa_DomainInformation(struct ndr_print *ndr, const char *name, struct lsa_DomainInformation *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_DomainInformation");
 	ndr->depth++;
 	ndr_print_lsa_Name(ndr, "name", &r->name);
 	ndr_print_ptr(ndr, "sid", r->sid);
@@ -651,7 +664,7 @@ done:
 
 void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, struct lsa_DomainList *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_DomainList");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_ptr(ndr, "domains", r->domains);
@@ -707,7 +720,7 @@ done:
 
 void ndr_print_lsa_TranslatedSid(struct ndr_print *ndr, const char *name, struct lsa_TranslatedSid *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_TranslatedSid");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "sid_type", r->sid_type);
 	ndr_print_uint32(ndr, "rid", r->rid);
@@ -752,7 +765,7 @@ done:
 
 void ndr_print_lsa_TransSidArray(struct ndr_print *ndr, const char *name, struct lsa_TransSidArray *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_TransSidArray");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_ptr(ndr, "sids", r->sids);
@@ -787,7 +800,7 @@ done:
 
 void ndr_print_lsa_TrustInformation(struct ndr_print *ndr, const char *name, struct lsa_TrustInformation *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_TrustInformation");
 	ndr->depth++;
 	ndr_print_lsa_Name(ndr, "name", &r->name);
 	ndr_print_ptr(ndr, "sid", r->sid);
@@ -823,7 +836,7 @@ done:
 
 void ndr_print_lsa_RefDomainList(struct ndr_print *ndr, const char *name, struct lsa_RefDomainList *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_RefDomainList");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_ptr(ndr, "domains", r->domains);
@@ -898,7 +911,7 @@ done:
 
 void ndr_print_lsa_TranslatedName(struct ndr_print *ndr, const char *name, struct lsa_TranslatedName *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_TranslatedName");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "sid_type", r->sid_type);
 	ndr_print_lsa_Name(ndr, "name", &r->name);
@@ -943,7 +956,7 @@ done:
 
 void ndr_print_lsa_TransNameArray(struct ndr_print *ndr, const char *name, struct lsa_TransNameArray *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_TransNameArray");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_ptr(ndr, "names", r->names);
@@ -1028,7 +1041,7 @@ done:
 
 void ndr_print_lsa_LUID(struct ndr_print *ndr, const char *name, struct lsa_LUID *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_LUID");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "low", r->low);
 	ndr_print_uint32(ndr, "high", r->high);
@@ -1049,7 +1062,7 @@ done:
 
 void ndr_print_lsa_LUIDAttribute(struct ndr_print *ndr, const char *name, struct lsa_LUIDAttribute *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_LUIDAttribute");
 	ndr->depth++;
 	ndr_print_lsa_LUID(ndr, "luid", &r->luid);
 	ndr_print_uint32(ndr, "attribute", r->attribute);
@@ -1070,10 +1083,13 @@ done:
 
 void ndr_print_lsa_PrivilegeSet(struct ndr_print *ndr, const char *name, struct lsa_PrivilegeSet *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_PrivilegeSet");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_lsa_LUIDAttribute(ndr, "set", r->set);
+	ndr_print_ptr(ndr, "set", r->set);
+	ndr->depth++;
+		ndr_print_array(ndr, "set", r->set, sizeof(r->set[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_LUIDAttribute);
+	ndr->depth--;
 	ndr->depth--;
 }
 
@@ -1338,7 +1354,7 @@ NTSTATUS ndr_pull_ENUMACCTWITHRIGHT(struct ndr_pull *ndr, struct ENUMACCTWITHRIG
 
 void ndr_print_lsa_RightAttribute(struct ndr_print *ndr, const char *name, struct lsa_RightAttribute *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_RightAttribute");
 	ndr->depth++;
 	ndr_print_ptr(ndr, "name", r->name);
 	ndr->depth++;
@@ -1372,7 +1388,7 @@ done:
 
 void ndr_print_lsa_RightSet(struct ndr_print *ndr, const char *name, struct lsa_RightSet *r)
 {
-	ndr_print_struct(ndr, name);
+	ndr_print_struct(ndr, name, "lsa_RightSet");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_ptr(ndr, "names", r->names);

@@ -375,9 +375,9 @@ NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, NTTIME *t)
 }
 
 
-void ndr_print_struct(struct ndr_print *ndr, const char *name)
+void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 {
-	ndr->print(ndr, "%s:", name);
+	ndr->print(ndr, "%s: struct %s", name, type);
 }
 
 void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8 v)
@@ -417,4 +417,14 @@ void ndr_print_unistr(struct ndr_print *ndr, const char *name, const char *s)
 void ndr_print_NTTIME(struct ndr_print *ndr, const char *name, NTTIME t)
 {
 	ndr->print(ndr, "%-25s: %s", name, nt_time_string(ndr->mem_ctx, &t));
+}
+
+void ndr_print_union(struct ndr_print *ndr, const char *name, uint16 level, const char *type)
+{
+	ndr->print(ndr, "%-25s: union %s(case %u)", name, type, level);
+}
+
+void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16 level)
+{
+	ndr->print(ndr, "UNKNOWN LEVEL %u", level);
 }
