@@ -36,6 +36,9 @@ struct connect_state {
 	struct smbcli_socket *sock;
 	struct smbcli_transport *transport;
 	struct smbcli_session *session;
+	struct smb_composite_connect *io;
+	union smb_tcon *io_tcon;
+	struct smb_composite_sesssetup *io_setup;
 };
 
 
@@ -69,21 +72,21 @@ static NTSTATUS connect_send_negprot(struct smbcli_composite *c,
 static NTSTATUS connect_tcon(struct smbcli_composite *c, 
 			     struct smb_composite_connect *io)
 {
+	struct connect_state *state = c->private;
 	struct smbcli_request *req = c->req;
-	union smb_tcon *io_tcon = c->req_parms;
 	NTSTATUS status;
 
-	status = smb_tree_connect_recv(req, c, io_tcon);
+	status = smb_tree_connect_recv(req, c, state->io_tcon);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	io->out.tree->tid = io_tcon->tconx.out.tid;
-	if (io_tcon->tconx.out.dev_type) {
+	io->out.tree->tid = state->io_tcon->tconx.out.tid;
+	if (state->io_tcon->tconx.out.dev_type) {
 		io->out.tree->device = talloc_strdup(io->out.tree, 
-						     io_tcon->tconx.out.dev_type);
+						     state->io_tcon->tconx.out.dev_type);
 	}
-	if (io_tcon->tconx.out.fs_type) {
+	if (state->io_tcon->tconx.out.fs_type) {
 		io->out.tree->fs_type = talloc_strdup(io->out.tree, 
-						      io_tcon->tconx.out.fs_type);
+						      state->io_tcon->tconx.out.fs_type);
 	}
 
 	/* all done! */
@@ -105,44 +108,41 @@ static NTSTATUS connect_session_setup(struct smbcli_composite *c,
 	struct connect_state *state = c->private;
 	struct smbcli_composite *req = c->req;
 	struct smbcli_request *req2;
-	struct smb_composite_sesssetup *io_setup = c->req_parms;
-	union smb_tcon *io_tcon;
 	NTSTATUS status;
 
 	status = smb_composite_sesssetup_recv(req);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
-	state->session->vuid = io_setup->out.vuid;
+	state->session->vuid = state->io_setup->out.vuid;
 	
 	/* setup for a tconx */
 	io->out.tree = smbcli_tree_init(state->session);
 	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
 
-	io_tcon = talloc(c, union smb_tcon);
-	NT_STATUS_HAVE_NO_MEMORY(io_tcon);
+	state->io_tcon = talloc(c, union smb_tcon);
+	NT_STATUS_HAVE_NO_MEMORY(state->io_tcon);
 
 	/* connect to a share using a tree connect */
-	io_tcon->generic.level = RAW_TCON_TCONX;
-	io_tcon->tconx.in.flags = 0;
-	io_tcon->tconx.in.password = data_blob(NULL, 0);	
+	state->io_tcon->generic.level = RAW_TCON_TCONX;
+	state->io_tcon->tconx.in.flags = 0;
+	state->io_tcon->tconx.in.password = data_blob(NULL, 0);	
 	
-	io_tcon->tconx.in.path = talloc_asprintf(io_tcon, 
+	state->io_tcon->tconx.in.path = talloc_asprintf(state->io_tcon, 
 						 "\\\\%s\\%s", 
 						 io->in.called_name, 
 						 io->in.service);
-	NT_STATUS_HAVE_NO_MEMORY(io_tcon->tconx.in.path);
+	NT_STATUS_HAVE_NO_MEMORY(state->io_tcon->tconx.in.path);
 	if (!io->in.service_type) {
-		io_tcon->tconx.in.device = "?????";
+		state->io_tcon->tconx.in.device = "?????";
 	} else {
-		io_tcon->tconx.in.device = io->in.service_type;
+		state->io_tcon->tconx.in.device = io->in.service_type;
 	}
 
-	req2 = smb_tree_connect_send(io->out.tree, io_tcon);
+	req2 = smb_tree_connect_send(io->out.tree, state->io_tcon);
 	NT_STATUS_HAVE_NO_MEMORY(req2);
 
 	req2->async.fn = request_handler;
 	req2->async.private = c;
-	c->req_parms = io_tcon;
 	c->req = req2;
 	c->stage = CONNECT_TCON;
 
@@ -159,7 +159,6 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 	struct smbcli_request *req = c->req;
 	struct smbcli_composite *req2;
 	NTSTATUS status;
-	struct smb_composite_sesssetup *io_setup;
 
 	status = smb_raw_negotiate_recv(req);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -171,22 +170,21 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 	/* get rid of the extra reference to the transport */
 	talloc_free(state->transport);
 
-	io_setup = talloc(c, struct smb_composite_sesssetup);
-	NT_STATUS_HAVE_NO_MEMORY(io_setup);
+	state->io_setup = talloc(c, struct smb_composite_sesssetup);
+	NT_STATUS_HAVE_NO_MEMORY(state->io_setup);
 
 	/* prepare a session setup to establish a security context */
-	io_setup->in.sesskey      = state->transport->negotiate.sesskey;
-	io_setup->in.capabilities = state->transport->negotiate.capabilities;
-	io_setup->in.domain       = io->in.domain;
-	io_setup->in.user         = io->in.user;
-	io_setup->in.password     = io->in.password;
+	state->io_setup->in.sesskey      = state->transport->negotiate.sesskey;
+	state->io_setup->in.capabilities = state->transport->negotiate.capabilities;
+	state->io_setup->in.domain       = io->in.domain;
+	state->io_setup->in.user         = io->in.user;
+	state->io_setup->in.password     = io->in.password;
 
-	req2 = smb_composite_sesssetup_send(state->session, io_setup);
+	req2 = smb_composite_sesssetup_send(state->session, state->io_setup);
 	NT_STATUS_HAVE_NO_MEMORY(req2);
 
 	req2->async.fn = composite_handler;
 	req2->async.private = c;
-	c->req_parms = io_setup;
 	c->req = req2;
 	c->stage = CONNECT_SESSION_SETUP;
 	
@@ -256,23 +254,23 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 */
 static void state_handler(struct smbcli_composite *c)
 {
-	struct smb_composite_connect *io = c->composite_parms;
-	
+	struct connect_state *state = c->private;
+
 	switch (c->stage) {
 	case CONNECT_SOCKET:
-		c->status = connect_socket(c, io);
+		c->status = connect_socket(c, state->io);
 		break;
 	case CONNECT_SESSION_REQUEST:
-		c->status = connect_session_request(c, io);
+		c->status = connect_session_request(c, state->io);
 		break;
 	case CONNECT_NEGPROT:
-		c->status = connect_negprot(c, io);
+		c->status = connect_negprot(c, state->io);
 		break;
 	case CONNECT_SESSION_SETUP:
-		c->status = connect_session_setup(c, io);
+		c->status = connect_session_setup(c, state->io);
 		break;
 	case CONNECT_TCON:
-		c->status = connect_tcon(c, io);
+		c->status = connect_tcon(c, state->io);
 		break;
 	}
 
@@ -320,8 +318,9 @@ struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect
 	state->sock = smbcli_sock_init(state);
 	if (state->sock == NULL) goto failed;
 
+	state->io = io;
+
 	c->state = SMBCLI_REQUEST_SEND;
-	c->composite_parms = io;
 	c->stage = CONNECT_SOCKET;
 	c->event_ctx = state->sock->event.ctx;
 	c->private = state;
@@ -349,8 +348,8 @@ NTSTATUS smb_composite_connect_recv(struct smbcli_composite *c, TALLOC_CTX *mem_
 	status = smb_composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct smb_composite_connect *io = c->composite_parms;
-		talloc_steal(mem_ctx, io->out.tree);
+		struct connect_state *state = c->private;
+		talloc_steal(mem_ctx, state->io->out.tree);
 	}
 
 	talloc_free(c);

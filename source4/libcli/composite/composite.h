@@ -39,12 +39,6 @@ struct smbcli_composite {
 	/* the currently running sub-request */
 	void *req;
 
-	/* the current requests parameter block */
-	void *req_parms;
-
-	/* the parameters of the whole composite function */
-	void *composite_parms;
-
 	/* a private pointer for use by the composite code */
 	void *private;
 
