@@ -372,19 +372,7 @@ init_auth
     if (ret)
 	goto failure;
 
-#if 1
     enctype = (*context_handle)->auth_context->keyblock->keytype;
-#else
-    if ((*context_handle)->auth_context->enctype)
-	enctype = (*context_handle)->auth_context->enctype;
-    else {
-	kret = krb5_keytype_to_enctype(gssapi_krb5_context,
-				       (*context_handle)->auth_context->keyblock->keytype,
-				       &enctype);
-	if (kret)
-	    return kret;
-    }
-#endif
 
     kret = krb5_build_authenticator (gssapi_krb5_context,
 				     (*context_handle)->auth_context,
@@ -632,6 +620,7 @@ spnego_reply
     ssize_t mech_len;
     const u_char *p;
     size_t len, taglen;
+    krb5_boolean require_mic;
 
     output_token->length = 0;
     output_token->value  = NULL;
@@ -730,22 +719,33 @@ spnego_reply
 				   output_token,
 				   ret_flags,
 				   time_rec);
-    if (ret || targ.mechListMIC == NULL) {
-	/* no thing to do */
-    } else if (targ.responseToken != NULL &&
-	       targ.mechListMIC->length == targ.responseToken->length &&
-	       memcmp(targ.mechListMIC->data, targ.responseToken->data,
-		      targ.mechListMIC->length) == 0) {
-	/* 
-	 * We dealing with a broken MS SPNEGO client that send the
-	 * responseToken in both responseToken and mechListMIC, just
-	 * ignore those.
-	 */
-    } else {
+    if (ret) {
+	free_NegTokenTarg(&targ);
+	return ret;
+    }
+
+    /*
+     * Verify the mechListMIC if GSS_C_EXPECTING_MECH_LIST_MIC_FLAG
+     * was specified or CFX was used; or if local policy dictated so.
+     */
+    ret = _gss_spnego_require_mechlist_mic(minor_status, *context_handle,
+					   &require_mic);
+    if (ret) {
+	free_NegTokenTarg(&targ);
+	return ret;
+    }
+
+    if (require_mic) {
 	MechTypeList mechlist;
 	MechType m0;
 	size_t buf_len;
 	gss_buffer_desc mic_buf, mech_buf;
+
+	if (targ.mechListMIC == NULL) {
+	    free_NegTokenTarg(&targ);
+	    *minor_status = 0;
+	    return GSS_S_BAD_MIC;
+	}
 
 	mechlist.len = 1;
 	mechlist.val = &m0;
