@@ -99,7 +99,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 
 	/* Find uid for this sid and return it */
 
-	if (!winbindd_idmap_get_uid_from_rid(domain, user_rid,
+	if (!winbindd_idmap_get_uid_from_rid(domain->name, user_rid,
 					     &state->response.data.uid)) {
 		DEBUG(1, ("Could not get uid for sid %s\n",
 			  state->request.data.sid));
@@ -135,7 +135,7 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 
 	/* Find uid for this sid and return it */
 
-	if (!winbindd_idmap_get_gid_from_rid(domain, group_rid,
+	if (!winbindd_idmap_get_gid_from_rid(domain->name, group_rid,
 					     &state->response.data.gid)) {
 		DEBUG(1, ("Could not get gid for sid %s\n",
 			  state->request.data.sid));
