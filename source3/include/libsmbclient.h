@@ -60,8 +60,9 @@ struct smbc_dirent {
 #define SMBC_DIR_MODE  (S_IFDIR | 0555)
 
 typedef void (*smbc_get_auth_data_fn)(char *server, char *share,
-				      char **workgroup, char **username,
-				      char **password);
+				      char *workgroup, int wgmaxlen, 
+				      char *username, int unmaxlen,
+				      char *password, int pwmaxlen);
 
 /*
  * Init the smbc package
@@ -159,6 +160,12 @@ int smbc_closedir(int fd);
  */
 
 int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count);
+
+/*
+ * Read a dirent in the old way
+ */
+
+struct smbc_dirent *smbc_readdir(unsigned int fd);
 
 /* 
  * Create a directory on a server, share, dir in fname URL

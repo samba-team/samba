@@ -28,6 +28,8 @@
 #include <gtk/gtk.h>
 #include "libsmbclient.h"
 
+static GtkWidget *clist;
+
 struct tree_data {
 
   guint32 type;    /* Type of tree item, an SMBC_TYPE */
@@ -142,7 +144,7 @@ static void cb_itemsignal( GtkWidget *item,
 
     if ((dh = smbc_opendir(get_path(item))) < 0) { /* Handle error */
 
-      g_print("cb_wholenet: Could not open dir %s, %s\n", server, 
+      g_print("cb_wholenet: Could not open dir %s, %s\n", get_path(item), 
 	      strerror(errno));
 
       gtk_main_quit();
@@ -208,7 +210,10 @@ static void cb_itemsignal( GtkWidget *item,
 
 	fprintf(stdout, "Added: %s, len: %u\n", dirp->name, dirlen);
 
-	if (dirp->smbc_type != SMBC_FILE && dirp->smbc_type != SMBC_IPC_SHARE){
+	if (dirp->smbc_type != SMBC_FILE &&
+	    dirp->smbc_type != SMBC_IPC_SHARE &&
+	    (strcmp(dirp->name, ".") != 0) && 
+	    (strcmp(dirp->name, "..") !=0)){
 	  
 	  subtree = gtk_tree_new();
 	  gtk_tree_item_set_subtree(GTK_TREE_ITEM(aitem), subtree);
@@ -242,8 +247,147 @@ static void cb_unselect_child( GtkWidget *root_tree,
 static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
 			     GtkWidget *subtree)
 {
+  gint dh, err, dirlen;
+  char dirbuf[512];
+  struct smbc_dirent *dirp;
+  struct stat st1;
+  char path[1024], path1[1024];
+
   g_print ("select_child called for root tree %p, subtree %p, child %p\n",
 	   root_tree, subtree, child);
+
+  /* Now, figure out what it is, and display it in the clist ... */
+
+  gtk_clist_clear(GTK_CLIST(clist));  /* Clear the CLIST */
+
+  /* Now, get the private data for the subtree */
+
+  strncpy(path, get_path(child), 1024);
+
+  if ((dh = smbc_opendir(path)) < 0) { /* Handle error */
+
+    g_print("cb_select_child: Could not open dir %s, %s\n", path,
+	    strerror(errno));
+
+    gtk_main_quit();
+
+    return;
+
+  }
+
+  while ((err = smbc_getdents(dh, (struct smbc_dirent *)dirbuf,
+			      sizeof(dirbuf))) != 0) {
+
+    if (err < 0) {
+
+      g_print("cb_select_child: Could not read dir %s, %s\n", path,
+	      strerror(errno));
+
+      gtk_main_quit();
+
+      return;
+
+    }
+
+    dirp = (struct smbc_dirent *)dirbuf;
+
+    while (err > 0) {
+      gchar col1[128], col2[128], col3[128], col4[128];
+      gchar *rowdata[4] = {col1, col2, col3, col4};
+
+      dirlen = dirp->dirlen;
+
+      /* Format each of the items ... */
+
+      strncpy(col1, dirp->name, 128);
+
+      col2[0] = col3[0] = col4[0] = (char)0;
+
+      switch (dirp->smbc_type) {
+
+      case SMBC_WORKGROUP:
+
+	break;
+
+      case SMBC_SERVER:
+
+	strncpy(col2, (dirp->comment?dirp->comment:""), 128);
+
+	break;
+
+      case SMBC_FILE_SHARE:
+
+	strncpy(col2, (dirp->comment?dirp->comment:""), 128);
+
+	break;
+
+      case SMBC_PRINTER_SHARE:
+
+	strncpy(col2, (dirp->comment?dirp->comment:""), 128);
+	break;
+
+      case SMBC_COMMS_SHARE:
+
+	break;
+
+      case SMBC_IPC_SHARE:
+
+	break;
+
+      case SMBC_DIR:
+      case SMBC_FILE:
+
+	/* Get stats on the file/dir and see what we have */
+
+	if ((strcmp(dirp->name, ".") != 0) &&
+	    (strcmp(dirp->name, "..") != 0)) {
+
+	  strncpy(path1, path, sizeof(path1));
+	  strncat(path1, "/", sizeof(path) - strlen(path));
+	  strncat(path1, dirp->name, sizeof(path) - strlen(path));
+
+	  if (smbc_stat(path1, &st1) < 0) {
+	    
+	    g_print("cb_select_child: Could not stat file %s, %s\n", path1, 
+		    strerror(errno));
+	    
+	    gtk_main_quit();
+
+	    return;
+
+	  }
+
+	  /* Now format each of the relevant things ... */
+
+	  snprintf(col2, sizeof(col2), "%s%s%s%s%s%s(%0X)",
+		   (st1.st_mode&0x20?"A":""),
+		   (st1.st_mode&0x10?"D":""),
+		   (st1.st_mode&0x08?"V":""),
+		   (st1.st_mode&0x04?"S":""),
+		   (st1.st_mode&0x02?"H":""),
+		   (st1.st_mode&0x01?"R":""),
+		   st1.st_mode); 
+	  snprintf(col3, sizeof(col3), "%u", st1.st_size);
+	  snprintf(col4, sizeof(col4), "%s", ctime(&st1.st_ctime));
+
+	}
+
+	break;
+
+      default:
+
+	break;
+      }
+
+      gtk_clist_append(GTK_CLIST(clist), rowdata);
+
+      (char *)dirp += dirlen;
+      err -= dirlen;
+
+    }
+
+  }
+
 }
 
 static void cb_selection_changed( GtkWidget *tree )
@@ -363,22 +507,28 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
 
 }
 
+/* Should put up a dialog box to ask the user for username and password */
+
 static void 
 auth_fn(char *server, char *share,
-	     char **workgroup, char **username, char **password)
+	char *workgroup, int wgmaxlen, char *username, int unmaxlen,
+	char *password, int pwmaxlen)
 {
 
-  *workgroup = "";
-  *username = "test";
-  *password = "test";
+   strncpy(username, "test", unmaxlen);
+   strncpy(password, "test", pwmaxlen);
 
 }
+
+static char *col_titles[] = {
+  "Name", "Attributes", "Size", "Creation Date",
+};
 
 int main( int   argc,
           char *argv[] )
 {
-  GtkWidget *window, *scrolled_win, *tree;
-  GtkWidget *subtree, *item;
+  GtkWidget *window, *scrolled_win, *scrolled_win2, *tree;
+  GtkWidget *subtree, *item, *main_hbox, *r_pane, *l_pane;
   gint err, dh;
   gint i;
   char dirbuf[512];
@@ -392,9 +542,32 @@ int main( int   argc,
 
   /* a generic toplevel window */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  gtk_widget_set_name(window, "main browser window");
   gtk_signal_connect (GTK_OBJECT(window), "delete_event",
 		      GTK_SIGNAL_FUNC (gtk_main_quit), NULL);
+  gtk_window_set_title(GTK_WINDOW(window), "The Linux Windows Network Browser");
+  gtk_widget_set_usize(GTK_WIDGET(window), 750, -1);
   gtk_container_set_border_width (GTK_CONTAINER(window), 5);
+
+  gtk_widget_show (window);
+
+  /* A container for the two panes ... */
+
+  main_hbox = gtk_hbox_new(FALSE, 1);
+  gtk_container_border_width(GTK_CONTAINER(main_hbox), 1);
+  gtk_container_add(GTK_CONTAINER(window), main_hbox);
+
+  gtk_widget_show(main_hbox);
+
+  l_pane = gtk_hpaned_new();
+  gtk_paned_gutter_size(GTK_PANED(l_pane), (GTK_PANED(l_pane))->handle_size);
+  r_pane = gtk_hpaned_new();
+  gtk_paned_gutter_size(GTK_PANED(r_pane), (GTK_PANED(r_pane))->handle_size);
+  gtk_container_add(GTK_CONTAINER(main_hbox), l_pane);
+  gtk_widget_show(l_pane);
+  /*gtk_container_add(GTK_CONTAINER(main_hbox), r_pane);
+    gtk_widget_show(r_pane); */
+
 
   /* A generic scrolled window */
   scrolled_win = gtk_scrolled_window_new (NULL, NULL);
@@ -402,8 +575,17 @@ int main( int   argc,
 				  GTK_POLICY_AUTOMATIC,
 				  GTK_POLICY_AUTOMATIC);
   gtk_widget_set_usize (scrolled_win, 150, 200);
-  gtk_container_add (GTK_CONTAINER(window), scrolled_win);
+  gtk_container_add (GTK_CONTAINER(l_pane), scrolled_win);
   gtk_widget_show (scrolled_win);
+
+  /* Another generic scrolled window */
+  scrolled_win2 = gtk_scrolled_window_new (NULL, NULL);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_win2),
+				  GTK_POLICY_AUTOMATIC,
+				  GTK_POLICY_AUTOMATIC);
+  gtk_widget_set_usize (scrolled_win2, 150, 200);
+  gtk_paned_add2 (GTK_PANED(l_pane), scrolled_win2);
+  gtk_widget_show (scrolled_win2);
   
   /* Create the root tree */
   tree = gtk_tree_new();
@@ -423,6 +605,14 @@ int main( int   argc,
 			       GTK_SELECTION_MULTIPLE);
   /* Show it */
   gtk_widget_show (tree);
+
+  /* Now, create a clist and attach it to the second pane */
+
+  clist = gtk_clist_new_with_titles(4, col_titles);
+
+  gtk_container_add (GTK_CONTAINER(scrolled_win2), clist);
+
+  gtk_widget_show(clist);
 
   /* Now, build the top level display ... */
 
@@ -457,6 +647,11 @@ int main( int   argc,
   subtree = gtk_tree_new();  /* A subtree for Whole Network */
 
   gtk_tree_item_set_subtree(GTK_TREE_ITEM(item), subtree);
+
+  gtk_signal_connect (GTK_OBJECT(subtree), "select_child",
+		      GTK_SIGNAL_FUNC(cb_select_child), tree);
+  gtk_signal_connect (GTK_OBJECT(subtree), "unselect_child",
+		      GTK_SIGNAL_FUNC(cb_unselect_child), tree);
 
   /* Now, get the items in smb:/// and add them to the tree */
 
@@ -507,6 +702,11 @@ int main( int   argc,
 
       gtk_tree_item_set_subtree(GTK_TREE_ITEM(item), subtree);
 
+      gtk_signal_connect (GTK_OBJECT(subtree), "select_child",
+			  GTK_SIGNAL_FUNC(cb_select_child), tree);
+      gtk_signal_connect (GTK_OBJECT(subtree), "unselect_child",
+			  GTK_SIGNAL_FUNC(cb_unselect_child), tree);
+
       (char *)dirp += dirlen;
       err -= dirlen;
 
@@ -517,7 +717,6 @@ int main( int   argc,
   smbc_closedir(dh); /* FIXME, check for error :-) */
 
   /* Show the window and loop endlessly */
-  gtk_widget_show (window);
   gtk_main();
   return 0;
 }
