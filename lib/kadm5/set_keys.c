@@ -60,7 +60,35 @@ free_keys (kadm5_server_context *context,
 	}
 	krb5_free_keyblock_contents(context->context, &keys[i].key);
     }
+    free (keys);
 }
+
+/*
+ * null-ify `len', `keys'
+ */
+
+static void
+init_keys (Key *keys, int len)
+{
+    int i;
+
+    for (i = 0; i < len; ++i) {
+	keys[i].mkvno               = NULL;
+	keys[i].salt                = NULL;
+	keys[i].key.keyvalue.length = 0;
+	keys[i].key.keyvalue.data   = NULL;
+    }
+}
+
+/*
+ * the known and used DES enctypes
+ */
+
+static krb5_enctype des_types[] = { ETYPE_DES_CBC_CRC,
+				    ETYPE_DES_CBC_MD4,
+				    ETYPE_DES_CBC_MD5 };
+
+static unsigned n_des_types = 3;
 
 /*
  * Set the keys of `ent' to the string-to-key of `password'
@@ -76,22 +104,14 @@ _kadm5_set_keys(kadm5_server_context *context,
     unsigned len;
     Key *keys;
     krb5_salt salt;
-    krb5_enctype des_types[] = { ETYPE_DES_CBC_CRC,
-				 ETYPE_DES_CBC_MD4,
-				 ETYPE_DES_CBC_MD5 };
     krb5_boolean v4_salt = FALSE;
 
-    len = 4;
+    len  = n_des_types + 1;
     keys = malloc (len * sizeof(*keys));
     if (keys == NULL)
 	return ENOMEM;
 
-    for (i = 0; i < len; ++i) {
-	keys[i].mkvno               = NULL;
-	keys[i].salt                = NULL;
-	keys[i].key.keyvalue.length = 0;
-	keys[i].key.keyvalue.data   = NULL;
-    }
+    init_keys (keys, len);
 
     salt.salttype         = KRB5_PW_SALT;
     salt.saltvalue.length = 0;
@@ -106,7 +126,7 @@ _kadm5_set_keys(kadm5_server_context *context,
 	v4_salt = TRUE;
     }
 
-    for (i = 0; i < sizeof(des_types) / sizeof(des_types[0]); ++i) {
+    for (i = 0; i < n_des_types; ++i) {
 	ret = krb5_string_to_key_salt (context->context,
 				       des_types[i],
 				       password,
@@ -131,7 +151,7 @@ _kadm5_set_keys(kadm5_server_context *context,
 			      ETYPE_DES3_CBC_SHA1,
 			      password,
 			      ent->principal,
-			      &keys[3].key);
+			      &keys[n_des_types].key);
     if (ret)
 	goto out;
 
@@ -185,4 +205,91 @@ _kadm5_set_keys2(hdb_entry *ent,
     }
     ent->kvno++;
     return 0;
+}
+
+/*
+ * Set the keys of `ent' to random keys and return them in `n_keys'
+ * and `new_keys'.
+ */
+
+kadm5_ret_t
+_kadm5_set_keys_randomly (kadm5_server_context *context,
+			  hdb_entry *ent,
+			  krb5_keyblock **new_keys,
+			  int *n_keys)
+{
+    kadm5_ret_t ret = 0;
+    int i;
+    unsigned len;
+    krb5_keyblock *keys;
+    Key *hkeys;
+
+    len  = n_des_types + 1;
+    keys = malloc (len * sizeof(*keys));
+    if (keys == NULL)
+	return ENOMEM;
+
+    for (i = 0; i < len; ++i) {
+	keys[i].keyvalue.length = 0;
+	keys[i].keyvalue.data   = NULL;
+    }
+
+    hkeys = malloc (len * sizeof(*hkeys));
+    if (hkeys == NULL) {
+	free (keys);
+	return ENOMEM;
+    }
+
+    init_keys (hkeys, len);
+
+    ret = krb5_generate_random_keyblock (context->context,
+					 des_types[0],
+					 &keys[0]);
+    if (ret)
+	goto out;
+
+    ret = krb5_copy_keyblock_contents (context->context,
+				       &keys[0],
+				       &hkeys[0].key);
+    if (ret)
+	goto out;
+
+    for (i = 1; i < n_des_types; ++i) {
+	ret = krb5_copy_keyblock_contents (context->context,
+					   &keys[0],
+					   &keys[i]);
+	if (ret)
+	    goto out;
+	ret = krb5_copy_keyblock_contents (context->context,
+					   &keys[0],
+					   &hkeys[i].key);
+	if (ret)
+	    goto out;
+    }
+
+    ret = krb5_generate_random_keyblock (context->context,
+					 ETYPE_DES3_CBC_SHA1,
+					 &keys[n_des_types]);
+    if (ret)
+	goto out;
+
+    ret = krb5_copy_keyblock_contents (context->context,
+				       &keys[n_des_types],
+				       &hkeys[n_des_types].key);
+    if (ret)
+	goto out;
+
+    free_keys (context, ent->keys.len, ent->keys.val);
+    ent->keys.len = len;
+    ent->keys.val = hkeys;
+    ent->kvno++;
+    *new_keys     = keys;
+    *n_keys       = len;
+    return ret;
+out:
+    for (i = 0; i < len; ++i)
+	krb5_free_keyblock_contents (context->context, &keys[i]);
+    free (keys);
+    free_keys (context, len, hkeys);
+    return ret;
 }
