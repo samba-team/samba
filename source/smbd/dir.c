@@ -24,21 +24,43 @@
    This module implements directory related functions for Samba.
 */
 
-typedef struct _dptr_struct {
-	struct _dptr_struct *next, *prev;
+/* Make directory handle internals available. */
+
+#define NAME_CACHE_SIZE 100
+
+struct name_cache_entry {
+	char *name;
+	long offset;
+};
+
+struct smb_Dir {
+	connection_struct *conn;
+	DIR *dir;
+	long offset;
+	char *dir_path;
+	struct name_cache_entry *name_cache;
+	unsigned int name_cache_index;
+	BOOL hide_unreadable;
+	BOOL hide_unwriteable;
+	BOOL hide_special;
+	BOOL use_veto;
+};
+
+struct dptr_struct {
+	struct dptr_struct *next, *prev;
 	int dnum;
 	uint16 spid;
-	connection_struct *conn;
-	void *ptr;
+	struct connection_struct *conn;
+	struct smb_Dir *dir_hnd;
 	BOOL expect_close;
-	char *wcard; /* Field only used for trans2_ searches */
-	uint16 attr; /* Field only used for trans2_ searches */
+	char *wcard;
+	uint16 attr;
 	char *path;
-} dptr_struct;
+	BOOL has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
+};
 
 static struct bitmap *dptr_bmap;
-static dptr_struct *dirptrs;
-
+static struct dptr_struct *dirptrs;
 static int dptrs_open = 0;
 
 #define INVALID_DPTR_KEY (-3)
@@ -66,13 +88,12 @@ void init_dptrs(void)
  Idle a dptr - the directory is closed but the control info is kept.
 ****************************************************************************/
 
-static void dptr_idle(dptr_struct *dptr)
+static void dptr_idle(struct dptr_struct *dptr)
 {
-	if (dptr->ptr) {
+	if (dptr->dir_hnd) {
 		DEBUG(4,("Idling dptr dnum %d\n",dptr->dnum));
-		dptrs_open--;
-		CloseDir(dptr->ptr);
-		dptr->ptr = NULL;
+		CloseDir(dptr->dir_hnd);
+		dptr->dir_hnd = NULL;
 	}
 }
 
@@ -82,7 +103,7 @@ static void dptr_idle(dptr_struct *dptr)
 
 static void dptr_idleoldest(void)
 {
-	dptr_struct *dptr;
+	struct dptr_struct *dptr;
 
 	/*
 	 * Go to the end of the list.
@@ -100,7 +121,7 @@ static void dptr_idleoldest(void)
 	 */
 
 	for(; dptr; dptr = dptr->prev) {
-		if (dptr->ptr) {
+		if (dptr->dir_hnd) {
 			dptr_idle(dptr);
 			return;
 		}
@@ -108,21 +129,24 @@ static void dptr_idleoldest(void)
 }
 
 /****************************************************************************
- Get the dptr_struct for a dir index.
+ Get the struct dptr_struct for a dir index.
 ****************************************************************************/
 
-static dptr_struct *dptr_get(int key, BOOL forclose)
+static struct dptr_struct *dptr_get(int key, BOOL forclose)
 {
-	dptr_struct *dptr;
+	struct dptr_struct *dptr;
 
 	for(dptr = dirptrs; dptr; dptr = dptr->next) {
 		if(dptr->dnum == key) {
-			if (!forclose && !dptr->ptr) {
+			if (!forclose && !dptr->dir_hnd) {
 				if (dptrs_open >= MAX_OPEN_DIRECTORIES)
 					dptr_idleoldest();
-				DEBUG(4,("Reopening dptr key %d\n",key));
-				if ((dptr->ptr = OpenDir(dptr->conn, dptr->path, True)))
-					dptrs_open++;
+				DEBUG(4,("dptr_get: Reopening dptr key %d\n",key));
+				if (!(dptr->dir_hnd = OpenDir(dptr->conn, dptr->path, True))) {
+					DEBUG(4,("dptr_get: Failed to open %s (%s)\n",dptr->path,
+						strerror(errno)));
+					return False;
+				}
 			}
 			DLIST_PROMOTE(dirptrs,dptr);
 			return dptr;
@@ -132,94 +156,64 @@ static dptr_struct *dptr_get(int key, BOOL forclose)
 }
 
 /****************************************************************************
- Get the dptr ptr for a dir index.
-****************************************************************************/
-
-static void *dptr_ptr(int key)
-{
-	dptr_struct *dptr = dptr_get(key, False);
-
-	if (dptr)
-		return(dptr->ptr);
-	return(NULL);
-}
-
-/****************************************************************************
  Get the dir path for a dir index.
 ****************************************************************************/
 
 char *dptr_path(int key)
 {
-	dptr_struct *dptr = dptr_get(key, False);
-
+	struct dptr_struct *dptr = dptr_get(key, False);
 	if (dptr)
 		return(dptr->path);
 	return(NULL);
 }
 
 /****************************************************************************
- Get the dir wcard for a dir index (lanman2 specific).
+ Get the dir wcard for a dir index.
 ****************************************************************************/
 
 char *dptr_wcard(int key)
 {
-	dptr_struct *dptr = dptr_get(key, False);
-
+	struct dptr_struct *dptr = dptr_get(key, False);
 	if (dptr)
 		return(dptr->wcard);
 	return(NULL);
 }
 
 /****************************************************************************
- Set the dir wcard for a dir index (lanman2 specific).
- Returns 0 on ok, 1 on fail.
-****************************************************************************/
-
-BOOL dptr_set_wcard(int key, char *wcard)
-{
-	dptr_struct *dptr = dptr_get(key, False);
-
-	if (dptr) {
-		dptr->wcard = wcard;
-		return True;
-	}
-	return False;
-}
-
-/****************************************************************************
- Set the dir attrib for a dir index (lanman2 specific).
- Returns 0 on ok, 1 on fail.
-****************************************************************************/
-
-BOOL dptr_set_attr(int key, uint16 attr)
-{
-	dptr_struct *dptr = dptr_get(key, False);
-
-	if (dptr) {
-		dptr->attr = attr;
-		return True;
-	}
-	return False;
-}
-
-/****************************************************************************
- Get the dir attrib for a dir index (lanman2 specific)
+ Get the dir attrib for a dir index.
 ****************************************************************************/
 
 uint16 dptr_attr(int key)
 {
-	dptr_struct *dptr = dptr_get(key, False);
-
+	struct dptr_struct *dptr = dptr_get(key, False);
 	if (dptr)
 		return(dptr->attr);
 	return(0);
 }
 
 /****************************************************************************
+ Set the dir wcard for a dir index.
+ Returns 0 on ok, 1 on fail.
+****************************************************************************/
+
+BOOL dptr_set_wcard_and_attributes(int key, char *wcard, uint16 attr)
+{
+	struct dptr_struct *dptr = dptr_get(key, False);
+
+	if (dptr) {
+		dptr->attr = attr;
+		dptr->wcard = wcard;
+		dptr->has_wild = ms_has_wild(wcard);
+		return True;
+	}
+	return False;
+}
+
+/****************************************************************************
  Close a dptr (internal func).
 ****************************************************************************/
 
-static void dptr_close_internal(dptr_struct *dptr)
+static void dptr_close_internal(struct dptr_struct *dptr)
 {
 	DEBUG(4,("closing dptr key %d\n",dptr->dnum));
 
@@ -237,9 +231,8 @@ static void dptr_close_internal(dptr_struct *dptr)
 
 	bitmap_clear(dptr_bmap, dptr->dnum - 1);
 
-	if (dptr->ptr) {
-		CloseDir(dptr->ptr);
-		dptrs_open--;
+	if (dptr->dir_hnd) {
+		CloseDir(dptr->dir_hnd);
 	}
 
 	/* Lanman 2 specific code */
@@ -254,14 +247,14 @@ static void dptr_close_internal(dptr_struct *dptr)
 
 void dptr_close(int *key)
 {
-	dptr_struct *dptr;
+	struct dptr_struct *dptr;
 
 	if(*key == INVALID_DPTR_KEY)
 		return;
 
 	/* OS/2 seems to use -1 to indicate "close all directories" */
 	if (*key == -1) {
-		dptr_struct *next;
+		struct dptr_struct *next;
 		for(dptr = dirptrs; dptr; dptr = next) {
 			next = dptr->next;
 			dptr_close_internal(dptr);
@@ -288,7 +281,7 @@ void dptr_close(int *key)
 
 void dptr_closecnum(connection_struct *conn)
 {
-	dptr_struct *dptr, *next;
+	struct dptr_struct *dptr, *next;
 	for(dptr = dirptrs; dptr; dptr = next) {
 		next = dptr->next;
 		if (dptr->conn == conn)
@@ -302,9 +295,9 @@ void dptr_closecnum(connection_struct *conn)
 
 void dptr_idlecnum(connection_struct *conn)
 {
-	dptr_struct *dptr;
+	struct dptr_struct *dptr;
 	for(dptr = dirptrs; dptr; dptr = dptr->next) {
-		if (dptr->conn == conn && dptr->ptr)
+		if (dptr->conn == conn && dptr->dir_hnd)
 			dptr_idle(dptr);
 	}
 }
@@ -315,41 +308,12 @@ void dptr_idlecnum(connection_struct *conn)
 
 void dptr_closepath(char *path,uint16 spid)
 {
-	dptr_struct *dptr, *next;
+	struct dptr_struct *dptr, *next;
 	for(dptr = dirptrs; dptr; dptr = next) {
 		next = dptr->next;
 		if (spid == dptr->spid && strequal(dptr->path,path))
 			dptr_close_internal(dptr);
 	}
-}
-
-/****************************************************************************
- Start a directory listing.
-****************************************************************************/
-
-static BOOL start_dir(connection_struct *conn, pstring directory)
-{
-	const char *dir2;
-
-	DEBUG(5,("start_dir dir=%s\n",directory));
-
-	if (!check_name(directory,conn))
-		return(False);
-
-	/* use a const pointer from here on */
-	dir2 = directory;
-  
-	if (! *dir2)
-		dir2 = ".";
-
-	conn->dirptr = OpenDir(conn, directory, True);
-	if (conn->dirptr) {    
-		dptrs_open++;
-		string_set(&conn->dirpath,directory);
-		return(True);
-	}
-  
-	return(False);
 }
 
 /****************************************************************************
@@ -360,7 +324,7 @@ static BOOL start_dir(connection_struct *conn, pstring directory)
 
 static void dptr_close_oldest(BOOL old)
 {
-	dptr_struct *dptr;
+	struct dptr_struct *dptr;
 
 	/*
 	 * Go to the end of the list.
@@ -393,23 +357,39 @@ static void dptr_close_oldest(BOOL old)
  from the bitmap range 0 - 255 as old SMBsearch directory handles are only
  one byte long. If old_handle is false we allocate from the range
  256 - MAX_DIRECTORY_HANDLES. We bias the number we return by 1 to ensure
- a directory handle is never zero. All the above is folklore taught to
- me at Andrew's knee.... :-) :-). JRA.
+ a directory handle is never zero.
 ****************************************************************************/
 
 int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid)
 {
-	dptr_struct *dptr;
+	struct dptr_struct *dptr = NULL;
+	struct smb_Dir *dir_hnd;
+        const char *dir2;
 
-	if (!start_dir(conn,path))
+	DEBUG(5,("dptr_create dir=%s\n", path));
+
+	if (!check_name(path,conn))
 		return(-2); /* Code to say use a unix error return code. */
+
+	/* use a const pointer from here on */
+	dir2 = path;
+	if (!*dir2)
+		dir2 = ".";
+
+	dir_hnd = OpenDir(conn, dir2, True);
+	if (!dir_hnd) {
+		return (-2);
+	}
+
+	string_set(&conn->dirpath,dir2);
 
 	if (dptrs_open >= MAX_OPEN_DIRECTORIES)
 		dptr_idleoldest();
 
-	dptr = SMB_MALLOC_P(dptr_struct);
+	dptr = SMB_MALLOC_P(struct dptr_struct);
 	if(!dptr) {
 		DEBUG(0,("malloc fail in dptr_create.\n"));
+		CloseDir(dir_hnd);
 		return -1;
 	}
 
@@ -439,6 +419,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 			if(dptr->dnum == -1 || dptr->dnum > 254) {
 				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
+				CloseDir(dir_hnd);
 				return -1;
 			}
 		}
@@ -468,6 +449,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 			if(dptr->dnum == -1 || dptr->dnum < 255) {
 				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
+				CloseDir(dir_hnd);
 				return -1;
 			}
 		}
@@ -477,20 +459,53 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 
 	dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
 
-	dptr->ptr = conn->dirptr;
-	string_set(&dptr->path,path);
+	string_set(&dptr->path,dir2);
 	dptr->conn = conn;
+	dptr->dir_hnd = dir_hnd;
 	dptr->spid = spid;
 	dptr->expect_close = expect_close;
 	dptr->wcard = NULL; /* Only used in lanman2 searches */
 	dptr->attr = 0; /* Only used in lanman2 searches */
+	dptr->has_wild = True; /* Only used in lanman2 searches */
 
 	DLIST_ADD(dirptrs, dptr);
 
 	DEBUG(3,("creating new dirptr %d for path %s, expect_close = %d\n",
 		dptr->dnum,path,expect_close));  
 
+	conn->dirptr = dptr;
+
 	return(dptr->dnum);
+}
+
+
+/****************************************************************************
+ Wrapper functions to access the lower level directory handles.
+****************************************************************************/
+
+int dptr_CloseDir(struct dptr_struct *dptr)
+{
+	return CloseDir(dptr->dir_hnd);
+}
+
+const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset)
+{
+	return ReadDirName(dptr->dir_hnd, poffset);
+}
+
+void dptr_SeekDir(struct dptr_struct *dptr, long offset)
+{
+	SeekDir(dptr->dir_hnd, offset);
+}
+
+long dptr_TellDir(struct dptr_struct *dptr)
+{
+	return TellDir(dptr->dir_hnd);
+}
+
+BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, BOOL case_sensitive)
+{
+	return SearchDir(dptr->dir_hnd, name, poffset, case_sensitive);
 }
 
 /****************************************************************************
@@ -500,15 +515,15 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 BOOL dptr_fill(char *buf1,unsigned int key)
 {
 	unsigned char *buf = (unsigned char *)buf1;
-	void *p = dptr_ptr(key);
+	struct dptr_struct *dptr = dptr_get(key, False);
 	uint32 offset;
-	if (!p) {
+	if (!dptr) {
 		DEBUG(1,("filling null dirptr %d\n",key));
 		return(False);
 	}
-	offset = TellDir(p);
+	offset = TellDir(dptr->dir_hnd);
 	DEBUG(6,("fill on key %u dirptr 0x%lx now at %d\n",key,
-		(long)p,(int)offset));
+		(long)dptr->dir_hnd,(int)offset));
 	buf[0] = key;
 	SIVAL(buf,1,offset | DPTR_MASK);
 	return(True);
@@ -518,38 +533,38 @@ BOOL dptr_fill(char *buf1,unsigned int key)
  Fetch the dir ptr and seek it given the 5 byte server field.
 ****************************************************************************/
 
-void *dptr_fetch(char *buf,int *num)
+struct dptr_struct *dptr_fetch(char *buf,int *num)
 {
 	unsigned int key = *(unsigned char *)buf;
-	void *p = dptr_ptr(key);
+	struct dptr_struct *dptr = dptr_get(key, False);
 	uint32 offset;
 
-	if (!p) {
+	if (!dptr) {
 		DEBUG(3,("fetched null dirptr %d\n",key));
 		return(NULL);
 	}
 	*num = key;
 	offset = IVAL(buf,1)&~DPTR_MASK;
-	SeekDir(p,offset);
+	SeekDir(dptr->dir_hnd,(long)offset);
 	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
 		key,dptr_path(key),offset));
-	return(p);
+	return(dptr);
 }
 
 /****************************************************************************
  Fetch the dir ptr.
 ****************************************************************************/
 
-void *dptr_fetch_lanman2(int dptr_num)
+struct dptr_struct *dptr_fetch_lanman2(int dptr_num)
 {
-	void *p = dptr_ptr(dptr_num);
+	struct dptr_struct *dptr  = dptr_get(dptr_num, False);
 
-	if (!p) {
+	if (!dptr) {
 		DEBUG(3,("fetched null dirptr %d\n",dptr_num));
 		return(NULL);
 	}
 	DEBUG(3,("fetching dirptr %d for path %s\n",dptr_num,dptr_path(dptr_num)));
-	return(p);
+	return(dptr);
 }
 
 /****************************************************************************
@@ -612,11 +627,11 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 		return(False);
 
 	while (!found) {
-		long curoff = TellDir(conn->dirptr);
-		dname = ReadDirName(conn->dirptr, &curoff);
+		long curoff = TellDir(conn->dirptr->dir_hnd);
+		dname = ReadDirName(conn->dirptr->dir_hnd, &curoff);
 
 		DEBUG(6,("readdir on dirptr 0x%lx now at offset %ld\n",
-			(long)conn->dirptr,TellDir(conn->dirptr)));
+			(long)conn->dirptr,TellDir(conn->dirptr->dir_hnd)));
       
 		if (dname == NULL) 
 			return(False);
@@ -799,34 +814,13 @@ static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 	return True;
 }
 
-#define NAME_CACHE_SIZE 100
-
-struct name_cache_entry {
-	char *name;
-	long offset;
-};
-
-typedef struct {
-	connection_struct *conn;
-	DIR *dir;
-	long offset;
-	char *dir_path;
-	struct name_cache_entry *name_cache;
-	unsigned int name_cache_index;
-	BOOL hide_unreadable;
-	BOOL hide_unwriteable;
-	BOOL hide_special;
-	BOOL use_veto;
-	BOOL finished;
-} Dir;
-
 /*******************************************************************
  Open a directory.
 ********************************************************************/
 
-void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
+struct smb_Dir *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 {
-	Dir *dirp = SMB_MALLOC_P(Dir);
+	struct smb_Dir *dirp = SMB_MALLOC_P(struct smb_Dir);
 	if (!dirp) {
 		return NULL;
 	}
@@ -854,7 +848,8 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 	dirp->hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
 	dirp->hide_special = lp_hide_special_files(SNUM(conn));
 
-	return((void *)dirp);
+	dptrs_open++;
+	return dirp;
 
   fail:
 
@@ -874,10 +869,9 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
  Close a directory.
 ********************************************************************/
 
-int CloseDir(void *p)
+int CloseDir(struct smb_Dir *dirp)
 {
 	int i, ret = 0;
-	Dir *dirp = (Dir *)p;
 
 	if (dirp->dir) {
 		ret = SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
@@ -890,62 +884,20 @@ int CloseDir(void *p)
 	}
 	SAFE_FREE(dirp->name_cache);
 	SAFE_FREE(dirp);
+	dptrs_open--;
 	return ret;
-}
-
-/*******************************************************************
- Set a directory into an inactive state.
-********************************************************************/
-
-static void SleepDir(Dir *dirp)
-{
-	if (dirp->dir) {
-		SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
-		dirp->dir = 0;
-	}
-	dirp->offset = 0;
-}
-
-/*******************************************************************
- Wake a directory into a known state.
-********************************************************************/
-
-static int WakeDir(Dir *dirp, long offset)
-{
-	if (!dirp->dir) {
-		dirp->dir = SMB_VFS_OPENDIR(dirp->conn, dirp->dir_path);
-		if (!dirp->dir) {
-			DEBUG(0,("WakeDir: Can't open %s. %s\n", dirp->dir_path, strerror(errno) ));
-			dirp->finished = True;
-			return -1;
-		}
-	}
-	if (offset != dirp->offset) {
-		SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
-		dirp->offset = SMB_VFS_TELLDIR(dirp->conn, dirp->dir);
-		if (dirp->offset != offset) {
-			DEBUG(0,("WakeDir: in path %s. offset changed %ld -> %ld\n",
-				dirp->dir_path, offset, dirp->offset ));
-			return -1;
-		}
-	}
-	return 0;
 }
 
 /*******************************************************************
  Read from a directory. Also return current offset.
 ********************************************************************/
 
-const char *ReadDirName(void *p, long *poffset)
+const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 {
 	const char *n;
-	Dir *dirp = (Dir *)p;
 	connection_struct *conn = dirp->conn;
 
-	if (WakeDir(dirp, *poffset) == -1) {
-		return NULL;
-	}
-
+	SeekDir(dirp, *poffset);
 	while ((n = vfs_readdirname(conn, dirp->dir))) {
 		struct name_cache_entry *e;
 
@@ -994,9 +946,6 @@ const char *ReadDirName(void *p, long *poffset)
 		*poffset = e->offset= dirp->offset;
 		return e->name;
 	}
-
-	dirp->finished = True;
-	SleepDir(dirp);
 	return NULL;
 }
 
@@ -1004,19 +953,20 @@ const char *ReadDirName(void *p, long *poffset)
  Seek a dir.
 ********************************************************************/
 
-BOOL SeekDir(void *p,long offset)
+void SeekDir(struct smb_Dir *dirp, long offset)
 {
-	Dir *dirp = (Dir *)p;
-	return (WakeDir(dirp, offset) != -1);
+	if (offset != dirp->offset) {
+		SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
+		dirp->offset = offset;
+	}
 }
 
 /*******************************************************************
  Tell a dir position.
 ********************************************************************/
 
-long TellDir(void *p)
+long TellDir(struct smb_Dir *dirp)
 {
-	Dir *dirp = (Dir *)p;
 	return(dirp->offset);
 }
 
@@ -1024,24 +974,18 @@ long TellDir(void *p)
  Find an entry by name. Leave us at the offset after it.
 ********************************************************************/
 
-BOOL SearchDir(void *p, const char *name, long *poffset, BOOL case_sensitive)
+BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset, BOOL case_sensitive)
 {
 	int i;
-	Dir *dirp = (Dir *)p;
 	const char *entry;
 	connection_struct *conn = dirp->conn;
-
-	/* Re-create dir but don't seek. */
-	if (WakeDir(dirp, dirp->offset) == -1) {
-		return False;
-	}
 
 	/* Search back in the name cache. */
 	for (i = dirp->name_cache_index; i >= 0; i--) {
 		struct name_cache_entry *e = &dirp->name_cache[i];
 		if (e->name && (case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
 			*poffset = e->offset;
-			WakeDir(dirp, e->offset);
+			SeekDir(dirp, e->offset);
 			return True;
 		}
 	}
@@ -1049,7 +993,7 @@ BOOL SearchDir(void *p, const char *name, long *poffset, BOOL case_sensitive)
 		struct name_cache_entry *e = &dirp->name_cache[i];
 		if (e->name && (case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
 			*poffset = e->offset;
-			WakeDir(dirp, e->offset);
+			SeekDir(dirp, e->offset);
 			return True;
 		}
 	}
@@ -1062,7 +1006,5 @@ BOOL SearchDir(void *p, const char *name, long *poffset, BOOL case_sensitive)
 			return True;
 		}
 	}
-
-	SleepDir(dirp);
 	return False;
 }

@@ -466,6 +466,8 @@ typedef struct
 #include "smb_acls.h"
 #include "vfs.h"
 
+struct dptr_struct;
+
 typedef struct connection_struct
 {
 	struct connection_struct *next, *prev;
@@ -475,7 +477,7 @@ typedef struct connection_struct
 	BOOL force_user;
 	BOOL force_group;
 	struct vuid_cache vuid_cache;
-	void *dirptr;
+	struct dptr_struct *dirptr;
 	BOOL printer;
 	BOOL ipc;
 	BOOL read_only; /* Attributes for the current user of the share. */
