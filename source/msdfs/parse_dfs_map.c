@@ -86,10 +86,10 @@ BOOL parse_referral(char* s, struct referral* ref)
   while( ((tok[count]=strtok(NULL,":")) != NULL) && count<MAXTOK_IN_REFERRAL)
     count++;
 
-  DEBUG(10,("parse_referral: Tokens\n"));
+  DEBUG(10,("parse_referral: Tokens"));
   for(i=0;i<count;i++)
-    DEBUG(10,("\t%s\n",tok[i]));
-
+    DEBUG(10,(" %s",tok[i]));
+  DEBUG(10,(".\n"));
   if(count > 0)
     pstrcpy(ref->alternate_path,tok[0]);
   else
@@ -104,10 +104,10 @@ BOOL parse_referral(char* s, struct referral* ref)
     ref->proximity = 0;
 
   if(count > 2)
-    ref->ttl = atoi(tok[1]);
+    ref->ttl = atoi(tok[2]);
   else
     ref->ttl = REFERRAL_TTL; 
-  
+
   return True;
 }
 
