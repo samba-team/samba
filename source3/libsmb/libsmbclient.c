@@ -23,7 +23,7 @@
 
 #include "includes.h"
 
-#include "libsmbclient.h"
+#include "../include/libsmbclient.h"
 
 /*
  * Functions exported by libsmb_cache.c that we need here
