@@ -2236,6 +2236,25 @@ static int cmd_rename(void)
 }
 
 /****************************************************************************
+ Print the volume name.
+****************************************************************************/
+
+static int cmd_volume(void)
+{
+	fstring volname;
+	uint32 serial_num;
+	time_t create_date;
+  
+	if (!cli_get_fs_volume_info(cli, volname, &serial_num, &create_date)) {
+		d_printf("Errr %s getting volume info\n",cli_errstr(cli));
+		return 1;
+	}
+	
+	d_printf("Volume: |%s| serial number 0x%x\n", volname, (unsigned int)serial_num);
+	return 0;
+}
+
+/****************************************************************************
  Hard link files using the NT call.
 ****************************************************************************/
 
@@ -2748,6 +2767,7 @@ static struct
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
+  {"volume",cmd_volume,"print the volume name",{COMPL_NONE,COMPL_NONE}},
   {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
   {"listconnect",cmd_list_connect,"list open connections",{COMPL_NONE,COMPL_NONE}},
