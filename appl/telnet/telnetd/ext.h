@@ -132,7 +132,7 @@ void recv_ayt (void);
 void doeof (void);
 void flowstat (void);
 void clientstat (int code, int parm1, int parm2);
-void ttloop (void);
+int ttloop (void);
 int stilloob (int s);
 void ptyflush (void);
 char *nextitem (char *current);
