@@ -140,7 +140,7 @@ static char *make_nisname_from_name(char *user_name)
  do not call this function directly.  use passdb.c instead.
 
  ****************************************************************/
-void *startnisppwent(BOOL update)
+static void *startnisppwent(BOOL update)
 {
 	return NULL;
 }
@@ -148,7 +148,7 @@ void *startnisppwent(BOOL update)
 /***************************************************************
  End enumeration of the nisplus passwd list.
 ****************************************************************/
-void endnisppwent(void *vp)
+static void endnisppwent(void *vp)
 {
 }
 
@@ -162,7 +162,7 @@ void endnisppwent(void *vp)
  do not call this function directly.  use passdb.c instead.
 
  *************************************************************************/
-struct sam_passwd *getnisp21pwent(void *vp)
+static struct sam_passwd *getnisp21pwent(void *vp)
 {
 	return NULL;
 }
@@ -174,7 +174,7 @@ struct sam_passwd *getnisp21pwent(void *vp)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-unsigned long getnisppwpos(void *vp)
+static unsigned long getnisppwpos(void *vp)
 {
 	return 0;
 }
@@ -186,7 +186,7 @@ unsigned long getnisppwpos(void *vp)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-BOOL setnisppwpos(void *vp, unsigned long tok)
+static BOOL setnisppwpos(void *vp, unsigned long tok)
 {
 	return False;
 }
@@ -197,7 +197,7 @@ BOOL setnisppwpos(void *vp, unsigned long tok)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
+static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 {
 	/* Static buffers we will return. */
 	static pstring  user_name;
@@ -347,7 +347,7 @@ BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
  do not call this function directly.  use passdb.c instead.
 
 ************************************************************************/
-BOOL mod_nisp21pwd_entry(struct sam_passwd* pwd, BOOL override)
+static BOOL mod_nisp21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
 	return False;
 }
@@ -420,7 +420,7 @@ static BOOL make_sam_from_nisp(struct sam_passwd *pw_buf, nis_result *result)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-struct sam_passwd *getnisp21pwnam(char *name)
+static struct sam_passwd *getnisp21pwnam(char *name)
 {
 	/* Static buffers we will return. */
 	static struct sam_passwd pw_buf;
@@ -465,7 +465,7 @@ struct sam_passwd *getnisp21pwnam(char *name)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-struct sam_passwd *getnisp21pwuid(int smb_userid)
+static struct sam_passwd *getnisp21pwuid(int smb_userid)
 {
 	/* Static buffers we will return. */
 	static struct sam_passwd pw_buf;
@@ -507,6 +507,57 @@ struct sam_passwd *getnisp21pwuid(int smb_userid)
 	return ret ? &pw_buf : NULL;
 }
 
+/*
+ * Derived functions for NIS+.
+ */
+
+static struct smb_passwd *getnispwnam(char *name)
+{
+  return pdb_sam_to_smb(iterate_getsam21pwnam(name));
+}
+
+static struct smb_passwd *getnispwuid(uid_t smb_userid)
+{
+    return pdb_sam_to_smb(iterate_getsam21pwuid(smb_userid));
+}
+
+static struct smb_passwd *getnispwent(void *vp)
+{
+  return pdb_sam_to_smb(getnisp21pwent(vp));
+}
+
+static BOOL add_nispwd_entry(struct smb_passwd *newpwd) 
+{   
+  return add_nisp21pwd_entry(pdb_smb_to_sam(newpwd));
+}
+
+static BOOL mod_nispwd_entry(struct smb_passwd* pwd, BOOL override)
+{    
+  return mod_nisp21pwd_entry(pdb_smb_to_sam(pwd), override);
+}
+
+static struct passdb_ops nispasswd_ops = {
+  startnisppwent,
+  endnisppwent,
+  getnisppwpos,
+  setnisppwpos,
+  getnispwnam,
+  getsmbpwuid,
+  getnispwent,
+  add_nispwd_entry,
+  mod_nispwd_entry,
+  getnisp21pwent,
+  iterate_getsam21pwnam,          /* Found in passdb.c */
+  iterate_getsam21pwuid,          /* Found in passdb.c */
+  add_nisp21pwd_entry,
+  mod_nisp21pwd_entry 
+};
+
+struct passdb_ops *nisplus_initialize_password_db(void)
+{
+  return &nispasswd_ops;
+}
+ 
 #else
  void nisplus_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* USE_NISPLUS_DB */

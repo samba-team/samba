@@ -297,8 +297,14 @@ int main(int argc, char **argv)
   
   charset_initialise();
 
+  if(!initialize_password_db()) {
+    fprintf(stderr, "%s: Can't setup password database vectors.\n", prog_name);
+    exit(1);
+  }
+
   if (!lp_load(servicesf,True,False,False)) {
     fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n", prog_name, servicesf);
+    exit(1);
   }
 
   if(!get_myname(myhostname,NULL)) {

@@ -225,16 +225,7 @@ void initialize_multibyte_vectors( int client_codepage);
 
 /*The following definitions come from  ldap.c  */
 
-BOOL add_ldappwd_entry(struct smb_passwd *newpwd);
-BOOL mod_ldappwd_entry(struct smb_passwd *pwd, BOOL override);
-BOOL add_ldap21pwd_entry(struct sam_passwd *newpwd);
-BOOL mod_ldap21pwd_entry(struct sam_passwd *pwd, BOOL override);
-void *startldappwent(BOOL update);
-struct smb_passwd *getldappwent(void *vp);
-struct sam_passwd *getldap21pwent(void *vp);
-void endldappwent(void *vp);
-unsigned long getldappwpos(void *vp);
-BOOL setldappwpos(void *vp, unsigned long tok);
+struct passdb_ops *ldap_initialize_password_db(void);
 
 /*The following definitions come from  lib/rpc/client/cli_login.c  */
 
@@ -1213,15 +1204,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip);
 
 /*The following definitions come from  nisppass.c  */
 
-void *startnisppwent(BOOL update);
-void endnisppwent(void *vp);
-struct sam_passwd *getnisp21pwent(void *vp);
-unsigned long getnisppwpos(void *vp);
-BOOL setnisppwpos(void *vp, unsigned long tok);
-BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd);
-BOOL mod_nisp21pwd_entry(struct sam_passwd* pwd, BOOL override);
-struct sam_passwd *getnisp21pwnam(char *name);
-struct sam_passwd *getnisp21pwuid(int smb_userid);
+struct passdb_ops *nisplus_initialize_password_db(void);
 
 /*The following definitions come from  nmbd.c  */
 
@@ -1572,6 +1555,9 @@ BOOL pm_process( char *FileName,
 
 /*The following definitions come from  passdb.c  */
 
+struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid);
+struct smb_passwd *iterate_getsmbpwnam(char *name);
+BOOL initialize_password_db(void);
 void *startsmbpwent(BOOL update);
 void endsmbpwent(void *vp);
 struct smb_passwd *getsmbpwent(void *vp);
@@ -1581,6 +1567,8 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
 struct smb_passwd *getsmbpwnam(char *name);
 struct smb_passwd *getsmbpwuid(uid_t smb_userid);
+struct sam_passwd *iterate_getsam21pwnam(char *name);
+struct sam_passwd *iterate_getsam21pwuid(uint32 uid);
 struct sam_disp_info *getsamdispent(void *vp);
 struct sam_passwd *getsam21pwent(void *vp);
 BOOL add_sam21pwd_entry(struct sam_passwd *newpwd);
@@ -1830,16 +1818,10 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  smbpass.c  */
 
-void *startsmbfilepwent(BOOL update);
-void endsmbfilepwent(void *vp);
-struct sam_passwd *getsmbfile21pwent(void *vp);
 struct smb_passwd *getsmbfilepwent(void *vp);
-unsigned long getsmbfilepwpos(void *vp);
-BOOL setsmbfilepwpos(void *vp, unsigned long tok);
-BOOL add_smbfile21pwd_entry(struct sam_passwd *newpwd);
-BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override);
 BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override);
+struct passdb_ops *file_initialize_password_db(void);
 
 /*The following definitions come from  smbpassfile.c  */
 
