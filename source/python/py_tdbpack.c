@@ -28,7 +28,7 @@
 /* This module is supposed to be standalone, however for portability
    it would be good to use the FUNCTION_MACRO preprocessor define. */
 
-#include "config.h"
+#include "include/config.h"
 
 #ifdef HAVE_FUNCTION_MACRO
 #define FUNCTION_MACRO  (__FUNCTION__)
