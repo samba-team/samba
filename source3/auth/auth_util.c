@@ -196,11 +196,16 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 	fstrcpy(internal_username, smb_name);
 	map_username(internal_username); 
 	
-	if (lp_allow_trusted_domains()) {
+	if (lp_allow_trusted_domains() && *client_domain) {
+
 		/* the client could have given us a workstation name
 		   or other crap for the workgroup - we really need a
 		   way of telling if this domain name is one of our
 		   trusted domain names 
+
+		   Also don't allow "" as a domain, fixes a Win9X bug 
+		   where it doens't supply a domain for logon script
+		   'net use' commands.
 
 		   The way I do it here is by checking if the fully
 		   qualified username exists. This is rather reliant
