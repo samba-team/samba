@@ -60,8 +60,6 @@ _nss_ntdom_getpwnam_r(const char *name,
     struct winbindd_response response;
     int sock, len;
     
-    fprintf(stderr, "query received for user %s\n", name);
-
     /* Connect to agent socket */
 
     if ((sock = connect_sock()) < 0) {
@@ -85,8 +83,6 @@ _nss_ntdom_getpwnam_r(const char *name,
 
     if (response.result == WINBINDD_OK) {
         struct winbindd_pw *pw = &response.data.pw;
-
-        fprintf(stderr, "name = %s\n", pw->pw_name);
 
         result->pw_name = strdup(pw->pw_name);
         result->pw_passwd = strdup(pw->pw_name);
@@ -113,8 +109,6 @@ _nss_ntdom_getpwuid_r(uid_t uid,
     struct winbindd_response response;
     int sock, len;
 
-    fprintf(stderr, "query received for uid %d\n", uid);
-
     /* Connect to agent socket */
 
     if ((sock = connect_sock()) < 0) {
@@ -136,6 +130,20 @@ _nss_ntdom_getpwuid_r(uid_t uid,
 
     close(sock);
 
+    if (response.result == WINBINDD_OK) {
+        struct winbindd_pw *pw = &response.data.pw;
+
+        result->pw_name = strdup(pw->pw_name);
+        result->pw_passwd = strdup(pw->pw_name);
+        result->pw_uid = pw->pw_uid;
+        result->pw_gid = pw->pw_gid;
+        result->pw_gecos = strdup(pw->pw_gecos);
+        result->pw_dir = strdup(pw->pw_dir);
+        result->pw_shell = strdup(pw->pw_shell);
+
+        return NSS_STATUS_SUCCESS;
+    }
+
     return NSS_STATUS_NOTFOUND;
 }
 
@@ -151,8 +159,6 @@ _nss_ntdom_getgrnam_r(const char *name,
     struct winbindd_request request;
     struct winbindd_response response;
     int sock, len;
-
-    fprintf(stderr, "query received for group %s\n", name);
 
     /* Connect to agent socket */
 
@@ -175,6 +181,17 @@ _nss_ntdom_getgrnam_r(const char *name,
 
     close(sock);
 
+    if (response.result == WINBINDD_OK) {
+        struct winbindd_gr *gr = &response.data.gr;
+
+        result->gr_name = strdup(gr->gr_name);
+        result->gr_passwd = strdup(gr->gr_passwd);
+        result->gr_gid = gr->gr_gid;
+        result->gr_mem = NULL; /* ??? */
+
+        return NSS_STATUS_SUCCESS;
+    }
+
     return NSS_STATUS_NOTFOUND;
 }
 
@@ -186,8 +203,6 @@ _nss_ntdom_getgrgid_r(gid_t gid,
     struct winbindd_request request;
     struct winbindd_response response;
     int sock, len;
-
-    fprintf(stderr, "query received for gid %d\n", gid);    
 
     /* Connect to agent socket */
 
@@ -209,6 +224,17 @@ _nss_ntdom_getgrgid_r(gid_t gid,
     }
 
     close(sock);
+
+    if (response.result == WINBINDD_OK) {
+        struct winbindd_gr *gr = &response.data.gr;
+
+        result->gr_name = strdup(gr->gr_name);
+        result->gr_passwd = strdup(gr->gr_passwd);
+        result->gr_gid = gr->gr_gid;
+        result->gr_mem = NULL; /* ??? */
+
+        return NSS_STATUS_SUCCESS;
+    }
 
     return NSS_STATUS_NOTFOUND;
 }
