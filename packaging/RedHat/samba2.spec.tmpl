@@ -227,9 +227,7 @@ fi
 
 %postun
 # Only delete remnants of samba if this is the final deletion.
-if [ $1 != 0 ] ; then
-    exit 0
-
+if [ $1 = 0 ] ; then
     if [ -x /etc/pam.d/samba ]; then
       rm -f /etc/pam.d/samba
     fi
