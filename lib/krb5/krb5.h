@@ -522,11 +522,14 @@ krb5_get_in_tkt_with_password (krb5_context context,
 			       krb5_kdc_rep **ret_as_reply);
 
 krb5_error_code
-krb5_mk_error(krb5_principal princ, 
+krb5_mk_error(krb5_context context,
 	      krb5_error_code error_code,
-	      char *e_text,
-	      krb5_data *e_data,
-	      krb5_data *err);
+	      const char *e_text,
+	      const krb5_data *e_data,
+	      const krb5_principal client,
+	      const krb5_principal server,
+	      time_t ctime,
+	      krb5_data *reply);
 
 krb5_error_code
 krb5_mk_req(krb5_context context,
@@ -906,10 +909,10 @@ void krb5_init_ets(krb5_context context);
 /* XXX these are glue functions and really don't belong here */
 
 krb5_error_code krb5_principal2principalname (PrincipalName *p, 
-					      krb5_principal from);
+					      const krb5_principal from);
 krb5_error_code principalname2krb5_principal (krb5_principal *principal,
-					      PrincipalName from,
-					      char *realm);
+					      const PrincipalName from,
+					      const Realm realm);
 
 #include "store.h"
 
