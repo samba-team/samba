@@ -638,7 +638,7 @@ typedef struct
   int         snum;
   } dir_cache_entry;
 
-static ubi_dlList dir_cache[1] = { { NULL, NULL, 0 } };
+static ubi_dlNewList( dir_cache );
 
 void DirCacheAdd( char *path, char *name, char *dname, int snum )
   /* ------------------------------------------------------------------------ **
