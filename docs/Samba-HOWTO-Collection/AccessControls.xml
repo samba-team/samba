@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 
 <chapter id="AccessControls">
 <chapterinfo>
@@ -352,7 +352,7 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	An overview of the permissions field can be found in <link linkend="access1">Overview of UNIX permissions field</link>.
 	</para>
 
-	<image id="access1" scale="40"><imagedescription>Overview of UNIX permissions field.</imagedescription><imagefile>access1</imagefile></image>
+	<image id="access1"><imagedescription>Overview of UNIX permissions field.</imagedescription><imagefile scale="40">access1</imagefile></image>
 
 	<para>
 	Any bit flag may be unset. An unset bit flag is the equivalent of <quote>cannot</quote> and is represented as a <quote>-</quote> character.
@@ -942,7 +942,7 @@ Before using any of the following options, please refer to the man page for &smb
 		</para>
 
 		<para>
-		<command><quote>SERVER\user (Long name)</quote></command>
+			<constant>SERVER\user (Long name)</constant>
 		</para>
 
 		<para>
@@ -1097,10 +1097,10 @@ Before using any of the following options, please refer to the man page for &smb
 		These are:
 
 		<itemizedlist>
-			<listitem><smbconfoption name="security mask"/></listitem>
-			<listitem><smbconfoption name="force security mode"/></listitem>
-			<listitem><smbconfoption name="directory security mask"/></listitem>
-			<listitem><smbconfoption name="force directory security mode"/></listitem>
+			<listitem><para><smbconfoption name="security mask"/></para></listitem>
+			<listitem><para><smbconfoption name="force security mode"/></para></listitem>
+			<listitem><para><smbconfoption name="directory security mask"/></para></listitem>
+			<listitem><para><smbconfoption name="force directory security mode"/></para></listitem>
 		</itemizedlist>
 
 		</para>
@@ -1257,13 +1257,13 @@ are examples taken from the mailing list in recent times.
 </screen>
 			</para>
 
-			<note><para>
+			<note>
 				<para>This is the same as doing:</para>
 <screen>
 &prompt;<userinput>chown jack /foodbar</userinput>
 &prompt;<userinput>chgrp engr /foodbar</userinput>
 </screen>
-			</para></note>
+			</note>
 		</step>
 		<step>
 			<para>Now type: 
