@@ -1902,7 +1902,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
 
   memset((char *)&p,'\0',sizeof(p));
 
-  if(ismyip(dest_ip))
+  if(ismyip(dest_ip) && dest_port == 138)  /* FIXME, change from constant */
     loopback_this_packet = True;
 
   generate_name_trn_id();
