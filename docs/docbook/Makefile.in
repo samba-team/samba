@@ -83,9 +83,9 @@ $(TXTDIR)/Samba-HOWTO-Collection.txt: $(PROJDOC)/samba-doc.sgml
 	$(DOCBOOK2TXT) -o . $<
 	mv ./samba-doc.txt $@
 
-$(TXTDIR)/Samba-Developers-Guide.txt: $(PROJDOC)/samba-doc.sgml
+$(TXTDIR)/Samba-Developers-Guide.txt: $(DEVDOC)/dev-doc.sgml
 	$(DOCBOOK2TXT) -o . $<
-	mv ./samba-doc.txt $@
+	mv ./dev-doc.txt $@
 
 # PostScript
 
@@ -93,9 +93,9 @@ $(PSDIR)/Samba-HOWTO-Collection.ps: $(PROJDOC)/samba-doc.sgml
 	$(DOCBOOK2PS) -o . $<
 	mv ./samba-doc.ps $@
 
-$(PSDIR)/Samba-Developers-Guide.ps: $(PROJDOC)/samba-doc.sgml
+$(PSDIR)/Samba-Developers-Guide.ps: $(DEVDOC)/dev-doc.sgml
 	$(DOCBOOK2PS) -o . $<
-	mv ./samba-doc.ps $@
+	mv ./dev-doc.ps $@
 
 # Adobe PDF files
 
