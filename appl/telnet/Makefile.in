@@ -21,7 +21,7 @@ all:
 	for i in $(SUBDIRS); \
 	do (cd $$i && $(MAKE) $(MFLAGS) all); done
 
-install: all
+install:
 	for i in $(SUBDIRS); \
 	do (cd $$i && $(MAKE) $(MFLAGS) install); done
 
