@@ -917,7 +917,6 @@ static uint32 cmd_set(CLIENT_INFO *info, int argc, char *argv[])
 	BOOL interactive = True;
 	char *cmd_str = NULL;
 	int opt;
-	extern XFILE *dbf;
 	extern char *optarg;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;

@@ -802,7 +802,6 @@ You can string acls together with spaces, commas or newlines\n\
 	pstring filename;
 	extern char *optarg;
 	extern int optind;
-	extern XFILE *dbf;
 	int opt;
 	char *p;
 	static pstring servicesf = CONFIGFILE;

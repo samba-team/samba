@@ -36,7 +36,6 @@
 #include "smb.h"
 
 /* these live in util.c */
-extern XFILE *dbf;
 extern int DEBUGLEVEL;
 
 /***********************************************

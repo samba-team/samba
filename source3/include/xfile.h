@@ -19,6 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _XFILE_H_
+#define _XFILE_H_
 /*
   see xfile.c for explanations
 */
@@ -42,3 +44,5 @@ extern XFILE *x_stdin, *x_stdout, *x_stderr;
 #define X_IONBF 2
 
 #define x_getc(f) x_fgetc(f)
+
+#endif /* _XFILE_H_ */

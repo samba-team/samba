@@ -999,7 +999,6 @@ static void printers_page(void)
 {
 	extern char *optarg;
 	extern int optind;
-	extern XFILE *dbf;
 	int opt;
 	char *page;
 

@@ -47,7 +47,6 @@ void smbw_init(void)
 	extern BOOL in_client;
 	static int initialised;
 	static pstring servicesf = CONFIGFILE;
-	extern XFILE *dbf;
 	char *p;
 	int eno;
 	pstring line;

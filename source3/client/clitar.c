@@ -71,7 +71,6 @@ stack dir_stack = {NULL, 0}; /* Want an empty stack */
 #define SEPARATORS " \t\n\r"
 extern int DEBUGLEVEL;
 extern struct cli_state *cli;
-extern XFILE *dbf;
 
 /* These defines are for the do_setrattr routine, to indicate
  * setting and reseting of file attributes in the function call */

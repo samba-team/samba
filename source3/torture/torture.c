@@ -3077,7 +3077,6 @@ static void usage(void)
 	int gotpass = 0;
 	extern char *optarg;
 	extern int optind;
-	extern XFILE *dbf;
 	static pstring servicesf = CONFIGFILE;
 	BOOL correct = True;
 
