@@ -193,8 +193,12 @@ krb5_get_in_tkt(krb5_context context,
     a.req_body.enc_authorization_data = NULL;
     a.req_body.additional_tickets = NULL;
 
-    /* moved the call of `key_proc' here so that the key is available
-       when/if creating pre-authentication */
+    /* 
+     * moved the call of `key_proc' here so that the key is available
+     * when/if creating pre-authentication.  This will failed when
+     * using different encryption/string-to-key algorithms for the
+     * initial PA-ENC-TS-ENC and the decryption of the ticket.
+     */
 
     salt.length = 0;
     salt.data = NULL;
