@@ -829,6 +829,7 @@ tgs_rep2(krb5_context context,
     hdb_entry *krbtgt;
     EncTicketPart *tgt;
     Key *ekey;
+    krb5_principal cp = NULL;
 
     ret = krb5_decode_ap_req(context, &pa_data->padata_value, &ap_req);
     if(ret){
@@ -891,7 +892,6 @@ tgs_rep2(krb5_context context,
     {
 	PrincipalName *s;
 	Realm r;
-	krb5_principal cp;
 	char *spn, *cpn;
 	hdb_entry *server, *client;
 
