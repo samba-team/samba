@@ -249,7 +249,7 @@ BOOL debug_parse_levels(char *params_str)
 			int q;
 
 			for (q = 0; q < DBGC_LAST; q++)
-				DEBUG(0, ("%s: %d/%d\n",
+				DEBUG(5, ("%s: %d/%d\n",
 					  classname_table[q],
 					  DEBUGLEVEL_CLASS[q],
 					  DEBUGLEVEL_CLASS_ISSET[q]));
