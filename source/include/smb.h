@@ -108,7 +108,7 @@ implemented */
 #define GET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
 #define SET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
 #define GET_DENY_MODE(x) (((x)>>SHARE_MODE_SHIFT) & SHARE_MODE_MASK)
-#define SET_DENY_MODE(x) ((x)<<SHARE_MODE_SHIFT)
+#define SET_DENY_MODE(x) (((x) & SHARE_MODE_MASK) <<SHARE_MODE_SHIFT)
 
 /* Sync on open file (not sure if used anymore... ?) */
 #define FILE_SYNC_OPENMODE (1<<14)

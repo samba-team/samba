@@ -496,7 +496,7 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 	 * from the record.
 	 */
 
-	DEBUG(10,("del_share_mode: num_share_modes = %d\n", data->u.num_share_mode_entries ));
+	DEBUG(10,("del_share_entry: num_share_modes = %d\n", data->u.num_share_mode_entries ));
 
 	for (i=0;i<data->u.num_share_mode_entries;) {
 		if (share_modes_identical(&shares[i], entry)) {
@@ -507,7 +507,7 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 				dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
 			del_count++;
 
-			DEBUG(10,("del_share_mode: deleting entry %d\n", i ));
+			DEBUG(10,("del_share_entry: deleting entry %d\n", i ));
 
 		} else {
 			i++;
