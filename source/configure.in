@@ -1606,6 +1606,17 @@ AC_ARG_WITH(dfs,
 
 
 #################################################
+# see if this box has the RedHat location for kerberos
+AC_MSG_CHECKING(for /usr/kerberos)
+if test -d /usr/kerberos; then
+    LDFLAGS="$LDFLAGS -L/usr/kerberos/lib"
+    CFLAGS="$CFLAGS -I/usr/kerberos/include"
+    AC_MSG_RESULT(yes)
+else
+    AC_MSG_RESULT(no)
+fi
+
+#################################################
 # check for location of Kerberos 5 install
 AC_MSG_CHECKING(for kerberos 5 install path)
 AC_ARG_WITH(krb5,
