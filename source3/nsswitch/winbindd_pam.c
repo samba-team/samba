@@ -384,6 +384,8 @@ done:
 	
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	push_utf8_fstring(state->response.data.auth.nt_status_string, nt_errstr(result));
+	
+	/* we might have given a more useful error above */
 	if (!*state->response.data.auth.error_string) 
 		push_utf8_fstring(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
