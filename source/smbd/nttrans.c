@@ -1625,6 +1625,11 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   *ppparams = params;
 
+  if ((mem_ctx = talloc_init()) == NULL) {
+    DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
+    return(ERROR(ERRDOS,ERRnomem));
+  }
+
   /*
    * Get the permissions to return.
    */
@@ -1634,8 +1639,10 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   else
     sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
 
-  if (sd_size == 0)
+  if (sd_size == 0) {
+    talloc_destroy(mem_ctx);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %d.\n",(int)sd_size));
 
@@ -1645,6 +1652,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
     send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL, ERRDOS, 122,
                     params, 4, *ppdata, 0);
+    talloc_destroy(mem_ctx);
     return -1;
   }
 
@@ -1654,6 +1662,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   data = Realloc(*ppdata, sd_size);
   if(data == NULL) {
+    talloc_destroy(mem_ctx);
     return(ERROR(ERRDOS,ERRnomem));
   }
 
@@ -1664,11 +1673,6 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   /*
    * Init the parse struct we will marshall into.
    */
-
-  if ((mem_ctx = talloc_init()) == NULL) {
-    DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
-    return(ERROR(ERRDOS,ERRnomem));
-  }
 
   prs_init(&pd, 0, mem_ctx, MARSHALL);
 
@@ -1721,14 +1725,14 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 	int error_class;
 	uint32 error_code;
 
-	if(!lp_nt_acl_support(SNUM(conn)))
-		goto done;
-
 	if(total_parameter_count < 8)
 		return(ERROR(ERRDOS,ERRbadfunc));
 
 	if((fsp = file_fsp(params,0)) == NULL)
 		return(ERROR(ERRDOS,ERRbadfid));
+
+	if(!lp_nt_acl_support(SNUM(conn)))
+		goto done;
 
 	security_info_sent = IVAL(params,4);
 
