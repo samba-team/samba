@@ -43,7 +43,7 @@ sub generate_static_library($)
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 	@{$lib->{LINK_FLAGS}} = ();
 
-	$lib->{OUTPUT} = $lib->{LIBRARY_NAME};
+	$lib->{OUTPUT} = "bin/$lib->{LIBRARY_NAME}";
 }
 
 sub generate_binary($)
@@ -95,7 +95,7 @@ sub create_output($)
 			push(@{$part->{CFLAGS}}, @{$elem->{CFLAGS}}) if defined(@{$elem->{CFLAGS}});
 			push(@{$part->{DEPEND_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
-			push(@{$part->{LINK_LIST}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
+			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
 
 			push(@{$part->{MODULE_INIT_FUNCTIONS}}, @{$elem->{INIT_FUNCTION}}) if 

@@ -425,13 +425,11 @@ sub _prepare_static_library_rule($)
 LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 #
 LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST =$tmpstlink
-LIBRARY_$ctx->{NAME}_STATIC_LINK_FLAGS =$tmpstflag
 #
 # Static $ctx->{LIBRARY_NAME}
-bin/$ctx->{LIBRARY_NAME}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+$ctx->{OUTPUT}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(STLD) \$(STLD_FLAGS) \$\@ \\
-		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_FLAGS) \\
 		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
 
 library_$ctx->{NAME}: basics $tmprules

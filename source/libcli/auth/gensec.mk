@@ -19,7 +19,7 @@ ADD_OBJ_FILES = \
 		libcli/auth/kerberos.o \
 		libcli/auth/kerberos_verify.o \
 		libcli/auth/gssapi_parse.o
-REQUIRED_SUBSYSTEMS = GENSEC EXT_LIB_KRB5
+REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
 # End MODULE gensec_krb5
 ################################################
 
@@ -31,7 +31,6 @@ INIT_FUNCTION = gensec_spnego_init
 INIT_OBJ_FILES = libcli/auth/spnego.o
 ADD_OBJ_FILES = \
 		libcli/auth/spnego_parse.o
-REQUIRED_SUBSYSTEMS = GENSEC
 # End MODULE gensec_spnego
 ################################################
 
@@ -45,6 +44,6 @@ ADD_OBJ_FILES = \
 		libcli/auth/ntlmssp.o \
 		libcli/auth/ntlmssp_parse.o \
 		libcli/auth/ntlmssp_sign.o
-REQUIRED_SUBSYSTEMS = GENSEC AUTH
+REQUIRED_SUBSYSTEMS = AUTH
 # End MODULE gensec_ntlmssp
 ################################################
