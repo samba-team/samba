@@ -190,7 +190,7 @@ init_socket(struct descr *d, krb5_address *a, int family, int type, int port)
 #if defined(HAVE_SETSOCKOPT) && defined(SOL_SOCKET) && defined(SO_REUSEADDR)
     {
 	int one = 1;
-	setsockopt(d->s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	setsockopt(d->s, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
     }
 #endif
     d->type = type;
