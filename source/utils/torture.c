@@ -2051,6 +2051,7 @@ static void run_oplock2(int dummy)
 static void run_deletetest(int dummy)
 {
     static struct cli_state cli1;
+    static struct cli_state cli2;
     char *fname = "\\delete.file";
     int fnum1, fnum2;
 
@@ -2324,12 +2325,66 @@ static void run_deletetest(int dummy)
 
 	printf("seventh delete on close test succeeded.\n");
 
+	/* Test 7 ... */
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 
+    if (!open_connection(&cli2)) {
+		printf("[8] failed to open second connection.\n");
+        return;
+    }
+
+	cli_sockopt(&cli1, sockops);
+
+	fnum1 = cli_nt_create_full(&cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0);
+								
+	if (fnum1 == -1) {
+		printf("[8] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	fnum2 = cli_nt_create_full(&cli2, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
+								
+	if (fnum2 == -1) {
+		printf("[8] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
+        printf("[8] setting delete_on_close on file failed !\n");
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[8] close - 1 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+    if (!cli_close(&cli2, fnum2)) {
+        printf("[8] close - 2 failed (%s)\n", cli_errstr(&cli2));
+        return;
+    }
+
+	/* This should fail.. */
+    fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_NONE);
+    if (fnum1 != -1) {
+		printf("[8] open of %s succeeded should have been deleted on close !\n", fname);
+		if (!cli_close(&cli1, fnum1)) {
+			printf("[8] close failed (%s)\n", cli_errstr(&cli1));
+		}
+		cli_unlink(&cli1, fname);
+    } else
+		printf("eighth delete on close test succeeded.\n");
+
     printf("finished delete test\n");
 
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
     close_connection(&cli1);
+    close_connection(&cli2);
 }
 
 /*
