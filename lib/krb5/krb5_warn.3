@@ -142,7 +142,9 @@ is used.
 .Pp
 .Fn krb5_free_error_string
 frees the error string
-.Fa str .
+.Fa str
+returned by
+.Fn krb5_get_error_string .
 .Pp
 .Fn krb5_clear_error_string
 clears the error string from the
