@@ -49,12 +49,13 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state);
 
 /* The following definitions come from nsswitch/winbindd_idmap.c  */
 
-BOOL winbindd_idmap_get_uid_from_rid(char *domain_name, uint32 user_rid, 
-                                     uid_t *uid);
-BOOL winbindd_idmap_get_gid_from_rid(char *domain_name, uint32 group_rid, 
-                                     gid_t *gid);
-BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
-                     BOOL isgroup);
+BOOL winbindd_idmap_get_uid_from_sid(DOM_SID *sid, uid_t *uid);
+BOOL winbindd_idmap_get_gid_from_sid(DOM_SID *sid, gid_t *gid);
+BOOL winbindd_idmap_get_uid_from_rid(const char *dom_name, uint32 rid, uid_t *uid);
+BOOL winbindd_idmap_get_gid_from_rid(const char *dom_name, uint32 rid, gid_t *gid);
+BOOL get_sid_from_id(int id, DOM_SID *sid, BOOL isgroup);
+BOOL winbindd_idmap_get_sid_from_uid(uid_t uid, DOM_SID *sid);
+BOOL winbindd_idmap_get_sid_from_gid(gid_t gid, DOM_SID *sid);
 BOOL winbindd_idmap_get_rid_from_uid(uid_t uid, uint32 *user_rid,
                                      struct winbindd_domain **domain);
 BOOL winbindd_idmap_get_rid_from_gid(gid_t gid, uint32 *group_rid, 
@@ -107,7 +108,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 struct winbindd_domain *domain_list(void);
 void free_domain_list(void);
 BOOL init_domain_list(void);
-struct winbindd_domain *find_domain_from_name(char *domain_name);
+struct winbindd_domain *find_domain_from_name(const char *domain_name);
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
 				 const char *name, DOM_SID *sid, 

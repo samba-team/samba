@@ -228,10 +228,9 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	}
 
 	/* Fill in group structure */
+	sid_peek_rid(&group_sid, &group_rid);
 
-	sid_split_rid(&group_sid, &group_rid);
-
-	if (!winbindd_idmap_get_gid_from_rid(domain->name, group_rid, &gid)) {
+	if (!winbindd_idmap_get_gid_from_sid(&group_sid, &gid)) {
 		DEBUG(1, ("error converting unix gid to sid\n"));
 		return WINBINDD_ERROR;
 	}

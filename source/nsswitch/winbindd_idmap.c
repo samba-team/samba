@@ -27,6 +27,9 @@
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
 
+/* idmap version determines auto-conversion */
+#define IDMAP_VERSION 2
+
 /* Globals */
 
 static TDB_CONTEXT *idmap_tdb;
@@ -66,17 +69,14 @@ static BOOL allocate_id(uid_t *id, BOOL isgroup)
 }
 
 /* Get an id from a rid */
-
-static BOOL get_id_from_rid(char *domain_name, uint32 rid, uid_t *id,
-                            BOOL isgroup)
+static BOOL get_id_from_sid(DOM_SID *sid, uid_t *id, BOOL isgroup)
 {
     TDB_DATA data, key;
     fstring keystr;
     BOOL result = False;
 
-    /* Check if rid is present in database */
-
-    slprintf(keystr, sizeof(keystr), "%s/%d", domain_name, rid);
+    /* Check if sid is present in database */
+    sid_to_string(keystr, sid);
     
     key.dptr = keystr;
     key.dsize = strlen(keystr) + 1;
@@ -88,34 +88,29 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, uid_t *id,
         int the_id;
 
         /* Parse and return existing uid */
-
         fstrcpy(scanstr, isgroup ? "GID" : "UID");
         fstrcat(scanstr, " %d");
 
         if (sscanf(data.dptr, scanstr, &the_id) == 1) {
-
             /* Store uid */
-
             if (id) {
-                *id = the_id;
+		    *id = the_id;
             }
 
             result = True;
         }
 
         SAFE_FREE(data.dptr);
-
     } else {
 
-        /* Allocate a new id for this rid */
+        /* Allocate a new id for this sid */
 
         if (id && allocate_id(id, isgroup)) {
             fstring keystr2;
 
             /* Store new id */
             
-            slprintf(keystr2, sizeof(keystr2), "%s %d", isgroup ? "GID" :
-                     "UID", *id);
+            slprintf(keystr2, sizeof(keystr2), "%s %d", isgroup ? "GID" : "UID", *id);
 
             data.dptr = keystr2;
             data.dsize = strlen(keystr2) + 1;
@@ -130,24 +125,52 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, uid_t *id,
     return result;
 }
 
-/* Get a uid from a user rid */
-
-BOOL winbindd_idmap_get_uid_from_rid(char *domain_name, uint32 user_rid, 
-                                     uid_t *uid)
+/* Get a uid from a user sid */
+BOOL winbindd_idmap_get_uid_from_sid(DOM_SID *sid, uid_t *uid)
 {
-    return get_id_from_rid(domain_name, user_rid, uid, False);
+    return get_id_from_sid(sid, uid, False);
+}
+
+/* Get a gid from a group sid */
+BOOL winbindd_idmap_get_gid_from_sid(DOM_SID *sid, gid_t *gid)
+{
+    return get_id_from_sid(sid, gid, True);
+}
+
+/* Get a uid from a user rid */
+BOOL winbindd_idmap_get_uid_from_rid(const char *dom_name, uint32 rid, uid_t *uid)
+{
+	struct winbindd_domain *domain;
+	DOM_SID sid;
+
+	if (!(domain = find_domain_from_name(dom_name))) {
+		return False;
+	}
+
+	sid_copy(&sid, &domain->sid);
+	sid_append_rid(&sid, rid);
+
+	return get_id_from_sid(&sid, uid, False);
 }
 
 /* Get a gid from a group rid */
-
-BOOL winbindd_idmap_get_gid_from_rid(char *domain_name, uint32 group_rid, 
-                                     gid_t *gid)
+BOOL winbindd_idmap_get_gid_from_rid(const char *dom_name, uint32 rid, gid_t *gid)
 {
-    return get_id_from_rid(domain_name, group_rid, gid, True);
+	struct winbindd_domain *domain;
+	DOM_SID sid;
+
+	if (!(domain = find_domain_from_name(dom_name))) {
+		return False;
+	}
+
+	sid_copy(&sid, &domain->sid);
+	sid_append_rid(&sid, rid);
+
+	return get_id_from_sid(&sid, gid, True);
 }
 
-BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
-                     BOOL isgroup)
+
+BOOL get_sid_from_id(int id, DOM_SID *sid, BOOL isgroup)
 {
     TDB_DATA key, data;
     fstring keystr;
@@ -161,43 +184,41 @@ BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
     data = tdb_fetch(idmap_tdb, key);
 
     if (data.dptr) {
-        char *p = data.dptr;
-        fstring domain_name;
-        uint32 the_rid;
-
-        if (next_token(&p, domain_name, "/", sizeof(fstring))) {
-
-            the_rid = atoi(p);
-
-            if (rid) {
-                *rid = the_rid;
-            }
-
-            if (domain) {
-                *domain = find_domain_from_name(domain_name);
-		if (*domain == NULL) {
-			DEBUG(1, ("unknown domain %s for rid %d\n",
-				  domain_name, the_rid));
-			result = False;
-			goto done;
-		}
-            }
-
-            result = True;
-        }
-    done:            
-        SAFE_FREE(data.dptr);
+	    result = string_to_sid(sid, data.dptr);
+	    SAFE_FREE(data.dptr);
     }
 
     return result;
 }
 
-/* Get a user rid from a uid */
+/* Get a sid from a uid */
+BOOL winbindd_idmap_get_sid_from_uid(uid_t uid, DOM_SID *sid)
+{
+	return get_sid_from_id((int)uid, sid, False);
+}
 
+/* Get a sid from a gid */
+BOOL winbindd_idmap_get_sid_from_gid(gid_t gid, DOM_SID *sid)
+{
+	return get_sid_from_id((int)gid, sid, True);
+}
+
+/* Get a user rid from a uid */
 BOOL winbindd_idmap_get_rid_from_uid(uid_t uid, uint32 *user_rid,
                                      struct winbindd_domain **domain)
 {
-    return get_rid_from_id((int)uid, user_rid, domain, False);
+	DOM_SID sid;
+
+	if (!get_sid_from_id((int)uid, &sid, False)) {
+		return False;
+	}
+
+	*domain = find_domain_from_sid(&sid);
+	if (! *domain) return False;
+
+	sid_split_rid(&sid, user_rid);
+
+	return True;
 }
 
 /* Get a group rid from a gid */
@@ -205,8 +226,78 @@ BOOL winbindd_idmap_get_rid_from_uid(uid_t uid, uint32 *user_rid,
 BOOL winbindd_idmap_get_rid_from_gid(gid_t gid, uint32 *group_rid, 
                                      struct winbindd_domain **domain)
 {
-    return get_rid_from_id((int)gid, group_rid, domain, True);
+	DOM_SID sid;
+
+	if (!get_sid_from_id((int)gid, &sid, True)) {
+		return False;
+	}
+
+	*domain = find_domain_from_sid(&sid);
+	if (! *domain) return False;
+
+	sid_split_rid(&sid, group_rid);
+
+	return True;
 }
+
+/* convert one record to the new format */
+static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *ignored)
+{
+	struct winbindd_domain *domain;
+	char *p, *dom_name;
+	DOM_SID sid;
+	uint32 rid;
+	fstring keystr;
+	TDB_DATA key2;
+
+	p = strchr(key.dptr, '/');
+	if (!p) return 0;
+
+	*p++ = 0;
+	dom_name = key.dptr;
+
+	domain = find_domain_from_name(dom_name);
+	if (!domain) {
+		/* what do we do about this?? */
+		return 0;
+	}
+
+	rid = atoi(p);
+
+	sid_copy(&sid, &domain->sid);
+	sid_append_rid(&sid, rid);
+
+	sid_to_string(keystr, &sid);
+	key2.dptr = keystr;
+	key2.dsize = strlen(keystr) + 1;
+
+	if (tdb_store(idmap_tdb, key2, data, TDB_INSERT) != 0) {
+		/* not good! */
+		return 0;
+	}
+
+	tdb_delete(idmap_tdb, key);
+
+	return 0;
+}
+
+/* convert the idmap database from an older version */
+static BOOL idmap_convert(void)
+{
+	if (tdb_fetch_int(idmap_tdb, "IDMAP_VERSION") == IDMAP_VERSION) {
+		return True;
+	}
+
+	/* the old format stored as DOMAIN/rid - now we store the SID direct */
+	tdb_traverse(idmap_tdb, convert_fn, NULL);
+
+        if (tdb_store_int(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION) == -1) {
+		return False;
+	}
+
+	return True;
+}
+
 
 /* Initialise idmap database */
 
@@ -218,6 +309,11 @@ BOOL winbindd_idmap_init(void)
                                TDB_NOLOCK, O_RDWR | O_CREAT, 0600))) {
         DEBUG(0, ("Unable to open idmap database\n"));
         return False;
+    }
+
+    /* possibly convert from an earlier version */
+    if (!idmap_convert()) {
+	    return False;
     }
 
      /* Create high water marks for group and user id */

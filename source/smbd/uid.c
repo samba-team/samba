@@ -596,6 +596,11 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 
 	*sidtype = SID_NAME_UNKNOWN;
 
+
+/* (tridge) I commented out the slab of code below in order to support foreign SIDs
+   Do we really need to validate the type of SID we have in this case? 
+*/
+#if 0
 	/*
 	 * First we must look up the name and decide if this is a user sid.
 	 */
@@ -616,7 +621,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 				(unsigned int)name_type ));
 		return False;
 	}
-
+#endif
 	*sidtype = SID_NAME_USER;
 
 	/*
@@ -658,7 +663,13 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
 				sid_to_string(sid_str, psid) ));
 
-		return local_sid_to_gid(pgid, psid, sidtype);
+		if (!local_sid_to_gid(pgid, psid, sidtype)) {
+			/* this was probably a foreign sid - assume its a group rid 
+			   and continue */
+			name_type = SID_NAME_DOM_GRP;
+		} else {
+			return True;
+		}
 	}
 
 	/*
