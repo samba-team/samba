@@ -59,5 +59,9 @@ CLEANFILES = $(MOD) $(OBJS)
 
 SUFFIXES += .c .o
 
+# XXX inline COMPILE since automake wont add it
+
 .c.o:
-	$(COMPILE) -c $<
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
+	-c `test -f '$<' || echo '$(srcdir)/'`$<
