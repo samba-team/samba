@@ -1928,7 +1928,11 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 		
 	while (param != NULL)
 	{
+#if 1 /* JRA - I think this should be case insensitive.... */
+		if ( strequal(value, param->value) 
+#else
 		if ( !strcmp(value, param->value) 
+#endif
 		    && strlen(value)==strlen(param->value))
 			break;
 			
@@ -2417,6 +2421,9 @@ BOOL print_time_access_check(int snum)
 		ok = True;
 
 	free_a_printer(&printer, 2);
+
+	if (!ok)
+		errno = EACCES;
 
 	return ok;
 }

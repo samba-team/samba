@@ -625,7 +625,12 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	errno = 0;
 
 	if (!print_access_check(user, snum, PRINTER_ACCESS_USE)) {
-		DEBUG(3, ("job start denied by security descriptor\n"));
+		DEBUG(3, ("print_job_start: job start denied by security descriptor\n"));
+		return -1;
+	}
+
+	if (!print_time_access_check(snum)) {
+		DEBUG(3, ("print_job_start: job start denied by time check\n"));
 		return -1;
 	}
 
