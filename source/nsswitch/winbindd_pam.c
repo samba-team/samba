@@ -314,8 +314,6 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	lm_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.lm_resp, state->request.data.auth_crap.lm_resp_len);
 	nt_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.nt_resp, state->request.data.auth_crap.nt_resp_len);
 	
-	/* what domain should we contact? */
-	
 
 	/* what domain should we contact? */
 	
