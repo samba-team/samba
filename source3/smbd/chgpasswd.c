@@ -64,7 +64,7 @@ static int findpty(char **slave)
 	int master;
 	static fstring line;
 	DIR *dirp;
-	char *dpname;
+	const char *dpname;
 
 #if defined(HAVE_GRANTPT)
 	/* Try to open /dev/ptmx. If that fails, fall through to old method. */

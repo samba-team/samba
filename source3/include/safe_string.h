@@ -96,4 +96,7 @@ char * __unsafe_string_function_usage_here__(void);
 #define push_pstring_base(dest, src, pstring_base) \
     push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE)
 
+#define safe_strcpy_base(dest, src, base, size) \
+    safe_strcpy(dest, src, size-PTR_DIFF(dest,base)-1)
+
 #endif
