@@ -17,7 +17,7 @@ CFLAGS = $(XINCS) @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = $(XLIBS) @LIBS@
 INSTALL = @INSTALL@
-
+INSTALL_DATA = @INSTALL_DATA@
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
 prefix = @prefix@
@@ -30,6 +30,8 @@ X_PROGS = xnlock
 PROG_BIN	= @MAKE_X_PROGS@
 PROG_LIBEXEC	= 
 PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
+
+MAN1 = xnlock.man
 
 SOURCES = xnlock.c
 
@@ -46,6 +48,11 @@ Wall:
 install: all
 	$(MKDIRHIER) $(bindir)
 	for x in $(PROG_BIN); do $(INSTALL) $$x $(bindir); done
+	$(MKDIRHIER) $(prefix)/man/man1
+	(cd $(srcdir); \
+	for x in $(MAN1); do \
+		$(INSTALL_DATA) $$x $(prefix)/man/man1/`echo $$x | sed 's/\.man/.1/'`; \
+	done)
 
 uninstall:
 
