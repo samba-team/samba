@@ -1,3 +1,8 @@
+2001-09-04  Assar Westerlund  <assar@sics.se>
+
+	* util.c (allocbuf): do not leak memory on failure and zero
+	re-used memory, from Markus Friedl <markus@openbsd.org>
+
 2001-07-19  Assar Westerlund  <assar@sics.se>
 
 	* rcp.c (main): add missing setprogname
