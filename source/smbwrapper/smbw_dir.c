@@ -374,14 +374,13 @@ int smbw_chdir(const char *name)
 	/* a special case - accept cd to /smb */
 	if (strncmp(cwd, smbw_prefix, len-1) == 0 &&
 	    cwd[len-1] == 0) {
-		goto success;
+		goto success1;
 	}
 
 	if (strncmp(cwd,smbw_prefix,strlen(smbw_prefix))) {
 		if (real_chdir(cwd) == 0) {
-			goto success;
+			goto success2;
 		}
-		errno = ENOENT;
 		goto failed;
 	}
 
@@ -405,7 +404,11 @@ int smbw_chdir(const char *name)
 		goto failed;
 	}
 
- success:
+ success1:
+	/* we don't want the old directory to be busy */
+	real_chdir("/");
+
+ success2:
 
 	DEBUG(4,("set SMBW_CWD to %s\n", cwd));
 
@@ -413,9 +416,6 @@ int smbw_chdir(const char *name)
 	if (setenv(SMBW_PWD_ENV, smbw_cwd, 1)) {
 		DEBUG(4,("setenv failed\n"));
 	}
-
-	/* we don't want the old directory to be busy */
-	real_chdir("/");
 
 	smbw_busy--;
 	return 0;
