@@ -37,6 +37,8 @@
  */
 
 #include "krb5_locl.h"
+#define USE_RESOLVER
+#include "resolve.h"
 
 RCSID("$Id$");
 
@@ -222,10 +224,11 @@ krb5_unparse_name_fixed_short(krb5_context context,
     return unparse_name_fixed(context, principal, name, len, TRUE);
 }
 
-krb5_error_code
-krb5_unparse_name(krb5_context context,
-		  krb5_const_principal principal,
-		  char **name)
+static krb5_error_code
+unparse_name(krb5_context context,
+	     krb5_const_principal principal,
+	     char **name,
+	     krb5_boolean short_flag)
 {
     size_t len = 0, plen;
     int i;
@@ -248,10 +251,26 @@ krb5_unparse_name(krb5_context context,
     *name = malloc(len);
     if(*name == NULL)
 	return ENOMEM;
-    ret = krb5_unparse_name_fixed(context, principal, *name, len);
+    ret = unparse_name_fixed(context, principal, *name, len, short_flag);
     if(ret)
 	free(*name);
     return ret;
+}
+
+krb5_error_code
+krb5_unparse_name(krb5_context context,
+		  krb5_const_principal principal,
+		  char **name)
+{
+    return unparse_name(context, principal, name, FALSE);
+}
+
+krb5_error_code
+krb5_unparse_name_short(krb5_context context,
+			krb5_const_principal principal,
+			char **name)
+{
+    return unparse_name(context, principal, name, TRUE);
 }
 
 #if 0 /* not implemented */
@@ -530,17 +549,34 @@ krb5_425_conv_principal_ext(krb5_context context,
 	return HEIM_ERR_V4_PRINC_NO_CONV;
     }
     if(resolve){
+	const char *inst = NULL;
+#ifdef USE_RESOLVER
+	struct dns_reply *r;
+	r = dns_lookup(instance, "a");
+	if(r && r->head && r->head->type == T_A)
+	    inst = r->head->domain;
+#else
 	struct hostent *hp = roken_gethostbyname(instance);
-	if(hp){
-	    instance = hp->h_name;
-	    ret = krb5_make_principal(context, &pr, 
-				      realm, name, instance, NULL);
-	    if(func == NULL || (*func)(context, pr)){
-		*princ = pr;
-		return 0;
+	if(hp)
+	    inst = hp->h_name;
+#endif
+	if(inst) {
+	    ret = krb5_make_principal(context, &pr, realm, name, inst, NULL);
+	    if(ret == 0) {
+		if(func == NULL || (*func)(context, pr)){
+		    *princ = pr;
+#ifdef USE_RESOLVER
+		    dns_free_data(r);
+#endif
+		    return 0;
+		}
+		krb5_free_principal(context, pr);
 	    }
-	    krb5_free_principal(context, pr);
 	}
+#ifdef USE_RESOLVER
+	if(r) 
+	    dns_free_data(r);
+#endif
     }
     {
 	char **domains, **d;
