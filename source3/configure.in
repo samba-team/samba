@@ -1993,8 +1993,8 @@ if test x$FOUND_KRB5 = x"no"; then
 # see if this box has the SuSE location for the heimdal kerberos implementation
 AC_MSG_CHECKING(for /usr/include/heimdal)
 if test -d /usr/include/heimdal; then
-    CFLAGS="$CFLAGS -I/usr/heimdal/include"
-    CPPFLAGS="$CPPFLAGS -I/usr/heimdal/include"
+    CFLAGS="$CFLAGS -I/usr/include/heimdal"
+    CPPFLAGS="$CPPFLAGS -I/usr/include/heimdal"
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(no)

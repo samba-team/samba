@@ -21,14 +21,18 @@
 # directory when testing.  Some of them take a -c parameter, but tpot
 # says it's not done consistently.
 
-template_smb_conf_setup() {
-	cat basicsmb.smb.conf$1.template | \
+template_setup() {
+	cat $1.template | \
               sed "s|PREFIX|$prefix|g" | \
 	      sed "s|BUILD_FARM|$test_root|g" | \
 	      sed "s|WHOAMI|$whoami|g" | \
 	      sed "s|LOGLEVEL|$loglevel|g" \
-        > $prefix/lib/smb.conf$1
-	echo "template_smb_conf_setup: Created $prefix/lib/smb.conf$1"
+        > $prefix/$2
+	echo "template_setup: Created $prefix/$2"
+}
+
+template_smb_conf_setup() {
+    template_setup "basicsmb.smb.conf$1" "lib/smb.conf$1"
 }
 
 test_smb_conf_setup() {
@@ -50,7 +54,13 @@ test_smb_conf_setup() {
 
     template_smb_conf_setup 
     template_smb_conf_setup .hostsequiv
+    template_smb_conf_setup .validusers
     template_smb_conf_setup .invalidusers
+    template_smb_conf_setup .preexec
+    template_smb_conf_setup .preexec_close
+    template_smb_conf_setup .preexec_cl_fail
+
+    template_setup preexec lib/preexec
 
 	echo "127.0.0.1    localhost">$prefix/lib/lmhosts
 	echo "127.0.0.2    BUILDFARM">>$prefix/lib/lmhosts
@@ -59,6 +69,12 @@ test_smb_conf_setup() {
     echo "127.0.0.5    SERVER">>$prefix/lib/lmhosts
     echo "127.0.0.6    DOMAIN">>$prefix/lib/lmhosts
     echo "127.0.0.7    HOSTSEQUIV">>$prefix/lib/lmhosts
+    echo "127.0.0.7    VALIDUSERS">>$prefix/lib/lmhosts
+    echo "127.0.0.7    INVALIDUSERS">>$prefix/lib/lmhosts
+    echo "127.0.0.7    PREEXEC">>$prefix/lib/lmhosts
+    echo "127.0.0.7    PREEXEC_CLOSE">>$prefix/lib/lmhosts
+    echo "127.0.0.7    PREEXEC_CL_FAIL">>$prefix/lib/lmhosts
+
 
 	echo "127.0.0.1" > $prefix/lib/hosts.equiv
 

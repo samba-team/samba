@@ -6229,7 +6229,7 @@ _ACEOF
 if { (eval echo "$as_me:$LINENO: \"$ac_cpp conftest.$ac_ext\"") >&5
   (eval $ac_cpp conftest.$ac_ext) 2>conftest.er1
   ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
+  egrep -v '^ *\+' conftest.er1 >conftest.err
   rm -f conftest.er1
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
@@ -20516,8 +20516,8 @@ if test x$FOUND_KRB5 = x"no"; then
 echo "$as_me:$LINENO: checking for /usr/include/heimdal" >&5
 echo $ECHO_N "checking for /usr/include/heimdal... $ECHO_C" >&6
 if test -d /usr/include/heimdal; then
-    CFLAGS="$CFLAGS -I/usr/heimdal/include"
-    CPPFLAGS="$CPPFLAGS -I/usr/heimdal/include"
+    CFLAGS="$CFLAGS -I/usr/include/heimdal"
+    CPPFLAGS="$CPPFLAGS -I/usr/include/heimdal"
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
 else
