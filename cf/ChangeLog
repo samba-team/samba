@@ -1,3 +1,7 @@
+Wed Mar 18 23:11:29 1998  Assar Westerlund  <assar@sics.se>
+
+	* krb-ipv6.m4: rename HAVE_STRUCT_SOCKADDR_IN6 to HAVE_IPV6
+
 Thu Feb 26 02:37:49 1998  Assar Westerlund  <assar@sics.se>
 
 	* make-proto.pl: should work with perl4
