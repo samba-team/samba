@@ -229,6 +229,8 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent)
 	if (buf[strlen(buf) - 1] == '\n')
 	    buf[strlen(buf) - 1] = '\0';
 	p = buf;
+	while(isspace(*p))
+	    ++p;
 	if (*p == '#' || *p == ';')
 	    continue;
 	while(isspace(*p))
@@ -309,6 +311,8 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
 	if(buf[strlen(buf) - 1] == '\n')
 	    buf[strlen(buf) - 1] = '\0';
 	p = buf;
+	while(isspace(*p))
+	    ++p;
 	if (*p == '#' || *p == ';')
 	    continue;
 	while(isspace(*p))
