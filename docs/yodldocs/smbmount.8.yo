@@ -12,7 +12,7 @@ bf(smbmount) service mountpoint [ -o options ]
 label(DESCRIPTION)
 manpagedescription()
 
-smbmount mounts a SMB filesystem. It is usually invoked as mount.smb
+smbmount mounts a SMB filesystem. It is usually invoked as mount.smbfs
 from the mount(8) command when using the "-t smb" option. The kernel
 must support the smbfs filesystem.
 

@@ -299,7 +299,7 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 
 	while (1) {
 		if ((fd = open(mount_point, O_RDONLY)) < 0) {
-			fprintf(stderr, "mount.smb: can't open %s\n", mount_point);
+			fprintf(stderr, "mount.smbfs: can't open %s\n", mount_point);
 			break;
 		}		
 
@@ -318,7 +318,7 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 
 		res = ioctl(fd, SMB_IOC_NEWCONN, &conn_options);
 		if (res != 0) {
-			fprintf(stderr, "mount.smb: ioctl failed, res=%d\n", res);
+			fprintf(stderr, "mount.smbfs: ioctl failed, res=%d\n", res);
 			break;
 		}
 
@@ -347,13 +347,13 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 		CatchSignal(SIGUSR1, &usr1_handler);
 		pause();
 #ifdef SMBFS_DEBUG
-		DEBUG(2,("mount.smb: got signal, getting new socket\n"));
+		DEBUG(2,("mount.smbfs: got signal, getting new socket\n"));
 #endif
 		c = do_connection(service);
 	}
 
 	smb_umount(mount_point);
-	DEBUG(2,("mount.smb: exit\n"));
+	DEBUG(2,("mount.smbfs: exit\n"));
 	exit(1);
 }
 
@@ -473,7 +473,7 @@ usage on the program
 ****************************************************************************/
 static void usage(void)
 {
-	printf("Usage: mount.smb service mountpoint [-o options,...]\n");
+	printf("Usage: mount.smbfs service mountpoint [-o options,...]\n");
 
 	printf("Version %s\n\n",VERSION);
 
@@ -497,16 +497,16 @@ static void usage(void)
       rw                              mount read-write
 
 This command is designed to be run from within /bin/mount by giving
-the option '-t smb'. For example:
-  mount -t smb -o username=tridge,password=foobar //fjall/test /data/test
+the option '-t smbfs'. For example:
+  mount -t smbfs -o username=tridge,password=foobar //fjall/test /data/test
 ");
 }
 
 
 /****************************************************************************
-  Argument parsing for mount.smb interface
+  Argument parsing for mount.smbfs interface
   mount will call us like this:
-    mount.smb device mountpoint -o <options>
+    mount.smbfs device mountpoint -o <options>
   
   <options> is never empty, containing at least rw or ro
  ****************************************************************************/
@@ -629,7 +629,7 @@ static void parse_mount_smb(int argc, char **argv)
 
 	DEBUGLEVEL = 1;
 	
-	setup_logging("mount.smb",True);
+	setup_logging("mount.smbfs",True);
 
 	TimeInit();
 	charset_initialise();
@@ -656,7 +656,7 @@ static void parse_mount_smb(int argc, char **argv)
 
 	parse_mount_smb(argc, argv);
 
-	DEBUG(3,("mount.smb started (version %s)\n", VERSION));
+	DEBUG(3,("mount.smbfs started (version %s)\n", VERSION));
 
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 

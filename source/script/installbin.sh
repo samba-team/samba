@@ -34,7 +34,7 @@ for p in $*; do
 
  # this is a special case, mount needs this in a specific location
  if [ $p2 = smbmount ]; then
-   ln -sf $BINDIR/$p2 /sbin/mount.smb
+   ln -sf $BINDIR/$p2 /sbin/mount.smbfs
  fi
 done
 
