@@ -86,6 +86,9 @@ void print_notify_send_messages(void)
 		offset += pq->buflen;
 	}
 
+	DEBUG(5, ("print_notify_send_messages: sending %d print notify message%s\n", 
+		  msg_count, msg_count != 1 ? "s" : ""));
+
 	message_send_all(tdb, MSG_PRINTER_NOTIFY2, buf, offset, False, NULL);
 	talloc_destroy_pool(send_ctx);
 	notify_queue_head = NULL;
@@ -149,6 +152,9 @@ again:
 
 	pnqueue->buf = buf;
 	pnqueue->buflen = buflen;
+
+	DEBUG(5, ("send_spoolss_notify2_msg: appending message 0x%02x/0x%02x to notify_queue_head\n", msg->type, msg->field));
+		  
 	DLIST_ADD(notify_queue_head, pnqueue);
 	return;
 
