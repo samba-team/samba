@@ -634,6 +634,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			return ERROR_DOS(ERRDOS,ERRbuftoosmall);
 		}
 
+		if (passlen1 > smb_buflen(inbuf)) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+		
 		if (doencrypt) {
 			lm_resp = data_blob(smb_buf(inbuf), passlen1);
 		} else {
@@ -694,14 +698,19 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		if ((doencrypt) && (passlen1 != 0) && (passlen1 != 24)) {
 			doencrypt = False;
 		}
+
+		/* check for nasty tricks */
+		if (passlen1 > smb_buflen(inbuf) || passlen2 > smb_buflen(inbuf)) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
 		
 		if (doencrypt) {
 			lm_resp = data_blob(p, passlen1);
 			nt_resp = data_blob(p+passlen1, passlen2);
 		} else {
 			pstring pass;
-			srvstr_pull_buf(inbuf, pass, smb_buf(inbuf), 
-					sizeof(pass), STR_TERMINATE);
+			srvstr_pull(inbuf, pass, smb_buf(inbuf), 
+				    sizeof(pass),  passlen1, STR_TERMINATE);
 			plaintext_password = data_blob(pass, strlen(pass));
 		}
 		
