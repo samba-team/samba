@@ -118,7 +118,7 @@ krb5_storage_emem(void)
     krb5_storage *sp = malloc(sizeof(krb5_storage));
     emem_storage *s = malloc(sizeof(*s));
     sp->data = s;
-    sp->host_byteorder = 0;
+    sp->flags = 0;
     s->size = 1024;
     s->base = malloc(s->size);
     s->len = 0;
