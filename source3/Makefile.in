@@ -378,7 +378,7 @@ SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
 
 SMBTREE_OBJ = utils/smbtree.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) \
-	     $(KRBCLIENT_OBJ)
+	     $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
@@ -765,9 +765,9 @@ bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) bin/.dummy
+bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
