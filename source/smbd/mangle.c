@@ -28,6 +28,7 @@ static struct {
 	struct mangle_fns *(*init_fn)(void);
 } mangle_backends[] = {
 	{ "hash", mangle_hash_init },
+	{ "hash2", mangle_hash2_init },
 	{ NULL, NULL }
 };
 

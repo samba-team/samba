@@ -212,7 +212,7 @@ AUTH_OBJ = auth/auth.o auth/auth_sam.o auth/auth_server.o auth/auth_domain.o \
 	   auth/auth_rhosts.o auth/auth_unix.o auth/auth_util.o	auth/auth_winbind.o \
 	   auth/auth_builtin.o auth/auth_compat.o $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
 
-MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o
+MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/utmp.o smbd/session.o \
