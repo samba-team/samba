@@ -43,55 +43,28 @@ krb5_sock_to_principal (krb5_context context,
 			krb5_principal *ret_princ)
 {
     krb5_error_code ret;
-    krb5_address address;
     struct sockaddr_storage __ss;
     struct sockaddr *sa = (struct sockaddr *)&__ss;
-    socklen_t len = sizeof(__ss);
-    struct hostent *hostent;
-    int family;
-    char *hname = NULL;
+    socklen_t sa_len = sizeof(__ss);
+    char hostname[NI_MAXHOST];
 
-    if (getsockname (sock, sa, &len) < 0) {
+    if (getsockname (sock, sa, &sa_len) < 0) {
 	ret = errno;
 	krb5_set_error_string (context, "getsockname: %s", strerror(ret));
 	return ret;
     }
-    family = sa->sa_family;
-    
-    ret = krb5_sockaddr2address (context, sa, &address);
-    if (ret)
-	return ret;
+    ret = getnameinfo (sa, sa_len, hostname, sizeof(hostname), NULL, 0, 0);
+    if (ret) {
+	int save_errno = errno;
 
-    hostent = roken_gethostbyaddr (address.address.data,
-				   address.address.length,
-				   family);
-
-    if (hostent == NULL) {
-	krb5_set_error_string (context, "gethostbyaddr: %s",
-			       hstrerror(h_errno));
-	return krb5_h_errno_to_heim_errno(h_errno);
-    }
-    hname = hostent->h_name;
-    if (strchr(hname, '.') == NULL) {
-	char **a;
-
-	for (a = hostent->h_aliases; a != NULL && *a != NULL; ++a)
-	    if (strchr(*a, '.') != NULL) {
-		hname = *a;
-		break;
-	    }
+	krb5_set_error_string (context, "getnameinfo: %s", gai_strerror(ret));
+	return krb5_eai_to_heim_errno(ret, save_errno);
     }
 
-    hname = strdup(hname);
-    if (hname == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
-	return ENOMEM;
-    }
     ret = krb5_sname_to_principal (context,
-				   hname,
+				   hostname,
 				   sname,
 				   type,
 				   ret_princ);
-    free(hname);
     return ret;
 }
