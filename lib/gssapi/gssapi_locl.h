@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -85,5 +85,13 @@ gssapi_krb5_verify_header(u_char **str,
 OM_uint32
 gss_krb5_getsomekey(const gss_ctx_id_t context_handle,
 		    des_cblock *key);
+
+/* sec_context flags */
+
+#define SC_LOCAL_ADDRESS  0x01
+#define SC_REMOTE_ADDRESS 0x02
+#define SC_KEYBLOCK	  0x04
+#define SC_LOCAL_SUBKEY	  0x08
+#define SC_REMOTE_SUBKEY  0x10
 
 #endif
