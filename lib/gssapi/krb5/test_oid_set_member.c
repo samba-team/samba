@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,14 +44,12 @@ OM_uint32 gss_test_oid_set_member (
 {
   size_t i;
 
+  *minor_status = 0;
   *present = 0;
   for (i = 0; i < set->count; ++i)
-    if (member->length == set->elements[i].length
-	&& memcmp (member->elements,
-		   set->elements[i].elements,
-		   member->length) == 0) {
-      *present = 1;
-      break;
-    }
+      if (gss_oid_equal(member, &set->elements[i]) != 0) {
+	  *present = 1;
+	  break;
+      }
   return GSS_S_COMPLETE;
 }
