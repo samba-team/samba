@@ -818,8 +818,7 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 		p = rbuf.offset != 0;
 
 		if (p && r_l.status != 0 &&
-		    r_l.status != 0x107 &&
-		    r_l.status != (0xC0000000 | NT_STATUS_NONE_MAPPED))
+		    r_l.status != 0x107)
 		{
 			/* report error code */
 			DEBUG(1, ("LSA_LOOKUP_SIDS: %s\n",
