@@ -1,4 +1,4 @@
-#include "../rsync.h"
+#include "includes.h"
 #ifndef HAVE_GETOPT_LONG
 
 /* Getopt for GNU.
