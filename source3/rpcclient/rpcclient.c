@@ -592,6 +592,8 @@ out_free:
 		{ NULL }
 	};
 
+	ZERO_STRUCT(server_ip);
+
 	setlinebuf(stdout);
 
 	/* Parse options */
@@ -674,13 +676,6 @@ out_free:
 	if (!init_names())
 		return 1;
 
-	/* Resolve the IP address */
-
-	if (!opt_ipaddr && !resolve_name(server, &server_ip, 0x20))  {
-		fprintf(stderr, "Unable to resolve %s\n", server);
-		return 1;
-	}
-	
 	/*
 	 * Get password
 	 * from stdin if necessary
@@ -697,7 +692,7 @@ out_free:
 		get_username(username);
 		
 	nt_status = cli_full_connection(&cli, global_myname(), server, 
-					&server_ip, 0,
+					opt_ipaddr ? &server_ip : NULL, 0,
 					"IPC$", "IPC",  
 					username, domain,
 					password, 0, NULL);
