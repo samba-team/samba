@@ -1,5 +1,9 @@
 2000-05-15  Assar Westerlund  <assar@sics.se>
 
+	* Release 0.2s
+
+2000-05-15  Assar Westerlund  <assar@sics.se>
+
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): set version to 11:0:0
 	* lib/hdb/Makefile.am (libhdb_la_LDFLAGS): set version to 4:2:1
 	* lib/asn1/Makefile.am (libasn1_la_LDFLAGS): bump to 2:0:0
