@@ -436,7 +436,7 @@ static BOOL api_spoolss_startdocprinter(pipes_struct *p)
 	}
 
 	r_u.status = _spoolss_startdocprinter(&q_u.handle,
-  			          q_u.doc_info_container.level, p->vuid,
+  			          q_u.doc_info_container.level, p,
 	                          &q_u.doc_info_container.docinfo,
 	                          &r_u.jobid);
 
@@ -529,7 +529,7 @@ static BOOL api_spoolss_setprinter(pipes_struct *p)
 	
 	r_u.status = _spoolss_setprinter(&q_u.handle, q_u.level, &q_u.info,
 	                                 q_u.devmode_ctr, q_u.secdesc_ctr, 
-					 q_u.command, p->vuid);
+					 q_u.command, p);
 	
 	if(!spoolss_io_r_setprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_setprinter: unable to marshall SPOOL_R_SETPRINTER.\n"));
@@ -692,7 +692,7 @@ static BOOL api_spoolss_setjob(pipes_struct *p)
 	}
 
 	r_u.status = _spoolss_setjob(&q_u.handle, q_u.jobid,
-				q_u.level, p->vuid, &q_u.ctr, q_u.command);
+				q_u.level, p, &q_u.ctr, q_u.command);
 
 	if(!spoolss_io_r_setjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_setjob: unable to marshall SPOOL_R_SETJOB.\n"));
