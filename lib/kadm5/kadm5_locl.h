@@ -218,6 +218,10 @@ _kadm5_string_to_privs __P((
 	u_int32_t* privs));
 
 kadm5_ret_t
+kadm5_log_get_version (kadm5_server_context *context,
+		       u_int32_t *ver);
+
+kadm5_ret_t
 kadm5_log_init (kadm5_server_context *context);
 
 kadm5_ret_t
