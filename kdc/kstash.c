@@ -36,16 +36,21 @@
  * SUCH DAMAGE. 
  */
 
-#include "kdc_locl.h"
+#include "headers.h"
 
 RCSID("$Id$");
 
 char *keyfile = "m-key";
-int help;
+char *v4_keyfile;
+int help_flag;
+int version_flag;
 
 struct getargs args[] = {
-    { "key-file", 'k', arg_string, &keyfile, "Master key file", "file" },
-    { "help", 'h', arg_flag, &help }
+    { "key-file", 'k', arg_string, &keyfile, "master key file", "file" },
+    { "version4-key-file", '4', arg_string, &v4_keyfile, 
+      "kerberos 4 master key file", "file" },
+    { "help", 'h', arg_flag, &help_flag },
+    { "version", 0, arg_flag, &version_flag }
 };
 
 int num_args = sizeof(args) / sizeof(args[0]);
@@ -57,24 +62,30 @@ int main(int argc, char **argv)
     FILE *f;
     size_t len;
     int optind = 0;
+    krb5_context context = NULL;
+    
 
-    set_progname(argv[0]);
+    krb5_program_setup(&context, argc, argv, args, num_args, NULL);
 
-    if(getarg(args, num_args, argc, argv, &optind)){
-	arg_printusage (args, num_args, "");
-	exit(1);
-    }
+    if(help_flag)
+	krb5_std_usage(0, args, num_args);
+    if(version_flag)
+	krb5_errx(context, 0, "%s", heimdal_version);
 
-    if(help){
-	arg_printusage (args, num_args, "");
-	exit(0);
-    }
 
-    des_read_pw_string(buf, sizeof(buf), "Master key: ", 1);
     key.keytype = KEYTYPE_DES;
     key.keyvalue.length = sizeof(des_cblock);
     key.keyvalue.data = malloc(key.keyvalue.length);
-    des_string_to_key(buf, key.keyvalue.data);
+    if(v4_keyfile){
+	f = fopen(v4_keyfile, "r");
+	if(f == NULL)
+	    krb5_err(context, 1, errno, "fopen(%s)", v4_keyfile);
+	fread(key.keyvalue.data, 1, key.keyvalue.length, f);
+	fclose(f);
+    }else{
+	des_read_pw_string(buf, sizeof(buf), "Master key: ", 1);
+	des_string_to_key(buf, key.keyvalue.data);
+    }
     
 #ifdef HAVE_UMASK
     umask(077);
@@ -82,7 +93,7 @@ int main(int argc, char **argv)
 
     f = fopen(keyfile, "w");
     if(f == NULL)
-	err(1, "Failed to open %s", keyfile);
+	krb5_err(context, 1, errno, "fopen(%s)", keyfile);
     encode_EncryptionKey(buf + sizeof(buf) - 1, sizeof(buf), &key, &len);
     fwrite(buf + sizeof(buf) - len, len, 1, f);
     fclose(f);
