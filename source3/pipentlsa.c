@@ -345,7 +345,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
-	RPC_HDR hdr;
+	RPC_HDR_RR hdr;
 
 	if (data == NULL)
 	{
@@ -353,11 +353,11 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		return False;
 	}
 
-	smb_io_rpc_hdr(True, &hdr, data, data, 4, 0);
+	smb_io_rpc_hdr_rr(True, &hdr, data, data, 4, 0);
 
-	if (hdr.pkt_type == RPC_BIND) /* RPC BIND */
+	if (hdr.hdr.pkt_type == RPC_BIND) /* RPC BIND */
 	{
-		DEBUG(4,("lsarpc rpc bind %x\n", hdr.pkt_type));
+		DEBUG(4,("lsarpc rpc bind %x\n", hdr.hdr.pkt_type));
 		LsarpcTNP1(data,rdata,rdata_len);
 		return True;
 	}
@@ -370,7 +370,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_OPENPOLICY\n"));
 			api_lsa_open_policy(param, data, rdata, rdata_len);
-			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -379,7 +379,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 			DEBUG(3,("LSA_QUERYINFOPOLICY\n"));
 
 			api_lsa_query_info(param, data, rdata, rdata_len);
-			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -447,7 +447,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_OPENSECRET\n"));
 			api_lsa_lookup_sids(param, data, rdata, rdata_len);
-			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -455,7 +455,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_LOOKUPNAMES\n"));
 			api_lsa_lookup_names(param, data, rdata, rdata_len);
-			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
+			create_rpc_reply(hdr.hdr.call_id, *rdata, *rdata_len);
 			break;
 		}
 

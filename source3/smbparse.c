@@ -794,8 +794,8 @@ char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int dept
 /*******************************************************************
 creates an RPC_HDR structure.
 ********************************************************************/
-void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
-				uint32 call_id, int data_len, uint8 opnum)
+void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len)
 {
 	if (hdr == NULL) return;
 
@@ -807,10 +807,6 @@ void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
 	hdr->frag_len     = data_len;        /* fragment length, fill in later */
 	hdr->auth_len     = 0;               /* authentication length */
 	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
-	hdr->alloc_hint   = data_len - 0x18; /* allocation hint (no idea) */
-	hdr->context_id   = 0;               /* presentation context identifier */
-	hdr->cancel_count = 0;               /* cancel count */
-	hdr->opnum        = opnum;           /* opnum */
 }
 
 /*******************************************************************
@@ -831,10 +827,224 @@ char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int 
 	DBG_RW_SVAL("frag_len  ", depth, base, io, q, rpc->frag_len); q += 2;
 	DBG_RW_SVAL("auth_len  ", depth, base, io, q, rpc->auth_len); q += 2;
 	DBG_RW_IVAL("call_id   ", depth, base, io, q, rpc->call_id); q += 4;
-	DBG_RW_IVAL("alloc_hint", depth, base, io, q, rpc->alloc_hint); q += 4;
-	DBG_RW_CVAL("context_id", depth, base, io, q, rpc->context_id); q++;
-	DBG_RW_CVAL("cancel_ct ", depth, base, io, q, rpc->cancel_count); q++;
-	DBG_RW_CVAL("opnum     ", depth, base, io, q, rpc->opnum); q++;
+
+	return q;
+}
+
+/*******************************************************************
+creates an RPC_IFACE structure.
+********************************************************************/
+void make_rpc_iface(RPC_IFACE *ifc, char data[16], uint32 version)
+{
+	if (ifc == NULL || data == NULL) return;
+
+	memcpy(ifc->data, data, sizeof(ifc->data)); /* 16 bytes of number */
+	ifc->version = version; /* the interface number */
+}
+
+/*******************************************************************
+reads or writes an RPC_IFACE structure.
+********************************************************************/
+char* smb_io_rpc_iface(BOOL io, RPC_IFACE *ifc, char *q, char *base, int align, int depth)
+{
+	if (ifc == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_rpc_iface\n", tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = align_offset(q, base, align);
+
+	DBG_RW_SVAL ("version", depth, base, io, q, ifc->version); q += 2;
+	DBG_RW_PCVAL("data   ", depth, base, io, q, ifc->data, sizeof(ifc->data)); q += sizeof(ifc->data);
+
+	return q;
+}
+
+/*******************************************************************
+creates an RPC_ADDR_STR structure.
+********************************************************************/
+void make_rpc_addr_str(RPC_ADDR_STR *str, char *name)
+{
+	if (str == NULL || name == NULL) return;
+
+	str->len = strlen(name) + 1;
+	fstrcpy(str->addr, name);
+}
+
+/*******************************************************************
+reads or writes an RPC_ADDR_STR structure.
+********************************************************************/
+char* smb_io_rpc_addr_str(BOOL io, RPC_ADDR_STR *str, char *q, char *base, int align, int depth)
+{
+	if (str == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_rpc_addr_str\n", tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = align_offset(q, base, align);
+
+	DBG_RW_IVAL ("len ", depth, base, io, q, str->len); q += 2;
+	DBG_RW_PSVAL("addr", depth, base, io, q, str->addr, str->len); q += str->len;
+
+	return q;
+}
+
+/*******************************************************************
+creates an RPC_HDR_BBA structure.
+********************************************************************/
+void make_rpc_hdr_bba(RPC_HDR_BBA *bba, uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid)
+{
+	if (bba == NULL) return;
+
+	bba->max_tsize = max_tsize; /* maximum transmission fragment size (0x1630) */
+	bba->max_rsize = max_rsize; /* max receive fragment size (0x1630) */   
+	bba->assoc_gid = assoc_gid; /* associated group id (0x0) */ 
+}
+
+/*******************************************************************
+reads or writes an RPC_HDR_BBA structure.
+********************************************************************/
+char* smb_io_rpc_hdr_bba(BOOL io, RPC_HDR_BBA *rpc, char *q, char *base, int align, int depth)
+{
+	if (rpc == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_rpc_hdr_bba\n",  tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	DBG_RW_SVAL("max_tsize", depth, base, io, q, rpc->max_tsize); q += 2;
+	DBG_RW_SVAL("max_rsize", depth, base, io, q, rpc->max_rsize); q += 2;
+	DBG_RW_IVAL("assoc_gid", depth, base, io, q, rpc->assoc_gid); q += 4;
+
+	return q;
+}
+
+/*******************************************************************
+creates an RPC_HDR_RB structure.
+********************************************************************/
+void make_rpc_hdr_rb(RPC_HDR_RB *rpc, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len,
+				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
+				uint32 num_elements, uint16 context_id, uint8 num_syntaxes,
+				RPC_IFACE *abstract, RPC_IFACE *transfer)
+{
+	if (rpc == NULL) return;
+
+	make_rpc_hdr    (&(rpc->hdr), pkt_type, call_id, data_len);
+	make_rpc_hdr_bba(&(rpc->bba), max_tsize, max_rsize, assoc_gid);
+
+	rpc->num_elements = num_elements ; /* the number of elements (0x1) */
+	rpc->context_id   = context_id   ; /* presentation context identifier (0x0) */
+	rpc->num_syntaxes = num_syntaxes ; /* the number of syntaxes (has always been 1?)(0x1) */
+
+	/* num and vers. of interface client is using */
+	memcpy(&(rpc->abstract), abstract, sizeof(rpc->abstract));
+
+	/* num and vers. of interface to use for replies */
+	memcpy(&(rpc->transfer), transfer, sizeof(rpc->transfer));
+}
+
+/*******************************************************************
+reads or writes an RPC_HDR_RB structure.
+********************************************************************/
+char* smb_io_rpc_hdr_rb(BOOL io, RPC_HDR_RB *rpc, char *q, char *base, int align, int depth)
+{
+	if (rpc == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_rpc_hdr_bba\n", tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = smb_io_rpc_hdr    (io, &(rpc->hdr), q, base, align, depth);
+	q = smb_io_rpc_hdr_bba(io, &(rpc->bba), q, base, align, depth);
+
+	DBG_RW_IVAL("num_elements", depth, base, io, q, rpc->num_elements); q += 4;
+	DBG_RW_IVAL("context_id  ", depth, base, io, q, rpc->context_id  ); q += 4;
+	DBG_RW_IVAL("num_syntaxes", depth, base, io, q, rpc->num_syntaxes); q += 4;
+
+	q = smb_io_rpc_iface(io, &(rpc->abstract), q, base, align, depth);
+	q = smb_io_rpc_iface(io, &(rpc->transfer), q, base, align, depth);
+
+	return q;
+}
+
+/*******************************************************************
+creates an RPC_RESULTS structure.
+
+lkclXXXX only one reason at the moment!
+
+********************************************************************/
+void make_rpc_results(RPC_RESULTS *res, 
+				uint8 num_results, uint16 result, uint16 reason)
+{
+	if (res == NULL) return;
+
+	res->num_results = num_results; /* the number of results (0x01) */
+	res->result      = result     ;  /* result (0x00 = accept) */
+	res->reason      = reason     ;  /* reason (0x00 = no reason specified) */
+}
+
+/*******************************************************************
+reads or writes an RPC_RESULTS structure.
+
+lkclXXXX only one reason at the moment!
+
+********************************************************************/
+char* smb_io_rpc_results(BOOL io, RPC_RESULTS *res, char *q, char *base, int align, int depth)
+{
+	if (res == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_rpc_results\n", tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = align_offset(q, base, align);
+	
+	DBG_RW_CVAL("num_results", depth, base, io, q, res->num_results); q++;
+
+	q = align_offset(q, base, align);
+	
+	DBG_RW_SVAL("result     ", depth, base, io, q, res->result     ); q += 2;
+	DBG_RW_SVAL("reason     ", depth, base, io, q, res->reason     ); q += 2;
+
+	return q;
+}
+
+/*******************************************************************
+creates an RPC_HDR_BA structure.
+
+lkclXXXX only one reason at the moment!
+
+********************************************************************/
+void make_rpc_hdr_ba(RPC_HDR_BA *rpc, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len,
+				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
+				char *pipe_addr,
+				uint8 num_results, uint16 result, uint16 reason,
+				RPC_IFACE *transfer)
+{
+	if (rpc == NULL || transfer == NULL || pipe_addr == NULL) return;
+
+	make_rpc_hdr     (&(rpc->hdr ), pkt_type, call_id, data_len);
+	make_rpc_hdr_bba (&(rpc->bba ), max_tsize, max_rsize, assoc_gid);
+	make_rpc_addr_str(&(rpc->addr), pipe_addr);
+	make_rpc_results (&(rpc->res ), num_results, result, reason);
+
+	/* the transfer syntax from the request */
+	memcpy(&(rpc->transfer), transfer, sizeof(rpc->transfer));
+}
+
+/*******************************************************************
+reads or writes an RPC_HDR_BA structure.
+********************************************************************/
+char* smb_io_rpc_hdr_ba(BOOL io, RPC_HDR_BA *rpc, char *q, char *base, int align, int depth)
+{
+	if (rpc == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_rpc_hdr_ba\n", tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = smb_io_rpc_hdr     (io, &(rpc->hdr)     , q, base, align, depth);
+	q = smb_io_rpc_hdr_bba (io, &(rpc->bba)     , q, base, align, depth);
+	q = smb_io_rpc_addr_str(io, &(rpc->addr)    , q, base, align, depth);
+	q = smb_io_rpc_results (io, &(rpc->res)     , q, base, align, depth);
 
 	return q;
 }
@@ -891,6 +1101,41 @@ char* smb_io_obj_attr(BOOL io, LSA_OBJ_ATTR *attr, char *q, char *base, int alig
 	return q;
 }
 
+/*******************************************************************
+creates an RPC_HDR_RR structure.
+********************************************************************/
+void make_rpc_hdr_rr(RPC_HDR_RR *hdr, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len, uint8 opnum)
+{
+	if (hdr == NULL) return;
+
+	make_rpc_hdr(&(hdr->hdr), pkt_type, call_id, data_len);
+
+	hdr->alloc_hint   = data_len - 0x18; /* allocation hint */
+	hdr->context_id   = 0;               /* presentation context identifier */
+	hdr->cancel_count = 0;               /* cancel count */
+	hdr->opnum        = opnum;           /* opnum */
+}
+
+/*******************************************************************
+reads or writes an RPC_HDR_RR structure.
+********************************************************************/
+char* smb_io_rpc_hdr_rr(BOOL io, RPC_HDR_RR *rpc, char *q, char *base, int align, int depth)
+{
+	if (rpc == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_rpc_hdr_rr\n",  tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = smb_io_rpc_hdr(io, &(rpc->hdr), q, base, align, depth);
+
+	DBG_RW_IVAL("alloc_hint", depth, base, io, q, rpc->alloc_hint); q += 4;
+	DBG_RW_CVAL("context_id", depth, base, io, q, rpc->context_id); q++;
+	DBG_RW_CVAL("cancel_ct ", depth, base, io, q, rpc->cancel_count); q++;
+	DBG_RW_CVAL("opnum     ", depth, base, io, q, rpc->opnum); q++;
+
+	return q;
+}
 /*******************************************************************
 reads or writes an LSA_POL_HND structure.
 ********************************************************************/

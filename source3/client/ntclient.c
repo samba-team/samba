@@ -111,7 +111,7 @@ static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
 	/* turn parameters into data stream */
 	p = lsa_io_q_open_pol(False, &q_o, data + 0x18, data, 4, 0);
 
-	/* create the request RPC_HDR with no data */
+	/* create the request RPC_HDR_RR with no data */
 	create_rpc_request(call_id, LSA_OPENPOLICY, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
@@ -126,7 +126,7 @@ static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
 				&rparam, &rdata))
 	{
 		LSA_R_OPEN_POL r_o;
-		RPC_HDR hdr;
+		RPC_HDR_RR hdr;
 		int hdr_len;
 		int pkt_len;
 
@@ -134,16 +134,16 @@ static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
 
 		p = rdata;
 
-		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
 		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
 
 		hdr_len = PTR_DIFF(p, rdata);
 
-		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
 		{
 			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_open_policy: hdr_len %x != frag_len-alloc_hint\n",
-			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			DEBUG(2,("do_lsa_open_policy: hdr_len %x != frag_len-alloc_hint %x\n",
+			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
 			p = NULL;
 		}
 
@@ -151,11 +151,11 @@ static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
 		
 		pkt_len = PTR_DIFF(p, rdata);
 
-		if (p && pkt_len != hdr.frag_len)
+		if (p && pkt_len != hdr.hdr.frag_len)
 		{
 			/* packet data size not same as reported fragment length */
 			DEBUG(2,("do_lsa_open_policy: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.frag_len));
+			                           pkt_len, hdr.hdr.frag_len));
 			p = NULL;
 		}
 
@@ -208,7 +208,7 @@ static BOOL do_lsa_query_info_pol(uint16 fnum, LSA_POL_HND *hnd, uint16 info_cla
 	/* turn parameters into data stream */
 	p = lsa_io_q_query(False, &q_q, data + 0x18, data, 4, 0);
 
-	/* create the request RPC_HDR with no data */
+	/* create the request RPC_HDR_RR with no data */
 	create_rpc_request(call_id, LSA_QUERYINFOPOLICY, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
@@ -223,7 +223,7 @@ static BOOL do_lsa_query_info_pol(uint16 fnum, LSA_POL_HND *hnd, uint16 info_cla
 				&rparam, &rdata))
 	{
 		LSA_R_QUERY_INFO r_q;
-		RPC_HDR hdr;
+		RPC_HDR_RR hdr;
 		int hdr_len;
 		int pkt_len;
 
@@ -231,16 +231,16 @@ static BOOL do_lsa_query_info_pol(uint16 fnum, LSA_POL_HND *hnd, uint16 info_cla
 
 		p = rdata;
 
-		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
 		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
 
 		hdr_len = PTR_DIFF(p, rdata);
 
-		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
 		{
 			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_query_info: hdr_len %x != frag_len-alloc_hint\n",
-			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			DEBUG(2,("do_lsa_query_info: hdr_len %x != frag_len-alloc_hint %x\n",
+			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
 			p = NULL;
 		}
 
@@ -248,11 +248,11 @@ static BOOL do_lsa_query_info_pol(uint16 fnum, LSA_POL_HND *hnd, uint16 info_cla
 		
 		pkt_len = PTR_DIFF(p, rdata);
 
-		if (p && pkt_len != hdr.frag_len)
+		if (p && pkt_len != hdr.hdr.frag_len)
 		{
 			/* packet data size not same as reported fragment length */
 			DEBUG(2,("do_lsa_query_info: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.frag_len));
+			                           pkt_len, hdr.hdr.frag_len));
 			p = NULL;
 		}
 
@@ -345,7 +345,7 @@ static BOOL do_lsa_close(uint16 fnum, LSA_POL_HND *hnd)
 	/* turn parameters into data stream */
 	p = lsa_io_q_close(False, &q_c, data + 0x18, data, 4, 0);
 
-	/* create the request RPC_HDR with no data */
+	/* create the request RPC_HDR_RR with no data */
 	create_rpc_request(call_id, LSA_CLOSE, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
@@ -360,7 +360,7 @@ static BOOL do_lsa_close(uint16 fnum, LSA_POL_HND *hnd)
 				&rparam, &rdata))
 	{
 		LSA_R_CLOSE r_c;
-		RPC_HDR hdr;
+		RPC_HDR_RR hdr;
 		int hdr_len;
 		int pkt_len;
 
@@ -368,16 +368,16 @@ static BOOL do_lsa_close(uint16 fnum, LSA_POL_HND *hnd)
 
 		p = rdata;
 
-		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
 		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
 
 		hdr_len = PTR_DIFF(p, rdata);
 
-		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
 		{
 			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_close: hdr_len %x != frag_len-alloc_hint\n",
-			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			DEBUG(2,("do_lsa_close: hdr_len %x != frag_len-alloc_hint %x\n",
+			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
 			p = NULL;
 		}
 
@@ -385,11 +385,11 @@ static BOOL do_lsa_close(uint16 fnum, LSA_POL_HND *hnd)
 		
 		pkt_len = PTR_DIFF(p, rdata);
 
-		if (p && pkt_len != hdr.frag_len)
+		if (p && pkt_len != hdr.hdr.frag_len)
 		{
 			/* packet data size not same as reported fragment length */
 			DEBUG(2,("do_lsa_close: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.frag_len));
+			                           pkt_len, hdr.hdr.frag_len));
 			p = NULL;
 		}
 
@@ -458,7 +458,7 @@ static BOOL do_lsa_req_chal(uint16 fnum,
 	/* turn parameters into data stream */
 	p = lsa_io_q_req_chal(False, &q_c, data + 0x18, data, 4, 0);
 
-	/* create the request RPC_HDR _after_ the main data: length is now known */
+	/* create the request RPC_HDR_RR _after_ the main data: length is now known */
 	create_rpc_request(call_id, LSA_REQCHAL, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
@@ -473,7 +473,7 @@ static BOOL do_lsa_req_chal(uint16 fnum,
 				&rparam,&rdata))
 	{
 		LSA_R_REQ_CHAL r_c;
-		RPC_HDR hdr;
+		RPC_HDR_RR hdr;
 		int hdr_len;
 		int pkt_len;
 
@@ -481,16 +481,16 @@ static BOOL do_lsa_req_chal(uint16 fnum,
 
 		p = rdata;
 
-		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
 		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
 
 		hdr_len = PTR_DIFF(p, rdata);
 
-		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
 		{
 			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_req_chal: hdr_len %x != frag_len-alloc_hint\n",
-			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			DEBUG(2,("do_lsa_req_chal: hdr_len %x != frag_len-alloc_hint %x\n",
+			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
 			p = NULL;
 		}
 
@@ -498,11 +498,11 @@ static BOOL do_lsa_req_chal(uint16 fnum,
 		
 		pkt_len = PTR_DIFF(p, rdata);
 
-		if (p && pkt_len != hdr.frag_len)
+		if (p && pkt_len != hdr.hdr.frag_len)
 		{
 			/* packet data size not same as reported fragment length */
 			DEBUG(2,("do_lsa_req_chal: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.frag_len));
+			                           pkt_len, hdr.hdr.frag_len));
 			p = NULL;
 		}
 
@@ -559,7 +559,7 @@ static BOOL do_lsa_auth2(uint16 fnum,
 	/* turn parameters into data stream */
 	p = lsa_io_q_auth_2(False, &q_a, data + 0x18, data, 4, 0);
 
-	/* create the request RPC_HDR _after_ the main data: length is now known */
+	/* create the request RPC_HDR_RR _after_ the main data: length is now known */
 	create_rpc_request(call_id, LSA_AUTH2, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
@@ -574,7 +574,7 @@ static BOOL do_lsa_auth2(uint16 fnum,
 				&rparam,&rdata))
 	{
 		LSA_R_AUTH_2 r_a;
-		RPC_HDR hdr;
+		RPC_HDR_RR hdr;
 		int hdr_len;
 		int pkt_len;
 
@@ -582,16 +582,16 @@ static BOOL do_lsa_auth2(uint16 fnum,
 
 		p = rdata;
 
-		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
 		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
 
 		hdr_len = PTR_DIFF(p, rdata);
 
-		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
 		{
 			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_auth2: hdr_len %x != frag_len-alloc_hint\n",
-			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			DEBUG(2,("do_lsa_auth2: hdr_len %x != frag_len-alloc_hint %x\n",
+			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
 			p = NULL;
 		}
 
@@ -599,11 +599,11 @@ static BOOL do_lsa_auth2(uint16 fnum,
 		
 		pkt_len = PTR_DIFF(p, rdata);
 
-		if (p && pkt_len != hdr.frag_len)
+		if (p && pkt_len != hdr.hdr.frag_len)
 		{
 			/* packet data size not same as reported fragment length */
 			DEBUG(2,("do_lsa_auth2: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.frag_len));
+			                           pkt_len, hdr.hdr.frag_len));
 			p = NULL;
 		}
 
@@ -673,7 +673,7 @@ static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt
 	/* turn parameters into data stream */
 	p = lsa_io_q_sam_logon(False, &q_s, data + 0x18, data, 4, 0);
 
-	/* create the request RPC_HDR _after_ the main data: length is now known */
+	/* create the request RPC_HDR_RR _after_ the main data: length is now known */
 	create_rpc_request(call_id, LSA_SAMLOGON, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
@@ -688,7 +688,7 @@ static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt
 				&rparam,&rdata))
 	{
 		LSA_R_SAM_LOGON r_s;
-		RPC_HDR hdr;
+		RPC_HDR_RR hdr;
 		int hdr_len;
 		int pkt_len;
 
@@ -698,16 +698,16 @@ static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt
 
 		p = rdata;
 
-		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
 		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
 
 		hdr_len = PTR_DIFF(p, rdata);
 
-		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
 		{
 			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_sam_logon: hdr_len %x != frag_len-alloc_hint\n",
-			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			DEBUG(2,("do_lsa_sam_logon: hdr_len %x != frag_len-alloc_hint %x\n",
+			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
 			p = NULL;
 		}
 
@@ -715,11 +715,11 @@ static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt
 		
 		pkt_len = PTR_DIFF(p, rdata);
 
-		if (p && pkt_len != hdr.frag_len)
+		if (p && pkt_len != hdr.hdr.frag_len)
 		{
 			/* packet data size not same as reported fragment length */
 			DEBUG(2,("do_lsa_sam_logon: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.frag_len));
+			                           pkt_len, hdr.hdr.frag_len));
 			p = NULL;
 		}
 
@@ -796,7 +796,7 @@ static BOOL do_lsa_sam_logoff(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_cln
 	/* turn parameters into data stream */
 	p = lsa_io_q_sam_logoff(False, &q_s, data + 0x18, data, 4, 0);
 
-	/* create the request RPC_HDR _after_ the main data: length is now known */
+	/* create the request RPC_HDR_RR _after_ the main data: length is now known */
 	create_rpc_request(call_id, LSA_SAMLOGOFF, data, PTR_DIFF(p, data));
 
 	/* create setup parameters. */
@@ -811,7 +811,7 @@ static BOOL do_lsa_sam_logoff(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_cln
 				&rparam,&rdata))
 	{
 		LSA_R_SAM_LOGOFF r_s;
-		RPC_HDR hdr;
+		RPC_HDR_RR hdr;
 		int hdr_len;
 		int pkt_len;
 
@@ -819,16 +819,16 @@ static BOOL do_lsa_sam_logoff(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_cln
 
 		p = rdata;
 
-		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
 		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
 
 		hdr_len = PTR_DIFF(p, rdata);
 
-		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
 		{
 			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_sam_logoff: hdr_len %x != frag_len-alloc_hint\n",
-			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			DEBUG(2,("do_lsa_sam_logoff: hdr_len %x != frag_len-alloc_hint %x\n",
+			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
 			p = NULL;
 		}
 
@@ -836,11 +836,11 @@ static BOOL do_lsa_sam_logoff(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_cln
 		
 		pkt_len = PTR_DIFF(p, rdata);
 
-		if (p && pkt_len != hdr.frag_len)
+		if (p && pkt_len != hdr.hdr.frag_len)
 		{
 			/* packet data size not same as reported fragment length */
 			DEBUG(2,("do_lsa_sam_logoff: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.frag_len));
+			                           pkt_len, hdr.hdr.frag_len));
 			p = NULL;
 		}
 

@@ -552,12 +552,101 @@ typedef struct rpc_hdr_info
   uint16 frag_len; /* fragment length - data size (bytes) inc header and tail. */
   uint16 auth_len; /* 0 - authentication length  */
   uint32 call_id; /* call identifier.  matches 12th uint32 of incoming RPC data. */
+
+} RPC_HDR;
+
+/* RPC_HDR_RR - ms request / response rpc header */
+typedef struct rpc_hdr_rr_info
+{
+  RPC_HDR hdr;
+
   uint32 alloc_hint; /* allocation hint - data size (bytes) minus header and tail. */
   uint16 context_id; /* 0 - presentation context identifier */
   uint8  cancel_count; /* 0 - cancel count */
   uint8  opnum; /* request: 0 - reserved.  response: opnum */
 
-} RPC_HDR;
+} RPC_HDR_RR;
+
+/* the interfaces are numbered. as yet I haven't seen more than one interface
+ * used on the same pipe name
+ * srvsvc
+ *   abstract (0x4B324FC8, 0x01D31670, 0x475A7812, 0x88E16EBF, 0x00000003)
+ *   transfer (0x8A885D04, 0x11C91CEB, 0x0008E89F, 0x6048102B, 0x00000002)
+ */
+/* RPC_IFACE */
+typedef struct rpc_iface_info
+{
+  uint8 data[16];    /* 16 bytes of number */
+  uint32 version;    /* the interface number */
+
+} RPC_IFACE;
+
+
+/* this seems to be the same string name depending on the name of the pipe,
+ * but is more likely to be linked to the interface name
+ * "srvsvc", "\\PIPE\\ntsvcs"
+ * "samr", "\\PIPE\\lsass"
+ * "wkssvc", "\\PIPE\\wksvcs"
+ * "NETLOGON", "\\PIPE\\NETLOGON"
+ */
+/* RPC_ADDR_STR */
+typedef struct rpc_addr_info
+{
+  uint16 len;   /* length of the string including null terminator */
+  fstring addr; /* the string above in single byte, null terminated form */
+
+} RPC_ADDR_STR;
+
+/* RPC_HDR_BBA */
+typedef struct rpc_hdr_bba_info
+{
+  uint16 max_tsize;       /* maximum transmission fragment size (0x1630) */
+  uint16 max_rsize;       /* max receive fragment size (0x1630) */
+  uint32 assoc_gid;       /* associated group id (0x0) */
+
+} RPC_HDR_BBA;
+
+/* RPC_HDR_RB - ms req bind header */
+typedef struct rpc_hdr_rb_info
+{
+  RPC_HDR     hdr;
+  RPC_HDR_BBA bba;
+
+  uint32 num_elements;    /* the number of elements (0x1) */
+  uint16 context_id;      /* presentation context identifier (0x0) */
+  uint8 num_syntaxes;     /* the number of syntaxes (has always been 1?)(0x1) */
+
+  RPC_IFACE abstract;     /* num and vers. of interface client is using */
+  RPC_IFACE transfer;     /* num and vers. of interface to use for replies */
+  
+} RPC_HDR_RB;
+
+/* RPC_RESULTS - can only cope with one reason, right now... */
+typedef struct rpc_results_info
+{
+/* uint8[] # 4-byte alignment padding, against SMB header */
+
+  uint8 num_results; /* the number of results (0x01) */
+
+/* uint8[] # 4-byte alignment padding, against SMB header */
+
+  uint16 result; /* result (0x00 = accept) */
+  uint16 reason; /* reason (0x00 = no reason specified) */
+
+} RPC_RESULTS;
+
+/* RPC_HDR_BA */
+typedef struct rpc_hdr_ba_info
+{
+  RPC_HDR     hdr;
+  RPC_HDR_BBA bba;
+
+  RPC_ADDR_STR addr    ;  /* the secondary address string, as described earlier */
+  RPC_RESULTS  res     ; /* results and reasons */
+  RPC_IFACE    transfer; /* the transfer syntax from the request */
+
+} RPC_HDR_BA;
+
 
 /* DOM_QUERY - info class 3 and 5 LSA Query response */
 typedef struct dom_query_info
