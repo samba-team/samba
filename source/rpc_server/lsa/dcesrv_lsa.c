@@ -828,10 +828,55 @@ static NTSTATUS lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   lsa_EnumAccountsWithUserRight
 */
-static NTSTATUS lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_EnumAccountsWithUserRight *r)
+static NTSTATUS lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *dce_call, 
+					      TALLOC_CTX *mem_ctx,
+					      struct lsa_EnumAccountsWithUserRight *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_policy_state *state;
+	int ret, i;
+	struct ldb_message **res;
+	const char * const attrs[] = { "objectSid", NULL};
+	const char *privname;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	if (r->in.name == NULL) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	} 
+
+	privname = r->in.name->string;
+	if (sec_privilege_id(privname) == -1) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+
+	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
+			   "privilege=%s", privname);
+	if (ret <= 0) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	r->out.sids->sids = talloc_array_p(r->out.sids, struct lsa_SidPtr, ret);
+	if (r->out.sids->sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<ret;i++) {
+		const char *sidstr;
+		sidstr = samdb_result_string(res[i], "objectSid", NULL);
+		if (sidstr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		r->out.sids->sids[i].sid = dom_sid_parse_talloc(r->out.sids->sids,
+								sidstr);
+		if (r->out.sids->sids[i].sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	r->out.sids->num_sids = ret;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -870,10 +915,6 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	r->out.rights = talloc_p(mem_ctx, struct lsa_RightSet);
-	if (r->out.rights == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 	r->out.rights->count = el->num_values;
 	r->out.rights->names = talloc_array_p(r->out.rights, 
 					      struct lsa_String, r->out.rights->count);
