@@ -285,6 +285,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 						  TALLOC_CTX *out_mem_ctx, 
 						  const DATA_BLOB in, DATA_BLOB *out) 
 {
+	DATA_BLOB null_data_blob = data_blob(NULL,0);
 	NTSTATUS nt_status;
 	int num_ops;
 	const char **mechTypes = NULL;
@@ -301,7 +302,6 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 		DEBUG(1, ("no GENSEC OID backends available\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	DATA_BLOB null_data_blob = data_blob(NULL,0);
 
 	nt_status = gensec_subcontext_start(gensec_security, 
 					    &spnego_state->sub_sec_security);
