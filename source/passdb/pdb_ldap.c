@@ -3305,10 +3305,9 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 		if (strlen(pdb_get_tp_domain_name_c(trustpw))) {
 			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 							   attr_domain, attr_val, sizeof(attr_val));
-			if (ret)
-				if (strncmp(pdb_get_tp_domain_name_c(trustpw), attr_val, sizeof(attr_val)))
-					smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-							 attr_domain, pdb_get_tp_domain_name_c(trustpw));
+			if (ret && strncmp(pdb_get_tp_domain_name_c(trustpw), attr_val, sizeof(attr_val)))
+				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+						 attr_domain, pdb_get_tp_domain_name_c(trustpw));
 		}
 	} else {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
@@ -3323,10 +3322,9 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 		if (strlen(pdb_get_tp_pass(trustpw))) {
 			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 							   attr_ntpw, attr_val, sizeof(attr_val));
-			if (ret)
-				if (strncmp(hexpwd, attr_val, sizeof(attr_val)))
-					smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-							 attr_ntpw, hexpwd);
+			if (ret && strncmp(hexpwd, attr_val, sizeof(attr_val)))
+				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+						 attr_ntpw, hexpwd);
 		}
 	} else {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
@@ -3337,19 +3335,17 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 	sid = pdb_get_tp_domain_sid(trustpw);
 	sid_to_string(sidstr, sid);
 	if (entry) {
-		ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-						   attr_sid, attr_val, sizeof(attr_val));
-		if (ret) {
-			/* pattern of "empty sid compare" */
-			DOM_SID empty_sid;
-			memset(&empty_sid, 0, sizeof(empty_sid));
-			const void *empty = &empty_sid, *new = &sid;
-
-			if (memcmp(new, empty, sizeof(DOM_SID)) &&
-			    strncmp(sid_to_string(sidstr, sid), attr_val, sizeof(attr_val)))
+		DOM_SID empty_sid;
+		/* pattern of "empty sid compare" */
+		memset(&empty_sid, 0, sizeof(empty_sid));
+		
+		if (sid_compare(&empty_sid, sid)) {
+			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+							   attr_sid, attr_val, sizeof(attr_val));
+			if (ret && strncmp(sid_to_string(sidstr, sid), attr_val, sizeof(attr_val)))
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 						 attr_sid, sidstr);
-		}
+		}			
 	} else {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 				 attr_sid, sidstr);
@@ -3360,10 +3356,9 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 	if (entry) {
 		ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 						   attr_lct, attr_val, sizeof(attr_val));
-		if (ret)
-			if (strncmp(mtime_str, attr_val, sizeof(attr_val)))
-				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-						 attr_lct, mtime_str);
+		if (ret && strncmp(mtime_str, attr_val, sizeof(attr_val)))
+			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+					 attr_lct, mtime_str);
 	} else {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 				 attr_lct, mtime_str);
@@ -3375,10 +3370,9 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 		if (pdb_get_tp_flags(trustpw)) {
 			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 							   attr_flags, attr_val, sizeof(attr_val));
-			if (ret)
-				if (strncmp(flags_str, attr_val, sizeof(attr_val)))
-					smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-							 attr_flags, flags_str);
+			if (ret && strncmp(flags_str, attr_val, sizeof(attr_val)))
+				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+						 attr_flags, flags_str);
 		}
 	} else {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
@@ -3710,7 +3704,7 @@ static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_
 	}
 	
 	/* Everything seems to have gone well */
-	DEBUG(2, ("ldapsam_add_trust_passwd: added: sambaDomainName == %s in the LDAP database\n", dom_name));
+	DEBUG(2, ("ldapsam_add_trust_passwd: added: (sambaDomainName==%s) in the LDAP database\n", dom_name));
 	ldap_mods_free(mod, True);
 
 	return NT_STATUS_OK;
@@ -3814,7 +3808,7 @@ static NTSTATUS ldapsam_update_trust_passwd(struct pdb_methods *methods, const S
 	}
 	
 	/* Everything seems to have gone well */
-	DEBUG(2, ("Successfully modified sambaDomainName == %s in LDAP database\n", dom_name));
+	DEBUG(2, ("Successfully modified (sambaDomainName==%s) in LDAP database\n", dom_name));
 	ldap_mods_free(mod, True);
 
 	return NT_STATUS_OK;
