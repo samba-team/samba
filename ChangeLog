@@ -1,3 +1,9 @@
+2003-08-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_tkt): for compatibility with
+	with the mit implemtation, don't free `creds' argument when done,
+	its up the the caller to do that, also allow a NULL ccache.
+	
 2003-08-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5.conf.5: document tgs_require_subkey
