@@ -38,13 +38,166 @@ enum GENSEC_KRB5_STATE {
 struct gensec_krb5_state {
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB session_key;
-	DATA_BLOB pac;
+	struct PAC_LOGON_INFO logon_info;
 	enum GENSEC_KRB5_STATE state_position;
 	krb5_context krb5_context;
 	krb5_auth_context krb5_auth_context;
 	krb5_ccache krb5_ccache;
 	krb5_data ticket;
+	krb5_keyblock krb5_keyblock;
 };
+
+static NTSTATUS gensec_krb5_pac_checksum(DATA_BLOB pac_data,
+					    struct PAC_SIGNATURE_DATA *sig,
+					    struct gensec_krb5_state *gensec_krb5_state,
+					    uint32 cksum_type)
+{
+	krb5_error_code ret;
+	krb5_crypto crypto;
+	Checksum cksum;
+
+	cksum.cksumtype		= (CKSUMTYPE)sig->type;
+	cksum.checksum.length	= sizeof(sig->signature);
+	cksum.checksum.data	= sig->signature;
+
+
+	ret = krb5_crypto_init(gensec_krb5_state->krb5_context,
+				&gensec_krb5_state->krb5_keyblock,
+				cksum_type,
+				&crypto);
+	if (ret) {
+		DEBUG(0,("krb5_crypto_init() failed\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	ret = krb5_verify_checksum(gensec_krb5_state->krb5_context,
+					crypto,
+					cksum_type,
+					pac_data.data,
+					pac_data.length,
+					&cksum);
+
+	krb5_crypto_destroy(gensec_krb5_state->krb5_context, crypto);
+
+	if (ret) {
+		DEBUG(0,("NOT verifying PAC checksums yet!\n"));
+		//return NT_STATUS_LOGON_FAILURE;
+	} else {
+		DEBUG(0,("PAC checksums verified!\n"));
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
+				struct PAC_LOGON_INFO *logon_info_out,
+				DATA_BLOB blob,
+				struct gensec_krb5_state *gensec_krb5_state)
+{
+	NTSTATUS status;
+	struct PAC_SIGNATURE_DATA srv_sig;
+	uint8_t *srv_key = NULL;
+	struct PAC_SIGNATURE_DATA kdc_sig;
+	uint8_t *kdc_key = NULL;
+	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_DATA pac_data;
+	DATA_BLOB tmp_blob;
+	int i;
+
+	status = ndr_pull_struct_blob(&blob, mem_ctx, &pac_data,
+					(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("can't parse the PAC\n"));
+		return status;
+	}
+
+	if (pac_data.num_buffers < 3) {
+		/* we need logon_ingo, service_key and kdc_key */
+		DEBUG(0,("less than 3 PAC buffers\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	for (i=0; i < pac_data.num_buffers; i++) {
+		switch (pac_data.buffers[i].type) {
+			case PAC_TYPE_LOGON_INFO:
+				if (!pac_data.buffers[i].info) {
+					break;
+				}
+				logon_info = &pac_data.buffers[i].info->logon_info;
+				break;
+			case PAC_TYPE_SRV_CHECKSUM:
+				if (!pac_data.buffers[i].info) {
+					break;
+				}
+				srv_key = (uint8_t *)&pac_data.buffers[i].info->srv_cksum.signature;
+				srv_sig = pac_data.buffers[i].info->srv_cksum;
+				break;
+			case PAC_TYPE_KDC_CHECKSUM:
+				if (!pac_data.buffers[i].info) {
+					break;
+				}
+				kdc_key = (uint8_t *)&pac_data.buffers[i].info->kdc_cksum.signature;
+				kdc_sig = pac_data.buffers[i].info->kdc_cksum;
+				break;
+			case PAC_TYPE_UNKNOWN_10:
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (!logon_info) {
+		DEBUG(0,("PAC no logon_info\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	if (!srv_key) {
+		DEBUG(0,("PAC no srv_key\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	if (!kdc_key) {
+		DEBUG(0,("PAC no kdc_key\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	/* clear the kdc_key */
+	memset(kdc_key , '\0', 16);
+
+	status = ndr_push_struct_blob(&tmp_blob, mem_ctx, &pac_data,
+					      (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* verify by kdc_key */
+	status = gensec_krb5_pac_checksum(tmp_blob, &kdc_sig, gensec_krb5_state, 0);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* clear the service_key */
+	memset(srv_key , '\0', 16);
+
+	status = ndr_push_struct_blob(&tmp_blob, mem_ctx, &pac_data,
+					      (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* verify by servie_key */
+	status = gensec_krb5_pac_checksum(tmp_blob, &srv_sig, gensec_krb5_state, 0);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	DEBUG(0,("account_name: %s [%s]\n",logon_info->account_name.string, logon_info->full_name.string));
+	*logon_info_out = *logon_info;
+
+	return status;
+}
 
 static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 {
@@ -334,7 +487,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 		}
 		return nt_status;
 	}
-		
+
 	case GENSEC_KRB5_SERVER_START:
 	{
 		char *principal;
@@ -348,19 +501,25 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 						      gensec_krb5_state->krb5_context, 
 						      gensec_krb5_state->krb5_auth_context, 
 						      lp_realm(), &in, 
-						      &principal, &pac, &unwrapped_out);
+						      &principal, &pac, &unwrapped_out,
+						      &gensec_krb5_state->krb5_keyblock);
 		} else {
 			/* TODO: check the tok_id */
 			nt_status = ads_verify_ticket(out_mem_ctx, 
 						      gensec_krb5_state->krb5_context, 
 						      gensec_krb5_state->krb5_auth_context, 
 						      lp_realm(), &unwrapped_in, 
-						      &principal, &pac, &unwrapped_out);
+						      &principal, &pac, &unwrapped_out,
+						      &gensec_krb5_state->krb5_keyblock);
 		}
 
-		gensec_krb5_state->pac = data_blob_talloc_steal(out_mem_ctx, gensec_krb5_state->mem_ctx, 
-								&pac);
-		/* TODO: parse the pac */
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		/* decode and verify the pac */
+		nt_status = gensec_krb5_decode_pac(gensec_krb5_state->mem_ctx, &gensec_krb5_state->logon_info, pac,
+						    gensec_krb5_state);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			gensec_krb5_state->state_position = GENSEC_KRB5_DONE;
@@ -413,6 +572,95 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 }
+/*
+struct gensec_krb5_state {
+	TALLOC_CTX *mem_ctx;
+	DATA_BLOB session_key;
+	struct PAC_LOGON_INFO logon_info;
+	enum GENSEC_KRB5_STATE state_position;
+	krb5_context krb5_context;
+	krb5_auth_context krb5_auth_context;
+	krb5_ccache krb5_ccache;
+	krb5_data ticket;
+	krb5_keyblock krb5_keyblock;
+};
+struct auth_session_info 
+{
+	TALLOC_CTX *mem_ctx;
+
+	int refcount;
+	
+	NT_USER_TOKEN *nt_user_token;
+
+	struct auth_serversupplied_info *server_info;
+
+	DATA_BLOB session_key;
+
+	const char *workstation;
+};
+*/
+static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security,
+				     struct auth_session_info **session_info_out) 
+{
+	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+	TALLOC_CTX *mem_ctx;
+	struct auth_session_info *session_info = NULL;
+	struct PAC_LOGON_INFO *logon_info = &gensec_krb5_state->logon_info;
+	struct nt_user_token *ptoken;
+	struct dom_sid *sid;
+
+	*session_info_out = NULL;
+
+	mem_ctx = talloc_init("krb5: session_info");
+
+	session_info = talloc_p(mem_ctx, struct auth_session_info);
+	if (!session_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session_info->mem_ctx = mem_ctx;
+	session_info->refcount = 1;
+	session_info->server_info = NULL;
+	
+	ptoken = talloc_p(session_info->mem_ctx, struct nt_user_token);
+	if (!ptoken) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ptoken->num_sids = 0;
+
+	ptoken->user_sids = talloc_array_p(mem_ctx, struct dom_sid*, logon_info->groups_count + 2);
+	if (!ptoken->user_sids) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+
+	sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
+	ptoken->user_sids[0] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->user_rid);
+	ptoken->num_sids++;
+	sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
+	ptoken->user_sids[1] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->group_rid);
+	ptoken->num_sids++;
+
+	for (;ptoken->num_sids < logon_info->groups_count; ptoken->num_sids++) {
+		sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
+		ptoken->user_sids[ptoken->num_sids] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->groups[ptoken->num_sids - 2].rid);
+	}
+	
+	debug_nt_user_token(DBGC_AUTH, 0, ptoken);
+
+	session_info->nt_user_token = ptoken;
+
+	session_info->session_key = data_blob_talloc(session_info->mem_ctx, 
+							gensec_krb5_state->session_key.data,
+							gensec_krb5_state->session_key.length);
+
+	session_info->workstation = NULL;
+
+	*session_info_out = session_info;
+
+	return NT_STATUS_OK;
+}
 
 
 static const struct gensec_security_ops gensec_krb5_security_ops = {
@@ -423,6 +671,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.server_start   = gensec_krb5_server_start,
 	.update 	= gensec_krb5_update,
 	.session_key	= gensec_krb5_session_key,
+	.session_info	= gensec_krb5_session_info,
 	.end		= gensec_krb5_end
 };
 
@@ -434,6 +683,7 @@ static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
 	.server_start   = gensec_krb5_server_start,
 	.update 	= gensec_krb5_update,
 	.session_key	= gensec_krb5_session_key,
+	.session_info	= gensec_krb5_session_info,
 	.end		= gensec_krb5_end
 };
 

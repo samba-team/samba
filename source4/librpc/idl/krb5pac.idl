@@ -14,7 +14,7 @@ interface krb5pac
 	typedef struct {
 		NTTIME logon_time;
 		uint16 unknown;
-		nstring account_name;
+		astring account_name;
 	} UNKNOWN_TYPE_10;
 
 	typedef [flag(NDR_PAHEX)] struct {
@@ -89,15 +89,15 @@ interface krb5pac
     	} PAC_LOGON_INFO;
 
 	const uint8 PAC_TYPE_LOGON_INFO = 1;
-	const uint8 PAC_TYPE_SERVER_CHECKSUM = 6;
-	const uint8 PAC_TYPE_PRIVSVR_CHECKSUM = 7;
+	const uint8 PAC_TYPE_SRV_CHECKSUM = 6;
+	const uint8 PAC_TYPE_KDC_CHECKSUM = 7;
 	const uint8 PAC_TYPE_UNKNOWN_10 = 10;
 
 	typedef [nodiscriminant] union {
-		[case(PAC_TYPE_LOGON_INFO)]		PAC_LOGON_INFO logon_info;
-		[case(PAC_TYPE_SERVER_CHECKSUM)]	PAC_SIGNATURE_DATA srv_cksum;
-		[case(PAC_TYPE_PRIVSVR_CHECKSUM)]	PAC_SIGNATURE_DATA privsrv_cksum;
-		[case(PAC_TYPE_UNKNOWN_10)]		UNKNOWN_TYPE_10 type_10;
+		[case(PAC_TYPE_LOGON_INFO)]	PAC_LOGON_INFO logon_info;
+		[case(PAC_TYPE_SRV_CHECKSUM)]	PAC_SIGNATURE_DATA srv_cksum;
+		[case(PAC_TYPE_KDC_CHECKSUM)]	PAC_SIGNATURE_DATA kdc_cksum;
+		[case(PAC_TYPE_UNKNOWN_10)]	UNKNOWN_TYPE_10 type_10;
 	} PAC_INFO;
 
 	typedef struct {
@@ -105,12 +105,12 @@ interface krb5pac
 		uint32 size;
 		[relative,switch_is(type)] PAC_INFO *info;
 		uint32 _pad;
-	} PAC_INFO_HDR;
+	} PAC_BUFFER;
 
 	typedef [public] struct {
 		uint32 num_buffers;
 		uint32 version;
-		PAC_INFO_HDR pac_info_hdr_ptr[num_buffers];
+		PAC_BUFFER buffers[num_buffers];
 	} PAC_DATA;
 
 	void decode_pac(
