@@ -505,7 +505,7 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 		r_s.hdr_deltas = hdr_deltas;
 		r_s.deltas = deltas;
 
-		net_io_r_sam_sync("", &r_s, &rbuf, 0);
+		net_io_r_sam_sync("", cli->sess_key, &r_s, &rbuf, 0);
 		ok = (rbuf.offset != 0);
 
 		if (ok && r_s.status != 0 && r_s.status != NT_STATUS_MORE_ENTRIES)
@@ -713,20 +713,19 @@ domain %s.\n", timestring(), domain));
   return False;
 }
 
-BOOL do_sam_sync(struct cli_state *cli)
+BOOL do_sam_sync(struct cli_state *cli,
+				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
+				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
+				uint32 *num_deltas)
 {
 	uint16 nt_pipe_fnum;
 	BOOL res = True;
 	unsigned char trust_passwd[16];
-	int i, j;
 
-	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
-	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
-	uint32 num_deltas;
-	fstring name;
-	char *data;
+	*num_deltas = 0;
 
-	DEBUG(2,("Attempting SAM synchronisation with PDC\n"));
+	DEBUG(2,("Attempting SAM sync with PDC, domain: %s name: %s\n",
+		cli->domain, global_myname));
 
 	res = res ? trust_get_passwd(trust_passwd, cli->domain, global_myname) : False;
 
@@ -736,9 +735,9 @@ BOOL do_sam_sync(struct cli_state *cli)
 	res = res ? cli_nt_setup_creds(cli, nt_pipe_fnum, cli->mach_acct,
 	                               trust_passwd, SEC_CHAN_BDC) : False;
 
-	res = res ? cli_net_sam_sync(cli, nt_pipe_fnum, 0, &num_deltas, hdr_deltas, deltas) : False;
-
 	memset(trust_passwd, 0, 16);
+
+	res = res ? cli_net_sam_sync(cli, nt_pipe_fnum, 0, num_deltas, hdr_deltas, deltas) : False;
 
 	/* close the session */
 	cli_nt_session_close(cli, nt_pipe_fnum);
@@ -749,34 +748,7 @@ BOOL do_sam_sync(struct cli_state *cli)
 		return False;
 	}
 
-	DEBUG(0, ("SAM synchronisation returned %d entries\n", num_deltas));
-
-	for (i = 0; i < num_deltas; i++)
-	{
-		switch (hdr_deltas[i].type)
-		{
-		case 1:
-			unistr2_to_ascii(name, &(deltas[i].domain_info.uni_dom_name), sizeof(fstring)-1); 
-			DEBUG(0, ("Domain: %s\n", name));
-			break;
-			
-		case 2:
-			unistr2_to_ascii(name, &(deltas[i].group_info.uni_grp_name), sizeof(fstring)-1); 
-			DEBUG(0, ("Group: %s\n", name));
-			break;
-
-		case 5:
-			unistr2_to_ascii(name, &(deltas[i].account_info.uni_acct_name), sizeof(fstring)-1); 
-			DEBUG(0, ("Account: %s\n", name));
-
-			data = deltas[i].account_info.buf_priv_data.buffer;
-			for (j = 0; j < deltas[i].account_info.buf_priv_data.buf_len; j++)
-			{
-				snprintf(&name[2*j], 3, "%02X", data[j]);
-			}
-			DEBUG(0, ("Private Data: %s\n", name));
-		}
-	}
+	DEBUG(0, ("SAM synchronisation returned %d entries\n", *num_deltas));
 
 	return True;
 }

@@ -1288,7 +1288,6 @@ void make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
         make_uni_hdr(&(info->hdr_workstations), 0);
         make_uni_hdr(&(info->hdr_comment), 0);
         make_uni_hdr(&(info->hdr_parameters), 0);
-	make_bufhdr2(&(info->hdr_priv_data), 0, 0, 0);
 	make_bufhdr2(&(info->hdr_sec_desc), 0, 0, 0);
 
 	info->user_rid = user_rid;
@@ -1326,8 +1325,37 @@ void make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static void net_io_sam_account_info(char *desc, SAM_ACCOUNT_INFO *info, prs_struct *ps, int depth)
+static void net_io_sam_passwd_info(char *desc, SAM_PWD *pwd,
+				prs_struct *ps, int depth)
 {
+	if (pwd == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_sam_passwd_info");
+	depth++;
+
+	prs_uint32("unk_0 ", ps, depth, &(pwd->unk_0 ));
+
+	smb_io_unihdr ("hdr_lm_pwd", &(pwd->hdr_lm_pwd), ps, depth);
+	prs_uint8s(False, "buf_lm_pwd", ps, depth, pwd->buf_lm_pwd, 16);
+	
+	prs_uint32("ptr_1 ", ps, depth, &(pwd->ptr_1 ));
+
+	smb_io_unihdr ("hdr_nt_pwd", &(pwd->hdr_nt_pwd), ps, depth);
+	prs_uint8s(False, "buf_nt_pwd", ps, depth, pwd->buf_nt_pwd, 16);
+	
+	prs_uint32("ptr_2 ", ps, depth, &(pwd->ptr_2 ));
+	prs_uint32("ptr_3 ", ps, depth, &(pwd->ptr_3 ));
+	prs_uint32("ptr_4 ", ps, depth, &(pwd->ptr_4 ));
+	prs_uint32("ptr_5 ", ps, depth, &(pwd->ptr_5 ));
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void net_io_sam_account_info(char *desc, uint8 sess_key[16],
+			SAM_ACCOUNT_INFO *info, prs_struct *ps, int depth)
+{
+	BUFHDR2 hdr_priv_data;
 	int i;
 
 	if (info == NULL) return;
@@ -1370,7 +1398,7 @@ static void net_io_sam_account_info(char *desc, SAM_ACCOUNT_INFO *info, prs_stru
 	prs_uint16("country" , ps, depth, &(info->country ));
 	prs_uint16("codepage", ps, depth, &(info->codepage));
 
-	smb_io_bufhdr2("hdr_priv_data", &(info->hdr_priv_data), ps, depth);
+	smb_io_bufhdr2("hdr_priv_data", &(hdr_priv_data), ps, depth);
 	smb_io_bufhdr2("hdr_sec_desc" , &(info->hdr_sec_desc) , ps, depth);
 	smb_io_unihdr ("hdr_profile"  , &(info->hdr_profile)  , ps, depth);
 
@@ -1386,34 +1414,66 @@ static void net_io_sam_account_info(char *desc, SAM_ACCOUNT_INFO *info, prs_stru
 
 	smb_io_unistr2("uni_acct_name", &(info->uni_acct_name),
 		       info->hdr_acct_name.buffer, ps, depth);
+	prs_align(ps);
 	smb_io_unistr2("uni_full_name", &(info->uni_full_name),
 		       info->hdr_full_name.buffer, ps, depth);
+	prs_align(ps);
 	smb_io_unistr2("uni_home_dir ", &(info->uni_home_dir ),
 		       info->hdr_home_dir .buffer, ps, depth);
+	prs_align(ps);
 	smb_io_unistr2("uni_dir_drive", &(info->uni_dir_drive),
 		       info->hdr_dir_drive.buffer, ps, depth);
+	prs_align(ps);
 	smb_io_unistr2("uni_logon_script", &(info->uni_logon_script),
 		       info->hdr_logon_script.buffer, ps, depth);
+	prs_align(ps);
 	smb_io_unistr2("uni_acct_desc", &(info->uni_acct_desc),
 		       info->hdr_acct_desc.buffer, ps, depth);
+	prs_align(ps);
 	smb_io_unistr2("uni_workstations", &(info->uni_workstations),
 		       info->hdr_workstations.buffer, ps, depth);
+	prs_align(ps);
 
 	prs_uint32("unknown1", ps, depth, &(info->unknown1));
 	prs_uint32("unknown2", ps, depth, &(info->unknown2));
 
 	smb_io_buffer4("buf_logon_hrs" , &(info->buf_logon_hrs ),
 		       info->ptr_logon_hrs, ps, depth);
+	prs_align(ps);
 	smb_io_unistr2("uni_comment"   , &(info->uni_comment   ),
 		       info->hdr_comment.buffer, ps, depth);
+	prs_align(ps);
 	smb_io_unistr2("uni_parameters", &(info->uni_parameters),
 		       info->hdr_parameters.buffer, ps, depth);
-	smb_io_buffer4("buf_priv_data" , &(info->buf_priv_data ),
-		       info->hdr_priv_data.buffer, ps, depth);
+	prs_align(ps);
+	if (hdr_priv_data.buffer != 0)
+	{
+		int old_offset;
+		uint32 len = 0x44;
+		prs_uint32("pwd_len", ps, depth, &len);
+		old_offset = ps->offset;
+		if (len == 0x44)
+		{
+			if (ps->io)
+			{
+				/* reading */
+				prs_hash1(ps, ps->offset, sess_key);
+			}
+			net_io_sam_passwd_info("pass", &(info->pass), ps, depth);
+			if (!ps->io)
+			{
+				/* writing */
+				prs_hash1(ps, old_offset, sess_key);
+			}
+		}
+		ps->offset = old_offset + len;
+	}
 	smb_io_buffer4("buf_sec_desc"  , &(info->buf_sec_desc  ),
 		       info->hdr_sec_desc.buffer, ps, depth);
+	prs_align(ps);
 	smb_io_unistr2("uni_profile"   , &(info->uni_profile   ),
 		       info->hdr_profile.buffer, ps, depth);
+	prs_align(ps);
 }
 
 /*******************************************************************
@@ -1551,7 +1611,9 @@ static void net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO *info, prs_
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static void net_io_sam_delta_ctr(char *desc, SAM_DELTA_CTR *delta, uint16 type, prs_struct *ps, int depth)
+static void net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
+				SAM_DELTA_CTR *delta, uint16 type,
+				prs_struct *ps, int depth)
 {
 	if (delta == NULL) return;
 
@@ -1560,34 +1622,56 @@ static void net_io_sam_delta_ctr(char *desc, SAM_DELTA_CTR *delta, uint16 type, 
 
 	switch (type)
 	{
-	case 1:
-		net_io_sam_domain_info("", &(delta->domain_info), ps, depth);
-		break;
-	case 2:
-		net_io_sam_group_info("", &(delta->group_info), ps, depth);
-		break;
-	case 5:
-		net_io_sam_account_info("", &(delta->account_info), ps, depth);
-		break;
-	case 8:
-		net_io_sam_group_mem_info("", &(delta->grp_mem_info), ps, depth);
-		break;
-	case 9:
-		net_io_sam_alias_info("", &(delta->alias_info), ps, depth);
-		break;
-	case 0xC:
-		net_io_sam_alias_mem_info("", &(delta->als_mem_info), ps, depth);
-		break;
-	default:
-		DEBUG(0, ("Replication error: Unknown delta type %x\n", type));
+		case 1:
+		{
+			net_io_sam_domain_info("", &(delta->domain_info),
+			                           ps, depth);
+			break;
+		}
+		case 2:
+		{
+			net_io_sam_group_info("", &(delta->group_info), 
+			                           ps, depth);
+			break;
+		}
+		case 5:
+		{
+			net_io_sam_account_info("", sess_key,
+						&(delta->account_info), 
+			                           ps, depth);
+			break;
+		}
+		case 8:
+		{
+			net_io_sam_group_mem_info("", &(delta->grp_mem_info), 
+			                           ps, depth);
+			break;
+		}
+		case 9:
+		{
+			net_io_sam_alias_info("", &(delta->alias_info), 
+			                           ps, depth);
+			break;
+		}
+		case 0xC:
+		{
+			net_io_sam_alias_mem_info("", &(delta->als_mem_info), 
+			                           ps, depth);
+			break;
+		}
+		default:
+		{
+			DEBUG(0, ("Replication error: Unknown delta type %x\n", type));
+			break;
+		}
 	}
-
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void net_io_r_sam_sync(char *desc, NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth)
+void net_io_r_sam_sync(char *desc, uint8 sess_key[16],
+				NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth)
 {
 	int i;
 
@@ -1620,7 +1704,8 @@ void net_io_r_sam_sync(char *desc, NET_R_SAM_SYNC *r_s, prs_struct *ps, int dept
 
 			for (i = 0; i < r_s->num_deltas2; i++)
 			{
-				net_io_sam_delta_ctr("", &r_s->deltas[i],
+				net_io_sam_delta_ctr("", sess_key,
+				          &r_s->deltas[i],
 				          r_s->hdr_deltas[i].type3, ps, depth);
 			}
 		}

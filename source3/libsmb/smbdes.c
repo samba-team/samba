@@ -365,6 +365,10 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
   unsigned char index_j = 0;
   unsigned char j = 0;
   int ind;
+  int len = 0;
+  if (val == 1) len = 516;
+  if (val == 0) len = 16;
+  if (val == 2) len = 68;
 
   for (ind = 0; ind < 256; ind++)
   {
@@ -381,7 +385,7 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
      s_box[ind] = s_box[j];
      s_box[j] = tc;
   }
-  for( ind = 0; ind < (val ? 516 : 16); ind++)
+  for( ind = 0; ind < len; ind++)
   {
     unsigned char tc;
     unsigned char t;

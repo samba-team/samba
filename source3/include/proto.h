@@ -474,6 +474,7 @@ enum remote_arch_types get_remote_arch(void);
 char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 void out_ascii(FILE *f, unsigned char *buf,int len);
+void out_struct(FILE *f,char *buf1,int len, int per_line);
 void out_data(FILE *f,char *buf1,int len, int per_line);
 void print_asc(int level, unsigned char const *buf,int len);
 void dump_data(int level, const char *buf1, int len);
@@ -1759,7 +1760,10 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_
 BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id, uint32 *num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_DELTA_CTR *deltas);
 BOOL change_trust_account_password(char *domain, char *remote_machine_list,
 					uint16 sec_chan);
-BOOL do_sam_sync(struct cli_state *cli);
+BOOL do_sam_sync(struct cli_state *cli,
+				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
+				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
+				uint32 *num_deltas);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
@@ -2247,7 +2251,8 @@ void make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
 			   char *full_name, uint32 user_rid, uint32 group_rid,
 			   char *home_dir, char *dir_drive, char *logon_script,
 			   char *acct_desc, uint32 acb_info, char *profile);
-void net_io_r_sam_sync(char *desc, NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth);
+void net_io_r_sam_sync(char *desc, uint8 sess_key[16],
+				NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
@@ -2261,6 +2266,7 @@ void prs_align(prs_struct *ps);
 BOOL prs_grow(prs_struct *ps);
 BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
 BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
+BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16]);
 BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
 BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
 BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
@@ -3253,6 +3259,13 @@ void display_at_enum_info(FILE *out_hnd, enum action_type action,
 void display_at_job_info(FILE *out_hnd, enum action_type action,
 		     AT_JOB_INFO *job, fstring command);
 void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTLOGRECORD *ev);
+void display_sam_sync_ctr(FILE *out_hnd, enum action_type action,
+				SAM_DELTA_HDR *delta,
+				SAM_DELTA_CTR *ctr);
+void display_sam_sync(FILE *out_hnd, enum action_type action,
+				SAM_DELTA_HDR *deltas,
+				SAM_DELTA_CTR *ctr,
+				uint32 num);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
@@ -3316,7 +3329,7 @@ SMB_BIG_UINT sys_disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SM
 
 BOOL init_dfs_table(void);
 int under_dfs(connection_struct *conn, const char *path,
-				char *local_path, size_t path_len);
+				char *local_path, size_t local_plen);
 
 /*The following definitions come from  smbd/dir.c  */
 

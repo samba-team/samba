@@ -891,6 +891,8 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 	uint8 *types;
 	const char *names[1];
 
+	DEBUG(5,("lookup_remote_ntname: %s\n", ntname));
+
 	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
 	{
 		return False;

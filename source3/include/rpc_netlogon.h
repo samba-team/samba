@@ -447,6 +447,26 @@ typedef struct sam_group_info_info
 
 } SAM_GROUP_INFO;
 
+/* SAM_PWD */
+typedef struct sam_passwd_info
+{
+	uint32 unk_0; /* 0x0000 0002 */
+
+	UNIHDR hdr_lm_pwd;
+	uint8  buf_lm_pwd[16];
+
+	uint32 ptr_1; 
+
+	UNIHDR hdr_nt_pwd;
+	uint8  buf_nt_pwd[16];
+
+	uint32 ptr_2; 
+	uint32 ptr_3; 
+	uint32 ptr_4; 
+	uint32 ptr_5; 
+
+} SAM_PWD;
+
 /* SAM_ACCOUNT_INFO (0x5) */
 typedef struct sam_account_info_info
 {
@@ -485,7 +505,6 @@ typedef struct sam_account_info_info
 	uint16 country;
 	uint16 codepage;
 
-	BUFHDR2 hdr_priv_data;
 	BUFHDR2 hdr_sec_desc;  /* security descriptor */
 
 	UNIHDR  hdr_profile;
@@ -507,7 +526,7 @@ typedef struct sam_account_info_info
 	BUFFER4 buf_logon_hrs;
 	UNISTR2 uni_comment;
 	UNISTR2 uni_parameters;
-	BUFFER4 buf_priv_data;
+	SAM_PWD pass;
 	BUFFER4 buf_sec_desc;
 	UNISTR2 uni_profile;
 

@@ -196,7 +196,7 @@ BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5, char *servers)
 
 	if (!cli_connect_serverlist(&cli, servers))
 	{
-		DEBUG(0,("get_member_domain_sid: unable to initialise client connection.\n"));
+		DEBUG(0,("get_domain_sids: unable to initialise client connection.\n"));
 		return False;
 	}
 

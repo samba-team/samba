@@ -625,7 +625,16 @@ BOOL pwdb_initialise(BOOL is_server)
 	}
 	else
 	{
-		if (!get_domain_sids(&global_member_sid, &global_sam_sid, global_myname))
+		char *srvs;
+		if (lp_server_role() == ROLE_DOMAIN_PDC)
+		{
+			srvs = global_myname;
+		}
+		else
+		{
+			srvs = lp_passwordserver();
+		}
+		if (!get_domain_sids(&global_member_sid, &global_sam_sid, srvs))
 		{
 			return False;
 		}
