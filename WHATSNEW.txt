@@ -1,5 +1,6 @@
-              WHATS NEW IN Samba 3.0 alphaX
-              =============================
+                 WHATS NEW IN Samba 3.0 alpha21
+                 ===============================
+
 This is a pre-release of Samba 3.0. This is NOT a stable release.
 Use at your own risk.
 
@@ -65,11 +66,70 @@ feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.
 
 
+Removed Parameters
+------------------
+
+  * postscript
+  * printer driver
+  * printer driver location
+  * printer driver file
+
+Added Parmeters
+---------------
+
+
+Modified Parameters
+-------------------
+
+  * restruct anonymous
+  * password server
+
+
 Changes in alpha21:
 
-1)
+ See cvs log for SAMBA_3_0 for complete details.  There are many
+ smaller numerous changes that would clutter the release notes.
+
+1)  Numerous documentation updates including new Samba FAQ
+2)  Fixed logic error in checking wins server lists
+3)  Added more Solaris sendfile checks
+4)  Added --with-ldapsam for compatibility with 2.2.x Samba/LDAP setups
+5)  Add new client side support the Win2k LSARPC UUID in rpcbinds
+    Detect a native mode Win2k DC when in "security = domain"
+6)  Include Domain Local Groups in listing when a member of a native
+    mode Win2k domain
+7)  Fix ACL inheritance problem
+8)  Register <0x1c> name on unicast subnet
+9)  Removed stat() call in lp_add_home()
+10) Change default of max_xmit to match W2K. Ensure NT negprot uses it
+11) Merge the new ACL mapping code from Andreas Gruenbacher
+12) Removed make_printerdef tool from build
+13) Fix fd leak on printer queue tdb's
+14) Better error/status loggin in both the pam_winbind client and
+    winbindd_pam
+15) Fix fd leak with kernel change notify
+16) Fix slowdown because of enumerating all print queues on every smbd startup
+17) Fix --set-auth-user command to delete entries from the secrets file
+    when an empty username/password is passed on the command line
+18) Added --get-auth-user to wbinfo for displaying account information
+    used to enumerate users and groups
+19) Numerous updates for 'net rpc vampire' to migrate from an NT 4.0 Domain
+20) Merge of scalable printing code from APP_HEAD
+21) Numerous changes the passdb layer
+22) More work on printer publishing in Active Directory
+23) Enable "make modules" to build VFS libraries
+24) Enable print notify messages on printer attributes from smbcontrol
+25) Enable auto lookup of domain controllers when adding '*' to
+    "password server" parameter.  Allows to have prefferred list
+    of DC's, but not authoritative (e.g. password server = DC1 DC2 *)
 
 
+
+                 ===============================
+
+Changes in older alpha releases follow:
+
+---------------------------------------------------------------------
 
 Changes in alpha20:
 
