@@ -704,7 +704,7 @@ struct parm_struct
 	parm_type type;
 	parm_class class;
 	void *ptr;
-	BOOL (*special)(const char *, char **);
+	BOOL (*special)(int snum, const char *, char **);
 	const struct enum_list *enum_list;
 	unsigned flags;
 	union {

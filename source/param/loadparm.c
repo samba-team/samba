@@ -556,18 +556,18 @@ static int default_server_announce;
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static BOOL handle_include(const char *pszParmValue, char **ptr);
-static BOOL handle_copy(const char *pszParmValue, char **ptr);
-static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
-static BOOL handle_idmap_uid(const char *pszParmValue, char **ptr);
-static BOOL handle_idmap_gid(const char *pszParmValue, char **ptr);
-static BOOL handle_debug_list( const char *pszParmValue, char **ptr );
-static BOOL handle_workgroup( const char *pszParmValue, char **ptr );
-static BOOL handle_netbios_aliases( const char *pszParmValue, char **ptr );
-static BOOL handle_netbios_scope( const char *pszParmValue, char **ptr );
-static BOOL handle_charset( const char *pszParmValue, char **ptr );
-
-static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr);
+static BOOL handle_include( int snum, const char *pszParmValue, char **ptr);
+static BOOL handle_copy( int snum, const char *pszParmValue, char **ptr);
+static BOOL handle_netbios_name( int snum, const char *pszParmValue, char **ptr);
+static BOOL handle_idmap_uid( int snum, const char *pszParmValue, char **ptr);
+static BOOL handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
+static BOOL handle_debug_list( int snum, const char *pszParmValue, char **ptr );
+static BOOL handle_workgroup( int snum, const char *pszParmValue, char **ptr );
+static BOOL handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
+static BOOL handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
+static BOOL handle_charset( int snum, const char *pszParmValue, char **ptr );
+static BOOL handle_acl_compatibility( int snum, const char *pszParmValue, char **ptr);
+static BOOL handle_printing( int snum, const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -951,7 +951,7 @@ static struct parm_struct parm_table[] = {
 	{"printcap", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_HIDE}, 
 	{"printable", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"print ok", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_HIDE}, 
-	{"printing", P_ENUM, P_LOCAL, &sDefault.iPrinting, NULL, enum_printing, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
+	{"printing", P_ENUM, P_LOCAL, &sDefault.iPrinting, handle_printing, enum_printing, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"print command", P_STRING, P_LOCAL, &sDefault.szPrintcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"disable spoolss", P_BOOL, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"lpq command", P_STRING, P_LOCAL, &sDefault.szLpqcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
@@ -1180,11 +1180,6 @@ static struct parm_struct parm_table[] = {
 
 static void init_printer_values(service *pService)
 {
-	if ( pService == NULL ) {
-		DEBUG(0,("init_printer_values: NULL pointer\n"));
-		return;
-	}
-		
 	/* choose defaults depending on the type of printing */
 	switch (pService->iPrinting) {
 		case PRINT_BSD:
@@ -2708,7 +2703,7 @@ BOOL lp_file_list_changed(void)
  Note: We must *NOT* use string_set() here as ptr points to global_myname.
 ***************************************************************************/
 
-static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
+static BOOL handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 {
 	BOOL ret;
 	pstring netbios_name;
@@ -2726,7 +2721,7 @@ static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 	return ret;
 }
 
-static BOOL handle_charset(const char *pszParmValue, char **ptr)
+static BOOL handle_charset(int snum, const char *pszParmValue, char **ptr)
 {
 	if (strcmp(*ptr, pszParmValue) != 0) {
 		string_set(ptr, pszParmValue);
@@ -2735,7 +2730,7 @@ static BOOL handle_charset(const char *pszParmValue, char **ptr)
 	return True;
 }
 
-static BOOL handle_workgroup(const char *pszParmValue, char **ptr)
+static BOOL handle_workgroup(int snum, const char *pszParmValue, char **ptr)
 {
 	BOOL ret;
 	
@@ -2745,7 +2740,7 @@ static BOOL handle_workgroup(const char *pszParmValue, char **ptr)
 	return ret;
 }
 
-static BOOL handle_netbios_scope(const char *pszParmValue, char **ptr)
+static BOOL handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 {
 	BOOL ret;
 	
@@ -2755,7 +2750,7 @@ static BOOL handle_netbios_scope(const char *pszParmValue, char **ptr)
 	return ret;
 }
 
-static BOOL handle_netbios_aliases(const char *pszParmValue, char **ptr)
+static BOOL handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
 	Globals.szNetbiosAliases = str_list_make(pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
@@ -2765,7 +2760,7 @@ static BOOL handle_netbios_aliases(const char *pszParmValue, char **ptr)
  Handle the include operation.
 ***************************************************************************/
 
-static BOOL handle_include(const char *pszParmValue, char **ptr)
+static BOOL handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
@@ -2788,7 +2783,7 @@ static BOOL handle_include(const char *pszParmValue, char **ptr)
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-static BOOL handle_copy(const char *pszParmValue, char **ptr)
+static BOOL handle_copy(int snum, const char *pszParmValue, char **ptr)
 {
 	BOOL bRetval;
 	int iTemp;
@@ -2869,7 +2864,7 @@ BOOL lp_idmap_gid(gid_t *low, gid_t *high)
 
 /* Do some simple checks on "idmap [ug]id" parameter values */
 
-static BOOL handle_idmap_uid(const char *pszParmValue, char **ptr)
+static BOOL handle_idmap_uid(int snum, const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
@@ -2886,7 +2881,7 @@ static BOOL handle_idmap_uid(const char *pszParmValue, char **ptr)
 	return True;
 }
 
-static BOOL handle_idmap_gid(const char *pszParmValue, char **ptr)
+static BOOL handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
@@ -2907,7 +2902,7 @@ static BOOL handle_idmap_gid(const char *pszParmValue, char **ptr)
  Handle the DEBUG level list.
 ***************************************************************************/
 
-static BOOL handle_debug_list( const char *pszParmValueIn, char **ptr )
+static BOOL handle_debug_list( int snum, const char *pszParmValueIn, char **ptr )
 {
 	pstring pszParmValue;
 
@@ -2972,7 +2967,7 @@ char *lp_ldap_idmap_suffix(void)
 /***************************************************************************
 ***************************************************************************/
 
-static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr)
+static BOOL handle_acl_compatibility(int snum, const char *pszParmValue, char **ptr)
 {
 	if (strequal(pszParmValue, "auto"))
 		string_set(ptr, "");
@@ -2985,6 +2980,49 @@ static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr)
 
 	return True;
 }
+
+/****************************************************************************
+ set the value for a P_ENUM
+ ***************************************************************************/
+
+static void lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue,
+                              int *ptr )
+{
+	int i;
+
+	for (i = 0; parm->enum_list[i].name; i++) 
+	{
+		if ( strequal(pszParmValue, parm->enum_list[i].name)) 
+		{
+			*ptr = parm->enum_list[i].value;
+			break;
+		}
+	}
+}
+
+/***************************************************************************
+***************************************************************************/
+
+static BOOL handle_printing(int snum, const char *pszParmValue, char **ptr)
+{
+	static int parm_num = -1;
+	service *s;
+
+	if ( parm_num == -1 )
+		parm_num = map_parameter( "printing" );
+
+	lp_set_enum_parm( &parm_table[parm_num], pszParmValue, (int*)ptr );
+
+	if ( snum < 0 )
+		s = &sDefault;
+	else
+		s = ServicePtrs[snum];
+
+	init_printer_values( s );
+
+	return True;
+}
+
 
 /***************************************************************************
  Initialise a copymap.
@@ -3108,7 +3146,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		parm_table[parmnum].special(pszParmValue, (char **)parm_ptr);
+		parm_table[parmnum].special(snum, pszParmValue, (char **)parm_ptr);
 		return (True);
 	}
 
@@ -3160,16 +3198,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_ENUM:
-			for (i = 0; parm_table[parmnum].enum_list[i].name; i++) {
-				if (strequal
-				    (pszParmValue,
-				     parm_table[parmnum].enum_list[i].name)) {
-					*(int *)parm_ptr =
-						parm_table[parmnum].
-						enum_list[i].value;
-					break;
-				}
-			}
+			lp_set_enum_parm( &parm_table[parmnum], pszParmValue, (int*)parm_ptr );
 			break;
 		case P_SEP:
 			break;
@@ -3467,11 +3496,14 @@ static void dump_a_service(service * pService, FILE * f)
 	if (pService != &sDefault)
 		fprintf(f, "\n[%s]\n", pService->szService);
 
-	for (i = 0; parm_table[i].label; i++)
+	for (i = 0; parm_table[i].label; i++) {
+
 		if (parm_table[i].class == P_LOCAL &&
 		    parm_table[i].ptr &&
 		    (*parm_table[i].label != '-') &&
-		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) {
+		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
+		{
+		
 			int pdiff = PTR_DIFF(parm_table[i].ptr, &sDefault);
 
 			if (pService == &sDefault) {
@@ -3490,14 +3522,16 @@ static void dump_a_service(service * pService, FILE * f)
 			print_parameter(&parm_table[i],
 					((char *)pService) + pdiff, f);
 			fprintf(f, "\n");
-	}
-	if (pService->param_opt != NULL) {
-		data = pService->param_opt;
-		while(data) {
-			fprintf(f, "\t%s = %s\n", data->key, data->value);
-			data = data->next;
 		}
-        }
+
+		if (pService->param_opt != NULL) {
+			data = pService->param_opt;
+			while(data) {
+				fprintf(f, "\t%s = %s\n", data->key, data->value);
+				data = data->next;
+			}
+        	}
+	}
 }
 
 
@@ -3899,7 +3933,9 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	}
 
 	init_iconv();
+#if 0	/* JERRY */
 	init_printer_values(&sDefault);
+#endif
 
 	return (bRetval);
 }
