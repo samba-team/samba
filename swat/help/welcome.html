@@ -1,6 +1,64 @@
 Welcome to SWAT!<p>
 
-need to edit help/welcome.html to fill out this welcome page<p>
+This is a online demonstration of the current version of the Samba Web
+Administration Tool. This tool is still being written so you'll find
+it looks very rough at this stage.<p>
+
+Normally this opening page would contain the (as yet unwritten) welcome
+blurb for SWAT, giving basic instructions on how to use it. I've put
+this bit of waffle in its place for the moment. <p>
+
+Also note that SWAT normally demands authentication before showing you
+this page, otherwise anyone could modify your smb.conf! I've disabled
+that for this demo.<p>
+
+<H2>Features</H2>
+
+Here are some of the features we want to eventually incorporate.<p>
+
+<ul>
+<li> start/stop server
+<li> password changing
+<li> manage smbpasswd (add/delete users etc)
+<li> be able to run the disgnosis steps from DIAGNOSIS.txt
+<li> status monitoring (smbstatus style)
+<li> be able to kill off individual connections
+<li> wizard style config building
+</ul>
+
+There are also some obvious flaws with what has already been done:
+
+<ul>
+<li> help is ghastly
+<li> ordering of parameters needs to be looked at
+<li> some parameters which are share parameters need to be available at
+     the global level (especially "hosts allow" and friends)
+<li> images are just doodles 
+</ul>
+
+On the positive side, here are some good features of SWAT:
+
+<ul>
+<li> built in mini web server so you don't need a web server installed to
+manage a Samba server, you just need a browser
+<li> links to loadparm.c so it automatically makes available new
+parameters as they are added to Samba.
+<li> it's quite small (around 500 lines of code currently) 
+<li> layout and dialog building is done automatically based on the type 
+fields in loadparm.c
+</ul>
+
+<A HREF="mailto:mtippett@linuxsa.org.au">Matthew Tippett</A> is the
+main one doing SWAT work besides myself. He is especially looking at
+the layout and GUI design of the system which is something I am
+terrible with :-)<p>
+
+-- <p>
+<A HREF="http://samba.anu.edu.au/~tridge">Andrew Tridgell</A>
+
+
+
+
 
 
 
