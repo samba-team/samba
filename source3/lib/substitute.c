@@ -38,12 +38,12 @@ static fstring smb_user_name;
 void set_local_machine_name(const char* local_name, BOOL perm)
 {
 	static BOOL already_perm = False;
+	fstring tmp_local_machine;
+
 	if (already_perm)
 		return;
 
 	already_perm = perm;
-
-	fstring tmp_local_machine;
 
 	fstrcpy(tmp_local_machine,local_name);
 	trim_string(tmp_local_machine," "," ");
@@ -60,12 +60,12 @@ void set_local_machine_name(const char* local_name, BOOL perm)
 void set_remote_machine_name(const char* remote_name, BOOL perm)
 {
 	static BOOL already_perm = False;
+	fstring tmp_remote_machine;
+
 	if (already_perm)
 		return;
 
 	already_perm = perm;
-
-	fstring tmp_remote_machine;
 
 	fstrcpy(tmp_remote_machine,remote_name);
 	trim_string(tmp_remote_machine," "," ");
