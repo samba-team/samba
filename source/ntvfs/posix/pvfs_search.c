@@ -36,6 +36,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 {
 	struct pvfs_filename *name;
 	NTSTATUS status;
+	const char *shortname;
 
 	status = pvfs_resolve_partial(pvfs, file, unix_path, fname, &name);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -50,13 +51,15 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 	case RAW_SEARCH_SEARCH:
 	case RAW_SEARCH_FFIRST:
 	case RAW_SEARCH_FUNIQUE:
+		shortname = pvfs_short_name(pvfs, name, name);
 		file->search.attrib           = name->dos.attrib;
 		file->search.write_time       = nt_time_to_unix(name->dos.write_time);
 		file->search.size             = name->st.st_size;
-		file->search.name             = fname;
+		file->search.name             = shortname;
 		file->search.id.reserved      = 8;
 		memset(file->search.id.name, ' ', sizeof(file->search.id.name));
-		memcpy(file->search.id.name, fname, MIN(strlen(fname)+1, sizeof(file->search.id.name)));
+		memcpy(file->search.id.name, shortname, 
+		       MIN(strlen(shortname)+1, sizeof(file->search.id.name)));
 		file->search.id.handle        = search->handle;
 		file->search.id.server_cookie = dir_index+1;
 		file->search.id.client_cookie = 0;
