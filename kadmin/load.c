@@ -487,30 +487,29 @@ doit(const char *filename, int merge)
 extern int local_flag;
 
 static int
-loadit(int merge, int argc, char **argv)
+loadit(int merge, const char *name, int argc, char **argv)
 {
-    const char *myname = merge ? "merge" : "load";
     if(!local_flag) {
-	krb5_warnx(context, "%s is only available in local (-l) mode", myname);
+	krb5_warnx(context, "%s is only available in local (-l) mode", name);
 	return 0;
     }
 
     if(argc != 1) {
-	printf("%s file", myname);
+	printf("%s file", name);
  	return 0;
     }
-    doit(argv[optind], merge);
+    doit(argv[0], merge);
     return 0;
 }
  
 int
 load(void *opt, int argc, char **argv)
 {
-    return loadit(0, argc, argv);
+    return loadit(0, "load", argc, argv);
 }
  
 int
 merge(void *opt, int argc, char **argv)
 {
-    return loadit(1, argc, argv);
+    return loadit(1, "merge", argc, argv);
 }
