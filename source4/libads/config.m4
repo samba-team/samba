@@ -496,12 +496,10 @@ if test x"$with_krb5_support" != x"no"; then
 			krb5_context context;
 			krb5_keytab keytab;
 			krb5_init_context(&context);
-			if (krb5_kt_resolve(context, "WRFILE:api", &keytab))
-				exit(0);
-			exit(1);
+			return krb5_kt_resolve(context, "WRFILE:api", &keytab);
 		}],
-		samba_cv_HAVE_WRFILE_KEYTAB=no,
-		samba_cv_HAVE_WRFILE_KEYTAB=yes)])
+		samba_cv_HAVE_WRFILE_KEYTAB=yes,
+		samba_cv_HAVE_WRFILE_KEYTAB=no)])
 	if test x"$samba_cv_HAVE_WRFILE_KEYTAB" = x"yes"; then
 		AC_DEFINE(HAVE_WRFILE_KEYTAB,1,
 		[Whether the WRFILE:-keytab is supported])
