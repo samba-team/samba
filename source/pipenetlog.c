@@ -379,6 +379,7 @@ static BOOL deal_with_credentials(user_struct *vuser,
 			DOM_CRED *clnt_cred, DOM_CRED *srv_cred)
 {
 	UTIME new_clnt_time;
+	uint32 new_cred;
 
 	/* doesn't matter that server time is 0 */
 	srv_cred->timestamp.time = 0;
@@ -398,7 +399,9 @@ static BOOL deal_with_credentials(user_struct *vuser,
 	            &(srv_cred->challenge));
 
 	/* update the client and server credentials, for use next time... */
-	*(uint32*)(vuser->dc.srv_cred.data) = ( *(uint32*)(vuser->dc.clnt_cred.data) += new_clnt_time.time );
+	new_cred = IVAL(vuser->dc.clnt_cred.data, 0) + new_clnt_time.time;
+	SIVAL(vuser->dc.clnt_cred.data, new_cred, 0);
+	SIVAL(vuser->dc.srv_cred.data , new_cred, 0);
 
 	return True;
 }
