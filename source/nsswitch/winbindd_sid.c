@@ -189,6 +189,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	NTSTATUS result;
 	fstring domain_name, user_name;
 	enum SID_NAME_USE type;
+	unid_t id;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -227,6 +228,32 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
+	set_dc_type_and_flags(domain);
+
+	if (domain->is_samba) {
+		struct rpc_pipe_client *cli;
+
+		result = cm_connect_samba(domain, &cli);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0, ("Could not connect to samba pipe\n"));
+			return WINBINDD_ERROR;
+		}
+
+		result = rpccli_samba_sid_to_uid(cli, state->mem_ctx, &sid,
+						 &state->response.data.uid);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0, ("Could not map sid to uid: %s\n",
+				  nt_errstr(result)));
+			return WINBINDD_ERROR;
+		}
+
+		id.uid = state->response.data.uid;
+		idmap_set_mapping(&sid, id, ID_USERID);
+		return WINBINDD_OK;
+	}
+
 	/* This gets a little tricky.  If we assume that usernames are syncd
 	   between /etc/passwd and the windows domain (such as a member of a
 	   Samba domain), the we need to get the uid from the OS and not
@@ -236,7 +263,6 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	    (sid_compare_domain(&sid, &domain->sid) == 0)) {
 		
 		struct passwd *pw = NULL;
-		unid_t id;
 			
 		/* ok...here's we know that we are dealing with our own domain
 		   (the one to which we are joined).  And we know that there

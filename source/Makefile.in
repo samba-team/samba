@@ -257,6 +257,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ) 
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
+	       rpc_client/cli_samba.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
 	       rpc_client/cli_wkssvc.o rpc_client/cli_dfs.o \
 	       rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
@@ -275,6 +276,8 @@ RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o
 
 RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
                rpc_server/srv_samr_util.o
+
+RPC_SAMBA_OBJ = rpc_server/srv_samba.o rpc_server/srv_samba_nt.o
 
 RPC_REG_OBJ =  rpc_server/srv_reg.o rpc_server/srv_reg_nt.o
 
@@ -308,6 +311,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
 		rpc_parse/parse_echo.o rpc_parse/parse_shutdown.o \
 		rpc_parse/parse_epmapper.o rpc_parse/parse_svcctl.o \
+		rpc_parse/parse_samba.o \
                 $(REGOBJS_OBJ)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
@@ -487,6 +491,7 @@ SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
+		 rpcclient/cmd_samba.o \
 		 rpcclient/cmd_netlogon.o rpcclient/cmd_srvsvc.o \
 		 rpcclient/cmd_dfs.o rpcclient/cmd_reg.o \
 		 rpcclient/display_sec.o rpcclient/cmd_ds.o \
@@ -633,7 +638,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
 	    $(AUTH_SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
-	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_LSA_DS_OBJ) \
+	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_SAMBA_OBJ) $(RPC_REG_OBJ) $(RPC_LSA_DS_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(SMBLDAP_OBJ) $(IDMAP_OBJ) \
             libsmb/spnego.o $(PASSCHANGE_OBJ)
@@ -1038,6 +1043,11 @@ bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
 bin/librpc_samr.@SHLIBEXT@: $(RPC_SAMR_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SAMR_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_samba.@SHLIBEXT@: $(RPC_SAMBA_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SAMBA_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
 bin/librpc_srvsvc.@SHLIBEXT@: $(RPC_SVC_OBJ)

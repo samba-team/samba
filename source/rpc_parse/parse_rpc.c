@@ -190,6 +190,16 @@ interface/version dce/rpc pipe identification
 	}, 0x02                             \
 }
 
+#define SYNT_SAMBA_V0                      \
+{                                           \
+	{                                   \
+		0x9c54e310, 0xa955, 0x4885, \
+		{ 0xbd, 0x31 },		    \
+                { 0x78, 0x78,               \
+                  0x71, 0x47, 0xdf, 0xa6 }  \
+	}, 0x00                             \
+}
+
 
 /*
  * IMPORTANT!!  If you update this structure, make sure to
@@ -212,6 +222,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_SHUTDOWN, SYNT_SHUTDOWN_V1      , PIPE_SHUTDOWN , TRANS_SYNT_V2 },
 	{ PIPE_EPM     , SYNT_EPM_V3           , PIPE_EPM      , TRANS_SYNT_V2 },
 	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
+	{ PIPE_SAMBA   , SYNT_SAMBA_V0         , PIPE_SAMBA    , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };
 

@@ -30,6 +30,7 @@ static const char *known_nt_pipes[] = {
 	"\\LANMAN",
 	"\\srvsvc",
 	"\\samr",
+	"\\samba",
 	"\\wkssvc",
 	"\\NETLOGON",
 	"\\ntlsa",

@@ -458,6 +458,7 @@ static struct cmd_set separator_command[] = {
 
 extern struct cmd_set lsarpc_commands[];
 extern struct cmd_set samr_commands[];
+extern struct cmd_set samba_commands[];
 extern struct cmd_set spoolss_commands[];
 extern struct cmd_set netlogon_commands[];
 extern struct cmd_set srvsvc_commands[];
@@ -474,6 +475,7 @@ static struct cmd_set *rpcclient_command_list[] = {
 	lsarpc_commands,
 	ds_commands,
 	samr_commands,
+	samba_commands,
 	spoolss_commands,
 	netlogon_commands,
 	srvsvc_commands,
