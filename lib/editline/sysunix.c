@@ -23,10 +23,15 @@
 #include <config.h>
 #include "editline.h"
 
+#ifdef HAVE_TERMIOS_H
 #include <termios.h>
+#else
+#include <sgtty.h>
+#endif
 
 RCSID("$Id$");
 
+#ifdef HAVE_TERMIOS_H
 void
 rl_ttyset(int Reset)
 {
@@ -53,7 +58,26 @@ rl_ttyset(int Reset)
     else
 	tcsetattr(0, TCSANOW, &old);
 }
+#else /* !HAVE_TERMIOS_H */
+void
+rl_ttyset(int Reset)
+{
+       static struct sgttyb old;
+       struct sgttyb new;
 
+       if (Reset == 0) {
+               ioctl(0, TIOCGETP, &old);
+               rl_erase = old.sg_erase;
+               rl_kill = old.sg_kill;
+               new = old;
+               new.sg_flags &= ~(ECHO | ICANON);
+               new.sg_flags &= ~(ISTRIP | INPCK);
+               ioctl(0, TIOCSETP, &new);
+       } else {
+               ioctl(0, TIOCSETP, &old);
+       }
+}
+#endif /* HAVE_TERMIOS_H */
 
 void
 rl_add_slash(char *path, char *p)
