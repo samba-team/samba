@@ -49,10 +49,10 @@ krb5_rd_rep(krb5_context context,
 	    (*repl)->ctime, (*repl)->cusec,
 	    auth_context->authenticator->ctime,
 	    auth_context->authenticator->cusec);
-  }
-#if 0
+#if 0				/* Something wrong with the coding??? */
     return KRB_AP_ERR_MUT_FAIL;
 #endif
+  }
   
   return 0;
 }
