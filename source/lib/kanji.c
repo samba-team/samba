@@ -693,7 +693,6 @@ static int  euc3sjis (int hi, int lo, BOOL is_3byte)
       }
     }
   }
-  return ((GETAHI << 8) | GETALO);
 }
 
 /*******************************************************************

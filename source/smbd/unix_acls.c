@@ -352,15 +352,6 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
     sid_copy( &group_sid, &global_sid_World);
   } else {
 
-    /*
-     * If there is a VFS redirect, use it.
-     */
-
-    if ((fsp->is_directory || fsp->fd == -1) && fsp->conn->vfs_ops.get_nt_acl)
-      return fsp->conn->vfs_ops.get_nt_acl(fsp->conn,dos_to_unix(fsp->fsp_name, False), ppdesc);
-    else if (fsp->conn->vfs_ops.fget_nt_acl)
-      return fsp->conn->vfs_ops.fget_nt_acl(fsp,fsp->fd, ppdesc);
-
     if(fsp->is_directory || fsp->fd == -1) {
       if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0) {
         return 0;
@@ -461,15 +452,6 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
   mode_t perms = 0;
   SMB_STRUCT_STAT sbuf;  
   BOOL got_dacl = False;
-
-  /*
-   * If there is a VFS redirect, use it.
-   */
-
-  if ((fsp->is_directory || fsp->fd == -1) && fsp->conn->vfs_ops.set_nt_acl)
-    return fsp->conn->vfs_ops.set_nt_acl(conn,dos_to_unix(fsp->fsp_name, False), security_info_sent, psd);
-  else if (fsp->conn->vfs_ops.fset_nt_acl)
-    return fsp->conn->vfs_ops.fset_nt_acl(fsp,fsp->fd, security_info_sent, psd);
 
   /*
    * Get the current state of the file.

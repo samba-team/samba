@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-#ifdef WITH_PROFILE
 #include <sys/shm.h>
 
 extern int DEBUGLEVEL;
@@ -33,6 +32,11 @@ static int shm_id;
 static BOOL read_only;
 
 struct profile_struct *profile_p;
+
+BOOL do_profile_flag = False;
+
+struct timeval profile_starttime;
+struct timeval profile_endtime;
 
 /*******************************************************************
   open the profiling shared memory area
@@ -99,10 +103,7 @@ BOOL profile_setup(BOOL rdonly)
 		DEBUG(3,("Initialised profile area\n"));
 	}
 
+	do_profile_flag = True;		/* temp for now */
 	return True;
 }
 
-#else
- /* to keep compilers happy about empty modules */
- void profile_dummy(void) {}
-#endif

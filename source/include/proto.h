@@ -3793,7 +3793,6 @@ int sslutil_negotiate_ssl(int fd, int msg_type);
 
 /*The following definitions come from  smbd/statcache.c  */
 
-void print_stat_cache_statistics(void);
 void stat_cache_add( char *full_orig_name, char *orig_translated_path);
 BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath, 
 		       char **start, SMB_STRUCT_STAT *pst);
@@ -3834,7 +3833,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 /*The following definitions come from  smbd/vfs-wrap.c  */
 
 int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user);
-void vfswrap_dummy_disconnect(void);
+void vfswrap_dummy_disconnect(connection_struct *conn);
 SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 DIR *vfswrap_opendir(connection_struct *conn, char *fname);
@@ -3860,6 +3859,9 @@ char *vfswrap_getwd(connection_struct *conn, char *path);
 int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times);
 int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T offset);
 BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
+size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
+BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);
 
 /*The following definitions come from  smbd/vfs.c  */
 

@@ -679,7 +679,7 @@ uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
 
         DEBUG(5,("SPOOLSS Get Printer data)\n"));
 
-        make_spoolss_q_getprinterdata(&q_o, hnd, valuename, in_size);
+        make_spoolss_q_getprinterdata(&q_o, hnd,(UNISTR2 *)valuename, in_size);
 
         /* turn parameters into data stream */
         if (spoolss_io_q_getprinterdata("", &q_o, &buf, 0) &&

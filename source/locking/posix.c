@@ -408,7 +408,7 @@ static BOOL does_lock_overlap(SMB_OFF_T start1, SMB_OFF_T size1, SMB_OFF_T start
 	if (start1 >= start2 && start1 <= start2 + size2)
 		return True;
 
-	if (start1 < start2 && start1 + size1 > start2);
+	if (start1 < start2 && start1 + size1 > start2)
 		return True;
 
 	return False;
