@@ -203,7 +203,7 @@ static BOOL centry_expired(struct winbindd_domain *domain, struct cache_entry *c
 	/* if the server is down or the cache entry is not older than the
 	   current sequence number then it is OK */
 	if (wcache_server_down(domain) || 
-	    centry->sequence_number >= domain->sequence_number) {
+	    centry->sequence_number == domain->sequence_number) {
 		return False;
 	}
 
