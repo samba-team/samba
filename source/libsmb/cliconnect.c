@@ -339,17 +339,11 @@ void cli_negprot_send(struct cli_state *cli)
 {
 	char *p;
 	int numprots;
-	int plength;
 
 	memset(cli->outbuf,'\0',smb_size);
 
 	/* setup the protocol strings */
-	for (plength=0,numprots=0;
-	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
-	     numprots++)
-		plength += strlen(prots[numprots].name)+2;
-    
-	set_message(cli->outbuf,0,plength,True);
+	set_message(cli->outbuf,0,0,True);
 
 	p = smb_buf(cli->outbuf);
 	for (numprots=0;
@@ -362,6 +356,7 @@ void cli_negprot_send(struct cli_state *cli)
 	}
 
 	CVAL(cli->outbuf,smb_com) = SMBnegprot;
+	cli_setup_bcc(cli, p);
 	cli_setup_packet(cli);
 
 	CVAL(smb_buf(cli->outbuf),0) = 2;
