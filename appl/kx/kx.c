@@ -44,6 +44,21 @@ usr1handler (int sig)
 }
 
 /*
+ * Almost the same as for SIGUSR1, except we should exit immediately
+ * if there are no active children.
+ */
+
+static RETSIGTYPE
+usr2handler (int sig)
+{
+    donep = 1;
+    if (nchild == 0)
+	exit (0);
+
+    SIGRETURN(0);
+}
+
+/*
  * Establish authenticated connection
  */
 
@@ -398,5 +413,6 @@ main(int argc, char **argv)
      passivep = 1;
      signal (SIGCHLD, childhandler);
      signal (SIGUSR1, usr1handler);
+     signal (SIGUSR2, usr2handler);
      return doit (argv[0], passivep, debugp);
 }
