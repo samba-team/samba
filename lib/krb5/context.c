@@ -106,7 +106,7 @@ init_context_from_config_file(krb5_context context)
     context->time_fmt = krb5_config_get_string(context, NULL, "libdefaults", 
 					 "time_format", NULL);
     if(context->time_fmt == NULL)
-	context->time_fmt = "%d-%b-%Y %H:%M:%S";
+	context->time_fmt = "%Y-%m-%dT%H:%M:%S";
     context->log_utc = krb5_config_get_bool(context, NULL, "libdefaults",
 					    "log_utc", NULL);
 
