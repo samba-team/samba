@@ -3,9 +3,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1999,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
- *  Copyright (C) Paul Ashton                  1997-1999.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Sander Striker                    2000.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,15 +32,14 @@ extern int DEBUGLEVEL;
  make_svc_q_open_sc_man
  ********************************************************************/
 BOOL make_svc_q_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
-				const char *server, const char *database,
-				uint32 des_access)  
+				    const char *server, const char *database,
+				    uint32 des_access)
 {
 	DEBUG(5,("make_svc_q_open_sc_man\n"));
 
 	make_buf_unistr2(&(q_u->uni_srv_name), &(q_u->ptr_srv_name), server);
 	make_buf_unistr2(&(q_u->uni_db_name ), &(q_u->ptr_db_name), database);
 	q_u->des_access = des_access;
-
 
 	return True;
 }
@@ -72,20 +71,6 @@ BOOL svc_io_q_open_sc_man(char *desc, SVC_Q_OPEN_SC_MAN *q_u, prs_struct *ps, in
 }
 
 /*******************************************************************
- make_svc_r_open_sc_man
- ********************************************************************/
-BOOL make_svc_r_open_sc_man(SVC_R_OPEN_SC_MAN *r_u, POLICY_HND *hnd,
-				uint32 status)  
-{
-	DEBUG(5,("make_svc_r_unknown_0: %d\n", __LINE__));
-
-	memcpy(&(r_u->pol), hnd, sizeof(r_u->pol));
-	r_u->status = status;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 BOOL svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, int depth)
@@ -108,9 +93,9 @@ BOOL svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, i
  make_svc_q_open_service
  ********************************************************************/
 BOOL make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
-				POLICY_HND *hnd,
-				const char *server,
-				uint32 des_access)  
+				     POLICY_HND *hnd,
+				     const char *server,
+				     uint32 des_access)
 {
 	DEBUG(5,("make_svc_q_open_service\n"));
 
@@ -142,20 +127,6 @@ BOOL svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, 
 
 	prs_uint32("des_access", ps, depth, &(q_u->des_access));
 	prs_align(ps);
-
-	return True;
-}
-
-/*******************************************************************
- make_svc_r_open_service
- ********************************************************************/
-BOOL make_svc_r_open_service(SVC_R_OPEN_SERVICE *r_u, POLICY_HND *hnd,
-				uint32 status)  
-{
-	DEBUG(5,("make_svc_r_unknown_0: %d\n", __LINE__));
-
-	memcpy(&(r_u->pol), hnd, sizeof(r_u->pol));
-	r_u->status = status;
 
 	return True;
 }
@@ -431,7 +402,7 @@ makes an SVC_R_ENUM_SVCS_STATUS structure.
 ********************************************************************/
 BOOL make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c, 
 				ENUM_SRVC_STATUS *svcs, uint32 more_buf_size,
-				uint32 num_svcs, uint32 resume_hnd,
+				uint32 num_svcs, ENUM_HND *resume_hnd,
 				uint32 dos_status)
 {
 	if (r_c == NULL) return False;
@@ -441,7 +412,7 @@ BOOL make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c,
 	r_c->svcs          = svcs;
 	r_c->more_buf_size = more_buf_size;
 	r_c->num_svcs      = num_svcs;
-	make_enum_hnd(&r_c->resume_hnd, resume_hnd);
+	memcpy(&(r_c->resume_hnd), resume_hnd, sizeof(ENUM_HND));
 	r_c->dos_status = dos_status;
 
 	return True;
@@ -725,26 +696,6 @@ BOOL svc_io_q_query_disp_name(char *desc, SVC_Q_QUERY_DISP_NAME *q_u, prs_struct
 	prs_align(ps);
 
 	prs_uint32("buf_size", ps, depth, &(q_u->buf_size));
-
-	return True;
-}
-
-/*******************************************************************
-makes an SVC_R_QUERY_DISP_NAME structure.
-********************************************************************/
-BOOL make_svc_r_query_disp_name(SVC_R_QUERY_DISP_NAME *r_d, 
-				char *disp_name, uint32 status)
-{
-	uint32 len = strlen(disp_name);
-
-	if (r_d == NULL) return False;
-
-	DEBUG(5,("make_svc_r_query_disp_name\n"));
-
-	make_unistr2(&(r_d->uni_disp_name), disp_name, len+1);
-	r_d->buf_size = len;
-
-	r_d->status = status;
 
 	return True;
 }

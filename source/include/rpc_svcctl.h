@@ -36,6 +36,10 @@
 #define SVC_STOP_SERVICE      0x01
 #define SVC_CLOSE             0x00
 
+/* SVC_Q_START_SERVICE */
+#define MAX_SVC_ARGS 		10
+/* SVC_Q_ENUM_SVCS_STATUS */
+#define MAX_SERVICES		50
 
 /* SVC_Q_OPEN_SC_MAN */
 typedef struct q_svc_open_sc_man_info
@@ -74,8 +78,6 @@ typedef struct r_svc_open_service_info
 	uint32 status;             /* return status */
 
 } SVC_R_OPEN_SERVICE;
-
-#define MAX_SVC_ARGS 10
 
 /* SVC_Q_STOP_SERVICE */
 typedef struct q_svc_stop_service_info

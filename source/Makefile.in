@@ -327,6 +327,7 @@ SAMRD_OBJ1 = samrd/samrd.o \
 		rpc_server/srv_samr.o
 
 SVCCTLD_OBJ1 = svcctld/svcctld.o \
+		svcctld/srv_svcctl_nt.o \
 		rpc_server/srv_svcctl.o
 
 LSARPCD_OBJ1 = lsarpcd/lsarpcd.o \
