@@ -1,3 +1,8 @@
+1999-12-23  Assar Westerlund  <assar@sics.se>
+
+	* editline.c (TTYinfo): add fallback if we fail to find "le" in
+ 	termcap.
+
 1999-08-06  Assar Westerlund  <assar@sics.se>
 
 	* editline.c (TTYinfo): copy backspace string to avoid referencing
