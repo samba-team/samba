@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ ! -f configure.in ]; then
+	echo "Must be in top directory"
+	exit 1
+fi
+
+if [ $# -ne 1 ]; then
+	echo "make-release version"
+	exit 1
+fi
+
+HV="$1" emacs -batch -q -no-site-file -l ./make-release.el || exit
+
+echo cvs ci -m \"Release $1\" configure.in ChangeLog
