@@ -107,7 +107,8 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 						r->samr.in.domain_name, r->samr.in.account_name, 
 						nt_errstr(pw3.out.result));
 						/* TODO: give the reason of the reject */
-		if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
+		if (NT_STATUS_EQUAL(pw3.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
+			status = pw3.out.result;
 			goto disconnect;
 		}
 		goto ChangePasswordUser2;
@@ -148,6 +149,10 @@ ChangePasswordUser2:
 						"samr_ChangePasswordUser2 for '%s\\%s' failed: %s\n",
 						r->samr.in.domain_name, r->samr.in.account_name, 
 						nt_errstr(pw2.out.result));
+		if (NT_STATUS_EQUAL(pw2.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
+			status = pw2.out.result;
+			goto disconnect;
+		}
 		goto OemChangePasswordUser2;
 	}
 
@@ -182,6 +187,10 @@ OemChangePasswordUser2:
 						"samr_OemChangePasswordUser2 for '%s\\%s' failed: %s\n",
 						r->samr.in.domain_name, r->samr.in.account_name, 
 						nt_errstr(oe2.out.result));
+		if (NT_STATUS_EQUAL(oe2.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
+			status = oe2.out.result;
+			goto disconnect;
+		}
 		goto ChangePasswordUser;
 	}
 
@@ -225,6 +234,10 @@ ChangePasswordUser:
 						"samr_ChangePasswordUser for '%s\\%s' failed: %s\n",
 						r->samr.in.domain_name, r->samr.in.account_name, 
 						nt_errstr(pw.out.result));
+		if (NT_STATUS_EQUAL(pw.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
+			status = pw.out.result;
+			goto disconnect;
+		}
 		goto disconnect;
 	}
 #endif
@@ -341,6 +354,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_Connect failed: %s\n", 
 						nt_errstr(sc.out.result));
+		status = sc.out.result;
 		goto disconnect;
 	}
 
@@ -363,6 +377,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupDomain for [%s] failed: %s\n",
 						r->samr.in.domain_name, nt_errstr(ld.out.result));
+		status = ld.out.result;
 		goto disconnect;
 	}
 
@@ -387,6 +402,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenDomain for [%s] failed: %s\n",
 						r->samr.in.domain_name, nt_errstr(od.out.result));
+		status = od.out.result;
 		goto disconnect;
 	}
 
@@ -414,6 +430,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupNames for [%s] failed: %s\n",
 						r->samr.in.account_name, nt_errstr(ln.out.result));
+		status = ln.out.result;
 		goto disconnect;
 	}
 
@@ -422,6 +439,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupNames for [%s] returns %d RIDs\n",
 						r->samr.in.account_name, ln.out.rids.count);
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto disconnect;	
 	}
 
@@ -446,6 +464,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenUser for [%s] failed: %s\n",
 						r->samr.in.account_name, nt_errstr(ou.out.result));
+		status = ou.out.result;
 		goto disconnect;
 	}
 
@@ -490,6 +509,10 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"SetUserInfo level 26 for [%s] failed: %s\n",
 						r->samr.in.account_name, nt_errstr(sui.out.result));
+		if (NT_STATUS_EQUAL(sui.out.result, NT_STATUS_WRONG_PASSWORD)) {
+			status = sui.out.result;
+			goto disconnect;
+		}
 		goto UserInfo25;
 	}
 
@@ -537,6 +560,10 @@ UserInfo25:
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"SetUserInfo level 25 for [%s] failed: %s\n",
 						r->samr.in.account_name, nt_errstr(sui.out.result));
+		if (NT_STATUS_EQUAL(sui.out.result, NT_STATUS_WRONG_PASSWORD)) {
+			status = sui.out.result;
+			goto disconnect;
+		}
 		goto UserInfo24;
 	}
 
@@ -577,6 +604,10 @@ UserInfo24:
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"SetUserInfo level 24 for [%s] failed: %s\n",
 						r->samr.in.account_name, nt_errstr(sui.out.result));
+		if (NT_STATUS_EQUAL(sui.out.result, NT_STATUS_WRONG_PASSWORD)) {
+			status = sui.out.result;
+			goto disconnect;
+		}
 		goto UserInfo23;
 	}
 
@@ -616,6 +647,10 @@ UserInfo23:
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"SetUserInfo level 23 for [%s] failed: %s\n",
 						r->samr.in.account_name, nt_errstr(sui.out.result));
+		if (NT_STATUS_EQUAL(sui.out.result, NT_STATUS_WRONG_PASSWORD)) {
+			status = sui.out.result;
+			goto disconnect;
+		}
 		goto disconnect;
 	}
 
