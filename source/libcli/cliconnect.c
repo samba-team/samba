@@ -83,7 +83,11 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 		setup.generic.in.domain = "";
 		setup.generic.in.capabilities &= ~CAP_EXTENDED_SECURITY;
 	} else {
-		setup.generic.in.password = password;
+		if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
+			setup.generic.in.password = password;
+		} else {
+			setup.generic.in.password = NULL;
+		}
 		setup.generic.in.user = user;
 		setup.generic.in.domain = domain;
 	}
@@ -121,8 +125,11 @@ NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename,
 	if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
 		tcon.tconx.in.password = data_blob(NULL, 0);
 	} else if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
-		tcon.tconx.in.password = data_blob_talloc(mem_ctx, NULL, 16);
-		E_md4hash(password, tcon.tconx.in.password.data);
+		tcon.tconx.in.password = data_blob_talloc(mem_ctx, NULL, 24);
+		if (cli->transport->negotiate.secblob.length < 8) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		SMBencrypt(password, cli->transport->negotiate.secblob.data, tcon.tconx.in.password.data);
 	} else {
 		tcon.tconx.in.password = data_blob_talloc(mem_ctx, password, strlen(password)+1);
 	}
