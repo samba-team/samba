@@ -375,6 +375,19 @@ getreply(int expecteof)
 			osa.sa_handler != SIG_IGN)
 			osa.sa_handler(SIGINT);
 #endif
+		    if(code == 227){
+			char *p, *q;
+			pasv[0] = 0;
+			p = strchr(reply_string, '(');
+			if(p){
+			    p++;
+			    q = strchr(p, ')');
+			    if(q){
+				strncpy(pasv, p, q - p);
+				pasv[q - p] = 0;
+			    }
+			}
+		    }
 		    return code / 100;
 		}
 	    }else{
@@ -1165,19 +1178,21 @@ initconn(void)
 		   "Shouldn't happen!\n");
 	    goto bad;
 	}
-
+	if(a0 < 0 || a0 > 255 || 
+	   a1 < 0 || a1 > 255 || 
+	   a2 < 0 || a2 > 255 || 
+	   a3 < 0 || a3 > 255 || 
+	   p0 < 0 || p0 > 255 || 
+	   p1 < 0 || p1 > 255){
+	    printf("Can't parse passive mode string.\n");
+	    goto bad;
+	}
+	
 	memset(&data_addr, 0, sizeof(data_addr));
 	data_addr.sin_family = AF_INET;
-	tmpaddr = data_addr.sin_addr.s_addr;
-	a = (char *)&tmpaddr;
-	a[0] = a0 & 0xff;
-	a[1] = a1 & 0xff;
-	a[2] = a2 & 0xff;
-	a[3] = a3 & 0xff;
-	tmpport = data_addr.sin_port;
-	p = (char *)&tmpport;
-	p[0] = p0 & 0xff;
-	p[1] = p1 & 0xff;
+	data_addr.sin_addr.s_addr = htonl((a0 << 24) | (a1 << 16) | 
+					  (a2 << 8) | a3);
+	data_addr.sin_port = htons((p0 << 8) | p1);
 
 	if (connect(data, (struct sockaddr *)&data_addr,
 		    sizeof(data_addr)) < 0) {
