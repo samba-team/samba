@@ -270,12 +270,12 @@ static BOOL smb_io_notify_option_type_ctr(char *desc, SPOOL_NOTIFY_OPTION_TYPE_C
 		
 	/* the option type struct */
 	for(i=0;i<ctr->count;i++)
-		if(!smb_io_notify_option_type("", &(ctr->type[i]) , ps, depth))
+		if(!smb_io_notify_option_type("", &ctr->type[i] , ps, depth))
 			return False;
 
 	/* the type associated with the option type struct */
 	for(i=0;i<ctr->count;i++)
-		if(!smb_io_notify_option_type_data("", &(ctr->type[i]) , ps, depth))
+		if(!smb_io_notify_option_type_data("", &ctr->type[i] , ps, depth))
 			return False;
 	
 	return True;
@@ -1473,20 +1473,20 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		SEC_DESC **secdesc)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps= &buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_relsecdesc");
 	depth++;
 
-	if (MARSHALLING(ps))
-	{
+	if (MARSHALLING(ps)) {
 		uint32 struct_offset = prs_offset(ps);
 		uint32 relative_offset;
 		
-		if (*secdesc != NULL)
-		{
-			buffer->string_at_end -= 256; /* HACK! */
-			
+		if (*secdesc != NULL) {
+#if 0 /* JRA */
+			buffer->string_at_end -= 256; /* HACK! */ 
+#endif
+
 			prs_set_offset(ps, buffer->string_at_end);
 			
 			/* write the secdesc */
@@ -1500,9 +1500,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		/* write its offset */
 		if (!prs_uint32("offset", ps, depth, &relative_offset))
 			return False;
-	}
-	else
-	{
+	} else {
 		uint32 old_offset;
 		
 		/* read the offset */
@@ -2874,12 +2872,14 @@ BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps
 }
 
 /*******************************************************************
- Delete the dynamic parts of a SPOOL_Q_SETPRINTE struct.
+ Delete the dynamic parts of a SPOOL_Q_SETPRINTER struct.
 ********************************************************************/  
 
 void free_spoolss_q_setprinter(SPOOL_Q_SETPRINTER *q_u)
 {
+	free_spool_printer_info_level(&q_u->info);
 	free_sec_desc_buf( &q_u->secdesc_ctr );
+	free_devmode( q_u->devmode_ctr.devmode );
 }
 
 /*******************************************************************
@@ -3519,6 +3519,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 			if (UNMARSHALLING(ps)) {
 				if ((il->info_1=(SPOOL_PRINTER_INFO_LEVEL_1 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_1))) == NULL)
 					return False;
+				ZERO_STRUCTP(il->info_1);
 			}
 			if (!spool_io_printer_info_level_1("", il->info_1, ps, depth))
 				return False;
@@ -3528,6 +3529,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 			if (UNMARSHALLING(ps)) {
 				if ((il->info_2=(SPOOL_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2))) == NULL)
 					return False;
+				ZERO_STRUCTP(il->info_2);
 			}
 			if (!spool_io_printer_info_level_2("", il->info_2, ps, depth))
 				return False;
@@ -3537,6 +3539,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 			if (UNMARSHALLING(ps)) {
 				if ((il->info_3=(SPOOL_PRINTER_INFO_LEVEL_3 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_3))) == NULL)
 					return False;
+				ZERO_STRUCTP(il->info_3);
 			}
 			if (!spool_io_printer_info_level_3("", il->info_3, ps, depth))
 				return False;
@@ -4769,19 +4772,14 @@ BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int de
 void free_devmode(DEVICEMODE *devmode)
 {
 	if (devmode!=NULL) {
-		if (devmode->private!=NULL)
-			free(devmode->private);
-		free(devmode);
+		safe_free(devmode->private);
+		safe_free(devmode);
 	}
 }
 
-void free_printer_info_3(PRINTER_INFO_3 *printer)
+void free_printer_info_1(PRINTER_INFO_1 *printer)
 {
-	if (printer!=NULL) {
-		if (printer->secdesc != NULL)
-			free_sec_desc(&printer->secdesc);
-		free(printer);
-	}
+	safe_free(printer);
 }
 
 void free_printer_info_2(PRINTER_INFO_2 *printer)
@@ -4791,7 +4789,55 @@ void free_printer_info_2(PRINTER_INFO_2 *printer)
 		printer->devmode = NULL;
 		if (printer->secdesc != NULL)
 			free_sec_desc(&printer->secdesc);
-		free(printer);
+		safe_free(printer);
+	}
+}
+
+void free_printer_info_3(PRINTER_INFO_3 *printer)
+{
+	if (printer!=NULL) {
+		if (printer->secdesc != NULL)
+			free_sec_desc(&printer->secdesc);
+		safe_free(printer);
+	}
+}
+
+void free_spool_printer_info_1(SPOOL_PRINTER_INFO_LEVEL_1 *printer)
+{
+	safe_free(printer);
+}
+
+void free_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *printer)
+{
+	if (printer!=NULL) {
+		if (printer->secdesc != NULL)
+			free_sec_desc_buf(&printer->secdesc);
+		safe_free(printer);
+	}
+}
+
+void free_spool_printer_info_3(SPOOL_PRINTER_INFO_LEVEL_3 *printer)
+{
+	safe_free(printer);
+}
+
+void free_spool_printer_info_level(SPOOL_PRINTER_INFO_LEVEL *pil)
+{
+	if (pil == NULL)
+		return;
+
+	switch (pil->level) {
+		case 1:
+			free_spool_printer_info_1(pil->info_1);
+			break;
+		case 2:
+			free_spool_printer_info_2(pil->info_2);
+			break;
+		case 3:
+			free_spool_printer_info_3(pil->info_3);
+			break;
+		default:
+			break;
 	}
 }
 
@@ -4824,16 +4870,11 @@ PRINTER_INFO_2 *add_print2_to_array(uint32 *len, PRINTER_INFO_2 ***array,
 static PRINTER_INFO_1 *prt1_dup(const PRINTER_INFO_1* from)
 {
 	PRINTER_INFO_1 *copy = (PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
-	if (copy != NULL)
-	{
+	if (copy != NULL) {
 		if (from != NULL)
-		{
 			memcpy(copy, from, sizeof(*copy));
-		}
 		else
-		{
 			ZERO_STRUCTP(copy);
-		}
 	}
 	return copy;
 }
