@@ -42,6 +42,9 @@ static char sccsid[] = "@(#)utilities.c	8.3 (Berkeley) 5/30/95";
 #define	SLC_NAMES
 #include <arpa/telnet.h>
 #include <sys/types.h>
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 #include <sys/time.h>
 
 #include <ctype.h>

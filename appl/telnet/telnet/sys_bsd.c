@@ -45,6 +45,9 @@ static char sccsid[] = "@(#)sys_bsd.c	8.4 (Berkeley) 5/30/95";
 
 #include <fcntl.h>
 #include <sys/types.h>
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <signal.h>
