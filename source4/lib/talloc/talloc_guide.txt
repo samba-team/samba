@@ -267,9 +267,13 @@ particularly useful for creating a new temporary working context.
 (type *)talloc_realloc(const void *context, void *ptr, type, count);
 
 The talloc_realloc() macro changes the size of a talloc
-pointer. It has the following equivalences:
+pointer. The "count" argument is the number of elements of type "type"
+that you want the resulting pointer to hold. 
+
+talloc_realloc() has the following equivalences:
 
   talloc_realloc(context, NULL, type, 1) ==> talloc(context, type);
+  talloc_realloc(context, NULL, type, N) ==> talloc_array(context, type, N);
   talloc_realloc(context, ptr, type, 0)  ==> talloc_free(ptr);
 
 The "context" argument is only used if "ptr" is not NULL, otherwise it
