@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -80,7 +80,7 @@ extern struct timeval now;
 
 krb5_error_code as_rep (KDC_REQ*, krb5_data*, const char*, struct sockaddr*);
 void configure (int, char**);
-hdb_entry* db_fetch (krb5_principal);
+krb5_error_code db_fetch (krb5_principal, hdb_entry**);
 void free_ent(hdb_entry *);
 void kdc_log (int, const char*, ...)
     __attribute__ ((format (printf, 2,3)));
@@ -99,7 +99,7 @@ krb5_error_code check_flags(hdb_entry *client, const char *client_name,
 			    krb5_boolean is_as_req);
 
 #ifdef KRB4
-hdb_entry* db_fetch4 (const char*, const char*, const char*);
+krb5_error_code db_fetch4 (const char*, const char*, const char*, hdb_entry**);
 krb5_error_code do_524 (const Ticket*, krb5_data*, const char*, struct sockaddr*);
 krb5_error_code do_version4 (unsigned char*, size_t, krb5_data*, const char*, 
 			     struct sockaddr_in*);

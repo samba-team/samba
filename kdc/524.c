@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,12 +63,15 @@ fetch_server (const Ticket *t,
 	kdc_log(0, "krb5_unparse_name: %s", krb5_get_err_text(context, ret));
 	return ret;
     }
-    *server = db_fetch(sprinc);
+    ret = db_fetch(sprinc, server);
     krb5_free_principal(context, sprinc);
-    if(*server == NULL){
-	kdc_log(0, "Request to convert ticket from %s for unknown principal %s",
-		from, *spn);
-	return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+    if (ret) {
+	kdc_log(0,
+	"Request to convert ticket from %s for unknown principal %s: %s",
+		from, *spn, krb5_get_err_text(context, ret));
+	if (ret == ENOENT)
+	    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+	return ret;
     }
     return 0;
 }

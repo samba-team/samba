@@ -469,17 +469,18 @@ as_rep(KDC_REQ *req,
     if(ret)
 	goto out;
 
-    client = db_fetch(client_princ);
-    if(client == NULL){
-	kdc_log(0, "UNKNOWN -- %s", client_name);
+    ret = db_fetch(client_princ, &client);
+    if(ret){
+	kdc_log(0, "UNKNOWN -- %s: %s", client_name,
+		krb5_get_err_text(context, ret));
 	ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	goto out;
     }
 
-    server = db_fetch(server_princ);
-
-    if(server == NULL){
-	kdc_log(0, "UNKNOWN -- %s", server_name);
+    ret = db_fetch(server_princ, &server);
+    if(ret){
+	kdc_log(0, "UNKNOWN -- %s: %s", server_name,
+		krb5_get_err_text(context, ret));
 	ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	goto out;
     }
@@ -1350,12 +1351,13 @@ tgs_rep2(KDC_REQ_BODY *b,
 				 ap_req.ticket.sname,
 				 ap_req.ticket.realm);
     
-    krbtgt = db_fetch(princ);
+    ret = db_fetch(princ, &krbtgt);
 
-    if(krbtgt == NULL) {
+    if(ret) {
 	char *p;
 	krb5_unparse_name(context, princ, &p);
-	kdc_log(0, "Ticket-granting ticket not found in database: %s", p);
+	kdc_log(0, "Ticket-granting ticket not found in database: %s: %s",
+		p, krb5_get_err_text(context, ret));
 	free(p);
 	ret = KRB5KRB_AP_ERR_NOT_US;
 	goto out2;
@@ -1510,10 +1512,11 @@ tgs_rep2(KDC_REQ_BODY *b,
 		goto out2;
 	    }
 	    principalname2krb5_principal(&p, t->sname, t->realm);
-	    uu = db_fetch(p);
+	    ret = db_fetch(p, &uu);
 	    krb5_free_principal(context, p);
-	    if(uu == NULL){
-		ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+	    if(ret){
+		if (ret == ENOENT)
+		    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 		goto out;
 	    }
 	    ret = hdb_enctype2key(context, uu, t->enc_part.etype, &tkey);
@@ -1541,10 +1544,9 @@ tgs_rep2(KDC_REQ_BODY *b,
 	else
 	    kdc_log(0, "TGS-REQ %s from %s for %s", cpn, from, spn);
     server_lookup:
-	server = db_fetch(sp);
-    
+	ret = db_fetch(sp, &server);
 
-	if(server == NULL){
+	if(ret){
 	    Realm req_rlm, new_rlm;
 	    if(loop++ < 2 && (req_rlm = is_krbtgt(&sp->name))){
 		new_rlm = find_rpath(req_rlm);
@@ -1559,19 +1561,24 @@ tgs_rep2(KDC_REQ_BODY *b,
 		    goto server_lookup;
 		}
 	    }
-	    kdc_log(0, "Server not found in database: %s", spn);
-	    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+	    kdc_log(0, "Server not found in database: %s: %s", spn,
+		    krb5_get_err_text(context, ret));
+	    if (ret == ENOENT)
+		ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	    goto out;
 	}
 
-	client = db_fetch(cp);
-	if(client == NULL)
-	    kdc_log(1, "Client not found in database: %s", cpn);
+	ret = db_fetch(cp, &client);
+	if(ret)
+	    kdc_log(1, "Client not found in database: %s: %s",
+		    cpn, krb5_get_err_text(context, ret));
 #if 0
 	/* XXX check client only if same realm as krbtgt-instance */
-	if(client == NULL){
-	    kdc_log(0, "Client not found in database: %s", cpn);
-	    ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+	if(ret){
+	    kdc_log(0, "Client not found in database: %s: %s",
+		    cpn, krb5_get_err_text(context, ret));
+	    if (ret == ENOENT)
+		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	    goto out;
 	}
 #endif
