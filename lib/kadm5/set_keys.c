@@ -97,12 +97,12 @@ _kadm5_set_keys2(hdb_entry *ent,
 {
     krb5_error_code ret;
     int i;
+
     ent->keys.len = n_key_data;
     ent->keys.val = malloc(ent->keys.len * sizeof(*ent->keys.val));
     if(ent->keys.val == NULL)
 	return ENOMEM;
     for(i = 0; i < n_key_data; i++) {
-	free(ent->keys.val[i].mkvno);
 	ent->keys.val[i].mkvno = NULL;
 	ent->keys.val[i].key.keytype = key_data[i].key_data_type[0];
 	ret = krb5_data_copy(&ent->keys.val[i].key.keyvalue,
