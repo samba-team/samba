@@ -192,14 +192,19 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
 	    got_kerberos_mechanism) {
+		int krb_error;
 		status = ads_sasl_spnego_krb5_bind(ads, principal);
 		if (ADS_ERR_OK(status))
 			return status;
-		if (ads_kinit_password(ads) == 0) {
+		
+		krb_error = ads_kinit_password(ads);
+		if (krb_error) {
+			return ADS_ERROR_KRB5(krb_error);
+		} else {
 			status = ads_sasl_spnego_krb5_bind(ads, principal);
-		}
-		if (ADS_ERR_OK(status))
-			return status;
+			if (ADS_ERR_OK(status))
+				return status;
+		} 
 	}
 #endif
 
