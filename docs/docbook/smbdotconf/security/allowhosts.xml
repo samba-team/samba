@@ -1,9 +1,0 @@
-<samba:parameter name="allow hosts"
-                 context="S"
-		 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>Synonym for <link linkend="HOSTSALLOW">
-    <parameter moreinfo="none">hosts allow</parameter></link>.</para>
-</listitem>
-</samba:parameter>

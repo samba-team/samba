@@ -1,9 +1,0 @@
-<samba:parameter name="debuglevel"
-                 context="G"
-		 hide="1"
-                 xmlns:samba="http://samba.org/common">
-<listitem>
-    <para>Synonym for <link linkend="LOGLEVEL"><parameter moreinfo="none">
-    log level</parameter></link>.</para>
-</listitem>
-</samba:parameter>

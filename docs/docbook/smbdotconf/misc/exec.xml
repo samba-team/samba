@@ -1,9 +1,0 @@
-<samba:parameter name="exec"
-		 context="S"
-		 advanced="1" developer="1"
-		 xmlns:samba="http://samba.org/common">
-<listitem>
-	<para>This is a synonym for <link linkend="PREEXEC">
-	<parameter moreinfo="none">preexec</parameter></link>.</para>
-</listitem>
-</samba:parameter>
