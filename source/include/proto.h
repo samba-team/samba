@@ -225,7 +225,6 @@ void initialize_multibyte_vectors( int client_codepage);
 
 /*The following definitions come from  ldap.c  */
 
-BOOL ldap_open_connection(LDAP **ldap_struct);
 BOOL add_ldappwd_entry(struct smb_passwd *newpwd);
 BOOL mod_ldappwd_entry(struct smb_passwd *pwd, BOOL override);
 BOOL add_ldap21pwd_entry(struct sam_passwd *newpwd);

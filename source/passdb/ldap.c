@@ -32,7 +32,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  open a connection to the ldap serve.
 ******************************************************************/	
-BOOL ldap_open_connection(LDAP **ldap_struct)
+static BOOL ldap_open_connection(LDAP **ldap_struct)
 {
 	if ( (*ldap_struct = ldap_open(lp_ldap_server(),lp_ldap_port()) ) == NULL)
 	{
@@ -922,4 +922,6 @@ BOOL setldappwpos(void *vp, unsigned long tok)
 	return False;
 }
 
+#else
+static void dummy_function(void) { } /* stop some compilers complaining */
 #endif

@@ -22,6 +22,7 @@
 extern int DEBUGLEVEL;
 
 static int gotalarm;
+int pw_file_lock_depth = 0;
 
 /***************************************************************
  Signal function to tell us we timed out.
@@ -63,7 +64,6 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   return (ret == 0);
 }
 
-static int pw_file_lock_depth;
 
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.

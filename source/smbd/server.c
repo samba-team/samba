@@ -5193,7 +5193,7 @@ static void usage(char *pname)
 
   pstrcpy(global_myworkgroup, lp_workgroup());
 
-  if(!generate_machine_sid())
+  if(!pdb_generate_machine_sid())
   {
     DEBUG(0,("ERROR: Samba cannot get a machine SID.\n"));
     exit(1);
