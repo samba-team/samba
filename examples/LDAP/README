@@ -52,22 +52,12 @@ objectclass.
 smbldap-tools/
 --------------
 
-This is a collection of perl scripts (wrapped around the standard 
-OpenLDAP command line tools) for managing Samba and posix accounts
-in an LDAP directory.  See the README file included with the scripts
-for more details.
+The smbldap-tools have been removed from the samba svn 
+tree.  The latest version will continue to be included 
+in Samba releases.
 
-
-ldapsync.pl 
------------
-For more information on these scripts, see
-
-	http://www.mami.net/univr/tng-ldap/howto/
-
-
-The ldapsync.pl script requires a small command (smbencrypt) 
-for generating LanMan and NT password hashes which 
-can be found at ftp://samba.org/pub/samba/contributed/
+The smbldap-tools package can be downloaded individually from 
+http://samba.idealx.org/dist/
 
 !==
 !== end of README
