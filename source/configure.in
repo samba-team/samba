@@ -16,19 +16,11 @@ AC_ARG_WITH(fhs, [  --with-fhs            use FHS-compliant paths [default=no]],
     privatedir="\${CONFIGDIR}/private"
     swatdir="\${DATADIR}/samba/swat",
     codepagedir="\$(LIBDIR)/codepages"
-    configdir="\${prefix}/lib"
-    lockdir="\${prefix}/var/locks"
-    logfilebase="\${VARDIR}"
+    configdir="\$(LIBDIR)"
+    lockdir="\$(VARDIR)/locks"
+    logfilebase="\$(VARDIR)"
     privatedir="\${prefix}/private"
-    sbindir="\${prefix}/bin"
     swatdir="\${prefix}/swat")
-
-AC_SUBST(codepagedir)
-AC_SUBST(configdir)
-AC_SUBST(lockdir)
-AC_SUBST(logfilebase)
-AC_SUBST(privatedir)
-AC_SUBST(swatdir)
 
 #################################################
 # set private directory location
@@ -94,6 +86,15 @@ AC_ARG_WITH(configdir,
     ;;
   esac])
 
+
+AC_SUBST(codepagedir)
+AC_SUBST(configdir)
+AC_SUBST(lockdir)
+AC_SUBST(logfilebase)
+AC_SUBST(privatedir)
+AC_SUBST(swatdir)
+AC_SUBST(bindir)
+AC_SUBST(sbindir)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
@@ -2066,6 +2067,14 @@ samba_cv_HAVE_POSIX_ACLS=yes,samba_cv_HAVE_POSIX_ACLS=no)])
   AC_MSG_RESULT(no)
 )
 
+#################################################
+# check for the historical SAMBA installation
+
+if test "x$prefix" = xNONE -a "$sbindir" = "\${exec_prefix}/sbin"; then
+	# Put all binaries under the /usr/local/samba/bin directory.
+	sbindir="$bindir"
+fi
+
 echo "checking configure summary"
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,
@@ -2073,14 +2082,5 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 
 builddir=`pwd`
 AC_SUBST(builddir)
-
-#################################################
-# check for the historical SAMBA installation
-
-if test "$prefix" = /usr/local/samba -a "$sbindir" = "\${exec_prefix}/sbin"; then
-	# Put all binaries under the /usr/local/samba/bin directory.
-	sbindir="$bindir"
-fi
-
 
 AC_OUTPUT(include/stamp-h Makefile)
