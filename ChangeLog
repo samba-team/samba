@@ -1,5 +1,18 @@
+2003-03-26  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* doc/misc.texi: spelling and add `Configuring AFS clients'
+	subsection
+
 2003-03-25  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* lib/krb5/krb5.3: add krb5_free_data_contents.3
+	
+	* lib/krb5/data.c: add krb5_free_data_contents for compat with MIT
+	API
+
+	* lib/krb5/krb5_data.3: add krb5_free_data_contents for compat
+	with MIT API
+	
 	* lib/krb5/krb5_verify_user.3: write more about how the ccache
 	argument should be inited when used
 	
