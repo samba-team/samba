@@ -86,7 +86,7 @@ init (unsigned char *a, unsigned char *b)
      a[7] = b[7] << 1;
 }
 
-void
+krb5_error_code
 krb5_string_to_key (char *str,
 		    krb5_data *salt,
 		    krb5_keyblock *key)
@@ -98,7 +98,7 @@ krb5_string_to_key (char *str,
      des_key_schedule sched;
      krb5_error_code err;
 
-     len = strlen(str) + salt->len;
+     len = strlen(str) + salt->length;
 #if 1
      len = (len + 7) / 8 * 8;
 #endif
@@ -113,7 +113,7 @@ krb5_string_to_key (char *str,
      memset (s, 0, len);
      strncpy (p, str, strlen(str));
      p += strlen(str);
-     strncpy (p, salt->data, salt->len);
+     strncpy (p, salt->data, salt->length);
      odd = 1;
      memset (tempkey, 0, sizeof(tempkey));
      for (i = 0; i < len; i += 8) {

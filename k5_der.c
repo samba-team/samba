@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <time.h>
-#include <sys/time.h>
+#include <krb5_locl.h>
 #include <k5_der.h>
 
 static void
@@ -11,7 +7,7 @@ time2generalizedtime (krb5_data *s, time_t t)
      struct tm *tm;
 
      s->data = malloc(16);
-     s->len = 15;
+     s->length = 15;
      tm = gmtime (&t);
      sprintf (s->data, "%04d%02d%02d%02d%02d%02dZ", tm->tm_year + 1900,
 	      tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min,
@@ -20,7 +16,7 @@ time2generalizedtime (krb5_data *s, time_t t)
 
 unsigned
 der_put_context_etypes (unsigned char *ptr, int tag,
-			EncryptionType *etypes, unsigned num_etypes)
+			krb5_enctype *etypes, unsigned num_etypes)
 {
      unsigned char *p = ptr;
      int i;
@@ -34,19 +30,19 @@ der_put_context_etypes (unsigned char *ptr, int tag,
 
 unsigned
 der_put_context_principalname (unsigned char *ptr, int tag,
-			       PrincipalName *name)
+			       krb5_principal name)
 {
      unsigned char *p = ptr;
      int i;
 
      if (name == NULL)
 	  return 0;
-     for (i = name->num_strings - 1; i >= 0; --i)
+     for (i = name->ncomp - 1; i >= 0; --i)
 	  p -= der_put_type_and_value (p, UT_GeneralString,
-				       &name->names[i]);
+				       &name->comp[i]);
      p -= der_put_type (p, UNIV, CONS, UT_Sequence, ptr - p);
      p -= der_put_type (p, CONTEXT, CONS, 1, ptr - p);
-     p -= der_put_context (p, 0, UT_Integer, &name->name_type);
+     p -= der_put_context (p, 0, UT_Integer, &name->type);
      p -= der_put_type (p, UNIV, CONS, UT_Sequence, ptr - p);
      p -= der_put_type (p, CONTEXT, CONS, tag, ptr - p);
      return ptr - p;
@@ -71,15 +67,16 @@ der_put_context_kdcoptions (unsigned char *ptr, int tag, KdcOptions *k)
 
 unsigned
 der_put_context_hostaddresses (unsigned char *ptr, int tag,
-			       HostAddress *addrs,
-			       unsigned naddr)
+			       krb5_addresses addrs)
 {
      unsigned char *p = ptr;
      int i;
      
-     for(i = naddr - 1; i >= 0; --i) {
-	  p -= der_put_context (p, 1, UT_OctetString, &addrs[i].addr);
-	  p -= der_put_context (p, 0, UT_Integer, &addrs[i].addr_type);
+     for(i = addrs.number - 1; i >= 0; --i) {
+	  p -= der_put_context (p, 1, UT_OctetString,
+				&addrs.addrs[i].address);
+	  p -= der_put_context (p, 0, UT_Integer,
+				&addrs.addrs[i].type);
      }
      p -= der_put_type (p, UNIV, CONS, UT_Sequence, ptr - p);
      p -= der_put_type (p, UNIV, CONS, UT_Sequence, ptr - p);
@@ -91,15 +88,13 @@ unsigned
 der_put_kdc_req_body (unsigned char *ptr, Kdc_Req *k)
 {
      unsigned char *p = ptr;
-     unsigned random = 17;
 
      /* additional-tickets[11] SEQUENCE OF Ticket OPTIONAL */
      /* enc-authorization-data[10] EncryptedData OPTIONAL */
-     p -= der_put_context_hostaddresses (p, 9, k->addrs,
-					 k->num_addrs);
+     p -= der_put_context_hostaddresses (p, 9, k->addrs);
      /* addresses[9] HostAddresses OPTIONAL */
      p -= der_put_context_etypes (p, 8, k->etypes, k->num_etypes);
-     p -= der_put_context (p, 7, UT_Integer, &random);
+     p -= der_put_context (p, 7, UT_Integer, &k->nonce);
      /* rtime[6] KerberosTime OPTIONAL */
      {
 	  krb5_data t;
@@ -180,7 +175,7 @@ der_get_principalname (unsigned char *ptr, Principalname *name)
 
 int
 der_get_kdc_rep (unsigned char *ptr, unsigned mylen, int msg_type,
-		 Kdc_Rep *k)
+		 krb5_kdc_rep *k)
 {
      unsigned char *p = ptr;
      unsigned tlen, slen;

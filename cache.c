@@ -46,6 +46,10 @@ krb5_error_code
 krb5_cc_default(krb5_context context,
 		krb5_ccache *id)
 {
+  *id = malloc(sizeof(**id));
+  if (*id == NULL)
+    return ENOMEM;
+  return krb5_cc_resolve (context, id, "/tmp/foo");
 }
 
 static krb5_error_code
@@ -112,7 +116,7 @@ krb5_cc_initialize(krb5_context context,
   if(ret = erase_file(f->filename))
     return ret;
   
-  fd = open(f->filename, O_RDWR, 0600);
+  fd = open(f->filename, O_RDWR | O_CREAT | O_EXCL, 0600);
   if(fd == -1)
     return errno;
   store_int16(fd, 0x503);

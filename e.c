@@ -1,37 +1,38 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <krb5_locl.h>
 #include <d.h>
 #include <k5_der.h>
 
 int
-der_get_principalname (Buffer *b, PrincipalName *p)
+der_get_principalname (Buffer *b, krb5_principal *p)
 {
      Identifier i;
      int cur, max;
      char *str;
      int len;
 
-     p->num_strings = 0;
+     *p = malloc(sizeof(**p));
+     if (*p == NULL)
+	  return -1;
+     (*p)->ncomp = 0;
 
      if (matchid3 (b, &i, UNIV, CONS, UT_Sequence) == NULL)
 	  return -1;
      if (matchcontextid3 (b, &i, UNIV, PRIM, UT_Integer, 0) == NULL)
 	  return -1;
-     getdata (b, &i, &p->name_type);
+     getdata (b, &i, &(*p)->type);
      if (matchcontextid3 (b, &i, UNIV, CONS, UT_Sequence, 1) == NULL)
 	  return -1;
      cur = 0;
      max = 1;
-     p->names = malloc(sizeof(char *) * max);
+     (*p)->comp = malloc(sizeof(*(*p)->comp) * max);
      while (matchid3 (b, &i, UNIV, PRIM, UT_GeneralString)) {
 	  if (cur >= max) {
 	       max *= 2;
-	       p->names = realloc (p->names, sizeof(char *) * max);
+	       (*p)->comp = realloc ((*p)->comp, sizeof(*(*p)->comp) * max);
 	  }
-	  getdata (b, &i, &p->names[cur++]);
+	  getdata (b, &i, &(*p)->comp[cur++]);
      }
-     p->num_strings = cur;
+     (*p)->ncomp = cur;
      return buf_length (b);
 }
 
@@ -106,7 +107,7 @@ der_get_ticket (Buffer *b, Ticket *t)
 }
 
 int
-der_get_kdc_rep (Buffer *b, int msg, Kdc_Rep *k)
+der_get_kdc_rep (Buffer *b, int msg, krb5_kdc_rep *k)
 {
      Identifier i, i0;
      Buffer tmp;
@@ -160,7 +161,7 @@ der_get_kdc_rep (Buffer *b, int msg, Kdc_Rep *k)
 }
 
 static int
-der_get_kdc_rep_msg (Buffer *b, int msg, Kdc_Rep *a)
+der_get_kdc_rep_msg (Buffer *b, int msg, krb5_kdc_rep *a)
 {
      Identifier i;
 
@@ -198,7 +199,7 @@ der_get_encryptionkey (Buffer *b, EncryptionKey *k)
 }
 
 int
-der_get_hostaddresses (Buffer *b, HostAddresses *h)
+der_get_hostaddresses (Buffer *b, krb5_addresses *h)
 {
      Identifier i;
      int cur, max;
@@ -215,10 +216,10 @@ der_get_hostaddresses (Buffer *b, HostAddresses *h)
 	  }
 	  if (matchcontextid3 (b, &i, UNIV, PRIM, UT_Integer, 0) == NULL)
 	       return -1;
-	  getdata (b, &i, &h->addrs[cur].addr_type);
+	  getdata (b, &i, &h->addrs[cur].type);
 	  if (matchcontextid3 (b, &i, UNIV, PRIM, UT_OctetString, 1) == NULL)
 	       return -1;
-	  getdata (b, &i, &h->addrs[cur].addr);
+	  getdata (b, &i, &h->addrs[cur].address);
 	  ++cur;
      }
      h->number = cur;

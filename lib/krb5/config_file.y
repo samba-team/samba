@@ -19,6 +19,9 @@ static krb5_config_relation **crel;
 static krb5_config_relation **rels[16];
 static int relp;
 
+static void yyerror (char *);
+static int yylex (void);
+
 %}
 
 %union {
@@ -143,7 +146,7 @@ static int yylex(void)
   return type;
 }
 
-static void yyerror(char *s)
+void yyerror(char *s)
 {
 	printf("yyerror: %s\n", s);
 }

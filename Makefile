@@ -1,15 +1,20 @@
-CC=cc -std1
-CFLAGS=-I/usr/athena/include -g
+CC=cc
+CFLAGS=-I. -I/usr/athena/include -g
 
 
-YFLAGS = -d
+#YACC=bison -y
+YACC=yacc
 
 SOURCES = cache.c principal.c principal_p.c data.c context.c misc.c \
-	  krbhst.c getport.c send_to_kdc.c der.c e.c d.c str2key.c \
-	  get_in_tkt.c get_in_tkt_pw.c
+	  krbhst.c get_port.c send_to_kdc.c der.c e.c d.c str2key.c \
+	  get_in_tkt.c get_in_tkt_pw.c der_put.c constants.c get_addrs.c \
+	  k5_der.c
 
 OBJECTS = $(SOURCES:%.c=%.o) config_file.o
 
+
+kinit: kinit.o libkrb5.a
+	$(CC) -o kinit kinit.o libkrb5.a -L/usr/local/lib -ldes
 
 tt: test.o libkrb5.a
 	$(CC) -o tt test.o libkrb5.a
@@ -23,7 +28,7 @@ libkrb5.a: $(OBJECTS)
 config_file.o: config_file.c
 
 config_file.c: config_file.y
-	yacc -b y -p __k5cf_ $<
+	$(YACC) -p __k5cf_ $<
 	mv -f y.tab.c config_file.c
 
 clean:

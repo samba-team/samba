@@ -28,37 +28,6 @@ enum {
   APPL_TICKET = 1
 };
 
-struct HostAddress {
-     int addr_type;
-     krb5_data addr;
-};
-
-typedef struct HostAddress HostAddress;
-
-struct HostAddresses {
-     int number;
-     HostAddress *addrs;
-};
-
-typedef struct HostAddresses HostAddresses;
-
-struct PrincipalName {
-     int name_type;
-     unsigned num_strings;
-     krb5_data *names;
-};
-
-enum {
-     nt_unknown = 0,
-     nt_principal = 1,
-     nt_srv_inst = 2,
-     nt_srv_hst = 3,
-     nt_srv_xhst = 4,
-     nt_uid = 5
-};
-
-typedef struct PrincipalName PrincipalName;
-
 struct KdcOptions {
      unsigned
 	  reserved : 1,
@@ -81,22 +50,20 @@ struct KdcOptions {
 
 typedef struct KdcOptions KdcOptions;
 
-typedef krb5_data Realm;
-
 typedef int EncryptionType;
 
 struct  Kdc_Req {
      int pvno;
      int msg_type;
      KdcOptions kdc_options;
-     PrincipalName *cname;
-     Realm realm;
-     PrincipalName *sname;
-     time_t till;
+     krb5_principal cname;
+     krb5_realm realm;
+     krb5_principal sname;
+     krb5_time till;
+     int nonce;
      unsigned num_etypes;
-     EncryptionType *etypes;
-     HostAddress *addrs;
-     unsigned num_addrs;
+     krb5_enctype *etypes;
+     krb5_addresses addrs;
 };
 
 typedef struct Kdc_Req Kdc_Req;
@@ -113,27 +80,12 @@ typedef struct EncryptedData EncryptedData;
 
 struct Ticket {
      int tkt_vno;
-     Realm realm;
-     PrincipalName sname;
+     krb5_realm realm;
+     krb5_principal sname;
      EncryptedData enc_part;
 };
 
 typedef struct Ticket Ticket;
-
-struct Kdc_Rep {
-     int pvno;
-     int msg_type;
-     Realm realm;
-     PrincipalName cname;
-     Ticket ticket;
-     EncryptedData enc_part;
-};
-
-typedef struct Kdc_Rep Kdc_Rep;
-
-typedef Kdc_Rep As_Rep;
-
-typedef Kdc_Rep Tgs_Rep;
 
 struct EncryptionKey {
      int keytype;
@@ -146,7 +98,7 @@ struct LastReq {
      int number;
      struct {
 	  int lr_type;
-	  time_t lr_value;
+	  krb5_time lr_value;
      } *values;
 };
 
@@ -172,18 +124,33 @@ struct EncKdcRepPart {
      EncryptionKey key;
      LastReq req;
      int nonce;
-     time_t *key_expiration;
+     krb5_time *key_expiration;
      TicketFlags flags;
-     time_t authtime;
-     time_t *starttime;
-     time_t endtime;
-     time_t *renew_till;
-     Realm srealm;
-     PrincipalName sname;
-     HostAddresses caddr;
+     krb5_time authtime;
+     krb5_time *starttime;
+     krb5_time endtime;
+     krb5_time *renew_till;
+     krb5_realm srealm;
+     krb5_principal sname;
+     krb5_addresses caddr;
 };
 
 typedef struct EncKdcRepPart EncKdcRepPart;
 
 typedef EncKdcRepPart EncASRepPart;
 typedef EncKdcRepPart EncTGSRepPart;
+
+struct krb5_kdc_rep {
+     int pvno;
+     int msg_type;
+     krb5_realm realm;
+     krb5_principal cname;
+     Ticket ticket;
+     EncryptedData enc_part;
+     EncASRepPart enc_part2;
+};
+
+typedef krb5_kdc_rep As_Rep;
+
+typedef krb5_kdc_rep Tgs_Rep;
+

@@ -8,6 +8,13 @@
 
 #include "config_file.h"
 
+/* simple constants */
+
+#ifndef TRUE
+#define TRUE  1
+#define FALSE 0
+#endif
+
 /* types */
 typedef int32_t	krb5_int32;
 typedef int16_t	krb5_int16;
@@ -40,7 +47,7 @@ typedef enum krb5_cksumtype {
   CKSUMTYPE_DES_MAC		= 4,
   CKSUMTYPE_DES_MAC_K		= 5,
   CKSUMTYPE_RSA_MD4_DES_K	= 6,
-  CKSUMTYPE_RSA_MD5_DES		= 7,
+  CKSUMTYPE_RSA_MD5_DES		= 7
 } krb5_cksumtype;
 
 
@@ -63,7 +70,7 @@ typedef enum krb5_preauthtype {
 
 
 typedef enum krb5_address_type { 
-  KRB5_ADDRESS_INET = 2,
+  KRB5_ADDRESS_INET = 2
 } krb5_address_type;
 
 typedef struct krb5_address{
@@ -71,7 +78,10 @@ typedef struct krb5_address{
   krb5_data address;
 } krb5_address;
 
-
+typedef struct krb5_addresses {
+  int number;
+  krb5_address *addrs;
+} krb5_addresses;
 
 typedef enum krb5_keytype { KEYTYPE_DES } krb5_keytype;
 
@@ -79,7 +89,6 @@ typedef struct krb5_keyblock{
   krb5_keytype keytype;
   krb5_data contents;
 } krb5_keyblock;
-
 
 typedef struct krb5_context_data{
   krb5_enctype *etypes;
@@ -107,6 +116,7 @@ enum{
   KRB5_NT_SRV_XHST	= 4,
   KRB5_NT_UID		= 5
 };
+
 typedef struct krb5_principal_data{
   int type;
   krb5_data realm;
@@ -117,6 +127,7 @@ typedef struct krb5_principal_data{
 typedef krb5_principal_data *krb5_principal;
 typedef const krb5_principal_data *krb5_const_principal;
 
+typedef krb5_data krb5_realm;
 
 typedef struct krb5_ticket{
   int kvno;
@@ -198,10 +209,7 @@ typedef struct krb5_auth_context{
 
 typedef krb5_uint32 krb5_flags;
 
-typedef struct krb5_kdc_rep{
-  int dummy;
-}krb5_kdc_rep;
-
+typedef struct krb5_kdc_rep krb5_kdc_rep;
 
 krb5_error_code
 krb5_init_context(krb5_context *context);
@@ -223,13 +231,13 @@ krb5_get_credentials(krb5_context context,
 		     krb5_creds *out_creds);
 
 typedef krb5_error_code (*krb5_key_proc)(krb5_context context,
-					 const krb5_keytype type,
+					 krb5_keytype type,
 					 krb5_data *salt,
 					 krb5_const_pointer keyseed,
 					 krb5_keyblock **key);
 typedef krb5_error_code (*krb5_decrypt_proc)(krb5_context context,
 					     const krb5_keyblock *key,
-					     krb5_const_pointer *decrypt_arg,
+					     krb5_const_pointer decrypt_arg,
 					     krb5_kdc_rep *dec_rep);
 
 krb5_error_code
@@ -246,6 +254,16 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_ccache ccache,
 		krb5_kdc_rep **ret_as_reply);
 
+krb5_error_code
+krb5_get_in_tkt_with_password (krb5_context context,
+			       krb5_flags options,
+			       krb5_address *const *addrs,
+			       const krb5_enctype *etypes,
+			       const krb5_preauthtype *pre_auth_types,
+			       const char *password,
+			       krb5_ccache ccache,
+			       krb5_creds *creds,
+			       krb5_kdc_rep **ret_as_reply);
 
 krb5_error_code
 krb5_mk_req(krb5_context context,
@@ -352,6 +370,12 @@ krb5_get_krbhst (krb5_context context,
 krb5_error_code
 krb5_free_krbhst (krb5_context context,
 		  char *const *hostlist);
+
+
+/* variables */
+
+extern const char krb5_config_file[];
+extern const char krb5_defkeyname[];
 
 
 #endif /* __KRB5_H__ */

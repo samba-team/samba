@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+#include <krb5_locl.h>
 #include <d.h>
 
 int
@@ -160,8 +158,8 @@ der_get_octetstring (Buffer *b, void *val)
      char *p;
 
      len = buf_bytesleft (b);
-     str->len = len;
-     str->data = p = malloc (len + 1);
+     str->length = len;
+     str->data   = p = malloc (len + 1);
      while (len && (c = buf_getbyte (b)) != EOF) {
 	  *p++ = c;
 	  --len;
@@ -177,6 +175,7 @@ der_get_generalizedtime (Buffer *b, void *val)
      int len;
      krb5_data str;
      struct tm tm;
+     extern long timezone;
 
      len = der_get_octetstring (b, &str);
      sscanf (str.data, "%04d%02d%02d%02d%02d%02dZ",

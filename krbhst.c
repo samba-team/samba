@@ -9,11 +9,11 @@ krb5_get_krbhst (krb5_context context,
      char buf[BUFSIZ];
      char *val;
      
-     sprintf (buf, "realms %s kdc", realm.data);
-     err = krb5_get_config_tag (context.cf, buf, &val);
+     sprintf (buf, "realms %.*s kdc", realm->length, realm->data);
+     err = krb5_get_config_tag (context->cf, buf, &val);
      if (err)
 	  return err;
-     **hostlist = malloc (2 * sizeof (char *));
+     *hostlist = malloc (2 * sizeof (char *));
      (*hostlist)[0] = val;
      (*hostlist)[1] = NULL;
      return 0;

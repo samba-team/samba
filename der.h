@@ -20,7 +20,7 @@ enum {
      UT_IA5String = 22,
      UT_UTCTime = 23,
      UT_GeneralizedTime = 24,
-     UT_GeneralString = 27,
+     UT_GeneralString = 27
 };
 
 krb5_data string_make (char *);

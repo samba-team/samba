@@ -49,4 +49,10 @@
 #define KRB_ERR_GENERIC				60
 #define KRB_ERR_FIELD_TOOLONG			61
 
+#define KRB5_KDC_UNREACH			155
+
+/* Just some random number */
+
+#define ASN1_PARSE_ERROR			274
+
 #endif /* __KRB5_ERROR_H__ */
