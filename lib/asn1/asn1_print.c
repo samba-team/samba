@@ -154,6 +154,8 @@ loop (unsigned char *buf, size_t len, int indent)
 		break;
 	    }
 	    case UT_GeneralizedTime :
+	    case UT_IA5String:
+	    case UT_UTF8String :
 	    case UT_GeneralString : {
 		heim_general_string str;
 
