@@ -1,3 +1,7 @@
+2001-04-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getifaddrs.c (getifaddrs2): close socket when done
+
 2001-03-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken.awk: END has to be last with Sun's awk
