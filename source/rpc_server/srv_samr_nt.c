@@ -2277,7 +2277,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	/* the passdb lookup has failed; check to see if we need to run the
 	   add user/machine script */
 	   
-	pw = getpwnam_alloc(account);
+	pw = Get_Pwnam(account);
 	
 	if ( !pw ) {
 		/* 
@@ -2299,33 +2299,14 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
  			DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
 		
-		/* try again */
-		pw = getpwnam_alloc(account);
 	}
 	
-
-	if (pw) {
-		nt_status = pdb_init_sam_pw(&sam_pass, pw);
-		passwd_free(&pw); /* done with this now */
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			pdb_free_sam(&sam_pass);
-			return nt_status;
-		}
-	} else {
-		DEBUG(3,("attempting to create non-unix account %s\n", account));
+	nt_status = pdb_init_sam_new(&sam_pass, account);
+	if (!NT_STATUS_IS_OK(nt_status))
+		return nt_status;
 		
-		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sam_pass))) {
-			return nt_status;
-		}
-		
-		if (!pdb_set_username(sam_pass, account, PDB_CHANGED)) {
-			pdb_free_sam(&sam_pass);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
  	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
- 
+	
  	if (!pdb_add_sam_account(sam_pass)) {
  		pdb_free_sam(&sam_pass);
  		DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
