@@ -1,10 +1,10 @@
 !==
-!== NTDOMAIN.txt for Samba release 2.0.1 07 Feb 1999
+!== NTDOMAIN.txt for Samba release 2.0.3 07 Feb 1999
 !==
 Contributor:	Luke Kenneth Casson Leighton (samba-bugs@samba.org)
 		Copyright (C) 1997 Luke Kenneth Casson Leighton
 Created:	October 20, 1997
-Updated:	October 29, 1997
+Updated:	February 25, 1999 (Jerry Carter)
 
 Subject:	NT Domain Logons
 ===========================================================================
@@ -38,113 +38,14 @@ reinstall NT from scratch: their workstation had become totally unuseable.
 
 This *has* been reported to the NTBUGTRAQ@LISTSERV.NTBUGTRAQ.COM digest.
 
+==========================================================================
+Please note that Samba 2.0 does not **officially** support domain logons
+for Windows NT clients.  Of course, domain logon support for Windows 9x
+clients is complete and official.  These are two different issues.
 
-Domain Logons using latest cvs source
-=====================================
-
-1) obtain and compile samba: see http://samba.org/cvs.html
-
-2) set up samba with encrypted passwords: see ENCRYPTION.txt (probably out
-   of date: you no longer need the DES libraries, but other than that,
-   ENCRYPTION.txt is current).
-
-   at this point, you ought to test that your samba server is accessible
-   correctly with encrypted passwords, before progressing with any of the
-   NT workstation-specific bits: it's up to you.
-
-3) [ for each workstation, add a line to smbpasswd with a username of MACHINE$
-     and a password of "machine".  this process will be automated in further
-     releases (but for now use smbpasswd -m machine_name).
-
-4) if using NT server to log in, run the User Manager for Domains, and
-   add the capability to "Log in Locally" to the policies, which you would
-   have to do even if you were logging in to another NT PDC instead of a
-   Samba PDC.
-
-5) set up the following parameters in smb.conf
-
-;	substitute your workgroup here
-	workgroup = SAMBA
-
-;	DO NOT add the redundant "domain sid = " parameter as this has
-;	been superseded by code that automatically generates a random
-;	sid for you.
-;	domain sid = redundant.
-
-;	tells workstations to use SAMBA as its Primary Domain Controller.
-	domain logons = yes
-
-6) make sure samba is running before the next step is carried out.  if
-   this is your first time, just for fun you might like to switch the
-   debug log level to about 10.  the NT pipes produces some very pretty
-   output when decoding requests and generating responses, which would
-   be particularly useful to see in tcpdump at some point.
-
-7) In the NT Network Settings, change the domain to SAMBA.  Do
-   not attempt to create an account using the other part of the dialog:
-   it will fail at present.
-
-   You should get a wonderful message saying "Welcome to the SAMBA Domain."
-
-   If you don't, then please first increase your debug log levels and also
-   get a tcpdump (or preferably NetMonitor) trace and examine it carefully.
-   You should see a NETLOGON, a SAMLOGON on UDP port 138.  If you don't,
-   then you probably don't have "domain logons = yes" or there is some other
-   problem in resolving the NetBIOS name SAMBA<1c>.
-
-   On port 139, you should see a LSA_OPEN_POLICY, two LSA_QUERY_INFOs (one
-   for a domain SID of S-1-3... and another for S-1-5) and then an LSA_CLOSE
-   or two.  
-
-   You may see a pipe connection to a wksta service being refused: this
-   is acceptable, we have found.  You may also see a "Net Server Get Info"
-   being issued on the srvsvc pipe.
-
-   Assuming you got the Welcome message, go through the obligatory reboot...
-
-8) When pressing Ctrl-Alt-Delete, the NT login box should have three entries.
-   If there is a delay of about twenty seconds between pressing Ctrl-Alt-Delete
-   and the appearance of this login dialog, then there might be a problem:
-   at this stage the workstation is issuing an LSA_ENUMTRUSTEDDOMAIN request
-
-   The domain box should have two entries: the hostname and the SAMBA domain.
-   Any local accounts are under the hostname domain, from which you will be
-   able to shut down the machine etc.
-   
-   Select the SAMBA domain, and type in a valid username and password for
-   which there is a valid entry in the samba server's smbpasswd LM/NT OWF
-   database.  At present, the password is ignored, to allow access to the
-   domain, but *not* ignored for accesses to Samba's SMB services: that's
-   completely separate from the SAM Logon process.  Even if you log in a
-   user to a domain, your users will still need to connect to Samba SMB
-   shares with valid username / passwords, for that share.
-
-   You should see an LSA_REQ_CHAL, followed by LSA_AUTH2, LSA_NET_SRV_PWSET,
-   and LSA_SAM_LOGON.  The SAM Logon will be particularly large (the response
-   can be approximately 600 bytes) as it contains user info.
-
-   Also, there will probably be a "Net Server Get Info" and a "Net Share Enum"
-   amongst this lot.  If the SAM Logon is successful, the dialog should
-   disappear, and a standard SMB connection established to download the
-   profile specified in the SAM Logon (if it was).
-
-   At this point, you _may_ encounter difficulties in creating a remote
-   profile, and the login may terminate (generating an LSA_SAM_LOGOFF).  If
-   this occurs, then either find an existing profile on the samba server and
-   copy it into the location specified by the "logon path" smb.conf parameter
-   for the user logging in, or log in on the local machine, and use the
-   System | Profiles control panel to make a copy of the _local_ profile onto
-   the samba server.  This process is described and documented in the NT
-   Help Files.
-
-9) Play around.  Look at the Samba Server: see if it can be found in the
-   browse lists.  Check that it is accessible; run some applications.
-   Generally stress things.  Laugh a lot.  Logout of the NT machine
-   (generating an LSA_SAM_LOGOFF) and log back in again.  Try logging in
-   two users simultaneously.  Try logging the same user in twice.
-   Make Samba fall over, and then send bug reports to us, with NTDOM: at
-   the start of the subject line, as "samba-bugs@samba.org".
-
-Your reports, testing, patches, criticism and encouragement will help us
-get this right.
+Samba's capability to act as a Primary Domain Controller for Windows NT
+domains is not advertised as it is not completed yet.  For more information 
+regarding how to obtain the latest development (HEAD branch) source code
+and what features are available, please refer to the NT Domain FAQ on-line
+at the Samba web site under the documentation page.
 
