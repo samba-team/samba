@@ -45,29 +45,105 @@ struct dual_list {
 	struct dual_list *next;
 	char *data;
 	int length;
+};
+
+struct dual_child {
+	struct dual_child *next, *prev;
+	BOOL busy;
+	pid_t pid;
+	int fd;
+	char *data;
+	int length;
 	int offset;
 };
 
+static struct dual_child *child_list;
+
 static struct dual_list *dual_list;
 static struct dual_list *dual_list_end;
+
+static BOOL dual_schedule_request(void)
+{
+	struct dual_child *child;
+	int busy_children = 0;
+
+	if (dual_list == NULL)
+		return False;
+
+	for (child = child_list; child != NULL; child = child->next) {
+		struct dual_list *next;
+
+		if (child->busy) {
+			extern int max_busy_children;
+			busy_children += 1;
+			if (busy_children > max_busy_children)
+				max_busy_children = busy_children;
+			continue;
+		}
+
+		child->data = dual_list->data;
+		child->length = dual_list->length;
+		child->offset = 0;
+		child->busy = True;
+
+		next = dual_list->next;
+		free(dual_list);
+		dual_list = next;
+		if (dual_list == NULL)
+			dual_list_end = NULL;
+
+		return True;
+	}
+	return False;
+}
+
+void dual_finished(pid_t pid)
+{
+	struct dual_child *child;
+
+	for (child = child_list; child != NULL; child = child->next) {
+		if (child->pid == pid) {
+			child->busy = False;
+			return;
+		}
+	}
+}
 
 /*
   setup a select() including the dual daemon pipe
  */
 int dual_select_setup(fd_set *fds, int maxfd)
 {
-	if (dual_daemon_pipe == -1 ||
-	    !dual_list) {
-		return maxfd;
+	struct dual_child *child;
+
+	while (dual_schedule_request())
+		;
+
+	for (child = child_list; child != NULL; child = child->next) {
+		if (child->length == 0)
+			continue;
+
+		FD_SET(child->fd, fds);
+		if (child->fd > maxfd)
+			maxfd = child->fd;
 	}
 
-	FD_SET(dual_daemon_pipe, fds);
-	if (dual_daemon_pipe > maxfd) {
-		maxfd = dual_daemon_pipe;
-	}
 	return maxfd;
 }
 
+static void resend_request(char *data, int length)
+{
+	struct dual_list *list;
+
+	list = malloc(sizeof(*list));
+	list->next = dual_list;
+	list->data = data;
+	list->length = length;
+	dual_list = list;
+
+	if (dual_list_end == NULL)
+		dual_list_end = list;
+}
 
 /*
   a hook called from the main winbindd select() loop to handle writes
@@ -76,34 +152,54 @@ int dual_select_setup(fd_set *fds, int maxfd)
 void dual_select(fd_set *fds)
 {
 	int n;
+	struct dual_child *child;
 
-	if (dual_daemon_pipe == -1 ||
-	    !dual_list ||
-	    !FD_ISSET(dual_daemon_pipe, fds)) {
-		return;
-	}
+	for (child = child_list; child != NULL; child = child->next) {
+		if (child->length == 0)
+			continue;
 
-	n = sys_write(dual_daemon_pipe, 
-		  &dual_list->data[dual_list->offset],
-		  dual_list->length - dual_list->offset);
+		if (!FD_ISSET(child->fd, fds))
+			continue;
 
-	if (n <= 0) {
-		/* the pipe is dead! fall back to normal operation */
-		dual_daemon_pipe = -1;
-		return;
-	}
+		n = sys_write(child->fd,
+			      &child->data[child->offset],
+			      child->length - child->offset);
 
-	dual_list->offset += n;
-
-	if (dual_list->offset == dual_list->length) {
-		struct dual_list *next;
-		next = dual_list->next;
-		free(dual_list->data);
-		free(dual_list);
-		dual_list = next;
-		if (!dual_list) {
-			dual_list_end = NULL;
+		if (n <= 0) {
+			/* the pipe is dead! */
+			resend_request(child->data, child->length);
+			child->fd = -1;
+			continue;
 		}
+
+		child->offset += n;
+
+		if (child->offset < child->length)
+			continue;
+
+		/* Data fully sent, discard it */
+
+		SAFE_FREE(child->data);
+		child->length = 0;
+	}
+
+	/* Remove dead children */
+	child = child_list;
+
+	while (child != NULL) {
+		struct dual_child *next;
+		next = child->next;
+		if (child->fd == -1) {
+			DLIST_REMOVE(child_list, child);
+			free(child);
+		}
+		child = next;
+	}
+
+	if (child_list == NULL) {
+		extern BOOL opt_dual_daemon;
+		DEBUG(0, ("All children died -- normal operation\n"));
+		opt_dual_daemon = False;
 	}
 }
 
@@ -123,7 +219,6 @@ void dual_send_request(struct winbindd_cli_state *state)
 	list->next = NULL;
 	list->data = memdup(&state->request, sizeof(state->request));
 	list->length = sizeof(state->request);
-	list->offset = 0;
 	
 	if (!dual_list_end) {
 		dual_list = list;
@@ -144,6 +239,7 @@ void do_dual_daemon(void)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;
+	struct dual_child *child;
 	
 	if (pipe(fdpair) != 0) {
 		return;
@@ -152,10 +248,23 @@ void do_dual_daemon(void)
 	ZERO_STRUCT(state);
 	state.pid = getpid();
 
-	dual_daemon_pipe = fdpair[1];
-	state.sock = fdpair[0];
+	child = malloc(sizeof(*child));
 
-	if (fork() != 0) {
+	if (child == NULL)
+		return;
+
+	child->busy = False;
+	child->data = NULL;
+	child->length = 0;
+	child->offset = 0;
+
+	child->fd = fdpair[1];
+	state.sock = fdpair[0];
+	child->pid = sys_fork();
+
+	DLIST_ADD(child_list, child)
+
+	if (child->pid != 0) {
 		close(fdpair[0]);
 		return;
 	}

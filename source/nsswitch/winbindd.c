@@ -28,6 +28,7 @@
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = True;
 BOOL opt_lsa_daemon = False;
+int max_busy_children = 0;
 
 /* Reload configuration */
 
@@ -226,6 +227,8 @@ static void msg_finished(int msg_type, pid_t src, void *buf, size_t len)
 		DEBUG(0, ("Wrong buffer size in message: %d\n", len));
 		return;
 	}
+
+	dual_finished(src);
 
 	fd = (int *)buf;
 
@@ -809,6 +812,28 @@ static void process_loop(void)
 
 			if (opt_dual_daemon) {
 				dual_select(&w_fds);
+
+				if (!opt_dual_daemon) {
+					/* All children died */
+
+					state = winbindd_client_list();
+
+					while (state != NULL) {
+						struct winbindd_cli_state *next;
+						next = state->next;
+
+						/* In theory we should re-do
+						 * the whole request, but this
+						 * looks rather complicated as
+						 * the client's state machines
+						 * might have changed
+						 * state->request. Is it worth
+						 * the effort? */
+						remove_client(state);
+
+						state = next;
+					}
+				}
 			}
 
 			if (FD_ISSET(listen_sock, &r_fds)) {
@@ -909,7 +934,9 @@ static void process_loop(void)
 		}
 
 		if (do_sigchld) {
+#if 0
 			check_children();
+#endif
 			do_sigchld = False;
 		}
 	}
@@ -922,6 +949,7 @@ struct winbindd_state server_state;   /* Server state information */
 int main(int argc, char **argv)
 {
 	pstring logfile;
+	int num_children;
 	static BOOL interactive = False;
 	static BOOL Fork = True;
 	static BOOL log_stdout = False;
@@ -933,6 +961,7 @@ int main(int argc, char **argv)
 		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
 		{ "lsa-daemon", 'L', POPT_ARG_VAL, &opt_lsa_daemon, True, "LSA daemon mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
+		{ "num-clients", 'c', POPT_ARG_INT, &num_children, True, "Number of winbind children" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -1065,7 +1094,10 @@ int main(int argc, char **argv)
 #endif
 
 	if (opt_dual_daemon) {
-		do_dual_daemon();
+		int i;
+
+		for (i=0; i<num_children; i++)
+			do_dual_daemon();
 	}
 
 	if (opt_lsa_daemon) {

@@ -244,11 +244,13 @@ enum winbindd_result winbindd_ping(struct winbindd_cli_state
 
 enum winbindd_result winbindd_info(struct winbindd_cli_state *state)
 {
+	extern int max_busy_children;
 
 	DEBUG(3, ("[%5lu]: request misc info\n", (unsigned long)state->pid));
 
 	state->response.data.info.winbind_separator = *lp_winbind_separator();
 	fstrcpy(state->response.data.info.samba_version, SAMBA_VERSION_STRING);
+	state->response.data.info.max_busy_children = max_busy_children;
 
 	return WINBINDD_OK;
 }

@@ -85,6 +85,26 @@ static const char *get_winbind_domain(void)
 
 }
 
+static BOOL wbinfo_info(void)
+{
+	struct winbindd_response response;
+
+	ZERO_STRUCT(response);
+
+	/* Send off request */
+
+	if (winbindd_request(WINBINDD_INFO, NULL, &response)
+	    != NSS_STATUS_SUCCESS)
+		return False;
+
+	d_printf("Separator: [%c]\nVersion: %s\nmax_busy: %d\n",
+		 response.data.info.winbind_separator,
+		 response.data.info.samba_version,
+		 response.data.info.max_busy_children);
+	
+	return True;
+}
+
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
@@ -1072,6 +1092,7 @@ int main(int argc, char **argv)
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
 		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
+		{ "get-info", 'i', POPT_ARG_NONE, 0, 'i', "Get misc info" },
 #ifdef WITH_FAKE_KASERVER
  		{ "klog", 'k', POPT_ARG_STRING, &string_arg, 'k', "set an AFS token from winbind", "user%password" },
 #endif
@@ -1285,6 +1306,12 @@ int main(int argc, char **argv)
 		case 'p':
 			if (!wbinfo_ping()) {
 				d_printf("could not ping winbindd!\n");
+				goto done;
+			}
+			break;
+		case 'i':
+			if (!wbinfo_info()) {
+				d_printf("could not get winbind info!\n");
 				goto done;
 			}
 			break;

@@ -264,6 +264,7 @@ struct winbindd_response {
 		struct winbindd_info {
 			char winbind_separator;
 			fstring samba_version;
+			int max_busy_children;
 		} info;
 		fstring domain_name;
 		fstring netbios_name;
