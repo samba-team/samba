@@ -48,9 +48,12 @@ void smbw_init(void)
 	static pstring servicesf = CONFIGFILE;
 	extern FILE *dbf;
 	char *p;
+	int eno;
 
 	if (initialised) return;
 	initialised = 1;
+
+	eno = errno;
 
 	smbw_busy++;
 
@@ -98,6 +101,8 @@ void smbw_init(void)
 	smbw_busy--;
 
 	set_maxfiles();
+
+	errno = eno;
 }
 
 /***************************************************** 
