@@ -338,6 +338,6 @@ int pop_maildir_info (POP*);
 int pop_maildir_open (POP*, MsgInfoList*);
 int pop_maildir_update (POP*);
 
-void changeuser(POP*, struct passwd*);
+int changeuser(POP*, struct passwd*);
 void parse_header(MsgInfoList*, char*);
 int add_missing_headers(POP*, MsgInfoList*);
