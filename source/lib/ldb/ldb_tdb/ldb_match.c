@@ -93,13 +93,14 @@ static int ltdb_val_equal_wildcard_ci(struct ldb_module *module,
 
 	s2 = ldb_casefold(ldb, v2->data);
 	if (!s2) {
+		talloc_free(s1);
 		return -1;
 	}
 
 	ret = fnmatch(s2, s1, 0);
 
-	ldb_free(ldb, s1);
-	ldb_free(ldb, s2);
+	talloc_free(s1);
+	talloc_free(s2);
 
 	if (ret == 0) {
 		return 1;
@@ -149,8 +150,8 @@ static int ltdb_val_equal_objectclass(struct ldb_module *module,
 		return 1;
 	}
 
-	for (i=0;i<ltdb->cache.subclasses.num_elements;i++) {
-		struct ldb_message_element *el = &ltdb->cache.subclasses.elements[i];
+	for (i=0;i<ltdb->cache->subclasses->num_elements;i++) {
+		struct ldb_message_element *el = &ltdb->cache->subclasses->elements[i];
 		if (ldb_attr_cmp(el->name, v2->data) == 0) {
 			unsigned int j;
 			for (j=0;j<el->num_values;j++) {

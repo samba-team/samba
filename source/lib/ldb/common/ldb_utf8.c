@@ -44,7 +44,7 @@
 char *ldb_casefold(struct ldb_context *ldb, const char *s)
 {
 	int i;
-	char *ret = ldb_strdup(ldb, s);
+	char *ret = talloc_strdup(ldb, s);
 	if (!s) {
 		errno = ENOMEM;
 		return NULL;

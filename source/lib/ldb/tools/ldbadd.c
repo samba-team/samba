@@ -66,10 +66,10 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 			break;
 		}
 
-		ret = ldb_add(ldb, &ldif->msg);
+		ret = ldb_add(ldb, ldif->msg);
 		if (ret != 0) {
 			fprintf(stderr, "ERR: \"%s\" on DN %s\n", 
-				ldb_errstring(ldb), ldif->msg.dn);
+				ldb_errstring(ldb), ldif->msg->dn);
 			failures++;
 		} else {
 			count++;

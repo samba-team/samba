@@ -62,18 +62,18 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 		switch (ldif->changetype) {
 		case LDB_CHANGETYPE_NONE:
 		case LDB_CHANGETYPE_ADD:
-			ret = ldb_add(ldb, &ldif->msg);
+			ret = ldb_add(ldb, ldif->msg);
 			break;
 		case LDB_CHANGETYPE_DELETE:
-			ret = ldb_delete(ldb, ldif->msg.dn);
+			ret = ldb_delete(ldb, ldif->msg->dn);
 			break;
 		case LDB_CHANGETYPE_MODIFY:
-			ret = ldb_modify(ldb, &ldif->msg);
+			ret = ldb_modify(ldb, ldif->msg);
 			break;
 		}
 		if (ret != 0) {
 			fprintf(stderr, "ERR: \"%s\" on DN %s\n", 
-				ldb_errstring(ldb), ldif->msg.dn);
+				ldb_errstring(ldb), ldif->msg->dn);
 			failures++;
 		} else {
 			count++;

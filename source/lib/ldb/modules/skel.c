@@ -98,11 +98,6 @@ static const char *skel_errstring(struct ldb_module *module)
 	return ldb_next_errstring(module);
 }
 
-static void skel_cache_free(struct ldb_module *module)
-{
-	ldb_next_cache_free(module);
-}
-
 static const struct ldb_module_ops skel_ops = {
 	"skel",
 	skel_close, 
@@ -114,8 +109,7 @@ static const struct ldb_module_ops skel_ops = {
 	skel_rename_record,
 	skel_named_lock,
 	skel_named_unlock,
-	skel_errstring,
-	skel_cache_free
+	skel_errstring
 };
 
 #ifdef HAVE_DLOPEN

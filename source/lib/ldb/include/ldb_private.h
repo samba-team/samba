@@ -66,10 +66,6 @@ struct ldb_module_ops {
 	int (*named_lock)(struct ldb_module *, const char *);
 	int (*named_unlock)(struct ldb_module *, const char *);
 	const char * (*errstring)(struct ldb_module *);
-
-	/* this is called when the alloc ops changes to ensure we 
-	   don't have any old allocated data in the context */
-	void (*cache_free)(struct ldb_module *);
 };
 
 /* the modules init function */
@@ -82,10 +78,7 @@ struct ldb_context {
 	/* the operations provided by the backend */
 	struct ldb_module *modules;
 
-	/* memory allocation info */
-	struct ldb_alloc_ops alloc_ops;
-
-	/* memory allocation info */
+	/* debugging operations */
 	struct ldb_debug_ops debug_ops;
 };
 
@@ -106,7 +99,6 @@ int ldb_next_rename_record(struct ldb_module *module, const char *olddn, const c
 int ldb_next_named_lock(struct ldb_module *module, const char *lockname);
 int ldb_next_named_unlock(struct ldb_module *module, const char *lockname);
 const char *ldb_next_errstring(struct ldb_module *module);
-void ldb_next_cache_free(struct ldb_module *module);
 
 /* The following definitions come from lib/ldb/common/util.c  */
 int ldb_list_find(const void *needle, 

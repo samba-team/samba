@@ -57,21 +57,19 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	pn = 0;
 
 	if (options) {
-
 		for (i = 0; options[i] != NULL; i++) {
-
-			if (strncmp(options[i], LDB_MODULE_PREFIX, LDB_MODULE_PREFIX_LEN) == 0) {
-
-				p = q = ldb_strdup(ldb, &options[i][LDB_MODULE_PREFIX_LEN]);
+			if (strncmp(options[i], LDB_MODULE_PREFIX, 
+				    LDB_MODULE_PREFIX_LEN) == 0) {
+				p = q = talloc_strdup(ldb, &options[i][LDB_MODULE_PREFIX_LEN]);
 				if (*q != ':') {
-					ldb_free(ldb, q);
+					talloc_free(q);
 					return -1;
 				}
 				do {
 					*p = '\0';
 					q = p + 1;
 					pn++;
-					modules = ldb_realloc_array(ldb, modules, sizeof(char *), pn);
+					modules = talloc_realloc_p(ldb, modules, char *, pn);
 					if (!modules) {
 						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in register_modules()\n");
 						return -1;
@@ -82,10 +80,12 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		}
 	}
 
-	if (!modules && strcmp("ldap", ldb->modules->ops->name)) { /* no modules in the options, look for @MODULES in the db (not for ldap) */
+	if (!modules && strcmp("ldap", ldb->modules->ops->name)) { 
+		/* no modules in the options, look for @MODULES in the
+		   db (not for ldap) */
 		int ret, j, k;
 		const char * const attrs[] = { "@MODULE" , NULL};
-		struct ldb_message **msg;
+		struct ldb_message **msg = NULL;
 
 		ret = ldb_search(ldb, "", LDB_SCOPE_BASE, "dn=@MODULES", attrs, &msg);
 		if (ret == 0) {
@@ -103,12 +103,12 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			for (j = 0; j < msg[0]->num_elements; j++) {
 				for (k = 0; k < msg[0]->elements[j].num_values; k++) {
 					pn++;
-					modules = ldb_realloc_array(ldb, modules, sizeof(char *), pn);
+					modules = talloc_realloc_p(ldb, modules, char *, pn);
 					if (!modules) {
 						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in register_modules()\n");
 						return -1;
 					}
-					modules[pn - 1] = ldb_strndup(ldb, msg[0]->elements[j].values[k].data, msg[0]->elements[j].values[k].length);
+					modules[pn - 1] = talloc_strndup(modules, msg[0]->elements[j].values[k].data, msg[0]->elements[j].values[k].length);
 					if (!modules[pn - 1]) {
 						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in register_modules()\n");
 						return -1;
@@ -116,13 +116,11 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				}
 			}
 		}
-		ldb_search_free(ldb, msg);
+		talloc_free(msg);
 	}
 
 	if (modules) {
-
 		for (i = 0; i < pn; i++) {
-
 			if (strcmp(modules[i], "timestamps") == 0) {
 				current = timestamps_module_init(ldb, options);
 				if (!current) {
@@ -274,10 +272,3 @@ const char *ldb_next_errstring(struct ldb_module *module)
 	return module->next->ops->errstring(module->next);
 }
 
-void ldb_next_cache_free(struct ldb_module *module)
-{
-	if (!module->next) {
-		return;
-	}
-	module->next->ops->cache_free(module->next);
-}

@@ -105,7 +105,7 @@ enum ldb_changetype {
 */
 struct ldb_ldif {
 	enum ldb_changetype changetype;
-	struct ldb_message msg;
+	struct ldb_message *msg;
 };
 
 enum ldb_scope {LDB_SCOPE_DEFAULT=-1, 
@@ -122,16 +122,6 @@ typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *)
 
 
 struct ldb_module;
-
-/*
-  the user can optionally supply a allocator function. It is presumed
-  it will act like a modern realloc(), with a context ptr to allow
-  for pool allocators
-*/
-struct ldb_alloc_ops {
-	void *(*alloc)(const void *context, void *ptr, size_t size);
-	void *context;
-};
 
 /* debugging uses one of the following levels */
 enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR, 
@@ -240,6 +230,9 @@ int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif 
 int ldb_dn_cmp(const char *dn1, const char *dn2);
 int ldb_attr_cmp(const char *dn1, const char *dn2);
 
+/* create an empty message */
+struct ldb_message *ldb_msg_new(void *mem_ctx);
+
 /* find an element within an message */
 struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, 
 						 const char *attr_name);
@@ -305,40 +298,11 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 					 const struct ldb_message *msg);
 
 
-struct ldb_val ldb_val_dup(struct ldb_context *ldb,
-			   const struct ldb_val *v);
-
-/*
-  this allows the user to choose their own allocation function
-  the allocation function should behave like a modern realloc() 
-  function, which means that:
-     malloc(size)       == alloc(context, NULL, size)
-     free(ptr)          == alloc(context, ptr, 0)
-     realloc(ptr, size) == alloc(context, ptr, size)
-  The context argument is provided to allow for pool based allocators,
-  which often take a context argument
-*/
-int ldb_set_alloc(struct ldb_context *ldb,
-		  void *(*alloc)(const void *context, void *ptr, size_t size),
-		  void *context);
-
-/* these are used as type safe versions of the ldb allocation functions */
-#define ldb_malloc_p(ldb, type) (type *)ldb_malloc(ldb, sizeof(type))
-#define ldb_malloc_array_p(ldb, type, count) (type *)ldb_realloc_array(ldb, NULL, sizeof(type), count)
-#define ldb_realloc_p(ldb, p, type, count) (type *)ldb_realloc_array(ldb, p, sizeof(type), count)
-
-void *ldb_realloc(struct ldb_context *ldb, void *ptr, size_t size);
-void *ldb_malloc(struct ldb_context *ldb, size_t size);
-void ldb_free(struct ldb_context *ldb, void *ptr);
-void *ldb_strndup(struct ldb_context *ldb, const char *str, size_t maxlen);
-void *ldb_strdup(struct ldb_context *ldb, const char *str);
-void *ldb_realloc_array(struct ldb_context *ldb,
-			void *ptr, size_t el_size, unsigned count);
+struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v);
 
 #ifndef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a,b)
 #endif
-int ldb_asprintf(struct ldb_context *ldb, char **strp, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 
 /*
   this allows the user to set a debug function for error reporting

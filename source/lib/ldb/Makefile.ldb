@@ -10,24 +10,33 @@ LDB_LDAP_OBJ=ldb_ldap/ldb_ldap.o
 endif
 
 TDBDIR=../tdb
+TALLOCDIR=../talloc
 
-CFLAGS=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. -I$(TDBDIR)/include -DUSE_MMAP=1 $(LDAP_FLAGS)
-LIB_FLAGS=-Llib -lldb $(LDAP_LIBS)
+CFLAGS1=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
+       -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. \
+       -I$(TDBDIR)/include -I$(TALLOCDIR) -DUSE_MMAP=1 $(LDAP_FLAGS)
+#GCOV_FLAGS = -ftest-coverage -fprofile-arcs 
+#GCOV_LIBS = -lgcov
+
+CFLAGS = $(CFLAGS1) $(GCOV_FLAGS)
+
+LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(GCOV_LIBS)
 
 TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/spinlock.o
+TALLOC_OBJ=$(TALLOCDIR)/talloc.o
 
 LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
 	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o \
 	ldb_tdb/ldb_cache.o
 
 
-COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o  common/talloc.o \
+COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
 	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
-	   common/ldb_alloc.o common/ldb_debug.o common/ldb_modules.o
+	   common/ldb_debug.o common/ldb_modules.o
 
 MODULES_OBJ=modules/timestamps.o
 
-OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
+OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ)
 
 LDB_LIB = lib/libldb.a
 
@@ -72,7 +81,7 @@ manpages:
 	-man/build_manpages.sh
 
 clean:
-	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB) man/man?/*.[13]
+	rm -f */*.o *.gcov */*.gc?? *~ */*~ $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) man/man?/*.[13]
 
 etags:
 	etags */*.[ch]
@@ -86,3 +95,10 @@ test-ldap:
 	tests/test-ldap.sh
 
 test: test-tdb test-ldap
+
+gcov:
+	gcov -po ldb_ldap ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
+	gcov -po ldb_tdb ldb_tdb/*.c 2| tee ldb_tdb.report.gcov
+	gcov -po common common/*.c 2| tee ldb_common.report.gcov
+	gcov -po modules modules/*.c 2| tee ldb_modules.report.gcov
+	gcov -po tools tools/*.c 2| tee ldb_tools.report.gcov

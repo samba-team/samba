@@ -130,7 +130,7 @@ static void add_records(struct ldb_context *ldb,
 		free(name);
 		free(msg.dn);
 		free(vals[1][0].data);
-		ldb_free(ldb, vals[2][0].data);
+		talloc_free(vals[2][0].data);
 		free(vals[3][0].data);
 		free(vals[4][0].data);
 	}
@@ -288,7 +288,7 @@ be indexed
 */
 static void start_test_index(struct ldb_context **ldb)
 {
-	struct ldb_message msg;
+	struct ldb_message *msg;
 	struct ldb_message **res;
 	int ret;
 
@@ -296,24 +296,25 @@ static void start_test_index(struct ldb_context **ldb)
 
 	ldb_delete(*ldb, "@INDEXLIST");
 
-	memset(&msg, 0, sizeof(msg));
-	msg.dn = strdup("@INDEXLIST");
-	ldb_msg_add_string(*ldb, &msg, "@IDXATTR", strdup("uid"));
+	msg = ldb_msg_new(NULL);
 
-	if (ldb_add(*ldb, &msg) != 0) {
-		printf("Add of %s failed - %s\n", msg.dn, ldb_errstring(*ldb));
+	msg->dn = strdup("@INDEXLIST");
+	ldb_msg_add_string(*ldb, msg, "@IDXATTR", strdup("uid"));
+
+	if (ldb_add(*ldb, msg) != 0) {
+		printf("Add of %s failed - %s\n", msg->dn, ldb_errstring(*ldb));
 		exit(1);
 	}
 
-	memset(&msg, 0, sizeof(msg));
-	asprintf(&msg.dn, "cn=%s,%s", "test", base_dn);
-	ldb_msg_add_string(*ldb, &msg, "cn", strdup("test"));
-	ldb_msg_add_string(*ldb, &msg, "sn", strdup("test"));
-	ldb_msg_add_string(*ldb, &msg, "uid", strdup("test"));
-	ldb_msg_add_string(*ldb, &msg, "objectClass", strdup("OpenLDAPperson"));
+	memset(msg, 0, sizeof(*msg));
+	asprintf(&msg->dn, "cn=%s,%s", "test", base_dn);
+	ldb_msg_add_string(*ldb, msg, "cn", strdup("test"));
+	ldb_msg_add_string(*ldb, msg, "sn", strdup("test"));
+	ldb_msg_add_string(*ldb, msg, "uid", strdup("test"));
+	ldb_msg_add_string(*ldb, msg, "objectClass", strdup("OpenLDAPperson"));
 
-	if (ldb_add(*ldb, &msg) != 0) {
-		printf("Add of %s failed - %s\n", msg.dn, ldb_errstring(*ldb));
+	if (ldb_add(*ldb, msg) != 0) {
+		printf("Add of %s failed - %s\n", msg->dn, ldb_errstring(*ldb));
 		exit(1);
 	}
 
@@ -335,7 +336,7 @@ static void start_test_index(struct ldb_context **ldb)
 		exit(1);
 	}
 
-	if (ldb_delete(*ldb, msg.dn) != 0 ||
+	if (ldb_delete(*ldb, msg->dn) != 0 ||
 	    ldb_delete(*ldb, "@INDEXLIST") != 0) {
 		printf("cleanup failed - %s\n", ldb_errstring(*ldb));
 		exit(1);
