@@ -50,7 +50,7 @@ PLEASE read this.</para>
 </partintro>
 &IntroSMB;
 &UNIX-INSTALL;
-&BROWSING-Quick;
+&NetworkBrowsing;
 &Passdb;
 </part>
 
@@ -90,7 +90,6 @@ for various environments.
 &VFS;
 &MS-Dfs-Setup;
 &IntegratingWithWindows;
-&BROWSING;
 &SecuringSamba;
 &unicode;
 &locking;
