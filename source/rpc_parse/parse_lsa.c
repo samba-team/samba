@@ -1879,6 +1879,96 @@ BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME * r_q,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+BOOL lsa_io_q_sid_get_privs(char *desc, LSA_Q_SID_GET_PRIVS * q_o,
+			    prs_struct *ps, int depth)
+{
+	if (q_o == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_sid_get_privs");
+	depth++;
+
+	if(!smb_io_pol_hnd("", &q_o->hnd, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("", &q_o->sid, ps, depth))
+		return False;
+
+	return True;
+}
+
+BOOL lsa_io_r_sid_get_privs(char *desc, LSA_R_SID_GET_PRIVS * r_q,
+			    prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_sid_get_privs");
+	depth++;
+
+	prs_uint32("count", ps, depth, &r_q->count);
+
+	r_q->ptr_entries = (r_q->priv_names != NULL);
+	prs_uint32("ptr_entries", ps, depth, &r_q->ptr_entries);
+
+	if (r_q->ptr_entries)
+	{
+		uint32 i;
+		prs_uint32("count2", ps, depth, &r_q->count2);
+
+		r_q->hdr_privs = g_new(UNIHDR, r_q->count2);
+
+		if (UNMARSHALLING(ps))
+		{
+			r_q->priv_names = g_new(UNISTR2 *, r_q->count2);
+		}
+
+		for (i = 0; i < r_q->count2; i++)
+		{
+			fstring tmp;
+			if (MARSHALLING(ps))
+			{
+				make_unihdr_from_unistr2(&r_q->hdr_privs[i],
+							 r_q->priv_names[i]);
+			}
+			slprintf(tmp, sizeof(tmp), "hdr_privs[%d]", i);
+			if (!smb_io_unihdr(tmp, &r_q->hdr_privs[i], ps, depth))
+				return False;
+		}
+
+		for (i = 0; i < r_q->count2; i++)
+		{
+			fstring tmp;
+			if (UNMARSHALLING(ps))
+			{
+				r_q->priv_names[i] = g_new(UNISTR2, 1);
+			}
+			slprintf(tmp, sizeof(tmp), "priv_names[%d]", i);
+			if (!smb_io_unistr2(tmp, r_q->priv_names[i],
+					    r_q->hdr_privs[i].buffer,
+					    ps, depth))
+				return False;
+			prs_align(ps);
+		}
+
+		free(r_q->hdr_privs);
+		r_q->hdr_privs = NULL;
+	}
+	else
+	{
+		r_q->hdr_privs = NULL;
+		r_q->priv_names = NULL;
+	}
+
+	prs_uint32("status", ps, depth, &r_q->status);
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
 BOOL lsa_io_r_enum_sids(char *desc, LSA_R_ENUM_SIDS *r_q,
 			prs_struct *ps, int depth)
 {

@@ -59,10 +59,10 @@ static BOOL rpc_read(struct cli_state *cli, uint16 fnum,
 	      ("rpc_read: data_to_read: %d data offset: %d file offset: %d\n",
 	       data_to_read, rdata_offset, file_offset));
 
-	if (new_data_size > rdata->data_size)
+	if (new_data_size > prs_data_size(rdata))
 	{
 		prs_grow_data(rdata, True, new_data_size, True);
-		DEBUG(5, ("rpc_read: grow buffer to %d\n", rdata->data_size));
+		DEBUG(5, ("rpc_read: grow buffer to %d\n", prs_data_size(rdata)));
 	}
 
 	data = rdata->data + rdata_offset;
@@ -108,7 +108,7 @@ static BOOL rpc_read(struct cli_state *cli, uint16 fnum,
 static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR * rhdr,
 			  BOOL *first, BOOL *last, int *len)
 {
-	DEBUG(5, ("rpc_check_hdr: rdata->data_size: %d\n", rdata->data_size));
+	DEBUG(5, ("rpc_check_hdr: rdata->data_size: %d\n", prs_data_size(rdata)));
 
 	smb_io_rpc_hdr("rpc_hdr   ", rhdr, rdata, 0);
 
@@ -120,11 +120,11 @@ static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR * rhdr,
 
 	DEBUG(5,
 	      ("rpc_check_hdr: (after smb_io_rpc_hdr call) rdata->data_size: %d\n",
-	       rdata->data_size));
+	       prs_data_size(rdata)));
 
 	(*first) = IS_BITS_SET_ALL(rhdr->flags, RPC_FLG_FIRST);
 	(*last) = IS_BITS_SET_ALL(rhdr->flags, RPC_FLG_LAST);
-	(*len) = rhdr->frag_len - rdata->data_size;
+	(*len) = rhdr->frag_len - prs_data_size(rdata);
 
 	return rhdr->pkt_type != RPC_FAULT;
 }
@@ -383,7 +383,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	{
 		DEBUG(6, ("cli_pipe: fragment first and last both set\n"));
 		DEBUG(10, ("cli_pipe: dce/rpc `body' data:\n"));
-		dump_data(10, prs_data(rdata, 0), rdata->data_size);
+		dump_data(10, prs_data(rdata, 0), prs_data_size(rdata));
 		return True;
 	}
 
@@ -434,7 +434,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	}
 
 	DEBUG(10, ("cli_pipe: dce/rpc `body' data:\n"));
-	dump_data(10, prs_data(rdata, 0), rdata->data_size);
+	dump_data(10, prs_data(rdata, 0), prs_data_size(rdata));
 	return True;
 }
 
@@ -476,7 +476,7 @@ static BOOL cli_send_trans_data(struct cli_state *cli,
 	 * Setup the pointers from the incoming.
 	 */
 	char *pdata = prs_data(data, 0);
-	int data_len = data ? (data->data_size) : 0;
+	int data_len = data ? prs_data_size(data) : 0;
 	data_len = MIN(max_data_len, data_len);
 	/* create setup parameters. */
 	setup[0] = cmd;
@@ -523,7 +523,7 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
 	BOOL first = True;
 	BOOL last = True;
 	RPC_HDR rhdr;
-	size_t data_len = data->data_size;
+	size_t data_len = prs_data_size(data);
 	int max_data_len = MAX(data_len, 2048);
 	DEBUG(5, ("cli_send_and_rcv_pdu_trans: fnum:%x\n", fnum));
 	DEBUG(10, ("cli_send_and_rcv_pdu_trans: len: %d\n", data_len));
@@ -536,7 +536,7 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
 		return False;
 	/**** parse the header: check it's a response record */
 	rdata->start = 0;
-	rdata->end = rdata->data_size;
+	rdata->end = prs_data_size(rdata);
 	rdata->offset = 0;
 	if (!rpc_check_hdr(rdata, &rhdr, &first, &last, &len))
 	{
@@ -557,12 +557,12 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
 
 
 	DEBUG(5, ("cli_pipe: len left: %d smbtrans read: %d\n",
-		  len, rdata->data_size));
+		  len, prs_data_size(rdata)));
 	/* check if data to be sent back was too large for one SMB. */
 	/* err status is only informational: the _real_ check is on the length */
 	if (len > 0)		/* || err == (0x80000000 | STATUS_BUFFER_OVERFLOW)) */
 	{
-		if (!rpc_read(cli, fnum, rdata, len, rdata->data_size, False))
+		if (!rpc_read(cli, fnum, rdata, len, prs_data_size(rdata), False))
 		{
 			return False;
 		}
@@ -599,8 +599,8 @@ BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
 	int max_data_len = 2048;
 	int write_mode = 0x000c;
 	char *d = NULL;
-	size_t data_left = data->data_size;
-	size_t data_len = data->data_size;
+	size_t data_left = prs_data_size(data);
+	size_t data_len = prs_data_size(data);
 	DEBUG(5, ("cli_send_and_rcv_pdu_rw: fnum:%x\n", fnum));
 	while (data_offset < data_len)
 	{
@@ -639,7 +639,7 @@ BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
 		return False;
 	/**** parse the header: check it's a response record */
 	rdata->start = 0;
-	rdata->end = rdata->data_size;
+	rdata->end = prs_data_size(rdata);
 	rdata->offset = 0;
 	if (!rpc_check_hdr(rdata, &rhdr, &first, &last, &len))
 	{
@@ -665,12 +665,12 @@ BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
 	}
 
 	DEBUG(5, ("cli_pipe: len left: %d smbtrans read: %d\n",
-		  len, rdata->data_size));
+		  len, prs_data_size(rdata)));
 	/* check if data to be sent back was too large for one SMB. */
 	/* err status is only informational: the _real_ check is on the length */
 	if (len > 0)
 	{
-		if (!rpc_read(cli, fnum, rdata, len, rdata->data_size, False))
+		if (!rpc_read(cli, fnum, rdata, len, prs_data_size(rdata), False))
 		{
 			return False;
 		}
@@ -729,7 +729,7 @@ BOOL cli_rcv_pdu(struct cli_connection *con,
 
 	prs_set_packtype(rdata, rhdr.pack_type);
 	smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, rdata, 0);
-	if (!rpc_read(cli, fnum, rdata, len, rdata->data_size, False))
+	if (!rpc_read(cli, fnum, rdata, len, prs_data_size(rdata), False))
 	{
 		return False;
 	}

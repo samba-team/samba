@@ -1405,3 +1405,62 @@ uint32 lsa_priv_get_dispname(const POLICY_HND *hnd, const UNISTR2 *name,
 
 	return status;
 }
+
+/****************************************************************************
+do a LSA Get Privileges of a SID
+****************************************************************************/
+uint32 lsa_sid_get_privs(const POLICY_HND *hnd, const DOM_SID *sid,
+			 /* [out] */ uint32 *num_privs,
+			 /* [out] */ UNISTR2 ***privs)
+{
+	BOOL status = NT_STATUS_UNSUCCESSFUL;
+	prs_struct rbuf;
+	prs_struct buf;
+	LSA_Q_SID_GET_PRIVS q_q;
+
+	if (hnd == NULL || num_privs==NULL || privs==NULL)
+		return False;
+
+	prs_init(&buf, 0, 4, False);
+	prs_init(&rbuf, 0, 4, True);
+
+	DEBUG(4, ("LSA SID get privs\n"));
+
+	/* store the parameters */
+	q_q.hnd = *hnd;
+	make_dom_sid2(&q_q.sid, sid);
+
+	(*num_privs) = 0;
+	(*privs) = NULL;
+
+	/* turn parameters into data stream */
+	if (lsa_io_q_sid_get_privs("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_SID_GET_PRIVS, &buf, &rbuf))
+	{
+		LSA_R_SID_GET_PRIVS r_q;
+		BOOL p;
+
+		ZERO_STRUCT(r_q);
+
+		p = lsa_io_r_sid_get_privs("", &r_q, &rbuf, 0)
+			&& rbuf.offset != 0;
+
+		if (p)
+		{
+			(*num_privs) = r_q.count;
+			(*privs) = r_q.priv_names;
+			status = r_q.status;
+		}
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf);
+
+	if (status)
+	{
+		DEBUG(0, ("LSA_SID_GET_PRIVS: %s\n",
+			  get_nt_error_msg(status)));
+	}
+
+	return status;
+}

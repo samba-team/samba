@@ -168,6 +168,9 @@ uint32 lsa_enum_sids(POLICY_HND *hnd, uint32 *start_idx, uint32 unk1,
 uint32 lsa_priv_get_dispname(const POLICY_HND *hnd, const UNISTR2 *name,
 			     uint16 req_lang_id,
 			     UNISTR2 **desc, uint16 *got_lang_id);
+uint32 lsa_sid_get_privs(const POLICY_HND *hnd, const DOM_SID *sid,
+			 /* [out] */ uint32 *num_privs,
+			 /* [out] */ UNISTR2 ***privs);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 

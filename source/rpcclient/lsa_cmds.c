@@ -100,7 +100,8 @@ static const struct command_set lsa_commands[] =
 	{
 		"lsaenumsids",
 		cmd_lsa_enum_sids,
-		"lsa enum SIDs",
+		"LSA enum SIDs\n"
+		"\t-p: Shows the privileges for that SID",
 		{NULL, NULL}
 	},
 

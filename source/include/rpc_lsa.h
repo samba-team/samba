@@ -104,10 +104,13 @@ enum SID_NAME_USE
 #define LSA_OPENSECRET         0x1c
 #define LSA_SETSECRET          0x1d
 #define LSA_QUERYSECRET        0x1e
+#define LSA_PRIV_GET_VALUE     0x1f
 #define LSA_PRIV_GET_DISPNAME  0x21
 #define LSA_DELETE_OBJECT      0x22
-#define LSA_ADD_ACC_PRIVS      0x25
-#define LSA_REM_ACC_PRIVS      0x26
+#define LSA_PRIV_GET_SIDS      0x23
+#define LSA_SID_GET_PRIVS      0x24
+#define LSA_SID_ADD_PRIVS      0x25
+#define LSA_SID_REM_PRIVS      0x26
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_UNK_2D             0x2d /* LsaGetConnectedCredentials ? */
 
@@ -306,6 +309,24 @@ typedef struct lsa_r_priv_get_dispname
 	/* align */
 	uint32 status;
 } LSA_R_PRIV_GET_DISPNAME;
+
+
+/* LSA_SID_GET_PRIVS */
+typedef struct lsa_q_sid_get_privs
+{
+	POLICY_HND hnd;
+	DOM_SID2 sid;
+} LSA_Q_SID_GET_PRIVS;
+
+typedef struct lsa_r_sid_get_privs
+{
+	uint32 count;
+	uint32 ptr_entries;
+	uint32 count2;
+	UNIHDR *hdr_privs;
+	UNISTR2 **priv_names;
+	uint32 status;
+} LSA_R_SID_GET_PRIVS;
 
 
 /* LSA_Q_CREATE_SECRET - LSA Create Secret */

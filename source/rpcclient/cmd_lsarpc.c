@@ -526,6 +526,24 @@ uint32 cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 
 /****************************************************************************
 ****************************************************************************/
+static void show_priv_dispname(const POLICY_HND *lsa_hnd,
+			       const UNISTR2 *privname, uint16 lang_id)
+{
+	UNISTR2 *uni_desc = NULL;
+	uint16 ret_lang_id = 0xffff;
+	char *desc;
+	lsa_priv_get_dispname(lsa_hnd, privname,
+			      lang_id,
+			      &uni_desc, &ret_lang_id);
+	desc = unistr2_to_ascii(NULL, uni_desc, 0);
+	report(out_hnd, "\t\t%s (0x%x)\n",
+	       desc, lang_id);
+	safe_free(desc);
+	unistr2_free(uni_desc);
+}
+
+/****************************************************************************
+****************************************************************************/
 uint32 cmd_lsa_enum_privs(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
@@ -567,17 +585,8 @@ uint32 cmd_lsa_enum_privs(struct client_info *info, int argc, char *argv[])
 			       privs[i].luid_high, privs[i].luid_low, name);
 			if (do_info)
 			{
-				UNISTR2 *uni_desc = NULL;
-				uint16 lang_id = 0;
-				char *desc;
-				lsa_priv_get_dispname(&lsa_pol, &privs[i].name,
-						      0x407,
-						      &uni_desc, &lang_id);
-				desc = unistr2_to_ascii(NULL, uni_desc, 0);
-				report(out_hnd, "\t\t%s (0x%x)\n",
-				       desc, lang_id);
-				safe_free(desc);
-				unistr2_free(uni_desc);
+				show_priv_dispname(&lsa_pol, &privs[i].name,
+						   0x400);
 			}
 			safe_free(name);
 		}
@@ -646,17 +655,54 @@ uint32 cmd_lsa_priv_info(struct client_info *info, int argc, char *argv[])
 
 /****************************************************************************
 ****************************************************************************/
+static void show_privs_for_sid(const POLICY_HND *lsa_hnd, const DOM_SID *sid)
+{
+	uint32 num_privs;
+	UNISTR2 **privs;
+	uint32 i;
+
+	lsa_sid_get_privs(lsa_hnd, sid,
+			  &num_privs, &privs);
+
+	if (privs == NULL)
+		num_privs = 0;
+
+	for (i = 0; i < num_privs; i++)
+	{
+		char *priv_asc = unistr2_to_ascii(NULL, privs[i], 0);
+
+		report(out_hnd, "\t\t%s\n", priv_asc);
+		show_priv_dispname(lsa_hnd, privs[i], 0x400);
+		safe_free(priv_asc);
+		safe_free(privs[i]);
+	}
+
+	safe_free(privs);
+}
+
 uint32 cmd_lsa_enum_sids(struct client_info *info, int argc, char *argv[])
 {
+	int opt;
 	fstring srv_name;
 	uint32 unk0 = 0, unk1 = 0x1000;
 	POLICY_HND lsa_pol;
 	uint32 count, num_names;
 	DOM_SID **sids;
 	char **names;
-
+	BOOL show_privs = False;
 	BOOL res = True;
 	BOOL res1 = True;
+
+	while ((opt = getopt(argc, argv, "p")) != EOF)
+	{
+		switch (opt)
+		{
+			case 'p':
+			{
+				show_privs = True;
+			}
+		}
+	}
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -675,8 +721,6 @@ uint32 cmd_lsa_enum_sids(struct client_info *info, int argc, char *argv[])
 
 	lsa_lookup_sids(&lsa_pol, count, sids, &names, NULL, &num_names);
 
-	res = res ? lsa_close(&lsa_pol) : False;
-
 	if (res1 && names)
 	{
 		uint32 i;
@@ -684,12 +728,17 @@ uint32 cmd_lsa_enum_sids(struct client_info *info, int argc, char *argv[])
 		for (i = 0; i < count; i++)
 		{
 			fstring sid_str;
+
 			sid_to_string(sid_str, sids[i]);
 			report(out_hnd, "\t%s -> %s\n", sid_str, names[i]);
 			safe_free(names[i]);
+			if (show_privs)
+				show_privs_for_sid(&lsa_pol, sids[i]);
 		}
 		safe_free(names);
 	}
+
+	res = res ? lsa_close(&lsa_pol) : False;
 
 	return 0;
 }

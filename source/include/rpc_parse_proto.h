@@ -186,6 +186,10 @@ BOOL lsa_io_q_priv_get_dispname(char *desc, LSA_Q_PRIV_GET_DISPNAME * q_q,
 				prs_struct *ps, int depth);
 BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME * r_q,
 				prs_struct *ps, int depth);
+BOOL lsa_io_q_sid_get_privs(char *desc, LSA_Q_SID_GET_PRIVS * q_o,
+			    prs_struct *ps, int depth);
+BOOL lsa_io_r_sid_get_privs(char *desc, LSA_R_SID_GET_PRIVS * r_q,
+			    prs_struct *ps, int depth);
 BOOL lsa_io_r_enum_sids(char *desc, LSA_R_ENUM_SIDS *r_q,
 			prs_struct *ps, int depth);
 BOOL lsa_io_q_open_trusted_dom(char *desc, LSA_Q_OPEN_TRUSTED_DOM * q_o,
