@@ -1000,7 +1000,15 @@ struct cli_state *server_cryptkey(void)
 	}
 
 	make_nmb_name(&calling, local_machine, 0x0 , scope);
-	make_nmb_name(&called , desthost     , 0x20, scope);
+
+    if(strlen(desthost) > 15)
+	{
+		DEBUG(1,("server_cryptkey: %s is too long for a password server NetBIOS \
+name, using *SMBSERVER for the connection.\n", desthost ));
+		make_nmb_name(&called , "*SMBSERVER", 0x20, scope);
+	}
+	else
+		make_nmb_name(&called , desthost     , 0x20, scope);
 
 	if (!cli_session_request(cli, &calling, &called))
 	{
