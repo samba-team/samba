@@ -354,7 +354,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	    /* Loadable object file */
 
-	    if (vfs_init_custom(conn) < 0) {
+	    if (!vfs_init_custom(conn)) {
 		return NULL;
 	    }
 #else
@@ -516,7 +516,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		extern int Client;
 		
 		dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
-		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
+		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)));
 		dbgtext( "as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)conn->uid, (int)conn->gid );
 		dbgtext( "(pid %d)\n", (int)getpid() );
@@ -525,7 +525,42 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	/* Invoke make connection hook */
 
 	if (conn->vfs_ops.connect) {
-	    if (conn->vfs_ops.connect(conn, service, user) < 0) {
+	    struct vfs_connection_struct *vconn;
+
+	    vconn = (struct vfs_connection_struct *)
+		malloc(sizeof(struct vfs_connection_struct));
+
+	    if (vconn == NULL) {
+		DEBUG(0, ("No memory to create vfs_connection_struct"));
+		return NULL;
+	    }
+
+	    ZERO_STRUCTP(vconn);
+
+	    /* Copy across relevant data from connection struct */
+
+	    vconn->printer = conn->printer;
+	    vconn->ipc = conn->ipc;
+	    vconn->read_only = conn->read_only;
+	    vconn->admin_user = conn->admin_user;
+
+	    pstrcpy(vconn->dirpath, conn->dirpath);
+	    pstrcpy(vconn->connectpath, conn->connectpath);
+	    pstrcpy(vconn->origpath, conn->origpath);
+
+	    pstrcpy(vconn->user, conn->user);
+	    vconn->uid = conn->uid;
+	    vconn->gid = conn->gid;
+	    vconn->ngroups = conn->ngroups;
+	    vconn->groups = (gid_t *)malloc(conn->ngroups * sizeof(gid_t));
+	    if (vconn->groups != NULL) {
+		memcpy(vconn->groups, conn->groups, 
+		       conn->ngroups * sizeof(gid_t));
+	    }
+
+	    /* Call connect hook */
+	    
+	    if (conn->vfs_ops.connect(vconn, service, user) < 0) {
 		return NULL;
 	    }
 	}
@@ -549,7 +584,19 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 				 lp_servicename(SNUM(conn))));
 
 	if (conn->vfs_ops.disconnect != NULL) {
-	  conn->vfs_ops.disconnect(conn, lp_servicename(SNUM(conn)));
+
+	    /* Call disconnect hook */
+	    
+	    conn->vfs_ops.disconnect();
+	    
+	    /* Free vfs_connection_struct */
+	    
+	    if (conn->vfs_conn != NULL) {
+		if (conn->vfs_conn->groups != NULL) {
+		    free(conn->vfs_conn->groups);
+		}
+		free(conn->vfs_conn);
+	    }
 	}
 
 	yield_connection(conn,
