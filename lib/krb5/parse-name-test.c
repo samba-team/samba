@@ -42,24 +42,25 @@ static struct testcase {
     krb5_realm realm;
     unsigned ncomponents;
     char *comp_val[MAX_COMPONENTS];
+    int realmp;
 } tests[] = {
-    {"", "@", "", 1, {""}},
-    {"a", "a@", "", 1, {"a"}},
-    {"\\n", "\\n@", "", 1, {"\n"}},
-    {"\\ ", "\\ @", "", 1, {" "}},
-    {"\\t", "\\t@", "", 1, {"\t"}},
-    {"\\b", "\\b@", "", 1, {"\b"}},
-    {"\\\\", "\\\\@", "", 1, {"\\"}},
-    {"\\/", "\\/@", "", 1, {"/"}},
-    {"\\@", "\\@@", "", 1, {"@"}},
-    {"@", "@", "", 1, {""}},
-    {"a/b", "a/b@", "", 2, {"a", "b"}},
-    {"a/", "a/@", "", 2, {"a", ""}},
-    {"a\\//\\/", "a\\//\\/@", "", 2, {"a/", "/"}},
-    {"/a", "/a@", "", 2, {"", "a"}},
-    {"\\@@\\@", "\\@@\\@", "@", 1, {"@"}},
-    {"a/b/c", "a/b/c@", "", 3, {"a", "b", "c"}},
-    {NULL, NULL, "", 0, {}}};
+    {"", "@", "", 1, {""}, FALSE},
+    {"a", "a@", "", 1, {"a"}, FALSE},
+    {"\\n", "\\n@", "", 1, {"\n"}, FALSE},
+    {"\\ ", "\\ @", "", 1, {" "}, FALSE},
+    {"\\t", "\\t@", "", 1, {"\t"}, FALSE},
+    {"\\b", "\\b@", "", 1, {"\b"}, FALSE},
+    {"\\\\", "\\\\@", "", 1, {"\\"}, FALSE},
+    {"\\/", "\\/@", "", 1, {"/"}, FALSE},
+    {"\\@", "\\@@", "", 1, {"@"}, FALSE},
+    {"@", "@", "", 1, {""}, TRUE},
+    {"a/b", "a/b@", "", 2, {"a", "b"}, FALSE},
+    {"a/", "a/@", "", 2, {"a", ""}, FALSE},
+    {"a\\//\\/", "a\\//\\/@", "", 2, {"a/", "/"}, FALSE},
+    {"/a", "/a@", "", 2, {"", "a"}, FALSE},
+    {"\\@@\\@", "\\@@\\@", "@", 1, {"@"}, TRUE},
+    {"a/b/c", "a/b/c@", "", 3, {"a", "b", "c"}, FALSE},
+    {NULL, NULL, "", 0, {}}, FALSE};
 
 int
 main(int argc, char **argv)
@@ -115,7 +116,7 @@ main(int argc, char **argv)
 		}
 	    }
 	}
-	for (j = 0; j < strlen(t->input_string); ++j) {
+	for (j = 0; j < strlen(t->output_string); ++j) {
 	    ret = krb5_unparse_name_fixed(context, princ,
 					  name_buf, j);
 	    if (ret != ERANGE) {
@@ -146,6 +147,44 @@ main(int argc, char **argv)
 		    " (\"%s\" should be \"%s\"\n",
 		    s, t->output_string);
 	    val = 1;
+	}
+	free(s);
+
+	if (!t->realmp) {
+	    for (j = 0; j < strlen(t->input_string); ++j) {
+		ret = krb5_unparse_name_fixed_short(context, princ,
+						    name_buf, j);
+		if (ret != ERANGE) {
+		    printf ("unparse_name_short %s with length %d"
+			    " should have failed\n",
+			    t->input_string, j);
+		    val = 1;
+		    break;
+		}
+	    }
+	    ret = krb5_unparse_name_fixed_short(context, princ,
+						name_buf, sizeof(name_buf));
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_unparse_name_fixed");
+
+	    if (strcmp (t->input_string, name_buf) != 0) {
+		printf ("failed comparing the re-parsed"
+			" (\"%s\" should be \"%s\")\n",
+			name_buf, t->input_string);
+		val = 1;
+	    }
+
+	    ret = krb5_unparse_name_short(context, princ, &s);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_unparse_name_short");
+
+	    if (strcmp (t->input_string, s) != 0) {
+		printf ("failed comparing the re-parsed"
+			" (\"%s\" should be \"%s\"\n",
+			s, t->input_string);
+		val = 1;
+	    }
+	    free(s);
 	}
 	krb5_free_principal (context, princ);
     }
