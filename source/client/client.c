@@ -517,7 +517,11 @@ static void do_get(char *rname,char *lname)
 	DEBUG(2,("getting file %s of size %.0f as %s ", 
 		 lname, (double)size, lname));
 
-	data = (char *)malloc(read_size);
+	if(!(data = (char *)malloc(read_size))) { 
+		DEBUG(0,("malloc fail for size %d\n", read_size));
+		cli_close(cli, fnum);
+		return;
+	}
 
 	while (1) {
 		int n = cli_read(cli, fnum, data, nread, read_size);
@@ -531,6 +535,8 @@ static void do_get(char *rname,char *lname)
       
 		nread += n;
 	}
+
+	free(data);
 	
 	if (!cli_close(cli, fnum)) {
 		DEBUG(0,("Error %s closing remote file\n",cli_errstr(cli)));
