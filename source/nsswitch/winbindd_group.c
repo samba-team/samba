@@ -581,7 +581,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	struct getent_state *ent;
 	struct winbindd_gr *group_list = NULL;
 	int num_groups, group_list_ndx = 0, i, gr_mem_list_len = 0;
-	char *sep, *new_extra_data, *gr_mem_list = NULL;
+	char *new_extra_data, *gr_mem_list = NULL;
 
 	DEBUG(3, ("[%5d]: getgrent\n", state->pid));
 
@@ -599,7 +599,6 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	state->response.data.num_entries = 0;
 
 	group_list = (struct winbindd_gr *)state->response.extra_data;
-	sep = lp_winbind_separator();
 
 	if (!(ent = state->getgrent_state))
 		return WINBINDD_ERROR;
