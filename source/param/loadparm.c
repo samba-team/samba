@@ -1078,9 +1078,10 @@ static struct parm_struct parm_table[] = {
 	{"vfs object", P_STRING, P_LOCAL, &sDefault.szVfsObjectFile, handle_vfs_object, NULL, FLAG_SHARE},
 	{"vfs options", P_STRING, P_LOCAL, &sDefault.szVfsOptions, NULL, NULL, FLAG_SHARE},
 
-	
+#ifdef WITH_MSDFS
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
 	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, 0},
+#endif
 
 	{"Winbind options", P_SEP, P_SEPARATOR},
 
@@ -1425,6 +1426,8 @@ static void init_globals(void)
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
+
+	Globals.bHostMSDfs = False;
 
 	/*
 	 * This must be done last as it checks the value in 
