@@ -1,3 +1,9 @@
+2000-06-27  Assar Westerlund  <assar@sics.se>
+
+	* parse.y (yyerror): static-ize
+	* make_cmds.h (error_message, yylex): add prototypes
+	* lex.l: fix prototypes and kill warnings
+
 2000-05-24  Assar Westerlund  <assar@sics.se>
 
 	* ss.h (SS_ET_COMMAND_NOT_FOUND): add
