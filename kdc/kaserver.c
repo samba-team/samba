@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -199,6 +199,8 @@ krb5_ret_xdr_data(krb5_storage *sp,
 	size_t pad = (4 - size % 4) % 4;
 
 	data->data = malloc(size);
+	if (data->data == NULL)
+	    return ENOMEM;
 	ret = sp->fetch(sp, data->data, size);
 	if(ret != size)
 	    return (ret < 0)? errno : KRB5_CC_END;
@@ -360,8 +362,10 @@ unparse_auth_args (krb5_storage *sp,
 
     krb5_ret_xdr_data (sp, &data);
     *instance = malloc(data.length + 1);
-    if (*instance == NULL)
+    if (*instance == NULL) {
+	free (*name);
 	return ENOMEM;
+    }
     memcpy (*instance, data.data, data.length);
     (*instance)[data.length] = '\0';
     krb5_data_free (&data);
@@ -523,16 +527,21 @@ unparse_getticket_args (krb5_storage *sp,
 
     krb5_ret_xdr_data (sp, &data);
     *name = malloc(data.length + 1);
-    if (*name == NULL)
+    if (*name == NULL) {
+	free (*auth_domain);
 	return ENOMEM;
+    }
     memcpy (*name, data.data, data.length);
     (*name)[data.length] = '\0';
     krb5_data_free (&data);
 
     krb5_ret_xdr_data (sp, &data);
     *instance = malloc(data.length + 1);
-    if (*instance == NULL)
+    if (*instance == NULL) {
+	free (*auth_domain);
+	free (*name);
 	return ENOMEM;
+    }
     memcpy (*instance, data.data, data.length);
     (*instance)[data.length] = '\0';
     krb5_data_free (&data);
