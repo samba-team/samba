@@ -152,11 +152,6 @@ typedef struct
 	char *szNetbiosAliases;
 	char *szDomainOtherSIDs;
 	char *szNameResolveOrder;
-	char *szLdapServer;
-	char *szLdapSuffix;
-	char *szLdapFilter;
-	char *szLdapRoot;
-	char *szLdapRootPassword;
 	char *szPanicAction;
 	char *szAddUserScript;
 	char *szDelUserScript;
@@ -214,7 +209,15 @@ typedef struct
 	int winbind_cache_time;
 #ifdef WITH_LDAP
 	int ldap_port;
+	int ldap_schema;
+	int ldap_ssl;
+	char *szLdapServer;
+	char *szLdapSuffix;
+	char *szLdapFilter;
+	char *szLdapRoot;
+	char *szLdapRootPassword;
 #endif				/* WITH_LDAP */
+
 #ifdef WITH_SSL
 	int sslVersion;
 	char *sslHostsRequire;
@@ -370,7 +373,6 @@ typedef struct
 	BOOL bLocking;
 	BOOL bStrictLocking;
 	BOOL bPosixLocking;
-	BOOL bShareModes;
 	BOOL bOpLocks;
 	BOOL bLevel2OpLocks;
 	BOOL bOnlyUser;
@@ -485,7 +487,6 @@ static service sDefault = {
 	True,			/* bLocking */
 	False,			/* bStrictLocking */
 	True,			/* bPosixLocking */
-	True,			/* bShareModes */
 	True,			/* bOpLocks */
 	True,			/* bLevel2OpLocks */
 	False,			/* bOnlyUser */
@@ -576,6 +577,27 @@ static struct enum_list enum_printing[] = {
 	{PRINT_TEST, "test"},
 	{PRINT_VLP, "vlp"},
 #endif /* DEVELOPER */
+	{-1, NULL}
+};
+
+static struct enum_list enum_ldap_schema[] = {
+	{SCHEMA_COMPAT, "compat"},
+	{SCHEMA_AD, "ad"},
+	{SCHEMA_AD, "active directory"},
+	{SCHEMA_SAMBA, "samba"},
+	{-1, NULL}
+};
+
+static struct enum_list enum_ldap_ssl[] = {
+	{LDAP_SSL_ON, "Yes"},
+	{LDAP_SSL_ON, "yes"},
+	{LDAP_SSL_ON, "on"},
+	{LDAP_SSL_ON, "On"},
+	{LDAP_SSL_OFF, "no"},
+	{LDAP_SSL_OFF, "No"},
+	{LDAP_SSL_OFF, "off"},
+	{LDAP_SSL_OFF, "Off"},
+	{LDAP_SSL_START_TLS, "start tls"},
 	{-1, NULL}
 };
 
@@ -754,7 +776,9 @@ static struct parm_struct parm_table[] = {
 	{"ssl CA certDir", P_STRING, P_GLOBAL, &Globals.sslCaCertDir, NULL, NULL, 0},
 	{"ssl CA certFile", P_STRING, P_GLOBAL, &Globals.sslCaCertFile, NULL, NULL, 0},
 	{"ssl server cert", P_STRING, P_GLOBAL, &Globals.sslCert, NULL, NULL, 0},
+	{"ssl cert", P_STRING, P_GLOBAL, &Globals.sslCert, NULL, NULL, 0},
 	{"ssl server key", P_STRING, P_GLOBAL, &Globals.sslPrivKey, NULL, NULL, 0},
+	{"ssl key", P_STRING, P_GLOBAL, &Globals.sslPrivKey, NULL, NULL, 0},
 	{"ssl client cert", P_STRING, P_GLOBAL, &Globals.sslClientCert, NULL, NULL, 0},
 	{"ssl client key", P_STRING, P_GLOBAL, &Globals.sslClientPrivKey, NULL, NULL, 0},
 	{"ssl require clientcert", P_BOOL, P_GLOBAL, &Globals.sslReqClientCert, NULL, NULL, 0},
@@ -943,7 +967,6 @@ static struct parm_struct parm_table[] = {
 	{"oplock contention limit", P_INTEGER, P_LOCAL, &sDefault.iOplockContentionLimit, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"posix locking", P_BOOL, P_LOCAL, &sDefault.bPosixLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"strict locking", P_BOOL, P_LOCAL, &sDefault.bStrictLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
-	{"share modes", P_BOOL, P_LOCAL, &sDefault.bShareModes, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 
 #ifdef WITH_LDAP
 	{"Ldap Options", P_SEP, P_SEPARATOR},
@@ -954,6 +977,8 @@ static struct parm_struct parm_table[] = {
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, 0},
 	{"ldap root", P_STRING, P_GLOBAL, &Globals.szLdapRoot, NULL, NULL, 0},
 	{"ldap root passwd", P_STRING, P_GLOBAL, &Globals.szLdapRootPassword, NULL, NULL, 0},
+	{"ldap schema", P_ENUM, P_GLOBAL, &Globals.ldap_schema, NULL, enum_ldap_schema, 0},
+	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, 0},
 #endif /* WITH_LDAP */
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
@@ -1297,12 +1322,6 @@ static void init_globals(void)
 	Globals.bUseMmap = True;
 #endif
 
-#ifdef WITH_LDAP
-	/* default values for ldap */
-	string_set(&Globals.szLdapServer, "localhost");
-	Globals.ldap_port = 389;
-#endif /* WITH_LDAP */
-
 #ifdef WITH_SSL
 	Globals.sslVersion = SMB_SSL_V23;
 	string_set(&Globals.sslHostsRequire, "");
@@ -1320,6 +1339,16 @@ static void init_globals(void)
 	Globals.sslCompatibility = False;
 #endif /* WITH_SSL */
 
+#ifdef WITH_LDAP
+	string_set(&Globals.szLdapServer, "localhost");
+	string_set(&Globals.szLdapSuffix, "");
+	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
+	string_set(&Globals.szLdapRoot, "");
+	string_set(&Globals.szLdapRootPassword, "");
+	Globals.ldap_port = 389;
+	Globals.ldap_schema = SCHEMA_COMPAT;
+	Globals.ldap_ssl = LDAP_SSL_OFF;
+#endif /* WITH_LDAP */
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
 
@@ -1498,6 +1527,9 @@ FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_root, &Globals.szLdapRoot)
 FN_GLOBAL_STRING(lp_ldap_rootpasswd, &Globals.szLdapRootPassword)
+FN_GLOBAL_INTEGER(lp_ldap_schema, &Globals.ldap_schema)
+FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
+FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 #endif /* WITH_LDAP */
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
@@ -1593,9 +1625,6 @@ FN_GLOBAL_INTEGER(lp_stat_cache_size, &Globals.stat_cache_size)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
-#ifdef WITH_LDAP
-FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
-#endif				/* WITH_LDAP */
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)
@@ -1659,7 +1688,6 @@ FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_locking, bLocking)
 FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
-FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
 FN_LOCAL_BOOL(lp_onlyuser, bOnlyUser)
@@ -1926,8 +1954,6 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
 	ServicePtrs[i]->bRead_only = False;
-	/* No share modes on printer services. */
-	ServicePtrs[i]->bShareModes = False;
 	/* No oplocks on printer services. */
 	ServicePtrs[i]->bOpLocks = False;
 	/* Printer services must be printable. */

@@ -1766,24 +1766,24 @@ AC_ARG_WITH(tdbpwd,
 # --jerry
 #
 # check for a LDAP password database
-#AC_MSG_CHECKING(whether to use LDAP password database)
-#AC_ARG_WITH(ldap,
-#[  --with-ldap     Include LDAP support
-#  --without-ldap  Don't include LDAP support (default)],
-#[ case "$withval" in
-#  yes)
-#    AC_MSG_RESULT(yes)
-#    AC_DEFINE(WITH_LDAP)
-#    AC_MSG_ERROR([LDAP password database not supported in this version.])
-#    ;;
-#  *)
-#    AC_MSG_RESULT(no)
-#    ;;
-#  esac ],
-#  AC_MSG_RESULT(no)
-#)
+AC_MSG_CHECKING(whether to use LDAP password database)
+AC_ARG_WITH(ldap,
+[  --with-ldap     Include Experimental LDAP-Sam support (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LDAP)
+    LIBS="-lldap -llber -lresolv $LIBS"
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
+## commented out by --jerry
 # check for a NISPLUS password database
 #AC_MSG_CHECKING(whether to use NISPLUS password database)
 #AC_ARG_WITH(nisplus,
