@@ -36,9 +36,7 @@ extern uint32 global_client_caps;
 SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	SMB_BIG_UINT ret;
-#if defined(HAVE_STAT_ST_BLKSIZE) && defined(HAVE_STAT_ST_BLOCKS)
-	ret = (SMB_BIG_UINT)sbuf->st_blksize * (SMB_BIG_UINT)sbuf->st_blocks;
-#elif defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
 	ret = (SMB_BIG_UINT)STAT_ST_BLOCKSIZE * (SMB_BIG_UINT)sbuf->st_blocks;
 #else
 	ret = (SMB_BIG_UINT)get_file_size(*sbuf);
