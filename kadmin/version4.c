@@ -309,6 +309,8 @@ values_to_ent(krb5_context context,
 	if(ent->key_data == NULL)
 	    return ENOMEM;
 	for(i = 0; i < 3; i++) {
+	    u_int32_t key_low, key_high;
+
 	    ent->key_data[i].key_data_ver = 2;
 #ifdef EXTENDED_KADM
 	    if(IS_FIELD(KADM_KVNO, vals->fields))
@@ -318,12 +320,13 @@ values_to_ent(krb5_context context,
 	    ent->key_data[i].key_data_length[0] = 8;
 	    if((ent->key_data[i].key_data_contents[0] = malloc(8)) == NULL)
 		return ENOMEM;
+
+	    key_low  = ntohl(vals->key_low);
+	    key_high = ntohl(vals->key_high);
 	    memcpy(ent->key_data[i].key_data_contents[0],
-		   &vals->key_low,
-		   4);
+		   &key_low, 4);
 	    memcpy((char*)ent->key_data[i].key_data_contents[0] + 4,
-		   &vals->key_high,
-		   4);
+		   &key_high, 4);
 	    ent->key_data[i].key_data_type[1] = KRB5_PW_SALT;
 	    ent->key_data[i].key_data_length[1] = 0;
 	    ent->key_data[i].key_data_contents[1] = NULL;
