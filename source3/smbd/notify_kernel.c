@@ -1,5 +1,6 @@
 /*
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    change notify handling - linux kernel based implementation
    Copyright (C) Andrew Tridgell 2000
 
@@ -22,9 +23,9 @@
 
 #if HAVE_KERNEL_CHANGE_NOTIFY
 
-static VOLATILE sig_atomic_t fd_pending;
+#define FD_PENDING_SIZE 20
+static VOLATILE sig_atomic_t fd_pending_array[FD_PENDING_SIZE];
 static VOLATILE sig_atomic_t signals_received;
-static VOLATILE sig_atomic_t signals_processed;
 
 #ifndef DN_ACCESS
 #define DN_ACCESS       0x00000001      /* File accessed in directory */
@@ -53,77 +54,108 @@ static VOLATILE sig_atomic_t signals_processed;
  This is the structure to keep the information needed to
  determine if a directory has changed.
 *****************************************************************************/
+
 struct change_data {
 	int directory_handle;
 };
 
 /****************************************************************************
-the signal handler for change notify
+ The signal handler for change notify.
+ The Linux kernel has a bug in that we should be able to block any
+ further delivery of RT signals until the kernel_check_notify() function
+ unblocks them, but it seems that any signal mask we're setting here is
+ being overwritten on exit from this handler. I should create a standalone
+ test case for the kernel hackers. JRA.
 *****************************************************************************/
+
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
 	BlockSignals(True, sig);
-	fd_pending = (sig_atomic_t)info->si_fd;
-	signals_received++;
+	if (signals_received < FD_PENDING_SIZE - 1) {
+		fd_pending_array[signals_received] = (sig_atomic_t)info->si_fd;
+		signals_received++;
+	} /* Else signal is lost. */
 	sys_select_signal();
 }
-
-
 
 /****************************************************************************
  Check if a change notify should be issued.
  time non-zero means timeout check (used for hash). Ignore this (async method
  where time is zero will be used instead).
 *****************************************************************************/
+
 static BOOL kernel_check_notify(connection_struct *conn, uint16 vuid, char *path, uint32 flags, void *datap, time_t t)
 {
 	struct change_data *data = (struct change_data *)datap;
+	int i;
+	BOOL ret = False;
 
 	if (t)
 		return False;
 
-	if (data->directory_handle != (int)fd_pending) return False;
+	BlockSignals(True, RT_SIGNAL_NOTIFY);
+	for (i = 0; i < signals_received; i++) {
+		if (data->directory_handle == (int)fd_pending_array[i]) {
+			DEBUG(3,("kernel_check_notify: kernel change notify on %s fd[%d]=%d (signals_received=%d)\n",
+						path, i, (int)fd_pending_array[i], (int)signals_received ));
 
-	DEBUG(3,("kernel change notify on %s fd=%d\n", path, (int)fd_pending));
-
-	close((int)fd_pending);
-	fd_pending = (sig_atomic_t)-1;
-	data->directory_handle = -1;
-	signals_processed++;
+			close((int)fd_pending_array[i]);
+			fd_pending_array[i] = (sig_atomic_t)-1;
+			if (signals_received - i - 1) {
+				memmove(&fd_pending_array[i], &fd_pending_array[i+1],
+						sizeof(sig_atomic_t)*(signals_received-i-1));
+			}
+			data->directory_handle = -1;
+			signals_received--;
+			ret = True;
+			break;
+		}
+	}
 	BlockSignals(False, RT_SIGNAL_NOTIFY);
-	return True;
+	return ret;
 }
 
 /****************************************************************************
-remove a change notify data structure
+ Remove a change notify data structure.
 *****************************************************************************/
+
 static void kernel_remove_notify(void *datap)
 {
 	struct change_data *data = (struct change_data *)datap;
 	int fd = data->directory_handle;
 	if (fd != -1) {
-		if (fd == (int)fd_pending) {
-			fd_pending = (sig_atomic_t)-1;
-			signals_processed++;
-			BlockSignals(False, RT_SIGNAL_NOTIFY);
+		int i;
+		BlockSignals(True, RT_SIGNAL_NOTIFY);
+		for (i = 0; i < signals_received; i++) {
+			if (fd == (int)fd_pending_array[i]) {
+				close(fd);
+				fd_pending_array[i] = (sig_atomic_t)-1;
+				if (signals_received - i - 1) {
+					memmove(&fd_pending_array[i], &fd_pending_array[i+1],
+							sizeof(sig_atomic_t)*(signals_received-i-1));
+				}
+				data->directory_handle = -1;
+				signals_received--;
+				break;
+			}
 		}
-		close(fd);
+		BlockSignals(False, RT_SIGNAL_NOTIFY);
 	}
 	SAFE_FREE(data);
-	DEBUG(3,("removed kernel change notify fd=%d\n", fd));
+	DEBUG(3,("kernel_remove_notify: fd=%d\n", fd));
 }
 
-
 /****************************************************************************
-register a change notify request
+ Register a change notify request.
 *****************************************************************************/
+
 static void *kernel_register_notify(connection_struct *conn, char *path, uint32 flags)
 {
 	struct change_data data;
 	int fd;
 	unsigned long kernel_flags;
 	
-	fd = conn->vfs_ops.open(conn, path, O_RDONLY, 0);
+	fd = sys_open(path,O_RDONLY, 0);
 
 	if (fd == -1) {
 		DEBUG(3,("Failed to open directory %s for change notify\n", path));
@@ -161,22 +193,24 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 }
 
 /****************************************************************************
-see if the kernel supports change notify
+ See if the kernel supports change notify.
 ****************************************************************************/
+
 static BOOL kernel_notify_available(void) 
 {
 	int fd, ret;
 	fd = open("/tmp", O_RDONLY);
-	if (fd == -1) return False; /* uggh! */
+	if (fd == -1)
+		return False; /* uggh! */
 	ret = sys_fcntl_long(fd, F_NOTIFY, 0);
 	close(fd);
 	return ret == 0;
 }
 
-
 /****************************************************************************
-setup kernel based change notify
+ Setup kernel based change notify.
 ****************************************************************************/
+
 struct cnotify_fns *kernel_notify_init(void) 
 {
 	static struct cnotify_fns cnotify;
@@ -190,7 +224,8 @@ struct cnotify_fns *kernel_notify_init(void)
 		return NULL;
         }
 
-	if (!kernel_notify_available()) return NULL;
+	if (!kernel_notify_available())
+		return NULL;
 
 	cnotify.register_notify = kernel_register_notify;
 	cnotify.check_notify = kernel_check_notify;
@@ -199,7 +234,6 @@ struct cnotify_fns *kernel_notify_init(void)
 
 	return &cnotify;
 }
-
 
 #else
  void notify_kernel_dummy(void) {}
