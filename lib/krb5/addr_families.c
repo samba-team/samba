@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,6 +52,8 @@ struct addr_operations {
     int (*order_addr)(krb5_context, const krb5_address*, const krb5_address*);
     int (*free_addr)(krb5_context, krb5_address*);
     int (*copy_addr)(krb5_context, const krb5_address*, krb5_address*);
+    int (*mask_boundary)(krb5_context, const krb5_address*, unsigned long, 
+				     krb5_address*, krb5_address*);
 };
 
 /*
@@ -191,6 +193,40 @@ ipv4_parse_addr (krb5_context context, const char *address, krb5_address *addr)
     _krb5_put_int(addr->address.data, ntohl(a.s_addr), addr->address.length);
     return 0;
 }
+
+static int
+ipv4_mask_boundary(krb5_context context, const krb5_address *inaddr,
+		   unsigned long len, krb5_address *low, krb5_address *high)
+{
+    unsigned long ia;
+    u_int32_t l, h, m = 0xffffffff;
+
+    if (len > 32) {
+	krb5_set_error_string(context, "IPv4 prefix too large (%ld)", len);
+	return KRB5_PROG_ATYPE_NOSUPP;
+    }
+    m = m << (32 - len);
+
+    _krb5_get_int(inaddr->address.data, &ia, inaddr->address.length);
+
+    l = ia & m;
+    h = l | ~m;
+
+    low->addr_type = KRB5_ADDRESS_INET;
+    if(krb5_data_alloc(&low->address, 4) != 0)
+	return -1;
+    _krb5_put_int(low->address.data, l, low->address.length);
+
+    high->addr_type = KRB5_ADDRESS_INET;
+    if(krb5_data_alloc(&high->address, 4) != 0) {
+	krb5_free_address(context, low);
+	return -1;
+    }
+    _krb5_put_int(high->address.data, h, high->address.length);
+
+    return 0;
+}
+
 
 /*
  * AF_INET6 - aka IPv6 implementation
@@ -367,8 +403,8 @@ static int
 arange_parse_addr (krb5_context context, 
 		   const char *address, krb5_address *addr)
 {
-    char buf[1024];
-    krb5_addresses low, high;
+    char buf[1024], *p;
+    krb5_address low0, high0;
     struct arange *a;
     krb5_error_code ret;
     
@@ -377,39 +413,84 @@ arange_parse_addr (krb5_context context,
     
     address += 6;
 
-    /* should handle netmasks */
-    strsep_copy(&address, "-", buf, sizeof(buf));
-    ret = krb5_parse_address(context, buf, &low);
-    if(ret)
-	return ret;
-    if(low.len != 1) {
-	krb5_free_addresses(context, &low);
-	return -1;
-    }
+    p = strrchr(address, '/');
+    if (p) {
+	krb5_addresses addrmask;
+	char *q;
+	long num;
 
-    strsep_copy(&address, "-", buf, sizeof(buf));
-    ret = krb5_parse_address(context, buf, &high);
-    if(ret) {
-	krb5_free_addresses(context, &low);
-	return ret;
-    }
+	if (strlcpy(buf, address, sizeof(buf)) > sizeof(buf))
+	    return -1;
+	buf[p - address] = '\0';
+	ret = krb5_parse_address(context, buf, &addrmask);
+	if (ret)
+	    return ret;
+	if(addrmask.len != 1) {
+	    krb5_free_addresses(context, &addrmask);
+	    return -1;
+	}
+	
+	address += p - address + 1;
 
-    if(high.len != 1 || high.val[0].addr_type != low.val[0].addr_type) {
+	num = strtol(address, &q, 10);
+	if (q == address || *q != '\0' || num < 0) {
+	    krb5_free_addresses(context, &addrmask);
+	    return -1;
+	}
+
+	ret = krb5_address_prefixlen_boundary(context, &addrmask.val[0], num,
+					      &low0, &high0);
+	krb5_free_addresses(context, &addrmask);
+	if (ret)
+	    return ret;
+
+    } else {
+	krb5_addresses low, high;
+	
+	strsep_copy(&address, "-", buf, sizeof(buf));
+	ret = krb5_parse_address(context, buf, &low);
+	if(ret)
+	    return ret;
+	if(low.len != 1) {
+	    krb5_free_addresses(context, &low);
+	    return -1;
+	}
+	
+	strsep_copy(&address, "-", buf, sizeof(buf));
+	ret = krb5_parse_address(context, buf, &high);
+	if(ret) {
+	    krb5_free_addresses(context, &low);
+	    return ret;
+	}
+	
+	if(high.len != 1 && high.val[0].addr_type != low.val[0].addr_type) {
+	    krb5_free_addresses(context, &low);
+	    krb5_free_addresses(context, &high);
+	    return -1;
+	}
+
+	ret = krb5_copy_address(context, &high.val[0], &high0);
+	if (ret == 0) {
+	    ret = krb5_copy_address(context, &low.val[0], &low0);
+	    if (ret)
+		krb5_free_address(context, &high0);
+	}
 	krb5_free_addresses(context, &low);
 	krb5_free_addresses(context, &high);
-	return -1;
+	if (ret)
+	    return ret;
     }
 
     krb5_data_alloc(&addr->address, sizeof(*a));
     addr->addr_type = KRB5_ADDRESS_ARANGE;
     a = addr->address.data;
 
-    if(krb5_address_order(context, &low.val[0], &high.val[0]) < 0) {
-	a->low = low.val[0];
-	a->high = high.val[0];
+    if(krb5_address_order(context, &low0, &high0) < 0) {
+	a->low = low0;
+	a->high = high0;
     } else {
-	a->low = high.val[0];
-	a->high = low.val[0];
+	a->low = high0;
+	a->high = low0;
     }
     return 0;
 }
@@ -457,20 +538,31 @@ arange_print_addr (const krb5_address *addr, char *str, size_t len)
 {
     struct arange *a;
     krb5_error_code ret;
-    size_t l, ret_len = 0;
+    size_t l, size, ret_len;
 
     a = addr->address.data;
 
     l = strlcpy(str, "RANGE:", len);
+    ret_len = l;
+    if (l > len)
+	l = len;
+    size = l;
+	
+    ret = krb5_print_address (&a->low, str + size, len - size, &l);
     ret_len += l;
+    if (len - size > l)
+	size += l;
+    else
+	size = len;
 
-    ret = krb5_print_address (&a->low, str + ret_len, len - ret_len, &l);
+    l = strlcat(str + size, "-", len - size);
     ret_len += l;
+    if (len - size > l)
+	size += l;
+    else
+	size = len;
 
-    l = strlcat(str, "-", len);
-    ret_len += l;
-
-    ret = krb5_print_address (&a->high, str + ret_len, len - ret_len, &l);
+    ret = krb5_print_address (&a->high, str + size, len - size, &l);
     ret_len += l;
 
     return ret_len;
@@ -552,7 +644,8 @@ static struct addr_operations at[] = {
      ipv4_addr2sockaddr,
      ipv4_h_addr2sockaddr,
      ipv4_h_addr2addr,
-     ipv4_uninteresting, ipv4_anyaddr, ipv4_print_addr, ipv4_parse_addr},
+     ipv4_uninteresting, ipv4_anyaddr, ipv4_print_addr, ipv4_parse_addr,
+     NULL, NULL, NULL, ipv4_mask_boundary },
 #ifdef HAVE_IPV6
     {AF_INET6,	KRB5_ADDRESS_INET6, sizeof(struct sockaddr_in6),
      ipv6_sockaddr2addr, 
@@ -560,7 +653,8 @@ static struct addr_operations at[] = {
      ipv6_addr2sockaddr,
      ipv6_h_addr2sockaddr,
      ipv6_h_addr2addr,
-     ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr, ipv6_parse_addr} ,
+     ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr, ipv6_parse_addr,
+     NULL, NULL, NULL } ,
 #endif
     {KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_ADDRPORT, 0,
      NULL, NULL, NULL, NULL, NULL, 
@@ -990,4 +1084,19 @@ krb5_make_addrport (krb5_context context,
     p += 2;
 
     return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_address_prefixlen_boundary(krb5_context context,
+				const krb5_address *inaddr,
+				unsigned long prefixlen,
+				krb5_address *low,
+				krb5_address *high)
+{
+    struct addr_operations *a = find_af (inaddr->addr_type);
+    if(a != NULL && a->mask_boundary != NULL)
+	return (*a->mask_boundary)(context, inaddr, prefixlen, low, high);
+    krb5_set_error_string(context, "Address family %d doesn't support "
+			  "address mask operation", inaddr->addr_type);
+    return KRB5_PROG_ATYPE_NOSUPP;
 }
