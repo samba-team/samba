@@ -89,7 +89,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     p->myname = argmessage[0];
 
     /*  Get the name of our host */
-    (void)gethostname(p->myhost,MaxHostNameLen);
+    k_gethostname(p->myhost,MaxHostNameLen);
 
     /*  Open the log file */
 #ifdef SYSLOG42

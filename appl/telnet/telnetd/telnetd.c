@@ -873,7 +873,7 @@ void doit(struct sockaddr_in *who)
 	remote_host_name[sizeof(remote_host_name)-1] = 0;
 	host = remote_host_name;
 
-	(void) gethostname(host_name, sizeof (host_name));
+	(void) k_gethostname(host_name, sizeof (host_name));
 	hostname = host_name;
 
 #ifndef abs

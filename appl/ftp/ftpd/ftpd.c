@@ -427,7 +427,7 @@ main(int argc, char **argv)
 		(void) fclose(fd);
 		/* reply(220,) must follow */
 	}
-	(void) gethostname(hostname, sizeof(hostname));
+	k_gethostname(hostname, sizeof(hostname));
 	reply(220, "%s FTP server (%s) ready.", hostname, version);
 	(void) setjmp(errcatch);
 	for (;;)

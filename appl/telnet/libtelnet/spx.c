@@ -170,7 +170,7 @@ spx_init(ap, server)
 
 	if (server) {
 		str_data[3] = TELQUAL_REPLY;
-		gethostname(lhostname, sizeof(lhostname));
+		k_gethostname(lhostname, sizeof(lhostname));
 		strcpy(targ_printable, "SERVICE:rcmd@");
 		strcat(targ_printable, lhostname);
 		input_name_buffer.length = strlen(targ_printable);
@@ -320,7 +320,7 @@ spx_is(ap, data, cnt)
 		input_token.length = cnt;
 		input_token.value = (char *) data;
 
-		gethostname(lhostname, sizeof(lhostname));
+		k_gethostname(lhostname, sizeof(lhostname));
 
 		strcpy(targ_printable, "SERVICE:rcmd@");
 		strcat(targ_printable, lhostname);
