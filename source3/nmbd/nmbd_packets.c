@@ -592,7 +592,7 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(nmbname, (subrec != unicast_subnet), False,
+  if ((p = create_and_init_netbios_packet(nmbname, (subrec != unicast_subnet), False,
                      subrec->bcast_ip)) == NULL)
     return NULL;
 
@@ -621,10 +621,9 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
    * This will cause us to remove the name asap. JRA.
    */
 
-  if(bcast)
-  {
-    rrec->repeat_count = 0;
-    rrec->repeat_time = 0;
+  if (subrec != unicast_subnet) {
+	  rrec->repeat_count = 0;
+	  rrec->repeat_time = 0;
   }
 
   return rrec;
