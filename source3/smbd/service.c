@@ -104,7 +104,9 @@ int add_home_service(const char *service, const char *username, const char *home
 		}
 	}
 
-	lp_add_home(service, iHomeService, username, homedir);
+	if (!lp_add_home(service, iHomeService, username, homedir)) {
+		return -1;
+	}
 	
 	return lp_servicenumber(service);
 
