@@ -384,6 +384,10 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 		Free all structures and commit the change
 	*/
 
+	if (msg->dn[0] == '@') { /* do not check on our control entries */
+		return ldb_next_add_record(module, msg);
+	}
+
 	entry_structs = talloc(module, struct schema_structures);
 	if (!entry_structs) {
 		return -1;
@@ -470,6 +474,10 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		Throw an error in case a check fail.
 		Free all structures and commit the change.
 	*/
+
+	if (msg->dn[0] == '@') { /* do not check on our control entries */
+		return ldb_next_modify_record(module, msg);
+	}
 
 	/* allocate object structs */
 	entry_structs = talloc(module, struct schema_structures);
