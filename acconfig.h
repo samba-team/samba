@@ -13,6 +13,9 @@
 #undef HAVE_U_INT32_T
 #undef HAVE_U_INT64_T
 
+#undef ssize_t
+#undef sig_atomic_t
+
 /*  Define this if struct utmp have ut_user  */
 #undef HAVE_UT_USER
 
@@ -94,6 +97,13 @@
 /*  Define this if struct sockaddr has sa_len */
 #undef SOCKADDR_HAS_SA_LEN
 
+/* Define to isoc_realloc if you have a broken realloc */
+#undef BROKEN_REALLOC
+#ifdef BROKEN_REALLOC
+#define realloc(X, Y) isoc_realloc((X), (Y))
+#define isoc_realloc(X, Y) ((X) ? realloc((X), (Y)) : malloc(Y))
+#endif
+
 #undef VOID_RETSIGTYPE
 
 #ifdef VOID_RETSIGTYPE
@@ -161,4 +171,5 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 #define LOGIN_PATH BINDIR "/login"
 #endif
 
-
+/* operating system kludges ahead */
+#undef SunOS
