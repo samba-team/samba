@@ -21,3 +21,18 @@ class printerdata:
         self.hnd.setprinterdata({"key": "", "value": key, "type": 3,
                                  "data": value})
         
+class printerdata_ex:
+    def __init__(self, host, creds = {}):
+        self.hnd = spoolss.openprinter(host, creds = creds)
+
+    def keys(self):
+        return self.hnd.enumprinterdataex("PrinterDriverData").keys()
+
+    def __getitem__(self, key):
+        return self.hnd.getprinterdataex("PrinterDriverData", key)['data']
+
+    def __setitem__(self, key, value):
+        # Store as REG_BINARY for now
+        self.hnd.setprinterdataex({"key": "PrinterDriverData", "value": key, "type": 3,
+                                 "data": value})
+        
