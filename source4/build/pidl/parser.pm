@@ -1044,7 +1044,7 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, uint16_t level, union $e->{NAME} *r)";
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1074,7 +1074,7 @@ sub ParseTypedefPull($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, uint16_t level, union $e->{NAME} *r)";
+		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		ParseTypePull($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1098,7 +1098,7 @@ sub ParseTypedefPrint($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, uint16_t level, union $e->{NAME} *r)";
+		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, int level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		pidl "\tndr_print_union(ndr, name, level, \"$e->{NAME}\");\n";
 		ParseTypePrint($e->{DATA});
