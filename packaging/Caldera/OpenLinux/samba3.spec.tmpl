@@ -252,7 +252,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 #	--with-acl-support \
 
 make all nsswitch/libnss_wins.so torture nsswitch/pam_winbind.so everything
-make tbp/tdbdump tdb/tdbtest tdb/tdbtorture tdb/tdbtool
+make tdb/tdbdump tdb/tdbtest tdb/tdbtorture tdb/tdbtool
 
 
 %Install
@@ -286,10 +286,14 @@ do
 	install -m 755 source/bin/$i $DESTDIR/usr/bin
 done
 # Next install /usr/sbin progs
-for i in talloctort samsync locktest locktest2 masktest msgtest smbtorture \
-	tdb/tdbdump tdb/tdbtest tdb/tdbtorture tdb/tdbtool
+for i in talloctort samsync locktest locktest2 masktest msgtest smbtorture
 do
 	install -m 755 source/bin/$i $DESTDIR/usr/sbin
+done
+for i in talloctort samsync locktest locktest2 masktest msgtest smbtorture
+	tdb/tdbdump tdb/tdbtest tdb/tdbtorture tdb/tdbtool
+do
+	install -m 755 source/$i $DESTDIR/usr/sbin
 done
 
 #mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
