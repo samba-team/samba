@@ -3047,11 +3047,15 @@ static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
 			     &status)) {
 		DEBUG(3, ("security descriptor change denied by existing "
 			  "security descriptor\n"));
-		free_sec_desc_buf(&old_secdesc_ctr);
-		return status;
+		result = status;
+		goto done;
 	}
 
-	return nt_printing_setsec(Printer->dev.printername, secdesc_ctr);
+	result = nt_printing_setsec(Printer->dev.printername, secdesc_ctr);
+
+ done:
+	free_sec_desc_buf(&old_secdesc_ctr);
+	return result;
 }
 
 /********************************************************************
