@@ -1283,6 +1283,9 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 {
 	int fnum;
 
+	/* At the moment we can't have more than one pipe open over
+           a cli connection. )-: */
+
 	SMB_ASSERT(cli->nt_pipe_fnum == 0);
 	
 	/* The pipe index must fall within our array */
