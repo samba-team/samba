@@ -306,16 +306,16 @@ void do_announce_host(int command,
 void remove_my_servers(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
 		     char *name, char *comment, time_t ttl, int server_type);
-void announce_host(void);
-void announce_master(void);
-void announce_remote(void);
+void announce_host(time_t t);
+void announce_master(time_t t);
+void announce_remote(time_t t);
 
 /*The following definitions come from  namebrowse.c  */
 
 void expire_browse_cache(time_t t);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
 					      time_t ttl, struct in_addr ip, BOOL local);
-void do_browser_lists(void);
+void do_browser_lists(time_t t);
 
 /*The following definitions come from  nameconf.c  */
 
@@ -354,7 +354,7 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 		BOOL new_only,BOOL wins);
 void expire_names(time_t t);
 struct name_record *search_for_name(struct subnet_record **d,
-					struct nmb_name *question,
+				    struct nmb_name *question,
 				    struct in_addr ip, int Time, int search);
 
 /*The following definitions come from  namedbresp.c  */
@@ -393,7 +393,7 @@ void add_my_subnets(char *group);
 struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
 				       struct in_addr mask_ip,
 				       char *name, BOOL add, BOOL lmhosts);
-void write_browse_list(void);
+void write_browse_list(time_t t);
 
 /*The following definitions come from  namedbwork.c  */
 
@@ -406,7 +406,7 @@ void dump_workgroups(void);
 
 /*The following definitions come from  nameelect.c  */
 
-void check_master_browser(void);
+void check_master_browser(time_t t);
 void browser_gone(char *work_name, struct in_addr ip);
 void send_election(struct subnet_record *d, char *group,uint32 criterion,
 		   int timeup,char *name);
@@ -416,7 +416,7 @@ void name_register_work(struct subnet_record *d, char *name, int name_type,
 void become_master(struct subnet_record *d, struct work_record *work);
 void become_nonmaster(struct subnet_record *d, struct work_record *work,
 				int remove_type);
-void run_elections(void);
+void run_elections(time_t t);
 void process_election(struct packet_struct *p,char *buf);
 BOOL check_elections(void);
 
@@ -453,7 +453,7 @@ BOOL name_query(int fd,char *name,int name_type,
 
 /*The following definitions come from  nameresp.c  */
 
-void expire_netbios_response_entries();
+void expire_netbios_response_entries(time_t t);
 struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
 				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
@@ -474,7 +474,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
 void add_my_names(void);
 void remove_my_names();
 void refresh_my_names(time_t t);
-void query_refresh_names(void);
+void query_refresh_names(time_t t);
 
 /*The following definitions come from  nameservreply.c  */
 

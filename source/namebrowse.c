@@ -190,11 +190,10 @@ static void start_sync_browse_entry(struct browse_cache_record *b)
 /****************************************************************************
   search through browser list for an entry to sync with
   **************************************************************************/
-void do_browser_lists(void)
+void do_browser_lists(time_t t)
 {
   struct browse_cache_record *b;
   static time_t last = 0;
-  time_t t = time(NULL);
   
   if (t-last < 20) return; /* don't do too many of these at once! */
                            /* XXXX equally this period should not be too long

@@ -174,7 +174,7 @@ static void dead_netbios_entry(struct subnet_record *d,
        see name_query() and name_status() for suggested implementation.
 
   ******************************************************************/
-void expire_netbios_response_entries()
+void expire_netbios_response_entries(time_t t)
 {
   struct subnet_record *d;
 
@@ -186,7 +186,7 @@ void expire_netbios_response_entries()
     {
 	  nextn = n->next;
 
-      if (n->repeat_time <= time(NULL))
+      if (n->repeat_time <= t)
 	  {
 		  if (n->repeat_count > 0)
 		  {

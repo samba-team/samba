@@ -292,9 +292,8 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 /****************************************************************************
   construct a host announcement unicast
   **************************************************************************/
-void announce_host(void)
+void announce_host(time_t t)
 {
-  time_t t = time(NULL);
   struct subnet_record *d;
   pstring comment;
   char *my_name;
@@ -368,11 +367,10 @@ void announce_host(void)
   NAME_QUERY_DOM_SRV_CHK command, if there is a response from the
   name query initiated here.  see response_name_query()
   **************************************************************************/
-void announce_master(void)
+void announce_master(time_t t)
 {
   struct subnet_record *d;
   static time_t last=0;
-  time_t t = time(NULL);
   BOOL am_master = False; /* are we a master of some sort? :-) */
 
   if (!last) last = t;
@@ -477,11 +475,10 @@ void announce_master(void)
   on a remote browse list. They are done blind, no checking is done to
   see if there is actually a browse master at the other end.
   **************************************************************************/
-void announce_remote(void)
+void announce_remote(time_t t)
 {
   char *s,*ptr;
   static time_t last_time = 0;
-  time_t t = time(NULL);
   pstring s2;
   struct in_addr addr;
   char *comment,*workgroup;

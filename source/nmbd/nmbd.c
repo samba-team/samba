@@ -159,10 +159,9 @@ static void fault_continue(void)
 /*******************************************************************
   expire old names from the namelist and server list
   ******************************************************************/
-static void expire_names_and_servers(void)
+static void expire_names_and_servers(time_t t)
 {
   static time_t lastrun = 0;
-  time_t t = time(NULL);
   
   if (!lastrun) lastrun = t;
   if (t < lastrun + 5) return;
@@ -298,23 +297,23 @@ static void process(void)
       listen_for_packets(run_election);
 
       run_packet_queue();
-      run_elections();
+      run_elections(t);
 
-      announce_host();
+      announce_host(t);
 
-      announce_master();
+      announce_master(t);
 
-      announce_remote();
+      announce_remote(t);
 
-      query_refresh_names();
+      query_refresh_names(t);
 
-      expire_names_and_servers();
-      expire_netbios_response_entries();
+      expire_names_and_servers(t);
+      expire_netbios_response_entries(t);
       refresh_my_names(t);
 
-      write_browse_list();
-      do_browser_lists();
-      check_master_browser();
+      write_browse_list(t);
+      do_browser_lists(t);
+      check_master_browser(t);
     }
 }
 
@@ -528,7 +527,7 @@ static void usage(char *pname)
 
   DEBUG(3,("Loaded names\n"));
 
-  write_browse_list();
+  write_browse_list(time(NULL));
 
   DEBUG(3,("Dumped names\n"));
 

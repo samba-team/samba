@@ -240,7 +240,7 @@ void refresh_my_names(time_t t)
 	for (n = d->namelist; n; n = n->next)
     {
       /* each SELF name has an individual time to be refreshed */
-      if (n->source == SELF && n->refresh_time < time(NULL) && 
+      if (n->source == SELF && n->refresh_time < t && 
           n->death_time != 0)
       {
         add_my_name_entry(d,n->name.name,n->name.name_type,
@@ -263,13 +263,12 @@ void refresh_my_names(time_t t)
 
   XXXX which names to poll and which not can be refined at a later date.
   ******************************************************************/
-void query_refresh_names(void)
+void query_refresh_names(time_t t)
 {
 	struct name_record *n;
 	struct subnet_record *d = find_subnet(ipgrp);
 
 	static time_t lasttime = 0;
-	time_t t = time(NULL);
 
 	int count = 0;
 	int name_refresh_time = NAME_POLL_REFRESH_TIME;
