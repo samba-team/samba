@@ -1720,6 +1720,23 @@ BOOL is_myname_or_ipaddr(const char *s)
 }
 
 /*******************************************************************
+ Is the name specified our workgroup/domain.
+ Returns true if it is equal, false otherwise.
+********************************************************************/
+
+BOOL is_myworkgroup(const char *s)
+{
+	BOOL ret = False;
+
+	if (strequal(s, lp_workgroup())) {
+		ret=True;
+	}
+
+	DEBUG(8, ("is_myworkgroup(\"%s\") returns %d\n", s, ret));
+	return(ret);
+}
+
+/*******************************************************************
  Set the horrid remote_arch string based on an enum.
 ********************************************************************/
 

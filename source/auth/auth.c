@@ -31,6 +31,7 @@ static const struct auth_init_function_entry builtin_auth_init_functions[] = {
 	{ "hostsequiv", auth_init_hostsequiv },
 	{ "sam", auth_init_sam },	
 	{ "samstrict", auth_init_samstrict },
+	{ "samstrict_dc", auth_init_samstrict_dc },
 	{ "unix", auth_init_unix },
 	{ "smbserver", auth_init_smbserver },
 	{ "ntdomain", auth_init_ntdomain },
