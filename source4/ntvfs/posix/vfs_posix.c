@@ -65,6 +65,9 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
 		pvfs->fs_attribs |= FS_ATTR_NAMED_STREAMS;
 	}
+	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
+		pvfs->fs_attribs |= FS_ATTR_PERSISTANT_ACLS;
+	}
 }
 
 

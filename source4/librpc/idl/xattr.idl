@@ -8,6 +8,9 @@
    about a file in a architecture independent manner
 */
 
+[
+  depends(security)
+]
 interface xattr
 {
 	const string XATTR_DOSATTRIB_NAME = "user.DosAttrib";
@@ -72,4 +75,24 @@ interface xattr
 		uint32 num_streams;
 		[size_is(num_streams)] xattr_DosStream *streams;
 	} xattr_DosStreams;
+
+
+	/* we store the NT ACL a DosAcl xattr. It is versioned so we
+	   can later add other acl attribs (such as posix acl
+	   mapping) 
+	   
+	   we put this xattr in the security namespace to ensure that
+	   only trusted users can write to the ACL
+	*/
+	const string XATTR_DOSACL_NAME = "security.DosAcl";
+
+	typedef union {
+		[case(1)] security_descriptor *sd;
+	} xattr_DosAclInfo;
+
+	typedef [public] struct {
+		uint16 version;
+		[switch_is(version)] xattr_DosAclInfo info;
+	} xattr_DosAcl;
+
 }
