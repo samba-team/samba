@@ -30,6 +30,16 @@
 
 static pstring servicesf = CONFIGFILE;
 
+/*
+ * Password Management Globals
+ */
+char user[] = "username";
+char old_pswd[] = "old_passwd";
+char new_pswd[] = "new_passwd";
+char new2_pswd[] = "new2_passwd";
+char chg_passwd_flag[] = "chg_passwd_flag";
+char add_user_flag[] = "add_user_flag";
+char disable_user_flag[] = "disable_user_flag";
 
 /* we need these because we link to locking*.o */
  void become_root(BOOL save_dir) {}
@@ -37,6 +47,8 @@ static pstring servicesf = CONFIGFILE;
 /* We need this because we link to password.o */
 BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override) {return False;}
 
+/****************************************************************************
+****************************************************************************/
 static int enum_index(int value, struct enum_list *enumlist)
 {
 int i;
@@ -86,8 +98,9 @@ char *p = parmname;
 	return parmname;
 }
 
-
-/* include a lump of html in a page */
+/****************************************************************************
+  include a lump of html in a page 
+****************************************************************************/
 static int include_html(char *fname)
 {
 	FILE *f = fopen(fname,"r");
@@ -109,7 +122,9 @@ static int include_html(char *fname)
 	return 1;
 }
 
-/* start the page with standard stuff */
+/****************************************************************************
+  start the page with standard stuff 
+****************************************************************************/
 static void print_header(void)
 {
 	if (!cgi_waspost()) {
@@ -123,8 +138,9 @@ static void print_header(void)
 	}
 }
 
-
-/* finish off the page */
+/****************************************************************************
+ finish off the page 
+****************************************************************************/
 static void print_footer(void)
 {
 	if (!include_html("include/footer.html")) {
@@ -132,9 +148,9 @@ static void print_footer(void)
 	}
 }
 
-
-
-/* display one editable parameter in a form */
+/****************************************************************************
+  display one editable parameter in a form 
+****************************************************************************/
 static void show_parameter(int snum, struct parm_struct *parm)
 {
 	int i;
@@ -215,7 +231,9 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	printf("</td></tr>\n");
 }
 
-/* display a set of parameters for a service */
+/****************************************************************************
+  display a set of parameters for a service 
+****************************************************************************/
 static void show_parameters(int snum, int allparameters, int advanced, int printers)
 {
 	int i = 0;
@@ -278,8 +296,9 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 	}
 }
 
-
-/* write a config file */
+/****************************************************************************
+  write a config file 
+****************************************************************************/
 static void write_config(FILE *f, BOOL show_defaults)
 {
 	fprintf(f, "# Samba config file created using SWAT\n");
@@ -289,8 +308,9 @@ static void write_config(FILE *f, BOOL show_defaults)
 	lp_dump(f, show_defaults);	
 }
 
-
-/* save and reoad the smb.conf config file */
+/****************************************************************************
+  save and reoad the smb.conf config file 
+****************************************************************************/
 static int save_reload(void)
 {
 	FILE *f;
@@ -314,9 +334,9 @@ static int save_reload(void)
 	return 1;
 }
 
-
-
-/* commit one parameter */
+/****************************************************************************
+  commit one parameter 
+****************************************************************************/
 static void commit_parameter(int snum, struct parm_struct *parm, char *v)
 {
 	int i;
@@ -337,7 +357,9 @@ static void commit_parameter(int snum, struct parm_struct *parm, char *v)
 	lp_do_parameter(snum, parm->label, v);
 }
 
-/* commit a set of parameters for a service */
+/****************************************************************************
+  commit a set of parameters for a service 
+****************************************************************************/
 static void commit_parameters(int snum)
 {
 	int i = 0;
@@ -354,8 +376,9 @@ static void commit_parameters(int snum)
 	}
 }
 
-
-/* load the smb.conf file into loadparm. */
+/****************************************************************************
+  load the smb.conf file into loadparm.
+****************************************************************************/
 static void load_config(void)
 {
 	if (!lp_load(servicesf,False,True,False)) {
@@ -364,37 +387,49 @@ static void load_config(void)
 	}
 }
 
-/* spit out the html for a link with an image */
-static void image_link(char *name,char *hlink, char *src, int width, int height)
+/****************************************************************************
+  spit out the html for a link with an image 
+****************************************************************************/
+static void image_link(char *name,char *hlink, char *src)
 {
-	printf("<A HREF=\"%s/%s\"><img width=%d height=%d src=\"/swat/%s\" alt=\"%s\"></A>\n", 
-	       cgi_baseurl(),
-	       hlink, width, height, 
-	       src, name);
+	printf("<A HREF=\"%s/%s\"><img src=\"/swat/%s\" alt=\"%s\"></A>\n", 
+	       cgi_baseurl(), hlink, src, name);
 }
 
-/* display the main navigation controls at the top of each page along
-   with a title */
+/****************************************************************************
+  display the main navigation controls at the top of each page along
+  with a title 
+****************************************************************************/
 static void show_main_buttons(void)
 {
-	image_link("Home", "", "images/home.gif", 50, 50);
-	image_link("Globals", "globals", "images/globals.gif", 50, 50);
-	image_link("Shares", "shares", "images/shares.gif", 50, 50);
-	image_link("Printers", "printers", "images/printers.gif", 50, 50);
-	image_link("Status", "status", "images/status.gif", 50, 50);
-	image_link("View Config", "viewconfig", "images/viewconfig.gif", 50, 50);
+	image_link("Home", "", "images/home.gif");
+
+	/* Root gets full functionality */
+	if ( is_root() == True) {
+		image_link("Globals", "globals", "images/globals.gif");
+		image_link("Shares", "shares", "images/shares.gif");
+		image_link("Printers", "printers", "images/printers.gif");
+		image_link("Status", "status", "images/status.gif");
+		image_link("View Config", "viewconfig","images/viewconfig.gif");
+	}
+
+	/* Everyone gets this functionality */
+	image_link("Password Management", "passwd", "images/passwd.gif");
 
 	printf("<HR>\n");
 }
 
-/* display a welcome page  */
+/****************************************************************************
+  display a welcome page  
+****************************************************************************/
 static void welcome_page(void)
 {
 	include_html("help/welcome.html");
 }
 
-
-/* display the current smb.conf  */
+/****************************************************************************
+  display the current smb.conf  
+****************************************************************************/
 static void viewconfig_page(void)
 {
 	int full_view=0;
@@ -418,8 +453,9 @@ static void viewconfig_page(void)
 	printf("</form>\n");
 }
 
-
-/* display a globals editing page  */
+/****************************************************************************
+  display a globals editing page  
+****************************************************************************/
 static void globals_page(void)
 {
 	int advanced = 0;
@@ -456,7 +492,9 @@ static void globals_page(void)
 	printf("</FORM>\n");
 }
 
-/* display a shares editing page  */
+/****************************************************************************
+  display a shares editing page  
+****************************************************************************/
 static void shares_page(void)
 {
 	char *share = cgi_variable("share");
@@ -537,8 +575,405 @@ static void shares_page(void)
 	printf("</FORM>\n");
 }
 
+/****************************************************************************
+****************************************************************************/
+static void sig_pipe ( int signo)
+{
+	printf("<p> SIGPIPE caught\n");
+}
 
-/* display a printers editing page  */
+/****************************************************************************
+  create 2 pipes and use them to feed the smbpasswd program 
+****************************************************************************/
+static BOOL talk_to_smbpasswd(char *old, char *new)
+{
+	int 	i, n, fd1[2], fd2[2];
+	pid_t	pid;
+	BOOL	rslt;
+	char	line[MAX_STRINGLEN + 2]; /* one for newline, one for null */
+
+	if (signal(SIGPIPE, sig_pipe) == SIG_ERR) {
+		printf("<p> signal error");
+	}
+
+	if ((pipe(fd1) < 0) || (pipe(fd2) < 0)) {
+		printf("<p> pipe error");
+	}
+
+	if ((pid = fork()) < 0) {
+		printf("<p> fork error");
+	}
+
+	/*
+	 * Create this relationship with the pipes between the parent and 
+	 * the child as detailed below.
+	 *
+	 * parent -> fd1[1] -- fd1[0] -> child 
+	 * parent <- fd2[0] -- fd2[1] <- child 
+	 *
+	 * fd1[0] is turned into child's stdin
+	 * fd2[1] is turned into child's stdout
+	 * fd2[1] is also turned into child's stderr
+	 *
+	 */
+	else if (pid > 0) {			/* parent */
+
+		int	to_child    = fd1[1];
+		int	from_child  = fd2[0];
+		int	wstat;
+		pid_t	wpid;
+
+		close(fd1[0]); /* parent doesn't need input  side of pipe fd1 */
+		close(fd2[1]); /* parent doesn't need output side of pipe fd2 */
+
+		/*
+		 * smbpasswd doesn't require any input to disable a user 
+		 */
+		if (cgi_variable(disable_user_flag)) {
+			/*
+			 * smbpasswd requires a regular old user to send their old password 
+			 */
+			if ( is_root() == False) {
+				n = (strlen(old) <= (MAX_STRINGLEN)) ? strlen(old) : (MAX_STRINGLEN);
+				strncpy( line, old, n);
+				line[n] = '\n'; n++; /* add carriage return */
+				line[n] =    0;      /* add null terminator, for debug */
+				if (write( to_child, line, n) != n) {
+					printf("<p> error on write to child");
+				}
+			}
+
+			/*
+			 * smbpasswd requires that the new password be sent to it twice
+			 */
+			for( i=0; i<2; i++) {
+				n = (strlen(new) <= (MAX_STRINGLEN)) ? strlen(new) : (MAX_STRINGLEN);
+				strncpy( line, new, n);
+				line[n] = '\n'; n++; /* add carriage return */
+				line[n] =    0;      /* add null terminator, for debug */
+				if (write( to_child, line, n) != n) {
+					printf("<p> error on write to child");
+					break;
+				}
+			}
+		}
+
+		/*
+		 * Wait for smbpasswd to finish
+		 */
+		if ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
+			printf("<p> problem waiting");
+		}
+
+		/* 
+		 * Read the answer from the add program
+		 */
+		memset( line, '\0', sizeof(line));
+		if ((n = read( from_child, line, MAX_STRINGLEN)) < 0) {
+			printf("<p> error on read from child");
+		}
+
+		/*
+		 * Write the response from smbpasswd to user, if all is well
+		 * line[] should be just a null terminated line. We could 
+		 * check for the null line and not print anything, but we 
+		 * really should be checking the exit code if we want to be 
+		 * sure.
+		 */
+		line[n] = 0;    /* null terminate */
+		printf("<p> %s\n",line);
+	
+		close(to_child); 
+		close(from_child); 
+	
+		if (line[0] == '\0') {
+			rslt = True;   /* All ok */
+		} else {
+			rslt = False;  /* Something didn't work */
+		}
+		
+	} else {				/* child  */
+
+		int	from_parent  = fd1[0];
+		int	to_parent    = fd2[1];
+
+		close(fd1[1]); /* child  doesn't need output side of pipe fd1 */
+		close(fd2[0]); /* child  doesn't need input  side of pipe fd2 */
+
+		/*
+		 * Turn the from_parent pipe into the childs stdin 
+		 */
+		if (from_parent != STDIN_FILENO) {
+			if (dup2( from_parent, STDIN_FILENO) != STDIN_FILENO) {
+				printf("<p> dup2 error of stdin");
+			}
+			close( from_parent);
+		}
+
+		/*
+		 * Turn the to_parent pipe into the childs stdout
+		 */
+		if (to_parent != STDOUT_FILENO) {
+			if (dup2( to_parent, STDOUT_FILENO) != STDOUT_FILENO) {
+				printf("<p> dup2 error of stdout");
+			}
+			close( to_parent);
+		}
+		/*
+		 * Make the childs stderr the to_parent pipe also
+		 */
+		if (dup2( STDOUT_FILENO, STDERR_FILENO) != STDERR_FILENO) {
+			printf("<p> dup2 error of stdout");
+		}
+
+		
+		/* Root can do more */
+		if (is_root() == True) {
+			if (cgi_variable(add_user_flag)) {
+				/* 
+				 * Add a user 
+				 */
+				if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", "-a", cgi_variable(user), (char *) 0) < 0) {
+					printf("<p> execl error of smbpasswd");
+				}
+			} else if (cgi_variable(disable_user_flag)) {
+				/* 
+				 * Disable a user 
+				 */
+				if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", "-d", cgi_variable(user), (char *) 0) < 0) {
+					printf("<p> execl error of smbpasswd");
+				}
+			} else {
+				/* 
+			 	 * Change a users password 
+				 */
+				if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", cgi_variable(user), (char *) 0) < 0) {
+					printf("<p> execl error of smbpasswd");
+				}
+			}
+		} else {
+			/* 
+		 	 * Ordinary users can change any users passwd if they know the old passwd
+			 */
+			if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", (char *) 0) < 0) {
+				printf("<p> execl error of smbpasswd");
+			}
+		}
+	}
+	return(rslt);  
+}
+
+/****************************************************************************
+  become the specified uid
+****************************************************************************/
+static BOOL become_uid(uid_t uid)
+{
+#ifdef HAVE_TRAPDOOR_UID
+#ifdef HAVE_SETUIDX
+	/* AIX3 has setuidx which is NOT a trapoor function (tridge) */
+	if (setuidx(ID_EFFECTIVE, uid) != 0) {
+		if (seteuid(uid) != 0) {
+			printf("<p> Can't set uid %d (setuidx)\n", (int)uid);
+			return False;
+		}
+	}
+#endif
+#endif
+
+#ifdef HAVE_SETRESUID
+	if (setresuid(-1,uid,-1) != 0)
+#else
+	if ((seteuid(uid) != 0) && (setuid(uid) != 0))
+#endif
+	{
+		printf("<p> Couldn't set uid %d currently set to (uid %d, euid %d)\n",
+			(int)uid,(int)getuid(), (int)geteuid());
+		if (uid > (uid_t)32000) {
+			printf("<p> Looks like your OS doesn't like high uid values - try using a different account\n");
+
+		}
+		return(False);
+	}
+
+	if (((uid == (uid_t)-1) || ((sizeof(uid_t) == 2) && (uid == 65535))) &&
+            (geteuid() != uid)) {
+		printf("<p> Invalid uid -1. perhaps you have a account with uid 65535?\n");
+		return(False);
+	}
+
+	return(True);
+}
+
+/****************************************************************************
+  become the specified gid
+****************************************************************************/
+static BOOL become_gid(gid_t gid)
+{
+#ifdef HAVE_SETRESUID
+	if (setresgid(-1,gid,-1) != 0)
+#else
+	if (setgid(gid) != 0)
+#endif
+	{
+		printf("<p> Couldn't set gid %d currently set to (gid %d, egid %d)\n",
+                 (int)gid,(int)getgid(),(int)getegid());
+		if (gid > 32000) {
+			printf("<p> Looks like your OS doesn't like high gid values - try using a different account\n");
+		}
+		return(False);
+	}
+
+	return(True);
+}
+
+/****************************************************************************
+  become the specified uid and gid
+****************************************************************************/
+static BOOL become_id(uid_t uid,gid_t gid)
+{
+	return(become_gid(gid) && become_uid(uid));
+}
+
+/****************************************************************************
+  do the stuff required to add or change a password 
+****************************************************************************/
+static void chg_passwd(void)
+{
+	char *s;
+	struct passwd *pass = NULL;
+	BOOL rslt;
+
+	/* Make sure users name has been specified */
+	if (strlen(cgi_variable(user)) == 0) {
+		printf("<p> Must specify \"User Name\" \n");
+		return;
+	}
+
+	/*
+	 * smbpasswd doesn't require anything but the users name to disable the user,
+	 * so if that's what we're doing, skip the rest of the checks
+	 */
+	if (!cgi_variable(disable_user_flag)) {
+
+		/* If current user is not root, make sure old password has been specified */
+		if ((is_root() == False) &&  (strlen( cgi_variable(old_pswd)) <= 0)) {
+			printf("<p> Must specify \"Old Password\" \n");
+			return;
+		}
+
+		/* Make sure new passwords have been specified */
+		if ((strlen( cgi_variable(new_pswd )) <= 0) ||
+		    (strlen( cgi_variable(new2_pswd)) <= 0)) {
+			printf("<p> Must specify \"New, and Re-typed Passwords\" \n");
+			return;
+		}
+
+		/* Make sure new passwords was typed correctly twice */
+		if (strcmp(cgi_variable(new_pswd), cgi_variable(new2_pswd)) != 0) {
+			printf("<p> Re-typed password didn't match new password\n");
+			return;
+		}
+	}
+
+	/* Get the UID/GID of the user, and become that user  */
+	if (is_root() == False) {
+		pass = Get_Pwnam(cgi_variable(user),True);
+		if (pass == NULL) {
+			printf("<p> User uid unknown     \n");
+		} else {
+			if (become_id(pass->pw_uid, pass->pw_gid) == False) {
+				printf("<p> uid/gid set failed \n");
+				return;
+			}
+		}
+	}
+
+#ifndef SWAT_DEBUG
+	if (pass) printf("<p> User uid %d  gid %d \n", pass->pw_uid, pass->pw_gid);
+	printf("<p> Processes uid %d, euid %d, gid %d, egid %d \n",getuid(),geteuid(),getgid(),getegid());
+	printf("<p> User Name %s     \n", cgi_variable(user));
+	printf("<p> Old passwd %s    \n", cgi_variable(old_pswd) ? cgi_variable(old_pswd):"");
+	printf("<p> New passwd %s    \n", cgi_variable(new_pswd));
+	printf("<p> Re-typed New passwd %s    \n", cgi_variable(new2_pswd));
+	printf("<p> flags '%s', '%s', '%s'   \n", 
+		(cgi_variable( chg_passwd_flag) ? cgi_variable( chg_passwd_flag) : ""),
+		(cgi_variable( add_user_flag) ? cgi_variable( add_user_flag) : ""),
+		(cgi_variable( disable_user_flag) ? cgi_variable( disable_user_flag) : ""));
+#endif /* SWAT_DEBUG */
+
+
+	rslt = talk_to_smbpasswd( cgi_variable(old_pswd), cgi_variable(new_pswd));
+	if (is_root() == False) {
+		if (rslt == True) {
+			printf("<p> The passwd for '%s' has been changed. \n",cgi_variable(user));
+		} else {
+			printf("<p> The passwd for '%s' has NOT been changed. \n",cgi_variable(user));
+		}
+	}
+	
+	return;
+}
+
+/****************************************************************************
+  display a password editing page  
+****************************************************************************/
+static void passwd_page(void)
+{
+	char *s, *new_name;
+	int i;
+	extern char * get_user_name();
+
+	printf("<H2>Password Manager</H2>\n");
+
+	printf("<FORM name=\"swatform\" method=post>\n");
+
+	printf("<table>\n");
+
+	/* 
+	 * After the first time through here be nice. If the user
+	 * changed the User box text to another users name, remember it.
+	 */
+	if ( cgi_variable(user) && 
+	    (strcmp(cgi_variable(user), get_user_name()))) {
+		/* User is changing another accounts passwd */
+		new_name = cgi_variable(user);
+	} else {
+		/* User is changing there own passwd */
+		new_name = get_user_name();
+	}
+
+	printf("<p> User Name        : <input type=text size=30 name=%s value=%s> \n", user, new_name);
+	if (is_root() == False) {
+		printf("<p> Old Password: <input type=password size=30 name=%s>\n",old_pswd);
+	}
+	printf("<p> New Password: <input type=password size=30 name=%s>\n",new_pswd);
+	printf("<p> Re-type New Password: <input type=password size=30 name=%s>\n",new2_pswd);
+
+	printf("</select></td></tr><p>");
+	printf("<tr><td>");
+	printf("<input type=submit name=%s value=\"Change Password\">", chg_passwd_flag);
+	if (is_root() == True) {
+		printf("<input type=submit name=%s value=\"Add New User\">", add_user_flag);
+		printf("<input type=submit name=%s value=\"Disable User\">", disable_user_flag);
+	}
+	printf("</td>\n");
+
+	/*
+	 * If we don't have user information then there's nothing to do. It's probably
+	 * the first time through this code.
+	 */
+	if (s = cgi_variable(user)) {
+		chg_passwd();		
+	}
+
+	printf("</table>");
+
+	printf("</FORM>\n");
+}
+
+/****************************************************************************
+  display a printers editing page  
+****************************************************************************/
 static void printers_page(void)
 {
 	char *share = cgi_variable("share");
@@ -621,8 +1056,9 @@ static void printers_page(void)
 	printf("</FORM>\n");
 }
 
-
-
+/****************************************************************************
+  MAIN()
+****************************************************************************/
  int main(int argc, char *argv[])
 {
 	extern char *optarg;
@@ -667,22 +1103,33 @@ static void printers_page(void)
 
 	page = cgi_pathinfo();
 
-	if (strcmp(page, "globals")==0) {
-		globals_page();
-	} else if (strcmp(page,"shares")==0) {
-		shares_page();
-	} else if (strcmp(page,"printers")==0) {
-		printers_page();
-	} else if (strcmp(page,"status")==0) {
-		status_page();
-	} else if (strcmp(page,"viewconfig")==0) {
-		viewconfig_page();
+	/* Root gets full functionality */
+	if ( is_root() == True) {
+		if (strcmp(page, "globals")==0) {
+			globals_page();
+		} else if (strcmp(page,"shares")==0) {
+			shares_page();
+		} else if (strcmp(page,"printers")==0) {
+			printers_page();
+		} else if (strcmp(page,"status")==0) {
+			status_page();
+		} else if (strcmp(page,"viewconfig")==0) {
+			viewconfig_page();
+		} else if (strcmp(page,"passwd")==0) {
+			passwd_page();
+		} else {
+			welcome_page();
+		}
 	} else {
-		welcome_page();
+		/* Everyone gets this functionality */
+		if (strcmp(page,"passwd")==0) {
+			passwd_page();
+		} else {
+			welcome_page();
+		}
 	}
 	
 	print_footer();
 	return 0;
 }
-
 

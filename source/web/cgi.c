@@ -44,6 +44,7 @@ static int request_post;
 static char *query_string;
 static char *baseurl;
 static char *pathinfo;
+static char *C_user;
 
 static void unescape(char *buf)
 {
@@ -311,14 +312,30 @@ static int cgi_handle_authorization(char *line)
 	user = line;
 	pass = p+1;
 
-	/* currently only allow connections as root */
-	if (strcmp(user,"root")) {
-		cgi_setup_error("401 Bad Authorization", "", 
-				"incorrect username/password");
-	}
-
+	/* Save the users name */
+	C_user = strdup(user);
 
 	return pass_check(user, pass, strlen(pass), NULL, NULL);
+}
+
+/***************************************************************************
+is this root?
+  ***************************************************************************/
+BOOL is_root()
+{
+	if ((C_user) && (strcmp(C_user,"root") == 0)) {
+		return( True);
+	} else {
+		return( False);
+	}
+}
+
+/***************************************************************************
+return a ptr to the users name
+  ***************************************************************************/
+char * get_user_name()
+{
+        return(C_user);
 }
 
 
@@ -390,6 +407,16 @@ void cgi_setup(char *rootdir, int auth_required)
 	}
 
 	if (getenv("CONTENT_LENGTH") || getenv("REQUEST_METHOD")) {
+
+		char *x;
+
+		/* Save the users name if available */
+		if (x = getenv("REMOTE_USER")) {
+			C_user = strdup(x);
+		} else {
+			C_user = "";
+		}
+
 		/* assume we are running under a real web server */
 		return;
 	}
