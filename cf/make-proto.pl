@@ -10,7 +10,7 @@ $debug = 0;
 $oproto = 1;
 $private_func_re = "^_";
 
-do Getopts('x:m:o:p:dqR:P:') || die "foo";
+do Getopts('x:m:o:p:dqE:R:P:') || die "foo";
 
 if($opt_d) {
     $debug = 1;
@@ -256,6 +256,27 @@ if($opt_m ne "roken") {
 ";
     }
     
+    if ($opt_E) {
+	$public_h_header .= "#ifndef $opt_E
+#if defined(_WIN32)
+#define $opt_E _stdcall
+#else
+#define $opt_E
+#endif
+#endif
+
+";
+
+	$private_h_header .= "#ifndef $opt_E
+#if defined(_WIN32)
+#define $opt_E _stdcall
+#else
+#define $opt_E
+#endif
+#endif
+
+";
+    }
     
     if ($public_h ne "") {
 	$public_h = $public_h_header . $public_h . "#endif /* $block */\n";
