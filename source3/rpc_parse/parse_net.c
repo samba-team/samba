@@ -1338,15 +1338,11 @@ static void net_io_sam_passwd_info(char *desc, SAM_PWD *pwd,
 	smb_io_unihdr ("hdr_lm_pwd", &(pwd->hdr_lm_pwd), ps, depth);
 	prs_uint8s(False, "buf_lm_pwd", ps, depth, pwd->buf_lm_pwd, 16);
 	
-	prs_uint32("ptr_1 ", ps, depth, &(pwd->ptr_1 ));
-
 	smb_io_unihdr ("hdr_nt_pwd", &(pwd->hdr_nt_pwd), ps, depth);
 	prs_uint8s(False, "buf_nt_pwd", ps, depth, pwd->buf_nt_pwd, 16);
-	
-	prs_uint32("ptr_2 ", ps, depth, &(pwd->ptr_2 ));
-	prs_uint32("ptr_3 ", ps, depth, &(pwd->ptr_3 ));
-	prs_uint32("ptr_4 ", ps, depth, &(pwd->ptr_4 ));
-	prs_uint32("ptr_5 ", ps, depth, &(pwd->ptr_5 ));
+
+	smb_io_unihdr("", &(pwd->hdr_empty_lm), ps, depth);
+	smb_io_unihdr("", &(pwd->hdr_empty_nt), ps, depth);
 }
 
 /*******************************************************************
