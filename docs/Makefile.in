@@ -38,11 +38,12 @@ MANDIR = $(OUTPUTDIR)/manpages
 EPSTOPDF = @EPSTOPDF@
 MANPAGEDIR = $(TOPDIR)/manpages
 HOWTODIR = $(TOPDIR)/howto
+GUIDEDOC = $(TOPDIR)/guide
+DEVDOCDIR = $(TOPDIR)/devel
 MAKEINDEX = @MAKEINDEX@
 IMAGEPROJDIR = $(HOWTODIR)/imagefiles
-GUIDEDOC = $(TOPDIR)/guide
+IMAGEGUIDEDIR = $(GUIDEDOC)/images
 EXAMPLESDIR = $(TOPDIR)/examples
-DEVDOCDIR = $(TOPDIR)/devel
 SMBDOTCONFDOC = $(TOPDIR)/smbdotconf
 PSDIR = $(OUTPUTDIR)
 PDFDIR = $(OUTPUTDIR)
@@ -59,6 +60,7 @@ MANPAGES_HTML = $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES_SOUR
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES_SOURCES)) $(PLUCKERDIR)/smb.conf.5.pdb
 
 HOWTODIR_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
+GUIDEDOC_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
 HOWTODIR_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
 HOWTODIR_DEPS = $(HOWTODIR)/*.xml $(HOWTODIR)/attributions.xml $(MANPAGEDIR)/*.xml $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
 DEVDOCDIR_DEPS = $(DEVDOCDIR)/*.xml $(DEVDOCDIR)/attributions.xml
@@ -87,7 +89,7 @@ all: @TARGETS@
 
 everything: manpages pdf html-single html htmlman txt ps
 
-release: manpages htmlman html html-single pdf guide
+release: manpages htmlman html sg-html html-single pdf guide
 
 # Global rules
 
@@ -112,7 +114,14 @@ html: $(HTMLDIR) CSS Samba-HOWTO-Collection.xml $(HTMLDIR)/Samba-Developers-Guid
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
-	&& cp -p $(HOWTODIR)/imagefiles/*png $(HTMLDIR)/images/
+	&& cp -p $(GUIDEDOC)/imagefiles/*png $(HTMLDIR)/images/
+
+sg-html: $(HTMLDIR) CSS Samba-Guide.xml
+	$(XSLTPROC) -o "$(HTMLDIR)/" xslt/html-chunk.xsl Samba-Guide.xml
+	@if [ ! -d $(HTMLDIR)/images/ ]; then \
+		mkdir $(HTMLDIR)/images/; \
+	fi \
+	&& cp -p $(HOWTODIR)/images/*png $(HTMLDIR)/images/
 
 manpages: $(MANDIR) $(MANPAGES)
 
@@ -206,6 +215,9 @@ CSS: $(HTMLDIR) xslt/html/samba.css
 	cp xslt/html/samba.css $(HTMLDIR)/
 
 $(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(HOWTODIR_DEPS) $(HOWTODIR_IMAGES_PNG)
+	$(XSLTPROC) --output $@ xslt/html.xsl $<
+
+$(HTMLDIR)/Samba-Guide.html: Samba-Guide.xml $(GUIDEDOC_IMAGES_PNG)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 $(HTMLDIR)/Samba-Developers-Guide.html: Samba-Developers-Guide.xml $(DEVDOCDIR_DEPS)
