@@ -376,10 +376,30 @@ check_flags(hdb_entry *client, const char *client_name,
     return 0;
 }
 
+static krb5_boolean
+check_addresses(HostAddresses *addresses, struct sockaddr *from)
+{
+    krb5_error_code ret;
+    krb5_address addr;
+    
+    if(check_ticket_addresses == 0)
+	return TRUE;
+
+    if(addresses == NULL)
+	return allow_null_ticket_addresses;
+    
+    ret = krb5_sockaddr2address (from, &addr);
+    if(ret)
+	return FALSE;
+
+    return krb5_address_search(context, &addr, addresses);
+}
+
 krb5_error_code
 as_rep(KDC_REQ *req, 
        krb5_data *reply,
-       const char *from)
+       const char *from,
+       struct sockaddr *from_addr)
 {
     KDC_REQ_BODY *b = &req->req_body;
     AS_REP rep;
@@ -647,6 +667,13 @@ as_rep(KDC_REQ *req,
 	goto out;
     }
 
+    /* check for valid set of addresses */
+    if(!check_addresses(b->addresses, from_addr)) {
+	ret = KRB5KRB_AP_ERR_BADADDR;
+	kdc_log(0, "Bad address list requested -- %s", client_name);
+	goto out;
+    }
+
     if(context->ktype_is_etype) {
 	krb5_keytype kt;
 	ret = krb5_etype_to_keytype(context, sess_ktype, &kt);
@@ -709,7 +736,7 @@ as_rep(KDC_REQ *req,
 	ALLOC(et.caddr);
 	copy_HostAddresses(b->addresses, et.caddr);
     }
-
+    
     copy_EncryptionKey(&et.key, &ek.key);
 
     /* The MIT ASN.1 library (obviously) doesn't tell lengths encoded
@@ -1239,7 +1266,8 @@ static krb5_error_code
 tgs_rep2(KDC_REQ_BODY *b,
 	 PA_DATA *tgs_req,
 	 krb5_data *reply,
-	 const char *from)
+	 const char *from,
+	 struct sockaddr *from_addr)
 {
     krb5_ap_req ap_req;
     krb5_error_code ret;
@@ -1488,6 +1516,13 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    ret = KRB5KDC_ERR_SERVER_NOMATCH;
 	    goto out;
 	}
+
+	/* check for valid set of addresses */
+	if(!check_addresses(tgt->caddr, from_addr)) {
+	    ret = KRB5KRB_AP_ERR_BADADDR;
+	    kdc_log(0, "Request from wrong address");
+	    goto out;
+	}
 	
 	ret = tgs_make_reply(b, 
 			     tgt, 
@@ -1547,7 +1582,8 @@ out2:
 krb5_error_code
 tgs_rep(KDC_REQ *req, 
 	krb5_data *data,
-	const char *from)
+	const char *from,
+	struct sockaddr *from_addr)
 {
     krb5_error_code ret;
     int i = 0;
@@ -1567,7 +1603,7 @@ tgs_rep(KDC_REQ *req,
 	kdc_log(0, "TGS-REQ from %s without PA-TGS-REQ", from);
 	goto out;
     }
-    ret = tgs_rep2(&req->req_body, tgs_req, data, from);
+    ret = tgs_rep2(&req->req_body, tgs_req, data, from, from_addr);
 out:
     if(ret && data->data == NULL){
 	krb5_mk_error(context,
