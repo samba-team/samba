@@ -2328,7 +2328,7 @@ static char **completion_fn(const char *text, int start, int end)
 		if (sp == NULL)
 			return NULL;
 		
-		for (i = 0; commands[i].name; i++)
+		for (i = 0; commands[i].description; i++)
 			if ((strncmp(commands[i].name, text, sp - buf) == 0) && (commands[i].name[sp - buf] == 0))
 				break;
 		if (commands[i].name == NULL)
