@@ -133,6 +133,8 @@ LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
 	       libsmb/cli_reg.o \
 	       rpc_client/cli_pipe.o libsmb/cli_pipe_util.o
 
+LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
+
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
                  rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o rpc_server/srv_reg_nt.o \
@@ -667,6 +669,13 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
 	$(LD) $(LDSHFLAGS) -symbolic -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(LIBS) -lc
 
+bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
+	-$(AR) -rc $@ $(LIBMSRPC_PICOBJ) 
+
+bin/spamsync: rpcclient/samsync.o bin/libmsrpc.a
+	@$(LINK) -o $@ rpcclient/samsync.o bin/libmsrpc.a \
+		$(UBIQX_OBJ) $(LIBS)
+
 install: installbin installman installscripts installswat 
 
 installdirs:
@@ -711,7 +720,7 @@ uninstallbin:
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
-clean: 
+clean: delheaders
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ $(PROGS) $(SPROGS) 
 
 winbindd_proto:
