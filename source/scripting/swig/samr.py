@@ -3,17 +3,20 @@ import dcerpc
 def sid_to_string(sid):
     """Convert a Python dictionary SID to a string SID."""
 
-    result = 'S-%d' % sid['sid_rev_num']
+    result = 'S-%d' % sid.sid_rev_num
 
-    ia = sid['id_auth']
+    result = result + '-%u' % \
+             (dcerpc.uint8_array_getitem(sid.id_auth, 5) +
+              (dcerpc.uint8_array_getitem(sid.id_auth, 4) << 8) + 
+              (dcerpc.uint8_array_getitem(sid.id_auth, 3) << 16) +
+              (dcerpc.uint8_array_getitem(sid.id_auth, 2) << 24))
     
-    result = result + '-%u' % (ia[5] + (ia[4] << 8) + (ia[3] << 16) + \
-             (ia[2] << 24))
-    
-    for i in range(0, sid['num_auths']):
-        result = result + '-%u' % sid['sub_auths'][i]
+    for i in range(0, sid.num_auths):
+        result = result + '-%u' % \
+                 dcerpc.uint32_array_getitem(sid.sub_auths, i)
 
     return result
+
 
 def string_to_sid(string):
     """Convert a string SID to a Python dictionary SID.  Throws a
@@ -72,9 +75,18 @@ def string_to_sid(string):
         sub_auths.append(int(sa))
 
         string = string[match.end():]
-    
-    return {'sid_rev_num': sid_rev_num, 'id_auth': id_auth,
-            'num_auths': num_auths, 'sub_auths': sub_auths}
+
+    sid = dcerpc.dom_sid()
+    sid.sid_rev_num = sid_rev_num
+    sid.id_auth = dcerpc.new_uint8_array(6)
+    for i in range(6):
+        dcerpc.uint8_array_setitem(sid.id_auth, i, id_auth[i])
+    sid.num_auths = num_auths
+    sid.sub_auths = dcerpc.new_uint32_array(num_auths)
+    for i in range(num_auths):
+        dcerpc.uint32_array_setitem(sid.sub_auths, i, sub_auths[i])
+
+    return sid
 
 
 class SamrHandle:
@@ -86,128 +98,147 @@ class SamrHandle:
 
     def __del__(self):
 
-        r = {}
-        r['handle'] = self.handle
+        r = dcerpc.samr_Close()
+        r.data_in.handle = self.handle
 
-        dcerpc.samr_Close(self.pipe, r)
+        dcerpc.dcerpc_samr_Close(self.pipe, r)
 
 
 class ConnectHandle(SamrHandle):
 
     def EnumDomains(self):
 
-        r = {}
-        r['connect_handle'] = self.handle
-        r['resume_handle'] = 0
-        r['buf_size'] = -1
+        r = dcerpc.samr_EnumDomains()
+        r.data_in.connect_handle = self.handle
+        r.data_in.resume_handle = 1
+        r.data_in.buf_size = -1
 
         domains = []
 
         while 1:
 
-            result = dcerpc.samr_EnumDomains(self.pipe, r)
+            result = dcerpc.dcerpc_samr_EnumDomains(self.pipe, r)
 
-            domains = domains + result['sam']['entries']
+            for i in range(r.data_out.sam.count):
+                domains.append(dcerpc.samr_SamEntry_array_getitem(
+                    r.data_out.sam.entries, i).name.string)
 
-            if result['result'] == dcerpc.STATUS_MORE_ENTRIES:
-                r['resume_handle'] = result['resume_handle']
-                continue
+            # TODO: Handle more entries here
 
             break
 
-        return map(lambda x: x['name']['name'], domains)
+        return domains
 
     def LookupDomain(self, domain_name):
 
-        r = {}
-        r['connect_handle'] = self.handle
-        r['domain'] = {}
-        r['domain']['name_len'] = 0
-        r['domain']['name_size'] = 0
-        r['domain']['name'] = domain_name
+        r = dcerpc.samr_LookupDomain()
+        r.data_in.connect_handle = self.handle
+        r.data_in.domain = dcerpc.samr_String()
+        r.data_in.domain.string = domain_name
 
-        result = dcerpc.samr_LookupDomain(self.pipe, r)
+        result = dcerpc.dcerpc_samr_LookupDomain(self.pipe, r)
 
-        return sid_to_string(result['sid'])
+        return sid_to_string(r.data_out.sid);
 
     def OpenDomain(self, domain_sid, access_mask = 0x02000000):
 
-        r = {}
-        r['connect_handle'] = self.handle
-        r['access_mask'] = access_mask
-        r['sid'] = string_to_sid(domain_sid)
+        r = dcerpc.samr_OpenDomain()
+        r.data_in.connect_handle = self.handle
+        r.data_in.access_mask = access_mask
+        r.data_in.sid = string_to_sid(domain_sid)
 
-        result = dcerpc.samr_OpenDomain(self.pipe, r)
+        result = dcerpc.dcerpc_samr_OpenDomain(self.pipe, r)
 
-        return DomainHandle(self.pipe, result['domain_handle'])
+        return DomainHandle(self.pipe, r.data_out.domain_handle)
 
 
 class DomainHandle(SamrHandle):
 
     def QueryDomainInfo(self, level = 2):
 
-        r = {}
-        r['domain_handle'] = self.handle
-        r['level'] = level
+        r = dcerpc.samr_QueryDomainInfo()
+        r.data_in.domain_handle = self.handle
+        r.data_in.level = level
 
-        result = dcerpc.samr_QueryDomainInfo(self.pipe, r)
+        result = dcerpc.dcerpc_samr_QueryDomainInfo(self.pipe, r)
 
-        return result
+        return getattr(r.data_out.info, 'info%d' % level)
 
     def QueryDomainInfo2(self, level = 2):
 
-        r = {}
-        r['domain_handle'] = self.handle
-        r['level'] = level
+        r = dcerpc.samr_QueryDomainInfo2()
+        r.data_in.domain_handle = self.handle
+        r.data_in.level = level
 
-        result = dcerpc.samr_QueryDomainInfo2(self.pipe, r)
+        result = dcerpc.dcerpc_samr_QueryDomainInfo2(self.pipe, r)
 
-        return result
+        return getattr(r.data_out.info, 'info%d' % level)       
 
     def EnumDomainGroups(self):
 
-        r = {}
-        r['domain_handle'] = self.handle
-        r['resume_handle'] = 0
-        r['max_size'] = 1000
+        r = dcerpc.samr_EnumDomainGroups()
+        r.data_in.domain_handle = self.handle
+        r.data_in.resume_handle = 0
+        r.data_in.max_size = 1000
 
-        result = dcerpc.samr_EnumDomainGroups(self.pipe, r)
+        result = dcerpc.dcerpc_samr_EnumDomainGroups(self.pipe, r)
 
-        return result
+        groups = []
+
+        if r.data_out.sam.entries:
+            for i in range(r.data_out.sam.count):
+                groups.append(dcerpc.samr_SamEntry_array_getitem(
+                    r.data_out.sam.entries, i).name.string)
+
+        return groups
 
     def EnumDomainAliases(self):
 
-        r = {}
-        r['domain_handle'] = self.handle
-        r['resume_handle'] = 0
+        r = dcerpc.samr_EnumDomainAliases()
+        r.data_in.domain_handle = self.handle
+        r.data_in.resume_handle = 0
         # acct_flags in SamrEnumerateAliasesInDomain has probably
         # no meaning so use 0xffffffff like W2K
-        r['acct_flags'] = 0xffffffff
+        r.data_in.acct_flags = 0xffffffffL
 
-        result = dcerpc.samr_EnumDomainAliases(self.pipe, r)
+        result = dcerpc.dcerpc_samr_EnumDomainAliases(self.pipe, r)
 
-        return result
+        aliases = []
+
+        if r.data_out.sam.entries:
+            for i in range(r.data_out.sam.count):
+                aliases.append(dcerpc.samr_SamEntry_array_getitem(
+                    r.data_out.sam.entries, i).name.string)
+
+        return aliases
 
     def EnumDomainUsers(self, user_account_flags = 16):
 
-        r = {}
-        r['domain_handle'] = self.handle
-        r['resume_handle'] = 0
-        r['acct_flags'] = user_account_flags
-        r['max_size'] = 1000
+        r = dcerpc.samr_EnumDomainUsers()
+        r.data_in.domain_handle = self.handle
+        r.data_in.resume_handle = 0
+        r.data_in.acct_flags = user_account_flags
+        r.data_in.max_size = 1000
 
-        result = dcerpc.samr_EnumDomainUsers(self.pipe, r)
+        result = dcerpc.dcerpc_samr_EnumDomainUsers(self.pipe, r)
 
-        return result
+        users = []
+
+        if r.data_out.sam.entries:
+            for i in range(r.data_out.sam.count):
+                users.append(dcerpc.samr_SamEntry_array_getitem(
+                    r.data_out.sam.entries, i).name.string)
+
+        return users
 
 
-def Connect(pipe, system_name = None, access_mask = 0x02000000):
+def Connect(pipe, system_name = '', access_mask = 0x02000000):
     """Connect to the SAMR pipe."""
 
-    r = {}
-    r['system_name'] = system_name
-    r['access_mask'] = access_mask
+    r = dcerpc.samr_Connect2()
+    r.data_in.system_name = system_name
+    r.data_in.access_mask = access_mask
 
-    result = dcerpc.samr_Connect2(pipe, r)
+    result = dcerpc.dcerpc_samr_Connect2(pipe, r)
 
-    return ConnectHandle(pipe, result['connect_handle'])
+    return ConnectHandle(pipe, r.data_out.connect_handle)
