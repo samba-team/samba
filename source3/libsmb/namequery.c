@@ -335,6 +335,8 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
   while (1)
   {
 	  struct timeval tval2;
+      struct in_addr *tmp_ip_list;
+
 	  GetTimeOfDay(&tval2);
 	  if (TvalDiff(&tval,&tval2) > retry_time) {
 		  if (!retries)
@@ -398,9 +400,17 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			  continue;
 		  }
 
-		  ip_list = (struct in_addr *)Realloc( ip_list,
-				sizeof( ip_list[0] )
-				* ( (*count) + nmb2->answers->rdlength/6 ) );
+          tmp_ip_list = (struct in_addr *)Realloc( ip_list, sizeof( ip_list[0] )
+                                                * ( (*count) + nmb2->answers->rdlength/6 ) );
+ 
+          if (!tmp_ip_list) {
+              DEBUG(0,("name_query: Realloc failed.\n"));
+              if (ip_list)
+                  free(ip_list);
+          }
+ 
+          ip_list = tmp_ip_list;
+
 		  if (ip_list) {
 			  DEBUG(2,("Got a positive name query response from %s ( ",
 				   inet_ntoa(p2->ip)));
