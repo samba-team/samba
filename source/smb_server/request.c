@@ -277,10 +277,6 @@ void req_send_reply_nosign(struct request_context *req)
 */
 void req_send_reply(struct request_context *req)
 {
-	if (req->out.size > NBT_HDR_SIZE) {
-		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
-	}
-
 	req_sign_packet(req);
 
 	req_send_reply_nosign(req);

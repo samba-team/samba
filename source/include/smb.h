@@ -44,12 +44,6 @@ typedef int BOOL;
 #define _BOOL       /* So we don't typedef BOOL again in vfs.h */
 #endif
 
-#define SIZEOFWORD 2
-
-#ifndef DEF_CREATE_MASK
-#define DEF_CREATE_MASK (0755)
-#endif
-
 /* string manipulation flags - see clistr.c and srvstr.c */
 #define STR_TERMINATE 1
 #define STR_UPPER 2
@@ -238,8 +232,6 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 /* turn a 7 bit character into a ucs2 character */
 #define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
 
-#define MAX_HOURS_LEN 32
-
 /* for compatibility */
 #define SID_NAME_USE samr_SidType
 
@@ -260,12 +252,6 @@ typedef struct nt_user_token {
 	size_t num_sids;
 	struct dom_sid **user_sids;
 } NT_USER_TOKEN;
-
-/* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
-typedef struct time_info
-{
-  uint32_t time;
-} UTIME;
 
 /* used to hold an arbitrary blob of data */
 typedef struct data_blob {
@@ -686,18 +672,6 @@ struct bitmap {
    otherwise NT will not honour the announce packets */
 #define MAX_SERVER_STRING_LENGTH 48
 
-
-#define SMB_SUCCESS 0  /* The request was successful. */
-
-#ifdef WITH_DFS
-void dfs_unlogin(void);
-extern int dcelogin_atmost_once;
-#endif
-
-#ifdef NOSTRDUP
-char *strdup(char *s);
-#endif
-
 #ifndef SIGNAL_CAST
 #define SIGNAL_CAST (RETSIGTYPE (*)(int))
 #endif
@@ -892,28 +866,6 @@ struct node_status {
 	unsigned char flags;
 };
 
-struct pwd_info
-{
-	BOOL null_pwd;
-	BOOL cleartext;
-	BOOL crypted;
-
-	fstring password;
-
-	uchar smb_lm_pwd[16];
-	uchar smb_nt_pwd[16];
-
-	uchar smb_lm_owf[24];
-	uchar smb_nt_owf[128];
-	size_t nt_owf_len;
-
-	uchar lm_cli_chal[8];
-	uchar nt_cli_chal[128];
-	size_t nt_cli_chal_len;
-
-	uchar sess_key[16];
-};
-
 #include "rpc_secdes.h"
 
 typedef struct user_struct
@@ -931,22 +883,7 @@ typedef struct user_struct
 
 } user_struct;
 
-struct unix_error_map {
-	int unix_error;
-	int dos_class;
-	int dos_code;
-	NTSTATUS nt_error;
-};
-
 #include "client.h"
-
-/*
- * Size of new password account encoding string.  This is enough space to
- * hold 11 ACB characters, plus the surrounding [] and a terminating null.
- * Do not change unless you are adding new ACB bits!
- */
-
-#define NEW_PW_FORMAT_SPACE_PADDED_LEN 14
 
 /*
    Do you want session setups at user level security with a invalid

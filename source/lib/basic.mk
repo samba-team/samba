@@ -39,7 +39,6 @@ ADD_OBJ_FILES = \
 		lib/messages.o \
 		lib/tallocmsg.o \
 		lib/dmallocmsg.o \
-		lib/smbpasswd.o \
 		lib/pam_errors.o \
 		intl/lang_tdb.o \
 		lib/gencache.o \

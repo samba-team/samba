@@ -108,19 +108,9 @@
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
-#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(outbuf,status,0,0,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(outbuf,status,class,code,__LINE__,__FILE__)
-
-/* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
 
 /* REWRITE TODO: remove these smb_xxx macros */
 #define smb_buf(buf) (((char *)(buf)) + MIN_SMB_SIZE + CVAL(buf,HDR_WCT+4)*2)
-
-/* the remaining number of bytes in smb buffer 'buf' from pointer 'p'. */
-#define smb_bufrem(buf, p) (smb_buflen(buf)-PTR_DIFF(p, smb_buf(buf)))
-
 
 #define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|(PVAL(buf,1)<<16))
 #define _smb_setlen(buf,len) do {(buf)[0] = 0; (buf)[1] = ((len)&0x10000)>>16; \

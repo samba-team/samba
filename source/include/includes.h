@@ -436,12 +436,6 @@ typedef int socklen_t;
 #define uchar unsigned char
 #endif
 
-#ifdef HAVE_UNSIGNED_CHAR
-#define schar signed char
-#else
-#define schar char
-#endif
-
 /*
    Samba needs type definitions for 
    int8_t,  int16_t,  int32_t, int64_t 
@@ -709,10 +703,6 @@ typedef int (*comparison_fn_t)(const void *, const void *);
 
 #ifndef MAP_FILE
 #define MAP_FILE 0
-#endif
-
-#if (!defined(WITH_LDAP) && !defined(WITH_TDB_SAM))
-#define USE_SMBPASS_DB 1
 #endif
 
 #if defined(HAVE_PUTPRPWNAM) && defined(AUTH_CLEARTEXT_SEG_CHARS)

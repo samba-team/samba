@@ -1486,6 +1486,13 @@ WERROR ntstatus_to_werror(NTSTATUS error)
 
 /* Mapping between Unix, DOS and NT error numbers */
 
+struct unix_error_map {
+	int unix_error;
+	int dos_class;
+	int dos_code;
+	NTSTATUS nt_error;
+};
+
 const struct unix_error_map unix_dos_nt_errmap[] = {
 	{ EPERM, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
 	{ EACCES, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
