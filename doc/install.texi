@@ -24,8 +24,6 @@ yacc or bison
 a socket library
 @item
 NDBM or Berkeley DB for building the server side.
-@item 
-
 @end itemize
 
 When everything is built, you can install by doing @kbd{make
