@@ -102,7 +102,7 @@ enum ntlmssp_direction {
 	NTLMSSP_RECEIVE
 };
 
-static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_CLIENT_STATE *ntlmssp_state,
+static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 					      const uchar *data, size_t length, 
 					      enum ntlmssp_direction direction,
 					      DATA_BLOB *sig) 
@@ -113,7 +113,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_CLIENT_STATE *ntlmssp_stat
 		uchar digest[16];
 		SIVAL(seq_num, 0, ntlmssp_state->ntlmssp_seq_num);
 
-		hmac_md5_init_limK_to_64((const unsigned char *)(ntlmssp_state->cli_sign_const), 16, &ctx);
+		hmac_md5_init_limK_to_64((const unsigned char *)(ntlmssp_state->send_sign_const), 16, &ctx);
 		hmac_md5_update((const unsigned char *)seq_num, 4, &ctx);
 		hmac_md5_update(data, length, &ctx);
 		hmac_md5_final(digest, &ctx);
@@ -124,10 +124,10 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_CLIENT_STATE *ntlmssp_stat
 		}
 		switch (direction) {
 		case NTLMSSP_SEND:
-			NTLMSSPcalc_ap(ntlmssp_state->cli_sign_hash,  sig->data+4, sig->length-4);
+			NTLMSSPcalc_ap(ntlmssp_state->send_sign_hash,  sig->data+4, sig->length-4);
 			break;
 		case NTLMSSP_RECEIVE:
-			NTLMSSPcalc_ap(ntlmssp_state->srv_sign_hash,  sig->data+4, sig->length-4);
+			NTLMSSPcalc_ap(ntlmssp_state->recv_sign_hash,  sig->data+4, sig->length-4);
 			break;
 		}
 	} else {
@@ -144,9 +144,9 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_CLIENT_STATE *ntlmssp_stat
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ntlmssp_client_sign_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
-					   const uchar *data, size_t length, 
-					   DATA_BLOB *sig) 
+NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
+				    const uchar *data, size_t length, 
+				    DATA_BLOB *sig) 
 {
 	NTSTATUS nt_status = ntlmssp_make_packet_signature(ntlmssp_state, data, length, NTLMSSP_SEND, sig);
 
@@ -161,9 +161,9 @@ NTSTATUS ntlmssp_client_sign_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_client_check_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
-				     const uchar *data, size_t length, 
-				     const DATA_BLOB *sig) 
+NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
+			      const uchar *data, size_t length, 
+			      const DATA_BLOB *sig) 
 {
 	DATA_BLOB local_sig;
 	NTSTATUS nt_status;
@@ -204,11 +204,11 @@ NTSTATUS ntlmssp_client_check_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_client_seal_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
-				    uchar *data, size_t length,
-				    DATA_BLOB *sig)
+NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
+			     uchar *data, size_t length,
+			     DATA_BLOB *sig)
 {	
-	DEBUG(10,("ntlmssp_client_seal_data: seal\n"));
+	DEBUG(10,("ntlmssp_seal_data: seal\n"));
 	dump_data_pw("ntlmssp clear data\n", data, length);
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		HMACMD5Context ctx;
@@ -216,7 +216,7 @@ NTSTATUS ntlmssp_client_seal_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 		uchar digest[16];
 		SIVAL(seq_num, 0, ntlmssp_state->ntlmssp_seq_num);
 
-		hmac_md5_init_limK_to_64((const unsigned char *)(ntlmssp_state->cli_sign_const), 16, &ctx);
+		hmac_md5_init_limK_to_64((const unsigned char *)(ntlmssp_state->send_sign_const), 16, &ctx);
 		hmac_md5_update((const unsigned char *)seq_num, 4, &ctx);
 		hmac_md5_update(data, length, &ctx);
 		hmac_md5_final(digest, &ctx);
@@ -227,13 +227,13 @@ NTSTATUS ntlmssp_client_seal_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 		}
 
 		dump_data_pw("ntlmssp client sealing hash:\n", 
-			     ntlmssp_state->cli_seal_hash,
-			     sizeof(ntlmssp_state->cli_seal_hash));
-		NTLMSSPcalc_ap(ntlmssp_state->cli_seal_hash, data, length);
+			     ntlmssp_state->send_seal_hash,
+			     sizeof(ntlmssp_state->send_seal_hash));
+		NTLMSSPcalc_ap(ntlmssp_state->send_seal_hash, data, length);
 		dump_data_pw("ntlmssp client signing hash:\n", 
-			     ntlmssp_state->cli_sign_hash,
-			     sizeof(ntlmssp_state->cli_sign_hash));
-		NTLMSSPcalc_ap(ntlmssp_state->cli_sign_hash,  sig->data+4, sig->length-4);
+			     ntlmssp_state->send_sign_hash,
+			     sizeof(ntlmssp_state->send_sign_hash));
+		NTLMSSPcalc_ap(ntlmssp_state->send_sign_hash,  sig->data+4, sig->length-4);
 	} else {
 		uint32 crc;
 		crc = crc32_calc_buffer((const char *)data, length);
@@ -266,14 +266,14 @@ NTSTATUS ntlmssp_client_seal_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_client_unseal_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
 				      uchar *data, size_t length,
 				      DATA_BLOB *sig)
 {
-	DEBUG(10,("ntlmssp_client_unseal_data: seal\n"));
+	DEBUG(10,("ntlmssp__unseal_data: seal\n"));
 	dump_data_pw("ntlmssp sealed data\n", data, length);
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		NTLMSSPcalc_ap(ntlmssp_state->srv_seal_hash, data, length);
+		NTLMSSPcalc_ap(ntlmssp_state->recv_seal_hash, data, length);
 	} else {
 		dump_data_pw("ntlmssp hash:\n", ntlmssp_state->ntlmssp_hash,
 			     sizeof(ntlmssp_state->ntlmssp_hash));
@@ -281,13 +281,13 @@ NTSTATUS ntlmssp_client_unseal_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 	}
 	dump_data_pw("ntlmssp clear data\n", data, length);
 
-	return ntlmssp_client_check_packet(ntlmssp_state, data, length, sig);
+	return ntlmssp_check_packet(ntlmssp_state, data, length, sig);
 }
 
 /**
    Initialise the state for NTLMSSP signing.
 */
-NTSTATUS ntlmssp_client_sign_init(NTLMSSP_CLIENT_STATE *ntlmssp_state)
+NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 {
 	unsigned char p24[24];
 	ZERO_STRUCT(p24);
@@ -297,34 +297,54 @@ NTSTATUS ntlmssp_client_sign_init(NTLMSSP_CLIENT_STATE *ntlmssp_state)
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2)
 	{
+		const char *send_sign_const;
+		const char *send_seal_const;
+		const char *recv_sign_const;
+		const char *recv_seal_const;
 
-		calc_ntlmv2_hash(ntlmssp_state->cli_sign_hash, 
-				 ntlmssp_state->cli_sign_const, 
-				 ntlmssp_state->session_key, CLI_SIGN);
-		dump_data_pw("NTLMSSP client sign hash:\n", 
-			     ntlmssp_state->cli_sign_hash, 
-			     sizeof(ntlmssp_state->cli_sign_hash));
+		switch (ntlmssp_state->role) {
+		case NTLMSSP_CLIENT:
+			send_sign_const = CLI_SIGN;
+			send_seal_const = CLI_SEAL;
+			recv_sign_const = SRV_SIGN;
+			recv_seal_const = SRV_SEAL;
+			break;
+		case NTLMSSP_SERVER:
+			send_sign_const = SRV_SIGN;
+			send_seal_const = SRV_SEAL;
+			recv_sign_const = CLI_SIGN;
+			recv_seal_const = CLI_SEAL;
+			break;
+		}
 
-		calc_ntlmv2_hash(ntlmssp_state->cli_seal_hash, 
-				 ntlmssp_state->cli_seal_const, 
-				 ntlmssp_state->session_key, CLI_SEAL);
-		dump_data_pw("NTLMSSP client sesl hash:\n", 
-			     ntlmssp_state->cli_seal_hash, 
-			     sizeof(ntlmssp_state->cli_seal_hash));
+		calc_ntlmv2_hash(ntlmssp_state->send_sign_hash, 
+				 ntlmssp_state->send_sign_const, 
+				 ntlmssp_state->session_key, send_sign_const);
+		dump_data_pw("NTLMSSP send sign hash:\n", 
+			     ntlmssp_state->send_sign_hash, 
+			     sizeof(ntlmssp_state->send_sign_hash));
 
-		calc_ntlmv2_hash(ntlmssp_state->srv_sign_hash, 
-				 ntlmssp_state->srv_sign_const, 
-				 ntlmssp_state->session_key, SRV_SIGN);
-		dump_data_pw("NTLMSSP server sign hash:\n", 
-			     ntlmssp_state->srv_sign_hash, 
-			     sizeof(ntlmssp_state->srv_sign_hash));
+		calc_ntlmv2_hash(ntlmssp_state->send_seal_hash, 
+				 ntlmssp_state->send_seal_const, 
+				 ntlmssp_state->session_key, send_seal_const);
+		dump_data_pw("NTLMSSP send sesl hash:\n", 
+			     ntlmssp_state->send_seal_hash, 
+			     sizeof(ntlmssp_state->send_seal_hash));
 
-		calc_ntlmv2_hash(ntlmssp_state->srv_seal_hash, 
-				 ntlmssp_state->srv_seal_const, 
-				 ntlmssp_state->session_key, SRV_SEAL);
-		dump_data_pw("NTLMSSP server seal hash:\n", 
-			     ntlmssp_state->cli_sign_hash, 
-			     sizeof(ntlmssp_state->cli_sign_hash));
+		calc_ntlmv2_hash(ntlmssp_state->recv_sign_hash, 
+				 ntlmssp_state->recv_sign_const, 
+				 ntlmssp_state->session_key, send_sign_const);
+		dump_data_pw("NTLMSSP receive sign hash:\n", 
+			     ntlmssp_state->recv_sign_hash, 
+			     sizeof(ntlmssp_state->recv_sign_hash));
+
+		calc_ntlmv2_hash(ntlmssp_state->recv_seal_hash, 
+				 ntlmssp_state->recv_seal_const, 
+				 ntlmssp_state->session_key, send_seal_const);
+		dump_data_pw("NTLMSSP receive seal hash:\n", 
+			     ntlmssp_state->recv_sign_hash, 
+			     sizeof(ntlmssp_state->recv_sign_hash));
+
 	} 
 	else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
 		if (!ntlmssp_state->session_key.data || ntlmssp_state->session_key.length < 8) {

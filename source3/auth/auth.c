@@ -88,6 +88,8 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 		return auth_context->challenge.data;
 	}
 
+	auth_context->challenge_may_be_modified = False;
+
 	for (auth_method = auth_context->auth_method_list; auth_method; auth_method = auth_method->next) {
 		if (auth_method->get_chal == NULL) {
 			DEBUG(5, ("auth_get_challenge: module %s did not want to specify a challenge\n", auth_method->name));
@@ -127,6 +129,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 							   chal, sizeof(chal));
 		
 		challenge_set_by = "random";
+		auth_context->challenge_may_be_modified = True;
 	} 
 	
 	DEBUG(5, ("auth_context challenge created by %s\n", challenge_set_by));

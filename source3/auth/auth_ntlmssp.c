@@ -23,13 +23,59 @@
 
 #include "includes.h"
 
-static const uint8 *auth_ntlmssp_get_challenge(struct ntlmssp_state *ntlmssp_state)
+/**
+ * Return the challenge as determined by the authentication subsystem 
+ * @return an 8 byte random challenge
+ */
+
+static const uint8 *auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
 	return auth_ntlmssp_state->auth_context->get_ntlm_challenge(auth_ntlmssp_state->auth_context);
 }
 
-static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state) 
+/**
+ * Some authentication methods 'fix' the challenge, so we may not be able to set it
+ *
+ * @return If the effective challenge used by the auth subsystem may be modified
+ */
+static BOOL auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
+{
+	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
+	struct auth_context *auth_context = auth_ntlmssp_state->auth_context;
+
+	return auth_context->challenge_may_be_modified;
+}
+
+/**
+ * NTLM2 authentication modifies the effective challange, 
+ * @param challenge The new challenge value
+ */
+static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
+{
+	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
+	struct auth_context *auth_context = auth_ntlmssp_state->auth_context;
+
+	SMB_ASSERT(challenge->length == 8);
+
+	auth_context->challenge = data_blob_talloc(auth_context->mem_ctx, 
+						   challenge->data, challenge->length);
+
+	auth_context->challenge_set_by = "NTLMSSP callback (NTLM2)";
+
+	DEBUG(5, ("auth_context challenge set by %s\n", auth_context->challenge_set_by));
+	DEBUG(5, ("challenge is: \n"));
+	dump_data(5, (const char *)auth_context->challenge.data, auth_context->challenge.length);
+	return NT_STATUS_OK;
+}
+
+/**
+ * Check the password on an NTLMSSP login.  
+ *
+ * Return the session keys used on the connection.
+ */
+
+static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key) 
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
 	uint32 auth_flags = AUTH_FLAG_NONE;
@@ -45,7 +91,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state)
 		auth_flags |= AUTH_FLAG_NTLM_RESP;
 	} else 	if (auth_ntlmssp_state->ntlmssp_state->nt_resp.length > 24) {
 		auth_flags |= AUTH_FLAG_NTLMv2_RESP;
-	};
+	}
 
 	/* the client has given us its machine name (which we otherwise would not get on port 445).
 	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
@@ -71,10 +117,26 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state)
 		return nt_status;
 	}
 
-	nt_status = auth_ntlmssp_state->auth_context->check_ntlm_password(auth_ntlmssp_state->auth_context, user_info, &auth_ntlmssp_state->server_info); 
-			
+	nt_status = auth_ntlmssp_state->auth_context->check_ntlm_password(auth_ntlmssp_state->auth_context, 
+									  user_info, &auth_ntlmssp_state->server_info); 
+
 	free_user_info(&user_info);
 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+	if (auth_ntlmssp_state->server_info->nt_session_key.length) {
+		DEBUG(10, ("Got NT session key of length %u\n", auth_ntlmssp_state->server_info->nt_session_key.length));
+		*nt_session_key = data_blob_talloc(auth_ntlmssp_state->mem_ctx, 
+						   auth_ntlmssp_state->server_info->nt_session_key.data,
+						   auth_ntlmssp_state->server_info->nt_session_key.length);
+	}
+	if (auth_ntlmssp_state->server_info->lm_session_key.length) {
+		DEBUG(10, ("Got LM session key of length %u\n", auth_ntlmssp_state->server_info->lm_session_key.length));
+		*lm_session_key = data_blob_talloc(auth_ntlmssp_state->mem_ctx, 
+						   auth_ntlmssp_state->server_info->lm_session_key.data,
+						   auth_ntlmssp_state->server_info->lm_session_key.length);
+	}
 	return nt_status;
 }
 
@@ -106,18 +168,20 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 
 	(*auth_ntlmssp_state)->ntlmssp_state->auth_context = (*auth_ntlmssp_state);
 	(*auth_ntlmssp_state)->ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
+	(*auth_ntlmssp_state)->ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
+	(*auth_ntlmssp_state)->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	(*auth_ntlmssp_state)->ntlmssp_state->check_password = auth_ntlmssp_check_password;
 	(*auth_ntlmssp_state)->ntlmssp_state->server_role = lp_server_role();
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
+void auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 {
 	TALLOC_CTX *mem_ctx = (*auth_ntlmssp_state)->mem_ctx;
 
 	if ((*auth_ntlmssp_state)->ntlmssp_state) {
-		ntlmssp_server_end(&(*auth_ntlmssp_state)->ntlmssp_state);
+		ntlmssp_end(&(*auth_ntlmssp_state)->ntlmssp_state);
 	}
 	if ((*auth_ntlmssp_state)->auth_context) {
 		((*auth_ntlmssp_state)->auth_context->free)(&(*auth_ntlmssp_state)->auth_context);
@@ -127,11 +191,10 @@ NTSTATUS auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 	}
 	talloc_destroy(mem_ctx);
 	*auth_ntlmssp_state = NULL;
-	return NT_STATUS_OK;
 }
 
 NTSTATUS auth_ntlmssp_update(AUTH_NTLMSSP_STATE *auth_ntlmssp_state, 
 			     const DATA_BLOB request, DATA_BLOB *reply) 
 {
-	return ntlmssp_server_update(auth_ntlmssp_state->ntlmssp_state, request, reply);
+	return ntlmssp_update(auth_ntlmssp_state->ntlmssp_state, request, reply);
 }

@@ -245,7 +245,7 @@ typedef struct pipes_struct
 	fstring pipe_user_name;
 	struct current_user pipe_user;
 
-	uint8 session_key[16];
+	DATA_BLOB session_key;
 
 	/*
 	 * Set to true when an RPC bind has been done on this pipe.

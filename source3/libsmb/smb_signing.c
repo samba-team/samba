@@ -405,11 +405,11 @@ static void simple_free_signing_context(struct smb_sign_info *si)
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
 
-BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[16], const DATA_BLOB response)
+BOOL cli_simple_set_signing(struct cli_state *cli, const DATA_BLOB user_session_key, const DATA_BLOB response)
 {
 	struct smb_basic_signing_context *data;
 
-	if (!user_session_key)
+	if (!user_session_key.length)
 		return False;
 
 	if (!cli_set_smb_signing_common(cli)) {
@@ -425,20 +425,22 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 
 	cli->sign_info.signing_context = data;
 	
-	data->mac_key = data_blob(NULL, response.length + 16);
+	data->mac_key = data_blob(NULL, response.length + user_session_key.length);
 
-	memcpy(&data->mac_key.data[0], user_session_key, 16);
+	memcpy(&data->mac_key.data[0], user_session_key.data, user_session_key.length);
 
 	DEBUG(10, ("cli_simple_set_signing: user_session_key\n"));
-	dump_data(10, (const char *)user_session_key, 16);
+	dump_data(10, (const char *)user_session_key.data, user_session_key.length);
 
 	if (response.length) {
-		memcpy(&data->mac_key.data[16],response.data, response.length);
+		memcpy(&data->mac_key.data[user_session_key.length],response.data, response.length);
 		DEBUG(10, ("cli_simple_set_signing: response_data\n"));
 		dump_data(10, (const char *)response.data, response.length);
 	} else {
 		DEBUG(10, ("cli_simple_set_signing: NULL response_data\n"));
 	}
+
+	dump_data_pw("MAC ssession key is:\n", data->mac_key.data, data->mac_key.length);
 
 	/* Initialise the sequence number */
 	data->send_seq_num = 0;
@@ -928,11 +930,11 @@ data->send_seq_num = %u\n",
  Turn on signing from this packet onwards. 
 ************************************************************/
 
-void srv_set_signing(const uchar user_session_key[16], const DATA_BLOB response)
+void srv_set_signing(const DATA_BLOB user_session_key, const DATA_BLOB response)
 {
 	struct smb_basic_signing_context *data;
 
-	if (!user_session_key)
+	if (!user_session_key.length)
 		return;
 
 	if (!srv_sign_info.negotiated_smb_signing && !srv_sign_info.mandatory_signing) {
@@ -957,11 +959,13 @@ void srv_set_signing(const uchar user_session_key[16], const DATA_BLOB response)
 
 	srv_sign_info.signing_context = data;
 	
-	data->mac_key = data_blob(NULL, response.length + 16);
+	data->mac_key = data_blob(NULL, response.length + user_session_key.length);
 
-	memcpy(&data->mac_key.data[0], user_session_key, 16);
+	memcpy(&data->mac_key.data[0], user_session_key.data, user_session_key.length);
 	if (response.length)
-		memcpy(&data->mac_key.data[16],response.data, response.length);
+		memcpy(&data->mac_key.data[user_session_key.length],response.data, response.length);
+
+	dump_data_pw("MAC ssession key is:\n", data->mac_key.data, data->mac_key.length);
 
 	/* Initialise the sequence number */
 	data->send_seq_num = 0;

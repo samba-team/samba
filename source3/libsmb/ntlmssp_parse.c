@@ -31,7 +31,7 @@
   format specifiers are:
 
   U = unicode string (input is unix string)
-  a = address (input is BOOL unicode, char *unix_string)
+  a = address (input is char *unix_string)
       (1 byte type, 1 byte length, unicode/ASCII string, all inline)
   A = ASCII string (input is unix string)
   B = data blob (pointer + length)
@@ -49,7 +49,6 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 	uint8 *b;
 	int head_size=0, data_size=0;
 	int head_ofs, data_ofs;
-	BOOL unicode;
 
 	/* first scan the format to work out the header and body size */
 	va_start(ap, format);
@@ -66,14 +65,9 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			data_size += str_ascii_charnum(s);
 			break;
 		case 'a':
-			unicode = va_arg(ap, BOOL);
 			n = va_arg(ap, int);
 			s = va_arg(ap, char *);
-			if (unicode) {
-				data_size += (str_charnum(s) * 2) + 4;
-			} else {
-				data_size += (str_ascii_charnum(s)) + 4;
-			}
+			data_size += (str_charnum(s) * 2) + 4;
 			break;
 		case 'B':
 			b = va_arg(ap, uint8 *);
@@ -124,27 +118,16 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			data_ofs += n;
 			break;
 		case 'a':
-			unicode = va_arg(ap, BOOL);
 			n = va_arg(ap, int);
 			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
 			s = va_arg(ap, char *);
-			if (unicode) {
-				n = str_charnum(s);
-				SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
-				if (0 < n) {
-					push_string(NULL, blob->data+data_ofs, s, n*2,
-						    STR_UNICODE|STR_NOALIGN);
-				}
-				data_ofs += n*2;
-			} else {
-				n = str_ascii_charnum(s);
-				SSVAL(blob->data, data_ofs, n); data_ofs += 2;
-				if (0 < n) {
-					push_string(NULL, blob->data+data_ofs, s, n,
-						    STR_ASCII|STR_NOALIGN);
-				}
-				data_ofs += n;
+			n = str_charnum(s);
+			SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
+			if (0 < n) {
+				push_string(NULL, blob->data+data_ofs, s, n*2,
+					    STR_UNICODE|STR_NOALIGN);
 			}
+			data_ofs += n*2;
 			break;
 
 		case 'B':

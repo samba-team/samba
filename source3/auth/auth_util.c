@@ -900,7 +900,13 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	nt_status = make_server_info_sam(server_info, sampass);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
+		static const char zeros[16];
 		(*server_info)->guest = True;
+		
+		/* annoying, but the Guest really does have a session key, 
+		   and it is all zeros! */
+		(*server_info)->nt_session_key = data_blob(zeros, sizeof(zeros));
+		(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
 	}
 
 	return nt_status;
@@ -992,6 +998,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				auth_serversupplied_info **server_info, 
 				NET_USER_INFO_3 *info3) 
 {
+	static const char zeros[16];
+
 	NTSTATUS nt_status = NT_STATUS_OK;
 	char *found_username;
 	const char *nt_domain;
@@ -1210,10 +1218,20 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	(*server_info)->ptok = token; 
 
 	SAFE_FREE(all_group_SIDs);
-	
-	memcpy((*server_info)->session_key, info3->user_sess_key, sizeof((*server_info)->session_key)/* 16 */);
-	memcpy((*server_info)->first_8_lm_hash, info3->padding, 8);
 
+	/* ensure we are never given NULL session keys */
+	
+	if (memcmp(info3->user_sess_key, zeros, sizeof(zeros)) == 0) {
+		(*server_info)->nt_session_key = data_blob(NULL, 0);
+	} else {
+		(*server_info)->nt_session_key = data_blob(info3->user_sess_key, sizeof(info3->user_sess_key));
+	}
+
+	if (memcmp(info3->padding, zeros, sizeof(zeros)) == 0) {
+		(*server_info)->lm_session_key = data_blob(NULL, 0);
+	} else {
+		(*server_info)->lm_session_key = data_blob(info3->padding, 16);
+	}
 	return NT_STATUS_OK;
 }
 
@@ -1256,6 +1274,8 @@ void free_server_info(auth_serversupplied_info **server_info)
 		delete_nt_token( &(*server_info)->ptok );
 		SAFE_FREE((*server_info)->groups);
 		SAFE_FREE((*server_info)->unix_name);
+		data_blob_free(&(*server_info)->lm_session_key);
+		data_blob_free(&(*server_info)->nt_session_key);
 		ZERO_STRUCT(**server_info);
 	}
 	SAFE_FREE(*server_info);
