@@ -1006,9 +1006,9 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 		}
 	} else {
 		(*return_iplist)->ip.s_addr = allones ? 0xFFFFFFFF : 0;
-		*return_count = 1;
 	}
-    return True;
+	*return_count = 1;
+	return True;
   }
   
   /* Check name cache */
