@@ -50,7 +50,7 @@ static char* Dfs_Crop_Whitespace(char* line)
 
   if(line[0]=='#' || line[0]==';') return NULL;
   
-  for(i=0;i<len && line[i]==' ';i++);
+  for(i=0;i<len && isspace(line[i]);i++);
 
   if(i>=len) return NULL;
   
@@ -168,9 +168,10 @@ static BOOL load_dfsmap(char* fname, int snum)
 
       if(line[0]!='\\')
 	{
+	  /* a new junction definition encountered */
 
-	  /* a junction encountered. add the current junction first */
-	  if(junction)
+	  /* add the current junction if it has any referrals defined */
+	  if(junction && ref_count!=0)
 	    {
 	      junction->referral_count = ref_count;
 	      junction->referral_list = tmp_ref_array;
