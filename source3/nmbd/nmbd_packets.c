@@ -91,43 +91,6 @@ void set_nb_flags(char *buf, uint16 nb_flags)
 }
 
 /***************************************************************************
-Dumps out the browse packet data.
-**************************************************************************/
-
-static void debug_browse_data(char *outbuf, int len)
-{
-  int i,j;
-
-  DEBUG( 4, ( "debug_browse_data():\n" ) );
-  for (i = 0; i < len; i+= 16)
-  {
-    DEBUGADD( 4, ( "%3x char ", i ) );
-
-    for (j = 0; j < 16; j++)
-    {
-      unsigned char x = outbuf[i+j];
-      if (x < 32 || x > 127) 
-        x = '.';
-	    
-      if (i+j >= len)
-        break;
-      DEBUGADD( 4, ( "%c", x ) );
-    }
-
-    DEBUGADD( 4, ( "%*s hex", 16-j, "" ) );
-
-    for (j = 0; j < 16; j++)
-    {
-      if (i+j >= len) 
-        break;
-      DEBUGADD( 4, ( " %02x", (unsigned char)outbuf[i+j] ) );
-    }
-
-    DEBUGADD( 4, ("\n") );
-  }
-}
-
-/***************************************************************************
   Generates the unique transaction identifier
 **************************************************************************/
 
@@ -1041,37 +1004,31 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
   {
     case ANN_HostAnnouncement:
     {
-      debug_browse_data(buf, len);
       process_host_announce(subrec, p, buf+1);
       break;
     }
     case ANN_DomainAnnouncement:
     {
-      debug_browse_data(buf, len);
       process_workgroup_announce(subrec, p, buf+1);
       break;
     }
     case ANN_LocalMasterAnnouncement:
     {
-      debug_browse_data(buf, len);
       process_local_master_announce(subrec, p, buf+1);
       break;
     }
     case ANN_AnnouncementRequest:
     {
-      debug_browse_data(buf, len);
       process_announce_request(subrec, p, buf+1);
       break;
     }
     case ANN_Election:
     {
-      debug_browse_data(buf, len);
       process_election(subrec, p, buf+1);
       break;
     }
     case ANN_GetBackupListReq:
     {
-      debug_browse_data(buf, len);
 
       /* This is one occasion where we change a subnet that is
         given to us. If the packet was sent to WORKGROUP<1b> instead
@@ -1086,7 +1043,6 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
     }
     case ANN_GetBackupListResp:
     {
-      debug_browse_data(buf, len);
       /* We never send ANN_GetBackupListReq so we
          should never get these. */
       DEBUG(0,("process_browse_packet: Discarding GetBackupListResponse \
@@ -1095,7 +1051,6 @@ packet from %s IP %s\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip)));
     }
     case ANN_ResetBrowserState:
     {
-      debug_browse_data(buf, len);
       process_reset_browser(subrec, p, buf+1);
       break;
     }
@@ -1105,7 +1060,6 @@ packet from %s IP %s\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip)));
          on the unicast subnet. */
       subrec = unicast_subnet;
 
-      debug_browse_data(buf, len);
       process_master_browser_announce(subrec, p, buf+1);
       break;
     }
@@ -1114,7 +1068,6 @@ packet from %s IP %s\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip)));
       /* 
        * We don't currently implement this. Log it just in case.
        */
-      debug_browse_data(buf, len);
       DEBUG(10,("process_browse_packet: On subnet %s ignoring browse packet \
 command ANN_BecomeBackup from %s IP %s to %s\n",
             subrec->subnet_name, nmb_namestr(&dgram->source_name),
@@ -1123,7 +1076,6 @@ command ANN_BecomeBackup from %s IP %s to %s\n",
     }
     default:
     {
-      debug_browse_data(buf, len);
       DEBUG(0,("process_browse_packet: On subnet %s ignoring browse packet \
 command code %d from %s IP %s to %s\n", 
             subrec->subnet_name, command, nmb_namestr(&dgram->source_name),
@@ -1162,7 +1114,7 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
   {
     case ANN_HostAnnouncement:
     {
-      debug_browse_data(buf, len);
+      dump_data(4, buf, len);
       process_lm_host_announce(subrec, p, buf+1);
       break;
     }
@@ -1247,10 +1199,11 @@ static void process_dgram(struct packet_struct *p)
 	   nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
 	   inet_ntoa(p->ip), smb_buf(buf),CVAL(buf2,0),len));
 
- 
   if (len <= 0)
     return;
 
+  dump_data(100, buf2, len);
+ 
   /* Datagram packet received for the browser mailslot */
   if (strequal(smb_buf(buf),BROWSE_MAILSLOT))
   {
@@ -1958,7 +1911,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
                     nmb_namestr(&dgram->source_name), inet_ntoa(src_ip)));
   DEBUG(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name), inet_ntoa(dest_ip)));
 
-  debug_browse_data(buf, len);
+  dump_data(4, buf, len);
 
   if(loopback_this_packet)
   {
