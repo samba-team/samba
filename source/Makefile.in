@@ -363,7 +363,8 @@ SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
 
 SWAT_OBJ = $(SWAT_OBJ1) $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
            $(PARAM_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
-	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ)
+	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
+	   $(POPT_LIB_OBJ)
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -707,10 +708,10 @@ bin/wrepld@EXEEXT@: $(WREPL_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(WREPL_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/swat@EXEEXT@: $(SWAT_OBJ) bin/.dummy
+bin/swat@EXEEXT@: $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(LIBS) 
+	  $(AUTHLIBS) $(LIBS)  @BUILD_POPT@
 
 bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
