@@ -380,6 +380,7 @@ main(int argc, char **argv)
 	exit(0);
     }
 
+    pidfile (NULL);
     krb5_openlog (context, "ipropd-master", &log_facility);
     krb5_set_warn_dest(context, log_facility);
 
