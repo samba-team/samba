@@ -249,6 +249,10 @@
 									<xsl:value-of select="@scale"/>
 								</xsl:when>
 
+								<xsl:when test="imagefile/@scale != ''">
+									<xsl:value-of select="imagefile/@scale"/>
+								</xsl:when>
+
 								<xsl:otherwise>
 									<xsl:text>50</xsl:text>
 								</xsl:otherwise>
@@ -262,7 +266,21 @@
 					<xsl:element name="imagedata">
 						<xsl:attribute name="fileref">
 							<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
-						<xsl:attribute name="scale"><xsl:text>50</xsl:text></xsl:attribute>
+						<xsl:attribute name="scale">
+							<xsl:choose>
+								<xsl:when test="@scale != ''">
+									<xsl:value-of select="@scale"/>
+								</xsl:when>
+
+								<xsl:when test="imagefile/@scale != ''">
+									<xsl:value-of select="imagefile/@scale"/>
+								</xsl:when>
+
+								<xsl:otherwise>
+									<xsl:text>50</xsl:text>
+								</xsl:otherwise>
+							</xsl:choose>
+						</xsl:attribute>
 						<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
 					</xsl:element>
 				</xsl:element>
@@ -270,7 +288,21 @@
 					<xsl:element name="imagedata">
 						<xsl:attribute name="fileref">
 							<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
-						<xsl:attribute name="scale"><xsl:text>50</xsl:text></xsl:attribute>
+						<xsl:attribute name="scale">
+							<xsl:choose>
+								<xsl:when test="@scale != ''">
+									<xsl:value-of select="@scale"/>
+								</xsl:when>
+
+								<xsl:when test="imagefile/@scale != ''">
+									<xsl:value-of select="imagefile/@scale"/>
+								</xsl:when>
+
+								<xsl:otherwise>
+									<xsl:text>50</xsl:text>
+								</xsl:otherwise>
+							</xsl:choose>
+						</xsl:attribute>
 						<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
 					</xsl:element>
 				</xsl:element>
