@@ -1,3 +1,11 @@
+1999-10-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/keytab_keyfile.c: make krb5_akf_ops const
+
+	* lib/krb5/keytab_memory.c: make krb5_mkt_ops const
+
+	* lib/krb5/keytab_file.c: make krb5_fkt_ops const
+
 1999-10-01  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/config_file.c: rewritten to allow error messages
