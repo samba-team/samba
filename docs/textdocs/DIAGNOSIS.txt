@@ -202,8 +202,12 @@ TEST 7:
 Run the command "smbclient '\\BIGSERVER\TMP'". You should then be
 prompted for a password. You should use the password of the account
 you are logged into the unix box with. If you want to test with
-another account then add the -U <accountname> option to the command
-line. 
+another account then add the -U <accountname> option to the end of
+the command line.  eg: smbclient //bigserver/tmp -Ujohndoe
+
+Note: It is possible to specify the password along with the username
+as follows:
+	smbclient //bigserver/tmp -Ujohndoe%secret
 
 Once you enter the password you should get the "smb>" prompt. If you
 don't then look at the error message. If it says "invalid network
