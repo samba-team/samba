@@ -544,8 +544,29 @@ static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps,
  * on reading allocate memory for the private member
  ********************************************************************/
 
+#define DM_NUM_OPTIONAL_FIELDS 		8
+
 BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
 {
+	uint32 available_space;		/* size of the device mode left to parse */
+					/* only important on unmarshalling       */
+	int i = 0;
+					
+	struct optional_fields {
+		fstring		name;
+		uint32*		field;
+	} opt_fields[DM_NUM_OPTIONAL_FIELDS] = {
+		{ "icmmethod",		&devmode->icmmethod  	},
+		{ "icmintent",		&devmode->icmintent  	},
+		{ "mediatype",		&devmode->mediatype  	},
+		{ "dithertype",		&devmode->dithertype 	},
+		{ "reserved1",		&devmode->reserved1  	},
+		{ "reserved2",		&devmode->reserved2	},
+		{ "panningwidth",	&devmode->panningwidth	},
+		{ "panningheight",	&devmode->panningheight	}
+	};
+		
+	
 	prs_debug(ps, depth, desc, "spoolss_io_devmode");
 	depth++;
 
@@ -557,8 +578,27 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 
 	if (!prs_uint16uni(True,"devicename", ps, depth, devmode->devicename.buffer, 32))
 		return False;
+	
 	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))
-		return False;
+		return False;	
+		
+	/* Sanity Check - look for unknown specversions, but don't fail if we see one.
+	   Let the size determine that */
+	   
+	switch (devmode->specversion) {
+		case 0x0320:
+		case 0x0400:
+		case 0x0401:
+			break;
+			
+		default:
+			DEBUG(0,("spoolss_io_devmode: Unknown specversion in devicemode [0x%x]\n",
+				devmode->specversion));
+			DEBUG(0,("spoolss_io_devmode: please report to samba-technical@samba.org!\n"));
+			break;
+	}
+			
+	
 	if (!prs_uint16("driverversion",    ps, depth, &devmode->driverversion))
 		return False;
 	if (!prs_uint16("size",             ps, depth, &devmode->size))
@@ -614,45 +654,50 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 		return False;
 	if (!prs_uint32("displayfrequency", ps, depth, &devmode->displayfrequency))
 		return False;
-
+	/* 
+	 * every device mode I've ever seen on the wire at least has up 
+	 * to the displayfrequency field.   --jerry (05-09-2002)
+	 */
+	 
+	/* add uint32's + uint16's + two UNICODE strings */
+	 
+	available_space = devmode->size - (sizeof(uint32)*6 + sizeof(uint16)*18 + sizeof(uint16)*64);
+	
+	/* Sanity check - we only have uint32's left tp parse */
+	
+	if ( available_space && ((available_space % 4) != 0) ) {
+		DEBUG(0,("spoolss_io_devmode: available_space [%d] no in multiple of 4 bytes (size = %d)!\n",
+			available_space, devmode->size));
+		DEBUG(0,("spoolss_io_devmode: please report to samba-technical@samba.org!\n"));
+		return False;
+	}
+	
 	/* 
 	 * Conditional parsing.  Assume that the DeviceMode has been 
 	 * zero'd by the caller. 
 	 */
-	switch(devmode->specversion) {
+
+	while (available_space && (i<DM_NUM_OPTIONAL_FIELDS))
+	{
+		if (!prs_uint32(opt_fields[i].name, ps, depth, opt_fields[i].field))
+			return False;
+		available_space -= sizeof(uint32);
+		i++;
+	}	 
 	
-		/* Used by spooler when issuing OpenPrinter() calls.  NT 3.5x? */
-		case 0x0320:
-			break;
-		
-		/* See the comments on the DEVMODE in the msdn GDI documentation */
-		case 0x0400:
-		case 0x0401:
-			if (!prs_uint32("icmmethod",        ps, depth, &devmode->icmmethod))
-				return False;
-			if (!prs_uint32("icmintent",        ps, depth, &devmode->icmintent))
-				return False;
-			if (!prs_uint32("mediatype",        ps, depth, &devmode->mediatype))
-				return False;
-			if (!prs_uint32("dithertype",       ps, depth, &devmode->dithertype))
-				return False;
-			if (!prs_uint32("reserved1",        ps, depth, &devmode->reserved1))
-				return False;
-			if (!prs_uint32("reserved2",        ps, depth, &devmode->reserved2))
-				return False;
-			if (!prs_uint32("panningwidth",     ps, depth, &devmode->panningwidth))
-				return False;
-			if (!prs_uint32("panningheight",    ps, depth, &devmode->panningheight))
-				return False;
-			break;
-
-		/* log an error if we see something else */
-		default:
-			DEBUG(0,("spoolss_io_devmode: Unknown specversion [0x%x]!\n", devmode->specversion));
-			DEBUG(0,("spoolss_io_devmode: Please report to samba-technical@samba.org\n"));
-			break;
+	/* Sanity Check - we should no available space at this point unless 
+	   MS changes the device mode structure */
+	   
+	if (available_space) {
+		DEBUG(0,("spoolss_io_devmode: I've parsed all I know and there is still stuff left|\n"));
+		DEBUG(0,("spoolss_io_devmode: available_space = [%d], devmode_size = [%d]!\n",
+			available_space, devmode->size));
+		DEBUG(0,("spoolss_io_devmode: please report to samba-technical@samba.org!\n"));
+		return False;
 	}
+	
 
+parse_driverextra:
 	if (devmode->driverextra!=0) {
 		if (UNMARSHALLING(ps)) {
 			devmode->private=(uint8 *)prs_alloc_mem(ps, devmode->driverextra*sizeof(uint8));
