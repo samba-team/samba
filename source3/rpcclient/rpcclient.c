@@ -591,7 +591,6 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	static char 		*opt_authfile=NULL,
 				*opt_username=NULL,
 				*opt_domain=NULL,
-				*opt_configfile=NULL,
  	                        *opt_logfile=NULL,
 	                        *opt_ipaddr=NULL;
 	pstring 		logfile;
@@ -604,15 +603,15 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A', "File containing user credentials"},
-		{"conf",        's', POPT_ARG_STRING, 	&opt_configfile, 's', "Specify an alternative config file"},
+		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A', "File containing user credentials", "AUTHFILE"},
 		{"nopass",	'N', POPT_ARG_NONE,	&got_pass, 'N', "Don't ask for a password"},
-		{"user",        'U', POPT_ARG_STRING,	&opt_username, 'U', "Set the network username"},
-		{"workgroup",   'W', POPT_ARG_STRING, 	&opt_domain, 'W', "Set the domain name for user account"},
-		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon separated cmds"},
-		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout"},
-		{"dest-ip",     'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address"},
+		{"user", 'U', POPT_ARG_STRING,	&opt_username, 'U', "Set the network username", "USER"},
+		{"workgroup", 'W', POPT_ARG_STRING, 	&opt_domain, 'W', "Set the domain name for user account", "DOMAIN"},
+		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon separated cmds", "COMMANDS"},
+		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout", "LOGFILE" },
+		{"dest-ip", 'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address", "IP"},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{ NULL }
 	};
 
@@ -642,10 +641,6 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 				 opt_logfile);
 			lp_set_logfile(logfile);
 			interactive = False;
-			break;
-			
-		case 's':
-			pstrcpy(dyn_CONFIGFILE, opt_configfile);
 			break;
 			
 		case 'U': {
