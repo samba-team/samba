@@ -40,7 +40,7 @@ RCSID("$Id$");
 
 #define CFXSentByAcceptor	(1 << 0)
 #define CFXSealed		(1 << 1)
-#define CTXAcceptorSubkey	(1 << 2)
+#define CFXAcceptorSubkey	(1 << 2)
 
 static krb5_error_code
 wrap_length_cfx(krb5_crypto crypto,
@@ -241,7 +241,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     if ((context_handle->more_flags & LOCAL) == 0)
 	token->Flags |= CFXSentByAcceptor;
     if (context_handle->more_flags & ACCEPTOR_SUBKEY)
-	token->Flags |= CTXAcceptorSubkey;
+	token->Flags |= CFXAcceptorSubkey;
     if (conf_req_flag) {
 	/*
 	 * In Wrap tokens with confidentiality, the EC field is
@@ -443,7 +443,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 
     /* Ignore unknown flags */
     token_flags = token->Flags &
-	(CFXSentByAcceptor | CFXSealed | CTXAcceptorSubkey);
+	(CFXSentByAcceptor | CFXSealed | CFXAcceptorSubkey);
 
     if (token_flags & CFXSentByAcceptor) {
 	if ((context_handle->more_flags & LOCAL) == 0)
@@ -451,10 +451,10 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     }
 
     if (context_handle->more_flags & ACCEPTOR_SUBKEY) {
-	if ((token_flags & CTXAcceptorSubkey) == 0)
+	if ((token_flags & CFXAcceptorSubkey) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
     } else {
-	if (token_flags & CTXAcceptorSubkey)
+	if (token_flags & CFXAcceptorSubkey)
 	    return GSS_S_DEFECTIVE_TOKEN;
     }
 
@@ -660,7 +660,7 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
     if ((context_handle->more_flags & LOCAL) == 0)
 	token->Flags |= CFXSentByAcceptor;
     if (context_handle->more_flags & ACCEPTOR_SUBKEY)
-	token->Flags |= CTXAcceptorSubkey;
+	token->Flags |= CFXAcceptorSubkey;
     memset(token->Filler, 0xFF, 5);
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
@@ -744,17 +744,17 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
     }
 
     /* Ignore unknown flags */
-    token_flags = token->Flags & (CFXSentByAcceptor | CTXAcceptorSubkey);
+    token_flags = token->Flags & (CFXSentByAcceptor | CFXAcceptorSubkey);
 
     if (token_flags & CFXSentByAcceptor) {
 	if ((context_handle->more_flags & LOCAL) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
     }
     if (context_handle->more_flags & ACCEPTOR_SUBKEY) {
-	if ((token_flags & CTXAcceptorSubkey) == 0)
+	if ((token_flags & CFXAcceptorSubkey) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
     } else {
-	if (token_flags & CTXAcceptorSubkey)
+	if (token_flags & CFXAcceptorSubkey)
 	    return GSS_S_DEFECTIVE_TOKEN;
     }
 
