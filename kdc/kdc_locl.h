@@ -97,4 +97,6 @@ void loop (krb5_context);
 
 void kdc_log(int, const char *fmt, ...);
 
+#define ALLOC(X) ((X) = malloc(sizeof(*(X))))
+
 #endif /* __KDC_LOCL_H__ */
