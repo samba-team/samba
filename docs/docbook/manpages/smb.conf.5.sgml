@@ -297,7 +297,7 @@
 </refsect1>
 
 <refsect1>
-	<title>paraMETRS</title>
+	<title>PARAMETERS</title>
 
 	<para>parameters define the specific attributes of sections.</para>
 
@@ -643,7 +643,8 @@
 		<listitem><para><parameter>max disk size</parameter> </para></listitem>
 		<listitem><para><parameter>max log size</parameter> </para></listitem>
 		<listitem><para><parameter>max mux</parameter> </para></listitem>
-		<listitem><para><parameter>max open files</parameter> </para></listitem>
+		<listitem><para><parameter>max open files</parameter></para></listitem>
+		<listitem><para><parameter>max smbd processes</parameter> </para></listitem>
 		<listitem><para><parameter>max ttl</parameter> </para></listitem>
 		<listitem><para><parameter>max wins ttl</parameter> </para></listitem>
 		<listitem><para><parameter>max xmit</parameter> </para></listitem>
@@ -808,6 +809,7 @@
 		<listitem><para><parameter>map hidden</parameter></para></listitem>
 		<listitem><para><parameter>map system</parameter> </para></listitem>
 		<listitem><para><parameter>max connections</parameter> </para></listitem>
+		<listitem><para><parameter>max print jobs</parameter></para></listitem>
 		<listitem><para><parameter>min print space</parameter> </para></listitem>
 		<listitem><para><parameter>only guest</parameter> </para></listitem>
 		<listitem><para><parameter>only user</parameter> </para></listitem>
@@ -3842,6 +3844,41 @@
 		<para>Default: <command>max open files = 10000</command></para>
 		</listitem>
 		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="MAXPRINTJOBS">max print jobs (S)</term>
+		<listitem><para>This parameter limits the maximum number of 
+		jobs allowable in a Samba printer queue at any given moment.
+		If this number is exceeded, <ulink url="smbd.8.html"><command>
+		smbd(8)</command></ulink> will remote "Out of Space" to the client.
+		</para>
+
+		<para>Default: <command>max print jobs = 1000</command></para>
+		<para>Example: <command>max print jobs = 5000</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="MAXSMBDPROCESSES">max smbd processes (G)</term>
+		<listitem><para>This parameter limits the maximum number of 
+		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>
+		processes concurrently running on a system and is intended
+		as a stop gap to prevent degrading service to clients in the event
+		that the server has insufficient resources to handle more than this
+		number of connections.  Remember that under normal operating
+		conditions, each user will have an smbd associated with him or her
+		to handle connections to all shares from a given host.
+		</para>
+
+		<para>Default: <command>max smbd processes = 0   ## no limit</command></para>
+		<para>Example: <command>max smbd processes = 1000</command></para>
+		</listitem>
+		</varlistentry>
+
 
 
 
