@@ -548,6 +548,18 @@ if test x"$samba_cv_have_longlong" = x"yes"; then
     AC_DEFINE(HAVE_LONGLONG)
 fi
 
+#
+# Check if the compiler supports the LL prefix on long long integers.
+# AIX needs this.
+
+AC_CACHE_CHECK([for LL suffix on long long integers],samba_cv_compiler_supports_ll, [
+    AC_TRY_COMPILE([#include <stdio.h>],[long long i = 0x8000000000LL],
+	samba_cv_compiler_supports_ll=yes,samba_cv_compiler_supports_ll=no)])
+if test x"$samba_cv_compiler_supports_ll" = x"yes"; then
+   AC_DEFINE(COMPILER_SUPPORTS_LL)
+fi
+
+  
 AC_CACHE_CHECK([for 64 bit off_t],samba_cv_SIZEOF_OFF_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
