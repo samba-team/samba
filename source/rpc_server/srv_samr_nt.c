@@ -2719,7 +2719,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 	fstring alias_sid_str;
 	DOM_SID temp_sid;
 
-	SAM_ACCOUNT *sam_user;
+	SAM_ACCOUNT *sam_user = NULL;
 	BOOL check;
 
 	/* find the policy handle.  open a policy on it. */
@@ -2815,7 +2815,7 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	uint32 *rid=NULL;
 	uint32 *attr=NULL;
 
-	SAM_ACCOUNT *sam_user;
+	SAM_ACCOUNT *sam_user = NULL;
 	BOOL check;
 
 
@@ -2904,7 +2904,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	uint32 rid;
 	GROUP_MAP map;
 	NTSTATUS ret;
-	SAM_ACCOUNT *sam_user;
+	SAM_ACCOUNT *sam_user = NULL;
 	BOOL check;
 
 	/* Find the policy handle. Open a policy on it. */

@@ -92,7 +92,7 @@ NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
 	if (*user != NULL) {
 		DEBUG(0,("pdb_init_sam: SAM_ACCOUNT was non NULL\n"));
 #if 0
-		smb_panic("NULL pointer passed to pdb_init_sam\n");
+		smb_panic("non-NULL pointer passed to pdb_init_sam\n");
 #endif
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -750,7 +750,7 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	extern DOM_SID global_sam_sid;
 	struct passwd *pass;
-	SAM_ACCOUNT *sam_user;
+	SAM_ACCOUNT *sam_user = NULL;
 
 	sid_copy(psid, &global_sam_sid);
 
@@ -786,7 +786,7 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	uint32 rid;
 	fstring str;
 	struct passwd *pass;
-	SAM_ACCOUNT *sam_user;
+	SAM_ACCOUNT *sam_user = NULL;
 
 	*name_type = SID_NAME_UNKNOWN;
 
