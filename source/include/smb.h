@@ -1079,20 +1079,8 @@ typedef struct user_struct
 {
 	struct user_struct *next, *prev;
 	uint16 vuid; /* Tag for this entry. */
-	uid_t uid; /* uid of a validated user */
-	gid_t gid; /* gid of a validated user */
 
-	userdom_struct user;
-	char *homedir;
-	char *unix_homedir;
-	char *logon_script;
-	
 	BOOL guest;
-
-	/* following groups stuff added by ih */
-	/* This groups info is needed for when we become_user() for this uid */
-	int n_groups;
-	gid_t *groups;
 
 	NT_USER_TOKEN *nt_user_token;
 
