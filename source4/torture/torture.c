@@ -3607,9 +3607,6 @@ BOOL torture_chkpath_test(int dummy)
 	return ret;
 }
 
-
-
-
 static BOOL run_dirtest1(int dummy)
 {
 	int i;
@@ -3766,6 +3763,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 	volatile BOOL *child_status_out;
 	int synccount;
 	int tries = 8;
+	double start_time_limit = 10 + (nprocs * 0.5);
 
 	synccount = 0;
 
@@ -3805,12 +3803,18 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 					printf("pid %d failed to start\n", (int)getpid());
 					_exit(1);
 				}
-				msleep(10);	
+				msleep(100);	
 			}
 
 			child_status[i] = getpid();
 
-			while (child_status[i] && end_timer() < 5) msleep(2);
+			while (child_status[i] && end_timer() < start_time_limit) msleep(2);
+
+			if (child_status[i]) {
+				printf("Child %d failed to start!\n", i);
+				child_status_out[i] = 1;
+				_exit(1);
+			}
 
 			child_status_out[i] = fn(i);
 			_exit(0);
@@ -3823,14 +3827,16 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 			if (child_status[i]) synccount++;
 		}
 		if (synccount == nprocs) break;
-		msleep(10);
-	} while (end_timer() < 30);
+		msleep(100);
+	} while (end_timer() < start_time_limit);
 
 	if (synccount != nprocs) {
 		printf("FAILED TO START %d CLIENTS (started %d)\n", nprocs, synccount);
 		*result = False;
 		return end_timer();
 	}
+
+	printf("Starting %d clients\n", nprocs);
 
 	/* start the client load */
 	start_timer();
@@ -3842,7 +3848,11 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 	printf("%d clients started\n", nprocs);
 
 	for (i=0;i<nprocs;i++) {
-		while (waitpid(0, &status, 0) == -1 && errno == EINTR) /* noop */ ;
+		int ret;
+		while ((ret=waitpid(0, &status, 0)) == -1 && errno == EINTR) /* noop */ ;
+		if (ret == -1 || WEXITSTATUS(status) != 0) {
+			*result = False;
+		}
 	}
 
 	printf("\n");
