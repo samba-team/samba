@@ -708,7 +708,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /* If name ends in $ then I think it's asking about whether a */
   /* computer with that name (minus the $) has access. For now */
   /* say yes to everything ending in $. */
-  if ((user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24))
+  if (*user && (user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24))
   {
     return session_trust_account(conn, inbuf, outbuf, user, 
                                  smb_apasswd, smb_apasslen,

@@ -80,6 +80,7 @@ static BOOL shm_stop_share_mode_mgmt(void)
 static BOOL shm_lock_share_entry(connection_struct *conn,
 				 SMB_DEV_T dev, SMB_INO_T inode, int *ptok)
 {
+	*ptok = 0; /* For purify... */
 	return shmops->lock_hash_entry(HASH_ENTRY(dev, inode));
 }
 

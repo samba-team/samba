@@ -196,16 +196,16 @@ do a server net share enum
 ****************************************************************************/
 BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 			char *server_name, 
-			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
+			uint32 switch_value, SRV_R_NET_SHARE_ENUM *r_o,
 			uint32 preferred_len,
 			ENUM_HND *hnd)
 {
 	prs_struct data; 
 	prs_struct rdata;
 	SRV_Q_NET_SHARE_ENUM q_o;
-	SRV_R_NET_SHARE_ENUM r_o;
+	SRV_SHARE_INFO_CTR ctr;
 
-	if (server_name == NULL || ctr == NULL || preferred_len == 0)
+	if (server_name == NULL || preferred_len == 0)
 		return False;
 
 	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
@@ -218,14 +218,16 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 				
 	q_o.share_level = switch_value;
 
-	ctr->switch_value = switch_value;
-	ctr->ptr_share_ctr = 1;
-	ctr->share.info1.num_entries_read = 0;
-	ctr->share.info1.ptr_share_info    = 1;
+	memset(&ctr, '\0', sizeof(SRV_SHARE_INFO_CTR));
+
+	ctr.switch_value = switch_value;
+	ctr.ptr_share_ctr = 1;
+	ctr.share.info1.num_entries_read = 0;
+	ctr.share.info1.ptr_share_info    = 1;
 
 	/* store the parameters */
 	init_srv_q_net_share_enum(&q_o, server_name, 
-	                         switch_value, ctr,
+	                         switch_value, &ctr,
 	                         preferred_len,
 	                         hnd);
 
@@ -245,25 +247,25 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 
 	prs_mem_free(&data);
 
-	r_o.ctr = ctr;
-
-	if(!srv_io_r_net_share_enum("", &r_o, &rdata, 0)) {
+	if(!srv_io_r_net_share_enum("", r_o, &rdata, 0)) {
 		prs_mem_free(&rdata);
 		return False;
 	}
 		
-	if (r_o.status != 0) {
+	if (r_o->status != 0) {
 		/* report error code */
-		DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o->status)));
 		prs_mem_free(&rdata);
+		free_srv_r_net_share_enum(r_o);
 		return False;
 	}
 
-	if (r_o.ctr->switch_value != switch_value) {
+	if (r_o->ctr.switch_value != switch_value) {
 		/* different switch levels.  oops. */
 		DEBUG(0,("SRV_R_NET_SRV_SHARE_ENUM: info class %d does not match request %d\n",
-			r_o.ctr->switch_value, switch_value));
+			r_o->ctr.switch_value, switch_value));
 		prs_mem_free(&rdata);
+		free_srv_r_net_share_enum(r_o);
 		return False;
 	}
 

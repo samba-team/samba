@@ -1432,7 +1432,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 			ENUM_HND *hnd);
 BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 			char *server_name, 
-			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
+			uint32 switch_value, SRV_R_NET_SHARE_ENUM *r_o,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
 BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
@@ -1996,6 +1996,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 
 void init_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark);
 void init_srv_share_info1(SH_INFO_1 *sh1, char *net_name, uint32 type, char *remark);
+void free_srv_share_info_1(SRV_SHARE_INFO_1 *sh1);
 void init_srv_share_info2_str(SH_INFO_2_STR *sh2,
 				char *net_name, char *remark,
 				char *path, char *passwd);
@@ -2003,6 +2004,10 @@ void init_srv_share_info2(SH_INFO_2 *sh2,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *passwd);
+void free_srv_share_info_2(SRV_SHARE_INFO_2 *sh2);
+void free_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr);
+void free_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n);
+void free_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n);
 void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
 				char *srv_name, 
 				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,

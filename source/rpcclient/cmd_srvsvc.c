@@ -162,13 +162,11 @@ void cmd_srv_enum_shares(struct client_info *info)
 {
 	fstring dest_srv;
 	fstring tmp;
-	SRV_SHARE_INFO_CTR ctr;
+	SRV_R_NET_SHARE_ENUM r_o;
 	ENUM_HND hnd;
 	uint32 info_level = 1;
 
 	BOOL res = True;
-
-	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
@@ -193,13 +191,14 @@ void cmd_srv_enum_shares(struct client_info *info)
 	/* enumerate shares_files on server */
 	res = res ? do_srv_net_srv_share_enum(smb_cli,
 				dest_srv, 
-	            info_level, &ctr, 0xffffffff, &hnd) : False;
+	            info_level, &r_o, 0xffffffff, &hnd) : False;
 
 	if (res)
 	{
-		display_srv_share_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
-		display_srv_share_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_srv_share_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_HEADER   , &r_o.ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_ENUMERATE, &r_o.ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_FOOTER   , &r_o.ctr);
+		free_srv_r_net_share_enum(&r_o);
 	}
 
 	/* close the session */

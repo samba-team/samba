@@ -247,10 +247,6 @@ typedef struct r_net_conn_enum_info
 
 } SRV_R_NET_CONN_ENUM;
 
-/* oops - this is going to take up a *massive* amount of stack. */
-/* the UNISTR2s already have 1024 uint16 chars in them... */
-#define MAX_SHARE_ENTRIES 200
-
 /* SH_INFO_1 (pointers to level 1 share info strings) */
 typedef struct ptr_share_info1
 {
@@ -275,8 +271,8 @@ typedef struct share_info_1_info
 	uint32 ptr_share_info;                       /* Buffer */
 	uint32 num_entries_read2;                    /* EntriesRead */
 
-	SH_INFO_1     info_1    [MAX_SHARE_ENTRIES]; /* share entry pointers */
-	SH_INFO_1_STR info_1_str[MAX_SHARE_ENTRIES]; /* share entry strings */
+	SH_INFO_1 *info_1; /* share entry pointers */
+	SH_INFO_1_STR *info_1_str; /* share entry strings */
 
 } SRV_SHARE_INFO_1;
 
@@ -311,8 +307,8 @@ typedef struct share_info_2_info
 	uint32 ptr_share_info;                       /* Buffer */
 	uint32 num_entries_read2;                    /* EntriesRead */
 
-	SH_INFO_2     info_2    [MAX_SHARE_ENTRIES]; /* share entry pointers */
-	SH_INFO_2_STR info_2_str[MAX_SHARE_ENTRIES]; /* share entry strings */
+	SH_INFO_2 *info_2; /* share entry pointers */
+	SH_INFO_2_STR *info_2_str; /* share entry strings */
 
 } SRV_SHARE_INFO_2;
 
@@ -321,12 +317,10 @@ typedef struct srv_share_info_1_info
 {
 	uint32 switch_value;         /* switch value */
 	uint32 ptr_share_ctr;       /* pointer to share info union */
-	union
-    {
+	union {
 		SRV_SHARE_INFO_1 info1; /* share info level 1 */
 		SRV_SHARE_INFO_2 info2; /* share info level 2 */
-
-    } share;
+	} share;
 
 } SRV_SHARE_INFO_CTR;
 
@@ -338,7 +332,7 @@ typedef struct q_net_share_enum_info
 
 	uint32 share_level;          /* share level */
 
-	SRV_SHARE_INFO_CTR *ctr;     /* share info container */
+	SRV_SHARE_INFO_CTR ctr;     /* share info container */
 
 	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
 
@@ -351,7 +345,7 @@ typedef struct q_net_share_enum_info
 typedef struct r_net_share_enum_info
 {
 	uint32 share_level;          /* share level */
-	SRV_SHARE_INFO_CTR *ctr;     /* share info container */
+	SRV_SHARE_INFO_CTR ctr;     /* share info container */
 
 	uint32 total_entries;                    /* total number of entries */
 	ENUM_HND enum_hnd;
@@ -573,4 +567,3 @@ typedef struct r_net_remote_tod
 
 
 #endif /* _RPC_SRVSVC_H */
-

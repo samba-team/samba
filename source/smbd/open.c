@@ -773,7 +773,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   BOOL file_existed = dos_file_exist(fname,&sbuf);
   BOOL share_locked = False;
   BOOL fcbopen = False;
-  int token;
+  int token = 0;
   SMB_DEV_T dev = 0;
   SMB_INO_T inode = 0;
   int num_share_modes = 0;

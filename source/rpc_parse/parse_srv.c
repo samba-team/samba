@@ -6,6 +6,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Jeremy Allison		    1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -101,6 +102,23 @@ static BOOL srv_io_share_info1(char *desc, SH_INFO_1 *sh1, prs_struct *ps, int d
 }
 
 /*******************************************************************
+ Free a share info level 1 structure.
+ ********************************************************************/
+
+void free_srv_share_info_1(SRV_SHARE_INFO_1 *sh1)
+{
+	if(!sh1)
+		return;
+	if(sh1->info_1)
+		free(sh1->info_1);
+	sh1->info_1 = NULL;
+	if(sh1->info_1_str)
+		free(sh1->info_1_str);
+	sh1->info_1_str = NULL;
+	memset(sh1, '\0', sizeof(SRV_SHARE_INFO_1) );
+}
+
+/*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
 
@@ -123,14 +141,34 @@ static BOOL srv_io_srv_share_info_1(char *desc, SRV_SHARE_INFO_1 *ctr, prs_struc
 	if (ctr->ptr_share_info != 0) {
 		int i;
 		int num_entries = ctr->num_entries_read;
-		if (num_entries > MAX_SHARE_ENTRIES) {
-			num_entries = MAX_SHARE_ENTRIES; /* report this! */
+
+		/*
+		 * Allocate the num_entries arrays on demand if reading.
+		 */
+
+		if(UNMARSHALLING(ps) && ctr->info_1 == NULL) {
+			if(!(ctr->info_1 = malloc(num_entries * sizeof(SH_INFO_1)))) {
+				DEBUG(0,("srv_io_srv_share_info_1: malloc failed for %d SH_INFO_1.\n",
+					num_entries ));
+				return False;
+			}
+			memset(ctr->info_1, '\0', num_entries * sizeof(SH_INFO_1) );
+		}
+
+		if(UNMARSHALLING(ps) && ctr->info_1_str == NULL) {
+			if(!(ctr->info_1_str = malloc(num_entries * sizeof(SH_INFO_1_STR)))) {
+				DEBUG(0,("srv_io_srv_share_info_1: malloc failed for %d SH_INFO_1_STR.\n",
+					num_entries ));
+				free(ctr->info_1);
+				ctr->info_1 = NULL;
+				return False;
+			}
+			memset(ctr->info_1_str, '\0', num_entries * sizeof(SH_INFO_1_STR) );
 		}
 
 		if(!prs_uint32("num_entries_read2", ps, depth, &ctr->num_entries_read2))
+		if(!prs_uint32("num_entries_read2", ps, depth, &ctr->num_entries_read2))
 			return False;
-
-		SMB_ASSERT_ARRAY(ctr->info_1, num_entries);
 
 		for (i = 0; i < num_entries; i++) {
 			if(!srv_io_share_info1("", &ctr->info_1[i], ps, depth))
@@ -144,6 +182,9 @@ static BOOL srv_io_srv_share_info_1(char *desc, SRV_SHARE_INFO_1 *ctr, prs_struc
 
 		if(!prs_align(ps))
 			return False;
+	} else {
+		if(UNMARSHALLING(ps))
+			memset(ctr, '\0', sizeof(SRV_SHARE_INFO_1));
 	}
 
 	return True;
@@ -160,9 +201,9 @@ void init_srv_share_info2_str(SH_INFO_2_STR *sh2,
 	DEBUG(5,("init_srv_share_info2_str\n"));
 
 	init_unistr2(&sh2->uni_netname, net_name, strlen(net_name)+1);
-	init_unistr2(&(sh2->uni_remark), remark, strlen(remark)+1);
-	init_unistr2(&(sh2->uni_path), path, strlen(path)+1);
-	init_unistr2(&(sh2->uni_passwd), passwd, strlen(passwd)+1);
+	init_unistr2(&sh2->uni_remark, remark, strlen(remark)+1);
+	init_unistr2(&sh2->uni_path, path, strlen(path)+1);
+	init_unistr2(&sh2->uni_passwd, passwd, strlen(passwd)+1);
 }
 
 /*******************************************************************
@@ -212,6 +253,23 @@ void init_srv_share_info2(SH_INFO_2 *sh2,
 	sh2->type        = type;
 	sh2->ptr_path    = (path != NULL) ? 1 : 0;
 	sh2->ptr_passwd  = (passwd != NULL) ? 1 : 0;
+}
+
+/*******************************************************************
+ Free a share info level 2 structure.
+ ********************************************************************/
+
+void free_srv_share_info_2(SRV_SHARE_INFO_2 *sh2)
+{
+	if(!sh2)
+		return;
+	if(sh2->info_2)
+		free(sh2->info_2);
+	sh2->info_2 = NULL;
+	if(sh2->info_2_str)
+		free(sh2->info_2_str);
+	sh2->info_2_str = NULL;
+	memset(sh2, '\0', sizeof(SRV_SHARE_INFO_2) );
 }
 
 /*******************************************************************
@@ -273,14 +331,32 @@ static BOOL srv_io_srv_share_info_2(char *desc, SRV_SHARE_INFO_2 *ctr, prs_struc
 		int i;
 		int num_entries = ctr->num_entries_read;
 
-		if (num_entries > MAX_SHARE_ENTRIES) {
-			num_entries = MAX_SHARE_ENTRIES; /* report this! */
+		/*
+		 * Allocate the num_entries arrays on demand if reading.
+		 */
+
+		if(UNMARSHALLING(ps) && ctr->info_2 == NULL) {
+			if(!(ctr->info_2 = malloc(num_entries * sizeof(SH_INFO_2)))) {
+				DEBUG(0,("srv_io_srv_share_info_2: malloc failed for %d SH_INFO_2.\n",
+					num_entries ));
+				return False;
+			}
+			memset(ctr->info_2, '\0', num_entries * sizeof(SH_INFO_2) );
+		}
+
+		if(UNMARSHALLING(ps) && ctr->info_2_str == NULL) {
+			if(!(ctr->info_2_str = malloc(num_entries * sizeof(SH_INFO_2_STR)))) {
+				DEBUG(0,("srv_io_srv_share_info_2: malloc failed for %d SH_INFO_2_STR.\n",
+					num_entries ));
+				free(ctr->info_2);
+				ctr->info_2 = NULL;
+				return False;
+			}
+			memset(ctr->info_2_str, '\0', num_entries * sizeof(SH_INFO_2_STR) );
 		}
 
 		if(!prs_uint32("num_entries_read2", ps, depth, &ctr->num_entries_read2))
 			return False;
-
-		SMB_ASSERT_ARRAY(ctr->info_2, num_entries);
 
 		for (i = 0; i < num_entries; i++) {
 			if(!srv_io_share_info2("", &ctr->info_2[i], ps, depth))
@@ -294,6 +370,9 @@ static BOOL srv_io_srv_share_info_2(char *desc, SRV_SHARE_INFO_2 *ctr, prs_struc
 
 		if(!prs_align(ps))
 			return False;
+	} else {
+		if(UNMARSHALLING(ps))
+			memset(ctr, '\0', sizeof(SRV_SHARE_INFO_2));
 	}
 
 	return True;
@@ -334,9 +413,55 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 			         tab_depth(depth), ctr->switch_value));
 			break;
 		}
+	} else {
+		if(UNMARSHALLING(ps))
+			memset(ctr, '\0', sizeof(SRV_SHARE_INFO_CTR));
 	}
 
 	return True;
+}
+
+/*******************************************************************
+ Frees a SRV_SHARE_INFO_CTR structure.
+********************************************************************/
+
+void free_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr)
+{
+	if(!ctr)
+		return;
+	switch (ctr->switch_value) {
+	case 1:
+		free_srv_share_info_1(&ctr->share.info1);
+		break;
+	case 2:
+		free_srv_share_info_2(&ctr->share.info2);
+		break;
+	}
+	memset(ctr, '\0', sizeof(SRV_SHARE_INFO_CTR));
+}
+
+/*******************************************************************
+ Frees a SRV_Q_NET_SHARE_ENUM structure.
+********************************************************************/
+
+void free_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n)
+{
+	if(!q_n)
+		return;
+	free_srv_share_info_ctr(&q_n->ctr);
+	memset(q_n, '\0', sizeof(SRV_Q_NET_SHARE_ENUM));
+}
+
+/*******************************************************************
+ Frees a SRV_R_NET_SHARE_ENUM structure.
+********************************************************************/
+
+void free_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n)
+{
+	if(!r_n)
+		return;
+	free_srv_share_info_ctr(&r_n->ctr);
+	memset(r_n, '\0', sizeof(SRV_R_NET_SHARE_ENUM));
 }
 
 /*******************************************************************
@@ -349,7 +474,7 @@ void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 				uint32 preferred_len,
 				ENUM_HND *hnd)
 {
-	q_n->ctr = ctr;
+	q_n->ctr = *ctr;
 
 	DEBUG(5,("init_q_net_share_enum\n"));
 
@@ -388,8 +513,11 @@ BOOL srv_io_q_net_share_enum(char *desc, SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *
 		return False;
 
 	if (q_n->share_level != -1) {
-		if(!srv_io_srv_share_ctr("share_ctr", q_n->ctr, ps, depth))
+		if(!srv_io_srv_share_ctr("share_ctr", &q_n->ctr, ps, depth))
 			return False;
+	} else {
+		if(UNMARSHALLING(ps))
+			memset(&q_n->ctr, '\0', sizeof(SRV_SHARE_INFO_CTR));
 	}
 
 	if(!prs_uint32("preferred_len", ps, depth, &q_n->preferred_len))
@@ -420,8 +548,8 @@ BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *
 		return False;
 
 	if (r_n->share_level != 0) {
-		if(!srv_io_srv_share_ctr("share_ctr", r_n->ctr, ps, depth))
-		return False;
+		if(!srv_io_srv_share_ctr("share_ctr", &r_n->ctr, ps, depth))
+			return False;
 	}
 
 	if(!prs_uint32("total_entries", ps, depth, &r_n->total_entries))

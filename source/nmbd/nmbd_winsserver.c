@@ -715,7 +715,7 @@ to register name %s. Name already exists in WINS with source type %d.\n",
   if(!registering_group_name && (question->name_type == 0x1d))
   {
     DEBUG(3,("wins_process_name_registration_request: Ignoring request \
-to register name %s from IP %s.", nmb_namestr(question), inet_ntoa(p->ip) ));
+to register name %s from IP %s.\n", nmb_namestr(question), inet_ntoa(p->ip) ));
     send_wins_name_registration_response(0, ttl, p);
     return;
   }

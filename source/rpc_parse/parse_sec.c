@@ -201,7 +201,7 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 
 	psa = *ppsa;
 
-	if(ps->io && psa == NULL)
+	if(UNMARSHALLING(ps) && psa == NULL)
 	{
 		/*
 		 * This is a read and we must allocate the stuct to read into.
@@ -229,7 +229,7 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	if(!prs_uint32("num_aces ", ps, depth, &psa->num_aces))
 		return False;
 
-	if (ps->io && psa->num_aces != 0)
+	if (UNMARSHALLING(ps) && psa->num_aces != 0)
 	{
 		/* reading */
 		if((psa->ace_list = malloc(sizeof(psa->ace_list[0]) * psa->num_aces)) == NULL)
@@ -414,7 +414,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	psd = *ppsd;
 
-	if(ps->io && psd == NULL)
+	if(UNMARSHALLING(ps) && psd == NULL)
 	{
 		if((psd = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL)
 			return False;
@@ -477,7 +477,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if (psd->off_owner_sid != 0)
 	{
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
 			if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
 				return False;
@@ -497,7 +497,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if (psd->off_grp_sid != 0)
 	{
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
 			/* reading */
 			if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
@@ -593,7 +593,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 
 	psdb = *ppsdb;
 
-	if (ps->io && psdb == NULL)
+	if (UNMARSHALLING(ps) && psdb == NULL)
 	{
 		if((psdb = (SEC_DESC_BUF *)malloc(sizeof(SEC_DESC_BUF))) == NULL)
 			return False;
@@ -619,7 +619,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 	old_offset = prs_offset(ps);
 
 	/* reading, length is non-zero; writing, descriptor is non-NULL */
-	if ((psdb->len != 0 || (!ps->io)) && psdb->sec != NULL)
+	if ((psdb->len != 0 || MARSHALLING(ps)) && psdb->sec != NULL)
 	{
 		if(!sec_io_desc("sec   ", &psdb->sec, ps, depth))
 			return False;
