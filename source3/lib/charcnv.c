@@ -209,8 +209,7 @@ convert:
 	}
 	
 	destlen = destlen - o_len;
-	*dest = (char *)realloc(ob,destlen);
-	*dest = (char *)realloc(outbuf,destlen);
+	*dest = (char *)Realloc(ob,destlen);
 	if (!*dest) {
 		DEBUG(0, ("convert_string_allocate: out of memory!\n"));
 		SAFE_FREE(ob);
