@@ -16,8 +16,8 @@ for d in $BINDIR; do
  fi
 done
 
-cp $SRCDIR/smbtar $BINDIR
-cp $SRCDIR/addtosmbpass $BINDIR
+cp ${SRCDIR}smbtar $BINDIR
+cp ${SRCDIR}addtosmbpass $BINDIR
 echo Setting permissions on scripts
 chmod $INSTALLPERMS $BINDIR/smbtar
 chmod $INSTALLPERMS $BINDIR/addtosmbpass

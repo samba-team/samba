@@ -29,6 +29,7 @@
 
 #include "includes.h"
 
+extern int DEBUGLEVEL;
 
 #ifdef LINUX
 
@@ -50,7 +51,7 @@ If you didn't make the symlink to the quota package, too bad :(
 */
 #include "quota/quotactl.c"
 #include "quota/hasquota.c"
-static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 {
   uid_t euser_id;
   struct dqblk D;
@@ -139,7 +140,7 @@ static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 /****************************************************************************
 try to get the disk space from disk quotas (CRAY VERSION)
 ****************************************************************************/
-static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 {
   struct mntent *mnt;
   FILE *fd;
@@ -233,48 +234,119 @@ static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 }
 
 
-#elif defined(SUNOS5)
+#elif defined(SUNOS5) || defined(SUNOS4)
 
-#include <devnm.h>
 #include <fcntl.h>
+#if defined(SUNOS5)
 #include <sys/fs/ufs_quota.h>
+#include <sys/mnttab.h>
+#else /* defined(SUNOS4) */
+#include <ufs/quota.h>
+#include <mntent.h>
+#endif
 
 /****************************************************************************
 try to get the disk space from disk quotas (solaris 2 version)
 ****************************************************************************/
 /* Quota code by Peter Urbanec (amiga@cse.unsw.edu.au) */
-static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 {
   uid_t user_id, euser_id;
-  int r;
+  int ret;
   struct dqblk D;
+#if defined(SUNOS5)
   struct quotctl command;
   int file;
-  int ret;
- 
-  if((file=open(path, O_RDONLY))<0) return(False);
+  struct mnttab mnt;
+  static char name[MNT_LINE_MAX] ;
+#else
+  struct mntent *mnt;
+  static char name[MNTMAXSTR] ;
+#endif
+  FILE *fd;
+  struct stat sbuf;
+  dev_t devno ;
+  static dev_t devno_cached = 0 ;
+  int found ;
+  
+  if ( stat(path,&sbuf) == -1 )
+    return(False) ;
+  
+  devno = sbuf.st_dev ;
+DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%o\n", path,devno));
+  if ( devno != devno_cached ) {
+    devno_cached = devno ;
+#if defined(SUNOS5)
+    if ((fd = fopen(MNTTAB, "r")) == NULL)
+      return(False) ;
+    
+    found = False ;
+    while (getmntent(fd, &mnt) == 0) {
+      if ( stat(mnt.mnt_mountp,&sbuf) == -1 )
+	continue ;
+DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", mnt.mnt_mountp,sbuf.st_dev));
+      if (sbuf.st_dev == devno) {
+	found = True ;
+	break ;
+      }
+    }
+    
+    strcpy(name,mnt.mnt_mountp) ;
+    strcat(name,"/quotas") ;
+    fclose(fd) ;
+#else
+    if ((fd = setmntent(MOUNTED, "r")) == NULL)
+      return(False) ;
+    
+    found = False ;
+    while ((mnt = getmntent(fd)) != NULL) {
+      if ( stat(mnt->mnt_dir,&sbuf) == -1 )
+	continue ;
+DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", mnt->mnt_dir,sbuf.st_dev));
+      if (sbuf.st_dev == devno) {
+	found = True ;
+	break ;
+      }
+    }
+    
+    strcpy(name,mnt->mnt_fsname) ;
+    endmntent(fd) ;
+#endif
+    
+    if ( ! found )
+      return(False) ;
+  }
 
   euser_id = geteuid();
   user_id = getuid();
 
-  command.op = Q_GETQUOTA;
-  command.uid = euser_id;
-  command.addr = (caddr_t) &D;
- 
   setuid(0);  /* Solaris seems to want to give info only to super-user */
   seteuid(0);
 
+#if defined(SUNOS5)
+DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
+  if((file=open(name, O_RDONLY))<0) {
+    setuid(user_id);  /* Restore the original UID status */
+    seteuid(euser_id);
+    return(False);
+  }
+  command.op = Q_GETQUOTA;
+  command.uid = euser_id;
+  command.addr = (caddr_t) &D;
   ret = ioctl(file, Q_QUOTACTL, &command);
+  close(file);
+#else
+DEBUG(5,("disk_quotas: trying quotactl on device \"%s\"\n", name));
+  ret = quotactl(Q_GETQUOTA, name, euser_id, &D);
+#endif
 
   setuid(user_id);  /* Restore the original UID status */
   seteuid(euser_id);
 
   if (ret < 0) {
-    close(file);
     DEBUG(2,("disk_quotas ioctl (Solaris) failed\n"));
     return(False);
   }
-  close(file);
 
 
   /* Use softlimit to determine disk space. A user exceeding the quota is told
@@ -283,6 +355,8 @@ static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
    * made of rubber latex and begins to expand to accommodate the user :-)
    */
 
+  if (D.dqb_bsoftlimit==0)
+    return(False);
   *bsize = 512;
   *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
   *dsize = D.dqb_bsoftlimit;
@@ -306,7 +380,7 @@ DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %d, dfree %d, dsize %d\n"
 /****************************************************************************
 try to get the disk space from disk quotas - default version
 ****************************************************************************/
-static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 {
   uid_t user_id, euser_id;
   int r;
@@ -341,6 +415,8 @@ static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 	}
       else return(False);
     }
+  if (D.dqb_bsoftlimit==0)
+    return(False);
   /* Use softlimit to determine disk space, except when it has been exceeded */
   if ((D.dqb_curblocks>D.dqb_bsoftlimit)||(D.dqb_curfiles>D.dqb_fsoftlimit)) 
     {
