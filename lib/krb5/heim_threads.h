@@ -132,10 +132,10 @@
 
 #define HEIMDAL_MUTEX int
 #define HEIMDAL_MUTEX_INITIALIZER 0
-#define HEIMDAL_MUTEX_init(m)  do { } while(0)
-#define HEIMDAL_MUTEX_lock(m)  do { } while(0)
-#define HEIMDAL_MUTEX_unlock(m) do { } while(0)
-#define HEIMDAL_MUTEX_destroy(m) do { } while(0)
+#define HEIMDAL_MUTEX_init(m)  do { (void)(m); } while(0)
+#define HEIMDAL_MUTEX_lock(m)  do { (void)(m); } while(0)
+#define HEIMDAL_MUTEX_unlock(m) do { (void)(m); } while(0)
+#define HEIMDAL_MUTEX_destroy(m) do { (void)(m); } while(0)
 
 #define HEIMDAL_RWLOCK rwlock_t int
 #define HEIMDAL_RWLOCK_INITIALIZER 0
