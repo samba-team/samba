@@ -92,6 +92,29 @@ Sat Jan 30 13:43:02 1999  Assar Westerlund  <assar@sics.se>
 
 	* kuser/klist.c: add option -t | --test
 
+Sat Dec  5 19:49:34 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/krb5/context.c: remove ktype_is_etype
+
+	* lib/krb5/crypto.c, lib/krb5/krb5.h, acconfig.h: NEW_DES3_CODE
+
+	* configure.in: fix for AIX install; better tests for AIX dynamic
+ 	AFS libs; `--enable-new-des3-code'
+
+Tue Dec  1 14:44:44 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* appl/rsh/rshd.c: update to new crypto framework
+
+	* appl/rsh/rsh_locl.h: update to new crypto framework
+
+	* appl/rsh/rsh.c: update to new crypto framework
+
+	* appl/rsh/common.c: update to new crypto framework
+
+	* appl/afsutil/Makefile.am: link with extra libs for aix
+
+	* kuser/Makefile.am: link with extra libs for aix
+
 Sun Nov 29 01:56:21 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_addrs.c (krb5_get_all_server_addrs): add.  almost
