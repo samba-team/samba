@@ -10,7 +10,7 @@ AC_ARG_WITH(mips_abi,
 
 case "$host_os" in
 irix*)
-with_mips_abi="${with_mips_abi:-default}"
+with_mips_abi="${with_mips_abi:-yes}"
 if test -n "$GCC"; then
 
 # GCC < 2.8 only supports the O32 ABI. GCC >= 2.8 has a flag to select
@@ -31,13 +31,19 @@ case "${with_mips_abi}" in
 esac
 if test -n "$abi" ; then
 ac_foo=krb_cv_gcc_`echo $abi | tr =- __`
-AC_CACHE_CHECK([if $CC supports the $abi option], $ac_foo, [
+dnl
+dnl can't use AC_CACHE_CHECK here, since it doesn't quote CACHE-ID to
+dnl AC_MSG_RESULT
+dnl
+AC_MSG_CHECKING([if $CC supports the $abi option])
+AC_CACHE_VAL($ac_foo, [
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $abi"
 AC_TRY_COMPILE(,int x;, eval $ac_foo=yes, eval $ac_foo=no)
 CFLAGS="$save_CFLAGS"
 ])
 ac_res=`eval echo \\\$$ac_foo`
+AC_MSG_RESULT($ac_res)
 if test $ac_res = no; then
 # Try to figure out why that failed...
 case $abi in
@@ -54,7 +60,7 @@ case $abi in
 	abi=''
 	;;
 	-mabi=n32|-mabi=64)
-		if test $with_mips_abi = default; then
+		if test $with_mips_abi = yes; then
 			# Old GCC, default to O32
 			abi=32
 			abilibdirext=''
@@ -69,7 +75,7 @@ fi #if test -n "$abi" ; then
 else
 case "${with_mips_abi}" in
         32|o32) abi='-32'; abilibdirext=''     ;;
-       n32|default|yes) abi='-n32'; abilibdirext='32'  ;;
+       n32|yes) abi='-n32'; abilibdirext='32'  ;;
         64) abi='-64'; abilibdirext='64'   ;;
 	no) abi=''; abilibdirext='';;
          *) AC_ERROR("Invalid ABI specified") ;;
