@@ -31,8 +31,6 @@ extern int DEBUGLEVEL;
  */
 
 extern DOM_SID global_sam_sid;
-extern pstring global_myname;
-extern fstring global_myworkgroup;
 
 /*
  * NOTE. All these functions are abstracted into a structure
