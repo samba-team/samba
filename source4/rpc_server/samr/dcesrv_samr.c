@@ -3306,6 +3306,7 @@ static NTSTATUS samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct samr_QueryUserInfo r1;
 	NTSTATUS status;
 
+	ZERO_STRUCT(r1.out);
 	r1.in.user_handle = r->in.user_handle;
 	r1.in.level  = r->in.level;
 	
@@ -3321,7 +3322,7 @@ static NTSTATUS samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_C
   samr_QueryDisplayInfo2 
 */
 static NTSTATUS samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_QueryDisplayInfo2 *r)
+				       struct samr_QueryDisplayInfo2 *r)
 {
 	struct samr_QueryDisplayInfo q;
 	NTSTATUS result;
@@ -3331,6 +3332,7 @@ static NTSTATUS samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call, TALLO
 	q.in.start_idx = r->in.start_idx;
 	q.in.max_entries = r->in.max_entries;
 	q.in.buf_size = r->in.buf_size;
+	ZERO_STRUCT(q.out);
 
 	result = samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
 
