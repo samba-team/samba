@@ -4493,12 +4493,10 @@ BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 	}
 	for (i = 0; i < q_u->num_names2; i++)
 	{
+		prs_align(ps);
 		smb_io_unistr2("", &(q_u->uni_name[i]),
 			       q_u->hdr_name[i].buffer, ps, depth);
-		prs_align(ps);
 	}
-
-	prs_align(ps);
 
 	if (!ps->io)
 	{

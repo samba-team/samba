@@ -5,6 +5,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Elrond                            2000
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -255,10 +256,10 @@ static BOOL api_svc_get_svc_sec(prs_struct *data, prs_struct *rdata)
  ********************************************************************/
 static const struct api_struct api_svc_cmds[] = {
 	{"SVC_CLOSE", SVC_CLOSE, api_svc_close},
+	{"SVC_DELETE", SVC_DELETE, NULL},
 	{"SVC_OPEN_SC_MAN", SVC_OPEN_SC_MAN, api_svc_open_sc_man},
 	{"SVC_OPEN_SERVICE", SVC_OPEN_SERVICE, api_svc_open_service},
-
-	{"SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS,
+	{"SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS, 
 	 api_svc_enum_svcs_status},
 	{"SVC_QUERY_DISP_NAME", SVC_QUERY_DISP_NAME, api_svc_query_disp_name},
 	{"SVC_START_SERVICE", SVC_START_SERVICE, api_svc_start_service},
@@ -267,6 +268,8 @@ static const struct api_struct api_svc_cmds[] = {
 	{"SVC_GET_SVC_SEC", SVC_GET_SVC_SEC, api_svc_get_svc_sec},
 	{"SVC_OPEN_SC_MAN_A", SVC_OPEN_SC_MAN_A, NULL},
 	{"SVC_OPEN_SERVICE_A", SVC_OPEN_SERVICE_A, NULL},
+	{"SVC_QUERY_SVC_CONFIG", SVC_QUERY_SVC_CONFIG, NULL},
+	{"SVC_CHANGE_SVC_CONFIG", SVC_CHANGE_SVC_CONFIG, NULL},
 	{NULL, 0, NULL}
 };
 

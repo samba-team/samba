@@ -537,6 +537,8 @@ static const struct api_struct api_lsa_cmds[] = {
 /*	{"LSA_UNK_2D",  LSA_UNK_2D, api_lsa_unk_2d}, */
 	{"LSA_ENUM_PRIVS", LSA_ENUM_PRIVS, api_lsa_enum_privs},
 	{"LSA_PRIV_GET_DISPNAME", LSA_PRIV_GET_DISPNAME, api_lsa_priv_get_dispname},
+	{"LSA_ADD_ACC_PRIVS", LSA_ADD_ACC_PRIVS, NULL},
+	{"LSA_REM_ACC_PRIVS", LSA_REM_ACC_PRIVS, NULL},
 	{NULL, 0, NULL}
 };
 
