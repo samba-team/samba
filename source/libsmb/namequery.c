@@ -332,7 +332,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
 
 FILE *startlmhosts(char *fname)
 {
-  FILE *fp = fopen(fname,"r");
+  FILE *fp = sys_fopen(fname,"r");
   if (!fp) {
     DEBUG(4,("startlmhosts: Can't open lmhosts file %s. Error was %s\n",
              fname, strerror(errno)));

@@ -106,7 +106,7 @@ static char *make_parm_name(char *label)
 ****************************************************************************/
 static int include_html(char *fname)
 {
-	FILE *f = fopen(fname,"r");
+	FILE *f = sys_fopen(fname,"r");
 	char buf[1024];
 	int ret;
 
@@ -318,7 +318,7 @@ static int save_reload(void)
 {
 	FILE *f;
 
-	f = fopen(servicesf,"w");
+	f = sys_fopen(servicesf,"w");
 	if (!f) {
 		printf("failed to open %s for writing\n", servicesf);
 		return 0;
@@ -894,7 +894,7 @@ static void printers_page(void)
 	/* just in case it goes wild ... */
 	alarm(300);
 
-	dbf = fopen("/dev/null", "w");
+	dbf = sys_fopen("/dev/null", "w");
 
 	if (!dbf) dbf = stderr;
 

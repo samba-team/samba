@@ -111,9 +111,9 @@ BOOL trust_password_lock( char *domain, char *name, BOOL update)
 
     get_trust_account_file_name( domain, name, mac_file);
 
-    if((mach_passwd_fp = fopen(mac_file, "r+b")) == NULL) {
+    if((mach_passwd_fp = sys_fopen(mac_file, "r+b")) == NULL) {
       if(errno == ENOENT && update) {
-        mach_passwd_fp = fopen(mac_file, "w+b");
+        mach_passwd_fp = sys_fopen(mac_file, "w+b");
       }
 
       if(mach_passwd_fp == NULL) {

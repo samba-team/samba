@@ -552,8 +552,8 @@ static void mmap_open_file(files_struct *fsp)
   if (!fsp->can_write) {
 	  fsp->mmap_size = file_size(fsp->fsp_name);
 	  if (fsp->mmap_size < MAX_MMAP_SIZE) {
-		  fsp->mmap_ptr = (char *)mmap(NULL,fsp->mmap_size,
-					       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,0);
+		  fsp->mmap_ptr = (char *)sys_mmap(NULL,fsp->mmap_size,
+					       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,(SMB_OFF_T)0);
 
 		  if (fsp->mmap_ptr == (char *)-1 || !fsp->mmap_ptr) {
 			  DEBUG(3,("Failed to mmap() %s - %s\n",

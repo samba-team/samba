@@ -51,7 +51,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	pstrcat(fname,name);
 	pstrcat(fname,".LCK");
 
-	fd = open(fname,O_RDWR);
+	fd = sys_open(fname,O_RDWR,0);
 	if (fd == -1) {
 		DEBUG(2,("Couldn't open lock file %s (%s)\n",fname,strerror(errno)));
 		return(False);
@@ -137,11 +137,11 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	pstrcat(fname,".LCK");
 	
 	if (!file_exist(fname,NULL)) {
-		fd = open(fname,O_RDWR|O_CREAT|O_EXCL, 0644);
+		fd = sys_open(fname,O_RDWR|O_CREAT|O_EXCL, 0644);
 	}
 
 	if (fd == -1) {
-		fd = open(fname,O_RDWR);
+		fd = sys_open(fname,O_RDWR,0);
 	}
 	
 	if (fd == -1) {

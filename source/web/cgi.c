@@ -437,7 +437,7 @@ static void cgi_download(char *file)
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
 	}
-	fd = open(file,O_RDONLY);
+	fd = sys_open(file,O_RDONLY,0);
 	if (fd == -1) {
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
@@ -493,7 +493,7 @@ void cgi_setup(char *rootdir, int auth_required)
 	inetd_server = True;
 
 #if CGI_LOGGING
-	f = fopen("/tmp/cgi.log", "a");
+	f = sys_fopen("/tmp/cgi.log", "a");
 	if (f) fprintf(f,"\n[Date: %s   %s (%s)]\n", 
 		       http_timestring(time(NULL)),
 		       client_name(1), client_addr(1));

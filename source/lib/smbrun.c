@@ -58,7 +58,7 @@ static BOOL setup_stdout_file(char *outfile,BOOL shared)
       flags = O_RDWR;
   }
   /* now create the file */
-  fd = open(outfile,flags,mode);
+  fd = sys_open(outfile,flags,mode);
 
   if (fd == -1) return False;
 

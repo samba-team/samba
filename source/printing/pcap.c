@@ -101,7 +101,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)())
 	*name = 0;
 	*comment = 0;
 
-	if ((pfile = fopen(psz, "r")) == NULL)
+	if ((pfile = sys_fopen(psz, "r")) == NULL)
 	{
 	      DEBUG(0,( "Unable to open qconfig file %s for read!\n", psz));
 	      return;
@@ -176,7 +176,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		DEBUG(0,(" Unable to allocate memory for printer %s\n",pszPrintername));
 		return(False);
 	}
-	if ((pfile = fopen(psz, "r")) == NULL)
+	if ((pfile = sys_fopen(psz, "r")) == NULL)
 	{
 	      DEBUG(0,( "Unable to open qconfig file %s for read!\n", psz));
 	      free(pName);
@@ -272,7 +272,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
      return(ScanQconfig(psz,pszPrintername));
 #endif
 
-  if ((pfile = fopen(psz, "r")) == NULL)
+  if ((pfile = sys_fopen(psz, "r")) == NULL)
     {
       DEBUG(0,( "Unable to open printcap file %s for read!\n", psz));
       return(False);
@@ -344,7 +344,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
   }
 #endif
 
-  if ((pfile = fopen(psz, "r")) == NULL)
+  if ((pfile = sys_fopen(psz, "r")) == NULL)
     {
       DEBUG(0,( "Unable to open printcap file %s for read!\n", psz));
       return;

@@ -80,7 +80,7 @@ BOOL map_username(char *user)
     return True;
   }
   
-  f = fopen(mapfile,"r");
+  f = sys_fopen(mapfile,"r");
   if (!f) {
     DEBUG(0,("can't open username map %s\n",mapfile));
     return False;

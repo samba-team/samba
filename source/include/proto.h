@@ -149,6 +149,10 @@ int sys_ftruncate(int fd, SMB_OFF_T offset);
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence);
 int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence);
 SMB_OFF_T sys_ftell(FILE *fp);
+int sys_creat(const char *path, mode_t mode);
+int sys_open(const char *path, int oflag, mode_t mode);
+FILE *sys_fopen(const char *path, const char *type);
+void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T offset);
 int dos_unlink(char *fname);
 int dos_open(char *fname,int flags,mode_t mode);
 DIR *dos_opendir(char *dname);
@@ -487,7 +491,7 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOOL recurse,
          struct in_addr to_ip, int *count, void (*fn)(struct packet_struct *));
 FILE *startlmhosts(char *fname);
-BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr);
+BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);

@@ -611,7 +611,7 @@ void dump_all_namelists(void)
   pstrcat(fname,"/"); 
   pstrcat(fname,"namelist.debug");
 
-  fp = fopen(fname,"w");
+  fp = sys_fopen(fname,"w");
      
   if (!fp)
   { 

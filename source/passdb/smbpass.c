@@ -44,7 +44,7 @@ static void *startsmbfilepwent(BOOL update)
   }
   DEBUG(10, ("startsmbfilepwent: opening file %s\n", pfile));
 
-  fp = fopen(pfile, update ? "r+b" : "rb");
+  fp = sys_fopen(pfile, update ? "r+b" : "rb");
 
   if (fp == NULL) {
     DEBUG(0, ("startsmbfilepwent: unable to open file %s\n", pfile));
@@ -592,7 +592,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   }
   DEBUG(10, ("mod_smbfilepwd_entry: opening file %s\n", pfile));
 
-  fp = fopen(pfile, "r+");
+  fp = sys_fopen(pfile, "r+");
 
   if (fp == NULL) {
     DEBUG(0, ("mod_smbfilepwd_entry: unable to open file %s\n", pfile));

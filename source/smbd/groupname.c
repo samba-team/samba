@@ -102,7 +102,7 @@ void load_groupname_map(void)
    * Load the file.
    */
 
-  fp = fopen(groupname_map_file,"r");
+  fp = sys_fopen(groupname_map_file,"r");
   if (!fp) {
     DEBUG(0,("load_groupname_map: can't open groupname map %s. Error was %s\n",
           groupname_map_file, strerror(errno)));
