@@ -230,7 +230,7 @@
 
 	<para>
 	There is no safe way to provide access on a UNIX/Linux system without providing <constant>root</constant>
-	level privilege. Provision of <constant>root</constant> privileges can be done wither by logging onto
+	level privilege. Provision of <constant>root</constant> privileges can be done either by logging onto
 	the Domain as the user <constant>root</constant>, or by permitting particular users to use a UNIX account
 	that is a member of the UNIX group that has a GID=0 as the primary group in the <filename>/etc/passwd</filename>
 	database. Users of such accounts can use tools like the NT4 Domain User Manager, and the NT4 Domain Server 
