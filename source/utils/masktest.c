@@ -35,7 +35,7 @@ static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
 
 char *standard_masks[] = {"*", "*.", "*.*", 
-			  ".*", "d2.??", "d2\">>", 
+			  ".*", "d2.??", "d2\">>", "??", 
 			  NULL};
 char *standard_files[] = {"abc", "abc.", ".abc", 
 			  "abc.def", "abc.de.f", 
@@ -45,23 +45,49 @@ char *standard_files[] = {"abc", "abc.", ".abc",
 
 #include <regex.h>
 
-static char *reg_test(char *pattern, char *file)
+static BOOL reg_match_one(char *pattern, char *file)
 {
-	static fstring ret;
 	pstring rpattern;
-	regex_t preg;
+	pstring rfile;
 
-	pattern = 1+strrchr(pattern,'\\');
-	file = 1+strrchr(file,'\\');
-
-	fstrcpy(ret,"---");
+	pstrcpy(rpattern, pattern);
 
 	if (strcmp(file,"..") == 0) file = ".";
-	if (strcmp(pattern,".") == 0) return ret;
+	if (strcmp(rpattern,".") == 0) return False;
+
+	all_string_sub(rpattern,"\"", ".", 0);
+	all_string_sub(rpattern,"<", "*", 0);
+
+	all_string_sub(rpattern,"*>", "*", 0);
+	all_string_sub(rpattern,">*", "*", 0);
+	all_string_sub(rpattern,">", "?", 0);
+
+	if (is_8_3(file, False)) {
+		return fnmatch(rpattern, file, 0)==0;
+	}
+
+	pstrcpy(rfile, file);
+	mangle_name_83(rfile);
+	strlower(rfile);
+
+	return (fnmatch(rpattern, file, 0)==0 ||
+		fnmatch(rpattern, rfile, 0)==0);
+}
+
+static BOOL regex_reg_match_one(char *pattern, char *file)
+{
+	pstring rpattern;
+	regex_t preg;
+	BOOL ret = False;
+
+	return fnmatch(pattern, file, 0)==0;
+
+	if (strcmp(file,"..") == 0) file = ".";
+	if (strcmp(pattern,".") == 0) return False;
 
 	if (strcmp(pattern,"") == 0) {
-		ret[2] = '+';
-		return ret;
+		if (strcmp(file,".") == 0) return False;
+		return True;
 	}
 
 	pstrcpy(rpattern,"^");
@@ -85,15 +111,24 @@ static char *reg_test(char *pattern, char *file)
 	/* printf("pattern=[%s] rpattern=[%s]\n", pattern, rpattern); */
 
 	regcomp(&preg, rpattern, REG_ICASE|REG_NOSUB|REG_EXTENDED);
-	if (regexec(&preg, ".", 0, NULL, 0) == 0) {
-		ret[0] = '+';
-		ret[1] = '+';
-	}
-	if (regexec(&preg, file, 0, NULL, 0) == 0) {
-		ret[2] = '+';
-	}
+	ret = (regexec(&preg, file, 0, NULL, 0) == 0);
+
 	regfree(&preg);
 
+	return ret;
+}
+
+static char *reg_test(char *pattern, char *file)
+{
+	static fstring ret;
+	fstrcpy(ret, "---");
+
+	pattern = 1+strrchr(pattern,'\\');
+	file = 1+strrchr(file,'\\');
+
+	if (reg_match_one(pattern, ".")) ret[0] = '+';
+	if (reg_match_one(pattern, "..")) ret[1] = '+';
+	if (reg_match_one(pattern, file)) ret[2] = '+';
 	return ret;
 }
 
@@ -241,13 +276,22 @@ static void testpair(struct cli_state *cli1, struct cli_state *cli2,
 	resultp = res2;
 	cli_list(cli2, mask, aHIDDEN | aDIR, listfn);
 
-	if (showall || strcmp(res1, res2)) {
-		DEBUG(0,("%s %s %s %d mask=[%s] file=[%s]\n",
-			 res1, res2, res3, count, mask, file));
+	if (showall || strcmp(res1, res3)) {
+		char *p;
+		pstring rfile;
+		p = strrchr(file,'\\');
+		pstrcpy(rfile, p+1);
+		mangle_name_83(rfile);
+		strlower(rfile);
+		DEBUG(0,("%s %s %s %d mask=[%s] file=[%s] mfile=[%s]\n",
+			 res1, res2, res3, count, mask, file, rfile));
 	}
 
 	cli_unlink(cli1, file);
 	cli_unlink(cli2, file);
+
+
+	if (count % 500 == 0) DEBUG(0,("%d\n", count));
 }
 
 static void test_mask(int argc, char *argv[], 
@@ -277,6 +321,7 @@ static void test_mask(int argc, char *argv[],
 		goto finished;
 	}
 
+#if 1
 	for (i=0; standard_masks[i]; i++) {
 		for (j=0; standard_files[j]; j++) {
 			pstrcpy(mask,"\\masktest\\");
@@ -286,6 +331,7 @@ static void test_mask(int argc, char *argv[],
 			testpair(cli1, cli2, mask, file);
 		}
 	}
+#endif
 
 	while (1) {
 		l1 = 1 + random() % 20;
