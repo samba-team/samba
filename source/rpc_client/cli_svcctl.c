@@ -230,6 +230,65 @@ BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 
 
 /****************************************************************************
+do a SVC Start Service 
+****************************************************************************/
+BOOL svc_start_service(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *hnd,
+				uint32 argc,
+				char **argv)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SVC_Q_START_SERVICE q_c;
+	BOOL valid_cfg = False;
+
+	if (hnd == NULL) return False;
+
+	/* create and send a MSRPC command with api SVC_START_SERVICE */
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SVC Start Service\n"));
+
+	/* store the parameters */
+	make_svc_q_start_service(&q_c, hnd, argc, argv);
+
+	/* turn parameters into data stream */
+	svc_io_q_start_service("", &q_c, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SVC_START_SERVICE, &buf, &rbuf))
+	{
+		SVC_R_START_SERVICE r_c;
+		BOOL p;
+
+		ZERO_STRUCT (r_c);
+
+		svc_io_r_start_service("", &r_c, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_c.status != 0)
+		{
+			/* report error code */
+			DEBUG(1,("SVC_START_SERVICE: %s\n", get_nt_error_msg(r_c.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_cfg = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_cfg;
+}
+
+
+/****************************************************************************
 do a SVC Query Service Config
 ****************************************************************************/
 BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,

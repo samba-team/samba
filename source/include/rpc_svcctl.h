@@ -73,7 +73,7 @@ typedef struct r_svc_open_service_info
 
 } SVC_R_OPEN_SERVICE;
 
-#define MAX_SVC_ARGS 4
+#define MAX_SVC_ARGS 10
 
 /* SVC_Q_START_SERVICE */
 typedef struct q_svc_start_service_info
@@ -81,8 +81,9 @@ typedef struct q_svc_start_service_info
 	POLICY_HND pol;
 
 	uint32 argc;
-	uint32 ptr_argv;
+	uint32 ptr_args;
 	uint32 argc2;
+	uint32 ptr_argv[MAX_SVC_ARGS];
 	UNISTR2 argv[MAX_SVC_ARGS];
 
 } SVC_Q_START_SERVICE;
