@@ -626,10 +626,10 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
     return PAM_SUCCESS;
 }
 
-int _pam_smb_approve_pass(pam_handle_t * pamh
-						  ,unsigned int ctrl
-						  ,const char *pass_old
-						  ,const char *pass_new)
+int _pam_smb_approve_pass(pam_handle_t * pamh,
+		unsigned int ctrl,
+		const char *pass_old,
+		const char *pass_new )
 {
 
     /* Further checks should be handled through module stacking. -SRL */
@@ -645,4 +645,4 @@ int _pam_smb_approve_pass(pam_handle_t * pamh
     }
 
     return PAM_SUCCESS;
-
+}
