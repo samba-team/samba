@@ -56,7 +56,7 @@ struct samr_domain_state {
 	uint32 access_mask;
 	const char *domain_sid;
 	const char *domain_name;
-	const char *basedn;
+	const char *domain_dn;
 };
 
 /*
@@ -69,19 +69,19 @@ struct samr_account_state {
 	uint32 access_mask;
 	const char *account_sid;
 	const char *account_name;
-	const char *basedn;
+	const char *account_dn;
 };
 
 
 /*
   destroy connection state
 */
-static void samr_Connect_close(struct samr_connect_state *state)
+static void samr_Connect_close(struct samr_connect_state *c_state)
 {
-	state->reference_count--;
-	if (state->reference_count == 0) {
-		samdb_close(state->sam_ctx);
-		talloc_destroy(state->mem_ctx);
+	c_state->reference_count--;
+	if (c_state->reference_count == 0) {
+		samdb_close(c_state->sam_ctx);
+		talloc_destroy(c_state->mem_ctx);
 	}
 }
 
@@ -90,8 +90,8 @@ static void samr_Connect_close(struct samr_connect_state *state)
 */
 static void samr_Connect_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
 {
-	struct samr_connect_state *state = h->data;
-	samr_Connect_close(state);
+	struct samr_connect_state *c_state = h->data;
+	samr_Connect_close(c_state);
 }
 
 /* 
@@ -102,7 +102,7 @@ static void samr_Connect_destroy(struct dcesrv_connection *conn, struct dcesrv_h
 static NTSTATUS samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			     struct samr_Connect *r)
 {
-	struct samr_connect_state *state;
+	struct samr_connect_state *c_state;
 	struct dcesrv_handle *handle;
 	TALLOC_CTX *connect_mem_ctx;
 
@@ -113,30 +113,30 @@ static NTSTATUS samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state = talloc_p(connect_mem_ctx, struct samr_connect_state);
-	if (!state) {
+	c_state = talloc_p(connect_mem_ctx, struct samr_connect_state);
+	if (!c_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->mem_ctx = connect_mem_ctx;
+	c_state->mem_ctx = connect_mem_ctx;
 
 	/* make sure the sam database is accessible */
-	state->sam_ctx = samdb_connect();
-	if (state->sam_ctx == NULL) {
-		talloc_destroy(state->mem_ctx);
+	c_state->sam_ctx = samdb_connect();
+	if (c_state->sam_ctx == NULL) {
+		talloc_destroy(c_state->mem_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
 	handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_CONNECT);
 	if (!handle) {
-		talloc_destroy(state->mem_ctx);
+		talloc_destroy(c_state->mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	handle->data = state;
+	handle->data = c_state;
 	handle->destroy = samr_Connect_destroy;
 
-	state->reference_count = 1;
-	state->access_mask = r->in.access_mask;
+	c_state->reference_count = 1;
+	c_state->access_mask = r->in.access_mask;
 	*r->out.handle = handle->wire_handle;
 
 	return NT_STATUS_OK;
@@ -207,7 +207,7 @@ static NTSTATUS samr_Shutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct samr_LookupDomain *r)
 {
-	struct samr_connect_state *state;
+	struct samr_connect_state *c_state;
 	struct dcesrv_handle *h;
 	struct dom_sid2 *sid;
 	const char *sidstr;
@@ -216,13 +216,13 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_CONNECT);
 
-	state = h->data;
+	c_state = h->data;
 
 	if (r->in.domain->name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	sidstr = samdb_search_string(state->sam_ctx,
+	sidstr = samdb_search_string(c_state->sam_ctx,
 				     mem_ctx, NULL, "objectSid",
 				     "(&(name=%s)(objectclass=domain))",
 				     r->in.domain->name);
@@ -251,7 +251,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_EnumDomains *r)
 {
-	struct samr_connect_state *state;
+	struct samr_connect_state *c_state;
 	struct dcesrv_handle *h;
 	struct samr_SamArray *array;
 	const char **domains;
@@ -263,9 +263,9 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_CONNECT);
 
-	state = h->data;
+	c_state = h->data;
 
-	count = samdb_search_string_multiple(state->sam_ctx,
+	count = samdb_search_string_multiple(c_state->sam_ctx,
 					     mem_ctx, NULL, &domains, 
 					     "name", "(objectclass=domain)");
 	if (count == -1) {
@@ -312,12 +312,12 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
   close an open domain context
 */
 static void samr_Domain_close(struct dcesrv_connection *conn, 
-			      struct samr_domain_state *state)
+			      struct samr_domain_state *d_state)
 {
-	state->reference_count--;
-	if (state->reference_count == 0) {
-		samr_Connect_close(state->connect_state);
-		talloc_destroy(state->mem_ctx);
+	d_state->reference_count--;
+	if (d_state->reference_count == 0) {
+		samr_Connect_close(d_state->connect_state);
+		talloc_destroy(d_state->mem_ctx);
 	}
 }
 
@@ -326,8 +326,8 @@ static void samr_Domain_close(struct dcesrv_connection *conn,
 */
 static void samr_Domain_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
 {
-	struct samr_domain_state *state = h->data;
-	samr_Domain_close(conn, state);
+	struct samr_domain_state *d_state = h->data;
+	samr_Domain_close(conn, d_state);
 }
 
 /* 
@@ -339,7 +339,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	struct dcesrv_handle *h_conn, *h_domain;
 	const char *sidstr, *domain_name;
 	struct samr_connect_state *c_state;
-	struct samr_domain_state *state;
+	struct samr_domain_state *d_state;
 	TALLOC_CTX *mem_ctx2;
 	const char * const attrs[2] = { "name", NULL};
 	struct ldb_message **msgs;
@@ -378,24 +378,24 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state = talloc_p(mem_ctx2, struct samr_domain_state);
-	if (!state) {
+	d_state = talloc_p(mem_ctx2, struct samr_domain_state);
+	if (!d_state) {
 		talloc_destroy(mem_ctx2);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state->reference_count = 1;
-	state->connect_state = c_state;
-	state->sam_ctx = c_state->sam_ctx;
-	state->mem_ctx = mem_ctx2;
-	state->domain_sid = talloc_strdup(mem_ctx2, sidstr);
-	state->domain_name = talloc_strdup(mem_ctx2, domain_name);
-	state->basedn = talloc_strdup(mem_ctx2, msgs[0]->dn);
-	if (!state->domain_sid || !state->domain_name || !state->basedn) {
+	d_state->reference_count = 1;
+	d_state->connect_state = c_state;
+	d_state->sam_ctx = c_state->sam_ctx;
+	d_state->mem_ctx = mem_ctx2;
+	d_state->domain_sid = talloc_strdup(mem_ctx2, sidstr);
+	d_state->domain_name = talloc_strdup(mem_ctx2, domain_name);
+	d_state->domain_dn = talloc_strdup(mem_ctx2, msgs[0]->dn);
+	if (!d_state->domain_sid || !d_state->domain_name || !d_state->domain_dn) {
 		talloc_destroy(mem_ctx2);
 		return NT_STATUS_NO_MEMORY;		
 	}
-	state->access_mask = r->in.access_mask;
+	d_state->access_mask = r->in.access_mask;
 
 	h_domain = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_DOMAIN);
 	if (!h_domain) {
@@ -404,7 +404,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	c_state->reference_count++;
-	h_domain->data = state;
+	h_domain->data = d_state;
 	h_domain->destroy = samr_Domain_destroy;
 	*r->out.domain_handle = h_domain->wire_handle;
 
@@ -436,9 +436,9 @@ static NTSTATUS samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 */
 static void samr_Account_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
 {
-	struct samr_account_state *state = h->data;
-	samr_Domain_close(conn, state->domain_state);
-	talloc_destroy(state->mem_ctx);
+	struct samr_account_state *a_state = h->data;
+	samr_Domain_close(conn, a_state->domain_state);
+	talloc_destroy(a_state->mem_ctx);
 }
 
 /* 
@@ -448,7 +448,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 				       struct samr_CreateDomainGroup *r)
 {
 	struct samr_domain_state *d_state;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
 	const char *name;
 	struct ldb_message msg;
@@ -474,7 +474,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	/* check if the group already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->basedn, 
+	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->domain_dn, 
 				   "sAMAccountName",
 				   "(&(sAMAccountName=%s)(objectclass=group))",
 				   groupname);
@@ -494,7 +494,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 
 	/* allocate a rid */
 	status = samdb_allocate_next_id(d_state->sam_ctx, mem_ctx, 
-					d_state->basedn, "nextRid", &rid);
+					d_state->domain_dn, "nextRid", &rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -507,7 +507,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 
 	/* add core elements to the ldb_message for the user */
 	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", groupname,
-				 d_state->basedn);
+				 d_state->domain_dn);
 	if (!msg.dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -539,18 +539,18 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state = talloc_p(mem_ctx2, struct samr_account_state);
-	if (!state) {
+	a_state = talloc_p(mem_ctx2, struct samr_account_state);
+	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->mem_ctx = mem_ctx2;
-	state->sam_ctx = d_state->sam_ctx;
-	state->access_mask = r->in.access_mask;
-	state->domain_state = d_state;
-	state->basedn = talloc_steal(mem_ctx, mem_ctx2, msg.dn);
-	state->account_sid = talloc_strdup(mem_ctx2, sidstr);
-	state->account_name = talloc_strdup(mem_ctx2, groupname);
-	if (!state->account_name || !state->account_sid) {
+	a_state->mem_ctx = mem_ctx2;
+	a_state->sam_ctx = d_state->sam_ctx;
+	a_state->access_mask = r->in.access_mask;
+	a_state->domain_state = d_state;
+	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msg.dn);
+	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
+	a_state->account_name = talloc_strdup(mem_ctx2, groupname);
+	if (!a_state->account_name || !a_state->account_sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -560,7 +560,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	g_handle->data = state;
+	g_handle->data = a_state;
 	g_handle->destroy = samr_Account_destroy;
 
 	/* the domain state is in use one more time */
@@ -592,7 +592,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 				 struct samr_CreateUser2 *r)
 {
 	struct samr_domain_state *d_state;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
 	const char *name;
 	struct ldb_message msg;
@@ -619,7 +619,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* check if the user already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->basedn, 
+	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->domain_dn, 
 				   "sAMAccountName", 
 				   "(&(sAMAccountName=%s)(objectclass=user))", username);
 	if (name != NULL) {
@@ -638,7 +638,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	
 	/* allocate a rid */
 	status = samdb_allocate_next_id(d_state->sam_ctx, mem_ctx, 
-					d_state->basedn, "nextRid", &rid);
+					d_state->domain_dn, "nextRid", &rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -650,7 +650,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* add core elements to the ldb_message for the user */
-	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", username, d_state->basedn);
+	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", username, d_state->domain_dn);
 	if (!msg.dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}
@@ -675,18 +675,18 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state = talloc_p(mem_ctx2, struct samr_account_state);
-	if (!state) {
+	a_state = talloc_p(mem_ctx2, struct samr_account_state);
+	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->mem_ctx = mem_ctx2;
-	state->sam_ctx = d_state->sam_ctx;
-	state->access_mask = r->in.access_mask;
-	state->domain_state = d_state;
-	state->basedn = talloc_steal(mem_ctx, mem_ctx2, msg.dn);
-	state->account_sid = talloc_strdup(mem_ctx2, sidstr);
-	state->account_name = talloc_strdup(mem_ctx2, username);
-	if (!state->account_name || !state->account_sid) {
+	a_state->mem_ctx = mem_ctx2;
+	a_state->sam_ctx = d_state->sam_ctx;
+	a_state->access_mask = r->in.access_mask;
+	a_state->domain_state = d_state;
+	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msg.dn);
+	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
+	a_state->account_name = talloc_strdup(mem_ctx2, username);
+	if (!a_state->account_name || !a_state->account_sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -696,7 +696,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	u_handle->data = state;
+	u_handle->data = a_state;
 	u_handle->destroy = samr_Account_destroy;
 
 	/* the domain state is in use one more time */
@@ -747,7 +747,7 @@ static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_
 				     struct samr_EnumDomainUsers *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_domain_state *state;
+	struct samr_domain_state *d_state;
 	struct ldb_message **res;
 	int count, i, first;
 	struct samr_SamEntry *entries;
@@ -759,11 +759,11 @@ static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_DOMAIN);
 
-	state = h->data;
+	d_state = h->data;
 	
 	/* search for all users in this domain. This could possibly be cached and 
 	   resumed based on resume_key */
-	count = samdb_search(state->sam_ctx, mem_ctx, state->basedn, &res, attrs, 
+	count = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
 			     "objectclass=user");
 	if (count == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -855,7 +855,7 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 				 struct samr_LookupNames *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_domain_state *state;
+	struct samr_domain_state *d_state;
 	int i;
 	NTSTATUS status = NT_STATUS_OK;
 	const char * const attrs[] = { "sAMAccountType", "objectSid", NULL };
@@ -866,7 +866,7 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_DOMAIN);
 
-	state = h->data;
+	d_state = h->data;
 
 	if (r->in.num_names == 0) {
 		return NT_STATUS_OK;
@@ -889,7 +889,7 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		r->out.rids.ids[i] = 0;
 		r->out.types.ids[i] = SID_NAME_UNKNOWN;
 
-		count = samdb_search(state->sam_ctx, mem_ctx, state->basedn, &res, attrs, 
+		count = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
 				     "sAMAccountName=%s", r->in.names[i].name);
 		if (count != 1) {
 			status = STATUS_SOME_UNMAPPED;
@@ -956,7 +956,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		       struct samr_OpenGroup *r)
 {
 	struct samr_domain_state *d_state;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
 	const char *groupname, *sidstr;
 	TALLOC_CTX *mem_ctx2;
@@ -979,7 +979,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 	/* search for the group record */
 	ret = samdb_search(d_state->sam_ctx,
-			   mem_ctx, d_state->basedn, &msgs, attrs,
+			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=group))", 
 			   sidstr);
 	if (ret == 0) {
@@ -1002,18 +1002,18 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state = talloc_p(mem_ctx2, struct samr_account_state);
-	if (!state) {
+	a_state = talloc_p(mem_ctx2, struct samr_account_state);
+	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->mem_ctx = mem_ctx2;
-	state->sam_ctx = d_state->sam_ctx;
-	state->access_mask = r->in.access_mask;
-	state->domain_state = d_state;
-	state->basedn = talloc_steal(mem_ctx, mem_ctx2, msgs[0]->dn);
-	state->account_sid = talloc_strdup(mem_ctx2, sidstr);
-	state->account_name = talloc_strdup(mem_ctx2, groupname);
-	if (!state->account_name || !state->account_sid) {
+	a_state->mem_ctx = mem_ctx2;
+	a_state->sam_ctx = d_state->sam_ctx;
+	a_state->access_mask = r->in.access_mask;
+	a_state->domain_state = d_state;
+	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msgs[0]->dn);
+	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
+	a_state->account_name = talloc_strdup(mem_ctx2, groupname);
+	if (!a_state->account_name || !a_state->account_sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1023,7 +1023,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	g_handle->data = state;
+	g_handle->data = a_state;
 	g_handle->destroy = samr_Account_destroy;
 
 	/* the domain state is in use one more time */
@@ -1045,11 +1045,11 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 #define QUERY_NTTIME(msg, field, attr) \
 	r->out.info->field = samdb_result_nttime(msg, attr, 0);
 #define QUERY_APASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_allow_pwd_change(state->sam_ctx, mem_ctx, \
-							   state->domain_state->basedn, msg, attr);
+	r->out.info->field = samdb_result_allow_pwd_change(a_state->sam_ctx, mem_ctx, \
+							   a_state->domain_state->domain_dn, msg, attr);
 #define QUERY_FPASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_force_pwd_change(state->sam_ctx, mem_ctx, \
-							   state->domain_state->basedn, msg, attr);
+	r->out.info->field = samdb_result_force_pwd_change(a_state->sam_ctx, mem_ctx, \
+							   a_state->domain_state->domain_dn, msg, attr);
 #define QUERY_LHOURS(msg, field, attr) \
 	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
 #define QUERY_AFLAGS(msg, field, attr) \
@@ -1060,25 +1060,25 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 #define SET_STRING(mod, field, attr) do { \
 	if (r->in.info->field == NULL) return NT_STATUS_INVALID_PARAMETER; \
-	if (samdb_msg_add_string(state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
+	if (samdb_msg_add_string(a_state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
 		return NT_STATUS_NO_MEMORY; \
 	} \
 } while (0)
 
 #define SET_UINT(mod, field, attr) do { \
-	if (samdb_msg_add_uint(state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
+	if (samdb_msg_add_uint(a_state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
 		return NT_STATUS_NO_MEMORY; \
 	} \
 } while (0)
 
 #define SET_AFLAGS(msg, field, attr) do { \
-	if (samdb_msg_add_acct_flags(state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+	if (samdb_msg_add_acct_flags(a_state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
 		return NT_STATUS_NO_MEMORY; \
 	} \
 } while (0)
 
 #define SET_LHOURS(msg, field, attr) do { \
-	if (samdb_msg_add_logon_hours(state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+	if (samdb_msg_add_logon_hours(a_state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
 		return NT_STATUS_NO_MEMORY; \
 	} \
 } while (0)
@@ -1090,7 +1090,7 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 		       struct samr_QueryGroupInfo *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	struct ldb_message *msg, **res;
 	const char * const attrs[4] = { "sAMAccountName", "description",
 					"numMembers", NULL };
@@ -1100,11 +1100,11 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_GROUP);
 
-	state = h->data;
+	a_state = h->data;
 
 	/* pull all the group attributes */
-	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs,
-			   "dn=%s", state->basedn);
+	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "dn=%s", a_state->account_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1150,16 +1150,16 @@ static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		       struct samr_SetGroupInfo *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	struct ldb_message mod, *msg = &mod;
 	int i, ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_GROUP);
 
-	state = h->data;
+	a_state = h->data;
 
 	ZERO_STRUCT(mod);
-	mod.dn = talloc_strdup(mem_ctx, state->basedn);
+	mod.dn = talloc_strdup(mem_ctx, a_state->account_dn);
 	if (!mod.dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1186,7 +1186,7 @@ static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	}
 
 	/* modify the samdb record */
-	ret = samdb_modify(state->sam_ctx, mem_ctx, &mod);
+	ret = samdb_modify(a_state->sam_ctx, mem_ctx, &mod);
 	if (ret != 0) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1213,16 +1213,16 @@ static NTSTATUS samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 		       struct samr_DeleteDomainGroup *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	int ret;
 
         *r->out.handle = *r->in.handle;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_GROUP);
 
-	state = h->data;
+	a_state = h->data;
 
-	ret = samdb_delete(state->sam_ctx, mem_ctx, state->basedn);
+	ret = samdb_delete(a_state->sam_ctx, mem_ctx, a_state->account_dn);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1340,7 +1340,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 			      struct samr_OpenUser *r)
 {
 	struct samr_domain_state *d_state;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
 	const char *username, *sidstr;
 	TALLOC_CTX *mem_ctx2;
@@ -1363,7 +1363,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	/* search for the user record */
 	ret = samdb_search(d_state->sam_ctx,
-			   mem_ctx, d_state->basedn, &msgs, attrs,
+			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=user))", 
 			   sidstr);
 	if (ret == 0) {
@@ -1386,18 +1386,18 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state = talloc_p(mem_ctx2, struct samr_account_state);
-	if (!state) {
+	a_state = talloc_p(mem_ctx2, struct samr_account_state);
+	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->mem_ctx = mem_ctx2;
-	state->sam_ctx = d_state->sam_ctx;
-	state->access_mask = r->in.access_mask;
-	state->domain_state = d_state;
-	state->basedn = talloc_steal(mem_ctx, mem_ctx2, msgs[0]->dn);
-	state->account_sid = talloc_strdup(mem_ctx2, sidstr);
-	state->account_name = talloc_strdup(mem_ctx2, username);
-	if (!state->account_name || !state->account_sid) {
+	a_state->mem_ctx = mem_ctx2;
+	a_state->sam_ctx = d_state->sam_ctx;
+	a_state->access_mask = r->in.access_mask;
+	a_state->domain_state = d_state;
+	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msgs[0]->dn);
+	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
+	a_state->account_name = talloc_strdup(mem_ctx2, username);
+	if (!a_state->account_name || !a_state->account_sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1407,7 +1407,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	u_handle->data = state;
+	u_handle->data = a_state;
 	u_handle->destroy = samr_Account_destroy;
 
 	/* the domain state is in use one more time */
@@ -1427,16 +1427,16 @@ static NTSTATUS samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 				struct samr_DeleteUser *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	int ret;
 
 	*r->out.handle = *r->in.handle;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
 
-	state = h->data;
+	a_state = h->data;
 
-	ret = samdb_delete(state->sam_ctx, mem_ctx, state->basedn);
+	ret = samdb_delete(a_state->sam_ctx, mem_ctx, a_state->account_dn);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1454,7 +1454,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 				   struct samr_QueryUserInfo *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	struct ldb_message *msg, **res;
 	int ret;
 
@@ -1462,11 +1462,11 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
 
-	state = h->data;
+	a_state = h->data;
 
 	/* pull all the user attributes */
-	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, NULL,
-			   "dn=%s", state->basedn);
+	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, NULL,
+			   "dn=%s", a_state->account_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1634,7 +1634,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
   password when applied
 */
 static NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
-				  struct samr_account_state *state, TALLOC_CTX *mem_ctx,
+				  struct samr_account_state *a_state, TALLOC_CTX *mem_ctx,
 				  struct ldb_message *msg, 
 				  struct samr_CryptPassword *pwbuf)
 {
@@ -1652,8 +1652,8 @@ static NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 
 	/* set the password - samdb needs to know both the domain and user DNs,
 	   so the domain password policy can be used */
-	return samdb_set_password(state->sam_ctx, mem_ctx,
-				  state->basedn, state->domain_state->basedn, 
+	return samdb_set_password(a_state->sam_ctx, mem_ctx,
+				  a_state->account_dn, a_state->domain_state->domain_dn, 
 				  msg, new_pass);
 }
 
@@ -1664,17 +1664,17 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 				 struct samr_SetUserInfo *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 	struct ldb_message mod, *msg = &mod;
 	int i, ret;
 	NTSTATUS status = NT_STATUS_OK;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
 
-	state = h->data;
+	a_state = h->data;
 
 	ZERO_STRUCT(mod);
-	mod.dn = talloc_strdup(mem_ctx, state->basedn);
+	mod.dn = talloc_strdup(mem_ctx, a_state->account_dn);
 	if (!mod.dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1757,7 +1757,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 		/* the set password levels are handled separately */
 	case 24:
-		status = samr_set_password(dce_call, state, mem_ctx, msg, 
+		status = samr_set_password(dce_call, a_state, mem_ctx, msg, 
 					   &r->in.info->info24.password);
 		break;
 		
@@ -1780,7 +1780,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* modify the samdb record */
-	ret = samdb_modify(state->sam_ctx, mem_ctx, msg);
+	ret = samdb_modify(a_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1857,18 +1857,18 @@ static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 				   struct samr_GetUserPwInfo *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_account_state *state;
+	struct samr_account_state *a_state;
 
 	ZERO_STRUCT(r->out.info);
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
 
-	state = h->data;
+	a_state = h->data;
 
-	r->out.info.min_pwd_len = samdb_search_uint(state->sam_ctx, mem_ctx, 0, NULL, "minPwdLength", 
-						    "dn=%s", state->domain_state->basedn);
-	r->out.info.password_properties = samdb_search_uint(state->sam_ctx, mem_ctx, 0, NULL, "pwdProperties", 
-							    "dn=%s", state->basedn);
+	r->out.info.min_pwd_len = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "minPwdLength", 
+						    "dn=%s", a_state->domain_state->domain_dn);
+	r->out.info.password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "pwdProperties", 
+							    "dn=%s", a_state->account_dn);
 	return NT_STATUS_OK;
 }
 
