@@ -46,6 +46,7 @@ libgssapi_la_SOURCES =		\
 	inquire_cred_by_mech.c	\
 	inquire_mechs_for_name.c \
 	inquire_names_for_mech.c \
+	kuserok.c		\
 	release_buffer.c	\
 	release_cred.c		\
 	release_name.c		\
@@ -57,3 +58,9 @@ libgssapi_la_SOURCES =		\
 	verify_mic.c		\
         wrap.c                  \
         address_to_krb5addr.c
+
+noinst_PROGRAMS = test_acquire_cred
+
+test_acquire_cred_SOURCES = test_acquire_cred.c
+
+test_acquire_cred_LDADD = ./libgssapi.la
