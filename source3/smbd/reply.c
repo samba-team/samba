@@ -2129,7 +2129,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   maxcount = MIN(65535,maxcount);
   maxcount = MAX(mincount,maxcount);
 
-  if (!is_locked(fsp,conn,maxcount,startpos, F_RDLCK))
+  if (!is_locked(fsp,conn,maxcount,startpos, READ_LOCK))
   {
     SMB_OFF_T size = fsp->size;
     SMB_OFF_T sizeneeded = startpos + maxcount;
@@ -2227,7 +2227,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
    * for a write lock. JRA.
    */
 
-  if(!do_lock( fsp, conn, numtoread, startpos, F_WRLCK, &eclass, &ecode)) {
+  if(!do_lock( fsp, conn, numtoread, startpos, WRITE_LOCK, &eclass, &ecode)) {
     if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
       /*
        * A blocking lock was requested. Package up
@@ -2281,7 +2281,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
   
-  if (is_locked(fsp,conn,numtoread,startpos, F_RDLCK))
+  if (is_locked(fsp,conn,numtoread,startpos, READ_LOCK))
     return(ERROR(ERRDOS,ERRlock));	
 
   if (numtoread > 0)
@@ -2349,7 +2349,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   }
 
-  if (is_locked(fsp,conn,smb_maxcnt,startpos, F_RDLCK))
+  if (is_locked(fsp,conn,smb_maxcnt,startpos, READ_LOCK))
     return(ERROR(ERRDOS,ERRlock));
   nread = read_file(fsp,data,startpos,smb_maxcnt);
   
@@ -2404,7 +2404,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CVAL(inbuf,smb_com) = SMBwritec;
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fsp,conn,tcount,startpos, F_WRLCK))
+  if (is_locked(fsp,conn,tcount,startpos, WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   if (numtowrite>0)
@@ -2490,7 +2490,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
+  if (is_locked(fsp,conn,numtowrite,startpos, WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   /* The special X/Open SMB protocol handling of
@@ -2544,7 +2544,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
+  if (is_locked(fsp,conn,numtowrite,startpos, WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   /* X/Open SMB protocol says that if smb_vwv1 is
@@ -2623,7 +2623,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 #endif /* LARGE_SMB_OFF_T */
   }
 
-  if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
+  if (is_locked(fsp,conn,numtowrite,startpos, WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   /* X/Open SMB protocol says that, unlike SMBwrite
@@ -2877,7 +2877,7 @@ int reply_writeclose(connection_struct *conn,
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
+	if (is_locked(fsp,conn,numtowrite,startpos, WRITE_LOCK))
 		return(ERROR(ERRDOS,ERRlock));
           
 	nwritten = write_file(fsp,data,startpos,numtowrite);
@@ -2926,7 +2926,7 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fd_ptr->fd, fsp->fnum, (double)offset, (double)count));
 
-	if (!do_lock(fsp, conn, count, offset, F_WRLCK, &eclass, &ecode)) {
+	if (!do_lock(fsp, conn, count, offset, WRITE_LOCK, &eclass, &ecode)) {
       if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
         /*
          * A blocking lock was requested. Package up
@@ -2946,7 +2946,6 @@ int reply_lock(connection_struct *conn,
 /****************************************************************************
   reply to a unlock
 ****************************************************************************/
-
 int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   int outsize = set_message(outbuf,0,0,True);
@@ -4248,7 +4247,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
     DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
 
-    if(!do_unlock(fsp,conn,count,offset,&eclass, &ecode))
+    if(!do_unlock(fsp,conn,count,offset, &eclass, &ecode))
       return ERROR(eclass,ecode);
   }
 
@@ -4274,7 +4273,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
     DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
 
-    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
+    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
                 &eclass, &ecode)) {
       if((ecode == ERRlock) && (lock_timeout != 0) && lp_blocking_locks(SNUM(conn))) {
         /*
@@ -4354,7 +4353,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   tcount = maxcount;
   total_read = 0;
 
-  if (is_locked(fsp,conn,maxcount,startpos, F_RDLCK))
+  if (is_locked(fsp,conn,maxcount,startpos, READ_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 	
   do
@@ -4416,7 +4415,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
      not an SMBwritebmpx - set this up now so we don't forget */
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fsp,conn,tcount,startpos,F_WRLCK))
+  if (is_locked(fsp,conn,tcount,startpos,WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   nwritten = write_file(fsp,data,startpos,numtowrite);
