@@ -612,9 +612,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		return NULL;
 	}
 
-	/* the %U substitution may have changed */
-	reload_services(True);
-	
 	/* Remember that a different vuid can connect later without these checks... */
 	
 	/* Preexecs are done here as they might make the dir we are to ChDir to below */
