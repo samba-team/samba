@@ -23,7 +23,7 @@
 #define _WINBINDD_H
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
-#define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX socket */
+#define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
 
 /* Naughty global stuff */
 
@@ -48,6 +48,7 @@ enum winbindd_cmd {
 
 struct winbindd_request {
     enum winbindd_cmd cmd;
+    pid_t pid;
 
     union {
         pstring username;
@@ -111,37 +112,40 @@ struct winbindd_state {
 
 struct getent_state {
     struct getent_state *prev, *next;
-    POLICY_HND sam_handle;
-    POLICY_HND sam_dom_handle;
     struct acct_info *sam_entries;
     uint32 sam_entry_index, num_sam_entries;  
-    fstring domain_name;
+    struct winbindd_domain *domain;
     BOOL got_sam_entries;
 };
 
-extern struct winbindd_domain_uid *domain_uid_list;
-extern struct winbindd_domain_gid *domain_gid_list;
 extern struct winbindd_domain *domain_list;
 
 /* Structures to hold domain list */
 
 struct winbindd_domain {
-    fstring domain_name;                     /* Domain name */
-    fstring domain_controller;               /* NetBIOS name of DC */
-    DOM_SID domain_sid;                      /* SID for this domain */
-    struct winbindd_domain *prev, *next;
-};
 
-struct winbindd_domain_uid {
-    struct winbindd_domain *domain;           /* Domain info */
-    uid_t uid_low, uid_high;                  /* Range of uids to allocate */
-    struct winbindd_domain_uid *prev, *next;
-};
+    /* Domain information */
 
-struct winbindd_domain_gid {
-    struct winbindd_domain *domain;           /* Domain info */
-    gid_t gid_low, gid_high;                  /* Range of gids to allocate */
-    struct winbindd_domain_gid *prev, *next;
+    fstring name;                          /* Domain name */
+
+    fstring controller;                    /* NetBIOS name of DC */
+    DOM_SID sid;                           /* SID for this domain */
+    BOOL got_domain_info;                  /* Got controller and sid */
+
+    uid_t uid_low, uid_high;               /* Range of uids to allocate */
+    gid_t gid_low, gid_high;               /* Range of gids to allocate */
+
+    /* Cached handle to lsa pipe */
+
+    POLICY_HND lsa_handle;
+    BOOL lsa_handle_open;
+
+    /* Cached handles to samr pipe */
+
+    POLICY_HND sam_handle, sam_dom_handle;
+    BOOL sam_handle_open, sam_dom_handle_open;
+
+    struct winbindd_domain *prev, *next;   /* Linked list info */
 };
 
 #include "rpc_parse.h"
