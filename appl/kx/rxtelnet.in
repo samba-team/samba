@@ -8,7 +8,8 @@ host=$1
 shift
 telnet_args=$*
 bindir=%bindir%
-PATH=$PATH:$bindir
+pdc_trams=`dirname $0`
+PATH=$pdc_trams:$bindir:$PATH
 set -- `kx $host`
 if test $# -ne 3; then
   exit 1
