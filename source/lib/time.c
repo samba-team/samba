@@ -543,6 +543,6 @@ struct timeval timeval_diff(struct timeval *tv1, struct timeval *tv2)
 */
 NTTIME timeval_to_nttime(struct timeval *tv)
 {
-	double t1 = tv->tv_sec + (tv->tv_usec*1.0e-6);
-	return (t1 + TIME_FIXUP_CONSTANT) * 1.0e7;
+	return 10*(tv->tv_usec + 
+		  ((TIME_FIXUP_CONSTANT + (uint64_t)tv->tv_sec) * 1000000));
 }
