@@ -38,28 +38,30 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 {
 	ADS_STATUS status;
 	int count = 3;
+	char *bp;
 
 	if (!ads->ld &&
 	    time(NULL) - ads->last_attempt < ADS_RECONNECT_TIME) {
 		return ADS_ERROR(LDAP_SERVER_DOWN);
 	}
 
+	bp = strdup(bind_path);
+
 	while (count--) {
-		status = ads_do_search(ads, bind_path, scope, exp, attrs, res);
+		status = ads_do_search(ads, bp, scope, exp, attrs, res);
 		if (ADS_ERR_OK(status)) {
 			DEBUG(5,("Search for %s gave %d replies\n",
 				 exp, ads_count_replies(ads, *res)));
+			free(bp);
 			return status;
 		}
 
 		if (*res) ads_msgfree(ads, *res);
 		*res = NULL;
-		DEBUG(1,("Reopening ads connection after error %s\n", 
-			 ads_errstr(status)));
+		DEBUG(1,("Reopening ads connection to %s after error %s\n", 
+			 ads->ldap_server, ads_errstr(status)));
 		if (ads->ld) {
-			/* we should unbind here, but that seems to trigger openldap bugs :(
-			   ldap_unbind(ads->ld); 
-			*/
+			ldap_unbind(ads->ld); 
 		}
 		ads->ld = NULL;
 		status = ads_connect(ads);
@@ -67,9 +69,11 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n",
 				 ads_errstr(status)));
 			ads_destroy(&ads);
+			free(bp);
 			return status;
 		}
 	}
+	free(bp);
 
 	DEBUG(1,("ads reopen failed after error %s\n", ads_errstr(status)));
 	return status;
@@ -725,7 +729,7 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 
 	if (!ADS_ERR_OK(rc)) {
 		/* its a dead connection */
-		ads_destroy(ads);
+		ads_destroy(&ads);
 		domain->private = NULL;
 	}
 
