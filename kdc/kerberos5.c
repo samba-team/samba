@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -166,6 +166,23 @@ find_keys(hdb_entry *client,
 #endif
 
 static krb5_error_code
+make_anonymous_principalname (PrincipalName *pn)
+{
+    pn->name_type = KRB5_NT_PRINCIPAL;
+    pn->name_string.len = 1;
+    pn->name_string.val = malloc(sizeof(*pn->name_string.val));
+    if (pn->name_string.val == NULL)
+	return ENOMEM;
+    pn->name_string.val[0] = strdup("anonymous");
+    if (pn->name_string.val[0] == NULL) {
+	free(pn->name_string.val);
+	pn->name_string.val = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+static krb5_error_code
 encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek, 
 	     krb5_enctype etype, 
 	     int skvno, EncryptionKey *skey,
@@ -321,6 +338,12 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
     return 0;
 }
 
+/*
+ * verify the flags on `client' and `server', returning 0
+ * if they are OK and generating an error messages and returning
+ * and error code otherwise.
+ */
+
 static int
 check_flags(hdb_entry *client, const char *client_name,
 	    hdb_entry *server, const char *server_name,
@@ -393,11 +416,18 @@ check_flags(hdb_entry *client, const char *client_name,
     return 0;
 }
 
+/*
+ * Return TRUE if `from' is part of `addresses' taking into consideration
+ * the configuration variables that tells us how strict we should be about
+ * these checks
+ */
+
 static krb5_boolean
-check_addresses(HostAddresses *addresses, struct sockaddr *from)
+check_addresses(HostAddresses *addresses, const struct sockaddr *from)
 {
     krb5_error_code ret;
     krb5_address addr;
+    krb5_boolean result;
     
     if(check_ticket_addresses == 0)
 	return TRUE;
@@ -409,7 +439,9 @@ check_addresses(HostAddresses *addresses, struct sockaddr *from)
     if(ret)
 	return FALSE;
 
-    return krb5_address_search(context, &addr, addresses);
+    result = krb5_address_search(context, &addr, addresses);
+    krb5_free_address (context, &addr);
+    return result;
 }
 
 krb5_error_code
@@ -430,8 +462,9 @@ as_rep(KDC_REQ *req,
     krb5_error_code ret = 0;
     const char *e_text = NULL;
     krb5_crypto crypto;
-
     Key *ckey, *skey;
+
+    memset(&rep, 0, sizeof(rep));
 
     if(b->sname == NULL){
 	server_name = "<unknown server>";
@@ -634,16 +667,6 @@ as_rep(KDC_REQ *req,
 	free(set);
     }
     
-
-    memset(&rep, 0, sizeof(rep));
-    rep.pvno = 5;
-    rep.msg_type = krb_as_rep;
-    copy_Realm(&b->realm, &rep.crealm);
-    copy_PrincipalName(b->cname, &rep.cname);
-    rep.ticket.tkt_vno = 5;
-    copy_Realm(&b->realm, &rep.ticket.realm);
-    copy_PrincipalName(b->sname, &rep.ticket.sname);
-
     {
 	char str[128];
 	unparse_flags(KDCOptions2int(f), KDCOptions_units, str, sizeof(str));
@@ -651,13 +674,25 @@ as_rep(KDC_REQ *req,
 	    kdc_log(2, "Requested flags: %s", str);
     }
     
-    if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey || 
-       f.request_anonymous){
+
+    if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey
+       || (f.request_anonymous && !allow_anonymous)) {
 	ret = KRB5KDC_ERR_BADOPTION;
 	kdc_log(0, "Bad KDC options -- %s", client_name);
 	goto out;
     }
     
+    rep.pvno = 5;
+    rep.msg_type = krb_as_rep;
+    copy_Realm(&b->realm, &rep.crealm);
+    if (f.request_anonymous)
+	make_anonymous_principalname (&rep.cname);
+    else
+	copy_PrincipalName(b->cname, &rep.cname);
+    rep.ticket.tkt_vno = 5;
+    copy_Realm(&b->realm, &rep.ticket.realm);
+    copy_PrincipalName(b->sname, &rep.ticket.sname);
+
     et.flags.initial = 1;
     if(client->flags.forwardable && server->flags.forwardable)
 	et.flags.forwardable = f.forwardable;
@@ -689,7 +724,7 @@ as_rep(KDC_REQ *req,
     }
 
     krb5_generate_random_keyblock(context, setype, &et.key);
-    copy_PrincipalName(b->cname, &et.cname);
+    copy_PrincipalName(&rep.cname, &et.cname);
     copy_Realm(&b->realm, &et.crealm);
     
     {
@@ -739,6 +774,9 @@ as_rep(KDC_REQ *req,
 	    et.flags.renewable = 1;
 	}
     }
+
+    if (f.request_anonymous)
+	et.flags.anonymous = 1;
     
     if(b->addresses){
 	ALLOC(et.caddr);
@@ -952,7 +990,7 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
     }	    
     
     /* checks for excess flags */
-    if(f.request_anonymous){
+    if(f.request_anonymous && !allow_anonymous){
 	kdc_log(0, "Request for anonymous ticket");
 	return KRB5KDC_ERR_BADOPTION;
     }
@@ -1089,7 +1127,10 @@ tgs_make_reply(KDC_REQ_BODY *b,
 	       &rep.ticket.realm);
     krb5_principal2principalname(&rep.ticket.sname, server->principal);
     copy_Realm(&tgt->crealm, &rep.crealm);
-    copy_PrincipalName(&tgt->cname, &rep.cname);
+    if (f.request_anonymous)
+	make_anonymous_principalname (&tgt->cname);
+    else
+	copy_PrincipalName(&tgt->cname, &rep.cname);
     rep.ticket.tkt_vno = 5;
 
     ek.caddr = et.caddr;
@@ -1140,7 +1181,8 @@ tgs_make_reply(KDC_REQ_BODY *b,
     }
     
     et.flags.pre_authent = tgt->flags.pre_authent;
-    et.flags.hw_authent = tgt->flags.hw_authent;
+    et.flags.hw_authent  = tgt->flags.hw_authent;
+    et.flags.anonymous   = tgt->flags.anonymous;
 	    
     /* XXX Check enc-authorization-data */
     et.authorization_data = auth_data;
