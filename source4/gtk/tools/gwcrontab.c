@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_atsvc.h"
+#include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 
 struct dcerpc_pipe *at_pipe = NULL;
@@ -79,7 +80,7 @@ static void on_job_select(GtkTreeSelection *sel,
 }
 
 
-void
+static void
 on_connect_activate                    (GtkMenuItem     *menuitem,
                                         gpointer         user_data)
 {

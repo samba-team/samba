@@ -27,7 +27,7 @@
 
 static void sig_cld(int signum)
 {
-	while (waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0)
+	while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0)
 		;
 
 	/*
