@@ -174,12 +174,14 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 
 void delete_nt_token(NT_USER_TOKEN **pptoken)
 {
-    if (*pptoken) {
+        if (*pptoken) {
 		NT_USER_TOKEN *ptoken = *pptoken;
-        safe_free( ptoken->user_sids );
-        ZERO_STRUCTP(ptoken);
-    }
-    safe_free(*pptoken);
+                
+                safe_free( ptoken->user_sids );
+                ZERO_STRUCTP(ptoken);
+        }
+
+        safe_free(*pptoken);
 	*pptoken = NULL;
 }
 
