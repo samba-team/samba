@@ -93,6 +93,10 @@ pstring fileselection = "";
 
 extern file_info def_finfo;
 
+/* readline variables */
+static pstring command_line;
+static int readline_event;
+
 /* timing globals */
 int get_total_size = 0;
 int get_total_time_ms = 0;
@@ -929,6 +933,7 @@ static BOOL do_mkdir(char *name)
 ****************************************************************************/
 static void cmd_quit(void)
 {
+	smb_readline_remove_handler();
 	cli_shutdown(cli);
 	exit(0);
 }
@@ -1601,27 +1606,6 @@ static BOOL list_servers(char *wk_grp)
 	return True;
 }
 
-#if defined(HAVE_LIBREADLINE)
-#  if defined(HAVE_READLINE_HISTORY_H) || defined(HAVE_HISTORY_H)
-/****************************************************************************
-history
-****************************************************************************/
-static void cmd_history(void)
-{
-	HIST_ENTRY **hlist;
-	register int i;
-
-	hlist = history_list ();	/* Get pointer to history list */
-	
-	if (hlist)			/* If list not empty */
-	{
-		for (i = 0; hlist[i]; i++)	/* then display it */
-			DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
-	}
-}
-#  endif 
-#endif
-
 /* Some constants for completing filename arguments */
 
 #define COMPL_NONE        0          /* No completions */
@@ -1677,9 +1661,7 @@ struct
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
-#ifdef HAVE_LIBREADLINE
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
-#endif
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
@@ -1737,7 +1719,6 @@ static void cmd_help(void)
 	}
 }
 
-#ifndef HAVE_LIBREADLINE
 /****************************************************************************
 wait for keyboard activity, swallowing network packets
 ****************************************************************************/
@@ -1756,7 +1737,10 @@ static void wait_keyboard(void)
 		sys_select_intr(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
       		
 		if (FD_ISSET(fileno(stdin),&fds))
-			return;
+		{
+			smb_rl_read_char();
+			if (readline_event != RL_NO_EVENTS) return;
+		}
 
 		/* We deliberately use receive_smb instead of
 		   client_receive_smb as we want to receive
@@ -1768,7 +1752,6 @@ static void wait_keyboard(void)
 		cli_chkpath(cli, "\\");
 	}  
 }
-#endif
 
 /****************************************************************************
 process a -c command string
@@ -1808,66 +1791,38 @@ static void process_command_string(char *cmd)
 	}
 }	
 
+
 /****************************************************************************
 process commands on stdin
 ****************************************************************************/
 static void process_stdin(void)
 {
-	pstring line;
 	char *ptr;
 
-#ifdef HAVE_LIBREADLINE
-/* Minimal readline support, 29Jun1999, s.xenitellis@rhbnc.ac.uk */
-#ifdef PROMPTSIZE
-#undef PROMPTSIZE
-#endif
-#define PROMPTSIZE 2048
-	char prompt_str[PROMPTSIZE];	/* This holds the buffer "smb: \dir1\> " */
+	init_smb_readline("smbclient", command_line, &readline_event);
 	
-        char *temp;			/* Gets the buffer from readline() */
-	temp = (char *)NULL;
-#endif
 	while (!feof(stdin)) {
 		fstring tok;
+		fstring prompt;
 		int i;
-#ifdef HAVE_LIBREADLINE
-		if ( temp != (char *)NULL )
-		{
-			free( temp );	/* Free memory allocated every time by readline() */
-			temp = (char *)NULL;
-		}
-
-		slprintf( prompt_str, PROMPTSIZE - 1, "smb: %s> ", cur_dir );
-
-		temp = readline( prompt_str );		/* We read the line here */
-
-		if ( !temp )
-			break;		/* EOF occured */
-
-		if ( *temp )		/* If non-empty line, save to history */
-			add_history (temp);
-	
-		strncpy( line, temp, 1023 ); /* Maximum size of (pstring)line. Null is guarranteed. */
-#else 
+		
 		/* display a prompt */
-		DEBUG(0,("smb: %s> ", cur_dir));
-		dbgflush( );
-		
+		slprintf(prompt, sizeof(prompt), "smb: %s> ", cur_dir);
+		smb_readline_prompt(prompt);
+
 		wait_keyboard();
-		
-		/* and get a response */
-		if (!fgets(line,1000,stdin))
+
+		if (readline_event == RL_GOT_EOF) /* got an eof */
 			break;
-#endif
 
 		/* special case - first char is ! */
-		if (*line == '!') {
-			system(line + 1);
+		if (*command_line == '!') {
+			system(command_line + 1);
 			continue;
 		}
       
 		/* and get the first part of the command */
-		ptr = line;
+		ptr = command_line;
 		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
 
 		if ((i = process_tok(tok)) >= 0) {
@@ -1878,6 +1833,7 @@ static void process_stdin(void)
 			DEBUG(0,("%s: command not found\n",tok));
 		}
 	}
+	smb_readline_remove_handler ();
 }
 
 
@@ -2223,11 +2179,7 @@ static int do_message_op(void)
 	*new_name_resolve_order = 0;
 
 	DEBUGLEVEL = 2;
-
-#ifdef HAVE_LIBREADLINE
-	/* Allow conditional parsing of the ~/.inputrc file. */
-	rl_readline_name = "smbclient";
-#endif    
+ 
 	setup_logging(pname,True);
 
 	/*
@@ -2537,7 +2489,7 @@ static int do_message_op(void)
 	if (message) {
 		return do_message_op();
 	}
-
+	
 	if (!process(base_directory)) {
 		return(1);
 	}

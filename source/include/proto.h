@@ -164,6 +164,14 @@ int ms_fnmatch(char *pattern, char *string);
 pid_t pidfile_pid(char *name);
 void pidfile_create(char *name);
 
+/*The following definitions come from  lib/readline.c  */
+
+void smb_rl_read_char (void);
+void init_smb_readline(char *prg_name, char *cline_ptr, int *event_ptr);
+void smb_readline_prompt(char *prompt);
+void smb_readline_remove_handler(void);
+void cmd_history(void);
+
 /*The following definitions come from  lib/replace.c  */
 
 char *rep_inet_ntoa(struct in_addr ip);
@@ -2003,8 +2011,9 @@ void pcap_printer_fn(void (*fn)(char *, char *));
 
 /*The following definitions come from  printing/print_cups.c  */
 
-void cups_printer_fn(void (*fn)(char *, char *));
-int cups_printername_ok(char *name);
+
+/*The following definitions come from  printing/print_generic.c  */
+
 
 /*The following definitions come from  printing/print_svid.c  */
 
