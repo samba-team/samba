@@ -41,6 +41,9 @@ static char hex_tag = HEXTAG;
 ********************************************************************/
 char *sj_strtok(char *s1, char *s2)
 {
+  if (lp_client_code_page() != KANJI_CODEPAGE) {
+   return strtok(s1, s2);
+  } else {
     static char *s = NULL;
     char *q;
     if (!s1) {
@@ -72,6 +75,7 @@ char *sj_strtok(char *s1, char *s2)
 	return q;
     }
     return NULL;
+  }
 }
 
 /*******************************************************************
@@ -80,6 +84,9 @@ char *sj_strtok(char *s1, char *s2)
 ********************************************************************/
 char *sj_strstr(char *s1, char *s2)
 {
+  if (lp_client_code_page() != KANJI_CODEPAGE) {
+    return strstr(s1, s2);
+  } else {
     int len = strlen ((char *) s2);
     if (!*s2) 
 	return (char *) s1;
@@ -95,6 +102,7 @@ char *sj_strstr(char *s1, char *s2)
 	}
     }
     return 0;
+  }
 }
 
 /*******************************************************************
@@ -103,6 +111,9 @@ char *sj_strstr(char *s1, char *s2)
 ********************************************************************/
 char *sj_strchr (char *s, int c)
 {
+  if (lp_client_code_page() != KANJI_CODEPAGE) {
+    return strchr(s, c);
+  } else {
     for (; *s; ) {
 	if (*s == c)
 	    return (char *) s;
@@ -113,6 +124,7 @@ char *sj_strchr (char *s, int c)
 	}
     }
     return 0;
+  }
 }
 
 /*******************************************************************
@@ -121,6 +133,9 @@ char *sj_strchr (char *s, int c)
 ********************************************************************/
 char *sj_strrchr(char *s, int c)
 {
+  if (lp_client_code_page() != KANJI_CODEPAGE) {
+    return strrchr(s, c);
+  } else {
     char *q;
 
     for (q = 0; *s; ) {
@@ -134,6 +149,7 @@ char *sj_strrchr(char *s, int c)
 	}
     }
     return q;
+  }
 }
 
 /*******************************************************************
