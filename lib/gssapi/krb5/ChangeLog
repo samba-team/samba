@@ -1,5 +1,7 @@
 1999-07-28  Assar Westerlund  <assar@sics.se>
 
+	* gssapi.h (GSS_C_AF_INET6): add
+
 	* import_name.c (import_hostbased_name): set minor_status
 
 1999-07-26  Assar Westerlund  <assar@sics.se>
