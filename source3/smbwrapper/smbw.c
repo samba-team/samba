@@ -1335,7 +1335,7 @@ int smbw_fork(void)
 /***************************************************** 
 say no to acls
 *******************************************************/
-int smbw_acl(const char *pathp, int cmd, int nentries, aclent_t *aclbufp)
+ int smbw_acl(const char *pathp, int cmd, int nentries, aclent_t *aclbufp)
 {
 	if (cmd == GETACL || cmd == GETACLCNT) return 0;
 	errno = ENOSYS;
@@ -1347,7 +1347,7 @@ int smbw_acl(const char *pathp, int cmd, int nentries, aclent_t *aclbufp)
 /***************************************************** 
 say no to acls
 *******************************************************/
-int smbw_facl(int fd, int cmd, int nentries, aclent_t *aclbufp)
+ int smbw_facl(int fd, int cmd, int nentries, aclent_t *aclbufp)
 {
 	if (cmd == GETACL || cmd == GETACLCNT) return 0;
 	errno = ENOSYS;
@@ -1358,7 +1358,7 @@ int smbw_facl(int fd, int cmd, int nentries, aclent_t *aclbufp)
 
 #ifdef HAVE_STAT64
 /* this can't be in wrapped.c because of include conflicts */
-void stat64_convert(struct stat *st, struct stat64 *st64)
+ void stat64_convert(struct stat *st, struct stat64 *st64)
 {
 	st64->st_size = st->st_size;
 	st64->st_mode = st->st_mode;
@@ -1377,7 +1377,7 @@ void stat64_convert(struct stat *st, struct stat64 *st64)
 #endif
 
 #ifdef HAVE_READDIR64
-void dirent64_convert(struct dirent *d, struct dirent64 *d64)
+ void dirent64_convert(struct dirent *d, struct dirent64 *d64)
 {
 	d64->d_ino = d->d_ino;
 	d64->d_off = d->d_off;
@@ -1412,7 +1412,7 @@ struct kernel_stat {
 	unsigned long int __unused5;
 };
 
-void xstat_convert(int vers, struct stat *st, struct kernel_stat *kbuf)
+ void xstat_convert(int vers, struct stat *st, struct kernel_stat *kbuf)
 {
 	if (vers == _STAT_VER_LINUX_OLD) {
 		memcpy(st, kbuf, sizeof(*st));
