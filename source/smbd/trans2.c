@@ -908,11 +908,14 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
     start_pos = TellDir(dirptr);
     for(current_pos = start_pos; current_pos >= 0; current_pos--)
     {
+      DEBUG(7,("call_trans2findnext: seeking to pos %d\n", current_pos));
+
       SeekDir(dirptr, current_pos);
       dname = ReadDirName(dirptr);
       if(dname && strcsequal( resume_name, dname))
       {
         SeekDir(dirptr, current_pos+1);
+        DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
         break;
       }
     }
@@ -923,12 +926,14 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 
     if(current_pos < 0)
     {
+      DEBUG(7,("call_trans2findnext: notfound: seeking to pos %d\n", start_pos));
       SeekDir(dirptr, start_pos);
       for(current_pos = start_pos; (dname = ReadDirName(dirptr)) != NULL; SeekDir(dirptr,++current_pos))
       {
         if(strcsequal( resume_name, dname))
         {
           SeekDir(dirptr, current_pos+1);
+          DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
           break;
         }
       } /* end for */

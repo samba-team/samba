@@ -103,7 +103,8 @@ static void asyncdns_process(void)
 }
 
 /**************************************************************************** **
-  catch a sigterm
+  catch a sigterm (in the child process - the parent has a different handler
+  see nmbd.c for details).
   We need a separate term handler here so we don't release any 
   names that our parent is going to release, or overwrite a 
   WINS db that our parent is going to write.
@@ -114,6 +115,17 @@ static int sig_term()
   _exit(0);
   /* Keep compiler happy.. */
   return 0;
+}
+
+/***************************************************************************
+ Called by the parent process when it receives a SIGTERM - also kills the
+ child so we don't get child async dns processes lying around, causing trouble.
+  ****************************************************************************/
+
+void kill_async_dns_child()
+{
+  if(child_pid != 0 && child_pid != -1)
+    kill(child_pid, SIGTERM);
 }
 
 /***************************************************************************
@@ -325,5 +337,13 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
         else
           send_wins_name_query_response(0, p, *n);
 	return False;
+}
+
+/***************************************************************************
+ With sync dns there is no child to kill on SIGTERM.
+  ****************************************************************************/
+void kill_async_dns_child()
+{
+  return;
 }
 #endif

@@ -74,6 +74,9 @@ static int sig_term()
   /* Announce all server entries as 0 time-to-live, 0 type. */
   announce_my_servers_removed();
 
+  /* If there was an async dns child - kill it. */
+  kill_async_dns_child();
+
   exit(0);
 
   /* Keep compiler happy.. */

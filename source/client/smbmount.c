@@ -136,13 +136,8 @@ extern int Client;
 
 #define USENMB
 
-static BOOL setup_term_code(char *code)
-{
-	interpret_coding_system(code);
-	return True;
-}
-#define CNV_LANG(s) dos2unix_format(s,False)
-#define CNV_INPUT(s) unix2dos_format(s,True)
+#define CNV_LANG(s) dos_to_unix(s,False)
+#define CNV_INPUT(s) unix_to_dos(s,True)
 
 /****************************************************************************
 check for existance of a dir
@@ -879,15 +874,7 @@ static void usage(char *pname)
 
   codepage_initialise(lp_client_code_page());
 
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-        if (!setup_term_code (term_code))
-    {
-            DEBUG(0, ("%s: unknown terminal code name\n", optarg));
-            usage (pname);
-            exit (1);
-        }
-  }
+  interpret_coding_system(term_code);
 
   if (*workgroup == 0)
     strcpy(workgroup,lp_workgroup());

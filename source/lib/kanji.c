@@ -27,6 +27,55 @@
 #define _KANJI_C_
 #include "includes.h"
 
+/*
+ * Function pointers that get overridden when multi-byte code pages
+ * are loaded.
+ */
+
+char *(*multibyte_strchr)(char *, int ) = (char *(*)(char *, int )) strchr;
+char *(*multibyte_strrchr)(char *, int ) = (char *(*)(char *, int )) strrchr;
+char *(*multibyte_strstr)(char *, char *) = (char *(*)(char *, char *)) strstr;
+char *(*multibyte_strtok)(char *, char *) = (char *(*)(char *, char *)) strtok;
+
+/*
+ * Kanji is treated differently here due to historical accident of
+ * it being the first non-English codepage added to Samba.
+ * The define 'KANJI' is being overloaded to mean 'use kanji codepage
+ * by default' and also 'this is the filename-to-disk conversion 
+ * method to use'. This really should be removed and all control
+ * over this left in the smb.conf parameters 'client codepage'
+ * and 'coding system'.
+ */
+
+#ifndef KANJI
+
+/*
+ * Set the default conversion to be the functions in
+ * charcnv.c.
+ */
+
+static int not_multibyte_char(char);
+
+char *(*_dos_to_unix)(char *, BOOL) = dos2unix_format;
+char *(*_unix_to_dos)(char *, BOOL) = unix2dos_format;
+int (*is_multibyte_char)(char) = not_multibyte_char;
+
+#else /* KANJI */
+
+/*
+ * Set the default conversion to be the function
+ * sj_to_sj in this file.
+ */
+
+static char *sj_to_sj(char *from, BOOL overwrite);
+static int kanji_multibyte_char(char);
+
+char *(*_dos_to_unix)(char *, BOOL) = sj_to_sj;
+char *(*_unix_to_dos)(char *, BOOL) = sj_to_sj;
+int (*is_multibyte_char)(char) = kanji_multibyte_char;
+
+#endif /* KANJI */
+
 /* jis si/so sequence */
 static char jis_kso = JIS_KSO;
 static char jis_ksi = JIS_KSI;
@@ -37,13 +86,10 @@ static char hex_tag = HEXTAG;
 ********************************************************************/
 /*******************************************************************
  search token from S1 separated any char of S2
- S1 contain SHIFT JIS chars.
+ S1 contains SHIFT JIS chars.
 ********************************************************************/
-char *sj_strtok(char *s1, char *s2)
+static char *sj_strtok(char *s1, char *s2)
 {
-  if (lp_client_code_page() != KANJI_CODEPAGE) {
-   return strtok(s1, s2);
-  } else {
     static char *s = NULL;
     char *q;
     if (!s1) {
@@ -75,18 +121,14 @@ char *sj_strtok(char *s1, char *s2)
 	return q;
     }
     return NULL;
-  }
 }
 
 /*******************************************************************
  search string S2 from S1
- S1 contain SHIFT JIS chars.
+ S1 contains SHIFT JIS chars.
 ********************************************************************/
-char *sj_strstr(char *s1, char *s2)
+static char *sj_strstr(char *s1, char *s2)
 {
-  if (lp_client_code_page() != KANJI_CODEPAGE) {
-    return strstr(s1, s2);
-  } else {
     int len = strlen ((char *) s2);
     if (!*s2) 
 	return (char *) s1;
@@ -102,18 +144,14 @@ char *sj_strstr(char *s1, char *s2)
 	}
     }
     return 0;
-  }
 }
 
 /*******************************************************************
  Search char C from beginning of S.
- S contain SHIFT JIS chars.
+ S contains SHIFT JIS chars.
 ********************************************************************/
-char *sj_strchr (char *s, int c)
+static char *sj_strchr (char *s, int c)
 {
-  if (lp_client_code_page() != KANJI_CODEPAGE) {
-    return strchr(s, c);
-  } else {
     for (; *s; ) {
 	if (*s == c)
 	    return (char *) s;
@@ -124,18 +162,14 @@ char *sj_strchr (char *s, int c)
 	}
     }
     return 0;
-  }
 }
 
 /*******************************************************************
  Search char C end of S.
- S contain SHIFT JIS chars.
+ S contains SHIFT JIS chars.
 ********************************************************************/
-char *sj_strrchr(char *s, int c)
+static char *sj_strrchr(char *s, int c)
 {
-  if (lp_client_code_page() != KANJI_CODEPAGE) {
-    return strrchr(s, c);
-  } else {
     char *q;
 
     for (q = 0; *s; ) {
@@ -149,7 +183,249 @@ char *sj_strrchr(char *s, int c)
 	}
     }
     return q;
+}
+
+/*******************************************************************
+ Kanji multibyte char function.
+*******************************************************************/
+   
+static int kanji_multibyte_char(char c)
+{
+  if(is_shift_jis(c)) {
+    return 2;
+  } else if (is_kana(c)) {
+    return 1;
   }
+  return 0;
+}
+
+/*******************************************************************
+  Hangul (Korean - code page 949) functions
+********************************************************************/
+/*******************************************************************
+ search token from S1 separated any char of S2
+ S1 contains hangul chars.
+********************************************************************/
+static char *hangul_strtok(char *s1, char *s2)
+{
+    static char *s = NULL;
+    char *q;
+    if (!s1) {
+        if (!s) {
+            return NULL;
+        }
+        s1 = s;
+    }
+    for (q = s1; *s1; ) {
+        if (is_hangul (*s1)) {
+            s1 += 2;
+        } else {
+            char *p = strchr (s2, *s1);
+            if (p) {
+                if (s1 != q) {
+                    s = s1 + 1;
+                    *s1 = '\0';
+                    return q;
+                }
+                q = s1 + 1;
+            }
+            s1++;
+        }
+    }
+    s = NULL;
+    if (*q) {
+        return q;
+    }
+    return NULL;
+}
+
+/*******************************************************************
+ search string S2 from S1
+ S1 contains hangul chars.
+********************************************************************/
+static char *hangul_strstr(char *s1, char *s2)
+{
+    int len = strlen ((char *) s2);
+    if (!*s2)
+        return (char *) s1;
+    for (;*s1;) {
+        if (*s1 == *s2) {
+            if (strncmp (s1, s2, len) == 0)
+                return (char *) s1;
+        }
+        if (is_hangul (*s1)) {
+            s1 += 2;
+        } else {
+            s1++;
+        }
+    }
+    return 0;
+}
+
+/*******************************************************************
+ Search char C from beginning of S.
+ S contains hangul chars.
+********************************************************************/
+static char *hangul_strchr (char *s, int c)
+{
+    for (; *s; ) {
+        if (*s == c)
+            return (char *) s;
+        if (is_hangul (*s)) {
+            s += 2;
+        } else {
+            s++;
+        }
+    }
+    return 0;
+}
+
+/*******************************************************************
+ Search char C end of S.
+ S contains hangul chars.
+********************************************************************/
+static char *hangul_strrchr(char *s, int c)
+{
+    char *q;
+ 
+    for (q = 0; *s; ) {
+        if (*s == c) {
+            q = (char *) s;
+        }
+        if (is_hangul (*s)) {
+            s += 2;
+        } else {
+            s++;
+        }
+    }
+    return q;
+}
+
+/*******************************************************************
+ Hangul multibyte char function.
+*******************************************************************/
+
+static int hangul_multibyte_char(char c)
+{
+  if( is_hangul(c)) {
+    return 2;
+  }
+  return 0;
+}
+
+/*******************************************************************
+  Big5 Traditional Chinese (code page 950) functions
+********************************************************************/
+
+/*******************************************************************
+ search token from S1 separated any char of S2
+ S1 contains big5 chars.
+********************************************************************/
+static char *big5_strtok(char *s1, char *s2)
+{
+    static char *s = NULL;
+    char *q;
+    if (!s1) {
+        if (!s) {
+            return NULL;
+        }
+        s1 = s;
+    }
+    for (q = s1; *s1; ) {
+        if (is_big5_c1 (*s1)) {
+            s1 += 2;
+        } else {
+            char *p = strchr (s2, *s1);
+            if (p) {
+                if (s1 != q) {
+                    s = s1 + 1;
+                    *s1 = '\0';
+                    return q;
+                }
+                q = s1 + 1;
+            }
+            s1++;
+        }
+    }
+    s = NULL;
+    if (*q) {
+        return q;
+    }
+    return NULL;
+}
+
+/*******************************************************************
+ search string S2 from S1
+ S1 contains big5 chars.
+********************************************************************/
+static char *big5_strstr(char *s1, char *s2)
+{
+    int len = strlen ((char *) s2);
+    if (!*s2)
+        return (char *) s1;
+    for (;*s1;) {
+        if (*s1 == *s2) {
+            if (strncmp (s1, s2, len) == 0)
+                return (char *) s1;
+        }
+        if (is_big5_c1 (*s1)) {
+            s1 += 2;
+        } else {
+            s1++;
+        }
+    }
+    return 0;
+}
+
+/*******************************************************************
+ Search char C from beginning of S.
+ S contains big5 chars.
+********************************************************************/
+static char *big5_strchr (char *s, int c)
+{
+    for (; *s; ) {
+        if (*s == c)
+            return (char *) s;
+        if (is_big5_c1 (*s)) {
+            s += 2;
+        } else {
+            s++;
+        }
+    }
+    return 0;
+}
+
+/*******************************************************************
+ Search char C end of S.
+ S contains big5 chars.
+********************************************************************/
+static char *big5_strrchr(char *s, int c)
+{
+    char *q;
+ 
+    for (q = 0; *s; ) {
+        if (*s == c) {
+            q = (char *) s;
+        }
+        if (is_big5_c1 (*s)) {
+            s += 2;
+        } else {
+            s++;
+        }
+    }
+    return q;
+}
+
+/*******************************************************************
+ Big5 multibyte char function.
+*******************************************************************/
+
+static int big5_multibyte_char(char c)
+{
+  if( is_big5_c1(c)) {
+    return 2;
+  }
+  return 0;
 }
 
 /*******************************************************************
@@ -770,17 +1046,17 @@ static char *sj_to_sj(char *from, BOOL overwrite)
  _dos_to_unix		_unix_to_dos
 ************************************************************************/
 
-char *(*_dos_to_unix)(char *str, BOOL overwrite) = sj_to_sj;
-char *(*_unix_to_dos)(char *str, BOOL overwrite) = sj_to_sj;
-
-static int setup_string_function(int codes)
+static void setup_string_function(int codes)
 {
     switch (codes) {
     default:
+        _dos_to_unix = dos2unix_format;
+        _unix_to_dos = unix2dos_format;
+        break;
+
     case SJIS_CODE:
 	_dos_to_unix = sj_to_sj;
 	_unix_to_dos = sj_to_sj;
-
 	break;
 	
     case EUC_CODE:
@@ -813,13 +1089,12 @@ static int setup_string_function(int codes)
 	_unix_to_dos = cap_to_sj;
 	break;
     }
-    return codes;
 }
 
 /*
  * Interpret coding system.
  */
-int interpret_coding_system(char *str)
+void interpret_coding_system(char *str)
 {
     int codes = UNKNOWN_CODE;
     
@@ -909,5 +1184,58 @@ int interpret_coding_system(char *str)
 	jis_kso = '@';
 	jis_ksi = 'H';
     }	
-    return setup_string_function (codes);
+    setup_string_function (codes);
+}
+
+/*******************************************************************
+ Non multibyte char function.
+*******************************************************************/
+   
+static int not_multibyte_char(char c)
+{
+  return 0;
+}
+
+/*******************************************************************
+ Setup the function pointers for the functions that are replaced
+ when multi-byte codepages are used.
+
+ The dos_to_unix and unix_to_dos function pointers are only
+ replaced by setup_string_function called by interpret_coding_system
+ above.
+*******************************************************************/
+
+void initialize_multibyte_vectors( int client_codepage)
+{
+  switch( client_codepage )
+  {
+  case KANJI_CODEPAGE:
+    multibyte_strchr = (char *(*)(char *, int )) sj_strchr;
+    multibyte_strrchr = (char *(*)(char *, int )) sj_strrchr;
+    multibyte_strstr = (char *(*)(char *, char *)) sj_strstr;
+    multibyte_strtok = (char *(*)(char *, char *)) sj_strtok;
+    is_multibyte_char = kanji_multibyte_char;
+    break;
+  case HANGUL_CODEPAGE:
+    multibyte_strchr = (char *(*)(char *, int )) hangul_strchr;
+    multibyte_strrchr = (char *(*)(char *, int )) hangul_strrchr;
+    multibyte_strstr = (char *(*)(char *, char *)) hangul_strstr;
+    multibyte_strtok = (char *(*)(char *, char *)) hangul_strtok;
+    is_multibyte_char = hangul_multibyte_char;
+    break;
+  case BIG5_CODEPAGE:
+    multibyte_strchr = (char *(*)(char *, int )) big5_strchr;
+    multibyte_strrchr = (char *(*)(char *, int )) big5_strrchr;
+    multibyte_strstr = (char *(*)(char *, char *)) big5_strstr;
+    multibyte_strtok = (char *(*)(char *, char *)) big5_strtok;
+    is_multibyte_char = big5_multibyte_char;
+    break;
+  default:
+    multibyte_strchr = (char *(*)(char *, int )) strchr;
+    multibyte_strrchr = (char *(*)(char *, int )) strrchr;
+    multibyte_strstr = (char *(*)(char *, char *)) strstr;
+    multibyte_strtok = (char *(*)(char *, char *)) strtok;
+    is_multibyte_char = not_multibyte_char;
+    break; 
+  }
 }

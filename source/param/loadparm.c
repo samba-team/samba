@@ -50,6 +50,17 @@
 #include "includes.h"
 
 /* Set default coding system for KANJI if none specified in Makefile. */
+/* 
+ * We treat KANJI specially due to historical precedent (it was the
+ * first non-english codepage added to Samba). With the new dynamic
+ * codepage support this is not needed anymore.
+ *
+ * The define 'KANJI' is being overloaded to mean 'use kanji codepage
+ * by default' and also 'this is the filename-to-disk conversion 
+ * method to use'. This really should be removed and all control
+ * over this left in the smb.conf parameters 'client codepage'
+ * and 'coding system'.
+ */
 #ifndef KANJI
 #define KANJI "sjis"
 #endif /* KANJI */
@@ -721,7 +732,6 @@ static void init_globals(void)
   Globals.bNISHomeMap = False;
   string_set(&Globals.szNISHomeMapName, "auto.home");
 #endif
-  interpret_coding_system(KANJI);
   Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
   Globals.bTimeServer = False;
   Globals.bBindInterfacesOnly = False;
@@ -748,6 +758,13 @@ static void init_globals(void)
   Globals.bWINSproxy = False;
 
   Globals.bDNSproxy = True;
+
+  /*
+   * This must be done last as it checks the value in 
+   * client_code_page.
+   */
+
+  interpret_coding_system(KANJI);
 }
 
 /***************************************************************************

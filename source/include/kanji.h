@@ -103,10 +103,13 @@
 #define bin2hex(x)						      \
     ( (((int) (x)) >= 10)? (((int) (x))-10 + (int) 'a'): (((int) (x)) + (int) '0') )
 
-#else /* not _KANJI_C_ */
+/* For Hangul (Korean - code page 949). */
+#define is_hangul(c) ((0x81 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xfd))
 
-extern char *(*_dos_to_unix)(char *str, BOOL overwrite);
-extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
+/* For traditional Chinese (known as Big5 encoding - code page 950). */
+#define is_big5_c1(c) ((0xa1 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xf9)) 
+
+#else /* not _KANJI_C_ */
 
 /*
  * The following is needed for AIX systems that have
@@ -130,12 +133,24 @@ extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
 #undef strtok
 #endif /* strtok */
 
-/* Ensure we use our definitions. */
+/* Ensure we use our definitions in all other files than kanji.c. */
 
-#define strchr sj_strchr
-#define strrchr sj_strrchr
-#define strstr sj_strstr
-#define strtok sj_strtok
+/* Function pointers we will replace. */
+extern char *(*multibyte_strchr)(char *s, int c);
+extern char *(*multibyte_strrchr)(char *s, int c);
+extern char *(*multibyte_strstr)(char *s1, char *s2);
+extern char *(*multibyte_strtok)(char *s1, char *s2);
+extern char *(*_dos_to_unix)(char *str, BOOL overwrite);
+extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
+extern BOOL (*is_multibyte_char)(char c);
+
+#define strchr(s1, c) ((*multibyte_strchr)((s1), (c)))
+#define strrchr(s1, c) ((*multibyte_strrchr)((s1), (c)))
+#define strstr(s1, s2) ((*multibyte_strstr)((s1), (s2)))
+#define strtok(s1, s2) ((*multibyte_strtok)((s1), (s2)))
+#define dos_to_unix(x,y) ((*_dos_to_unix)((x), (y)))
+#define unix_to_dos(x,y) ((*_unix_to_dos)((x), (y)))
+#define skip_multibyte_char(c) ((*is_multibyte_char)((c)))
 
 #endif /* _KANJI_C_ */
 
@@ -148,8 +163,5 @@ extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
 #define HEX_CODE (5)
 #define CAP_CODE (6)
 #define DOSV_CODE SJIS_CODE
-
-#define unix_to_dos(x,y) unix2dos_format(x,y)
-#define dos_to_unix(x,y) dos2unix_format(x,y)
 
 #endif /* _KANJI_H_ */
