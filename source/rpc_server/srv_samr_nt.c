@@ -1976,7 +1976,10 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	}
 
 	r_u->user_rid=sam_pass->user_rid;
-	r_u->unknown_0 = 0x000703ff;
+
+	/* This should probably be some subset of q_u->access_mask */
+
+	r_u->access_granted = 0x000703ff;
 
 	pdb_free_sam(sam_pass);
 

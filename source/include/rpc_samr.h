@@ -1459,7 +1459,7 @@ typedef struct r_samr_create_user_info
 {
 	POLICY_HND user_pol;       /* policy handle associated with user */
 
-	uint32 unknown_0;     /* 0x0007 03ff */
+	uint32 access_granted;
 	uint32 user_rid;      /* user RID */
 	NTSTATUS status;         /* return status */
 

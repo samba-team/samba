@@ -4962,7 +4962,7 @@ BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER * r_u,
 	if(!smb_io_pol_hnd("user_pol", &r_u->user_pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("unknown_0", ps, depth, &r_u->unknown_0))
+	if(!prs_uint32("access_granted", ps, depth, &r_u->access_granted))
 		return False;
 	if(!prs_uint32("user_rid ", ps, depth, &r_u->user_rid))
 		return False;
