@@ -5247,6 +5247,9 @@ static void usage(char *pname)
   if (!locking_init(0))
     exit(1);
 
+  if(!initialize_password_db())
+    exit(1);
+
   /* possibly reload the services file. */
   reload_services(True);
 

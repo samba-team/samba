@@ -31,11 +31,9 @@ static char s_readbuf[16 * 1024];
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer
  to ensure no modification outside this module.
+****************************************************************/
 
- do not call this function directly.  use passdb.c instead.
-
- ****************************************************************/
-void *startsmbfilepwent(BOOL update)
+static void *startsmbfilepwent(BOOL update)
 {
   FILE *fp = NULL;
   char *pfile = lp_smb_passwd_file();
@@ -73,7 +71,8 @@ void *startsmbfilepwent(BOOL update)
 /***************************************************************
  End enumeration of the smbpasswd list.
 ****************************************************************/
-void endsmbfilepwent(void *vp)
+
+static void endsmbfilepwent(void *vp)
 {
   FILE *fp = (FILE *)vp;
 
@@ -88,11 +87,9 @@ void endsmbfilepwent(void *vp)
  - the smbpasswd file
  - the unix password database
  - smb.conf options (not done at present).
-
- do not call this function directly.  use passdb.c instead.
-
  *************************************************************************/
-struct sam_passwd *getsmbfile21pwent(void *vp)
+
+static struct sam_passwd *getsmbfile21pwent(void *vp)
 {
 	struct smb_passwd *pw_buf = getsmbfilepwent(vp);
 	static struct sam_passwd user;
@@ -183,10 +180,8 @@ struct sam_passwd *getsmbfile21pwent(void *vp)
 
 /*************************************************************************
  Routine to return the next entry in the smbpasswd list.
-
- do not call this function directly.  use passdb.c instead.
-
  *************************************************************************/
+
 struct smb_passwd *getsmbfilepwent(void *vp)
 {
   /* Static buffers we will return. */
@@ -407,11 +402,9 @@ struct smb_passwd *getsmbfilepwent(void *vp)
 /*************************************************************************
  Return the current position in the smbpasswd list as an unsigned long.
  This must be treated as an opaque token.
-
- do not call this function directly.  use passdb.c instead.
-
 *************************************************************************/
-unsigned long getsmbfilepwpos(void *vp)
+
+static unsigned long getsmbfilepwpos(void *vp)
 {
   return (unsigned long)ftell((FILE *)vp);
 }
@@ -419,33 +412,27 @@ unsigned long getsmbfilepwpos(void *vp)
 /*************************************************************************
  Set the current position in the smbpasswd list from unsigned long.
  This must be treated as an opaque token.
-
- do not call this function directly.  use passdb.c instead.
-
 *************************************************************************/
-BOOL setsmbfilepwpos(void *vp, unsigned long tok)
+
+static BOOL setsmbfilepwpos(void *vp, unsigned long tok)
 {
   return !fseek((FILE *)vp, tok, SEEK_SET);
 }
 
 /************************************************************************
  Routine to add an entry to the smbpasswd file.
-
- do not call this function directly.  use passdb.c instead.
-
 *************************************************************************/
-BOOL add_smbfile21pwd_entry(struct sam_passwd *newpwd)
+
+static BOOL add_smbfile21pwd_entry(struct sam_passwd *newpwd)
 {
 	return False;
 }
 
 /************************************************************************
  Routine to add an entry to the smbpasswd file.
-
- do not call this function directly.  use passdb.c instead.
-
 *************************************************************************/
-BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
+
+static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
 {
   char *pfile = lp_smb_passwd_file();
   struct smb_passwd *pwd = NULL;
@@ -575,10 +562,8 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
  in the actual file to decide how much room we have to write data.
  override = False, normal
  override = True, override XXXXXXXX'd out password or NO PASS
-
- do not call this function directly.  use passdb.c instead.
-
 ************************************************************************/
+
 BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
 	return False;
@@ -591,10 +576,8 @@ BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override)
  in the actual file to decide how much room we have to write data.
  override = False, normal
  override = True, override XXXXXXXX'd out password or NO PASS
-
- do not call this function directly.  use passdb.c instead.
-
 ************************************************************************/
+
 BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
 {
   /* Static buffers we will return. */
@@ -936,6 +919,29 @@ BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   fclose(fp);
   return True;
 }
+
+static struct passdb_ops file_ops = {
+  startsmbfilepwent,
+  endsmbfilepwent,
+  getsmbfilepwpos,
+  setsmbfilepwpos,
+  iterate_getsmbpwnam,          /* In passdb.c */
+  iterate_getsmbpwuid,          /* In passdb.c */
+  getsmbfilepwent,
+  add_smbfilepwd_entry,
+  mod_smbfilepwd_entry,
+  getsmbfile21pwent,
+  iterate_getsam21pwnam,        /* In passdb.c */
+  iterate_getsam21pwuid,        /* In passdb.c */
+  add_smbfile21pwd_entry,
+  mod_smbfile21pwd_entry
+};
+
+struct passdb_ops *file_initialize_password_db(void)
+{    
+  return &file_ops;
+}
+
 #else
 static void dummy_function(void) { } /* stop some compilers complaining */
 #endif /* USE_SMBPASS_DB */

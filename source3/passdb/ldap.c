@@ -725,7 +725,7 @@ static BOOL modadd_ldap21pwd_entry(struct sam_passwd *newpwd, int flag)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
+static BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
 {
 	return (modadd_ldappwd_entry(newpwd, ADD_USER) );
 }
@@ -741,7 +741,7 @@ BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
  do not call this function directly.  use passdb.c instead.
 
 ************************************************************************/
-BOOL mod_ldappwd_entry(struct smb_passwd *pwd, BOOL override)
+static BOOL mod_ldappwd_entry(struct smb_passwd *pwd, BOOL override)
 {
 	return (modadd_ldappwd_entry(pwd, MODIFY_USER) );
 }
@@ -752,7 +752,7 @@ BOOL mod_ldappwd_entry(struct smb_passwd *pwd, BOOL override)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-BOOL add_ldap21pwd_entry(struct sam_passwd *newpwd)
+static BOOL add_ldap21pwd_entry(struct sam_passwd *newpwd)
 {	
 	return( modadd_ldappwd_entry(newpwd, ADD_USER)?
 	modadd_ldap21pwd_entry(newpwd, ADD_USER):False);
@@ -769,7 +769,7 @@ BOOL add_ldap21pwd_entry(struct sam_passwd *newpwd)
  do not call this function directly.  use passdb.c instead.
 
 ************************************************************************/
-BOOL mod_ldap21pwd_entry(struct sam_passwd *pwd, BOOL override)
+static BOOL mod_ldap21pwd_entry(struct sam_passwd *pwd, BOOL override)
 {
 	return( modadd_ldappwd_entry(pwd, MODIFY_USER)?
 	modadd_ldap21pwd_entry(pwd, MODIFY_USER):False);
@@ -791,7 +791,7 @@ static struct ldap_enum_info ldap_ent;
  do not call this function directly.  use passdb.c instead.
 
  ****************************************************************/
-void *startldappwent(BOOL update)
+static void *startldappwent(BOOL update)
 {
 	int scope = LDAP_SCOPE_ONELEVEL;
 	int rc;
@@ -843,7 +843,7 @@ void *startldappwent(BOOL update)
  do not call this function directly.  use passdb.c instead.
 
  *************************************************************************/
-struct smb_passwd *getldappwent(void *vp)
+static struct smb_passwd *getldappwent(void *vp)
 {
 	static struct smb_passwd user;
 	struct ldap_enum_info *ldap_vp = (struct ldap_enum_info *)vp;
@@ -864,7 +864,7 @@ struct smb_passwd *getldappwent(void *vp)
  do not call this function directly.  use passdb.c instead.
 
  *************************************************************************/
-struct sam_passwd *getldap21pwent(void *vp)
+static struct sam_passwd *getldap21pwent(void *vp)
 {
 	static struct sam_passwd user;
 	struct ldap_enum_info *ldap_vp = (struct ldap_enum_info *)vp;
@@ -885,7 +885,7 @@ struct sam_passwd *getldap21pwent(void *vp)
  do not call this function directly.  use passdb.c instead.
 
 ****************************************************************/
-void endldappwent(void *vp)
+static void endldappwent(void *vp)
 {
 	struct ldap_enum_info *ldap_vp = (struct ldap_enum_info *)vp;
 	ldap_msgfree(ldap_vp->result);
@@ -899,7 +899,7 @@ void endldappwent(void *vp)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-unsigned long getldappwpos(void *vp)
+static unsigned long getldappwpos(void *vp)
 {
 	return 0;
 }
@@ -911,9 +911,60 @@ unsigned long getldappwpos(void *vp)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-BOOL setldappwpos(void *vp, unsigned long tok)
+static BOOL setldappwpos(void *vp, unsigned long tok)
 {
 	return False;
+}
+
+/*
+ * Ldap derived functions.
+ */
+
+static struct smb_passwd *getldappwnam(char *name)
+{
+  return pdb_sam_to_smb(iterate_getsam21pwnam(name));
+}
+
+static struct smb_passwd *getldappwuid(uid_t smb_userid)
+{
+  return pdb_sam_to_smb(iterate_getsam21pwuid(smb_userid));
+}
+
+static struct smb_passwd *getldappwent(void *vp)
+{
+  return pdb_sam_to_smb(getldap21pwent(vp));
+}
+
+static BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
+{
+  return add_ldap21pwd_entry(pdb_smb_to_sam(newpwd));
+}
+
+static BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
+{
+  return mod_ldap21pwd_entry(pdb_smb_to_sam(pwd), override);
+}
+
+static struct passdb_ops ldap_ops = {
+  startldappwent,
+  endldappwent,
+  getldappwpos,
+  setldappwpos,
+  getldappwnam,
+  getldappwuid,
+  getldappwent, 
+  add_ldappwd_entry,
+  mod_ldappwd_entry,
+  getldap21pwent,
+  iterate_getsam21pwnam,       /* From passdb.c */
+  iterate_getsam21pwuid,       /* From passdb.c */
+  add_ldap21pwd_entry,
+  mod_ldap21pwd_entry
+};
+
+struct passdb_ops *ldap_initialize_password_db(void)
+{
+  return &ldap_ops;
 }
 
 #else

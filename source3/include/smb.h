@@ -332,7 +332,6 @@ struct sam_disp_info
 	char *full_name;    /* user's full name string */
 };
 
-
 /* DOM_CHAL - challenge info */
 typedef struct chal_info
 {
@@ -635,8 +634,45 @@ struct shmem_ops {
 	unsigned (*hash_size)(void);
 };
 
+/*
+ * Each implementation of the password database code needs
+ * to support the following operations.
+ */
+
+struct passdb_ops {
+  /*
+   * Password database ops.
+   */
+  void *(*startsmbpwent)(BOOL);
+  void (*endsmbpwent)(void *);
+  unsigned long (*getsmbpwpos)(void *);
+  BOOL (*setsmbpwpos)(void *, unsigned long);
+  /*
+   * smb password database query functions.
+   */
+  struct smb_passwd *(*getsmbpwnam)(char *);
+  struct smb_passwd *(*getsmbpwuid)(uid_t);
+  struct smb_passwd *(*getsmbpwent)(void *);
+  /*
+   * smb password database modification functions.
+   */
+  BOOL (*add_smbpwd_entry)(struct smb_passwd *);
+  BOOL (*mod_smbpwd_entry)(struct smb_passwd *, BOOL);
+
+  /*
+   * Functions that manupulate a struct sam_passwd.
+   */
+  struct sam_passwd *(*getsam21pwent)(void *);
+
+  struct sam_passwd *(*getsam21pwnam)(char *);
+  struct sam_passwd *(*getsam21pwuid)(uint32);
+
+  BOOL (*add_sam21pwd_entry)(struct sam_passwd *);
+  BOOL (*mod_sam21pwd_entry)(struct sam_passwd *, BOOL);
+};
 
 /* this is used for smbstatus */
+
 struct connect_record
 {
   int magic;
