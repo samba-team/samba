@@ -12,6 +12,8 @@
 
 2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
 
+	* ipropd_slave.c: use krb5_read_priv_message
+
 	* ipropd_master.c: use krb5_{read,write}_priv_message
 
 	* init_c.c: use krb5_write_priv_message
