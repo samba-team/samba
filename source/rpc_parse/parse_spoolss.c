@@ -333,10 +333,9 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 		return False;
 	if(!prs_uint32("id",             ps, depth, &data->id))
 		return False;
-#if 1 /* JRATEST - NEEDED ???? */
 	if(!prs_uint32("how many words", ps, depth, &how_many_words))
 		return False;
-#endif /* JRATEST - NEEDED ???? */
+
 
 	/*prs_align(ps);*/
 
@@ -1358,7 +1357,7 @@ static BOOL spoolss_smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int d
  ********************************************************************/
 static BOOL new_smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR *string)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 	
 	if (MARSHALLING(ps)) {
 		uint32 struct_offset = prs_offset(ps);
@@ -1421,15 +1420,6 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		p=*string;
 		q=*string;
 
-#if 0 /* JRATEST */
-		if (p == NULL) {
-			relative_offset = 0;
-			if (!prs_uint32("offset", ps, depth, &relative_offset))
-				return False;
-			return True;
-		}
-#endif
-		
 		/* first write the last 0 */
 		buffer->string_at_end -= 2;
 		if(!prs_set_offset(ps, buffer->string_at_end))
@@ -1437,13 +1427,6 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 
 		if(!prs_uint16("leading zero", ps, depth, &zero))
 			return False;
-
-#if 0 /* JRATEST */
-		if (p == NULL)
-			p = &zero;
-		if (q == NULL)
-			q = &zero;
-#endif /* JRATEST */
 
 		while (p && (*p!=0)) {	
 			while (*q!=0)
@@ -1532,11 +1515,15 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		}
 		
 		if (*secdesc != NULL) {
+#if 0 /* JRATEST */
+			if(!prs_set_offset(ps, 0x54))
+				return False;
+#else
 			buffer->string_at_end -= sec_desc_size(*secdesc);
 
 			if(!prs_set_offset(ps, buffer->string_at_end))
 				return False;
-			
+#endif
 			/* write the secdesc */
 			if (!sec_io_desc(desc, secdesc, ps, depth))
 				return False;
@@ -1547,6 +1534,10 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 
 		relative_offset=buffer->string_at_end - buffer->struct_start;
 		/* write its offset */
+#if 0 /* JRATEST */
+		relative_offset = 0x54;
+#endif
+
 		if (!prs_uint32("offset", ps, depth, &relative_offset))
 			return False;
 	} else {
@@ -1763,6 +1754,7 @@ BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *i
 ********************************************************************/  
 BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
+	uint32 sec_offset;
 	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_2");
@@ -1798,7 +1790,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!new_smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
-	if (!new_smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
+	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, NULL, &sec_offset))
 		return False;
 
 	if (!prs_uint32("attributes", ps, depth, &info->attributes))
@@ -1816,6 +1808,12 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!prs_uint32("jobs", ps, depth, &info->cjobs))
 		return False;
 	if (!prs_uint32("averageppm", ps, depth, &info->averageppm))
+		return False;
+
+	if (!prs_uint32_post("secdesc_ptr", ps, depth, NULL, sec_offset, info->secdesc ? prs_offset(ps) : 0 ))
+		return False;
+
+	if (!sec_io_desc("secdesc", &info->secdesc, ps, depth)) 
 		return False;
 
 	return True;

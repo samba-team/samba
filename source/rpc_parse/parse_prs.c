@@ -817,7 +817,7 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, int len, int m
 
 BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset)
 {
-	(*offset) = ps->data_offset;
+	*offset = ps->data_offset;
 	if (UNMARSHALLING(ps)) {
 		/* reading. */
 		return prs_uint16(name, ps, depth, data16);
@@ -864,7 +864,7 @@ BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 
 BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
 {
-	(*offset) = ps->data_offset;
+	*offset = ps->data_offset;
 	if (UNMARSHALLING(ps)) {
 		/* reading. */
 		return prs_uint32(name, ps, depth, data32);
