@@ -47,7 +47,7 @@ int net_common_flags_usage(int argc, const char **argv)
 	d_printf("\t-U or --user=<name>\t\tuser name\n");
 	d_printf("\t-s or --configfile=<path>\t\tpathname of smb.conf file\n");
 	d_printf("\t-l or --long\t\t\tDisplay full information\n");
-	d_printf("\t-V or --version\t\tPrint samba version information\n");
+	d_printf("\t-V or --version\t\t\tPrint samba version information\n");
 	d_printf("\t-P or --machine-pass\t\tAuthenticate as machine account\n");
 	return -1;
 }
@@ -60,7 +60,8 @@ static int help_usage(int argc, const char **argv)
 "\n"\
 "Valid functions are:\n"\
 "  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
-"  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP GETLOCALSID SETLOCALSID\n");
+"  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP GETLOCALSID SETLOCALSID\n"\
+"  CHANGESCRETPW\n");
 	return -1;
 }
 
@@ -156,6 +157,8 @@ static int net_usage(int argc, const char **argv)
 		 "  net cache\t\tto operate on cache tdb file\n"\
 		 "  net getlocalsid [NAME]\tto get the SID for local name\n"\
 		 "  net setlocalsid SID\tto set the local domain SID\n"\
+		 "  net changesecretpw\tto change the machine password in the local secrets database only\n"\
+		 "                    \tthis requires the -f flag as a safety barrier\n"\
 		 "\n"\
 		 "  net ads <command>\tto run ADS commands\n"\
 		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\

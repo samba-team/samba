@@ -40,7 +40,8 @@ Major new features:
 7)  Better Windows 2000/XP/2003 printing support including publishing 
     printer attributes in active directory.
 
-8)  New loadable RPC modules.
+8)  New loadable module support for passdb backends and 
+    character sets.
 
 9)  New default dual-daemon winbindd support for better performance.
 
@@ -73,17 +74,17 @@ refer to the various man pages for information on individual options.
 
 
 ######################################################################
-Changes since 3.0rc
-###################
+Changes since 3.0rc1
+####################
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details:
 
 1)  Add levels 261 and 262 to search. Found using Samba4 tester.
-2)  Correct bad errot return code in session setup reply
+2)  Correct bad error return code in session setup reply
 3)  Fix bug where smbd returned DOS error codes from SMBsearch
     even when NT1 protocol was negotiated.
-4)  Implement SMBxit properly.
+4)  Implement SMBexit properly.
 5)  Return group lists from a Samba PDC to a Windows 9x/ME box
     in implementing user level access control (bug 314).
 6)  Prevent SWAT from crashing when adding shares (bug 254)
@@ -99,29 +100,29 @@ details:
 14) Include initial version of smbldap-tool scripts for the Samba 
     3.0 schema.
 15) Implement numerous fixes for multi-byte character strings.
-16) Enable unix extensions by default.
-17) Make sure we set the sid type when falling back to the rid 
+16) Enable 'unix extensions' parameter by default.
+17) Make sure we set the SID type when falling back to the rid 
     algorithm (bug 245).
 18) Correct linking problems with pam_smbpass (bug 327).
 19) Add SYSV defines for Irix and Solaris to ensure the 'printing'
     parameter default to the correct value (bug 230)
-20) Fix recusion bug in alloc_string+sub() (bug 289, et. al.)
+20) Fix recursion bug in alloc_string_sub() (bug 289, et. al.)
 21) Ensure that 'make install' includes the static and shared 
     versions of the libsmbclient libraries.
 22) Add CP850 and CP437 internal character set support (bug 150).
-23) Add support to examples/LDAP/convertSambaAccuont for generating
-    LDIF modify files instaed of just add (303).
+23) Add support to examples/LDAP/convertSambaAccount for generating
+    LDIF modify files instead of just add (303).
 24) Fix support for -W option in smbclient (bug 39)
 25) Remove 'ldap trust ids' parameter since it could not be supported
     by the current architecture.
 26) Don't crash when no argument is given to -T in smbclient (bug 345).
 27) Ensure smbadduser contains the same paths for the smbpasswd file 
     as the other Samba tools (bug 290).
-28) Port of 'avalable = no' fix for [homes] from SAMBA_2_2 cvs tree.
+28) Port of 'available = no' fix for [homes] from SAMBA_2_2 cvs tree.
 29) Add sanity checks to DeletePrinterData[Ex]() and ensure that the
     modified printer is written to disk.
-30) Force winbindd to preiodically update the trusted domain cache.
-31) Remove outdate import/export script to convert an smbpasswd file
+30) Force winbindd to periodically update the trusted domain cache.
+31) Remove outdated import/export script to convert an smbpasswd file
     to and from and LDAP directory.  Use the pdbedit tool instead.
 
 
@@ -214,7 +215,7 @@ Changes since 3.0beta3
 53) Add vfs_readonly VFS module.
 54) Make sure to initialize the sambaNextUserRid and sambaNextGroupRid
     attributes when using 'idmap backend = ldap' (bug 280).
-55) Make sure that UNIX users shared between a Samba PDC and member 
+55) Make sure that users shared between a Samba PDC and member 
     samba server are seen as domain users and not local users on the 
     domain member.
 56) Fix Query FS Info level 2.
