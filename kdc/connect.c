@@ -242,7 +242,7 @@ init_socket(struct descr *d, krb5_address *a, int family, int type, int port)
 
     init_descr (d);
 
-    ret = krb5_addr2sockaddr (a, sa, &sa_size, port);
+    ret = krb5_addr2sockaddr (context, a, sa, &sa_size, port);
     if (ret) {
 	krb5_warn(context, ret, "krb5_addr2sockaddr");
 	close(d->s);
@@ -401,7 +401,7 @@ static void
 addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
 {
     krb5_address a;
-    krb5_sockaddr2address(addr, &a);
+    krb5_sockaddr2address(context, addr, &a);
     if(krb5_print_address(&a, str, len, &len) == 0) {
 	krb5_free_address(context, &a);
 	return;
