@@ -321,11 +321,7 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
  array of \PIPE\NETLOGON operations
  ********************************************************************/
 
-#ifdef RPC_NETLOG_DYNAMIC
-int rpc_pipe_init(void)
-#else
 int rpc_net_init(void)
-#endif
 {
   static struct api_struct api_net_cmds [] =
     {

@@ -506,46 +506,6 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
  The switch table for the pipe names and the functions to handle them.
  *******************************************************************/
 
-struct api_cmd
-{
-  const char *name;
-  int (*init)(void);
-};
-
-static struct api_cmd api_fd_commands[] =
-{
-#ifndef RPC_LSA_DYNAMIC
-    { "lsarpc",   rpc_lsa_init },
-#endif
-#ifndef RPC_SAMR_DYNAMIC
-    { "samr",     rpc_samr_init },
-#endif
-#ifndef RPC_SVC_DYNAMIC
-    { "srvsvc",   rpc_srv_init },
-#endif
-#ifndef RPC_WKS_DYNAMIC
-    { "wkssvc",   rpc_wks_init },
-#endif
-#ifndef RPC_NETLOG_DYNAMIC
-    { "NETLOGON", rpc_net_init },
-#endif
-#ifndef RPC_REG_DYNAMIC
-    { "winreg",   rpc_reg_init },
-#endif
-#ifndef RPC_SPOOLSS_DYNAMIC
-    { "spoolss",  rpc_spoolss_init },
-#endif
-#ifndef RPC_DFS_DYNAMIC
-    { "netdfs",   rpc_dfs_init },
-#endif
-#ifdef DEVELOPER
-#ifndef RPC_ECHO_DYNAMIC
-    { "rpcecho",   rpc_echo_init },
-#endif
-#endif
-    { NULL, NULL }
-};
-
 struct rpc_table
 {
   struct
@@ -849,47 +809,6 @@ int rpc_pipe_register_commands(const char *clnt, const char *srv, const struct a
 }
 
 /*******************************************************************
- Register commands to an RPC pipe
-*******************************************************************/
-int rpc_load_module(const char *module)
-{
-#ifdef HAVE_DLOPEN
-        void *handle;
-        int (*module_init)(void);
-        pstring full_path;
-        const char *error;
-        
-        pstrcpy(full_path, lib_path("rpc"));
-        pstrcat(full_path, "/librpc_");
-        pstrcat(full_path, module);
-        pstrcat(full_path, ".");
-        pstrcat(full_path, shlib_ext());
-
-        handle = sys_dlopen(full_path, RTLD_LAZY);
-        if (!handle) {
-                DEBUG(0, ("Could not load requested pipe %s as %s\n", 
-                    module, full_path));
-                DEBUG(0, (" Error: %s\n", dlerror()));
-                return 0;
-        }
-        
-        DEBUG(3, ("Module '%s' loaded\n", full_path));
-        
-        module_init = sys_dlsym(handle, "rpc_pipe_init");
-        if ((error = sys_dlerror()) != NULL) {
-                DEBUG(0, ("Error trying to resolve symbol 'rpc_pipe_init' in %s: %s\n",
-                          full_path, error));
-                return 0;
-        }
-        
-        return module_init();
-#else
-        DEBUG(0,("Attempting to load a dynamic RPC pipe when dlopen isn't available\n"));
-        return 0;
-#endif
-}
-
-/*******************************************************************
  Respond to a pipe bind request.
 *******************************************************************/
 
@@ -928,14 +847,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	}
 
 	if (i == rpc_lookup_size) {
-                for (i = 0; api_fd_commands[i].name; i++) {
-                       if (strequal(api_fd_commands[i].name, p->name)) {
-                               api_fd_commands[i].init();
-                               break;
-                       }
-                }
-
-                if (!api_fd_commands[i].name && !rpc_load_module(p->name)) {
+				if (!smb_probe_module("rpc", p->name)) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
                                 p->name ));
                        if(!setup_bind_nak(p))
@@ -951,6 +863,11 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
                                break;
                        }
                 }
+
+				if (i == rpc_lookup_size) {
+					DEBUG(0, ("module %s doesn't provide functions for pipe %s!\n", p->name, p->name));
+					return False;
+				}
 	}
 
 	/* decode the bind request */
@@ -1478,16 +1395,7 @@ BOOL api_pipe_request(pipes_struct *p)
 
 
 	if (i == rpc_lookup_size) {
-	        for (i = 0; api_fd_commands[i].name; i++) {
-                        if (strequal(api_fd_commands[i].name, p->name)) {
-                                api_fd_commands[i].init();
-                                break;
-                        }
-                }
-
-                if (!api_fd_commands[i].name) {
-                       rpc_load_module(p->name);
-                }
+		smb_probe_module("rpc", p->name);
 
                 for (i = 0; i < rpc_lookup_size; i++) {
                         if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
