@@ -812,12 +812,15 @@ main(int argc, char **argv)
     const char *local_user;
     char *host = NULL;
     int host_index = -1;
-    int status; 
+    int status;
+    uid_t uid;
 
     priv_port1 = priv_port2 = IPPORT_RESERVED-1;
     priv_socket1 = rresvport(&priv_port1);
     priv_socket2 = rresvport(&priv_port2);
-    setuid(getuid());
+    uid = getuid ();
+    if (setuid (uid) || (uid != 0 && setuid(0) == 0))
+	err (1, "setuid");
     
     set_progname (argv[0]);
 

@@ -405,7 +405,8 @@ main(int argc, char **argv)
 	    err(1, "setgid");
 	if (initgroups (su_info->pw_name, su_info->pw_gid) < 0)
 	    err (1, "initgroups");
-	if(setuid(su_info->pw_uid) < 0)
+	if(setuid(su_info->pw_uid) < 0
+	   || (su_info->pw_uid != 0 && setuid(0) == 0))
 	    err(1, "setuid");
 
 #ifdef KRB5
