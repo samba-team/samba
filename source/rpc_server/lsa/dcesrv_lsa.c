@@ -122,8 +122,8 @@ static NTSTATUS lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 			return NT_STATUS_NO_MEMORY;
 		}
 		e = &r->out.privs->privs[r->out.privs->count];
-		e->luid_low = i;
-		e->luid_high = 0;
+		e->luid.low = i;
+		e->luid.high = 0;
 		e->name.string = privname;
 		r->out.privs->count++;
 		i++;
@@ -821,18 +821,36 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   lsa_LookupPrivValue
 */
-static NTSTATUS lsa_LookupPrivValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_LookupPrivValue *r)
+static NTSTATUS lsa_LookupPrivValue(struct dcesrv_call_state *dce_call, 
+				    TALLOC_CTX *mem_ctx,
+				    struct lsa_LookupPrivValue *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_policy_state *state;
+	int id;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	id = sec_privilege_id(r->in.name->string);
+	if (id == -1) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+
+	r->out.luid->low = id;
+	r->out.luid->high = 0;
+
+	return NT_STATUS_OK;	
 }
 
 
 /* 
   lsa_LookupPrivName 
 */
-static NTSTATUS lsa_LookupPrivName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_LookupPrivName *r)
+static NTSTATUS lsa_LookupPrivName(struct dcesrv_call_state *dce_call, 
+				   TALLOC_CTX *mem_ctx,
+				   struct lsa_LookupPrivName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

@@ -36,9 +36,13 @@
 	} lsa_String;
 
 	typedef struct {
+		uint32 low;
+		uint32 high;
+	} lsa_LUID;
+	
+	typedef struct {
 		lsa_String name;
-		uint32 luid_low;
-		uint32 luid_high;
+		lsa_LUID luid;
 	} lsa_PrivEntry;
 
 	typedef struct {
@@ -359,11 +363,6 @@
 	/* Function:    0x12                    */
 
 	typedef struct {
-		uint32 low;
-		uint32 high;
-	} lsa_LUID;
-	
-	typedef struct {
 		lsa_LUID luid;
 		uint32 attribute;
 	} lsa_LUIDAttribute;
@@ -540,7 +539,11 @@
 		);
 
 	/* Function:     0x1f */
-	NTSTATUS lsa_LookupPrivValue();
+	NTSTATUS lsa_LookupPrivValue(
+		[in,ref]     policy_handle *handle,
+		[in,ref]     lsa_String *name,
+		[out,ref]    lsa_LUID *luid
+		);
 
 
 	/* Function:      0x20 */
