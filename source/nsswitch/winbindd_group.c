@@ -292,7 +292,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* Get rid and name type from name */
         
-	if (!winbindd_lookup_sid_by_name(domain, name_group, &group_sid, 
+	if (!winbindd_lookup_sid_by_name(domain, domain->name, name_group, &group_sid, 
 					 &name_type)) {
 		DEBUG(1, ("group %s in domain %s does not exist\n", 
 			  name_group, name_domain));
@@ -446,17 +446,16 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
 		
-		
+		/* Create a state record for this domain */
+
 		/* don't add our domaina if we are a PDC or if we 
 		   are a member of a Samba domain */
 		
-		if ( (IS_DC || lp_winbind_trusted_domains_only())
-			&& domain->primary )
+		if ( lp_winbind_trusted_domains_only() && domain->primary )
 		{
 			continue;
 		}
 						
-		/* Create a state record for this domain */
 		
 		if ((domain_state = (struct getent_state *)
 		     malloc(sizeof(struct getent_state))) == NULL) {
@@ -945,12 +944,10 @@ static void add_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 	if (NT_STATUS_IS_OK(idmap_sid_to_gid(sid, &gid, 0)))
 		add_gid_to_array_unique(gid, gids, num);
 
-	/* Don't expand aliases if not explicitly activated -- for now */
-	/* we don't support windows local nested groups if we are a DC.
-           refer to to sid_to_gid() in the smbd server code to see why 
+	/* Don't expand aliases if not explicitly activated -- for now
 	   -- jerry */
 
-	if (!lp_winbind_nested_groups() || IS_DC)
+	if (!lp_winbind_nested_groups())
 		return;
 
 	/* Add nested group memberships */
@@ -1021,7 +1018,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	
 	/* Get rid and name type from name.  The following costs 1 packet */
 
-	if (!winbindd_lookup_sid_by_name(domain, name_user, &user_sid, 
+	if (!winbindd_lookup_sid_by_name(domain, domain->name, name_user, &user_sid, 
 					 &name_type)) {
 		DEBUG(1, ("user '%s' does not exist\n", name_user));
 		goto done;
