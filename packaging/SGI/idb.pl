@@ -115,7 +115,7 @@ while(@bins) {
       print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
     }
     elsif ($filename eq "swat") {
-      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip exitop(/usr/samba/scripts/startswat.sh) removeop(/usr/samba/scripts/removeswat.sh)\n";
+      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip preop(/etc/killall smbd nmbd) exitop(/usr/samba/scripts/startswat.sh) removeop(/usr/samba/scripts/removeswat.sh)\n";
     }
     elsif ($filename eq "sambalp") {
       print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base nostrip\n";
@@ -152,10 +152,10 @@ if (@codepage) {
     print IDB "f 0644 root sys usr/samba/lib/codepages/codepage.$nextpage packaging/SGI/codepages/codepage.$nextpage samba.sw.base\n";
   }
 }
-print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(update)\n";
+print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(suggest)\n";
 
 print IDB "d 0644 root sys usr/samba/private packaging/SGI samba.sw.base\n";
-print IDB "f 0600 root sys usr/samba/private/smbpasswd packaging/SGI/smbpasswd samba.sw.base config(update)\n";
+print IDB "f 0600 root sys usr/samba/private/smbpasswd packaging/SGI/smbpasswd samba.sw.base config(suggest)\n";
 
 print IDB "d 0755 root sys usr/samba/scripts packaging/SGI samba.src.samba\n";
 print IDB "f 0755 root sys usr/samba/scripts/inetd.sh packaging/SGI/inetd.sh samba.sw.base\n";
