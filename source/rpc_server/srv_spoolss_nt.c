@@ -123,6 +123,22 @@ void init_printer_hnd(void)
 }
 
 /****************************************************************************
+ Return a user struct for a pipe user.
+****************************************************************************/
+
+static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
+{
+	if (p->ntlmssp_auth_validated) {
+		memcpy(user, &p->pipe_user, sizeof(struct current_user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(user, &current_user, sizeof(struct current_user));
+	}
+
+	return user;
+}
+
+/****************************************************************************
   create a unique printer handle
 ****************************************************************************/
 static void create_printer_hnd(POLICY_HND *hnd)
@@ -658,22 +674,6 @@ static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 	return True;
 }	
 
-/****************************************************************************
- Return a user struct for a pipe user.
-****************************************************************************/
-
-static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
-{
-	if (p->ntlmssp_auth_validated) {
-		memcpy(user, &p->pipe_user, sizeof(struct current_user));
-	} else {
-		extern struct current_user current_user;
-		memcpy(user, &current_user, sizeof(struct current_user));
-	}
-
-	return user;
-}
-
 /********************************************************************
  * spoolss_open_printer
  *
@@ -740,12 +740,12 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 	*/
 
 	get_current_user(&user, p);
-	
-	if (handle_is_printserver(handle) ) {
+
+	if (handle_is_printserver(handle)) {
 		if (printer_default->access_required == 0) {
 			return NT_STATUS_NO_PROBLEMO;
 		}
-		else if ( (printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
+		else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(handle);
@@ -753,22 +753,25 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 			}
 			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin(snum))) {
 				return NT_STATUS_NO_PROBLEMO;
-			} else {
+			} 
+			else {
 				close_printer_handle(handle);
 				return ERROR_ACCESS_DENIED;
 			}
 		}
-		else 
-			return NT_STATUS_NO_PROBLEMO;
-	} else {
-	
+	}
+	else
+	{
+		/* NT doesn't let us connect to a printer if the connecting user
+		   doesn't have print permission.  */
+
 		if (!get_printer_snum(handle, &snum))
 			return ERROR_INVALID_HANDLE;
 
 		/* map an empty access mask to the minimum access mask */
 		if (printer_default->access_required == 0x0)
 			printer_default->access_required = PRINTER_ACCESS_USE;
-
+		
 		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(handle);
@@ -790,10 +793,9 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 				return result;
 			}
 		}
-
-		return NT_STATUS_NO_PROBLEMO;
 	}
 
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /****************************************************************************
@@ -3649,6 +3651,7 @@ uint32 _spoolss_endpageprinter(POLICY_HND *handle)
 	return NT_STATUS_NO_PROBLEMO;
 }
 
+
 /********************************************************************
  * api_spoolss_getprinter
  * called from the spoolss dispatcher
@@ -4181,7 +4184,13 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	pi1 = p1->info_2;
 	pi2 = p2->info_2;
 
+	/* Don't check the attributes as we stomp on the value in
+	   check_printer_ok() anyway. */
+
+#if 0
 	PI_CHECK_INT(attributes);
+#endif
+
 	PI_CHECK_INT(priority);
 	PI_CHECK_INT(default_priority);
 	PI_CHECK_INT(starttime);

@@ -77,10 +77,17 @@ Prints out the current Debug level returned by MSG_DEBUGLEVEL
 ****************************************************************************/
 void debuglevel_function(int msg_type, pid_t src, void *buf, size_t len)
 {
-        int level;
-        memcpy(&level, buf, sizeof(int));
+	int i;
+	int debuglevel_class[DBGC_LAST];
 
-	printf("Current debug level of PID %d is %d\n",src,level);
+	memcpy(debuglevel_class, buf, len);
+
+	printf("Current debug level of PID %d is %d ",src, debuglevel_class[0]);
+	for (i=1;i<DBGC_LAST;i++)
+		if (debuglevel_class[i])
+			printf("%s:%d ", debug_classname_from_index(i), debuglevel_class[i]);
+	printf("\n");
+
 	got_level = True;
 }
 
@@ -164,11 +171,12 @@ static int parse_type(char *mtype)
 /****************************************************************************
 do command
 ****************************************************************************/
-static BOOL do_command(char *dest, char *msg_name, char *params)
+static BOOL do_command(char *dest, char *msg_name, char *params[])
 {
 	int i, n, v;
 	int mtype;
 	BOOL retval;
+	int debuglevel_class[DBGC_LAST];
 
 	mtype = parse_type(msg_name);
 	if (mtype == -1) {
@@ -178,26 +186,31 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 
 	switch (mtype) {
 	case MSG_DEBUG:
-		if (!params) {
+		if (!params[0]) {
 			fprintf(stderr,"MSG_DEBUG needs a parameter\n");
 			return(False);
 		}
-		v = atoi(params);
-		send_message(dest, MSG_DEBUG, &v, sizeof(int), False);
+
+		ZERO_ARRAY(debuglevel_class);
+		if (!debug_parse_params(params, debuglevel_class)) {
+			fprintf(stderr, "MSG_DEBUG error. Expected <class name>:level\n");
+			return(False);
+		} else
+			send_message(dest, MSG_DEBUG, debuglevel_class, sizeof(debuglevel_class), False);
 		break;
 
 	case MSG_PROFILE:
-		if (!params) {
+		if (!params[0]) {
 			fprintf(stderr,"MSG_PROFILE needs a parameter\n");
 			return(False);
 		}
-		if (strequal(params, "off")) {
+		if (strequal(params[0], "off")) {
 			v = 0;
-		} else if (strequal(params, "count")) {
+		} else if (strequal(params[0], "count")) {
 			v = 1;
-		} else if (strequal(params, "on")) {
+		} else if (strequal(params[0], "on")) {
 			v = 2;
-		} else if (strequal(params, "flush")) {
+		} else if (strequal(params[0], "flush")) {
 			v = 3;
 		} else {
 		    fprintf(stderr,
@@ -258,12 +271,12 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 			fprintf(stderr,"printer-notify can only be sent to smbd\n");
 			return(False);
 		}
-		if (!params) {
+		if (!params[0]) {
 			fprintf(stderr, "printer-notify needs a printer name\n");
 			return (False);
 		}
-		retval = send_message(dest, MSG_PRINTER_NOTIFY, params,
-				      strlen(params) + 1, False);
+		retval = send_message(dest, MSG_PRINTER_NOTIFY, params[0],
+				      strlen(params[0]) + 1, False);
 		break;
 
 	case MSG_PING:
@@ -271,11 +284,11 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		    message_register(MSG_PONG, pong_function);
 		    pong_registered = True;
 		}
-		if (!params) {
+		if (!params[0]) {
 			fprintf(stderr,"MSG_PING needs a parameter\n");
 			return(False);
 		}
-		n = atoi(params);
+		n = atoi(params[0]);
 		pong_count = 0;
 		for (i=0;i<n;i++) {
 			retval = send_message(dest, MSG_PING, NULL, 0, True);
@@ -332,7 +345,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 
 	if (!interactive) {
 		if (argc < 2) usage(True);
-		return (do_command(argv[0],argv[1],argc > 2 ? argv[2] : 0));
+		return (do_command(argv[0],argv[1],argc > 2 ? &argv[2] : 0));
 	}
 
 	while (True) {
@@ -350,7 +363,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		if (strequal(myargv[0],"q")) break;
 		if (myargc < 2)
 			usage(False);
-		else if (!do_command(myargv[0],myargv[1],myargc > 2 ? myargv[2] : 0))
+		else if (!do_command(myargv[0],myargv[1],myargc > 2 ? &myargv[2] : 0))
 			usage(False);
 	}
 	return(0);

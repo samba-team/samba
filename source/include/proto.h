@@ -58,6 +58,10 @@ uint32 crc32_calc_buffer( char *buffer, uint32 count);
 
 /*The following definitions come from  lib/debug.c  */
 
+char* debug_classname_from_index(int index);
+int debug_lookup_classname(char* classname);
+BOOL debug_parse_params(char **params, int *debuglevel_class);
+BOOL debug_parse_levels(char *params_str);
 void debug_message(int msg_type, pid_t src, void *buf, size_t len);
 void debug_message_send(pid_t pid, int level);
 void setup_logging(char *pname, BOOL interactive);
@@ -1539,6 +1543,7 @@ int lp_maxprotocol(void);
 int lp_security(void);
 int lp_maxdisksize(void);
 int lp_lpqcachetime(void);
+int lp_max_smbd_processes(void);
 int lp_totalprintjobs(void);
 int lp_syslog(void);
 int lp_client_code_page(void);
