@@ -1,3 +1,7 @@
+2001-01-30  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/gss_userok.c: use gss_krb5_copy_ccache
+
 2001-01-29  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/Makefile.am: move up LIB_otp so we do not end up picking

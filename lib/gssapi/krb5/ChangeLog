@@ -1,3 +1,7 @@
+2001-01-30  Assar Westerlund  <assar@sics.se>
+
+	* copy_ccache.c: add gss_krb5_copy_ccache
+
 2001-01-27  Assar Westerlund  <assar@sics.se>
 
 	* get_mic.c: cast parameters to des function to non-const pointers
