@@ -18,6 +18,7 @@ use dump;
 use header;
 use parser;
 use eparser;
+use client;
 use util;
 
 my($opt_help) = 0;
@@ -27,6 +28,7 @@ my($opt_diff) = 0;
 my($opt_header) = 0;
 my($opt_parser) = 0;
 my($opt_eparser) = 0;
+my($opt_client);
 my($opt_keep) = 0;
 my($opt_output);
 
@@ -59,7 +61,7 @@ sub ShowHelp()
 {
     print "
            perl IDL parser and code generator
-           Copyright tridge\@samba.org
+           Copyright (C) tridge\@samba.org
 
            Usage: pidl.pl [options] <idlfile>
 
@@ -71,6 +73,7 @@ sub ShowHelp()
              --header              create a C header file
              --parser              create a C parser
              --eparser             create an ethereal parser
+             --client FILENAME     create client calls in FILENAME
              --diff                run diff on the idl and dumped output
              --keep                keep the .pidl file
            \n";
@@ -86,6 +89,7 @@ GetOptions (
 	    'header' => \$opt_header,
 	    'parser' => \$opt_parser,
 	    'eparser' => \$opt_eparser,
+	    'client=s' => \$opt_client,
 	    'diff' => \$opt_diff,
 	    'keep' => \$opt_keep
 	    );
@@ -134,6 +138,13 @@ if ($opt_eparser) {
     my($parser) = util::ChangeExtension($opt_output, "c");
     print "Generating $parser for ethereal\n";
     util::FileSave($parser, IdlEParser::Parse($idl));
+}
+
+if ($opt_client) {
+    my($idl) = util::LoadStructure($pidl_file);
+    my($client) = util::ChangeExtension($opt_client, "c");
+    print "Generating $client client calls\n";
+    util::FileSave($client, IdlClient::Parse($idl));
 }
 
 if ($opt_diff) {
