@@ -73,6 +73,10 @@ struct ClearToken {
   int32_t EndTimestamp;
 };
 
+#ifndef __P
+#define __P(x) x
+#endif
+
 /* Use k_hasafs() to probe if the machine supports AFS syscalls.
    The other functions will generate a SIGSYS if AFS is not supported */
 
