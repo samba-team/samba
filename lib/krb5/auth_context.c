@@ -420,6 +420,24 @@ krb5_auth_con_setuserkey(krb5_context context,
     return krb5_copy_keyblock(context, keyblock, &auth_context->keyblock);
 }
 
+krb5_error_code
+krb5_auth_con_getrcache(krb5_context context,
+			krb5_auth_context auth_context,
+			krb5_rcache *rcache)
+{
+    *rcache = auth_context->rcache;
+    return 0;
+}
+
+krb5_error_code
+krb5_auth_con_setrcache(krb5_context context,
+			krb5_auth_context auth_context,
+			krb5_rcache rcache)
+{
+    auth_context->rcache = rcache;
+    return 0;
+}
+
 #if 0 /* not implemented */
 
 krb5_error_code
@@ -436,15 +454,6 @@ krb5_auth_con_setivector(krb5_context context,
 			 krb5_pointer ivector)
 {
     krb5_abortx(context, "unimplemented krb5_auth_con_setivector called");
-}
-
-
-krb5_error_code
-krb5_auth_con_setrcache(krb5_context context,
-			krb5_auth_context auth_context,
-			krb5_rcache rcache)
-{
-    krb5_abortx(context, "unimplemented krb5_auth_con_setrcache called");
 }
 
 #endif /* not implemented */
