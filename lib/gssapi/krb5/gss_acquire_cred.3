@@ -37,7 +37,7 @@
 .Sh NAME
 .Nm gss_accept_sec_context ,
 .Nm gss_acquire_cred ,
-.\" .Nm gss_add_cred ,
+.Nm gss_add_cred ,
 .Nm gss_add_oid_set_member ,
 .Nm gss_canonicalize_name ,
 .Nm gss_compare_name ,
@@ -56,11 +56,11 @@
 .Nm gss_init_sec_context ,
 .Nm gss_inquire_context ,
 .Nm gss_inquire_cred ,
-.\" .Nm gss_inquire_cred_by_mech ,
-.\" .Nm gss_inquire_mechs_for_name ,
-.\" .Nm gss_inquire_names_for_mech ,
+.Nm gss_inquire_cred_by_mech ,
+.Nm gss_inquire_mechs_for_name ,
+.Nm gss_inquire_names_for_mech ,
 .Nm gss_krb5_copy_ccache ,
-.\" .Nm gss_process_context_token ,
+.Nm gss_process_context_token ,
 .Nm gss_release_buffer ,
 .Nm gss_release_cred ,
 .Nm gss_release_name ,
@@ -241,24 +241,24 @@ gssapi library (libgssapi, -lgssapi)
 .Fa "gss_cred_usage_t * cred_usage"
 .Fa "gss_OID_set * mechanisms"
 .Fc
-.\" .Ft OM_uint32
-.\" .Fo gss_inquire_cred_by_mech
-.\" .Fc
-.\" .Ft OM_uint32
-.\" .Fo gss_inquire_mechs_for_name
-.\" .Fc
-.\" .Ft OM_uint32
-.\" .Fo gss_inquire_names_for_mech
-.\" .Fc
+.Ft OM_uint32
+.Fo gss_inquire_cred_by_mech
+.Fc
+.Ft OM_uint32
+.Fo gss_inquire_mechs_for_name
+.Fc
+.Ft OM_uint32
+.Fo gss_inquire_names_for_mech
+.Fc
 .Ft OM_uint32
 .Fo gss_krb5_copy_ccache
 .Fa "OM_uint32 *minor"
 .Fa "gss_cred_id_t cred"
 .Fa "krb5_ccache out"
 .Fc
-.\" .Ft OM_uint32
-.\" .Fo gss_process_context_token
-.\" .Fc
+.Ft OM_uint32
+.Fo gss_process_context_token
+.Fc
 .Ft OM_uint32
 .Fo gss_release_buffer
 .Fa "OM_uint32 * minor_status"
