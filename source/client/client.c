@@ -2816,7 +2816,8 @@ static void remember_query_host(const char *arg,
 	set_global_myworkgroup( "" );
 
         /* set default debug level to 0 regardless of what smb.conf sets */
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
+	setup_logging( "smbclient", True );
+	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
 	dbf = x_stderr;
 	x_setbuf( x_stderr, NULL );
 
