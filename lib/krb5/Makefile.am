@@ -134,4 +134,12 @@ all-local: $(inc_DATA)
 .et.h:
 	$(COMPILE_ET) $<
 
+krb5_err.h: krb5_err.et
+
+krb5_err.c: krb5_err.et
+
+heim_err.h: heim_err.et
+
+heim_err.c: heim_err.et
+
 $(libkrb5_la_OBJECTS): krb5_err.h heim_err.h
