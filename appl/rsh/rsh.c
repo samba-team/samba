@@ -124,11 +124,11 @@ static int
 send_krb4_auth(int s,
 	       struct sockaddr_in thisaddr,
 	       struct sockaddr_in thataddr,
-	       char *hostname,
-	       char *remote_user,
-	       char *local_user,
+	       const char *hostname,
+	       const char *remote_user,
+	       const char *local_user,
 	       size_t cmd_len,
-	       char *cmd)
+	       const char *cmd)
 {
     KTEXT_ST text;
     CREDENTIALS cred;
@@ -138,7 +138,7 @@ send_krb4_auth(int s,
 
     status = krb_sendauth (do_encrypt ? KOPT_DO_MUTUAL : 0,
 			   s, &text, "rcmd",
-			   hostname, krb_realmofhost (hostname),
+			   (char *)hostname, krb_realmofhost (hostname),
 			   getpid(), &msg, &cred, schedule,
 			   &thisaddr, &thataddr, KCMD_VERSION);
     if (status != KSUCCESS) {
@@ -244,11 +244,11 @@ static int
 send_krb5_auth(int s,
 	       struct sockaddr_in thisaddr,
 	       struct sockaddr_in thataddr,
-	       char *hostname,
-	       char *remote_user,
-	       char *local_user,
+	       const char *hostname,
+	       const char *remote_user,
+	       const char *local_user,
 	       size_t cmd_len,
-	       char *cmd)
+	       const char *cmd)
 {
     krb5_principal server;
     krb5_data cksum_data;
@@ -339,11 +339,11 @@ static int
 send_broken_auth(int s,
 		 struct sockaddr_in thisaddr,
 		 struct sockaddr_in thataddr,
-		 char *hostname,
-		 char *remote_user,
-		 char *local_user,
+		 const char *hostname,
+		 const char *remote_user,
+		 const char *local_user,
 		 size_t cmd_len,
-		 char *cmd)
+		 const char *cmd)
 {
     size_t len;
 
@@ -366,12 +366,13 @@ send_broken_auth(int s,
 
 static int
 proto (int s, int errsock,
-       char *hostname, char *local_user, char *remote_user,
-       char *cmd, size_t cmd_len,
+       const char *hostname, const char *local_user, const char *remote_user,
+       const char *cmd, size_t cmd_len,
        int (*auth_func)(int s,
 			struct sockaddr_in this, struct sockaddr_in that,
-			char *hostname, char *remote_user,
-			char *local_user, size_t cmd_len, char *cmd))
+			const char *hostname, const char *remote_user,
+			const char *local_user, size_t cmd_len,
+			const char *cmd))
 {
     struct sockaddr_in erraddr;
     int errsock2;
@@ -481,13 +482,13 @@ static int
 doit_broken (int argc,
 	     char **argv,
 	     int optind,
-	     char *host,
-	     char *remote_user,
-	     char *local_user,
+	     const char *host,
+	     const char *remote_user,
+	     const char *local_user,
 	     int port,
 	     int priv_socket1,
 	     int priv_socket2,
-	     char *cmd,
+	     const char *cmd,
 	     size_t cmd_len)
 {
     struct hostent *hostent;
@@ -568,16 +569,17 @@ doit_broken (int argc,
 }
 
 static int
-doit (char *hostname,
-      char *remote_user,
-      char *local_user,
+doit (const char *hostname,
+      const char *remote_user,
+      const char *local_user,
       int port,
-      char *cmd,
+      const char *cmd,
       size_t cmd_len,
       int (*auth_func)(int s,
 		       struct sockaddr_in this, struct sockaddr_in that,
-		       char *hostname, char *remote_user,
-		       char *local_user, size_t cmd_len, char *cmd))
+		       const char *hostname, const char *remote_user,
+		       const char *local_user, size_t cmd_len,
+		       const char *cmd))
 {
     struct hostent *hostent;
     struct in_addr **h;
@@ -635,7 +637,7 @@ static int use_v5 = 0;
 static int use_only_broken = 0;
 static int use_broken = 1;
 static char *port_str;
-static char *user;
+static const char *user;
 static int do_version;
 static int do_help;
 
@@ -690,7 +692,7 @@ main(int argc, char **argv)
     int ret = 1;
     char *cmd;
     size_t cmd_len;
-    char *local_user;
+    const char *local_user;
     char *host = NULL;
     int host_index = -1;
 
@@ -762,14 +764,9 @@ main(int argc, char **argv)
 	}
     }
 
-    local_user = getenv ("USERNAME");
-    if (local_user == NULL) {
-	struct passwd *pwd = getpwuid (getuid());
-
-	if (pwd == NULL)
-	    errx (1, "who are you?");
-	local_user = pwd->pw_name;
-    }
+    local_user = get_default_username ();
+    if (local_user == NULL)
+	errx (1, "who are you?");
 
     if (user == NULL)
 	user = local_user;
