@@ -890,6 +890,16 @@ uint32 cli_samr_query_groupmem(
 	uint32 **rid, 
 	uint32 **attr
 );
+uint32 cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *pol, uint32 *start_idx, 
+				uint32 size, struct acct_info **dom_groups,
+				uint32 *num_dom_groups);
+uint32 cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *alias_pol, uint32 *num_mem, 
+			       DOM_SID **sids);
+uint32 cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			   POLICY_HND *domain_pol, uint32 access_mask, 
+			   uint32 alias_rid, POLICY_HND *alias_pol);
 
 /*The following definitions come from  libsmb/cli_spoolss.c  */
 
@@ -1783,6 +1793,8 @@ char *lp_winbind_gid(void);
 char *lp_template_homedir(void);
 char *lp_template_shell(void);
 char *lp_winbind_separator(void);
+BOOL lp_winbind_enum_users(void);
+BOOL lp_winbind_enum_groups(void);
 char *lp_codepagedir(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
@@ -1956,6 +1968,7 @@ BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
 BOOL lp_blocking_locks(int );
 BOOL lp_inherit_perms(int );
+BOOL lp_restrict_acl_with_mask(int );
 int lp_create_mask(int );
 int lp_force_create_mode(int );
 int _lp_security_mask(int );
@@ -3026,7 +3039,7 @@ BOOL samr_io_rids(char *desc, uint32 *num_rids, uint32 **rid,
 BOOL samr_io_r_query_useraliases(char *desc, SAMR_R_QUERY_USERALIASES * r_u,
 				 prs_struct *ps, int depth);
 void init_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, POLICY_HND *pol,
-			    uint32 unknown_0, uint32 rid);
+			    uint32 access_mask, uint32 rid);
 BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS * q_u,
 			  prs_struct *ps, int depth);
 BOOL samr_io_r_open_alias(char *desc, SAMR_R_OPEN_ALIAS * r_u,
