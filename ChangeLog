@@ -1,3 +1,8 @@
+Tue Sep 15 17:02:33 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/kadm5/set_keys.c: add KEYTYPE_USE_AFS3_SALT to keytype if
+ 	using AFS3 salt
+
 Tue Aug 25 23:30:52 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc): care about
