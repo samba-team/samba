@@ -42,6 +42,7 @@ RCSID("$Id$");
 
 #ifdef KRB4
 
+void
 do_524(Ticket *t, krb5_data *reply, const char *from)
 {
     krb5_error_code ret;
