@@ -97,7 +97,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 		else if(strcmp(optarg, "otp") == 0)
 		    p->auth_level = AUTH_OTP;
 		else
-		    warnx ("bac value for -a: %s", optarg);
+		    warnx ("bad value for -a: %s", optarg);
 		break;
             /*  Debugging requested */
             case 'd':
