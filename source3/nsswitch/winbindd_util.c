@@ -45,9 +45,9 @@ static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
 
 	if (!resolve_name(domain_name, &ip, 0x1B)) return False;
 
-	return lookup_pdc_name(global_myname, domain_name, &ip, domain_controller);
+	return lookup_pdc_name(global_myname, domain_name, &ip, 
+			       domain_controller);
 }
-
 
 static struct winbindd_domain *add_trusted_domain(char *domain_name)
 {
@@ -90,7 +90,8 @@ static BOOL get_trusted_domains(void)
 
 	/* Add our workgroup - keep handle to look up trusted domains */
 	if (!add_trusted_domain(lp_workgroup())) {
-		DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
+		DEBUG(0, ("could not add record for domain %s\n", 
+			  lp_workgroup()));
 		return False;
 	}
 	
@@ -103,7 +104,8 @@ static BOOL get_trusted_domains(void)
         /* Add each domain to the trusted domain list */
 	for(i = 0; i < num_doms; i++) {
 		if (!add_trusted_domain(domains[i])) {
-			DEBUG(0, ("could not add record for domain %s\n", domains[i]));
+			DEBUG(0, ("could not add record for domain %s\n", 
+				  domains[i]));
 			result = False;
 		}
 	}
@@ -126,7 +128,9 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	}
 
 	if ((domain->sam_handle_open && !rpc_hnd_ok(&domain->sam_handle)) ||
-	    (domain->sam_dom_handle_open && !rpc_hnd_ok(&domain->sam_dom_handle))) {
+	    (domain->sam_dom_handle_open && 
+	     !rpc_hnd_ok(&domain->sam_dom_handle))) {
+
 		domain->got_domain_info = get_domain_info(domain);
 		if (domain->sam_dom_handle_open) {
 			samr_close(&domain->sam_dom_handle);
@@ -139,48 +143,85 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	}
 
 	/* Open sam handle if it isn't already open */
+
 	if (!domain->sam_handle_open) {
+
 		domain->sam_handle_open = 
-			samr_connect(domain->controller, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+			samr_connect(domain->controller, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED, 
 				     &domain->sam_handle);
+
 		if (!domain->sam_handle_open) return False;
 	}
 
 	/* Open sam domain handle if it isn't already open */
+
 	if (!domain->sam_dom_handle_open) {
+
 		domain->sam_dom_handle_open =
 			samr_open_domain(&domain->sam_handle, 
-					 SEC_RIGHTS_MAXIMUM_ALLOWED, &domain->sid, 
-					 &domain->sam_dom_handle);
+					 SEC_RIGHTS_MAXIMUM_ALLOWED, 
+					 &domain->sid, &domain->sam_dom_handle);
+
 		if (!domain->sam_dom_handle_open) return False;
 	}
 	
 	return True;
 }
 
+/* Close all LSA and SAM connections */
+
 static void winbindd_kill_connections(void)
 {
+	struct winbindd_cli_state *cli;
 	struct winbindd_domain *domain;
 
 	DEBUG(1,("killing winbindd connections\n"));
+
+	/* Close LSA connection */
 
 	server_state.pwdb_initialised = False;
 	server_state.lsa_handle_open = False;
 	lsa_close(&server_state.lsa_handle);
 	
-	for (domain=domain_list; domain; domain=domain->next) {
+	/* Close SAM connections */
+
+	domain = domain_list;
+
+	while(domain) {
+		struct winbindd_domain *next;
+
+		/* Close SAM handles */
+
 		if (domain->sam_dom_handle_open) {
 			samr_close(&domain->sam_dom_handle);
 			domain->sam_dom_handle_open = False;
 		}
+
 		if (domain->sam_handle_open) {
 			samr_close(&domain->sam_handle);
 			domain->sam_handle_open = False;
 		}
+
+		/* Remove from list */
+
+		next = domain->next;
 		DLIST_REMOVE(domain_list, domain);
 		free(domain);
+
+		domain = next;
+	}
+
+	/* We also need to go through and trash any pointers to domains in
+	   get{pw,gr}ent state records */
+
+	for (cli = client_list; cli; cli = cli->next) {
+		free_getent_state(cli->getpwent_state);
+		free_getent_state(cli->getgrent_state);
 	}
 }
+
+/* Try to establish connections to NT servers */
 
 void establish_connections(void) 
 {

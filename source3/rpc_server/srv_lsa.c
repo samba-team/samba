@@ -279,65 +279,6 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 		r_l->status = 0x0;
 }
 
-/* Call winbindd to convert sid to name */
-
-BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
-			uint8 *name_type)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	enum nss_status result;
-	DOM_SID tmp_sid;
-	uint32 rid;
-	fstring sid_str;
-	
-	if (!name_type) return False;
-
-	/* Check if this is our own sid.  This should perhaps be done by
-	   winbind?  For the moment handle it here. */
-
-	if (sid->num_auths == 5) {
-		sid_copy(&tmp_sid, sid);
-		sid_split_rid(&tmp_sid, &rid);
-
-		if (sid_equal(&global_sam_sid, &tmp_sid)) {
-
-		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-			lookup_local_rid(rid, name, name_type);
-		}
-	}
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	sid_to_string(sid_str, sid);
-	fstrcpy(request.data.sid, sid_str);
-	
-	/* Make request */
-
-	result = winbindd_request(WINBINDD_LOOKUPSID, &request, &response);
-
-	/* Copy out result */
-
-	if (result == NSS_STATUS_SUCCESS) {
-		parse_domain_user(response.data.name.name, dom_name, name);
-		*name_type = response.data.name.type;
-	} else {
-
-		DEBUG(10,("winbind_lookup_sid: winbind lookup for %s failed - trying builtin.\n",
-				sid_str));
-
-		sid_copy(&tmp_sid, sid);
-		sid_split_rid(&tmp_sid, &rid);
-		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-			lookup_known_rid(&tmp_sid, rid, name, name_type);
-	}
-
-	return (result == NSS_STATUS_SUCCESS);
-}
-
 /***************************************************************************
  Init lsa_trans_names.
  ***************************************************************************/

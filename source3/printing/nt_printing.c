@@ -1583,31 +1583,6 @@ uint32 nt_printing_setsec(char *printername, struct current_user *user,
 	return status;
 }
 
-/* Call winbindd to convert a name to a sid */
-
-BOOL winbind_lookup_name(char *name, DOM_SID *sid, uint8 *name_type)
-{
-	struct winbindd_request request;
-        struct winbindd_response response;
-	enum nss_status result;
-	
-	if (!sid || !name_type) return False;
-
-        /* Send off request */
-
-        ZERO_STRUCT(request);
-        ZERO_STRUCT(response);
-
-        fstrcpy(request.data.name, name);
-        if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
-				       &response)) == NSS_STATUS_SUCCESS) {
-		string_to_sid(sid, response.data.sid.sid);
-		*name_type = response.data.sid.type;
-	}
-
-        return result == NSS_STATUS_SUCCESS;
-}
-
 /****************************************************************************
  Construct a default security descriptor buffer for a printer.
 ****************************************************************************/
