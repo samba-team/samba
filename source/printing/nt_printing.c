@@ -3056,6 +3056,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 	
 		/* check to see if there are any more registry values */
 		
+		regval_p = NULL;
 		len += tdb_unpack(buf+len, buflen-len, "p", &regval_p);		
 		if ( !regval_p ) 
 			break;
