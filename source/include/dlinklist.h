@@ -81,5 +81,6 @@ do { \
 		p->prev = el; \
 		p->next = el->next; \
 		el->next = p; \
+		if (p->next) p->next->prev = p; \
 	}\
 } while (0)
