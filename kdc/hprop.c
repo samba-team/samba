@@ -490,7 +490,7 @@ struct getargs args[] = {
       
 #ifdef KRB4
     { "v4-db",    '4',	arg_flag, &v4_db },
-    { "v4-realm", 'r',  arg_string, &realm, "v4 realm to use" },
+    { "v4-realm", 'r',  arg_string, &v4_realm, "v4 realm to use" },
 #endif
     { "ka-db",	  'K',  arg_flag, &ka_db },
     { "cell",	  'c',  arg_string, &afs_cell, "name of AFS cell" },
@@ -835,12 +835,12 @@ main(int argc, char **argv)
     if (IS_TYPE_V4(type)) {
 	int e;
 
-	if (realm == NULL) {
+	if (v4_realm == NULL) {
 	    e = krb_get_lrealm(realm_buf, 1);
 	    if(e)
 		krb5_errx(context, 1, "krb_get_lrealm: %s",
 			  krb_get_err_text(e));
-	    realm = realm_buf;
+	    v4_realm = realm_buf;
 	}
     }
 #endif
