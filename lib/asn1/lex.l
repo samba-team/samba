@@ -62,6 +62,8 @@ static unsigned lineno = 1;
 
 %%
 INTEGER			{ return INTEGER; }
+IMPORTS			{ return IMPORTS; }
+FROM			{ return FROM; }
 SEQUENCE		{ return SEQUENCE; }
 OF			{ return OF; }
 OCTET			{ return OCTET; }
@@ -75,7 +77,7 @@ BEGIN			{ return TBEGIN; }
 END			{ return END; }
 DEFINITIONS		{ return DEFINITIONS; }
 EXTERNAL		{ return EXTERNAL; }
-[,{}()|]		{ return *yytext; }
+[,;{}()|]		{ return *yytext; }
 "["			{ return *yytext; }
 "]"			{ return *yytext; }
 ::=			{ return EEQUAL; }
