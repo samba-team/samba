@@ -480,9 +480,14 @@ static BOOL print_job_delete1(int jobid)
 /****************************************************************************
 delete a print job
 ****************************************************************************/
-BOOL print_job_delete(int jobid)
+BOOL print_job_delete(uint16 vuid, int jobid)
 {
 	int snum = print_job_snum(jobid);
+
+	if (!print_access_check(snum, vuid, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+		DEBUG(3, ("delete denied by security descriptor\n"));
+		return False;
+	}
 
 	if (!print_job_delete1(jobid)) return False;
 
@@ -497,7 +502,7 @@ BOOL print_job_delete(int jobid)
 /****************************************************************************
 pause a job
 ****************************************************************************/
-BOOL print_job_pause(int jobid)
+BOOL print_job_pause(uint16 vuid, int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret = -1;
@@ -507,6 +512,11 @@ BOOL print_job_pause(int jobid)
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
+
+	if (!print_access_check(snum, vuid, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+		DEBUG(3, ("pause denied by security descriptor\n"));
+		return False;
+	}
 
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
@@ -525,7 +535,7 @@ BOOL print_job_pause(int jobid)
 /****************************************************************************
 resume a job
 ****************************************************************************/
-BOOL print_job_resume(int jobid)
+BOOL print_job_resume(uint16 vuid, int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret;
@@ -535,6 +545,11 @@ BOOL print_job_resume(int jobid)
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
+
+	if (!print_access_check(snum, vuid, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+		DEBUG(3, ("resume denied by security descriptor\n"));
+		return False;
+	}
 
 	slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
 	ret = print_run_command(snum, 
@@ -566,13 +581,18 @@ int print_job_write(int jobid, const char *buf, int size)
 /***************************************************************************
 start spooling a job - return the jobid
 ***************************************************************************/
-int print_job_start(int snum, char *jobname)
+int print_job_start(int snum, uint16 vuid, char *jobname)
 {
 	int jobid;
 	char *path;
 	struct printjob pjob;
 	int next_jobid;
 	extern struct current_user current_user;
+
+	if (!print_access_check(snum, vuid, PRINTER_ACE_PRINT)) {
+		DEBUG(3, ("job start denied by security descriptor\n"));
+		return False;
+	}
 
 	path = lp_pathname(snum);
 
@@ -828,11 +848,15 @@ int print_queue_snum(char *qname)
 /****************************************************************************
  pause a queue
 ****************************************************************************/
-BOOL print_queue_pause(int snum)
+BOOL print_queue_pause(int snum, uint16 vuid)
 {
-	int ret = print_run_command(snum, 
-				    lp_queuepausecommand(snum), NULL,
-				    NULL);
+	int ret;
+
+	if (!print_access_check(snum, vuid, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+		return False;
+	}
+
+	ret = print_run_command(snum, lp_queuepausecommand(snum), NULL, NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -843,11 +867,15 @@ BOOL print_queue_pause(int snum)
 /****************************************************************************
  resume a queue
 ****************************************************************************/
-BOOL print_queue_resume(int snum)
+BOOL print_queue_resume(int snum, uint16 vuid)
 {
-	int ret = print_run_command(snum, 
-				    lp_queueresumecommand(snum), NULL,
-				    NULL);
+	int ret;
+
+	if (!print_access_check(snum, vuid, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+		return False;
+	}
+
+	ret = print_run_command(snum, lp_queueresumecommand(snum), NULL, NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -858,11 +886,15 @@ BOOL print_queue_resume(int snum)
 /****************************************************************************
  purge a queue - implemented by deleting all jobs that we can delete
 ****************************************************************************/
-BOOL print_queue_purge(int snum)
+BOOL print_queue_purge(int snum, uint16 vuid)
 {
 	print_queue_struct *queue;
 	print_status_struct status;
 	int njobs, i;
+
+	if (!print_access_check(snum, vuid, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+		return False;
+	}
 
 	njobs = print_queue_status(snum, &queue, &status);
 	for (i=0;i<njobs;i++) {
@@ -873,5 +905,3 @@ BOOL print_queue_purge(int snum)
 
 	return True;
 }
-
-
