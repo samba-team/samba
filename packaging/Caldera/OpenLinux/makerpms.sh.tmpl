@@ -14,4 +14,5 @@ for src in *.patch; do
   cp -a $src $SRCDIR/$trg
 done
 cd $SPECDIR
+ln samba2.spec-lsb samba2.spec
 rpm -ba -v samba2.spec
