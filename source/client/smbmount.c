@@ -29,6 +29,8 @@
 
 #include "includes.h"
 
+#include <mntent.h>
+
 #include <asm/types.h>
 #include <linux/smb_fs.h>
 static struct smb_conn_opt conn_options;
@@ -47,6 +49,7 @@ extern pstring desthost;
 extern pstring global_myname;
 extern pstring myhostname;
 extern pstring password;
+extern pstring smb_login_passwd;
 extern pstring username;
 extern pstring workgroup;
 char *cmdstr="";
@@ -258,6 +261,17 @@ static BOOL mount_send_login(char *inbuf, char *outbuf)
   if (!res)
     return res;
 
+  if( !got_pass ) {
+	/* Ok...  If we got this thing connected and got_pass is false,
+	   that means that the client util prompted for a password and
+	   got a good one...  We need to cache this in password and set
+	   got_pass for future retries.  We don't want to prompt for the
+	   $#@$#$ password everytime the network blinks!
+	*/
+
+      pstrcpy(password,smb_login_passwd);
+      got_pass = True;
+  }
   conn_options.protocol = opt.protocol;
   conn_options.case_handling = CASE_LOWER;
   conn_options.max_xmit = opt.max_xmit;
@@ -274,6 +288,86 @@ static BOOL mount_send_login(char *inbuf, char *outbuf)
 
   return True;
 }
+
+/****************************************************************************
+unmount smbfs  (this is a bailout routine to clean up if a reconnect fails)
+	Code blatently stolen from smbumount.c
+		-mhw-
+****************************************************************************/
+static void smb_umount( char *mount_point )
+{
+	int fd;
+        struct mntent *mnt;
+        FILE* mtab;
+        FILE* new_mtab;
+
+	/* Programmers Note:
+		This routine only gets called to the scene of a disaster
+		to shoot the survivors...  A connection that was working
+		has now apparently failed.  We have an active mount point
+		(presumably) that we need to dump.  If we get errors along
+		the way - make some noise, but we are already turning out
+		the lights to exit anyways...
+	*/
+        if (umount(mount_point) != 0) {
+                DEBUG(0, ("Could not umount %s: %s\n",
+                        mount_point, strerror(errno)));
+                return;
+        }
+
+        if ((fd = open(MOUNTED"~", O_RDWR|O_CREAT|O_EXCL, 0600)) == -1)
+        {
+                DEBUG(0, ("Can't get "MOUNTED"~ lock file"));
+                return;
+        }
+        close(fd);
+	
+        if ((mtab = setmntent(MOUNTED, "r")) == NULL) {
+                DEBUG(0, ("Can't open " MOUNTED ": %s\n",
+                        strerror(errno)));
+                return;
+        }
+
+#define MOUNTED_TMP MOUNTED".tmp"
+
+        if ((new_mtab = setmntent(MOUNTED_TMP, "w")) == NULL) {
+                DEBUG(0, ("Can't open " MOUNTED_TMP ": %s\n",
+                        strerror(errno)));
+                endmntent(mtab);
+                return;
+        }
+
+        while ((mnt = getmntent(mtab)) != NULL) {
+                if (strcmp(mnt->mnt_dir, mount_point) != 0) {
+                        addmntent(new_mtab, mnt);
+                }
+        }
+
+        endmntent(mtab);
+
+        if (fchmod (fileno (new_mtab), S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) < 0) {
+                DEBUG(0, ("Error changing mode of %s: %s\n",
+                        MOUNTED_TMP, strerror(errno)));
+                return;
+        }
+
+        endmntent(new_mtab);
+
+        if (rename(MOUNTED_TMP, MOUNTED) < 0) {
+                DEBUG(0, ("Cannot rename %s to %s: %s\n",
+                        MOUNTED, MOUNTED_TMP, strerror(errno)));
+                return;
+        }
+
+        if (unlink(MOUNTED"~") == -1)
+        {
+                DEBUG(0, ("Can't remove "MOUNTED"~"));
+                return;
+        }
+
+	return;
+}
+
 
 /*
  * Call the smbfs ioctl to install a connection socket,
@@ -349,8 +443,10 @@ send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 		if (!res)
 		{
 			DEBUG(0, ("smbmount: login failed\n"));
+			break;
 		}
 	}
+	smb_umount( mount_point );
 	DEBUG(0, ("smbmount: exit\n"));
 	exit(1);
 }
@@ -411,8 +507,13 @@ static void cmd_mount(char *inbuf,char *outbuf)
 		exit(1);
 	}
 
+	/* Ok...  This is the rubicon for that mount point...  At any point
+	   after this, if the connections fail and can not be reconstructed
+	   for any reason, we will have to unmount the mount point.  There
+	   is no exit from the next call...
+	*/
 	send_fs_socket(mount_point, inbuf, outbuf);
-}	
+}
 
 
 /* This defines the commands supported by this client */
