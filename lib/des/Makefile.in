@@ -64,7 +64,7 @@ Wall:
 # Compile this file without debug if using gcc
 des_enc.o: des_enc.c
 	@echo "Compiling des_enc.o without debug info"
-	@if test $(CC) = gcc; then\
+	@if test "$(CC)" = gcc; then\
 	  $(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) -fomit-frame-pointer -O3 $(PICFLAGS) $(srcdir)/des_enc.c; \
 	else \
 	  $(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $(srcdir)/des_enc.c; \
