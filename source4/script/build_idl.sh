@@ -4,7 +4,7 @@ for f in librpc/idl/*.idl; do
     echo Processing $f
     base=`basename $f .idl`
     ndr=librpc/ndr/ndr_$base
-    pidl.pl --output $ndr --parse --header --parser $f || exit 1
+    pidl.pl --output $ndr --parse --header --parser --client librpc/rpc/rpc_$base.c $f || exit 1
 done
 
 exit 0

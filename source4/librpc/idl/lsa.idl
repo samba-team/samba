@@ -7,7 +7,35 @@
   pointer_default(unique)
 ] interface lsarpc
 {
+	/******************/
+	/* Function: 0x00 */
+	NTSTATUS lsa_Close (
+		[in,ref]     policy_handle *handle
+		);
 	
+	/******************/
+	/* Function: 0x01 */
+	NTSTATUS lsa_Delete ();
+
+	/******************/
+	/* Function: 0x02 */
+	NTSTATUS lsa_EnumPrivs ();
+
+	/******************/
+	/* Function: 0x03 */
+	NTSTATUS lsa_QuerySecObj ();
+
+	/******************/
+	/* Function: 0x04 */
+	NTSTATUS lsa_SetSecObj ();
+
+	/******************/
+	/* Function: 0x05 */
+	NTSTATUS lsa_ChangePassword ();
+
+
+	/******************/
+	/* Function: 0x06 */
 	typedef struct {
 		[struct_len] uint32 _len;
 		uint16  impersonation_level;
@@ -31,13 +59,26 @@
 		[out,ref]  policy_handle *handle
 		);
 	
-	NTSTATUS lsa_OpenPolicy2 (
-		[in]      unistr *system_name,
-		[in,ref]  lsa_ObjectAttribute *attr,
-		[in]      uint32 desired_access,
-		[out,ref] policy_handle *handle
-		);
 
+	/******************/
+	/* Function: 0x07 */
+	NTSTATUS lsa_QueryInfoPolicy ();
+
+	/******************/
+	/* Function:       0x08 */
+	NTSTATUS lsa_SetInfoPolicy ();
+
+	/******************/
+	/* Function:       0x09 */
+	NTSTATUS lsa_ClearAuditLog ();
+
+	/******************/
+	/* Function: 0x0a */
+	NTSTATUS lsa_CreateAccount ();
+
+
+	/******************/
+	/* Function: 0x0b */
 	typedef struct {
 		dom_sid2 *sid;
 	} lsa_SidPtr;
@@ -47,49 +88,31 @@
 		[size_is(num_sids)] lsa_SidPtr *sids;
 	} lsa_SidArray;
 
-	NTSTATUS lsa_EnumSids (
+	NTSTATUS lsa_EnumAccounts (
 		[in,ref]     policy_handle *handle,
 		[in,out,ref] uint32 *resume_handle,
 		[in]         uint32 num_entries,
 		[out,ref]    lsa_SidArray *sids
 		);
 
+
+	/*************************************************/
+	/* Function: 0x0c                                */
+	NTSTATUS lsa_CreateTrustDom ();
+
+	/******************/
+	/* Function: 0x0d */
+	NTSTATUS lsa_EnumTrustDom ();
+
+
+	/******************/
+	/* Function: 0x0e */
+
 	typedef struct {
 		uint16 name_len;
 		uint16 name_size;
 		unistr_noterm *name;
 	} lsa_Name;
-
-	typedef struct {
-		uint16 sid_type;
-		lsa_Name name;
-		uint32 sid_index;
-	} lsa_TranslatedName;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] lsa_TranslatedName *names;
-	} lsa_TransNameArray;
-
-	typedef struct {
-		lsa_Name name;
-		dom_sid2 *sid;
-	} lsa_TrustInformation;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] lsa_TrustInformation *domains;
-		uint32 max_count;
-	} lsa_RefDomainList;
-
-	NTSTATUS lsa_LookupSids (
-		[in,ref]     policy_handle *handle,
-		[in,ref]     lsa_SidArray *sids,
-		[out]        lsa_RefDomainList *domains,
-		[in,out,ref] lsa_TransNameArray *names,
-		[in]         uint16 level,
-		[in,out,ref] uint32 *count
-		);
 
 	typedef struct {
 		uint16 sid_type;
@@ -102,6 +125,17 @@
 		[size_is(count)] lsa_TranslatedSid *sids;
 	} lsa_TransSidArray;
 
+	typedef struct {
+		lsa_Name name;
+		dom_sid2 *sid;
+	} lsa_TrustInformation;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_TrustInformation *domains;
+		uint32 max_count;
+	} lsa_RefDomainList;
+
 	NTSTATUS lsa_LookupNames (
 		[in,ref]     policy_handle *handle,
 		[in]         uint32 num_names,
@@ -111,4 +145,105 @@
 		[in]         uint16 level,
 		[in,out,ref] uint32 *count
 		);
+
+
+	/******************/
+	/* Function: 0x0f */
+
+	typedef struct {
+		uint16 sid_type;
+		lsa_Name name;
+		uint32 sid_index;
+	} lsa_TranslatedName;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_TranslatedName *names;
+	} lsa_TransNameArray;
+
+	NTSTATUS lsa_LookupSids (
+		[in,ref]     policy_handle *handle,
+		[in,ref]     lsa_SidArray *sids,
+		[out]        lsa_RefDomainList *domains,
+		[in,out,ref] lsa_TransNameArray *names,
+		[in]         uint16 level,
+		[in,out,ref] uint32 *count
+		);
+
+
+	/* Function:        0x10 */
+	NTSTATUS CREATESECRET ();
+	/* Function:     0x11 */
+	NTSTATUS OPENACCOUNT ();
+	/* Function:    0x12 */
+	NTSTATUS ENUMPRIVSACCOUNT ();
+	/* Function:            0x13 */
+	NTSTATUS ADDPRIVS ();
+	/* Function:         0x14 */
+	NTSTATUS REMOVEPRIVS ();
+	/* Function:           0x15 */
+	NTSTATUS GETQUOTAS ();
+	/* Function:           0x16 */
+	NTSTATUS SETQUOTAS ();
+	/* Function:    0x17 */
+	NTSTATUS GETSYSTEMACCOUNT ();
+	/* Function:    0x18 */
+	NTSTATUS SETSYSTEMACCOUNT ();
+	/* Function:        0x19 */
+	NTSTATUS OPENTRUSTDOM ();
+	/* Function:       0x1a */
+	NTSTATUS QUERYTRUSTDOM ();
+	/* Function:     0x1b */
+	NTSTATUS SETINFOTRUSTDOM ();
+	/* Function:          0x1c */
+	NTSTATUS OPENSECRET ();
+	/* Function:           0x1d */
+	NTSTATUS SETSECRET ();
+	/* Function:         0x1e */
+	NTSTATUS QUERYSECRET ();
+	/* Function:     0x1f */
+	NTSTATUS LOOKUPPRIVVALUE ();
+	/* Function:      0x20 */
+	NTSTATUS LOOKUPPRIVNAME ();
+	/* Function:  0x21 */
+	NTSTATUS PRIV_GET_DISPNAME ();
+	/* Function:        0x22 */
+	NTSTATUS DELETEOBJECT ();
+	/* Function:   0x23 */
+	NTSTATUS ENUMACCTWITHRIGHT ();
+	/* Function:      0x24 */
+	NTSTATUS ENUMACCTRIGHTS ();
+	/* Function:       0x25 */
+	NTSTATUS ADDACCTRIGHTS ();
+	/* Function:    0x26 */
+	NTSTATUS REMOVEACCTRIGHTS ();
+	/* Function:   0x27 */
+	NTSTATUS QUERYTRUSTDOMINFO ();
+	/* Function:     0x28 */
+	NTSTATUS SETTRUSTDOMINFO ();
+	/* Function:      0x29 */
+	NTSTATUS DELETETRUSTDOM ();
+	/* Function:       0x2a */
+	NTSTATUS STOREPRIVDATA ();
+	/* Function:        0x2b */
+	NTSTATUS RETRPRIVDATA ();
+
+
+	/**********************/
+	/* Function:     0x2c */
+	NTSTATUS lsa_OpenPolicy2 (
+		[in]      unistr *system_name,
+		[in,ref]  lsa_ObjectAttribute *attr,
+		[in]      uint32 desired_access,
+		[out,ref] policy_handle *handle
+		);
+
+
+	/* Function:    0x2d */
+	NTSTATUS UNK_GET_CONNUSER ();
+	/* Function:          0x2e */
+	NTSTATUS QUERYINFO2 ();
+
+
+
 }
