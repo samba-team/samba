@@ -29,6 +29,8 @@ proto_src="`echo $@ | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort | uniq | egrep -
 
 echo creating $header
 
+mkdir -p `dirname $header`
+
 ${awk} $headeropt \
   -f script/mkproto.awk $proto_src > $headertmp
 

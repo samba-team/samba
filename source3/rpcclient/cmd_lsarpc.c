@@ -32,7 +32,8 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID dom_sid;
-	fstring sid_str, domain_name;
+	GUID dom_guid;
+	fstring sid_str, domain_name="", dns_name="", forest_name="";
 	uint32 info_class = 3;
 
 	if (argc > 2) {
@@ -43,17 +44,31 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 	if (argc == 2)
 		info_class = atoi(argv[1]);
 	
-	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+	/* Lookup info policy */
+	switch (info_class) {
+	case 12:
+		result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+					     SEC_RIGHTS_MAXIMUM_ALLOWED,
+					     &pol);
+
+		if (!NT_STATUS_IS_OK(result))
+			goto done;
+		result = cli_lsa_query_info_policy2(cli, mem_ctx, &pol,
+						    info_class, domain_name,
+						    dns_name, forest_name,
+						    &dom_guid, &dom_sid);
+		break;
+	default:
+		result = cli_lsa_open_policy(cli, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol);
 
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	/* Lookup info policy */
-
-	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
-					   domain_name, &dom_sid);
+		if (!NT_STATUS_IS_OK(result))
+			goto done;
+		result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, 
+						   info_class, domain_name, 
+						   &dom_sid);
+	}
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -65,6 +80,22 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 	else
 		printf("could not query info for level %d\n", info_class);
 
+	if (dns_name[0])
+		printf("domain dns name is %s\n", dns_name);
+	if (forest_name[0])
+		printf("forest name is %s\n", forest_name);
+
+	if (info_class == 12) {
+		int i;
+		uint32 *data1 = (uint32 *) dom_guid.info;
+		uint16 *data2 = (uint16 *) &dom_guid.info[4];
+		uint16 *data3 = (uint16 *) &dom_guid.info[6];
+		printf("domain GUID is %08x-%04x-%04x", *data1,*data2,*data3);
+		printf("-%02x%02x-", dom_guid.info[8], dom_guid.info[9]);
+		for (i=10;i<GUID_SIZE;i++)
+			printf("%02x", dom_guid.info[i]);
+		printf("\n");
+	}
  done:
 	return result;
 }
@@ -191,23 +222,15 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 
 	/* defaults, but may be changed using params */
 	uint32 enum_ctx = 0;
-	uint32 preferred_maxnum = 5;
 	uint32 num_domains = 0;
 	int i;
 
-	if (argc > 3) {
-		printf("Usage: %s [preferred max number (%d)] [enum context (0)]\n",
-			argv[0], preferred_maxnum);
+	if (argc > 2) {
+		printf("Usage: %s [enum context (0)]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	/* enumeration context */
-	if (argc >= 2 && argv[1]) {
-		preferred_maxnum = atoi(argv[1]);
-	}	
-
-	/* preferred maximum number */
-	if (argc == 3 && argv[2]) {
+	if (argc == 2 && argv[1]) {
 		enum_ctx = atoi(argv[2]);
 	}	
 
@@ -221,8 +244,8 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 	/* Lookup list of trusted domains */
 
 	result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
-						&preferred_maxnum, &num_domains,
-						&domain_names, &domain_sids);
+					&num_domains,
+					&domain_names, &domain_sids);
 	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
 	    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))

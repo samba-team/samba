@@ -612,7 +612,6 @@ static void usage(void)
 				*opt_configfile=NULL,
  	                        *opt_logfile=NULL,
 	                        *opt_ipaddr=NULL;
-	static int		opt_debuglevel;
 	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
 	struct in_addr 		server_ip;
@@ -626,14 +625,13 @@ static void usage(void)
 		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A'},
 		{"conf",        's', POPT_ARG_STRING, 	&opt_configfile, 's'},
 		{"nopass",	'N', POPT_ARG_NONE,	&got_pass},
-		{"debug",       'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
-		{"debuglevel",  'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
 		{"user",        'U', POPT_ARG_STRING,	&opt_username, 'U'},
 		{"workgroup",   'W', POPT_ARG_STRING, 	&opt_domain, 'W'},
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
 		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l'},
 		{"help",        'h', POPT_ARG_NONE,	0, 'h'},
 		{"dest-ip",     'I', POPT_ARG_STRING,   &opt_ipaddr, 'I'},
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL }
 	};
 
@@ -671,10 +669,6 @@ static void usage(void)
 			
 		case 's':
 			pstrcpy(dyn_CONFIGFILE, opt_configfile);
-			break;
-			
-		case 'd':
-			DEBUGLEVEL = opt_debuglevel;
 			break;
 			
 		case 'U': {
@@ -768,7 +762,7 @@ static void usage(void)
 					password, 0);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
+		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
 		return 1;
 	}
 

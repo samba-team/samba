@@ -1,8 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
-   RPC pipe client
+   SAM synchronisation and replication
 
-   Copyright (C) Tim Potter 2001
+   Copyright (C) Tim Potter 2001,2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+
+DOM_SID domain_sid;
 
 static void decode_domain_info(SAM_DOMAIN_INFO *a)
 {
@@ -252,19 +254,123 @@ static void decode_sam_deltas(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_
 	}
 }
 
+/* Convert a SAM_ACCOUNT_DELTA to a SAM_ACCOUNT. */
+
+static void sam_account_from_delta(SAM_ACCOUNT *account,
+				   SAM_ACCOUNT_INFO *delta)
+{
+	DOM_SID sid;
+	fstring s;
+
+	/* Username, fullname, home dir, dir drive, logon script, acct
+	   desc, workstations, profile. */
+
+	unistr2_to_ascii(s, &delta->uni_acct_name, sizeof(s) - 1);
+	pdb_set_nt_username(account, s);
+
+	/* Unix username is the same - for sainity */
+	pdb_set_username(account, s);
+
+	unistr2_to_ascii(s, &delta->uni_full_name, sizeof(s) - 1);
+	pdb_set_fullname(account, s);
+
+	unistr2_to_ascii(s, &delta->uni_home_dir, sizeof(s) - 1);
+	pdb_set_homedir(account, s, True);
+
+	unistr2_to_ascii(s, &delta->uni_dir_drive, sizeof(s) - 1);
+	pdb_set_dir_drive(account, s, True);
+
+	unistr2_to_ascii(s, &delta->uni_logon_script, sizeof(s) - 1);
+	pdb_set_logon_script(account, s, True);
+
+	unistr2_to_ascii(s, &delta->uni_acct_desc, sizeof(s) - 1);
+	pdb_set_acct_desc(account, s);
+
+	unistr2_to_ascii(s, &delta->uni_workstations, sizeof(s) - 1);
+	pdb_set_workstations(account, s);
+
+	unistr2_to_ascii(s, &delta->uni_profile, sizeof(s) - 1);
+	pdb_set_profile_path(account, s, True);
+
+	/* User and group sid */
+
+	sid_copy(&sid, &domain_sid);
+	sid_append_rid(&sid, delta->user_rid);
+	pdb_set_user_sid(account, &sid);
+
+	sid_copy(&sid, &domain_sid);
+	sid_append_rid(&sid, delta->group_rid);
+	pdb_set_group_sid(account, &sid);
+
+	/* Logon and password information */
+
+	pdb_set_logon_time(account, nt_time_to_unix(&delta->logon_time), True);
+	pdb_set_logoff_time(account, nt_time_to_unix(&delta->logoff_time), 
+			    True);
+
+	pdb_set_logon_divs(account, delta->logon_divs);
+
+	/* TODO: logon hours */
+	/* TODO: bad password count */
+	/* TODO: logon count */
+
+	pdb_set_pass_last_set_time(
+		account, nt_time_to_unix(&delta->pwd_last_set_time));
+
+	/* TODO: account expiry time */
+
+	pdb_set_acct_ctrl(account, delta->acb_info);
+}
+
+static void apply_account_info(SAM_ACCOUNT_INFO *sam_acct_delta)
+{
+	SAM_ACCOUNT sam_acct;
+	BOOL result;
+
+	ZERO_STRUCT(sam_acct);
+
+	pdb_init_sam(&sam_acct);
+
+	sam_account_from_delta(&sam_acct, sam_acct_delta);
+	result = pdb_add_sam_account(&sam_acct);
+}
+
+/* Apply an array of deltas to the SAM database */
+
+static void apply_deltas(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
+			 SAM_DELTA_CTR *deltas)
+{
+	uint32 i;
+
+	for (i = 0; i < num_deltas; i++) {
+		switch(hdr_deltas[i].type) {
+		case SAM_DELTA_ACCOUNT_INFO:
+			apply_account_info(&deltas[i].account_info);
+			break;
+		}
+	}
+}
+
 /* Synchronise sam database */
 
 static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
                          BOOL do_smbpasswd_output, BOOL verbose)
 {
         TALLOC_CTX *mem_ctx;
-        SAM_DELTA_HDR *hdr_deltas_0, *hdr_deltas_1, *hdr_deltas_2;
-        SAM_DELTA_CTR *deltas_0, *deltas_1, *deltas_2;
-        uint32 num_deltas_0, num_deltas_1, num_deltas_2;
+        SAM_DELTA_HDR *hdr_deltas_0, *hdr_deltas_2;
+        SAM_DELTA_CTR *deltas_0, *deltas_2;
+        uint32 num_deltas_0, num_deltas_2;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct pdb_context *in;
 
 	DOM_CRED ret_creds;
+
         /* Initialise */
+
+	if (!NT_STATUS_IS_OK(make_pdb_context_list(&in, lp_passdb_backend()))){
+		DEBUG(0, ("Can't initialize passdb backend.\n"));
+		      return result;
+	}
 
 	if (!(mem_ctx = talloc_init())) {
 		DEBUG(0,("talloc_init failed\n"));
@@ -278,7 +384,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 
         /* Request a challenge */
 
-        if (!NT_STATUS_IS_OK(new_cli_nt_setup_creds(cli, SEC_CHAN_BDC, trust_passwd))) {
+        if (!NT_STATUS_IS_OK(cli_nt_setup_creds(cli, SEC_CHAN_BDC, trust_passwd))) {
                 DEBUG(0, ("Error initialising session creds\n"));
                 goto done;
         }
@@ -288,14 +394,14 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 
         /* Do sam synchronisation on the SAM database*/
 
-	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 0, &num_deltas_0, &hdr_deltas_0, &deltas_0);
+	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 0, 
+				       &num_deltas_0, &hdr_deltas_0, 
+				       &deltas_0);
         
         if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	/* verbose mode */
-	if (verbose)
-		decode_sam_deltas(num_deltas_0, hdr_deltas_0, deltas_0);
+	apply_deltas(num_deltas_0, hdr_deltas_0, deltas_0);
 
 
 	/* 
@@ -379,23 +485,6 @@ static NTSTATUS sam_repl(struct cli_state *cli, unsigned char trust_passwde[16],
         return result;
 }
 
-/* Print usage information */
-
-static void usage(void)
-{
-	printf("Usage: samsync [options]\n");
-
-	printf("\t-d debuglevel         set the debuglevel\n");
-	printf("\t-h                    Print this help message.\n");
-	printf("\t-s configfile         specify an alternative config file\n");
-	printf("\t-S                    synchronise sam database\n");
-	printf("\t-R                    replicate sam deltas\n");
-	printf("\t-U username           username and password\n");
-        printf("\t-p                    produce smbpasswd output\n");
-        printf("\t-V                    verbose output\n");
-	printf("\n");
-}
-
 /* Connect to primary domain controller */
 
 static struct cli_state *init_connection(struct cli_state **cli,
@@ -407,7 +496,16 @@ static struct cli_state *init_connection(struct cli_state **cli,
         int count;
         fstring dest_host;
 
-	/* Initialise cli_state information */
+	/* Initialise myname */
+
+	if (!global_myname[0]) {
+		char *p;
+
+		fstrcpy(global_myname, myhostname());
+		p = strchr(global_myname, '.');
+		if (p)
+			*p = 0;
+	}
 
         /* Look up name of PDC controller */
 
@@ -430,148 +528,239 @@ static struct cli_state *init_connection(struct cli_state **cli,
 						username, domain,
 						password, 0))) {
 		return *cli;
-	} else {
-		return NULL;
 	}
+
+	return NULL;
 }
 
 /* Main function */
+
+static fstring popt_username, popt_domain, popt_password;
+static BOOL popt_got_pass;
+
+static void user_callback(poptContext con, 
+			  enum poptCallbackReason reason,
+			  const struct poptOption *opt,
+			  const char *arg, const void *data)
+{
+	char *p, *ch;
+
+	if (!arg)
+		return;
+
+	switch(opt->val) {
+
+		/* Check for [DOMAIN\\]username[%password]*/
+
+	case 'U':
+
+		p = arg;
+
+		if ((ch = strchr(p, '\\'))) {
+			fstrcpy(popt_domain, p); 
+			popt_domain[ch - p] = 0;
+		}
+
+		fstrcpy(popt_username, p);
+
+		if ((ch = strchr(p, '%'))) {
+			popt_username[ch - p] = 0;
+			fstrcpy(popt_password, ch + 1);
+			popt_got_pass = True;
+		}
+
+		break;
+		
+	case 'W':
+		fstrcpy(popt_domain, arg);
+		break;
+	}
+}
+
+/* Return domain, username and password passed in from cmd line */
+
+void popt_common_get_auth_info(char **domain, char **username, char **password,
+			       BOOL *got_pass)
+{
+	*domain = popt_domain;
+	*username = popt_username;
+	*password = popt_password;
+	*got_pass = popt_got_pass;
+}
+
+struct poptOption popt_common_auth_info[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK, user_callback },
+	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set username",
+	  "[DOMAIN\\]username[%password]" },
+	{ "domain", 'W', POPT_ARG_STRING, NULL, 'W', "Set domain name", 
+	  "DOMAIN"},
+	{ 0 }
+};
+
+static BOOL popt_interactive;
+
+BOOL popt_common_is_interactive(void)
+{
+	return popt_interactive;
+}
+
+struct poptOption popt_common_interactive[] = {
+	{ "interactive", 'i', POPT_ARG_NONE, &popt_interactive, 'i',
+	  "Log to stdout" },
+	{ 0 }
+};
 
  int main(int argc, char **argv)
 {
         BOOL do_sam_sync = False, do_sam_repl = False;
         struct cli_state *cli;
         NTSTATUS result;
-        int opt;
         pstring logfile;
-        BOOL interactive = False, do_smbpasswd_output = False;
-        BOOL verbose = False;
-        uint32 low_serial = 0;
+        BOOL do_smbpasswd_output = False;
+        BOOL verbose = True, got_pass = False;
+        uint32 serial = 0;
         unsigned char trust_passwd[16];
-        fstring username, domain, password;
+        char *username, *domain, *password;
+	poptContext pc;
+	char c;
 
-        if (argc == 1) {
-                usage();
-                return 1;
-        }
+	struct poptOption popt_samsync_opts[] = {
+		{ "synchronise", 'S', POPT_ARG_NONE, &do_sam_sync, 'S', 
+		  "Perform full SAM synchronisation" },
+		{ "replicate", 'R', POPT_ARG_NONE, &do_sam_repl, 'R',
+		  "Replicate SAM changes" },
+		{ "serial", 0, POPT_ARG_INT, &serial, 0, "SAM serial number" },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_auth_info },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_interactive },
+		POPT_AUTOHELP
+		{ 0 }
+	};
 
-        ZERO_STRUCT(username);
-        ZERO_STRUCT(domain);
-        ZERO_STRUCT(password);
+	/* Read command line options */
 
-        /* Parse command line options */
+	pc = poptGetContext("samsync", argc, (const char **)argv,
+			    popt_samsync_opts, 0);
 
-        while((opt = getopt(argc, argv, "s:d:SR:hiU:W:pV")) != EOF) {
-                switch (opt) {
-                case 's':
-                        pstrcpy(dyn_CONFIGFILE, optarg);
-                        break;
-                case 'd':
-                        DEBUGLEVEL = atoi(optarg);
-                        break;
-                case 'S':
-                        do_sam_sync = 1;
-                        break;
-                case 'R':
-                        do_sam_repl = 1;
-                        low_serial = atoi(optarg);
-                        break;
-                case 'i':
-                        interactive = True;
-                        break;
-                case 'U': {
-                        char *lp;
+	if (argc == 1) {
+		poptPrintUsage(pc, stdout, 0);
+		return 1;
+	}
 
-                        fstrcpy(username,optarg);
-                        if ((lp=strchr_m(username,'%'))) {
-                                *lp = 0;
-                                fstrcpy(password,lp+1);
-                                memset(strchr_m(optarg, '%') + 1, 'X',
-                                       strlen(password));
-			}
-                        break;
-                }
-                case 'W':
-                        pstrcpy(domain, optarg);
-                        break;
-                case 'p':
-                        do_smbpasswd_output = True;
-                        break;
-                case 'V':
-                        verbose = True;
-                        break;
-               case 'h':
-                default:
-                        usage();
-                        exit(1);
-                }
-        }
+	while ((c = poptGetNextOpt(pc)) != -1) {
 
-        argc -= optind;
+		/* Argument processing error */
 
-        if (argc > 0) {
-                usage();
-                return 1;
-        }
+		if (c < -1) {
+			fprintf(stderr, "samsync: %s: %s\n",
+				poptBadOption(pc, POPT_BADOPTION_NOALIAS),
+				poptStrerror(c));
+			return 1;
+		}
 
-        /* Initialise samba */
+		/* Handle arguments */
+
+		switch (c) {
+		case 'h':
+			poptPrintHelp(pc, stdout, 0);
+			return 1;
+		case 'u':
+			poptPrintUsage(pc, stdout, 0);
+			return 1;
+		}
+	}
+
+	/* Bail out if any extra args were passed */
+
+	if (poptPeekArg(pc)) {
+		fprintf(stderr, "samsync: invalid argument %s\n",
+			poptPeekArg(pc));
+		poptPrintUsage(pc, stdout, 0);
+		return 1;
+	}
+
+	poptFreeContext(pc);
+
+	/* Setup logging */
+
+	dbf = x_stdout;
+
+	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+		d_fprintf(stderr, "samsync: error opening config file %s. "
+			  "Error was %s\n", dyn_CONFIGFILE, strerror(errno));
+		return 1;
+	}
 
 	slprintf(logfile, sizeof(logfile) - 1, "%s/log.%s", dyn_LOGFILEBASE, 
                  "samsync");
+
 	lp_set_logfile(logfile);
 
-        setup_logging("samsync", interactive);
+        setup_logging("samsync", popt_common_is_interactive());
 
-        if (!interactive)
+        if (!popt_common_is_interactive())
                 reopen_logs();
 
-        if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
-                fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
-        }
-
-        load_interfaces();
+	load_interfaces();
 
         /* Check arguments make sense */
 
         if (do_sam_sync && do_sam_repl) {
-                fprintf(stderr, "cannot specify both -S and -R\n");
+                DEBUG(0, ("cannot specify both -S and -R\n"));
                 return 1;
 
         }
 
         if (!do_sam_sync && !do_sam_repl) {
-                fprintf(stderr, "must specify either -S or -R\n");
+                DEBUG(0, ("samsync: you must either --synchronise or "
+			  "--replicate the SAM database\n"));
                 return 1;
         }
 
-        if (do_sam_repl && low_serial == 0) {
-                fprintf(stderr, "serial number must be positive\n");
+        if (do_sam_repl && serial == 0) {
+                DEBUG(0, ("samsync: must specify serial number\n"));
                 return 1;
         }
+
+	if (do_sam_sync && serial != 0) {
+		DEBUG(0, ("samsync: you can't specify a serial number when "
+			  "synchonising the SAM database\n"));
+		return 1;
+	}
 
         /* BDC operations require the machine account password */
 
         if (!secrets_init()) {
-                DEBUG(0, ("Unable to initialise secrets database\n"));
+                DEBUG(0, ("samsync: unable to initialise secrets database\n"));
                 return 1;
         }
 
 	if (!secrets_fetch_trust_account_password(lp_workgroup(), 
                                                   trust_passwd, NULL)) {
-		DEBUG(0, ("could not fetch trust account password\n"));
+		DEBUG(0, ("samsync: could not fetch trust account password\n"));
 		return 1;
 	}        
 
+	/* I wish the domain sid wasn't stored in secrets.tdb */
+
+	if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+		DEBUG(0, ("samsync: could not retrieve domain sid\n"));
+		return 1;
+	}
+
         /* Perform sync or replication */
+
+	popt_common_get_auth_info(&domain, &username, &password, &got_pass);
 
         if (!init_connection(&cli, username, domain, password))
                 return 1;
 
         if (do_sam_sync)
-                result = sam_sync(cli, trust_passwd, do_smbpasswd_output, verbose);
+                result = sam_sync(cli, trust_passwd, do_smbpasswd_output, 
+				  verbose);
 
         if (do_sam_repl)
-                result = sam_repl(cli, trust_passwd, low_serial);
+                result = sam_repl(cli, trust_passwd, serial);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(0, ("%s\n", nt_errstr(result)));
