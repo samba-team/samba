@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * $Id: skel.c,v 1.2 2000/02/04 05:08:16 tpot Exp $
+ * $Id: skel.c,v 1.3 2000/04/05 22:42:26 tpot Exp $
  */
 
 #include "config.h"
@@ -57,7 +57,7 @@ ssize_t skel_read(int fd, char *data, size_t n);
 ssize_t skel_write(int fd, char *data, size_t n);
 SMB_OFF_T skel_lseek(int filedes, SMB_OFF_T offset, int whence);
 int skel_rename(char *old, char *new);
-void skel_fsync(int fd);
+int skel_fsync(int fd);
 int skel_stat(char *fname, SMB_STRUCT_STAT *sbuf);
 int skel_fstat(int fd, SMB_STRUCT_STAT *sbuf);
 int skel_lstat(char *path, SMB_STRUCT_STAT *sbuf);
@@ -182,7 +182,7 @@ int skel_rename(char *old, char *new)
     return default_vfs_ops.rename(old, new);
 }
 
-void skel_fsync(int fd)
+int skel_fsync(int fd)
 {
     default_vfs_ops.fsync(fd);
 }
