@@ -25,6 +25,11 @@ struct libnet_context {
 	 * a client env context
 	 * a user env context
 	 */
+	struct {
+		const char *account_name;
+		const char *domain_name;
+		const char *password;
+	} user;
 };
 
 /* struct and enum for connecting to a dcerpc inferface */

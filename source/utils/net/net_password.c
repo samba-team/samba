@@ -46,6 +46,9 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	if (!libnetctx) {
 		return -1;	
 	}
+	libnetctx->user.account_name	= ctx->user.account_name;
+	libnetctx->user.domain_name	= ctx->user.domain_name;
+	libnetctx->user.password	= ctx->user.password;
 
 	/* prepare password change */
 	r.generic.level			= LIBNET_CHANGE_PASSWORD_GENERIC;
