@@ -7,11 +7,22 @@ Create Software Depot for Samba
 
        ./configure --prefix /usr/local/samba --localstatedir /usr/local/samba
 
+   NOTE: to compile samba with optional winbind capability (HP-UX 11.x only),
+   use the following configure command line instead:
+
+       ./configure --with-winbind --with-pam --prefix /usr/local/samba --localstatedir /usr/local/samba
+
    Afterwards compile the source code in a standard way.
 
 2. In packaging/HPUX directory run the following command:
 
+  WITHOUT winbind:
+
     $ create_package.sh
+
+  WITH winbind:
+
+    $ create_package_with_winbind.sh
 
 3. Use resulting samba.depot file as the software depot for Samba.
 
