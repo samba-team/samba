@@ -439,6 +439,7 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 
 		ZERO_STRUCT(nullsid);
 		store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
+		*type = SID_NAME_UNKNOWN;
 	}
 
 	rv = NT_STATUS_IS_OK(result);
