@@ -316,8 +316,6 @@ RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
-GUMS_OBJ = sam/gums.o sam/gums_api.o sam/gums_helper.o @GUMS_STATIC@
-
 PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
@@ -1517,15 +1515,6 @@ utils/ntlm_auth_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _NTLM_AUTH_PROTO_H_ $(builddir)/utils/ntlm_auth_proto.h \
 	  $(NTLM_AUTH_OBJ1)
-
-include/tdbsam2_parse_info.h:
-	@if test -n "$(PERL)"; then \
-		cd $(srcdir) && @PERL@ -w script/genstruct.pl \
-		-o include/tdbsam2_parse_info.h $(CC) -E -O2 -g \
-		include/gums.h; \
-	else \
-		echo Unable to build $@, continuing; \
-	fi
 
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
