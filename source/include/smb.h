@@ -486,6 +486,8 @@ typedef struct domain_grp_member_info
 {
 	fstring name;
 	uint8   attr; /* attributes forced to be set to 0x7: SE_GROUP_xxx */
+	uint32  rid; /* rid of domain group member */
+	uint8   sid_use; /* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
 
 } DOMAIN_GRP_MEMBER;
 

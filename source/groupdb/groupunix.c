@@ -84,6 +84,8 @@ BOOL get_unixgroup_members(struct group *grp,
 	for (i = 0; (unix_name = grp->gr_mem[i]) != NULL; i++)
 	{
 		DOM_NAME_MAP gmep;
+		DOMAIN_GRP_MEMBER *mem;
+		uint32 rid;
 
 		if (!lookupsmbpwnam (unix_name, &gmep) &&
 		    !lookupsmbgrpnam(unix_name, &gmep))
@@ -100,7 +102,8 @@ BOOL get_unixgroup_members(struct group *grp,
 			continue;
 		}
 			
-		if (!sid_front_equal(&global_sam_sid, &gmep.sid))
+		sid_split_rid(&gmep.sid, &rid);
+		if (!sid_equal(&global_sam_sid, &gmep.sid))
 		{
 			DEBUG(0,("group database: could not resolve name %s (wrong Domain SID)\n",
 			          unix_name));
@@ -113,9 +116,13 @@ BOOL get_unixgroup_members(struct group *grp,
 			return False;
 		}
 
-		fstrcpy((*members)[(*num_mem)].name, gmep.nt_name);
-		(*members)[(*num_mem)].attr = 0x07;
+		mem = &(*members)[(*num_mem)];
 		(*num_mem)++;
+
+		fstrcpy(mem->name, gmep.nt_name);
+		mem->attr    = 0x07;
+		mem->sid_use = gmep.type;
+		mem->rid     = rid;
 	}
 	return True;
 }

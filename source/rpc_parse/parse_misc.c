@@ -458,7 +458,7 @@ void smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, i
 
 		prs_align(ps);
 		
-		prs_uint32("uni_max_len", ps, depth, &(buf2->buf_max_len));
+		prs_uint32("buf_max_len", ps, depth, &(buf2->buf_max_len));
 		prs_uint32("undoc      ", ps, depth, &(buf2->undoc      ));
 		prs_uint32("buf_len    ", ps, depth, &(buf2->buf_len));
 

@@ -1037,20 +1037,20 @@ SAMR_R_UNKNOWN_12 - do a conversion from group RID to names
 /* SAMR_R_UNKNOWN_12 */
 typedef struct r_samr_unknown_12_info
 {
-    POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;       /* policy handle */
 
-	uint32 num_aliases1;      /* number of aliases being looked up */
-	uint32 ptr_aliases;       /* pointer to aliases */
-	uint32 num_aliases2;      /* number of aliases being looked up */
+	uint32 num_names1;      /* number of aliases being looked up */
+	uint32 ptr_names;       /* pointer to aliases */
+	uint32 num_names2;      /* number of aliases being looked up */
 
-	UNIHDR  hdr_als_name[MAX_LOOKUP_SIDS]; /* unicode account name header */
-	UNISTR2 uni_als_name[MAX_LOOKUP_SIDS]; /* unicode account name string */
+	UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* unicode account name header */
+	UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* unicode account name string */
 
-	uint32 num_als_usrs1;      /* number of users in aliases being looked up */
-	uint32 ptr_als_usrs;       /* pointer to users in aliases */
-	uint32 num_als_usrs2;      /* number of users in aliases being looked up */
+	uint32 num_types1;      /* number of users in aliases being looked up */
+	uint32 ptr_types;       /* pointer to users in aliases */
+	uint32 num_types2;      /* number of users in aliases being looked up */
 
-	uint32 num_als_usrs[MAX_LOOKUP_SIDS]; /* number of users per group */
+	uint32 type[MAX_LOOKUP_SIDS]; /* SID_ENUM type */
 
 	uint32 status;
 
