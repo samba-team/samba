@@ -909,4 +909,8 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define VUID_OFFSET 100 /* Amount to bias returned vuid numbers */
 
 #endif 
+
+/* Default client code page - 850 - Western European */
+#define DEFAULT_CLIENT_CODE_PAGE 850
+
 /* _SMB_H */

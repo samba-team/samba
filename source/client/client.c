@@ -2921,7 +2921,7 @@ static BOOL send_session_request(char *inbuf,char *outbuf)
 
   /* put in the destination name */
   p = outbuf+len;
-  name_mangle(dest,p,0x20); /* 0x20 is the SMB server NetBIOS type. */
+  name_mangle(dest,p,name_type); /* 0x20 is the SMB server NetBIOS type. */
   len += name_len(p);
 
   /* and my name */
@@ -4316,7 +4316,7 @@ static void usage(char *pname)
   setup_logging(pname,True);
 
   TimeInit();
-  charset_initialise();
+  charset_initialise(0);
 
   pid = getpid();
   uid = getuid();

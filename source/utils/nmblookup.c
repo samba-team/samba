@@ -111,7 +111,7 @@ int main(int argc,char *argv[])
 
   setup_logging(argv[0],True);
 
-  charset_initialise();
+  charset_initialise(0);
 
   while ((opt = getopt(argc, argv, "p:d:B:i:s:SMh")) != EOF)
     switch (opt)

@@ -513,7 +513,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (!done_sesssetup)
     max_send = MIN(max_send,smb_bufsize);
 
-  DEBUG(0,(" Client requested max send size of %d\n", max_send));
+  DEBUG(1,(" Client requested max send size of %d\n", max_send));
 
   done_sesssetup = True;
 
@@ -2156,11 +2156,17 @@ int reply_echo(char *inbuf,char *outbuf)
 
   cnum = SVAL(inbuf,smb_tid);
 
+  /* According to the latest CIFS spec we shouldn't
+     care what the TID is.
+   */
+
+#if 0
   if (cnum != 0xFFFF && !OPEN_CNUM(cnum))
     {
       DEBUG(4,("Invalid cnum in echo (%d)\n",cnum));
       return(ERROR(ERRSRV,ERRinvnid));
     }
+#endif
 
   /* copy any incoming data back out */
   if (data_len > 0)

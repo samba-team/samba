@@ -1964,9 +1964,9 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
     /* get NIS home of a previously validated user - simeon */
     user_struct *vuser = get_valid_user_struct(vuid);
     DEBUG(3,("  Username of UID %d is %s\n", vuser->uid, vuser->name));
-  #if (defined(NETGROUP) && defined(AUTOMOUNT))
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
     DEBUG(3,("  HOMESHR for %s is %s\n", vuser->name, vuser->home_share));
-  #endif
+#endif
 
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);

@@ -48,7 +48,7 @@ extern int DEBUGLEVEL;
 
   setup_logging(argv[0],True);
   
-  charset_initialise();
+  charset_initialise(0);
 
   if (argc < 2)
     strcpy(configfile,CONFIGFILE);

@@ -4036,7 +4036,7 @@ static void usage(char *pname)
 
   setup_logging(argv[0],False);
 
-  charset_initialise();
+  charset_initialise(-1);
 
   /* make absolutely sure we run as root - to handle cases whre people
      are crazy enough to have it setuid */
@@ -4150,6 +4150,8 @@ static void usage(char *pname)
 
   if (!reload_services(False))
     return(-1);	
+
+  charset_initialise(lp_client_code_page());
 
   strcpy(myworkgroup, lp_workgroup());
 
