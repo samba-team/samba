@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 CLEANFILES = roken.h make-roken.c print_version.h
 
 lib_LTLIBRARIES = libroken.la
-libroken_la_LDFLAGS = -version-info 4:1:0
+libroken_la_LDFLAGS = -version-info 4:2:0
 
 noinst_PROGRAMS = make-roken make-print-version
 
@@ -14,7 +14,7 @@ TESTS = $(check_PROGRAMS)
 
 getaddrinfo_test_LDADD = libroken.la
 parse_bytes_test_LDADD = libroken.la
-strpftime_test_LDADD = strftime.o strptime.o
+strpftime_test_LDADD = strftime.o strptime.o snprintf.o
 
 if KRB4
 if KRB5
