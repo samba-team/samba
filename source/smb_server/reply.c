@@ -675,8 +675,8 @@ void reply_readbraw(struct smbsrv_request *req)
 
 	io.readbraw.in.fnum    = req_fnum(req, req->in.vwv, VWV(0));
 	io.readbraw.in.offset  = IVAL(req->in.vwv, VWV(1));
-	io.readbraw.in.mincnt  = SVAL(req->in.vwv, VWV(3));
-	io.readbraw.in.maxcnt  = SVAL(req->in.vwv, VWV(4));
+	io.readbraw.in.maxcnt  = SVAL(req->in.vwv, VWV(3));
+	io.readbraw.in.mincnt  = SVAL(req->in.vwv, VWV(4));
 	io.readbraw.in.timeout = IVAL(req->in.vwv, VWV(5));
 
 	/* the 64 bit variant */
