@@ -22,5 +22,5 @@ if eval "test \"\${ac_cv_func_[]$1}\" = yes"; then
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
-  AC_LIBOBJ($1)
+  rk_LIBOBJ($1)
 fi])

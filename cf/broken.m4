@@ -9,4 +9,4 @@ AC_DEFUN([AC_BROKEN],
 	[AC_CHECK_FUNC(rk_func,
 		[AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_[]rk_func), 1, 
 			[Define if you have the function `]rk_func['.])],
-		[AC_LIBOBJ(rk_func)])])])
+		[rk_LIBOBJ(rk_func)])])])
