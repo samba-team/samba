@@ -59,7 +59,7 @@ void load_case_tables(void)
 	if (!lowcase_table) {
 		DEBUG(1,("creating lame lowcase table\n"));
 		lowcase_table = malloc(0x20000);
-		for (i=0;i<0x10000;i++) upcase_table[i] = i;
+		for (i=0;i<0x10000;i++) lowcase_table[i] = i;
 		for (i=0;i<256;i++) lowcase_table[UCS2_CHAR(i)] = UCS2_CHAR(isupper(i)?tolower(i):i);
 	}
 
