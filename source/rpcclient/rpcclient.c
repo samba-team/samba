@@ -339,6 +339,13 @@ struct command_set commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"samlookuprids",
+		cmd_sam_lookup_rids,
+		"[-d <domain>] <rid> [<rid> ...]\n"
+		"\tLookup RIDs in SAM",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
 		"samlookupnames",
 		cmd_sam_lookup_names,
 		"[-d <domain>] <name> [<name> ...]\n"

@@ -315,6 +315,9 @@ static void fill_domain_sid(const char *srv_name,
 	DEBUG(3, ("Using Domain-SID: %s\n", temp));
 }
 
+/****************************************************************************
+Lookup names in SAM server.
+****************************************************************************/
 void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 {
 	int opt;
@@ -334,12 +337,6 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 	sid_copy(&sid_dom, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
-	if (sid_dom.num_auths == 0)
-	{
-		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
-	}
-
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
@@ -355,9 +352,18 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 		switch (opt)
 		{
 			case 'd':
+			{
 				fill_domain_sid(srv_name, optarg,
 						domain, &sid_dom);
+				break;
+			}
 		}
+	}
+
+	if (sid_dom.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
 	}
 
 	report(out_hnd, "SAM Lookup Names\n");
@@ -375,8 +381,7 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000,
-				 &pol_sam) : False;
+	res = res ? samr_connect(srv_name, 0x02000000, &pol_sam) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&pol_sam, ace_perms, &sid_dom,
@@ -398,8 +403,10 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 		DEBUG(5,("cmd_sam_lookup_names: query failed\n"));
 	}
 
-	if (res1) {
-		for(i = 0; i < num_rids; i++) {
+	if (res1)
+	{
+		for (i = 0; i < num_rids; i++)
+		{
 			report(out_hnd, "RID: %s -> %d (%d: %s)\n",
 			       names[i], rids[i], types[i],
 			       get_sid_name_use_str(types[i]));
@@ -408,6 +415,120 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 
 	safe_free(rids);
 	safe_free(types);
+}
+
+/****************************************************************************
+Lookup rids in SAM server.
+****************************************************************************/
+void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
+{
+	int opt;
+	fstring srv_name;
+	fstring domain;
+	DOM_SID sid_dom;
+	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	BOOL res = True, res1 = True;
+	POLICY_HND pol_sam;
+	POLICY_HND pol_dom;
+	int num_names;
+	char **names;
+	uint32 num_rids, i;
+	uint32 *rids = NULL;
+	uint32 *types = NULL;
+
+	sid_copy(&sid_dom, &info->dom.level5_sid);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (argc < 2)
+	{
+		report(out_hnd, "samlookupnames [-d <domain>] <name> [<name> ...]\n");
+		return;
+	}
+
+	while ((opt = getopt(argc, argv, "d:")) != EOF)
+	{
+		switch (opt)
+		{
+			case 'd':
+			{
+				fill_domain_sid(srv_name, optarg,
+						domain, &sid_dom);
+				break;
+			}
+		}
+	}
+
+	if (sid_dom.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	report(out_hnd, "SAM Lookup Rids\n");
+
+	argc -= optind;
+	argv += optind;
+
+	if (argc <= 0)
+	{
+		report(out_hnd, "samlookuprids [-d <domain>] <rid> [<rid> ...]\n");
+		return;
+	}
+
+	num_rids = 0;
+
+	while (num_rids < argc)
+	{
+		rids = Realloc(rids, sizeof(rids[0]) * (num_rids+1));
+		if (rids == NULL)
+		{
+			return;
+		}
+		rids[num_rids] = get_number(argv[num_rids]);
+		num_rids++;
+	}
+
+	/* establish a connection. */
+	res = res ? samr_connect(srv_name, 0x02000000, &pol_sam) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(&pol_sam, ace_perms, &sid_dom,
+				     &pol_dom) : False;
+
+	res1 = res ? samr_query_lookup_rids( &pol_dom, 0x000003e8,
+	            num_rids, rids,
+	            &num_names, &names, &types) : False;
+
+	res = res ? samr_close(&pol_dom) : False;
+	res = res ? samr_close(&pol_sam) : False;
+
+	if (res1)
+	{
+		DEBUG(5,("cmd_sam_lookup_rids: query succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_lookup_rids: query failed\n"));
+	}
+
+	if (res1)
+	{
+		for (i = 0; i < num_names; i++)
+		{
+			report(out_hnd, "Name: %s -> %d (%d: %s)\n",
+			       names[i], rids[i], types[i],
+			       get_sid_name_use_str(types[i]));
+		}
+	}
+
+	safe_free(rids);
+	safe_free(types);
+
+	free_char_array(num_names, names);
 }
 
 /****************************************************************************

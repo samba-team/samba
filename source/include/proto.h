@@ -3970,6 +3970,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_test(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[]);
