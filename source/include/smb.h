@@ -759,6 +759,7 @@ struct bitmap {
 #define FLAG_SHARE 	0x02 /* file sharing options */
 #define FLAG_PRINT 	0x04 /* printing options */
 #define FLAG_GLOBAL 	0x08 /* local options that should be globally settable in SWAT */
+#define FLAG_WIZARD 	0x0A /* Parameters that the wizard will operate on */
 #define FLAG_DEPRECATED 0x10 /* options that should no longer be used */
 #define FLAG_HIDE  	0x20 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x40 /* convert from UNIX to DOS codepage when reading this string. */
@@ -1286,7 +1287,7 @@ char *strdup(char *s);
  */
 
 #define DEFAULT_MAJOR_VERSION 0x04
-#define DEFAULT_MINOR_VERSION 0x05
+#define DEFAULT_MINOR_VERSION 0x09
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
