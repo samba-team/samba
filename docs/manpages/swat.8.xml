@@ -71,6 +71,14 @@
 		server. </emphasis></para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>-P</term>
+		<listitem><para>This option restricts read-only users to the password 
+        management page.  <command>swat</command> can then be used to change
+        user passwords without users seeing the "View" and "Status" menu 
+        buttons.</para></listitem>
+		</varlistentry>
+
 		&popt.common.samba;
 		&stdarg.help;
 
