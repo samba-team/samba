@@ -91,3 +91,14 @@ void stop_nmbd(void)
 
 	kill(pid, SIGTERM);
 }
+
+/* kill a specified process */
+void kill_pid(int pid)
+{
+	if (geteuid() != 0) return;
+
+	if (pid <= 0) return;
+
+	kill(pid, SIGTERM);
+	sleep(SLEEP_TIME);
+}

@@ -35,10 +35,17 @@ void pidfile_create(char *name)
 	int     fd;
 	char    buf[20];
 	pstring pidFile;
+	int pid;
 
 	sprintf(pidFile, "%s/%s.pid", lp_lockdir(), name);
 
-	fd = open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY | O_TRUNC, 0644);
+	pid = pidfile_pid(name);
+	if (pid > 0 && process_exists(pid)) {
+		DEBUG(0,("ERROR: %s is already running\n", name));
+		exit(1);
+	}
+
+	fd = open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY, 0644);
 	if (fd < 0) {
 		DEBUG(0,("ERROR: can't open %s: %s\n", pidFile, 
 			 strerror(errno)));
@@ -50,8 +57,9 @@ void pidfile_create(char *name)
 		exit(1);
 	}
 
+	memset(buf, 0, sizeof(buf));
 	sprintf(buf, "%u\n", (unsigned int) getpid());
-	if (write(fd, buf, strlen(buf)) < 0) {
+	if (write(fd, buf, sizeof(buf)) != sizeof(buf)) {
 		DEBUG(0,("ERROR: can't write to %s: %s\n", 
 			 pidFile, strerror(errno)));
 		exit(1);
