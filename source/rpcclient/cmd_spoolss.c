@@ -82,58 +82,6 @@ static NTSTATUS cmd_spoolss_not_implemented(struct cli_state *cli,
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- display sec_ace structure
- ****************************************************************************/
-static void display_sec_ace(SEC_ACE *ace)
-{
-	fstring sid_str;
-
-	sid_to_string(sid_str, &ace->trustee);
-	printf("\t\tSID: %s\n", sid_str);
-
-	printf("\t\ttype:[%d], flags:[0x%02x], mask:[0x%08x]\n", 
-	       ace->type, ace->flags, ace->info.mask);
-}
-
-/****************************************************************************
- display sec_acl structure
- ****************************************************************************/
-static void display_sec_acl(SEC_ACL *acl)
-{
-	if (acl->size != 0 && acl->num_aces != 0) {
-		int i;
-
-		printf("\t\tRevision:[%d]\n", acl->revision);
-		for (i = 0; i < acl->num_aces; i++) {
-			display_sec_ace(&acl->ace[i]);
-		}
-	}
-}
-
-/****************************************************************************
- display sec_desc structure
- ****************************************************************************/
-static void display_sec_desc(SEC_DESC *sec)
-{
-	fstring sid_str;
-
-	printf("\tRevision:[%d]\n", sec->revision);
-
-	if (sec->off_owner_sid) {
-		sid_to_string(sid_str, sec->owner_sid);
-		printf("\tOwner SID: %s\n", sid_str);
-	}
-
-	if (sec->off_grp_sid) {
-		sid_to_string(sid_str, sec->grp_sid);
-		printf("\tGroup SID: %s\n", sid_str);
-	}
-
-	if (sec->off_sacl) display_sec_acl(sec->sacl);
-	if (sec->off_dacl) display_sec_acl(sec->dacl);
-}
-
 /***********************************************************************
  * Get printer information
  */

@@ -988,6 +988,58 @@ NTSTATUS cli_lsa_lookupprivvalue(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/** Query LSA security object */
+
+NTSTATUS cli_lsa_query_secobj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, uint32 sec_info, 
+			      SEC_DESC_BUF **psdb)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_SEC_OBJ q;
+	LSA_R_QUERY_SEC_OBJ r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_query_sec_obj(&q, pol, sec_info);
+
+	if (!lsa_io_q_query_sec_obj("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_QUERYSECOBJ, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query_sec_obj("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (psdb)
+		*psdb = r.buf;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /** Fetch a DOMAIN sid. Does complete cli setup / teardown anonymously. */
 
 BOOL fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid)
