@@ -987,6 +987,8 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 		 * Not a normal close or we couldn't stat the job file,
 		 * so something has gone wrong. Cleanup.
 		 */
+		close(pjob->fd);
+		pjob->fd = -1;
 		goto fail;
 	}
 

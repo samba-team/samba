@@ -84,6 +84,14 @@ print a file - called on closing the file
 ****************************************************************************/
 void print_fsp_end(files_struct *fsp, BOOL normal_close)
 {
+	if (fsp->share_mode == FILE_DELETE_ON_CLOSE) {
+		/*
+		 * Truncate the job. print_job_end will take
+		 * care of deleting it for us. JRA.
+		 */
+		sys_ftruncate(fsp->fd, 0);
+	}
+
 	print_job_end(fsp->print_jobid, normal_close);
 
 	if (fsp->fsp_name) {
