@@ -1,5 +1,7 @@
 1999-05-14  Assar Westerlund  <assar@sics.se>
 
+	* admin/ktutil.c (kt_remove): -t should be -e
+
 	* kdc/hpropd.c: support for dumping to krb4.  From Miroslav Ruda
  	<ruda@ics.muni.cz>
 
