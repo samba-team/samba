@@ -178,7 +178,9 @@ ADS_STRUCT *ads_init(const char *realm,
 void ads_destroy(ADS_STRUCT **ads)
 {
 	if (ads && *ads) {
+#if HAVE_LDAP
 		if ((*ads)->ld) ldap_unbind((*ads)->ld);
+#endif
 		SAFE_FREE((*ads)->realm);
 		SAFE_FREE((*ads)->ldap_server);
 		SAFE_FREE((*ads)->kdc_server);
