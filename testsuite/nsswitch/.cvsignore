@@ -1,3 +1,5 @@
+initgroups
+nss_winbind_syms
 getgrent_r
 getgrgid
 getgrnam
