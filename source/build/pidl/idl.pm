@@ -1974,7 +1974,11 @@ sub parse_idl($$)
 
 	my $saved_delim = $/;
 	undef $/;
-	my $data = `cpp $filename`;
+	my $cpp = $ENV{CPP};
+	if (! defined $cpp) {
+		$cpp = "cpp"
+	}
+	my $data = `$cpp -xc $filename`;
 	$/ = $saved_delim;
 
         $self->YYData->{INPUT} = $data;

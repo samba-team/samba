@@ -643,10 +643,10 @@ pch: basics
 
 
 idl_full: build/pidl/idl.pm
-	script/build_idl.sh FULL
+	CPP="@CPP@" script/build_idl.sh FULL
 
 idl: build/pidl/idl.pm
-	@script/build_idl.sh
+	@CPP="@CPP@" script/build_idl.sh
 
 basics: idl proto_test
 
