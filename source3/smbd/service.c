@@ -551,7 +551,7 @@ connection_struct *make_connection(char *service,char *password,
 	}
 	/* Initialise VFS function pointers */
 
-	if (!vfs_init(conn)) {
+	if (!smbd_vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
 		conn_free(conn);
 		return NULL;
