@@ -1020,11 +1020,6 @@ bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.po
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.po \
 		@SONAMEFLAG@`basename $@`
 
-bin/nisplussam.@SHLIBEXT@: passdb/pdb_nisplus.po
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_nisplus.po \
-		@SONAMEFLAG@`basename $@`
-
 bin/weird.@SHLIBEXT@: $(DEVEL_HELP_OBJ:.o=.po)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_OBJ:.o=.po) \

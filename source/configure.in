@@ -2442,10 +2442,10 @@ AC_MSG_CHECKING(whether to build experimental passdb libraries)
 AC_ARG_WITH(expsam,
 [  --with-expsam=<list>    Include experimental passdb libraries (default=no)]
 [                          Valid choices include (comma separated list): ]
-[                              xml, mysql, & nisplussam ],
+[                              xml & mysql],
 [ expsam_pdb_modules=`echo "$withval" | sed 's/,/ /g'`
   if test "z$expsam_pdb_modules" = "zyes"; then
-    expsam_pdb_modules="xml mysql nisplussam"
+    expsam_pdb_modules="xml mysql"
   fi
   AC_MSG_RESULT($expsam_pdb_modules)
   for i in $expsam_pdb_modules
@@ -2460,12 +2460,6 @@ AC_ARG_WITH(expsam,
       ## pdb_mysql
       AM_PATH_MYSQL([0.11.0],[default_shared_modules="$default_shared_modules pdb_mysql"],[])
       CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-      ;;
-    nisplussam)
-      ## pdb_nisplussam
-      if test x"$ac_cv_header_rpcsvc_nis_h" = x"yes"; then
-	  default_shared_modules="$default_shared_modules pdb_nisplussam"
-      fi
       ;;
     *)
       echo "Unknown module name \"$i\"!  Exiting..."
@@ -3845,7 +3839,6 @@ SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
 		  [ PASSDBLIBS="$PASSDBLIBS $XML_LIBS" ] )
 SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
 		   [ PASSDBLIBS="$PASSDBLIBS $MYSQL_LIBS" ]	)
-SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, "bin/nisplussam.$SHLIBEXT", PDB)
 
 ## end of contributed pdb_modules
 ###########################################################################
