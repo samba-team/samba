@@ -320,7 +320,8 @@ int krb4_write(int fd, void *data, int length)
 	data_buffer[1] = (bytes >> 16) & 0xff;
 	data_buffer[2] = (bytes >> 8) & 0xff;
 	data_buffer[3] = bytes & 0xff;
-	krb_net_write(fd, data_buffer, bytes+4);
+	if(krb_net_write(fd, data_buffer, bytes+4) < 0)
+	    return -1;
 	length -= len;
 	data = (unsigned char*)data + len;
 	tx += len;
