@@ -14,7 +14,7 @@
 #undef HAVE_U_INT32_T
 #undef HAVE_U_INT64_T
 
-#ifdef HAVE_FOUR_VALUED_KRB_PUT_INT
+#if defined(HAVE_FOUR_VALUED_KRB_PUT_INT) || !defined(KRB4)
 #define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (L), (S))
 #else
 #define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (S))
