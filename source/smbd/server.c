@@ -574,7 +574,7 @@ static void usage(char *pname)
 
 		case 'l':
 			specified_logfile = True;
-			pstrcpy(debugf,optarg);
+			slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd", optarg);
 			break;
 
 		case 'a':
