@@ -1,3 +1,23 @@
+2005-01-05  Luke Howard  <lukeh@padl.com>
+
+	* 8003.c: use symbolic name for checksum type
+
+	* accept_sec_context.c: allow client to indicate
+	  that subkey should be used
+
+	* acquire_cred.c: plug leak
+
+	* get_mic.c: use gss_krb5_get_subkey() instead
+	  of gss_krb5_get_{local,remote}key()
+
+	* gssapi_local.c: use gss_krb5_get_subkey()
+
+	* unwrap.c: use gss_krb5_get_subkey()
+
+	* verify_mic.c: use gss_krb5_get_subkey()
+
+	* wrap.c: use gss_krb5_get_subkey()
+
 2004-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* inquire_cred.c: Reverse order of HEIMDAL_MUTEX_unlock and
