@@ -222,9 +222,13 @@ static int talloc_reference_destructor(void *ptr)
 */
 void *talloc_reference(const void *context, const void *ptr)
 {
-	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	struct talloc_chunk *tc;
 	struct talloc_reference_handle *handle;
+	if (ptr == NULL) return NULL;
+
+	tc = talloc_chunk_from_ptr(ptr);
 	handle = talloc_named_const(context, sizeof(*handle), TALLOC_MAGIC_REFERENCE);
+
 	if (handle == NULL) return NULL;
 
 	/* note that we hang the destructor off the handle, not the
@@ -272,6 +276,10 @@ int talloc_unlink(const void *context, void *ptr)
 {
 	struct talloc_chunk *tc_p, *new_p;
 	void *new_parent;
+
+	if (ptr == NULL) {
+		return -1;
+	}
 
 	if (context == NULL) {
 		context = null_context;

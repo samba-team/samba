@@ -117,6 +117,11 @@ static BOOL test_ref1(void)
 	talloc_free(r1);
 	talloc_report_full(NULL, stdout);
 
+	printf("Testing NULL\n");
+	if (talloc_reference(root, NULL)) {
+		return False;
+	}
+
 	CHECK_BLOCKS(root, 1);
 
 	CHECK_SIZE(root, 0);
@@ -478,7 +483,12 @@ static BOOL test_misc(void)
 	talloc_unlink(NULL, p2);
 	talloc_unlink(root, p1);
 
-	
+	/* Test that talloc_unlink is a no-op */
+
+	if (talloc_unlink(root, NULL) != -1) {
+		printf("failed: talloc_unlink(root, NULL) == -1\n");
+		return False;
+	}
 
 	talloc_report(root, stdout);
 	talloc_report(NULL, stdout);
