@@ -606,7 +606,7 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (W_ERROR_IS_OK(result)) {
 		switch (level) {
 		case 0:
 			decode_printer_info_0(mem_ctx, r.buffer, 1, &ctr->printers_0);
