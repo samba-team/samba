@@ -426,8 +426,6 @@ static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	
-	DOM_SID sid;
 	LUID luid;
 
 	if (argc != 2 ) {

@@ -233,7 +233,7 @@ add a privilege to a privilege array
 ****************************************************************************/
 BOOL add_privilege(uint32 *privilege, uint32 priv)
 {
-	int i;
+	int i=0;
 
 	while (i<PRIV_ALL_INDEX && privilege[i]!=0 && privilege[i]!=priv)
 		i++;
@@ -262,6 +262,7 @@ BOOL add_all_privilege(uint32 *privilege)
 	add_privilege(privilege, SE_PRIV_ADD_USERS);
 	add_privilege(privilege, SE_PRIV_ADD_MACHINES);
 	add_privilege(privilege, SE_PRIV_PRINT_OPERATOR);
+	return True;
 }
 
 /****************************************************************************
@@ -301,7 +302,6 @@ BOOL default_group_mapping(void)
 	fstring str_admins;
 	fstring str_users;
 	fstring str_guests;
-	int i;
 
 	uint32 privilege_none[PRIV_ALL_INDEX];
 	uint32 privilege_all[PRIV_ALL_INDEX];

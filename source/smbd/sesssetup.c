@@ -73,16 +73,12 @@ static int reply_spnego_kerberos(connection_struct *conn,
 				 DATA_BLOB *secblob)
 {
 	DATA_BLOB ticket;
-	krb5_context context;
-	krb5_auth_context auth_context = NULL;
-	krb5_keytab keytab = NULL;
-	krb5_data packet;
-	krb5_ticket *tkt = NULL;
-	int ret;
 	char *realm, *client, *p;
 	const struct passwd *pw;
 	char *user;
 	int sess_vuid;
+	NTSTATUS ret;
+	DATA_BLOB auth_data;
 	auth_serversupplied_info *server_info = NULL;
 
 	realm = lp_realm();
@@ -91,38 +87,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ret = krb5_init_context(&context);
-	if (ret) {
-		DEBUG(1,("krb5_init_context failed (%s)\n", error_message(ret)));
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-
-	packet.length = ticket.length;
-	packet.data = (krb5_pointer)ticket.data;
-
-#if 0
-	file_save("/tmp/ticket.dat", ticket.data, ticket.length);
-#endif
-
-	if ((ret = krb5_rd_req(context, &auth_context, &packet, 
-			       NULL, keytab, NULL, &tkt))) {
-		DEBUG(3,("krb5_rd_req failed (%s)\n", 
-			 error_message(ret)));
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-
-#if 0
-	if (tkt->enc_part2) {
-		file_save("/tmp/authdata.dat", 
-			  tkt->enc_part2->authorization_data[0]->contents,
-			  tkt->enc_part2->authorization_data[0]->length);
-	}
-#endif
-
-	if ((ret = krb5_unparse_name(context, tkt->enc_part2->client,
-				     &client))) {
-		DEBUG(3,("krb5_unparse_name failed (%s)\n", 
-			 error_message(ret)));
+	ret = ads_verify_ticket(&ticket, &client, &auth_data);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(1,("Failed to verify incoming ticket!\n"));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 

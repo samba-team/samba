@@ -95,6 +95,7 @@ DATA_BLOB krb5_get_ticket(char *principal)
 	krb5_context context;
 	krb5_auth_context auth_context = NULL;
 	DATA_BLOB ret;
+	krb5_enctype enc_types[] = {ENCTYPE_DES_CBC_MD5, ENCTYPE_NULL};
 
 	retval = krb5_init_context(&context);
 	if (retval) {
@@ -105,6 +106,12 @@ DATA_BLOB krb5_get_ticket(char *principal)
 
 	if ((retval = krb5_cc_default(context, &ccdef))) {
 		DEBUG(1,("krb5_cc_default failed (%s)\n",
+			 error_message(retval)));
+		goto failed;
+	}
+
+	if ((retval = krb5_set_default_tgs_ktypes(context, enc_types))) {
+		DEBUG(1,("krb5_set_default_tgs_ktypes failed (%s)\n",
 			 error_message(retval)));
 		goto failed;
 	}

@@ -122,7 +122,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^DATA_BLOB|^ASN1_DATA|^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^TALLOC_CTX|^hash_element|^NT_DEVICEMODE|^enum.*\(|^NT_USER_TOKEN|^SAM_ACCOUNT/ ) {
+  if( $0 ~ /^ADS_STRUCT|^DATA_BLOB|^ASN1_DATA|^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^TALLOC_CTX|^hash_element|^NT_DEVICEMODE|^enum.*\(|^NT_USER_TOKEN|^SAM_ACCOUNT/ ) {
     gotstart = 1;
   }
 

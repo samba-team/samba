@@ -114,6 +114,7 @@ typedef struct
 	char *szSocketOptions;
 	char *szWorkGroup;
 	char *szRealm;
+	char *szADSserver;
 	char **szDomainAdminGroup;
 	char **szDomainGuestGroup;
 	char *szUsernameMap;
@@ -650,6 +651,7 @@ static struct parm_struct parm_table[] = {
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, 0},
 	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkGroup, NULL, NULL, FLAG_BASIC},
 	{"realm", P_USTRING, P_GLOBAL, &Globals.szRealm, NULL, NULL, FLAG_BASIC},
+	{"ADS server", P_STRING, P_GLOBAL, &Globals.szADSserver, NULL, NULL, FLAG_BASIC},
 	{"netbios name", P_UGSTRING, P_GLOBAL, global_myname, handle_netbios_name, NULL, FLAG_BASIC},
 	{"netbios aliases", P_LIST, P_GLOBAL, &Globals.szNetbiosAliases, NULL, NULL, 0},
 	{"netbios scope", P_UGSTRING, P_GLOBAL, global_scope, NULL, NULL, 0},
@@ -1459,6 +1461,7 @@ FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_workgroup, &Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
+FN_GLOBAL_STRING(lp_ads_server, &Globals.szADSserver)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 #ifdef USING_GROUPNAME_MAP
 FN_GLOBAL_STRING(lp_groupname_map, &Globals.szGroupnameMap)
