@@ -1837,7 +1837,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       break;
 
     case SMB_SET_FILE_BASIC_INFO:
-	case 1004:
+	case SMB_FILE_BASIC_INFORMATION:
     {
       /* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
       time_t write_time;
@@ -2039,8 +2039,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
   if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
      (info_level == SMB_SET_FILE_ALLOCATION_INFO) ||
-     (info_level == 1019) ||
-     (info_level == 1020))) {
+     (info_level == SMB_FILE_ALLOCATION_INFORMATION) ||
+     (info_level == SMB_FILE_END_OF_FILE_INFORMATION))) {
     /*
      * Only do this test if we are not explicitly
      * changing the size of a file.
