@@ -1,3 +1,8 @@
+Thu Apr  1 11:26:38 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: noinst_PROGRAMS -> check_PROGRAMS; add TESTS; don't
+ 	build rpw, and speed
+
 Mon Mar 22 20:16:26 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: hash.h
