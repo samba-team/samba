@@ -46,11 +46,14 @@
 
 /* We use these, but they are not always present in <arpa/nameser.h> */
 
+#ifndef T_TXT
+#define T_TXT		16
+#endif
 #ifndef T_AFSDB
-#define T_AFSDB 18
+#define T_AFSDB		18
 #endif
 #ifndef T_SRV
-#define T_SRV 33
+#define T_SRV		 33
 #endif
 
 struct dns_query{
