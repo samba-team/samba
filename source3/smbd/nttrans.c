@@ -1838,7 +1838,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   char *data = *ppdata;
   prs_struct pd;
   SEC_DESC *psd = NULL;
-  size_t sec_desc_size;
+  size_t sd_size;
 
   files_struct *fsp = file_fsp(params,0);
 
@@ -1855,14 +1855,14 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Get the permissions to return.
    */
 
-  if((sec_desc_size = get_nt_acl(fsp, &psd)) == 0)
+  if((sd_size = get_nt_acl(fsp, &psd)) == 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-  DEBUG(3,("call_nt_transact_query_security_desc: sec_desc_size = %d.\n",(int)sec_desc_size));
+  DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %d.\n",(int)sd_size));
 
-  SIVAL(params,0,(uint32)sec_desc_size);
+  SIVAL(params,0,(uint32)sd_size);
 
-  if(max_data_count < sec_desc_size) {
+  if(max_data_count < sd_size) {
 
     free_sec_desc(&psd);
 
@@ -1875,13 +1875,13 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Allocate the data we will point this at.
    */
 
-  data = *ppdata = Realloc(*ppdata, sec_desc_size);
+  data = *ppdata = Realloc(*ppdata, sd_size);
   if(data == NULL) {
     free_sec_desc(&psd);
     return(ERROR(ERRDOS,ERRnomem));
   }
 
-  memset(data, '\0', sec_desc_size);
+  memset(data, '\0', sd_size);
 
   /*
    * Init the parse struct we will marshall into.
@@ -1894,7 +1894,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * allocated.
    */
 
-  prs_give_memory( &pd, data, (uint32)sec_desc_size, False);
+  prs_give_memory( &pd, data, (uint32)sd_size, False);
 
   /*
    * Finally, linearize into the outgoing buffer.
@@ -1916,7 +1916,7 @@ security descriptor.\n"));
 
   free_sec_desc(&psd);
 
-  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sec_desc_size);
+  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sd_size);
   return -1;
 }
 
