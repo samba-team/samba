@@ -35,7 +35,7 @@ struct request_buffer {
 	*/
 	uint_t allocated;
 	
-		/* the start of the SMB header - this is always buffer+4 */
+	/* the start of the SMB header - this is always buffer+4 */
 	char *hdr;
 	
 	/* the command words and command word count. vwv points
@@ -53,5 +53,5 @@ struct request_buffer {
 	 * a send packet is done we need to move this
 	 * pointer */
 	char *ptr;
-} in, out;
+};
 
