@@ -302,6 +302,7 @@ MYSQL_OBJ = passdb/pdb_mysql.o
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
 CP850_OBJ = modules/CP850.o
 CP437_OBJ = modules/CP437.o
+CHARSET_MACOSXFS_OBJ = modules/charset_macosxfs.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -1113,6 +1114,11 @@ bin/CP437.@SHLIBEXT@: $(CP437_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP437_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
+
+bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ:.o=.po)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CHARSET_MACOSXFS_OBJ:.o=.po) \
+		-framework CoreFoundation @SONAMEFLAG@`basename $@`
 
 bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
