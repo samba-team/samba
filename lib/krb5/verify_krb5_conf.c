@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -141,23 +141,68 @@ check_host(krb5_context context, const char *path, char *data)
     int ret;
     char hostname[128];
     const char *p = data;
+    struct addrinfo hints;
+    char service[32];
+    int defport;
+
+    hints.ai_flags = 0;
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = 0;
+    hints.ai_protocol = 0;
+
+    hints.ai_addrlen = 0;
+    hints.ai_canonname = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
+    
     struct addrinfo *ai;
     /* XXX data could be a list of hosts that this code can't handle */
     /* XXX copied from krbhst.c */
     if(strncmp(p, "http://", 7) == 0){
         p += 7;
+	hints.ai_socktype = SOCK_STREAM;
+	strlcpy(service, "http", sizeof(service));
+	defport = 80;
     } else if(strncmp(p, "http/", 5) == 0) {
         p += 5;
+	hints.ai_socktype = SOCK_STREAM;
+	strlcpy(service, "http", sizeof(service));
+	defport = 80;
     }else if(strncmp(p, "tcp/", 4) == 0){
         p += 4;
+	hints.ai_socktype = SOCK_STREAM;
+	strlcpy(service, "kerberos", sizeof(service));
+	defport = 88;
     } else if(strncmp(p, "udp/", 4) == 0) {
         p += 4;
+	hints.ai_socktype = SOCK_DGRAM;
+	strlcpy(service, "kerberos", sizeof(service));
+	defport = 88;
+    } else {
+	hints.ai_socktype = SOCK_DGRAM;
+	strlcpy(service, "kerberos", sizeof(service));
+	defport = 88;
     }
     if(strsep_copy(&p, ":", hostname, sizeof(hostname)) < 0) {
 	return 1;
     }
     hostname[strcspn(hostname, "/")] = '\0';
-    ret = getaddrinfo(hostname, "telnet" /* XXX */, NULL, &ai);
+    if(p != NULL) {
+	char *end;
+	int tmp = strtol(p, &end, 0);
+	if(end == p) {
+	    krb5_warnx(context, "%s: failed to parse port number in %s", 
+		       path, data);
+	    return 1;
+	}
+	defport = tmp;
+	snprintf(service, sizeof(service), "%u", defport);
+    }
+    ret = getaddrinfo(hostname, service, &hints, &ai);
+    if(ret == EAI_SERVICE && !isdigit(service[0])) {
+	snprintf(service, sizeof(service), "%u", defport);
+	ret = getaddrinfo(hostname, service, &hints, &ai);
+    }
     if(ret != 0) {
 	krb5_warnx(context, "%s: %s (%s)", path, gai_strerror(ret), hostname);
 	return 1;
