@@ -140,6 +140,11 @@ static int mount_ok(char *mount_point)
 
 	memset(&data, 0, sizeof(struct smb_mount_data));
 
+	if (argc < 2) {
+		help();
+		exit(1);
+	}
+
 	if (argv[1][0] == '-') {
 		help();
 		exit(1);
@@ -153,11 +158,6 @@ static int mount_ok(char *mount_point)
                 fprintf(stderr, "smbmnt must be installed suid root for direct user mounts\n");
                 exit(1);
         }
-
-	if (argc < 2) {
-		help();
-		exit(1);
-	}
 
 	mount_uid = getuid();
 	mount_gid = getgid();
