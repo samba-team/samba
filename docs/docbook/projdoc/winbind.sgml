@@ -304,22 +304,546 @@
 
 <sect1>
 	<title>Installation and Configuration</title>
-
-	<para>The easiest way to install winbind is by using the packages 
-	provided in the <filename>pub/samba/appliance/</filename> 
-	directory on your nearest 
-	Samba mirror. These packages provide snapshots of the Samba source 
-	code and binaries already setup to provide the full functionality 
-	of winbind. This setup is a little more complex than a normal Samba 
-	build as winbind needs a small amount of functionality from a 
-	development code branch called SAMBA_TNG.</para>
 	
-	<para>Once you have installed the packages you should read 
-	the <command>winbindd(8)</command> man page, which will provide you 
-	with configuration information and give you sample configuration files. 
-	You may also wish to update the main Samba daemons smbd and nmbd) 
-	with a more recent development release, such as the recently
-	announced Samba 2.2 alpha release.</para>
+<para>
+Many thanks to John Trostel <ulink 
+url="mailto:jtrostel@snapserver.com">jtrostel@snapserver.com</ulink>
+for providing the HOWTO for this section.
+</para>
+
+<para>
+This HOWTO describes how to get winbind services up and running 
+to control access and authenticate users on your Linux box using 
+the winbind services which come with SAMBA 2.2.2.
+</para>
+
+
+<sect2>
+<title>Introduction</title>
+
+<para>
+This HOWTO describes the procedures used to get winbind up and 
+running on my RedHat 7.1 system.  Winbind is capable of providing access 
+and authentication control for Windows Domain users through an NT 
+or Win2K PDC for 'regular' services, such as telnet a nd ftp, as
+well for SAMBA services.
+</para>
+
+<para>
+This HOWTO has been written from a 'RedHat-centric' perspective, so if 
+you are using another distribution, you may have to modify the instructions 
+somewhat to fit the way your distribution works.
+</para>
+
+
+<itemizedlist>
+<listitem>
+	<para>
+	<emphasis>Why should I to this?</emphasis>
+	</para>
+	
+	<para>This allows the SAMBA administrator to rely on the 
+	authentication mechanisms on the NT/Win2K PDC for the authentication 
+	of domain members.  NT/Win2K users no longer need to have separate 
+	accounts on the SAMBA server.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	<emphasis>Who should be reading this document?</emphasis>
+	</para>
+	
+	<para>
+	This HOWTO is designed for system administrators.  If you are 
+	implementing SAMBA on a file server and wish to (fairly easily) 
+	integrate existing NT/Win2K users from your PDC onto the
+	SAMBA server, this HOWTO is for you.  That said, I am no NT or PAM 
+	expert, so you may find a better or easier way to accomplish 
+	these tasks.
+	</para>
+</listitem>
+</itemizedlist>
+</sect2>
+
+
+<sect2>
+<title>Requirements</title>
+
+<para>
+If you have a samba configuration file that you are currently 
+using... BACK IT UP!  If your system already uses PAM, BACK UP 
+THE <filename>/etc/pam.d</filename> directory contents! If you 
+haven't already made a boot disk, MAKE ON NOW!
+</para>
+
+<para>
+Messing with the pam configuration files can make it nearly impossible 
+to log in to yourmachine. That's why you want to be able to boot back 
+into your machine in single user mode and restore your 
+<filename>/etc/pam.d</filename> back to the original state they were in if 
+you get frustrated with the way things are going.  ;-)
+</para>
+
+<para>
+The newest version of SAMBA (version 2.2.2), available from 
+cvs.samba.org, now include a functioning winbindd daemon.  Please refer 
+to the main SAMBA web page or, better yet, your closest SAMBA mirror 
+site for instructions on downloading the source code.
+</para>
+
+<para>
+To allow Domain users the ability to access SAMBA shares and 
+files, as well as potentially other services provided by your 
+SAMBA machine, PAM (pluggable authentication modules) must
+be setup properly on your machine.  In order to compile the 
+winbind modules, you should have at least the pam libraries resident 
+on your system.  For recent RedHat systems (7.1, for instance), that 
+means 'pam-0.74-22'.  For best results, it is helpful to also
+install the development packages in 'pam-devel-0.74-22'.
+</para>
+
+</sect2>
+
+
+<sect2>
+<title>Testing Things Out</title>
+
+<para>
+Before starting, it is probably best to kill off all the SAMBA 
+related daemons running on your server.  Kill off all <command>smbd</command>, 
+<command>nmbd</command>, and <command>winbindd</command> processes that may 
+be running.  To use PAM, you will want to make sure that you have the 
+standard PAM package (for RedHat) which supplies the <filename>/etc/pam.d</filename> 
+directory structure, including the pam modules are used by pam-aware 
+services, several pam libraries, and the <filename>/usr/doc</filename> 
+and <filename>/usr/man</filename> entries for pam.  Winbind built better 
+in SAMBA if the pam-devel package was also installed.  This package includes 
+the header files needed to compile pam-aware applications. For instance, my RedHat 
+system has both 'pam-0.74-22' and 'pam-devel-0.74-22' RPMs installed.
+</para>
+
+<sect3>
+<title>Configure and compile SAMBA</title>
+
+<para>
+The configuration and compilation of SAMBA is pretty straightforward.
+The first three steps maynot be necessary depending upon
+whether or not you have previously built the Samba binaries.
+</para>
+
+<para><programlisting>
+<prompt>root# </prompt> autoconf
+<prompt>root# </prompt> make clean
+<prompt>root# </prompt> rm config.cache
+<prompt>root# </prompt> ./configure --with-winbind
+<prompt>root# </prompt> make
+<prompt>root# </prompt> make install
+</programlisting></para>
+
+
+<para>
+This will, by default, install SAMBA in /usr/local/samba.  See the 
+main SAMBA documentation if you want to install SAMBA somewhere else.  
+It will also build the winbindd executable and libraries. 
+</para>
+
+</sect3>
+
+<sect3>
+<title>Configure nsswitch.conf and the winbind libraries</title>
+
+<para>
+The libraries needed to run the winbind daemon through nsswitch 
+need to be copied to their proper locations, so
+</para>
+
+<para>
+<prompt>root# </prompt> cp ../samba/source/nsswitch/libnss_winbind.so /lib
+</para>
+
+<para>
+I also found it necessary to make the following symbolic link:
+</para>
+
+<para>
+<prompt>root# </prompt> ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2
+</para>
+
+<para>
+Now, as root you need to edit <filename>/etc/nsswitch.conf</filename> to 
+allow user and group entries to be visible from the <command>winbindd</command> 
+daemon, as well as from your /etc/hosts files and NIS servers.  My 
+<filename>/etc/nsswitch.conf</filename> file look like this after editing:
+</para>
+
+<para><programlisting>
+	passwd:     files winbind
+	shadow:     files winbind
+	group:      files winbind
+</programlisting></para>
+
+<para>	
+The libraries needed by the winbind daemon will be automatically 
+entered into the ldconfig cache the next time your system reboots, but it 
+is faster (and you don't need to reboot) if you do it manually:
+</para>
+
+<para>
+<prompt>root# </prompt> /sbin/ldconfig -v | grep winbind
+</para>
+
+<para>
+This makes <filename>libnss_winbind</filename> available to winbindd 
+and echos back a check to you.
+</para>
+
+</sect3>
+
+
+<sect3>
+<title>Configure smb.conf</title>
+
+<para>
+Several parameters are needed in the smb.conf file to control 
+the behavior of <command>winbindd</command>. Configure 
+<filename>smb.conf</filename> These are described in more detail in 
+the <ulink url="winbindd.8.html">winbindd(8)</ulink> man page.  My 
+<filename>smb.conf</filename> file was modified to
+include the following entries in the [global] section:
+</para>
+
+<para><programlisting>
+[global]
+     <...>
+     # separate domain and username with '+', like DOMAIN+username
+     winbind separator = +
+     # use uids from 10000 to 20000 for domain users
+     winbind uid = 10000-20000
+     # use gids from 10000 to 20000 for domain groups
+     winbind gid = 10000-20000
+     # allow enumeration of winbind users and groups
+     winbind enum users = yes
+     winbind enum groups = yes
+     # give winbind users a real shell (only needed if they have telnet access)
+     template shell = /bin/bash
+</programlisting></para>
+
+</sect3>
+
+
+<sect3>
+<title>Join the SAMBA server to the PDC domain</title>
+
+<para>
+Enter the following command to make the SAMBA server join the 
+PDC domain, where <replaceable>DOMAIN</replaceable> is the name of 
+your Windows domain and <replaceable>Administrator</replaceable> is 
+a domain user who has administrative privileges in the domain.
+</para>
+	
+
+<para>
+<prompt>root# </prompt>/usr/local/samba/bin/smbpasswd -j DOMAIN -r PDC -U Administrator
+</para>
+
+
+<para>
+The proper response to the command should be: "Joined the domain 
+<replaceable>DOMAIN</replaceable>" where <replaceable>DOMAIN</replaceable> 
+is your DOMAIN name.
+</para>
+
+</sect3>
+
+
+<sect3>
+<title>Start up the winbindd daemon and test it!</title>
+
+<para>
+Eventually, you will want to modify your smb startup script to 
+automatically invoke the winbindd daemon when the other parts of 
+SAMBA start, but it is possible to test out just the winbind
+portion first.  To start up winbind services, enter the following 
+command as root:
+</para>
+	
+<para>
+<prompt>root# </prompt>/usr/local/samba/bin/winbindd
+</para>
+
+<para>
+I'm always paranoid and like to make sure the daemon 
+is really running...
+</para>
+
+<para>
+<prompt>root# </prompt> ps -ae | grep winbindd 
+3025 ?        00:00:00 winbindd
+</para>
+
+<para>
+Now... for the real test, try to get some information about the 
+users on your PDC
+</para>
+
+<para>
+<prompt>root# </prompt> # /usr/local/samba/bin/wbinfo -u
+</para>
+
+<para>	
+This should echo back a list of users on your Windows users on 
+your PDC.  For example, I get the following response:
+</para>
+
+<para><programlisting>
+CEO+Administrator
+CEO+burdell
+CEO+Guest
+CEO+jt-ad
+CEO+krbtgt
+CEO+TsInternetUser
+</programlisting></para>
+
+<para>
+Obviously, I have named my domain 'CEO' and my winbindd separator is '+'.
+</para>
+
+<para>
+You can do the same sort of thing to get group information from 
+the PDC:
+</para>
+
+<para><programlisting>
+<prompt>root# </prompt>/usr/local/samba/bin/wbinfo -g
+CEO+Domain Admins
+CEO+Domain Users
+CEO+Domain Guests
+CEO+Domain Computers
+CEO+Domain Controllers
+CEO+Cert Publishers
+CEO+Schema Admins
+CEO+Enterprise Admins
+CEO+Group Policy Creator Owners
+</programlisting></para>
+
+<para>
+The function 'getent' can now be used to get unified 
+lists of both local and PDC users and groups.
+Try the following command:
+</para>
+
+<para>
+<prompt>root# </prompt> getent passwd
+</para>
+	
+<para>
+You should get a list that looks like your <filename>/etc/passwd</filename> 
+list followed by the domain users with their new uids, gids, home 
+directories and default shells.
+</para>
+
+<para>
+The same thing can be done for groups with the command
+</para>
+
+<para>
+<prompt>root# </prompt> getent group
+</para>
+
+</sect3>
+
+
+<sect3>
+<title>Fix the /etc/rc.d/init.d/smb startup files</title>
+
+<para>
+The <command>winbindd</command> daemon needs to start up after the 
+<command>smbd</command> and <command>nmbd</command> daemons are running.  
+To accomplish this task, you need to modify the <filename>/etc/init.d/smb</filename>
+script to add commands to invoke this daemon in the proper sequence.  My 
+<filename>/etc/init.d/smb</filename> file starts up <command>smbd</command>, 
+<command>nmbd</command>, and <command>winbindd</command> from the 
+<filename>/usr/local/samba/bin</filename> directory directly.  The 'start' 
+function in the script looks like this:
+</para>
+
+<para><programlisting>
+start() {
+        KIND="SMB"
+        echo -n $"Starting $KIND services: "
+        daemon /usr/local/samba/bin/smbd $SMBDOPTIONS
+        RETVAL=$?
+        echo
+        KIND="NMB"
+        echo -n $"Starting $KIND services: "
+        daemon /usr/local/samba/bin/nmbd $NMBDOPTIONS
+        RETVAL2=$?
+        echo
+        KIND="Winbind"
+        echo -n $"Starting $KIND services: "
+        daemon /usr/local/samba/bin/winbindd
+        RETVAL3=$?
+        echo
+        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] && touch /var/lock/subsys/smb || \
+           RETVAL=1
+        return $RETVAL
+}
+</programlisting></para>
+
+<para>
+The 'stop' function has a corresponding entry to shut down the 
+services and look s like this:
+</para>
+
+<para><programlisting>
+stop() {
+        KIND="SMB"
+        echo -n $"Shutting down $KIND services: "
+        killproc smbd
+        RETVAL=$?
+        echo
+        KIND="NMB"
+        echo -n $"Shutting down $KIND services: "
+        killproc nmbd
+        RETVAL2=$?
+        echo
+        KIND="Winbind"
+        echo -n $"Shutting down $KIND services: "
+        killproc winbindd
+        RETVAL3=$?
+        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] && rm -f /var/lock/subsys/smb
+        echo ""
+        return $RETVAL
+}
+</programlisting></para>
+
+</sect3>
+
+
+
+<sect3>
+<title>Configure Winbind and PAM</title>
+
+<para>
+If you have made it this far, you know that winbindd is working.  
+Now it is time to integrate it into the operation of samba and other 
+services.  The pam configuration files need to be altered in
+this step.  (Did you remember to make backups of your original 
+<filename>/etc/pam.d</filename> files? If not, do it now.)
+</para>
+
+<para>
+To get samba to allow domain users and groups, I modified the 
+<filename>/etc/pam.d/samba</filename> file from
+</para>
+
+
+<para><programlisting>
+auth    required        /lib/security/pam_stack.so service=system-auth
+account required        /lib/security/pam_stack.so service=system-auth
+</programlisting></para>
+
+<para>
+to
+</para>
+
+<para><programlisting>
+auth    required        /lib/security/pam_winbind.so
+auth    required        /lib/security/pam_stack.so service=system-auth
+account required        /lib/security/pam_winbind.so
+account required        /lib/security/pam_stack.so service=system-auth
+</programlisting></para>
+
+<para>
+The other services that I modified to allow the use of winbind 
+as an authentication service were the normal login on the console (or a terminal 
+session), telnet logins, and ftp service.  In order to enable these 
+services, you may first need to change the entries in 
+<filename>/etc/xinetd.d</filename> (or <filename>/etc/inetd.conf</filename>).  
+RedHat 7.1 uses the new xinetd.d structure, in this case you need 
+to change the lines in <filename>/etc/xinetd.d/telnet</filename> 
+and <filename>/etc/xinetd.d/wu-ftp</filename> from 
+</para>
+
+<para><programlisting>
+enable = no
+</programlisting></para>
+
+<para>
+to
+</para>
+
+<para><programlisting>
+enable = yes
+</programlisting></para>
+
+<para>	
+For ftp services to work properly, you will also need to either 
+have individual directories for the domain users already present on 
+the server, or change the home directory template to a general
+directory for all domain users.  These can be easily set using 
+the <filename>smb.conf</filename> global entry 
+<command>template homedir</command>.
+</para>
+
+<para>
+The <filename>/etc/pam.d/ftp</filename> file can be changed 
+to allow winbind ftp access in a manner similar to the
+samba file.  My <filename>/etc/pam.d/ftp</filename> file was 
+changed to look like this:
+</para>
+
+<para><programlisting>
+auth       sufficient   /lib/security/pam_winbind.so
+auth       required     /lib/security/pam_listfile.so item=user sense=deny file=/etc/ftpusers onerr=succeed
+auth       required     /lib/security/pam_stack.so service=system-auth
+auth       required     /lib/security/pam_shells.so
+account    required     /lib/security/pam_stack.so service=system-auth
+session    required     /lib/security/pam_stack.so service=system-auth
+</programlisting></para>
+
+<para>
+The <filename>/etc/pam.d/login</filename> file can be changed nearly the 
+same way.  It now looks like this:
+</para>
+
+<para><programlisting>
+auth       required     /lib/security/pam_securetty.so
+auth       sufficient   /lib/security/pam_winbind.so
+auth       sufficient   /lib/security/pam_unix.so use_first_pass
+auth       required     /lib/security/pam_stack.so service=system-auth
+auth       required     /lib/security/pam_nologin.so
+account    sufficient   /lib/security/pam_winbind.so
+account    required     /lib/security/pam_stack.so service=system-auth
+password   required     /lib/security/pam_stack.so service=system-auth
+session    required     /lib/security/pam_stack.so service=system-auth
+session    optional     /lib/security/pam_console.so
+</programlisting></para>
+
+<para>
+In this case, I added the <command>auth sufficient /lib/security/pam_winbind.so</command> 
+lines as before, but also added the <command>required pam_securetty.so</command> 
+above it, to disallow root logins over the network.  I also added a 
+<command>sufficient /lib/security/pam_unix.so use_first_pass</command>
+line after the <command>winbind.so</command> line to get rid of annoying 
+double prompts for passwords.
+</para>
+
+<para>
+Finally, don't forget to copy the winbind pam modules from 
+the source directory in which you originally compiled the new 
+SAMBA up to the /lib/security directory so that pam can use it:
+</para>
+
+<para>
+<prompt>root# </prompt> cp ../samba/source/nsswitch/pam_winbind.so /lib/security
+</para>
+
+</sect3>
+
+</sect2>
+
 </sect1>
 
 <sect1>
@@ -365,4 +889,3 @@
 </sect1>
 
 </chapter>
-
