@@ -199,6 +199,10 @@ static BOOL default_group_mapping(void)
 	sid_to_string(str_guests, &sid_guests);
 	add_initial_entry(-1, str_guests, SID_NAME_DOM_GRP, "Domain Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
 
+	free_privilege(&privilege_none);
+	free_privilege(&privilege_all);
+	free_privilege(&privilege_print_op);
+
 	return True;
 }
 

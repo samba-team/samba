@@ -354,6 +354,7 @@ BOOL idmap_init_wellknown_sids(void)
 			id.gid = map[i].gid;
 			idmap_set_mapping(&(map[i].sid), id, ID_GROUPID);
 		}
+		SAFE_FREE(map);
 	}
 
 	/* check if DOMAIN_GROUP_RID_GUESTS SID is set, if not store the
