@@ -693,7 +693,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 			fsp->fsp_name ));
 
 		offset = sizeof(*data) + sizeof(share_mode_entry);
-		safe_strcpy(p + offset, fname, size - offset);
+		safe_strcpy(p + offset, fname, size - offset - 1);
 		fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 		dbuf.dptr = p;
 		dbuf.dsize = size;
