@@ -45,6 +45,8 @@ PERL = @PERL@
 PSDIR = ..
 PDFDIR = ..
 TXTDIR = ../textdocs
+FAQPROJDOC = faq/
+FAQDIR = ../faq
 
 MANPAGES=$(patsubst %,$(MANDIR)/%,$(MANPAGES_NAMES))
 MANPAGES_HTML=$(patsubst %,$(HTMLDIR)/%.html,$(MANPAGES_NAMES))
@@ -59,9 +61,10 @@ all:
 	@echo "html - Build HTML version of HOWTO Collection"
 	@echo "htmlman - Build html version of manpages"
 	@echo "txt - Build plain text version of HOWTO Collection"
+	@echo "htmlfaq - Build html version of the FAQ"
 	@echo "everything - Build all of the above"
 
-everything: manpages ps pdf html-single html htmlman txt
+everything: manpages ps pdf html-single html htmlman txt htmlfaq
 
 # Global rules
 
@@ -70,9 +73,11 @@ pdf: $(PDFDIR)/Samba-HOWTO-Collection.pdf ../Samba-Developers-Guide.pdf
 ps: $(PSDIR)/Samba-HOWTO-Collection.ps ../Samba-Developers-Guide.ps
 txt: $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
 htmlman:  $(MANPAGES_HTML)
+htmlfaq: 
+	$(DOCBOOK2HTML) -d samba.dsl -o $(FAQDIR) $(FAQPROJDOC)/sambafaq.sgml
 html-single: $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
 html:
-	$(DOCBOOK2HTML) -d samba.dsl -o $(HTMLDIR) projdoc/samba-doc.sgml
+	$(DOCBOOK2HTML) -d samba.dsl -o $(HTMLDIR) $(PROJDOC)/samba-doc.sgml
 
 # Text files
 

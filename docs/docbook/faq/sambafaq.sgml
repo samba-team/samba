@@ -1,15 +1,15 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
 
 <book id="sambafaq">
+<title>Samba FAQ</title>
 
 <bookinfo>
 	<author><surname>Samba Team</surname></author>
 	<pubdate>October 2002</pubdate>
 </bookinfo>
 
-<title>Samba FAQ
-
-<abstract>
+<dedication>
+<para>
 This is the Frequently Asked Questions (FAQ) document for
 Samba, the free and very popular SMB server product. An SMB server
 allows file and printer connections from clients such as Windows,
@@ -17,13 +17,14 @@ OS/2, Linux and others. Current to version 3.0. Please send any
 corrections to the samba documentation mailinglist at
 <ulink url="mailto:samba-doc@samba.org">samba-doc@samba.org</ulink>. 
 This FAQ is based on the old Samba FAQ by Dan Shearer and Paul Blackman.
-</abstract>
+</para>
+</dedication>
 
 <chapter>
 <title>General Information</title>
 
 <sect1>
-<title>Where can I get it?</title> <p> <label id="where">
+<title>Where can I get it?</title>
 <para>
 The Samba suite is available at the <ulink url="http://samba.org/">samba website</ulink>.
 </sect1>
@@ -66,7 +67,7 @@ levels are released which give us the pXX series, for example 1.9.16p2.</member>
 <para>
 So the progression goes:
 
-<verb>
+<programlisting>
 1.9.15p7	(production)
 1.9.15p8	(production)
 1.9.16alpha1	(test sites only)
@@ -74,7 +75,7 @@ So the progression goes:
 1.9.16alpha20	(test sites only)
 1.9.16		(production)
 1.9.16p1	(production)
-</verb>
+</programlisting>
 </para>
 
 <para>
@@ -88,6 +89,7 @@ version.
 
 <sect1>
 <title>What platforms are supported?</title>
+<para>
 Many different platforms have run Samba successfully. The platforms
 most widely used and thus best tested are Linux and SunOS.</para>
 
@@ -141,7 +143,9 @@ versions):
 
 <sect1>
 <title>How do I subscribe to the Samba Mailing Lists?</title>
+<para>
 Look at <ulink url="http://samba.org/samba/archives.html">the samba mailing list page</ulink>
+</para>
 </sect1>
 
 <sect1>
@@ -485,12 +489,14 @@ zones.
 <quote> On NT, I opened "Printer Manager" and "Connect to Printer".
  Enter ["\\ptdi270\ps1"] in the box of printer. I got the
  following error message
+ </quote>
+ <para>
  <programlisting>
      You do not have sufficient access to your machine
      to connect to the selected printer, since a driver
      needs to be installed locally.
  </programlisting>
- </quote>
+ </para>
 
  <para>Answer:</para>
 
@@ -513,7 +519,8 @@ in that dialog box.</para>
 <chapter>
 <title>Specific client application problems</title>
 
-<para>MS Office Setup reports "Cannot change properties of '\MSOFFICE\SETUP.INI'"</title>
+<sect1>
+<title>MS Office Setup reports "Cannot change properties of '\MSOFFICE\SETUP.INI'"</title>
 <para>
 When installing MS Office on a Samba drive for which you have admin
 user permissions, ie. admin users = username, you will find the
