@@ -169,6 +169,8 @@ void rescan_trusted_domains( void )
 	/* this will only add new domains we didn't already know about */
 	
 	add_trusted_domains( mydomain );
+
+	last_scan = now;
 	
 	return;	
 }
