@@ -3170,13 +3170,13 @@ contents, are loaded and displayed on your Windows NT client.
 The share and the path must be readable by the user for the
 preferences and directories to be loaded onto the Windows NT
 client.  The share must be writeable when the logs in for the first
-time, in order that the Windows NT client can create the user.dat
+time, in order that the Windows NT client can create the NTuser.dat
 and other directories.
 
 Thereafter, the directories and any of the contents can, if required, be
-made read-only.  It is not advisable that the USER.DAT file be made
-read-only - rename it to USER.MAN to achieve the desired effect (a
-em(MAN)datory profile). Hmmm, this para is suspect ... RJS
+made read-only.  It is not advisable that the NTuser.dat file be made
+read-only - rename it to NTuser.man to achieve the desired effect (a
+em(MAN)datory profile). 
 
 Windows clients can sometimes maintain a connection to the [homes]
 share, even though there is no user logged in.  Therefore, it is vital
