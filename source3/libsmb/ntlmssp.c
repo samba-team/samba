@@ -24,7 +24,7 @@
 #include "includes.h"
 
 /**
- * Default challange generation code.
+ * Default challenge generation code.
  *
  */
    
