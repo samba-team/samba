@@ -4321,7 +4321,7 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	PI_CHECK_INT(averageppm);
 
 	/* Yuck - don't check the printername or servername as the
-	   add_a_printer() code plays games with them.  You can't
+	   mod_a_printer() code plays games with them.  You can't
 	   change the printername or the sharename through this interface
 	   in Samba. */
 
@@ -4483,7 +4483,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	/* Update printer info */
 
-	if (add_a_printer(*printer, 2)!=0) {
+	if (mod_a_printer(*printer, 2)!=0) {
 		/* I don't really know what to return here !!! */
 		result = ERROR_ACCESS_DENIED;
 		goto done;
@@ -5587,7 +5587,7 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	set_driver_init(printer, 2);
 	
 	/* write the ASCII on disk */
-	if (add_a_printer(*printer, 2) != 0) {
+	if (mod_a_printer(*printer, 2) != 0) {
 	        delete_printer_hook(printer->info_2->sharename);
 		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;

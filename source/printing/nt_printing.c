@@ -2808,39 +2808,6 @@ uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 }
 
 /****************************************************************************
- Add a printer. This is called from ADDPRINTER(EX) and also SETPRINTER.
- We split this out from mod_a_printer as it updates the id's and timestamps.
-****************************************************************************/
-
-uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
-{
-	uint32 result;
-	
-	dump_a_printer(printer, level);	
-	
-	switch (level)
-	{
-		case 2:
-		{
-			/*
-			 * Update the changestamp.  See comments in mod_a_printer()
-			 * --jerry
-			 */
-
-			printer.info_2->changeid = rev_changeid();
-
-			result=update_a_printer_2(printer.info_2);
-			break;
-		}
-		default:
-			result=1;
-			break;
-	}
-	
-	return result;
-}
-
-/****************************************************************************
  Initialize printer devmode & data with previously saved driver init values.
 ****************************************************************************/
 static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
@@ -3946,7 +3913,7 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	 * Finally write back to the tdb.
 	 */
 
-	if (add_a_printer(*printer, 2)!=0) {
+	if (mod_a_printer(*printer, 2)!=0) {
 		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}
