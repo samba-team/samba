@@ -80,58 +80,12 @@ DB_unlock(krb5_context context, HDB *db)
 
 
 static krb5_error_code
-DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
-{
-    DB *d = (DB*)db->db;
-    DBT key, value;
-    krb5_data data;
-    int code;
-
-    hdb_principal2key(context, entry->principal, &data);
-    key.data = data.data;
-    key.size = data.length;
-    switch(op){
-    case 0:
-	code = db->lock(context, db, HDB_RLOCK);
-	if(code)
-	    return code;
-	code = d->get(d, &key, &value, 0);
-	db->unlock(context, db); /* XXX check value */
-	break;
-    case 1:
-	code = db->lock(context, db, HDB_WLOCK);
-	if(code)
-	    return code;
-	code = d->del(d, &key, 0);
-	db->unlock(context, db); /* XXX check value */
-	break;
-    }
-    data.data = key.data;
-    data.length = key.size;
-    krb5_data_free(&data);
-    if(code < 0)
-	return errno;
-    if(code == 1)
-	if(op == 2)
-	    return HDB_ERR_EXISTS;
-	else
-	    return HDB_ERR_NOENTRY;
-    if(op == 0){
-	data.data = value.data;
-	data.length = value.size;
-	hdb_value2entry(context, &data, entry);
-    }
-    return 0;
-}
-
-static krb5_error_code
 DB_seq(krb5_context context, HDB *db, hdb_entry *entry, int flag)
 {
     DB *d = (DB*)db->db;
     DBT key, value;
     krb5_data key_data, data;
     int code;
-    krb5_principal principal;
 
     code = db->lock(context, db, HDB_RLOCK);
     if(code == -1)
