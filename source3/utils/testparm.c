@@ -67,7 +67,7 @@ extern pstring myhostname;
     return(1);
   }
 
-  if (!lp_load(configfile,False))
+  if (!lp_load(configfile,False,True,False))
     {
       printf("Error loading services.\n");
       return(1);
