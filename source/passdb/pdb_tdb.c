@@ -2,7 +2,7 @@
  * Unix SMB/CIFS implementation. 
  * SMB parameters and setup
  * Copyright (C) Andrew Tridgell   1992-1998
- * Copyright (C) Simo Sorce        2000-2002
+ * Copyright (C) Simo Sorce        2000-2003
  * Copyright (C) Gerald Carter     2000
  * Copyright (C) Jeremy Allison    2001
  * Copyright (C) Andrew Bartlett   2002

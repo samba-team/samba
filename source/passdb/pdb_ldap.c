@@ -6,6 +6,7 @@
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
    Copyright (C) Stefan (metze) Metzmacher	2002-2003
+   Copyright (C) Simo Sorce			2003
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1989,8 +1990,8 @@ static int ldapsam_search_one_group_by_gid(struct ldapsam_privates *ldap_state,
 {
 	pstring filter;
 
-	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%lu))", 
-		LDAP_OBJ_POSIXGROUP, LDAP_OBJ_IDMAP_ENTRY,
+	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s)(objectclass=%s))(%s=%lu))", 
+		LDAP_OBJ_POSIXGROUP, LDAP_OBJ_IDMAP_ENTRY, LDAP_OBJ_GROUPMAP, 
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
 		(unsigned long)gid);
 
@@ -2367,13 +2368,13 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 				   result);
 
 	if (count < 1) {
-		DEBUG(4, ("ldapsam_add_aliasmem: Did not find alias\n"));
+		DEBUG(4, ("ldapsam_modify_aliasmem: Did not find alias\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
 	if (count > 1) {
-		DEBUG(1, ("ldapsam_getgroup: Duplicate entries for filter %s: "
+		DEBUG(1, ("ldapsam_modify_aliasmem: Duplicate entries for filter %s: "
 			  "count=%d\n", filter, count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -2408,7 +2409,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
-		DEBUG(0, ("ldapsam_delete_entry: Could not delete attributes "
+		DEBUG(0, ("ldapsam_modify_aliasmem: Could not modify attributes "
 			  "for %s, error: %s (%s)\n", dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);

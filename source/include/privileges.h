@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
+   Copyright (C) Simo Sorce 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

@@ -382,7 +382,7 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY
 objectclass ( 1.3.6.1.4.1.7165.2.2.4 NAME 'sambaGroupMapping' SUP top AUXILIARY
 	DESC 'Samba Group Mapping'
 	MUST ( gidNumber $ sambaSID $ sambaGroupType )
-	MAY  ( displayName $ description ))
+	MAY  ( displayName $ description $ sambaSIDList))
 
 ##
 ## Trust password for trust relationships (any kind)
