@@ -245,11 +245,11 @@ process_request(unsigned char *buf,
 
     gettimeofday(&now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	ret = as_rep(&req, reply, from);
+	ret = as_rep(&req, reply, from, addr);
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	ret = tgs_rep(&req, reply, from);
+	ret = tgs_rep(&req, reply, from, addr);
 	free_TGS_REQ(&req);
 	return ret;
     }
