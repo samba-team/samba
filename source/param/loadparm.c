@@ -2011,7 +2011,7 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 
 	} else {
 
-		SMB_STRUCT_STAT st;
+		struct stat st;
 
 		DEBUG(4, ("handle_source_env: source env from file %s\n", fname));
 		if ((env = sys_fopen(fname, "r")) == NULL) {
