@@ -25,6 +25,8 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth.h"
+#include "dlinklist.h"
+#include "lib/crypto/crypto.h"
 
 #define TEST_MACHINE_NAME "samsynctest"
 
@@ -55,12 +57,18 @@ static NTSTATUS test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ninfo.nt.length = 24;
 		ninfo.nt.data = talloc(mem_ctx, 24);
 		SMBOWFencrypt(nt_hash->hash, ninfo.challenge, ninfo.nt.data);
+	} else {
+		ninfo.nt.length = 0;
+		ninfo.nt.data = NULL;
 	}
 	
 	if (lm_hash) {
 		ninfo.lm.length = 24;
 		ninfo.lm.data = talloc(mem_ctx, 24);
 		SMBOWFencrypt(lm_hash->hash, ninfo.challenge, ninfo.lm.data);
+	} else {
+		ninfo.lm.length = 0;
+		ninfo.lm.data = NULL;
 	}
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
@@ -81,7 +89,9 @@ static NTSTATUS test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("Credential chaining failed\n");
 	}
 
-	*info3 = r.out.validation.sam3;
+	if (info3) {
+		*info3 = r.out.validation.sam3;
+	}
 
 	return status;
 }
@@ -89,6 +99,20 @@ static NTSTATUS test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 struct samsync_state {
 	uint64_t seq_num;
 	char *domain_name;
+	struct samsync_secret *secrets;
+	struct samsync_trusted_domain *trusted_domains;
+};
+
+struct samsync_secret {
+	struct samsync_secret *prev, *next;
+	DATA_BLOB secret;
+	char *name;
+};
+
+struct samsync_trusted_domain {
+	struct samsync_trusted_domain *prev, *next;
+        struct dom_sid *sid;
+	char *name;
 };
 
 static struct samsync_state *samsync_state;
@@ -103,7 +127,7 @@ static BOOL samsync_handle_domain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		domain->sequence_num;
 
 	samsync_state[database_id].domain_name = 
-		talloc_reference(samsync_state, domain->DomainName.string);
+		talloc_reference(samsync_state, domain->domain_name.string);
 
 	printf("\tsequence_nums[%d/%s]=%llu\n",
 	       database_id, samsync_state[database_id].domain_name,
@@ -120,6 +144,8 @@ static BOOL samsync_handle_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_SamInfo3 *info3;
 	struct samr_Password lm_hash;
 	struct samr_Password nt_hash;
+	struct samr_Password *lm_hash_p = NULL;
+	struct samr_Password *nt_hash_p = NULL;
 	const char *domain = samsync_state[database_id].domain_name
 		? samsync_state[database_id].domain_name
 		: lp_workgroup();
@@ -130,22 +156,53 @@ static BOOL samsync_handle_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (user->lmpassword_present) {
 		sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
+		lm_hash_p = &lm_hash;
 	}
 	if (user->ntpassword_present) {
 		sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
+		nt_hash_p = &nt_hash;
 	}
 
-	if (!user->lmpassword_present && !user->lmpassword_present) {
+	if (user->user_private_info.SensitiveData) {
+		DATA_BLOB data;
+		struct netr_USER_KEYS keys;
+		data.data = user->user_private_info.SensitiveData;
+		data.length = user->user_private_info.DataLength;
+		creds_arcfour_crypt(creds, data.data, data.length);
+#if 0		
+		printf("Sensitive Data for %s:\n", username);
+		dump_data(0, data.data, data.length);
+#endif
+		nt_status = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return False;
+		}
+		if (keys.keys.keys2.lmpassword.length == 16) {
+			sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
+			dump_data(0, keys.keys.keys2.lmpassword.pwd.hash, 
+				  sizeof(keys.keys.keys2.lmpassword.pwd.hash));
+
+			lm_hash_p = &lm_hash;
+		}
+		if (keys.keys.keys2.ntpassword.length == 16) {
+			sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
+			dump_data(0, keys.keys.keys2.ntpassword.pwd.hash, 
+				  sizeof(keys.keys.keys2.ntpassword.pwd.hash));
+			nt_hash_p = &nt_hash;
+		}
+		
+	}
+	if (!lm_hash_p && !nt_hash_p) {
 		printf("NO password set for %s\n", 
 		       user->account_name.string);
 		return True;
 	}
-
+	
 	nt_status = test_SamLogon(p, mem_ctx, creds, 
 				  domain,
 				  username, 
-				  user->lmpassword_present ? &lm_hash : NULL,
-				  user->ntpassword_present ? &nt_hash : NULL,
+				  lm_hash_p,
+				  nt_hash_p,
 				  &info3);
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED)) {
@@ -178,7 +235,7 @@ static BOOL samsync_handle_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       user->acct_flags, info3->base.acct_flags);
 			return False;
 		}
-		if (strcmp(user->full_name.string, info3->base.full_name.string) != 0) {
+		if (strcmp_safe(user->full_name.string, info3->base.full_name.string) != 0) {
 			printf("Full name mismatch: %s != %s\n", 
 			       user->full_name.string, info3->base.full_name.string);
 			return False;
@@ -190,6 +247,44 @@ static BOOL samsync_handle_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	} 
 	return False;
+}
+
+static BOOL samsync_handle_secret(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				  struct creds_CredentialState *creds,
+				  int database_id, struct netr_DELTA_ENUM *delta) 
+{
+	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
+	const char *name = delta->delta_id_union.name;
+	struct samsync_secret *new = talloc_p(samsync_state, struct samsync_secret);
+
+	creds_arcfour_crypt(creds, secret->current_cipher.cipher_data, 
+			    secret->current_cipher.maxlen); 
+
+	creds_arcfour_crypt(creds, secret->old_cipher.cipher_data, 
+			    secret->old_cipher.maxlen); 
+
+	new->name = talloc_reference(new, name);
+	new->secret = data_blob_talloc(new, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
+
+	DLIST_ADD(samsync_state[database_id].secrets, new);
+
+	return True;
+}
+
+static BOOL samsync_handle_trusted_domain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+					  struct creds_CredentialState *creds,
+					  int database_id, struct netr_DELTA_ENUM *delta) 
+{
+	struct netr_DELTA_TRUSTED_DOMAIN *trusted_domain = delta->delta_union.trusted_domain;
+	struct dom_sid *dom_sid = delta->delta_id_union.sid;
+
+	struct samsync_trusted_domain *new = talloc_p(samsync_state, struct samsync_trusted_domain);
+	new->name = talloc_reference(new, trusted_domain->domain_name.string);
+	new->sid = talloc_reference(new, dom_sid);
+
+	DLIST_ADD(samsync_state[database_id].trusted_domains, new);
+
+	return True;
 }
 
 /* we remember the sequence numbers so we can easily do a DatabaseDelta */
@@ -206,6 +301,8 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const uint32_t database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i, d;
 	BOOL ret = True;
+	struct samsync_trusted_domain *t;
+	struct samsync_secret *s;
 	
 	samsync_state = talloc_zero_array_p(mem_ctx, struct samsync_state, 3);
 
@@ -247,9 +344,67 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 					ret &= samsync_handle_user(p, mem_ctx, creds, 
 								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
 					break;
+				case NETR_DELTA_TRUSTED_DOMAIN:
+					ret &= samsync_handle_trusted_domain(p, mem_ctx, creds, 
+									     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					break;
+				case NETR_DELTA_SECRET:
+					ret &= samsync_handle_secret(p, mem_ctx, creds, 
+								     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					break;
 				}
 			}
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+		for (t=samsync_state[r.in.database_id].trusted_domains; t; t=t->next) {
+			const char *domain = samsync_state[r.in.database_id].domain_name
+				? samsync_state[r.in.database_id].domain_name
+				: lp_workgroup();
+			char *username = talloc_asprintf(mem_ctx, "%s$", domain);
+			char *secret_name = talloc_asprintf(mem_ctx, "G$$%s", t->name);
+			for (s=samsync_state[r.in.database_id].secrets; s; s=s->next) {
+				printf("Checking secret %s against %s\n",
+				       s->name, secret_name);
+				if (StrCaseCmp(s->name, secret_name) == 0) {
+					NTSTATUS nt_status;
+					struct samr_Password nt_hash;
+					mdfour(nt_hash.hash, s->secret.data, s->secret.length);
+
+				printf("Checking password for %s\\%s\n", t->name, username);
+					nt_status = test_SamLogon(p, mem_ctx, creds, 
+								  t->name,
+								  username, 
+								  NULL, 
+								  &nt_hash,
+								  NULL);
+					if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)) {
+						printf("Could not verify trust password to %s: %s\n", 
+						       t->name, nt_errstr(nt_status));
+						ret = False;
+					}
+					
+					/* break it */
+					nt_hash.hash[0]++;
+					nt_status = test_SamLogon(p, mem_ctx, creds, 
+								  t->name,
+								  username, 
+								  NULL,
+								  &nt_hash,
+								  NULL);
+
+					if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
+						printf("Verifiction of trust password to %s: should have failed (wrong password), instead: %s\n", 
+						       t->name, nt_errstr(nt_status));
+						ret = False;
+						ret = False;
+					}
+					
+					break;
+				}
+			}
+			talloc_free(secret_name);
+			talloc_free(username);
+		}
 	}
 
 	return ret;
