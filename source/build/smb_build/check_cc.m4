@@ -11,8 +11,6 @@ if test x"$CC" = x""; then
 	AC_MSG_ERROR([Please Install gcc from http://gcc.gnu.org/])
 fi
 
-AC_PROG_CC_STDC
-
 # compile with optimization and without debugging by default, but
 # allow people to set their own preference.
 if test "x$CFLAGS" = x; then
@@ -53,6 +51,3 @@ AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
 if test x"$samba_cv_volatile" = x"yes"; then
 	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
 fi
-
-AC_C_CONST
-AC_C_INLINE
