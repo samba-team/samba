@@ -1,3 +1,9 @@
+2003-03-27  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/keytab.c (krb5_kt_get_entry): avoid printing 0
+	(wildcard kvno) after principal when the keytab entry isn't found,
+	reported by Chris Chiappa <chris@chiappa.net>
+	
 2003-03-26  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* doc/misc.texi: update 2b example to match reality (from
