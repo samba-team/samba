@@ -78,6 +78,10 @@ static void query_name_response( struct subnet_record   *subrec,
         dbgtext( "for name %s. ", nmb_namestr(question_name) );
         dbgtext( "Error code was %d.\n", nmb->header.rcode );
         }
+	/* BEGIN_ADMIN_LOG */
+	sys_adminlog(LOG_CRIT,(char *)gettext("Failed WINS name resolution. Unresolved name: %s. WINS server address: %s.")
+		,question_name->name,inet_ntoa(p->ip));
+	/* END_ADMIN_LOG */
     }
     else
     {

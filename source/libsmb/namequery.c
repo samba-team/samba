@@ -347,6 +347,11 @@ struct in_addr *name_query(int fd,const char *unix_name,int name_type,
 				&& nmb2->header.rcode		/* Error returned     */
 				) {
 
+				/* BEGIN_ADMIN_LOG */
+				sys_adminlog(LOG_CRIT,(char *)gettext("Failed WINS name resolution. Unresolved name: %s. WINS server address: %s."),
+					unix_name,inet_ntoa(p2->ip));
+				/* END_ADMIN_LOG */
+
 				if( DEBUGLVL( 3 ) ) {
 					/* Only executed if DEBUGLEVEL >= 3 */
 					dbgtext( "Negative name query response, rcode 0x%02x: ", nmb2->header.rcode );
