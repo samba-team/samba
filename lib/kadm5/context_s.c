@@ -56,7 +56,7 @@ set_funcs(kadm5_server_context *c)
     SET(c, modify_principal);
     SET(c, randkey_principal);
     SET(c, rename_principal);
-};
+}
 
 kadm5_ret_t
 _kadm5_s_init_context(kadm5_server_context **ctx, 
