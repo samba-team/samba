@@ -197,7 +197,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
     }
   }
 
-  get_myname(myhostname, NULL);
+  get_myname(myhostname);
 
   if (!lp_load(servicesf,False,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);

@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
 
   printf("Load smb config files from %s\n",configfile);
 
-  if(!get_myname(myhostname,NULL)) {
+  if(!get_myname(myhostname)) {
     printf("Failed to get my hostname.\n");
     return(1);
   }

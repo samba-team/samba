@@ -309,7 +309,7 @@ enum client_action
 	myumask = umask(0);
 	umask(myumask);
 
-	if (!get_myname(global_myname, NULL))
+	if (!get_myname(global_myname))
 	{
 		fprintf(stderr, "Failed to get my hostname.\n");
 	}

@@ -65,7 +65,7 @@ static BOOL open_sockets(void)
 ****************************************************************************/
 static BOOL init_structs(void )
 {
-  if (!get_myname(myhostname,NULL))
+  if (!get_myname(myhostname))
     return(False);
 
   return True;
@@ -110,9 +110,10 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 				     bcast_addr,&count,NULL);
 	} else {
 		struct in_addr *bcast;
-		for (j=0;
-		     !ip_list && (bcast = iface_n_bcast(j));
-		     j++) {
+		for (j=iface_count() - 1;
+		     !ip_list && j >= 0;
+		     j--) {
+			bcast = iface_n_bcast(j);
 			printf("querying %s on %s\n", 
 			       lookup, inet_ntoa(*bcast));
 			ip_list = name_query(ServerFD,lookup,lookup_type,

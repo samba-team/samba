@@ -575,7 +575,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if(!get_myname(myhostname,NULL)) {
+	if(!get_myname(myhostname)) {
 		fprintf(stderr, "unable to get my hostname.\n");
 		exit(1);
 	}
