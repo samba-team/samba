@@ -165,7 +165,7 @@ static NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p,
 	/* always do NDR validation in smbtorture */
 	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;
 
-#if 1
+#if 0
 	status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
 #else
 	/* enable signing on tcp connections */
