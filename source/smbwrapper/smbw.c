@@ -481,13 +481,13 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
 
-	if ((p=strchr(server_n,'#')) && 
+	if ((p=strchr_m(server_n,'#')) && 
 	    (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
 		struct in_addr sip;
 		pstring s;
 
 		fstrcpy(group, server_n);
-		p = strchr(group,'#');
+		p = strchr_m(group,'#');
 		*p = 0;
 		
 		/* cache the workgroup master lookup */

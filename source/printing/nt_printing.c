@@ -673,29 +673,29 @@ static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	 * or worse c:\windows\system\driver.dll !
 	 */
 	/* using an intermediate string to not have overlaping memcpy()'s */
-	if ((p = strrchr(driver->driverpath,'\\')) != NULL) {
+	if ((p = strrchr_m(driver->driverpath,'\\')) != NULL) {
 		fstrcpy(new_name, p+1);
 		fstrcpy(driver->driverpath, new_name);
 	}
 
-	if ((p = strrchr(driver->datafile,'\\')) != NULL) {
+	if ((p = strrchr_m(driver->datafile,'\\')) != NULL) {
 		fstrcpy(new_name, p+1);
 		fstrcpy(driver->datafile, new_name);
 	}
 
-	if ((p = strrchr(driver->configfile,'\\')) != NULL) {
+	if ((p = strrchr_m(driver->configfile,'\\')) != NULL) {
 		fstrcpy(new_name, p+1);
 		fstrcpy(driver->configfile, new_name);
 	}
 
-	if ((p = strrchr(driver->helpfile,'\\')) != NULL) {
+	if ((p = strrchr_m(driver->helpfile,'\\')) != NULL) {
 		fstrcpy(new_name, p+1);
 		fstrcpy(driver->helpfile, new_name);
 	}
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
-			if ((p = strrchr(driver->dependentfiles[i],'\\')) != NULL) {
+			if ((p = strrchr_m(driver->dependentfiles[i],'\\')) != NULL) {
 				fstrcpy(new_name, p+1);
 				fstrcpy(driver->dependentfiles[i], new_name);
 			}
@@ -738,29 +738,29 @@ static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 	 * or worse c:\windows\system\driver.dll !
 	 */
 	/* using an intermediate string to not have overlaping memcpy()'s */
-	if ((p = strrchr(driver->driverpath,'\\')) != NULL) {
+	if ((p = strrchr_m(driver->driverpath,'\\')) != NULL) {
 		fstrcpy(new_name, p+1);
 		fstrcpy(driver->driverpath, new_name);
 	}
 
-	if ((p = strrchr(driver->datafile,'\\')) != NULL) {
+	if ((p = strrchr_m(driver->datafile,'\\')) != NULL) {
 		fstrcpy(new_name, p+1);
 		fstrcpy(driver->datafile, new_name);
 	}
 
-	if ((p = strrchr(driver->configfile,'\\')) != NULL) {
+	if ((p = strrchr_m(driver->configfile,'\\')) != NULL) {
 		fstrcpy(new_name, p+1);
 		fstrcpy(driver->configfile, new_name);
 	}
 
-	if ((p = strrchr(driver->helpfile,'\\')) != NULL) {
+	if ((p = strrchr_m(driver->helpfile,'\\')) != NULL) {
 		fstrcpy(new_name, p+1);
 		fstrcpy(driver->helpfile, new_name);
 	}
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
-			if ((p = strrchr(driver->dependentfiles[i],'\\')) != NULL) {
+			if ((p = strrchr_m(driver->dependentfiles[i],'\\')) != NULL) {
 				fstrcpy(new_name, p+1);
 				fstrcpy(driver->dependentfiles[i], new_name);
 			}
@@ -2292,7 +2292,7 @@ static void map_to_os2_driver(fstring drivername)
 
 	for( i = 0; i < numlines; i++) {
 		char *nt_name = lines[i];
-		char *os2_name = strchr(nt_name,'=');
+		char *os2_name = strchr_m(nt_name,'=');
 
 		if (!os2_name)
 			continue;
@@ -2302,7 +2302,7 @@ static void map_to_os2_driver(fstring drivername)
 		while (isspace(*nt_name))
 			nt_name++;
 
-		if (!*nt_name || strchr("#;",*nt_name))
+		if (!*nt_name || strchr_m("#;",*nt_name))
 			continue;
 
 		{
@@ -3189,7 +3189,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 	fstring key;
 	char *temp;
 
-	if ((temp = strchr(printername + 2, '\\'))) {
+	if ((temp = strchr_m(printername + 2, '\\'))) {
 		printername = temp + 1;
 	}
 

@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 			smbw_setshared("DEBUG", optarg);
 			break;
 		case 'U':
-			p = strchr(optarg,'%');
+			p = strchr_m(optarg,'%');
 			if (p) {
 				*p=0;
 				smbw_setshared("PASSWORD",p+1);

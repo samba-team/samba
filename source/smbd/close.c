@@ -35,7 +35,7 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
 
   {
     char *p;
-    if (!(p = strrchr(fsp->fsp_name,'/')))
+    if (!(p = strrchr_m(fsp->fsp_name,'/')))
       p = fsp->fsp_name;
     else
       p++;

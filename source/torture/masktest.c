@@ -76,7 +76,7 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 		case '<':
 			for (; *n; n++) {
 				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-				if (*n == '.' && !strchr(n+1,'.')) {
+				if (*n == '.' && !strchr_m(n+1,'.')) {
 					n++;
 					break;
 				}
@@ -146,7 +146,7 @@ static char *reg_test(char *pattern, char *long_name, char *short_name)
 	static fstring ret;
 	fstrcpy(ret, "---");
 
-	pattern = 1+strrchr(pattern,'\\');
+	pattern = 1+strrchr_m(pattern,'\\');
 
 	if (reg_match_one(pattern, ".")) ret[0] = '+';
 	if (reg_match_one(pattern, "..")) ret[1] = '+';
@@ -169,7 +169,7 @@ struct cli_state *connect_one(char *share)
 	extern struct in_addr ipzero;
 
 	server = share+2;
-	share = strchr(server,'\\');
+	share = strchr_m(server,'\\');
 	if (!share) return NULL;
 	*share = 0;
 	share++;
@@ -289,7 +289,7 @@ static void get_real_name(struct cli_state *cli,
 	}
 
 #if 0
-	if (!strchr(short_name,'.')) {
+	if (!strchr_m(short_name,'.')) {
 		fstrcat(short_name,".");
 	}
 #endif
@@ -468,7 +468,7 @@ static void usage(void)
 			break;
 		case 'U':
 			pstrcpy(username,optarg);
-			p = strchr(username,'%');
+			p = strchr_m(username,'%');
 			if (p) {
 				*p = 0;
 				pstrcpy(password, p+1);

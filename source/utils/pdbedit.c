@@ -391,7 +391,7 @@ static int import_users (char *filename)
 		sam_pwent.acct_ctrl = ACB_NORMAL;
 		
 		/* Get user name */
-		p = (unsigned char *) strchr(linebuf, ':');
+		p = (unsigned char *) strchr_m(linebuf, ':');
 		if (p == NULL)
 		{
 			fprintf (stderr, "Error: malformed password entry at line %d !!\n", line);
@@ -478,7 +478,7 @@ static int import_users (char *filename)
 		/* Get ACCT_CTRL field if any */
 		if (*p == '[')
 		{
-			unsigned char *end_p = (unsigned char *)strchr((char *)p, ']');
+			unsigned char *end_p = (unsigned char *)strchr_m((char *)p, ']');
 			
 			sam_pwent.acct_ctrl = pdb_decode_acct_ctrl((char*)p);
 			if(sam_pwent.acct_ctrl == 0) sam_pwent.acct_ctrl = ACB_NORMAL;

@@ -198,13 +198,13 @@ int reply_tcon(connection_struct *conn,
 	p += srvstr_pull(inbuf, dev, p, sizeof(dev), -1, STR_TERMINATE) + 1;
 
 	*user = 0;
-	p = strchr(service,'%');
+	p = strchr_m(service,'%');
 	if (p != NULL) {
 		*p = 0;
 		fstrcpy(user,p+1);
 	}
 
-	p = strrchr(service,'\\');
+	p = strrchr_m(service,'\\');
 	if (p) {
 		pstrcpy(service, p+1);
 	}
@@ -288,13 +288,13 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		passlen = strlen(password);
 	}
 	
-	q = strchr(path+2,'\\');
+	q = strchr_m(path+2,'\\');
 	if (!q) {
 		END_PROFILE(SMBtconX);
 		return(ERROR(ERRDOS,ERRnosuchshare));
 	}
 	fstrcpy(service,q+1);
-	q = strchr(service,'%');
+	q = strchr_m(service,'%');
 	if (q) {
 		*q++ = 0;
 		fstrcpy(user,q);
@@ -1362,7 +1362,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     if (!check_name(directory,conn))
       can_open = False;
 
-    p = strrchr(dir2,'/');
+    p = strrchr_m(dir2,'/');
     if (p == NULL) 
     {
       pstrcpy(mask,dir2);
@@ -1374,7 +1374,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       pstrcpy(mask,p+1);
     }
 
-    p = strrchr(directory,'/');
+    p = strrchr_m(directory,'/');
     if (!p) 
       *directory = 0;
     else
@@ -1976,7 +1976,7 @@ int unlink_internals(connection_struct *conn, char *inbuf,char *outbuf,
 
   rc = unix_convert(name,conn,0,&bad_path,&sbuf);
 
-  p = strrchr(name,'/');
+  p = strrchr_m(name,'/');
   if (!p) {
     pstrcpy(directory,"./");
     pstrcpy(mask,name);
@@ -3627,21 +3627,21 @@ static BOOL resolve_wildcards(char *name1,char *name2)
   fstring ext1,ext2;
   char *p,*p2;
 
-  name1 = strrchr(name1,'/');
-  name2 = strrchr(name2,'/');
+  name1 = strrchr_m(name1,'/');
+  name2 = strrchr_m(name2,'/');
 
   if (!name1 || !name2) return(False);
   
   fstrcpy(root1,name1);
   fstrcpy(root2,name2);
-  p = strrchr(root1,'.');
+  p = strrchr_m(root1,'.');
   if (p) {
     *p = 0;
     fstrcpy(ext1,p+1);
   } else {
     fstrcpy(ext1,"");    
   }
-  p = strrchr(root2,'.');
+  p = strrchr_m(root2,'.');
   if (p) {
     *p = 0;
     fstrcpy(ext2,p+1);
@@ -3731,7 +3731,7 @@ int rename_internals(connection_struct *conn,
 	 * as this is checked in resolve_wildcards().
 	 */
 	
-	p = strrchr(name,'/');
+	p = strrchr_m(name,'/');
 	if (!p) {
 		pstrcpy(directory,".");
 		pstrcpy(mask,name);
@@ -3767,7 +3767,7 @@ int rename_internals(connection_struct *conn,
 		pstrcat(directory,mask);
 		
 		/* Ensure newname contains a '/' also */
-		if(strrchr(newname,'/') == 0) {
+		if(strrchr_m(newname,'/') == 0) {
 			pstring tmpstr;
 			
 			pstrcpy(tmpstr, "./");
@@ -3800,7 +3800,7 @@ int rename_internals(connection_struct *conn,
 			 * Note that we guarantee that newname contains a '/'
 			 * character above.
 			 */
-			p = strrchr(newname,'/');
+			p = strrchr_m(newname,'/');
 			pstrcpy(newname_modified_last_component,p+1);
 			
 			if(strcsequal(newname_modified_last_component, 
@@ -3966,7 +3966,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 
   pstrcpy(dest,dest1);
   if (target_is_directory) {
-    char *p = strrchr(src,'/');
+    char *p = strrchr_m(src,'/');
     if (p) 
       p++;
     else
@@ -4091,7 +4091,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(ERROR(ERRSRV,ERRerror));    
   }
 
-  p = strrchr(name,'/');
+  p = strrchr_m(name,'/');
   if (!p) {
     pstrcpy(directory,"./");
     pstrcpy(mask,name);

@@ -120,7 +120,7 @@ static void interpret_interface(char *token)
 	if (added) return;
 
 	/* maybe it is a DNS name */
-	p = strchr(token,'/');
+	p = strchr_m(token,'/');
 	if (!p) {
 		ip = *interpret_addr2(token);
 		for (i=0;i<total_probed;i++) {

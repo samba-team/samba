@@ -87,13 +87,13 @@ BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
 	if (!sep) sep = " \t\n\r";
 
 	/* find the first non sep char */
-	while (*s && strchr(sep,*s)) s++;
+	while (*s && strchr_m(sep,*s)) s++;
 	
 	/* nothing left? */
 	if (! *s) return(False);
 	
 	/* copy over the token */
-	for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
+	for (quoted = False; len < bufsize && *s && (quoted || !strchr_m(sep,*s)); s++) {
 		if (*s == '\"') {
 			quoted = !quoted;
 		} else {

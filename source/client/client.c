@@ -479,7 +479,7 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 			char *p;
 
 			pstrcpy(mask2, mask);
-			p = strrchr(mask2,'\\');
+			p = strrchr_m(mask2,'\\');
 			if (!p) return;
 			p[1] = 0;
 			pstrcat(mask2, f->name);
@@ -1354,7 +1354,7 @@ static void cmd_print(void)
 	}
 
 	pstrcpy(rname,lname);
-	p = strrchr(rname,'/');
+	p = strrchr_m(rname,'/');
 	if (p) {
 		slprintf(rname, sizeof(rname)-1, "%s-%d", p+1, (int)sys_getpid());
 	}
@@ -1813,7 +1813,7 @@ static void process_command_string(char *cmd)
 		fstring tok;
 		int i;
 		
-		if ((p = strchr(cmd, ';')) == 0) {
+		if ((p = strchr_m(cmd, ';')) == 0) {
 			strncpy(line, cmd, 999);
 			line[1000] = '\0';
 			cmd += strlen(cmd);
@@ -1971,7 +1971,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 	sharename = servicename;
 	if (*sharename == '\\') {
 		server = sharename+2;
-		sharename = strchr(server,'\\');
+		sharename = strchr_m(server,'\\');
 		if (!sharename) return NULL;
 		*sharename = 0;
 		sharename++;
@@ -2003,7 +2003,7 @@ struct cli_state *do_connect(const char *server, const char *share)
 			 called.name, cli_errstr(c)));
 		cli_shutdown(c);
 		free(c);
-		if ((p=strchr(called.name, '.'))) {
+		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;
 		}
@@ -2350,11 +2350,11 @@ static int do_message_op(void)
 		/* modification to support userid%passwd syntax in the USER var
 		   25.Aug.97, jdblair@uab.edu */
 
-		if ((p=strchr(username,'%'))) {
+		if ((p=strchr_m(username,'%'))) {
 			*p = 0;
 			pstrcpy(password,p+1);
 			got_pass = True;
-			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
+			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
 		}
 		strupper(username);
 	}
@@ -2471,11 +2471,11 @@ static int do_message_op(void)
 			{
 				char *lp;
 				pstrcpy(username,optarg);
-				if ((lp=strchr(username,'%'))) {
+				if ((lp=strchr_m(username,'%'))) {
 					*lp = 0;
 					pstrcpy(password,lp+1);
 					got_pass = True;
-					memset(strchr(optarg,'%')+1,'X',strlen(password));
+					memset(strchr_m(optarg,'%')+1,'X',strlen(password));
 				}
 			}
 			break;
@@ -2512,7 +2512,7 @@ static int do_message_op(void)
 					/* break up the line into parameter & value.
 					   will need to eat a little whitespace possibly */
 					param = buf;
-					if (!(ptr = strchr (buf, '=')))
+					if (!(ptr = strchr_m (buf, '=')))
 						continue;
 					val = ptr+1;
 					*ptr = '\0';
@@ -2589,7 +2589,7 @@ static int do_message_op(void)
 		return do_tar_op(base_directory);
 	}
 
-	if ((p=strchr(query_host,'#'))) {
+	if ((p=strchr_m(query_host,'#'))) {
 		*p = 0;
 		p++;
 		sscanf(p, "%x", &name_type);

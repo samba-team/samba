@@ -343,7 +343,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
       DEBUG(6, ("getsmbfilepwent: skipping comment or blank line\n"));
       continue;
     }
-    p = (unsigned char *) strchr(linebuf, ':');
+    p = (unsigned char *) strchr_m(linebuf, ':');
     if (p == NULL) {
       DEBUG(0, ("getsmbfilepwent: malformed password entry (no :)\n"));
       continue;
@@ -443,7 +443,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 
     if (*p == '[')
 	{
-      unsigned char *end_p = (unsigned char *)strchr((char *)p, ']');
+      unsigned char *end_p = (unsigned char *)strchr_m((char *)p, ']');
       pw_buf.acct_ctrl = pdb_decode_acct_ctrl((char*)p);
 
       /* Must have some account type set. */
@@ -768,7 +768,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
       continue;
     }
 
-    p = (unsigned char *) strchr(linebuf, ':');
+    p = (unsigned char *) strchr_m(linebuf, ':');
 
     if (p == NULL) {
       DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (no :)\n"));
@@ -1346,7 +1346,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, char *username)
 	/* break the username from the domain if we have 
 	   been given a string in the form 'DOMAIN\user' */
 	fstrcpy (name, username);
-	if ((user=strchr(name, '\\')) != NULL) {
+	if ((user=strchr_m(name, '\\')) != NULL) {
 		domain = name;
 		*user = '\0';
 		user++;

@@ -288,7 +288,7 @@ BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 		/* If we are looking up a domain user, make sure it is
 		   for the local machine only */
 
-		if (strchr(name, sep[0]) || strchr(name, '\\')) {
+		if (strchr_m(name, sep[0]) || strchr_m(name, '\\')) {
 			fstring domain, username;
 
 			split_domain_name(name, domain, username);

@@ -111,7 +111,7 @@ static BOOL dump_core(void)
   char *p;
   pstring dname;
   pstrcpy( dname, debugf );
-  if ((p=strrchr(dname,'/')))
+  if ((p=strrchr_m(dname,'/')))
     *p=0;
   pstrcat( dname, "/corefiles" );
   mkdir( dname, 0700 );
@@ -558,7 +558,7 @@ static BOOL init_structs(void)
   if (! *global_myname)
   {
     fstrcpy( global_myname, myhostname() );
-    p = strchr( global_myname, '.' );
+    p = strchr_m( global_myname, '.' );
     if (p)
       *p = 0;
   }
@@ -622,7 +622,7 @@ static BOOL init_structs(void)
   
   fstrcpy( local_machine, global_myname );
   trim_string( local_machine, " ", " " );
-  p = strchr( local_machine, ' ' );
+  p = strchr_m( local_machine, ' ' );
   if (p)
     *p = 0;
   strlower( local_machine );

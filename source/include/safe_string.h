@@ -47,10 +47,8 @@
 #define wfstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wfstring))
 #define wfstrcat(d,s) safe_strcat_w((d),(s),sizeof(wfstring))
 
-/* replace some standard C library string functions with multi-byte
+/* replace some string functions with multi-byte
    versions */
-#define strchr(s, c) strchr_m(s, c)
-#define strrchr(s, c) strrchr_m(s, c)
 #define strlower(s) strlower_m(s)
 #define strupper(s) strupper_m(s)
 

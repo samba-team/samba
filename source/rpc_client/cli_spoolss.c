@@ -448,7 +448,7 @@ BOOL spoolss_open_printer_ex(  const char *printername,
         memset(srv_name, 0, sizeof(srv_name));
         fstrcpy(srv_name, printername);
 
-        s = strchr(&srv_name[2], '\\');
+        s = strchr_m(&srv_name[2], '\\');
 	if (s != NULL)
 		*s = '\0';
 

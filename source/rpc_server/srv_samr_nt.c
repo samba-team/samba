@@ -256,7 +256,7 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 
 	for (i=0; lines[i]; i++) {
 		char *unixname = lines[i];
-		char *dosname = strchr(unixname,'=');
+		char *dosname = strchr_m(unixname,'=');
 
 		if (!dosname)
 			continue;
@@ -271,7 +271,7 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 				unixname++;
 		}
     
-		if (!*unixname || strchr("#;",*unixname))
+		if (!*unixname || strchr_m("#;",*unixname))
 			continue;
 
 		if (strncmp(unixname, unix_user_name, strlen(unix_user_name)))
@@ -280,7 +280,7 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 		/* We have matched the UNIX user name */
 
 		while(next_token(&dosname, tok, LIST_SEP, sizeof(tok))) {
-			if (!strchr("@&+", *tok)) {
+			if (!strchr_m("@&+", *tok)) {
 				name_idx--;
 				if (name_idx < 0 ) {
 					break;
@@ -406,7 +406,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 			/* Don't enumerate winbind users as they are not local */
 
-			if (strchr(pwd->pw_name, *sep) != NULL) {
+			if (strchr_m(pwd->pw_name, *sep) != NULL) {
 				continue;
 			}
 
@@ -834,7 +834,7 @@ static BOOL get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID
 			sid_split_rid(&smap.sid, &trid);
 
 			/* Don't return winbind groups as they are not local! */
-			if (strchr(smap.nt_name, *sep) != NULL) {
+			if (strchr_m(smap.nt_name, *sep) != NULL) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, not local.\n", smap.nt_name ));
 				continue;
 			}

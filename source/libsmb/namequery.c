@@ -503,7 +503,7 @@ BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipad
 
     DEBUG(4, ("getlmhostsent: lmhost entry: %s %s %s\n", ip, name, flags));
 
-    if (strchr(flags,'G') || strchr(flags,'S'))
+    if (strchr_m(flags,'G') || strchr_m(flags,'S'))
     {
       DEBUG(0,("getlmhostsent: group flag in lmhosts ignored (obsolete)\n"));
       continue;
@@ -513,7 +513,7 @@ BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipad
 
     /* Extra feature. If the name ends in '#XX', where XX is a hex number,
        then only add that name type. */
-    if((ptr = strchr(name, '#')) != NULL)
+    if((ptr = strchr_m(name, '#')) != NULL)
     {
       char *endptr;
 

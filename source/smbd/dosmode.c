@@ -149,7 +149,7 @@ int dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
   /* hide files with a name starting with a . */
   if (lp_hide_dot_files(SNUM(conn)))
     {
-      char *p = strrchr(path,'/');
+      char *p = strrchr_m(path,'/');
       if (p)
 	p++;
       else

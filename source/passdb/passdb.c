@@ -318,8 +318,8 @@ BOOL pdb_gethexpwd(char *p, unsigned char *pwd)
 		hinybble = toupper(p[i]);
 		lonybble = toupper(p[i + 1]);
 
-		p1 = strchr(hexchars, hinybble);
-		p2 = strchr(hexchars, lonybble);
+		p1 = strchr_m(hexchars, hinybble);
+		p2 = strchr_m(hexchars, lonybble);
 
 		if (!p1 || !p2)
 		{

@@ -130,7 +130,7 @@ static struct cli_state *do_connection(char *service)
 	}
 
 	pstrcpy(server, service+2);
-	share = strchr(server,'\\');
+	share = strchr_m(server,'\\');
 	if (!share) {
 		usage();
 		exit(1);
@@ -164,7 +164,7 @@ static struct cli_state *do_connection(char *service)
 			 getpid(), called.name, cli_errstr(c)));
 		cli_shutdown(c);
 		free(c);
-		if ((p=strchr(called.name, '.'))) {
+		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;
 		}
@@ -715,7 +715,7 @@ static void parse_mount_smb(int argc, char **argv)
 	 */
         for (opts = strtok(optarg, ","); opts; opts = strtok(NULL, ",")) {
 		DEBUG(3, ("opts: %s\n", opts));
-                if ((opteq = strchr(opts, '='))) {
+                if ((opteq = strchr_m(opts, '='))) {
                         val = atoi(opteq + 1);
                         *opteq = '\0';
 
@@ -723,13 +723,13 @@ static void parse_mount_smb(int argc, char **argv)
 			    !strcmp(opts, "logon")) {
 				char *lp;
 				pstrcpy(username,opteq+1);
-				if ((lp=strchr(username,'%'))) {
+				if ((lp=strchr_m(username,'%'))) {
 					*lp = 0;
 					pstrcpy(password,lp+1);
 					got_pass = True;
-					memset(strchr(opteq+1,'%')+1,'X',strlen(password));
+					memset(strchr_m(opteq+1,'%')+1,'X',strlen(password));
 				}
-				if ((lp=strchr(username,'/'))) {
+				if ((lp=strchr_m(username,'/'))) {
 					*lp = 0;
 					pstrcpy(workgroup,lp+1);
 				}
@@ -824,11 +824,11 @@ static void parse_mount_smb(int argc, char **argv)
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
 
-		if ((p=strchr(username,'%'))) {
+		if ((p=strchr_m(username,'%'))) {
 			*p = 0;
 			pstrcpy(password,p+1);
 			got_pass = True;
-			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
+			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
 		}
 		strupper(username);
 	}

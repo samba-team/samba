@@ -42,7 +42,7 @@ static int fd_open(struct connection_struct *conn, char *fname,
 
 	/* Fix for files ending in '.' */
 	if((fd == -1) && (errno == ENOENT) &&
-	   (strchr(fname,'.')==NULL)) {
+	   (strchr_m(fname,'.')==NULL)) {
 		pstrcat(fname,".");
 		fd = conn->vfs_ops.open(conn,fname,flags,mode);
 	}
@@ -245,7 +245,7 @@ return True if the filename is one of the special executable types
 ********************************************************************/
 static BOOL is_executable(const char *fname)
 {
-	if ((fname = strrchr(fname,'.'))) {
+	if ((fname = strrchr_m(fname,'.'))) {
 		if (strequal(fname,".com") ||
 		    strequal(fname,".dll") ||
 		    strequal(fname,".exe") ||

@@ -102,7 +102,7 @@ int add_home_service(char *service, char *homedir)
 
 	fstrcpy(new_service, service);
 
-	if ((usr_p = strchr(service,*lp_winbind_separator())) != NULL)
+	if ((usr_p = strchr_m(service,*lp_winbind_separator())) != NULL)
 		fstrcpy(new_service, usr_p+1);
 
 	lp_add_home(new_service,iHomeService,homedir);

@@ -603,11 +603,11 @@ static int process_root(int argc, char *argv[])
 
 			fstrcpy(user_name, optarg);
 
-			if ((lp = strchr(user_name, '%'))) {
+			if ((lp = strchr_m(user_name, '%'))) {
 				*lp = 0;
 				fstrcpy(user_password, lp + 1);
 				got_pass = True;
-				memset(strchr(optarg, '%') + 1, 'X',
+				memset(strchr_m(optarg, '%') + 1, 'X',
 				       strlen(user_password));
 			}
 
@@ -920,7 +920,7 @@ int main(int argc, char **argv)
 	if (!*global_myname) {   
 		char *p;
 		fstrcpy(global_myname, myhostname());
-		p = strchr(global_myname, '.' );
+		p = strchr_m(global_myname, '.' );
 		if (p) *p = 0;
 	}           
 	strupper(global_myname);

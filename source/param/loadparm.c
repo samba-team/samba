@@ -2211,7 +2211,7 @@ static BOOL source_env(char **lines)
 		strncpy(varval, line, len);
 		varval[len] = '\0';
 
-		p = strchr(line, (int)'=');
+		p = strchr_m(line, (int)'=');
 		if (p == NULL)
 		{
 			DEBUG(4, ("source_env: missing '=': %s\n", line));
@@ -3486,7 +3486,7 @@ int lp_major_announce_version(void)
 	if ((vers = lp_announce_version()) == NULL)
 		return major_version;
 
-	if ((p = strchr(vers, '.')) == 0)
+	if ((p = strchr_m(vers, '.')) == 0)
 		return major_version;
 
 	*p = '\0';
@@ -3508,7 +3508,7 @@ int lp_minor_announce_version(void)
 	if ((vers = lp_announce_version()) == NULL)
 		return minor_version;
 
-	if ((p = strchr(vers, '.')) == 0)
+	if ((p = strchr_m(vers, '.')) == 0)
 		return minor_version;
 
 	p++;

@@ -58,7 +58,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 	/* now tokenize */
 	/* parse out hostname */
-	p = strchr(temp,'\\');
+	p = strchr_m(temp,'\\');
 	if(p == NULL)
 		return False;
 	*p = '\0';
@@ -67,7 +67,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 	/* parse out servicename */
 	temp = p+1;
-	p = strchr(temp,'\\');
+	p = strchr_m(temp,'\\');
 	if(p == NULL) {
 		pstrcpy(pdp->servicename,temp);
 		return True;
@@ -78,7 +78,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 	/* parse out volumename */
 	temp = p+1;
-	p = strchr(temp,'\\');
+	p = strchr_m(temp,'\\');
 	if(p == NULL) {
 		pstrcpy(pdp->volumename,temp);
 		return True;
@@ -202,7 +202,7 @@ static BOOL parse_symlink(char* buf,struct referral** preflist, int* refcount)
   
 	for(i=0;i<count;i++) {
 		/* replace / in the alternate path by a \ */
-		char* p = strchr(alt_path[i],'/');
+		char* p = strchr_m(alt_path[i],'/');
 		if(p)
 			*p = '\\'; 
 

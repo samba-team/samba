@@ -253,7 +253,7 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
 	  
 	  pstrcpy(path, ref->alternate_path);
 	  trim_string(path,"\\","");
-	  p = strrchr(path,'\\');
+	  p = strrchr_m(path,'\\');
 	  if(p==NULL)
 	    {
 	      DEBUG(4,("init_reply_dfs_info_3: invalid path: no \\ found in %s\n",path));

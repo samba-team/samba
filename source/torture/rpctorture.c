@@ -394,12 +394,12 @@ enum client_action
 			{
 				char *lp;
 				pstrcpy(smb_cli->user_name,optarg);
-				if ((lp=strchr(smb_cli->user_name,'%')))
+				if ((lp=strchr_m(smb_cli->user_name,'%')))
 				{
 					*lp = 0;
 					pstrcpy(password,lp+1);
 					got_pass = True;
-					memset(strchr(optarg,'%')+1,'X',strlen(password));
+					memset(strchr_m(optarg,'%')+1,'X',strlen(password));
 				}
 				break;
 			}

@@ -510,7 +510,7 @@ void announce_remote(time_t t)
     char *wgroup;
     int i;
 
-    wgroup = strchr(s2,'/');
+    wgroup = strchr_m(s2,'/');
     if (wgroup)
       *wgroup++ = 0;
     if (!wgroup || !*wgroup)

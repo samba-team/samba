@@ -50,12 +50,12 @@ static void unescape(char *buf)
 {
 	char *p=buf;
 
-	while ((p=strchr(p,'+')))
+	while ((p=strchr_m(p,'+')))
 		*p = ' ';
 
 	p = buf;
 
-	while (p && *p && (p=strchr(p,'%'))) {
+	while (p && *p && (p=strchr_m(p,'%'))) {
 		int c1 = p[1];
 		int c2 = p[2];
 
@@ -104,7 +104,7 @@ static char *grab_line(FILE *f, int *cl)
 		
 		if (c == '\r') continue;
 
-		if (strchr("\n&", c)) break;
+		if (strchr_m("\n&", c)) break;
 
 		ret[i++] = c;
 
@@ -160,7 +160,7 @@ void cgi_load_variables(FILE *f1)
 	     ((s=getenv("REQUEST_METHOD")) && 
 	      strcasecmp(s,"POST")==0))) {
 		while (len && (line=grab_line(f, &len))) {
-			p = strchr(line,'=');
+			p = strchr_m(line,'=');
 			if (!p) continue;
 			
 			*p = 0;
@@ -200,7 +200,7 @@ void cgi_load_variables(FILE *f1)
 
 	if ((s=query_string) || (s=getenv("QUERY_STRING"))) {
 		for (tok=strtok(s,"&;");tok;tok=strtok(NULL,"&;")) {
-			p = strchr(tok,'=');
+			p = strchr_m(tok,'=');
 			if (!p) continue;
 			
 			*p = 0;
@@ -335,7 +335,7 @@ static void base64_decode(char *s)
 
 	n=i=0;
 
-	while (*s && (p=strchr(b64,*s))) {
+	while (*s && (p=strchr_m(b64,*s))) {
 		idx = (int)(p - b64);
 		byte_offset = (i*6)/8;
 		bit_offset = (i*6)%8;
@@ -377,7 +377,7 @@ static BOOL cgi_handle_authorization(char *line)
 	line += 6;
 	while (line[0] == ' ') line++;
 	base64_decode(line);
-	if (!(p=strchr(line,':'))) {
+	if (!(p=strchr_m(line,':'))) {
 		/*
 		 * Always give the same error so a cracker
 		 * cannot tell why we fail.
@@ -475,7 +475,7 @@ static void cgi_download(char *file)
 
 	/* sanitise the filename */
 	for (i=0;file[i];i++) {
-		if (!isalnum((int)file[i]) && !strchr("/.-_", file[i])) {
+		if (!isalnum((int)file[i]) && !strchr_m("/.-_", file[i])) {
 			cgi_setup_error("404 File Not Found","",
 					"Illegal character in filename");
 		}
@@ -491,7 +491,7 @@ static void cgi_download(char *file)
 				"The requested file was not found");
 	}
 	printf("HTTP/1.0 200 OK\r\n");
-	if ((p=strrchr(file,'.'))) {
+	if ((p=strrchr_m(file,'.'))) {
 		if (strcmp(p,".gif")==0) {
 			printf("Content-Type: image/gif\r\n");
 		} else if (strcmp(p,".jpg")==0) {
@@ -579,15 +579,15 @@ void cgi_setup(char *rootdir, int auth_required)
 	}
 
 	/* trim the URL */
-	if ((p = strchr(url,' ')) || (p=strchr(url,'\t'))) {
+	if ((p = strchr_m(url,' ')) || (p=strchr_m(url,'\t'))) {
 		*p = 0;
 	}
-	while (*url && strchr("\r\n",url[strlen(url)-1])) {
+	while (*url && strchr_m("\r\n",url[strlen(url)-1])) {
 		url[strlen(url)-1] = 0;
 	}
 
 	/* anything following a ? in the URL is part of the query string */
-	if ((p=strchr(url,'?'))) {
+	if ((p=strchr_m(url,'?'))) {
 		query_string = p+1;
 		*p = 0;
 	}

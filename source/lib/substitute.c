@@ -56,7 +56,7 @@ static size_t expand_env_var(char *p, int len)
 	 * Look for the terminating ')'.
 	 */
 
-	if ((q = strchr(p,')')) == NULL) {
+	if ((q = strchr_m(p,')')) == NULL) {
 		DEBUG(0,("expand_env_var: Unterminated environment variable [%s]\n", p));
 		return 2;
 	}
@@ -107,7 +107,7 @@ static char *automount_path(char *user_name)
 		char *automount_value = automount_lookup(user_name);
 
 		if(strlen(automount_value) > 0) {
-			home_path_start = strchr(automount_value,':');
+			home_path_start = strchr_m(automount_value,':');
 			if (home_path_start != NULL) {
 				DEBUG(5, ("NIS lookup succeeded.  Home path is: %s\n",
 						home_path_start?(home_path_start+1):""));
@@ -171,7 +171,7 @@ void standard_sub_basic(char *str)
 	char *p, *s;
 	fstring pidstr;
 
-	for (s=str; (p=strchr(s, '%'));s=p) {
+	for (s=str; (p=strchr_m(s, '%'));s=p) {
 		fstring tmp_str;
 
 		int l = sizeof(pstring) - (int)(p-str);
@@ -220,7 +220,7 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 	char *p, *s, *home;
 	struct passwd *pass;
 
-	for (s=str; (p=strchr(s, '%'));s=p) {
+	for (s=str; (p=strchr_m(s, '%'));s=p) {
 		int l = sizeof(pstring) - (int)(p-str);
 		
 		switch (*(p+1)) {

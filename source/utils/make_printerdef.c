@@ -47,8 +47,8 @@ static char *myfgets(char *s, int n, FILE *stream)
   int i;
 
   fgets(s,n,stream);
-  while ((LString1 = strchr(s,'%')) != NULL) {
-    if (!(LString2 = strchr(LString1+1,'%'))) break;
+  while ((LString1 = strchr_m(s,'%')) != NULL) {
+    if (!(LString2 = strchr_m(LString1+1,'%'))) break;
     *LString2 = '\0';
     pstrcpy(String,LString1+1);
     i = 0;
@@ -56,7 +56,7 @@ static char *myfgets(char *s, int n, FILE *stream)
       if (strncmp(sbuffer[i],String,strlen(String))==0)
       {
 	pstrcpy(String,sbuffer[i]);
-	if ((temp = strchr(String,'=')) != NULL) ++temp;
+	if ((temp = strchr_m(String,'=')) != NULL) ++temp;
 	pstrcpy(String,temp);
 	break;
       }
@@ -360,7 +360,7 @@ static void scan_copyfiles(FILE *fichier, char *chaine)
  * This may still be wrong but at least I get the same list
  * of files as seen on a printer test page.
  */
-        part = strchr(buffer[i],'=');
+        part = strchr_m(buffer[i],'=');
         if (part) {
           /*
            * Case (1) eg. pscript.hlp =  pscript.hl_ - chop after the first name.
@@ -379,13 +379,13 @@ static void scan_copyfiles(FILE *fichier, char *chaine)
               break;
           }
         } else {
-          part = strchr(buffer[i],',');
+          part = strchr_m(buffer[i],',');
           if (part) {
             /*
              * Cases (2-4)
              */
 
-            if ((mpart = strrchr(part+1,','))!=NULL) {
+            if ((mpart = strrchr_m(part+1,','))!=NULL) {
               /*
                * Second ',' - case 3 or 4.
                * Check if the last part is just a number,
@@ -507,7 +507,7 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
 	temp = strtok(languagemonitor,",");
 	if (*temp == '"') ++temp;
 	pstrcpy(languagemonitor,temp);
-	if ((temp = strchr(languagemonitor,'"'))!=NULL) *temp = '\0';
+	if ((temp = strchr_m(languagemonitor,'"'))!=NULL) *temp = '\0';
   }
 
   if (i) fprintf(stderr,"End of section found\n");

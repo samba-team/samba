@@ -240,8 +240,8 @@ int main(int argc, char *argv[])
       int i;
       if(deny_list) {
         for (i=0; deny_list[i]; i++) {
-          char *hasstar = strchr(deny_list[i], '*');
-          char *hasquery = strchr(deny_list[i], '?');
+          char *hasstar = strchr_m(deny_list[i], '*');
+          char *hasquery = strchr_m(deny_list[i], '?');
           if(hasstar || hasquery) {
             printf("Invalid character %c in hosts deny list (%s) for service %s.\n",
                  hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(s) );
@@ -251,8 +251,8 @@ int main(int argc, char *argv[])
 
       if(allow_list) {
         for (i=0; allow_list[i]; i++) {
-          char *hasstar = strchr(allow_list[i], '*');
-          char *hasquery = strchr(allow_list[i], '?');
+          char *hasstar = strchr_m(allow_list[i], '*');
+          char *hasquery = strchr_m(allow_list[i], '?');
           if(hasstar || hasquery) {
             printf("Invalid character %c in hosts allow list (%s) for service %s.\n",
                  hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(s) );

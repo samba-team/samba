@@ -43,13 +43,13 @@ BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
 	if (!sep) sep = " \t\n\r";
 
 	/* find the first non sep char */
-	while (*s && strchr(sep,*s)) s++;
+	while (*s && strchr_m(sep,*s)) s++;
 	
 	/* nothing left? */
 	if (! *s) return(False);
 	
 	/* copy over the token */
-	for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
+	for (quoted = False; len < bufsize && *s && (quoted || !strchr_m(sep,*s)); s++) {
 		if (*s == '\"') {
 			quoted = !quoted;
 		} else {
@@ -103,15 +103,15 @@ char **toktocliplist(int *ctok, char *sep)
 
 	if (!sep) sep = " \t\n\r";
 
-	while(*s && strchr(sep,*s)) s++;
+	while(*s && strchr_m(sep,*s)) s++;
 
 	/* nothing left? */
 	if (!*s) return(NULL);
 
 	do {
 		ictok++;
-		while(*s && (!strchr(sep,*s))) s++;
-		while(*s && strchr(sep,*s)) *s++=0;
+		while(*s && (!strchr_m(sep,*s))) s++;
+		while(*s && strchr_m(sep,*s)) *s++=0;
 	} while(*s);
 	
 	*ctok=ictok;
@@ -461,7 +461,7 @@ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, si
 
 	for(i = 0; i < len; i++) {
 		int val = (src[i] & 0xff);
-		if(isupper(val) || islower(val) || isdigit(val) || strchr(other_safe_chars, val))
+		if(isupper(val) || islower(val) || isdigit(val) || strchr_m(other_safe_chars, val))
 			dest[i] = src[i];
 		else
 			dest[i] = '_';
@@ -499,7 +499,7 @@ char *strncpyn(char *dest, const char *src,size_t n, char c)
 	char *p;
 	size_t str_len;
 
-	p = strchr(src, c);
+	p = strchr_m(src, c);
 	if (p == NULL)
 	{
 		DEBUG(5, ("strncpyn: separator character (%c) not found\n", c));
@@ -539,14 +539,14 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 			continue;
 		}
 
-		if (!(p1 = strchr(hexchars, toupper(strhex[i]))))
+		if (!(p1 = strchr_m(hexchars, toupper(strhex[i]))))
 		{
 			break;
 		}
 
 		i++; /* next hex digit */
 
-		if (!(p2 = strchr(hexchars, toupper(strhex[i]))))
+		if (!(p2 = strchr_m(hexchars, toupper(strhex[i]))))
 		{
 			break;
 		}
@@ -751,7 +751,7 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 ****************************************************************************/
 void split_at_last_component(char *path, char *front, char sep, char *back)
 {
-	char *p = strrchr(path, sep);
+	char *p = strrchr_m(path, sep);
 
 	if (p != NULL)
 	{
@@ -806,7 +806,7 @@ char *string_truncate(char *s, int length)
 
 
 /****************************************************************************
-strchr and strrchr are very hard to do on general multi-byte strings. 
+strchr and strrchr_m are very hard to do on general multi-byte strings. 
 we convert via ucs2 for now
 ****************************************************************************/
 char *strchr_m(const char *s, char c)

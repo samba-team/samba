@@ -866,7 +866,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   str3 = p + 4;
  
   /* remove any trailing username */
-  if ((p = strchr(QueueName,'%'))) *p = 0;
+  if ((p = strchr_m(QueueName,'%'))) *p = 0;
  
   DEBUG(3,("PrintQueue uLevel=%d name=%s\n",uLevel,QueueName));
  

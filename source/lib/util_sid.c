@@ -318,8 +318,8 @@ void split_domain_name(const char *fullname, char *domain, char *name)
 		fullname++;
 
 	pstrcpy(full_name, fullname);
-	p = strchr(full_name+1, '\\');
-	if (!p) p = strchr(full_name+1, sep[0]);
+	p = strchr_m(full_name+1, '\\');
+	if (!p) p = strchr_m(full_name+1, sep[0]);
 
 	if (p != NULL) {
 		*p = 0;

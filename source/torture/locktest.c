@@ -120,7 +120,7 @@ struct cli_state *connect_one(char *share)
 	static int count;
 
 	fstrcpy(server,share+2);
-	share = strchr(server,'\\');
+	share = strchr_m(server,'\\');
 	if (!share) return NULL;
 	*share = 0;
 	share++;
@@ -524,7 +524,7 @@ static void usage(void)
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
-			p = strchr(username,'%');
+			p = strchr_m(username,'%');
 			if (p) {
 				*p = 0;
 				pstrcpy(password, p+1);

@@ -277,7 +277,7 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
    * for the current user on the taskbar.  Plop in a null.
    */
 
-  if ((cptr = strchr(buf->user,'@')) != NULL) {
+  if ((cptr = strchr_m(buf->user,'@')) != NULL) {
     *cptr = '\0';
   }
 
@@ -342,13 +342,13 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
           if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[4])) return(False);
           buf->size = atoi(tok[4]) * 1024;
           /* if the fname contains a space then use STDIN */
-          if (strchr(tok[2],' '))
+          if (strchr_m(tok[2],' '))
             fstrcpy(tok[2],"STDIN");
 
           /* only take the last part of the filename */
           {
             fstring tmp;
-            char *p = strrchr(tok[2],'/');
+            char *p = strrchr_m(tok[2],'/');
             if (p)
               {
                 fstrcpy(tmp,p+1);
@@ -376,13 +376,13 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
       if (!isdigit((int)*tok[3]) || !isdigit((int)*tok[8])) return(False);
       buf->size = atoi(tok[8]) * 1024;
       /* if the fname contains a space then use STDIN */
-      if (strchr(tok[4],' '))
+      if (strchr_m(tok[4],' '))
         fstrcpy(tok[4],"STDIN");
 
       /* only take the last part of the filename */
       {
         fstring tmp;
-        char *p = strrchr(tok[4],'/');
+        char *p = strrchr_m(tok[4],'/');
         if (p)
           {
             fstrcpy(tmp,p+1);
@@ -453,7 +453,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     if (!isdigit((int)*tok[1])) return(False);
     
     /* if the fname contains a space then use STDIN */
-    if (strchr(tok[0],' '))
+    if (strchr_m(tok[0],' '))
       fstrcpy(tok[0],"STDIN");
     
     buf->size = atoi(tok[1]);
@@ -564,7 +564,7 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* if the user contains a ! then trim the first part of it */  
-  if ((p=strchr(tok[2],'!'))) {
+  if ((p=strchr_m(tok[2],'!'))) {
       fstring tmp;
       fstrcpy(tmp,p+1);
       fstrcpy(tok[2],tmp);
@@ -627,7 +627,7 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
   /* only take the last part of the filename */
   {
     fstring tmp;
-    char *p = strrchr(tok[6],'/');
+    char *p = strrchr_m(tok[6],'/');
     if (p)
       {
 	fstrcpy(tmp,p+1);
@@ -685,13 +685,13 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* if the fname contains a space then use STDIN */
-  if (strchr(tok[6],' '))
+  if (strchr_m(tok[6],' '))
     fstrcpy(tok[6],"STDIN");
 
   /* only take the last part of the filename */
   {
     fstring tmp;
-    char *p = strrchr(tok[6],'/');
+    char *p = strrchr_m(tok[6],'/');
     if (p)
       {
         fstrcpy(tmp,p+1);
@@ -703,9 +703,9 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
   buf->job = atoi(tok[4]);
 
   buf->size = atoi(tok[7]);
-  if (strchr(tok[7],'K'))
+  if (strchr_m(tok[7],'K'))
     buf->size *= 1024;
-  if (strchr(tok[7],'M'))
+  if (strchr_m(tok[7],'M'))
     buf->size *= 1024*1024;
 
   buf->status = strequal(tok[0],"active")?LPQ_PRINTING:LPQ_QUEUED;
@@ -841,8 +841,8 @@ static BOOL parse_lpq_nt(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* Just want the first word in the owner field - the username */
-  if (strchr(parse_line.owner, ' '))
-    *(strchr(parse_line.owner, ' ')) = '\0';
+  if (strchr_m(parse_line.owner, ' '))
+    *(strchr_m(parse_line.owner, ' ')) = '\0';
   else
     parse_line.space1 = '\0';
 
@@ -1053,7 +1053,7 @@ BOOL parse_lpq_entry(int snum,char *line,
 
   /* We don't want the newline in the status message. */
   {
-    char *p = strchr(line,'\n');
+    char *p = strchr_m(line,'\n');
     if (p) *p = 0;
   }
 

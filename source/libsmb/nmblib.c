@@ -300,7 +300,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
     pstrcpy(&buf[offset+1],name->scope);  
   
     p = &buf[offset+1];
-    while ((p = strchr(p,'.'))) {
+    while ((p = strchr_m(p,'.'))) {
       buf[offset] = PTR_DIFF(p,&buf[offset+1]);
       offset += (buf[offset] + 1);
       p = &buf[offset+1];

@@ -176,7 +176,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    */
 
   if(saved_last_component) {
-    end = strrchr(name, '/');
+    end = strrchr_m(name, '/');
     if(end)
       pstrcpy(saved_last_component, end + 1);
     else
@@ -243,7 +243,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 #if 0
   /* Keep Andrew's conservative code around, just in case. JRA. */
   /* this is an extremely conservative test for mangled names. */
-  if (strchr(start,magic_char))
+  if (strchr_m(start,magic_char))
     component_was_mangled = True;
 #endif
 
@@ -261,7 +261,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
       /* 
        * Pinpoint the end of this section of the filename.
        */
-      end = strchr(start, '/');
+      end = strchr_m(start, '/');
 
       /* 
        * Chop the name at this point.
