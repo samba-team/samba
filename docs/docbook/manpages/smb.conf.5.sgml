@@ -1903,47 +1903,16 @@
 		<varlistentry>
 		<term><anchor id="DELETEUSERSCRIPT">delete user script (G)</term>
 		<listitem><para>This is the full pathname to a script that will 
-		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">
-		<command>smbd(8)</command></ulink> under special circumstances 
-		described below.</para>
+		be run by <ulink url="smbd.8.html"><command>smbd(8)</command></ulink>
+                when managing user's with remote RPC (NT) tools.
+		</para>
 
-		<para>Normally, a Samba server requires that UNIX users are 
-		created for all users accessing files on this server. For sites 
-		that use Windows NT account databases as their primary user database 
-		creating these users and keeping the user list in sync with the 
-		Windows NT PDC is an onerous task. This option allows <command>
-		smbd</command> to delete the required UNIX users <emphasis>ON 
-		DEMAND</emphasis> when a user accesses the Samba server and the 
-		Windows NT user no longer exists.</para>
-		
-		<para>In order to use this option, <command>smbd</command> must be 
-		set to <parameter>security = domain</parameter> or <parameter>security =
-		user</parameter> and <parameter>delete user script</parameter> 
-		must be set to a full pathname for a script 
-		that will delete a UNIX user given one argument of <parameter>%u</parameter>, 
-		which expands into the UNIX user name to delete.</para>
+                <para>This script is called when a remote client removes a user
+                from the server, normally using 'User Manager for Domains' or
+                <command>rpcclient</command>.
 
-		<para>When the Windows user attempts to access the Samba server, 
-		at <emphasis>login</emphasis> (session setup in the SMB protocol) 
-		time, <command>smbd</command> contacts the <link linkend="PASSWORDSERVER">
-		<parameter>password server</parameter></link> and attempts to authenticate 
-		the given user with the given password. If the authentication fails 
-		with the specific Domain error code meaning that the user no longer 
-		exists then <command>smbd</command> attempts to find a UNIX user in 
-		the UNIX password database that matches the Windows user account. If 
-		this lookup succeeds, and <parameter>delete user script</parameter> is 
-		set then <command>smbd</command> will all the specified script 
-		<emphasis>AS ROOT</emphasis>, expanding any <parameter>%u</parameter> 
-		argument to be the user name to delete.</para>
-
-		<para>This script should delete the given UNIX username. In this way, 
-		UNIX users are dynamically deleted to match existing Windows NT 
-		accounts.</para>
-
-		<para>See also <link linkend="SECURITYEQUALSDOMAIN">security = domain</link>,
-		<link linkend="PASSWORDSERVER"><parameter>password server</parameter>
-		</link>, <link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter>
-		</link>.</para>
+		<para>This script should delete the given UNIX username. 
+		</para>
 
 		<para>Default: <command>delete user script = &lt;empty string&gt;
 		</command></para>

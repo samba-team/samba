@@ -49,24 +49,6 @@ static int smb_create_user(const char *unix_user, const char *homedir)
 }
 
 /****************************************************************************
- Delete a UNIX user on demand.
-****************************************************************************/
-
-int smb_delete_user(const char *unix_user)
-{
-	pstring del_script;
-	int ret;
-
-	pstrcpy(del_script, lp_deluser_script());
-	if (! *del_script)
-		return -1;
-	all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
-	ret = smbrun(del_script,NULL);
-	DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
-	return ret;
-}
-
-/****************************************************************************
  Add and Delete UNIX users on demand, based on NTSTATUS codes.
 ****************************************************************************/
 
@@ -87,16 +69,6 @@ void smb_user_control(const auth_usersupplied_info *user_info, auth_serversuppli
 			if(lp_adduser_script() && !(pwd = Get_Pwnam(user_info->internal_username.str))) {
 				smb_create_user(user_info->internal_username.str, NULL);
 			}
-		}
-	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
-		/*
-		 * User failed to validate ok against Domain controller.
-		 * If the failure was "user doesn't exist" and admin 
-		 * wants us to try and delete that UNIX user on the fly,
-		 * do so.
-		 */
-		if (lp_deluser_script()) {
-			smb_delete_user(user_info->internal_username.str);
 		}
 	}
 }
