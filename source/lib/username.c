@@ -375,7 +375,7 @@ BOOL user_in_list(char *user,char *list)
 
 static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(char *),int N)
 {
-  size_t len = strlen(s);
+  ssize_t len = (ssize_t)strlen(s);
   int i;
   struct passwd *ret;
 
