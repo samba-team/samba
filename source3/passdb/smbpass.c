@@ -567,13 +567,13 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 	char            readbuf[16 * 1024];
 	unsigned char   c;
 	char            ascii_p16[66];
-	unsigned char  *p;
-	long            linebuf_len;
+	unsigned char  *p = NULL;
+	long            linebuf_len = 0;
 	FILE           *fp;
 	int             lockfd;
 	char           *pfile = lp_smb_passwd_file();
+	BOOL found_entry = False;
 
-	BOOL found_entry = True;
 	long pwd_seekpos = 0;
 
 	int i;
@@ -585,13 +585,13 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 		DEBUG(0, ("No SMB password file set\n"));
 		return False;
 	}
-	DEBUG(10, ("add_smbpwd_entry: opening file %s\n", pfile));
+	DEBUG(10, ("mod_smbpwd_entry: opening file %s\n", pfile));
 
 	fp = fopen(pfile, "r+");
 
 	if (fp == NULL)
 	{
-		DEBUG(0, ("add_smbpwd_entry: unable to open file %s\n", pfile));
+		DEBUG(0, ("mod_smbpwd_entry: unable to open file %s\n", pfile));
 		return False;
 	}
 	/* Set a 16k buffer to do more efficient reads */
@@ -599,7 +599,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
 	if ((lockfd = pw_file_lock(pfile, F_RDLCK | F_WRLCK, 5)) < 0)
 	{
-		DEBUG(0, ("add_smbpwd_entry: unable to lock file %s\n", pfile));
+		DEBUG(0, ("mod_smbpwd_entry: unable to lock file %s\n", pfile));
 		fclose(fp);
 		return False;
 	}
@@ -647,12 +647,12 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 		}
 
 #ifdef DEBUG_PASSWORD
-		DEBUG(100, ("add_smbpwd_entry: got line |%s|\n", linebuf));
+		DEBUG(100, ("mod_smbpwd_entry: got line |%s|\n", linebuf));
 #endif
 
 		if ((linebuf[0] == 0) && feof(fp))
 		{
-			DEBUG(4, ("add_smbpwd_entry: end of file reached\n"));
+			DEBUG(4, ("mod_smbpwd_entry: end of file reached\n"));
 			break;
 		}
 
@@ -671,7 +671,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
 		if (linebuf[0] == '#' || linebuf[0] == '\0')
 		{
-			DEBUG(6, ("add_smbpwd_entry: skipping comment or blank line\n"));
+			DEBUG(6, ("mod_smbpwd_entry: skipping comment or blank line\n"));
 			continue;
 		}
 
@@ -679,7 +679,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
 		if (p == NULL)
 		{
-			DEBUG(0, ("add_smbpwd_entry: malformed password entry (no :)\n"));
+			DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no :)\n"));
 			continue;
 		}
 
@@ -691,109 +691,111 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 		user_name[PTR_DIFF(p, linebuf)] = '\0';
 		if (strequal(user_name, pwd->smb_name))
 		{
-			DEBUG(6, ("add_smbpwd_entry: entry already exists\n"));
 			found_entry = True;
 			break;
 		}
-
-		/* User name matches - get uid and password */
-		p++;		/* Go past ':' */
-
-		if (!isdigit(*p))
-		{
-			DEBUG(0, ("mod_smbpwd_entry: malformed password entry (uid not number)\n"));
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return False;
-		}
-
-		while (*p && isdigit(*p))
-			p++;
-		if (*p != ':')
-		{
-			DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no : after uid)\n"));
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return False;
-		}
-		/*
-		 * Now get the password value - this should be 32 hex digits
-		 * which are the ascii representations of a 16 byte string.
-		 * Get two at a time and put them into the password.
-		 */
-		p++;
-
-		/* record exact password position */
-		pwd_seekpos += PTR_DIFF(p, linebuf);
-
-		if (*p == '*' || *p == 'X')
-		{
-			/* Password deliberately invalid - end here. */
-			DEBUG(10, ("get_smbpwd_entry: entry invalidated for user %s\n", user_name));
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return False;
-		}
-
-		if (linebuf_len < (PTR_DIFF(p, linebuf) + 33))
-		{
-			DEBUG(0, ("mod_smbpwd_entry: malformed password entry (passwd too short)\n"));
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return (False);
-		}
-
-		if (p[32] != ':')
-		{
-			DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no terminating :)\n"));
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return False;
-		}
-
-		if (*p == '*' || *p == 'X')
-		{
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return False;
-		}
-		if (!strncasecmp((char *) p, "NO PASSWORD", 11))
-		{
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return False;
-		}
-
-		/* Now check if the NT compatible password is
-			available. */
-		p += 33; /* Move to the first character of the line after
-					the lanman password. */
-		if (linebuf_len < (PTR_DIFF(p, linebuf) + 33))
-		{
-			DEBUG(0, ("mod_smbpwd_entry: malformed password entry (passwd too short)\n"));
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return (False);
-		}
-
-		if (p[32] != ':')
-		{
-			DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no terminating :)\n"));
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return False;
-		}
-
-		if (*p == '*' || *p == 'X')
-		{
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return False;
-		}
-
-		/* whew.  entry is correctly formed. */
-		break;
 	}
+
+	if (!found_entry) return False;
+
+	DEBUG(6, ("mod_smbpwd_entry: entry exists\n"));
+
+	/* User name matches - get uid and password */
+	p++;		/* Go past ':' */
+
+	if (!isdigit(*p))
+	{
+		DEBUG(0, ("mod_smbpwd_entry: malformed password entry (uid not number)\n"));
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	while (*p && isdigit(*p))
+		p++;
+	if (*p != ':')
+	{
+		DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no : after uid)\n"));
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+	/*
+	 * Now get the password value - this should be 32 hex digits
+	 * which are the ascii representations of a 16 byte string.
+	 * Get two at a time and put them into the password.
+	 */
+	p++;
+
+	/* record exact password position */
+	pwd_seekpos += PTR_DIFF(p, linebuf);
+
+	if (*p == '*' || *p == 'X')
+	{
+		/* Password deliberately invalid - end here. */
+		DEBUG(10, ("get_smbpwd_entry: entry invalidated for user %s\n", user_name));
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	if (linebuf_len < (PTR_DIFF(p, linebuf) + 33))
+	{
+		DEBUG(0, ("mod_smbpwd_entry: malformed password entry (passwd too short)\n"));
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return (False);
+	}
+
+	if (p[32] != ':')
+	{
+		DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no terminating :)\n"));
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	if (*p == '*' || *p == 'X')
+	{
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+	if (!strncasecmp((char *) p, "NO PASSWORD", 11))
+	{
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	/* Now check if the NT compatible password is
+		available. */
+	p += 33; /* Move to the first character of the line after
+				the lanman password. */
+	if (linebuf_len < (PTR_DIFF(p, linebuf) + 33))
+	{
+		DEBUG(0, ("mod_smbpwd_entry: malformed password entry (passwd too short)\n"));
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return (False);
+	}
+
+	if (p[32] != ':')
+	{
+		DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no terminating :)\n"));
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	if (*p == '*' || *p == 'X')
+	{
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	/* whew.  entry is correctly formed. */
 
 	/*
 	 * Do an atomic write into the file at the position defined by
