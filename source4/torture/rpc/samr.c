@@ -324,6 +324,100 @@ static BOOL test_GetUserPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static NTSTATUS test_LookupName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				struct policy_handle *domain_handle, const char *name,
+				uint32 *rid)
+{
+	NTSTATUS status;
+	struct samr_LookupNames n;
+	struct samr_Name sname;
+
+	init_samr_Name(&sname, name);
+
+	n.in.handle = domain_handle;
+	n.in.num_names = 1;
+	n.in.names = &sname;
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (NT_STATUS_IS_OK(status)) {
+		*rid = n.out.rids.ids[0];
+	}
+
+	return status;
+}
+
+static NTSTATUS test_OpenUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				     struct policy_handle *domain_handle,
+				     const char *name, struct policy_handle *user_handle)
+{
+	NTSTATUS status;
+	struct samr_OpenUser r;
+	uint32 rid;
+
+	status = test_LookupName(p, mem_ctx, domain_handle, name, &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	r.in.handle = domain_handle;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.rid = rid;
+	r.out.acct_handle = user_handle;
+	status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenUser_byname(%s) failed - %s\n", name, nt_errstr(status));
+	}
+
+	return status;
+}
+
+
+static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				    struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_ChangePasswordUser r;
+	BOOL ret = True;
+	struct samr_Hash hash1, hash2, hash3, hash4;
+	const char *test_pass1 = "";
+	const char *test_pass2 = "newpass";
+	struct policy_handle user_handle;
+
+	status = test_OpenUser_byname(p, mem_ctx, handle, TEST_USERNAME, &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	printf("Testing ChangePasswordUser\n");
+
+	nt_lm_owf_gen(test_pass1, hash1.hash, hash2.hash);
+	nt_lm_owf_gen(test_pass2, hash3.hash, hash4.hash);
+
+	r.in.handle = &user_handle;
+	r.in.unknown1 = 1;
+	r.in.hash1 = &hash1;
+	r.in.hash2 = &hash2;
+	r.in.unknown2 = 1;
+	r.in.hash3 = &hash3;
+	r.in.hash4 = &hash4;
+	r.in.unknown3 = 1;
+	r.in.hash5 = &hash3;
+	r.in.unknown4 = 1;
+	r.in.hash6 = &hash3;
+
+	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ChangePasswordUser failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	if (!test_Close(p, mem_ctx, &user_handle)) {
+		ret = False;
+	}
+
+	return ret;
+}
+
+
 static BOOL test_GetMembersInAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				  struct policy_handle *alias_handle)
 {
@@ -382,6 +476,27 @@ static BOOL test_AddMemberToAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_TestPrivateFunctionsUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+					    struct policy_handle *user_handle)
+{
+    	struct samr_TestPrivateFunctionsUser r;
+	NTSTATUS status;
+	BOOL ret = True;
+
+	printf("Testing TestPrivateFunctionsUser\n");
+
+	r.in.handle = user_handle;
+
+	status = dcerpc_samr_TestPrivateFunctionsUser(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(NT_STATUS_NOT_IMPLEMENTED, status)) {
+		printf("TestPrivateFunctionsUser failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+
 static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
 {
@@ -400,6 +515,10 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}	
 
 	if (!test_GetUserPwInfo(p, mem_ctx, handle)) {
+		ret = False;
+	}
+
+	if (!test_TestPrivateFunctionsUser(p, mem_ctx, handle)) {
 		ret = False;
 	}
 
@@ -434,32 +553,10 @@ static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-static NTSTATUS test_LookupName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-				struct policy_handle *domain_handle, const char *name,
-				uint32 *rid)
-{
-	NTSTATUS status;
-	struct samr_LookupNames n;
-	struct samr_Name sname;
-
-	init_samr_Name(&sname, name);
-
-	n.in.handle = domain_handle;
-	n.in.num_names = 1;
-	n.in.names = &sname;
-	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
-	if (NT_STATUS_IS_OK(status)) {
-		*rid = n.out.rids.ids[0];
-	}
-
-	return status;
-}
-
 static BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				   struct policy_handle *handle, const char *name)
 {
 	NTSTATUS status;
-	struct samr_OpenUser r;
 	struct samr_DeleteUser d;
 	struct policy_handle acct_handle;
 	uint32 rid;
@@ -469,11 +566,7 @@ static BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	r.in.handle = handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.in.rid = rid;
-	r.out.acct_handle = &acct_handle;
-	status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
+	status = test_OpenUser_byname(p, mem_ctx, handle, name, &acct_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -694,6 +787,10 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       acct_flags, acct_flags);
 			ret = False;
 		}
+	}
+
+	if (!test_ChangePasswordUser(p, mem_ctx, domain_handle)) {
+		ret = False;
 	}
 
 	if (!test_user_ops(p, mem_ctx, user_handle)) {
@@ -1196,6 +1293,33 @@ static BOOL test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;	
 }
 
+static BOOL test_GetDisplayEnumerationIndex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+					    struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_GetDisplayEnumerationIndex r;
+	BOOL ret = True;
+	uint16 levels[] = {1, 2, 3, 4, 5};
+	int i;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing GetDisplayEnumerationIndex level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+		init_samr_Name(&r.in.name, TEST_USERNAME);
+
+		status = dcerpc_samr_GetDisplayEnumerationIndex(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("GetDisplayEnumerationIndex level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+	}
+	
+	return ret;	
+}
+
 static BOOL test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				  struct policy_handle *handle)
 {
@@ -1294,7 +1418,6 @@ void add_string_to_array(TALLOC_CTX *mem_ctx,
 
 /* Test whether querydispinfo level 5 and enumdomgroups return the same
    set of group names. */
-
 static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			   struct policy_handle *handle)
 {
@@ -1426,6 +1549,26 @@ static BOOL test_DeleteDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_TestPrivateFunctionsDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+					    struct policy_handle *domain_handle)
+{
+    	struct samr_TestPrivateFunctionsDomain r;
+	NTSTATUS status;
+	BOOL ret = True;
+
+	printf("Testing TestPrivateFunctionsDomain\n");
+
+	r.in.handle = domain_handle;
+
+	status = dcerpc_samr_TestPrivateFunctionsDomain(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(NT_STATUS_NOT_IMPLEMENTED, status)) {
+		printf("TestPrivateFunctionsDomain failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				struct policy_handle *domain_handle,
 				struct policy_handle *group_handle)
@@ -1469,6 +1612,7 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       nt_errstr(status));
 		return False;
 	}
+
 
 	status = dcerpc_samr_DeleteGroupMember(p, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1532,6 +1676,31 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
+/*
+  its not totally clear what this does. It seems to accept any sid you like.
+*/
+static BOOL test_RemoveMemberFromForeignDomain(struct dcerpc_pipe *p, 
+					       TALLOC_CTX *mem_ctx, 
+					       struct policy_handle *domain_handle)
+{
+	NTSTATUS status;
+	struct samr_RemoveMemberFromForeignDomain r;
+
+	r.in.handle = domain_handle;
+	r.in.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-12-34-56-78-9");
+
+	status = dcerpc_samr_RemoveMemberFromForeignDomain(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("RemoveMemberFromForeignDomain failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+
+
+
 static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle, struct dom_sid *sid)
 {
@@ -1557,6 +1726,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenDomain failed - %s\n", nt_errstr(status));
 		return False;
+	}
+
+	if (!test_RemoveMemberFromForeignDomain(p, mem_ctx, &domain_handle)) {
+		ret = False;
 	}
 
 	if (!test_CreateUser2(p, mem_ctx, &domain_handle)) {
@@ -1599,7 +1772,15 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
 	if (!test_GroupList(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_TestPrivateFunctionsDomain(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 
