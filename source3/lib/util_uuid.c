@@ -38,60 +38,24 @@ struct uuid {
 
 static void uuid_pack(const struct uuid *uu, GUID *ptr)
 {
-	uint32 tmp;
 	uint8 *out = ptr->info;
 
-	tmp = uu->time_low;
-	out[3] = (uint8) tmp;
-	tmp >>= 8;
-	out[2] = (uint8) tmp;
-	tmp >>= 8;
-	out[1] = (uint8) tmp;
-	tmp >>= 8;
-	out[0] = (uint8) tmp;
-	
-	tmp = uu->time_mid;
-	out[5] = (uint8) tmp;
-	tmp >>= 8;
-	out[4] = (uint8) tmp;
-
-	tmp = uu->time_hi_and_version;
-	out[7] = (uint8) tmp;
-	tmp >>= 8;
-	out[6] = (uint8) tmp;
-
-	tmp = uu->clock_seq;
-	out[9] = (uint8) tmp;
-	tmp >>= 8;
-	out[8] = (uint8) tmp;
-
+	SIVAL(out, 0, uu->time_low);
+	SSVAL(out, 4, uu->time_mid);
+	SSVAL(out, 6, uu->time_hi_and_version);
+	SSVAL(out, 8, uu->clock_seq);
 	memcpy(out+10, uu->node, 6);
 }
 
 static void uuid_unpack(const GUID in, struct uuid *uu)
 {
 	const uint8 *ptr = in.info;
-	uint32 tmp;
 
-	tmp = *ptr++;
-	tmp = (tmp << 8) | *ptr++;
-	tmp = (tmp << 8) | *ptr++;
-	tmp = (tmp << 8) | *ptr++;
-	uu->time_low = tmp;
-
-	tmp = *ptr++;
-	tmp = (tmp << 8) | *ptr++;
-	uu->time_mid = tmp;
-	
-	tmp = *ptr++;
-	tmp = (tmp << 8) | *ptr++;
-	uu->time_hi_and_version = tmp;
-
-	tmp = *ptr++;
-	tmp = (tmp << 8) | *ptr++;
-	uu->clock_seq = tmp;
-
-	memcpy(uu->node, ptr, 6);
+	uu->time_low = IVAL(ptr, 0);
+	uu->time_mid = SVAL(ptr, 4);
+	uu->time_hi_and_version = SVAL(ptr, 6);
+	uu->clock_seq = SVAL(ptr, 8);
+	memcpy(uu->node, ptr+10, 6);
 }
 
 void uuid_generate_random(GUID *out)
