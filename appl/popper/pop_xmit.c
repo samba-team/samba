@@ -13,6 +13,7 @@ static char SccsId[] = "@(#)@(#)pop_xmit.c	2.1  2.1 3/18/91";
 #include <sys/types.h>
 #include <sys/file.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 #include "popper.h"
 
 /*
