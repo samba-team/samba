@@ -11,8 +11,18 @@
 	to SID mappings. This avoids the risk of UID / GID inconsistencies across UNIX / Linux
 	systems that are sharing information over protocols other than SMB/CIFS (ie: NFS).
 	</para>
+
+	<para>
+	An alternate method of SID to UID / GID  mapping can be achieved using the idmap_rid
+	plug-in. This plug-in uses the account RID to derive the UID and GID by adding the
+	RID to a base value specified. This utility requires that the parameter
+	<quote>allow trusted domains = No</quote> must be specified, as it is not compatible
+	with multiple domain environments. The idmap uid and idmap gid ranges must also be
+	specified.
+	</para>
 </description>
 
 <value type="default"></value>
 <value type="example">ldap:ldap://ldapslave.example.com</value>
+<value type="example">idmap_rid:DOMNAME=1000-100000000</value>
 </samba:parameter>
