@@ -30,12 +30,12 @@
 extern void print_title(char *fmt, ...);
 #endif
 
-struct var {
+struct cgi_var {
 	char *name;
 	char *value;
 };
 
-static struct var variables[MAX_VARIABLES];
+static struct cgi_var variables[MAX_VARIABLES];
 static int num_variables;
 static int content_length;
 static int request_post;
