@@ -443,46 +443,6 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 }
 
 /****************************************************************************
- Read data from a socket, reading exactly N bytes. 
-****************************************************************************/
-
-static ssize_t read_socket_data(int fd,char *buffer,size_t N)
-{
-  ssize_t  ret;
-  size_t total=0;  
- 
-  smb_read_error = 0;
-
-  while (total < N)
-  {
-#ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_read(ssl, buffer + total, N - total);
-    }else{
-      ret = read(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
-    ret = read(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
-
-    if (ret == 0)
-    {
-      DEBUG(10,("read_socket_data: recv of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_EOF;
-      return 0;
-    }
-    if (ret == -1)
-    {
-      DEBUG(0,("read_socket_data: recv failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-    total += ret;
-  }
-  return (ssize_t)total;
-}
-
-/****************************************************************************
  Write data to a fd.
 ****************************************************************************/
 
@@ -585,7 +545,7 @@ static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int 
     if (timeout > 0)
       ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout) == 4);
     else 
-      ok = (read_socket_data(fd,inbuf,4) == 4);
+      ok = (read_data(fd,inbuf,4) == 4);
 
     if (!ok)
       return(-1);
@@ -667,7 +627,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	}
 
 	if(len > 0) {
-		ret = read_socket_data(fd,buffer+4,len);
+		ret = read_data(fd,buffer+4,len);
 		if (ret != len) {
 			smb_read_error = READ_ERROR;
 			return False;
