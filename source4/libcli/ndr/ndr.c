@@ -29,6 +29,8 @@
 
 #include "includes.h"
 
+#define NDR_BASE_MARSHALL_SIZE 1024
+
 /*
   initialise a ndr parse structure from a data blob
 */
@@ -166,7 +168,7 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32 size)
 	}
 
 	ndr->alloc_size = size;
-	ndr->data = realloc(ndr->data, ndr->alloc_size);
+	ndr->data = talloc_realloc(ndr->mem_ctx, ndr->data, ndr->alloc_size);
 	if (!ndr->data) {
 		return NT_STATUS_NO_MEMORY;
 	}
