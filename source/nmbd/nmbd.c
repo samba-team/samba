@@ -185,6 +185,57 @@ static void expire_names_and_servers(time_t t)
   expire_workgroups_and_servers(t);
 } /* expire_names_and_servers */
 
+
+/************************************************************************** **
+reload the list of network interfaces
+ ************************************************************************** */
+static void reload_interfaces(void)
+{
+	int n;
+	struct subnet_record *sr;
+
+	if (!interfaces_changed()) return;
+
+	/* the list of probed interfaces has changed, we may need to add/remove
+	   some subnets */
+	load_interfaces();
+
+	/* find any interfaces that need adding */
+	for (n=iface_count() - 1; n >= 0; n--) {
+		struct interface *iface = get_interface(n);
+		for (sr=subnetlist; sr; sr=sr->next) {
+			if (ip_equal(iface->ip, sr->myip) &&
+			    ip_equal(iface->nmask, sr->mask_ip)) break;
+		}
+		if (!sr) {
+			/* it wasn't found! add it */
+			sr = make_normal_subnet(iface);
+			if (sr) register_my_workgroup_one_subnet(sr);
+		}
+	}
+
+	/* find any interfaces that need deleting */
+	for (sr=subnetlist; sr; sr=sr->next) {
+		for (n=iface_count() - 1; n >= 0; n--) {
+			struct interface *iface = get_interface(n);
+			if (ip_equal(iface->ip, sr->myip) &&
+			    ip_equal(iface->nmask, sr->mask_ip)) break;
+		}
+		if (n == -1) {
+			/* oops, an interface has disapeared. This s
+			 tricky, we don't dare actually free the
+			 interface as it could be being used, so
+			 instead we just wear the memory leak and
+			 remove it from the list of interfaces without
+			 freeing it */
+			DLIST_REMOVE(subnetlist, sr);
+		}
+	}
+	
+}
+
+
+
 /**************************************************************************** **
   reload the services file
  **************************************************************************** */
@@ -402,9 +453,10 @@ static void process(void)
      */
 
     if(reload_after_sighup) {
-      reload_services( True );
-      reopen_logs();
-      reload_after_sighup = False;
+	    reload_services( True );
+	    reopen_logs();
+	    reload_interfaces();
+	    reload_after_sighup = False;
     }
 
   }
