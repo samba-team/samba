@@ -157,6 +157,12 @@ static const struct {
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_STREETTALK, EPM_PROTOCOL_VINES_SPP } },
 	{ "ncacn_vns_ipc", NCACN_VNS_IPC, 3, 
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_STREETTALK, EPM_PROTOCOL_VINES_IPC }, },
+	{ "ncadg_ipx", NCADG_IPX, 2,
+		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_IPX },
+	},
+	{ "ncacn_spx", NCACN_SPX, 2,
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_SPX },
+	},
 };
 
 static const struct {
