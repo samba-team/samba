@@ -13,6 +13,282 @@ NTSTATUS ndr_push_wks_QueryInfo(struct ndr_push *ndr, struct wks_QueryInfo *r)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_push_wks_SetInfo(struct ndr_push *ndr, struct wks_SetInfo *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRWKSTAUSERENUM(struct ndr_push *ndr, struct WKS_NETRWKSTAUSERENUM *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRWKSTAUSERGETINFO(struct ndr_push *ndr, struct WKS_NETRWKSTAUSERGETINFO *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRWKSTAUSERSETINFO(struct ndr_push *ndr, struct WKS_NETRWKSTAUSERSETINFO *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_wks_TransportInfo0(struct ndr_push *ndr, int ndr_flags, struct wks_TransportInfo0 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_uint32(ndr, r->quality_of_service));
+	NDR_CHECK(ndr_push_uint32(ndr, r->vc_count));
+	NDR_CHECK(ndr_push_ptr(ndr, r->name));
+	NDR_CHECK(ndr_push_ptr(ndr, r->address));
+	NDR_CHECK(ndr_push_uint32(ndr, r->wan_link));
+	ndr_push_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->name) {
+		NDR_CHECK(ndr_push_unistr(ndr, r->name));
+	}
+	if (r->address) {
+		NDR_CHECK(ndr_push_unistr(ndr, r->address));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_wks_TransportInfoArray(struct ndr_push *ndr, int ndr_flags, struct wks_TransportInfoArray *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_uint32(ndr, r->count));
+	NDR_CHECK(ndr_push_ptr(ndr, r->transports));
+	ndr_push_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->transports) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->count));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->transports, sizeof(r->transports[0]), r->count, (ndr_push_flags_fn_t)ndr_push_wks_TransportInfo0));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_wks_TransportUnion(struct ndr_push *ndr, int ndr_flags, uint16 level, union wks_TransportUnion *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
+	NDR_CHECK(ndr_push_uint16(ndr, level));
+	switch (level) {
+	case 0:
+	NDR_CHECK(ndr_push_ptr(ndr, r->array));
+	break;
+
+	default:
+		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+	}
+	ndr_push_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	switch (level) {
+	case 0:
+	if (r->array) {
+		NDR_CHECK(ndr_push_wks_TransportInfoArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->array));
+	}
+	break;
+
+	default:
+		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_wks_TransportInfo(struct ndr_push *ndr, int ndr_flags, struct wks_TransportInfo *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_uint32(ndr, r->level));
+	NDR_CHECK(ndr_push_wks_TransportUnion(ndr, NDR_SCALARS, r->level, &r->u));
+	ndr_push_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	NDR_CHECK(ndr_push_wks_TransportUnion(ndr, NDR_BUFFERS, r->level, &r->u));
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_wks_TransportEnum(struct ndr_push *ndr, struct wks_TransportEnum *r)
+{
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.server_name));
+	if (r->in.server_name) {
+		NDR_CHECK(ndr_push_unistr(ndr, r->in.server_name));
+	}
+	NDR_CHECK(ndr_push_wks_TransportInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.max_buffer));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.resume_handle));
+	if (r->in.resume_handle) {
+		NDR_CHECK(ndr_push_uint32(ndr, *r->in.resume_handle));
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRWKSTATRANSPORTADD(struct ndr_push *ndr, struct WKS_NETRWKSTATRANSPORTADD *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRWKSTATRANSPORTDEL(struct ndr_push *ndr, struct WKS_NETRWKSTATRANSPORTDEL *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRUSEADD(struct ndr_push *ndr, struct WKS_NETRUSEADD *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRUSEGETINFO(struct ndr_push *ndr, struct WKS_NETRUSEGETINFO *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRUSEDEL(struct ndr_push *ndr, struct WKS_NETRUSEDEL *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRUSEENUM(struct ndr_push *ndr, struct WKS_NETRUSEENUM *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRMESSAGEBUFFERSEND(struct ndr_push *ndr, struct WKS_NETRMESSAGEBUFFERSEND *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRWORKSTATIONSTATISTICSGET(struct ndr_push *ndr, struct WKS_NETRWORKSTATIONSTATISTICSGET *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRLOGONDOMAINNAMEADD(struct ndr_push *ndr, struct WKS_NETRLOGONDOMAINNAMEADD *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRLOGONDOMAINNAMEDEL(struct ndr_push *ndr, struct WKS_NETRLOGONDOMAINNAMEDEL *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRJOINDOMAIN(struct ndr_push *ndr, struct WKS_NETRJOINDOMAIN *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRUNJOINDOMAIN(struct ndr_push *ndr, struct WKS_NETRUNJOINDOMAIN *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRRENAMEMACHINEINDOMAIN(struct ndr_push *ndr, struct WKS_NETRRENAMEMACHINEINDOMAIN *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRVALIDATENAME(struct ndr_push *ndr, struct WKS_NETRVALIDATENAME *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRGETJOININFORMATION(struct ndr_push *ndr, struct WKS_NETRGETJOININFORMATION *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRGETJOINABLEOUS(struct ndr_push *ndr, struct WKS_NETRGETJOINABLEOUS *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRJOINDOMAIN2(struct ndr_push *ndr, struct WKS_NETRJOINDOMAIN2 *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRUNJOINDOMAIN2(struct ndr_push *ndr, struct WKS_NETRUNJOINDOMAIN2 *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRRENAMEMACHINEINDOMAIN2(struct ndr_push *ndr, struct WKS_NETRRENAMEMACHINEINDOMAIN2 *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRVALIDATENAME2(struct ndr_push *ndr, struct WKS_NETRVALIDATENAME2 *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRGETJOINABLEOUS2(struct ndr_push *ndr, struct WKS_NETRGETJOINABLEOUS2 *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRADDALTERNATECOMPUTERNAME(struct ndr_push *ndr, struct WKS_NETRADDALTERNATECOMPUTERNAME *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRREMOVEALTERNATECOMPUTERNAME(struct ndr_push *ndr, struct WKS_NETRREMOVEALTERNATECOMPUTERNAME *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRSETPRIMARYCOMPUTERNAME(struct ndr_push *ndr, struct WKS_NETRSETPRIMARYCOMPUTERNAME *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_WKS_NETRENUMERATECOMPUTERNAMES(struct ndr_push *ndr, struct WKS_NETRENUMERATECOMPUTERNAMES *r)
+{
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_pull_wks_Info100(struct ndr_pull *ndr, int ndr_flags, struct wks_Info100 *r)
 {
 	uint32 _ptr_server;
@@ -52,7 +328,7 @@ NTSTATUS ndr_pull_wks_Info101(struct ndr_pull *ndr, int ndr_flags, struct wks_In
 {
 	uint32 _ptr_server;
 	uint32 _ptr_domain;
-	uint32 _ptr_unknown;
+	uint32 _ptr_lan_root;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -71,11 +347,11 @@ NTSTATUS ndr_pull_wks_Info101(struct ndr_pull *ndr, int ndr_flags, struct wks_In
 	}
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_major));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_minor));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_unknown));
-	if (_ptr_unknown) {
-		NDR_ALLOC(ndr, r->unknown);
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_lan_root));
+	if (_ptr_lan_root) {
+		NDR_ALLOC(ndr, r->lan_root);
 	} else {
-		r->unknown = NULL;
+		r->lan_root = NULL;
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
@@ -86,8 +362,8 @@ buffers:
 	if (r->domain) {
 		NDR_CHECK(ndr_pull_unistr(ndr, &r->domain));
 	}
-	if (r->unknown) {
-		NDR_CHECK(ndr_pull_unistr(ndr, &r->unknown));
+	if (r->lan_root) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->lan_root));
 	}
 done:
 	return NT_STATUS_OK;
@@ -97,7 +373,7 @@ NTSTATUS ndr_pull_wks_Info102(struct ndr_pull *ndr, int ndr_flags, struct wks_In
 {
 	uint32 _ptr_server;
 	uint32 _ptr_domain;
-	uint32 _ptr_unknown;
+	uint32 _ptr_lan_root;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -116,13 +392,13 @@ NTSTATUS ndr_pull_wks_Info102(struct ndr_pull *ndr, int ndr_flags, struct wks_In
 	}
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_major));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_minor));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_unknown));
-	if (_ptr_unknown) {
-		NDR_ALLOC(ndr, r->unknown);
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_lan_root));
+	if (_ptr_lan_root) {
+		NDR_ALLOC(ndr, r->lan_root);
 	} else {
-		r->unknown = NULL;
+		r->lan_root = NULL;
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown2));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->logged_on_users));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -132,8 +408,8 @@ buffers:
 	if (r->domain) {
 		NDR_CHECK(ndr_pull_unistr(ndr, &r->domain));
 	}
-	if (r->unknown) {
-		NDR_CHECK(ndr_pull_unistr(ndr, &r->unknown));
+	if (r->lan_root) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->lan_root));
 	}
 done:
 	return NT_STATUS_OK;
@@ -213,7 +489,352 @@ NTSTATUS ndr_pull_wks_QueryInfo(struct ndr_pull *ndr, struct wks_QueryInfo *r)
 	NDR_CHECK(ndr_pull_wks_Info(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, &r->out.info));
 	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
-	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_wks_SetInfo(struct ndr_pull *ndr, struct wks_SetInfo *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRWKSTAUSERENUM(struct ndr_pull *ndr, struct WKS_NETRWKSTAUSERENUM *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRWKSTAUSERGETINFO(struct ndr_pull *ndr, struct WKS_NETRWKSTAUSERGETINFO *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRWKSTAUSERSETINFO(struct ndr_pull *ndr, struct WKS_NETRWKSTAUSERSETINFO *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_wks_TransportInfo0(struct ndr_pull *ndr, int ndr_flags, struct wks_TransportInfo0 *r)
+{
+	uint32 _ptr_name;
+	uint32 _ptr_address;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->quality_of_service));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->vc_count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_name));
+	if (_ptr_name) {
+		NDR_ALLOC(ndr, r->name);
+	} else {
+		r->name = NULL;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_address));
+	if (_ptr_address) {
+		NDR_ALLOC(ndr, r->address);
+	} else {
+		r->address = NULL;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->wan_link));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->name) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->name));
+	}
+	if (r->address) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->address));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_wks_TransportInfoArray(struct ndr_pull *ndr, int ndr_flags, struct wks_TransportInfoArray *r)
+{
+	uint32 _ptr_transports;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_transports));
+	if (_ptr_transports) {
+		NDR_ALLOC(ndr, r->transports);
+	} else {
+		r->transports = NULL;
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->transports) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
+		NDR_ALLOC_N_SIZE(ndr, r->transports, r->count, sizeof(r->transports[0]));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->transports, sizeof(r->transports[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_wks_TransportInfo0));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_wks_TransportUnion(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union wks_TransportUnion *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	NDR_CHECK(ndr_pull_uint16(ndr, level));
+	switch (*level) {
+	case 0: {
+		uint32 _ptr_array;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_array));
+	if (_ptr_array) {
+		NDR_ALLOC(ndr, r->array);
+	} else {
+		r->array = NULL;
+	}
+	break; }
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	switch (*level) {
+	case 0:
+	if (r->array) {
+		NDR_CHECK(ndr_pull_wks_TransportInfoArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->array));
+	}
+	break;
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_wks_TransportInfo(struct ndr_pull *ndr, int ndr_flags, struct wks_TransportInfo *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
+	{ uint16 _level = r->level;
+	NDR_CHECK(ndr_pull_wks_TransportUnion(ndr, NDR_SCALARS, &_level, &r->u));
+	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in u");
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	{ uint16 _level = r->level;
+	NDR_CHECK(ndr_pull_wks_TransportUnion(ndr, NDR_BUFFERS, &_level, &r->u));
+	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in u");
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_wks_TransportEnum(struct ndr_pull *ndr, struct wks_TransportEnum *r)
+{
+	uint32 _ptr_resume_handle;
+	NDR_CHECK(ndr_pull_wks_TransportInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.unknown));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_resume_handle));
+	if (_ptr_resume_handle) {
+		NDR_ALLOC(ndr, r->out.resume_handle);
+	} else {
+		r->out.resume_handle = NULL;
+	}
+	if (r->out.resume_handle) {
+		NDR_CHECK(ndr_pull_uint32(ndr, r->out.resume_handle));
+	}
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRWKSTATRANSPORTADD(struct ndr_pull *ndr, struct WKS_NETRWKSTATRANSPORTADD *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRWKSTATRANSPORTDEL(struct ndr_pull *ndr, struct WKS_NETRWKSTATRANSPORTDEL *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRUSEADD(struct ndr_pull *ndr, struct WKS_NETRUSEADD *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRUSEGETINFO(struct ndr_pull *ndr, struct WKS_NETRUSEGETINFO *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRUSEDEL(struct ndr_pull *ndr, struct WKS_NETRUSEDEL *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRUSEENUM(struct ndr_pull *ndr, struct WKS_NETRUSEENUM *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRMESSAGEBUFFERSEND(struct ndr_pull *ndr, struct WKS_NETRMESSAGEBUFFERSEND *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRWORKSTATIONSTATISTICSGET(struct ndr_pull *ndr, struct WKS_NETRWORKSTATIONSTATISTICSGET *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRLOGONDOMAINNAMEADD(struct ndr_pull *ndr, struct WKS_NETRLOGONDOMAINNAMEADD *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRLOGONDOMAINNAMEDEL(struct ndr_pull *ndr, struct WKS_NETRLOGONDOMAINNAMEDEL *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRJOINDOMAIN(struct ndr_pull *ndr, struct WKS_NETRJOINDOMAIN *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRUNJOINDOMAIN(struct ndr_pull *ndr, struct WKS_NETRUNJOINDOMAIN *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRRENAMEMACHINEINDOMAIN(struct ndr_pull *ndr, struct WKS_NETRRENAMEMACHINEINDOMAIN *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRVALIDATENAME(struct ndr_pull *ndr, struct WKS_NETRVALIDATENAME *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRGETJOININFORMATION(struct ndr_pull *ndr, struct WKS_NETRGETJOININFORMATION *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRGETJOINABLEOUS(struct ndr_pull *ndr, struct WKS_NETRGETJOINABLEOUS *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRJOINDOMAIN2(struct ndr_pull *ndr, struct WKS_NETRJOINDOMAIN2 *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRUNJOINDOMAIN2(struct ndr_pull *ndr, struct WKS_NETRUNJOINDOMAIN2 *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRRENAMEMACHINEINDOMAIN2(struct ndr_pull *ndr, struct WKS_NETRRENAMEMACHINEINDOMAIN2 *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRVALIDATENAME2(struct ndr_pull *ndr, struct WKS_NETRVALIDATENAME2 *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRGETJOINABLEOUS2(struct ndr_pull *ndr, struct WKS_NETRGETJOINABLEOUS2 *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRADDALTERNATECOMPUTERNAME(struct ndr_pull *ndr, struct WKS_NETRADDALTERNATECOMPUTERNAME *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRREMOVEALTERNATECOMPUTERNAME(struct ndr_pull *ndr, struct WKS_NETRREMOVEALTERNATECOMPUTERNAME *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRSETPRIMARYCOMPUTERNAME(struct ndr_pull *ndr, struct WKS_NETRSETPRIMARYCOMPUTERNAME *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_WKS_NETRENUMERATECOMPUTERNAMES(struct ndr_pull *ndr, struct WKS_NETRENUMERATECOMPUTERNAMES *r)
+{
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
 }
@@ -259,10 +880,10 @@ void ndr_print_wks_Info101(struct ndr_print *ndr, const char *name, struct wks_I
 	ndr->depth--;
 	ndr_print_uint32(ndr, "ver_major", r->ver_major);
 	ndr_print_uint32(ndr, "ver_minor", r->ver_minor);
-	ndr_print_ptr(ndr, "unknown", r->unknown);
+	ndr_print_ptr(ndr, "lan_root", r->lan_root);
 	ndr->depth++;
-	if (r->unknown) {
-		ndr_print_unistr(ndr, "unknown", r->unknown);
+	if (r->lan_root) {
+		ndr_print_unistr(ndr, "lan_root", r->lan_root);
 	}
 	ndr->depth--;
 	ndr->depth--;
@@ -287,13 +908,13 @@ void ndr_print_wks_Info102(struct ndr_print *ndr, const char *name, struct wks_I
 	ndr->depth--;
 	ndr_print_uint32(ndr, "ver_major", r->ver_major);
 	ndr_print_uint32(ndr, "ver_minor", r->ver_minor);
-	ndr_print_ptr(ndr, "unknown", r->unknown);
+	ndr_print_ptr(ndr, "lan_root", r->lan_root);
 	ndr->depth++;
-	if (r->unknown) {
-		ndr_print_unistr(ndr, "unknown", r->unknown);
+	if (r->lan_root) {
+		ndr_print_unistr(ndr, "lan_root", r->lan_root);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
+	ndr_print_uint32(ndr, "logged_on_users", r->logged_on_users);
 	ndr->depth--;
 }
 
@@ -353,7 +974,638 @@ void ndr_print_wks_QueryInfo(struct ndr_print *ndr, const char *name, int flags,
 		ndr_print_struct(ndr, "out", "wks_QueryInfo");
 	ndr->depth++;
 	ndr_print_wks_Info(ndr, "info", r->in.level, &r->out.info);
-	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_wks_SetInfo(struct ndr_print *ndr, const char *name, int flags, struct wks_SetInfo *r)
+{
+	ndr_print_struct(ndr, name, "wks_SetInfo");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wks_SetInfo");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wks_SetInfo");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRWKSTAUSERENUM(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRWKSTAUSERENUM *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRWKSTAUSERENUM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRWKSTAUSERENUM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRWKSTAUSERENUM");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRWKSTAUSERGETINFO(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRWKSTAUSERGETINFO *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRWKSTAUSERGETINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRWKSTAUSERGETINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRWKSTAUSERGETINFO");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRWKSTAUSERSETINFO(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRWKSTAUSERSETINFO *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRWKSTAUSERSETINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRWKSTAUSERSETINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRWKSTAUSERSETINFO");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_wks_TransportInfo0(struct ndr_print *ndr, const char *name, struct wks_TransportInfo0 *r)
+{
+	ndr_print_struct(ndr, name, "wks_TransportInfo0");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "quality_of_service", r->quality_of_service);
+	ndr_print_uint32(ndr, "vc_count", r->vc_count);
+	ndr_print_ptr(ndr, "name", r->name);
+	ndr->depth++;
+	if (r->name) {
+		ndr_print_unistr(ndr, "name", r->name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "address", r->address);
+	ndr->depth++;
+	if (r->address) {
+		ndr_print_unistr(ndr, "address", r->address);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "wan_link", r->wan_link);
+	ndr->depth--;
+}
+
+void ndr_print_wks_TransportInfoArray(struct ndr_print *ndr, const char *name, struct wks_TransportInfoArray *r)
+{
+	ndr_print_struct(ndr, name, "wks_TransportInfoArray");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "transports", r->transports);
+	ndr->depth++;
+	if (r->transports) {
+		ndr_print_array(ndr, "transports", r->transports, sizeof(r->transports[0]), r->count, (ndr_print_fn_t)ndr_print_wks_TransportInfo0);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_wks_TransportUnion(struct ndr_print *ndr, const char *name, uint16 level, union wks_TransportUnion *r)
+{
+	ndr_print_union(ndr, name, level, "wks_TransportUnion");
+	switch (level) {
+	case 0:
+	ndr_print_ptr(ndr, "array", r->array);
+	ndr->depth++;
+	if (r->array) {
+		ndr_print_wks_TransportInfoArray(ndr, "array", r->array);
+	}
+	ndr->depth--;
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
+}
+
+void ndr_print_wks_TransportInfo(struct ndr_print *ndr, const char *name, struct wks_TransportInfo *r)
+{
+	ndr_print_struct(ndr, name, "wks_TransportInfo");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "level", r->level);
+	ndr_print_wks_TransportUnion(ndr, "u", r->level, &r->u);
+	ndr->depth--;
+}
+
+void ndr_print_wks_TransportEnum(struct ndr_print *ndr, const char *name, int flags, struct wks_TransportEnum *r)
+{
+	ndr_print_struct(ndr, name, "wks_TransportEnum");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wks_TransportEnum");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "server_name", r->in.server_name);
+	ndr->depth++;
+	if (r->in.server_name) {
+		ndr_print_unistr(ndr, "server_name", r->in.server_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "info", r->in.info);
+	ndr->depth++;
+		ndr_print_wks_TransportInfo(ndr, "info", r->in.info);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "max_buffer", r->in.max_buffer);
+	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
+	ndr->depth++;
+	if (r->in.resume_handle) {
+		ndr_print_uint32(ndr, "resume_handle", *r->in.resume_handle);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wks_TransportEnum");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->out.info);
+	ndr->depth++;
+		ndr_print_wks_TransportInfo(ndr, "info", r->out.info);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "unknown", r->out.unknown);
+	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
+	ndr->depth++;
+	if (r->out.resume_handle) {
+		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+	}
+	ndr->depth--;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRWKSTATRANSPORTADD(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRWKSTATRANSPORTADD *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRWKSTATRANSPORTADD");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRWKSTATRANSPORTADD");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRWKSTATRANSPORTADD");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRWKSTATRANSPORTDEL(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRWKSTATRANSPORTDEL *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRWKSTATRANSPORTDEL");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRWKSTATRANSPORTDEL");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRWKSTATRANSPORTDEL");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRUSEADD(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRUSEADD *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRUSEADD");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRUSEADD");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRUSEADD");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRUSEGETINFO(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRUSEGETINFO *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRUSEGETINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRUSEGETINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRUSEGETINFO");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRUSEDEL(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRUSEDEL *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRUSEDEL");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRUSEDEL");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRUSEDEL");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRUSEENUM(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRUSEENUM *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRUSEENUM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRUSEENUM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRUSEENUM");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRMESSAGEBUFFERSEND(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRMESSAGEBUFFERSEND *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRMESSAGEBUFFERSEND");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRMESSAGEBUFFERSEND");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRMESSAGEBUFFERSEND");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRWORKSTATIONSTATISTICSGET(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRWORKSTATIONSTATISTICSGET *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRWORKSTATIONSTATISTICSGET");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRWORKSTATIONSTATISTICSGET");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRWORKSTATIONSTATISTICSGET");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRLOGONDOMAINNAMEADD(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRLOGONDOMAINNAMEADD *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRLOGONDOMAINNAMEADD");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRLOGONDOMAINNAMEADD");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRLOGONDOMAINNAMEADD");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRLOGONDOMAINNAMEDEL(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRLOGONDOMAINNAMEDEL *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRLOGONDOMAINNAMEDEL");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRLOGONDOMAINNAMEDEL");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRLOGONDOMAINNAMEDEL");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRJOINDOMAIN(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRJOINDOMAIN *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRJOINDOMAIN");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRJOINDOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRJOINDOMAIN");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRUNJOINDOMAIN(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRUNJOINDOMAIN *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRUNJOINDOMAIN");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRUNJOINDOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRUNJOINDOMAIN");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRRENAMEMACHINEINDOMAIN(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRRENAMEMACHINEINDOMAIN *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRRENAMEMACHINEINDOMAIN");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRRENAMEMACHINEINDOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRRENAMEMACHINEINDOMAIN");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRVALIDATENAME(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRVALIDATENAME *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRVALIDATENAME");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRVALIDATENAME");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRVALIDATENAME");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRGETJOININFORMATION(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRGETJOININFORMATION *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRGETJOININFORMATION");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRGETJOININFORMATION");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRGETJOININFORMATION");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRGETJOINABLEOUS(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRGETJOINABLEOUS *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRGETJOINABLEOUS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRGETJOINABLEOUS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRGETJOINABLEOUS");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRJOINDOMAIN2(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRJOINDOMAIN2 *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRJOINDOMAIN2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRJOINDOMAIN2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRJOINDOMAIN2");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRUNJOINDOMAIN2(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRUNJOINDOMAIN2 *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRUNJOINDOMAIN2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRUNJOINDOMAIN2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRUNJOINDOMAIN2");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRRENAMEMACHINEINDOMAIN2(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRRENAMEMACHINEINDOMAIN2 *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRRENAMEMACHINEINDOMAIN2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRRENAMEMACHINEINDOMAIN2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRRENAMEMACHINEINDOMAIN2");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRVALIDATENAME2(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRVALIDATENAME2 *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRVALIDATENAME2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRVALIDATENAME2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRVALIDATENAME2");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRGETJOINABLEOUS2(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRGETJOINABLEOUS2 *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRGETJOINABLEOUS2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRGETJOINABLEOUS2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRGETJOINABLEOUS2");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRADDALTERNATECOMPUTERNAME(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRADDALTERNATECOMPUTERNAME *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRADDALTERNATECOMPUTERNAME");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRADDALTERNATECOMPUTERNAME");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRADDALTERNATECOMPUTERNAME");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRREMOVEALTERNATECOMPUTERNAME(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRREMOVEALTERNATECOMPUTERNAME *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRREMOVEALTERNATECOMPUTERNAME");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRREMOVEALTERNATECOMPUTERNAME");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRREMOVEALTERNATECOMPUTERNAME");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRSETPRIMARYCOMPUTERNAME(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRSETPRIMARYCOMPUTERNAME *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRSETPRIMARYCOMPUTERNAME");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRSETPRIMARYCOMPUTERNAME");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRSETPRIMARYCOMPUTERNAME");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_WKS_NETRENUMERATECOMPUTERNAMES(struct ndr_print *ndr, const char *name, int flags, struct WKS_NETRENUMERATECOMPUTERNAMES *r)
+{
+	ndr_print_struct(ndr, name, "WKS_NETRENUMERATECOMPUTERNAMES");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "WKS_NETRENUMERATECOMPUTERNAMES");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "WKS_NETRENUMERATECOMPUTERNAMES");
+	ndr->depth++;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
