@@ -2635,6 +2635,10 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		SET_STRING(msg, info6.full_name.string,        "displayName");
 		break;
 
+	case 7:
+		SET_STRING(msg, info7.account_name.string,     "samAccountName");
+		break;
+
 	case 8:
 		SET_STRING(msg, info8.full_name.string,        "displayName");
 		break;
@@ -2674,7 +2678,9 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	case 21:
 #define IFSET(bit) if (bit & r->in.info->info21.fields_present)
-		IFSET(SAMR_FIELD_NAME)         
+		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
+			SET_STRING(msg, info21.account_name.string, "samAccountName");
+		IFSET(SAMR_FIELD_FULL_NAME)         
 			SET_STRING(msg, info21.full_name.string,    "displayName");
 		IFSET(SAMR_FIELD_DESCRIPTION)  
 			SET_STRING(msg, info21.description.string,  "description");
@@ -2704,7 +2710,9 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	case 23:
 #define IFSET(bit) if (bit & r->in.info->info23.info.fields_present)
-		IFSET(SAMR_FIELD_NAME)         
+		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
+			SET_STRING(msg, info23.info.account_name.string, "samAccountName");
+		IFSET(SAMR_FIELD_FULL_NAME)         
 			SET_STRING(msg, info23.info.full_name.string,    "displayName");
 		IFSET(SAMR_FIELD_DESCRIPTION)  
 			SET_STRING(msg, info23.info.description.string,  "description");
@@ -2756,7 +2764,9 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	case 25:
 #define IFSET(bit) if (bit & r->in.info->info25.info.fields_present)
-		IFSET(SAMR_FIELD_NAME)         
+		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
+			SET_STRING(msg, info25.info.account_name.string, "samAccountName");
+		IFSET(SAMR_FIELD_FULL_NAME)         
 			SET_STRING(msg, info25.info.full_name.string,    "displayName");
 		IFSET(SAMR_FIELD_DESCRIPTION)  
 			SET_STRING(msg, info25.info.description.string,  "description");
