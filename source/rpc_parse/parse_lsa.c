@@ -1281,3 +1281,73 @@ BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_c, prs_struct *ps, in
 
 	return True;
 }
+
+/*******************************************************************
+ Reads or writes an LSA_Q_UNK_GET_CONNUSER structure.
+********************************************************************/
+
+BOOL lsa_io_q_unk_get_connuser(char *desc, LSA_Q_UNK_GET_CONNUSER *q_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_unk_get_connuser");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+   
+	if(!prs_uint32("ptr_srvname", ps, depth, &q_c->ptr_srvname))
+		return False;
+
+	if(!smb_io_unistr2("uni2_srvname", &q_c->uni2_srvname, q_c->ptr_srvname, ps, depth)) /* server name to be looked up */
+		return False;
+
+	if(!prs_uint32("unk1", ps, depth, &q_c->unk1))
+		return False;
+	if(!prs_uint32("unk2", ps, depth, &q_c->unk2))
+		return False;
+	if(!prs_uint32("unk3", ps, depth, &q_c->unk3))
+		return False;
+
+	/* Don't bother to read or write at present... */
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_UNK_GET_CONNUSER structure.
+********************************************************************/
+
+BOOL lsa_io_r_unk_get_connuser(char *desc, LSA_R_UNK_GET_CONNUSER *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_unk_get_connuser");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+   
+	if(!prs_uint32("ptr_user_name", ps, depth, &r_c->ptr_user_name))
+		return False;
+	if(!smb_io_unihdr("hdr_user_name", &r_c->hdr_user_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni2_user_name", &r_c->uni2_user_name, r_c->ptr_user_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+	  return False;
+	
+	if(!prs_uint32("unk1", ps, depth, &r_c->unk1))
+		return False;
+
+	if(!prs_uint32("ptr_dom_name", ps, depth, &r_c->ptr_dom_name))
+		return False;
+	if(!smb_io_unihdr("hdr_dom_name", &r_c->hdr_dom_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni2_dom_name", &r_c->uni2_dom_name, r_c->ptr_dom_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+	  return False;
+	
+	if(!prs_uint32("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
