@@ -809,6 +809,10 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		flags |= O_RDONLY;
 	}
 
+	if (io->generic.in.file_attr & FILE_ATTRIBUTE_DIRECTORY) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* handle creating a new file separately */
 	if (!name->exists) {
 		status = pvfs_create_file(pvfs, req, name, io);
