@@ -391,6 +391,16 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 	DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 	
+	/*
+	 * Check the machine account name we're changing is the same
+	 * as the one we've authenticated from. This prevents arbitrary
+	 * machines changing other machine account passwords.
+	 */
+
+	if (!strequal(mach_acct, p->dc.mach_acct)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	pdb_init_sam(&sampass);
 
 	become_root();
@@ -403,18 +413,6 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		pdb_free_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
-
-	/*
-	 * Check the machine account name we're changing is the same
-	 * as the one we've authenticated from. This prevents arbitrary
-	 * machines changing other machine account passwords.
-	 */
-
-	if (!strequal(mach_acct, p->dc.mach_acct)) {
-		pdb_free_sam(sampass);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	
 	DEBUG(100,("Server password set : new given value was :\n"));
 	for(i = 0; i < 16; i++)
