@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -287,10 +287,10 @@ gss_accept_sec_context
          goto end_fwd;
       }
       
-      kret = krb5_rd_cred(gssapi_krb5_context,
-                          (*context_handle)->auth_context,
-                          ccache,
-                          &fwd_data);
+      kret = krb5_rd_cred2(gssapi_krb5_context,
+			   (*context_handle)->auth_context,
+			   ccache,
+			   &fwd_data);
       if (kret) {
          flags &= ~GSS_C_DELEG_FLAG;
          goto end_fwd;
