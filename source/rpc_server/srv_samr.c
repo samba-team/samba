@@ -81,8 +81,8 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 		user_name_len = strlen(pwd->smb_name);
 		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len);
-		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len-1, 
-		               user_name_len-1, 1);
+		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len, 
+		               user_name_len, 1);
 		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
 		bzero( pw_buf[(*num_entries)].nt_pwd , 16);
 
