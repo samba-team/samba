@@ -20,14 +20,6 @@
 
 */
 
-/*
- * Reasons for cache flush.
- */
-
-#define NUM_FLUSH_REASONS 8 /* Keep this in sync with the enum below. */
-enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
-			OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH };
- 
 /* this file defines the profile structure in the profile shared
    memory area */
 
