@@ -116,7 +116,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		con->pipe_name = strdup(pipe_name);
 	}
 
-	if (strequal(srv_name, "\\\\.")
+	if (strequal(srv_name, "\\\\."))
 	{
 		con->type = MSRPC_LOCAL;
 		con->usr_creds.reuse = False;

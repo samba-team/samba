@@ -50,7 +50,11 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
-	if (!get_any_dc_name(domain, srv_name))
+	if (domain == NULL)
+	{
+		fstrcpy(srv_name, "\\\\.");
+	}
+	else if (!get_any_dc_name(domain, srv_name))
 	{
 		return NT_STATUS_NONE_MAPPED | 0xC0000000;
 	}

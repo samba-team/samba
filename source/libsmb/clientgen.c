@@ -3879,16 +3879,12 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 BOOL get_any_dc_name(const char *domain, char *srv_name)
 {
 	struct cli_state cli;
-	extern pstring global_myname;
 	char *servers = get_trusted_serverlist(domain);
 
 	if (servers[0] == 0)
 	{
 		/* empty list: return our own name */
-		fstrcpy(srv_name, "\\\\");
-		fstrcat(srv_name, global_myname);
-		strupper(srv_name);
-
+		fstrcpy(srv_name, "\\\\.");
 		return True;
 	}
 
