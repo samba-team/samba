@@ -502,6 +502,7 @@ static void usage(char *pname)
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
+	BOOL specified_logfile = False;
 	int port = SMB_PORT;
 	int opt;
 	extern char *optarg;
@@ -534,6 +535,7 @@ static void usage(char *pname)
 			break;
 
 		case 'l':
+			specified_logfile = True;
 			pstrcpy(debugf,optarg);
 			break;
 
@@ -595,7 +597,8 @@ static void usage(char *pname)
 
 	TimeInit();
 
-	pstrcpy(debugf,SMBLOGFILE);  
+	if(!specified_logfile)
+		pstrcpy(debugf,SMBLOGFILE);  
 
 	pstrcpy(remote_machine, "smb");
 
