@@ -239,25 +239,51 @@ void reopen_logs( void )
  * ************************************************************************** **
  */
 void force_check_log_size( void )
-  {
+{
   debug_count = 100;
-  } /* force_check_log_size */
+}
+
+/***************************************************************************
+ Check to see if there is any need to check if the logfile has grown too big.
+**************************************************************************/
+
+BOOL need_to_check_log_size( void )
+{
+	int maxlog;
+
+	if( debug_count++ < 100 )
+		return( False );
+
+	maxlog = lp_max_log_size() * 1024;
+	if( !dbf || maxlog <= 0 ) {
+		debug_count = 0;
+		return(False);
+	}
+	return( True );
+}
 
 /* ************************************************************************** **
  * Check to see if the log has grown to be too big.
  * ************************************************************************** **
  */
-static void check_log_size( void )
+
+void check_log_size( void )
 {
   int         maxlog;
   SMB_STRUCT_STAT st;
 
-  if( debug_count++ < 100 || geteuid() != 0 )
+  /*
+   *  We need to be root to check/change log-file, skip this and let the main
+   *  loop check do a new check as root.
+   */
+
+  if( geteuid() != 0 )
+    return;
+
+  if( !need_to_check_log_size() )
     return;
 
   maxlog = lp_max_log_size() * 1024;
-  if( !dbf || maxlog <= 0 )
-    return;
 
   if( sys_fstat( fileno( dbf ), &st ) == 0 && st.st_size > maxlog )
     {
