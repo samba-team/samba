@@ -169,12 +169,12 @@ static BOOL test_sinkdata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 static BOOL test_testcall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	struct TestCall r;
+	struct echo_TestCall r;
 
 	r.in.s1 = "input string";
 
 	printf("\nTesting TestCall\n");
-	status = dcerpc_TestCall(p, mem_ctx, &r);
+	status = dcerpc_echo_TestCall(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("TestCall failed - %s\n", nt_errstr(status));
 		return False;
@@ -189,7 +189,7 @@ static BOOL test_testcall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 static BOOL test_testcall2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	struct TestCall2 r;
+	struct echo_TestCall2 r;
 	int i;
 	BOOL ret = True;
 
@@ -197,7 +197,7 @@ static BOOL test_testcall2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		r.in.level = i;
 
 		printf("\nTesting TestCall2 level %d\n", i);
-		status = dcerpc_TestCall2(p, mem_ctx, &r);
+		status = dcerpc_echo_TestCall2(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("TestCall2 failed - %s\n", nt_errstr(status));
 			ret = False;

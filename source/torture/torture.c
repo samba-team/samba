@@ -226,7 +226,18 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 	cli_tree_close(cli->tree);
 
 	/* bind to the pipe, using the uuid as the key */
+#if 0
 	status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
+#else
+	/* enable signing on tcp connections */
+	(*p)->flags |= DCERPC_SIGN;
+
+	/* bind to the pipe, using the uuid as the key */
+	status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
+				       lp_workgroup(),
+				       lp_parm_string(-1, "torture", "username"),
+				       lp_parm_string(-1, "torture", "password"));
+#endif
 	if (!NT_STATUS_IS_OK(status)) {
 		dcerpc_pipe_close(*p);
 		return status;

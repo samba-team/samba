@@ -31,7 +31,7 @@ interface rpcecho
 
 
 	/* test strings */
- 	void TestCall (
+ 	void echo_TestCall (
 		[in]       unistr *s1,
 		[out]      unistr *s2
  		);
@@ -83,7 +83,7 @@ interface rpcecho
 		[case(7)]  echo_info7 info7;
 	} echo_Info;
 
-	NTSTATUS TestCall2 (
+	NTSTATUS echo_TestCall2 (
 		     [in]                    uint16 level,
 		     [out,switch_is(level)]  echo_Info *info
 		);
