@@ -626,7 +626,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 		 */
 
 		if (ret)
-			return smb_pam_accountcheck(user);
+			return (smb_pam_accountcheck(user) == NT_STATUS_NOPROBLEMO);
 	} 
 
 	return pass_check(user, password, pwlen, pwd, 
