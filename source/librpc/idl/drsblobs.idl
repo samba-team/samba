@@ -126,4 +126,30 @@ interface drsblobs {
 	void decode_repsFromTo(
 		[in] repsFromToBlob blob
 		);
+
+	typedef struct {
+		GUID guid1;
+		dlong usn;
+	} ldapControlDirSyncArray;
+
+	typedef [public] struct {
+		uint8 prefix[4];
+		uint32 u1;
+		NTTIME time;
+		uint32 u2;
+		uint32 u3;
+		uint32 u4;
+		dlong usn1;
+		dlong usn2;
+		dlong usn3;
+		GUID guid1;
+		dlong h4;
+		uint32 count;
+		uint32 u5;
+		ldapControlDirSyncArray array[count];
+	} ldapControlDirSyncBlob;
+
+	void decode_ldapControlDirSync(
+		[in] ldapControlDirSyncBlob blob
+		);
 }
