@@ -2341,7 +2341,7 @@ tn(int argc, char **argv)
     return 0;
 }
 
-#define HELPINDENT (sizeof ("connect"))
+#define HELPINDENT ((int)sizeof ("connect"))
 
 static char
 	openhelp[] =	"connect to a site",
