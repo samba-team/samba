@@ -2062,6 +2062,8 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 		return True;
 	}
 
+	pjob->smbjob = jobid;
+
 	ret = (*(current_printif->job_submit))(snum, pjob);
 
 	if (ret)
