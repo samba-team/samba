@@ -52,7 +52,7 @@ check_ticket_flags(TicketFlags f)
 krb5_error_code
 krb524_convert_creds_kdc(krb5_context context, 
 			 krb5_creds *v5creds, 
-			 CREDENTIALS *v4creds)
+			 struct credentials *v4creds)
 {
     krb5_error_code ret;
     krb5_data reply;
