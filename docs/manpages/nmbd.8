@@ -36,26 +36,33 @@ LanManager clients, when they start up, may wish to locate a LanManager server.
 That is, they wish to know what IP number a specified host is using.
 
 This program simply listens for such requests, and if its own name is specified
-it will respond with the IP number of the host it is running on. "Its own name"
-is by default the name of the host it is running on, but this can be overriden
-with the
+it will respond with the IP number of the host it is running on.
+Its "own name" is by default the name of the host it is running on,
+but this can be overriden with the
 .B \-n
-option (see "OPTIONS" below). Using the
+option (see "OPTIONS" below).
 
-Nmbd can also be used as a WINS (Windows Internet Name Server)
-server. It will do this automatically by default. What this basically
-means is that it will respond to all name requests that it receives
-that are not broadcasts, as long as it can resolve the name.
+.B nmbd 
+can also be used as a WINS (Windows Internet Name Server) server. 
+What this basically means is that it will respond to all name requests that 
+it receives that are not broadcasts, as long as it can resolve the name.
+Resolvable names include all names in the netbios hosts file (if any, see 
+.B \-H
+below), its own name, and any other names that it may have learned about
+from other browsers on the network.
+A change to previous versions is that nmbd will now no longer
+do this automatically by default.
 .SH OPTIONS
 .B \-B
 
 .RS 3
-This option is obsolete. Please use the interfaces option in smb.conf
+This option is obsolete. Please use the "interfaces" option in smb.conf instead.
 .RE
+
 .B \-I
 
 .RS 3
-This option is obsolete. Please use the interfaces option in smb.conf
+This option is obsolete. Please use the "interfaces" option in smb.conf instead.
 .RE
 
 .B \-D
@@ -71,13 +78,14 @@ By default, the server will NOT operate as a daemon.
 .B \-C comment string
 
 .RS 3
-This option is obsolete. Please use the "server string" option in smb.conf
+This option is obsolete. Please use the "server string" option in smb.conf 
+instead.
 .RE
 
 .B \-G
 
 .RS 3
-This option is obsolete. Please use the "workgroup" option in smb.conf
+This option is obsolete. Please use the "workgroup" option in smb.conf instead.
 .RE
 
 .B \-H
@@ -85,24 +93,23 @@ This option is obsolete. Please use the "workgroup" option in smb.conf
 
 .RS 3
 It may be useful in some situations to be able to specify a list of
-netbios names for which the server should send a reply if
-queried. This option allows that. The syntax is similar to the
-standard /etc/hosts file format, but has some extensions.
+netbios names for which the server should send a reply if queried.  
+This option allows you to specify a file containing such a list. 
+The syntax of the hosts file is similar to the standard /etc/hosts file
+format, but has some extensions.
 
 The file contains three columns. Lines beginning with a # are ignored
 as comments. The first column is an IP address, or a hostname. If it
 is a hostname then it is interpreted as the IP address returned by
-gethostbyname() when read. Any IP address of 0.0.0.0 will be
+gethostbyname() when read. An IP address of 0.0.0.0 will be
 interpreted as the server's own IP address.
 
 The second column is a netbios name. This is the name that the server
 will respond to. It must be less than 20 characters long.
 
 The third column is optional, and is intended for flags. Currently the
-only flag supported is M. 
-
-An M means that this name is the default netbios name for this
-machine. This has the same affect as specifying the
+only flag supported is M, which means that this name is the default 
+netbios name for this machine. This has the same effect as specifying the
 .B \-n
 option to
 .BR nmbd .
@@ -110,14 +117,18 @@ option to
 NOTE: The G and S flags are now obsolete and are replaced by the
 "interfaces" and "remote announce" options in smb.conf.
 
-After startup the server waits for queries, and will answer queries to
-any name known to it. This includes all names in the netbios hosts
-file (if any) and its own name.
+The default hosts file name is set at compile time, typically as
+.I /etc/lmhosts,
+but this may be changed in the Samba Makefile.
+
+After startup the server waits for queries, and will answer queries for
+any name known to it. This includes all names in the netbios hosts file, 
+its own name, and any other names it may have learned about from other 
+browsers on the network.
 
 The primary intention of the
 .B \-H
-option is to allow a mapping from
-netbios names to internet domain names.
+option is to allow a mapping from netbios names to internet domain names.
 
 .B Example:
 
@@ -138,12 +149,12 @@ netbios names to internet domain names.
 .B \-N
 
 .RS 3
-This option is obsolete. Please use the "interfaces" option in
-smb.conf instead.
+This option is obsolete. Please use the "interfaces" option in smb.conf instead.
 .RE
 
 .B \-d
 .I debuglevel
+
 .RS 3
 This option sets the debug level. See
 .BR smb.conf (5).
@@ -153,24 +164,26 @@ This option sets the debug level. See
 .I log file
 
 .RS 3
-If specified,
+The
 .I log file
-specifies a base filename into which operational data from the running server
-will be logged.
+parameter specifies a path and base filename into which operational data 
+from the running 
+.B nmbd
+server will be logged.
+The actual log file name is generated by appending the extension ".nmb" to 
+the specified base name.
+For example, if the name specified was "log" then the file log.nmb would
+contain the debugging data.
 
-The default base name is specified at compile time.
-
-The base name is used to generate actual log file names. For example, if the
-name specified was "log" then the file log.nmb would contain debug
-info.
+The default log file is specified at compile time, typically as
+.I /var/log/log.nmb.
 .RE
 
 .B \-n
 .I netbios name
 
 .RS 3
-This option allows you to override the Netbios name that Samba uses
-for itself. 
+This option allows you to override the Netbios name that Samba uses for itself. 
 .RE
 
 .B \-p
@@ -181,12 +194,15 @@ port number is a positive integer value.
 
 Don't use this option unless you are an expert, in which case you
 won't need help!
+.RE
 
 .B \-s
 .I configuration file
 
 .RS 3
-The default configuration file name is determined at compile time.
+The default configuration file name is set at compile time, typically as
+.I /etc/smb.conf,
+but this may be changed in the Samba Makefile.
 
 The file specified contains the configuration details required by the server.
 See
