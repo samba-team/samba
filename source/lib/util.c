@@ -755,7 +755,7 @@ BOOL is_ipaddress(const char *str)
 interpret an internet address or name into an IP address in 4 byte form
 ****************************************************************************/
 
-uint32 interpret_addr(char *str)
+uint32 interpret_addr(const char *str)
 {
   struct hostent *hp;
   uint32 res;
@@ -788,7 +788,7 @@ uint32 interpret_addr(char *str)
 /*******************************************************************
   a convenient addition to interpret_addr()
   ******************************************************************/
-struct in_addr *interpret_addr2(char *str)
+struct in_addr *interpret_addr2(const char *str)
 {
   static struct in_addr ret;
   uint32 a = interpret_addr(str);
