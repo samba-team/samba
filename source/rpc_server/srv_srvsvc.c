@@ -198,6 +198,36 @@ static BOOL api_srv_net_share_get_info(pipes_struct *p)
 }
 
 /*******************************************************************
+ RPC to set share information.
+********************************************************************/
+
+static BOOL api_srv_net_share_set_info(pipes_struct *p)
+{
+	SRV_Q_NET_SHARE_SET_INFO q_u;
+	SRV_R_NET_SHARE_SET_INFO r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* Unmarshall the net server set info. */
+	if(!srv_io_q_net_share_set_info("", &q_u, data, 0)) {
+		DEBUG(0,("api_srv_net_share_set_info: Failed to unmarshall SRV_Q_NET_SHARE_SET_INFO.\n"));
+		return False;
+	}
+
+	r_u.status = _srv_net_share_set_info(p, &q_u, &r_u);
+
+	if(!srv_io_r_net_share_set_info("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_srv_net_share_set_info: Failed to marshall SRV_R_NET_SHARE_SET_INFO.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
  api_srv_net_remote_tod
 ********************************************************************/
 
@@ -234,6 +264,7 @@ struct api_struct api_srv_cmds[] =
 	{ "SRV_NETSESSENUM"       , SRV_NETSESSENUM       , api_srv_net_sess_enum    },
 	{ "SRV_NETSHAREENUM"      , SRV_NETSHAREENUM      , api_srv_net_share_enum   },
 	{ "SRV_NET_SHARE_GET_INFO", SRV_NET_SHARE_GET_INFO, api_srv_net_share_get_info },
+	{ "SRV_NET_SHARE_SET_INFO", SRV_NET_SHARE_SET_INFO, api_srv_net_share_set_info },
 	{ "SRV_NETFILEENUM"       , SRV_NETFILEENUM       , api_srv_net_file_enum    },
 	{ "SRV_NET_SRV_GET_INFO"  , SRV_NET_SRV_GET_INFO  , api_srv_net_srv_get_info },
 	{ "SRV_NET_REMOTE_TOD"    , SRV_NET_REMOTE_TOD    , api_srv_net_remote_tod   },
