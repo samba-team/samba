@@ -709,9 +709,9 @@ sub RewriteHeader($$$)
 
 	s/dom_sid2/dom_sid/g;
 
-	# Copy structure definitions
+	# Copy structure and union definitions
 
-	if (/^struct .*? {$/ .. /^\};$/) {
+	if (/^(struct|union) .*? {$/ .. /^\};$/) {
 	    s/\} (in|out);/\} data_$1;/; # "in" is a Python keyword
 	    pidl $_;
 	    next;
