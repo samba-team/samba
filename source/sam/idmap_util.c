@@ -402,5 +402,16 @@ BOOL idmap_init_wellknown_sids(void)
 		SAFE_FREE(map);
 	}
 
+	/* Fill in the SID for the administrator account. */
+	id.uid = 0;
+	sid_copy(&sid, get_global_sam_sid());
+	sid_append_rid(&sid, DOMAIN_USER_RID_ADMIN);
+
+	if (!NT_STATUS_IS_OK(wellknown_id_init(&sid, id, ID_USERID))) {
+		DEBUG(0, ("Failed to setup UID mapping for ADMINISTRATOR (%s) to (%u)\n", 
+			  sid_to_string(sid_string, &sid), (unsigned int)id.uid));
+		return False;
+	}
+
 	return True;
 }
