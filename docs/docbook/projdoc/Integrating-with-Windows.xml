@@ -97,7 +97,7 @@ as two digit hexadecimal numbers separated by colons. eg:
 </para>
 
 <para>
-Every network interfrace must have an MAC address. Associated with 
+Every network interface must have an MAC address. Associated with 
 a MAC address there may be one or more IP addresses. There is NO 
 relationship between an IP address and a MAC address, all such assignments 
 are arbitary or discretionary in nature. At the most basic level all 
