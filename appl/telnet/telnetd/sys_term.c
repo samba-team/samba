@@ -1607,6 +1607,7 @@ void start_login(char *host, int autologin, char *name)
 	if (auth_level >= 0 && autologin == AUTH_VALID) {
 # if	!defined(NO_LOGIN_F)
 		addarg(&argv, "-f");
+		addarg(&argv, "--");
 		addarg(&argv, name);
 # else
 #  if defined(LOGIN_R)
@@ -1679,6 +1680,7 @@ void start_login(char *host, int autologin, char *name)
 			ourpty = xpty;
 		}
 #  else /* LOGIN_R */
+		addarg(&argv, "--");
 		addarg(&argv, name);
 #  endif
 # endif /* NO_LOGIN_F */
