@@ -300,7 +300,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 
 
 /****************************************************************************
- Send data on an rpc pipe, which *must* be in one fragment.
+ Send data on an rpc pipe via trans, which *must* be the last fragment.
  receive response data from an rpc pipe, which may be large...
 
  Read the first fragment: unfortunately have to use SMBtrans for the first
@@ -341,7 +341,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, prs_struct *data, prs_struct *rd
 
 	/* Create setup parameters - must be in native byte order. */
 
-	setup[0] = 0x26; 
+	setup[0] = TRANSACT_DCERPCCMD; 
 	setup[1] = cli->nt_pipe_fnum; /* Pipe file handle. */
 
 	DEBUG(5,("rpc_api_pipe: fnum:%x\n", (int)cli->nt_pipe_fnum));
@@ -772,6 +772,10 @@ static uint32 create_rpc_request(prs_struct *rpc_out, uint8 op_num, int data_len
 	return callid;
 }
 
+/*******************************************************************
+ Puts an auth header into an rpc request.
+ ********************************************************************/
+
 static BOOL create_auth_hdr(prs_struct *outgoing_packet, BOOL auth_verify)
 {
 	RPC_HDR_AUTH hdr_auth;
@@ -786,6 +790,10 @@ static BOOL create_auth_hdr(prs_struct *outgoing_packet, BOOL auth_verify)
 	}
 	return True;
 }
+
+/*******************************************************************
+ Puts auth data into an rpc request.
+ ********************************************************************/
 
 static BOOL create_auth_data(struct cli_state *cli, uint32 crc32, 
 			     prs_struct *outgoing_packet)
@@ -806,6 +814,13 @@ static BOOL create_auth_data(struct cli_state *cli, uint32 crc32,
 		       RPC_AUTH_NTLMSSP_CHK_LEN - 4);
 	return True;
 }
+
+/**
+ * Send a request on an RPC pipe and get a response.
+ *
+ * @param data NDR contents of the request to be sent.
+ * @param rdata Unparsed NDR response data.
+**/
 
 BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
                       prs_struct *data, prs_struct *rdata)
@@ -924,143 +939,6 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	slprintf(dump_name, sizeof(dump_name) - 1, "reply_%s",
 		 cli_pipe_get_name(cli));
 	prs_dump(dump_name, op_num, rdata);
-
-	return ret;
-}
-
-/**
- * Send a request on an RPC pipe and get a response.
- *
- * @param data NDR contents of the request to be sent.
- * @param rdata Unparsed NDR response data.
-**/
-
-BOOL rpc_api_pipe_req2(struct cli_state *cli, uint8 op_num,
-                      prs_struct *data, prs_struct *rdata)
-{
-	prs_struct outgoing_packet;
-	uint32 data_len;
-	uint32 auth_len;
-	BOOL ret;
-	BOOL auth_verify;
-	BOOL auth_seal;
-	uint32 crc32 = 0;
-	char *pdata_out = NULL;
-	fstring dump_name;
-
-	auth_verify = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SIGN) != 0);
-	auth_seal   = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SEAL) != 0);
-
-	/* Optionally capture for use in debugging */
-	slprintf(dump_name, sizeof(dump_name) - 1, "call_%s",
-		 cli_pipe_get_name(cli));
-	prs_dump_before(dump_name, op_num, data);
-
-	/*
-	 * The auth_len doesn't include the RPC_HDR_AUTH_LEN.
-	 */
-
-	auth_len = (auth_verify ? RPC_AUTH_NTLMSSP_CHK_LEN : 0);
-
-	/*
-	 * PDU len is header, plus request header, plus data, plus
-	 * auth_header_len (if present), plus auth_len (if present).
-	 * NB. The auth stuff should be aligned on an 8 byte boundary
-	 * to be totally DCE/RPC spec complient. For now we cheat and
-	 * hope that the data structs defined are a multiple of 8 bytes.
-	 */
-
-	if((prs_offset(data) % 8) != 0) {
-		DEBUG(5,("rpc_api_pipe_req: Outgoing data not a multiple of 8 bytes....\n"));
-	}
-
-	data_len = RPC_HEADER_LEN + RPC_HDR_REQ_LEN + prs_offset(data) +
-			(auth_verify ? RPC_HDR_AUTH_LEN : 0) + auth_len;
-
-	/*
-	 * Malloc a parse struct to hold it (and enough for alignments).
-	 */
-
-	if(!prs_init(&outgoing_packet, data_len + 8, cli->mem_ctx, MARSHALL)) {
-		DEBUG(0,("rpc_api_pipe_req: Failed to malloc %u bytes.\n", (unsigned int)data_len ));
-		return False;
-	}
-
-	pdata_out = prs_data_p(&outgoing_packet);
-	
-	/*
-	 * Write out the RPC header and the request header.
-	 */
-
-	if(!create_rpc_request(&outgoing_packet, op_num, data_len, auth_len,
-			       (uint8) RPC_FLG_FIRST | RPC_FLG_LAST, 0, data_len)) {
-		DEBUG(0,("rpc_api_pipe_req: Failed to create RPC request.\n"));
-		prs_mem_free(&outgoing_packet);
-		return False;
-	}
-
-	/*
-	 * Seal the outgoing data if requested.
-	 */
-
-	if (auth_seal) {
-		crc32 = crc32_calc_buffer(prs_data_p(data), prs_offset(data));
-		NTLMSSPcalc_ap(cli, (unsigned char*)prs_data_p(data), prs_offset(data));
-	}
-
-	/*
-	 * Now copy the data into the outgoing packet.
-	 */
-
-	if(!prs_append_prs_data( &outgoing_packet, data)) {
-		DEBUG(0,("rpc_api_pipe_req: Failed to append data to outgoing packet.\n"));
-		prs_mem_free(&outgoing_packet);
-		return False;
-	}
-
-	/*
-	 * Add a trailing auth_verifier if needed.
-	 */
-
-	if (auth_seal || auth_verify) {
-		RPC_HDR_AUTH hdr_auth;
-
-		init_rpc_hdr_auth(&hdr_auth, NTLMSSP_AUTH_TYPE,
-			NTLMSSP_AUTH_LEVEL, 0x08, (auth_verify ? 1 : 0));
-		if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, &outgoing_packet, 0)) {
-			DEBUG(0,("rpc_api_pipe_req: Failed to marshal RPC_HDR_AUTH.\n"));
-			prs_mem_free(&outgoing_packet);
-			return False;
-		}
-	}
-
-	/*
-	 * Finally the auth data itself.
-	 */
-
-	if (auth_verify) {
-		RPC_AUTH_NTLMSSP_CHK chk;
-		uint32 current_offset = prs_offset(&outgoing_packet);
-
-		init_rpc_auth_ntlmssp_chk(&chk, NTLMSSP_SIGN_VERSION, crc32, cli->ntlmssp_seq_num++);
-		if(!smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &outgoing_packet, 0)) {
-			DEBUG(0,("rpc_api_pipe_req: Failed to marshal RPC_AUTH_NTLMSSP_CHK.\n"));
-			prs_mem_free(&outgoing_packet);
-			return False;
-		}
-		NTLMSSPcalc_ap(cli, (unsigned char*)&pdata_out[current_offset+4], RPC_AUTH_NTLMSSP_CHK_LEN - 4);
-	}
-
-	DEBUG(100,("data_len: %x data_calc_len: %x\n", data_len, prs_offset(&outgoing_packet)));
-
-	ret = rpc_api_pipe(cli, &outgoing_packet, rdata);
-
-	/* Also capture received data */
-	slprintf(dump_name, sizeof(dump_name) - 1, "reply_%s",
-		 cli_pipe_get_name(cli));
-	prs_dump(dump_name, op_num, rdata);
-
-	prs_mem_free(&outgoing_packet);
 
 	return ret;
 }
