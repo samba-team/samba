@@ -1,3 +1,7 @@
+2001-05-17  Assar Westerlund  <assar@sics.se>
+
+	* kadm_conn.c (start_server): fix krb5_eai_to_heim_errno call
+
 2001-05-15  Assar Westerlund  <assar@sics.se>
 
 	* kadmin.c (main): some error cleaning required
