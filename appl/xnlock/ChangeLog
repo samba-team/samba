@@ -1,3 +1,8 @@
+Wed Jul  8 01:37:37 1998  Assar Westerlund  <assar@sics.se>
+
+	* xnlock.c (main): create place-holder ticket file with
+ 	open(O_EXCL | O_CREAT) instead of creat
+
 Sat Mar 28 12:53:46 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (install, uninstall): transform the man page

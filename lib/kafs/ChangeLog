@@ -1,3 +1,9 @@
+Wed Jul  8 01:39:44 1998  Assar Westerlund  <assar@sics.se>
+
+	* afssys.c (map_syscall_name_to_number): new function for finding
+ 	the number of a syscall given the name on solaris
+	(k_hasafs): try using map_syscall_name_to_number
+
 Tue Jun 30 17:19:00 1998  Assar Westerlund  <assar@sics.se>
 
 	* afssys.c: rewrite and add support for environment variable
