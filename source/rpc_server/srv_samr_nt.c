@@ -2330,7 +2330,13 @@ uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_
 		DEBUG(0,("_samr_set_userinfo: Unable to get smbpasswd entry for uid %u\n", (unsigned int)user.uid ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-		
+
+	if (smb_pass->smb_nt_passwd == NULL) {
+		DEBUG(0,("_samr_set_userinfo: Unable to get smbpasswd NT password entry entry for uid %u\n",
+				(unsigned int)user.uid ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	memset(sess_key, '\0', 16);
 	mdfour(sess_key, smb_pass->smb_nt_passwd, 16);
 
