@@ -365,19 +365,11 @@ void pidfile (const char*);
 #endif
 
 #ifndef HAVE_BSWAP32
-#ifndef HAVE_U_INT32_T
 unsigned int bswap32(unsigned int);
-#else
-u_int32_t bswap32(u_int32_t);
-#endif
 #endif
 
 #ifndef HAVE_BSWAP16
-#ifndef HAVE_U_INT16_T
-unsigned short bswap16(unsigned short);
-#else
-u_int16_t bswap16(u_int16_t);
-#endif
+unsiged short bswap16(unsigned short);
 #endif
 
 #ifndef HAVE_FLOCK
