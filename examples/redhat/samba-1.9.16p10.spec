@@ -75,6 +75,7 @@ fi
 /usr/bin/smbstatus
 /usr/bin/nmblookup
 /usr/bin/smbpasswd
+/usr/bin/smbtar
 %config /etc/smb.conf
 /etc/smb.conf.sampl
 /etc/rc.d/init.d/smb
