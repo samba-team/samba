@@ -32,7 +32,8 @@ pop_msg(POP *p, int stat, char *format, ...)
 
     /*  Append the message (formatted, if necessary) */
     if (format) 
-        vsprintf(mp,format,ap);
+	vsnprintf (mp, sizeof(message) - strlen(message),
+		   format, ap);
     
     /*  Log the message if debugging is turned on */
 #ifdef DEBUG
@@ -45,10 +46,10 @@ pop_msg(POP *p, int stat, char *format, ...)
         pop_log(p,POP_PRIORITY,"%s",message);
 
     /*  Append the <CR><LF> */
-    strcat(message, "\r\n");
+    strncat(message, "\r\n", sizeof(message) - strlen(message));
         
     /*  Send the message to the client */
-    fputs(message,p->output);
+    fputs(message, p->output);
     fflush(p->output);
 
     va_end(ap);
