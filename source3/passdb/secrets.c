@@ -34,11 +34,7 @@ BOOL secrets_init(void)
 
 	if (tdb) return True;
 
-	pstrcpy(fname, lp_smb_passwd_file());
-	p = strrchr(fname, '/');
-	if(!p) return False;
-
-	*p = 0;
+	pstrcpy(fname, lp_private_dir());
 	pstrcat(fname,"/secrets.tdb");
 
 	tdb = tdb_open(fname, 0, 0, O_RDWR|O_CREAT, 0600);

@@ -119,11 +119,8 @@ typedef struct
 	char *szPasswdChat;
 	char *szLogFile;
 	char *szConfigFile;
-#ifdef WITH_TDBPWD
-	char *szTDBPasswdFile;
-#else
 	char *szSMBPasswdFile;
-#endif
+	char *szPrivateDir;
 	char *szPassdbModulePath;
 	char *szPasswordServer;
 	char *szSocketOptions;
@@ -669,11 +666,8 @@ static struct parm_struct parm_table[] = {
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, 0},
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, 0},
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, 0},
-/* #ifdef WITH_TDBPWD
-	{"tdb passwd file", P_STRING, P_GLOBAL, &Globals.szTDBPasswdFile, NULL, NULL, 0},
-#else */
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, 0},
-/* #endif */
+	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, 0},
 	{"passdb module path", P_STRING, P_GLOBAL, &Globals.szPassdbModulePath, NULL, NULL, 0},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
@@ -1149,11 +1143,8 @@ static void init_globals(void)
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
-#ifdef WITH_TDBPWD
-	string_set(&Globals.szTDBPasswdFile, TDB_PASSWD_FILE);
-#else
 	string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
-#endif
+	string_set(&Globals.szPrivateDir, PRIVATE_DIR);
 	string_set(&Globals.szPassdbModulePath, "");
 	
 	/*
@@ -1384,11 +1375,8 @@ static char *lp_string(const char *s)
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_smbrun, &Globals.szSmbrun)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
-#ifdef WITH_TDBPWD
-FN_GLOBAL_STRING(lp_tdb_passwd_file, &Globals.szTDBPasswdFile)
-#else
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
-#endif
+FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_passdb_module_path, &Globals.szPassdbModulePath)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)

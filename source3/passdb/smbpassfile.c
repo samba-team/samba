@@ -85,12 +85,10 @@ static BOOL pw_file_unlock(int fd, int *plock_depth)
 static void get_trust_account_file_name( char *domain, char *name, char *mac_file)
 {
   unsigned int mac_file_len;
-  char *p;
 
-  pstrcpy(mac_file, lp_smb_passwd_file());
-  p = strrchr(mac_file, '/');
-  if(p != NULL)
-    *++p = '\0';
+  pstrcpy(mac_file, lp_private_dir());
+  if (mac_file[strlen(mac_file)-1] != '/')
+	pstrcat (mac_file, "/");
 
   mac_file_len = strlen(mac_file);
 

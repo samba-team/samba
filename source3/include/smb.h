@@ -654,6 +654,9 @@ typedef struct
 
 typedef struct sam_passwd
 {
+	BOOL own_memory;    /* do we own the memory allocated for the
+			       pointers in this struct? */
+	
         time_t logon_time;            /* logon time */
         time_t logoff_time;           /* logoff time */
         time_t kickoff_time;          /* kickoff time */
@@ -693,71 +696,6 @@ typedef struct sam_passwd
         uint32 unknown_6; /* 0x0000 04ec */
 	
 } SAM_ACCOUNT;
-
-#if 0	/* GWC */
-/*
- * Each implementation of the password database code needs
- * to support the following operations.
- */
-
-struct passdb_ops {
-  /*
-   * Password database ops.
-   */
-  void *(*startsmbpwent)(BOOL);
-  void (*endsmbpwent)(void *);
-  SMB_BIG_UINT (*getsmbpwpos)(void *);
-  BOOL (*setsmbpwpos)(void *, SMB_BIG_UINT);
-
-  /*
-   * smb password database query functions.
-   */
-  struct smb_passwd *(*getsmbpwnam)(char *);
-  struct smb_passwd *(*getsmbpwuid)(uid_t);
-  struct smb_passwd *(*getsmbpwrid)(uint32);
-  struct smb_passwd *(*getsmbpwent)(void *);
-
-  /*
-   * smb password database modification functions.
-   */
-  BOOL (*add_smbpwd_entry)(struct smb_passwd *);
-  BOOL (*mod_smbpwd_entry)(struct smb_passwd *, BOOL);
-  BOOL (*del_smbpwd_entry)(const char *);
-
-  /*
-   * Functions that manupulate a struct sam_passwd.
-   */
-  struct sam_passwd *(*getsam21pwent)(void *);
-
-  /*
-   * sam password database query functions.
-   */
-  struct sam_passwd *(*getsam21pwnam)(char *);
-  struct sam_passwd *(*getsam21pwuid)(uid_t);
-  struct sam_passwd *(*getsam21pwrid)(uint32);
-
-  /*
-   * sam password database modification functions.
-   */
-  BOOL (*add_sam21pwd_entry)(struct sam_passwd *);
-  BOOL (*mod_sam21pwd_entry)(struct sam_passwd *, BOOL);
-
-  /*
-   * sam query display info functions.
-   */
-  struct sam_disp_info *(*getsamdispnam)(char *);
-  struct sam_disp_info *(*getsamdisprid)(uint32);
-  struct sam_disp_info *(*getsamdispent)(void *);
-
-  /*
-   * password checking functions
-   */
-  struct smb_passwd *(*smb_password_chal  )(char *username, char lm_pass[24], char nt_pass[24], char chal[8]);
-  struct smb_passwd *(*smb_password_check )(char *username, char lm_hash[16], char nt_hash[16]);
-  struct passwd     *(*unix_password_check)(char *username, char *pass, int pass_len);
-};
-
-#endif	/* 0 */
 
 /*
  * Flags for local user manipulation.

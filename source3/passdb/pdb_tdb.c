@@ -22,577 +22,586 @@
 
 #ifdef WITH_TDBPWD
 
-#define lp_tdb_passwd_file lp_smb_passwd_file
-#define tdb_writelock(ptr)
-#define tdb_writeunlock(ptr)
+#define TDB_FORMAT_STRING	"ddddddfffPPfPPPPffddBBwdwdBdd"
+#define USERPREFIX		"USER_"
 
-extern int DEBUGLEVEL;
-extern pstring samlogon_user;
-extern BOOL sam_logon_in_ssb;
+extern int 		DEBUGLEVEL;
+extern pstring 		samlogon_user;
+extern BOOL 		sam_logon_in_ssb;
 
-#if 0	/* GWC */
-struct tdb_sam_entry
-{
-	time_t logon_time;            /* logon time */
-	time_t logoff_time;           /* logoff time */
-	time_t kickoff_time;          /* kickoff time */
-	time_t pass_last_set_time;    /* password last set time */
-	time_t pass_can_change_time;  /* password can change time */
-	time_t pass_must_change_time; /* password must change time */
-
-	uid_t smb_userid;       /* this is actually the unix uid_t */
-	gid_t smb_grpid;        /* this is actually the unix gid_t */
-	uint32 user_rid;      /* Primary User ID */
-	uint32 group_rid;     /* Primary Group ID */
-
-	char smb_passwd[33]; /* Null if no password */
-	char smb_nt_passwd[33]; /* Null if no password */
-
-	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-	uint32 unknown_3; /* 0x00ff ffff */
-
-	uint16 logon_divs; /* 168 - number of hours in a week */
-	uint32 hours_len; /* normally 21 bytes */
-	uint8 hours[MAX_HOURS_LEN];
-
-	uint32 unknown_5; /* 0x0002 0000 */
-	uint32 unknown_6; /* 0x0000 04ec */
-	
-	/* relative pointers to dynamically allocated strings[] */
-	int smb_name_offset;     /* username string */
-	int full_name_offset;    /* user's full name string */
-	int home_dir_offset;     /* home directory string */
-	int dir_drive_offset;    /* home directory drive string */
-	int logon_script_offset; /* logon script string */
-	int profile_path_offset; /* profile path string */
-	int acct_desc_offset;  /* user description string */
-	int workstations_offset; /* login from workstations string */
-	int unknown_str_offset; /* don't know what this is, yet. */
-	int munged_dial_offset; /* munged path name and dial-back tel number */
-
-	/* how to correctly declare this ?*/
-	char strings[1]; 
-};
-
-#endif
 
 struct tdb_enum_info
 {
-	TDB_CONTEXT *passwd_tdb;
-	TDB_DATA key;
+	TDB_CONTEXT 	*passwd_tdb;
+	TDB_DATA 	key;
 };
 
-static struct tdb_enum_info tdb_ent;
+static struct tdb_enum_info 	global_tdb_ent;
+static SAM_ACCOUNT 		global_sam_pass;
 
-/***************************************************************
- Start to enumerate the TDB passwd list. Returns a void pointer
- to ensure no modification outside this module.
-****************************************************************/
-
-static void *startsamtdbpwent(BOOL update)
+/**********************************************************************
+ Intialize a SAM_ACCOUNT struct from a BYTE buffer of size len
+ *********************************************************************/
+static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, BYTE *buf, 
+				  uint32 buflen)
 {
-	/* Open tdb passwd */
-	if (!(tdb_ent.passwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, update ? O_RDWR : O_RDONLY, 0600)))
+	static fstring	username,
+			domain,
+			nt_username,
+			dir_drive,
+			unknown_str,
+			munged_dial;
+	static pstring	full_name,
+			home_dir,
+			logon_script,
+			profile_path,
+			acct_desc,
+			workstations;
+	static BYTE	*lm_pw_ptr,
+			*nt_pw_ptr,
+			lm_pw[16],
+			nt_pw[16];
+	uint32		len = 0;
+	uint32		lmpwlen, ntpwlen, hourslen;
+			
+	/* unpack the buffer into variables */
+	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
+		&sampass->logon_time,
+		&sampass->logoff_time,
+		&sampass->kickoff_time,
+		&sampass->pass_last_set_time,
+		&sampass->pass_can_change_time,
+		&sampass->pass_must_change_time,
+		username,
+		domain,
+		nt_username,
+		full_name,
+		home_dir,
+		dir_drive,
+		logon_script,
+		profile_path,
+		acct_desc,
+		workstations,
+		unknown_str,
+		munged_dial,
+		&sampass->user_rid,
+		&sampass->group_rid,
+		&lmpwlen, &lm_pw_ptr,
+		&ntpwlen, &nt_pw_ptr,
+		&sampass->acct_ctrl,
+		&sampass->unknown_3,
+		&sampass->logon_divs,
+		&sampass->hours_len,
+		&hourslen, &sampass->hours,
+		&sampass->unknown_5,
+		&sampass->unknown_6);
+		
+	if (len == -1) 
+		return False;
+
+	/*
+	 * We have to copy the password hashes into static memory
+	 * and free the memory allocated by tdb_unpack.  This is because
+	 * the sampass->own_memory flag is for all pointer members.
+	 * The remaining members are using static memory and so
+	 * the password hashes must as well.     --jerry
+	 */
+	if (lm_pw_ptr)
 	{
-		DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
-		if (!(tdb_ent.passwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
-		{
-			DEBUG(0, ("Unable to creat TDB passwd (smbpasswd.tdb) !!!"));
-			return NULL;
-		}
-		return &tdb_ent;
+		memcpy(lm_pw, lm_pw_ptr, 16);
+		free (lm_pw_ptr);
+	}
+	if (nt_pw_ptr)
+	{
+		memcpy(nt_pw, nt_pw_ptr, 16);
+		free (nt_pw_ptr);
+	}
+
+	/* using static memory for strings */
+	pdb_set_mem_ownership(sampass, False);
+	
+	pdb_set_username     (sampass, username);
+	pdb_set_domain       (sampass, domain);
+	pdb_set_nt_username  (sampass, nt_username);
+	pdb_set_fullname     (sampass, full_name);
+	pdb_set_homedir      (sampass, home_dir);
+	pdb_set_dir_drive    (sampass, dir_drive);
+	pdb_set_logon_script (sampass, logon_script);
+	pdb_set_profile_path (sampass, profile_path);
+	pdb_set_acct_desc    (sampass, acct_desc);
+	pdb_set_workstations (sampass, workstations);
+	pdb_set_munged_dial  (sampass, munged_dial);
+	pdb_set_lanman_passwd(sampass, lm_pw);
+	pdb_set_nt_passwd    (sampass, nt_pw);
+	
+	return True;
+}
+
+/**********************************************************************
+ Intialize a BYTE buffer from a SAM_ACCOUNT struct
+ *********************************************************************/
+static uint32 init_buffer_from_sam (BYTE **buf, SAM_ACCOUNT *sampass)
+{
+	size_t		len, buflen;
+
+	fstring		username,
+			domain,
+			nt_username,
+			dir_drive,
+			unknown_str,
+			munged_dial;
+	pstring		full_name,
+			home_dir,
+			logon_script,
+			profile_path,
+			acct_desc,
+			workstations;
+	BYTE		lm_pw[16],
+			nt_pw[16];
+	char		null_pw[] = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+
+	/* do we have a valid SAM_ACCOUNT pointer? */
+	if (sampass == NULL)
+		return -1;
+		
+	*buf = NULL;
+	buflen = 0;
+
+	fstrcpy(username, sampass->username);
+	fstrcpy(domain,   sampass->domain);
+	fstrcpy(nt_username, sampass->nt_username);
+	fstrcpy(dir_drive, sampass->dir_drive);
+	fstrcpy(unknown_str, sampass->unknown_str);
+	fstrcpy(munged_dial, sampass->munged_dial);
+	
+	pstrcpy(full_name, sampass->full_name);
+	pstrcpy(home_dir, sampass->home_dir);
+	pstrcpy(logon_script, sampass->logon_script);
+	pstrcpy(profile_path, sampass->profile_path);
+	pstrcpy(acct_desc, sampass->acct_desc);
+	pstrcpy(workstations, sampass->workstations);
+	
+	if (sampass->lm_pw)
+		memcpy(lm_pw, sampass->lm_pw, 16);
+	else
+		pdb_gethexpwd (null_pw, lm_pw);
+		
+	if (sampass->nt_pw)
+		memcpy(nt_pw, sampass->nt_pw, 16);
+	else
+		pdb_gethexpwd (null_pw, nt_pw);
+		
+			
+	/* one time to get the size needed */
+	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING,
+		sampass->logon_time,
+		sampass->logoff_time,
+		sampass->kickoff_time,
+		sampass->pass_last_set_time,
+		sampass->pass_can_change_time,
+		sampass->pass_must_change_time,
+		username,
+		domain,
+		nt_username,
+		full_name,
+		home_dir,
+		dir_drive,
+		logon_script,
+		profile_path,
+		acct_desc,
+		workstations,
+		unknown_str,
+		munged_dial,
+		sampass->user_rid,
+		sampass->group_rid,
+		16, lm_pw,
+		16, nt_pw,
+		sampass->acct_ctrl,
+		sampass->unknown_3,
+		sampass->logon_divs,
+		sampass->hours_len,
+		MAX_HOURS_LEN, sampass->hours,
+		sampass->unknown_5,
+		sampass->unknown_6);
+
+
+	/* malloc the space needed */
+	if ( (*buf=(BYTE*)malloc(len)) == NULL)
+	{
+		DEBUG(0,("init_buffer_from_sam: Unable to malloc() memory for buffer!\n"));
+		return (-1);
 	}
 	
-	tdb_ent.key = tdb_firstkey(tdb_ent.passwd_tdb);
-	return &tdb_ent;
+	/* now for the real call to tdb_pack() */
+	/* one time to get the size needed */
+	buflen = tdb_pack(*buf, len,  TDB_FORMAT_STRING,
+		sampass->logon_time,
+		sampass->logoff_time,
+		sampass->kickoff_time,
+		sampass->pass_last_set_time,
+		sampass->pass_can_change_time,
+		sampass->pass_must_change_time,
+		username,
+		domain,
+		nt_username,
+		full_name,
+		home_dir,
+		dir_drive,
+		logon_script,
+		profile_path,
+		acct_desc,
+		workstations,
+		unknown_str,
+		munged_dial,
+		sampass->user_rid,
+		sampass->group_rid,
+		16, lm_pw,
+		16, nt_pw,
+		sampass->acct_ctrl,
+		sampass->unknown_3,
+		sampass->logon_divs,
+		sampass->hours_len,
+		MAX_HOURS_LEN, sampass->hours,
+		sampass->unknown_5,
+		sampass->unknown_6);
+	
+	
+	/* check to make sure we got it correct */
+	if (buflen != len)
+	{
+		/* error */
+		free (*buf);
+		return (-1);
+	}
+
+	return (buflen);
+}
+
+/***************************************************************
+ Open the TDB account SAM fo renumeration.
+****************************************************************/
+BOOL pdb_setsampwent(BOOL update)
+{
+	pstring		tdbfile;
+	
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/passdb.tdb");
+	
+	/* Open tdb passwd */
+	if (!(global_tdb_ent.passwd_tdb = tdb_open(tdbfile, 0, 0, update ? O_RDWR : O_RDONLY, 0600)))
+	{
+		DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
+		if (!(global_tdb_ent.passwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
+		{
+			DEBUG(0, ("Unable to create TDB passwd (smbpasswd.tdb) !!!"));
+			return False;
+		}
+	}
+	
+	global_tdb_ent.key = tdb_firstkey(global_tdb_ent.passwd_tdb);
+
+	return True;
 }
 
 /***************************************************************
  End enumeration of the TDB passwd list.
 ****************************************************************/
-
-static void endsamtdbpwent(void *vp)
+void pdb_endsampwent(void)
 {
-  struct tdb_enum_info *p_ent = (struct tdb_enum_info *)vp;
-
-  tdb_close(p_ent->passwd_tdb);
-  DEBUG(7, ("endtdbpwent: closed password file.\n"));
-}
-
-static struct sam_passwd *getsamtdb21pwent(void *vp)
-{
-  static struct sam_passwd sam_entry;
-  static struct tdb_sam_entry *tdb_entry;
-  struct tdb_enum_info *p_ent = (struct tdb_enum_info *)vp;
-  TDB_DATA data;
-
-  if(p_ent == NULL) {
-    DEBUG(0,("gettdbpwent: Bad TDB Context pointer.\n"));
-    return NULL;
-  }
-
-  data = tdb_fetch (p_ent->passwd_tdb, p_ent->key);
-  if (!data.dptr)
-  {
-    DEBUG(5,("gettdbpwent: database entry not found.\n"));
-    return NULL;
-  }
-  
-  tdb_entry = (struct tdb_sam_entry *)(data.dptr);
-
-  sam_entry.logon_time = tdb_entry->logon_time;
-  sam_entry.logoff_time = tdb_entry->logoff_time;
-  sam_entry.kickoff_time = tdb_entry->kickoff_time;
-  sam_entry.pass_last_set_time = tdb_entry->pass_last_set_time;
-  sam_entry.pass_can_change_time = tdb_entry->pass_can_change_time;
-  sam_entry.pass_must_change_time = tdb_entry->pass_must_change_time;
-  sam_entry.smb_name = tdb_entry->strings + tdb_entry->smb_name_offset;
-  sam_entry.full_name = tdb_entry->strings + tdb_entry->full_name_offset;
-  sam_entry.home_dir = tdb_entry->strings + tdb_entry->home_dir_offset;
-  sam_entry.dir_drive = tdb_entry->strings + tdb_entry->dir_drive_offset;
-  sam_entry.logon_script = tdb_entry->strings + tdb_entry->logon_script_offset;
-  sam_entry.profile_path = tdb_entry->strings + tdb_entry->profile_path_offset;
-  sam_entry.acct_desc = tdb_entry->strings + tdb_entry->acct_desc_offset;
-  sam_entry.workstations = tdb_entry->strings + tdb_entry->workstations_offset;
-  sam_entry.unknown_str = tdb_entry->strings + tdb_entry->unknown_str_offset;
-  sam_entry.munged_dial = tdb_entry->strings + tdb_entry->munged_dial_offset;
-  sam_entry.smb_userid = tdb_entry->smb_userid;
-  sam_entry.smb_grpid = tdb_entry->smb_grpid;
-  sam_entry.user_rid = tdb_entry->user_rid;
-  sam_entry.group_rid = tdb_entry->group_rid;
-  sam_entry.smb_passwd = tdb_entry->smb_passwd;
-  sam_entry.smb_nt_passwd = tdb_entry->smb_nt_passwd;
-  sam_entry.acct_ctrl = tdb_entry->acct_ctrl;
-  sam_entry.unknown_3 = tdb_entry->unknown_3;
-  sam_entry.logon_divs = tdb_entry->logon_divs;
-  sam_entry.hours_len = tdb_entry->hours_len;
-  memcpy (sam_entry.hours, tdb_entry->hours, MAX_HOURS_LEN);
-  sam_entry.unknown_5 = tdb_entry->unknown_5;
-  sam_entry.unknown_6 = tdb_entry->unknown_6;
-
-  p_ent->key = tdb_nextkey (p_ent->passwd_tdb, p_ent->key);
-
-  return &sam_entry;
-}
-
-static BOOL del_samtdbpwd_entry(const char *name)
-{
-  TDB_CONTEXT *pwd_tdb;
-  TDB_DATA key;
-  fstring keystr;
-
-  if (!(pwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR, 0600)))
-  {
-     DEBUG(0, ("Unable to open TDB passwd!"));
-     return False;
-  }
-  
-  slprintf(keystr, sizeof(keystr), "USER_%s", name);
-  key.dptr = keystr;
-  key.dsize = strlen (keystr) + 1;
-  if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS)
-  {
-  	DEBUG(5, ("Error deleting entry from tdb database!\n"));
-	DEBUGADD(5, (" Error: %s\n", tdb_error(pwd_tdb)));
-	tdb_close(pwd_tdb); 
-	return False;
-  }
-  tdb_close(pwd_tdb);
-  return True;
-}
-
-static BOOL mod_samtdb21pwd_entry(struct sam_passwd* newpwd, BOOL override)
-{
-  TDB_CONTEXT *pwd_tdb;
-  TDB_DATA key;
-  TDB_DATA data;
-  struct tdb_sam_entry *tdb_entry;
-  fstring keystr;
-  
-  int smb_name_len = (newpwd->smb_name) ? (strlen (newpwd->smb_name) + 1) : 0;
-  int full_name_len = (newpwd->full_name) ? (strlen (newpwd->full_name) + 1) : 0;
-  int home_dir_len = (newpwd->home_dir) ? (strlen (newpwd->home_dir) + 1) : 0;
-  int dir_drive_len = (newpwd->dir_drive) ? (strlen (newpwd->dir_drive) + 1) : 0;
-  int logon_script_len = (newpwd->logon_script) ? (strlen (newpwd->logon_script) + 1) : 0;
-  int profile_path_len = (newpwd->profile_path) ? (strlen (newpwd->profile_path) + 1) : 0;
-  int acct_desc_len = (newpwd->acct_desc) ? (strlen (newpwd->acct_desc) + 1) : 0;
-  int workstations_len = (newpwd->workstations) ? (strlen (newpwd->workstations) + 1) : 0;
-  int unknown_str_len = (newpwd->unknown_str) ? (strlen (newpwd->unknown_str) + 1) : 0;
-  int munged_dial_len = (newpwd->munged_dial) ? (strlen (newpwd->munged_dial) + 1) : 0;
-  
-  if (!(pwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR, 0600)))
-  {
-     DEBUG(0, ("Unable to open TDB passwd!"));
-     return False;
-  }
-
-  data.dsize = sizeof (struct tdb_sam_entry) +
-  				smb_name_len +
-				full_name_len +
-				home_dir_len +
-				dir_drive_len +
-				logon_script_len +
-				profile_path_len +
-				acct_desc_len +
-				workstations_len +
-				unknown_str_len +
-				munged_dial_len;
-
-  tdb_entry = malloc (data.dsize);
-  data.dptr = tdb_entry;
-  memset (data.dptr, 0, data.dsize);
-
-  tdb_entry->logon_time = newpwd->logon_time;
-  tdb_entry->logoff_time = newpwd->logoff_time;
-  tdb_entry->kickoff_time = newpwd->kickoff_time;
-  tdb_entry->pass_last_set_time = newpwd->pass_last_set_time;
-  tdb_entry->pass_can_change_time = newpwd->pass_can_change_time;
-  tdb_entry->pass_must_change_time = newpwd->pass_must_change_time;
-  tdb_entry->smb_userid = newpwd->smb_userid;
-  tdb_entry->smb_grpid = newpwd->smb_grpid;
-  tdb_entry->user_rid = newpwd->user_rid;
-  tdb_entry->group_rid = newpwd->group_rid;
-  memcpy (tdb_entry->smb_passwd, newpwd->smb_passwd, strlen (newpwd->smb_passwd) + 1);
-  memcpy (tdb_entry->smb_nt_passwd, newpwd->smb_nt_passwd, strlen (newpwd->smb_nt_passwd) + 1);
-  tdb_entry->acct_ctrl = newpwd->acct_ctrl;
-  tdb_entry->unknown_3 = newpwd->unknown_3;
-  tdb_entry->logon_divs = newpwd->logon_divs;
-  tdb_entry->hours_len = newpwd->hours_len;
-  memcpy (tdb_entry->hours, newpwd->hours, MAX_HOURS_LEN);
-  tdb_entry->unknown_5 = newpwd->unknown_5;
-  tdb_entry->unknown_6 = newpwd->unknown_6;
-  tdb_entry->smb_name_offset = 0;
-  tdb_entry->full_name_offset = smb_name_len;
-  tdb_entry->home_dir_offset = tdb_entry->full_name_offset + full_name_len;
-  tdb_entry->dir_drive_offset = tdb_entry->home_dir_offset + home_dir_len;
-  tdb_entry->logon_script_offset = tdb_entry->dir_drive_offset + dir_drive_len;
-  tdb_entry->profile_path_offset = tdb_entry->logon_script_offset + logon_script_len;
-  tdb_entry->acct_desc_offset = tdb_entry->profile_path_offset + profile_path_len;
-  tdb_entry->workstations_offset = tdb_entry->acct_desc_offset + acct_desc_len;
-  tdb_entry->unknown_str_offset = tdb_entry->workstations_offset  + workstations_len;
-  tdb_entry->munged_dial_offset = tdb_entry->unknown_str_offset + unknown_str_len;
-  if (newpwd->smb_name)
-    memcpy (tdb_entry->strings + tdb_entry->smb_name_offset, newpwd->smb_name, smb_name_len);
-  if (newpwd->full_name)
-    memcpy (tdb_entry->strings + tdb_entry->full_name_offset, newpwd->full_name, full_name_len);
-  if (newpwd->home_dir)
-    memcpy (tdb_entry->strings + tdb_entry->home_dir_offset, newpwd->home_dir, home_dir_len);
-  if (newpwd->dir_drive)
-    memcpy (tdb_entry->strings + tdb_entry->dir_drive_offset, newpwd->dir_drive, dir_drive_len);
-  if (newpwd->logon_script)
-    memcpy (tdb_entry->strings + tdb_entry->logon_script_offset, newpwd->logon_script, logon_script_len);
-  if (newpwd->profile_path)
-    memcpy (tdb_entry->strings + tdb_entry->profile_path_offset, newpwd->profile_path, profile_path_len);
-  if (newpwd->acct_desc)
-    memcpy (tdb_entry->strings + tdb_entry->acct_desc_offset, newpwd->acct_desc, acct_desc_len);
-  if (newpwd->workstations)
-    memcpy (tdb_entry->strings + tdb_entry->workstations_offset, newpwd->workstations, workstations_len);
-  if (newpwd->unknown_str)
-    memcpy (tdb_entry->strings + tdb_entry->unknown_str_offset, newpwd->unknown_str, unknown_str_len);
-  if (newpwd->munged_dial)
-    memcpy (tdb_entry->strings + tdb_entry->munged_dial_offset, newpwd->munged_dial, munged_dial_len);
- 
-  slprintf(keystr, sizeof(keystr), "USER_%s", newpwd->smb_name);
-  key.dptr = keystr;
-  key.dsize = strlen (keystr) + 1;
-  
-  tdb_writelock (pwd_tdb);
-  if (tdb_store (pwd_tdb, key, data, TDB_MODIFY) != TDB_SUCCESS)
-  {
-      DEBUG(0, ("Unable to modify TDB passwd!"));
-      DEBUGADD(0, (" Error: %s\n", tdb_error (pwd_tdb)));
-      tdb_writeunlock (pwd_tdb);
-      tdb_close (pwd_tdb);
-      return False;
-  }
-  
-  tdb_writeunlock (pwd_tdb);
-  tdb_close (pwd_tdb);
-  return True;
-}
-
-static BOOL add_samtdb21pwd_entry(struct sam_passwd *newpwd)
-{
-  TDB_CONTEXT *pwd_tdb;
-  TDB_DATA key;
-  TDB_DATA data;
-  struct tdb_sam_entry *tdb_entry;
-  fstring keystr;
-  
-  int smb_name_len = (newpwd->smb_name) ? (strlen (newpwd->smb_name) + 1) : 1;
-  int full_name_len = (newpwd->full_name) ? (strlen (newpwd->full_name) + 1) : 1;
-  int home_dir_len = (newpwd->home_dir) ? (strlen (newpwd->home_dir) + 1) : 1;
-  int dir_drive_len = (newpwd->dir_drive) ? (strlen (newpwd->dir_drive) + 1) : 1;
-  int logon_script_len = (newpwd->logon_script) ? (strlen (newpwd->logon_script) + 1) : 1;
-  int profile_path_len = (newpwd->profile_path) ? (strlen (newpwd->profile_path) + 1) : 1;
-  int acct_desc_len = (newpwd->acct_desc) ? (strlen (newpwd->acct_desc) + 1) : 1;
-  int workstations_len = (newpwd->workstations) ? (strlen (newpwd->workstations) + 1) : 1;
-  int unknown_str_len = (newpwd->unknown_str) ? (strlen (newpwd->unknown_str) + 1) : 1;
-  int munged_dial_len = (newpwd->munged_dial) ? (strlen (newpwd->munged_dial) + 1) : 1;
-  
-  if (!(pwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR, 0600)))
-  {
-     DEBUG(0, ("Unable to open TDB passwd!"));
-     return False;
-  }
-
-  data.dsize = sizeof (struct tdb_sam_entry) +
-  				smb_name_len +
-				full_name_len +
-				home_dir_len +
-				dir_drive_len +
-				logon_script_len +
-				profile_path_len +
-				acct_desc_len +
-				workstations_len +
-				unknown_str_len +
-				munged_dial_len;
-
-  tdb_entry = malloc (data.dsize);
-  data.dptr = tdb_entry;
-  memset (data.dptr, 0, data.dsize);
-
-  tdb_entry->logon_time = newpwd->logon_time;
-  tdb_entry->logoff_time = newpwd->logoff_time;
-  tdb_entry->kickoff_time = newpwd->kickoff_time;
-  tdb_entry->pass_last_set_time = newpwd->pass_last_set_time;
-  tdb_entry->pass_can_change_time = newpwd->pass_can_change_time;
-  tdb_entry->pass_must_change_time = newpwd->pass_must_change_time;
-  tdb_entry->smb_userid = newpwd->smb_userid;
-  tdb_entry->smb_grpid = newpwd->smb_grpid;
-  tdb_entry->user_rid = newpwd->user_rid;
-  tdb_entry->group_rid = newpwd->group_rid;
-  memcpy (tdb_entry->smb_passwd, newpwd->smb_passwd, strlen (newpwd->smb_passwd) + 1);
-  memcpy (tdb_entry->smb_nt_passwd, newpwd->smb_nt_passwd, strlen (newpwd->smb_nt_passwd) + 1);
-  tdb_entry->acct_ctrl = newpwd->acct_ctrl;
-  tdb_entry->unknown_3 = newpwd->unknown_3;
-  tdb_entry->logon_divs = newpwd->logon_divs;
-  tdb_entry->hours_len = newpwd->hours_len;
-  memcpy (tdb_entry->hours, newpwd->hours, MAX_HOURS_LEN);
-  tdb_entry->unknown_5 = newpwd->unknown_5;
-  tdb_entry->unknown_6 = newpwd->unknown_6;
-  tdb_entry->smb_name_offset = 0;
-  tdb_entry->full_name_offset = smb_name_len;
-  tdb_entry->home_dir_offset = tdb_entry->full_name_offset + full_name_len;
-  tdb_entry->dir_drive_offset = tdb_entry->home_dir_offset + home_dir_len;
-  tdb_entry->logon_script_offset = tdb_entry->dir_drive_offset + dir_drive_len;
-  tdb_entry->profile_path_offset = tdb_entry->logon_script_offset + logon_script_len;
-  tdb_entry->acct_desc_offset = tdb_entry->profile_path_offset + profile_path_len;
-  tdb_entry->workstations_offset = tdb_entry->acct_desc_offset + acct_desc_len;
-  tdb_entry->unknown_str_offset = tdb_entry->workstations_offset  + workstations_len;
-  tdb_entry->munged_dial_offset = tdb_entry->unknown_str_offset + unknown_str_len;
-  if (newpwd->smb_name)
-    memcpy (tdb_entry->strings + tdb_entry->smb_name_offset, newpwd->smb_name, smb_name_len);
-  if (newpwd->full_name)
-    memcpy (tdb_entry->strings + tdb_entry->full_name_offset, newpwd->full_name, full_name_len);
-  if (newpwd->home_dir)
-    memcpy (tdb_entry->strings + tdb_entry->home_dir_offset, newpwd->home_dir, home_dir_len);
-  if (newpwd->dir_drive)
-    memcpy (tdb_entry->strings + tdb_entry->dir_drive_offset, newpwd->dir_drive, dir_drive_len);
-  if (newpwd->logon_script)
-    memcpy (tdb_entry->strings + tdb_entry->logon_script_offset, newpwd->logon_script, logon_script_len);
-  if (newpwd->profile_path)
-    memcpy (tdb_entry->strings + tdb_entry->profile_path_offset, newpwd->profile_path, profile_path_len);
-  if (newpwd->acct_desc)
-    memcpy (tdb_entry->strings + tdb_entry->acct_desc_offset, newpwd->acct_desc, acct_desc_len);
-  if (newpwd->workstations)
-    memcpy (tdb_entry->strings + tdb_entry->workstations_offset, newpwd->workstations, workstations_len);
-  if (newpwd->unknown_str)
-    memcpy (tdb_entry->strings + tdb_entry->unknown_str_offset, newpwd->unknown_str, unknown_str_len);
-  if (newpwd->munged_dial)
-    memcpy (tdb_entry->strings + tdb_entry->munged_dial_offset, newpwd->munged_dial, munged_dial_len);
-  
-  slprintf(keystr, sizeof(keystr), "USER_%s", newpwd->smb_name);
-  key.dptr = keystr;
-  key.dsize = strlen (keystr) + 1;
-  
-  tdb_writelock (pwd_tdb);
-  if (tdb_store (pwd_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
-  {
-      DEBUG(0, ("Unable to modify TDB passwd!"));
-      DEBUGADD(0, (" Error: %s\n", tdb_error (pwd_tdb)));
-      tdb_writeunlock (pwd_tdb);
-      tdb_close (pwd_tdb);
-      return False;
-  }
-
-  tdb_writeunlock (pwd_tdb);
-  tdb_close (pwd_tdb);
-  return True;
-}
-
-static struct sam_passwd *iterate_getsamtdb21pwrid(uint32 user_rid)
-{
-	struct sam_passwd *pwd = NULL;
-	void *fp = NULL;
-
-	DEBUG(10, ("search by smb_userid: %x\n", (int)user_rid));
-
-	/* Open the smb password database - not for update. */
-	fp = startsamtdbpwent(False);
-
-	if (fp == NULL)
+	if (global_tdb_ent.passwd_tdb)
 	{
-		DEBUG(0, ("unable to open smb password database.\n"));
+		tdb_close(global_tdb_ent.passwd_tdb);
+		global_tdb_ent.passwd_tdb = NULL;
+	}
+	
+	DEBUG(7, ("endtdbpwent: closed password file.\n"));
+}
+
+
+/*****************************************************************
+ Get one SAM_ACCOUNT from the TDB (next in line)
+*****************************************************************/
+SAM_ACCOUNT* pdb_getsampwent(void)
+{
+	TDB_DATA 			data;
+	struct passwd			*pw;
+
+	/* do we have an valid interation pointer? */
+	if(global_tdb_ent.passwd_tdb == NULL) 
+	{
+		DEBUG(0,("pdb_get_sampwent: Bad TDB Context pointer.\n"));
 		return NULL;
 	}
 
-	while ((pwd = getsamtdb21pwent(fp)) != NULL && pwd->user_rid != user_rid);
-
-	if (pwd != NULL)
+	data = tdb_fetch (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
+	if (!data.dptr)
 	{
-		DEBUG(10, ("found by user_rid: %x\n", (int)user_rid));
+		DEBUG(5,("pdb_getsampwent: database entry not found.\n"));
+		return NULL;
+	}
+  
+  	/* unpack the buffer */
+	pdb_clear_sam (&global_sam_pass);
+	if (!init_sam_from_buffer (&global_sam_pass, data.dptr, data.dsize))
+	{
+		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
+		return NULL;
+	}
+	
+	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
+	   is used instaed of Get_Pwnam() as we do not need to try case
+	   permutations */
+	if ((pw=sys_getpwnam(pdb_get_username(&global_sam_pass))) == NULL)
+	{
+		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 
+		          pdb_get_username(&global_sam_pass)));
+		return NULL;
+	}
+	
+	pdb_set_uid (&global_sam_pass, pw->pw_uid);
+	pdb_set_gid (&global_sam_pass, pw->pw_gid);
+
+	/* increment to next in line */
+	global_tdb_ent.key = tdb_nextkey (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
+
+	return (&global_sam_pass);
+}
+
+/******************************************************************
+ Lookup a name in the SAM TDB
+******************************************************************/
+SAM_ACCOUNT* pdb_getsampwnam (char *name)
+{
+	TDB_CONTEXT 		*pwd_tdb;
+	TDB_DATA 		data, key;
+	fstring 		keystr;
+	struct passwd		*pw;
+	pstring			tdbfile;
+	
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/passdb.tdb");
+	
+	/* set search key */
+	slprintf(keystr, sizeof(keystr), "%s%s", USERPREFIX, name);
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+
+	/* open the accounts TDB */
+	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDONLY, 0600)))
+	{
+		DEBUG(0, ("pdb_getsampwnam: Unable to open TDB passwd!\n"));
+		return False;
 	}
 
-	endsamtdbpwent(fp);
-	return pwd;
-}
-
-static struct sam_passwd *getsamtdb21pwnam(char *name)
-{
-  static struct sam_passwd sam_entry;
-  static struct tdb_sam_entry *tdb_entry;
-  TDB_CONTEXT *pwd_tdb;
-  TDB_DATA data;
-  TDB_DATA key;
-  fstring keystr;
-
-  if (!(pwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDONLY, 0600)))
-  {
-     DEBUG(0, ("Unable to open TDB passwd!"));
-     return False;
-  }
-
-  slprintf(keystr, sizeof(keystr), "USER_%s", name);
-  key.dptr = keystr;
-  key.dsize = strlen (keystr) + 1;
-
-  data = tdb_fetch (pwd_tdb, key);
-  if (!data.dptr)
-  {
-    DEBUG(5,("getsamtdbpwent: error fetching database.\n"));
-    DEBUGADD(5, (" Error: %s\n", tdb_error(pwd_tdb)));
-    tdb_close (pwd_tdb);
-    return NULL;
-  }
+	/* get the record */
+	data = tdb_fetch (pwd_tdb, key);
+	if (!data.dptr)
+	{
+		DEBUG(5,("pdb_getsampwnam (TDB): error fetching database.\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_error(pwd_tdb)));
+		tdb_close (pwd_tdb);
+		return NULL;
+	}
   
-  tdb_entry = (struct tdb_sam_entry *)(data.dptr);
+  	/* unpack the buffer */
+	pdb_clear_sam (&global_sam_pass);
+	if (!init_sam_from_buffer (&global_sam_pass, data.dptr, data.dsize))
+	{
+		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
+		return NULL;
+	}
+	
+	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
+	   is used instaed of Get_Pwnam() as we do not need to try case
+	   permutations */
+	if ((pw=sys_getpwnam(pdb_get_username(&global_sam_pass))) == NULL)
+	{
+		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 
+		          pdb_get_username(&global_sam_pass)));
+		return NULL;
+	}
+	
+	pdb_set_uid (&global_sam_pass, pw->pw_uid);
+	pdb_set_gid (&global_sam_pass, pw->pw_gid);
+	
+	/* cleanup */
+	tdb_close (pwd_tdb);
 
-  sam_entry.logon_time = tdb_entry->logon_time;
-  sam_entry.logoff_time = tdb_entry->logoff_time;
-  sam_entry.kickoff_time = tdb_entry->kickoff_time;
-  sam_entry.pass_last_set_time = tdb_entry->pass_last_set_time;
-  sam_entry.pass_can_change_time = tdb_entry->pass_can_change_time;
-  sam_entry.pass_must_change_time = tdb_entry->pass_must_change_time;
-  sam_entry.smb_name = tdb_entry->strings + tdb_entry->smb_name_offset;
-  sam_entry.full_name = tdb_entry->strings + tdb_entry->full_name_offset;
-  sam_entry.home_dir = tdb_entry->strings + tdb_entry->home_dir_offset;
-  sam_entry.dir_drive = tdb_entry->strings + tdb_entry->dir_drive_offset;
-  sam_entry.logon_script = tdb_entry->strings + tdb_entry->logon_script_offset;
-  sam_entry.profile_path = tdb_entry->strings + tdb_entry->profile_path_offset;
-  sam_entry.acct_desc = tdb_entry->strings + tdb_entry->acct_desc_offset;
-  sam_entry.workstations = tdb_entry->strings + tdb_entry->workstations_offset;
-  sam_entry.unknown_str = tdb_entry->strings + tdb_entry->unknown_str_offset;
-  sam_entry.munged_dial = tdb_entry->strings + tdb_entry->munged_dial_offset;
-  sam_entry.smb_userid = tdb_entry->smb_userid;
-  sam_entry.smb_grpid = tdb_entry->smb_grpid;
-  sam_entry.user_rid = tdb_entry->user_rid;
-  sam_entry.group_rid = tdb_entry->group_rid;
-  sam_entry.smb_passwd = tdb_entry->smb_passwd;
-  sam_entry.smb_nt_passwd = tdb_entry->smb_nt_passwd;
-  sam_entry.acct_ctrl = tdb_entry->acct_ctrl;
-  sam_entry.unknown_3 = tdb_entry->unknown_3;
-  sam_entry.logon_divs = tdb_entry->logon_divs;
-  sam_entry.hours_len = tdb_entry->hours_len;
-  memcpy (sam_entry.hours, tdb_entry->hours, MAX_HOURS_LEN);
-  sam_entry.unknown_5 = tdb_entry->unknown_5;
-  sam_entry.unknown_6 = tdb_entry->unknown_6;
-
-  tdb_close (pwd_tdb);
-  return &sam_entry;
+	return (&global_sam_pass);
 }
 
-static SMB_BIG_UINT getsamtdbpwpos(void *vp)
+/***************************************************************************
+ Search by uid
+ 
+ I now know what the 'T' stands for in TDB :-(  This is an unacceptable
+ solution.  We need multiple indexes and transactional support.  I'm
+ including this implementation only as an example.
+ **************************************************************************/
+SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
 {
-	return (SMB_BIG_UINT)0;
+	SAM_ACCOUNT	*pw = NULL;
+
+	if (!pdb_setsampwent(False))
+		return NULL;
+		
+	while ( ((pw=pdb_getsampwent()) != NULL) && (pdb_get_uid(pw) != uid) )
+		/* do nothing */ ;
+	
+	pdb_endsampwent();
+		
+	return pw;
 }
 
-static BOOL setsamtdbpwpos(void *vp, SMB_BIG_UINT tok)
+/***************************************************************************
+ Search by rid
+ **************************************************************************/
+SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 {
-	return False;
+	SAM_ACCOUNT	*pw = NULL;
+
+	if (!pdb_setsampwent(False))
+		return NULL;
+		
+	while ( ((pw=pdb_getsampwent()) != NULL) && (pdb_get_user_rid(pw) != rid) )
+		/* do nothing */ ;
+	
+	pdb_endsampwent();
+		
+	return pw;
 }
 
-static struct smb_passwd *getsamtdbpwent(void *vp)
+
+/***************************************************************************
+ Delete a SAM_ACCOUNT
+****************************************************************************/
+BOOL pdb_delete_sam_account(char *name)
 {
-	return pdb_sam_to_smb(getsamtdb21pwent(vp));
+	TDB_CONTEXT 	*pwd_tdb;
+	TDB_DATA 	key;
+	fstring 	keystr;
+	pstring		tdbfile;
+	
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/passdb.tdb");
+	
+
+	/* open the TDB */
+	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
+	{
+		DEBUG(0, ("Unable to open TDB passwd!"));
+		return False;
+	}
+  
+  	/* set the search key */
+	slprintf(keystr, sizeof(keystr), "%s%s", USERPREFIX, name);
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+	
+	/* it's outaa here!  8^) */
+	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS)
+	{
+		DEBUG(5, ("Error deleting entry from tdb database!\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_error(pwd_tdb)));
+		tdb_close(pwd_tdb); 
+		return False;
+	}
+	
+	tdb_close(pwd_tdb);
+	return True;
 }
 
-static BOOL add_samtdbpwd_entry(struct smb_passwd *newpwd)
+/***************************************************************************
+ Update the TDB SAM
+****************************************************************************/
+static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 {
-	return add_samtdb21pwd_entry(pdb_smb_to_sam(newpwd));
+	TDB_CONTEXT 	*pwd_tdb;
+	TDB_DATA 	key, data;
+	BYTE		*buf = NULL;
+	fstring 	keystr;
+	pstring		tdbfile;
+	
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/passdb.tdb");
+	
+	if ( (!newpwd->uid) || (!newpwd->gid) )
+	{
+		DEBUG (0,("tdb_update_sam: Attempting to store a SAM_ACCOUNT for [%s] with no uid/gid!\n", newpwd->username));
+		return False;
+	}
+		
+	/* if we don't have a RID, then generate one */
+	if (!newpwd->user_rid)
+		pdb_set_user_rid (pdb_uid_to_user_rid (newpwd->uid));
+	if (!newpwd->group_rid)
+		pdb_set_user_rid (pdb_uid_to_group_rid (newpwd->gid));
+    
+	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
+	if ((data.dsize=init_buffer_from_sam (&buf, newpwd)) == -1)
+	{
+		DEBUG(0,("tdb_update_sam: ERROR - Unable to copy SAM_ACCOUNT info BYTE buffer!\n"));
+		return False;
+	}
+	data.dptr = buf;
+
+  	/* setup the index key */
+	slprintf(keystr, sizeof(keystr), "%s%s", USERPREFIX, pdb_get_username(newpwd));
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+
+	/* invalidate the existing TDB iterator if it is open */
+	if (global_tdb_ent.passwd_tdb)
+	{
+		tdb_close(global_tdb_ent.passwd_tdb);
+		global_tdb_ent.passwd_tdb = NULL;
+	}
+ 
+ 	/* open the account TDB */
+  	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
+	{
+     		DEBUG(0, ("tdb_update_sam: Unable to open TDB passwd!\n"));
+		if (flag == TDB_INSERT)
+		{
+			DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
+			if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
+			{
+				DEBUG(0, ("Unable to create TDB passwd (smbpasswd.tdb) !!!\n"));
+				return False;
+			}
+		}
+	}
+
+	/* add the account */
+	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS)
+	{
+		DEBUG(0, ("Unable to modify TDB passwd!"));
+		DEBUGADD(0, (" Error: %s\n", tdb_error (pwd_tdb)));
+		tdb_close (pwd_tdb);
+		return False;
+	}
+
+	/* cleanup */
+	tdb_close (pwd_tdb);
+
+	return (True);
 }
 
-static BOOL mod_samtdbpwd_entry(struct smb_passwd* pwd, BOOL override)
+/***************************************************************************
+ Modifies an existing SAM_ACCOUNT
+****************************************************************************/
+BOOL pdb_update_sam_account (SAM_ACCOUNT *newpwd, BOOL override)
 {
-	return mod_samtdb21pwd_entry(pdb_smb_to_sam(pwd), override);
+	return (tdb_update_sam(newpwd, override, TDB_MODIFY));
 }
 
-static struct sam_disp_info *getsamtdbdispnam(char *name)
+/***************************************************************************
+ Adds an existing SAM_ACCOUNT
+****************************************************************************/
+BOOL pdb_add_sam_account (SAM_ACCOUNT *newpwd)
 {
-	return pdb_sam_to_dispinfo(getsam21pwnam(name));
+	return (tdb_update_sam(newpwd, True, TDB_INSERT));
 }
 
-static struct sam_disp_info *getsamtdbdisprid(uint32 rid)
-{
-	return pdb_sam_to_dispinfo(getsam21pwrid(rid));
-}
-
-static struct sam_disp_info *getsamtdbdispent(void *vp)
-{
-	return pdb_sam_to_dispinfo(getsam21pwent(vp));
-}
-
-static struct smb_passwd *iterate_getsamtdbpwrid(uint32 user_rid)
-{
-	return pdb_sam_to_smb(iterate_getsamtdb21pwrid(user_rid));
-}
-
-static struct smb_passwd *getsamtdbpwnam(char *name)
-{
-	return pdb_sam_to_smb(getsamtdb21pwnam(name));
-}
-
-static struct passdb_ops tdb_ops = {
-	startsamtdbpwent,
-	endsamtdbpwent,
-	getsamtdbpwpos,
-	setsamtdbpwpos,
-	getsamtdbpwnam,
-	iterate_getsmbpwuid,          /* In passdb.c */
-	iterate_getsamtdbpwrid,
-	getsamtdbpwent,
-	add_samtdbpwd_entry,
-	mod_samtdbpwd_entry,
-	del_samtdbpwd_entry,
-	getsamtdb21pwent,
-	getsamtdb21pwnam,
-
-	/* TODO change get username from uid and then use
-	   getsamtdb21pwnam */
-	iterate_getsam21pwuid,
-
-	iterate_getsamtdb21pwrid, 
-	add_samtdb21pwd_entry,
-	mod_samtdb21pwd_entry,
-	getsamtdbdispnam,
-	getsamtdbdisprid,
-	getsamtdbdispent
-};
-
-struct passdb_ops *tdb_initialize_password_db(void)
-{    
-  return &tdb_ops;
-}
 
 #else
 	/* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
