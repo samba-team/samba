@@ -378,7 +378,7 @@ static NTSTATUS svfs_rmdir(struct request_context *req, struct smb_rmdir *rd)
 /*
   rename a set of files
 */
-static NTSTATUS svfs_rename(struct request_context *req, struct smb_rename *ren)
+static NTSTATUS svfs_rename(struct request_context *req, union smb_rename *ren)
 {
 	char *unix_path1, *unix_path2;
 

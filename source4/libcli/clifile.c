@@ -137,11 +137,12 @@ BOOL cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t g
 ****************************************************************************/
 BOOL cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
 {
-	struct smb_rename parms;
+	union smb_rename parms;
 
-	parms.in.attrib = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
-	parms.in.pattern1 = fname_src;
-	parms.in.pattern2 = fname_dst;
+	parms.generic.level = RAW_RENAME_RENAME;
+	parms.rename.in.attrib = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
+	parms.rename.in.pattern1 = fname_src;
+	parms.rename.in.pattern2 = fname_dst;
 	return NT_STATUS_IS_OK(smb_raw_rename(cli->tree, &parms));
 }
 

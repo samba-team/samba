@@ -32,16 +32,27 @@
  Rename a file - async interface
 ****************************************************************************/
 struct cli_request *smb_raw_rename_send(struct cli_tree *tree,
-					struct smb_rename *parms)
+					union smb_rename *parms)
 {
 	struct cli_request *req; 
 
-	SETUP_REQUEST(SMBmv, 1, 0);
-	
-	SSVAL(req->out.vwv, VWV(0), parms->in.attrib);
-	
-	cli_req_append_ascii4(req, parms->in.pattern1, STR_TERMINATE);
-	cli_req_append_ascii4(req, parms->in.pattern2, STR_TERMINATE);
+	switch (parms->generic.level) {
+	case RAW_RENAME_RENAME:
+		SETUP_REQUEST(SMBmv, 1, 0);
+		SSVAL(req->out.vwv, VWV(0), parms->rename.in.attrib);
+		cli_req_append_ascii4(req, parms->rename.in.pattern1, STR_TERMINATE);
+		cli_req_append_ascii4(req, parms->rename.in.pattern2, STR_TERMINATE);
+		break;
+
+	case RAW_RENAME_NTRENAME:
+		SETUP_REQUEST(SMBntrename, 4, 0);
+		SSVAL(req->out.vwv, VWV(0), parms->ntrename.in.attrib);
+		SSVAL(req->out.vwv, VWV(1), parms->ntrename.in.flags);
+		SIVAL(req->out.vwv, VWV(2), parms->ntrename.in.root_fid);
+		cli_req_append_ascii4(req, parms->ntrename.in.old_name, STR_TERMINATE);
+		cli_req_append_ascii4(req, parms->ntrename.in.new_name, STR_TERMINATE);
+		break;
+	}
 
 	if (!cli_request_send(req)) {
 		cli_request_destroy(req);
@@ -55,7 +66,7 @@ struct cli_request *smb_raw_rename_send(struct cli_tree *tree,
  Rename a file - sync interface
 ****************************************************************************/
 NTSTATUS smb_raw_rename(struct cli_tree *tree,
-			struct smb_rename *parms)
+			union smb_rename *parms)
 {
 	struct cli_request *req = smb_raw_rename_send(tree, parms);
 	return cli_request_simple_recv(req);

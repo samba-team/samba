@@ -883,6 +883,7 @@ struct bitmap {
 #define SMBnttranss      0xA1   /* NT transact secondary */
 #define SMBntcreateX     0xA2   /* NT create and X */
 #define SMBntcancel      0xA4   /* NT cancel */
+#define SMBntrename      0xA5   /* NT rename */
 
 /* used to indicate end of chain */
 #define SMB_CHAIN_NONE   0xFF
@@ -967,6 +968,11 @@ struct bitmap {
 
 /* Flag for NT transact rename call. */
 #define RENAME_REPLACE_IF_EXISTS 1
+
+/* flags for SMBntrename call */
+#define RENAME_FLAG_HARD_LINK 0x103
+#define RENAME_FLAG_RENAME    0x104
+#define RENAME_FLAG_COPY      0x105
 
 /* Filesystem Attributes. */
 #define FILE_CASE_SENSITIVE_SEARCH 0x01
