@@ -161,4 +161,6 @@ krb5_error_code krb5_afslog __P((krb5_context, krb5_ccache,
 #define _PATH_ARLA_CELLSERVDB 	_PATH_ARLA_VICE "CellServDB"
 #define _PATH_ARLA_THESECELLS	_PATH_ARLA_VICE "TheseCells"
 
+extern int _kafs_debug;
+
 #endif /* __KAFS_H */
