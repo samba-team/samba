@@ -1,3 +1,39 @@
+2001-06-18  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/mcache.c (mcc_remove_cred): use
+	krb5_free_creds_contents
+
+	* lib/krb5/auth_context.c: name function krb5_auth_con more
+	consistenly
+	* lib/krb5/rd_req.c (krb5_verify_authenticator_checksum): use
+	renamed krb5_auth_con_getauthenticator
+
+	* lib/krb5/convert_creds.c (krb524_convert_creds_kdc): update to
+	use krb5_krbhst API
+	* lib/krb5/changepw.c (krb5_change_password): update to use
+	krb5_krbhst API
+	* lib/krb5/send_to_kdc.c: update to use krb5_krbhst API
+	* lib/krb5/krbhst.c (krb5_krbhst_get_addrinfo): add set def_port
+	in krb5_krbhst_info
+	(krb5_krbhst_free): free everything
+
+	* lib/krb5/krb5.h (KRB5_VERIFY_NO_ADDRESSES): add
+	(krb5_krbhst_info): add def_port (default port for this service)
+
+	* lib/krb5/krbhst-test.c: make it more verbose and useful
+	* lib/krb5/krbhst.c: remove some more memory leaks do not try any
+	dns operations if there is local configuration admin: fallback to
+	kerberos.REALM 524: fallback to kdcs kpasswd: fallback to admin
+	add some comments
+
+	* configure.in: remove initstate and setstate, they should be in
+	cf/roken-frag.m4
+
+	* lib/krb5/Makefile.am (noinst_PROGRAMS): add krbhst-test
+	* lib/krb5/krbhst-test.c: new program for testing krbhst
+	* lib/krb5/krbhst.c (common_init): remove memory leak
+	(main): move test program into krbhst-test
+
 2001-06-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5_krbhst_init.3: manpage
@@ -48,6 +84,10 @@
 
 	* kdc/kerberos5.c (tgs_rep2): alloc and free csec and cusec
 	properly
+
+2001-05-17  Assar Westerlund  <assar@sics.se>
+
+	* Release 0.3f
 
 2001-05-17  Assar Westerlund  <assar@sics.se>
 
