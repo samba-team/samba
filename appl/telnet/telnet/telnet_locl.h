@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -160,7 +160,9 @@
 #include <libtelnet/misc-proto.h>
 
 #define LINEMODE
+#ifndef KLUDGELINEMODE
 #define KLUDGELINEMODE
+#endif
 
 #include "ring.h"
 #include "externs.h"
