@@ -54,7 +54,7 @@ that don't have any int types that are 2 bytes long)
 
 You do this:
 
-#define CVAL(buf,pos) (((unsigned char *)(buf))[pos])
+#define CVAL(buf,pos) (((uint8_t *)(buf))[pos])
 #define PVAL(buf,pos) ((unsigned)CVAL(buf,pos))
 #define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
 
@@ -105,8 +105,8 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define CAREFUL_ALIGNMENT 1
 #endif
 
-#define CVAL(buf,pos) ((unsigned)(((const unsigned char *)(buf))[pos]))
-#define CVAL_NC(buf,pos) (((unsigned char *)(buf))[pos]) /* Non-const version of CVAL */
+#define CVAL(buf,pos) ((unsigned)(((const uint8_t *)(buf))[pos]))
+#define CVAL_NC(buf,pos) (((uint8_t *)(buf))[pos]) /* Non-const version of CVAL */
 #define PVAL(buf,pos) (CVAL(buf,pos))
 #define SCVAL(buf,pos,val) (CVAL_NC(buf,pos) = (val))
 
@@ -115,7 +115,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 #define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
 #define IVAL(buf,pos) (SVAL(buf,pos)|SVAL(buf,(pos)+2)<<16)
-#define SSVALX(buf,pos,val) (CVAL_NC(buf,pos)=(unsigned char)((val)&0xFF),CVAL_NC(buf,pos+1)=(unsigned char)((val)>>8))
+#define SSVALX(buf,pos,val) (CVAL_NC(buf,pos)=(uint8_t)((val)&0xFF),CVAL_NC(buf,pos+1)=(uint8_t)((val)>>8))
 #define SIVALX(buf,pos,val) (SSVALX(buf,pos,val&0xFFFF),SSVALX(buf,pos+2,val>>16))
 #define SVALS(buf,pos) ((int16_t)SVAL(buf,pos))
 #define IVALS(buf,pos) ((int32_t)IVAL(buf,pos))

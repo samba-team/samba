@@ -37,7 +37,7 @@ static void mark_packet_signed(struct request_context *req)
 static void calc_signature(uint8_t *buffer, size_t length,
 			   DATA_BLOB *mac_key, uint8_t signature[8])
 {
-	unsigned char calc_md5_mac[16];
+	uint8_t calc_md5_mac[16];
 	struct MD5Context md5_ctx;
 
 	MD5Init(&md5_ctx);
@@ -106,7 +106,7 @@ static void req_signing_alloc_seq_num(struct request_context *req)
 */
 BOOL req_signing_check_incoming(struct request_context *req)
 {
-	unsigned char client_md5_mac[8], signature[8];
+	uint8_t client_md5_mac[8], signature[8];
 
 	switch (req->smb->signing.signing_state) {
 	case SMB_SIGNING_OFF:

@@ -458,8 +458,8 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
-		const unsigned char *c = (const unsigned char *)*inbuf;
-		unsigned char *uc = (unsigned char *)*outbuf;
+		const uint8_t *c = (const uint8_t *)*inbuf;
+		uint8_t *uc = (uint8_t *)*outbuf;
 		int len = 1;
 
 		if ((c[0] & 0x80) == 0) {
@@ -505,8 +505,8 @@ static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-		unsigned char *c = (unsigned char *)*outbuf;
-		const unsigned char *uc = (const unsigned char *)*inbuf;
+		uint8_t *c = (uint8_t *)*outbuf;
+		const uint8_t *uc = (const uint8_t *)*inbuf;
 		int len=1;
 
 		if (uc[1] & 0xf8) {

@@ -121,7 +121,7 @@ static int blocksize=20;
 static int tarhandle;
 
 static void writetarheader(int f,  const char *aname, uint64_t size, time_t mtime,
-			   const char *amode, unsigned char ftype);
+			   const char *amode, uint8_t ftype);
 static void do_atar(char *rname,char *lname,file_info *finfo1);
 static void do_tar(file_info *finfo);
 static void oct_it(uint64_t value, int ndgs, char *p);
@@ -164,7 +164,7 @@ static char *string_create_s(int size)
 Write a tar header to buffer
 ****************************************************************************/
 static void writetarheader(int f, const char *aname, uint64_t size, time_t mtime,
-			   const char *amode, unsigned char ftype)
+			   const char *amode, uint8_t ftype)
 {
   union hblock hb;
   int i, chk, l;

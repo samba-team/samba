@@ -100,7 +100,7 @@ static BOOL dfs_auth(char *user, char *password)
 	struct passwd *pw;
 	sec_passwd_rec_t passwd_rec;
 	sec_login_auth_src_t auth_src = sec_login_auth_src_network;
-	unsigned char dce_errstr[dce_c_error_string_len];
+	uint8_t dce_errstr[dce_c_error_string_len];
 	gid_t egid;
 
 	if (dcelogin_atmost_once)
@@ -174,7 +174,7 @@ static BOOL dfs_auth(char *user, char *password)
 		}
 
 		sec_key_mgmt_get_key(rpc_c_authn_dce_secret, NULL,
-				     (unsigned char *)pw->pw_name,
+				     (uint8_t *)pw->pw_name,
 				     sec_c_key_version_none,
 				     (void **)&key, &err);
 		if (err != error_status_ok)
@@ -205,7 +205,7 @@ static BOOL dfs_auth(char *user, char *password)
 		}
 	}
 
-	if (sec_login_setup_identity((unsigned char *)user,
+	if (sec_login_setup_identity((uint8_t *)user,
 				     sec_login_no_flags,
 				     &my_dce_sec_context, &err) == 0)
 	{
@@ -248,7 +248,7 @@ static BOOL dfs_auth(char *user, char *password)
 	set_effective_gid(pw->pw_gid);
 	set_effective_uid(pw->pw_uid);
 
-	if (sec_login_setup_identity((unsigned char *)user,
+	if (sec_login_setup_identity((uint8_t *)user,
 				     sec_login_no_flags,
 				     &my_dce_sec_context, &err) == 0)
 	{
@@ -359,7 +359,7 @@ void dfs_unlogin(void)
 {
 	error_status_t err;
 	int err2;
-	unsigned char dce_errstr[dce_c_error_string_len];
+	uint8_t dce_errstr[dce_c_error_string_len];
 
 	sec_login_purge_context(&my_dce_sec_context, &err);
 	if (err != error_status_ok)

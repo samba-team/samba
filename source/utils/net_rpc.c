@@ -239,7 +239,7 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 				       int argc, const char **argv) {
 	
 	fstring trust_passwd;
-	unsigned char orig_trust_passwd_hash[16];
+	uint8_t orig_trust_passwd_hash[16];
 	NTSTATUS result;
 
 	fstrcpy(trust_passwd, lp_netbios_name());

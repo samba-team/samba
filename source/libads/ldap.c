@@ -1100,7 +1100,7 @@ static void dump_binary(const char *field, struct berval **values)
 	for (i=0; values[i]; i++) {
 		printf("%s: ", field);
 		for (j=0; j<values[i]->bv_len; j++) {
-			printf("%02X", (unsigned char)values[i]->bv_val[j]);
+			printf("%02X", (uint8_t)values[i]->bv_val[j]);
 		}
 		printf("\n");
 	}

@@ -64,7 +64,7 @@ static unsigned pull_netlogon_string(struct netlogon_string *ret,const char *d)
 	ZERO_STRUCTP(ret);
 
 	do {
-		unsigned len = (unsigned char)*p;
+		unsigned len = (uint8_t)*p;
 		p++;
 
 		if (len > 0 && len != 0xc0) {

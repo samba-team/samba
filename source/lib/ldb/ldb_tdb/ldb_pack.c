@@ -42,7 +42,7 @@
 #define LTDB_PACKING_FORMAT_NODN 0x26011966
 
 /* use a portable integer format */
-static void put_uint32(unsigned char *p, int ofs, unsigned int val)
+static void put_uint32(uint8_t *p, int ofs, unsigned int val)
 {
 	p += ofs;
 	p[0] = val&0xFF;
@@ -51,7 +51,7 @@ static void put_uint32(unsigned char *p, int ofs, unsigned int val)
 	p[3] = (val>>24) & 0xFF;
 }
 
-static unsigned int pull_uint32(unsigned char *p, int ofs)
+static unsigned int pull_uint32(uint8_t *p, int ofs)
 {
 	p += ofs;
 	return p[0] | (p[1]<<8) | (p[2]<<16) | (p[3]<<24);

@@ -218,7 +218,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 					 auth_serversupplied_info **server_info)
 {
 	struct cli_state *cli;
-	static unsigned char badpass[24];
+	static uint8_t badpass[24];
 	static fstring baduser; 
 	static BOOL tested_password_server = False;
 	static BOOL bad_password_server = False;

@@ -688,11 +688,11 @@ static BOOL test_ntlm_in_both(struct samlogon_state *samlogon_state, char **erro
 
 	SMBNTencrypt(samlogon_state->password, samlogon_state->chall.data, 
 		     nt_response.data);
-	E_md4hash(samlogon_state->password, (unsigned char *)nt_hash);
-	SMBsesskeygen_ntv1((const unsigned char *)nt_hash, 
+	E_md4hash(samlogon_state->password, (uint8_t *)nt_hash);
+	SMBsesskeygen_ntv1((const uint8_t *)nt_hash, 
 			   session_key.data);
 
-	E_deshash(samlogon_state->password, (unsigned char *)lm_hash); 
+	E_deshash(samlogon_state->password, (uint8_t *)lm_hash); 
 
 	nt_status = check_samlogon(samlogon_state,
 				   BREAK_NONE,

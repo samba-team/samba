@@ -200,9 +200,9 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 {
 	char lm_pwd[16];
 	char nt_pwd[16];
-	unsigned char local_lm_response[24];
-	unsigned char local_nt_response[24];
-	unsigned char key[16];
+	uint8_t local_lm_response[24];
+	uint8_t local_nt_response[24];
+	uint8_t key[16];
 	
 	ZERO_STRUCT(key);
 	memcpy(key, dc_sess_key, 8);
@@ -236,10 +236,10 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 #endif
 	
 	if (lm_interactive_pwd)
-		SMBOWFencrypt((const unsigned char *)lm_pwd, chal, local_lm_response);
+		SMBOWFencrypt((const uint8_t *)lm_pwd, chal, local_lm_response);
 
 	if (nt_interactive_pwd)
-		SMBOWFencrypt((const unsigned char *)nt_pwd, chal, local_nt_response);
+		SMBOWFencrypt((const uint8_t *)nt_pwd, chal, local_nt_response);
 	
 	/* Password info paranoia */
 	ZERO_STRUCT(key);
@@ -307,7 +307,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 	DEBUG(5,("make_user_info_for_reply: User passwords not in encrypted format.\n"));
 	
 	if (plaintext_password.data) {
-		unsigned char local_lm_response[24];
+		uint8_t local_lm_response[24];
 		
 #ifdef DEBUG_PASSWORD
 		DEBUG(10,("Unencrypted password (len %d):\n",plaintext_password.length));

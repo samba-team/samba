@@ -1268,10 +1268,10 @@ static void *nt_alloc_regf_space(REG_HANDLE *h, int size, unsigned int *off)
 /*
  * Store a SID at the location provided
  */
-static int nt_store_SID(REG_HANDLE *regf, DOM_SID *sid, unsigned char *locn)
+static int nt_store_SID(REG_HANDLE *regf, DOM_SID *sid, uint8_t *locn)
 {
 	int i;
-	unsigned char *p = locn;
+	uint8_t *p = locn;
 
 	if (!regf || !sid || !locn) return 0;
 
@@ -1290,11 +1290,11 @@ static int nt_store_SID(REG_HANDLE *regf, DOM_SID *sid, unsigned char *locn)
 
 }
 
-static int nt_store_ace(REG_HANDLE *regf, SEC_ACE *ace, unsigned char *locn)
+static int nt_store_ace(REG_HANDLE *regf, SEC_ACE *ace, uint8_t *locn)
 {
 	int size = 0;
 	SEC_ACE *reg_ace = (SEC_ACE *)locn;
-	unsigned char *p;
+	uint8_t *p;
 
 	if (!regf || !ace || !locn) return 0;
 
@@ -1303,7 +1303,7 @@ static int nt_store_ace(REG_HANDLE *regf, SEC_ACE *ace, unsigned char *locn)
 
 	/* Deal with the length when we have stored the SID */
 
-	p = (unsigned char *)&reg_ace->info.mask;
+	p = (uint8_t *)&reg_ace->info.mask;
 
 	SIVAL(p, 0, ace->info.mask); p += 4;
 
@@ -1311,7 +1311,7 @@ static int nt_store_ace(REG_HANDLE *regf, SEC_ACE *ace, unsigned char *locn)
 
 	size += 8; /* Size of the fixed header */
 
-	p = (unsigned char *)&reg_ace->size;
+	p = (uint8_t *)&reg_ace->size;
 
 	SSVAL(p, 0, size);
 
@@ -1321,9 +1321,9 @@ static int nt_store_ace(REG_HANDLE *regf, SEC_ACE *ace, unsigned char *locn)
 /*
  * Store an ACL at the location provided
  */
-static int nt_store_acl(REG_HANDLE *regf, SEC_ACL *acl, unsigned char *locn) {
+static int nt_store_acl(REG_HANDLE *regf, SEC_ACL *acl, uint8_t *locn) {
 	int size = 0, i;
-	unsigned char *p = locn, *s;
+	uint8_t *p = locn, *s;
 
 	if (!regf || !acl || !locn) return 0;
 

@@ -68,7 +68,7 @@ void E_md4hash(const char *passwd, uchar p16[16])
 	/* Calculate length in bytes */
 	len = strlen_w(wpwd) * sizeof(int16_t);
 
-	mdfour(p16, (unsigned char *)wpwd, len);
+	mdfour(p16, (uint8_t *)wpwd, len);
 	ZERO_STRUCT(wpwd);	
 }
 
@@ -90,7 +90,7 @@ BOOL E_deshash(const char *passwd, uchar p16[16])
 	push_ascii(dospwd, passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
        
 	/* Only the fisrt 14 chars are considered, password need not be null terminated. */
-	E_P16((const unsigned char *)dospwd, p16);
+	E_P16((const uint8_t *)dospwd, p16);
 
 	if (strlen(dospwd) > 14) {
 		ret = False;
@@ -170,8 +170,8 @@ BOOL ntv2_owf_gen(const uchar owf[16],
 	domain_byte_len = domain_byte_len - 2;
 	
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
-	hmac_md5_update((const unsigned char *)user, user_byte_len, &ctx);
-	hmac_md5_update((const unsigned char *)domain, domain_byte_len, &ctx);
+	hmac_md5_update((const uint8_t *)user, user_byte_len, &ctx);
+	hmac_md5_update((const uint8_t *)domain, domain_byte_len, &ctx);
 	hmac_md5_final(kr_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
@@ -247,7 +247,7 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
 	hmac_md5_update(nt_resp, 16, &ctx);
-	hmac_md5_final((unsigned char *)sess_key, &ctx);
+	hmac_md5_final((uint8_t *)sess_key, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv2:\n"));
@@ -260,7 +260,7 @@ void SMBsesskeygen_ntv1(const uchar kr[16], uint8_t sess_key[16])
 	/* yes, this session key does not change - yes, this 
 	   is a problem - but it is 128 bits */
 	
-	mdfour((unsigned char *)sess_key, kr, 16);
+	mdfour((uint8_t *)sess_key, kr, 16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv1:\n"));
@@ -443,7 +443,7 @@ BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
 	
 	memcpy(&buffer[512 - new_pw_len], new_pw, new_pw_len);
 
-	generate_random_buffer((unsigned char *)buffer, 512 - new_pw_len, False);
+	generate_random_buffer((uint8_t *)buffer, 512 - new_pw_len, False);
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of

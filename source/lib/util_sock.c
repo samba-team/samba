@@ -238,7 +238,7 @@ send a keepalive packet (rfc1002)
 ****************************************************************************/
 BOOL send_nbt_keepalive(int sock_fd)
 {
-	unsigned char buf[4];
+	uint8_t buf[4];
 
 	buf[0] = SMBkeepalive;
 	buf[1] = buf[2] = buf[3] = 0;

@@ -120,9 +120,9 @@ static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	for (i=0;i<len;i++) {
-		unsigned char *v = (unsigned char *)data_out;
+		uint8_t *v = (uint8_t *)data_out;
 		if (v[i] != (i & 0xFF)) {
-			printf("bad data 0x%x at %d\n", (unsigned char)data_out[i], i);
+			printf("bad data 0x%x at %d\n", (uint8_t)data_out[i], i);
 			return False;
 		}
 	}

@@ -38,7 +38,7 @@
 
 static struct {
 	int fnum;
-	unsigned char level;
+	uint8_t level;
 	int count;
 } break_info;
 

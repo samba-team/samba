@@ -45,11 +45,11 @@ static const char *workstation;
 static const char *hex_challenge;
 static const char *hex_lm_response;
 static const char *hex_nt_response;
-static unsigned char *challenge;
+static uint8_t *challenge;
 static size_t challenge_len;
-static unsigned char *lm_response;
+static uint8_t *lm_response;
 static size_t lm_response_len;
-static unsigned char *nt_response;
+static uint8_t *nt_response;
 static size_t nt_response_len;
 
 static char *password;
@@ -393,7 +393,7 @@ enum {
  Routine to set hex password characters into an allocated array.
 **************************************************************/
 
-static void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
+static void hex_encode(const uint8_t *buff_in, size_t len, char **out_hex_buffer)
 {
 	int i;
 	char *hex_buffer;
@@ -410,12 +410,12 @@ static void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_
  into a 16 byte array.
 **************************************************************/
 
-static BOOL hex_decode(const char *hex_buf_in, unsigned char **out_buffer, size_t *size)
+static BOOL hex_decode(const char *hex_buf_in, uint8_t **out_buffer, size_t *size)
 {
 	int i;
 	size_t hex_buf_in_len = strlen(hex_buf_in);
-	unsigned char  partial_byte_hex;
-	unsigned char  partial_byte;
+	uint8_t        partial_byte_hex;
+	uint8_t        partial_byte;
 	const char     *hexchars = "0123456789ABCDEF";
 	char           *p;
 	BOOL           high = True;

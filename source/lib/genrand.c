@@ -22,21 +22,21 @@
 
 #include "includes.h"
 
-static unsigned char hash[258];
+static uint8_t hash[258];
 static uint32_t counter;
-static unsigned char *reseed_data;
+static uint8_t *reseed_data;
 static size_t reseed_data_size;
 
 /**************************************************************** 
  Copy any user given reseed data.
 *****************************************************************/
 
-void set_rand_reseed_data(unsigned char *data, size_t len)
+void set_rand_reseed_data(uint8_t *data, size_t len)
 {
 	SAFE_FREE(reseed_data);
 	reseed_data_size = 0;
 
-	reseed_data = (unsigned char *)memdup(data, len);
+	reseed_data = (uint8_t *)memdup(data, len);
 	if (reseed_data)
 		reseed_data_size = len;
 }
@@ -45,16 +45,16 @@ void set_rand_reseed_data(unsigned char *data, size_t len)
  Setup the seed.
 *****************************************************************/
 
-static void seed_random_stream(unsigned char *seedval, size_t seedlen)
+static void seed_random_stream(uint8_t *seedval, size_t seedlen)
 {
-	unsigned char j = 0;
+	uint8_t j = 0;
 	size_t ind;
 
 	for (ind = 0; ind < 256; ind++)
-		hash[ind] = (unsigned char)ind;
+		hash[ind] = (uint8_t)ind;
 
 	for( ind = 0; ind < 256; ind++) {
-		unsigned char tc;
+		uint8_t tc;
 
 		j += (hash[ind] + seedval[ind%seedlen]);
 
@@ -71,15 +71,15 @@ static void seed_random_stream(unsigned char *seedval, size_t seedlen)
  Get datasize bytes worth of random data.
 *****************************************************************/
 
-static void get_random_stream(unsigned char *data, size_t datasize)
+static void get_random_stream(uint8_t *data, size_t datasize)
 {
-	unsigned char index_i = hash[256];
-	unsigned char index_j = hash[257];
+	uint8_t index_i = hash[256];
+	uint8_t index_j = hash[257];
 	size_t ind;
 
 	for( ind = 0; ind < datasize; ind++) {
-		unsigned char tc;
-		unsigned char t;
+		uint8_t tc;
+		uint8_t t;
 
 		index_i++;
 		index_j += hash[index_i];
@@ -101,10 +101,10 @@ static void get_random_stream(unsigned char *data, size_t datasize)
  Note that the hash is not initialised.
 *****************************************************************/
 
-static void do_filehash(const char *fname, unsigned char *the_hash)
+static void do_filehash(const char *fname, uint8_t *the_hash)
 {
-	unsigned char buf[1011]; /* deliberate weird size */
-	unsigned char tmp_md4[16];
+	uint8_t buf[1011]; /* deliberate weird size */
+	uint8_t tmp_md4[16];
 	int fd, n;
 
 	fd = sys_open(fname,O_RDONLY,0);
@@ -133,7 +133,7 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
 
 static int do_reseed(BOOL use_fd, int fd)
 {
-	unsigned char seed_inbuf[40];
+	uint8_t seed_inbuf[40];
 	uint32_t v1, v2; struct timeval tval; pid_t mypid;
 
 	if (use_fd) {
@@ -181,13 +181,13 @@ static int do_reseed(BOOL use_fd, int fd)
  Interface to the (hopefully) good crypto random number generator.
 ********************************************************************/
 
-void generate_random_buffer( unsigned char *out, int len, BOOL do_reseed_now)
+void generate_random_buffer( uint8_t *out, int len, BOOL do_reseed_now)
 {
 	static BOOL done_reseed = False;
 	static int urand_fd = -1;
-	unsigned char md4_buf[64];
-	unsigned char tmp_buf[16];
-	unsigned char *p;
+	uint8_t md4_buf[64];
+	uint8_t tmp_buf[16];
+	uint8_t *p;
 
 	if(!done_reseed || do_reseed_now) {
 		urand_fd = do_reseed(True, urand_fd);

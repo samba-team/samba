@@ -98,7 +98,7 @@ static BOOL signing_good(struct cli_request *req, BOOL good)
 ************************************************************/
 static void cli_request_simple_sign_outgoing_message(struct cli_request *req)
 {
-	unsigned char calc_md5_mac[16];
+	uint8_t calc_md5_mac[16];
 	struct MD5Context md5_ctx;
 	struct smb_basic_signing_context *data = req->transport->negotiate.sign_info.signing_context;
 
@@ -150,9 +150,9 @@ static void cli_request_simple_sign_outgoing_message(struct cli_request *req)
 static BOOL cli_request_simple_check_incoming_message(struct cli_request *req)
 {
 	BOOL good;
-	unsigned char calc_md5_mac[16];
-	unsigned char server_sent_mac[8];
-	unsigned char sequence_buf[8];
+	uint8_t calc_md5_mac[16];
+	uint8_t server_sent_mac[8];
+	uint8_t sequence_buf[8];
 	struct MD5Context md5_ctx;
 	struct smb_basic_signing_context *data = req->transport->negotiate.sign_info.signing_context;
 	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);

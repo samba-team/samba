@@ -57,9 +57,9 @@ typedef struct _AfpInfo
 	 uint32_t       	afpi_Version;     		/* Must be 0x00010000 */
 	 uint32_t       	afpi_Reserved1;
 	 uint32_t       	afpi_BackupTime;  		/* Backup time for the file/dir */
-	 unsigned char 	afpi_FinderInfo[AFP_FinderSize];  	/* Finder Info (32 bytes) */
-	 unsigned char 	afpi_ProDosInfo[6];  	/* ProDos Info (6 bytes) # */
-	 unsigned char 	afpi_Reserved2[6];
+	 uint8_t 	afpi_FinderInfo[AFP_FinderSize];  	/* Finder Info (32 bytes) */
+	 uint8_t 	afpi_ProDosInfo[6];  	/* ProDos Info (6 bytes) # */
+	 uint8_t 	afpi_Reserved2[6];
 } AfpInfo;
 
 typedef struct _SambaAfpInfo

@@ -107,7 +107,7 @@ static void mdfour64(struct mdfour_state *s, uint32_t *M)
 		X[j] = 0;
 }
 
-static void copy64(uint32_t *M, const unsigned char *in)
+static void copy64(uint32_t *M, const uint8_t *in)
 {
 	int i;
 
@@ -116,7 +116,7 @@ static void copy64(uint32_t *M, const unsigned char *in)
 			(in[i*4+1]<<8) | (in[i*4+0]<<0);
 }
 
-static void copy4(unsigned char *out, uint32_t x)
+static void copy4(uint8_t *out, uint32_t x)
 {
 	out[0] = x&0xFF;
 	out[1] = (x>>8)&0xFF;
@@ -125,9 +125,9 @@ static void copy4(unsigned char *out, uint32_t x)
 }
 
 /* produce a md4 message digest from data of length n bytes */
-void mdfour(unsigned char *out, const unsigned char *in, int n)
+void mdfour(uint8_t *out, const uint8_t *in, int n)
 {
-	unsigned char buf[128];
+	uint8_t buf[128];
 	uint32_t M[16];
 	uint32_t b = n * 8;
 	int i;

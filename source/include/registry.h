@@ -51,7 +51,7 @@ typedef struct reg_ops_s REG_OPS;
 #if 0
 //FIXME
 typedef struct ace_struct_s {
-  unsigned char type, flags;
+  uint8_t type, flags;
   unsigned int perms;   /* Perhaps a better def is in order */
   DOM_SID *trustee;
 } ACE;
