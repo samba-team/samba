@@ -64,25 +64,6 @@ FILE	*NetTrace = 0;		/* Not in bss, since needs to stay */
 int	prettydump;
 
 /*
- * upcase()
- *
- *	Upcase (in place) the argument.
- */
-
-void
-upcase(char *argument)
-{
-    int c;
-
-    while ((c = *argument) != 0) {
-	if (islower(c)) {
-	    *argument = toupper(c);
-	}
-	argument++;
-    }
-}
-
-/*
  * SetSockOpt()
  *
  * Compensate for differences in 4.2 and 4.3 systems.
@@ -91,6 +72,7 @@ upcase(char *argument)
 int
 SetSockOpt(int fd, int level, int option, int yesno)
 {
+#ifdef HAVE_SETSOCKOPT
 #ifndef	NOT43
     return setsockopt(fd, level, option,
 				(void *)&yesno, sizeof yesno);
@@ -102,6 +84,9 @@ SetSockOpt(int fd, int level, int option, int yesno)
     }
     return setsockopt(fd, level, option, 0, 0);
 #endif	/* NOT43 */
+#else
+    return -1;
+#endif
 }
 
 /*
