@@ -35,12 +35,10 @@ struct dcesrv_connection;
 struct dcesrv_call_state;
 struct dcesrv_auth;
 
-/* the dispatch functions for an interface take this form */
-typedef NTSTATUS (*dcesrv_dispatch_fn_t)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
-
 struct dcesrv_interface {
-	/* the ndr function table for the chosen interface */
-	const struct dcerpc_interface_table *ndr;
+	const char *name;
+	const char *uuid;
+	uint32_t if_version;
 
 	/* this function is called when the client binds to this interface  */
 	NTSTATUS (*bind)(struct dcesrv_call_state *, const struct dcesrv_interface *);
@@ -48,10 +46,22 @@ struct dcesrv_interface {
 	/* this function is called when the client disconnects the endpoint */
 	void (*unbind)(struct dcesrv_connection *, const struct dcesrv_interface *);
 
+
+	/* the ndr_pull function for the chosen interface.
+	 */
+	NTSTATUS (*ndr_pull)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_pull *, void **);;
+	
 	/* the dispatch function for the chosen interface.
 	 */
-	dcesrv_dispatch_fn_t dispatch;
-}; 
+	NTSTATUS (*dispatch)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
+
+	/* the ndr_push function for the chosen interface.
+	 */
+	NTSTATUS (*ndr_push)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_push *,void *);
+
+	/* for any private use by the interface code */
+	const void *private;
+};
 
 /* the state of an ongoing dcerpc call */
 struct dcesrv_call_state {

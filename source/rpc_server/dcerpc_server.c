@@ -69,11 +69,11 @@ static struct dcesrv_endpoint *find_endpoint(struct dcesrv_context *dce_ctx,
 static BOOL interface_match(const struct dcesrv_interface *if1,
 							const struct dcesrv_interface *if2)
 {
-	if (if1->ndr->if_version != if2->ndr->if_version) {
+	if (if1->if_version != if2->if_version) {
 		return False;
 	}
 
-	if (strcmp(if1->ndr->uuid, if2->ndr->uuid)==0) {
+	if (strcmp(if1->uuid, if2->uuid)==0) {
 		return True;
 	}			
 
@@ -101,11 +101,11 @@ static const struct dcesrv_interface *find_interface(const struct dcesrv_endpoin
 static BOOL interface_match_by_uuid(const struct dcesrv_interface *iface,
 				    const char *uuid, uint32_t if_version)
 {
-	if (iface->ndr->if_version != if_version) {
+	if (iface->if_version != if_version) {
 		return False;
 	}
 
-	if (strcmp(iface->ndr->uuid, uuid)==0) {
+	if (strcmp(iface->uuid, uuid)==0) {
 		return True;
 	}			
 
@@ -177,7 +177,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	/* see if the interface is already registered on te endpoint */
 	if (find_interface(ep, iface)!=NULL) {
 		DEBUG(0,("dcesrv_interface_register: interface '%s' already registered on endpoint '%s'\n",
-			iface->ndr->name, ep_name));
+			iface->name, ep_name));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
@@ -208,7 +208,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		if (ep->sd != NULL) {
 			DEBUG(0,("dcesrv_interface_register: interface '%s' failed to setup a security descriptor\n"
 			         "                           on endpoint '%s'\n",
-				iface->ndr->name, ep_name));
+				iface->name, ep_name));
 			if (add_ep) free(ep);
 			free(ifl);
 			return NT_STATUS_OBJECT_NAME_COLLISION;
@@ -224,7 +224,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	}
 
 	DEBUG(4,("dcesrv_interface_register: interface '%s' registered on endpoint '%s'\n",
-		iface->ndr->name, ep_name));
+		iface->name, ep_name));
 
 	return NT_STATUS_OK;
 }
@@ -497,10 +497,10 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	pkt.u.bind_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
-	if (call->conn->iface && call->conn->iface->ndr) {
+	if (call->conn->iface) {
 		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", 
-								   call->conn->iface->ndr->name);
+								   call->conn->iface->name);
 	} else {
 		pkt.u.bind_ack.secondary_address = "";
 	}
@@ -631,21 +631,15 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 {
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	uint16_t opnum;
 	void *r;
 	NTSTATUS status;
 	DATA_BLOB stub;
 	uint32_t total_length;
 
+	call->fault_code = 0;
 
 	if (!call->conn->iface) {
 		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
-	}
-
-	opnum = call->pkt.u.request.opnum;
-
-	if (opnum >= call->conn->iface->ndr->num_calls) {
-		return dcesrv_fault(call, DCERPC_FAULT_OP_RNG_ERROR);
 	}
 
 	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call);
@@ -657,21 +651,14 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		pull->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
 	}
 
-	r = talloc(call, call->conn->iface->ndr->calls[opnum].struct_size);
-	if (!r) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	if (!(call->pkt.drep[0] & DCERPC_DREP_LE)) {
 		pull->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
 	/* unravel the NDR for the packet */
-	status = call->conn->iface->ndr->calls[opnum].ndr_pull(pull, NDR_IN, r);
+	status = call->conn->iface->ndr_pull(call, call, pull, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_log_packet(call->conn->iface->ndr, opnum, NDR_IN, 
-				  &call->pkt.u.request.stub_and_verifier);
-		return dcesrv_fault(call, DCERPC_FAULT_NDR);
+		return dcesrv_fault(call, call->fault_code);
 	}
 
 	if (pull->offset != pull->data_size) {
@@ -680,13 +667,9 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		dump_data(10, pull->data+pull->offset, pull->data_size - pull->offset);
 	}
 
-	call->fault_code = 0;
-
 	/* call the dispatch function */
 	status = call->conn->iface->dispatch(call, call, r);
 	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_log_packet(call->conn->iface->ndr, opnum, NDR_IN, 
-				  &call->pkt.u.request.stub_and_verifier);
 		return dcesrv_fault(call, call->fault_code);
 	}
 
@@ -705,9 +688,9 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = call->conn->iface->ndr->calls[opnum].ndr_push(push, NDR_OUT, r);
+	status = call->conn->iface->ndr_push(call, call, push, r);
 	if (!NT_STATUS_IS_OK(status)) {
-		return dcesrv_fault(call, DCERPC_FAULT_NDR);
+		return dcesrv_fault(call, call->fault_code);
 	}
 
 	stub = ndr_push_blob(push);

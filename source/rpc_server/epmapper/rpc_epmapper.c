@@ -72,12 +72,10 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			if (!*eps) {
 				return 0;
 			}
-			(*eps)[total].name = iface->iface.ndr->name;
+			(*eps)[total].name = iface->iface.name;
 			(*eps)[total].ep_description = d->ep_description;
-			GUID_from_string(iface->iface.ndr->uuid, 
-							 &(*eps)[total].ep_description.object);
-			(*eps)[total].ep_description.object_version = 
-											iface->iface.ndr->if_version;
+			GUID_from_string(iface->iface.uuid, &(*eps)[total].ep_description.object);
+			(*eps)[total].ep_description.object_version = iface->iface.if_version;
 			total++;
 		}
 	}

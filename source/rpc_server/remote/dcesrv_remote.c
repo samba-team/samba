@@ -24,7 +24,6 @@
 
 struct dcesrv_remote_private {
 	struct dcerpc_pipe *c_pipe;
-	void *private;	
 };
 
 static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
@@ -34,7 +33,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	const char *binding = lp_parm_string(-1, "dcerpc_remote", "binding");
 
 	if (!binding) {
-		printf("You must specify a ncacn binding string\n");
+		DEBUG(0,("You must specify a ncacn binding string\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -43,10 +42,13 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return NT_STATUS_NO_MEMORY;	
 	}
 
-	status = dcerpc_pipe_connect(&(private->c_pipe), binding, iface->ndr->uuid, iface->ndr->if_version,
+	status = dcerpc_pipe_connect(&(private->c_pipe), binding, iface->uuid, iface->if_version,
 				     lp_workgroup(), 
 				     lp_parm_string(-1, "dcerpc_remote", "username"),
 				     lp_parm_string(-1, "dcerpc_remote", "password"));
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	dce_call->conn->private = private;
 
@@ -62,28 +64,53 @@ static void remote_op_unbind(struct dcesrv_connection *dce_conn, const struct dc
 	return;	
 }
 
-static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
+static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
-	struct dcesrv_remote_private *private = dce_call->conn->private;
+	NTSTATUS status;
+	const struct dcerpc_interface_table *table = dce_call->conn->iface->private;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
-	const struct dcerpc_interface_call *call;
-	const char *name;
 
-	if (opnum >= dce_call->conn->iface->ndr->num_calls) {
+	dce_call->fault_code = 0;
+
+	if (opnum >= table->num_calls) {
 		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	name = dce_call->conn->iface->ndr->calls[opnum].name;
-	call = &dce_call->conn->iface->ndr->calls[opnum];
+	*r = talloc(mem_ctx, table->calls[opnum].struct_size);
+	if (!*r) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+        /* unravel the NDR for the packet */
+	status = table->calls[opnum].ndr_pull(pull, NDR_IN, *r);
+	if (!NT_STATUS_IS_OK(status)) {
+		dcerpc_log_packet(table, opnum, NDR_IN,
+				  &dce_call->pkt.u.request.stub_and_verifier);
+		dce_call->fault_code = DCERPC_FAULT_NDR;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
+{
+	struct dcesrv_remote_private *private = dce_call->conn->private;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
+	const struct dcerpc_interface_table *table = dce_call->conn->iface->private;
+	const struct dcerpc_interface_call *call;
+	const char *name;
+
+	name = table->calls[opnum].name;
+	call = &table->calls[opnum];
 
 	if (private->c_pipe->flags & DCERPC_DEBUG_PRINT_IN) {
 		ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);		
 	}
 
 	/* we didn't use the return code of this function as we only check the last_fault_code */
-	dcerpc_ndr_request(private->c_pipe, NULL, dce_call->conn->iface->ndr,
-				    opnum, mem_ctx,r);
+	dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx,r);
 
 	dce_call->fault_code = private->c_pipe->last_fault_code;
 	if (dce_call->fault_code != 0) {
@@ -98,13 +125,30 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS remote_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, void *r)
+{
+	NTSTATUS status;
+	const struct dcerpc_interface_table *table = dce_call->conn->iface->private;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
+
+        /* unravel the NDR for the packet */
+	status = table->calls[opnum].ndr_push(push, NDR_OUT, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		dce_call->fault_code = DCERPC_FAULT_NDR;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const struct dcesrv_interface *iface)
 {
 	int i;
+	const struct dcerpc_interface_table *table = iface->private;
 
-	for (i=0;i<iface->ndr->endpoints->count;i++) {
+	for (i=0;i<table->endpoints->count;i++) {
 		NTSTATUS ret;
-		const char *name = iface->ndr->endpoints->names[i];
+		const char *name = table->endpoints->names[i];
 
 		ret = dcesrv_interface_register(dce_ctx, name, iface, NULL);
 		if (!NT_STATUS_IS_OK(ret)) {
@@ -150,11 +194,18 @@ static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const stru
 
 static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct dcerpc_interface_table *if_tabl)
 {
-	iface->ndr = if_tabl;
-
+	iface->name = if_tabl->name;
+	iface->uuid = if_tabl->uuid;
+	iface->if_version = if_tabl->if_version;
+	
 	iface->bind = remote_op_bind;
 	iface->unbind = remote_op_unbind;
+
+	iface->ndr_pull = remote_op_ndr_pull;
 	iface->dispatch = remote_op_dispatch;
+	iface->ndr_push = remote_op_ndr_push;
+
+	iface->private = if_tabl;
 
 	return True;
 }
