@@ -40,7 +40,6 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 	GtkTreeIter firstiter, iter, tmpiter;
 	REG_KEY *k, *sub;
 	char *name;
-	GValue value;
 	WERROR error;
 	int i;
 
@@ -330,7 +329,6 @@ static GtkWidget* create_mainwin (void)
 	GtkWidget *tree_vals;
 	GtkWidget *statusbar;
 	GtkAccelGroup *accel_group;
-	GtkTreeIter iter, child;
 
 	accel_group = gtk_accel_group_new ();
 

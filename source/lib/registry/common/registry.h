@@ -123,7 +123,7 @@ struct registry_ops {
 };
 
 struct reg_handle_s {
-	struct registry_ops *functions;
+	const struct registry_ops *functions;
 	char *location;
 	char *credentials;
 	void *backend_data;
@@ -132,7 +132,7 @@ struct reg_handle_s {
 
 struct reg_init_function_entry {
 	/* Function to create a member of the pdb_methods list */
-	struct registry_ops *functions;
+	const struct registry_ops *functions;
 	struct reg_init_function_entry *prev, *next;
 };
 
