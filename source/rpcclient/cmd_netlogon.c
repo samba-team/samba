@@ -51,11 +51,13 @@ void cmd_netlogon_login_test(struct client_info *info)
 	char *nt_password;
 	unsigned char trust_passwd[16];
 
+#if 0
 	/* machine account passwords */
 	pstring new_mach_pwd;
 
 	/* initialisation */
 	new_mach_pwd[0] = 0;
+#endif
 
 	if (!next_token(NULL, nt_user_name, NULL, sizeof(nt_user_name)))
 	{

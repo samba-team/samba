@@ -2682,7 +2682,7 @@ void samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int de
 /*******************************************************************
 makes a SAMR_ENC_HASH structure.
 ********************************************************************/
-void make_enc_hash(SAMR_ENC_HASH *hsh, char hash[16])
+void make_enc_hash(SAMR_ENC_HASH *hsh, uchar hash[16])
 {
 	if (hsh == NULL) return;
 
@@ -2711,8 +2711,8 @@ makes a SAMR_R_UNKNOWN_38 structure.
 ********************************************************************/
 void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 				char *dest_host, char *user_name,
-				char nt_newpass[516], char nt_oldhash[16],
-				char lm_newpass[516], char lm_oldhash[16])
+				char nt_newpass[516], uchar nt_oldhash[16],
+				char lm_newpass[516], uchar lm_oldhash[16])
 {
 	int len_dest_host = strlen(dest_host);
 	int len_user_name = strlen(user_name);

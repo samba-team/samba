@@ -102,8 +102,8 @@ do a SAMR change user password command
 ****************************************************************************/
 BOOL do_samr_chgpasswd_user(struct cli_state *cli,
 		char *srv_name, char *user_name,
-		char nt_newpass[516], char nt_oldhash[16],
-		char lm_newpass[516], char lm_oldhash[16])
+		char nt_newpass[516], uchar nt_oldhash[16],
+		char lm_newpass[516], uchar lm_oldhash[16])
 {
 	prs_struct data;
 	prs_struct rdata;

@@ -1277,8 +1277,8 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 				uint32 user_rid, SAM_USER_INFO_21 *usr);
 BOOL do_samr_chgpasswd_user(struct cli_state *cli,
 		char *srv_name, char *user_name,
-		char nt_newpass[516], char nt_oldhash[16],
-		char lm_newpass[516], char lm_oldhash[16]);
+		char nt_newpass[516], uchar nt_oldhash[16],
+		char lm_newpass[516], uchar lm_oldhash[16]);
 BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name);
 BOOL do_samr_unknown_8(struct cli_state *cli, 
 				POLICY_HND *domain_pol, uint16 switch_value);
@@ -1750,12 +1750,12 @@ void make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u);
 void samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth);
 void make_enc_passwd(SAMR_ENC_PASSWD *pwd, char pass[512]);
 void samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
-void make_enc_hash(SAMR_ENC_HASH *hsh, char hash[16]);
+void make_enc_hash(SAMR_ENC_HASH *hsh, uchar hash[16]);
 void samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth);
 void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 				char *dest_host, char *user_name,
-				char nt_newpass[516], char nt_oldhash[16],
-				char lm_newpass[516], char lm_oldhash[16]);
+				char nt_newpass[516], uchar nt_oldhash[16],
+				char lm_newpass[516], uchar lm_oldhash[16]);
 void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
 void make_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER *r_u, uint32 status);
 void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
@@ -2210,7 +2210,7 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
                      uchar lm_pass[24], uchar nt_pass[24]);
 BOOL pass_check_smb(char *user, char *domain,
-		uchar *chal, char *lm_pwd, char *nt_pwd,
+		uchar *chal, uchar *lm_pwd, uchar *nt_pwd,
 		struct passwd *pwd);
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd);
 BOOL user_ok(char *user,int snum);
