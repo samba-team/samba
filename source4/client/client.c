@@ -1646,7 +1646,7 @@ static int cmd_allinfo(void)
 	pstrcpy(fname,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("deltree <dirname>\n");
+		d_printf("allinfo <filename>\n");
 		return 1;
 	}
 	pstrcat(fname,buf);
