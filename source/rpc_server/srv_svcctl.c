@@ -291,6 +291,44 @@ static void api_svc_enum_svcs_status( uint16 vuid, prs_struct *data,
 }
 
 /*******************************************************************
+ svc_reply_query_disp_name
+ ********************************************************************/
+static void svc_reply_query_disp_name(SVC_Q_QUERY_DISP_NAME *q_u,
+				prs_struct *rdata)
+{
+	SVC_R_QUERY_DISP_NAME r_u;
+	fstring svc_name;
+	uint32 status = 0;
+
+	DEBUG(5,("svc_query_disp_name: %d\n", __LINE__));
+
+	if (find_lsa_policy_by_hnd(&q_u->scman_pol) == -1)
+	{
+		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* for now display name = service name */
+	unistr2_to_ascii(svc_name, &q_u->uni_svc_name, sizeof(svc_name)-1);
+	make_svc_r_query_disp_name(&r_u, svc_name, status);
+
+	/* store the response in the SMB stream */
+	svc_io_r_query_disp_name("", &r_u, rdata, 0);
+
+	DEBUG(5,("svc_query_disp_name: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ api_svc_query_disp_name
+ ********************************************************************/
+static void api_svc_query_disp_name( uint16 vuid, prs_struct *data,
+                                    prs_struct *rdata )
+{
+	SVC_Q_QUERY_DISP_NAME q_u;
+	svc_io_q_query_disp_name("", &q_u, data, 0);
+	svc_reply_query_disp_name(&q_u, rdata);
+}
+
+/*******************************************************************
  array of \PIPE\svcctl operations
  ********************************************************************/
 static struct api_struct api_svc_cmds[] =
@@ -299,6 +337,7 @@ static struct api_struct api_svc_cmds[] =
 	{ "SVC_OPEN_SC_MAN"     , SVC_OPEN_SC_MAN     , api_svc_open_sc_man      },
 	{ "SVC_OPEN_SERVICE"    , SVC_OPEN_SERVICE    , api_svc_open_service     },
 	{ "SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS, api_svc_enum_svcs_status },
+	{ "SVC_QUERY_DISP_NAME" , SVC_QUERY_DISP_NAME , api_svc_query_disp_name  },
 	{ NULL                  , 0                   , NULL                     }
 };
 

@@ -29,6 +29,7 @@
 #define SVC_OPEN_SC_MAN      0x0f
 #define SVC_ENUM_SVCS_STATUS 0x0e
 #define SVC_QUERY_SVC_CONFIG 0x11
+#define SVC_QUERY_DISP_NAME  0x14
 #define SVC_OPEN_SERVICE     0x10
 #define SVC_CLOSE            0x00
 
@@ -156,6 +157,26 @@ typedef struct r_svc_query_svc_cfg_info
 	uint32 status;             /* return status */
 
 } SVC_R_QUERY_SVC_CONFIG;
+
+
+/* SVC_Q_QUERY_DISP_NAME */
+typedef struct q_svc_query_disp_name_info
+{
+	POLICY_HND scman_pol;
+	UNISTR2 uni_svc_name;
+	uint32 buf_size;
+
+} SVC_Q_QUERY_DISP_NAME;
+
+
+/* SVC_R_QUERY_DISP_NAME */
+typedef struct r_svc_query_disp_name_info
+{
+	UNISTR2 uni_disp_name;
+	uint32 buf_size;
+	uint32 status;
+
+} SVC_R_QUERY_DISP_NAME;
 
 
 /* SVC_Q_CLOSE */
