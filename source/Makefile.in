@@ -184,6 +184,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/clidomain.o \
 	libsmb/pwd_cache.o  lib/util_hnd.o \
 	lib/crc32.o lib/md5.o lib/hmacmd5.o \
 	rpc_parse/parse_creds.o  rpc_parse/parse_net.o \
+	rpc_parse/parse_rpc.o rpc_parse/parse_misc.o \
 	rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
 	rpc_parse/parse_vuid.o \
 	lib/vuser.o lib/vuser_db.o
@@ -207,8 +208,7 @@ RPC_PARSE_OBJ1 = rpc_parse/parse_lsa.o \
 		rpc_parse/parse_brs.o \
 		rpc_parse/parse_dfs.o
 
-RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o \
-                rpc_parse/parse_misc.o \
+RPC_PARSE_OBJ2 = \
                 rpc_parse/parse_netsec.o \
 		rpc_parse/parse_sec.o \
 		lib/msrpc-client.o 
@@ -275,8 +275,9 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		smbd/service.o smbd/error.o smbd/vfs.o smbd/vfs-wrap.o \
 		smbd/challenge.o  lib/util_pwdb.o smbd/afsticket.o
 
-PRINTING_OBJ = printing/load.o printing/pcap.o printing/print_svid.o printing/printing.o \
-		printing/lpq_parse.o printing/print_cups.o
+PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_cups.o printing/load.o
+
+PRINTBACKEND_OBJ = printing/printing.o printing/lpq_parse.o printing/nt_printing.o
 
 MSDFS_OBJ = msdfs/msdfs.o msdfs/msdfs_tdb.o msdfs/parse_dfs_map.o
 
@@ -354,7 +355,8 @@ SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(UNIXPASSDB_OBJ) \
            lib/domain_namemap.o \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
-		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) 
+		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) \
+		$(PROFILE_OBJ) 
 
 SMBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(LIBSURS)
 
@@ -449,7 +451,7 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
 NMBD_OBJ = $(NMBD_OBJ1) 
-NMBD_LIBS = $(RPC_PARSE_OBJ2) $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(UBIQXLIB)
+NMBD_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(UBIQXLIB)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
@@ -630,7 +632,7 @@ SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o
 
 CLIENT_OBJ = client/client.o client/clitar.o
-CLIENT_LIBS = $(RPC_PARSE_OBJ2) $(SMBLIB) $(NMBLIB) $(SAMBALIB) 
+CLIENT_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) 
 
 MOUNT_OBJ = client/smbmount.o client/clientutil.o \
               $(RPC_PARSE_OBJ2)
