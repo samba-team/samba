@@ -1,8 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba utility functions
+   
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce      2001-2002
+   Copyright (C) Martin Pool     2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +22,11 @@
 */
 
 #include "includes.h"
+
+/**
+ * @file
+ * @brief String utilities.
+ **/
 
 /**
  * Get the next token from a string, return False if none found.
@@ -140,21 +147,79 @@ char **toktocliplist(int *ctok, const char *sep)
 }
 
 /**
- Case insensitive string compararison.
-**/
-
+ * Case insensitive string compararison.
+ *
+ * iconv does not directly give us a way to compare strings in
+ * arbitrary unix character sets -- all we can is convert and then
+ * compare.  This is expensive.
+ *
+ * As an optimization, we do a first pass that considers only the
+ * prefix of the strings that is entirely 7-bit.  Within this, we
+ * check whether they have the same value.
+ *
+ * Hopefully this will often give the answer without needing to copy.
+ * In particular it should speed comparisons to literal ascii strings
+ * or comparisons of strings that are "obviously" different.
+ *
+ * If we find a non-ascii character we fall back to converting via
+ * iconv.
+ *
+ * This should never be slower than convering the whole thing, and
+ * often faster.
+ *
+ * A different optimization would be to compare for bitwise equality
+ * in the binary encoding.  (It would be possible thought hairy to do
+ * both simultaneously.)  But in that case if they turn out to be
+ * different, we'd need to restart the whole thing.
+ *
+ * Even better is to implement strcasecmp for each encoding and use a
+ * function pointer. 
+ **/
 int StrCaseCmp(const char *s, const char *t)
 {
+
+	const char * ps, * pt;
 	pstring buf1, buf2;
-	unix_strupper(s, strlen(s)+1, buf1, sizeof(buf1));
-	unix_strupper(t, strlen(t)+1, buf2, sizeof(buf2));
-	return strcmp(buf1,buf2);
+
+	for (ps = s, pt = t; ; ps++, pt++) {
+		char us, ut;
+
+		if (!*ps && !*pt)
+			return 0; /* both ended */
+ 		else if (!*ps)
+			return -1; /* s is a prefix */
+		else if (!*pt)
+			return +1; /* t is a prefix */
+		else if ((*ps & 0x80) || (*pt & 0x80))
+			/* not ascii anymore, do it the hard way from here on in */
+			break;
+
+		us = toupper(*ps);
+		ut = toupper(*pt);
+		if (us == ut)
+			continue;
+		else if (us < ut)
+			return -1;
+		else if (us > ut)
+			return +1;
+	}
+
+	/* TODO: Don't do this with a fixed-length buffer.  This could
+	 * still be much more efficient. */
+	/* TODO: Hardcode a char-by-char comparison for UTF-8, which
+	 * can be much faster. */
+	/* TODO: Test case for this! */
+
+	unix_strupper(ps, strlen(ps)+1, buf1, sizeof(buf1));
+	unix_strupper(pt, strlen(pt)+1, buf2, sizeof(buf2));
+
+	return strcmp(buf1, buf2);
 }
+
 
 /**
  Case insensitive string compararison, length limited.
 **/
-
 int StrnCaseCmp(const char *s, const char *t, size_t n)
 {
 	pstring buf1, buf2;
