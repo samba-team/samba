@@ -1229,11 +1229,6 @@ BOOL domain_client_validate( char *user, char *domain,
 
   ZERO_STRUCT(cli);
 
-  if(cli_initialise(&cli) == False) {
-    DEBUG(0,("domain_client_validate: unable to initialize client connection.\n"));
-    return False;
-  }
-
   /*
    * Treat each name in the 'password server =' line as a potential
    * PDC/BDC. Contact each in turn and try and authenticate.
@@ -1242,30 +1237,37 @@ BOOL domain_client_validate( char *user, char *domain,
   p = lp_passwordserver();
   while(p && next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 
+    if(cli_initialise(&cli) == False) {
+      DEBUG(0,("domain_client_validate: unable to initialize client connection.\n"));
+      return False;
+    }
+
     standard_sub_basic(remote_machine);
     strupper(remote_machine);
  
     if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
       DEBUG(1,("domain_client_validate: Can't resolve address for %s\n", remote_machine));
+      cli_shutdown(&cli);
       continue;
     }   
     
     if (ismyip(dest_ip)) {
       DEBUG(1,("domain_client_validate: Password server loop - not using password server %s\n",remote_machine));
+      cli_shutdown(&cli);
       continue;
     }
       
     if (!cli_connect(&cli, remote_machine, &dest_ip)) {
       DEBUG(0,("domain_client_validate: unable to connect to SMB server on \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+      cli_shutdown(&cli);
       continue;
     }
     
-	make_nmb_name(&calling, global_myname , 0x0 , scope);
-	make_nmb_name(&called , remote_machine, 0x20, scope);
+    make_nmb_name(&calling, global_myname , 0x0 , scope);
+    make_nmb_name(&called , remote_machine, 0x20, scope);
 
-	if (!cli_session_request(&cli, &calling, &called))
-	{
+    if (!cli_session_request(&cli, &calling, &called)) {
       DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
       cli_shutdown(&cli);
