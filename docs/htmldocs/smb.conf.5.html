@@ -3145,13 +3145,18 @@ better restrict them with hosts allow!
 <p><br>If the <a href="smb.conf.5.html#security"><strong>"security"</strong></a> parameter is set to
 <strong>"domain"</strong>, then the list of machines in this option must be a list
 of Primary or Backup Domain controllers for the
-<a href="smb.conf.5.html#workgroup"><strong>Domain</strong></a>, as the Samba server is cryptographicly
+<a href="smb.conf.5.html#workgroup"><strong>Domain</strong></a> or the character <code>*</code>, as the Samba server is cryptographicly
 in that domain, and will use cryptographicly authenticated RPC calls
 to authenticate the user logging on. The advantage of using
 <a href="smb.conf.5.html#securityequaldomain"><strong>"security=domain"</strong></a> is that if you list
 several hosts in the <strong>"password server"</strong> option then
 <a href="smbd.8.html"><strong>smbd</strong></a> will try each in turn till it finds one
 that responds. This is useful in case your primary server goes down.
+<p><br>If the <strong>"password server"</strong> option is set to the character <code>*</code>,
+then Samba will attempt to auto-locate the Primary or Backup Domain controllers
+to authenticate against by doing a query for the name <code>WORKGROUP&lt;1C&gt;</code>
+and then contacting each server returned in the list of IP addresses
+from the <a href="smb.conf.5.html#nameresolveorder"><strong>name resolution</strong></a> source.
 <p><br>If the <a href="smb.conf.5.html#security"><strong>"security"</strong></a> parameter is set to
 <a href="smb.conf.5.html#securityequalserver"><strong>"server"</strong></a>, then there are different
 restrictions that <a href="smb.conf.5.html#securityequaldomain"><strong>"security=domain"</strong></a>
@@ -3176,6 +3181,8 @@ workstation.
 <code>	password server = &lt;empty string&gt;</code>
 <p><br><strong>Example:</strong>
 <code>	password server = NT-PDC, NT-BDC1, NT-BDC2</code>
+<p><br><strong>Example:</strong>
+<code>	password server = *</code>
 <p><br><a name="path"></a>
 <li><strong><strong>path (S)</strong></strong>
 <p><br>This parameter specifies a directory to which the user of the service
