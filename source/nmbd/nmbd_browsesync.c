@@ -556,12 +556,17 @@ void collect_all_workgroup_names_from_wins_server(time_t t)
 
 /****************************************************************************
  If we are a domain master browser on the unicast subnet, do a regular sync
- with all other DMBs that we know of on that subnet
+ with all other DMBs that we know of on that subnet.
+
+To prevent exponential network traffic with large numbers of workgroups
+we use a randomised system where sync probability is inversely proportional
+to the number of known workgroups
 **************************************************************************/
 void sync_all_dmbs(time_t t)
 {
 	static time_t lastrun = 0;
 	struct work_record *work;
+	int count=0;
 
 	/* Only do this if we are using a WINS server. */
 	if(we_are_a_wins_client() == False)
@@ -575,13 +580,24 @@ void sync_all_dmbs(time_t t)
 	if (!AM_DOMAIN_MASTER_BROWSER(work))
 		return;
 
-	if ((lastrun != 0) && (t < lastrun + (15 * 60)))
+	if ((lastrun != 0) && (t < lastrun + (5 * 60)))
 		return;
      
-
+	/* count how many syncs we might need to do */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
 		if (strcmp(global_myworkgroup, work->work_group) &&
 		    !ip_equal(work->dmb_addr, ipzero)) {
+			count++;
+		}
+	}
+
+	/* sync with a probability of 1/count */
+	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
+		if (strcmp(global_myworkgroup, work->work_group) &&
+		    !ip_equal(work->dmb_addr, ipzero)) {
+
+			if (((unsigned)random()) % count != 0) continue;
+
 			lastrun = t;
 
 			DEBUG(3,("initiating DMB<->DMB sync with %s(%s)\n",
