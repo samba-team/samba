@@ -341,6 +341,7 @@ char *getwd(char *);
 #define STATFS4
 #define USE_WAITPID
 #define USE_DIRECT
+#define USE_SETSID
 #endif
 
 #ifdef SGI5
@@ -358,6 +359,7 @@ char *getwd(char *);
 #define SIGNAL_CAST (void (*)())
 #define USE_STATVFS
 #define USE_WAITPID
+#define USE_SETSID
 #endif
 
 

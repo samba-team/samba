@@ -135,10 +135,10 @@ void reply_name_release(struct packet_struct *p)
   
   /* XXXX under what conditions should we reject the removal?? */
   /* For now - remove if the names match and the group bit matches. */
-  if (n && (NAME_GROUP(n->ip_flgs[0].nb_flags) == NAME_GROUP(nb_flags)))
+  if (n && (n->source != SELF) && (NAME_GROUP(n->ip_flgs[0].nb_flags) == NAME_GROUP(nb_flags)))
     {
       success = True;
-      
+     
       DEBUG(5, ("reply_name_release: Removing name %s on subnet %s\n",
                 namestr(&nmb->question.question_name), inet_ntoa(d->bcast_ip)));
       remove_name(d,n);
