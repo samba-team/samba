@@ -325,7 +325,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			session_key = data_blob(NULL, 16);
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 		}
-		cli_simple_set_signing(cli, session_key, nt_response); 
+		cli_simple_set_signing(cli, session_key, nt_response, 0); 
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
@@ -518,7 +518,7 @@ static NTSTATUS cli_session_setup_kerberos(struct cli_state *cli, const char *pr
 	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
 #endif
 
-	cli_simple_set_signing(cli, session_key_krb5, null_blob); 
+	cli_simple_set_signing(cli, session_key_krb5, null_blob, 0); 
 			
 	blob2 = cli_session_setup_blob(cli, negTokenTarg);
 
@@ -575,7 +575,6 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 						  blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DATA_BLOB null_blob = data_blob(NULL, 0);
 			if (turn == 1) {
 				/* and wrap it in a SPNEGO wrapper */
 				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
@@ -584,10 +583,6 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 				msg1 = spnego_gen_auth(blob_out);
 			}
 		
-			cli_simple_set_signing(cli, 
-					       data_blob(ntlmssp_state->session_key.data, ntlmssp_state->session_key.length), 
-					       null_blob); 
-			
 			/* now send that blob on its way */
 			if (!cli_session_setup_blob_send(cli, msg1)) {
 				DEBUG(3, ("Failed to send NTLMSSP/SPENGO blob to server!\n"));
@@ -637,8 +632,21 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED));
 
 	if (NT_STATUS_IS_OK(nt_status)) {
+
+		DATA_BLOB key = data_blob(ntlmssp_state->session_key.data,
+					  ntlmssp_state->session_key.length);
+		DATA_BLOB null_blob = data_blob(NULL, 0);
+
 		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
 		cli_set_session_key(cli, ntlmssp_state->session_key);
+
+		/* Using NTLMSSP session setup, signing on the net only starts
+		 * after a successful authentication and the session key has
+		 * been determined, but with a sequence number of 2. This
+		 * assumes that NTLMSSP needs exactly 2 roundtrips, for any
+		 * other SPNEGO mechanism it needs adapting. */
+
+		cli_simple_set_signing(cli, key, null_blob, 2);
 	}
 
 	/* we have a reference conter on ntlmssp_state, if we are signing
