@@ -4035,7 +4035,10 @@ case "$host_os" in
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
 		;;
 	*freebsd5*)
-		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_freebsd.o"
+		# FreeBSD winbind client is implemented as a wrapper around
+		# the Linux version.
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_freebsd.o \
+		    nsswitch/winbind_nss_linux.o"
 		;;
 	*irix*)
 		# IRIX has differently named shared libraries
