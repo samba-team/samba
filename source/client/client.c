@@ -481,6 +481,11 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 			pstring mask2;
 			char *p;
 
+			if (!f->name[0]) {
+				d_printf("Empty dir name returned. Possible server misconfiguration.\n");
+				return;
+			}
+
 			pstrcpy(mask2, mask);
 			p = strrchr_m(mask2,'\\');
 			if (!p) return;
