@@ -134,6 +134,11 @@ BOOL rpcbuf_alloc_size(RPC_BUFFER *buffer, uint32 buffer_size)
 	uint32 extra_space;
 	uint32 old_offset;
 	
+	/* if we don't need anything. don't do anything */
+	
+	if ( buffer_size == 0x0 )
+		return True;
+	
 	ps= &buffer->prs;
 
 	/* damn, I'm doing the reverse operation of prs_grow() :) */

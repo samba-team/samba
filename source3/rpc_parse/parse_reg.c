@@ -572,6 +572,54 @@ BOOL reg_io_r_getversion(const char *desc,  REG_R_GETVERSION *r_u, prs_struct *p
 reads or writes a structure.
 ********************************************************************/
 
+BOOL reg_io_q_restore_key(const char *desc,  REG_Q_RESTORE_KEY *q_u, prs_struct *ps, int depth)
+{
+	if ( !q_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_q_restore_key");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
+		return False;
+
+	if(!prs_unistr4("filename", ps, depth, &q_u->filename))
+		return False;
+
+	if(!prs_uint32("flags", ps, depth, &q_u->flags))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL reg_io_r_restore_key(const char *desc,  REG_R_RESTORE_KEY *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_r_restore_key");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_werror("status" , ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
 BOOL reg_io_q_save_key(const char *desc,  REG_Q_SAVE_KEY *q_u, prs_struct *ps, int depth)
 {
 	if ( !q_u )
