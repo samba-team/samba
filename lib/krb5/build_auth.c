@@ -42,7 +42,8 @@ krb5_build_authenticator (krb5_context context,
 			  krb5_creds *cred,
 			  Checksum *cksum,
 			  Authenticator **auth_result,
-			  krb5_data *result)
+			  krb5_data *result,
+			  krb5_key_usage usage)
 {
   Authenticator *auth;
   u_char *buf = NULL;
@@ -130,7 +131,7 @@ krb5_build_authenticator (krb5_context context,
       goto fail;
   ret = krb5_encrypt (context,
 		      crypto,
-		      KRB5_KU_AP_REQ_AUTH,
+		      usage /* KRB5_KU_AP_REQ_AUTH */,
 		      buf + buf_size - len, 
 		      len,
 		      result);
