@@ -273,6 +273,13 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 	int extra_data_len, gr_mem_len;
 	char *gr_mem;
 
+	/* Bug out if the gid isn't in the winbind range */
+
+	if ((state->request.data.gid < server_state.gid_low) ||
+	    (state->request.data.gid > server_state.gid_high)) {
+		return WINBINDD_ERROR;
+	}
+
 	DEBUG(3, ("[%5d]: getgrgid %d\n", state->pid, 
 		  state->request.data.gid));
 

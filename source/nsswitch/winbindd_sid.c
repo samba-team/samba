@@ -163,6 +163,13 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 	uint32 user_rid;
 	DOM_SID sid;
 
+	/* Bug out if the uid isn't in the winbind range */
+
+	if ((state->request.data.uid < server_state.uid_low ) ||
+	    (state->request.data.uid > server_state.uid_high)) {
+		return WINBINDD_ERROR;
+	}
+
 	DEBUG(3, ("[%5d]: uid to sid %d\n", state->pid, 
 		  state->request.data.uid));
 
@@ -192,6 +199,13 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 	uint32 group_rid;
 	DOM_SID sid;
+
+	/* Bug out if the gid isn't in the winbind range */
+
+	if ((state->request.data.gid < server_state.gid_low) ||
+	    (state->request.data.gid > server_state.gid_high)) {
+		return WINBINDD_ERROR;
+	}
 
 	DEBUG(3, ("[%5d]: gid to sid %d\n", state->pid,
 		  state->request.data.gid));

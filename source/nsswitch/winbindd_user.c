@@ -192,6 +192,13 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	SAM_USERINFO_CTR user_info;
 	gid_t gid;
 	
+	/* Bug out if the uid isn't in the winbind range */
+
+	if ((state->request.data.uid < server_state.uid_low ) ||
+	    (state->request.data.uid > server_state.uid_high)) {
+		return WINBINDD_ERROR;
+	}
+
 	DEBUG(3, ("[%5d]: getpwuid %d\n", state->pid, 
 		  state->request.data.uid));
 	
