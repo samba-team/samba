@@ -26,6 +26,11 @@
 /* Some macros to ensure people don't use buffer overflow vulnerable string
    functions. */
 
+#ifdef bcopy
+#undef bcopy
+#endif /* bcopy */
+#define bcopy(src,dest,size) __ERROR__XX__NEVER_USE_BCOPY___;
+
 #ifdef strcpy
 #undef strcpy
 #endif /* strcpy */
