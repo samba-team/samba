@@ -490,6 +490,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 	user_dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
+	if (!user_dn) {
+		DEBUG(1,("lookup_usergroups(rid=%d) ads_search did not return a a distinguishedName!\n", user_rid));
+		goto done;
+	}
 
 	if (msg) ads_msgfree(ads, msg);
 
