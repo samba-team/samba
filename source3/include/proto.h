@@ -403,9 +403,6 @@ DOM_SID *sid_dup(DOM_SID *src);
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
 BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2);
 size_t sid_size(DOM_SID *sid);
-BOOL read_sid(char *sam_name, DOM_SID *sid);
-BOOL write_sid(char *sam_name, DOM_SID *sid);
-BOOL create_new_sid(DOM_SID *sid);
 
 /*The following definitions come from  lib/util_sock.c  */
 
@@ -1486,7 +1483,7 @@ void pdb_set_last_set_time(char *p, int max_len, time_t t);
 void pdb_sethexpwd(char *p, unsigned char *pwd, uint16 acct_ctrl);
 BOOL pdb_gethexpwd(char *p, unsigned char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
-BOOL pdb_generate_sam_sid(char *domain_name, DOM_SID *sid);
+BOOL pdb_generate_sam_sid(void);
 uid_t pdb_user_rid_to_uid(uint32 user_rid);
 gid_t pdb_user_rid_to_gid(uint32 user_rid);
 uint32 pdb_uid_to_user_rid(uid_t uid);
