@@ -1669,7 +1669,7 @@ static BOOL lp_add_hidden(const char *name, const char *fstype, BOOL guest_ok)
 	string_set(&ServicePtrs[i]->szUsername, "");
 	string_set(&ServicePtrs[i]->comment, comment);
 	string_set(&ServicePtrs[i]->fstype, fstype);
-	ServicePtrs[i]->iMaxConnections = 0;
+	ServicePtrs[i]->iMaxConnections = -1;
 	ServicePtrs[i]->bAvailable = True;
 	ServicePtrs[i]->bRead_only = True;
 	ServicePtrs[i]->bGuest_only = False;
