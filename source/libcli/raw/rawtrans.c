@@ -56,8 +56,8 @@ NTSTATUS smb_raw_trans2_recv(struct smbcli_request *req,
 {
 	int total_data=0;
 	int total_param=0;
-	char *tdata;
-	char *tparam;
+	uint8_t *tdata;
+	uint8_t *tparam;
 
 	parms->out.data.length = 0;
 	parms->out.data.data = NULL;

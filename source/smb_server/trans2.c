@@ -666,7 +666,7 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 
 		for (i=0;i<st->stream_info.out.num_streams;i++) {
 			uint16_t data_size = trans->out.data.length;
-			char *data;
+			uint8_t *data;
 
 			trans2_grow_data(req, trans, data_size + 24);
 			data = trans->out.data.data + data_size;
@@ -957,7 +957,7 @@ static void find_fill_info(struct smbsrv_request *req,
 			   struct find_state *state,
 			   union smb_search_data *file)
 {
-	char *data;
+	uint8_t *data;
 	uint_t ofs = trans->out.data.length;
 
 	switch (state->level) {
@@ -1157,7 +1157,7 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct smb_trans2 *
 	union smb_search_first search;
 	NTSTATUS status;
 	uint16_t level;
-	char *param;
+	uint8_t *param;
 	struct find_state state;
 
 	/* make sure we got all the parameters */
@@ -1218,7 +1218,7 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct smb_trans2 *t
 	union smb_search_next search;
 	NTSTATUS status;
 	uint16_t level;
-	char *param;
+	uint8_t *param;
 	struct find_state state;
 
 	/* make sure we got all the parameters */
@@ -1322,7 +1322,7 @@ void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 	uint16_t param_count, data_count;
 	uint16_t params_left, data_left;
 	uint16_t param_total, data_total;
-	char *params, *data;
+	uint8_t *params, *data;
 	NTSTATUS status;
 
 	/* parse request */

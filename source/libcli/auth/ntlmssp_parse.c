@@ -115,7 +115,7 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			break;
 		case 'C':
 			s = va_arg(ap, char *);
-			pointers[i].data = s;
+			pointers[i].data = (void *)s;
 			pointers[i].length = strlen(s)+1;
 			head_size += pointers[i].length;
 			break;
