@@ -88,6 +88,8 @@ do_request(krb5_context context, void *buf, size_t len,
 {
     krb5_error_code ret;
     krb5_data reply;
+
+    reply.length = 0;
     ret = process_request(context, buf, len, &reply);
     if(ret)
 	warnx("%s", krb5_get_err_text(context, ret));
