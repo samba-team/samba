@@ -17,13 +17,25 @@
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/*
+ * This file also contains migration code to move from an old
+ * trust account password file stored in the file :
+ * ${SAMBA_HOME}/private/{domain}.{netbiosname}.mac
+ * into a record stored in the tdb ${SAMBA_HOME}/private/secrets.tdb
+ * database. JRA.
+ */
+
 #include "includes.h"
+
+extern int DEBUGLEVEL;
+extern pstring global_myname;
 
 BOOL global_machine_password_needs_changing = False;
 
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
+
 BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
 {
   if (fd < 0)
@@ -45,6 +57,7 @@ BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
 /***************************************************************
  Unlock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
+
 BOOL pw_file_unlock(int fd, int *plock_depth)
 {
   BOOL ret=True;
@@ -61,9 +74,210 @@ BOOL pw_file_unlock(int fd, int *plock_depth)
   return ret;
 }
 
+static int mach_passwd_lock_depth;
+static FILE *mach_passwd_fp;
+
+/************************************************************************
+ Routine to get the name for an old trust account file.
+************************************************************************/
+
+static void get_trust_account_file_name( char *domain, char *name, char *mac_file)
+{
+  unsigned int mac_file_len;
+  char *p;
+
+  pstrcpy(mac_file, lp_smb_passwd_file());
+  p = strrchr(mac_file, '/');
+  if(p != NULL)
+    *++p = '\0';
+
+  mac_file_len = strlen(mac_file);
+
+  if ((int)(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) < 0)
+  {
+    DEBUG(0,("trust_password_lock: path %s too long to add trust details.\n",
+              mac_file));
+    return;
+  }
+
+  pstrcat(mac_file, domain);
+  pstrcat(mac_file, ".");
+  pstrcat(mac_file, name);
+  pstrcat(mac_file, ".mac");
+}
+ 
+/************************************************************************
+ Routine to lock the old trust account password file for a domain.
+ As this is a function to migrate to the new secrets.tdb, we never
+ create the file here, only open it.
+************************************************************************/
+
+static BOOL trust_password_file_lock(char *domain, char *name)
+{
+  pstring mac_file;
+
+  if(mach_passwd_lock_depth == 0) {
+    int fd;
+
+    get_trust_account_file_name( domain, name, mac_file);
+
+    if ((fd = sys_open(mac_file, O_RDWR, 0)) == -1)
+      return False;
+
+    if((mach_passwd_fp = fdopen(fd, "w+b")) == NULL) {
+        DEBUG(0,("trust_password_lock: cannot open file %s - Error was %s.\n",
+              mac_file, strerror(errno) ));
+        return False;
+    }
+
+    if(!pw_file_lock(fileno(mach_passwd_fp), F_WRLCK, 60, &mach_passwd_lock_depth)) {
+      DEBUG(0,("trust_password_lock: cannot lock file %s\n", mac_file));
+      fclose(mach_passwd_fp);
+      return False;
+    }
+
+  }
+
+  return True;
+}
+
+/************************************************************************
+ Routine to unlock the old trust account password file for a domain.
+************************************************************************/
+
+static BOOL trust_password_file_unlock(void)
+{
+  BOOL ret = pw_file_unlock(fileno(mach_passwd_fp), &mach_passwd_lock_depth);
+  if(mach_passwd_lock_depth == 0)
+    fclose(mach_passwd_fp);
+  return ret;
+}
+
+/************************************************************************
+ Routine to delete the old trust account password file for a domain.
+ Note that this file must be locked as it is truncated before the
+ delete. This is to ensure it only gets deleted by one smbd.
+************************************************************************/
+
+static BOOL trust_password_file_delete( char *domain, char *name )
+{
+  pstring mac_file;
+  int ret;
+
+  get_trust_account_file_name( domain, name, mac_file);
+  if(sys_ftruncate(fileno(mach_passwd_fp),(SMB_OFF_T)0) == -1) {
+    DEBUG(0,("trust_password_file_delete: Failed to truncate file %s (%s)\n",
+        mac_file, strerror(errno) ));
+  }
+  ret = unlink( mac_file );
+  return (ret != -1);
+}
+
+/************************************************************************
+ Routine to get the old trust account password for a domain - to convert
+ to the new secrets.tdb entry.
+ The user of this function must have locked the trust password file.
+************************************************************************/
+
+static BOOL get_trust_account_password_from_file( unsigned char *ret_pwd, time_t *pass_last_set_time)
+{
+  char linebuf[256];
+  char *p;
+  int i;
+  SMB_STRUCT_STAT st;
+  linebuf[0] = '\0';
+
+  *pass_last_set_time = (time_t)0;
+  memset(ret_pwd, '\0', 16);
+
+  if(sys_fstat(fileno(mach_passwd_fp), &st) == -1) {
+    DEBUG(0,("get_trust_account_password: Failed to stat file. Error was %s.\n",
+              strerror(errno) )); 
+    return False;
+  }
+
+  /*
+   * If size is zero, another smbd has migrated this file
+   * to the secrets.tdb file, and we are in a race condition.
+   * Just ignore the file.
+   */
+
+  if (st.st_size == 0)
+    return False;
+
+  if(sys_fseek( mach_passwd_fp, (SMB_OFF_T)0, SEEK_SET) == -1) {
+    DEBUG(0,("get_trust_account_password: Failed to seek to start of file. Error was %s.\n",
+              strerror(errno) ));
+    return False;
+  } 
+
+  fgets(linebuf, sizeof(linebuf), mach_passwd_fp);
+  if(ferror(mach_passwd_fp)) {
+    DEBUG(0,("get_trust_account_password: Failed to read password. Error was %s.\n",
+              strerror(errno) ));
+    return False;
+  }
+
+  if(linebuf[strlen(linebuf)-1] == '\n')
+    linebuf[strlen(linebuf)-1] = '\0';
+
+  /*
+   * The length of the line read
+   * must be 45 bytes ( <---XXXX 32 bytes-->:TLC-12345678
+   */
+
+  if(strlen(linebuf) != 45) {
+    DEBUG(0,("get_trust_account_password: Malformed trust password file (wrong length \
+- was %d, should be 45).\n", (int)strlen(linebuf)));
+#ifdef DEBUG_PASSWORD
+    DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
+#endif
+    return False;
+  }
+
+  /*
+   * Get the hex password.
+   */
+
+  if (!pdb_gethexpwd((char *)linebuf, ret_pwd) || linebuf[32] != ':' || 
+         strncmp(&linebuf[33], "TLC-", 4)) {
+    DEBUG(0,("get_trust_account_password: Malformed trust password file (incorrect format).\n"));
+#ifdef DEBUG_PASSWORD
+    DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
+#endif
+    return False;
+  }
+
+  /*
+   * Get the last changed time.
+   */
+  p = &linebuf[37];
+
+  for(i = 0; i < 8; i++) {
+    if(p[i] == '\0' || !isxdigit((int)p[i])) {
+      DEBUG(0,("get_trust_account_password: Malformed trust password file (no timestamp).\n"));
+#ifdef DEBUG_PASSWORD
+      DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
+#endif
+      return False;
+    }
+  }
+
+  /*
+   * p points at 8 characters of hex digits -
+   * read into a time_t as the seconds since
+   * 1970 that the password was last changed.
+   */
+
+  *pass_last_set_time = (time_t)strtol(p, NULL, 16);
+
+  return True;
+}
+
 /************************************************************************
 form a key for fetching a domain trust password
 ************************************************************************/
+
 static char *trust_keystr(char *domain)
 {
 	static fstring keystr;
@@ -71,10 +285,34 @@ static char *trust_keystr(char *domain)
 	return keystr;
 }
 
+/************************************************************************
+ Migrate an old DOMAIN.MACINE.mac password file to the tdb secrets db.
+************************************************************************/
+
+static void migrate_from_old_password_file(char *domain)
+{
+	struct machine_acct_pass pass;
+
+	if (!trust_password_file_lock(domain, global_myname))
+		return;
+
+	if (!get_trust_account_password_from_file( pass.hash, &pass.mod_time)) {
+		trust_password_file_unlock();
+		return;
+	}
+
+	trust_password_file_delete(domain, global_myname);
+
+	secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
+
+	trust_password_file_unlock();
+	return;
+}
 
 /************************************************************************
  Routine to delete the trust account password file for a domain.
 ************************************************************************/
+
 BOOL trust_password_delete(char *domain)
 {
 	return secrets_delete(trust_keystr(domain));
@@ -82,27 +320,44 @@ BOOL trust_password_delete(char *domain)
 
 /************************************************************************
  Routine to get the trust account password for a domain.
- The user of this function must have locked the trust password file.
 ************************************************************************/
+
 BOOL get_trust_account_password(char *domain, unsigned char *ret_pwd, time_t *pass_last_set_time)
 {
 	struct machine_acct_pass *pass;
 	size_t size;
 
+	/*
+	 * Firstly check if we need to migrate an old DOMAIN.MACHINE.mac
+	 * file into the secrets file.
+	 */
+
+	migrate_from_old_password_file(domain);
+
 	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
 	    size != sizeof(*pass)) return False;
 
-	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
+	/* 
+	 * Here we check the last change time to see if the machine
+	 * password needs changing. JRA. 
+	 */
+
+	if(time(NULL) > pass->mod_time + lp_machine_password_timeout())
+		global_machine_password_needs_changing = True;
+
+	if (pass_last_set_time)
+		*pass_last_set_time = pass->mod_time;
+
 	memcpy(ret_pwd, pass->hash, 16);
 	free(pass);
+
 	return True;
 }
 
-
 /************************************************************************
  Routine to get the trust account password for a domain.
- The user of this function must have locked the trust password file.
 ************************************************************************/
+
 BOOL set_trust_account_password(char *domain, unsigned char *md4_new_pwd)
 {
 	struct machine_acct_pass pass;
