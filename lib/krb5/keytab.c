@@ -41,15 +41,6 @@
 RCSID("$Id$");
 
 /*
- * the registered keytab types.
- * `num_kt_types' are them are stored in `kt_types'
- */
-
-static int num_kt_types;
-
-static struct krb5_keytab_data *kt_types;
-
-/*
  * Register a new keytab in `ops'
  * Return 0 or an error.
  */
@@ -60,18 +51,16 @@ krb5_kt_register(krb5_context context,
 {
     struct krb5_keytab_data *tmp;
 
-    tmp = realloc(kt_types, (num_kt_types + 1) * sizeof(*kt_types));
+    tmp = realloc(context->kt_types,
+		  (context->num_kt_types + 1) * sizeof(*context->kt_types));
     if(tmp == NULL)
 	return ENOMEM;
-    memcpy(&tmp[num_kt_types], ops, sizeof(tmp[num_kt_types]));
-    kt_types = tmp;
-    num_kt_types++;
+    memcpy(&tmp[context->num_kt_types], ops,
+	   sizeof(tmp[context->num_kt_types]));
+    context->kt_types = tmp;
+    context->num_kt_types++;
     return 0;
 }
-
-#ifdef KRB4
-extern krb5_kt_ops krb4_fkt_ops;
-#endif
 
 /*
  * Resolve the keytab name (of the form `type:residual') in `name'
@@ -90,18 +79,6 @@ krb5_kt_resolve(krb5_context context,
     size_t type_len;
     krb5_error_code ret;
 
-    /* register default set of types */
-    if(num_kt_types == 0) {
-	ret = krb5_kt_register(context, &krb5_fkt_ops);
-	if(ret) return ret;
-	ret = krb5_kt_register(context, &krb5_mkt_ops);
-	if(ret) return ret;
-#ifdef KRB4
-	ret = krb5_kt_register(context, &krb4_fkt_ops);
-	if(ret) return ret;
-#endif
-    }
-    
     residual = strchr(name, ':');
     if(residual == NULL) {
 	type = "FILE";
@@ -113,17 +90,17 @@ krb5_kt_resolve(krb5_context context,
 	residual++;
     }
     
-    for(i = 0; i < num_kt_types; i++) {
-	if(strncmp(type, kt_types[i].prefix, type_len) == 0)
+    for(i = 0; i < context->num_kt_types; i++) {
+	if(strncmp(type, context->kt_types[i].prefix, type_len) == 0)
 	    break;
     }
-    if(i == num_kt_types)
+    if(i == context->num_kt_types)
 	return KRB5_KT_UNKNOWN_TYPE;
     
     k = malloc (sizeof(*k));
     if (k == NULL)
 	return ENOMEM;
-    memcpy(k, &kt_types[i], sizeof(*k));
+    memcpy(k, &context->kt_types[i], sizeof(*k));
     k->data = NULL;
     ret = (*k->resolve)(context, residual, k);
     if(ret) {
