@@ -23,28 +23,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-/** List of various built-in authentication modules */
-
-static const struct auth_init_function_entry builtin_auth_init_functions[] = {
-	{ "guest", auth_init_guest },
-/*	{ "rhosts", auth_init_rhosts }, */
-/*	{ "hostsequiv", auth_init_hostsequiv }, */
-	{ "sam", auth_init_sam },	
-	{ "samstrict", auth_init_samstrict },
-	{ "samstrict_dc", auth_init_samstrict_dc },
-	{ "unix", auth_init_unix },
-/*	{ "smbserver", auth_init_smbserver }, */
-/*	{ "ntdomain", auth_init_ntdomain }, */
-/*	{ "trustdomain", auth_init_trustdomain }, */
-/*	{ "winbind", auth_init_winbind }, */
-#ifdef DEVELOPER
-	{ "name_to_ntstatus", auth_init_name_to_ntstatus },
-	{ "fixed_challenge", auth_init_fixed_challenge },
-#endif
-	{ "plugin", auth_init_plugin },
-	{ NULL, NULL}
-};
-
 /****************************************************************************
  Try to get a challenge out of the various authentication modules.
  Returns a const char of length 8 bytes.
@@ -335,37 +313,40 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context(auth_context)))
 		return nt_status;
 	
-	for (;*text_list; text_list++) { 
+	for (;*text_list; text_list++) {
+		char *module_name = smb_xstrdup(*text_list);
+		char *module_params = NULL;
+		char *p;
+		const struct auth_operations *ops;
+
 		DEBUG(5,("make_auth_context_text_list: Attempting to find an auth method to match %s\n",
 					*text_list));
-		for (i = 0; builtin_auth_init_functions[i].name; i++) {
-			char *module_name = smb_xstrdup(*text_list);
-			char *module_params = NULL;
-			char *p;
 
-			p = strchr(module_name, ':');
-			if (p) {
-				*p = 0;
-				module_params = p+1;
-				trim_string(module_params, " ", " ");
-			}
-
-			trim_string(module_name, " ", " ");
-
-			if (strequal(builtin_auth_init_functions[i].name, module_name)) {
-				DEBUG(5,("make_auth_context_text_list: Found auth method %s (at pos %d)\n", *text_list, i));
-				if (NT_STATUS_IS_OK(builtin_auth_init_functions[i].init(*auth_context, module_params, &t))) {
-					DEBUG(5,("make_auth_context_text_list: auth method %s has a valid init\n",
-								*text_list));
-					DLIST_ADD_END(list, t, auth_methods *);
-				} else {
-					DEBUG(0,("make_auth_context_text_list: auth method %s did not correctly init\n",
-								*text_list));
-				}
-				break;
-			}
-			SAFE_FREE(module_name);
+		p = strchr(module_name, ':');
+		if (p) {
+			*p = 0;
+			module_params = p+1;
+			trim_string(module_params, " ", " ");
 		}
+
+		trim_string(module_name, " ", " ");
+
+		ops = auth_backend_byname(module_name);
+		if (!ops) {
+			DEBUG(5,("make_auth_context_text_list: Found auth method %s (at pos %d)\n", *text_list, i));
+			SAFE_FREE(module_name);
+			break;
+		}
+
+		if (NT_STATUS_IS_OK(ops->init(*auth_context, module_params, &t))) {
+			DEBUG(5,("make_auth_context_text_list: auth method %s has a valid init\n",
+						*text_list));
+			DLIST_ADD_END(list, t, auth_methods *);
+		} else {
+			DEBUG(0,("make_auth_context_text_list: auth method %s did not correctly init\n",
+						*text_list));
+		}
+		SAFE_FREE(module_name);
 	}
 	
 	(*auth_context)->auth_method_list = list;
@@ -452,4 +433,101 @@ NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[
 	return nt_status;
 }
 
+/* the list of currently registered AUTH backends */
+static struct {
+	const struct auth_operations *ops;
+} *backends = NULL;
+static int num_backends;
 
+/*
+  register a AUTH backend. 
+
+  The 'name' can be later used by other backends to find the operations
+  structure for this backend.
+*/
+static NTSTATUS auth_register(void *_ops)
+{
+	const struct auth_operations *ops = _ops;
+	struct auth_operations *new_ops;
+	
+	if (auth_backend_byname(ops->name) != NULL) {
+		/* its already registered! */
+		DEBUG(0,("AUTH backend '%s' already registered\n", 
+			 ops->name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	backends = Realloc(backends, sizeof(backends[0]) * (num_backends+1));
+	if (!backends) {
+		smb_panic("out of memory in auth_register");
+	}
+
+	new_ops = smb_xmemdup(ops, sizeof(*ops));
+	new_ops->name = smb_xstrdup(ops->name);
+
+	backends[num_backends].ops = new_ops;
+
+	num_backends++;
+
+	DEBUG(3,("AUTH backend '%s' registered\n", 
+		 ops->name));
+
+	return NT_STATUS_OK;
+}
+
+/*
+  return the operations structure for a named backend of the specified type
+*/
+const struct auth_operations *auth_backend_byname(const char *name)
+{
+	int i;
+
+	for (i=0;i<num_backends;i++) {
+		if (strcmp(backends[i].ops->name, name) == 0) {
+			return backends[i].ops;
+		}
+	}
+
+	return NULL;
+}
+
+/*
+  return the AUTH interface version, and the size of some critical types
+  This can be used by backends to either detect compilation errors, or provide
+  multiple implementations for different smbd compilation options in one module
+*/
+const struct auth_critical_sizes *auth_interface_version(void)
+{
+	static const struct auth_critical_sizes critical_sizes = {
+		AUTH_INTERFACE_VERSION,
+		sizeof(struct auth_operations),
+		sizeof(struct auth_methods),
+		sizeof(struct auth_context),
+		sizeof(struct auth_ntlmssp_state),
+		sizeof(struct auth_usersupplied_info),
+		sizeof(struct auth_serversupplied_info),
+		sizeof(struct auth_str),
+		sizeof(struct auth_unistr)
+	};
+
+	return &critical_sizes;
+}
+
+/*
+  initialise the AUTH subsystem
+*/
+BOOL auth_init(void)
+{
+	NTSTATUS status;
+
+	status = register_subsystem("auth", auth_register); 
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	/* FIXME: Perhaps panic if a basic backend, such as SAM, fails to initialise? */
+	static_init_auth;
+
+	DEBUG(3,("AUTH subsystem version %d initialised\n", AUTH_INTERFACE_VERSION));
+	return True;
+}

@@ -742,8 +742,8 @@ extern int errno;
 
 #include "libcli/auth/ntlmssp.h"
 
-#include "auth.h"
-#include "passdb.h"
+#include "auth/auth.h"
+#include "passdb/passdb.h"
 
 #include "module.h"
 

@@ -19,22 +19,20 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _PASSDB_H
-#define _PASSDB_H
-
-
-/*****************************************************************
- Functions to be implemented by the new (v2) passdb API 
-****************************************************************/
+#ifndef _SAMBA_PASSDB_H
+#define _SAMBA_PASSDB_H
 
 /*
  * This next constant specifies the version number of the PASSDB interface
- * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
+ * this SAMBA will load. Increment this with a comment if *ANY* changes are made
+ * to the interface and maybe update struct auth_critical_sizes
  */
-
+/* version 2 - init versioning of the interface - metze */
+/* version 3 - value states of SAM_ACCOUNT entries - metze */
+/* version 4 - add group mapping api - vlendec */
 #define PASSDB_INTERFACE_VERSION 4
 
-typedef struct pdb_context 
+typedef struct pdb_context
 {
 	struct pdb_methods *pdb_methods;
 	struct pdb_methods *pwent_methods;
@@ -101,15 +99,21 @@ typedef struct pdb_methods
 
 } PDB_METHODS;
 
-typedef NTSTATUS (*pdb_init_function)(struct pdb_context *, 
-			 struct pdb_methods **, 
-			 const char *);
-
-struct pdb_init_function_entry {
+struct passdb_ops {
+	/* the name of the backend */
 	const char *name;
+
 	/* Function to create a member of the pdb_methods list */
-	pdb_init_function init;
-	struct pdb_init_function_entry *prev, *next;
+	NTSTATUS (*init)(struct pdb_context *, struct pdb_methods **, const char *);
 };
 
-#endif /* _PASSDB_H */
+/* this structure is used by modules to determine the size of some critical types */
+struct passdb_critical_sizes {
+	int interface_version;
+	int sizeof_passdb_ops;
+	int sizeof_pdb_methods;
+	int sizeof_pdb_context;
+	int sizeof_SAM_ACCOUNT;
+};
+
+#endif /* _SAMBA_PASSDB_H */

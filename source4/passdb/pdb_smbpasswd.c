@@ -1508,7 +1508,7 @@ static void free_private_data(void **vp)
 }
 
 
-NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct smbpasswd_privates *privates;
@@ -1557,7 +1557,7 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct smbpasswd_privates *privates;
@@ -1578,4 +1578,38 @@ NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	}
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_smbpasswd_init(void)
+{
+	NTSTATUS ret;
+	struct passdb_ops ops;
+
+	/* fill in our name */
+	ops.name = "smbpasswd";
+	/* fill in all the operations */
+	ops.init = pdb_init_smbpasswd;
+
+	/* register ourselves with the PASSDB subsystem. */
+	ret = register_backend("passdb", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' PASSDB backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	/* fill in our name */
+	ops.name = "smbpasswd_nua";
+	/* fill in all the operations */
+	ops.init = pdb_init_smbpasswd_nua;
+
+	/* register ourselves with the PASSDB subsystem. */
+	ret = register_backend("passdb", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' PASSDB backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	return ret;
 }

@@ -30,7 +30,7 @@
  * can be more than one backend with the same name, as long as they
  * have different typesx */
 static struct {
-	struct ntvfs_ops *ops;
+	const struct ntvfs_ops *ops;
 } *backends = NULL;
 static int num_backends;
 
@@ -44,7 +44,8 @@ static int num_backends;
 */
 static NTSTATUS ntvfs_register(void *_ops)
 {
-	struct ntvfs_ops *ops = _ops;
+	const struct ntvfs_ops *ops = _ops;
+	struct ntvfs_ops *new_ops;
 	
 	if (ntvfs_backend_byname(ops->name, ops->type) != NULL) {
 		/* its already registered! */
@@ -58,8 +59,10 @@ static NTSTATUS ntvfs_register(void *_ops)
 		smb_panic("out of memory in ntvfs_register");
 	}
 
-	backends[num_backends].ops = smb_xmemdup(ops, sizeof(*ops));
-	backends[num_backends].ops->name = smb_xstrdup(ops->name);
+	new_ops = smb_xmemdup(ops, sizeof(*ops));
+	new_ops->name = smb_xstrdup(ops->name);
+
+	backends[num_backends].ops = new_ops;
 
 	num_backends++;
 
@@ -73,7 +76,7 @@ static NTSTATUS ntvfs_register(void *_ops)
 /*
   return the operations structure for a named backend of the specified type
 */
-struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntvfs_type type)
+const struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntvfs_type type)
 {
 	int i;
 

@@ -71,7 +71,7 @@ struct tcon_context {
 	BOOL admin_user;
 
 	/* the NTVFS operations - see source/ntvfs/ and include/ntvfs.h for details */
-	struct ntvfs_ops *ntvfs_ops;
+	const struct ntvfs_ops *ntvfs_ops;
 
 	/* the reported filesystem type */
 	char *fs_type;
@@ -359,7 +359,7 @@ struct server_context {
 	struct event_context *events;
 
 	/* process model specific operations */
-	struct model_ops *model_ops;
+	const struct model_ops *model_ops;
 };
 
 

@@ -24,78 +24,99 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-/** List of various built-in passdb modules */
-static const struct {
-    const char *name;
-    /* Function to create a member of the pdb_methods list */
-    pdb_init_function init;
-} builtin_pdb_init_functions[] = {
-	{ "smbpasswd", pdb_init_smbpasswd },
-	{ "smbpasswd_nua", pdb_init_smbpasswd_nua },
-	{ "tdbsam", pdb_init_tdbsam },
-	{ "tdbsam_nua", pdb_init_tdbsam_nua },
-	{ "ldapsam", pdb_init_ldapsam },
-	{ "ldapsam_nua", pdb_init_ldapsam_nua },
-	{ "unixsam", pdb_init_unixsam },
-	{ "guest", pdb_init_guestsam },
-	{ "nisplussam", pdb_init_nisplussam },
-	{ NULL, NULL}
-};
+/* the list of currently registered AUTH backends */
+static struct {
+	const struct passdb_ops *ops;
+} *backends = NULL;
+static int num_backends;
 
-static struct pdb_init_function_entry *backends;
-static void lazy_initialize_passdb(void);
+/*
+  register a AUTH backend. 
 
-static void lazy_initialize_passdb()
+  The 'name' can be later used by other backends to find the operations
+  structure for this backend.
+*/
+static NTSTATUS passdb_register(void *_ops)
+{
+	const struct passdb_ops *ops = _ops;
+	struct passdb_ops *new_ops;
+	
+	if (passdb_backend_byname(ops->name) != NULL) {
+		/* its already registered! */
+		DEBUG(0,("PASSDB backend '%s' already registered\n", 
+			 ops->name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	backends = Realloc(backends, sizeof(backends[0]) * (num_backends+1));
+	if (!backends) {
+		smb_panic("out of memory in passdb_register");
+	}
+
+	new_ops = smb_xmemdup(ops, sizeof(*ops));
+	new_ops->name = smb_xstrdup(ops->name);
+
+	backends[num_backends].ops = new_ops;
+
+	num_backends++;
+
+	DEBUG(3,("PASSDB backend '%s' registered\n", 
+		 ops->name));
+
+	return NT_STATUS_OK;
+}
+
+/*
+  return the operations structure for a named backend of the specified type
+*/
+const struct passdb_ops *passdb_backend_byname(const char *name)
 {
 	int i;
-	static BOOL initialised = False;
-	
-	if(!initialised) {
-		initialised = True;
 
-		for(i = 0; builtin_pdb_init_functions[i].name; i++) {
-			smb_register_passdb(builtin_pdb_init_functions[i].name, builtin_pdb_init_functions[i].init, PASSDB_INTERFACE_VERSION);
+	for (i=0;i<num_backends;i++) {
+		if (strcmp(backends[i].ops->name, name) == 0) {
+			return backends[i].ops;
 		}
-	}
-}
-
-BOOL smb_register_passdb(const char *name, pdb_init_function init, int version) 
-{
-	struct pdb_init_function_entry *entry = backends;
-
-	if(version != PASSDB_INTERFACE_VERSION)
-		return False;
-
-	DEBUG(5,("Attempting to register passdb backend %s\n", name));
-
-	/* Check for duplicates */
-	while(entry) { 
-		if(strcasecmp(name, entry->name) == 0) { 
-			DEBUG(0,("There already is a passdb backend registered with the name %s!\n", name));
-			return False;
-		}
-		entry = entry->next;
-	}
-
-	entry = smb_xmalloc(sizeof(struct pdb_init_function_entry));
-	entry->name = name;
-	entry->init = init;
-
-	DLIST_ADD(backends, entry);
-	DEBUG(5,("Successfully added passdb backend '%s'\n", name));
-	return True;
-}
-
-struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
-{
-	struct pdb_init_function_entry *entry = backends;
-
-	while(entry) {
-		if (strequal(entry->name, name)) return entry;
-		entry = entry->next;
 	}
 
 	return NULL;
+}
+
+/*
+  return the PASSDB interface version, and the size of some critical types
+  This can be used by backends to either detect compilation errors, or provide
+  multiple implementations for different smbd compilation options in one module
+*/
+const struct passdb_critical_sizes *passdb_interface_version(void)
+{
+	static const struct passdb_critical_sizes critical_sizes = {
+		PASSDB_INTERFACE_VERSION,
+		sizeof(struct passdb_ops),
+		sizeof(struct pdb_methods),
+		sizeof(struct pdb_context),
+		sizeof(SAM_ACCOUNT)
+	};
+
+	return &critical_sizes;
+}
+
+/*
+  initialise the PASSDB subsystem
+*/
+BOOL passdb_init(void)
+{
+	NTSTATUS status;
+
+	status = register_subsystem("passdb", passdb_register); 
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	/* FIXME: Perhaps panic if a basic backend, such as SAM, fails to initialise? */
+	static_init_passdb;
+
+	DEBUG(3,("PASSDB subsystem version %d initialised\n", PASSDB_INTERFACE_VERSION));
+	return True;
 }
 
 static NTSTATUS context_setsampwent(struct pdb_context *context, BOOL update)
@@ -300,18 +321,16 @@ static void free_pdb_context(struct pdb_context **context)
 static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_context *context, const char *selected)
 {
 	char *module_name = smb_xstrdup(selected);
-	char *module_location = NULL, *p;
-	struct pdb_init_function_entry *entry;
+	char *module_param = NULL, *p;
+	const struct passdb_ops *ops;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-
-	lazy_initialize_passdb();
 
 	p = strchr(module_name, ':');
 
 	if (p) {
 		*p = 0;
-		module_location = p+1;
-		trim_string(module_location, " ", " ");
+		module_param = p+1;
+		trim_string(module_param, " ", " ");
 	}
 
 	trim_string(module_name, " ", " ");
@@ -319,20 +338,18 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 
 	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));
 
-	entry = pdb_find_backend_entry(module_name);
-	
+	ops = passdb_backend_byname(module_name);
 	/* No such backend found */
-	if(!entry) { 
+	if(!ops) { 
 		SAFE_FREE(module_name);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
-	DEBUG(5,("Found pdb backend %s\n", module_name));
-	nt_status = entry->init(context, methods, module_location);
+	DEBUG(5,("Found PASSDB backend %s\n", module_name));
+	nt_status = ops->init(context, methods, module_param);
 	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(5,("pdb backend %s has a valid init\n", selected));
+		DEBUG(5,("PASSDB backend %s has a valid init\n", selected));
 	} else {
-		DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
+		DEBUG(0,("PASSDB backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
 	}
 	SAFE_FREE(module_name);
 	return nt_status;

@@ -44,9 +44,6 @@ void smbd_process_init(void)
 	if (!init_registry())
 		exit(1);
 
-	if(!initialize_password_db(False))
-		exit(1);
-
 	/* possibly reload the services file. */
 	reload_services(NULL, True);
 
@@ -71,6 +68,16 @@ void smbd_process_init(void)
 	
 	/* Setup change notify */
 	if (!init_change_notify())
+		exit(1);
+
+	/* Setup the AUTH subsystem */
+	if (!auth_init())
+		exit(1);
+
+	/* Setup the PASSDB subsystem */
+	if (!passdb_init())
+		exit(1);
+	if(!initialize_password_db(False))
 		exit(1);
 
 	/* Setup the NTVFS subsystem */

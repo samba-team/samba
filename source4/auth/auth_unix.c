@@ -119,7 +119,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-NTSTATUS auth_init_unix(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
+static NTSTATUS auth_init_unix(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -130,3 +130,19 @@ NTSTATUS auth_init_unix(struct auth_context *auth_context, const char* param, au
 	return NT_STATUS_OK;
 }
 
+NTSTATUS auth_unix_init(void)
+{
+	NTSTATUS ret;
+	struct auth_operations ops;
+
+	ops.name = "unix";
+	ops.init = auth_init_unix;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	return ret;
+}

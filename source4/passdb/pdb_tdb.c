@@ -37,8 +37,6 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 #endif
 
-#ifdef WITH_TDB_SAM
-
 #define PDB_VERSION		"20010830"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define TDB_FORMAT_STRING	"ddddddBBBBBBBBBBBBddBBwdwdBdd"
@@ -906,7 +904,7 @@ static void free_private_data(void **vp)
 }
 
 
-NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
@@ -960,7 +958,7 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
@@ -988,20 +986,36 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 	return NT_STATUS_OK;
 }
 
-
-#else
-
-NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS pdb_tdb_init(void)
 {
-	DEBUG(0, ("tdbsam not compiled in!\n"));
-	return NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS ret;
+	struct passdb_ops ops;
+
+	/* fill in our name */
+	ops.name = "tdbsam";
+	/* fill in all the operations */
+	ops.init = pdb_init_tdbsam;
+
+	/* register ourselves with the PASSDB subsystem. */
+	ret = register_backend("passdb", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' PASSDB backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	/* fill in our name */
+	ops.name = "tdbsam_nua";
+	/* fill in all the operations */
+	ops.init = pdb_init_tdbsam_nua;
+
+	/* register ourselves with the PASSDB subsystem. */
+	ret = register_backend("passdb", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' PASSDB backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	return ret;
 }
-
-NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	DEBUG(0, ("tdbsam_nua not compiled in!\n"));
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-
-#endif

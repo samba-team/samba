@@ -1718,7 +1718,6 @@ AC_SUBST(SMBD_EXTRA_OBJS)
 AC_SUBST(SMBD_EXTRA_LIBS)
 
 sinclude(libads/config.m4)
-sinclude(passdb/config.m4)
 
 ###############################################
 # test for where we get crypt() from
@@ -1987,6 +1986,8 @@ fi ])
 sinclude(lib/iconv.m4)
 sinclude(smbd/process_model.m4)
 sinclude(smb_server/config.m4)
+sinclude(auth/config.m4)
+sinclude(passdb/config.m4)
 sinclude(ntvfs/config.m4)
 sinclude(rpc_server/config.m4)
 
