@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,9 +52,9 @@ get_kdc_address (krb5_context context,
     char *dot;
     char *p;
 
-    ret = krb5_get_krbhst (context,
-			   &realm,
-			   &hostlist);
+    ret = krb5_get_krb_admin_hst (context,
+				  &realm,
+				  &hostlist);
     if (ret)
 	return ret;
 
