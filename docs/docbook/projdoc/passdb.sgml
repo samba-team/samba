@@ -878,8 +878,6 @@ identifier:workstations column           - varchar(255)
 					 - Workstations user can logon to (or NULL for all)
 identifier:unknown string column         - varchar(255) - unknown string
 identifier:munged dial column            - varchar(255) - ?
-identifier:uid column                    - int(9) - Unix user ID (uid)
-identifier:gid column                    - int(9) - Unix user group (gid)
 identifier:user sid column               - varchar(255) - NT user SID
 identifier:group sid column              - varchar(255) - NT group ID
 identifier:lanman pass column            - varchar(255) - encrypted lanman password
