@@ -157,6 +157,11 @@ static int binary_net(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	struct net_context *ctx;
 	poptContext pc;
+	struct poptOption long_options[] = {
+		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
+		{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
+		{ 0, 0, 0, 0}
+	};
 
 	setup_logging("net", DEBUG_STDOUT);
 
@@ -172,13 +177,7 @@ static int binary_net(int argc, const char **argv)
 	}
 
 	ZERO_STRUCTP(ctx);
-	ctx->mem_ctx		= mem_ctx;
-
-	struct poptOption long_options[] = {
-		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
-		{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
-		{ 0, 0, 0, 0}
-	};
+	ctx->mem_ctx = mem_ctx;
 
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
