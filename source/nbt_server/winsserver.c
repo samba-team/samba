@@ -37,21 +37,80 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
 	uint32_t ttl = packet->additional[0].ttl;
+	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
+	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 	struct winsdb_record rec;
 
 	ttl = MIN(ttl, winssrv->max_ttl);
 	ttl = MAX(ttl, winssrv->min_ttl);
 
 	rec.name          = name;
-	rec.nb_flags      = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
+	rec.nb_flags      = nb_flags;
 	rec.state         = WINS_REC_ACTIVE;
 	rec.expire_time   = time(NULL) + ttl;
 	rec.registered_by = src_address;
-	rec.addresses     = str_list_make(packet, 
-					  packet->additional[0].rdata.netbios.addresses[0].ipaddr,
-					  NULL);
+	if (nb_flags & NBT_NM_GROUP) {
+		rec.addresses     = str_list_make(packet, "255.255.255.255", NULL);
+	} else {
+		rec.addresses     = str_list_make(packet, address, NULL);
+	}
+	if (rec.addresses == NULL) return NBT_RCODE_SVR;
+
+	DEBUG(4,("WINS: accepted registration of %s with address %s\n",
+		 nbt_name_string(packet, name), rec.addresses[0]));
 	
 	return winsdb_add(winssrv, &rec);
+}
+
+
+/*
+  update the ttl on an existing record
+*/
+static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock, 
+			       struct nbt_name_packet *packet, 
+			       struct winsdb_record *rec,
+			       const char *src_address, int src_port)
+{
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct wins_server *winssrv = iface->nbtsrv->winssrv;
+	uint32_t ttl = packet->additional[0].ttl;
+	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
+	time_t now = time(NULL);
+
+	ttl = MIN(ttl, winssrv->max_ttl);
+	ttl = MAX(ttl, winssrv->min_ttl);
+
+	if (now + ttl > rec->expire_time) {
+		rec->expire_time   = now + ttl;
+	}
+	rec->registered_by = src_address;
+
+	DEBUG(5,("WINS: refreshed registration of %s at %s\n",
+		 nbt_name_string(packet, rec->name), address));
+	
+	return winsdb_modify(winssrv, rec);
+}
+
+
+/*
+  send a WACK reply, then check if the current owners want to keep the name
+*/
+static uint8_t wins_register_wack(struct nbt_name_socket *nbtsock, 
+				  struct nbt_name_packet *packet, 
+				  struct winsdb_record *rec,
+				  const char *src_address, int src_port)
+{
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct wins_server *winssrv = iface->nbtsrv->winssrv;
+	uint32_t ttl = packet->additional[0].ttl;
+	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
+	time_t now = time(NULL);
+
+	DEBUG(0,("TODO: WACK\n"));
+
+	return NBT_RCODE_SVR;
 }
 
 
@@ -67,27 +126,58 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
 	struct winsdb_record *rec;
-	uint8_t rcode = 0;
+	uint8_t rcode = NBT_RCODE_OK;
+	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
+	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
+	int i;
 
 	rec = winsdb_load(winssrv, name, packet);
 	if (rec == NULL) {
 		rcode = wins_register_new(nbtsock, packet, src_address, src_port);
+		goto done;
 	} else if (rec->state != WINS_REC_ACTIVE) {
-		uint32_t ttl = packet->additional[0].ttl;
-		ttl = MIN(ttl, winssrv->max_ttl);
-		ttl = MAX(ttl, winssrv->min_ttl);
-		rec->nb_flags      = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
-		rec->state         = WINS_REC_ACTIVE;
-		rec->expire_time   = time(NULL) + ttl;
-		rec->registered_by = src_address;
-		rec->addresses     = str_list_make(packet, 
-						   packet->additional[0].rdata.netbios.addresses[0].ipaddr,
-						   NULL);
-		winsdb_modify(winssrv, rec);
-	} else {
-		rcode = NBT_RCODE_ACT;
+		winsdb_delete(winssrv, rec->name);
+		rcode = wins_register_new(nbtsock, packet, src_address, src_port);
+		goto done;
 	}
 
+	/* its an active name - first see if the registration is of the right type */
+	if ((rec->nb_flags & NBT_NM_GROUP) && !(nb_flags & NBT_NM_GROUP)) {
+		DEBUG(2,("WINS: Attempt to register unique name %s when group name is active\n",
+			 nbt_name_string(packet, name)));
+		rcode = NBT_RCODE_ACT;
+		goto done;
+	}
+
+	/* if its an active unique name, and the registration is for a group, then
+	   see if the unique name owner still wants the name */
+	if (!(rec->nb_flags & NBT_NM_GROUP) && (nb_flags & NBT_NM_GROUP)) {
+		wins_register_wack(nbtsock, packet, rec, src_address, src_port);
+		return;
+	}
+
+	/* if the registration is for a group, then just update the expiry time 
+	   and we are done */
+	if (nb_flags & NBT_NM_GROUP) {
+		wins_update_ttl(nbtsock, packet, rec, src_address, src_port);
+		goto done;
+	}
+
+	/* if the registration is for an address that is currently active, then 
+	   just update the expiry time */
+	for (i=0;rec->addresses[i];i++) {
+		if (strcmp(address, rec->addresses[i]) == 0) {
+			wins_update_ttl(nbtsock, packet, rec, src_address, src_port);
+			goto done;
+		}
+	}
+
+	/* we have to do a WACK to see if the current owners are willing to give
+	   up their claim */	
+	wins_register_wack(nbtsock, packet, rec, src_address, src_port);
+	return;
+
+done:
 	nbtd_name_registration_reply(nbtsock, packet, src_address, src_port, rcode);
 }
 
@@ -130,7 +220,10 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	struct winsdb_record *rec;
 
 	rec = winsdb_load(winssrv, name, packet);
-	if (rec != NULL && rec->state == WINS_REC_ACTIVE) {
+	if (rec != NULL && 
+	    rec->state == WINS_REC_ACTIVE &&
+	    !(rec->nb_flags & NBT_NM_GROUP)) {
+		/* should we release all, or only some of the addresses? */
 		rec->state = WINS_REC_RELEASED;
 		winsdb_modify(winssrv, rec);
 	}

@@ -25,6 +25,7 @@
 #include "nbt_server/winsdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "db_wrap.h"
+#include "system/time.h"
 
 /*
   load a WINS entry from the database
@@ -71,6 +72,14 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 		rec->addresses[i] = talloc_steal(rec->addresses, el->values[i].data);
 	}
 	rec->addresses[i] = NULL;
+
+	/* see if it has already expired */
+	if (rec->state == WINS_REC_ACTIVE &&
+	    rec->expire_time <= time(NULL)) {
+		DEBUG(5,("WINS: expiring name %s (expired at %s)\n", 
+			 nbt_name_string(tmp_ctx, rec->name), timestring(tmp_ctx, rec->expire_time)));
+		rec->state = WINS_REC_EXPIRED;
+	}
 
 	talloc_steal(mem_ctx, rec);
 	talloc_free(tmp_ctx);
@@ -163,6 +172,32 @@ failed:
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_SVR;
 }
+
+
+/*
+  delete a WINS record from the database
+*/
+uint8_t winsdb_delete(struct wins_server *winssrv, struct nbt_name *name)
+{
+	struct ldb_context *ldb = winssrv->wins_db->ldb;
+	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
+	int ret;
+	const char *dn;
+
+	dn = talloc_asprintf(tmp_ctx, "NAME=%s", nbt_name_string(tmp_ctx, name));
+	if (dn == NULL) goto failed;
+
+	ret = ldb_delete(ldb, dn);
+	if (ret != 0) goto failed;
+
+	talloc_free(tmp_ctx);
+	return NBT_RCODE_OK;
+
+failed:
+	talloc_free(tmp_ctx);
+	return NBT_RCODE_SVR;
+}
+
 
 /*
   connect to the WINS database
