@@ -157,7 +157,8 @@ View menu, that is in the left corner just below the real menu (or press
 Alt-V), and select Advanced Features. Right click on the user that you
 are going to do a name mapping for and choose Name mapping.
 
-Click on the Kerberos Names tab and add the new principal in the non-Windows domain.
+Click on the Kerberos Names tab and add a new principal from the
+non-Windows domain.
 
 @node Encryption types, Authorization data, Create account mappings, Windows 2000 compatability
 @comment  node-name,  next,  previous,  up
