@@ -9908,13 +9908,13 @@ TARGET="_top"
 		with Windows 2000. Note that due to Windows 2000 client redirector bugs
 		this requires Samba to be running on a 64-bit capable operating system such
 		as IRIX, Solaris or a Linux 2.4 kernel. Can improve performance by 10% with
-		Windows 2000 clients. Defaults to off. Not as tested as some other Samba
-		code paths.
+		Windows 2000 clients. Defaults to on. Windows NT 4.0 only supports
+		read version of this call, and ignores the write version.
 		</P
 ><P
 >Default : <B
 CLASS="COMMAND"
->large readwrite = no</B
+>large readwrite = yes</B
 ></P
 ></DD
 ><DT
@@ -12374,14 +12374,16 @@ NAME="MAXXMIT"
 ><DD
 ><P
 >This option controls the maximum packet size 
-		that will be negotiated by Samba. The default is 65535, which 
-		is the maximum. In some cases you may find you get better performance 
+		that will be negotiated by Samba. The default in Samba 2.2.6 is
+		now 16644 (changed from 65535 in earlier releases) which matches
+		Windows 2000. This allows better performance with Windows NT clients.
+		The maximum is 65535. In some cases you may find you get better performance 
 		with a smaller value. A value below 2048 is likely to cause problems.
 		</P
 ><P
 >Default: <B
 CLASS="COMMAND"
->max xmit = 65535</B
+>max xmit = 16644</B
 ></P
 ><P
 >Example: <B
