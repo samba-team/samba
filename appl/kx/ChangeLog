@@ -1,3 +1,12 @@
+Sat Sep 26 17:34:21 1998  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c: create sockets before setuid to handle Solaris' strange
+ 	permissions on /tmp/.X11-{unix,pipe}
+
+	* common.c (chown_xsockets): new function
+
+	* kx.h (chown_xsockets): new prototype
+
 Sun Aug 16 18:34:30 1998  Assar Westerlund  <assar@sics.se>
 
 	* kxd.c (doit_passive): conditionalize stream pipe code
