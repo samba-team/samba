@@ -302,6 +302,9 @@ void
 socket_set_port (struct sockaddr *sa, int port);
 
 void
+socket_set_portrange (int sock, int restrict, int af);
+
+void
 socket_set_debug (int sock);
 
 void
