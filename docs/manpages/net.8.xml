@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
 				  
-<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+<!ENTITY % globalentities SYSTEM '../entities/global.entities'> %globalentities;
 ]>
 <refentry id="net.8">
 

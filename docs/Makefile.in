@@ -31,24 +31,25 @@ LATEX += --interaction nonstopmode
 endif
 
 # Paths
-OUTPUTDIR = output
-ARCHIVEDIR = output/archive
+TOPDIR = $(shell pwd)
+OUTPUTDIR = $(TOPDIR)/output
+ARCHIVEDIR = $(OUTPUTDIR)/archive
 SRCDIR = @srcdir@
 MANDIR=$(OUTPUTDIR)/manpages
 EPSTOPDF = @EPSTOPDF@
-MANPAGEDIR = manpages
-HOWTODIR = howto
+MANPAGEDIR = $(TOPDIR)/manpages
+HOWTODIR = $(TOPDIR)/howto
 MAKEINDEX = @MAKEINDEX@
 IMAGEPROJDIR = $(HOWTODIR)/imagefiles
-GUIDEDOC = guide
-EXAMPLESDIR = examples
-DEVDOC = devdoc
-SMBDOTCONFDOC = smbdotconf
+GUIDEDOC = $(TOPDIR)/guide
+EXAMPLESDIR = $(TOPDIR)/examples
+DEVDOC = $(TOPDIR)/devdoc
+SMBDOTCONFDOC = $(TOPDIR)/smbdotconf
 PSDIR = $(OUTPUTDIR)
 PDFDIR = $(OUTPUTDIR)
 DVIDIR = $(OUTPUTDIR)
 TXTDIR = $(OUTPUTDIR)/textdocs
-FAQHOWTODIR = faq
+FAQHOWTODIR = $(TOPDIR)/faq
 FAQDIR = $(OUTPUTDIR)/faq
 HTMLDIR=$(OUTPUTDIR)/htmldocs
 PLUCKERDIR=$(OUTPUTDIR)/plucker
@@ -153,7 +154,7 @@ clean:
 	rm -f $(PLUCKERDIR)/*.pdb
 
 # Text files
-$(TXTDIR):
+$(TXTDIR): $(OUTPUTDIR)
 	mkdir $(TXTDIR)
 
 $(TXTDIR)/%.txt: %.xml
@@ -196,12 +197,14 @@ $(PSDIR)/%.ps: $(DVIDIR)/%.dvi
 xslt/figures/%.pdf: xslt/figures/%.eps
 	$(EPSTOPDF) $<
 
+$(OUTPUTDIR):
+	mkdir $(OUTPUTDIR)
 # Single large HTML files
 
-$(HTMLDIR):
+$(HTMLDIR): $(OUTPUTDIR)
 	mkdir $(HTMLDIR)
 
-$(PLUCKERDIR):
+$(PLUCKERDIR): $(OUTPUTDIR)
 	mkdir $(PLUCKERDIR)
 
 CSS: $(HTMLDIR) xslt/html/samba.css
@@ -248,7 +251,7 @@ smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.
  		$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
 	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-$(MANDIR): 
+$(MANDIR): $(OUTPUTDIR)
 	mkdir $(MANDIR)
 
 $(MANDIR)/%: %.xml

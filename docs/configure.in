@@ -1,4 +1,4 @@
-AC_INIT(global.ent)
+AC_INIT(entities/global.entities)
 
 AC_PATH_PROG(XSLTPROC, xsltproc)
 if test "x$XSLTPROC" = x; then
