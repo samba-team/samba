@@ -62,4 +62,4 @@ noinst_PROGRAMS = test_acquire_cred
 
 test_acquire_cred_SOURCES = test_acquire_cred.c
 
-test_acquire_cred_LDADD = ./libgssapi.la
+test_acquire_cred_LDADD = libgssapi.la
