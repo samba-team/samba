@@ -107,10 +107,13 @@ sub type2ft($)
 {
     my($t) = shift;
  
-    return "FT_UINT32", if ($t eq "uint32");
-    return "FT_UINT16", if ($t eq "uint16");
-    return "FT_UINT8", if ($t eq "uint8");
-    return "FT_BYTES";
+    return "FT_UINT$1" if $t =~ /uint(8|16|32|64)/;
+    return "FT_INT$1" if $t =~ /int(8|16|32|64)/;
+    return "FT_UINT64", if ($t eq "HYPER_T" or $t eq "NTTIME");
+    
+    # Type is an enum
+
+    return "FT_UINT16";
 }
 
 # Determine the display base for an element
@@ -123,9 +126,13 @@ sub elementbase($)
 	return "BASE_" . uc($base);
     }
  
-    return "BASE_DEC", if ($e->{TYPE} eq "uint32") or 
-	($e->{TYPE} eq "uint16") or ($e->{TYPE} eq "uint8");
-    return "BASE_NONE";
+    return "BASE_DEC", if $e->{TYPE} eq "ENUM";
+    return "BASE_DEC", if $e->{TYPE} =~ /u?int(8|16|32|64)/;
+    return "BASE_DEC", if $e->{TYPE} eq "NTTIME" or $e->{TYPE} eq "HYPER_T";
+
+    # Probably an enum
+
+    return "BASE_DEC";
 }
 
 # Convert a IDL structure field name (e.g access_mask) to a prettier
@@ -230,13 +237,10 @@ sub NeededTypedef($)
 	}
 
 	if ($t->{DATA}->{TYPE} eq "ENUM") {
-	    use Data::Dumper;
-	    print Dumper($t);
-
 	    $needed{"hf_$t->{NAME}"} = {
 		'name' => $t->{NAME},
-		'ft' => 'FT_UINT32',
-		'base' => 'BASE_HEX'
+		'ft' => 'FT_UINT16',
+		'base' => 'BASE_DEC'
 		};
 	}
 }
