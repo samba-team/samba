@@ -1,6 +1,6 @@
-#! /usr/bin/python
+#! /usr/bin/python     
 
-# Comfychair test cases for Samba
+# Comfychair test cases for Samba string functions.
 
 # Copyright (C) 2003 by Martin Pool <mbp@samba.org>
 # 
@@ -19,16 +19,23 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA
 
-"""These tests are run by Samba's "make check"."""
+"""Tests for Samba library functions."""
 
-import strings, comfychair
-import smbcontrol, sambalib
+import sys, re, comfychair
+from unicodenames import *
 
-# There should not be any actual tests in here: this file just serves
-# to define the ones run by default.  They're imported from other
-# modules.
+class snprintf_Test(comfychair.TestCase):
+    def runtest(self):
+        # Everything is built in to the test
+        out, err = self.runcmd('t_snprintf')
+        
+# Define the tests exported by this module
+tests = [snprintf_Test]
 
-tests = strings.tests + smbcontrol.tests + sambalib.tests
-
+# Handle execution of this file as a main program
 if __name__ == '__main__':
     comfychair.main(tests)
+
+# Local variables:
+# coding: utf-8
+# End:
