@@ -24,6 +24,29 @@
 
 
 /****************************************************************************
+convert a SID_NAME_USE to a string 
+****************************************************************************/
+char *get_sid_name_use_str(uint8 sid_name_use)
+{
+	static fstring type;
+
+	switch (sid_name_use)
+	{
+		case SID_NAME_USER    : fstrcpy(type, "User"            ); break;
+		case SID_NAME_DOM_GRP : fstrcpy(type, "Domain Group"    ); break;
+		case SID_NAME_DOMAIN  : fstrcpy(type, "Domain"          ); break;
+		case SID_NAME_ALIAS   : fstrcpy(type, "Local Group"     ); break;
+		case SID_NAME_WKN_GRP : fstrcpy(type, "Well-known Group"); break;
+		case SID_NAME_DELETED : fstrcpy(type, "Deleted"         ); break;
+		case SID_NAME_INVALID : fstrcpy(type, "Invalid"         ); break;
+		case SID_NAME_UNKNOWN : 
+		default               : fstrcpy(type, "UNKNOWN"         ); break;
+	}
+
+	return type;
+}
+
+/****************************************************************************
 convert a share mode to a string
 ****************************************************************************/
 char *get_file_mode_str(uint32 share_mode)
@@ -174,8 +197,8 @@ void display_srv_info_101(FILE *out_hnd, enum action_type action,
 
 			display_server(out_hnd, action, name, sv101->srv_type, comment);
 
-			fprintf(out_hnd, "\tplatform_id     : %d\n"    , sv101->platform_id);
-			fprintf(out_hnd, "\tos version      : %d.%d\n" , sv101->ver_major, sv101->ver_minor);
+			fprintf(out_hnd, "\tplatform_id     :\t%d\n"    , sv101->platform_id);
+			fprintf(out_hnd, "\tos version      :\t%d.%d\n" , sv101->ver_major, sv101->ver_minor);
 
 			break;
 		}
@@ -217,14 +240,14 @@ void display_srv_info_102(FILE *out_hnd, enum action_type action,SRV_INFO_102 *s
 
 			display_server(out_hnd, action, name, sv102->srv_type, comment);
 
-			fprintf(out_hnd, "\tplatform_id     : %d\n"    , sv102->platform_id);
-			fprintf(out_hnd, "\tos version      : %d.%d\n" , sv102->ver_major, sv102->ver_minor);
+			fprintf(out_hnd, "\tplatform_id     :\t%d\n"    , sv102->platform_id);
+			fprintf(out_hnd, "\tos version      :\t%d.%d\n" , sv102->ver_major, sv102->ver_minor);
 
-			fprintf(out_hnd, "\tusers           : %x\n"    , sv102->users      );
-			fprintf(out_hnd, "\tdisc, hidden    : %x,%x\n" , sv102->disc     , sv102->hidden   );
-			fprintf(out_hnd, "\tannounce, delta : %d, %d\n", sv102->announce , sv102->ann_delta);
-			fprintf(out_hnd, "\tlicenses        : %d\n"    , sv102->licenses   );
-			fprintf(out_hnd, "\tuser path       : %s\n"    , usr_path);
+			fprintf(out_hnd, "\tusers           :\t%x\n"    , sv102->users      );
+			fprintf(out_hnd, "\tdisc, hidden    :\t%x,%x\n" , sv102->disc     , sv102->hidden   );
+			fprintf(out_hnd, "\tannounce, delta :\t%d, %d\n", sv102->announce , sv102->ann_delta);
+			fprintf(out_hnd, "\tlicenses        :\t%d\n"    , sv102->licenses   );
+			fprintf(out_hnd, "\tuser path       :\t%s\n"    , usr_path);
 
 			break;
 		}
@@ -287,7 +310,7 @@ void display_conn_info_0(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\tid: %d\n", info0->id);
+			fprintf(out_hnd, "\tid:\t%d\n", info0->id);
 
 			break;
 		}
@@ -327,14 +350,14 @@ void display_conn_info_1(FILE *out_hnd, enum action_type action,
 			fstrcpy(usr_name, unistrn2(str1->uni_usr_name.buffer, str1->uni_usr_name.uni_str_len));
 			fstrcpy(net_name, unistrn2(str1->uni_net_name.buffer, str1->uni_net_name.uni_str_len));
 
-			fprintf(out_hnd, "\tid       : %d\n", info1->id);
-			fprintf(out_hnd, "\ttype     : %s\n", get_share_type_str(info1->type));
-			fprintf(out_hnd, "\tnum_opens: %d\n", info1->num_opens);
-			fprintf(out_hnd, "\tnum_users: %d\n", info1->num_users);
-			fprintf(out_hnd, "\topen_time: %d\n", info1->open_time);
+			fprintf(out_hnd, "\tid       :\t%d\n", info1->id);
+			fprintf(out_hnd, "\ttype     :\t%s\n", get_share_type_str(info1->type));
+			fprintf(out_hnd, "\tnum_opens:\t%d\n", info1->num_opens);
+			fprintf(out_hnd, "\tnum_users:\t%d\n", info1->num_users);
+			fprintf(out_hnd, "\topen_time:\t%d\n", info1->open_time);
 
-			fprintf(out_hnd, "\tuser name: %s\n", usr_name);
-			fprintf(out_hnd, "\tnet  name: %s\n", net_name);
+			fprintf(out_hnd, "\tuser name:\t%s\n", usr_name);
+			fprintf(out_hnd, "\tnet  name:\t%s\n", net_name);
 
 			break;
 		}
@@ -678,12 +701,12 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 			fstrcpy(path_name, unistrn2(str3->uni_path_name.buffer, str3->uni_path_name.uni_str_len));
 			fstrcpy(user_name, unistrn2(str3->uni_user_name.buffer, str3->uni_user_name.uni_str_len));
 
-			fprintf(out_hnd, "\tid       : %d\n", info3->id);
-			fprintf(out_hnd, "\tperms    : %s\n", get_file_mode_str(info3->perms));
-			fprintf(out_hnd, "\tnum_locks: %d\n", info3->num_locks);
+			fprintf(out_hnd, "\tid       :\t%d\n", info3->id);
+			fprintf(out_hnd, "\tperms    :\t%s\n", get_file_mode_str(info3->perms));
+			fprintf(out_hnd, "\tnum_locks:\t%d\n", info3->num_locks);
 
-			fprintf(out_hnd, "\tpath name: %s\n", path_name);
-			fprintf(out_hnd, "\tuser name: %s\n", user_name);
+			fprintf(out_hnd, "\tpath name:\t%s\n", path_name);
+			fprintf(out_hnd, "\tuser name:\t%s\n", user_name);
 
 			break;
 		}
@@ -867,6 +890,50 @@ void display_name(FILE *out_hnd, enum action_type action,
 
 
 /****************************************************************************
+ display alias members
+ ****************************************************************************/
+void display_alias_members(FILE *out_hnd, enum action_type action,
+				uint32 num_mem, char **sid_mem)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			if (num_mem == 0)
+			{
+				fprintf(out_hnd, "\tNo Alias Members\n");
+			}
+			else
+			{
+				fprintf(out_hnd, "\tAlias Members:\n");
+				fprintf(out_hnd, "\t-------------\n");
+			}
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < num_mem; i++)
+			{
+				if (sid_mem[i] != NULL)
+				{
+					fprintf(out_hnd, "\tMember Name:\t%s\n", sid_mem[i]);
+				}
+			}
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+
+/****************************************************************************
  display alias rid info
  ****************************************************************************/
 void display_alias_rid_info(FILE *out_hnd, enum action_type action,
@@ -881,11 +948,11 @@ void display_alias_rid_info(FILE *out_hnd, enum action_type action,
 			sid_to_string(sid_str, sid);
 			if (num_rids == 0)
 			{
-				fprintf(out_hnd, "\tNo Aliases: Sid %s\n", sid_str);
+				fprintf(out_hnd, "\tNo Aliases:\tSid %s\n", sid_str);
 			}
 			else
 			{
-				fprintf(out_hnd, "\tAlias Info: Sid %s\n", sid_str);
+				fprintf(out_hnd, "\tAlias Info:\tSid %s\n", sid_str);
 				fprintf(out_hnd, "\t----------\n");
 			}
 			break;
@@ -896,7 +963,7 @@ void display_alias_rid_info(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < num_rids; i++)
 			{
-				fprintf(out_hnd, "\tAlias RID: %8x\n", rid[i]);
+				fprintf(out_hnd, "\tAlias RID:\t%8x\n", rid[i]);
 			}
 
 			break;
@@ -909,6 +976,77 @@ void display_alias_rid_info(FILE *out_hnd, enum action_type action,
 	}
 }
 
+/****************************************************************************
+ display group members
+ ****************************************************************************/
+void display_group_members(FILE *out_hnd, enum action_type action,
+				uint32 num_mem, fstring *name, uint32 *type)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			if (num_mem == 0)
+			{
+				fprintf(out_hnd, "\tNo Members\n");
+			}
+			else
+			{
+				fprintf(out_hnd, "\tMembers:\n");
+				fprintf(out_hnd, "\t-------\n");
+			}
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < num_mem; i++)
+			{
+				fprintf(out_hnd, "\tMember Name:\t%s\tType:\t%s\n",
+				        name[i], get_sid_name_use_str(type[i]));
+			}
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+
+#if 0
+
+/****************************************************************************
+ display group info
+ ****************************************************************************/
+void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *info1)
+				
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			fprintf(out_hnd, "\tGroup Name:\t%s\tDescription:\t%s\tunk1:\t%sunk2:%s\n",
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+#endif
 
 /****************************************************************************
  display group rid info
@@ -937,7 +1075,7 @@ void display_group_rid_info(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < num_gids; i++)
 			{
-				fprintf(out_hnd, "\tGroup RID: %8x attr: %x\n",
+				fprintf(out_hnd, "\tGroup RID:\t%8x attr:\t%x\n",
 								  gid[i].g_rid, gid[i].attr);
 			}
 
@@ -979,7 +1117,7 @@ void display_alias_name_info(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < num_aliases; i++)
 			{
-				fprintf(out_hnd, "\tAlias Name: %s Attributes: %3d\n",
+				fprintf(out_hnd, "\tAlias Name:\t%s Attributes:\t%3d\n",
 								  alias_name[i], num_als_usrs[i]);
 			}
 
@@ -1010,33 +1148,33 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t\tUser Name   : %s\n", unistrn2(usr->uni_user_name   .buffer, usr->uni_user_name   .uni_str_len)); /* username unicode string */
-			fprintf(out_hnd, "\t\tFull Name   : %s\n", unistrn2(usr->uni_full_name   .buffer, usr->uni_full_name   .uni_str_len)); /* user's full name unicode string */
-			fprintf(out_hnd, "\t\tHome Drive  : %s\n", unistrn2(usr->uni_home_dir    .buffer, usr->uni_home_dir    .uni_str_len)); /* home directory unicode string */
-			fprintf(out_hnd, "\t\tDir Drive   : %s\n", unistrn2(usr->uni_dir_drive   .buffer, usr->uni_dir_drive   .uni_str_len)); /* home directory drive unicode string */
-			fprintf(out_hnd, "\t\tProfile Path: %s\n", unistrn2(usr->uni_profile_path.buffer, usr->uni_profile_path.uni_str_len)); /* profile path unicode string */
-			fprintf(out_hnd, "\t\tLogon Script: %s\n", unistrn2(usr->uni_logon_script.buffer, usr->uni_logon_script.uni_str_len)); /* logon script unicode string */
-			fprintf(out_hnd, "\t\tDescription : %s\n", unistrn2(usr->uni_acct_desc   .buffer, usr->uni_acct_desc   .uni_str_len)); /* user description unicode string */
-			fprintf(out_hnd, "\t\tWorkstations: %s\n", unistrn2(usr->uni_workstations.buffer, usr->uni_workstations.uni_str_len)); /* workstaions unicode string */
-			fprintf(out_hnd, "\t\tUnknown Str : %s\n", unistrn2(usr->uni_unknown_str .buffer, usr->uni_unknown_str .uni_str_len)); /* unknown string unicode string */
-			fprintf(out_hnd, "\t\tRemote Dial : %s\n", unistrn2(usr->uni_munged_dial .buffer, usr->uni_munged_dial .uni_str_len)); /* munged remote access unicode string */
+			fprintf(out_hnd, "\t\tUser Name   :\t%s\n", unistrn2(usr->uni_user_name   .buffer, usr->uni_user_name   .uni_str_len)); /* username unicode string */
+			fprintf(out_hnd, "\t\tFull Name   :\t%s\n", unistrn2(usr->uni_full_name   .buffer, usr->uni_full_name   .uni_str_len)); /* user's full name unicode string */
+			fprintf(out_hnd, "\t\tHome Drive  :\t%s\n", unistrn2(usr->uni_home_dir    .buffer, usr->uni_home_dir    .uni_str_len)); /* home directory unicode string */
+			fprintf(out_hnd, "\t\tDir Drive   :\t%s\n", unistrn2(usr->uni_dir_drive   .buffer, usr->uni_dir_drive   .uni_str_len)); /* home directory drive unicode string */
+			fprintf(out_hnd, "\t\tProfile Path:\t%s\n", unistrn2(usr->uni_profile_path.buffer, usr->uni_profile_path.uni_str_len)); /* profile path unicode string */
+			fprintf(out_hnd, "\t\tLogon Script:\t%s\n", unistrn2(usr->uni_logon_script.buffer, usr->uni_logon_script.uni_str_len)); /* logon script unicode string */
+			fprintf(out_hnd, "\t\tDescription :\t%s\n", unistrn2(usr->uni_acct_desc   .buffer, usr->uni_acct_desc   .uni_str_len)); /* user description unicode string */
+			fprintf(out_hnd, "\t\tWorkstations:\t%s\n", unistrn2(usr->uni_workstations.buffer, usr->uni_workstations.uni_str_len)); /* workstaions unicode string */
+			fprintf(out_hnd, "\t\tUnknown Str :\t%s\n", unistrn2(usr->uni_unknown_str .buffer, usr->uni_unknown_str .uni_str_len)); /* unknown string unicode string */
+			fprintf(out_hnd, "\t\tRemote Dial :\t%s\n", unistrn2(usr->uni_munged_dial .buffer, usr->uni_munged_dial .uni_str_len)); /* munged remote access unicode string */
 
-			fprintf(out_hnd, "\t\tLogon Time               : %s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
-			fprintf(out_hnd, "\t\tLogoff Time              : %s\n", http_timestring(nt_time_to_unix(&(usr->logoff_time          ))));
-			fprintf(out_hnd, "\t\tKickoff Time             : %s\n", http_timestring(nt_time_to_unix(&(usr->kickoff_time         ))));
-			fprintf(out_hnd, "\t\tPassword last set Time   : %s\n", http_timestring(nt_time_to_unix(&(usr->pass_last_set_time   ))));
-			fprintf(out_hnd, "\t\tPassword can change Time : %s\n", http_timestring(nt_time_to_unix(&(usr->pass_can_change_time ))));
-			fprintf(out_hnd, "\t\tPassword must change Time: %s\n", http_timestring(nt_time_to_unix(&(usr->pass_must_change_time))));
+			fprintf(out_hnd, "\t\tLogon Time               :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
+			fprintf(out_hnd, "\t\tLogoff Time              :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logoff_time          ))));
+			fprintf(out_hnd, "\t\tKickoff Time             :\t%s\n", http_timestring(nt_time_to_unix(&(usr->kickoff_time         ))));
+			fprintf(out_hnd, "\t\tPassword last set Time   :\t%s\n", http_timestring(nt_time_to_unix(&(usr->pass_last_set_time   ))));
+			fprintf(out_hnd, "\t\tPassword can change Time :\t%s\n", http_timestring(nt_time_to_unix(&(usr->pass_can_change_time ))));
+			fprintf(out_hnd, "\t\tPassword must change Time:\t%s\n", http_timestring(nt_time_to_unix(&(usr->pass_must_change_time))));
 			
 			fprintf(out_hnd, "\t\tunknown_2[0..31]...\n"); /* user passwords? */
 
-			fprintf(out_hnd, "\t\tuser_rid : %x\n"  , usr->user_rid ); /* User ID */
-			fprintf(out_hnd, "\t\tgroup_rid: %x\n"  , usr->group_rid); /* Group ID */
-			fprintf(out_hnd, "\t\tacb_info : %04x\n", usr->acb_info ); /* Account Control Info */
+			fprintf(out_hnd, "\t\tuser_rid :\t%x\n"  , usr->user_rid ); /* User ID */
+			fprintf(out_hnd, "\t\tgroup_rid:\t%x\n"  , usr->group_rid); /* Group ID */
+			fprintf(out_hnd, "\t\tacb_info :\t%04x\n", usr->acb_info ); /* Account Control Info */
 
-			fprintf(out_hnd, "\t\tunknown_3: %08x\n", usr->unknown_3); /* 0x00ff ffff */
-			fprintf(out_hnd, "\t\tlogon_divs: %d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
-			fprintf(out_hnd, "\t\tunknown_5: %08x\n", usr->unknown_5); /* 0x0002 0000 */
+			fprintf(out_hnd, "\t\tunknown_3:\t%08x\n", usr->unknown_3); /* 0x00ff ffff */
+			fprintf(out_hnd, "\t\tlogon_divs:\t%d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
+			fprintf(out_hnd, "\t\tunknown_5:\t%08x\n", usr->unknown_5); /* 0x0002 0000 */
 
 			fprintf(out_hnd, "\t\tpadding1[0..7]...\n");
 
@@ -1133,7 +1271,7 @@ void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *info
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t\tPermissions: %s\n",
+			fprintf(out_hnd, "\t\tPermissions:\t%s\n",
 			        get_sec_mask_str(info->mask));
 		}
 		case ACTION_FOOTER:
@@ -1164,7 +1302,7 @@ void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *ace)
 			display_sec_access(out_hnd, ACTION_FOOTER   , &ace->info);
 
 			sid_to_string(sid_str, &ace->sid);
-			fprintf(out_hnd, "\t\tSID: %s\n", sid_str);
+			fprintf(out_hnd, "\t\tSID:\t%s\n", sid_str);
 		}
 		case ACTION_FOOTER:
 		{
@@ -1336,7 +1474,7 @@ static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFF
 
 		case 0x04: /* uint32 */
 		{
-			fprintf(out_hnd,"\t%s:\t%s: 0x%08x\n", val_name, type, buffer2_to_uint32(value));
+			fprintf(out_hnd,"\t%s:\t%s:\t0x%08x\n", val_name, type, buffer2_to_uint32(value));
 			break;
 		}
 

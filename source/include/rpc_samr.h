@@ -92,7 +92,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_USERALIASES 0x10
 
 #define SAMR_LOOKUP_NAMES      0x11
-#define SAMR_UNKNOWN_12        0x12
+#define SAMR_LOOKUP_RIDS       0x12
 
 #define SAMR_OPEN_GROUP        0x13
 #define SAMR_QUERY_GROUPINFO   0x14
@@ -438,7 +438,7 @@ SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
 typedef struct q_samr_open_domain_info
 {
 	POLICY_HND connect_pol;   /* policy handle */
-	uint32 rid;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - a RID? */
+	uint32 flags;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - flags? */
 	DOM_SID2 dom_sid;         /* domain SID */
 
 } SAMR_Q_OPEN_DOMAIN;
@@ -1012,34 +1012,32 @@ typedef struct r_samr_lookup_names_info
 
 
 /****************************************************************************
-SAMR_Q_UNKNOWN_12 - do a conversion from RID groups to something.
+SAMR_Q_LOOKUP_RIDS - do a conversion from RID groups to something.
 
 called to resolve domain RID groups.
 *****************************************************************************/
-/* SAMR_Q_UNKNOWN_12 */
-typedef struct q_samr_unknown_12_info
+/* SAMR_Q_LOOKUP_RIDS */
+typedef struct q_samr_lookup_rids_info
 {
 	POLICY_HND pol;       /* policy handle */
 
-	uint32 num_gids1;      /* number of rids being looked up */
-	uint32 rid;            /* 0x0000 03e8 - RID of the server doing the query? */
+	uint32 num_rids1;      /* number of rids being looked up */
+	uint32 flags;          /* 0x0000 03e8 - RID of the server doing the query? */
 	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
-	uint32 num_gids2;      /* number of rids being looked up */
+	uint32 num_rids2;      /* number of rids being looked up */
 
-	uint32 gid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
+	uint32 rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
 
-} SAMR_Q_UNKNOWN_12;
+} SAMR_Q_LOOKUP_RIDS;
 
 
 /****************************************************************************
-SAMR_R_UNKNOWN_12 - do a conversion from group RID to names
+SAMR_R_LOOKUP_RIDS - do a conversion from group RID to names
 
 *****************************************************************************/
-/* SAMR_R_UNKNOWN_12 */
-typedef struct r_samr_unknown_12_info
+/* SAMR_R_LOOKUP_RIDS */
+typedef struct r_samr_lookup_rids_info
 {
-	POLICY_HND pol;       /* policy handle */
-
 	uint32 num_names1;      /* number of aliases being looked up */
 	uint32 ptr_names;       /* pointer to aliases */
 	uint32 num_names2;      /* number of aliases being looked up */
@@ -1055,7 +1053,7 @@ typedef struct r_samr_unknown_12_info
 
 	uint32 status;
 
-} SAMR_R_UNKNOWN_12;
+} SAMR_R_LOOKUP_RIDS;
 
 
 /* SAMR_Q_OPEN_USER - probably an open */
@@ -1216,7 +1214,7 @@ typedef struct q_samr_add_alias_mem_info
 {
 	POLICY_HND alias_pol;       /* policy handle */
 
-	DOM_SID sid; /* member sid to be added to alias */
+	DOM_SID2 sid; /* member sid to be added to alias */
 
 } SAMR_Q_ADD_ALIASMEM;
 
