@@ -975,11 +975,19 @@ open the client sockets
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
 	extern pstring user_socket_options;
+	int name_type = 0x20;
+	char *p;
 
 	fstrcpy(cli->desthost, host);
+
+	/* allow hostnames of the form NAME#xx and do a netbios lookup */
+	if ((p = strchr(cli->desthost, '#'))) {
+		name_type = strtol(p+1, NULL, 16);		
+		*p = 0;
+	}
 	
 	if (!ip || is_zero_ip(*ip)) {
-                if (!resolve_name( cli->desthost, &cli->dest_ip, 0x20)) {
+                if (!resolve_name(cli->desthost, &cli->dest_ip, name_type)) {
                         return False;
                 }
 		if (ip) *ip = cli->dest_ip;
@@ -1328,3 +1336,5 @@ name *SMBSERVER with error %s\n", desthost, cli_errstr(cli) ));
 
   return True;
 }
+
+
