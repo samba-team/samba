@@ -379,6 +379,10 @@
 typedef int sig_atomic_t;
 #endif
 
+#ifndef HAVE_SOCKLEN_T_TYPE
+typedef int socklen_t;
+#endif
+
 #ifndef uchar
 #define uchar unsigned char
 #endif
