@@ -25,7 +25,6 @@
    at startup either via mmap() or read() from the lib directory */
 static smb_ucs2_t *upcase_table;
 static smb_ucs2_t *lowcase_table;
-static uint8_t *valid_table;
 
 
 /*******************************************************************
@@ -102,61 +101,6 @@ static int check_dos_char(smb_ucs2_t c)
 	if (len2 != 2) return 0;
 	return (c == c2);
 }
-
-/**
- * Load the valid character map table from <tt>valid.dat</tt> or
- * create from the configured codepage.
- *
- * This function is called whenever the configuration is reloaded.
- * However, the valid character table is not changed if it's loaded
- * from a file, because we can't unmap files.
- **/
-void init_valid_table(void)
-{
-	static int mapped_file;
-	int i;
-	const char *allowed = ".!#$%&'()_-@^`~";
-	uint8_t *valid_file;
-	TALLOC_CTX *mem_ctx;
-
-	if (mapped_file) {
-		/* Can't unmap files, so stick with what we have */
-		return;
-	}
-
-	mem_ctx = talloc_init("init_valid_table");
-	if (!mem_ctx) {
-		smb_panic("No memory for valid_table");
-	}
-	valid_file = map_file(lib_path(mem_ctx, "valid.dat"), 0x10000);
-	talloc_destroy(mem_ctx);
-	if (valid_file) {
-		valid_table = valid_file;
-		mapped_file = 1;
-		return;
-	}
-
-	/* Otherwise, we're using a dynamically created valid_table.
-	 * It might need to be regenerated if the code page changed.
-	 * We know that we're not using a mapped file, so we can
-	 * free() the old one. */
-	if (valid_table) free(valid_table);
-
-	DEBUG(2,("creating default valid table\n"));
-	valid_table = malloc(0x10000);
-	if (!valid_table) {
-		smb_panic("No memory for valid_table");
-	}
-	for (i=0;i<128;i++)
-		valid_table[i] = isalnum(i) || strchr(allowed,i);
-	
-	for (;i<0x10000;i++) {
-		smb_ucs2_t c;
-		SSVAL(&c, 0, i);
-		valid_table[i] = check_dos_char(c);
-	}
-}
-
 
 /*******************************************************************
  Convert a wchar to upper case.
