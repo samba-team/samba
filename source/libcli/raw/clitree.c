@@ -223,7 +223,6 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 		setup.generic.in.password = NULL;
 		setup.generic.in.user = "";
 		setup.generic.in.domain = "";
-		setup.generic.in.capabilities &= ~CAP_EXTENDED_SECURITY;
 	} else {
 		setup.generic.in.password = password;
 		setup.generic.in.user = user;
