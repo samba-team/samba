@@ -534,6 +534,7 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	pdb_init_sam(&sampass);
 	if (!pdb_getsampwnam(sampass, user)) {
 		DEBUG(1,("Couldn't find user '%s' in passdb.\n", user));
+		pdb_free_sam(sampass);
 		return(False);
 	}
 
