@@ -413,6 +413,7 @@ typedef struct krb5_keytab_entry {
     krb5_principal principal;
     krb5_kvno vno;
     krb5_keyblock keyblock;
+    u_int32_t timestamp;
 } krb5_keytab_entry;
 
 typedef struct krb5_kt_cursor {
