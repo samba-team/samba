@@ -195,28 +195,6 @@ int TimeDiff(time_t t)
   return TimeZoneFaster(t) + 60*extra_time_offset;
 }
 
-
-/****************************************************************************
-  return the UTC offset in seconds west of UTC, adjusted for extra time
-  offset, for a local time value.  If ut = lt + LocTimeDiff(lt), then
-  lt = ut - TimeDiff(ut), but the converse does not necessarily hold near
-  daylight savings transitions because some local times are ambiguous.
-  LocTimeDiff(t) equals TimeDiff(t) except near daylight savings transitions.
-  +**************************************************************************/
-static int LocTimeDiff(time_t lte)
-{
-  time_t lt = lte - 60*extra_time_offset;
-  int d = TimeZoneFaster(lt);
-  time_t t = lt + d;
-
-  /* if overflow occurred, ignore all the adjustments so far */
-  if (((lte < lt) ^ (extra_time_offset < 0))  |  ((t < lt) ^ (d < 0)))
-    t = lte;
-
-  /* now t should be close enough to the true UTC to yield the right answer */
-  return TimeDiff(t);
-}
-
 /****************************************************************************
 try to optimise the localtime call, it can be quite expensive on some machines
 ****************************************************************************/
@@ -381,17 +359,6 @@ static uint16 make_dos_date1_x(struct tm *t)
   uint16 ret=0;
   ret = (((unsigned)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
   ret = ((ret&0xFF)<<8) | (t->tm_mday | (((t->tm_mon+1) & 0x7) << 5));
-  return(ret);
-}
-
-/*******************************************************************
-  create a 16 bit dos packed time
-********************************************************************/
-static uint16 make_dos_time1_x(struct tm *t)
-{
-  uint16 ret=0;
-  ret = ((((unsigned)t->tm_min >> 3)&0x7) | (((unsigned)t->tm_hour) << 3));
-  ret = ((ret&0xFF)<<8) | ((t->tm_sec/2) | ((t->tm_min & 0x7) << 5));
   return(ret);
 }
 

@@ -209,8 +209,8 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o \
-	  lib/genparser.o lib/genparser_samba.o
+	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o 
+#	  lib/genparser.o lib/genparser_samba.o
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o 
 
@@ -218,10 +218,6 @@ LIB_NONSMBD_OBJ = $(LIB_OBJ) lib/dummysmbd.o
 
 READLINE_OBJ = lib/readline.o
 READLINE_OBJ = 
-
-# Also depends on  $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
-# Be sure to include them into your application
-POPT_LIB_OBJ = lib/popt_common.o 
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o 
@@ -675,7 +671,7 @@ MNT_OBJ = client/smbmnt.o $(VERSION_OBJ) $(SNPRINTF_OBJ)
 UMOUNT_OBJ = client/smbumount.o
 
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBNMB_OBJ) \
-               $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
+               $(LIB_NONSMBD_OBJ) $(LIBCMDLINE_OBJ) $(SECRETS_OBJ) $(LIBCLI_UTILS_OBJ)
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
 		torture/denytest.o torture/mangle_test.o 

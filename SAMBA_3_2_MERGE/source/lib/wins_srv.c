@@ -182,16 +182,25 @@ struct tagged_ip {
 static void parse_ip(struct tagged_ip *ip, const char *str)
 {
 	char *s = strchr(str, ':');
+	TALLOC_CTX *mem_ctx;
+
+	if ( !(mem_ctx = talloc_init( "parse_ip()" )) ) {
+		d_printf("nmblookup.c: Not enough memory\n");
+		exit( 1 );
+	}
+
 	if (!s) {
 		fstrcpy(ip->tag, "*");
-		ip->ip = *interpret_addr2_x(str);
+		ip->ip = *interpret_addr2(mem_ctx, str);
 		return;
 	} 
 
-	ip->ip = *interpret_addr2_x(s+1);
+	ip->ip = *interpret_addr2( mem_ctx, s+1 );
 	fstrcpy(ip->tag, str);
 	s = strchr(ip->tag, ':');
 	if (s) *s = 0;
+
+	talloc_destroy( mem_ctx );
 }
 
 

@@ -805,8 +805,14 @@ int open_udp_socket(const char *host, int port)
 	struct sockaddr_in sock_out;
 	int res;
 	struct in_addr *addr;
+	TALLOC_CTX *mem_ctx;
 
-	addr = interpret_addr2_x(host);
+
+        mem_ctx = talloc_init("open_udp_socket");
+        if (!mem_ctx) {
+                return -1;
+        }
+	addr = interpret_addr2(mem_ctx, host);
 
 	res = socket(PF_INET, type, 0);
 	if (res == -1) {
@@ -817,6 +823,8 @@ int open_udp_socket(const char *host, int port)
 	putip((char *)&sock_out.sin_addr,(char *)addr);
 	sock_out.sin_port = htons(port);
 	sock_out.sin_family = PF_INET;
+
+	talloc_destroy(mem_ctx);
 
 	if (connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out))) {
 		close(res);
@@ -916,7 +924,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
  Return the DNS name of the remote end of a socket.
 ******************************************************************/
 
-char *get_peer_name(int fd, BOOL force_lookup)
+char *get_socket_name(int fd, BOOL force_lookup)
 {
 	static pstring name_buf;
 	pstring tmp_name;
@@ -930,7 +938,7 @@ char *get_peer_name(int fd, BOOL force_lookup)
 	   with dns. To avoid the delay we avoid the lookup if
 	   possible */
 	if (!lp_hostname_lookups() && (force_lookup == False)) {
-		return get_peer_addr(fd);
+		return get_socket_addr(fd);
 	}
 	
 	p = get_peer_addr(fd);

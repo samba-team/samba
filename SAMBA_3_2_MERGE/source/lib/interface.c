@@ -99,6 +99,7 @@ static void interpret_interface(const char *token)
 	struct in_addr ip, nmask;
 	char *p;
 	int i, added=0;
+	TALLOC_CTX *mem_ctx;
 
         zero_ip(&ip);
         zero_ip(&nmask);
@@ -113,10 +114,15 @@ static void interpret_interface(const char *token)
 	}
 	if (added) return;
 
+	if ( !(mem_ctx = talloc_init( "interpret_interface()" )) ) {
+		d_printf("nmblookup.c: Not enough memory\n");
+		exit( 1 );
+	}
+
 	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
 	if (!p) {
-		ip = *interpret_addr2_x(token);
+		ip = *interpret_addr2( mem_ctx, token );
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
 			    !ip_equal(allones_ip, probed_ifaces[i].netmask)) {
@@ -132,10 +138,10 @@ static void interpret_interface(const char *token)
 	/* parse it into an IP address/netmasklength pair */
 	*p++ = 0;
 
-	ip = *interpret_addr2_x(token);
+	ip = *interpret_addr2( mem_ctx, token );
 
 	if (strlen(p) > 2) {
-		nmask = *interpret_addr2_x(p);
+		nmask = *interpret_addr2( mem_ctx, p );
 	} else {
 		nmask.s_addr = htonl(((ALLONES >> atoi(p)) ^ ALLONES));
 	}
@@ -154,6 +160,8 @@ static void interpret_interface(const char *token)
 	}
 
 	add_interface(ip, nmask);
+
+	talloc_destroy( mem_ctx );
 }
 
 
@@ -165,11 +173,17 @@ void load_interfaces(void)
 	const char **ptr;
 	int i;
 	struct iface_struct ifaces[MAX_INTERFACES];
+	TALLOC_CTX *mem_ctx;
 
 	ptr = lp_interfaces();
 
-	allones_ip = *interpret_addr2_x("255.255.255.255");
-	loopback_ip = *interpret_addr2_x("127.0.0.1");
+	if ( !(mem_ctx = talloc_init( "load_interfaces()" )) ) {
+		d_printf("nmblookup.c: Not enough memory\n");
+		exit( 1 );
+	}
+
+	allones_ip = *interpret_addr2( mem_ctx, "255.255.255.255" );
+	loopback_ip = *interpret_addr2( mem_ctx, "127.0.0.1" );
 
 	SAFE_FREE(probed_ifaces);
 
@@ -215,6 +229,8 @@ void load_interfaces(void)
 	if (!local_interfaces) {
 		DEBUG(0,("WARNING: no network interfaces found\n"));
 	}
+
+	talloc_destroy( mem_ctx );
 }
 
 
