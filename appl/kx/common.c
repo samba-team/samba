@@ -316,6 +316,127 @@ create_and_write_cookie (char *xauthfile,
 }
 
 /*
+ * Verify and remove cookies.  Read and parse a X-connection from
+ * `fd'. Check the cookie used is the same as in `cookie'.  Remove the
+ * cookie and copy the rest of it to `sock'.
+ * Return 0 iff ok.
+ */
+
+int
+verify_and_remove_cookies (int fd, int sock)
+{
+     u_char beg[12];
+     int bigendianp;
+     unsigned n, d, npad, dpad;
+     char *protocol_name, *protocol_data;
+     u_char zeros[6] = {0, 0, 0, 0, 0, 0};
+
+     if (krb_net_read (fd, beg, sizeof(beg)) != sizeof(beg))
+	  return 1;
+     if (krb_net_write (sock, beg, 6) != 6)
+	  return 1;
+     bigendianp = beg[0] == 'B';
+     if (bigendianp) {
+	  n = (beg[6] << 8) | beg[7];
+	  d = (beg[8] << 8) | beg[9];
+     } else {
+	  n = (beg[7] << 8) | beg[6];
+	  d = (beg[9] << 8) | beg[8];
+     }
+     npad = (4 - (n % 4)) % 4;
+     dpad = (4 - (d % 4)) % 4;
+     protocol_name = malloc(n + npad);
+     protocol_data = malloc(d + dpad);
+     if (krb_net_read (fd, protocol_name, n + npad) != n + npad)
+	  return 1;
+     if (krb_net_read (fd, protocol_data, d + dpad) != d + dpad)
+	  return 1;
+     if (strncmp (protocol_name, COOKIE_TYPE, strlen(COOKIE_TYPE)) != 0)
+	  return 1;
+     if (d != cookie_len ||
+	 memcmp (protocol_data, cookie, cookie_len) != 0)
+	  return 1;
+     if (krb_net_write (sock, zeros, 6) != 6)
+	  return 1;
+     return 0;
+}
+
+/*
+ * Get rid of the cookie that we were sent and get the correct one
+ * from our own cookie file instead.
+ */
+
+int
+replace_cookie(int xserver, int fd, char *filename)
+{
+     u_char beg[12];
+     int bigendianp;
+     unsigned n, d, npad, dpad;
+     Xauth *auth;
+     FILE *f;
+     u_char zeros[6] = {0, 0, 0, 0, 0, 0};
+
+     if (krb_net_read (fd, beg, sizeof(beg)) != sizeof(beg))
+	  return 1;
+     if (krb_net_write (xserver, beg, 6) != 6)
+	  return 1;
+     bigendianp = beg[0] == 'B';
+     if (bigendianp) {
+	  n = (beg[6] << 8) | beg[7];
+	  d = (beg[8] << 8) | beg[9];
+     } else {
+	  n = (beg[7] << 8) | beg[6];
+	  d = (beg[9] << 8) | beg[8];
+     }
+     if (n != 0 || d != 0)
+	  return 1;
+     f = fopen(filename, "r");
+     if (f) {
+	  u_char len[6] = {0, 0, 0, 0, 0, 0};
+
+	  auth = XauReadAuth(f);
+	  fclose(f);
+	  n = auth->name_length;
+	  d = auth->data_length;
+	  if (bigendianp) {
+	       len[0] = n >> 8;
+	       len[1] = n & 0xFF;
+	       len[2] = d >> 8;
+	       len[3] = d & 0xFF;
+	  } else {
+	       len[0] = n & 0xFF;
+	       len[1] = n >> 8;
+	       len[2] = d & 0xFF;
+	       len[3] = d >> 8;
+	  }
+	  if (krb_net_write (xserver, len, 6) != 6)
+	       return 1;
+	  if(krb_net_write (xserver, auth->name, n) != n)
+	       return 1;
+	  npad = (4 - (n % 4)) % 4;
+	  if (npad) { 
+	       if (krb_net_write (xserver, zeros, npad) != npad)
+		    return 1;
+	  }
+	  if (krb_net_write (xserver, auth->data, d) != d)
+	       return 1;
+	  dpad = (4 - (d % 4)) % 4;
+	  if (dpad) { 
+	       if (krb_net_write (xserver, zeros, dpad) != dpad)
+		    return 1;
+	  }
+	  XauDisposeAuth(auth);
+     } else {
+	  if(krb_net_write(xserver, zeros, 6) != 6)
+	       return 1;
+     }
+     return 0;
+}
+
+
+
+
+/*
  * Some simple controls on the address and corresponding socket
  */
 
