@@ -210,7 +210,7 @@ NTSTATUS schannel_seal_packet(struct schannel_state *state,
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
 
 	if (!state->signature.data) {
-		state->signature = data_blob_talloc(mem_ctx, NULL, 32);
+		state->signature = data_blob_talloc(state->mem_ctx, NULL, 32);
 		if (!state->signature.data) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -253,7 +253,7 @@ NTSTATUS schannel_sign_packet(struct schannel_state *state,
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
 
 	if (!state->signature.data) {
-		state->signature = data_blob_talloc(mem_ctx, NULL, 32);
+		state->signature = data_blob_talloc(state->mem_ctx, NULL, 32);
 		if (!state->signature.data) {
 			return NT_STATUS_NO_MEMORY;
 		}
