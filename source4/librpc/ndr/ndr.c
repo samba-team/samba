@@ -292,10 +292,10 @@ static void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ..
 	va_end(ap);
 
 	for (i=0;i<ndr->depth;i++) {
-		DEBUG(0,("    "));
+		DEBUG(2,("    "));
 	}
 
-	DEBUG(0,("%s\n", s));
+	DEBUG(2,("%s\n", s));
 	free(s);
 }
 
@@ -307,6 +307,10 @@ void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
 		     void *ptr)
 {
 	struct ndr_print ndr;
+
+	if (!DEBUGLVL(2)) {
+		return;
+	}
 
 	ndr.mem_ctx = talloc_init("ndr_print_debug");
 	if (!ndr.mem_ctx) return;
