@@ -247,7 +247,11 @@ static BOOL api_net_sam_logon(rpcsrv_struct * p,
 		return False;
 	}
 
-	status = _net_sam_logon(&q_l.sam_id,
+	status = _net_sam_logon(&q_l.sam_id.client.login.uni_logon_srv,
+				&q_l.sam_id.client.login.uni_comp_name,
+				&q_l.sam_id.client.cred,
+				q_l.sam_id.logon_level,
+				q_l.sam_id.ctr,
 				q_l.validation_level,
 				&srv_creds, &uctr, p->key.pid,
 				&r_s.auth_resp);

@@ -201,7 +201,8 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 /*************************************************************************
  net_login_interactive:
  *************************************************************************/
-static uint32 net_login_interactive(NET_ID_INFO_1 * id1, struct dcinfo *dc)
+static uint32 net_login_interactive(const NET_ID_INFO_1 * id1,
+				    struct dcinfo *dc)
 {
 	const UNISTR2 *uni_samusr = &id1->uni_user_name;
 	uint32 status = NT_STATUS_NOPROBLEMO;
@@ -254,12 +255,12 @@ static uint32 net_login_interactive(NET_ID_INFO_1 * id1, struct dcinfo *dc)
 /*************************************************************************
  net_login_network:
  *************************************************************************/
-static uint32 net_login_general(NET_ID_INFO_4 * id4,
+static uint32 net_login_general(const NET_ID_INFO_4 * id4,
 				struct dcinfo *dc, char usr_sess_key[16])
 {
 	fstring user;
 	fstring domain;
-	char *general;
+	const char *general;
 
 	int pw_len = id4->str_general.str_str_len;
 
@@ -310,7 +311,7 @@ static uint32 net_login_general(NET_ID_INFO_4 * id4,
 /*************************************************************************
  net_login_network:
  *************************************************************************/
-static uint32 net_login_network(NET_ID_INFO_2 * id2,
+static uint32 net_login_network(const NET_ID_INFO_2 * id2,
 				uint16 acb_info,
 				struct dcinfo *dc,
 				char usr_sess_key[16], char lm_pw8[8])
@@ -794,14 +795,18 @@ uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
 /*************************************************************************
  _net_sam_logon
  *************************************************************************/
-uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
+uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
+		      const UNISTR2 *uni_comp_name,
+		      const DOM_CRED * clnt_cred,
+		      uint16 logon_level,
+		      const NET_ID_INFO_CTR * id_ctr,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
 		      NET_USER_INFO_CTR * uctr, uint32 remote_pid,
 		      uint32 *auth_resp)
 {
-	UNISTR2 *uni_samusr = NULL;
-	UNISTR2 *uni_domain = NULL;
+	const UNISTR2 *uni_samusr = NULL;
+	const UNISTR2 *uni_domain = NULL;
 	fstring nt_username;
 	char *enc_user_sess_key = NULL;
 	char usr_sess_key[16];
@@ -839,8 +844,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 
 	uint32 status = NT_STATUS_NOPROBLEMO;
 
-	unistr2_to_ascii(trust_name, &(sam_id->client.login.uni_comp_name),
-			 sizeof(trust_name) - 1);
+	unistr2_to_ascii(trust_name, uni_comp_name, sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -849,7 +853,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (!deal_with_creds(dc.sess_key, &dc.clnt_cred,
-			     &(sam_id->client.cred), srv_creds))
+			     clnt_cred, srv_creds))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -863,12 +867,12 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 
 	/* find the username */
 
-	switch (sam_id->logon_level)
+	switch (logon_level)
 	{
 		case INTERACTIVE_LOGON_TYPE:
 		{
-			uni_samusr = &(sam_id->ctr->auth.id1.uni_user_name);
-			uni_domain = &(sam_id->ctr->auth.id1.uni_domain_name);
+			uni_samusr = &id_ctr->auth.id1.uni_user_name;
+			uni_domain = &id_ctr->auth.id1.uni_domain_name;
 
 			DEBUG(3,
 			      ("SAM Logon (Interactive). Domain:[%s].  ",
@@ -877,8 +881,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		}
 		case NETWORK_LOGON_TYPE:
 		{
-			uni_samusr = &(sam_id->ctr->auth.id2.uni_user_name);
-			uni_domain = &(sam_id->ctr->auth.id2.uni_domain_name);
+			uni_samusr = &id_ctr->auth.id2.uni_user_name;
+			uni_domain = &id_ctr->auth.id2.uni_domain_name;
 
 			DEBUG(3,
 			      ("SAM Logon (Network). Domain:[%s].  ",
@@ -887,8 +891,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		}
 		case GENERAL_LOGON_TYPE:
 		{
-			uni_samusr = &(sam_id->ctr->auth.id4.uni_user_name);
-			uni_domain = &(sam_id->ctr->auth.id4.uni_domain_name);
+			uni_samusr = &id_ctr->auth.id4.uni_user_name;
+			uni_domain = &id_ctr->auth.id4.uni_domain_name;
 
 			DEBUG(3,
 			      ("SAM Logon (General). Domain:[%s].  ",
@@ -917,12 +921,13 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 	 * not guaranteed to deliver.
 	 */
 
-	if (sam_id->logon_level == GENERAL_LOGON_TYPE)
+	if (logon_level == GENERAL_LOGON_TYPE)
 	{
 		/* general login.  cleartext password */
 		status = NT_STATUS_NOPROBLEMO;
-		status = net_login_general(&(sam_id->ctr->auth.id4),
-					   &dc, usr_sess_key);
+		status =
+			net_login_general(&id_ctr->auth.id4, &dc,
+					  usr_sess_key);
 		enc_user_sess_key = usr_sess_key;
 
 		if (status != NT_STATUS_NOPROBLEMO)
@@ -989,16 +994,14 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 
 	if (!(IS_BITS_SET_ALL(acb_info, ACB_PWNOTREQ)))
 	{
-		switch (sam_id->logon_level)
+		switch (logon_level)
 		{
 			case INTERACTIVE_LOGON_TYPE:
 			{
 				/* interactive login. */
 				status =
-					net_login_interactive(&
-							      (sam_id->ctr->
-							       auth.id1),
-							      &dc);
+					net_login_interactive(&id_ctr->
+							      auth.id1, &dc);
 				(*auth_resp) = 1;
 				break;
 			}
@@ -1006,11 +1009,10 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 			{
 				/* network login.  lm challenge and 24 byte responses */
 				status =
-					net_login_network(&
-							  (sam_id->ctr->auth.
-							   id2), acb_info,
-							  &dc, usr_sess_key,
-lm_pw8);
+					net_login_network(&id_ctr->auth.id2,
+							  acb_info, &dc,
+							  usr_sess_key,
+							  lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = usr_sess_key;
 				(*auth_resp) = 1;
