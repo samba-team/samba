@@ -676,17 +676,17 @@ swig: scripting/swig/_tdb.so scripting/swig/_dcerpc.so
 scripting/swig/tdb.py: scripting/swig/tdb.i
 	swig -python scripting/swig/tdb.i
 
-scripting/swig/_tdb.so: scripting/swig/tdb.py scripting/swig/tdb_wrap.o \$(BINARY_swig_tdb_LINK_LIST)
+scripting/swig/_tdb.so: scripting/swig/tdb.py scripting/swig/tdb_wrap.o \$(LIBRARY_swig_tdb_DEPEND_LIST)
 	\$(SHLD) \$(SHLD_FLAGS) -o scripting/swig/_tdb.so scripting/swig/tdb_wrap.o \\
-		\$(BINARY_swig_tdb_LINK_LIST) \$(BINARY_swig_tdb_LINK_FLAGS)
+		\$(LIBRARY_swig_tdb_SHARED_LINK_LIST) \$(LIBRARY_swig_tdb_SHARED_LINK_FLAGS)
 
-SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/winreg.i librpc/gen_ndr/spoolss.i
+SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/spoolss.i
 
 scripting/swig/dcerpc.py: scripting/swig/dcerpc.i scripting/swig/samba.i scripting/swig/status_codes.i \$(SWIG_INCLUDES)
 	swig -python scripting/swig/dcerpc.i
 
-scripting/swig/_dcerpc.so: scripting/swig/dcerpc.py scripting/swig/dcerpc_wrap.o \$(BINARY_swig_dcerpc_DEPEND_LIST)
-	\$(SHLD) \$(SHLD_FLAGS) -o scripting/swig/_dcerpc.so scripting/swig/dcerpc_wrap.o \$(BINARY_swig_dcerpc_DEPEND_LIST) \$(BINARY_swig_dcerpc_LINK_FLAGS)
+scripting/swig/_dcerpc.so: scripting/swig/dcerpc.py scripting/swig/dcerpc_wrap.o \$(LIBRARY_swig_dcerpc_DEPEND_LIST)
+	\$(SHLD) \$(SHLD_FLAGS) -o scripting/swig/_dcerpc.so scripting/swig/dcerpc_wrap.o \$(LIBRARY_swig_dcerpc_SHARED_LINK_LIST) \$(LIBRARY_swig_dcerpc_SHARED_LINK_FLAGS)
 
 swig_clean:
 	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc \\
