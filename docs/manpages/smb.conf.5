@@ -327,6 +327,8 @@ browse list
 
 character set
 
+client code page
+
 config file
 
 deadtime
@@ -777,6 +779,38 @@ code page. Normally not set, meaning no filename translation is done.
 .B Example
 
 	character set = iso8859-1
+
+.SS client code page (G)
+Currently (Samba 1.9.17 and above) this may be set to one of two
+values, 850 or 437. It specifies the base DOS code page that the
+clients accessing Samba are using. To determine this, open a DOS
+command prompt and type the command "chcp". This will output the
+code page. The default for USA MS-DOS, Windows 95, and Windows NT
+releases is code page 437. The default for western european 
+releases of the above operating systems is code page 850.
+
+This parameter co-operates with the "valid chars" parameter in
+determining what characters are valid in filenames and how
+capitalization is done. It has been added as a convenience for
+clients whose code page is either 437 or 850 so a convoluted
+"valid chars" string does not have to be determined. If you
+set both this parameter and the "valid chars" parameter the 
+"client code page" parameter MUST be set before the "valid chars"
+in the smb.conf file. The "valid chars" string will then augment
+the character settings in the "client code page" parameter.
+
+If "client code page" is set to a value other than 850 or 437
+it will default to 850.
+
+See also : "valid chars".
+
+.B Default
+
+	client code page = 850
+
+.B Example
+
+	client code page = 437
 
 .SS comment (S)
 This is a text field that is seen when a client does a net view to
@@ -2960,6 +2994,13 @@ valid chars = 0132:0172
 
 The last two examples above actually add two characters, and alter
 the uppercase and lowercase mappings appropriately.
+
+Note that you MUST specify this parameter after the "client code page"
+parameter if you have both set. If "client code page" is set after
+the "valid chars" parameter the "valid chars" settings will be
+overwritten.
+
+See also the "client code page" parameter.
 
 .B Default
 .br
