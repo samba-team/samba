@@ -1135,7 +1135,6 @@ extern char *sys_errlist[];
 #include "charset.h"
 
 /***** automatically generated prototypes *****/
-#include "rpc_pipes/rpc_proto.h"
 #include "proto.h"
 
 
