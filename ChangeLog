@@ -1,5 +1,9 @@
 1999-07-26  Assar Westerlund  <assar@sics.se>
 
+	* Release 0.1j
+
+1999-07-26  Assar Westerlund  <assar@sics.se>
+
 	* lib/krb5/store_fd.c: lots of changes from size_t to ssize_t
 	
 	* lib/krb5/store_mem.c: lots of changes from size_t to ssize_t
