@@ -196,6 +196,10 @@
 
 /* Print notification constants */
 
+#define ONE_VALUE 1
+#define TWO_VALUE 2
+#define POINTER   3
+
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01
 
