@@ -59,7 +59,8 @@ manpages: $(MANPAGES)
 pdf: ../Samba-HOWTO-Collection.pdf
 ps: ../Samba-HOWTO-Collection.ps
 txt: ../Samba-HOWTO-Collection.txt
-html: $(HTMLDIR)/samba-doc.html $(MANPAGES_HTML)
+html: $(MANPAGES_HTML)
+	$(DOCBOOK2HTML) -d samba.dsl -o $(HTMLDIR) $<
 html-single: ../Samba-HOWTO-Collection.html  ../Samba-Developers-Guide.html
 
 ../Samba-HOWTO-Collection.txt: $(SGMLDIR)/samba-doc.sgml
@@ -81,8 +82,6 @@ html-single: ../Samba-HOWTO-Collection.html  ../Samba-Developers-Guide.html
 	$(DOCBOOK2HTML) -u -o .. $<
 	mv ../dev-doc.html $@
 
-$(HTMLDIR)/samba-doc.html: $(SGMLDIR)/samba-doc.sgml
-	$(DOCBOOK2HTML) -o $(HTMLDIR) $<
 
 $(HTMLDIR)/%.html: $(MANSGMLDIR)/%.sgml
 	$(DOCBOOK2HTML) -o $(HTMLDIR) $<
