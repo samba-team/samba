@@ -34,5 +34,6 @@ to have the Software Packager software (inst_dev) installed to
 generate the inst images.
 
 From /usr/samba/packaging/SGI directory run the mkrelease.sh script. 
+This script uses Perl to generate the Makefile with the proper defines.
 The package files will be placed in ./bins
 
