@@ -1939,7 +1939,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				SAFE_FREE(dir->fname);
 				SAFE_FREE(dir);
 			}
-			errno = cli_errno(&srv->cli);
 
 			return NULL;
 
@@ -2032,7 +2031,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                                         SAFE_FREE(dir->fname);
                                         SAFE_FREE(dir);
                                 }
-                                errno = cli_errno(&srv->cli);
                                 
                                 return NULL;
                                 
@@ -2106,7 +2104,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);
 					}
-					errno = cli_errno(&srv->cli);
 					return NULL;
 					
 				}
@@ -2150,7 +2147,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				}
 				else {
 
-					errno = ENODEV;   /* Neither the workgroup nor server exists */
+					errno = ECONNREFUSED;   /* Neither the workgroup nor server exists */
 					if (dir) {
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);
