@@ -1,11 +1,23 @@
+Contributor:	Unknown
+Date:		Unknown
+Status:		Current
+
+Subject:	Definition of NetBIOS Protocol and Name Resolution Modes
+=============================================================================
+
 =======
-NetBIOS 
+NETBIOS
 =======
 
 NetBIOS runs over the following tranports: TCP/IP; NetBEUI and IPX/SPX.
 Samba only uses NetBIOS over TCP/IP.  For details on the TCP/IP NetBIOS 
 Session Service NetBIOS Datagram Service, and NetBIOS Names, see
 rfc1001.txt and rfc1002.txt.
+
+NetBEUI is a raw NetBIOS frame protocol implementation that allows NetBIOS
+datagrams to be sent out over the 'wire' embedded within LLC frames.
+NetBEUI is not required when using NetBIOS over TCP/IP protocols and it
+is preferrable NOT to install NetBEUI if it can be avoided.
 
 NetBIOS applications (such as samba) offer their services (for example,
 SMB file and print sharing) on a NetBIOS name.  They must claim this name

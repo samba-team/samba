@@ -1,3 +1,10 @@
+Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
+Date:		Old
+Status:		Questionable
+
+Subject:	How to trace samba system calls for debugging purposes
+=============================================================================
+
 This file describes how to do a system call trace on Samba to work out
 what its doing wrong. This is not for the faint of heart, but if you
 are reading this then you are probably desperate.

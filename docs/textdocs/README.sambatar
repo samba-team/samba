@@ -1,3 +1,11 @@
+Contributor/s:	Martin.Kraemer <Martin.Kraemer@mch.sni.de>
+                and Ricky Poulten (ricky@logcam.co.uk)
+Date:		Unknown - circa 1994
+Status:		Obsoleted - smbtar has been a stable part of Samba
+		since samba-1.9.13
+
+Subject:	Sambatar (now smbtar)
+=============================================================================
 
 This is version 1.4 of my small extension to samba that allows PC shares
 to be backed up directly to a UNIX tape. It only has been tested under

@@ -9,11 +9,12 @@ across subnets correctly. Look in the file docs/BROWSING.txt
 as it has been largely re-written to explain how to do this.
 
 *IMPORTANT* All Samba servers acting as local/domain master
-browsers must be running 1.9.17alpha3, as should the nmbd
-set up as the WINS server.
+browsers must be running 1.9.17alpha3 (or later), in addition
+nmbd must be set up as the WINS server.
 
 Thanks to Silicon Graphics for allowing us to test the new 
 code on their corporate network.
+
 
 Improved share mode handling
 ----------------------------
@@ -42,7 +43,6 @@ the Makefile :
 
 Updated smb.conf documentation
 ------------------------------
-
 All options are now documented we believe.
 
 Many small bugfixes and improvements
@@ -52,7 +52,6 @@ thanks to everyone who contributed.
 
 Remaining known issues with cross-subnet browsing.
 --------------------------------------------------
-
 When nmbd is acting as a WINS server it doesn't handle
 de-registering of members of a WORKGROUP<1e> name correctly.
 The first machine to de-register will remove the name. This
@@ -79,4 +78,3 @@ samba-bugs@samba.anu.edu.au
 Regards,
 
 	The Samba Team.
-

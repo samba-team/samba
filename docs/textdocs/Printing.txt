@@ -1,3 +1,10 @@
+Contributor:	Unknown <samba-bugs@samba.anu.edu.au>
+Date:		Unknown
+Status:		Current
+
+Subject:	Dubugging Printing Problems
+=============================================================================
+
 This is a short description of how to debug printing problems with
 Samba. This describes how to debug problems with printing from a SMB
 client to a Samba server, not the other way around. For the reverse

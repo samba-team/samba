@@ -78,11 +78,11 @@ unixes:
 
 Linux, SunOS, Solaris, SVR4, Ultrix, OSF1, AIX, BSDI, NetBSD,
 Sequent, HP-UX, SGI, FreeBSD, NeXT, ISC, A/UX, SCO, Intergraph,
-Domain/OS and DGUX.
+Silicon Graphics Inc., Domain/OS and DGUX.
 
 Some of these have received more testing than others. If it doesn't
 work with your unix then it should be easy to fix. It has also been ported
-to Netware, OS/2 and the Amiga. A VMS port is underway. See the web site
+to Netware, OS/2 and the Amiga. A VMS port is available too. See the web site
 for more details.
 
 Who wrote it?

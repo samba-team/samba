@@ -1,8 +1,9 @@
-Note: This file is now quite out of date - but perhaps that's
-appropriate?
+Contributor:	Andrew Tridgell and the Samba Team
+Date:		June 27, 1997
+Satus:		Always out of date! (Would not be the same without it!)
 
-
-=========
+Subject:	A bit of history and a bit of fun
+============================================================================
 
 This is a short history of this project. It's not supposed to be
 comprehensive, just enough so that new users can get a feel for where
@@ -10,7 +11,7 @@ this project has come from and maybe where it's going to.
 
 The whole thing really started in December 1991. I was (and still am)
 a PhD student in the Computer Sciences Laboratory at the Australian
-Netional University, in Canberra, Australia. We had just got a
+National University, in Canberra, Australia. We had just got a
 beta copy of eXcursion from Digital, and I was testing it on my PC. At
 this stage I was a MS-DOS user, dabbling in windows.
 
@@ -162,4 +163,34 @@ released. There have been lots of changes recently with master browser
 support and the ability to do domain logons etc. Samba has also been
 ported to OS/2, the amiga and NetWare. There are now 3000 people on
 the samba mailing list.
+---------------------
+
+
+---------------------
+It's now June 1997 and samba-1.9.17 is due out soon. My how time passes!
+Please refer to the WHATSNEW.txt for an update on new features. Just when
+you think you understand what is happening the ground rules change - this
+is a real world after all. Since the heady days of March 1996 there has
+been a concerted effort within the SMB protocol using community to document
+and standardize the protocols. The CIFS initiative has helped a long way
+towards creating a better understood and more interoperable environment.
+The Samba Team has grown in number and have been very active in the standards
+formation and documentation process.
+
+The net effect has been that we have had to do a lot of work to bring Samba
+into line with new features and capabilities in the SMB protocols.
+
+The past year has been a productive one with the following releases:
+	1.9.16, 1.9.16p2, 1.9.16p6, 1.9.16p9, 1.9.16p10, 1.9.16p11
+
+There are some who believe that 1.9.15p8 was the best release and others
+who would not want to be without the latest. Whatever your perception we
+hope that 1.9.17 will close the gap and convince you all that the long
+wait and the rolling changes really were worth it. Here is functionality
+and a level of code maturity that ..., well - you can be the judge!
+
+Happy SMB networking!
+Samba Team
+
+ps: The bugs are ours, so please report any you find.
 ---------------------

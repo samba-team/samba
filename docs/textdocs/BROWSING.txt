@@ -1,9 +1,24 @@
+Author/s:	Many (Thanks to Luke, Jeremy, Andrew, etc.)
+Updated:	June 29, 1997
+Status:		Current - For VERY Advanced Users ONLY
+
+Summary: This describes how to configure Samba for improved browsing.
+=====================================================================
+
+OVERVIEW:
+=========
+SMB networking provides a mechanism by which clients can access a list
+of machines that are available within the network. This list is called
+the browse list and is heavily used by all SMB clients. Configuration
+of SMB browsing has been problematic for some Samba users, hence this
+document.
+
+=====================================================================
+
 BROWSING
 ========
-
 Samba now fully supports browsing. The browsing is supported by nmbd
-and is also controlled by options in the smb.conf file (see
-smb.conf(5)).
+and is also controlled by options in the smb.conf file (see smb.conf(5)).
 
 Samba can act as a local browse master for a workgroup and the ability
 for samba to support domain logons and scripts is now available.  See
@@ -51,7 +66,7 @@ have a valid guest account.
 Also, a lot of people are getting bitten by the problem of too many
 parameters on the command line of nmbd in inetd.conf. This trick is to
 not use spaces between the option and the parameter (eg: -d2 instead
-Of -d 2), and to not use the -B and -N options. New versions of nmbd
+of -d 2), and to not use the -B and -N options. New versions of nmbd
 are now far more likely to correctly find your broadcast and network
 addess, so in most cases these aren't needed.
 
@@ -167,7 +182,7 @@ Now examine subnet 2. As soon as N2_B has become the local
 master browser it looks for a Domain master browser to synchronize
 its browse list with. It does this by querying the WINS server
 (N2_D) for the IP address associated with the NetBIOS name 
-WORKGROUP<1b>. This name was registerd by the Domain master
+WORKGROUP<1B>. This name was registerd by the Domain master
 browser (N1_C) with the WINS server as soon as it was booted.
 
 Once N2_B knows the address of the Domain master browser it
@@ -279,6 +294,9 @@ least set the parameter to 'no' on all these machines.
 Machines with "wins support = yes" will keep a list of all NetBIOS
 names registered with them, acting as a DNS for NetBIOS names.
 
+You should set up only ONE wins server. Do NOT set the
+"wins support = yes" option on more than one Samba server.
+
 To set up a Windows NT Server as a WINS server you need to set up
 the WINS service - see your NT documentation for details. Note that
 Windows NT WINS Servers can replicate to each other, allowing more
@@ -339,7 +357,7 @@ server as a domain master browser set the following option in the
 
         domain master = yes
 
-The domain master browser should also probably be the local master
+The domain master browser should also preferrably be the local master
 browser for it's own subnet. In order to achieve this set the following
 options in the [global] section of the smb.conf file :
 
@@ -458,7 +476,7 @@ broadcast isolated subnet.
 
 It is possible to configure two samba servers to attempt to become
 the domain master browser for a domain.  The first server that comes
-up with be the domain master browser.  All other samba servers will
+up will be the domain master browser.  All other samba servers will
 attempt to become the domain master browser every 5 minutes.  They
 will find that another samba server is already the domain master
 browser and will fail.  This provides automatic redundancy, should

@@ -1,5 +1,9 @@
-		LanManager / Samba Password Encryption.
-		---------------------------------------
+Contributor:	Jeremy Allison <samba-bugs@samba.anu.edu.au>
+Updated:	June 27, 1997
+Note:		Please refer to WinNT.txt also
+
+Subject:	LanManager / Samba Password Encryption.
+============================================================================
 
 With the development of LanManager and Windows NT compatible password 
 encryption for Samba, it is now able to validate user connections in 
@@ -114,6 +118,13 @@ ftp
 - you are probably already using other services (such as telnet and
 ftp) which send plain text passwords over the net, so not sending them
 for SMB isn't such a big deal.
+
+Note that Windows NT 4.0 Service pack 3 changed the default for
+permissible authentication so that plaintext passwords are *never*
+sent over the wire. The solution to this is either to switch to
+encrypted passwords with Samba or edit the Windows NT registry to
+re-enable plaintext passwords. See the document WinNT.txt for
+details on how to do this.
 
 The smbpasswd file.
 -------------------
@@ -249,7 +260,7 @@ secure by reporting all problems to me (the author, Jeremy Allison).
 
 My email address is :-
 
-jra@cygnus.com
+jallison@whistle.com
 
 Setting up Samba to support LanManager Encryption.
 --------------------------------------------------
@@ -335,3 +346,5 @@ Thank you,
 
 Jeremy Allison.
 
+==============================================================================
+Footnote:	Please refer to WinNT.txt also

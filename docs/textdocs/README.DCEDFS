@@ -1,9 +1,8 @@
-=============================================================================
+Contributor:	Jim Doyle <doyle@oec.com>
+Date:		06-02-95
+Status:		Current but needs updating
 
-	Basic DCE/DFS Support for SAMBA 1.9.13
-
-	Jim Doyle <doyle@oec.com> 06-02-95
-
+Subject:	Basic DCE/DFS Support for SAMBA 1.9.13
 =============================================================================
 
 Functionality:

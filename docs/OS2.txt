@@ -1,8 +1,10 @@
-This describes how to use smbclient to connect to an OS/2 server.
-Knowing this allows you to use a OS/2 printer from unix.
+Author:		riiber@oslonett.no
+Date:		Unknown
+Status:		Unspecified Currency - feedback welcomed
 
-Author: riiber@oslonett.no
-
+Subject: This describes how to use smbclient to connect to an OS/2 server.
+	Knowing this allows you to use a OS/2 printer from unix.
+==============================================================================
 
 How to login to an OS/2 server
 -------------------------------
@@ -20,7 +22,7 @@ First, the two servers were started with the commands
 smbd and nmbd -n KLATREMUS.
 
 Command to connect to a the shared printer LASER02 on the OS/2 server:
-n
+
 	smbclient '\\OBV11\LASER02' xxx -n ARNE -U ARNE -P
 
 and to connect to the shared drive 'PCPROGS':

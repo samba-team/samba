@@ -1,5 +1,9 @@
-Here is some advice from maxfield@ctelcom.uucp.netcom.com (Wade Maxfie
-to use Samba with OS/2 Warp.
+Contributor:	Wade Maxfie <maxfield@ctelcom.uucp.netcom.com>
+Date:		Unknown
+Status:		Old
+
+Subject:	Samba with OS/2 Warp.
+============================================================================
 
 Note that you may also find ftp://ftp.cdrom.com/pub/os2/new/os2net.faq
 useful.

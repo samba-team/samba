@@ -1,6 +1,23 @@
-Description of SMB security levels.
-----------------------------------
+Contributor:	Andrew Tridgell
+Updated:	June 27, 1997
+Status:		Current
 
+Subject:	Description of SMB security levels.
+===========================================================================
+
+Samba supports the following options to the global smb.conf parameter
+"security =":
+	share, user, server
+
+Of the above, "security = server" means that Samba reports to clients that
+it is running in "user mode" but actually passes off all authentication
+requests to another "user mode" server. This requires an additional
+parameter "password server =" that points to the real authentication server.
+That real authentication server can be another Samba server or can be a
+Windows NT server, the later natively capable of encrypted password support.
+
+Below is a more complete description of security levels.
+===========================================================================
 
 A SMB server tells the client at startup what "security level" it is
 running. There are two options "share level" and "user level". Which

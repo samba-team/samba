@@ -1,5 +1,9 @@
-HOW TO INSTALL AND TEST SAMBA
-=============================
+Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
+Date:		Unknown
+Status:		Current
+
+Subject:	HOW TO INSTALL AND TEST SAMBA
+===============================================================================
 
 
 STEP 0. Read the man pages. They contain lots of useful info that will

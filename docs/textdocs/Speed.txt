@@ -1,8 +1,11 @@
+Contributor:	Andrew Tridgell
+Date:		January 1995
+Status:		Current
+
+Subject:	Samba performance issues
+============================================================================
+
 This file tries to outline the ways to improve the speed of a Samba server.
-
-Andrew Tridgell
-January 1995
-
 
 COMPARISONS
 -----------
@@ -106,7 +109,10 @@ MAX XMIT
 At startup the client and server negotiate a "maximum transmit" size,
 which limits the size of nearly all SMB commands. You can set the
 maximum size that Samba will negotiate using the "max xmit = " option
-in smb.conf.
+in smb.conf. Note that this is the maximum size of SMB request that 
+Samba will accept, but not the maximum size that the *client* will accept.
+The client maximum receive size is sent to Samba by the client and Samba
+honours this limit.
 
 It defaults to 65536 bytes (the maximum), but it is possible that some
 clients may perform better with a smaller transmit unit. Trying values
@@ -137,11 +143,20 @@ no". This will gain you a lot in opening and closing files but will
 mean that (in some cases) the system won't force a second user of a
 file to open the file read-only if the first has it open
 read-write. For many applications that do their own locking this
-doesn't matter, but for some it may.
+doesn't matter, but for some it may. Most Windows applications
+depend heavily on "share modes" working correctly and it is
+recommended that the Samba share mode support be left at the
+default of "on".
+
+The share mode code in Samba has been re-written in the 1.9.17
+release following tests with the Ziff-Davis NetBench PC Benchmarking
+tool. It is now believed that Samba 1.9.17 implements share modes
+similarly to Windows NT.
 
 NOTE: In the most recent versions of Samba there is an option to use
 shared memory via mmap() to implement the share modes. This makes
 things much faster. See the Makefile for how to enable this.
+
 
 LOG LEVEL
 ---------
@@ -217,7 +232,7 @@ Samba supports reading files via memory mapping them. One some
 machines this can give a large boost to performance, on others it
 makes not difference at all, and on some it may reduce performance.
 
-To enable you you have to recompile Samba with the -DUSE_MMAP=1 option
+To enable you you have to recompile Samba with the -DUSE_MMAP option
 on the FLAGS line of the Makefile.
 
 Note that memory mapping is only used on files opened read only, and
@@ -268,6 +283,7 @@ person even reported a speed drop of a factor of 30 when he went from
 
 It probably depends a lot on your hardware, and the type of unix box
 you have at the other end of the link.
+
 
 MY RESULTS
 ----------

@@ -1,9 +1,15 @@
-Samba 1.9.15p8 for OS/2  :  REQUIRES emx 0.9b.
+Contributor:	Jason Rumney <jasonr@pec.co.nz>.
+Date:		1995
+Status:		Needs Updating - Old!
 
+Subject:	IBM OS/2 Support
+=============================================================================
+
+
+Samba 1.9.15p8 for OS/2  :  REQUIRES emx 0.9b.
 
 Please read the file README, which contains general information about
 the configuration and use of Samba.
-
 
 Notes specific to OS/2 port:
 ============================

@@ -1,4 +1,4 @@
-This file lists real Gotchas to watch out for:
+This file lists Gotchas to watch out for:
 =========================================================================
 Item Number:	1.0
 Description:	Problem Detecting Interfaces
@@ -6,7 +6,7 @@ Symptom:	Workstations do NOT see Samba server in Browse List
 OS:		RedHat - Rembrandt Beta 2
 Platform:	Intel
 Date:		August 16, 1996
-Submitted By:	John H Terpstra <jht@aquasoft.com.au>
+Submitted By:	John H Terpstra 
 Details:
 	By default RedHat Rembrandt-II during installation adds an
 	entry to /etc/hosts as follows:-
@@ -27,7 +27,7 @@ Symptom:	Loss of Domain Logon Services and failed Windows NT / 95
 OS:		All Unix systems with Windows NT Domain Control environments.
 Platform:	All
 Date:		February 1, 1997
-Submitted By:	John H Terpstra <jht@aquasoft.com.au>
+Submitted By:	John H Terpstra 
 Details:
 	Samba is configured for Domain logon control in a network
 	where a Windows NT Domain Primary Controller is running.
@@ -57,4 +57,12 @@ Details:
 Work-around:	Stop the Samba nmbd and smbd processes, then on the Windows
 		NT Primary Domain Controller start the Network Logon Service.
 		Now restart the Samba nmbd and smbd services.
+
+		Better still: DO NOT CONFIGURE SAMBA AS THE NETWORK LOGON
+		SERVER, DO NOT SET SAMBA TO BE THE DOMAIN MASTER, DO NOT
+		SET SAMBA TO OS LEVEL GREATER THAN 0.
+
+		ie: Let Windows NT Server be the Domain Logon server, the
+		domain master browser and do NOT interfere with any aspect
+		of Microsoft Windows NT Domain Control.
 =========================================================================

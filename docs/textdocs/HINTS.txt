@@ -1,3 +1,10 @@
+Contributor:	Many
+Updated:	Not for a long time!
+
+Subject:	A collection of hints
+Status:		May be useful information but NOT current
+===============================================================================
+
 Here are some random hints that you may find useful. These really
 should be incorporated in the main docs someday.
 
