@@ -1309,32 +1309,6 @@ static BOOL run_trans2test(void)
 }
 
 
-/*
-  print out server properties
- */
-static BOOL run_properties(void)
-{
-	struct smbcli_state *cli;
-	BOOL correct = True;
-	
-	printf("starting properties test\n");
-	
-	ZERO_STRUCT(cli);
-
-	if (!torture_open_connection(&cli)) {
-		return False;
-	}
-	
-	d_printf("Capabilities 0x%08x\n", cli->transport->negotiate.capabilities);
-
-	if (!torture_close_connection(cli)) {
-		correct = False;
-	}
-
-	return correct;
-}
-
-
 
 /* FIRST_DESIRED_ACCESS   0xf019f */
 #define FIRST_DESIRED_ACCESS   SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA|SA_RIGHT_FILE_APPEND_DATA|\
@@ -2333,9 +2307,10 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 	for (i=0;i<torture_nprocs;i++) {
 		child_status[i] = 0;
 	}
-	kill(0, SIGCONT);
 
 	printf("%d clients started\n", torture_nprocs);
+
+	kill(0, SIGCONT);
 
 	for (i=0;i<torture_nprocs;i++) {
 		int ret;
@@ -2393,7 +2368,7 @@ static struct {
 	{"BASE-XCOPY", run_xcopy, 0},
 	{"BASE-RENAME", torture_test_rename, 0},
 	{"BASE-DELETE", torture_test_delete, 0},
-	{"BASE-PROPERTIES", run_properties, 0},
+	{"BASE-PROPERTIES", torture_test_properties, 0},
 	{"BASE-MANGLE", torture_mangle, 0},
 	{"BASE-OPENATTR", torture_openattrtest, 0},
 	{"BASE-CHARSET", torture_charset, 0},
