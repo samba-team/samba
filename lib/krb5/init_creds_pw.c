@@ -1212,7 +1212,7 @@ krb5_get_init_creds_password(krb5_context context,
     if (ret)
 	goto out;
 
-    if (password == NULL) {
+    if (password == NULL && pa_ctx.password == NULL) {
 	krb5_prompt prompt;
 	krb5_data password_data;
 	char *p, *q;
@@ -1237,8 +1237,8 @@ krb5_get_init_creds_password(krb5_context context,
 	}
 	password = password_data.data;
     }
-
-    pa_ctx.password = password;
+    if (pa_ctx.password == NULL)
+	pa_ctx.password = password;
 
     done = 0;
     while(!done) {
