@@ -214,7 +214,7 @@ static int process_root(int argc, char *argv[])
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "axdehmnijr:swR:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "axdehmnijr:sw:R:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = True;
