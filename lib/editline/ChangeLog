@@ -1,3 +1,7 @@
+Tue Jun 30 17:18:09 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (distclean): don't remove roken_rename.h
+
 Fri May 29 19:03:38 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (strdup.c): remove dependency

@@ -1,3 +1,10 @@
+Tue Jun 30 17:19:00 1998  Assar Westerlund  <assar@sics.se>
+
+	* afssys.c: rewrite and add support for environment variable
+ 	AFS_SYSCALL
+
+	* Makefile.in (distclean): don't remove roken_rename.h
+
 Fri May 29 19:03:20 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (roken_rename.h): remove dependency

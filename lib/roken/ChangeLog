@@ -1,3 +1,8 @@
+Tue Jun 30 17:29:09 1998  Assar Westerlund  <assar@sics.se>
+
+	* get_window_size.c: fix misspelling of TIOCGWINSZ and bad use of
+ 	fields
+
 Sun May 31 03:24:34 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* getarg.c (mandoc_template): Put short and long options in
