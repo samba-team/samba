@@ -108,7 +108,7 @@ void free_connections(void)
 }
 
 static struct cli_connection *cli_con_get(const char *srv_name,
-                                          const char *pipe_name,
+                                          char *pipe_name,
                                           cli_auth_fns * auth,
                                           void *auth_creds, BOOL reuse)
 {

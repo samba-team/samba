@@ -613,6 +613,7 @@ BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
+	free_spoolss_q_addprinterex(&q_o);
 
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
@@ -802,6 +803,57 @@ uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 le
         cli_connection_unlink(con);
 
         return r_o.status;
+}
+
+/******************************************************************************
+ AddPrinterDriver()
+ *****************************************************************************/
+uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIVER_CTR *info)
+{
+        prs_struct 			rbuf;
+        prs_struct 			buf;
+        SPOOL_Q_ADDPRINTERDRIVER 	q_o;
+        SPOOL_R_ADDPRINTERDRIVER 	r_o;
+	TALLOC_CTX 			*mem_ctx = NULL;
+	struct cli_connection 		*con = NULL;
+	
+        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
+                return False;
+
+	if ((mem_ctx=talloc_init()) == NULL)
+	{
+		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
+		return False;
+	}
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, mem_ctx, UNMARSHALL);
+	
+	/* make the ADDPRINTERDRIVER PDU */
+	make_spoolss_q_addprinterdriver(&q_o, srv_name, level, info);
+
+	/* turn the data into an io stream */
+        if (spoolss_io_q_addprinterdriver("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, SPOOLSS_ADDPRINTERDRIVER, &buf, &rbuf)) 
+	{
+        	ZERO_STRUCT(r_o);
+
+        	if(!spoolss_io_r_addprinterdriver("", &r_o, &rbuf, 0)) 
+		{
+                        /* report error code */
+                        DEBUG(5,("SPOOLSS_ADDPRINTEREX: %s\n", get_nt_error_msg(r_o.status)));
+		}
+        }
+
+
+        prs_mem_free(&rbuf);
+        prs_mem_free(&buf );
+	free_spool_driver_info_3(q_o.info.info_3);
+
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
+		
+	return r_o.status;
+
 }
 
 
