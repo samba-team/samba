@@ -44,55 +44,61 @@ char *get_home_dir(char *user)
 map a username from a dos name to a unix name by looking in the username
 map
 ********************************************************************/
-void map_username(char *user)
+BOOL map_username(char *user)
 {
   static int depth=0;
   static BOOL initialised=False;
   static fstring last_from,last_to;
   FILE *f;
   char *s;
+  pstring buf;
   char *mapfile = lp_username_map();
-  if (!*mapfile || depth) return;
 
-  if (!*user) return;
+  if (!*mapfile || depth)
+    return False;
+
+  if (!*user)
+    return False;
 
   if (!initialised) {
     *last_from = *last_to = 0;
     initialised = True;
   }
 
-  if (strequal(user,last_to)) return;
+  if (strequal(user,last_to))
+    return False;
 
   if (strequal(user,last_from)) {
     DEBUG(3,("Mapped user %s to %s\n",user,last_to));
     fstrcpy(user,last_to);
-    return;
+    return True;
   }
   
   f = fopen(mapfile,"r");
   if (!f) {
     DEBUG(0,("can't open username map %s\n",mapfile));
-    return;
+    return False;
   }
 
   DEBUG(4,("Scanning username map %s\n",mapfile));
 
   depth++;
 
-  for (; (s=fgets_slash(NULL,80,f)); free(s)) {
+  while((s=fgets_slash(buf,sizeof(buf),f))!=NULL) {
     char *unixname = s;
     char *dosname = strchr(unixname,'=');
-    BOOL break_if_mapped = False;
+    BOOL return_if_mapped = False;
 
-    if (!dosname) continue;
+    if (!dosname)
+      continue;
     *dosname++ = 0;
 
     while (isspace(*unixname)) unixname++;
-    if ('!' == *unixname)
-    {
-      break_if_mapped = True;
+    if ('!' == *unixname) {
+      return_if_mapped = True;
       unixname++;
-      while (*unixname && isspace(*unixname)) unixname++;
+      while (*unixname && isspace(*unixname))
+        unixname++;
     }
     
     if (!*unixname || strchr("#;",*unixname)) continue;
@@ -100,26 +106,36 @@ void map_username(char *user)
     {
       int l = strlen(unixname);
       while (l && isspace(unixname[l-1])) {
-	unixname[l-1] = 0;
-	l--;
+        unixname[l-1] = 0;
+        l--;
       }
     }
 
     if (strchr(dosname,'*') || user_in_list(user,dosname)) {
       DEBUG(3,("Mapped user %s to %s\n",user,unixname));
-      StrnCpy(last_from,user,sizeof(last_from)-1);
+      fstrcpy(last_from,user);
       sscanf(unixname,"%s",user);
-      StrnCpy(last_to,user,sizeof(last_to)-1);
-      if(break_if_mapped) { 
-        free(s);
-        break;
+      fstrcpy(last_to,user);
+      if(return_if_mapped) { 
+        fclose(f);
+        return True;
       }
     }
   }
 
   fclose(f);
 
+  /*
+   * Username wasn't mapped. Setup the last_from and last_to
+   * as an optimization so that we don't scan the file again
+   * for the same user.
+   */
+  fstrcpy(last_from,user);
+  fstrcpy(last_to,user);
+
   depth--;
+
+  return False;
 }
 
 /****************************************************************************
@@ -170,8 +186,6 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
     user = &user2[0];
   }
 
-  map_username(user);
-
   ret = _Get_Pwnam(user);
   if (ret) return(ret);
 
@@ -208,9 +222,71 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
   return(NULL);
 }
 
+/****************************************************************************
+check if a user is in a netgroup user list
+****************************************************************************/
+static BOOL user_in_netgroup_list(char *user,char *ngname)
+{
+#ifdef NETGROUP
+  static char *mydomain = NULL;
+  if (mydomain == NULL)
+    yp_get_default_domain(&mydomain);
+
+  if(mydomain == NULL)
+  {
+    DEBUG(5,("Unable to get default yp domain\n"));
+  }
+  else
+  {
+    DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+          user, mydomain, ngname));
+    DEBUG(5,("innetgr is %s\n",
+          innetgr(ngname, NULL, user, mydomain)
+          ? "TRUE" : "FALSE"));
+
+    if (innetgr(ngname, NULL, user, mydomain))
+      return (True);
+  }
+#endif /* NETGROUP */
+  return False;
+}
 
 /****************************************************************************
-check if a user is in a user list
+check if a user is in a UNIX user list
+****************************************************************************/
+static BOOL user_in_group_list(char *user,char *gname)
+{
+#if HAVE_GETGRNAM 
+  struct group *gptr;
+  char **member;  
+  struct passwd *pass = Get_Pwnam(user,False);
+
+  if (pass)
+  { 
+    gptr = getgrgid(pass->pw_gid);
+    if (gptr && strequal(gptr->gr_name,gname))
+      return(True); 
+  } 
+
+  gptr = (struct group *)getgrnam(gname);
+
+  if (gptr)
+  {
+    member = gptr->gr_mem;
+    while (member && *member)
+    {
+      if (strequal(*member,user))
+        return(True);
+      member++;
+    }
+  }
+#endif /* HAVE_GETGRNAM */
+  return False;
+}	      
+
+/****************************************************************************
+check if a user is in a user list - can check combinations of UNIX
+and netgroup lists.
 ****************************************************************************/
 BOOL user_in_list(char *user,char *list)
 {
@@ -218,65 +294,72 @@ BOOL user_in_list(char *user,char *list)
   char *p=list;
 
   while (next_token(&p,tok,LIST_SEP))
+  {
+    /*
+     * Check raw username.
+     */
+    if (strequal(user,tok))
+      return(True);
+
+    /*
+     * Now check to see if any combination
+     * of UNIX and netgroups has been specified.
+     */
+
+    if(*tok == '@')
     {
-      if (strequal(user,tok))
-	return(True);
-
-#ifdef NETGROUP
-      if (*tok == '@')
-	{
-	  static char *mydomain = NULL;
-	  if (mydomain == 0)
-	    yp_get_default_domain(&mydomain);
-
-	  if(mydomain == 0)
-	    {
-              DEBUG(5,("Unable to get default yp domain\n"));
-            }
-          else
-	    {
-	  
-  	      DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-		   user, mydomain, &tok[1]));
-	      DEBUG(5,("innetgr is %s\n",
-		   innetgr(&tok[1], (char *) 0, user, mydomain)
-		   ? "TRUE" : "FALSE"));
-	  
-  	      if (innetgr(&tok[1], (char *)0, user, mydomain))
-	        return (True);
-            }
-	}
-#endif
-
-
-#if HAVE_GETGRNAM 
-      if (*tok == '@')
-	{
-          struct group *gptr;
-          char **member;  
-	  struct passwd *pass = Get_Pwnam(user,False);
-
-	  if (pass) { 
-	    gptr = getgrgid(pass->pw_gid);
-	    if (gptr && strequal(gptr->gr_name,&tok[1]))
-	      return(True); 
-	  } 
-
-	  gptr = (struct group *)getgrnam(&tok[1]);
-
-	  if (gptr)
-	    {
-	      member = gptr->gr_mem;
-	      while (member && *member)
-		{
-		  if (strequal(*member,user))
-		    return(True);
-		  member++;
-		}
-	    }
-	}	      
-#endif
+      /*
+       * Old behaviour. Check netgroup list
+       * followed by UNIX list.
+       */
+      if(user_in_netgroup_list(user,&tok[1]))
+        return True;
+      if(user_in_group_list(user,&tok[1]))
+        return True;
     }
+    else if (*tok == '+')
+    {
+      if(tok[1] == '&')
+      {
+        /*
+         * Search UNIX list followed by netgroup.
+         */
+        if(user_in_group_list(user,&tok[2]))
+          return True;
+        if(user_in_netgroup_list(user,&tok[2]))
+          return True;
+      }
+      else
+      {
+        /*
+         * Just search UNIX list.
+         */
+        if(user_in_group_list(user,&tok[1]))
+          return True;
+      }
+    }
+    else if (*tok == '&')
+    {
+      if(tok[1] == '&')
+      {
+        /*
+         * Search netgroup list followed by UNIX list.
+         */
+        if(user_in_netgroup_list(user,&tok[2]))
+          return True;
+        if(user_in_group_list(user,&tok[2]))
+          return True;
+      }
+      else
+      {
+        /*
+         * Just search netgroup list.
+         */
+        if(user_in_netgroup_list(user,&tok[1]))
+          return True;
+      }
+    }
+  }
   return(False);
 }
 
