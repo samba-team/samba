@@ -146,18 +146,16 @@ int open_rpc_pipe_hnd(char *pipe_name, int cnum, uint16 vuid)
  ****************************************************************************/
 int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 {
-	int data_hdr_pos;
-	int data_pos;
 	pipes_struct *p = &Pipes[pnum - PIPE_HANDLE_OFFSET];
 	DEBUG(6,("read_pipe: %x", pnum));
 
 	if (VALID_PNUM(pnum - PIPE_HANDLE_OFFSET))
 	{
-		DEBUG(6,("name: %s cnum: %d open: %s data_pos: %d len: %d",
+		DEBUG(6,("name: %s cnum: %d open: %s pos: %d len: %d",
 		          p->name,
 		          p->cnum,
 		          BOOLSTR(p->open),
-		          data_pos, n));
+		          pos, n));
 	}
 
 	if (OPEN_PNUM(pnum - PIPE_HANDLE_OFFSET))
@@ -165,6 +163,8 @@ int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 		int num = 0;
 		int len = 0;
 		uint32 hdr_num = 0;
+		int data_hdr_pos;
+		int data_pos;
 
 		DEBUG(6,("OK\n"));
 
