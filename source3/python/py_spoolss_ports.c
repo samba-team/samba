@@ -40,8 +40,12 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 		    args, kw, "s|iO", kwlist, &server, &level, &creds))
 		return NULL;
 	
-	if (server[0] == '\\' && server[1] == '\\')
-		server += 2;
+	if (server[0] != '\\' || server[1] != '\\') {
+		PyErr_SetString(PyExc_ValueError, "UNC name required");
+		return NULL;
+	}
+
+	server += 2;
 
 	if (creds && creds != Py_None && !PyDict_Check(creds)) {
 		PyErr_SetString(PyExc_TypeError, 

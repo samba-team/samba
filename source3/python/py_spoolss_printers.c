@@ -39,7 +39,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 
 	if (unc_name[0] != '\\' || unc_name[1] != '\\') {
-		PyErr_SetString(spoolss_error, "bad printer name");
+		PyErr_SetString(PyExc_ValueError, "UNC name required");
 		return NULL;
 	}
 
@@ -296,8 +296,12 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		    &flags, &creds))
 		return NULL;
 	
-	if (server[0] == '\\' && server[1] == '\\')
-		server += 2;
+	if (server[0] != '\\' || server[1] != '\\') {
+		PyErr_SetString(PyExc_ValueError, "UNC name required");
+		return NULL;
+	}
+
+	server += 2;
 
 	if (creds && creds != Py_None && !PyDict_Check(creds)) {
 		PyErr_SetString(PyExc_TypeError, 
