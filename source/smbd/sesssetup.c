@@ -677,6 +677,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 	if (Protocol < PROTOCOL_NT1) {
 		uint16 passlen1 = SVAL(inbuf,smb_vwv7);
+
+		/* Never do NT status codes with protocols before NT1 as we don't get client caps. */
+		remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
+
 		if ((passlen1 > MAX_PASS_LEN) || (passlen1 > smb_bufrem(inbuf, smb_buf(inbuf)))) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
