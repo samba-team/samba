@@ -39,6 +39,19 @@ extern struct in_addr ipgrp;
 int num_response_packets = 0;
 
 /***************************************************************************
+  updates the unique transaction identifier
+  **************************************************************************/
+static void update_name_trn_id(void)
+{
+  if (!name_trn_id)
+  {
+    name_trn_id = (time(NULL)%(unsigned)0x7FFF) + (getpid()%(unsigned)100);
+  }
+  name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
+}
+
+
+/***************************************************************************
   add an initated name query  into the list
   **************************************************************************/
 static void add_response_record(struct subnet_record *d,
@@ -74,20 +87,20 @@ static void dead_netbios_entry(struct subnet_record *d,
 	   inet_ntoa(n->to_ip), namestr(&n->name), n->num_msgs));
 
   switch (n->cmd_type)
-    {
+  {
     case NAME_QUERY_CONFIRM:
-	{
+    {
 		if (!lp_wins_support()) return; /* only if we're a WINS server */
 
-	      if (n->num_msgs == 0)
+		if (n->num_msgs == 0)
         {
 			/* oops. name query had no response. check that the name is
 			   unique and then remove it from our WINS database */
-	  
+
 			/* IMPORTANT: see query_refresh_names() */
-	  
+
 			if ((!NAME_GROUP(n->nb_flags)))
-	{
+			{
 				struct subnet_record *d = find_subnet(ipgrp);
 				if (d)
 				{
@@ -97,24 +110,24 @@ static void dead_netbios_entry(struct subnet_record *d,
 					 */
 					remove_netbios_name(d, n->name.name, n->name.name_type,
 									REGISTER, n->to_ip);
-	}
-    }
-}
+				}
+			}
+		}
 		break;
     }
 
 	case NAME_QUERY_MST_CHK:
-{
+	{
 	  /* if no response received, the master browser must have gone
 		 down on that subnet, without telling anyone. */
-  
+
 	  /* IMPORTANT: see response_netbios_packet() */
 
 	  if (n->num_msgs == 0)
 		  browser_gone(n->name.name, n->to_ip);
 	  break;
 	}
-  
+
 	case NAME_RELEASE:
 	{
 	  /* if no response received, it must be OK for us to release the
@@ -122,7 +135,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 		 WINS server) */
 
 	  /* IMPORTANT: see response_name_release() */
-  
+
 	  if (ismyip(n->to_ip))
 	  {
 		remove_netbios_name(d,n->name.name,n->name.name_type,SELF,n->to_ip);
@@ -133,7 +146,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 	  }
 	  break;
 	}
-  
+
 	case NAME_REGISTER:
 	{
 	  /* if no response received, and we are using a broadcast registration
@@ -145,14 +158,14 @@ static void dead_netbios_entry(struct subnet_record *d,
 	  {
 		/* broadcast method: implicit acceptance of the name registration
 		   by not receiving any objections. */
-  
+
 		/* IMPORTANT: see response_name_reg() */
-  
+
 		enum name_source source = ismyip(n->to_ip) ? SELF : REGISTER;
-  
+
 		add_netbios_entry(d,n->name.name,n->name.name_type,
 				n->nb_flags, n->ttl, source,n->to_ip, True,!n->bcast);
-    }
+	  }
 	  else
 	  {
 		/* XXXX oops. this is where i wish this code could retry DGRAM
@@ -160,12 +173,12 @@ static void dead_netbios_entry(struct subnet_record *d,
 		   received no response. rfc1001.txt states that after retrying,
 		   we should assume the WINS server is dead, and fall back to
 		   broadcasting. */
-  
+		
 		 DEBUG(1,("WINS server did not respond to name registration!\n"));
 	  }
 	  break;
 	}
-  
+
 	default:
 	{
 	  /* nothing to do but delete the dead expected-response structure */
@@ -181,8 +194,8 @@ static void dead_netbios_entry(struct subnet_record *d,
   ****************************************************************************/
 static void initiate_netbios_packet(uint16 *id,
 				int fd,int quest_type,char *name,int name_type,
-			       int nb_flags,BOOL bcast,BOOL recurse,
-			       struct in_addr to_ip)
+			    int nb_flags,BOOL bcast,BOOL recurse,
+			    struct in_addr to_ip)
 {
   struct packet_struct p;
   struct nmb_packet *nmb = &p.packet.nmb;
@@ -204,9 +217,7 @@ static void initiate_netbios_packet(uint16 *id,
 
   bzero((char *)&p,sizeof(p));
 
-  if (!name_trn_id) name_trn_id = (time(NULL)%(unsigned)0x7FFF) + 
-    (getpid()%(unsigned)100);
-  name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
+  update_name_trn_id();
 
   if (*id == 0xffff) *id = name_trn_id; /* allow resending with same id */
 
@@ -409,7 +420,7 @@ void queue_netbios_pkt_wins(struct subnet_record *d,
 static struct response_record *
 make_response_queue_record(enum cmd_type cmd,int id,int fd,
 				int quest_type, char *name,int type, int nb_flags, time_t ttl,
-		       BOOL bcast,BOOL recurse,struct in_addr ip)
+				BOOL bcast,BOOL recurse, struct in_addr ip)
 {
   struct response_record *n;
 	
@@ -476,19 +487,24 @@ void queue_netbios_packet(struct subnet_record *d,
 /****************************************************************************
   find a response in a subnet's name query response list. 
   **************************************************************************/
-struct response_record *find_response_record(struct subnet_record *d,
+struct response_record *find_response_record(struct subnet_record **d,
 				uint16 id)
-{   
+{  
   struct response_record *n;
 
   if (!d) return NULL;
 
-  for (n = d->responselist; n; n = n->next)
+  for ((*d) = subnetlist; (*d); (*d) = (*d)->next)
+  {
+    for (n = (*d)->responselist; n; n = n->next)
     {
-      if (n->response_id == id)	{
-	return n;
+      if (n->response_id == id) {
+         return n;
       }
     }
+  }
+
+  *d = NULL;
 
   return NULL;
 }
@@ -724,11 +740,13 @@ BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
 
   bzero((char *)&p,sizeof(p));
 
+  update_name_trn_id();
+
   dgram->header.msg_type = 0x11; /* DIRECT GROUP DATAGRAM */
   dgram->header.flags.node_type = M_NODE;
   dgram->header.flags.first = True;
   dgram->header.flags.more = False;
-  dgram->header.dgm_id = name_trn_id++;
+  dgram->header.dgm_id = name_trn_id;
   dgram->header.source_ip = src_ip;
   dgram->header.source_port = DGRAM_PORT;
   dgram->header.dgm_length = 0; /* let build_dgram() handle this */
