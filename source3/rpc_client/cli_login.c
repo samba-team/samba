@@ -294,6 +294,24 @@ void make_nt_login_interactive(NET_ID_INFO_CTR *ctr,
 }
 
 /****************************************************************************
+ make network sam login info
+ ****************************************************************************/
+void make_nt_login_network(NET_ID_INFO_CTR *ctr,
+				char *workgroup, char *myhostname,
+				uint32 smb_userid, char *username,
+				char lm_chal[8], char lm_chal_resp[24], char nt_chal_resp[24])
+{
+	/* indicate a "network" login */
+	ctr->switch_value = 2;
+
+	/* this is used in both the SAM Logon and the SAM Logoff */
+	make_id_info2(&ctr->auth.id2, workgroup, 0,
+			  smb_userid, 0,
+			  username, myhostname,
+			  lm_chal, lm_chal_resp, nt_chal_resp);
+}
+
+/****************************************************************************
 experimental nt login.
 ****************************************************************************/
 BOOL do_nt_login(struct cli_state *cli, int t_idx, uint16 fnum,

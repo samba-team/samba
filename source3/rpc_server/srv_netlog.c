@@ -488,11 +488,13 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	char nt_pwd[16];
 	char lm_pwd[16];
 	unsigned char key[16];
+
 	memset(key, 0, 16);
 	memcpy(key, vuser->dc.sess_key, 8);
 
-        memcpy(lm_pwd, id1->lm_owf.data, 16);
-        memcpy(nt_pwd, id1->nt_owf.data, 16);
+	memcpy(lm_pwd, id1->lm_owf.data, 16);
+	memcpy(nt_pwd, id1->nt_owf.data, 16);
+
 	SamOEMhash(lm_pwd, key, False);
 	SamOEMhash(nt_pwd, key, False);
 
@@ -520,17 +522,40 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 				struct smb_passwd *smb_pass,
 				user_struct *vuser)
 {
-	if ((id2->lm_chal_resp.str_str_len == 24 ||
-	     id2->lm_chal_resp.str_str_len == 0) &&
-	    id2->nt_chal_resp.str_str_len == 24 && 
-            (((smb_pass->smb_nt_passwd != NULL) &&
-               smb_password_check(id2->nt_chal_resp.buffer, smb_pass->smb_nt_passwd,
-                                 id2->lm_chal)) ||
-               smb_password_check(id2->lm_chal_resp.buffer, smb_pass->smb_passwd,
-                                 id2->lm_chal)))
+	DEBUG(5,("net_login_network: lm_len: %d nt_len: %d\n",
+		id2->lm_chal_resp.str_str_len, 
+		id2->nt_chal_resp.str_str_len));
+
+	/* check the lm password, first. */
+	/* lkclXXXX this is not a good place to put disabling of LM hashes in.
+	   if that is to be done, first move this entire function into a
+	   library routine that calls the two smb_password_check() functions.
+	   if disabling LM hashes (which nt can do for security reasons) then
+	   an attempt should be made to disable them everywhere (which nt does
+	   not do, for various security-hole reasons).
+	 */
+
+	if (id2->lm_chal_resp.str_str_len == 24 &&
+		smb_password_check(id2->lm_chal_resp.buffer,
+		                   smb_pass->smb_passwd,
+		                   id2->lm_chal))
 	{
 		return 0x0;
 	}
+
+	/* now check the nt password, if it exists */
+
+	if (id2->nt_chal_resp.str_str_len == 24 && 
+		smb_pass->smb_nt_passwd != NULL &&
+		smb_password_check(id2->nt_chal_resp.buffer,
+		                   smb_pass->smb_nt_passwd,
+                           id2->lm_chal)) 
+	{
+		return 0x0;
+	}
+
+	/* oops! neither password check succeeded */
+
 	return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 }
 
@@ -577,21 +602,17 @@ static void api_net_sam_logon( int uid,
 			case 1:
 			{
 				uni_samlogon_user = &(q_l.sam_id.ctr->auth.id1.uni_user_name);
-				pstrcpy(samlogon_user, unistrn2(uni_samlogon_user->buffer,
-		                                uni_samlogon_user->uni_str_len));
 
-				DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  User:[%s]\n",
-				          lp_workgroup(), samlogon_user));
+				DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ",
+				          lp_workgroup()));
 				break;
 			}
 			case 2:
 			{
 				uni_samlogon_user = &(q_l.sam_id.ctr->auth.id2.uni_user_name);
-				pstrcpy(samlogon_user, unistrn2(uni_samlogon_user->buffer,
-		                                uni_samlogon_user->uni_str_len));
 
-				DEBUG(3,("SAM Logon (Network). Domain:[%s].  User:[%s]\n",
-				          lp_workgroup(), samlogon_user));
+				DEBUG(3,("SAM Logon (Network). Domain:[%s].  ",
+				          lp_workgroup()));
 				break;
 			}
 			default:
@@ -609,6 +630,8 @@ static void api_net_sam_logon( int uid,
 	{
 		pstrcpy(samlogon_user, unistrn2(uni_samlogon_user->buffer,
 		                                uni_samlogon_user->uni_str_len));
+
+		DEBUG(3,("User:[%s]\n", samlogon_user));
 
 		become_root(True);
 		smb_pass = get_smbpwd_entry(samlogon_user, 0);
