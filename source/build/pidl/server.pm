@@ -102,7 +102,7 @@ pidl "
 	}
 
 	if (dce_call->fault_code != 0) {
-		return dcerpc_map_fault2ntstatus(dce_call->fault_code);
+		return NT_STATUS_NET_WRITE_FAULT;
 	}
 	return NT_STATUS_OK;
 }
