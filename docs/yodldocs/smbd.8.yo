@@ -418,7 +418,7 @@ label(SEEALSO)
 manpageseealso()
 
 bf(hosts_access (5)), bf(inetd (8)), url(bf(nmbd (8)))(nmbd.8.html),
-url(bf(smb.conf (5)))(smb.conf.html), url(bf(smbclient
+url(bf(smb.conf (5)))(smb.conf.5.html), url(bf(smbclient
 (1)))(smbclient.1.html), url(bf(testparm (1)))(testparm.1.html),
 url(bf(testprns (1)))(testprns.1.html), and the Internet RFC's
 bf(rfc1001.txt), bf(rfc1002.txt). In addition the CIFS (formerly SMB)
