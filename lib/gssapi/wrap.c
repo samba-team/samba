@@ -461,8 +461,9 @@ OM_uint32 gss_wrap
 		       output_message_buffer, key);
       break;
   case KEYTYPE_ARCFOUR:
-      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
-      ret = GSS_S_FAILURE;
+      ret = _gssapi_wrap_arcfour (minor_status, context_handle, conf_req_flag,
+				  qop_req, input_message_buffer, conf_state,
+				  output_message_buffer, key);
       break;
   default :
 #ifdef HAVE_GSSAPI_CFX
