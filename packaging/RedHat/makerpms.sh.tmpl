@@ -2,6 +2,8 @@
 # Copyright (C) John H Terpstra 1998
 # Updated for RPM 3 by Jochen Wiedmann, joe@ispsoft.de
 # Changed for a generic tar file rebuild by abartlet@pcug.org.au
+SPECDIR=${SPECDIR:-/usr/src/redhat/SPECS}
+SRCDIR=${SRCDIR:-/usr/src/redhat/SOURCES}
 USERID=`id -u`
 GRPID=`id -g`
 VERSION='PVERSION'
@@ -29,10 +31,20 @@ esac
 
 ( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
-( cd ../../.. ; tar --exclude=CVS -czvf samba-${VERSION}.tar.gz samba-${VERSION}/samba2.*.spec samba-${VERSION} )
+if [ z$1 = z"devel" ]; then
+	(cd ../../.. ; mv samba samba-${VERSION} )
+fi
+( cd ../../.. ; tar --exclude=CVS -czvf ${SRCDIR}/samba-${VERSION}.tar.gz samba-${VERSION}/samba2.*.spec samba-${VERSION} )
 
-rpm -ta -v ../../../samba-${VERSION}.tar.gz
+cp samba2*spec ${SPECDIR}
 
-
-
+if [ z$1 = z"devel" ]; then
+	( cd ../../.. ; mv samba-${VERSION} samba )
+	if [ -x samba2-devel.spec ]; then
+		mv samba2.spec samba2-normal.spec
+		cp samba2-devel.spec samba2.spec
+	fi
+fi
+cd ${SPECDIR}
+rpm -ba -v samba2.spec
 
