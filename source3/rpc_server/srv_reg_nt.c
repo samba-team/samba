@@ -27,10 +27,9 @@
 
 #include "includes.h"
 
-struct reg_info
-{
-    /* for use by \PIPE\winreg */
-    fstring name; /* name of registry key */
+struct reg_info {
+	/* for use by \PIPE\winreg */
+	fstring name; /* name of registry key */
 };
 
 static void free_reg_info(void *ptr)
@@ -124,7 +123,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 	DEBUG(5,("_reg_info: %d\n", __LINE__));
 
-	if (find_policy_by_hnd(p, &q_u->pol, NULL) == -1)
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
 	rpcstr_pull(name, q_u->uni_type.buffer, sizeof(name), q_u->uni_type.uni_str_len*2, 0);
