@@ -38,20 +38,24 @@ char *ads_errstr(int rc)
 /*
   connect to the LDAP server
 */
-int ads_connect(ADS_STRUCT *ads)
+ADS_RETURN_CODE ads_connect(ADS_STRUCT *ads)
 {
 	int version = LDAP_VERSION3;
-	int rc;
+	ADS_RETURN_CODE rc;
+	
+	rc.error_type = False;
 
 	ads->last_attempt = time(NULL);
 
 	ads->ld = ldap_open(ads->ldap_server, ads->ldap_port);
 	if (!ads->ld) {
-		return LDAP_SERVER_DOWN;
+		rc.rc = LDAP_SERVER_DOWN;
+		return rc;
 	}
 	if (!ads_server_info(ads)) {
 		DEBUG(1,("Failed to get ldap server info\n"));
-		return LDAP_SERVER_DOWN;
+		rc.rc = LDAP_SERVER_DOWN;
+		return rc;
 	}
 
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
@@ -233,6 +237,19 @@ static void dump_binary(const char *field, struct berval **values)
 }
 
 /*
+  dump a sid result from ldap
+*/
+static void dump_sid(const char *field, struct berval **values)
+{
+	int i;
+	for (i=0; values[i]; i++) {
+		DOM_SID sid;
+		sid_parse(values[i]->bv_val, values[i]->bv_len, &sid);
+		printf("%s: %s\n", field, sid_string_static(&sid));
+	}
+}
+
+/*
   dump a string result from ldap
 */
 static void dump_string(const char *field, struct berval **values)
@@ -257,7 +274,7 @@ void ads_dump(ADS_STRUCT *ads, void *res)
 		void (*handler)(const char *, struct berval **);
 	} handlers[] = {
 		{"objectGUID", dump_binary},
-		{"objectSid", dump_binary},
+		{"objectSid", dump_sid},
 		{NULL, NULL}
 	};
     
@@ -547,16 +564,60 @@ BOOL ads_server_info(ADS_STRUCT *ads)
 
 	*p = 0;
 
+	SAFE_FREE(ads->server_realm);
+	SAFE_FREE(ads->bind_path);
+
+	ads->server_realm = strdup(p+2);
+	ads->bind_path = ads_build_dn(ads->server_realm);
+
 	/* in case the realm isn't configured in smb.conf */
 	if (!ads->realm || !ads->realm[0]) {
 		SAFE_FREE(ads->realm);
-		SAFE_FREE(ads->bind_path);
-		ads->realm = strdup(p+2);
-		ads->bind_path = ads_build_dn(ads->realm);
+		ads->realm = strdup(ads->server_realm);
 	}
 
 	DEBUG(3,("got ldap server name %s@%s\n", 
 		 ads->ldap_server_name, ads->realm));
+
+	return True;
+}
+
+
+/* 
+   find the list of trusted domains
+*/
+BOOL ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
+			 int *num_trusts, char ***names, DOM_SID **sids)
+{
+	const char *attrs[] = {"flatName", "securityIdentifier", NULL};
+	int rc;
+	void *res, *msg;
+	int count, i;
+
+	*num_trusts = 0;
+
+	rc = ads_search(ads, &res, "(objectcategory=trustedDomain)", attrs);
+	if (rc) return False;
+
+	count = ads_count_replies(ads, res);
+	if (count == 0) {
+		ads_msgfree(ads, res);
+		return False;
+	}
+
+	(*names) = talloc(mem_ctx, sizeof(char *) * count);
+	(*sids) = talloc(mem_ctx, sizeof(DOM_SID) * count);
+	if (! *names || ! *sids) return False;
+
+	for (i=0, msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
+		(*names)[i] = ads_pull_string(ads, mem_ctx, msg, "flatName");
+		ads_pull_sid(ads, msg, "securityIdentifier", &(*sids)[i]);
+		i++;
+	}
+
+	ads_msgfree(ads, res);
+
+	*num_trusts = i;
 
 	return True;
 }

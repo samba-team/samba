@@ -53,9 +53,9 @@ static int sasl_interact(LDAP *ld,unsigned flags,void *defaults,void *in)
    this routine is much less fragile
    see RFC2078 for details
 */
-int ads_sasl_gssapi_bind(ADS_STRUCT *ads)
+ADS_RETURN_CODE ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 {
-	int rc, minor_status;
+	int minor_status;
 	gss_name_t serv_name;
 	gss_buffer_desc input_name;
 	gss_ctx_id_t context_handle;
@@ -69,15 +69,27 @@ int ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	uint8 *p;
 	uint32 max_msg_size;
 	char *sname;
+	ADS_RETURN_CODE rc;
+	krb5_principal principal;
+	krb5_context ctx;
+	krb5_enctype enc_types[] = {ENCTYPE_DES_CBC_MD5, ENCTYPE_NULL};
+	gss_OID_desc nt_principal = 
+	{10, "\052\206\110\206\367\022\001\002\002\002"};
 
-	asprintf(&sname, "ldap@%s.%s", ads->ldap_server_name, ads->realm);
-
-	input_name.value = sname;
-	input_name.length = strlen(input_name.value);
-
-	rc = gss_import_name(&minor_status,&input_name,gss_nt_service_name, &serv_name);
-
+	/* we need to fetch a service ticket as the ldap user in the
+	   servers realm, regardless of our realm */
+	asprintf(&sname, "ldap/%s@%s", ads->ldap_server_name, ads->server_realm);
+	krb5_init_context(&ctx);
+	krb5_set_default_tgs_ktypes(ctx, enc_types);
+	krb5_parse_name(ctx, sname, &principal);
 	free(sname);
+	krb5_free_context(ctx);	
+
+	input_name.value = &principal;
+	input_name.length = sizeof(principal);
+
+	rc.rc = gss_import_name(&minor_status,&input_name,&nt_principal, &serv_name);
+	rc.error_type = False;
 
 	context_handle = GSS_C_NO_CONTEXT;
 
@@ -103,12 +115,17 @@ int ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 			gss_release_buffer(&minor_status, &input_token);
 		}
 
-		if (gss_rc && gss_rc != GSS_S_CONTINUE_NEEDED) goto failed;
+		if (gss_rc && gss_rc != GSS_S_CONTINUE_NEEDED) {
+		    rc.minor_status = minor_status;
+		    rc.rc = gss_rc;
+		    rc.error_type = True;
+		    goto failed;
+		}
 
 		cred.bv_val = output_token.value;
 		cred.bv_len = output_token.length;
 
-		rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
+		rc.rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
 				      &scred);
 
 		if (output_token.value) {
@@ -152,7 +169,7 @@ int ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	output_token.length = strlen(ads->bind_path) + 8;
 
-	gss_rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
+	rc.rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
 			  &output_token, &conf_state,
 			  &input_token);
 
@@ -161,22 +178,24 @@ int ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	cred.bv_val = input_token.value;
 	cred.bv_len = input_token.length;
 
-	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
+	rc.rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
 			      &scred);
 
 	gss_release_buffer(&minor_status, &input_token);
-	return rc;
 
 failed:
-	return gss_rc;
+	return rc;
 }
 
-int ads_sasl_bind(ADS_STRUCT *ads)
+ADS_RETURN_CODE ads_sasl_bind(ADS_STRUCT *ads)
 {
 #if USE_CYRUS_SASL
-	return ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 
+    ADS_RETURN_CODE rc;
+	rc.error_type = False;
+	rc.rc = ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 
 					    LDAP_SASL_QUIET,
 					    sasl_interact, NULL);
+	return rc;
 #else
 	return ads_sasl_gssapi_bind(ads);
 #endif

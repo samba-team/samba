@@ -462,8 +462,10 @@ do_cached:
 	return status;
 
 do_query:
+	*num_entries = 0;
+	*info = NULL;
+
 	if (wcache_server_down(domain)) {
-		*num_entries = 0;
 		return NT_STATUS_SERVER_DISABLED;
 	}
 
@@ -533,8 +535,10 @@ do_cached:
 	return status;
 
 do_query:
+	*num_entries = 0;
+	*info = NULL;
+
 	if (wcache_server_down(domain)) {
-		*num_entries = 0;
 		return NT_STATUS_SERVER_DISABLED;
 	}
 
@@ -580,6 +584,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	return status;
 
 do_query:
+	ZERO_STRUCTP(sid);
+
 	if (wcache_server_down(domain)) {
 		return NT_STATUS_SERVER_DISABLED;
 	}
@@ -619,6 +625,8 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	return status;
 
 do_query:
+	*name = NULL;
+
 	if (wcache_server_down(domain)) {
 		return NT_STATUS_SERVER_DISABLED;
 	}
@@ -656,9 +664,12 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	return status;
 
 do_query:
+	ZERO_STRUCTP(info);
+
 	if (wcache_server_down(domain)) {
 		return NT_STATUS_SERVER_DISABLED;
 	}
+	
 	status = cache->backend->query_user(domain, mem_ctx, user_rid, info);
 
 	/* and save it */
@@ -701,8 +712,10 @@ do_cached:
 	return status;
 
 do_query:
+	(*num_groups) = 0;
+	(*user_gids) = NULL;
+
 	if (wcache_server_down(domain)) {
-		(*num_groups) = 0;
 		return NT_STATUS_SERVER_DISABLED;
 	}
 	status = cache->backend->lookup_usergroups(domain, mem_ctx, user_rid, num_groups, user_gids);
@@ -763,8 +776,13 @@ do_cached:
 	return status;
 
 do_query:
+	(*num_names) = 0;
+	(*rid_mem) = NULL;
+	(*names) = NULL;
+	(*name_types) = NULL;
+	
+
 	if (wcache_server_down(domain)) {
-		(*num_names) = 0;
 		return NT_STATUS_SERVER_DISABLED;
 	}
 	status = cache->backend->lookup_groupmem(domain, mem_ctx, group_rid, num_names, 
