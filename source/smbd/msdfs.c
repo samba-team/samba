@@ -64,7 +64,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
 
 	/* rest is reqpath */
-	check_path_syntax(pdp->reqpath, p+1,True);
+	check_path_syntax(pdp->reqpath, p+1);
 
 	DEBUG(10,("parse_dfs_path: rest of the path: %s\n",pdp->reqpath));
 	return True;
@@ -110,7 +110,7 @@ static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path* pdp)
 	DEBUG(10,("parse_processed_dfs_path: servicename: %s\n",pdp->servicename));
 
 	/* rest is reqpath */
-	check_path_syntax(pdp->reqpath, p+1,True);
+	check_path_syntax(pdp->reqpath, p+1);
 
 	DEBUG(10,("parse_processed_dfs_path: rest of the path: %s\n",pdp->reqpath));
 	return True;
