@@ -74,6 +74,21 @@ AC_VALIDATE_CACHE_SYSTEM_TYPE
 
 DYNEXP=
 
+AC_HEADER_STDC
+AC_CHECK_HEADERS(stdbool.h)
+
+AC_CHECK_SIZEOF(short,cross)
+AC_CHECK_SIZEOF(int,cross)
+AC_CHECK_SIZEOF(long,cross)
+AC_CHECK_SIZEOF(long long,cross)
+if test x"$ac_cv_type_long_long" != x"yes";then
+    AC_MSG_ERROR([Sorry we need type 'long long'])
+fi
+if test $ac_cv_sizeof_long_long -lt 8;then
+    AC_MSG_ERROR([Sorry we need sizeof(long long) >= 8])
+fi
+AC_CHECK_TYPE(_Bool)
+
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests.
@@ -295,13 +310,12 @@ exit(1);
 
 esac
 
-AC_INLINE
-AC_HEADER_STDC
+
 AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(arpa/inet.h sys/select.h fcntl.h sys/fcntl.h sys/time.h)
-AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/if.h)
+AC_CHECK_HEADERS(utime.h grp.h sys/id.h limits.h memory.h net/if.h)
 AC_CHECK_HEADERS(compat.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
@@ -323,15 +337,6 @@ case "$host_os" in
 		fi
 	;;
 esac
-
-AC_CHECK_SIZEOF(int,cross)
-AC_CHECK_SIZEOF(short,cross)
-AC_CHECK_SIZEOF(long,cross)
-AC_CHECK_SIZEOF(long long,cross)
-AC_CHECK_HEADERS(stdint.h)
-AC_CHECK_HEADERS(inttypes.h)
-AC_CHECK_SIZEOF(_Bool,cross)
-AC_CHECK_HEADERS(stdbool.h)
 
 AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h security/pam_appl.h security/pam_modules.h)
