@@ -262,10 +262,23 @@ get_cred_cache(krb5_context context,
 		}
 	    }
 	}
-	
-	if(client == NULL)
+
+	if (client != NULL) {
+	    /* A client was specified by the caller. */
+	    if (default_client != NULL) {
+		krb5_free_principal(context, default_client);
+		default_client = NULL;
+	    }
+	}
+	else if (default_client != NULL)
+	    /* No client was specified by the caller, but we have a
+	     * client from the default credentials cache.
+	     */
 	    client = default_client;
-	if(client == NULL) {
+	else {
+	    /* No client was specified by the caller and we cannot determine
+	     * the client from a credentials cache.
+	     */
 	    const char *user;
 
 	    user = get_default_username ();
@@ -276,10 +289,6 @@ get_cred_cache(krb5_context context,
 				      NULL, user, "admin", NULL);
 	    if(ret)
 		return ret;
-	}
-	if(client != default_client) {
-	    krb5_free_principal(context, default_client);
-	    default_client = NULL;
 	    if (id != NULL) {
 		krb5_cc_close(context, id);
 		id = NULL;
@@ -288,7 +297,6 @@ get_cred_cache(krb5_context context,
     } else if(ccache != NULL)
 	id = ccache;
     
-
     if(id && (default_client == NULL || 
 	      krb5_principal_compare(context, client, default_client))) {
 	ret = get_kadm_ticket(context, id, client, server_name);
