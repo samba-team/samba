@@ -45,3 +45,7 @@ extern int opt_long_list_entries;
 extern int opt_reboot;
 extern int opt_force;
 extern int opt_timeout;
+extern char *opt_host;
+extern char *opt_user_name;
+extern char *opt_password;
+extern BOOL opt_user_specified;
