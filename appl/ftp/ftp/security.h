@@ -48,11 +48,6 @@ enum protection_level {
     prot_private 
 };
 
-extern enum protection_level command_prot;
-extern enum protection_level data_prot;
-extern size_t buffer_size;
-extern void *data_buffer;
-
 struct sec_client_mech {
     char *name;
     size_t size;
