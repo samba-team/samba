@@ -952,7 +952,7 @@ interface netlogon
 		[in]         unistr *computer_name,
 		[in,out,ref] netr_Authenticator *credential,
 		[in]         uint32 unknown1,
-		[in]         uint32 *i1,
+		[in]         uint32 i1[2],
 		[in]	     uint32 level,
 		[in,switch_is(level)] netr_DomainQuery query,
 		[out,switch_is(level)] netr_DomainInfo info

@@ -1573,7 +1573,6 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonGetDomainInfo r;
 	struct netr_DomainQuery1 q1;
 	struct netr_Authenticator a;
-	uint32_t i1;
 	struct creds_CredentialState creds;
 
 	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, &creds)) {
@@ -1591,8 +1590,8 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.credential = &a;
 	r.out.credential = &a;
 
-	i1 = 0;
-	r.in.i1 = &i1;
+	r.in.i1[0] = 0;
+	r.in.i1[1] = 0;
 
 	r.in.query.query1 = &q1;
 	ZERO_STRUCT(q1);
