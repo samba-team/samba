@@ -21,6 +21,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+
 #ifndef _SMB_H
 #define _SMB_H
 
@@ -33,17 +34,11 @@
 
 #define False (0)
 #define True (1)
-#define BOOLSTR(b) ((b) ? "Yes" : "No")
-#define BITSETB(ptr,bit) ((((char *)ptr)[0] & (1<<(bit)))!=0)
-#define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
 
-#define IS_BITS_SET_ALL(var,bit) (((var)&(bit))==(bit))
-#define IS_BITS_SET_SOME(var,bit) (((var)&(bit))!=0)
-#define IS_BITS_CLR_ALL(var,bit) (((var)&(bit))==0)
-
-#define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
-
+#ifndef _BOOL
 typedef int BOOL;
+#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
+#endif
 
 /* limiting size of ipc replies */
 #define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
@@ -57,93 +52,9 @@ typedef int BOOL;
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
 
-/* -------------------------------------------------------------------------- **
- * Debugging code.  See also debug.c
- */
+/* Debugging stuff */
 
-/* mkproto.awk has trouble with ifdef'd function definitions (it ignores
- * the #ifdef directive and will read both definitions, thus creating two
- * diffferent prototype declarations), so we must do these by hand.
- */
-/* I know the __attribute__ stuff is ugly, but it does ensure we get the 
-   arguemnts to DEBUG() right. We have got them wrong too often in the 
-   past */
-#ifdef HAVE_STDARG_H
-int  Debug1( char *, ... )
-#ifdef __GNUC__
-     __attribute__ ((format (printf, 1, 2)))
-#endif
-;
-BOOL dbgtext( char *, ... )
-#ifdef __GNUC__
-     __attribute__ ((format (printf, 1, 2)))
-#endif
-;
-#else
-int  Debug1();
-BOOL dbgtext();
-#endif
-
-/* If we have these macros, we can add additional info to the header. */
-#ifdef HAVE_FILE_MACRO
-#define FILE_MACRO (__FILE__)
-#else
-#define FILE_MACRO ("")
-#endif
-
-#ifdef HAVE_FUNCTION_MACRO
-#define FUNCTION_MACRO  (__FUNCTION__)
-#else
-#define FUNCTION_MACRO  ("")
-#endif
-
-/* Debugging macros. 
- *  DEBUGLVL() - If level is <= the system-wide DEBUGLEVEL then generate a
- *               header using the default macros for file, line, and
- *               function name.
- *               Returns True if the debug level was <= DEBUGLEVEL.
- *               Example usage:
- *                 if( DEBUGLVL( 2 ) )
- *                   dbgtext( "Some text.\n" );
- *  DEGUG()    - Good old DEBUG().  Each call to DEBUG() will generate a new
- *               header *unless* the previous debug output was unterminated
- *               (i.e., no '\n').  See debug.c:dbghdr() for more info.
- *               Example usage:
- *                 DEBUG( 2, ("Some text.\n") );
- *  DEBUGADD() - If level <= DEBUGLEVEL, then the text is appended to the
- *               current message (i.e., no header).
- *               Usage:
- *                 DEBUGADD( 2, ("Some additional text.\n") );
- */
-#define DEBUGLVL( level ) \
-  ( (DEBUGLEVEL >= (level)) \
-   && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
-
-#if 0
-
-#define DEBUG( level, body ) \
-  ( ( DEBUGLEVEL >= (level) \
-   && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) ) \
-      ? (void)(dbgtext body) : (void)0 )
-
-#define DEBUGADD( level, body ) \
-     ( (DEBUGLEVEL >= (level)) ? (void)(dbgtext body) : (void)0 )
-
-#else
-
-#define DEBUG( level, body ) \
-  (void)( (DEBUGLEVEL >= (level)) \
-       && (dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) )) \
-       && (dbgtext body) )
-
-#define DEBUGADD( level, body ) \
-  (void)( (DEBUGLEVEL >= (level)) && (dbgtext body) )
-
-#endif
-
-/* End Debugging code section.
- * -------------------------------------------------------------------------- **
- */
+#include "debug.h"
 
 /* this defines the error codes that receive_smb can put in smb_read_error */
 #define READ_TIMEOUT 1
@@ -166,13 +77,6 @@ implemented */
 #define aVOLID (1L<<3)
 #define aDIR (1L<<4)
 #define aARCH (1L<<5)
-
-/* for readability... */
-#define IS_DOS_READONLY(test_mode) (((test_mode) & aRONLY) != 0)
-#define IS_DOS_DIR(test_mode) (((test_mode) & aDIR) != 0)
-#define IS_DOS_ARCHIVE(test_mode) (((test_mode) & aARCH) != 0)
-#define IS_DOS_SYSTEM(test_mode) (((test_mode) & aSYSTEM) != 0)
-#define IS_DOS_HIDDEN(test_mode) (((test_mode) & aHIDDEN) != 0)
 
 /* deny modes */
 #define DENY_DOS 0
@@ -330,9 +234,17 @@ implemented */
 #define ERRsharebufexc 36 /* share buffer exceeded */
 #define ERRdiskfull 39
 
+#ifndef _PSTRING
 
-typedef char pstring[1024];
-typedef char fstring[128];
+#define PSTRING_LEN 1024
+#define FSTRING_LEN 128
+
+typedef char pstring[PSTRING_LEN];
+typedef char fstring[FSTRING_LEN];
+
+#define _PSTRING
+
+#endif
 
 /*
  * SMB UCS2 (16-bit unicode) internal type.
@@ -537,6 +449,15 @@ typedef struct
   BOOL  wr_discard; /* discard all further data */
 } write_bmpx_struct;
 
+typedef struct write_cache
+{
+    SMB_OFF_T file_size;
+    SMB_OFF_T offset;
+    size_t alloc_size;
+    size_t data_size;
+    char *data;
+} write_cache;
+
 /*
  * Structure used to indirect fd's from the files_struct.
  * Needed as POSIX locking is based on file and process, not
@@ -557,6 +478,35 @@ typedef struct file_fd_struct
 	int real_open_flags;
 	BOOL delete_on_close;
 } file_fd_struct;
+
+typedef struct files_struct
+{
+	struct files_struct *next, *prev;
+	int fnum;
+	struct connection_struct *conn;
+	file_fd_struct *fd_ptr;
+	SMB_OFF_T pos;
+	SMB_OFF_T size;
+	mode_t mode;
+	uint16 vuid;
+	write_bmpx_struct *wbmpx_ptr;
+        write_cache *wcp;
+	struct timeval open_time;
+        int share_mode;
+	time_t pending_modtime;
+        int oplock_type;
+        int sent_oplock_break;
+	BOOL open;
+	BOOL can_lock;
+	BOOL can_read;
+	BOOL can_write;
+	BOOL print_file;
+	BOOL modified;
+	BOOL is_directory;
+	BOOL directory_delete_on_close;
+	BOOL stat_open;
+	char *fsp_name;
+} files_struct;
 
 /*
  * Structure used to keep directory state information around.
@@ -580,6 +530,10 @@ typedef struct
   BOOL is_wild;
 } name_compare_entry;
 
+/* Include VFS stuff */
+
+#include "vfs.h"
+
 typedef struct connection_struct
 {
 	struct connection_struct *next, *prev;
@@ -595,6 +549,10 @@ typedef struct connection_struct
 	char *dirpath;
 	char *connectpath;
 	char *origpath;
+
+        struct vfs_ops vfs_ops;                   /* Filesystem operations */
+        struct vfs_connection_struct *vfs_conn;   /* VFS specific connection stuff */
+
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */
 	gid_t gid; /* gid of user who *opened* this connection */
@@ -627,15 +585,6 @@ struct current_user
 	gid_t *groups;
 };
 
-typedef struct write_cache
-{
-    SMB_OFF_T file_size;
-    SMB_OFF_T offset;
-    size_t alloc_size;
-    size_t data_size;
-    char *data;
-} write_cache;
-
 /*
  * Reasons for cache flush.
  */
@@ -643,35 +592,6 @@ typedef struct write_cache
 #define NUM_FLUSH_REASONS 8 /* Keep this in sync with the enum below. */
 enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
                          OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH };     
-
-typedef struct files_struct
-{
-	struct files_struct *next, *prev;
-	int fnum;
-	connection_struct *conn;
-	file_fd_struct *fd_ptr;
-	SMB_OFF_T pos;
-	SMB_OFF_T size;
-	mode_t mode;
-	uint16 vuid;
-	write_bmpx_struct *wbmpx_ptr;
-    write_cache *wcp;
-	struct timeval open_time;
-	int share_mode;
-	time_t pending_modtime;
-	int oplock_type;
-	int sent_oplock_break;
-	BOOL open;
-	BOOL can_lock;
-	BOOL can_read;
-	BOOL can_write;
-	BOOL print_file;
-	BOOL modified;
-	BOOL is_directory;
-	BOOL directory_delete_on_close;
-	BOOL stat_open;
-	char *fsp_name;
-} files_struct;
 
 /* Defines for the sent_oplock_break field above. */
 #define NO_BREAK_SENT 0
@@ -947,55 +867,6 @@ struct bitmap {
 #define LOCKING_VERSION 4
 #endif /* LOCKING_VERSION */
 
-/* these are useful macros for checking validity of handles */
-#define OPEN_FSP(fsp)    ((fsp) && (fsp)->open && !(fsp)->is_directory)
-#define OPEN_CONN(conn)    ((conn) && (conn)->open)
-#define IS_IPC(conn)       ((conn) && (conn)->ipc)
-#define IS_PRINT(conn)       ((conn) && (conn)->printer)
-#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
-
-#define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
-                               return(ERROR(ERRDOS,ERRbadfid)); \
-                            else if((fsp)->fd_ptr == NULL) \
-                               return(ERROR(ERRDOS,ERRbadaccess))
-
-#define CHECK_READ(fsp) if (!(fsp)->can_read) \
-                               return(ERROR(ERRDOS,ERRbadaccess))
-#define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
-                               return(ERROR(ERRDOS,ERRbadaccess))
-#define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
-                               return(CACHED_ERROR(fsp))
-
-/* translates a connection number into a service number */
-#define SNUM(conn)         ((conn)?(conn)->service:-1)
-
-/* access various service details */
-#define SERVICE(snum)      (lp_servicename(snum))
-#define PRINTCAP           (lp_printcapname())
-#define PRINTCOMMAND(snum) (lp_printcommand(snum))
-#define PRINTERNAME(snum)  (lp_printername(snum))
-#define CAN_WRITE(conn)    (!conn->read_only)
-#define VALID_SNUM(snum)   (lp_snum_ok(snum))
-#define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
-#define GUEST_ONLY(snum)   (VALID_SNUM(snum) && lp_guest_only(snum))
-#define CAN_SETDIR(snum)   (!lp_no_set_dir(snum))
-#define CAN_PRINT(conn)    ((conn) && lp_print_ok((conn)->service))
-#define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden((conn)->service))
-#define MAP_SYSTEM(conn)   ((conn) && lp_map_system((conn)->service))
-#define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive((conn)->service))
-#define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list))
-#define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list))
-#define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list))
-
-/* 
- * Used by the stat cache code to check if a returned
- * stat structure is valid.
- */
-
-#define VALID_STAT(st) (st.st_nlink != 0)  
-#define VALID_STAT_OF_DIR(st) (VALID_STAT(st) && S_ISDIR(st.st_mode))
-
-#define SMBENCRYPT()       (lp_encrypted_passwords())
 
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39
@@ -1382,77 +1253,6 @@ struct bitmap {
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)
 
-/* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
-#define smb_buf(buf) (buf + smb_size + CVAL(buf,smb_wct)*2)
-#define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
-
-/* Note that chain_size must be available as an extern int to this macro. */
-#define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
-
-#define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|((PVAL(buf,1)&1)<<16))
-#define _smb_setlen(buf,len) buf[0] = 0; buf[1] = (len&0x10000)>>16; \
-        buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF;
-
-/*********************************************************
-* Routine to check if a given string matches exactly.
-* Case can be significant or not.
-**********************************************************/
-
-#define exact_match(str, regexp, case_sig) \
-  ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0)
-
-/*******************************************************************
-find the difference in milliseconds between two struct timeval
-values
-********************************************************************/
-
-#define TvalDiff(tvalold,tvalnew) \
-  (((tvalnew)->tv_sec - (tvalold)->tv_sec)*1000 +  \
-	 ((int)(tvalnew)->tv_usec - (int)(tvalold)->tv_usec)/1000)
-
-/****************************************************************************
-true if two IP addresses are equal
-****************************************************************************/
-
-#define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
-
-/*****************************************************************
- splits out the last subkey of a key
- *****************************************************************/  
-
-#define reg_get_subkey(full_keyname, key_name, subkey_name) \
-	split_at_last_component(full_keyname, key_name, '\\', subkey_name)
-
-/****************************************************************************
- Used by dptr_zero.
-****************************************************************************/
-
-#define DPTR_MASK ((uint32)(((uint32)1)<<31))
-
-/****************************************************************************
- Return True if the offset is at zero.
-****************************************************************************/
-
-#define dptr_zero(buf) ((IVAL(buf,1)&~DPTR_MASK) == 0)
-
-/*******************************************************************
-copy an IP address from one buffer to another
-********************************************************************/
-
-#define putip(dest,src) memcpy(dest,src,4)
-
-/****************************************************************************
- Make a filename into unix format.
-****************************************************************************/
-
-#define unix_format(fname) string_replace(fname,'\\','/')
-
-/****************************************************************************
- Make a file into DOS format.
-****************************************************************************/
-
-#define dos_format(fname) string_replace(fname,'/','\\')
-
 /* we don't allow server strings to be longer than 48 characters as
    otherwise NT will not honour the announce packets */
 #define MAX_SERVER_STRING_LENGTH 48
@@ -1481,17 +1281,6 @@ extern int dcelogin_atmost_once;
 
 #ifdef NOSTRDUP
 char *strdup(char *s);
-#endif
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
-#ifndef ABS
-#define ABS(a) ((a)>0?(a):(-(a)))
 #endif
 
 #ifndef SIGNAL_CAST
@@ -1639,38 +1428,6 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 /* SSL version options */
 enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
 #endif /* WITH_SSL */
-
-/* Macros to get at offsets within smb_lkrng and smb_unlkrng
-   structures. We cannot define these as actual structures
-   due to possible differences in structure packing
-   on different machines/compilers. */
-
-#define SMB_LPID_OFFSET(indx) (10 * (indx))
-#define SMB_LKOFF_OFFSET(indx) ( 2 + (10 * (indx)))
-#define SMB_LKLEN_OFFSET(indx) ( 6 + (10 * (indx)))
-#define SMB_LARGE_LKOFF_OFFSET_HIGH(indx) (4 + (20 * (indx)))
-#define SMB_LARGE_LKOFF_OFFSET_LOW(indx) (8 + (20 * (indx)))
-#define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
-#define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
-
-/* Macro to cache an error in a write_bmpx_struct */
-#define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \
-			    w->wr_discard = True, -1)
-/* Macro to test if an error has been cached for this fnum */
-#define HAS_CACHED_ERROR(fsp) ((fsp)->open && (fsp)->wbmpx_ptr && \
-				(fsp)->wbmpx_ptr->wr_discard)
-/* Macro to turn the cached error into an error packet */
-#define CACHED_ERROR(fsp) cached_error_packet(inbuf,outbuf,fsp,__LINE__)
-
-/* these are the datagram types */
-#define DGRAM_DIRECT_UNIQUE 0x10
-
-#define ERROR(class,x) error_packet(inbuf,outbuf,class,x,__LINE__)
-
-/* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(inbuf,outbuf,defclass,deferror,__LINE__)
-
-#define SMB_ROUNDUP(x,g) (((x)+((g)-1))&~((g)-1))
 
 /*
  * Global value meaing that the smb_uid field should be
@@ -1831,25 +1588,7 @@ extern int chain_size;
 
 #define CMD_REPLY 0x8000
 
-/* useful macros */
-
-/* zero a structure */
-#define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
-
-/* zero a structure given a pointer to the structure - no zero check */
-#define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
-
-/* zero a structure given a pointer to the structure */
-#define ZERO_STRUCTP(x) { if ((x) != NULL) ZERO_STRUCTPN(x); }
-
-/* zero an array - note that sizeof(array) must work - ie. it must not be a 
-   pointer */
-#define ZERO_ARRAY(x) memset((char *)(x), 0, sizeof(x))
-
-#define SMB_ASSERT(b) ((b)?(void)0: \
-        (DEBUG(0,("PANIC: assert failed at %s(%d)\n", \
-		 __FILE__, __LINE__)), smb_panic("assert failed")))
-#define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
+#include "smb_macros.h"
 
 #include "ntdomain.h"
 

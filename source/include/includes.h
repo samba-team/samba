@@ -686,31 +686,9 @@ typedef struct smb_wpasswd {
 /***** automatically generated prototypes *****/
 #include "proto.h"
 
-#ifdef strcpy
-#undef strcpy
-#endif /* strcpy */
-#define strcpy(dest,src) __ERROR__XX__NEVER_USE_STRCPY___;
+/* String routines */
 
-#ifdef strcat
-#undef strcat
-#endif /* strcat */
-#define strcat(dest,src) __ERROR__XX__NEVER_USE_STRCAT___;
-
-#ifdef sprintf
-#undef sprintf
-#endif /* sprintf */
-#define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
-
-#define pstrcpy(d,s) safe_strcpy((d),(s),sizeof(pstring)-1)
-#define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
-#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
-#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
-
-/* smb_ucs2_t versions of the above. */
-#define wpstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wpstring))
-#define wpstrcat(d,s) safe_strcat_w((d),(s),sizeof(wpstring))
-#define wfstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wfstring))
-#define wfstrcat(d,s) safe_strcat_w((d),(s),sizeof(wfstring))
+#include "safe_string.h"
 
 #ifdef __COMPAR_FN_T
 #define QSORT_CAST (__compar_fn_t)
@@ -908,6 +886,12 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #define DEFAULT_SOCKET_OPTIONS "TCP_NODELAY"
 #else
 #define DEFAULT_SOCKET_OPTIONS ""
+#endif
+
+/* Load header file for libdl stuff */
+
+#ifdef HAVE_LIBDL
+#include <dlfcn.h>
 #endif
 
 #endif /* _INCLUDES_H */
