@@ -1303,11 +1303,11 @@ int create_pipe_socket(char *dir, int dir_perms, char *path, int path_perms)
 	DEBUG(0, ("create_pipe_socket: %s %d %s %d\n",
 		  dir, dir_perms, path, path_perms));
 
-	DEBUG(0,
+	DEBUG(3,
 	      ("*** Please someone examine create_pipe_socket and fix it ***\n"));
-	DEBUG(0, ("*** if used other than for exclusive root access ***\n"));
-	DEBUG(0, ("*** (see perms, which should be 0700 and 0600) ***\n"));
-	DEBUG(0, ("*** there is a race condition to be exploited. ***\n"));
+	DEBUGADD(3, ("*** if used other than for exclusive root access ***\n"));
+	DEBUGADD(3, ("*** (see perms, which should be 0700 and 0600) ***\n"));
+	DEBUGADD(3, ("*** there is a race condition to be exploited. ***\n"));
 
 	mkdir(dir, dir_perms);
 
