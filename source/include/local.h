@@ -223,4 +223,8 @@
 
 /* Max number of simultaneous winbindd socket connections. */
 #define WINBINDD_MAX_SIMULTANEOUS_CLIENTS 200
+
+/* Buffer size to use when printing backtraces */
+#define BACKTRACE_STACK_SIZE 64
+
 #endif
