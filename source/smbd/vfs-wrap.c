@@ -208,6 +208,8 @@ int vfswrap_fsync(int fd)
 {
 #ifdef HAVE_FSYNC
     return fsync(fd);
+#else
+	return 0;
 #endif
 }
 
