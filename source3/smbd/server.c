@@ -101,7 +101,7 @@ extern fstring remote_machine;
 extern pstring OriginalDir;
 
 /* these can be set by some functions to override the error codes */
-int unix_ERR_class=SUCCESS;
+int unix_ERR_class=SMB_SUCCESS;
 int unix_ERR_code=0;
 
 
@@ -2303,11 +2303,11 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
   int ecode=def_code;
   int i=0;
 
-  if (unix_ERR_class != SUCCESS)
+  if (unix_ERR_class != SMB_SUCCESS)
     {
       eclass = unix_ERR_class;
       ecode = unix_ERR_code;
-      unix_ERR_class = SUCCESS;
+      unix_ERR_class = SMB_SUCCESS;
       unix_ERR_code = 0;
     }
   else
@@ -4686,12 +4686,12 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   CVAL(outbuf2,smb_com) = CVAL(inbuf2,smb_com);
   
   memcpy(outbuf2+4,inbuf2+4,4);
-  CVAL(outbuf2,smb_rcls) = SUCCESS;
+  CVAL(outbuf2,smb_rcls) = SMB_SUCCESS;
   CVAL(outbuf2,smb_reh) = 0;
   CVAL(outbuf2,smb_flg) = 0x80 | (CVAL(inbuf2,smb_flg) & 0x8); /* bit 7 set 
 								  means a reply */
   SSVAL(outbuf2,smb_flg2,1); /* say we support long filenames */
-  SSVAL(outbuf2,smb_err,SUCCESS);
+  SSVAL(outbuf2,smb_err,SMB_SUCCESS);
   SSVAL(outbuf2,smb_tid,SVAL(inbuf2,smb_tid));
   SSVAL(outbuf2,smb_pid,SVAL(inbuf2,smb_pid));
   SSVAL(outbuf2,smb_uid,SVAL(inbuf2,smb_uid));
@@ -4748,12 +4748,12 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   set_message(outbuf,0,0,True);
   
   memcpy(outbuf+4,inbuf+4,4);
-  CVAL(outbuf,smb_rcls) = SUCCESS;
+  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
   CVAL(outbuf,smb_reh) = 0;
   CVAL(outbuf,smb_flg) = 0x80 | (CVAL(inbuf,smb_flg) & 0x8); /* bit 7 set 
 							     means a reply */
   SSVAL(outbuf,smb_flg2,1); /* say we support long filenames */
-  SSVAL(outbuf,smb_err,SUCCESS);
+  SSVAL(outbuf,smb_err,SMB_SUCCESS);
   SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
   SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
   SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
