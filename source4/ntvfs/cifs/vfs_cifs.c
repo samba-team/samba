@@ -672,12 +672,15 @@ static NTSTATUS cvfs_trans2(struct request_context *req, struct smb_trans2 *tran
 /*
   initialise the CIFS->CIFS backend, registering ourselves with the ntvfs subsystem
  */
-BOOL cifs_vfs_init(void)
+NTSTATUS ntvfs_cifs_init(void)
 {
-	BOOL ret;
+	NTSTATUS ret;
 	struct ntvfs_ops ops;
 
 	ZERO_STRUCT(ops);
+
+	ops.name = "cifs";
+	ops.type = NTVFS_DISK;
 	
 	/* fill in all the operations */
 	ops.connect = cvfs_connect;
@@ -712,12 +715,11 @@ BOOL cifs_vfs_init(void)
 
 	/* register ourselves with the NTVFS subsystem. We register under the name 'cifs'. */
 
-	ret = ntvfs_register("cifs", NTVFS_DISK, &ops);
+	ret = register_backend("ntvfs", &ops);
 
-	if (!ret) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register CIFS backend!\n"));
-		return False;
 	}
 	
-	return True;
+	return ret;
 }

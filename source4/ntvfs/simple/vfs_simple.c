@@ -807,13 +807,16 @@ static NTSTATUS svfs_search_close(struct request_context *req, union smb_search_
 /*
   initialialise the POSIX disk backend, registering ourselves with the ntvfs subsystem
  */
-BOOL posix_vfs_init(void)
+NTSTATUS ntvfs_simple_init(void)
 {
-	BOOL ret;
+	NTSTATUS ret;
 	struct ntvfs_ops ops;
 
 	ZERO_STRUCT(ops);
 	
+	ops.name = "simple";
+	ops.type = NTVFS_DISK;
+
 	/* fill in all the operations */
 	ops.connect = svfs_connect;
 	ops.disconnect = svfs_disconnect;
@@ -844,12 +847,11 @@ BOOL posix_vfs_init(void)
 
 	/* register ourselves with the NTVFS subsystem. We register under the name 'default'
 	   as we wish to be the default backend */
-	ret = ntvfs_register("simple", NTVFS_DISK, &ops);
+	ret = register_backend("ntvfs", &ops);
 
-	if (!ret) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register POSIX backend!\n"));
-		return False;
 	}
 
-	return True;
+	return ret;
 }

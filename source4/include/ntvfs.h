@@ -32,6 +32,9 @@ enum ntvfs_type {NTVFS_DISK, NTVFS_PRINT, NTVFS_IPC};
 /* the ntvfs operations structure - contains function pointers to 
    the backend implementations of each operation */
 struct ntvfs_ops {
+	const char *name;
+	enum ntvfs_type type;
+	
 	/* initial setup */
 	NTSTATUS (*connect)(struct request_context *req, const char *sharename);
 	NTSTATUS (*disconnect)(struct tcon_context *conn);

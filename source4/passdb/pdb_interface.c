@@ -450,12 +450,6 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 
 	entry = pdb_find_backend_entry(module_name);
 	
-	/* Try to find a module that contains this module */
-	if(!entry) { 
-		smb_probe_module("passdb", module_name);
-		entry = pdb_find_backend_entry(module_name);
-	}
-	
 	/* No such backend found */
 	if(!entry) { 
 		SAFE_FREE(module_name);

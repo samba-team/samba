@@ -1355,9 +1355,6 @@ typedef struct {
 
 #define DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH 14
 
-/* Module support */
-typedef int (init_module_function) (void);
-
 
 /* a set of flags to control handling of request structures */
 #define REQ_CONTROL_PROTECTED (1<<0) /* don't destroy this request */

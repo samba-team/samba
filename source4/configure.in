@@ -160,41 +160,6 @@ AC_SUBST(SMBWRAPPER)
 AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
-dnl For the DYNAMIC RPC stuff
-dnl The complicated _YES and _NO stuff allows us to avoid a dependency
-dnl on GNU Make.
-AC_SUBST(LSA_DYNAMIC_YES)
-AC_SUBST(LSA_DYNAMIC_NO)
-LSA_DYNAMIC_YES="#"
-LSA_DYNAMIC_NO=
-AC_SUBST(NETLOG_DYNAMIC_YES)
-AC_SUBST(NETLOG_DYNAMIC_NO)
-NETLOG_DYNAMIC_YES="#"
-NETLOG_DYNAMIC_NO=
-AC_SUBST(SAMR_DYNAMIC_YES)
-AC_SUBST(SAMR_DYNAMIC_NO)
-SAMR_DYNAMIC_YES="#"
-SAMR_DYNAMIC_NO=
-AC_SUBST(SVC_DYNAMIC_YES)
-AC_SUBST(SVC_DYNAMIC_NO)
-SVC_DYNAMIC_YES="#"
-SVC_DYNAMIC_NO=
-AC_SUBST(WKS_DYNAMIC_YES)
-AC_SUBST(WKS_DYNAMIC_NO)
-WKS_DYNAMIC_YES="#"
-WKS_DYNAMIC_NO=
-AC_SUBST(REG_DYNAMIC_YES)
-AC_SUBST(REG_DYNAMIC_NO)
-REG_DYNAMIC_YES="#"
-REG_DYNAMIC_NO=
-AC_SUBST(SPOOLSS_DYNAMIC_YES)
-AC_SUBST(SPOOLSS_DYNAMIC_NO)
-SPOOLSS_DYNAMIC_YES="#"
-SPOOLSS_DYNAMIC_NO=
-AC_SUBST(DFS_DYNAMIC_YES)
-AC_SUBST(DFS_DYNAMIC_NO)
-DFS_DYNAMIC_YES="#"
-DFS_DYNAMIC_NO=
 
 AC_ARG_ENABLE(debug, 
 [  --enable-debug          Turn on compiler debugging information (default=no)],
@@ -204,18 +169,15 @@ AC_ARG_ENABLE(debug,
 
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if eval "test x$enable_developer = xyes"; then
-	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+        developer=yes
+    	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
 AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
     [if eval "test x$enable_krb5developer = xyes"; then
+        developer=yes
 	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
-
-# compile with optimization and without debugging by default
-if test "x$CFLAGS" = x; then
-   CFLAGS = "-O";
-fi
 
 AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc        Enable heap debugging [default=no]])
 
@@ -227,64 +189,17 @@ then
 	LIBS="$LIBS -ldmalloc"	
 fi
 
-AC_ARG_ENABLE(dynrpc,  [  --enable-dynrpc         Enable dynamic RPC modules [default=no]])
-
-if test x$enable_dynrpc = xyes
-then
-	enable_dynrpc=lsa,samr,reg,wks,netlog,dfs
-fi
-
-if test x$enable_dynrpc != xno
-then
-	for i in `echo $enable_dynrpc | sed -e's/,/ /g'` 
-         do case $i in lsa)
-	  LSA_DYNAMIC_YES=
-	  LSA_DYNAMIC_NO="#"
-          AC_DEFINE(RPC_LSA_DYNAMIC, 1,
-                    [Define to make the LSA pipe dynamic])
-	 ;; samr)
-          SAMR_DYNAMIC_YES=
-          SAMR_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_SAMR_DYNAMIC, 1, 
-	            [Define to make the SAMR pipe dynamic])
-	 ;; svc)
-          SVC_DYNAMIC_YES=
-          SVC_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_SVC_DYNAMIC, 1, 
-	            [Define to make the SRVSVC pipe dynamic])
-	 ;; wks)
-          WKS_DYNAMIC_YES=
-          WKS_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_WKS_DYNAMIC, 1, 
-	            [Define to make the WKSSVC pipe dynamic])
-	 ;; netlog)
-          NETLOG_DYNAMIC_YES=
-          NETLOG_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_NETLOG_DYNAMIC, 1, 
-	            [Define to make the NETLOGON pipe dynamic])
-	 ;; reg)
-          REG_DYNAMIC_YES=
-          REG_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_REG_DYNAMIC, 1, 
-	            [Define to make the WINREG pipe dynamic])
-	 ;; spoolss)
-          SPOOLSS_DYNAMIC_YES=
-          SPOOLSS_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_SPOOLSS_DYNAMIC, 1, 
-	            [Define to make the SPOOLSS pipe dynamic])
-	 ;; dfs)
-          DFS_DYNAMIC_YES=
-          DFS_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_DFS_DYNAMIC, 1, 
-	            [Define to make the NETDFS pipe dynamic])
-	 ;; esac
-         done
-fi
-
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PATH_PROG(PERL, perl)
+
+# compile with optimization and without debugging by default, but
+# allow people to set their own preference.
+if test "x$CFLAGS" = x
+then
+  CFLAGS="-O ${CFLAGS}"
+fi
 
 dnl Check if we use GNU ld
 LD=ld
@@ -340,6 +255,18 @@ esac
 AC_VALIDATE_CACHE_SYSTEM_TYPE
 
 DYNEXP=
+
+dnl Add modules that have to be built by default here
+dnl These have to be built static:
+default_static_modules="pdb_smbpasswd auth_sam auth_unix auth_builtin ntvfs_ipc ntvfs_simple ntvfs_print ntvfs_cifs"
+
+dnl These are preferably build shared, and static if dlopen() is not available
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms"
+
+if test "x$developer" = xyes; then
+   default_static_modules="$default_static_modules"
+   default_shared_modules="$default_shared_modules charset_weird"
+fi
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
@@ -2115,28 +2042,6 @@ AC_SUBST(SMBD_EXTRA_LIBS)
 
 
 #################################################
-# check for STFS NTVFS backend
-STFS_ENABLED=#
-AC_MSG_CHECKING(whether to use STFS NTVFS backend)
-AC_ARG_WITH(stfs,
-[  --with-stfs              Include STFS NTVFS backend (default=no) ],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NTVFS_STFS,1,[Whether to include STFS NTVFS backend])
-    STFS_ENABLED=
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-AC_SUBST(STFS_ENABLED)
-
-
-#################################################
 # check for the DFS clear-text auth system
 AC_MSG_CHECKING(whether to use DFS clear-text auth)
 AC_ARG_WITH(dfs,
@@ -2511,21 +2416,15 @@ if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 fi
 fi
 
-########################################################################################
-##
-## TESTS FOR SAM BACKENDS.  KEEP THESE GROUPED TOGETHER
-##
-########################################################################################
-
 #################################################
-# check for a LDAP password database configuration backwards compatibility
-AC_MSG_CHECKING(whether to use LDAP SAM 2.2 compatible configuration)
-AC_ARG_WITH(ldapsam,
-[  --with-ldapsam           Include LDAP SAM 2.2 compatible configuration (default=no)],
+# check for a NISPLUS_HOME support 
+AC_MSG_CHECKING(whether to use NISPLUS_HOME)
+AC_ARG_WITH(nisplus-home,
+[  --with-nisplus-home     Include NISPLUS_HOME support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LDAP_SAMCONFIG,1,[Whether to include 2.2 compatibel LDAP SAM configuration])
+    AC_DEFINE(WITH_NISPLUS_HOME,1,[Whether to include nisplus_home support])
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -2535,14 +2434,14 @@ AC_ARG_WITH(ldapsam,
 )
 
 #################################################
-# check for a TDB password database
-AC_MSG_CHECKING(whether to use TDB SAM database)
-AC_ARG_WITH(tdbsam,
-[  --with-tdbsam           Include experimental TDB SAM support (default=no)],
+# check for syslog logging
+AC_MSG_CHECKING(whether to use syslog logging)
+AC_ARG_WITH(syslog,
+[  --with-syslog           Include experimental SYSLOG support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_TDB_SAM,1,[Whether to include experimental TDB SAM support])
+    AC_DEFINE(WITH_SYSLOG,1,[Whether to include experimental syslog support])
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -2552,14 +2451,14 @@ AC_ARG_WITH(tdbsam,
 )
 
 #################################################
-# check for a NISPLUS password database
-AC_MSG_CHECKING(whether to use NISPLUS SAM database)
-AC_ARG_WITH(nisplussam,
-[  --with-nisplussam       Include NISPLUS SAM support (default=no)],
+# check for a shared memory profiling support
+AC_MSG_CHECKING(whether to use profiling)
+AC_ARG_WITH(profiling-data,
+[  --with-profiling-data   Include gathering source code profile information (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NISPLUS_SAM,1,[Whether to include nisplus SAM support])
+    AC_DEFINE(WITH_PROFILE,1,[Whether to use profiling])
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -3414,6 +3313,65 @@ AC_ARG_WITH(python,
 	;;
   esac ])
 AC_SUBST(PYTHON)
+
+for i in `echo $default_static_modules | sed -e's/,/ /g'`
+do
+	eval MODULE_DEFAULT_$i=STATIC
+done
+
+for i in `echo $default_shared_modules | sed -e's/,/ /g'`
+do
+	dnl Fall back to static if dlopen() is not available
+	eval MODULE_DEFAULT_$i=STATIC
+
+	if test x"$ac_cv_func_dlopen" = xyes; then
+		eval MODULE_DEFAULT_$i=SHARED
+	fi
+done
+
+dnl Always built these modules static
+MODULE_pdb_guest=STATIC
+MODULE_idmap_tdb=STATIC
+
+AC_ARG_WITH(static-modules,
+[  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+		eval MODULE_$i=STATIC
+	done
+fi ])
+
+AC_ARG_WITH(shared-modules,
+[  --with-shared-modules=MODULES  Comma-seperated list of names of modules to build shared],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+			eval MODULE_$i=SHARED
+	done
+fi ])
+
+SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
+SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
+
+SMB_MODULE(ntvfs_cifs, \$(NTVFS_CIFS_OBJ), "bin/cifs.$SHLIBEXT$", NTVFS)
+SMB_MODULE(ntvfs_simple, \$(NTVFS_SIMPLE_OBJ), "bin/ntvfs_simple.$SHLIBEXT$", NTVFS)
+SMB_MODULE(ntvfs_print, \$(NTVFS_PRINT_OBJ), "bin/ntvfs_print.$SHLIBEXT$", NTVFS)
+SMB_MODULE(ntvfs_ipc, \$(NTVFS_IPC_OBJ), "bin/ntvfs_ipc.$SHLIBEXT$", NTVFS)
+SMB_MODULE(ntvfs_posix, \$(NTVFS_POSIX_OBJ), "bin/ntvfs_posix.$SHLIBEXT$", NTVFS)
+
+# Tank FS
+SMB_MODULE(ntvfs_csm, \$(NTVFS_CSM_OBJ), "bin/ntvfs_csm.$SHLIBEXT$", NTVFS)
+STFS_ENABLED="#"
+if test "$MODULE_ntvfs_csm"; then
+	SMBD_EXTRA_LIBS="$SMBD_EXTRA_LIBS \$\(STFS_LIBS\)"
+	STFS_ENABLED=
+fi
+AC_SUBST(STFS_ENABLED)
+
+SMB_SUBSYSTEM(NTVFS,ntvfs/ntvfs_base.o)
+
+AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
 #################################################
 # do extra things if we are running insure

@@ -248,14 +248,16 @@ NTSTATUS ipc_search_close(struct request_context *req, union smb_search_close *i
 /*
   initialialise the IPC backend, registering ourselves with the ntvfs subsystem
  */
-BOOL ipc_vfs_init(void)
+NTSTATUS ntvfs_ipc_init(void)
 {
-	BOOL ret;
+	NTSTATUS ret;
 	struct ntvfs_ops ops;
 
 	ZERO_STRUCT(ops);
 	
 	/* fill in all the operations */
+	ops.name = "ipc";
+	ops.type = NTVFS_IPC;
 	ops.connect = ipc_connect;
 	ops.disconnect = ipc_disconnect;
 	ops.unlink = ipc_unlink;
@@ -284,12 +286,12 @@ BOOL ipc_vfs_init(void)
 	ops.search_close = ipc_search_close;
 
 	/* register ourselves with the NTVFS subsystem. */
-	ret = ntvfs_register("ipc", NTVFS_IPC, &ops);
+	ret = register_backend("ntvfs", &ops);
 
-	if (!ret) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register IPC backend!\n"));
-		return False;
+		return ret;
 	}
 
-	return True;
+	return ret;
 }
