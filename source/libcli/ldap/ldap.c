@@ -1481,6 +1481,8 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 		return result;
 	}
 
+	gensec_want_feature(conn->gensec, GENSEC_WANT_SIGN|GENSEC_WANT_SEAL);
+
 	status = gensec_set_domain(conn->gensec, domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 

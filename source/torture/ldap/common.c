@@ -102,3 +102,83 @@ NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 	return NT_STATUS_OK;
 }
 
+BOOL ldap_sasl_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
+		   const struct timeval *endtime)
+{
+	NTSTATUS status;
+	DATA_BLOB request;
+	BOOL result;
+	DATA_BLOB creds;
+	DATA_BLOB pdu;
+	int len;
+	ASN1_DATA asn1;
+	TALLOC_CTX *mem_ctx;
+
+	msg->messageid = conn->next_msgid++;
+
+	if (!ldap_encode(msg, &request))
+		return False;
+
+	status = gensec_seal_packet(conn->gensec, 
+					    msg->mem_ctx, 
+					    request.data, request.length,
+					    request.data, request.length,
+					    &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("gensec_seal_packet: %s\n",nt_errstr(status)));
+		return False;
+	}
+
+	len = 4 + creds.length + request.length;
+	pdu = data_blob_talloc(msg->mem_ctx, NULL, len);
+	RSIVAL(pdu.data, 0, len-4);
+	memcpy(pdu.data + 4, creds.data, creds.length);
+	memcpy(pdu.data + 4 + creds.length, request.data, request.length);
+
+	result = (write_data_until(conn->sock, pdu.data, pdu.length,
+				   endtime) == pdu.length);
+	if (!result)
+		return result;
+
+	pdu = data_blob(NULL, 0x4000);
+	data_blob_clear(&pdu);
+
+	result = (read_data_until(conn->sock, pdu.data, 4, NULL) == 4);
+	if (!result)
+		return result;
+
+	len = RIVAL(pdu.data,0);
+
+	result = (read_data_until(conn->sock, pdu.data + 4, MIN(0x4000,len), NULL) == len);
+	if (!result)
+		return result;
+
+	pdu.length = 4+len;
+
+	creds = data_blob(pdu.data + 4 , gensec_sig_size(conn->gensec));
+
+	request = data_blob(pdu.data + (4 + creds.length), pdu.length - (4 + creds.length));
+
+	status = gensec_unseal_packet(conn->gensec,
+			     msg->mem_ctx,
+			     request.data, request.length,
+			     request.data, request.length,
+			     &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("gensec_unseal_packet: %s\n",nt_errstr(status)));
+		return False;
+	}
+
+	mem_ctx = msg->mem_ctx;
+	ZERO_STRUCTP(msg);
+	msg->mem_ctx = mem_ctx;
+
+	asn1_load(&asn1, request);
+	if (!ldap_decode(&asn1, msg)) {
+		return False;
+	}
+
+	result = True;
+
+	return result;
+}
