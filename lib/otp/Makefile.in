@@ -67,7 +67,7 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-otptest: otptest.o all
+otptest: otptest.o
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ otptest.o -L. -lotp -L../des -ldes
 
 $(LIBNAME).a: $(OBJECTS)
