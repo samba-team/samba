@@ -134,7 +134,7 @@
 		<term>-U uid</term>
 		<listitem><para>Try to convert a UNIX user id to a Windows NT 
 		SID.  If the uid specified does not refer to one within
-		the winbind uid range then the operation will fail. </para></listitem>
+		the idmap uid range then the operation will fail. </para></listitem>
 		</varlistentry>
 
 
@@ -142,7 +142,7 @@
 		<term>-G gid</term>
 		<listitem><para>Try to convert a UNIX group id to a Windows 
 		NT SID.  If the gid specified does not refer to one within 
-		the winbind gid range then the operation will fail. </para></listitem>
+		the idmap gid range then the operation will fail. </para></listitem>
 		</varlistentry>
 		
 		
