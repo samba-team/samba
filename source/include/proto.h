@@ -525,10 +525,13 @@ NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                  POLICY_HND *domain_pol, uint16 switch_value,
                                  SAM_UNK_CTR *ctr);
+void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
+			       uint32 *max_size);
 NTSTATUS cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                  POLICY_HND *domain_pol, uint32 *start_idx,
                                  uint16 switch_value, uint32 *num_entries,
-                                 uint32 max_entries, SAM_DISPINFO_CTR *ctr);
+                                 uint32 max_entries, uint32 max_size,
+				 SAM_DISPINFO_CTR *ctr);
 NTSTATUS cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                               POLICY_HND *domain_pol, uint32 flags,
                               uint32 num_rids, uint32 *rids, 
@@ -3158,7 +3161,7 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
 			      prs_struct *ps, int depth);
 void init_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND *pol,
 				uint16 switch_level, uint32 start_idx,
-				uint32 max_entries);
+				uint32 max_entries, uint32 max_size);
 BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 			      prs_struct *ps, int depth);
 NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_entries,
