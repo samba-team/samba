@@ -770,8 +770,6 @@ sub ParseStructPull($)
 		return;
 	}
 
-	start_flags($struct);
-
 	# see if the structure contains a conformant array. If it
 	# does, then it must be the last element of the structure, and
 	# we need to pull the conformant length early, as it fits on
@@ -791,6 +789,8 @@ sub ParseStructPull($)
 			pidl "\tuint32 _ptr_$e->{NAME};\n";
 		}
 	}
+
+	start_flags($struct);
 
 	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
