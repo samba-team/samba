@@ -50,9 +50,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
            the trust account password. */
 
 	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(lp_workgroup(),
-				     trust_passwd, sec_channel_type,
-				     True, &cli);
+        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, sec_channel_type, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
