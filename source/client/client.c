@@ -1808,8 +1808,11 @@ static void process_stdin(void)
 
 #ifdef HAVE_LIBREADLINE
 /* Minimal readline support, 29Jun1999, s.xenitellis@rhbnc.ac.uk */
-	const int PromptSize = 2048;
-	char prompt_str[PromptSize];	/* This holds the buffer "smb: \dir1\> " */
+#ifdef PROMPTSIZE
+#undef PROMPTSIZE
+#endif
+#define PROMPTSIZE 2048
+	char prompt_str[PROMPTSIZE];	/* This holds the buffer "smb: \dir1\> " */
 	
         char *temp;			/* Gets the buffer from readline() */
 	temp = (char *)NULL;
@@ -1824,7 +1827,7 @@ static void process_stdin(void)
 			temp = (char *)NULL;
 		}
 
-		snprintf( prompt_str, PromptSize - 1, "smb: %s> ", CNV_LANG(cur_dir) );
+		snprintf( prompt_str, PROMPTSIZE - 1, "smb: %s> ", CNV_LANG(cur_dir) );
 
 		temp = readline( prompt_str );		/* We read the line here */
 

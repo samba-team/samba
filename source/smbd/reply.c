@@ -626,6 +626,22 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
 }
 
 /****************************************************************************
+ Return a bad password error configured for the correct client type.
+****************************************************************************/       
+
+static int bad_password_error(char *inbuf,char *outbuf)
+{
+  enum remote_arch_types ra_type = get_remote_arch();
+
+  if(ra_type == RA_WINNT && (global_client_caps & (CAP_NT_SMBS | CAP_STATUS32 ))) {
+    SSVAL(outbuf,smb_flg2,FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0,0xc0000000|NT_STATUS_LOGON_FAILURE));
+  }
+
+  return(ERROR(ERRSRV,ERRbadpw));
+}
+
+/****************************************************************************
 reply to a session setup command
 ****************************************************************************/
 
@@ -905,16 +921,16 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
         if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
         {
           DEBUG(1,("Rejecting user '%s': authentication failed\n", user));
-          return(ERROR(ERRSRV,ERRbadpw));
+          return bad_password_error(inbuf,outbuf);
         }
 
         if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
         {
-	  if (Get_Pwnam(user,True))
-	  {
+          if (Get_Pwnam(user,True))
+          {
             DEBUG(1,("Rejecting user '%s': bad password\n", user));
-            return(ERROR(ERRSRV,ERRbadpw));
-	  }
+            return bad_password_error(inbuf,outbuf);
+          }
         }
 
         /*
@@ -968,7 +984,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     struct passwd *pw = Get_Pwnam(user,False);
     if (!pw) {
       DEBUG(1,("Username %s is invalid on this system\n",user));
-      return(ERROR(ERRSRV,ERRbadpw));
+      return bad_password_error(inbuf,outbuf);
     }
     gid = pw->pw_gid;
     uid = pw->pw_uid;

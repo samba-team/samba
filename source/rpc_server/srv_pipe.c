@@ -253,26 +253,24 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	fstring unix_user_name;
 	fstring domain;
 	fstring wks;
+	BOOL guest_user = False;
 	struct smb_passwd *smb_pass = NULL;
 	struct passwd *pass = NULL;
+	uchar null_smb_passwd[16];
+	uchar *smb_passwd_ptr = NULL;
 	
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
-
-	if (ntlmssp_resp->hdr_lm_resp.str_str_len == 0)
-		return False;
-	if (ntlmssp_resp->hdr_nt_resp.str_str_len == 0)
-		return False;
-	if (ntlmssp_resp->hdr_usr.str_str_len == 0)
-		return False;
-	if (ntlmssp_resp->hdr_domain.str_str_len == 0)
-		return False;
-	if (ntlmssp_resp->hdr_wks.str_str_len == 0)
-		return False;
 
 	memset(p->user_name, '\0', sizeof(p->user_name));
 	memset(p->unix_user_name, '\0', sizeof(p->unix_user_name));
 	memset(p->domain, '\0', sizeof(p->domain));
 	memset(p->wks, '\0', sizeof(p->wks));
+
+	/* 
+	 * Setup an empty password for a guest user.
+	 */
+
+ 	memset(null_smb_passwd,0,16);
 
 	/*
 	 * We always negotiate UNICODE.
@@ -301,12 +299,44 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 #endif
 
 	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
+	 * Allow guest access. Patch from Shirish Kalele <kalele@veritas.com>.
 	 */
 
-	fstrcpy(unix_user_name, user_name);
-	(void)map_username(unix_user_name);
+	if(strlen(user_name) == 0) {
+
+		guest_user = True;
+
+        fstrcpy(unix_user_name, lp_guestaccount(-1));
+		DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", unix_user_name));
+
+		smb_passwd_ptr = null_smb_passwd;
+
+	} else {
+
+		/*
+		 * Pass the user through the NT -> unix user mapping
+		 * function.
+		 */
+
+		fstrcpy(unix_user_name, user_name);
+		(void)map_username(unix_user_name);
+
+	 	/* 
+		 * Do the length checking only if user is not NULL.
+		 */
+
+ 		if (ntlmssp_resp->hdr_lm_resp.str_str_len == 0)
+ 			return False;
+ 		if (ntlmssp_resp->hdr_nt_resp.str_str_len == 0)
+ 			return False;
+ 		if (ntlmssp_resp->hdr_usr.str_str_len == 0)
+ 			return False;
+ 		if (ntlmssp_resp->hdr_domain.str_str_len == 0)
+ 			return False;
+ 		if (ntlmssp_resp->hdr_wks.str_str_len == 0)
+ 			return False;
+
+	}
 
 	/*
 	 * Find the user in the unix password db.
@@ -317,40 +347,45 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 		return(False);
 	}
 
-	become_root(True);
+	if(!guest_user) {
 
-	if(!(p->ntlmssp_auth_validated = pass_check_smb(unix_user_name, domain,
-	                      (uchar*)p->challenge, lm_owf, nt_owf, NULL))) {
-		DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
+		become_root(True);
+
+		if(!(p->ntlmssp_auth_validated = pass_check_smb(unix_user_name, domain,
+		                      (uchar*)p->challenge, lm_owf, nt_owf, NULL))) {
+			DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
 failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name ));
+			unbecome_root(True);
+			return False;
+		}
+
+		if(!(smb_pass = getsmbpwnam(unix_user_name))) {
+			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
+				unix_user_name));
+			unbecome_root(True);
+			return False;
+		}
+
 		unbecome_root(True);
-		return False;
-	}
 
-	if(!(smb_pass = getsmbpwnam(unix_user_name))) {
-		DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
-			unix_user_name));
-		unbecome_root(True);
-		return False;
-	}
+		if (smb_pass == NULL) {
+			DEBUG(1,("api_pipe_ntlmssp_verify: Couldn't find user '%s' in smb_passwd file.\n", 
+				unix_user_name));
+			return(False);
+		}
 
-	unbecome_root(True);
+		/* Quit if the account was disabled. */
+		if((smb_pass->acct_ctrl & ACB_DISABLED) || !smb_pass->smb_passwd) {
+			DEBUG(1,("Account for user '%s' was disabled.\n", unix_user_name));
+			return(False);
+		}
 
-	if (smb_pass == NULL) {
-		DEBUG(1,("api_pipe_ntlmssp_verify: Couldn't find user '%s' in smb_passwd file.\n", 
-			unix_user_name));
-		return(False);
-	}
+		if(!smb_pass->smb_nt_passwd) {
+			DEBUG(1,("Account for user '%s' has no NT password hash.\n", unix_user_name));
+			return(False);
+		}
 
-	/* Quit if the account was disabled. */
-	if((smb_pass->acct_ctrl & ACB_DISABLED) || !smb_pass->smb_passwd) {
-		DEBUG(1,("Account for user '%s' was disabled.\n", unix_user_name));
-		return(False);
-	}
-
-	if(!smb_pass->smb_nt_passwd) {
-		DEBUG(1,("Account for user '%s' has no NT password hash.\n", unix_user_name));
-		return(False);
+		smb_passwd_ptr = smb_pass->smb_passwd;
 	}
 
 	/*
@@ -359,7 +394,7 @@ failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name
 
 	{
 		uchar p24[24];
-		NTLMSSPOWFencrypt(smb_pass->smb_passwd, lm_owf, p24);
+		NTLMSSPOWFencrypt(smb_passwd_ptr, lm_owf, p24);
 		{
 			unsigned char j = 0;
 			int ind;
