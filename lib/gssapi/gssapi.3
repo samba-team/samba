@@ -1,0 +1,49 @@
+.\" $Id$
+.\"
+.Dd January 23, 2003
+.Dt GSSAPI 3
+.Os
+.Sh NAME
+.Nm gssapi
+.Nd Generic Security Service Application Program Interface library
+.Sh LIBRARY
+GSS-API Library (libgssapi, -lgssapi)
+.Sh DESCRIPTION
+The Generic Security Service Application Program Interface (GSS-API)
+provides security services to callers in a generic fashion,
+supportable with a range of underlying mechanisms and technologies and
+hence allowing source-level portability of applications to different
+environments.
+.Sh COMPATIBILITY
+The
+.Nm Heimdal
+.Nm
+implementation had a bug in releases before 0.6 that made it fail to
+inter-operate with other
+.Nm
+implementations when using
+.Fn gss_get_mic
+/
+.Fn gss_verify_mic .
+.Pp
+To turn on compatibility with older clients and servers, change the
+.Nm [gssapi]
+.Ar broken_3des_mic
+in
+.Pa krb5.conf
+that contains a list of globbing expressions that will be matched
+against the server name.
+This config option modifies behaviour for both clients and servers.
+.Pp
+Example:
+.Bd -literal -offset indent
+[gssapi]
+	broken_3des_mic = cvs/*@SU.SE
+	broken_3des_mic = host/*@SU.SE afs/*@SU.SE
+.Ed
+.\" .Sh LIST OF FUNCTIONS
+.\"
+.Sh SEE ALSO
+.Xr krb5 3 ,
+.Xr krb5.conf 5 ,
+.Xr kerberos 8
