@@ -111,6 +111,9 @@
 #include <md5.h>
 #include <sha.h>
 
+#include <asn1.h>
+#include <der.h>
+
 #include <krb5.h>
 #include <krb5_err.h>
 #include <asn1_err.h>
