@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "system/iconv.h"
 
 /**************************************************************************n
  Find a suitable temporary directory. The result should be copied immediately

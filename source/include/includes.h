@@ -73,25 +73,15 @@
 #endif
 
 #include <unistd.h>
-
 #include <sys/types.h>
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-
-#ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif
-
 #include <unistd.h>
 #include <stdio.h>
 #include <stddef.h>
-
-#ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif
-
 #include <stdlib.h>
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
 
 #ifdef HAVE_STRING_H
 #include <string.h>
@@ -119,23 +109,11 @@
 
 #include <sys/stat.h>
 
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#endif
-
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
 
-#ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>
-#endif
-
 #include <signal.h>
-
-#ifdef HAVE_CTYPE_H
-#include <ctype.h>
-#endif
 
 #include <errno.h>
 
@@ -151,8 +129,6 @@
 #else
 #include <varargs.h>
 #endif
-
-#include <sys/file.h>
 
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
@@ -281,11 +257,11 @@ extern int errno;
 /* Lists, trees, caching, database... */
 #include "xfile.h"
 #include "dlinklist.h"
+#include "talloc.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/tdb/include/spinlock.h"
 #include "lib/tdb/include/tdbutil.h"
-#include "talloc.h"
 #include "db_wrap.h"
 #include "nt_status.h"
 #include "trans2.h"

@@ -43,6 +43,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb_parse.h"
+#include <ctype.h>
 
 
 /*

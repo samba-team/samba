@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "system/time.h"
+#include "system/iconv.h"
 
 static const struct opcode_names {
 	const char *nmb_opcode_name;

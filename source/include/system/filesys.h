@@ -52,3 +52,9 @@
 #include <sys/statvfs.h>
 #endif
 
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
+
+#include <sys/file.h>
+

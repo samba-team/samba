@@ -37,6 +37,7 @@
 */
 
 #include "includes.h"
+#include <ctype.h>
 
 
 /*
