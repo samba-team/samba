@@ -180,10 +180,9 @@ static void add_socket_rpc_tcp(struct server_service *service,
 			add_socket_rpc_tcp_iface(service, model_ops, dce_ctx, e, ifip);
 		}
 	} else {
-		struct in_addr *ifip;
-		ifip = interpret_addr2(dce_ctx, lp_socket_address());
-		add_socket_rpc_tcp_iface(service, model_ops, dce_ctx, e, ifip);
-		talloc_free(ifip);
+		struct in_addr ifip;
+		ifip = interpret_addr2(lp_socket_address());
+		add_socket_rpc_tcp_iface(service, model_ops, dce_ctx, e, &ifip);
 	}
 
 	return;

@@ -228,7 +228,7 @@ int main(int argc,char *argv[])
     switch (opt)
       {
       case 'B':
-	bcast_addr = *interpret_addr2(optarg);
+	bcast_addr = interpret_addr2(optarg);
 	got_bcast = True;
 	use_bcast = True;
 	break;
@@ -236,7 +236,7 @@ int main(int argc,char *argv[])
 	give_flags = True;
 	break;
       case 'U':
-	bcast_addr = *interpret_addr2(optarg);
+	bcast_addr = interpret_addr2(optarg);
 	got_bcast = True;
 	use_bcast = False;
 	break;
@@ -306,7 +306,7 @@ int main(int argc,char *argv[])
       if(lookup_by_ip)
       {
         fstrcpy(lookup,"*");
-        ip = *interpret_addr2(argv[i]);
+        ip = interpret_addr2(argv[i]);
 	do_node_status(ServerFD, lookup, lookup_type, ip);
         continue;
       }

@@ -64,7 +64,7 @@ static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, uint_t port)
 		return False;
 	}
 	ads->ldap_port = port;
-	ads->ldap_ip = *interpret_addr2(srv);
+	ads->ldap_ip = interpret_addr2(srv);
 	free(srv);
 
 	return True;
