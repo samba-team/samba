@@ -52,17 +52,17 @@ KRBLIBS = ${ATHENA}/lib/libkrb.a ${ATHENA}/lib/libdes.a
 
 CFLAGS		=	-O -DBIND43 -DHAVE_VSPRINTF -DDEBUG -DRETURN_PATH_HANDLING ${KRBDEFS}
 
-TARGET		=	popper
+TARGET		=	kpopper
 
 TAR		=	${TARGET}.tar
 
-INSTALLDIR	=	/usr/etc
+INSTALLDIR	=	$(ATHENA)/libexec
 
 MANPAGE		=	popper.8
 
 CATPAGE		=	popper.0
 
-MANDIR		=	/usr/local/man/cat8
+MANDIR		=	$(ATHENA)/man/cat8
 
 
 
