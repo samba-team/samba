@@ -130,8 +130,12 @@ void  killkids(void)
          dos archive is represented in unix by the user's execute bit
          dos system is represented in unix by the group's execute bit
          dos hidden is represented in unix by the other's execute bit
+         Then apply create mask,
+         then add force bits.
     base permission for directories:
          dos directory is represented in unix by unix's dir bit and the exec bit
+         Then apply create mask,
+         then add force bits.
 ****************************************************************************/
 mode_t unix_mode(int cnum,int dosmode)
 {
@@ -144,7 +148,10 @@ mode_t unix_mode(int cnum,int dosmode)
     /* We never make directories read only for the owner as under DOS a user
        can always create a file in a read-only directory. */
     result |= (S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH | S_IWUSR);
+    /* Apply directory mask */
     result &= lp_dir_mode(SNUM(cnum));
+    /* Add in force bits */
+    result |= lp_force_dir_mode(SNUM(cnum));
   } else { 
     if (MAP_ARCHIVE(cnum) && IS_DOS_ARCHIVE(dosmode))
       result |= S_IXUSR;
@@ -155,7 +162,10 @@ mode_t unix_mode(int cnum,int dosmode)
     if (MAP_HIDDEN(cnum) && IS_DOS_HIDDEN(dosmode))
       result |= S_IXOTH;  
  
-    result &= CREATE_MODE(cnum);
+    /* Apply mode mask */
+    result &= lp_create_mode(SNUM(cnum));
+    /* Add in force bits */
+    result |= lp_force_create_mode(SNUM(cnum));
   }
   return(result);
 }
