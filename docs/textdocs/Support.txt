@@ -1,3 +1,6 @@
+!==
+!== Support.txt for Samba release 2.0.0beta2 24 Nov 1998
+!==
 The Samba Consultants List
 ==========================
 
