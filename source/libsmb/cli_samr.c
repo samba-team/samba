@@ -536,6 +536,10 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 	
+	*dom_users = NULL;
+	*rids = NULL;
+	*num_dom_users = NULL;
+
 	/* Initialise parse structures */
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
