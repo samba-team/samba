@@ -71,11 +71,6 @@
 #define FLAG_POSSIBLE3 64
 #define FLAG_POSSIBLE4 128
 
-/* by default have a max of 512 entries in the cache. */
-#ifndef MANGLE_CACHE_SIZE
-#define MANGLE_CACHE_SIZE 512
-#endif
-
 #define DEFAULT_MANGLE_PREFIX 4
 
 #define MANGLE_BASECHARS "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -85,6 +80,31 @@
 static const char *reserved_names[] = 
 { "AUX", "CON", "COM1", "COM2", "COM3", "COM4",
   "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
+
+
+struct pvfs_mangle_context {
+	uint8_t char_flags[256];
+	/*
+	  this determines how many characters are used from the original
+	  filename in the 8.3 mangled name. A larger value leads to a weaker
+	  hash and more collisions.  The largest possible value is 6.
+	*/
+	int mangle_prefix;
+	uint32_t mangle_modulus;
+
+	/* we will use a very simple direct mapped prefix cache. The big
+	   advantage of this cache structure is speed and low memory usage 
+
+	   The cache is indexed by the low-order bits of the hash, and confirmed by
+	   hashing the resulting cache entry to match the known hash
+	*/
+	uint32_t cache_size;
+	char **prefix_cache;
+	uint32_t *prefix_cache_hashes;
+
+	/* this is used to reverse the base 36 mapping */
+	unsigned char base_reverse[256];
+};
 
 
 /* 
@@ -105,7 +125,7 @@ static uint32_t mangle_hash(struct pvfs_mangle_context *ctx,
 static void cache_insert(struct pvfs_mangle_context *ctx,
 			 const char *prefix, int length, uint32_t hash)
 {
-	int i = hash % MANGLE_CACHE_SIZE;
+	int i = hash % ctx->cache_size;
 
 	if (ctx->prefix_cache[i]) {
 		talloc_free(ctx->prefix_cache[i]);
@@ -120,7 +140,7 @@ static void cache_insert(struct pvfs_mangle_context *ctx,
 */
 static const char *cache_lookup(struct pvfs_mangle_context *ctx, uint32_t hash)
 {
-	int i = hash % MANGLE_CACHE_SIZE;
+	int i = hash % ctx->cache_size;
 
 
 	if (!ctx->prefix_cache[i] || hash != ctx->prefix_cache_hashes[i]) {
@@ -592,17 +612,21 @@ NTSTATUS pvfs_mangle_init(struct pvfs_state *pvfs)
 	if (ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ctx->prefix_cache = talloc_array_p(ctx, char *, MANGLE_CACHE_SIZE);
+
+	/* by default have a max of 512 entries in the cache. */
+	ctx->cache_size = lp_parm_int(-1, "mangle", "cachesize", 512);
+
+	ctx->prefix_cache = talloc_array(ctx, char *, ctx->cache_size);
 	if (ctx->prefix_cache == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ctx->prefix_cache_hashes = talloc_array_p(ctx, uint32_t, MANGLE_CACHE_SIZE);
+	ctx->prefix_cache_hashes = talloc_array(ctx, uint32_t, ctx->cache_size);
 	if (ctx->prefix_cache_hashes == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	memset(ctx->prefix_cache, 0, sizeof(char *)*MANGLE_CACHE_SIZE);
-	memset(ctx->prefix_cache_hashes, 0, sizeof(uint32_t)*MANGLE_CACHE_SIZE);
+	memset(ctx->prefix_cache, 0, sizeof(char *) * ctx->cache_size);
+	memset(ctx->prefix_cache_hashes, 0, sizeof(uint32_t) * ctx->cache_size);
 
 	ctx->mangle_prefix = lp_parm_int(-1, "mangle", "prefix", -1);
 	if (ctx->mangle_prefix < 0 || ctx->mangle_prefix > 6) {
