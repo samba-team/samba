@@ -401,8 +401,21 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			one at a time - if a component fails it expects
 			ERRbadpath, not ERRbadfile.
 		*/
-		if(errno == ENOENT)
-			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		if(errno == ENOENT) {
+			/*
+			 * Windows returns different error codes if
+			 * the parent directory is valid but not the
+			 * last component - it returns NT_STATUS_OBJECT_NAME_NOT_FOUND
+			 * for that case and NT_STATUS_OBJECT_PATH_NOT_FOUND
+			 * if the path is invalid.
+			 */
+			if (bad_path) {
+				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+			} else {
+				return ERROR_NT(NT_STATUS_OBJECT_NAME_NOT_FOUND);
+			}
+		} else if (errno == ENOTDIR)
+			return ERROR_NT(NT_STATUS_NOT_A_DIRECTORY);
 
 		return(UNIXERROR(ERRDOS,ERRbadpath));
 	}
