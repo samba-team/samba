@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 YFLAGS = -d
 
 lib_LTLIBRARIES = libasn1.la
-libasn1_la_LDFLAGS = -version-info 1:0:0
+libasn1_la_LDFLAGS = -version-info 1:1:0
 
 BUILT_SOURCES =			\
 	$(gen_files:.x=.c)	\
