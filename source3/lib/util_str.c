@@ -919,7 +919,7 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 	if (len == 0)
 		len = ls + 1; /* len is number of *bytes* */
 
-	while (lp <= ls && (p = strstr(s,pattern))) {
+	while (lp <= ls && (p = strstr_m(s,pattern))) {
 		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
@@ -1004,7 +1004,7 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 		}
 	}
 	
-	while ((p = strstr(s,pattern))) {
+	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
 			char *t = Realloc(string, ls + ld + 1);
@@ -1052,7 +1052,7 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 	if (len == 0)
 		len = ls + 1; /* len is number of *bytes* */
 	
-	while (lp <= ls && (p = strstr(s,pattern))) {
+	while (lp <= ls && (p = strstr_m(s,pattern))) {
 		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
@@ -1292,6 +1292,76 @@ char *strnrchr_m(const char *s, char c, unsigned int n)
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
 	return (char *)(s+strlen(s2));
+}
+
+/***********************************************************************
+ strstr_m - We convert via ucs2 for now.
+***********************************************************************/
+
+char *strstr_m(const char *src, const char *findstr)
+{
+	smb_ucs2_t *p;
+	smb_ucs2_t *src_w, *find_w;
+	const char *s;
+	char *s2;
+	char *retp;
+
+	/* Samba does single character findstr calls a *lot*. */
+	if (findstr[1] == '\0')
+		return strchr_m(src, *findstr);
+
+	/* We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
+		if (*s == *findstr) {
+			if (strcmp(s, findstr) == 0) {
+				return (char *)s;
+			}
+		}
+	}
+
+	if (!*s)
+		return NULL;
+
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+	/* With compose characters we must restart from the beginning. JRA. */
+	s = src;
+#endif
+
+	if (push_ucs2_allocate(&src_w, src) == (size_t)-1) {
+		DEBUG(0,("strstr_m: src malloc fail\n"));
+		return NULL;
+	}
+	
+	if (push_ucs2_allocate(&find_w, findstr) == (size_t)-1) {
+		SAFE_FREE(src_w);
+		DEBUG(0,("strstr_m: find malloc fail\n"));
+		return NULL;
+	}
+	
+	for (p = src_w; (p = strchr_w(p, *find_w)) != NULL; p++) {
+		if (strcmp_w(p, find_w) == 0)
+			break;
+	}
+	if (!p) {
+		SAFE_FREE(src_w);
+		SAFE_FREE(find_w);
+		return NULL;
+	}
+	*p = 0;
+	if (pull_ucs2_allocate(&s2, src_w) == (size_t)-1) {
+		SAFE_FREE(src_w);
+		SAFE_FREE(find_w);
+		DEBUG(0,("strstr_m: dest malloc fail\n"));
+		return NULL;
+	}
+	retp = (char *)(s+strlen(s2));
+	SAFE_FREE(src_w);
+	SAFE_FREE(find_w);
+	SAFE_FREE(s2);
+	return retp;
 }
 
 /**
@@ -1624,7 +1694,7 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 		s = *list;
 		ls = (ssize_t)strlen(s);
 
-		while ((p = strstr(s, pattern))) {
+		while ((p = strstr_m(s, pattern))) {
 			t = *list;
 			d = p -t;
 			if (ld) {

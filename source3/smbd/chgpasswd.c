@@ -542,7 +542,7 @@ BOOL chgpasswd(const char *name, const struct passwd *pass,
 
 	if (as_root) {
 		/* The password program *must* contain the user name to work. Fail if not. */
-		if (strstr(passwordprogram, "%u") == NULL) {
+		if (strstr_m(passwordprogram, "%u") == NULL) {
 			DEBUG(0,("chgpasswd: Running as root the 'passwd program' parameter *MUST* contain \
 the string %%u, and the given string %s does not.\n", passwordprogram ));
 			return False;
