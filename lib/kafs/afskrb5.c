@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -114,8 +114,12 @@ get_realm(kafs_data *data, const char *host)
 }
 
 krb5_error_code
-krb5_afslog_uid(krb5_context context, krb5_ccache id,
-		const char *cell, krb5_const_realm realm, uid_t uid)
+krb5_afslog_uid_home(krb5_context context,
+		     krb5_ccache id,
+		     const char *cell,
+		     krb5_const_realm realm,
+		     uid_t uid,
+		     const char *homedir)
 {
     kafs_data kd;
     struct krb5_kafs_data d;
@@ -126,12 +130,34 @@ krb5_afslog_uid(krb5_context context, krb5_ccache id,
     d.context = context;
     d.id = id;
     d.realm = realm;
-    return afslog_uid_int(&kd, cell, uid);
+    return afslog_uid_int(&kd, cell, uid, homedir);
 }
 
 krb5_error_code
-krb5_afslog(krb5_context context, krb5_ccache id, 
-	    const char *cell, krb5_const_realm realm)
+krb5_afslog_uid(krb5_context context,
+		krb5_ccache id,
+		const char *cell,
+		krb5_const_realm realm,
+		uid_t uid)
+{
+    return krb5_afslog_uid_home (context, id, cell, realm, uid, NULL);
+}
+
+krb5_error_code
+krb5_afslog(krb5_context context,
+	    krb5_ccache id, 
+	    const char *cell,
+	    krb5_const_realm realm)
 {
     return krb5_afslog_uid (context, id, cell, realm, getuid());
+}
+
+krb5_error_code
+krb5_afslog_home(krb5_context context,
+		 krb5_ccache id, 
+		 const char *cell,
+		 krb5_const_realm realm,
+		 const char *homedir)
+{
+    return krb5_afslog_uid_home (context, id, cell, realm, getuid(), homedir);
 }

@@ -118,6 +118,11 @@ int k_hasafs __P((void));
 
 int krb_afslog __P((const char *cell, const char *realm));
 int krb_afslog_uid __P((const char *cell, const char *realm, uid_t uid));
+int krb_afslog_home __P((const char *cell, const char *realm,
+			 const char *homedir));
+int krb_afslog_uid_home __P((const char *cell, const char *realm, uid_t uid,
+			     const char *homedir));
+
 /* compat */
 #define k_afsklog krb_afslog
 #define k_afsklog_uid krb_afslog_uid
@@ -144,10 +149,27 @@ int kafs_settoken __P((const char*, uid_t, CREDENTIALS*));
 #endif
 
 #ifdef KRB5_H_INCLUDED
-krb5_error_code krb5_afslog_uid __P((krb5_context, krb5_ccache,
-				     const char*, krb5_const_realm, uid_t));
-krb5_error_code krb5_afslog __P((krb5_context, krb5_ccache, 
-				 const char*, krb5_const_realm));
+krb5_error_code krb5_afslog_uid __P((krb5_context context,
+				     krb5_ccache id,
+				     const char *cell,
+				     krb5_const_realm realm,
+				     uid_t uid));
+krb5_error_code krb5_afslog __P((krb5_context context,
+				 krb5_ccache id, 
+				 const char *cell,
+				 krb5_const_realm realm));
+krb5_error_code krb5_afslog_uid_home __P((krb5_context context,
+					  krb5_ccache id,
+					  const char *cell,
+					  krb5_const_realm realm,
+					  uid_t uid,
+					  const char *homedir));
+
+krb5_error_code krb5_afslog_home __P((krb5_context context,
+				      krb5_ccache id,
+				      const char *cell,
+				      krb5_const_realm realm,
+				      const char *homedir));
 #endif
 
 

@@ -213,27 +213,28 @@ find_cells(char *file, char ***cells, int *index)
  * Get tokens for all cells[]
  */
 static int
-afslog_cells(kafs_data *data, char **cells, int max, uid_t uid)
+afslog_cells(kafs_data *data, char **cells, int max, uid_t uid,
+	     const char *homedir)
 {
     int ret = 0;
     int i;
     for(i = 0; i < max; i++)
-	ret = (*data->afslog_uid)(data, cells[i], uid);
+	ret = (*data->afslog_uid)(data, cells[i], uid, homedir);
     return ret;
 }
 
 int
-_kafs_afslog_all_local_cells(kafs_data *data, uid_t uid)
+_kafs_afslog_all_local_cells(kafs_data *data, uid_t uid, const char *homedir)
 {
     int ret;
     char **cells = NULL;
     int index = 0;
 
-    char *p;
-    
-    if ((p = getenv("HOME"))) {
+    if (homedir == NULL)
+	homedir = getenv("HOME");
+    if (homedir != NULL) {
 	char home[MaxPathLen];
-	snprintf(home, sizeof(home), "%s/.TheseCells", p);
+	snprintf(home, sizeof(home), "%s/.TheseCells", homedir);
 	find_cells(home, &cells, &index);
     }
     find_cells(_PATH_THESECELLS, &cells, &index);
@@ -241,7 +242,7 @@ _kafs_afslog_all_local_cells(kafs_data *data, uid_t uid)
     find_cells(_PATH_ARLA_THESECELLS, &cells, &index);
     find_cells(_PATH_ARLA_THISCELL, &cells, &index);
     
-    ret = afslog_cells(data, cells, index, uid);
+    ret = afslog_cells(data, cells, index, uid, homedir);
     while(index > 0)
 	free(cells[--index]);
     free(cells);

@@ -106,7 +106,8 @@
 #include "afssysdefs.h"
 
 struct kafs_data;
-typedef int (*afslog_uid_func_t)(struct kafs_data*, const char*, uid_t);
+typedef int (*afslog_uid_func_t)(struct kafs_data*, const char*, uid_t,
+				 const char *);
 
 typedef int (*get_cred_func_t)(struct kafs_data*, const char*, const char*, 
 				    const char*, CREDENTIALS*);
@@ -120,7 +121,7 @@ typedef struct kafs_data {
     void *data;
 } kafs_data;
 
-int _kafs_afslog_all_local_cells(kafs_data*, uid_t);
+int _kafs_afslog_all_local_cells(kafs_data*, uid_t, const char*);
 
 int _kafs_get_cred(kafs_data*, const char*, const char*, const char *, 
 		  CREDENTIALS*);

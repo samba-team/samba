@@ -60,7 +60,8 @@ get_cred(kafs_data *data, const char *name, const char *inst,
 }
 
 static int
-afslog_uid_int(kafs_data *data, const char *cell, uid_t uid)
+afslog_uid_int(kafs_data *data, const char *cell, uid_t uid,
+	       const char *homedir)
 {
     int ret;
     CREDENTIALS c;
@@ -68,7 +69,7 @@ afslog_uid_int(kafs_data *data, const char *cell, uid_t uid)
     char realm[REALM_SZ], *lrealm;
     
     if (cell == 0 || cell[0] == 0)
-	return _kafs_afslog_all_local_cells (data, uid);
+	return _kafs_afslog_all_local_cells (data, uid, homedir);
 
     ret = krb_get_lrealm(realm , 0);
     if(ret == KSUCCESS && (d->realm == NULL || strcmp(d->realm, realm)))
@@ -94,7 +95,8 @@ get_realm(kafs_data *data, const char *host)
 }
 
 int
-krb_afslog_uid(const char *cell, const char *realm, uid_t uid)
+krb_afslog_uid_home(const char *cell, const char *realm, uid_t uid,
+		    const char *homedir)
 {
     kafs_data kd;
     struct krb_kafs_data d;
@@ -104,11 +106,23 @@ krb_afslog_uid(const char *cell, const char *realm, uid_t uid)
     kd.get_realm = get_realm;
     kd.data = &d;
     d.realm = realm;
-    return afslog_uid_int(&kd, cell, uid);
+    return afslog_uid_int(&kd, cell, uid, homedir);
+}
+
+int
+krb_afslog_uid(const char *cell, const char *realm, uid_t uid)
+{
+    return krb_afslog_uid_home (cell, realm, uid, NULL);
 }
 
 int
 krb_afslog(const char *cell, const char *realm)
 {
     return krb_afslog_uid (cell, realm, getuid());
+}
+
+int
+krb_afslog_home(const char *cell, const char *realm, const char *homedir)
+{
+    return krb_afslog_uid_home (cell, realm, getuid(), homedir);
 }
