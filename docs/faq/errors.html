@@ -77,7 +77,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN192"
+NAME="AEN201"
 ></A
 >4.1. Not listening for calling name</H1
 ><P
@@ -103,7 +103,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN199"
+NAME="AEN208"
 ></A
 >4.2. System Error 1240</H1
 ><P
@@ -139,7 +139,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN206"
+NAME="AEN215"
 ></A
 >4.3. smbclient ignores -N !</H1
 ><P
@@ -168,6 +168,80 @@ CLASS="COMMAND"
 an anonymous login for SMB. Using -N would only set the password
 to null, and this is not accepted as an anonymous login for most
 SMB servers.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN224"
+></A
+>4.4. The data on the CD-Drive I've shared seems to be corrupted!</H1
+><P
+>Some OSes (notably Linux) default to auto detection of file type on
+cdroms and do cr/lf translation. This is a very bad idea when use with
+Samba. It causes all sorts of stuff ups.</P
+><P
+>To overcome this problem use conv=binary when mounting the cdrom
+before exporting it with Samba.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN228"
+></A
+>4.5. Why can users access home directories of other users?</H1
+><P
+><SPAN
+CLASS="QUOTE"
+>"We are unable to keep individual users from mapping to any other user's
+home directory once they have supplied a valid password! They only need
+to enter their own password. I have not found *any* method that I can
+use to configure samba to enforce that only a user may map their own
+home directory."</SPAN
+></P
+><P
+><SPAN
+CLASS="QUOTE"
+>"User xyzzy can map his home directory. Once mapped user xyzzy can also map
+*anyone* elses home directory!"</SPAN
+></P
+><P
+>This is not a security flaw, it is by design. Samba allows
+users to have *exactly* the same access to the UNIX filesystem
+as they would if they were logged onto the UNIX box, except
+that it only allows such views onto the file system as are
+allowed by the defined shares.</P
+><P
+>This means that if your UNIX home directories are set up
+such that one user can happily cd into another users
+directory and do an ls, the UNIX security solution is to 
+change the UNIX file permissions on the users home directories
+such that the cd and ls would be denied.</P
+><P
+>Samba tries very hard not to second guess the UNIX administrators
+security policies, and trusts the UNIX admin to set
+the policies and permissions he or she desires.</P
+><P
+>Samba does allow the setup you require when you have set the
+"only user = yes" option on the share, is that you have not set the
+valid users list for the share.</P
+><P
+>Note that only user works in conjunction with the users= list,
+so to get the behavior you require, add the line :
+<PRE
+CLASS="PROGRAMLISTING"
+>users = %S</PRE
+>
+this is equivalent to:
+<PRE
+CLASS="PROGRAMLISTING"
+>valid users = %S</PRE
+>
+to the definition of the [homes] share, as recommended in
+the smb.conf man page.</P
 ></DIV
 ></DIV
 ><DIV

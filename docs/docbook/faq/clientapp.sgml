@@ -82,4 +82,20 @@ workstation as follows: <command>\\"Server_Name"\MSOP95\msoffice\setup</command>
 </itemizedlist>
 
 </sect1>
+
+<sect1>
+<title>Microsoft Access database opening errors</title>
+
+<para>
+Here are some notes on running MS-Access on a Samba drive from <ulink url="stefank@esi.com.au">Stefan Kjellberg</ulink>
+</para>
+
+<para><simplelist>
+<member>Opening a database in 'exclusive' mode does NOT work. Samba ignores r/w/share modes on file open.</member>
+<member>Make sure that you open the database as 'shared' and to 'lock modified records'</member>
+<member>Of course locking must be enabled for the particular share (smb.conf)</member>
+</simplelist>
+</para>
+
+</sect1>
 </chapter>
