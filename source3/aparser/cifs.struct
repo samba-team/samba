@@ -724,8 +724,7 @@ typedef struct _R_TRANS {
 	}
 } R_TRANS;
 
-typedef struct _Q_NT_CREATE_ANDX{
-	uint8 wcount;
+typedef struct _Q_NT_CREATE_ANDX_24 {
 	ANDX_INFO andx;
 	uint8 reserved;
 	uint16 name_len;
@@ -736,20 +735,29 @@ typedef struct _Q_NT_CREATE_ANDX{
 	ULONG attribs;
 	ULONG sharing;
 	ULONG creat_disp;
+	ULONG creat_options;
 	ULONG impersonation;
 	uint8 sec_flags;
 
 	uint16 count;
 	uint8 name[name_len];
 
-} Q_NT_CREATE_ANDX;
+} Q_NTCREATE_ANDX_24;
+
+typedef struct _Q_NTCREATE_ANDX{
+	uint8 wcount;
+	union ctr[wcount] {
+		case 24 Q_NTCREATE_ANDX_24 q24;
+	}
+} Q_NTCREATE_ANDX;
 
 typedef struct {
-	uint8 wcount;
+	ANDX_INFO andx;
 	uint8 oplock_level;
 	uint16 fid;
 	ULONG action;
 	TIME create_time;
+	TIME access_time;
 	TIME write_time;
 	TIME change_time;
 	ULONG ext_attribs;
@@ -760,8 +768,16 @@ typedef struct {
 	uint8 directory;
 
 	uint16 count;
+	uint8 none[count];
 
-} R_NT_CREATE_ANDX;
+} R_NTCREATE_ANDX_34;
+
+typedef struct _R_NTCREATE_ANDX{
+	uint8 wcount;
+	union ctr[wcount] {
+		case 34 R_NTCREATE_ANDX_34 q34;
+	}
+} R_NTCREATE_ANDX;
 
 typedef struct {
 	ULONG smbhdr;
@@ -797,6 +813,7 @@ typedef struct _R_SMB {
 		case 117 R_TCON_ANDX r117;
 		case 128 R_DSKATTR    r128;
 		case 160 R_NTTRANS r160;
+		case 162 R_NTCREATE_ANDX r162;
 	}
 } R_SMB;
 
@@ -818,6 +835,7 @@ typedef struct _Q_SMB {
 		case 117 Q_TCON_ANDX q117;
 		case 128 Q_DSKATTR    q128;
 		case 160 Q_NTTRANS q160;
+		case 162 Q_NTCREATE_ANDX q162;
 	}
 } Q_SMB;
 
