@@ -1,5 +1,6 @@
 2000-02-19  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/Makefile.am: set version to 9:1:0
 	* kdc/connect.c (descr): add sockaddr and string representation
 	(*): re-write to use the above mentioned
 
