@@ -1,3 +1,7 @@
+1999-08-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kpasswd/kpasswdd.c: add `--keytab' flag
+
 1999-08-18  Assar Westerlund  <assar@sics.se>
 
 	* configure.in (--enable-new-des3-code): remove check for `struct
