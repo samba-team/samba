@@ -20,7 +20,7 @@ libdir = $(exec_prefix)/lib
 bindir = $(exec_prefix)/bin
 
 PROG_BIN	= 
-PROG_LIBEXEC	= kpopper
+PROG_LIBEXEC	= popper
 PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
 
 SOURCES = pop_dele.c pop_dropcopy.c pop_dropinfo.c \
@@ -74,7 +74,7 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-kpopper: $(OBJECTS)
+popper: $(OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken $(LIBS)
 
 $(OBJECTS): ../../config.h
