@@ -2,10 +2,10 @@
 # Start SUBSYSTEM LIBTDB
 [SUBSYSTEM::LIBTDB]
 INIT_OBJ_FILES = \
-		lib/tdb/tdb.o
+		lib/tdb/common/tdb.o
 ADD_OBJ_FILES = \
-		lib/tdb/tdbutil.o \
-		lib/tdb/spinlock.o
+		lib/tdb/common/tdbutil.o \
+		lib/tdb/common/spinlock.o
 #
 # End SUBSYSTEM LIBLDB
 ################################################
