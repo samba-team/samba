@@ -252,6 +252,188 @@ typedef char fstring[128];
 typedef fstring string;
 
 
+/* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
+typedef uint32 UTIME;
+
+/* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
+typedef struct nttime
+{
+  uint32 low;
+  uint32 high;
+
+} NTTIME;
+ 
+
+#define MAXSUBAUTHS 10 /* max sub authorities in a SID */
+
+/* DOM_SID - security id */
+typedef struct sid_info
+{
+  uint8  sid_no;                  /* SID revision number */
+  uint8  num_auths;               /* number of sub-authorities */
+  uint8  id_auth[6];              /* Identifier Authority */
+  uint16 sub_auths[MAXSUBAUTHS]; /* pointer to sub-authorities. */
+
+} DOM_SID;
+
+/* UNIHDR - unicode string header */
+typedef struct unihdr_info
+{
+  uint16 uni_max_len;
+  uint16 uni_str_len;
+  uint32 undoc; /* usually has a value of 4 */
+
+} UNIHDR;
+
+/* UNIHDR2 - unicode string header and undocumented buffer */
+typedef struct unihdr2_info
+{
+  UNIHDR unihdr;
+  uint32 undoc_buffer; /* undocumented 32 bit buffer pointer */
+
+} UNIHDR2;
+
+/* clueless as to what maximum length should be */
+#define MAX_UNISTRLEN 1024
+
+/* UNISTR - unicode string size and buffer */
+typedef struct unistr_info
+{
+  uint16 buffer[MAX_UNISTRLEN]; /* unicode characters. ***MUST*** be null-terminated */
+
+} UNISTR;
+
+/* UNISTR2 - unicode string size and buffer */
+typedef struct unistr2_info
+{
+  uint32 uni_max_len;
+  uint32 undoc;
+  uint32 uni_str_len;
+  uint16 buffer[MAX_UNISTRLEN]; /* unicode characters. **NOT** necessarily null-terminated */
+
+} UNISTR2;
+
+/* DOM_SID2 - domain SID structure - SIDs stored in unicode */
+typedef struct domsid2_info
+{
+  uint32 type; /* value is 5 */
+  uint32 undoc; /* value is 0 */
+  UNIHDR2 hdr; /* XXXX conflict between hdr and str for length */
+  UNISTR  str; /* XXXX conflict between hdr and str for length */
+
+} DOM_SID2;
+
+/* DOM_RID2 - domain RID structure */
+typedef struct domrid2_info
+{
+  uint32 type; /* value is 5 */
+  uint32 undoc; /* value is 5 */
+  uint32 rid;
+  uint32 rid_idx; /* don't know what this is */
+
+} DOM_RID2;
+
+/* DOM_LOG_INFO - login info */
+typedef struct log_info
+{
+  uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
+  UNISTR2 uni_logon_srv; /* logon server name */
+  UNISTR2 uni_acct_name; /* account name */
+  uint16  sec_chan;      /* secure channel type */
+  UNISTR2 uni_comp_name; /* client machine name */
+
+} DOM_LOG_INFO;
+
+/* DOM_CREDs - client or server credentials */
+typedef struct cred_info
+{
+  uint8 data[8]; /* credentials */
+  UTIME timestamp;    /* credential time-stamp */
+
+} DOM_CRED;
+
+/* DOM_CLNT_INFO - client info */
+typedef struct clnt_info
+{
+  DOM_LOG_INFO login;
+  DOM_CRED     cred;
+
+} DOM_CLNT_INFO;
+
+/* DOM_LOGON_ID - logon id */
+typedef struct logon_info
+{
+  uint32 low;
+  uint32 high;
+
+} DOM_LOGON_ID;
+
+/* RC4_OWF */
+typedef struct rc4_owf_info
+{
+  uint8 data[16];
+
+} RC4_OWF;
+
+
+/* DOM_ID_INFO_1 */
+typedef struct id_info_1
+{
+  UNIHDR            hdr_domain_name;     /* domain name unicode header */
+  uint32            param;               /* param control */
+  DOM_LOGON_ID      logon_id;            /* logon ID */
+  UNIHDR            hdr_user_name;       /* user name unicode header */
+  UNIHDR            hdr_workgroup_name;  /* workgroup name unicode header */
+  RC4_OWF           rc4_lm_owf;          /* rc4 LM OWF Password */
+  RC4_OWF           rc4_nt_owf;          /* rc4 NT OWF Password */
+  UNISTR2           uni_domain_name;     /* domain name unicode string */
+  UNISTR2           uni_user_name;       /* user name unicode string */
+  UNISTR2           uni_workgroup_name;  /* workgroup name unicode string */
+
+} DOM_ID_INFO_1;
+
+/* SAM_INFO - sam logon/off id structure */
+typedef struct sam_info
+{
+  DOM_CLNT_INFO client;
+  DOM_CRED      rtn_cred; /* return credentials */
+  uint16        logon_level;
+  uint32        auth_level; /* undocumented */
+  
+  union
+  {
+    DOM_ID_INFO_1 id1; /* auth-level 1 */
+
+  } auth;
+  
+} DOM_SAM_INFO;
+
+/* DOM_GID - group id + user attributes */
+typedef struct gid_info
+{
+  uint32 gid;  /* group id */
+  uint32 attr;
+
+} DOM_GID;
+
+/* RPC_HEADER - ms rpc header */
+typedef struct rpc_hdr_info
+{
+  uint8  major; /* 5 - RPC major version */
+  uint8  minor; /* 0 - RPC minor version */
+  uint8  pkt_type; /* 2 - RPC response packet */
+  uint8  frag; /* 3 - first frag + last frag */
+  uint32 pack_type; /* 0x0000 0010 - packed data representation */
+  uint16 frag_len; /* fragment length - data size (bytes) inc header and tail. */
+  uint16 auth_len; /* 0 - authentication length  */
+  uint32 call_id; /* call identifier.  matches 12th uint32 of incoming RPC data. */
+  uint32 alloc_hint; /* allocation hint - data size (bytes) minus header and tail. */
+  uint16 context_id; /* 0 - presentation context identifier */
+  uint8  cancel_count; /* 0 - cancel count */
+  uint8  reserved; /* 0 - reserved */
+} RPC_HEADER;
+
+
 struct smb_passwd {
 	int smb_userid;
 	char *smb_name;
