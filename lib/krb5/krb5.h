@@ -723,6 +723,13 @@ krb5_425_conv_principal(krb5_context context,
 			krb5_principal *princ);
 
 krb5_error_code
+krb5_524_conv_principal(krb5_context context,
+			const krb5_principal principal,
+			char *name, 
+			char *instance,
+			char *realm);
+
+krb5_error_code
 krb5_sname_to_principal (krb5_context context,
 			 const char *hostname,
 			 const char *sname,
