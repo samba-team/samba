@@ -1,3 +1,9 @@
+1999-12-05  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (libroken_la_SOURCES); removed inaddr2str
+	* roken-common.h (getnameinfo_verified): add prototype
+	* getnameinfo_verified.c: new file
+
 1999-12-03  Assar Westerlund  <assar@sics.se>
 
 	* mini_inetd.c (mini_inted): rewrite to use `getaddrinfo'
