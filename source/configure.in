@@ -132,16 +132,10 @@ AC_SUBST(sbindir)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
-AC_SUBST(RUNPROG)
-AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
 AC_SUBST(SHLD)
 AC_SUBST(HOST_OS)
-AC_SUBST(PAM_MOD)
-AC_SUBST(WRAP)
-AC_SUBST(WRAP32)
-AC_SUBST(WRAPPROG)
 AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
@@ -150,6 +144,11 @@ AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(PRINTLIBS)
 AC_SUBST(AUTHLIBS)
+AC_SUBST(SHLIB_PROGS)
+AC_SUBST(SMBWRAPPER)
+AC_SUBST(EXTRA_BIN_PROGS)
+AC_SUBST(EXTRA_SBIN_PROGS)
+AC_SUBST(EXTRA_ALL_TARGETS)
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -737,9 +736,7 @@ fi
 # Check if we have execl, if not we need to compile smbrun.
 AC_CHECK_FUNCS(execl)
 if test x"$ac_cv_func_execl" = x"no"; then
-    RUNPROG="bin/smbrun"
-else
-    RUNPROG=""
+    EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbrun"
 fi
 
 AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
@@ -1908,6 +1905,8 @@ AC_ARG_WITH(smbwrapper,
 	   WRAP=""
 	   WRAP32=""
 	fi
+	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WRAPPROG $WRAP $WRAP32"
+	SMBWRAPPER="$WRAPPROG $WRAP $WRAP32"
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1958,7 +1957,7 @@ with_ads_support=yes
 AC_MSG_CHECKING([whether to use Active Directory])
 
 AC_ARG_WITH(ads,
-[  --with-ads              Active Directory support (default yes)],
+[   --with-ads  Active Directory support (default yes)],
 [ case "$withval" in
     no)
 	with_ads_support=no
@@ -2058,7 +2057,7 @@ with_ldap_support=yes
 AC_MSG_CHECKING([whether to use LDAP])
 
 AC_ARG_WITH(ldap,
-[  --with-ldap             LDAP support (default yes)],
+[   --with-ldap  LDAP support (default yes)],
 [ case "$withval" in
     no)
 	with_ldap_support=no
@@ -2106,9 +2105,9 @@ AC_SUBST(MODULE_XML)
 
 #################################################
 # check for automount support
-AC_MSG_CHECKING(whether to use AUTOMOUNT)
+AC_MSG_CHECKING(whether to use automount)
 AC_ARG_WITH(automount,
-[  --with-automount        Include AUTOMOUNT support (default=no)],
+[  --with-automount        Include automount support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -2123,16 +2122,16 @@ AC_ARG_WITH(automount,
 
 #################################################
 # check for smbmount support
-AC_MSG_CHECKING(whether to use SMBMOUNT)
+AC_MSG_CHECKING(whether to use smbmount)
 AC_ARG_WITH(smbmount,
-[  --with-smbmount         Include SMBMOUNT (Linux only) support (default=no)],
+[  --with-smbmount         Include smbmount (Linux only) support (default=no)],
 [ case "$withval" in
   yes)
 	case "$host_os" in
 	*linux*)
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(WITH_SMBMOUNT,1,[Whether to build smbmount])
-		MPROGS="bin/smbmount bin/smbmnt bin/smbumount"
+		EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbmount bin/smbmnt bin/smbumount"
 		;;
 	*)
 		AC_MSG_ERROR(not on a linux system!)
@@ -2141,11 +2140,9 @@ AC_ARG_WITH(smbmount,
     ;;
   *)
     AC_MSG_RESULT(no)
-    MPROGS=
     ;;
   esac ],
   AC_MSG_RESULT(no)
-  MPROGS=
 )
 
 
@@ -2185,12 +2182,10 @@ AC_ARG_WITH(pam_smbpass,
 
        if test x$PICFLAG = x; then
           AC_MSG_RESULT([No support for PIC code - disabling pam_smbpass])
-          PAM_MOD=""
        elif test x$ac_cv_lib_pam_pam_get_data = xno; then
           AC_MSG_RESULT([No libpam found -- disabling pam_smbpass])
-          PAM_MOD=""
        else
-          PAM_MOD="bin/pam_smbpass.so"
+          SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.so"
        fi
     ;;
   *)
@@ -2240,7 +2235,7 @@ fi
 # check for a LDAP password database configuration backwards compatibility
 AC_MSG_CHECKING(whether to use LDAP SAM 2.2 compatible configuration)
 AC_ARG_WITH(ldapsam,
-[  --with-ldapsam          Include LDAP SAM 2.2 compatible configuration (default=no)],
+[  --with-ldapsam           Include LDAP SAM 2.2 compatible configuration (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -2757,7 +2752,7 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)])
 with_sendfile_support=yes
 AC_MSG_CHECKING(whether to check to support sendfile)
 AC_ARG_WITH(sendfile-support,
-[  --with-sendfile-support Check for sendfile support (default=yes)],
+[  --with-sendfile-support      Check for sendfile support (default=yes)],
 [ case "$withval" in
   yes)
 
@@ -2981,8 +2976,7 @@ samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
 
 #################################################
 # Check whether winbind is supported on this platform.  If so we need to
-# build and install client programs (WINBIND_TARGETS), sbin programs
-# (WINBIND_STARGETS) and shared libraries (WINBIND_LTARGETS).
+# build and install client programs, sbin programs and shared libraries
 
 AC_MSG_CHECKING(whether to build winbind)
 
@@ -3006,6 +3000,9 @@ case "$host_os" in
 		winbind_no_reason=", unsupported on $host_os"
 		;;
 esac
+
+AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
+AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 
 # Check the setting of --with-winbindd
 
@@ -3034,36 +3031,21 @@ fi
 
 # Display test results
 
-WINBIND_TARGETS=""
-WINBIND_STARGETS=""
-WINBIND_LTARGETS=""
-WINBIND_PAM_PROGS=""
-
 if test x"$HAVE_WINBIND" = x"yes"; then
         AC_MSG_RESULT(yes)
 	AC_DEFINE(WITH_WINBIND,1,[Whether to build winbind])
 
-	WINBIND_TARGETS="bin/wbinfo"
-	WINBIND_STARGETS="bin/winbindd"
+	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo"
+	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd"
         if test x"$BLDSHARED" = x"true"; then
-		WINBIND_LTARGETS="nsswitch/libnss_winbind.so"
+		SHLIB_PROGS="$SHLIB_PROGS nsswitch/libnss_winbind.so"
 		if test x"$with_pam" = x"yes"; then
-			WINBIND_PAM_TARGETS="nsswitch/pam_winbind.so"
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.so"
 		fi
 	fi
 else
         AC_MSG_RESULT(no$winbind_no_reason)
 fi
-
-
-# Substitution time!
-
-AC_SUBST(WINBIND_TARGETS)
-AC_SUBST(WINBIND_STARGETS)
-AC_SUBST(WINBIND_LTARGETS)
-AC_SUBST(WINBIND_PAM_TARGETS)
-AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
-AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 
 # Solaris has some extra fields in struct passwd that need to be
 # initialised otherwise nscd crashes.  Unfortunately autoconf < 2.50
@@ -3132,11 +3114,22 @@ AC_SUBST(FLAGS1)
 # though they can coexist in different directories.)  In the future
 # this might make the Python stuff be built by default.
 
+# If you don't specify --with-python, we assume "python" anyhow,
+# because the extensions are not built until you specifically "make
+# python_ext".  --without-python turns them off.  Perhaps in the
+# future --with-python should make them automatically built by make
+# all.
+
+PYTHON=python
+
 AC_ARG_WITH(python,
 [  --with-python=PYTHONNAME  build Python libraries],
 [ case "${withval-python}" in
   yes)
-	PYTHON=python
+	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS python_ext"
+	;;
+  no)
+	PYTHON=
 	;;
   *)
 	PYTHON=${withval-python}
