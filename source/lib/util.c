@@ -4845,3 +4845,26 @@ void zero_free(void *p, size_t size)
 	free(p);
 }
 
+
+/*****************************************************************
+set our open file limit to the max and return the limit
+*****************************************************************/  
+int set_maxfiles(void)
+{
+#if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
+	struct rlimit rlp;
+	getrlimit(RLIMIT_NOFILE, &rlp);
+	/* Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
+	 * account for the extra fd we need 
+	 * as well as the log files and standard
+	 * handles etc.  */
+	rlp.rlim_cur = rlp.rlim_max;
+	setrlimit(RLIMIT_NOFILE, &rlp);
+	getrlimit(RLIMIT_NOFILE, &rlp);
+	return rlp.rlim_cur;
+#else
+	/* just guess ... */
+	return 1024;
+#endif
+}
+

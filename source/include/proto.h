@@ -347,6 +347,7 @@ char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
+int set_maxfiles(void);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 

@@ -202,38 +202,19 @@ initialise file structures
 
 void file_init(void)
 {
-    real_max_open_files = lp_max_open_files();
+	int real_max_open_files, lim;
 
-#if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
-	{
-		struct rlimit rlp;
-		getrlimit(RLIMIT_NOFILE, &rlp);
-		/* Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
-		 * account for the extra fd we need 
-		 * as well as the log files and standard
-		 * handles etc.  */
-		rlp.rlim_cur = (real_max_open_files+MAX_OPEN_FUDGEFACTOR>rlp.rlim_max)? 
-			rlp.rlim_max:real_max_open_files+MAX_OPEN_FUDGEFACTOR;
-		setrlimit(RLIMIT_NOFILE, &rlp);
-		getrlimit(RLIMIT_NOFILE, &rlp);
-        if(rlp.rlim_cur != (real_max_open_files + MAX_OPEN_FUDGEFACTOR))
-          DEBUG(0,("file_init: Maximum number of open files requested per session \
-was %d, actual files available  per session = %d\n", 
-                real_max_open_files, (int)rlp.rlim_cur - MAX_OPEN_FUDGEFACTOR ));
+	lim = set_maxfiles();
+	lim = MIN(lim, lp_max_open_files());
 
-        DEBUG(2,("Maximum number of open files per session is %d\n", 
-              (int)rlp.rlim_cur - MAX_OPEN_FUDGEFACTOR));
-
-        real_max_open_files = (int)rlp.rlim_cur - MAX_OPEN_FUDGEFACTOR;
-	}
-#endif
-
+	real_max_open_files = lim - MAX_OPEN_FUDGEFACTOR;
+	
 	file_bmap = bitmap_allocate(real_max_open_files);
-
+	
 	if (!file_bmap) {
 		exit_server("out of memory in file_init");
 	}
-
+	
 	/*
 	 * Ensure that pipe_handle_oppset is set correctly.
 	 */
