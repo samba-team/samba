@@ -17,6 +17,7 @@ kadm5include_HEADERS = kadm5_err.h admin.h private.h
 install-build-headers::
 	@foo='$(kadm5include_HEADERS)'; \
 	for f in $$foo; do \
+		f=`basename $$f`; \
 		if test -f "$(srcdir)/$$f"; then file="$(srcdir)/$$f"; \
 		else file="$$f"; fi; \
 		if cmp -s  $$file $(buildkadm5include)/$$f 2> /dev/null ; then \
@@ -102,3 +103,7 @@ CLEANFILES = kadm5_err.c kadm5_err.h
 $(libkadm5srv_la_OBJECTS): kadm5_err.h
 
 client_glue.lo server_glue.lo: $(srcdir)/common_glue.c
+
+# to help stupid solaris make
+
+kadm5_err.h: kadm5_err.et
