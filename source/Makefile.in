@@ -743,7 +743,8 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_util.o  \
 		nsswitch/winbindd_cache.o \
 		nsswitch/winbindd_pam.o   \
-		nsswitch/winbindd_sid.o
+		nsswitch/winbindd_sid.o   \
+		nsswitch/winbindd_misc.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) \
