@@ -200,7 +200,6 @@ typedef struct
 	int lpqcachetime;
 	int iMaxSmbdProcesses;
 	BOOL bDisableSpoolss;
-	int iTotalPrintJobs;
 	int syslog;
 	int os_level;
 	int enhanced_browsing;
@@ -1374,7 +1373,6 @@ static void init_globals(void)
 	Globals.lpqcachetime = 10;
 	Globals.bDisableSpoolss = False;
 	Globals.iMaxSmbdProcesses = 0;/* no limit specified */
-	Globals.iTotalPrintJobs = 0;  /* no limit specified */
 	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
