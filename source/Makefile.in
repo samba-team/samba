@@ -196,6 +196,7 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
+		smbwrapper/realcalls.o \
 		$(LIBSMB_OBJ) $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(LIB_OBJ)
 
