@@ -5,6 +5,7 @@
 
    Copyright (C) by Tim Potter 2000-2002
    Copyright (C) Andrew Tridgell 2002
+   Copyright (C) Jelmer Vernooij 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,7 +32,6 @@ BOOL opt_dual_daemon = False;
 static BOOL reload_services_file(BOOL test)
 {
 	BOOL ret;
-	pstring logfile;
 
 	if (lp_loaded()) {
 		pstring fname;
@@ -43,38 +43,13 @@ static BOOL reload_services_file(BOOL test)
 		}
 	}
 
-	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
-
 	reopen_logs();
 	ret = lp_load(dyn_CONFIGFILE,False,False,True);
-
-	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
 
 	reopen_logs();
 	load_interfaces();
 
 	return(ret);
-}
-
-/*******************************************************************
- Print out all talloc memory info.
-********************************************************************/
-
-void return_all_talloc_info(int msg_type, pid_t src_pid, void *buf, size_t len)
-{
-	TALLOC_CTX *ctx = talloc_init("info context");
-	char *info = NULL;
-
-	if (!ctx)
-		return;
-
-	info = talloc_describe_all(ctx);
-	if (info)
-		DEBUG(10,(info));
-	message_send_pid(src_pid, MSG_TALLOC_USAGE, info, info ? strlen(info) + 1: 0, True);
-	talloc_destroy(ctx);
 }
 
 #if DUMP_CORE
@@ -812,27 +787,23 @@ BOOL winbind_setup_common(void)
 
 struct winbindd_state server_state;   /* Server state information */
 
-
-static void usage(void)
+int main(int argc, char **argv)
 {
-	printf("Usage: winbindd [options]\n");
-        printf("\t-F                daemon in foreground mode\n");
-        printf("\t-S                log to stdout\n");
-	printf("\t-i                interactive mode\n");
-	printf("\t-B                dual daemon mode\n");
-	printf("\t-n                disable cacheing\n");
-	printf("\t-d level          set debug level\n");
-	printf("\t-s configfile     choose smb.conf location\n");
-	printf("\t-h                show this help message\n");
-}
-
- int main(int argc, char **argv)
-{
-	extern BOOL AllowDebugChange;
 	pstring logfile;
-	BOOL interactive = False;
-	BOOL Fork = True;
-	BOOL log_stdout = False;
+	static BOOL interactive = False;
+	static BOOL Fork = True;
+	static BOOL log_stdout = False;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
+		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
+		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
+		{ "dual-daemon", 'B', POPT_ARG_VAL, &opt_dual_daemon, True, "Dual daemon mode" },
+		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, False, "Disable caching" },
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
+	};
+	poptContext pc;
 	int opt;
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
@@ -843,12 +814,11 @@ static void usage(void)
 
 	fault_setup((void (*)(void *))fault_quit );
 
-	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
-
 	/* Initialise for running in non-root mode */
 
 	sec_init();
+
+	set_remote_machine_name("winbindd", False);
 
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
@@ -857,56 +827,24 @@ static void usage(void)
 
 	/* Initialise samba/rpc client stuff */
 
-	while ((opt = getopt(argc, argv, "FSid:s:nhB")) != EOF) {
-		switch (opt) {
+	pc = poptGetContext("winbindd", argc, (const char **)argv, long_options,
+						POPT_CONTEXT_KEEP_FIRST);
 
-		case 'F':
-			Fork = False;
-			break;
-		case 'S':
-			log_stdout = True;
-			break;
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
 			/* Don't become a daemon */
 		case 'i':
 			interactive = True;
 			log_stdout = True;
 			Fork = False;
 			break;
-
-			/* dual daemon system */
-		case 'B':
-			opt_dual_daemon = True;
-			break;
-
-			/* disable cacheing */
-		case 'n':
-			opt_nocache = True;
-			break;
-
-			/* Run with specified debug level */
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
-			AllowDebugChange = False;
-			break;
-
-			/* Load a different smb.conf file */
-		case 's':
-			pstrcpy(dyn_CONFIGFILE,optarg);
-			break;
-
-		case 'h':
-			usage();
-			exit(0);
-
-		default:
-			printf("Unknown option %c\n", (char)opt);
-			exit(1);
 		}
 	}
 
+
 	if (log_stdout && Fork) {
 		printf("Can't log to stdout (-S) unless daemon is in foreground +(-F) or interactive (-i)\n");
-		usage();
+		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
 
@@ -928,11 +866,10 @@ static void usage(void)
 	if (!init_names())
 		exit(1);
 
-	if (!interactive) {
+	if (!interactive)
 		become_daemon(Fork);
-		pidfile_create("winbindd");
-	}
 
+	pidfile_create("winbindd");
 
 #if HAVE_SETPGID
 	/*
@@ -957,9 +894,8 @@ static void usage(void)
 		DEBUG(0, ("unable to initialise messaging system\n"));
 		exit(1);
 	}
-
+	poptFreeContext(pc);
 	register_msg_pool_usage();
-	message_register(MSG_REQ_TALLOC_USAGE, return_all_talloc_info);
 
 	/* Loop waiting for requests */
 
