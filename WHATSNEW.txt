@@ -14,11 +14,11 @@ There have been no changes to smb.conf(5) parameters.
 Changes in 2.2.6pre1
 --------------------
 
-1)  Fixed several compiler warnings caused by the use const parameters
-2)  Fixed a hand in the main smbd process caused by an EINTR in the
+1)  Fixed several compiler warnings caused by the use of const parameters
+2)  Fixed a hang in the main smbd process caused by an EINTR in the
     wrong place
 3)  Fixed string substitutions to accept a length for sanity checks
-4)  Fixed 17-bit length fiedl in nmb header
+4)  Fixed 17-bit length field in nmb header
 5)  Removed non-portable inline declaration for functions
 6)  Performance fix for including files with an smb.conf variable in the
     path name
