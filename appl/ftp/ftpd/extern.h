@@ -71,7 +71,7 @@ void	fatal(char *);
 int	filename_check(char *);
 int	ftpd_pclose(FILE *);
 FILE   *ftpd_popen(char *, char *, int, int);
-char   *getline(char *, int);
+char   *ftpd_getline(char *, int);
 void	ftpd_logwtmp(char *, char *, char *);
 void	lreply(int, const char *, ...)
 #ifdef __GNUC__
