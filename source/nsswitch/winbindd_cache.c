@@ -94,7 +94,6 @@ static void fill_cache(char *domain_name, char *cache_type,
                        struct acct_info *sam_entries,
                        int num_sam_entries)
 {
-    TDB_DATA data, key;
     fstring keystr;
 
     if (lp_winbind_cache_time() == 0) return;
@@ -108,16 +107,11 @@ static void fill_cache(char *domain_name, char *cache_type,
 
     /* Store data as a mega-huge chunk in the tdb */
 
-    data.dptr = (void *)sam_entries;
-    data.dsize = sizeof(struct acct_info) * num_sam_entries;
-
     slprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type,
              domain_name);
 
-    key.dptr = keystr;
-    key.dsize = strlen(keystr);
-
-    tdb_store(cache_tdb, key, data, TDB_REPLACE);
+    tdb_store_by_string(cache_tdb, keystr, sam_entries, 
+                        sizeof(struct acct_info) * num_sam_entries);
 
     /* Stamp cache with current time */
 
@@ -144,7 +138,6 @@ void winbindd_fill_group_cache(char *domain_name,
 
 static void fill_cache_entry(char *domain, char *name, void *buf, int len)
 {
-    TDB_DATA key, data;
     fstring keystr;
 
     /* Create key for store */
@@ -153,15 +146,9 @@ static void fill_cache_entry(char *domain, char *name, void *buf, int len)
 
     DEBUG(4, ("filling cache entry %s\n", keystr));
 
-    key.dptr = keystr;
-    key.dsize = strlen(keystr) + 1;
-
-    data.dptr = buf;
-    data.dsize = len;
-
     /* Store it */
 
-    tdb_store(cache_tdb, key, data, TDB_REPLACE);
+    tdb_store_by_string(cache_tdb, keystr, buf, len);
 }
 
 /* Fill a user info cache entry */
@@ -193,7 +180,6 @@ void winbindd_fill_group_cache_entry(char *domain, char *group_name,
                                      struct winbindd_gr *gr, void *extra_data,
                                      int extra_data_len)
 {
-        TDB_DATA key, data;
         fstring keystr;
 
         if (lp_winbind_cache_time() == 0) return;
@@ -207,13 +193,7 @@ void winbindd_fill_group_cache_entry(char *domain, char *group_name,
 
         slprintf(keystr, sizeof(keystr), "%s/%s DATA", domain, group_name);
 
-        key.dptr = keystr;
-        key.dsize = strlen(keystr) + 1;
-
-        data.dptr = extra_data;
-        data.dsize = extra_data_len;
-
-        tdb_store(cache_tdb, key, data, TDB_REPLACE);
+        tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
 }
 
 /* Fill a group info cache entry */
@@ -222,9 +202,9 @@ void winbindd_fill_gid_cache_entry(char *domain, gid_t gid,
                                      struct winbindd_gr *gr, void *extra_data,
                                      int extra_data_len)
 {
-        TDB_DATA key, data;
         fstring keystr;
 	fstring gidstr;
+
 	slprintf(gidstr, sizeof(gidstr), "#%u", (unsigned)gid);
 
         if (lp_winbind_cache_time() == 0) return;
@@ -238,13 +218,7 @@ void winbindd_fill_gid_cache_entry(char *domain, gid_t gid,
 
         slprintf(keystr, sizeof(keystr), "%s/%s DATA", domain, gidstr);
 
-        key.dptr = keystr;
-        key.dsize = strlen(keystr) + 1;
-
-        data.dptr = extra_data;
-        data.dsize = extra_data_len;
-
-        tdb_store(cache_tdb, key, data, TDB_REPLACE);
+        tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
 }
 
 /* Expire information in cache */
@@ -271,7 +245,7 @@ void expire_cache(char *domain_name, char *cache_type)
 static BOOL fetch_cache(char *domain_name, char *cache_type,
                         struct acct_info **sam_entries, int *num_sam_entries)
 {
-        TDB_DATA data, key;
+        TDB_DATA data;
         fstring keystr;
 
         if (lp_winbind_cache_time() == 0) return False;
@@ -292,12 +266,9 @@ static BOOL fetch_cache(char *domain_name, char *cache_type,
         slprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type,
                  domain_name);
 	
-        key.dptr = keystr;
-        key.dsize = strlen(keystr);
-	
         /* Fetch cache information */
 	
-        data = tdb_fetch(cache_tdb, key);
+        data = tdb_fetch_by_string(cache_tdb, keystr);
 	
         if (!data.dptr) return False;
 
@@ -338,19 +309,16 @@ BOOL winbindd_fetch_group_cache(char *domain_name,
 
 static BOOL fetch_cache_entry(char *domain, char *name, void *buf, int len)
 {
-    TDB_DATA key, data;
+    TDB_DATA data;
     fstring keystr;
     
     /* Create key for lookup */
     
     slprintf(keystr, sizeof(keystr), "%s/%s", domain, name);
     
-    key.dptr = keystr;
-    key.dsize = strlen(keystr) + 1;
-    
     /* Look up cache entry */
     
-    data = tdb_fetch(cache_tdb, key);
+    data = tdb_fetch_by_string(cache_tdb, keystr);
     
     if (data.dptr) {
         
@@ -406,7 +374,7 @@ BOOL winbindd_fetch_group_cache_entry(char *domain, char *group,
                                       struct winbindd_gr *gr,
                                       void **extra_data, int *extra_data_len)
 {
-        TDB_DATA key, data;
+        TDB_DATA data;
         fstring keystr;
 
         if (lp_winbind_cache_time() == 0) return False;
@@ -420,10 +388,7 @@ BOOL winbindd_fetch_group_cache_entry(char *domain, char *group,
         /* Fetch extra data */
         slprintf(keystr, sizeof(keystr), "%s/%s DATA", domain, group);
 
-        key.dptr = keystr;
-        key.dsize = strlen(keystr) + 1;
-
-        data = tdb_fetch(cache_tdb, key);
+        data = tdb_fetch_by_string(cache_tdb, keystr);
 
         if (!data.dptr) return False;
 
@@ -442,7 +407,7 @@ BOOL winbindd_fetch_gid_cache_entry(char *domain, gid_t gid,
 				    struct winbindd_gr *gr,
 				    void **extra_data, int *extra_data_len)
 {
-        TDB_DATA key, data;
+        TDB_DATA data;
         fstring keystr;
 	fstring gidstr;
 	slprintf(gidstr, sizeof(gidstr), "#%u", (unsigned)gid);
@@ -458,10 +423,7 @@ BOOL winbindd_fetch_gid_cache_entry(char *domain, gid_t gid,
         /* Fetch extra data */
         slprintf(keystr, sizeof(keystr), "%s/%s DATA", domain, gidstr);
 
-        key.dptr = keystr;
-        key.dsize = strlen(keystr) + 1;
-
-        data = tdb_fetch(cache_tdb, key);
+        data = tdb_fetch_by_string(cache_tdb, keystr);
 
         if (!data.dptr) return False;
 
