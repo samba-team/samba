@@ -60,7 +60,17 @@ static void populate_printers(void)
 			if (((tmp = strchr(buf, ' ')) == NULL) ||
 			    ((tmp = strchr(++tmp, ' ')) == NULL))
 				continue;
-			name = ++tmp;
+
+			/*
+			 * In case we're only at the "for ".
+			 */
+
+            if(!strncmp("for ",++tmp,4))
+            {
+				tmp=strchr(tmp, ' ');
+				tmp++;
+			}
+			name = tmp;
 
 			/* truncate the ": ..." */
 			if ((tmp = strchr(name, ':')) != NULL)

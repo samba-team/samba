@@ -1090,7 +1090,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
     {
       SMB_BIG_UINT dfree,dsize,bsize;
       data_len = 18;
-      sys_disk_free(".",&bsize,&dfree,&dsize);	
+      sys_disk_free(".",False,&bsize,&dfree,&dsize);	
       SIVAL(pdata,l1_idFileSystem,st.st_dev);
       SIVAL(pdata,l1_cSectorUnit,bsize/512);
       SIVAL(pdata,l1_cUnit,dsize);
@@ -1163,7 +1163,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
     {
       SMB_BIG_UINT dfree,dsize,bsize;
       data_len = 24;
-      sys_disk_free(".",&bsize,&dfree,&dsize);	
+      sys_disk_free(".",False,&bsize,&dfree,&dsize);	
       SBIG_UINT(pdata,0,dsize);
       SBIG_UINT(pdata,8,dfree);
       SIVAL(pdata,16,bsize/512);

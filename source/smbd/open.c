@@ -486,7 +486,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     pstrcpy(dname,fname);
     p = strrchr(dname,'/');
     if (p) *p = 0;
-    if (sys_disk_free(dname,&dum1,&dum2,&dum3) < (SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
+    if (sys_disk_free(dname,False,&dum1,&dum2,&dum3) < (SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
       int err;
       if(fd_attempt_close(fd_ptr, &err) == 0)
         dos_unlink(fname);

@@ -1054,7 +1054,7 @@ int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   int outsize = 0;
   SMB_BIG_UINT dfree,dsize,bsize;
   
-  sys_disk_free(".",&bsize,&dfree,&dsize);
+  sys_disk_free(".",True,&bsize,&dfree,&dsize);
   
   outsize = set_message(outbuf,5,0,True);
   
