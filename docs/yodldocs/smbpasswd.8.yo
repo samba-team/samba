@@ -1,4 +1,4 @@
-mailto(samba-bugs@samba.org) 
+mailto(samba@samba.org) 
 
 manpage(smbpasswd htmlcommand((8)))(8)(23 Oct 1998)(Samba)(SAMBA)
 
@@ -8,7 +8,7 @@ manpagename(smbpasswd)(change a users SMB password)
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(smbpasswd) [link(-a)(minusa)] [link(-d)(minusd)] [link(-e)(minuse)] [link(-D debug level)(minusD)] [link(-n)(minusn)] [link(-r remote_machine)(minusr)] [link(-R name resolve order)(minusR)] [link(-m)(minusm)] [link(-j DOMAIN)(minusj)] [link(-U username)(minusU)] [link(-h)(minush)] [link(-s)(minuss)] link(username)(username)
+bf(smbpasswd) [link(-a)(minusa)] [link(-x)(minusx)] [link(-d)(minusd)] [link(-e)(minuse)] [link(-D debug level)(minusD)] [link(-n)(minusn)] [link(-r remote_machine)(minusr)] [link(-R name resolve order)(minusR)] [link(-m)(minusm)] [link(-j DOMAIN)(minusj)] [link(-U username)(minusU)] [link(-h)(minush)] [link(-s)(minuss)] link(username)(username)
 
 label(DESCRIPTION)
 manpagedescription()
@@ -64,6 +64,13 @@ url(bf(smbpasswd))(smbpasswd.5.html) file and it is treated like a
 regular change password command. Note that the user to be added
 bf(must) already exist in the system password file (usually /etc/passwd)
 else the request to add the user will fail.
+
+This option is only available when running bf(smbpasswd) as
+root.
+
+label(minusx)
+dit(bf(-x)) This option specifies that the username following should
+be deleted from the local url(bf(smbpasswd))(smbpasswd.5.html) file.
 
 This option is only available when running bf(smbpasswd) as
 root.
@@ -296,7 +303,7 @@ label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
-Andrew Tridgell email(samba-bugs@samba.org). Samba is now developed
+Andrew Tridgell email(samba@samba.org). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 
@@ -305,7 +312,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 url(bf(ftp://ftp.icce.rug.nl/pub/unix/))(ftp://ftp.icce.rug.nl/pub/unix/))
 and updated for the Samba2.0 release by Jeremy Allison.
-email(samba-bugs@samba.org).
+email(samba@samba.org).
 
 See url(bf(samba (7)))(samba.7.html) to find out how to get a full
 list of contributors and details on how to submit bug reports,
