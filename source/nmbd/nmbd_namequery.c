@@ -108,7 +108,7 @@ static void query_name_response( struct subnet_record   *subrec,
       dbgtext( "Multiple (%d) responses ", rrec->num_msgs );
       dbgtext( "received for a query on subnet %s ", subrec->subnet_name );
       dbgtext( "for name %s.\nThis response ", nmb_namestr(question_name) );
-      dbgtext( "was from IP %s, reporting", inet_ntoa(p->ip) );
+      dbgtext( "was from IP %s, reporting ", inet_ntoa(p->ip) );
       dbgtext( "an IP address of %s.\n", inet_ntoa(answer_ip) );
       }
 
