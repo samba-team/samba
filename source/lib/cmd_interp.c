@@ -117,7 +117,7 @@ static uint32 num_commands = 0;
  ****************************************************************************/
 void add_command_set(const struct command_set *cmds)
 {
-	while (cmds->fn != NULL)
+	while (! ((cmds->fn==NULL) && (strlen(cmds->name)==0)))
 	{
 		add_cmd_set_to_array(&num_commands, &commands, cmds);
 		cmds++;
@@ -132,16 +132,14 @@ static struct command_set general_commands[] = {
 	 * maintenance
 	 */
 
-	{
-	 "set",
-	 cmd_set,
+	{"General", NULL, NULL, {NULL, NULL}},
+
+	{ "set", cmd_set,
 	 "run rpcclient inside rpcclient (change options etc.)",
 	 {NULL, NULL}
 	},
 
-	{
-	 "use",
-	 cmd_use,
+	{ "use", cmd_use,
 	 "net use and net view",
 	 {NULL, NULL}
 	},
@@ -150,27 +148,19 @@ static struct command_set general_commands[] = {
 	 * bye bye
 	 */
 
-	{
-	 "quit",
-	 cmd_quit,
+	{ "quit", cmd_quit,
 	 "logoff the server",
 	 {NULL, NULL}
 	},
-	{
-	 "q",
-	 cmd_quit,
+	{ "q", cmd_quit,
 	 "logoff the server",
 	 {NULL, NULL}
 	},
-	{
-	 "exit",
-	 cmd_quit,
+	{ "exit", cmd_quit,
 	 "logoff the server",
 	 {NULL, NULL}
 	},
-	{
-	 "bye",
-	 cmd_quit,
+	{ "bye", cmd_quit,
 	 "logoff the server",
 	 {NULL, NULL}
 	},
@@ -179,15 +169,11 @@ static struct command_set general_commands[] = {
 	 * eek!
 	 */
 
-	{
-	 "help",
-	 cmd_help,
+	{ "help", cmd_help,
 	 "[command] give help on a command",
 	 {NULL, NULL}
 	},
-	{
-	 "?",
-	 cmd_help,
+	{ "?", cmd_help,
 	 "[command] give help on a command",
 	 {NULL, NULL}
 	},
@@ -196,9 +182,7 @@ static struct command_set general_commands[] = {
 	 * shell
 	 */
 
-	{
-	 "!",
-	 NULL,
+	{ "!", NULL,
 	 "run a shell command on the local system",
 	 {NULL, NULL}
 	},
@@ -207,10 +191,7 @@ static struct command_set general_commands[] = {
 	 * oop!
 	 */
 
-	{
-	 "",
-	 NULL,
-	 NULL,
+	{ "", NULL, NULL,
 	 {NULL, NULL}
 	}
 };
@@ -242,31 +223,29 @@ static uint32 cmd_help(struct client_info *info, int argc, char *argv[])
 {
 	int i = 0, j = 0;
 
-	if (argc > 1)
+	/* get help on a specific command */
+	if (argc > 0)
 	{
 		if ((i = process_tok(argv[1])) >= 0)
 		{
 			fprintf(out_hnd, "HELP %s:\n\t%s\n\n",
 				commands[i]->name, commands[i]->description);
 		}
+
+		return 0;
 	}
-	else
+
+	/* Print out the list of available commands */
+	for (i = 0; i < num_commands; i++)
 	{
-		for (i = 0; i < num_commands; i++)
-		{
-			fprintf(out_hnd, "%-15s", commands[i]->name);
-			j++;
-			if (j == 5)
-			{
-				fprintf(out_hnd, "\n");
-				j = 0;
-			}
-		}
-		if (j != 0)
-		{
-			fprintf(out_hnd, "\n");
-		}
+		if (commands[i]->fn == NULL)
+			fprintf (out_hnd, "\n");
+		else
+			fprintf (out_hnd, "\t");
+
+		fprintf(out_hnd, "%s\n", commands[i]->name);
 	}
+
 	return 0;
 }
 
