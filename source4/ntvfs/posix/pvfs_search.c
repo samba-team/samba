@@ -23,6 +23,17 @@
 #include "include/includes.h"
 #include "vfs_posix.h"
 
+
+/*
+  destroy an open search
+*/
+static int pvfs_search_destructor(void *ptr)
+{
+	struct pvfs_search_state *search = ptr;
+	idr_remove(search->pvfs->idtree_search, search->handle);
+	return 0;
+}
+
 /*
   fill in a single search result for a given info level
 */
@@ -224,32 +235,6 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/*
-  return the next available search handle
-*/
-static NTSTATUS pvfs_next_search_handle(struct pvfs_state *pvfs, uint16_t *handle, 
-					uint_t max_handles)
-{
-	struct pvfs_search_state *search;
-
-	if (pvfs->search.num_active_searches >= max_handles) {
-		return NT_STATUS_INSUFFICIENT_RESOURCES;
-	}
-
-	(*handle) = (pvfs->search.next_search_handle) & (max_handles-1);
-again:
-	for (search=pvfs->search.open_searches;search;search=search->next) {
-		if (*handle == search->handle) {
-			*handle = ((*handle)+1) & (max_handles-1);
-			goto again;
-		} 
-	}
-	pvfs->search.next_search_handle = ((*handle)+1) & (max_handles-1);
-
-	return NT_STATUS_OK;
-}
-
-
 /* 
    list files in a directory matching a wildcard pattern - old SMBsearch interface
 */
@@ -266,6 +251,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	const char *pattern;
 	NTSTATUS status;
 	struct pvfs_filename *name;
+	int id;
 
 	search_attrib = io->search_first.in.search_attrib;
 	pattern       = io->search_first.in.pattern;
@@ -301,14 +287,18 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 
 	/* we need to give a handle back to the client so it
 	   can continue a search */
-	status = pvfs_next_search_handle(pvfs, &search->handle, 0x100);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	id = idr_get_new(pvfs->idtree_search, search, 0x100);
+	if (id == -1) {
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
-	
+
+	search->pvfs = pvfs;
+	search->handle = id;
 	search->dir = dir;
 	search->current_index = 0;
 	search->search_attrib = search_attrib;
+
+	talloc_set_destructor(search, pvfs_search_destructor);
 
 	status = pvfs_search_fill(pvfs, req, io->search_first.in.max_count, search, io->generic.level,
 				  &reply_count, search_private, callback);
@@ -323,9 +313,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 		return STATUS_NO_MORE_FILES;
 	}
 
-	pvfs->search.num_active_searches++;
 	talloc_steal(pvfs, search);
-	DLIST_ADD(pvfs->search.open_searches, search);
 
 	return NT_STATUS_OK;
 }
@@ -346,11 +334,8 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	handle    = io->search_next.in.id.handle;
 	max_count = io->search_next.in.max_count;
 
-	for (search=pvfs->search.open_searches; search; search = search->next) {
-		if (search->handle == handle) break;
-	}
-	
-	if (!search) {
+	search = idr_find(pvfs->idtree_search, handle);
+	if (search == NULL) {
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -369,7 +354,6 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 
 	/* not matching any entries means end of search */
 	if (reply_count == 0) {
-		DLIST_REMOVE(pvfs->search.open_searches, search);
 		talloc_free(search);
 	}
 
@@ -392,6 +376,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	const char *pattern;
 	NTSTATUS status;
 	struct pvfs_filename *name;
+	int id;
 
 	if (io->generic.level >= RAW_SEARCH_SEARCH) {
 		return pvfs_search_first_old(ntvfs, req, io, search_private, callback);
@@ -430,16 +415,18 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	/* we need to give a handle back to the client so it
-	   can continue a search */
-	status = pvfs_next_search_handle(pvfs, &search->handle, 0x10000);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	id = idr_get_new(pvfs->idtree_search, search, 0x10000);
+	if (id == -1) {
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
-	
+
+	search->pvfs = pvfs;
+	search->handle = id;
 	search->dir = dir;
 	search->current_index = 0;
 	search->search_attrib = search_attrib;
+
+	talloc_set_destructor(search, pvfs_search_destructor);
 
 	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.level,
 				  &reply_count, search_private, callback);
@@ -463,9 +450,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	     io->t2ffirst.out.end_of_search)) {
 		talloc_free(search);
 	} else {
-		pvfs->search.num_active_searches++;
 		talloc_steal(pvfs, search);
-		DLIST_ADD(pvfs->search.open_searches, search);
 	}
 
 	return NT_STATUS_OK;
@@ -491,11 +476,8 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 
 	handle = io->t2fnext.in.handle;
 
-	for (search=pvfs->search.open_searches; search; search = search->next) {
-		if (search->handle == handle) break;
-	}
-	
-	if (!search) {
+	search = idr_find(pvfs->idtree_search, handle);
+	if (search == NULL) {
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -544,7 +526,6 @@ found:
 	if ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE) ||
 	    ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && 
 	     io->t2fnext.out.end_of_search)) {
-		DLIST_REMOVE(pvfs->search.open_searches, search);
 		talloc_free(search);
 	}
 
@@ -565,16 +546,12 @@ NTSTATUS pvfs_search_close(struct ntvfs_module_context *ntvfs,
 		handle = io->findclose.in.handle;
 	}
 
-	for (search=pvfs->search.open_searches; search; search = search->next) {
-		if (search->handle == handle) break;
-	}
-	
-	if (!search) {
+	search = idr_find(pvfs->idtree_search, handle);
+	if (search == NULL) {
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DLIST_REMOVE(pvfs->search.open_searches, search);
 	talloc_free(search);
 
 	return NT_STATUS_OK;

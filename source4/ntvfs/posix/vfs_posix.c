@@ -61,11 +61,10 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	char *base_directory;
 	NTSTATUS status;
 
-	pvfs = talloc_p(tcon, struct pvfs_state);
+	pvfs = talloc_zero_p(tcon, struct pvfs_state);
 	if (pvfs == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(pvfs);
 
 	/* for simplicity of path construction, remove any trailing slash now */
 	base_directory = talloc_strdup(pvfs, lp_pathname(tcon->service));
@@ -93,6 +92,18 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 				     pvfs->tcon->smb_conn->connection->messaging_ctx);
 	if (pvfs->brl_context == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* allocate the fnum id -> ptr tree */
+	pvfs->idtree_fnum = idr_init(pvfs);
+	if (pvfs->idtree_fnum == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* allocate the search handle -> ptr tree */
+	pvfs->idtree_search = idr_init(pvfs);
+	if (pvfs->idtree_search == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = pvfs_mangle_init(pvfs);
