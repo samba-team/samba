@@ -221,7 +221,7 @@ recv_conn (int sock, kx_context *kc,
 	 setjob(passwd->pw_uid, 0) == -1 ||
 #endif
 	 setuid(passwd->pw_uid)) {
-	 syslog(LOG_ERR, "%m");
+	 syslog(LOG_ERR, "setting uid/groups: %m");
 	 fatal (kc, sock, "cannot set uid");
      }
      syslog (LOG_INFO, "from %s(%s): %s -> %s",
@@ -622,7 +622,8 @@ doit_active (kx_context *kc,
 	child = fork ();
 	if (child < 0) {
 	    syslog (LOG_ERR, "fork: %m");
-	    return 1;
+	    if (errno != EAGAIN)
+		return 1;
 	} else if (child == 0) {
 	    return doit_conn (kc, sock, sock, flags, 1);
 	} else {
