@@ -97,7 +97,7 @@ Prints out the current Profile level returned by MSG_PROFILELEVEL
 void profilelevel_function(int msg_type, pid_t src, void *buf, size_t len)
 {
         int level;
-	char *s;
+	char *s=NULL;
         memcpy(&level, buf, sizeof(int));
 
 	if (level) {
@@ -175,7 +175,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params[])
 {
 	int i, n, v;
 	int mtype;
-	BOOL retval;
+	BOOL retval=False;
 	int debuglevel_class[DBGC_LAST];
 
 	mtype = parse_type(msg_name);

@@ -50,7 +50,7 @@ static void init_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, int snum)
 		
 	if (lp_print_ok(snum))
 		type = STYPE_PRINTQ;
-	if (strequal("IPC", lp_fstype(snum)))
+	if (strequal("IPC$", net_name) || strequal("ADMIN$", net_name))
 		type = STYPE_IPC;
 	if (net_name[len_net_name] == '$')
 		type |= STYPE_HIDDEN;
@@ -85,7 +85,7 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 		
 	if (lp_print_ok(snum))
 		type = STYPE_PRINTQ;
-	if (strequal("IPC", lp_fstype(snum)))
+	if (strequal("IPC$", net_name) || strequal("ADMIN$", net_name))
 		type = STYPE_IPC;
 	if (net_name[len_net_name] == '$')
 		type |= STYPE_HIDDEN;
@@ -1303,7 +1303,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
-		if ((ret = smbrun(command, NULL, NULL)) != 0) {
+		if ((ret = smbrun(command, NULL)) != 0) {
 			DEBUG(0,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));
 			return ERROR_ACCESS_DENIED;
 		}
@@ -1420,7 +1420,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
-	if ((ret = smbrun(command, NULL, NULL)) != 0) {
+	if ((ret = smbrun(command, NULL)) != 0) {
 		DEBUG(0,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
 		return ERROR_ACCESS_DENIED;
 	}
@@ -1487,7 +1487,7 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
-	if ((ret = smbrun(command, NULL, NULL)) != 0) {
+	if ((ret = smbrun(command, NULL)) != 0) {
 		DEBUG(0,("_srv_net_share_del: Running [%s] returned (%d)\n", command, ret ));
 		return ERROR_ACCESS_DENIED;
 	}

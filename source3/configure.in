@@ -250,8 +250,8 @@ case "$host_os" in
 esac
 AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h sys/security.h security/pam_appl.h)
-AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
-AC_CHECK_HEADERS(readline/history.h sys/capability.h syscall.h sys/syscall.h)
+AC_CHECK_HEADERS(stropts.h poll.h)
+AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h acl/acl.h)
 
 # For experimental utmp support (lastlog on some BSD-like systems)
@@ -359,14 +359,67 @@ fi
 
 
 ###############################################
-# test for where we get readline() from
-if test "$ac_cv_header_readline_h" = "yes" ||
-   test "$ac_cv_header_readline_readline_h" = "yes"; then
-  # we need to also pull in termcap for some systems to use readline
-  AC_CHECK_LIB(termcap,tgetent)
-  AC_CHECK_LIB(readline,rl_callback_handler_install)
-fi
+# Readline included by default unless explicitly asked not to
+test "${with_readline+set}" != "set" && with_readline=yes
 
+# test for where we get readline() from
+AC_MSG_CHECKING(whether to use readline)
+AC_ARG_WITH(readline,
+[  --with-readline[=DIR]   Look for readline include/libs in DIR
+  --without-readline      Don't include readline support],
+[  case "$with_readline" in
+  yes)
+    AC_MSG_RESULT(yes)
+
+    AC_CHECK_HEADERS(readline.h history.h readline/readline.h)
+    AC_CHECK_HEADERS(readline/history.h)
+
+    AC_CHECK_HEADERS(readline.h readline/readline.h,[
+      for termlib in ncurses curses termcap terminfo termlib; do
+       AC_CHECK_LIB(${termlib}, tgetent, [TERMLIBS="-l${termlib}"; break])
+      done
+      AC_CHECK_LIB(readline, rl_callback_handler_install,
+       [TERMLIBS="-lreadline $TERMLIBS"
+       AC_DEFINE(HAVE_LIBREADLINE)
+       break], [TERMLIBS=], $TERMLIBS)])
+    ;;
+  no)
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_RESULT(yes)
+
+    # Needed for AC_CHECK_HEADERS and AC_CHECK_LIB to look at
+    # alternate readline path
+    _ldflags=${LDFLAGS}
+    _cppflags=${CPPFLAGS}
+
+    # Add additional search path
+    LDFLAGS="-L$with_readline/lib $LDFLAGS"
+    CPPFLAGS="-I$with_readline/include $CPPFLAGS"
+
+    AC_CHECK_HEADERS(readline.h history.h readline/readline.h)
+    AC_CHECK_HEADERS(readline/history.h)
+
+    AC_CHECK_HEADERS(readline.h readline/readline.h,[
+      for termlib in ncurses curses termcap terminfo termlib; do
+       AC_CHECK_LIB(${termlib}, tgetent, [TERMLIBS="-l${termlib}"; break])
+      done
+      AC_CHECK_LIB(readline, rl_callback_handler_install,
+       [TERMLDFLAGS="-L$with_readline/lib"
+       TERMCPPFLAGS="-I$with_readline/include"
+       CPPFLAGS="-I$with_readline/include $CPPFLAGS"
+       TERMLIBS="-lreadline $TERMLIBS"
+       AC_DEFINE(HAVE_LIBREADLINE)
+       break], [TERMLIBS= CPPFLAGS=$_cppflags], $TERMLIBS)])
+
+    LDFLAGS=$_ldflags
+    ;;
+  esac],
+  AC_MSG_RESULT(no)
+)
+AC_SUBST(TERMLIBS)
+AC_SUBST(TERMLDFLAGS)
 
 # The following test taken from the cvs sources
 # If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
@@ -1968,7 +2021,10 @@ __COMPILE_ERROR_
 [int i],
 samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=yes,samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=no)
 if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
+	AC_MSG_RESULT(yes)
     AC_DEFINE(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
+else
+	AC_MSG_RESULT(no)
 fi
 AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 

@@ -30,14 +30,12 @@ extern int DEBUGLEVEL;
 This is a utility function of smbrun().
 ****************************************************************************/
 
-static BOOL setup_out_fd(char *template)
+static int setup_out_fd(void)
 {  
 	int fd;
 	pstring path;
 
-	pstrcpy( path, template);
-	pstrcat( path, generate_random_str(17));
-	pstrcat( path, ".XXXXXX");
+	slprintf(path, sizeof(path)-1, "%s/smb.XXXXXX", tmpdir());
 
 	/* now create the file */
 	fd = smb_mkstemp(path);
@@ -60,7 +58,7 @@ run a command being careful about uid/gid handling and putting the output in
 outfd (or discard it if outfd is NULL).
 ****************************************************************************/
 
-int smbrun(char *cmd, int *outfd, char *template)
+int smbrun(char *cmd, int *outfd)
 {
 	pid_t pid;
 	uid_t uid = current_user.uid;
@@ -73,7 +71,7 @@ int smbrun(char *cmd, int *outfd, char *template)
 
 	/* point our stdout at the file we want output to go into */
 
-	if (outfd && ((*outfd = setup_out_fd(template)) == -1)) {
+	if (outfd && ((*outfd = setup_out_fd()) == -1)) {
 		return -1;
 	}
 

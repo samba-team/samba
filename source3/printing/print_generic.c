@@ -54,33 +54,14 @@ run a given print command
 a null terminated list of value/substitute pairs is provided
 for local substitution strings
 ****************************************************************************/
-
-#ifdef HAVE_STDARG_H
-static int print_run_command(int snum,char *command, int *outfd, char *outfile, ...)
+static int print_run_command(int snum,char *command, int *outfd, ...)
 {
-#else /* HAVE_STDARG_H */
-static int print_run_command(va_alist)
-va_dcl
-{
-	int snum;
-	int *outfd;
-	char *command, *outfile;
-#endif /* HAVE_STDARG_H */
 
 	pstring syscmd;
 	char *p, *arg;
 	int ret;
 	va_list ap;
-
-#ifdef HAVE_STDARG_H
-	va_start(ap, outfile);
-#else /* HAVE_STDARG_H */
-	va_start(ap);
-	snum = va_arg(ap,int);
-	fd = va_arg(ap, int *);
-	command = va_arg(ap,char *);
-	outfile = va_arg(ap,char *);
-#endif /* HAVE_STDARG_H */
+	va_start(ap, outfd);
 
 	if (!command || !*command) return -1;
 
@@ -104,7 +85,7 @@ va_dcl
 
 	/* Convert script args to unix-codepage */
 	dos_to_unix(syscmd, True);
-	ret = smbrun(syscmd,outfd,outfile);
+	ret = smbrun(syscmd,outfd);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
 
@@ -214,7 +195,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 	int fd;
 	pstring tmp_file;
 	int numlines, i, qcount;
-	print_queue_struct *queue;
+	print_queue_struct *queue = NULL;
 	fstring printer_name;
               
 	/* Convert printer name (i.e. share name) to unix-codepage */
