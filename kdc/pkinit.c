@@ -105,16 +105,6 @@ struct pk_principal_mapping {
   }									\
 }
 
-/* XXX fix asn1_compile */
-extern heim_oid heim_dhpublicnumber_oid;
-extern heim_oid pkcs7_signed_oid;
-extern heim_oid heim_pkauthdata_oid;
-extern heim_oid heim_pkdhkeydata_oid;
-extern heim_oid pkcs7_signed_oid;
-extern heim_oid heim_pkrkeydata_oid;
-extern heim_oid heim_rsaEncryption_oid;
-extern heim_oid pkcs7_enveloped_oid;
-
 static struct krb5_pk_identity *kdc_identity;
 static struct pk_principal_mapping principal_mappings;
 
@@ -163,7 +153,7 @@ pk_encrypt_key(krb5_context context,
       	       krb5_keyblock *key,
                EVP_PKEY *public_key,
 	       krb5_data *encrypted_key,
-	       heim_oid **oid)
+	       const heim_oid **oid)
 {
     krb5_error_code ret;
 
@@ -194,7 +184,7 @@ pk_encrypt_key(krb5_context context,
 	krb5_abortx(context, "size of EVP_PKEY_size is not the "
 		    "size of the output");
 
-    *oid = &heim_rsaEncryption_oid;
+    *oid = oid_id_pkcs1_rsaEncryption();
 
     return 0;
 }
@@ -306,7 +296,7 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 
     memset(&dhparam, 0, sizeof(dhparam));
 
-    if (heim_oid_cmp(&dh_key_info->algorithm.algorithm, &heim_dhpublicnumber_oid)) {
+    if (heim_oid_cmp(&dh_key_info->algorithm.algorithm, oid_id_dhpublicnumber())) {
 	krb5_set_error_string(context,
 			      "PKINIT invalid oid in clientPublicValue");
 	return KRB5_BADMSGTYPE;
@@ -426,7 +416,7 @@ pk_rd_padata(krb5_context context,
 	return ret;
     }
 
-    if (heim_oid_cmp(&r.signedAuthPack.contentType, &pkcs7_signed_oid)) {
+    if (heim_oid_cmp(&r.signedAuthPack.contentType, oid_id_pkcs7_signedData())) {
 	krb5_set_error_string(context, "PK-AS-REQ invalid content type oid");
 	ret = KRB5KRB_ERR_GENERIC;
 	goto out;
@@ -449,7 +439,7 @@ pk_rd_padata(krb5_context context,
 	goto out;
 
     /* Signature is correct, now verify the signed message */
-    if (heim_oid_cmp(&eContentType, &heim_pkauthdata_oid)) {
+    if (heim_oid_cmp(&eContentType, oid_id_pkauthdata())) {
 	krb5_set_error_string(context, "got wrong oid for pkauthdata");
 	ret = KRB5_BADMSGTYPE;
 	goto out;
@@ -666,7 +656,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
      */
 
     ret = _krb5_pk_create_sign(context,
-			       &heim_pkrkeydata_oid,
+			       oid_id_pkrkeydata(),
 			       &buf,
 			       kdc_identity,
 			       &sd_data);
@@ -728,7 +718,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     }
 
     {
-	heim_oid *pk_enc_key_oid;
+	const heim_oid *pk_enc_key_oid;
 	krb5_data enc_tmp_key;
 
 	ret = pk_encrypt_key(context, &tmp_key,
@@ -753,7 +743,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     ed.version = 0;
     ed.originatorInfo = NULL;
 
-    ret = copy_oid(&pkcs7_signed_oid, &ed.encryptedContentInfo.contentType);
+    ret = copy_oid(oid_id_pkcs7_signedData(), &ed.encryptedContentInfo.contentType);
     if (ret) {
 	krb5_clear_error_string(context);
 	goto out;
@@ -782,7 +772,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
   
     ret = _krb5_pk_mk_ContentInfo(context,
 				  &buf,
-				  &pkcs7_enveloped_oid,
+				  oid_id_pkcs7_envelopedData(),
 				  content_info);
     krb5_data_free(&buf);
 
@@ -858,7 +848,7 @@ pk_mk_pa_reply_dh(krb5_context context,
      */
 
     ret = _krb5_pk_create_sign(context, 
-			       &heim_pkdhkeydata_oid,
+			       oid_id_pkdhkeydata(),
 			       &buf,
 			       kdc_identity, 
 			       &sd_buf);
@@ -866,7 +856,7 @@ pk_mk_pa_reply_dh(krb5_context context,
     if (ret)
 	goto out;
 
-    ret = _krb5_pk_mk_ContentInfo(context, &sd_buf, &pkcs7_signed_oid,
+    ret = _krb5_pk_mk_ContentInfo(context, &sd_buf, oid_id_pkcs7_signedData(),
 				  content_info);
     krb5_data_free(&sd_buf);
 
