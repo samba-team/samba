@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -108,7 +108,7 @@ make_path(struct tr_realm *r, const char *from, const char *to)
 		r->next = path; /* XXX */
 		return ENOMEM;
 	    }
-	    strncpy(path->realm, from, p - from);
+	    memcpy(path->realm, from, p - from);
 	    path->realm[p - from] = '\0';
 	    p--;
 	}
@@ -256,7 +256,7 @@ decode_realms(const char *tr, int length, struct tr_realm **realms)
 	}
 	if(tr[i] == ','){
 	    tmp = malloc(tr + i - start + 1);
-	    strncpy(tmp, start, tr + i - start);
+	    memcpy(tmp, start, tr + i - start);
 	    tmp[tr + i - start] = '\0';
 	    r = make_realm(tmp);
 	    if(r == NULL){
@@ -268,7 +268,7 @@ decode_realms(const char *tr, int length, struct tr_realm **realms)
 	}
     }
     tmp = malloc(tr + i - start + 1);
-    strncpy(tmp, start, tr + i - start);
+    memcpy(tmp, start, tr + i - start);
     tmp[tr + i - start] = '\0';
     r = make_realm(tmp);
     if(r == NULL){

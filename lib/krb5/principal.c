@@ -119,7 +119,7 @@ krb5_parse_name(krb5_context context,
 		    ret = ENOMEM;
 		    goto exit;
 		}
-		strncpy(comp[n], start, q - start);
+		memcpy(comp[n], start, q - start);
 		comp[n][q - start] = 0;
 		n++;
 	    }
@@ -140,7 +140,7 @@ krb5_parse_name(krb5_context context,
 	    ret = ENOMEM;
 	    goto exit;
 	}
-	strncpy(realm, start, q - start);
+	memcpy(realm, start, q - start);
 	realm[q - start] = 0;
     }else{
 	ret = krb5_get_default_realm (context, &realm);
@@ -152,7 +152,7 @@ krb5_parse_name(krb5_context context,
 	    ret = ENOMEM;
 	    goto exit;
 	}
-	strncpy(comp[n], start, q - start);
+	memcpy(comp[n], start, q - start);
 	comp[n][q - start] = 0;
 	n++;
     }
@@ -838,10 +838,11 @@ krb5_524_conv_principal(krb5_context context,
 
     if(type == KRB5_NT_SRV_HST){
 	char *p;
-	strncpy(tmpinst, i, sizeof(tmpinst));
-	tmpinst[sizeof(tmpinst) - 1] = 0;
+
+	strlcpy (tmpinst, i, sizeof(tmpinst));
 	p = strchr(tmpinst, '.');
-	if(p) *p = 0;
+	if(p)
+	    *p = 0;
 	i = tmpinst;
     }
     
