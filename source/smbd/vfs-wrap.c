@@ -213,8 +213,9 @@ SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int wh
 static int copy_reg(const char *source, const char *dest)
 {
 	SMB_STRUCT_STAT source_stats;
-	int ifd;
-	int ofd;
+	int saved_errno;
+	int ifd = -1;
+	int ofd = -1;
 
 	if (sys_lstat (source, &source_stats) == -1)
 		return -1;
@@ -222,41 +223,43 @@ static int copy_reg(const char *source, const char *dest)
 	if (!S_ISREG (source_stats.st_mode))
 		return -1;
 
-	if (unlink (dest) && errno != ENOENT)
-		return -1;
-
 	if((ifd = sys_open (source, O_RDONLY, 0)) < 0)
 		return -1;
 
-	if((ofd = sys_open (dest, O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0 ) {
-		int saved_errno = errno;
-		close (ifd);
-		errno = saved_errno;
+	if (unlink (dest) && errno != ENOENT)
 		return -1;
-	}
 
-	if (transfer_file(ifd, ofd, (size_t)-1) == -1) {
-		int saved_errno = errno;
-		close (ifd);
-		close (ofd);
-		unlink (dest);
-		errno = saved_errno;
-		return -1;
-	}
+#ifdef O_NOFOLLOW
+	if((ofd = sys_open (dest, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0600)) < 0 )
+#else
+	if((ofd = sys_open (dest, O_WRONLY | O_CREAT | O_TRUNC , 0600)) < 0 )
+#endif
+		goto err;
 
-	if (close (ifd) == -1) {
-		int saved_errno = errno;
-		close (ofd);
-		errno = saved_errno;
-		return -1;
-	}
-	if (close (ofd) == -1) 
-		return -1;
+	if (transfer_file(ifd, ofd, (size_t)-1) == -1)
+		goto err;
 
 	/*
-	 * chown turns off set[ug]id bits for non-root,
+	 * Try to preserve ownership.  For non-root it might fail, but that's ok.
+	 * But root probably wants to know, e.g. if NFS disallows it.
+	 */
+
+	if ((fchown(ofd, source_stats.st_uid, source_stats.st_gid) == -1) && (errno != EPERM))
+		goto err;
+
+	/*
+	 * fchown turns off set[ug]id bits for non-root,
 	 * so do the chmod last.
 	 */
+
+	if (fchmod (ofd, source_stats.st_mode & 07777))
+		goto err;
+
+	if (close (ifd) == -1)
+		goto err;
+
+	if (close (ofd) == -1) 
+		return -1;
 
 	/* Try to copy the old file's modtime and access time.  */
 	{
@@ -267,21 +270,19 @@ static int copy_reg(const char *source, const char *dest)
 		utime (dest, &tv);
 	}
 
-	/*
-	 * Try to preserve ownership.  For non-root it might fail, but that's ok.
-	 * But root probably wants to know, e.g. if NFS disallows it.
-	 */
-
-	if ((chown(dest, source_stats.st_uid, source_stats.st_gid) == -1) && (errno != EPERM))
-		return -1;
-
-	if (chmod (dest, source_stats.st_mode & 07777))
-		return -1;
-
 	if (unlink (source) == -1)
 		return -1;
 
 	return 0;
+
+  err:
+	saved_errno = errno;
+	if (ifd != -1)
+		close(ifd);
+	if (ofd != -1)
+		close(ofd);
+	errno = saved_errno;
+	return -1;
 }
 
 int vfswrap_rename(connection_struct *conn, const char *oldname, const char *newname)
