@@ -86,14 +86,19 @@ childhandler (int sig)
 }
 
 /*
- * Allocate and listen on a local X server socket, display dnr.
+ * Allocate and listen on a local X server socket.
  */
 
+#define TMPX11 "/tmp/.X11-unix"
+
 int
-get_local_xsocket (unsigned dnr)
+get_local_xsocket (int *num)
 {
      int fd;
      struct sockaddr_un addr;
+     int dpy;
+
+     mkdir (TMPX11, 01777);
 
      fd = socket (AF_UNIX, SOCK_STREAM, 0);
      if (fd < 0) {
@@ -101,8 +106,17 @@ get_local_xsocket (unsigned dnr)
 	  return fd;
      }    
      addr.sun_family = AF_UNIX;
-     sprintf (addr.sun_path, "/tmp/.X11-unix/X%u", dnr);
-     unlink (addr.sun_path);
+     for(dpy = 0; dpy < 256; ++dpy) {
+	  struct stat statbuf;
+
+	  sprintf (addr.sun_path, TMPX11 "/X%u", dpy);
+	  if(lstat(addr.sun_path, &statbuf) < 0 && errno == ENOENT)
+	       break;
+     }
+     if (dpy == 256) {
+	  fprintf (stderr, "%s: no free x-servers\n", prog);
+	  return -1;
+     }
      if(bind (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 	  fprintf (stderr, "%s: bind: %s\n", prog,
 		   strerror(errno));
@@ -113,6 +127,7 @@ get_local_xsocket (unsigned dnr)
 		   strerror(errno));
 	  return -1;
      }
+     *num = dpy;
      return fd;
 }
 
