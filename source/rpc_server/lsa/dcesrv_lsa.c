@@ -98,7 +98,40 @@ static NTSTATUS lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 static NTSTATUS lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			      struct lsa_EnumPrivs *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_policy_state *state;
+	int i;
+	const char *privname;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	i = *r->in.resume_handle;
+	if (i == 0) i = 1;
+
+	while ((privname = sec_privilege_name(i)) &&
+	       r->out.privs->count < r->in.max_count) {
+		struct lsa_PrivEntry *e;
+
+		r->out.privs->privs = talloc_realloc_p(r->out.privs,
+						       r->out.privs->privs, 
+						       struct lsa_PrivEntry, 
+						       r->out.privs->count+1);
+		if (r->out.privs->privs == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		e = &r->out.privs->privs[r->out.privs->count];
+		e->luid_low = i;
+		e->luid_high = 0;
+		e->name.string = privname;
+		r->out.privs->count++;
+		i++;
+	}
+
+	*r->in.resume_handle = i;
+
+	return NT_STATUS_OK;
 }
 
 
