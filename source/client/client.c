@@ -438,7 +438,8 @@ static void add_to_do_list_queue(const char* entry)
 	}
 	if (do_list_queue)
 	{
-		pstrcpy(do_list_queue + do_list_queue_end, entry);
+		safe_strcpy_base(do_list_queue + do_list_queue_end, 
+				 entry, do_list_queue, do_list_queue_size);
 		do_list_queue_end = new_end;
 		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
 			 entry, (int)do_list_queue_start, (int)do_list_queue_end));
@@ -480,6 +481,11 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 		    !strequal(f->name,"..")) {
 			pstring mask2;
 			char *p;
+
+			if (!f->name[0]) {
+				d_printf("Empty dir name returned. Possible server misconfiguration.\n");
+				return;
+			}
 
 			pstrcpy(mask2, mask);
 			p = strrchr_m(mask2,'\\');
@@ -2285,9 +2291,9 @@ static char **remote_completion(const char *text, int len)
 	if (i > 0) {
 		strncpy(info.dirmask, text, i+1);
 		info.dirmask[i+1] = 0;
-		snprintf(dirmask, sizeof(dirmask), "%s%*s*", cur_dir, i-1, text);
+		pstr_sprintf(dirmask, "%s%*s*", cur_dir, i-1, text);
 	} else
-		snprintf(dirmask, sizeof(dirmask), "%s*", cur_dir);
+		pstr_sprintf(dirmask, "%s*", cur_dir);
 
 	if (cli_list(cli, dirmask, aDIR | aSYSTEM | aHIDDEN, completion_remote_filter, &info) < 0)
 		goto cleanup;
@@ -2523,6 +2529,8 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	c->protocol = max_protocol;
 	c->use_kerberos = use_kerberos;
+	cli_setup_signing_state(c, cmdline_auth_info.signing_state);
+		
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
@@ -2816,9 +2824,25 @@ static void remember_query_host(const char *arg,
 			max_protocol = interpret_protocol(poptGetOptArg(pc), max_protocol);
 			break;
 		case 'T':
-			if (!tar_parseargs(argc, argv, poptGetOptArg(pc), optind)) {
-				poptPrintUsage(pc, stderr, 0);
-				exit(1);
+			/* We must use old option processing for this. Find the
+			 * position of the -T option in the raw argv[]. */
+			{
+				int i, optnum;
+				for (i = 1; i < argc; i++) {
+					if (strncmp("-T", argv[i],2)==0)
+						break;
+				}
+				i++;
+				if (!(optnum = tar_parseargs(argc, argv, poptGetOptArg(pc), i))) {
+					poptPrintUsage(pc, stderr, 0);
+					exit(1);
+				}
+				/* Now we must eat (optnum - i) options - they have
+				 * been processed by tar_parseargs().
+				 */
+				optnum -= i;
+				for (i = 0; i < optnum; i++)
+					poptGetOptArg(pc);
 			}
 			break;
 		case 'D':
@@ -2843,7 +2867,7 @@ static void remember_query_host(const char *arg,
 		}
 	}
 
-	if (poptPeekArg(pc)) { 
+	if (poptPeekArg(pc) && !cmdline_auth_info.got_pass) { 
 		cmdline_auth_info.got_pass = True;
 		pstrcpy(cmdline_auth_info.password,poptGetArg(pc));  
 	}

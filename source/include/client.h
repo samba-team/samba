@@ -57,18 +57,6 @@ struct print_job_info
 	time_t t;
 };
 
-typedef struct smb_sign_info {
-	void (*sign_outgoing_message)(struct cli_state *cli);
-	BOOL (*check_incoming_message)(struct cli_state *cli);
-	void (*free_signing_context)(struct cli_state *cli);
-	void *signing_context;
-
-	BOOL negotiated_smb_signing;
-	BOOL allow_smb_signing;
-	BOOL doing_signing;
-	BOOL mandatory_signing;
-} smb_sign_info;
-
 struct cli_state {
 	int port;
 	int fd;

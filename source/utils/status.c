@@ -45,11 +45,6 @@ static int            locks_only  = 0;            /* Added by RJS */
 static BOOL processes_only=False;
 static int show_brl;
 
-/* we need these because we link to locking*.o */
- void become_root(void) {}
- void unbecome_root(void) {}
-
-
 /* added by OH */
 static void Ucrit_addUsername(const char *username)
 {

@@ -3,7 +3,7 @@
    ads (active directory) utility library
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Remus Koos 2001
-   Copyright (C) Jim McDonough 2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -106,12 +106,24 @@ static BOOL ads_find_dc(ADS_STRUCT *ads)
 	struct ip_service *ip_list;
 	pstring realm;
 	BOOL got_realm = False;
+	BOOL use_own_domain = False;
+
+	/* if the realm and workgroup are both empty, assume they are ours */
 
 	/* realm */
 	c_realm = ads->server.realm;
+	
+	if ( !c_realm || !*c_realm ) {
+		/* special case where no realm and no workgroup means our own */
+		if ( !ads->server.workgroup || !*ads->server.workgroup ) {
+			use_own_domain = True;
+			c_realm = lp_realm();
+		}
+	}
+	
 	if (c_realm && *c_realm) 
 		got_realm = True;
-	   
+		   
 again:
 	/* we need to try once with the realm name and fallback to the 
 	   netbios domain name if we fail (if netbios has not been disabled */
@@ -119,7 +131,12 @@ again:
 	if ( !got_realm	&& !lp_disable_netbios() ) {
 		c_realm = ads->server.workgroup;
 		if (!c_realm || !*c_realm) {
-			DEBUG(0,("ads_find_dc: no realm or workgroup!  Was the structure initialized?\n"));
+			if ( use_own_domain )
+				c_realm = lp_workgroup();
+		}
+		
+		if ( !c_realm || !*c_realm ) {
+			DEBUG(0,("ads_find_dc: no realm or workgroup!  Don't know what to do\n"));
 			return False;
 		}
 	}
@@ -1867,77 +1884,6 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	}
 
 	talloc_destroy(ctx);
-
-	return ADS_SUCCESS;
-}
-
-
-/**
- * find the list of trusted domains
- * @param ads connection to ads server
- * @param mem_ctx TALLOC_CTX for allocating results
- * @param num_trusts pointer to number of trusts
- * @param names pointer to trusted domain name list
- * @param sids pointer to list of sids of trusted domains
- * @return the count of SIDs pulled
- **/
-ADS_STATUS ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
-			       int *num_trusts, 
-			       char ***names, 
-			       char ***alt_names,
-			       DOM_SID **sids)
-{
-	const char *attrs[] = {"name", "flatname", "securityIdentifier", 
-			       "trustDirection", NULL};
-	ADS_STATUS status;
-	void *res, *msg;
-	int count, i;
-
-	*num_trusts = 0;
-
-	status = ads_search(ads, &res, "(objectcategory=trustedDomain)", attrs);
-	if (!ADS_ERR_OK(status)) return status;
-
-	count = ads_count_replies(ads, res);
-	if (count == 0) {
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
-	}
-
-	(*names) = talloc(mem_ctx, sizeof(char *) * count);
-	(*alt_names) = talloc(mem_ctx, sizeof(char *) * count);
-	(*sids) = talloc(mem_ctx, sizeof(DOM_SID) * count);
-	if (! *names || ! *sids) return ADS_ERROR(LDAP_NO_MEMORY);
-
-	for (i=0, msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-		uint32 direction;
-
-		/* direction is a 2 bit bitfield, 1 means they trust us 
-		   but we don't trust them, so we should not list them
-		   as users from that domain can't login */
-		if (ads_pull_uint32(ads, msg, "trustDirection", &direction) &&
-		    direction == 1) {
-			continue;
-		}
-		
-		(*names)[i] = ads_pull_string(ads, mem_ctx, msg, "name");
-		(*alt_names)[i] = ads_pull_string(ads, mem_ctx, msg, "flatname");
-
-		if ((*alt_names)[i] && (*alt_names)[i][0]) {
-			/* we prefer the flatname as the primary name
-			   for consistency with RPC */
-			char *name = (*alt_names)[i];
-			(*alt_names)[i] = (*names)[i];
-			(*names)[i] = name;
-		}
-		if (ads_pull_sid(ads, msg, "securityIdentifier", &(*sids)[i])) {
-			i++;
-		}
-	}
-
-	ads_msgfree(ads, res);
-
-	*num_trusts = i;
 
 	return ADS_SUCCESS;
 }

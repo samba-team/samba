@@ -491,8 +491,8 @@ static BOOL sys_utmp_fill(struct utmp *u,
 	 *	If size limit proves troublesome, then perhaps use "ut_id_encode()".
 	 */
 	if (strlen(id_str) > sizeof(u->ut_line)) {
-		DEBUG(1,("id_str [%s] is too long for %d char utmp field\n",
-			 id_str, sizeof(u->ut_line)));
+		DEBUG(1,("id_str [%s] is too long for %lu char utmp field\n",
+			 id_str, (unsigned long)sizeof(u->ut_line)));
 		return False;
 	}
 	utmp_strcpy(u->ut_line, id_str, sizeof(u->ut_line));

@@ -4,7 +4,7 @@
    idmap TDB backend
 
    Copyright (C) Tim Potter 2000
-   Copyright (C) Anthony Liguori 2003
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) Simo Sorce 2003
    
    This program is free software; you can redistribute it and/or modify
@@ -116,7 +116,8 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 
 			/* check it is in the range */
 			if (hwm > idmap_state.uid_high) {
-				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %u)\n", idmap_state.uid_high));
+				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %lu)\n", 
+					  (unsigned long)idmap_state.uid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 
@@ -129,7 +130,8 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 
 			/* recheck it is in the range */
 			if (hwm > idmap_state.uid_high) {
-				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %u)\n", idmap_state.uid_high));
+				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %lu)\n", 
+					  (unsigned long)idmap_state.uid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			
@@ -144,7 +146,8 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 
 			/* check it is in the range */
 			if (hwm > idmap_state.gid_high) {
-				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %u)\n", idmap_state.gid_high));
+				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %lu)\n", 
+					  (unsigned long)idmap_state.gid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 
@@ -158,7 +161,8 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 
 			/* recheck it is in the range */
 			if (hwm > idmap_state.gid_high) {
-				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %u)\n", idmap_state.gid_high));
+				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %lu)\n", 
+					  (unsigned long)idmap_state.gid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			
@@ -185,10 +189,10 @@ static NTSTATUS internal_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 
 	switch (id_type & ID_TYPEMASK) {
 		case ID_USERID:
-			slprintf(keystr, sizeof(keystr), "UID %d", id.uid);
+			slprintf(keystr, sizeof(keystr), "UID %lu", (unsigned long)id.uid);
 			break;
 		case ID_GROUPID:
-			slprintf(keystr, sizeof(keystr), "GID %d", id.gid);
+			slprintf(keystr, sizeof(keystr), "GID %lu", (unsigned long)id.gid);
 			break;
 		default:
 			return NT_STATUS_UNSUCCESSFUL;
@@ -374,9 +378,11 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 			/* Store the UID side */
 			/* Store new id */
 			if (*id_type & ID_USERID) {
-				slprintf(ugid_str, sizeof(ugid_str), "UID %d", (*id).uid);
+				slprintf(ugid_str, sizeof(ugid_str), "UID %lu", 
+					 (unsigned long)((*id).uid));
 			} else {
-				slprintf(ugid_str, sizeof(ugid_str), "GID %d", (*id).gid);
+				slprintf(ugid_str, sizeof(ugid_str), "GID %lu", 
+					 (unsigned long)((*id).gid));
 			}
 			
 			ugid_data.dptr = ugid_str;
@@ -430,9 +436,9 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	ksid.dsize = strlen(ksidstr) + 1;
 
 	if (id_type & ID_USERID) {
-		slprintf(kidstr, sizeof(kidstr), "UID %d", id.uid);
+		slprintf(kidstr, sizeof(kidstr), "UID %lu", (unsigned long)id.uid);
 	} else if (id_type & ID_GROUPID) {
-		slprintf(kidstr, sizeof(kidstr), "GID %d", id.gid);
+		slprintf(kidstr, sizeof(kidstr), "GID %lu", (unsigned long)id.gid);
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
 	}

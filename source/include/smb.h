@@ -42,6 +42,7 @@
 #define SMB_PORT2 139
 #define SMB_PORTS "445 139"
 
+#define Undefined (-1)
 #define False (0)
 #define True (1)
 #define Auto (2)
@@ -79,9 +80,7 @@ typedef int BOOL;
 #define READ_TIMEOUT 1
 #define READ_EOF 2
 #define READ_ERROR 3
-
-/* This error code can go into the client smb_rw_error. */
-#define WRITE_ERROR 4
+#define WRITE_ERROR 4 /* This error code can go into the client smb_rw_error. */
 #define READ_BAD_SIG 5
 
 #define DIR_STRUCT_SIZE 43
@@ -707,13 +706,14 @@ struct bitmap {
 	unsigned int n;
 };
 
-#define FLAG_BASIC 	0x0001 /* fundamental options */
+/* The following flags are used in SWAT */
+#define FLAG_BASIC 	0x0001 /* Display only in BASIC view */
 #define FLAG_SHARE 	0x0002 /* file sharing options */
 #define FLAG_PRINT 	0x0004 /* printing options */
 #define FLAG_GLOBAL 	0x0008 /* local options that should be globally settable in SWAT */
 #define FLAG_WIZARD 	0x0010 /* Parameters that the wizard will operate on */
-#define FLAG_ADVANCED 	0x0020 /* Parameters that the wizard will operate on */
-#define FLAG_DEVELOPER 	0x0040 /* Parameters that the wizard will operate on */
+#define FLAG_ADVANCED 	0x0020 /* Parameters that will be visible in advanced view */
+#define FLAG_DEVELOPER 	0x0040 /* No longer used */
 #define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
@@ -1629,5 +1629,19 @@ struct ip_service {
 	struct in_addr ip;
 	unsigned port;
 };
+
+/* Used by the SMB signing functions. */
+
+typedef struct smb_sign_info {
+	void (*sign_outgoing_message)(char *outbuf, struct smb_sign_info *si);
+	BOOL (*check_incoming_message)(char *inbuf, struct smb_sign_info *si);
+	void (*free_signing_context)(struct smb_sign_info *si);
+	void *signing_context;
+
+	BOOL negotiated_smb_signing;
+	BOOL allow_smb_signing;
+	BOOL doing_signing;
+	BOOL mandatory_signing;
+} smb_sign_info;
 
 #endif /* _SMB_H */

@@ -53,55 +53,6 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- wrapper around retreiving the trsut account password 
-*******************************************************************/
-
-static BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
-                          time_t *pass_last_set_time, uint32 *channel)
-{
-	DOM_SID sid;
-	char *pwd;
-
-	/* if we are a DC and this is not our domain, then lookup an account
-	   for the domain trust */
-	   
-	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) 
-	{
-		if ( !secrets_fetch_trusted_domain_password(domain, &pwd, &sid, 
-			pass_last_set_time) ) 
-		{
-			DEBUG(0, ("get_trust_pw: could not fetch trust account "
-				  "password for trusted domain %s\n", domain));
-			return False;
-		}
-		
-		*channel = SEC_CHAN_DOMAIN;
-		E_md4hash(pwd, ret_pwd);
-		SAFE_FREE(pwd);
-
-		return True;
-	}
-	else 	/* just get the account for our domain (covers 
-		   ROLE_DOMAIN_MEMBER as well */
-	{
-		/* get the machine trust account for our domain */
-
-		if ( !secrets_fetch_trust_account_password (lp_workgroup(), ret_pwd,
-			pass_last_set_time, channel) ) 
-		{
-			DEBUG(0, ("get_trust_pw: could not fetch trust account "
-				  "password for my domain %s\n", domain));
-			return False;
-		}
-		
-		return True;
-	}
-	
-	/* Failure */
-	return False;
-}
-
 /**********************************************************************
  Authenticate a user with a clear test password
 **********************************************************************/
@@ -131,7 +82,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.auth.pass[sizeof(state->request.data.auth.pass)-1]='\0';
 
-	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: pam auth %s\n", (unsigned long)state->pid,
 		  state->request.data.auth.user));
 
 	if (!(mem_ctx = talloc_init("winbind pam auth for %s", state->request.data.auth.user))) {
@@ -305,7 +256,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	DEBUG(3, ("[%5d]: pam auth crap domain: %s user: %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n", (unsigned long)state->pid,
 		  domain, user));
 	   
 	if ( !get_trust_pw(domain, trust_passwd, &last_change_time, &sec_channel_type) ) {
@@ -436,7 +387,7 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	fstring domain, user;
 	CLI_POLICY_HND *hnd;
 
-	DEBUG(3, ("[%5d]: pam chauthtok %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request.data.chauthtok.user));
 
 	/* Setup crap */

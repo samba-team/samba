@@ -69,7 +69,7 @@ static void tree_error_message(gchar *message) {
  * workgroup type and return a path from there
  */
 
-static char path_string[1024];
+static pstring path_string;
 
 char *get_path(GtkWidget *item)
 {
@@ -112,7 +112,7 @@ char *get_path(GtkWidget *item)
    * Now, build the path
    */
 
-  snprintf(path_string, sizeof(path_string), "smb:/");
+  pstrcpy( path_string, "smb:/" );
 
   for (j = i - 1; j >= 0; j--) {
 
@@ -151,7 +151,7 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
   char dirbuf[512];
   struct smbc_dirent *dirp;
   struct stat st1;
-  char path[1024], path1[1024];
+  pstring path, path1;
 
   g_print ("select_child called for root tree %p, subtree %p, child %p\n",
 	   root_tree, subtree, child);

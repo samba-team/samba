@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    ID Mapping
    Copyright (C) Tim Potter 2000
-   Copyright (C) Anthony Liguori <aliguor@us.ibm.com>	2003
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com>	2003
    Copyright (C) Simo Sorce 2003
    Copyright (C) Jeremy Allison 2003.
 
@@ -153,10 +153,11 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	struct idmap_methods *map = remote_map;
 	DOM_SID tmp_sid;
 
-	DEBUG(10, ("idmap_set_mapping: Set %s to %s %d\n",
+	DEBUG(10, ("idmap_set_mapping: Set %s to %s %lu\n",
 		   sid_string_static(sid),
 		   ((id_type & ID_TYPEMASK) == ID_USERID) ? "UID" : "GID",
-		   ((id_type & ID_TYPEMASK) == ID_USERID) ? id.uid : id.gid));
+		   ((id_type & ID_TYPEMASK) == ID_USERID) ? (unsigned long)id.uid : 
+		   (unsigned long)id.gid));
 
 	if ( (NT_STATUS_IS_OK(cache_map->
 			      get_sid_from_id(&tmp_sid, id,

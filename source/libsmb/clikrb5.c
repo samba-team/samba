@@ -305,7 +305,7 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset)
+DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset, unsigned char session_key_krb5[16])
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -345,12 +345,14 @@ DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset)
 	}
 
 	if ((retval = ads_krb5_mk_req(context, 
-				      &auth_context, 
-				      0, 
-				      principal,
-				      ccdef, &packet))) {
+					&auth_context, 
+					AP_OPTS_USE_SUBKEY, 
+					principal,
+					ccdef, &packet))) {
 		goto failed;
 	}
+
+	get_krb5_smb_session_key(context, auth_context, session_key_krb5, False);
 
 	ret = data_blob(packet.data, packet.length);
 /* Hmm, heimdal dooesn't have this - what's the correct call? */
@@ -365,17 +367,22 @@ failed:
 	return data_blob(NULL, 0);
 }
 
- BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16])
+ BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16], BOOL remote)
  {
 #ifdef ENCTYPE_ARCFOUR_HMAC
 	krb5_keyblock *skey;
 #endif
 	BOOL ret = False;
+	krb5_error_code err;
 
 	memset(session_key, 0, 16);
 
 #ifdef ENCTYPE_ARCFOUR_HMAC
-	if (krb5_auth_con_getremotesubkey(context, auth_context, &skey) == 0 && skey != NULL) {
+	if (remote)
+		err = krb5_auth_con_getremotesubkey(context, auth_context, &skey);
+	else
+		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
+	if (err == 0 && skey != NULL) {
 		if (KRB5_KEY_TYPE(skey) ==
 		    ENCTYPE_ARCFOUR_HMAC
 		    && KRB5_KEY_LENGTH(skey) == 16) {
@@ -388,9 +395,22 @@ failed:
 
 	return ret;
  }
+
+
+#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
+ const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i )
+{
+	static krb5_data kdata;
+
+	kdata.data = krb5_principal_get_comp_string(context, principal, i);
+	kdata.length = strlen(kdata.data);
+	return &kdata;
+}
+#endif
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
-DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset)
+DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset, unsigned char session_key_krb5[16])
  {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return data_blob(NULL, 0);

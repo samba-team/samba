@@ -190,7 +190,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	char *p;
 	fstring lanman;
 	
-	snprintf( lanman, sizeof(lanman), "Samba %s", VERSION );
+	fstr_sprintf( lanman, "Samba %s", VERSION );
 
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
@@ -301,7 +301,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 				lm_response = data_blob(NULL, 24);
 				SMBencrypt(pass,cli->secblob.data, lm_response.data);
 			} else {
-				/* LM disabled, place NT# in LM feild instead */
+				/* LM disabled, place NT# in LM field instead */
 				lm_response = data_blob(nt_response.data, nt_response.length);
 			}
 
@@ -472,6 +472,7 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 /****************************************************************************
  Use in-memory credentials cache
 ****************************************************************************/
+
 static void use_in_memory_ccache(void) {
 	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
 }
@@ -483,18 +484,23 @@ static void use_in_memory_ccache(void) {
 static BOOL cli_session_setup_kerberos(struct cli_state *cli, const char *principal, const char *workgroup)
 {
 	DATA_BLOB blob2, negTokenTarg;
-
+	unsigned char session_key_krb5[16];
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	
 	DEBUG(2,("Doing kerberos session setup\n"));
 
 	/* generate the encapsulated kerberos5 ticket */
-	negTokenTarg = spnego_gen_negTokenTarg(principal, 0);
+	negTokenTarg = spnego_gen_negTokenTarg(principal, 0, session_key_krb5);
 
-	if (!negTokenTarg.data) return False;
+	if (!negTokenTarg.data)
+		return False;
 
 #if 0
 	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
 #endif
 
+	cli_simple_set_signing(cli, session_key_krb5, null_blob); 
+			
 	blob2 = cli_session_setup_blob(cli, negTokenTarg);
 
 	/* we don't need this blob for kerberos */
@@ -551,7 +557,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 						  blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DATA_BLOB null = data_blob(NULL, 0);
+			DATA_BLOB null_blob = data_blob(NULL, 0);
 			if (turn == 1) {
 				/* and wrap it in a SPNEGO wrapper */
 				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
@@ -562,7 +568,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 		
 			cli_simple_set_signing(cli, 
 					       ntlmssp_state->session_key.data, 
-					       null); 
+					       null_blob); 
 			
 			/* now send that blob on its way */
 			if (!cli_session_setup_blob_send(cli, msg1)) {
@@ -630,7 +636,7 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	BOOL got_kerberos_mechanism = False;
 	DATA_BLOB blob;
 
-	DEBUG(2,("Doing spnego session setup (blob length=%d)\n", cli->secblob.length));
+	DEBUG(2,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)cli->secblob.length));
 
 	/* the server might not even do spnego */
 	if (cli->secblob.length <= 16) {
@@ -989,6 +995,11 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;	
 
+	if ((cli->protocol < PROTOCOL_NT1) && cli->sign_info.mandatory_signing) {
+		DEBUG(1,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
+		return False;
+	}
+
 	if (cli->protocol >= PROTOCOL_NT1) {    
 		/* NT protocol */
 		cli->sec_mode = CVAL(cli->inbuf,smb_vwv1);
@@ -1015,7 +1026,7 @@ BOOL cli_negprot(struct cli_state *cli)
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED)) {
 			/* Fail if signing is mandatory and we don't want to support it. */
-			if (!lp_client_signing()) {
+			if (!cli->sign_info.allow_smb_signing) {
 				DEBUG(1,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
 				return False;
 			}
@@ -1248,6 +1259,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     const char *service, const char *service_type,
 			     const char *user, const char *domain, 
 			     const char *password, int flags,
+			     int signing_state,
 			     BOOL *retry) 
 {
 	struct ntuser_creds creds;
@@ -1309,6 +1321,8 @@ again:
 		}
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	cli_setup_signing_state(cli, signing_state);
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO)
 		cli->use_spnego = False;
@@ -1480,7 +1494,7 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
 	
 	nt_status = cli_full_connection(&cli, myname, server, server_ip, 0, "IPC$", "IPC", 
 					user_info->username, lp_workgroup(), user_info->password, 
-					CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, NULL);
+					CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, Undefined, NULL);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;

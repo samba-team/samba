@@ -125,7 +125,7 @@ static const char *display_time(NTTIME nttime)
 	mins=(sec - (days*60*60*24) - (hours*60*60) ) / 60;
 	secs=sec - (days*60*60*24) - (hours*60*60) - (mins*60);
 
-	snprintf(string, sizeof(string)-1, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
+	fstr_sprintf(string, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
 	return (string);
 }
 

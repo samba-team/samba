@@ -102,7 +102,7 @@ enum ntlmssp_direction {
 	NTLMSSP_RECEIVE
 };
 
-static NTSTATUS ntlmssp_make_packet_signiture(NTLMSSP_CLIENT_STATE *ntlmssp_state,
+static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 					      const uchar *data, size_t length, 
 					      enum ntlmssp_direction direction,
 					      DATA_BLOB *sig) 
@@ -148,7 +148,7 @@ NTSTATUS ntlmssp_client_sign_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 					   const uchar *data, size_t length, 
 					   DATA_BLOB *sig) 
 {
-	NTSTATUS nt_status = ntlmssp_make_packet_signiture(ntlmssp_state, data, length, NTLMSSP_SEND, sig);
+	NTSTATUS nt_status = ntlmssp_make_packet_signature(ntlmssp_state, data, length, NTLMSSP_SEND, sig);
 
 	/* increment counter on send */
 	ntlmssp_state->ntlmssp_seq_num++;
@@ -169,11 +169,11 @@ NTSTATUS ntlmssp_client_check_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 	NTSTATUS nt_status;
 
 	if (sig->length < 8) {
-		DEBUG(0, ("NTLMSSP packet check failed due to short signiture (%u bytes)!\n", 
+		DEBUG(0, ("NTLMSSP packet check failed due to short signature (%u bytes)!\n", 
 			  sig->length));
 	}
 
-	nt_status = ntlmssp_make_packet_signiture(ntlmssp_state, data, 
+	nt_status = ntlmssp_make_packet_signature(ntlmssp_state, data, 
 						  length, NTLMSSP_RECEIVE, &local_sig);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -188,7 +188,7 @@ NTSTATUS ntlmssp_client_check_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 		DEBUG(5, ("BAD SIG: got signature of\n"));
 		dump_data(5, sig->data, sig->length);
 
-		DEBUG(0, ("NTLMSSP packet check failed due to invalid signiture!\n"));
+		DEBUG(0, ("NTLMSSP packet check failed due to invalid signature!\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -328,7 +328,7 @@ NTSTATUS ntlmssp_client_sign_init(NTLMSSP_CLIENT_STATE *ntlmssp_state)
 	} 
 	else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
 		if (!ntlmssp_state->session_key.data || ntlmssp_state->session_key.length < 8) {
-			/* can't sign or check signitures yet */ 
+			/* can't sign or check signatures yet */ 
 			DEBUG(5, ("NTLMSSP Sign/Seal - cannot use LM KEY yet\n"));	
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -340,7 +340,7 @@ NTSTATUS ntlmssp_client_sign_init(NTLMSSP_CLIENT_STATE *ntlmssp_state)
 			     sizeof(ntlmssp_state->ntlmssp_hash));
 	} else {
 		if (!ntlmssp_state->session_key.data || ntlmssp_state->session_key.length < 16) {
-			/* can't sign or check signitures yet */ 
+			/* can't sign or check signatures yet */ 
 			DEBUG(5, ("NTLMSSP Sign/Seal - cannot use NT KEY yet\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}

@@ -326,7 +326,13 @@ static BOOL exact_match(char *str,char *mask, BOOL case_sig)
 		return False;
 	if (case_sig)	
 		return strcmp(str,mask)==0;
-	return StrCaseCmp(str,mask) == 0;
+	if (StrCaseCmp(str,mask) != 0) {
+		return False;
+	}
+	if (ms_has_wild(str)) {
+		return False;
+	}
+	return True;
 }
 
 /****************************************************************************
@@ -1906,7 +1912,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	if (strequal(base_name,".")) {
 		pstrcpy(dos_fname, "\\");
 	} else {
-		snprintf(dos_fname, sizeof(dos_fname), "\\%s", fname);
+		pstr_sprintf(dos_fname, "\\%s", fname);
 		string_replace(dos_fname, '/', '\\');
 	}
 
@@ -3353,6 +3359,8 @@ int reply_trans2(connection_struct *conn,
 		memcpy( data, smb_base(inbuf) + dsoff, num_data);
 	}
 
+	srv_signing_trans_start(SVAL(inbuf,smb_mid));
+
 	if(num_data_sofar < total_data || num_params_sofar < total_params)  {
 		/* We need to send an interim response then receive the rest
 		   of the parameter/data bytes */
@@ -3525,6 +3533,7 @@ int reply_trans2(connection_struct *conn,
 		SAFE_FREE(params);
 		SAFE_FREE(data);
 		END_PROFILE(SMBtrans2);
+		srv_signing_trans_stop();
 		return ERROR_DOS(ERRSRV,ERRerror);
 	}
 	
@@ -3535,6 +3544,8 @@ int reply_trans2(connection_struct *conn,
 	   an error packet. 
 	*/
 	
+	srv_signing_trans_stop();
+
 	SAFE_FREE(params);
 	SAFE_FREE(data);
 	END_PROFILE(SMBtrans2);
@@ -3544,6 +3555,7 @@ int reply_trans2(connection_struct *conn,
 
   bad_param:
 
+	srv_signing_trans_stop();
 	SAFE_FREE(params);
 	SAFE_FREE(data);
 	END_PROFILE(SMBtrans2);

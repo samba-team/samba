@@ -322,9 +322,9 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 	asn1_read_uint8(data, &b);
 
 	oid[0] = 0;
-	snprintf(el, sizeof(el), "%u",  b/40);
+	fstr_sprintf(el, "%u",  b/40);
 	pstrcat(oid, el);
-	snprintf(el, sizeof(el), " %u",  b%40);
+	fstr_sprintf(el, " %u",  b%40);
 	pstrcat(oid, el);
 
 	while (asn1_tag_remaining(data) > 0) {
@@ -333,7 +333,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 			asn1_read_uint8(data, &b);
 			v = (v<<7) | (b&0x7f);
 		} while (!data->has_error && b & 0x80);
-		snprintf(el, sizeof(el), " %u",  v);
+		fstr_sprintf(el, " %u",  v);
 		pstrcat(oid, el);
 	}
 

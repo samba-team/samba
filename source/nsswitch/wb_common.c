@@ -239,6 +239,8 @@ int winbind_open_pipe_sock(void)
 		}
 	}
 
+	SAFE_FREE(response.extra_data);
+
 	return winbindd_fd;
 #else
 	return -1;

@@ -223,7 +223,7 @@ BOOL trustdom_cache_store_timestamp( uint32 t, time_t timeout )
 	if (!gencache_init()) 
 		return False;
 		
-	snprintf(value, sizeof(value), "%d", t );
+	fstr_sprintf(value, "%d", t );
 		
 	if (!gencache_set(TDOMTSKEY, value, timeout)) {
 		DEBUG(5, ("failed to set timestamp for trustdom_cache\n"));

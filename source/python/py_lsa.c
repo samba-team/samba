@@ -213,6 +213,7 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 	char **domains, **names;
 	uint32 *types;
 	lsa_policy_hnd_object *hnd = (lsa_policy_hnd_object *)self;
+	TALLOC_CTX *mem_ctx = NULL;
 	DOM_SID *sids;
 
 	if (!PyArg_ParseTuple(args, "O", &py_sids))
@@ -223,12 +224,17 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
+	if (!(mem_ctx = talloc_init("lsa_open_policy"))) {
+		PyErr_SetString(lsa_error, "unable to init talloc context\n");
+		goto done;
+	}
+
 	if (PyList_Check(py_sids)) {
 
 		/* Convert dictionary to char ** array */
 		
 		num_sids = PyList_Size(py_sids);
-		sids = (DOM_SID *)talloc(hnd->mem_ctx, num_sids * sizeof(DOM_SID));
+		sids = (DOM_SID *)talloc(mem_ctx, num_sids * sizeof(DOM_SID));
 		
 		memset(sids, 0, num_sids * sizeof(DOM_SID));
 		
@@ -237,7 +243,8 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 			
 			if (!string_to_sid(&sids[i], PyString_AsString(obj))) {
 				PyErr_SetString(PyExc_ValueError, "string_to_sid failed");
-				return NULL;
+				result = NULL;
+				goto done;
 			}
 		}
 
@@ -246,21 +253,23 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 		/* Just a single element */
 
 		num_sids = 1;
-		sids = (DOM_SID *)talloc(hnd->mem_ctx, sizeof(DOM_SID));
+		sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID));
 
 		if (!string_to_sid(&sids[0], PyString_AsString(py_sids))) {
 			PyErr_SetString(PyExc_ValueError, "string_to_sid failed");
-			return NULL;
+			result = NULL;
+			goto done;
 		}
 	}
 
-	ntstatus = cli_lsa_lookup_sids(hnd->cli, hnd->mem_ctx, &hnd->pol,
+	ntstatus = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol,
 				       num_sids, sids, &domains, &names, 
 				       &types);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
-		return NULL;
+		result = NULL;
+		goto done;
 	}
 
 	result = PyList_New(num_sids);
@@ -274,7 +283,11 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 
 		PyList_SetItem(result, i, obj);
 	}
-	
+
+ done:
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
+
 	return result;
 }
 

@@ -124,9 +124,10 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 {
 	DATA_BLOB blob;
 	struct berval cred, *scred;
+	unsigned char sk[16];
 	int rc;
 
-	blob = spnego_gen_negTokenTarg(principal, ads->auth.time_offset);
+	blob = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, sk);
 
 	if (!blob.data) {
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);

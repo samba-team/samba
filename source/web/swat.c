@@ -51,10 +51,6 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
-/* we need these because we link to locking*.o */
- void become_root(void) {}
- void unbecome_root(void) {}
-
 /****************************************************************************
 ****************************************************************************/
 static int enum_index(int value, const struct enum_list *enumlist)
@@ -168,12 +164,12 @@ static const char* get_parm_translated(
 	static pstring output;
 	if(strcmp(pLabel, pTranslated) != 0)
 	{
-		snprintf(output, sizeof(output),
+		pstr_sprintf(output,
 		  "<A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s <br><span class=\"i18n_translated_parm\">%s</span>",
 		   pAnchor, pHelp, pLabel, pTranslated);
 		return output;
 	}
-	snprintf(output, sizeof(output), 
+	pstr_sprintf(output, 
 	  "<A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s",
 	  pAnchor, pHelp, pLabel);
 	return output;
@@ -316,9 +312,10 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 			if (printers & !(parm->flags & FLAG_PRINT)) continue;
 			if (!printers & !(parm->flags & FLAG_SHARE)) continue;
 		}
-		if (parm_filter == FLAG_BASIC) {
+
+		if (!( parm_filter & FLAG_ADVANCED )) {
 			if (!(parm->flags & FLAG_BASIC)) {
-				void *ptr = parm->ptr;
+					void *ptr = parm->ptr;
 
 				if (parm->class == P_LOCAL && snum >= 0) {
 					ptr = lp_local_ptr(snum, ptr);
@@ -359,16 +356,15 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 					break;
 				case P_SEP:
 					continue;
-				}
+					}
 			}
 			if (printers && !(parm->flags & FLAG_PRINT)) continue;
 		}
-		if (parm_filter == FLAG_WIZARD) {
-			if (!((parm->flags & FLAG_WIZARD))) continue;
-		}
-		if (parm_filter == FLAG_ADVANCED) {
-			if (!((parm->flags & FLAG_ADVANCED))) continue;
-		}
+
+		if ((parm_filter & FLAG_WIZARD) && !(parm->flags & FLAG_WIZARD)) continue;
+		
+		if ((parm_filter & FLAG_ADVANCED) && !(parm->flags & FLAG_ADVANCED)) continue;
+		
 		if (heading && heading != last_heading) {
 			d_printf("<tr><td></td></tr><tr><td><b><u>%s</u></b></td></tr>\n", _(heading));
 			last_heading = heading;
@@ -523,10 +519,12 @@ static void show_main_buttons(void)
  ****************************************************************************/
 static void ViewModeBoxes(int mode)
 {
-	d_printf("<p>%s\n", _("Configuration View:&nbsp"));
+	d_printf("<p>%s\n", _("Current View Is:&nbsp \n"));
 	d_printf("<input type=radio name=\"ViewMode\" value=0 %s>Basic\n", (mode == 0) ? "checked" : "");
 	d_printf("<input type=radio name=\"ViewMode\" value=1 %s>Advanced\n", (mode == 1) ? "checked" : "");
-	d_printf("<input type=radio name=\"ViewMode\" value=2 %s>Developer\n", (mode == 2) ? "checked" : "");
+	d_printf("<br>%s\n", _("Change View To:&nbsp"));
+	d_printf("<input type=submit name=\"BasicMode\" value=\"%s\">\n", _("Basic"));
+	d_printf("<input type=submit name=\"AdvMode\" value=\"%s\">\n", _("Advanced"));
 	d_printf("</p><br>\n");
 }
 
@@ -782,6 +780,10 @@ static void globals_page(void)
 
 	if ( cgi_variable("ViewMode") )
 		mode = atoi(cgi_variable("ViewMode"));
+	if ( cgi_variable("BasicMode"))
+		mode = 0;
+	if ( cgi_variable("AdvMode"))
+		mode = 1;
 
 	d_printf("<form name=\"swatform\" method=post action=globals>\n");
 
@@ -792,9 +794,6 @@ static void globals_page(void)
 			break;
 		case 1:
 			parm_filter = FLAG_ADVANCED;
-			break;
-		case 2:
-			parm_filter = FLAG_DEVELOPER;
 			break;
 	}
 	d_printf("<br>\n");
@@ -854,8 +853,14 @@ static void shares_page(void)
 	d_printf("<FORM name=\"swatform\" method=post>\n");
 
 	d_printf("<table>\n");
+
 	if ( cgi_variable("ViewMode") )
 		mode = atoi(cgi_variable("ViewMode"));
+	if ( cgi_variable("BasicMode"))
+		mode = 0;
+	if ( cgi_variable("AdvMode"))
+		mode = 1;
+
 	ViewModeBoxes( mode );
 	switch ( mode ) {
 		case 0:
@@ -863,9 +868,6 @@ static void shares_page(void)
 			break;
 		case 1:
 			parm_filter = FLAG_ADVANCED;
-			break;
-		case 2:
-			parm_filter = FLAG_DEVELOPER;
 			break;
 	}
 	d_printf("<br><tr>\n");
@@ -1196,6 +1198,11 @@ static void printers_page(void)
 
 	if ( cgi_variable("ViewMode") )
 		mode = atoi(cgi_variable("ViewMode"));
+        if ( cgi_variable("BasicMode"))
+                mode = 0;
+        if ( cgi_variable("AdvMode"))
+                mode = 1;
+
 	ViewModeBoxes( mode );
 	switch ( mode ) {
 		case 0:
@@ -1203,9 +1210,6 @@ static void printers_page(void)
 			break;
 		case 1:
 			parm_filter = FLAG_ADVANCED;
-			break;
-		case 2:
-			parm_filter = FLAG_DEVELOPER;
 			break;
 	}
 	d_printf("<table>\n");

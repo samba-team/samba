@@ -189,6 +189,22 @@
 #define SMB_QUOTAS_NO_LIMIT	((SMB_BIG_UINT)(0))
 #define SMB_QUOTAS_NO_SPACE	((SMB_BIG_UINT)(1))
 
+#define SMB_QUOTAS_SET_NO_LIMIT(dp) \
+{\
+	(dp)->softlimit = SMB_QUOTAS_NO_LIMIT;\
+	(dp)->hardlimit = SMB_QUOTAS_NO_LIMIT;\
+	(dp)->isoftlimit = SMB_QUOTAS_NO_LIMIT;\
+	(dp)->ihardlimit = SMB_QUOTAS_NO_LIMIT;\
+}
+
+#define SMB_QUOTAS_SET_NO_SPACE(dp) \
+{\
+	(dp)->softlimit = SMB_QUOTAS_NO_SPACE;\
+	(dp)->hardlimit = SMB_QUOTAS_NO_SPACE;\
+	(dp)->isoftlimit = SMB_QUOTAS_NO_SPACE;\
+	(dp)->ihardlimit = SMB_QUOTAS_NO_SPACE;\
+}
+
 typedef struct _SMB_DISK_QUOTA {
 	enum SMB_QUOTA_TYPE qtype;
 	SMB_BIG_UINT bsize;

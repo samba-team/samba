@@ -279,8 +279,8 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	data_blob_free(&sess_key);
 	
-	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%d len2=%d\n",
-		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->workstation, ntlmssp_state->lm_resp.length, ntlmssp_state->nt_resp.length));
+	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%lu len2=%lu\n",
+		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->workstation, (unsigned long)ntlmssp_state->lm_resp.length, (unsigned long)ntlmssp_state->nt_resp.length));
 
 #if 0
 	file_save("nthash1.dat",  &ntlmssp_state->nt_resp.data,  &ntlmssp_state->nt_resp.length);

@@ -5,7 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
  *  Copyright (C) Paul Ashton                  1997-1998,
  *  Copyright (C) Jeremy Allison                    1999,
- *  Copyright (C) Anthony Liguori                   2003.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -276,11 +276,6 @@ BOOL create_next_pdu(pipes_struct *p)
 
 		prs_init(&rverf, 0, p->mem_ctx, MARSHALL);
 		prs_init(&rauth, 0, p->mem_ctx, MARSHALL);
-
-		if ((p->netsec_auth.seq_num & 1) == 0) {
-			DEBUG(0,("SCHANNEL ERROR: seq_num must be odd in server! (seq_num=%d)\n",
-					p->netsec_auth.seq_num));
-		}
 
 		init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes, nullbytes, nullbytes);
 

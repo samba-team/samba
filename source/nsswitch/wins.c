@@ -86,29 +86,6 @@ static void nss_wins_init(void)
 	load_interfaces();
 }
 
-static struct node_status *lookup_byaddr_backend(char *addr, int *count)
-{
-	int fd;
-	struct in_addr  ip;
-	struct nmb_name nname;
-	struct node_status *status;
-
-	if (!initialised) {
-		nss_wins_init();
-	}
-
-	fd = wins_lookup_open_socket_in();
-	if (fd == -1)
-		return NULL;
-
-	make_nmb_name(&nname, "*", 0);
-	ip = *interpret_addr2(addr);
-	status = node_status_query(fd,&nname,ip, count);
-
-	close(fd);
-	return status;
-}
-
 static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd = -1;
@@ -149,8 +126,31 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	return ret;
 }
 
-
 #ifdef HAVE_NS_API_H
+
+static struct node_status *lookup_byaddr_backend(char *addr, int *count)
+{
+	int fd;
+	struct in_addr  ip;
+	struct nmb_name nname;
+	struct node_status *status;
+
+	if (!initialised) {
+		nss_wins_init();
+	}
+
+	fd = wins_lookup_open_socket_in();
+	if (fd == -1)
+		return NULL;
+
+	make_nmb_name(&nname, "*", 0);
+	ip = *interpret_addr2(addr);
+	status = node_status_query(fd,&nname,ip, count);
+
+	close(fd);
+	return status;
+}
+
 /* IRIX version */
 
 int init(void)

@@ -58,7 +58,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 					   NULL, 0,
 					   "IPC$", "IPC",  
 					   "", "",
-					   "", 0, NULL))) 
+					   "", 0, Undefined, NULL))) 
 	{
 		DEBUG(0,("modify_trust_password: Connection to %s failed!\n", remote_machine));
 		nt_status = NT_STATUS_UNSUCCESSFUL;

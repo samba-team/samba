@@ -58,14 +58,14 @@ BOOL py_from_ACE(PyObject **dict, SEC_ACE *ace)
 		return True;
 	}
 
-	*dict = PyDict_New();
+	*dict = Py_BuildValue("{sisisi}", "type", ace->type,
+	    			"flags", ace->flags,
+				"mask", ace->info.mask);
 
-	PyDict_SetItemString(*dict, "type", PyInt_FromLong(ace->type));
-	PyDict_SetItemString(*dict, "flags", PyInt_FromLong(ace->flags));
-	PyDict_SetItemString(*dict, "mask", PyInt_FromLong(ace->info.mask));
-
-	if (py_from_SID(&obj, &ace->trustee))
+	if (py_from_SID(&obj, &ace->trustee)) {
 		PyDict_SetItemString(*dict, "trustee", obj);
+		Py_DECREF(obj);
+	}
 
 	return True;
 }
@@ -125,10 +125,6 @@ BOOL py_from_ACL(PyObject **dict, SEC_ACL *acl)
 		return True;
 	}
 
-	*dict = PyDict_New();
-
-	PyDict_SetItemString(*dict, "revision", PyInt_FromLong(acl->revision));
-
 	ace_list = PyList_New(acl->num_aces);
 
 	for (i = 0; i < acl->num_aces; i++) {
@@ -138,7 +134,8 @@ BOOL py_from_ACL(PyObject **dict, SEC_ACL *acl)
 			PyList_SetItem(ace_list, i, obj);
 	}
 
-	PyDict_SetItemString(*dict, "ace_list", ace_list);
+	*dict = Py_BuildValue("{sisN}", "revision", acl->revision,
+			"ace_list", ace_list);
 
 	return True;
 }
@@ -181,19 +178,29 @@ BOOL py_from_SECDESC(PyObject **dict, SEC_DESC *sd)
 
 	*dict = PyDict_New();
 
-	PyDict_SetItemString(*dict, "revision", PyInt_FromLong(sd->revision));
+	obj = PyInt_FromLong(sd->revision);
+	PyDict_SetItemString(*dict, "revision", obj);
+	Py_DECREF(obj);
 
-	if (py_from_SID(&obj, sd->owner_sid))
+	if (py_from_SID(&obj, sd->owner_sid)) {
 		PyDict_SetItemString(*dict, "owner_sid", obj);
+		Py_DECREF(obj);
+	}
 
-	if (py_from_SID(&obj, sd->grp_sid))
+	if (py_from_SID(&obj, sd->grp_sid)) {
 		PyDict_SetItemString(*dict, "group_sid", obj);
+		Py_DECREF(obj);
+	}
 
-	if (py_from_ACL(&obj, sd->dacl))
+	if (py_from_ACL(&obj, sd->dacl)) {
 		PyDict_SetItemString(*dict, "dacl", obj);
+		Py_DECREF(obj);
+	}
 
-	if (py_from_ACL(&obj, sd->sacl))
+	if (py_from_ACL(&obj, sd->sacl)) {
 		PyDict_SetItemString(*dict, "sacl", obj);
+		Py_DECREF(obj);
+	}
 
 	return True;
 }

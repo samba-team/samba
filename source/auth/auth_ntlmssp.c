@@ -135,4 +135,3 @@ NTSTATUS auth_ntlmssp_update(AUTH_NTLMSSP_STATE *auth_ntlmssp_state,
 {
 	return ntlmssp_server_update(auth_ntlmssp_state->ntlmssp_state, request, reply);
 }
-
