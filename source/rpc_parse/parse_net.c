@@ -1356,6 +1356,66 @@ BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct * ps,
 }
 
 /*************************************************************************
+ net_user_info_3_copy_from_ctr
+ *************************************************************************/
+BOOL net_user_info_3_copy_from_ctr(NET_USER_INFO_3 * usr,
+		const NET_USER_INFO_CTR *ctr)
+{
+	ZERO_STRUCTP(usr);
+	if (ctr->ptr_user_info == 0)
+	{
+		return True;
+	}
+	switch (ctr->switch_value)
+	{
+		case 2:
+		{
+			const NET_USER_INFO_2 *usr2 = ctr->usr.id2;
+			if (!make_net_user_info3W(usr,
+					  &usr2->logon_time,
+					  &usr2->logoff_time,
+					  &usr2->kickoff_time,
+					  &usr2->pass_last_set_time,
+					  &usr2->pass_can_change_time,
+					  &usr2->pass_must_change_time,
+					  &usr2->uni_user_name,
+					  &usr2->uni_full_name,
+					  &usr2->uni_logon_script,
+					  &usr2->uni_profile_path,
+					  &usr2->uni_home_dir,
+					  &usr2->uni_dir_drive,
+					  usr2->logon_count,
+					  usr2->bad_pw_count,
+					  usr2->user_id,
+					  usr2->group_id,
+					  usr2->num_groups,
+					  usr2->gids,
+					  usr2->user_flgs,
+					  usr2->user_sess_key,
+					  &usr2->uni_logon_srv,
+					  &usr2->uni_logon_dom,
+					  usr2->padding,
+					  &usr2->dom_sid.sid, NULL))
+			{
+				return False;
+			}
+			break;
+		}
+		case 3:
+		{
+			memcpy(usr, ctr->usr.id3, sizeof(*usr));
+			break;
+		}
+		default:
+		{
+			DEBUG(0,("invalid NET_USER_INFO_X info class\n"));
+			return False;
+		}
+	}
+	return True;
+}
+
+/*************************************************************************
  make_net_user_info3
  *************************************************************************/
 BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,

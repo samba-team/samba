@@ -464,6 +464,8 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 			 char *logon_dom, char *padding, DOM_SID * dom_sid);
 BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct * ps,
 		       int depth);
+BOOL net_user_info_3_copy_from_ctr(NET_USER_INFO_3 * usr,
+		const NET_USER_INFO_CTR *ctr);
 BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 			  const NTTIME * logon_time,
 			  const NTTIME * logoff_time,

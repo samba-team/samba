@@ -1259,30 +1259,26 @@ BOOL lsa_close(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
-void gen_next_creds( struct ntdom_info *nt, DOM_CRED *new_clnt_cred);
-BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level);
+void gen_next_creds(struct ntdom_info *nt, DOM_CRED * new_clnt_cred);
+BOOL cli_net_logon_ctrl2(const char *srv_name, uint32 status_level);
 uint32 cli_net_auth2(const char *srv_name,
-				const char *trust_acct, 
-				const char *acct_name, 
-				uint16 sec_chan, 
-				uint32 *neg_flags, DOM_CHAL *srv_chal);
-uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
-				DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
-BOOL cli_net_srv_pwset(const char* srv_name,
-				const char* myhostname,
-				const char* trust_acct,
-				const uint8 hashed_trust_pwd[16],
-				uint16 sec_chan_type);
-uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
-				NET_ID_INFO_CTR *ctr, 
-				NET_USER_INFO_3 *user_info3);
-BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
-				NET_ID_INFO_CTR *ctr);
-BOOL cli_net_sam_sync( const char* srv_name, const char* myhostname,
-				uint32 database_id,
-				uint32 *num_deltas,
-				SAM_DELTA_HDR *hdr_deltas,
-				SAM_DELTA_CTR *deltas);
+		     const char *trust_acct,
+		     const char *acct_name,
+		     uint16 sec_chan, uint32 * neg_flags, DOM_CHAL * srv_chal);
+uint32 cli_net_req_chal(const char *srv_name, const char *myhostname,
+			DOM_CHAL * clnt_chal, DOM_CHAL * srv_chal);
+BOOL cli_net_srv_pwset(const char *srv_name,
+		       const char *myhostname,
+		       const char *trust_acct,
+		       const uint8 hashed_trust_pwd[16], uint16 sec_chan_type);
+uint32 cli_net_sam_logon(const char *srv_name, const char *myhostname,
+			 NET_ID_INFO_CTR * idc, NET_USER_INFO_CTR * ctr);
+BOOL cli_net_sam_logoff(const char *srv_name, const char *myhostname,
+			NET_ID_INFO_CTR * ctr);
+BOOL cli_net_sam_sync(const char *srv_name, const char *myhostname,
+		      uint32 database_id,
+		      uint32 * num_deltas,
+		      SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
@@ -1894,6 +1890,8 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 			 char *logon_dom, char *padding, DOM_SID * dom_sid);
 BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct * ps,
 		       int depth);
+BOOL net_user_info_3_copy_from_ctr(NET_USER_INFO_3 * usr,
+		const NET_USER_INFO_CTR *ctr);
 BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 			  const NTTIME * logon_time,
 			  const NTTIME * logoff_time,
