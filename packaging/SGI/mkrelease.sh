@@ -19,14 +19,14 @@ if [ ! -f ../../source/Makefile ]; then
   doclean="clean"
 fi
 
-if [ "$1" = "clean" ]; then
+if [ "$1" = "clean" ] || [ "$1" = "cleanonly" ]; then
   doclean=$1
   shift
 fi
 
 export SGI_ABI ISA CC
 
-if [ "$doclean" = "clean" ]; then
+if [ "$doclean" = "clean" ] || [ "$doclean" = "cleanonly" ]; then
   cd ../../source
   if [ -f Makefile ]; then
     make distclean
@@ -34,6 +34,7 @@ if [ "$doclean" = "clean" ]; then
   rm -rf bin/*.profile bin/*.noquota
   cd ../packaging/SGI
   rm -rf bins catman html codepages swat samba.idb samba.spec
+  if [ "$doclean" = "cleanonly" ]; then exit 0 ; fi
 fi
 
 # create the catman versions of the manual pages
