@@ -122,7 +122,7 @@ static uint32 check_any(char *trust_account, uchar trust_passwd[16])
 		if (ip_equal(pdc_ip, ip_list[i]))
 			continue;
 
-		if (!name_status_find(lp_workgroup(), 0x20, ip_list[i], srv_name))
+		if (!name_status_find(0x20, ip_list[i], srv_name))
 			continue;
 
 		DEBUG(3, ("contacting dc %s to check secret\n", srv_name));
@@ -159,7 +159,7 @@ static uint32 check_passwordserver(char *trust_account, uchar trust_passwd[16])
 
 			inet_aton(remote_machine, &ip);
 
-			if (!name_status_find(lp_workgroup(), 0x20, ip, srv_name)) {
+			if (!name_status_find(0x20, ip, srv_name)) {
 				DEBUG(3, ("invalid server %s\n",
 					  remote_machine));
 				continue;
