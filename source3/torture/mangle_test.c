@@ -151,7 +151,7 @@ static void gen_name(char *name)
 BOOL torture_mangle(int dummy)
 {
 	extern int torture_numops;
-	static struct cli_state cli;
+	static struct cli_state *cli;
 	int i;
 
 	printf("starting mangle test\n");
@@ -167,10 +167,10 @@ BOOL torture_mangle(int dummy)
 		return False;
 	}
 
-	cli_unlink(&cli, "\\mangle_test\\*");
-	cli_rmdir(&cli, "\\mangle_test");
+	cli_unlink(cli, "\\mangle_test\\*");
+	cli_rmdir(cli, "\\mangle_test");
 
-	if (!cli_mkdir(&cli, "\\mangle_test")) {
+	if (!cli_mkdir(cli, "\\mangle_test")) {
 		printf("ERROR: Failed to make directory\n");
 		return False;
 	}
@@ -180,7 +180,7 @@ BOOL torture_mangle(int dummy)
 
 		gen_name(name);
 
-		if (!test_one(&cli, name)) {
+		if (!test_one(cli, name)) {
 			break;
 		}
 		if (total && total % 100 == 0) {
@@ -189,8 +189,8 @@ BOOL torture_mangle(int dummy)
 		}
 	}
 
-	cli_unlink(&cli, "\\mangle_test\\*");
-	if (!cli_rmdir(&cli, "\\mangle_test")) {
+	cli_unlink(cli, "\\mangle_test\\*");
+	if (!cli_rmdir(cli, "\\mangle_test")) {
 		printf("ERROR: Failed to remove directory\n");
 		return False;
 	}
@@ -198,7 +198,7 @@ BOOL torture_mangle(int dummy)
 	printf("\nTotal collisions %u/%u  - %.2f%%   (%u failures)\n",
 	       collisions, total, (100.0*collisions) / total, failures);
 
-	torture_close_connection(&cli);
+	torture_close_connection(cli);
 
 	printf("mangle test finished\n");
 	return (failures == 0);
