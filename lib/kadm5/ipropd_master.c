@@ -238,9 +238,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     sp->fetch (sp, (char *)data.data + 4, data.length - 4);
     krb5_storage_free(sp);
 
-    data_sp = krb5_storage_from_mem (data.data, 4);
-    krb5_store_int32 (data_sp, FOR_YOU);
-    krb5_storage_free(sp);
+    _krb5_put_int(data.data, FOR_YOU, 4);
 
     ret = krb5_mk_priv (context, s->ac, &data, &priv_data, NULL);
     krb5_data_free(&data);
@@ -271,7 +269,7 @@ process_msg (krb5_context context, slave *s, int log_fd,
     if (ret)
 	return 1;
 
-    if(in->length == 0) {
+    if(in.length == 0) {
 	krb5_warnx(context, "process_msg: short message");
 	return 1;
     }
