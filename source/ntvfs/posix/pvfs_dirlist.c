@@ -24,6 +24,16 @@
 #include "includes.h"
 #include "vfs_posix.h"
 
+struct pvfs_dir {
+	struct pvfs_state *pvfs;
+	BOOL no_wildcard;
+	char *last_name;
+	off_t offset;
+	DIR *dir;
+	const char *unix_path;
+	BOOL end_of_search;
+};
+
 /*
   a special directory listing case where the pattern has no wildcard. We can just do a single stat()
   thus avoiding the more expensive directory scan
@@ -35,25 +45,33 @@ static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filen
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	dir->count = 0;
+	dir->pvfs = pvfs;
+	dir->no_wildcard = True;
+	dir->end_of_search = False;
 	dir->unix_path = talloc_strdup(dir, name->full_name);
 	if (!dir->unix_path) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dir->names = talloc_array_p(dir, const char *, 1);
-	if (!dir->names) {
+	dir->last_name = talloc_strdup(dir, pattern);
+	if (!dir->last_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dir->names[0] = talloc_strdup(dir, pattern);
-	if (!dir->names[0]) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dir->count = 1;
+	dir->dir = NULL;
+	dir->offset = 0;
 
 	return NT_STATUS_OK;
+}
+
+/*
+  destroy an open search
+*/
+static int pvfs_dirlist_destructor(void *ptr)
+{
+	struct pvfs_dir *dir = ptr;
+	if (dir->dir) closedir(dir->dir);
+	return 0;
 }
 
 /*
@@ -61,12 +79,18 @@ static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filen
 
   if the pattern matches no files then we return NT_STATUS_OK, with dir->count = 0
 */
-NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name, struct pvfs_dir *dir)
+NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name, 
+			 TALLOC_CTX *mem_ctx, struct pvfs_dir **dirp)
 {
-	DIR *odir;
-	struct dirent *dent;
-	uint_t allocated = 0;
 	char *pattern;
+	struct pvfs_dir *dir;
+
+	(*dirp) = talloc_p(mem_ctx, struct pvfs_dir);
+	if (*dirp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	dir = *dirp;
 
 	/* split the unix path into a directory + pattern */
 	pattern = strrchr(name->full_name, '/');
@@ -82,56 +106,102 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name, st
 		return pvfs_list_no_wildcard(pvfs, name, pattern, dir);
 	}
 
-	dir->names = NULL;
-	dir->count = 0;
 	dir->unix_path = talloc_strdup(dir, name->full_name);
 	if (!dir->unix_path) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	odir = opendir(name->full_name);
-	if (!odir) { 
+	dir->dir = opendir(name->full_name);
+	if (!dir->dir) { 
 		return pvfs_map_errno(pvfs, errno); 
 	}
 
-	while ((dent = readdir(odir))) {
-		uint_t i = dir->count;
-		const char *dname = dent->d_name;
+	dir->pvfs = pvfs;
+	dir->no_wildcard = False;
+	dir->last_name = NULL;
+	dir->end_of_search = False;
+	dir->offset = 0;
 
-		if (ms_fnmatch(pattern, dname, 
-			       pvfs->tcon->smb_conn->negotiate.protocol) != 0) {
-			char *short_name = pvfs_short_name_component(pvfs, dname);
-			if (short_name == NULL ||
-			    ms_fnmatch(pattern, short_name, 
-				       pvfs->tcon->smb_conn->negotiate.protocol) != 0) {
-				talloc_free(short_name);
-				continue;
-			}
-			talloc_free(short_name);
-		}
-
-		if (dir->count >= allocated) {
-			allocated = (allocated + 100) * 1.2;
-			dir->names = talloc_realloc_p(dir, dir->names, const char *, allocated);
-			if (!dir->names) { 
-				closedir(odir);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-
-		dir->names[i] = talloc_strdup(dir, dname);
-		if (!dir->names[i]) { 
-			closedir(odir);
-			return NT_STATUS_NO_MEMORY;
-		}
-		
-		dir->count++;
-	}
-
-	closedir(odir);
+	talloc_set_destructor(dir, pvfs_dirlist_destructor);
 
 	return NT_STATUS_OK;
 }
+
+/* 
+   return the next entry
+*/
+const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
+{
+	struct dirent *de;
+
+	/* non-wildcard searches are easy */
+	if (dir->no_wildcard) {
+		dir->end_of_search = True;
+		if (*ofs != 0) return NULL;
+		(*ofs)++;
+		return dir->last_name;
+	}
+
+	if (*ofs != dir->offset) {
+		seekdir(dir->dir, *ofs);
+		dir->offset = *ofs;
+	}
+	
+	de = readdir(dir->dir);
+	if (de == NULL) {
+		dir->last_name = NULL;
+		dir->end_of_search = True;
+		pvfs_list_hibernate(dir);
+		return NULL;
+	}
+
+	dir->offset = telldir(dir->dir);
+	(*ofs) = dir->offset;
+
+	dir->last_name = de->d_name;
+
+	return dir->last_name;
+}
+
+/* 
+   put the directory to sleep. Used between search calls to give the
+   right directory change semantics
+*/
+void pvfs_list_hibernate(struct pvfs_dir *dir)
+{
+	if (dir->dir) {
+		closedir(dir->dir);
+		dir->dir = NULL;
+	}
+}
+
+
+/* 
+   wake up the directory search
+*/
+NTSTATUS pvfs_list_wakeup(struct pvfs_dir *dir, uint_t *ofs)
+{
+	if (dir->no_wildcard ||
+	    dir->dir != NULL) {
+		return NT_STATUS_OK;
+	}
+
+	dir->dir = opendir(dir->unix_path);
+	if (dir->dir == NULL) {
+		dir->end_of_search = True;
+		return pvfs_map_errno(dir->pvfs, errno);
+	}
+
+	seekdir(dir->dir, *ofs);
+	dir->offset = telldir(dir->dir);
+	if (dir->offset != *ofs) {
+		DEBUG(0,("pvfs_list_wakeup: search offset changed %u -> %u\n", 
+			 *ofs, (unsigned)dir->offset));
+	}
+
+	return NT_STATUS_OK;
+}
+
 
 
 /*
@@ -147,24 +217,40 @@ const char *pvfs_list_unix_path(struct pvfs_dir *dir)
 */
 BOOL pvfs_list_eos(struct pvfs_dir *dir, uint_t ofs)
 {
-	return ofs >= dir->count;
-}
-
-/* 
-   return the next entry
-*/
-const char *pvfs_list_next(struct pvfs_dir *dir, uint_t ofs)
-{
-	if (ofs >= dir->count) return NULL;
-	return dir->names[ofs];
+	return dir->end_of_search;
 }
 
 /*
   seek to the given name
 */
-uint_t pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t ofs)
+NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 {
-	/* not correct, needs to be replaced with real search when 
-	   DIR* implementation is done */
-	return ofs;
+	struct dirent *de;
+	NTSTATUS status;
+
+	status = pvfs_list_wakeup(dir, ofs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (StrCaseCmp(name, dir->last_name) == 0) {
+		*ofs = dir->offset;
+		return NT_STATUS_OK;
+	}
+
+	rewinddir(dir->dir);
+
+	while ((de = readdir(dir->dir))) {
+		if (StrCaseCmp(name, de->d_name) == 0) {
+			dir->offset = telldir(dir->dir);
+			*ofs = dir->offset;
+			return NT_STATUS_OK;
+		}
+	}
+
+	dir->end_of_search = True;
+
+	pvfs_list_hibernate(dir);
+
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
