@@ -233,17 +233,17 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			return NT_STATUS_OK;
 		} else {
 			if (lp_ntlm_auth()) {				
-				/* Apparently NT accepts NT responses in the LM feild
-				   - I think this is related to Win9X pass-though authenticaion
+				/* Apparently NT accepts NT responses in the LM field
+				   - I think this is related to Win9X pass-though authentication
 				*/
-				DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM feild\n"));
+				DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM field\n"));
 				if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
 							 nt_pw, auth_context->challenge,
 							 user_sess_key)) 
 				{
 					return NT_STATUS_OK;
 				} else {
-					DEBUG(3,("sam_password_ok: NT MD4 password in LM feild failed for user %s\n",pdb_get_username(sampass)));
+					DEBUG(3,("sam_password_ok: NT MD4 password in LM field failed for user %s\n",pdb_get_username(sampass)));
 					return NT_STATUS_WRONG_PASSWORD;
 				}
 			}
