@@ -22,6 +22,7 @@
 
 int nbench_line_count = 0;
 static int timelimit = 600;
+static int warmup;
 static char *loadfile;
 
 #define ival(s) strtol(s, NULL, 0)
@@ -37,7 +38,7 @@ static BOOL run_netbench(struct cli_state *cli, int client)
 	const char *p;
 	BOOL correct = True;
 
-	nb_setup(cli, client);
+	nb_setup(cli, client, warmup);
 
 	asprintf(&cname, "client%d", client);
 
@@ -51,6 +52,13 @@ static BOOL run_netbench(struct cli_state *cli, int client)
 again:
 	while (fgets(line, sizeof(line)-1, f)) {
 		NTSTATUS status;
+		double t = end_timer();
+
+		if (warmup && t >= warmup) {
+			warmup = 0;
+			nb_warmup_done();
+			start_timer();
+		}
 
 		if (end_timer() >= timelimit) {
 			goto done;
@@ -152,7 +160,6 @@ done:
 /* run a test that simulates an approximate netbench client load */
 BOOL torture_nbench(int dummy)
 {
-	double t;
 	BOOL correct = True;
 	extern int torture_nprocs;
 	struct cli_state *cli;
@@ -163,6 +170,8 @@ BOOL torture_nbench(int dummy)
 		timelimit = atoi(p);
 	}
 
+	warmup = timelimit / 20;
+
 	loadfile =  lp_parm_string(-1, "torture", "loadfile");
 	if (!loadfile || !*loadfile) {
 		loadfile = "client.txt";
@@ -172,19 +181,20 @@ BOOL torture_nbench(int dummy)
 		return False;
 	}
 
-	nb_setup(cli, -1);
+	nb_setup(cli, -1, warmup);
 	nb_deltree("\\clients");
 
 	nbio_shmem(torture_nprocs);
 
-	printf("Running for %d seconds with load '%s'\n", timelimit, loadfile);
+	printf("Running for %d seconds with load '%s' and warmup %d secs\n", 
+	       timelimit, loadfile, warmup);
 
 	signal(SIGALRM, SIGNAL_CAST nb_alarm);
 	alarm(1);
-	t = torture_create_procs(run_netbench, &correct);
+	torture_create_procs(run_netbench, &correct);
 	alarm(0);
 
 	printf("\nThroughput %g MB/sec\n", 
-	       1.0e-6 * nbio_total() / t);
+	       1.0e-6 * nbio_total() / timelimit);
 	return correct;
 }
