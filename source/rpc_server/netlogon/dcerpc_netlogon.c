@@ -598,5 +598,331 @@ static WERROR netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TALLOC_CT
 }
 
 
+/* 
+  netr_NETRENUMERATETRUSTEDDOMAINS 
+*/
+static WERROR netr_NETRENUMERATETRUSTEDDOMAINS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRENUMERATETRUSTEDDOMAINS *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_DSRGETDCNAME 
+*/
+static WERROR netr_DSRGETDCNAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DSRGETDCNAME *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONDUMMYROUTINE1 
+*/
+static WERROR netr_NETRLOGONDUMMYROUTINE1(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONDUMMYROUTINE1 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONSETSERVICEBITS 
+*/
+static WERROR netr_NETRLOGONSETSERVICEBITS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONSETSERVICEBITS *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONGETTRUSTRID 
+*/
+static WERROR netr_NETRLOGONGETTRUSTRID(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONGETTRUSTRID *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONCOMPUTESERVERDIGEST 
+*/
+static WERROR netr_NETRLOGONCOMPUTESERVERDIGEST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONCOMPUTECLIENTDIGEST 
+*/
+static WERROR netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRSERVERAUTHENTICATE3 
+*/
+static WERROR netr_NETRSERVERAUTHENTICATE3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRSERVERAUTHENTICATE3 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_DSRGETDCNAMEX 
+*/
+static WERROR netr_DSRGETDCNAMEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DSRGETDCNAMEX *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_DSRGETSITENAME 
+*/
+static WERROR netr_DSRGETSITENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DSRGETSITENAME *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONGETDOMAININFO 
+*/
+static WERROR netr_NETRLOGONGETDOMAININFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONGETDOMAININFO *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRSERVERPASSWORDSET2 
+*/
+static WERROR netr_NETRSERVERPASSWORDSET2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRSERVERPASSWORDSET2 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRSERVERPASSWORDGET 
+*/
+static WERROR netr_NETRSERVERPASSWORDGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRSERVERPASSWORDGET *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONSENDTOSAM 
+*/
+static WERROR netr_NETRLOGONSENDTOSAM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONSENDTOSAM *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_DSRADDRESSTOSITENAMESW 
+*/
+static WERROR netr_DSRADDRESSTOSITENAMESW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DSRADDRESSTOSITENAMESW *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_DSRGETDCNAMEEX2 
+*/
+static WERROR netr_DSRGETDCNAMEEX2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DSRGETDCNAMEEX2 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN 
+*/
+static WERROR netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRENUMERATETRUSTEDDOMAINSEX 
+*/
+static WERROR netr_NETRENUMERATETRUSTEDDOMAINSEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRENUMERATETRUSTEDDOMAINSEX *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_DSRADDRESSTOSITENAMESEXW 
+*/
+static WERROR netr_DSRADDRESSTOSITENAMESEXW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DSRADDRESSTOSITENAMESEXW *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_DSRGETDCSITECOVERAGEW 
+*/
+static WERROR netr_DSRGETDCSITECOVERAGEW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DSRGETDCSITECOVERAGEW *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONSAMLOGONEX 
+*/
+static WERROR netr_NETRLOGONSAMLOGONEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONSAMLOGONEX *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_DsrEnumerateDomainTrusts 
+*/
+static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					      struct netr_DsrEnumerateDomainTrusts *r)
+{
+	struct netr_DomainTrust *trusts;
+	void *sam_ctx;
+	int ret, i;
+	struct ldb_message **res;
+	const char * const attrs[] = { "name", "dnsDomain", "objectSid", "objectGUID", NULL };
+
+	ZERO_STRUCT(r->out);
+
+	sam_ctx = samdb_connect();
+	if (sam_ctx == NULL) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	ret = samdb_search(sam_ctx, mem_ctx, NULL, &res, attrs, "(objectClass=domainDNS)");
+	if (ret == -1) {
+		samdb_close(sam_ctx);
+		return WERR_GENERAL_FAILURE;		
+	}
+
+	if (ret == 0) {
+		return WERR_OK;
+	}
+
+	trusts = talloc_array_p(mem_ctx, struct netr_DomainTrust, ret);
+	if (trusts == NULL) {
+		return WERR_NOMEM;
+	}
+	
+	r->out.count = ret;
+	r->out.trusts = trusts;
+
+	for (i=0;i<ret;i++) {
+		trusts[i].netbios_name = samdb_result_string(res[i], "name", NULL);
+		trusts[i].dns_name     = samdb_result_string(res[i], "dnsDomain", NULL);
+		trusts[i].trust_flags = 
+			NETR_TRUST_FLAG_TREEROOT | 
+			NETR_TRUST_FLAG_IN_FOREST | 
+			NETR_TRUST_FLAG_PRIMARY;
+		trusts[i].parent_index = 0;
+		trusts[i].trust_type = 2;
+		trusts[i].trust_attributes = 0;
+		trusts[i].sid  = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
+		trusts[i].guid = samdb_result_guid(res[i], "objectGUID");
+	}
+	
+
+	return WERR_OK;
+}
+
+
+/* 
+  netr_DSRDEREGISTERDNSHOSTRECORDS 
+*/
+static WERROR netr_DSRDEREGISTERDNSHOSTRECORDS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DSRDEREGISTERDNSHOSTRECORDS *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRSERVERTRUSTPASSWORDSGET 
+*/
+static WERROR netr_NETRSERVERTRUSTPASSWORDSGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRSERVERTRUSTPASSWORDSGET *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_DSRGETFORESTTRUSTINFORMATION 
+*/
+static WERROR netr_DSRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DSRGETFORESTTRUSTINFORMATION *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRGETFORESTTRUSTINFORMATION 
+*/
+static WERROR netr_NETRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRGETFORESTTRUSTINFORMATION *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRLOGONSAMLOGONWITHFLAGS 
+*/
+static WERROR netr_NETRLOGONSAMLOGONWITHFLAGS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRLOGONSAMLOGONWITHFLAGS *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  netr_NETRSERVERGETTRUSTINFO 
+*/
+static WERROR netr_NETRSERVERGETTRUSTINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NETRSERVERGETTRUSTINFO *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_netlogon_s.c"

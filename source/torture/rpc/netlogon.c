@@ -1561,6 +1561,30 @@ static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
+/*
+  try a netlogon netr_DsrEnumerateDomainTrusts
+*/
+static BOOL test_DsrEnumerateDomainTrusts(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_DsrEnumerateDomainTrusts r;
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.trust_flags = 0x3f;
+
+	printf("Testing netr_DsrEnumerateDomainTrusts\n");
+
+	status = dcerpc_netr_DsrEnumerateDomainTrusts(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		printf("netr_DsrEnumerateDomainTrusts - %s/%s\n", 
+		       nt_errstr(status), win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
+
 
 BOOL torture_rpc_netlogon(int dummy)
 {
@@ -1637,6 +1661,10 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_LogonControl2Ex(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_DsrEnumerateDomainTrusts(p, mem_ctx)) {
 		ret = False;
 	}
 

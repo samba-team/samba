@@ -10,6 +10,7 @@
 
 [ uuid(12345778-1234-abcd-ef00-0123456789ac),
   version(1.0),
+  endpoints(samr,TCP-0),
   pointer_default(unique)
 ] interface samr
 {
@@ -761,7 +762,7 @@
 
 	typedef struct {
 		samr_CryptPasswordEx password;
-		uint16 pw_len;
+		uint8 pw_len;
 	} samr_UserInfo26;
 
 	typedef union {
