@@ -1,182 +1,169 @@
-; The global setting for a default install
-; Copyright(C) John H Terpstra - 1997
-;======================= Global Settings =====================================
+;; This is the main Samba configuration file. You should read the
+;; smb.conf(5) manual page in order to understand the options listed
+;; here. Samba has a huge number of configurable options (perhaps too
+;; many!) most of which are not shown in this example
+
+;; Any line which starts with a ; (semi-colon) is a comment and
+;; is ignored
+
+
+;;======================= Global Settings =====================================
 [global]
 
-; workgroup = NT-Domain-Name or Workgroup-Name, eg: REDHAT4
-   workgroup = WORKGROUP
+;; workgroup = NT-Domain-Name or Workgroup-Name, eg: REDHAT4
+   workgroup = MYGROUP
 
-; comment is the equivalent of the NT Description field
-   comment = Samba Server
+;; server string is the equivalent of the NT Description field
+   server string = Samba Server
 
-; printing = BSD or SYSV or AIX, etc.
-   printing = bsd
+;; This option is important for security. It allows you to restrict
+;; connections to machines which are on your local network. The
+;; following example restricts access to two C class networks and
+;; the "loopback" interface. For more examples of the syntax see
+;; the smb.conf man page
+;   hosts allow = 192.168.1. 192.168.2. 127.
+
+;; if you want to automatically load your printer list rather
+;; than setting them up individually then you'll need this
    printcap name = /etc/printcap
    load printers = yes
 
-; Uncomment this if you want a guest account, you must add this to /etc/passwd
+;; Uncomment this if you want a guest account, you must add this to /etc/passwd
+;; otherwise the user "nobody" is used
 ;  guest account = pcguest
+
+;; this tells Samba to use a separate log file for each machine
+;; that connects
    log file = /usr/local/samba/var/log.%m
 
-; Put a capping on the size of the log files (in Kb)
+;; Put a capping on the size of the log files (in Kb).
    max log size = 50
 
-; Options for handling file name case sensitivity and / or preservation
-; Case Sensitivity breaks many WfW and Win95 apps
-;   case sensitive = yes
-    short preserve case = yes
-    preserve case = yes
-
-; Security and file integrity related options
-   lock directory = /usr/local/samba/var/locks
-   locking = yes
-; Strict locking is available for paranoid locking situations only
-;        enabling this severely degrades read / write performance.
-;   strict locking = yes
-;   fake oplocks = yes
-   share modes = yes
-
-; Security modes: USER uses Unix username/passwd, SHARE uses WfW type passwords
-;        SERVER uses an other SMB server (eg: Windows NT Server or Samba)
-;        to provide authentication services
+;; Security mode. Most people will want user level security. See
+;; security_level.txt for details.
    security = user
-; Use password server option only with security = server
+;; Use password server option only with security = server
 ;   password server = <NT-Server-Name>
 
-; Encrypted Password Support - Off by default. Requires smbpasswd file
-; Refer to docs/Encryption.txt
-   encrypt passwords = no
-
-; Configuration Options ***** The location of this entry in your smb.conf
-; heirachy determines  which parameters are overwritten - please watch out!
-; Where %m is any SMBName (machine name, or computer name) for which a custom
-; configuration is desired
+;; Using the following line enables you to customise your configuration
+;; on a per machine basis. The %m gets replaced with the netbios name
+;; of the machine that is connecting
 ;   include = /usr/local/samba/lib/smb.conf.%m
 
-; Performance Related Options
-; Before setting socket options read the smb.conf man page!!
+;; Most people will find that this option gives better performance.
+;; See speed.txt and the manual pages for details
    socket options = TCP_NODELAY 
-; Use keep alive only if really needed!!!!
-;   keep alive = 60
-; Configure Samba to use multiple interfaces
-;        Samba will auto-detect network interfaces - only use this if
-;        the auto-detection does not deliver the needed results
-;   interfaces = 192.168.12.2/24 176.16.111.22/19 10.11.13.14/255.255.252.0
 
-; Browser Control Options:
-; Local Master set to True causes Samba to participate in browser elections
-;       the default setting is true, this causes Samba to behave like a
-;       Windows NT server. Setting this to false turns off all browser
-;       election participation.
-;   local master = yes
+;; Configure Samba to use multiple interfaces
+;; If you have multiple network interfaces then you must list them
+;; here. See the man page for details.
+;   interfaces = 192.168.12.2/24 192.168.13.2/24 
 
-; OS Level gives Samba the power to win browser elections. Windows NT = 32
-;	Any value < 32 means NT wins as Master Browser, > 32 Samba gets it
-;	default = 0, this ensures that Samba will NOT win the browser election.
+;; Browser Control Options:
+;; set local master to no if you don't want Samba to become a master
+;; browser on your network. Otherwise the normal election rules apply
+;   local master = no
+
+;; OS Level determines the precedence of this server in master browser
+;; elections. The default value should be reasonable
 ;   os level = 33
 
-; Domain Master specifies Samba to be the Domain Master Browser
-;	Only ever set this if there is NO Windows NT Domain Controller on the
-;	network
+;; Domain Master specifies Samba to be the Domain Master Browser. This
+;; allows Samba to collate browse lists between subnets. Don't use this
+;; if you already have a Windows NT domain controller doing this job
 ;   domain master = yes 
 
-; Preferred Master causes Samba to force a local browser election on startup
+;; Preferred Master causes Samba to force a local browser election on startup
+;; and gives it a slightly higher chance of winning the election
 ;   preferred master = yes
 
-; Use with care only if you have an NT server on your network that has been
-; configured at install time to be a primary domain controller.
+;; Use only if you have an NT server on your network that has been
+;; configured at install time to be a primary domain controller.
 ;   domain controller = <NT-Domain-Controller-SMBName>
 
-; Domain Logon Service Options:
-; Domain logon control can be a good thing! See [netlogon] share section below!
-;	Do NOT set this to yes if there is an Windows NT domain controller
-;	on the network
+;; Enable this if you want Samba to be a domain logon server for 
+;; Windows95 workstations. 
 ;   domain logons = yes
 
-; run a specific logon batch file per workstation (machine)
+;; if you enable domain logons then you may want a per-machine or
+;; per user logon script
+;; run a specific logon batch file per workstation (machine)
 ;   logon script = %m.bat
-; run a specific logon batch file per session username (ie: Client User Name)
-;   logon script = %U.bat
+;; run a specific logon batch file per username
+;   logon script = %u.bat
 
-; Where to store roving profiles (only for Win95 and WinNT)
-;        %L substitutes for the SMB name we are called, %U is username
-;        You must uncomment the [Profiles] share below
+;; Where to store roving profiles (only for Win95 and WinNT)
+;;        %L substitutes for this servers netbios name, %U is username
+;;        You must uncomment the [Profiles] share below
 ;   logon path = \\%L\Profiles\%U
 
-; Windows Internet Name Serving Support Section:
-; WINS Support - Tells the NMBD component of Samba to enable it's WINS Server
-;	the default is NO. If you have an Windows NT Server WINS use it!
-;	Samba defaults to wins support = no
+;; Windows Internet Name Serving Support Section:
+;; WINS Support - Tells the NMBD component of Samba to enable it's WINS Server
 ;   wins support = yes
 
-; WINS Server - Tells the NMBD components of Samba to be a WINS Client
-;	Note: Samba can be either a WINS Server, or a WINS Client, but NOT both
+;; WINS Server - Tells the NMBD components of Samba to be a WINS Client
+;;	Note: Samba can be either a WINS Server, or a WINS Client, but NOT both
 ;   wins server = w.x.y.z
 
-; WINS Proxy - Tells Samba to answer name resolution queries on behalf of a non
-;	WINS Client capable client, for this to work there must be at least one
-;	WINS Server on the network. The default is NO.
+;; WINS Proxy - Tells Samba to answer name resolution queries on
+;; behalf of a non WINS capable client, for this to work there must be
+;; at least one	WINS Server on the network. The default is NO.
 ;   wins proxy = yes
 
-;============================ Share Definitions ==============================
+;;============================ Share Definitions ==============================
 [homes]
    comment = Home Directories
    browseable = no
    writable = yes
 
-; Un-comment the following and create the netlogon directory for Domain Logons
+;; Un-comment the following and create the netlogon directory for Domain Logons
 ; [netlogon]
-;   comment = Samba Network Logon Service
+;   comment = Network Logon Service
 ;   path = /usr/local/samba/lib/netlogon
-; Case sensitivity breaks logon script processing!!!
-;   case sensitive = no
 ;   guest ok = yes
-;   locking = no
 ;   writable = no
-;   For browseable say NO if you want to hide the NETLOGON share
-;   browseable = yes
-;   share modes = no
 
-; Un-comment the following to provide a specific roving profile share
-; the default is to use the user's home directory
+
+;; Un-comment the following to provide a specific roving profile share
+;; the default is to use the user's home directory
 ;[Profiles]
 ;    path = /usr/local/samba/profiles
 ;    browseable = no
-;    printable = no
 ;    guest ok = yes
 
-; NOTE: There is NO need to specifically define each individual printer
+
+;; NOTE: If you have a BSD-style print system there is no need to 
+;; specifically define each individual printer
 [printers]
    comment = All Printers
    path = /usr/spool/samba
    browseable = no
-   printable = yes
-; Set public = yes to allow user 'guest account' to print
+;; Set public = yes to allow user 'guest account' to print
    guest ok = no
    writable = no
-   create mask = 0700
 
+;; This one is useful for people to share files
 ;[tmp]
 ;   comment = Temporary file space
 ;   path = /tmp
 ;   read only = no
 ;   public = yes
 
-; A publicly accessible directory, but read only, except for people in
-; the staff group
-[public]
-   comment = Public Stuff
-   path = /home/samba
-   public = yes
-   writable = yes
-   printable = no
-   write list = @users
+;; A publicly accessible directory, but read only, except for people in
+;; the staff group
+;[public]
+;   comment = Public Stuff
+;   path = /home/samba
+;   public = yes
+;   writable = yes
+;   printable = no
+;   write list = @users
 
-; Other examples. 
-;
-; A private printer, usable only by fred. Spool data will be placed in fred's
-; home directory. Note that fred must have write access to the spool directory,
-; wherever it is.
+;; Other examples. 
+;;
+;; A private printer, usable only by fred. Spool data will be placed in fred's
+;; home directory. Note that fred must have write access to the spool directory,
+;; wherever it is.
 ;[fredsprn]
 ;   comment = Fred's Printer
 ;   valid users = fred
@@ -186,8 +173,8 @@
 ;   writable = no
 ;   printable = yes
 ;
-; A private directory, usable only by fred. Note that fred requires write
-; access to the directory.
+;; A private directory, usable only by fred. Note that fred requires write
+;; access to the directory.
 ;[fredsdir]
 ;   comment = Fred's Service
 ;   path = /usr/somewhere/private
@@ -196,10 +183,10 @@
 ;   writable = yes
 ;   printable = no
 ;
-; a service which has a different directory for each machine that connects
-; this allows you to tailor configurations to incoming machines. You could
-; also use the %u option to tailor it by user name.
-; The %m gets replaced with the machine name that is connecting.
+;; a service which has a different directory for each machine that connects
+;; this allows you to tailor configurations to incoming machines. You could
+;; also use the %u option to tailor it by user name.
+;; The %m gets replaced with the machine name that is connecting.
 ;[pchome]
 ;  comment = PC Directories
 ;  path = /usr/pc/%m
@@ -207,11 +194,11 @@
 ;  writable = yes
 ;
 ;
-; A publicly accessible directory, read/write to all users. Note that all files
-; created in the directory by users will be owned by the default user, so
-; any user with access can delete any other user's files. Obviously this
-; directory must be writable by the default user. Another user could of course
-; be specified, in which case all files would be owned by that user instead.
+;; A publicly accessible directory, read/write to all users. Note that all files
+;; created in the directory by users will be owned by the default user, so
+;; any user with access can delete any other user's files. Obviously this
+;; directory must be writable by the default user. Another user could of course
+;; be specified, in which case all files would be owned by that user instead.
 ;[public]
 ;   path = /usr/somewhere/else/public
 ;   public = yes
@@ -220,11 +207,11 @@
 ;   printable = no
 ;
 ;
-; The following two entries demonstrate how to share a directory so that two
-; users can place files there that will be owned by the specific users. In this
-; setup, the directory should be writable by both users and should have the
-; sticky bit set on it to prevent abuse. Obviously this could be extended to
-; as many users as required.
+;; The following two entries demonstrate how to share a directory so that two
+;; users can place files there that will be owned by the specific users. In this
+;; setup, the directory should be writable by both users and should have the
+;; sticky bit set on it to prevent abuse. Obviously this could be extended to
+;; as many users as required.
 ;[myshare]
 ;   comment = Mary's and Fred's stuff
 ;   path = /usr/somewhere/shared
@@ -233,4 +220,5 @@
 ;   writable = yes
 ;   printable = no
 ;   create mask = 0765
+
 
