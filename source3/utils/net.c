@@ -78,8 +78,6 @@ static int opt_machine_pass = 0;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
-extern BOOL AllowDebugChange;
-
 /*
   run a function from a function table. If not found then
   call the specified usage function 
@@ -513,8 +511,6 @@ static struct functable net_func[] = {
 	int argc_new = 0;
 	const char ** argv_new;
 	poptContext pc;
-	static char *servicesf = dyn_CONFIGFILE;
-	static char *debuglevel = NULL;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
@@ -524,7 +520,6 @@ static struct functable net_func[] = {
 		{"ipaddress",	'I', POPT_ARG_STRING, 0,'I'},
 		{"port",	'p', POPT_ARG_INT,    &opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
-		{"conf",	's', POPT_ARG_STRING, &servicesf},
 		{"server",	'S', POPT_ARG_STRING, &opt_host},
 		{"container",	'c', POPT_ARG_STRING, &opt_container},
 		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
@@ -536,8 +531,9 @@ static struct functable net_func[] = {
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
-		{"debuglevel",  'd', POPT_ARG_STRING, &debuglevel},
-		{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
+		POPT_COMMON_SAMBA
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{ 0, 0, 0, 0}
 	};
 
@@ -577,13 +573,8 @@ static struct functable net_func[] = {
 			exit(1);
 		}
 	}
-
-	if (debuglevel) {
-		debug_parse_levels(debuglevel);
-		AllowDebugChange = False;
-	}
-
-	lp_load(servicesf,True,False,False);       
+	
+	lp_load(dyn_CONFIGFILE,True,False,False);       
 
 	argv_new = (const char **)poptGetArgs(pc);
 
