@@ -33,7 +33,8 @@ extern BOOL short_case_preserve;
 extern fstring remote_machine;
 extern BOOL use_mangled_map;
 
-static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);
+static BOOL scan_directory(char *path, char *name,size_t maxlength,
+			   connection_struct *conn,BOOL docache);
 
 /****************************************************************************
  Check if two filenames are equal.
@@ -272,7 +273,11 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 			 * Try to find this part of the path in the directory.
 			 */
 
-			if (ms_has_wild(start) || !scan_directory(dirpath, start, conn, end?True:False)) {
+			if (ms_has_wild(start) || 
+			    !scan_directory(dirpath, start, 
+					    sizeof(pstring) - 1 - (start - name), 
+					    conn, 
+					    end?True:False)) {
 				if (end) {
 					/*
 					 * An intermediate part of the name can't be found.
@@ -321,8 +326,10 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 			 */
 			if (end) {
 				end = start + strlen(start);
-				pstrcat(start,"/");
-				pstrcat(start,rest);
+				if (!safe_strcat(start, "/", sizeof(pstring) - 1 - (start - name)) ||
+				    !safe_strcat(start, rest, sizeof(pstring) - 1 - (start - name))) {
+					return False;
+				}
 				*end = '\0';
 			} else {
 				/*
@@ -434,7 +441,8 @@ BOOL check_name(char *name,connection_struct *conn)
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache)
+static BOOL scan_directory(char *path, char *name,size_t maxlength,
+			   connection_struct *conn,BOOL docache)
 {
 	void *cur_dir;
 	char *dname;
@@ -447,7 +455,7 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
 		path = ".";
 
 	if (docache && (dname = DirCacheCheck(path,name,SNUM(conn)))) {
-		pstrcpy(name, dname);	
+		safe_strcpy(name, dname, maxlength);	
 		return(True);
 	}      
 
@@ -487,7 +495,7 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
 			/* we've found the file, change it's name and return */
 			if (docache)
 				DirCacheAdd(path,name,dname,SNUM(conn));
-			pstrcpy(name, dname);
+			safe_strcpy(name, dname, maxlength);
 			CloseDir(cur_dir);
 			return(True);
 		}
