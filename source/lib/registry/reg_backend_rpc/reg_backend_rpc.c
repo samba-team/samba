@@ -234,6 +234,7 @@ static WERROR rpc_get_value_by_index(REG_KEY *parent, int n, REG_VAL **value)
 	if(vn.max_len > 0) {
 		vn.len = 0;
 		vn.max_len = mykeydata->max_valnamelen*2;
+		/* FIXME: we should not point a 'char *' to a const buffer!!! --metze*/
 		vn.buf = "";
 	}
 	r.in.name = r.out.name = &vn;
