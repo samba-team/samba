@@ -44,7 +44,7 @@
 
 #define snprintf test_snprintf
 #define asprintf test_asprintf
-#define asnprintf test_asprintf
+#define asnprintf test_asnprintf
 #define vasprintf test_vasprintf
 #define vasnprintf test_vasnprintf
 #define vsnprintf test_vsnprintf
