@@ -50,17 +50,18 @@ BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 BOOL do_lsa_open_policy(struct cli_state *cli,
 			char *system_name, POLICY_HND *hnd,
 			BOOL sec_qos);
-BOOL do_lsa_lookup_sids(struct cli_state *cli,
-			POLICY_HND *hnd,
-			int num_sids,
-			DOM_SID **sids,
-			char ***names,
-			int *num_names);
 BOOL do_lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid);
 BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd);
 BOOL cli_lsa_get_domain_sid(struct cli_state *cli, char *server);
+uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
+		       BOOL sec_qos, uint32 des_access);
+uint32 lsa_close(POLICY_HND *hnd);
+uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
+		       char ***names, uint32 **types, int *num_names);
+uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
+			DOM_SID **sids, uint32 **types, int *num_sids);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
