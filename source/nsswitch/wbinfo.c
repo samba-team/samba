@@ -77,7 +77,7 @@ static const char *get_winbind_domain(void)
 		printf("could not obtain winbind domain name!\n");
 		
 		/* HACK: (this module should not call lp_ funtions) */
-		return lp_workgroup_dos();
+		return lp_workgroup_unix();
 	}
 
 	fstrcpy(winbind_domain, response.data.domain_name);

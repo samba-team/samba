@@ -79,7 +79,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	 */
 
 	if (!secrets_fetch_trust_account_password(
-                lp_workgroup_dos(), trust_passwd, &last_change_time)) {
+                lp_workgroup_unix(), trust_passwd, &last_change_time)) {
 		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
                           "password for domain %s\n", lp_workgroup_unix()));
 		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -93,7 +93,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	ZERO_STRUCT(info3);
 	
 	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(lp_workgroup_dos(), trust_passwd, &cli);
+        result = cm_get_netlogon_cli(lp_workgroup_unix(), trust_passwd, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
