@@ -7,9 +7,21 @@ Group: Networking
 Source: ftp://samba.org/pub/samba/samba-PVERSION.tar.gz
 Patch: makefile-path.patch
 Patch1: smbw.patch
-Requires: pam >= 0.64
+Requires: pam >= 0.64 kernel >= 2.2.1
 Prereq: chkconfig fileutils
 BuildRoot: /var/tmp/samba
+
+%package debugtools
+Version: PVERSION
+Release: PRELEASE
+Group: Networking
+Summary: Programs to debug Samba and to test SMB client integrity
+
+%package -n smbfs
+Version: PVERSION
+Release: PRELEASE
+Group: Utilities/File
+Summary: Programs to mount SMB shares.
 
 %description
 Samba provides an SMB server which can be used to provide
@@ -29,17 +41,41 @@ being enabled on TCP port 901 via inetd.
 
 Please refer to the WHATSNEW.txt document for fixup information.
 This binary release includes encrypted password support.
+
 Please read the smb.conf file and ENCRYPTION.txt in the
 docs directory for implementation details.
 
 NOTE: TurboLinux uses PAM which has integrated support
 for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
-enabled. Red Hat Linux has built in support for quotas in PAM.
+enabled. PHT TurboLinux has built in support for quotas in PAM.
+
+%description -n smbfs
+This package includes the tools necessary to mount filesystems from
+SMB servers.
+
+%description debugtools
+This package contains programs that can be used to crash test any SMB
+server. Please use it with care. If you do not need it then do NOT
+install.
 
 %changelog
+* Sun Oct 16 1999 John H Terspstra <jht@turbolinux.com>
+- changed mount.smb to link to smbmount
+
+* Sun May 09 1999 John H Terpstra <jht@samba.org>
+- Added smbtorture et al.
+
+* Wed Mar 10 1999 Scott Stone <sstone@turbolinux.com>
+- This package now builds smbfs stuff
+- Added xinetd autosetup in the post install section
+- (todo: add remove of xinetd stuff in postuninstall section)
+
+* Sun Feb 28 1999 Jeremy Allison <jra@samba.org>
+ - Removed smbrun binary and tidied up some loose ends
+
 * Sun Oct 25 1998 John H Terpstra <jht@samba.org>
  - Added modifier to /config specifier so that smb.conf,
-	lmhosts and smbusers never get lost
+        lmhosts and smbusers never get lost
 
 * Sat Oct 24 1998 John H Terpstra <jht@samba.org>
  - removed README.smbsh file from docs area
@@ -60,7 +96,7 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
 
 * Mon Jun 08 1998 Erik Troan <ewt@redhat.com>
   - made the %postun script a tad less agressive; no reason to remove
-    the logs or lock file 
+    the logs or lock file
   - the %postun and %preun should only exectute if this is the final
     removal
   - migrated %triggerpostun from Red Hat's samba package to work around
@@ -74,7 +110,7 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
  - Updated spec file
  - Included new codepage.936
 
-* Sat Mar 20 1998 John H Terpstra <jht@samba.anu.edu/au>
+* Sat Mar 20 1998 John H Terpstra <jht@samba.org>
  - Added swat facility
 
 * Sat Jan 24 1998 John H Terpstra <jht@samba.org>
@@ -96,12 +132,13 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %build
 cd source
-CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-smbwrapper
-make all smbwrapper
+CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas --with-smbmount --with-pam
+make all smbwrapper smbtorture rpctorture smbfilter debug2html
+
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT/sbin
 mkdir -p $RPM_BUILD_ROOT/etc/codepages/src
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/{init.d,rc0.d,rc1.d,rc2.d,rc3.d,rc5.d,rc6.d}
@@ -114,24 +151,26 @@ mkdir -p $RPM_BUILD_ROOT/var/log/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 
 # Install standard binary files
-for i in nmblookup smbclient smbpasswd smbrun smbstatus testparm testprns \
+for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
       make_smbcodepage make_printerdef rpcclient smbsh smbwrapper.so
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/bin
 done
-for i in addtosmbpass mksmbpasswd.sh smbtar 
+for i in addtosmbpass mksmbpasswd.sh smbtar
 do
 install -m755 source/script/$i $RPM_BUILD_ROOT/usr/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat
+for i in smbd nmbd swat smbmount smbumount smbmnt debug2html rpctorture smbtorture smbfilter
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
+# Now link smbmount to mount.smb 
+ln $RPM_BUILD_ROOT/usr/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
 # Install level 1 man pages
-for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1 make_smbcodepage.1 nmblookup.1
+for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1 make_smbcodepage.1 nmblookup.1 smbsh.1
 do
 install -m644 docs/manpages/$i $RPM_BUILD_ROOT/usr/man/man1
 done
@@ -166,15 +205,20 @@ install -m644 docs/manpages/smbd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/nmbd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/smbpasswd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/swat.8 $RPM_BUILD_ROOT/usr/man/man8
-install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
-install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/smbusers
-install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT/usr/bin
-install -m755 packaging/RedHat/findsmb $RPM_BUILD_ROOT/usr/bin
-install -m755 packaging/RedHat/smbadduser $RPM_BUILD_ROOT/usr/bin
-install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
-install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/usr/sbin/samba
-install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
-install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
+install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT/usr/man/man8
+install -m644 docs/manpages/smbmnt.8 $RPM_BUILD_ROOT/usr/man/man8
+install -m644 docs/manpages/smbumount.8 $RPM_BUILD_ROOT/usr/man/man8
+# The mount.smb script has been obsoleted.
+# install -m644 packaging/PHT/TurboLinux/mount.smb $RPM_BUILD_ROOT/sbin
+install -m644 packaging/PHT/TurboLinux/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
+install -m644 packaging/PHT/TurboLinux/smbusers $RPM_BUILD_ROOT/etc/smbusers
+install -m755 packaging/PHT/TurboLinux/smbprint $RPM_BUILD_ROOT/usr/bin
+install -m755 packaging/PHT/TurboLinux/findsmb $RPM_BUILD_ROOT/usr/bin
+install -m755 packaging/PHT/TurboLinux/smbadduser $RPM_BUILD_ROOT/usr/bin
+install -m755 packaging/PHT/TurboLinux/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
+install -m755 packaging/PHT/TurboLinux/smb.init $RPM_BUILD_ROOT/usr/sbin/samba
+install -m644 packaging/PHT/TurboLinux/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+install -m644 packaging/PHT/TurboLinux/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/lmhosts
 
 %clean
@@ -191,13 +235,19 @@ done
 
 # Add swat entry to /etc/services if not already there
 if !( grep ^[:space:]*swat /etc/services > /dev/null ) then
-	echo 'swat		901/tcp				# Add swat service used via inetd' >> /etc/services
+        echo 'swat              901/tcp                         # Add swat service used via inetd' >> /etc/services
 fi
 
 # Add swat entry to /etc/inetd.conf if needed
 if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
-	echo 'swat	stream	tcp	nowait.400	root	/usr/sbin/swat swat' >> /etc/inetd.conf
-killall -1 inetd || :
+        echo 'swat      stream  tcp     nowait.400      root    /usr/sbin/swat swat' >> /etc/inetd.conf
+	killall -1 inetd || :
+fi
+
+# Now create the xinetd.conf file from our inetd.conf file, back up orig first.
+if [ -f /etc/xinetd.conf ]; then
+	mv /etc/xinetd.conf /etc/xinetd.conf.presamba
+	/usr/sbin/itox --daemon_dir /usr/sbin < /etc/inetd.conf > /etc/xinetd.conf
 fi
 
 %preun
@@ -205,24 +255,22 @@ if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
 
     for n in /etc/codepages/*; do
-	if [ $n != /etc/codepages/src ]; then
-	    rm -rf $n
-	fi
+        if [ $n != /etc/codepages/src ]; then
+            rm -rf $n
+        fi
     done
     # We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
     if [ -e /var/lock/samba/browse.dat ]; then
-	    rm -f /var/lock/samba/browse.dat
+            rm -f /var/lock/samba/browse.dat
     fi
     if [ -e /var/lock/samba/wins.dat ]; then
-	    rm -f /var/lock/samba/wins.dat
+            rm -f /var/lock/samba/wins.dat
     fi
 fi
 
 %postun
 # Only delete remnants of samba if this is the final deletion.
-if [ $1 != 0 ] ; then
-    exit 0
-
+if [ $1 = 0 ] ; then
     if [ -x /etc/pam.d/samba ]; then
       rm -f /etc/pam.d/samba
     fi
@@ -240,6 +288,10 @@ if [ $1 != 0 ] ; then
     mv $tmpfile inetd.conf
     sed -e '/^[:space:]*swat.*$/d' /etc/services > $tmpfile
     mv $tmpfile services
+
+    # Recreate xinetd.conf file from /etc/inetd.conf
+    mv /etc/xinetd.conf /etc/xinetd.conf.samba
+    /usr/sbin/itox --daemon_dir /usr/sbin < /etc/inetd.conf > /etc/xinetd.conf
 fi
 
 %triggerpostun -- samba < samba-2.0.0
@@ -264,7 +316,6 @@ fi
 %attr(-,root,root) /usr/bin/rpcclient
 %attr(-,root,root) /usr/bin/testparm
 %attr(-,root,root) /usr/bin/testprns
-%attr(-,root,root) /usr/bin/smbrun
 %attr(-,root,root) /usr/bin/findsmb
 %attr(-,root,root) /usr/bin/smbstatus
 %attr(-,root,root) /usr/bin/nmblookup
@@ -289,6 +340,7 @@ fi
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.5.html
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.8.html
 %attr(-,root,root) /usr/share/swat/help/smbrun.1.html
+%attr(-,root,root) /usr/share/swat/help/smbsh.1.html
 %attr(-,root,root) /usr/share/swat/help/smbstatus.1.html
 %attr(-,root,root) /usr/share/swat/help/smbtar.1.html
 %attr(-,root,root) /usr/share/swat/help/swat.8.html
@@ -321,9 +373,11 @@ fi
 %attr(-,root,root) /etc/codepages/src/codepage_def.949
 %attr(-,root,root) /etc/codepages/src/codepage_def.950
 %attr(-,root,root) /usr/man/man1/smbstatus.1
+%attr(-,root,root) /usr/man/man1/nmblookup.1
 %attr(-,root,root) /usr/man/man1/smbclient.1
 %attr(-,root,root) /usr/man/man1/make_smbcodepage.1
 %attr(-,root,root) /usr/man/man1/smbrun.1
+%attr(-,root,root) /usr/man/man1/smbsh.1
 %attr(-,root,root) /usr/man/man1/smbtar.1
 %attr(-,root,root) /usr/man/man1/testparm.1
 %attr(-,root,root) /usr/man/man1/testprns.1
@@ -331,6 +385,7 @@ fi
 %attr(-,root,root) /usr/man/man7/samba.7
 %attr(-,root,root) /usr/man/man8/smbd.8
 %attr(-,root,root) /usr/man/man8/nmbd.8
+%attr(-,root,root) /usr/man/man8/swat.8
 %attr(-,root,root) /usr/man/man8/smbpasswd.8
 %attr(-,root,nobody) %dir /home/samba
 %attr(-,root,root) %dir /etc/codepages
@@ -338,3 +393,19 @@ fi
 %attr(-,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
+
+%files -n smbfs
+%attr(-,root,root) /usr/sbin/smbmount
+%attr(-,root,root) /usr/sbin/smbumount
+%attr(-,root,root) /usr/sbin/smbmnt
+%attr(-,root,root) /sbin/mount.smb
+%attr(-,root,root) /usr/man/man8/smbmnt.8
+%attr(-,root,root) /usr/man/man8/smbmount.8
+%attr(-,root,root) /usr/man/man8/smbumount.8
+
+%files debugtools
+%attr(-,root,root) /usr/sbin/smbtorture
+%attr(-,root,root) /usr/sbin/rpctorture
+%attr(-,root,root) /usr/sbin/smbfilter
+%attr(-,root,root) /usr/sbin/debug2html
+
