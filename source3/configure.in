@@ -3009,6 +3009,7 @@ samba_cv_TRY_QUOTAS=no
 samba_cv_RUN_QUOTA_TESTS=auto
 samba_cv_WITH_SYS_QUOTAS=auto
 samba_cv_TRY_SYS_QUOTAS=no
+samba_cv_SYSQUOTA_FOUND=no;
 
 AC_MSG_CHECKING(whether to try disk-quotas support)
 AC_ARG_WITH(quotas,
@@ -3078,6 +3079,10 @@ AC_MSG_CHECKING(whether to try the lib/sysquotas.c interface on ${host_os})
 	    AC_MSG_RESULT(yes)
             samba_cv_TRY_SYS_QUOTAS=yes
             samba_cv_RUN_QUOTA_TESTS=yes
+            samba_cv_SYSQUOTA_FOUND=yes
+            AC_DEFINE(HAVE_QUOTACTL_LINUX,1,[Whether Linux quota support is available])
+            AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
+            samba_cv_sysquotas_file="lib/sysquotas_linux.c"
 	    ;;
 	*)
 	    AC_MSG_RESULT(no)
@@ -3090,21 +3095,21 @@ fi
 # only check for quota stuff if --with-quotas
 if test x"$samba_cv_RUN_QUOTA_TESTS" != x"no"; then
 
+# some broken header files need this
+AC_CHECK_HEADER(asm/types.h,[
+	    AC_DEFINE(HAVE_ASM_TYPES_H,1,[check for <asm/types.h>])
+	    AC_ADD_INCLUDE(<asm/types.h>)
+	    ])
+
 # For quotas on Veritas VxFS filesystems
 AC_CHECK_HEADERS(sys/fs/vx_quota.h)
 
 # For sys/quota.h and linux/quota.h
 AC_CHECK_HEADERS(sys/quota.h)
-AC_CHECK_HEADERS(asm/types.h linux/quota.h)
 
-# For quotas on Linux XFS filesystems
-AC_CHECK_HEADERS(linux/xqm.h linux/xfs_fs.h)
-AC_CHECK_HEADERS(xfs/libxfs.h xfs/xqm.h xfs/xfs_fs.h)
-# For linux > 2.5.56 
-AC_CHECK_HEADERS(linux/dqblk_xfs.h)
-
-# if we have struct if_dqblk in <linux/quota.h> we should use it
-AC_CACHE_CHECK([for struct if_dqblk in <linux/quota.h>],samba_cv_HAVE_STRUCT_IF_DQBLK, [
+if test x"$samba_cv_found_xfs_header" = x"no"; then
+# if we have xfs quota support <sys/quota.h> (IRIX) we should use it
+AC_CACHE_CHECK([for XFS QUOTA in <sys/quota.h>],samba_cv_HAVE_SYS_QUOTA_XFS, [
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #ifdef HAVE_SYS_TYPES_H
@@ -3113,29 +3118,14 @@ AC_TRY_COMPILE([
 #ifdef HAVE_ASM_TYPES_H
 #include <asm/types.h>
 #endif
-#include <linux/quota.h>
-],[struct if_dqblk D;],
-samba_cv_HAVE_STRUCT_IF_DQBLK=yes,samba_cv_HAVE_STRUCT_IF_DQBLK=no)])
-if test "$samba_cv_HAVE_STRUCT_IF_DQBLK"x = "yes"x; then
-	AC_DEFINE(HAVE_STRUCT_IF_DQBLK,1,[struct if_dqblk])
+#include <sys/quota.h>
+],[int i = Q_XGETQUOTA;],
+samba_cv_HAVE_SYS_QUOTA_XFS=yes,samba_cv_HAVE_SYS_QUOTA_XFS=no)])
+if test "$samba_cv_HAVE_SYS_QUOTA_XFS"x = "yes"x; then
+	AC_DEFINE(HAVE_IRIX_XFS_QUOTAS,1,[Whether IRIX xfs quota support is available])
+fi
 fi
 
-# if we have struct mem_dqblk in <linux/quota.h> we should use it
-AC_CACHE_CHECK([for struct mem_dqblk in <linux/quota.h>],samba_cv_HAVE_STRUCT_MEM_DQBLK, [
-AC_TRY_COMPILE([
-#include "confdefs.h"
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_ASM_TYPES_H
-#include <asm/types.h>
-#endif
-#include <linux/quota.h>
-],[struct mem_dqblk D;],
-samba_cv_HAVE_STRUCT_MEM_DQBLK=yes,samba_cv_HAVE_STRUCT_MEM_DQBLK=no)])
-if test "$samba_cv_HAVE_STRUCT_MEM_DQBLK"x = "yes"x; then
-	AC_DEFINE(HAVE_STRUCT_MEM_DQBLK,1,[struct mem_dqblk])
-fi
 
 # if we have struct dqblk .dqb_fsoftlimit instead of .dqb_isoftlimit on IRIX 
 AC_CACHE_CHECK([if struct dqblk has .dqb_fsoftlimit],samba_cv_HAVE_DQB_FSOFTLIMIT, [
@@ -3154,7 +3144,6 @@ fi
 
 ##################
 # look for a working quota system
-samba_cv_SYSQUOTA_FOUND=no;
 
 if test x"$samba_cv_SYSQUOTA_FOUND" != x"yes"; then
 AC_CACHE_CHECK([for long quotactl(int cmd, char *special, qid_t id, caddr_t addr)],samba_cv_HAVE_QUOTACTL_4A,[
@@ -3165,7 +3154,9 @@ AC_TRY_RUN_STRICT([
 #include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4A=yes,samba_cv_HAVE_QUOTACTL_4A=no,samba_cv_HAVE_QUOTACTL_4A=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4A" = x"yes"; then
-    samba_cv_SYSQUOTA_FOUND=yes;AC_DEFINE(HAVE_QUOTACTL_4A,1,[Whether long quotactl(int cmd, char *special, qid_t id, caddr_t addr) is available])
+    samba_cv_SYSQUOTA_FOUND=yes;
+    AC_DEFINE(HAVE_QUOTACTL_4A,1,[Whether long quotactl(int cmd, char *special, qid_t id, caddr_t addr) is available])
+    samba_cv_sysquotas_file="lib/sysquotas_4A.c"
 fi
 fi
 
@@ -3179,7 +3170,9 @@ AC_TRY_RUN_STRICT([
            samba_cv_HAVE_QUOTACTL_4B=yes,samba_cv_HAVE_QUOTACTL_4B=no,samba_cv_HAVE_QUOTACTL_4B=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
     echo "int quotactl(const char *path, int cmd, int id, char *addr) is not reworked for the new sys_quota api"
-#    samba_cv_SYSQUOTA_FOUND=yes;AC_DEFINE(HAVE_QUOTACTL_4B,1,[Whether int quotactl(const char *path, int cmd, int id, char *addr) is available])
+    samba_cv_SYSQUOTA_FOUND=yes;
+    AC_DEFINE(HAVE_QUOTACTL_4B,1,[Whether int quotactl(const char *path, int cmd, int id, char *addr) is available])
+    samba_cv_sysquotas_file="lib/sysquotas_4B.c"
 fi
 fi
 
@@ -3193,7 +3186,9 @@ AC_TRY_RUN_STRICT([
            samba_cv_HAVE_QUOTACTL_3=yes,samba_cv_HAVE_QUOTACTL_3=no,samba_cv_HAVE_QUOTACTL_3=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_3" = x"yes"; then
     echo "CRAY int quotactl (char *spec, int request, char *arg) is NOT reworked for the sys_quota api"
-#    samba_cv_SYSQUOTA_FOUND=yes;AC_DEFINE(HAVE_QUOTACTL_3,1,[Whether CRAY int quotactl (char *spec, int request, char *arg); is available])
+    samba_cv_SYSQUOTA_FOUND=yes;
+    AC_DEFINE(HAVE_QUOTACTL_3,1,[Whether CRAY int quotactl (char *spec, int request, char *arg); is available])
+    samba_cv_sysquotas_file="lib/sysquotas_3.c"
 fi
 fi
 
@@ -3235,6 +3230,7 @@ AC_TRY_COMPILE([
 #define NO_PROTO_H 1
 #define NO_CONFIG_H 1
 #define HAVE_SYS_QUOTAS 1
+#include "${srcdir-.}/${samba_cv_sysquotas_file}"
 #include "${srcdir-.}/lib/sysquotas.c"
 ],[],samba_cv_SYSQUOTA_WORKS=yes,samba_cv_SYSQUOTA_WORKS=no)
 CPPFLAGS="$SAVE_CPPFLAGS"
