@@ -86,8 +86,8 @@ pstring samlogon_user="";
 
 BOOL sam_logon_in_ssb = False;
 
-pstring myname = "";
-fstring myworkgroup = "";
+pstring global_myname = "";
+fstring global_myworkgroup = "";
 char **my_netbios_names;
 
 int smb_read_error = 0;

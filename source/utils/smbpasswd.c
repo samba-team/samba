@@ -19,6 +19,8 @@
 
 #include "includes.h"
 
+extern pstring global_myname;
+
 /*********************************************************
  Print command usage on stderr and die.
 **********************************************************/
@@ -294,9 +296,8 @@ int main(int argc, char **argv)
   if(remote_machine != NULL) {
     struct cli_state cli;
     struct in_addr ip;
-    fstring myname;
 
-    if(get_myname(myname,NULL) == False) {
+    if(get_myname(global_myname,NULL) == False) {
       fprintf(stderr, "%s: unable to get my hostname.\n", prog_name );
       exit(1);
     }
@@ -315,7 +316,7 @@ int main(int argc, char **argv)
       exit(1);
     }
   
-    if (!cli_session_request(&cli, remote_machine, 0x20, myname)) {
+    if (!cli_session_request(&cli, remote_machine, 0x20, global_myname)) {
       fprintf(stderr, "%s: machine %s rejected the session setup. Error was : %s.\n",
               prog_name, remote_machine, cli_errstr(&cli) );
       cli_shutdown(&cli);

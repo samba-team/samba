@@ -41,7 +41,7 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
-extern fstring myworkgroup;
+extern fstring global_myworkgroup;
 extern int Client;
 extern int global_oplock_break;
 
@@ -671,7 +671,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     p = smb_buf(outbuf);
     strcpy(p,"Unix"); p = skip_string(p,1);
     strcpy(p,"Samba "); strcat(p,VERSION); p = skip_string(p,1);
-    strcpy(p,myworkgroup); p = skip_string(p,1);
+    strcpy(p,global_myworkgroup); p = skip_string(p,1);
     set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
     /* perhaps grab OS version here?? */
   }

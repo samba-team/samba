@@ -27,7 +27,7 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
-
+extern pstring global_myname;
 
 /*******************************************************************
  fill in a share info level 1 structure.
@@ -858,7 +858,6 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 	uint32 status = 0x0;
 	SRV_INFO_CTR ctr;
 
-	extern pstring myname;
 
 	DEBUG(5,("srv_net_srv_get_info: %d\n", __LINE__));
 
@@ -867,7 +866,7 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 		case 102:
 		{
 			make_srv_info_102(&ctr.srv.sv102,
-			                  500, myname, lp_serverstring(),
+			                  500, global_myname, lp_serverstring(),
 			                  5, 4, /* major/minor version - NT 5.4 :-) */
 			                  0x4100b, /* browsing stuff SV_TYPE_XXXX */
 			                  0xffffffff, /* users */
@@ -882,7 +881,7 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 		case 101:
 		{
 			make_srv_info_101(&ctr.srv.sv101,
-			                  500, myname,
+			                  500, global_myname,
 			                  5, 4, /* major/minor version - NT 5.4 :-) */
 			                  0x4100b, /* browsing stuff SV_TYPE_XXXX */
 			                  lp_serverstring());

@@ -27,6 +27,7 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
+extern pstring global_myname;
 
 
 /*******************************************************************
@@ -34,13 +35,12 @@ extern int DEBUGLEVEL;
  ********************************************************************/
 static void create_wks_info_100(WKS_INFO_100 *inf)
 {
-	extern pstring myname;
 	pstring my_name;
 	pstring domain;
 
 	DEBUG(5,("create_wks_info_100: %d\n", __LINE__));
 
-	pstrcpy (my_name, myname);
+	pstrcpy (my_name, global_myname);
 	strupper(my_name);
 
 	pstrcpy (domain , lp_workgroup());

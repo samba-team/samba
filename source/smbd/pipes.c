@@ -41,7 +41,6 @@ extern char magic_char;
 extern BOOL case_sensitive;
 extern pstring sesssetup_user;
 extern int Client;
-extern fstring myworkgroup;
 
 #define VALID_PNUM(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PIPES))
 #define OPEN_PNUM(pnum)    (VALID_PNUM(pnum) && Pipes[pnum].open)

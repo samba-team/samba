@@ -33,7 +33,7 @@ pstring cur_dir = "\\";
 pstring cd_path = "";
 extern pstring service;
 extern pstring desthost;
-extern pstring myname;
+extern pstring global_myname;
 extern pstring myhostname;
 extern pstring password;
 extern pstring username;
@@ -3705,7 +3705,7 @@ static void usage(char *pname)
 	}
 	break;
       case 'n':
-	strcpy(myname,optarg);
+	strcpy(global_myname,optarg);
 	break;
       case 'N':
 	got_pass = True;
@@ -3779,8 +3779,8 @@ static void usage(char *pname)
     strcpy(workgroup,lp_workgroup());
 
   load_interfaces();
-  get_myname((*myname)?NULL:myname,NULL);  
-  strupper(myname);
+  get_myname((*global_myname)?NULL:global_myname,NULL);  
+  strupper(global_myname);
 
   if(*new_name_resolve_order)
     lp_set_name_resolve_order(new_name_resolve_order);

@@ -25,7 +25,7 @@
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;
 extern pstring sesssetup_user;
-extern fstring myworkgroup;
+extern fstring global_myworkgroup;
 
 char *InBuffer = NULL;
 char *OutBuffer = NULL;
@@ -3961,10 +3961,10 @@ int reply_nt1(char *outbuf)
   /* decide where (if) to put the encryption challenge, and
      follow it with the OEM'd domain name
    */
-  data_len = crypt_len + strlen(myworkgroup) + 1;
+  data_len = crypt_len + strlen(global_myworkgroup) + 1;
 
   set_message(outbuf,17,data_len,True);
-  strcpy(smb_buf(outbuf)+crypt_len, myworkgroup);
+  strcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
 
   CVAL(outbuf,smb_vwv1) = secword;
   SSVALS(outbuf,smb_vwv16+1,crypt_len);
@@ -5154,7 +5154,7 @@ static void usage(char *pname)
 
   codepage_initialise(lp_client_code_page());
 
-  strcpy(myworkgroup, lp_workgroup());
+  strcpy(global_myworkgroup, lp_workgroup());
 
 #ifndef NO_SIGNAL_TEST
   signal(SIGHUP,SIGNAL_CAST sig_hup);

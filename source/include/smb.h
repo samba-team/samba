@@ -251,13 +251,6 @@ typedef fstring string;
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 
-/* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
-typedef struct time_info
-{
-  uint32 time;
-
-} UTIME;
-
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
 {
@@ -281,40 +274,69 @@ typedef struct nttime_info
  
 struct smb_passwd
 {
-	int smb_userid;
-	char *smb_name;
-	unsigned char *smb_passwd; /* Null if no password */
-	unsigned char *smb_nt_passwd; /* Null if no password */
-	/* Other fields / flags may be added later */
-        uint16 acct_ctrl;
-        time_t last_change_time;
+  int smb_userid;
+  char *smb_name;
+  unsigned char *smb_passwd; /* Null if no password */
+  unsigned char *smb_nt_passwd; /* Null if no password */
+  /* Other fields / flags may be added later */
+  uint16 acct_ctrl;
+  time_t last_change_time;
 };
 
+/* DOM_CHAL - challenge info */
+typedef struct chal_info
+{
+  uchar data[8]; /* credentials */
+} DOM_CHAL;
+
+/* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
+typedef struct time_info
+{
+  uint32 time;
+
+} UTIME;
+
+/* DOM_CREDs - timestamped client or server credentials */
+typedef struct cred_info
+{  
+  DOM_CHAL challenge; /* credentials */
+  UTIME timestamp;    /* credential time-stamp */
+
+} DOM_CRED;
+
 struct cli_state {
-	int fd;
-	int cnum;
-	int pid;
-	int mid;
-	int uid;
-	int protocol;
-	int sec_mode;
-	int rap_error;
-        uint32 nt_error;
-	int privilages;
-	fstring eff_name;
-	fstring desthost;
-	char cryptkey[8];
-	uint32 sesskey;
-	int serverzone;
-	uint32 servertime;
-	int readbraw_supported;
-	int writebraw_supported;
-	int timeout;
-	int max_xmit;
-	char *outbuf;
-	char *inbuf;
-	int bufsize;
-	int initialised;
+  int fd;
+  int cnum;
+  int pid;
+  int mid;
+  int uid;
+  int protocol;
+  int sec_mode;
+  int rap_error;
+  int privilages;
+  fstring eff_name;
+  fstring desthost;
+  char cryptkey[8];
+  uint32 sesskey;
+  int serverzone;
+  uint32 servertime;
+  int readbraw_supported;
+  int writebraw_supported;
+  int timeout;
+  int max_xmit;
+  char *outbuf;
+  char *inbuf;
+  int bufsize;
+  int initialised;
+  /*
+   * Only used in NT domain calls.
+   */
+  uint32 nt_error;                   /* NT RPC error code. */
+  uint16 nt_pipe_fnum;               /* Pipe handle. */
+  unsigned char sess_key[16];        /* Current session key. */
+  DOM_CRED clnt_cred;                /* Client credential. */
+  fstring mach_acct;
+  fstring srv_name;
 };
 
 
@@ -444,20 +466,6 @@ typedef struct
   name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */
 
 } connection_struct;
-
-/* DOM_CHAL - challenge info */
-typedef struct chal_info
-{
-  uchar data[8]; /* credentials */
-} DOM_CHAL;
-
-/* DOM_CREDs - timestamped client or server credentials */
-typedef struct cred_info
-{  
-  DOM_CHAL challenge; /* credentials */
-  UTIME timestamp;    /* credential time-stamp */
-
-} DOM_CRED;
 
 /* Domain controller authentication protocol info */
 struct dcinfo

@@ -40,7 +40,7 @@ extern files_struct Files[];
 extern connection_struct Connections[];
 
 extern fstring local_machine;
-extern fstring myworkgroup;
+extern fstring global_myworkgroup;
 
 #define NERR_Success 0
 #define NERR_badpass 86
@@ -1035,7 +1035,7 @@ static int get_server_info(uint32 servertype,
     if (!next_token(&ptr,s->comment, NULL)) continue;
     if (!next_token(&ptr,s->domain , NULL)) {
       /* this allows us to cope with an old nmbd */
-      strcpy(s->domain,myworkgroup); 
+      strcpy(s->domain,global_myworkgroup); 
     }
     
     if (sscanf(stype,"%X",&s->type) != 1) { 
@@ -1231,7 +1231,7 @@ static BOOL api_RNetServerEnum(int cnum, uint16 vuid, char *param, char *data,
   if (strcmp(str1, "WrLehDz") == 0) {
     StrnCpy(domain, p, sizeof(fstring)-1);
   } else {
-    StrnCpy(domain, myworkgroup, sizeof(fstring)-1);    
+    StrnCpy(domain, global_myworkgroup, sizeof(fstring)-1);    
   }
 
   if (lp_browse_list())
@@ -2039,7 +2039,7 @@ static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
       pstrcpy(comment,lp_serverstring());
 
-      if ((count=get_server_info(SV_TYPE_ALL,&servers,myworkgroup))>0) {
+      if ((count=get_server_info(SV_TYPE_ALL,&servers,global_myworkgroup))>0) {
 	for (i=0;i<count;i++)
 	  if (strequal(servers[i].name,local_machine))
       {
@@ -2125,7 +2125,7 @@ static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
   p += 4;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* login domain */
-  strcpy(p2,myworkgroup);
+  strcpy(p2,global_myworkgroup);
   strupper(p2);
   p2 = skip_string(p2,1);
   p += 4;
@@ -2135,7 +2135,7 @@ static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
   p += 2;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  strcpy(p2,myworkgroup);	/* don't know.  login domain?? */
+  strcpy(p2,global_myworkgroup);	/* don't know.  login domain?? */
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -2578,7 +2578,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
       strupper(mypath);
       PACKS(&desc,"z",mypath); /* computer */
     }
-    PACKS(&desc,"z",myworkgroup);/* domain */
+    PACKS(&desc,"z",global_myworkgroup);/* domain */
 
 /* JHT - By calling lp_logon_script() and standard_sub() we have */
 /* made sure all macros are fully substituted and available */

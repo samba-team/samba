@@ -29,7 +29,6 @@ extern int ClientNMB;
 extern int DEBUGLEVEL;
 
 extern pstring scope;
-extern pstring myname;
 extern struct in_addr ipzero;
 
 int num_response_packets = 0;
