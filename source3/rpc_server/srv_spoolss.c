@@ -172,6 +172,8 @@ static BOOL api_spoolss_rfnpcnex(prs_struct *data, prs_struct *rdata)
 	r_u.status = _spoolss_rfnpcnex(&q_u.handle, q_u.change,
 	                               q_u.option, &r_u.info);
 
+	safe_free(q_u.option);
+
 	/* we always have a NOTIFY_INFO struct */
 	r_u.info_ptr=0x1;
 
