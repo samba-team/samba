@@ -33,7 +33,7 @@ extern FILE* out_hnd;
 
 /****************************************************************************
 ****************************************************************************/
-void cmd_eventlog(struct client_info *info, int argc, char *argv[])
+uint32 cmd_eventlog(struct client_info *info, int argc, char *argv[])
 {
 	BOOL res1  = True;
 	BOOL res = True;

@@ -3051,7 +3051,7 @@ void cmd_dfs_enum(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_eventlog.c  */
 
-void cmd_eventlog(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_eventlog(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
@@ -3105,7 +3105,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc,
 void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 				 char *argv[]);
-void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_create_dom_alias(struct client_info *info, int argc,
 			      char *argv[]);
 void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[]);

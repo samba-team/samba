@@ -44,10 +44,10 @@ extern int DEBUGLEVEL;
 #define CNV_INPUT(s) unix2dos_format(s,True)
 
 static int process_tok(fstring tok);
-static void cmd_help(struct client_info *info, int argc, char *argv[]);
-static void cmd_quit(struct client_info *info, int argc, char *argv[]);
-static void cmd_set(struct client_info *info, int argc, char *argv[]);
-static void cmd_use(struct client_info *info, int argc, char *argv[]);
+static uint32 cmd_help(struct client_info *info, int argc, char *argv[]);
+static uint32 cmd_quit(struct client_info *info, int argc, char *argv[]);
+static uint32 cmd_set(struct client_info *info, int argc, char *argv[]);
+static uint32 cmd_use(struct client_info *info, int argc, char *argv[]);
 
 static struct user_creds usr;
 
@@ -215,7 +215,7 @@ static struct command_set general_commands[] = {
 /****************************************************************************
 do a (presumably graceful) quit...
 ****************************************************************************/
-static void cmd_quit(struct client_info *info, int argc, char *argv[])
+static uint32 cmd_quit(struct client_info *info, int argc, char *argv[])
 {
 #ifdef MEM_MAN
 	{
@@ -233,7 +233,7 @@ static void cmd_quit(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 help
 ****************************************************************************/
-static void cmd_help(struct client_info *info, int argc, char *argv[])
+static uint32 cmd_help(struct client_info *info, int argc, char *argv[])
 {
 	int i = 0, j = 0;
 
@@ -262,6 +262,7 @@ static void cmd_help(struct client_info *info, int argc, char *argv[])
 			fprintf(out_hnd, "\n");
 		}
 	}
+	return 0;
 }
 
 /*******************************************************************
@@ -844,7 +845,7 @@ static void set_user_password(struct ntuser_creds *u,
 	}
 }
 
-static void cmd_use(struct client_info *info, int argc, char *argv[])
+static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 {
 	int opt;
 	BOOL net_use = False;
@@ -1052,6 +1053,8 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 
 	/* paranoia: destroy the local copy of the password */
 	ZERO_STRUCT(password);
+
+	return 0;
 }
 
 /******************************************************************
@@ -1084,7 +1087,7 @@ void cmd_set_no_autoconnect(void)
 #define CMD_SCOPE 0x10000
 #define CMD_INTER 0x20000
 
-static void cmd_set(struct client_info *info, int argc, char *argv[])
+static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 {
 	BOOL interactive = True;
 	char *cmd_str = NULL;
@@ -1314,7 +1317,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
 	{
-		return;
+		return 0;
 	}
 
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_NOPW))
@@ -1358,6 +1361,8 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	{
 		process(&cli_info, cmd_str);
 	}
+
+	return 0;
 }
 
 static void read_user_env(struct ntuser_creds *u)

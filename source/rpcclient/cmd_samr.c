@@ -1002,7 +1002,7 @@ void cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 /****************************************************************************
 SAM create domain user.
 ****************************************************************************/
-void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
+uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 {
 	fstring domain;
 	fstring acct_name;
@@ -1022,6 +1022,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	UNISTR2 upw;
 	fstring ascii_pwd;
 	BOOL use_ascii_pwd = False;
+	uint32 status = NT_STATUS_ACCESS_DENIED;
 
 	BOOL res = True;
 	POLICY_HND lsa_pol;
@@ -1039,12 +1040,13 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (sid1.num_auths == 0)
 	{
-		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
-		    0x0)
+		status = msrpc_sam_get_first_domain(srv_name, domain, &sid1);
+
+		if (status != NT_STATUS_NOPROBLEMO)
 		{
 			report(out_hnd,
 			       "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
+			return status;
 		}
 	}
 
@@ -1052,7 +1054,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd,
 		       "createuser: <acct name> [-i] [-s] [-j] domain_name [-p password]\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	argc--;
@@ -1141,7 +1143,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	if (join_domain && acb_info == ACB_NORMAL)
 	{
 		report(out_hnd, "can only join trust accounts to a domain\n");
-		return;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (join_domain)
@@ -1152,15 +1154,16 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			report(out_hnd,
 			       "could not locate server for domain %s\n",
 			       domain);
-			return;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) !=
-		    0x0)
+		status = msrpc_sam_get_first_domain(srv_name, domain, &sid1);
+
+		if (status != NT_STATUS_NOPROBLEMO)
 		{
 			report(out_hnd,
 			       "could not find SID for domain %s\n", domain);
-			return;
+			return status;
 		}
 	}
 
@@ -1176,7 +1179,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			report(out_hnd,
 			       ("Workstation and Server Trust Accounts are randomly auto-generated\n"));
 			memset(&upw, 0, sizeof(upw));
-			return;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		if (join_domain)
@@ -1280,19 +1283,20 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			{
 				STRING2 secret;
 				secret_store_data(&secret, password, plen);
-
-				res2 = lsa_set_secret(&pol_sec, &secret) ==
-					NT_STATUS_NOPROBLEMO;
+				status = lsa_set_secret(&pol_sec, &secret);
+				res2 = status == NT_STATUS_NOPROBLEMO;
 
 			}
 
 			if (res2)
 			{
 				report(out_hnd, "Set $MACHINE.ACC: OK\n");
+				status = NT_STATUS_NOPROBLEMO;
 			}
 			else
 			{
 				report(out_hnd, "Set $MACHINE.ACC: FAILED\n");
+				status = NT_STATUS_ACCESS_DENIED;
 			}
 
 			res1 = res1 ? lsa_close(&pol_sec) : False;
@@ -1304,9 +1308,12 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	else
 	{
 		report(out_hnd, "Create Domain User: FAILED\n");
+		status = NT_STATUS_ACCESS_DENIED;
 	}
 
 	memset(&upw, 0, sizeof(upw));
+
+		return status;
 }
 
 

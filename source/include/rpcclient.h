@@ -92,7 +92,7 @@ enum action_type {ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER};
 struct command_set
 {
 	char *name;
-	void (*fn)(struct client_info*, int, char*[]);
+	uint32 (*fn)(struct client_info*, int, char*[]);
 	char *description;
 	char* (*compl_args[2])(char*, int);
 
