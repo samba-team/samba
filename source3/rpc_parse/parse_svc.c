@@ -106,7 +106,7 @@ void make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
 	DEBUG(5,("make_svc_q_open_service\n"));
 
 	memcpy(&(q_u->scman_pol), hnd, sizeof(q_u->scman_pol));
-	make_unistr2(&(q_u->uni_srv_name), server, strlen(server)+1);
+	make_unistr2(&(q_u->uni_svc_name), server, strlen(server)+1);
 	q_u->des_access = des_access;
 
 }
@@ -126,7 +126,7 @@ void svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, 
 	smb_io_pol_hnd("", &(q_u->scman_pol), ps, depth);
 	prs_align(ps);
 
-	smb_io_unistr2("", &(q_u->uni_srv_name), 1, ps, depth); 
+	smb_io_unistr2("", &(q_u->uni_svc_name), 1, ps, depth); 
 	prs_align(ps);
 
 	prs_uint32("des_access", ps, depth, &(q_u->des_access));
@@ -492,12 +492,14 @@ void svc_io_q_query_svc_config(char *desc,  SVC_Q_QUERY_SVC_CONFIG *q_u, prs_str
 makes an SVC_R_QUERY_SVC_CONFIG structure.
 ********************************************************************/
 void make_svc_r_query_svc_config(SVC_R_QUERY_SVC_CONFIG *r_c, 
+				QUERY_SERVICE_CONFIG *cfg,
 				uint32 buf_size)
 {
 	if (r_c == NULL) return;
 
 	DEBUG(5,("make_svc_r_query_svc_config\n"));
 
+	r_c->cfg      = cfg;
 	r_c->buf_size = buf_size;
 }
 

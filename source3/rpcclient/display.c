@@ -1536,6 +1536,62 @@ void display_reg_key_info(FILE *out_hnd, enum action_type action,
 }
 
 /****************************************************************************
+convert a security permissions into a string
+****************************************************************************/
+char *get_svc_start_type_str(uint32 type)
+{
+	static fstring typestr;
+
+	switch (type)
+	{
+		case 0x00: fstrcpy(typestr, "Boot"    ); return typestr;
+		case 0x01: fstrcpy(typestr, "System"  ); return typestr;
+		case 0x02: fstrcpy(typestr, "Auto"    ); return typestr;
+		case 0x03: fstrcpy(typestr, "Manual"  ); return typestr;
+		case 0x04: fstrcpy(typestr, "Disabled"); return typestr;
+		default  : break;
+	}
+	slprintf(typestr, sizeof(typestr)-1, "[%d]", type);
+	return typestr;
+}
+
+
+/****************************************************************************
+ display structure
+ ****************************************************************************/
+void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
+				QUERY_SERVICE_CONFIG *cfg)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tService:\t%s\n", unistr2_to_str(&cfg->uni_display_name)); /* service name unicode string */
+			fprintf(out_hnd, "\t-------\n");
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fprintf(out_hnd, "\tPath:\t%s\n"         ,  unistr2_to_str(&cfg->uni_bin_path_name));
+			fprintf(out_hnd, "\tLoad Order:\t%s\n"   ,  unistr2_to_str(&cfg->uni_load_order_grp));
+			fprintf(out_hnd, "\tDependencies:\t%s\n" ,  unistr2_to_str(&cfg->uni_dependencies));
+			fprintf(out_hnd, "\tService Start:\t%s\n",  unistr2_to_str(&cfg->uni_service_start_name));
+			fprintf(out_hnd, "\tService Type:\t%d\n" , cfg->service_type);
+			fprintf(out_hnd, "\tStart Type:\t%s\n" , get_svc_start_type_str(cfg->start_type));
+			fprintf(out_hnd, "\tError Control:\t%d\n" , cfg->error_control);
+			fprintf(out_hnd, "\tTag Id:\t%d\n" , cfg->tag_id);
+			break;
+
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+/****************************************************************************
  display structure
  ****************************************************************************/
 void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *svc)

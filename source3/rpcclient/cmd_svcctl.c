@@ -50,6 +50,8 @@ void cmd_svc_enum(struct client_info *info)
 	uint32 dos_error = 0;
 	ENUM_SRVC_STATUS *svcs = NULL;
 	uint32 num_svcs = 0;
+	fstring tmp;
+	BOOL request_info = False;
 
 	POLICY_HND sc_man_pol;
 	
@@ -61,11 +63,16 @@ void cmd_svc_enum(struct client_info *info)
 
 	DEBUG(4,("cmd_svc_enum: server:%s\n", srv_name));
 
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	{
+		request_info = strequal(tmp, "-i");
+	}
+
 	/* open SVCCTL session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
 
 	/* open service control manager receive a policy handle */
-	res = res ? do_svc_open_sc_man(smb_cli, fnum,
+	res = res ? svc_open_sc_man(smb_cli, fnum,
 	                        srv_name, NULL, 0x80000004,
 				&sc_man_pol) : False;
 
@@ -74,7 +81,7 @@ void cmd_svc_enum(struct client_info *info)
 		buf_size += 0x800;
 
 		/* enumerate services */
-		res1 = res ? do_svc_enum_svcs(smb_cli, fnum,
+		res1 = res ? svc_enum_svcs(smb_cli, fnum,
 		                        &sc_man_pol,
 		                        0x00000030, 0x00000003,
 		                        &buf_size, &resume_hnd, &dos_error,
@@ -88,14 +95,39 @@ void cmd_svc_enum(struct client_info *info)
 		fprintf(out_hnd,"--------\n");
 	}
 
-	for (i = 0; i < num_svcs && svcs != NULL; i++)
+	for (i = 0; i < num_svcs && svcs != NULL && res1; i++)
 	{
-		if (res1)
+		BOOL res2 = request_info;
+		BOOL res3;
+		POLICY_HND svc_pol;
+		fstring svc_name;
+		QUERY_SERVICE_CONFIG cfg;
+		uint32 svc_buf_size = 0x800;
+
+		fstrcpy(svc_name, unistr2(svcs[i].uni_srvc_name.buffer));
+
+		res2 = res2 ? svc_open_service(smb_cli, fnum,
+		                               &sc_man_pol,
+		                               svc_name, 0x80000001,
+		                               &svc_pol) : False;
+		res3 = res2 ? svc_query_svc_cfg(smb_cli, fnum,
+		                               &svc_pol, &cfg,
+		                               &svc_buf_size) : False;
+
+		if (res3)
+		{
+			display_query_svc_cfg(out_hnd, ACTION_HEADER   , &cfg);
+			display_query_svc_cfg(out_hnd, ACTION_ENUMERATE, &cfg);
+			display_query_svc_cfg(out_hnd, ACTION_FOOTER   , &cfg);
+		}
+		else
 		{
 			display_svc_info(out_hnd, ACTION_HEADER   , &svcs[i]);
 			display_svc_info(out_hnd, ACTION_ENUMERATE, &svcs[i]);
 			display_svc_info(out_hnd, ACTION_FOOTER   , &svcs[i]);
 		}
+
+		res2 = res2 ? svc_close(smb_cli, fnum, &svc_pol) : False;
 	}
 
 	if (svcs != NULL)
@@ -103,7 +135,7 @@ void cmd_svc_enum(struct client_info *info)
 		free(svcs);
 	}
 
-	res  = res  ? do_svc_close(smb_cli, fnum, &sc_man_pol) : False;
+	res = res ? svc_close(smb_cli, fnum, &sc_man_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);

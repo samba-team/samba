@@ -58,8 +58,8 @@ typedef struct r_svc_open_sc_man_info
 typedef struct q_svc_open_service_info
 {
 	POLICY_HND scman_pol;
-	UNISTR2 uni_srv_name;        /* unicode server name starting with '\\' */
-	uint32 des_access;            /* 0x80000004 - SC_MANAGER_xxxx */
+	UNISTR2 uni_svc_name;        /* unicode service name */
+	uint32 des_access;            /* 0x8000 0001 */
 
 } SVC_Q_OPEN_SERVICE;
 

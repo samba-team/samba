@@ -1778,17 +1778,26 @@ BOOL do_srv_net_srv_get_info(struct cli_state *cli, uint16 fnum,
 
 /*The following definitions come from  rpc_client/cli_svcctl.c  */
 
-BOOL do_svc_open_sc_man(struct cli_state *cli, uint16 fnum, 
+BOOL svc_open_sc_man(struct cli_state *cli, uint16 fnum, 
 				char *srv_name, char *db_name,
 				uint32 des_access,
 				POLICY_HND *hnd);
-BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
+BOOL svc_open_service(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *scm_hnd,
+				char *srv_name,
+				uint32 des_access,
+				POLICY_HND *hnd);
+BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *hnd,
 				uint32 services_type, uint32 services_state,
 				uint32 *buf_size, uint32 *resume_hnd,
 				uint32 *dos_error,
 				ENUM_SRVC_STATUS **svcs, uint32 *num_svcs);
-BOOL do_svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
+BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *hnd,
+				QUERY_SERVICE_CONFIG *cfg,
+				uint32 *buf_size);
+BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 
@@ -2540,6 +2549,7 @@ void make_svc_q_query_svc_config(SVC_Q_QUERY_SVC_CONFIG *q_c, POLICY_HND *hnd,
 				uint32 buf_size);
 void svc_io_q_query_svc_config(char *desc,  SVC_Q_QUERY_SVC_CONFIG *q_u, prs_struct *ps, int depth);
 void make_svc_r_query_svc_config(SVC_R_QUERY_SVC_CONFIG *r_c, 
+				QUERY_SERVICE_CONFIG *cfg,
 				uint32 buf_size);
 void svc_io_r_query_svc_config(char *desc,  SVC_R_QUERY_SVC_CONFIG *r_u, prs_struct *ps, int depth);
 void make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd);
@@ -2769,6 +2779,8 @@ void display_reg_value_info(FILE *out_hnd, enum action_type action,
 				char *val_name, uint32 val_type, BUFFER2 *value);
 void display_reg_key_info(FILE *out_hnd, enum action_type action,
 				char *key_name, time_t key_mod_time);
+void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
+				QUERY_SERVICE_CONFIG *cfg);
 void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *svc);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
