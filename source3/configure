@@ -2456,7 +2456,7 @@ else
 fi
 done
 
-for ac_hdr in sys/param.h ctype.h sys/un.h sys/wait.h sys/resource.h sys/ioctl.h sys/mode.h
+for ac_hdr in sys/param.h ctype.h sys/un.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -2496,7 +2496,7 @@ else
 fi
 done
 
-for ac_hdr in sys/mman.h sys/filio.h sys/priv.h string.h strings.h stdlib.h sys/socket.h
+for ac_hdr in sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
