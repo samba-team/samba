@@ -268,7 +268,7 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	group_rid = atoi(argv[1]);
+        sscanf(argv[1], "%i", &group_rid);
 
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
@@ -546,7 +546,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, max_entries=250, num_entries, i;
-	uint16 info_level = 1;
+	int info_level = 1;
 	SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
 
@@ -556,13 +556,13 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	}
 
 	if (argc >= 2)
-		info_level = atoi(argv[1]);
-
+                sscanf(argv[1], "%i", &info_level);
+        
 	if (argc >= 3)
-		 start_idx = atoi(argv[2]);
-
+                sscanf(argv[2], "%i", &start_idx);
+        
 	if (argc >= 4)
-		 max_entries = atoi(argv[3]);
+                sscanf(argv[3], "%i", &max_entries);
 
 	/* Get sam policy handle */
 
@@ -591,6 +591,9 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 					 &start_idx, info_level,
 					 &num_entries, max_entries, &ctr);
 
+        if (!NT_STATUS_IS_OK(result))
+                goto done;
+
 	for (i = 0; i < num_entries; i++) {
 		switch (info_level) {
 		case 1:
@@ -614,7 +617,7 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint16 switch_value = 2;
+	int switch_value = 2;
 	SAM_UNK_CTR ctr;
 
 	if (argc > 2) {
@@ -623,7 +626,7 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 	}
 
 	if (argc == 2)
-		switch_value = atoi(argv[1]);
+                sscanf(argv[1], "%i", &switch_value);
 
 	/* Get sam policy handle */
 
@@ -820,7 +823,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli,
 	rids = (uint32 *)talloc(mem_ctx, sizeof(uint32) * num_rids);
 
 	for (i = 0; i < argc - 1; i++)
-		rids[i] = atoi(argv[i + 1]);
+                sscanf(argv[i + 1], "%i", &rids[i]);
 
 	result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol,
 				      flags, num_rids, rids,
@@ -833,7 +836,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli,
 	/* Display results */
 
 	for (i = 0; i < num_names; i++)
-		printf("rid %x: %s (%d)\n", rids[i], names[i], name_types[i]);
+		printf("rid 0x%x: %s (%d)\n", rids[i], names[i], name_types[i]);
 
  done:
 	return result;
