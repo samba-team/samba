@@ -384,7 +384,7 @@ static void process(void)
     initiate_wins_processing(t);
 
     /*
-     * Go through the repsonse record queue and time out or re-transmit
+     * Go through the response record queue and time out or re-transmit
      * and expired entries.
      * (nmbd_packets.c)
      */
