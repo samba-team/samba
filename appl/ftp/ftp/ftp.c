@@ -63,11 +63,7 @@ hookup(char *host, int port)
     } else {
 	hp = gethostbyname(host);
 	if (hp == NULL) {
-#ifdef HAVE_H_ERRNO
 	    warnx("%s: %s", host, hstrerror(h_errno));
-#else
-	    warnx("%s: %s", host, "unknown error");
-#endif
 	    code = -1;
 	    return NULL;
 	}

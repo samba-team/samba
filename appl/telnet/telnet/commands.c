@@ -2104,11 +2104,7 @@ tn(int argc, char **argv)
 	srp = 0;
 	temp = sourceroute(hostp, &srp, &srlen);
 	if (temp == 0) {
-#ifdef HAVE_H_ERRNO
 	    fprintf (stderr, "%s: %s\r\n", srp ? srp : "", hstrerror(h_errno));
-#else
-	    fprintf (stderr, "%s: %s\r\n", srp ? srp : "", "unknown error");
-#endif
 	    setuid(getuid());
 	    return 0;
 	} else if (temp == -1) {
@@ -2176,11 +2172,7 @@ tn(int argc, char **argv)
 		hostname = _hostname;
 	    } else {
 	        fprintf (stderr, "%s: %s\r\n", hostp ? hostp : "",
-#ifdef HAVE_H_ERRNO
 			 hstrerror(h_errno));
-#else
-			 "unknown error");
-#endif
 		setuid(getuid());
 		return 0;
 	    }

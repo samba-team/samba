@@ -114,12 +114,7 @@ connect_host (char *host, char *user, des_cblock *key,
      hostent = gethostbyname (host);
      if (hostent == NULL) {
 	 warnx ("gethostbyname '%s' failed: %s", host,
-#ifdef HAVE_H_ERRNO
-		hstrerror(h_errno)
-#else
-		"unknown error"
-#endif
-	     );
+		hstrerror(h_errno));
 	 return -1;
      }
 
