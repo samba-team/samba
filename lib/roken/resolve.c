@@ -60,6 +60,7 @@ static struct stot{
     int type;
 }stot[] = {
     DECL(A),
+    DECL(AAAA),
     DECL(NS),
     DECL(CNAME),
     DECL(SOA),
