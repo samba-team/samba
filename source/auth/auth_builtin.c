@@ -99,7 +99,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	return nt_status;
 }
 
-/** Module initailisation function */
+/** Module initialisation function */
 
 NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
@@ -112,7 +112,7 @@ NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const cha
 }
 
 /** 
- * Return a 'fixed' challenge instead of a varaible one.
+ * Return a 'fixed' challenge instead of a variable one.
  *
  * The idea of this function is to make packet snifs consistant
  * with a fixed challenge, so as to aid debugging.
