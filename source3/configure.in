@@ -3069,7 +3069,14 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo\$(EXEEXT)"
 	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd\$(EXEEXT)"
         if test x"$BLDSHARED" = x"true"; then
-		SHLIB_PROGS="$SHLIB_PROGS nsswitch/libnss_winbind.so"
+		case "$host_os" in
+		*irix*)
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libns_winbind.so"
+			;;
+		*)
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libnss_winbind.so"
+			;;
+		esac
 		if test x"$with_pam" = x"yes"; then
 			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.so"
 		fi
