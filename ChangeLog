@@ -1,3 +1,7 @@
+2003-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c (main): return the return value from simple_execvp
+	
 2003-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/kinit.c: don't use PKINIT DH per default since its too
