@@ -34,7 +34,7 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct 
 void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
 			 uint16 sid_name_use, char *name, uint32 idx)
 {
-	int len_name = strlen(name)+1;
+	int len_name = strlen(name);
 
 	if(len_name == 0)
 		len_name = 1;
