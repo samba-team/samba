@@ -275,7 +275,6 @@ static const struct {
 } ncacn_options[] = {
 	{"sign", DCERPC_SIGN},
 	{"seal", DCERPC_SEAL},
-	{"schannel", DCERPC_SCHANNEL},
 	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
 	{"print", DCERPC_DEBUG_PRINT_BOTH},
 	{"bigendian", DCERPC_PUSH_BIGENDIAN}
@@ -458,11 +457,18 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 		pipe_name += 6;
 	}
 	    
-	status = cli_full_connection(&cli, lp_netbios_name(),
-				     binding->host, NULL, 
-				     "ipc$", "?????", 
-				     username, username[0]?domain:"",
-				     password, 0, &retry);
+	if ((binding->flags & DCERPC_SCHANNEL_ANY) || !username || !username[0]) {
+		status = cli_full_connection(&cli, lp_netbios_name(),
+					     binding->host, NULL, 
+					     "ipc$", "?????", 
+					     "", "", NULL, 0, &retry);
+	} else {
+		status = cli_full_connection(&cli, lp_netbios_name(),
+					     binding->host, NULL, 
+					     "ipc$", "?????", 
+					     username, domain,
+					     password, 0, &retry);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", binding->host, nt_errstr(status)));
 		return status;
@@ -482,23 +488,15 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	
 	(*p)->flags = binding->flags;
 
-	if (binding->flags & DCERPC_SCHANNEL) {
-		const char *trust_password = NULL; // samdb_fetch_member_password();
-		if (!trust_password) {
-			DEBUG(0,("Unable to fetch machine password\n"));
-			goto done;
-		}
+	if (binding->flags & DCERPC_SCHANNEL_ANY) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
-						   lp_workgroup(), 
-						   lp_netbios_name(), 
-						   trust_password);
+						   domain, username, password);
 	} else if (binding->flags & (DCERPC_SIGN | DCERPC_SEAL)) {
 		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
 	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
 	}
 
-done:
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
 		dcerpc_pipe_close(*p);
@@ -552,7 +550,10 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 
 	(*p)->flags = binding->flags;
 
-	if (!(binding->flags & (DCERPC_SIGN|DCERPC_SEAL)) && !username[0]) {
+	if (binding->flags & DCERPC_SCHANNEL_ANY) {
+		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
+						   domain, username, password);
+	} else if (!(binding->flags & (DCERPC_SIGN|DCERPC_SEAL)) && !username[0]) {
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
 	} else {
 		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
@@ -560,7 +561,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
+		DEBUG(0,("Failed to bind to uuid %s - %s\n", 
+			 pipe_uuid, nt_errstr(status)));
 		dcerpc_pipe_close(*p);
 		return status;
 	}
@@ -635,28 +637,46 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **p,
 
 
 /*
-  create a secondary dcerpc connection from a primary SMB connection
+  create a secondary dcerpc connection from a primary connection
 
-  the secondary connection will be on the same SMB connection, but use a new fnum
+  if the primary is a SMB connection then the secondary connection
+  will be on the same SMB connection, but use a new fnum
 */
-NTSTATUS dcerpc_secondary_smb(struct dcerpc_pipe *p, struct dcerpc_pipe **p2,
-			      const char *pipe_name,
-			      const char *pipe_uuid,
-			      uint32_t pipe_version)
+NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe **p2,
+				     const char *pipe_name,
+				     const char *pipe_uuid,
+				     uint32_t pipe_version)
 {
-	NTSTATUS status;
 	struct cli_tree *tree;
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
+	struct dcerpc_binding b;
 
-	tree = dcerpc_smb_tree(p);
-	if (!tree) {
-		return NT_STATUS_INVALID_PARAMETER;
+	switch (p->transport.transport) {
+	case NCACN_NP:
+		tree = dcerpc_smb_tree(p);
+		if (!tree) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		status = dcerpc_pipe_open_smb(p2, tree, pipe_name);
+		break;
+
+	case NCACN_IP_TCP:
+		status = dcerpc_parse_binding(p->mem_ctx, p->binding_string, &b);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		b.flags &= ~DCERPC_AUTH_OPTIONS;
+		status = dcerpc_pipe_connect_ncacn_ip_tcp(p2, &b, pipe_uuid,
+							  pipe_version, NULL, 
+							  NULL, NULL);
+		break;
 	}
 
-	status = dcerpc_pipe_open_smb(p2, tree, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
-                return status;
-        }
-	
+		return status;
+	}
+
 	(*p2)->flags = p->flags;
 
 	status = dcerpc_bind_auth_none(*p2, pipe_uuid, pipe_version);

@@ -2795,7 +2795,7 @@ static BOOL run_vuidtest(int dummy)
 	const char *fname = "\\vuid.tst";
 	int fnum;
 	size_t size;
-	time_t c_time, a_time, m_time, w_time, m_time2;
+	time_t c_time, a_time, m_time;
 	BOOL correct = True;
 
 	uint16_t orig_vuid;
@@ -4131,6 +4131,7 @@ static struct {
         {"RPC-SPOOLSS", torture_rpc_spoolss, 0},
         {"RPC-SAMR", torture_rpc_samr, 0},
         {"RPC-NETLOGON", torture_rpc_netlogon, 0},
+        {"RPC-SCHANNEL", torture_rpc_schannel, 0},
         {"RPC-WKSSVC", torture_rpc_wkssvc, 0},
         {"RPC-SRVSVC", torture_rpc_srvsvc, 0},
         {"RPC-ATSVC", torture_rpc_atsvc, 0},

@@ -587,10 +587,10 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 
 	printf("testing close on secondary pipe\n");
 
-	status = dcerpc_secondary_smb(p, &p2, 
-				      DCERPC_SPOOLSS_NAME, 
-				      DCERPC_SPOOLSS_UUID, 
-				      DCERPC_SPOOLSS_VERSION);
+	status = dcerpc_secondary_connection(p, &p2, 
+					     DCERPC_SPOOLSS_NAME, 
+					     DCERPC_SPOOLSS_UUID, 
+					     DCERPC_SPOOLSS_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to create secondary connection\n");
 		return False;
