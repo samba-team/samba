@@ -107,7 +107,7 @@ void pdb_init_sam(SAM_ACCOUNT *user)
 	
 	ZERO_STRUCTP(user);
 	
-	user->logon_time            = (time_t)-1;
+	user->logon_time            = (time_t)0;
 	user->logoff_time           = (time_t)-1;
 	user->kickoff_time          = (time_t)-1;
 	user->pass_last_set_time    = (time_t)-1;
@@ -508,7 +508,7 @@ BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, enum SID_NAME_US
 
 	(void)map_username(user);
 
-	if(!(pass = Get_Pwnam(user, False))) {
+	if(!(pass = sys_getpwnam(user))) {
 		/*
 		 * Maybe it was a group ?
 		 */
@@ -1024,7 +1024,7 @@ time_t pdb_get_logon_time (SAM_ACCOUNT *sampass)
 	if (sampass)
 		return (sampass->logon_time);
 	else
-		return (-1);
+		return (0);
 }
 
 time_t pdb_get_logoff_time (SAM_ACCOUNT *sampass)

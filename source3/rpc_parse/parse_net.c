@@ -1034,12 +1034,12 @@ void init_net_user_info3(NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
 	int len_logon_srv    = strlen(logon_srv);
 	int len_logon_dom    = strlen(logon_dom);
 
-	len_user_name    = user_name    != NULL ? strlen(user_name   )+1 : 0;
-	len_full_name    = full_name    != NULL ? strlen(full_name   )+1 : 0;
-	len_home_dir     = home_dir     != NULL ? strlen(home_dir    )+1 : 0;
-	len_dir_drive    = dir_drive    != NULL ? strlen(dir_drive   )+1 : 0;
-	len_logon_script = logon_script != NULL ? strlen(logon_script)+1 : 0;
-	len_profile_path = profile_path != NULL ? strlen(profile_path)+1 : 0;
+	len_user_name    = strlen(user_name   );
+	len_full_name    = strlen(full_name   );
+	len_home_dir     = strlen(home_dir    );
+	len_dir_drive    = strlen(dir_drive   );
+	len_logon_script = strlen(logon_script);
+	len_profile_path = strlen(profile_path);
 
 
 	ZERO_STRUCTP(usr);

@@ -1252,6 +1252,7 @@ static BOOL build_sam_account (SAM_ACCOUNT *sam_pass,
 	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd);			
 	pdb_set_acct_ctrl     (sam_pass, pw_buf->acct_ctrl);
 	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time);
+	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time);
 	pdb_set_domain        (sam_pass, lp_workgroup());
 	
 	/* FIXME!!  What should this be set to?  New smb.conf parameter maybe?
