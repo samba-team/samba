@@ -256,7 +256,7 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 	}
 
 	if (!smbcli_request_send(req)) {
-smbcli_request_destroy(req);
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 

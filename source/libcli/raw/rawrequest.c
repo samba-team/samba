@@ -225,7 +225,7 @@ static void smbcli_req_grow_allocation(struct smbcli_request *req, uint_t new_si
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-void smbcli_req_grow_data(struct smbcli_request *req, uint_t new_size)
+static void smbcli_req_grow_data(struct smbcli_request *req, uint_t new_size)
 {
 	int delta;
 
