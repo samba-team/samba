@@ -196,13 +196,15 @@ uint16 dptr_attr(int key)
  Returns 0 on ok, 1 on fail.
 ****************************************************************************/
 
-BOOL dptr_set_wcard_and_attributes(int key, char *wcard, uint16 attr)
+BOOL dptr_set_wcard_and_attributes(int key, const char *wcard, uint16 attr)
 {
 	struct dptr_struct *dptr = dptr_get(key, False);
 
 	if (dptr) {
 		dptr->attr = attr;
-		dptr->wcard = wcard;
+		dptr->wcard = SMB_STRDUP(wcard);
+		if (!dptr->wcard)
+			return False;
 		dptr->has_wild = ms_has_wild(wcard);
 		return True;
 	}
