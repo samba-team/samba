@@ -532,9 +532,13 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	ent.flags = log_ent.flags;
     }
     if (mask & KADM5_MAX_LIFE) {
-	if (ent.max_life == NULL)
-	    ent.max_life = malloc (sizeof(*ent.max_life));
-	*ent.max_life = *log_ent.max_life;
+	if (log_ent.max_life == NULL) {
+	    ent.max_life = NULL;
+	} else {
+	    if (ent.max_life == NULL)
+		ent.max_life = malloc (sizeof(*ent.max_life));
+	    *ent.max_life = *log_ent.max_life;
+	}
     }
     if ((mask & KADM5_MOD_TIME) && (mask & KADM5_MOD_NAME)) {
 	if (ent.modified_by == NULL) {
@@ -559,9 +563,13 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	abort ();		/* XXX */
     }
     if (mask & KADM5_MAX_RLIFE) {
-	if (ent.max_renew == NULL)
-	    ent.max_renew = malloc (sizeof(*ent.max_renew));
-	*ent.max_renew = *log_ent.max_renew;
+	if (log_ent.max_renew == NULL) {
+	    ent.max_renew = NULL;
+	} else {
+	    if (ent.max_renew == NULL)
+		ent.max_renew = malloc (sizeof(*ent.max_renew));
+	    *ent.max_renew = *log_ent.max_renew;
+	}
     }
     if (mask & KADM5_LAST_SUCCESS) {
 	abort ();		/* XXX */
