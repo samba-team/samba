@@ -63,7 +63,7 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 
 # get the first <00> name
 
-  @name = grep(/<00>/,@nmblookup);
+  @name = grep(/<00> - /,@nmblookup);
   $_ = @name[0];
   if ($_) {                     # we have a netbios name
     if (/GROUP/) {		# is it a group name
