@@ -241,7 +241,7 @@ void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
 /*The following definitions come from  lib/sysacls.c  */
 
-int sys_acl_get_entry( SMB_ACL_T acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
 int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
 void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
@@ -251,8 +251,8 @@ int sys_acl_free( void *obj_p);
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
 int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
-char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen);
-int sys_acl_get_entry( SMB_ACL_T acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
+int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
 int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
 void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
@@ -262,7 +262,7 @@ int sys_acl_free( void *obj_p);
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
 int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
-char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen);
+char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
 
 /*The following definitions come from  lib/system.c  */
 
