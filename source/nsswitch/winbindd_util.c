@@ -287,16 +287,13 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 
 /* Lookup user information from a rid */
 
-BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain, uint32 user_rid, 
+BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain, 
+                              TALLOC_CTX *mem_ctx, uint32 user_rid, 
                               SAM_USERINFO_CTR **user_info)
 {
-        TALLOC_CTX *mem_ctx;
         CLI_POLICY_HND *hnd;
         uint16 info_level = 0x15;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-        if (!(mem_ctx = talloc_init()))
-                return False;
 
         if (!(hnd = cm_get_sam_user_handle(domain->name, &domain->sid, 
                                            user_rid)))
@@ -306,8 +303,6 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain, uint32 user_rid,
                                          info_level, user_info);
 
  done:
-        talloc_destroy(mem_ctx);
-
         return NT_STATUS_IS_OK(result);
 }                                   
 

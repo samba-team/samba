@@ -59,7 +59,7 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	/* Full name (gecos) */
 	
 	safe_strcpy(pw->pw_gecos, full_name, sizeof(pw->pw_gecos) - 1);
-	
+
 	/* Home directory and shell - use template config parameters.  The
 	   defaults are /tmp for the home directory and /bin/false for
 	   shell. */
@@ -99,6 +99,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	fstring name_domain, name_user, name, gecos_name;
 	enum SID_NAME_USE name_type;
         struct winbindd_domain *domain;
+        TALLOC_CTX *mem_ctx;
 	
 	DEBUG(3, ("[%5d]: getpwnam %s\n", state->pid,
 		  state->request.data.username));
@@ -144,17 +145,26 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	   from the winbind_lookup_by_name() call and use it in a
 	   winbind_lookup_userinfo() */
     
+        if (!(mem_ctx = talloc_init())) {
+            DEBUG(1, ("out of memory\n"));
+            return WINBINDD_ERROR;
+        }
+
 	sid_split_rid(&user_sid, &user_rid);
 	
-	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
+	if (!winbindd_lookup_userinfo(domain, mem_ctx, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
 		return WINBINDD_ERROR;
 	}
     
 	group_rid = user_info->info.id21->group_rid;
+
 	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
+
+        talloc_destroy(mem_ctx);
+        user_info = NULL;
 
 	/* Now take all this information and fill in a passwd structure */
 	
@@ -182,6 +192,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	enum SID_NAME_USE name_type;
 	SAM_USERINFO_CTR *user_info;
 	gid_t gid;
+        TALLOC_CTX *mem_ctx;
 	
 	/* Bug out if the uid isn't in the winbind range */
 
@@ -228,7 +239,12 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 	/* Get some user info */
 	
-	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
+        if (!(mem_ctx = talloc_init())) {
+            DEBUG(1, ("out of memory\n"));
+            return WINBINDD_ERROR;
+        }
+
+	if (!winbindd_lookup_userinfo(domain, mem_ctx, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));
 		return WINBINDD_ERROR;
@@ -237,6 +253,9 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	group_rid = user_info->info.id21->group_rid;
 	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
+
+        talloc_destroy(mem_ctx);
+        user_info = NULL;
 
 	/* Resolve gid number */
 
