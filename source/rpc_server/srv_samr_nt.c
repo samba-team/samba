@@ -3821,7 +3821,6 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	DOM_SID user_sid;
 	SAM_ACCOUNT *sam_pass=NULL;
 	uint32 acc_granted;
-	SE_PRIV se_rights;
 	BOOL can_add_accounts;
 	BOOL ret;
 
@@ -3847,8 +3846,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
-	se_priv_copy( &se_rights, &se_add_users );
-	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
 
 	/******** BEGIN SeAddUsers BLOCK *********/
 	
