@@ -94,6 +94,10 @@ END {
     gotstart = 1;
   }
 
+  if( $0 ~ /^PRINTER_INFO_1|^PRINTER_INFO_2/ ) {
+    gotstart = 1;
+  }
+
   if( $0 ~ /^UNISTR2|^LOCAL_GRP|^DOMAIN_GRP|^DOM_SID|^SEC_DESC/ ) {
     gotstart = 1;
   }

@@ -33,6 +33,70 @@ extern int DEBUGLEVEL;
 
 
 /****************************************************************************
+do a SPOOLSS Enum Printers
+****************************************************************************/
+BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
+			uint32 flags, char *servername,
+			uint32 level,
+			uint32 *count,
+			void ***printers)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SPOOL_Q_ENUMPRINTERS q_o;
+	BOOL valid_pol = False;
+
+	if (count == NULL || printers == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
+
+	DEBUG(5,("SPOOLSS Enum Printers (Server: %s level: %d)\n",
+				servername, level));
+
+	make_spoolss_q_enumprinters(&q_o, flags, servername, level, 0x200);
+
+	/* turn parameters into data stream */
+	spoolss_io_q_enumprinters("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SPOOLSS_ENUMPRINTERS, &buf, &rbuf))
+	{
+		SPOOL_R_ENUMPRINTERS r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		r_o.level = level;
+
+		spoolss_io_r_enumprinters("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(5,("SPOOLSS_ENUM_PRINTERS: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			(*count) = r_o.returned;
+			(*printers) = r_o.printer.info;
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a SPOOLSS Open Printer Ex
 ****************************************************************************/
 BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
