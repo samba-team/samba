@@ -334,6 +334,9 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 					 mem_ctx, NULL, &group_msgs, group_attrs,
 					 "(&(member=%s)(sAMAccountType=*))", 
 					 dn);
+		if (group_ret == -1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
 		
 		if (group_ret > 0 && 
 		    !(groupSIDs = talloc_realloc_p((*server_info)->mem_ctx, groupSIDs, 
