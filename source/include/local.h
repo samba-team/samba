@@ -38,36 +38,10 @@
 /* to a maximum of 8 if old smb clients break because of long printer names. */
 #define MAXPRINTERLEN 15
 
-/* max number of directories open at once */
-/* note that with the new directory code this no longer requires a
-   file handle per directory, but large numbers do use more memory */
-#define MAX_OPEN_DIRECTORIES 256
-
-/* max number of directory handles */
-/* As this now uses the bitmap code this can be
-   quite large. */
-#define MAX_DIRECTORY_HANDLES 2048
-
-/* maximum number of file caches per smbd */
-#define MAX_WRITE_CACHES 10
-
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
 #define SYSLOG_FACILITY LOG_DAEMON
 #endif
-
-/* 
- * Default number of maximum open files per smbd. This is
- * also limited by the maximum available file descriptors
- * per process and can also be set in smb.conf as "max open files"
- * in the [global] section.
- */
-
-#ifndef MAX_OPEN_FILES
-#define MAX_OPEN_FILES 10000
-#endif
- 
-#define WORDMAX 0xFFFF
 
 /* the maximum password length before we declare a likely attack */
 #define MAX_PASS_LEN 200
@@ -77,20 +51,6 @@
 
 /* wchar separators for lists */
 #define LIST_SEP_W wchar_list_sep
-
-/* this is where browse lists are kept in the lock dir */
-#define SERVER_LIST "browse.dat"
-
-/* shall filenames with illegal chars in them get mangled in long
-   filename listings? */
-#define MANGLE_LONG_FILENAMES 
-
-/* define this if you want to stop spoofing with .. and soft links
-   NOTE: This also slows down the server considerably */
-#define REDUCE_PATHS
-
-/* the size of the directory cache */
-#define DIRCACHESIZE 20
 
 /* what default type of filesystem do we want this to show up as in a
    NT file manager window? */
@@ -162,14 +122,9 @@
 
 #define OPLOCK_BREAK_TIMEOUT_FUDGEFACTOR 2
 
-/* the read preciction code has been disabled until some problems with
-   it are worked out */
-#define USE_READ_PREDICTION 0
-
 /*
  * Default passwd chat script.
  */
-
 #define DEFAULT_PASSWD_CHAT "*new*password* %n\\n *new*password* %n\\n *changed*"
 
 /* Minimum length of allowed password when changing UNIX password. */
@@ -179,39 +134,11 @@
    than 62*62 for the current code */
 #define MAX_SESSION_ID 3000
 
-/* For the benifit of PAM and the 'session exec' scripts, we fake up a terminal
-   name. This can be in one of two forms:  The first for systems not using
-   utmp (and therefore not constrained as to length or the need for a number
-   < 3000 or so) and the second for systems with this 'well behaved terminal
-   like name' constraint.
-*/
-
-#ifndef SESSION_TEMPLATE
-/* Paramaters are 'pid' and 'vuid' */
-#define SESSION_TEMPLATE "smb/%lu/%d"
-#endif
-
-#ifndef SESSION_UTMP_TEMPLATE
-#define SESSION_UTMP_TEMPLATE "smb/%d"
-#endif
-
-/* the maximum age in seconds of a password. Should be a lp_ parameter */
-#define MAX_PASSWORD_AGE (21*24*60*60)
-
-/* Allocation roundup. */
-#define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
-
 /* shall we deny oplocks to clients that get timeouts? */
 #define FASCIST_OPLOCK_BACKOFF 1
 
-/* this enables the "rabbit pellet" fix for SMBwritebraw */
-#define RABBIT_PELLET_FIX 1
-
 /* Max number of jobs per print queue. */
 #define PRINT_MAX_JOBID 10000
-
-/* Max number of open RPC pipes. */
-#define MAX_OPEN_PIPES 2048
 
 /* Tuning for server auth mutex. */
 #define CLI_AUTH_TIMEOUT 5000 /* In milli-seconds. */

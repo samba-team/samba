@@ -141,14 +141,6 @@ struct ipv4_addr {
 	uint32_t addr;
 };
 
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
 #define strerror(i) sys_errlist[i]
@@ -190,7 +182,6 @@ extern int errno;
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
-#include "librpc/gen_ndr/tables.h"
 #include "smb_interfaces.h"
 #include "smbd/server.h"
 #include "smbd/service.h"

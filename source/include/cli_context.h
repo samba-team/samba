@@ -19,9 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _SMBCLI_CONTEXT_H
-#define _SMBCLI_CONTEXT_H
-
 /* 
    smbcli_state: internal state used in libcli library for single-threaded callers, 
    i.e. a single session on a single socket. 
@@ -32,5 +29,3 @@ struct smbcli_state {
 	struct smbcli_tree *tree;
 	struct substitute_context *substitute;
 };
-
-#endif /* _SMBCLI_CONTEXT_H */
