@@ -64,12 +64,48 @@ typedef uint32_t WERROR;
 	}\
 } while (0)
 
+#define NT_STATUS_IS_OK_RETURN(x) do { \
+	if (NT_STATUS_IS_OK(x)) {\
+		return x;\
+	}\
+} while (0)
+
+#define NT_STATUS_NOT_OK_RETURN(x) do { \
+	if (!NT_STATUS_IS_OK(x)) {\
+		return x;\
+	}\
+} while (0)
+
+#define NT_STATUS_IS_ERR_RETURN(x) do { \
+	if (NT_STATUS_IS_ERR(x)) {\
+		return x;\
+	}\
+} while (0)
+
+#define NT_STATUS_NOT_ERR_RETURN(x) do { \
+	if (!NT_STATUS_IS_ERR(x)) {\
+		return x;\
+	}\
+} while (0)
+
 #define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
 #define W_ERROR_EQUAL(x,y) (W_ERROR_V(x) == W_ERROR_V(y))
 
 #define W_ERROR_HAVE_NO_MEMORY(x) do { \
 	if (!(x)) {\
 		return WERR_NOMEM;\
+	}\
+} while (0)
+
+#define W_ERROR_IS_OK_RETURN(x) do { \
+	if (W_ERROR_IS_OK(x)) {\
+		return x;\
+	}\
+} while (0)
+
+#define W_ERROR_NOT_OK_RETURN(x) do { \
+	if (!W_ERROR_IS_OK(x)) {\
+		return x;\
 	}\
 } while (0)
 
