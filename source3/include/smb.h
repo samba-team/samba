@@ -6,6 +6,7 @@
    Copyright (C) John H Terpstra              1996-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1998-2000
+   Copyright (C) Simo Sorce                   2001-2002
    Copyright (C) Martin Pool		      2002
    
    This program is free software; you can redistribute it and/or modify
@@ -386,10 +387,8 @@ typedef struct write_cache
 
 typedef struct
 {
-	smb_ucs2_t *path;
-	smb_ucs2_t *name;
-	smb_ucs2_t *unixname;
-	smb_ucs2_t *dosname;
+	smb_ucs2_t *origname;
+	smb_ucs2_t *filename;
 	SMB_STRUCT_STAT *statinfo;
 } smb_filename;
 

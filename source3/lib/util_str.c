@@ -3,6 +3,7 @@
    Version 3.0
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-2001
+   Copyright (C) Simo Sorce      2001-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -749,8 +750,8 @@ len is the number of bytes, not chars
   if len==0 then no length check is performed
 ****************************************************************************/
 
-smb_ucs2_t *all_string_sub_w(smb_ucs2_t *s, const smb_ucs2_t *pattern,
-					    const smb_ucs2_t *insert)
+smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,
+				const smb_ucs2_t *insert)
 {
 	smb_ucs2_t *r, *rp, *sp;
 	size_t	lr, lp, li, lt;
@@ -951,7 +952,7 @@ int pstr_sprintf(pstring s, const char *fmt, ...)
 }
 
 
-/* Just a typesafety wrapper for snprintf into a pstring */
+/* Just a typesafety wrapper for snprintf into a fstring */
 int fstr_sprintf(fstring s, const char *fmt, ...)
 {
 	va_list ap;

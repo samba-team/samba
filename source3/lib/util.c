@@ -449,13 +449,14 @@ smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
 
 	/* reduce any /../ */
 	t = ns;
-	while ((r = strstr_wa(t, "/.."))) {
+	while (*t && (r = strstr_wa(t, "/.."))) {
 		t = &(r[3]);
 		if (*t == UCS2_CHAR('/') || *t == 0) {
 			*r = 0;
 			p = strrchr_w(ns, UCS2_CHAR('/'));
 			if (!p) p = ns;
-			memmove(p, t, (strlen_w(t) + 1) * sizeof(smb_ucs2_t));
+			if (*t == 0) *p = 0;
+			else memmove(p, t, (strlen_w(t) + 1) * sizeof(smb_ucs2_t));
 			t = p;
 		}
 	}
