@@ -998,10 +998,6 @@ Can't find printer handle we created for printer %s\n", name ));
 					 lp_printer_admin(snum)))
 				return WERR_OK;
 
-			DEBUG(0, ("** denied 0x%08x to user %s\n",
-				  printer_default->access_required,
-				  uidtoname(user.uid)));
-			
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
 		}
