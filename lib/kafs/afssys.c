@@ -148,7 +148,8 @@ k_pioctl(char *a_path,
 #endif
 
 #ifdef _AIX
-  return lpioctl(a_path, o_opcode, a_paramsP, a_followSymlinks);
+  if (afs_entry_point == AIX_ENTRY_POINTS)
+    return lpioctl(a_path, o_opcode, a_paramsP, a_followSymlinks);
 #endif
 
   errno = ENOSYS;
@@ -183,7 +184,8 @@ k_setpag(void)
 #endif
 
 #ifdef _AIX
-  return lsetpag();
+  if (afs_entry_point == AIX_ENTRY_POINTS)
+    return lsetpag();
 #endif
 
   errno = ENOSYS;
