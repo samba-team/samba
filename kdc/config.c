@@ -42,7 +42,6 @@
 RCSID("$Id$");
 
 static char *config_file;
-char *logfile;
 int loglevel = -2;
 int require_preauth = 1;
 char *keyfile;
@@ -57,10 +56,6 @@ static struct getargs args[] = {
     { 
 	"config-file",	'c',	arg_string,	&config_file, 
 	"location of config file",	"file" 
-    },
-    { 
-	"log-file", 	'l', 	arg_string, 	&logfile,
-	"location of log file",		"file"
     },
     { 
 	"log-level",	0,	arg_integer,	&loglevel, 
@@ -109,15 +104,6 @@ configure(int argc, char **argv)
     if(krb5_config_parse_file(config_file, &cf))
 	goto end;
     
-    if(logfile == NULL){
-	p = krb5_config_get_string (cf, 
-				    "kdc",
-				    "log-file",
-				    NULL);
-	if(p)
-	    logfile = strdup(p);
-    }
-	
     if(loglevel == -2){
 	p = krb5_config_get_string (cf, 
 				    "kdc",
@@ -162,8 +148,6 @@ configure(int argc, char **argv)
     
     krb5_config_file_free (cf);
 end:
-    if(logfile == NULL)
-	logfile = "kdc.log";
     if(loglevel == -2)
 	loglevel = 0;
     if(require_preauth == -1)
