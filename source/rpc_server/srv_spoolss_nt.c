@@ -633,7 +633,7 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
 	 */
 
 	hl = NULL;	
-	for ( p = get_first_pipe(); p; get_next_pipe(p)) {
+	for ( p = get_first_pipe(); p; p = get_next_pipe(p)) {
 		if (strequal(p->name, "spoolss")) {
 			hl = p->pipe_handles;
 			break;
