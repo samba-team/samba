@@ -2,6 +2,7 @@
    Samba Unix/Linux SMB client library 
    net ads cldap functions 
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
+   Copyright (C) 2003 Jim McDonough (jmcd@us.ibm.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,59 +24,68 @@
 
 #ifdef HAVE_ADS
 
-struct cldap_netlogon_reply {
-	uint32 version;
-	uint32 flags;
-	GUID guid;
-	char *domain;
-	char *server_name;
-	char *domain_flatname;
-	char *server_flatname;
-	char *dns_name;
-	uint32 unknown2[2];
+struct netlogon_string {
+	uint32 comp_len;
+	char **component;
+	uint8 extra_flag;
 };
 
+struct cldap_netlogon_reply {
+	uint32 type;
+	uint32 flags;
+	GUID guid;
+
+	struct netlogon_string forest;
+	struct netlogon_string domain;
+	struct netlogon_string hostname;
+
+	struct netlogon_string netbios_domain;
+	struct netlogon_string netbios_hostname;
+
+	struct netlogon_string user_name;
+	struct netlogon_string site_name;
+
+	struct netlogon_string unk0;
+
+	uint32 version;
+	uint16 lmnt_token;
+	uint16 lm20_token;
+};
 
 /*
-  pull a length prefixed string from a packet
-  return number of bytes consumed
+  These strings are rather interesting... They are composed of a series of
+  length encoded strings, terminated by either 1) a zero length string or 2)
+  a 0xc0 byte with what appears to be a one byte flags immediately following.
 */
-static unsigned pull_len_string(char **ret, const char *p)
+static unsigned pull_netlogon_string(struct netlogon_string *ret,const char *d)
 {
-	unsigned len = *p;
-	(*ret) = NULL;
-	if (len == 0) return 1;
-	(*ret) = smb_xstrndup(p+1, len);
-	return len+1;
-}
+	char *s, *p = (char *)d;
 
-/*
-  pull a dotted string from a packet
-  return number of bytes consumed
-*/
-static unsigned pull_dotted_string(char **ret, const char *p)
-{
-	char *s;
-	unsigned len, total_len=0;
+	ZERO_STRUCTP(ret);
 
-	(*ret) = NULL;
+	do {
+		unsigned len = (unsigned char)*p;
+		p++;
 
-	while ((len = pull_len_string(&s, p)) > 1) {
-		if (total_len) {
-			char *s2;
-			asprintf(&s2, "%s.%s", *ret, s);
-			SAFE_FREE(*ret);
-			(*ret) = s2;
+		if (len > 0 && len != 0xc0) {
+			ret->component = realloc(ret->component,
+						 ++ret->comp_len *
+						 sizeof(char *));
+
+			ret->component[ret->comp_len - 1] = 
+				smb_xstrndup(p, len);
+			p += len;
 		} else {
-			(*ret) = s;
+			if (len == 0xc0) {
+				ret->extra_flag = *p;
+				p++;
+			};
+			break;
 		}
-		total_len += len;
-		p += len;
-	}
+	} while (1);
 
-	return total_len + 1;
+	return (p - d);
 }
-
 
 /*
   do a cldap netlogon query
@@ -190,19 +200,25 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 
 	p = os3.data;
 
-	reply->version = IVAL(p, 0); p += 4;
+	reply->type = IVAL(p, 0); p += 4;
 	reply->flags = IVAL(p, 0); p += 4;
+
 	memcpy(&reply->guid.info, p, GUID_SIZE);
 	p += GUID_SIZE;
-	p += pull_dotted_string(&reply->domain, p);
-	p += 2; /* 0xc018 - whats this? */
-	p += pull_len_string(&reply->server_name, p);
-	p += 2; /* 0xc018 - whats this? */
-	p += pull_len_string(&reply->domain_flatname, p);
-	p += 1;
-	p += pull_len_string(&reply->server_flatname, p);
-	p += 2;
-	p += pull_len_string(&reply->dns_name, p);
+
+	p += pull_netlogon_string(&reply->forest, p);
+	p += pull_netlogon_string(&reply->domain, p);
+	p += pull_netlogon_string(&reply->hostname, p);
+	p += pull_netlogon_string(&reply->netbios_domain, p);
+	p += pull_netlogon_string(&reply->netbios_hostname, p);
+	p += pull_netlogon_string(&reply->user_name, p);
+	p += pull_netlogon_string(&reply->site_name, p);
+
+	p += pull_netlogon_string(&reply->unk0, p);
+
+	reply->version = IVAL(p, 0);
+	reply->lmnt_token = SVAL(p, 4);
+	reply->lm20_token = SVAL(p, 6);
 
 	data_blob_free(&os1);
 	data_blob_free(&os2);
@@ -212,17 +228,50 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	return 0;
 }
 
+/*
+  free a netlogon string
+*/
+static void netlogon_string_free(struct netlogon_string *str)
+{
+	int i;
+
+	for (i = 0; i < str->comp_len; ++i) {
+		SAFE_FREE(str->component[i]);
+	}
+	SAFE_FREE(str->component);
+}
 
 /*
   free a cldap reply packet
 */
 static void cldap_reply_free(struct cldap_netlogon_reply *reply)
 {
-	SAFE_FREE(reply->domain);
-	SAFE_FREE(reply->server_name);
-	SAFE_FREE(reply->domain_flatname);
-	SAFE_FREE(reply->server_flatname);
-	SAFE_FREE(reply->dns_name);
+	netlogon_string_free(&reply->forest);
+	netlogon_string_free(&reply->domain);
+	netlogon_string_free(&reply->hostname);
+	netlogon_string_free(&reply->netbios_domain);
+	netlogon_string_free(&reply->netbios_hostname);
+	netlogon_string_free(&reply->user_name);
+	netlogon_string_free(&reply->site_name);
+	netlogon_string_free(&reply->unk0);
+}
+
+static void d_print_netlogon_string(const char *label, 
+				    struct netlogon_string *str)
+{
+	int i;
+
+	if (str->comp_len) {
+		d_printf("%s", label);
+		if (str->extra_flag) {
+			d_printf("[%d]", str->extra_flag);
+		}
+		d_printf(": ");
+		for (i = 0; i < str->comp_len; ++i) {
+			d_printf("%s%s", (i ? "." : ""), str->component[i]);
+		}
+		d_printf("\n");
+	}
 }
 
 /*
@@ -246,7 +295,6 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 	if (ret != 0) {
 		return ret;
 	}
-
 	ret = recv_cldap_netlogon(sock, &reply);
 	close(sock);
 
@@ -254,15 +302,48 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 		return -1;
 	}
 
-	d_printf("Version: 0x%x\n", reply.version);
+	d_printf("Information for Domain Controller: %s\n\n", 
+		 ads->config.ldap_server_name);
+
+	d_printf("Response Type: 0x%x\n", reply.type);
 	d_printf("GUID: "); 
 	print_guid(&reply.guid);
-	d_printf("Flags:   0x%x\n", reply.flags);
-	d_printf("Domain: %s\n", reply.domain);
-	d_printf("Server Name: %s\n", reply.server_name);
-	d_printf("Flatname: %s\n", reply.domain_flatname);
-	d_printf("Server Name2: %s\n", reply.server_flatname);
-	d_printf("DNS Name: %s\n", reply.dns_name);
+	d_printf("Flags:\n"
+		 "\tIs a PDC:                                   %s\n"
+		 "\tIs a GC of the forest:                      %s\n"
+		 "\tIs an LDAP server:                          %s\n"
+		 "\tSupports DS:                                %s\n"
+		 "\tIs running a KDC:                           %s\n"
+		 "\tIs running time services:                   %s\n"
+		 "\tIs the closest DC:                          %s\n"
+		 "\tIs writable:                                %s\n"
+		 "\tHas a hardware clock:                       %s\n"
+		 "\tIs a non-domain NC serviced by LDAP server: %s\n",
+		 (reply.flags & ADS_PDC) ? "yes" : "no",
+		 (reply.flags & ADS_GC) ? "yes" : "no",
+		 (reply.flags & ADS_LDAP) ? "yes" : "no",
+		 (reply.flags & ADS_DS) ? "yes" : "no",
+		 (reply.flags & ADS_KDC) ? "yes" : "no",
+		 (reply.flags & ADS_TIMESERV) ? "yes" : "no",
+		 (reply.flags & ADS_CLOSEST) ? "yes" : "no",
+		 (reply.flags & ADS_WRITABLE) ? "yes" : "no",
+		 (reply.flags & ADS_GOOD_TIMESERV) ? "yes" : "no",
+		 (reply.flags & ADS_NDNC) ? "yes" : "no");
+
+	d_print_netlogon_string("Forest", &reply.forest);
+	d_print_netlogon_string("Domain", &reply.domain);
+	d_print_netlogon_string("Hostname", &reply.hostname);
+
+	d_print_netlogon_string("Pre-Win2k Domain", &reply.netbios_domain);
+	d_print_netlogon_string("Pre-Win2k Hostname", &reply.netbios_hostname);
+
+	d_print_netlogon_string("User name", &reply.user_name);
+	d_print_netlogon_string("Site Name", &reply.site_name);
+	d_print_netlogon_string("Unknown Field", &reply.unk0);
+
+	d_printf("NT Version: %d\n", reply.version);
+	d_printf("LMNT Token: %0.2x\n", reply.lmnt_token);
+	d_printf("LM20 Token: %0.2x\n", reply.lm20_token);
 
 	cldap_reply_free(&reply);
 	
