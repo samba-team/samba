@@ -4722,7 +4722,8 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 	convert_printer_driver_info(info, &driver, level);
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	clean_up_driver_struct(driver, level);
+	if ((err = clean_up_driver_struct(driver, level)) != NT_STATUS_NO_PROBLEMO )
+		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
 	if(!move_driver_to_download_area(driver, level, &user, &err)) {

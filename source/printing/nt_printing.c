@@ -513,7 +513,7 @@ static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	 */
 	if ((driver->cversion = get_correct_cversion(architecture,
 											driver->driverpath)) == -1)
-		return ERROR_INVALID_PARAMETER;     /* Not the best error. Fix JRR */
+		return NT_STATUS_FILE_INVALID;     /* Not the best error. Fix JRR */
 
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -576,30 +576,32 @@ static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 	 */
 	if ((driver->version = get_correct_cversion(architecture,
 											driver->driverpath)) == -1)
-		return ERROR_INVALID_PARAMETER;     /* Not the best error. Fix JRR */
+		return NT_STATUS_FILE_INVALID;     /* Not the best error. Fix JRR */
 
 	return NT_STATUS_NO_PROBLEMO;
 }
 
 /****************************************************************************
 ****************************************************************************/
-void clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level)
+uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level)
 {
 	switch (level) {
 		case 3:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 			driver=driver_abstract.info_3;
-			clean_up_driver_struct_level_3(driver);
+			return clean_up_driver_struct_level_3(driver);
 			break;
 		}
 		case 6:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
 			driver=driver_abstract.info_6;
-			clean_up_driver_struct_level_6(driver);
+			return clean_up_driver_struct_level_6(driver);
 			break;
 		}
+		default:
+			return ERROR_INVALID_PARAMETER;
 	}
 }
 
