@@ -117,6 +117,7 @@ struct
   {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
   {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs"},
   {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
+  {"ntpass",     cmd_sam_ntchange_pwd, "NT SAM Password Change"},
   {"samuser",    cmd_sam_query_user,   "<username> SAM User Query (experimental!)"},
   {"samtest",    cmd_sam_test      ,   "SAM User Encrypted RPC test (experimental!)"},
   {"enumaliases",cmd_sam_enum_aliases, "SAM Aliases Database Query (experimental!)"},

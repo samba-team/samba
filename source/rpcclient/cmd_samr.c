@@ -39,9 +39,9 @@ extern FILE* out_hnd;
 
 
 /****************************************************************************
-experimental SAM encryted rpc test connection
+SAM password change
 ****************************************************************************/
-void cmd_sam_test(struct client_info *info)
+void cmd_sam_ntchange_pwd(struct client_info *info)
 {
 	fstring srv_name;
 	fstring domain;
@@ -60,23 +60,17 @@ void cmd_sam_test(struct client_info *info)
 	fstrcpy(sid   , info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
-	if (strlen(sid) == 0)
-	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
-	}
-
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	fprintf(out_hnd, "SAM Encryption Test\n");
+	fprintf(out_hnd, "SAM NT Password Change\n");
 
 #if 0
 	struct pwd_info new_pwd;
 	pwd_read(&new_pwd, "New Password (ONCE: this is test code!):", True);
 #endif
-	new_passwd = (char*)getpass("New Password (ONCE: this is test code!):");
+	new_passwd = (char*)getpass("New Password (ONCE ONLY - get it right :-)");
 
 	nt_lm_owf_gen(new_passwd, lm_newhash, nt_newhash);
 	pwd_get_lm_nt_16(&(smb_cli->pwd), lm_oldhash, nt_oldhash );
@@ -96,6 +90,52 @@ void cmd_sam_test(struct client_info *info)
 	                                   srv_name, smb_cli->user_name,
 	                                   nt_newpass, nt_hshhash,
 	                                   lm_newpass, lm_hshhash) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_sam_ntpasswd_chg: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_ntpasswd_chg: failed\n"));
+	}
+}
+
+
+/****************************************************************************
+experimental SAM encryted rpc test connection
+****************************************************************************/
+void cmd_sam_test(struct client_info *info)
+{
+	fstring srv_name;
+	fstring domain;
+	fstring sid;
+	char *new_passwd;
+	BOOL res = True;
+
+	fstrcpy(sid   , info->dom.level5_sid);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (strlen(sid) == 0)
+	{
+		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	fprintf(out_hnd, "SAM Encryption Test\n");
+
+	/* open SAMR session.  */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, True) : False;
+
+	/* establish a connection. */
+	res = res ? do_samr_unknown_38(smb_cli, srv_name) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli);
