@@ -126,9 +126,9 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     return ret;
 }
 
-static char realm_buf[REALM_SZ];
-
 #ifdef KRB4
+
+static char realm_buf[REALM_SZ];
 
 static int
 kdb_prop(void *arg, Principal *p)
