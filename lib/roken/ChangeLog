@@ -1,3 +1,9 @@
+2000-06-27  Assar Westerlund  <assar@sics.se>
+
+	* resolve.c: export string_to_type and type_to_string
+	* resolve.c: add key,sig,cert update test-program
+	* resolve.h: add key,sig,cert
+
 2000-06-21  Assar Westerlund  <assar@sics.se>
 
 	* resolve.h: add T_SIG, T_KEY
