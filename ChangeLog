@@ -1,3 +1,11 @@
+2003-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c (LDAP__connect): bind sasl "EXTERNAL" to ldap
+	connection
+	(LDAP_store): remove superfluous argument to asprintf
+	
+	From Alberto Patino <jalbertop@aranea.com.mx>
+
 2003-05-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/*.[0-9]: pacify mdoclink
