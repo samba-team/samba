@@ -46,11 +46,12 @@ krb5_cc_register(krb5_context context,
 		 krb5_boolean override)
 {
     int i;
+
     if(context->cc_ops == NULL){
-	context->num_ops = 4;
-	context->cc_ops = calloc(context->num_ops, sizeof(*context->cc_ops));
+	context->num_cc_ops = 4;
+	context->cc_ops = calloc(context->num_cc_ops, sizeof(*context->cc_ops));
     }
-    for(i = 0; context->cc_ops[i].prefix && i < context->num_ops; i++){
+    for(i = 0; context->cc_ops[i].prefix && i < context->num_cc_ops; i++){
 	if(strcmp(context->cc_ops[i].prefix, ops->prefix) == 0){
 	    if(override)
 		free(context->cc_ops[i].prefix);
@@ -58,16 +59,16 @@ krb5_cc_register(krb5_context context,
 		return KRB5_CC_TYPE_EXISTS; /* XXX */
 	}
     }
-    if(i == context->num_ops){
+    if(i == context->num_cc_ops){
 	krb5_cc_ops *o = realloc(context->cc_ops, 
-				 (context->num_ops + 4) * 
+				 (context->num_cc_ops + 4) * 
 				 sizeof(*context->cc_ops));
 	if(o == NULL)
 	    return KRB5_CC_NOMEM;
-	context->num_ops += 4;
+	context->num_cc_ops += 4;
 	context->cc_ops = o;
 	memset(context->cc_ops + i, 0, 
-	       (context->num_ops - i) * sizeof(*context->cc_ops));
+	       (context->num_cc_ops - i) * sizeof(*context->cc_ops));
     }
     memcpy(&context->cc_ops[i], ops, sizeof(context->cc_ops[i]));
     context->cc_ops[i].prefix = strdup(ops->prefix);
@@ -107,17 +108,9 @@ krb5_cc_resolve(krb5_context context,
 		const char *residual,
 		krb5_ccache *id)
 {
-    krb5_error_code ret;
     int i;
 
-    if(context->cc_ops == NULL){
-	ret = krb5_cc_register(context, &krb5_fcc_ops, 1);
-	if(ret) return ret;
-	ret = krb5_cc_register(context, &krb5_mcc_ops, 1);
-	if(ret) return ret;
-    }
-
-    for(i = 0; i < context->num_ops && context->cc_ops[i].prefix; i++) {
+    for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
 	size_t prefix_len = strlen(context->cc_ops[i].prefix);
 
 	if(strncmp(context->cc_ops[i].prefix, residual, prefix_len) == 0
