@@ -63,8 +63,8 @@ esac
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
 
 ( cd ../../.. ; tar --exclude=CVS -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
-
-cp -av $SPECFILE ${SPECDIR}
+/bin/cp -p filter-requires-samba.sh ${SRCDIR}
+/bin/cp -av $SPECFILE ${SPECDIR}
 
 echo Getting Ready to build release package
 cd ${SPECDIR}
