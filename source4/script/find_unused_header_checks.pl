@@ -8,6 +8,8 @@
 #
 # You might want to specify configure.in again in the list of header files 
 # as well, because it also uses some includes.
+# Note that this script does not process any includes, so you might 
+# have to run "cat configure.in */config.m4 > foo.in" first.
 
 my %symbols;
 
@@ -30,7 +32,7 @@ while(<IN>) {
 	if(/AC_CHECK_HEADERS\(([\[]*)(.*)([\]]*)\)/) {
 		@hs = split / /, $2;
 		foreach(@hs) { 
-			if($symbols{$_} != 1) { print "|$_|\n"; }
+			if($symbols{$_} != 1) { print "$_\n"; }
 		}
 	}
 }
