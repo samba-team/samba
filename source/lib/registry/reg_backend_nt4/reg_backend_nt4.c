@@ -487,7 +487,7 @@ typedef struct regf_struct_s {
 	HBIN_BLK *blk_head, *blk_tail, *free_space;
 } REGF;
 
-DWORD str_to_dword(const char *a) {
+static DWORD str_to_dword(const char *a) {
 	int i;
 	unsigned long ret = 0;
 	for(i = strlen(a)-1; i >= 0; i--) {
