@@ -1078,7 +1078,6 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	BOOL interactive = True;
 	char *cmd_str = NULL;
 	int opt;
-	int i;
 	extern FILE *dbf;
 	extern char *optarg;
 	static pstring servicesf = CONFIGFILE;
@@ -1421,14 +1420,8 @@ int command_main(int argc, char *argv[])
 	extern struct user_creds *usr_creds;
 	mode_t myumask = 0755;
 	char progname[255], path[255], *s;
-	int i;
 
 	DEBUGLEVEL = 2;
-
-	for (i = 0; i < argc; i++)
-	{
-		DEBUG(2, ("arg %d: %s\n", i, argv[i]));
-	}
 
 	add_command_set(general_commands);
 
