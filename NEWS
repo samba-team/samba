@@ -1,5 +1,7 @@
 Changes in release 0.2r:
 
+ * `add --key' and `cpw --key' in kadmin
+
  * klist supports listing v4 tickets
 
  * support for anonymous tickets

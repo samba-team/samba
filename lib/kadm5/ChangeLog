@@ -1,3 +1,19 @@
+2000-03-24  Assar Westerlund  <assar@sics.se>
+
+	* set_keys.c (_kadm5_set_keys2): rewrite
+	(_kadm5_set_keys3): add
+
+	* private.h (struct kadm_func): add chpass_principal_with_key
+	* init_c.c (set_funcs): add chpass_principal_with_key
+
+2000-03-23  Assar Westerlund  <assar@sics.se>
+
+	* context_s.c (set_funcs): add chpass_principal_with_key
+	* common_glue.c (kadm5_chpass_principal_with_key): add
+	* chpass_s.c: comment-ize and change calling convention for
+	_kadm5_set_keys*
+	* chpass_c.c (kadm5_c_chpass_principal_with_key): add
+
 2000-02-07  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkadm5clnt_la_LDFLAGS): set version to 4:2:0
