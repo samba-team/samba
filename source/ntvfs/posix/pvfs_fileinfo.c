@@ -99,10 +99,10 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
 */
 mode_t pvfs_fileperms(struct pvfs_state *pvfs, uint32 attrib)
 {
-	mode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
+	mode_t mode = S_IRUSR;
 
 	if (attrib & FILE_ATTRIBUTE_DIRECTORY) {
-		mode |= S_IXUSR | S_IXGRP | S_IXOTH;
+		mode |= S_IXUSR;
 	}
 
 	if (!(attrib & FILE_ATTRIBUTE_READONLY) ||
