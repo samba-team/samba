@@ -91,7 +91,7 @@ on_select_domain_activate                       (GtkMenuItem     *menuitem,
 	d = GTK_SELECT_DOMAIN_DIALOG(gtk_select_domain_dialog_new(sam_pipe));
 	result = gtk_dialog_run(GTK_DIALOG(d));
 	switch(result) {
-	case GTK_RESPONSE_ACCEPT:
+	case GTK_RESPONSE_OK:
 		break;
 	default:
 		gtk_widget_destroy(GTK_WIDGET(d));
@@ -105,7 +105,7 @@ on_select_domain_activate                       (GtkMenuItem     *menuitem,
 	gtk_widget_destroy(GTK_WIDGET(d));
 }
 
-void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
+static void connect_sam(void)
 {
 	GtkRpcBindingDialog *d;
 	NTSTATUS status;
@@ -153,6 +153,12 @@ void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 	gtk_window_set_title (GTK_WINDOW (mainwin), talloc_asprintf(mem_ctx, "User Manager - Connected to %s", gtk_rpc_binding_dialog_get_host(d)));
 	gtk_widget_destroy(GTK_WIDGET(d));
 	talloc_destroy(mem_ctx);
+
+}
+
+void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
+{
+	connect_sam();
 }
 
 void on_disconnect_activate (GtkMenuItem *menuitem, gpointer user_data)
@@ -431,9 +437,11 @@ create_mainwindow (void)
 {
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
+	setup_logging("gwsam", True);
 
 	gtk_init(&argc, &argv);
 	mainwin = create_mainwindow();
+	connect_sam();
 	gtk_widget_show(mainwin);
 	gtk_main();
 

@@ -109,6 +109,13 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_widget_show (vbox6);
 	gtk_container_add (GTK_CONTAINER (frame_transport), vbox6);
 
+	gtk_rpc_binding_dialog->transport_ncalrpc = gtk_radio_button_new_with_mnemonic (NULL, "Local Host");
+	gtk_widget_show (gtk_rpc_binding_dialog->transport_ncalrpc);
+	gtk_box_pack_start (GTK_BOX (vbox6), gtk_rpc_binding_dialog->transport_ncalrpc, FALSE, FALSE, 0);
+	gtk_radio_button_set_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_ncalrpc), transport_smb_group);
+	transport_smb_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_ncalrpc));
+
+
 	gtk_rpc_binding_dialog->transport_smb = gtk_radio_button_new_with_mnemonic (NULL, "RPC over SMB over TCP/IP");
 	gtk_widget_show (gtk_rpc_binding_dialog->transport_smb);
 	gtk_box_pack_start (GTK_BOX (vbox6), gtk_rpc_binding_dialog->transport_smb, FALSE, FALSE, 0);
@@ -122,15 +129,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_radio_button_set_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_tcp_ip), transport_smb_group);
 	transport_smb_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_tcp_ip));
 
-	gtk_rpc_binding_dialog->transport_ncalrpc = gtk_radio_button_new_with_mnemonic (NULL, "Local Host");
-	gtk_widget_show (gtk_rpc_binding_dialog->transport_ncalrpc);
-	gtk_box_pack_start (GTK_BOX (vbox6), gtk_rpc_binding_dialog->transport_ncalrpc, FALSE, FALSE, 0);
-	gtk_radio_button_set_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_ncalrpc), transport_smb_group);
-	transport_smb_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_ncalrpc));
 
-	g_signal_connect ((gpointer) gtk_rpc_binding_dialog->transport_ncalrpc, "toggled",
-						  G_CALLBACK (on_ncalrpc_toggled),
-						  gtk_rpc_binding_dialog);
 
 	label1 = gtk_label_new ("Transport");
 	gtk_widget_show (label1);
@@ -264,6 +263,13 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_dialog_add_action_widget (GTK_DIALOG (gtk_rpc_binding_dialog), btn_connect, GTK_RESPONSE_ACCEPT);
 	gtk_container_set_border_width (GTK_CONTAINER (btn_connect), 1);
 	GTK_WIDGET_SET_FLAGS (btn_connect, GTK_CAN_DEFAULT);
+
+	g_signal_connect ((gpointer) gtk_rpc_binding_dialog->transport_ncalrpc, "toggled",
+						  G_CALLBACK (on_ncalrpc_toggled),
+						  gtk_rpc_binding_dialog);
+
+
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(gtk_rpc_binding_dialog->transport_ncalrpc), TRUE);
 
 	gtk_widget_grab_focus (btn_connect);
 	gtk_widget_grab_default (btn_connect);
