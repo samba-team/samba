@@ -1888,13 +1888,18 @@ static void do_tarput()
                  return;
               }
 
+
+	      bzero(longname, finfo.size + strlen(cur_dir) +1);
+
               buffer_p += TBLOCK;   /* Skip that longlink header */
 
               /* This needs restructuring ... */
 
-              strncpy(longname, cur_dir, strlen(cur_dir) + 1); 
+              safe_strcpy(longname, cur_dir, strlen(cur_dir) + 1); 
 	      cp = longname + strlen(cur_dir);
 	      file_len = finfo.size;
+
+	      DEBUG(5, ("longname=%0X, cp=%0X, file_len=%i\n", longname, cp, file_len));
 
 	      while (file_len > 0) {
 
@@ -1912,7 +1917,7 @@ static void do_tarput()
 		cp = cp + strlen(cp); /* Move to end of string */
 		buffer_p += TBLOCK;
 		file_len -= TBLOCK;
-		
+		DEBUG(5, ("cp=%0X, file_len=%i\n", cp, file_len));
 		next_header = 1;  /* Force read of next header */
 
 	      }
