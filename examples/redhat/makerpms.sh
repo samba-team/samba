@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright (C) John H Terpstra and Erik Troan - 1997
+#
 # First we move all our gear into place - a noble move!
 RPMDIR=`rpm --showrc | awk '/^rpmdir/ { print $3}'`
 SPECDIR=`rpm --showrc | awk '/^specdir/ { print $3}'`
