@@ -83,12 +83,20 @@ as_rep(krb5_context context,
 	    return 0;
 	}
 
-	krb5_decrypt (context,
-		      enc_data.cipher.data,
-		      enc_data.cipher.length,
-		      enc_data.etype,
-		      &client->keyblock,
-		      &ts_data);
+	e = krb5_decrypt (context,
+			  enc_data.cipher.data,
+			  enc_data.cipher.length,
+			  enc_data.etype,
+			  &client->keyblock,
+			  &ts_data);
+	if (e) {
+	    krb5_mk_error (client_princ,
+			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
+			   "Couldn't decode",
+			   NULL,
+			   reply);
+	    return 0;
+	}
 	e = decode_PA_ENC_TS_ENC(ts_data.data,
 				 ts_data.length,
 				 &p,
@@ -109,7 +117,7 @@ as_rep(krb5_context context,
 			   reply);
 	    return 0;
 	}
-
+	et->flags.pre_authent = 1;
     }
 
     /* Find appropriate key */
