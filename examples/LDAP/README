@@ -5,10 +5,9 @@
 !==
 
 This is a quick and dirty means of storing smbpasswd entries
-in LDAP.  Samba 2.2.x does not have any ability to grab
-this information directly from LDAP so you will need to
-periodically generate an smbpasswd from an ldapsearch
-"(objectclass=smbPasswordEntry)".
+in LDAP.  Samba 2.2.x (x >=4) and 3.0 can both store this information
+directly in LDAP, and the schema has *changed*.  As such these scripts will
+need modification prior to use.
 
 Be aware of search limits on your client or server which prevent
 all entries from being returned in the search result.
