@@ -55,29 +55,24 @@ AC_CHECK_HEADERS([\
 	fcntl.h					\
 	grp.h					\
 	ifaddrs.h				\
-	net/if.h				\
 	netdb.h					\
 	netinet/in.h				\
 	netinet/in6.h				\
 	netinet/in_systm.h			\
 	netinet6/in6.h				\
-	netinet6/in6_var.h			\
 	paths.h					\
 	poll.h					\
 	pwd.h					\
-	resolv.h				\
 	rpcsvc/ypclnt.h				\
 	shadow.h				\
 	sys/bswap.h				\
 	sys/ioctl.h				\
 	sys/mman.h				\
 	sys/param.h				\
-	sys/proc.h				\
 	sys/resource.h				\
 	sys/socket.h				\
 	sys/sockio.h				\
 	sys/stat.h				\
-	sys/sysctl.h				\
 	sys/time.h				\
 	sys/tty.h				\
 	sys/types.h				\
@@ -93,6 +88,35 @@ AC_CHECK_HEADERS([\
 	vis.h					\
 ])
 	
+AC_CHECK_HEADERS(net/if.h, , , [AC_INCLUDES_DEFAULT
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif])
+
+AC_CHECK_HEADERS(netinet6/in6_var.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_NETINET6_IN6_H
+#include <netinet6/in6.h>
+#endif
+])
+
+AC_CHECK_HEADERS(sys/sysctl.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+])
+
+AC_CHECK_HEADERS(sys/proc.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+])
+
+AC_CHECK_HEADERS(resolv.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+])
+
 AC_REQUIRE([CHECK_NETINET_IP_AND_TCP])
 
 AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
