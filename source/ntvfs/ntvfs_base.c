@@ -42,7 +42,7 @@ static int num_backends;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-static NTSTATUS ntvfs_register(void *_ops)
+static NTSTATUS ntvfs_register(const void *_ops)
 {
 	const struct ntvfs_ops *ops = _ops;
 	struct ntvfs_ops *new_ops;
