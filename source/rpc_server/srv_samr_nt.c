@@ -894,7 +894,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	/* well-known aliases */
 	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
 		
-		enum_group_mapping(SID_NAME_ALIAS, &map, (int *)&num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
+		enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
 		
 		if (num_entries != 0) {		
 			*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
@@ -1328,7 +1328,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	    !sid_check_is_in_builtin(&sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	if (!get_local_group_from_sid(sid, &map, MAPPING_WITHOUT_PRIV))
+	if (!get_group_map_from_sid(sid, &map, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	switch (q_u->switch_level) {

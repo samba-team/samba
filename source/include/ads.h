@@ -15,6 +15,7 @@ typedef struct {
 		char *realm;
 		char *workgroup;
 		char *ldap_server;
+		char *ldap_uri;
 		int foreign; /* set to 1 if connecting to a foreign realm */
 	} server;
 
@@ -255,5 +256,7 @@ typedef void **ADS_MODLIST;
 
 
 /* ads auth control flags */
-#define ADS_AUTH_DISABLE_KERBEROS 1
-#define ADS_AUTH_NO_BIND 2
+#define ADS_AUTH_DISABLE_KERBEROS 0x01
+#define ADS_AUTH_NO_BIND          0x02
+#define ADS_AUTH_ANON_BIND        0x04
+#define ADS_AUTH_SIMPLE_BIND      0x08

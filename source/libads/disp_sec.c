@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-#ifdef HAVE_ADS
-
 static struct perm_mask_str {
 	uint32  mask;
 	char   *str;
@@ -158,5 +156,4 @@ void ads_disp_sd(SEC_DESC *sd)
 	printf("-------------- End Of Security Descriptor\n");
 }
 
-#endif
 
