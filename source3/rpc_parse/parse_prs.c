@@ -164,9 +164,11 @@ BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize)
 
 	if (newsize < ps->buffer_size) {
 		char *new_data_p = Realloc(ps->data_p, newsize);
-		if (new_data_p == NULL) {
+		/* if newsize is zero, Realloc acts like free() & returns NULL*/
+		if (new_data_p == NULL && newsize != 0) {
 			DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
 				(unsigned int)newsize));
+			DEBUG(0,("prs_set_buffer_size: Reason %s\n",strerror(errno)));
 			return False;
 		}
 		ps->data_p = new_data_p;
