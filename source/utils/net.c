@@ -71,8 +71,8 @@ int opt_jobid = 0;
 char *opt_target_workgroup = NULL;
 
 static BOOL got_pass = False;
-static BOOL have_ip = False;
-static struct in_addr dest_ip;
+BOOL opt_have_ip = False;
+struct in_addr opt_dest_ip;
 
 extern pstring global_myname;
 
@@ -156,10 +156,10 @@ static BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **se
 		*server_name = strdup(opt_host);
 	}		
 
-	if (have_ip) {
-		*server_ip = dest_ip;
+	if (opt_have_ip) {
+		*server_ip = opt_dest_ip;
 		if (!*server_name) {
-			*server_name = strdup(inet_ntoa(dest_ip));
+			*server_name = strdup(inet_ntoa(opt_dest_ip));
 		}
 	} else if (*server_name) {
 		/* resolve the IP address */
@@ -196,7 +196,7 @@ static BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **se
 		} else {
 			*server_ip = msbrow_ip;
 		}
-		*server_name = strdup(inet_ntoa(dest_ip));
+		*server_name = strdup(inet_ntoa(opt_dest_ip));
 	} else if (flags & NET_FLAGS_MASTER) {
 		struct in_addr brow_ips;
 		if (!resolve_name(opt_target_workgroup, &brow_ips, 0x1D))  {
@@ -206,7 +206,7 @@ static BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **se
 		} else {
 			*server_ip = brow_ips;
 		}
-		*server_name = strdup(inet_ntoa(dest_ip));
+		*server_name = strdup(inet_ntoa(opt_dest_ip));
 	} else if (!(flags & NET_FLAGS_LOCALHOST_DEFAULT_INSANE)) {
 		extern struct in_addr loopback_ip;
 		*server_ip = loopback_ip;
@@ -264,7 +264,7 @@ static int help_usage(int argc, const char **argv)
 "\n"\
 "Valid functions are:\n"\
 "  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
-"  GROUPMEMBER ADMIN SERVICE PASSWORD\n");
+"  GROUPMEMBER ADMIN SERVICE PASSWORD TIME\n");
 	return -1;
 }
 
@@ -291,6 +291,7 @@ static int net_help(int argc, const char **argv)
 		{"ADMIN", net_rap_admin_usage},
 		{"SERVICE", net_rap_service_usage},
 		{"PASSWORD", net_rap_password_usage},
+		{"TIME", net_time_usage},
 
 		{"HELP", help_usage},
 		{NULL, NULL}};
@@ -318,6 +319,7 @@ static struct functable net_func[] = {
 	{"ADMIN", net_rap_admin},
 	{"SERVICE", net_rap_service},	
 	{"PASSWORD", net_rap_password},
+	{"TIME", net_time},
 
 	{"HELP", net_help},
 	{NULL, NULL}
@@ -359,7 +361,7 @@ static struct functable net_func[] = {
 	};
 
 	got_pass = 0;
-	zero_ip(&dest_ip);
+	zero_ip(&opt_dest_ip);
 
 	dbf = x_stdout;
 	
@@ -373,11 +375,11 @@ static struct functable net_func[] = {
 			exit(0);
 			break;
 		case 'I':
-			dest_ip = *interpret_addr2(poptGetOptArg(pc));
-			if (is_zero_ip(dest_ip))
+			opt_dest_ip = *interpret_addr2(poptGetOptArg(pc));
+			if (is_zero_ip(opt_dest_ip))
 				d_printf("\nInvalid ip address specified\n");
 			else
-				have_ip = True;
+				opt_have_ip = True;
 			break;
 		case 'U':
 			opt_user_name = strdup(opt_user_name);

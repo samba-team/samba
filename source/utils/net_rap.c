@@ -214,7 +214,7 @@ static const char *share_type[] = {
 
 /* End of weird 'strings at top of file' section */
 
-static int general_rap_usage(int argc, const char **argv)
+int general_rap_usage(int argc, const char **argv)
 {
 
 	d_printf("Valid targets: choose one (none defaults to using localhost)\n");
