@@ -60,7 +60,7 @@ RCSID("$Id$");
 #endif
 
 static void
-log_error(int level, const char *format, ...)
+psyslog(int level, const char *format, ...)
 {
   va_list args;
   va_start(args, format);
@@ -115,7 +115,7 @@ parse_ctrl(int argc, const char **argv)
 	  break;
     
       if (j >= KRB4_CTRLS)
-	log_error(LOG_ALERT, "unrecognized option [%s]", *argv);
+	psyslog(LOG_ALERT, "unrecognized option [%s]", *argv);
       else
 	ctrl_flags |= krb4_args[j].flag;
     }
@@ -134,7 +134,7 @@ pdeb(const char *format, ...)
   closelog();
 }
 
-#define ENTRY(f) pdeb("%s() ruid = %d euid = %d", f, getuid(), geteuid())
+#define ENTRY(func) pdeb("%s() flags = %d ruid = %d euid = %d", func, flags, getuid(), geteuid())
 
 static void
 set_tkt_string(uid_t uid)
@@ -182,9 +182,14 @@ verify_pass(pam_handle_t *pamh,
   old_euid = geteuid();
   setreuid(0, 0);
   ret = krb_verify_user(name, inst, realm, pass, krb_verify, NULL);
-  if (setreuid(old_ruid, old_euid) != 0)
+  pdeb("krb_verify_user(`%s', `%s', `%s', pw, %d, NULL) returns %s",
+       name, inst, realm, krb_verify,
+       krb_get_err_text(ret));
+  if (setreuid(old_ruid, old_euid) != 0
+      ||  getuid() != old_ruid
+      || geteuid() != old_euid)
     {
-      log_error(LOG_ALERT , "setreuid(%d, %d) failed", old_ruid, old_euid);
+      psyslog(LOG_ALERT , "setreuid(%d, %d) failed", old_ruid, old_euid);
       exit(1);
     }
     
@@ -220,7 +225,7 @@ krb4_auth(pam_handle_t *pamh,
       ret = pam_get_item(pamh, PAM_AUTHTOK, (void **) &pass);
       if (ret != PAM_SUCCESS)
         {
-          log_error(LOG_ERR , "pam_get_item returned error to get-password");
+          psyslog(LOG_ERR , "pam_get_item returned error to get-password");
           return ret;
         }
       else if (pass != 0 && verify_pass(pamh, name, inst, pass) == PAM_SUCCESS)
@@ -271,9 +276,11 @@ pam_sm_authenticate(pam_handle_t *pamh,
   struct passwd *pw;
   uid_t uid = -1;
   const char *name, *inst;
+  char realm[REALM_SZ];
+  realm[0] = 0;
 
-  parse_ctrl(argc, argv);
   ENTRY("pam_sm_authenticate");
+  parse_ctrl(argc, argv);
 
   ret = pam_get_user(pamh, &user, "login: ");
   if (ret != PAM_SUCCESS)
@@ -316,11 +323,9 @@ pam_sm_authenticate(pam_handle_t *pamh,
    */
   if (ret == PAM_SUCCESS && inst[0] != 0)
     {
-      char realm[REALM_SZ];
       uid_t old_euid = geteuid();
       uid_t old_ruid = getuid();
 
-      realm[0] = 0;
       setreuid(0, 0);		/* To read ticket file. */
       if (krb_get_tf_fullname(tkt_string(), 0, 0, realm) != KSUCCESS)
 	ret = PAM_SERVICE_ERR;
@@ -334,37 +339,52 @@ pam_sm_authenticate(pam_handle_t *pamh,
       if (ret != PAM_SUCCESS)
 	{
 	  dest_tkt();		/* Passwd known, ok to kill ticket. */
-	  log_error(LOG_NOTICE,
-		    "%s.%s@%s is not allowed to log in as %s",
-		    name, inst, realm, user);
+	  psyslog(LOG_NOTICE,
+		  "%s.%s@%s is not allowed to log in as %s",
+		  name, inst, realm, user);
 	}
 
-      if (setreuid(old_ruid, old_euid) != 0)
+      if (setreuid(old_ruid, old_euid) != 0
+	  ||  getuid() != old_ruid
+	  || geteuid() != old_ruid)
 	{
-	  log_error(LOG_ALERT , "setreuid(%d, %d) failed", old_ruid, old_euid);
+	  psyslog(LOG_ALERT , "setreuid(%d, %d) failed", old_ruid, old_euid);
 	  exit(1);
 	}
     }
 
   if (ret == PAM_SUCCESS)
-    chown(tkt_string(), uid, -1);
+    {
+      psyslog(LOG_INFO,
+	      "%s.%s@%s authenticated as user %s",
+	      name, inst, realm, user);
+      if (chown(tkt_string(), uid, -1) == -1)
+	{
+	  dest_tkt();
+	  psyslog(LOG_ALERT , "chown(%s, %d, -1) failed", tkt_string(), uid);
+	  exit(1);
+	}
+    }
 
-  /* Sun dtlogin unlock screen does not call any other pam_* funcs. */
-  if (ret == PAM_SUCCESS
-      && ctrl_on(KRB4_REAFSLOG)
-      && k_hasafs()
-      && (pw = getpwnam(user)) != 0)
-    krb_afslog_uid_home(/*cell*/ 0,/*realm_hint*/ 0, pw->pw_uid, pw->pw_dir);
-
+  /*
+   * Kludge alert!!! Sun dtlogin unlock screen fails to call
+   * pam_setcred(3) with PAM_REFRESH_CRED after a successful
+   * authentication attempt, sic.
+   *
+   * This hack is designed as a workaround to that problem.
+   */
+  if (ctrl_on(KRB4_REAFSLOG))
+    if (ret == PAM_SUCCESS)
+      pam_sm_setcred(pamh, PAM_REFRESH_CRED, argc, argv);
+  
   return ret;
 }
 
 int 
 pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-  parse_ctrl(argc, argv);
   ENTRY("pam_sm_setcred");
-  pdeb("flags = 0x%x", flags);
+  parse_ctrl(argc, argv);
 
   switch (flags & ~PAM_SILENT) {
   case 0:
@@ -393,7 +413,7 @@ pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
       k_unlog();
     break;
   default:
-    log_error(LOG_ALERT , "pam_sm_setcred: unknown flags 0x%x", flags);
+    psyslog(LOG_ALERT , "pam_sm_setcred: unknown flags 0x%x", flags);
     break;
   }
   
@@ -403,8 +423,8 @@ pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 int
 pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-  parse_ctrl(argc, argv);
   ENTRY("pam_sm_open_session");
+  parse_ctrl(argc, argv);
 
   return PAM_SUCCESS;
 }
@@ -413,13 +433,11 @@ pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 int
 pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, const char**argv)
 {
-  parse_ctrl(argc, argv);
   ENTRY("pam_sm_close_session");
+  parse_ctrl(argc, argv);
 
   /* This isn't really kosher, but it's handy. */
-  dest_tkt();
-  if (k_hasafs())
-    k_unlog();
+  pam_sm_setcred(pamh, PAM_DELETE_CRED, argc, argv);
 
   return PAM_SUCCESS;
 }
