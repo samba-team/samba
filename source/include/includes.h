@@ -28,10 +28,7 @@
 
 #ifdef NTDOMAIN
 #error WARNING: remove this option (-DNTDOMAIN) from your [Mm]akefile.
-#error you WILL run into difficulties with your Samba server if you
-#error use it, which you will NOT encounter if you do not.
-#error please see http://samba.anu.edu.au/listproc/samba-ntdom
-#error for the latest NT Domain developments.
+#error please read NTDOMAIN.txt with _this_ distribution.
 #endif
 
 
