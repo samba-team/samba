@@ -22,16 +22,16 @@
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%d) Incorrect status %s - should be %s\n", \
-		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%d) Incorrect value %s=%d - should be %d\n", \
-		       __LINE__, #v, v, correct); \
+		printf("(%s) Incorrect value %s=%d - should be %d\n", \
+		       __location__, #v, v, correct); \
 		ret = False; \
 		goto done; \
 	}} while (0)
@@ -211,11 +211,143 @@ static BOOL test_lockx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.lockx.in.ulock_cnt = 0;
 	io.lockx.in.lock_cnt = 1;
 	lock[0].pid = cli->session->pid;
-	lock[0].offset = 0;
-	lock[0].count = 0xFFFFFFFF;
+	lock[0].offset = 10;
+	lock[0].count = 1;
 	io.lockx.in.locks = &lock[0];
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+
+	printf("Trying 0xEEFFFFFF lock\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].count = 4000;
+	lock[0].offset = 0xEEFFFFFF;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid++;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	lock[0].pid--;
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	printf("Trying 0xEF000000 lock\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].count = 4000;
+	lock[0].offset = 0xEF000000;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid++;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	lock[0].pid--;
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	printf("Trying zero lock\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].count = 0;
+	lock[0].offset = ~0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid++;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid--;
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	printf("Trying max lock\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].count = 0;
+	lock[0].offset = ~0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid++;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid--;
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	printf("Trying 2^63\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].count = 1;
+	lock[0].offset = 1;
+	lock[0].offset <<= 63;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid++;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	lock[0].pid--;
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	printf("Trying 2^63 - 1\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].count = 1;
+	lock[0].offset = 1;
+	lock[0].offset <<= 63;
+	lock[0].offset--;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid++;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	lock[0].pid--;
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	printf("Trying max lock 2\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].count = 1;
+	lock[0].offset = ~0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid++;
+	lock[0].count = 2;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	lock[0].pid--;
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	lock[0].count = 1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -308,6 +440,99 @@ done:
 }
 
 
+/*
+  test locking&X async operation
+*/
+static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_lock io;
+	struct smb_lock_entry lock[2];
+	NTSTATUS status;
+	BOOL ret = True;
+	int fnum;
+	const char *fname = BASEDIR "\\test.txt";
+	time_t t;
+	struct smbcli_request *req;
+
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+		return False;
+	}
+
+	printf("Testing lock cancel\n");
+	io.generic.level = RAW_LOCK_LOCKX;
+	
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum == -1) {
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+		ret = False;
+		goto done;
+	}
+
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.fnum = fnum;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.timeout = 0;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	lock[0].pid = cli->session->pid;
+	lock[0].offset = 100;
+	lock[0].count = 10;
+	io.lockx.in.locks = &lock[0];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	t = time(NULL);
+
+	/* setup a timed lock */
+	io.lockx.in.timeout = 10000;
+	req = smb_raw_lock_send(cli->tree, &io);
+	if (req == NULL) {
+		printf("Failed to setup timed lock (%s)\n", __location__);
+		ret = False;
+		goto done;
+	}
+
+	/* cancel the wrong range */
+	lock[0].offset = 0;
+	io.lockx.in.timeout = 0;
+	io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+
+	/* cancel with the wrong bits set */
+	lock[0].offset = 100;
+	io.lockx.in.timeout = 0;
+	io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+
+	/* cancel the right range */
+	lock[0].offset = 100;
+	io.lockx.in.timeout = 0;
+	io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK | LOCKING_ANDX_LARGE_FILES;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* receive the failed lock request */
+	status = smbcli_request_simple_recv(req);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	if (time(NULL) > t+2) {
+		printf("lock cancel was not immediate (%s)\n", __location__);
+		ret = False;
+		goto done;
+	}
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+
 /* 
    basic testing of lock calls
 */
@@ -323,17 +548,10 @@ BOOL torture_raw_lock(int dummy)
 
 	mem_ctx = talloc_init("torture_raw_lock");
 
-	if (!test_lockx(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_lock(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_pidhigh(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_lockx(cli, mem_ctx);
+	ret &= test_lock(cli, mem_ctx);
+	ret &= test_pidhigh(cli, mem_ctx);
+	ret &= test_async(cli, mem_ctx);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
