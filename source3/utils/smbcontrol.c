@@ -34,7 +34,7 @@ static int num_replies;		/* Used by message callback fns */
 
 /* Send a message to a destination pid.  Zero means broadcast smbd. */
 
-static BOOL send_message(pid_t pid, int msg_type, void *buf, int len,
+static BOOL send_message(pid_t pid, int msg_type, const void *buf, int len,
 			 BOOL duplicates)
 {
 	TDB_CONTEXT *tdb;
@@ -92,7 +92,7 @@ static void print_string_cb(int msg_type, pid_t pid, void *buf, size_t len)
 
 /* Send no message.  Useful for testing. */
 
-static BOOL do_noop(const pid_t pid, const int argc, char **argv)
+static BOOL do_noop(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> noop\n");
@@ -106,7 +106,7 @@ static BOOL do_noop(const pid_t pid, const int argc, char **argv)
 
 /* Send a debug string */
 
-static BOOL do_debug(const pid_t pid, const int argc, char **argv)
+static BOOL do_debug(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 2) {
 		fprintf(stderr, "Usage: smbcontrol <dest> debug "
@@ -120,7 +120,7 @@ static BOOL do_debug(const pid_t pid, const int argc, char **argv)
 
 /* Force a browser election */
 
-static BOOL do_election(const pid_t pid, const int argc, char **argv)
+static BOOL do_election(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> force-election\n");
@@ -139,7 +139,7 @@ static void pong_cb(int msg_type, pid_t pid, void *buf, size_t len)
 	num_replies++;
 }
 
-static BOOL do_ping(const pid_t pid, const int argc, char **argv)
+static BOOL do_ping(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> ping\n");
@@ -167,7 +167,7 @@ static BOOL do_ping(const pid_t pid, const int argc, char **argv)
 
 /* Set profiling options */
 
-static BOOL do_profile(const pid_t pid, const int argc, char **argv)
+static BOOL do_profile(const pid_t pid, const int argc, const char **argv)
 {
 	int v;
 
@@ -239,7 +239,7 @@ static void profilelevel_rqst(int msg_type, pid_t pid, void *buf, size_t len)
 	send_message(pid, MSG_PROFILELEVEL, &v, sizeof(int), False);
 }
 
-static BOOL do_profilelevel(const pid_t pid, const int argc, char **argv)
+static BOOL do_profilelevel(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> profilelevel\n");
@@ -268,7 +268,7 @@ static BOOL do_profilelevel(const pid_t pid, const int argc, char **argv)
 
 /* Display debug level settings */
 
-static BOOL do_debuglevel(const pid_t pid, const int argc, char **argv)
+static BOOL do_debuglevel(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> debuglevel\n");
@@ -296,9 +296,9 @@ static BOOL do_debuglevel(const pid_t pid, const int argc, char **argv)
 
 /* Send a print notify message */
 
-static BOOL do_printnotify(const pid_t pid, const int argc, char **argv)
+static BOOL do_printnotify(const pid_t pid, const int argc, const char **argv)
 {
-	char *cmd;
+	const char *cmd;
 
 	/* Check for subcommand */
 
@@ -434,7 +434,7 @@ send:
 
 /* Close a share */
 
-static BOOL do_closeshare(const pid_t pid, const int argc, char **argv)
+static BOOL do_closeshare(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 2) {
 		fprintf(stderr, "Usage: smbcontrol <dest> close-share "
@@ -448,7 +448,7 @@ static BOOL do_closeshare(const pid_t pid, const int argc, char **argv)
 
 /* Force a SAM synchronisation */
 
-static BOOL do_samsync(const pid_t pid, const int argc, char **argv)
+static BOOL do_samsync(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> samsync\n");
@@ -461,7 +461,7 @@ static BOOL do_samsync(const pid_t pid, const int argc, char **argv)
 
 /* Force a SAM replication */
 
-static BOOL do_samrepl(const pid_t pid, const int argc, char **argv)
+static BOOL do_samrepl(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> samrepl\n");
@@ -474,7 +474,7 @@ static BOOL do_samrepl(const pid_t pid, const int argc, char **argv)
 
 /* Display talloc pool usage */
 
-static BOOL do_poolusage(const pid_t pid, const int argc, char **argv)
+static BOOL do_poolusage(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> pool-usage\n");
@@ -502,7 +502,7 @@ static BOOL do_poolusage(const pid_t pid, const int argc, char **argv)
 
 /* Perform a dmalloc mark */
 
-static BOOL do_dmalloc_mark(const pid_t pid, const int argc, char **argv)
+static BOOL do_dmalloc_mark(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> dmalloc-mark\n");
@@ -515,8 +515,7 @@ static BOOL do_dmalloc_mark(const pid_t pid, const int argc, char **argv)
 
 /* Perform a dmalloc changed */
 
-static BOOL do_dmalloc_changed(const pid_t pid, const int argc, 
-			       char **argv)
+static BOOL do_dmalloc_changed(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> "
@@ -530,7 +529,7 @@ static BOOL do_dmalloc_changed(const pid_t pid, const int argc,
 
 /* Shutdown a server process */
 
-static BOOL do_shutdown(const pid_t pid, const int argc, char **argv)
+static BOOL do_shutdown(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> shutdown\n");
@@ -542,7 +541,7 @@ static BOOL do_shutdown(const pid_t pid, const int argc, char **argv)
 
 /* Notify a driver upgrade */
 
-static BOOL do_drvupgrade(const pid_t pid, const int argc, char **argv)
+static BOOL do_drvupgrade(const pid_t pid, const int argc, const char **argv)
 {
 	if (argc != 2) {
 		fprintf(stderr, "Usage: smbcontrol <dest> drvupgrade "
@@ -558,7 +557,7 @@ static BOOL do_drvupgrade(const pid_t pid, const int argc, char **argv)
 
 static const struct {
 	const char *name;	/* Option name */
-	BOOL (*fn)(const pid_t pid, const int argc, char **argv);
+	BOOL (*fn)(const pid_t pid, const int argc, const char **argv);
 	const char *help;	/* Short help text */
 } msg_types[] = {
 	{ "debug", do_debug, "Set debuglevel"  },
@@ -613,7 +612,7 @@ static void usage(poptContext *pc)
 
 /* Return the pid number for a string destination */
 
-static pid_t parse_dest(char *dest)
+static pid_t parse_dest(const char *dest)
 {
 	pid_t pid;
 
@@ -644,9 +643,9 @@ static pid_t parse_dest(char *dest)
 
 /* Execute smbcontrol command */
 
-static BOOL do_command(int argc, char **argv)
+static BOOL do_command(int argc, const char **argv)
 {
-	char *dest = argv[0], *command = argv[1];
+	const char *dest = argv[0], *command = argv[1];
 	pid_t pid;
 	int i;
 
@@ -669,7 +668,7 @@ static BOOL do_command(int argc, char **argv)
 
 /* Main program */
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	poptContext pc;
 	int opt;
@@ -726,7 +725,7 @@ int main(int argc, char **argv)
            argv.  The argc parameter should have been decremented to the
            correct value in the above switch statement. */
 
-	argv = (char **)poptGetArgs(pc);
+	argv = (const char **)poptGetArgs(pc);
 	argc--;			/* Don't forget about argv[0] */
 
 	if (argc == 1)

@@ -75,7 +75,7 @@ static int net_idmap_dump(int argc, const char **argv)
  **********************************************************/
 static int net_idmap_restore(int argc, const char **argv)
 {
-	if (!idmap_init()) {
+	if (!idmap_init(lp_idmap_backend())) {
 		d_printf("Could not init idmap\n");
 		return -1;
 	}

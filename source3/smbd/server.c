@@ -845,8 +845,12 @@ void build_options(BOOL screen);
 	if(!initialize_password_db(False))
 		exit(1);
 
-	if (!idmap_init())
-		exit(1);
+	{
+		const char *idmap_back = lp_idmap_backend();
+
+		if (!idmap_init((idmap_back && *idmap_back) ? "winbind" : NULL))
+			exit(1);
+	}
 
 	if (!idmap_init_wellknown_sids())
 		exit(1);

@@ -393,7 +393,7 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	
 	/* Lock the record for this SID. */
 	if (tdb_chainlock(idmap_tdb, ksid) != 0) {
-		DEBUG(10,("db_get_id_from_sid: failed to lock record %s. Error %s\n",
+		DEBUG(10,("db_set_mapping: failed to lock record %s. Error %s\n",
 				ksidstr, tdb_errorstr(idmap_tdb) ));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
