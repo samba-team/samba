@@ -53,18 +53,14 @@ static BOOL test_TransportEnum(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct wkssvc_TransportEnum r;
 	BOOL ret = True;
-	struct wkssvc_TransportInfo info;
 	uint32 resume_handle = 0;
-	struct wkssvc_TransportInfoArray info_array;
+	struct wkssvc_TransportInfoArray array;
 
-	ZERO_STRUCT(info);
-	ZERO_STRUCT(info_array);
-
-	info.u.array = NULL;
+	ZERO_STRUCT(array);
 
 	r.in.server_name = dcerpc_server_name(p);
-	r.in.info = &info;
-	r.out.info = &info;
+	r.in.level = 0;
+	r.in.info.array = &array;
 	r.in.max_buffer = (uint32)-1;
 	r.in.resume_handle = &resume_handle;
 	r.out.resume_handle = &resume_handle;

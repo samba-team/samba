@@ -78,7 +78,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_wkssvc_TransportUnion(struct ndr_push *ndr, int ndr_flags, uint16 level, union wkssvc_TransportUnion *r)
+NTSTATUS ndr_push_wkssvc_TransportInfo(struct ndr_push *ndr, int ndr_flags, uint16 level, union wkssvc_TransportInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_struct_start(ndr));
@@ -107,23 +107,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_wkssvc_TransportInfo(struct ndr_push *ndr, int ndr_flags, struct wkssvc_TransportInfo *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level));
-	NDR_CHECK(ndr_push_wkssvc_TransportUnion(ndr, NDR_SCALARS, r->level, &r->u));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	NDR_CHECK(ndr_push_uint32(ndr, r->level));
-	NDR_CHECK(ndr_push_wkssvc_TransportUnion(ndr, NDR_BUFFERS, r->level, &r->u));
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_wkssvc_TransportEnum(struct ndr_push *ndr, struct wkssvc_TransportEnum *r)
 {
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.server_name));
@@ -131,7 +114,8 @@ NTSTATUS ndr_push_wkssvc_TransportEnum(struct ndr_push *ndr, struct wkssvc_Trans
 		NDR_CHECK(ndr_push_unistr(ndr, r->in.server_name));
 	}
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
-	NDR_CHECK(ndr_push_wkssvc_TransportInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_wkssvc_TransportInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->in.info));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.max_buffer));
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.resume_handle));
 	if (r->in.resume_handle) {
@@ -654,7 +638,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_wkssvc_TransportUnion(struct ndr_pull *ndr, int ndr_flags, uint16 level, union wkssvc_TransportUnion *r)
+NTSTATUS ndr_pull_wkssvc_TransportInfo(struct ndr_pull *ndr, int ndr_flags, uint16 level, union wkssvc_TransportInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
@@ -689,35 +673,16 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_wkssvc_TransportInfo(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_TransportInfo *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
-	if ((NDR_SCALARS) & NDR_SCALARS) {
-		 uint32 _level;
-		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
-		if (_level != r->level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in u");
-	}
-	NDR_CHECK(ndr_pull_wkssvc_TransportUnion(ndr, NDR_SCALARS, r->level, &r->u));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if ((NDR_BUFFERS) & NDR_SCALARS) {
-		 uint32 _level;
-		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
-		if (_level != r->level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in u");
-	}
-	NDR_CHECK(ndr_pull_wkssvc_TransportUnion(ndr, NDR_BUFFERS, r->level, &r->u));
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_wkssvc_TransportEnum(struct ndr_pull *ndr, struct wkssvc_TransportEnum *r)
 {
 	uint32 _ptr_resume_handle;
-	NDR_CHECK(ndr_pull_wkssvc_TransportInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.level));
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	}
+	NDR_CHECK(ndr_pull_wkssvc_TransportInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->out.info));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.totalentries));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_resume_handle));
 	if (_ptr_resume_handle) {
@@ -1208,9 +1173,9 @@ void ndr_print_wkssvc_TransportInfoArray(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-void ndr_print_wkssvc_TransportUnion(struct ndr_print *ndr, const char *name, uint16 level, union wkssvc_TransportUnion *r)
+void ndr_print_wkssvc_TransportInfo(struct ndr_print *ndr, const char *name, uint16 level, union wkssvc_TransportInfo *r)
 {
-	ndr_print_union(ndr, name, level, "wkssvc_TransportUnion");
+	ndr_print_union(ndr, name, level, "wkssvc_TransportInfo");
 	switch (level) {
 	case 0:
 	ndr_print_ptr(ndr, "array", r->array);
@@ -1224,15 +1189,6 @@ void ndr_print_wkssvc_TransportUnion(struct ndr_print *ndr, const char *name, ui
 	default:
 		ndr_print_bad_level(ndr, name, level);
 	}
-}
-
-void ndr_print_wkssvc_TransportInfo(struct ndr_print *ndr, const char *name, struct wkssvc_TransportInfo *r)
-{
-	ndr_print_struct(ndr, name, "wkssvc_TransportInfo");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "level", r->level);
-	ndr_print_wkssvc_TransportUnion(ndr, "u", r->level, &r->u);
-	ndr->depth--;
 }
 
 void ndr_print_wkssvc_TransportEnum(struct ndr_print *ndr, const char *name, int flags, struct wkssvc_TransportEnum *r)
@@ -1249,10 +1205,7 @@ void ndr_print_wkssvc_TransportEnum(struct ndr_print *ndr, const char *name, int
 	}
 	ndr->depth--;
 	ndr_print_uint32(ndr, "level", r->in.level);
-	ndr_print_ptr(ndr, "info", r->in.info);
-	ndr->depth++;
-		ndr_print_wkssvc_TransportInfo(ndr, "info", r->in.info);
-	ndr->depth--;
+	ndr_print_wkssvc_TransportInfo(ndr, "info", r->in.level, &r->in.info);
 	ndr_print_uint32(ndr, "max_buffer", r->in.max_buffer);
 	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
 	ndr->depth++;
@@ -1265,10 +1218,8 @@ void ndr_print_wkssvc_TransportEnum(struct ndr_print *ndr, const char *name, int
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "wkssvc_TransportEnum");
 	ndr->depth++;
-	ndr_print_ptr(ndr, "info", r->out.info);
-	ndr->depth++;
-		ndr_print_wkssvc_TransportInfo(ndr, "info", r->out.info);
-	ndr->depth--;
+	ndr_print_uint32(ndr, "level", r->out.level);
+	ndr_print_wkssvc_TransportInfo(ndr, "info", r->in.level, &r->out.info);
 	ndr_print_uint32(ndr, "totalentries", r->out.totalentries);
 	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
 	ndr->depth++;

@@ -127,17 +127,12 @@
 
 	typedef union {
 		case(0) wkssvc_TransportInfoArray *array;
-	} wkssvc_TransportUnion;
-
-	typedef struct {
-		uint32 level;
-		[switch_is(level)] wkssvc_TransportUnion u;
 	} wkssvc_TransportInfo;
 
 	WERROR wkssvc_TransportEnum (
 		[in]         unistr *server_name,
-		[in]	     uint32 level,
-		[in,out,ref] wkssvc_TransportInfo *info,
+		[in,out]     uint32 level,
+		[in,out,switch_is(level)] wkssvc_TransportInfo info,
 		[in]         uint32 max_buffer,
 		[out]        uint32 totalentries,
 		[in,out]     uint32 *resume_handle
