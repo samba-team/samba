@@ -266,6 +266,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	uint32_t create_options = io->generic.in.create_options;
 	uint32_t share_access = io->generic.in.share_access;
 	uint32_t access_mask = io->generic.in.access_mask;
+	mode_t mode;
+
+	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
+	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		return NT_STATUS_CANNOT_DELETE;
+	}
 	
 	flags = O_RDWR;
 
@@ -279,8 +285,14 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
+	if (io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) {
+		mode = 0444;
+	} else {
+		mode = 0644;
+	}
+
 	/* create the file */
-	fd = open(name->full_name, flags | O_CREAT | O_EXCL, 0644);
+	fd = open(name->full_name, flags | O_CREAT | O_EXCL, mode);
 	if (fd == -1) {
 		idr_remove(pvfs->idtree_fnum, fnum);
 		return pvfs_map_errno(pvfs, errno);
@@ -407,7 +419,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* certain create options are not allowed */
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
-	    !(share_access & NTCREATEX_SHARE_ACCESS_DELETE)) {
+	    !(access_mask & STD_RIGHT_DELETE_ACCESS)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -473,6 +485,11 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 			return status;
 		}
 		/* fall through to a normal open */
+	}
+
+	if ((name->dos.attrib & FILE_ATTRIBUTE_READONLY) &&
+	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		return NT_STATUS_CANNOT_DELETE;
 	}
 
 	f = talloc_p(req, struct pvfs_file);
@@ -653,6 +670,11 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
 
 	if (f->create_options == create_options) {
 		return NT_STATUS_OK;
+	}
+
+	if ((f->name->dos.attrib & FILE_ATTRIBUTE_READONLY) &&
+	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		return NT_STATUS_CANNOT_DELETE;
 	}
 
 	lck = odb_lock(req, pvfs->odb_context, &f->locking_key);
