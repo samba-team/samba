@@ -4,6 +4,7 @@
 # released under the GNU GPL
 package util;
 
+use strict;
 use Data::Dumper;
 
 sub dumpit($)

@@ -4,6 +4,7 @@
 # released under the GNU GPL
 package IdlHeader;
 
+use strict;
 use Data::Dumper;
 
 my($res);
@@ -208,7 +209,7 @@ sub HeaderInterface($)
 
     foreach my $d (@{$data}) {
 	    if ($d->{TYPE} eq "FUNCTION") {
-		    $u_name = uc $d->{NAME};
+		    my $u_name = uc $d->{NAME};
 		    $res .= "#define DCERPC_$u_name $count\n";
 		    $count++;
 	    }

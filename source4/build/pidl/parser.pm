@@ -6,8 +6,8 @@
 
 package IdlParser;
 
-use Data::Dumper;
 use strict;
+use Data::Dumper;
 
 my($res);
 
