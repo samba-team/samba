@@ -216,7 +216,7 @@ struct sam_passwd *getsmb21pwent(void *vp)
 		pstrcpy(home_drive   , lp_logon_drive        ());
 		pstrcpy(home_dir     , lp_logon_home         ());
 		pstrcpy(acct_desc    , "");
-		pstrcpy(workstations , lp_domain_workstations());
+		pstrcpy(workstations , "");
 
 		sam_logon_in_ssb = False;
 	}

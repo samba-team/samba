@@ -862,11 +862,6 @@ void wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int
 
 /*The following definitions come from  lib/rpc/server/srv_ldap_helpers.c  */
 
-BOOL get_ldap_entries(SAM_USER_INFO_21 *pw_buf,
-                      int *total_entries, int *num_entries,
-                      int max_num_entries,
-                      uint16 acb_mask, int switch_level);
-BOOL ldap_get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid);
 void ldap_helper_dummy(void);
 
 /*The following definitions come from  lib/rpc/server/srv_lsa.c  */
@@ -974,7 +969,6 @@ char *lp_driverfile(void);
 char *lp_domain_sid(void);
 char *lp_domain_other_sids(void);
 char *lp_domain_groups(void);
-char *lp_domain_workstations(void);
 char *lp_domain_admin_users(void);
 char *lp_domain_guest_users(void);
 char *lp_domain_hostsallow(void);
