@@ -77,11 +77,11 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
 	
 	ZERO_STRUCTP(user);
 	user->logon_time            = (time_t)0;
-	user->logoff_time           = (time_t)0;
-	user->kickoff_time          = (time_t)0;
-	user->pass_last_set_time    = (time_t)0;
-	user->pass_can_change_time  = (time_t)0;
-	user->pass_must_change_time = (time_t)0;
+	user->logoff_time           = 
+	user->kickoff_time          = 
+	user->pass_last_set_time    = 
+	user->pass_can_change_time  = 
+	user->pass_must_change_time = get_time_t_max();
 
 	user->unknown_3 = 0x00ffffff; 	/* don't know */
 	user->logon_divs = 168; 	/* hours per week */
@@ -140,7 +140,6 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
 	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
 	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
 	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
-	pdb_set_pass_last_set_time(*new_sam_acct, time(NULL));
 	pdb_set_profile_path(*new_sam_acct, lp_logon_path());
 	pdb_set_homedir(*new_sam_acct, lp_logon_home());
 	pdb_set_dir_drive(*new_sam_acct, lp_logon_drive());

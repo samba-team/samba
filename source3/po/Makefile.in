@@ -79,7 +79,7 @@ INSTOBJEXT = .mo
 	rm -f $@ && $(GENCAT) $@ $*.msg
 
 
-all: cat-id-tbl.c
+all: all-yes
 
 all-yes: cat-id-tbl.c $(CATALOGS)
 all-no:
@@ -228,8 +228,6 @@ update-po: Makefile
 	    mv $$lang.old.po $$lang.po; \
 	  fi; \
 	done
-
-update-gmo: $(CATALOGS)
 
 POTFILES: POTFILES.in
 	( if test 'x$(srcdir)' != 'x.'; then \

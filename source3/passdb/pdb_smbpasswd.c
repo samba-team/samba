@@ -101,16 +101,15 @@ static BOOL pw_file_unlock(int fd, int *plock_depth)
 /**************************************************************
  Intialize a smb_passwd struct
  *************************************************************/
+
 static void pdb_init_smb(struct smb_passwd *user)
 {
-        if (user == NULL) 
+	if (user == NULL) 
 		return;
-        ZERO_STRUCTP (user);
+	ZERO_STRUCTP (user);
 	
-        user->pass_last_set_time    = (time_t)-1;
+	user->pass_last_set_time = get_time_t_max();
 }
-
-
 
 /***************************************************************
  Internal fn to enumerate the smbpasswd list. Returns a void pointer
@@ -1154,22 +1153,21 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
  ********************************************************************/
 static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
 {
-        if (sampass == NULL) 
+	if (sampass == NULL) 
 		return False;
 
-        ZERO_STRUCTP(smb_pw);
+	ZERO_STRUCTP(smb_pw);
 
-        smb_pw->smb_userid=pdb_get_uid(sampass);
-        smb_pw->smb_name=pdb_get_username(sampass);
+	smb_pw->smb_userid=pdb_get_uid(sampass);
+	smb_pw->smb_name=pdb_get_username(sampass);
 
 	smb_pw->smb_passwd=pdb_get_lanman_passwd(sampass);
 	smb_pw->smb_nt_passwd=pdb_get_nt_passwd(sampass);
 
-        smb_pw->acct_ctrl=pdb_get_acct_ctrl(sampass);
-        smb_pw->pass_last_set_time=pdb_get_pass_last_set_time(sampass);
+	smb_pw->acct_ctrl=pdb_get_acct_ctrl(sampass);
+	smb_pw->pass_last_set_time=pdb_get_pass_last_set_time(sampass);
 
-        return True;
-
+	return True;
 }	
 
 /*********************************************************************
