@@ -378,16 +378,16 @@ static uint32 get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 	fstrcpy(info.name, lp_printerdriver(snum));
 	fstrcpy(info.defaultdatatype, "RAW");
 	
-	fstrcpy(info.driverpath, "DUMMY.DLL");
-	fstrcpy(info.datafile, "DUMMY.PPD");
-	fstrcpy(info.configfile, "DUMMY.DLL");
-	fstrcpy(info.helpfile, "DUMMY.HLP");
+	fstrcpy(info.driverpath, "");
+	fstrcpy(info.datafile, "");
+	fstrcpy(info.configfile, "");
+	fstrcpy(info.helpfile, "");
 
 	if ((info.dependentfiles=(fstring *)malloc(2*sizeof(fstring))) == NULL)
 		return ERROR_NOT_ENOUGH_MEMORY;
 
 	memset(info.dependentfiles, '\0', 2*sizeof(fstring));
-	fstrcpy(info.dependentfiles[0], "DUMMY.PPD");
+	fstrcpy(info.dependentfiles[0], "");
 
 	*info_ptr = memdup(&info, sizeof(info));
 	
@@ -734,8 +734,7 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 	if (current==NULL) return (False);
 	
 	if ( !strcmp(current->value, param->value) && 
-	    (strlen(current->value)==strlen(param->value)) )
-	{
+	    (strlen(current->value)==strlen(param->value)) ) {
 		DEBUG(109,("deleting first value\n"));
 		info_2->specific=current->next;
 		safe_free(current->data);
@@ -746,13 +745,12 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 
 	current=previous->next;
 		
-	while ( current!=NULL )
-	{
+	while ( current!=NULL ) {
 		if (!strcmp(current->value, param->value) &&
-		    strlen(current->value)==strlen(param->value) )
-		{
+		    strlen(current->value)==strlen(param->value) ) {
 			DEBUG(109,("deleting current value\n"));
 			previous->next=current->next;
+			safe_free(current->data);
 			safe_free(current);
 			DEBUG(109,("deleted current value\n"));
 			return(True);
