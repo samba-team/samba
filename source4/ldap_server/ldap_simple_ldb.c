@@ -40,7 +40,7 @@ struct samdb_context {
  */
 static char *sldb_fix_dn(const char *dn)
 {
-	char *new_dn, *n, *current;
+	char *new_dn;
 	int i, j, k;
 
 	/* alloc enough room to host the whole dn as multibyte string */
@@ -332,8 +332,6 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 	ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
 	ldb_ret = ldb_delete(ldb, dn);
-
-	errstr = ldb_errstring(ldb);
 
 	del_reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
 	ALLOC_CHECK(del_reply);
