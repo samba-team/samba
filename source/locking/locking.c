@@ -299,7 +299,7 @@ BOOL locking_init(int read_only)
 		return True;
 
 	tdb = tdb_open_log(lock_path("locking.tdb"), 
-		       0, TDB_CLEAR_IF_FIRST|USE_TDB_MMAP_FLAG, 
+		       0, USE_TDB_MMAP_FLAG|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
 		       read_only?O_RDONLY:O_RDWR|O_CREAT,
 		       0644);
 
@@ -365,18 +365,35 @@ static TDB_DATA locking_key_fsp(files_struct *fsp)
 	return locking_key(fsp->dev, fsp->inode);
 }
 
+#ifndef LOCK_SHARE_ENTRY_SPIN_COUNT
+#define LOCK_SHARE_ENTRY_SPIN_COUNT 100
+#endif
+
 /*******************************************************************
  Lock a hash bucket entry.
 ******************************************************************/
+
 BOOL lock_share_entry(connection_struct *conn,
 		      SMB_DEV_T dev, SMB_INO_T inode)
 {
+#if 1 /* JRATEST */
+	int count = 0;
+	for (count = 0; count < LOCK_SHARE_ENTRY_SPIN_COUNT; count++)
+		if (tdb_chainlock(tdb, locking_key(dev, inode)) == 0)
+			return True;
+		else
+			DEBUG(0,("lock_share_entry: locking (%d) for dev = %x, inode = %.0f failed with error %s\n",
+				count, (unsigned int)dev, (double)inode, strerror(errno) ));
+	return False;
+#else
 	return tdb_chainlock(tdb, locking_key(dev, inode)) == 0;
+#endif
 }
 
 /*******************************************************************
  Unlock a hash bucket entry.
 ******************************************************************/
+
 void unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode)
 {
@@ -389,7 +406,18 @@ void unlock_share_entry(connection_struct *conn,
 
 BOOL lock_share_entry_fsp(files_struct *fsp)
 {
+#if 1 /* JRATEST */
+	int count = 0;
+	for (count = 0; count < LOCK_SHARE_ENTRY_SPIN_COUNT; count++)
+		if (tdb_chainlock(tdb, locking_key(fsp->dev, fsp->inode)) == 0)
+			return True;
+		else
+			DEBUG(0,("lock_share_entry_fsp: locking (%d) for dev = %x, inode = %.0f failed with error %s\n",
+				count, (unsigned int)fsp->dev, (double)fsp->inode, strerror(errno) ));
+	return False;
+#else
 	return tdb_chainlock(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
+#endif
 }
 
 /*******************************************************************
@@ -465,7 +493,7 @@ BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
  Ignore if no entry deleted.
 ********************************************************************/
 
-static ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
+ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 			share_mode_entry *entry, share_mode_entry **ppse)
 {
 	TDB_DATA dbuf;
@@ -703,15 +731,6 @@ BOOL downgrade_share_oplock(files_struct *fsp)
 	 */
 	fill_share_mode((char *)&entry, fsp, 0, 0);
 	return mod_share_mode(fsp->dev, fsp->inode, &entry, downgrade_share_oplock_fn, NULL);
-}
-
-/*******************************************************************
- Delete an exclusive share oplock owned by a defunct smbd..
-********************************************************************/
-
-BOOL clear_share_entry(SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *entry)
-{
-	return mod_share_mode(dev, inode, entry, remove_share_oplock_fn, NULL);
 }
 
 /*******************************************************************
