@@ -64,9 +64,11 @@ OM_uint32 gss_accept_sec_context
 
   gssapi_krb5_init ();
 
-  *context_handle = malloc(sizeof(**context_handle));
-  if (*context_handle == NULL)
-    return GSS_S_FAILURE;
+  if (*context_handle != GSS_C_NO_CONTEXT) {
+    *context_handle = malloc(sizeof(**context_handle));
+    if (*context_handle == GSS_C_NO_CONTEXT)
+      return GSS_S_FAILURE;
+  }
 
   (*context_handle)->auth_context =  NULL;
   (*context_handle)->source = NULL;
@@ -102,8 +104,10 @@ OM_uint32 gss_accept_sec_context
   kret = krb5_rd_req (gssapi_krb5_context,
 		      &(*context_handle)->auth_context,
 		      &indata,
-		      /*server*/ NULL,	/* XXX */
-		      NULL,
+		      (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) ? NULL 
+			: acceptor_cred_handle->principal,
+		      (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) ? NULL 
+			: acceptor_cred_handle->keytab,
 		      &ap_options,
 		      &ticket);
   if (kret) {
