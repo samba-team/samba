@@ -664,7 +664,7 @@ getit(int argc, char **argv, int restartit, char *mode)
 static int
 suspicious_filename(const char *fn)
 {
-    return strncmp(fn, "../", 3) == 0 || *fn == '/';
+    return strstr(fn, "../") != NULL || *fn == '/';
 }
 
 /*
