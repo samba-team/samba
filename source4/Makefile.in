@@ -84,13 +84,7 @@ LIBSMBCLIENT_MAJOR=0
 LIBSMBCLIENT_MINOR=1
 
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I. $(CPPFLAGS) -I$(srcdir)
-FLAGS2 = -I/usr/src/newport/csm/include/@STFS_CSM_INCLUDE@ -I/usr/src/newport/csm/include/common -I/usr/src/newport/stp/include
-FLAGS3 = 
-FLAGS4 = 
-FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
-FLAGS  = $(ISA) $(FLAGS5) 
-FLAGS32  = $(ISA32) $(FLAGS5)
+FLAGS = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I. $(CPPFLAGS) -I$(srcdir)
 
 PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
 PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
@@ -284,10 +278,6 @@ CSM_NTVFS_OBJ = ntvfs/tank/csm_init.o ntvfs/tank/csm_unlink.o \
 		ntvfs/tank/csm_attr.o ntvfs/tank/csm_truncate.o \
 		ntvfs/tank/csm_fd.o
 
-@STFS_ENABLED@STFS_MAIN = $(CSM_NTVFS_MAIN)
-@STFS_ENABLED@STFS_OBJS = $(CSM_NTVFS_OBJ)
-@STFS_ENABLED@STFS_LIBS = -L/usr/lib -L/usr/src/newport/csm/lib -Wl,"-(,-lcsm,-lcsmlinuxusp,-)"
-
 SMBD_NTVFS_OBJ = ntvfs/ntvfs_base.o ntvfs/ntvfs_util.o ntvfs/ntvfs_generic.o \
 	ntvfs/simple/vfs_simple.o ntvfs/simple/svfs_util.o \
 	ntvfs/ipc/vfs_ipc.o ntvfs/cifs/vfs_cifs.o \
@@ -302,7 +292,7 @@ SMBD_OBJ_SRV = smbd/connection.o \
            lib/sysacls.o lib/server_mutex.o \
            smbd/build_options.o smbd/service.o \
 	   smbd/rewrite.o \
-	       $(SMBD_NTVFS_OBJ) $(STFS_MAIN) @SMBD_EXTRA_OBJS@ 
+	       $(SMBD_NTVFS_OBJ) @SMBD_EXTRA_OBJS@ 
 
 PROCESS_MODEL_OBJ = smbd/process.o smbd/process_model.o smbd/process_standard.o \
 			smbd/process_single.o
@@ -311,7 +301,7 @@ PROCESS_MODEL_OBJ = smbd/process.o smbd/process_model.o smbd/process_standard.o 
 
 # printing/printfsp.o
 
-SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJ) $(SMBD_OBJ_SRV) $(STFS_OBJS) \
+SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJ) $(SMBD_OBJ_SRV) \
 		$(MSDFS_OBJ) $(PARAM_OBJ) \
 		$(SECRETS_OBJ) \
 		$(PASSDB_OBJ)  \
@@ -708,7 +698,7 @@ bin/.dummy:
 bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(ACLLIBS) $(LIBS) $(PTHREAD_LIB) @SMBD_EXTRA_LIBS@ $(STFS_LIBS) @BUILD_POPT@
+	  $(AUTHLIBS) $(ACLLIBS) $(LIBS) $(PTHREAD_LIB) @SMBD_EXTRA_LIBS@ @BUILD_POPT@
 
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
