@@ -141,7 +141,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	case AF_INET:
 	    printf("IPv4: %s", inet_ntoa(*(struct in_addr*)cred->addresses.val[j].address.data));
 	    break;
-#if defined(AF_INET6) && defined(HAVE_INET_NTOP)
+#if defined(AF_INET6) && defined(HAVE_INET_NTOP) && defined(INET6_ADDRSTRLEN)
 	case AF_INET6: {
 	    char foo[INET6_ADDRSTRLEN];
 
