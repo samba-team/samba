@@ -107,7 +107,7 @@ $(LIBNAME).a: $(LIB_OBJECTS)
 
 $(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
 	rm -f $@
-	$(LDSHARED) $(LD_FLAGS) -o $@ $(LIB_OBJECTS) $(LIB_DEPS)
+	$(LDSHARED) -o $@ $(LIB_OBJECTS) $(LIB_DEPS)
 	@build_symlink_command@
 
 $(OBJECTS): ../../include/config.h
