@@ -1,3 +1,7 @@
+Mon Feb 22 20:05:06 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* broken-glob.m4: check for broken glob
+
 Sun Jan 31 06:50:33 1999  Assar Westerlund  <assar@sics.se>
 
 	* krb-ipv6.m4: more magic for different v6 implementations.  From
