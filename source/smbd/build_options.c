@@ -23,692 +23,534 @@
 #include "includes.h"
 #include "build_env.h"
 
+static void output(BOOL screen, char *format, ...) PRINTF_ATTRIBUTE(2,3);
+
+/*
+#define OUTPUT(x) snprintf(outstring,sizeof(outstring),x); output(screen,outstring);
+*/
 /****************************************************************************
 helper function for build_options
 ****************************************************************************/
-static void output(BOOL screen, char *buffer)
+static void output(BOOL screen, char *format, ...)
 {
+       char *ptr;
+       va_list ap;
+       
+       va_start(ap, format);
+       vasprintf(&ptr,format,ap);
+       va_end(ap);
+
        if (screen) {
-              d_printf(buffer);
+              d_printf("%s", ptr);
        } else {
-	       DEBUG(4, (buffer));
+	       DEBUG(4,("%s", ptr));
        }
+       
+       SAFE_FREE(ptr);
 }
+
 /****************************************************************************
 options set at build time for the samba suite
 ****************************************************************************/
 void build_options(BOOL screen)
 {
-       pstring outstring;
-
        if ((DEBUGLEVEL < 4) && (!screen)) {
 	       return;
        }
 
 #ifdef _BUILD_ENV_H
        /* Output information about the build environment */
-       snprintf(outstring,sizeof(outstring),"Build environment:\n");
-       output(screen,outstring);       
-       snprintf(outstring,sizeof(outstring),"   Built by:    %s@%s\n",BUILD_ENV_USER,BUILD_ENV_HOST);
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   Built on:    %s\n",BUILD_ENV_DATE);
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   Built using: %s\n",BUILD_ENV_COMPILER);
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   Build host:  %s\n",BUILD_ENV_UNAME);
-       output(screen,outstring);
-    
-       snprintf(outstring,sizeof(outstring),"   SRCDIR:      %s\n",BUILD_ENV_SRCDIR);
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   BUILDDIR:    %s\n",BUILD_ENV_BUILDDIR);
-       output(screen,outstring);
+       output(screen,"Build environment:\n");
+       output(screen,"   Built by:    %s@%s\n",BUILD_ENV_USER,BUILD_ENV_HOST);
+       output(screen,"   Built on:    %s\n",BUILD_ENV_DATE);
+
+       output(screen,"   Built using: %s\n",BUILD_ENV_COMPILER);
+       output(screen,"   Build host:  %s\n",BUILD_ENV_UNAME);
+       output(screen,"   SRCDIR:      %s\n",BUILD_ENV_SRCDIR);
+       output(screen,"   BUILDDIR:    %s\n",BUILD_ENV_BUILDDIR);
+
        
 #endif
 
        /* Output various options (most correspond to --with options) */ 
-       snprintf(outstring,sizeof(outstring),"\nBuild options:\n");
-       output(screen,outstring);
+       output(screen,"\nBuild options:\n");
 #ifdef WITH_SMBWRAPPER 
-       snprintf(outstring,sizeof(outstring),"   WITH_SMBWRAPPER\n");
-       output(screen,outstring);
+       output(screen,"   WITH_SMBWRAPPER\n");
 #endif
 #ifdef WITH_AFS
-       snprintf(outstring,sizeof(outstring),"   WITH_AFS\n");
-       output(screen,outstring);
+       output(screen,"   WITH_AFS\n");
 #endif
 #ifdef WITH_DFS
-       snprintf(outstring,sizeof(outstring),"   WITH_DFS\n");
-       output(screen,outstring);
+       output(screen,"   WITH_DFS\n");
 #endif
-#if defined(KRB4_AUTH) && defined(KRB4_DIR) 
-       snprintf(outstring,sizeof(outstring),"   KRB4_AUTH");
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   KRB4_DIR: %s\n",KRB4_DIR);
-       output(screen,outstring);
+#ifdef KRB4_AUTH
+       output(screen,"   KRB4_AUTH");
 #endif
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
        output(screen,"   HAVE_KRB5");
 #endif
 #ifdef WITH_AUTOMOUNT
-       snprintf(outstring,sizeof(outstring),"   WITH_AUTOMOUNT\n");
-       output(screen,outstring);
+       output(screen,"   WITH_AUTOMOUNT\n");
 #endif
 #ifdef WITH_SMBMOUNT
-       snprintf(outstring,sizeof(outstring),"   WITH_SMBMOUNT\n");
-       output(screen,outstring);
+       output(screen,"   WITH_SMBMOUNT\n");
 #endif
 #ifdef WITH_PAM
-       snprintf(outstring,sizeof(outstring),"   WITH_PAM\n");
-       output(screen,outstring);
+       output(screen,"   WITH_PAM\n");
 #endif
 #ifdef WITH_TDB_SAM
-       snprintf(outstring,sizeof(outstring),"   WITH_TDB_SAM\n");
-       output(screen,outstring);
+       output(screen,"   WITH_TDB_SAM\n");
 #endif
 #ifdef WITH_LDAP_SAM
-       snprintf(outstring,sizeof(outstring),"   WITH_LDAP_SAM\n");
-       output(screen,outstring);
+       output(screen,"   WITH_LDAP_SAM\n");
 #endif
 #ifdef WITH_SMBPASSWD_SAM
-       snprintf(outstring,sizeof(outstring),"   WITH_SMBPASSWD_SAM\n");
-       output(screen,outstring);
+       output(screen,"   WITH_SMBPASSWD_SAM\n");
 #endif
 #ifdef WITH_NISPLUS_SAM
-       snprintf(outstring,sizeof(outstring),"   WITH_NISPLUS_SAM\n");
-       output(screen,outstring);
+       output(screen,"   WITH_NISPLUS_SAM\n");
 #endif
 #ifdef WITH_NISPLUS_HOME
-       snprintf(outstring,sizeof(outstring),"   WITH_NISPLUS_HOME\n");
-       output(screen,outstring);
+       output(screen,"   WITH_NISPLUS_HOME\n");
 #endif
 #ifdef WITH_SSL
-       snprintf(outstring,sizeof(outstring),"   WITH_SSL\n");
-       output(screen,outstring);
+       output(screen,"   WITH_SSL\n");
 #endif
 #ifdef SSL_DIR
-       snprintf(outstring,sizeof(outstring),"   SSL_DIR: %s\n",SSL_DIR);
-       output(screen,outstring);
+       output(screen,"   SSL_DIR: %s\n",SSL_DIR);
 #endif
 #ifdef WITH_SYSLOG
-       snprintf(outstring,sizeof(outstring),"   WITH_SYSLOG\n");
-       output(screen,outstring);
+       output(screen,"   WITH_SYSLOG\n");
 #endif
 #ifdef WITH_PROFILE
-       snprintf(outstring,sizeof(outstring),"   WITH_PROFILE\n");
-       output(screen,outstring);
+       output(screen,"   WITH_PROFILE\n");
 #endif
 #ifdef WITH_QUOTAS
-       snprintf(outstring,sizeof(outstring),"   WITH_QUOTAS\n");
-       output(screen,outstring);
+       output(screen,"   WITH_QUOTAS\n");
 #endif
 #ifdef WITH_MSDFS
-       snprintf(outstring,sizeof(outstring),"   WITH_MSDFS\n");
-       output(screen,outstring);
+       output(screen,"   WITH_MSDFS\n");
 #endif
 #ifdef WITH_VFS
-       snprintf(outstring,sizeof(outstring),"   WITH_VFS\n");
-       output(screen,outstring);
+       output(screen,"   WITH_VFS\n");
 #endif
 #ifdef USE_SPINLOCKS
-       snprintf(outstring,sizeof(outstring),"   USE_SPINLOCKS\n");
-       output(screen,outstring);
+       output(screen,"   USE_SPINLOCKS\n");
 #endif
 #ifdef SPARC_SPINLOCKS
-       snprintf(outstring,sizeof(outstring),"   SPARC_SPINLOCKS\n");
-       output(screen,outstring);
+       output(screen,"   SPARC_SPINLOCKS\n");
 #endif
 #ifdef INTEL_SPINLOCKS
-       snprintf(outstring,sizeof(outstring),"   INTEL_SPINLOCKS\n");
-       output(screen,outstring);
+       output(screen,"   INTEL_SPINLOCKS\n");
 #endif
 #ifdef MIPS_SPINLOCKS
-       snprintf(outstring,sizeof(outstring),"   MIPS_SPINLOCKS\n");
-       output(screen,outstring);
+       output(screen,"   MIPS_SPINLOCKS\n");
 #endif
 #ifdef POWERPC_SPINLOCKS
-       snprintf(outstring,sizeof(outstring),"   POWERPC_SPINLOCKS\n");
-       output(screen,outstring);
+       output(screen,"   POWERPC_SPINLOCKS\n");
 #endif
 #ifdef HAVE_UNIXWARE_ACLS
-       snprintf(outstring,sizeof(outstring),"   HAVE_UNIXWARE_ACLS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UNIXWARE_ACLS\n");
 #endif
 #ifdef HAVE_SOLARIS_ACLS
-       snprintf(outstring,sizeof(outstring),"   HAVE_SOLARIS_ACLS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_SOLARIS_ACLS\n");
 #endif 
 #ifdef HAVE_IRIX_ACLS
-       snprintf(outstring,sizeof(outstring),"   HAVE_IRIX_ACLS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_IRIX_ACLS\n");
 #endif
 #ifdef HAVE_AIX_ACLS
-       snprintf(outstring,sizeof(outstring),"   HAVE_AIX_ACLS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_AIX_ACLS\n");
 #endif
 #ifdef HAVE_POSIX_ACLS
-       snprintf(outstring,sizeof(outstring),"   HAVE_POSIX_ACLS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_POSIX_ACLS\n");
 #endif
 #ifdef HAVE_TRU64_ACLS
-       snprintf(outstring,sizeof(outstring),"   HAVE_TRU64_ACLS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_TRU64_ACLS\n");
 #endif
 
 #ifdef HAVE_ACL_GET_PERM_NP
-       snprintf(outstring,sizeof(outstring),"   HAVE_ACL_GET_PERM_NP\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_ACL_GET_PERM_NP\n");
 #endif
 #ifdef HAVE_NO_ACLS
-       snprintf(outstring,sizeof(outstring),"   HAVE_NO_ACLS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_NO_ACLS\n");
 #endif
 #ifdef HAVE_LIBREADLINE
-       snprintf(outstring,sizeof(outstring),"   HAVE_LIBREADLINE\n"); 
-       output(screen,outstring);
+       output(screen,"   HAVE_LIBREADLINE\n"); 
 #endif
 #ifdef WITH_LIBICONV
-       snprintf(outstring,sizeof(outstring),"   WITH_LIBICONV: %s\n",WITH_LIBICONV);
-       output(screen,outstring);
+       output(screen,"   WITH_LIBICONV: %s\n",WITH_LIBICONV);
 #endif
 
 
        /* Output various paths to files and directories */
-       snprintf(outstring,sizeof(outstring),"\nPaths:\n");
-       output(screen,outstring);
+       output(screen,"\nPaths:\n");
 #ifdef CONFIGFILE
-       snprintf(outstring,sizeof(outstring),"   CONFIGFILE: %s\n",CONFIGFILE);
-       output(screen,outstring);
+       output(screen,"   CONFIGFILE: %s\n",CONFIGFILE);
 #endif
 #ifdef PRIVATE_DIR
-       snprintf(outstring,sizeof(outstring),"   PRIVATE_DIR: %s\n",PRIVATE_DIR);
-       output(screen,outstring);
+       output(screen,"   PRIVATE_DIR: %s\n",PRIVATE_DIR);
 #endif
 #ifdef LMHOSTSFILE
-       snprintf(outstring,sizeof(outstring),"   LMHOSTSFILE: %s\n",LMHOSTSFILE);
-       output(screen,outstring);
+       output(screen,"   LMHOSTSFILE: %s\n",LMHOSTSFILE);
 #endif
 #ifdef SBINDIR
-       snprintf(outstring,sizeof(outstring),"   SBINDIR: %s\n",SBINDIR);
-       output(screen,outstring);
+       output(screen,"   SBINDIR: %s\n",SBINDIR);
 #endif
 #ifdef BINDIR
-       snprintf(outstring,sizeof(outstring),"   BINDIR: %s\n",BINDIR);
-       output(screen,outstring);
+       output(screen,"   BINDIR: %s\n",BINDIR);
 #endif
 #ifdef LOCKDIR
-       snprintf(outstring,sizeof(outstring),"   LOCKDIR: %s\n",LOCKDIR);
-       output(screen,outstring);
+       output(screen,"   LOCKDIR: %s\n",LOCKDIR);
 #endif
 #ifdef DRIVERFILE
-       snprintf(outstring,sizeof(outstring),"   DRIVERFILE: %s\n",DRIVERFILE);
-       output(screen,outstring);
+       output(screen,"   DRIVERFILE: %s\n",DRIVERFILE);
 #endif
 #ifdef LOGFILEBASE
-       snprintf(outstring,sizeof(outstring),"   LOGFILEBASE: %s\n",LOGFILEBASE);
-       output(screen,outstring);
+       output(screen,"   LOGFILEBASE: %s\n",LOGFILEBASE);
 #endif
 #ifdef FORMSFILE
-       snprintf(outstring,sizeof(outstring),"   FORMSFILE: %s\n",FORMSFILE);
-       output(screen,outstring);
+       output(screen,"   FORMSFILE: %s\n",FORMSFILE);
 #endif
 #ifdef NTDRIVERSDIR
-       snprintf(outstring,sizeof(outstring),"   NTDRIVERSDIR: %s\n",NTDRIVERSDIR);
-       output(screen,outstring);
+       output(screen,"   NTDRIVERSDIR: %s\n",NTDRIVERSDIR);
 #endif 
 
        /*Output various other options (most map to defines in the configure script*/
-       snprintf(outstring,sizeof(outstring),"\nOther Build Options:\n");
-       output(screen,outstring);
+       output(screen,"\nOther Build Options:\n");
 #ifdef HAVE_VOLATILE
-       snprintf(outstring,sizeof(outstring),"   HAVE_VOLATILE\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_VOLATILE\n");
 #endif
 #ifdef HAVE_SHADOW_H
-       snprintf(outstring,sizeof(outstring),"   HAVE_SHADOW_H\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_SHADOW_H\n");
 #endif
 #ifdef HAVE_CRYPT
-       snprintf(outstring,sizeof(outstring),"   HAVE_CRYPT\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_CRYPT\n");
 #endif
 #ifdef USE_BOTH_CRYPT_CALLS
-       snprintf(outstring,sizeof(outstring),"   USE_BOTH_CRYPT_CALLS\n");
-       output(screen,outstring);
+       output(screen,"   USE_BOTH_CRYPT_CALLS\n");
 #endif
 #ifdef HAVE_TRUNCATED_SALT
-       snprintf(outstring,sizeof(outstring),"   HAVE_TRUNCATED_SALT\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_TRUNCATED_SALT\n");
 #endif
 #ifdef HAVE_CUPS
-       snprintf(outstring,sizeof(outstring),"   HAVE_CUPS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_CUPS\n");
 #endif
 #ifdef HAVE_CUPS_CUPS_H
-       snprintf(outstring,sizeof(outstring),"   HAVE_CUPS_CUPS_H\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_CUPS_CUPS_H\n");
 #endif
 #ifdef HAVE_CUPS_LANGUAGE_H
-       snprintf(outstring,sizeof(outstring),"   HAVE_CUPS_LANGUAGE_H\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_CUPS_LANGUAGE_H\n");
 #endif
 #ifdef HAVE_LIBDL
-       snprintf(outstring,sizeof(outstring),"   HAVE_LIBDL\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_LIBDL\n");
 #endif
 #ifdef HAVE_UNIXSOCKET
-       snprintf(outstring,sizeof(outstring),"   HAVE_UNIXSOCKET\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UNIXSOCKET\n");
 #endif
 #ifdef HAVE_SOCKLEN_T_TYPE
-       snprintf(outstring,sizeof(outstring),"   HAVE_SOCKLEN_T_TYPE\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_SOCKLEN_T_TYPE\n");
 #endif
 #ifdef HAVE_SIG_ATOMIC_T_TYPE
-       snprintf(outstring,sizeof(outstring),"   HAVE_SIG_ATOMIC_T_TYPE\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_SIG_ATOMIC_T_TYPE\n");
 #endif
 #ifdef HAVE_SETRESUID
-       snprintf(outstring,sizeof(outstring),"   HAVE_SETRESUID\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_SETRESUID\n");
 #endif
 #ifdef HAVE_SETRESGID
-       snprintf(outstring,sizeof(outstring),"   HAVE_SETRESGID\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_SETRESGID\n");
 #endif
 #ifdef HAVE_CONNECT
-       snprintf(outstring,sizeof(outstring),"   HAVE_CONNECT\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_CONNECT\n");
 #endif
 #ifdef HAVE_YP_GET_DEFAULT_DOMAIN
-       snprintf(outstring,sizeof(outstring),"   HAVE_YP_GET_DEFAULT_DOMAIN\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_YP_GET_DEFAULT_DOMAIN\n");
 #endif
 #ifdef HAVE_STAT64
-       snprintf(outstring,sizeof(outstring),"   HAVE_STAT64\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_STAT64\n");
 #endif
 #ifdef HAVE_LSTAT64
-       snprintf(outstring,sizeof(outstring),"   HAVE_LSTAT64\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_LSTAT64\n");
 #endif
 #ifdef HAVE_FSTAT64
-       snprintf(outstring,sizeof(outstring),"   HAVE_FSTAT64\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_FSTAT64\n");
 #endif
 #ifdef HAVE_STRCASECMP
-       snprintf(outstring,sizeof(outstring),"   HAVE_STRCASECMP\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_STRCASECMP\n");
 #endif
 #ifdef HAVE_MEMSET
-       snprintf(outstring,sizeof(outstring),"   HAVE_MEMSET\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_MEMSET\n");
 #endif
 #ifdef HAVE_LONGLONG
-       snprintf(outstring,sizeof(outstring),"   HAVE_LONGLONG\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_LONGLONG\n");
 #endif
 #ifdef COMPILER_SUPPORTS_LL
-       snprintf(outstring,sizeof(outstring),"   COMPILER_SUPPORTS_LL\n");
-       output(screen,outstring);
+       output(screen,"   COMPILER_SUPPORTS_LL\n");
 #endif
 #ifdef SIZEOF_OFF_T
-       snprintf(outstring,sizeof(outstring),"   SIZEOF_OFF_T: %d\n",SIZEOF_OFF_T);
-       output(screen,outstring);
+       output(screen,"   SIZEOF_OFF_T: %d\n",SIZEOF_OFF_T);
 #endif
 #ifdef HAVE_OFF64_T
-       snprintf(outstring,sizeof(outstring),"   HAVE_OFF64_T\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_OFF64_T\n");
 #endif
 #ifdef SIZEOF_INO_T
-       snprintf(outstring,sizeof(outstring),"   SIZEOF_INO_T: %d\n",SIZEOF_INO_T);
-       output(screen,outstring);
+       output(screen,"   SIZEOF_INO_T: %d\n",SIZEOF_INO_T);
 #endif
 #ifdef HAVE_INO64_T
-       snprintf(outstring,sizeof(outstring),"   HAVE_INO64_T\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_INO64_T\n");
 #endif
 #ifdef HAVE_STRUCT_DIRENT64
-       snprintf(outstring,sizeof(outstring),"   HAVE_STRUCT_DIRENT64\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_STRUCT_DIRENT64\n");
 #endif
 #ifdef HAVE_UNSIGNED_CHAR
-       snprintf(outstring,sizeof(outstring),"   HAVE_UNSIGNED_CHAR\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UNSIGNED_CHAR\n");
 #endif
 #ifdef HAVE_SOCK_SIN_LEN
-       snprintf(outstring,sizeof(outstring),"   HAVE_SOCK_SIN_LEN\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_SOCK_SIN_LEN\n");
 #endif
 #ifdef SEEKDIR_RETURNS_VOID
-       snprintf(outstring,sizeof(outstring),"   SEEKDIR_RETURNS_VOID\n");
-       output(screen,outstring);
+       output(screen,"   SEEKDIR_RETURNS_VOID\n");
 #endif
 #ifdef HAVE_FILE_MACRO
-       snprintf(outstring,sizeof(outstring),"   HAVE_FILE_MACRO\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_FILE_MACRO\n");
 #endif
 #ifdef HAVE_FUNCTION_MACRO
-       snprintf(outstring,sizeof(outstring),"   HAVE_FUNCTION_MACRO\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_FUNCTION_MACRO\n");
 #endif
 #ifdef HAVE_GETTIMEOFDAY
-       snprintf(outstring,sizeof(outstring),"   HAVE_GETTIMEOFDAY\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_GETTIMEOFDAY\n");
 #endif
 #ifdef HAVE_C99_VSNPRINTF
-       snprintf(outstring,sizeof(outstring),"   HAVE_C99_VSNPRINTF\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_C99_VSNPRINTF\n");
 #endif
 #ifdef HAVE_BROKEN_READDIR
-       snprintf(outstring,sizeof(outstring),"   HAVE_BROKEN_READDIR\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_BROKEN_READDIR\n");
 #endif
 #ifdef HAVE_NATIVE_ICONV
-       snprintf(outstring,sizeof(outstring),"   HAVE_NATIVE_ICONV\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_NATIVE_ICONV\n");
 #endif
 #ifdef HAVE_KERNEL_OPLOCKS_LINUX
-       snprintf(outstring,sizeof(outstring),"   HAVE_KERNEL_OPLOCKS_LINUX\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_KERNEL_OPLOCKS_LINUX\n");
 #endif
 #ifdef HAVE_KERNEL_CHANGE_NOTIFY
-       snprintf(outstring,sizeof(outstring),"   HAVE_KERNEL_CHANGE_NOTIFY\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_KERNEL_CHANGE_NOTIFY\n");
 #endif
 #ifdef HAVE_KERNEL_SHARE_MODES
-       snprintf(outstring,sizeof(outstring),"   HAVE_KERNEL_SHARE_MODES\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_KERNEL_SHARE_MODES\n");
 #endif
 #ifdef HAVE_KERNEL_OPLOCKS_IRIX
-       snprintf(outstring,sizeof(outstring),"   HAVE_KERNEL_OPLOCKS_IRIX\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_KERNEL_OPLOCKS_IRIX\n");
 #endif
 #ifdef HAVE_IRIX_SPECIFIC_CAPABILITIES
-       snprintf(outstring,sizeof(outstring),"   HAVE_IRIX_SPECIFIC_CAPABILITIES\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_IRIX_SPECIFIC_CAPABILITIES\n");
 #endif
 #ifdef HAVE_INT16_FROM_RPC_RPC_H
-       snprintf(outstring,sizeof(outstring),"   HAVE_INT16_FROM_RPC_RPC_H\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_INT16_FROM_RPC_RPC_H\n");
 #endif
 #ifdef HAVE_UINT16_FROM_RPC_RPC_H
-       snprintf(outstring,sizeof(outstring),"   HAVE_UINT16_FROM_RPC_RPC_H\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UINT16_FROM_RPC_RPC_H\n");
 #endif
 #ifdef HAVE_INT32_FROM_RPC_RPC_H
-       snprintf(outstring,sizeof(outstring),"   HAVE_INT16_FROM_RPC_RPC_H\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_INT16_FROM_RPC_RPC_H\n");
 #endif
 #ifdef HAVE_UINT32_FROM_RPC_RPC_H
-       snprintf(outstring,sizeof(outstring),"   HAVE_UINT32_FROM_RPC_RPC_H\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UINT32_FROM_RPC_RPC_H\n");
 #endif
 #ifdef HAVE_RPC_AUTH_ERROR_CONFLICT
-       snprintf(outstring,sizeof(outstring),"   HAVE_RPC_AUTH_ERROR_CONFLICT\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_RPC_AUTH_ERROR_CONFLICT\n");
 #endif
 #ifdef HAVE_FTRUNCATE_EXTEND
-       snprintf(outstring,sizeof(outstring),"   HAVE_FTRUNCATE_EXTEND\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_FTRUNCATE_EXTEND\n");
 #endif
 #ifdef HAVE_WORKING_AF_LOCAL
-       snprintf(outstring,sizeof(outstring),"   HAVE_WORKING_AF_LOCAL\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_WORKING_AF_LOCAL\n");
 #endif
 #ifdef HAVE_BROKEN_GETGROUPS
-       snprintf(outstring,sizeof(outstring),"   HAVE_BROKEN_GETGROUPS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_BROKEN_GETGROUPS\n");
 #endif
 #ifdef REPLACE_GETPASS
-       snprintf(outstring,sizeof(outstring),"   REPLACE_GETPASS\n");
-       output(screen,outstring);
+       output(screen,"   REPLACE_GETPASS\n");
 #endif
 #ifdef REPLACE_INET_NTOA
-       snprintf(outstring,sizeof(outstring),"   REPLACE_INET_NTOA\n");
-       output(screen,outstring);
+       output(screen,"   REPLACE_INET_NTOA\n");
 #endif
 #ifdef HAVE_SECURE_MKSTEMP
-       snprintf(outstring,sizeof(outstring),"   HAVE_SECURE_MKSTEMP\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_SECURE_MKSTEMP\n");
 #endif
 #ifdef SYSCONF_SC_NGROUPS_MAX
-       snprintf(outstring,sizeof(outstring),"   SYSCONF_SC_NGROUPS_MAX\n");
-       output(screen,outstring);
+       output(screen,"   SYSCONF_SC_NGROUPS_MAX\n");
 #endif
 #ifdef HAVE_IFACE_AIX
-       snprintf(outstring,sizeof(outstring),"   HAVE_IFACE_AIX\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_IFACE_AIX\n");
 #endif
 #ifdef HAVE_IFACE_IFCONF
-       snprintf(outstring,sizeof(outstring),"   HAVE_IFACE_IFCONF\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_IFACE_IFCONF\n");
 #endif
 #ifdef HAVE_IFACE_IFREQ
-       snprintf(outstring,sizeof(outstring),"   HAVE_IFACE_IFREQ\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_IFACE_IFREQ\n");
 #endif
 #ifdef USE_SETRESUID
-       snprintf(outstring,sizeof(outstring),"   USE_SETRESUID\n");
-       output(screen,outstring);
+       output(screen,"   USE_SETRESUID\n");
 #endif
 #ifdef USE_SETRESGID
-       snprintf(outstring,sizeof(outstring),"   USE_SETREUID\n");
-       output(screen,outstring);
+       output(screen,"   USE_SETREUID\n");
 #endif
 #ifdef USE_SETEUID
-       snprintf(outstring,sizeof(outstring),"   USE_SETEUID\n");
-       output(screen,outstring);
+       output(screen,"   USE_SETEUID\n");
 #endif
 #ifdef USE_SETUIDX
-       snprintf(outstring,sizeof(outstring),"   USE_SETUIDX\n");
-       output(screen,outstring);
+       output(screen,"   USE_SETUIDX\n");
 #endif
 #ifdef HAVE_MMAP
-       snprintf(outstring,sizeof(outstring),"   HAVE_MMAP\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_MMAP\n");
 #endif
 #ifdef MMAP_BLACKLIST
-       snprintf(outstring,sizeof(outstring),"   MMAP_BLACKLIST\n");
-       output(screen,outstring);
+       output(screen,"   MMAP_BLACKLIST\n");
 #endif
 #ifdef FTRUNCATE_NEEDS_ROOT
-       snprintf(outstring,sizeof(outstring),"   FTRUNCATE_NEEDS_ROOT\n");
-       output(screen,outstring);
+       output(screen,"   FTRUNCATE_NEEDS_ROOT\n");
 #endif
 #ifdef HAVE_FCNTL_LOCK
-       snprintf(outstring,sizeof(outstring),"   HAVE_FCNTL_LOCK\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_FCNTL_LOCK\n");
 #endif
 #ifdef HAVE_BROKEN_FCNTL64_LOCKS
-       snprintf(outstring,sizeof(outstring),"   HAVE_BROKEN_FCNTL64_LOCKS\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_BROKEN_FCNTL64_LOCKS\n");
 #endif
 #ifdef HAVE_STRUCT_FLOCK64
-       snprintf(outstring,sizeof(outstring),"   HAVE_STRUCT_FLOCK64\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_STRUCT_FLOCK64\n");
 #endif
 #ifdef BROKEN_NISPLUS_INCLUDE_FILES
-       snprintf(outstring,sizeof(outstring),"   BROKEN_NISPLUS_INCLUDE_FILES\n");
-       output(screen,outstring);
+       output(screen,"   BROKEN_NISPLUS_INCLUDE_FILES\n");
 #endif
 #ifdef HAVE_LIBPAM
-       snprintf(outstring,sizeof(outstring),"   HAVE_LIBPAM\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_LIBPAM\n");
 #endif
 #ifdef STAT_STATVFS64
-       snprintf(outstring,sizeof(outstring),"   STAT_STATVFS64\n");
-       output(screen,outstring);
+       output(screen,"   STAT_STATVFS64\n");
 #endif
 #ifdef STAT_STATVFS
-       snprintf(outstring,sizeof(outstring),"   STAT_STATVFS\n");
-       output(screen,outstring);
+       output(screen,"   STAT_STATVFS\n");
 #endif
 #ifdef STAT_STATFS3_OSF1
-       snprintf(outstring,sizeof(outstring),"   STAT_STATFS3_OSF1\n");
-       output(screen,outstring);
+       output(screen,"   STAT_STATFS3_OSF1\n");
 #endif
 #ifdef STAT_STATFS2_BSIZE
-       snprintf(outstring,sizeof(outstring),"   STAT_STATFS2_BSIZE\n");
-       output(screen,outstring);
+       output(screen,"   STAT_STATFS2_BSIZE\n");
 #endif
 #ifdef STAT_STATFS4
-       snprintf(outstring,sizeof(outstring),"   STAT_STATFS4\n");
-       output(screen,outstring);
+       output(screen,"   STAT_STATFS4\n");
 #endif
 #ifdef STAT_STATFS2_FSIZE
-       snprintf(outstring,sizeof(outstring),"   STAT_STATFS2_FSIZE\n");
-       output(screen,outstring);
+       output(screen,"   STAT_STATFS2_FSIZE\n");
 #endif
 #ifdef STAT_STATFS2_FS_DATA
-       snprintf(outstring,sizeof(outstring),"   STAT_STATFS2_FS_DATA\n");
-       output(screen,outstring);
+       output(screen,"   STAT_STATFS2_FS_DATA\n");
 #endif
 #ifdef HAVE_EXPLICIT_LARGEFILE_SUPPORT
-       snprintf(outstring,sizeof(outstring),"   HAVE_EXPLICIT_LARGEFILE_SUPPORT\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_EXPLICIT_LARGEFILE_SUPPORT\n");
 #endif
 
 #ifdef WITH_UTMP
        /* Output UTMP Stuff */
-       snprintf(outstring,sizeof(outstring),"\nUTMP Related:\n");
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   WITH_UTMP\n");
-       output(screen,outstring);
+       output(screen,"\nUTMP Related:\n");
+       output(screen,"   WITH_UTMP\n");
 
 #ifdef HAVE_UTIMBUF
-       snprintf(outstring,sizeof(outstring),"   HAVE_UTIMBUF\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UTIMBUF\n");
 #endif
 #ifdef HAVE_UT_UT_NAME
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_NAME\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_NAME\n");
 #endif
 #ifdef HAVE_UT_UT_USER
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_USER\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_USER\n");
 #endif
 #ifdef HAVE_UT_UT_ID
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_ID\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_ID\n");
 #endif
 #ifdef HAVE_UT_UT_HOST
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_HOST\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_HOST\n");
 #endif
 #ifdef HAVE_UT_UT_TIME
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_TIME\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_TIME\n");
 #endif
 #ifdef HAVE_UT_UT_TV
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_TV\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_TV\n");
 #endif
 #ifdef HAVE_UT_UT_TYPE
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_TYPE\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_TYPE\n");
 #endif
 #ifdef HAVE_UT_UT_PID
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_PID\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_PID\n");
 #endif
 #ifdef HAVE_UT_UT_EXIT
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_EXIT\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_EXIT\n");
 #endif
 #ifdef HAVE_UT_UT_ADDR
-       snprintf(outstring,sizeof(outstring),"   HAVE_UT_UT_ADDR\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UT_UT_ADDR\n");
 #endif
 #ifdef PUTUTLINE_RETURNS_UTMP
-       snprintf(outstring,sizeof(outstring),"   PUTUTLINE_RETURNS_UTMP\n");
-       output(screen,outstring);
+       output(screen,"   PUTUTLINE_RETURNS_UTMP\n");
 #endif
 #ifdef HAVE_UX_UT_SYSLEN
-       snprintf(outstring,sizeof(outstring),"   HAVE_UX_UT_SYSLEN\n");
-       output(screen,outstring);
+       output(screen,"   HAVE_UX_UT_SYSLEN\n");
 #endif
-#endif
+#endif /* WITH_UTMP */
 
        /* Output Build OS */
-       snprintf(outstring,sizeof(outstring),"\nBuilt for host os:\n");
-       output(screen,outstring);
+       output(screen,"\nBuilt for host os:\n");
 #ifdef LINUX
-       snprintf(outstring,sizeof(outstring),"   LINUX\n");
-       output(screen,outstring);
+       output(screen,"   LINUX\n");
 #endif
 #ifdef SUNOS5
-       snprintf(outstring,sizeof(outstring),"   SUNOS5\n");
-       output(screen,outstring);
+       output(screen,"   SUNOS5\n");
 #endif
 #ifdef SUNOS4
-       snprintf(outstring,sizeof(outstring),"   SUNOS4\n");
-       output(screen,outstring);
+       output(screen,"   SUNOS4\n");
 #endif
        /* BSD Isn't Defined in the configure script, but there is something about it in include/config.h.in (and I guess acconfig.h) */
 #ifdef BSD
-       snprintf(outstring,sizeof(outstring),"   BSD\n");
-       output(screen,outstring);
+       output(screen,"   BSD\n");
 #endif
 #ifdef IRIX
-       snprintf(outstring,sizeof(outstring),"   IRIX\n");
-       output(screen,outstring);
+       output(screen,"   IRIX\n");
 #endif
 #ifdef IRIX6
-       snprintf(outstring,sizeof(outstring),"   IRIX6\n");
-       output(screen,outstring);
+       output(screen,"   IRIX6\n");
 #endif
 #ifdef AIX
-       snprintf(outstring,sizeof(outstring),"   AIX\n");
-       output(screen,outstring);
+       output(screen,"   AIX\n");
 #endif
 #ifdef HPUX
-       snprintf(outstring,sizeof(outstring),"   HPUX\n");
-       output(screen,outstring);
+       output(screen,"   HPUX\n");
 #endif
 #ifdef QNX
-       snprintf(outstring,sizeof(outstring),"   QNX\n");
-       output(screen,outstring);
+       output(screen,"   QNX\n");
 #endif
 #ifdef OSF1
-       snprintf(outstring,sizeof(outstring),"   OSF1\n");
-       output(screen,outstring);
+       output(screen,"   OSF1\n");
 #endif
 #ifdef SCO
-       snprintf(outstring,sizeof(outstring),"   SCO\n");
-       output(screen,outstring);
+       output(screen,"   SCO\n");
 #endif
 #ifdef UNIXWARE
-       snprintf(outstring,sizeof(outstring),"   UNIXWARE\n");
-       output(screen,outstring);
+       output(screen,"   UNIXWARE\n");
 #endif
 #ifdef NEXT2
-       snprintf(outstring,sizeof(outstring),"   NEXT2\n");
-       output(screen,outstring);
+       output(screen,"   NEXT2\n");
 #endif
 #ifdef RELIANTUNIX
-       snprintf(outstring,sizeof(outstring),"   RELIANTUNIX\n");
-       output(screen,outstring);
+       output(screen,"   RELIANTUNIX\n");
 #endif
 
        /* Output the sizes of the various types */
-       snprintf(outstring,sizeof(outstring),"\nType sizes:\n");
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   sizeof(char):    %d\n",sizeof(char));
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   sizeof(int):     %d\n",sizeof(int));
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   sizeof(long):    %d\n",sizeof(long));
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   sizeof(uint8):   %d\n",sizeof(uint8));
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   sizeof(uint16):  %d\n",sizeof(uint16));
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   sizeof(uint32):  %d\n",sizeof(uint32));
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   sizeof(short):   %d\n",sizeof(short));
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   sizeof(void*):   %d\n",sizeof(void*));
-       output(screen,outstring);
+       output(screen,"\nType sizes:\n");
+       output(screen,"   sizeof(char):    %d\n",sizeof(char));
+       output(screen,"   sizeof(int):     %d\n",sizeof(int));
+       output(screen,"   sizeof(long):    %d\n",sizeof(long));
+       output(screen,"   sizeof(uint8):   %d\n",sizeof(uint8));
+       output(screen,"   sizeof(uint16):  %d\n",sizeof(uint16));
+       output(screen,"   sizeof(uint32):  %d\n",sizeof(uint32));
+       output(screen,"   sizeof(short):   %d\n",sizeof(short));
+       output(screen,"   sizeof(void*):   %d\n",sizeof(void*));
 }
 
 
