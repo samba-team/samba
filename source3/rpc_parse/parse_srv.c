@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -2259,6 +2258,57 @@ void init_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
 }
 
 /*******************************************************************
+ Inits a SRV_R_NET_SRV_SET_INFO structure.
+ ********************************************************************/
+
+void init_srv_r_net_srv_set_info(SRV_R_NET_SRV_SET_INFO *srv,
+				 uint32 switch_value, uint32 status)
+{
+	DEBUG(5,("init_srv_r_net_srv_set_info\n"));
+
+	srv->switch_value = switch_value;
+	srv->status = status;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL srv_io_q_net_srv_set_info(char *desc, SRV_Q_NET_SRV_SET_INFO *q_n, 
+			       prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "srv_io_q_net_srv_set_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name  ", ps, depth, &q_n->ptr_srv_name))
+		return False;
+	if(!smb_io_unistr2("", &q_n->uni_srv_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("switch_value  ", ps, depth, &q_n->switch_value))
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		q_n->ctr = (SRV_INFO_CTR *)
+			prs_alloc_mem(ps, sizeof(SRV_INFO_CTR));
+
+		if (!q_n->ctr)
+			return False;
+	}
+
+	if(!srv_io_info_ctr("ctr", q_n->ctr, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Reads or writes a structure.
  ********************************************************************/
 
@@ -2282,6 +2332,27 @@ BOOL srv_io_r_net_srv_get_info(char *desc, SRV_R_NET_SRV_GET_INFO *r_n, prs_stru
 	return True;
 }
 
+/*******************************************************************
+ Reads or writes a structure.
+ ********************************************************************/
+
+BOOL srv_io_r_net_srv_set_info(char *desc, SRV_R_NET_SRV_SET_INFO *r_n, 
+			       prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "srv_io_r_net_srv_set_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("switch_value  ", ps, depth, &r_n->switch_value))
+		return False;
+
+	if(!prs_uint32("status ", ps, depth, &r_n->status))
+		return False;
+
+	return True;
+}
 
 /*******************************************************************
  Reads or writes a structure.

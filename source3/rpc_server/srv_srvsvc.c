@@ -56,6 +56,33 @@ static BOOL api_srv_net_srv_get_info(pipes_struct *p)
 }
 
 /*******************************************************************
+ api_srv_net_srv_get_info
+********************************************************************/
+
+static BOOL api_srv_net_srv_set_info(pipes_struct *p)
+{
+	SRV_Q_NET_SRV_SET_INFO q_u;
+	SRV_R_NET_SRV_SET_INFO r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the net server set info */
+	if (!srv_io_q_net_srv_set_info("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _srv_net_srv_set_info(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if (!srv_io_r_net_srv_set_info("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  api_srv_net_file_enum
 ********************************************************************/
 
@@ -480,6 +507,7 @@ struct api_struct api_srv_cmds[] =
 	{ "SRV_NET_SHARE_SET_INFO", SRV_NET_SHARE_SET_INFO, api_srv_net_share_set_info },
 	{ "SRV_NETFILEENUM"       , SRV_NETFILEENUM       , api_srv_net_file_enum    },
 	{ "SRV_NET_SRV_GET_INFO"  , SRV_NET_SRV_GET_INFO  , api_srv_net_srv_get_info },
+	{ "SRV_NET_SRV_SET_INFO"  , SRV_NET_SRV_SET_INFO  , api_srv_net_srv_set_info },
 	{ "SRV_NET_REMOTE_TOD"    , SRV_NET_REMOTE_TOD    , api_srv_net_remote_tod   },
 	{ "SRV_NET_DISK_ENUM"     , SRV_NET_DISK_ENUM     , api_srv_net_disk_enum    },
 	{ "SRV_NET_NAME_VALIDATE" , SRV_NET_NAME_VALIDATE , api_srv_net_name_validate},
