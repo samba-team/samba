@@ -259,7 +259,7 @@ BOOL smbd_vfs_init(connection_struct *conn)
 /*******************************************************************
  Create vfs_ops reflecting current vfs_opaque_ops
 *******************************************************************/
-struct vfs_ops *smb_vfs_get_opaque_ops()
+struct vfs_ops *smb_vfs_get_opaque_ops(void)
 {
   int i;
   struct vfs_ops *ops;
