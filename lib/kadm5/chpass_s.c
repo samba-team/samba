@@ -65,14 +65,14 @@ change(void *server_handle,
 
     ret = _kadm5_set_keys(context, &ent, password);
     if(ret) {
-	_kadm5_free_keys (server_handle, num_keys, keys);
+	_kadm5_free_keys (context->context, num_keys, keys);
 	goto out2;
     }
     ent.kvno++;
     if (cond)
 	cmp = _kadm5_cmp_keys (ent.keys.val, ent.keys.len,
 			       keys, num_keys);
-    _kadm5_free_keys (server_handle, num_keys, keys);
+    _kadm5_free_keys (context->context, num_keys, keys);
 
     if (cmp == 0) {
 	krb5_set_error_string(context->context, "Password reuse forbidden");
