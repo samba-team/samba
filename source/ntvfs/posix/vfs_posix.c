@@ -59,7 +59,7 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename, 
 
 	DEBUG(0,("WARNING: the posix vfs handler is incomplete - you probably want \"ntvfs handler = simple\"\n"));
 
-	pvfs = talloc_named(tcon, sizeof(struct pvfs_state), "pvfs_connect(%s)", sharename);
+	pvfs = talloc_p(tcon, struct pvfs_state);
 	if (pvfs == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

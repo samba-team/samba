@@ -211,7 +211,7 @@ struct smbcli_state *smbcli_state_init(void)
 {
 	struct smbcli_state *cli;
 
-	cli = talloc_named(NULL, sizeof(*cli), "smbcli_state");
+	cli = talloc_p(NULL, struct smbcli_state);
 	if (cli) {
 		ZERO_STRUCTP(cli);
 	}

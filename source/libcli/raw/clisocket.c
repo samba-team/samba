@@ -29,7 +29,7 @@ struct smbcli_socket *smbcli_sock_init(void)
 {
 	struct smbcli_socket *sock;
 
-	sock = talloc_named(NULL, sizeof(*sock), "smbcli_socket");
+	sock = talloc_p(NULL, struct smbcli_socket);
 	if (!sock) {
 		return NULL;
 	}

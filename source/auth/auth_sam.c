@@ -39,6 +39,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				DATA_BLOB *user_sess_key, 
 				DATA_BLOB *lm_sess_key)
 {
+	NTSTATUS status;
+
 	if (acct_flags & ACB_PWNOTREQ) {
 		if (lp_null_passwords()) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", 
@@ -51,7 +53,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		}		
 	}
 
-	return ntlm_password_check(mem_ctx, &auth_context->challenge, 
+	status = ntlm_password_check(mem_ctx, &auth_context->challenge, 
 				   &user_info->lm_resp, &user_info->nt_resp, 
 				   &user_info->lm_interactive_password, 
 				   &user_info->nt_interactive_password,
@@ -59,6 +61,17 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				   user_info->smb_name.str, 
 				   user_info->client_domain.str, 
 				   lm_pwd->hash, nt_pwd->hash, user_sess_key, lm_sess_key);
+
+	if (NT_STATUS_IS_OK(status)) {
+		if (user_sess_key && user_sess_key->data) {
+			talloc_steal(auth_context, user_sess_key->data);
+		}
+		if (lm_sess_key && lm_sess_key->data) {
+			talloc_steal(auth_context, lm_sess_key->data);
+		}
+	}
+
+	return status;
 }
 
 
@@ -330,8 +343,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		}
 		
 		if (group_ret > 0 && 
-		    !(groupSIDs = talloc_realloc_p(groupSIDs, 
-						   struct dom_sid *, group_ret))) {
+		    !(groupSIDs = talloc_array_p(*server_info, struct dom_sid *, group_ret))) {
 			talloc_free(*server_info);
 			return NT_STATUS_NO_MEMORY;
 		}

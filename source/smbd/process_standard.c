@@ -97,6 +97,10 @@ static void standard_terminate_connection(struct server_connection *conn, const 
 		talloc_free(conn->service->srv_ctx);
 	}
 
+	/* this init_iconv() has the effect of freeing the iconv context memory,
+	   which makes leak checking easier */
+	init_iconv();
+
 	/* terminate this process */
 	exit(0);
 }

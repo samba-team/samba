@@ -33,7 +33,7 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
 {
 	struct smbcli_session *session;
 
-	session = talloc_named(NULL, sizeof(*session), "smbcli_session");
+	session = talloc_p(transport, struct smbcli_session);
 	if (!session) {
 		return NULL;
 	}

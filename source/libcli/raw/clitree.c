@@ -34,7 +34,7 @@ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session)
 {
 	struct smbcli_tree *tree;
 
-	tree = talloc_named(NULL, sizeof(*tree), "smbcli_tree");
+	tree = talloc_p(session, struct smbcli_tree);
 	if (!tree) {
 		return NULL;
 	}
