@@ -48,27 +48,11 @@
 	attr->values = blob;\
 } while(0)				 
 
-/*
-  connect to the HACKED database
-  return an opaque context pointer on success, or NULL on failure
- */
-struct ldb_wrap *hacked_db_connect(TALLOC_CTX *mem_ctx)
-{
-	char *db_path;
-
-	db_path = talloc_asprintf(mem_ctx, "tdb://%s/hacked.ldb", dyn_PRIVATE_DIR);
-	if (db_path == NULL) {
-		return NULL;
-	}
-	return ldb_wrap_connect(mem_ctx, db_path, 0, NULL);
-}
-
 
 static NTSTATUS convert_values(TALLOC_CTX *mem_ctx,
 			       struct ldb_message_element *elem,
 			       struct ldap_attribute *attrs,
 			       struct ldb_wrap *samdb,
-			       struct ldb_wrap *hackeddb,
 			       const char **dn,
 			       struct ldap_SearchRequest *r)
 {
@@ -145,7 +129,7 @@ DEBUG(0, (__location__": convert_values(ncname): nc dn = '%s'\n", nc_filter));
 
 		
 		/* first the NC stuff */
-		count = ldb_search(hackeddb->ldb, "", LDB_SCOPE_BASE, nc_filter, s_attrs, &res);
+		count = ldb_search(samdb->ldb, "", LDB_SCOPE_BASE, nc_filter, s_attrs, &res);
 		if (count != 1) {
 			DEBUG(0, (__location__": convert_values(ncname): nc_count: %d \n", count));
 			return NT_STATUS_FOOBAR;
@@ -216,10 +200,7 @@ static NTSTATUS hacked_wellknown_Search(struct ldapsrv_partition *partition, str
 	void *local_ctx;
 	struct ldap_SearchResEntry *ent;
 	struct ldap_Result *done;
-	int result = LDAP_SUCCESS;
 	struct ldapsrv_reply *ent_r, *done_r;
-	struct ldb_wrap *hackeddb;
-	const char *errstr = NULL;
 	int count;
 	const char *dn_prefix;
 	const char *wkdn;
@@ -285,24 +266,12 @@ static NTSTATUS hacked_wellknown_Search(struct ldapsrv_partition *partition, str
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 	NT_STATUS_HAVE_NO_MEMORY(done_r);
 
-	if (count > 0) {
-		DEBUG(10,("hacked_Search: results: [%d]\n",count));
-		result = LDAP_SUCCESS;
-		errstr = NULL;
-	} else if (count == 0) {
-		DEBUG(10,("hacked_Search: no results\n"));
-		result = LDAP_NO_SUCH_OBJECT;
-		errstr = ldb_errstring(hackeddb->ldb);	
-	} else if (count == -1) {
-		DEBUG(10,("hacked_Search: error\n"));
-		result = LDAP_OTHER;
-		errstr = ldb_errstring(hackeddb->ldb);
-	}
+	DEBUG(10,("hacked_Search: results: [%d]\n",count));
 
 	done = &done_r->msg.r.SearchResultDone;
 	done->dn = NULL;
-	done->resultcode = result;
-	done->errormessage = (errstr?talloc_strdup(done_r,errstr):NULL);;
+	done->resultcode = LDAP_SUCCESS;
+	done->errormessage = NULL;
 	done->referral = NULL;
 
 	talloc_free(local_ctx);
@@ -320,7 +289,6 @@ static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsr
 	struct ldb_message **res = NULL;
 	int result = LDAP_SUCCESS;
 	struct ldapsrv_reply *ent_r, *done_r;
-	struct ldb_wrap *hackeddb;
 	const char *errstr = NULL;
 	int count, j, y, i;
 	const char **attrs = NULL;
@@ -330,9 +298,6 @@ static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsr
 
 	local_ctx = talloc_named(call, 0, "hacked_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
-
-	hackeddb = hacked_db_connect(local_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(hackeddb);
 
 	basedn = ldap_parse_dn(local_ctx, r->basedn);
 	if (!basedn) {
@@ -357,7 +322,7 @@ static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsr
 	}
 
 	if (r->num_attributes >= 1) {
-		attrs = talloc_array_p(hackeddb, const char *, r->num_attributes+1);
+		attrs = talloc_array_p(samdb, const char *, r->num_attributes+1);
 		NT_STATUS_HAVE_NO_MEMORY(attrs);
 
 		for (j=0; j < r->num_attributes; j++) {
@@ -368,8 +333,8 @@ static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsr
 	}
 DEBUG(0,("hacked basedn: %s\n", basedn_str));
 DEBUGADD(0,("hacked filter: %s\n", r->filter));
-	count = ldb_search(hackeddb->ldb, basedn_str, scope, r->filter, attrs, &res);
-	talloc_steal(hackeddb, res);
+	count = ldb_search(samdb->ldb, basedn_str, scope, r->filter, attrs, &res);
+	talloc_steal(samdb, res);
 
 	if (count < 1) {
 		DEBUG(0,("hacked not found\n"));
@@ -403,7 +368,7 @@ DEBUGADD(0,("hacked filter: %s\n", r->filter));
 				status = convert_values(ent_r,
 							&(res[0]->elements[j]),
 							&(ent->attributes[j]),
-							samdb, hackeddb, &ent->dn, r);
+							samdb, &ent->dn, r);
 				if (!NT_STATUS_IS_OK(status)) {
 					return status;
 				}
@@ -454,7 +419,7 @@ queue_reply:
 					status = convert_values(ent_r,
 							&(res[0]->elements[j]),
 							&(ent->attributes[j]),
-							samdb, hackeddb, &ent->dn, r);
+							samdb, &ent->dn, r);
 					if (!NT_STATUS_IS_OK(status)) {
 						return status;
 					}
@@ -484,11 +449,11 @@ queue_reply2:
 	} else if (count == 0) {
 		DEBUG(10,("hacked_Search: no results\n"));
 		result = LDAP_NO_SUCH_OBJECT;
-		errstr = ldb_errstring(hackeddb->ldb);	
+		errstr = ldb_errstring(samdb->ldb);	
 	} else if (count == -1) {
 		DEBUG(10,("hacked_Search: error\n"));
 		result = LDAP_OTHER;
-		errstr = ldb_errstring(hackeddb->ldb);
+		errstr = ldb_errstring(samdb->ldb);
 	}
 
 	done = &done_r->msg.r.SearchResultDone;
@@ -507,24 +472,32 @@ static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 {
 	NTSTATUS status;
 	void *local_ctx;
+	struct ldb_wrap *samdb;
+#if 0
 	struct ldap_dn *basedn;
 	struct ldap_Result *done;
 	struct ldap_SearchResEntry *ent;
 	struct ldapsrv_reply *ent_r, *done_r;
 	int result = LDAP_SUCCESS;
-	struct ldb_wrap *samdb;
 	struct ldb_message **res = NULL;
 	int i, j, y, count = 0;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *errstr = NULL;
-
+#endif
 	local_ctx = talloc_named(call, 0, "hldb_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	samdb = samdb_connect(local_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
+	status = hacked_Search(partition, call, r, samdb);
+	talloc_free(local_ctx);
+	NT_STATUS_IS_OK_RETURN(status);
+	status = hacked_wellknown_Search(partition, call, r);
+	NT_STATUS_IS_OK_RETURN(status);
+	return status;
+#if 0
 	basedn = ldap_parse_dn(local_ctx, r->basedn);
 	VALID_DN_SYNTAX(basedn,0);
 
@@ -634,6 +607,7 @@ reply:
 	talloc_free(local_ctx);
 
 	return ldapsrv_queue_reply(call, done_r);
+#endif
 }
 
 static NTSTATUS hldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
