@@ -387,7 +387,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		break;
 	}
 
-		val = regval_ctr_specific_value( &regvals, 0 );
+		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
 		
 		status = NT_STATUS_OK;
 		
@@ -409,7 +409,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	}
 
   
- out:
+out:
 	new_init_reg_r_info(q_u->ptr_buf, r_u, val, status);
 	
 	regval_ctr_destroy( &regvals );
@@ -554,5 +554,29 @@ done:
 }
 
 
+
+/*******************************************************************
+ REG_SAVE_KEY (0x14)
+ ********************************************************************/
+
+NTSTATUS _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
+{
+	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	
+	DEBUG(5,("_reg_save_key: Enter\n"));
+	
+	/* 
+	 * basically this is a no op function which just gverifies 
+	 * that the client gave us a valid registry key handle 
+	 */
+	 
+	if ( !regkey )
+		return NT_STATUS_INVALID_HANDLE;	
+
+	DEBUG(8,("_reg_save_key: berifying backup of key [%s]\n", regkey->name));
+	
+
+	return NT_STATUS_OK;
+}
 
 

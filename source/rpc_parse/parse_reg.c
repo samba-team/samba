@@ -724,6 +724,57 @@ BOOL reg_io_r_unknown_1a(char *desc,  REG_R_UNKNOWN_1A *r_r, prs_struct *ps, int
 	return True;
 }
 
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL reg_io_q_save_key(char *desc,  REG_Q_SAVE_KEY *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_q_save_key");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
+		return False;
+
+	if(!smb_io_unihdr ("hdr_file", &r_q->hdr_file, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni_file", &r_q->uni_file, r_q->hdr_file.buffer, ps, depth))
+		return False;
+
+	if(!prs_uint32("unknown", ps, depth, &r_q->unknown))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL reg_io_r_save_key(char *desc,  REG_R_SAVE_KEY *r_r, prs_struct *ps, int depth)
+{
+	if (r_r == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_r_save_key");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_ntstatus("status" , ps, depth, &r_r->status))
+		return False;
+
+	return True;
+}
+
 /*******************************************************************
  Inits a structure.
 ********************************************************************/
@@ -755,9 +806,9 @@ BOOL reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int dep
 	if(!prs_uint32("ptr      ", ps, depth, &r_q->ptr))
 		return False;
 	if (r_q->ptr != 0) {
-		if(!prs_uint16("unknown_0", ps, depth, &r_q->unknown_0))
+		if(!prs_uint16("unknown_0   ", ps, depth, &r_q->unknown_0))
 			return False;
-		if(!prs_uint16("unknown_1", ps, depth, &r_q->unknown_1))
+		if(!prs_uint16("unknown_1   ", ps, depth, &r_q->unknown_1))
 			return False;
 		if(!prs_uint32("access_mask ", ps, depth, &r_q->access_mask))
 			return False;
@@ -1695,9 +1746,9 @@ BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("unknown_0", ps, depth, &r_q->unknown_0))
+	if(!prs_uint32("unknown_0        ", ps, depth, &r_q->unknown_0))
 		return False;
-	if(!prs_uint32("asccess_desired  ", ps, depth, &r_q->access_desired))
+	if(!prs_uint32("access_desired  ", ps, depth, &r_q->access_desired))
 		return False;
 
 	return True;

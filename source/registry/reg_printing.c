@@ -566,7 +566,7 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 		regval_ctr_addvalue( val, "Share",            REG_SZ, info2->sharename,       sizeof(info2->sharename)+1 );
 		regval_ctr_addvalue( val, "Driver",           REG_SZ, info2->drivername,      sizeof(info2->drivername)+1 );
 		regval_ctr_addvalue( val, "Separator File",   REG_SZ, info2->sepfile,         sizeof(info2->sepfile)+1 );
-		regval_ctr_addvalue( val, "Print Processor",  REG_SZ, info2->printprocessor,  sizeof(info2->printprocessor)+1 );
+		regval_ctr_addvalue( val, "Print Processor",  REG_SZ, "winprint",             sizeof("winprint")+1 );
 		
 		
 		/* use a prs_struct for converting the devmode and security 

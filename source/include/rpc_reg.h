@@ -38,7 +38,6 @@
 #define _REG_UNK_0E		0x0e
 #define	_REG_UNK_12		0x12
 #define _REG_UNK_13		0x13
-#define	_REG_UNK_14		0x14
 #define REG_SET_KEY_SEC		0x15
 #define REG_CREATE_VALUE	0x16
 #define	_REG_UNK_17		0x17
@@ -56,6 +55,7 @@
 #define REG_INFO		0x11
 #define REG_SHUTDOWN		0x18
 #define REG_ABORT_SHUTDOWN	0x19
+#define	REG_SAVE_KEY		0x14	/* no idea what the real name is */
 #define REG_UNKNOWN_1A		0x1a
 
 
@@ -452,6 +452,29 @@ typedef struct r_reg_unk_1a_info
 	NTSTATUS status;         /* return status */
 
 } REG_R_UNKNOWN_1A;
+
+
+/* REG_Q_UNKNOWN_1A */
+typedef struct q_reg_unknown_14
+{
+	POLICY_HND pol;       /* policy handle */
+	
+	UNIHDR  hdr_file;	/* unicode product type header */
+	UNISTR2 uni_file;	/* local filename to save key as from regedt32.exe */
+				/* e.g. "c:\temp\test.dat" */
+	
+	uint32 unknown;		/* 0x0000 0000 */
+
+} REG_Q_SAVE_KEY;
+
+
+/* REG_R_UNKNOWN_1A */
+typedef struct r_reg_unknown_14
+{
+	NTSTATUS status;         /* return status */
+
+} REG_R_SAVE_KEY;
+
 
 
 /* REG_Q_CLOSE */
