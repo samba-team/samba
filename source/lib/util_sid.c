@@ -176,3 +176,16 @@ BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2)
 
 	return True;
 }
+
+
+/*****************************************************************
+ calculates size of a sid
+*****************************************************************/  
+int sid_size(DOM_SID *sid)
+{
+	if (sid == NULL)
+	{
+		return 0;
+	}
+	return sid->num_auths * sizeof(uint32) + 8;
+}

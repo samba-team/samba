@@ -32,9 +32,9 @@
  * are loaded.
  */
 
-char *(*multibyte_strchr)(const char *, int ) = (char *(*)(const char *, int )) strchr;
-char *(*multibyte_strrchr)(const char *, int ) = (char *(*)(const char *, int )) strrchr;
-char *(*multibyte_strstr)(const char *, const char *) = (char *(*)(const char *, const char *)) strstr;
+const char *(*multibyte_strchr)(const char *, int ) = (const char *(*)(const char *, int )) strchr;
+const char *(*multibyte_strrchr)(const char *, int ) = (const char *(*)(const char *, int )) strrchr;
+const char *(*multibyte_strstr)(const char *, const char *) = (const char *(*)(const char *, const char *)) strstr;
 char *(*multibyte_strtok)(char *, const char *) = (char *(*)(char *, const char *)) strtok;
 
 /*
@@ -134,15 +134,15 @@ static char *sj_strtok(char *s1, const char *s2)
  S1 contains SHIFT JIS chars.
 ********************************************************************/
 
-static char *sj_strstr(const char *s1, const char *s2)
+static const char *sj_strstr(const char *s1, const char *s2)
 {
   size_t len = strlen (s2);
   if (!*s2) 
-    return (char *) s1;
+    return (const char *) s1;
   for (;*s1;) {
     if (*s1 == *s2) {
       if (strncmp (s1, s2, len) == 0)
-        return (char *) s1;
+        return (const char *) s1;
     }
     if (is_shift_jis (*s1)) {
       s1 += 2;
@@ -150,7 +150,7 @@ static char *sj_strstr(const char *s1, const char *s2)
       s1++;
     }
   }
-  return 0;
+  return NULL;
 }
 
 /*******************************************************************
@@ -158,18 +158,18 @@ static char *sj_strstr(const char *s1, const char *s2)
  S contains SHIFT JIS chars.
 ********************************************************************/
 
-static char *sj_strchr (const char *s, int c)
+static const char *sj_strchr (const char *s, int c)
 {
   for (; *s; ) {
     if (*s == c)
-      return (char *) s;
+      return (const char *) s;
     if (is_shift_jis (*s)) {
       s += 2;
     } else {
       s++;
     }
   }
-  return 0;
+  return NULL;
 }
 
 /*******************************************************************
@@ -177,13 +177,13 @@ static char *sj_strchr (const char *s, int c)
  S contains SHIFT JIS chars.
 ********************************************************************/
 
-static char *sj_strrchr(const char *s, int c)
+static const char *sj_strrchr(const char *s, int c)
 {
-  char *q;
+  const char *q;
 
   for (q = 0; *s; ) {
     if (*s == c) {
-      q = (char *) s;
+      q = (const char *) s;
     }
     if (is_shift_jis (*s)) {
       s += 2;
@@ -300,15 +300,15 @@ static char *generic_multibyte_strtok(char *s1, const char *s2)
  S1 contains generic multibyte chars.
 ********************************************************************/
 
-static char *generic_multibyte_strstr(const char *s1, const char *s2)
+static const char *generic_multibyte_strstr(const char *s1, const char *s2)
 {
   size_t len = strlen (s2);
   if (!*s2)
-    return (char *) s1;
+    return (const char *) s1;
   for (;*s1;) {
     if (*s1 == *s2) {
       if (strncmp (s1, s2, len) == 0)
-        return (char *) s1;
+        return (const char *) s1;
     }
     if ((*is_multibyte_char_1)(*s1)) {
       s1 += 2;
@@ -316,7 +316,7 @@ static char *generic_multibyte_strstr(const char *s1, const char *s2)
       s1++;
     }
   }
-  return 0;
+  return NULL;
 }
 
 /*******************************************************************
@@ -324,18 +324,18 @@ static char *generic_multibyte_strstr(const char *s1, const char *s2)
  S contains generic multibyte chars.
 ********************************************************************/
 
-static char *generic_multibyte_strchr(const char *s, int c)
+static const char *generic_multibyte_strchr(const char *s, int c)
 {
   for (; *s; ) {
     if (*s == c)
-      return (char *) s;
+      return (const char *) s;
     if ((*is_multibyte_char_1)(*s)) {
       s += 2;
     } else {
       s++;
     }
   }
-  return 0;
+  return NULL;
 }
 
 /*******************************************************************
@@ -343,13 +343,13 @@ static char *generic_multibyte_strchr(const char *s, int c)
  S contains generic multibyte chars.
 ********************************************************************/
 
-static char *generic_multibyte_strrchr(const char *s, int c)
+static const char *generic_multibyte_strrchr(const char *s, int c)
 {
-  char *q;
+  const char *q;
  
   for (q = 0; *s; ) {
     if (*s == c) {
-      q = (char *) s;
+      q = (const char *) s;
     }
     if ((*is_multibyte_char_1)(*s)) {
       s += 2;
@@ -1221,9 +1221,9 @@ void initialize_multibyte_vectors( int client_codepage)
    * Single char size code page.
    */
   default:
-    multibyte_strchr = (char *(*)(const char *, int )) strchr;
-    multibyte_strrchr = (char *(*)(const char *, int )) strrchr;
-    multibyte_strstr = (char *(*)(const char *, const char *)) strstr;
+    multibyte_strchr = (const char *(*)(const char *, int )) strchr;
+    multibyte_strrchr = (const char *(*)(const char *, int )) strrchr;
+    multibyte_strstr = (const char *(*)(const char *, const char *)) strstr;
     multibyte_strtok = (char *(*)(char *, const char *)) strtok;
     _skip_multibyte_char = skip_non_multibyte_char;
     is_multibyte_char_1 = not_multibyte_char_1;

@@ -60,24 +60,30 @@
 #define SEC_DESC_SACL_DEFAULTED		0x0020
 #define SEC_DESC_SELF_RELATIVE		0x8000
 
+/* security information */
+
+#define OWNER_SECURITY_INFORMATION 0x00000001
+#define GROUP_SECURITY_INFORMATION 0x00000002
+#define DACL_SECURITY_INFORMATION  0x00000004
+#define SACL_SECURITY_INFORMATION  0x00000008
 
 
 
-/* SEC_INFO */
+/* SEC_ACCESS */
 typedef struct security_info_info
 {
-	uint32 perms;
+	uint32 mask;
 
-} SEC_INFO;
+} SEC_ACCESS;
 
 /* SEC_ACE */
 typedef struct security_ace_info
 {
-	uint8 type;
-	uint8 flags;
+	uint8 type;  /* xxxx_xxxx_ACE_TYPE - e.g allowed / denied etc */
+	uint8 flags; /* xxxx_INHERIT_xxxx - e.g OBJECT_INHERIT_ACE */
 	uint16 size;
 
-	SEC_INFO info;
+	SEC_ACCESS info;
 	DOM_SID sid;
 
 } SEC_ACE;
@@ -92,7 +98,7 @@ typedef struct security_acl_info
 	uint16 size; /* size in bytes of the entire ACL structure */
 	uint32 num_aces; /* number of Access Control Entries */
 
-	SEC_ACE ace[MAX_SEC_ACES];
+	SEC_ACE *ace;
 
 } SEC_ACL;
 
@@ -108,10 +114,10 @@ typedef struct security_descriptor_info
 	uint32 off_sacl     ; /* offset to system list of permissions */
 	uint32 off_dacl     ; /* offset to list of permissions */
 
-	SEC_ACL dacl; /* user ACL */
-	SEC_ACL sacl; /* system ACL */
-	DOM_SID owner_sid; 
-	DOM_SID grp_sid;
+	SEC_ACL *dacl; /* user ACL */
+	SEC_ACL *sacl; /* system ACL */
+	DOM_SID *owner_sid; 
+	DOM_SID *grp_sid;
 
 } SEC_DESC;
 

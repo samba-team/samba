@@ -1015,7 +1015,7 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 /****************************************************************************
 convert a security permissions into a string
 ****************************************************************************/
-char *get_sec_perms_str(uint32 type)
+char *get_sec_mask_str(uint32 type)
 {
 	static fstring typestr;
 	int i;
@@ -1077,9 +1077,9 @@ char *get_sec_perms_str(uint32 type)
 }
 
 /****************************************************************************
- display sec_info structure
+ display sec_access structure
  ****************************************************************************/
-void display_sec_info(FILE *out_hnd, enum action_type action, SEC_INFO *info)
+void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *info)
 {
 	switch (action)
 	{
@@ -1090,7 +1090,7 @@ void display_sec_info(FILE *out_hnd, enum action_type action, SEC_INFO *info)
 		case ACTION_ENUMERATE:
 		{
 			fprintf(out_hnd, "\t\tPermissions: %s\n",
-			        get_sec_perms_str(info->perms));
+			        get_sec_mask_str(info->mask));
 		}
 		case ACTION_FOOTER:
 		{
@@ -1115,9 +1115,9 @@ void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *ace)
 		{
 			fstring sid_str;
 
-			display_sec_info(out_hnd, ACTION_HEADER   , &ace->info);
-			display_sec_info(out_hnd, ACTION_ENUMERATE, &ace->info);
-			display_sec_info(out_hnd, ACTION_FOOTER   , &ace->info);
+			display_sec_access(out_hnd, ACTION_HEADER   , &ace->info);
+			display_sec_access(out_hnd, ACTION_ENUMERATE, &ace->info);
+			display_sec_access(out_hnd, ACTION_FOOTER   , &ace->info);
 
 			sid_to_string(sid_str, &ace->sid);
 			fprintf(out_hnd, "\t\tSID: %s\n", sid_str);
@@ -1186,20 +1186,26 @@ void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec)
 		{
 			fstring sid_str;
 
+			if (sec->off_sacl != 0)
+			{
+				display_sec_acl(out_hnd, ACTION_HEADER   , sec->sacl);
+				display_sec_acl(out_hnd, ACTION_ENUMERATE, sec->sacl);
+				display_sec_acl(out_hnd, ACTION_FOOTER   , sec->sacl);
+			}
 			if (sec->off_dacl != 0)
 			{
-				display_sec_acl(out_hnd, ACTION_HEADER   , &sec->dacl);
-				display_sec_acl(out_hnd, ACTION_ENUMERATE, &sec->dacl);
-				display_sec_acl(out_hnd, ACTION_FOOTER   , &sec->dacl);
+				display_sec_acl(out_hnd, ACTION_HEADER   , sec->dacl);
+				display_sec_acl(out_hnd, ACTION_ENUMERATE, sec->dacl);
+				display_sec_acl(out_hnd, ACTION_FOOTER   , sec->dacl);
 			}
 			if (sec->off_owner_sid != 0)
 			{
-				sid_to_string(sid_str, &sec->owner_sid);
+				sid_to_string(sid_str, sec->owner_sid);
 				fprintf(out_hnd, "\tOwner SID:\t%s\n", sid_str);
 			}
 			if (sec->off_grp_sid != 0)
 			{
-				sid_to_string(sid_str, &sec->grp_sid);
+				sid_to_string(sid_str, sec->grp_sid);
 				fprintf(out_hnd, "\tParent SID:\t%s\n", sid_str);
 			}
 				
