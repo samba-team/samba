@@ -655,10 +655,16 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle)
 {
+	uint32 result = NT_STATUS_NO_PROBLEMO;
+	SEC_DESC_BUF *sec_desc = NULL;
+	uint32 acc_granted, status;
 	fstring name;
+	extern struct current_user current_user;
 	
-	if (printername == NULL)
-		return ERROR_INVALID_PRINTER_NAME;
+	if (printername == NULL) {
+		result = ERROR_INVALID_PRINTER_NAME;
+		goto done;
+	}
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
@@ -666,8 +672,10 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
-	if (!open_printer_hnd(handle, name))
-		return ERROR_INVALID_PRINTER_NAME;
+	if (!open_printer_hnd(handle, name)) {
+		result = ERROR_INVALID_PRINTER_NAME;
+		goto done;
+	}
 	
 /*
 	if (printer_default->datatype_ptr != NULL)
@@ -681,7 +689,8 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	
 	if (!set_printer_hnd_accesstype(handle, printer_default->access_required)) {
 		close_printer_handle(handle);
-		return ERROR_ACCESS_DENIED;
+		result = ERROR_ACCESS_DENIED;
+		goto done;
 	}
 		
 	/* Disallow MS AddPrinterWizard if parameter disables it. A Win2k
@@ -696,13 +705,41 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 
 	if (handle_is_printserver(handle) &&
 	    !lp_ms_add_printer_wizard()) {
-		if (printer_default->access_required == 0)
-			return NT_STATUS_NO_PROBLEMO;
-		else if (printer_default->access_required != (SERVER_READ))
-		return ERROR_ACCESS_DENIED;
+		if (printer_default->access_required == 0) {
+			goto done;
+		}
+		else if (printer_default->access_required != (SERVER_READ)) {
+			close_printer_handle(handle);
+			result = ERROR_ACCESS_DENIED;
+			goto done;
+		}
 	}
 
-	return NT_STATUS_NO_PROBLEMO;
+	/* NT doesn't let us connect to a printer if the connecting user
+	   doesn't have print permission.  If no security descriptor just
+	   return OK. */
+
+	if (!nt_printing_getsec(name, &sec_desc)) {
+		goto done;
+	}
+	
+	/* Yuck - we should use the pipe_user rather than current_user but
+	   it doesn't seem to be filled in correctly. )-: */
+
+	map_printer_permissions(sec_desc->sec);
+
+	if (!se_access_check(sec_desc->sec, &current_user, PRINTER_ACCESS_USE,
+			     &acc_granted, &status)) {
+		DEBUG(3, ("access DENIED for printer open\n"));
+		close_printer_handle(handle);
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+
+ done:
+	free_sec_desc_buf(&sec_desc);
+
+	return result;
 }
 
 /****************************************************************************
