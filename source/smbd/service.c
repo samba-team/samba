@@ -633,6 +633,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	/* Invoke VFS make connection hook */
 
 	if (conn->vfs_ops.connect) {
+		DEBUG(10,("calling vfs_ops.connect for service %s (options = %s)\n", service, lp_vfs_options(SNUM(conn)) ));
 		if (conn->vfs_ops.connect(conn, service, user) < 0)
 			return NULL;
 	}

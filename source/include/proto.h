@@ -1963,7 +1963,7 @@ char *lp_writelist(int );
 char *lp_printer_admin(int );
 char *lp_fstype(int );
 char *lp_vfsobj(int );
-char *lp_vfoptions(int );
+char *lp_vfs_options(int );
 char *lp_mangled_map(int );
 char *lp_veto_files(int );
 char *lp_hide_files(int );

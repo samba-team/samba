@@ -1943,93 +1943,94 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 
 NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 {
-  pstring directory;
-  pstring mask;
-  char *p;
-  int count=0;
+	pstring directory;
+	pstring mask;
+	char *p;
+	int count=0;
 	NTSTATUS error = NT_STATUS_OK;
-  BOOL has_wild;
-  BOOL exists=False;
-  BOOL bad_path = False;
-  BOOL rc = True;
-  SMB_STRUCT_STAT sbuf;
+	BOOL has_wild;
+	BOOL exists=False;
+	BOOL bad_path = False;
+	BOOL rc = True;
+	SMB_STRUCT_STAT sbuf;
 
-  *directory = *mask = 0;
+	*directory = *mask = 0;
 
-  rc = unix_convert(name,conn,0,&bad_path,&sbuf);
+	rc = unix_convert(name,conn,0,&bad_path,&sbuf);
 
-  p = strrchr(name,'/');
-  if (!p) {
-    pstrcpy(directory,"./");
-    pstrcpy(mask,name);
-  } else {
-    *p = 0;
-    pstrcpy(directory,name);
-    pstrcpy(mask,p+1);
-  }
+	p = strrchr(name,'/');
+	if (!p) {
+		pstrcpy(directory,".");
+		pstrcpy(mask,name);
+	} else {
+		*p = 0;
+		pstrcpy(directory,name);
+		pstrcpy(mask,p+1);
+	}
 
-  /*
-   * We should only check the mangled cache
-   * here if unix_convert failed. This means
-   * that the path in 'mask' doesn't exist
-   * on the file system and so we need to look
-   * for a possible mangle. This patch from
-   * Tine Smukavec <valentin.smukavec@hermes.si>.
-   */
+	/*
+	 * We should only check the mangled cache
+	 * here if unix_convert failed. This means
+	 * that the path in 'mask' doesn't exist
+	 * on the file system and so we need to look
+	 * for a possible mangle. This patch from
+	 * Tine Smukavec <valentin.smukavec@hermes.si>.
+	 */
 
-  if (!rc && is_mangled(mask))
-    check_mangled_cache( mask );
+	if (!rc && is_mangled(mask))
+		check_mangled_cache( mask );
 
-  has_wild = ms_has_wild(mask);
+	has_wild = ms_has_wild(mask);
 
-  if (!has_wild) {
-    pstrcat(directory,"/");
-    pstrcat(directory,mask);
+	if (!has_wild) {
+		pstrcat(directory,"/");
+		pstrcat(directory,mask);
 		error = can_delete(directory,conn,dirtype);
-		if (!NT_STATUS_IS_OK(error)) return error;
+		if (!NT_STATUS_IS_OK(error))
+			return error;
 
-		if (vfs_unlink(conn,directory) == 0) {
-      count++;
-		}
-    if (!count)
-      exists = vfs_file_exist(conn,directory,&sbuf);    
-  } else {
-    void *dirptr = NULL;
-    char *dname;
+		if (vfs_unlink(conn,directory) == 0)
+			count++;
+		if (!count)
+			exists = vfs_file_exist(conn,directory,&sbuf);    
+	} else {
+		void *dirptr = NULL;
+		char *dname;
+    		if (check_name(directory,conn))
+		dirptr = OpenDir(conn, directory, True);
 
-    if (check_name(directory,conn))
-      dirptr = OpenDir(conn, directory, True);
-
-    /* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
-       the pattern matches against the long name, otherwise the short name 
-       We don't implement this yet XXXX
-       */
+		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
+			the pattern matches against the long name, otherwise the short name 
+			We don't implement this yet XXXX
+		*/
 
 		if (dirptr) {
 			error = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	if (strequal(mask,"????????.???"))
-	  pstrcpy(mask,"*");
+			if (strequal(mask,"????????.???"))
+				pstrcpy(mask,"*");
 
 			while ((dname = ReadDirName(dirptr))) {
-	    pstring fname;
-	    pstrcpy(fname,dname);
+				pstring fname;
+				pstrcpy(fname,dname);
 	    
-	    if(!mask_match(fname, mask, case_sensitive)) continue;
+				if(!mask_match(fname, mask, case_sensitive))
+					continue;
 
-	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
+				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 				error = can_delete(fname,conn,dirtype);
-				if (!NT_STATUS_IS_OK(error)) continue;
-				if (vfs_unlink(conn,fname) == 0) count++;
-	    DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
-	  }
-	CloseDir(dirptr);
-      }
-  }
+				if (!NT_STATUS_IS_OK(error))
+					continue;
+				if (vfs_unlink(conn,fname) == 0)
+					count++;
+				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
+			}
+			CloseDir(dirptr);
+		}
+	}
   
-	if (count == 0 && NT_STATUS_IS_OK(error)) {
+	if (count == 0 && NT_STATUS_IS_OK(error))
 		error = map_nt_error_from_unix(errno);
-  }
   
 	return error;
 }
@@ -2040,33 +2041,35 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 
 int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int outsize = 0;
-  pstring name;
-  int dirtype;
+	int outsize = 0;
+	pstring name;
+	int dirtype;
 	NTSTATUS status;
-  START_PROFILE(SMBunlink);
 
-  dirtype = SVAL(inbuf,smb_vwv0);
+	START_PROFILE(SMBunlink);
 
-  pstrcpy(name,smb_buf(inbuf) + 1);
+	dirtype = SVAL(inbuf,smb_vwv0);
 
-  RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+	pstrcpy(name,smb_buf(inbuf) + 1);
 
-  DEBUG(3,("reply_unlink : %s\n",name));
+	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+
+	DEBUG(3,("reply_unlink : %s\n",name));
 
 	status = unlink_internals(conn, dirtype, name);
-	if (!NT_STATUS_IS_OK(status)) return ERROR_NT(status);
+	if (!NT_STATUS_IS_OK(status))
+		return ERROR_NT(status);
 
-    /*
-     * Win2k needs a changenotify request response before it will
-     * update after a rename..
-     */
+	/*
+	 * Win2k needs a changenotify request response before it will
+	 * update after a rename..
+	 */
 
-    process_pending_change_notify_queue((time_t)0);
+	process_pending_change_notify_queue((time_t)0);
 
-  outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,True);
   
-  END_PROFILE(SMBunlink);
+	END_PROFILE(SMBunlink);
 	return outsize;
 }
 
