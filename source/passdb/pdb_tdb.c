@@ -188,7 +188,7 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	}
 	else {
 		pdb_set_homedir(sampass, 
-				standard_sub_specified(sampass->mem_ctx, 
+				talloc_sub_specified(sampass->mem_ctx, 
 						       lp_logon_home(),
 						       username, domain, 
 						       uid, gid),
@@ -199,7 +199,7 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		pdb_set_dir_drive(sampass, dir_drive, True);
 	else {
 		pdb_set_dir_drive(sampass, 
-				  standard_sub_specified(sampass->mem_ctx, 
+				  talloc_sub_specified(sampass->mem_ctx, 
 							 lp_logon_drive(),
 							 username, domain, 
 							 uid, gid),
@@ -210,18 +210,18 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		pdb_set_logon_script(sampass, logon_script, True);
 	else {
 		pdb_set_logon_script(sampass, 
-				     standard_sub_specified(sampass->mem_ctx, 
+				     talloc_sub_specified(sampass->mem_ctx, 
 							    lp_logon_script(),
 							    username, domain, 
 							    uid, gid),
 				  False);
 	}
-
+	
 	if (profile_path) {	
 		pdb_set_profile_path(sampass, profile_path, True);
 	} else {
 		pdb_set_profile_path(sampass, 
-				     standard_sub_specified(sampass->mem_ctx, 
+				     talloc_sub_specified(sampass->mem_ctx, 
 							    lp_logon_path(),
 							    username, domain, 
 							    uid, gid),

@@ -695,7 +695,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive)) {
-		pdb_set_dir_drive(sampass, standard_sub_specified(sampass->mem_ctx, 
+		pdb_set_dir_drive(sampass, talloc_sub_specified(sampass->mem_ctx, 
 								  lp_logon_drive(),
 								  username, domain, 
 								  uid, gid),
@@ -705,7 +705,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "smbHome", homedir)) {
-		pdb_set_homedir(sampass, standard_sub_specified(sampass->mem_ctx, 
+		pdb_set_homedir(sampass, talloc_sub_specified(sampass->mem_ctx, 
 								  lp_logon_home(),
 								  username, domain, 
 								  uid, gid), 
@@ -715,7 +715,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "scriptPath", logon_script)) {
-		pdb_set_logon_script(sampass, standard_sub_specified(sampass->mem_ctx, 
+		pdb_set_logon_script(sampass, talloc_sub_specified(sampass->mem_ctx, 
 								     lp_logon_script(),
 								     username, domain, 
 								     uid, gid), 
@@ -725,7 +725,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "profilePath", profile_path)) {
-		pdb_set_profile_path(sampass, standard_sub_specified(sampass->mem_ctx, 
+		pdb_set_profile_path(sampass, talloc_sub_specified(sampass->mem_ctx, 
 								     lp_logon_path(),
 								     username, domain, 
 								     uid, gid), 

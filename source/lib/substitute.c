@@ -84,6 +84,66 @@ static size_t expand_env_var(char *p, int len)
 }
 
 /*******************************************************************
+ Given a pointer to a %$(NAME) in p and the whole string in str
+ expand it as an environment variable.
+ Return a new allocated and expanded string.
+ Based on code by Branko Cibej <branko.cibej@hermes.si>
+ When this is called p points at the '%' character.
+ May substitute multiple occurrencies of the same env var.
+********************************************************************/
+
+
+static char * realloc_expand_env_var(char *str, char *p)
+{
+	char *envname;
+	char *envval;
+	char *q, *r;
+	int copylen;
+
+	if (p[0] != '%' || p[1] != '$' || p[2] != '(')
+		return str;
+
+	/*
+	 * Look for the terminating ')'.
+	 */
+
+	if ((q = strchr_m(p,')')) == NULL) {
+		DEBUG(0,("expand_env_var: Unterminated environment variable [%s]\n", p));
+		return str;
+	}
+
+	/*
+	 * Extract the name from within the %$(NAME) string.
+	 */
+
+	r = p + 3;
+	copylen = q - r;
+	envname = (char *)malloc(copylen + 1 + 4); // reserve space for use later add %$() chars
+	if (envname == NULL) return NULL;
+	strncpy(envname,r,copylen);
+	envname[copylen] = '\0';
+
+	if ((envval = getenv(envname)) == NULL) {
+		DEBUG(0,("expand_env_var: Environment variable [%s] not set\n", envname));
+		SAFE_FREE(envname);
+		return str;
+	}
+
+	/*
+	 * Copy the full %$(NAME) into envname so it
+	 * can be replaced.
+	 */
+
+	copylen = q + 1 - p;
+	strncpy(envname,p,copylen);
+	envname[copylen] = '\0';
+	r = realloc_string_sub(str, envname, envval);
+	SAFE_FREE(envname);
+	if (r == NULL) return NULL;
+	return r;
+}
+
+/*******************************************************************
  Patch from jkf@soton.ac.uk
  Added this to implement %p (NIS auto-map version of %H)
 *******************************************************************/
@@ -244,10 +304,6 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 	}
 }
 
-/****************************************************************************
- Do some standard substitutions in a string.
-****************************************************************************/
-
 static void standard_sub_advanced(int snum, const char *user, 
 				  const char *connectpath, gid_t gid, 
 				  const char *smb_name, char *str, size_t len)
@@ -305,55 +361,273 @@ static void standard_sub_advanced(int snum, const char *user,
 	standard_sub_basic(smb_name, str, len);
 }
 
-const char *standard_sub_specified(TALLOC_CTX *mem_ctx, const char *input_string,
-				   const char *username,
-				   const char *domain,
-				   uid_t uid,
-				   gid_t gid) 
+/****************************************************************************
+ Do some standard substitutions in a string.
+ This function will return an allocated string that have to be freed.
+****************************************************************************/
+
+char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *str)
 {
-	pstring input_pstring;
-	char *p, *s;
+	char *a, *t;
+       	a = alloc_sub_basic(smb_name, str);
+	if (!a) return NULL;
+	t = talloc_strdup(mem_ctx, a);
+	SAFE_FREE(a);
+	return t;
+}
 
-	pstrcpy(input_pstring, input_string);
+char *alloc_sub_basic(const char *smb_name, const char *str)
+{
+	char *b, *p, *s, *t, *r, *a_string;
+	fstring pidstr;
+	struct passwd *pass;
+
+	a_string = strdup(str);
+	if (a_string == NULL) {
+		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
+		return NULL;
+	}
 	
-	for (s=input_pstring; (p=strchr_m(s, '%')); s=p) {
+	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
 
-		int l = sizeof(pstring) - (int)(p-input_pstring);
+		r = NULL;
+		b = t = a_string;
 		
 		switch (*(p+1)) {
 		case 'U' : 
-			string_sub(p,"%U",username,l);
-			break;
-		case 'u' : 
-			string_sub(p,"%u",username,l);
+			r = strdup_lower(smb_name);
+			if (r == NULL) goto error;
+			t = realloc_string_sub(t, "%U", r);
 			break;
 		case 'G' :
+			r = strdup(smb_name);
+			if (r == NULL) goto error;
+			if ((pass = Get_Pwnam(r))!=NULL) {
+				t = realloc_string_sub(t, "%G", gidtoname(pass->pw_gid));
+			} 
+			break;
+		case 'D' :
+			r = strdup_upper(current_user_info.domain);
+			if (r == NULL) goto error;
+			t = realloc_string_sub(t, "%D", r);
+			break;
+		case 'I' :
+			t = realloc_string_sub(t, "%I", client_addr());
+			break;
+		case 'L' : 
+			if (*local_machine)
+				t = realloc_string_sub(t, "%L", local_machine); 
+			else
+				t = realloc_string_sub(t, "%L", global_myname); 
+			break;
+		case 'M' :
+			t = realloc_string_sub(t, "%M", client_name());
+			break;
+		case 'R' :
+			t = realloc_string_sub(t, "%R", remote_proto);
+			break;
+		case 'T' :
+			t = realloc_string_sub(t, "%T", timestring(False));
+			break;
+		case 'a' :
+			t = realloc_string_sub(t, "%a", remote_arch);
+			break;
+		case 'd' :
+			slprintf(pidstr,sizeof(pidstr)-1, "%d",(int)sys_getpid());
+			t = realloc_string_sub(t, "%d", pidstr);
+			break;
+		case 'h' :
+			t = realloc_string_sub(t, "%h", myhostname());
+			break;
+		case 'm' :
+			t = realloc_string_sub(t, "%m", remote_machine);
+			break;
+		case 'v' :
+			t = realloc_string_sub(t, "%v", VERSION);
+			break;
+		case '$' :
+			t = realloc_expand_env_var(t, p); /* Expand environment variables */
+			break;
+			
+		default: 
+			break;
+		}
+
+		p++;
+		SAFE_FREE(r);
+		if (t == NULL) goto error;
+		a_string = t;
+	}
+
+	return a_string;
+error:
+	SAFE_FREE(a_string);
+	return NULL;
+}
+
+/****************************************************************************
+ Do some specific substitutions in a string.
+ This function will return an allocated string that have to be freed.
+****************************************************************************/
+
+char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
+			const char *input_string,
+			const char *username,
+			const char *domain,
+			uid_t uid,
+			gid_t gid)
+{
+	char *a, *t;
+       	a = alloc_sub_specified(input_string, username, domain, uid, gid);
+	if (!a) return NULL;
+	t = talloc_strdup(mem_ctx, a);
+	SAFE_FREE(a);
+	return t;
+}
+
+char *alloc_sub_specified(const char *input_string,
+			const char *username,
+			const char *domain,
+			uid_t uid,
+			gid_t gid)
+{
+	char *a_string, *ret_string;
+	char *b, *p, *s, *t;
+
+	a_string = strdup(input_string);
+	if (a_string == NULL) {
+		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
+		return NULL;
+	}
+	
+	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
+		
+		b = t = a_string;
+		
+		switch (*(p+1)) {
+		case 'U' : 
+			t = realloc_string_sub(t, "%U", username);
+			break;
+		case 'u' : 
+			t = realloc_string_sub(t, "%u", username);
+			break;
+		case 'G' :
+			if (gid != -1) {
+				t = realloc_string_sub(t, "%G", gidtoname(gid));
+			} else {
+				t = realloc_string_sub(t, "%G", "NO_GROUP");
+			}
+			break;
 		case 'g' :
 			if (gid != -1) {
-				string_sub(p,"%G",gidtoname(gid),l);
-				string_sub(p,"%g",gidtoname(gid),l);
+				t = realloc_string_sub(t, "%g", gidtoname(gid));
 			} else {
-				string_sub(p,"%G","NO_GROUP",l);
-				string_sub(p,"%g","NO_GROUP",l);
+				t = realloc_string_sub(t, "%g", "NO_GROUP");
 			}
 			break;
 		case 'D' :
-			string_sub(p,"%D", domain,l);
+			t = realloc_string_sub(t, "%D", domain);
 			break;
 		case 'N' : 
-			string_sub(p,"%N", automount_server(username),l); 
+			t = realloc_string_sub(t, "%N", automount_server(username)); 
 			break;
-		case '\0': 
-			p++; 
-			break; /* don't run off the end of the string */
-			
-		default: p+=2; 
+		default: 
 			break;
 		}
+
+		p++;
+		if (t == NULL) {
+			SAFE_FREE(a_string);
+			return NULL;
+		}
+		a_string = t;
 	}
 
-	standard_sub_basic(username, input_pstring, sizeof(pstring));
-	return talloc_strdup(mem_ctx, input_pstring);
+	ret_string = alloc_sub_basic(username, a_string);
+	SAFE_FREE(a_string);
+	return ret_string;
+}
+
+char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
+			int snum,
+			const char *user,
+			const char *connectpath,
+			gid_t gid,
+			const char *smb_name,
+			char *str)
+{
+	char *a, *t;
+       	a = alloc_sub_advanced(snum, user, connectpath, gid, smb_name, str);
+	if (!a) return NULL;
+	t = talloc_strdup(mem_ctx, a);
+	SAFE_FREE(a);
+	return t;
+}
+
+char *alloc_sub_advanced(int snum, const char *user, 
+				  const char *connectpath, gid_t gid, 
+				  const char *smb_name, char *str)
+{
+	char *a_string, *ret_string;
+	char *b, *p, *s, *t, *h;
+
+	a_string = strdup(str);
+	if (a_string == NULL) {
+		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
+		return NULL;
+	}
+	
+	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
+		
+		b = t = a_string;
+		
+		switch (*(p+1)) {
+		case 'N' :
+			t = realloc_string_sub(t, "%N", automount_server(user));
+			break;
+		case 'H':
+			if ((h = get_user_home_dir(user)))
+				t = realloc_string_sub(t, "%H", h);
+			break;
+		case 'P': 
+			t = realloc_string_sub(t, "%P", connectpath); 
+			break;
+		case 'S': 
+			t = realloc_string_sub(t, "%S", lp_servicename(snum)); 
+			break;
+		case 'g': 
+			t = realloc_string_sub(t, "%g", gidtoname(gid)); 
+			break;
+		case 'u': 
+			t = realloc_string_sub(t, "%u", user); 
+			break;
+			
+			/* Patch from jkf@soton.ac.uk Left the %N (NIS
+			 * server name) in standard_sub_basic as it is
+			 * a feature for logon servers, hence uses the
+			 * username.  The %p (NIS server path) code is
+			 * here as it is used instead of the default
+			 * "path =" string in [homes] and so needs the
+			 * service name, not the username.  */
+		case 'p': 
+			t = realloc_string_sub(t, "%p", automount_path(lp_servicename(snum))); 
+			break;
+			
+		default: 
+			break;
+		}
+
+		p++;
+		if (t == NULL) {
+			SAFE_FREE(a_string);
+			return NULL;
+		}
+		a_string = t;
+	}
+
+	ret_string = alloc_sub_basic(smb_name, a_string);
+	SAFE_FREE(a_string);
+	return ret_string;
 }
 
 /****************************************************************************
