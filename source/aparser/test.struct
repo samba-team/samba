@@ -1,23 +1,46 @@
 module spool
+test PRINTER_DRIVER_INFO
+
+struct PRINTER_DRIVER_INFO_LEVEL_3 {
+	uint32 cversion;
+	REF UNISTR2 name;
+	REF UNISTR2 environment;
+	REF UNISTR2 driverpath;
+	REF UNISTR2 datafile;
+	REF UNISTR2 configfile;
+	REF UNISTR2 helpfile;
+	REF UNISTR2 monitorname;
+	REF UNISTR2 defaultdatatype;
+	REF BUFFER5 dependentfiles;
+};
+
 struct PRINTER_DRIVER_INFO_LEVEL_6 {
   uint32   dummy1; 
   uint32   version; 
-  UNISTR2  name;       
-  UNISTR2  environment;
-  UNISTR2  driverpath;
-  UNISTR2  datafile;
-  UNISTR2  configfile;
-  UNISTR2  helpfile;
-  UNISTR2  monitorname;
-  UNISTR2  defaultdatatype;
-  BUFFER5  dependentfiles;
-  BUFFER5  previousnames;
+  REF UNISTR2  name;       
+  REF UNISTR2  environment;
+  REF UNISTR2  driverpath;
+  REF UNISTR2  datafile;
+  REF UNISTR2  configfile;
+  REF UNISTR2  helpfile;
+  REF UNISTR2  monitorname;
+  REF UNISTR2  defaultdatatype;
+  REF BUFFER5  dependentfiles;
+  REF BUFFER5  previousnames;
   NTTIME   driverdate; 
   UINT64_S driverversion; 
   uint32   dummy4;
-  UNISTR2  mfgname; 
-  UNISTR2  oemurl; 
-  UNISTR2  hardwareid; 
-  UNISTR2  provider; 
+  REF UNISTR2  mfgname; 
+  REF UNISTR2  oemurl; 
+  REF UNISTR2  hardwareid; 
+  REF UNISTR2  provider; 
 };
 
+
+struct PRINTER_DRIVER_INFO {
+       uint32 level;
+       union level info {
+	      case 3 PRINTER_DRIVER_INFO_LEVEL_3 *info_3;
+	      case 6 PRINTER_DRIVER_INFO_LEVEL_6 *info_6;
+       }
+};

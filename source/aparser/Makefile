@@ -2,7 +2,7 @@ CFLAGS=-Wall -g
 CC=gcc
 
 %.h : %.struct
-	awk -f parser.awk < $*.struct > $*.h
+	igawk -f parser.awk < $*.struct > $*.h
 
 OBJ = harness.o parser.o
 
