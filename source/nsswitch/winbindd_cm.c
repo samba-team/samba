@@ -794,7 +794,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 		return result;
 	}
 	
-	result = new_cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+	result = cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
 					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -808,7 +808,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 			}
 			
 			/* Try again */
-			result = new_cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+			result = cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
 							SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 		}
 		

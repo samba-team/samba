@@ -28,8 +28,8 @@
 /* LSA Request Challenge. Sends our challenge to server, then gets
    server response. These are used to generate the credentials. */
 
-NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, 
-                              DOM_CHAL *srv_chal)
+NTSTATUS cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, 
+			  DOM_CHAL *srv_chal)
 {
         prs_struct qbuf, rbuf;
         NET_Q_REQ_CHAL q;
@@ -42,7 +42,7 @@ NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
         
         /* create and send a MSRPC command with api NET_REQCHAL */
 
-        DEBUG(4,("new_cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
+        DEBUG(4,("cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
                  global_myname, cli->desthost, credstr(clnt_chal->data)));
         
         /* store the parameters */
@@ -84,9 +84,9 @@ Ensure that the server credential returned matches the session key
 encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-NTSTATUS new_cli_net_auth2(struct cli_state *cli, 
-			   uint16 sec_chan, 
-                           uint32 neg_flags, DOM_CHAL *srv_chal)
+NTSTATUS cli_net_auth2(struct cli_state *cli, 
+		       uint16 sec_chan, 
+		       uint32 neg_flags, DOM_CHAL *srv_chal)
 {
         prs_struct qbuf, rbuf;
         NET_Q_AUTH_2 q;
@@ -99,7 +99,7 @@ NTSTATUS new_cli_net_auth2(struct cli_state *cli,
 
         /* create and send a MSRPC command with api NET_AUTH2 */
 
-        DEBUG(4,("new_cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
+        DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
                  cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
                  credstr(cli->clnt_cred.challenge.data), neg_flags));
 
@@ -138,7 +138,7 @@ NTSTATUS new_cli_net_auth2(struct cli_state *cli,
                         /*
                          * Server replied with bad credential. Fail.
                          */
-                        DEBUG(0,("new_cli_net_auth2: server %s replied with bad credential (bad machine \
+                        DEBUG(0,("cli_net_auth2: server %s replied with bad credential (bad machine \
 password ?).\n", cli->desthost ));
                         result = NT_STATUS_ACCESS_DENIED;
                         goto done;
@@ -154,9 +154,9 @@ password ?).\n", cli->desthost ));
 
 /* Initialize domain session credentials */
 
-NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli, 
-				uint16 sec_chan,
-                                const unsigned char mach_pwd[16])
+NTSTATUS cli_nt_setup_creds(struct cli_state *cli, 
+			    uint16 sec_chan,
+			    const unsigned char mach_pwd[16])
 {
         DOM_CHAL clnt_chal;
         DOM_CHAL srv_chal;
@@ -168,10 +168,10 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
         generate_random_buffer(clnt_chal.data, 8, False);
 	
         /* send a client challenge; receive a server challenge */
-        result = new_cli_net_req_chal(cli, &clnt_chal, &srv_chal);
+        result = cli_net_req_chal(cli, &clnt_chal, &srv_chal);
 
         if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(0,("new_cli_nt_setup_creds: request challenge failed\n"));
+                DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
                 return result;
         }
         
@@ -194,8 +194,8 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
          * Receive an auth-2 challenge response and check it.
          */
         
-	result = new_cli_net_auth2(cli, sec_chan, 0x000001ff, 
-				   &srv_chal);
+	result = cli_net_auth2(cli, sec_chan, 0x000001ff, &srv_chal);
+
 	if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(1,("cli_nt_setup_creds: auth2 challenge failed %s\n",
 			 nt_errstr(result)));

@@ -139,7 +139,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = new_cli_nt_setup_creds(*cli, sec_chan, trust_passwd);
+	result = cli_nt_setup_creds(*cli, sec_chan, trust_passwd);
 
         if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
