@@ -112,7 +112,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^TALLOC_CTX|^hash_element|^NT_DEVICEMODE/ ) {
+  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^TALLOC_CTX|^hash_element|^NT_DEVICEMODE|^enum nss_status/ ) {
     gotstart = 1;
   }
 
