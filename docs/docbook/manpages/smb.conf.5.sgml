@@ -3483,6 +3483,8 @@
 		<varlistentry>
 		<term><anchor id="LDAPSUFFIX">ldap suffix (G)</term>
 		<listitem>
+		<para>Specifies where user and machine accounts are added to the tree. Can be overriden by <command>ldap user suffix</command> and <command>ldap machine suffix</command>. It also used as the base dn for all ldap searches. </para>
+		
 		<para>Default : <emphasis>none</emphasis></para>
 		</listitem>
 		</varlistentry>
