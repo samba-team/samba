@@ -486,7 +486,7 @@ diff -uNr samba-3.0.0beta2.orig/source/configure.in samba-3.0.0beta2/source/conf
  
    # now check for gssapi headers.  This is also done here to allow for
    # different kerberos include paths
-@@ -2250,62 +2355,45 @@
+@@ -2250,64 +2365,46 @@
  
    ##################################################################
    # we might need the k5crypto and com_err libraries on some systems
@@ -505,19 +505,8 @@ diff -uNr samba-3.0.0beta2.orig/source/configure.in samba-3.0.0beta2/source/conf
  
    # Heimdal checks. On static Heimdal gssapi must be linked before krb5.
 -  AC_CHECK_LIB(gssapi, gss_display_status, [LIBS="$LIBS -lgssapi -lkrb5";
--                 AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
 +  AC_CHECK_LIB_EXT(gssapi, KRB5_LIBS, gss_display_status, [KRB5_LIBS="$KRB5_LIBS -lgssapi -lkrb5";
-+				AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
-+
-+  ########################################################
-+  # now see if we can find the krb5 libs in standard paths
-+  # or as specified above
-+  AC_CHECK_LIB_EXT(krb5, KRB5_LIBS, krb5_mk_req_extended)
-+
-+  ########################################################
-+  # now see if we can find the gssapi libs in standard paths
-+  AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS,gss_display_status,[],[],
-+	    AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available]))
+                  AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
  
 -  AC_CHECK_LIB(krb5, krb5_set_real_time, 
 -	         [AC_DEFINE(HAVE_KRB5_SET_REAL_TIME,1,
@@ -562,27 +551,41 @@ diff -uNr samba-3.0.0beta2.orig/source/configure.in samba-3.0.0beta2/source/conf
 -  AC_CHECK_LIB(krb5, krb5_free_ktypes, 
 -                [AC_DEFINE(HAVE_KRB5_FREE_KTYPES,1,
 -                   [Whether krb5_free_ktypes is available])])
+-  AC_CHECK_LIB(krb5, krb5_principal_get_comp_string, 
+-                [AC_DEFINE(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING,1,
+-                   [Whether krb5_principal_get_comp_string is available])])
++  ########################################################
++  # now see if we can find the krb5 libs in standard paths
++  # or as specified above
++  AC_CHECK_LIB_EXT(krb5, KRB5_LIBS, krb5_mk_req_extended)
++
++  ########################################################
++  # now see if we can find the gssapi libs in standard paths
++  AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS,gss_display_status,[],[],
++	   AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available]))
++
 +  AC_CHECK_FUNC_EXT(krb5_set_real_time, $KRB5_LIBS)
 +  AC_CHECK_FUNC_EXT(krb5_set_default_in_tkt_etypes, $KRB5_LIBS)
 +  AC_CHECK_FUNC_EXT(krb5_set_default_tgs_ktypes, $KRB5_LIBS)
 +  AC_CHECK_FUNC_EXT(krb5_principal2salt, $KRB5_LIBS)
 +  AC_CHECK_FUNC_EXT(krb5_use_enctype, $KRB5_LIBS)
-+  AC_CHECK_FUNC_EXT(krb5_string_to_key, $KRB5_LIBS) 
++  AC_CHECK_FUNC_EXT(krb5_string_to_key, $KRB5_LIBS)
 +  AC_CHECK_FUNC_EXT(krb5_get_pw_salt, $KRB5_LIBS)
-+  AC_CHECK_FUNC_EXT(krb5_string_to_key_salt, $KRB5_LIBS) 
++  AC_CHECK_FUNC_EXT(krb5_string_to_key_salt, $KRB5_LIBS)
 +  AC_CHECK_FUNC_EXT(krb5_auth_con_setkey, $KRB5_LIBS)
-+  AC_CHECK_FUNC_EXT(krb5_auth_con_setuseruserkey, $KRB5_LIBS) 
++  AC_CHECK_FUNC_EXT(krb5_auth_con_setuseruserkey, $KRB5_LIBS)
 +  AC_CHECK_FUNC_EXT(krb5_locate_kdc, $KRB5_LIBS)
-+  AC_CHECK_FUNC_EXT(krb5_get_permitted_enctypes, $KRB5_LIBS) 
-+  AC_CHECK_FUNC_EXT(krb5_get_default_in_tkt_etypes, $KRB5_LIBS) 
++  AC_CHECK_FUNC_EXT(krb5_get_permitted_enctypes, $KRB5_LIBS)
++  AC_CHECK_FUNC_EXT(krb5_get_default_in_tkt_etypes, $KRB5_LIBS)
 +  AC_CHECK_FUNC_EXT(krb5_free_ktypes, $KRB5_LIBS)
- 
++  AC_CHECK_FUNC_EXT(krb5_principal_get_comp_string, $KRB5_LIBS)
++
 +  LIBS="$LIBS $KRB5_LIBS"
-+  
-   AC_CACHE_CHECK([for addrtype in krb5_address],
-                 samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS,[
-     AC_TRY_COMPILE([#include <krb5.h>],
-@@ -2365,87 +2453,21 @@
++
+   AC_CACHE_CHECK([for the krb5_princ_component macro],
+                 samba_cv_HAVE_KRB5_PRINC_COMPONENT,[
+     AC_TRY_LINK([#include <krb5.h>],
+@@ -2380,87 +2468,21 @@
                [Whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type is available])
    fi
  

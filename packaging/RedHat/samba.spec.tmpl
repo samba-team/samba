@@ -7,7 +7,7 @@ Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
-Prereq: chkconfig fileutils
+Prereq: chkconfig fileutils /sbin/ldconfig
 Provides: samba = %{version}
 Obsoletes: samba-common, samba-client, samba-swat
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -94,7 +94,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
 	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net \
-	smbcacls pdbedit tdbbackup smbtree
+	smbcacls pdbedit tdbbackup smbtree ntlm_auth
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -123,7 +123,7 @@ make DESTDIR=$RPM_BUILD_ROOT \
 	LIBDIR=%{prefix}/lib/samba \
 	VARDIR=/var \
 	SBINDIR=%{prefix}/sbin \
-	BINDIR=$%{prefix}/bin \
+	BINDIR=%{prefix}/bin \
 	MANDIR=MANDIR_MACRO \
 	SWATDIR=%{prefix}/share/swat \
 	SAMBABOOK=%{prefix}/share/swat/using_samba \
@@ -146,20 +146,6 @@ install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
-
-# Install SWAT helper files
-#for i in swat/help/*.html docs/htmldocs/*.html
-#do
-#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/help
-#done
-#for i in swat/images/*.gif
-#do
-#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/images
-#done
-#for i in swat/include/*.html
-#do
-#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/include
-#done
 
 # Install the miscellany
 install -m755 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat/README
@@ -287,15 +273,13 @@ else
 	rm -f /etc/samba/samba.stack
 fi
 
-# Create winbind nss client symlink
-
-if [ -e /lib/libnss_winbind.so ]; then
-	ln -sf /lib/libnss_winbind.so /lib/libnss_winbind.so.2
-fi
+## call ldconfig to create the version symlink for libsmbclient.so
+/sbin/ldconfig
 
 %preun
 if [ $1 = 0 ] ; then
 	/sbin/chkconfig --del smb
+	/sbin/chkconfig --del winbind
 
 	# We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
 	if [ -e /var/cache/samba/browse.dat ]; then
@@ -366,6 +350,8 @@ if [ $1 = 0 ] ; then
 	fi
 fi
 
+/sbin/ldconfig
+
 %files
 %defattr(-,root,root)
 %doc README COPYING Manifest Read-Manifest-Now
@@ -399,6 +385,7 @@ fi
 %{prefix}/bin/smbcontrol
 %{prefix}/bin/wbinfo
 %{prefix}/bin/net
+%{prefix}/bin/ntlm_auth
 %{prefix}/bin/smbcacls
 %{prefix}/bin/pdbedit
 %{prefix}/bin/tdbbackup
