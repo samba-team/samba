@@ -18,6 +18,7 @@
 #include <config.h>
 #include <protos.h>
 #define UIDL
+#define XOVER
 #define DEBUG
 #define RETURN_PATH_HANDLING
 #endif
@@ -183,8 +184,13 @@ typedef struct {                                /*  Message information */
                                                     is marked for deletion */
     int         retr_flag;                      /*  Flag indicating if message 
                                                     was retrieved */
-#ifdef UIDL
+#if defined(UIDL) || defined(XOVER)
     char        *msg_id;	                /*  The POP UIDL uniqueifier */
+#endif
+#ifdef XOVER
+    char	*subject;
+    char	*from;
+    char	*date;
 #endif
 } MsgInfoList;
 
@@ -278,6 +284,9 @@ int pop_xmit(POP *p);
 int pop_xtnd(POP *p);
 #ifdef UIDL
 int pop_uidl(POP *p);
+#endif
+#ifdef XOVER
+int pop_xover(POP *p);
 #endif
 int pop_help(POP *p);
 state_table *pop_get_command(POP *p, char *mp);

@@ -13,6 +13,9 @@ RCSID("$Id$");
 
 static xtnd_table subcommands[] = {
         {"xmit",     0,  0,  pop_xmit},
+#ifdef XOVER
+	{"xover",    0,  0,  pop_xover},
+#endif
         {NULL}
 };
 
