@@ -1973,7 +1973,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       }
 
       if (ret == -1)
-        return(UNIXERROR(ERRHRD,ERRdiskfull));
+		return allocate_space_error(inbuf, outbuf, errno);
 
       sbuf.st_size = size;
       break;
@@ -2087,8 +2087,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		{
 			unsigned char setval = CVAL(pdata,0);
 		}
-#endif /* JRA */
 		return(ERROR(ERRDOS,ERRnoaccess));
+#endif /* JRA */
+		break;
 
 	default:
 	{
@@ -2190,7 +2191,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       vfs_set_filelen(new_fsp, size);
       close_file(new_fsp,True);
     } else {
-        vfs_set_filelen(fsp, size);
+      vfs_set_filelen(fsp, size);
     }
   }
 

@@ -693,7 +693,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
                    smb_buflen(inbuf),fname_len);
 
         if( strchr(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+          SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
           END_PROFILE(SMBntcreateX);
           return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
         }
@@ -834,7 +834,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(file_attributes);
-					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+					SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 					END_PROFILE(SMBntcreateX);
 					return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
 				}
@@ -1217,7 +1217,7 @@ static int call_nt_transact_create(connection_struct *conn,
                             total_parameter_count - 53 - fname_len, fname_len);
 
       if( strchr(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+          SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
           return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
       }
 
@@ -1324,7 +1324,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
 				restore_case_semantics(file_attributes);
-				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+				SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 				return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
 			}
 	

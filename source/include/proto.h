@@ -4156,8 +4156,6 @@ struct cnotify_fns *kernel_notify_init(void) ;
 
 /*The following definitions come from  smbd/nttrans.c  */
 
-void fail_next_srvsvc_open(void);
-BOOL should_fail_next_srvsvc_open(const char *pipename);
 int reply_ntcreate_and_X(connection_struct *conn,
 			 char *inbuf,char *outbuf,int length,int bufsize);
 int reply_ntcancel(connection_struct *conn,
@@ -4297,6 +4295,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int allocate_space_error(char *inbuf,char *outbuf, int errno_val);
 int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int dum_buffsize);
 int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
