@@ -153,7 +153,7 @@ static void gen_name(char *name)
 
 	/* ..... and a 100% proability of a file not ending in "." */
 	if (p[strlen(p)-1] == '.')
-		p[strlen(p)-1] = '\0';
+		p[strlen(p)-1] = '_';
 }
 
 
