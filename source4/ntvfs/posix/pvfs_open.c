@@ -225,6 +225,16 @@ static int pvfs_handle_destructor(void *p)
 {
 	struct pvfs_file_handle *h = p;
 
+	if ((h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
+	    h->name->stream_name) {
+		NTSTATUS status;
+		status = pvfs_stream_delete(h->pvfs, h->name, h->fd);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Failed to delete stream '%s' on close of '%s'\n",
+				 h->name->stream_name, h->name->full_name));
+		}
+	}
+
 	if (h->fd != -1) {
 		if (close(h->fd) != 0) {
 			DEBUG(0,("pvfs_handle_destructor: close(%d) failed for %s - %s\n",
@@ -233,7 +243,8 @@ static int pvfs_handle_destructor(void *p)
 		h->fd = -1;
 	}
 
-	if (h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+	if ((h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
+	    h->name->stream_name == NULL) {
 		if (unlink(h->name->full_name) != 0) {
 			DEBUG(0,("pvfs_close: failed to delete '%s' - %s\n", 
 				 h->name->full_name, strerror(errno)));

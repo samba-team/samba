@@ -48,6 +48,11 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
+	/* don't allow stream renames for now */
+	if (name->stream_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* w2k3 does not appear to allow relative rename */
 	if (r->root_fid != 0) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -366,7 +371,8 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	struct utimbuf unix_times;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, info->generic.file.fname, 0, &name);
+	status = pvfs_resolve_name(pvfs, req, info->generic.file.fname, 
+				   PVFS_RESOLVE_STREAMS, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
