@@ -1444,7 +1444,8 @@ BOOL domain_client_validate( char *user, char *domain,
    */
   if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, NULL))
   {
-    return False;
+	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", lp_workgroup()));
+	  return False;
   }
 
   /*
