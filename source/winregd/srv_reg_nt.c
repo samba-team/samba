@@ -129,21 +129,6 @@ uint32 _reg_open(POLICY_HND *pol, uint32 access_mask)
 }
 
 #if 0
-/*******************************************************************
- api_reg_open
- ********************************************************************/
-static void api_reg_open( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
-{
-	REG_Q_OPEN_HKLM q_u;
-
-	/* grab the reg open */
-	reg_io_q_open_hklm("", &q_u, data, 0);
-
-	/* construct reply.  always indicate success */
-	reg_reply_open(&q_u, rdata);
-}
-
 
 /*******************************************************************
  reg_reply_open_entry
