@@ -33,7 +33,9 @@
 
 static struct winbindd_state *client_list;
 
-/* Handle termination signals */
+/*
+ * Signal handlers
+ */
 
 static void termination_handler(int signum)
 {
@@ -42,6 +44,20 @@ static void termination_handler(int signum)
     unlink(WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME);
 
     exit(0);
+}
+
+static BOOL print_client_info;
+
+static void siguser1_handler(int signum)
+{
+    print_client_info = True;
+}
+
+static BOOL flush_cache;
+
+static void sighup_handler(int signum)
+{
+    flush_cache = True;
 }
 
 /* Create winbindd socket */
@@ -149,17 +165,14 @@ static void process_request(struct winbindd_state *state)
         break;
         
     case WINBINDD_SETPWENT:
-        fprintf(stderr, "calling setpwent()\n");
         state->response.result = winbindd_setpwent(state);
         break;
         
     case WINBINDD_ENDPWENT:
-        fprintf(stderr, "calling endpwent()\n");
         state->response.result = winbindd_endpwent(state);
         break;
         
     case WINBINDD_GETPWENT:
-        fprintf(stderr, "calling getpwent()\n");
         state->response.result = winbindd_getpwent(state);
         break;
         
@@ -365,6 +378,18 @@ static void process_loop(int accept_sock)
             state = state->next;
         }
 
+        /* Check signal handling */
+
+        if (flush_cache) {
+            fprintf(stderr, "flush cache request\n");
+            flush_cache = False;
+        }
+
+        if (print_client_info) {
+            fprintf(stderr, "print client info requet\n");
+            print_client_info = False;
+        }
+
         /* Call select */
         
         fprintf(stderr, "calling select\n");
@@ -374,6 +399,7 @@ static void process_loop(int accept_sock)
 
             /* Select error, something is badly wrong */
 
+            exit(2);
             DEBUG(0, ("select returned %d", selret));
             return;
         }
@@ -447,8 +473,7 @@ int main(int argc, char **argv)
 
     pwdb_initialise(False);
 
-    if (!winbindd_surs_init()) {
-        DEBUG(0, ("Could not initialise surs information\n"));
+    if (!winbindd_param_init()) {
         return 1;
     }
 
@@ -458,6 +483,8 @@ int main(int argc, char **argv)
     signal(SIGQUIT, termination_handler);
     signal(SIGTERM, termination_handler);
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGUSR1, siguser1_handler);
+    signal(SIGHUP, sighup_handler);
 
     /* Create UNIX domain socket */
 

@@ -431,6 +431,7 @@ _nss_ntdom_setpwent(void)
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_SETPWENT;
+    request.pid = getpid();
 
     if ((result = write_sock(sock, &request, sizeof(request))) == -1) {
         close(sock);
@@ -471,6 +472,7 @@ _nss_ntdom_endpwent(void)
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_ENDPWENT;
+    request.pid = getpid();
 
     if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -511,6 +513,7 @@ _nss_ntdom_getpwent_r(struct passwd *result, char *buffer,
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETPWENT;
+    request.pid = getpid();
 
     if (write_sock(sock, &request, sizeof(request)) == -1) {
         close(sock);
@@ -554,6 +557,7 @@ _nss_ntdom_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
     request.cmd = WINBINDD_GETPWNAM_FROM_UID;
     request.data.uid = uid;
+    request.pid = getpid();
 
     if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -597,6 +601,7 @@ _nss_ntdom_getpwnam_r(const char *name, struct passwd *result, char *buffer,
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETPWNAM_FROM_USER;
+    request.pid = getpid();
 
     strncpy(request.data.username, name, sizeof(request.data.username) - 1);
     request.data.username[sizeof(request.data.username) - 1] = '\0';
@@ -644,6 +649,7 @@ _nss_ntdom_setgrent(void)
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_SETGRENT;
+    request.pid = getpid();
 
     if ((result = write_sock(sock, &request, sizeof(request))) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -683,6 +689,7 @@ _nss_ntdom_endgrent(void)
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_ENDGRENT;
+    request.pid = getpid();
 
     if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -723,6 +730,7 @@ _nss_ntdom_getgrent_r(struct group *result,
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETGRENT;
+    request.pid = getpid();
 
     if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
@@ -764,6 +772,7 @@ _nss_ntdom_getgrnam_r(const char *name,
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETGRNAM_FROM_GROUP;
+    request.pid = getpid();
 
     strncpy(request.data.groupname, name, sizeof(request.data.groupname));
     request.data.groupname[sizeof(request.data.groupname) - 1] = '\0';
@@ -809,6 +818,7 @@ _nss_ntdom_getgrgid_r(gid_t gid,
 
     request.cmd = WINBINDD_GETGRNAM_FROM_GID;
     request.data.gid = gid;
+    request.pid = getpid();
 
     if (write_sock(sock, &request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
