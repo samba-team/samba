@@ -123,6 +123,11 @@ int str2attr(const char *str, krb5_flags *flags);
 void get_response(const char*, const char*, char*, size_t);
 int get_deltat(const char*, const char*, unsigned *);
 int edit_entry(kadm5_principal_ent_t ent, int *mask);
+int set_entry(krb5_context context,
+	      kadm5_principal_ent_t ent, int *mask,
+	      const char *max_ticket_life,
+	      const char *max_renewable_life,
+	      const char *attributes);
 int foreach_principal(const char *, int (*)(krb5_principal, void*), void *);
 
 /* server.c */
