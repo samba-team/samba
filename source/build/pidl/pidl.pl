@@ -13,6 +13,7 @@ use Parse::RecDescent;
 use dump;
 use header;
 use parser;
+use eparser;
 use util;
 
 my($opt_help) = 0;
@@ -21,6 +22,7 @@ my($opt_dump) = 0;
 my($opt_diff) = 0;
 my($opt_header) = 0;
 my($opt_parser) = 0;
+my($opt_eparser) = 0;
 
 #####################################################################
 # parse an IDL file returning a structure containing all the data
@@ -60,6 +62,7 @@ sub ShowHelp()
              --dump                dump a pidl file back to idl
              --header              create a C header file
              --parser              create a C parser
+             --eparser             create an ethereal parser
              --diff                run diff on the idl and dumped output
            \n";
     exit(0);
@@ -72,6 +75,7 @@ GetOptions (
 	    'dump' => \$opt_dump,
 	    'header' => \$opt_header,
 	    'parser' => \$opt_parser,
+	    'eparser' => \$opt_eparser,
 	    'diff' => \$opt_diff
 	    );
 
@@ -107,7 +111,14 @@ if ($opt_parser) {
     my($idl) = util::LoadStructure($pidl_file);
     my($parser) = util::ChangeExtension($idl_file, "c");
     print "Generating $parser\n";
-    util::FileSave($parser, IdlParser::Dump($idl));
+    util::FileSave($parser, IdlParser::Parse($idl));
+}
+
+if ($opt_eparser) {
+    my($idl) = util::LoadStructure($pidl_file);
+    my($parser) = util::ChangeExtension($idl_file, "c");
+    print "Generating $parser for ethereal\n";
+    util::FileSave($parser, IdlEParser::Parse($idl));
 }
 
 if ($opt_diff) {
