@@ -238,9 +238,9 @@ sub ParseArrayPull($$$)
 		$alloc_size = $e->{CONFORMANT_SIZE};
 
 		pidl "\tif ($size > $alloc_size) {\n";
-		pidl "\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
+		pidl "\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad conformant size (%u should be %u)\", $alloc_size, $size);\n";
 		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 1Bad conformant size %u should be %u\", $alloc_size, $size);\n";
+		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad conformant size\", $alloc_size, $size);\n";
 		pidl "\t\treturn;\n";
 		pidl "\t}\n";
 	} elsif (!util::is_inline_array($e)) {
@@ -258,9 +258,9 @@ sub ParseArrayPull($$$)
 		} else {
 			pidl "\t\tif ($size != _array_size) {\n";
 		}
-		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array size %u should be %u\", _array_size, $size);\n";
+		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array size (%u should be %u)\", _array_size, $size);\n";
 		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 2Bad array size %u should be %u\", _array_size, $size);\n";
+		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad array size\", _array_size, $size);\n";
 		pidl "\t\t\treturn;\n";
 		pidl "\t\t}\n";
 		if ($size =~ /r->in/) {
@@ -292,15 +292,15 @@ sub ParseArrayPull($$$)
 		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_offset, &_offset);\n";
 		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_length, &_length);\n";
 		pidl "\t\tif (_offset != 0) {\n";
-		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array offset 0x%08x\", _offset);\n";
+		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array offset %d\", _offset);\n";
 		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \"3Bad array offset 0x%08x\", _offset);\n";
+		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \"Bad array offset %d\", _offset);\n";
 		pidl "\t\t\treturn;\n";
 		pidl "\t\t}\n";
 		pidl "\t\tif (_length > $size || _length != $length) {\n";
 		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array length %d > size %d\", _offset, $size);\n";
 		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 4Bad array length %d > size %d\", _offset, $size);\n";
+		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad array length %d > size %d\", _offset, $size);\n";
 		pidl "\t\t\treturn;\n";
 		pidl "\t\t}\n";
 		$size = "_length";
@@ -482,6 +482,8 @@ sub ParseStructPull($)
 			pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
 	}
+
+	pidl "\n";
 
 	start_flags($struct);
 
@@ -725,13 +727,19 @@ sub ParseFunctionPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
+
 		if (util::need_wire_pointer($e) &&
 		    util::has_property($e, "in")) {
 			pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
-	        pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
-	            if util::is_builtin_type($e->{TYPE});
+
+		if (util::has_property($e, "in")) {
+		    pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
+	                if util::is_builtin_type($e->{TYPE});
+		}
 	}
+
+	pidl "\n";
 
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "in")) {
@@ -741,6 +749,7 @@ sub ParseFunctionPull($)
 
 	pidl "\toffset = ndr->offset;\n";
 	pidl "\tndr_pull_free(ndr);\n";
+	pidl "\n";
 	pidl "\treturn offset;\n";
 	pidl "}\n\n";
 
@@ -753,13 +762,19 @@ sub ParseFunctionPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
+
 		if (util::need_wire_pointer($e) && 
 		    util::has_property($e, "out")) {
 			pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
-	        pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
-	            if util::is_builtin_type($e->{TYPE});
+
+		if (util::has_property($e, "out")) {
+		    pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
+	                if util::is_builtin_type($e->{TYPE});
+		}
 	}
+
+	pidl "\n";
 
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "out")) {
@@ -773,6 +788,7 @@ sub ParseFunctionPull($)
 
 	pidl "\toffset = ndr->offset;\n";
 	pidl "\tndr_pull_free(ndr);\n";
+	pidl "\n";
 	pidl "\treturn offset;\n";
 	pidl "}\n\n";
 }
