@@ -20,10 +20,10 @@ eval "ac_cv_type_$cv=no"))dnl
 AC_MSG_RESULT(`eval echo \\$ac_cv_type_$cv`)
 if test `eval echo \\$ac_cv_type_$cv` = yes; then
   ac_tr_hdr=HAVE_`echo $1 | sed 'y%abcdefghijklmnopqrstuvwxyz./- %ABCDEFGHIJKLMNOPQRSTUVWXYZ____%'`
+dnl autoheader tricks *sigh*
+: << END
+@@@funcs="$funcs $1"@@@
+END
   AC_DEFINE_UNQUOTED($ac_tr_hdr, 1)
 fi
 ])
-dnl dnl autoheader tricks *sigh*
-dnl : << END
-dnl @@@syms="$syms $ac_tr_hdr"@@@
-dnl END
