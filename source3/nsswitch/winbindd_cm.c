@@ -378,7 +378,13 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 		return False;
 	}
 
-	if (!conn->cli || !conn->cli->initialised) {
+	if (!conn->cli) {
+		DEBUG(3, ("Connection to %s for domain %s (pipe %s) has NULL conn->cli!\n", 
+			  conn->controller, conn->domain, conn->pipe_name));
+		return False;
+	}
+
+	if (!conn->cli->initialised) {
 		DEBUG(3, ("Connection to %s for domain %s (pipe %s) was never initialised!\n", 
 			  conn->controller, conn->domain, conn->pipe_name));
 		return False;
