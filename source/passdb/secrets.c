@@ -52,11 +52,13 @@ BOOL secrets_init(void)
 void *secrets_fetch(char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	dbuf = tdb_fetch(tdb, kbuf);
-	if (size) *size = dbuf.dsize;
+	if (size)
+		*size = dbuf.dsize;
 	return dbuf.dptr;
 }
 
@@ -65,7 +67,8 @@ void *secrets_fetch(char *key, size_t *size)
 BOOL secrets_store(char *key, void *data, size_t size)
 {
 	TDB_DATA kbuf, dbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	dbuf.dptr = data;
@@ -79,7 +82,8 @@ BOOL secrets_store(char *key, void *data, size_t size)
 BOOL secrets_delete(char *key)
 {
 	TDB_DATA kbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	return tdb_delete(tdb, kbuf) == 0;
@@ -106,8 +110,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	if (dyn_sid == NULL)
 		return False;
 
-	if (size != sizeof(DOM_SID))
-	{ 
+	if (size != sizeof(DOM_SID)) { 
 		free(dyn_sid);
 		return False;
 	}
@@ -117,10 +120,10 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	return True;
 }
 
-
 /************************************************************************
 form a key for fetching a domain trust password
 ************************************************************************/
+
 char *trust_keystr(char *domain)
 {
 	static fstring keystr;
@@ -226,15 +229,14 @@ BOOL fetch_ldap_pw(char *dn, char* pw, int len)
 	fstring key;
 	char *p;
 	void *data = NULL;
-	int size;
+	size_t size;
 	
 	pstrcpy(key, dn);
 	for (p=key; *p; p++)
 		if (*p == ',') *p = '/';
 	
 	data=secrets_fetch(key, &size);
-	if (!size) 
-	{
+	if (!size) {
 		DEBUG(0,("fetch_ldap_pw: no ldap secret retrieved!\n"));
 		return False;
 	}
@@ -250,4 +252,3 @@ BOOL fetch_ldap_pw(char *dn, char* pw, int len)
 	
 	return True;
 }
-

@@ -627,11 +627,11 @@ static int process_root(int argc, char *argv[])
 #ifdef WITH_LDAP_SAM
 			local_flags |= LOCAL_SET_LDAP_ADMIN_PW;
 			fstrcpy(ldap_secret, optarg);
+			break;
 #else
 			printf("-w not available unless configured --with-ldap\n");
 			goto done;
 #endif			
-			break;
 		case 'R':
 			lp_set_name_resolve_order(optarg);
 			break;
