@@ -104,16 +104,20 @@ void build_options(BOOL screen)
        snprintf(outstring,sizeof(outstring),"   WITH_PAM\n");
        output(screen,outstring);
 #endif
-#ifdef WITH_TDBSAM
-       snprintf(outstring,sizeof(outstring),"   WITH_TDBSAM\n");
+#ifdef WITH_TDB_SAM
+       snprintf(outstring,sizeof(outstring),"   WITH_TDB_SAM\n");
        output(screen,outstring);
 #endif
-#ifdef WITH_LDAP
-       snprintf(outstring,sizeof(outstring),"   WITH_LDAP\n");
+#ifdef WITH_LDAP_SAM
+       snprintf(outstring,sizeof(outstring),"   WITH_LDAP_SAM\n");
        output(screen,outstring);
 #endif
-#ifdef WITH_NISPLUS
-       snprintf(outstring,sizeof(outstring),"   WITH_NISPLUS\n");
+#ifdef WITH_SMBPASSWD_SAM
+       snprintf(outstring,sizeof(outstring),"   WITH_SMBPASSWD_SAM\n");
+       output(screen,outstring);
+#endif
+#ifdef WITH_NISPLUS_SAM
+       snprintf(outstring,sizeof(outstring),"   WITH_NISPLUS_SAM\n");
        output(screen,outstring);
 #endif
 #ifdef WITH_NISPLUS_HOME
