@@ -3407,7 +3407,10 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
   BOOL reply=False;
   int i;
 
-  SMB_ASSERT(params != 0);
+  if (!params) {
+	  DEBUG(0,("ERROR: NULL params in api_reply()\n"));
+	  return 0;
+  }
 
   api_command = SVAL(params,0);
 
