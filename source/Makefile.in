@@ -278,7 +278,7 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
 		passdb/pdb_tdb.o passdb/pdb_ldap.o \
 		passdb/pdb_unix.o passdb/util_sam_sid.o \
-		passdb/pdb_compat.o passdb/pdb_nisplus.o
+		passdb/pdb_compat.o passdb/pdb_nisplus.o passdb/privileges.o
 
 XML_OBJ = modules/xml.o
 MYSQL_OBJ = modules/mysql.o

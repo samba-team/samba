@@ -1198,7 +1198,7 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	*privs_name = (char **)talloc(mem_ctx, (*count) * sizeof(char **));
 	for (i=0;i<*count;i++) {
-		pull_ucs2_talloc(mem_ctx, &(*privs_name)[i], r.rights.strings[i].string.buffer);
+		(*privs_name)[i] = unistr2_tdup(mem_ctx, &r.rights.strings[i].string);
 	}
 
 done:
