@@ -72,18 +72,16 @@ RCSID("$Id$");
  *
  */
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
+#endif
 #include <stdio.h>
 #include "gssapi_defs.h"
-#ifdef	__STDC__
 #include <stdlib.h>
-#endif
-#ifdef	NO_STRING_H
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 
 #include <pwd.h>
 #include "encrypt.h"

@@ -73,18 +73,14 @@ RCSID("$Id$");
  */
 
 #include <sys/types.h>
+#ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
+#endif
 #include <pwd.h>
 #include <stdio.h>
 
-#ifdef	__STDC__
 #include <stdlib.h>
-#endif
-#ifdef	NO_STRING_H
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 
 #include "encrypt.h"
 #include "auth.h"

@@ -62,20 +62,18 @@
 RCSID("$Id$");
 
 #ifdef	KRB4
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
+#endif
 #include <stdio.h>
 #include <des.h>	/* BSD wont include this in krb.h, so we do it here */
 #include <krb.h>
 #include <pwd.h>
-#ifdef	__STDC__
 #include <stdlib.h>
-#endif
-#ifdef	NO_STRING_H
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 
 #include "encrypt.h"
 #include "auth.h"

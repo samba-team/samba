@@ -60,18 +60,16 @@ RCSID("$Id$");
 
 #if	defined(AUTHENTICATION)
 #include <stdio.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <signal.h>
 #define	AUTH_NAMES
+#ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
-#ifdef	__STDC__
+#endif
 #include <stdlib.h>
-#endif
-#ifdef	NO_STRING_H
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 
 #include "encrypt.h"
 #include "auth.h"
