@@ -44,17 +44,21 @@ krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
 }
 
 krb5_error_code
-krb5_get_init_creds_opt_alloc(krb5_get_init_creds_opt **opt)
+krb5_get_init_creds_opt_alloc(krb5_context context, 
+			      krb5_get_init_creds_opt **opt)
 {
     krb5_get_init_creds_opt *o;
     
     *opt = NULL;
     o = calloc(1, sizeof(*o));
-    if (o == NULL)
+    if (o == NULL) {
+	krb5_set_error_string(context, "out of memory");
 	return ENOMEM;
+    }
     krb5_get_init_creds_opt_init(o);
     o->private = calloc(1, sizeof(*o->private));
     if (o->private == NULL) {
+	krb5_set_error_string(context, "out of memory");
 	free(o);
 	return ENOMEM;
     }
