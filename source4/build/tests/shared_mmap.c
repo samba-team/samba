@@ -1,5 +1,5 @@
 /* this tests whether we can use a shared writeable mmap on a file -
-   as needed for the mmap varient of FAST_SHARE_MODES */
+   as needed for the mmap variant of FAST_SHARE_MODES */
 
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
