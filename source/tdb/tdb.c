@@ -1180,7 +1180,19 @@ int tdb_lockall(TDB_CONTEXT *tdb)
 	/* There are no locks on read-only dbs */
 	if (tdb->read_only) return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	if (tdb->lockedkeys) return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
-	for (i = 0; i < tdb->header.hash_size; i++) tdb_lock(tdb, i, F_WRLCK);
+	for (i = 0; i < tdb->header.hash_size; i++) 
+		if (tdb_lock(tdb, i, F_WRLCK))
+			break;
+
+	/* If error, release locks we have... */
+	if (i < tdb->header.hash_size) {
+		u32 j;
+
+		for ( j = 0; j < i; j++)
+			tdb_unlock(tdb, j, F_WRLCK);
+		return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
+	}
+
 	return 0;
 }
 void tdb_unlockall(TDB_CONTEXT *tdb)
@@ -1211,7 +1223,18 @@ int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[])
 		tdb->lockedkeys[j+1] = hash;
 	}
 	/* Finally, lock in order */
-	for (i = 0; i < number; i++) tdb_lock(tdb, i, F_WRLCK);
+	for (i = 0; i < number; i++)
+		if (tdb_lock(tdb, i, F_WRLCK))
+			break;
+
+	/* If error, release locks we have... */
+	if (i < number) {
+		for ( j = 0; j < i; j++)
+			tdb_unlock(tdb, j, F_WRLCK);
+		free(tdb->lockedkeys);
+		tdb->lockedkeys = NULL;
+		return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
+	}
 	return 0;
 }
 
