@@ -172,6 +172,9 @@ struct response_record *make_response_record( struct subnet_record *subrec,
   rrec->repeat_count = 3; /* 3 retries */
   rrec->repeat_time = time(NULL) + rrec->repeat_interval; /* initial retry time */
 
+  /* This packet is not being processed. */
+  rrec->in_expiration_processing = False;
+
   /* Lock the packet so we won't lose it while it's on the list. */
   p->locked = True;
 
