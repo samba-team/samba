@@ -225,41 +225,6 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 }
 
 /*******************************************************************
- samr_reply_query_sec_obj
- ********************************************************************/
-uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SEC_DESC_BUF *buf)
-{
-	uint32 rid;
-	DOM_SID usr_sid;
-	TDB_CONTEXT *tdb = NULL;
-
-	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbrid(get_global_hnd_cache(), user_pol, &tdb, &rid))
-	{
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	sid_copy(&usr_sid, &global_sam_sid);
-	sid_append_rid(&usr_sid, rid);
-
-#if 0
-	/* maybe need another 1 or 2 (S-1-5-0x20-0x220 and S-1-5-20-0x224) */
-	/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */
-	make_dom_sid3(&sid_stuff->sid[0], 0x035b, 0x0002, &global_sid_S_1_1);
-	make_dom_sid3(&sid_stuff->sid[1], 0x0044, 0x0002, &usr_sid);
-
-	make_sam_sid_stuff(sid_stuff, 
-				0x0001, 0x8004,
-				0x00000014, 0x0002, 0x0070,
-				2);
-
-#endif
-	DEBUG(5,("samr_query_sec_obj: %d\n", __LINE__));
-
-	return NT_STATUS_NOPROBLEMO;
-}
-
-/*******************************************************************
  samr_reply_query_usergroups
  ********************************************************************/
 uint32 _samr_query_usergroups(const POLICY_HND *pol,

@@ -524,11 +524,11 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 
 	prs_align(ps);
 	
-	size = ps->offset - old_offset;
+	size = ps->offset - old_offset - 8;
 	prs_uint32_post("max_len", ps, depth, &(sec->max_len), off_max_len, size == 0 ? sec->max_len : size + 8);
 	prs_uint32_post("len    ", ps, depth, &(sec->len    ), off_len    , size == 0 ? 0 : size + 8);
 
-	ps->offset = old_offset + sec->max_len;
+	ps->offset = old_offset + size + 8;
 
 	return True;
 }

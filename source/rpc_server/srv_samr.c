@@ -95,6 +95,7 @@ static void api_samr_query_sec_obj( rpcsrv_struct *p, prs_struct *data, prs_stru
 
 	samr_io_q_query_sec_obj("", &q_u, data, 0);
 	r_u.status = _samr_query_sec_obj(&q_u.user_pol, &r_u.buf);
+	r_u.ptr = 1; /* man, we don't have any choice!  NT bombs otherwise! */
 	samr_io_r_query_sec_obj("", &r_u, rdata, 0);
 }
 
