@@ -317,7 +317,35 @@ static NTSTATUS cmd_delete_account(struct samtest_state *st, TALLOC_CTX *mem_ctx
 
 static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	DOM_SID sid;
+	int32 account_count, i;
+	SAM_ACCOUNT_ENUM *accounts;
+
+	if (argc != 2) {
+		printf("Usage: enum_accounts <domain-sid>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!string_to_sid(&sid, argv[1])){
+		printf("Unparseable SID specified!\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!NT_STATUS_IS_OK(status = context_sam_enum_accounts(st->context, st->token, &sid, 0, &account_count, &accounts))) {
+		printf("context_sam_enum_accounts failed: %s\n", nt_errstr(status));
+		return status;
+	}
+
+	for (i = 0; i < account_count; i++)
+		printf("%s\t%s\t%s\t%s\t%d\n", 
+			   sid_string_static(&accounts[i].sid), accounts[i].account_name,
+			   accounts[i].full_name, accounts[i].account_desc, 
+			   accounts[i].acct_ctrl);
+
+	SAFE_FREE(accounts);
+	
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_lookup_account_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
