@@ -136,43 +136,6 @@ cmd
 			user($3);
 			free($3);
 		}
-	| AUTH SP STRING CRLF
-		{
-			auth($3);
-			free($3);
-		}
-	| ADAT SP STRING CRLF
-		{
-			adat($3);
-			free($3);
-		}
-	| PBSZ SP NUMBER CRLF
-		{
-			pbsz($3);
-		}
-	| PROT SP STRING CRLF
-		{
-			prot($3);
-		}
-	| CCC CRLF
-		{
-			ccc();
-		}
-	| MIC SP STRING CRLF
-		{
-			mec($3, prot_safe);
-			free($3);
-		}
-	| CONF SP STRING CRLF
-		{
-			mec($3, prot_confidential);
-			free($3);
-		}
-	| ENC SP STRING CRLF
-		{
-			mec($3, prot_private);
-			free($3);
-		}
 	| PASS SP password CRLF
 		{
 			pass($3);
@@ -673,6 +636,43 @@ rcmd
 			reply(350, "Restarting at %ld. %s",
 			      (long)restart_point,
 			      "Send STORE or RETRIEVE to initiate transfer.");
+		}
+	| AUTH SP STRING CRLF
+		{
+			auth($3);
+			free($3);
+		}
+	| ADAT SP STRING CRLF
+		{
+			adat($3);
+			free($3);
+		}
+	| PBSZ SP NUMBER CRLF
+		{
+			pbsz($3);
+		}
+	| PROT SP STRING CRLF
+		{
+			prot($3);
+		}
+	| CCC CRLF
+		{
+			ccc();
+		}
+	| MIC SP STRING CRLF
+		{
+			mec($3, prot_safe);
+			free($3);
+		}
+	| CONF SP STRING CRLF
+		{
+			mec($3, prot_confidential);
+			free($3);
+		}
+	| ENC SP STRING CRLF
+		{
+			mec($3, prot_private);
+			free($3);
 		}
 	;
 
