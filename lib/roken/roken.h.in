@@ -124,6 +124,7 @@ void unsetenv(const char *name);
 
 #if !defined(HAVE_GETUSERSHELL) || defined(NEED_GETUSERSHELL_PROTO)
 char *getusershell(void);
+void endusershell(void);
 #endif
 
 #ifndef HAVE_SNPRINTF
@@ -170,6 +171,10 @@ int strnlen(char*, int);
 
 #ifndef HAVE_STRSEP
 char *strsep(char**, const char*);
+#endif
+
+#ifndef HAVE_STRCASECMP
+int strcasecmp(const char *s1, const char *s2);
 #endif
 
 #ifdef NEED_FCLOSE_PROTO
