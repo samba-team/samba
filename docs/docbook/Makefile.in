@@ -35,7 +35,7 @@ MANPAGES=$(MANDIR)/findsmb.1 $(MANDIR)/smbclient.1 \
 	$(MANDIR)/smbmount.8 $(MANDIR)/swat.8 $(MANDIR)/rpcclient.1	 \
 	$(MANDIR)/smbpasswd.5 $(MANDIR)/testparm.1 $(MANDIR)/samba.7 \
 	$(MANDIR)/smbpasswd.8 $(MANDIR)/testprns.1 \
-	$(MANDIR)/smb.conf.5 $(MANDIR)/smbrun.1 $(MANDIR)/wbinfo.1 \
+	$(MANDIR)/smb.conf.5 $(MANDIR)/wbinfo.1 \
 	$(MANDIR)/smbcacls.1 $(MANDIR)/smbsh.1 $(MANDIR)/winbindd.8 
 
 SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
@@ -48,7 +48,7 @@ SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 	manpages/rpcclient.1.sgml manpages/smbpasswd.5.sgml \
 	manpages/testparm.1.sgml manpages/samba.7.sgml \
 	manpages/smbpasswd.8.sgml manpages/testprns.1.sgml \
-	manpages/smb.conf.5.sgml manpages/smbrun.1.sgml \
+	manpages/smb.conf.5.sgml \
 	manpages/wbinfo.1.sgml manpages/smbcacls.1.sgml \
 	manpages/smbsh.1.sgml manpages/winbindd.8.sgml
 
@@ -307,14 +307,6 @@ $(MANDIR)/testprns.1: manpages/testprns.1.sgml
 	@$(JADE) -t sgml -V nochunks -d $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
 $(MANDIR)/smb.conf.5: manpages/smb.conf.5.sgml
-	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
-	@cat `basename $@` | $(PERL) scripts/strip-links.pl > $@
-	@/bin/rm -f `basename $@`
-	@echo "Making HTML version of $@"
-	@$(JADE) -t sgml -V nochunks -d $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
-
-$(MANDIR)/smbrun.1: manpages/smbrun.1.sgml
 	@echo "Making $@"
 	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `basename $@` | $(PERL) scripts/strip-links.pl > $@
