@@ -3834,10 +3834,12 @@ const char *get_called_name(void)
 
 	/*
 	 * Windows NT/2k uses "*SMBSERVER" and XP uses "*SMBSERV"
+	 * arrggg!!! but we've already rewritten the client's
+	 * netbios name at this point...
 	 */
 
 	if (*local_machine) {
-		if (!StrCaseCmp(local_machine, "*SMBSERVER") || !StrCaseCmp(local_machine, "*SMBSERV")) {
+		if (!StrCaseCmp(local_machine, "_SMBSERVER") || !StrCaseCmp(local_machine, "_SMBSERV")) {
 			fstrcpy(called_name, get_my_primary_ip());
 			DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
 				called_name));
