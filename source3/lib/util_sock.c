@@ -775,80 +775,70 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
 }
 
 /****************************************************************************
-open a socket of the specified type, port, and address for incoming data
+ Open a socket of the specified type, port, and address for incoming data.
 ****************************************************************************/
 
-int open_socket_in( int type, int port, int dlevel,
-                    uint32 socket_addr, BOOL rebind )
-  {
-  struct sockaddr_in sock;
-  int res;
+int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL rebind )
+{
+	struct sockaddr_in sock;
+	int res;
 
-  /* Clear the sockaddr_in structure (why not bzero()?). */
-  memset( (char *)&sock, '\0', sizeof(sock) );
+	memset( (char *)&sock, '\0', sizeof(sock) );
 
 #ifdef HAVE_SOCK_SIN_LEN
-  sock.sin_len         = sizeof(sock);
+	sock.sin_len         = sizeof(sock);
 #endif
-  sock.sin_port        = htons( port );
-  sock.sin_family      = AF_INET;
-  sock.sin_addr.s_addr = socket_addr;
+	sock.sin_port        = htons( port );
+	sock.sin_family      = AF_INET;
+	sock.sin_addr.s_addr = socket_addr;
 
-  res = socket( AF_INET, type, 0 );
-  if( res < 0 )
-    {
-    if( DEBUGLVL(0) )
-      {
-      dbgtext( "open_socket_in(): socket() call failed: " );
-      dbgtext( "%s\n", strerror( errno ) );
-      }
-    return -1;
-    }
+	res = socket( AF_INET, type, 0 );
+	if( res == -1 ) {
+		if( DEBUGLVL(0) ) {
+			dbgtext( "open_socket_in(): socket() call failed: " );
+			dbgtext( "%s\n", strerror( errno ) );
+		}
+		return -1;
+	}
 
-  /* This block sets/clears the SO_REUSEADDR and possibly SO_REUSEPORT. */
-  {
-  int val = rebind ? 1 : 0;
-  if( setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) == -1 )
-    {
-    if( DEBUGLVL( dlevel ) )
-      {
-      dbgtext( "open_socket_in(): setsockopt: " );
-      dbgtext( "SO_REUSEADDR = %d ", val?"True":"False" );
-      dbgtext( "on port %d failed ", port );
-      dbgtext( "with error = %s\n", strerror(errno) );
-      }
-    }
+	/* This block sets/clears the SO_REUSEADDR and possibly SO_REUSEPORT. */
+	{
+		int val = rebind ? 1 : 0;
+		if( setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) == -1 ) {
+			if( DEBUGLVL( dlevel ) ) {
+				dbgtext( "open_socket_in(): setsockopt: " );
+				dbgtext( "SO_REUSEADDR = %d ", val?"True":"False" );
+				dbgtext( "on port %d failed ", port );
+				dbgtext( "with error = %s\n", strerror(errno) );
+			}
+		}
 #ifdef SO_REUSEPORT
-  if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1 )
-    {
-    if( DEBUGLVL( dlevel ) )
-      {
-      dbgtext( "open_socket_in(): setsockopt: "
-      dbgtext( "SO_REUSEPORT = %d ", val?"True":"False" );
-      dbgtext( "on port %d failed ", port );
-      dbgtext( "with error = %s\n", strerror(errno) );
-      }
-    }
+		if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1 ) {
+			if( DEBUGLVL( dlevel ) ) {
+				dbgtext( "open_socket_in(): setsockopt: "
+				dbgtext( "SO_REUSEPORT = %d ", val?"True":"False" );
+				dbgtext( "on port %d failed ", port );
+				dbgtext( "with error = %s\n", strerror(errno) );
+			}
+		}
 #endif /* SO_REUSEPORT */
-  }
+	}
 
-  /* now we've got a socket - we need to bind it */
-  if( bind( res, (struct sockaddr *)&sock, sizeof(sock) ) < 0 ) 
-    {
-    if( DEBUGLVL(dlevel) && (port == SMB_PORT || port == NMB_PORT) )
-      {
-      dbgtext( "bind failed on port %d ", port );
-      dbgtext( "socket_addr = %s.\n", inet_ntoa( sock.sin_addr ) );
-      dbgtext( "Error = %s\n", strerror(errno) );
-      }
-    close( res ); 
-    return( -1 ); 
-    }
+	/* now we've got a socket - we need to bind it */
+	if( bind( res, (struct sockaddr *)&sock, sizeof(sock) ) == -1 ) {
+		if( DEBUGLVL(dlevel) && (port == SMB_PORT || port == NMB_PORT) ) {
+			dbgtext( "bind failed on port %d ", port );
+			dbgtext( "socket_addr = %s.\n", inet_ntoa( sock.sin_addr ) );
+			dbgtext( "Error = %s\n", strerror(errno) );
+		}
+		close( res ); 
+		return( -1 ); 
+	}
 
-  DEBUG( 3, ( "bind succeeded on port %d\n", port ) );
+	DEBUG( 3, ( "bind succeeded on port %d\n", port ) );
 
-  return( res );
-  }
+	return( res );
+ }
 
 /****************************************************************************
   create an outgoing socket. timeout is in milliseconds.
