@@ -96,6 +96,7 @@ OM_uint32 gss_accept_sec_context
     flags |= GSS_C_MUTUAL_FLAG;
   flags |= GSS_C_CONF_FLAG;
   flags |= GSS_C_INTEG_FLAG;
+  flags |= GSS_C_SEQUENCE_FLAG;
 
   kret = gssapi_krb5_create_8003_checksum (input_chan_bindings,
 					   flags,

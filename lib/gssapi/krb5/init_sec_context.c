@@ -86,6 +86,7 @@ init_auth
     ;				/* XXX */
   flags |= GSS_C_CONF_FLAG;
   flags |= GSS_C_INTEG_FLAG;
+  flags |= GSS_C_SEQUENCE_FLAG;
 
   if (ret_flags)
     *ret_flags = flags;
