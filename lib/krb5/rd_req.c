@@ -276,7 +276,7 @@ krb5_verify_ap_req2(krb5_context context,
 		    krb5_ticket **ticket,
 		    krb5_key_usage usage)
 {
-    krb5_ticket t;
+    krb5_ticket *t;
     krb5_auth_context ac;
     krb5_error_code ret;
     
@@ -288,38 +288,46 @@ krb5_verify_ap_req2(krb5_context context,
 	    return ret;
     }
 
+    t = malloc(sizeof(*t));
+    if (t == NULL) {
+	ret = ENOMEM;
+	krb5_clear_error_string (context);
+	goto out;
+    }
+    memset(t, 0, sizeof(t));
+
     if (ap_req->ap_options.use_session_key && ac->keyblock){
 	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
 				  ac->keyblock, 
-				  &t.ticket,
+				  &t->ticket,
 				  flags);
 	krb5_free_keyblock(context, ac->keyblock);
 	ac->keyblock = NULL;
     }else
 	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
 				  keyblock, 
-				  &t.ticket,
+				  &t->ticket,
 				  flags);
     
     if(ret)
 	goto out;
 
-    principalname2krb5_principal(&t.server, ap_req->ticket.sname, 
+    principalname2krb5_principal(&t->server, ap_req->ticket.sname, 
 				 ap_req->ticket.realm);
-    principalname2krb5_principal(&t.client, t.ticket.cname, 
-				 t.ticket.crealm);
+    principalname2krb5_principal(&t->client, t->ticket.cname, 
+				 t->ticket.crealm);
 
     /* save key */
 
-    krb5_copy_keyblock(context, &t.ticket.key, &ac->keyblock);
+    krb5_copy_keyblock(context, &t->ticket.key, &ac->keyblock);
 
     ret = decrypt_authenticator (context,
-				 &t.ticket.key,
+				 &t->ticket.key,
 				 &ap_req->authenticator,
 				 ac->authenticator,
 				 usage);
     if (ret)
-	goto out2;
+	goto out;
 
     {
 	krb5_principal p1, p2;
@@ -329,28 +337,28 @@ krb5_verify_ap_req2(krb5_context context,
 				     ac->authenticator->cname,
 				     ac->authenticator->crealm);
 	principalname2krb5_principal(&p2, 
-				     t.ticket.cname,
-				     t.ticket.crealm);
+				     t->ticket.cname,
+				     t->ticket.crealm);
 	res = krb5_principal_compare (context, p1, p2);
 	krb5_free_principal (context, p1);
 	krb5_free_principal (context, p2);
 	if (!res) {
 	    ret = KRB5KRB_AP_ERR_BADMATCH;
 	    krb5_clear_error_string (context);
-	    goto out2;
+	    goto out;
 	}
     }
 
     /* check addresses */
 
-    if (t.ticket.caddr
+    if (t->ticket.caddr
 	&& ac->remote_address
 	&& !krb5_address_search (context,
 				 ac->remote_address,
-				 t.ticket.caddr)) {
+				 t->ticket.caddr)) {
 	ret = KRB5KRB_AP_ERR_BADADDR;
 	krb5_clear_error_string (context);
-	goto out2;
+	goto out;
     }
 
     if (ac->authenticator->seq_number)
@@ -363,7 +371,7 @@ krb5_verify_ap_req2(krb5_context context,
 	ret = krb5_auth_con_setremotesubkey(context, ac,
 					    ac->authenticator->subkey);
 	if (ret)
-	    goto out2;
+	    goto out;
     }
 
     if (ap_req_options) {
@@ -374,20 +382,19 @@ krb5_verify_ap_req2(krb5_context context,
 	    *ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
     }
 
-    if(ticket){
-	*ticket = malloc(sizeof(**ticket));
-	**ticket = t;
-    } else
-	krb5_free_ticket (context, &t);
+    if(ticket)
+	*ticket = t;
+    else
+	krb5_free_ticket (context, t);
     if (auth_context) {
 	if (*auth_context == NULL)
 	    *auth_context = ac;
     } else
 	krb5_auth_con_free (context, ac);
     return 0;
- out2:
-    krb5_free_ticket (context, &t);
  out:
+    if (t)
+	krb5_free_ticket (context, t);
     if (auth_context == NULL || *auth_context == NULL)
 	krb5_auth_con_free (context, ac);
     return ret;
