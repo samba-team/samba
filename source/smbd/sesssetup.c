@@ -633,7 +633,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	static BOOL done_sesssetup = False;
 	extern BOOL global_encrypted_passwords_negotiated;
 	extern BOOL global_spnego_negotiated;
-	extern int Protocol;
+	extern enum protocol_types Protocol;
 	extern int max_send;
 
 	auth_usersupplied_info *user_info = NULL;
