@@ -226,6 +226,7 @@ BOOL in_group(gid_t group, int current_gid, int ngroups, GID_T *groups);
 char *StrCpy(char *dest,char *src);
 char *StrnCpy(char *dest,char *src,int n);
 void putip(void *dest,void *src);
+char *dns_to_netbios_name(char *dns_name);
 int name_mangle( char *In, char *Out, char name_type );
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
 time_t file_modtime(char *fname);
@@ -387,14 +388,20 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
                              char *old_password);
 BOOL cli_negprot(struct cli_state *cli);
-BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
-			 char *myname);
+BOOL cli_session_request(struct cli_state *cli,
+			struct nmb_name *calling, struct nmb_name *called);
 BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
 BOOL cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 void cli_error(struct cli_state *cli, int *eclass, int *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 int cli_setpid(struct cli_state *cli, int pid);
+BOOL cli_reestablish_connection(struct cli_state *cli);
+BOOL cli_establish_connection(struct cli_state *cli, 
+				char *dest_host, struct in_addr *dest_ip,
+				struct nmb_name *calling, struct nmb_name *called,
+				char *service, char *service_type,
+				BOOL do_shutdown, BOOL do_tcon);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
@@ -440,6 +447,20 @@ void sort_query_replies(char *data, int n, struct in_addr ip);
 
 char *get_nt_error_msg(uint32 nt_code);
 
+/*The following definitions come from  libsmb/pwd_cache.c  */
+
+void pwd_init(struct pwd_info *pwd);
+void pwd_obfuscate_key(struct pwd_info *pwd, uint32 int_key, char *str_key);
+void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt);
+void pwd_set_nullpwd(struct pwd_info *pwd);
+void pwd_set_cleartext(struct pwd_info *pwd, char *clr);
+void pwd_get_cleartext(struct pwd_info *pwd, char *clr);
+void pwd_set_lm_nt_16(struct pwd_info *pwd, char lm_pwd[16], char nt_pwd[16]);
+void pwd_get_lm_nt_16(struct pwd_info *pwd, char lm_pwd[16], char nt_pwd[16]);
+void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr);
+void pwd_make_lm_nt_owf(struct pwd_info *pwd, char cryptkey[8]);
+void pwd_get_lm_nt_owf(struct pwd_info *pwd, char lm_owf[24], char nt_owf[24]);
+
 /*The following definitions come from  libsmb/smbdes.c  */
 
 void E_P16(unsigned char *p14,unsigned char *p16);
@@ -455,6 +476,8 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
+void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
+void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 
 /*The following definitions come from  libsmb/smberr.c  */
@@ -1162,6 +1185,15 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
                           NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 
+/*The following definitions come from  rpc_client/cli_lsarpc.c  */
+
+BOOL do_lsa_open_policy(struct cli_state *cli,
+			char *server_name, POLICY_HND *hnd);
+BOOL do_lsa_query_info_pol(struct cli_state *cli,
+			POLICY_HND *hnd, uint16 info_class,
+			fstring domain_name, fstring domain_sid);
+BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd);
+
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
 BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level);
@@ -1184,8 +1216,13 @@ void cli_nt_session_close(struct cli_state *cli);
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
 void make_lsa_trans_name(LSA_TRANS_NAME *trn, uint32 sid_name_use, char *name, uint32 idx);
+void make_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, uint32 sec_qos);
+void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
+			uint32 attributes, uint32 sec_qos,
+			uint32 desired_access);
 void lsa_io_q_open_pol(char *desc,  LSA_Q_OPEN_POL *r_q, prs_struct *ps, int depth);
 void lsa_io_r_open_pol(char *desc,  LSA_R_OPEN_POL *r_p, prs_struct *ps, int depth);
+void make_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
 void lsa_io_q_query(char *desc,  LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth);
 void lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
 void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
@@ -1197,6 +1234,9 @@ void lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, in
 void lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
 void lsa_io_q_lookup_rids(char *desc,  LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, int depth);
 void lsa_io_r_lookup_rids(char *desc,  LSA_R_LOOKUP_RIDS *r_r, prs_struct *ps, int depth);
+void make_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
+void lsa_io_q_close(char *desc,  LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
+void lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 
@@ -1628,6 +1668,14 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid);
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
 
 BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
+
+/*The following definitions come from  rpcclient/cmd_lsarpc.c  */
+
+void cmd_lsa_query_info(struct client_info *info);
+
+/*The following definitions come from  rpcclient/rpcclient.c  */
+
+void rpcclient_init(void);
 
 /*The following definitions come from  smbd/blocking.c  */
 

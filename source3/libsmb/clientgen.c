@@ -1604,31 +1604,26 @@ BOOL cli_negprot(struct cli_state *cli)
 
 
 /****************************************************************************
-  send a session request
+  send a session request.  see rfc1002.txt 4.3 and 4.3.2
 ****************************************************************************/
-BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
-			 char *myname)
+BOOL cli_session_request(struct cli_state *cli,
+			struct nmb_name *calling, struct nmb_name *called)
 {
-	fstring dest;
 	char *p;
 	int len = 4;
 	/* send a session request (RFC 1002) */
 
-	fstrcpy(dest,host);
+	memcpy(&(cli->calling), calling, sizeof(*calling));
+	memcpy(&(cli->called ), called , sizeof(*called ));
   
-	p = strchr(dest,'.');
-	if (p) *p = 0;
-
-	fstrcpy(cli->desthost, dest);
-
 	/* put in the destination name */
 	p = cli->outbuf+len;
-	name_mangle(dest,p,name_type);
+	name_mangle(cli->called .name, p, cli->called .name_type);
 	len += name_len(p);
 
 	/* and my name */
 	p = cli->outbuf+len;
-	name_mangle(myname,p,0);
+	name_mangle(cli->calling.name, p, cli->calling.name_type);
 	len += name_len(p);
 
 	/* setup the packet length */
@@ -1753,4 +1748,158 @@ int cli_setpid(struct cli_state *cli, int pid)
 	int ret = cli->pid;
 	cli->pid = pid;
 	return ret;
+}
+
+/****************************************************************************
+establishes a connection right up to doing tconX, reading in a password.
+****************************************************************************/
+BOOL cli_reestablish_connection(struct cli_state *cli)
+{
+	struct nmb_name calling;
+	struct nmb_name called;
+	fstring dest_host;
+	struct in_addr dest_ip;
+	fstring share;
+	fstring dev;
+	BOOL do_tcon = False;
+
+	if (!cli->initialised || cli->fd == -1)
+	{
+		DEBUG(3,("cli_reestablish_connection: not connected\n"));
+		return False;
+	}
+
+	/* copy the parameters necessary to re-establish the connection */
+
+	if (cli->cnum != 0)
+	{
+		fstrcpy(share, cli->share);
+		fstrcpy(dev  , cli->dev);
+		do_tcon = True;
+	}
+
+	memcpy(&called , &(cli->called ), sizeof(called ));
+	memcpy(&calling, &(cli->calling), sizeof(calling));
+	fstrcpy(dest_host, cli->full_dest_host_name);
+	dest_ip = cli->dest_ip;
+
+	DEBUG(5,("cli_reestablish_connection: %s connecting to %s (ip %s) - %s [%s]\n",
+		          namestr(&calling), namestr(&called), inet_ntoa(dest_ip),
+	              cli->user_name, cli->domain));
+
+	return cli_establish_connection(cli,
+	                                dest_host, &dest_ip,
+	                                &calling, &called,
+	                                share, dev, False, do_tcon);
+}
+
+/****************************************************************************
+establishes a connection right up to doing tconX, reading in a password.
+****************************************************************************/
+BOOL cli_establish_connection(struct cli_state *cli, 
+				char *dest_host, struct in_addr *dest_ip,
+				struct nmb_name *calling, struct nmb_name *called,
+				char *service, char *service_type,
+				BOOL do_shutdown, BOOL do_tcon)
+{
+	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s]\n",
+		          namestr(calling), namestr(called), inet_ntoa(*dest_ip),
+	              cli->user_name, cli->domain));
+
+	/* establish connection */
+
+	if ((!cli->initialised))
+	{
+		return False;
+	}
+
+	if (cli->fd == -1)
+	{
+		if (!cli_connect(cli, dest_host, dest_ip))
+		{
+			DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
+					  namestr(calling), inet_ntoa(*dest_ip)));
+			return False;
+		}
+	}
+
+	if (!cli_session_request(cli, calling, called))
+	{
+		DEBUG(1,("failed session request\n"));
+		if (do_shutdown) cli_shutdown(cli);
+		return False;
+	}
+
+	if (!cli_negprot(cli))
+	{
+		DEBUG(1,("failed negprot\n"));
+		if (do_shutdown) cli_shutdown(cli);
+		return False;
+	}
+
+	if (cli->pwd.cleartext || cli->pwd.null_pwd)
+	{
+		/* attempt clear-text session */
+
+		fstring passwd;
+
+		pwd_get_cleartext(&(cli->pwd), passwd);
+
+		/* attempt clear-text session */
+		if (!cli_session_setup(cli, cli->user_name,
+	                       passwd, strlen(passwd),
+	                       NULL, 0,
+	                       cli->domain))
+		{
+			DEBUG(1,("failed session setup\n"));
+			if (do_shutdown) cli_shutdown(cli);
+			return False;
+		}
+		if (do_tcon)
+		{
+			if (!cli_send_tconX(cli, service, service_type,
+			                    (char*)passwd, strlen(passwd)))
+			{
+				DEBUG(1,("failed tcon_X\n"));
+				if (do_shutdown) cli_shutdown(cli);
+				return False;
+			}
+		}
+	}
+	else
+	{
+		/* attempt encrypted session */
+		uchar nt_sess_pwd[24];
+		uchar lm_sess_pwd[24];
+
+		/* creates (storing a copy of) and then obtains a 24 byte password OWF */
+		pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
+		pwd_get_lm_nt_owf(&(cli->pwd), lm_sess_pwd, nt_sess_pwd);
+
+		/* attempt encrypted session */
+		if (!cli_session_setup(cli, cli->user_name,
+	                       (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
+	                              nt_sess_pwd, sizeof(nt_sess_pwd),
+	                       cli->domain))
+		{
+			DEBUG(1,("failed session setup\n"));
+			if (do_shutdown) cli_shutdown(cli);
+			return False;
+		}
+
+		if (do_tcon)
+		{
+			if (!cli_send_tconX(cli, service, service_type,
+			                    (char*)nt_sess_pwd, sizeof(nt_sess_pwd)))
+			{
+				DEBUG(1,("failed tcon_X\n"));
+				if (do_shutdown) cli_shutdown(cli);
+				return False;
+			}
+		}
+	}
+
+	if (do_shutdown) cli_shutdown(cli);
+
+	return True;
 }

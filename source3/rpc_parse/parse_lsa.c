@@ -102,6 +102,23 @@ static void lsa_io_dom_r_ref(char *desc,  DOM_R_REF *r_r, prs_struct *ps, int de
 
 
 /*******************************************************************
+makes an LSA_OBJ_ATTR structure.
+********************************************************************/
+void make_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, uint32 sec_qos)
+{
+	if (attr == NULL) return;
+
+	DEBUG(5,("make_lsa_obj_attr\n"));
+
+	attr->len = 0x18; /* length of object attribute block, in bytes */
+	attr->ptr_root_dir = 0;
+	attr->ptr_obj_name = 0;
+	attr->attributes = attributes;
+	attr->ptr_sec_desc = 0;
+	attr->sec_qos = sec_qos;
+}
+
+/*******************************************************************
 reads or writes an LSA_OBJ_ATTR structure.
 ********************************************************************/
 static void lsa_io_obj_attr(char *desc,  LSA_OBJ_ATTR *attr, prs_struct *ps, int depth)
@@ -132,6 +149,25 @@ static void lsa_io_obj_attr(char *desc,  LSA_OBJ_ATTR *attr, prs_struct *ps, int
 		DEBUG(3,("lsa_io_obj_attr: length %x does not match size %x\n",
 		         attr->len, ps->offset - start));
 	}
+}
+
+/*******************************************************************
+makes an LSA_Q_OPEN_POL structure.
+********************************************************************/
+void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
+			uint32 attributes, uint32 sec_qos,
+			uint32 desired_access)
+{
+	if (r_q == NULL) return;
+
+	DEBUG(5,("make_open_pol\n"));
+
+	r_q->ptr = 1; /* undocumented pointer */
+
+	make_unistr2     (&(r_q->uni_server_name), server_name, strlen(server_name));
+	make_lsa_obj_attr(&(r_q->attr           ), attributes, sec_qos);
+
+	r_q->des_access = desired_access;
 }
 
 /*******************************************************************
@@ -166,6 +202,20 @@ void lsa_io_r_open_pol(char *desc,  LSA_R_OPEN_POL *r_p, prs_struct *ps, int dep
 	smb_io_pol_hnd("", &(r_p->pol), ps, depth);
 
 	prs_uint32("status", ps, depth, &(r_p->status));
+}
+
+/*******************************************************************
+makes an LSA_Q_QUERY_INFO structure.
+********************************************************************/
+void make_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class)
+{
+	if (q_q == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_q_query\n"));
+
+	memcpy(&(q_q->pol), hnd, sizeof(q_q->pol));
+
+	q_q->info_class = info_class;
 }
 
 /*******************************************************************
@@ -476,5 +526,46 @@ void lsa_io_r_lookup_rids(char *desc,  LSA_R_LOOKUP_RIDS *r_r, prs_struct *ps, i
 	prs_uint32("num_entries3", ps, depth, &(r_r->num_entries3));
 
 	prs_uint32("status      ", ps, depth, &(r_r->status));
+}
+
+
+/*******************************************************************
+makes an LSA_Q_CLOSE structure.
+********************************************************************/
+void make_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd)
+{
+	if (q_c == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_lsa_q_close\n"));
+
+	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_CLOSE structure.
+********************************************************************/
+void lsa_io_q_close(char *desc,  LSA_Q_CLOSE *q_c, prs_struct *ps, int depth)
+{
+	if (q_c == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_close");
+	depth++;
+
+	smb_io_pol_hnd("", &(q_c->pol), ps, depth);
+}
+
+/*******************************************************************
+reads or writes an LSA_R_CLOSE structure.
+********************************************************************/
+void lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth)
+{
+	if (r_c == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_close");
+	depth++;
+
+	smb_io_pol_hnd("", &(r_c->pol), ps, depth);
+
+	prs_uint32("status", ps, depth, &(r_c->status));
 }
 

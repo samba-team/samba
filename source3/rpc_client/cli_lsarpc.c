@@ -35,7 +35,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a LSA Open Policy
 ****************************************************************************/
-BOOL do_lsa_open_policy(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_lsa_open_policy(struct cli_state *cli,
 			char *server_name, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
@@ -59,7 +59,7 @@ BOOL do_lsa_open_policy(struct cli_state *cli, int t_idx, uint16 fnum,
 	lsa_io_q_open_pol("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, LSA_OPENPOLICY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, LSA_OPENPOLICY, &buf, &rbuf))
 	{
 		LSA_R_OPEN_POL r_o;
 		BOOL p;
@@ -91,7 +91,7 @@ BOOL do_lsa_open_policy(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a LSA Query Info Policy
 ****************************************************************************/
-BOOL do_lsa_query_info_pol(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, fstring domain_sid)
 {
@@ -116,7 +116,7 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli, int t_idx, uint16 fnum,
 	lsa_io_q_query("", &q_q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, LSA_QUERYINFOPOLICY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, LSA_QUERYINFOPOLICY, &buf, &rbuf))
 	{
 		LSA_R_QUERY_INFO r_q;
 		BOOL p;
@@ -148,9 +148,8 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli, int t_idx, uint16 fnum,
 				{
 					char *dom_name = unistrn2(r_q.dom.id3.uni_domain_name.buffer,
 					                          r_q.dom.id3.uni_domain_name.uni_str_len);
-					char *dom_sid  = dom_sid_to_string(&(r_q.dom.id3.dom_sid.sid));
 					fstrcpy(domain_name, dom_name);
-					pstrcpy(domain_sid , dom_sid);
+					sid_to_string(domain_sid, &(r_q.dom.id3.dom_sid.sid));
 
 					valid_response = True;
 					break;
@@ -159,9 +158,8 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli, int t_idx, uint16 fnum,
 				{
 					char *dom_name = unistrn2(r_q.dom.id5.uni_domain_name.buffer,
 					                          r_q.dom.id5.uni_domain_name.uni_str_len);
-					char *dom_sid  = dom_sid_to_string(&(r_q.dom.id5.dom_sid.sid));
 					fstrcpy(domain_name, dom_name);
-					pstrcpy(domain_sid , dom_sid);
+					sid_to_string(domain_sid, &(r_q.dom.id5.dom_sid.sid));
 
 					valid_response = True;
 					break;
@@ -189,7 +187,7 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli, int t_idx, uint16 fnum,
 /****************************************************************************
 do a LSA Close
 ****************************************************************************/
-BOOL do_lsa_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd)
+BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -212,7 +210,7 @@ BOOL do_lsa_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd
 	lsa_io_q_close("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, t_idx, fnum, LSA_CLOSE, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, LSA_CLOSE, &buf, &rbuf))
 	{
 		LSA_R_CLOSE r_c;
 		BOOL p;
@@ -253,3 +251,5 @@ BOOL do_lsa_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd
 
 	return valid_close;
 }
+
+

@@ -29,6 +29,7 @@ BOOL global_machine_pasword_needs_changing;
 /* users from session setup */
 static pstring session_users="";
 
+extern pstring scope;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -929,6 +930,7 @@ struct cli_state *server_cryptkey(void)
 	extern fstring local_machine;
 	char *p;
         BOOL connected_ok = False;
+	struct nmb_name calling, called;
 
 	if (!cli_initialise(&pw_cli))
 		return NULL;
@@ -961,7 +963,11 @@ struct cli_state *server_cryptkey(void)
 		return NULL;
 	}
 
-	if (!cli_session_request(&pw_cli, desthost, 0x20, local_machine)) {
+	make_nmb_name(&calling, local_machine, 0x0 , scope);
+	make_nmb_name(&called , desthost     , 0x20, scope);
+
+	if (!cli_session_request(&pw_cli, &calling, &called))
+	{
 		DEBUG(1,("%s rejected the session\n",desthost));
 		cli_shutdown(&pw_cli);
 		return NULL;
@@ -1124,6 +1130,7 @@ BOOL domain_client_validate( char *user, char *domain,
   struct cli_state cli;
   uint32 smb_uid_low;
   BOOL connected_ok = False;
+  struct nmb_name calling, called;
 
   /* 
    * Check that the requested domain is not our own machine name.
@@ -1236,7 +1243,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
       continue;
     }
     
-    if (!cli_session_request(&cli, remote_machine, 0x20, global_myname)) {
+	make_nmb_name(&calling, global_myname , 0x0 , scope);
+	make_nmb_name(&called , remote_machine, 0x20, scope);
+
+	if (!cli_session_request(&pw_cli, &calling, &called))
+	{
       DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
       cli_shutdown(&cli);

@@ -170,13 +170,6 @@ enum logon_state
 
 struct subnet_record;
 
-/* A netbios name structure. */
-struct nmb_name {
-  char         name[17];
-  char         scope[64];
-  unsigned int name_type;
-};
-
 struct nmb_data
 {
   uint16 nb_flags;         /* Netbios flags. */

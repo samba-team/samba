@@ -196,6 +196,8 @@ int main(int argc, char **argv)
   char *new_domain = NULL;
   pstring servicesf = CONFIGFILE;
   void           *vp;
+	struct nmb_name calling, called;
+  
 
   new_passwd[0] = '\0';
   user_name[0] = '\0';
@@ -493,7 +495,11 @@ int main(int argc, char **argv)
       exit(1);
     }
   
-    if (!cli_session_request(&cli, remote_machine, 0x20, global_myname)) {
+	make_nmb_name(&calling, global_myname , 0x0 , scope);
+	make_nmb_name(&called , remote_machine, 0x20, scope);
+
+	if (!cli_session_request(&cli, &calling, &called))
+	{
       fprintf(stderr, "%s: machine %s rejected the session setup. Error was : %s.\n",
               prog_name, remote_machine, cli_errstr(&cli) );
       cli_shutdown(&cli);
