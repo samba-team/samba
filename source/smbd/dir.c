@@ -928,9 +928,9 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum )
     return;             /* so just return as if nothing happened. */
 
   /* Set pointers correctly and load values. */
-  entry->path  = memcpy( (char *)&entry[1],       path, strlen(path) );
-  entry->name  = memcpy( &(entry->path[pathlen]), name, strlen(name) );
-  entry->dname = memcpy( &(entry->name[namelen]), dname, strlen(dname) );
+	entry->path  = memcpy( (char *)&entry[1], path, strlen(path)+1 );
+	entry->name  = memcpy( &(entry->path[pathlen]), name, strlen(name)+1 );
+	entry->dname = memcpy( &(entry->name[namelen]), dname, strlen(dname)+1 );
   entry->snum  = snum;
 
   /* Add the new entry to the linked list. */
