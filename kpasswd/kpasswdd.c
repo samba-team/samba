@@ -276,10 +276,15 @@ change (krb5_auth_context auth_context,
 		}
 	    }
 	    ret = krb5_copy_principal(context, &princ, &principal);
-	    if (ret)
-		abort();
 	    if (*chpw.targrealm == NULL)
 		free(princ.realm);
+	    if (ret) {
+		krb5_warn(context, ret, "krb5_copy_principal");
+		reply_priv(auth_context, s, sa, sa_size, 
+			   KRB5_KPASSWD_HARDERROR,
+			   "failed to allocate principal");
+		goto out;
+	    }
 	} else
 	    principal = admin_principal;
     } else {
