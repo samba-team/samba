@@ -248,7 +248,7 @@ KRB-SAFE-BODY ::=   SEQUENCE {
             timestamp[1]          KerberosTime OPTIONAL,
             usec[2]               INTEGER OPTIONAL,
             seq-number[3]         INTEGER OPTIONAL,
-            s-address[4]          HostAddress,
+            s-address[4]          HostAddress OPTIONAL,
             r-address[5]          HostAddress OPTIONAL
 }
 
@@ -269,7 +269,7 @@ EncKrbPrivPart ::=   [APPLICATION 28] SEQUENCE {
              timestamp[1]              KerberosTime OPTIONAL,
              usec[2]                   INTEGER OPTIONAL,
              seq-number[3]             INTEGER OPTIONAL,
-             s-address[4]              HostAddress, -- sender's addr
+             s-address[4]              HostAddress OPTIONAL, -- sender's addr
              r-address[5]              HostAddress OPTIONAL
                                                    -- recip's addr
 }
