@@ -210,7 +210,7 @@ typedef struct {                                /*  Message information */
     int         retr_flag;                      /*  Flag indicating if message 
                                                     was retrieved */
 #ifdef UIDL
-    char        *msg_id;
+    char        *msg_id;	                /*  The POP UIDL uniqueifier */
 #endif
 } MsgInfoList;
 

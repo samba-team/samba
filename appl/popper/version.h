@@ -14,4 +14,4 @@
  *  Current version of this POP implementation
  */
 
-#define VERSION         "1.831beta + krb4-0.9"
+#define VERSION         "krb4-0.9.3++"

@@ -141,6 +141,7 @@ pop_dropinfo(POP *p)
 	  if (mp->msg_id == 0)
 	    *msg_idp = find_value_after_colon(buffer);
 	} else if (strncasecmp(buffer, "X-UIDL:", 7) == 0) {
+	  /* Courtesy to Qualcomm, there is really no such thing as X-UIDL */
 	  *msg_idp = find_value_after_colon(buffer);
 	}
 #endif
