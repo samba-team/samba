@@ -98,9 +98,9 @@ BOOL mangle_is_8_3_wildcards(const char *fname, BOOL check_case)
   looking for a matching name if it doesn't. It should succeed most of the time
   or there will be a huge performance penalty
 */
-BOOL mangle_check_cache(char *s)
+BOOL mangle_check_cache(char *s, size_t maxlen)
 {
-	return mangle_fns->check_cache(s);
+	return mangle_fns->check_cache(s, maxlen);
 }
 
 /* 
