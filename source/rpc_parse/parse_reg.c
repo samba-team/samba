@@ -34,83 +34,13 @@
 
 static uint32 reg_init_buffer2( BUFFER2 *buf2, REGISTRY_VALUE *val )
 {
-	UNISTR2		unistr;
 	uint32		real_size = 0;
-	char 		*string;
-	char 		*list = NULL;
-	char 		*list2 = NULL;
-	int		len = 0;
 	
 	if ( !buf2 || !val )
 		return 0;
 		
-	real_size = val->size;
-		
-	switch (val->type )
-	{
-		case REG_SZ:
-			string = (char*)regval_data_p( val );
-			DEBUG(10,("reg_init_buffer2: REG_SZ string => [%s]\n", string));
-			
-			if ( string )
-				len = strlen(string)+1;
-	
-			init_unistr2( &unistr, (char*)val->data_p, len );
-			init_buffer2( buf2, (char*)unistr.buffer, unistr.uni_str_len*2 );
-			real_size = unistr.uni_str_len*2;
-			break;
-			
-		case REG_MULTI_SZ:
-			string = (char*)val->data_p;
-			real_size = 0;
-			while ( string && *string )
-			{
-				DEBUG(10,("reg_init_buffer2: REG_MULTI_SZ string => [%s], size => [%d]\n", string, real_size ));
-				
-				init_unistr2( &unistr, string, strlen(string)+1 );
-				
-				list2 = Realloc( list, real_size + unistr.uni_str_len*2 );
-				if ( !list2 )
-					break;
-				list = list2;
-				
-				memcpy( list+real_size, unistr.buffer, unistr.uni_str_len*2 );
-				
-				real_size += unistr.uni_str_len*2;
-				
-				string += strlen(string)+1;
-			}
-			
-			list2 = Realloc( list, real_size + 2 );
-			if ( !list2 )
-				break;
-			list = list2;
-			list[real_size++] = 0x0;
-			list[real_size++] = 0x0;
-			
-			init_buffer2( buf2, (char*)list, real_size );
-			
-			DEBUG(10,("reg_init_buffer2: REG_MULTI_SZ size => [%d]\n", real_size ));
-			
-			break;
-			
-		case REG_BINARY:
-			DEBUG(10,("reg_init_buffer2: REG_BINARY size => [%d]\n", val->size ));
-			
-			init_buffer2( buf2, val->data_p, val->size );
-			break;
-			
-		case REG_DWORD: 
-			DEBUG(10,("reg_init_buffer2: REG_DWORD value => [%d]\n", *(uint32*)val->data_p));
-			init_buffer2( buf2, val->data_p, val->size );
-			break;
-			
-		default:
-			DEBUG(0,("reg_init_buffer2: Unsupported registry data type [%d]\n", val->type));
-			break;
-	}
-	
-	SAFE_FREE( list );
+	real_size = regval_size(val);
+	init_buffer2( buf2, (char*)regval_data_p(val), real_size );
 
 	return real_size;
 }
