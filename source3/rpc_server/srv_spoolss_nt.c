@@ -29,8 +29,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-
 #ifndef MAX_OPEN_PRINTER_EXS
 #define MAX_OPEN_PRINTER_EXS 50
 #endif
@@ -1447,7 +1445,7 @@ static void spoolss_notify_server_name(int snum,
 	pstring temp_name, temp;
 	uint32 len;
 
-	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", get_called_name());
 
 	len = rpcstr_push(temp, temp_name, sizeof(temp)-2, STR_TERMINATE);
 
@@ -2573,7 +2571,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 
 	init_unistr(&printer->printername, chaine);
 	
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s", global_myname);
+	slprintf(chaine,sizeof(chaine)-1,"\\\\%s", get_called_name());
 	init_unistr(&printer->servername, chaine);
 	
 	printer->cjobs = count;
@@ -2641,12 +2639,12 @@ static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int 
 
 	if (*ntprinter->info_2->comment == '\0') {
 		init_unistr(&printer->comment, lp_comment(snum));
-		slprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
+		slprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",get_called_name(), ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, lp_comment(snum));
 	}
 	else {
 		init_unistr(&printer->comment, ntprinter->info_2->comment); /* saved comment. */
-		slprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
+		slprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",get_called_name(), ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, ntprinter->info_2->comment);
 	}
 		
@@ -2981,8 +2979,8 @@ static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, 
 
 	*returned=1;
 	
-	slprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", global_myname);		
-	slprintf(desc, sizeof(desc)-1,"%s", global_myname);
+	slprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", get_called_name());		
+	slprintf(desc, sizeof(desc)-1,"%s", get_called_name());
 	slprintf(comment, sizeof(comment)-1, "Logged on Domain");
 
 	init_unistr(&printer->description, desc);
@@ -3871,7 +3869,7 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	*servermajorversion=0;
 	*serverminorversion=0;
 
-	pstrcpy(servername, global_myname);
+	pstrcpy(servername, get_called_name());
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
 
 	if (!get_printer_snum(p, handle, &snum))
@@ -4200,9 +4198,9 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 		 info->servername, info->printername, info->sharename, info->portname, info->drivername, info->comment, info->location));
 
 	/* we force some elements to "correct" values */
-	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", global_myname);
+	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", get_called_name());
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
-		 global_myname, lp_servicename(snum));
+		 get_called_name(), lp_servicename(snum));
 	fstrcpy(info->sharename, lp_servicename(snum));
 	info->attributes = PRINTER_ATTRIBUTE_SHARED   \
 		| PRINTER_ATTRIBUTE_LOCAL  \
@@ -4226,7 +4224,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 	/* build driver path... only 9X architecture is needed for legacy reasons */
 	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
-			global_myname);
+			get_called_name());
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
 
@@ -4704,7 +4702,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	struct tm *t;
 	
 	t=gmtime(&queue->time);
-	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", get_called_name());
 
 	job_info->jobid=queue->job;	
 	init_unistr(&job_info->printername, lp_servicename(snum));
@@ -4733,11 +4731,11 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	struct tm *t;
 
 	t=gmtime(&queue->time);
-	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", get_called_name());
 
 	job_info->jobid=queue->job;
 	
-	slprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter->info_2->printername);
+	slprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", get_called_name(), ntprinter->info_2->printername);
 
 	init_unistr(&job_info->printername, chaine);
 	
@@ -5251,7 +5249,7 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumprinterdrivers\n"));
-	fstrcpy(servername, global_myname);
+	fstrcpy(servername, get_called_name());
 	*needed=0;
 	*returned=0;
 
@@ -5752,7 +5750,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 			return WERR_ACCESS_DENIED;
 	}
 
-	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname,
+	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", get_called_name(),
              printer->info_2->sharename);
 
 	if ((snum = print_queue_snum(printer->info_2->sharename)) == -1) {
@@ -5900,7 +5898,7 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
 		return WERR_NOMEM;
 
-	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", global_myname, short_archi);
+	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", get_called_name(), short_archi);
 
 	DEBUG(4,("printer driver directory: [%s]\n", path));
 
@@ -7119,7 +7117,7 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 	   Windows returns the string: C:\WINNT\System32\spool\PRTPROCS\W32X86
 	   which is pretty bogus for a RPC. */
 
-	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", global_myname, short_archi);
+	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", get_called_name(), short_archi);
 
 	DEBUG(4,("print processor directory: [%s]\n", path));
 
