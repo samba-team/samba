@@ -14,7 +14,7 @@ TESTS = $(check_PROGRAMS)
 
 getaddrinfo_test_LDADD = libroken.la
 parse_bytes_test_LDADD = libroken.la
-strpftime_test_LDADD = strftime.o strptime.o snprintf.o
+strpftime_test_SOURCES = strpftime_test.c strftime.c strptime.c snprintf.c
 
 if KRB4
 if KRB5
