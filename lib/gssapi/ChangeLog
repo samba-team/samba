@@ -1,3 +1,11 @@
+2000-12-08  Assar Westerlund  <assar@sics.se>
+
+	* wrap.c (wrap_des3): use the checksum as ivec when encrypting the
+	sequence number
+	* unwrap.c (unwrap_des3): use the checksum as ivec when encrypting
+	the sequence number
+	* init_sec_context.c (init_auth): always zero fwd_data
+
 2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* accept_sec_context.c: de-pointerise auth_context parameter to

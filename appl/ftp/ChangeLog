@@ -1,3 +1,8 @@
+2000-12-08  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/gss_userok.c (gss_userok): handle getpwnam failing
+	* ftp/gssapi.c (gss_auth): be more explicit in error message
+
 2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpd.8: close list
