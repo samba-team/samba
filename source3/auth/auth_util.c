@@ -705,8 +705,8 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 	for (i = 0; i < *n_groups; i++) {
 		if (!gid_to_sid(&(*groups)[i], (*unix_groups)[i])) {
 			DEBUG(1, ("get_user_groups_from_local_sam: failed to convert gid %ld to a sid!\n", (long int)(*unix_groups)[i+1]));
-			SAFE_FREE(groups);
-			SAFE_FREE(unix_groups);
+			SAFE_FREE(*groups);
+			SAFE_FREE(*unix_groups);
 			return NT_STATUS_NO_SUCH_USER;
 		}
 	}
