@@ -4,9 +4,10 @@
 The Samba Consultants List
 ==========================
 
-This is a list of people who are prepared to commercialy support
-Samba. Being on this list does not imply any sort of endorsement by
-anyone, it is just provided in the hope that it will be useful.
+This is a list of companies who are prepared to support Samba
+commercially. We do not do check any of this information for
+accuracy, we just report what companies say about themselves in
+the hope that it will be useful. 
 
 Note that the organisations listed below will expect you to pay for
 The support that they offer. We have been told that several people
@@ -18,7 +19,8 @@ newsgroup.
 
 If you want to be added to the list, or want your entry modified then
 contact the address below. Please make sure to include a header line
-giving the region and country, eg CANBERRA - AUSTRALIA.
+giving the region and country, eg CANBERRA - AUSTRALIA, and use a 
+similar format to the existing entries.
 
 The Samba Team reserves the right not to add support providers.
 
