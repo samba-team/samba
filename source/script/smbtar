@@ -6,6 +6,10 @@
 #          and Ricky Poulten (ricky@logcam.co.uk)
 #
 # (May need to change shell to ksh for HPUX or OSF for better getopts)
+#
+# Richard Sharpe, added -c 'tarmode full' so that we back up all files to
+# fix a bug in clitar when a patch was added to stop system and hidden files
+# being backed up.
 
 case $0 in
     # when called by absolute path, assume smbclient is in the same directory
@@ -25,6 +29,7 @@ verbose="2>/dev/null"        # Default: no echo to stdout
 log="-d 2"
 newer=""
 blocksize=""
+clientargs="-c 'tarmode full'"
 tarcmd="c"
 tarargs=""
 cdcmd="\\"
@@ -145,6 +150,6 @@ if [ -z "$verbose" ]; then
 fi
 
 eval $SMBCLIENT "'\\\\$server\\$service'" "'$password'" -U "'$username'" \
--E -N $log -D "'$cdcmd'" \
+-E -N $log -D "'$cdcmd'" ${clientargs} \
 -T${tarcmd}${tarargs} $blocksize $newer $tapefile $* $verbose
 
