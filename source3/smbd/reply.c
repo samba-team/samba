@@ -179,14 +179,11 @@ int reply_tcon(char *inbuf,char *outbuf)
   pstring dev;
   int connection_num;
   int outsize = 0;
-  int uid = SVAL(inbuf,smb_uid);
-  int vuid;
+  uint16 vuid = SVAL(inbuf,smb_uid);
   int pwlen=0;
 
   *service = *user = *password = *dev = 0;
 
-  vuid = valid_uid(uid);
-  
   parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
   connection_num = make_connection(service,user,password,pwlen,dev,vuid);
@@ -215,8 +212,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   pstring password;
   pstring devicename;
   int connection_num;
-  int uid = SVAL(inbuf,smb_uid);
-  int vuid;
+  uint16 vuid = SVAL(inbuf,smb_uid);
   int passlen = SVAL(inbuf,smb_vwv3);
   BOOL doencrypt = SMBENCRYPT();
 
@@ -224,9 +220,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   /* we might have to close an old one */
   if ((SVAL(inbuf,smb_vwv2) & 0x1) != 0)
-    close_cnum(SVAL(inbuf,smb_tid),uid);
-  
-  vuid = valid_uid(uid);
+    close_cnum(SVAL(inbuf,smb_tid),vuid);
   
   {
     char *path;
@@ -317,8 +311,9 @@ reply to a session setup command
 ****************************************************************************/
 int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int sess_uid;
+  uint16 sess_vuid;
   int gid;
+  int uid;
   int   smb_bufsize;    
   int   smb_mpxmax;     
   int   smb_vc_num;     
@@ -336,7 +331,6 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   *smb_apasswd = 0;
   
-  sess_uid = SVAL(inbuf,smb_uid);
   smb_bufsize = SVAL(inbuf,smb_vwv2);
   smb_mpxmax = SVAL(inbuf,smb_vwv3);
   smb_vc_num = SVAL(inbuf,smb_vwv4);
@@ -499,8 +493,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       return(ERROR(ERRSRV,ERRbadpw));
     }
     gid = pw->pw_gid;
-    SSVAL(outbuf,smb_uid,(uint16)pw->pw_uid);
-    SSVAL(inbuf,smb_uid,(uint16)pw->pw_uid);
+    uid = pw->pw_uid;
   }
 
   if (guest && !computer_id)
@@ -508,8 +501,11 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
-  register_uid(SVAL(inbuf,smb_uid),gid,user,guest);
+  sess_vuid = register_vuid(uid,gid,user,guest);
  
+  SSVAL(outbuf,smb_uid,sess_vuid);
+  SSVAL(inbuf,smb_uid,sess_vuid);
+
   if (!done_sesssetup)
     maxxmit = MIN(maxxmit,smb_bufsize);
 
@@ -1105,23 +1101,28 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 ****************************************************************************/
 int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int uid = SVAL(inbuf,smb_uid);
+  uint16 vuid = SVAL(inbuf,smb_uid);
+  user_struct *vuser = get_valid_user_struct(vuid);
 
-  invalidate_uid(uid);
+  if(vuser == 0) {
+    DEBUG(3,("ulogoff, vuser id %d does not map to user.\n", vuid));
+  }
 
   /* in user level security we are supposed to close any files
      open by this user */
-  if (lp_security() != SEC_SHARE) {
+  if ((vuser != 0) && (lp_security() != SEC_SHARE)) {
     int i;
     for (i=0;i<MAX_OPEN_FILES;i++)
-      if (Files[i].uid == uid && Files[i].open) {
+      if (Files[i].uid == vuser->uid && Files[i].open) {
 	close_file(i);
       }
   }
 
+  invalidate_vuid(vuid);
+
   set_message(outbuf,2,0,True);
 
-  DEBUG(3,("%s ulogoffX uid=%d\n",timestring(),uid));
+  DEBUG(3,("%s ulogoffX vuid=%d\n",timestring(),vuid));
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -2101,11 +2102,12 @@ int reply_unlock(char *inbuf,char *outbuf)
 ****************************************************************************/
 int reply_tdis(char *inbuf,char *outbuf)
 {
-  int cnum, uid;
+  int cnum;
   int outsize = set_message(outbuf,0,0,True);
-  
+  uint16 vuid;
+
   cnum = SVAL(inbuf,smb_tid);
-  uid = SVAL(inbuf,smb_uid);
+  vuid = SVAL(inbuf,smb_uid);
 
   if (!OPEN_CNUM(cnum)) {
     DEBUG(4,("Invalid cnum in tdis (%d)\n",cnum));
@@ -2114,7 +2116,7 @@ int reply_tdis(char *inbuf,char *outbuf)
 
   Connections[cnum].used = False;
 
-  close_cnum(cnum,uid);
+  close_cnum(cnum,vuid);
   
   DEBUG(3,("%s tdis cnum=%d\n",timestring(),cnum));
 
@@ -2259,13 +2261,14 @@ int reply_printclose(char *inbuf,char *outbuf)
 ****************************************************************************/
 int reply_printqueue(char *inbuf,char *outbuf)
 {
-  int cnum, uid;
+  int cnum;
   int outsize = set_message(outbuf,2,3,True);
   int max_count = SVAL(inbuf,smb_vwv0);
   int start_index = SVAL(inbuf,smb_vwv1);
+  uint16 vuid;
 
   cnum = SVAL(inbuf,smb_tid);
-  uid = SVAL(inbuf,smb_uid);
+  vuid = SVAL(inbuf,smb_uid);
 
 /* allow checking the queue for anyone */
 #if 0
@@ -2301,7 +2304,7 @@ int reply_printqueue(char *inbuf,char *outbuf)
       DEBUG(5,("connection not open or not a printer, using cnum %d\n",cnum));
     }
 
-  if (!become_user(cnum,uid))
+  if (!become_user(cnum,vuid))
     return(ERROR(ERRSRV,ERRinvnid));
 
   {
