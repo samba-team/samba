@@ -123,7 +123,7 @@ static XtResource resources[] = {
       XtOffsetOf(struct appres_t,file), XtRImmediate, NULL },
 
     { "noScreenSaver", "NoScreenSaver", XtRBoolean, sizeof(Boolean),
-      XtOffsetOf(struct appres_t,no_screensaver), XtRImmediate, (XtPointer)False },
+      XtOffsetOf(struct appres_t,no_screensaver), XtRImmediate, (XtPointer)True },
 };
 
 static XrmOptionDescRec options[] = {
@@ -135,7 +135,7 @@ static XrmOptionDescRec options[] = {
     { "-noip", ".ignorePasswd", XrmoptionNoArg, "False" },
     { "-ar",  ".acceptRootPasswd", XrmoptionNoArg, "True" },
     { "-noar", ".acceptRootPasswd", XrmoptionNoArg, "False" },
-    { "-noscreensaver", ".noScreenSaver", XrmoptionNoArg, "True" },
+    { "-nonoscreensaver", ".noScreenSaver", XrmoptionNoArg, "False" },
 };
 
 static char*
