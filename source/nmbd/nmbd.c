@@ -323,7 +323,7 @@ static void process(void)
 
       announce_host();
 
-#if 0
+#if 1
       /* XXXX what was this stuff supposed to do? It sent
 	 ANN_GetBackupListReq packets which I think should only be
 	 sent when trying to find out who to browse with */	 

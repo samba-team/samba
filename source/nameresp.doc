@@ -131,18 +131,6 @@ samba should take this into account (see rfc1001.txt 10.3).
 remove_name_entry() issues this samba 'state'
 response_name_rel() deals with responses to NAME_RELEASE.
 
-- NAME_REGISTER_CHALLENGE
-
-when a samba 'state' of type NAME_REGISTER_CHALLENGE is sent, and a
-response is not received, it is assumed that the server being queried
-is either dead, deaf or unreachable. the host that wanted this
-unique name is then informed that it can have it (the name query
-challenge went unanswered) and that its registration of this name
-did in fact succeed.
-
-reply_name_reg() issues this samba 'state'
-response_name_query_register() deals with responses.
-
 - NAME_REGISTER
 
 when a samba 'state' of type NAME_REGISTER is sent, and a response is

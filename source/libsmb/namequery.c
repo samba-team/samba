@@ -173,6 +173,8 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 	    continue;
 	  }
 
+      debug_nmb_packet(p2);
+
 	  _interpret_node_status(&nmb2->answers->rdata[0], master,rname);
 	  free_packet(p2);
 	  return(True);
@@ -266,6 +268,8 @@ BOOL name_query(int fd,char *name,int name_type,
 	    continue;
 	  }
 	  
+      debug_nmb_packet(p2);
+
 	  if (nmb2->header.opcode != 0 ||
 	      nmb2->header.nm_flags.bcast ||
 	      nmb2->header.rcode ||

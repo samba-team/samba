@@ -256,7 +256,7 @@ BOOL ms_browser_name(char *name, int type);
 void remove_name(struct subnet_record *d, struct name_record *n);
 struct name_record *find_name(struct name_record *n,
 			struct nmb_name *name,
-			int search, struct in_addr ip);
+			int search);
 struct name_record *find_name_search(struct subnet_record **d,
 			struct nmb_name *name,
 			int search, struct in_addr ip);
@@ -286,6 +286,7 @@ struct response_record *find_response_record(struct subnet_record **d,
 				uint16 id);
 void remove_old_servers(struct work_record *work, time_t t,
 					BOOL remove_all);
+struct server_record *find_server(struct work_record *work, char *name);
 struct server_record *add_server_entry(struct subnet_record *d, 
 				       struct work_record *work,
 				       char *name,int servertype, 
@@ -320,12 +321,13 @@ void run_elections(void);
 void process_election(struct packet_struct *p,char *buf);
 BOOL check_elections(void);
 void process_logon_packet(struct packet_struct *p,char *buf,int len);
+void debug_browse_data(char *outbuf, int len);
 void initiate_netbios_packet(uint16 *id,
 				int fd,int quest_type,char *name,int name_type,
 			    int nb_flags,BOOL bcast,BOOL recurse,
 			    struct in_addr to_ip);
 void reply_netbios_packet(struct packet_struct *p1,int trn_id,
-				int rcode,int opcode, BOOL recurse,
+				int rcode, int rcv_code, int opcode, BOOL recurse,
 				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
 				char *data,int len);
 void queue_packet(struct packet_struct *packet);
@@ -357,11 +359,12 @@ void add_my_names(void);
 void remove_my_names();
 void refresh_my_names(time_t t);
 void query_refresh_names(void);
-void add_name_respond(struct subnet_record *d, int fd, uint16 response_id,
+void add_name_respond(struct subnet_record *d, int fd, struct in_addr from_ip,
+				uint16 response_id,
 				struct nmb_name *name,
 				int nb_flags, int ttl, struct in_addr register_ip,
 				BOOL new_owner, struct in_addr reply_to_ip);
-void send_name_response(int fd,
+void send_name_response(int fd, struct in_addr from_ip,
 				int name_trn_id, int opcode, BOOL success, BOOL recurse,
 				struct nmb_name *reply_name, int nb_flags, int ttl,
 				struct in_addr ip);
@@ -369,6 +372,7 @@ void reply_name_release(struct packet_struct *p);
 void reply_name_reg(struct packet_struct *p);
 void reply_name_status(struct packet_struct *p);
 void reply_name_query(struct packet_struct *p);
+void debug_state_type(int state);
 void response_netbios_packet(struct packet_struct *p);
 void reset_server(char *name, int state, struct in_addr ip);
 void tell_become_backup(void);

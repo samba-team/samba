@@ -49,7 +49,7 @@ static BOOL open_sockets(void)
       return False;
     }   
 
-  ServerFD = open_socket_in(SOCK_DGRAM, 0,3);
+  ServerFD = open_socket_in(SOCK_DGRAM, NMB_PORT,3);
 
   if (ServerFD == -1)
     return(False);
@@ -164,7 +164,7 @@ int main(int argc,char *argv[])
 	  strcpy(lookup,"\01\02__MSBROWSE__\02");
 	  lookup_type = 1;
 	} else {
-	  lookup_type = 0x1d;
+	  lookup_type = 0x1b;
 	}
       }
 

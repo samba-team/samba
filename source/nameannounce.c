@@ -48,7 +48,7 @@ extern  pstring ServerComment;
 extern int  updatecount;
 extern int  workgroup_count;
 
-/* what server type are we currently */
+extern struct in_addr ipgrp;
 
 /****************************************************************************
   send a announce request to the local net
@@ -146,12 +146,19 @@ void announce_backup(void)
   char *p;
   struct subnet_record *d1;
   int tok;
+  static uint32 id_count = 0;
   
   if (!lastrun) lastrun = t;
+#if 1
+  if (t < lastrun + 1 * 60)
+#else
   if (t < lastrun + CHECK_TIME_ANNOUNCE_BACKUP * 60)
+#endif
 	return;
   lastrun = t;
   
+  DEBUG(4,("checking backups...\n"));
+
   for (tok = 0; tok <= workgroup_count; tok++)
     {
       for (d1 = subnetlist; d1; d1 = d1->next)
@@ -178,14 +185,15 @@ void announce_backup(void)
 	      
 	      bzero(outbuf,sizeof(outbuf));
 	      p = outbuf;
+
 	      CVAL(p,0) = ANN_GetBackupListReq;
-	      p++;
+	      CVAL(p,1) = work->token; /* workgroup unique key index */
+	      SIVAL(p,2,++id_count); /* unique count. not that we use it! */
+
+	      p += 6;
 	      
-	      CVAL(p,0) = 1; /* count? */
-	      SIVAL(p,1,work->token); /* workgroup unique key index */
-	      p += 5;
-	      p++;
-	      
+          debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
+
 	      if (!AM_DOMCTL(work))
           {
             /* only ask for a list of backup domain controllers
@@ -199,6 +207,8 @@ void announce_backup(void)
 				  *iface_ip(d->bcast_ip));
           }
 
+          debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
+
 	      if (!AM_MASTER(work))
           {
             /* only ask for a list of master browsers if we
@@ -208,7 +218,7 @@ void announce_backup(void)
 				  ClientDGRAM,outbuf,
 				  PTR_DIFF(p,outbuf),
 				  myname, work->work_group,
-				  0x0,0x1b,d->bcast_ip,
+				  0x0,0x1d,d->bcast_ip,
 				  *iface_ip(d->bcast_ip));
           }
 	    }
@@ -246,12 +256,14 @@ static void do_announce_host(int command,
 	CVAL(p,22) = 0x02; /* minor version */
 
 	SIVAL(p,23,server_type);
-	SSVAL(p,27,0xaa55); /* browse signature */
-	SSVAL(p,29,0x001f); /* browse version: CIFS draft 1.0 indicates 0x001f */
+	SSVAL(p,27,0x010f); /* browse version: got from NT/AS 4.00 */
+	SSVAL(p,29,0xaa55); /* browse signature */
 
 	strcpy(p+31,server_comment);
 	p += 31;
 	p = skip_string(p,1);
+
+    debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
 
 	/* send the announcement */
 	send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
@@ -290,6 +302,8 @@ void remove_my_servers(void)
 void announce_server(struct subnet_record *d, struct work_record *work,
 					char *name, char *comment, time_t ttl, int server_type)
 {
+	uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_SERVER_UNIX;
+
 	if (AM_MASTER(work))
 	{
 		DEBUG(3,("sending local master announce to %s for %s(1e)\n",
@@ -307,11 +321,15 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 		/* XXXX should we do a domain-announce-kill? */
 		if (server_type != 0)
 		{
+			if (AM_DOMCTL(work)) {
+				domain_type |= SV_TYPE_DOMAIN_CTRL;
+			}
 			do_announce_host(ANN_DomainAnnouncement,
-						work->work_group, 0x00, d->myip,
-						MSBROWSE        , 0x01, d->bcast_ip,
+						name    , 0x00, d->myip,
+						MSBROWSE, 0x01, d->bcast_ip,
 						ttl*1000,
-						name, server_type ? SV_TYPE_DOMAIN_ENUM : 0, comment);
+						work->work_group, server_type ? domain_type : 0,
+						comment);
 		}
 	}
 	else
@@ -345,6 +363,8 @@ void announce_host(void)
     {
       struct work_record *work;
       
+      if (ip_equal(d->bcast_ip, ipgrp)) continue;
+
       for (work = d->workgrouplist; work; work = work->next)
 	{
 	  uint32 stype = work->ServerType;

@@ -64,6 +64,7 @@ extern int  updatecount;
 
 extern time_t StartupTime;
 
+extern BOOL updatedlists;
 
 /****************************************************************************
 tell a server to become a backup browser
@@ -195,18 +196,22 @@ BOOL listening_name(struct work_record *work, struct nmb_name *n)
   resources. We just have to pass it to smbd (via browser.dat) and let
   the client choose using bit masks.
   ******************************************************************/
-static void process_announce(struct packet_struct *p,int command,char *buf)
+static void process_announce(struct packet_struct *p,uint16 command,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
   struct subnet_record *d = find_subnet(ip); 
   int update_count = CVAL(buf,0);
+
   int ttl = IVAL(buf,1)/1000;
   char *name = buf+5;
   int osmajor=CVAL(buf,21);
   int osminor=CVAL(buf,22);
   uint32 servertype = IVAL(buf,23);
+  uint32 browse_type= CVAL(buf,27);
+  uint32 browse_sig = CVAL(buf,29);
   char *comment = buf+31;
+
   struct work_record *work;
   char *work_name;
   char *serv_name = dgram->source_name.name;
@@ -215,9 +220,9 @@ static void process_announce(struct packet_struct *p,int command,char *buf)
   comment[43] = 0;
   
   DEBUG(4,("Announce(%d) %s(%x)",command,name,name[15]));
-  DEBUG(4,("%s count=%d ttl=%d OS=(%d,%d) type=%08x comment=%s\n",
+  DEBUG(4,("%s count=%d ttl=%d OS=(%d,%d) type=%08x sig=%4x %4x comment=%s\n",
 	   namestr(&dgram->dest_name),update_count,ttl,osmajor,osminor,
-	   servertype,comment));
+	   servertype,browse_type,browse_sig,comment));
   
   name[15] = 0;  
   
@@ -236,7 +241,7 @@ static void process_announce(struct packet_struct *p,int command,char *buf)
       return;
     }
   
-  if (same_context(dgram)) return;
+  if (!strequal(dgram->dest_name.scope,scope )) return;
   
   if (command == ANN_DomainAnnouncement) { 
     /* XXXX if we are a master browser for the workgroup work_name,
@@ -249,6 +254,7 @@ static void process_announce(struct packet_struct *p,int command,char *buf)
      */
 
     work_name = name;
+    add = True;
   } else {
     work_name = dgram->dest_name.name;
   }
@@ -268,9 +274,10 @@ static void process_announce(struct packet_struct *p,int command,char *buf)
   
   ttl = GET_TTL(ttl);
   
-  /* add them to our browse list */
+  /* add them to our browse list, and update the browse.dat file */
   add_server_entry(d,work,name,servertype,ttl,comment,True);
-  
+  updatedlists = True;
+
 #if 0
   /* the tell become backup code is broken, no great harm is done by
      disabling it */
@@ -339,12 +346,12 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
   int count = CVAL(buf,0);
-  int Index = IVAL(buf,1); /* caller's index representing workgroup */
+  uint32 info = IVAL(buf,1); /* XXXX caller's incremental info */
   char *buf1;
   
-  DEBUG(3,("Receive Backup ack for %s from %s total=%d index=%d\n",
+  DEBUG(3,("Receive Backup ack for %s from %s total=%d info=%d\n",
 	   namestr(&dgram->dest_name), inet_ntoa(ip),
-	   count, Index));
+	   count, info));
   
   if (same_context(dgram)) return;
   
@@ -352,44 +359,49 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
   
   /* go through the list of servers attempting to sync browse lists */
   for (buf1 = buf+5; *buf1 && count; buf1 = skip_string(buf1, 1), --count)
-    {
-      struct in_addr back_ip;
-      struct subnet_record *d;
+  {
+    struct in_addr back_ip;
+    struct subnet_record *d;
       
-      DEBUG(4,("Searching for backup browser %s at %s...\n",
+    DEBUG(4,("Searching for backup browser %s at %s...\n",
 	       buf1, inet_ntoa(ip)));
       
-      /* XXXX assume name is a DNS name NOT a netbios name. a more complete
-	     approach is to use reply_name_query functionality to find the name */
-      back_ip = *interpret_addr2(buf1);
+    /* XXXX assume name is a DNS name NOT a netbios name. a more complete
+	   approach is to use reply_name_query functionality to find the name */
+
+    back_ip = *interpret_addr2(buf1);
       
-      if (zero_ip(back_ip))
+    if (zero_ip(back_ip))
 	{
 	  DEBUG(4,("Failed to find backup browser server using DNS\n"));
 	  continue;
 	}
       
       DEBUG(4,("Found browser server at %s\n", inet_ntoa(back_ip)));
+      DEBUG(4,("END THIS LOOP: CODE NEEDS UPDATING\n"));
       
-      if ((d = find_subnet(back_ip)))
+      /* XXXX function needs work */
+	  continue;
+
+    if ((d = find_subnet(back_ip)))
 	{
 	  struct subnet_record *d1;
 	  for (d1 = subnetlist; d1; d1 = d1->next)
-	    {
+	  {
 	      struct work_record *work;
 	      for (work = d1->workgrouplist; work; work = work->next)
 		{
-		  if (work->token == Index)
-		    {
+		  if (work->token == 0 /* token */)
+		  {
 		      queue_netbios_packet(d1,ClientNMB,NMB_QUERY,NAME_QUERY_SRV_CHK,
 					   work->work_group,0x1d,0,0,
 					   False,False,back_ip,back_ip);
 		      return;
-		    }
+		  }
 		}
-	    }
+	  }
 	}
-    }
+  }
 }
 
 
@@ -397,19 +409,18 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
   send a backup list response.
   **************************************************************************/
 static void send_backup_list(char *work_name, struct nmb_name *src_name,
-			     int info_count, int token, int info,
+			     int token, uint32 info,
 			     int name_type, struct in_addr ip)
 {                     
   struct subnet_record *d;
   char outbuf[1024];
   char *p, *countptr, *nameptr;
   int count = 0;
-  int i, j;
   char *theirname = src_name->name;
   
   DEBUG(3,("sending backup list of %s to %s: %s(%x) %s(%x)\n", 
 	   work_name, inet_ntoa(ip),
-	   myname,0x20,theirname,0x0));	   
+	   myname,0x0,theirname,0x0));	   
   
   if (name_type == 0x1d)
     {
@@ -429,18 +440,20 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
   p = outbuf;
   
   CVAL(p,0) = ANN_GetBackupListResp;    /* backup list response */
+  
   p++;
-  
-  countptr = p; /* count pointer */
-  
-  SSVAL(p,1,token); /* sender's workgroup index representation */
-  SSVAL(p,3,info); /* XXXX clueless: info, usually zero */
+  countptr = p;
+
+  SIVAL(p,1,info); /* the sender's unique info */
+
   p += 5;
   
   nameptr = p;
-  
+
+#if 0
+
   for (d = subnetlist; d; d = d->next)
-    {
+  {
       struct work_record *work;
       
       for (work = d->workgrouplist; work; work = work->next)
@@ -465,9 +478,9 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
 	      
 	      /* workgroup request: include all backup browsers in the list */
 	      /* domain request: include all domain members in the list */
-	      
+
 	      if ((name_type == 0x1d && (s->serv.type & MASTER_TYPE)) ||
-		  (name_type == 0x1b && (s->serv.type & DOMCTL_TYPE)))
+		      (name_type == 0x1b && (s->serv.type & DOMCTL_TYPE)))
 		{                          
 		  DEBUG(4, ("%s ", s->serv.name));
 		  
@@ -476,52 +489,34 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
 		  strupper(p);
 		  p = skip_string(p,1);
 		}
-	    }
+	 }
 	}
-    }
-  
+  }
+
+#endif
+
+	count++;
+	strcpy(p,myname);
+	strupper(p);
+	p = skip_string(p,1);
+
   if (count == 0)
     {
       DEBUG(4, ("none\n"));
-      return;
     }
   else
     {
       DEBUG(4, (" - count %d\n", count));
     }
   
-  CVAL(countptr,0) = count; /* total number of backup browsers found */
-  
+  CVAL(countptr, 0) = count;
+
   {
     int len = PTR_DIFF(p, outbuf);
-    
-    for (i = 0; i < len; i+= 16)
-      {
-	DEBUG(4, ("%3x char ", i));
-	
-	for (j = 0; j < 16; j++)
-	  {
-	    unsigned char x = outbuf[i+j];
-	    if (x < 32 || x > 127) x = '.';
-	    
-	    if (i+j >= len) break;
-	    DEBUG(4, ("%c", x));
-	  }
-	
-	DEBUG(4, (" hex ", i));
-	
-	for (j = 0; j < 16; j++)
-	  {
-	    if (i+j >= len) break;
-	    DEBUG(4, (" %02x", outbuf[i+j]));
-	  }
-	
-	DEBUG(4, ("\n"));
-      }
-    
+    debug_browse_data(outbuf, len);
   }
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		      myname,theirname,0x20,0x0,ip,*iface_ip(ip));
+		      myname,theirname,0x0,0x0,ip,*iface_ip(ip));
 }
 
 
@@ -544,14 +539,11 @@ static void process_send_backup_list(struct packet_struct *p,char *buf)
   struct subnet_record *d;
   struct work_record *work;
 
-  int count = CVAL(buf,0);
-  int token = SVAL(buf,1); /* sender's key index for the workgroup? */
-  int info  = SVAL(buf,3); /* XXXX don't know: some sort of info */
+  int    token = CVAL(buf,0); /* sender's key index for the workgroup */
+  uint32 info  = IVAL(buf,1); /* XXXX don't know: some sort of info */
   int name_type = dgram->dest_name.name_type;
 
   if (same_context(dgram)) return;
-  
-  if (count <= 0) return;
   
   if (name_type != 0x1b && name_type != 0x1d) {
     DEBUG(0,("backup request to wrong type %d from %s\n",
@@ -565,11 +557,11 @@ static void process_send_backup_list(struct packet_struct *p,char *buf)
 	{
 	  if (strequal(work->work_group, dgram->dest_name.name))
 	    {
-	      DEBUG(2,("sending backup list to %s %s count=%d\n",
-		       namestr(&dgram->dest_name),inet_ntoa(ip),count));
+	      DEBUG(2,("sending backup list to %s %s id=%x\n",
+		       namestr(&dgram->dest_name),inet_ntoa(ip),info));
   
 	      send_backup_list(work->work_group,&dgram->source_name,
-			       count,token,info,name_type,ip);
+			       token,info,name_type,ip);
 	      return;
 	    }
 	} 
@@ -633,7 +625,6 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
       DEBUG(1,("ignoring request to stop being a browser. sorry!\n"));
     }
 }
-
 
 /*******************************************************************
   process a announcement request
@@ -759,6 +750,7 @@ void process_browse_packet(struct packet_struct *p,char *buf,int len)
     case ANN_DomainAnnouncement:
     case ANN_LocalMasterAnnouncement:
       {
+        debug_browse_data(buf, len);
 	process_announce(p,command,buf+1);
 	break;
       }
@@ -777,15 +769,17 @@ void process_browse_packet(struct packet_struct *p,char *buf,int len)
       
     case ANN_GetBackupListReq:
       {
+        debug_browse_data(buf, len);
 	process_send_backup_list(p,buf+1);
 	break;
       }
       
     case ANN_GetBackupListResp:
-      {
-	process_rcv_backup_list(p, buf+1);
-	break;
-      }
+    {
+        debug_browse_data(buf, len);
+        process_rcv_backup_list(p, buf+1);
+        break;
+    }
       
     case ANN_ResetBrowserState:
       {

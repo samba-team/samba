@@ -103,6 +103,26 @@ static void add_server(struct work_record *work,struct server_record *s)
 
 
 /****************************************************************************
+  find a server in a server list.
+  **************************************************************************/
+struct server_record *find_server(struct work_record *work, char *name)
+{
+	struct server_record *ret;
+  
+	if (!work) return NULL;
+
+	for (ret = work->serverlist; ret; ret = ret->next)
+	{
+		if (strequal(ret->serv.name,name))
+		{
+			return ret;
+		}
+	}
+    return NULL;
+}
+
+
+/****************************************************************************
   add a server entry
   ****************************************************************************/
 struct server_record *add_server_entry(struct subnet_record *d, 
@@ -115,33 +135,30 @@ struct server_record *add_server_entry(struct subnet_record *d,
   struct server_record *s;
   
   if (name[0] == '*')
-    {
+  {
       return (NULL);
-    }
+  }
   
-  for (s = work->serverlist; s; s = s->next)
-    {
-      if (strequal(name,s->serv.name)) break;
-    }
-  
+  s = find_server(work, name);
+
   if (s && !replace)
-    {
-      DEBUG(4,("Not replacing %s\n",name));
-      return(s);
-    }
+  {
+    DEBUG(4,("Not replacing %s\n",name));
+    return(s);
+  }
   
   if (!s || s->serv.type != servertype || !strequal(s->serv.comment, comment))
     updatedlists=True;
 
   if (!s)
-    {
-      newentry = True;
-      s = (struct server_record *)malloc(sizeof(*s));
+  {
+    newentry = True;
+    s = (struct server_record *)malloc(sizeof(*s));
       
-      if (!s) return(NULL);
+    if (!s) return(NULL);
       
-      bzero((char *)s,sizeof(*s));
-    }
+    bzero((char *)s,sizeof(*s));
+  }
   
   
   if (d->my_interface && strequal(lp_workgroup(),work->work_group))

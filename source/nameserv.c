@@ -37,6 +37,7 @@ extern int DEBUGLEVEL;
 
 extern pstring scope;
 extern pstring myname;
+extern pstring ServerComment;
 extern struct in_addr ipzero;
 extern struct in_addr ipgrp;
 
@@ -124,7 +125,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
      it must be re-registered, rather than just registered */
 
   make_nmb_name(&n, name, type, scope);
-  if (find_name(d->namelist, &n, SELF, ipzero))
+  if (find_name(d->namelist, &n, SELF))
 	re_reg = True;
 
   /* XXXX BUG: if samba is offering WINS support, it should still add the
@@ -141,6 +142,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
          actually be true
        */
 
+      DEBUG(4,("samba as WINS server adding: "));
       /* this will call add_netbios_entry() */
       name_register_work(d, name, type, nb_flags,0, ipzero, False);
     }
@@ -155,10 +157,11 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
   }
   else
   {
+    /* broadcast the packet, but it comes from ipzero */
   	queue_netbios_packet(d,ClientNMB,
 				 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
 			     name, type, nb_flags, GET_TTL(0),
-			     True, True, d->bcast_ip, d->bcast_ip);
+			     True, True, d->bcast_ip, ipzero);
   }
 }
 
@@ -181,9 +184,10 @@ void add_my_names(void)
 
   for (d = subnetlist; d; d = d->next)
   {
-    if (!d->my_interface) continue;
+    BOOL wins_iface = ip_equal(d->bcast_ip, ipgrp);
 
-    /* these names need to be refreshed with the WINS server */
+    if (!d->my_interface && !wins_iface) continue;
+
 	add_my_name_entry(d, myname,0x20,NB_ACTIVE);
 	add_my_name_entry(d, myname,0x03,NB_ACTIVE);
 	add_my_name_entry(d, myname,0x00,NB_ACTIVE);
@@ -195,9 +199,18 @@ void add_my_names(void)
 	add_netbios_entry(d,"__SAMBA__",0x20,NB_ACTIVE,0,SELF,ip,False,wins);
 	add_netbios_entry(d,"__SAMBA__",0x00,NB_ACTIVE,0,SELF,ip,False,wins);
 
-    if (lp_domain_logons() && lp_domain_master()) {
+    if (!wins_iface && lp_domain_logons() && lp_domain_master()) {
 	/* XXXX the 0x1c is apparently something to do with domain logons */
 	  add_my_name_entry(d, my_workgroup(),0x1c,NB_ACTIVE|NB_GROUP);
+    }
+  }
+  if (lp_domain_master() && (d = find_subnet(ipgrp)))
+  {
+    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), True);
+    if (work && work->state == MST_NONE)
+    {
+      work->state = MST_DOMAIN_NONE;
+      become_master(d, work);
     }
   }
 }
