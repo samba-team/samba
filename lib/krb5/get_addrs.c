@@ -265,7 +265,7 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int flags)
 	    ret = gethostname_fallback (res);
 #endif
     } else
-	ret == 0;
+	ret = 0;
 
     if(ret == 0 && (flags & EXTRA_ADDRESSES)) {
 	/* append user specified addresses */
