@@ -417,7 +417,7 @@ static void smb_dump(char *name, int type, char *data, ssize_t len)
 	pstring fname;
 	if (DEBUGLEVEL < 50) return;
 
-	if (len < 4) len = smb_buflen(data);
+	if (len < 4) len = smb_len(data)+4;
 	for (i=1;i<100;i++) {
 		slprintf(fname,sizeof(fname), "/tmp/%s.%d.%s", name, i,
 				type ? "req" : "resp");
