@@ -1,5 +1,21 @@
-              WHATS NEW IN 1.9.17alpha4 - July 3rd 1997.
+              WHATS NEW IN 1.9.17alpha5 - July 31st 1997.
               ==========================================
+
+Last Alpha before full release.
+-------------------------------
+
+It is our intention that 1.9.17alpha5 be the last alpha
+before the full 1.9.17 release. If you are concerned that
+Samba 1.9.17 compile cleanly out of the box on your platform
+please try 1.9.17alpha5 and make sure it compiles for your
+particular platform. Please let samba-bugs@samba.anu.edu.au
+know if you have problems.
+
+The differences between 1.9.17alpha4 and 1.9.17alpha5 are
+mainly tidying code to ensure portability over different
+platforms (although some new code has been added).
+
+Thanks to Cisco for the new netbios alias code support.
 
 Improved browsing support. 
 --------------------------
@@ -10,9 +26,6 @@ as it has been largely re-written to explain how to do this.
 
 *IMPORTANT* All Samba servers acting as local/domain master
 browsers must be running 1.9.17alpha3 (or later).
-
-Samba 1.9.17alpha4 should now keep global and authoritative
-browse lists separate - see docs/BROWSING.txt for full details.
 
 Thanks to Silicon Graphics for allowing us to test the new 
 code on their corporate network.
@@ -43,9 +56,6 @@ the Makefile :
 	IRIX 5.x.x
 	FreeBSD
 
-A crash bug with slow share modes in 1.9.17alpha3 has been
-corrected.
-
 Updated smb.conf documentation
 ------------------------------
 All options are now documented we believe.
@@ -55,16 +65,17 @@ Many bugfixes and improvements
 From around the 'net around the world. Many
 thanks to everyone who contributed.
 
-A list of the new code since alpha3 includes :
+Some of the changes since alpha4 are:
 
-*** Fix for roaming profiles hanging on a Samba drive.
-*** smbclient can now query Win95/NT print queues.
-*** smbd can now rename across filesystem mount points.
-*** New 'force xxx mode' options allow more control over
-    Unix file permissions.
-*** New 'client code page' option for internationalization
-    support.
-*** Documentation update.
+*** Alias names for Samba servers.
+*** Fixes for smbtar.
+*** New "follow symlinks" option can prevent any 
+    symlink following for security reasons.
+*** Authentication for Kerberos 5 clients (note that
+    this is not the same as the Kerberos 5 Microsoft
+    will be using, that has not yet been documented).
+*** smbpasswd can now add users to the smbpasswd file.
+*** Hex dump style of debug packets.
 
 Remaining known issues with cross-subnet browsing.
 --------------------------------------------------
