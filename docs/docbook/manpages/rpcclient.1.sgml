@@ -99,7 +99,7 @@
 
 	<para><emphasis>LSARPC</emphasis></para>
 	<itemizedlist>
-		<listitem><para><command>lsaquery</command></para></listitem>
+		<listitem><para><command>lsaquery</command> - Query info policy</para></listitem>
 		
 		<listitem><para><command>lookupsids</command> - Resolve a list 
 		of SIDs to usernames.
@@ -109,22 +109,90 @@
 		of usernames to SIDs.
 		</para></listitem>
 		
-		<listitem><para><command>enumtrusts</command></para></listitem>
-	</itemizedlist>	
-	<para> </para>
-	
+		<listitem><para><command>enumtrusts</command> - Enumerate trusted domains</para></listitem>
 
+		<listitem><para><command>enumprivs</command> - Enumerate privileges</para></listitem>
+
+		<listitem><para><command>getdispname</command> - Get the privilege name</para></listitem>
+
+		<listitem><para><command>lsaenumsid</command> - Enumerate the LSA SIDS</para></listitem>
+
+		<listitem><para><command>lsaenumprivsaccount</command> - Enumerate the privileges of an SID</para></listitem>
+
+		<listitem><para><command>lsaenumacctrights</command> - Enumerate the rights of an SID</para></listitem>
+
+		<listitem><para><command>lsaenumacctwithright</command> - Enumerate accounts with a right</para></listitem>
+
+		<listitem><para><command>lsaaddacctrights</command> - Add rights to an account</para></listitem>
+
+		<listitem><para><command>lsaremoveacctrights</command> - Remove rights from an account</para></listitem>
+
+		<listitem><para><command>lsalookupprivvalue</command> - Get a privilege value given its name</para></listitem>
+
+		<listitem><para><command>lsaquerysecobj</command> - Query LSA security object</para></listitem>
+
+	</itemizedlist>	
+	
+	<para> </para>
+
+	<para><emphasis>LSARPC-DS</emphasis></para>
+	<itemizedlist>
+		<listitem><para><command>dsroledominfo</command> - Get Primary Domain Information</para></listitem>
+	</itemizedlist>
+
+	<para> </para>
+
+	<para><emphasis>DFS</emphasis></para>
+	<itemizedlist>
+		<listitem><para><command>dfsexist</command> - Query DFS support</para></listitem>
+		<listitem><para><command>dfsadd</command> - Add a DFS share</para></listitem>
+		<listitem><para><command>dfsremove</command> - Remove a DFS share</para></listitem>
+		<listitem><para><command>dfsgetinfo</command> - Query DFS share info</para></listitem>
+		<listitem><para><command>dfsenum</command> - Enumerate dfs shares</para></listitem>
+	</itemizedlist>
+
+	<para> </para>
+
+	<para><emphasis>REG</emphasis></para>
+	<itemizedlist>
+		<listitem><para><command>shutdown</command> - Remote Shutdown</para></listitem>
+		<listitem><para><command>abortshutdown</command> - Abort Shutdown</para></listitem>
+	</itemizedlist>
+
+	<para> </para>
+
+	<para><emphasis>SRVSVC</emphasis></para>
+	<itemizedlist>
+		<listitem><para><command>srvinfo</command> - Server query info</para></listitem>
+		
+		<listitem><para><command>netshareenum</command> - Enumerate shares</para></listitem>
+
+		<listitem><para><command>netfileenum</command> - Enumerate open files</para></listitem>
+		
+		<listitem><para><command>netremotetod</command> - Fetch remote time of day</para></listitem>
+		
+	</itemizedlist>
+
+	<para> </para>
 
 	<para><emphasis>SAMR</emphasis></para>
 	<itemizedlist>
-		<listitem><para><command>queryuser</command></para></listitem>
-		<listitem><para><command>querygroup</command></para></listitem>
-		<listitem><para><command>queryusergroups</command></para></listitem>
-		<listitem><para><command>querygroupmem</command></para></listitem>
-		<listitem><para><command>queryaliasmem</command></para></listitem>
-		<listitem><para><command>querydispinfo</command></para></listitem>
-		<listitem><para><command>querydominfo</command></para></listitem>
-		<listitem><para><command>enumdomgroups</command></para></listitem>
+		<listitem><para><command>queryuser</command> - Query user info</para></listitem>
+		<listitem><para><command>querygroup</command> - Query group info</para></listitem>
+		<listitem><para><command>queryusergroups</command> - Query user groups</para></listitem>
+		<listitem><para><command>querygroupmem</command> - Query group membership</para></listitem>
+		<listitem><para><command>queryaliasmem</command> - Query alias membership</para></listitem>
+		<listitem><para><command>querydispinfo</command> - Query display info</para></listitem>
+		<listitem><para><command>querydominfo</command> - Query domain info</para></listitem>
+		<listitem><para><command>enumdomusers</command> - Enumerate domain users</para></listitem>
+		<listitem><para><command>enumdomgroups</command> - Enumerate domain groups</para></listitem>
+		<listitem><para><command>enumalsgroups</command> - Enumerate alias groups</para></listitem>
+		<listitem><para><command>createdomuser</command> - Create domain user</para></listitem>
+		<listitem><para><command>samlookupnames</command> - Look up names</para></listitem>
+		<listitem><para><command>samlookuprids</command> - Look up names</para></listitem>
+		<listitem><para><command>deletedomuser</command> - Delete domain user</para></listitem>
+		<listitem><para><command>samquerysecobj</command> - Query SAMR security object</para></listitem>
+		<listitem><para><command>getdompwinfo</command> - Retrieve domain password info</para></listitem>
 	</itemizedlist>
 	<para> </para>
 
@@ -189,7 +257,7 @@ Comma Separated list of Files
 		<listitem><para><command>enumjobs &lt;printer&gt;</command> 
 		- List the jobs and status of a given printer. 
 		This command corresponds to the MS Platform SDK EnumJobs() 
-		function (* This command is currently unimplemented).</para></listitem>
+		function </listitem>
 		
 
 
@@ -218,11 +286,11 @@ Comma Separated list of Files
 
 
 
-		<listitem><para><command>getdata &lt;printername&gt;</command> 
+		<listitem><para><command>getdata &lt;printername&gt; &lt;valuename;&gt;</command> 
 		- Retrieve the data for a given printer setting.  See 
 		the  <command>enumdata</command> command for more information.  
 		This command corresponds to the GetPrinterData() MS Platform 
-		SDK function (* This command is currently unimplemented). </para></listitem>
+		SDK function. </para></listitem>
 
 
 		
