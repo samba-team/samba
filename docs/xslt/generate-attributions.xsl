@@ -9,7 +9,7 @@
 				version="1.1"
                 extension-element-prefixes="exsl">
 
-<xsl:output method="xml" omit-xml-declaration="yes"/>
+<xsl:output method="xml" omit-xml-declaration="yes" indent="yes"/>
 
 <!-- Remove all character data -->
 <xsl:template match="@*|node()">
