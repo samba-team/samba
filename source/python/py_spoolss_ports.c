@@ -26,7 +26,7 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 {
 	WERROR werror;
 	PyObject *result = NULL, *creds = NULL;
-	int level = 1;
+	uint32 level = 1;
 	uint32 i, needed, num_ports;
 	static char *kwlist[] = {"server", "level", "creds", NULL};
 	TALLOC_CTX *mem_ctx = NULL;
