@@ -36,7 +36,7 @@
  * SUCH DAMAGE. 
  */
 
-#include "kdc_locl.h"
+#include "headers.h"
 #include <getarg.h>
 
 RCSID("$Id$");

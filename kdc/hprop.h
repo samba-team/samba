@@ -41,7 +41,7 @@
 #ifndef __HPROP_H__
 #define __HPROP_H__
 
-#include "kdc_locl.h"
+#include "headers.h"
 
 #define HPROP_VERSION "hprop-0.0"
 #define HPROP_NAME "hprop"

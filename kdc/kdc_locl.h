@@ -43,49 +43,7 @@
 #ifndef __KDC_LOCL_H__
 #define __KDC_LOCL_H__
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <signal.h>
-#include <stdarg.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-#include <err.h>
-#include <roken.h>
-#include <getarg.h>
-#include <krb5.h>
-#include <hdb_err.h>
-
-#ifdef KRB4
-#define krb_as_req krb4_as_req
-#include <krb.h>
-#include <prot.h>
-#endif
-
-#include "hdb.h"
+#include "headers.h"
 
 extern krb5_context context;
 
@@ -122,7 +80,5 @@ char* kdc_log_msg_va(int, const char*, va_list);
 char* kdc_log_msg(int, const char*, ...);
 
 Key *unseal_key(Key *key);
-
-#define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 
 #endif /* __KDC_LOCL_H__ */
