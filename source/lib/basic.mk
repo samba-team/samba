@@ -48,7 +48,6 @@ ADD_OBJ_FILES = \
 		lib/username.o \
 		lib/dprintf.o \
 		lib/xfile.o \
-		lib/wins_srv.o \
 		lib/util_str.o \
 		lib/util_strlist.o \
 		lib/util_unistr.o \

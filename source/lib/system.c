@@ -181,37 +181,6 @@ struct hostent *sys_gethostbyname(const char *name)
 }
 
 
-/**************************************************************************
- Wrapper for random().
-****************************************************************************/
-
-long sys_random(void)
-{
-#if defined(HAVE_RANDOM)
-	return (long)random();
-#elif defined(HAVE_RAND)
-	return (long)rand();
-#else
-	DEBUG(0,("Error - no random function available !\n"));
-	exit(1);
-#endif
-}
-
-/**************************************************************************
- Wrapper for srandom().
-****************************************************************************/
-
-void sys_srandom(uint_t seed)
-{
-#if defined(HAVE_SRANDOM)
-	srandom(seed);
-#elif defined(HAVE_SRAND)
-	srand(seed);
-#else
-	DEBUG(0,("Error - no srandom function available !\n"));
-	exit(1);
-#endif
-}
 
 /**************************************************************************
  Wrappers for dlopen, dlsym, dlclose.

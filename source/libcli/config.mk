@@ -30,7 +30,9 @@ REQUIRED_SUBSYSTEMS = NDR_NBT
 [SUBSYSTEM::LIBCLI_RESOLVE]
 ADD_OBJ_FILES = \
 	libcli/resolve/resolve.o \
-	libcli/resolve/bcast.o
+	libcli/resolve/nbtlist.o \
+	libcli/resolve/bcast.o \
+	libcli/resolve/wins.o
 REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 
 [SUBSYSTEM::LIBCLI]

@@ -331,7 +331,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 
 	/* we select a random transaction id unless the user supplied one */
 	if (req->request->name_trn_id == 0) {
-		req->request->name_trn_id = random() % UINT16_MAX;
+		req->request->name_trn_id = generate_random() % UINT16_MAX;
 	}
 
 	/* choose the next available transaction id >= the one asked for.
@@ -342,7 +342,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	id = idr_get_new_above(req->nbtsock->idr, req, 
 			       req->request->name_trn_id, UINT16_MAX);
 	if (id == -1) {
-		id = idr_get_new_above(req->nbtsock->idr, req, 1+(random()%(UINT16_MAX/2)),
+		id = idr_get_new_above(req->nbtsock->idr, req, 1+(generate_random()%(UINT16_MAX/2)),
 				       UINT16_MAX);
 	}
 	if (id == -1) goto failed;

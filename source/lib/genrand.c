@@ -192,10 +192,9 @@ static int do_reseed(BOOL use_fd, int fd)
 	return -1;
 }
 
-/*******************************************************************
+/*
  Interface to the (hopefully) good crypto random number generator.
-********************************************************************/
-
+*/
 void generate_random_buffer(uint8_t *out, int len)
 {
 	static int urand_fd = -1;
@@ -238,6 +237,17 @@ void generate_random_buffer(uint8_t *out, int len)
 		len -= copy_len;
 	}
 }
+
+/*
+  generate a single random uint32_t
+*/
+uint32_t generate_random(void)
+{
+	uint8_t v[4];
+	generate_random_buffer(v, 4);
+	return IVAL(v, 0);
+}
+
 
 /*
   very basic password quality checker
