@@ -221,7 +221,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 			}
 			break;
 		case DP_S_MIN:
-			if (isdigit((uint8_t)ch)) {
+			if (isdigit((unsigned char)ch)) {
 				min = 10*min + char_to_int (ch);
 				ch = *format++;
 			} else if (ch == '*') {
@@ -241,7 +241,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 			}
 			break;
 		case DP_S_MAX:
-			if (isdigit((uint8_t)ch)) {
+			if (isdigit((unsigned char)ch)) {
 				if (max < 0)
 					max = 0;
 				max = 10*max + char_to_int (ch);
