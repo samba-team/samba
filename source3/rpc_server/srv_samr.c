@@ -860,41 +860,21 @@ static void api_samr_open_user( int uid, prs_struct *data, prs_struct *rdata)
 /*************************************************************************
  get_user_info_21
  *************************************************************************/
-static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
+static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 {
 	NTTIME dummy_time;
 	struct sam_passwd *sam_pass;
 	LOGON_HRS hrs;
 	int i;
 
-    /*
-     * Convert from rid to either a uid or gid as soon as
-     * possible. JRA.
-     */
+	if (!pdb_rid_is_user(user_rid))
+	{
+		return False;
+	}
 
-    if(pdb_rid_is_user(rid))
-    {
-      uint32 uid = pdb_user_rid_to_uid(rid);
-	  become_root(True);
-      sam_pass = getsam21pwuid(uid);
-      unbecome_root(True);
-    }
-    else
-    {
-      struct group *grent;
-      uint32 gid;
-      gid = pdb_group_rid_to_gid(rid);
-      if((grent = getgrgid(gid)) == NULL) 
-      {
-        DEBUG(0,("get_user_info_21: Unable to get group info.\n"));
-        return False;
-      }
-      /* TODO - at this point we need to convert from
-         a UNIX struct group into a user info 21 structure.
-         Punt for now. JRA.
-       */
-      return False;
-    }
+	become_root(True);
+	sam_pass = getsam21pwrid(user_rid);
+	unbecome_root(True);
 
 	if (sam_pass == NULL)
 	{

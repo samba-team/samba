@@ -394,8 +394,7 @@ uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
  ********************************************************************/
 uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 {
-	struct smb_passwd *smb_pass;
-	uint32 unix_uid;
+	struct sam_disp_info *disp_info;
 	int i = 0;
 	(*type) = SID_NAME_USER;
 
@@ -414,17 +413,14 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 		return 0x0;
 	}
 
-	unix_uid = pdb_uid_to_user_rid(rid);
-	DEBUG(5,(" uid: %d", unix_uid));
-
 	/* ok, it's a user.  find the user account */
 	become_root(True);
-	smb_pass = getsmbpwuid(rid); /* lkclXXXX SHOULD use rid mapping here! */
+	disp_info = getsamdisprid(rid);
 	unbecome_root(True);
 
-	if (smb_pass != NULL)
+	if (disp_info != NULL)
 	{
-		fstrcpy(user_name, smb_pass->smb_name);
+		fstrcpy(user_name, disp_info->smb_name);
 		DEBUG(5,(" = %s\n", user_name));
 		return 0x0;
 	}

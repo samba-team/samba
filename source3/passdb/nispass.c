@@ -94,13 +94,14 @@ static void gotalarm_sig(void)
 /***************************************************************
  make_nisname_from_user_rid
  ****************************************************************/
-static char *make_nisname_from_user_rid(uint32 rid)
+static char *make_nisname_from_user_rid(uint32 rid, char *pfile)
 {
 	static pstring nisname;
 
 	safe_strcpy(nisname, "[user_rid=", sizeof(nisname)-1);
 	slprintf(nisname, sizeof(nisname)-1, "%s%d", nisname, rid);
-	safe_strcat(nisname, "], passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
+	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
+	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
 
 	return nisname;
 }
@@ -108,13 +109,14 @@ static char *make_nisname_from_user_rid(uint32 rid)
 /***************************************************************
  make_nisname_from_uid
  ****************************************************************/
-static char *make_nisname_from_uid(int uid)
+static char *make_nisname_from_uid(int uid, char *pfile)
 {
 	static pstring nisname;
 
 	safe_strcpy(nisname, "[uid=", sizeof(nisname)-1);
 	slprintf(nisname, sizeof(nisname)-1, "%s%d", nisname, uid);
-	safe_strcat(nisname, "], passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
+	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
+	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
 
 	return nisname;
 }
@@ -122,13 +124,14 @@ static char *make_nisname_from_uid(int uid)
 /***************************************************************
  make_nisname_from_name
  ****************************************************************/
-static char *make_nisname_from_name(char *user_name)
+static char *make_nisname_from_name(char *user_name, char *pfile)
 {
 	static pstring nisname;
 
 	safe_strcpy(nisname, "[name=", sizeof(nisname)-1);
 	safe_strcat(nisname, user_name, sizeof(nisname) - strlen(nisname) - 1);
-	safe_strcat(nisname, "], passwd.org_dir", sizeof(nisname) - strlen(nisname) - 1);
+	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
+	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
 
 	return nisname;
 }
@@ -214,9 +217,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 
 	pfile = lp_smb_passwd_file();
 
-	safe_strcpy(user_name, newpwd->smb_name, sizeof(user_name)-1);
-
-	nisname = make_nisname_from_name(user_name);
+	nisname = make_nisname_from_name(user_name, "passwd.org_dir");
 
 	nis_user = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
 
@@ -229,10 +230,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 
 	user_obj = NIS_RES_OBJECT(nis_user);
 
-	safe_strcpy(nisname, "[name=", sizeof(nisname)-1);
-	safe_strcat(nisname, ENTRY_VAL(user_obj,0),sizeof(nisname)-strlen(nisname)-1);
-	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
-	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
+	make_nisname_from_name(ENTRY_VAL(user_obj,0), pfile);
 
 	result = nis_list(nisname, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP,NULL,NULL);
 	if (result->status != NIS_SUCCESS && result->status != NIS_NOTFOUND)
@@ -465,12 +463,12 @@ static struct sam_passwd *getnisp21pwnam(char *name)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-static struct sam_passwd *getnisp21pwuid(int smb_userid)
+static struct sam_passwd *getnisp21pwrid(uint32 rid)
 {
 	/* Static buffers we will return. */
 	static struct sam_passwd pw_buf;
 	nis_result *result;
-	pstring nisname;
+	char *nisname;
 	BOOL ret;
 
 	if (!*lp_smb_passwd_file())
@@ -479,10 +477,10 @@ static struct sam_passwd *getnisp21pwuid(int smb_userid)
 		return NULL;
 	}
 
-	DEBUG(10, ("getnisppwuid: search by uid: %d\n", smb_userid));
-	DEBUG(10, ("getnisppwuid: using NIS+ table %s\n", lp_smb_passwd_file()));
+	DEBUG(10, ("getnisp21pwrid: search by rid: %x\n", rid));
+	DEBUG(10, ("getnisp21pwrid: using NIS+ table %s\n", lp_smb_passwd_file()));
 
-	slprintf(nisname, sizeof(nisname)-1, "[uid=%d],%s", smb_userid, lp_smb_passwd_file());
+	nisname = make_nisname_from_user_rid(rid, lp_smb_passwd_file());
 
 	/* Search the table. */
 	gotalarm = 0;
@@ -496,7 +494,7 @@ static struct sam_passwd *getnisp21pwuid(int smb_userid)
 
 	if (gotalarm)
 	{
-		DEBUG(0,("getnisppwuid: NIS+ lookup time out\n"));
+		DEBUG(0,("getnisp21pwrid: NIS+ lookup time out\n"));
 		nis_freeresult(result);
 		return NULL;
 	}
@@ -511,46 +509,24 @@ static struct sam_passwd *getnisp21pwuid(int smb_userid)
  * Derived functions for NIS+.
  */
 
-static struct smb_passwd *getnispwnam(char *name)
-{
-  return pdb_sam_to_smb(iterate_getsam21pwnam(name));
-}
-
-static struct smb_passwd *getnispwuid(uid_t smb_userid)
-{
-    return pdb_sam_to_smb(iterate_getsam21pwuid(smb_userid));
-}
-
-static struct smb_passwd *getnispwent(void *vp)
-{
-  return pdb_sam_to_smb(getnisp21pwent(vp));
-}
-
-static BOOL add_nispwd_entry(struct smb_passwd *newpwd) 
-{   
-  return add_nisp21pwd_entry(pdb_smb_to_sam(newpwd));
-}
-
-static BOOL mod_nispwd_entry(struct smb_passwd* pwd, BOOL override)
-{    
-  return mod_nisp21pwd_entry(pdb_smb_to_sam(pwd), override);
-}
-
 static struct passdb_ops nispasswd_ops = {
   startnisppwent,
   endnisppwent,
   getnisppwpos,
   setnisppwpos,
-  getnispwnam,
-  getsmbpwuid,
-  getnispwent,
-  add_nispwd_entry,
-  mod_nispwd_entry,
+  NULL, /* getnispwnam, */
+  NULL, /* getnispwuid, */
+  NULL, /* getnispwent, */
+  NULL, /* add_nispwd_entry, */
+  NULL, /* mod_nispwd_entry, */
   getnisp21pwent,
-  iterate_getsam21pwnam,          /* Found in passdb.c */
-  iterate_getsam21pwuid,          /* Found in passdb.c */
+  getnisp21pwnam,
+  NULL, /* getsam21pwuid */          
+  getnisp21pwrid, 
   add_nisp21pwd_entry,
-  mod_nisp21pwd_entry 
+  mod_nisp21pwd_entry,
+  NULL, /* getsamdisprid */
+  NULL /* getsamdispent */
 };
 
 struct passdb_ops *nisplus_initialize_password_db(void)

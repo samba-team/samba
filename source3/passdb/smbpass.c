@@ -933,6 +933,7 @@ static struct passdb_ops file_ops = {
   getsmbfile21pwent,
   iterate_getsam21pwnam,        /* In passdb.c */
   iterate_getsam21pwuid,        /* In passdb.c */
+  iterate_getsam21pwrid,        /* In passdb.c */
   add_smbfile21pwd_entry,
   mod_smbfile21pwd_entry
 };

@@ -945,21 +945,25 @@ static BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
   return mod_ldap21pwd_entry(pdb_smb_to_sam(pwd), override);
 }
 
-static struct passdb_ops ldap_ops = {
-  startldappwent,
-  endldappwent,
-  getldappwpos,
-  setldappwpos,
-  getldappwnam,
-  getldappwuid,
-  getldappwent, 
-  add_ldappwd_entry,
-  mod_ldappwd_entry,
-  getldap21pwent,
-  iterate_getsam21pwnam,       /* From passdb.c */
-  iterate_getsam21pwuid,       /* From passdb.c */
-  add_ldap21pwd_entry,
-  mod_ldap21pwd_entry
+static struct passdb_ops ldap_ops =
+{
+	startldappwent,
+	endldappwent,
+	getldappwpos,
+	setldappwpos,
+	getldappwnam,
+	NULL, /* getldappwuid, */
+	NULL, /* getldappwent, */
+	NULL, /* add_ldappwd_entry, */
+	NULL, /* mod_ldappwd_entry, */
+	getldap21pwent,
+	iterate_getsam21pwnam,       /* From passdb.c */
+	iterate_getsam21pwuid,       /* From passdb.c */
+	iterate_getsam21pwrid,       /* From passdb.c */
+	add_ldap21pwd_entry,
+	mod_ldap21pwd_entry,
+	NULL, /* getsamdisprid, */
+	NULL /* getsamdispent */
 };
 
 struct passdb_ops *ldap_initialize_password_db(void)
