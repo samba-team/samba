@@ -1,3 +1,36 @@
+2000-06-16  Assar Westerlund  <assar@sics.se>
+
+	* ipropd_slave.c: change default keytab to default keytab (as in
+	typically FILE:/etc/krb5.keytab)
+
+2000-06-08  Assar Westerlund  <assar@sics.se>
+
+	* ipropd_slave.c: bug fixes, for actually writing the full dump to
+	the database.  based on a patch from Love <lha@stacken.kth.se>
+
+2000-06-07  Assar Westerlund  <assar@sics.se>
+
+	* acl.c: add support for patterns of principals
+	* log.c (kadm5_log_replay_create): handle more NULL pointers
+	(should they really happen?)
+	* log.c (kadm5_log_replay_modify): handle max_life == NULL and
+	max_renew == NULL
+
+	* ipropd_master.c: use syslog.  be less verbose
+	* ipropd_slave.c: use syslog
+
+2000-06-05  Assar Westerlund  <assar@sics.se>
+
+	* private.h (kadm_ops): add kadm_nop more prototypes
+	* log.c (kadm5_log_set_version, kadm5_log_reinit, kadm5_log_nop,
+	kadm5_log_replay_nop): add
+	* ipropd_slave.c: and some more improvements
+	* ipropd_master.c: lots of improvements
+	* iprop.h (IPROP_PORT, IPROP_SERVICE): add
+	(iprop_cmd): add new commands
+
+	* dump_log.c: add nop
+
 2000-05-15  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkadm5clnt_la_LDFLAGS): set version to 5:1:1
