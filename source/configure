@@ -11504,9 +11504,9 @@ fi
 # check for a shared memory profiling support
 echo $ac_n "checking whether to use profiling""... $ac_c" 1>&6
 echo "configure:11507: checking whether to use profiling" >&5
-# Check whether --with-profile or --without-profile was given.
-if test "${with_profile+set}" = set; then
-  withval="$with_profile"
+# Check whether --with-profiling-data or --without-profiling-data was given.
+if test "${with_profiling_data+set}" = set; then
+  withval="$with_profiling_data"
    case "$withval" in
   yes)
     echo "$ac_t""yes" 1>&6
