@@ -26,6 +26,30 @@
 extern int DEBUGLEVEL;
 static uint32 counter = 0;
 
+
+/****************************************************************
+get a 16 byte hash from the contents of a file
+Note that the hash is not initialised.
+*****************************************************************/
+static void do_filehash(char *fname, unsigned char *hash)
+{
+	unsigned char buf[1011]; /* deliberate weird size */
+	unsigned char tmp_md4[16];
+	int fd, n;
+
+	fd = open(fname,O_RDONLY);
+	if (fd == -1) return;
+
+	while ((n = read(fd, (char *)buf, sizeof(buf))) > 0) {
+		mdfour(tmp_md4, buf, n);
+		for (n=0;n<16;n++)
+			hash[n] ^= tmp_md4[n];
+	}
+	close(fd);
+}
+
+
+
 /****************************************************************
  Try and get a seed by looking at the atimes of files in a given
  directory. XOR them into the buf array.
@@ -81,14 +105,15 @@ static void do_dirrand(char *name, unsigned char *buf, int buf_len)
  XOR all the file timestamps. If this fails then just use
  a combination of pid and time of day (yes I know this
  sucks :-). Finally md4 the result.
+
+ The result goes in a 16 byte buffer passed from the caller
 **************************************************************/
 
-static uint32 do_reseed(void)
+static void do_reseed(unsigned char *md4_outbuf)
 {
-  unsigned char md4_outbuf[16];
   unsigned char md4_inbuf[40];
   BOOL got_random = False;
-  uint32 v1, v2, ret;
+  uint32 v1, v2;
   int fd;
   struct timeval tval;
   pid_t mypid;
@@ -115,6 +140,10 @@ static uint32 do_reseed(void)
     do_dirrand("/dev", md4_inbuf, sizeof(md4_inbuf));
   }
 
+  /* possibly add in some secret file contents */
+  do_filehash("/etc/shadow", &md4_inbuf[0]);
+  do_filehash(SMB_PASSWD_FILE, &md4_inbuf[16]);
+
   /*
    * Finally add the counter, time of day, and pid.
    */
@@ -124,19 +153,9 @@ static uint32 do_reseed(void)
   v2 = (counter++) * mypid + tval.tv_usec;
 
   SIVAL(md4_inbuf, 32, v1 ^ IVAL(md4_inbuf, 32));
-  SIVAL(md4_inbuf, 36, v1 ^ IVAL(md4_inbuf, 36));
+  SIVAL(md4_inbuf, 36, v2 ^ IVAL(md4_inbuf, 36));
 
   mdfour(md4_outbuf, md4_inbuf, sizeof(md4_inbuf));
-
-  /* XOR everything togther in blocks of 4 bytes. */
-  ret = IVAL(md4_outbuf,0);
-  ret ^= IVAL(md4_outbuf,4);
-  ret ^= IVAL(md4_outbuf,8);
-  ret ^= IVAL(md4_outbuf,12);
-
-  DEBUG(10,("do_reseed: returning seed %lu\n", ret));
-
-  return ret;
 }
 
 /*******************************************************************
@@ -146,13 +165,13 @@ static uint32 do_reseed(void)
 void generate_random_buffer( unsigned char *out, int len, BOOL re_seed)
 {
   static BOOL done_reseed = False;
-  unsigned char tmp_buf[64];
+  unsigned char tmp_buf[16];
   unsigned char md4_buf[16];
   unsigned char *p;
 
   if(!done_reseed || re_seed) {
-    srandom(do_reseed());
-    done_reseed = True;
+	  do_reseed(md4_buf);
+	  done_reseed = True;
   }
 
   /*
@@ -162,12 +181,10 @@ void generate_random_buffer( unsigned char *out, int len, BOOL re_seed)
 
   p = out;
   while(len > 0) {
-    int i;
     int copy_len = len > 16 ? 16 : len;
-    for( i = 0; i < 16; i++)
-      SIVAL(tmp_buf, i*4, random());
-    mdfour(md4_buf, tmp_buf, sizeof(tmp_buf));
-    memcpy(p, md4_buf, copy_len);
+    mdfour(tmp_buf, md4_buf, sizeof(md4_buf));
+    memcpy(md4_buf, tmp_buf, sizeof(md4_buf));
+    memcpy(p, tmp_buf, copy_len);
     p += copy_len;
     len -= copy_len;
   }
