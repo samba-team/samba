@@ -27,27 +27,11 @@
 
 
 /*
-  receive an incoming request
-*/
-static void nbt_request_handler(struct nbt_name_socket *nbtsock, 
-				struct nbt_name_packet *packet, 
-				const char *src_address, int src_port)
-{
-	switch (packet->operation & NBT_OPCODE) {
-	case NBT_OPCODE_QUERY:
-		nbt_request_query(nbtsock, packet, src_address, src_port);
-		break;
-	}
-}
-
-
-/*
   startup the nbtd task
 */
 static void nbtd_task_init(struct task_server *task)
 {
 	struct nbt_server *nbtsrv;
-	struct nbt_interface *iface;
 	NTSTATUS status;
 
 	nbtsrv = talloc(task, struct nbt_server);
@@ -66,13 +50,6 @@ static void nbtd_task_init(struct task_server *task)
 		task_terminate(task, "nbtd failed to setup interfaces");
 		return;
 	}
-
-	/* setup the incoming request handler for all our interfaces */
-	for (iface=nbtsrv->interfaces;iface;iface=iface->next) {
-		nbt_set_incoming_handler(iface->nbtsock, nbt_request_handler, iface);
-	}
-	nbt_set_incoming_handler(nbtsrv->bcast_interface->nbtsock, nbt_request_handler, 
-				 nbtsrv->bcast_interface);
 
 	/* start the process of registering our names on all interfaces */
 	nbt_register_names(nbtsrv);
