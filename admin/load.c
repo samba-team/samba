@@ -10,27 +10,33 @@ struct entry{
     char *max_renew;
 };
 
-int main(int argc, char **argv)
+static void
+doit(char *filename, int merge)
 {
     FILE *f;
     HDB *db;
-    krb5_context context;
     char s[1024];
     char *p;
     int line;
     int err;
     int i;
+    int flags = O_RDWR;
 
     struct entry e;
     hdb_entry ent;
 
-    
-    krb5_init_context(&context);
-    f = fopen(argv[1], "r");
-    err = hdb_open(context, &db, argv[2], O_RDWR | O_CREAT | O_TRUNC, 0600);
+    f = fopen(filename, "r");
+    if(f == NULL){
+	fprintf(stderr, "%s: %s\n", filename, strerror(errno));
+	return;
+    }
+    if(!merge)
+	flags |= O_CREAT | O_TRUNC;
+    err = hdb_open(context, &db, database, flags, 0600);
     if(err){
 	fprintf(stderr, "hdb_open: %s\n", krb5_get_err_text(context, err));
-	exit(1);
+	fclose(f);
+	return;
     }
     line = 0;
     while(fgets(s, sizeof(s), f)){
@@ -70,7 +76,7 @@ int main(int argc, char **argv)
 	err = krb5_parse_name(context, e.principal, &ent.principal);
 	if(err){
 	    fprintf(stderr, "%s:%s:%s (%s)\n", 
-		    argv[1], 
+		    filename, 
 		    line,
 		    krb5_get_err_text(context, err),
 		    e.principal);
@@ -79,7 +85,7 @@ int main(int argc, char **argv)
 	
 	ent.keyblock.keytype = KEYTYPE_DES;
 	ent.keyblock.contents.data = malloc(strlen(e.key)/2+1);
-	for(i = 0; i < strlen(e.key); i += 2){
+	for(i = 1; i < strlen(e.key) - 1; i += 2){
 	    unsigned tmp;
 	    sscanf(e.key + i, "%2x", &tmp);
 	    ((unsigned char *)ent.keyblock.contents.data)[i/2] = tmp;
@@ -91,4 +97,25 @@ int main(int argc, char **argv)
 	db->store(context, db, &ent);
     }
     db->close(context, db);
+    fclose(f);
+}
+
+void
+load(int argc, char **argv)
+{
+    if(argc < 2){
+	fprintf(stderr, "Usage: load filename\n");
+	return;
+    }
+    doit(argv[1], 0);
+}
+
+void
+merge(int argc, char **argv)
+{
+    if(argc < 2){
+	fprintf(stderr, "Usage: merge filename\n");
+	return;
+    }
+    doit(argv[1], 1);
 }
