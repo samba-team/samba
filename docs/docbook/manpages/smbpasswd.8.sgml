@@ -200,6 +200,15 @@
                 </listitem>
 		</varlistentry>
 		
+		<varlistentry>
+		<term>-T</term>
+		<listitem><para>The <parameter>-T</parameter> option may be used to
+		force samba to use a previously created trust account by allowing
+		the trust account hash to be set in the secrets database only. 
+		This way, an application can change the trust account password
+		and call "smbpasswd -T" so that Samba can continue to work.
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>
