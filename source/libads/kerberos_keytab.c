@@ -30,26 +30,10 @@
 #ifdef HAVE_KRB5
 
 /**********************************************************************
- Converts a name to a fully qalified domain name.
-***********************************************************************/
-
-void name_to_fqdn(fstring fqdn, const char *name)
-{
-	struct hostent *hp = sys_gethostbyname(name);
-	if ( hp && hp->h_name && *hp->h_name ) {
-		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, hp->h_name));
-		fstrcpy(fqdn,hp->h_name);
-	} else {
-		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
-		fstrcpy(fqdn, name);
-	}
-}
-
-/**********************************************************************
  Adds a single service principal, i.e. 'host' to the system keytab
 ***********************************************************************/
 
-int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
+int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 {
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
@@ -254,8 +238,8 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 
 	/* Update the LDAP with the SPN */
 	DEBUG(3,("ads_keytab_add_entry: Attempting to add/update '%s'\n", princ_s));
-	if (!ADS_ERR_OK(ads_add_spn(ads, global_myname(), srvPrinc))) {
-		DEBUG(1,("ads_keytab_add_entry: ads_add_spn failed.\n"));
+	if (!ADS_ERR_OK(ads_add_service_principal_name(ads, global_myname(), srvPrinc))) {
+		DEBUG(1,("ads_keytab_add_entry: ads_add_service_principcal_name failed.\n"));
 		goto out;
 	}
 
@@ -372,7 +356,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	ZERO_STRUCT(kt_entry);
 	cursor = NULL;
 
-	if (!ADS_ERR_OK(ads_clear_spns(ads, global_myname()))) {
+	if (!ADS_ERR_OK(ads_clear_service_principal_names(ads, global_myname()))) {
 		DEBUG(1,("ads_keytab_flush: Error while clearing service principal listings in LDAP.\n"));
 		goto out;
 	}
@@ -413,12 +397,12 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	int i, found = 0;
 	char **oldEntries = NULL;
 
-	ret = ads_keytab_add_entry("host", ads);
+	ret = ads_keytab_add_entry(ads, "host");
 	if (ret) {
 		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding 'host'.\n"));
 		return ret;
 	}
-	ret = ads_keytab_add_entry("cifs", ads);
+	ret = ads_keytab_add_entry(ads, "cifs");
 	if (ret) {
 		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding 'cifs'.\n"));
 		return ret;
@@ -512,7 +496,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 			ZERO_STRUCT(kt_entry);
 		}
 		for (i = 0; oldEntries[i]; i++) {
-			ret |= ads_keytab_add_entry(oldEntries[i], ads);
+			ret |= ads_keytab_add_entry(ads, oldEntries[i]);
 			krb5_free_unparsed_name(context, oldEntries[i]);
 		}
 		krb5_kt_end_seq_get(context, keytab, &cursor);

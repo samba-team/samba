@@ -59,7 +59,7 @@
 #ifdef strncasecmp
 #undef strncasecmp
 #endif
-#define strncasecmp __ERROR__XX__NEVER_USE_STRCASECMP__;
+#define strncasecmp __ERROR__XX__NEVER_USE_STRNCASECMP__;
 
 #endif /* !_SPLINT_ */
 
