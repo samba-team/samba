@@ -40,7 +40,6 @@ dn: @MODULES
 @MODULE: timestamps
 
 dn: ${BASEDN}
-distinguishedName: ${BASEDN}
 objectClass: top
 objectClass: domain
 objectClass: domainDNS
@@ -75,7 +74,6 @@ objectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Users,${BASEDN}
-distinguishedName: CN=Users,${BASEDN}
 objectClass: top
 objectClass: container
 cn: Users
@@ -93,7 +91,6 @@ objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Computers,${BASEDN}
-distinguishedName: CN=Computers,${BASEDN}
 objectClass: top
 objectClass: container
 cn: Computers
@@ -111,7 +108,6 @@ objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: OU=Domain Controllers,${BASEDN}
-distinguishedName: OU=Domain Controllers,${BASEDN}
 objectClass: top
 objectClass: organizationalUnit
 ou: Domain Controllers
@@ -129,7 +125,6 @@ objectCategory: CN=Organizational-Unit,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=ForeignSecurityPrincipals,${BASEDN}
-distinguishedName: CN=ForeignSecurityPrincipals,${BASEDN}
 objectClass: top
 objectClass: container
 cn: ForeignSecurityPrincipals
@@ -147,7 +142,6 @@ objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=System,${BASEDN}
-distinguishedName: CN=System,${BASEDN}
 objectClass: top
 objectClass: container
 cn: System
@@ -165,7 +159,6 @@ objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Builtin,${BASEDN}
-distinguishedName: CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: builtinDomain
 cn: Builtin
@@ -191,7 +184,6 @@ objectCategory: CN=Builtin-Domain,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Administrator,CN=Users,${BASEDN}
-distinguishedName: CN=Administrator,CN=Users,${BASEDN}
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
@@ -231,7 +223,6 @@ unicodePwd: ${ADMINPASS}
 unixName: root
 
 dn: CN=Guest,CN=Users,${BASEDN}
-distinguishedName: CN=Guest,CN=Users,${BASEDN}
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
@@ -264,7 +255,6 @@ objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Administrators,CN=Builtin,${BASEDN}
-distinguishedName: CN=Administrators,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Administrators
@@ -315,7 +305,6 @@ privilege: SeRemoteInteractiveLogonRight
 
 
 dn: CN=Users,CN=Builtin,${BASEDN}
-distinguishedName: CN=Users,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Users
@@ -337,7 +326,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Guests,CN=Builtin,${BASEDN}
-distinguishedName: CN=Guests,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Guests
@@ -361,7 +349,6 @@ isCriticalSystemObject: TRUE
 unixName: ${NOGROUP}
 
 dn: CN=Print Operators,CN=Builtin,${BASEDN}
-distinguishedName: CN=Print Operators,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Print Operators
@@ -386,7 +373,6 @@ privilege: SeShutdownPrivilege
 privilege: SeInteractiveLogonRight
 
 dn: CN=Backup Operators,CN=Builtin,${BASEDN}
-distinguishedName: CN=Backup Operators,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Backup Operators
@@ -412,7 +398,6 @@ privilege: SeShutdownPrivilege
 privilege: SeInteractiveLogonRight
 
 dn: CN=Replicator,CN=Builtin,${BASEDN}
-distinguishedName: CN=Replicator,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Replicator
@@ -434,7 +419,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Remote Desktop Users,CN=Builtin,${BASEDN}
-distinguishedName: CN=Remote Desktop Users,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Remote Desktop Users
@@ -455,7 +439,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Network Configuration Operators,CN=Builtin,${BASEDN}
-distinguishedName: CN=Network Configuration Operators,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Network Configuration Operators
@@ -476,7 +459,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Performance Monitor Users,CN=Builtin,${BASEDN}
-distinguishedName: CN=Performance Monitor Users,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Performance Monitor Users
@@ -497,7 +479,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Performance Log Users,CN=Builtin,${BASEDN}
-distinguishedName: CN=Performance Log Users,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Performance Log Users
@@ -518,7 +499,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
-distinguishedName: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
@@ -561,7 +541,6 @@ servicePrincipalName: LDAP/${DNSNAME}
 servicePrincipalName: LDAP/${NETBIOSNAME}
 
 dn: CN=krbtgt,CN=Users,${BASEDN}
-distinguishedName: CN=krbtgt,CN=Users,${BASEDN}
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
@@ -597,7 +576,6 @@ isCriticalSystemObject: TRUE
 unicodePwd: ${RANDPASS}
 
 dn: CN=Domain Computers,CN=Users,${BASEDN}
-distinguishedName: CN=Domain Computers,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Domain Computers
@@ -617,7 +595,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Domain Controllers,CN=Users,${BASEDN}
-distinguishedName: CN=Domain Controllers,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Domain Controllers
@@ -638,7 +615,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Schema Admins,CN=Users,${BASEDN}
-distinguishedName: CN=Schema Admins,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Schema Admins
@@ -661,7 +637,6 @@ isCriticalSystemObject: TRUE
 unixName: ${WHEEL}
 
 dn: CN=Enterprise Admins,CN=Users,${BASEDN}
-distinguishedName: CN=Enterprise Admins,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Enterprise Admins
@@ -685,7 +660,6 @@ isCriticalSystemObject: TRUE
 unixName: ${WHEEL}
 
 dn: CN=Cert Publishers,CN=Users,${BASEDN}
-distinguishedName: CN=Cert Publishers,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Cert Publishers
@@ -705,7 +679,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Domain Admins,CN=Users,${BASEDN}
-distinguishedName: CN=Domain Admins,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Domain Admins
@@ -729,7 +702,6 @@ isCriticalSystemObject: TRUE
 unixName: ${WHEEL}
 
 dn: CN=Domain Users,CN=Users,${BASEDN}
-distinguishedName: CN=Domain Users,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Domain Users
@@ -751,7 +723,6 @@ isCriticalSystemObject: TRUE
 unixName: ${USERS}
 
 dn: CN=Domain Guests,CN=Users,${BASEDN}
-distinguishedName: CN=Domain Guests,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Domain Guests
@@ -772,7 +743,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Group Policy Creator Owners,CN=Users,${BASEDN}
-distinguishedName: CN=Group Policy Creator Owners,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Group Policy Creator Owners
@@ -794,7 +764,6 @@ isCriticalSystemObject: TRUE
 unixName: ${WHEEL}
 
 dn: CN=RAS and IAS Servers,CN=Users,${BASEDN}
-distinguishedName: CN=RAS and IAS Servers,CN=Users,${BASEDN}
 objectClass: top
 objectClass: group
 cn: RAS and IAS Servers
@@ -814,7 +783,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Server Operators,CN=Builtin,${BASEDN}
-distinguishedName: CN=Server Operators,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Server Operators
@@ -842,7 +810,6 @@ privilege: SeShutdownPrivilege
 privilege: SeInteractiveLogonRight
 
 dn: CN=Account Operators,CN=Builtin,${BASEDN}
-distinguishedName: CN=Account Operators,CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: group
 cn: Account Operators
@@ -865,7 +832,6 @@ isCriticalSystemObject: TRUE
 privilege: SeInteractiveLogonRight
 
 dn: CN=Templates,${BASEDN}
-distinguishedName: CN=Templates,${BASEDN}
 objectClass: top
 objectClass: container
 cn: Templates
