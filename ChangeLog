@@ -1,5 +1,7 @@
 2002-09-10  Johan Danielsson  <joda@pdc.kth.se>
 
+	* include/make_crypto.c: don't use function macros if possible
+
 	* lib/krb5/krb5_locl.h: get limits.h for UINT_MAX
 
 	* include/Makefile.am: use make_crypto to create crypto-headers.h
