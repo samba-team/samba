@@ -38,7 +38,6 @@
 
 #include "kuser_locl.h"
 RCSID("$Id$");
-#include <getarg.h>
 
 int forwardable;
 int preauth = 1;
