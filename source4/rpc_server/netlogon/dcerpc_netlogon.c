@@ -60,9 +60,9 @@ static void netlogon_unbind(struct dcesrv_connection *conn, const struct dcesrv_
   netr_ServerReqChallenge 
 
 	NTSTATUS netr_ServerReqChallenge(
-		[in]        unistr *server_name,
-		[in]        unistr computer_name,
-		[in][out]   netr_Credential credentials
+		[in]         unistr *server_name,
+		[in]         unistr computer_name,
+		[in,out,ref] netr_Credential *credentials
 		);
 
 */
@@ -72,7 +72,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 	struct server_pipe_state *pipe_state = dce_call->conn->private;
 	TALLOC_CTX *pipe_mem_ctx;
 
-	ZERO_STRUCT(r->out.credentials);
+	ZERO_STRUCTP(r->out.credentials);
 
 	/* destroyed on pipe shutdown */
 
@@ -100,13 +100,13 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 	pipe_state->account_name = NULL;
 	pipe_state->computer_name = NULL;
 
-	pipe_state->client_challenge = r->in.credentials;
+	pipe_state->client_challenge = *r->in.credentials;
 
 	generate_random_buffer(pipe_state->server_challenge.data, 
 			       sizeof(pipe_state->server_challenge.data),
 			       False);
 
-	r->out.credentials = pipe_state->server_challenge;
+	*r->out.credentials = pipe_state->server_challenge;
 
 	dce_call->conn->private = pipe_state;
 
@@ -123,42 +123,32 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 	const int SEC_CHAN_DOMAIN  = 4;
 	const int SEC_CHAN_BDC     = 6;
 
-	NTSTATUS netr_ServerAuthenticate(
-		[in]        unistr *server_name,
-		[in]        unistr username,
-		[in]        uint16 secure_channel_type,
-		[in]        unistr computer_name,
-		[in,out]    netr_Credential credentials
+	NTSTATUS netr_ServerAuthenticate3(
+		[in]         unistr *server_name,
+		[in]         unistr username,
+		[in]         uint16 secure_channel_type,
+		[in]         unistr computer_name,
+		[in,out,ref] netr_Credential *credentials
+		[in,out,ref] uint32 *negotiate_flags,
+		[out,ref]    uint32 *rid
 		);
-
-
 */
-
-static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_state,
-						 TALLOC_CTX *mem_ctx,
-						 const char *account_name, 
-						 const char *computer_name, 
-						 uint16_t secure_channel_type,
-						 uint32_t in_flags,
-						 const struct netr_Credential *client_credentials,
-						 struct netr_Credential *server_credentials,
-						 uint32_t *out_flags) 
+static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					 struct netr_ServerAuthenticate3 *r)
 {
+	struct server_pipe_state *pipe_state = dce_call->conn->private;
 	void *sam_ctx;
 	uint8_t *mach_pwd;
 	uint16_t acct_flags;
 	int num_records;
 	struct ldb_message **msgs;
 	NTSTATUS nt_status;
+	const char *attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash", "userAccountControl", 
+			       "objectSid", NULL};
 
-	const char *attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash", 
-			       "userAccountControl", NULL 
-	};
-
-	ZERO_STRUCTP(server_credentials);
-	if (out_flags) {
-		*out_flags = 0;
-	}
+	ZERO_STRUCTP(r->out.credentials);
+	*r->out.negotiate_flags = 0;
+	*r->out.rid = 0;
 
 	if (!pipe_state) {
 		DEBUG(1, ("No challange requested by client, cannot authenticate\n"));
@@ -172,17 +162,17 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 	/* pull the user attributes */
 	num_records = samdb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
-				   account_name);
+				   r->in.username);
 
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
-			 account_name));
+			 r->in.username));
 		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (num_records > 1) {
-		DEBUG(1,("Found %d records matching user [%s]\n", num_records, account_name));
+		DEBUG(1,("Found %d records matching user [%s]\n", num_records, r->in.username));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -191,35 +181,38 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 					     "userAccountControl");
 
 	if (acct_flags & ACB_DISABLED) {
-		DEBUG(1, ("Account [%s] is disabled\n", account_name));
+		DEBUG(1, ("Account [%s] is disabled\n", r->in.username));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (secure_channel_type == SEC_CHAN_WKSTA) {
+	if (r->in.secure_channel_type == SEC_CHAN_WKSTA) {
 		if (!(acct_flags & ACB_WSTRUST)) {
 			DEBUG(1, ("Client asked for a workstation secure channel, but is not a workstation (member server) acb flags: 0x%x\n", acct_flags));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-	} else if (secure_channel_type == SEC_CHAN_DOMAIN) {
+	} else if (r->in.secure_channel_type == SEC_CHAN_DOMAIN) {
 		if (!(acct_flags & ACB_DOMTRUST)) {
 			DEBUG(1, ("Client asked for a trusted domain secure channel, but is not a trusted domain: acb flags: 0x%x\n", acct_flags));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-	} else if (secure_channel_type == SEC_CHAN_BDC) {
+	} else if (r->in.secure_channel_type == SEC_CHAN_BDC) {
 		if (!(acct_flags & ACB_SVRTRUST)) {
 			DEBUG(1, ("Client asked for a server secure channel, but is not a server (domain controller): acb flags: 0x%x\n", acct_flags));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
-		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n", secure_channel_type));
+		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n", 
+			  r->in.secure_channel_type));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	pipe_state->acct_flags = acct_flags;
-	pipe_state->sec_chan_type = secure_channel_type;
+	pipe_state->sec_chan_type = r->in.secure_channel_type;
 
-	if (!NT_STATUS_IS_OK(nt_status = samdb_result_passwords(mem_ctx, msgs[0], 
-								NULL, &mach_pwd))) {
+	*r->out.rid = samdb_result_rid_from_sid(mem_ctx, msgs[0], "objectSid", 0);
+
+	nt_status = samdb_result_passwords(mem_ctx, msgs[0], NULL, &mach_pwd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		samdb_close(sam_ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -235,9 +228,9 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 
 	creds_server_init(pipe_state->creds, &pipe_state->client_challenge, 
 			  &pipe_state->server_challenge, mach_pwd,
-			  server_credentials);
+			  r->out.credentials);
 
-	if (!creds_server_check(pipe_state->creds, client_credentials)) {
+	if (!creds_server_check(pipe_state->creds, r->in.credentials)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -248,18 +241,16 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 		talloc_free(pipe_state->mem_ctx, pipe_state->account_name);
 	}
 
-	pipe_state->account_name = talloc_strdup(pipe_state->mem_ctx, account_name);
+	pipe_state->account_name = talloc_strdup(pipe_state->mem_ctx, r->in.username);
 	
 	if (pipe_state->computer_name) {
 		/* We don't want a memory leak on this long-lived talloc context */
 		talloc_free(pipe_state->mem_ctx, pipe_state->account_name);
 	}
 
-	pipe_state->computer_name = talloc_strdup(pipe_state->mem_ctx, computer_name);
+	pipe_state->computer_name = talloc_strdup(pipe_state->mem_ctx, r->in.computer_name);
 	
-	if (out_flags) {
-		*out_flags = NETLOGON_NEG_AUTH2_FLAGS;
-	}
+	*r->out.negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
 	return NT_STATUS_OK;
 }
@@ -268,34 +259,41 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 static NTSTATUS netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerAuthenticate *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->conn->private;
+	struct netr_ServerAuthenticate3 r3;
+	uint32 negotiate_flags, rid;
+
+	r3.in.server_name = r->in.server_name;
+	r3.in.username = r->in.username;
+	r3.in.secure_channel_type = r->in.secure_channel_type;
+	r3.in.computer_name = r->in.computer_name;
+	r3.in.credentials = r->in.credentials;
+	r3.out.credentials = r->out.credentials;
+	r3.in.negotiate_flags = &negotiate_flags;
+	r3.out.negotiate_flags = &negotiate_flags;
+	r3.out.rid = &rid;
 	
-	return netr_ServerAuthenticateInternals(pipe_state,
-						mem_ctx,
-						r->in.username,
-						r->in.computer_name,
-						r->in.secure_channel_type,
-						0,
-						&r->in.credentials,
-						&r->out.credentials,
-						NULL); 
+	return netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
 }
 
 static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					struct netr_ServerAuthenticate2 *r)
+					 struct netr_ServerAuthenticate2 *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->conn->private;
+	struct netr_ServerAuthenticate3 r3;
+	uint32 rid;
+
+	r3.in.server_name = r->in.server_name;
+	r3.in.username = r->in.username;
+	r3.in.secure_channel_type = r->in.secure_channel_type;
+	r3.in.computer_name = r->in.computer_name;
+	r3.in.credentials = r->in.credentials;
+	r3.out.credentials = r->out.credentials;
+	r3.in.negotiate_flags = r->in.negotiate_flags;
+	r3.out.negotiate_flags = r->out.negotiate_flags;
+	r3.out.rid = &rid;
 	
-	return netr_ServerAuthenticateInternals(pipe_state,
-						mem_ctx,
-						r->in.username,
-						r->in.computer_name,
-						r->in.secure_channel_type,
-						*r->in.negotiate_flags,
-						&r->in.credentials,
-						&r->out.credentials,
-						r->out.negotiate_flags); 
+	return netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
 }
+
 
 static BOOL netr_creds_server_step_check(struct server_pipe_state *pipe_state,
 					 struct netr_Authenticator *received_authenticator,
@@ -340,8 +338,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	const char *domain_dn;
 	const char *domain_sid;
 
-	const char *attrs[] = {"objectSid", NULL 
-	};
+	const char *attrs[] = {"objectSid", NULL };
 
 	const char **domain_attrs = attrs;
 	ZERO_STRUCT(mod);
@@ -669,16 +666,6 @@ static WERROR netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state *dce_ca
 
 
 /* 
-  netr_NETRSERVERAUTHENTICATE3 
-*/
-static WERROR netr_NETRSERVERAUTHENTICATE3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRSERVERAUTHENTICATE3 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   netr_DSRGETDCNAMEX 
 */
 static WERROR netr_DSRGETDCNAMEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -845,6 +832,8 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 	r->out.count = ret;
 	r->out.trusts = trusts;
 
+	/* TODO: add filtering by trust_flags, and correct trust_type
+	   and attributes */
 	for (i=0;i<ret;i++) {
 		trusts[i].netbios_name = samdb_result_string(res[i], "name", NULL);
 		trusts[i].dns_name     = samdb_result_string(res[i], "dnsDomain", NULL);

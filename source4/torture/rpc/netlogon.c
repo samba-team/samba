@@ -240,6 +240,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate a;
+	struct netr_Credential credentials1, credentials2, credentials3;
 	const char *plain_pass;
 	uint8_t mach_pwd[16];
 
@@ -247,7 +248,10 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.server_name = NULL;
 	r.in.computer_name = TEST_MACHINE_NAME;
-	generate_random_buffer(r.in.credentials.data, sizeof(r.in.credentials.data), False);
+	r.in.credentials = &credentials1;
+	r.out.credentials = &credentials2;
+
+	generate_random_buffer(credentials1.data, sizeof(credentials1.data), False);
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -263,13 +267,14 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	E_md4hash(plain_pass, mach_pwd);
 
-	creds_client_init(creds, &r.in.credentials, &r.out.credentials, mach_pwd,
-			  &a.in.credentials);
-
 	a.in.server_name = NULL;
 	a.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
 	a.in.computer_name = TEST_MACHINE_NAME;
+	a.in.credentials = &credentials3;
+	a.out.credentials = &credentials3;
+
+	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3);
 
 	printf("Testing ServerAuthenticate\n");
 
@@ -279,7 +284,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (!creds_client_check(creds, &a.out.credentials)) {
+	if (!creds_client_check(creds, &credentials3)) {
 		printf("Credential chaining failed\n");
 		return False;
 	}
@@ -294,6 +299,7 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
+	struct netr_Credential credentials1, credentials2, credentials3;
 	const char *plain_pass;
 	uint8_t mach_pwd[16];
 
@@ -301,7 +307,10 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.server_name = NULL;
 	r.in.computer_name = TEST_MACHINE_NAME;
-	generate_random_buffer(r.in.credentials.data, sizeof(r.in.credentials.data), False);
+	r.in.credentials = &credentials1;
+	r.out.credentials = &credentials2;
+
+	generate_random_buffer(credentials1.data, sizeof(credentials1.data), False);
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -317,15 +326,16 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	E_md4hash(plain_pass, mach_pwd);
 
-	creds_client_init(creds, &r.in.credentials, &r.out.credentials, mach_pwd,
-			  &a.in.credentials);
-
 	a.in.server_name = NULL;
 	a.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
 	a.in.computer_name = TEST_MACHINE_NAME;
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
+	a.in.credentials = &credentials3;
+	a.out.credentials = &credentials3;
+
+	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3);
 
 	printf("Testing ServerAuthenticate2\n");
 
@@ -335,7 +345,72 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (!creds_client_check(creds, &a.out.credentials)) {
+	if (!creds_client_check(creds, &credentials3)) {
+		printf("Credential chaining failed\n");
+		return False;
+	}
+
+	printf("negotiate_flags=0x%08x\n", negotiate_flags);
+
+	return True;
+}
+
+
+static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				   uint32_t negotiate_flags,
+				   struct creds_CredentialState *creds)
+{
+	NTSTATUS status;
+	struct netr_ServerReqChallenge r;
+	struct netr_ServerAuthenticate3 a;
+	struct netr_Credential credentials1, credentials2, credentials3;
+	const char *plain_pass;
+	uint8_t mach_pwd[16];
+	uint32 rid;
+
+	printf("Testing ServerReqChallenge\n");
+
+	r.in.server_name = NULL;
+	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.credentials = &credentials1;
+	r.out.credentials = &credentials2;
+	generate_random_buffer(credentials1.data, sizeof(credentials1.data), False);
+
+	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerReqChallenge - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	plain_pass = join.machine_password;
+	if (!plain_pass) {
+		printf("Unable to fetch machine password!\n");
+		return False;
+	}
+
+	E_md4hash(plain_pass, mach_pwd);
+
+	a.in.server_name = NULL;
+	a.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	a.in.secure_channel_type = SEC_CHAN_BDC;
+	a.in.computer_name = TEST_MACHINE_NAME;
+	a.in.negotiate_flags = &negotiate_flags;
+	a.in.credentials = &credentials3;
+	a.out.credentials = &credentials3;
+	a.out.negotiate_flags = &negotiate_flags;
+	a.out.rid = &rid;
+
+	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3);
+
+	printf("Testing ServerAuthenticate3\n");
+
+	status = dcerpc_netr_ServerAuthenticate3(p, mem_ctx, &a);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerAuthenticate3 - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!creds_client_check(creds, &credentials3)) {
 		printf("Credential chaining failed\n");
 		return False;
 	}
@@ -982,6 +1057,14 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			       8, False);
 
 	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_AUTH2_FLAGS, &samlogon_state.creds)) {
+		return False;
+	}
+
+	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_FLAGS, &samlogon_state.creds)) {
+		return False;
+	}
+
+	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, &samlogon_state.creds)) {
 		return False;
 	}
 
