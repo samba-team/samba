@@ -2014,7 +2014,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	};
 	
 	/* SamrConnect */
-	nt_status = cli_samr_connect(cli, mem_ctx, SAMR_ACCESS_OPEN_DOMAIN,
+	nt_status = cli_samr_connect(cli, mem_ctx, SA_RIGHT_SAM_OPEN_DOMAIN,
 								 &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
@@ -2025,7 +2025,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/* SamrOpenDomain - we have to open domain policy handle in order to be
 	   able to enumerate accounts*/
 	nt_status = cli_samr_open_domain(cli, mem_ctx, &connect_hnd,
-									 DOMAIN_ACCESS_ENUM_ACCOUNTS,
+									 SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
 									 &queried_dom_sid, &domain_hnd);									 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open domain object. Error was %s\n",

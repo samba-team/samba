@@ -5,6 +5,7 @@
    Copyright (C) Luke Kenneth Caseson Leighton 	1998-1999
    Copyright (C) Jeremy Allison  		1999
    Copyright (C) Stefan (metze) Metzmacher 	2002
+   Copyright (C) Simo Sorce 			2002
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,16 +38,23 @@ DOM_SID global_sid_NT_Authority;    		/* NT Authority */
 DOM_SID global_sid_System;    		/* System */
 DOM_SID global_sid_NULL;            		/* NULL sid */
 DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
-DOM_SID global_sid_Network;					/* Network rids */
+DOM_SID global_sid_Network;			/* Network rids */
 
-static DOM_SID global_sid_Creator_Owner;    		/* Creator Owner */
-static DOM_SID global_sid_Creator_Group;              /* Creator Group */
-static DOM_SID global_sid_Anonymous;				/* Anonymous login */
+static DOM_SID global_sid_Creator_Owner;	/* Creator Owner */
+static DOM_SID global_sid_Creator_Group;	/* Creator Group */
+static DOM_SID global_sid_Anonymous;		/* Anonymous login */
 
-DOM_SID global_sid_Builtin; 				/* Local well-known domain */
-DOM_SID global_sid_Builtin_Administrators;
-DOM_SID global_sid_Builtin_Users;
-DOM_SID global_sid_Builtin_Guests;			/* Builtin guest users */
+DOM_SID global_sid_Builtin; 			/* Local well-known domain */
+DOM_SID global_sid_Builtin_Administrators;	/* Builtin administrators */
+DOM_SID global_sid_Builtin_Users;		/* Builtin users */
+DOM_SID global_sid_Builtin_Guests;		/* Builtin guest users */
+DOM_SID global_sid_Builtin_Power_Users;		/* Builtin power users */
+DOM_SID global_sid_Builtin_Account_Operators;	/* Builtin account operators */
+DOM_SID global_sid_Builtin_Server_Operators;	/* Builtin server operators */
+DOM_SID global_sid_Builtin_Print_Operators;	/* Builtin print operators */
+DOM_SID global_sid_Builtin_Backup_Operators;	/* Builtin backup operators */
+DOM_SID global_sid_Builtin_Replicator;		/* Builtin replicator */
+
 
 /*
  * An NT compatible anonymous token.
@@ -112,10 +120,6 @@ void generate_wellknown_sids(void)
 	if (initialised) 
 		return;
 
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
-	string_to_sid(&global_sid_Builtin_Administrators, "S-1-5-32-544");
-	string_to_sid(&global_sid_Builtin_Users, "S-1-5-32-545");
-	string_to_sid(&global_sid_Builtin_Guests, "S-1-5-32-546");
 	string_to_sid(&global_sid_World_Domain, "S-1-1");
 	string_to_sid(&global_sid_World, "S-1-1-0");
 	string_to_sid(&global_sid_Creator_Owner_Domain, "S-1-3");
@@ -127,6 +131,18 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
 	string_to_sid(&global_sid_Network, "S-1-5-2");
 	string_to_sid(&global_sid_Anonymous, "S-1-5-7");
+
+	/* create well known builtin SIDs */
+	string_to_sid(&global_sid_Builtin, "S-1-5-32");
+	string_to_sid(&global_sid_Builtin_Administrators, "S-1-5-32-544");
+	string_to_sid(&global_sid_Builtin_Users, "S-1-5-32-545");
+	string_to_sid(&global_sid_Builtin_Guests, "S-1-5-32-546");
+	string_to_sid(&global_sid_Builtin_Power_Users, "S-1-5-32-547");
+	string_to_sid(&global_sid_Builtin_Account_Operators, "S-1-5-32-548");
+	string_to_sid(&global_sid_Builtin_Server_Operators, "S-1-5-32-549");
+	string_to_sid(&global_sid_Builtin_Print_Operators, "S-1-5-32-550");
+	string_to_sid(&global_sid_Builtin_Backup_Operators, "S-1-5-32-551");
+	string_to_sid(&global_sid_Builtin_Replicator, "S-1-5-32-552");
 
 	/* Create the anon token. */
 	sid_copy( &anonymous_token.user_sids[0], &global_sid_World);

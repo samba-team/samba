@@ -639,7 +639,7 @@ NTSTATUS sam_enum_domains(const SAM_CONTEXT *context, const NT_USER_TOKEN *acces
 		return nt_status;
 	}
 
-	if (!se_access_check(sd, access_token, SAMR_ACCESS_ENUM_DOMAINS, &acc_granted, &nt_status)) {
+	if (!se_access_check(sd, access_token, SA_RIGHT_SAM_ENUM_DOMAINS, &acc_granted, &nt_status)) {
 		DEBUG(3,("sam_enum_domains: ACCESS DENIED\n"));
 			return nt_status;
 	}
@@ -699,7 +699,7 @@ NTSTATUS sam_lookup_domain(const SAM_CONTEXT *context, const NT_USER_TOKEN *acce
 		return nt_status;
 	}
 
-	if (!se_access_check(sd, access_token, SAMR_ACCESS_OPEN_DOMAIN, &acc_granted, &nt_status)) {
+	if (!se_access_check(sd, access_token, SA_RIGHT_SAM_OPEN_DOMAIN, &acc_granted, &nt_status)) {
 		DEBUG(3,("sam_lookup_domain: ACCESS DENIED\n"));
 			return nt_status;
 	}
