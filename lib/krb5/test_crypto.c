@@ -32,6 +32,7 @@
 
 #include "krb5_locl.h"
 #include <err.h>
+#include <getarg.h>
 
 RCSID("$Id$");
 
@@ -78,7 +79,7 @@ time_encryption(krb5_context context, size_t size,
 
     timevalsub(&tv2, &tv1);
 
-    printf("%s size: %4d iterations: %d time: %3ld.%06ld\n", 
+    printf("%s size: %7d iterations: %d time: %3ld.%06ld\n", 
 	   etype_name, size, iterations,
 	   (long)tv2.tv_sec, (long)tv2.tv_usec);
 
@@ -88,12 +89,33 @@ time_encryption(krb5_context context, size_t size,
 
 
 
+static int version_flag = 0;
+static int help_flag	= 0;
+
+static struct getargs args[] = {
+    {"version",	0,	arg_flag,	&version_flag,
+     "print version", NULL },
+    {"help",	0,	arg_flag,	&help_flag,
+     NULL, NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "");
+    exit (ret);
+}
+
 int
 main(int argc, char **argv)
 {
     krb5_context context;
     krb5_error_code ret;
     int i, iterations;
+    int optind = 0;
 
     krb5_enctype enctypes[] = { 
 	ETYPE_DES_CBC_CRC,
@@ -104,6 +126,21 @@ main(int argc, char **argv)
     };
 
     setprogname(argv[0]);
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= optind;
+    argv += optind;
+
 
     ret = krb5_init_context(&context);
     if (ret)
@@ -116,6 +153,8 @@ main(int argc, char **argv)
 	time_encryption(context, 32, enctypes[i], iterations);
 	time_encryption(context, 512, enctypes[i], iterations);
 	time_encryption(context, 1024, enctypes[i], iterations);
+	time_encryption(context, 2048, enctypes[i], iterations);
+	time_encryption(context, 4096, enctypes[i], iterations);
 	time_encryption(context, 8192, enctypes[i], iterations);
 	time_encryption(context, 16384, enctypes[i], iterations);
 	time_encryption(context, 32768, enctypes[i], iterations);
