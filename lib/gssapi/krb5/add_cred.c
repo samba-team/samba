@@ -64,12 +64,14 @@ OM_uint32 gss_add_cred (
 	return GSS_S_NO_CRED;
     }
 
-    if (cred->usage == cred_usage
-	|| (cred->usage == GSS_C_BOTH && output_cred_handle != NULL)) {
+    /* check if requested output usage is compatible with output usage */ 
+    if (output_cred_handle != NULL &&
+	(cred->usage != cred_usage && cred->usage != GSS_C_BOTH)) {
 	*minor_status = GSS_KRB5_S_G_BAD_USAGE;
 	return(GSS_S_FAILURE);
     }
 	
+    /* check that we have the same name */
     if (desired_name != GSS_C_NO_NAME &&
 	krb5_principal_compare(gssapi_krb5_context, desired_name,
 			       cred->principal) != FALSE) {
@@ -139,25 +141,36 @@ OM_uint32 gss_add_cred (
 
 	if (cred->ccache) {
 	    krb5_error_code kret;
+	    const char *type, *name;
+	    char *type_name;
 
 	    ret = GSS_S_FAILURE;
 
-	    kret = krb5_cc_gen_new(gssapi_krb5_context, 
-				   krb5_cc_get_ops(gssapi_krb5_context, 
-						   cred->ccache),
+	    type = krb5_cc_get_type(gssapi_krb5_context, cred->ccache);
+	    if (type == NULL){
+		*minor_status = ENOMEM;
+		goto failure;
+	    }
+
+	    name = krb5_cc_get_name(gssapi_krb5_context, cred->ccache);
+	    if (name == NULL) {
+		*minor_status = ENOMEM;
+		goto failure;
+	    }
+
+	    asprintf(&type_name, "%s:%s", type, name);
+	    if (type_name == NULL) {
+		*minor_status = ENOMEM;
+		goto failure;
+	    }
+
+	    kret = krb5_cc_resolve(gssapi_krb5_context, type_name,
 				   &handle->ccache);
+	    free(type_name);
 	    if (kret) {
 		*minor_status = kret;
 		goto failure;
-	    }
-
-	    kret = krb5_cc_copy_cache(gssapi_krb5_context, cred->ccache,
-				      handle->ccache);
-	    if (kret) {
-		*minor_status = kret;
-		goto failure;
-	    }
-
+	    }	    
 	}
 
 	ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
