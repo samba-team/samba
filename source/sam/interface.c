@@ -32,7 +32,9 @@ extern DOM_SID global_sid_Builtin;
 
 const struct sam_init_function_entry builtin_sam_init_functions[] = {
 	{ "plugin", sam_init_plugin },
+#ifdef HAVE_LDAP
 	{ "ads", sam_init_ads },
+#endif
 	{ "skel", sam_init_skel },
 	{ NULL, NULL}
 };
@@ -356,7 +358,7 @@ NTSTATUS context_sam_get_domain_by_sid(const SAM_CONTEXT *context, const NT_USER
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, TALLOC_CTX *mem_ctx, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -373,7 +375,7 @@ NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TO
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_create_account(tmp_methods, access_token, access_desired, mem_ctx, account_name, acct_ctrl, account))) {
+	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_create_account(tmp_methods, access_token, access_desired, account_name, acct_ctrl, account))) {
 		DEBUG(4,("sam_create_account in backend %s failed\n",
 				 tmp_methods->backendname));
 		return nt_status;

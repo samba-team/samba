@@ -569,7 +569,6 @@ static NTSTATUS sam_ads_get_domain_handle(const SAM_METHODS *sam_method, const N
 /* Account API */
 static NTSTATUS sam_ads_create_account(const SAM_METHODS *sam_method, 
 				const NT_USER_TOKEN *access_token, uint32 access_desired, 
-				TALLOC_CTX *mem_ctx, 
 				const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
 {
 	ADS_STATUS		ads_status = ADS_STATUS_NOT_IMPLEMENTED;
@@ -586,7 +585,7 @@ static NTSTATUS sam_ads_create_account(const SAM_METHODS *sam_method,
 	if (!ADS_ERR_OK(ads_status))
 		return ads_ntstatus(ads_status);
 
-	ads_status = ADS_ERROR_NT(sam_init_account_talloc(mem_ctx, account));
+	ads_status = ADS_ERROR_NT(sam_init_account(account));
 	if (!ADS_ERR_OK(ads_status))
 		return ads_ntstatus(ads_status);	
 
