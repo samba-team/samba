@@ -251,7 +251,7 @@ krb5_error_code
 krb5_build_principal(krb5_context context,
 		     krb5_principal *principal,
 		     int rlen,
-		     const char *realm,
+		     krb5_const_realm realm,
 		     ...)
 {
     krb5_error_code ret;
@@ -308,7 +308,7 @@ static krb5_error_code
 build_principal(krb5_context context,
 		krb5_principal *principal,
 		int rlen,
-		const char *realm,
+		krb5_const_realm realm,
 		void (*func)(krb5_context, krb5_principal, va_list),
 		va_list ap)
 {
@@ -334,7 +334,7 @@ build_principal(krb5_context context,
 krb5_error_code
 krb5_make_principal(krb5_context context,
 		    krb5_principal *principal,
-		    krb5_realm realm,
+		    krb5_const_realm realm,
 		    ...)
 {
     krb5_error_code ret;
@@ -358,7 +358,7 @@ krb5_error_code
 krb5_build_principal_va(krb5_context context, 
 			krb5_principal *principal, 
 			int rlen,
-			const char *realm,
+			krb5_const_realm realm,
 			va_list ap)
 {
     return build_principal(context, principal, rlen, realm, va_princ, ap);
@@ -368,7 +368,7 @@ krb5_error_code
 krb5_build_principal_va_ext(krb5_context context, 
 			    krb5_principal *principal, 
 			    int rlen,
-			    const char *realm,
+			    krb5_const_realm realm,
 			    va_list ap)
 {
     return build_principal(context, principal, rlen, realm, va_ext_princ, ap);
@@ -379,7 +379,7 @@ krb5_error_code
 krb5_build_principal_ext(krb5_context context,
 			 krb5_principal *principal,
 			 int rlen,
-			 const char *realm,
+			 krb5_const_realm realm,
 			 ...)
 {
     krb5_error_code ret;
@@ -431,7 +431,18 @@ krb5_realm_compare(krb5_context context,
     return strcmp(princ_realm(princ1), princ_realm(princ2)) == 0;
 }
 
-		   
+static struct v4_conv {
+    char *from;
+    char *to;
+    int host_convert;
+} inst_conv[] = {
+    { "rcmd", "host", 1 },
+    { "ftp",  "ftp",  1 },
+    { "pop",  "pop",  1 },
+    { NULL,    NULL , 0 }
+};
+
+
 krb5_error_code
 krb5_425_conv_principal(krb5_context context,
 			const char *name,
@@ -441,47 +452,63 @@ krb5_425_conv_principal(krb5_context context,
 {
     const char *p;
     krb5_error_code ret;
-    char *domain = NULL;
+    char host[128];
+
+    /* do the following: if the name is found in the
+       `v4_name_convert:host' part, is is assumed to be a `host' type
+       principal, and the instance is looked up in the
+       `v4_instance_convert' part. if not found there the name is
+       (optionally) looked up as a hostname, and if that doesn't yield
+       anything, the `default_domain' is appended to the instance
+       */
+
+    if(instance == NULL)
+	goto no_host;
+    if(instance[0] == 0){
+	instance == NULL;
+	goto no_host;
+    }
+    p = krb5_config_get_string(context->cf, "realms", realm,
+			       "v4_name_convert", "host", name, NULL);
+    if(p){
+	name = p;
+	p = krb5_config_get_string(context->cf, "realms", realm, 
+				   "v4_instance_convert", instance, NULL);
+	if(p)
+	    goto done;
+	if(krb5_config_get_string(context->cf, "lib_defaults", 
+				  "v4_instance_resolve", NULL)){
+	    struct hostent *hp = gethostbyname(instance);
+	    if(hp){
+		instance = hp->h_name;
+		goto done;
+	    }
+	}
+	p = krb5_config_get_string(context->cf, "realms", realm, 
+				   "default_domain", instance, NULL);
+	if(p == NULL){
+	    /* should this be an error or should it silently
+	       succeed? */
+	    return HEIM_ERR_V4_PRINC_NO_CONV;
+	}
+	
+	snprintf(host, sizeof(host), "%s.%s", instance, p);
+	instance = host;
+	goto done;
+    }
+no_host:
     p = krb5_config_get_string(context->cf,
 			       "realms",
 			       realm,
 			       "v4_name_convert",
+			       "plain",
 			       name,
 			       NULL);
     if(p)
 	name = p;
-    if(instance[0] == 0)
-	instance = NULL;
-    if(instance){
-	p = krb5_config_get_string(context->cf,
-				   "realms",
-				   realm,
-				   "v4_instance_convert",
-				   instance,
-				   NULL);
-	if(p)
-	    instance = p;
-	else{
-	    p = krb5_config_get_string(context->cf,
-				       "realms",
-				       realm,
-				       "default_domain",
-				       NULL);
-	    if(p){
-		asprintf(&domain, "%s.%s", instance, p);
-		instance = domain;
-	    }
-	}
-    }
-    ret = krb5_build_principal(context, princ, 
-			       strlen(realm), 
-			       realm, 
-			       name, 
-			       instance, 
-			       0);
-    if(domain)
-	free(domain);
-    return ret;
+    
+done:		
+    return krb5_make_principal(context, princ, realm, name, instance, NULL);
 }
 
 krb5_error_code
