@@ -818,6 +818,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	char* service_name = lp_servicename(snum);
 	connection_struct conns;
 	connection_struct *conn = &conns;
+	struct referral *ref = NULL;
  
 	pstrcpy(connect_path,lp_pathname(snum));
 
@@ -831,31 +832,34 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	if (!create_conn_struct(conn, snum, connect_path))
 		return False;
 
-	{ 
-		/* form a junction for the msdfs root - convention 
-		   DO NOT REMOVE THIS: NT clients will not work with us
-		   if this is not present
-		*/ 
-		struct referral *ref = NULL;
-		pstring alt_path;
-		pstrcpy(jn[cnt].service_name, service_name);
-		jn[cnt].volume_name[0] = '\0';
-		jn[cnt].referral_count = 1;
-	
-		slprintf(alt_path,sizeof(alt_path)-1,"\\\\%s\\%s", 
-			 local_machine, service_name);
-		ref = jn[cnt].referral_list = (struct referral*) malloc(sizeof(struct referral));
-		if (jn[cnt].referral_list == NULL) {
-			DEBUG(0, ("Malloc failed!\n"));
-			return False;
-		}
+	/* form a junction for the msdfs root - convention 
+	   DO NOT REMOVE THIS: NT clients will not work with us
+	   if this is not present
+	*/ 
+	pstrcpy(jn[cnt].service_name, service_name);
+	jn[cnt].volume_name[0] = '\0';
+	jn[cnt].referral_count = 1;
 
-		safe_strcpy(ref->alternate_path, alt_path, sizeof(pstring));
-		ref->proximity = 0;
-		ref->ttl = REFERRAL_TTL;
-		cnt++;
+	ref = jn[cnt].referral_list
+		= (struct referral*) malloc(sizeof(struct referral));
+	if (jn[cnt].referral_list == NULL) {
+		DEBUG(0, ("Malloc failed!\n"));
+		return False;
 	}
 
+	ref->proximity = 0;
+	ref->ttl = REFERRAL_TTL;
+	if (*lp_msdfs_proxy(snum) != '\0') {
+		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
+		*jn_count = 1;
+		return True;
+	}
+		
+	slprintf(ref->alternate_path, sizeof(pstring)-1,
+		 "\\\\%s\\%s", local_machine, service_name);
+	cnt++;
+	
+	/* Now enumerate all dfs links */
 	dirp = conn->vfs_ops.opendir(conn, connect_path);
 	if(!dirp)
 		return False;
