@@ -135,12 +135,19 @@ krb5_rd_req_with_keyblock(krb5_context context,
 	    return KRB5KRB_AP_ERR_BADMATCH;
     }
 
+    /* check addresses */
+
+    if (t->tkt.caddr
+	&& (*auth_context)->remote_address
+	&& !krb5_address_search (context,
+				 (*auth_context)->remote_address,
+				 t->tkt.caddr))
+	    return KRB5KRB_AP_ERR_BADADDR;
+
     if (authenticator.seq_number)
       (*auth_context)->remote_seqnumber = *(authenticator.seq_number);
 
     /* XXX - Xor sequence numbers */
-
-    /* XXX - check addresses */
 
     /* XXX - subkeys? */
 
