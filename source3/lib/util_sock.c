@@ -221,9 +221,9 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
 		
 		while (nread < mincnt) {
 #ifdef WITH_SSL
-			if(fd == sslFd){
+			if (fd == sslFd) {
 				readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-			}else{
+			} else {
 				readret = read(fd, buf + nread, maxcnt - nread);
 			}
 #else /* WITH_SSL */
@@ -263,7 +263,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
 		selrtn = sys_select_intr(fd+1,&fds,&timeout);
 		
 		/* Check if error */
-		if(selrtn == -1) {
+		if (selrtn == -1) {
 			/* something is wrong. Maybe the socket is dead? */
 			DEBUG(0,("read_socket_with_timeout: timeout read. select error = %s.\n", strerror(errno) ));
 			smb_read_error = READ_ERROR;
@@ -278,7 +278,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
 		}
 		
 #ifdef WITH_SSL
-		if(fd == sslFd){
+		if (fd == sslFd) {
 			readret = SSL_read(ssl, buf + nread, maxcnt - nread);
 		}else{
 			readret = read(fd, buf + nread, maxcnt - nread);
@@ -305,7 +305,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
 	}
 	
 	/* Return the number we got */
-	return((ssize_t)nread);
+	return (ssize_t)nread;
 }
 
 /****************************************************************************
