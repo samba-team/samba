@@ -140,7 +140,7 @@ static NTSTATUS make_backend_entry(SAM_BACKEND_ENTRY *backend_entry, char *sam_b
 	
 	DEBUG(5,("makeing backend_entry for %s\n", backend_entry->module_name));
 	
-	if ((tmp = strchr(tmp_string, '|')) != NULL) {
+	if ((tmp = strrchr(tmp_string, '|')) != NULL) {
 		DEBUGADD(20,("a domain name has been specified\n"));
 		*tmp = 0;
 		backend_entry->domain_name = smb_xstrdup(tmp + 1);
