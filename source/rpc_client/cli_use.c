@@ -111,7 +111,6 @@ find client state.  server name, user name, domain name and password must all
 match.
 ****************************************************************************/
 static struct cli_use *cli_find(const char *srv_name,
-				const vuser_key * key,
 				const struct ntuser_creds *usr_creds,
 				BOOL reuse)
 {
@@ -127,13 +126,8 @@ static struct cli_use *cli_find(const char *srv_name,
 		sv_name = &sv_name[2];
 	}
 
-	DEBUG(10, ("cli_find: %s %s %s ",
+	DEBUG(10, ("cli_find: %s %s %s\n",
 		   srv_name, usr_creds->user_name, usr_creds->domain));
-	if (key != NULL)
-	{
-		DEBUG(10, ("[%d,%x]", key->pid, key->vuid));
-	}
-	DEBUG(10, ("\n"));
 
 
 	for (i = 0; i < num_clis; i++)
@@ -146,10 +140,9 @@ static struct cli_use *cli_find(const char *srv_name,
 
 		cli_name = c->cli->desthost;
 
-		DEBUG(10, ("cli_find[%d]: %s %s %s [%d,%x]\n",
+		DEBUG(10, ("cli_find[%d]: %s %s %s\n",
 			   i, cli_name,
-			   c->cli->usr.user_name, c->cli->usr.domain,
-			   c->cli->nt.key.pid, c->cli->nt.key.vuid));
+			   c->cli->usr.user_name, c->cli->usr.domain));
 
 		if (strnequal("\\\\", cli_name, 2))
 		{
@@ -161,12 +154,6 @@ static struct cli_use *cli_find(const char *srv_name,
 			continue;
 		}
 		if (!strequal(usr_creds->user_name, c->cli->usr.user_name))
-		{
-			continue;
-		}
-		if (!reuse
-		    && (key == NULL || key->pid != c->cli->nt.key.pid
-			|| key->vuid != c->cli->nt.key.vuid))
 		{
 			continue;
 		}
@@ -219,7 +206,6 @@ static struct cli_use *cli_use_get(const char *srv_name,
 init client state
 ****************************************************************************/
 struct cli_state *cli_net_use_add(const char *srv_name,
-				  const vuser_key * key,
 				  const struct ntuser_creds *usr_creds,
 				  BOOL redir, BOOL reuse, BOOL *is_new)
 {
@@ -233,11 +219,13 @@ struct cli_state *cli_net_use_add(const char *srv_name,
 
 	DEBUG(10, ("cli_net_use_add\n"));
 
-	cli = cli_find(srv_name, key, usr_creds, reuse);
+	cli = cli_find(srv_name, usr_creds, reuse);
 
 	if (cli != NULL)
 	{
 		cli->num_users++;
+		DEBUG(10,
+		      ("cli_net_use_add: num_users: %d\n", cli->num_users));
 		(*is_new) = False;
 		return cli->cli;
 	}
@@ -283,27 +271,10 @@ struct cli_state *cli_net_use_add(const char *srv_name,
 		return NULL;
 	}
 
-	if (key != NULL)
-	{
-		cli->cli->nt.key = *key;
-	}
-	else
-	{
-		NET_USER_INFO_3 usr;
-		uid_t uid = getuid();
-		gid_t gid = getgid();
-		char *name = uidtoname(uid);
-
-		ZERO_STRUCT(usr);
-
-		cli->cli->nt.key.pid = getpid();
-		cli->cli->nt.key.vuid = register_vuid(cli->cli->nt.key.pid,
-						      uid, gid,
-						      name, name, False,
-						      &usr);
-	}
 	add_cli_to_array(&num_clis, &clis, cli);
 	cli->num_users++;
+
+	DEBUG(10, ("cli_net_use_add: num_users: %d\n", cli->num_users));
 
 	(*is_new) = True;
 

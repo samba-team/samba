@@ -504,15 +504,15 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 			{
 				if (!cli_nt_session_open(con->msrpc.smb->cli,
 							 pipe_name,
-							 &con->msrpc.smb->
-							 fnum))
+							 &con->msrpc.
+							 smb->fnum))
 				{
 					cli_connection_free(con);
 					return NULL;
 				}
 				dump_data_pw("sess key:",
-					     con->msrpc.smb->cli->nt.
-					     usr_sess_key, 16);
+					     con->msrpc.smb->cli->
+					     nt.usr_sess_key, 16);
 			}
 			else
 			{

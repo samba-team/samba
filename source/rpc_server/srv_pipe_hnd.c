@@ -121,18 +121,12 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key * key,
 
 	if (l == NULL)
 	{
-		BOOL ret = False;
-		m = ncalrpc_l_initialise(NULL, key);
-		if (m != NULL)
+		BOOL is_new;
+		become_root(False);	/* to make pipe connection */
+		m = ncalrpc_l_use_add(pipe_name, key, True, True, &is_new);
+		unbecome_root(False);
+		if (m == NULL)
 		{
-			m->redirect = True;
-			become_root(False);	/* to make pipe connection */
-			ret = ncalrpc_l_establish_connection(m, pipe_name);
-			unbecome_root(False);
-		}
-		if (!ret)
-		{
-			ncalrpc_l_shutdown(m);
 			DEBUG(5, ("open pipes: msrpc redirect failed\n"));
 			return NULL;
 		}
@@ -231,7 +225,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct * p)
 	if (p->m != NULL)
 	{
 		DEBUG(4, ("closing msrpc redirect"));
-		ncalrpc_l_shutdown(p->m);
+		ncalrpc_l_use_del(p->name, &p->key, False, NULL);
 	}
 
 	ZERO_STRUCTP(p);

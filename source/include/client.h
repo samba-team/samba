@@ -44,7 +44,8 @@ typedef struct file_info
 	time_t atime;
 	time_t ctime;
 	pstring name;
-} file_info;
+}
+file_info;
 
 struct print_job_info
 {
@@ -116,7 +117,7 @@ struct cli_state
 
 	struct ntdom_info nt;
 
-	uint32 nt_error;                   /* NT RPC error code. */
+	uint32 nt_error;	/* NT RPC error code. */
 };
 
 struct cli_connection;

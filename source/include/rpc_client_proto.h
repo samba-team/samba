@@ -407,7 +407,6 @@ BOOL svc_change_svc_cfg(POLICY_HND * hnd,
 void init_cli_use(void);
 void free_cli_use(void);
 struct cli_state *cli_net_use_add(const char *srv_name,
-				  const vuser_key * key,
 				  const struct ntuser_creds *usr_creds,
 				  BOOL redir, BOOL reuse, BOOL *is_new);
 BOOL cli_net_use_del(const char *srv_name,
@@ -605,6 +604,28 @@ BOOL msrpc_sam_ntpasswd_set(const char *srv_name, const char *user,
 BOOL msrpc_sam_query_userinfo(const char *srv_name, const DOM_SID * sid,
 			      const char *user_name, uint16 info_level,
 			      SAM_USERINFO_CTR * ctr);
+
+/*The following definitions come from  rpc_client/ncacn_np_use.c  */
+
+BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
+				   const char *srv_name,
+				   const struct ntuser_creds *ntc,
+				   const char *pipe_name, BOOL redir,
+				   BOOL reuse, BOOL *is_new_connection);
+void init_ncacn_np_use(void);
+void free_ncacn_np_use(void);
+struct ncacn_np *ncacn_np_initialise(struct ncacn_np *msrpc,
+				     const vuser_key * key);
+struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
+				  const vuser_key * key,
+				  const char *srv_name,
+				  const struct ntuser_creds *ntc,
+				  BOOL redir,
+				  BOOL reuse, BOOL *is_new_connection);
+BOOL ncacn_np_use_del(const char *pipe_name,
+		      const vuser_key * key,
+		      BOOL force_close, BOOL *connection_closed);
+void ncacn_np_use_enum(uint32 * num_cons, struct use_info ***use);
 
 /*The following definitions come from  rpc_client/ncalrpc_l_use.c  */
 

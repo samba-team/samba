@@ -1148,12 +1148,15 @@ BOOL srv_io_q_net_tprt_enum(char *desc, SRV_Q_NET_TPRT_ENUM * q_n,
 			    prs_struct * ps, int depth);
 BOOL srv_io_r_net_tprt_enum(char *desc, SRV_R_NET_TPRT_ENUM * r_n,
 			    prs_struct * ps, int depth);
-BOOL make_srv_file_info3_str(FILE_INFO_3_STR * fi3, char *user_name,
-			     char *path_name);
+BOOL make_srv_file_info3_str(FILE_INFO_3_STR * fi3, const char *user_name,
+			     const char *path_name);
 BOOL make_srv_file_info3(FILE_INFO_3 * fl3, uint32 id, uint32 perms,
-			 uint32 num_locks, char *path_name, char *user_name);
-BOOL make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM * q_n, const char *srv_name,
-			      const char *qual_name, uint32 file_id,
+			 uint32 num_locks, const char *path_name,
+			 const char *user_name);
+void srv_free_srv_file_ctr(SRV_FILE_INFO_CTR * ctr);
+BOOL make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM * q_n,
+			      const char *srv_name, const char *qual_name,
+			      uint32 file_id,
 			      uint32 file_level, SRV_FILE_INFO_CTR * ctr,
 			      uint32 preferred_len, ENUM_HND * hnd);
 BOOL srv_io_q_net_file_enum(char *desc, SRV_Q_NET_FILE_ENUM * q_n,

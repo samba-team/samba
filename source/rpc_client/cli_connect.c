@@ -29,17 +29,9 @@ struct user_creds *usr_creds = NULL;
 vuser_key *user_key = NULL;
 
 extern int DEBUGLEVEL;
-extern pstring scope;
-extern pstring global_myname;
 
 enum
 { MSRPC_NONE, MSRPC_LOCAL, MSRPC_SMB };
-
-struct msrpc_smb
-{
-	struct cli_state *cli;
-	uint16 fnum;
-};
 
 struct cli_connection
 {
@@ -52,7 +44,7 @@ struct cli_connection
 
 	union
 	{
-		struct msrpc_smb *smb;
+		struct ncacn_np *smb;
 		struct msrpc_local *local;
 		void *cli;
 	}
@@ -106,7 +98,10 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 {
 	struct cli_connection *con = NULL;
 	BOOL is_new_connection = False;
+
+#if 0
 	vuser_key key;
+#endif
 
 	con = (struct cli_connection *)malloc(sizeof(*con));
 
@@ -155,45 +150,10 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 	else
 	{
 		con->type = MSRPC_SMB;
-		con->msrpc.smb = malloc(sizeof(*con->msrpc.smb));
-		if (con->msrpc.smb == NULL)
-		{
-			cli_connection_free(con);
-			return NULL;
-		}
-		else
-		{
-			con->msrpc.smb->cli =
-				cli_net_use_add(srv_name, user_key,
-						&con->usr_creds.ntc, True,
-						reuse, &is_new_connection);
-			if (con->msrpc.smb->cli != NULL)
-			{
-				if (!cli_nt_session_open(con->msrpc.smb->cli,
-							 pipe_name,
-							 &con->msrpc.smb->
-							 fnum))
-				{
-					cli_connection_free(con);
-					return NULL;
-				}
-				dump_data_pw("sess key:",
-					     con->msrpc.smb->cli->nt.
-					     usr_sess_key, 16);
-
-				/* HACK! */
-				key = con->msrpc.smb->cli->nt.key;
-				con->msrpc.smb->cli->nt.key.pid = 0;
-				con->msrpc.smb->cli->nt.key.vuid =
-					UID_FIELD_INVALID;
-
-			}
-			else
-			{
-				cli_connection_free(con);
-				return NULL;
-			}
-		}
+		con->msrpc.smb =
+			ncacn_np_use_add(pipe_name, user_key, srv_name,
+					 &con->usr_creds.ntc, True, reuse,
+					 &is_new_connection);
 	}
 
 	if (is_new_connection && con->msrpc.cli != NULL)
@@ -215,11 +175,12 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 		return NULL;
 	}
 
+#if 0
 	if (con->type == MSRPC_SMB)
 	{
-		con->msrpc.smb->cli->nt.key = key;
+		con->msrpc.smb->cli->smb->nt.key = key;
 	}
-
+#endif
 	add_con_to_array(&num_cons, &con_list, con);
 	return con;
 }
@@ -252,17 +213,10 @@ void cli_connection_free(struct cli_connection *con)
 			case MSRPC_SMB:
 			{
 				DEBUG(10, ("msrpc smb connection\n"));
-				if (con->msrpc.smb->cli != NULL)
-				{
-					cli_nt_session_close(con->msrpc.smb->
-							     cli,
-							     con->msrpc.smb->
-							     fnum);
-				}
-				cli_net_use_del(con->srv_name,
-						&con->usr_creds.ntc, False,
-						&closed);
-				oldcli = con->msrpc.smb;
+				ncacn_np_use_del(con->pipe_name,
+						 &con->msrpc.local->nt.key,
+						 False, &closed);
+				oldcli = con->msrpc.local;
 				con->msrpc.smb = NULL;
 				break;
 			}
@@ -575,7 +529,7 @@ struct ntdom_info *cli_conn_get_ntinfo(struct cli_connection *con)
 		}
 		case MSRPC_SMB:
 		{
-			return &con->msrpc.smb->cli->nt;
+			return &con->msrpc.smb->smb->nt;
 		}
 	}
 	return NULL;
@@ -617,7 +571,7 @@ BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name)
 	{
 		case MSRPC_SMB:
 		{
-			desthost = con->msrpc.smb->cli->desthost;
+			desthost = con->msrpc.smb->smb->desthost;
 			break;
 		}
 		case MSRPC_LOCAL:
@@ -765,7 +719,7 @@ BOOL rpc_api_write(struct cli_connection *con, prs_struct * data)
 	{
 		case MSRPC_SMB:
 		{
-			struct cli_state *cli = con->msrpc.smb->cli;
+			struct cli_state *cli = con->msrpc.smb->smb;
 			int fnum = con->msrpc.smb->fnum;
 			return cli_write(cli, fnum, 0x0008,
 					 data->data, 0,
@@ -788,7 +742,7 @@ BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct * rdata)
 	{
 		case MSRPC_SMB:
 		{
-			struct cli_state *cli = con->msrpc.smb->cli;
+			struct cli_state *cli = con->msrpc.smb->smb;
 			int fnum = con->msrpc.smb->fnum;
 			return cli_rcv_pdu(con, cli, fnum, rdata);
 		}
@@ -815,7 +769,7 @@ BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct * data,
 		case MSRPC_SMB:
 		{
 			struct ntdom_info *nt = cli_conn_get_ntinfo(con);
-			struct cli_state *cli = con->msrpc.smb->cli;
+			struct cli_state *cli = con->msrpc.smb->smb;
 			int fnum = con->msrpc.smb->fnum;
 			return cli_send_and_rcv_pdu(con, cli, fnum, data,
 						    rdata, nt->max_xmit_frag);

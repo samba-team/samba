@@ -31,7 +31,7 @@ extern pstring global_myname;
 
 struct msrpc_use
 {
-	struct cli_connection *cli;
+	struct msrpc_smb *cli;
 	uint32 num_users;
 };
 

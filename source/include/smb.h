@@ -2,10 +2,10 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) John H Terpstra 1996-1998
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1998
-   Copyright (C) Paul Ashton 1998
+   Copyright (C) Andrew Tridgell              1992-2000
+   Copyright (C) John H Terpstra              1996-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+   Copyright (C) Paul Ashton                  1998-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -381,8 +381,7 @@ typedef struct group_name_info
 	uint32 type;
 	uint32 unix_id;
 
-}
-DOM_NAME_MAP;
+} DOM_NAME_MAP;
 
 /* map either local aliases, domain groups or builtin aliases */
 typedef enum
@@ -403,8 +402,7 @@ typedef struct local_grp_member_info
 	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
 	fstring name;		/* matches with sid: must be of the form "DOMAIN\account" */
 
-}
-LOCAL_GRP_MEMBER;
+} LOCAL_GRP_MEMBER;
 
 /* enumerate these to get list of local groups */
 
@@ -415,8 +413,7 @@ typedef struct local_grp_info
 	fstring comment;
 	uint32 rid;		/* alias rid */
 
-}
-LOCAL_GRP;
+} LOCAL_GRP;
 
 /*** query a domain group, get a list of these: shows who is in that group ***/
 
@@ -428,8 +425,7 @@ typedef struct domain_grp_member_info
 	uint32 rid;		/* rid of domain group member */
 	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
 
-}
-DOMAIN_GRP_MEMBER;
+} DOMAIN_GRP_MEMBER;
 
 /*** enumerate these to get list of domain groups ***/
 
@@ -441,8 +437,7 @@ typedef struct domain_grp_info
 	uint32 rid;		/* group rid */
 	uint8 attr;		/* attributes forced to be set to 0x7: SE_GROUP_xxx */
 
-}
-DOMAIN_GRP;
+} DOMAIN_GRP;
 
 /* DOM_CHAL - challenge info */
 typedef struct chal_info
@@ -475,8 +470,7 @@ typedef struct
 	int32 wr_error;		/* Cached errors */
 	BOOL wr_mode;		/* write through mode) */
 	BOOL wr_discard;	/* discard all further data */
-}
-write_bmpx_struct;
+} write_bmpx_struct;
 
 /*
  * Structure used to indirect fd's from the files_struct.
@@ -497,8 +491,7 @@ typedef struct file_fd_struct
 	int fd_writeonly;
 	int real_open_flags;
 	BOOL delete_on_close;
-}
-file_fd_struct;
+} file_fd_struct;
 
 typedef struct files_struct
 {
@@ -526,8 +519,7 @@ typedef struct files_struct
 	BOOL sent_oplock_break;
 	BOOL is_directory;
 	char *fsp_name;
-}
-files_struct;
+} files_struct;
 
 /*
  * Structure used to keep directory state information around.
@@ -551,8 +543,7 @@ typedef struct
 {
 	char *name;
 	BOOL is_wild;
-}
-name_compare_entry;
+} name_compare_entry;
 
 /* Include VFS stuff */
 
@@ -602,8 +593,7 @@ typedef struct connection_struct
 	name_compare_entry *veto_list;	/* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list;	/* Per-share list of files to refuse oplocks on. */
 
-}
-connection_struct;
+} connection_struct;
 
 /* Domain controller authentication protocol info */
 struct dcinfo
@@ -630,8 +620,7 @@ typedef struct
 	time_t time;
 	char user[30];
 	char file[100];
-}
-print_queue_struct;
+} print_queue_struct;
 
 enum
 { LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR };
@@ -640,8 +629,7 @@ typedef struct
 {
 	fstring message;
 	int status;
-}
-print_status_struct;
+} print_status_struct;
 
 /* used for server information: client, nameserv and ipc */
 struct server_info_struct
@@ -1016,8 +1004,7 @@ struct parm_struct
 		int ivalue;
 		char *svalue;
 		char cvalue;
-	}
-	def;
+	} def;
 };
 
 struct bitmap
@@ -1550,7 +1537,8 @@ char *strdup(char *s);
    as subsets */
 enum protocol_types
 { PROTOCOL_NONE, PROTOCOL_CORE, PROTOCOL_COREPLUS, PROTOCOL_LANMAN1,
-		PROTOCOL_LANMAN2, PROTOCOL_NT1 };
+	PROTOCOL_LANMAN2, PROTOCOL_NT1
+};
 
 /* security levels */
 enum security_types
@@ -1762,8 +1750,7 @@ typedef struct
 
 	NET_USER_INFO_3 usr;
 
-}
-user_struct;
+} user_struct;
 
 struct current_user
 {
@@ -1868,8 +1855,7 @@ typedef struct subst_creds
 	fstring myhostname;
 	fstring remote_machine;
 
-}
-CREDS_SUBST;
+} CREDS_SUBST;
 
 #include "rpc_creds.h"
 
@@ -1892,14 +1878,25 @@ struct msrpc_local
 {
 	fstring pipe_name;
 	struct ntdom_info nt;
+#if 0
 	cli_auth_fns *auth;
 	void *auth_info;
+#endif
 
 	int fd;
 	BOOL redirect;
 	BOOL initialised;
 	char *inbuf;
 	char *outbuf;
+};
+
+struct ncacn_np
+{
+	fstring pipe_name;
+	struct cli_state *smb;
+	uint16 fnum;
+	BOOL redirect;
+	BOOL initialised;
 };
 
 typedef struct netsec_creds
@@ -1909,8 +1906,7 @@ typedef struct netsec_creds
 
 	uchar sess_key[16];	/* NETLOGON session key */
 
-}
-netsec_creds;
+} netsec_creds;
 
 struct policy;
 struct bitmap;

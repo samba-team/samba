@@ -188,18 +188,20 @@ struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
 {
 	struct ncalrpc_use *cli;
 
+	DEBUG(10, ("ncalrpc_l_use_add\n"));
+
 	if (strnequal("\\PIPE\\", pipe_name, 6))
 	{
 		pipe_name = &pipe_name[6];
 	}
-
-	DEBUG(10, ("ncalrpc_l_use_add\n"));
 
 	cli = ncalrpc_l_find(pipe_name, key, reuse);
 
 	if (cli != NULL)
 	{
 		cli->num_users++;
+		DEBUG(10,
+		      ("ncalrpc_l_use_add: num_users: %d\n", cli->num_users));
 		(*is_new) = False;
 		return cli->cli;
 	}
@@ -231,6 +233,8 @@ struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
 
 	add_cli_to_array(&num_clis, &clis, cli);
 	cli->num_users++;
+
+	DEBUG(10, ("ncalrpc_l_use_add: num_users: %d\n", cli->num_users));
 
 	(*is_new) = True;
 
@@ -277,26 +281,27 @@ BOOL ncalrpc_l_use_del(const char *pipe_name,
 		if (!strequal(cli_name, pipe_name))
 			continue;
 
-		if (key->pid == clis[i]->cli->nt.key.pid &&
-		    key->vuid == clis[i]->cli->nt.key.vuid)
+		if (key->pid != clis[i]->cli->nt.key.pid ||
+		    key->vuid != clis[i]->cli->nt.key.vuid)
 		{
-			/* decrement number of users */
-			clis[i]->num_users--;
-
-			DEBUG(10, ("idx: %i num_users now: %d\n",
-				   i, clis[i]->num_users));
-
-			if (force_close || clis[i]->num_users == 0)
-			{
-				ncalrpc_use_free(clis[i]);
-				clis[i] = NULL;
-				if (connection_closed != NULL)
-				{
-					*connection_closed = True;
-				}
-			}
-			return True;
+			continue;
 		}
+		/* decrement number of users */
+		clis[i]->num_users--;
+
+		DEBUG(10, ("idx: %i num_users now: %d\n",
+			   i, clis[i]->num_users));
+
+		if (force_close || clis[i]->num_users == 0)
+		{
+			ncalrpc_use_free(clis[i]);
+			clis[i] = NULL;
+			if (connection_closed != NULL)
+			{
+				*connection_closed = True;
+			}
+		}
+		return True;
 	}
 
 	return False;

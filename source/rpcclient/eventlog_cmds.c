@@ -26,29 +26,28 @@
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-static const struct command_set evt_commands[] = 
-{
+static const struct command_set evt_commands[] = {
 	/*
 	 * eventlog
 	 */
 
 	{
-		"eventlog",
-		cmd_eventlog,
-		"list the events",
-		{NULL, NULL}
-	},
+	 "eventlog",
+	 cmd_eventlog,
+	 "list the events",
+	 {NULL, NULL}
+	 },
 
 	/*
 	 * oop!
 	 */
 
 	{
-		"",
-		NULL,
-		NULL,
-		{NULL, NULL}
-	}
+	 "",
+	 NULL,
+	 NULL,
+	 {NULL, NULL}
+	 }
 };
 
 void add_evt_commands(void)

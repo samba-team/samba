@@ -1399,10 +1399,12 @@ int set_filelen(int fd, SMB_OFF_T len)
 /****************************************************************************
 this is a version of setbuffer() for those machines that only have setvbuf
 ****************************************************************************/
-void setbuffer(FILE * f, char *buf, int bufsize)
+/* *INDENT-OFF* */
+ void setbuffer(FILE * f, char *buf, int bufsize)
 {
 	setvbuf(f, buf, _IOFBF, bufsize);
 }
+/* *INDENT-ON* */
 #endif
 
 
@@ -1726,19 +1728,21 @@ static char *automount_lookup(char *user_name)
 				if (object->zo_data.zo_type == ENTRY_OBJ)
 				{
 					entry =
-						&object->zo_data.objdata_u.
-						en_data;
+						&object->zo_data.
+						objdata_u.en_data;
 					DEBUG(5,
 					      ("NIS+ entry type: %s\n",
 					       entry->en_type));
 					DEBUG(3,
 					      ("NIS+ result: %s\n",
-					       entry->en_cols.en_cols_val[1].
-					       ec_value.ec_value_val));
+					       entry->en_cols.
+					       en_cols_val[1].ec_value.
+					       ec_value_val));
 
 					pstrcpy(last_value,
-						entry->en_cols.en_cols_val[1].
-						ec_value.ec_value_val);
+						entry->en_cols.
+						en_cols_val[1].ec_value.
+						ec_value_val);
 					string_sub(last_value, "&",
 						   user_name);
 					fstrcpy(last_key, user_name);
@@ -2012,7 +2016,7 @@ void standard_sub_vuser(const user_struct * vuser, char *str)
 			case 'N':
 				string_sub(p, "%N",
 					   automount_server(vuser->name));
-					break;
+				break;
 			case 'U':
 				string_sub(p, "%U", vuser->requested_name);
 				break;
@@ -2063,7 +2067,7 @@ void standard_sub(connection_struct * conn, user_struct * vuser, char *str)
 				string_sub(p, "%p",
 					   automount_path(lp_servicename
 							  (SNUM(conn))));
-					break;
+				break;
 			case 'P':
 				string_sub(p, "%P", conn->connectpath);
 				break;
@@ -2255,8 +2259,8 @@ BOOL get_unix_grps(int *p_ngroups, struct group **p_groups)
 	{
 		struct group *copy_grp;
 
-		
-			(*p_groups) =
+
+		(*p_groups) =
 			(struct group *)Realloc((*p_groups),
 						(size_t) ((*p_ngroups) +
 							  1) *

@@ -32,21 +32,21 @@ extern int DEBUGLEVEL;
 /****************************************************************************
   set reg name 
 ****************************************************************************/
-static BOOL set_policy_reg_name(struct policy_cache *cache, POLICY_HND *hnd,
+static BOOL set_policy_reg_name(struct policy_cache *cache, POLICY_HND * hnd,
 				fstring name)
 {
 	char *dev = strdup(name);
 	if (dev != NULL)
 	{
-		if (set_policy_state(cache, hnd, NULL, (void*)dev))
+		if (set_policy_state(cache, hnd, NULL, (void *)dev))
 		{
-			DEBUG(3,("Registry setting policy name=%s\n", name));
+			DEBUG(3, ("Registry setting policy name=%s\n", name));
 			return True;
 		}
 		free(dev);
 	}
 
-	DEBUG(3,("Error setting policy name=%s\n", name));
+	DEBUG(3, ("Error setting policy name=%s\n", name));
 	return False;
 }
 
@@ -54,27 +54,26 @@ static BOOL set_policy_reg_name(struct policy_cache *cache, POLICY_HND *hnd,
 /****************************************************************************
   get reg name 
 ****************************************************************************/
-static BOOL get_policy_reg_name(struct policy_cache *cache, POLICY_HND *hnd,
+static BOOL get_policy_reg_name(struct policy_cache *cache, POLICY_HND * hnd,
 				fstring name)
 {
-	char *dev = (char*)get_policy_state_info(cache, hnd);
+	char *dev = (char *)get_policy_state_info(cache, hnd);
 
 	if (dev != NULL)
 	{
 		fstrcpy(name, dev);
-		DEBUG(5,("getting policy reg name=%s\n", name));
+		DEBUG(5, ("getting policy reg name=%s\n", name));
 		return True;
 	}
 
-	DEBUG(3,("Error getting policy reg name\n"));
+	DEBUG(3, ("Error getting policy reg name\n"));
 	return False;
 }
 
 /*******************************************************************
  reg_reply_unknown_1
  ********************************************************************/
-static void reg_reply_close(REG_Q_CLOSE *q_r,
-				prs_struct *rdata)
+static void reg_reply_close(REG_Q_CLOSE * q_r, prs_struct * rdata)
 {
 	REG_R_CLOSE r_u;
 
@@ -91,12 +90,12 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 		r_u.status = NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
-	DEBUG(5,("reg_unknown_1: %d\n", __LINE__));
+	DEBUG(5, ("reg_unknown_1: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
 	reg_io_r_close("", &r_u, rdata, 0);
 
-	DEBUG(5,("reg_unknown_1: %d\n", __LINE__));
+	DEBUG(5, ("reg_unknown_1: %d\n", __LINE__));
 }
 
 
@@ -104,36 +103,37 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 /*******************************************************************
  _reg_close
  ********************************************************************/
-uint32 _reg_close(POLICY_HND *pol)
+uint32 _reg_close(POLICY_HND * pol)
 {
-        /* close the policy handle */
-        if (!close_policy_hnd(get_global_hnd_cache(), pol))
-        {
-                return NT_STATUS_OBJECT_NAME_INVALID;
-        }
+	/* close the policy handle */
+	if (!close_policy_hnd(get_global_hnd_cache(), pol))
+	{
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
 	return NT_STATUS_NOPROBLEMO;
-}                                 
+}
 
 /*******************************************************************
  _reg_open
  ********************************************************************/
-uint32 _reg_open(POLICY_HND *pol, uint32 access_mask)
+uint32 _reg_open(POLICY_HND * pol, uint32 access_mask)
 {
-       /* get a (unique) handle.  open a policy on it. */
-       if (!open_policy_hnd(get_global_hnd_cache(), get_sec_ctx(),
-                               pol, access_mask))
-       {
-               return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-       }
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_policy_hnd(get_global_hnd_cache(), get_sec_ctx(),
+			     pol, access_mask))
+	{
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
-       return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
  _reg_open_entry
  ********************************************************************/
-uint32 _reg_open_entry(const POLICY_HND* pol, const UNISTR2* uni_name, uint32 unknown_0, 
-	uint32 access_mask, POLICY_HND* entry_pol)
+uint32 _reg_open_entry(const POLICY_HND * pol, const UNISTR2 * uni_name,
+		       uint32 unknown_0, uint32 access_mask,
+		       POLICY_HND * entry_pol)
 {
 	fstring name;
 
@@ -143,23 +143,25 @@ uint32 _reg_open_entry(const POLICY_HND* pol, const UNISTR2* uni_name, uint32 un
 	}
 
 	if (!open_policy_hnd_link(get_global_hnd_cache(),
-		pol, entry_pol, access_mask))
+				  pol, entry_pol, access_mask))
 	{
-		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		return NT_STATUS_TOO_MANY_SECRETS;	/* ha ha very droll */
 	}
 
-	unistr2_to_ascii(name, uni_name, sizeof(name)-1);
+	unistr2_to_ascii(name, uni_name, sizeof(name) - 1);
 
 	/* lkcl XXXX do a check on the name, here */
-	if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions") &&
-	    !strequal(name, "SYSTEM\\CurrentControlSet\\Services\\NETLOGON\\Parameters\\"))
+	if (!strequal
+	    (name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions")
+	    && !strequal(name,
+			 "SYSTEM\\CurrentControlSet\\Services\\NETLOGON\\Parameters\\"))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!set_policy_reg_name(get_global_hnd_cache(), entry_pol, name))
 	{
-		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
+		return NT_STATUS_TOO_MANY_SECRETS;	/* ha ha very droll */
 	}
 
 	return NT_STATUS_NOPROBLEMO;
@@ -170,10 +172,9 @@ uint32 _reg_open_entry(const POLICY_HND* pol, const UNISTR2* uni_name, uint32 un
 /*******************************************************************
  reg_reply_info
  ********************************************************************/
-static void reg_reply_info(REG_Q_INFO *q_u,
-				prs_struct *rdata)
+static void reg_reply_info(REG_Q_INFO * q_u, prs_struct * rdata)
 {
-	uint32 status     = 0;
+	uint32 status = 0;
 
 	REG_R_INFO r_u;
 	uint32 type = 0xcafeface;
@@ -182,15 +183,17 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 
 	ZERO_STRUCT(buf);
 
-	DEBUG(5,("reg_info: %d\n", __LINE__));
+	DEBUG(5, ("reg_info: %d\n", __LINE__));
 
-	if (status == 0x0 && !get_policy_reg_name(get_global_hnd_cache(), &q_u->pol, name))
+	if (status == 0x0
+	    && !get_policy_reg_name(get_global_hnd_cache(), &q_u->pol, name))
 	{
 		status = NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (status == 0 &&
-	   strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
+	    strequal(name,
+		     "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
 	{
 		char *key = "LanmanNT";
 		make_buffer2(&buf, key, strlen(key));
@@ -198,7 +201,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 	}
 	else
 	{
-		status = 0x2; /* Win32 status code.  ick */
+		status = 0x2;	/* Win32 status code.  ick */
 	}
 
 	make_reg_r_info(&r_u, &type, &buf, status);
@@ -206,18 +209,18 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 	/* store the response in the SMB stream */
 	reg_io_r_info("", &r_u, rdata, 0);
 
-	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
+	DEBUG(5, ("reg_open_entry: %d\n", __LINE__));
 }
 
 /*******************************************************************
  api_reg_info
  ********************************************************************/
-static BOOL api_reg_info( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_reg_info(rpcsrv_struct * p, prs_struct * data,
+			 prs_struct * rdata)
 {
 	REG_Q_INFO q_u;
 
-	/* grab the reg unknown 0x11*/
+	/* grab the reg unknown 0x11 */
 	if (!reg_io_q_info("", &q_u, data, 0))
 	{
 		return False;
@@ -232,21 +235,19 @@ static BOOL api_reg_info( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  array of \PIPE\reg operations
  ********************************************************************/
-static struct api_struct api_reg_cmds[] =
-{
-	{ "REG_CLOSE"        , REG_CLOSE        , api_reg_close        },
-	{ "REG_OPEN_ENTRY"   , REG_OPEN_ENTRY   , api_reg_open_entry   },
-	{ "REG_OPEN"         , REG_OPEN_HKLM    , api_reg_open         },
-	{ "REG_INFO"         , REG_INFO         , api_reg_info         },
-	{ NULL,                0                , NULL                 }
+static struct api_struct api_reg_cmds[] = {
+	{"REG_CLOSE", REG_CLOSE, api_reg_close},
+	{"REG_OPEN_ENTRY", REG_OPEN_ENTRY, api_reg_open_entry},
+	{"REG_OPEN", REG_OPEN_HKLM, api_reg_open},
+	{"REG_INFO", REG_INFO, api_reg_info},
+	{NULL, 0, NULL}
 };
 
 /*******************************************************************
  receives a reg pipe and responds.
  ********************************************************************/
-BOOL api_reg_rpc(rpcsrv_struct *p)
+BOOL api_reg_rpc(rpcsrv_struct * p)
 {
 	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds);
 }
 #endif
-

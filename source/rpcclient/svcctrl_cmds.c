@@ -27,57 +27,56 @@
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-static const struct command_set svc_commands[] = 
-{
+static const struct command_set svc_commands[] = {
 	/*
 	 * service control
 	 */
 
 	{
-		"svcenum",
-		cmd_svc_enum,
-		"[-i] Lists Services Manager",
-		{NULL, NULL}
-	},
+	 "svcenum",
+	 cmd_svc_enum,
+	 "[-i] Lists Services Manager",
+	 {NULL, NULL}
+	 },
 
 	{
-		"svcinfo",
-		cmd_svc_info,
-		"<service> Service Information",
-		{complete_svcenum, NULL}
-	},
+	 "svcinfo",
+	 cmd_svc_info,
+	 "<service> Service Information",
+	 {complete_svcenum, NULL}
+	 },
 
 	{
-		"svcstart",
-		cmd_svc_start,
-		"<service> [arg 0] [arg 1] ... Start Service",
-		{complete_svcenum, NULL}
-	},
+	 "svcstart",
+	 cmd_svc_start,
+	 "<service> [arg 0] [arg 1] ... Start Service",
+	 {complete_svcenum, NULL}
+	 },
 
 	{
-		"svcset",
-		cmd_svc_set,
-		"<service> Test Set Service",
-		{complete_svcenum, NULL}
-	},
+	 "svcset",
+	 cmd_svc_set,
+	 "<service> Test Set Service",
+	 {complete_svcenum, NULL}
+	 },
 
 	{
-		"svcstop",
-		cmd_svc_stop,
-		"<service> Stop Service",
-		{complete_svcenum, NULL}
-	},
+	 "svcstop",
+	 cmd_svc_stop,
+	 "<service> Stop Service",
+	 {complete_svcenum, NULL}
+	 },
 
 	/*
 	 * oop!
 	 */
 
 	{
-		"",
-		NULL,
-		NULL,
-		{NULL, NULL}
-	}
+	 "",
+	 NULL,
+	 NULL,
+	 {NULL, NULL}
+	 }
 };
 
 void add_svc_commands(void)

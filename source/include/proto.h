@@ -200,7 +200,7 @@ void free_cmd_set_array(uint32 num_entries, struct command_set **entries);
 struct command_set *add_cmd_set_to_array(uint32 * len,
 					 struct command_set ***array,
 					 const struct command_set *cmd);
-void add_command_set(struct command_set *cmds);
+void add_command_set(const struct command_set *cmds);
 char *complete_regenum(char *text, int state);
 char *complete_samenum_usr(char *text, int state);
 char *complete_samenum_als(char *text, int state);
@@ -621,7 +621,7 @@ BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 * acct_ctrl);
 void *memdup(const void *p, size_t size);
 char *passdb_path(char *name);
 char *lock_path(char *name);
-char *get_sid_name_use_str(uint32 sid_name_use);
+const char *get_sid_name_use_str(uint32 sid_name_use);
 
 /*The following definitions come from  lib/util_array.c  */
 
@@ -2596,7 +2596,6 @@ BOOL svc_change_svc_cfg(POLICY_HND * hnd,
 void init_cli_use(void);
 void free_cli_use(void);
 struct cli_state *cli_net_use_add(const char *srv_name,
-				  const vuser_key * key,
 				  const struct ntuser_creds *usr_creds,
 				  BOOL redir, BOOL reuse, BOOL *is_new);
 BOOL cli_net_use_del(const char *srv_name,
@@ -2794,6 +2793,28 @@ BOOL msrpc_sam_ntpasswd_set(const char *srv_name, const char *user,
 BOOL msrpc_sam_query_userinfo(const char *srv_name, const DOM_SID * sid,
 			      const char *user_name, uint16 info_level,
 			      SAM_USERINFO_CTR * ctr);
+
+/*The following definitions come from  rpc_client/ncacn_np_use.c  */
+
+BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
+				   const char *srv_name,
+				   const struct ntuser_creds *ntc,
+				   const char *pipe_name, BOOL redir,
+				   BOOL reuse, BOOL *is_new_connection);
+void init_ncacn_np_use(void);
+void free_ncacn_np_use(void);
+struct ncacn_np *ncacn_np_initialise(struct ncacn_np *msrpc,
+				     const vuser_key * key);
+struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
+				  const vuser_key * key,
+				  const char *srv_name,
+				  const struct ntuser_creds *ntc,
+				  BOOL redir,
+				  BOOL reuse, BOOL *is_new_connection);
+BOOL ncacn_np_use_del(const char *pipe_name,
+		      const vuser_key * key,
+		      BOOL force_close, BOOL *connection_closed);
+void ncacn_np_use_enum(uint32 * num_cons, struct use_info ***use);
 
 /*The following definitions come from  rpc_client/ncalrpc_l_use.c  */
 
@@ -3466,6 +3487,7 @@ void cmd_wks_query_info(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmdat_cmds.c  */
 
+void add_at_commands(void);
 
 /*The following definitions come from  rpcclient/display_at.c  */
 
@@ -3649,27 +3671,32 @@ void display_sam_sync(FILE * out_hnd, enum action_type action,
 
 /*The following definitions come from  rpcclient/eventlog_cmds.c  */
 
+void add_evt_commands(void);
 
 /*The following definitions come from  rpcclient/lsa.c  */
 
 
 /*The following definitions come from  rpcclient/lsa_cmds.c  */
 
+void add_lsa_commands(void);
 
 /*The following definitions come from  rpcclient/net.c  */
 
 
 /*The following definitions come from  rpcclient/net_cmds.c  */
 
+void add_net_commands(void);
 
 /*The following definitions come from  rpcclient/netlogon_cmds.c  */
 
+void add_ntl_commands(void);
 
 /*The following definitions come from  rpcclient/regedit.c  */
 
 
 /*The following definitions come from  rpcclient/regedit_cmds.c  */
 
+void add_reg_commands(void);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
@@ -3679,12 +3706,18 @@ void display_sam_sync(FILE * out_hnd, enum action_type action,
 
 /*The following definitions come from  rpcclient/samedit_cmds.c  */
 
+void add_sam_commands(void);
+
+/*The following definitions come from  rpcclient/spoolss_cmds.c  */
+
+void add_spl_commands(void);
 
 /*The following definitions come from  rpcclient/svcctrl.c  */
 
 
 /*The following definitions come from  rpcclient/svcctrl_cmds.c  */
 
+void add_svc_commands(void);
 
 /*The following definitions come from  samrd/samrd.c  */
 

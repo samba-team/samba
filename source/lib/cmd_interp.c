@@ -1191,7 +1191,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		report(out_hnd, "Connection:\t");
 
 		if (cli_net_use_add
-		    (srv_name, NULL, &u, True, info->reuse, &isnew) != NULL)
+		    (srv_name, &u, True, info->reuse, &isnew) != NULL)
 		{
 			report(out_hnd, "OK\n");
 		}

@@ -27,41 +27,40 @@
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-static const struct command_set spl_commands[] = 
-{
+static const struct command_set spl_commands[] = {
 	/*
 	 * printer testing
 	 */
 
 	{
-		"spoolenum",
-		cmd_spoolss_enum_printers,
-		"Enumerate Printers",
-		{NULL, NULL}
-	},
+	 "spoolenum",
+	 cmd_spoolss_enum_printers,
+	 "Enumerate Printers",
+	 {NULL, NULL}
+	 },
 	{
-		"spooljobs",
-		cmd_spoolss_enum_jobs,
-		"<printer name> Enumerate Printer Jobs",
-		{complete_printersenum, NULL}
-	},
+	 "spooljobs",
+	 cmd_spoolss_enum_jobs,
+	 "<printer name> Enumerate Printer Jobs",
+	 {complete_printersenum, NULL}
+	 },
 	{
-		"spoolopen",
-		cmd_spoolss_open_printer_ex,
-		"<printer name> Spool Printer Open Test",
-		{complete_printersenum, NULL}
-	},
+	 "spoolopen",
+	 cmd_spoolss_open_printer_ex,
+	 "<printer name> Spool Printer Open Test",
+	 {complete_printersenum, NULL}
+	 },
 
 	/*
 	 * oop!
 	 */
 
 	{
-		"",
-		NULL,
-		NULL,
-		{NULL, NULL}
-	}
+	 "",
+	 NULL,
+	 NULL,
+	 {NULL, NULL}
+	 }
 };
 
 void add_spl_commands(void)

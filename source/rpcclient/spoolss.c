@@ -27,7 +27,7 @@
  This defines the commands supported by this client
  ****************************************************************************/
 
- int main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	add_spl_commands();
 
