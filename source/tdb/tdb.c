@@ -1074,7 +1074,10 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		goto internal;
 	}
 
-	if ((tdb.fd = open(name, open_flags, mode)) == -1) goto fail;
+	if ((tdb.fd = open(name, open_flags, mode)) == -1) {
+		DEBUG(10,("Couldn't open %s: (%d) %s\n",name,errno,strerror(errno)));
+		goto fail;
+	}
 
 	/* ensure there is only one process initialising at once */
 	tdb_brlock(&tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW);
