@@ -644,13 +644,13 @@ static int pack_specifics(NT_PRINTER_PARAM *param, char *buf, int buflen)
 delete a printer - this just deletes the printer info file, any open
 handles are not affected
 ****************************************************************************/
-uint32 del_a_printer(char *portname)
+uint32 del_a_printer(char *sharename)
 {
 	pstring key;
 	TDB_DATA kbuf;
 
 	slprintf(key, sizeof(key), "%s%s",
-		 PRINTERS_PREFIX, portname);
+		 PRINTERS_PREFIX, sharename);
 
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
@@ -678,8 +678,8 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	 * Samba manages only local printers.
 	 * we currently don't support things like path=\\other_server\printer
 	 */
-	if (info->servername[0]!='\0')
-	{
+
+	if (info->servername[0]!='\0') {
 		trim_string(info->printername, info->servername, NULL);
 		trim_string(info->printername, "\\", NULL);
 		info->servername[0]='\0';
@@ -704,7 +704,7 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
  again:	
 	len = 0;
-	len += tdb_pack(buf+len, buflen-len, "dddddddddddffffffffff",
+	len += tdb_pack(buf+len, buflen-len, "dddddddddddfffffffffff",
 			info->attributes,
 			info->priority,
 			info->default_priority,
@@ -721,6 +721,7 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 			info->sharename,
 			info->portname,
 			info->drivername,
+			info->comment,
 			info->location,
 			info->sepfile,
 			info->printprocessor,
@@ -1093,6 +1094,7 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.printername, sharename);
 	fstrcpy(info.portname, sharename);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
+	fstrcpy(info.comment, "");
 	fstrcpy(info.printprocessor, "winprint");
 	fstrcpy(info.datatype, "RAW");
 
@@ -1152,7 +1154,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	if (!dbuf.dptr) return 1;
 #endif
 
-	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddffffffffff",
+	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffffffff",
 			&info.attributes,
 			&info.priority,
 			&info.default_priority,
@@ -1169,27 +1171,25 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 			info.sharename,
 			info.portname,
 			info.drivername,
+			info.comment,
 			info.location,
 			info.sepfile,
 			info.printprocessor,
 			info.datatype,
 			info.parameters);
 
-	info.attributes |= PRINTER_ATTRIBUTE_RAW_ONLY; /* Samba has to have raw drivers. */
+	/* Samba has to have shared raw drivers. */
+	info.attributes |= (PRINTER_ATTRIBUTE_SHARED|PRINTER_ATTRIBUTE_RAW_ONLY);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
-#if 1 /* JRATEST */
 	nt_printing_getsec(sharename, &info.secdesc_buf);
-#endif /* JRATEST */
-
-	fstrcpy(info.sharename, "");
 
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
 
-	DEBUG(9,("Unpacked printer [%s] running drier [%s]\n",
+	DEBUG(9,("Unpacked printer [%s] running driver [%s]\n",
 		 sharename, info.drivername));
 
 	
@@ -1233,6 +1233,7 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 				DEBUGADD(106,("sharename:[%s]\n", info2->sharename));
 				DEBUGADD(106,("portname:[%s]\n", info2->portname));
 				DEBUGADD(106,("drivername:[%s]\n", info2->drivername));
+				DEBUGADD(106,("comment:[%s]\n", info2->comment));
 				DEBUGADD(106,("location:[%s]\n", info2->location));
 				DEBUGADD(106,("sepfile:[%s]\n", info2->sepfile));
 				DEBUGADD(106,("printprocessor:[%s]\n", info2->printprocessor));
