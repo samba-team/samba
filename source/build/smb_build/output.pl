@@ -150,8 +150,6 @@ sub _generate_libraries($)
 			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
 				die("Library[$NAME] depends on unkown External Library[$elem]!\n");
 			}
-			push(@STATIC_LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
-			push(@STATIC_LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
 			push(@SHARED_LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
 			push(@SHARED_LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
 		}
