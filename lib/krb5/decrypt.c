@@ -1,6 +1,5 @@
 #include <krb5_locl.h>
 #include "crc.h"
-#include <md5.h>
 
 RCSID("$Id$");
 
@@ -73,6 +72,7 @@ krb5_decrypt (krb5_context context,
 {
     switch(etype){
     case ETYPE_DES_CBC_CRC:
+    case ETYPE_DES_CBC_MD5:
 	return des_cbc_crc_decrypt(context, ptr, len, etype, keyblock, result);
     }
     return KRB5_PROG_ETYPE_NOSUPP;
