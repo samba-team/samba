@@ -76,8 +76,9 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	*num_gr_mem = 0;
 	
 	if (group_name_type != SID_NAME_DOM_GRP) {
-		DEBUG(1, ("SID %s in domain %s isn't a domain group\n", 
-			  sid_to_string(sid_string, group_sid), domain->name));
+		DEBUG(1, ("SID %s in domain %s isn't a domain group (%d)\n", 
+			  sid_to_string(sid_string, group_sid), domain->name, 
+			  group_name_type));
                 goto done;
 	}
 
