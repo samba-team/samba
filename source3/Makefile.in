@@ -540,7 +540,7 @@ MSGTEST_OBJ = torture/msgtest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
                  $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
 
 LOCKTEST_OBJ = torture/locktest.o $(PARAM_OBJ) $(LOCKING_OBJ) $(KRBCLIENT_OBJ) \
-			   $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) 
+               $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) lib/dummyroot.o
 
 NSSTEST_OBJ = torture/nsstest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
                  $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
@@ -552,7 +552,7 @@ SMBICONV_OBJ = $(PARAM_OBJ) torture/smbiconv.o $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) $
 LOG2PCAP_OBJ = utils/log2pcaphex.o
 
 LOCKTEST2_OBJ = torture/locktest2.o $(PARAM_OBJ) $(LOCKING_OBJ) $(LIBSMB_OBJ) \
-		$(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
+		$(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) lib/dummyroot.o
 
 SMBCACLS_OBJ = utils/smbcacls.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 			   $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) \
