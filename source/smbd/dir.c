@@ -723,76 +723,83 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 
 void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
-  Dir *dirp;
-  char *n;
-  DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix_static(name));
-  int used=0;
+	Dir *dirp;
+	char *n;
+	DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix_static(name));
+	int used=0;
+  
+	if (!p)
+		return(NULL);
+	dirp = (Dir *)malloc(sizeof(Dir));
+	if (!dirp) {
+		DEBUG(0,("Out of memory in OpenDir\n"));
+		conn->vfs_ops.closedir(conn,p);
+		return(NULL);
+	}
 
-  if (!p) return(NULL);
-  dirp = (Dir *)malloc(sizeof(Dir));
-  if (!dirp) {
-    DEBUG(0,("Out of memory in OpenDir\n"));
-    conn->vfs_ops.closedir(conn,p);
-    return(NULL);
-  }
-  dirp->pos = dirp->numentries = dirp->mallocsize = 0;
-  dirp->data = dirp->current = NULL;
+	dirp->pos = dirp->numentries = dirp->mallocsize = 0;
+	dirp->data = dirp->current = NULL;
 
-  while (True)
-  {
-    int l;
+	while (True) {
+		int l;
+		BOOL normal_entry = True;
 
-    if (used == 0) {
-	n = ".";
-    } else if (used == 2) {
-	n = "..";
-    } else {
-	n = vfs_readdirname(conn, p);
-	if (n == NULL)
-		break;
-	if ((strcmp(".",n) == 0) ||(strcmp("..",n) == 0))
-		continue;
-    }
+		if (used == 0) {
+			n = ".";
+			normal_entry = False;
+		} else if (used == 2) {
+			n = "..";
+			normal_entry = False;
+		} else {
+			n = vfs_readdirname(conn, p);
+			if (n == NULL)
+				break;
+			if ((strcmp(".",n) == 0) ||(strcmp("..",n) == 0))
+				continue;
+			normal_entry = True;
+		}
 
-    l = strlen(n)+1;
+		l = strlen(n)+1;
 
-    /* Return value of vfs_readdirname has already gone through 
-       unix_to_dos() */
+		/* Return value of vfs_readdirname has already gone through 
+			unix_to_dos() */
 
-    /* If it's a vetoed file, pretend it doesn't even exist */
-    if (use_veto && conn && IS_VETO_PATH(conn, n)) continue;
+		/* If it's a vetoed file, pretend it doesn't even exist */
+		if (normal_entry && use_veto && conn && IS_VETO_PATH(conn, n))
+			continue;
 
-    /* Honour _hide unreadable_ option */
-    if (conn && lp_hideunreadable(SNUM(conn))) {
-	    char *entry;
-	    int ret=0;
+		/* Honour _hide unreadable_ option */
+		if (normal_entry && conn && lp_hideunreadable(SNUM(conn))) {
+			char *entry;
+			int ret=0;
       
-	    if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
-		    ret = user_can_read_file(conn, entry);
-		    SAFE_FREE(entry);
-	    }
-	    if (!ret) continue;
-    }
+			if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
+				ret = user_can_read_file(conn, entry);
+				SAFE_FREE(entry);
+			}
+			if (!ret)
+				continue;
+		}
 
-    if (used + l > dirp->mallocsize) {
-      int s = MAX(used+l,used+2000);
-      char *r;
-      r = (char *)Realloc(dirp->data,s);
-      if (!r) {
-	DEBUG(0,("Out of memory in OpenDir\n"));
-	break;
-      }
-      dirp->data = r;
-      dirp->mallocsize = s;
-      dirp->current = dirp->data;
-    }
-    pstrcpy(dirp->data+used,n);
-    used += l;
-    dirp->numentries++;
-  }
+		if (used + l > dirp->mallocsize) {
+			int s = MAX(used+l,used+2000);
+			char *r;
+			r = (char *)Realloc(dirp->data,s);
+			if (!r) {
+				DEBUG(0,("Out of memory in OpenDir\n"));
+				break;
+											}
+			dirp->data = r;
+			dirp->mallocsize = s;
+			dirp->current = dirp->data;
+		}
+		pstrcpy(dirp->data+used,n);
+		used += l;
+		dirp->numentries++;
+	}
 
-  conn->vfs_ops.closedir(conn,p);
-  return((void *)dirp);
+	conn->vfs_ops.closedir(conn,p);
+	return((void *)dirp);
 }
 
 
