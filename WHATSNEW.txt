@@ -1,25 +1,46 @@
-                   WHATS NEW IN Samba 3.0.1pre2
-                         November 7, 2003
+                   WHATS NEW IN Samba 3.0.1pre3
+                        November 14, 2003
                   ==============================
 
-This is a preview release of the Samba 3.0.1 code base and is 
-provided for testing only.  This release is *not* intended for 
+This is a preview release of the Samba 3.0.1 code base and is
+provided for testing only.  This release is *not* intended for
 production servers.  Use at your own risk.
 
-There have been several bug fixes since the 3.0.0 releaser that 
-we feel are important to make available to the Samba community 
-for wider testings.  See the "Changes" section for details on 
+There have been several bug fixes since the 3.0.0 releaser that
+we feel are important to make available to the Samba community
+for wider testings.  See the "Changes" section for details on
 exact updates.
 
 
 ######################################################################
 Changes
 #######
-Changes since 3.0.1pre1
+Changes since 3.0.1pre2
 -----------------------
 
-Please refer to the CVS log for the SAMBA_3_0 branch for complete 
+Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details:
+
+1)  Skip over the winbind separator when looking up a user.
+    This fixes the bug that prevented local users from
+    matching an AD user when not running winbindd (bug 698).
+2)  Fix a problem with configure on *BSD systems. Make sure
+    we add -liconv etc to LDFLAGS.
+3)  Fix core dump bug when security=server and the server goes
+    away.
+4)  Correct crash bug due to an empty munged dial string.
+5)  Show locked files for -u <user> (bug 590).
+6)  Fix bug preventing print jobs from display in the queue
+    monitor used by Windows NT and later clients (bug 660).
+7)  Fix several reported problems with point-n-print from
+    Windows 2000/XP clients due to a bug in the EnumPrinterDataEx()
+    reply (bug 338, 527 & 643).
+8)  Fix a handful of potential memory leaks in the LDAP code used
+    by ldapsam[_compat] and the LDAP idmap backend.
+
+
+Changes since 3.0.1pre1
+-----------------------
 
 1)  Match Samba 2.2 behavior; make ACB_NORMAL the default ACB value.
 2)  Updated Japanese welcome file in SWAT.
@@ -62,7 +83,7 @@ details:
 24) Change the \n after the password prompt to go to tty instead 
     of stdout (bug 668).
 25) Stop net -P from prompting for machine account password (bug 451).
-26) Change in behavior to Not only change the effective uid but also 
+26) Change in behavior to Not only change the effective uid but also
     the real uid when becoming unprivileged.
 27) Cope with Exchange 5.5 cleartext pop password auth.
 28) New files for support of initshutdown pipe.  Win2k doesn't 
@@ -89,7 +110,7 @@ details:
     apache header files.
 42) COrrect winbindd build problems on HP-UX 11
 43) Lowercase netgroups lookups (bug 703).
-44) Use the actual size of the buffer in strftime instead of a made 
+44) Use the actual size of the buffer in strftime instead of a made
     up value which just happens to be less than sizeof(fstring).  
     (bug 713).
 45) Add ldaplibs to pdbedit link line (bug 651).
@@ -108,7 +129,7 @@ details:
     lookup fails (bug 698).
 56) Add const for lp_set_name_resolve_order() to avoid compiler 
     warnings (bug 471).
-57) Add support for the %i macro in smb.conf to stand in for the for 
+57) Add support for the %i macro in smb.conf to stand in for the for
     the local IP address to which a client connected.
 58) Allow winbindd to match local accounts to domain SID when 
     'winbind trusted domains only = yes' (bug 680).
@@ -116,7 +137,7 @@ details:
     suffix.  It's not needed and provides inconsistent functionality 
     from the tdb backend.
 60) Patch to handle munged dial string for Windows 200 TSE.
-61) Correct the "smbldap_open: cannot access when not root error" 
+61) Correct the "smbldap_open: cannot access when not root error"
     messages when looking up group information (bug 281).
 
 
