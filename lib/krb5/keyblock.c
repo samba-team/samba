@@ -63,10 +63,7 @@ krb5_copy_keyblock_contents (krb5_context context,
 			     const krb5_keyblock *inblock,
 			     krb5_keyblock *to)
 {
-    to->keytype = inblock->keytype;
-    return krb5_data_copy (&to->keyvalue,
-			   inblock->keyvalue.data,
-			   inblock->keyvalue.length);
+    return copy_EncryptionKey(inblock, to);
 }
 
 krb5_error_code
