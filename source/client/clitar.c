@@ -303,12 +303,12 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix)
   if (fchk != chk)
     {
       DEBUG(0, ("checksums don't match %d %d\n", fchk, chk));
-      for (i = 0; i < sizeof(hb -> dummy); i++) {
+/*      for (i = 0; i < sizeof(hb -> dummy); i++) {
 	fprintf(stdout, "%2X ", hb -> dummy[i]);
       }
       fprintf(stdout, "\n");
       fprintf(stdout, "%s\n", hb -> dummy);
-      fprintf(stdout, "Tarbuf = %X, hb = %X\n", (int)tarbuf, (int)hb);
+      fprintf(stdout, "Tarbuf = %X, hb = %X\n", (int)tarbuf, (int)hb);*/
       return -1;
     }
 
@@ -1410,17 +1410,17 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       get_total_time_ms += this_time;
       get_total_size += finfo.size;
 
+      if (tar_noisy)
+	{
+	  DEBUG(0, ("%10d (%7.1f kb/s) %s\n",
+	       finfo.size, finfo.size / MAX(0.001, (1.024*this_time)),
+               finfo.name));
+	}
+
       /* Thanks to Carel-Jan Engel (ease@mail.wirehub.nl) for this one */
       DEBUG(3,("(%g kb/s) (average %g kb/s)\n",
 	       finfo.size / MAX(0.001, (1.024*this_time)),
 	       get_total_size / MAX(0.001, (1.024*get_total_time_ms))));
-      if (tar_noisy)
-	{
-	  printf("%10d (%7.1f kb/s) %s\n",
-	       finfo.size, finfo.size / MAX(0.001, (1.024*this_time)),
-               finfo.name);
-	}
-
     }
   
   free(inbuf);free(outbuf);
@@ -1490,7 +1490,7 @@ static void do_tar(file_info *finfo)
       writetarheader(tarhandle, cur_dir, 0, finfo->mtime, "040755 \0", '5');
       if (tar_noisy) {
 
-          printf("                directory %s\n", cur_dir);
+          DEBUG(0, ("                directory %s\n", cur_dir));
 
       }
       ntarf++;  /* Make sure we have a file on there */
