@@ -786,6 +786,9 @@
 /* Define if you have the <utime.h> header file.  */
 #undef HAVE_UTIME_H
 
+/* Define if you have the <mysql.h> header file.  */
+#undef HAVE_MYSQL_H
+
 /* Define if you have the dl library (-ldl).  */
 #undef HAVE_LIBDL
 
