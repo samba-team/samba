@@ -2,9 +2,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-1998,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
+ *  Copyright (C) Paul Ashton                  1997-1998.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1284,93 +1284,6 @@ void samr_io_r_open_group(char *desc,  SAMR_R_OPEN_GROUP *r_u, prs_struct *ps, i
 }
 
 
-#if 0
-/* SAMR_Q_CREATE_DOM_GROUP - SAM create group */
-typedef struct q_samr_create_dom_group_info
-{
-	POLICY_HND pol;        /* policy handle */
-
-	UNIHDR hdr_acct_desc;
-	UNISTR2 uni_acct_desc;
-
-	uint16 unknown_1;    /* 0x0002 */
-	uint16 unknown_2;    /* 0x0001 */
-
-} SAMR_Q_CREATE_DOM_GROUP;
-
-/* SAMR_R_CREATE_DOM_GROUP - SAM create group */
-typedef struct r_samr_create_dom_group_info
-{
-	POLICY_HND pol;        /* policy handle */
-
-	uint32 rid;    
-	uint32 status;    
-
-} SAMR_R_CREATE_DOM_GROUP;
-
-
-/* SAMR_Q_SET_GROUPINFO - SAM Group Info */
-typedef struct q_samr_set_group_info
-{
-	POLICY_HND pol;        /* policy handle */
-	uint16 switch_value1;     /* 0x0004 seen */
-	uint16 switch_value2;     /* 0x0004 seen */
-
-	union
- 	{
-		GROUP_INFO4 info4;
-
-	} group;
-
-} SAMR_Q_SET_GROUPINFO;
-
-/* SAMR_R_SET_GROUPINFO - SAM Group Info */
-typedef struct r_samr_set_group_info
-{
-	uint32 status;
-
-} SAMR_R_SET_GROUPINFO;
-
-
-/* SAMR_Q_ADD_GROUPMEM - probably an add group member */
-typedef struct q_samr_add_group_mem_info
-{
-	POLICY_HND pol;       /* policy handle */
-
-	uint32 rid;         /* rid */
-	uint32 unknown;     /* 0x0000 0005 */
-
-} SAMR_Q_ADD_GROUPMEM;
-
-
-/* SAMR_R_ADD_GROUPMEM - probably an add group member */
-typedef struct r_samr_add_group_mem_info
-{
-	uint32 status;         /* return status */
-
-} SAMR_R_ADD_GROUPMEM;
-
-
-/* SAMR_Q_OPEN_GROUP - probably an open */
-typedef struct q_samr_open_group_info
-{
-	POLICY_HND domain_pol;
-	uint32 unknown;         /* 0x0000 0001, 0x0000 0003, 0x0000 001f */
-	uint32 rid_group;        /* rid */
-
-} SAMR_Q_OPEN_GROUP;
-
-
-/* SAMR_R_OPEN_GROUP - probably an open */
-typedef struct r_samr_open_group_info
-{
-	POLICY_HND pol;       /* policy handle */
-	uint32 status;         /* return status */
-
-} SAMR_R_OPEN_GROUP;
-#endif
-
-
 /*******************************************************************
 makes a GROUP_INFO1 structure.
 ********************************************************************/
@@ -1486,6 +1399,220 @@ void samr_group_info_ctr(char *desc,  GROUP_INFO_CTR *ctr, prs_struct *ps, int d
 	prs_align(ps);
 }
 
+
+/*******************************************************************
+makes a SAMR_Q_CREATE_DOM_GROUP structure.
+********************************************************************/
+void make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_e,
+				POLICY_HND *pol,
+				char *acct_desc)
+{
+	int acct_len = acct_desc != NULL ? strlen(acct_desc) : 0;
+	if (q_e == NULL || pol == NULL) return;
+
+	DEBUG(5,("make_samr_q_create_dom_group\n"));
+
+	memcpy(&(q_e->pol), pol, sizeof(*pol));
+
+	make_uni_hdr(&(q_e->hdr_acct_desc), acct_len , acct_len, acct_desc ? 1 : 0);
+	make_unistr2(&(q_e->uni_acct_desc), acct_desc, acct_len);
+
+	q_e->unknown_1 = 0x0002;
+	q_e->unknown_2 = 0x0001;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_create_dom_group(char *desc,  SAMR_Q_CREATE_DOM_GROUP *q_e, prs_struct *ps, int depth)
+{
+	if (q_e == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_create_dom_group");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
+	prs_align(ps);
+
+	smb_io_unihdr ("hdr_acct_desc", &(q_e->hdr_acct_desc), ps, depth); 
+	smb_io_unistr2("uni_acct_desc", &(q_e->uni_acct_desc), q_e->hdr_acct_desc.buffer, ps, depth);
+	prs_align(ps);
+
+	prs_uint16("unknown_1", ps, depth, &(q_e->unknown_1));
+	prs_uint16("unknown_2", ps, depth, &(q_e->unknown_2));
+}
+
+
+/*******************************************************************
+makes a SAMR_R_CREATE_DOM_GROUP structure.
+********************************************************************/
+void make_samr_r_create_dom_group(SAMR_R_CREATE_DOM_GROUP *r_u, POLICY_HND *pol,
+		uint32 rid, uint32 status)
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_samr_r_create_dom_group\n"));
+
+	memcpy(&(r_u->pol), pol, sizeof(*pol));
+
+	r_u->rid    = rid   ;
+	r_u->status = status;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_create_dom_group(char *desc,  SAMR_R_CREATE_DOM_GROUP *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_create_dom_group");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("pol", &(r_u->pol), ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("rid   ", ps, depth, &(r_u->rid   ));
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
+
+/*******************************************************************
+makes a SAMR_Q_ADD_GROUPMEM structure.
+********************************************************************/
+void make_samr_q_add_groupmem(SAMR_Q_ADD_GROUPMEM *q_e,
+				POLICY_HND *pol,
+				uint32 rid)
+{
+	if (q_e == NULL || pol == NULL) return;
+
+	DEBUG(5,("make_samr_q_add_groupmem\n"));
+
+	memcpy(&(q_e->pol), pol, sizeof(*pol));
+
+	q_e->rid = rid;
+	q_e->unknown = 0x0005;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_add_groupmem(char *desc,  SAMR_Q_ADD_GROUPMEM *q_e, prs_struct *ps, int depth)
+{
+	if (q_e == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_add_groupmem");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("rid    ", ps, depth, &(q_e->rid));
+	prs_uint32("unknown", ps, depth, &(q_e->unknown));
+}
+
+
+/*******************************************************************
+makes a SAMR_R_ADD_GROUPMEM structure.
+********************************************************************/
+void make_samr_r_add_groupmem(SAMR_R_ADD_GROUPMEM *r_u, POLICY_HND *pol,
+		uint32 status)
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_samr_r_add_groupmem\n"));
+
+	r_u->status = status;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_add_groupmem(char *desc,  SAMR_R_ADD_GROUPMEM *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_add_groupmem");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
+
+/*******************************************************************
+makes a SAMR_Q_SET_GROUPINFO structure.
+********************************************************************/
+void make_samr_q_set_groupinfo(SAMR_Q_SET_GROUPINFO *q_e,
+				POLICY_HND *pol, GROUP_INFO_CTR *ctr)
+{
+	if (q_e == NULL || pol == NULL) return;
+
+	DEBUG(5,("make_samr_q_set_groupinfo\n"));
+
+	memcpy(&(q_e->pol), pol, sizeof(*pol));
+	q_e->ctr = ctr;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_set_groupinfo(char *desc,  SAMR_Q_SET_GROUPINFO *q_e, prs_struct *ps, int depth)
+{
+	if (q_e == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_set_groupinfo");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
+	prs_align(ps);
+
+	samr_group_info_ctr("ctr", q_e->ctr, ps, depth);
+}
+
+
+/*******************************************************************
+makes a SAMR_R_SET_GROUPINFO structure.
+********************************************************************/
+void make_samr_r_set_groupinfo(SAMR_R_SET_GROUPINFO *r_u, 
+		uint32 status)
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_samr_r_set_groupinfo\n"));
+
+	r_u->status = status;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_set_groupinfo(char *desc,  SAMR_R_SET_GROUPINFO *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_set_groupinfo");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
 
 /*******************************************************************
 makes a SAMR_Q_QUERY_GROUPINFO structure.
