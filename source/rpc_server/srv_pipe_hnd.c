@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -883,3 +884,5 @@ pipes_struct *get_rpc_pipe(int pnum)
 
 	return NULL;
 }
+#undef OLD_NTDOMAIN
+
