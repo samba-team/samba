@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,10 +44,12 @@ kadm5_ret_t
 kadm5_c_destroy(void *server_handle)
 {
     kadm5_client_context *context = server_handle;
+
     free(context->realm);
     free(context->admin_server);
     close(context->sock);
-    krb5_auth_con_free(context->context, context->ac);
+    if (context->ac != NULL)
+	krb5_auth_con_free(context->context, context->ac);
     if(context->my_context)
 	krb5_free_context(context->context);
     return 0;
