@@ -254,6 +254,26 @@
 #include <compat.h>
 #endif
 
+#ifdef HAVE_RPC_TYPES_H
+#include <rpc/types.h>
+#endif
+
+#ifdef HAVE_RPC_XDR_H
+#include <rpc/xdr.h>
+#endif
+
+#ifdef HAVE_RPC_AUTH_H
+#include <rpc/auth.h>
+#endif
+
+#ifdef HAVE_RPC_CLNT_H
+#include <rpc/clnt.h>
+#endif
+
+#ifdef HAVE_RPCSVC_YP_PROT_H
+#include <rpcsvc/yp_prot.h>
+#endif
+
 #ifdef HAVE_RPCSVC_YPCLNT_H
 #include <rpcsvc/ypclnt.h>
 #endif

@@ -302,6 +302,21 @@
 /* Define if you have the <netinet/tcp.h> header file.  */
 #undef HAVE_NETINET_TCP_H
 
+/* Define if you have the <rpc/types.h> header file.  */
+#undef HAVE_RPC_TYPES_H
+
+/* Define if you have the <rpc/xdr.h> header file.  */
+#undef HAVE_RPC_XDR_H
+
+/* Define if you have the <rpc/auth.h> header file.  */
+#undef HAVE_RPC_AUTH_H
+
+/* Define if you have the <rpc/clnt.h> header file.  */
+#undef HAVE_RPC_CLNT_H
+
+/* Define if you have the <rpcsvc/yp_prot.h> header file.  */
+#undef HAVE_RPCSVC_YP_PROT_H
+
 /* Define if you have the <rpcsvc/ypclnt.h> header file.  */
 #undef HAVE_RPCSVC_YPCLNT_H
 
