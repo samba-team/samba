@@ -301,7 +301,7 @@ record mode 0x%X pid=%d\n", entry_scanner_p->share_mode, entry_scanner_p->pid));
 hash bucket %d has a share mode record but no entries - deleting\n", 
                  dev, inode, hash_entry));
     if(*old_shares)
-      free((char *)old_shares);
+      free((char *)*old_shares);
     *old_shares = 0;
 
     if(file_prev_p == file_scanner_p)
