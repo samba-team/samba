@@ -1,5 +1,5 @@
 <samba:parameter name="printer admin"
-                 context="G"
+                 context="S"
 				 type="list"
 		 print="1"
                  xmlns:samba="http://samba.org/common">
@@ -8,7 +8,10 @@
 	This lists users who can do anything to printers
 	via the remote administration interfaces offered
 	by MS-RPC (usually using a NT workstation).
-	Note: The root user always has admin rights.
+	This parameter can be set per-share or globally.
+	Note: The root user always has admin rights. Use
+	caution with use in the global stanza as this can
+	cause side effects.
 	</para>
 </description>
 
