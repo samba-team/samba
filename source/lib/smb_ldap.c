@@ -528,6 +528,9 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 	const char *attr_name;
 	struct ldb_val value;
 
+	r->num_attributes = 0;
+	r->attributes = NULL;
+
 	while (next_attr(chunk, &attr_name, &value) == 0) {
 		int i;
 		struct ldap_attribute *attrib = NULL;
@@ -550,6 +553,8 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 			attrib = &(r->attributes[r->num_attributes]);
 			r->num_attributes += 1;
 			ZERO_STRUCTP(attrib);
+			attrib->name = talloc_strdup(msg->mem_ctx,
+						     attr_name);
 		}
 
 		if (!add_value_to_attrib(msg->mem_ctx, &value, attrib))
@@ -574,46 +579,38 @@ static BOOL fill_mods(struct ldap_message *msg, char **chunk)
 
 		mod.attrib.name = talloc_strdup(msg->mem_ctx, value.data);
 
-		if (strequal(attr_name, "add") ||
-		    strequal(attr_name, "replace")) {
+		if (strequal(attr_name, "add"))
+			mod.type = LDAP_MOD_ADD;
 
-			mod.type = strequal(attr_name, "add") ?
-				LDAP_MOD_ADD : LDAP_MOD_REPLACE;
+		if (strequal(attr_name, "delete"))
+			mod.type = LDAP_MOD_DELETE;
 
-			mod.attrib.num_values = 0;
-			mod.attrib.values = NULL;
-
-			while (next_attr(chunk, &attr_name, &value) == 0) {
-				if (strequal(attr_name, "-"))
-					break;
-				if (!strequal(attr_name, mod.attrib.name)) {
-					DEBUG(3, ("attrib name %s does not "
-						  "match %s\n", attr_name,
-						  mod.attrib.name));
-					return False;
-				}
-				if (!add_value_to_attrib(msg->mem_ctx, &value,
-							 &mod.attrib)) {
-					DEBUG(3, ("Could not add value\n"));
-					return False;
-				}
-			}
-		}
-
-		if (strequal(attr_name, "delete")) {
-			mod.type = LDAP_MODIFY_DELETE;
-
-			if ((next_attr(chunk, &attr_name, &value) == 0) &&
-			    !strequal(attr_name, "-")) {
-				DEBUG(3, ("delete mod must be ended by -\n"));
-				return False;
-			}
-		}
+		if (strequal(attr_name, "replace"))
+			mod.type = LDAP_MOD_REPLACE;
 
 		if (mod.type == LDAP_MODIFY_NONE) {
 			DEBUG(2, ("ldif modification type %s unsupported\n",
 				  attr_name));
 			return False;
+		}
+
+		mod.attrib.num_values = 0;
+		mod.attrib.values = NULL;
+
+		while (next_attr(chunk, &attr_name, &value) == 0) {
+			if (strequal(attr_name, "-"))
+				break;
+			if (!strequal(attr_name, mod.attrib.name)) {
+				DEBUG(3, ("attrib name %s does not "
+					  "match %s\n", attr_name,
+					  mod.attrib.name));
+				return False;
+			}
+			if (!add_value_to_attrib(msg->mem_ctx, &value,
+						 &mod.attrib)) {
+				DEBUG(3, ("Could not add value\n"));
+				return False;
+			}
 		}
 
 		r->mods = talloc_realloc(msg->mem_ctx, r->mods,
@@ -1087,6 +1084,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 				value.length = blob.length;
 				add_value_to_attrib(msg->mem_ctx, &value,
 						    &attrib);
+				data_blob_free(&blob);
 			}
 			asn1_end_tag(data);
 			asn1_end_tag(data);
@@ -1522,6 +1520,30 @@ static BOOL ldap_abandon_message(struct ldap_connection *conn, int msgid,
 	return result;
 }
 
+struct ldap_message *new_ldap_search_message(const char *base,
+					     enum ldap_scope scope,
+					     const char *filter,
+					     int num_attributes,
+					     const char **attributes)
+{
+	struct ldap_message *res = new_ldap_message();
+
+	if (res == NULL)
+		return NULL;
+
+	res->type = LDAP_TAG_SearchRequest;
+	res->r.SearchRequest.basedn = base;
+	res->r.SearchRequest.scope = scope;
+	res->r.SearchRequest.deref = LDAP_DEREFERENCE_NEVER;
+	res->r.SearchRequest.timelimit = 0;
+	res->r.SearchRequest.sizelimit = 0;
+	res->r.SearchRequest.attributesonly = False;
+	res->r.SearchRequest.filter = filter;
+	res->r.SearchRequest.num_attributes = num_attributes;
+	res->r.SearchRequest.attributes = attributes;
+	return res;
+}
+
 BOOL ldap_setsearchent(struct ldap_connection *conn, struct ldap_message *msg,
 		       const struct timeval *endtime)
 {
@@ -1624,6 +1646,24 @@ BOOL ldap_find_single_value(struct ldap_message *msg, const char *attr,
 		}
 	}
 	return False;
+}
+
+BOOL ldap_find_single_string(struct ldap_message *msg, const char *attr,
+			     TALLOC_CTX *mem_ctx, char **value)
+{
+	DATA_BLOB blob;
+
+	if (!ldap_find_single_value(msg, attr, &blob))
+		return False;
+
+	*value = talloc(mem_ctx, blob.length+1);
+
+	if (*value == NULL)
+		return False;
+
+	memcpy(*value, blob.data, blob.length);
+	(*value)[blob.length] = '\0';
+	return True;
 }
 
 BOOL ldap_find_single_int(struct ldap_message *msg, const char *attr,
