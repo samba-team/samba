@@ -472,6 +472,7 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 		struct passwd *pwd, uchar user_sess_key[16])
 {
 	const struct passwd *pass;
+	struct passwd pw;
 	struct smb_passwd *smb_pass;
 
 	if (!lm_pwd || !nt_pwd)
@@ -487,12 +488,13 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	else
 	{
 		pass = Get_Pwnam(user,True);
-	}
-
-	if (pass == NULL)
-	{
-		DEBUG(3,("Couldn't find user %s\n",user));
-		return False;
+		if (pass == NULL)
+		{
+			DEBUG(3,("Couldn't find user %s\n",user));
+			return False;
+		}
+		memcpy(&pw, pass, sizeof(struct passwd));
+		pass = &pw;
 	}
 
 	smb_pass = getsmbpwnam(user);
