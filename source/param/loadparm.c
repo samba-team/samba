@@ -89,7 +89,7 @@ extern pstring myname;
 #define LP_SNUM_OK(iService) (((iService) >= 0) && ((iService) < iNumServices) && iSERVICE(iService).valid)
 #define VALID(i) iSERVICE(i).valid
 
-int keepalive=0;
+int keepalive=DEFAULT_KEEPALIVE;
 extern BOOL use_getwd_cache;
 
 extern int extra_time_offset;
