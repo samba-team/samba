@@ -534,7 +534,7 @@ NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 		return nt_status;
 	}
 
-	(*pdb_method)->name = "xmlsam";
+	(*pdb_method)->name = "xml";
 
 	(*pdb_method)->setsampwent = xmlsam_setsampwent;
 	(*pdb_method)->endsampwent = xmlsam_endsampwent;
@@ -566,8 +566,5 @@ NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 
 int pdb_xml_init() 
 {
-	if(smb_register_passdb("xml", xmlsam_init, PASSDB_INTERFACE_VERSION))
-		return 0;
-
-	return 1;
+	return smb_register_passdb("xml", xmlsam_init, PASSDB_INTERFACE_VERSION);
 }
