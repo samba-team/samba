@@ -33,12 +33,55 @@ sub _generate_subsystems($)
 
 sub _generate_shared_modules($)
 {
-	
+	my $CTX = shift;
+
+	#
+	# loop over all binaries
+	#
+	foreach my $key (sort keys %{$CTX->{DEPEND}{SHARED_MODULES}}) {
+		my $NAME = $CTX->{INPUT}{MODULES}{$key}{NAME};
+		my @OBJ_LIST = ();
+		my @LIB_LIST = ();
+		#
+		my $MODULE = $NAME.".so";
+		my @DEPEND_LIST = ("\$(MODULE_$NAME\_OBJS)");
+		my @LINK_LIST = ("\$(MODULE_$NAME\_OBJS)");
+		my @LINK_FLAGS = ();
+
+		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(MODULE_$key\_OBJS)");
+		push(@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}},"bin/$MODULE");
+
+		push(@OBJ_LIST,@{$CTX->{INPUT}{MODULES}{$key}{INIT_OBJ_FILES}});
+		push(@OBJ_LIST,@{$CTX->{INPUT}{MODULES}{$key}{ADD_OBJ_FILES}});
+
+		foreach my $elem (@{$CTX->{DEPEND}{SHARED_MODULES}{$key}{SUBSYSTEMS_LIST}}) {
+			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
+			push(@LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
+		}
+
+		foreach my $elem (@{$CTX->{DEPEND}{SHARED_MODULES}{$key}{LIBRARIES_LIST}}) {
+			#push(@LINK_FLAGS,"\$(EXTLIB_$elem\_FLAGS");
+		}
+
+		#
+		# set the lists
+		#
+		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME} = $NAME;
+		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}} = @OBJ_LIST;
+		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LIB_LIST}} = @LIB_LIST;
+		#
+		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{MODULE} = $MODULE;
+		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{DEPEND_LIST}} = @DEPEND_LIST;
+		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_LIST}} = @LINK_LIST;
+		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_FLAGS}} = @LINK_FLAGS;
+	}
+
+	return;	
 }
 
 sub _generate_libraries($)
 {
-	
+	return;
 }
 
 sub _generate_binaries($)

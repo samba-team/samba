@@ -620,7 +620,7 @@ sub _prepare_rule_lists($)
 	my $output = "";
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
-		$output .= _prepare_module_rule(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
+		$output .= _prepare_shared_module_rule(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
 	}
 
 	foreach my $key (sort keys %{$CTX->{OUTPUT}{LIBRARIES}}) {
