@@ -1,3 +1,9 @@
+2003-08-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/principal.c (unparse_name): make sure there are space
+	for a NUL, set *name to NULL when there is a failure (so caller
+	can't get hold of a freed pointer)
+
 2003-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/kerberos.8: remove duplicate manual, from
