@@ -4391,6 +4391,9 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 		case 0x07:
 			init_unk_info7(&ctr->info.inf7);
 			break;
+		case 0x08:
+			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
+			break;
 		case 0x0c:
 			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
 			u_lock_duration = account_policy_temp * 60;
