@@ -256,16 +256,68 @@ hdb_foreach(krb5_context context,
 }
 
 krb5_error_code
+hdb_check_db_format(krb5_context context, HDB *db)
+{
+    krb5_data tag;
+    krb5_data version;
+    krb5_error_code ret;
+    unsigned ver;
+    tag.data = HDB_DB_FORMAT_ENTRY;
+    tag.length = strlen(tag.data);
+    ret = (*db->_get)(context, db, tag, &version);
+    if(ret)
+	return ret;
+    if(sscanf(version.data, "%u", &ver) != 1)
+	return HDB_ERR_BADVERSION;
+    if(ver != HDB_DB_FORMAT)
+	return HDB_ERR_BADVERSION;
+    return 0;
+}
+
+krb5_error_code
+hdb_init_db(krb5_context context, HDB *db)
+{
+    krb5_error_code ret;
+    krb5_data tag;
+    krb5_data version;
+    char ver[32];
+    
+    ret = hdb_check_db_format(context, db);
+    if(ret != HDB_ERR_NOENTRY)
+	return ret;
+    
+    tag.data = HDB_DB_FORMAT_ENTRY;
+    tag.length = strlen(tag.data);
+    snprintf(ver, sizeof(ver), "%u", HDB_DB_FORMAT);
+    version.data = ver;
+    version.length = strlen(version.data) + 1; /* zero terminated */
+    ret = (*db->_put)(context, db, 0, tag, version);
+    return ret;
+}
+
+krb5_error_code
 hdb_open(krb5_context context, HDB **db, 
 	 const char *filename, int flags, mode_t mode)
 {
+    krb5_error_code ret = 0;
     if(filename == NULL)
 	filename = HDB_DEFAULT_DB;
+    initialize_hdb_error_table(&context->et_list);
 #ifdef HAVE_DB_H
-    return hdb_db_open(context, db, filename, flags, mode);
+    ret = hdb_db_open(context, db, filename, flags, mode);
 #elif HAVE_NDBM_H
-    return hdb_ndbm_open(context, db, filename, flags, mode);
+    ret =  hdb_ndbm_open(context, db, filename, flags, mode);
 #else
-#error No suitable database library
+    krb5_errx(context, 1, "No database support! (hdb_open)");
 #endif
+    if(ret == 0){
+	if(((flags & O_ACCMODE) == O_WRONLY || (flags & O_ACCMODE) == O_RDWR) &&
+	   (flags & O_CREAT))
+	    ret = hdb_init_db(context, *db);
+	else
+	    ret = hdb_check_db_format(context, *db);
+	if(ret)
+	    (*db)->close(context, *db);
+    }
+    return ret;
 }
