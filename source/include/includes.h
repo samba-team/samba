@@ -455,13 +455,9 @@
 
 #if HAVE_GSSAPI_H
 #include <gssapi.h>
-#endif
-
-#if HAVE_GSSAPI_GSSAPI_H
+#elif HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
-#endif
-
-#if HAVE_GSSAPI_GSSAPI_GENERIC_H
+#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
 #include <gssapi/gssapi_generic.h>
 #endif
 
