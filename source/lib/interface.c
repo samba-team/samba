@@ -36,6 +36,7 @@ static struct interface *local_interfaces  = NULL;
 
 #define ALLONES  ((uint32)0xFFFFFFFF)
 #define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
+#define MKNETADDR(_IP, _NM) (_IP & _NM)
 
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
@@ -144,7 +145,8 @@ static void interpret_interface(char *token)
 	}
 
 	/* maybe the first component was a broadcast address */
-	if (ip.s_addr == MKBCADDR(ip.s_addr, nmask.s_addr)) {
+	if (ip.s_addr == MKBCADDR(ip.s_addr, nmask.s_addr) ||
+	    ip.s_addr == MKNETADDR(ip.s_addr, nmask.s_addr)) {
 		for (i=0;i<total_probed;i++) {
 			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
 				add_interface(probed_ifaces[i].ip, nmask);
