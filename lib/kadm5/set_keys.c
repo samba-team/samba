@@ -51,6 +51,8 @@ _kadm5_set_keys(kadm5_server_context *context,
 
     for(i = 0; i < ent->keys.len; i++) {
 	key = &ent->keys.val[i];
+	free(key->mkvno);
+	key->mkvno = NULL;
 	if(key->salt && 
 	   key->salt->type == hdb_pw_salt &&
 	   (key->salt->salt.length != 0 ||
@@ -100,6 +102,8 @@ _kadm5_set_keys2(hdb_entry *ent,
     if(ent->keys.val == NULL)
 	return ENOMEM;
     for(i = 0; i < n_key_data; i++) {
+	free(ent->keys.val[i].mkvno);
+	ent->keys.val[i].mkvno = NULL;
 	ent->keys.val[i].key.keytype = key_data[i].key_data_type[0];
 	ret = krb5_data_copy(&ent->keys.val[i].key.keyvalue,
 			     key_data[i].key_data_contents[0],
