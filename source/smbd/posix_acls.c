@@ -318,6 +318,7 @@ static void merge_aces( canon_ace **pp_list_head )
 
 					DLIST_REMOVE(list_head, curr_ace_outer);
 					SAFE_FREE(curr_ace_outer);
+					break;
 				}
 			}
 
