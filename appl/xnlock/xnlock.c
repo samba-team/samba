@@ -251,8 +251,8 @@ init_words (int argc, char **argv)
 		errx (1, "cannot allocate memory for message");
 	    appres.text[0] = 0;
 	    for(; i < j; i++){
-		strcat_truncate(appres.text, argv[i], len);
-		strcat_truncate(appres.text, " ", len);
+		strlcat(appres.text, argv[i], len);
+		strlcat(appres.text, " ", len);
 	    }
 	}
     }
@@ -799,7 +799,7 @@ talk(int force_erase)
     XSetForeground(dpy, gc, White);
     talking = 1;
     walk(FRONT);
-    strcpy_truncate (buf, words, sizeof(buf));
+    strlcpy (buf, words, sizeof(buf));
     p = buf;
 
     /* possibly avoid a lot of work here
@@ -834,7 +834,7 @@ talk(int force_erase)
 	if ((w = XTextWidth(font, p, p2 - p)) > width)
 	    width = w;
 	total += p2 - p; /* total chars; count to determine reading time */
-	strcpy_truncate(args[height], p, sizeof(args[height]));
+	strlcpy(args[height], p, sizeof(args[height]));
 	if (height == MAXLINES - 1) {
 	    puts("Message too long!");
 	    break;
@@ -929,14 +929,14 @@ main (int argc, char **argv)
       struct passwd *pw;
       if (!(pw = k_getpwuid(0)))
 	errx (1, "can't get root's passwd!");
-      strcpy_truncate(root_cpass, pw->pw_passwd, sizeof(root_cpass));
+      strlcpy(root_cpass, pw->pw_passwd, sizeof(root_cpass));
 
       if (!(pw = k_getpwuid(getuid())))
 	errx (1, "Can't get your password entry!");
-      strcpy_truncate(user_cpass, pw->pw_passwd, sizeof(user_cpass));
+      strlcpy(user_cpass, pw->pw_passwd, sizeof(user_cpass));
       setuid(getuid());
       /* Now we're no longer running setuid root. */
-      strcpy_truncate(login, pw->pw_name, sizeof(login));
+      strlcpy(login, pw->pw_name, sizeof(login));
     }
 
     srand(getpid());

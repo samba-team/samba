@@ -73,7 +73,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
      * running as root.
      */
 
-    strcpy_truncate(template, POP_TMPDROP, sizeof(template));
+    strlcpy(template, POP_TMPDROP, sizeof(template));
     if ((tf_fd = mkstemp(template)) < 0 ||
 	(tf = fdopen(tf_fd, "w+")) == NULL) {
         pop_log(p,POP_PRIORITY,

@@ -1023,7 +1023,7 @@ ftpd_getline(char *s, int n)
 	cs = s;
 /* tmpline may contain saved command from urgent mode interruption */
 	if(ftp_command){
-	  strcpy_truncate(s, ftp_command, n);
+	  strlcpy(s, ftp_command, n);
 	  if (debug)
 	    syslog(LOG_DEBUG, "command: %s", s);
 #ifdef XXX
@@ -1362,7 +1362,7 @@ help(struct tab *ctab, char *s)
 			columns = 1;
 		lines = (NCMDS + columns - 1) / columns;
 		for (i = 0; i < lines; i++) {
-		    strcpy_truncate (buf, "   ", sizeof(buf));
+		    strlcpy (buf, "   ", sizeof(buf));
 		    for (j = 0; j < columns; j++) {
 			c = ctab + j * lines + i;
 			snprintf (buf + strlen(buf),
@@ -1374,7 +1374,7 @@ help(struct tab *ctab, char *s)
 			    break;
 			w = strlen(c->name) + 1;
 			while (w < width) {
-			    strcat_truncate (buf,
+			    strlcat (buf,
 					     " ",
 					     sizeof(buf));
 			    w++;

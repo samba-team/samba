@@ -196,7 +196,7 @@ pop_dropinfo(POP *p)
 			"Msg %d at offset %ld being added to list",
 			mp->number, mp->offset);
 #endif /* DEBUG */
-        }else if(in_header)
+        } else if(in_header)
 	    parse_header(mp, buffer);
 	blank_line = (strncmp(buffer, "\n", nchar) == 0);
 	if(blank_line) {

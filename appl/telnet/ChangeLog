@@ -1,3 +1,8 @@
+1999-09-16  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c: revert 1.54, get_default_username should DTRT
+ 	now
+
 1999-09-05  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/utility.c (ttloop): make it return 1 if interrupted by a

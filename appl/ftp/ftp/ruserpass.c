@@ -77,7 +77,7 @@ guess_domain (char *hostname, size_t sz)
     char **aliases;
 
     if (gethostname (hostname, sz) < 0) {
-	strcpy_truncate (hostname, "", sz);
+	strlcpy (hostname, "", sz);
 	return "";
     }
     dot = strchr (hostname, '.');
@@ -90,13 +90,13 @@ guess_domain (char *hostname, size_t sz)
 
     dot = strchr (he->h_name, '.');
     if (dot != NULL) {
-	strcpy_truncate (hostname, he->h_name, sz);
+	strlcpy (hostname, he->h_name, sz);
 	return dot + 1;
     }
     for (aliases = he->h_aliases; (a = *aliases) != NULL; ++aliases) {
 	dot = strchr (a, '.');
 	if (dot != NULL) {
-	    strcpy_truncate (hostname, a, sz);
+	    strlcpy (hostname, a, sz);
 	    return dot + 1;
 	}
     }

@@ -75,7 +75,7 @@ hookup (const char *host, int port)
 	code = -1;
 	return NULL;
     }
-    strcpy_truncate (hostnamebuf, hp->h_name, sizeof(hostnamebuf));
+    strlcpy (hostnamebuf, hp->h_name, sizeof(hostnamebuf));
     hostname = hostnamebuf;
     af = hisctladdr->sa_family = hp->h_addrtype;
 
@@ -99,7 +99,7 @@ hookup (const char *host, int port)
 
 	    if (inet_ntop (af, socket_get_address(hisctladdr),
 			   addr, sizeof(addr)) == NULL)
-		strcpy_truncate (addr, "unknown address",
+		strlcpy (addr, "unknown address",
 				 sizeof(addr));
 	    warn ("connect %s", addr);
 	    close (s);
@@ -200,7 +200,7 @@ login (char *host)
 	else
 	    user = tmp;
     }
-    strcpy_truncate(username, user, sizeof(username));
+    strlcpy(username, user, sizeof(username));
     n = command("USER %s", user);
     if (n == CONTINUE) {
 	if(sec_complete)
@@ -240,7 +240,7 @@ login (char *host)
 	return (1);
     for (n = 0; n < macnum; ++n) {
 	if (!strcmp("init", macros[n].mac_name)) {
-	    strcpy_truncate (line, "$init", sizeof (line));
+	    strlcpy (line, "$init", sizeof (line));
 	    makeargv();
 	    domacro(margc, margv);
 	    break;
@@ -1471,7 +1471,7 @@ pswitch (int flag)
     ip->connect = connected;
     connected = op->connect;
     if (hostname) {
-	strcpy_truncate (ip->name, hostname, sizeof (ip->name));
+	strlcpy (ip->name, hostname, sizeof (ip->name));
     } else
 	ip->name[0] = 0;
     hostname = op->name;
@@ -1497,16 +1497,16 @@ pswitch (int flag)
     mcase = op->mcse;
     ip->ntflg = ntflag;
     ntflag = op->ntflg;
-    strcpy_truncate (ip->nti, ntin, sizeof (ip->nti));
-    strcpy_truncate (ntin, op->nti, 17);
-    strcpy_truncate (ip->nto, ntout, sizeof (ip->nto));
-    strcpy_truncate (ntout, op->nto, 17);
+    strlcpy (ip->nti, ntin, sizeof (ip->nti));
+    strlcpy (ntin, op->nti, 17);
+    strlcpy (ip->nto, ntout, sizeof (ip->nto));
+    strlcpy (ntout, op->nto, 17);
     ip->mapflg = mapflag;
     mapflag = op->mapflg;
-    strcpy_truncate (ip->mi, mapin, MaxPathLen);
-    strcpy_truncate (mapin, op->mi, MaxPathLen);
-    strcpy_truncate (ip->mo, mapout, MaxPathLen);
-    strcpy_truncate (mapout, op->mo, MaxPathLen);
+    strlcpy (ip->mi, mapin, MaxPathLen);
+    strlcpy (mapin, op->mi, MaxPathLen);
+    strlcpy (ip->mo, mapout, MaxPathLen);
+    strlcpy (mapout, op->mo, MaxPathLen);
     signal(SIGINT, oldintr);
     if (abrtflag) {
 	abrtflag = 0;
@@ -1680,7 +1680,7 @@ gunique (char *local)
 	warn ("local: %s", local);
 	return NULL;
     }
-    strcpy_truncate (new, local, sizeof(new));
+    strlcpy (new, local, sizeof(new));
     cp = new + strlen(new);
     *cp++ = '.';
     while (!d) {

@@ -56,7 +56,7 @@ domacro(int argc, char **argv)
 		code = -1;
 		return;
 	}
-	strcpy_truncate(line2, line, sizeof(line2));
+	strlcpy(line2, line, sizeof(line2));
 TOP:
 	cp1 = macros[i].mac_start;
 	while (cp1 != macros[i].mac_end) {

@@ -594,12 +594,12 @@ getterminaltype(char *name, size_t name_sz)
 	 * we have to just go with what we (might) have already gotten.
 	 */
 	if (his_state_is_will(TELOPT_TTYPE) && !terminaltypeok(terminaltype)) {
-	    strcpy_truncate(first, terminaltype, sizeof(first));
+	    strlcpy(first, terminaltype, sizeof(first));
 	    for(;;) {
 		/*
 		 * Save the unknown name, and request the next name.
 		 */
-		strcpy_truncate(last, terminaltype, sizeof(last));
+		strlcpy(last, terminaltype, sizeof(last));
 		_gettermname();
 		if (terminaltypeok(terminaltype))
 		    break;
@@ -731,7 +731,7 @@ Please contact your net administrator");
 
     tmp = inet_ntop(af, addr, host_addr, sizeof(host_addr));
     if (tmp == NULL)
-	strcpy_truncate (host_addr, "unknown address", sizeof(host_addr));
+	strlcpy (host_addr, "unknown address", sizeof(host_addr));
 
     if (host == NULL)
 	host = host_addr;
@@ -740,7 +740,7 @@ Please contact your net administrator");
      * We must make a copy because Kerberos is probably going
      * to also do a gethost* and overwrite the static data...
      */
-    strcpy_truncate(remote_host_name, host, sizeof(remote_host_name));
+    strlcpy(remote_host_name, host, sizeof(remote_host_name));
     if (hp != NULL)
 	freehostent (hp);
     host = remote_host_name;
@@ -762,7 +762,7 @@ Please contact your net administrator");
      * If hostname still doesn't fit utmp, use ipaddr.
      */
     if (strlen(remote_host_name) > abs(utmp_len))
-	strcpy_truncate(remote_host_name,
+	strlcpy(remote_host_name,
 			host_addr,
 			sizeof(remote_host_name));
 

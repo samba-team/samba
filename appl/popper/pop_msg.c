@@ -46,7 +46,7 @@ pop_msg(POP *p, int stat, char *format, ...)
         pop_log(p,POP_PRIORITY,"%s",message);
 
     /*  Append the <CR><LF> */
-    strcat_truncate(message, "\r\n", sizeof(message));
+    strlcat(message, "\r\n", sizeof(message));
         
     /*  Send the message to the client */
     fputs(message, p->output);

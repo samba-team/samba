@@ -56,7 +56,7 @@ loop(int s)
 	if(FD_ISSET(0, &fds)){
 	    fgets(cmd, sizeof(cmd), stdin);
 	    cmd[strlen(cmd) - 1] = '\0';
-	    strcat_truncate (cmd, "\r\n", sizeof(cmd));
+	    strlcat (cmd, "\r\n", sizeof(cmd));
 	    write(s, cmd, strlen(cmd));
 	}
 	if(FD_ISSET(s, &fds)){

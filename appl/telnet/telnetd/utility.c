@@ -400,7 +400,7 @@ void edithost(char *pat, char *host)
 	pat++;
     }
     if (*host)
-	strcpy_truncate (res, host,
+	strlcpy (res, host,
 			 sizeof editedhost - (res - editedhost));
     else
 	*res = '\0';

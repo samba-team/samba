@@ -84,7 +84,7 @@ pwd_dialog(char *buf, int size)
     switch(DialogBox(hInst,MAKEINTRESOURCE(IDD_PASSWD_DIALOG),wnd,pwd_dialog_proc))
     {
     case IDOK:
-	strcpy_truncate(buf, passwd, size);
+	strlcpy(buf, passwd, size);
 	memset (passwd, 0, sizeof(passwd));
 	return 0;
     case IDCANCEL:

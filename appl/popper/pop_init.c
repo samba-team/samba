@@ -319,7 +319,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     if (ch == NULL){
         pop_log(p,POP_PRIORITY,
             "Unable to get canonical name of client, err = %d",error);
-	strcpy_truncate (p->client, p->ipaddr, sizeof(p->client));
+	strlcpy (p->client, p->ipaddr, sizeof(p->client));
     }
     /*  Save the cannonical name of the client host in 
         the POP parameter block */
@@ -339,12 +339,12 @@ pop_init(POP *p,int argcount,char **argmessage)
             pop_log(p,POP_PRIORITY,
                 "Client at \"%s\" resolves to an unknown host name \"%s\"",
                     p->ipaddr,ch->h_name);
-	    strcpy_truncate (p->client, p->ipaddr, sizeof(p->client));
+	    strlcpy (p->client, p->ipaddr, sizeof(p->client));
         }
         else {
             /*  Save the host name (the previous value was 
                 destroyed by gethostbyname) */
-	    strcpy_truncate (p->client, ch->h_name, sizeof(p->client));
+	    strlcpy (p->client, ch->h_name, sizeof(p->client));
 
             /*  Look for the client's IP address in the list returned 
                 for its name */
@@ -358,7 +358,7 @@ pop_init(POP *p,int argcount,char **argmessage)
                 pop_log (p,POP_PRIORITY,
                     "Client address \"%s\" not listed for its host name \"%s\"",
                         p->ipaddr,ch->h_name);
-		strcpy_truncate (p->client, p->ipaddr, sizeof(p->client));
+		strlcpy (p->client, p->ipaddr, sizeof(p->client));
             }
         }
 	freehostent (ch_again);

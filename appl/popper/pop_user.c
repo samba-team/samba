@@ -16,7 +16,7 @@ pop_user (POP *p)
 {
     char ss[256];
 
-    strcpy_truncate(p->user, p->pop_parm[1], sizeof(p->user));
+    strlcpy(p->user, p->pop_parm[1], sizeof(p->user));
 
 #ifdef OTP
     if (otp_challenge (&p->otp_ctx, p->user, ss, sizeof(ss)) == 0) {

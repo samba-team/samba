@@ -141,10 +141,10 @@ lex.c: $(srcdir)/lex.l
 snprintf.c:
 	$(LN_S) $(srcdir)/../roken/snprintf.c .
 
-strcat_truncate.c:
-	$(LN_S) $(srcdir)/../roken/strcat_truncate.c .
+strlcat.c:
+	$(LN_S) $(srcdir)/../roken/strlcat.c .
 
-strcpy_truncate.c:
-	$(LN_S) $(srcdir)/../roken/strcpy_truncate.c .
+strlcpy.c:
+	$(LN_S) $(srcdir)/../roken/strlcpy.c .
 
 .PHONY: all Wall install uninstall clean mostlyclean distclean realclean

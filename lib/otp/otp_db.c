@@ -145,7 +145,7 @@ otp_get_internal (void *v, OtpContext *ctx, int lockp)
   p += 4;
   memcpy (ctx->key, p, OTPKEYSIZE);
   p += OTPKEYSIZE;
-  strcpy_truncate (ctx->seed, p, sizeof(ctx->seed));
+  strlcpy (ctx->seed, p, sizeof(ctx->seed));
   if (lockp)
     return dbm_store (dbm, key, dat, DBM_REPLACE);
   else

@@ -88,7 +88,7 @@ otp_print_hex (OtpKey key, char *str, size_t sz)
 void
 otp_print_hex_extended (OtpKey key, char *str, size_t sz)
 {
-  strcpy_truncate (str, OTP_HEXPREFIX, sz);
+  strlcpy (str, OTP_HEXPREFIX, sz);
   otp_print_hex (key,
 		 str + strlen(OTP_HEXPREFIX),
 		 sz - strlen(OTP_HEXPREFIX));
@@ -97,7 +97,7 @@ otp_print_hex_extended (OtpKey key, char *str, size_t sz)
 void
 otp_print_stddict_extended (OtpKey key, char *str, size_t sz)
 {
-  strcpy_truncate (str, OTP_WORDPREFIX, sz);
+  strlcpy (str, OTP_WORDPREFIX, sz);
   otp_print_stddict (key,
 		     str + strlen(OTP_WORDPREFIX),
 		     sz - strlen(OTP_WORDPREFIX));

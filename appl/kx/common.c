@@ -416,7 +416,7 @@ create_and_write_cookie (char *xauthfile,
      auth.data = (char*)cookie;
      des_rand_data (cookie, cookie_sz);
 
-     strcpy_truncate(xauthfile, "/tmp/AXXXXXX", xauthfile_size);
+     strlcpy(xauthfile, "/tmp/AXXXXXX", xauthfile_size);
      fd = mkstemp(xauthfile);
      if(fd < 0) {
 	 saved_errno = errno;

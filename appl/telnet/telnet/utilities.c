@@ -82,13 +82,13 @@ SetNetTrace(char *file)
     if (file  && (strcmp(file, "-") != 0)) {
 	NetTrace = fopen(file, "w");
 	if (NetTrace) {
-	    strcpy_truncate(NetTraceFile, file, sizeof(NetTraceFile));
+	    strlcpy(NetTraceFile, file, sizeof(NetTraceFile));
 	    return;
 	}
 	fprintf(stderr, "Cannot open %s.\n", file);
     }
     NetTrace = stdout;
-    strcpy_truncate(NetTraceFile, "(standard output)", sizeof(NetTraceFile));
+    strlcpy(NetTraceFile, "(standard output)", sizeof(NetTraceFile));
 }
 
 void

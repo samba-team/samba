@@ -388,7 +388,7 @@ int getpty(int *ptynum)
     p = _getpty(&master, O_RDWR, 0600, 1);
     if(p == NULL)
 	return -1;
-    strcpy_truncate(line, p, sizeof(Xline));
+    strlcpy(line, p, sizeof(Xline));
     return master;
 #else
 
@@ -420,7 +420,7 @@ int getpty(int *ptynum)
 #ifdef HAVE_UNLOCKPT
 	    unlockpt(p);
 #endif
-	    strcpy_truncate(line, ptsname(p), sizeof(Xline));
+	    strlcpy(line, ptsname(p), sizeof(Xline));
 	    really_stream = 1;
 	    return p;
 	}

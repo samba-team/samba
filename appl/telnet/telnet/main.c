@@ -263,7 +263,7 @@ main(int argc, char **argv)
 			extern char *dest_realm, dst_realm_buf[];
 			extern int dst_realm_sz;
 			dest_realm = dst_realm_buf;
-			strcpy_truncate(dest_realm, optarg, dst_realm_sz);
+			strlcpy(dest_realm, optarg, dst_realm_sz);
 		    }
 #else
 			fprintf(stderr,

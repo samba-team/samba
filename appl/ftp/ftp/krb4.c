@@ -152,9 +152,9 @@ krb4_adat(void *app_data, void *buf, size_t len)
     memcpy(d->key, auth_dat.session, sizeof(d->key));
     des_set_key(&d->key, d->schedule);
 
-    strcpy_truncate(d->name, auth_dat.pname, sizeof(d->name));
-    strcpy_truncate(d->instance, auth_dat.pinst, sizeof(d->instance));
-    strcpy_truncate(d->realm, auth_dat.prealm, sizeof(d->instance));
+    strlcpy(d->name, auth_dat.pname, sizeof(d->name));
+    strlcpy(d->instance, auth_dat.pinst, sizeof(d->instance));
+    strlcpy(d->realm, auth_dat.prealm, sizeof(d->instance));
 
     cs = auth_dat.checksum + 1;
     {
@@ -213,15 +213,15 @@ mk_auth(struct krb4_data *d, KTEXT adat,
     CREDENTIALS cred;
     char sname[SNAME_SZ], inst[INST_SZ], realm[REALM_SZ];
 
-    strcpy_truncate(sname, service, sizeof(sname));
-    strcpy_truncate(inst, krb_get_phost(host), sizeof(inst));
-    strcpy_truncate(realm, krb_realmofhost(host), sizeof(realm));
+    strlcpy(sname, service, sizeof(sname));
+    strlcpy(inst, krb_get_phost(host), sizeof(inst));
+    strlcpy(realm, krb_realmofhost(host), sizeof(realm));
     ret = krb_mk_req(adat, sname, inst, realm, checksum);
     if(ret)
 	return ret;
-    strcpy_truncate(sname, service, sizeof(sname));
-    strcpy_truncate(inst, krb_get_phost(host), sizeof(inst));
-    strcpy_truncate(realm, krb_realmofhost(host), sizeof(realm));
+    strlcpy(sname, service, sizeof(sname));
+    strlcpy(inst, krb_get_phost(host), sizeof(inst));
+    strlcpy(realm, krb_realmofhost(host), sizeof(realm));
     ret = krb_get_cred(sname, inst, realm, &cred);
     memmove(&d->key, &cred.session, sizeof(des_cblock));
     des_key_sched(&d->key, d->schedule);

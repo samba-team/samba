@@ -153,7 +153,7 @@ curdir(void)
 	if (getcwd(path, sizeof(path)-1) == NULL)
 		return ("");
 	if (path[1] != '\0')		/* special case for root dir. */
-		strcat_truncate(path, "/", sizeof(path));
+		strlcat(path, "/", sizeof(path));
 	/* For guest account, skip / since it's chrooted */
 	return (guest ? path+1 : path);
 }
@@ -526,7 +526,7 @@ user(char *name)
 		if (inet_ntop (his_addr->sa_family,
 			       socket_get_address(his_addr),
 			       data_addr, sizeof(data_addr)) == NULL)
-			strcpy_truncate (data_addr, "unknown address",
+			strlcpy (data_addr, "unknown address",
 					 sizeof(data_addr));
 
 		syslog(LOG_NOTICE,
@@ -556,7 +556,7 @@ user(char *name)
 					       socket_get_address(his_addr),
 					       data_addr,
 					       sizeof(data_addr)) == NULL)
-					strcpy_truncate (data_addr,
+					strlcpy (data_addr,
 							 "unknown address",
 							 sizeof(data_addr));
 
@@ -571,7 +571,7 @@ user(char *name)
 		}
 	}
 	if (logging)
-	    strcpy_truncate(curname, name, sizeof(curname));
+	    strlcpy(curname, name, sizeof(curname));
 	if(sec_complete) {
 	    if(sec_userok(name) == 0)
 		do_login(232, name);
@@ -786,7 +786,7 @@ int do_login(int code, char *passwd)
 	    if (inet_ntop (his_addr->sa_family,
 			   socket_get_address(his_addr),
 			   data_addr, sizeof(data_addr)) == NULL)
-		strcpy_truncate (data_addr, "unknown address",
+		strlcpy (data_addr, "unknown address",
 				 sizeof(data_addr));
 
 	    syslog(LOG_INFO, "ANONYMOUS FTP LOGIN FROM %s(%s), %s",
@@ -807,7 +807,7 @@ int do_login(int code, char *passwd)
 	    if (inet_ntop (his_addr->sa_family,
 			   socket_get_address(his_addr),
 			   data_addr, sizeof(data_addr)) == NULL)
-		strcpy_truncate (data_addr, "unknown address",
+		strlcpy (data_addr, "unknown address",
 				 sizeof(data_addr));
 
 	    syslog(LOG_INFO, "FTP LOGIN FROM %s(%s) as %s",
@@ -898,7 +898,7 @@ pass(char *passwd)
 			if (inet_ntop (his_addr->sa_family,
 				       socket_get_address(his_addr),
 				       data_addr, sizeof(data_addr)) == NULL)
-				strcpy_truncate (data_addr, "unknown address",
+				strlcpy (data_addr, "unknown address",
 						 sizeof(data_addr));
 
 			reply(530, "Login incorrect.");
@@ -1242,7 +1242,7 @@ dataconn(char *name, off_t size, char *mode)
 		if (inet_ntop (data_source->sa_family,
 			       socket_get_address(data_source),
 			       data_addr, sizeof(data_addr)) == NULL)
-			strcpy_truncate (data_addr, "unknown address",
+			strlcpy (data_addr, "unknown address",
 					 sizeof(data_addr));
 
 		reply(425, "Can't create data socket (%s,%d): %s.",
@@ -1781,7 +1781,7 @@ dolog(struct sockaddr *sa)
 		if (inet_ntop (his_addr->sa_family,
 			       socket_get_address(his_addr),
 			       data_addr, sizeof(data_addr)) == NULL)
-			strcpy_truncate (data_addr, "unknown address",
+			strlcpy (data_addr, "unknown address",
 					 sizeof(data_addr));
 
 

@@ -155,7 +155,7 @@ dns_find_cell(const char *cell, char *dbserver, size_t len)
 	struct resource_record *rr = r->head;
 	while(rr){
 	    if(rr->type == T_AFSDB && rr->u.afsdb->preference == 1){
-		strcpy_truncate(dbserver,
+		strlcpy(dbserver,
 				rr->u.afsdb->domain,
 				len);
 		ok = 0;
