@@ -328,7 +328,7 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
 	new = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
-	free(aces);
+	SAFE_FREE(aces);
 	(*the_acl) = new;
 	return True;
 }
@@ -391,8 +391,8 @@ static SEC_DESC *sec_desc_parse(char *str)
 	ret = make_sec_desc(ctx,revision, owner_sid, grp_sid, 
 			    NULL, dacl, &sd_size);
 
-	if (grp_sid) free(grp_sid);
-	if (owner_sid) free(owner_sid);
+	SAFE_FREE(grp_sid);
+	SAFE_FREE(owner_sid);
 
 	return ret;
 }
@@ -605,10 +605,8 @@ static int cacl_set(struct cli_state *cli, char *filename,
 					}
 					old->dacl->num_aces--;
 					if (old->dacl->num_aces == 0) {
-						free(old->dacl->ace);
-						old->dacl->ace=NULL;
-						free(old->dacl);
-						old->dacl = NULL;
+						SAFE_FREE(old->dacl->ace);
+						SAFE_FREE(old->dacl);
 						old->off_dacl = 0;
 					}
 					found = True;
@@ -713,14 +711,14 @@ struct cli_state *connect_one(char *share)
 	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server));
 		cli_shutdown(c);
-		safe_free(c);
+		SAFE_FREE(c);
 		return NULL;
 	}
 
 	if (!cli_session_request(c, &calling, &called)) {
 		DEBUG(0,("session request to %s failed\n", called.name));
 		cli_shutdown(c);
-		safe_free(c);
+		SAFE_FREE(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
@@ -733,7 +731,7 @@ struct cli_state *connect_one(char *share)
 	if (!cli_negprot(c)) {
 		DEBUG(0,("protocol negotiation failed\n"));
 		cli_shutdown(c);
-		safe_free(c);
+		SAFE_FREE(c);
 		return NULL;
 	}
 
@@ -750,7 +748,7 @@ struct cli_state *connect_one(char *share)
 			       lp_workgroup())) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
-		safe_free(c);
+		SAFE_FREE(c);
 		return NULL;
 	}
 
@@ -760,7 +758,7 @@ struct cli_state *connect_one(char *share)
 			    password, strlen(password)+1)) {
 		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
-		safe_free(c);
+		SAFE_FREE(c);
 		return NULL;
 	}
 
