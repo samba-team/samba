@@ -31,7 +31,7 @@ extern int DEBUGLEVEL;
 creates a LSA_TRANS_NAME structure.
 ********************************************************************/
 BOOL make_lsa_trans_name(LSA_TRANS_NAME * trn, UNISTR2 * uni_name,
-			 uint32 sid_name_use, char *name, uint32 idx)
+			 uint16 sid_name_use, char *name, uint32 idx)
 {
 	int len_name = strlen(name);
 
@@ -57,9 +57,10 @@ static BOOL lsa_io_trans_name(char *desc, LSA_TRANS_NAME * trn,
 
 	prs_align(ps);
 
-	prs_uint32("sid_name_use", ps, depth, &(trn->sid_name_use));
-	smb_io_unihdr("hdr_name", &(trn->hdr_name), ps, depth);
-	prs_uint32("domain_idx  ", ps, depth, &(trn->domain_idx));
+	prs_uint16("sid_name_use", ps, depth, &trn->sid_name_use);
+	prs_align(ps);
+	smb_io_unihdr("hdr_name", &trn->hdr_name, ps, depth);
+	prs_uint32("domain_idx  ", ps, depth, &trn->domain_idx);
 
 	return True;
 }

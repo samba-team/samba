@@ -402,7 +402,7 @@ typedef struct dom_ref_info
 /* LSA_TRANS_NAME - translated name */
 typedef struct lsa_trans_name_info
 {
-	uint32 sid_name_use; /* value is 5 for a well-known group; 2 for a domain group; 1 for a user... */
+	uint16 sid_name_use; /* value is 5 for a well-known group; 2 for a domain group; 1 for a user... */
 	UNIHDR hdr_name; 
 	uint32 domain_idx; /* index into DOM_R_REF array of SIDs */
 

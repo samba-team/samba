@@ -1679,7 +1679,7 @@ BOOL create_user_creds( prs_struct *ps,
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
 BOOL make_lsa_trans_name(LSA_TRANS_NAME * trn, UNISTR2 * uni_name,
-			 uint32 sid_name_use, char *name, uint32 idx);
+			 uint16 sid_name_use, char *name, uint32 idx);
 int make_dom_ref_uni(DOM_R_REF * ref, const UNISTR2 * uni_domname,
 		     const DOM_SID * dom_sid);
 int make_dom_ref(DOM_R_REF * ref, const char *domname,

@@ -333,7 +333,7 @@ typedef struct unistr3_info
 /* DOM_RID2 - domain RID structure for ntlsa pipe */
 typedef struct domrid2_info
 {
-	uint8 type; /* value is SID_NAME_USE enum */
+	uint16 type; /* value is SID_NAME_USE enum */
 	uint32 rid;
 	uint32 rid_idx; /* referenced domain index */
 

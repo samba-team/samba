@@ -67,7 +67,7 @@ BOOL eventlog_io_r_readeventlog(char *desc, EVENTLOG_R_READEVENTLOG *r_u, prs_st
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
 BOOL make_lsa_trans_name(LSA_TRANS_NAME * trn, UNISTR2 * uni_name,
-			 uint32 sid_name_use, char *name, uint32 idx);
+			 uint16 sid_name_use, char *name, uint32 idx);
 int make_dom_ref_uni(DOM_R_REF * ref, const UNISTR2 * uni_domname,
 		     const DOM_SID * dom_sid);
 int make_dom_ref(DOM_R_REF * ref, const char *domname,
@@ -208,7 +208,7 @@ BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
 BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx);
+BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint16 type, uint32 idx);
 BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
 BOOL make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
 BOOL smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth);

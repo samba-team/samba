@@ -937,7 +937,7 @@ BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, i
 /*******************************************************************
 creates a DOM_RID2 structure.
 ********************************************************************/
-BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx)
+BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint16 type, uint32 idx)
 {
 	rid2->type    = type;
 	rid2->rid     = rid;
@@ -958,7 +958,7 @@ BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth)
 
 	prs_align(ps);
 	
-	prs_uint8("type   ", ps, depth, &(rid2->type));
+	prs_uint16("type   ", ps, depth, &(rid2->type));
 	prs_align(ps);
 	prs_uint32("rid    ", ps, depth, &(rid2->rid     ));
 	prs_uint32("rid_idx", ps, depth, &(rid2->rid_idx ));

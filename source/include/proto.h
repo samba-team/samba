@@ -3233,7 +3233,7 @@ BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
 BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx);
+BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint16 type, uint32 idx);
 BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
 BOOL make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
 BOOL smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth);
