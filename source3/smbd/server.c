@@ -67,7 +67,17 @@ int max_file_fd_used = 0;
 
 extern int Protocol;
 
-int maxxmit = BUFFER_SIZE;
+/* 
+ * Size of data we can send to client. Set
+ *  by the client for all protocols above CORE.
+ *  Set by us for CORE protocol.
+ */
+int max_send = BUFFER_SIZE;
+/*
+ * Size of the data we can receive. Set by us.
+ * Can be modified by the max xmit parameter.
+ */
+int max_recv = BUFFER_SIZE;
 
 /* a fnum to use when chaining */
 int chain_fnum = -1;
@@ -2592,7 +2602,7 @@ int reply_lanman1(char *outbuf)
   }
 
   CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
-  SSVAL(outbuf,smb_vwv2,maxxmit);
+  SSVAL(outbuf,smb_vwv2,max_recv);
   SSVAL(outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
   SSVAL(outbuf,smb_vwv4,1);
   SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
@@ -2639,7 +2649,7 @@ int reply_lanman2(char *outbuf)
   }
 
   CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
-  SSVAL(outbuf,smb_vwv2,maxxmit);
+  SSVAL(outbuf,smb_vwv2,max_recv);
   SSVAL(outbuf,smb_vwv3,lp_maxmux()); 
   SSVAL(outbuf,smb_vwv4,1);
   SSVAL(outbuf,smb_vwv5,raw); /* readbraw and/or writebraw */
@@ -3813,7 +3823,7 @@ static void process(void)
       if (msg_type == 0)
 	show_msg(InBuffer);
 
-      nread = construct_reply(InBuffer,OutBuffer,nread,maxxmit);
+      nread = construct_reply(InBuffer,OutBuffer,nread,max_send);
       
       if(nread > 0) {
         if (CVAL(OutBuffer,0) == 0)
@@ -4093,7 +4103,7 @@ static void usage(char *pname)
   /* possibly reload the services file. */
   reload_services(True);
 
-  maxxmit = MIN(lp_maxxmit(),BUFFER_SIZE);
+  max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
   if (*lp_rootdir())
     {

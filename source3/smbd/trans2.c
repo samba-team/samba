@@ -40,13 +40,13 @@ extern int Client;
 static int send_trans2_replies(char *outbuf, int bufsize, char *params, 
 			 int paramsize, char *pdata, int datasize)
 {
-  /* As we are using a protocol > LANMAN1 then the maxxmit
+  /* As we are using a protocol > LANMAN1 then the max_send
      variable must have been set in the sessetupX call.
      This takes precedence over the max_xmit field in the
      global struct. These different max_xmit variables should
      be merged as this is now too confusing */
 
-  extern int maxxmit;
+  extern int max_send;
   int data_to_send = datasize;
   int params_to_send = paramsize;
   int useable_space;
@@ -71,9 +71,9 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
   /* The alignment_offset is to align the param and data bytes on an even byte
      boundary. NT 4.0 Beta needs this to work correctly. */
   useable_space = bufsize - ((smb_buf(outbuf)+alignment_offset) - outbuf);
-  /* useable_space can never be more than maxxmit minus the
+  /* useable_space can never be more than max_send minus the
      alignment offset. */
-  useable_space = MIN(useable_space, maxxmit - alignment_offset);
+  useable_space = MIN(useable_space, max_send - alignment_offset);
 
   while( params_to_send || data_to_send)
     {

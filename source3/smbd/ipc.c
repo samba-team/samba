@@ -31,7 +31,7 @@
 #define CHECK_TYPES 0
 
 extern int DEBUGLEVEL;
-extern int maxxmit;
+extern int max_send;
 extern files_struct Files[];
 extern connection_struct Connections[];
 
@@ -142,8 +142,8 @@ static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
   int tot_data=0,tot_param=0;
   int align;
 
-  this_lparam = MIN(lparam,maxxmit - (500+lsetup*SIZEOFWORD)); /* hack */
-  this_ldata = MIN(ldata,maxxmit - (500+lsetup*SIZEOFWORD+this_lparam));
+  this_lparam = MIN(lparam,max_send - (500+lsetup*SIZEOFWORD)); /* hack */
+  this_ldata = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
 
   align = (this_lparam%4);
 
@@ -173,8 +173,8 @@ static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
 
   while (tot_data < ldata || tot_param < lparam)
     {
-      this_lparam = MIN(lparam-tot_param,maxxmit - 500); /* hack */
-      this_ldata = MIN(ldata-tot_data,maxxmit - (500+this_lparam));
+      this_lparam = MIN(lparam-tot_param,max_send - 500); /* hack */
+      this_ldata = MIN(ldata-tot_data,max_send - (500+this_lparam));
 
       align = (this_lparam%4);
 
