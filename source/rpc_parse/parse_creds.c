@@ -2,7 +2,7 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tgrpsgell              1992-1999,
+ *  Copyright (C) Andrew Tridgell              1992-1999,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
  *  Copyright (C) Paul Ashton                  1997-1999.
  *  
