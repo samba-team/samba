@@ -84,20 +84,11 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
 {
   unsigned int mac_file_len;
   char *p;
-#ifdef WITH_TDBSAM
-  pstrcpy(mac_file, lp_tdb_passwd_file());
-#else
-  pstrcpy(mac_file, lp_smb_passwd_file());
-#endif
 
   /* strip the filename to the last '/' */
+  get_private_directory(mac_file);
+  pstrcat(mac_file, "/");
 
-  p = strrchr(mac_file, '/');
-  if (p) {
-    p++;
-    p = '\0';
-  }
- 
   mac_file_len = strlen(mac_file);
 
   if ((int)(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) < 0)

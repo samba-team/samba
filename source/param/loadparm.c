@@ -118,7 +118,7 @@ typedef struct
 	char *szPasswdChat;
 	char *szLogFile;
 	char *szConfigFile;
-#ifdef WITH_TDBSAM
+#ifdef WITH_TDB_SAM
 	char *szTDBPasswdFile;
 #else
 	char *szSMBPasswdFile;
@@ -207,7 +207,7 @@ typedef struct
 	int min_passwd_length;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 	int ldap_port;
 	int ldap_ssl;
 	char *szLdapServer;
@@ -578,7 +578,7 @@ static struct enum_list enum_printing[] = {
 	{-1, NULL}
 };
 
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 static struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_ON, "Yes"},
 	{LDAP_SSL_ON, "yes"},
@@ -695,7 +695,7 @@ static struct parm_struct parm_table[] = {
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, 0},
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, 0},
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, 0},
-#ifdef WITH_TDBSAM
+#ifdef WITH_TDB_SAM
 	{"tdb passwd file", P_STRING, P_GLOBAL, &Globals.szTDBPasswdFile, NULL, NULL, 0},
 #else
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, 0},
@@ -960,7 +960,7 @@ static struct parm_struct parm_table[] = {
 	{"posix locking", P_BOOL, P_LOCAL, &sDefault.bPosixLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"strict locking", P_BOOL, P_LOCAL, &sDefault.bStrictLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 	{"Ldap Options", P_SEP, P_SEPARATOR},
 	
 	{"ldap server", P_STRING, P_GLOBAL, &Globals.szLdapServer, NULL, NULL, 0},
@@ -969,7 +969,7 @@ static struct parm_struct parm_table[] = {
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, 0},
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, 0},
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, 0},
-#endif /* WITH_LDAP */
+#endif /* WITH_LDAP_SAM */
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, 0},
@@ -1202,7 +1202,7 @@ static void init_globals(void)
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
-#ifdef WITH_TDBSAM
+#ifdef WITH_TDB_SAM
 	string_set(&Globals.szTDBPasswdFile, TDB_PASSWD_FILE);
 #else
 	string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
@@ -1329,14 +1329,14 @@ static void init_globals(void)
 	Globals.sslCompatibility = False;
 #endif /* WITH_SSL */
 
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 	string_set(&Globals.szLdapServer, "localhost");
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_port = 389;
 	Globals.ldap_ssl = LDAP_SSL_OFF;
-#endif /* WITH_LDAP */
+#endif /* WITH_LDAP_SAM */
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
 
@@ -1450,7 +1450,7 @@ static char *lp_string(const char *s)
 
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
-#ifdef WITH_TDBSAM
+#ifdef WITH_TDB_SAM
 FN_GLOBAL_STRING(lp_tdb_passwd_file, &Globals.szTDBPasswdFile)
 #else
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
@@ -1509,14 +1509,14 @@ FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_STRING(lp_codepagedir,&Globals.szCodePageDir)
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
-#endif /* WITH_LDAP */
+#endif /* WITH_LDAP_SAM */
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
@@ -3663,12 +3663,12 @@ void get_private_directory(pstring priv_dir)
 
 	*priv_dir = 0;
 
-#ifdef WITH_TDBSAM
+#ifdef WITH_TDB_SAM
 	pstrcpy(priv_dir, lp_tdb_passwd_file());
 #else
 	pstrcpy(priv_dir, lp_smb_passwd_file());
 #endif
 
 	p = strrchr(priv_dir, '/');
-	*p = 0;
+	if (p)	*p = 0;
 }

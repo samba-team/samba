@@ -23,7 +23,7 @@
 
 #include "includes.h"
 
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 /* TODO:
 *  persistent connections: if using NSS LDAP, many connections are made
 *      however, using only one within Samba would be nice

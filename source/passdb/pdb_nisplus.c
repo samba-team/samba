@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#ifdef WITH_NISPLUSSAM
+#ifdef WITH_NISPLUS_SAM
 
 #ifdef BROKEN_NISPLUS_INCLUDE_FILES
 

@@ -1753,15 +1753,27 @@ fi
 fi
 
 
+########################################################################################
+##
+## TESTS FOR SAM BACKENDS.  KEEP THESE GROUPED TOGETHER
+##
+########################################################################################
+
+## set the with_smbpasswd_sam as the default
+with_smbpasswd_sam=yes
+
+
+
 #################################################
 # check for a TDB password database
-AC_MSG_CHECKING(whether to use TDB password database)
+AC_MSG_CHECKING(whether to use TDB SAM database)
 AC_ARG_WITH(tdbsam,
 [  --with-tdbsam           Include experimental TDB SAM support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_TDBSAM)
+    AC_DEFINE(WITH_TDB_SAM)
+    with_smbpasswd_sam=no
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1772,14 +1784,15 @@ AC_ARG_WITH(tdbsam,
 
 #################################################
 # check for a LDAP password database
-AC_MSG_CHECKING(whether to use LDAP password database)
-AC_ARG_WITH(ldap,
+AC_MSG_CHECKING(whether to use LDAP SAM database)
+AC_ARG_WITH(ldapsam,
 [  --with-ldapsam          Include experimental LDAP SAM support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LDAP)
+    AC_DEFINE(WITH_LDAP_SAM)
     LIBS="-lldap -llber -lresolv $LIBS"
+    with_smbpasswd_sam=no
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1789,15 +1802,15 @@ AC_ARG_WITH(ldap,
 )
 
 #################################################
-## commented out by --jerry
 # check for a NISPLUS password database
-AC_MSG_CHECKING(whether to use NISPLUS password database)
+AC_MSG_CHECKING(whether to use NISPLUS SAM database)
 AC_ARG_WITH(nisplussam,
 [  --with-nisplussam       Include NISPLUS SAM support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NISPLUSSAM)
+    AC_DEFINE(WITH_NISPLUS_SAM)
+    with_smbpasswd_sam=no
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1805,6 +1818,24 @@ AC_ARG_WITH(nisplussam,
   esac ],
   AC_MSG_RESULT(no)
 )
+
+################################################
+# This test should come last because the
+# smbpasswd SAM is only used if another format
+# has not been defined
+AC_MSG_CHECKING(whether to use traditional smbpasswd file)
+if test $with_smbpasswd_sam = yes; then
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(WITH_SMBPASSWD_SAM)
+else
+	AC_MSG_RESULT(no)
+fi
+
+########################################################################################
+##
+## END OF TESTS FOR SAM BACKENDS.  
+##
+########################################################################################
 
 #################################################
 # check for a NISPLUS_HOME support 

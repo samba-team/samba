@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#ifdef USE_SMBPASS_DB
+#ifdef WITH_SMBPASSWD_SAM
 
 
 /* 
@@ -1520,4 +1520,4 @@ BOOL pdb_delete_sam_account (char* username)
 #else
  /* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
  void smbpass_dummy_function(void) { } /* stop some compilers complaining */
-#endif /* USE_SMBPASS_DB */
+#endif /* WTH_SMBPASSWD_SAM*/
