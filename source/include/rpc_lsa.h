@@ -94,7 +94,7 @@ enum SID_NAME_USE
 #define LSA_OPENPOLICY         0x06
 #define LSA_QUERYINFOPOLICY    0x07
 #define LSA_SET_INFO           0x08
-#define LSA_ENUM_PRIVS2        0x0b
+#define LSA_ENUM_SIDS          0x0b
 #define LSA_ENUMTRUSTDOM       0x0d
 #define LSA_LOOKUPNAMES        0x0e
 #define LSA_LOOKUPSIDS         0x0f
@@ -600,5 +600,13 @@ typedef struct lsa_r_unk_2d
   uint32 status;
 } LSA_R_UNK_2D;
 
-#endif /* _RPC_LSA_H */
+/* LSA_R_ENUM_SIDS */
+typedef struct lsa_r_enum_sids
+{
+	uint32 start_idx;
+	LSA_SID_ENUM sids;
+	uint32 status;
+} LSA_R_ENUM_SIDS;
 
+
+#endif /* _RPC_LSA_H */

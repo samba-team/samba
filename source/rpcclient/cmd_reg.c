@@ -572,7 +572,7 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 	argc--;
 	argv++;
 
-	val_type = str_to_enum_field(argv[0], &reg_val_types, 0);
+	val_type = str_to_enum_field(argv[0], reg_val_types, 0);
 
 	if (val_type != 1 && val_type != 3 && val_type != 4)
 	{

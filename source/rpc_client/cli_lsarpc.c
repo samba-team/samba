@@ -1299,39 +1299,54 @@ BOOL lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 }
 
 /****************************************************************************
-do a LSA Enum Privileges
+do a LSA Enum SIDs
 ****************************************************************************/
-BOOL lsa_enum_privs2(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
-		     uint32 *count, LSA_PRIV_ENTRY **entries)
+uint32 lsa_enum_sids(POLICY_HND *hnd, uint32 *start_idx, uint32 unk1,
+		     uint32 *count, DOM_SID ***sids)
 {
-	BOOL valid_resp = False;
+	uint32 status = NT_STATUS_INVALID_PARAMETER;
 	prs_struct rbuf;
 	prs_struct buf;
 	LSA_Q_ENUM_PRIVS q_q;
 
-	if (hnd == NULL)
-		return False;
+	if (hnd == NULL || start_idx == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
 
 	prs_init(&buf, 0, 4, False);
 	prs_init(&rbuf, 0, 4, True);
 
-	DEBUG(4, ("LSA Enum Privileges\n"));
+	DEBUG(4, ("LSA Enum SIDs\n"));
 
 	/* store the parameters */
 	q_q.pol = *hnd;
-	q_q.unk0 = unk0;
+	q_q.unk0 = *start_idx;
 	q_q.unk1 = unk1;
 
 	/* turn parameters into data stream */
 	if (lsa_io_q_enum_privs("", &q_q, &buf, 0) &&
-	    rpc_hnd_pipe_req(hnd, LSA_ENUM_PRIVS2, &buf, &rbuf))
+	    rpc_hnd_pipe_req(hnd, LSA_ENUM_SIDS, &buf, &rbuf))
 	{
+		LSA_R_ENUM_SIDS r_q;
+		BOOL p;
+
+		ZERO_STRUCT(r_q);
+
+		p = lsa_io_r_enum_sids("", &r_q, &rbuf, 0)
+			&& rbuf.offset != 0;
+
+		if (p)
+		{
+			(*start_idx) = r_q.start_idx;
+			status = r_q.status;
+			if (!make_sids_from_sid_enum(&r_q.sids, count, sids))
+				status = NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 
 	prs_free_data(&rbuf);
 	prs_free_data(&buf);
 
-	return valid_resp;
+	return status;
 }
 
 /****************************************************************************

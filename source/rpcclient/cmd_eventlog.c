@@ -85,4 +85,6 @@ uint32 cmd_eventlog(struct client_info *info, int argc, char *argv[])
 	display_eventlog_eventrecord(out_hnd, ACTION_FOOTER, &ev);
 			
 	res = res ? event_close(&hnd): False;
+
+	return 0x0;
 }

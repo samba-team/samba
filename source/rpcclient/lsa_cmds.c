@@ -97,6 +97,13 @@ static const struct command_set lsa_commands[] =
 		{NULL, NULL}
 	},
 
+	{
+		"lsaenumsids",
+		cmd_lsa_enum_sids,
+		"lsa enum SIDs",
+		{NULL, NULL}
+	},
+
 	/*
 	 * oop!
 	 */

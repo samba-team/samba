@@ -155,6 +155,8 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM * r_e,
 			     prs_struct * ps, int depth);
 void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e);
 BOOL make_lsa_sid_enum(LSA_SID_ENUM * sen, uint32 num_entries, DOM_SID **sids);
+BOOL make_sids_from_sid_enum(const LSA_SID_ENUM *sen,
+			     uint32 *num_sids, DOM_SID ***sids);
 BOOL make_q_lookup_sids(LSA_Q_LOOKUP_SIDS * q_l, POLICY_HND *hnd,
 			int num_sids, DOM_SID ** sids, uint16 level);
 BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS * q_s,
@@ -184,6 +186,8 @@ BOOL lsa_io_q_priv_get_dispname(char *desc, LSA_Q_PRIV_GET_DISPNAME * q_q,
 				prs_struct *ps, int depth);
 BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME * r_q,
 				prs_struct *ps, int depth);
+BOOL lsa_io_r_enum_sids(char *desc, LSA_R_ENUM_SIDS *r_q,
+			prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_netsec.c  */
 

@@ -163,8 +163,8 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
 BOOL lsa_close(POLICY_HND *hnd);
 BOOL lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 		    uint32 *count, LSA_PRIV_ENTRY **entries);
-BOOL lsa_enum_privs2(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
-		     uint32 *count, LSA_PRIV_ENTRY **entries);
+uint32 lsa_enum_sids(POLICY_HND *hnd, uint32 *start_idx, uint32 unk1,
+		     uint32 *count, DOM_SID ***sids);
 uint32 lsa_priv_get_dispname(const POLICY_HND *hnd, const UNISTR2 *name,
 			     uint16 req_lang_id,
 			     UNISTR2 **desc, uint16 *got_lang_id);

@@ -628,3 +628,53 @@ uint32 cmd_lsa_priv_info(struct client_info *info, int argc, char *argv[])
 
 	return 0;
 }
+
+/****************************************************************************
+****************************************************************************/
+uint32 cmd_lsa_enum_sids(struct client_info *info, int argc, char *argv[])
+{
+	fstring srv_name;
+	uint32 unk0 = 0, unk1 = 0x1000;
+	POLICY_HND lsa_pol;
+	uint32 count, num_names;
+	DOM_SID **sids;
+	char **names;
+
+	BOOL res = True;
+	BOOL res1 = True;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	DEBUG(4, ("cmd_lsa_enum_sids: server:%s\n", srv_name));
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy(srv_name,
+				    &lsa_pol, False,
+				    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
+
+
+	res1 = res ? (lsa_enum_sids(&lsa_pol, &unk0, unk1,
+				    &count, &sids)==0) : False;
+
+	lsa_lookup_sids(&lsa_pol, count, sids, &names, NULL, &num_names);
+
+	res = res ? lsa_close(&lsa_pol) : False;
+
+	if (res1 && names)
+	{
+		uint32 i;
+
+		for (i = 0; i < count; i++)
+		{
+			fstring sid_str;
+			sid_to_string(sid_str, sids[i]);
+			report(out_hnd, "\t%s -> %s\n", sid_str, names[i]);
+			safe_free(names[i]);
+		}
+		safe_free(names);
+	}
+
+	return 0;
+}

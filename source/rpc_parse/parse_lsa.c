@@ -1093,6 +1093,45 @@ BOOL make_lsa_sid_enum(LSA_SID_ENUM * sen, uint32 num_entries, DOM_SID **sids)
 }
 
 /*******************************************************************
+makes a LSA_SID_ENUM structure.
+********************************************************************/
+BOOL make_sids_from_sid_enum(const LSA_SID_ENUM *sen,
+			     uint32 *num_sids, DOM_SID ***sids)
+{
+	uint32 i;
+
+	if (sen == NULL || num_sids == NULL || sids == NULL)
+		return False;
+
+	if (sen->num_entries2 == 0)
+	{
+		(*sids) = NULL;
+		(*num_sids) = 0;
+		return True;
+	}
+
+	(*sids) = g_new(DOM_SID *, sen->num_entries2);
+	if (*sids == NULL)
+		return False;
+
+	(*num_sids) = sen->num_entries2;
+
+	for(i = 0; i < sen->num_entries2; i++)
+	{
+		if (sen->ptr_sid[i])
+		{
+			(*sids)[i] = sid_dup(&sen->sid[i].sid);
+		}
+		else
+		{
+			(*sids)[i] = NULL;
+		}
+	}
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes a LSA_SID_ENUM structure.
 ********************************************************************/
 static BOOL lsa_io_sid_enum(char *desc, LSA_SID_ENUM * sen,
@@ -1832,6 +1871,31 @@ BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME * r_q,
 
 	prs_uint16("lang_id", ps, depth, &r_q->lang_id);
 	prs_align(ps);
+	prs_uint32("status", ps, depth, &r_q->status);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_r_enum_sids(char *desc, LSA_R_ENUM_SIDS *r_q,
+			prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_enum_sids");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	prs_uint32("start_idx", ps, depth, &r_q->start_idx);
+
+	if (!lsa_io_sid_enum("sids", &r_q->sids, ps, depth))
+		return False;
+
 	prs_uint32("status", ps, depth, &r_q->status);
 
 	return True;
