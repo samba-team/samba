@@ -381,11 +381,23 @@ error_code(int ret)
     case KADM5_UNK_PRINC :
 	return KADM_NOENTRY;
     case KADM5_PASS_Q_TOOSHORT :
+#ifdef KADM_PASS_Q_TOOSHORT
 	return KADM_PASS_Q_TOOSHORT;
+#else
+	return KADM_INSECURE_PW;
+#endif
     case KADM5_PASS_Q_CLASS :
+#ifdef KADM_PASS_Q_CLASS :
 	return KADM_PASS_Q_CLASS;
+#else
+	return KADM_INSECURE_PW;
+#endif
     case KADM5_PASS_Q_DICT :
+#ifdef KADM_PASS_Q_DICT
 	return KADM_PASS_Q_DICT;
+#else
+	return KADM_INSECURE_PW;
+#endif
     case KADM5_PASS_REUSE :
     case KADM5_PASS_TOOSOON :
     case KADM5_BAD_PASSWORD :
