@@ -940,8 +940,9 @@ BOOL check_hosts_equiv(char *user)
 
 
 /****************************************************************************
-return the client state structure
+ Return the client state structure.
 ****************************************************************************/
+
 struct cli_state *server_client(void)
 {
 	static struct cli_state pw_cli;
@@ -949,8 +950,9 @@ struct cli_state *server_client(void)
 }
 
 /****************************************************************************
-support for server level security 
+ Support for server level security.
 ****************************************************************************/
+
 struct cli_state *server_cryptkey(void)
 {
 	struct cli_state *cli;
@@ -958,8 +960,7 @@ struct cli_state *server_cryptkey(void)
 	struct in_addr dest_ip;
 	extern fstring local_machine;
 	char *p;
-        BOOL connected_ok = False;
-	struct nmb_name calling, called;
+    BOOL connected_ok = False;
 
 	cli = server_client();
 
@@ -971,10 +972,10 @@ struct cli_state *server_cryptkey(void)
 		standard_sub_basic(desthost);
 		strupper(desthost);
 
-                if(!resolve_name( desthost, &dest_ip, 0x20)) {
-                        DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
-                        continue;
-                }
+		if(!resolve_name( desthost, &dest_ip, 0x20)) {
+			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
+			continue;
+		}
 
 		if (ismyip(dest_ip)) {
 			DEBUG(1,("Password server loop - disabling password server %s\n",desthost));
@@ -994,21 +995,8 @@ struct cli_state *server_cryptkey(void)
 		return NULL;
 	}
 
-	make_nmb_name(&calling, local_machine, 0x0 , scope);
-    make_nmb_name(&called , desthost     , 0x20, scope);
-
-    if (!cli_session_request(cli, &calling, &called)) {
-        /* try with *SMBSERVER if the first name fails */
-        cli_shutdown(cli);
-        make_nmb_name(&called , "*SMBSERVER", 0x20, scope);
-        if (!cli_initialise(cli) ||
-            !cli_connect(cli, desthost, &dest_ip) ||
-            !cli_session_request(cli, &calling, &called)) {
-            DEBUG(1,("%s rejected the session\n",desthost));
-            cli_shutdown(cli);
-            return NULL;
-        }
-    }
+	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip))
+		return NULL;
 
 	DEBUG(3,("got session\n"));
 
@@ -1031,8 +1019,9 @@ struct cli_state *server_cryptkey(void)
 }
 
 /****************************************************************************
-validate a password with the password server
+ Validate a password with the password server.
 ****************************************************************************/
+
 BOOL server_validate(char *user, char *domain, 
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen)
@@ -1124,10 +1113,99 @@ use this machine as the password server.\n"));
     return(False);
   }
 
-
   cli_ulogoff(cli);
 
   return(True);
+}
+
+/***********************************************************************
+ Connect to a remote machine for domain security authentication
+ given a name or IP address.
+************************************************************************/
+
+static BOOL connect_to_domain_password_server(struct cli_state *pcli, char *remote_machine)
+{
+  struct in_addr dest_ip;
+
+  if(cli_initialise(pcli) == False) {
+    DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
+    return False;
+  }
+
+  standard_sub_basic(remote_machine);
+  strupper(remote_machine);
+
+  if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
+    DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", remote_machine));
+    cli_shutdown(pcli);
+    return False;
+  }
+  
+  if (ismyip(dest_ip)) {
+    DEBUG(1,("connect_to_domain_password_server: Password server loop - not using password server %s\n",
+         remote_machine));
+    cli_shutdown(pcli);
+    return False;
+  }
+  
+  if (!cli_connect(pcli, remote_machine, &dest_ip)) {
+    DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
+    cli_shutdown(pcli);
+    return False;
+  }
+  
+  if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
+    DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
+session request. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
+    return False;
+  }
+  
+  pcli->protocol = PROTOCOL_NT1;
+
+  if (!cli_negprot(pcli)) {
+    DEBUG(0,("connect_to_domain_password_server: machine %s rejected the negotiate protocol. \
+Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
+    cli_shutdown(pcli);
+    return False;
+  }
+
+  if (pcli->protocol != PROTOCOL_NT1) {
+    DEBUG(0,("connect_to_domain_password_server: machine %s didn't negotiate NT protocol.\n",
+                   remote_machine));
+    cli_shutdown(pcli);
+    return False;
+  }
+
+  /*
+   * Do an anonymous session setup.
+   */
+
+  if (!cli_session_setup(pcli, "", "", 0, "", 0, "")) {
+    DEBUG(0,("connect_to_domain_password_server: machine %s rejected the session setup. \
+Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
+    cli_shutdown(pcli);
+    return False;
+  }
+
+  if (!(pcli->sec_mode & 1)) {
+    DEBUG(1,("connect_to_domain_password_server: machine %s isn't in user level security mode\n",
+               remote_machine));
+    cli_shutdown(pcli);
+    return False;
+  }
+
+  if (!cli_send_tconX(pcli, "IPC$", "IPC", "", 1)) {
+    DEBUG(0,("connect_to_domain_password_server: machine %s rejected the tconX on the IPC$ share. \
+Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
+    cli_shutdown(pcli);
+    return False;
+  }
+
+  /*
+   * We have an anonymous connection to IPC$ on the domain password server.
+   */
+  return True;
 }
 
 /***********************************************************************
@@ -1224,91 +1302,43 @@ BOOL domain_client_validate( char *user, char *domain,
    */
 
   p = lp_passwordserver();
-  while(p && next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
+  while(!connected_ok && p &&
+        next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
+    if(strequal(remote_machine, "*")) {
 
-    if(cli_initialise(&cli) == False) {
-      DEBUG(0,("domain_client_validate: unable to initialize client connection.\n"));
-      return False;
+      /*
+       * We have been asked to dynamcially determine the IP addresses of
+       * the PDC and BDC's for this DOMAIN, and query them in turn.
+       */
+
+      struct in_addr *ip_list = NULL;
+      fstring ip_str;
+      int count = 0;
+      int i;
+
+      if(!get_dc_list(lp_workgroup(), &ip_list, &count))
+        continue;
+
+      /*
+       * Try and connect to the PDC/BDC list in turn as an IP
+       * address used as a string.
+       */
+
+      for(i = 0; i < count; i++) {
+        fstring dc_name;
+        if(!lookup_pdc_name(global_myname, lp_workgroup(), &ip_list[i], dc_name))
+          continue;
+
+        if((connected_ok = connect_to_domain_password_server(&cli, dc_name)))
+          break;
+      }
+
+      if(ip_list != NULL)
+        free((char *)ip_list);
+
+    } else {
+      connected_ok = connect_to_domain_password_server(&cli, remote_machine);
     }
-
-    standard_sub_basic(remote_machine);
-    strupper(remote_machine);
- 
-    if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
-      DEBUG(1,("domain_client_validate: Can't resolve address for %s\n", remote_machine));
-      cli_shutdown(&cli);
-      continue;
-    }   
-    
-    if (ismyip(dest_ip)) {
-      DEBUG(1,("domain_client_validate: Password server loop - not using password server %s\n",remote_machine));
-      cli_shutdown(&cli);
-      continue;
-    }
-      
-    if (!cli_connect(&cli, remote_machine, &dest_ip)) {
-      DEBUG(0,("domain_client_validate: unable to connect to SMB server on \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-    
-    make_nmb_name(&calling, global_myname , 0x0 , scope);
-    make_nmb_name(&called , remote_machine, 0x20, scope);
-
-    if (!cli_session_request(&cli, &calling, &called)) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-    
-    cli.protocol = PROTOCOL_NT1;
-
-    if (!cli_negprot(&cli)) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the negotiate protocol. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-    
-    if (cli.protocol != PROTOCOL_NT1) {
-      DEBUG(0,("domain_client_validate: machine %s didn't negotiate NT protocol.\n",
-                     remote_machine));
-      cli_shutdown(&cli);
-      continue;
-    }
-
-    /* 
-     * Do an anonymous session setup.
-     */
-
-    if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }      
-
-    if (!(cli.sec_mode & 1)) {
-      DEBUG(1,("domain_client_validate: machine %s isn't in user level security mode\n",
-                 remote_machine));
-      cli_shutdown(&cli);
-      continue;
-    }
-
-    if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
-      DEBUG(0,("domain_client_validate: machine %s rejected the tconX on the IPC$ share. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-      cli_shutdown(&cli);
-      continue;
-    }
-
-    /*
-     * We have an anonymous connection to IPC$.
-     */
-    connected_ok = True;
-    break;
   }
 
   if (!connected_ok) {

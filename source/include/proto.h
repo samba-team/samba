@@ -256,6 +256,7 @@ void *Realloc(void *p,size_t size);
 BOOL get_myname(char *my_name);
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
 int interpret_protocol(char *str,int def);
+BOOL is_ipaddress(const char *str);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
@@ -501,6 +502,8 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
+                                            struct in_addr *pdest_ip);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
@@ -529,6 +532,8 @@ BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipad
 void endlmhosts(FILE *fp);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);
+BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name);
+BOOL get_dc_list(char *group, struct in_addr **ip_list, int *count);
 
 /*The following definitions come from  libsmb/nmblib.c  */
 

@@ -1782,26 +1782,40 @@ int interpret_protocol(char *str,int def)
   return(def);
 }
 
+/****************************************************************************
+ Return true if a string could be a pure IP address.
+****************************************************************************/
+
+BOOL is_ipaddress(const char *str)
+{
+  BOOL pure_address = True;
+  int i;
+  
+  for (i=0; pure_address && str[i]; i++)
+    if (!(isdigit((int)str[i]) || str[i] == '.'))
+      pure_address = False;
+
+  /* Check that a pure number is not misinterpreted as an IP */
+  pure_address = pure_address && (strchr(str, '.') != NULL);
+
+  return pure_address;
+}
 
 /****************************************************************************
 interpret an internet address or name into an IP address in 4 byte form
 ****************************************************************************/
+
 uint32 interpret_addr(char *str)
 {
   struct hostent *hp;
   uint32 res;
   int i;
-  BOOL pure_address = True;
 
   if (strcmp(str,"0.0.0.0") == 0) return(0);
   if (strcmp(str,"255.255.255.255") == 0) return(0xFFFFFFFF);
 
-  for (i=0; pure_address && str[i]; i++)
-    if (!(isdigit((int)str[i]) || str[i] == '.')) 
-      pure_address = False;
-
   /* if it's in the form of an IP address then get the lib to interpret it */
-  if (pure_address) {
+  if (is_ipaddress(str)) {
     res = inet_addr(str);
   } else {
     /* otherwise assume it's a network name of some sort and use 
