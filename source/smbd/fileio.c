@@ -163,7 +163,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
 	int write_path = -1; 
 
 	if (fsp->print_file)
-		return print_job_write(fsp->print_jobid, data, n);
+		return print_job_write(SNUM(fsp->conn), fsp->print_jobid, data, n);
 
 	if (!fsp->can_write) {
 		errno = EPERM;
