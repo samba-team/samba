@@ -60,6 +60,9 @@ krb5_boolean allow_null_ticket_addresses;
 #ifdef KRB4
 char *v4_realm;
 #endif
+#ifdef KASERVER
+krb5_boolean enable_kaserver = -1;
+#endif
 
 static int help_flag;
 static int version_flag;
@@ -90,6 +93,12 @@ static struct getargs args[] = {
     { 
 	"v4-realm",	'r',	arg_string, &v4_realm, 
 	"realm to serve v4-requests for"
+    },
+#endif
+#ifdef KASERVER
+    {
+	"kaserver", 'K', arg_negative_flag,   &enable_kaserver,
+	"turn off kaserver support"
     },
 #endif
     {	"ports",	'P', 	arg_string, &port_str,
@@ -202,6 +211,13 @@ configure(int argc, char **argv)
 	if(p)
 	    v4_realm = strdup(p);
     }
+#endif
+#ifdef KASERVER
+    if (enable_kaserver == -1)
+	enable_kaserver = krb5_config_get_bool_default(context, cf, TRUE,
+						       "kdc",
+						       "enable-kaserver",
+						       NULL);
 #endif
 
     encode_as_rep_as_tgs_rep = krb5_config_get_bool(context, cf, "kdc", 
