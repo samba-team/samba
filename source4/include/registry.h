@@ -75,10 +75,8 @@ struct registry_key {
   const char *path;		  /* Full path to the key */
   char *class_name; /* Name of key class */
   NTTIME last_mod; /* Time last modified                 */
-  SEC_DESC *security;
   struct registry_hive *hive;
   void *backend_data;
-  int ref;
 };
 
 struct registry_value {
@@ -86,10 +84,6 @@ struct registry_value {
   unsigned int data_type;
   int data_len;
   void *data_blk;    /* Might want a separate block */
-  struct registry_hive *hive;
-  struct registry_key *parent;
-  void *backend_data;
-  int ref;
 };
 
 /* FIXME */
@@ -142,7 +136,7 @@ struct hive_operations {
 
 	/* Value management */
 	WERROR (*set_value)(struct registry_key *, const char *name, int type, void *data, int len); 
-	WERROR (*del_value)(struct registry_value *);
+	WERROR (*del_value)(struct registry_key *, const char *valname);
 };
 
 struct registry_hive {

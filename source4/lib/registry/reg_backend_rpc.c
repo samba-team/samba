@@ -218,7 +218,6 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 	if(NT_STATUS_IS_OK(status) && 
 	   W_ERROR_IS_OK(r.out.result) && r.out.length) {
 		*value = talloc_p(mem_ctx, struct registry_value);
-		(*value)->parent = parent;
 		(*value)->name = talloc_strdup(mem_ctx, r.out.name_out.name);
 		(*value)->data_type = type;
 		(*value)->data_len = *r.out.length;

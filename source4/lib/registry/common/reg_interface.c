@@ -281,8 +281,6 @@ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		return WERR_NOT_SUPPORTED;
 	}
 	
-	(*val)->parent = key;
-	(*val)->hive = key->hive;
 	return WERR_OK;
 }
 
@@ -408,9 +406,6 @@ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key, 
 	if(!W_ERROR_IS_OK(error) && !W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS))
 		return error;
 	
-	(*val)->parent = key;
-	(*val)->hive = key->hive;
-	
 	return WERR_OK;
 }
 
@@ -447,7 +442,7 @@ WERROR reg_key_del_recursive(struct registry_key *key)
 		}
 
 		if(W_ERROR_IS_OK(error)) {
-			error = reg_del_value(val);
+			error = reg_del_value(key, val->name);
 			if(!W_ERROR_IS_OK(error)) {
 				talloc_destroy(mem_ctx);
 				return error;
@@ -564,13 +559,13 @@ WERROR reg_val_set(struct registry_key *key, const char *value, int type, void *
 
 
 
-WERROR reg_del_value(struct registry_value *val)
+WERROR reg_del_value(struct registry_key *key, const char *valname)
 {
 	WERROR ret = WERR_OK;
-	if(!val->hive->functions->del_value)
+	if(!key->hive->functions->del_value)
 		return WERR_NOT_SUPPORTED;
 
-	ret = val->hive->functions->del_value(val);
+	ret = key->hive->functions->del_value(key, valname);
 
 	if(!W_ERROR_IS_OK(ret)) return ret;
 
