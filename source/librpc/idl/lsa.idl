@@ -792,8 +792,31 @@
 	/* Function 0x43 */
 	NTSTATUS lsa_CREDRPROFILELOADED();
 
+	/**********************/
 	/* Function 0x44 */
-	NTSTATUS lsa_LSARLOOKUPNAMES3();
+	typedef struct {
+		uint16 sid_type;
+		dom_sid *sid;
+		uint32 sid_index;
+		uint32 unknown;
+	} lsa_TranslatedSid3;
+
+	typedef struct {
+		[range(0,1000)] uint32 count;
+		[size_is(count)] lsa_TranslatedSid3 *sids;
+	} lsa_TransSidArray3;
+
+	NTSTATUS lsa_LookupNames3 (
+		[in,ref]     policy_handle *handle,
+		[in,range(0,1000)] uint32 num_names,
+		[in,ref,size_is(num_names)]  lsa_String *names,
+		[out]        lsa_RefDomainList *domains,
+		[in,out,ref] lsa_TransSidArray3 *sids,
+		[in]         uint16 level,
+		[in,out,ref] uint32 *count,
+		[in]         uint32 unknown1,
+		[in]         uint32 unknown2
+		);
 
 	/* Function 0x45 */
 	NTSTATUS lsa_CREDRGETSESSIONTYPES();
@@ -816,8 +839,18 @@
 	/* Function 0x4b */
 	NTSTATUS lsa_CREDRRENAME();
 
+	/*****************/
 	/* Function 0x4c */
-	NTSTATUS lsa_LSARLOOKUPSIDS3();
+
+	NTSTATUS lsa_LookupSids3(
+		[in,ref]     lsa_SidArray *sids,
+		[out]        lsa_RefDomainList *domains,
+		[in,out,ref] lsa_TransNameArray2 *names,
+		[in]         uint16 level,
+		[in,out,ref] uint32 *count,
+		[in]         uint32 unknown1,
+		[in]         uint32 unknown2
+		);
 
 	/* Function 0x4d */
 	NTSTATUS lsa_LSARLOOKUPNAMES4();

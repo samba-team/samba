@@ -188,6 +188,51 @@ static BOOL test_LookupNames2(struct dcerpc_pipe *p,
 }
 
 
+static BOOL test_LookupNames3(struct dcerpc_pipe *p, 
+			      TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle,
+			      struct lsa_TransNameArray2 *tnames)
+{
+	struct lsa_LookupNames3 r;
+	struct lsa_TransSidArray3 sids;
+	struct lsa_String *names;
+	uint32_t count = 0;
+	NTSTATUS status;
+	int i;
+
+	printf("\nTesting LookupNames3 with %d names\n", tnames->count);
+
+	sids.count = 0;
+	sids.sids = NULL;
+
+	names = talloc_array_p(mem_ctx, struct lsa_String, tnames->count);
+	for (i=0;i<tnames->count;i++) {
+		init_lsa_String(&names[i], tnames->names[i].name.string);
+	}
+
+	r.in.handle = handle;
+	r.in.num_names = tnames->count;
+	r.in.names = names;
+	r.in.sids = &sids;
+	r.in.level = 1;
+	r.in.count = &count;
+	r.in.unknown1 = 0;
+	r.in.unknown2 = 0;
+	r.out.count = &count;
+	r.out.sids = &sids;
+
+	status = dcerpc_lsa_LookupNames3(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		printf("LookupNames3 failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("\n");
+
+	return True;
+}
+
+
 static BOOL test_LookupSids(struct dcerpc_pipe *p, 
 			    TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle,
@@ -261,6 +306,45 @@ static BOOL test_LookupSids2(struct dcerpc_pipe *p,
 	printf("\n");
 
 	if (!test_LookupNames2(p, mem_ctx, handle, &names)) {
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_LookupSids3(struct dcerpc_pipe *p, 
+			    TALLOC_CTX *mem_ctx, 
+			    struct policy_handle *handle,
+			    struct lsa_SidArray *sids)
+{
+	struct lsa_LookupSids3 r;
+	struct lsa_TransNameArray2 names;
+	uint32_t count = sids->num_sids;
+	NTSTATUS status;
+
+	printf("\nTesting LookupSids3\n");
+
+	names.count = 0;
+	names.names = NULL;
+
+	r.in.sids = sids;
+	r.in.names = &names;
+	r.in.level = 1;
+	r.in.count = &count;
+	r.in.unknown1 = 0;
+	r.in.unknown2 = 0;
+	r.out.count = &count;
+	r.out.names = &names;
+
+	status = dcerpc_lsa_LookupSids3(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		printf("LookupSids3 failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("\n");
+
+	if (!test_LookupNames3(p, mem_ctx, handle, &names)) {
 		return False;
 	}
 
@@ -786,6 +870,10 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 		}
 
 		if (!test_LookupSids2(p, mem_ctx, handle, &sids1)) {
+			return False;
+		}
+
+		if (!test_LookupSids3(p, mem_ctx, handle, &sids1)) {
 			return False;
 		}
 
