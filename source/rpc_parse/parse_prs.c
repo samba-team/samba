@@ -28,17 +28,22 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 dump a prs to a file
  ********************************************************************/
-void prs_dump(char *name, int level, prs_struct *ps)
+void prs_dump(char *name, int v, prs_struct *ps)
 {
-	int fd;
-	int len = prs_buf_len(ps);
-	char *data = prs_data(ps, ps->offset);
+	int fd, i;
 	pstring fname;
 	if (DEBUGLEVEL < 50) return;
-	slprintf(fname,sizeof(fname), "%s/%s_%d.prs", tmpdir(), name, level);
-	fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
+	for (i=1;i<100;i++) {
+		if (v != -1) {
+			slprintf(fname,sizeof(fname), "/tmp/%s_%d.%d.prs", name, v, i);
+		} else {
+			slprintf(fname,sizeof(fname), "/tmp/%s.%d.prs", name, i);
+		}
+		fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
+		if (fd != -1 || errno != EEXIST) break;
+	}
 	if (fd != -1) {
-		write(fd, data, len - ps->offset);
+		write(fd, ps->data, ps->data_size);
 		close(fd);
 		DEBUG(0,("created %s\n", fname));
 	}
