@@ -972,10 +972,10 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 	}
 
 	/* calculate the size and limit on the number of entries we will return */
-	temp_size=(enum_context+max_entries)*struct_size;
+	temp_size=max_entries*struct_size;
 	
 	if (temp_size>max_size) {
-		max_entries=max_size/struct_size;
+		max_entries=MIN((max_size/struct_size),max_entries);;
 		DEBUG(5, ("samr_reply_query_dispinfo: buffer size limits to only %d entries\n", max_entries));
 	}
 
