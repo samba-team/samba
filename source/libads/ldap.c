@@ -1623,16 +1623,18 @@ BOOL ads_pull_uint32(ADS_STRUCT *ads,
  * @return boolean indicating success
  **/
 BOOL ads_pull_guid(ADS_STRUCT *ads,
-		   void *msg, GUID *guid)
+		   void *msg, struct uuid *guid)
 {
 	char **values;
+	UUID_FLAT flat_guid;
 
 	values = ldap_get_values(ads->ld, msg, "objectGUID");
 	if (!values)
 		return False;
 	
 	if (values[0]) {
-		memcpy(guid, values[0], sizeof(GUID));
+		memcpy(&flat_guid.info, values[0], sizeof(UUID_FLAT));
+		smb_uuid_unpack(flat_guid, guid);
 		ldap_value_free(values);
 		return True;
 	}
