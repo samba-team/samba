@@ -642,7 +642,7 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_O
 ######################################################################
 # now the rules...
 ######################################################################
-all: proto_test idl_test bin/smbd bin/smbclient bin/smbtorture bin/locktest bin/masktest bin/gentest
+all: SHOWFLAGS bin/smbd bin/smbclient bin/smbtorture bin/locktest bin/masktest bin/gentest
 
 #SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
 #	$(TORTURE_PROGS) $(RPC_MODULES) @EXTRA_ALL_TARGETS@
@@ -686,7 +686,7 @@ everything: all libsmbclient debug2html smbfilter talloctort
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
 
-SHOWFLAGS:
+SHOWFLAGS: basics
 	@echo "Using FLAGS = $(FLAGS)"
 	@echo "      FLAGS32 = $(FLAGS32)"
 	@echo "      LIBS = $(LIBS)"
@@ -720,6 +720,8 @@ idl:
 
 idl_test:
 	@script/build_idl.sh
+
+basics: idl_test proto_test
 
 
 # These dependencies are only approximately correct: we want to make
