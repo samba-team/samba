@@ -6,10 +6,13 @@ RCSID("$Id$");
 
 /* utmpx_login - update utmp and wtmp after login */
 
-#ifdef HAVE_UTMPX
+#ifndef HAVE_UTMPX_H
+int utmpx_login(char *line, char *user, char *host) { return 0; }
+#else
+
 static
 void
-update(struct utmpx *ut, char *line, char *user, char *host)
+utmpx_update(struct utmpx *ut, char *line, char *user, char *host)
 {
     strncpy(ut->ut_line, line, sizeof(ut->ut_line));
     strncpy(ut->ut_user, user, sizeof(ut->ut_user));
@@ -26,14 +29,10 @@ update(struct utmpx *ut, char *line, char *user, char *host)
     updwtmpx(WTMPX_FILE, ut);
 #endif
 }
-#endif
 
 int
 utmpx_login(char *line, char *user, char *host)
 {
-#ifndef HAVE_UTMPX
-    return 0;
-#else
     struct utmpx *ut;
     pid_t   mypid = getpid();
     int     ret = (-1);
@@ -52,7 +51,7 @@ utmpx_login(char *line, char *user, char *host)
 	    && (   ut->ut_type == INIT_PROCESS
 		|| ut->ut_type == LOGIN_PROCESS
 		|| ut->ut_type == USER_PROCESS)) {
-	    update(ut, line, user, host);
+	    utmpx_update(ut, line, user, host);
 	    ret = 0;
 	    break;
 	}
@@ -62,10 +61,10 @@ utmpx_login(char *line, char *user, char *host)
         struct utmpx newut;
 	memset(&newut, 0, sizeof(newut));
 	newut.ut_pid = mypid;
-        update(&newut, line, user, host);
+        utmpx_update(&newut, line, user, host);
 	ret = 0;
     }
     endutxent();
     return (ret);
-#endif /* HAVE_UTMPX */
 }
+#endif /* HAVE_UTMPX_H */
