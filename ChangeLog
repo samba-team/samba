@@ -1,5 +1,9 @@
 2001-05-11  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/store.c: add more byteorder storage flags
+	
+	* lib/krb5/krb5.h: add more byteorder storage flags
+	
 	* kdc/kerberos5.c: don't use NULL where we mean 0
 
 	* kdc/kerberos5.c: put referral test code in separate function,
