@@ -1,3 +1,9 @@
+Sun Jun  1 23:23:08 1997  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kdc.c: more support for ENC-TS-ENC
+
+	* lib/krb5/get_in_tkt.c: redone to enable pre-authentication
+
 Sun Jun  1 22:45:11 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/str2key.c: Fill in keytype and length.
