@@ -404,7 +404,7 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 
         /* Query user rids */
 
-        result = cli_samr_query_usergroups(hnd->cli, mem_ctx, &hnd->pol, 
+        result = cli_samr_query_usergroups(hnd->cli, mem_ctx, &user_pol, 
                                            num_groups, user_groups);
 
  done:
