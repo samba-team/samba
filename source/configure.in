@@ -1951,7 +1951,6 @@ fi
 AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 
 sinclude(nsswitch/config.m4)
-sinclude(popt/config.m4)
 
 dnl exclude these modules 
 AC_ARG_WITH(exclude-modules,
@@ -1983,6 +1982,7 @@ AC_ARG_WITH(static-modules,
 	done
 fi ])
 
+sinclude(lib/popt/config.m4)
 sinclude(lib/iconv.m4)
 sinclude(lib/basic.m4)
 sinclude(libcli/config.m4)

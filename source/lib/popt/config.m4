@@ -25,9 +25,9 @@ fi
 
 AC_MSG_CHECKING(whether to use included popt)
 if test x"$INCLUDED_POPT" != x"no"; then
-	TMP_LIBPOPT_OBJS="popt/findme.o popt/popt.o popt/poptconfig.o \
-				popt/popthelp.o popt/poptparse.o"
-	CPPFLAGS="$CPPFLAGS -I$srcdir/popt"
+	TMP_LIBPOPT_OBJS="lib/popt/findme.o lib/popt/popt.o lib/popt/poptconfig.o \
+				lib/popt/popthelp.o lib/popt/poptparse.o"
+	CPPFLAGS="$CPPFLAGS -I$srcdir/lib/popt"
 	AC_MSG_RESULT(yes)
 else
 	AC_MSG_RESULT(no)
