@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,6 +43,10 @@ RCSID("$Id$");
 static struct getargs args[] = {
     { "random-key",	'r',	arg_flag,	NULL, "set random key" },
     { "password",	'p',	arg_string,	NULL, "princial's password" },
+    { "max-ticket-life",  0,	arg_string,	NULL, "max ticket lifetime" },
+    { "max-renewable-life",  0,	arg_string,	NULL,
+      "max renewable lifetime" },
+    { "attributes",	0,	arg_string,	NULL, "attributes" }
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
@@ -52,7 +56,6 @@ usage(void)
 {
     arg_printusage (args, num_args, "ank", "principal");
 }
-
 
 int
 add_new_key(int argc, char **argv)
@@ -65,9 +68,15 @@ add_new_key(int argc, char **argv)
     int mask = 0;
     krb5_error_code ret;
     krb5_principal princ_ent = NULL;
+    char *max_ticket_life;
+    char *max_renewable_life;
+    char *attributes;
 
     args[0].value = &rkey;
     args[1].value = &password;
+    args[2].value = &max_ticket_life;
+    args[3].value = &max_renewable_life;
+    args[4].value = &attributes;
     
     if(getarg(args, num_args, argc, argv, &optind))
 	goto usage;
@@ -81,6 +90,10 @@ add_new_key(int argc, char **argv)
     }
     princ.principal = princ_ent;
     mask |= KADM5_PRINCIPAL;
+    if (set_entry(context, &princ, &mask,
+		  max_ticket_life, max_renewable_life, attributes)) {
+	goto out;
+    }
     edit_entry(&princ, &mask);
     if(rkey){
 	princ.attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
