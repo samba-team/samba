@@ -53,7 +53,7 @@ extern pstring OriginalDir;
    the following 2 functions are an alternative - they make the file
    descriptor private to smbd
  */
-static int server_fd;
+static int server_fd = -1;
 
 int smbd_server_fd(void)
 {
