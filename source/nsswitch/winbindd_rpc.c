@@ -515,7 +515,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 int get_ldap_seq(const char *server, uint32 *seq)
 {
-	int err;
 	int ret = -1;
 	char *attrs[] = {"highestCommittedUSN", NULL};
 	LDAPMessage *res = NULL;
