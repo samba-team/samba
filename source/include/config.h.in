@@ -239,6 +239,9 @@
 /* Define if you have the __stat64 function.  */
 #undef HAVE___STAT64
 
+/* Define if you have the __sys_llseek function.  */
+#undef HAVE___SYS_LLSEEK
+
 /* Define if you have the __telldir function.  */
 #undef HAVE___TELLDIR
 
@@ -734,8 +737,8 @@
 /* Define if you have the <sys/wait.h> header file.  */
 #undef HAVE_SYS_WAIT_H
 
-/* Define if you have the <sysacll.h> header file.  */
-#undef HAVE_SYSACLL_H
+/* Define if you have the <syscall.h> header file.  */
+#undef HAVE_SYSCALL_H
 
 /* Define if you have the <termios.h> header file.  */
 #undef HAVE_TERMIOS_H
