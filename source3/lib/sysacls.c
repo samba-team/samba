@@ -63,6 +63,7 @@ extern int DEBUGLEVEL;
 
  int sys_acl_free_text(char *text) - free acl_to_text
  int sys_acl_free_acl(SMB_ACL_T posix_acl)
+ int sys_acl_free_qualifier(SMB_ACL_T posix_acl)
 
 */
 
@@ -168,6 +169,11 @@ int sys_acl_free_text(char *text)
 int sys_acl_free_acl(SMB_ACL_T the_acl) 
 {
 	return acl_free(the_acl);
+}
+
+int sys_acl_free_qualifier(void *qual) 
+{
+	return acl_free(qual);
 }
 
 #elif defined(HAVE_UNIXWARE_ACLS) || defined(HAVE_SOLARIS_ACLS)
@@ -762,6 +768,11 @@ int sys_acl_free_acl(SMB_ACL_T acl_d)
 	return 0;
 }
 
+int sys_acl_free_qualifier(void *qual) 
+{
+	return 0;
+}
+
 #elif defined(HAVE_IRIX_ACLS)
 
 int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p)
@@ -1007,6 +1018,11 @@ int sys_acl_free_acl(SMB_ACL_T acl_d)
 	return 0;
 }
 
+int sys_acl_free_qualifier(void *qual) 
+{
+	return 0;
+}
+
 #elif defined(HAVE_XFS_ACLS)
 /* For Linux SGI/XFS Filesystems    
  * contributed by J Trostel, Connex 
@@ -1221,6 +1237,11 @@ int sys_acl_free_acl(SMB_ACL_T the_acl)
 	return acl_free(the_acl);
 }
 
+int sys_acl_free_qualifier(void *qual) 
+{
+	return 0;
+}
+
 #else /* No ACLs. */
 
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
@@ -1342,4 +1363,11 @@ int sys_acl_free_acl(SMB_ACL_T the_acl)
 	errno = ENOSYS;
 	return -1;
 }
+
+int sys_acl_free_qualifier(void *qual) 
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 #endif /* No ACLs. */
