@@ -2119,7 +2119,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
       pstring comment;
       uint32 servertype= lp_default_server_announce();
 
-      pstrcpy(comment,lp_serverstring());
+      pstrcpy(comment,string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
 
       if ((count=get_server_info(SV_TYPE_ALL,&servers,global_myworkgroup))>0) {
 	for (i=0;i<count;i++)

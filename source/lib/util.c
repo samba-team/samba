@@ -2168,6 +2168,14 @@ void standard_sub_basic(char *str)
 	for (s = str ; s && *s && (p = strchr(s,'%')); s = p )
 	{
 		int l = sizeof(pstring) - (int)(p-str);
+
+		if (l < 0) {
+			DEBUG(0,("ERROR: string overflow by %d in standard_sub_basic(%.50s)\n", 
+				 -l, str));
+			
+			return;
+		}
+
 		switch (*(p+1))
 		{
 			case 'G' :

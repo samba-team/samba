@@ -395,6 +395,7 @@ void pstring_sub(char *s,const char *pattern,const char *insert);
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 char *octal_string(int i);
+char *string_truncate(char *s, int length);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
