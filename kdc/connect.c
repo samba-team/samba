@@ -302,7 +302,8 @@ do_request(void *buf, size_t len,
 	krb5_data_free(&reply);
     }
     if(ret)
-	kdc_log(0, "Failed processing %d byte request from %s", len, addr);
+	kdc_log(0, "Failed processing %lu byte request from %s", 
+		(unsigned long)len, addr);
 }
 
 static void
