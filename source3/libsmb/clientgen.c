@@ -627,8 +627,9 @@ BOOL cli_session_setup(struct cli_state *cli,
             SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
             SMBNTencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
           } else {
-            memcpy(pword, pass, passlen);
-            memcpy(ntpword, ntpass, ntpasslen);
+		  fstrcpy(pword, pass);
+		  fstrcpy(ntpword, "");
+		  ntpasslen = 0;
           }
         }
 
