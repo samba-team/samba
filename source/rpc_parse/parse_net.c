@@ -1089,6 +1089,8 @@ BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
 	int len_logon_srv = logon_srv != NULL ? logon_srv->uni_str_len : 0;
 	int len_logon_dom = logon_dom != NULL ? logon_dom->uni_str_len : 0;
 
+	ZERO_STRUCTP(usr);
+
 	usr->logon_time = *logon_time;
 	usr->logoff_time = *logoff_time;
 	usr->kickoff_time = *kickoff_time;
@@ -1286,7 +1288,7 @@ BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct * ps,
 	if (usr == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_lsa_user_info");
+	prs_debug(ps, depth, desc, "net_io_lsa_user_info2");
 	depth++;
 
 	prs_align(ps);
@@ -1458,6 +1460,8 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 
 	int len_logon_srv = logon_srv != NULL ? logon_srv->uni_str_len : 0;
 	int len_logon_dom = logon_dom != NULL ? logon_dom->uni_str_len : 0;
+
+	ZERO_STRUCTP(usr);
 
 	usr->logon_time = *logon_time;
 	usr->logoff_time = *logoff_time;
@@ -1670,7 +1674,7 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 	if (usr == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_lsa_user_info");
+	prs_debug(ps, depth, desc, "net_io_lsa_user_info3");
 	depth++;
 
 	prs_align(ps);
@@ -1848,7 +1852,7 @@ BOOL net_io_user_info_ctr(char *desc, NET_USER_INFO_CTR * ctr,
 				{
 					return False;
 				}
-				net_io_user_info2("", ctr->usr.id2, ps,
+				net_io_user_info2("usr2", ctr->usr.id2, ps,
 						  depth);
 				break;
 			}
@@ -1862,7 +1866,7 @@ BOOL net_io_user_info_ctr(char *desc, NET_USER_INFO_CTR * ctr,
 				{
 					return False;
 				}
-				net_io_user_info3("", ctr->usr.id3, ps,
+				net_io_user_info3("usr3", ctr->usr.id3, ps,
 						  depth);
 				break;
 			}

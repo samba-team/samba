@@ -1242,8 +1242,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
-		      uint16 * switch_value,
-		      NET_USER_INFO_3 * user, uint16 remote_pid);
+		      NET_USER_INFO_CTR * uctr, uint16 remote_pid);
 uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
 		       DOM_CRED * srv_creds, uint16 remote_pid);
 uint32 _net_sam_sync(const UNISTR2 * uni_srv_name,

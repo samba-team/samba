@@ -817,8 +817,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
-		      uint16 * switch_value,
-		      NET_USER_INFO_3 * user, uint16 remote_pid)
+		      NET_USER_INFO_CTR * uctr, uint16 remote_pid)
 {
 	UNISTR2 *uni_samusr = NULL;
 	UNISTR2 *uni_domain = NULL;
@@ -856,6 +855,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 
 	UNISTR2 uni_myname;
 	UNISTR2 uni_sam_name;
+
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	unistr2_to_ascii(trust_name, &(sam_id->client.login.uni_comp_name),
 			 sizeof(trust_name) - 1);
@@ -933,10 +934,9 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 	if (sam_id->logon_level == GENERAL_LOGON_TYPE)
 	{
 		/* general login.  cleartext password */
-		uint32 status = NT_STATUS_NOPROBLEMO;
-		status =
-			net_login_general(&(sam_id->ctr->auth.id4), &dc,
-					  usr_sess_key);
+		status = NT_STATUS_NOPROBLEMO;
+		status = net_login_general(&(sam_id->ctr->auth.id4),
+					   &dc, usr_sess_key);
 		enc_user_sess_key = usr_sess_key;
 
 		if (status != NT_STATUS_NOPROBLEMO)
@@ -1002,7 +1002,6 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 
 	if (!(IS_BITS_SET_ALL(acb_info, ACB_PWNOTREQ)))
 	{
-		uint32 status = NT_STATUS_NOPROBLEMO;
 		switch (sam_id->logon_level)
 		{
 			case INTERACTIVE_LOGON_TYPE:
@@ -1022,7 +1021,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 					net_login_network(&
 							  (sam_id->ctr->auth.
 							   id2), acb_info,
-&dc, usr_sess_key, lm_pw8);
+							  &dc, usr_sess_key,
+lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = usr_sess_key;
 				break;
@@ -1051,28 +1051,71 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 	make_unistr2(&uni_myname, global_myname, strlen(global_myname));
 	make_unistr2(&uni_sam_name, global_sam_name, strlen(global_sam_name));
 
-	make_net_user_info3W(user, &logon_time, &logoff_time, &kickoff_time, &pass_last_set_time, &pass_can_change_time, &pass_must_change_time, uni_nt_name,	/* user_name */
-			     uni_full_name,	/* full_name */
-			     uni_logon_script,	/* logon_script */
-			     uni_profile_path,	/* profile_path */
-			     uni_home_dir,	/* home_dir */
-			     uni_dir_drive,	/* dir_drive */
-			     0,	/* logon_count */
-			     0,	/* bad_pw_count */
-			     user_rid,	/* RID user_id */
-			     group_rid,	/* RID group_id */
-			     num_gids,	/* uint32 num_groups */
-			     gids,	/* DOM_GID *gids */
-			     0x20,	/* uint32 user_flgs (?) */
-			     enc_user_sess_key,	/* char usr_sess_key[16] */
-			     &uni_myname,	/* char *logon_srv */
-			     &uni_sam_name,	/* char *logon_dom */
-			     padding, &global_sam_sid,	/* DOM_SID *dom_sid */
-			     NULL);	/* char *other_sids */
+	switch (validation_level)
+	{
+		case 2:
+		{
+			uctr->usr.id2 = g_new(NET_USER_INFO_2, 1);
+			if (uctr->usr.id2 == NULL)
+			{
+				status = NT_STATUS_INVALID_PARAMETER;
+				break;
+			}
+			make_net_user_info2W(uctr->usr.id2, &logon_time,
+					     &logoff_time, &kickoff_time,
+					     &pass_last_set_time,
+					     &pass_can_change_time,
+					     &pass_must_change_time,
+					     uni_nt_name, uni_full_name,
+					     uni_logon_script,
+					     uni_profile_path, uni_home_dir,
+					     uni_dir_drive, 0, 0, user_rid,
+					     group_rid, num_gids, gids, 0x20,
+					     enc_user_sess_key, &uni_myname,
+					     &uni_sam_name, padding,
+					     &global_sam_sid);
+			break;
+		}
+		case 3:
+		{
+			uctr->usr.id3 = g_new(NET_USER_INFO_3, 1);
+			if (uctr->usr.id3 == NULL)
+			{
+				status = NT_STATUS_INVALID_PARAMETER;
+				break;
+			}
+			make_net_user_info3W(uctr->usr.id3, &logon_time,
+					     &logoff_time, &kickoff_time,
+					     &pass_last_set_time,
+					     &pass_can_change_time,
+					     &pass_must_change_time,
+					     uni_nt_name, uni_full_name,
+					     uni_logon_script,
+					     uni_profile_path, uni_home_dir,
+					     uni_dir_drive, 0,
+					     0,
+					     user_rid, group_rid, num_gids,
+					     gids, 0x20,
+					     enc_user_sess_key, &uni_myname,
+					     &uni_sam_name, padding,
+					     &global_sam_sid, NULL);
+			break;
+		}
+		default:
+		{
+			status = NT_STATUS_INVALID_INFO_CLASS;
+			break;
+		}
+	}
 
 	/* Free any allocated groups array. */
 	safe_free(gids);
 	free_samr_userinfo_ctr(&ctr);
+
+	if (status != NT_STATUS_NOPROBLEMO)
+	{
+		return status;
+	}
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
