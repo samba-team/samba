@@ -266,7 +266,7 @@ void unbecome_root(void)
  Tries winbind first - then uses local lookup.
 *****************************************************************/  
 
-BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
+BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
@@ -302,7 +302,6 @@ BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 			ret = local_lookup_name(domain, username, psid, 
 						name_type);
 		} else {
-
 			ret = local_lookup_name(global_myname, name, psid, 
 						name_type);
 		}
