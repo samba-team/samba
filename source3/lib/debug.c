@@ -422,7 +422,7 @@ static void format_debug_text( char *msg )
     if( '\n' == msg[i] )
       {
       format_bufr[format_pos] = '\0';
-      Debug1( format_bufr );
+      Debug1( "%s", format_bufr );
       format_pos = 0;
       }
     }
