@@ -1,3 +1,8 @@
+2000-06-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos4.c (get_des_key): change to return v4 or afs keys
+	if possible
+
 2000-06-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/hprop.c (ka_convert): allow using null salt, and treat 0
