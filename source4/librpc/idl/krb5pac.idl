@@ -28,10 +28,9 @@ interface krb5pac
 	} GROUP_MEMBERSHIP;
 
 	typedef struct {
-		uint32 sid_ptr;
-		uint32 attrs;
 		dom_sid2 *sid;
-	} KRB_SID_AND_ATTRS;
+		uint32 attrs;
+	} EXTRA_SIDS;
 
 	typedef struct {
 		uint16 size;
@@ -78,8 +77,16 @@ interface krb5pac
 
 		uint32 reserved16[2];
 		uint32 reserved17;      /* looks like it may be acb_info */
-		uint32 reserved18[12];
-	} PAC_LOGON_INFO;
+		uint32 reserved18[7];
+
+		uint32 extra_sids_count;
+		[size_is(extra_sids_count)] EXTRA_SIDS *extra_sids;
+
+		dom_sid2 *res_group_dom_sid;
+
+		uint32 res_groups_count;
+		[size_is(res_groups_count)] GROUP_MEMBERSHIP *res_groups;
+    	} PAC_LOGON_INFO;
 
 	const uint8 PAC_TYPE_LOGON_INFO = 1;
 	const uint8 PAC_TYPE_SERVER_CHECKSUM = 6;
