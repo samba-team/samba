@@ -79,7 +79,7 @@ union libnet_rpc_connect {
 /* struct and enum for doing a remote password change */
 enum libnet_ChangePassword_level {
 	LIBNET_CHANGE_PASSWORD_GENERIC,
-	LIBNET_CHANGE_PASSWORD_RPC,
+	LIBNET_CHANGE_PASSWORD_SAMR,
 	LIBNET_CHANGE_PASSWORD_KRB5,
 	LIBNET_CHANGE_PASSWORD_LDAP,
 	LIBNET_CHANGE_PASSWORD_RAP
@@ -105,7 +105,7 @@ union libnet_ChangePassword {
 		enum libnet_ChangePassword_level level;
 		struct _libnet_ChangePassword_in in;
 		struct _libnet_ChangePassword_out out;
-	} rpc;
+	} samr;
 
 	struct {
 		enum libnet_ChangePassword_level level;
@@ -129,7 +129,7 @@ union libnet_ChangePassword {
 /* struct and enum for doing a remote password set */
 enum libnet_SetPassword_level {
 	LIBNET_SET_PASSWORD_GENERIC,
-	LIBNET_SET_PASSWORD_RPC,
+	LIBNET_SET_PASSWORD_SAMR,
 	LIBNET_SET_PASSWORD_KRB5,
 	LIBNET_SET_PASSWORD_LDAP,
 	LIBNET_SET_PASSWORD_RAP
@@ -154,7 +154,7 @@ union libnet_SetPassword {
 		enum libnet_SetPassword_level level;
 		struct _libnet_SetPassword_in in;
 		struct _libnet_SetPassword_out out;
-	} rpc;
+	} samr;
 
 	struct {
 		enum libnet_SetPassword_level level;
