@@ -145,8 +145,10 @@ setup_name(SIAENTITY *e, prompt_t *p)
 {
     SIA_DEBUG(("setup_name"));
     e->name = malloc(SIANAMEMIN+1);
-    if(e->name == NULL)
+    if(e->name == NULL){
+	SIA_DEBUG(("failed to malloc %u bytes", SIANAMEMIN+1));
 	return SIADFAIL;
+    }
     p->prompt = (unsigned char*)"login: ";
     p->result = (unsigned char*)e->name;
     p->min_result_length = 1;
@@ -160,8 +162,10 @@ setup_password(SIAENTITY *e, prompt_t *p)
 {
     SIA_DEBUG(("setup_password"));
     e->password = malloc(SIAMXPASSWORD+1);
-    if(e->password == NULL)
+    if(e->password == NULL){
+	SIA_DEBUG(("failed to malloc %u bytes", SIAMXPASSWORD+1));
 	return SIADFAIL;
+    }
     p->prompt = (unsigned char*)"Password: ";
     p->result = (unsigned char*)e->password;
     p->min_result_length = 0;
@@ -179,19 +183,23 @@ common_auth(sia_collect_func_t *collect,
 {
     prompt_t prompts[2], *pr;
     char *toname, *toinst;
+    char *name;
 
     SIA_DEBUG(("common_auth"));
     if((siastat == SIADSUCCESS) && (geteuid() == 0))
 	return SIADSUCCESS;
-    if(entity == NULL)
+    if(entity == NULL) {
+	SIA_DEBUG(("entity == NULL"));
 	return SIADFAIL | SIADSTOP;
-    if((entity->acctname != NULL) || (entity->pwd != NULL))
-	return SIADFAIL | SIADSTOP;
+    }
+    name = entity->name;
+    if(entity->acctname)
+	name = entity->acctname;
     
     if((collect != NULL) && entity->colinput) {
 	int num;
 	pr = prompts;
-	if(entity->name == NULL){
+	if(name == NULL){
 	    if(setup_name(entity, pr) != SIADSUCCESS)
 		return SIADFAIL;
 	    pr++;
@@ -204,19 +212,29 @@ common_auth(sia_collect_func_t *collect,
 	num = pr - prompts;
 	if(num == 1){
 	    if((*collect)(240, SIAONELINER, (unsigned char*)"", num, 
-			  prompts) != SIACOLSUCCESS)
+			  prompts) != SIACOLSUCCESS){
+		SIA_DEBUG(("collect failed"));
 		return SIADFAIL | SIADSTOP;
+	    }
 	} else if(num > 0){
 	    if((*collect)(0, SIAFORM, (unsigned char*)"", num, 
-			  prompts) != SIACOLSUCCESS)
+			  prompts) != SIACOLSUCCESS){
+		SIA_DEBUG(("collect failed"));
 		return SIADFAIL | SIADSTOP;
+	    }
 	}
     }
-    
-    if(entity->password == NULL || strlen(entity->password) > SIAMXPASSWORD)
+    if(name == NULL)
+	name = entity->name;
+    if(name == NULL || name[0] == '\0'){
+	SIA_DEBUG(("name is null"));
 	return SIADFAIL;
-    if(entity->name[0] == 0)
+    }
+
+    if(entity->password == NULL || strlen(entity->password) > SIAMXPASSWORD){
+	SIA_DEBUG(("entity->password is null"));
 	return SIADFAIL;
+    }
     
     {
 	char realm[REALM_SZ];
@@ -225,13 +243,15 @@ common_auth(sia_collect_func_t *collect,
 	char pwbuf[1024], fpwbuf[1024];
 	struct state *s = (struct state*)entity->mech[pkgind];
 	
-	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
+	if(getpwnam_r(name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0){
+	    SIA_DEBUG(("failed to getpwnam(%s)", name));
 	    return SIADFAIL;
+	}
 	
 	snprintf(s->ticket, sizeof(s->ticket),
 		 TKT_ROOT "%u_%u", (unsigned)pwd->pw_uid, (unsigned)getpid());
 	krb_get_lrealm(realm, 1);
-	toname = entity->name;
+	toname = name;
 	toinst = "";
 	if(entity->authtype == SIA_A_SUAUTH){
 	    uid_t ouid;
@@ -240,8 +260,10 @@ common_auth(sia_collect_func_t *collect,
 #else
 	    ouid = getuid();
 #endif
-	    if(getpwuid_r(ouid, &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0)
+	    if(getpwuid_r(ouid, &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0){
+		SIA_DEBUG(("failed to getpwuid(%u)", ouid));
 		return SIADFAIL;
+	    }
 	    snprintf(s->ticket, sizeof(s->ticket), TKT_ROOT "_%s_to_%s_%d", 
 		     fpwd->pw_name, pwd->pw_name, getpid());
 	    if(strcmp(pwd->pw_name, "root") == 0){
@@ -249,15 +271,21 @@ common_auth(sia_collect_func_t *collect,
 		toinst = pwd->pw_name;
 	    }
 	}
+	if(entity->authtype == SIA_A_REAUTH) 
+	    snprintf(s->ticket, sizeof(s->ticket), "%s", tkt_string());
     
 	krb_set_tkt_string(s->ticket);
 	
 	setuid(0); /* XXX fix for fix in tf_util.c */
-	if(krb_kuserok(toname, toinst, realm, entity->name))
+	if(krb_kuserok(toname, toinst, realm, name)){
+	    SIA_DEBUG(("%s.%s@%s is not allowed to login as %s", 
+		       toname, toinst, realm, name));
 	    return SIADFAIL;
+	}
 	ret = krb_verify_user(toname, toinst, realm,
-			      entity->password, 1, NULL);
+			      entity->password, getuid() == 0, NULL);
 	if(ret){
+	    SIA_DEBUG(("krb_verify_user: %s", krb_get_err_text(ret)));
 	    if(ret != KDC_PR_UNKNOWN)
 		/* since this is most likely a local user (such as
                    root), just silently return failure when the
@@ -344,12 +372,23 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 
 int
 siad_ses_reauthent (sia_collect_func_t *collect,
-			SIAENTITY *entity,
-			int siastat,
-			int pkgind)
+		    SIAENTITY *entity,
+		    int siastat,
+		    int pkgind)
 {
+    int ret;
     SIA_DEBUG(("siad_ses_reauthent"));
-    return SIADFAIL;
+    if(entity == NULL || entity->name == NULL)
+	return SIADFAIL;
+    ret = common_auth(collect, entity, siastat, pkgind);
+    if((ret & SIADSUCCESS) && k_hasafs()) {
+	char cell[64];
+	k_setpag();
+	if(k_afs_cell_of_file(entity->pwd->pw_dir, cell, sizeof(cell)) == 0)
+	    krb_afslog(cell, 0);
+	krb_afslog(0, 0);
+    }
+    return ret;
 }
 
 int
