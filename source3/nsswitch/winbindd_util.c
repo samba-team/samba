@@ -98,10 +98,7 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
 		}
 	}
         
-	DEBUG(1, ("adding domain %s\n", domain_name));
-        
 	/* Create new domain entry */
-        
 	if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL)
 		return NULL;
 
@@ -146,6 +143,10 @@ BOOL get_domain_info(void)
 			 domain->name));
 		result = cache_methods.domain_sid(domain, &domain->sid);
 	}
+       
+	DEBUG(1,("Added domain %s (%s)\n", 
+		 domain->name, 
+		 sid_string_static(&domain->sid)));
 
 	DEBUG(1, ("getting trusted domain list\n"));
 
@@ -160,6 +161,9 @@ BOOL get_domain_info(void)
 			if (domain) {
 				sid_copy(&domain->sid, &dom_sids[i]);
 			}
+			DEBUG(1,("Added domain %s (%s)\n", 
+				 domain->name, 
+				 sid_string_static(&domain->sid)));
 		}
 	}
 

@@ -157,3 +157,29 @@ void ads_destroy(ADS_STRUCT **ads)
 	}
 }
 
+
+static void ads_display_status_helper(char *m, OM_uint32 code, int type)
+{
+     int maj_stat, min_stat;
+     gss_buffer_desc msg;
+     int msg_ctx;
+     
+     msg_ctx = 0;
+     while (1) {
+	  maj_stat = gss_display_status(&min_stat, code,
+				       type, GSS_C_NULL_OID,
+				       &msg_ctx, &msg);
+	  DEBUG(1, ("GSS-API error %s: %s\n", m,
+		      (char *)msg.value)); 
+	  (void) gss_release_buffer(&min_stat, &msg);
+	  
+	  if (!msg_ctx)
+	       break;
+     }
+}
+
+void ads_display_status(char * msg, int maj_stat,int min_stat)
+{
+     ads_display_status_helper(msg, maj_stat, GSS_C_GSS_CODE);
+     ads_display_status_helper(msg, min_stat, GSS_C_MECH_CODE);
+}

@@ -68,7 +68,7 @@ static int net_ads_info(int argc, const char **argv)
 static ADS_STRUCT *ads_startup(void)
 {
 	ADS_STRUCT *ads;
-	int rc;
+	ADS_RETURN_CODE rc;
 	extern char *opt_password;
 	extern char *opt_user_name;
 
@@ -88,8 +88,11 @@ static ADS_STRUCT *ads_startup(void)
 	ads->user_name = strdup(opt_user_name);
 
 	rc = ads_connect(ads);
-	if (rc) {
-		d_printf("ads_connect: %s\n", ads_errstr(rc));
+	if (rc.rc) {
+		if(rc.error_type) 
+		    ads_display_status("ads_connect", rc.rc, rc.minor_status);
+		else
+		    d_printf("ads_connect: %s\n", ads_errstr(rc.rc));
 		return NULL;
 	}
 	return ads;

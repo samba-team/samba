@@ -15,8 +15,19 @@ typedef struct {
 	time_t last_attempt;
 	char *password;
 	char *user_name;
+	char *server_realm;
 } ADS_STRUCT;
 
+typedef struct {
+	/* Type of error returned by ads_connect: */
+	/* True corresponds GSS API, False - LDAP */
+	int error_type;
+	/* For error_type = False rc describes LDAP error */
+	int rc;
+	/* For error_type = True rc and minor_status describe GSS API error */
+	/* Where rc represents major_status of GSS API error */
+	int minor_status;
+} ADS_RETURN_CODE;
 
 /* time between reconnect attempts */
 #define ADS_RECONNECT_TIME 5

@@ -24,6 +24,9 @@
 
 #ifdef HAVE_ADS
 
+/* the realm of our primary LDAP server */
+static char *primary_realm;
+
 
 /*
   a wrapper around ldap_search_s that retries depending on the error code
@@ -33,7 +36,8 @@ int ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope,
 			const char *exp,
 			const char **attrs, void **res)
 {
-	int rc = -1, rc2;
+	int rc = -1;
+	ADS_RETURN_CODE rc2;
 	int count = 3;
 
 	if (!ads->ld &&
@@ -59,9 +63,15 @@ int ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope,
 		}
 		ads->ld = NULL;
 		rc2 = ads_connect(ads);
-		if (rc2) {
-			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n", ads_errstr(rc)));
-			return rc2;
+		if (rc2.rc) {
+		    DEBUG(1,("ads_search_retry: failed to reconnect:\n"));
+		    if(rc2.error_type) 
+			ads_display_status("", rc2.rc, rc2.minor_status);
+		    else 
+			DEBUG(1,("LDAP error: %s\n", ads_errstr(rc2.rc)));
+		    
+		    ads_destroy(&ads);
+		    return rc2.rc;
 		}
 	}
 	DEBUG(1,("ads reopen failed after error %s\n", ads_errstr(rc)));
@@ -92,8 +102,9 @@ int ads_search_retry_dn(ADS_STRUCT *ads, void **res,
 static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
-	int rc;
+	ADS_RETURN_CODE rc;
 	char *ccache;
+	struct in_addr server_ip;
 
 	if (domain->private) {
 		return (ADS_STRUCT *)domain->private;
@@ -104,7 +115,12 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	SETENV("KRB5CCNAME", ccache, 1);
 	unlink(ccache);
 
-	ads = ads_init(NULL, NULL, NULL, NULL);
+	if (!resolve_name(domain->name, &server_ip, 0x1b)) {
+		DEBUG(1,("Can't find PDC for domain %s\n", domain->name));
+		return NULL;
+	}
+
+	ads = ads_init(primary_realm, inet_ntoa(server_ip), NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", domain->name));
 		return NULL;
@@ -115,10 +131,20 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ads->password = secrets_fetch_machine_password();
 
 	rc = ads_connect(ads);
-	if (rc) {
-		DEBUG(1,("ads_connect for domain %s failed: %s\n", domain->name, ads_errstr(rc)));
+	if (rc.rc) {
+		DEBUG(1,("ads_connect for domain %s failed:\n", domain->name));
+		if(rc.error_type) 
+		    ads_display_status("", rc.rc, rc.minor_status);
+		else 
+		    DEBUG(1,("LDAP error: %s\n", ads_errstr(rc.rc)));
+		    
 		ads_destroy(&ads);
 		return NULL;
+	}
+
+	/* remember our primary realm for trusted domain support */
+	if (!primary_realm) {
+		primary_realm = strdup(ads->realm);
 	}
 
 	domain->private = (void *)ads;
@@ -546,7 +572,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group)) {
-		DEBUG(1,("No primary group for rid=%d !?\n", user_rid));
+		DEBUG(1,("%s: No primary group for rid=%d !?\n", domain->name, user_rid));
 		goto done;
 	}
 
@@ -666,8 +692,19 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				char ***names,
 				DOM_SID **dom_sids)
 {
+	ADS_STRUCT *ads = NULL;
+
 	*num_domains = 0;
-	return NT_STATUS_NOT_IMPLEMENTED;
+	*names = NULL;
+
+	ads = ads_cached_connection(domain);
+	if (!ads) return NT_STATUS_UNSUCCESSFUL;
+
+	if (!ads_trusted_domains(ads, mem_ctx, num_domains, names, dom_sids)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /* find the domain sid for a domain */

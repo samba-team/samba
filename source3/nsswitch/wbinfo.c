@@ -486,7 +486,7 @@ int main(int argc, char **argv)
 	struct poptOption long_options[] = {
 
 		/* longName, shortName, argInfo, argPtr, value, descrip, argDesc */
-
+		{ "help", 'h', POPT_ARG_NONE, 0, 'h' },
 		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u' },
 		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g' },
 		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n' },
@@ -548,6 +548,9 @@ int main(int argc, char **argv)
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case 'h':
+			usage();
+			exit(0);
 		case 'u':
 			if (!print_domain_users()) {
 				printf("Error looking up domain users\n");
@@ -644,6 +647,7 @@ int main(int argc, char **argv)
 			break;
 		default:
 			fprintf(stderr, "Invalid option\n");
+			usage();
 			return 1;
 		}
 	}
