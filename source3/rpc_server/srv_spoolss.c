@@ -498,13 +498,17 @@ static BOOL api_spoolss_setprinter(prs_struct *data, prs_struct *rdata)
 	}
 	
 	r_u.status = _spoolss_setprinter(&q_u.handle, q_u.level, &q_u.info,
-	                                 q_u.devmode_ctr, &q_u.secdesc_ctr, 
+	                                 q_u.devmode_ctr, q_u.secdesc_ctr, 
 					 q_u.command);
 	
 	if(!spoolss_io_r_setprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_setprinter: unable to marshall SPOOL_R_SETPRINTER.\n"));
+		free_spoolss_q_setprinter(&q_u);
 		return False;
 	}
+
+	/* Free anything allocated in the unparse. */
+	free_spoolss_q_setprinter(&q_u);
 
 	return True;
 }

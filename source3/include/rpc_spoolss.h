@@ -1356,7 +1356,7 @@ typedef struct spool_q_setprinter
 	POLICY_HND handle;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
-	SEC_DESC_BUF secdesc_ctr;
+	SEC_DESC_BUF *secdesc_ctr;
 	DEVMODE_CTR devmode_ctr;
 
 	uint32 command;

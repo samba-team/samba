@@ -1945,7 +1945,7 @@ BOOL smb_io_buffer3(char *desc, BUFFER3 *buf3, prs_struct *ps, int depth);
 BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
 void init_buffer2(BUFFER2 *str, uint8 *buf, int len);
 BOOL smb_io_buffer2(char *desc, BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
-void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf);
+void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
 void copy_unistr2(UNISTR2 *str, UNISTR2 *from);
 void init_string2(STRING2 *str, char *buf, int len);
 BOOL smb_io_string2(char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
@@ -2424,13 +2424,14 @@ SEC_ACL *make_sec_acl(uint16 revision, int num_aces, SEC_ACE *ace_list);
 SEC_ACL *dup_sec_acl( SEC_ACL *src);
 void free_sec_acl(SEC_ACL **ppsa);
 BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth);
+size_t sec_desc_size(SEC_DESC *psd);
 SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
-			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sec_desc_size);
+			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size);
 SEC_DESC *dup_sec_desc( SEC_DESC *src);
 void free_sec_desc(SEC_DESC **ppsd);
 SEC_DESC *make_standard_sec_desc(DOM_SID *owner_sid, DOM_SID *grp_sid,
-				 SEC_ACL *dacl, size_t *sec_desc_size);
+				 SEC_ACL *dacl, size_t *sd_size);
 BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth);
 SEC_DESC_BUF *make_sec_desc_buf(size_t len, SEC_DESC *sec_desc);
 SEC_DESC_BUF *dup_sec_desc_buf(SEC_DESC_BUF *src);
@@ -2450,10 +2451,6 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		const fstring user_name);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
-BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
-				const POLICY_HND *handle,
-				const UNISTR2 *valuename,
-				uint32 size);
 BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, POLICY_HND *hnd);
@@ -2530,6 +2527,7 @@ BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps
 BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u, const POLICY_HND *hnd, uint32 level, 
 				NEW_BUFFER *buffer, uint32 offered);
 BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps, int depth);
+void free_spoolss_q_setprinter(SPOOL_Q_SETPRINTER *q_u);
 BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_fcpn(char *desc, SPOOL_Q_FCPN *q_u, prs_struct *ps, int depth);

@@ -686,7 +686,7 @@ BOOL smb_io_buffer2(char *desc, BUFFER2 *buf2, uint32 buffer, prs_struct *ps, in
 creates a UNISTR2 structure: sets up the buffer, too
 ********************************************************************/
 
-void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf)
+void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
 {
 	if (buf != NULL) {
 

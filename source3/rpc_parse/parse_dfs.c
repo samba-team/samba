@@ -281,7 +281,7 @@ BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries,
 	depth++;
 	/* should depend on whether marshalling or unmarshalling! */
 	if(UNMARSHALLING(ps))
-	  ctr->dfs.info1 = g_new0(DFS_INFO_1, num_entries);
+	  ctr->dfs.info1 = (DFS_INFO_1 *)malloc(sizeof(DFS_INFO_1)*num_entries);
 
 	for(i=0;i<num_entries;i++)
 	  {
@@ -302,7 +302,7 @@ BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries,
 	int i=0;
 	depth++;
 	if(UNMARSHALLING(ps))
-	  ctr->dfs.info2 = g_new0(DFS_INFO_2, num_entries);
+	  ctr->dfs.info2 = (DFS_INFO_2 *)calloc(num_entries, sizeof(DFS_INFO_2));
 
 	for(i=0;i<num_entries;i++)
 	  {
@@ -331,7 +331,7 @@ BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries,
 	int i=0;
 	depth++;
 	if(UNMARSHALLING(ps))
-	  ctr->dfs.info3 = g_new0(DFS_INFO_3, num_entries);
+	  ctr->dfs.info3 = (DFS_INFO_3 *)calloc(num_entries, sizeof(DFS_INFO_3));
 
 	for(i=0;i<num_entries;i++)
 	  {
@@ -406,7 +406,7 @@ BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
   depth++;
 
   if(UNMARSHALLING(ps))
-    info3->storages = g_new0(DFS_STORAGE_INFO, info3->num_storage_infos);
+    info3->storages = (DFS_STORAGE_INFO *)calloc(info3->num_storage_infos, sizeof(DFS_STORAGE_INFO));
 
   for(i=0;i<info3->num_storage_infos;i++)
     {

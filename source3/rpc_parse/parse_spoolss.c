@@ -775,26 +775,6 @@ BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_
 
 	return True;
 }
-/*******************************************************************
- * make a structure.
- ********************************************************************/
-BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
-				const POLICY_HND *handle,
-				const UNISTR2 *valuename,
-				uint32 size)
-{
-	int len_name = valuename != NULL ? strlen(valuename) : 0;
-
-	if (q_u == NULL) return False;
-
-	DEBUG(5,("make_spoolss_q_getprinterdata\n"));
-
-	q_u->handle = *handle;
-	init_unistr2(&(q_u->valuename), valuename, len_name);
-	q_u->size = size;
-
-	return True;
-}
 
 /*******************************************************************
  * read a structure.
@@ -1300,14 +1280,6 @@ static uint32 size_of_relative_string(UNISTR *string)
 }
 
 /*******************************************************************
- * return the length of a uint32 + sec desc
- ********************************************************************/
-static uint32 size_of_sec_desc(SEC_DESC *sec)
-{
-	return 4+1024;
-}
-
-/*******************************************************************
  * return the length of a uint32 (obvious, but the code is clean)
  ********************************************************************/
 static uint32 size_of_device_mode(DEVICEMODE *devmode)
@@ -1518,7 +1490,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 			prs_set_offset(ps, buffer->string_at_end);
 			
 			/* write the secdesc */
-			if (!sec_io_desc(desc, *secdesc, ps, depth))
+			if (!sec_io_desc(desc, secdesc, ps, depth))
 				return False;
 
 			prs_set_offset(ps, struct_offset);
@@ -1801,7 +1773,7 @@ BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *i
 	
 	if (!prs_uint32("flags", ps, depth, &info->flags))
 		return False;
-	if (!sec_io_desc("sec_desc", &info->sec, ps, depth))
+	if (!sec_io_desc("sec_desc", &info->secdesc, ps, depth))
 		return False;
 
 	return True;
@@ -2350,10 +2322,10 @@ uint32 spoolss_size_printer_info_1(PRINTER_INFO_1 *info)
 {
 	int size=0;
 		
-	size+=size_of_uint32( &(info->flags) );	
-	size+=size_of_relative_string( &(info->description) );
-	size+=size_of_relative_string( &(info->name) );
-	size+=size_of_relative_string( &(info->comment) );
+	size+=size_of_uint32( &info->flags );	
+	size+=size_of_relative_string( &info->description );
+	size+=size_of_relative_string( &info->name );
+	size+=size_of_relative_string( &info->comment );
 
 	return size;
 }
@@ -2363,9 +2335,10 @@ return the size required by a struct in the stream
 ********************************************************************/
 uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 {
-	int size=0;
+	uint32 size=0;
 		
-	size += size_of_sec_desc( info->secdesc );
+	size += 4;
+	size += sec_desc_size( info->secdesc );
 	
 	size+=size_of_device_mode( info->devmode );
 	
@@ -2398,11 +2371,8 @@ return the size required by a struct in the stream
 ********************************************************************/
 uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info)
 {
-	/* well, we don't actually *know* the damn size of the
-	 * security descriptor.  spoolss is a stupidly designed
-	 * api.
-	 */
-	return size_of_sec_desc( &info->sec );
+	/* The 4 is for the self relative pointer.. */
+	return 4 + (uint32)sec_desc_size( info->secdesc );
 }
 
 /*******************************************************************
@@ -2642,9 +2612,7 @@ BOOL make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u,
 			       NEW_BUFFER *buffer, uint32 offered)
 {      
 	if (q_u == NULL)
-	{
 		return False;
-	}
 
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 
@@ -2906,7 +2874,18 @@ BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps
 }
 
 /*******************************************************************
+ Delete the dynamic parts of a SPOOL_Q_SETPRINTE struct.
 ********************************************************************/  
+
+void free_spoolss_q_setprinter(SPOOL_Q_SETPRINTER *q_u)
+{
+	free_sec_desc_buf( &q_u->secdesc_ctr );
+}
+
+/*******************************************************************
+ Marshall/unmarshall a SPOOL_Q_SETPRINTER struct.
+********************************************************************/  
+
 BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth)
 {
 	uint32 ptr_sec_desc = 0;
@@ -3538,8 +3517,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 		case 1:
 		{
 			if (UNMARSHALLING(ps)) {
-				il->info_1=g_new(SPOOL_PRINTER_INFO_LEVEL_1, 1);
-				if(il->info_1 == NULL)
+				if ((il->info_1=(SPOOL_PRINTER_INFO_LEVEL_1 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_1))) == NULL)
 					return False;
 			}
 			if (!spool_io_printer_info_level_1("", il->info_1, ps, depth))
@@ -3548,8 +3526,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 		}
 		case 2:
 			if (UNMARSHALLING(ps)) {
-				il->info_2=g_new(SPOOL_PRINTER_INFO_LEVEL_2, 1);
-				if(il->info_2 == NULL)
+				if ((il->info_2=(SPOOL_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2))) == NULL)
 					return False;
 			}
 			if (!spool_io_printer_info_level_2("", il->info_2, ps, depth))
@@ -3558,8 +3535,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 		case 3:
 		{
 			if (UNMARSHALLING(ps)) {
-				il->info_3=g_new(SPOOL_PRINTER_INFO_LEVEL_3, 1);
-				if(il->info_3 == NULL)
+				if ((il->info_3=(SPOOL_PRINTER_INFO_LEVEL_3 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_3))) == NULL)
 					return False;
 			}
 			if (!spool_io_printer_info_level_3("", il->info_3, ps, depth))
@@ -4754,8 +4730,8 @@ void free_devmode(DEVICEMODE *devmode)
 void free_printer_info_3(PRINTER_INFO_3 *printer)
 {
 	if (printer!=NULL) {
-		if (printer->sec != NULL)
-			free_sec_desc(&printer->sec);
+		if (printer->secdesc != NULL)
+			free_sec_desc(&printer->secdesc);
 		free(printer);
 	}
 }
