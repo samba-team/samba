@@ -97,6 +97,7 @@ build-stamp:
 
 	$(MAKE) -C source headers
 	$(MAKE) -C source all nsswitch/libnss_wins.so python_ext
+	$(MAKE) -C source client/mount.cifs
 
 	touch build-stamp
 
@@ -167,6 +168,10 @@ install: build
 	ln -s /usr/bin/smbmount $(DESTDIR)/sbin/mount.smb
 	ln -s smbmount.8 $(DESTDIR)/usr/share/man/man8/mount.smb.8
 	ln -s smbmount.8 $(DESTDIR)/usr/share/man/man8/mount.smbfs.8
+
+	# Install mount.cifs and its man page
+	install -m 0755 source/client/mount.cifs $(DESTDIR)/sbin/
+	install -m 0644 docs/manpages/mount.cifs.8 $(DESTDIR)/usr/share/man/man8/
 
 	# For CUPS to support printing to samba printers, it's necessary
 	#	to make the following symlink (according to
