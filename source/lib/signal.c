@@ -31,7 +31,16 @@ static void sig_cld(int signum)
 	while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0)
 		;
 
+	/*
+	 * Turns out it's *really* important not to
+	 * restore the signal handler here if we have real POSIX
+	 * signal handling. If we do, then we get the signal re-delivered
+	 * immediately - hey presto - instant loop ! JRA.
+	 */
+
+#if !defined(HAVE_SIGACTION)
 	CatchSignal(SIGCLD, sig_cld);
+#endif
 }
 
 /****************************************************************************
@@ -40,7 +49,18 @@ catch child exits - leave status;
 
 static void sig_cld_leave_status(int signum)
 {
+	/*
+	 * Turns out it's *really* important not to
+	 * restore the signal handler here if we have real POSIX
+	 * signal handling. If we do, then we get the signal re-delivered
+	 * immediately - hey presto - instant loop ! JRA.
+	 */
+
+#if !defined(HAVE_SIGACTION)
 	CatchSignal(SIGCLD, sig_cld_leave_status);
+#else
+	;
+#endif
 }
 
 /*******************************************************************
@@ -93,7 +113,7 @@ void CatchSignal(int signum,void (*handler)(int ))
 	sigemptyset(&act.sa_mask);
 	sigaddset(&act.sa_mask,signum);
 	sigaction(signum,&act,NULL);
-#else
+#else /* !HAVE_SIGACTION */
 	/* FIXME: need to handle sigvec and systems with broken signal() */
 	signal(signum, handler);
 #endif
