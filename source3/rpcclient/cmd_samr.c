@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "rpcclient.h"
 
 extern DOM_SID domain_sid;
 
@@ -138,19 +139,16 @@ void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
 /**********************************************************************
  * Query user information 
  */
-static NTSTATUS cmd_samr_query_user(struct cli_state *cli, int argc, char **argv) 
+static NTSTATUS cmd_samr_query_user(struct cli_state *cli, 
+                                    TALLOC_CTX *mem_ctx,
+                                    int argc, char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 21;
-	BOOL 	got_connect_pol = False, 
-		got_domain_pol = False,
-		got_user_pol = False;
 	SAM_USERINFO_CTR *user_ctr;
-	fstring			server;
-	TALLOC_CTX		*mem_ctx;
+	fstring server;
 	uint32 user_rid;
-	
 	
 	if (argc != 2) {
 		printf("Usage: %s rid\n", argv[0]);
@@ -159,68 +157,42 @@ static NTSTATUS cmd_samr_query_user(struct cli_state *cli, int argc, char **argv
 	
 	sscanf(argv[1], "%i", &user_rid);
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_samr_query_user: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	fetch_domain_sid(cli);
 
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 	
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
 
-	got_connect_pol = True;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &domain_sid, &domain_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
 
-	got_domain_pol = True;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
 	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
 				    MAXIMUM_ALLOWED_ACCESS,
 				    user_rid, &user_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
 
-	got_user_pol = True;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
 	ZERO_STRUCT(user_ctr);
 
 	result = cli_samr_query_userinfo(cli, mem_ctx, &user_pol, 
 					 info_level, &user_ctr);
-	if (!NT_STATUS_IS_OK(result)) {
+
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	}
 
 	display_sam_user_info_21(user_ctr->info.id21);
 
 done:
-	if (got_user_pol) cli_samr_close(cli, mem_ctx, &user_pol);
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
@@ -270,16 +242,15 @@ static void display_group_info_ctr(GROUP_INFO_CTR *ctr)
 /***********************************************************************
  * Query group information 
  */
-static NTSTATUS cmd_samr_query_group(struct cli_state *cli, int argc, char **argv) 
+static NTSTATUS cmd_samr_query_group(struct cli_state *cli, 
+                                     TALLOC_CTX *mem_ctx,
+                                     int argc, char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 1;
-	BOOL got_connect_pol = False, got_domain_pol = False,
-		got_group_pol = False;
 	GROUP_INFO_CTR group_ctr;
 	fstring			server;	
-	TALLOC_CTX		*mem_ctx;
 	uint32 group_rid;
 	
 	if (argc != 2) {
@@ -289,48 +260,30 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli, int argc, char **arg
 
 	group_rid = atoi(argv[1]);
 
-	if (!(mem_ctx=talloc_init())) {
-		DEBUG(0,("cmd_samr_query_group: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	fetch_domain_sid(cli);
 
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
 
-	got_connect_pol = True;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &domain_sid, &domain_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
 
-	got_domain_pol = True;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
 	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
 				     MAXIMUM_ALLOWED_ACCESS,
 				     group_rid, &group_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
 
-	got_group_pol = True;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
 	ZERO_STRUCT(group_ctr);
 
@@ -343,55 +296,33 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli, int argc, char **arg
 	display_group_info_ctr(&group_ctr);
 
 done:
-	if (got_group_pol) cli_samr_close(cli, mem_ctx, &group_pol);
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Query groups a user is a member of */
 
-static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli, int argc, char **argv) 
+static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli, 
+                                          TALLOC_CTX *mem_ctx,
+                                          int argc, char **argv) 
 {
 	POLICY_HND 		connect_pol, 
 				domain_pol, 
 				user_pol;
 	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
-	BOOL 			got_connect_pol = False, 
-				got_domain_pol = False,
-				got_user_pol = False;
 	uint32 			num_groups, 
 				user_rid;
 	DOM_GID 		*user_gids;
 	int 			i;
 	fstring			server;
-	TALLOC_CTX		*mem_ctx;
 	
 	if (argc != 2) {
 		printf("Usage: %s rid\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_samr_query_usergroups: talloc_init returned NULL!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	sscanf(argv[1], "%i", &user_rid);
 
 	fetch_domain_sid(cli);
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
@@ -402,8 +333,6 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli, int argc, char 
 		goto done;
 	}
 
-	got_connect_pol = True;
-
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &domain_sid, &domain_pol);
@@ -411,16 +340,12 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli, int argc, char 
 		goto done;
 	}
 
-	got_domain_pol = True;
-
 	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
 				    MAXIMUM_ALLOWED_ACCESS,
 				    user_rid, &user_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_user_pol = True;
 
 	result = cli_samr_query_usergroups(cli, mem_ctx, &user_pol,
 					   &num_groups, &user_gids);
@@ -434,51 +359,29 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli, int argc, char 
 	}
 
  done:
-	if (got_user_pol) cli_samr_close(cli, mem_ctx, &user_pol);
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Query members of a group */
 
-static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **argv) 
+static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli, 
+                                        TALLOC_CTX *mem_ctx,
+                                        int argc, char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	BOOL 	got_connect_pol = False, 
-		got_domain_pol = False,
-		got_group_pol = False;
 	uint32 num_members, *group_rids, *group_attrs, group_rid;
 	int i;
 	fstring			server;
-	TALLOC_CTX		*mem_ctx;
 	
 	if (argc != 2) {
 		printf("Usage: %s rid\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_samr_query_groupmem: talloc_init returned NULL!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	sscanf(argv[1], "%i", &group_rid);
 
 	fetch_domain_sid(cli);
-
-	/* Initialise RPC connection */
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
@@ -489,8 +392,6 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **
 		goto done;
 	}
 
-	got_connect_pol = True;
-
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &domain_sid, &domain_pol);
@@ -498,16 +399,12 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **
 		goto done;
 	}
 
-	got_domain_pol = True;
-
 	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
 				     MAXIMUM_ALLOWED_ACCESS,
 				     group_rid, &group_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_group_pol = True;
 
 	result = cli_samr_query_groupmem(cli, mem_ctx, &group_pol,
 					 &num_members, &group_rids,
@@ -522,25 +419,17 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **
 	}
 
  done:
-	if (got_group_pol) cli_samr_close(cli, mem_ctx, &group_pol);
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Enumerate domain groups */
 
-static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli, int argc, 
-				       char **argv) 
+static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx,
+                                         int argc, char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	BOOL got_connect_pol = False, got_domain_pol = False;
-	TALLOC_CTX *mem_ctx;
 	uint32 start_idx, size, num_dom_groups, i;
 	struct acct_info *dom_groups;
 
@@ -549,21 +438,7 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli, int argc,
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0, ("cmd_samr_enum_dom_groups: talloc_init returned "
-			  "NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	fetch_domain_sid(cli);
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* Get sam policy handle */
 
@@ -573,8 +448,6 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli, int argc,
 		goto done;
 	}
 
-	got_connect_pol = True;
-
 	/* Get domain policy handle */
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
@@ -583,8 +456,6 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli, int argc,
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_domain_pol = True;
 
 	/* Enumerate domain groups */
 
@@ -600,24 +471,16 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli, int argc,
 		       dom_groups[i].rid);
 
  done:
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Query alias membership */
 
-static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli, int argc, 
-				      char **argv) 
+static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli, 
+                                        TALLOC_CTX *mem_ctx,
+                                        int argc, char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, alias_pol;
-	BOOL got_connect_pol = False, got_domain_pol = False,
-		got_alias_pol = False;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 alias_rid, num_members, i;
 	DOM_SID *alias_sids;
@@ -627,23 +490,9 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli, int argc,
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx=talloc_init())) {
-		DEBUG(0,("cmd_samr_query_aliasmem: talloc_init() "
-			 "returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	sscanf(argv[1], "%i", &alias_rid);
 
-	/* Initialise RPC connection */
-
 	fetch_domain_sid(cli);
-
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* Open SAMR handle */
 
@@ -652,8 +501,6 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli, int argc,
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_connect_pol = True;
 
 	/* Open handle on domain */
 
@@ -664,8 +511,6 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli, int argc,
 		goto done;
 	}
 
-	got_domain_pol = True;
-
 	/* Open handle on alias */
 
 	result = cli_samr_open_alias(cli, mem_ctx, &domain_pol,
@@ -674,8 +519,6 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli, int argc,
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_alias_pol = True;
 
 	result = cli_samr_query_aliasmem(cli, mem_ctx, &alias_pol,
 					 &num_members, &alias_sids);
@@ -691,25 +534,17 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli, int argc,
 	}
 
  done:
-	if (got_alias_pol) cli_samr_close(cli, mem_ctx, &alias_pol);
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Query display info */
 
-static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli, int argc, 
-					char **argv) 
+static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli, 
+                                        TALLOC_CTX *mem_ctx,
+                                        int argc, char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	BOOL got_connect_pol = False, got_domain_pol = False;
-	TALLOC_CTX *mem_ctx;
 	uint32 start_idx, max_entries, num_entries, i;
 	uint16 info_level = 1;
 	SAM_DISPINFO_CTR ctr;
@@ -720,21 +555,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli, int argc,
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0, ("cmd_samr_query_dispinfo: talloc_init returned "
-			  "NULL!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	fetch_domain_sid(cli);
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* Get sam policy handle */
 
@@ -744,8 +565,6 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli, int argc,
 		goto done;
 	}
 
-	got_connect_pol = True;
-
 	/* Get domain policy handle */
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
@@ -754,8 +573,6 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli, int argc,
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_domain_pol = True;
 
 	/* Query display info */
 
@@ -777,24 +594,17 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli, int argc,
 	}
 
  done:
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Query domain info */
 
-static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli, int argc, 
-				       char **argv) 
+static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli, 
+                                       TALLOC_CTX *mem_ctx,
+                                       int argc, char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	BOOL got_connect_pol = False, got_domain_pol = False;
-	TALLOC_CTX *mem_ctx;
 	uint16 switch_value = 2;
 	SAM_UNK_CTR ctr;
 
@@ -806,21 +616,7 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli, int argc,
 	if (argc == 2)
 		switch_value = atoi(argv[1]);
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0, ("cmd_samr_query_dispinfo: talloc_init returned "
-			  "NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	fetch_domain_sid(cli);
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* Get sam policy handle */
 
@@ -830,8 +626,6 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli, int argc,
 		goto done;
 	}
 
-	got_connect_pol = True;
-
 	/* Get domain policy handle */
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
@@ -840,8 +634,6 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli, int argc,
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_domain_pol = True;
 
 	/* Query domain info */
 
@@ -864,25 +656,17 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli, int argc,
 	}
 
  done:
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Create domain user */
 
-static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli, int argc, 
-					 char **argv) 
+static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx,
+                                         int argc, char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	BOOL got_connect_pol = False, got_domain_pol = False, 
-		got_user_pol = False;
-	TALLOC_CTX *mem_ctx;
 	char *acct_name;
 	uint16 acb_info;
 	uint32 unknown, user_rid;
@@ -894,21 +678,7 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli, int argc,
 
 	acct_name = argv[1];
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0, ("cmd_samr_query_dispinfo: talloc_init returned "
-			  "NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	fetch_domain_sid(cli);
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* Get sam policy handle */
 
@@ -918,8 +688,6 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli, int argc,
 		goto done;
 	}
 
-	got_connect_pol = True;
-
 	/* Get domain policy handle */
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
@@ -928,8 +696,6 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli, int argc,
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_domain_pol = True;
 
 	/* Create domain user */
 
@@ -943,29 +709,19 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli, int argc,
 		goto done;
 	}
 
-	got_user_pol = True;
-
  done:
-	if (got_user_pol) cli_samr_close(cli, mem_ctx, &user_pol);
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Lookup sam names */
 
-static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli, int argc, 
-				    char **argv) 
+static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli, 
+                                      TALLOC_CTX *mem_ctx,
+                                      int argc, char **argv) 
 {
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol;
-	BOOL got_connect_pol = False, got_domain_pol = False;
-	uint32 flags = 0x000003e8;
+	uint32 flags = 0x000003e8; /* Unknown */
 	uint32 num_rids, num_names, *name_types, *rids;
 	char **names;
 	int i;
@@ -975,39 +731,24 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli, int argc,
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0, ("cmd_samr_lookup_names: talloc_init failed\n"));
-		return result;
-	}
-
 	fetch_domain_sid(cli);
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* Get sam policy and domain handles */
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_connect_pol = True;
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &domain_sid, &domain_pol);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_domain_pol = True;
 
 	/* Look up names */
 
@@ -1020,6 +761,7 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli, int argc,
 	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
 				       flags, num_names, names,
 				       &num_rids, &rids, &name_types);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1031,25 +773,18 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli, int argc,
 		       name_types[i]);
 
  done:
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Lookup sam rids */
 
-static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli, int argc, 
-				   char **argv) 
+static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli, 
+                                     TALLOC_CTX *mem_ctx,
+                                     int argc, char **argv) 
 {
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol;
-	BOOL got_connect_pol = False, got_domain_pol = False;
-	uint32 flags = 0x000003e8;
+	uint32 flags = 0x000003e8; /* Unknown */
 	uint32 num_rids, num_names, *rids, *name_types;
 	char **names;
 	int i;
@@ -1059,39 +794,24 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli, int argc,
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0, ("cmd_samr_lookup_rids: talloc_init failed\n"));
-		return result;
-	}
-
 	fetch_domain_sid(cli);
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* Get sam policy and domain handles */
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_connect_pol = True;
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &domain_sid, &domain_pol);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_domain_pol = True;
 
 	/* Look up rids */
 
@@ -1104,6 +824,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli, int argc,
 	result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol,
 				      flags, num_rids, rids,
 				      &num_names, &names, &name_types);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1114,21 +835,15 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli, int argc,
 		printf("rid %x: %s (%d)\n", rids[i], names[i], name_types[i]);
 
  done:
-	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
-	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
-
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
 /* Delete domain user */
 
-static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli, int argc, 
-				       char **argv) 
+static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx,
+                                         int argc, char **argv) 
 {
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol, user_pol;
 
@@ -1137,25 +852,13 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli, int argc,
 		return NT_STATUS_OK;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0, ("cmd_samr_delete_dom_user: talloc_init failed\n"));
-		return result;
-	}
-
 	fetch_domain_sid(cli);
-
-	/* Initialise RPC connection */
-
-	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
-		DEBUG(0, ("cmd_samr_delete_dom_user: could not open samr pipe!\n"));
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* Get sam policy and domain handles */
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1163,6 +866,7 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli, int argc,
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &domain_sid, &domain_pol);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1171,12 +875,13 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli, int argc,
 
 	{
 		uint32 *user_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8;
+		uint32 flags = 0x000003e8; /* Unknown */
 
 		result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
 					       flags, 1, &argv[1],
 					       &num_rids, &user_rids,
 					       &name_types);
+
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
@@ -1184,6 +889,7 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli, int argc,
 		result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
 					    MAXIMUM_ALLOWED_ACCESS,
 					    user_rids[0], &user_pol);
+
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
@@ -1192,6 +898,7 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli, int argc,
 	/* Delete user */
 
 	result = cli_samr_delete_dom_user(cli, mem_ctx, &user_pol);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1199,9 +906,6 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli, int argc,
 	/* Display results */
 
  done:
-	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 

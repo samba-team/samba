@@ -1563,7 +1563,6 @@ typedef struct {
 #include "ntdomain.h"
 
 #include "client.h"
-#include "rpcclient.h"
 
 /*
  * Size of new password account encoding string.  This is enough space to
