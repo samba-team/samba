@@ -169,7 +169,6 @@ static int join_domain( char *domain, char *remote)
   fstring machine_passwd;
   unsigned char machine_passwd_hash[16];
   unsigned char new_machine_passwd_hash[16];
-  void *vp;
   int ret = 1;
 
   fstrcpy(remote_machine, remote ? remote : "");
@@ -196,20 +195,20 @@ for that domain.\n", prog_name, domain);
   /*
    * Get the machine account password.
    */
-  if((vp = machine_password_lock( domain, global_myname, True)) == NULL) {
+  if(!machine_password_lock( domain, global_myname, True)) {
     fprintf(stderr, "%s: unable to open the machine account password file for \
 machine %s in domain %s.\n", prog_name, global_myname, domain); 
     return 1;
   }
 
-  if(!set_machine_account_password( vp, new_machine_passwd_hash)) {              
+  if(!set_machine_account_password( new_machine_passwd_hash)) {              
     fprintf(stderr, "%s: unable to read the machine account password for \
 machine %s in domain %s.\n", prog_name, global_myname, domain);
-    machine_password_unlock(vp);
+    machine_password_unlock();
     return 1;
   }
 
-  machine_password_unlock(vp);
+  machine_password_unlock();
 
   /*
    * If we are given a remote machine assume this is the PDC.
