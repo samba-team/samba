@@ -165,6 +165,16 @@ sub ParamStruct($)
     return $res;
 }
 
+sub ParamDomSID($)
+{
+    my($p) = shift;
+    my($res);
+
+    $res .= "\toffset = dissect_ndr_nt_SID(tvb, offset, pinfo, tree, drep);\n";
+
+    return $res;
+}
+
 # Index of NDR types and functions to generate code to dissect that type
 
 my %param_handlers = (
@@ -173,7 +183,68 @@ my %param_handlers = (
 		      'uint32' 	      => \&ParamSimpleNdrType,
 		      'policy_handle' => \&ParamPolicyHandle,
 		      'string' 	      => \&ParamString,
+		      'dom_sid2'      => \&ParamDomSID,
 		      );
+
+sub PtrString($)
+{
+    my($p) = shift;
+    my($res) = "";
+
+    $res .= "/* pointer to string not supported */\n";
+
+    return $res;
+}
+
+sub PtrSimpleNdrType($)
+{
+    my($p) = shift;
+    my($res) = "";
+
+    $res .= "/* pointer to $p->{TYPE} not supported */\n";
+
+    return $res;
+}
+
+sub PtrDomSID($)
+{
+    my($p) = shift;
+    my($res) = "";
+
+    $res .= "/* pointer to dom_sid not supported */\n";
+
+    return $res;
+}
+
+sub PtrSecurityDescriptor($)
+{
+    my($p) = shift;
+    my($res) = "";
+
+    $res .= "/* pointer to security descriptor not supported */\n";
+
+    return $res;
+}
+
+sub PtrNotImplemented($)
+{
+    my($p) = shift;
+    my($res) = "";
+
+    $res .= "/* pointer to $p->{TYPE} not supported */\n";
+
+    return $res;
+}
+
+my %ptr_handlers = (
+		    'uint8'    		  => \&PtrSimpleNdrType,
+		    'uint16'   		  => \&PtrSimpleNdrType,
+		    'uint32'   		  => \&PtrSimpleNdrType,
+		    'string'   		  => \&PtrString,
+		    'dom_sid2' 		  => \&PtrDomSID,
+		    'security_descriptor' => \&PtrSecurityDescriptor,
+		    'lsa_SidArray' => \&PtrNotImplemented,
+		    );
 
 # Generate a parser for a NDR parameter
 
@@ -183,6 +254,17 @@ sub ParseParameter($)
     my($res);
 
     # Call function registered for this type
+
+    if ($p->{POINTERS} == 1 && $p->{TYPE} ne "policy_handle") {
+
+	if (defined($ptr_handlers{$p->{TYPE}})) {
+	    $res .= &{$ptr_handlers{$p->{TYPE}}}($p);
+	} else {
+	    $res .= "\toffset = dissect_ndr_pointer(tvb, offset, pinfo, tree, drep, dissect_$p->{TYPE}, NDR_POINTER_UNIQUE, \"$p->{TYPE} pointer\", -1);\n";
+	}
+
+	return $res;
+    }
 
     if (defined($param_handlers{$p->{TYPE}})) {
 	$res .= &{$param_handlers{$p->{TYPE}}}($p);
