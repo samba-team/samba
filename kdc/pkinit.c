@@ -44,11 +44,13 @@ RCSID("$Id$");
 
 #include <openssl/evp.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <openssl/bn.h>
 #include <openssl/asn1.h>
 #include <openssl/err.h>
 
 int enable_pkinit = 0;
+int enable_pkinit_princ_in_cert = 0;
 
 /* XXX copied from lib/krb5/pkinit.c */
 struct krb5_pk_identity {
@@ -106,7 +108,6 @@ struct pk_principal_mapping {
 extern heim_oid heim_dhpublicnumber_oid;
 extern heim_oid pkcs7_signed_oid;
 extern heim_oid heim_pkauthdata_oid;
-extern heim_oid heim_des_ede3_cbc_oid;
 extern heim_oid heim_pkdhkeydata_oid;
 extern heim_oid pkcs7_signed_oid;
 extern heim_oid heim_pkrkeydata_oid;
@@ -962,6 +963,60 @@ pk_mk_pa_reply(krb5_context context,
     return ret;
 }
 
+static int
+pk_principal_from_X509(krb5_context context, 
+		       struct krb5_pk_cert *client_cert, 
+		       krb5_principal *principal)
+{
+    krb5_error_code ret;
+    GENERAL_NAMES *gens;
+    GENERAL_NAME *gen;
+    ASN1_OBJECT *obj;
+    int i;
+
+    *principal = NULL;
+
+    obj = OBJ_txt2obj("1.3.6.1.5.2.2",1);
+	
+    gens = X509_get_ext_d2i(client_cert->cert, NID_subject_alt_name, 
+			    NULL, NULL);
+    if (gens)
+	return 1;
+
+    for (i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
+	KerberosName kn;
+	size_t len, size;
+	void *p;
+
+	gen = sk_GENERAL_NAME_value(gens, i);
+	if (gen->type != GEN_OTHERNAME)
+	    continue;
+
+	if(OBJ_cmp(obj, gen->d.otherName->type_id) != 0) 
+	    continue;
+	
+	p = ASN1_STRING_data(gen->d.otherName->value->value.sequence);
+	len = ASN1_STRING_length(gen->d.otherName->value->value.sequence);
+
+	ret = decode_KerberosName(p, len, &kn, &size);
+	if (ret) {
+	    kdc_log(0, "Decoding kerberos name in certificate failed: %s",
+		    krb5_get_err_text(context, ret));
+	    continue;
+	}
+
+	*principal = malloc(sizeof(**principal));
+	if (*principal == NULL)
+	    return 1;
+
+	(*principal)->name = kn.principalName;
+	(*principal)->realm = kn.realm;
+	return 0;
+    }
+    return 1;
+}
+
+
 /* XXX match with issuer too ? */
 
 krb5_error_code
@@ -972,8 +1027,11 @@ pk_check_client(krb5_context context,
 		char **subject_name)
 {
     struct krb5_pk_cert *client_cert = client_params->certificate;
+    krb5_principal cert_princ;
     X509_NAME *name;
     char *subject = NULL;
+    krb5_error_code ret;
+    krb5_boolean b;
     int i;
 
     *subject_name = NULL;
@@ -995,13 +1053,21 @@ pk_check_client(krb5_context context,
     }
     OPENSSL_free(subject);
 
-    for (i = 0; i < principal_mappings.len; i++) {
-	krb5_boolean ret;
+    if (enable_pkinit_princ_in_cert) {
+	ret = pk_principal_from_X509(context, client_cert, &cert_princ);
+	if (ret == 0) {
+	    b = krb5_principal_compare(context, client_princ, cert_princ);
+	    krb5_free_principal(context, cert_princ);
+	    if (b == TRUE)
+		return 0;
+	}
+    }
 
-	ret = krb5_principal_compare(context,
-				     client_princ,
-				     principal_mappings.val[i].principal);
-	if (ret == FALSE)
+    for (i = 0; i < principal_mappings.len; i++) {
+	b = krb5_principal_compare(context,
+				   client_princ,
+				   principal_mappings.val[i].principal);
+	if (b == FALSE)
 	    continue;
 	if (strcmp(principal_mappings.val[i].subject, *subject_name) != 0)
 	    continue;
