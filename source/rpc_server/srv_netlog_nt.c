@@ -595,6 +595,8 @@ static NTSTATUS _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, c
 	DEBUG(5, ("_net_logon_any: exited with status %s\n", 
 		  get_nt_error_msg(nt_status)));
 
+        free_serversupplied_info(&server_info); /* No info needed */
+
 	return nt_status;
 }
 

@@ -141,6 +141,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
                                         auth_dc, trust_passwd, 
                                         last_change_time);
 
+        free_serversupplied_info(&server_info); /* No info needed */
+
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
@@ -217,6 +219,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	result = domain_client_validate(&user_info, &server_info,
                                         auth_dc, trust_passwd,
                                         last_change_time);
+
+        free_serversupplied_info(&server_info); /* No info needed */        
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }

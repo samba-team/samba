@@ -129,6 +129,7 @@ NTSTATUS pass_check_smb_with_chal(char *smb_user, char *unix_user,
 	auth_serversupplied_info server_info;
 	AUTH_STR ourdomain, theirdomain, unix_username, smb_username, 
                 wksta_name;
+        NTSTATUS result;
 		
 	ZERO_STRUCT(user_info);
 	ZERO_STRUCT(ourdomain);
@@ -203,7 +204,11 @@ NTSTATUS pass_check_smb_with_chal(char *smb_user, char *unix_user,
 
 	}
 
-	return check_password(&user_info, &server_info);
+	result = check_password(&user_info, &server_info);
+
+        free_serversupplied_info(&server_info); /* No info needed */
+
+        return result;
 }
 
 NTSTATUS pass_check_smb(char *smb_user, char *unix_user, 
@@ -254,4 +259,11 @@ BOOL password_ok(char *user, char *password, int pwlen)
 	}
 
 	return False;
+}
+
+/* Free a auth_serversupplied_info structure */
+
+void free_serversupplied_info(auth_serversupplied_info *server_info)
+{
+        SAFE_FREE(server_info->group_rids);
 }
