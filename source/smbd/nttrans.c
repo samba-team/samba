@@ -353,6 +353,11 @@ static int map_share_mode( char *fname, uint32 create_options,
 	int smb_open_mode = -1;
 	uint32 original_desired_access = *desired_access;
 
+	/* This is a nasty hack - must fix... JRA. */
+	if (*desired_access == MAXIMUM_ALLOWED_ACCESS) {
+		*desired_access = FILE_GENERIC_ALL;
+	}
+
 	/*
 	 * Convert GENERIC bits to specific bits.
 	 */
