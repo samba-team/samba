@@ -38,43 +38,21 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 #include "roken.h"
 
-/* can't use includes here */
-#ifdef KRB5
-extern const char *heimdal_version;
-#endif
-#ifdef KRB4
-extern const char *krb4_version;
-#endif
-
-RCSID("$Id$");
+#include "print_version.h"
 
 void
 print_version(const char *progname)
 {
-    const char *arg[] = { 
-#ifdef KRB5
-	NULL,
-#endif
-#ifdef KRB4
-	NULL,
-#endif
-    };
+    const char *arg[] = VERSIONLIST;
     const int num_args = sizeof(arg) / sizeof(arg[0]);
     char *msg;
     size_t len = 0;
     int i;
-    const char **p = arg;
-
-#ifdef KRB5
-    *p++ = heimdal_version;
-#endif
-#ifdef KRB4
-    *p++ = krb4_version;
-#endif
-
+    
     if(progname == NULL)
 	progname = __progname;
     
