@@ -213,12 +213,84 @@ interface nbt
 	} dgram_node_type;
 
 	/* a dgram_message is the main dgram body in general use */
+
+	/* the most common datagram type is a SMB_TRANSACTION
+	   operation, where a SMB packet is used in the data section
+	   of a dgram_message to hold a trans request, which in turn
+	   holds a small command structure. It's a very strange beast
+	   indeed. To make the code cleaner we define a basic SMB
+	   packet in IDL here. This is not a general purpose SMB
+	   packet, and won't be used in the core SMB client/server
+	   code, but it does make working with these types of dgrams
+	   easier */
+
+	typedef [enum8bit] enum {
+		SMB_TRANSACTION = 0x25
+	} smb_command;
+
 	typedef struct {
-		uint16         length;
-		uint16         offset;
-		nbt_name       source_name;
-		nbt_name       dest_name;
+		[range(17,17),value(17)] uint8 wct;
+		uint16                      total_param_count;
+		uint16                      total_data_count;
+		uint16                      max_param_count;
+		uint16                      max_data_count;
+		uint8                       max_setup_count;
+		uint8                       pad;
+		uint16                      trans_flags;
+		uint32                      timeout;
+		uint16                      reserved;
+		uint16                      param_count;
+		uint16                      param_offset;
+		uint16                      data_count;
+		uint16                      data_offset;
+		[range(3,3),value(3)] uint8 setup_count;
+		uint8                       pad2;
+		uint16                      opcode;
+		uint16                      priority;
+		uint16                      class;
+		[value(strlen(r->mailslot_name)+1+r->data.length)] 
+		      uint16                byte_count;
+		astring                     mailslot_name;
 		[flag(NDR_REMAINING)] DATA_BLOB data;
+	} smb_trans_body;
+
+	typedef [nodiscriminant] union {
+		[case(SMB_TRANSACTION)] smb_trans_body trans;
+	} smb_body;
+
+
+	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN|NDR_PAHEX),public] struct {
+		smb_command                smb_command;
+		uint8                      err_class;
+		uint8                      pad;
+		uint16                     err_code;
+		uint8                      flags;
+		uint16                     flags2;
+		uint16                     pid_high;
+		uint8                      signature[8];
+		uint16                     reserved;
+		uint16                     tid;
+		uint16                     pid;
+		uint16                     vuid;
+		uint16                     mid;
+		[switch_is(smb_command)]   smb_body body;
+	} dgram_smb_packet;
+
+	typedef [v1_enum] enum {
+		DGRAM_SMB = 0xff534d42 /* 0xffSMB */
+	} dgram_body_type;
+
+	typedef [nodiscriminant] union {
+		[case(DGRAM_SMB)] dgram_smb_packet smb;
+	} dgram_message_body;
+
+	typedef struct {
+		uint16          length;
+		uint16          offset;
+		nbt_name        source_name;
+		nbt_name        dest_name;
+		dgram_body_type dgram_body_type;
+		[switch_is(dgram_body_type)] dgram_message_body body;
 	} dgram_message;
 
 	typedef [enum8bit] enum {
@@ -228,9 +300,9 @@ interface nbt
 	} dgram_err_code;
 
 	typedef [nodiscriminant] union {
-		[case(DGRAM_DIRECT_UNIQUE)]   dgram_message msg;
-		[case(DGRAM_DIRECT_GROUP)]    dgram_message msg;
-		[case(DGRAM_BCAST)]           dgram_message msg;
+		[case(DGRAM_DIRECT_UNIQUE)]   dgram_message  msg;
+		[case(DGRAM_DIRECT_GROUP)]    dgram_message  msg;
+		[case(DGRAM_BCAST)]           dgram_message  msg;
 		[case(DGRAM_ERROR)]           dgram_err_code error;
 		[case(DGRAM_QUERY)]           nbt_name       dest_name;
 		[case(DGRAM_QUERY_POSITIVE)]  nbt_name       dest_name;
