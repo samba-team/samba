@@ -852,7 +852,8 @@ static BOOL api_samr_lookup_names( uint16 vuid, prs_struct *data, prs_struct *rd
 /*******************************************************************
  samr_reply_chgpasswd_user
  ********************************************************************/
-static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
+
+static BOOL samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_CHGPASSWD_USER r_u;
@@ -875,23 +876,34 @@ static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 	init_samr_r_chgpasswd_user(&r_u, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_chgpasswd_user("", &r_u, rdata, 0);
+	if(!samr_io_r_chgpasswd_user("", &r_u, rdata, 0)) {
+		DEBUG(0,("samr_reply_chgpasswd_user: Failed to marshall SAMR_R_CHGPASSWD_USER struct.\n" ));
+		return False;
+	}
 
 	DEBUG(5,("samr_chgpasswd_user: %d\n", __LINE__));
+	return True;
 }
 
 /*******************************************************************
  api_samr_chgpasswd_user
  ********************************************************************/
+
 static BOOL api_samr_chgpasswd_user( uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CHGPASSWD_USER q_u;
 
 	/* unknown 38 command */
-	samr_io_q_chgpasswd_user("", &q_u, data, 0);
+	if (!samr_io_q_chgpasswd_user("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_chgpasswd_user: samr_io_q_chgpasswd_user failed to parse RPC packet.\n"));
+		return False;
+	}
 
 	/* construct reply. */
-	samr_reply_chgpasswd_user(&q_u, rdata);
+	if(!samr_reply_chgpasswd_user(&q_u, rdata)) {
+		DEBUG(0,("api_samr_chgpasswd_user: samr_reply_chgpasswd_user failed to create reply packet.\n"));
+		return False;
+	}
 
 	return True;
 }

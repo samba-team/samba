@@ -71,7 +71,7 @@ char *unistrn2(uint16 *src, int len)
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *src && p-lbuf < MAXUNI-2 && len > 0; len--, src++)
+	for (p = lbuf; (len > 0) && (p-lbuf < MAXUNI-2) && *src; len--, src++)
 	{
 		*p++ = (SVAL(src,0) & 0xff);
 	}
@@ -95,7 +95,7 @@ char *unistr2(uint16 *src)
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *src && p-lbuf < MAXUNI-2; p++, src++)
+	for (p = lbuf; *src && (p-lbuf < MAXUNI-2); p++, src++)
 	{
 		*p = (SVAL(src,0) & 0xff);
 	}

@@ -125,8 +125,12 @@ int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask)
 			close(fd);
 			return -1;
 		}  
-		close(fd);
 		(*nmask) = ((struct sockaddr_in *)&ifr[i].ifr_addr)->sin_addr;
+		if (strcmp(inet_ntoa(*nmask),"255.255.255.255") == 0) {
+			/* this isn't a broadcast capable interface - probably a ppp link */
+			continue;
+		}
+		close(fd);
 #ifdef DEBUG
 		fprintf(stderr,"netmask %s\n", inet_ntoa(*nmask));
 #endif

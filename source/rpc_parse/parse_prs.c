@@ -544,47 +544,37 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 /*******************************************************************
  Stream a null-terminated string.  len is strlen, and therefore does
  not include the null-termination character.
-
- len == 0 indicates variable length string
- (up to max size of pstring - 1024 chars).
  ********************************************************************/
 
-BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size)
+BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, int len, int max_buf_size)
 {
-	int i = -1; /* start off at zero after 1st i++ */
 	char *q;
 	uint8 *start;
+	int i;
 
-	do
-	{
-		i++;
-	} while (i < max_buf_size && (len == 0 ? str[i] != 0 : i < len) );
+	len = MIN(len, (max_buf_size-1));
 
-	q = prs_mem_get(ps, i+1);
+	q = prs_mem_get(ps, len+1);
 	if (q == NULL)
 		return False;
 
 	start = (uint8*)q;
 
-	i = -1;
-	do
-	{
-		i++;
-
-		if (i < len || len == 0) {
-			RW_CVAL(ps->io, q, str[i],0);
-		}else {
-			uint8 dummy = 0;
-			RW_CVAL(ps->io, q, dummy,0);
-		}
-
+	for(i = 0; i < len; i++) {
+		RW_CVAL(ps->io, q, str[i],0);
 		q++;
+	}
 
-	} while (i < max_buf_size && (len == 0 ? str[i] != 0 : i < len) );
+	/* The terminating null. */
+	str[i] = '\0';
 
-	ps->data_offset += i+1;
+	if (MARSHALLING(ps)) {
+		RW_CVAL(ps->io, q, str[i], 0);
+	}
 
-	dump_data(5+depth, (char *)start, i);
+	ps->data_offset += len+1;
+
+	dump_data(5+depth, (char *)start, len);
 
 	return True;
 }
