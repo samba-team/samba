@@ -1,6 +1,7 @@
 #include <krb5_locl.h>
-#include <krb5_error.h>
 #include "md4.h"
+
+RCSID("$Id$");
 
 krb5_error_code
 krb5_create_checksum (krb5_context context,
@@ -36,9 +37,9 @@ krb5_verify_checksum (krb5_context context,
   u_char csum[16];
 
   if (cksum->cksumtype != CKSUMTYPE_RSA_MD4)
-    return KRB_AP_ERR_INAPP_CKSUM;
+    return KRB5KRB_AP_ERR_INAPP_CKSUM;
   if (cksum->checksum.length != 16)
-    return KRB_AP_ERR_MODIFIED;
+    return KRB5KRB_AP_ERR_MODIFIED;
 
   md4_init (&m);
   md4_update (&m, ptr, len);
@@ -46,5 +47,5 @@ krb5_verify_checksum (krb5_context context,
   if (memcmp (cksum->checksum.data, csum, 16) == 0)
     return 0;
   else
-    return KRB_AP_ERR_MODIFIED;
+    return KRB5KRB_AP_ERR_MODIFIED;
 }

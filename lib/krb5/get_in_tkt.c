@@ -1,7 +1,8 @@
 #include "krb5_locl.h"
-#include <krb5_error.h>
 
-krb5_error_code
+RCSID("$Id$");
+
+static krb5_error_code
 krb5_get_salt (krb5_principal princ,
 	       krb5_data *salt)
 {

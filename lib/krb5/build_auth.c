@@ -1,5 +1,6 @@
 #include <krb5_locl.h>
-#include <krb5_error.h>
+
+RCSID("$Id$");
 
 krb5_error_code
 krb5_build_authenticator (krb5_context context,

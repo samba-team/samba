@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef __KEYTAB_H__
 #define __KEYTAB_H__
 

@@ -1,5 +1,7 @@
 #include "krb5_locl.h"
 
+RCSID("$Id$");
+
 krb5_error_code
 krb5_principal_alloc(krb5_principal *p)
 {

@@ -1,5 +1,6 @@
 #include <krb5_locl.h>
-#include <krb5_error.h>
+
+RCSID("$Id$");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -86,11 +87,11 @@ krb5_rd_req(krb5_context context,
   if (len < 0)
     return ASN1_PARSE_ERROR;
   if (ap_req.pvno != 5)
-    return KRB_AP_ERR_BADVERSION;
+    return KRB5KRB_AP_ERR_BADVERSION;
   if (ap_req.msg_type != krb_ap_req)
-    return KRB_AP_ERR_MSG_TYPE;
+    return KRB5KRB_AP_ERR_MSG_TYPE;
   if (ap_req.ticket.tkt_vno != 5)
-    return KRB_AP_ERR_BADVERSION;
+    return KRB5KRB_AP_ERR_BADVERSION;
   if (ap_req.ap_options.use_session_key)
     abort ();
   else {
@@ -139,7 +140,7 @@ krb5_rd_req(krb5_context context,
       return ret;
 
     if (strcmp (authenticator.crealm, decr_part.crealm) != 0)
-      return KRB_AP_ERR_BADMATCH;
+      return KRB5KRB_AP_ERR_BADMATCH;
     {
       krb5_principal p1, p2;
 
@@ -148,7 +149,7 @@ krb5_rd_req(krb5_context context,
       principalname2krb5_principal(&p2, decr_part.cname,
 				   decr_part.crealm);
       if (!krb5_principal_compare (context, p1, p2))
-	return KRB_AP_ERR_BADMATCH;
+	return KRB5KRB_AP_ERR_BADMATCH;
     }
     (*auth_context)->authenticator->cusec = authenticator.cusec;
     (*auth_context)->authenticator->ctime = authenticator.ctime;

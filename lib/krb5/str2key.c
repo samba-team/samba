@@ -1,5 +1,7 @@
 #include <krb5_locl.h>
 
+RCSID("$Id$");
+
 /*
  * Reverse 8 bytes
  */

@@ -1,6 +1,7 @@
 #include <krb5_locl.h>
-#include <krb5_error.h>
 #include "crc.h"
+
+RCSID("$Id$");
 
 krb5_error_code
 krb5_encrypt (krb5_context context,

@@ -1,5 +1,6 @@
 #include "krb5_locl.h"
-#include "krb5_error.h"
+
+RCSID("$Id$");
 
 static int
 send_and_recv (int fd,

@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #include <sys/types.h>
 
 #define CRC_GEN 0xEDB88320L

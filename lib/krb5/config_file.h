@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef __CONF_H__
 #define __CONF_H__
 

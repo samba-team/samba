@@ -1,5 +1,7 @@
 #include "krb5_locl.h"
 
+RCSID("$Id$");
+
 static krb5_error_code
 key_proc (krb5_context context,
 	  krb5_keytype type,

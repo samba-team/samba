@@ -1,5 +1,7 @@
 #include "krb5_locl.h"
 
+RCSID("$Id$");
+
 krb5_error_code
 krb5_get_krbhst (krb5_context context,
 		 const krb5_data *realm,

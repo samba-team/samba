@@ -1,3 +1,7 @@
+#include "krb5_locl.h"
+
+RCSID("$Id$");
+
 #include <stdio.h>
 #include "crc.h"
 

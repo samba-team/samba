@@ -8,6 +8,8 @@
 #include "krb5_locl.h"
 #include "config_file.h"
 
+RCSID("$Id$");
+
 static char section[128];
 static FILE *F;
 

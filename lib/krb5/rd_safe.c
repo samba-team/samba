@@ -1,5 +1,6 @@
 #include <krb5_locl.h>
-#include <krb5_error.h>
+
+RCSID("$Id$");
 
 krb5_error_code
 krb5_rd_safe(krb5_context context,
@@ -16,11 +17,11 @@ krb5_rd_safe(krb5_context context,
   if (len < 0)
     return ASN1_PARSE_ERROR;
   if (safe.pvno != 5)
-    return KRB_AP_ERR_BADVERSION;
+    return KRB5KRB_AP_ERR_BADVERSION;
   if (safe.msg_type != krb_safe)
-    return KRB_AP_ERR_MSG_TYPE;
+    return KRB5KRB_AP_ERR_MSG_TYPE;
   if (safe.cksum.cksumtype != CKSUMTYPE_RSA_MD4)
-    return KRB_AP_ERR_INAPP_CKSUM;
+    return KRB5KRB_AP_ERR_INAPP_CKSUM;
   /* XXX */
   r = krb5_verify_checksum (context,
 			    safe.safe_body.user_data.data,

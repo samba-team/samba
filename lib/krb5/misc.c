@@ -1,5 +1,6 @@
 #include "krb5_locl.h"
 
+RCSID("$Id$");
 
 krb5_error_code
 krb5_get_lrealm(char **realm)

@@ -1,5 +1,7 @@
 #include <krb5_locl.h>
 
+RCSID("$Id$");
+
 int
 krb5_getportbyname (const char *service,
 		    const char *proto,

@@ -1,5 +1,6 @@
 #include "krb5_locl.h"
 
+RCSID("$Id$");
 
 /*
  * Try to get all addresses, but return the one corresponding to
