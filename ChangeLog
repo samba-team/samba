@@ -1,4 +1,22 @@
+2001-09-02  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/Makefile.am: install kauth as a symlink to kinit
+
+	* kuser/kinit.c: get v4_tickets by default
+
+	* lib/asn1/Makefile.am: fix for broken automake
+
 2001-08-31  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/hdb-ldap.c: some pretty much untested changes from Luke
+	Howard
+
+	* kuser/kinit.1: remove references to kauth
+
+	* kuser/Makefile.am: kauth is no more
+
+	* kuser/kinit.c: use appdefaults for everything. defaults are now
+	as in kauth.
 
 	* lib/krb5/appdefault.c: also check libdefaults, and realms/realm
 
