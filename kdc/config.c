@@ -52,6 +52,7 @@ char *database;
 HDB *db;
 char *port_str;
 int enable_http = -1;
+krb5_boolean encode_as_rep_as_tgs_rep; /* bug compatibility */
 
 #ifdef KRB4
 char *v4_realm;
@@ -191,6 +192,10 @@ configure(int argc, char **argv)
 	    v4_realm = strdup(p);
     }
 #endif
+
+    encode_as_rep_as_tgs_rep = krb5_config_get_bool(context, cf, "kdc", 
+						    "encode_as_rep_as_tgs_rep", 
+						    NULL);
 
     kdc_warn_pwexpire = krb5_config_get_time (context, cf,
 					      "kdc",

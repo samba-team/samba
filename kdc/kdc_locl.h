@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,6 +56,7 @@ extern char *database;
 extern HDB *db;
 extern char *port_str;
 extern int enable_http;
+extern krb5_boolean encode_as_rep_as_tgs_rep;
 
 #ifdef KRB4
 extern char *v4_realm;
