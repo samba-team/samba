@@ -270,14 +270,13 @@ arg_match_long(struct getargs *args, size_t num_args,
 	    negate = 0;
 
 	    for (;;) {
-		if (strncmp (args[i].long_name, p, len) == 0) {
-		    current = &args[i];
-		    optarg  = p + len;
-		} else if (strncmp (args[i].long_name,
-				    p,
-				    p_len) == 0) {
-		    ++partial_match;
-		    partial = &args[i];
+		if (strncmp (args[i].long_name, p, p_len) == 0) {
+		    if(p_len == len)
+			current = &args[i];
+		    else {
+			++partial_match;
+			partial = &args[i];
+		    }
 		    optarg  = p + p_len;
 		} else if (ISFLAG(args[i]) && strncmp (p, "no-", 3) == 0) {
 		    negate = !negate;
