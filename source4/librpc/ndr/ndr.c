@@ -324,23 +324,6 @@ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 	talloc_free(ndr);
 }
 
-
-/*
-  a useful helper function for printing idl unions via DEBUG()
-*/
-void ndr_print_union_debug(ndr_print_union_fn_t fn, const char *name, uint32_t level, void *ptr)
-{
-	struct ndr_print *ndr;
-
-	ndr = talloc(NULL, struct ndr_print);
-	if (!ndr) return;
-	ndr->print = ndr_print_debug_helper;
-	ndr->depth = 1;
-	ndr->flags = 0;
-	fn(ndr, name, level, ptr);
-	talloc_free(ndr);
-}
-
 /*
   a useful helper function for printing idl function calls via DEBUG()
 */
@@ -686,6 +669,19 @@ uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p)
 }
 
 uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p)
+{
+	return ndr_token_peek(&ndr->switch_list, p);
+}
+
+NTSTATUS ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val)
+{
+	return ndr_token_store(ndr, &ndr->switch_list, p, val);
+}
+
+/*
+  retrieve a switch value
+ */
+uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *p)
 {
 	return ndr_token_peek(&ndr->switch_list, p);
 }
