@@ -115,10 +115,12 @@ int net_help_file(int argc, const char **argv)
 {
 	d_printf("net <method> file [misc. options] [targets]\n"\
 		 "\tlists all open files on file server\n\n");
-	d_printf("net [rap] file USER <username> [misc. options] [targets]\n"\
-		 "\tlists all files opened by username on file server\n\n");
-	d_printf("net [rap] file CLOSE <id> [misc. options] [targets]\n"\
-		 "\tcloses specified file on target server\n");
+	d_printf("net <method> file USER <username> [misc. options] [targets]"\
+		 "\n\tlists all files opened by username on file server\n\n");
+	d_printf("net <method> file CLOSE <id> [misc. options] [targets]\n"\
+		 "\tcloses specified file on target server\n\n");
+	d_printf("net [rap] file INFO <id> [misc. options] [targets]\n"\
+		 "\tdisplays information about the specified open file\n");
 
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
