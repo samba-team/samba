@@ -23,6 +23,4 @@ security="hostsequiv"
 (test_smb_conf_setup ) || exit 1
 
 (test_listfilesauth $security) || exit 1
-# (test_listfilesrootnpw $security) || exit 1
-# Unfortuetly we map to guest, and this is allowed access due to a BUG.  This
-# test disabled till we fix it.
+(test_listfilesrootnpw $security) || exit 1
