@@ -17,12 +17,11 @@
 #include <termio.h>
 #define sgttyb termio
 #define sg_flags c_lflag
-#ifndef TIOCGETP
+/* Really redefine these ioctl's! */
+#undef TIOCGETP
 #define TIOCGETP TCGETA
-#endif
-#ifndef TIOCSETP
+#undef TIOCSETP
 #define TIOCSETP TCSETA
-#endif
 #else /* !TERMIO */
 #include <sgtty.h>
 #endif
