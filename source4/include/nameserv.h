@@ -36,6 +36,13 @@
 #define MAX_DGRAM_SIZE (576) /* tcp/ip datagram limit is 576 bytes */
 #define MIN_DGRAM_SIZE 12
 
+/* A netbios name structure. */
+struct nmb_name {
+	char         name[17];
+	char         scope[64];
+	uint_t name_type;
+};
+
 /*********************************************************
  Types of reply packet.
 **********************************************************/

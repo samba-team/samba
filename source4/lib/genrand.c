@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/iconv.h"
+#include "lib/crypto/crypto.h"
 
 static unsigned char hash[258];
 static uint32 counter;
