@@ -70,8 +70,6 @@
 
 #define SPOOLSS_ADDPRINTERDRIVEREX			0x59
 
-*/
-
 /* those are implemented */
 #define SPOOLSS_ENUMPRINTERS				0x00
 #define SPOOLSS_SETJOB					0x02
