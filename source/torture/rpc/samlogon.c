@@ -1031,7 +1031,7 @@ BOOL torture_rpc_samlogon(void)
 	}
 
 	if (!test_SetupCredentials(p, mem_ctx, 
-				    TEST_MACHINE_NAME, machine_pass, &creds)) {
+				   TEST_MACHINE_NAME, machine_pass, &creds)) {
 		ret = False;
 	}
 
