@@ -301,6 +301,15 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	*num_groups = 0;
 
+	/* First try cached universal groups from logon */
+	*user_gids = uni_group_cache_fetch(&domain->sid, user_rid, mem_ctx, num_groups);
+	if((*num_groups > 0) && *user_gids) {
+		return NT_STATUS_OK;
+	} else {
+	    *user_gids = NULL;
+	    *num_groups = 0;
+	}
+
 	/* Get sam handle */
 	if (!(hnd = cm_get_sam_handle(domain->name)))
 		goto done;

@@ -881,5 +881,6 @@ int main(int argc, char **argv)
 
 	process_loop(accept_sock);
 
+	uni_group_cache_shutdown();
 	return 0;
 }
