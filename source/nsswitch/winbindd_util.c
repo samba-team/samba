@@ -259,7 +259,6 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 		server_state.pwdb_initialised = False;
 		server_state.lsa_handle_open = False;
 		lsa_close(&server_state.lsa_handle);
-                DEBUG(0, ("** closing lsa_handle_open\n"));
 	}
 	
 	/* Close domain sam handles but don't free them as this
@@ -319,7 +318,6 @@ void establish_connections(BOOL force_reestablish)
 
 	t = time(NULL);
 	if ((t - lastt < WINBINDD_ESTABLISH_LOOP) && !force_reestablish) {
-                DEBUG(0, ("** timeout not reached\n"));
 		return;
 	}
 	lastt = t;
