@@ -124,11 +124,6 @@ typedef struct unihdr2_info
 	uint32 buffer; /* 32 bit buffer pointer */
 } UNIHDR2;
 
-/* clueless as to what maximum length should be */
-#define MAX_UNISTRLEN 256
-#define MAX_STRINGLEN 256
-#define MAX_BUFFERLEN 512
-
 /* UNISTR - unicode string size and buffer */
 typedef struct unistr_info
 {
@@ -408,7 +403,7 @@ BUFHDR4;
 typedef struct buffer4_info
 {
 	uint32 buf_len;
-	uint8 buffer[MAX_BUFFERLEN];
+	uint8 *buffer;
 
 }
 BUFFER4;

@@ -553,7 +553,6 @@ void init_unistr(UNISTR *str, const char *buf)
 	}
 		
 	len = strlen(buf) + 1;
-	len = MAX(len,MAX_UNISTRLEN);
 
 	str->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, len);
 	if (str->buffer == NULL)
@@ -585,14 +584,12 @@ BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
  Allocate the BUFFER3 memory.
 ********************************************************************/
 
-static void create_buffer3(BUFFER3 *str, size_t len)
+static size_t create_buffer3(BUFFER3 *str, size_t len)
 {
-	len = MAX(len,MAX_BUFFERLEN);
-
 	str->buffer = TALLOC_ZERO(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
 		smb_panic("create_buffer3: talloc fail\n");
-
+	return len;
 }
 
 /*******************************************************************
@@ -604,10 +601,7 @@ void init_buffer3_uint32(BUFFER3 *str, uint32 val)
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->buf_max_len = sizeof(uint32);
-	str->buf_len     = sizeof(uint32);
-
-	create_buffer3(str, sizeof(uint32));
+	str->buf_max_len = str->buf_len = create_buffer3(str, sizeof(uint32));
 	SIVAL(str->buffer, 0, val);
 }
 
@@ -620,11 +614,7 @@ void init_buffer3_str(BUFFER3 *str, const char *buf, int len)
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->buf_max_len = len * 2;
-	str->buf_len = len * 2;
-
-	create_buffer3(str, str->buf_max_len);
-
+	str->buf_max_len = str->buf_len = create_buffer3(str, len*2);
 	rpcstr_push(str->buffer, buf, str->buf_max_len, STR_TERMINATE);
 	
 }
@@ -636,24 +626,24 @@ void init_buffer3_str(BUFFER3 *str, const char *buf, int len)
 void init_buffer3_hex(BUFFER3 *str, const char *buf)
 {
 	ZERO_STRUCTP(str);
-	create_buffer3(str, strlen(buf));
-	str->buf_max_len = str->buf_len = strhex_to_str((char *)str->buffer, sizeof(str->buffer), buf);
+	str->buf_max_len = str->buf_len = create_buffer3(str, strlen(buf));
+	str->buf_max_len = str->buf_len = strhex_to_str((char *)str->buffer, str->buf_len, buf);
 }
 
 /*******************************************************************
  Inits a BUFFER3 structure.
 ********************************************************************/
 
-void init_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len)
+void init_buffer3_bytes(BUFFER3 *str, uint8 *buf, size_t len)
 {
 	ZERO_STRUCTP(str);
 
 	/* max buffer size (allocated size) */
-	str->buf_max_len = len;
 	if (buf != NULL) {
-		create_buffer3(str, len);
+		len = create_buffer3(str, len);
 		memcpy(str->buffer, buf, len);
 	}
+	str->buf_max_len = len;
 	str->buf_len = buf != NULL ? len : 0;
 }
 
@@ -730,11 +720,11 @@ void init_buffer2(BUFFER2 *str, const uint8 *buf, size_t len)
 	str->buf_len = buf != NULL ? len : 0;
 
 	if (buf != NULL) {
-		len = MAX(len,MAX_BUFFERLEN);
-		str->buffer = TALLOC_ZERO(get_talloc_ctx(), len);
+		SMB_ASSERT(str->buf_max_len >= str->buf_len);
+		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->buf_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_buffer2: talloc fail\n");
-		memcpy(str->buffer, buf, MIN(str->buf_len, len));
+		memcpy(str->buffer, buf, str->buf_len);
 	}
 }
 
@@ -802,19 +792,22 @@ void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
 
 void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 {
+	if (from->buffer == NULL) {
+		ZERO_STRUCTP(str);
+		return;
+	}
+
+	SMB_ASSERT(from->uni_max_len >= from->uni_str_len);
+
 	str->uni_max_len = from->uni_max_len;
 	str->offset      = from->offset;
 	str->uni_str_len = from->uni_str_len;
 
-	if (from->buffer == NULL)
-		return;
-		
 	/* the string buffer is allocated to the maximum size
 	   (the the length of the source string) to prevent
 	   reallocation of memory. */
 	if (str->buffer == NULL) {
-		size_t alloc_len = MAX(from->uni_max_len,MAX_UNISTRLEN);
-   		str->buffer = (uint16 *)TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, alloc_len);
+   		str->buffer = (uint16 *)TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_max_len);
 		if ((str->buffer == NULL)) {
 			smb_panic("copy_unistr2: talloc fail\n");
 			return;
@@ -822,24 +815,25 @@ void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 	}
 
 	/* copy the string */
-	memcpy(str->buffer, from->buffer, from->uni_max_len*sizeof(uint16));
+	memcpy(str->buffer, from->buffer, str->uni_max_len*sizeof(uint16));
 }
 
 /*******************************************************************
  Creates a STRING2 structure.
 ********************************************************************/
 
-void init_string2(STRING2 *str, const char *buf, int max_len, int str_len)
+void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len)
 {
 	/* set up string lengths. */
+	SMB_ASSERT(max_len >= str_len);
+
 	str->str_max_len = max_len;
 	str->offset = 0;
 	str->str_str_len = str_len;
 
 	/* store the string */
 	if(str_len != 0) {
-		int alloc_len = MAX(str_len, MAX_STRINGLEN);
-		str->buffer = TALLOC_ZERO(get_talloc_ctx(), alloc_len);
+		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->str_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
 		memcpy(str->buffer, buf, str_len);
@@ -903,8 +897,6 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 		len = strlen(buf) + 1;
 	}
 
-	len = MAX(len,MAX_UNISTRLEN);
-
 	str->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, len);
 	if (str->buffer == NULL) {
 		smb_panic("init_unistr2: malloc fail\n");
@@ -943,7 +935,6 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 {
 	uint32 len = strlen_w(buf);
-	uint32 alloc_len;
 
 	ZERO_STRUCTP(str);
 
@@ -952,9 +943,7 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 	str->offset = 0;
 	str->uni_str_len = len;
 
-	alloc_len = MAX((len + 1), MAX_UNISTRLEN);
-
-	str->buffer = TALLOC_ZERO_ARRAY(ctx, uint16, alloc_len);
+	str->buffer = TALLOC_ZERO_ARRAY(ctx, uint16, len + 1);
 	if (str->buffer == NULL) {
 		smb_panic("init_unistr2_w: malloc fail\n");
 		return;
@@ -1667,25 +1656,19 @@ BOOL smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth
 
 void init_unistr3(UNISTR3 *str, const char *buf)
 {
-	size_t len, alloc_len;
-
 	if (buf == NULL) {
 		str->uni_str_len=0;
 		str->str.buffer = NULL;
 		return;
 	}
 
-	len = strlen(buf) + 1;
+	str->uni_str_len = strlen(buf) + 1;
 
-	str->uni_str_len=len;
-
-	alloc_len = MAX(len, MAX_UNISTRLEN);
-
-	str->str.buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, alloc_len);
+	str->str.buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_str_len);
 	if (str->str.buffer == NULL)
 		smb_panic("init_unistr3: malloc fail\n");
 
-	rpcstr_push((char *)str->str.buffer, buf, len * sizeof(uint16), STR_TERMINATE);
+	rpcstr_push((char *)str->str.buffer, buf, str->uni_str_len * sizeof(uint16), STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -1750,8 +1733,8 @@ BOOL smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth)
 	depth++;
 
 	prs_align(ps);
-	prs_uint32("size", ps, depth, &(hdr->size));
-	prs_uint32("buffer", ps, depth, &(hdr->buffer));
+	prs_uint32("size", ps, depth, &hdr->size);
+	prs_uint32("buffer", ps, depth, &hdr->buffer);
 
 	return True;
 }
@@ -1759,19 +1742,20 @@ BOOL smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a BUFFER4 structure.
 ********************************************************************/
+
 BOOL smb_io_buffer4(const char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_buffer4");
 	depth++;
 
 	prs_align(ps);
-	prs_uint32("buf_len", ps, depth, &(buf4->buf_len));
-
-	if (buf4->buf_len > MAX_BUFFERLEN)
-	{
-		buf4->buf_len = MAX_BUFFERLEN;
+	prs_uint32("buf_len", ps, depth, &buf4->buf_len);
+	if (UNMARSHALLING(ps)) {
+		buf4->buffer = PRS_ALLOC_MEM(ps, uint8, buf4->buf_len);
+		if (!buf4->buffer) {
+			return False;
+		}
 	}
-
 	prs_uint8s(True, "buffer", ps, depth, buf4->buffer, buf4->buf_len);
 
 	return True;
