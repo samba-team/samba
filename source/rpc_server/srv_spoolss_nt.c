@@ -671,7 +671,11 @@ static BOOL is_monitoring_event(Printer_entry *p, uint16 notify_type,
 	 * might use the flags though instead of the NOTIFY_OPTION_INFO 
 	 * --jerry
 	 */
-	 
+
+	if (!option) {
+		return False;
+	}
+
 	if (p->notify.flags)
 		return is_monitoring_event_flags(
 			p->notify.flags, notify_type, notify_field);
