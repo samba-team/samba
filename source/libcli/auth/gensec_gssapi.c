@@ -35,7 +35,7 @@ struct gensec_gssapi_state {
 	struct gss_channel_bindings_struct *input_chan_bindings;
 	gss_name_t server_name;
 	gss_name_t client_name;
-	int want_flags, got_flags;
+	OM_uint32 want_flags, got_flags;
 	const gss_OID_desc *gss_oid;
 };
 static int gensec_gssapi_destory(void *ptr) 
@@ -205,7 +205,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	case GENSEC_SERVER:
 	{
 		maj_stat = gss_accept_sec_context(&min_stat, 
-						  gensec_gssapi_state->gssapi_context, 
+						  &gensec_gssapi_state->gssapi_context, 
 						  GSS_C_NO_CREDENTIAL, 
 						  &input_token, 
 						  gensec_gssapi_state->input_chan_bindings,
