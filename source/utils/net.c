@@ -215,7 +215,7 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS connect_local_pipe(struct cli_state **cli_local, int pipe, BOOL *got_pipe)
+NTSTATUS connect_local_pipe(struct cli_state **cli_local, int pipe_num, BOOL *got_pipe)
 {
 	NTSTATUS nt_status;
 	extern struct in_addr loopback_ip;
@@ -227,7 +227,7 @@ NTSTATUS connect_local_pipe(struct cli_state **cli_local, int pipe, BOOL *got_pi
 	if (!NT_STATUS_IS_OK(nt_status)) 
 		return nt_status;
 
-	if (!cli_nt_session_open(cli_tmp, pipe)) {
+	if (!cli_nt_session_open(cli_tmp, pipe_num)) {
 		DEBUG(0, ("couldn't not initialise spoolss pipe\n"));
 		cli_shutdown(cli_tmp);
 		return NT_STATUS_UNSUCCESSFUL;
