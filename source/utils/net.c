@@ -76,6 +76,8 @@ static BOOL got_pass = False;
 static BOOL have_ip = False;
 static struct in_addr dest_ip;
 
+extern pstring global_myname;
+
 /*
   run a function from a function table. If not found then
   call the specified usage function 
@@ -129,9 +131,14 @@ static struct cli_state *connect_to_ipc(struct in_addr *server_ip, const char *s
 
 struct cli_state *net_make_ipc_connection(unsigned flags)
 {
-	char *server_name = opt_host;
+	char *server_name = NULL;
 	struct in_addr server_ip;
 	struct cli_state *cli;
+
+	if (opt_host) {
+		server_name = strdup(opt_host);
+	}		
+
 	if (have_ip) {
 		server_ip = dest_ip;
 		if (!server_name) {
@@ -143,45 +150,50 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 			DEBUG(1,("Unable to resolve server name\n"));
 			return NULL;
 		}
-	} else if (flags & NET_FLAGS_DMB) {
+	} else if (flags & NET_FLAGS_PDC) {
 		struct in_addr *ip_list;
 		int addr_count;
-		char *our_workgroup = lp_workgroup();
+		if (get_dc_list(True /* PDC only*/, opt_target_workgroup, &ip_list, &addr_count)) {
+			fstring dc_name;
+			if (addr_count < 1) {
+				return NULL;
+			}
+			
+			server_ip = *ip_list;
+			
+			if (is_zero_ip(server_ip))
+				return NULL;
+			
+			if (!lookup_dc_name(global_myname, opt_target_workgroup, &server_ip, dc_name))
+				return NULL;
+				
+			server_name = strdup(dc_name);
+		}
+		
+	} else if (flags & NET_FLAGS_DMB) {
 		struct in_addr msbrow_ip;
 		/*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1)) */
-		if (!get_dmb_list(&ip_list,&addr_count)){
-			DEBUG(1,("Unable to resolve global master browser via name lookup"));
-			if (!resolve_name(our_workgroup, &msbrow_ip, 0x1D))  {
-				DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
-				return NULL;
-			} else {
-				server_ip = msbrow_ip;
-			}
+		if (!resolve_name(opt_target_workgroup, &msbrow_ip, 0x1B))  {
+			DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
+			return NULL;
 		} else {
-			server_ip = *ip_list;
+			server_ip = msbrow_ip;
 		}
+		server_name = strdup(inet_ntoa(dest_ip));
 	} else if (flags & NET_FLAGS_MASTER) {
-		char *temp_workgroup = lp_workgroup();
-		char our_workgroup[16];
 		struct in_addr brow_ips;
-
-		/* find target server based on workgroup or domain */
-		if((temp_workgroup == 0) || (temp_workgroup[0] == 0)) 
-			temp_workgroup = lp_workgroup();  /* by default enum our local workgroup or domain */
-		
-		safe_strcpy(our_workgroup, temp_workgroup,15);
-		
-		if (!resolve_name(our_workgroup, &brow_ips, 0x1D))  {
+		if (!resolve_name(opt_target_workgroup, &brow_ips, 0x1D))  {
 				/* go looking for workgroups */
 			DEBUG(1,("Unable to resolve master browser via name lookup\n"));
 			return NULL;
 		} else {
 			server_ip = brow_ips;
 		}
+		server_name = strdup(inet_ntoa(dest_ip));
 	} else if (!(flags & NET_FLAGS_LOCALHOST_DEFAULT_INSANE)) {
 		extern struct in_addr loopback_ip;
 		server_ip = loopback_ip;
-		server_name = "127.0.0.1";
+		server_name = strdup("127.0.0.1");
 	}
 
 	if (!server_name) {
@@ -190,6 +202,7 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	}
 
 	cli = connect_to_ipc(&server_ip, server_name);
+	SAFE_FREE(server_name);
 	if(!cli) {
 		d_printf("\nUnable to connect to target server\n");
 		return NULL;
@@ -255,7 +268,6 @@ static struct functable net_func[] = {
 	const char ** argv_new;
 	poptContext pc;
 	static char *servicesf = dyn_CONFIGFILE;
-	extern pstring global_myname;
 	static int debuglevel;
 
 	struct poptOption long_options[] = {
@@ -341,7 +353,11 @@ static struct functable net_func[] = {
 	if (!opt_workgroup) {
 		opt_workgroup = lp_workgroup();
 	}
-
+	
+	if (!opt_target_workgroup) {
+		opt_target_workgroup = lp_workgroup();
+	}
+	
 	if (!*global_myname) {
 		char *p2;
 

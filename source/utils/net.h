@@ -28,9 +28,15 @@
 */
 #define NET_FLAGS_LOCALHOST_DEFAULT_INSANE 3 
 
+/* We want to find the PDC only */
+#define NET_FLAGS_PDC 4 
+
 
 extern int opt_maxusers;
 extern char *opt_comment;
 extern int opt_flags;
 
+extern char *opt_comment;
+
+extern char *opt_target_workgroup;
 extern int opt_long_list_entries;
