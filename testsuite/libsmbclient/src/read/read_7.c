@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 		strncpy(g_username,argv[2],strlen(argv[2]));
 		strncpy(g_password,argv[3],strlen(argv[3]));
 
-		fd = 10345; // Random value for File Descriptor
+		fd = 10345; /* Random value for File Descriptor */
 		smbc_init(auth_fn, 0);
 		err = smbc_read(fd, message, sizeof(message));
 

@@ -31,8 +31,8 @@ int main(int argc, char** argv)
 {
 	int err = -1;
 	int dh = 0; 
-	//int dirsize = 0;
-	//int dircount = 0;
+	/* int dirsize = 0; */
+	/* int dircount = 0; */
 
 	struct smbc_dirent *dirptr;
 

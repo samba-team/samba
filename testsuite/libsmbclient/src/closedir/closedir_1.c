@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 		smbc_rmdir(url);
 		smbc_mkdir(url,0666);
 		dh = smbc_opendir(url);
-		//printf("directory handle: %i\n",dh);
+		/* printf("directory handle: %i\n",dh); */
 		err = smbc_closedir(dh);
 
 		if ( err < 0 )

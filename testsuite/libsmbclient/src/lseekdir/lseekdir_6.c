@@ -106,13 +106,13 @@ int main(int argc, char** argv)
 
 		}
 		
-		smbc_lseekdir(dh,0);	// move to front
-		smbc_lseekdir(dh,dirsize); // move to end
+		smbc_lseekdir(dh,0);	/* move to front */
+		smbc_lseekdir(dh,dirsize); /* move to end */
 		offset = smbc_telldir(dh);
 
 		if ( offset != dirsize )
 		{
-			//printf("offset: %i dirsize: %i\n",offset,dirsize);
+			/* printf("offset: %i dirsize: %i\n",offset,dirsize); */
 			err = 1;
 		}	
 

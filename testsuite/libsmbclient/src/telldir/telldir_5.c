@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 
 		if ( offset != dirsize )
 		{
-			//printf("offset: %i dirsize: %i\n",offset,dirsize);
+			/* printf("offset: %i dirsize: %i\n",offset,dirsize); */
 			err = 1;
 		}	
 

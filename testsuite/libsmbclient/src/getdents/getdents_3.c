@@ -102,7 +102,7 @@ int main(int argc, char** argv)
 		while ( diramount > 0 )
 		{
 			direntsize = dirptr->dirlen;
-			//printf("Name: %s\n",dirptr->name);
+			/* printf("Name: %s\n",dirptr->name); */
 			if ( j == 0 )
 			{
 				if ( !(( strncmp(dirptr->name,".",1) == 0 )) ) 
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
 					memcpy(tmp_file_ptr,buff,strlen(buff)+4);
 					strncat(tmp_file_ptr,".txt",4);
 
-					if ( !(( strcmp(dirptr->name,file_url) == 0 )) ) // make sure entries match
+					if ( !((strcmp(dirptr->name,file_url) == 0 )) ) /* make sure entries match */
 					{
 						err = 1;
 						break;
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
 	
 		if ( ! err )
 		{
-			if ( (j - 2) != entry_num ) // Make sure that all entries created are counted and returned - minus . and ..
+			if ( (j - 2) != entry_num ) /* Make sure that all entries created are counted and returned - minus . and .. */
 				err = 1;
 		}	
 
