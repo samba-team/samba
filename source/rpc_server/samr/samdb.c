@@ -287,15 +287,115 @@ uint32 samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 }
 
 /*
-  pull a rid from a objectSid in a result set. 
+  pull a NTTIME in a result set. 
 */
-NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, 
-			   const char *default_value)
+NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, const char *default_value)
 {
 	const char *str = ldb_msg_find_string(msg, attr, default_value);
 	return nttime_from_string(str);
 }
 
+/*
+  pull a double (really a large integer) from a result set. 
+*/
+double samdb_result_double(struct ldb_message *msg, const char *attr, double default_value)
+{
+	return ldb_msg_find_double(msg, attr, default_value);
+}
+
+
+/*
+  construct the allow_pwd_change field from the PwdLastSet attribute and the 
+  domain password settings
+*/
+NTTIME samdb_result_allow_pwd_change(void *ctx, TALLOC_CTX *mem_ctx, 
+				     const char *domain_dn, struct ldb_message *msg, const char *attr)
+{
+	double attr_time = samdb_result_double(msg, attr, 0);
+	if (attr_time > 0) {
+		const char *minPwdAge = samdb_search_string(ctx, mem_ctx, NULL, "minPwdAge", 
+							    "dn=%s", domain_dn);
+		if (minPwdAge) {
+			/* yes, this is a -= not a += as minPwdAge is stored as the negative
+			   of the number of 100-nano-seconds */
+			attr_time -= strtod(minPwdAge, NULL);
+		}
+	}
+	return nttime_from_double_nt(attr_time);
+}
+
+/*
+  construct the force_pwd_change field from the PwdLastSet attribute and the 
+  domain password settings
+*/
+NTTIME samdb_result_force_pwd_change(void *ctx, TALLOC_CTX *mem_ctx, 
+				     const char *domain_dn, struct ldb_message *msg, const char *attr)
+{
+	double attr_time = samdb_result_double(msg, attr, 0);
+	if (attr_time > 0) {
+		const char *maxPwdAge = samdb_search_string(ctx, mem_ctx, NULL, "maxPwdAge", 
+							    "dn=%s", domain_dn);
+		if (!maxPwdAge || strcmp(maxPwdAge, "0") == 0) {
+			attr_time = 0;
+		} else {
+			attr_time -= strtod(maxPwdAge, NULL);
+		}
+	}
+	return nttime_from_double_nt(attr_time);
+}
+
+/*
+  pull a samr_LogonHours structutre from a result set. 
+*/
+struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_message *msg, const char *attr)
+{
+	struct samr_LogonHours hours;
+	const int units_per_week = 168;
+	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
+	ZERO_STRUCT(hours);
+	hours.bitmap = talloc_array_p(mem_ctx, uint8, units_per_week);
+	if (!hours.bitmap) {
+		return hours;
+	}
+	hours.units_per_week = units_per_week;
+	memset(hours.bitmap, 0xFF, units_per_week);
+	if (val) {
+		memcpy(hours.bitmap, val->data, MIN(val->length, units_per_week));
+	}
+	return hours;
+}
+
+/* mapping between ADS userAccountControl and SAMR acct_flags */
+static const struct {
+	uint32 uf, acb;
+} acct_flags_map[] = {
+	{ UF_ACCOUNTDISABLE, ACB_DISABLED },
+	{ UF_HOMEDIR_REQUIRED, ACB_HOMDIRREQ },
+	{ UF_PASSWD_NOTREQD, ACB_PWNOTREQ },
+	{ UF_TEMP_DUPLICATE_ACCOUNT, ACB_TEMPDUP },
+	{ UF_NORMAL_ACCOUNT, ACB_NORMAL },
+	{ UF_MNS_LOGON_ACCOUNT, ACB_MNS },
+	{ UF_INTERDOMAIN_TRUST_ACCOUNT, ACB_DOMTRUST },
+	{ UF_WORKSTATION_TRUST_ACCOUNT, ACB_WSTRUST },
+	{ UF_SERVER_TRUST_ACCOUNT, ACB_SVRTRUST },
+	{ UF_DONT_EXPIRE_PASSWD, ACB_PWNOEXP },
+	{ UF_LOCKOUT, ACB_AUTOLOCK }
+};
+
+/*
+  pull a set of account_flags from a result set. 
+*/
+uint32 samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
+{
+	uint_t userAccountControl = ldb_msg_find_uint(msg, attr, 0);
+	uint32 i, ret = 0;
+	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
+		if (acct_flags_map[i].uf & userAccountControl) {
+			ret |= acct_flags_map[i].acb;
+		}
+	}
+	return ret;
+}
 
 /*
   copy from a template record to a message
@@ -460,6 +560,35 @@ int samdb_msg_add_uint(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 {
 	const char *s = talloc_asprintf(mem_ctx, "%u", v);
 	return samdb_msg_add_string(ctx, mem_ctx, msg, attr_name, s);
+}
+
+/*
+  add a acct_flags element to a message
+*/
+int samdb_msg_add_acct_flags(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			     const char *attr_name, uint32 v)
+{
+	uint_t i, flags = 0;
+	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
+		if (acct_flags_map[i].acb & v) {
+			flags |= acct_flags_map[i].uf;
+		}
+	}
+	return samdb_msg_add_uint(ctx, mem_ctx, msg, attr_name, flags);
+}
+
+/*
+  add a logon_hours element to a message
+*/
+int samdb_msg_add_logon_hours(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			      const char *attr_name, struct samr_LogonHours hours)
+{
+	struct samdb_context *sam_ctx = ctx;
+	struct ldb_val val;
+	val.length = hours.units_per_week / 8;
+	val.data = hours.bitmap;
+	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
+	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, &val);
 }
 
 /*
