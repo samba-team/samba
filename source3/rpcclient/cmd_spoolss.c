@@ -395,7 +395,31 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 	rpcstr_pull(buffer, i2->description.buffer, sizeof(buffer), -1, STR_TERMINATE);
 
 	printf("\tDescription:\t[%s]\n", buffer);
-	printf("\tPort Type:\t[%d]\n", i2->port_type);
+	printf("\tPort Type:\t" );
+	if ( i2->port_type ) {
+		int comma = 0; /* hack */
+		printf( "[" );
+		if ( i2->port_type & PORT_TYPE_READ ) {
+			printf( "Read" );
+			comma = 1;
+		}
+		if ( i2->port_type & PORT_TYPE_WRITE ) {
+			printf( "%sWrite", comma ? ", " : "" );
+			comma = 1;
+		}
+		/* These two have slightly different interpretations
+		 on 95/98/ME but I'm disregarding that for now */
+		if ( i2->port_type & PORT_TYPE_REDIRECTED ) {
+			printf( "%sRedirected", comma ? ", " : "" );
+			comma = 1;
+		}
+		if ( i2->port_type & PORT_TYPE_NET_ATTACHED ) {
+			printf( "%sNet-Attached", comma ? ", " : "" );
+		}
+		printf( "]\n" );
+	} else {
+		printf( "[Unset]\n" );
+	}
 	printf("\tReserved:\t[%d]\n", i2->reserved);
 	printf("\n");
 }
