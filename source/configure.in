@@ -1557,7 +1557,7 @@ AC_ARG_WITH(smbmount,
 
 #################################################
 # check for a PAM password database
-with_pam_for_crypt=no
+
 AC_MSG_CHECKING(whether to use PAM password database)
 AC_ARG_WITH(pam,
 [  --with-pam     Include PAM password database support
@@ -1567,7 +1567,6 @@ AC_ARG_WITH(pam,
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_PAM)
     LIBS="$LIBS -lpam"
-    with_pam_for_crypt=yes
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1613,7 +1612,7 @@ AC_ARG_WITH(pam_smbpass,
 ###############################################
 # test for where we get crypt() from, but only
 # if not using PAM
-if test $with_pam_for_crypt = no; then
+if test $with_pam != yes; then
 AC_CHECK_FUNCS(crypt)
 if test x"$ac_cv_func_crypt" = x"no"; then
     AC_CHECK_LIB(crypt, crypt, [LIBS="$LIBS -lcrypt";
@@ -2222,6 +2221,12 @@ AC_MSG_CHECKING(whether to compile winbind)
 case "$host_os" in 
         *linux*|*solaris*)
                 WINBIND_TARGETS="$WINBIND_TARGETS \$(WINBIND_PROGS)"
+		case "$with_pam" in
+			yes)
+				WINBIND_TARGETS="$WINBIND_TARGETS \$(WINBIND_PAM_PROGS)"
+			;;
+			*)
+		esac
                 ;;
         *)
                 winbind_no_reason=", unsupported on $host_os"
