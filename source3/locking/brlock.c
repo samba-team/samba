@@ -86,7 +86,7 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 		return False;
 
 	if (brl_same_context(&lck1->context, &lck2->context) &&
-	    lck2->lock_type == READ_LOCK) return False;
+	    lck2->lock_type == READ_LOCK && lck1->fnum == lck2->fnum) return False;
 
 	if (lck1->start >= (lck2->start + lck2->size) ||
 	    lck2->start >= (lck1->start + lck1->size)) return False;
