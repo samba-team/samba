@@ -81,7 +81,8 @@ static BOOL rpc_read(struct cli_state *cli, prs_struct *rdata, uint32 data_to_re
 		DEBUG(5,("rpc_read: num_read = %d, read offset: %d, to read: %d\n",
 		          num_read, stream_offset, data_to_read));
 
-		if (cli_error(cli, &eclass, &ecode, NULL) && 
+		if (cli_is_dos_error(cli) &&
+                    cli_dos_error(cli, &eclass, &ecode) && 
 		    (eclass != ERRDOS && ecode != ERRmoredata)) {
 			DEBUG(0,("rpc_read: Error %d/%u in cli_read\n", 
 				 eclass, (unsigned int)ecode));
@@ -468,7 +469,8 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 		prs_give_memory(&hps, hdr_data, sizeof(hdr_data), False);
 
 		num_read = cli_read(cli, cli->nt_pipe_fnum, hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
-		if (cli_error(cli, &eclass, &ecode, NULL) &&
+		if (cli_is_dos_error(cli) &&
+                    cli_dos_error(cli, &eclass, &ecode) &&
 		    (eclass != ERRDOS && ecode != ERRmoredata)) {
 			DEBUG(0,("rpc_api_pipe: cli_read error : %d/%d\n", 
 				 eclass, ecode));
