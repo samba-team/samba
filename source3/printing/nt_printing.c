@@ -78,7 +78,7 @@ int get_ntforms(nt_forms_struct **list)
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr) continue;
 
-		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX));
+		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX)+1);
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddddddd",
 				 &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
