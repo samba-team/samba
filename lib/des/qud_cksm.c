@@ -72,11 +72,19 @@ DES_LONG des_quad_cksum(input, output, length, out_count, seed)
     DES_LONG z0,z1,t0,t1;
     int i;
     long l=0;
+#ifdef _CRAY
+    typedef struct {
+	unsigned int a:32;
+	unsigned int b:32;
+    } XXX;
+#else
+    typedef DES_LONG XXX;
+#endif
     unsigned char *cp;
-    DES_LONG *lp;
+    XXX *lp;
 
     if (out_count < 1) out_count=1;
-    lp=(DES_LONG*)output;
+    lp=(XXX*)output;
 
     z0=B0((*seed)[0])|B1((*seed)[1])|B2((*seed)[2])|B3((*seed)[3]);
     z1=B0((*seed)[4])|B1((*seed)[5])|B2((*seed)[6])|B3((*seed)[7]);
@@ -109,8 +117,14 @@ DES_LONG des_quad_cksum(input, output, length, out_count, seed)
 		{
 		    /* The MIT library assumes that the checksum is
 		     * composed of 2*out_count 32 bit ints */
-		    *lp++ = z0;
-		    *lp++ = z1;
+#ifdef _CRAY
+		    lp->a = z0;
+		    lp->b = z1;
+		    lp++;
+#else
+		    *lp++ = (XXX)z0;
+		    *lp++ = (XXX)z1;
+#endif
 		}
 	}
     return(z0);
