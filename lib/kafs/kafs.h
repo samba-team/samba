@@ -9,11 +9,7 @@
 #define AFSCALL_SETPAG 21
 
 #ifndef _VICEIOCTL
-#if defined(__STDC__)
 #define _VICEIOCTL(id)  ((unsigned int ) _IOW('V', id, struct ViceIoctl))
-#else
-#define _VICEIOCTL(id)  ((unsigned int ) _IOW(V, id, struct ViceIoctl))
-#endif
 #endif /* _VICEIOCTL */
 
 #define VIOCSETTOK _VICEIOCTL(3)
