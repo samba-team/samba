@@ -1,4 +1,16 @@
+2003-03-25  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/aes-test.c: add another arcfour test
+	
+2003-03-22  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/aes-test.c: sneek in a test for arcfour-hmac-md5
+	
 2003-03-20  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* lib/krb5/krb5_ccache.3: update .Dd
+
+	* lib/krb5/krb5.3: sort in krb5_data functions
 
 	* lib/krb5/Makefile.am (man_MANS): += krb5_data.3
 
