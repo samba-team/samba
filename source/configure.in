@@ -1469,9 +1469,9 @@ AC_ARG_WITH(ssl,
 	  LDFLAGS="=L/usr/local/ssl/lib $LDFLAGS"
 	;;
         * )
-          CFLAGS="-I${withval}/include $CFLAGS"
+          CFLAGS="-I${withval} $CFLAGS"
 	  LIBS="-lssl -lcrypto $LIBS"
-  	  LDFLAGS="-L${withval}/lib $LDFLAGS"
+#  	  LDFLAGS="-L${withval}/lib $LDFLAGS"
 	;;
 	esac
 
