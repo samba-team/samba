@@ -2079,8 +2079,6 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		report(out_hnd, "Set User Info: Failed\n");
 		DEBUG(5,("cmd_sam_query_user: failed\n"));
 	}
-
-	free_char_array(argc, argv);
 }
 
 
