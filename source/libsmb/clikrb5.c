@@ -249,6 +249,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	krb5_creds 		* credsp;
 	krb5_creds 		  creds;
 	krb5_data in_data;
+	BOOL have_creds = False;
 	
 	retval = krb5_parse_name(context, principal, &server);
 	if (retval) {
@@ -270,20 +271,43 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		goto cleanup_creds;
 	}
 
-	if ((retval = krb5_get_credentials(context, 0,
-					   ccache, &creds, &credsp))) {
-		DEBUG(1,("krb5_get_credentials failed for %s (%s)\n", 
-			 principal, error_message(retval)));
-		goto cleanup_creds;
+	while(!have_creds) {
+		if ((retval = krb5_get_credentials(context, 0, ccache, 
+						   &creds, &credsp))) {
+			DEBUG(1,("krb5_get_credentials failed for %s (%s)\n",
+				 principal, error_message(retval)));
+			goto cleanup_creds;
+		}
+
+		/* cope with ticket being in the future due to clock skew */
+		if ((unsigned)credsp->times.starttime > time(NULL)) {
+			time_t t = time(NULL);
+			int time_offset =(unsigned)credsp->times.starttime-t;
+			DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
+			krb5_set_real_time(context, t + time_offset + 1, 0);
+		}
+
+		/* cope with expired tickets */
+		if ((unsigned)credsp->times.endtime < time(NULL)) {
+			DEBUG(3,("Ticket (%s) in ccache (%s) has expired (%s - %d). Obtaining new ticket.\n", 
+				 principal, krb5_cc_default_name(context),
+				 http_timestring(
+					 (unsigned)credsp->times.endtime), 
+				 (unsigned)credsp->times.endtime));
+			if ((retval = krb5_cc_remove_cred(context, ccache, 0,
+							  credsp))) {
+				DEBUG(1,("krb5_cc_remove_cred failed for %s (%s)\n", 
+					 principal, error_message(retval)));
+			} 
+		} else {
+			have_creds = True;
+		}
 	}
 
-	/* cope with the ticket being in the future due to clock skew */
-	if ((unsigned)credsp->times.starttime > time(NULL)) {
-		time_t t = time(NULL);
-		int time_offset = (unsigned)credsp->times.starttime - t;
-		DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
-		krb5_set_real_time(context, t + time_offset + 1, 0);
-	}
+	DEBUG(10,("Ticket (%s) in ccache (%s) is valid until: (%s - %d)\n",
+		  principal, krb5_cc_default_name(context),
+		  http_timestring((unsigned)credsp->times.endtime), 
+		  (unsigned)credsp->times.endtime));
 
 	in_data.length = 0;
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
