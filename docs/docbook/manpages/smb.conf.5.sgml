@@ -3310,7 +3310,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="LARGE READWRITE">large readwrite(G)</term>
+		<term><anchor id="LARGEREADWRITE">large readwrite(G)</term>
 		<listitem><para>This parameter determines whether or not <ulink url="smbd.8.html">smbd</ulink>
 		supports the new 64k streaming read and write varient SMB requests introduced
 		with Windows 2000. Note that due to Windows 2000 client redirector bugs
