@@ -123,7 +123,7 @@ arcfour_mic_cksum(krb5_keyblock *key, unsigned usage,
     free(ptr);
     if (ret == 0) {
 	memcpy(sgn_cksum, CKSUM.checksum.data, sgn_cksum_sz);
-	krb5_free_checksum_contents(gssapi_krb5_context, &CKSUM);
+	free_Checksum(&CKSUM);
     }
     krb5_crypto_destroy(gssapi_krb5_context, crypto);
 
