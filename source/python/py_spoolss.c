@@ -192,6 +192,15 @@ Set the form given by the dictionary argument.
 
 static void py_policy_hnd_dealloc(PyObject* self)
 {
+        spoolss_policy_hnd_object *hnd;
+
+        /* Close down policy handle and free talloc context */
+
+        hnd = (spoolss_policy_hnd_object*)self;
+
+        cli_shutdown(hnd->cli);
+        talloc_destroy(hnd->mem_ctx);
+
 	PyObject_Del(self);
 }
 
@@ -337,8 +346,7 @@ void initspoolss(void)
 	module = Py_InitModule("spoolss", spoolss_methods);
 	dict = PyModule_GetDict(module);
 
-	/* Make spools_error global an exception we can raise when an error
-	   occurs. */
+	/* Exceptions we can raise */
 
 	spoolss_error = PyErr_NewException("spoolss.error", NULL, NULL);
 	PyDict_SetItemString(dict, "error", spoolss_error);
