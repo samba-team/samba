@@ -387,7 +387,7 @@ static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *f
 static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
 {
 	struct ea_list *ea_list_head = NULL;
-	size_t offset = 4;
+	size_t offset = 0;
 
 	while (offset + 2 < data_size) {
 		struct ea_list *tmp;
@@ -426,16 +426,11 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
 {
 	struct ea_list *ea_list_head = NULL;
-	size_t offset = 4;
+	size_t offset = 0;
 
 	if (data_size < 10) {
 		return NULL;
 	}
-
-        if (IVAL(pdata,0) > data_size) {
-                DEBUG(10,("read_ea_list: bad total data size (%u) > %u\n", IVAL(pdata,0), (unsigned int)data_size));
-		return NULL;
-        }
 
 	/* Each entry must be at least 6 bytes in length. */
 	while (offset + 6 <= data_size) {
@@ -1589,11 +1584,11 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	if (info_level == SMB_FIND_EA_LIST) {
 		uint32 ea_size;
-                                                                                                                                                        
+
 		if (total_data < 4) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
-                                                                                                                                                        
+
 		ea_size = IVAL(pdata,0);
 		if (ea_size != total_data) {
 			DEBUG(4,("call_trans2findfirst: Rejecting EA request with incorrect \
@@ -1610,7 +1605,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
                                                                                                                                                         
 		/* Pull out the list of names. */
-		ea_list = read_ea_name_list(ea_ctx, pdata, ea_size);
+		ea_list = read_ea_name_list(ea_ctx, pdata + 4, ea_size - 4);
 		if (!ea_list) {
 			talloc_destroy(ea_ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -1863,9 +1858,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		if ((ea_ctx = talloc_init("findnext_ea_list")) == NULL) {
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
-                                                                                                                                                     
+
 		/* Pull out the list of names. */
-		ea_list = read_ea_name_list(ea_ctx, pdata, ea_size);
+		ea_list = read_ea_name_list(ea_ctx, pdata + 4, ea_size - 4);
 		if (!ea_list) {
 			talloc_destroy(ea_ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -2772,7 +2767,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 
 		/* Pull out the list of names. */
-		ea_list = read_ea_name_list(ea_ctx, pdata, ea_size);
+		ea_list = read_ea_name_list(ea_ctx, pdata + 4, ea_size - 4);
 		if (!ea_list) {
 			talloc_destroy(ea_ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -3644,11 +3639,23 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_INFO_SET_EA:
 		{
 			struct ea_list *ea_list = NULL;
-			TALLOC_CTX *ctx = talloc_init("SMB_INFO_SET_EA");
+			TALLOC_CTX *ctx = NULL;
+
+			if (total_data < 10) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
+			if (IVAL(pdata,0) > total_data) {
+				DEBUG(10,("call_trans2setfilepathinfo: bad total data size (%u) > %u\n",
+					IVAL(pdata,0), (unsigned int)total_data));
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
+			ctx = talloc_init("SMB_INFO_SET_EA");
 			if (!ctx) {
 				return ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
-			ea_list = read_ea_list(ctx, pdata, total_data);
+			ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
 			if (!ea_list) {
 				talloc_destroy(ctx);
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
