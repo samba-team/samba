@@ -682,6 +682,7 @@ typedef struct krb5_verify_opt {
 #define KRB5_VERIFY_LREALMS		1
 #define KRB5_VERIFY_NO_ADDRESSES	2
 
+extern const krb5_cc_ops krb5_acc_ops;
 extern const krb5_cc_ops krb5_fcc_ops;
 extern const krb5_cc_ops krb5_mcc_ops;
 
