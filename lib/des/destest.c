@@ -614,28 +614,28 @@ char *argv[];
 		printf("quad_cksum error, ret %08lx should be 70d7a63a\n",cs);
 		err=1;
 		}
-	if (lqret[0] != 0x327eba8dL)
+	if (lqret[0] != 0x8dba7e32L)
 		{
 		printf("quad_cksum error, out[0] %08lx is not %08lx\n",
-			lqret[0],0x327eba8dL);
+			lqret[0],0x8dba7e32L);
 		err=1;
 		}
-	if (lqret[1] != 0x201a49ccL)
+	if (lqret[1] != 0xcc491a20L)
 		{
 		printf("quad_cksum error, out[1] %08lx is not %08lx\n",
-			lqret[1],0x201a49ccL);
+			lqret[1],0xcc491a20L);
 		err=1;
 		}
-	if (lqret[2] != 0x70d7a63aL)
+	if (lqret[2] != 0x3aa6d770L)
 		{
 		printf("quad_cksum error, out[2] %08lx is not %08lx\n",
-			lqret[2],0x70d7a63aL);
+			lqret[2],0x3aa6d770L);
 		err=1;
 		}
-	if (lqret[3] != 0x501c2c26L)
+	if (lqret[3] != 0x262c1c50L)
 		{
 		printf("quad_cksum error, out[3] %08lx is not %08lx\n",
-			lqret[3],0x501c2c26L);
+			lqret[3],0x262c1c50L);
 		err=1;
 		}
 
