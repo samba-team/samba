@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -316,8 +316,8 @@ typedef struct krb5_creds {
 } krb5_creds;
 
 typedef struct krb5_cc_ops {
-    char *prefix;
-    char* (*get_name)(krb5_context, krb5_ccache);
+    const char *prefix;
+    const char* (*get_name)(krb5_context, krb5_ccache);
     krb5_error_code (*resolve)(krb5_context, krb5_ccache *, const char *);
     krb5_error_code (*gen_new)(krb5_context, krb5_ccache *);
     krb5_error_code (*init)(krb5_context, krb5_ccache, krb5_principal);
@@ -438,7 +438,7 @@ struct krb5_keytab_data;
 typedef struct krb5_keytab_data *krb5_keytab;
 
 struct krb5_keytab_data {
-    char *prefix;
+    const char *prefix;
     krb5_error_code (*resolve)(krb5_context, const char*, krb5_keytab);
     krb5_error_code (*get_name)(krb5_context, krb5_keytab, char*, size_t);
     krb5_error_code (*close)(krb5_context, krb5_keytab);
@@ -550,7 +550,7 @@ typedef enum {
 } krb5_prompt_type;
 
 typedef struct _krb5_prompt {
-    char *prompt;
+    const char *prompt;
     int hidden;
     krb5_data *reply;
     krb5_prompt_type type;
@@ -664,7 +664,6 @@ typedef struct krb5_krbhst_info {
 
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
-
 struct sockaddr;
 
 #include <krb5-protos.h>
