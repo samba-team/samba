@@ -81,8 +81,14 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	 */
 
 	if((lp_security() == SEC_SERVER || lp_security() == SEC_DOMAIN) && !lp_passwordserver()) {
+		pstring sec_setting;
+		if(lp_security() == SEC_SERVER)
+			pstrcpy(sec_setting, "server");
+		else if(lp_security() == SEC_DOMAIN)
+			pstrcpy(sec_setting, "domain");
+
 		printf("ERROR: The setting 'security=%s' requires the 'password server' parameter be set \
-to a valid password server.\n", lp_security() );
+to a valid password server.\n", sec_setting );
 		ret = 1;
 	}
 
@@ -136,6 +142,8 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 			}
 		}
 	}
+
+	return ret;
 }   
 
 int main(int argc, char *argv[])
