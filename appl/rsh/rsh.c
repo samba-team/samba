@@ -41,6 +41,7 @@ RCSID("$Id$");
 
 enum auth_method auth_method;
 int do_encrypt;
+int do_forward;
 krb5_context context;
 krb5_keyblock *keyblock;
 des_key_schedule schedule;
@@ -51,17 +52,7 @@ des_cblock iv;
  *
  */
 
-static int no_input;
-
-static void
-usage (void)
-{
-    errx (1, "Usage: %s [-"
-#ifdef KRB4
-	  "4"
-#endif
-	  "5nx] [-p port] [-l user] host command", __progname);
-}
+static int input;		/* Read from stdin */
 
 static int
 loop (int s, int errsock)
@@ -72,7 +63,7 @@ loop (int s, int errsock)
     FD_ZERO(&real_readset);
     FD_SET(s, &real_readset);
     FD_SET(errsock, &real_readset);
-    if(!no_input) {
+    if(input) {
 	FD_SET(STDIN_FILENO, &real_readset);
     }
 
@@ -158,6 +149,77 @@ send_krb4_auth(int s, struct sockaddr_in thisaddr,
 }
 #endif /* KRB4 */
 
+static int
+krb5_forward_cred (krb5_auth_context auth_context,
+		   int s,
+		   char *hostname)
+{
+    krb5_error_code ret;
+    krb5_ccache     ccache;
+    krb5_creds      creds;
+    krb5_kdc_flags  flags;
+    krb5_data       out_data;
+    krb5_principal  principal;
+
+    ret = krb5_cc_default (context, &ccache);
+    if (ret) {
+	warnx ("could not forward creds: krb5_cc_default: %s",
+	       krb5_get_err_text (context, ret));
+	return 1;
+    }
+
+    ret = krb5_cc_get_principal (context, ccache, &principal);
+    if (ret) {
+	warnx ("could not forward creds: krb5_cc_get_principal: %s",
+	       krb5_get_err_text (context, ret));
+	return 1;
+    }
+
+    creds.client = principal;
+    
+    ret = krb5_build_principal (context,
+				&creds.server,
+				strlen(principal->realm),
+				principal->realm,
+				"krbtgt",
+				principal->realm,
+				NULL);
+
+    if (ret) {
+	warnx ("could not forward creds: krb5_build_principal: %s",
+	       krb5_get_err_text (context, ret));
+	return 1;
+    }
+
+    creds.times.endtime = 0;
+
+    flags.i = 0;
+    flags.b.forwarded = 1;
+
+    ret = krb5_get_forwarded_creds (context,
+				    auth_context,
+				    ccache,
+				    flags.i,
+				    hostname,
+				    &creds,
+				    &out_data);
+    if (ret) {
+	warnx ("could not forward creds: krb5_get_forwarded_creds: %s",
+	       krb5_get_err_text (context, ret));
+	return 1;
+    }
+
+    ret = krb5_write_message (context,
+			      (void *)&s,
+			      &out_data);
+    krb5_data_free (&out_data);
+
+    if (ret)
+	warnx ("could not forward creds: krb5_write_message: %s",
+	       krb5_get_err_text (context, ret));
+    return 0;
+}
+
 static void
 send_krb5_auth(int s, struct sockaddr_in thisaddr,
 	       struct sockaddr_in thataddr,
@@ -226,12 +288,13 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
     if (net_write (s, remote_user, len) != len)
 	err (1, "write");
 
-    {
+    if (!do_forward || krb5_forward_cred (auth_context, s, hostname)) {
 	/* Empty forwarding info */
 
-	u_int32_t zero = 0;
+	u_char zero[4] = {0, 0, 0, 0};
 	write (s, &zero, 4);
     }
+    krb5_auth_con_free (context, auth_context);
 
 }
 
@@ -386,73 +449,119 @@ doit (char *hostname, char *remote_user, int port, int argc, char **argv)
     return 1;
 }
 
+#ifdef KRB4
+static int use_v4 = 0;
+#endif
+static int use_v5 = 1;
+static char *port_str;
+static char *user;
+static int do_version;
+static int do_help;
+
+struct getargs args[] = {
+#ifdef KRB4
+    { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
+      NULL },
+#endif
+    { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
+      NULL },
+    { "input",	'n', arg_negative_flag,	&input,		"Close stdin",
+      NULL },
+    { "encrypt", 'x', arg_flag,		&do_encrypt,	"Encrypt connection",
+      NULL },
+    { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials",
+      NULL },
+    { "port",	'p', arg_string,	&port_str,	"Use this port",
+      "number-or-service" },
+    { "user",	'l', arg_string,	&user,		"Run as this user",
+      NULL },
+    { "version", 0,  arg_flag,		&do_version,	"Print version",
+      NULL },
+    { "help",	 0,  arg_flag,		&do_help,	NULL,
+      NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args) / sizeof(args[0]),
+		    "host command");
+    exit (ret);
+}
+
 /*
- * rsh host command
+ * main
  */
 
 int
 main(int argc, char **argv)
 {
-    int c;
-    char *remote_user = NULL;
     int port = 0;
+    int optind = 0;
+    int ret = 1;
 
     set_progname (argv[0]);
 
-    auth_method = AUTH_KRB5;
-    while ((c = getopt(argc, argv, "45l:nxp:")) != EOF) {
-	switch (c) {
-#ifdef KRB4
-	case '4':
-	    auth_method = AUTH_KRB4;
-	    break;
-#endif
-	case '5':
-	    auth_method = AUTH_KRB5;
-	    break;
-	case 'l':
-	    remote_user = optarg;
-	    break;
-	case 'n':
-	    no_input = 1;
-	    break;
-	case 'x':
-	    do_encrypt = 1;
-	    break;
-	case 'p': {
-	    struct servent *s = getservbyname (optarg, "tcp");
+    if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
+		&optind))
+	usage (1);
 
-	    if (s)
-		port = s->s_port;
-	    else {
-		char *ptr;
-
-		port = strtol (optarg, &ptr, 10);
-		if (port == 0 && ptr == optarg)
-		    errx (1, "Bad port `%s'", optarg);
-		port = htons(port);
-	    }
-	    break;
-	}
-	default:
-	    usage ();
-	    break;
-	}
-    }
     argc -= optind;
     argv += optind;
 
-    if (argc < 1)
-	usage ();
+    if (do_help)
+	usage (0);
 
-    if (port == 0)
-#ifdef KRB4
-	if (do_encrypt && auth_method == AUTH_KRB4)
-	    port = k_getportbyname ("ekshell", "tcp", htons(545));
+    if (do_version) {
+	printf ("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	return 0;
+    }
+	
+    if (argc < 2)
+	usage (1);
+
+    if (port_str) {
+	struct servent *s = getservbyname (port_str, "tcp");
+
+	if (s)
+	    port = s->s_port;
+	else {
+	    char *ptr;
+
+	    port = strtol (port_str, &ptr, 10);
+	    if (port == 0 && ptr == port_str)
+		errx (1, "Bad port `%s'", port_str);
+	    port = htons(port);
+	}
+    }
+
+
+    if (ret && use_v5) {
+	int tmp_port;
+
+	if (port)
+	    tmp_port = port;
 	else
-#endif /* KRB4 */
-	    port = krb5_getportbyname ("kshell", "tcp", htons(544));
+	    tmp_port = krb5_getportbyname ("kshell", "tcp", htons(544));
 
-    return doit (*argv, remote_user, port,
-		 argc - 1, argv + 1);
+	auth_method = AUTH_KRB5;
+	ret = doit (*argv, user, tmp_port, argc - 1, argv + 1);
+    }
+#ifdef KRB4
+    if (ret && use_v4) {
+	int tmp_port;
+
+	if (port)
+	    tmp_port = port;
+	else if (do_encrypt)
+	    tmp_port = k_getportbyname ("ekshell", "tcp", htons(545));
+	else
+	    tmp_port = krb5_getportbyname ("kshell", "tcp", htons(544));
+
+	auth_method = AUTH_KRB4;
+	ret = doit (*argv, user, tmp_port, argc - 1, argv + 1);
+    }
+#endif
+    return ret;
 }
