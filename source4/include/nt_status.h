@@ -57,8 +57,21 @@ typedef uint32_t WERROR;
 #define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
 #define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
 #define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
+
+#define NT_STATUS_HAVE_NO_MOMORY(x) do { \
+	if (!(x)) {\
+		return NT_STATUS_NO_MEMORY;\
+	}\
+} while (0)
+
 #define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
 #define W_ERROR_EQUAL(x,y) (W_ERROR_V(x) == W_ERROR_V(y))
+
+#define W_ERROR_HAVE_NO_MOMORY(x) do { \
+	if (!(x)) {\
+		return WERR_NOMEM;\
+	}\
+} while (0)
 
 /* this defines special NTSTATUS codes to represent DOS errors.  I
    have chosen this macro to produce status codes in the invalid
