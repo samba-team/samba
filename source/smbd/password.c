@@ -877,6 +877,68 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
 }
 
 /****************************************************************************
+ Do a specific test for an smb password being correct, given a smb_password and
+ the lanman and NT responses.
+****************************************************************************/
+
+BOOL smb_password_ok(struct smb_passwd *smb_pass,
+                     uchar lm_pass[24], uchar nt_pass[24])
+{
+  uchar challenge[8];
+
+  if (!lm_pass || !smb_pass) return(False);
+
+  if(smb_pass->acct_ctrl & ACB_DISABLED)
+  {
+    DEBUG(3,("smb_password_ok: account for user %s was disabled.\n", smb_pass->smb_name));
+    return(False);
+  }
+
+  if (!last_challenge(challenge))
+  {
+    DEBUG(1,("smb_password_ok: no challenge done - password failed\n"));
+    return False;
+  }
+
+  DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n", smb_pass->smb_name));
+
+  if ((Protocol >= PROTOCOL_NT1) && (smb_pass->smb_nt_passwd != NULL))
+  {
+    /* We have the NT MD4 hash challenge available - see if we can
+       use it (ie. does it exist in the smbpasswd file).
+     */
+    DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
+    if (smb_password_check(nt_pass, smb_pass->smb_nt_passwd, challenge))
+    {
+      DEBUG(4,("smb_password_ok: NT MD4 password check succeeded\n"));
+      return(True);
+    }
+    DEBUG(4,("smb_password_ok: NT MD4 password check failed\n"));
+  }
+
+  /* Try against the lanman password. smb_pass->smb_passwd == NULL means
+     no password, allow access. */
+
+  DEBUG(4,("Checking LM MD4 password\n"));
+
+  if((smb_pass->smb_passwd == NULL) && (smb_pass->acct_ctrl & ACB_PWNOTREQ))
+  {
+    DEBUG(4,("smb_password_ok: no password required for user %s\n", smb_pass->smb_name));
+    return True;
+  }
+
+  if((smb_pass->smb_passwd != NULL) && smb_password_check(lm_pass, smb_pass->smb_passwd, challenge))
+  {
+    DEBUG(4,("smb_password_ok: LM MD4 password check succeeded\n"));
+    return(True);
+  }
+
+  DEBUG(4,("smb_password_ok: LM MD4 password check failed\n"));
+
+  return False;
+}
+
+/****************************************************************************
 check if a username/password is OK
 ****************************************************************************/
 BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
@@ -940,6 +1002,13 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 	  return(False);
 	}
 
+      /* Quit if the account was disabled. */
+      if(smb_pass->acct_ctrl & ACB_DISABLED)
+        {
+          DEBUG(3,("password_ok: account for user %s was disabled.\n", user));
+          return(False);
+        }
+
       /* Ensure the uid's match */
       if (smb_pass->smb_userid != pass->pw_uid)
 	{
@@ -947,35 +1016,13 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 	  return(False);
 	}
 
-	if (Protocol >= PROTOCOL_NT1)
-	{
-		/* We have the NT MD4 hash challenge available - see if we can
-		   use it (ie. does it exist in the smbpasswd file).
-		*/
-		if (smb_pass->smb_nt_passwd != NULL)
-		{
-		  DEBUG(4,("Checking NT MD4 password\n"));
-		  if (smb_password_check(password, 
-					smb_pass->smb_nt_passwd, 
-					(unsigned char *)challenge))
-   		  {
-	      	update_protected_database(user,True);
-	        return(True);
-    	  }
-		  DEBUG(4,("NT MD4 password check failed\n"));
-		}
-	}
+      if(smb_password_ok( smb_pass, password, password))
+        {
+          update_protected_database(user,True);
+          return(True);
+        }
 
-	/* Try against the lanman password */
-
-      if (smb_password_check(password, 
-			     smb_pass->smb_passwd,
-			     (unsigned char *)challenge)) {
-	update_protected_database(user,True);
-	return(True);
-      }
-
-	DEBUG(3,("Error smb_password_check failed\n"));
+      DEBUG(3,("Error smb_password_check failed\n"));
     }
 
   DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));

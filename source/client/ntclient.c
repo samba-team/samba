@@ -33,13 +33,10 @@ extern pstring workgroup;
 
 #define CLIENT_TIMEOUT (30*1000)
 
-#ifdef NTDOMAIN
-
-
 /****************************************************************************
 experimental nt login.
 ****************************************************************************/
-BOOL do_nt_login(char *desthost, char *myhostname,
+BOOL client_do_nt_login(char *desthost, char *myhostname,
 				int Client, int cnum)
 {
 	DOM_CHAL clnt_chal;
@@ -351,4 +348,3 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	return True;
 }
-#endif /* NTDOMAIN */

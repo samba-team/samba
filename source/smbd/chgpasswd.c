@@ -422,6 +422,12 @@ BOOL check_lanman_password(char *user, unsigned char *pass1,
     return False;
   }
 
+  if(smbpw->acct_ctrl & ACB_DISABLED)
+  {
+    DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
+    return False;
+  }
+
   if(smbpw->smb_passwd == NULL)
   {
     DEBUG(0,("check_lanman_password: no lanman password !\n"));
@@ -459,6 +465,12 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsi
   if(smbpw == NULL)
   { 
     DEBUG(0,("change_lanman_password: get_smbpwd_entry returned NULL\n"));
+    return False;
+  }
+
+  if(smbpw->acct_ctrl & ACB_DISABLED)
+  {
+    DEBUG(0,("change_lanman_password: account %s disabled.\n", smbpw->smb_name));
     return False;
   }
 

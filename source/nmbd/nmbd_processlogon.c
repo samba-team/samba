@@ -195,7 +195,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
        * Let's ignore the SID.
        */
 
-      strcpy(ascuser, unistr(uniuser));
+      pstrcpy(ascuser, unistr(uniuser));
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
       strcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
@@ -203,9 +203,15 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       smb_pass = get_smbpwd_entry(ascuser, 0);
 
-      if(!smb_pass)
+      if(!smb_pass )
       {
         DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, not in password file\n",
+           unistr(unicomp),inet_ntoa(p->ip), ascuser));
+        return;
+      }
+      else if(smb_pass->acct_ctrl & ACB_DISABLED)
+      {
+        DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, accound disabled.\n",
            unistr(unicomp),inet_ntoa(p->ip), ascuser));
         return;
       }
