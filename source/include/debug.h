@@ -36,9 +36,9 @@
    arguemnts to DEBUG() right. We have got them wrong too often in the 
    past.
  */
-int  Debug1( char *, ... ) PRINTF_ATTRIBUTE(1,2);
-BOOL dbgtext( char *, ... ) PRINTF_ATTRIBUTE(1,2);
-BOOL dbghdr( int level, char *file, char *func, int line );
+int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
+BOOL dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
+BOOL dbghdr( int level, const char *file, const char *func, int line );
 
 extern XFILE *dbf;
 extern pstring debugf;
