@@ -794,8 +794,6 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 				const UNISTR2 *valuename,
 				uint32 size)
 {
-	int len_name = valuename != NULL ? strlen(valuename) : 0;
-
 	if (q_u == NULL) return False;
 
 	DEBUG(5,("make_spoolss_q_getprinterdata\n"));
