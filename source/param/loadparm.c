@@ -1782,16 +1782,25 @@ static int add_a_service(service * pservice, char *name)
 	/* if not, then create one */
 	if (i == iNumServices)
 	{
-		ServicePtrs =
-			(service **) Realloc(ServicePtrs,
-					     sizeof(service *) *
-					     num_to_alloc);
-		if (ServicePtrs)
+		service **tsp;
+		
+		tsp = (service **) Realloc(ServicePtrs,
+					   sizeof(service *) *
+					   num_to_alloc);
+					   
+		if (!tsp) {
+			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
+			return (-1);
+		}
+		else {
+			ServicePtrs = tsp;
 			ServicePtrs[iNumServices] =
 				(service *) malloc(sizeof(service));
-
-		if (!ServicePtrs || !ServicePtrs[iNumServices])
+		}
+		if (!ServicePtrs[iNumServices]) {
+			DEBUG(0,("add_a_service: out of memory!\n"));
 			return (-1);
+		}
 
 		iNumServices++;
 	}

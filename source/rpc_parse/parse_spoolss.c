@@ -1861,12 +1861,17 @@ static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16
 			   an extra NULL for termination */
 			if (l_chaine > 0)
 			{
+				uint16 *tc2;
+			
 				realloc_size = (l_chaine2+l_chaine+2)*sizeof(uint16);
 
 				/* Yes this should be realloc - it's freed below. JRA */
 
-				if((chaine2=(uint16 *)Realloc(chaine2, realloc_size)) == NULL)
+				if((tc2=(uint16 *)Realloc(chaine2, realloc_size)) == NULL) {
+					if (chaine2) free(chaine2);
 					return False;
+				}
+				else chaine2 = tc2;
 				memcpy(chaine2+l_chaine2, chaine.buffer, (l_chaine+1)*sizeof(uint16));
 				l_chaine2+=l_chaine+1;
 			}
@@ -4703,7 +4708,7 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 ********************************************************************/  
 static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 {
-	fstring f;
+	fstring f, *tar;
 	int n = 0;
 	char *src;
 
@@ -4715,7 +4720,9 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 	while (src < ((char *)buf5->buffer) + buf5->buf_len*2) {
 		rpcstr_pull(f, src, sizeof(f)-1, -1, 0);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
-		*ar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
+		tar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
+		if (!tar) return False;
+		else *ar = tar;
 		fstrcpy((*ar)[n], f);
 		n++;
 	}
@@ -4993,9 +5000,11 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
 	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
 
-	uniarray_2_dosarray(&uni->dependentfiles, &d->dependentfiles );
-
-	return True;
+	if (uniarray_2_dosarray(&uni->dependentfiles, &d->dependentfiles ))
+		return True;
+	
+	free(*asc);
+	return False;
 }
 
 /*******************************************************************
@@ -5038,10 +5047,16 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
 	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
 
-	uniarray_2_dosarray(&uni->dependentfiles, &d->dependentfiles );
-	uniarray_2_dosarray(&uni->previousnames, &d->previousnames );
-
+	if (!uniarray_2_dosarray(&uni->dependentfiles, &d->dependentfiles ))
+		goto error;
+	if (!uniarray_2_dosarray(&uni->previousnames, &d->previousnames ))
+		goto error;
+	
 	return True;
+	
+error:
+	free(*asc);
+	return False;
 }
 
 BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,

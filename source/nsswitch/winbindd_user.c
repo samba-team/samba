@@ -594,7 +594,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
         SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
         uint32 num_entries = 0, total_entries = 0;
-	char *extra_data = NULL;
+	char *ted, *extra_data = NULL;
 	int extra_data_len = 0;
 
 	DEBUG(3, ("[%5d]: list users\n", state->pid));
@@ -635,12 +635,15 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 			total_entries += num_entries;
 			
-			extra_data = Realloc(extra_data, sizeof(fstring) * 
+			ted = Realloc(extra_data, sizeof(fstring) * 
 					     total_entries);
 			
-			if (!extra_data) {
+			if (!ted) {
+				DEBUG(0,("winbindd_list_users: failed to enlarge buffer!\n"));
+				if (extra_data) free(extra_data);
 				return WINBINDD_ERROR;
 			}
+			else extra_data = ted;
 			
 			/* Pack user list into extra data fields */
 			

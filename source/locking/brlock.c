@@ -218,6 +218,7 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct lock, *locks;
+	char *tp;
 
 	kbuf = locking_key(dev,ino);
 
@@ -246,8 +247,9 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	}
 
 	/* no conflicts - add it to the list of locks */
-	dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(*locks));
-	if (!dbuf.dptr) goto fail;
+	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(*locks));
+	if (!tp) goto fail;
+	else dbuf.dptr = tp;
 	memcpy(dbuf.dptr + dbuf.dsize, &lock, sizeof(lock));
 	dbuf.dsize += sizeof(lock);
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);

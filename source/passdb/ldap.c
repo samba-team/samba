@@ -378,7 +378,7 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 ************************************************************************/
 static void make_a_mod(LDAPMod ***modlist,int modop, char *attribute, char *value)
 {
-	LDAPMod **mods;
+	LDAPMod **mods, **tmods;
 	int i;
 	int j;
 	
@@ -386,12 +386,13 @@ static void make_a_mod(LDAPMod ***modlist,int modop, char *attribute, char *valu
 	
 	if (mods == NULL)
 	{
-		mods = (LDAPMod **)malloc( sizeof(LDAPMod *) );
-		if (mods == NULL)
+		tmods = (LDAPMod **)malloc( sizeof(LDAPMod *) );
+		if (tmods == NULL)
 		{
 			DEBUG(0,("make_a_mod: out of memory!\n"));
 			return;
 		}
+		mods = tmods;
 		mods[0] = NULL;
 	}
 	
@@ -406,12 +407,13 @@ static void make_a_mod(LDAPMod ***modlist,int modop, char *attribute, char *valu
 	
 	if (mods[i] == NULL)
 	{
-		mods = (LDAPMod **)Realloc( mods,  (i+2) * sizeof( LDAPMod * ) );	
-		if (mods == NULL)
+		tmods = (LDAPMod **)Realloc( mods,  (i+2) * sizeof( LDAPMod * ) );	
+		if (tmods == NULL)
 		{
 			DEBUG(0,("make_a_mod: out of memory!\n"));
 			return;
 		}
+		mods = tmods;
 		mods[i] = (LDAPMod *)malloc( sizeof( LDAPMod ) );
 		if (mods[i] == NULL)
 		{
@@ -426,18 +428,21 @@ static void make_a_mod(LDAPMod ***modlist,int modop, char *attribute, char *valu
 
 	if (value ! = NULL )
 	{
+		char **tmval;
+		
 		j = 0;
 		if ( mods[ i ]->mod_values ! = NULL )
 		{
 			for ( ; mods[ i ]->mod_values[ j ] ! = NULL; j++ );
 		}
-		mods[ i ]->mod_values = (char **)Realloc(mods[ i ]->mod_values,
+		tmval = (char **)Realloc(mods[ i ]->mod_values,
 		                                          (j+2) * sizeof( char * ));
-		if ( mods[ i ]->mod_values == NULL)
+		if ( tmval == NULL)
 		{
 			DEBUG(0, "make_a_mod: Memory allocation failure!\n");
 			return;
 		}
+		mods[ i ]->mod_values = tmval;
 		mods[ i ]->mod_values[ j ] = strdup(value);	
 		mods[ i ]->mod_values[ j + 1 ] = NULL;		
 	}

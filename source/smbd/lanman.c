@@ -1123,10 +1123,16 @@ static int get_server_info(uint32 servertype,
     if (!*ptr) continue;
     
     if (count == alloced) {
+      struct srv_info_struct *ts;
+      
       alloced += 10;
-      (*servers) = (struct srv_info_struct *)
+      ts = (struct srv_info_struct *)
 	Realloc(*servers,sizeof(**servers)*alloced);
-      if (!(*servers)) return(0);
+      if (!ts) {
+      	DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
+	return(0);
+      }
+      else *servers = ts;
       memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
     }
     s = &(*servers)[count];
