@@ -346,6 +346,11 @@ AC_BROKEN([					\
 AC_FOREACH([rk_func], [strndup strsep strtok_r],
 	[AC_NEED_PROTO([#include <string.h>], rk_func)])
 
+AC_FOREACH([rk_func], [strsvis strunvis strvis strvisx svis unvis vis],
+[AC_NEED_PROTO([#ifdef HAVE_VIS_H
+#include <vis.h>
+#endif], rk_func)])
+
 AC_BROKEN2(inet_aton,
 [#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
