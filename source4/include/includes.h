@@ -649,11 +649,12 @@ extern int errno;
 #include "md5.h"
 #include "hmacmd5.h"
 
-#include "libcli/auth/spnego.h"
 #include "libcli/auth/ntlmssp.h"
 #include "libcli/auth/credentials.h"
 #include "libcli/auth/schannel.h"
 #include "libcli/auth/kerberos.h"
+#include "libcli/auth/gensec.h"
+#include "libcli/auth/spnego.h"
 
 #include "auth/auth.h"
 

@@ -2,8 +2,9 @@
    Unix SMB/CIFS implementation.
 
    RFC2478 Compliant SPNEGO implementation
-
-   Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2003
+   
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com>      2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,318 +27,295 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-static BOOL read_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token)
+NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
 {
-	ZERO_STRUCTP(token);
+	struct spnego_state *spnego_state;
+	TALLOC_CTX *mem_ctx = talloc_init("gensec_spengo_client_start");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	spnego_state = talloc_p(mem_ctx, struct spnego_state);
+		
+	if (!spnego_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	asn1_start_tag(asn1, ASN1_CONTEXT(0));
-	asn1_start_tag(asn1, ASN1_SEQUENCE(0));
+	spnego_state->role = SPNEGO_CLIENT;
+	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
+	spnego_state->state_position = SPNEGO_CLIENT_GET_MECHS;
+	spnego_state->result = SPNEGO_ACCEPT_INCOMPLETE;
+	spnego_state->mem_ctx = mem_ctx;
 
-	while (!asn1->has_error && 0 < asn1_tag_remaining(asn1)) {
+	gensec_security->private_data = spnego_state;
+	return NT_STATUS_OK;
+}
+
+/*
+  wrappers for the spnego_*() functions
+*/
+NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_security, 
+				      TALLOC_CTX *mem_ctx, 
+				      uint8_t *data, size_t length, DATA_BLOB *sig)
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	return spnego_state->sub_sec_security.ops->unseal(&spnego_state->sub_sec_security, 
+							  mem_ctx, data, length, sig); 
+}
+
+NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_security, 
+				     TALLOC_CTX *mem_ctx, 
+				     const uint8_t *data, size_t length, 
+				     const DATA_BLOB *sig)
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+
+	return NT_STATUS_NOT_IMPLEMENTED;
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	return spnego_state->sub_sec_security.ops->check_sig(&spnego_state->sub_sec_security, 
+							     mem_ctx, data, length, sig);
+}
+
+NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_security, 
+				    TALLOC_CTX *mem_ctx, 
+				    uint8_t *data, size_t length, 
+				    DATA_BLOB *sig)
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+
+	return NT_STATUS_NOT_IMPLEMENTED;
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	return spnego_state->sub_sec_security.ops->seal(&spnego_state->sub_sec_security, 
+							mem_ctx, data, length, sig);
+}
+
+NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_security, 
+				    TALLOC_CTX *mem_ctx, 
+				    const uint8_t *data, size_t length, 
+				    DATA_BLOB *sig)
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	return spnego_state->sub_sec_security.ops->sign(&spnego_state->sub_sec_security, 
+							      mem_ctx, data, length, sig);
+}
+
+NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security, 
+				    DATA_BLOB *session_key)
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	return spnego_state->sub_sec_security.ops->session_key(&spnego_state->sub_sec_security, 
+							      session_key);
+}
+
+NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
+			       const DATA_BLOB in, DATA_BLOB *out) 
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+	DATA_BLOB null_data_blob = data_blob(NULL, 0);
+	DATA_BLOB unwrapped_out;
+	struct spnego_data spnego_out;
+	struct spnego_data spnego;
+	const struct gensec_security_ops *op;
+
+	ssize_t len;
+
+	if (!out_mem_ctx) {
+		out_mem_ctx = spnego_state->mem_ctx;
+	}
+
+	if (spnego_state->state_position == SPNEGO_FALLBACK) {
+		return spnego_state->sub_sec_security.ops->update(&spnego_state->sub_sec_security,
+								  out_mem_ctx, in, out);
+	}
+
+	len = read_spnego_data(in, &spnego);
+
+	if (len == -1 && spnego_state->state_position == SPNEGO_SERVER_START) {
 		int i;
-
-		switch (asn1->data[asn1->ofs]) {
-		/* Read mechTypes */
-		case ASN1_CONTEXT(0):
-			asn1_start_tag(asn1, ASN1_CONTEXT(0));
-			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
-
-			token->mechTypes = malloc(sizeof(*token->mechTypes));
-			for (i = 0; !asn1->has_error &&
-				     0 < asn1_tag_remaining(asn1); i++) {
-				token->mechTypes = 
-					realloc(token->mechTypes, (i + 2) *
-						sizeof(*token->mechTypes));
-				asn1_read_OID(asn1, token->mechTypes + i);
+		const struct gensec_security_ops **all_ops = gensec_security_all();
+		for (i=0; all_ops[i]; i++) {
+			NTSTATUS nt_status;
+			op = all_ops[i];
+			if (!op->oid) {
+				continue;
 			}
-			token->mechTypes[i] = NULL;
+			nt_status = op->server_start(&spnego_state->sub_sec_security);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				continue;
+			}
+			nt_status = op->update(&spnego_state->sub_sec_security,
+					       out_mem_ctx, in, out);
+			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				spnego_state->state_position = SPNEGO_FALLBACK;
+				return nt_status;
+			}
+			op->end(&spnego_state->sub_sec_security);
+		}
+		DEBUG(1, ("Failed to parse SPENGO request\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	} else {
+
+		if (spnego.type != spnego_state->expected_packet) {
+			free_spnego_data(&spnego);
+			DEBUG(1, ("Invalid SPENGO request: %d, expected %d\n", spnego.type, 
+				  spnego_state->expected_packet));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (spnego_state->state_position == SPNEGO_CLIENT_GET_MECHS) {
+
+			/* The server offers a list of mechanisms */
 			
-			asn1_end_tag(asn1);
-			asn1_end_tag(asn1);
-			break;
-		/* Read reqFlags */
-		case ASN1_CONTEXT(1):
-			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_Integer(asn1, &token->reqFlags);
-			token->reqFlags |= SPNEGO_REQ_FLAG;
-			asn1_end_tag(asn1);
-			break;
-                /* Read mechToken */
-		case ASN1_CONTEXT(2):
-			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, &token->mechToken);
-			asn1_end_tag(asn1);
-			break;
-		/* Read mecListMIC */
-		case ASN1_CONTEXT(3):
-			asn1_start_tag(asn1, ASN1_CONTEXT(3));
-			if (asn1->data[asn1->ofs] == ASN1_OCTET_STRING) {
-				asn1_read_OctetString(asn1,
-						      &token->mechListMIC);
-			} else {
-				/* RFC 2478 says we have an Octet String here,
-				   but W2k sends something different... */
-				char *mechListMIC;
-				asn1_push_tag(asn1, ASN1_SEQUENCE(0));
-				asn1_push_tag(asn1, ASN1_CONTEXT(0));
-				asn1_read_GeneralString(asn1, &mechListMIC);
-				asn1_pop_tag(asn1);
-				asn1_pop_tag(asn1);
-
-				token->mechListMIC =
-					data_blob(mechListMIC, strlen(mechListMIC));
-				SAFE_FREE(mechListMIC);
-			}
-			asn1_end_tag(asn1);
-			break;
-		default:
-			asn1->has_error = True;
-			break;
-		}
-	}
-
-	asn1_end_tag(asn1);
-	asn1_end_tag(asn1);
-
-	return !asn1->has_error;
-}
-
-static BOOL write_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token)
-{
-	asn1_push_tag(asn1, ASN1_CONTEXT(0));
-	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
-
-	/* Write mechTypes */
-	if (token->mechTypes && *token->mechTypes) {
-		int i;
-
-		asn1_push_tag(asn1, ASN1_CONTEXT(0));
-		asn1_push_tag(asn1, ASN1_SEQUENCE(0));
-		for (i = 0; token->mechTypes[i]; i++) {
-			asn1_write_OID(asn1, token->mechTypes[i]);
-		}
-		asn1_pop_tag(asn1);
-		asn1_pop_tag(asn1);
-	}
-
-	/* write reqFlags */
-	if (token->reqFlags & SPNEGO_REQ_FLAG) {
-		int flags = token->reqFlags & ~SPNEGO_REQ_FLAG;
-
-		asn1_push_tag(asn1, ASN1_CONTEXT(1));
-		asn1_write_Integer(asn1, flags);
-		asn1_pop_tag(asn1);
-	}
-
-	/* write mechToken */
-	if (token->mechToken.data) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(2));
-		asn1_write_OctetString(asn1, token->mechToken.data,
-				       token->mechToken.length);
-		asn1_pop_tag(asn1);
-	}
-
-	/* write mechListMIC */
-	if (token->mechListMIC.data) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(3));
-#if 0
-		/* This is what RFC 2478 says ... */
-		asn1_write_OctetString(asn1, token->mechListMIC.data,
-				       token->mechListMIC.length);
-#else
-		/* ... but unfortunately this is what Windows
-		   sends/expects */
-		asn1_push_tag(asn1, ASN1_SEQUENCE(0));
-		asn1_push_tag(asn1, ASN1_CONTEXT(0));
-		asn1_push_tag(asn1, ASN1_GENERAL_STRING);
-		asn1_write(asn1, token->mechListMIC.data,
-			   token->mechListMIC.length);
-		asn1_pop_tag(asn1);
-		asn1_pop_tag(asn1);
-		asn1_pop_tag(asn1);
-#endif		
-		asn1_pop_tag(asn1);
-	}
-
-	asn1_pop_tag(asn1);
-	asn1_pop_tag(asn1);
-
-	return !asn1->has_error;
-}
-
-static BOOL read_negTokenTarg(ASN1_DATA *asn1, struct spnego_negTokenTarg *token)
-{
-	ZERO_STRUCTP(token);
-
-	asn1_start_tag(asn1, ASN1_CONTEXT(1));
-	asn1_start_tag(asn1, ASN1_SEQUENCE(0));
-
-	while (!asn1->has_error && 0 < asn1_tag_remaining(asn1)) {
-		switch (asn1->data[asn1->ofs]) {
-		case ASN1_CONTEXT(0):
-			asn1_start_tag(asn1, ASN1_CONTEXT(0));
-			asn1_start_tag(asn1, ASN1_ENUMERATED);
-			asn1_read_uint8(asn1, &token->negResult);
-			asn1_end_tag(asn1);
-			asn1_end_tag(asn1);
-			break;
-		case ASN1_CONTEXT(1):
-			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_OID(asn1, &token->supportedMech);
-			asn1_end_tag(asn1);
-			break;
-		case ASN1_CONTEXT(2):
-			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, &token->responseToken);
-			asn1_end_tag(asn1);
-			break;
-		case ASN1_CONTEXT(3):
-			asn1_start_tag(asn1, ASN1_CONTEXT(3));
-			asn1_read_OctetString(asn1, &token->mechListMIC);
-			asn1_end_tag(asn1);
-			break;
-		default:
-			asn1->has_error = True;
-			break;
-		}
-	}
-
-	asn1_end_tag(asn1);
-	asn1_end_tag(asn1);
-
-	return !asn1->has_error;
-}
-
-static BOOL write_negTokenTarg(ASN1_DATA *asn1, struct spnego_negTokenTarg *token)
-{
-	asn1_push_tag(asn1, ASN1_CONTEXT(1));
-	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
-
-	asn1_push_tag(asn1, ASN1_CONTEXT(0));
-	asn1_write_enumerated(asn1, token->negResult);
-	asn1_pop_tag(asn1);
-
-	if (token->supportedMech) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(1));
-		asn1_write_OID(asn1, token->supportedMech);
-		asn1_pop_tag(asn1);
-	}
-
-	if (token->responseToken.data) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(2));
-		asn1_write_OctetString(asn1, token->responseToken.data,
-				       token->responseToken.length);
-		asn1_pop_tag(asn1);
-	}
-
-	if (token->mechListMIC.data) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(3));
-		asn1_write_OctetString(asn1, token->mechListMIC.data,
-				      token->mechListMIC.length);
-		asn1_pop_tag(asn1);
-	}
-
-	asn1_pop_tag(asn1);
-	asn1_pop_tag(asn1);
-
-	return !asn1->has_error;
-}
-
-ssize_t read_spnego_data(DATA_BLOB data, struct spnego_data *token)
-{
-	ASN1_DATA asn1;
-	ssize_t ret = -1;
-
-	ZERO_STRUCTP(token);
-	ZERO_STRUCT(asn1);
-	asn1_load(&asn1, data);
-
-	switch (asn1.data[asn1.ofs]) {
-	case ASN1_APPLICATION(0):
-		asn1_start_tag(&asn1, ASN1_APPLICATION(0));
-		asn1_check_OID(&asn1, OID_SPNEGO);
-		if (read_negTokenInit(&asn1, &token->negTokenInit)) {
-			token->type = SPNEGO_NEG_TOKEN_INIT;
-		}
-		asn1_end_tag(&asn1);
-		break;
-	case ASN1_CONTEXT(1):
-		if (read_negTokenTarg(&asn1, &token->negTokenTarg)) {
-			token->type = SPNEGO_NEG_TOKEN_TARG;
-		}
-		break;
-	default:
-		break;
-	}
-
-	if (!asn1.has_error) ret = asn1.ofs;
-	asn1_free(&asn1);
-
-	return ret;
-}
-
-ssize_t write_spnego_data(DATA_BLOB *blob, struct spnego_data *spnego)
-{
-	ASN1_DATA asn1;
-	ssize_t ret = -1;
-
-	ZERO_STRUCT(asn1);
-
-	switch (spnego->type) {
-	case SPNEGO_NEG_TOKEN_INIT:
-		asn1_push_tag(&asn1, ASN1_APPLICATION(0));
-		asn1_write_OID(&asn1, OID_SPNEGO);
-		write_negTokenInit(&asn1, &spnego->negTokenInit);
-		asn1_pop_tag(&asn1);
-		break;
-	case SPNEGO_NEG_TOKEN_TARG:
-		write_negTokenTarg(&asn1, &spnego->negTokenTarg);
-		break;
-	default:
-		asn1.has_error = True;
-		break;
-	}
-
-	if (!asn1.has_error) {
-		*blob = data_blob(asn1.data, asn1.length);
-		ret = asn1.ofs;
-	}
-	asn1_free(&asn1);
-
-	return ret;
-}
-
-BOOL free_spnego_data(struct spnego_data *spnego)
-{
-	BOOL ret = True;
-
-	if (!spnego) goto out;
-
-	switch(spnego->type) {
-	case SPNEGO_NEG_TOKEN_INIT:
-		if (spnego->negTokenInit.mechTypes) {
+			char **mechType = spnego.negTokenInit.mechTypes;
+			char *my_mechs[] = {NULL, NULL};
 			int i;
-			for (i = 0; spnego->negTokenInit.mechTypes[i]; i++) {
-				free(spnego->negTokenInit.mechTypes[i]);
+			NTSTATUS nt_status;
+			
+			for (i=0; mechType[i]; i++) {
+				op = gensec_security_by_oid(mechType[i]);
+				if (!op) {
+					continue;
+				}
+				spnego_state->sub_sec_security.ops = op;
+				spnego_state->sub_sec_security.user = gensec_security->user;
+
+				nt_status = op->client_start(&spnego_state->sub_sec_security);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					op->end(&spnego_state->sub_sec_security);
+					continue;
+				}
+				if (i == 0) {
+					nt_status = op->update(&spnego_state->sub_sec_security,
+							       out_mem_ctx, 
+							       spnego.negTokenInit.mechToken, 
+							       &unwrapped_out);
+				} else {
+					/* only get the helping start blob for the first OID */
+					nt_status = op->update(&spnego_state->sub_sec_security,
+							       out_mem_ctx, 
+							       null_data_blob, 
+							       &unwrapped_out);
+				}
+				if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+					DEBUG(1, ("SPENGO(%s) NEG_TOKEN_INIT failed: %s\n", op->name, nt_errstr(nt_status)));
+					op->end(&spnego_state->sub_sec_security);
+				} else {
+					break;
+				}
 			}
-			free(spnego->negTokenInit.mechTypes);
+			if (!mechType[i]) {
+				DEBUG(1, ("SPENGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
+			}
+
+			free_spnego_data(&spnego);
+			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				return nt_status;
+			}
+			
+			/* compose reply */
+			my_mechs[0] = op->oid;
+
+			spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
+			spnego_out.negTokenInit.mechTypes = my_mechs;
+			spnego_out.negTokenInit.reqFlags = 0;
+			spnego_out.negTokenInit.mechListMIC = null_data_blob;
+			spnego_out.negTokenInit.mechToken = unwrapped_out;
+			
+			if (write_spnego_data(out_mem_ctx, out, &spnego_out) == -1) {
+				DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_INIT\n"));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			/* set next state */
+			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
+			spnego_state->state_position = SPNEGO_TARG;
+
+			return nt_status;
+		} else if (spnego_state->state_position == SPNEGO_TARG) {
+			NTSTATUS nt_status;
+			if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+
+			op = spnego_state->sub_sec_security.ops;
+			if (spnego.negTokenTarg.responseToken.length) {
+				nt_status = op->update(&spnego_state->sub_sec_security,
+						       out_mem_ctx, 
+						       spnego.negTokenTarg.responseToken, 
+						       &unwrapped_out);
+			} else {
+				unwrapped_out = data_blob(NULL, 0);
+				nt_status = NT_STATUS_OK;
+			}
+			
+			if (NT_STATUS_IS_OK(nt_status) 
+			    && (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED)) {
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+			}
+
+			spnego_state->result = spnego.negTokenTarg.negResult;
+			free_spnego_data(&spnego);
+			
+			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				/* compose reply */
+				spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
+				spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+				spnego_out.negTokenTarg.supportedMech = op->oid;
+				spnego_out.negTokenTarg.responseToken = unwrapped_out;
+				spnego_out.negTokenTarg.mechListMIC = null_data_blob;
+				
+			if (write_spnego_data(out_mem_ctx, out, &spnego_out) == -1) {
+				DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_TARG\n"));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+				spnego_state->state_position = SPNEGO_TARG;
+			} else if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->state_position = SPNEGO_DONE;
+			} else {
+				DEBUG(1, ("SPENGO(%s) login failed: %s\n", op->name, nt_errstr(nt_status)));
+				return nt_status;
+			}
+			
+			return nt_status;
+		} else {
+			free_spnego_data(&spnego);
+			DEBUG(1, ("Invalid SPENGO request: %d\n", spnego.type));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
-		data_blob_free(&spnego->negTokenInit.mechToken);
-		data_blob_free(&spnego->negTokenInit.mechListMIC);
-		break;
-	case SPNEGO_NEG_TOKEN_TARG:
-		if (spnego->negTokenTarg.supportedMech) {
-			free(spnego->negTokenTarg.supportedMech);
-		}
-		data_blob_free(&spnego->negTokenTarg.responseToken);
-		data_blob_free(&spnego->negTokenTarg.mechListMIC);
-		break;
-	default:
-		ret = False;
-		break;
 	}
-	ZERO_STRUCTP(spnego);
-out:
-	return ret;
 }
 
+void gensec_spnego_end(struct gensec_security *gensec_security)
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+	
+	spnego_state->sub_sec_security.ops->end(&spnego_state->sub_sec_security);
+
+	talloc_destroy(spnego_state->mem_ctx);
+
+	gensec_security->private_data = NULL;
+}
