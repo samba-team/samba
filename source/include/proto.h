@@ -1471,7 +1471,7 @@ void expire_workgroups_and_servers(time_t t);
 
 /*The following definitions come from  nsswitch/wb_client.c  */
 
-BOOL winbind_lookup_name(char *name, DOM_SID *sid, enum SID_NAME_USE *name_type);
+BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name_type);
 BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 BOOL winbind_sid_to_uid(uid_t *puid, DOM_SID *sid);
 BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid);
@@ -1846,7 +1846,7 @@ uint32 pdb_uid_to_user_rid(uid_t uid);
 uint32 pdb_gid_to_group_rid(gid_t gid);
 BOOL pdb_rid_is_user(uint32 rid);
 BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use);
-BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use);
+BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use);
 DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid);
 BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type);
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid);
@@ -4146,7 +4146,7 @@ BOOL become_authenticated_pipe_user(pipes_struct *p);
 BOOL unbecome_authenticated_pipe_user(pipes_struct *p);
 void become_root(void);
 void unbecome_root(void);
-BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
+BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
 BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
 DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid);
