@@ -1,5 +1,7 @@
 Wed Jul  9 06:58:00 1997  Assar Westerlund  <assar@sics.se>
 
+	* appl/rsh/rsh.c: use the correct user for the checksum
+
 	* lib/krb5/{rd,mk}_{*}.c: more checking for addresses and stuff
 	according to pseudocode from 1510
 
