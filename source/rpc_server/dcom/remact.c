@@ -25,7 +25,6 @@
 #include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_remact.h"
 #include "librpc/gen_ndr/ndr_oxidresolver.h"
-#include "rpc_server/dcom/dcom.h"
 
 struct dcom_interface_pointer *dcom_interface_pointer_by_ipid(struct GUID *ipid)
 {
@@ -38,9 +37,9 @@ struct dcom_interface_pointer *dcom_interface_pointer_by_ipid(struct GUID *ipid)
 */
 static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct RemoteActivation *r)
 {
-	struct IClassFactory_CreateInstance *cr;
-	struct IUnknown_Release *ur;
-	struct dcom_interface *o;
+	struct CreateInstance *cr;
+	struct Release *ur;
+	struct dcom_interface_p *o;
 	int i;
 
 	/* FIXME: CoGetClassObject() */
@@ -61,9 +60,9 @@ static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r->out.hr = cr->out.result;
 
 	for (i = 0; i < r->in.Interfaces; i++) {
-		struct IUnknown_QueryInterface rr;
+		struct QueryInterface rr;
 		rr.in.iid = &r->in.pIIDs[i];
-		dcerpc_IUnknown_QueryInterface(o, mem_ctx, &rr);
+		dcom_IUnknown_QueryInterface(o, mem_ctx, &rr);
 		ZERO_STRUCT(r->out.ifaces[i]);	
 		r->out.results[i] = rr.out.result;
 	}

@@ -9,6 +9,7 @@ package IdlParser;
 
 use strict;
 use client;
+use proxy;
 use needed;
 
 # the list of needed functions
@@ -1594,10 +1595,14 @@ sub Parse($$)
 		if ($x->{TYPE} eq "INTERFACE") { 
 			needed::BuildNeeded($x);
 			ParseInterface($x);
+
+			if (util::has_property($x, "object")) {
+				pidl IdlProxy::ParseInterface($x);
+			} else {
+				pidl IdlClient::ParseInterface($x);
+			}
 		}
 	}
-
-	pidl IdlClient::Parse($idl);
 
 	close(OUT);
 }

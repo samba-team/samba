@@ -12,16 +12,13 @@
 	version(0.0)
 ] interface dcom_Unknown
 {
-	void dcomu_UseProtSeq();
-	void dcomu_GetCustomProtseqInfo();
-	void dcomu_UpdateResolverBindings();
+	void UseProtSeq();
+	void GetCustomProtseqInfo();
+	void UpdateResolverBindings();
 }
 
 interface ObjectRpcBaseTypes
 {
-	/*//////////////////////////////////////////////////////////////// */
-	/* ORPC Call Packet Format */
-	/*//////////////////////////////////////////////////////////////// */
 	/* COM_MINOR_VERSION = 1 (NT4.0, SP1, SP2, DCOM95). */
 	/* - Initial Release */
 	/* - Must be used when talking to downlevel machines, including */
@@ -71,7 +68,7 @@ interface ObjectRpcBaseTypes
 	{ 	
 		GUID id; /* Extension identifier. */
 		uint32 size; /* Extension size. */
-		/*FIXME[size_is((size+7)&~7)] uint8 data[]; // Extension data. */
+		/*FIXME[size_is((size+7)&~7)] uint8 data[]; Extension data. */
 		[size_is(size)] uint8 data[];
 	} 	ORPC_EXTENT;
 
@@ -81,7 +78,7 @@ interface ObjectRpcBaseTypes
 	{
 		uint32 size; /* Num extents. */
 		uint32 reserved; /* Must be zero. */
-		/*FIXME[size_is((size+1)&~1,), unique] ORPC_EXTENT **extent; // extents */
+		/*FIXME[size_is((size+1)&~1,), unique] ORPC_EXTENT **extent; extents */
 		[size_is(size),unique] ORPC_EXTENT extent[];
 	} ORPC_EXTENT_ARRAY;
 
@@ -227,16 +224,16 @@ interface IUnknown
 	/* Function 0x00 */
 	/* Returns the interface with the specified IID 
 	   if implemented by this object */
-	[local] WERROR IUnknown_QueryInterface([in] GUID *iid,
+	[local] WERROR QueryInterface([in] GUID *iid,
 	   [out,iid_is(riid)] MInterfacePointer *data);
 
 	/*****************/
 	/* Function 0x01 */
-	[local] uint32 IUnknown_AddRef();
+	[local] uint32 AddRef();
 
 	/*****************/
 	/* Function 0x02 */
-	[local] uint32 IUnknown_Release();
+	[local] uint32 Release();
 }
 
 
@@ -246,7 +243,7 @@ interface IUnknown
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
-	[local] WERROR IClassFactory_CreateInstance([in] MInterfacePointer *pUnknown, 
+	[local] WERROR CreateInstance([in] MInterfacePointer *pUnknown, 
 			       [in] GUID *iid,
 			       [out, iid_is(riid)] MInterfacePointer *ppv);
 
@@ -254,12 +251,10 @@ interface IUnknown
 
 	/* Set lock to TRUE when you want to do a lock
 	and set it to FALSE when you want to unlock */
-	[local] WERROR IClassFactory_LockServer([in] uint8 lock);
+	[local] WERROR LockServer([in] uint8 lock);
 
 	[call_as(LockServer)] WERROR RemoteLockServer();
 }
-
-/*//////////////////////////////////////////////////////////////// */
 
 /* The remote version of IUnknown. This interface exists on every */
 /* OXID (whether an OXID represents either a thread or a process is */
@@ -286,7 +281,7 @@ interface IRemUnknown : IUnknown
 		[in] GUID *ripid, /* interface to QI on */
 		[in] uint32 cRefs, /* count of AddRefs requested */
 		[in] uint16 cIids, /* count of IIDs that follow */
-		[in, size_is(cIids)] GUID* iids, /*, // IIDs to QI for */
+		[in, size_is(cIids)] GUID* iids, /* IIDs to QI for */
 		[out, size_is(cIids)] MInterfacePointer *ip
 		);
 
@@ -463,14 +458,14 @@ uuid(DB7C21F8-FE33-4C11-AEA5-CEB56F076FBB),
 ]
 interface IStream : IUnknown
 {
-	WERROR IStream_Read(
+	WERROR Read(
 				[out, size_is(num_requested), length_is(num_read)] uint8 pv[],
 				[in] uint32 num_requested, 
 				[in] uint32 *num_readx,
 				[out] uint32 num_read
 				);
 
-	WERROR IStream_Write(
+	WERROR Write(
 				[in,size_is(num_requested)] uint8 *data,
 				 [in] uint32 num_requested,
 				 [out] uint32 num_written);
