@@ -122,6 +122,8 @@ The return value of talloc_reference() is always the original pointer
 which case it will return NULL (each additional reference consumes
 around 48 bytes of memory on intel x86 platforms).
 
+If "ptr" is NULL, then the function is a no-op, and simply returns NULL.
+
 After creating a reference you can free it in one of the following
 ways:
 
@@ -144,7 +146,8 @@ context passed must either be a context used in talloc_reference()
 with this pointer, or must be a direct parent of ptr. 
 
 Note that if the parent has already been removed using talloc_free()
-then this function will fail and will return -1.
+then this function will fail and will return -1.  Likewise, if "ptr"
+is NULL, then the function will make no modifications and return -1.
 
 Usually you can just use talloc_free() instead of talloc_unlink(), but
 sometimes it is useful to have the additional control on which parent
