@@ -46,9 +46,21 @@ RCSID("$Id$");
  *	afs or afs3 == des:afs3-salt
  */
 
+    /* the 3 DES types must be first */
+const krb5_enctype all_etypes[] = { 
+    ETYPE_DES_CBC_MD5,
+    ETYPE_DES_CBC_MD4,
+    ETYPE_DES_CBC_CRC,
+#ifdef ENABLE_AES
+    ETYPE_AES256_CTS_HMAC_SHA1_96,
+#endif
+    ETYPE_ARCFOUR_HMAC_MD5,
+    ETYPE_DES3_CBC_SHA1
+};
+
 static krb5_error_code
 parse_key_set(krb5_context context, const char *key, 
-	      krb5_enctype **enctypes, size_t *num_enctypes, 
+	      const krb5_enctype **enctypes, size_t *num_enctypes, 
 	      krb5_salt *salt, krb5_principal principal)
 {
     const char *p;
@@ -58,18 +70,6 @@ parse_key_set(krb5_context context, const char *key,
     static krb5_enctype e; /* XXX */
     krb5_error_code ret;
     
-    /* the 3 DES types must be first */
-    krb5_enctype all_etypes[] = { 
-	ETYPE_DES_CBC_MD5,
-	ETYPE_DES_CBC_MD4,
-	ETYPE_DES_CBC_CRC,
-#ifdef ENABLE_AES
-	ETYPE_AES256_CTS_HMAC_SHA1_96,
-#endif
-	ETYPE_ARCFOUR_HMAC_MD5,
-	ETYPE_DES3_CBC_SHA1
-    };
-
     p = key;
 
     *enctypes = NULL;
@@ -246,7 +246,7 @@ _kadm5_generate_key_set(krb5_context context, krb5_principal principal,
     for(kp = ktypes; kp && *kp; kp++) {
 	const char *p;
 	krb5_salt salt;
-	krb5_enctype *enctypes;
+	const krb5_enctype *enctypes;
 	size_t num_enctypes;
 
 	p = *kp;
