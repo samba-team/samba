@@ -154,18 +154,27 @@ define_asn1 (int level, Type *t)
     }
     case TSequence: {
 	Member *m;
-	int tag = -1;
+	int tag;
+	int max_width = 0;
 
 	space(level);
 	fprintf (headerfile, "SEQUENCE {\n");
-	for (m = t->members; m && m->val != tag; m = m->next) {
+	for (m = t->members, tag = -1; m && m->val != tag; m = m->next) {
+	    if (tag == -1)
+		tag = m->val;
+	    if(strlen(m->name) + (m->val > 9) > max_width)
+		max_width = strlen(m->name) + (m->val > 9);
+	}
+	max_width += 3 + 2;
+	if(max_width < 16) max_width = 16;
+	for (m = t->members, tag = -1 ; m && m->val != tag; m = m->next) {
+	    int width;
 	    if (tag == -1)
 		tag = m->val;
 	    space(level + 1);
 	    fprintf(headerfile, "%s[%d]", m->name, m->val);
-	    if(strlen(m->name) + 3 + (m->val > 9) < 16)
-		fprintf(headerfile, "%*s", 
-			16 - strlen(m->name) + 3 + (m->val > 9), "");
+	    width = max_width - strlen(m->name) - 3 - (m->val > 9) - 2;
+	    fprintf(headerfile, "%*s", width, "");
 	    define_asn1(level + 1, m->type);
 	    if(m->optional)
 		fprintf(headerfile, " OPTIONAL");
