@@ -1,3 +1,8 @@
+2001-09-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/mkey.c (hdb_set_master_keyfile): clear error string when
+	not returning error
+
 2001-09-16  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/appdefault.c (krb5_appdefault_{boolean,string,time):
