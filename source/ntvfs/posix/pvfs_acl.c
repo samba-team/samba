@@ -392,6 +392,8 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	/* expand the generic access bits to file specific bits */
 	*access_mask = pvfs_translate_mask(*access_mask);
 
+	*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
+
 	/* check the acl against the required access mask */
 	status = sec_access_check(sd, token, *access_mask, access_mask);
 
@@ -424,7 +426,8 @@ NTSTATUS pvfs_access_check_simple(struct pvfs_state *pvfs,
 */
 NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs, 
 				  struct smbsrv_request *req,
-				  struct pvfs_filename *name)
+				  struct pvfs_filename *name,
+				  uint32_t *access_mask)
 {
 	struct pvfs_filename *parent;
 	NTSTATUS status;
@@ -434,7 +437,34 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	return pvfs_access_check_simple(pvfs, req, parent, SEC_DIR_ADD_FILE);
+	status = pvfs_access_check(pvfs, req, parent, access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (! ((*access_mask) & SEC_DIR_ADD_FILE)) {
+		return pvfs_access_check_simple(pvfs, req, name, SEC_DIR_ADD_FILE);
+	}
+
+	return status;
+}
+
+/*
+  access check for creating a new file/directory - no access mask supplied
+*/
+NTSTATUS pvfs_access_check_create_nomask(struct pvfs_state *pvfs, 
+					 struct smbsrv_request *req,
+					 struct pvfs_filename *name)
+{
+	struct pvfs_filename *parent;
+	NTSTATUS status;
+
+	status = pvfs_resolve_parent(pvfs, req, name, &parent);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return pvfs_access_check_simple(pvfs, req, name, SEC_DIR_ADD_FILE);
 }
 
 
