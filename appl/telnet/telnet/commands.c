@@ -1717,6 +1717,15 @@ env_init()
 
 		gethostname(hbuf, 256);
 		hbuf[256] = '\0';
+
+		/* If this is not the full name, try to get it via DNS */
+		if (strchr(hbuf, '.') == 0) {
+			struct hostent *he = gethostbyname(hbuf);
+			if (he != 0)
+				strncpy(hbuf, he->h_name, 256);
+			hbuf[256] = '\0';
+		}
+
 		cp = (char *)malloc(strlen(hbuf) + strlen(cp2) + 1);
 		sprintf((char *)cp, "%s%s", hbuf, cp2);
 		free(ep->value);
