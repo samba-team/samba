@@ -118,6 +118,38 @@ krb5_decode_ap_req(krb5_context context,
 }
 
 krb5_error_code
+krb5_decrypt_ticket(krb5_context context,
+		    Ticket *ticket,
+		    krb5_keyblock *key,
+		    EncTicketPart *out)
+{
+    EncTicketPart t;
+    krb5_error_code ret;
+    ret = decrypt_tkt_enc_part (context, key, &ticket->enc_part, &t);
+    if (ret)
+	return ret;
+    
+    {
+	int32_t now;
+	time_t start = t.authtime;
+
+	krb5_timeofday (context, &now);
+	if(t.starttime)
+	    start = *t.starttime;
+	if(start - now > context->max_skew || t.flags.invalid)
+	    return KRB5KRB_AP_ERR_TKT_NYV;
+	if(now - t.endtime > context->max_skew)
+	    return KRB5KRB_AP_ERR_TKT_EXPIRED;
+    }
+    
+    if(out)
+	*out = t;
+    else
+	free_EncTicketPart(&t);
+    return 0;
+}
+
+krb5_error_code
 krb5_verify_ap_req(krb5_context context,
 		   krb5_auth_context *auth_context,
 		   krb5_ap_req *ap_req,
@@ -139,20 +171,17 @@ krb5_verify_ap_req(krb5_context context,
     }else
 	krb5_auth_con_init(context, &ac);
 	
-    ret = decrypt_tkt_enc_part (context,
-				keyblock,
-				&ap_req->ticket.enc_part,
-				&t.ticket);
-    if (ret)
-	return ret;
+    ret = krb5_decrypt_ticket(context, &ap_req->ticket, keyblock, 
+			      &t.ticket);
     
-    principalname2krb5_principal(&t.server,
-				 ap_req->ticket.sname,
-				 ap_req->ticket.realm);
+    if(ret)
+	return ret;
 
-    principalname2krb5_principal(&t.client,
-				 t.ticket.cname,
+    principalname2krb5_principal(&t.server, ap_req->ticket.sname, 
+				 ap_req->ticket.realm);
+    principalname2krb5_principal(&t.client, t.ticket.cname, 
 				 t.ticket.crealm);
+
     /* save key */
 
     copy_EncryptionKey(&t.ticket.key, &ac->key);
@@ -213,19 +242,6 @@ krb5_verify_ap_req(krb5_context context,
 	    *ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
     }
 
-    {
-	int32_t now;
-	time_t start = t.ticket.authtime;
-
-	krb5_timeofday (context, &now);
-	if(t.ticket.starttime)
-	    start = *t.ticket.starttime;
-	if(start - now > context->max_skew || t.ticket.flags.invalid)
-	    return KRB5KRB_AP_ERR_TKT_NYV;
-	if(now - t.ticket.endtime > context->max_skew)
-	    return KRB5KRB_AP_ERR_TKT_EXPIRED;
-    }
-    
     if(ticket){
 	*ticket = malloc(sizeof(**ticket));
 	**ticket = t;
