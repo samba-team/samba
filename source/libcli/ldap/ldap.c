@@ -1162,6 +1162,47 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		return False;
 	}
 
+	msg->num_controls = 0;
+	msg->controls = NULL;
+
+	if (asn1_peek_tag(data, ASN1_CONTEXT(0))) {
+		int i;
+		struct ldap_Control *ctrl = NULL;
+
+		asn1_start_tag(data, ASN1_CONTEXT(0));
+
+		for (i=0; asn1_peek_tag(data, ASN1_SEQUENCE(0)); i++) {
+			asn1_start_tag(data, ASN1_SEQUENCE(0));
+
+			ctrl = talloc_realloc_p(msg->mem_ctx, ctrl, struct ldap_Control, i+1);
+			if (!ctrl) {
+				return False;
+			}
+			ctrl[i].oid = NULL;
+			ctrl[i].critical = False;
+			ctrl[i].value = data_blob(NULL, 0);
+
+			asn1_read_OctetString_talloc(ctrl, data, &ctrl[i].oid);
+
+			if (asn1_peek_tag(data, ASN1_BOOLEAN)) {
+				asn1_read_BOOLEAN(data, &ctrl[i].critical);
+			}
+
+			if (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+				asn1_read_OctetString(data, &ctrl[i].value);
+				if (ctrl[i].value.data) {
+					talloc_steal(msg->mem_ctx, ctrl[i].value.data);
+				}
+			}
+
+			asn1_end_tag(data);
+		}
+		msg->num_controls = i;
+		msg->controls = ctrl;
+
+		asn1_end_tag(data);
+	}
+
 	asn1_end_tag(data);
 	return ((!data->has_error) && (data->nesting == NULL));
 }
