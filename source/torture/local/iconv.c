@@ -57,15 +57,14 @@ static int gen_codepoint(unsigned int codepoint,
 /*
   work out the unicode codepoint of the first UTF-8 character in the buffer
 */
-static unsigned int get_codepoint(char *buf, size_t size)
+static unsigned int get_codepoint(char *buf, size_t size, const char *charset)
 {
-	static iconv_t cd;
+	iconv_t cd;
 	uint8_t out[4];
 	char *ptr_out;
 	size_t size_out, size_in, ret;
-	if (!cd) {
-		cd = iconv_open("UCS-4LE", "UTF-8");
-	}
+
+	cd = iconv_open("UCS-4LE", charset);
 
 	size_in = size;
 	ptr_out = out;
@@ -73,6 +72,8 @@ static unsigned int get_codepoint(char *buf, size_t size)
 	memset(out, 0, sizeof(out));
 
 	ret = iconv(cd, &buf, &size_in, &ptr_out, &size_out);
+
+	iconv_close(cd);
 
 	return out[0] | (out[1]<<8) | (out[2]<<16) | (out[3]<<24);
 }
@@ -91,12 +92,12 @@ static void show_buf(const char *name, uint8_t *buf, size_t size)
 }
 
 /*
-  given a UTF-16LE buffer, test the system and built-in iconv code
-  to make sure they do exactly the same thing in converting the buffer
-  to UTF-8, then convert it back again and ensure we get the same buffer
-  back
+  given a UTF-16LE buffer, test the system and built-in iconv code to
+  make sure they do exactly the same thing in converting the buffer to
+  "charset", then convert it back again and ensure we get the same
+  buffer back
 */
-static int test_buffer(uint8_t *inbuf, size_t size)
+static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 {
 	uint8_t buf1[1000], buf2[1000], buf3[1000];
 	size_t outsize1, outsize2, outsize3;
@@ -108,11 +109,20 @@ static int test_buffer(uint8_t *inbuf, size_t size)
 	int errno1, errno2;
 	static iconv_t cd;
 	static smb_iconv_t cd2, cd3;
-	
+	static const char *last_charset;
+
+	if (cd && last_charset) {
+		iconv_close(cd);
+		smb_iconv_close(cd2);
+		smb_iconv_close(cd3);
+		cd = NULL;
+	}
+
 	if (!cd) {
-		cd = iconv_open("UTF-8", "UTF-16LE");
-		cd2 = smb_iconv_open("UTF-8", "UTF-16LE");
-		cd3 = smb_iconv_open("UTF-16LE", "UTF-8");
+		cd = iconv_open(charset, "UTF-16LE");
+		cd2 = smb_iconv_open(charset, "UTF-16LE");
+		cd3 = smb_iconv_open("UTF-16LE", charset);
+		last_charset = charset;
 	}
 
 #if 0
@@ -156,12 +166,12 @@ static int test_buffer(uint8_t *inbuf, size_t size)
 	/* codepoints above 1M are not interesting for now */
 	if (len2 > len1 && 
 	    memcmp(buf1, buf2, len1) == 0 && 
-	    get_codepoint(buf2+len1, len2-len1) >= (1<<20)) {
+	    get_codepoint(buf2+len1, len2-len1, charset) >= (1<<20)) {
 		return ok;
 	}
 	if (len1 > len2 && 
 	    memcmp(buf1, buf2, len2) == 0 && 
-	    get_codepoint(buf1+len2, len1-len2) >= (1<<20)) {
+	    get_codepoint(buf1+len2, len1-len2, charset) >= (1<<20)) {
 		return ok;
 	}
 
@@ -198,17 +208,17 @@ static int test_buffer(uint8_t *inbuf, size_t size)
 		show_buf("OUT1:", buf1, len1);
 		show_buf("OUT2:", buf2, len2);
 		if (len2 > len1 && memcmp(buf1, buf2, len1) == 0) {
-			printf("next codepoint is %u\n", get_codepoint(buf2+len1, len2-len1));
+			printf("next codepoint is %u\n", 
+			       get_codepoint(buf2+len1, len2-len1, charset));
 		}
 		if (len1 > len2 && memcmp(buf1, buf2, len2) == 0) {
-			printf("next codepoint is %u\n", get_codepoint(buf1+len2,len1-len2));
+			printf("next codepoint is %u\n", 
+			       get_codepoint(buf1+len2,len1-len2, charset));
 		}
 
 		ok = 0;
 	}
 	
-	if (!ok) return ok;
-
 	size = size - size_in1;
 	ptr_in = buf1;
 	ptr_out = buf3;
@@ -232,15 +242,13 @@ static int test_buffer(uint8_t *inbuf, size_t size)
 	if (memcmp(buf3, inbuf, size) != 0) {
 		int i;
 		printf("pull bytes mismatch:\n");
-		for (i=0;i<size;i++) {
-			printf("%02x ", inbuf[i]);
-		}
-		printf("\n");
-		for (i=0;i<size;i++) {
-			printf("%02x ", buf3[i]);
-		}
-		printf("\n");
+		show_buf("inbuf", inbuf, size);
+		show_buf(" buf3", buf3, size);
 		ok = 0;
+	}
+
+	if (!ok) {
+		printf("test_buffer failed for charset %s\n", charset);
 	}
 
 	return ok;
@@ -265,7 +273,7 @@ BOOL torture_local_iconv(int dummy)
 			printf("codepoint=%u   \r", codepoint);
 		}
 
-		ok = test_buffer(inbuf, size);
+		ok = test_buffer(inbuf, size, "UTF-8");
 	}
 
 
@@ -289,7 +297,8 @@ BOOL torture_local_iconv(int dummy)
 				inbuf[c] |= 0xdc;
 			}
 		}
-		ok = test_buffer(inbuf, size);
+		ok &= test_buffer(inbuf, size, "UTF-8");
+		ok &= test_buffer(inbuf, size, "CP850");
 	}
 
 	return ok == 1;
