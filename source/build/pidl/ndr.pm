@@ -305,7 +305,7 @@ sub end_flags($)
 
 
 #####################################################################
-# work out the correct alignment for a structure
+# work out the correct alignment for a structure or union
 sub struct_alignment
 {
 	my $s = shift;
@@ -329,35 +329,6 @@ sub struct_alignment
 }
 
 #####################################################################
-# work out the correct alignment for a union
-sub union_alignment
-{
-	my $u = shift;
-
-	my $align = 1;
-
-	foreach my $e (@{$u->{DATA}}) {
-		my $a = 1;
-
-		if ($e->{TYPE} eq "EMPTY") {
-			next;
-		}
-
-		if (need_wire_pointer($e->{DATA})) {
-			$a = 4;
-		} else {
-			$a = align_type($e->{DATA}->{TYPE});
-		}
-
-		if ($align < $a) {
-			$align = $a;
-		}
-	}
-
-	return $align;
-}
-
-#####################################################################
 # align a type
 sub align_type
 {
@@ -369,12 +340,8 @@ sub align_type
     }
 
 	if (defined $typedefs{$e}) {
-		if ($typedefs{$e}->{DATA}->{TYPE} eq "STRUCT") {
+		if ($typedefs{$e}->{DATA}->{TYPE} eq "STRUCT" or $typedefs{$e}->{DATA}->{TYPE} eq "UNION") {
 			return struct_alignment($typedefs{$e}->{DATA});
-		} elsif ($typedefs{$e}->{DATA}->{TYPE} eq "UNION") {
-			if (defined $typedefs{$e}->{DATA}) {
-				return union_alignment($typedefs{$e}->{DATA});
-			}
 		} elsif ($typedefs{$e}->{DATA}->{TYPE} eq "ENUM") {
 	    	return align_type(util::enum_type_fn(util::get_enum($e)));
 		} elsif ($typedefs{$e}->{DATA}->{TYPE} eq "BITMAP") {
@@ -1192,15 +1159,15 @@ sub ParseUnionPush($)
 #	pidl "\tNDR_CHECK(ndr_push_align(ndr, $align));\n";
 
 	pidl "\tswitch (level) {\n";
-	foreach my $el (@{$e->{DATA}}) {
-		if ($el->{CASE} eq "default") {
+	foreach my $el (@{$e->{ELEMENTS}}) {
+		if (util::has_property($el, "default")) {
 			pidl "\tdefault:\n";
 			$have_default = 1;
 		} else {
-			pidl "\tcase $el->{CASE}:\n";
+			pidl "\tcase $el->{PROPERTIES}->{case}:\n";
 		}
-		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPushScalar($el->{DATA}, "r->", "NDR_SCALARS");
+		if ($el->{TYPE} ne "EMPTY") {
+			ParseElementPushScalar($el, "r->", "NDR_SCALARS");
 		}
 		pidl "\tbreak;\n\n";
 	}
@@ -1212,14 +1179,14 @@ sub ParseUnionPush($)
 	pidl "buffers:\n";
 	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	pidl "\tswitch (level) {\n";
-	foreach my $el (@{$e->{DATA}}) {
-		if ($el->{CASE} eq "default") {
+	foreach my $el (@{$e->{ELEMENTS}}) {
+		if (util::has_property($el, "default")) {
 			pidl "\tdefault:\n";
 		} else {
-			pidl "\tcase $el->{CASE}:\n";
+			pidl "\tcase $el->{PROPERTIES}->{case}:\n";
 		}
-		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPushBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
+		if ($el->{TYPE} ne "EMPTY") {
+			ParseElementPushBuffer($el, "r->", "NDR_BUFFERS");
 		}
 		pidl "\tbreak;\n\n";
 	}
@@ -1243,15 +1210,15 @@ sub ParseUnionPrint($)
 	start_flags($e);
 
 	pidl "\tswitch (level) {\n";
-	foreach my $el (@{$e->{DATA}}) {
-		if ($el->{CASE} eq "default") {
+	foreach my $el (@{$e->{ELEMENTS}}) {
+		if (util::has_property($el, "default")) {
 			$have_default = 1;
 			pidl "\tdefault:\n";
 		} else {
-			pidl "\tcase $el->{CASE}:\n";
+			pidl "\tcase $el->{PROPERTIES}->{case}:\n";
 		}
-		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPrintScalar($el->{DATA}, "r->");
+		if ($el->{TYPE} ne "EMPTY") {
+			ParseElementPrintScalar($el, "r->");
 		}
 		pidl "\tbreak;\n\n";
 	}
@@ -1280,19 +1247,18 @@ sub ParseUnionPull($)
 #	pidl "\tNDR_CHECK(ndr_pull_align(ndr, $align));\n";
 
 	pidl "\tswitch (level) {\n";
-	foreach my $el (@{$e->{DATA}}) {
-		if ($el->{CASE} eq "default") {
+	foreach my $el (@{$e->{ELEMENTS}}) {
+		if (util::has_property($el, "default")) {
 			pidl "\tdefault: {\n";
 			$have_default = 1;
 		} else {
-			pidl "\tcase $el->{CASE}: {\n";
+			pidl "\tcase $el->{PROPERTIES}->{case}: {\n";
 		}
-		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			my $e2 = $el->{DATA};
-			if ($e2->{POINTERS}) {
-				pidl "\t\tuint32_t _ptr_$e2->{NAME};\n";
+		if ($el->{TYPE} ne "EMPTY") {
+			if ($el->{POINTERS}) {
+				pidl "\t\tuint32_t _ptr_$el->{NAME};\n";
 			}
-			ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");
+			ParseElementPullScalar($el, "r->", "NDR_SCALARS");
 		}
 		pidl "\tbreak; }\n\n";
 	}
@@ -1304,14 +1270,14 @@ sub ParseUnionPull($)
 	pidl "buffers:\n";
 	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	pidl "\tswitch (level) {\n";
-	foreach my $el (@{$e->{DATA}}) {
-		if ($el->{CASE} eq "default") {
+	foreach my $el (@{$e->{ELEMENTS}}) {
+		if (util::has_property($el, "default")) {
 			pidl "\tdefault:\n";
 		} else {
-			pidl "\tcase $el->{CASE}:\n";
+			pidl "\tcase $el->{PROPERTIES}->{case}:\n";
 		}
-		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPullBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
+		if ($el->{TYPE} ne "EMPTY") {
+			ParseElementPullBuffer($el, "r->", "NDR_BUFFERS");
 		}
 		pidl "\tbreak;\n\n";
 	}
@@ -1866,18 +1832,23 @@ sub ParseInterface($)
 		}
 	}
 
+	# Push functions
 	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "TYPEDEF") &&
 		    ParseTypedefPush($d);
 		($d->{TYPE} eq "FUNCTION") && 
 		    ParseFunctionPush($d);
 	}
+
+	# Pull functions
 	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "TYPEDEF") &&
 		    ParseTypedefPull($d);
 		($d->{TYPE} eq "FUNCTION") && 
 		    ParseFunctionPull($d);
 	}
+	
+	# Print functions
 	foreach my $d (@{$data}) {
 		if ($d->{TYPE} eq "TYPEDEF" &&
 		    !util::has_property($d, "noprint")) {
@@ -1889,6 +1860,7 @@ sub ParseInterface($)
 		}
 	}
 
+	# Size functions
 	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "TYPEDEF") && 
 			ParseTypedefNdrSize($d);
