@@ -1,3 +1,8 @@
+2003-12-07  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* ank.c (add_one_principal): pass right argument to
+	kadm5_free_principal_ent From Panasas, Inc
+	
 2003-11-18  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kadmind.c (main): move opening the logfile to after reading
