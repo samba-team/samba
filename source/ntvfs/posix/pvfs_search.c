@@ -533,7 +533,11 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 	if (io->t2fnext.in.last_name && *io->t2fnext.in.last_name) {
 		status = pvfs_list_seek(dir, io->t2fnext.in.last_name, &search->current_index);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			if (io->t2fnext.in.resume_key) {
+				search->current_index = io->t2fnext.in.resume_key;
+			} else {
+				return status;
+			}
 		}
 	} else if (io->t2fnext.in.flags & FLAG_TRANS2_FIND_CONTINUE) {
 		/* plain continue - nothing to do */
@@ -560,10 +564,6 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 	    ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && 
 	     io->t2fnext.out.end_of_search)) {
 		talloc_free(search);
-	}
-
-	if (reply_count == 0) {
-		return NT_STATUS_NO_SUCH_FILE;
 	}
 
 	return NT_STATUS_OK;

@@ -25,15 +25,24 @@
 #include "vfs_posix.h"
 #include "system/dir.h"
 
+#define NAME_CACHE_SIZE 100
+
+struct name_cache_entry {
+	char *name;
+	off_t offset;
+};
+
 struct pvfs_dir {
 	struct pvfs_state *pvfs;
 	BOOL no_wildcard;
-	char *last_name;
+	char *single_name;
 	const char *pattern;
 	off_t offset;
 	DIR *dir;
 	const char *unix_path;
 	BOOL end_of_search;
+	struct name_cache_entry *name_cache;
+	uint32_t name_cache_index;
 };
 
 /*
@@ -55,8 +64,8 @@ static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filen
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dir->last_name = talloc_strdup(dir, pattern);
-	if (!dir->last_name) {
+	dir->single_name = talloc_strdup(dir, pattern);
+	if (!dir->single_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -88,7 +97,7 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	char *pattern;
 	struct pvfs_dir *dir;
 
-	(*dirp) = talloc_p(mem_ctx, struct pvfs_dir);
+	(*dirp) = talloc_zero_p(mem_ctx, struct pvfs_dir);
 	if (*dirp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -126,9 +135,15 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 
 	dir->pvfs = pvfs;
 	dir->no_wildcard = False;
-	dir->last_name = NULL;
 	dir->end_of_search = False;
 	dir->offset = 0;
+	dir->name_cache = talloc_zero_array_p(dir, 
+					      struct name_cache_entry, 
+					      NAME_CACHE_SIZE);
+	if (dir->name_cache == NULL) {
+		talloc_free(dir);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	talloc_set_destructor(dir, pvfs_dirlist_destructor);
 
@@ -147,7 +162,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 		dir->end_of_search = True;
 		if (*ofs != 0) return NULL;
 		(*ofs)++;
-		return dir->last_name;
+		return dir->single_name;
 	}
 
 	if (*ofs != dir->offset) {
@@ -157,6 +172,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 	
 	while ((de = readdir(dir->dir))) {
 		const char *dname = de->d_name;
+		struct name_cache_entry *e;
 
 		if (ms_fnmatch(dir->pattern, dname, 
 			       dir->pvfs->tcon->smb_conn->negotiate.protocol) != 0) {
@@ -173,10 +189,15 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 		dir->offset = telldir(dir->dir);
 		(*ofs) = dir->offset;
 
-		if (dir->last_name) talloc_free(dir->last_name);
-		dir->last_name = talloc_strdup(dir, de->d_name);
+		dir->name_cache_index = (dir->name_cache_index+1) % NAME_CACHE_SIZE;
+		e = &dir->name_cache[dir->name_cache_index];
 
-		return dir->last_name;
+		if (e->name) talloc_free(e->name);
+
+		e->name = talloc_strdup(dir, de->d_name);
+		e->offset = dir->offset;
+
+		return e->name;
 	}
 
 	dir->end_of_search = True;
@@ -248,16 +269,26 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 {
 	struct dirent *de;
 	NTSTATUS status;
+	int i;
 
 	status = pvfs_list_wakeup(dir, ofs);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (dir->last_name &&
-	    StrCaseCmp(name, dir->last_name) == 0) {
-		*ofs = dir->offset;
-		return NT_STATUS_OK;
+	for (i=dir->name_cache_index;i>=0;i--) {
+		struct name_cache_entry *e = &dir->name_cache[i];
+		if (e->name && StrCaseCmp(name, e->name) == 0) {
+			*ofs = e->offset;
+			return NT_STATUS_OK;
+		}
+	}
+	for (i=NAME_CACHE_SIZE-1;i>dir->name_cache_index;i--) {
+		struct name_cache_entry *e = &dir->name_cache[i];
+		if (e->name && StrCaseCmp(name, e->name) == 0) {
+			*ofs = e->offset;
+			return NT_STATUS_OK;
+		}
 	}
 
 	rewinddir(dir->dir);
@@ -266,8 +297,6 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 		if (StrCaseCmp(name, de->d_name) == 0) {
 			dir->offset = telldir(dir->dir);
 			*ofs = dir->offset;
-			if (dir->last_name) talloc_free(dir->last_name);
-			dir->last_name = talloc_strdup(dir, de->d_name);
 			return NT_STATUS_OK;
 		}
 	}
@@ -276,7 +305,5 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 
 	pvfs_list_hibernate(dir);
 
-	/* it is not an error to give a bad name (it may have been deleted). Instead
-	   just continue from end of directory */
-	return NT_STATUS_OK;
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
