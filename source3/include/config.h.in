@@ -196,8 +196,23 @@
 /* Define if you have the __open function.  */
 #undef HAVE___OPEN
 
+/* Define if you have the __open64 function.  */
+#undef HAVE___OPEN64
+
 /* Define if you have the __opendir function.  */
 #undef HAVE___OPENDIR
+
+/* Define if you have the __pread function.  */
+#undef HAVE___PREAD
+
+/* Define if you have the __pread64 function.  */
+#undef HAVE___PREAD64
+
+/* Define if you have the __pwrite function.  */
+#undef HAVE___PWRITE
+
+/* Define if you have the __pwrite64 function.  */
+#undef HAVE___PWRITE64
 
 /* Define if you have the __read function.  */
 #undef HAVE___READ
@@ -280,8 +295,23 @@
 /* Define if you have the _open function.  */
 #undef HAVE__OPEN
 
+/* Define if you have the _open64 function.  */
+#undef HAVE__OPEN64
+
 /* Define if you have the _opendir function.  */
 #undef HAVE__OPENDIR
+
+/* Define if you have the _pread function.  */
+#undef HAVE__PREAD
+
+/* Define if you have the _pread64 function.  */
+#undef HAVE__PREAD64
+
+/* Define if you have the _pwrite function.  */
+#undef HAVE__PWRITE
+
+/* Define if you have the _pwrite64 function.  */
+#undef HAVE__PWRITE64
 
 /* Define if you have the _read function.  */
 #undef HAVE__READ
@@ -412,6 +442,9 @@
 /* Define if you have the mktime function.  */
 #undef HAVE_MKTIME
 
+/* Define if you have the open64 function.  */
+#undef HAVE_OPEN64
+
 /* Define if you have the pam_authenticate function.  */
 #undef HAVE_PAM_AUTHENTICATE
 
@@ -421,8 +454,20 @@
 /* Define if you have the pipe function.  */
 #undef HAVE_PIPE
 
+/* Define if you have the pread function.  */
+#undef HAVE_PREAD
+
+/* Define if you have the pread64 function.  */
+#undef HAVE_PREAD64
+
 /* Define if you have the putprpwnam function.  */
 #undef HAVE_PUTPRPWNAM
+
+/* Define if you have the pwrite function.  */
+#undef HAVE_PWRITE
+
+/* Define if you have the pwrite64 function.  */
+#undef HAVE_PWRITE64
 
 /* Define if you have the rand function.  */
 #undef HAVE_RAND
