@@ -116,9 +116,10 @@ char *get_trusted_serverlist(const char *domain)
  connect to one of multiple servers: don't care which
 ****************************************************************************/
 BOOL cli_connect_servers_auth(struct cli_state *cli,
-				char *p,
+				char *server,
 				const struct ntuser_creds *usr)
 {
+	char *p = server;
 	fstring remote_host;
 	BOOL connected_ok = False;
 
