@@ -81,14 +81,17 @@ should only be used when investigating a problem. Levels above 3 are
 designed for use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.
 
-dit(bf(-l log file)) If specified, em(logfile) specifies a log filename
-into which informational and debug messages from the running server
-will be logged. The log file generated is never removed by the server
-although its size may be controlled by an bf(smb.conf (5)) option.
-The default log file name is specified at compile time.
+dit(bf(-l log file)) If specified, em(logfile) specifies a log
+filename into which informational and debug messages from the running
+server will be logged. The log file generated is never removed by the
+server although its size may be controlled by the url(bf(max log
+size))(smb.conf.5.html#max log size) option in the url(bf(smb.conf
+(5)))(smb.conf.5.html) file.  The default log file name is specified
+at compile time.
 
-dit(bf(-O socket options)) See the socket options section of bf(smb.conf
-(5)) for details.
+dit(bf(-O socket options)) See the url(bf(socket
+options))(smb.conf.5.html#socket options) parameter in the
+url(bf(smb.conf (5)))(smb.conf.5.html) file for details.
 
 dit(bf(-p port number)) port number is a positive integer value.  The
 default value if this parameter is not specified is 139.

@@ -54,8 +54,9 @@ dit(bf(-h)) Print a help (usage) message.
 dit(bf(-B broadcast address)) Send the query to the given broadcast
 address. Without this option the default behavior of nmblookup is to
 send the query to the broadcast address of the primary network
-interface as either auto-detected or defined in the url(bf(smb.conf
-(5)))(smb.conf.5.html) file.
+interface as either auto-detected or defined in the 
+url(bf(interfaces))(smb.conf.5.html#interfaces) parameter of the 
+url(bf(smb.conf (5)))(smb.conf.5.html) file.
 
 dit(bf(-U unicast address)) Do a unicast query to the specified
 address or host tt("unicast address"). This option (along with the
