@@ -233,6 +233,7 @@ sub type_align($)
     return 1, if ($type eq "uint8");
     return 2, if ($type eq "uint16");
     return 4, if ($type eq "NTTIME");
+    return 4, if ($type eq "NTTIME_1sec");
     return 4, if ($type eq "time_t");
     return 8, if ($type eq "HYPER_T");
     return 2, if ($type eq "wchar_t");
