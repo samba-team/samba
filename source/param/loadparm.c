@@ -830,8 +830,8 @@ static struct parm_struct parm_table[] = {
 	{"deleteprinter command", P_STRING, P_GLOBAL, &Globals.szDeletePrinterCommand, NULL, NULL, 0},
 	{"show add printer wizard", P_BOOL, P_GLOBAL, &Globals.bMsAddPrinterWizard, NULL, NULL, 0},
 	
-	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT},
-	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, 0},
+	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT|FLAG_DOS_STRING},
+	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_DOS_STRING},
 	{"printer driver", P_STRING, P_LOCAL, &sDefault.szPrinterDriver, NULL, NULL, FLAG_PRINT},
 	{"printer driver file", P_STRING, P_LOCAL, &sDefault.szDriverFile, NULL, NULL, FLAG_PRINT},
 	{"printer driver location", P_STRING, P_LOCAL, &sDefault.szPrinterDriverLocation, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
@@ -938,8 +938,8 @@ static struct parm_struct parm_table[] = {
 	{"smbrun", P_STRING, P_GLOBAL, &Globals.szSmbrun, NULL, NULL, 0},
 	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
-	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, 0},
-	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, 0},
+	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
+	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
 	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0}, 
 	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0},
 #ifdef WITH_UTMP
@@ -1270,8 +1270,7 @@ static void init_globals(void)
 	Globals.sslCompatibility = False;
 #endif /* WITH_SSL */
 
-/* 
-   these parameters are set to defaults that are more appropriate
+/* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
 
    as a member of the workgroup, that will possibly become a
@@ -1280,6 +1279,7 @@ static void init_globals(void)
 
    doesn't provide WINS server service by default (wsupp = False),
    and doesn't provide domain master browser services by default, either.
+
 */
 
 	Globals.bMsAddPrinterWizard = True;
@@ -1690,7 +1690,7 @@ static void free_service(service * pservice)
 
 /***************************************************************************
 add a new service to the services array initialising it with the given 
-service
+service. name must be in DOS codepage.
 ***************************************************************************/
 static int add_a_service(service * pservice, char *name)
 {
@@ -1739,14 +1739,13 @@ static int add_a_service(service * pservice, char *name)
 	if (name)
 	{
 		string_set(&iSERVICE(i).szService, name);
-		unix_to_dos(iSERVICE(i).szService, True);
 	}
 	return (i);
 }
 
 /***************************************************************************
 add a new home service, with the specified home directory, defaults coming 
-from service ifrom
+from service ifrom. homename must be in DOS codepage.
 ***************************************************************************/
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 {
@@ -1775,7 +1774,7 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 }
 
 /***************************************************************************
-add a new service, based on an old one
+add a new service, based on an old one. pszService must be in DOS codepage.
 ***************************************************************************/
 int lp_add_service(char *pszService, int iDefaultService)
 {
@@ -1817,7 +1816,8 @@ static BOOL lp_add_ipc(void)
 
 
 /***************************************************************************
-add a new printer service, with defaults coming from service iFrom
+add a new printer service, with defaults coming from service iFrom.
+printername must be in DOS codepage.
 ***************************************************************************/
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 {
@@ -1834,9 +1834,7 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 
 	/* the printer name is set to the service name. */
 	string_set(&iSERVICE(i).szPrintername, pszPrintername);
-	unix_to_dos(iSERVICE(i).szPrintername, True);
 	string_set(&iSERVICE(i).comment, comment);
-	unix_to_dos(iSERVICE(i).comment, True);
 	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
 	iSERVICE(i).bRead_only = False;
@@ -2734,7 +2732,7 @@ void init_locals(void)
 /***************************************************************************
 Process a new section (service). At this stage all sections are services.
 Later we'll have special sections that permit server parameters to be set.
-Returns True on success, False on failure.
+Returns True on success, False on failure. SectionName must be in DOS codepage.
 ***************************************************************************/
 static BOOL do_section(char *pszSectionName)
 {
@@ -3037,6 +3035,7 @@ void lp_add_one_printer(char *name, char *comment)
 		if ((i = lp_servicenumber(name)) >= 0)
 		{
 			string_set(&iSERVICE(i).comment, comment);
+            unix_to_dos(iSERVICE(i).comment, True);
 			iSERVICE(i).autoloaded = True;
 		}
 	}
@@ -3448,7 +3447,7 @@ void lp_remove_service(int snum)
 }
 
 /*******************************************************************
-copy a service
+copy a service. new_name must be in dos codepage
 ********************************************************************/
 void lp_copy_service(int snum, char *new_name)
 {

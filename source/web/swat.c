@@ -520,7 +520,8 @@ static void globals_page(void)
 }
 
 /****************************************************************************
-  display a shares editing page  
+  display a shares editing page. share is in unix codepage, and must be in
+  dos codepage. FIXME !!! JRA.
 ****************************************************************************/
 static void shares_page(void)
 {
@@ -641,7 +642,7 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 	}
 
 	if(!initialize_password_db(True)) {
-		printf("Can't initialize passdb!\n<p>");
+		printf("Can't setup password database vectors.\n<p>");
 		return False;
 	}
 	

@@ -3043,9 +3043,6 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	pname = PRINTERNAME(snum);
 
-	if (!pname || !*pname)
-		pname = SERVICE(snum);
-
 	if (!pname || !*pname) {
 		errno = EACCES;
 		return False;

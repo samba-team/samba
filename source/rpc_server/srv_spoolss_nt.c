@@ -272,6 +272,7 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 		/* Printer->dev.handlename equals portname equals sharename */
 		slprintf(command, sizeof(command), "%s \"%s\"", cmd,
 					Printer->dev.handlename);
+		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
 		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
 
 		unlink(tmp_file);
@@ -289,7 +290,6 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 		kill(0, SIGHUP);
 
 		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
-			lp_remove_service( i );
 			lp_killservice( i );
 			return True;
 		} else
@@ -526,7 +526,8 @@ static BOOL open_printer_hnd(POLICY_HND *hnd, char *name)
 		return False;
 	}
 
-	DEBUG(5, ("%d printer handles active\n", ubi_dlCount(&Printer_list)));
+	DEBUG(5, ("%d printer handles active\n", 
+		  (int)ubi_dlCount(&Printer_list)));
 
 	return True;
 }
@@ -1604,11 +1605,9 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	print_queue_struct *queue=NULL;
 	
-	DEBUG(4,("construct_notify_printer_info\n"));
-	
 	type=option_type->type;
 
-	DEBUGADD(4,("Notify type: [%s], number of notify info: [%d] on printer: [%s]\n",
+	DEBUG(4,("construct_notify_printer_info: Notify type: [%s], number of notify info: [%d] on printer: [%s]\n",
 		(option_type->type==PRINTER_NOTIFY_TYPE?"PRINTER_NOTIFY_TYPE":"JOB_NOTIFY_TYPE"),
 		option_type->count, lp_servicename(snum)));
 	
@@ -1617,7 +1616,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
 
 	for(field_num=0; field_num<option_type->count; field_num++) {
 		field = option_type->fields[field_num];
-		DEBUGADD(4,("notify [%d]: type [%x], field [%x]\n", field_num, type, field));
+		DEBUG(4,("construct_notify_printer_info: notify [%d]: type [%x], field [%x]\n", field_num, type, field));
 
 		if (!search_notify(type, field, &j) )
 			continue;
@@ -1629,8 +1628,8 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
 
 		construct_info_data(current_data, type, field, id);		
 
-		DEBUG(10,("construct_notify_printer_info: calling %s\n",
-				notify_info_data_table[j].name ));
+		DEBUG(10,("construct_notify_printer_info: calling [%s]  snum=%d  printername=[%s])\n",
+				notify_info_data_table[j].name, snum, printer->info_2->printername ));
 
 		notify_info_data_table[j].fn(snum, current_data, queue, printer);
 
@@ -1646,14 +1645,17 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
  * fill a notify_info struct with info asked
  *
  ********************************************************************/
-static BOOL construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_INFO *info, int snum, SPOOL_NOTIFY_OPTION_TYPE *option_type, uint32 id)
+static BOOL construct_notify_jobs_info(print_queue_struct *queue,
+				       SPOOL_NOTIFY_INFO *info,
+				       NT_PRINTER_INFO_LEVEL *printer,
+				       int snum, SPOOL_NOTIFY_OPTION_TYPE
+				       *option_type, uint32 id) 
 {
 	int field_num,j;
 	uint16 type;
 	uint16 field;
 
 	SPOOL_NOTIFY_INFO_DATA *current_data;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	
 	DEBUG(4,("construct_notify_jobs_info\n"));
 	
@@ -1663,9 +1665,6 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
 		(option_type->type==PRINTER_NOTIFY_TYPE?"PRINTER_NOTIFY_TYPE":"JOB_NOTIFY_TYPE"),
 		option_type->count));
 
-	if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
-		return False;
-	
 	for(field_num=0; field_num<option_type->count; field_num++) {
 		field = option_type->fields[field_num];
 
@@ -1683,7 +1682,6 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
 		info->count++;
 	}
 
-	free_a_printer(&printer, 2);	
 	return True;
 }
 
@@ -1798,17 +1796,34 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
 		
 		switch ( option_type->type ) {
 		case PRINTER_NOTIFY_TYPE:
-			if(construct_notify_printer_info(info, snum, option_type, id))
+			if(construct_notify_printer_info(info, snum,
+							 option_type, id))  
 				id--;
 			break;
 			
-		case JOB_NOTIFY_TYPE:
+		case JOB_NOTIFY_TYPE: {
+			NT_PRINTER_INFO_LEVEL *printer = NULL;
+
 			memset(&status, 0, sizeof(status));	
 			count = print_queue_status(snum, &queue, &status);
-			for (j=0; j<count; j++)
-				construct_notify_jobs_info(&queue[j], info, snum, option_type, queue[j].job);
+
+			if (get_a_printer(&printer, 2, 
+					  lp_servicename(snum)) != 0)
+				goto done;
+
+			for (j=0; j<count; j++) {
+				construct_notify_jobs_info(&queue[j], info,
+							   printer, snum,
+							   option_type,
+							   queue[j].job); 
+			}
+
+			free_a_printer(&printer, 2);
+
+		done:
 			safe_free(queue);
 			break;
+		}
 		}
 	}
 	

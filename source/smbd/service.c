@@ -80,7 +80,7 @@ BOOL become_service(connection_struct *conn,BOOL do_chdir)
 
 
 /****************************************************************************
-  find a service entry
+  find a service entry. service is always in dos codepage
 ****************************************************************************/
 int find_service(char *service)
 {
