@@ -153,6 +153,10 @@ AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(PRINTLIBS)
 AC_SUBST(AUTHLIBS)
 AC_SUBST(ACLLIBS)
+AC_SUBST(ADSLIBS)
+AC_SUBST(PASSDBLIBS)
+AC_SUBST(KRB5_LIBS)
+AC_SUBST(LDAP_LIBS)
 AC_SUBST(SHLIB_PROGS)
 AC_SUBST(SMBWRAPPER)
 AC_SUBST(EXTRA_BIN_PROGS)
@@ -2065,6 +2069,11 @@ AC_MSG_RESULT($with_ads_support)
 FOUND_KRB5=no
 if test x"$with_ads_support" = x"yes"; then
 
+ac_save_CFLAGS="$CFLAGS"
+ac_save_LIBS="$LIBS"
+CFLAGS=""
+LIBS=""
+	
   #################################################
   # check for krb5-config from recent MIT and Heimdal kerberos 5
   AC_PATH_PROG(KRB5_CONFIG, krb5-config)
@@ -2229,6 +2238,8 @@ fi
   AC_CHECK_LIB(gssapi_krb5, gss_display_status, [LIBS="$LIBS -lgssapi_krb5";
         AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
 
+KRB5_LIBS="$LIBS"; KRB5_CFLAGS="$CFLAGS"
+LIBS="$ac_save_LIBS"; CFLAGS="$ac_save_CFLAGS"
 fi
 
 ########################################################
@@ -2248,6 +2259,8 @@ AC_ARG_WITH(ldap,
 AC_MSG_RESULT($with_ldap_support)
 
 if test x"$with_ldap_support" = x"yes"; then
+ac_save_CFLAGS="$CFLAGS"; ac_save_LIBS="$LIBS"
+CFLAGS=""; LIBS=""
 
   ##################################################################
   # we might need the lber lib on some systems. To avoid link errors
@@ -2272,6 +2285,12 @@ if test x"$with_ldap_support" = x"yes"; then
 	AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $pam_ldap_cv_ldap_set_rebind_proc, [Number of arguments to ldap_set_rebind_proc])
   fi
   
+LDAP_LIBS="$LIBS";LDAP_CFLAGS="$CFLAGS"
+LIBS="$ac_save_LIBS"; CFLAGS="$ac_save_CFLAGS"
+fi
+
+if test x"$with_ads_support" = x"yes"; then
+	ADSLIBS="$LDAP_LIBS $KRB5_LIBS"
 fi
 
 ########################################################
@@ -2433,7 +2452,7 @@ AC_ARG_WITH(ldapsam,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LDAP_SAMCONFIG,1,[Whether to include 2.2 compatibel LDAP SAM configuration])
+    AC_DEFINE(WITH_LDAP_SAMCONFIG,1,[Whether to include 2.2 compatible LDAP SAM configuration])
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -3327,7 +3346,7 @@ if test x"$INCLUDED_POPT" = x"yes"; then
     FLAGS1="-I$srcdir/popt"
 else
     AC_MSG_RESULT(no)
-    LIBS="$LIBS -lpopt"
+    BUILD_POPT="-lpopt"
 fi
 AC_SUBST(BUILD_POPT)
 AC_SUBST(FLAGS1)
@@ -3399,11 +3418,11 @@ AC_ARG_WITH(shared-modules,
 fi ])
 
 SMB_MODULE(pdb_xml, modules/xml.o, bin/xml.so, PDB,
-		  [ LIBS="$LIBS $XML_LIBS" ] )
+		  [ PASSDBLIBS="$PASSDBLIBS $XML_LIBS" ] )
 SMB_MODULE(pdb_mysql, modules/mysql.o, bin/mysql.so, PDB, 
-		   [ LIBS="$LIBS $MYSQL_LIBS" ]	)
+		   [ PASSDBLIBS="$PASSDBLIBS $MYSQL_LIBS" ]	)
 SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, bin/ldapsam.so, PDB, 
-		   [ LIBS="$LIBS $LDAP_LIBS" ] )
+		   [ PASSDBLIBS="$PASSDBLIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, bin/smbpasswd.so, PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, bin/tdbsam.so, PDB)
 SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, bin/nisplussam.so, PDB)
