@@ -1345,8 +1345,9 @@ Principal command for creating / extracting
 int cmd_tar(void)
 {
 	fstring buf;
-	char **argl;
-	int argcl;
+	char **argl = NULL;
+	int argcl = 0;
+	int ret;
 
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
@@ -1357,8 +1358,9 @@ int cmd_tar(void)
 	if (!tar_parseargs(argcl, argl, buf, 0))
 		return 1;
 
+	ret = process_tar();
 	SAFE_FREE(argl);
-	return process_tar();
+	return ret;
 }
 
 /****************************************************************************

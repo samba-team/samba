@@ -134,17 +134,20 @@ char **toktocliplist(int *ctok, const char *sep)
 	*ctok=ictok;
 	s=(char *)last_ptr;
 	
-	if (!(ret=iret=malloc(ictok*sizeof(char *))))
+	if (!(ret=iret=malloc((ictok+1)*sizeof(char *))))
 		return NULL;
 	
 	while(ictok--) {    
 		*iret++=s;
-		while(*s++)
-			;
-		while(!*s)
-			s++;
+		if (ictok > 0) {
+			while(*s++)
+				;
+			while(!*s)
+				s++;
+		}
 	}
 
+	ret[*ctok] = NULL;
 	return ret;
 }
 
