@@ -23,7 +23,7 @@ for lang in $langs; do
     fi
 
     langdir=$MANDIR/lang/$lang
-    for d in $MANDIR $langdir $langdir/man1 $langdir/man5 $langdir/man7 $langdir/man8; do
+    for d in $MANDIR $MANDIR/lang $langdir $langdir/man1 $langdir/man5 $langdir/man7 $langdir/man8; do
 	if [ ! -d $d ]; then
 	    mkdir $d
 	    if [ ! -d $d ]; then
