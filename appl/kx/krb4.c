@@ -94,7 +94,7 @@ krb4_authenticate (kx_context *kc, int s)
 			   (struct sockaddr_in *)&kc->thisaddr,
 			   (struct sockaddr_in *)&kc->thataddr, KX_VERSION);
     if (status != KSUCCESS) {
-	warnx ("%s: %s\n", host, krb_get_err_text(status));
+	warnx ("%s: %s", host, krb_get_err_text(status));
 	return -1;
     }
     memcpy (c->key, cred.session, sizeof(des_cblock));
