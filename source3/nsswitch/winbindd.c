@@ -647,6 +647,17 @@ static void process_loop(int accept_sock)
 
 struct winbindd_state server_state;   /* Server state information */
 
+
+static void usage(void)
+{
+	printf("Usage: winbindd [options]\n");
+	printf("\t-i                interactive mode\n");
+	printf("\t-n                disable cacheing\n");
+	printf("\t-d level          set debug level\n");
+	printf("\t-s configfile     choose smb.conf location\n");
+	printf("\t-h                show this help message\n");
+}
+
 int main(int argc, char **argv)
 {
 	extern BOOL AllowDebugChange;
@@ -684,7 +695,7 @@ int main(int argc, char **argv)
 
 	/* Initialise samba/rpc client stuff */
 
-	while ((opt = getopt(argc, argv, "id:s:n")) != EOF) {
+	while ((opt = getopt(argc, argv, "id:s:nh")) != EOF) {
 		switch (opt) {
 
 			/* Don't become a daemon */
@@ -707,6 +718,10 @@ int main(int argc, char **argv)
 		case 's':
 			pstrcpy(dyn_CONFIGFILE,optarg);
 			break;
+
+		case 'h':
+			usage();
+			exit(0);
 
 		default:
 			printf("Unknown option %c\n", (char)opt);
