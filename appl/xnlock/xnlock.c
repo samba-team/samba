@@ -440,7 +440,7 @@ post_prompt_box(Window window)
 
     snprintf (s, sizeof(s), "User: %s%s%s@%s", name,
 	      inst[0] ? "." : "",
-	      inst ? inst : "",
+	      inst[0] ? inst : "",
 	      realm);
 
     /* erase current guy -- text message may still exist */
