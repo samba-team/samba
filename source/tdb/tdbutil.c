@@ -46,9 +46,6 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
 	tdb_chainunlock(tdb, key);
 }
 
-/* lock a chain by string key */
-
-
 /* fetch a value by a arbitrary blob key, return -1 if not found */
 int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
 {
@@ -107,6 +104,7 @@ int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len)
 
 /* Fetch a buffer using a null terminated string key.  Don't forget to call
    free() on the result dptr. */
+
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
 {
     TDB_DATA key;
@@ -117,6 +115,37 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
     return tdb_fetch(tdb, key);
 }
 
+/* Atomic integer change. Returns old value. To create, set initial value in *oldval. */
+
+int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val)
+{
+	int val;
+	int ret = -1;
+
+	if (tdb_lock_bystring(tdb, keystr) == -1)
+		return -1;
+
+	if ((val = tdb_fetch_int(tdb, keystr)) == -1) {
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
+			goto err_out;
+
+		val = *oldval;
+
+	} else {
+		*oldval = val;
+		val += change_val;
+	}
+		
+	if (tdb_store_int(tdb, keystr, val) == -1)
+		goto err_out;
+
+	ret = 0;
+
+  err_out:
+
+	tdb_unlock_bystring(tdb, keystr);
+	return ret;
+}
 
 /* useful pair of routines for packing/unpacking data consisting of
    integers and strings */

@@ -100,7 +100,8 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 
 /*The following definitions come from  lib/genrand.c  */
 
-void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
+void set_rand_reseed_data(unsigned char *data, size_t len);
+void generate_random_buffer( unsigned char *out, int len, BOOL do_reseed_now);
 char *generate_random_str(size_t len);
 
 /*The following definitions come from  lib/getsmbpass.c  */
@@ -4454,6 +4455,7 @@ int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
+int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val);
 size_t tdb_pack(char *buf, int bufsize, char *fmt, ...);
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
 
