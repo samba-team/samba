@@ -1,3 +1,11 @@
+Fri Sep  5 14:19:38 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/kafs: Move functions common to krb/krb5 modules to new file,
+ 	and make things more modular.
+
+	* lib/krb5/krb5.h: rename STRING -> krb5_config_string, and LIST
+ 	-> krb5_config_list
+
 Thu Sep  4 23:39:43 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/get_addrs.c: Fix loopback test.
