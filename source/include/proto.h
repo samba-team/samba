@@ -1805,9 +1805,6 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 /*The following definitions come from  passdb/passdb.c  */
 
 BOOL initialize_password_db(void);
-struct smb_passwd *iterate_getsmbpwrid(uint32 user_rid);
-struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid);
-struct smb_passwd *iterate_getsmbpwnam(char *name);
 void *startsmbpwent(BOOL update);
 void endsmbpwent(void *vp);
 struct smb_passwd *getsmbpwent(void *vp);
