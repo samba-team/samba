@@ -157,8 +157,7 @@ edit_time (const char *prompt, krb5_deltat *value, int *mask, int bit)
 	get_response(prompt, buf, resp, sizeof(resp));
 	if (str2deltat(resp, &tmp) == 0) {
 	    *value = tmp;
-	    if (tmp)
-		*mask |= bit;
+	    *mask |= bit;
 	    break;
 	} else if(*resp == '?') {
 	    print_time_table (stderr);
@@ -198,20 +197,34 @@ edit_attributes (const char *prompt, krb5_flags *attr, int *mask, int bit)
 }
 
 int
-edit_entry(kadm5_principal_ent_t ent, int *mask)
+edit_entry(kadm5_principal_ent_t ent, int *mask,
+	   kadm5_principal_ent_t default_ent, int default_mask)
 {
+    if (default_ent && (default_mask & KADM5_MAX_LIFE))
+	ent->max_life = default_ent->max_life;
     edit_time ("Max ticket life", &ent->max_life, mask,
 	       KADM5_MAX_LIFE);
+    if (default_ent && (default_mask & KADM5_MAX_RLIFE))
+	ent->max_renewable_life = default_ent->max_renewable_life;
     edit_time ("Max renewable life", &ent->max_renewable_life, mask,
 	       KADM5_MAX_RLIFE);
+    if (default_ent && (default_mask & KADM5_ATTRIBUTES))
+	ent->attributes = default_ent->attributes & ~KRB5_KDB_DISALLOW_ALL_TIX;
     edit_attributes ("Attributes", &ent->attributes, mask,
 		     KADM5_ATTRIBUTES);
     return 0;
 }
 
+/*
+ * Parse the arguments, set the fields in `ent' and the `mask' for the
+ * entries having been set.
+ * Return 1 on failure and 0 on success.
+ */
+
 int
 set_entry(krb5_context context,
-	  kadm5_principal_ent_t ent, int *mask,
+	  kadm5_principal_ent_t ent,
+	  int *mask,
 	  const char *max_ticket_life,
 	  const char *max_renewable_life,
 	  const char *attributes)
