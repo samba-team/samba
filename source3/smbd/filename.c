@@ -229,7 +229,9 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
  Return True if we translated (and did a scuccessful stat on) the entire name.
 *****************************************************************************/
 
-static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRUCT_STAT *pst)
+static BOOL stat_cache_lookup(struct connection_struct *conn, char *name, 
+			      char *dirpath, char **start, 
+			      SMB_STRUCT_STAT *pst)
 {
   stat_cache_entry *scp;
   stat_cache_entry *longest_hit = NULL;
@@ -282,7 +284,7 @@ static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRU
    * and then promote it to the top.
    */
 
-  if(dos_stat( longest_hit->translated_name, pst) != 0) {
+  if(conn->vfs_ops.stat(longest_hit->translated_name, pst) != 0) {
     /*
      * Discard this entry.
      */
@@ -431,7 +433,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 
   pstrcpy(orig_path, name);
 
-  if(stat_cache_lookup( name, dirpath, &start, &st)) {
+  if(stat_cache_lookup(conn, name, dirpath, &start, &st)) {
     if(pst)
       *pst = st;
     return True;
