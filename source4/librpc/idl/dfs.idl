@@ -88,10 +88,48 @@
 		[size_is(count)] dfs_Info3 *s;
 	} dfs_EnumArray3;
 
+	typedef struct {
+		unistr *path;
+		unistr *comment;
+		uint32 state;
+		uint32 timeout;
+		GUID   guid;
+		uint32 num_stores;
+		[size_is(num_stores)] dfs_StorageInfo *stores;
+	} dfs_Info4;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info4 *s;
+	} dfs_EnumArray4;
+
+	typedef struct {
+		unistr *dom_root;
+	} dfs_Info200;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info200 *s;
+	} dfs_EnumArray200;
+
+	typedef struct {
+		uint32 flags;
+		unistr *dom_root;
+	} dfs_Info300;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info300 *s;
+	} dfs_EnumArray300;
+
+
 	typedef union {
 		case(1) dfs_EnumArray1 *info1;
 		case(2) dfs_EnumArray2 *info2;
 		case(3) dfs_EnumArray3 *info3;
+		case(4) dfs_EnumArray4 *info4;
+		case(200) dfs_EnumArray200 *info200;
+		case(300) dfs_EnumArray300 *info300;
 	} dfs_EnumInfo;
 
 	typedef struct {

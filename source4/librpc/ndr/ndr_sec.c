@@ -203,10 +203,10 @@ NTSTATUS ndr_push_security_ace(struct ndr_push *ndr, struct security_ace *ace)
 	if (sec_ace_object(ace->type)) {
 		NDR_CHECK(ndr_push_uint32(ndr, ace->obj->flags));
 		if (ace->obj->flags & SEC_ACE_OBJECT_PRESENT) {
-			NDR_CHECK(ndr_push_GUID(ndr, &ace->obj->object_guid));
+			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &ace->obj->object_guid));
 		}
 		if (ace->obj->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
-			NDR_CHECK(ndr_push_GUID(ndr, &ace->obj->inherit_guid));
+			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &ace->obj->inherit_guid));
 		}
 	}
 

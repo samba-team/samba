@@ -41,28 +41,26 @@ static BOOL test_Exist(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-static BOOL test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 level)
 {
 	NTSTATUS status;
 	struct dfs_Enum r;
 	uint32 total=0;
 	struct dfs_EnumStruct e;
-	uint32 i = 0;
 	struct dfs_Info1 s;
-	struct dfs_EnumArray1 e2;
-
-	r.in.level = 3;
+	struct dfs_EnumArray1 e1;
+	
+	r.in.level = level;
 	r.in.bufsize = (uint32)-1;
 	r.in.total = &total;
-	r.in.unknown = NULL;
+	r.in.unknown = &total;
 	r.in.info = &e;
 
 	e.level = r.in.level;
-	e.e.info1 = &e2;
+	e.e.info1 = &e1;
 	e.e.info1->count = 0;
 	e.e.info1->s = &s;
 	s.path = NULL;
-
 	
 	status = dcerpc_dfs_Enum(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -70,11 +68,24 @@ static BOOL test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
+	printf("Received %d records\n", r.out.total?*r.out.total:-1);
+
 	NDR_PRINT_DEBUG(dfs_EnumStruct, r.out.info);
 
-	printf("total=%d\n", r.out.total?*r.out.total:-1);
-
 	return True;
+}
+
+static BOOL test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	BOOL ret = True;
+	uint16 levels[] = {1, 2, 3, 4, 200, 300};
+	int i;
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		if (!test_EnumLevel(p, mem_ctx, levels[i])) {
+			ret = False;
+		}
+	}
+	return ret;
 }
 
 BOOL torture_rpc_dfs(int dummy)
