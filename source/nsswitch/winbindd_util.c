@@ -499,9 +499,9 @@ static BOOL parse_id_list(char *paramstr, BOOL is_user)
     uid_t id_low, id_high = 0;
     struct winbindd_domain *domain;
     fstring domain_name;
-    char *p;
+    fstring p;
 
-    for (p = strtok(paramstr, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+    while(next_token(&paramstr, p, LIST_SEP, sizeof(fstring) - 1)) {
 
         /* Parse domain entry */
 
@@ -566,8 +566,73 @@ static BOOL parse_id_list(char *paramstr, BOOL is_user)
 
 BOOL winbindd_param_init(void)
 {
+    BOOL result;
+
     /* Parse winbind uid and winbind_gid parameters */
 
-    return (parse_id_list(lp_winbind_uid(), True) &&
-            parse_id_list(lp_winbind_gid(), False));
+    result = parse_id_list(lp_winbind_uid(), True) &&
+        parse_id_list(lp_winbind_gid(), False);
+
+    /* Perform other sanity checks on results.  The only fields we have filled
+       in at the moment are name and [ug]id_{low,high} */
+
+    if (result) {
+        struct winbindd_domain *temp, *temp2;
+
+        /* Check for duplicate domain names */
+
+        for (temp = domain_list; temp; temp = temp->next) {
+
+            /* Check for reversed uid and gid ranges */
+
+            if (temp->uid_low > temp->uid_high) {
+                DEBUG(0, ("uid range for domain %s invalid\n", temp->name));
+                return False;
+            }
+
+            if (temp->gid_low > temp->gid_high) {
+                DEBUG(0, ("gid range for domain %s invalid\n", temp->name));
+                return False;
+            }
+
+            for (temp2 = domain_list; temp2; temp2 = temp2->next) {
+                if (temp != temp2) {
+                    
+                    /* Check for duplicate domain names */
+                    
+                    if ((temp != temp2) && strequal(temp->name, temp2->name)) {
+                        DEBUG(0, ("found duplicate domain %s in winbind "
+                                  "domain list\n", temp->name));
+                        return False;
+                    }
+
+                    /* Check for overlapping uid ranges */
+
+                    if (((temp->uid_low >= temp2->uid_low) &&
+                         (temp->uid_low <= temp2->uid_high)) ||
+                        ((temp->uid_high >= temp2->uid_low) &&
+                         (temp->uid_high <= temp2->uid_high))) {
+                        
+                        DEBUG(0, ("uid ranges for domains %s and %s overlap\n",
+                                  temp->name, temp2->name));
+                        return False;
+                    }
+
+                    /* Check for overlapping gid ranges */
+
+                    if (((temp->gid_low >= temp2->gid_low) &&
+                         (temp->gid_low <= temp2->gid_high)) ||
+                        ((temp->gid_high >= temp2->gid_low) &&
+                         (temp->gid_high <= temp2->gid_high))) {
+
+                        DEBUG(0, ("gid ranges for domains %s and %s overlap\n",
+                                 temp->name, temp2->name));
+                        return False;
+                    }                    
+                }
+            }
+        }
+    }
+
+    return result;
 }
