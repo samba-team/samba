@@ -31,6 +31,7 @@
  * SUCH DAMAGE.
  */
 
+#if 0
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)util.c	8.2 (Berkeley) 4/2/94";
@@ -38,6 +39,12 @@ static char sccsid[] = "@(#)util.c	8.2 (Berkeley) 4/2/94";
 static const char rcsid[] =
   "$FreeBSD: src/bin/rcp/util.c,v 1.9 1999/08/27 23:14:58 peter Exp $";
 #endif /* not lint */
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+RCSID("$Id$");
+#endif
 
 #include <sys/param.h>
 #include <sys/stat.h>
@@ -112,7 +119,7 @@ susystem(s, userid)
 	int userid;
 	char *s;
 {
-	sig_t istat, qstat;
+	void (*istat)(int), (*qstat)(int);
 	int status;
 	pid_t pid;
 
