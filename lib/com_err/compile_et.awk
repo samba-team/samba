@@ -92,6 +92,17 @@ END {
 	print "    et->next = *list;" > c_file
 	print "    *list = et;" > c_file
 	print "}" > c_file
+	print "" > c_file
+	print "void destroy_" name "_error_table (struct error_table *list)" > c_file
+	print "{" > c_file
+	print "     struct error_table *next;" > c_file
+	print "" > c_file
+	print "     while(list) {" > c_file
+	print "         next = list->next;" > c_file
+	print "         free(list);" > c_file
+        print "         list = next;" > c_file
+	print "     }" > c_file
+	print "}" > c_file
 	close(c_file)
 
 	print "\t" name "_num_errors = " number > h_file
