@@ -52,6 +52,9 @@ static void fault_report(int sig)
 #ifdef SIGBUS
 		CatchSignal(SIGBUS,SIGNAL_CAST SIG_DFL);
 #endif
+#ifdef SIGILL
+		CatchSignal(SIGILL, SIGNAL_CAST SIG_DFL);
+#endif
 		return; /* this should cause a core dump */
 	}
 	exit(1);
@@ -77,6 +80,9 @@ void fault_setup(void (*fn)(void *))
 #endif
 #ifdef SIGBUS
 	CatchSignal(SIGBUS,SIGNAL_CAST sig_fault);
+#endif
+#ifdef SIGILL
+	CatchSignal(SIGILL,SIGNAL_CAST sig_fault);
 #endif
 }
 

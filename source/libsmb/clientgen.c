@@ -1002,16 +1002,17 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
 			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
 			           cli->usr.user_name, myhostname,
-			           cli->usr.domain);
+			           cli->usr.domain, sess_key);
 		}
 		else
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
-			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey);
+			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey,
+			                  sess_key);
 		}
 
 		pwd_get_lm_nt_owf(&(cli->usr.pwd), pass, ntpass,
-		                  ntpasslen, sess_key);
+		                  ntpasslen);
 
 		*passlen = 24; 
 	}
@@ -1038,7 +1039,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	return cli_calc_session_pwds(cli, myhostname, pword, ntpword,
 				pass, &passlen,
-				ntpass, &ntpasslen, cli->nt.sess_key,
+				ntpass, &ntpasslen, cli->nt.usr_sess_key,
 	                        cli->use_ntlmv2) &&
 	       cli_session_setup_x(cli, user, pass, passlen, ntpass, ntpasslen,
 				user_domain);
@@ -3223,12 +3224,15 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
 			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
-			           cli->usr.user_name, calling->name, cli->usr.domain);
+			           cli->usr.user_name, calling->name,
+			           cli->usr.domain,
+			           cli->nt.usr_sess_key);
 		}
 		else
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
-			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey);
+			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey,
+			           cli->nt.usr_sess_key);
 		}
 
 		create_ntlmssp_resp(&cli->usr.pwd, cli->usr.domain,
@@ -3378,16 +3382,19 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
 			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
-			           cli->usr.user_name, calling->name, cli->usr.domain);
+			           cli->usr.user_name, calling->name,
+			           cli->usr.domain,
+			           cli->nt.usr_sess_key);
 		}
 		else
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
-			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey);
+			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey,
+			                   cli->nt.usr_sess_key);
 		}
 
 		pwd_get_lm_nt_owf(&(cli->usr.pwd), lm_sess_pwd, nt_sess_pwd,
-		                  &nt_sess_pwd_len, cli->nt.sess_key);
+		                  &nt_sess_pwd_len);
 
 		/* attempt encrypted session */
 		if (!cli_session_setup_x(cli, cli->usr.user_name,
@@ -3888,6 +3895,12 @@ BOOL get_any_dc_name(const char *domain, char *srv_name)
 	DEBUG(10,("get_any_dc_name: domain %s\n", domain));
 
 	servers = get_trusted_serverlist(domain);
+
+	if (servers == NULL)
+	{
+		/* no domain found, not even our own domain. */
+		return False;
+	}
 
 	if (servers[0] == 0)
 	{

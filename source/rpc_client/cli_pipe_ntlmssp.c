@@ -483,6 +483,7 @@ static BOOL create_ntlmssp_bind_cont(struct cli_connection *con,
 	unsigned char p24[24];
 	unsigned char lm_owf[24];
 	unsigned char lm_hash[16];
+	unsigned char usr_sess_key[16];
 
 	prs_struct hdra;
 	prs_struct hdr_autha;
@@ -504,7 +505,7 @@ static BOOL create_ntlmssp_bind_cont(struct cli_connection *con,
 	prs_init(&hdr_autha, 0x0, 4, False);
 	prs_init(&auth_resp, 0x0, 4, False);
 
-	pwd_make_lm_nt_owf(&usr->pwd, a->ntlmssp_chal.challenge);
+	pwd_make_lm_nt_owf(&usr->pwd, a->ntlmssp_chal.challenge, usr_sess_key);
 
 	create_ntlmssp_rpc_bind_resp(&usr->pwd, usr->domain,
 			     usr->user_name, global_myname,
@@ -512,7 +513,8 @@ static BOOL create_ntlmssp_bind_cont(struct cli_connection *con,
 			     rpc_call_id,
 			     &hdra, &hdr_autha, &auth_resp);
 			    
-	pwd_get_lm_nt_owf(&usr->pwd, lm_owf, NULL, NULL, NULL);
+	cli_set_con_usr_sesskey(con, usr_sess_key);
+	pwd_get_lm_nt_owf(&usr->pwd, lm_owf, NULL, NULL);
 	pwd_get_lm_nt_16(&usr->pwd, lm_hash, NULL);
 	NTLMSSPOWFencrypt(lm_hash, lm_owf, p24);
 	{

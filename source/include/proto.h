@@ -956,11 +956,12 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd,
 void pwd_get_lm_nt_16(const struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
 void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr);
 void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
-		const char *user, const char *server, const char *domain);
-void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8]);
+		const char *user, const char *server, const char *domain,
+					uchar sess_key[16]);
+void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8],
+				uchar sess_key[16]);
 void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
-				uchar *nt_owf, size_t *nt_owf_len,
-				uchar *sess_key);
+				uchar *nt_owf, size_t *nt_owf_len);
 
 /*The following definitions come from  libsmb/smbdes.c  */
 
@@ -1934,6 +1935,8 @@ BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con);
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
 BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
+BOOL cli_set_con_usr_sesskey(struct cli_connection *con,
+				const uchar usr_sess_key[16]);
 BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16]);
 struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con);
 void *cli_conn_get_auth_creds(struct cli_connection *con);

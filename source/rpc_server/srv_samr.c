@@ -1173,15 +1173,7 @@ static void samr_reply_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
 	/* store the response in the SMB stream */
 	samr_io_r_query_groupmem("", &r_u, rdata, 0);
 
-	if (rid != NULL)
-	{
-		free(rid);
-	}
-
-	if (attr != NULL)
-	{
-		free(attr);
-	}
+	samr_free_r_query_groupmem(&r_u);
 
 	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
 
@@ -1417,10 +1409,7 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 	/* store the response in the SMB stream */
 	samr_io_r_query_useraliases("", &r_u, rdata, 0);
 
-	if (rid != NULL)
-	{
-		free(rid);
-	}
+	samr_free_r_query_useraliases(&r_u);
 
 	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
 

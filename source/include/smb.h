@@ -1780,18 +1780,18 @@ struct pwd_info
 	uchar lm_cli_chal[8];
 	uchar nt_cli_chal[128];
 	size_t nt_cli_chal_len;
-
-	uchar sess_key[16];
 };
 
 #include "rpc_creds.h"
 
 struct ntdom_info
 {
-	unsigned char sess_key[16];        /* Current session key. */
+	unsigned char usr_sess_key[16];   /* Current user session key. */
 	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */
 	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
-	DOM_CRED clnt_cred;                /* Client credential. */
+
+	unsigned char sess_key[16];        /* Client NETLOGON session key. */
+	DOM_CRED clnt_cred;                /* Client NETLOGON credential. */
 
 	int max_recv_frag;
 	int max_xmit_frag;

@@ -22,7 +22,6 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-extern int Protocol;
 
 extern pstring scope;
 extern pstring global_myname;
@@ -127,6 +126,9 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar challenge[8],
 	DEBUG(4,("Checking SMB password for user %s\n", 
 		 smb_pass->unix_name));
 
+	dump_data_pw("lm password:\n", lm_pass, lm_pwd_len);
+	dump_data_pw("nt password:\n", nt_pass, nt_pwd_len);
+
 	if (smb_pass->acct_ctrl & ACB_DISABLED)
 	{
 		DEBUG(3,("account for user %s was disabled.\n", 
@@ -140,7 +142,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar challenge[8],
 		return False;
 	}
 
-	if ((Protocol >= PROTOCOL_NT1) && (smb_pass->smb_nt_passwd != NULL))
+	if (smb_pass->smb_nt_passwd != NULL)
 	{
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it (ie. does it exist in the smbpasswd file).
@@ -193,7 +195,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar challenge[8],
 	if ((smb_pass->smb_passwd != NULL) && 
 	   smb_pwd_check_ntlmv1((char *)lm_pass, 
 			      (uchar *)smb_pass->smb_passwd,
-				challenge, NULL))
+				challenge, user_sess_key))
 	{
 		DEBUG(4,("LM MD4 password check succeeded\n"));
 		return(True);

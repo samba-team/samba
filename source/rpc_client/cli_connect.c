@@ -203,7 +203,8 @@ terminate client connection
 ****************************************************************************/
 void cli_connection_free(struct cli_connection *con)
 {
-	BOOL closed;
+	BOOL closed = False;
+	void *oldcli = NULL;
 	int i;
 
 	if (con->msrpc.cli != NULL)
@@ -213,6 +214,8 @@ void cli_connection_free(struct cli_connection *con)
 			case MSRPC_LOCAL:
 			{
 				msrpc_use_del(con->srv_name, NULL, False, &closed);
+				oldcli = con->msrpc.local;
+				con->msrpc.local = NULL;
 				break;
 			}
 			case MSRPC_SMB:
@@ -223,6 +226,8 @@ void cli_connection_free(struct cli_connection *con)
 							     con->msrpc.smb->fnum);
 				}
 				cli_net_use_del(con->srv_name, &con->usr_creds.ntc, False, &closed);
+				oldcli = con->msrpc.smb;
+				con->msrpc.smb = NULL;
 				break;
 			}
 		}
@@ -235,7 +240,7 @@ void cli_connection_free(struct cli_connection *con)
 			struct cli_connection *c = con_list[i];
 			if (c != NULL &&
 			    con != c &&
-			    c->msrpc.cli == con->msrpc.cli)
+			    c->msrpc.cli == oldcli)
 			{
 				/* WHOOPS! fnum already open: too bad!!!
 				   get rid of all other connections that
@@ -250,8 +255,8 @@ void cli_connection_free(struct cli_connection *con)
 					}
 					case MSRPC_SMB:
 					{
-						c->msrpc.smb->cli = NULL;
-						c->msrpc.smb->fnum = 0xffff;
+						c->msrpc.smb = NULL;
+						break;
 					}
 				}
 			}
@@ -392,35 +397,34 @@ BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from)
 }
 
 /****************************************************************************
-get a user session key associated with a connection associated with a
-policy handle.
+set a user session key associated with a connection 
 ****************************************************************************/
-BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16])
+BOOL cli_set_con_usr_sesskey(struct cli_connection *con,
+				const uchar usr_sess_key[16])
 {
-	char *src_key = NULL;
-
+	struct ntdom_info *nt;
 	if (con == NULL)
 	{
 		return False;
 	}
-	switch (con->type)
+	nt = cli_conn_get_ntinfo(con);
+	memcpy(nt->usr_sess_key, usr_sess_key, sizeof(nt->usr_sess_key));
+
+	return True;
+}
+
+/****************************************************************************
+get a user session key associated with a connection 
+****************************************************************************/
+BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16])
+{
+	struct ntdom_info *nt;
+	if (con == NULL)
 	{
-		case MSRPC_LOCAL:
-		{
-			src_key = con->msrpc.local->usr.ntc.pwd.sess_key;
-			break;
-		}
-		case MSRPC_SMB:
-		{
-			src_key = con->msrpc.smb->cli->usr.pwd.sess_key;
-			break;
-		}
-		default:
-		{
-			return False;
-		}
+		return False;
 	}
-	memcpy(usr_sess_key, src_key, 16);
+	nt = cli_conn_get_ntinfo(con);
+	memcpy(usr_sess_key, nt->usr_sess_key, sizeof(nt->usr_sess_key));
 
 	return True;
 }

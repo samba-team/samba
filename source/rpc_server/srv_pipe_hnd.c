@@ -89,8 +89,8 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	ZERO_STRUCT(usr);
 
-	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
-		 pipe_name, pipes_open));
+	DEBUG(4,("Open pipe requested %s by vuid %d (pipes_open=%d)\n",
+		 pipe_name, vuid, pipes_open));
 	
 	if (vuser == NULL)
 	{
@@ -99,12 +99,14 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	}
 
 	/* set up unix credentials from the smb side, to feed over the pipe */
+	usr.ptr_uxc = 1;
 	make_creds_unix(&usr.uxc, vuser->name, vuser->requested_name,
 	                              vuser->real_name, vuser->guest);
-	usr.ptr_uxc = 1;
+	usr.ptr_uxs = 1;
 	make_creds_unix_sec(&usr.uxs, vuser->uid, vuser->gid,
 	                              vuser->n_groups, vuser->groups);
-	usr.ptr_uxs = 1;
+	usr.ptr_ssk = 1;
+	memcpy(usr.usr_sess_key, vuser->user_sess_key, sizeof(usr.usr_sess_key));
 
 	/* set up nt credentials from the smb side, to feed over the pipe */
 	/* lkclXXXX todo!

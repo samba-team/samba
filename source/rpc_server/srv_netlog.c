@@ -791,7 +791,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
  *************************************************************************/
 static uint32 net_login_general(NET_ID_INFO_4 *id4,
 				struct dcinfo *dc,
-				char sess_key[16])
+				char usr_sess_key[16])
 {
 	fstring user;
 	fstring domain;
@@ -823,13 +823,13 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 		dump_data(100, key, 16);
 
 		DEBUG(100,("user sess key:"));
-		dump_data(100, sess_key, 16);
+		dump_data(100, usr_sess_key, 16);
 #endif
-		SamOEMhash((uchar *)sess_key, key, 0);
+		SamOEMhash((uchar *)usr_sess_key, key, 0);
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("encrypt of user session key:"));
-		dump_data(100, sess_key, 16);
+		dump_data(100, usr_sess_key, 16);
 #endif
 
                   return 0x0;
@@ -844,7 +844,7 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 static uint32 net_login_network(NET_ID_INFO_2 *id2,
 				struct sam_passwd *sam_pass,
 				struct dcinfo *dc,
-				char sess_key[16],
+				char usr_sess_key[16],
 				char lm_pw8[8])
 {
 	fstring user;
@@ -864,7 +864,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	                    id2->lm_chal, 
 	                    (uchar *)id2->lm_chal_resp.buffer, lm_pw_len, 
 	                    (uchar *)id2->nt_chal_resp.buffer, nt_pw_len,
-	                    NULL, sess_key)) 
+	                    NULL, usr_sess_key)) 
 	{
 		unsigned char key[16];
 
@@ -878,17 +878,17 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 		dump_data(100, key, 16);
 
 		DEBUG(100,("user sess key:"));
-		dump_data(100, sess_key, 16);
+		dump_data(100, usr_sess_key, 16);
 
 		DEBUG(100,("lm_pw8:"));
 		dump_data(100, lm_pw8, 16);
 #endif
 		SamOEMhash((uchar *)lm_pw8, key, 3);
-		SamOEMhash((uchar *)sess_key, key, 0);
+		SamOEMhash((uchar *)usr_sess_key, key, 0);
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("encrypt of user session key:"));
-		dump_data(100, sess_key, 16);
+		dump_data(100, usr_sess_key, 16);
 		DEBUG(100,("encrypt of lm_pw8:"));
 		dump_data(100, lm_pw8, 16);
 #endif
@@ -910,7 +910,7 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 	UNISTR2 *uni_domain = NULL;
 	fstring nt_username;
 	char *enc_user_sess_key = NULL;
-	char sess_key[16];
+	char usr_sess_key[16];
 	char lm_pw8[16];
 	char *padding = NULL;
 
@@ -1010,8 +1010,8 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 	{
 		/* general login.  cleartext password */
 		uint32 status = 0x0;
-		status = net_login_general(&q_l->sam_id.ctr->auth.id4, &dc, sess_key);
-		enc_user_sess_key = sess_key;
+		status = net_login_general(&q_l->sam_id.ctr->auth.id4, &dc, usr_sess_key);
+		enc_user_sess_key = usr_sess_key;
 
 		if (status != 0x0)
 		{
@@ -1082,9 +1082,9 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 			case NETWORK_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
-				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, &dc, sess_key, lm_pw8);
+				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, &dc, usr_sess_key, lm_pw8);
 				padding = lm_pw8;
-				enc_user_sess_key = sess_key;
+				enc_user_sess_key = usr_sess_key;
 				break;
 			}
 			case GENERAL_LOGON_TYPE:
@@ -1140,7 +1140,7 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 		gids    , /* DOM_GID *gids */
 		0x20    , /* uint32 user_flgs (?) */
 
-		enc_user_sess_key, /* char sess_key[16] */
+		enc_user_sess_key, /* char usr_sess_key[16] */
 
 		global_myname  , /* char *logon_srv */
 		global_sam_name, /* char *logon_dom */

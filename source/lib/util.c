@@ -3088,7 +3088,10 @@ void dump_data_pw(const char *msg, const uchar* data, size_t len)
 {
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("%s", msg));
-	dump_data(100, data, len);
+	if (data != NULL && len > 0)
+	{
+		dump_data(100, data, len);
+	}
 #endif
 }
 

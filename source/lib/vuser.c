@@ -89,6 +89,7 @@ uint16 create_vuid(uid_t uid, gid_t gid, int n_groups, gid_t *groups,
 				BOOL guest, uchar user_sess_key[16])
 {
   user_struct *vuser;
+	uint16 vuid;
 
   validated_users = (user_struct *)Realloc(validated_users,
 			   sizeof(user_struct)*
@@ -115,9 +116,12 @@ uint16 create_vuid(uid_t uid, gid_t gid, int n_groups, gid_t *groups,
   vuser->n_groups = n_groups;
 	vuser->groups = groups;
 
-  DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
+  vuid = (uint16)((num_validated_users - 1) + VUID_OFFSET);
+  DEBUG(3,("uid %d vuid %d registered to name %s\n",(int)uid, vuid, unix_name));
+  dump_data_pw("vuid usr sess key:\n", vuser->user_sess_key,
+               sizeof(vuser->user_sess_key));
 
-  return (uint16)((num_validated_users - 1) + VUID_OFFSET);
+  return vuid;
 }
 
 /****************************************************************************

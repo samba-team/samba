@@ -156,6 +156,7 @@ static uint32 domain_client_validate( char *user, char *domain,
 	{
 		memcpy(user_sess_key, info3.user_sess_key,
 		       sizeof(info3.user_sess_key));
+		dump_data_pw("user session key\n", user_sess_key, 16);
 	}
 
 	/*

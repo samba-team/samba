@@ -512,7 +512,7 @@ void create_ntlmssp_resp(struct pwd_info *pwd,
 	uchar nt_owf[128];
 	size_t nt_owf_len;
 
-	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len, NULL);
+	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len);
 			
 	make_rpc_auth_ntlmssp_resp(&ntlmssp_resp,
 			         lm_owf, nt_owf, nt_owf_len,

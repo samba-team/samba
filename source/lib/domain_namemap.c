@@ -56,27 +56,41 @@ extern DOM_SID global_sam_sid;
 extern DOM_SID global_sid_S_1_5_20;
 
 /*******************************************************************
+ converts a RID to a UNIX ID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
+ ********************************************************************/
+static BOOL pwdb_rid_to_unix_id(uint32 rid, uint32 *id, int type)
+{
+	if((id == NULL) || (rid < 1000))
+		return False;
+	rid -= 1000;
+	if((rid % RID_MULTIPLIER) != type)
+		return False;
+	*id = rid / RID_MULTIPLIER;
+	return True;
+}
+
+/*******************************************************************
  converts UNIX uid to an NT User RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
  ********************************************************************/
-static uid_t pwdb_user_rid_to_uid(uint32 user_rid)
+static BOOL pwdb_user_rid_to_uid(uint32 user_rid, uint32 *id)
 {
-	return ((user_rid & (~RID_TYPE_USER))- 1000)/RID_MULTIPLIER;
+	return pwdb_rid_to_unix_id(user_rid, id, RID_TYPE_USER);
 }
 
 /*******************************************************************
  converts NT Group RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
  ********************************************************************/
-static uint32 pwdb_group_rid_to_gid(uint32 group_rid)
+static BOOL pwdb_group_rid_to_gid(uint32 group_rid, uint32 *id)
 {
-	return ((group_rid & (~RID_TYPE_GROUP))- 1000)/RID_MULTIPLIER;
+	return pwdb_rid_to_unix_id(group_rid, id, RID_TYPE_GROUP);
 }
 
 /*******************************************************************
  converts NT Alias RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
  ********************************************************************/
-static uint32 pwdb_alias_rid_to_gid(uint32 alias_rid)
+static BOOL pwdb_alias_rid_to_gid(uint32 alias_rid, uint32 *id)
 {
-	return ((alias_rid & (~RID_TYPE_ALIAS))- 1000)/RID_MULTIPLIER;
+	return pwdb_rid_to_unix_id(alias_rid, id, RID_TYPE_ALIAS);
 }
 
 /*******************************************************************
@@ -126,19 +140,16 @@ static BOOL pwdb_sam_sid_to_unixid(DOM_SID *sid, uint8 type, uint32 *id)
 	{
 		case SID_NAME_USER:
 		{
-			*id = pwdb_user_rid_to_uid(rid);
-			return True;
+			return pwdb_user_rid_to_uid(rid, id);
 		}
 		case SID_NAME_ALIAS:
 		{
-			*id = pwdb_alias_rid_to_gid(rid);
-			return True;
+			return pwdb_alias_rid_to_gid(rid, id);
 		}
 		case SID_NAME_DOM_GRP:
 		case SID_NAME_WKN_GRP:
 		{
-			*id = pwdb_group_rid_to_gid(rid);
-			return True;
+			return pwdb_group_rid_to_gid(rid, id);
 		}
 	}
 	return False;
