@@ -463,7 +463,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SSVAL(p,l1_attrFile,mode);
       p += l1_achName;
       nameptr = p;
-      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+      len = srvstr_push(outbuf, p, fname, -1, 
 			STR_TERMINATE|STR_CONVERT);
       SCVAL(p, -1, len);
       p += len;
@@ -484,7 +484,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,l2_cbList,0); /* No extended attributes */
       p += l2_achName;
       nameptr = p;
-      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+      len = srvstr_push(outbuf, p, fname, -1, 
 			STR_TERMINATE|STR_CONVERT);
       SCVAL(p, -1, len);
       p += len;
@@ -501,7 +501,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,26,4);
       p += 31;
       nameptr = p;
-      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+      len = srvstr_push(outbuf, p, fname, -1, 
 			STR_TERMINATE|STR_CONVERT);
       SCVAL(p, -1, len);
       p += len;
@@ -521,7 +521,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SSVAL(p,24,mode);
       p += 33;
       nameptr = p;
-      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+      len = srvstr_push(outbuf, p, fname, -1, 
 			STR_TERMINATE|STR_CONVERT);
       SCVAL(p, -1, len);
       p += len;
@@ -548,7 +548,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	      pstrcpy(mangled_name, fname);
 	      name_map_mangle(mangled_name,True,True,SNUM(conn));
 	      mangled_name[12] = 0;
-	      len = srvstr_push(inbuf, outbuf, p+2, mangled_name, 24, 
+	      len = srvstr_push(outbuf, p+2, mangled_name, 24, 
 				STR_CONVERT|STR_UPPER);
 	      SSVAL(p, 0, len);
       } else {
@@ -556,7 +556,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	      *(p+2) = 0;
       }
       p += 2 + 24;
-      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+      len = srvstr_push(outbuf, p, fname, -1, 
 			STR_TERMINATE|STR_CONVERT);
       SIVAL(q,0,len);
       p += len;
@@ -578,7 +578,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
       p += 4;
-      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+      len = srvstr_push(outbuf, p, fname, -1, 
 			STR_TERMINATE|STR_CONVERT);
       SIVAL(p, -4, len);
       p += len;
@@ -603,7 +603,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       p += 4;
       SIVAL(p,0,0); p += 4;
 
-      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+      len = srvstr_push(outbuf, p, fname, -1, 
 			STR_TERMINATE|STR_CONVERT);
       SIVAL(p, -4, len);
       p += len;
@@ -618,7 +618,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       p += 4;
       SIVAL(p,0,reskey); p += 4;
       p += 4;
-      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+      len = srvstr_push(outbuf, p, fname, -1, 
 			STR_TERMINATE|STR_CONVERT);
       SIVAL(p, -4, len);
       p += len;

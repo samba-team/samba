@@ -23,7 +23,7 @@
 
 #include "includes.h"
 
-#define UNICODE_FLAG() (SVAL(inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS)
+#define UNICODE_FLAG(buf) (SVAL(buf, smb_flg2) & FLAGS2_UNICODE_STRINGS)
 
 /****************************************************************************
 copy a string from a char* src to a unicode or ascii
@@ -38,7 +38,7 @@ flags can have:
 dest_len is the maximum length allowed in the destination. If dest_len
 is -1 then no maxiumum is used
 ****************************************************************************/
-int srvstr_push(void *inbuf, void *outbuf, void *dest, const char *src, int dest_len, int flags)
+int srvstr_push(void *outbuf, void *dest, const char *src, int dest_len, int flags)
 {
 	int len=0;
 
@@ -47,14 +47,14 @@ int srvstr_push(void *inbuf, void *outbuf, void *dest, const char *src, int dest
 		dest_len = sizeof(pstring);
 	}
 
-	if (!(flags & STR_ASCII) && srvstr_align(inbuf, PTR_DIFF(dest, outbuf))) {
+	if (!(flags & STR_ASCII) && srvstr_align(outbuf, PTR_DIFF(dest, outbuf))) {
 		*(char *)dest = 0;
 		dest++;
 		dest_len--;
 		len++;
 	}
 
-	if ((flags & STR_ASCII) || !UNICODE_FLAG()) {
+	if ((flags & STR_ASCII) || !UNICODE_FLAG(outbuf)) {
 		/* the client doesn't want unicode */
 		safe_strcpy(dest, src, dest_len);
 		len = strlen(dest);
@@ -86,14 +86,14 @@ return the length that a string would occupy when copied with srvstr_push()
   STR_UPPER     means uppercase in the destination
 note that dest is only used for alignment purposes. No data is written.
 ****************************************************************************/
-int srvstr_push_size(void *inbuf, void *outbuf, 
+int srvstr_push_size(void *outbuf, 
 		     const void *dest, const char *src, int dest_len, int flags)
 {
 	int len = strlen(src);
 	if (flags & STR_TERMINATE) len++;
-	if (!(flags & STR_ASCII) && UNICODE_FLAG()) len *= 2;
+	if (!(flags & STR_ASCII) && UNICODE_FLAG(outbuf)) len *= 2;
 
-	if (!(flags & STR_ASCII) && dest && srvstr_align(inbuf, PTR_DIFF(outbuf, dest))) {
+	if (!(flags & STR_ASCII) && dest && srvstr_align(outbuf, PTR_DIFF(outbuf, dest))) {
 		len++;
 	}
 
@@ -124,7 +124,7 @@ int srvstr_pull(void *inbuf, char *dest, const void *src, int dest_len, int src_
 		if (src_len > 0) src_len--;
 	}
 
-	if ((flags & STR_ASCII) || (!(flags & STR_UNICODE) && !UNICODE_FLAG())) {
+	if ((flags & STR_ASCII) || (!(flags & STR_UNICODE) && !UNICODE_FLAG(inbuf))) {
 		/* the server doesn't want unicode */
 		if (flags & STR_TERMINATE) {
 			safe_strcpy(dest, src, dest_len);
@@ -168,7 +168,7 @@ int srvstr_pull_size(void *inbuf, const void *src, int src_len)
 		if (src_len > 0) src_len--;
 	}
 
-	if (!UNICODE_FLAG()) {
+	if (!UNICODE_FLAG(inbuf)) {
 		return strlen(src);
 	}	
 	return strlen_w(src);
@@ -181,6 +181,6 @@ otherwise return 1 if offset is off
 ****************************************************************************/
 int srvstr_align(void *inbuf, int offset)
 {
-	if (!UNICODE_FLAG()) return 0;
+	if (!UNICODE_FLAG(inbuf)) return 0;
 	return offset & 1;
 }
