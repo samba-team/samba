@@ -67,6 +67,7 @@ tdbtool:
   store     key  data  : store a record (replace)
   show      key        : show a record by key
   delete    key        : delete a record by key
+  free                 : print the database freelist
 ");
 }
 
@@ -273,6 +274,8 @@ int main(int argc, char *argv[])
             tdb_traverse(tdb, print_rec, NULL);
         } else if (strcmp(tok,"info") == 0) {
             info_tdb();
+		} else if (strcmp(tok, "free") == 0) {
+			tdb_printfreelist(tdb);
         } else {
             help();
         }
