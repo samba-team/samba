@@ -832,7 +832,8 @@ abortrecv(int sig)
 }
 
 void
-recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
+recvrequest(char *cmd, char *local, char *remote, 
+	    char *lmode, int printnames, int local_given)
 {
     FILE *fout, *din = 0;
     int (*closefunc) (FILE *);
@@ -873,7 +874,7 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 	return;
     }
     oldintr = signal(SIGINT, abortrecv);
-    if (strcmp(local, "-") && *local != '|') {
+    if (!local_given || (strcmp(local, "-") && *local != '|')) {
 	if (access(local, 2) < 0) {
 	    char *dir = strrchr(local, '/');
 
@@ -945,9 +946,9 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
     if (din == NULL)
 	goto abort;
     set_buffer_size(fileno(din), 1);
-    if (strcmp(local, "-") == 0)
+    if (local_given && strcmp(local, "-") == 0)
 	fout = stdout;
-    else if (*local == '|') {
+    else if (local_given && *local == '|') {
 	oldintp = signal(SIGPIPE, SIG_IGN);
 	fout = popen(local + 1, "w");
 	if (fout == NULL) {
