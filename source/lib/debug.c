@@ -384,7 +384,7 @@ BOOL need_to_check_log_size( void )
 {
 	int maxlog;
 
-	if( debug_count++ < 100 )
+	if( debug_count < 100 )
 		return( False );
 
 	maxlog = lp_max_log_size() * 1024;
@@ -468,6 +468,8 @@ void check_log_size( void )
 {
   va_list ap;  
   int old_errno = errno;
+
+  debug_count++;
 
   if( stdout_logging )
     {
