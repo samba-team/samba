@@ -93,17 +93,5 @@ kadm5_s_modify_principal(void *server_handle,
 			    KADM5_LAST_PWD_CHANGE | KADM5_MOD_TIME 
 			    | KADM5_MOD_NAME | KADM5_MKVNO 
 			    | KADM5_AUX_ATTRIBUTES | KADM5_LAST_SUCCESS
-			    | KADM5_LAST_FAILED | KADM5_KEY_DATA);
-}
-
-kadm5_ret_t
-kadm5_s_modify_principal_with_key(void *server_handle,
-				  kadm5_principal_ent_t princ, 
-				  u_int32_t mask)
-{
-    return modify_principal(server_handle, princ, mask, 
-			    KADM5_LAST_PWD_CHANGE | KADM5_MOD_TIME 
-			    | KADM5_MOD_NAME | KADM5_MKVNO 
-			    | KADM5_AUX_ATTRIBUTES | KADM5_LAST_SUCCESS
 			    | KADM5_LAST_FAILED);
 }
