@@ -86,7 +86,7 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	uint32		lmpwlen, ntpwlen, hourslen;
 	BOOL ret = True;
 	BOOL setflag;
-	gid_t gid;
+	gid_t gid = -1; /* This is what standard sub advanced expects if no gid is known */
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
