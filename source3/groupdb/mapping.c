@@ -144,10 +144,72 @@ char *decode_sid_name_use(fstring group, enum SID_NAME_USE name_use)
 }
 
 /****************************************************************************
+initialise first time the mapping list - called from init_group_mapping()
+****************************************************************************/
+static BOOL default_group_mapping(void)
+{
+	DOM_SID sid_admins;
+	DOM_SID sid_users;
+	DOM_SID sid_guests;
+	fstring str_admins;
+	fstring str_users;
+	fstring str_guests;
+	LUID_ATTR set;
+
+	PRIVILEGE_SET privilege_none;
+	PRIVILEGE_SET privilege_all;
+	PRIVILEGE_SET privilege_print_op;
+
+	init_privilege(&privilege_none);
+	init_privilege(&privilege_all);
+	init_privilege(&privilege_print_op);
+
+	set.attr=0;
+	set.luid.high=0;
+	set.luid.low=SE_PRIV_PRINT_OPERATOR;
+	add_privilege(&privilege_print_op, set);
+
+	add_all_privilege(&privilege_all);
+
+	/* Add the Wellknown groups */
+
+	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_ALIAS, "Administrators", "", privilege_all, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_ALIAS, "Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_ALIAS, "Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
+	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_ALIAS, "Power Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+
+	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_ALIAS, "Account Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_ALIAS, "System Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_ALIAS, "Print Operators", "", privilege_print_op, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_ALIAS, "Backup Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+
+	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_ALIAS, "Replicators", "", privilege_none, PR_ACCESS_FROM_NETWORK);
+
+	/* Add the defaults domain groups */
+
+	sid_copy(&sid_admins, &global_sam_sid);
+	sid_append_rid(&sid_admins, DOMAIN_GROUP_RID_ADMINS);
+	sid_to_string(str_admins, &sid_admins);
+	add_initial_entry(-1, str_admins, SID_NAME_DOM_GRP, "Domain Admins", "", privilege_all, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+
+	sid_copy(&sid_users,  &global_sam_sid);
+	sid_append_rid(&sid_users,  DOMAIN_GROUP_RID_USERS);
+	sid_to_string(str_users, &sid_users);
+	add_initial_entry(-1, str_users,  SID_NAME_DOM_GRP, "Domain Users",  "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+
+	sid_copy(&sid_guests, &global_sam_sid);
+	sid_append_rid(&sid_guests, DOMAIN_GROUP_RID_GUESTS);
+	sid_to_string(str_guests, &sid_guests);
+	add_initial_entry(-1, str_guests, SID_NAME_DOM_GRP, "Domain Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
+
+	return True;
+}
+
+/****************************************************************************
  Open the group mapping tdb.
 ****************************************************************************/
 
-BOOL init_group_mapping(void)
+static BOOL init_group_mapping(void)
 {
 	static pid_t local_pid;
 	char *vstring = "INFO/version";
@@ -239,6 +301,11 @@ BOOL add_initial_entry(gid_t gid, fstring sid, enum SID_NAME_USE sid_name_use,
 {
 	GROUP_MAP map;
 
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
+	
 	map.gid=gid;
 	string_to_sid(&map.sid, sid);
 	map.sid_name_use=sid_name_use;
@@ -343,11 +410,7 @@ check if the privilege list is empty
 ****************************************************************************/
 BOOL check_empty_privilege(PRIVILEGE_SET *priv_set)
 {
-
-	if (priv_set->count!=0)
-		return False;
-
-	return True;
+	return (priv_set->count == 0);
 }
 
 /****************************************************************************
@@ -436,69 +499,6 @@ BOOL remove_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 	
 	return True;	
 }
-
-/****************************************************************************
-initialise first time the mapping list
-****************************************************************************/
-BOOL default_group_mapping(void)
-{
-	DOM_SID sid_admins;
-	DOM_SID sid_users;
-	DOM_SID sid_guests;
-	fstring str_admins;
-	fstring str_users;
-	fstring str_guests;
-	LUID_ATTR set;
-
-	PRIVILEGE_SET privilege_none;
-	PRIVILEGE_SET privilege_all;
-	PRIVILEGE_SET privilege_print_op;
-
-	init_privilege(&privilege_none);
-	init_privilege(&privilege_all);
-	init_privilege(&privilege_print_op);
-
-	set.attr=0;
-	set.luid.high=0;
-	set.luid.low=SE_PRIV_PRINT_OPERATOR;
-	add_privilege(&privilege_print_op, set);
-
-	add_all_privilege(&privilege_all);
-
-	/* Add the Wellknown groups */
-
-	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_ALIAS, "Administrators", "", privilege_all, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_ALIAS, "Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_ALIAS, "Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
-	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_ALIAS, "Power Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-
-	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_ALIAS, "Account Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_ALIAS, "System Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_ALIAS, "Print Operators", "", privilege_print_op, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_ALIAS, "Backup Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-
-	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_ALIAS, "Replicators", "", privilege_none, PR_ACCESS_FROM_NETWORK);
-
-	/* Add the defaults domain groups */
-
-	sid_copy(&sid_admins, &global_sam_sid);
-	sid_append_rid(&sid_admins, DOMAIN_GROUP_RID_ADMINS);
-	sid_to_string(str_admins, &sid_admins);
-	add_initial_entry(-1, str_admins, SID_NAME_DOM_GRP, "Domain Admins", "", privilege_all, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-
-	sid_copy(&sid_users,  &global_sam_sid);
-	sid_append_rid(&sid_users,  DOMAIN_GROUP_RID_USERS);
-	sid_to_string(str_users, &sid_users);
-	add_initial_entry(-1, str_users,  SID_NAME_DOM_GRP, "Domain Users",  "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-
-	sid_copy(&sid_guests, &global_sam_sid);
-	sid_append_rid(&sid_guests, DOMAIN_GROUP_RID_GUESTS);
-	sid_to_string(str_guests, &sid_guests);
-	add_initial_entry(-1, str_guests, SID_NAME_DOM_GRP, "Domain Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
-
-	return True;
-}
-
 
 /****************************************************************************
 return the sid and the type of the unix group
@@ -910,6 +910,11 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 {
 	struct group *grp;
 
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
+
 	DEBUG(10, ("get_domain_group_from_sid\n"));
 
 	/* if the group is NOT in the database, it CAN NOT be a domain group */
@@ -953,6 +958,11 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 {
 	struct group *grp;
+
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
 
 	/* The group is in the mapping table */
 	if(get_group_map_from_sid(sid, map, with_priv)) {
@@ -1004,6 +1014,11 @@ BOOL get_builtin_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 {
 	struct group *grp;
 
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
+
 	if(!get_group_map_from_sid(sid, map, with_priv))
 		return False;
 
@@ -1036,6 +1051,11 @@ Returns a GROUP_MAP struct based on the gid.
 BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 {
 	struct group *grp;
+
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
 
 	if ( (grp=getgrgid(gid)) == NULL)
 		return False;
@@ -1084,6 +1104,11 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
 	char *gr;
 	uid_t *u;
  
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
+
 	*num_uids = 0;
 	*uid=NULL;
 	
@@ -1199,6 +1224,3 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 	DEBUG(3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
 	return ret;
 }
-
-
-

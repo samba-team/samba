@@ -255,11 +255,6 @@ int main (int argc, char **argv)
 		return 0;
 	}
 
-	if (init_group_mapping()==False) {
-		printf("Could not open tdb mapping file.\n");
-		return 0;
-	}
-	
 	while ((ch = getopt(argc, argv, "a:c:d:ln:p:st:u:vx:")) != EOF) {
 		switch(ch) {
 		case 'a':
