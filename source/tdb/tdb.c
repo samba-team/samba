@@ -761,7 +761,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB
 
 	/* loop over all hash chains */
 	for (h = 0; h < tdb->header.hash_size; h++) {
-		tdb_lock(tdb, BUCKET(h), F_RDLCK);
+		tdb_lock(tdb, BUCKET(h), F_WRLCK);
 
 		/* read in the hash top */
 		offset = tdb_hash_top(tdb, h);
