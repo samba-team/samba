@@ -83,6 +83,7 @@ setpeer(int argc, char **argv)
 {
 	char *host;
 	short port;
+	struct servent *sp;
 
 	if (connected) {
 		printf("Already connected to %s, use close first.\n",
@@ -97,6 +98,9 @@ setpeer(int argc, char **argv)
 		code = -1;
 		return;
 	}
+	sp = getservbyname("ftp", "tcp");
+	if (sp == NULL)
+		errx(1, "You bastard. You removed ftp/tcp from services");
 	port = sp->s_port;
 	if (argc > 2) {
 		port = atoi(argv[2]);
