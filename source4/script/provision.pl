@@ -364,11 +364,28 @@ system("ldbadd -H newsam.ldb newsam.ldif");
 
 print "done\n";
 
+$data = FileLoad("rootdse.ldif") || die "Unable to load rootdse.ldif\n";
+
+$res = "";
+
+print "applying substitutions ...\n";
+
+while ($data =~ /(.*?)\$\{(\w*)\}(.*)/s) {
+	my $sub = substitute($2);
+	$res .= "$1$sub";
+	$data = $3;
+}
+$res .= $data;
+
+print "saving ldif to newrootdse.ldif ...\n";
+
+FileSave("newrootdse.ldif", $res);
+
 unlink("newrootdse.ldb");
 
 print "creating newrootdse.ldb ...\n";
 
-system("ldbadd -H newrootdse.ldb rootdse.ldif");
+system("ldbadd -H newrootdse.ldb newrootdse.ldif");
 
 print "done\n";
 
@@ -407,6 +424,8 @@ Installation:
 - Please move newsam.ldb to sam.ldb in the private/ directory of your
   Samba4 installation
 - Please move newrootdse.ldb to rootdse.ldb in the private/ directory
+  of your Samba4 installation
+- Please move newhklm.ldb to hklm.ldb in the private/ directory
   of your Samba4 installation
 - Please use $dnsdomain.zone to in BIND dns server
 ";
