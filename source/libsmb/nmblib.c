@@ -301,8 +301,8 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
   
     p = &buf[offset+1];
     while ((p = strchr(p,'.'))) {
-      buf[offset] = PTR_DIFF(p,&buf[offset]);
-      offset += buf[offset];
+      buf[offset] = PTR_DIFF(p,&buf[offset+1]);
+      offset += (buf[offset] + 1);
       p = &buf[offset+1];
     }
     buf[offset] = strlen(&buf[offset+1]);
