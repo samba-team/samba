@@ -378,7 +378,7 @@ typedef struct dom_sid_s {
 typedef struct ace_struct_s {
   unsigned char type, flags;
   unsigned int perms;   /* Perhaps a better def is in order */
-  DOM_SID trustee;
+  DOM_SID *trustee;
 } ACE; 
 
 typedef struct acl_struct_s {
@@ -427,10 +427,13 @@ typedef int (*val_print_f)(char *path, char *val_name, int val_type,
 			   int data_len, void *data_blk, int terminal,
 			   int first, int last);
 
+typedef int (*sec_print_f)(SEC_DESC *sec_desc);
+
 typedef struct regf_struct_s REGF;
 
 int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path, 
-		    key_print_f key_print, val_print_f val_print);
+		    key_print_f key_print, sec_print_f sec_print,
+		    val_print_f val_print);
 
 int nt_val_list_iterator(REGF *regf, VAL_LIST *val_list, int bf, char *path,
 			 int terminal, val_print_f val_print)
@@ -457,7 +460,8 @@ int nt_val_list_iterator(REGF *regf, VAL_LIST *val_list, int bf, char *path,
 }
 
 int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, char *path,
-			 key_print_f key_print, val_print_f val_print)
+			 key_print_f key_print, sec_print_f sec_print, 
+			 val_print_f val_print)
 {
   int i;
 
@@ -465,7 +469,7 @@ int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, char *path,
 
   for (i=0; i< key_list->key_count; i++) {
     if (!nt_key_iterator(regf, key_list->keys[i], bf, path, key_print, 
-			 val_print)) {
+			 sec_print, val_print)) {
       return 0;
     }
   }
@@ -473,7 +477,8 @@ int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, char *path,
 }
 
 int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
-		    key_print_f key_print, val_print_f val_print)
+		    key_print_f key_print, sec_print_f sec_print,
+		    val_print_f val_print)
 {
   int path_len = strlen(path);
   char *new_path;
@@ -490,6 +495,14 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
 		      (key_tree->type == REG_ROOT_KEY),
 		      (key_tree->sub_keys == NULL),
 		      (key_tree->values?(key_tree->values->val_count):0)))
+      return 0;
+  }
+
+  /*
+   * If we have a security print routine, call it
+   */
+  if (sec_print) {
+    if (key_tree->security && !(*sec_print)(key_tree->security->sec_desc))
       return 0;
   }
 
@@ -519,7 +532,7 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
 
   if (key_tree->sub_keys && 
       !nt_key_list_iterator(regf, key_tree->sub_keys, bf, new_path, key_print, 
-			    val_print)) {
+			    sec_print, val_print)) {
     free(new_path);
     return 0;
   } 
@@ -609,7 +622,7 @@ struct regf_struct_s {
   NTTIME last_mod_time;
   REG_KEY *root;  /* Root of the tree for this file */
   int sk_count, sk_map_size;
-  SK_MAP **sk_map;
+  SK_MAP *sk_map;
 };
 
 /*
@@ -625,6 +638,8 @@ struct regf_struct_s {
 #define SVAL(buf) ((unsigned short) \
                    (unsigned short)*((unsigned char *)(buf)+1)<<8| \
                    (unsigned short)*((unsigned char *)(buf)+0)) 
+
+#define CVAL(buf) ((unsigned char)*((unsigned char *)(buf)))
 
 #define OFF(f) ((f) + REGF_HDR_BLKSIZ + 4) 
 #define LOCN(base, f) ((base) + OFF(f))
@@ -930,31 +945,31 @@ int valid_regf_hdr(REGF_HDR *regf_hdr)
  * Create a new entry in the map, and increase the size of the map if needed
  */
 
-SK_MAP **alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
+SK_MAP *alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
 {
  if (!regf->sk_map) { /* Allocate a block of 10 */
-    regf->sk_map = (SK_MAP **)malloc(sizeof(SK_MAP) * 10);
+    regf->sk_map = (SK_MAP *)malloc(sizeof(SK_MAP) * 10);
     if (!regf->sk_map) {
       free(tmp);
       return NULL;
     }
     regf->sk_map_size = 10;
     regf->sk_count = 1;
-    (*regf->sk_map)[0].sk_off = sk_off;
-    (*regf->sk_map)[0].key_sec_desc = tmp;
+    (regf->sk_map)[0].sk_off = sk_off;
+    (regf->sk_map)[0].key_sec_desc = tmp;
   }
   else { /* Simply allocate a new slot, unless we have to expand the list */ 
     int index = regf->sk_count;
     if (regf->sk_count == regf->sk_map_size) {
-      regf->sk_map = (SK_MAP **)realloc(regf->sk_map, regf->sk_map_size + 10);
+      regf->sk_map = (SK_MAP *)realloc(regf->sk_map, regf->sk_map_size + 10);
       if (!regf->sk_map) {
 	free(tmp);
 	return NULL;
       }
       index++;
     }
-    (*regf->sk_map)[index].sk_off = sk_off;
-    (*regf->sk_map)[index].key_sec_desc = tmp;
+    (regf->sk_map)[index].sk_off = sk_off;
+    (regf->sk_map)[index].key_sec_desc = tmp;
     regf->sk_count++;
   }
  return regf->sk_map;
@@ -988,7 +1003,7 @@ KEY_SEC_DESC *lookup_sec_key(SK_MAP *sk_map, int count, int sk_off)
 
 KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
 {
-  KEY_SEC_DESC *tmp = lookup_sec_key(*regf->sk_map, regf->sk_count, sk_off);
+  KEY_SEC_DESC *tmp = lookup_sec_key(regf->sk_map, regf->sk_count, sk_off);
 
   if (tmp) {
     return tmp;
@@ -1034,6 +1049,14 @@ ACE *dup_ace(REG_ACE *ace)
 {
   ACE *tmp = NULL; 
 
+  tmp = (ACE *)malloc(sizeof(ACE));
+
+  if (!tmp) return NULL;
+
+  tmp->type = CVAL(&ace->flags);
+  tmp->flags = CVAL(&ace->flags);
+  tmp->perms = IVAL(&ace->perms);
+  tmp->trustee = dup_sid(&ace->trustee);
   return tmp;
 }
 
@@ -1088,6 +1111,16 @@ SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
 
   /* Now pick up the SACL and DACL */
 
+  if (sec_desc->sacl_off)
+    tmp->sacl = dup_acl((REG_ACL *)(sec_desc + IVAL(&sec_desc->sacl_off)));
+  else
+    tmp->sacl = NULL;
+
+  if (sec_desc->dacl_off)
+    tmp->dacl = dup_acl((REG_ACL *)(sec_desc + IVAL(&sec_desc->dacl_off)));
+  else
+    tmp->dacl = NULL;
+
   return tmp;
 }
 
@@ -1117,7 +1150,8 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
    * use that
    */
 
-  if (((tmp = lookup_sec_key(*regf->sk_map, regf->sk_count, sk_off)) != NULL)
+  if (regf->sk_map &&
+      ((tmp = lookup_sec_key(regf->sk_map, regf->sk_count, sk_off)) != NULL)
       && (tmp->state == SEC_DESC_OCU)) {
     tmp->ref_cnt++;
     return tmp;
@@ -1125,7 +1159,7 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
 
   /* Here, we have an item in the map that has been reserved, or tmp==NULL. */
 
-  assert(tmp && tmp->state != SEC_DESC_NON);
+  assert(tmp == NULL || (tmp && tmp->state != SEC_DESC_NON));
 
   /*
    * Now, allocate a KEY_SEC_DESC, and parse the structure here, and add the
@@ -1167,10 +1201,10 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
    */
 
   sk_prev_off = IVAL(&sk_hdr->prev_off);
-  tmp->prev = lookup_create_sec_key(regf, *regf->sk_map, sk_prev_off);
+  tmp->prev = lookup_create_sec_key(regf, regf->sk_map, sk_prev_off);
   assert(tmp->prev != NULL);
   sk_next_off = IVAL(&sk_hdr->prev_off);
-  tmp->next = lookup_create_sec_key(regf, *regf->sk_map, sk_next_off);
+  tmp->next = lookup_create_sec_key(regf, regf->sk_map, sk_next_off);
   assert(tmp->next != NULL);
 
   return tmp;
@@ -1472,7 +1506,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 
   if (sk_off != -1) {
 
-    /* To be coded */  
+    tmp->security = process_sk(regf, sk_hdr, sk_off, BLK_SIZE(sk_hdr));
 
   } 
 
@@ -1582,6 +1616,34 @@ int print_key(char *path, char *name, char *class_name, int root,
 }
 
 /*
+ * Sec Desc print functions 
+ */
+
+void print_sid(DOM_SID *sid)
+{
+  int i, comps = sid->auths;
+  fprintf(stdout, "S-%u-%u", sid->ver, sid->auth[5]);
+
+  for (i = 0; i < comps; i++) {
+
+    fprintf(stdout, "-%u", sid->sub_auths[i]);
+
+  }
+  fprintf(stdout, "\n");
+}
+
+int print_sec(SEC_DESC *sec_desc)
+{
+
+  fprintf(stdout, "  SECURITY\n");
+  fprintf(stdout, "    Owner: \n");
+  print_sid(sec_desc->owner);
+  fprintf(stdout, "    Group: \n");
+  print_sid(sec_desc->group);
+  return 1;
+}
+
+/*
  * Value print function here ...
  */
 int print_val(char *path, char *val_name, int val_type, int data_len, 
@@ -1656,7 +1718,7 @@ int main(int argc, char *argv[])
    * to iterate over it.
    */
 
-  nt_key_iterator(regf, regf->root, 0, "", print_key, print_val);
+  nt_key_iterator(regf, regf->root, 0, "", print_key, print_sec, print_val);
   return 0;
 }
 
