@@ -19,11 +19,7 @@ proto (int sock, const char *service)
     OM_uint32 maj_stat, min_stat;
     gss_name_t client_name;
     u_int32_t len, net_len;
-    char *name;
-
-    krb5_context context;
-    krb5_principal server;
-    krb5_error_code status;
+    gss_buffer_desc name_token;
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -35,22 +31,11 @@ proto (int sock, const char *service)
 	|| addrlen != sizeof(remote))
 	err (1, "getpeername");
 
-    status = krb5_init_context(&context);
-    if (status)
-	errx (1, "krb5_init_context: %s",
-	      krb5_get_err_text(context, status));
-
     input_token = &real_input_token;
     output_token = &real_output_token;
 
     do {
-	if (read(sock, &net_len, 4) != 4)
-	    err (1, "read");
-	len = ntohl(net_len);
-	input_token->length = len;
-	input_token->value  = malloc(len);
-	if (read (sock, input_token->value, len) != len)
-	    err (1, "read");
+	read_token (sock, input_token);
 	maj_stat =
 	    gss_accept_sec_context (&min_stat,
 				    &context_hdl,
@@ -65,19 +50,8 @@ proto (int sock, const char *service)
 				    NULL);
 	if(GSS_ERROR(maj_stat))
 	    abort ();
-	if (output_token->length != 0) {
-	    len = output_token->length;
-
-	    net_len = htonl(len);
-
-	    if (write (sock, &net_len, 4) != 4)
-		err (1, "write");
-	    if (write (sock, output_token->value, len) != len)
-		err (1, "write");
-
-	    gss_release_buffer (&min_stat,
-				output_token);
-	}
+	if (output_token->length != 0)
+	    write_token (sock, output_token);
 	if (GSS_ERROR(maj_stat)) {
 	    if (context_hdl != GSS_C_NO_CONTEXT)
 		gss_delete_sec_context (&min_stat,
@@ -87,15 +61,44 @@ proto (int sock, const char *service)
 	}
     } while(maj_stat & GSS_S_CONTINUE_NEEDED);
 
-    status = krb5_unparse_name (context,
-				client_name,
-				&name);
-    if (status)
-	errx (1, "krb5_unparse_name: %s",
-	      krb5_get_err_text(context, status));
+    maj_stat = gss_display_name (&min_stat,
+				 client_name,
+				 &name_token,
+				 NULL);
+    if (GSS_ERROR(maj_stat))
+	abort ();
 
-    printf ("User is `%s'\n", name);
-    free (name);
+    printf ("User is `%.*s'\n", name_token.length, name_token.value);
+
+    /* gss_verify_mic */
+
+    read_token (sock, input_token);
+    read_token (sock, output_token);
+
+    maj_stat = gss_verify_mic (&min_stat,
+			       context_hdl,
+			       input_token,
+			       output_token,
+			       NULL);
+    if (GSS_ERROR(maj_stat))
+	abort ();
+
+    printf ("gss_verify_mic: %.*s\n", input_token->length, input_token->value);
+
+    /* gss_unwrap */
+
+    read_token (sock, input_token);
+
+    maj_stat = gss_unwrap (&min_stat,
+			   context_hdl,
+			   input_token,
+			   output_token,
+			   NULL,
+			   NULL);
+    if(GSS_ERROR(maj_stat))
+	abort ();
+
+    printf ("gss_unwrap: %.*s\n", output_token->length, output_token->value);
 
     return 0;
 }

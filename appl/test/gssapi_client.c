@@ -20,24 +20,19 @@ proto (int sock, const char *hostname, const char *service)
     gss_buffer_desc real_input_token, real_output_token;
     OM_uint32 maj_stat, min_stat;
     u_int32_t len, net_len;
+    gss_name_t server;
+    gss_buffer_desc name_token;
+    char *n;
 
-    krb5_context context;
-    krb5_principal server;
-    krb5_error_code status;
+    name_token.length = asprintf ((char **)&name_token.value,
+				  "%s@%s", service, hostname);
 
-    status = krb5_init_context(&context);
-    if (status)
-	errx (1, "krb5_init_context: %s",
-	      krb5_get_err_text(context, status));
-
-    status = krb5_sname_to_principal (context,
-				      hostname,
-				      service,
-				      KRB5_NT_SRV_INST,
-				      &server);
-    if (status)
-	errx (1, "krb5_sname_to_principal: %s",
-	      krb5_get_err_text(context, status));
+    maj_stat = gss_import_name (&min_stat,
+				&name_token,
+				GSS_C_NT_HOSTBASED_SERVICE,
+				&server);
+    if (GSS_ERROR(maj_stat))
+	abort ();
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -72,19 +67,8 @@ proto (int sock, const char *hostname, const char *service)
 				 NULL);
 	if (GSS_ERROR(maj_stat))
 	    abort ();
-	if (output_token->length != 0) {
-	    len = output_token->length;
-
-	    net_len = htonl(len);
-
-	    if (write (sock, &net_len, 4) != 4)
-		err (1, "write");
-	    if (write (sock, output_token->value, len) != len)
-		err (1, "write");
-
-	    gss_release_buffer (&min_stat,
-				output_token);
-	}
+	if (output_token->length != 0)
+	    write_token (sock, output_token);
 	if (GSS_ERROR(maj_stat)) {
 	    if (context_hdl != GSS_C_NO_CONTEXT)
 		gss_delete_sec_context (&min_stat,
@@ -93,18 +77,47 @@ proto (int sock, const char *hostname, const char *service)
 	    break;
 	}
 	if (maj_stat & GSS_S_CONTINUE_NEEDED) {
-	    if (read(sock, &net_len, 4) != 4)
-		err (1, "read");
-	    len = ntohl(net_len);
-	    input_token->length = len;
-	    input_token->value  = malloc(len);
-	    if (read (sock, input_token->value, len) != len)
-		err (1, "read");
+	    read_token (sock, input_token);
 	} else {
 	    context_established = 1;
 	}
 
     }
+
+    /* get_mic */
+
+    input_token->length = 3;
+    input_token->value  = strdup("hej");
+
+    maj_stat = gss_get_mic(&min_stat,
+			   context_hdl,
+			   GSS_C_QOP_DEFAULT,
+			   input_token,
+			   output_token);
+    if (GSS_ERROR(maj_stat))
+	abort ();
+
+    write_token (sock, input_token);
+    write_token (sock, output_token);
+
+    /* wrap */
+
+    input_token->length = 7;
+    input_token->value  = "hemligt";
+
+
+    maj_stat = gss_wrap (&min_stat,
+			 context_hdl,
+			 1,
+			 GSS_C_QOP_DEFAULT,
+			 input_token,
+			 NULL,
+			 output_token);
+    if (GSS_ERROR(maj_stat))
+	abort ();
+
+    write_token (sock, output_token);
+
     return 0;
 }
 
