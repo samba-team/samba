@@ -196,8 +196,6 @@ static void setup_process_model(struct event_context *events,
 {
 	const struct model_ops *ops;
 
-	process_model_init();
-
 	ops = process_model_byname(model);
 	if (!ops) {
 		DEBUG(0,("Unknown process model '%s'\n", model));
@@ -342,6 +340,8 @@ static void setup_process_model(struct event_context *events,
 
 	register_msg_pool_usage();
 	register_dmalloc_msgs();
+
+	init_subsystems();
 
 	setup_process_model(events, model);
 

@@ -70,14 +70,25 @@ void smbd_process_init(void)
 	if (!init_change_notify())
 		exit(1);
 
+	/* Setup the PASSDB subsystem */
+	if(!initialize_password_db(False))
+		exit(1);
+
+	talloc_destroy(mem_ctx);
+}
+
+void init_subsystems(void)
+{
+	/* Setup the PROCESS_MODEL subsystem */
+	if (!process_model_init())
+		exit(1);
+
 	/* Setup the AUTH subsystem */
 	if (!auth_init())
 		exit(1);
 
 	/* Setup the PASSDB subsystem */
 	if (!passdb_init())
-		exit(1);
-	if(!initialize_password_db(False))
 		exit(1);
 
 	/* Setup the NTVFS subsystem */
@@ -88,6 +99,4 @@ void smbd_process_init(void)
 	if (!dcesrv_init())
 		exit(1);
 
-	talloc_destroy(mem_ctx);
 }
-
