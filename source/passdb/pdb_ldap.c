@@ -1420,13 +1420,6 @@ static NTSTATUS ldapsam_modify_entry(LDAP *ldap_struct,SAM_ACCOUNT *newpwd,char 
 		char *retoid;
 		struct berval *retdata;
 
-		if (ldap_get_option(ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS) {
-			if (version != LDAP_VERSION3) {
-				version = LDAP_VERSION3;
-				ldap_set_option (ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
-			}
-		}
-
 		if ((ber = ber_alloc_t(LBER_USE_DER))==NULL) {
 			DEBUG(0,("ber_alloc_t returns NULL\n"));
 			return ret;

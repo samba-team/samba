@@ -316,20 +316,20 @@ BOOL check_access(int sock, char **allow_list, char **deny_list)
 		else
 		{
 			DEBUG (3, ("check_access: hostnames in host allow/deny list.\n"));
-			ret = allow_access(deny_list,allow_list, get_socket_name(sock),
+			ret = allow_access(deny_list,allow_list, get_socket_name(sock,True),
 					   get_socket_addr(sock));
 		}
 		
 		if (ret) 
 		{
 			DEBUG(2,("Allowed connection from %s (%s)\n",
-				 only_ip ? "" : get_socket_name(sock),
+				 only_ip ? "" : get_socket_name(sock,True),
 				 get_socket_addr(sock)));
 		} 
 		else 
 		{
 			DEBUG(0,("Denied connection from %s (%s)\n",
-				 only_ip ? "" : get_socket_name(sock),
+				 only_ip ? "" : get_socket_name(sock,True),
 				 get_socket_addr(sock)));
 		}
 	}
