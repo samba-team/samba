@@ -292,7 +292,6 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
  				 STR_TERMINATE|STR_ASCII);
  		p += srvstr_push(outbuf, p, fsname, -1, 
  				 STR_TERMINATE);
-		p = smb_buf(outbuf);
 		set_message_end(outbuf,p);
 		
 		/* what does setting this bit do? It is set by NT4 and
