@@ -19,7 +19,11 @@ BUILT_SOURCES = $(spnego_files:.x=.c)
 
 lib_LTLIBRARIES = libgssapi.la
 libgssapi_la_LDFLAGS = -version-info 4:0:0
-libgssapi_la_LIBADD  = ../krb5/libkrb5.la $(LIB_des) ../asn1/libasn1.la ../roken/libroken.la
+libgssapi_la_LIBADD  = \
+	../krb5/libkrb5.la \
+	$(LIB_des) \
+	../asn1/libasn1.la \
+	$(LIB_roken)
 
 man_MANS = gssapi.3 gss_acquire_cred.3
 
@@ -88,4 +92,4 @@ $(libgssapi_la_OBJECTS): spnego_asn1.h
 
 check_PROGRAMS = test_acquire_cred test_sequence
 noinst_PROGRAMS = test_cred
-LDADD = libgssapi.la
+LDADD = libgssapi.la $(LIB_roken)
