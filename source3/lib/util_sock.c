@@ -642,35 +642,38 @@ ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
 
 BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 {
-  ssize_t len,ret;
+	ssize_t len,ret;
 
-  smb_read_error = 0;
+	smb_read_error = 0;
 
-  memset(buffer,'\0',smb_size + 100);
+	memset(buffer,'\0',smb_size + 100);
 
-  len = read_smb_length_return_keepalive(fd,buffer,timeout);
-  if (len < 0)
-  {
-    DEBUG(10,("receive_smb: length < 0!\n"));
-    return(False);
-  }
+	len = read_smb_length_return_keepalive(fd,buffer,timeout);
+	if (len < 0) {
+		DEBUG(10,("receive_smb: length < 0!\n"));
+		return(False);
+	}
 
-  if (len > BUFFER_SIZE) {
-    DEBUG(0,("Invalid packet length! (%d bytes).\n",len));
-    if (len > BUFFER_SIZE + (SAFETY_MARGIN/2))
-    {
-	exit(1);
-    }
-  }
+	/*
+	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
+     * of header. Don't print the error if this fits.... JRA.
+	 */
 
-  if(len > 0) {
-    ret = read_socket_data(fd,buffer+4,len);
-    if (ret != len) {
-      smb_read_error = READ_ERROR;
-      return False;
-    }
-  }
-  return(True);
+	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
+		DEBUG(0,("Invalid packet length! (%d bytes).\n",len));
+		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2))
+			exit(1);
+	}
+
+	if(len > 0) {
+		ret = read_socket_data(fd,buffer+4,len);
+		if (ret != len) {
+			smb_read_error = READ_ERROR;
+			return False;
+		}
+	}
+
+	return(True);
 }
 
 /****************************************************************************
