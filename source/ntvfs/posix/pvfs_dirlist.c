@@ -179,8 +179,6 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 		return dir->last_name;
 	}
 
-	if (dir->last_name) talloc_free(dir->last_name);
-	dir->last_name = NULL;
 	dir->end_of_search = True;
 	pvfs_list_hibernate(dir);
 	return NULL;
@@ -195,10 +193,6 @@ void pvfs_list_hibernate(struct pvfs_dir *dir)
 	if (dir->dir) {
 		closedir(dir->dir);
 		dir->dir = NULL;
-	}
-	if (!dir->no_wildcard && dir->last_name) {
-		talloc_free(dir->last_name);
-		dir->last_name = NULL;
 	}
 }
 
