@@ -679,6 +679,7 @@ BOOL pdb_delete_sam_account(char *sname)
   
   	/* unpack the buffer */
 	if (!pdb_init_sam (&sam_pass)) {
+		SAFE_FREE(data.dptr);
 		tdb_close (pwd_tdb);
 		return False;
 	}

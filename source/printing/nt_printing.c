@@ -212,10 +212,12 @@ static BOOL upgrade_to_version_3(void)
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving form\n"));
 			if (tdb_store(tdb_forms, kbuf, dbuf, TDB_REPLACE) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to move form. Error (%s).\n", tdb_errorstr(tdb_forms)));
 				return False;
 			}
 			if (tdb_delete(tdb_drivers, kbuf) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to delete form. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				return False;
 			}
@@ -224,10 +226,13 @@ static BOOL upgrade_to_version_3(void)
 		if (strncmp(kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving printer\n"));
 			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
+				SAFE_FREE(dbuf.dptr);
+				DEBUG(0,("upgrade_to_version_3: failed to delete form. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				DEBUG(0,("upgrade_to_version_3: failed to move printer. Error (%s)\n", tdb_errorstr(tdb_printers)));
 				return False;
 			}
 			if (tdb_delete(tdb_drivers, kbuf) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to delete printer. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				return False;
 			}
@@ -236,10 +241,12 @@ static BOOL upgrade_to_version_3(void)
 		if (strncmp(kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving secdesc\n"));
 			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to move secdesc. Error (%s)\n", tdb_errorstr(tdb_printers)));
 				return False;
 			}
 			if (tdb_delete(tdb_drivers, kbuf) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to delete secdesc. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				return False;
 			}
@@ -1822,10 +1829,11 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 		tddfs = (fstring *)Realloc(driver.dependentfiles,
 							 sizeof(fstring)*(i+2));
 		if (tddfs == NULL) {
+			SAFE_FREE(dbuf.dptr);
 			DEBUG(0,("get_a_printer_driver_3: failed to enlarge buffer!\n"));
 			break;
-		}
-		else driver.dependentfiles = tddfs;
+		} else
+			driver.dependentfiles = tddfs;
 
 		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "F",
 				  &driver.dependentfiles[i]);
@@ -3292,7 +3300,6 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	/* Add the printer data 'values' to the new printer */
 
 	len += unpack_values( &info_ptr->data, dbuf.dptr+len, dbuf.dsize-len );
-
 
 	SAFE_FREE(dbuf.dptr);
 

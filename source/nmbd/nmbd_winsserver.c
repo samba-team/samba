@@ -266,7 +266,8 @@ BOOL initialise_wins(void)
 			continue;
 				
 		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr) continue;
+		if (!dbuf.dptr)
+			continue;
 
 		fstrcpy(name_type, kbuf.dptr+strlen(ENTRY_PREFIX));
 
@@ -284,16 +285,21 @@ BOOL initialise_wins(void)
 		wins_ip=*interpret_addr2(ip_str);
 
 		/* Don't reload replica records */
-		if (!ip_equal(wins_ip, our_fake_ip))
+		if (!ip_equal(wins_ip, our_fake_ip)) {
+			SAFE_FREE(dbuf.dptr);
 			continue;
+		}
 
 		/* Don't reload released or tombstoned records */
-		if ((wins_flags&WINS_STATE_MASK) != WINS_ACTIVE)
+		if ((wins_flags&WINS_STATE_MASK) != WINS_ACTIVE) {
+			SAFE_FREE(dbuf.dptr);
 			continue;
+		}
 
  		/* Allocate the space for the ip_list. */
 		if((ip_list = (struct in_addr *)malloc( num_ips * sizeof(struct in_addr))) == NULL) {
-			DEBUG(0,("initialise_wins: Malloc fail !\n"));
+			SAFE_FREE(dbuf.dptr);
+		 	DEBUG(0,("initialise_wins: Malloc fail !\n"));
 			return False;
 		}
 
@@ -324,6 +330,7 @@ BOOL initialise_wins(void)
 				  name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
 		}
 
+		SAFE_FREE(dbuf.dptr);
 		SAFE_FREE(ip_list);
 	}
     

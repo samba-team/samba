@@ -150,9 +150,8 @@ static size_t get_posix_pending_close_entries(files_struct *fsp, int **entries)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
-    if (!dbuf.dptr) {
+	if (!dbuf.dptr)
 		return 0;
-	}
 
 	*entries = (int *)dbuf.dptr;
 	count = (size_t)(dbuf.dsize / sizeof(int));
@@ -177,9 +176,8 @@ static size_t get_posix_lock_entries(files_struct *fsp, struct posix_lock **entr
 
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
-    if (!dbuf.dptr) {
+	if (!dbuf.dptr)
 		return 0;
-	}
 
 	*entries = (struct posix_lock *)dbuf.dptr;
 	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
@@ -339,8 +337,8 @@ static BOOL delete_posix_lock_entry_by_index(files_struct *fsp, size_t entry)
 	return True;
 
  fail:
-    SAFE_FREE(dbuf.dptr);
-    return False;
+	SAFE_FREE(dbuf.dptr);
+	return False;
 }
 
 /****************************************************************************
@@ -386,7 +384,7 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 		goto fail;
 	}
 
-    SAFE_FREE(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f: dev=%.0f inode=%.0f\n",
 			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size,
@@ -395,8 +393,8 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
     return True;
 
  fail:
-    SAFE_FREE(dbuf.dptr);
-    return False;
+	SAFE_FREE(dbuf.dptr);
+	return False;
 }
 
 /****************************************************************************
@@ -493,13 +491,13 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 			posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
 				(unsigned int)num_overlapping_records ));
 
-    SAFE_FREE(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	return num_overlapping_records;
 
  fail:
-    SAFE_FREE(dbuf.dptr);
-    return -1;
+	SAFE_FREE(dbuf.dptr);
+	return -1;
 }
 
 /****************************************************************************
