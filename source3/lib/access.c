@@ -269,7 +269,7 @@ static BOOL only_ipaddrs_in_list(const char* list)
 			if ((p=strchr(tok, '/')) == NULL)
 			{
 				only_ip = False;
-				DEBUG(3,("only_ipaddrs_in_list: list [%s] has non-ip address %s\n", list, p));
+				DEBUG(3,("only_ipaddrs_in_list: list [%s] has non-ip address %s\n", list, tok));
 				break;
 			}
 		}
