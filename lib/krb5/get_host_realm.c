@@ -64,12 +64,21 @@ krb5_get_host_realm(krb5_context context,
     char *res = NULL;
     const char *partial = NULL;
     const krb5_config_binding *l;
+    struct in_addr addr;
+    struct hostent *hostent;
 
     if (host == NULL) {
 	if (gethostname (hostname, sizeof(hostname)))
 	    return errno;
 	host = hostname;
     }
+
+    addr.s_addr = inet_addr(host);
+    hostent = gethostbyname (host);
+    if (hostent == NULL && addr.s_addr != INADDR_NONE)
+	hostent = gethostbyaddr ((const char *)&addr, sizeof(addr), AF_INET);
+    if (hostent != NULL)
+	host = hostent->h_addr;
 
     *realms = malloc(2 * sizeof(char*));
     if (*realms == NULL)
