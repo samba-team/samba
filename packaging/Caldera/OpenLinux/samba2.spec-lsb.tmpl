@@ -277,10 +277,11 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-smbmount \
 	--with-pam \
 	--with-pam_smbpass \
-	--with-tdbsam \
 	--with-quotas \
 	--with-utmp \
 	--with-syslog 
+# The following will go back later - JHT
+#	--with-tdbsam
 
 make LOGFILEBASE=/var/log/samba.d all nsswitch/libnss_wins.so debug2html bin/smbspool
 
