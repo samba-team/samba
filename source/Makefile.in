@@ -321,6 +321,8 @@ WINBINDD_OBJ = \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
 
+WBINFO_OBJ = nsswitch/wbinfo.o nsswitch/common.o
+
 WINBIND_NSS_OBJ = nsswitch/winbind.o nsswitch/common.o
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
@@ -533,7 +535,13 @@ nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -shared -o $@ $(PAM_WINBIND_OBJ)
 
-nsswitch: nsswitch/libnss_wins.so nsswitch/pam_winbind.so nsswitch/libnss_winbind.so
+bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) $(UBIQX_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
+		$(UBIQX_OBJ) $(LIBS)
+
+nsswitch: nsswitch/libnss_wins.so nsswitch/pam_winbind.so \
+	nsswitch/libnss_winbind.so bin/wbinfo
 
 install: installbin installman installscripts installcp installswat
 
