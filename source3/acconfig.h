@@ -144,4 +144,5 @@
 #undef HAVE_SOLARIS_ACLS
 #undef HAVE_IRIX_ACLS
 #undef HAVE_XFS_ACLS
+#undef HAVE_AIX_ACLS
 #undef HAVE_NO_ACLS
