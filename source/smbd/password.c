@@ -203,7 +203,6 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 	psids = token->user_sids;
 
 	token->num_sids = 2;
-	token->num_sids = ngroups + 2;
 
 	uid_to_sid( &psids[0], uid);
 	gid_to_sid( &psids[1], gid);
