@@ -1,3 +1,15 @@
+Sun Jun  7 04:13:14 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/addr_families.c: fall-back definition of
+ 	IN6_ADDR_V6_TO_V4
+
+	* configure.in: only set CFLAGS if it wasn't set look for
+ 	dn_expand and res_search
+
+Mon Jun  1 21:28:07 1998  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: remove duplicate seteuid
+
 Sat May 30 00:19:51 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/convert_creds.c: import _krb_time_to_life, to avoid
