@@ -5,7 +5,8 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Jeremy Allison                    2001,
- *  Copyright (C) Jim McDonough                     2002.
+ *  Copyright (C) Jim McDonough                     2002,
+ *  Copyright (C) Anthony Liguori                   2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -645,35 +646,36 @@ static BOOL api_lsa_query_info2(pipes_struct *p)
  \PIPE\ntlsa commands
  ***************************************************************************/
 
-static const struct api_struct api_lsa_cmds[] =
+#ifdef RPC_LSA_DYNAMIC
+int rpc_pipe_init(void)
+#else
+int rpc_lsa_init(void)
+#endif
 {
-	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2     },
-	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy      },
-	{ "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info       },
-	{ "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom   },
-	{ "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close            },
-	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret      },
-	{ "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids      },
-	{ "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names     },
-	{ "LSA_ENUM_PRIVS"      , LSA_ENUM_PRIVS      , api_lsa_enum_privs       },
-	{ "LSA_PRIV_GET_DISPNAME",LSA_PRIV_GET_DISPNAME,api_lsa_priv_get_dispname},
-	{ "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts    },
-	{ "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser },
-	{ "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account     },
-	{ "LSA_ENUMPRIVSACCOUNT", LSA_ENUMPRIVSACCOUNT, api_lsa_enum_privsaccount},
-	{ "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount },
-	{ "LSA_SETSYSTEMACCOUNT", LSA_SETSYSTEMACCOUNT, api_lsa_setsystemaccount },
-	{ "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
-	{ "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
-	{ "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
-	{ "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      },
-	{ NULL                  , 0                   , NULL                     }
-};
+  static const struct api_struct api_lsa_cmds[] =
+    {
+      { "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2     },
+      { "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy      },
+      { "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info       },
+      { "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom   },
+      { "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close            },
+      { "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret      },
+      { "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids      },
+      { "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names     },
+      { "LSA_ENUM_PRIVS"      , LSA_ENUM_PRIVS      , api_lsa_enum_privs       },
+      { "LSA_PRIV_GET_DISPNAME",LSA_PRIV_GET_DISPNAME,api_lsa_priv_get_dispname},
+      { "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts    },
+      { "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser },
+      { "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account     },
+      { "LSA_ENUMPRIVSACCOUNT", LSA_ENUMPRIVSACCOUNT, api_lsa_enum_privsaccount},
+      { "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount },
+      { "LSA_SETSYSTEMACCOUNT", LSA_SETSYSTEMACCOUNT, api_lsa_setsystemaccount },
+      { "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
+      { "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
+      { "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
+      { "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      }
+    };
 
-/***************************************************************************
- api_ntLsarpcTNP
- ***************************************************************************/
-BOOL api_ntlsa_rpc(pipes_struct *p)
-{
-	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds);
+  return rpc_pipe_register_commands("lsarpc", "lsass", api_lsa_cmds, 
+				    sizeof(api_lsa_cmds) / sizeof(struct api_struct));
 }
