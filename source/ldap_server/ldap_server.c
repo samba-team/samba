@@ -51,7 +51,41 @@ static void add_socket(struct server_service *service,
 static void ldapsrv_init(struct server_service *service,
 			 const struct model_ops *model_ops)
 {	
+	struct ldapsrv_service *ldap_service;
+	struct ldapsrv_partition *part;
+
 	DEBUG(1,("ldapsrv_init\n"));
+
+	ldap_service = talloc_p(service, struct ldapsrv_service);
+	if (!ldap_service) {
+		DEBUG(0,("talloc_p(service, struct ldapsrv_service) failed\n"));
+		return;
+	}
+	ZERO_STRUCTP(ldap_service);
+
+	part = talloc_p(ldap_service, struct ldapsrv_partition);
+	if (!ldap_service) {
+		DEBUG(0,("talloc_p(ldap_service, struct ldapsrv_partition) failed\n"));
+		return;
+	}
+	part->base_dn = ""; /* RootDSE */
+	part->ops = ldapsrv_get_rootdse_partition_ops();
+
+	ldap_service->rootDSE = part;
+	DLIST_ADD_END(ldap_service->partitions, part, struct ldapsrv_partition *);
+
+	part = talloc_p(ldap_service, struct ldapsrv_partition);
+	if (!ldap_service) {
+		DEBUG(0,("talloc_p(ldap_service, struct ldapsrv_partition) failed\n"));
+		return;
+	}
+	part->base_dn = "*"; /* default partition */
+	part->ops = ldapsrv_get_sldb_partition_ops();
+
+	ldap_service->default_partition = part;
+	DLIST_ADD_END(ldap_service->partitions, part, struct ldapsrv_partition *);
+
+	service->private_data = ldap_service;
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		int num_interfaces = iface_count();
@@ -74,17 +108,12 @@ static void ldapsrv_init(struct server_service *service,
 		}
 	} else {
 		struct in_addr *ifip;
-		TALLOC_CTX *mem_ctx = talloc_init("ldapsrv_init");
-
-		if (!mem_ctx) {
-			smb_panic("No memory");
-		}	
 
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		ifip = interpret_addr2(mem_ctx, lp_socket_address());
+		ifip = interpret_addr2(service, lp_socket_address());
 		add_socket(service, model_ops, ifip);
 
-		talloc_destroy(mem_ctx);
+		talloc_destroy(ifip);
 	}
 }
 
@@ -199,15 +228,11 @@ NTSTATUS ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *re
 
 struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn)
 {
-	static struct ldapsrv_partition null_part;
-
 	if (strcasecmp("", dn) == 0) {
-		null_part.ops = ldapsrv_get_rootdse_partition_ops();
-	} else {
-		null_part.ops = ldapsrv_get_sldb_partition_ops();
+		return conn->service->rootDSE;
 	}
 
-	return &null_part;
+	return conn->service->default_partition;
 }
 
 NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
@@ -524,9 +549,12 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 
 		if (!ldap_decode(&data, &call->request)) {
 			dump_data(0,buf, msg_length);
+			asn1_free(&data);
 			ldapsrv_terminate_connection(ldap_conn, "ldap_decode() failed");
 			return;
 		}
+
+		asn1_free(&data);
 
 		DLIST_ADD_END(ldap_conn->calls, call,
 			      struct ldapsrv_call *);
@@ -608,6 +636,7 @@ static void ldapsrv_accept(struct server_connection *conn)
 
 	ZERO_STRUCTP(ldap_conn);
 	ldap_conn->connection = conn;
+	ldap_conn->service = talloc_reference(ldap_conn, conn->service->private_data);
 
 	conn->private_data = ldap_conn;
 
