@@ -675,6 +675,7 @@ krb5_get_in_cred(krb5_context context,
 	if (my_preauth) {
 	    free_ETYPE_INFO(&my_preauth->val[0].info);
 	    free (my_preauth->val);
+	    my_preauth = NULL;
 	}
 	if (ret)
 	    return ret;
