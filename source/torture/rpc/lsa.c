@@ -21,9 +21,8 @@
 
 #include "includes.h"
 
-/* Helper function for RPC-OPEN test */
-static DATA_BLOB blob_lsa_open_policy_req(TALLOC_CTX *mem_ctx, BOOL sec_qos, 
-					  uint32 des_access)
+/* form a lsa open request */
+static DATA_BLOB blob_lsa_open_policy_req(TALLOC_CTX *mem_ctx, BOOL sec_qos, uint32 des_access)
 {
 	prs_struct qbuf;
 	LSA_Q_OPEN_POL q;
@@ -32,7 +31,6 @@ static DATA_BLOB blob_lsa_open_policy_req(TALLOC_CTX *mem_ctx, BOOL sec_qos,
 	ZERO_STRUCT(q);
 
 	/* Initialise parse structures */
-
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 
 	/* Initialise input parameters */

@@ -122,3 +122,6 @@ struct dcerpc_packet {
 	} out;
 };
 
+/* this seems to be the only transfer syntax used */
+#define DCERPC_TRANSFER_SYNTAX_V2 {"8a885d04-1ceb-11c9-9fe8-08002b104860", 2}
+

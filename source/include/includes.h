@@ -777,7 +777,6 @@ extern int errno;
 #include "mutex.h"
 
 #include "libcli/ndr/libndr.h"
-#include "libcli/ndr/ndr_sec.h"
 #include "libcli/rpc/dcerpc.h"
 
 /*
