@@ -87,3 +87,25 @@ void spoolssdb_close(void *ctx)
 	spoolss_ctx->ldb = NULL;
 	free(spoolss_ctx);
 }
+
+/*
+  search the db for the specified attributes - varargs variant
+*/
+int spoolssdb_search(void *ctx,
+		 TALLOC_CTX *mem_ctx, 
+		 const char *basedn,
+		 struct ldb_message ***res,
+		 const char * const *attrs,
+		 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
+{
+	struct spoolssdb_context *spoolss_ctx = ctx;
+	va_list ap;
+	int count;
+
+	va_start(ap, format);
+	count = gendb_search_v(spoolss_ctx->ldb, mem_ctx, basedn, res, attrs, format, ap);
+	va_end(ap);
+
+	return count;
+}
+

@@ -24,27 +24,28 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/spoolss/dcesrv_spoolss.h"
 
-
-static WERROR spoolss_EnumPrinters1(TALLOC_CTX *mem_ctx, void *spoolss_ctx,
-				    struct ndr_push *ndr, uint32_t *count)
+static WERROR spoolss_EnumPrinters1(TALLOC_CTX *mem_ctx, 
+				    struct ldb_message **msgs, int num_msgs,
+				    struct ndr_push *ndr)
 {
-	struct spoolss_PrinterInfo1 info[2];
+	struct spoolss_PrinterInfo1 *info;
+	int i;
 
-	info[0].flags = 0x80;
-	info[0].name = "p";
-	info[0].description = "a printer";
-	info[0].comment = "a comment";
+	info = talloc(mem_ctx, num_msgs * sizeof(struct spoolss_PrinterInfo1));
 
-	info[1].flags = 0x80;
-	info[1].name = "p2";
-	info[1].description = "spottyfoot";
-	info[1].comment = "the doggy";
+	if (!info)
+		return WERR_NOMEM;
+
+	for (i = 0; i < num_msgs; i++) {
+		info[i].flags = samdb_result_uint(msgs[i], "flags", 0);
+		info[i].name = samdb_result_string(msgs[i], "name", "");
+		info[i].description = samdb_result_string(msgs[i], "description", "");
+		info[i].comment = samdb_result_string(msgs[i], "comment", "");
+	}
 
 	ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, info,
-		       sizeof(struct spoolss_PrinterInfo1), 2,
+		       sizeof(struct spoolss_PrinterInfo1), num_msgs,
 		       (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo1);
-
-	*count = 2;
 
 	return WERR_OK;
 }
@@ -58,22 +59,27 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 	struct ndr_push *ndr;
 	void *spoolss_ctx;
 	WERROR result;
+	struct ldb_message **msgs;
+	int ret;
 
 	spoolss_ctx = spoolssdb_connect();
 	if (spoolss_ctx == NULL)
 		return WERR_NOMEM;
 
+	ret = spoolssdb_search(spoolss_ctx, mem_ctx, NULL, &msgs, NULL,
+			       "(&(objectclass=printer))");
+	
 	ndr = ndr_push_init();
+
+	r->out.count = 0;
+	*r->out.buf_size = 0;
 
 	switch(r->in.level) {
 	case 1:
-		result = spoolss_EnumPrinters1(
-			mem_ctx, spoolss_ctx, ndr, &r->out.count);
+		result = spoolss_EnumPrinters1(mem_ctx, msgs, ret, ndr);
 		break;
 	default:
 		r->out.buffer = NULL;
-		*r->out.buf_size = 0;
-		r->out.count = 0;
 		result = WERR_INVALID_PARAM;
 		goto done;
 	}
