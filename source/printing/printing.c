@@ -72,10 +72,10 @@ BOOL print_backend_init(void)
 	tdb_unlock_bystring(tdb, sversion);
 
 	/* select the appropriate printing interface... */
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
 	if (strcmp(lp_printcapname(), "cups") == 0)
 		current_printif = &cups_printif;
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
 
 	/* do NT print initialization... */
 	return nt_printing_init();

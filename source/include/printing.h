@@ -57,9 +57,9 @@ struct printif
 
 extern struct printif	generic_printif;
 
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
 extern struct printif	cups_printif;
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
 
 #define PRINT_MAX_JOBID 10000
 #define UNIX_JOB_START PRINT_MAX_JOBID
