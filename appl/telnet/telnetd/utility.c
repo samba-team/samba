@@ -68,7 +68,7 @@ ttloop(void)
 	syslog(LOG_INFO, "ttloop:  read: %m\n");
 	exit(1);
     } else if (ncc == 0) {
-	syslog(LOG_INFO, "ttloop:  peer died: %m\n");
+	syslog(LOG_INFO, "ttloop:  peer died\n");
 	exit(1);
     }
     DIAG(TD_REPORT, {
@@ -92,6 +92,9 @@ stilloob(int s)
     static struct timeval timeout = { 0 };
     fd_set	excepts;
     int value;
+
+    if (s >= FD_SETSIZE)
+	fatal(ourpty, "fd too large");
 
     do {
 	FD_ZERO(&excepts);
