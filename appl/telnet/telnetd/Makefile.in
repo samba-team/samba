@@ -28,9 +28,16 @@ OBJECTS=telnetd.o state.o termstat.o slc.o sys_term.o \
 	utility.o global.o authenc.o
 
 
-libtop=../../../lib
+libtop = @libtop@
 
-KLIB=-L$(libtop)/kafs -lkafs -L$(libtop)/krb -lkrb -L$(libtop)/des -ldes -L../../../util/et -lcom_err
+KRBLIBPATH	= @KRBLIBPATH@
+KRBINCPATH	= @KRBINCPATH@
+LIBKRB		= @LIBKRB@
+LIBDES		= @LIBDES@
+LIBKAFS		= @LIBKAFS@
+LIBCOM_ERR	= @LIBCOM_ERR@
+
+KLIB=$(KRBLIBPATH) $(LIBKAFS) $(LIBKRB) $(LIBDES) $(LIBCOM_ERR) 
 
 
 all: telnetd
@@ -39,7 +46,7 @@ $(OBJECTS): ../config.h
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
-	-I../../../include -I$(srcdir)/../../../include -I.. -I$(srcdir)/.. $<
+	@KRBINCPATH@ -I.. -I$(srcdir)/.. $<
 
 telnetd: $(OBJECTS)
 	$(CC) -o telnetd $(OBJECTS) $(LIBS) ../libtelnet/libtelnet.a $(KLIB)

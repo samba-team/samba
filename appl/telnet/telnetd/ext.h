@@ -204,7 +204,7 @@ extern char	*nclearto;
  * the relationship between various variables.
  */
 
-extern struct {
+struct clocks_t{
     int
 	system,			/* what the current time is */
 	echotoggle,		/* last time user entered echo character */
@@ -217,7 +217,8 @@ extern struct {
 	xdisplocsubopt,		/* xdisploc subopt is received */
 	baseline,		/* time started to do timed action */
 	gotDM;			/* when did we last see a data mark */
-} clocks;
+};
+extern struct clocks_t clocks;
 
 
 #if	defined(CRAY2) && defined(UNICOS5)

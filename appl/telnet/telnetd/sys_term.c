@@ -101,7 +101,7 @@ extern struct sysv sysv;
 #include <sys/proc.h>
 #undef SE
 #endif
-#if !(defined(__sgi) || defined(__linux) || defined(_AIX))
+#if !(defined(__sgi) || defined(__linux) || defined(_AIX)) && defined(HAVE_SYS_TTY)
 #include <sys/tty.h>
 #endif
 #ifdef	t_erase
@@ -477,11 +477,18 @@ char *line = Xline;
 char *myline = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 #endif	/* CRAY */
 
-	int
+int
 getpty(ptynum)
 int *ptynum;
 {
 	register int p;
+#ifdef _AIX
+	p=open("/dev/ptc", 2);
+	if(p > 0){
+	  strcpy(line, ttyname(p));
+	  return p;
+	}
+#else
 #ifdef	STREAMSPTY
 	int t;
 	char *ptsname();
@@ -587,6 +594,7 @@ int *ptynum;
 	}
 #endif	/* CRAY */
 #endif	/* STREAMSPTY */
+#endif  /* AIX */
 	return(-1);
 }
 #endif	/* convex */
@@ -1223,9 +1231,8 @@ getptyslave()
  * Open the specified slave side of the pty,
  * making sure that we have a clean tty.
  */
-	int
-cleanopen(line)
-	char *line;
+
+int cleanopen(char *line)
 {
 	register int t;
 #ifdef	UNICOS7x
