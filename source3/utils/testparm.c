@@ -227,7 +227,7 @@ int main(int argc, const char *argv[])
 	caddr = poptGetArg(pc);
 	
 	if (new_local_machine) {
-		set_local_machine_name(new_local_machine);
+		set_local_machine_name(new_local_machine, True);
 	}
 
 	dbf = x_stdout;
