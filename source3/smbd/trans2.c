@@ -54,7 +54,7 @@ SMB_BIG_UINT smb_roundup(connection_struct *conn, SMB_BIG_UINT val)
  account sparse files.
 ********************************************************************/
 
-SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	SMB_BIG_UINT ret;
 
@@ -67,7 +67,7 @@ SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 	if (!ret && fsp && fsp->initial_allocation_size)
 		ret = fsp->initial_allocation_size;
 
-	return smb_roundup(fsp->conn, ret);
+	return smb_roundup(conn, ret);
 }
 
 /****************************************************************************
@@ -936,7 +936,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			}
 
 			file_size = get_file_size(sbuf);
-			allocation_size = get_allocation_size(NULL,&sbuf);
+			allocation_size = get_allocation_size(conn,NULL,&sbuf);
 			mdate = sbuf.st_mtime;
 			adate = sbuf.st_atime;
 			cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
@@ -1232,7 +1232,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SOFF_T(p,0,get_file_size(sbuf));             /* File size 64 Bit */
 			p+= 8;
 
-			SOFF_T(p,0,get_allocation_size(NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
+			SOFF_T(p,0,get_allocation_size(conn,NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			p+= 8;
 
 			put_long_date(p,sbuf.st_ctime);       /* Inode change Time 64 Bit */
@@ -2439,7 +2439,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 	fullpathname = fname;
 	file_size = get_file_size(sbuf);
-	allocation_size = get_allocation_size(fsp,&sbuf);
+	allocation_size = get_allocation_size(conn,fsp,&sbuf);
 	if (mode & aDIR) {
 		/* This is necessary, as otherwise the desktop.ini file in
 		 * this folder is ignored */
@@ -2785,7 +2785,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			SOFF_T(pdata,0,get_file_size(sbuf));             /* File size 64 Bit */
 			pdata += 8;
 
-			SOFF_T(pdata,0,get_allocation_size(fsp,&sbuf)); /* Number of bytes used on disk - 64 Bit */
+			SOFF_T(pdata,0,get_allocation_size(conn,fsp,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			pdata += 8;
 
 			put_long_date(pdata,sbuf.st_ctime);       /* Creation Time 64 Bit */
