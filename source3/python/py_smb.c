@@ -179,6 +179,44 @@ static PyObject *py_smb_nt_create_andx(PyObject *self, PyObject *args,
 	return PyInt_FromLong(result);
 }
 
+static PyObject *py_smb_close(PyObject *self, PyObject *args,
+			      PyObject *kw)
+{
+	cli_state_object *cli = (cli_state_object *)self;
+	static char *kwlist[] = { "fnum", NULL };
+	BOOL result;
+	int fnum;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "i", kwlist, &fnum))
+		return NULL;
+
+	result = cli_close(cli->cli, fnum);
+
+	return PyInt_FromLong(result);
+}
+
+static PyObject *py_smb_unlink(PyObject *self, PyObject *args,
+			       PyObject *kw)
+{
+	cli_state_object *cli = (cli_state_object *)self;
+	static char *kwlist[] = { "filename", NULL };
+	char *filename;
+	BOOL result;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s", kwlist, &filename))
+		return NULL;
+
+	result = cli_unlink(cli->cli, filename);
+
+	return PyInt_FromLong(result);
+}
+
 static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 				      PyObject *kw)
 {
@@ -278,6 +316,12 @@ static PyMethodDef smb_hnd_methods[] = {
 
 	{ "nt_create_andx", (PyCFunction)py_smb_nt_create_andx,
 	  METH_VARARGS | METH_KEYWORDS, "NT Create&X" },
+
+	{ "close", (PyCFunction)py_smb_close,
+	  METH_VARARGS | METH_KEYWORDS, "Close" },
+
+	{ "unlink", (PyCFunction)py_smb_unlink,
+	  METH_VARARGS | METH_KEYWORDS, "Unlink" },
 
 	/* Security descriptors */
 
