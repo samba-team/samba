@@ -22,8 +22,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* This is the implementation of the dfs pipe. 
- * $Id: srv_dfs_nt.c,v 1.1.2.14 2002/04/08 20:26:15 kalele Exp $
+/* 
+ * This is the implementation of the dfs pipe. 
  */
 
 #include "includes.h"
