@@ -145,7 +145,8 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
 
-//Access bits to the SAM-object
+/* Access bits to the SAM-object */
+
 #define SAMR_ACCESS_UNKNOWN_1        0x00000001
 #define SAMR_ACCESS_SHUTDOWN_SERVER  0x00000002
 #define SAMR_ACCESS_UNKNOWN_4        0x00000004
@@ -173,7 +174,8 @@ SamrTestPrivateFunctionsUser
                            SAMR_ACCESS_OPEN_DOMAIN         | \
 			   SAMR_ACCESS_UNKNOWN_1 )            
 
-//Access bits to Domain-objects
+/* Access bits to Domain-objects */
+
 #define DOMAIN_ACCESS_LOOKUP_INFO_1  0x000000001
 #define DOMAIN_ACCESS_SET_INFO_1     0x000000002
 #define DOMAIN_ACCESS_LOOKUP_INFO_2  0x000000004
@@ -216,7 +218,8 @@ SamrTestPrivateFunctionsUser
 			     DOMAIN_ACCESS_ENUM_ACCOUNTS     | \
 			     DOMAIN_ACCESS_LOOKUP_INFO_1 )            
 
-//Access bits to User-objects
+/* Access bits to User-objects */
+
 #define USER_ACCESS_GET_NAME_ETC     0x000000001
 #define USER_ACCESS_GET_LOCALE       0x000000002
 #define USER_ACCESS_SET_LOC_COM      0x000000004
@@ -257,7 +260,8 @@ SamrTestPrivateFunctionsUser
                              USER_ACCESS_CHANGE_PASSWORD     | \
 			     USER_ACCESS_GET_NAME_ETC )
 
-//Access bits to Group-objects			     
+/* Access bits to Group-objects */
+
 #define GROUP_ACCESS_LOOKUP_INFO     0x00000001
 #define GROUP_ACCESS_SET_INFO        0x00000002
 #define GROUP_ACCESS_ADD_MEMBER      0x00000004
@@ -282,7 +286,8 @@ SamrTestPrivateFunctionsUser
 #define GROUP_EXECUTE      ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
                              GROUP_ACCESS_LOOKUP_INFO )
 			     
-//Access bits to Alias-objects
+/* Access bits to Alias-objects */
+
 #define ALIAS_ACCESS_ADD_MEMBER      0x00000001
 #define ALIAS_ACCESS_REMOVE_MEMBER   0x00000002
 #define ALIAS_ACCESS_GET_MEMBERS     0x00000004
