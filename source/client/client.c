@@ -1683,12 +1683,11 @@ static int cmd_allinfo(void)
 		d_printf("\talt_name:       %s\n", finfo.alt_name_info.out.fname.s);
 	}
 
-	/* dev/inode if available */
+	/* file_id if available */
 	finfo.generic.level = RAW_FILEINFO_INTERNAL_INFORMATION;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	if (NT_STATUS_IS_OK(status)) {
-		d_printf("\tdevice          0x%x\n", finfo.internal_information.out.device);
-		d_printf("\tinode           0x%x\n", finfo.internal_information.out.inode);
+		d_printf("\tfile_id         %.0f\n", finfo.internal_information.out.file_id);
 	}
 
 	/* the EAs, if any */

@@ -136,8 +136,7 @@ static NTSTATUS svfs_map_fileinfo(struct request_context *req, union smb_fileinf
 	info->generic.out.alloc_size = st->st_blksize * st->st_blocks;
 	info->generic.out.nlink = st->st_nlink;
 	info->generic.out.directory = S_ISDIR(st->st_mode) ? 1 : 0;
-	info->generic.out.device = st->st_dev;
-	info->generic.out.inode = st->st_ino;
+	info->generic.out.file_id = svfs_file_id(st);
 	/* REWRITE: TODO stuff in here */
 	info->generic.out.delete_pending = 0;
 	info->generic.out.ea_size = 0;

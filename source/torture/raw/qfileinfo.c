@@ -660,8 +660,13 @@ BOOL torture_raw_qfileinfo(int dummy)
 	} \
 } while (0)
 
-	NAME_PATH_CHECK("INTERNAL_INFORMATION", internal_information, device);
-	NAME_PATH_CHECK("INTERNAL_INFORMATION", internal_information, inode);
+
+	s1 = fnum_find("INTERNAL_INFORMATION");
+	if (s1) {
+		printf("file_id=%.0f\n", (double)s1->internal_information.out.file_id);
+	}
+
+	NAME_PATH_CHECK("INTERNAL_INFORMATION", internal_information, file_id);
 	NAME_PATH_CHECK("POSITION_INFORMATION", position_information, position);
 	printf("fnum pos = %.0f, fname pos = %.0f\n",
 		(double)s2->position_information.out.position,

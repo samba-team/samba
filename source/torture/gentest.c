@@ -1290,7 +1290,7 @@ static BOOL handler_ntrename(int instance)
 	parm[0].ntrename.in.old_name = gen_fname();
 	parm[0].ntrename.in.new_name = gen_fname();
 	parm[0].ntrename.in.attrib = gen_attrib();
-	parm[0].ntrename.in.unknown = gen_bits_mask2(0, 0xFFFFFFF);
+	parm[0].ntrename.in.cluster_size = gen_bits_mask2(0, 0xFFFFFFF);
 	parm[0].ntrename.in.flags = gen_rename_flags();
 
 	GEN_COPY_PARM;
@@ -1571,8 +1571,7 @@ static BOOL cmp_fileinfo(int instance,
 		break;
 
 	case RAW_FILEINFO_INTERNAL_INFORMATION:
-		CHECK_EQUAL(internal_information.out.device);
-		CHECK_EQUAL(internal_information.out.inode);
+		CHECK_EQUAL(internal_information.out.file_id);
 		break;
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:

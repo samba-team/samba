@@ -453,8 +453,7 @@ NTSTATUS ntvfs_map_fileinfo(struct request_context *req, union smb_fileinfo *inf
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_INTERNAL_INFORMATION:
-		info->internal_information.out.device = info2->generic.out.device;
-		info->internal_information.out.inode = info2->generic.out.inode;
+		info->internal_information.out.file_id = info2->generic.out.file_id;
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_EA_INFO:

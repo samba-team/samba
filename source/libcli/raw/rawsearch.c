@@ -362,48 +362,45 @@ static int parse_trans2_search(struct cli_tree *tree,
 		return ofs;
 
 
-	case RAW_SEARCH_261:
+	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
 		if (blob->length < 81) return -1;
 		ofs                                          = IVAL(blob->data,             0);
-		data->level_261.file_index  = IVAL(blob->data,             4);
-		data->level_261.create_time = cli_pull_nttime(blob->data,  8);
-		data->level_261.access_time = cli_pull_nttime(blob->data, 16);
-		data->level_261.write_time  = cli_pull_nttime(blob->data, 24);
-		data->level_261.change_time = cli_pull_nttime(blob->data, 32);
-		data->level_261.size        = BVAL(blob->data,            40);
-		data->level_261.alloc_size  = BVAL(blob->data,            48);
-		data->level_261.attrib      = IVAL(blob->data,            56);
-		data->level_261.ea_size     = IVAL(blob->data,            64);
-		data->level_261.unknown[0]  = IVAL(blob->data,            68);
-		data->level_261.unknown[1]  = IVAL(blob->data,            72);
-		data->level_261.unknown[2]  = IVAL(blob->data,            76);
+		data->id_full_directory_info.file_index  = IVAL(blob->data,             4);
+		data->id_full_directory_info.create_time = cli_pull_nttime(blob->data,  8);
+		data->id_full_directory_info.access_time = cli_pull_nttime(blob->data, 16);
+		data->id_full_directory_info.write_time  = cli_pull_nttime(blob->data, 24);
+		data->id_full_directory_info.change_time = cli_pull_nttime(blob->data, 32);
+		data->id_full_directory_info.size        = BVAL(blob->data,            40);
+		data->id_full_directory_info.alloc_size  = BVAL(blob->data,            48);
+		data->id_full_directory_info.attrib      = IVAL(blob->data,            56);
+		data->id_full_directory_info.ea_size     = IVAL(blob->data,            64);
+		data->id_full_directory_info.file_id     = BVAL(blob->data,            72);
 		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
-					   &data->level_261.name,
+					   &data->id_full_directory_info.name,
 					   60, 80, 0);
 		if (ofs != 0 && ofs < 80+len) {
 			return -1;
 		}
 		return ofs;
 
-	case RAW_SEARCH_262:
+	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
 		if (blob->length < 105) return -1;
 		ofs                                          = IVAL(blob->data,             0);
-		data->level_262.file_index  = IVAL(blob->data,             4);
-		data->level_262.create_time = cli_pull_nttime(blob->data,  8);
-		data->level_262.access_time = cli_pull_nttime(blob->data, 16);
-		data->level_262.write_time  = cli_pull_nttime(blob->data, 24);
-		data->level_262.change_time = cli_pull_nttime(blob->data, 32);
-		data->level_262.size        = BVAL(blob->data,            40);
-		data->level_262.alloc_size  = BVAL(blob->data,            48);
-		data->level_262.attrib      = SVAL(blob->data,            56);
-		data->level_262.ea_size     = IVAL(blob->data,            64);
+		data->id_both_directory_info.file_index  = IVAL(blob->data,             4);
+		data->id_both_directory_info.create_time = cli_pull_nttime(blob->data,  8);
+		data->id_both_directory_info.access_time = cli_pull_nttime(blob->data, 16);
+		data->id_both_directory_info.write_time  = cli_pull_nttime(blob->data, 24);
+		data->id_both_directory_info.change_time = cli_pull_nttime(blob->data, 32);
+		data->id_both_directory_info.size        = BVAL(blob->data,            40);
+		data->id_both_directory_info.alloc_size  = BVAL(blob->data,            48);
+		data->id_both_directory_info.attrib      = SVAL(blob->data,            56);
+		data->id_both_directory_info.ea_size     = IVAL(blob->data,            64);
 		cli_blob_pull_string(tree->session, mem_ctx, blob,
-				     &data->level_262.short_name,
+				     &data->id_both_directory_info.short_name,
 				     68, 70, STR_LEN8BIT | STR_UNICODE);
-		data->level_262.unknown[0]  = IVAL(blob->data,            94);
-		data->level_262.unknown[1]  = IVAL(blob->data,            98);
+		data->id_both_directory_info.file_id     = BVAL(blob->data,            96);
 		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
-					   &data->level_262.name,
+					   &data->id_both_directory_info.name,
 					   60, 104, 0);
 		if (ofs != 0 && ofs < 104+len) {
 			return -1;

@@ -173,8 +173,7 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 
 	case RAW_FILEINFO_INTERNAL_INFORMATION:
 		FINFO_CHECK_SIZE(8);
-		parms->internal_information.out.device = IVAL(blob->data, 0);
-		parms->internal_information.out.inode =  IVAL(blob->data, 4);
+		parms->internal_information.out.file_id = BVAL(blob->data, 0);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:

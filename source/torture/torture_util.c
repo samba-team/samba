@@ -39,7 +39,7 @@ double end_timer(void)
 /*
   create a directory, returning a handle to it
 */
-int create_directory_handle(struct cli_state *cli, const char *dname)
+int create_directory_handle(struct cli_tree *tree, const char *dname)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -60,7 +60,7 @@ int create_directory_handle(struct cli_state *cli, const char *dname)
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = dname;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(tree, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		return -1;
