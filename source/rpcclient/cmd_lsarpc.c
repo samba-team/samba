@@ -176,6 +176,8 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 		       sid_type_lookup(types[i]), types[i]);
 	}
 
+	cli_lsa_close(cli, mem_ctx, &pol);
+
  done:
 	return result;
 }
@@ -241,6 +243,8 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		       domains[i] ? domains[i] : "*unknown*", 
 		       names[i] ? names[i] : "*unknown*", types[i]);
 	}
+
+	cli_lsa_close(cli, mem_ctx, &pol);
 
  done:
 	return result;
