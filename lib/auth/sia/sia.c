@@ -238,7 +238,7 @@ common_auth(sia_collect_func_t *collect,
 	if(krb_kuserok(toname, toinst, realm, entity->name))
 	    return SIADFAIL;
 	ret = krb_verify_user(toname, toinst, realm,
-			      entity->password, 1, NULL, "");
+			      entity->password, 1, NULL);
 	if(ret){
 	    if(ret != KDC_PR_UNKNOWN)
 		/* since this is most likely a local user (such as

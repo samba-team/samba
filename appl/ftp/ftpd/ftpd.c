@@ -891,7 +891,7 @@ pass(char *passwd)
 		    char realm[REALM_SZ];
 		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
 			rval = krb_verify_user(pw->pw_name, "", realm, 
-					       passwd, 1, NULL, "");
+					       passwd, 1, NULL);
 		    if (rval == KSUCCESS ) {
 			chown (tkt_string(), pw->pw_uid, pw->pw_gid);
 			if(k_hasafs())
