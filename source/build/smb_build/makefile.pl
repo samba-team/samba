@@ -146,22 +146,10 @@ sub _prepare_dummy_MAKEDIR()
 	my $output;
 
 	$output = "
-MAKEDIR = || exec false; \\
-	  if test -d \"\$\$dir\"; then :; else \\
-	  echo mkdir \"\$\$dir\"; \\
-	  mkdir -p \"\$\$dir\" >/dev/null 2>&1 || \\
-	  test -d \"\$\$dir\" || \\
-	  mkdir \"\$\$dir\" || \\
-	  exec false; fi || exec false
-
 bin/.dummy:
-	\@if (: >> \$\@ || : > \$\@) >/dev/null 2>&1; then :; else \\
-	  dir=bin \$(MAKEDIR); fi
 	\@: >> \$\@ || : > \$\@
 
 dynconfig.o: dynconfig.c Makefile
-	\@if (: >> \$\@ || : > \$\@) >/dev/null 2>&1; then rm -f \$\@; else \\
-	 dir=`echo \$\@ | sed 's,/[^/]*\$\$,,;s,^\$\$,.,'` \$(MAKEDIR); fi
 	\@echo Compiling \$*.c
 	\@\$(CC) \$(CC_FLAGS) \$(PATH_FLAGS) -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
@@ -200,8 +188,6 @@ sub _prepare_std_CC_rule($$$$$)
 ###################################
 # Start $comment
 .$src.$dst:
-	\@if (: >> \$\@ || : > \$\@) >/dev/null 2>&1; then rm -f \$\@; else \\
-	 dir=`echo \$\@ | sed 's,/[^/]*\$\$,,;s,^\$\$,.,'` \$(MAKEDIR); fi
 	\@echo $message \$*.$src
 	\@\$(CC) \$(CC_FLAGS) $flags -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
