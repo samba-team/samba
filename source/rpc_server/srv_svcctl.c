@@ -143,7 +143,30 @@ static BOOL api_svcctl_query_status(pipes_struct *p)
 	return True;
 }
 
-#if 0
+/*******************************************************************
+ ********************************************************************/
+
+static BOOL api_svcctl_enum_services_status(pipes_struct *p)
+{
+	SVCCTL_Q_ENUM_SERVICES_STATUS q_u;
+	SVCCTL_R_ENUM_SERVICES_STATUS r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_enum_services_status("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_enum_services_status(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_enum_services_status("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
 /*******************************************************************
  ********************************************************************/
 
@@ -167,7 +190,6 @@ static BOOL api_svcctl_start_service(pipes_struct *p)
 
 	return True;
 }
-#endif
 
 /*******************************************************************
  \PIPE\svcctl commands
@@ -175,14 +197,13 @@ static BOOL api_svcctl_start_service(pipes_struct *p)
 
 static struct api_struct api_svcctl_cmds[] =
 {
-      { "SVCCTL_CLOSE_SERVICE"      , SVCCTL_CLOSE_SERVICE       , api_svcctl_close_service },
-      { "SVCCTL_OPEN_SCMANAGER"     , SVCCTL_OPEN_SCMANAGER      , api_svcctl_open_scmanager },
-      { "SVCCTL_OPEN_SERVICE"       , SVCCTL_OPEN_SERVICE        , api_svcctl_open_service },
-      { "SVCCTL_GET_DISPLAY_NAME"   , SVCCTL_GET_DISPLAY_NAME    , api_svcctl_get_display_name },
-#if 0
-      { "SVCCTL_START_SERVICE"      , SVCCTL_START_SERVICE       , api_svcctl_start_service }
-#endif
-      { "SVCCTL_QUERY_STATUS"       , SVCCTL_QUERY_STATUS        , api_svcctl_query_status }
+      { "SVCCTL_CLOSE_SERVICE"         , SVCCTL_CLOSE_SERVICE         , api_svcctl_close_service },
+      { "SVCCTL_OPEN_SCMANAGER"        , SVCCTL_OPEN_SCMANAGER        , api_svcctl_open_scmanager },
+      { "SVCCTL_OPEN_SERVICE"          , SVCCTL_OPEN_SERVICE          , api_svcctl_open_service },
+      { "SVCCTL_GET_DISPLAY_NAME"      , SVCCTL_GET_DISPLAY_NAME      , api_svcctl_get_display_name },
+      { "SVCCTL_QUERY_STATUS"          , SVCCTL_QUERY_STATUS          , api_svcctl_query_status },
+      { "SVCCTL_ENUM_SERVICES_STATUS"  , SVCCTL_ENUM_SERVICES_STATUS  , api_svcctl_enum_services_status },
+      { "SVCCTL_START_SERVICE"         , SVCCTL_START_SERVICE         , api_svcctl_start_service }
 };
 
 void svcctl_get_pipe_fns( struct api_struct **fns, int *n_fns )

@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell              1992-1997,
-   Copyright (C) Gerald (Jerry) Carter        2004
+   Copyright (C) Gerald (Jerry) Carter        2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,8 +27,10 @@
 
 #define SVCCTL_CLOSE_SERVICE		0x00
 #define SVCCTL_QUERY_STATUS		0x06
+#define SVCCTL_ENUM_SERVICES_STATUS	0x0e
 #define SVCCTL_OPEN_SCMANAGER		0x0f
 #define SVCCTL_OPEN_SERVICE		0x10
+#define SVCCTL_QUERY_SERVICE_CONFIG	0x11
 #define SVCCTL_START_SERVICE		0x13
 #define SVCCTL_GET_DISPLAY_NAME		0x14
 
@@ -107,6 +109,25 @@ typedef struct {
 	SERVICE_STATUS svc_status;
 	WERROR status;
 } SVCCTL_R_QUERY_STATUS;
+
+typedef struct {
+	POLICY_HND handle;
+	uint32 type;
+	uint32 state;
+	uint32 buffer_size;
+	uint32 resume_ptr;
+	uint32 resume;
+} SVCCTL_Q_ENUM_SERVICES_STATUS;
+
+typedef struct {
+	uint32 buffer_size;
+	uint8 *buffer;
+	uint32 needed;
+	uint32 returned;
+	uint32 resume_ptr;
+	uint32 resume;
+	WERROR status;
+} SVCCTL_R_ENUM_SERVICES_STATUS;
 
 #endif /* _RPC_SVCCTL_H */
 

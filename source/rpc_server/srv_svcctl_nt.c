@@ -99,3 +99,26 @@ WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_
 
 	return WERR_OK;
 }
+
+/********************************************************************
+********************************************************************/
+
+WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, SVCCTL_R_ENUM_SERVICES_STATUS *r_u)
+{
+	/* we have to set the outgoing buffer size to the same as the 
+	   incoming buffer size (even in the case of failure */
+
+	r_u->buffer_size = q_u->buffer_size;
+	r_u->buffer = TALLOC_ZERO_ARRAY( p->mem_ctx, uint8, r_u->buffer_size );
+
+	return WERR_ACCESS_DENIED;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _svcctl_start_service(pipes_struct *p, SVCCTL_Q_START_SERVICE *q_u, SVCCTL_R_START_SERVICE *r_u)
+{
+	return WERR_ACCESS_DENIED;
+}
+

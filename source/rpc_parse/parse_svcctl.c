@@ -80,14 +80,14 @@ BOOL svcctl_io_q_open_scmanager(const char *desc, SVCCTL_Q_OPEN_SCMANAGER *q_u, 
 
 	if(!prs_uint32("srv_ptr", ps, depth, &q_u->ptr_srv))
 		return False;
-	if(!smb_io_unistr2("", &q_u->servername, q_u->ptr_srv, ps, depth))
+	if(!smb_io_unistr2("servername", &q_u->servername, q_u->ptr_srv, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("db_ptr", ps, depth, &q_u->ptr_db))
 		return False;
-	if(!smb_io_unistr2("", &q_u->database, q_u->ptr_db, ps, depth))
+	if(!smb_io_unistr2("database", &q_u->database, q_u->ptr_db, ps, depth))
 		return False;
 
 	if(!prs_align(ps))
@@ -139,7 +139,7 @@ BOOL svcctl_io_q_get_display_name(const char *desc, SVCCTL_Q_GET_DISPLAY_NAME *q
 	if(!smb_io_pol_hnd("scm_pol", &q_u->handle, ps, depth))
 		return False;
 
-	if(!smb_io_unistr2("", &q_u->servicename, 1, ps, depth))
+	if(!smb_io_unistr2("servicename", &q_u->servicename, 1, ps, depth))
 		return False;
 
 	if(!prs_align(ps))
@@ -177,7 +177,7 @@ BOOL svcctl_io_r_get_display_name(const char *desc, SVCCTL_R_GET_DISPLAY_NAME *r
 		return False;
 
 	
-	if(!smb_io_unistr2("", &r_u->displayname, 1, ps, depth))
+	if(!smb_io_unistr2("displayname", &r_u->displayname, 1, ps, depth))
 		return False;
 
 	if(!prs_align(ps))
@@ -210,7 +210,7 @@ BOOL svcctl_io_q_open_service(const char *desc, SVCCTL_Q_OPEN_SERVICE *q_u, prs_
 	if(!smb_io_pol_hnd("scm_pol", &q_u->handle, ps, depth))
 		return False;
 
-	if(!smb_io_unistr2("", &q_u->servicename, 1, ps, depth))
+	if(!smb_io_unistr2("servicename", &q_u->servicename, 1, ps, depth))
 		return False;
 
 	if(!prs_align(ps))
@@ -320,3 +320,123 @@ BOOL svcctl_io_r_query_status(const char *desc, SVCCTL_R_QUERY_STATUS *r_u, prs_
 
 	return True;
 }
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_enum_services_status");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("scm_pol", &q_u->handle, ps, depth))
+		return False;
+
+	if(!prs_uint32("type", ps, depth, &q_u->type))
+		return False;
+	if(!prs_uint32("state", ps, depth, &q_u->state))
+		return False;
+	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
+		return False;
+	if(!prs_uint32("resume_ptr", ps, depth, &q_u->resume_ptr))
+		return False;
+	if(!prs_uint32("resume", ps, depth, &q_u->resume))
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_STATUS *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_enum_services_status");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("buffer_size", ps, depth, &r_u->buffer_size))
+		return False;
+	if ( r_u->buffer_size ) {
+
+		if ( !(r_u->buffer = TALLOC_ZERO_ARRAY( get_talloc_ctx(), uint8, r_u->buffer_size )) )
+			return False;
+
+		if(!prs_uint8s(False, "buffer", ps, depth, r_u->buffer, r_u->buffer_size))
+			return False;
+	}
+		
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+	if(!prs_uint32("returned", ps, depth, &r_u->returned))
+		return False;
+
+	if(!prs_uint32("resume_ptr", ps, depth, &r_u->resume_ptr))
+		return False;
+	if(!prs_uint32("resume", ps, depth, &r_u->resume))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_start_service(const char *desc, SVCCTL_Q_START_SERVICE *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_start_service");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
+		return False;
+
+	if(!prs_uint32("parmcount", ps, depth, &q_u->parmcount))
+		return False;
+
+	if(!smb_io_unistr2_array("parameters", &q_u->parameters, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_start_service(const char *desc, SVCCTL_R_START_SERVICE *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_start_service");
+	depth++;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
