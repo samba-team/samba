@@ -1914,6 +1914,7 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 	PRINTER_INFO_CTR ctr;
 	PRINTER_INFO_0 info;
 	REGISTRY_VALUE value;
+	UNISTR2 data;
 
 	/* parse the command arguements */
 	if (argc != 4) {
@@ -1951,10 +1952,11 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 
 	/* Set the printer data */
 	
+	init_unistr2(&data, argv[3], UNI_STR_TERMINATE);
 	fstrcpy(value.valuename, argv[2]);
 	value.type = REG_SZ;
-	value.size = strlen(argv[3]) + 1;
-	value.data_p = talloc_memdup(mem_ctx, argv[3], value.size);
+	value.size = data.uni_str_len * 2;
+	value.data_p = talloc_memdup(mem_ctx, data.buffer, value.size);
 
 	result = cli_spoolss_setprinterdata(cli, mem_ctx, &pol, &value);
 		
