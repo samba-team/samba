@@ -37,6 +37,19 @@ static const struct dcesrv_endpoint_ops *find_endpoint(struct server_context *sm
 	return NULL;
 }
 
+/*
+  find a call that is pending in our call list
+*/
+static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_state *dce, uint16 call_id)
+{
+	struct dcesrv_call_state *c;
+	for (c=dce->call_list;c;c=c->next) {
+		if (c->pkt.call_id == call_id) {
+			return c;
+		}
+	}
+	return NULL;
+}
 
 /*
   register an endpoint server
@@ -248,11 +261,6 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	DATA_BLOB stub;
 	struct dcerpc_packet pkt;
 
-	if (call->pkt.pfc_flags != (DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST)) {
-		/* we don't do fragments in the server yet */
-		return dcesrv_fault(call, DCERPC_FAULT_TODO);
-	}
-
 	opnum = call->pkt.u.request.opnum;
 
 	if (opnum >= call->dce->ndr->num_calls) {
@@ -349,6 +357,7 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 	}
 	call->mem_ctx = mem_ctx;
 	call->dce = dce;
+	call->data = data_blob(NULL, 0);
 
 	ndr = ndr_pull_init_blob(data, mem_ctx);
 	if (!ndr) {
@@ -362,10 +371,56 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 		return status;
 	}
 
-	/* TODO: at this point we should see if the packet is a
-	   continuation of an existing call, but I'm too lazy for that
-	   right now ... maybe tomorrow */
+	/* see if this is a continued packet */
+	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
+		struct dcesrv_call_state *call2 = call;
+		uint32 alloc_size;
 
+		/* we only allow fragmented requests, no other packet types */
+		if (call->pkt.ptype != DCERPC_PKT_REQUEST) {
+			return dcesrv_fault(call2, DCERPC_FAULT_TODO);
+		}
+
+		/* this is a continuation of an existing call - find the call then
+		   tack it on the end */
+		call = dcesrv_find_call(dce, call2->pkt.call_id);
+		if (!call) {
+			return dcesrv_fault(call2, DCERPC_FAULT_TODO);
+		}
+
+		if (call->pkt.ptype != call2->pkt.ptype) {
+			/* trying to play silly buggers are we? */
+			return dcesrv_fault(call2, DCERPC_FAULT_TODO);
+		}
+
+		alloc_size = call->pkt.u.request.stub_and_verifier.length +
+			call2->pkt.u.request.stub_and_verifier.length;
+		if (call->pkt.u.request.alloc_hint > alloc_size) {
+			alloc_size = call->pkt.u.request.alloc_hint;
+		}
+
+		call->pkt.u.request.stub_and_verifier.data = 
+			talloc_realloc(call->mem_ctx,
+				       call->pkt.u.request.stub_and_verifier.data, alloc_size);
+		if (!call->pkt.u.request.stub_and_verifier.data) {
+			return dcesrv_fault(call2, DCERPC_FAULT_TODO);
+		}
+		memcpy(call->pkt.u.request.stub_and_verifier.data +
+		       call->pkt.u.request.stub_and_verifier.length,
+		       call2->pkt.u.request.stub_and_verifier.data,
+		       call2->pkt.u.request.stub_and_verifier.length);
+		call->pkt.u.request.stub_and_verifier.length += 
+			call2->pkt.u.request.stub_and_verifier.length;
+
+		call->pkt.pfc_flags |= (call2->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST);
+	}
+
+	/* this may not be the last pdu in the chain - if its isn't then
+	   just put it on the call_list and wait for the rest */
+	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+		DLIST_ADD_END(dce->call_list, call, struct dcesrv_call_state *);
+		return NT_STATUS_OK;
+	}
 
 	switch (call->pkt.ptype) {
 	case DCERPC_PKT_BIND:

@@ -31,6 +31,10 @@ static NTSTATUS echo_AddOne(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struc
 
 static NTSTATUS echo_EchoData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_EchoData *r)
 {
+	r->out.out_data = talloc(mem_ctx, r->in.len);
+	if (!r->out.out_data) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	memcpy(r->out.out_data, r->in.in_data, r->in.len);
 
 	return NT_STATUS_OK;
