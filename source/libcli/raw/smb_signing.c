@@ -90,7 +90,7 @@ static BOOL signing_good(struct cli_request *req, int seq, BOOL good)
 		if (!req->transport->negotiate.sign_info.mandatory_signing && !req->transport->negotiate.sign_info.seen_valid) {
 
 			/* Non-mandatory signing - just turn off if this is the first bad packet.. */
-			DEBUG(5, ("srv_check_incoming_message: signing negotiated but not required and peer\n"
+			DEBUG(5, ("signing_good: signing negotiated but not required and peer\n"
 				  "isn't sending correct signatures. Turning off.\n"));
 			req->transport->negotiate.sign_info.negotiated_smb_signing = False;
 			req->transport->negotiate.sign_info.allow_smb_signing = False;
