@@ -175,6 +175,7 @@ typedef struct
 	int maxprotocol;
 	int minprotocol;
 	int security;
+	BOOL paranoid_server_security;
 	int maxdisksize;
 	int lpqcachetime;
 	int iMaxSmbdProcesses;
@@ -800,6 +801,7 @@ static struct parm_struct parm_table[] = {
 	{"lpq cache time", P_INTEGER, P_GLOBAL, &Globals.lpqcachetime, NULL, NULL, 0},
 	{"max smbd processes", P_INTEGER, P_GLOBAL, &Globals.iMaxSmbdProcesses, NULL, NULL, 0},
 	{"max connections", P_INTEGER, P_LOCAL, &sDefault.iMaxConnections, NULL, NULL, FLAG_SHARE},
+	{"paranoid server security", P_BOOL, P_GLOBAL, &Globals.paranoid_server_security, NULL, NULL, 0},
 	{"max disk size", P_INTEGER, P_GLOBAL, &Globals.maxdisksize, NULL, NULL, 0},
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, 0},
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_PRINT},
@@ -1230,6 +1232,7 @@ static void init_globals(void)
 	Globals.maxprotocol = PROTOCOL_NT1;
 	Globals.minprotocol = PROTOCOL_CORE;
 	Globals.security = SEC_USER;
+	Globals.paranoid_server_security = True;
 	Globals.bEncryptPasswords = False;
 	Globals.bUpdateEncrypt = False;
 	Globals.bReadRaw = True;
@@ -1573,6 +1576,7 @@ FN_GLOBAL_INTEGER(lp_deadtime, &Globals.deadtime)
 FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_minprotocol, &Globals.minprotocol)
 FN_GLOBAL_INTEGER(lp_security, &Globals.security)
+FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_max_smbd_processes, &Globals.iMaxSmbdProcesses)

@@ -158,7 +158,7 @@ static uint32 server_validate(const auth_usersupplied_info *user_info, auth_serv
 	 *  - abartlet@samba.org
 	 */
 
-	if(!tested_password_server) {
+	if ((!tested_password_server) && (lp_paranoid_server_security())) {
 		if (cli_session_setup(cli, baduser, (char *)badpass, sizeof(badpass), 
 					(char *)badpass, sizeof(badpass), user_info->domain.str)) {
 
