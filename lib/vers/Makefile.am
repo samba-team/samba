@@ -14,7 +14,7 @@ if KRB4
 if KRB5
 ## need to link with des here; otherwise, if krb4 is shared the link
 ## will fail with unresolved references
-make_print_version_LDADD += $(LIB_krb4) -ldes
+make_print_version_LDADD = $(LIB_krb4) -ldes
 endif
 endif
 
