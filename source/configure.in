@@ -2377,12 +2377,30 @@ if test x"$samba_cv_WITH_AFS" != x"no" ||
     fi
 fi
 
-if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no"; then
-	AC_CHECK_LIB( crypto, DES_pcbc_encrypt, LIBS="$LIBS -lcrypto" )
-fi
-
 if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no" && test x"$have_afs_headers" == x"yes"; then
     AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
+fi
+
+#################################################
+# check whether to compile AFS/NT ACL mapping module
+samba_cv_WITH_VFS_AFSACL=no
+AC_MSG_CHECKING(whether to use AFS fake-kaserver)
+AC_ARG_WITH(vfs-afsacl,
+[  --with-vfs-afsacl       Include AFS to NT ACL mapping module (default=no) ],
+[ case "$withval" in
+  yes|auto)
+    AC_MSG_RESULT($withval)
+    samba_cv_WITH_VFS_AFSACL=yes
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+if test x"$samba_cv_WITH_VFS_AFSACL" == x"yes"; then
+   default_shared_modules="$default_shared_modules vfs_afsacl"
 fi
 	
 if test x"$samba_cv_WITH_AFS" != x"no" && test x"$have_afs_headers" = x"yes"; then
@@ -4337,6 +4355,7 @@ SMB_MODULE(vfs_readonly, \$(VFS_READONLY_OBJ), "bin/readonly.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
