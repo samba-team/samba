@@ -42,6 +42,7 @@
 .Nm krb5_free_keyblock ,
 .Nm krb5_free_keyblock_contents ,
 .Nm krb5_generate_random_keyblock ,
+.Nm krb5_generate_subkey ,
 .Nm krb5_keyblock_zero
 .Nd Kerberos 5 key handling functions.
 .Sh LIBRARY
@@ -80,6 +81,12 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_context context"
 .Fa "krb5_enctype type"
 .Fa "krb5_keyblock *key"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_generate_subkey
+.Fo "krb5_context context"
+.Fa "const krb5_keyblock *key"
+.Fa "krb5_keyblock **subkey"
 .Fc
 .Ft void
 .Fo krb5_keyblock_zero
@@ -128,6 +135,14 @@ The content of
 .Fa key
 is overwritten and not freed, so the caller should be sure it is
 freed before calling the function.
+.Pp
+.Fn krb5_generate_subkey
+generates a
+.Fa subkey
+of the same type as
+.Fa key .
+The caller must free the subkey with
+.Fa krb5_free_keyblock .
 .Pp
 .Fn krb5_keyblock_zero
 zeros out the keyblock to to make sure no keymaterial is in
