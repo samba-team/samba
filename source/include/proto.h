@@ -2814,19 +2814,19 @@ void init_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND *pol,
 				uint32 max_entries);
 BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 			      prs_struct *ps, int depth);
-void init_sam_dispinfo_1(SAM_DISPINFO_1 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-void init_sam_dispinfo_2(SAM_DISPINFO_2 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-void init_sam_dispinfo_3(SAM_DISPINFO_3 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 DOMAIN_GRP * grp);
-void init_sam_dispinfo_4(SAM_DISPINFO_4 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-void init_sam_dispinfo_5(SAM_DISPINFO_5 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 DOMAIN_GRP * grp);
 void init_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
@@ -3027,12 +3027,12 @@ void init_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM * r_u,
 				uint32 status);
 BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 			      prs_struct *ps, int depth);
-void init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
+uint32 init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 			      POLICY_HND *pol, uint32 flags,
 			      uint32 num_names, char **name);
 BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 			    prs_struct *ps, int depth);
-void init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
+uint32 init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 			      uint32 num_rids,
 			      uint32 *rid, uint32 *type,
 			      uint32 status);
