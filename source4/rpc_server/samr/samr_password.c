@@ -50,7 +50,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	a_state = h->data;
 
 	/* fetch the old hashes */
-	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
 			   "dn=%s", a_state->account_dn);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -167,7 +167,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	/* we need the users dn and the domain dn (derived from the
 	   user SID). We also need the current lm password hash in
 	   order to decrypt the incoming password */
-	ret = samdb_search(sam_ctx, 
+	ret = gendb_search(sam_ctx, 
 			   mem_ctx, NULL, &res, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
 			   r->in.account->string);
@@ -295,7 +295,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	/* we need the users dn and the domain dn (derived from the
 	   user SID). We also need the current lm and nt password hashes
 	   in order to decrypt the incoming passwords */
-	ret = samdb_search(sam_ctx, 
+	ret = gendb_search(sam_ctx, 
 			   mem_ctx, NULL, &res, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
 			   r->in.account->string);
@@ -400,7 +400,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 
 failed:
-	ret = samdb_search(sam_ctx, 
+	ret = gendb_search(sam_ctx, 
 			   mem_ctx, NULL, &res, dom_attrs,
 			   "dn=%s", domain_dn);
 
@@ -517,7 +517,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	unix_to_nt_time(&now_nt, now);
 
 	/* pull all the user parameters */
-	count = samdb_search(ctx, mem_ctx, NULL, &res, user_attrs, "dn=%s", user_dn);
+	count = gendb_search(ctx, mem_ctx, NULL, &res, user_attrs, "dn=%s", user_dn);
 	if (count != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -533,7 +533,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
 
 	/* pull the domain parameters */
-	count = samdb_search(ctx, mem_ctx, NULL, &res, domain_attrs, "dn=%s", domain_dn);
+	count = gendb_search(ctx, mem_ctx, NULL, &res, domain_attrs, "dn=%s", domain_dn);
 	if (count != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

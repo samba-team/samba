@@ -204,9 +204,9 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 	}
 
 	/* search for the secret record */
-	ldb_ret = samdb_search(ldb,
+	ldb_ret = gendb_search(ldb,
 			       mem_ctx, base_dn, &msgs, attrs,
-			       "(&(realm=%s)(objectclass=primaryDomain))", 
+			       SECRETS_PRIMARY_REALM_FILTER,
 			       lp_realm());
 	if (ldb_ret == 0) {
 		DEBUG(1, ("Could not find domain join record for %s\n",

@@ -5,8 +5,7 @@
 [SUBSYSTEM::DCERPC_COMMON]
 ADD_OBJ_FILES = \
 		rpc_server/common/server_info.o \
-		rpc_server/common/share_info.o \
-		rpc_server/common/gendb.o
+		rpc_server/common/share_info.o
 #
 # End SUBSYSTEM DCERPC_COMMON
 ################################################

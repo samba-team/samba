@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/crypto/crypto.h"
 #include "lib/ldb/include/ldb.h"
+#include "include/secrets.h"
 
 /*
  * do a domain join using DCERPC/SAMR calls
@@ -373,9 +374,9 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	msg = ldb_msg_new(mem_ctx);
 
 	/* search for the secret record */
-	ret = samdb_search(ldb,
+	ret = gendb_search(ldb,
 			   mem_ctx, base_dn, &msgs, attrs,
-			   "(&(flatname=%s)(objectclass=primaryDomain))", 
+			   SECRETS_PRIMARY_DOMAIN_FILTER,
 			   r->generic.in.domain_name);
 	if (ret == 0) {
 		msg->dn = talloc_asprintf(mem_ctx, "flatname=%s,%s", 

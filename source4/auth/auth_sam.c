@@ -214,7 +214,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, void *sam_ctx,
 
 	if (domain_name) {
 		/* find the domain's DN */
-		ret_domain = samdb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
+		ret_domain = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
 					  "(&(|(realm=%s)(name=%s))(objectclass=domain))", 
 					  domain_name, domain_name);
 		if (ret_domain == -1) {
@@ -237,7 +237,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, void *sam_ctx,
 	}
 
 	/* pull the user attributes */
-	ret = samdb_search(sam_ctx, mem_ctx, domain_dn, &msgs, attrs,
+	ret = gendb_search(sam_ctx, mem_ctx, domain_dn, &msgs, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))", 
 			   account_name);
 	if (ret == -1) {
@@ -264,7 +264,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, void *sam_ctx,
 		}
 
 		/* find the domain's DN */
-		ret_domain = samdb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
+		ret_domain = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
 					  "(&(objectSid=%s)(objectclass=domain))", 
 					  domain_sid);
 		if (ret_domain == -1) {
@@ -360,7 +360,7 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, void *sam_ctx,
 	uint_t rid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
-	group_ret = samdb_search(sam_ctx,
+	group_ret = gendb_search(sam_ctx,
 				 tmp_ctx, NULL, &group_msgs, group_attrs,
 				 "(&(member=%s)(sAMAccountType=*))", 
 				 msgs[0]->dn);
