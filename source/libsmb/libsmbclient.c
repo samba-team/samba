@@ -364,7 +364,7 @@ struct smbc_server *smbc_server(char *server, char *share,
   make_nmb_name(&calling, my_netbios_name, 0x0);
   make_nmb_name(&called , server, 0x20);
 
-  DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
+  DEBUG(4,("smbc_server: server_n=[%s] server=[%s]\n", server_n, server));
   
   if ((p=strchr(server_n,'#')) && 
       (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
@@ -497,14 +497,13 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
   /*
    * Next lot ifdef'd out until test suite fixed ...
    */
-#ifdef 0 
+
   if (!fn || debug < 0 || debug > 100) {
 
     errno = EINVAL;
     return -1;
 
   }
-#endif
 
   smbc_initialized = 1;
   smbc_auth_fn = fn;
@@ -1167,7 +1166,7 @@ BOOL smbc_getatr(struct smbc_server *srv, char *path,
 
   }
 
-  DEBUG(4,("sending qpathinfo\n"));
+  DEBUG(4,("smbc_getatr: sending qpathinfo\n"));
   
   if (!srv->no_pathinfo2 &&
       cli_qpathinfo2(&srv->cli, path, c_time, a_time, m_time, NULL,
@@ -1212,7 +1211,7 @@ int smbc_stat(const char *fname, struct stat *st)
 
   }
   
-  DEBUG(4, ("stat(%s)\n", fname));
+  DEBUG(4, ("smbc_stat(%s)\n", fname));
 
   smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
 
@@ -1954,7 +1953,7 @@ int smbc_mkdir(const char *fname, mode_t mode)
 
   }
   
-  DEBUG(4, ("stat(%s)\n", fname));
+  DEBUG(4, ("smbc_mkdir(%s)\n", fname));
 
   smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
 
@@ -2024,7 +2023,7 @@ int smbc_rmdir(const char *fname)
 
   }
   
-  DEBUG(4, ("stat(%s)\n", fname));
+  DEBUG(4, ("smbc_rmdir(%s)\n", fname));
 
   smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
 
@@ -2140,3 +2139,53 @@ int smbc_fstatdir(int fd, struct stat *st)
   return 0;
 
 }
+
+/*
+ * Routine to list print jobs on a printer share ...
+ */
+
+int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
+{
+  struct smbc_server *srv;
+  fstring server, share, user, password;
+  pstring path;
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
+  if (!fname) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+  
+  DEBUG(4, ("smbc_list_print_jobs(%s)\n", fname));
+
+  smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+
+  if (user[0] == (char)0) pstrcpy(user, smbc_user);
+
+  srv = smbc_server(server, share, lp_workgroup(), user, password);
+
+  if (!srv) {
+
+    return -1;  /* errno set by smbc_server */
+
+  }
+
+  if (cli_print_queue(&srv->cli, fn) < 0) {
+
+    errno = smbc_errno(&srv->cli);
+    return -1;
+
+  }
+
+  return 0;
+
+}
+
