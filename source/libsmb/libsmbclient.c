@@ -122,8 +122,8 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 	 */
 
 	/* check that '@' occurs before '/', if '/' exists at all */
-	q = strchr(p, '@');
-	r = strchr(p, '/');
+	q = strchr_m(p, '@');
+	r = strchr_m(p, '/');
 	if (q && (!r || q < r)) {
 		pstring username, passwd, domain;
 		char *u = userinfo;
@@ -132,13 +132,13 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 
 		username[0] = passwd[0] = domain[0] = 0;
 
-		if (strchr(u, ';')) {
+		if (strchr_m(u, ';')) {
       
 			next_token(&u, domain, ";", sizeof(fstring));
 
 		}
 
-		if (strchr(u, ':')) {
+		if (strchr_m(u, ':')) {
 
 			next_token(&u, username, ":", sizeof(fstring));
 
@@ -342,11 +342,11 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 
 	DEBUG(4,("smbc_server: server_n=[%s] server=[%s]\n", server_n, server));
   
-	if ((p=strchr(server_n,'#')) && 
+	if ((p=strchr_m(server_n,'#')) && 
 	    (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
     
 		fstrcpy(group, server_n);
-		p = strchr(group,'#');
+		p = strchr_m(group,'#');
 		*p = 0;
 		
 	}
