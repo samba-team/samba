@@ -49,8 +49,8 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_state *dce,
 	
 	/* TODO: check for wraparound here */
 	SIVAL(&h->wire_handle.data, 12, random());
-	SIVAL(&h->wire_handle.data, 16, dce->next_handle);
 	dce->next_handle++;	
+	SIVAL(&h->wire_handle.data, 16, dce->next_handle);
 
 	DLIST_ADD(dce->handles, h);
 
