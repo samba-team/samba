@@ -488,12 +488,12 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
-	if (!cli_session_setup(&c, username, 
+	if (!cli_session_setup_x(&c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup) &&
 	    /* try an anonymous login if it failed */
-	    !cli_session_setup(&c, "", "", 1,"", 0, workgroup)) {
+	    !cli_session_setup_x(&c, "", "", 1,"", 0, workgroup)) {
 		cli_shutdown(&c);
 		errno = EPERM;
 		return NULL;

@@ -2772,7 +2772,7 @@ int reply_printqueue(connection_struct *conn,
 	int max_count = SVAL(inbuf,smb_vwv0);
 	int start_index = SVAL(inbuf,smb_vwv1);
 	uint16 vuid = SVAL(inbuf,smb_uid);
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
 
 	/* we used to allow the client to get the cnum wrong, but that
 	   is really quite gross and only worked when there was only

@@ -242,6 +242,8 @@
 #define real_llseek(fd,ofs,whence)            	(__llseek(fd,ofs,whence))
 #elif HAVE___SYS_LLSEEK
 #define real_llseek(fd,ofs,whence)            	(__sys_llseek(fd,ofs,whence))
+#elif IRIX
+#define real_llseek(fd,ofs,whence)		(lseek64(fd, ofs, whence)) /* is this true?  neither the IRIX or Linux man pages match this */
 #else
 #error No llseek() wrapper
 #endif

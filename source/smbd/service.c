@@ -591,7 +591,7 @@ close a cnum
 ****************************************************************************/
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
 
 	DirCacheFlush(SNUM(conn));
 

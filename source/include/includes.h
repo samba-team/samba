@@ -787,5 +787,6 @@ int crypt(const char *key, const char *salt);
 
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
-
+/* change initialization ... support for IRIX cc */
+#define VUSER_KEY vuser_key key; key.pid=conn->smbd_pid; key.vuid=vuid
 #endif /* _INCLUDES_H */

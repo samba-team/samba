@@ -438,7 +438,9 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       if (session_tag != last_session_tag)
       {
         user_struct *vuser = NULL;
-        vuser_key key = { pid, session_tag };
+        vuser_key key;
+	key.pid = pid;
+        key.vuid = session_tag;
 
         last_session_tag = session_tag;
         if(session_tag != UID_FIELD_INVALID)

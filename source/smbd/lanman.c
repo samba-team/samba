@@ -696,7 +696,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
-	vuser_key key = { conn->smbd_pid, vuid };
+
+  VUSER_KEY;
   
   bzero(&status,sizeof(status));
   bzero(&desc,sizeof(desc));
@@ -796,7 +797,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
   print_status_struct *status = NULL;
   int* subcntarr = NULL;
   int queuecnt, subcnt=0, succnt=0;
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
  
   bzero(&desc,sizeof(desc));
 
@@ -1388,7 +1389,7 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
   char *p = skip_string(netname,1);
   int uLevel = SVAL(p,0);
   int snum = find_service(netname);
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
   
   if (snum < 0) return False;
   
@@ -1430,7 +1431,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
   int i;
   int data_len, fixed_len, string_len;
   int f_len = 0, s_len = 0;
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
  
   if (!prefix_ok(str1,"WrLeh")) return False;
   if (!check_share_info(uLevel,str2)) return False;
@@ -1673,7 +1674,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
   char *p = skip_string(str2,1);
   int jobid, snum;
   int i, count;
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
 
   printjob_decode(SVAL(p,0), &snum, &jobid);
 
@@ -1737,7 +1738,7 @@ static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *para
   char *str2 = skip_string(str1,1);
   char *QueueName = skip_string(str2,1);
   int snum;
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
 
   /* check it's a supported varient */
   if (!(strcsequal(str1,"z") && strcsequal(str2,"")))
@@ -1828,7 +1829,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	int i;
 	char *s = data;
 	files_struct *fsp;
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
 
 	printjob_decode(SVAL(p,0), &snum, &jobid);
    
@@ -1935,7 +1936,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
   int uLevel = SVAL(p,0);
   char *p2;
   int struct_len;
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
 
   DEBUG(4,("NetServerGetInfo level %d\n",uLevel));
 
@@ -2291,12 +2292,12 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	fstring home_dir;
 	fstring logon_srv;
 
-	vuser_key key = { conn->smbd_pid, vuid };
-
     /* get NIS home of a previously validated user - simeon */
     /* With share level security vuid will always be zero.
        Don't depend on vuser being non-null !!. JRA */
     user_struct *vuser = NULL;
+    /* moved here due to initialization code (req for IRIX cc) */
+	VUSER_KEY;
 
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
@@ -2521,8 +2522,9 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   int uLevel;
   struct pack_desc desc;
   char* name;
-  vuser_key key = { conn->smbd_pid, vuid };
-    user_struct *vuser = get_valid_user_struct(&key);
+    user_struct *vuser;
+  VUSER_KEY;
+  vuser = get_valid_user_struct(&key); /* moved due to VUSER_KEY initialization */
 
 	if (vuser == NULL)
 	{
@@ -2643,7 +2645,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
 
   uLevel = SVAL(p,2);
 
@@ -2707,7 +2709,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
-	vuser_key key = { conn->smbd_pid, vuid };
+	VUSER_KEY;
 
   bzero(&desc,sizeof(desc));
   bzero(&status,sizeof(status));
