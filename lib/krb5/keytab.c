@@ -291,6 +291,7 @@ krb5_kt_copy_entry_contents(krb5_context context,
 				       &out->keyblock);
     if (ret)
 	goto fail;
+    out->timestamp = in->timestamp;
     return 0;
 fail:
     krb5_kt_free_entry (context, out);
