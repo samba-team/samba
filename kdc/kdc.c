@@ -5,6 +5,10 @@ RCSID("$Id$");
 struct timeval now;
 #define kdc_time now.tv_sec
 
+#ifndef MIN
+#define MIN(A,B) ((A)<(B)?(A):(B))
+#endif
+
 hdb_entry*
 db_fetch(krb5_context context, PrincipalName *principal, char *realm)
 {
