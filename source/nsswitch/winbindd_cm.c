@@ -152,6 +152,9 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 		if(is_local_net(ip_list[i]))
 			goto got_ip;
 	}
+
+	if (count == 0)
+		return False;
 	
 	i = (sys_random() % count);
 	
