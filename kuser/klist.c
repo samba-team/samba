@@ -96,6 +96,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     if(ret)
 	exit(1);
     printf("Server: %s\n", str);
+    free (str);
     printf("Session key: type = %d, length = %d\n", 
 	   cred->session.keytype, 
 	   cred->session.keyvalue.length);
