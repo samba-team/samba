@@ -61,7 +61,7 @@ static struct field_name {
     { "fail_auth_count", KADM5_FAIL_AUTH_COUNT, "Fail count", "Failed login count", RTBL_ALIGN_RIGHT },
     
     { "policy", KADM5_POLICY, "Policy", "Policy", 0 },
-    { "keytypes", KADM5_KEY_DATA, "Keytypes", "Keytypes(salttype[(salt-value)])", 0 },
+    { "keytypes", KADM5_KEY_DATA, "Keytypes", "Keytypes", 0 },
     { NULL }
 };
 
@@ -331,7 +331,7 @@ setup_columns(struct get_entry_data *data, const char *column_info)
 }
 
 #define DEFAULT_COLUMNS_SHORT "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife"
-#define DEFAULT_COLUMNS_LONG "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife,kvno,mkvno,last_success,last_failed,fail_auth_count,mod_time,mod_name,attributes"
+#define DEFAULT_COLUMNS_LONG "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife,kvno,mkvno,last_success,last_failed,fail_auth_count,mod_time,mod_name,attributes,keytypes"
 #define DEFAULT_COLUMNS_TERSE "principal="
 
 static int
