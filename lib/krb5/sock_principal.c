@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -54,6 +54,7 @@ krb5_sock_to_principal (krb5_context context,
     struct sockaddr *sa;
     struct hostent *hostent;
     int family;
+    char hname[256];
 
     if (buf == NULL)
 	return ENOMEM;
@@ -76,8 +77,9 @@ krb5_sock_to_principal (krb5_context context,
 
     if (hostent == NULL)
 	return h_errno;
+    strcpy_truncate(hname, hostent->h_name, sizeof(hname));
     return krb5_sname_to_principal (context,
-				    hostent->h_name,
+				    hname,
 				    sname,
 				    type,
 				    ret_princ);
