@@ -108,6 +108,9 @@ int reply_special(char *inbuf,char *outbuf)
 		strlower(local_machine);
 		alpha_strcpy(local_machine,local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
 
+		DEBUG(2,("netbios connect: local=%s remote=%s\n",
+			local_machine, remote_machine ));
+
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 
 			   no thanks! */
