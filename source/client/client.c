@@ -1837,59 +1837,43 @@ done:
 }
 
 /****************************************************************************
-lookup a sid
+lookup a name or sid
 ****************************************************************************/
-static int cmd_lookupsid(const char **cmd_ptr)
+static int cmd_lookup(const char **cmd_ptr)
 {
 	fstring buf;
 	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
 	NTSTATUS status;
-	const char *name;
+	struct dom_sid *sid;
 
 	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
-		d_printf("lookupsid <sid>\n");
+		d_printf("lookup <name|sid>\n");
 		talloc_free(mem_ctx);
 		return 1;
 	}
 
-	status = smblsa_lookup_sid(cli, buf, mem_ctx, &name);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("lsa_LookupSids - %s\n", nt_errstr(status));
-		talloc_free(mem_ctx);
-		return 1;
+	sid = dom_sid_parse_talloc(mem_ctx, buf);
+	if (sid == NULL) {
+		const char *sidstr;
+		status = smblsa_lookup_name(cli, buf, mem_ctx, &sidstr);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("lsa_LookupNames - %s\n", nt_errstr(status));
+			talloc_free(mem_ctx);
+			return 1;
+		}
+
+		d_printf("%s\n", sidstr);
+	} else {
+		const char *name;
+		status = smblsa_lookup_sid(cli, buf, mem_ctx, &name);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("lsa_LookupSids - %s\n", nt_errstr(status));
+			talloc_free(mem_ctx);
+			return 1;
+		}
+
+		d_printf("%s\n", name);
 	}
-
-	d_printf("%s\n", name);
-
-	talloc_free(mem_ctx);
-
-	return 0;
-}
-
-/****************************************************************************
-lookup a name, showing sid
-****************************************************************************/
-static int cmd_lookupname(const char **cmd_ptr)
-{
-	fstring buf;
-	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
-	NTSTATUS status;
-	const char *sid;
-
-	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
-		d_printf("lookupname <name>\n");
-		talloc_free(mem_ctx);
-		return 1;
-	}
-
-	status = smblsa_lookup_name(cli, buf, mem_ctx, &sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("lsa_LookupNames - %s\n", nt_errstr(status));
-		talloc_free(mem_ctx);
-		return 1;
-	}
-
-	d_printf("%s\n", sid);
 
 	talloc_free(mem_ctx);
 
@@ -2613,8 +2597,7 @@ static struct
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
   {"link",cmd_link,"<src> <dest> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"lookupname",cmd_lookupname,"<name> show SID for name",{COMPL_NONE,COMPL_NONE}},
-  {"lookupsid",cmd_lookupsid,"<sid> show name for SID",{COMPL_NONE,COMPL_NONE}},
+  {"lookup",cmd_lookup,"<name|sid> show SID for name or name for SID",{COMPL_NONE,COMPL_NONE}},
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
   {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
