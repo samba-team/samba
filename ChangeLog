@@ -1,3 +1,7 @@
+Sat Jan 30 22:38:27 1999  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.0u
+
 Sat Jan 30 13:43:02 1999  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am: explicit rules for *.et files

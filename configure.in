@@ -3,7 +3,7 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
-AM_INIT_AUTOMAKE(heimdal,0.0t)
+AM_INIT_AUTOMAKE(heimdal,0.0u)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -657,6 +657,8 @@ AC_OUTPUT(Makefile 			\
 	appl/rsh/Makefile		\
 	appl/popper/Makefile		\
 	appl/push/Makefile		\
+	appl/login/Makefile		\
+	appl/su/Makefile		\
 	appl/telnet/Makefile		\
 	appl/telnet/libtelnet/Makefile	\
 	appl/telnet/telnet/Makefile	\
