@@ -1278,23 +1278,46 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 ****************************************************************************/
 int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int outsize = 0;
-  SMB_BIG_UINT dfree,dsize,bsize;
-  START_PROFILE(SMBdskattr);
-  
-  conn->vfs_ops.disk_free(conn,".",True,&bsize,&dfree,&dsize);
-  
-  outsize = set_message(outbuf,5,0,True);
-  
-  SSVAL(outbuf,smb_vwv0,dsize);
-  SSVAL(outbuf,smb_vwv1,bsize/512);
-  SSVAL(outbuf,smb_vwv2,512);
-  SSVAL(outbuf,smb_vwv3,dfree);
+	int outsize = 0;
+	SMB_BIG_UINT dfree,dsize,bsize;
+	START_PROFILE(SMBdskattr);
 
-  DEBUG(3,("dskattr dfree=%d\n", (unsigned int)dfree));
+	conn->vfs_ops.disk_free(conn,".",True,&bsize,&dfree,&dsize);
+  
+	outsize = set_message(outbuf,5,0,True);
+	
+	if (Protocol <= PROTOCOL_LANMAN2) {
+		double total_space, free_space;
+		/* we need to scale this to a number that DOS6 can handle. We
+		   use floating point so we can handle large drives on systems
+		   that don't have 64 bit integers 
 
-  END_PROFILE(SMBdskattr);
-  return(outsize);
+		   we end up displaying a maximum of 2G to DOS systems
+		*/
+		total_space = dsize * (double)bsize;
+		free_space = dfree * (double)bsize;
+
+		dsize = (total_space+63*512) / (64*512);
+		dfree = (free_space+63*512) / (64*512);
+		
+		if (dsize > 0xFFFF) dsize = 0xFFFF;
+		if (dfree > 0xFFFF) dfree = 0xFFFF;
+
+		SSVAL(outbuf,smb_vwv0,dsize);
+		SSVAL(outbuf,smb_vwv1,64); /* this must be 64 for dos systems */
+		SSVAL(outbuf,smb_vwv2,512); /* and this must be 512 */
+		SSVAL(outbuf,smb_vwv3,dfree);
+	} else {
+		SSVAL(outbuf,smb_vwv0,dsize);
+		SSVAL(outbuf,smb_vwv1,bsize/512);
+		SSVAL(outbuf,smb_vwv2,512);
+		SSVAL(outbuf,smb_vwv3,dfree);
+	}
+
+	DEBUG(3,("dskattr dfree=%d\n", (unsigned int)dfree));
+
+	END_PROFILE(SMBdskattr);
+	return(outsize);
 }
 
 
