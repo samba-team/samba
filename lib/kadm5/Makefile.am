@@ -3,6 +3,8 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libkadm5srv.la libkadm5clnt.la
+libkadm5srv_la_LDFLAGS = -version-info 1:0:0
+libkadm5clnt_la_LDFLAGS = -version-info 1:0:0
 sbin_PROGRAMS = dump_log replay_log
 
 libexec_PROGRAMS = ipropd-master ipropd-slave
@@ -24,49 +26,59 @@ install-build-headers::
 		fi ; \
 	done
 
-COMMON_SOURCES =	\
-	acl.c		\
+C_SOURCES =		\
 	admin.h		\
 	chpass_c.c	\
-	chpass_s.c	\
 	common_glue.c	\
-	context_s.c	\
 	create_c.c	\
-	create_s.c	\
 	delete_c.c	\
-	delete_s.c	\
 	destroy_c.c	\
-	destroy_s.c	\
-	ent_setup.c	\
-	error.c		\
-	flush.c		\
+	flush_c.c	\
 	free.c		\
 	get_c.c		\
 	get_princs_c.c	\
+	init_c.c	\
+	kadm5_err.c	\
+	kadm5_locl.h	\
+	marshall.c	\
+	modify_c.c	\
+	private.h	\
+	privs_c.c	\
+	randkey_c.c	\
+	rename_c.c	\
+	send_recv.c
+
+S_SOURCES =		\
+	acl.c		\
+	admin.h		\
+	chpass_s.c	\
+	common_glue.c	\
+	context_s.c	\
+	create_s.c	\
+	delete_s.c	\
+	destroy_s.c	\
+	ent_setup.c	\
+	error.c		\
+	flush_s.c	\
+	free.c		\
 	get_princs_s.c	\
 	get_s.c		\
-	init_c.c	\
 	init_s.c	\
 	kadm5_err.c	\
 	kadm5_locl.h	\
 	log.c		\
 	marshall.c	\
-	modify_c.c	\
 	modify_s.c	\
 	private.h	\
-	privs_c.c	\
 	privs_s.c	\
-	randkey_c.c	\
 	randkey_s.c	\
-	rename_c.c	\
 	rename_s.c	\
-	send_recv.c	\
 	server.c	\
 	set_keys.c	\
 	set_modifier.c
 	
-libkadm5srv_la_SOURCES = $(COMMON_SOURCES) server_glue.c
-libkadm5clnt_la_SOURCES = $(COMMON_SOURCES) client_glue.c
+libkadm5srv_la_SOURCES = $(S_SOURCES) server_glue.c
+libkadm5clnt_la_SOURCES = $(C_SOURCES) client_glue.c
 
 dump_log_SOURCES = dump_log.c kadm5_locl.h
 
