@@ -1,3 +1,10 @@
+2001-02-08  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/sys_term.c (startslave, start_login): re-write code to
+	keep track both of remote hostname and utmp string to be used
+	* telnetd/telnetd.c (doit, my_telnet): re-write code to keep track
+	both of remote hostname and utmp string to be used
+
 2001-02-07  Assar Westerlund  <assar@sics.se>
 
 	* telnet/Makefile.am, telnetd/Makefile.am: add LIB_kdfs
