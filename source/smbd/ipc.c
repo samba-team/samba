@@ -371,7 +371,10 @@ va_dcl
 #endif
   stringneeded = -1;
 
-  if (!p->curpos) return(0);
+  if (!p->curpos) {
+    va_end(args);
+    return(0);
+  }
 
   switch( *p->curpos++ ) {
   case 'W':			/* word (2 byte) */

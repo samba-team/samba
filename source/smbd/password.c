@@ -322,7 +322,13 @@ static BOOL update_smbpassword_file(char *user, char *password)
 		DEBUG(0,("getsmbpwnam returned NULL\n"));
 		return False;
 	}
- 
+
+	/*
+	 * Remove the account disabled flag - we are updating the
+	 * users password from a login.
+	 */
+	smbpw->acct_ctrl &= ~ACB_DISABLED;
+
 	/* Here, the flag is one, because we want to ignore the
            XXXXXXX'd out password */
 	ret = change_oem_password( smbpw, password, True);
