@@ -66,6 +66,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	initialize_krb5_error_table();
 	gensec_krb5_state->krb5_context = NULL;
 	gensec_krb5_state->krb5_auth_context = NULL;
+	gensec_krb5_state->krb5_ccdef = NULL;
 	gensec_krb5_state->session_key = data_blob(NULL, 0);
 
 	ret = krb5_init_context(&gensec_krb5_state->krb5_context);
@@ -120,12 +121,29 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	gensec_krb5_state = gensec_security->private_data;
 	gensec_krb5_state->state_position = GENSEC_KRB5_CLIENT_START;
 
+	ret = krb5_cc_default(gensec_krb5_state->krb5_context, &gensec_krb5_state->ccdef);
+	if (ret) {
+		DEBUG(1,("krb5_cc_default failed (%s)\n",
+			 error_message(ret)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	
 	return NT_STATUS_OK;
 }
 
 static void gensec_krb5_end(struct gensec_security *gensec_security)
 {
 	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+
+	if (gensec_krb5_state->krb5_ccdef) {
+		/* Removed by jra. They really need to fix their kerberos so we don't leak memory. 
+		   JERRY -- disabled since it causes heimdal 0.6.1rc3 to die
+		   SuSE 9.1 Pro 
+		*/
+#if 0 /* redisabled by gd :) at least until any official heimdal version has it fixed. */
+		krb5_cc_close(context, gensec_krb5_state->krb5_ccdef);
+#endif
+	}
 
 	if (gensec_krb5_state->krb5_auth_context) {
 		krb5_auth_con_free(gensec_krb5_state->krb5_context, 
@@ -164,7 +182,6 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 	case GENSEC_KRB5_CLIENT_START:
 	{
 		krb5_data packet;
-		krb5_ccache ccdef = NULL;
 		
 #if 0 /* When we get some way to input the time offset */
 		if (time_offset != 0) {
@@ -172,20 +189,9 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 		}
 #endif
 
-		ret = krb5_cc_default(gensec_krb5_state->krb5_context, &ccdef);
-		if (ret) {
-			DEBUG(1,("krb5_cc_default failed (%s)\n",
-				 error_message(ret)));
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
 		ret = ads_krb5_mk_req(gensec_krb5_state->krb5_context, 
 				      &gensec_krb5_state->krb5_auth_context, 
-				      AP_OPTS_USE_SUBKEY
-#ifdef MUTUAL_AUTH
- | AP_OPTS_MUTUAL_REQUIRED
-#endif
-				      , 
+				      AP_OPTS_USE_SUBKEY | AP_OPTS_MUTUAL_REQUIRED,
 				      gensec_security->target.principal,
 				      ccdef, &packet);
 		if (ret) {
@@ -193,28 +199,19 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 				 error_message(ret)));
 			nt_status = NT_STATUS_LOGON_FAILURE;
 		} else {
-			*out = data_blob_talloc(out_mem_ctx, packet.data, packet.length);
+			DATA_BLOB unwrapped_out;
+			unwrapped_out = data_blob_talloc(out_mem_ctx, packet.data, packet.length);
 			
+			/* wrap that up in a nice GSS-API wrapping */
+			*out = gensec_gssapi_gen_krb5_wrap(out_mem_ctx, &unwrapped_out, TOK_ID_KRB_AP_REQ);
 			/* Hmm, heimdal dooesn't have this - what's the correct call? */
 #ifdef HAVE_KRB5_FREE_DATA_CONTENTS
 			krb5_free_data_contents(gensec_krb5_state->krb5_context, &packet); 
 #endif
-#ifdef MUTUAL_AUTH
 			gensec_krb5_state->state_position = GENSEC_KRB5_CLIENT_MUTUAL_AUTH;
 			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-#else 
-			gensec_krb5_state->state_position = GENSEC_KRB5_DONE;
-			nt_status = NT_STATUS_OK;
-#endif
 		}
 		
-		/* Removed by jra. They really need to fix their kerberos so we don't leak memory. 
-		   JERRY -- disabled since it causes heimdal 0.6.1rc3 to die
-		   SuSE 9.1 Pro 
-		*/
-#if 0 /* redisabled by gd :) at least until any official heimdal version has it fixed. */
-		krb5_cc_close(context, ccdef);
-#endif
 		return nt_status;
 	}
 		
@@ -222,8 +219,16 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 	{
 		krb5_data inbuf;
 		krb5_ap_rep_enc_part *repl = NULL;
-		inbuf.data = in.data;
-		inbuf.length = in.length;
+		uint8 tok_id[2];
+		DATA_BLOB unwrapped_in;
+
+		if (!gensec_gssapi_parse_krb5_wrap(out_mem_ctx, &in, &unwrapped_in, tok_id)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		/* TODO: check the tok_id */
+
+		inbuf.data = unwrapped_in.data;
+		inbuf.length = unwrapped_in.length;
 		ret = krb5_rd_rep(gensec_krb5_state->krb5_context, 
 				  gensec_krb5_state->krb5_auth_context,
 				  &inbuf, &repl);
@@ -246,18 +251,34 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 	case GENSEC_KRB5_SERVER_START:
 	{
 		char *principal;
+		DATA_BLOB unwrapped_in;
+		DATA_BLOB unwrapped_out;
+		uint8 tok_id[2];
 
-		nt_status = ads_verify_ticket(out_mem_ctx, 
-					      gensec_krb5_state->krb5_context, 
-					      gensec_krb5_state->krb5_auth_context, 
-					      lp_realm(), &in, 
-					      &principal, &pac, out);
+		/* Parse the GSSAPI wrapping, if it's there... (win2k3 allows it to be omited) */
+		if (!gensec_gssapi_parse_krb5_wrap(out_mem_ctx, &in, &unwrapped_in, tok_id)) {
+			nt_status = ads_verify_ticket(out_mem_ctx, 
+						      gensec_krb5_state->krb5_context, 
+						      gensec_krb5_state->krb5_auth_context, 
+						      lp_realm(), &in, 
+						      &principal, &pac, &unwrapped_out);
+		} else {
+			/* TODO: check the tok_id */
+			nt_status = ads_verify_ticket(out_mem_ctx, 
+						      gensec_krb5_state->krb5_context, 
+						      gensec_krb5_state->krb5_auth_context, 
+						      lp_realm(), &unwrapped_in, 
+						      &principal, &pac, &unwrapped_out);
+		}
+
 		gensec_krb5_state->pac = data_blob_talloc_steal(out_mem_ctx, gensec_krb5_state->mem_ctx, 
 								&pac);
 		/* TODO: parse the pac */
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			gensec_krb5_state->state_position = GENSEC_KRB5_DONE;
+			/* wrap that up in a nice GSS-API wrapping */
+			*out = gensec_gssapi_gen_krb5_wrap(out_mem_ctx, &unwrapped_out, TOK_ID_KRB_AP_REP);
 		}
 		SAFE_FREE(principal);
 		return nt_status;
