@@ -589,11 +589,10 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
 			return False;
 		}
                 
-                SMB_ASSERT(auth->cli_decode_pdu != NULL);
-
-		if (rhdr.auth_len != 0 &&
-		    !auth->cli_decode_pdu(con, rdata, rhdr.frag_len,
-					  rhdr.auth_len))
+		if (rhdr.auth_len != 0
+		    && auth->cli_decode_pdu
+		    && !auth->cli_decode_pdu(con, rdata, rhdr.frag_len,
+					     rhdr.auth_len))
 		{
 			return False;
 		}
