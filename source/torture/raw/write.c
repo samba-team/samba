@@ -690,6 +690,7 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
+		printf("Failed to open %s\n", fname);
 		return False;
 	}
 
@@ -708,7 +709,7 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
 
 	/* 3 second delay to ensure we get past any 2 second time
-	   granularity (older systems may have that */
+	   granularity (older systems may have that) */
 	sleep(3);
 
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
@@ -738,6 +739,12 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 		sleep(1);
 		fflush(stdout);
 	}
+	
+	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
+		printf("Server did not update write time?!\n");
+		ret = False;
+	}
+
 
 	if (fnum1 != -1)
 		smbcli_close(cli->tree, fnum1);
