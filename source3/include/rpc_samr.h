@@ -842,7 +842,7 @@ called to resolve domain RID groups.
 /* SAMR_Q_UNKNOWN_12 */
 typedef struct q_samr_unknown_12_info
 {
-    POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;       /* policy handle */
 
 	uint32 num_gids1;      /* number of rids being looked up */
 	uint32 rid;            /* 0x0000 03e8 - RID of the server doing the query? */
@@ -884,7 +884,7 @@ typedef struct r_samr_unknown_12_info
 /* SAMR_Q_OPEN_USER - probably an open */
 typedef struct q_samr_open_user_info
 {
-    POLICY_HND domain_pol;       /* policy handle */
+	POLICY_HND domain_pol;       /* policy handle */
 	uint32 unknown_0;     /* 32 bit unknown - 0x02011b */
 	uint32 user_rid;      /* user RID */
 
@@ -894,7 +894,7 @@ typedef struct q_samr_open_user_info
 /* SAMR_R_OPEN_USER - probably an open */
 typedef struct r_samr_open_user_info
 {
-    POLICY_HND user_pol;       /* policy handle associated with unknown id */
+	POLICY_HND user_pol;       /* policy handle associated with unknown id */
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_USER;

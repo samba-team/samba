@@ -63,13 +63,10 @@ DOM_SID global_member_sid;
 
 DOM_SID global_sid_S_1_5_20; /* local well-known domain */
 DOM_SID global_sid_S_1_1;    /* everyone */
+DOM_SID global_sid_S_1_3;    /* */
 DOM_SID global_sid_S_1_5;    /* NT Authority */
-DOM_SID global_sid_S_1_3_0;    /* Creator owner */
-DOM_SID global_sid_S_1_3_1;    /* Creator group */
-DOM_SID global_sid_S_1_3_2;    /* Creator owner server */
-DOM_SID global_sid_S_1_3_3;    /* Creator group server */
 
-extern fstring global_myworkgroup;
+extern pstring global_myworkgroup;
 /* extern fstring global_member_dom_name; */
 
 static struct sid_name_map_info
@@ -82,10 +79,7 @@ sid_name_map[] =
 {
 	{ &global_sid_S_1_5_20, "BUILTIN" },
 	{ &global_sid_S_1_1   , "Everyone" },
-	{ &global_sid_S_1_3_0 , "Creator Owner" },
-	{ &global_sid_S_1_3_1 , "Creator Group" },
-	{ &global_sid_S_1_3_2 , "Creator Owner Server" },
-	{ &global_sid_S_1_3_3 , "Creator Group Server" },
+	{ &global_sid_S_1_3   , "don't know" },
 	{ &global_sid_S_1_5   , "NT Authority" },
 	{ &global_sam_sid     , global_sam_name },
 	{ &global_member_sid  , global_myworkgroup },
@@ -99,6 +93,7 @@ sid_name_map[] =
 static BOOL read_sid_from_file(int fd, char *sid_file)
 {   
   fstring fline;
+	fstring sid_str;
     
   memset(fline, '\0', sizeof(fline));
 
@@ -118,12 +113,43 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
     return False;
   }
 
+	sid_to_string(sid_str, &global_sam_sid);
+	DEBUG(5,("read_sid_from_file: sid %s\n", sid_str));
+
   return True;
 }
 
 /****************************************************************************
- Generate the global machine sid. Look for the MACHINE.SID file first, if
- not found then look in smb.conf and use it to create the MACHINE.SID file.
+ sets up the name associated with the SAM database for which we are responsible
+****************************************************************************/
+void get_sam_domain_name(void)
+{
+	switch (lp_server_role())
+	{
+		case ROLE_DOMAIN_PDC:
+		case ROLE_DOMAIN_BDC:
+		{
+			/* we are PDC (or BDC) for a Domain */
+			fstrcpy(global_sam_name, lp_workgroup());
+			break;
+		}
+		case ROLE_DOMAIN_MEMBER:
+		{
+			/* we are a "PDC", but FOR LOCAL SAM DATABASE ONLY */
+			fstrcpy(global_sam_name, global_myname);
+			break;
+		}
+		default:
+		{
+			/* no domain role, probably due to "security = share" */
+			memset(global_sam_name, 0, sizeof(global_sam_name));
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ obtain the sid from the PDC.  do some verification along the way...
 ****************************************************************************/
 BOOL get_member_domain_sid(void)
 {
@@ -138,7 +164,7 @@ BOOL get_member_domain_sid(void)
 
 	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
 	{
-		DEBUG(0,("get_member_domain_sid: unable to initialize client connection.\n"));
+		DEBUG(0,("get_member_domain_sid: unable to initialise client connection.\n"));
 		return False;
 	}
 
@@ -179,11 +205,11 @@ BOOL get_member_domain_sid(void)
 	if (res)
 	{
 		pstring sid;
-		DEBUG(5,("LSA Query Info Policy\n"));
+		DEBUG(2,("LSA Query Info Policy\n"));
 		sid_to_string(sid, &sid3);
-		DEBUG(5,("Domain Member     - Domain: %s SID: %s\n", dom3, sid));
+		DEBUG(2,("Domain Member     - Domain: %s SID: %s\n", dom3, sid));
 		sid_to_string(sid, &sid5);
-		DEBUG(5,("Domain Controller - Domain: %s SID: %s\n", dom5, sid));
+		DEBUG(2,("Domain Controller - Domain: %s SID: %s\n", dom5, sid));
 
 		if (!strequal(dom3, global_myworkgroup) ||
 		    !strequal(dom5, global_myworkgroup))
@@ -195,7 +221,7 @@ BOOL get_member_domain_sid(void)
 	}
 	else
 	{
-		DEBUG(5,("lsa query info failed\n"));
+		DEBUG(1,("lsa query info failed\n"));
 	}
 	if (!res)
 	{
@@ -217,10 +243,7 @@ void generate_wellknown_sids(void)
 {
 	string_to_sid(&global_sid_S_1_5_20, "S-1-5-32");
 	string_to_sid(&global_sid_S_1_1   , "S-1-1"   );
-	string_to_sid(&global_sid_S_1_3_0 , "S-1-3-0" );
-	string_to_sid(&global_sid_S_1_3_1 , "S-1-3-1" );
-	string_to_sid(&global_sid_S_1_3_2 , "S-1-3-2" );
-	string_to_sid(&global_sid_S_1_3_3 , "S-1-3-3" );
+	string_to_sid(&global_sid_S_1_3   , "S-1-3"   );
 	string_to_sid(&global_sid_S_1_5   , "S-1-5"   );
 }
 
@@ -476,7 +499,7 @@ BOOL split_domain_name(char *fullname, char *domain, char *name)
 	fstrcpy(full_name, fullname);
 	p = strchr(full_name+1, '\\');
 
-	if (p == NULL)
+	if (p != NULL)
 	{
 		*p = 0;
 		fstrcpy(domain, full_name);

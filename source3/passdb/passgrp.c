@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
  *
  */
 
-static struct passgrp_ops *pwgrp_ops;
+static struct passgrp_ops *pwgrp_ops = NULL;
 
 /***************************************************************
  Initialise the passgrp operations.
@@ -51,7 +51,9 @@ BOOL initialise_passgrp_db(void)
   pwgrp_ops =  nisplus_initialise_password_grp();
 #elif defined(WITH_LDAP)
   pwgrp_ops = ldap_initialise_password_grp();
-#else 
+#elif defined(USE_SMBUNIX_DB)
+  pwgrp_ops = unix_initialise_password_grp();
+#elif defined(USE_SMBPASS_DB)
   pwgrp_ops = file_initialise_password_grp();
 #endif 
 

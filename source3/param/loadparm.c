@@ -2727,3 +2727,43 @@ BOOL lp_kernel_oplocks(void)
 {
   return kernel_oplocks_available;
 }
+
+/***********************************************************
+ returns role of Samba server
+************************************************************/
+int lp_server_role(void)
+{
+	switch (lp_security())
+	{
+		case SEC_SHARE:
+		{
+			if (lp_domain_logons())
+			{
+				DEBUG(0,("Server's Role (logon server) conflicts with share-level security\n"));
+			}
+			return ROLE_DOMAIN_NONE;
+		}
+		case SEC_SERVER:
+		case SEC_DOMAIN:
+		{
+			if (lp_domain_logons())
+			{
+				return ROLE_DOMAIN_BDC;
+			}
+			return ROLE_DOMAIN_MEMBER;
+		}
+		case SEC_USER:
+		{
+			if (lp_domain_logons())
+			{
+				return ROLE_DOMAIN_BDC;
+			}
+			return ROLE_DOMAIN_PDC;
+		}
+		default:
+		{
+			DEBUG(0,("Server's Role undefined due to unknown security mode\n"));
+			return ROLE_DOMAIN_NONE;
+		}
+	}
+}

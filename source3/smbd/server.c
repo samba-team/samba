@@ -652,26 +652,8 @@ static void usage(char *pname)
 	codepage_initialise(lp_client_code_page());
 
 	fstrcpy(global_myworkgroup, lp_workgroup());
- 	memset(global_sam_name, 0, sizeof(global_sam_name));
 
-	if (lp_domain_logons())
-	{
-		if (lp_security() == SEC_USER)
-		{
-			/* we are PDC (or BDC) for a Domain */
-			fstrcpy(global_sam_name, lp_workgroup());
-		}
-		else if (lp_security() == SEC_DOMAIN)
-		{
-			/* we are a "PDC", but FOR LOCAL SAM DATABASE ONLY */
-			fstrcpy(global_sam_name, global_myname);
-		}
-		else if (lp_security() == SEC_SHARE)
-		{
-			DEBUG(0,("ERROR: no Domain functionality in security = share\n"));
-			exit(1);
-		}
-	}
+	get_sam_domain_name();
 
 	generate_wellknown_sids();
 

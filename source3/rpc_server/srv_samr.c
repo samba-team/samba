@@ -444,15 +444,20 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 	{
 		BOOL ret;
 		char *name;
+		int i;
 		got_grps = True;
 
-		while (num_entries < MAX_SAM_ENTRIES && ((name = domain_group_rids[num_entries].name) != NULL))
+		become_root(True);
+		ret = enumdomgroups(&grps, &num_entries);
+		unbecome_root(True);
+
+		while (num_entries < MAX_SAM_ENTRIES && ((name = domain_group_rids[i].name) != NULL))
 		{
 			DOMAIN_GRP tmp_grp;
 
 			fstrcpy(tmp_grp.name   , name);
 			fstrcpy(tmp_grp.comment, "");
-			tmp_grp.rid = domain_group_rids[num_entries].rid;
+			tmp_grp.rid = domain_group_rids[i].rid;
 			tmp_grp.attr = 0x7;
 
 			if (!add_domain_group(&grps, &num_entries, &tmp_grp))
@@ -460,11 +465,10 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 				r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
 				break;
 			}
+
+			i++;
 		}
 
-		become_root(True);
-		ret = enumdomgroups(&grps, &num_entries);
-		unbecome_root(True);
 		if (!ret)
 		{
 			r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
@@ -807,11 +811,12 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 		else if (sid_equal(&dom_sid, &usr_sid))
 		{
 			DOMAIN_GRP *mem_grp = NULL;
+			BOOL ret;
 
 			DEBUG(5,("lookup on Domain SID\n"));
 
 			become_root(True);
-			getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_rids);
+			ret = getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_rids);
 			unbecome_root(True);
 
 			num_rids = MIN(num_rids, MAX_SAM_ENTRIES);
@@ -880,10 +885,19 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 
 	for (i = 0; i < num_rids && status == 0; i++)
 	{
+		DOM_SID sid;
 		fstring name;
 		fstrcpy(name, unistrn2(q_u->uni_user_name[i].buffer, q_u->uni_user_name[i].uni_str_len));
 
-		status = lookup_rid(name, &(rid[i]), &(type[i]));
+		status = lookup_name(name, &sid, &(type[i]));
+		if (status == 0x0)
+		{
+			sid_split_rid(&sid, &rid[i]);
+		}
+		else
+		{
+			type[i] = SID_NAME_UNKNOWN;
+		}
 	}
 
 	make_samr_r_lookup_names(&r_u, num_rids, rid, type, status);
@@ -995,9 +1009,10 @@ static void samr_reply_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 				prs_struct *rdata)
 {
 	fstring group_names[MAX_SAM_ENTRIES];
-	uint32  group_attrs[MAX_SAM_ENTRIES];
+	uint8   group_attrs[MAX_SAM_ENTRIES];
 	uint32 status     = 0;
 	int num_gids = q_u->num_gids1;
+	DOM_SID pol_sid;
 
 	SAMR_R_UNKNOWN_12 r_u;
 
@@ -1007,6 +1022,11 @@ static void samr_reply_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 	if (status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (status == 0x0 && !get_lsa_policy_samr_sid(&q_u->pol, &pol_sid))
+	{
+		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
 	if (status == 0x0)
@@ -1020,7 +1040,10 @@ static void samr_reply_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 
 		for (i = 0; i < num_gids && status == 0; i++)
 		{
-			fstrcpy(group_names[i], "dummy group");
+			DOM_SID sid;
+			sid_copy(&sid, &pol_sid);
+			sid_append_rid(&sid, q_u->gid[i]);
+			lookup_sid(&sid, group_names[i], &group_attrs[i]);
 			group_attrs[i] = 0x2;
 		}
 	}
@@ -1369,9 +1392,10 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	if (status == 0x0)
 	{
 		DOMAIN_GRP *mem_grp = NULL;
+		BOOL ret;
 
 		become_root(True);
-		getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_groups);
+		ret = getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_groups);
 		unbecome_root(True);
 
                 gids = NULL;

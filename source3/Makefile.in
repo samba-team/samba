@@ -100,7 +100,8 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
-          lib/util.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
+          lib/util.o lib/genrand.o lib/username.o \
+		lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/util_sid.o lib/snprintf.o \
 		lib/util_str.o lib/util_unistr.o \
 		lib/util_file.o mem_man/mem_man.o \
@@ -150,21 +151,22 @@ LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
 
 GROUPDB_OBJ = groupdb/groupdb.o groupdb/groupfile.o \
-		groupdb/aliasdb.o groupdb/aliasfile.o
+		groupdb/aliasdb.o groupdb/aliasfile.o \
+		groupdb/groupunix.o groupdb/aliasunix.o \
+		passdb/passgrp.o passdb/smbpassgroup.o \
+		passdb/smbpassgroupunix.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
              passdb/pass_check.o passdb/ldap.o passdb/nispass.o \
-		passdb/passgrp.o passdb/smbpassgroup.o \
-		passdb/smbpasschange.o
+		passdb/smbpasschange.o 
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
-            smbd/ipc.o smbd/mangle.o smbd/negprot.o \
+            smbd/ipc.o smbd/mangle.o smbd/negprot.o smbd/groupname.o \
             smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
             smbd/$(QUOTAOBJS) smbd/reply.o smbd/ssl.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
 	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o \
-		smbd/groupname.o 
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
 

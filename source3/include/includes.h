@@ -621,6 +621,7 @@ union semun {
 
 #if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP))
 #define USE_SMBPASS_DB 1
+#define USE_SMBUNIX_DB 1
 #endif
 
 #if defined(HAVE_PUTPRPWNAM) && defined(AUTH_CLEARTEXT_SEG_CHARS)

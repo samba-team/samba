@@ -1560,6 +1560,15 @@ enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANM
 /* security levels */
 enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN};
 
+/* server roles */
+enum server_types
+{
+	ROLE_DOMAIN_NONE,
+	ROLE_DOMAIN_MEMBER,
+	ROLE_DOMAIN_BDC,
+	ROLE_DOMAIN_PDC
+};
+
 /* printing types */
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG,PRINT_SOFTQ};

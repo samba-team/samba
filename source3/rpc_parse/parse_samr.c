@@ -1905,7 +1905,7 @@ void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, i
 makes a SAMR_R_UNKNOWN_12 structure.
 ********************************************************************/
 void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
-		uint32 num_aliases, fstring *als_name, uint32 *num_als_usrs,
+		uint32 num_aliases, fstring *als_name, uint8 *num_als_usrs,
 		uint32 status)
 {
 	int i;
