@@ -54,6 +54,11 @@ static krb5_data msched5;
 
 #ifdef KRB4
 static int v4_db;
+
+#ifdef KA_SERVER
+static int ka_db;
+static char *afs_cell;
+#endif
 #endif
 
 static int
@@ -221,7 +226,120 @@ out:
     return ret;
 }
 
-#endif
+#ifdef KA_SERVER
+
+#include "kadb.h"
+
+/* read a `ka_entry' from `fd' at offset `pos' */
+static void
+read_block(krb5_context context, int fd, int32_t pos, void *buf, size_t len)
+{
+    krb5_error_code ret;
+    if(lseek(fd, 64 + pos, SEEK_SET) == (off_t)-1)
+	krb5_err(context, 1, errno, "lseek(%u)", 64 + pos);
+    ret = read(fd, buf, len);
+    if(ret < 0)
+	krb5_err(context, 1, errno, "read(%u)", len);
+    if(ret != len)
+	krb5_errx(context, 1, "read(%u) = %u", len, ret);
+}
+
+static int
+ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent, const char *cell)
+{
+    int32_t flags = ntohl(ent->flags);
+    krb5_error_code ret;
+    hdb_entry hdb;
+    if((flags & KAFNORMAL) == 0) /* remove special entries */
+	return 0;
+    memset(&hdb, 0, sizeof(hdb));
+    ret = krb5_425_conv_principal(pd->context, ent->name, ent->instance, realm,
+				  &hdb.principal);
+    if(ret) {
+	krb5_warn(pd->context, ret, "krb5_425_conv_principal");
+	return 0;
+    }
+    hdb.keys.len = 1;
+    ALLOC(hdb.keys.val);
+    hdb.keys.val[0].mkvno = 0; /* XXX */
+    hdb.keys.val[0].salt = calloc(1, sizeof(*hdb.keys.val[0].salt));
+    hdb.keys.val[0].salt->type = hdb_afs3_salt;
+    hdb.keys.val[0].salt->salt.data = strdup(cell);
+    hdb.keys.val[0].salt->salt.length = strlen(cell);
+    
+    hdb.kvno = ntohl(ent->kvno);
+    hdb.keys.val[0].key.keytype = KEYTYPE_DES;
+    krb5_data_copy(&hdb.keys.val[0].key.keyvalue, ent->key, sizeof(ent->key));
+
+    ALLOC(hdb.max_life);
+    *hdb.max_life = ntohl(ent->max_life);
+
+    if(ntohl(ent->pw_end) != NEVERDATE && ntohl(ent->pw_end) != -1){
+	ALLOC(hdb.pw_end);
+	*hdb.pw_end = ntohl(ent->pw_end);
+    }
+    
+    ret = krb5_make_principal(pd->context, &hdb.created_by.principal,
+			      realm,
+			      "kadmin",
+			      "hprop",
+			      NULL);
+    hdb.created_by.time = time(NULL);
+
+    if(ent->mod_ptr){
+	struct ka_entry mod;
+	ALLOC(hdb.modified_by);
+	read_block(pd->context, fd, ntohl(ent->mod_ptr), &mod, sizeof(mod));
+	
+	krb5_425_conv_principal(pd->context, mod.name, mod.instance, realm, 
+				&hdb.modified_by->principal);
+	hdb.modified_by->time = ntohl(ent->mod_time);
+	memset(&mod, 0, sizeof(mod));
+    }
+
+    hdb.flags.forwardable = 1;
+    hdb.flags.renewable = 1;
+    hdb.flags.proxiable = 1;
+    hdb.flags.postdate = 1;
+    hdb.flags.client = (flags & KAFNOTGS) == 0;
+    hdb.flags.server = (flags & KAFNOSEAL) == 0;
+
+    ret = v5_prop(pd->context, NULL, &hdb, pd);
+    hdb_free_entry(pd->context, &hdb);
+    return ret;
+}
+
+static int
+ka_dump(struct prop_data *pd, const char *file, const char *cell)
+{
+    struct ka_header header;
+    krb5_error_code ret;
+    int i;
+    int fd = open(file, O_RDONLY);
+    if(fd < 0)
+	krb5_err(pd->context, 1, errno, "open(%s)", file);
+    read_block(pd->context, fd, 0, &header, sizeof(header));
+    if(header.version1 != header.version2)
+	krb5_errx(pd->context, 1, "Version mismatch in header: %d/%d", 
+		  ntohl(header.version1), ntohl(header.version2));
+    if(ntohl(header.version1) != 5)
+	krb5_errx(pd->context, 1, "Unknown database version %d (expected 5)", 
+		  ntohl(header.version1));
+    for(i = 0; i < ntohl(header.hashsize); i++){
+	int32_t pos = ntohl(header.hash[i]);
+	while(pos){
+	    struct ka_entry ent;
+	    read_block(pd->context, fd, pos, &ent, sizeof(ent));
+	    ka_convert(pd, fd, &ent, cell);
+	    pos = ntohl(ent.next);
+	}
+    }
+    return 0;
+}
+
+#endif /* KA_SERVER */
+
+#endif /* KRB4 */
 
 
 struct getargs args[] = {
@@ -231,6 +349,10 @@ struct getargs args[] = {
     { "database", 'd',	arg_string, &database, "database", "file" },
 #ifdef KRB4
     { "v4-db",    '4',	arg_flag, &v4_db, "use version 4 database" },
+#endif
+#ifdef KA_SERVER
+    { "ka-db",	  'K',  arg_flag, &ka_db, "use kaserver database" },
+    { "cell",	  'c',  arg_string, &afs_cell, "name of AFS cell" },
 #endif
     { "keytab",   'k',	arg_string, &ktname, "keytab to use for authentication", "keytab" },
     { "decrypt",  'D',  arg_flag,   &decrypt_flag,   "decrypt keys" },
@@ -346,6 +468,11 @@ int main(int argc, char **argv)
 	if(e) krb5_errx(context, 1, "kdb_get_master_key: %s", krb_get_err_text(e));
 	e = krb_get_lrealm(realm, 1);
 	if(e) krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
+#ifdef KA_SERVER
+    }else if(ka_db) {
+	e = krb_get_lrealm(realm, 1);
+	if(e) krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
+#endif
     }else
 #endif
 	{
@@ -369,6 +496,11 @@ int main(int argc, char **argv)
 	    if(e)
 		krb5_errx(context, 1, "kerb_db_iterate: %s", 
 			  krb_get_err_text(e));
+#ifdef KA_SERVER
+	} else if(ka_db) {
+	    e = ka_dump(&pd, database, afs_cell);
+	    if(e) krb5_errx(context, 1, "ka_dump: %s", krb_get_err_text(e));
+#endif
 	} else
 #endif
 	{
@@ -421,6 +553,13 @@ int main(int argc, char **argv)
 #ifdef KRB4
 		if(v4_db)
 		    e = kerb_db_iterate ((k_iter_proc_t)v4_prop, &pd);
+#ifdef KA_SERVER
+		else if(ka_db) {
+		    e = ka_dump(&pd, database, afs_cell);
+		    if(e) krb5_errx(context, 1, "ka_dump: %s", 
+				    krb_get_err_text(e));
+		}
+#endif
 		else
 #endif
 		    ret = hdb_foreach(context, db, v5_prop, &pd);
