@@ -64,6 +64,23 @@ struct lock_key {
 static TDB_CONTEXT *tdb;
 
 /****************************************************************************
+ Create a locking key - ensuring zero filled for pad purposes.
+****************************************************************************/
+
+static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
+{
+        static struct lock_key key;
+        TDB_DATA kbuf;
+
+        memset(&key, '\0', sizeof(key));
+        key.device = dev;
+        key.inode = inode;
+        kbuf.dptr = (char *)&key;
+        kbuf.dsize = sizeof(key);
+        return kbuf;
+}
+
+/****************************************************************************
  See if two locking contexts are equal.
 ****************************************************************************/
 
@@ -163,15 +180,11 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      br_off start, br_off size, 
 	      enum brl_type lock_type)
 {
-	struct lock_key key;
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct lock, *locks;
 
-	key.device = dev;
-	key.inode = ino;
-	kbuf.dptr = (char *)&key;
-	kbuf.dsize = sizeof(key);
+	kbuf = locking_key(dev,ino);
 
 	dbuf.dptr = NULL;
 
@@ -222,16 +235,12 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
 		br_off start, br_off size)
 {
-	struct lock_key key;
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct *locks;
 	struct lock_context context;
 
-	key.device = dev;
-	key.inode = ino;
-	kbuf.dptr = (char *)&key;
-	kbuf.dsize = sizeof(key);
+	kbuf = locking_key(dev,ino);
 
 	dbuf.dptr = NULL;
 
@@ -305,15 +314,11 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  br_off start, br_off size, 
 		  enum brl_type lock_type)
 {
-	struct lock_key key;
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct lock, *locks;
 
-	key.device = dev;
-	key.inode = ino;
-	kbuf.dptr = (char *)&key;
-	kbuf.dsize = sizeof(key);
+	kbuf = locking_key(dev,ino);
 
 	dbuf.dptr = NULL;
 
@@ -356,15 +361,11 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 {
-	struct lock_key key;
 	TDB_DATA kbuf, dbuf;
 	int count, i, dcount=0;
 	struct lock_struct *locks;
 
-	key.device = dev;
-	key.inode = ino;
-	kbuf.dptr = (char *)&key;
-	kbuf.dsize = sizeof(key);
+	kbuf = locking_key(dev,ino);
 
 	dbuf.dptr = NULL;
 
