@@ -48,7 +48,7 @@ krb5_kt_resolve(krb5_context context,
   krb5_keytab k;
 
   if (strncmp (name, "FILE:", 5) != 0)
-    return -1;
+    return KRB5_KT_UNKNOWN_TYPE;
 
   ALLOC(k, 1);
   if (k == NULL)
@@ -186,7 +186,7 @@ krb5_kt_start_seq_get(krb5_context context,
 
   cursor->fd = open (id->filename, O_RDONLY);
   if (cursor->fd < 0)
-    return -1;
+    return errno;
   cursor->sp = krb5_storage_from_fd(cursor->fd);
   ret = krb5_ret_int16(cursor->sp, &tag);
   if (ret)
