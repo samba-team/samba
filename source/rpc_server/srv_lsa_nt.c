@@ -295,7 +295,7 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
  _lsa_open_policy2.
  ***************************************************************************/
 
-uint32 _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 *r_u)
+NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 *r_u)
 {
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 

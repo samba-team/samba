@@ -207,7 +207,18 @@ typedef struct nttime_info
   uint32 high;
 } NTTIME;
 
+#ifdef __GNUC__XX
+typedef struct {uint32 v;} NTSTATUS;
+#define NT_STATUS(x) ((NTSTATUS) { x })
+#define NT_STATUS_V(x) ((x).v)
+#else
 typedef uint32 NTSTATUS;
+#define NT_STATUS(x) (x)
+#define NT_STATUS_V(x) (x)
+#endif
+
+#define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
+#define NT_STATUS_IS_ERR(x) (NT_STATUS_V(x) & 0xc0000000)
 
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */

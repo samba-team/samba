@@ -135,7 +135,7 @@
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
-#define ERROR_DOS(class,code) error_packet(outbuf,0,class,code,__LINE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,__LINE__)
 #define ERROR_NT(status) error_packet(outbuf,status,0,0,__LINE__)
 #define ERROR_BOTH(status,class,code) error_packet(outbuf,status,class,code,__LINE__)
 

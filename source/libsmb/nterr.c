@@ -26,8 +26,7 @@
 typedef struct
 {
 	char *nt_errstr;
-	uint32 nt_errcode;
-
+	NTSTATUS nt_errcode;
 } nt_err_code_struct;
 
 nt_err_code_struct nt_errs[] =
@@ -534,22 +533,22 @@ nt_err_code_struct nt_errs[] =
 	{ "NT_STATUS_TOO_MANY_LINKS", NT_STATUS_TOO_MANY_LINKS },
 	{ "NT_STATUS_QUOTA_LIST_INCONSISTENT", NT_STATUS_QUOTA_LIST_INCONSISTENT },
 	{ "NT_STATUS_FILE_IS_OFFLINE", NT_STATUS_FILE_IS_OFFLINE },
-	{ NULL, 0 }
+	{ NULL, NT_STATUS(0) }
 };
 
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-char *get_nt_error_msg(uint32 nt_code)
+char *get_nt_error_msg(NTSTATUS nt_code)
 {
         static pstring msg;
         int idx = 0;
 
-	slprintf(msg, sizeof(msg), "NT code 0x%08x", nt_code);
+	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
 
 	while (nt_errs[idx].nt_errstr != NULL) {
-		if ((nt_errs[idx].nt_errcode & 0xFFFFFF) == 
-                    (nt_code & 0xFFFFFF)) {
+		if ((NT_STATUS_V(nt_errs[idx].nt_errcode) & 0xFFFFFF) == 
+                    (NT_STATUS_V(nt_code) & 0xFFFFFF)) {
                         return nt_errs[idx].nt_errstr;
 		}
 		idx++;

@@ -63,7 +63,7 @@ struct generic_mapping file_generic_mapping = {
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_error, char *params,
+static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_error, char *params,
                            int paramsize, char *pdata, int datasize)
 {
   extern int max_send;
@@ -83,7 +83,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
 
   set_message(outbuf,18,0,True);
 
-  if(nt_error != 0) {
+  if (NT_STATUS_V(nt_error)) {
 	  ERROR_NT(nt_error);
   }
 
@@ -937,7 +937,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
 
 	return -1;
 }
@@ -1353,7 +1353,7 @@ static int call_nt_transact_create(connection_struct *conn,
   DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
   /* Send the required number of replies */
-  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
+  send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
 
   return -1;
 }
@@ -1450,7 +1450,7 @@ static int call_nt_transact_rename(connection_struct *conn,
     /*
      * Rename was successful.
      */
-    send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
+    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 
     DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
           fsp->fsp_name, new_name));
@@ -1570,7 +1570,7 @@ security descriptor.\n"));
 
   talloc_destroy(mem_ctx);
 
-  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sd_size);
+  send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 4, data, (int)sd_size);
   return -1;
 }
 
@@ -1609,7 +1609,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
 		return ERROR_DOS(error_class, error_code);
 
-  send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
+  send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
   return -1;
 }
    

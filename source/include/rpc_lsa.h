@@ -130,7 +130,7 @@ typedef struct lsa_q_open_pol_info
 typedef struct lsa_r_open_pol_info
 {
 	POLICY_HND pol; /* policy handle */
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } LSA_R_OPEN_POL;
 
@@ -149,7 +149,7 @@ typedef struct lsa_q_open_pol2_info
 typedef struct lsa_r_open_pol2_info
 {
 	POLICY_HND pol; /* policy handle */
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } LSA_R_OPEN_POL2;
 
@@ -167,7 +167,7 @@ typedef struct r_lsa_query_sec_obj_info
 	uint32 ptr;
 	SEC_DESC_BUF *buf;
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } LSA_R_QUERY_SEC_OBJ;
 
@@ -196,7 +196,7 @@ typedef struct lsa_r_query_info
    
 	LSA_INFO_UNION dom; 
 
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } LSA_R_QUERY_INFO;
 
@@ -222,7 +222,7 @@ typedef struct lsa_r_enum_trust_dom_info
 	UNISTR2 *uni_domain_name;
 	DOM_SID2 *domain_sid;
 
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } LSA_R_ENUM_TRUST_DOM;
 
@@ -238,7 +238,7 @@ typedef struct lsa_r_close_info
 {
 	POLICY_HND pol; /* policy handle.  should be all zeros. */
 
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } LSA_R_CLOSE;
 
@@ -331,7 +331,7 @@ typedef struct lsa_r_lookup_sids
 	LSA_TRANS_NAME_ENUM *names;
 	uint32              mapped_count;
 
-	uint32              status; /* return code */
+	NTSTATUS            status; /* return code */
 
 } LSA_R_LOOKUP_SIDS;
 
@@ -364,7 +364,7 @@ typedef struct lsa_r_lookup_names
 
 	uint32 mapped_count;
 
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } LSA_R_LOOKUP_NAMES;
 
@@ -384,7 +384,7 @@ typedef struct lsa_r_open_secret
 	uint32 dummy2;
 	uint32 dummy3;
 	uint32 dummy4;
-	uint32 status;
+	NTSTATUS status;
 } LSA_R_OPEN_SECRET;
 
 typedef struct lsa_enum_priv_entry
@@ -413,7 +413,7 @@ typedef struct lsa_r_enum_privs
 
 	LSA_PRIV_ENTRY *privs;
 
-	uint32 status;
+	NTSTATUS status;
 } LSA_R_ENUM_PRIVS;
 
 /* LSA_Q_PRIV_GET_DISPNAME - LSA get privilege display name */
@@ -434,7 +434,7 @@ typedef struct lsa_r_priv_get_dispname
 	/* Don't align ! */
 	uint16 lang_id;
 	/* align */
-	uint32 status;
+	NTSTATUS status;
 } LSA_R_PRIV_GET_DISPNAME;
 
 /* LSA_Q_ENUM_ACCOUNTS */
@@ -450,7 +450,7 @@ typedef struct lsa_r_enum_accounts
 {
 	uint32 enum_context;
 	LSA_SID_ENUM sids;
-	uint32 status;
+	NTSTATUS status;
 } LSA_R_ENUM_ACCOUNTS;
 
 /* LSA_Q_UNK_GET_CONNUSER - gets username\domain of connected user
@@ -477,7 +477,7 @@ typedef struct lsa_r_unk_get_connuser
   UNIHDR hdr_dom_name;
   UNISTR2 uni2_dom_name;
 
-  uint32 status;
+  NTSTATUS status;
 } LSA_R_UNK_GET_CONNUSER;
 
 
@@ -491,7 +491,7 @@ typedef struct lsa_q_openaccount
 typedef struct lsa_r_openaccount
 {
 	POLICY_HND pol; /* policy handle */
-	uint32 status;
+	NTSTATUS status;
 } LSA_R_OPENACCOUNT;
 
 typedef struct lsa_q_enumprivsaccount
@@ -524,7 +524,7 @@ typedef struct lsa_r_enumprivsaccount
 	uint32 ptr;
 	uint32 count;
 	PRIVILEGE_SET set;
-	uint32 status;
+	NTSTATUS status;
 } LSA_R_ENUMPRIVSACCOUNT;
 
 typedef struct lsa_q_getsystemaccount
@@ -535,7 +535,7 @@ typedef struct lsa_q_getsystemaccount
 typedef struct lsa_r_getsystemaccount
 {
 	uint32 access;
-	uint32 status;
+	NTSTATUS status;
 } LSA_R_GETSYSTEMACCOUNT;
 
 
