@@ -152,7 +152,7 @@ LDAP_no_size_limit(krb5_context context, LDAP *lp)
 
 static krb5_error_code
 LDAP__setmod(LDAPMod *** modlist, int modop, const char *attribute,
-	int *pIndex)
+	     int *pIndex)
 {
     int cMods;
 
@@ -210,39 +210,36 @@ static krb5_error_code
 LDAP_addmod_len(LDAPMod *** modlist, int modop, const char *attribute,
 		unsigned char *value, size_t len)
 {
-    int cMods, cValues = 0;
     krb5_error_code ret;
+    int cMods, i = 0;
 
     ret = LDAP__setmod(modlist, modop | LDAP_MOD_BVALUES, attribute, &cMods);
-    if (ret != 0) {
+    if (ret)
 	return ret;
-    }
 
     if (value != NULL) {
-	struct berval *bValue;
-	struct berval ***pbValues = &((*modlist)[cMods]->mod_bvalues);
+	struct berval **bv;
 
-	if (*pbValues != NULL) {
-	    for (cValues = 0; (*pbValues)[cValues] != NULL; cValues++)
+	bv = (*modlist)[cMods]->mod_bvalues;
+	if (bv != NULL) {
+	    for (i = 0; bv[i] != NULL; i++)
 		;
-	    *pbValues = (struct berval **)ber_memrealloc(*pbValues, (cValues + 2)
-							 * sizeof(struct berval *));
-	} else {
-	    *pbValues = (struct berval **)ber_memalloc(2 * sizeof(struct berval *));
-	}
-	if (*pbValues == NULL) {
+	    bv = ber_memrealloc(bv, (i + 2) * sizeof(*bv));
+	} else
+	    bv = ber_memalloc(2 * sizeof(*bv));
+	if (bv == NULL)
 	    return ENOMEM;
-	}
-	(*pbValues)[cValues] = (struct berval *)ber_memalloc(sizeof(struct berval));;
-	if ((*pbValues)[cValues] == NULL) {
+
+	(*modlist)[cMods]->mod_bvalues = bv;
+
+	bv[i] = ber_memalloc(sizeof(*bv));;
+	if (bv[i] == NULL)
 	    return ENOMEM;
-	}
 
-	bValue = (*pbValues)[cValues];
-	bValue->bv_val = value;
-	bValue->bv_len = len;
+	bv[i]->bv_val = value;
+	bv[i]->bv_len = len;
 
-	(*pbValues)[cValues + 1] = NULL;
+	bv[i + 1] = NULL;
     }
 
     return 0;
@@ -252,32 +249,33 @@ static krb5_error_code
 LDAP_addmod(LDAPMod *** modlist, int modop, const char *attribute,
 	    const char *value)
 {
-    int cMods, cValues = 0;
+    int cMods, i = 0;
     krb5_error_code ret;
 
     ret = LDAP__setmod(modlist, modop, attribute, &cMods);
-    if (ret != 0) {
+    if (ret != 0)
 	return ret;
-    }
 
     if (value != NULL) {
-	char ***pValues = &((*modlist)[cMods]->mod_values);
+	char **bv;
 
-	if (*pValues != NULL) {
-	    for (cValues = 0; (*pValues)[cValues] != NULL; cValues++)
+	bv = (*modlist)[cMods]->mod_values;
+	if (bv != NULL) {
+	    for (i = 0; bv[i] != NULL; i++)
 		;
-	    *pValues = (char **)ber_memrealloc(*pValues, (cValues + 2) * sizeof(char *));
-	} else {
-	    *pValues = (char **)ber_memalloc(2 * sizeof(char *));
-	}
-	if (*pValues == NULL) {
+	    bv = ber_memrealloc(bv, (i + 2) * sizeof(*bv));
+	} else
+	    bv = ber_memalloc(2 * sizeof(*bv));
+	if (bv == NULL)
 	    return ENOMEM;
-	}
-	(*pValues)[cValues] = ber_strdup(value);
-	if ((*pValues)[cValues] == NULL) {
+
+	(*modlist)[cMods]->mod_values = bv;
+
+	bv[i] = ber_strdup(value);
+	if (bv[i] == NULL)
 	    return ENOMEM;
-	}
-	(*pValues)[cValues + 1] = NULL;
+
+	bv[i + 1] = NULL;
     }
 
     return 0;
@@ -488,10 +486,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     if (is_heimdal_entry && ent->valid_start) {
 	if (orig.valid_end == NULL
 	    || (*(ent->valid_start) != *(orig.valid_start))) {
-	    ret =
-		LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
-					     "krb5ValidStart",
-					     ent->valid_start);
+	    ret = LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
+					       "krb5ValidStart",
+					       ent->valid_start);
 	    if (ret != 0) {
 		goto out;
 	    }
@@ -501,10 +498,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     if (is_heimdal_entry && ent->valid_end) {
 	if (orig.valid_end == NULL
 	    || (*(ent->valid_end) != *(orig.valid_end))) {
-	    ret =
-		LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
-					     "krb5ValidEnd",
-					     ent->valid_end);
+	    ret = LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
+					       "krb5ValidEnd",
+					       ent->valid_end);
 	    if (ret != 0) {
 		goto out;
 	    }
@@ -514,10 +510,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     if (ent->pw_end) {
 	if (orig.pw_end == NULL || (*(ent->pw_end) != *(orig.pw_end))) {
 	    if (is_heimdal_entry) {
-		ret =
-		    LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
-						 "krb5PasswordEnd",
-						 ent->pw_end);
+		ret = LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
+						   "krb5PasswordEnd",
+						   ent->pw_end);
 		if (ret != 0) {
 		    goto out;
 		}
@@ -530,7 +525,8 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 		    ret = ENOMEM;
 		    goto out;
 		}
-		ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "sambaPwdMustChange", tmp);
+		ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE,
+				  "sambaPwdMustChange", tmp);
 		free(tmp);
 		if (ret != 0) {
 		    goto out;
