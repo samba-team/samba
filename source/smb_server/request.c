@@ -368,6 +368,11 @@ void req_setup_error(struct smbsrv_request *req, NTSTATUS status)
 */
 void req_reply_error(struct smbsrv_request *req, NTSTATUS status)
 {
+	if (req->smb_conn->connection->event.fde == NULL) {
+		/* the socket has been destroyed - no point trying to send an error! */
+		talloc_free(req);
+		return;
+	}
 	req_setup_reply(req, 0, 0);
 
 	/* error returns never have any data */
