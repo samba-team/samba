@@ -1,69 +1,76 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
-
-INCLUDES = $(WFLAGS)
-##INCLUDES = -I$(top_builddir)/include
-
-COMPILE_ET = ../com_err/compile_et
+include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libkadm5srv.la libkadm5clnt.la
 sbin_PROGRAMS = dump_log replay_log
 
 libexec_PROGRAMS = ipropd-master ipropd-slave
 
+kadm5includedir = $(includedir)/kadm5
+
+kadm5include_HEADERS = kadm5_err.h admin.h private.h
+
+include__DATA = kadm5_err.h
+
+
 incdir = $(includedir)/kadm5
 idir = $(top_builddir)/include/kadm5
 inc_DATA = kadm5_err.h
 
-COMMON_SOURCES =				\
-	acl.c					\
-	chpass_c.c				\
-	chpass_s.c				\
-	common_glue.c				\
-	context_s.c				\
-	create_c.c				\
-	create_s.c				\
-	delete_c.c				\
-	delete_s.c				\
-	destroy_c.c				\
-	destroy_s.c				\
-	ent_setup.c				\
-	error.c					\
-	flush.c					\
-	free.c					\
-	get_c.c					\
-	get_princs_c.c				\
-	get_princs_s.c				\
-	get_s.c					\
-	init_c.c				\
-	init_s.c				\
-	kadm5_err.c				\
-	log.c					\
-	marshall.c				\
-	modify_c.c				\
-	modify_s.c				\
-	privs_c.c				\
-	privs_s.c				\
-	randkey_c.c				\
-	randkey_s.c				\
-	rename_c.c				\
-	rename_s.c				\
-	send_recv.c				\
-	server.c				\
-	set_keys.c				\
+
+
+COMMON_SOURCES =	\
+	acl.c		\
+	admin.h		\
+	chpass_c.c	\
+	chpass_s.c	\
+	common_glue.c	\
+	context_s.c	\
+	create_c.c	\
+	create_s.c	\
+	delete_c.c	\
+	delete_s.c	\
+	destroy_c.c	\
+	destroy_s.c	\
+	ent_setup.c	\
+	error.c		\
+	flush.c		\
+	free.c		\
+	get_c.c		\
+	get_princs_c.c	\
+	get_princs_s.c	\
+	get_s.c		\
+	init_c.c	\
+	init_s.c	\
+	kadm5_err.c	\
+	kadm5_locl.h	\
+	log.c		\
+	marshall.c	\
+	modify_c.c	\
+	modify_s.c	\
+	private.h	\
+	privs_c.c	\
+	privs_s.c	\
+	randkey_c.c	\
+	randkey_s.c	\
+	rename_c.c	\
+	rename_s.c	\
+	send_recv.c	\
+	server.c	\
+	set_keys.c	\
 	set_modifier.c
 	
 libkadm5srv_la_SOURCES = $(COMMON_SOURCES) server_glue.c
 libkadm5clnt_la_SOURCES = $(COMMON_SOURCES) client_glue.c
 
-dump_log_SOURCES = dump_log.c
+dump_log_SOURCES = dump_log.c kadm5_locl.h
 
-replay_log_SOURCES = replay_log.c
+replay_log_SOURCES = replay_log.c kadm5_locl.h
 
-ipropd_master_SOURCES = ipropd_master.c
+ipropd_master_SOURCES = ipropd_master.c iprop.h kadm5_locl.h
 
-ipropd_slave_SOURCES = ipropd_slave.c
+ipropd_slave_SOURCES = ipropd_slave.c iprop.h kadm5_locl.h
 
 LDADD = \
 	libkadm5srv.la \
