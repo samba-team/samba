@@ -102,16 +102,33 @@ void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 	}
 }
 
+
+/*
+  setup for a ndr pull, also setting up any flags from the binding string
+*/
+static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_pipe *p, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
+{
+	struct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx);
+
+	if (ndr == NULL) return ndr;
+
+	if (p->flags & DCERPC_DEBUG_PAD_CHECK) {
+		ndr->flags |= LIBNDR_FLAG_PAD_CHECK;
+	}
+
+	return ndr;
+}
+
 /* 
    parse a data blob into a dcerpc_packet structure. This handles both
    input and output packets
 */
-static NTSTATUS dcerpc_pull(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+static NTSTATUS dcerpc_pull(struct dcerpc_pipe *p, DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 			    struct dcerpc_packet *pkt)
 {
 	struct ndr_pull *ndr;
 
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	ndr = ndr_pull_init_flags(p, blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -137,10 +154,10 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 
 	/* non-signed packets are simpler */
 	if (!p->security_state.auth_info || !p->security_state.generic_state) {
-		return dcerpc_pull(blob, mem_ctx, pkt);
+		return dcerpc_pull(p, blob, mem_ctx, pkt);
 	}
 
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	ndr = ndr_pull_init_flags(p, blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -172,7 +189,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	pkt->u.response.stub_and_verifier.length -= auth_blob.length;
 
 	/* pull the auth structure */
-	ndr = ndr_pull_init_blob(&auth_blob, mem_ctx);
+	ndr = ndr_pull_init_flags(p, &auth_blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -439,7 +456,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	}
 
 	/* unmarshall the NDR */
-	status = dcerpc_pull(&blob, mem_ctx, &pkt);
+	status = dcerpc_pull(p, &blob, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -513,7 +530,7 @@ NTSTATUS dcerpc_alter(struct dcerpc_pipe *p,
 	}
 
 	/* unmarshall the NDR */
-	status = dcerpc_pull(&blob, mem_ctx, &pkt);
+	status = dcerpc_pull(p, &blob, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -855,7 +872,8 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
   for that to the NDR we initially generated. If they don't match then we know
   we must have a bug in either the pull or push side of our code
 */
-static NTSTATUS dcerpc_ndr_validate_in(TALLOC_CTX *mem_ctx,
+static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_pipe *p, 
+				       TALLOC_CTX *mem_ctx,
 				       DATA_BLOB blob,
 				       size_t struct_size,
 				       NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
@@ -872,7 +890,7 @@ static NTSTATUS dcerpc_ndr_validate_in(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	pull = ndr_pull_init_flags(p, &blob, mem_ctx);
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -918,7 +936,8 @@ static NTSTATUS dcerpc_ndr_validate_in(TALLOC_CTX *mem_ctx,
   initially generated. If they don't match then we know we must have a
   bug in either the pull or push side of our code
 */
-static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
+static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_pipe *p,
+					TALLOC_CTX *mem_ctx,
 					void *struct_ptr,
 					size_t struct_size,
 					NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
@@ -950,7 +969,7 @@ static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
 
 	blob = ndr_push_blob(push);
 
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	pull = ndr_pull_init_flags(p, &blob, mem_ctx);
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1032,7 +1051,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	request = ndr_push_blob(push);
 
 	if (p->flags & DCERPC_DEBUG_VALIDATE_IN) {
-		status = dcerpc_ndr_validate_in(mem_ctx, request, struct_size, 
+		status = dcerpc_ndr_validate_in(p, mem_ctx, request, struct_size, 
 						ndr_push, ndr_pull);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2,("Validation failed in dcerpc_ndr_request_send - %s\n",
@@ -1086,7 +1105,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	talloc_free(req);
 
 	/* prepare for ndr_pull_* */
-	pull = ndr_pull_init_blob(&response, ndr.mem_ctx);
+	pull = ndr_pull_init_flags(p, &response, ndr.mem_ctx);
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1105,7 +1124,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	}
 
 	if (p->flags & DCERPC_DEBUG_VALIDATE_OUT) {
-		status = dcerpc_ndr_validate_out(ndr.mem_ctx, ndr.struct_ptr, ndr.struct_size, 
+		status = dcerpc_ndr_validate_out(p, ndr.mem_ctx, ndr.struct_ptr, ndr.struct_size, 
 						 ndr.ndr_push, ndr.ndr_pull);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

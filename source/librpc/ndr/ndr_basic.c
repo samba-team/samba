@@ -28,6 +28,31 @@
 #define NDR_SSVAL(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSSVAL(ndr->data,ofs,v); } else SSVAL(ndr->data,ofs,v); } while (0)
 #define NDR_SIVAL(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSIVAL(ndr->data,ofs,v); } else SIVAL(ndr->data,ofs,v); } while (0)
 
+
+/*
+  check for data leaks from the server by looking for non-zero pad bytes
+  these could also indicate that real structure elements have been
+  mistaken for padding in the IDL
+*/
+void ndr_check_padding(struct ndr_pull *ndr, size_t n)
+{
+	size_t ofs2 = (ndr->offset + (n-1)) & ~(n-1);
+	int i;
+	for (i=ndr->offset;i<ofs2;i++) {
+		if (ndr->data[i] != 0) {
+			break;
+		}
+	}
+	if (i<ofs2) {
+		DEBUG(0,("WARNING: Non-zero padding to %d: ", n));
+		for (i=ndr->offset;i<ofs2;i++) {
+			DEBUG(0,("%02x ", ndr->data[i]));
+		}
+		DEBUG(0,("\n"));
+	}
+
+}
+
 /*
   parse a uint8
 */

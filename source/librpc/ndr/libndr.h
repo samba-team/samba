@@ -42,7 +42,7 @@ struct ndr_token_list {
 */
 struct ndr_pull {
 	uint32_t flags; /* LIBNDR_FLAG_* */
-	char *data;
+	uint8_t *data;
 	uint32_t data_size;
 	uint32_t offset;
 
@@ -62,7 +62,7 @@ struct ndr_pull_save {
 /* structure passed to functions that generate NDR formatted data */
 struct ndr_push {
 	uint32_t flags; /* LIBNDR_FLAG_* */
-	char *data;
+	uint8_t *data;
 	uint32_t alloc_size;
 	uint32_t offset;
 
@@ -111,6 +111,9 @@ struct ndr_print {
 
 /* used to force a section of IDL to be little-endian */
 #define LIBNDR_FLAG_LITTLE_ENDIAN (1<<17)
+
+/* used to check if alignment padding is zero */
+#define LIBNDR_FLAG_PAD_CHECK     (1<<18)
 
 
 /* useful macro for debugging */
@@ -161,6 +164,9 @@ enum ndr_err_code {
 
 #define NDR_PULL_ALIGN(ndr, n) do { \
 	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
+		if (ndr->flags & LIBNDR_FLAG_PAD_CHECK) { \
+			ndr_check_padding(ndr, n); \
+		} \
 		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
 	} \
 	if (ndr->offset >= ndr->data_size) { \

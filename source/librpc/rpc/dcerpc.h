@@ -101,6 +101,9 @@ struct dcerpc_pipe {
 
 #define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL_ANY)
 
+/* check incoming pad bytes */
+#define DCERPC_DEBUG_PAD_CHECK         (1<<12)
+
 /*
   this is used to find pointers to calls
 */
