@@ -188,7 +188,6 @@ void build_options(BOOL screen)
        output(screen,"   SBINDIR: %s\n", dyn_SBINDIR);
        output(screen,"   BINDIR: %s\n", dyn_BINDIR);
        output(screen,"   LOCKDIR: %s\n",dyn_LOCKDIR);
-       output(screen,"   DRIVERFILE: %s\n", dyn_DRIVERFILE);
        output(screen,"   LOGFILEBASE: %s\n", dyn_LOGFILEBASE);
 
        /*Output various other options (most map to defines in the configure script*/
