@@ -340,6 +340,7 @@ int reply_negprot(connection_struct *conn,
   char *p;
   int bcc = SVAL(smb_buf(inbuf),-2);
   int arch = ARCH_ALL;
+  START_PROFILE(SMBnegprot);
 
   p = smb_buf(inbuf)+1;
   while (p < (smb_buf(inbuf) + bcc))
@@ -437,6 +438,7 @@ int reply_negprot(connection_struct *conn,
   
   DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
+  END_PROFILE(SMBnegprot);
   return(outsize);
 }
 

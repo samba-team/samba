@@ -374,6 +374,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	int dscnt = SVAL(inbuf,smb_vwv11);
 	int dsoff = SVAL(inbuf,smb_vwv12);
 	int suwcnt = CVAL(inbuf,smb_vwv13);
+	START_PROFILE(SMBtrans);
 
 	memset(name, '\0',sizeof(name));
 	fstrcpy(name,smb_buf(inbuf));
@@ -385,6 +386,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	if (tdscnt)  {
 		if((data = (char *)malloc(tdscnt)) == NULL) {
 			DEBUG(0,("reply_trans: data malloc fail for %d bytes !\n", tdscnt));
+			END_PROFILE(SMBtrans);
 			return(ERROR(ERRDOS,ERRnomem));
 		} 
 		memcpy(data,smb_base(inbuf)+dsoff,dscnt);
@@ -393,6 +395,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	if (tpscnt) {
 		if((params = (char *)malloc(tpscnt)) == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %d bytes !\n", tpscnt));
+			END_PROFILE(SMBtrans);
 			return(ERROR(ERRDOS,ERRnomem));
 		} 
 		memcpy(params,smb_base(inbuf)+psoff,pscnt);
@@ -402,6 +405,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		int i;
 		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
           DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", (int)(suwcnt * sizeof(uint16))));
+		  END_PROFILE(SMBtrans);
 		  return(ERROR(ERRDOS,ERRnomem));
         } 
 		for (i=0;i<suwcnt;i++)
@@ -437,6 +441,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				free(data);
 			if (setup)
 				free(setup);
+			END_PROFILE(SMBtrans);
 			return(ERROR(ERRSRV,ERRerror));
 		}
 
@@ -499,12 +504,17 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	if (close_on_completion)
 		close_cnum(conn,vuid);
 
-	if (one_way)
+	if (one_way) {
+		END_PROFILE(SMBtrans);
 		return(-1);
+	}
 	
-	if (outsize == 0)
+	if (outsize == 0) {
+		END_PROFILE(SMBtrans);
 		return(ERROR(ERRSRV,ERRnosupport));
+	}
 	
+	END_PROFILE(SMBtrans);
 	return(outsize);
 }
 #undef OLD_NTDOMAIN

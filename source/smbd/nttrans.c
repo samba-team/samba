@@ -650,6 +650,7 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 int reply_ntcreate_and_X(connection_struct *conn,
 			 char *inbuf,char *outbuf,int length,int bufsize)
 {  
+	int result;
 	pstring fname;
 	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
 	uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
@@ -675,14 +676,18 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	files_struct *fsp=NULL;
 	char *p = NULL;
 	BOOL stat_open_only = False;
+	START_PROFILE(SMBntcreateX);
 
 	/* If it's an IPC, use the pipe handler. */
 
 	if (IS_IPC(conn)) {
-		if (lp_nt_pipe_support())
+		if (lp_nt_pipe_support()) {
+			END_PROFILE(SMBntcreateX);
 			return do_ntcreate_pipe_open(conn,inbuf,outbuf,length,bufsize);
-		else
+		} else {
+			END_PROFILE(SMBntcreateX);
 			return(ERROR(ERRDOS,ERRbadaccess));
+		}
 	}
 			
 
@@ -691,8 +696,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * NT values, as that's what our code is structured to accept.
 	 */    
 	
-	if((smb_ofun = map_create_disposition( create_disposition )) == -1)
+	if((smb_ofun = map_create_disposition( create_disposition )) == -1) {
+		END_PROFILE(SMBntcreateX);
 		return(ERROR(ERRDOS,ERRbadaccess));
+	}
 
 	/*
 	 * Get the file name.
@@ -705,8 +712,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
       files_struct *dir_fsp = file_fsp(inbuf,smb_ntcreate_RootDirectoryFid);
       size_t dir_name_len;
 
-      if(!dir_fsp)
+      if(!dir_fsp) {
+	END_PROFILE(SMBntcreateX);
         return(ERROR(ERRDOS,ERRbadfid));
+      }
 
       if(!dir_fsp->is_directory) {
         /* 
@@ -718,8 +727,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
         if( fname[0] == ':') {
           SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+	  END_PROFILE(SMBntcreateX);
           return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
         }
+	END_PROFILE(SMBntcreateX);
         return(ERROR(ERRDOS,ERRbadfid));
       }
 
@@ -744,8 +755,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
        * with the Win2k unicode bug, but that would be rare. JRA.
        */
 
-      if(fname_len + dir_name_len >= sizeof(pstring))
+      if(fname_len + dir_name_len >= sizeof(pstring)) {
+	END_PROFILE(SMBntcreateX);
         return(ERROR(ERRSRV,ERRfilespecs));
+      }
 
       get_filename(&fname[dir_name_len], inbuf, smb_buf(inbuf)-inbuf, 
                    smb_buflen(inbuf),fname_len);
@@ -764,8 +777,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 	if((smb_open_mode = map_share_mode(&stat_open_only, fname, desired_access, 
 					   share_access, 
-					   file_attributes)) == -1)
+					   file_attributes)) == -1) {
+		END_PROFILE(SMBntcreateX);
 		return(ERROR(ERRDOS,ERRbadaccess));
+	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
@@ -800,6 +815,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				unix_ERR_class = ERRDOS;
 				unix_ERR_code = ERRbadpath;
 			}
+			END_PROFILE(SMBntcreateX);
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
@@ -852,6 +868,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(file_attributes);
 					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+					END_PROFILE(SMBntcreateX);
 					return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
 				}
 	
@@ -864,6 +881,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 						unix_ERR_class = ERRDOS;
 						unix_ERR_code = ERRbadpath;
 					}
+					END_PROFILE(SMBntcreateX);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
 #ifdef EROFS
@@ -882,6 +900,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
+					END_PROFILE(SMBntcreateX);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
 
@@ -894,6 +913,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				
 				restore_case_semantics(file_attributes);
 				
+				END_PROFILE(SMBntcreateX);
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 		} 
@@ -903,12 +923,14 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name, False), &sbuf) != 0) {
 			close_file(fsp,True);
 			restore_case_semantics(file_attributes);
+			END_PROFILE(SMBntcreateX);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
 		if (conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
+			END_PROFILE(SMBntcreateX);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		} 
 	}
@@ -921,6 +943,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		fmode = FILE_ATTRIBUTE_NORMAL;
 	if (!fsp->is_directory && (fmode & aDIR)) {
 		close_file(fsp,False);
+		END_PROFILE(SMBntcreateX);
 		return(ERROR(ERRDOS,ERRnoaccess));
 	} 
 	
@@ -977,7 +1000,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	
 	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	result = chain_reply(inbuf,outbuf,length,bufsize);
+	END_PROFILE(SMBntcreateX);
+	return result;
 }
 
 /****************************************************************************
@@ -1403,11 +1428,13 @@ int reply_ntcancel(connection_struct *conn,
 	 */
 	
 	int mid = SVAL(inbuf,smb_mid);
+	START_PROFILE(SMBntcancel);
 	remove_pending_change_notify_requests_by_mid(mid);
 	remove_pending_lock_requests_by_mid(mid);
 	
 	DEBUG(3,("reply_ntcancel: cancel called on mid = %d.\n", mid));
 
+	END_PROFILE(SMBntcancel);
 	return(-1);
 }
 
@@ -1417,7 +1444,9 @@ int reply_ntcancel(connection_struct *conn,
 int reply_nttranss(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize)
 {
+	START_PROFILE(SMBnttranss);
 	DEBUG(4,("Ignoring nttranss of length %d\n",length));
+	END_PROFILE(SMBnttranss);
 	return(-1);
 }
 
@@ -1729,6 +1758,7 @@ int reply_nttrans(connection_struct *conn,
   uint16 function_code = SVAL( inbuf, smb_nt_Function);
   char *params = NULL, *data = NULL, *setup = NULL;
   uint32 num_params_sofar, num_data_sofar;
+  START_PROFILE(SMBnttrans);
 
   if(global_oplock_break && (function_code == NT_TRANSACT_CREATE)) {
     /*
@@ -1739,11 +1769,14 @@ int reply_nttrans(connection_struct *conn,
 due to being in oplock break state.\n" ));
 
     push_oplock_pending_smb_message( inbuf, length);
+    END_PROFILE(SMBnttrans);
     return -1;
   }
 
-  if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE))
+  if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
+    END_PROFILE(SMBnttrans);
     return (ERROR(ERRSRV,ERRaccess));
+  }
 
   outsize = set_message(outbuf,0,0,True);
 
@@ -1755,6 +1788,7 @@ due to being in oplock break state.\n" ));
   if(CVAL(inbuf, smb_wct) != 19 + (setup_count/2)) {
     DEBUG(2,("Invalid smb_wct %d in nttrans call (should be %d)\n",
           CVAL(inbuf, smb_wct), 19 + (setup_count/2)));
+    END_PROFILE(SMBnttrans);
     return(ERROR(ERRSRV,ERRerror));
   }
     
@@ -1770,6 +1804,7 @@ due to being in oplock break state.\n" ));
   if ((total_parameter_count && !params)  || (total_data_count && !data) ||
       (setup_count && !setup)) {
     DEBUG(0,("reply_nttrans : Out of memory\n"));
+    END_PROFILE(SMBnttrans);
     return(ERROR(ERRDOS,ERRnomem));
   }
 
@@ -1822,6 +1857,7 @@ due to being in oplock break state.\n" ));
           free(data);
         if(setup)
           free(setup);
+	END_PROFILE(SMBnttrans);
         return(ERROR(ERRSRV,ERRerror));
       }
       
@@ -1848,34 +1884,46 @@ due to being in oplock break state.\n" ));
   /* Now we must call the relevant NT_TRANS function */
   switch(function_code) {
     case NT_TRANSACT_CREATE:
+      START_PROFILE_NESTED(NT_transact_create);
       outsize = call_nt_transact_create(conn, inbuf, outbuf, length, bufsize, 
                                         &setup, &params, &data);
+      END_PROFILE_NESTED(NT_transact_create);
       break;
     case NT_TRANSACT_IOCTL:
+      START_PROFILE_NESTED(NT_transact_ioctl);
       outsize = call_nt_transact_ioctl(conn, 
 				       inbuf, outbuf, length, bufsize, 
                                        &setup, &params, &data);
+      END_PROFILE_NESTED(NT_transact_ioctl);
       break;
     case NT_TRANSACT_SET_SECURITY_DESC:
+      START_PROFILE_NESTED(NT_transact_set_security_desc);
       outsize = call_nt_transact_set_security_desc(conn, inbuf, outbuf, 
 						   length, bufsize, 
                                                    &setup, &params, &data);
+      END_PROFILE_NESTED(NT_transact_set_security_desc);
       break;
     case NT_TRANSACT_NOTIFY_CHANGE:
+      START_PROFILE_NESTED(NT_transact_notify_change);
       outsize = call_nt_transact_notify_change(conn, inbuf, outbuf, 
 					       length, bufsize, 
                                                &setup, &params, &data);
+      END_PROFILE_NESTED(NT_transact_notify_change);
       break;
     case NT_TRANSACT_RENAME:
+      START_PROFILE_NESTED(NT_transact_rename);
       outsize = call_nt_transact_rename(conn, inbuf, outbuf, length, 
 					bufsize, 
                                         &setup, &params, &data);
+      END_PROFILE_NESTED(NT_transact_rename);
       break;
 
     case NT_TRANSACT_QUERY_SECURITY_DESC:
+      START_PROFILE_NESTED(NT_transact_query_security_desc);
       outsize = call_nt_transact_query_security_desc(conn, inbuf, outbuf, 
 						     length, bufsize, 
                                                      &setup, &params, &data);
+      END_PROFILE_NESTED(NT_transact_query_security_desc);
       break;
   default:
 	  /* Error in request */
@@ -1886,6 +1934,7 @@ due to being in oplock break state.\n" ));
 		  free(params);
 	  if(data)
 		  free(data);
+	  END_PROFILE(SMBnttrans);
 	  return (ERROR(ERRSRV,ERRerror));
   }
 
@@ -1902,6 +1951,7 @@ due to being in oplock break state.\n" ));
     free(params);
   if(data)
     free(data);
+  END_PROFILE(SMBnttrans);
   return outsize; /* If a correct response was needed the call_nt_transact_xxxx 
 		     calls have already sent it. If outsize != -1 then it is
 		     returning an error packet. */
