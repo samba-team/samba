@@ -1227,7 +1227,7 @@ scrub_env(void)
 	NULL
     };
 
-    const char **cpp, **cpp2;
+    char **cpp, **cpp2;
     const char **p;
   
     for (cpp2 = cpp = environ; *cpp; cpp++) {
