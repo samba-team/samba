@@ -239,7 +239,11 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		capabilities |= CAP_EXTENDED_SECURITY;
 	}
 	
-	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS|(lp_unix_extensions() ? CAP_UNIX : 0);
+	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
+
+	if (lp_unix_extensions()) {
+		capabilities |= CAP_UNIX;
+	}
 	
 	if (lp_large_readwrite() && (SMB_OFF_T_BITS == 64))
 		capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_W2K_SMBS;
