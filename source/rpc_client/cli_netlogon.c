@@ -114,6 +114,7 @@ encrypt of the server challenge originally received. JRA.
 
 uint32 cli_net_auth2(const char *srv_name,
 				const char *trust_acct, 
+				const char *acct_name, 
 				uint16 sec_chan, 
 				uint32 neg_flags, DOM_CHAL *srv_chal)
 {
@@ -142,13 +143,13 @@ uint32 cli_net_auth2(const char *srv_name,
 	/* create and send a MSRPC command with api NET_AUTH2 */
 
 	DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s neg: %x\n",
-	          srv_name, trust_acct, sec_chan, srv_name,
+	          srv_name, trust_acct, sec_chan, acct_name,
 	          neg_flags));
 
 	cli_con_get_cli_cred(con, &clnt_cred);
 
 	/* store the parameters */
-	make_q_auth_2(&q_a, srv_name, trust_acct, sec_chan, srv_name,
+	make_q_auth_2(&q_a, srv_name, trust_acct, sec_chan, acct_name,
 	              &clnt_cred.challenge, neg_flags);
 
 	/* turn parameters into data stream */

@@ -89,7 +89,7 @@ uint32 cli_nt_setup_creds( char* servers, const char* myhostname,
 	 * Receive an auth-2 challenge response and check it.
 	 */
 
-	ret = cli_net_auth2(srv_name, trust_acct, 
+	ret = cli_net_auth2(srv_name, trust_acct, myhostname,
 	                    sec_chan, 0x000001ff, &srv_chal);
 	if (ret != 0x0)
 	{

@@ -690,11 +690,18 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 {
 	fstring domain;
 	fstring acct_name;
+	fstring name;
 	fstring sid;
 	DOM_SID sid1;
 	uint32 user_rid; 
 	uint16 acb_info = ACB_NORMAL;
+	BOOL join_domain = False;
 	int opt;
+	char *password = NULL;
+	int plen = 0;
+	int len = 0;
+	UNISTR2 upw;
+
 	fstring srv_name;
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -713,7 +720,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "createuser: <acct name> [-i] [-s]\n");
+		report(out_hnd, "createuser: <acct name> [-i] [-s] [-j]\n");
 		return;
 	}
 
@@ -721,12 +728,15 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	argv++;
 
 	safe_strcpy(acct_name, argv[0], sizeof(acct_name));
-	if (acct_name[strlen(acct_name)-1] == '$')
+	len = strlen(acct_name)-1;
+	if (acct_name[len] == '$')
 	{
+		safe_strcpy(name, argv[0], sizeof(name));
+		name[len] = 0;
 		acb_info = ACB_WSTRUST;
 	}
 
-	while ((opt = getopt(argc, argv,"is")) != EOF)
+	while ((opt = getopt(argc, argv,"isj")) != EOF)
 	{
 		switch (opt)
 		{
@@ -740,7 +750,17 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 				acb_info = ACB_SVRTRUST;
 				break;
 			}
+			case 'j':
+			{
+				join_domain = True;
+			}
 		}
+	}
+
+	if (join_domain && acb_info == ACB_NORMAL)
+	{
+		report(out_hnd, "can only join trust accounts to a domain\n");
+		return;
 	}
 
 	report(out_hnd, "SAM Create Domain User\n");
@@ -748,11 +768,38 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	                  domain, acct_name,
 	    pwdb_encode_acct_ctrl(acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
+	if (acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)
+	{
+		upw.uni_str_len = 24;
+		upw.uni_max_len = 24;
+		generate_random_buffer((uchar*)upw.buffer,
+		                       upw.uni_str_len, True);
+		password = (char*)upw.buffer;
+		plen = upw.uni_str_len;
+	}
+
 	if (msrpc_sam_create_dom_user(srv_name, &sid1,
-	                              acct_name, acb_info, NULL,
+	                              acct_name, acb_info, password, plen,
 	                              &user_rid))
 	{
 		report(out_hnd, "Create Domain User: OK\n");
+
+		if (join_domain)
+		{
+			uchar ntpw[16];
+			
+			nt_owf_genW(&upw, ntpw);
+
+			report(out_hnd, "Join %s to Domain %s", name, domain);
+			if (create_trust_account_file(domain, name, ntpw))
+			{
+				report(out_hnd, ": OK\n");
+			}
+			else
+			{
+				report(out_hnd, ": FAILED\n");
+			}
+		}
 	}
 	else
 	{

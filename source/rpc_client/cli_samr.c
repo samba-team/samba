@@ -1636,7 +1636,7 @@ BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 do a SAMR Query Lookup Names
 ****************************************************************************/
 BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
-				uint32 num_names, const char **names,
+				uint32 num_names, char **names,
 				uint32 *num_rids,
 				uint32 rid[MAX_LOOKUP_SIDS],
 				uint32 type[MAX_LOOKUP_SIDS])

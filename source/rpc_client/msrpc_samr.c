@@ -997,15 +997,13 @@ do a SAMR create domain user
 ****************************************************************************/
 BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 				const char *acct_name, uint16 acb_info,
-				const char* password,
+				const char* password, int plen,
 				uint32 *rid)
 {
 	POLICY_HND pol_open_user;
 	BOOL ret = True;
 	BOOL res1 = True;
 	char pwbuf[516];
-	char randompw[24];
-	int plen = 0;
 	SAM_USER_INFO_24 *p24;
 	SAM_USER_INFO_16 *p16;
 	SAM_USER_INFO_16 usr16;
@@ -1052,16 +1050,6 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 		return True;
 	}
 
-	if (password == NULL)
-	{
-		generate_random_buffer(randompw, sizeof(randompw), True);
-		password = randompw;
-		plen = sizeof(randompw);
-	}
-	else
-	{
-		plen = strlen(password);
-	}
 	encode_pw_buffer(pwbuf, password, plen, False);
 
 	p24 = (SAM_USER_INFO_24*)malloc(sizeof(SAM_USER_INFO_24));
@@ -1525,7 +1513,7 @@ SAM create domain user.
 ****************************************************************************/
 BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 				const char *acct_name, uint16 acb_info,
-				const char *password,
+				const char *password, int plen,
 				uint32 *rid)
 {
 	BOOL res = True;
@@ -1535,6 +1523,7 @@ BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 	uint32 user_rid; 
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
+	char *pwd = NULL;
 
 	/* establish a connection. */
 	res = res ? samr_connect( 
@@ -1550,7 +1539,7 @@ BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 	res2 = res1 ? create_samr_domain_user( 
 				&pol_dom,
 	                        acct_name, 
-				acb_info, password, &user_rid) : False;
+				acb_info, password, plen, &user_rid) : False;
 
 	res1 = res1 ? samr_close( &pol_dom) : False;
 	res  = res  ? samr_close( &sam_pol) : False;
