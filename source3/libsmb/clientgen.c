@@ -27,6 +27,40 @@
 
 extern int DEBUGLEVEL;
 
+
+/****************************************************************************
+  send an smb to a fd and re-establish if necessary
+****************************************************************************/
+static BOOL cli_send_smb(struct cli_state *cli)
+{
+	size_t len;
+	size_t nwritten=0;
+	ssize_t ret;
+	BOOL reestablished=False;
+
+	len = smb_len(cli->outbuf) + 4;
+
+	while (nwritten < len) {
+		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
+		if (ret <= 0 && errno == EPIPE && !reestablished) {
+			if (cli_reestablish_connection(cli)) {
+				reestablished = True;
+				nwritten=0;
+				continue;
+			}
+		}
+		if (ret <= 0) {
+			DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",
+				 len,ret));
+			close_sockets();
+			exit(1);
+		}
+		nwritten += ret;
+	}
+	
+	return True;
+}
+
 /*****************************************************
  RAP error codes - a small start but will be extended.
 *******************************************************/
@@ -218,7 +252,7 @@ static BOOL cli_send_trans(struct cli_state *cli, int trans,
 		    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
 
 	show_msg(cli->outbuf);
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
@@ -259,7 +293,7 @@ static BOOL cli_send_trans(struct cli_state *cli, int trans,
 				    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
 			
 			show_msg(cli->outbuf);
-			send_smb(cli->fd,cli->outbuf);
+			cli_send_smb(cli);
 			
 			tot_data += this_ldata;
 			tot_param += this_lparam;
@@ -717,7 +751,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		set_message(cli->outbuf,13,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
 	}
 
-      send_smb(cli->fd,cli->outbuf);
+      cli_send_smb(cli);
       if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 	      return False;
 
@@ -729,6 +763,8 @@ BOOL cli_session_setup(struct cli_state *cli,
 
       /* use the returned vuid from now on */
       cli->vuid = SVAL(cli->inbuf,smb_uid);
+
+      fstrcpy(cli->user_name, user);
 
       return True;
 }
@@ -746,7 +782,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
 
-        send_smb(cli->fd,cli->outbuf);
+        cli_send_smb(cli);
         if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
                 return False;
 
@@ -799,7 +835,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	SCVAL(cli->inbuf,smb_rcls, 1);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
@@ -840,7 +876,7 @@ BOOL cli_tdis(struct cli_state *cli)
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 	
@@ -872,7 +908,7 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
         *p++ = 4;
         pstrcpy(p,fname_dst);
 
-        send_smb(cli->fd,cli->outbuf);
+        cli_send_smb(cli);
         if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
                 return False;
         }
@@ -906,7 +942,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 	*p++ = 4;      
 	pstrcpy(p,fname);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
@@ -938,7 +974,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 	*p++ = 4;      
 	pstrcpy(p,dname);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
@@ -970,7 +1006,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 	*p++ = 4;      
 	pstrcpy(p,dname);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
@@ -1015,7 +1051,7 @@ int cli_nt_create(struct cli_state *cli, char *fname)
 	pstrcpy(p,fname);
 	p = skip_string(p,1);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return -1;
 	}
@@ -1086,7 +1122,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	pstrcpy(p,fname);
 	p = skip_string(p,1);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return -1;
 	}
@@ -1118,7 +1154,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 	SSVAL(cli->outbuf,smb_vwv0,fnum);
 	SIVALS(cli->outbuf,smb_vwv1,-1);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
@@ -1160,7 +1196,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 	SIVAL(p, 2, offset);
 	SIVAL(p, 6, len);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 
         cli->timeout = (timeout == -1) ? 0x7FFFFFFF : timeout;
 
@@ -1206,7 +1242,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 	SIVAL(p, 2, offset);
 	SIVAL(p, 6, len);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
@@ -1242,7 +1278,7 @@ static void cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SSVAL(cli->outbuf,smb_vwv6,size);
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 }
 
 /****************************************************************************
@@ -1349,7 +1385,7 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 	
 	show_msg(cli->outbuf);
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 }
 
 /****************************************************************************
@@ -1437,7 +1473,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 
 	SSVAL(cli->outbuf,smb_vwv0,fd);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
@@ -1491,7 +1527,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 	*p = 4;
 	pstrcpy(p+1, fname);
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
@@ -1542,7 +1578,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t)
 	p = skip_string(p,1);
 	*p = 4;
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
@@ -2149,7 +2185,7 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	CVAL(smb_buf(cli->outbuf),0) = 2;
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
@@ -2231,7 +2267,7 @@ BOOL cli_session_request(struct cli_state *cli,
 retry:
 #endif /* WITH_SSL */
 
-	send_smb(cli->fd,cli->outbuf);
+	cli_send_smb(cli);
 	DEBUG(5,("Sent session request\n"));
 
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
@@ -2260,22 +2296,22 @@ open the client sockets
 ****************************************************************************/
 BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip)
 {
-	struct in_addr dest_ip;
 	extern struct in_addr ipzero;
 
 	fstrcpy(cli->desthost, host);
 	
 	if (!ip || ip_equal(*ip, ipzero)) {
-                if (!resolve_name( cli->desthost, &dest_ip, 0x20)) {
+                if (!resolve_name( cli->desthost, &cli->dest_ip, 0x20)) {
                         return False;
                 }
-		if (ip) *ip = dest_ip;
+		if (ip) *ip = cli->dest_ip;
 	} else {
-		dest_ip = *ip;
+		cli->dest_ip = *ip;
 	}
 
 
-	cli->fd = open_socket_out(SOCK_STREAM, &dest_ip, 139, cli->timeout);
+	cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
+				  139, cli->timeout);
 	if (cli->fd == -1)
 		return False;
 
@@ -2424,17 +2460,17 @@ uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 }
 
 /****************************************************************************
-establishes a connection right up to doing tconX, reading in a password.
+re-establishes a connection
 ****************************************************************************/
 BOOL cli_reestablish_connection(struct cli_state *cli)
 {
 	struct nmb_name calling;
 	struct nmb_name called;
 	fstring dest_host;
-	struct in_addr dest_ip;
 	fstring share;
 	fstring dev;
 	BOOL do_tcon = False;
+	int oldfd = cli->fd;
 
 	if (!cli->initialised || cli->fd == -1)
 	{
@@ -2454,16 +2490,26 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 	memcpy(&called , &(cli->called ), sizeof(called ));
 	memcpy(&calling, &(cli->calling), sizeof(calling));
 	fstrcpy(dest_host, cli->full_dest_host_name);
-	dest_ip = cli->dest_ip;
 
 	DEBUG(5,("cli_reestablish_connection: %s connecting to %s (ip %s) - %s [%s]\n",
-		          namestr(&calling), namestr(&called), inet_ntoa(dest_ip),
-	              cli->user_name, cli->domain));
+		 namestr(&calling), namestr(&called), 
+		 inet_ntoa(cli->dest_ip),
+		 cli->user_name, cli->domain));
 
-	return cli_establish_connection(cli,
-	                                dest_host, &dest_ip,
-	                                &calling, &called,
-	                                share, dev, False, do_tcon);
+	cli->fd = -1;
+
+	if (cli_establish_connection(cli,
+				     dest_host, &cli->dest_ip,
+				     &calling, &called,
+				     share, dev, False, do_tcon)) {
+		if (cli->fd != oldfd) {
+			if (dup2(cli->fd, oldfd) == oldfd) {
+				close(cli->fd);
+			}
+		}
+		return True;
+	}
+	return False;
 }
 
 /****************************************************************************
