@@ -152,11 +152,11 @@ kadmin/changepw@@MY.REALM 1:0:1:f48c8af2b340e9fb:-:0:7:e3e6088 ...
 
 To extract a service ticket from the database and put it in a keytab you
 need to first create the principal in the database with @samp{ank}
-(using the @kbd{--random} flag to get a random password) and then
+(using the @kbd{--random-key} flag to get a random key) and then
 extract it with @samp{ext_keytab}.
 
 @example
-kadmin> add --random host/my.host.name
+kadmin> add --random-key host/my.host.name
 Max ticket life [unlimited]:
 Max renewable life [unlimited]:
 Attributes []:
