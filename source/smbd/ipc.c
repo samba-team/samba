@@ -2966,7 +2966,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 
 		rdata_len = PTR_DIFF(p, rdata);
 
-        make_rpc_hdr(&hdr, RPC_BINDACK, hdr.call_id, rdata_len);
+        make_rpc_hdr(&hdr, RPC_BINDACK, 0x0, hdr.call_id, rdata_len);
 
         p = smb_io_rpc_hdr(False, &hdr, rdata, rdata, 4, 0);
         
