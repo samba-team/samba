@@ -152,7 +152,10 @@ struct winbindd_response {
 		} gr;
 
 		fstring sid;        /* lookupname, [ug]id_to_sid */
-		fstring name;       /* lookupsid */
+		struct {
+			fstring name;       /* lookupsid */
+			int type;
+		} name;
 		uid_t uid;          /* sid_to_uid */
 		gid_t gid;          /* sid_to_gid */
 	} data;

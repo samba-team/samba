@@ -42,7 +42,8 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	}
 
 	string_sub(name, "\\", lp_winbind_separator(), sizeof(fstring));
-	fstrcpy(state->response.data.name, name);
+	fstrcpy(state->response.data.name.name, name);
+	state->response.data.name.type = type;
 
 	return WINBINDD_OK;
 }

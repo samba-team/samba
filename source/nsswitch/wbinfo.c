@@ -21,6 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "includes.h"
 #include "winbind_nss_config.h"
 #include "winbindd.h"
 #include "debug.h"
@@ -153,7 +154,7 @@ static BOOL wbinfo_lookupsid(char *sid)
 
 	/* Display response */
 
-	printf("%s\n", response.data.name);
+	printf("%s %d\n", response.data.name.name, response.data.name.type);
 
 	return True;
 }
