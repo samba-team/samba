@@ -280,7 +280,7 @@ typedef struct sid_info
 
 typedef struct nt_user_token {
 	size_t num_sids;
-	DOM_SID *user_sids;
+	struct dom_sid **user_sids;
 } NT_USER_TOKEN;
 
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
@@ -1079,10 +1079,6 @@ typedef struct user_struct
 {
 	struct user_struct *next, *prev;
 	uint16 vuid; /* Tag for this entry. */
-
-	BOOL guest;
-
-	NT_USER_TOKEN *nt_user_token;
 
 	DATA_BLOB session_key;
 

@@ -28,52 +28,35 @@
  * Some useful sids
  */
 
-DOM_SID global_sid_World_Domain;	    	/* Everyone domain */
-DOM_SID global_sid_World;    				/* Everyone */
-DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
-DOM_SID global_sid_NT_Authority;    		/* NT Authority */
-DOM_SID global_sid_System;    		/* System */
-DOM_SID global_sid_NULL;            		/* NULL sid */
-DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
-DOM_SID global_sid_Network;			/* Network rids */
+struct dom_sid *global_sid_World_Domain;	    	/* Everyone domain */
+struct dom_sid *global_sid_World;    				/* Everyone */
+struct dom_sid *global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
+struct dom_sid *global_sid_NT_Authority;    		/* NT Authority */
+struct dom_sid *global_sid_System;    		/* System */
+struct dom_sid *global_sid_NULL;            		/* NULL sid */
+struct dom_sid *global_sid_Authenticated_Users;		/* All authenticated rids */
+struct dom_sid *global_sid_Network;			/* Network rids */
 
-DOM_SID global_sid_Creator_Owner;	/* Creator Owner */
-DOM_SID global_sid_Creator_Group;	/* Creator Group */
-DOM_SID global_sid_Anonymous;		/* Anonymous login */
+struct dom_sid *global_sid_Creator_Owner;	/* Creator Owner */
+struct dom_sid *global_sid_Creator_Group;	/* Creator Group */
+struct dom_sid *global_sid_Anonymous;		/* Anonymous login */
 
-DOM_SID global_sid_Builtin; 			/* Local well-known domain */
-DOM_SID global_sid_Builtin_Administrators;	/* Builtin administrators */
-DOM_SID global_sid_Builtin_Users;		/* Builtin users */
-DOM_SID global_sid_Builtin_Guests;		/* Builtin guest users */
-DOM_SID global_sid_Builtin_Power_Users;		/* Builtin power users */
-DOM_SID global_sid_Builtin_Account_Operators;	/* Builtin account operators */
-DOM_SID global_sid_Builtin_Server_Operators;	/* Builtin server operators */
-DOM_SID global_sid_Builtin_Print_Operators;	/* Builtin print operators */
-DOM_SID global_sid_Builtin_Backup_Operators;	/* Builtin backup operators */
-DOM_SID global_sid_Builtin_Replicator;		/* Builtin replicator */
+struct dom_sid *global_sid_Builtin; 			/* Local well-known domain */
+struct dom_sid *global_sid_Builtin_Administrators;	/* Builtin administrators */
+struct dom_sid *global_sid_Builtin_Users;		/* Builtin users */
+struct dom_sid *global_sid_Builtin_Guests;		/* Builtin guest users */
+struct dom_sid *global_sid_Builtin_Power_Users;		/* Builtin power users */
+struct dom_sid *global_sid_Builtin_Account_Operators;	/* Builtin account operators */
+struct dom_sid *global_sid_Builtin_Server_Operators;	/* Builtin server operators */
+struct dom_sid *global_sid_Builtin_Print_Operators;	/* Builtin print operators */
+struct dom_sid *global_sid_Builtin_Backup_Operators;	/* Builtin backup operators */
+struct dom_sid *global_sid_Builtin_Replicator;		/* Builtin replicator */
 
 #define SECURITY_NULL_SID_AUTHORITY    0
 #define SECURITY_WORLD_SID_AUTHORITY   1
 #define SECURITY_LOCAL_SID_AUTHORITY   2
 #define SECURITY_CREATOR_SID_AUTHORITY 3
 #define SECURITY_NT_AUTHORITY          5
-
-/*
- * An NT compatible anonymous token.
- */
-
-static DOM_SID anon_sid_array[3];
-
-NT_USER_TOKEN anonymous_token = {
-	3,
-	anon_sid_array
-};
-
-static DOM_SID system_sid_array[4];
-NT_USER_TOKEN system_token = {
-	1,
-	system_sid_array
-};
 
 /****************************************************************************
  Lookup string names for SID types.
@@ -117,60 +100,47 @@ const char *sid_type_lookup(uint32 sid_type)
 void generate_wellknown_sids(void)
 {
 	static BOOL initialised = False;
+	static TALLOC_CTX *mem_ctx;
 
 	if (initialised) 
 		return;
 
+	mem_ctx = talloc_init("Well known groups, global static context");
+	if (!mem_ctx)
+		return;
+
 	/* SECURITY_NULL_SID_AUTHORITY */
-	string_to_sid(&global_sid_NULL, "S-1-0-0");
+	global_sid_NULL = dom_sid_parse_talloc(mem_ctx, "S-1-0-0");
 
 	/* SECURITY_WORLD_SID_AUTHORITY */
-	string_to_sid(&global_sid_World_Domain, "S-1-1");
-	string_to_sid(&global_sid_World, "S-1-1-0");
+	global_sid_World_Domain = dom_sid_parse_talloc(mem_ctx, "S-1-1");
+	global_sid_World = dom_sid_parse_talloc(mem_ctx, "S-1-1-0");
 
 	/* SECURITY_CREATOR_SID_AUTHORITY */
-	string_to_sid(&global_sid_Creator_Owner_Domain, "S-1-3");
-	string_to_sid(&global_sid_Creator_Owner, "S-1-3-0");
-	string_to_sid(&global_sid_Creator_Group, "S-1-3-1");
+	global_sid_Creator_Owner_Domain = dom_sid_parse_talloc(mem_ctx, "S-1-3");
+	global_sid_Creator_Owner = dom_sid_parse_talloc(mem_ctx, "S-1-3-0");
+	global_sid_Creator_Group = dom_sid_parse_talloc(mem_ctx, "S-1-3-1");
 
 	/* SECURITY_NT_AUTHORITY */
-	string_to_sid(&global_sid_NT_Authority, "S-1-5");
-	string_to_sid(&global_sid_Network, "S-1-5-2");
-	string_to_sid(&global_sid_Anonymous, "S-1-5-7");
-	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
-	string_to_sid(&global_sid_System, "S-1-5-18");
+	global_sid_NT_Authority = dom_sid_parse_talloc(mem_ctx, "S-1-5");
+	global_sid_Network = dom_sid_parse_talloc(mem_ctx, "S-1-5-2");
+	global_sid_Anonymous = dom_sid_parse_talloc(mem_ctx, "S-1-5-7");
+	global_sid_Authenticated_Users = dom_sid_parse_talloc(mem_ctx, "S-1-5-11");
+	global_sid_System = dom_sid_parse_talloc(mem_ctx, "S-1-5-18");
 
 	/* SECURITY_BUILTIN_DOMAIN_RID */
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
-	string_to_sid(&global_sid_Builtin_Administrators, "S-1-5-32-544");
-	string_to_sid(&global_sid_Builtin_Users, "S-1-5-32-545");
-	string_to_sid(&global_sid_Builtin_Guests, "S-1-5-32-546");
-	string_to_sid(&global_sid_Builtin_Power_Users, "S-1-5-32-547");
-	string_to_sid(&global_sid_Builtin_Account_Operators, "S-1-5-32-548");
-	string_to_sid(&global_sid_Builtin_Server_Operators, "S-1-5-32-549");
-	string_to_sid(&global_sid_Builtin_Print_Operators, "S-1-5-32-550");
-	string_to_sid(&global_sid_Builtin_Backup_Operators, "S-1-5-32-551");
-	string_to_sid(&global_sid_Builtin_Replicator, "S-1-5-32-552");
+	global_sid_Builtin = dom_sid_parse_talloc(mem_ctx, "S-1-5-32");
+	global_sid_Builtin_Administrators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-544");
+	global_sid_Builtin_Users = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-545");
+	global_sid_Builtin_Guests = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-546");
+	global_sid_Builtin_Power_Users = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-547");
+	global_sid_Builtin_Account_Operators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-548");
+	global_sid_Builtin_Server_Operators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-549");
+	global_sid_Builtin_Print_Operators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-550");
+	global_sid_Builtin_Backup_Operators = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-551");
+	global_sid_Builtin_Replicator = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-552");
 
-	/* Create the anon token. */
-	sid_copy( &anonymous_token.user_sids[0], &global_sid_World);
-	sid_copy( &anonymous_token.user_sids[1], &global_sid_Network);
-	sid_copy( &anonymous_token.user_sids[2], &global_sid_Anonymous);
-
-	/* Create the system token. */
-	sid_copy( &system_token.user_sids[0], &global_sid_System);
-	
 	initialised = True;
-}
-
-/**************************************************************************
- Create the SYSTEM token.
-***************************************************************************/
-
-NT_USER_TOKEN *get_system_token(void) 
-{
-	generate_wellknown_sids(); /* The token is initialised here */
-	return &system_token;
 }
 
 /**************************************************************************
@@ -208,153 +178,31 @@ void split_domain_name(const char *fullname, char *domain, char *name)
 			fullname, domain, name));
 }
 
-/****************************************************************************
- Test if a SID is wellknown and resolvable.
-****************************************************************************/
-
-BOOL resolvable_wellknown_sid(DOM_SID *sid)
-{
-	uint32 ia = (sid->id_auth[5]) +
-			(sid->id_auth[4] << 8 ) +
-			(sid->id_auth[3] << 16) +
-			(sid->id_auth[2] << 24);
-
-	if (sid->sid_rev_num != SEC_DESC_REVISION || sid->num_auths < 1)
-		return False;
-
-	return (ia == SECURITY_WORLD_SID_AUTHORITY ||
-		ia == SECURITY_CREATOR_SID_AUTHORITY);
-}
-
 /*****************************************************************
  Convert a SID to an ascii string.
 *****************************************************************/
 
-char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
+char *sid_to_string(fstring sidstr_out, const struct dom_sid *sid)
 {
-	char subauth[16];
-	int i;
-	uint32 ia;
-  
-	if (!sid) {
-		fstrcpy(sidstr_out, "(NULL SID)");
-		return sidstr_out;
+	char *tmp_string;
+	TALLOC_CTX *mem_ctx;
+	if (!(mem_ctx = talloc_init("sid_to_string temp context"))) {
+		return NULL;
 	}
 
-	/*
-	 * BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 
-	 * in a range of 2^48.
-	 */
-	ia = (sid->id_auth[5]) +
-		(sid->id_auth[4] << 8 ) +
-		(sid->id_auth[3] << 16) +
-		(sid->id_auth[2] << 24);
-
-	slprintf(sidstr_out, sizeof(fstring) - 1, "S-%u-%lu", (unsigned int)sid->sid_rev_num, (unsigned long)ia);
-
-	for (i = 0; i < sid->num_auths; i++) {
-		slprintf(subauth, sizeof(subauth)-1, "-%lu", (unsigned long)sid->sub_auths[i]);
-		fstrcat(sidstr_out, subauth);
-	}
-
+	tmp_string = dom_sid_string(mem_ctx, sid);
+	if (!tmp_string)
+		return NULL;
+	
+	fstrcpy(sidstr_out, tmp_string);
 	return sidstr_out;
-}
-
-/*****************************************************************
- Useful function for debug lines.
-*****************************************************************/  
-
-const char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
-{
-	fstring tempSid;
-	sid_to_string(tempSid, sid);
-	return talloc_strdup(mem_ctx, tempSid);
-}
-
-/*****************************************************************
- Convert a string to a SID. Returns True on success, False on fail.
-*****************************************************************/  
-   
-BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
-{
-	pstring tok;
-	char *q;
-	const char *p;
-	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-	uint32 ia;
-  
-	if (StrnCaseCmp( sidstr, "S-", 2)) {
-		DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
-		return False;
-	}
-
-	memset((char *)sidout, '\0', sizeof(DOM_SID));
-
-	p = q = strdup(sidstr + 2);
-	if (p == NULL) {
-		DEBUG(0, ("string_to_sid: out of memory!\n"));
-		return False;
-	}
-
-	if (!next_token(&p, tok, "-", sizeof(tok))) {
-		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-		SAFE_FREE(q);
-		return False;
-	}
-
-	/* Get the revision number. */
-	sidout->sid_rev_num = (uint8)strtoul(tok, NULL, 10);
-
-	if (!next_token(&p, tok, "-", sizeof(tok))) {
-		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-		SAFE_FREE(q);
-		return False;
-	}
-
-	/* identauth in decimal should be <  2^32 */
-	ia = (uint32)strtoul(tok, NULL, 10);
-
-	/* NOTE - the ia value is in big-endian format. */
-	sidout->id_auth[0] = 0;
-	sidout->id_auth[1] = 0;
-	sidout->id_auth[2] = (ia & 0xff000000) >> 24;
-	sidout->id_auth[3] = (ia & 0x00ff0000) >> 16;
-	sidout->id_auth[4] = (ia & 0x0000ff00) >> 8;
-	sidout->id_auth[5] = (ia & 0x000000ff);
-
-	sidout->num_auths = 0;
-
-	while(next_token(&p, tok, "-", sizeof(tok)) && 
-		sidout->num_auths < MAXSUBAUTHS) {
-		/* 
-		 * NOTE - the subauths are in native machine-endian format. They
-		 * are converted to little-endian when linearized onto the wire.
-		 */
-		sid_append_rid(sidout, (uint32)strtoul(tok, NULL, 10));
-	}
-
-	SAFE_FREE(q);
-	return True;
-}
-
-/*****************************************************************
- Add a rid to the end of a sid
-*****************************************************************/  
-
-BOOL sid_append_rid(DOM_SID *sid, uint32 rid)
-{
-	if (sid->num_auths < MAXSUBAUTHS) {
-		sid->sub_auths[sid->num_auths++] = rid;
-		return True;
-	}
-	return False;
 }
 
 /*****************************************************************
  Removes the last rid from the end of a sid
 *****************************************************************/  
 
-BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
+BOOL sid_split_rid(struct dom_sid *sid, uint32 *rid)
 {
 	if (sid->num_auths > 0) {
 		sid->num_auths--;
@@ -368,7 +216,7 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
  Return the last rid from the end of a sid
 *****************************************************************/  
 
-BOOL sid_peek_rid(const DOM_SID *sid, uint32 *rid)
+BOOL sid_peek_rid(const struct dom_sid *sid, uint32 *rid)
 {
 	if (!sid || !rid)
 		return False;		
@@ -385,7 +233,7 @@ BOOL sid_peek_rid(const DOM_SID *sid, uint32 *rid)
  and check the sid against the exp_dom_sid  
 *****************************************************************/  
 
-BOOL sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *rid)
+BOOL sid_peek_check_rid(const struct dom_sid *exp_dom_sid, const struct dom_sid *sid, uint32 *rid)
 {
 	if (!exp_dom_sid || !sid || !rid)
 		return False;
@@ -400,71 +248,10 @@ BOOL sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *
 }
 
 /*****************************************************************
- Copies a sid
-*****************************************************************/  
-
-void sid_copy(DOM_SID *dst, const DOM_SID *src)
-{
-	int i;
-
-	ZERO_STRUCTP(dst);
-
-	dst->sid_rev_num = src->sid_rev_num;
-	dst->num_auths = src->num_auths;
-
-	memcpy(&dst->id_auth[0], &src->id_auth[0], sizeof(src->id_auth));
-
-	for (i = 0; i < src->num_auths; i++)
-		dst->sub_auths[i] = src->sub_auths[i];
-}
-
-/*****************************************************************
- Write a sid out into on-the-wire format.
-*****************************************************************/  
-
-BOOL sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
-{
-	size_t i;
-
-	if (len < sid_size(sid))
-		return False;
-
-	SCVAL(outbuf,0,sid->sid_rev_num);
-	SCVAL(outbuf,1,sid->num_auths);
-	memcpy(&outbuf[2], sid->id_auth, 6);
-	for(i = 0; i < sid->num_auths; i++)
-		SIVAL(outbuf, 8 + (i*4), sid->sub_auths[i]);
-
-	return True;
-}
-
-/*****************************************************************
- Parse a on-the-wire SID to a DOM_SID.
-*****************************************************************/  
-
-BOOL sid_parse(const char *inbuf, size_t len, DOM_SID *sid)
-{
-	int i;
-	if (len < 8)
-		return False;
-
-	ZERO_STRUCTP(sid);
-
-	sid->sid_rev_num = CVAL(inbuf, 0);
-	sid->num_auths = CVAL(inbuf, 1);
-	memcpy(sid->id_auth, inbuf+2, 6);
-	if (len < 8 + sid->num_auths*4)
-		return False;
-	for (i=0;i<sid->num_auths;i++)
-		sid->sub_auths[i] = IVAL(inbuf, 8+i*4);
-	return True;
-}
-
-/*****************************************************************
  Compare the auth portion of two sids.
 *****************************************************************/  
 
-static int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
+static int sid_compare_auth(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	int i;
 
@@ -489,7 +276,7 @@ static int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
  Compare two sids.
 *****************************************************************/  
 
-int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
+int sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	int i;
 
@@ -516,7 +303,7 @@ int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
  this just compares the leading sub-auths
 *****************************************************************/  
 
-int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
+int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	int n, i;
 
@@ -533,40 +320,36 @@ int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
  Compare two sids.
 *****************************************************************/  
 
-BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
+BOOL sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	return sid_compare(sid1, sid2) == 0;
 }
-
 /*****************************************************************
- Check if the SID is the builtin SID (S-1-5-32).
+ Write a sid out into on-the-wire format.
 *****************************************************************/  
 
-BOOL sid_check_is_builtin(const DOM_SID *sid)
+BOOL sid_linearize(char *outbuf, size_t len, const struct dom_sid *sid)
 {
-	return sid_equal(sid, &global_sid_Builtin);
+	size_t i;
+
+	if (len < sid_size(sid))
+		return False;
+
+	SCVAL(outbuf,0,sid->sid_rev_num);
+	SCVAL(outbuf,1,sid->num_auths);
+	memcpy(&outbuf[2], sid->id_auth, 6);
+	for(i = 0; i < sid->num_auths; i++)
+		SIVAL(outbuf, 8 + (i*4), sid->sub_auths[i]);
+
+	return True;
 }
 
-/*****************************************************************
- Check if the SID is one of the builtin SIDs (S-1-5-32-a).
-*****************************************************************/  
-
-BOOL sid_check_is_in_builtin(const DOM_SID *sid)
-{
-	DOM_SID dom_sid;
-	uint32 rid;
-
-	sid_copy(&dom_sid, sid);
-	sid_split_rid(&dom_sid, &rid);
-	
-	return sid_equal(&dom_sid, &global_sid_Builtin);
-}
 
 /*****************************************************************
  Calculates size of a sid.
 *****************************************************************/  
 
-size_t sid_size(const DOM_SID *sid)
+size_t sid_size(const struct dom_sid *sid)
 {
 	if (sid == NULL)
 		return 0;
@@ -575,32 +358,11 @@ size_t sid_size(const DOM_SID *sid)
 }
 
 /*****************************************************************
- Returns true if SID is internal (and non-mappable).
-*****************************************************************/
-
-BOOL non_mappable_sid(DOM_SID *sid)
-{
-	DOM_SID dom;
-	uint32 rid;
-
-	sid_copy(&dom, sid);
-	sid_split_rid(&dom, &rid);
-
-	if (sid_equal(&dom, &global_sid_Builtin))
-		return True;
-
-	if (sid_equal(&dom, &global_sid_NT_Authority))
-		return True;
-
-	return False;
-}
-
-/*****************************************************************
  Return the binary string representation of a DOM_SID.
  Caller must free.
 *****************************************************************/
 
-char *sid_binstring(const DOM_SID *sid)
+char *sid_binstring(const struct dom_sid *sid)
 {
 	char *buf, *s;
 	int len = sid_size(sid);
