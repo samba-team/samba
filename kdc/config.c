@@ -394,8 +394,11 @@ configure(int argc, char **argv)
 	trpolicy = TRPOLICY_ALWAYS_CHECK;
     }
 	
-    krb5_config_get_bool_default(context, NULL, TRUE, "kdc", 
-				 "enforce-transited-policy", NULL);
+    if (krb5_config_get_string(context, NULL, "kdc", 
+			       "enforce-transited-policy", NULL))
+	krb5_errx(context, 1, "enforce-transited-policy deprecated, "
+		  "use [kdc]transited-policy instead");
+
 #ifdef KRB4
     if(v4_realm == NULL){
 	p = krb5_config_get_string (context, NULL, 
