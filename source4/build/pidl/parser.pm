@@ -1155,10 +1155,12 @@ sub ParseFunctionElementPush($$)
 	if (util::array_size($e)) {
 		if (util::need_wire_pointer($e)) {
 			pidl "\tNDR_CHECK(ndr_push_ptr(ndr, r->$inout.$e->{NAME}));\n";
+			pidl "\tif (r->$inout.$e->{NAME}) {\n";
+			ParseArrayPush($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+			pidl "\t}\n";
+		} else {
+			ParseArrayPush($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		}
-		pidl "\tif (r->$inout.$e->{NAME}) {\n";
-		ParseArrayPush($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
-		pidl "\t}\n";
 	} else {
 		ParseElementPushScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		if ($e->{POINTERS}) {
