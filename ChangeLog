@@ -1,5 +1,9 @@
 1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
 
+	* configure.in: --enable-netinfo
+
+	* lib/krb5/config_file.c: HAVE_NETINFO_NI_H -> HAVE_NETINFO
+
 	* config.sub: fix for crays
 
 	* config.guess: new version from automake 1.4

@@ -1,0 +1,20 @@
+1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: remove server.c
+
+	* admin.h: add prototypes
+
+	* ent_setup.c (_kadm5_setup_entry): set key_data
+
+	* set_keys.c: add _kadm5_set_keys2 to sey keys from key_data
+
+	* modify_s.c: add kadm5_s_modify_principal_with_key
+
+	* create_s.c: add kadm5_s_create_principal_with_key
+
+	* chpass_s.c: add kadm5_s_chpass_principal_with_key
+
+	* kadm5_locl.h: move stuff to private.h
+
+	* private.h: move stuff from kadm5_locl.h
+	

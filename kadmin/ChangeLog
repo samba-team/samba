@@ -1,0 +1,10 @@
+1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: link with krb4
+
+	* kadmin_locl.h: include <sys/un.h>
+
+	* server.c: move from lib/kadm5, and add basic support for krb4
+	kadmin protocol
+
+	* kadmind.c: move recvauth to kadmind_loop()
