@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "lib/netif/netif.h"
+#include "dlinklist.h"
 
 static struct iface_struct *probed_ifaces;
 static int total_probed;

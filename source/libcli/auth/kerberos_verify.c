@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "libcli/auth/kerberos.h"
+#include "asn_1.h"
 
 #ifdef HAVE_KRB5
 
@@ -32,7 +33,7 @@ static DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
 {
 	DATA_BLOB out;
 	DATA_BLOB pac_contents = data_blob(NULL, 0);
-	ASN1_DATA data;
+	struct asn1_data data;
 	int data_type;
 	if (!auth_data->length) {
 		return data_blob(NULL, 0);

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 
 /* initialise a dcerpc pipe. */

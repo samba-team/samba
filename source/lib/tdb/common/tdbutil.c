@@ -19,7 +19,8 @@
 */
 
 #include "includes.h"
-#include <fnmatch.h>
+#include "system/glob.h"
+#include "dlinklist.h"
 
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
