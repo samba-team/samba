@@ -953,6 +953,10 @@ krb5_get_host_realm(krb5_context context,
 		    char ***realms);
 
 krb5_error_code
+krb5_free_host_realm(krb5_context context,
+		     char **realmlist);
+
+krb5_error_code
 krb5_set_default_realm(krb5_context context,
 		       char *realm);
 
