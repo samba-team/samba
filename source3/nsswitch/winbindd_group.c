@@ -193,8 +193,9 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	enum SID_NAME_USE name_type;
 	fstring name_domain, name_group;
 	char *tmp, *gr_mem;
-	gid_t gid;
 	int gr_mem_len;
+	unid_t id;
+	int id_type;
 	
 	/* Ensure null termination */
 	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
@@ -233,13 +234,14 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if (!winbindd_idmap_get_gid_from_sid(&group_sid, &gid)) {
+	id_type = ID_GROUPID;
+	if (NT_STATUS_IS_ERR(idmap_get_id_from_sid(&id, &id_type, &group_sid))) {
 		DEBUG(1, ("error converting unix gid to sid\n"));
 		return WINBINDD_ERROR;
 	}
 
 	if (!fill_grent(&state->response.data.gr, name_domain,
-			name_group, gid) ||
+			name_group, id.gid) ||
 	    !fill_grent_mem(domain, &group_sid, name_type,
 			    &state->response.data.gr.num_gr_mem,
 			    &gr_mem, &gr_mem_len)) {
@@ -267,6 +269,7 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 	fstring group_name;
 	int gr_mem_len;
 	char *gr_mem;
+	unid_t id;
 
 	DEBUG(3, ("[%5d]: getgrgid %d\n", state->pid, 
 		  state->request.data.gid));
@@ -278,8 +281,8 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	/* Get rid from gid */
-
-	if (!winbindd_idmap_get_sid_from_gid(state->request.data.gid, &group_sid)) {
+	id.gid = state->request.data.gid;
+	if (NT_STATUS_IS_ERR(idmap_get_sid_from_id(&group_sid, id, ID_GROUPID))) {
 		DEBUG(1, ("could not convert gid %d to rid\n", 
 			  state->request.data.gid));
 		return WINBINDD_ERROR;
@@ -544,6 +547,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		char *gr_mem, *new_gr_mem_list;
 		DOM_SID group_sid;
 		struct winbindd_domain *domain;
+		unid_t id;
+		int id_type;
 				
 		/* Do we need to fetch another chunk of groups? */
 
@@ -590,9 +595,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!winbindd_idmap_get_gid_from_sid(
-			    &group_sid,
-			    &group_gid)) {
+		id_type = ID_GROUPID;
+		if (NT_STATUS_IS_ERR(idmap_get_id_from_sid(&id, &id_type, &group_sid))) {
 			
 			DEBUG(1, ("could not look up gid for group %s\n", 
 				  name_list[ent->sam_entry_index].acct_name));
@@ -600,6 +604,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 			ent->sam_entry_index++;
 			goto tryagain;
 		}
+		group_gid = id.gid;
 
 		DEBUG(10, ("got gid %d for group %x\n", group_gid,
 			   name_list[ent->sam_entry_index].rid));
@@ -869,16 +874,18 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		goto done;
 
 	for (i = 0; i < num_groups; i++) {
-		if (!winbindd_idmap_get_gid_from_sid(
-			    user_gids[i], 
-			    &gid_list[num_gids])) {
+		unid_t id;
+		int id_type;
+		
+		id_type = ID_GROUPID;
+		if (NT_STATUS_IS_ERR(idmap_get_id_from_sid(&id, &id_type, user_gids[i]))) {
 			fstring sid_string;
 
 			DEBUG(1, ("unable to convert group sid %s to gid\n", 
 				  sid_to_string(sid_string, user_gids[i])));
 			continue;
 		}
-			
+		gid_list[num_gids] = id.gid;
 		num_gids++;
 	}
 
