@@ -618,7 +618,7 @@ bin/smbumount: $(UMOUNT_OBJ) bin/.dummy
 
 bin/testparm: $(TESTPARM_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/testprns: $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
