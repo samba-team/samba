@@ -57,9 +57,7 @@ struct hdbldapdb {
     LDAP *h_lp;
     int   h_msgid;
     char *h_base;
-#if 0
     char *h_createbase;
-#endif
 };
 
 #define HDB2LDAP(db) (((struct hdbldapdb *)(db)->hdb_db)->h_lp)
@@ -67,9 +65,7 @@ struct hdbldapdb {
 #define HDBSETMSGID(db,msgid) \
 	do { ((struct hdbldapdb *)(db)->hdb_db)->h_msgid = msgid; } while(0)
 #define HDB2BASE(dn) (((struct hdbldapdb *)(db)->hdb_db)->h_base)
-#if 0
 #define HDB2CREATE(db) (((struct hdbldapdb *)(db)->hdb_db)->h_createbase)
-#endif
 
 /*
  *
@@ -1520,7 +1516,7 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
 	goto out;
 
     if (e == NULL) {
-	ret = asprintf(&dn, "krb5PrincipalName=%s,%s", name, HDB2BASE(db));
+	ret = asprintf(&dn, "krb5PrincipalName=%s,%s", name, HDB2CREATE(db));
 	if (ret < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
 	    ret = ENOMEM;
@@ -1629,6 +1625,8 @@ LDAP_destroy(krb5_context context, HDB * db)
     ret = hdb_clear_master_key(context, db);
     if (HDB2BASE(db))
 	free(HDB2BASE(db));
+    if (HDB2CREATE(db))
+	free(HDB2CREATE(db));
     if (db->hdb_name)
 	free(db->hdb_name);
     free(db->hdb_db);
@@ -1641,6 +1639,7 @@ krb5_error_code
 hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
 {
     struct hdbldapdb *h;
+    const char *create_base = NULL;
 
     if (arg == NULL && arg[0] == '\0') {
 	krb5_set_error_string(context, "ldap search base not configured");
@@ -1686,8 +1685,21 @@ hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
     (*db)->hdb_db = h;
     h->h_base = strdup(arg);
     if (h->h_base == NULL) {
+	LDAP_destroy(context, *db);
 	krb5_set_error_string(context, "strdup: out of memory");
-	free(*db);
+	*db = NULL;
+	return ENOMEM;
+    }
+
+    create_base = krb5_config_get_string(context, NULL, "kdc", 
+					 "hdb-ldap-create-base", NULL);
+    if (create_base == NULL)
+	create_base = h->h_base;
+
+    h->h_createbase = strdup(create_base);
+    if (h->h_createbase == NULL) {
+	LDAP_destroy(context, *db);
+	krb5_set_error_string(context, "strdup: out of memory");
 	*db = NULL;
 	return ENOMEM;
     }
