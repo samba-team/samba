@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -47,5 +47,6 @@ OM_uint32 gss_create_empty_oid_set (
   }
   (*oid_set)->count = 0;
   (*oid_set)->elements = NULL;
+  *minor_status = 0;
   return GSS_S_COMPLETE;
 }
