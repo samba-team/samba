@@ -919,7 +919,7 @@ static WERROR vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size, REG_VAL **val
 
 	if (dat_len&0x7FFFFFFF) {
 
-		char *dtmp = (char *)malloc(dat_len&0x7FFFFFFF);
+		char *dtmp = (char *)talloc(tmp->mem_ctx, dat_len&0x7FFFFFFF);
 
 		tmp->data_blk = dtmp;
 
@@ -1085,15 +1085,12 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 	if (clsname_len) { /* Just print in Ascii for now */
 		smb_ucs2_t *clsnamep;
 		int clsnam_off;
-		char *clsnameu;
 
 		clsnam_off = IVAL(&nk_hdr->clsnam_off,0);
 		clsnamep = (smb_ucs2_t *)LOCN(regf->base, clsnam_off);
 		DEBUG(2, ("Class Name Offset: %0X\n", clsnam_off));
 
-		clsnameu = acnv_u2ux(clsnamep);
-		tmp->class_name = talloc_strdup(tmp->mem_ctx, clsnameu);
-		SAFE_FREE(clsnameu);
+		pull_ucs2_talloc(tmp->mem_ctx, &tmp->class_name, clsnamep);
 
 		DEBUGADD(2,("  Class Name: %s\n", cls_name));
 
