@@ -1072,7 +1072,9 @@ TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*/*.o */*/*.po */*/*.po32 */*.po */*.po32 */*.@SHLIBEXT@ \
-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) .headers.stamp
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
+		.headers.stamp 
+	-rm -rf librpc/gen_*
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
