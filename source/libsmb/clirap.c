@@ -318,10 +318,10 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    * use this as the key to make_oem_passwd_hash().
    */
   memset(upper_case_old_pw, '\0', sizeof(upper_case_old_pw));
-  clistr_push(cli, upper_case_old_pw, old_password, -1,STR_TERMINATE|STR_UPPER);
+  clistr_push(cli, upper_case_old_pw, old_password, -1,STR_TERMINATE|STR_UPPER|STR_ASCII);
   E_P16((uchar *)upper_case_old_pw, old_pw_hash);
 
-  clistr_push(cli, dos_new_password, new_password, -1, STR_TERMINATE);
+  clistr_push(cli, dos_new_password, new_password, -1, STR_TERMINATE|STR_ASCII);
 
   if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
     return False;
@@ -330,7 +330,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    * Now place the old password hash in the data.
    */
   memset(upper_case_new_pw, '\0', sizeof(upper_case_new_pw));
-  clistr_push(cli, upper_case_new_pw, new_password, -1, STR_TERMINATE|STR_UPPER);
+  clistr_push(cli, upper_case_new_pw, new_password, -1, STR_TERMINATE|STR_UPPER|STR_ASCII);
 
   E_P16((uchar *)upper_case_new_pw, new_pw_hash);
 
