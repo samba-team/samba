@@ -996,8 +996,16 @@ tgs_check_authenticator(krb5_auth_context ac,
 	ret = KRB5KRB_AP_ERR_INAPP_CKSUM;
 	goto out;
     }
-    if (!krb5_checksum_is_keyed(auth->cksum->cksumtype)
-	|| !krb5_checksum_is_collision_proof(auth->cksum->cksumtype)) {
+    /*
+     * according to RFC1510 it doesn't need to be keyed,
+     * but according to the latest draft it needs to.
+     */
+    if (
+#if 0
+!krb5_checksum_is_keyed(auth->cksum->cksumtype)
+	||
+#endif
+ !krb5_checksum_is_collision_proof(auth->cksum->cksumtype)) {
 	kdc_log(0, "Bad checksum type in authenticator: %d", 
 		auth->cksum->cksumtype);
 	ret =  KRB5KRB_AP_ERR_INAPP_CKSUM;
