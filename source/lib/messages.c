@@ -382,10 +382,11 @@ void message_deregister(int msg_type)
 
 struct msg_all {
 	int msg_type;
+	uint32 msg_flag;
 	const void *buf;
 	size_t len;
 	BOOL duplicates;
-	int		n_sent;
+	int n_sent;
 };
 
 /****************************************************************************
@@ -405,13 +406,20 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 	if (crec.cnum != -1)
 		return 0;
 
-	/* if the msg send fails because the pid was not found (i.e. smbd died), 
+	/* Don't send if the receiver hasn't registered an interest. */
+
+	if(!(crec.bcast_msg_flags & msg_all->msg_flag))
+		return 0;
+
+	/* If the msg send fails because the pid was not found (i.e. smbd died), 
 	 * the msg has already been deleted from the messages.tdb.*/
+
 	if (!message_send_pid(crec.pid, msg_all->msg_type,
 			      msg_all->buf, msg_all->len,
 			      msg_all->duplicates)) {
 		
-		/* if the pid was not found delete the entry from connections.tdb */
+		/* If the pid was not found delete the entry from connections.tdb */
+
 		if (errno == ESRCH) {
 			DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
 					(unsigned int)crec.pid, crec.cnum, crec.name));
@@ -442,6 +450,17 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 	struct msg_all msg_all;
 
 	msg_all.msg_type = msg_type;
+	if (msg_type < 1000)
+		msg_all.msg_flag = FLAG_MSG_GENERAL;
+	else if (msg_type > 1000 && msg_type < 2000)
+		msg_all.msg_flag = FLAG_MSG_NMBD;
+	else if (msg_type > 2000 && msg_type < 3000)
+		msg_all.msg_flag = FLAG_MSG_PRINTING;
+	else if (msg_type > 3000 && msg_type < 4000)
+		msg_all.msg_flag = FLAG_MSG_SMBD;
+	else
+		return False;
+
 	msg_all.buf = buf;
 	msg_all.len = len;
 	msg_all.duplicates = duplicates_allowed;
