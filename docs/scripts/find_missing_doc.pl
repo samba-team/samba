@@ -27,7 +27,7 @@ chdir($curdir);
 # Reading entries from source code
 
 
-open(SOURCE,"$topdir/source/param/loadparm.c") or die("Can't open $topdir/source/param/loadparm.c: $!");
+open(SOURCE,"$topdir/param/loadparm.c") or die("Can't open $topdir/param/loadparm.c: $!");
 
 while ($ln = <SOURCE>) {
   last if $ln =~ m/^static\ struct\ parm_struct\ parm_table.*/;
@@ -42,7 +42,7 @@ while ($ln = <SOURCE>) {
   if($doc{lc($1)}) {
 	$doc{lc($1)} = "FOUND";
   } else {
-	print "$1 is not documented!\n";
+	print "'$1' is not documented\n";
   }
 }
 close SOURCE;
@@ -52,6 +52,6 @@ close SOURCE;
 
 foreach (keys %doc) {
 	if($doc{$_} cmp "FOUND") {
-		print "$_ is documented but is not a configuration option!\n";
+		print "'$_' is documented but is not a configuration option\n";
 	}
 }
