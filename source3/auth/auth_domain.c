@@ -127,7 +127,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	
 	/* Attempt connection */
 	result = cli_full_connection(cli, global_myname, server,
-				     &dest_ip, 0, "IPC$", "IPC", "", "", "", 0);
+				     &dest_ip, 0, "IPC$", "IPC", "", "", "");
 
 	if (!NT_STATUS_IS_OK(result)) {
 		release_server_mutex();

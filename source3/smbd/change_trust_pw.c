@@ -56,7 +56,7 @@ static NTSTATUS modify_trust_password( char *domain, char *remote_machine,
 					   &dest_ip, 0,
 					   "IPC$", "IPC",  
 					   "", "",
-					   "", 0))) {
+					   ""))) {
 	  DEBUG(0,("modify_trust_password: Connection to %s failed!\n", remote_machine));
 	  return NT_STATUS_UNSUCCESSFUL;
   }
