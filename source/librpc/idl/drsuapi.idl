@@ -500,8 +500,7 @@ interface drsuapi
 	typedef struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
-		[subcontext(4),subcontext_size(r->compressed_length),compression(NDR_COMPRESSION_ZLIB,compressed_length,decompressed_length),flag(NDR_REMAINING)] DATA_BLOB *decompressed;
-		/*[subcontext(4),subcontext_size(r->compressed_length),compression(NDR_COMPRESSION_ZLIB,compressed_length,decompressed_length)] drsuapi_DsGetNCChangesCtr1 *ctr1;*/
+		[subcontext(4),subcontext_size(r->compressed_length),compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length)] drsuapi_DsGetNCChangesCtr1 *ctr1;
 	} drsuapi_DsGetNCChangesCompressedInfo;
 
 	typedef struct {
