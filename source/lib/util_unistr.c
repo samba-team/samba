@@ -852,7 +852,7 @@ size_t strlen_w(const smb_ucs2_t *src)
 {
   size_t len;
 
-  for(len = 0; *src; len++)
+  for(len = 0; *src++; len++)
     ;
 
   return len;
