@@ -448,7 +448,7 @@ uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 
 	/* Store the parameters */
 
-	init_q_lookup_sids(ctx, &q_l, hnd, num_sids, &sids, 1);
+	init_q_lookup_sids(ctx, &q_l, hnd, num_sids, sids, 1);
 
 	/* turn parameters into data stream */
 	if (lsa_io_q_lookup_sids("", &q_l, &buf, 0) &&
@@ -590,7 +590,7 @@ uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
 	DEBUG(4, ("LSA Lookup NAMEs\n"));
 
 	/* store the parameters */
-	init_q_lookup_names(&q_l, hnd, num_names, names);
+	init_q_lookup_names(ctx, &q_l, hnd, num_names, names);
 
 	/* turn parameters into data stream */
 	if (lsa_io_q_lookup_names("", &q_l, &buf, 0) &&
@@ -606,7 +606,7 @@ uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
 		r_l.dom_ref = &ref;
 		r_l.dom_rid = t_rids;
 
-		lsa_io_r_lookup_names("", &r_l, &rbuf, 0);
+		lsa_io_r_lookup_names(ctx, "", &r_l, &rbuf, 0);
 		p = rbuf.data_offset != 0;
 
 		if (p && r_l.status != 0) {
