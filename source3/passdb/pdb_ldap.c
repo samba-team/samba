@@ -1,11 +1,12 @@
 /* 
    Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
-   Copyright (C) Gerald Carter 2001
-   Copyright (C) Shahms King 2001
-   Copyright (C) Jean François Micouleau 1998
-   Copyright (C) Andrew Bartlett 2002
-   
+   Copyright (C) Jean François Micouleau       1998
+   Copyright (C) Gerald Carter                         2001
+   Copyright (C) Shahms King                   2001
+   Copyright (C) Andrew Bartlett               2002
+   Copyright (C) Stefan (metze) Metzmacher     2002
+    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -159,6 +160,8 @@ static const char *attr[] = {"uid", "pwdLastSet", "logonTime",
 static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP ** ldap_struct)
 {
 
+	int version;
+
 	if (geteuid() != 0) {
 		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not root..\n"));
 		return False;
@@ -171,6 +174,16 @@ static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP *
 		DEBUG(0, ("ldap_initialize: %s\n", strerror(errno)));
 		return (False);
 	}
+	
+	if (ldap_get_option(*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS)
+	{
+		if (version != LDAP_VERSION3)
+		{
+			version = LDAP_VERSION3;
+			ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
+		}
+	}
+
 #else 
 
 	/* Parse the string manually */
@@ -179,7 +192,6 @@ static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP *
 		int rc;
 		int tls = LDAP_OPT_X_TLS_HARD;
 		int port = 0;
-		int version;
 		fstring protocol;
 		fstring host;
 		const char *p = ldap_state->uri; 
@@ -1353,7 +1365,7 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	}
 }
 
-static BOOL ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+static BOOL ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
