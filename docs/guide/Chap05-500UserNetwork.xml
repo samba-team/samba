@@ -1126,22 +1126,21 @@ subnet 172.16.1.0 netmask 255.255.252.0 {
         option subnet-mask 255.255.252.0;
         option routers 172.16.0.1, 172.16.0.128;
         allow unknown-clients;
-
+	}
 subnet 172.16.4.0 netmask 255.255.252.0 {
         range dynamic-bootp 172.16.7.0 172.16.7.254;
         option subnet-mask 255.255.252.0;
         option routers 172.16.4.128;
         allow unknown-clients;
-
+	}
 subnet 172.16.8.0 netmask 255.255.252.0 {
         range dynamic-bootp 172.16.11.0 172.16.11.254;
         option subnet-mask 255.255.252.0;
         option routers 172.16.4.128;
         allow unknown-clients;
-
+	}
 subnet 127.0.0.0 netmask 255.0.0.0 {
         }
-
 subnet 123.45.67.64 netmask 255.255.255.252 {
         }
 </screen>
@@ -1170,13 +1169,13 @@ subnet 172.16.1.0 netmask 255.255.252.0 {
         option subnet-mask 255.255.252.0;
         option routers 172.16.0.1, 172.16.0.128;
         allow unknown-clients;
-
+	}
 subnet 172.16.4.0 netmask 255.255.252.0 {
         range dynamic-bootp 172.16.5.0 172.16.6.255;
         option subnet-mask 255.255.252.0;
         option routers 172.16.4.128;
         allow unknown-clients;
-
+	}
 subnet 127.0.0.0 netmask 255.0.0.0 {
         }
 </screen>
@@ -1205,7 +1204,7 @@ subnet 172.16.8.0 netmask 255.255.252.0 {
         option subnet-mask 255.255.252.0;
         option routers 172.16.8.128;
         allow unknown-clients;
-
+	}
 subnet 127.0.0.0 netmask 255.0.0.0 {
         }
 </screen>
