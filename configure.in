@@ -259,7 +259,6 @@ AC_CHECK_HEADERS([\
 	pthread.h				\
 	pty.h					\
 	sac.h					\
-	security/pam_modules.h			\
 	sgtty.h					\
 	siad.h					\
 	signal.h				\
@@ -274,6 +273,7 @@ AC_CHECK_HEADERS([\
 	sys/ptyio.h				\
 	sys/ptyvar.h				\
 	sys/select.h				\
+	sys/socket.h				\
 	sys/str_tty.h				\
 	sys/stream.h				\
 	sys/stropts.h				\
@@ -283,7 +283,6 @@ AC_CHECK_HEADERS([\
 	sys/timeb.h				\
 	sys/times.h				\
 	sys/un.h				\
-	term.h					\
 	termcap.h				\
 	termio.h				\
 	time.h					\
@@ -291,6 +290,19 @@ AC_CHECK_HEADERS([\
 	udb.h					\
 	utmp.h					\
 	utmpx.h					\
+])
+
+dnl On Solaris 8 there's a compilation warning for term.h because
+dnl it doesn't define `bool'.
+AC_CHECK_HEADERS(term.h, , , -)
+
+AC_CHECK_HEADERS(net/if.h, , , [AC_INCLUDES_DEFAULT
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif])
+
+AC_CHECK_HEADERS(security/pam_modules.h, , , [AC_INCLUDES_DEFAULT
+#include <security/pam_appl.h>
 ])
 
 AC_ARG_ENABLE(netinfo,
