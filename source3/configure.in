@@ -145,6 +145,7 @@ AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
+AC_SUBST(INSTALLCLIENT)
 AC_SUBST(INSTALLCLIENTCMD_SH)
 AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
@@ -3144,6 +3145,7 @@ AC_ARG_WITH(manpages-langs,
 
 INSTALLCLIENTCMD_SH=:
 INSTALLCLIENTCMD_A=:
+INSTALLCLIENT=
 LIBSMBCLIENT_SHARED=
 LIBSMBCLIENT=
 AC_MSG_CHECKING(whether to build the libsmbclient shared library)
@@ -3167,6 +3169,7 @@ AC_ARG_WITH(libsmbclient,
         INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
         LIBSMBCLIENT=libsmbclient
      fi
+     INSTALLCLIENT=installclietlib
      ;;
   esac ],
 [
@@ -3184,6 +3187,7 @@ AC_ARG_WITH(libsmbclient,
      INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
      LIBSMBCLIENT=libsmbclient
   fi]
+  INSTALLCLIENT=installclientlib
 )
 
 
@@ -4061,7 +4065,7 @@ dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
 CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
 CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 
-AC_OUTPUT(include/stamp-h Makefile script/findsmb)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb smbadduser)
 
 #################################################
 # Print very concise instructions on building/use

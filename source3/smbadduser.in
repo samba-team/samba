@@ -2,13 +2,19 @@
 #
 # smbadduser - Written by Mike Zakharoff
 #
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+LIBDIR=@libdir@
+PRIVATEDIR=@privatedir@
+CONFIGDIR=@configdir@
+
 unalias *
 set path = ($path /usr/local/samba/bin)
 
-set smbpasswd = /usr/local/samba/private/smbpasswd
-#set smbpasswd = /etc/samba/smbpasswd
-set user_map  = /usr/local/samba/lib/users.map
-#set user_map  = /etc/samba/smbusers
+set smbpasswd = $PRIVATEDIR/smbpasswd
+set user_map  = $CONFIGDIR/users.map
+
 #
 # Set to site specific passwd command
 #
