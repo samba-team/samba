@@ -158,9 +158,12 @@ static int binary_net(int argc, const char **argv)
 	struct net_context *ctx;
 	poptContext pc;
 	struct poptOption long_options[] = {
-		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
-		{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
-		{ 0, 0, 0, 0}
+		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
+		POPT_TABLEEND
 	};
 
 	setup_logging("net", DEBUG_STDOUT);
@@ -179,15 +182,11 @@ static int binary_net(int argc, const char **argv)
 	ZERO_STRUCTP(ctx);
 	ctx->mem_ctx = mem_ctx;
 
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
-			    POPT_CONTEXT_KEEP_FIRST);
+	pc = poptGetContext("net", argc, (const char **) argv, long_options, 
+				POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-		case 'h':
-			net_help(ctx, argc, argv);
-			exit(0);
-			break;
 		default:
 			d_printf("Invalid option %s: %s\n", 
 				 poptBadOption(pc, 0), poptStrerror(opt));
