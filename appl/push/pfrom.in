@@ -1,0 +1,7 @@
+#!/bin/sh
+# $Id$
+bindir=%bindir%
+pdc_trams=`dirname $0`
+PATH=$pdc_trams:$bindir:$PATH
+export PATH
+push --from $*
