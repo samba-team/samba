@@ -361,10 +361,23 @@
 	use any PC. Only two Windows applications are used: a custom funds tracking and management package
 	that stores all files on the central server and Microsoft Word. The office prepares mail-out
 	letters, letters of invitation, and thank-you notes. All files must be stored in perpetuity.
-	The custom funds tracking and management software has been configured to use a server named
+	The custom funds tracking and management (FTM) software has been configured to use a server named
 	<constant>SERVER</constant>, a share named <constant>FTMFILES</constant>, and a printer queue
 	named <constant>PRINTQ</constant> that uses preprinted stationery, thus demanding a
 	dedicated printer. This printer does not need to be mapped to a local printer on the workstations.
+	</para>
+
+	<para>
+	The FTM software has been in use since the days of Windows 3.11. The software was configured
+	by the vendor who has since gone out of business. The name of the identities of the file
+	server and the printer are hard coded in a configuration file that was created using a
+	setup tool that the vendor did not provide to Abmas Vision NL or to its predecessors. The
+	company that produced the software is no longer in business. In order to avoid risk of
+	any incompatibilities the share name and the name of the target print queue is being set
+	precisely as the application expects. In actual fact, share names and print queue names
+	should be treated as case insensitive (i.e.: Case does not matter) but Abmas Vision claim
+	that if the share name is not in lower case the application claims it can not find the
+	file share.
 	</para>
 
 	<para><indexterm>
@@ -778,7 +791,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				<step><para>
 				On each Windows Me workstation, configure a network drive mapping to drive <filename>G:</filename>
 				that redirects to the uniform naming convention (UNC) resource 
-				<filename>\\server\officefiles</filename>. Make this a permanent drive connection as follows:
+				<filename>\\server\office</filename>. Make this a permanent drive connection as follows:
 					<procedure>
 						<step><para>
 							<menuchoice>
