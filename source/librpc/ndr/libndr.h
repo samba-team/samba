@@ -132,6 +132,9 @@ struct ndr_print {
 /* set if an object uuid will be present */
 #define LIBNDR_FLAG_OBJECT_PRESENT    (1<<30)
 
+/* set to avoid recursion in ndr_size_*() calculation */
+#define LIBNDR_FLAG_NO_NDR_SIZE		(1<<31)
+
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
 #define NDR_PRINT_UNION_DEBUG(type, level, p) ndr_print_union_debug((ndr_print_union_fn_t)ndr_print_ ##type, #p, level, p)
