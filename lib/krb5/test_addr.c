@@ -40,6 +40,7 @@ print_addr(krb5_context context, const char *addr)
     krb5_addresses addresses;
     krb5_error_code ret;
     char buf[38];
+    char buf2[1000];
     size_t len;
     int i;
 
@@ -52,11 +53,18 @@ print_addr(krb5_context context, const char *addr)
     
     for (i = 0; i < addresses.len; i++) {
 	krb5_print_address(&addresses.val[i], buf, sizeof(buf), &len);
-	/*
-	  printf("addr %d: %s (%d/%d)\n", i, buf, (int)len, (int)strlen(buf)); 
-	*/
+#if 0
+	printf("addr %d: %s (%d/%d)\n", i, buf, (int)len, (int)strlen(buf)); 
+#endif
 	if (strlen(buf) > sizeof(buf))
 	    abort();
+	krb5_print_address(&addresses.val[i], buf2, sizeof(buf2), &len);
+#if 0
+	printf("addr %d: %s (%d/%d)\n", i, buf2, (int)len, (int)strlen(buf2)); 
+#endif
+	if (strlen(buf2) > sizeof(buf2))
+	    abort();
+
     }
     krb5_free_addresses(context, &addresses);
 
@@ -113,6 +121,9 @@ main(int argc, char **argv)
     print_addr(context, "RANGE:127.0.0.0/24");
     print_addr(context, "RANGE:IPv4:127.0.0.0-IPv4:127.0.0.255");
     print_addr(context, "RANGE:130.237.237.4/29");
+    print_addr(context, "RANGE:fe80::209:6bff:fea0:e522/64");
+    print_addr(context, "RANGE:IPv6:fe80::-IPv6:fe80::ffff:ffff:ffff:ffff");
+    print_addr(context, "RANGE:fe80::-fe80::ffff:ffff:ffff:ffff");
 
     match_addr(context, "RANGE:127.0.0.0/8", "inet:127.0.0.0", 1);
     match_addr(context, "RANGE:127.0.0.0/8", "inet:127.255.255.255", 1);
