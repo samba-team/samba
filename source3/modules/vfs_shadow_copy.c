@@ -59,7 +59,7 @@ static int vfs_shadow_copy_debug_level = DBGC_VFS;
 typedef struct {
 	int pos;
 	int num;
-	struct dirent *dirs;
+	SMB_STRUCT_DIRENT *dirs;
 } shadow_copy_Dir;
 
 static BOOL shadow_copy_match_name(const char *name)
@@ -92,8 +92,8 @@ static DIR *shadow_copy_opendir(vfs_handle_struct *handle, connection_struct *co
 	ZERO_STRUCTP(dirp);
 
 	while (True) {
-		struct dirent *d;
-		struct dirent *r;
+		SMB_STRUCT_DIRENT *d;
+		SMB_STRUCT_DIRENT *r;
 
 
 		d = SMB_VFS_NEXT_READDIR(handle, conn, p);
@@ -108,7 +108,7 @@ static DIR *shadow_copy_opendir(vfs_handle_struct *handle, connection_struct *co
 
 		DEBUG(10,("shadow_copy_opendir: not hide [%s]\n",d->d_name));
 
-		r = (struct dirent *)Realloc(dirp->dirs,(dirp->num+1)*sizeof(struct dirent));
+		r = (SMB_STRUCT_DIRENT *)Realloc(dirp->dirs,(dirp->num+1)*sizeof(SMB_STRUCT_DIRENT));
 		if (!r) {
 			DEBUG(0,("shadow_copy_opendir: Out of memory\n"));
 			break;
@@ -122,7 +122,7 @@ static DIR *shadow_copy_opendir(vfs_handle_struct *handle, connection_struct *co
 	return((DIR *)dirp);
 }
 
-struct dirent *shadow_copy_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *_dirp)
+SMB_STRUCT_DIRENT *shadow_copy_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *_dirp)
 {
 	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
 
@@ -156,7 +156,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_str
 
 	while (True) {
 		SHADOW_COPY_LABEL *tlabels;
-		struct dirent *d;
+		SMB_STRUCT_DIRENT *d;
 
 		d = SMB_VFS_NEXT_READDIR(handle, fsp->conn, p);
 		if (d == NULL) {
