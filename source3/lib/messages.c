@@ -19,7 +19,18 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* this module is used for internal messaging between Samba daemons. */
+/* this module is used for internal messaging between Samba daemons. 
+
+   The idea is that if a part of Samba wants to do communication with
+   another Samba process then it will do a message_register() of a
+   dispatch function, and use message_send_pid() to send messages to
+   that process.
+
+   This system doesn't have any inherent size limitations but is not
+   very efficient for large messages or when messages are sent in very
+   quick succession.
+
+*/
 
 #include "includes.h"
 
@@ -37,6 +48,13 @@ struct message_rec {
 	pid_t src;
 	size_t len;
 };
+
+/* we have a linked list of dispatch handlers */
+static struct dispatch_fns {
+	struct dispatch_fns *next, *prev;
+	enum message_type msg_type;
+	void (*fn)(enum message_type msg_type, pid_t pid, void *buf, size_t len);
+} *dispatch_fns;
 
 /****************************************************************************
 notifications come in as signals
@@ -213,6 +231,8 @@ static BOOL message_recv(enum message_type *msg_type, pid_t *src, void **buf, si
 
 /****************************************************************************
 receive and dispatch any messages pending for this process
+notice that all dispatch handlers for a particular msg_type get called,
+so you can register multiple handlers for a message
 ****************************************************************************/
 void message_dispatch(void)
 {
@@ -220,18 +240,35 @@ void message_dispatch(void)
 	pid_t src;
 	void *buf;
 	size_t len;
+	struct dispatch_fns *dfn;
 
 	if (!received_signal) return;
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
-		switch (msg_type) {
-		case MSG_DEBUG:
-			debug_message(src, buf, len);
-			break;
-		default:
-			DEBUG(0,("Unknown message type %d from %d\n", msg_type, (int)src));
-			break;
+		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
+			if (dfn->msg_type == msg_type) {
+				dfn->fn(msg_type, src, buf, len);
+			}
 		}
 	}
+}
+
+
+/****************************************************************************
+register a dispatch function for a particular message type
+****************************************************************************/
+void message_register(enum message_type msg_type, 
+		      void (*fn)(enum message_type msg_type, pid_t pid, void *buf, size_t len))
+{
+	struct dispatch_fns *dfn;
+
+	dfn = (struct dispatch_fns *)malloc(sizeof(*dfn));
+
+	ZERO_STRUCTP(dfn);
+
+	dfn->msg_type = msg_type;
+	dfn->fn = fn;
+
+	DLIST_ADD(dispatch_fns, dfn);
 }
