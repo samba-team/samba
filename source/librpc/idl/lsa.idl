@@ -429,7 +429,7 @@
 	} lsa_TrustDomInfoEnum;
 
 	typedef struct {
-		lsa_String     domain_name;
+		lsa_String     netbios_name;
 	} lsa_TrustDomainInfoName;
 
 	typedef struct {
@@ -442,13 +442,13 @@
 	} lsa_TrustDomainInfoPassword;
 
 	typedef struct {
-		lsa_String     domain_name;
+		lsa_String     netbios_name;
 		dom_sid2    *sid;
 	} lsa_TrustDomainInfo5;
 
 	typedef struct {
-		lsa_String     name;
-		lsa_String     name2;
+		lsa_String     domain_name;
+		lsa_String     netbios_name;
 		dom_sid2    *sid;
 		uint32       unknown1;
 		uint32       unknown2;
