@@ -539,6 +539,57 @@ krb5_config_vget_string (krb5_config_section *c,
     return krb5_config_vget (c, STRING, args);
 }
 
+char **
+krb5_config_vget_strings(krb5_config_section *c,
+			 va_list args)
+{
+    char **strings = NULL;
+    int nstr = 0;
+    krb5_config_binding *b = NULL;
+    const char *p;
+    while((p = krb5_config_vget_next(c, &b, STRING, args))){
+	char *tmp = strdup(p);
+	char *pos = NULL;
+	char *s;
+	s = strtok_r(tmp, " \t", &pos);
+	while(s){
+	    strings = realloc(strings, (nstr + 1) * sizeof(*strings));
+	    strings[nstr] = strdup(s);
+	    nstr++;
+	    s = strtok_r(NULL, " \t", &pos);
+	}
+	free(tmp);
+    }
+    if(nstr){
+	strings = realloc(strings, (nstr + 1) * sizeof(*strings));
+	strings[nstr] = NULL;
+    }
+    return strings;
+}
+
+char**
+krb5_config_get_strings(krb5_config_section *c,
+			...)
+{
+    va_list ap;
+    char **ret;
+    va_start(ap, c);
+    ret = krb5_config_vget_strings(c, ap);
+    va_end(ap);
+    return ret;
+}
+
+void
+krb5_config_free_strings(char **strings)
+{
+    char **s = strings;
+    while(s && *s){
+	free(s);
+	s++;
+    }
+    free(strings);
+}
+
 krb5_boolean
 krb5_config_vget_bool (krb5_config_section *c,
 		       va_list args)

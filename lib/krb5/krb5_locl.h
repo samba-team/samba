@@ -153,6 +153,10 @@ const char *krb5_config_get_string (krb5_config_section *c,
 const char *krb5_config_vget_string (krb5_config_section *c,
 				     va_list args);
 
+char **krb5_config_vget_strings(krb5_config_section *c, va_list args);
+char **krb5_config_get_strings(krb5_config_section *c, ...);
+void krb5_config_free_strings(char **strings);
+
 krb5_boolean krb5_config_vget_bool (krb5_config_section *c, va_list args);
 
 krb5_boolean krb5_config_get_bool (krb5_config_section *c, ...);
