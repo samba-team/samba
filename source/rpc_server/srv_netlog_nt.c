@@ -76,25 +76,54 @@ NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u,
 	return r_u->status;
 }
 
+/****************************************************************************
+Send a message to smbd to do a sam synchronisation
+**************************************************************************/
+static void send_sync_message()
+{
+        TDB_CONTEXT *tdb;
+
+        tdb = tdb_open_log(lock_path("connections.tdb"), 0,
+                           USE_TDB_MMAP_FLAG, O_RDONLY, 0);
+
+        if (!tdb) {
+                DEBUG(3, ("send_sync_message(): failed to open connections "
+                          "database\n"));
+                return;
+        }
+
+        DEBUG(3, ("sending sam synchronisation message\n"));
+        
+        message_send_all(tdb, MSG_SMB_SAM_SYNC, NULL, 0, False);
+
+        tdb_close(tdb);
+}
+
 /*************************************************************************
  net_reply_logon_ctrl2:
  *************************************************************************/
 
 NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u)
 {
-    /* lkclXXXX - guess what - absolutely no idea what these are! */
-    uint32 flags = 0x0;
-    uint32 pdc_connection_status = 0x0;
-    uint32 logon_attempts = 0x0;
-    uint32 tc_status = ERROR_NO_LOGON_SERVERS;
-    char *trusted_domain = "test_domain";
+        uint32 flags = 0x0;
+        uint32 pdc_connection_status = 0x0;
+        uint32 logon_attempts = 0x0;
+        uint32 tc_status = ERROR_NO_LOGON_SERVERS;
+        char *trusted_domain = "test_domain";
+
+        DEBUG(0, ("*** net long ctrl2 %d, %d, %d\n",
+                  q_u->function_code, q_u->query_level, q_u->switch_value));
 
 	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
+
 
 	/* set up the Logon Control2 response */
 	init_net_r_logon_ctrl2(r_u, q_u->query_level,
 			       flags, pdc_connection_status, logon_attempts,
 			       tc_status, trusted_domain);
+
+        if (lp_server_role() == ROLE_DOMAIN_BDC)
+                send_sync_message();
 
 	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
 
