@@ -109,11 +109,11 @@ static NTSTATUS libnet_ChangePassword_generic(struct libnet_context *ctx, TALLOC
 	NTSTATUS status;
 	union libnet_ChangePassword r2;
 
-	r2.generic.level	= LIBNET_CHANGE_PASSWORD_RPC;
-	r2.rpc.in.account_name	= NULL;
-	r2.rpc.in.domain_name	= NULL;
-	r2.rpc.in.oldpassword	= NULL;
-	r2.rpc.in.newpassword	= NULL;
+	r2.rpc.level		= LIBNET_CHANGE_PASSWORD_RPC;
+	r2.rpc.in.account_name	= r->generic.in.account_name;
+	r2.rpc.in.domain_name	= r->generic.in.domain_name;
+	r2.rpc.in.oldpassword	= r->generic.in.oldpassword;
+	r2.rpc.in.newpassword	= r->generic.in.newpassword;
 
 	status = libnet_ChangePassword(ctx, mem_ctx, &r2);
 
