@@ -1076,14 +1076,11 @@ static void init_locals(void)
       string_set(&sDefault.szLpqcommand,"lpstat -o%p");
       string_set(&sDefault.szLprmcommand,"cancel %p-%j");
       string_set(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
-#ifdef HPUX
       string_set(&sDefault.szQueuepausecommand, "disable %p");
       string_set(&sDefault.szQueueresumecommand, "enable %p");
-#else /* SYSV */
+#ifndef HPUX
       string_set(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
       string_set(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
-      string_set(&sDefault.szQueuepausecommand, "lpc stop %p");
-      string_set(&sDefault.szQueueresumecommand, "lpc start %p");
 #endif /* SYSV */
       break;
 
@@ -2283,9 +2280,14 @@ static BOOL do_section(char *pszSectionName)
 		    (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
    bRetval = False;
 
+   /* removed this because it broke setting printer commands in global
+    * section. init_locals now uses string_set so it overwrites any
+    * parameters you just changed with the defaults */
+#ifdef notdef
    /* if we were in a global section then do the local inits */
    if (bInGlobalSection && !isglobal)
      init_locals();
+#endif
 
    /* if we've just struck a global section, note the fact. */
    bInGlobalSection = isglobal;   
