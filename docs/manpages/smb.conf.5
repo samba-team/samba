@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "20 August 2002" "" ""
+.TH "SMB.CONF" "5" "22 augustus 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -3396,7 +3396,7 @@ The default is to match the login name with the uid
 attribute for all entries matching the sambaAccount  
 objectclass.  Note that this filter should only return one entry.
 
-Default : \fBldap filter = (&(uid=%u)(objectclass=sambaAccount))\fR
+Default : \fBldap filter = (%u)(objectclass=sambaAccount))\fR
 .TP
 \fBldap ssl (G)\fR
 This option is used to define whether or not Samba should
@@ -4858,6 +4858,9 @@ backend, with non unix account support.  Takes an LDAP URL as an optional argume
 \fBldap://localhost\fR)
 
 See also                         \fInon unix account range\fR
+.TP 0.2i
+\(bu
+\fBnisplussam\fR - The NIS+ based passdb backend. Takes name NIS domain as an optional argument. Only works with sun NIS+ servers. 
 .TP 0.2i
 \(bu
 \fBplugin\fR - Allows Samba to load an 
