@@ -54,6 +54,8 @@ static void cmd_help(void);
 #define CLIENT_TIMEOUT (30*1000)
 #define SHORT_TIMEOUT (5*1000)
 
+int timeout_msec = 0;
+
 /* value for unused fid field in trans2 secondary request */
 #define FID_UNUSED (0xFFFF)
 
@@ -2185,6 +2187,8 @@ struct cli_state *do_connect(char *server, char *share)
 	}
 
 	c->protocol = max_protocol;
+	if (timeout_msec)
+		c->timeout = timeout_msec;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
@@ -2624,8 +2628,11 @@ static int do_message_op(void)
 	}
 
 	while ((opt = 
-		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:A:")) != EOF) {
+		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:A:z:")) != EOF) {
 		switch (opt) {
+		case 'z':
+			timeout_msec = atoi(optarg);
+			break;
 		case 's':
 			pstrcpy(servicesf, optarg);
 			break;
