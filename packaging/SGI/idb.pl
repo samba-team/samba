@@ -88,7 +88,7 @@ chdir $curdir;
 
 open(IDB,">samba.idb") || die "Unable to open samba.idb for output\n";
 
-print IDB "f 0644 root sys etc/config/samba packaging/SGI/samba.config samba.sw.base config(update) removeop(\"chroot \$rbase /usr/samba/scripts/removeswat.sh\")\n";
+print IDB "f 0644 root sys etc/config/samba packaging/SGI/samba.config samba.sw.base config(update)\n";
 print IDB "f 0755 root sys etc/init.d/samba packaging/SGI/samba.rc samba.sw.base\n";
 print IDB "l 0000 root sys etc/rc0.d/K39samba packaging/SGI samba.sw.base symval(../init.d/samba)\n";
 print IDB "l 0000 root sys etc/rc2.d/S81samba packaging/SGI samba.sw.base symval(../init.d/samba)\n";
@@ -115,7 +115,7 @@ while(@bins) {
       print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
     }
     elsif ($filename eq "swat") {
-      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip preop(\"chroot \$rbase /etc/init.d/samba stop\") exitop(\"chroot \$rbase /usr/samba/scripts/startswat.sh\")\n";
+      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip preop(\"chroot \$rbase /etc/init.d/samba stop\") exitop(\"chroot \$rbase /usr/samba/scripts/startswat.sh\") removeop(\"chroot $rbase cp /etc/inetd.conf /etc/inetd.O ; chroot $rbase sed -e '/^swat/D' -e '/^#SWAT/D' /etc/inetd.O >/etc/inetd.conf; /etc/killall -HUP inetd || true\")\n";
     }
     elsif ($filename eq "sambalp") {
       print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base nostrip\n";
@@ -159,6 +159,7 @@ print IDB "f 0600 root sys usr/samba/private/smbpasswd packaging/SGI/smbpasswd s
 
 print IDB "d 0755 root sys usr/samba/scripts packaging/SGI samba.src.samba\n";
 print IDB "f 0755 root sys usr/samba/scripts/inetd.sh packaging/SGI/inetd.sh samba.sw.base\n";
+print IDB "f 0755 root sys usr/samba/scripts/inst.msg packaging/SGI/inst.msg samba.sw.base exitop(\"chroot \$rbase /usr/samba/scripts/inst.msg\")\n";
 print IDB "f 0755 root sys usr/samba/scripts/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base\n";
 print IDB "f 0755 root sys usr/samba/scripts/removeswat.sh packaging/SGI/removeswat.sh samba.sw.base\n";
 print IDB "f 0755 root sys usr/samba/scripts/startswat.sh packaging/SGI/startswat.sh samba.sw.base\n";
