@@ -256,7 +256,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
-	snprintf( key, sizeof(key), "SEQNUM/%s", domain->name );
+	fstr_sprintf( key, "SEQNUM/%s", domain->name );
 	
 	data = tdb_fetch_bystring( wcache->tdb, key );
 	if ( !data.dptr || data.dsize!=8 ) {
@@ -295,7 +295,7 @@ static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
-	snprintf( key_str, sizeof(key_str), "SEQNUM/%s", domain->name );
+	fstr_sprintf( key_str, "SEQNUM/%s", domain->name );
 	key.dptr = key_str;
 	key.dsize = strlen(key_str)+1;
 	

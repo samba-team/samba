@@ -158,7 +158,7 @@ static void terminate(void)
 	idmap_close();
 	
 	/* Remove socket file */
-	snprintf(path, sizeof(path), "%s/%s", 
+	pstr_sprintf(path, "%s/%s", 
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 	unlink(path);
 	exit(0);
@@ -824,7 +824,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	pstr_sprintf(logfile, "%s/log.winbindd", dyn_LOGFILEBASE);
 	lp_set_logfile(logfile);
 	setup_logging("winbindd", log_stdout);
 	reopen_logs();

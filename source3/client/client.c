@@ -2291,9 +2291,9 @@ static char **remote_completion(const char *text, int len)
 	if (i > 0) {
 		strncpy(info.dirmask, text, i+1);
 		info.dirmask[i+1] = 0;
-		snprintf(dirmask, sizeof(dirmask), "%s%*s*", cur_dir, i-1, text);
+		pstr_sprintf(dirmask, "%s%*s*", cur_dir, i-1, text);
 	} else
-		snprintf(dirmask, sizeof(dirmask), "%s*", cur_dir);
+		pstr_sprintf(dirmask, "%s*", cur_dir);
 
 	if (cli_list(cli, dirmask, aDIR | aSYSTEM | aHIDDEN, completion_remote_filter, &info) < 0)
 		goto cleanup;

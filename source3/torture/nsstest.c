@@ -29,11 +29,11 @@ static int total_errors;
 
 static void *find_fn(const char *name)
 {
-	char s[1024];
+	pstring s;
 	static void *h;
 	void *res;
 
-	snprintf(s,sizeof(s), "_nss_%s_%s", nss_name, name);
+	pstr_sprintf(s, "_nss_%s_%s", nss_name, name);
 
 	if (!h) {
 		h = sys_dlopen(so_path, RTLD_LAZY);

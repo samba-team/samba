@@ -986,7 +986,7 @@ int create_pipe_sock(const char *socket_dir,
                 goto out_umask;
 	}
         
-	snprintf(path, sizeof(path), "%s/%s", socket_dir, socket_name);
+	pstr_sprintf(path, "%s/%s", socket_dir, socket_name);
         
 	unlink(path);
 	memset(&sunaddr, 0, sizeof(sunaddr));
