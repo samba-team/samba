@@ -18,14 +18,18 @@ unset TMPDIR
 
 # If Samba is running from inetd then there is nothing to do
 if [ "$RUN_MODE" = "inetd" ]; then
-	# Commented out to close bug #26884 (startup message is rather long). I
-	#	have yet to think how to let the user know that if he/she is running
-	#	Samba from inetd, he can't just "/etc/init.d/samba stop" to stop
-	#	the Samba daemons.
-#	echo "Warning: Samba is not running as daemons. Daemons not restarted/stopped."
-#	echo "Daemons will start automatically by inetd (if you wanted to start Samba)."
-#	echo "If you want to stop Samba, get the PID's of all nmbd and smbd processes"
-#	echo "and send them a SIGTERM signal but keep in mind that inetd could restart them."
+	# INIT_VERSION is defined for scripts than run directly from init...
+	if [ "$INIT_VERSION" = "" ]; then
+		cat <<EOF
+
+Warning: Samba is set to start from inetd; this script has no effect.
+Run "dpkg-reconfigure samba" if you want Samba to be started and stopped
+from this script.  If you want to continue running Samba from inetd, you
+should use "killall nmbd smbd" to restart the service, or update-inetd
+to disable/reenable it.
+
+EOF
+	fi
 	exit 0
 fi
 
@@ -45,15 +49,30 @@ case "$1" in
 		echo "."
 		;;
 	stop)
-		echo -n "Stopping Samba daemons:"
+		echo -n "Stopping Samba daemons: "
 
-		echo -n " nmbd"
 		start-stop-daemon --stop --quiet --pidfile $NMBDPID
+		# Wait a little and remove stale PID file
+		sleep 1
+		if [ -f $NMBDPID ] && ! ps h `cat $NMBDPID` > /dev/null
+		then
+			# Stale PID file (nmbd was succesfully stopped),
+			# remove it (should be removed by nmbd itself IMHO.)
+			rm -f $NMBDPID
+		fi
+		echo -n "nmbd "
 
-		echo -n " smbd"
 		start-stop-daemon --stop --quiet --pidfile $SMBDPID
+		# Wait a little and remove stale PID file
+		sleep 1
+		if [ -f $SMBDPID ] && ! ps h `cat $SMBDPID` > /dev/null
+		then
+			# Stale PID file (nmbd was succesfully stopped),
+			# remove it (should be removed by smbd itself IMHO.)
+			rm -f $SMBDPID
+		fi
+		echo "smbd."
 
-		echo "."
 		;;
 	reload)
 		echo -n "Reloading /etc/samba/smb.conf (smbd only)"
@@ -62,19 +81,9 @@ case "$1" in
 		echo "."
 		;;
 	restart|force-reload)
-		echo -n "Restarting Samba daemons:"
-
-		echo -n " nmbd"
-		start-stop-daemon --stop --quiet --pidfile $NMBDPID
-		sleep 2
-		start-stop-daemon --start --quiet --exec /usr/sbin/nmbd -- -D
-
-		echo -n " smbd"
-		start-stop-daemon --stop --quiet --pidfile $SMBDPID
-		sleep 2
-		start-stop-daemon --start --quiet --exec /usr/sbin/smbd -- -D
-
-		echo "."
+		$0 stop
+		sleep 1
+		$0 start
 		;;
 	*)
 		echo "Usage: /etc/init.d/samba {start|stop|reload|restart|force-reload}"

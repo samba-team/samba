@@ -75,7 +75,8 @@ configure-stamp:
 		--with-pam_smbpass \
 		--with-libsmbclient \
 		--with-winbind \
-		--with-msdfs)
+		--with-msdfs \
+		--with-automount)
 
 	touch configure-stamp
 

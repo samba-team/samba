@@ -46,12 +46,6 @@ samba_cv_have_setresgid=${samba_cv_have_setresgid=yes}
 samba_cv_USE_SETRESUID=${samba_cv_USE_SETRESUID=yes}
 
 
-# POSIX ACL support not present in Linux 2.2; not allowed in the
-# Debian packages, even if present on the build machine.
-
-ac_cv_header_sys_acl_h=${ac_cv_header_sys_acl_h=no}
-
-
 # Various basic libc/compiler stuff that it's blindingly obvious that
 # Linux supports (now watch me get bitten for saying that)
 
@@ -130,8 +124,6 @@ samba_cv_HAVE_FCNTL_LOCK=${samba_cv_HAVE_FCNTL_LOCK=yes}
 # to support transparent userland VFS.  We might as well preempt
 # any checks for shadowed symbols that are only useful for smbwrapper.
 
-ac_cv_func___acl=${ac_cv_func___acl=no}
-ac_cv_func__acl=${ac_cv_func__acl=no}
 ac_cv_func___chdir=${ac_cv_func___chdir=no}
 ac_cv_func__chdir=${ac_cv_func__chdir=no}
 ac_cv_func___close=${ac_cv_func___close=no}
@@ -142,8 +134,6 @@ ac_cv_func___dup=${ac_cv_func___dup=no}
 ac_cv_func__dup=${ac_cv_func__dup=no}
 ac_cv_func___dup2=${ac_cv_func___dup2=no}
 ac_cv_func__dup2=${ac_cv_func__dup2=no}
-ac_cv_func___facl=${ac_cv_func___facl=no}
-ac_cv_func__facl=${ac_cv_func__facl=no}
 ac_cv_func___fchdir=${ac_cv_func___fchdir=no}
 ac_cv_func__fchdir=${ac_cv_func__fchdir=no}
 ac_cv_func___fcntl=${ac_cv_func___fcntl=no}

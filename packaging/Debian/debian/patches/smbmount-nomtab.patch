@@ -1,5 +1,6 @@
---- samba-2.2.3a/source/client/smbmnt.c.orig	Tue Apr  2 09:58:18 2002
-+++ samba-2.2.3a/source/client/smbmnt.c	Tue Apr  2 09:58:24 2002
+diff -uNr samba-2.2.5pre1.orig/source/client/smbmnt.c samba-2.2.5pre1/source/client/smbmnt.c
+--- samba-2.2.5pre1.orig/source/client/smbmnt.c	Wed Jun 12 15:50:00 2002
++++ samba-2.2.5pre1/source/client/smbmnt.c	Wed Jun 12 15:50:04 2002
 @@ -28,6 +28,7 @@
  static uid_t mount_uid;
  static gid_t mount_gid;
@@ -35,7 +36,7 @@
                  case 'r':
                          mount_ro = 1;
                          break;
-@@ -271,36 +276,38 @@
+@@ -274,36 +279,38 @@
  		return -1;
  	}
  	
@@ -101,8 +102,9 @@
  
  	return 0;
  }	
---- samba-2.2.4/source/client/smbmount.c.orig	Thu May  2 00:33:08 2002
-+++ samba-2.2.4/source/client/smbmount.c	Thu May  2 00:36:12 2002
+diff -uNr samba-2.2.5pre1.orig/source/client/smbmount.c samba-2.2.5pre1/source/client/smbmount.c
+--- samba-2.2.5pre1.orig/source/client/smbmount.c	Wed Jun 12 15:46:02 2002
++++ samba-2.2.5pre1/source/client/smbmount.c	Wed Jun 12 15:50:04 2002
 @@ -50,6 +50,7 @@
  static int mount_ro;
  static unsigned mount_fmask;

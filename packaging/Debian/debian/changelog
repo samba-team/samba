@@ -1,10 +1,55 @@
-samba (2.2.4-0.1debian) unstable; urgency=low
+samba (2.2.5-0.1debian) unstable; urgency=low
 
   * This is a locally-built version of Samba for Debian. Do not pester
     the Samba Team with questions about Debian packaging. Contact the
     Debian Samba maintainers <samba@packages.debian.org> instead.
 
- -- Debian User <somebody@somewhere.com>  Thu,  2 May 2002 01:36:33 -0400
+ -- Debian User <somebody@somewhere.com>  Mon, 17 Jun 2002 23:22:36 -0400
+
+samba (2.2.4+2.2.5-1) unstable; urgency=low
+
+  * New upstream release.
+  * Remove patches/parse_spoolss.patch, now included upstream.
+  * Fixed thinko WRT POSIX ACL support, which we "half-enabled" in
+    2.2.4-1. We don't use POSIX ACL support ourselves, so we'd
+    appreciate reports from those using this feature so we can
+    be sure this works.
+  * Fix the filename-matching algorithm used for smbtar's 'exclude'
+    functionality. (closes: #131571)
+  * Look for secrets.tdb in /var/lib/samba, and handle in the postinst.
+    This is not really a config file, because users don't edit it.
+    (closes: #147429)
+  * Doxygen fix for libsmbclient.h, thanks to Tommi Komulainen
+    <Tommi.Komulainen@iki.fi> for the patch. (closes: #144847)
+
+ -- Eloy A. Paris <peloy@debian.org>  Tue, 28 May 2002 11:33:51 -0400
+
+samba (2.2.4-1) unstable; urgency=low
+
+  * New upstream release (closes: #144713)
+  * Building with POSIX ACL support (closes: #137819)
+  * Include samples, exclude INSTALL from libpam-smbpass (closes: #145055)
+  * Compile with --with-automount, for NIS homedir support (closes: #123396)
+  * Add a proper 'flags' field to the mount entry we write to /etc/mtab;
+    fixes a display bug with mount (closes: #140397)
+  * Added logic to /etc/init.d/samba so a help message is printed out
+    when Samba is running from inetd _and_ we are not booting, i.e. the
+    user called the init script manually. Thanks to Francesco
+    Potorti <pot@gnu.org> for the suggestion on how to implement this.
+    (Closes: #139807, #140204)
+  * samba.postinst: added logic so we don't call /etc/init.d/samba if
+    we are running from inetd (this prevents the stupid help message
+    to be printed during package upgrades if we are running from inetd.)
+  * samba.prerm: idem.
+  * /etc/init.d/samba: delete stale PID files after nmbd and smbd are
+    stopped. This prevents start-stop-daemon from printing an ugly
+    error message when called from '/etc/init.d/samba stop'. I prefer
+    this than running start-stop-daemon with --oknodo because
+    start-stop-daemon might print other important error messages that with
+    --oknodo it would otherwise not print. (Closes: #102187, #109301)
+  * Patch from jerry@samba.org to fix parsing of spoolss structures.
+
+ -- Eloy A. Paris <peloy@debian.org>  Thu, 23 May 2002 23:16:52 -0400
 
 samba (2.2.3a-7) unstable; urgency=medium
 
@@ -53,7 +98,7 @@ samba (2.2.3a-6) unstable; urgency=low
   * Bring our shipped smb.conf closer in line with the upstream
     defaults: don't twiddle the send/recv buffer sizes, since the Linux
     kernel already provides a much better default setting
-    (closes: #80966, #80934, #137415, #133477)
+     (closes: #80966, #80934, #137415, #133477)
   * Added libnss_wins.so to the winbind package (closes: #137201)
   * Updates to README.debian.
 

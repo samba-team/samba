@@ -16,10 +16,11 @@ then
 	fi
 fi
 
-if [ -x /etc/init.d/samba ]; then	# Old Samba packages didn't have  
-					#	/etc/init.d/samba so we'd better
-					#	check first.
-	/etc/init.d/samba stop
-fi
+# We read /etc/default/samba to know if we're running from inetd or as
+# daemons so we don't call the init script if we are running from inetd.
+[ -r /etc/default/samba ] && . /etc/default/samba
+
+# We call the init script to stop Samba only if we are running as daemons.
+[ -x /etc/init.d/samba -a "$RUN_MODE" != "inetd" ] && /etc/init.d/samba stop
 
 #DEBHELPER#
