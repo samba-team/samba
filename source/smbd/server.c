@@ -3546,11 +3546,6 @@ int reply_lanman1(char *outbuf)
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
-  /* We need to save and restore this as it can be destroyed
-     if we call another server if security=server
-     Thanks to Paul Nelson @ Thursby for pointing this out.
-   */
-  uint16 mid = SVAL(outbuf, smb_mid);
 
   if (lp_security()>=SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
@@ -3564,7 +3559,6 @@ int reply_lanman1(char *outbuf)
   Protocol = PROTOCOL_LANMAN1;
 
   CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
-  SSVAL(outbuf,smb_mid,mid); /* Restore possibly corrupted mid */
   SSVAL(outbuf,smb_vwv2,max_recv);
   SSVAL(outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
   SSVAL(outbuf,smb_vwv4,1);
@@ -3616,10 +3610,9 @@ int reply_lanman2(char *outbuf)
 
   set_message(outbuf,13,crypt_len,True);
   SSVAL(outbuf,smb_vwv1,secword); 
+  SIVAL(outbuf,smb_vwv6,getpid());
   if (doencrypt) 
 	  memcpy(smb_buf(outbuf), cryptkey, 8);
-
-  SIVAL(outbuf,smb_vwv6,getpid());
 
   Protocol = PROTOCOL_LANMAN2;
 
