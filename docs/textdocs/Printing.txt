@@ -1,5 +1,5 @@
 !==
-!== Printing.txt for Samba release 1.9.18alpha9 30 Oct 1997
+!== Printing.txt for Samba release 1.9.18alpha10 02 Nov 1997
 !==
 Contributor:	Unknown <samba-bugs@samba.anu.edu.au>
 Date:		Unknown
