@@ -1,6 +1,26 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha15
+- Improvements in pam_winbind/winbindd_pam.c: (abartlet)
+  - Much better error reporting
+  - Password changing is now stackable
+  - now returns multiple PAM errors based on the NTSTATUS
+    that winbind got.
+  - returns an error string the client can use in their own logs.
+- Print form updates (tpot)
+- added 'wbinfo --sequence' to show sequence numbers of 
+  all domains (tridge)
+- better winbind memory mangement (tridge)
+- make signal processing work correctly in winbindd
+  Michael Steffens <michael_steffens@hp.com>
+- Inital ADS printer publishing work.  (jmcd)
+- Debian packaging
+- large debian packaging checking from Eloy. (merge by jerry)
+- Make smbgroupedit a little easier on the user (select groups
+  by name rather than by sid) (abartlet)
+- rework parts of smbtorture (tridge)
+
 Changes in alpha14
 - 'Winbind Default Domain' support:
   This allows winbind to supply usernames without a 'DOMAIN\' 
