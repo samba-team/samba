@@ -30,22 +30,6 @@ REQUIRED_SUBSYSTEMS = \
 # End MODULE dcerpc_dcom
 ################################################
 
-
-
-################################################
-# Start SUBSYSTEM SAMDB
-[SUBSYSTEM::SAMDB]
-INIT_OBJ_FILES = \
-		rpc_server/samr/samdb.o
-ADD_OBJ_FILES = \
-		rpc_server/samr/samr_utils.o
-REQUIRED_SUBSYSTEMS = \
-		DCERPC_COMMON \
-		LIBLDB
-#
-# End SUBSYSTEM SAMDB
-################################################
-
 ################################################
 # Start SUBSYSTEM SCHANNELDB
 [SUBSYSTEM::SCHANNELDB]

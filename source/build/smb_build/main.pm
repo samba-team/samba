@@ -22,7 +22,8 @@ sub smb_build_main($)
 	);
 
 	my @mkfiles = (
-		"gtk/config.mk", 
+		"dsdb/config.mk",
+		"gtk/config.mk",
 		"smbd/config.mk",
 		"smbd/process_model.mk",
 		"libnet/config.mk",
