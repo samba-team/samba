@@ -39,11 +39,13 @@ static char *etype_str;
 static int version_flag;
 static int help_flag;
 static int transit_check = 1;
+static int canonicalize = 0;
 
 struct getargs args[] = {
     { "enctype",	'e', arg_string, &etype_str,
       "encryption type to use", "enctype"},
     { "transit-check",	0,   arg_negative_flag, &transit_check },
+    { "canonicalize",	0,   arg_flag, &canonicalize },
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
 };
@@ -118,6 +120,9 @@ main(int argc, char **argv)
 
     if (!transit_check)
 	flags.b.disable_transited_check = 1;
+    if (canonicalize)
+	flags.b.canonicalize = 1;
+
 
     in.times.endtime = 0;
     ret = krb5_get_credentials_with_flags(context, 0, flags, cache, &in, &out);
