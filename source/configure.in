@@ -10,6 +10,10 @@ AC_SUBST(HOST_OS)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
+
+# compile with optimisation and without debugging by default
+CFLAGS=${CFLAGS-"-O"}
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
