@@ -1716,9 +1716,12 @@ sub ParseInterface($)
 	my($data) = $interface->{DATA};
 
 	foreach my $d (@{$data}) {
+		if ($d->{TYPE} eq "DECLARE") {
+		    $structs{$d->{NAME}} = $d;
+		}
 		if ($d->{TYPE} eq "TYPEDEF") {
 		    $structs{$d->{NAME}} = $d;
-	    }
+		}
 	}
 
 	foreach my $d (@{$data}) {

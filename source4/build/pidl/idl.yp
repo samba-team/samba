@@ -55,7 +55,7 @@ definitions:
 ;    
 
 
-definition: function | const | typedef
+definition: function | const | typedef | declare
 ;
 
 const: 'const' identifier identifier '=' anytext ';' 
@@ -84,6 +84,30 @@ function: property_list type identifier '(' element_list2 ')' ';'
 		"PROPERTIES" => $_[1],
 		"DATA" => $_[5]
 	 }}
+;
+
+declare: 'declare' property_list decl_type identifier';' 
+        {{
+	             "TYPE" => "DECLARE", 
+                     "PROPERTIES" => $_[2],
+		     "NAME" => $_[4],
+		     "DATA" => $_[3],
+        }}
+;
+
+decl_type: decl_enum | decl_bitmap
+;
+
+decl_enum: 'enum' 
+        {{
+                     "TYPE" => "ENUM"
+        }}
+;
+
+decl_bitmap: 'bitmap' 
+        {{
+                     "TYPE" => "BITMAP"
+        }}
 ;
 
 typedef: 'typedef' property_list type identifier array_len ';' 
@@ -327,7 +351,7 @@ again:
 		if (s/^([\w_]+)//) {
 			$parser->YYData->{LAST_TOKEN} = $1;
 			if ($1 =~ 
-			    /^(coclass|interface|const|typedef|union
+			    /^(coclass|interface|const|typedef|declare|union
 			      |struct|enum|bitmap|void|case|default)$/x) {
 				return $1;
 			}
