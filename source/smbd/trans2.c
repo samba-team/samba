@@ -118,21 +118,19 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
     data_sent_thistime = MIN(data_sent_thistime,data_to_send);
 
     SSVAL(outbuf,smb_prcnt, params_sent_thistime);
+
+    /* smb_proff is the offset from the start of the SMB header to the
+       parameter bytes, however the first 4 bytes of outbuf are
+       the Netbios over TCP header. Thus use smb_base() to subtract
+       them from the calculation */
+
+    SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
+
     if(params_sent_thistime == 0)
-    {
-      SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf))); 
       SSVAL(outbuf,smb_prdisp,0);
-    }
     else
-    {
-      /* smb_proff is the offset from the start of the SMB header to the
-         parameter bytes, however the first 4 bytes of outbuf are
-         the Netbios over TCP header. Thus use smb_base() to subtract
-         them from the calculation */
-      SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
       /* Absolute displacement of param bytes sent in this packet */
       SSVAL(outbuf,smb_prdisp,pp - params);
-    }
 
     SSVAL(outbuf,smb_drcnt, data_sent_thistime);
     if(data_sent_thistime == 0)
