@@ -2696,9 +2696,29 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_LookupDomain r;
+	struct samr_Name n2;
 	BOOL ret = True;
 
 	printf("Testing LookupDomain(%s)\n", domain->name);
+
+	/* check for correct error codes */
+	r.in.handle = handle;
+	r.in.domain = &n2;
+	n2.name = NULL;
+
+	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(NT_STATUS_INVALID_PARAMETER, status)) {
+		printf("failed: LookupDomain expected NT_STATUS_INVALID_PARAMETER - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	n2.name = "xxNODOMAINxx";
+
+	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(NT_STATUS_NO_SUCH_DOMAIN, status)) {
+		printf("failed: LookupDomain expected NT_STATUS_NO_SUCH_DOMAIN - %s\n", nt_errstr(status));
+		ret = False;
+	}
 
 	r.in.handle = handle;
 	r.in.domain = domain;
@@ -2706,7 +2726,7 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupDomain failed - %s\n", nt_errstr(status));
-		return False;
+		ret = False;
 	}
 
 	if (!test_GetDomPwInfo(p, mem_ctx, domain)) {
@@ -2750,6 +2770,12 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				       &r.out.sam->entries[i].name)) {
 			ret = False;
 		}
+	}
+
+	status = dcerpc_samr_EnumDomains(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumDomains failed - %s\n", nt_errstr(status));
+		return False;
 	}
 
 	return ret;
