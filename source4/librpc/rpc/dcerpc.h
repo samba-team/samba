@@ -51,13 +51,16 @@ struct dcerpc_pipe {
 };
 
 /* dcerpc pipe flags */
-#define DCERPC_DEBUG_PRINT_IN  1
-#define DCERPC_DEBUG_PRINT_OUT 2
+#define DCERPC_DEBUG_PRINT_IN  (1<<0)
+#define DCERPC_DEBUG_PRINT_OUT (1<<1)
 #define DCERPC_DEBUG_PRINT_BOTH (DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT)
 
 #define DCERPC_DEBUG_VALIDATE_IN  4
 #define DCERPC_DEBUG_VALIDATE_OUT 8
 #define DCERPC_DEBUG_VALIDATE_BOTH (DCERPC_DEBUG_VALIDATE_IN | DCERPC_DEBUG_VALIDATE_OUT)
+
+#define DCERPC_SIGN            16
+#define DCERPC_SEAL            32
 
 /*
   this is used to find pointers to calls
