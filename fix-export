@@ -3,6 +3,15 @@
 echo "fixing distribution in $1..."
 
 cd $1
+
+ver=`sed -n 's/AM_INIT_AUTOMAKE(.*,\(.*\))/\1/p' configure.in`
+echo "*************************************************************"
+echo "*                                                           *"
+echo "* Hej $USER!                                                *"
+echo "* Har du uppdaterat versionsnummret? Detta är version $ver. *"
+echo "*                                                           *"
+echo "*************************************************************"
+
 aclocal
 autoconf
 autoheader
