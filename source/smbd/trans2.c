@@ -31,20 +31,43 @@ extern uint32 global_client_caps;
 extern struct current_user current_user;
 
 #define get_file_size(sbuf) ((sbuf).st_size)
+#define DIR_ENTRY_SAFETY_MARGIN 4096
 
-/* given a stat buffer return the allocated size on disk, taking into
-   account sparse files */
+/********************************************************************
+ Roundup a value to the nearest SMB_ROUNDUP_ALLOCATION_SIZE boundary.
+ Only do this for Windows clients.
+********************************************************************/
+
+SMB_BIG_UINT smb_roundup(SMB_BIG_UINT val)
+{
+	/* Only roundup for Windows clients. */
+	enum remote_arch_types ra_type = get_remote_arch();
+	if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
+		val = SMB_ROUNDUP(val,SMB_ROUNDUP_ALLOCATION_SIZE);
+	}
+	return val;
+}
+
+/********************************************************************
+ Given a stat buffer return the allocated size on disk, taking into
+ account sparse files.
+********************************************************************/
+
 SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	SMB_BIG_UINT ret;
+
 #if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
 	ret = (SMB_BIG_UINT)STAT_ST_BLOCKSIZE * (SMB_BIG_UINT)sbuf->st_blocks;
 #else
 	ret = (SMB_BIG_UINT)get_file_size(*sbuf);
 #endif
+
 	if (!ret && fsp && fsp->initial_allocation_size)
 		ret = fsp->initial_allocation_size;
-	ret = SMB_ROUNDUP(ret,SMB_ROUNDUP_ALLOCATION_SIZE);
+
+	ret = smb_roundup(ret);
+
 	return ret;
 }
 
@@ -1409,12 +1432,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
 
-	pdata = Realloc(*ppdata, max_data_bytes + 1024);
+	pdata = Realloc(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if( pdata == NULL )
 		return(ERROR_DOS(ERRDOS,ERRnomem));
 
 	*ppdata = pdata;
-	memset((char *)pdata,'\0',max_data_bytes + 1024);
+	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
 	params = Realloc(*pparams, 10);
@@ -1602,12 +1625,12 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
 
-	pdata = Realloc( *ppdata, max_data_bytes + 1024);
+	pdata = Realloc( *ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(pdata == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
 
 	*ppdata = pdata;
-	memset((char *)pdata,'\0',max_data_bytes + 1024);
+	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
 	params = Realloc(*pparams, 6*SIZEOFWORD);
@@ -1818,12 +1841,12 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		return ERROR_DOS(ERRSRV,ERRinvdevice);
 	}
 
-	pdata = Realloc(*ppdata, max_data_bytes + 1024);
+	pdata = Realloc(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if ( pdata == NULL )
 		return ERROR_DOS(ERRDOS,ERRnomem);
 
 	*ppdata = pdata;
-	memset((char *)pdata,'\0',max_data_bytes + 1024);
+	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	switch (info_level) {
 		case SMB_INFO_ALLOCATION:
@@ -2389,7 +2412,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	  return ERROR_DOS(ERRDOS,ERRnomem);
 	*pparams = params;
 	memset((char *)params,'\0',2);
-	data_size = max_data_bytes + 1024;
+	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
 	pdata = Realloc(*ppdata, data_size); 
 	if ( pdata == NULL )
 		return ERROR_DOS(ERRDOS,ERRnomem);
@@ -3189,7 +3212,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 					fname, (double)allocation_size ));
 
 			if (allocation_size)
-				allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+				allocation_size = smb_roundup(allocation_size);
 
 			if(allocation_size != get_file_size(sbuf)) {
 				SMB_STRUCT_STAT new_sbuf;
