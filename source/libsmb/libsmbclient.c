@@ -544,8 +544,6 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
   in_client = True; /* FIXME, make a param */
 
-  
-
   if (!lp_load(conf, True, False, False)) {
 
     /*
@@ -562,6 +560,8 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
   codepage_initialise(lp_client_code_page()); /* Get a codepage */
 
   reopen_logs();  /* Get logging working ... */
+
+  name_register_wins(my_netbios_name, 0);
 
   /* 
    * Now initialize the file descriptor array and figure out what the
