@@ -24,6 +24,7 @@
 #include "nbt_server/nbt_server.h"
 
 
+
 static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock, 
 				  struct nbt_name_packet *packet, 
 				  const char *src_address, int src_port)

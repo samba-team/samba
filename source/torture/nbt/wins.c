@@ -65,11 +65,8 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	   the right IP */
 	socket_listen(nbtsock->sock, myaddress, 0, 0, 0);
 
-	printf("Testing name registration to WINS with name %s<%02x> at %s\n", 
-	       name->name, name->type, myaddress);
-	if (name->scope) {
-		printf("scope is %s\n", name->scope);
-	}
+	printf("Testing name registration to WINS with name %s at %s\n", 
+	       nbt_name_string(mem_ctx, name), myaddress);
 
 	printf("release the name\n");
 	release.in.name = *name;

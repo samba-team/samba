@@ -185,10 +185,9 @@ static void name_register_bcast_handler(struct nbt_name_request *req)
 	} else {
 		c->state = SMBCLI_REQUEST_ERROR;
 		c->status = NT_STATUS_CONFLICTING_ADDRESSES;
-		DEBUG(3,("Name registration conflict from %s for %s<%02x> with ip %s - rcode %d\n",
+		DEBUG(3,("Name registration conflict from %s for %s with ip %s - rcode %d\n",
 			 state->io->out.reply_from, 
-			 state->io->out.name.name,
-			 state->io->out.name.type,
+			 nbt_name_string(state, &state->io->out.name),
 			 state->io->out.reply_addr,
 			 state->io->out.rcode));
 	}

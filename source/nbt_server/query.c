@@ -79,8 +79,8 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 	   ignore it for now */
 	if (!(iname->nb_flags & NBT_NM_ACTIVE) && 
 	    (packet->operation & NBT_FLAG_BROADCAST)) {
-		DEBUG(7,("Query for %s<%02x> from %s - name not active yet on %s\n",
-			 name->name, name->type, src_address, iface->ip_address));
+		DEBUG(7,("Query for %s from %s - name not active yet on %s\n",
+			 nbt_name_string(packet, name), src_address, iface->ip_address));
 		return;
 	}
 
