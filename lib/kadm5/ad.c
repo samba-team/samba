@@ -637,26 +637,46 @@ kadm5_ad_get_principal(void *server_handle,
 	if (vals)
 	    printf("userAccountControl %s\n", vals[0]);
 #endif
-	vals = ldap_get_values(CTX2LP(context), m0, "accountExpires");
-	if (vals)
-	    entry->princ_expire_time = nt2unixtime(vals[0]);
-
-	vals = ldap_get_values(CTX2LP(context), m0, "lastLogon");
-	if (vals)
-	    entry->last_success = nt2unixtime(vals[0]);
-
-	vals = ldap_get_values(CTX2LP(context), m0, "badPasswordTime");
-	if (vals)
-	    entry->last_failed = nt2unixtime(vals[0]);
-
-	vals = ldap_get_values(CTX2LP(context), m0, "pwdLastSet");
-	if (vals)
-	    entry->last_pwd_change = nt2unixtime(vals[0]);
-
-	vals = ldap_get_values(CTX2LP(context), m0, "badPwdCount");
-	if (vals)
-	    entry->fail_auth_count = atoi(vals[0]);
-
+	if (mask & KADM5_PRINC_EXPIRE_TIME) {
+	    vals = ldap_get_values(CTX2LP(context), m0, "accountExpires");
+	    if (vals)
+		entry->princ_expire_time = nt2unixtime(vals[0]);
+	}
+	if (mask & KADM5_LAST_SUCCESS) {
+	    vals = ldap_get_values(CTX2LP(context), m0, "lastLogon");
+	    if (vals)
+		entry->last_success = nt2unixtime(vals[0]);
+	}
+	if (mask & KADM5_LAST_FAILED) {
+	    vals = ldap_get_values(CTX2LP(context), m0, "badPasswordTime");
+	    if (vals)
+		entry->last_failed = nt2unixtime(vals[0]);
+	}
+	if (mask & KADM5_LAST_PWD_CHANGE) {
+	    vals = ldap_get_values(CTX2LP(context), m0, "pwdLastSet");
+	    if (vals)
+		entry->last_pwd_change = nt2unixtime(vals[0]);
+	}
+	if (mask & KADM5_FAIL_AUTH_COUNT) {
+	    vals = ldap_get_values(CTX2LP(context), m0, "badPwdCount");
+	    if (vals)
+		entry->fail_auth_count = atoi(vals[0]);
+	}
+ 	if (mask & KADM5_ATTRIBUTES) {
+	    vals = ldap_get_values(CTX2LP(context), m0, "userAccountControl");
+	    if (vals) {
+		u_int32_t i;
+		i = atoi(vals[0]);
+		if (i & (UF_ACCOUNTDISABLE|UF_LOCKOUT))
+		    entry->attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
+		if ((i & UF_DONT_REQUIRE_PREAUTH) == 0)
+		    entry->attributes |= KRB5_KDB_REQUIRES_PRE_AUTH;
+		if (i & UF_SMARTCARD_REQUIRED)
+		    entry->attributes |= KRB5_KDB_REQUIRES_HW_AUTH;
+		if ((i & UF_WORKSTATION_TRUST_ACCOUNT) == 0)
+		    entry->attributes |= KRB5_KDB_DISALLOW_SVR;
+	    }
+	}
 	if (mask & KADM5_KVNO) {
 	    vals = ldap_get_values(CTX2LP(context), m0, 
 				   "msDS-KeyVersionNumber");
@@ -671,8 +691,6 @@ kadm5_ad_get_principal(void *server_handle,
 	return KADM5_UNK_PRINC;
     }
 
-    if (mask & KADM5_ATTRIBUTES)
-	entry->attributes = 0;
     if (mask & KADM5_PRINCIPAL)
 	krb5_copy_principal(context->context, principal, &entry->principal);
 
