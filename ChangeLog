@@ -1,3 +1,14 @@
+2004-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* doc/setup.texi: clarify credentials refreshing stuff
+	
+	* doc/setup.texi: add new node: Providing Kerberos credentials to
+	servers and programs
+
+	* doc/whatis.texi: fix spurious cross-reference makeinfo warning
+	
+	* lib/hdb/hdb-ldap.c (pos): uppercase in character
+
 2004-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb-ldap.c (LDAP__bytes2hex,LDAP__hex2bytes): encode
