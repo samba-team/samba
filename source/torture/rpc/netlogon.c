@@ -442,7 +442,7 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 	ZERO_STRUCT(user_session_key);
 
 	lm_good = SMBencrypt(samlogon_state->password, samlogon_state->chall.data, lm_response.data);
-	if (samlogon_state->r.in.logon_level == 6 || !lm_good) {
+	if (!lm_good) {
 		ZERO_STRUCT(lm_hash);
 	} else {
 		E_deshash(samlogon_state->password, lm_hash); 
