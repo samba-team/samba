@@ -127,7 +127,7 @@ sec_getc(FILE *F)
 {
     if(sec_complete && data_prot) {
 	char c;
-	if(sec_read(fileno(F), &c, 1) == 0)
+	if(sec_read(fileno(F), &c, 1) <= 0)
 	    return EOF;
 	return c;
     } else
@@ -141,7 +141,9 @@ block_read(int fd, void *buf, size_t len)
     int b;
     while(len) {
 	b = read(fd, p, len);
-	if(b <= 0)
+	if (b == 0)
+	    return 0;
+	else if (b < 0)
 	    return -1;
 	len -= b;
 	p += b;
@@ -168,12 +170,19 @@ static int
 sec_get_data(int fd, struct buffer *buf, int level)
 {
     int len;
-    
-    if(block_read(fd, &len, sizeof(len)) < 0)
+    int b;
+
+    b = block_read(fd, &len, sizeof(len));
+    if (b == 0)
+	return 0;
+    else if (b < 0)
 	return -1;
     len = ntohl(len);
     buf->data = realloc(buf->data, len);
-    if(block_read(fd, buf->data, len) < 0)
+    b = block_read(fd, buf->data, len);
+    if (b == 0)
+	return 0;
+    else if (b < 0)
 	return -1;
     buf->size = (*mech->decode)(app_data, buf->data, len, data_prot);
     buf->index = 0;
