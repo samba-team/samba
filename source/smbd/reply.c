@@ -1621,7 +1621,6 @@ int reply_readbraw(char *inbuf, char *outbuf)
   int fd;
   char *fname;
 
-#ifdef USE_OPLOCKS
   /*
    * Special check if an oplock break has been issued
    * and the readraw request croses on the wire, we must
@@ -1635,7 +1634,6 @@ int reply_readbraw(char *inbuf, char *outbuf)
     DEBUG(5,("readbraw - oplock break finished\n"));
     return -1;
   }
-#endif
 
   cnum = SVAL(inbuf,smb_tid);
   fnum = GETFNUM(inbuf,smb_vwv0);
@@ -3373,7 +3371,7 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
 #if 0
   unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
-#endif /* USE_OPLOCKS */
+#endif
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
@@ -3391,7 +3389,6 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
 
   data = smb_buf(inbuf);
 
-#ifdef USE_OPLOCKS
   /* Check if this is an oplock break on a file
      we have granted an oplock on.
    */
@@ -3432,7 +3429,6 @@ dev = %x, inode = %x\n", fnum, dev, inode));
     fsp->granted_oplock = False;
     return -1;
   }
-#endif /* USE_OPLOCKS */
 
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */

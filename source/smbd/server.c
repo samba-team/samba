@@ -84,13 +84,11 @@ int chain_fnum = -1;
 /* number of open connections */
 static int num_connections_open = 0;
 
-#ifdef USE_OPLOCKS
 /* Oplock ipc UDP socket. */
 int oplock_sock = -1;
 uint16 oplock_port = 0;
 /* Current number of oplocks we have outstanding. */
 int32 global_oplocks_open = 0;
-#endif /* USE_OPLOCKS */
 
 BOOL global_oplock_break = False;
 
@@ -1487,7 +1485,6 @@ BOOL check_file_sharing(int cnum,char *fname)
       {
         min_share_mode_entry *share_entry = &old_shares[i];
 
-#ifdef USE_OPLOCKS
         /* 
          * Break oplocks before checking share modes. See comment in
          * open_file_shared for details. 
@@ -1513,7 +1510,6 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
           broke_oplock = True;
           break;
         }
-#endif /* USE_OPLOCKS */
 
         /* someone else has a share lock on it, check to see 
            if we can too */
@@ -1729,7 +1725,6 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
         {
           min_share_mode_entry *share_entry = &old_shares[i];
 
-#ifdef USE_OPLOCKS
           /* 
            * By observation of NetBench, oplocks are broken *before* share
            * modes are checked. This allows a file to be closed by the client
@@ -1759,7 +1754,6 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
             broke_oplock = True;
             break;
           }
-#endif /* USE_OPLOCKS */
 
           /* someone else has a share lock on it, check to see 
              if we can too */
@@ -1841,7 +1835,6 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
     if (lp_share_modes(SNUM(cnum)))
     {
       uint16 port = 0;
-#ifdef USE_OPLOCKS
       /* JRA. Currently this only services Exlcusive and batch
          oplocks (no other opens on this file). This needs to
          be extended to level II oplocks (multiple reader
@@ -1862,10 +1855,6 @@ dev = %x, inode = %x\n", oplock_request, fname, dev, inode));
         port = 0;
         oplock_request = 0;
       }
-#else /* USE_OPLOCKS */
-      oplock_request = 0;
-      port = 0;
-#endif /* USE_OPLOCKS */
       set_share_mode(token, fnum, port, oplock_request);
     }
 
@@ -2434,7 +2423,6 @@ static void process_smb(char *inbuf, char *outbuf)
   trans_num++;
 }
 
-#ifdef USE_OPLOCKS
 /****************************************************************************
   open the oplock IPC socket communication
 ****************************************************************************/
@@ -2881,8 +2869,6 @@ oplock break response from pid %d on port %d for dev = %x, inode = %x.\n",
 
   return True;
 }
-
-#endif /* USE_OPLOCKS */
 
 /****************************************************************************
 check if a snum is in use
@@ -4588,9 +4574,7 @@ static void process(void)
     int counter;
     int last_keepalive=0;
     int service_load_counter = 0;
-#ifdef USE_OPLOCKS
     BOOL got_smb = False;
-#endif /* USE_OPLOCKS */
 
     if (deadtime <= 0)
       deadtime = DEFAULT_SMBD_TIMEOUT;
@@ -4601,12 +4585,8 @@ static void process(void)
     errno = 0;      
 
     for (counter=SMBD_SELECT_LOOP; 
-#ifdef USE_OPLOCKS
           !receive_message_or_smb(Client,oplock_sock,
                       InBuffer,BUFFER_SIZE,SMBD_SELECT_LOOP*1000,&got_smb); 
-#else /* USE_OPLOCKS */
-          !receive_smb(Client,InBuffer,SMBD_SELECT_LOOP*1000); 
-#endif /* USE_OPLOCKS */
           counter += SMBD_SELECT_LOOP)
     {
       int i;
@@ -4689,14 +4669,10 @@ static void process(void)
       }
     }
 
-#ifdef USE_OPLOCKS
     if(got_smb)
-#endif /* USE_OPLOCKS */
       process_smb(InBuffer, OutBuffer);
-#ifdef USE_OPLOCKS
     else
       process_local_message(oplock_sock, InBuffer, BUFFER_SIZE);
-#endif /* USE_OPLOCKS */
   }
 }
 
@@ -4976,11 +4952,9 @@ static void usage(char *pname)
 	DEBUG(2,("%s changed root to %s\n",timestring(),lp_rootdir()));
     }
 
-#ifdef USE_OPLOCKS
   /* Setup the oplock IPC socket. */
   if(!open_oplock_ipc())
     exit(1);
-#endif /* USE_OPLOCKS */
 
   process();
   close_sockets();

@@ -441,7 +441,6 @@ static BOOL Parse( FILE *InFile,
    */
   {
   int    c;
-  char  *func = "params.c:Parse() -";
 
   c = EatWhitespace( InFile );
   while( (EOF != c) && (c > 0) )
