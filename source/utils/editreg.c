@@ -444,7 +444,7 @@ struct key_sec_desc_s {
   struct key_sec_desc_s *prev, *next;
   int ref_cnt;
   int state;
-  int offset, stored;
+  int offset;
   SEC_DESC *sec_desc;
 }; 
 
@@ -1321,7 +1321,7 @@ KEY_SEC_DESC *nt_create_init_sec(REGF *regf)
 
   tsec->ref_cnt = 1;
   tsec->state = SEC_DESC_NBK;
-  tsec->stored = tsec->offset = 0;
+  tsec->offset = 0;
 
   tsec->sec_desc = regf->def_sec_desc;
 
@@ -1798,7 +1798,7 @@ KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
     if (!tmp) {
       return NULL;
     }
-    bzero(tmp, sizeof(KEY_SEC_DESC));
+    bzero(tmp, sizeof(KEY_SEC_DESC)); /* Neatly sets offset to 0 */
     tmp->state = SEC_DESC_RES;
     if (!alloc_sk_map_entry(regf, tmp, sk_off)) {
       return NULL;
@@ -1889,6 +1889,12 @@ SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
   tmp->type = SVAL(&sec_desc->type);
   if (verbose) fprintf(stdout, "SEC_DESC Rev: %0X, Type: %0X\n", 
 		       tmp->rev, tmp->type);
+  if (verbose) fprintf(stdout, "SEC_DESC Owner Off: %0X\n",
+		       IVAL(&sec_desc->owner_off));
+  if (verbose) fprintf(stdout, "SEC_DESC Group Off: %0X\n",
+		       IVAL(&sec_desc->group_off));
+  if (verbose) fprintf(stdout, "SEC_DESC DACL Off: %0X\n",
+		       IVAL(&sec_desc->dacl_off));
   tmp->owner = dup_sid((DOM_SID *)((char *)sec_desc + IVAL(&sec_desc->owner_off)));
   if (!tmp->owner) {
     free(tmp);
@@ -2580,6 +2586,72 @@ void *nt_alloc_regf_space(REGF *regf, int size, int *off)
 }
 
 /*
+ * Compute the size of a SID stored ...
+ */
+
+unsigned int sid_size(DOM_SID *sid)
+{
+  unsigned int size;
+
+  if (!sid) return 0;
+
+  size = 8 + (sid->auths * sizeof(unsigned int));
+
+  return size;
+}
+
+/*
+ * Compute the size of an ACE on disk from its components
+ */
+
+unsigned int ace_size(ACE *ace)
+{
+  unsigned int size;
+
+  if (!ace) return 0;
+
+  size = 8 + sid_size(ace->trustee);
+
+  return size;
+}     
+
+/* 
+ * Compute the size of an ACL from its components ...
+ */
+unsigned int acl_size(ACL *acl)
+{
+  unsigned int size;
+  int i;
+
+  if (!acl) return 0;
+
+  size = 8; 
+  for (i = 0; i < acl->num_aces; i++)
+    size += ace_size(acl->aces[i]);
+
+  return size;
+}
+
+/*
+ * Compute the size of the sec desc as a self-relative SD
+ */
+unsigned int sec_desc_size(SEC_DESC *sd)
+{
+  unsigned int size;
+  
+  if (!sd) return 0;
+
+  size = 20;
+
+  if (sd->owner) size += sid_size(sd->owner);
+  if (sd->group) size += sid_size(sd->group);
+  if (sd->sacl) size += acl_size(sd->sacl);
+  if (sd->dacl) size += acl_size(sd->dacl);
+
+  return size;
+}
+
+/*
  * Store the security information
  *
  * If it has already been stored, just get its offset from record
@@ -2588,6 +2660,27 @@ void *nt_alloc_regf_space(REGF *regf, int size, int *off)
 
 unsigned int nt_store_security(REGF *regf, KEY_SEC_DESC *sec)
 {
+  int size = 0;
+  unsigned int sk_off;
+  SK_HDR *sk_hdr;
+  
+  if (sec->offset) return sec->offset;
+
+  /*
+   * OK, we don't have this one in the file yet. We must compute the 
+   * size taken by the security descriptor as a self-relative SD, which
+   * means making one pass over each structure and figuring it out
+   */
+
+  size = sec_desc_size(sec->sec_desc);
+
+  /* Allocate that much space */
+
+  sk_hdr = nt_alloc_regf_space(regf, size, &sk_off);
+
+  if (!sk_hdr) return 0;
+
+  /* Now, lay out the sec_desc in the space provided */
 
   return 0;
 
