@@ -65,6 +65,7 @@ void smbw_setup_shared(void)
 	exit(1);
 }
 
+static int locked;
 
 /***************************************************** 
 lock the shared variable area
@@ -79,10 +80,12 @@ static void lockit(void)
 		}
 		shared_fd = atoi(p);
 	}
-	if (fcntl_lock(shared_fd,SMB_F_SETLKW,0,1,F_WRLCK)==False) {
+	if (locked==0 && 
+	    fcntl_lock(shared_fd,SMB_F_SETLKW,0,1,F_WRLCK)==False) {
 		DEBUG(0,("ERROR: can't get smbw shared lock\n"));
 		exit(1);
 	}
+	locked++;
 }
 
 /***************************************************** 
@@ -90,7 +93,10 @@ unlock the shared variable area
 *******************************************************/
 static void unlockit(void)
 {
-	fcntl_lock(shared_fd,SMB_F_SETLK,0,1,F_UNLCK);
+	locked--;
+	if (locked == 0) {
+		fcntl_lock(shared_fd,SMB_F_SETLK,0,1,F_UNLCK);
+	}
 }
 
 
@@ -122,11 +128,14 @@ char *smbw_getshared(const char *name)
 	i=0;
 	while (i < shared_size) {
 		char *n, *v;
+		int l1, l2;
 
-		n = &variables[i];
-		i += strlen(n)+1;
-		v = &variables[i];
-		i += strlen(v)+1;
+		l1 = SVAL(&variables[i], 0);
+		l2 = SVAL(&variables[i], 2);
+
+		n = &variables[i+4];
+		v = &variables[i+4+l1];
+		i += 4+l1+l2;
 
 		if (strcmp(name,n)) {
 			continue;
@@ -150,25 +159,30 @@ set a variable in the shared area
 void smbw_setshared(const char *name, const char *val)
 {
 	int len;
+	int l1, l2;
 
 	/* we don't allow variable overwrite */
 	if (smbw_getshared(name)) return;
 
 	lockit();
 
-	len = strlen(name) + strlen(val) + 2;
+	l1 = strlen(name)+1;
+	l2 = strlen(val)+1;
 
-	variables = (char *)Realloc(variables, shared_size + len);
+	variables = (char *)Realloc(variables, shared_size + l1+l2+4);
 
 	if (!variables) {
 		DEBUG(0,("out of memory in smbw_setshared\n"));
 		exit(1);
 	}
 
-	pstrcpy(&variables[shared_size], name);
-	shared_size += strlen(name)+1;
-	pstrcpy(&variables[shared_size], val);
-	shared_size += strlen(val)+1;
+	SSVAL(&variables[shared_size], 0, l1);
+	SSVAL(&variables[shared_size], 2, l2);
+
+	pstrcpy(&variables[shared_size] + 4, name);
+	pstrcpy(&variables[shared_size] + 4 + l1, val);
+
+	shared_size += l1+l2+4;
 
 	lseek(shared_fd, 0, SEEK_SET);
 	if (write(shared_fd, variables, shared_size) != shared_size) {
