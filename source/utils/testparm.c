@@ -46,7 +46,7 @@ static int do_global_checks(void)
 	int ret = 0;
 	SMB_STRUCT_STAT st;
 
-	if (lp_security() == SEC_DOMAIN && !lp_encrypted_passwords()) {
+	if (lp_security() >= SEC_DOMAIN && !lp_encrypted_passwords()) {
 		printf("ERROR: in 'security=domain' mode the 'encrypt passwords' parameter must also be set to 'true'.\n");
 		ret = 1;
 	}
@@ -71,7 +71,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	 * Password server sanity checks.
 	 */
 
-	if((lp_security() == SEC_SERVER || lp_security() == SEC_DOMAIN) && !lp_passwordserver()) {
+	if((lp_security() == SEC_SERVER || lp_security() >= SEC_DOMAIN) && !lp_passwordserver()) {
 		pstring sec_setting;
 		if(lp_security() == SEC_SERVER)
 			pstrcpy(sec_setting, "server");
