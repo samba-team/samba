@@ -209,7 +209,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
  done:
 	SAFE_FREE(status);
 
-	DEBUG(10, ("name_status_find: %sfound", name, result ? "" : "not "));
+	DEBUG(10, ("name_status_find: %s %sfound", name, result ? "" : "not "));
 
 	if (result)
 		DEBUGADD(10, (", name %s ip address is %s",
