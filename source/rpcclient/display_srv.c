@@ -94,19 +94,16 @@ char *get_file_oplock_str(uint32 op_type)
 /****************************************************************************
 convert a share type enum to a string
 ****************************************************************************/
-char *get_share_type_str(uint32 type)
+static const char *get_share_type_str(uint32 type)
 {
-	static fstring typestr;
-
 	switch (type)
 	{
-		case STYPE_DISKTREE: fstrcpy(typestr, "Disk"   ); break;
-		case STYPE_PRINTQ  : fstrcpy(typestr, "Printer"); break;	      
-		case STYPE_DEVICE  : fstrcpy(typestr, "Device" ); break;
-		case STYPE_IPC     : fstrcpy(typestr, "IPC"    ); break;      
-		default            : fstrcpy(typestr, "????"   ); break;      
+		case STYPE_DISKTREE: return "Disk"   ; break;
+		case STYPE_PRINTQ  : return "Printer"; break;	      
+		case STYPE_DEVICE  : return "Device" ; break;
+		case STYPE_IPC     : return "IPC"    ; break;      
+		default            : return "????"   ; break;      
 	}
-	return typestr;
 }
 
 /****************************************************************************
@@ -592,14 +589,9 @@ void display_srv_tprt_info_ctr(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 share info level 1 display function
 ****************************************************************************/
-void display_share_info_1(FILE *out_hnd, enum action_type action, 
+static void display_share_info_1(FILE *out_hnd, enum action_type action,
 		SH_INFO_1 *const info1, SH_INFO_1_STR *const str1)
 {
-	if (info1 == NULL || str1 == NULL)
-	{
-		return;
-	}
-
 	switch (action)
 	{
 		case ACTION_HEADER:
@@ -612,6 +604,11 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 		{
 			fstring remark  ;
 			fstring net_name;
+
+			if (info1 == NULL || str1 == NULL)
+			{
+				return;
+			}
 
 			unistr2_to_ascii(net_name, &str1->uni_netname, sizeof(net_name)-1);
 			unistr2_to_ascii(remark, &str1->uni_remark, sizeof(remark)-1);
@@ -632,14 +629,9 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 share info level 2 display function
 ****************************************************************************/
-void display_share_info_2(FILE *out_hnd, enum action_type action, 
+static void display_share_info_2(FILE *out_hnd, enum action_type action, 
 		SH_INFO_2 *const info2, SH_INFO_2_STR *const str2)
 {
-	if (info2 == NULL || str2 == NULL)
-	{
-		return;
-	}
-
 	switch (action)
 	{
 		case ACTION_HEADER:
@@ -654,6 +646,11 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 			fstring net_name;
 			fstring path    ;
 			fstring password;
+
+			if (info2 == NULL || str2 == NULL)
+			{
+				return;
+			}
 
 			unistr2_to_ascii(net_name, &str2->uni_netname, sizeof(net_name)-1);
 			unistr2_to_ascii(remark, &str2->uni_remark, sizeof(remark)-1);
@@ -678,7 +675,7 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 share info level 1 container display function
 ****************************************************************************/
-void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action, 
+static void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action, 
 				SRV_SHARE_INFO_1 *const ctr)
 {
 	if (ctr == NULL)
@@ -691,6 +688,7 @@ void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
+			display_share_info_1(out_hnd, ACTION_HEADER, NULL, NULL);
 			break;
 		}
 		case ACTION_ENUMERATE:
@@ -699,14 +697,13 @@ void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < ctr->num_entries_read; i++)
 			{
-				display_share_info_1(out_hnd, ACTION_HEADER   , &(ctr->info_1[i]), &(ctr->info_1_str[i]));
-				display_share_info_1(out_hnd, ACTION_ENUMERATE, &(ctr->info_1[i]), &(ctr->info_1_str[i]));
-				display_share_info_1(out_hnd, ACTION_FOOTER   , &(ctr->info_1[i]), &(ctr->info_1_str[i]));
+				display_share_info_1(out_hnd, ACTION_ENUMERATE, ctr->info_1[i], ctr->info_1_str[i]);
 			}
 			break;
 		}
 		case ACTION_FOOTER:
 		{
+			display_share_info_1(out_hnd, ACTION_FOOTER, NULL, NULL);
 			break;
 		}
 	}
@@ -715,7 +712,7 @@ void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 share info level 2 container display function
 ****************************************************************************/
-void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action, 
+static void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action, 
 				SRV_SHARE_INFO_2 *const ctr)
 {
 	if (ctr == NULL)
@@ -728,6 +725,7 @@ void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
+			display_share_info_2(out_hnd, ACTION_HEADER, NULL, NULL);
 			break;
 		}
 		case ACTION_ENUMERATE:
@@ -736,14 +734,13 @@ void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < ctr->num_entries_read; i++)
 			{
-				display_share_info_2(out_hnd, ACTION_HEADER   , &(ctr->info_2[i]), &(ctr->info_2_str[i]));
-				display_share_info_2(out_hnd, ACTION_ENUMERATE, &(ctr->info_2[i]), &(ctr->info_2_str[i]));
-				display_share_info_2(out_hnd, ACTION_FOOTER   , &(ctr->info_2[i]), &(ctr->info_2_str[i]));
+				display_share_info_2(out_hnd, ACTION_ENUMERATE, ctr->info_2[i], ctr->info_2_str[i]);
 			}
 			break;
 		}
 		case ACTION_FOOTER:
 		{
+			display_share_info_2(out_hnd, ACTION_FOOTER, NULL, NULL);
 			break;
 		}
 	}
@@ -1131,7 +1128,7 @@ void display_share(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_ENUMERATE:
 		{
-			report(out_hnd, "\t%-15.15s%-10.10s%s\n", 
+			report(out_hnd, "\t%-15.15s%-8s %s\n",
 			                 sname, get_share_type_str(type), comment);
 			break;
 		}
@@ -1159,9 +1156,16 @@ void display_share2(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_ENUMERATE:
 		{
-			report(out_hnd, "\t%-15.15s%-10.10s%s %x %x %x %s %s\n", 
-			                 sname, get_share_type_str(type), comment, 
-			                 perms, max_uses, num_uses, path, password);
+			report(out_hnd,
+			       "\t%-15.15s%-8s %x %d/%d\n", 
+			       sname, get_share_type_str(type),
+			       perms, num_uses, max_uses);
+			report(out_hnd,
+			       "\t\t\t\t%s %s\n", path, password);
+			if (comment && *comment)
+			{
+				report(out_hnd, "\t\t\t\t%s\n", comment);
+			}
 			break;
 		}
 		case ACTION_FOOTER:

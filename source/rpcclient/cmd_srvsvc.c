@@ -247,6 +247,8 @@ void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[])
 		display_srv_share_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
 	}
 
+	srv_free_srv_share_ctr(&ctr);
+
 	if (res)
 	{
 		DEBUG(5,("cmd_srv_enum_shares: query succeeded\n"));

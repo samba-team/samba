@@ -32,7 +32,8 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  makes a SH_INFO_1_STR structure
 ********************************************************************/
-BOOL make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark)
+BOOL make_srv_share_info1_str(SH_INFO_1_STR *sh1,
+			      const char *net_name, const char *remark)
 {
 	if (sh1 == NULL) return False;
 
@@ -42,6 +43,11 @@ BOOL make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark)
 	make_unistr2(&(sh1->uni_remark ), remark  , strlen(remark  )+1);
 
 	return True;
+}
+
+static void srv_free_share_info1_str(SH_INFO_1_STR *sh1)
+{
+	safe_free(sh1);
 }
 
 /*******************************************************************
@@ -61,14 +67,15 @@ static BOOL srv_io_share_info1_str(char *desc,  SH_INFO_1_STR *sh1, prs_struct *
 	smb_io_unistr2("", &(sh1->uni_remark ), True, ps, depth); 
 	prs_align(ps);
 
-
 	return True;
 }
 
 /*******************************************************************
  makes a SH_INFO_1 structure
 ********************************************************************/
-BOOL make_srv_share_info1(SH_INFO_1 *sh1, char *net_name, uint32 type, char *remark)
+BOOL make_srv_share_info1(SH_INFO_1 *sh1,
+			  const char *net_name, uint32 type,
+			  const char *remark)
 {
 	if (sh1 == NULL) return False;
 
@@ -79,6 +86,11 @@ BOOL make_srv_share_info1(SH_INFO_1 *sh1, char *net_name, uint32 type, char *rem
 	sh1->ptr_remark  = remark   != NULL ? 1 : 0;
 
 	return True;
+}
+
+static void srv_free_share_info1(SH_INFO_1 *sh1)
+{
+	safe_free(sh1);
 }
 
 /*******************************************************************
@@ -103,12 +115,38 @@ static BOOL srv_io_share_info1(char *desc,  SH_INFO_1 *sh1, prs_struct *ps, int 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+static void srv_free_srv_share_info_1(SRV_SHARE_INFO_1 *ctr)
+{
+	void(*fn)(void*) = (void(*)(void*))&srv_free_share_info1;
+	void(*fnstr)(void*) = (void(*)(void*))&srv_free_share_info1_str;
+
+	if (!ctr) return;
+
+	free_void_array(ctr->num_entries_read,
+			(void**) ctr->info_1, *fn);
+	free_void_array(ctr->num_entries_read,
+			(void**) ctr->info_1_str, *fnstr);
+
+	ctr->num_entries_read = 0;
+	ctr->ptr_share_info = 0;
+}
+
 static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_struct *ps, int depth)
 {
 	if (ctr == NULL) return False;
 
 	prs_debug(ps, depth, desc, "srv_io_share_1_ctr");
 	depth++;
+
+	if(! ctr)
+	{
+		return False;
+	}
+
+	if(ps->io)
+	{
+		ZERO_STRUCTP(ctr);
+	}
 
 	prs_align(ps);
 
@@ -119,23 +157,36 @@ static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_stru
 	{
 		uint32 i;
 		uint32 num_entries = ctr->num_entries_read;
-		if (num_entries > MAX_SHARE_ENTRIES)
-		{
-			num_entries = MAX_SHARE_ENTRIES; /* report this! */
-		}
 
 		prs_uint32("num_entries_read2", ps, depth, &(ctr->num_entries_read2));
 
-		SMB_ASSERT_ARRAY(ctr->info_1, num_entries);
-
-		for (i = 0; i < num_entries; i++)
+		if(ps->io)
 		{
-			srv_io_share_info1("", &(ctr->info_1[i]), ps, depth); 
+			ctr->info_1 = g_new0(SH_INFO_1 *, num_entries);
+			ctr->info_1_str = g_new0(SH_INFO_1_STR *, num_entries);
+			if (! ctr->info_1 || ! ctr->info_1_str)
+			{
+				srv_free_srv_share_info_1(ctr);
+				return False;
+			}
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			srv_io_share_info1_str("", &(ctr->info_1_str[i]), ps, depth); 
+			if(ps->io)
+			{
+				ctr->info_1[i] = g_new(SH_INFO_1, 1);
+			}
+			srv_io_share_info1("", ctr->info_1[i], ps, depth); 
+		}
+
+		for (i = 0; i < num_entries; i++)
+		{
+			if(ps->io)
+			{
+				ctr->info_1_str[i] = g_new(SH_INFO_1_STR, 1);
+			}
+			srv_io_share_info1_str("", ctr->info_1_str[i], ps, depth); 
 		}
 
 		prs_align(ps);
@@ -148,8 +199,8 @@ static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_stru
  makes a SH_INFO_2_STR structure
 ********************************************************************/
 BOOL make_srv_share_info2_str(SH_INFO_2_STR *sh2,
-				char *net_name, char *remark,
-				char *path, char *pass)
+			      const char *net_name, const char *remark,
+			      const char *path, const char *pass)
 {
 	if (sh2 == NULL) return False;
 
@@ -161,6 +212,11 @@ BOOL make_srv_share_info2_str(SH_INFO_2_STR *sh2,
 	make_unistr2(&(sh2->uni_passwd ), pass    , strlen(pass    )+1);
 
 	return True;
+}
+
+static void srv_free_share_info2_str(SH_INFO_2_STR *sh2)
+{
+	safe_free(sh2);
 }
 
 /*******************************************************************
@@ -191,9 +247,10 @@ static BOOL srv_io_share_info2_str(char *desc,  SH_INFO_2_STR *ss2, SH_INFO_2 *s
  makes a SH_INFO_2 structure
 ********************************************************************/
 BOOL make_srv_share_info2(SH_INFO_2 *sh2,
-				char *net_name, uint32 type, char *remark,
-				uint32 perms, uint32 max_uses, uint32 num_uses,
-				char *path, char *pass)
+			  const char *net_name, uint32 type,
+			  const char *remark,
+			  uint32 perms, uint32 max_uses, uint32 num_uses,
+			  const char *path, const char *pass)
 {
 	if (sh2 == NULL) return False;
 
@@ -210,6 +267,11 @@ BOOL make_srv_share_info2(SH_INFO_2 *sh2,
 	sh2->ptr_passwd  = pass     != NULL ? 1 : 0;
 
 	return True;
+}
+
+static void srv_free_share_info2(SH_INFO_2 *sh2)
+{
+	safe_free(sh2);
 }
 
 /*******************************************************************
@@ -239,12 +301,38 @@ static BOOL srv_io_share_info2(char *desc,  SH_INFO_2 *sh2, prs_struct *ps, int 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+static void srv_free_srv_share_info_2(SRV_SHARE_INFO_2 *ctr)
+{
+	void(*fn)(void*) = (void(*)(void*))&srv_free_share_info2;
+	void(*fnstr)(void*) = (void(*)(void*))&srv_free_share_info2_str;
+
+	if (!ctr) return;
+
+	free_void_array(ctr->num_entries_read,
+			(void**) ctr->info_2, *fn);
+	free_void_array(ctr->num_entries_read,
+			(void**) ctr->info_2_str, *fnstr);
+
+	ctr->num_entries_read = 0;
+	ctr->ptr_share_info = 0;
+}
+
 static BOOL srv_io_srv_share_info_2(char *desc,  SRV_SHARE_INFO_2 *ctr, prs_struct *ps, int depth)
 {
 	if (ctr == NULL) return False;
 
 	prs_debug(ps, depth, desc, "srv_io_share_2_ctr");
 	depth++;
+
+	if (! ctr)
+	{
+		return False;
+	}
+
+	if(ps->io)
+	{
+		ZERO_STRUCTP(ctr);
+	}
 
 	prs_align(ps);
 
@@ -255,23 +343,44 @@ static BOOL srv_io_srv_share_info_2(char *desc,  SRV_SHARE_INFO_2 *ctr, prs_stru
 	{
 		uint32 i;
 		uint32 num_entries = ctr->num_entries_read;
-		if (num_entries > MAX_SHARE_ENTRIES)
-		{
-			num_entries = MAX_SHARE_ENTRIES; /* report this! */
-		}
 
 		prs_uint32("num_entries_read2", ps, depth, &(ctr->num_entries_read2));
 
-		SMB_ASSERT_ARRAY(ctr->info_2, num_entries);
-
-		for (i = 0; i < num_entries; i++)
+		if(ps->io)
 		{
-			if (!srv_io_share_info2("", &(ctr->info_2[i]), ps, depth)) return False;
+			ctr->info_2 = g_new0(SH_INFO_2 *, num_entries);
+			ctr->info_2_str = g_new0(SH_INFO_2_STR *, num_entries);
+			if (! ctr->info_2 || ! ctr->info_2_str)
+			{
+				srv_free_srv_share_info_2(ctr);
+				return False;
+			}
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			if (!srv_io_share_info2_str("", &(ctr->info_2_str[i]), &(ctr->info_2[i]), ps, depth)) return False;
+			if(ps->io)
+			{
+				ctr->info_2[i] = g_new(SH_INFO_2, 1);
+			}
+			if (!srv_io_share_info2("", ctr->info_2[i], ps, depth))
+			{
+				srv_free_srv_share_info_2(ctr);
+				return False;
+			}
+		}
+
+		for (i = 0; i < num_entries; i++)
+		{
+			if(ps->io)
+			{
+				ctr->info_2_str[i] = g_new(SH_INFO_2_STR, 1);
+			}
+			if (!srv_io_share_info2_str("", ctr->info_2_str[i], ctr->info_2[i], ps, depth))
+			{
+				srv_free_srv_share_info_2(ctr);
+				return False;
+			}
 		}
 
 		prs_align(ps);
@@ -283,6 +392,20 @@ static BOOL srv_io_srv_share_info_2(char *desc,  SRV_SHARE_INFO_2 *ctr, prs_stru
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+void srv_free_srv_share_ctr(SRV_SHARE_INFO_CTR *ctr)
+{
+	if(! ctr) return;
+	switch (ctr->switch_value)
+	{
+		case 2:
+			srv_free_srv_share_info_2(&(ctr->share.info2)); 
+			break;
+		case 1:
+			srv_free_srv_share_info_1(&(ctr->share.info1)); 
+			break;
+	}
+}
+
 static BOOL srv_io_srv_share_ctr(char *desc,  SRV_SHARE_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
 	if (ctr == NULL) return False;

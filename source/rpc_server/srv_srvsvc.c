@@ -163,6 +163,7 @@ static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
 
 	ZERO_STRUCT(q_n);
 	ZERO_STRUCT(r_n);
+	ZERO_STRUCT(ctr);
 
         q_n.ctr = &ctr;
 	r_n.ctr = &ctr;
@@ -182,6 +183,8 @@ static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
 
 	/* store the response in the SMB stream */
 	srv_io_r_net_share_enum("", &r_n, rdata, 0);
+
+	srv_free_srv_share_ctr(&ctr);
 }
 
 /*******************************************************************

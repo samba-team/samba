@@ -359,8 +359,8 @@ typedef struct share_info_1_info
 	uint32 ptr_share_info;                       /* Buffer */
 	uint32 num_entries_read2;                    /* EntriesRead */
 
-	SH_INFO_1     info_1    [MAX_SHARE_ENTRIES]; /* share entry pointers */
-	SH_INFO_1_STR info_1_str[MAX_SHARE_ENTRIES]; /* share entry strings */
+	SH_INFO_1     **info_1;     /* share entry pointers */
+	SH_INFO_1_STR **info_1_str; /* share entry strings */
 
 } SRV_SHARE_INFO_1;
 
@@ -395,8 +395,8 @@ typedef struct share_info_2_info
 	uint32 ptr_share_info;                       /* Buffer */
 	uint32 num_entries_read2;                    /* EntriesRead */
 
-	SH_INFO_2     info_2    [MAX_SHARE_ENTRIES]; /* share entry pointers */
-	SH_INFO_2_STR info_2_str[MAX_SHARE_ENTRIES]; /* share entry strings */
+	SH_INFO_2     **info_2;     /* share entry pointers */
+	SH_INFO_2_STR **info_2_str; /* share entry strings */
 
 } SRV_SHARE_INFO_2;
 

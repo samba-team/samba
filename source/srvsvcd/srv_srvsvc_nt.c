@@ -210,14 +210,21 @@ static void make_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, uint32 *snum,
 		return;
 	}
 
+	sh1->info_1     = g_new(SH_INFO_1 *, (*svcs));
+	sh1->info_1_str = g_new(SH_INFO_1_STR *, (*svcs));
+
 	DEBUG(5,("make_srv_share_1_sh1\n"));
 
 	for (; (*snum) < (*svcs) && num_entries < MAX_SHARE_ENTRIES; (*snum)++)
 	{
 		if (lp_browseable((*snum)) && lp_snum_ok((*snum)))
 		{
-			make_srv_share_1_info(&(sh1->info_1    [num_entries]),
-			  &(sh1->info_1_str[num_entries]), (*snum));
+			sh1->info_1    [num_entries] = g_new(SH_INFO_1, 1);
+			sh1->info_1_str[num_entries] = g_new(SH_INFO_1_STR, 1);
+
+			make_srv_share_1_info(sh1->info_1    [num_entries],
+			                      sh1->info_1_str[num_entries],
+			                      (*snum));
 
 			/* move on to creating next share */
 			num_entries++;
@@ -292,14 +299,21 @@ static void make_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, uint32 *snum,
 		return;
 	}
 
+	sh2->info_2     = g_new(SH_INFO_2 *, (*svcs));
+	sh2->info_2_str = g_new(SH_INFO_2_STR *, (*svcs));
+
 	DEBUG(5,("make_srv_share_2_sh1\n"));
 
 	for (; (*snum) < (*svcs) && num_entries < MAX_SHARE_ENTRIES; (*snum)++)
 	{
 		if (lp_browseable((*snum)) && lp_snum_ok((*snum)))
 		{
-			make_srv_share_2_info(&(sh2->info_2    [num_entries]),
-			  &(sh2->info_2_str[num_entries]), (*snum));
+			sh2->info_2    [num_entries] = g_new(SH_INFO_2, 1);
+			sh2->info_2_str[num_entries] = g_new(SH_INFO_2_STR, 1);
+
+			make_srv_share_2_info(sh2->info_2    [num_entries],
+					      sh2->info_2_str[num_entries],
+					      (*snum));
 
 			/* move on to creating next share */
 			num_entries++;
