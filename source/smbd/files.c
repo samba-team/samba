@@ -120,7 +120,7 @@ void file_close_conn(connection_struct *conn)
 	
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
-		if (fsp->conn == conn && fsp->open) {
+		if (fsp->conn == conn) {
 			close_file(fsp,False); 
 		}
 	}
@@ -173,7 +173,7 @@ void file_close_user(int vuid)
 
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
-		if ((fsp->vuid == vuid) && fsp->open) {
+		if (fsp->vuid == vuid) {
 			close_file(fsp,False);
 		}
 	}
@@ -191,8 +191,7 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 	files_struct *fsp;
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
-		if (fsp->open && 
-			fsp->fd != -1 &&
+		if (fsp->fd != -1 &&
 		    fsp->dev == dev && 
 		    fsp->inode == inode &&
 		    (tval ? (fsp->open_time.tv_sec == tval->tv_sec) : True ) &&
@@ -208,6 +207,22 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 }
 
 /****************************************************************************
+ Check if an fsp still exists.
+****************************************************************************/
+
+files_struct *file_find_fsp(files_struct *orig_fsp)
+{
+	files_struct *fsp;
+
+    for (fsp=Files;fsp;fsp=fsp->next) {
+        if (fsp == orig_fsp)
+            return fsp;
+    }
+
+    return NULL;
+}
+
+/****************************************************************************
  Find the first fsp given a device and inode.
 ****************************************************************************/
 
@@ -216,8 +231,7 @@ files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
     files_struct *fsp;
 
     for (fsp=Files;fsp;fsp=fsp->next) {
-        if (fsp->open &&
-	    fsp->fd != -1 &&
+        if ( fsp->fd != -1 &&
             fsp->dev == dev &&
             fsp->inode == inode )
             return fsp;
@@ -235,8 +249,7 @@ files_struct *file_find_di_next(files_struct *start_fsp)
     files_struct *fsp;
 
     for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
-        if (fsp->open &&
-	    fsp->fd != -1 &&
+        if ( fsp->fd != -1 &&
             fsp->dev == start_fsp->dev &&
             fsp->inode == start_fsp->inode )
             return fsp;
@@ -253,7 +266,7 @@ files_struct *file_find_print(void)
 	files_struct *fsp;
 
 	for (fsp=Files;fsp;fsp=fsp->next) {
-		if (fsp->open && fsp->print_file) return fsp;
+		if (fsp->print_file) return fsp;
 	} 
 
 	return NULL;
@@ -269,7 +282,7 @@ void file_sync_all(connection_struct *conn)
 
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
-		if (fsp->open && (conn == fsp->conn) && (fsp->fd != -1)) {
+		if ((conn == fsp->conn) && (fsp->fd != -1)) {
 			conn->vfs_ops.fsync(fsp->fd);
 		}
 	}

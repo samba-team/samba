@@ -73,7 +73,7 @@
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
 /* these are useful macros for checking validity of handles */
-#define OPEN_FSP(fsp)    ((fsp) && (fsp)->open && !(fsp)->is_directory)
+#define OPEN_FSP(fsp)    ((fsp) && !(fsp)->is_directory)
 #define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
@@ -150,7 +150,7 @@
 #define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \
 			    w->wr_discard = True, -1)
 /* Macro to test if an error has been cached for this fnum */
-#define HAS_CACHED_ERROR(fsp) ((fsp)->open && (fsp)->wbmpx_ptr && \
+#define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
 				(fsp)->wbmpx_ptr->wr_discard)
 /* Macro to turn the cached error into an error packet */
 #define CACHED_ERROR(fsp) cached_error_packet(inbuf,outbuf,fsp,__LINE__)

@@ -90,8 +90,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	int accmode = (flags & O_ACCMODE);
 	SMB_STRUCT_STAT sbuf;
 
-	fsp->open = False;
-	fsp->fd = 0;
+	fsp->fd = -1;
 	fsp->oplock_type = NO_OPLOCK;
 	errno = EPERM;
 
@@ -155,7 +154,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->vuid = current_user.vuid;
 	fsp->size = 0;
 	fsp->pos = -1;
-	fsp->open = True;
 	fsp->can_lock = True;
 	fsp->can_read = ((flags & O_WRONLY)==0);
 	fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
@@ -508,6 +506,7 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 	SMB_INO_T inode = 0;
 	int num_share_modes = 0;
 	BOOL all_current_opens_are_level_II = False;
+	BOOL fsp_open = False;
 	files_struct *fsp = NULL;
 	int open_mode=0;
 	uint16 port = 0;
@@ -524,7 +523,6 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 	if(!fsp)
 		return NULL;
 
-	fsp->open = False;
 	fsp->fd = -1;
 
 	DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
@@ -638,14 +636,14 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 			flags,flags2,(int)mode));
 
-	fsp->open = open_file(fsp,conn,fname,flags|(flags2&~(O_TRUNC)),mode);
+	fsp_open = open_file(fsp,conn,fname,flags|(flags2&~(O_TRUNC)),mode);
 
-	if (!fsp->open && (flags == O_RDWR) && (errno != ENOENT) && fcbopen) {
-		if((fsp->open = open_file(fsp,conn,fname,O_RDONLY,mode)) == True)
+	if (!fsp_open && (flags == O_RDWR) && (errno != ENOENT) && fcbopen) {
+		if((fsp_open = open_file(fsp,conn,fname,O_RDONLY,mode)) == True)
 			flags = O_RDONLY;
 	}
 
-	if (!fsp->open) {
+	if (!fsp_open) {
 		if(file_existed)
 			unlock_share_entry(conn, dev, inode);
 		file_free(fsp);
@@ -790,7 +788,6 @@ files_struct *open_file_stat(connection_struct *conn,
 	fsp->vuid = current_user.vuid;
 	fsp->size = 0;
 	fsp->pos = -1;
-	fsp->open = True;
 	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->can_write = False;
@@ -915,7 +912,6 @@ files_struct *open_directory(connection_struct *conn,
 	fsp->vuid = current_user.vuid;
 	fsp->size = 0;
 	fsp->pos = -1;
-	fsp->open = True;
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->can_write = False;
