@@ -48,118 +48,122 @@ usage (void)
 int
 main (int argc, char **argv)
 {
-  krb5_error_code ret;
-  krb5_context context;
-  krb5_ccache  ccache;
-  krb5_principal principal;
-  krb5_principal server;
-  krb5_creds cred;
-  krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
-  int c;
-  char *realm;
-  int preauth = 1;
+    krb5_error_code ret;
+    krb5_context context;
+    krb5_ccache  ccache;
+    krb5_principal principal;
+    krb5_principal server;
+    krb5_creds cred;
+    krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
+    int c;
+    char *realm;
+    int preauth = 1;
 
-  union {
-      krb5_flags i;
-      KDCOptions f;
-  }options;
+    union {
+	krb5_flags i;
+	KDCOptions f;
+    }options;
 
-  set_progname (argv[0]);
-  options.i = 0;
-  while ((c = getopt (argc, argv, "fp")) != EOF) {
-      switch (c) {
-      case 'f':
-	  options.f.forwardable = 1;
-	  break;
-      case 'p':
-	  preauth = 0;
-	  break;
-      default:
-	  usage ();
-      }
-  }
-  argc -= optind;
-  argv += optind;
+    set_progname (argv[0]);
+    memset(&cred, 0, sizeof(cred));
+    options.i = 0;
+    while ((c = getopt (argc, argv, "frp")) != EOF) {
+	switch (c) {
+	case 'f':
+	    options.f.forwardable = 1;
+	    break;
+	case 'p':
+	    preauth = 0;
+	    break;
+	case 'r':
+	    options.f.renewable = 1;
+	    cred.times.renew_till = 1 << 30;
+	    break;
+	default:
+	    usage ();
+	}
+    }
+    argc -= optind;
+    argv += optind;
 
-  ret = krb5_init_context (&context);
-  if (ret)
-      errx (1, "krb5_init_context: %s", krb5_get_err_text(context, ret));
+    ret = krb5_init_context (&context);
+    if (ret)
+	errx (1, "krb5_init_context: %s", krb5_get_err_text(context, ret));
   
-  ret = krb5_cc_default (context, &ccache);
-  if (ret)
-      errx (1, "krb5_cc_default: %s", krb5_get_err_text(context, ret));
+    ret = krb5_cc_default (context, &ccache);
+    if (ret)
+	errx (1, "krb5_cc_default: %s", krb5_get_err_text(context, ret));
   
-  ret = krb5_get_default_realm (context, &realm);
-  if (ret)
-      errx (1, "krb5_get_default_realm: %s",
-	    krb5_get_err_text(context, ret));
+    ret = krb5_get_default_realm (context, &realm);
+    if (ret)
+	errx (1, "krb5_get_default_realm: %s",
+	      krb5_get_err_text(context, ret));
 
-  if(argv[0]){
-      char *p;
-      ret = krb5_parse_name (context, argv[0], &principal);
-      if (ret)
-	  errx (1, "krb5_parse_name: %s", krb5_get_err_text(context, ret));
-      krb5_unparse_name(context, principal, &p);
-      fprintf (stderr, "%s's ", p);
-      free(p);
-  }else{
-      struct passwd *pw;
+    if(argv[0]){
+	char *p;
+	ret = krb5_parse_name (context, argv[0], &principal);
+	if (ret)
+	    errx (1, "krb5_parse_name: %s", krb5_get_err_text(context, ret));
+	krb5_unparse_name(context, principal, &p);
+	fprintf (stderr, "%s's ", p);
+	free(p);
+    }else{
+	struct passwd *pw;
 
-      pw = getpwuid(getuid());
-      ret = krb5_build_principal(context, &principal,
-				 strlen(realm), realm,
-				 pw->pw_name, NULL);
-      if (ret)
-	  errx (1, "krb5_build_principal: %s",
-		krb5_get_err_text(context, ret));
-      fprintf (stderr, "%s@%s's ", pw->pw_name, realm);
-  }
-  free(realm);
+	pw = getpwuid(getuid());
+	ret = krb5_build_principal(context, &principal,
+				   strlen(realm), realm,
+				   pw->pw_name, NULL);
+	if (ret)
+	    errx (1, "krb5_build_principal: %s",
+		  krb5_get_err_text(context, ret));
+	fprintf (stderr, "%s@%s's ", pw->pw_name, realm);
+    }
+    free(realm);
 
-  ret = krb5_cc_initialize (context, ccache, principal);
-  if (ret)
-      errx (1, "krb5_cc_initialize: %s",
-	    krb5_get_err_text(context, ret));
+    ret = krb5_cc_initialize (context, ccache, principal);
+    if (ret)
+	errx (1, "krb5_cc_initialize: %s",
+	      krb5_get_err_text(context, ret));
 
-  memset(&cred, 0, sizeof(cred));
-  cred.client = principal;
-  cred.times.endtime = 0;
+    cred.client = principal;
+    cred.times.endtime = 0;
 
-  ret = krb5_build_principal_ext (context,
-				  &server,
-				  strlen(principal->realm),
-				  principal->realm,
-				  strlen("krbtgt"),
-				  "krbtgt",
-				  strlen(principal->realm),
-				  principal->realm,
-				  NULL);
-  if (ret)
-      errx (1, "krb5_build_principal_ext: %s",
-	    krb5_get_err_text(context, ret));
+    ret = krb5_build_principal_ext (context,
+				    &server,
+				    strlen(principal->realm),
+				    principal->realm,
+				    strlen("krbtgt"),
+				    "krbtgt",
+				    strlen(principal->realm),
+				    principal->realm,
+				    NULL);
+    if (ret)
+	errx (1, "krb5_build_principal_ext: %s",
+	      krb5_get_err_text(context, ret));
 
-  server->name.name_type = KRB5_NT_SRV_INST;
+    server->name.name_type = KRB5_NT_SRV_INST;
 
-  cred.client = principal;
-  cred.server = server;
-  cred.times.endtime = 0;
+    cred.client = principal;
+    cred.server = server;
+    cred.times.endtime = 0;
 
-  ret = krb5_get_in_tkt_with_password (context,
-				       options.i,
-				       NULL,
-				       NULL,
-				       preauth ? pre_auth_types : NULL,
-				       NULL,
-				       ccache,
-				       &cred,
-				       NULL);
-  if (ret)
-      errx (1, "krb5_get_in_tkt_with_password: %s",
-	    krb5_get_err_text(context, ret));
-  
-  krb5_free_principal (context, principal);
-  krb5_free_principal (context, server);
-  krb5_free_ccache (context, ccache);
-  krb5_free_context (context);
-  return 0;
+    ret = krb5_get_in_tkt_with_password (context,
+					 options.i,
+					 NULL,
+					 NULL,
+					 preauth ? pre_auth_types : NULL,
+					 NULL,
+					 ccache,
+					 &cred,
+					 NULL);
+    if (ret)
+	errx (1, "krb5_get_in_tkt_with_password: %s",
+	      krb5_get_err_text(context, ret));
+
+    krb5_free_principal (context, principal);
+    krb5_free_principal (context, server);
+    krb5_free_ccache (context, ccache);
+    krb5_free_context (context);
+    return 0;
 }
