@@ -1,17 +1,31 @@
 /*
   eventlog interface definition
 */
-[ uuid(82273fdc-e32a-17c3-3f78-827929dc23ea),
-  version(1.0),
+[ uuid(82273fdc-e32a-18c3-3f78-827929dc23ea),
+  version(0.0),
   pointer_default(unique)
 ] interface eventlog
 {
+	typedef struct {
+		uint16 unknown0;
+		uint16 unknown1;
+	} eventlog_OpenUnknown0;
+
+	typedef struct {
+		[value(2*strlen_m(r->name))] uint16 name_len;
+		[value(r->name_len)]       uint16 name_size;
+		unistr_noterm *name;
+	} eventlog_String;
+
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS eventlog_OpenEventLog(
-		[in]	  unistr *servername,
-		[in]	  unistr *sourcename,
-		[out,ref] policy_handle *handle
+		[in]	    eventlog_OpenUnknown0 *unknown0,
+		[in]	    eventlog_String source,
+		[in]	    eventlog_String unknown1,
+		[in]	    uint32 unknown2,
+		[in]	    uint32 unknown3,
+		[out,ref]   policy_handle *handle
 	);
 
 	/******************/

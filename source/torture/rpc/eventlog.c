@@ -21,6 +21,13 @@
 
 #include "includes.h"
 
+static void init_eventlog_String(struct eventlog_String *name, const char *s)
+{
+	name->name = s;
+	name->name_len = 2*strlen_m(s);
+	name->name_size = name->name_len;
+}
+
 BOOL test_CloseEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			struct policy_handle *handle)
 {
@@ -44,12 +51,19 @@ static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct eventlog_OpenEventLog r;
+	struct eventlog_OpenUnknown0 unknown0;
 	struct policy_handle handle;
 
 	printf("\ntesting OpenEventLog\n");
 
-	r.in.servername = dcerpc_server_name(p);
-	r.out.handle = &handle;
+	unknown0.unknown0 = 0x005c;
+	unknown0.unknown1 = 0x0001;
+
+	r.in.unknown0 = &unknown0;
+	init_eventlog_String(&r.in.source, "system");
+	init_eventlog_String(&r.in.unknown1, NULL);
+	r.in.unknown2 = 0x00000001;
+	r.in.unknown3 = 0x00000001;
 
 	status = dcerpc_eventlog_OpenEventLog(p, mem_ctx, &r);
 
@@ -74,9 +88,9 @@ BOOL torture_rpc_eventlog(int dummy)
 	mem_ctx = talloc_init("torture_rpc_atsvc");
 
 	status = torture_rpc_connection(&p, 
-					DCERPC_ATSVC_NAME, 
-					DCERPC_ATSVC_UUID, 
-					DCERPC_ATSVC_VERSION);
+					DCERPC_EVENTLOG_NAME, 
+					DCERPC_EVENTLOG_UUID, 
+					DCERPC_EVENTLOG_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
