@@ -2199,6 +2199,8 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 	int num_unc_names = 0;
 	struct timeval tv;
 
+	*result = True;
+
 	synccount = 0;
 
 	signal(SIGCONT, sigcont);
@@ -2492,7 +2494,7 @@ static BOOL run_test(const char *name)
 			init_iconv();
 			printf("Running %s\n", torture_ops[i].name);
 			if (torture_ops[i].multi_fn) {
-				BOOL result;
+				BOOL result = False;
 				t = torture_create_procs(torture_ops[i].multi_fn, 
 							 &result);
 				if (!result) { 
