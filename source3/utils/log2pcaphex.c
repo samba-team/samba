@@ -25,16 +25,17 @@
 #include "includes.h"
 #include <assert.h>
 
+int quiet = 0;
 
 #define itoa(a) ((a) < 0xa?'0'+(a):'A' + (a-0xa))
 
-void print_packet(FILE *out, char *data, long length)
+void print_packet(FILE *out, unsigned char *data, long length)
 {
 long i,cur = 0;int tmp;
 while(cur < length) {
 	fprintf(out, "%06X ", cur);
 	for(i = cur; i < length && i < cur + 16; i++) {
-		fprintf(out, "%02x ", (unsigned char)data[i]);
+		fprintf(out, "%02x ", data[i]);
 	}
 	
 	cur = i;
@@ -42,12 +43,12 @@ while(cur < length) {
 }
 }
 
-char *curpacket = NULL;
+unsigned char *curpacket = NULL;
 long curpacket_len = 0;
 
-void read_log_msg(FILE *in, char **_buffer, long *buffersize, long *data_offset, long *data_length)
+void read_log_msg(FILE *in, unsigned char **_buffer, long *buffersize, long *data_offset, long *data_length)
 {
-	char *buffer;
+	unsigned char *buffer;
 	int tmp; long i;
 	assert(fscanf(in, " size=%d\n", buffersize));
 	*buffersize+=4; /* for netbios */
@@ -83,18 +84,27 @@ void read_log_msg(FILE *in, char **_buffer, long *buffersize, long *data_offset,
 	*_buffer = buffer;
 }
 
-void read_log_data(FILE *in, char *buffer, long data_length)
+void read_log_data(FILE *in, unsigned char *buffer, long data_length)
 {
-	long i, addr; char real[2][16];
+	long i, addr; char real[2][16]; int ret;
+	unsigned char tmp;
 	for(i = 0; i < data_length; i++) {
 		if(i % 16 == 0){
 			if(i != 0) { /* Read data after each line */
 				assert(fscanf(in, "%8s %8s", real[0], real[1]) == 2);
 			}
-			assert(fscanf(in, "  [%X]", &addr));
+			ret = fscanf(in, "  [%03X]", &addr);
+			if(!ret) {
+				if(!quiet)fprintf(stderr, "Only first %d bytes are logged, packet trace will be incomplete\nTry a higher log level\n", i);
+				return;
+			}
 			assert(addr == i);
 		}
-		assert(fscanf(in, "%2X", &buffer[i]));
+		if(!fscanf(in, "%02X", &tmp)) {
+			if(!quiet)fprintf(stderr, "Only first %d bytes are logged, packet trace will be incomplete\nTry a higher log level\n", i-1);
+			return;
+		}
+		buffer[i] = tmp;
 	}
 }
 
@@ -110,6 +120,7 @@ int main (int argc, char **argv)
 	int in_packet = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
+		{ "quiet", 'q', POPT_ARG_NONE, &quiet, 0, "Be quiet, don't output warnings" },
 		POPT_TABLEEND
 	};
 	
