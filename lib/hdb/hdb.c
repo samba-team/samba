@@ -150,6 +150,7 @@ hdb_unseal_key(Key *key, krb5_data schedule)
     return new_key;
 }
 
+/* is it useful to have this public? */
 void
 hdb_seal_key(Key *key, krb5_data schedule)
 {
@@ -161,6 +162,29 @@ hdb_seal_key(Key *key, krb5_data schedule)
 		      key->key.keyvalue.data, 
 		      key->key.keyvalue.length, 
 		      schedule.data, &iv, &num, 1);
+}
+
+void
+hdb_unseal_keys(hdb_entry *ent, krb5_data schedule)
+{
+    int i;
+    for(i = 0; i < ent->keys.len; i++){
+	des_cblock iv;
+	int num = 0;
+	memset(&iv, 0, sizeof(iv));
+	des_cfb64_encrypt(ent->keys.val[i].key.keyvalue.data, 
+			  ent->keys.val[i].key.keyvalue.data, 
+			  ent->keys.val[i].key.keyvalue.length, 
+			  schedule.data, &iv, &num, 0);
+    }
+}
+
+void
+hdb_seal_keys(hdb_entry *ent, krb5_data schedule)
+{
+    int i;
+    for(i = 0; i < ent->keys.len; i++)
+	hdb_seal_key(&ent->keys.val[i], schedule);
 }
 
 void
