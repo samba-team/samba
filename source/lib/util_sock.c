@@ -903,6 +903,9 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 
 	for (i=0; i<num_addrs; i++) {
 
+		if (sockets[i] == -1)
+			continue;
+
 		if (connect(sockets[i], (struct sockaddr *)&(addrs[i]),
 			    sizeof(*addrs)) == 0) {
 			/* Rather unlikely as we are non-blocking, but it
@@ -916,6 +919,10 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 			/* These are the error messages that something is
 			   progressing. */
 			good_connect = True;
+		} else if (errno != 0) {
+			/* There was a direct error */
+			close(sockets[i]);
+			sockets[i] = -1;
 		}
 	}
 
@@ -931,6 +938,8 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 	FD_ZERO(&r_fds);
 
 	for (i=0; i<num_addrs; i++) {
+		if (sockets[i] == -1)
+			continue;
 		FD_SET(sockets[i], &wr_fds);
 		FD_SET(sockets[i], &r_fds);
 		if (sockets[i]>maxfd)
@@ -950,14 +959,23 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 
 	for (i=0; i<num_addrs; i++) {
 
-		if (!FD_ISSET(sockets[i], &wr_fds))
+		if (sockets[i] == -1)
 			continue;
 
 		/* Stevens, Network Programming says that if there's a
 		 * successful connect, the socket is only writable. Upon an
 		 * error, it's both readable and writable. */
 
-		if (!FD_ISSET(sockets[i], &r_fds)) {
+		if (FD_ISSET(sockets[i], &r_fds) &&
+		    FD_ISSET(sockets[i], &wr_fds)) {
+			/* readable and writable, so it's an error */
+			close(sockets[i]);
+			sockets[i] = -1;
+			continue;
+		}
+
+		if (!FD_ISSET(sockets[i], &r_fds) &&
+		    FD_ISSET(sockets[i], &wr_fds)) {
 			/* Only writable, so it's connected */
 			resulting_index = i;
 			goto done;
