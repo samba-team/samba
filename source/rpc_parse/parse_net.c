@@ -1325,31 +1325,40 @@ BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct * ps,
 
 	smb_io_unistr2("unistr2", &(usr->uni_user_name),
 		       usr->hdr_user_name.buffer, ps, depth);	/* username unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(usr->uni_full_name),
 		       usr->hdr_full_name.buffer, ps, depth);	/* user's full name unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(usr->uni_logon_script),
 		       usr->hdr_logon_script.buffer, ps, depth);	/* logon script unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(usr->uni_profile_path),
 		       usr->hdr_profile_path.buffer, ps, depth);	/* profile path unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(usr->uni_home_dir),
 		       usr->hdr_home_dir.buffer, ps, depth);	/* home directory unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(usr->uni_dir_drive),
 		       usr->hdr_dir_drive.buffer, ps, depth);	/* home directory drive unicode string */
-
 	prs_align(ps);
+
 	prs_uint32("num_groups2   ", ps, depth, &(usr->num_groups2));	/* num groups */
 	SMB_ASSERT_ARRAY(usr->gids, usr->num_groups2);
 	for (i = 0; i < usr->num_groups2; i++)
 	{
 		smb_io_gid("", &(usr->gids[i]), ps, depth);	/* group info */
+		prs_align(ps);
 	}
 
 	smb_io_unistr2("unistr2", &(usr->uni_logon_srv),
 		       usr->hdr_logon_srv.buffer, ps, depth);	/* logon server unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(usr->uni_logon_dom),
 		       usr->hdr_logon_srv.buffer, ps, depth);	/* logon domain unicode string */
+	prs_align(ps);
 
 	smb_io_dom_sid2("sid", &(usr->dom_sid), ps, depth);	/* domain SID */
+	prs_align(ps);
 
 	return True;
 }
@@ -1708,14 +1717,19 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 
 	smb_io_unistr2("user_name", &(usr->uni_user_name),
 		       usr->hdr_user_name.buffer, ps, depth);	/* username unicode string */
+	prs_align(ps);
 	smb_io_unistr2("full_name", &(usr->uni_full_name),
 		       usr->hdr_full_name.buffer, ps, depth);	/* user's full name unicode string */
+	prs_align(ps);
 	smb_io_unistr2("logon_script", &(usr->uni_logon_script),
 		       usr->hdr_logon_script.buffer, ps, depth);	/* logon script unicode string */
+	prs_align(ps);
 	smb_io_unistr2("profile_path", &(usr->uni_profile_path),
 		       usr->hdr_profile_path.buffer, ps, depth);	/* profile path unicode string */
+	prs_align(ps);
 	smb_io_unistr2("home_dir", &(usr->uni_home_dir),
 		       usr->hdr_home_dir.buffer, ps, depth);	/* home directory unicode string */
+	prs_align(ps);
 	smb_io_unistr2("dir_drive", &(usr->uni_dir_drive),
 		       usr->hdr_dir_drive.buffer, ps, depth);	/* home directory drive unicode string */
 	prs_align(ps);
@@ -1729,16 +1743,20 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 
 	smb_io_unistr2("logon_srv", &(usr->uni_logon_srv),
 		       usr->hdr_logon_srv.buffer, ps, depth);	/* logon server unicode string */
+	prs_align(ps);
 	smb_io_unistr2("logon_dom", &(usr->uni_logon_dom),
 		       usr->hdr_logon_srv.buffer, ps, depth);	/* logon domain unicode string */
+	prs_align(ps);
 
 	smb_io_dom_sid2("dom_sid", &(usr->dom_sid), ps, depth);	/* domain SID */
+	prs_align(ps);
 
 	SMB_ASSERT_ARRAY(usr->other_sids, usr->num_other_sids);
 
 	for (i = 0; i < usr->num_other_sids; i++)
 	{
 		smb_io_dom_sid2("sids", &(usr->other_sids[i]), ps, depth);	/* other domain SIDs */
+		prs_align(ps);
 	}
 
 	return True;
