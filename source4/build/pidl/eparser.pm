@@ -19,6 +19,7 @@ sub is_scalar_type($)
     return 1, if ($type eq "short");
     return 1, if ($type eq "char");
     return 1, if ($type eq "uint16");
+    return 1, if ($type eq "hyper");
 
     return 0;
 }
@@ -64,7 +65,7 @@ sub ParseElement($$)
 	    
     foreach my $prop (@{$elt->{PROPERTIES}}) {
 	if ($prop =~ /context_handle/) {
-	    $res .= "\toffset = dissect_policy_hnd(tvb, offset, pinfo, tree);\n";
+	    $res .= "\toffset = prs_policy_hnd(tvb, offset, pinfo, tree);\n";
 	    return;
 	}
     }
@@ -76,13 +77,13 @@ sub ParseElement($$)
 	# Pointers are scalars
 
 	if ($elt->{POINTERS}) {
-	    $res .= "\t\tptr_$elt->{NAME} = dissect_ptr(tvb, offset, pinfo, tree, \"$elt->{NAME}\");\n";
+	    $res .= "\t\tptr_$elt->{NAME} = prs_ptr(tvb, offset, pinfo, tree, \"$elt->{NAME}\");\n";
 	} else {
 
 	    # Simple type are scalars too
 
 	    if (is_scalar_type($elt->{TYPE})) {
-		$res .= "\t\tdissect_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n";
+		$res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n";
 	    }
 	}
 
@@ -98,7 +99,7 @@ sub ParseElement($$)
 		$res .= "\t\tif (ptr_$elt->{NAME}) {\n\t";
 	    }
 	    
-	    $res .= "\t\tdissect_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
+	    $res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
 	    
 	    if ($elt->{POINTERS}) {
 		$res .= "\t\t}\n\n";
@@ -110,14 +111,14 @@ sub ParseElement($$)
     
 #    if (is_simple_type($elt->{TYPE})) {
 #	if ($flags =~ /scalars/ && !$elt->{POINTERS}) {
-#	    $res .= "\t\tdissect_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n",
+#	    $res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n",
 #	}
 #    } else {
 #	if ($flags =~ /buffers/) {
 #	    if ($elt->{POINTERS}) {
 #		$res .= "\t\tif (ptr_$elt->{NAME}) {\n\t";
 #	    }
-#	    $res .= "\t\tdissect_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
+#	    $res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
 #	    if ($elt->{POINTERS}) {
 #		$res .= "\t\t}\n\n";
 #	    }
@@ -141,9 +142,9 @@ sub ParseStruct($)
 	    ParseElement($e, "scalars");
 
 #	    if (defined $e->{POINTERS}) {
-#		$res .= "\t\toffset = dissect_ptr(tvb, offset, pinfo, tree, &ptr_$e->{NAME}, \"$e->{NAME}\");\n";
+#		$res .= "\t\toffset = prs_ptr(tvb, offset, pinfo, tree, &ptr_$e->{NAME}, \"$e->{NAME}\");\n";
 #	    } else {
-#		$res .= "\t\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n";
+#		$res .= "\t\toffset = prs_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n";
 #	    }
 	}	
 
@@ -155,7 +156,7 @@ sub ParseStruct($)
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 	    ParseElement($e, "buffers");
-#	    $res .= "\t\tif (ptr_$e->{NAME})\n\t\t\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n\n",
+#	    $res .= "\t\tif (ptr_$e->{NAME})\n\t\t\toffset = prs_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n\n",
 #	    if (defined $e->{POINTERS});
 	}
 
@@ -170,12 +171,12 @@ sub ParseUnionElement($)
 {
     my($element) = shift;
     
-#    $res .= "int dissect_$element->{DATA}->{TYPE}()\n{\n";
+#    $res .= "int prs_$element->{DATA}->{TYPE}()\n{\n";
 
 #    $res .= "}\n\n";
 
     $res .= "\tcase $element->{DATA}->{NAME}: \n";
-    $res .= "\t\toffset = dissect_$element->{DATA}->{TYPE}(tvb, offset, pinfo, tree, \"$element->{DATA}->{NAME}\");\n\t\tbreak;\n";
+    $res .= "\t\toffset = prs_$element->{DATA}->{TYPE}(tvb, offset, pinfo, tree, \"$element->{DATA}->{NAME}\");\n\t\tbreak;\n";
 
 #    $res .= "[case($element->{CASE})] ";
 #    ParseElement($element->{DATA});
@@ -220,7 +221,7 @@ sub ParseTypedef($)
 {
     my($typedef) = shift;
 
-    $res .= "static int dissect_$typedef->{NAME}(tvbuff_t *tvb, int offset,\
+    $res .= "static int prs_$typedef->{NAME}(tvbuff_t *tvb, int offset,\
 \tpacket_info *pinfo, proto_tree *tree)\n{\n";
     ParseType($typedef->{DATA});
     $res .= "}\n\n";
@@ -266,7 +267,7 @@ sub ParseFunction($)
 	ParseFunctionArg($arg, "out");
     }
 
-    $res .= "\n\toffset = dissect_ntstatus(tvb, offset, pinfo, tree);\n";
+    $res .= "\n\toffset = prs_ntstatus(tvb, offset, pinfo, tree);\n";
 
     $res .= "\n\treturn 0;\n}\n\n";
 
