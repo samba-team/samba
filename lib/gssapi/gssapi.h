@@ -20,7 +20,10 @@
 
 #include <bits.h>
 
+/* I don't want to include krb.h here */
+#if 0
 #include <krb5.h>
+#endif
 
 /*
  * Now define the three implementation-dependent types.
@@ -29,15 +32,19 @@
 typedef u_int32_t OM_uint32;
 
 /*
- * XXX - Should we really do it this way?
- * I'm not entirely happy with exposing this match of the krb5 stuff
- * here, and having to include the <krb5.h> file as well.
+ * This is to avoid having to include <krb5.h>
  */
 
-typedef krb5_principal gss_name_t;
+struct krb5_principal_data;
+
+struct krb5_auth_context_data;
+
+/* */
+
+typedef struct krb5_principal_data *gss_name_t;
 
 typedef struct gss_ctx_id_t_desc_struct {
-  krb5_auth_context auth_context;
+  struct krb5_auth_context_data *auth_context;
   gss_name_t source, target;
   OM_uint32 flags;
   enum { LOCAL = 1, OPEN = 2} more_flags;
