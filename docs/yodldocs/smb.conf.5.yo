@@ -2394,35 +2394,30 @@ described in the man page bf(hosts_access (5)). Note that this man
 page may not be present on your system, so a brief description will
 be given here also.
 
-em(NOTE:) IF you wish to allow the url(bf(smbpasswd
-(8)))(smbpasswd.html.8) program to be run by local users to change
-their Samba passwords using the local url(bf(smbd (8)))(smbd.8.html)
-daemon, then you em(MUST) ensure that the localhost is listed in your
-bf(hosts allow) list, as url(bf(smbpasswd (8)))(smbpasswd.html.8) runs
-in client-server mode and is seen by the local
-url(bf(smbd))(smbd.8.html) process as just another client.
+Note that the localhost address 127.0.0.1 will always be allowed
+access unless specifically denied by a "hosts deny" option.
 
 You can also specify hosts by network/netmask pairs and by netgroup
 names if your system supports netgroups. The em(EXCEPT) keyword can also
 be used to limit a wildcard list. The following examples may provide
 some help:
 
-bf(Example 1): allow localhost and all IPs in 150.203.*.* except one
+bf(Example 1): allow all IPs in 150.203.*.* except one
 
-tt(	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66)
+tt(	hosts allow = 150.203. EXCEPT 150.203.6.66)
 
-bf(Example 2): allow localhost and hosts that match the given network/netmask
+bf(Example 2): allow hosts that match the given network/netmask
 
-tt(	hosts allow = localhost, 150.203.15.0/255.255.255.0)
+tt(	hosts allow = 150.203.15.0/255.255.255.0)
 
-bf(Example 3): allow a localhost plus a couple of hosts
+bf(Example 3): allow a couple of hosts
 
-tt(	hosts allow = localhost, lapland, arvidsjaur)
+tt(	hosts allow = lapland, arvidsjaur)
 
-bf(Example 4): allow only hosts in NIS netgroup "foonet" or localhost, but 
+bf(Example 4): allow only hosts in NIS netgroup "foonet", but 
 deny access from one particular host
 
-tt( 	hosts allow = @foonet, localhost)
+tt( 	hosts allow = @foonet)
 
 tt( 	hosts deny = pirate)
 
@@ -2435,7 +2430,7 @@ host access to see if it does what you expect.
 tt(	none (i.e., all hosts permitted access))
 
   bf(Example:)
-tt(	allow hosts = 150.203.5. localhost myhost.mynet.edu.au)
+tt(	allow hosts = 150.203.5. myhost.mynet.edu.au)
 
 
 label(hostsdeny)
