@@ -23,6 +23,7 @@
 
 # Compile a program consisting of one .c file.  For example 
 # simple_compile "foo" will compile foo.c to the executable foo.exe
+# Use a second argument to specify link libraries.
 
 proc simple_compile { args } {
     global srcdir
@@ -31,8 +32,19 @@ proc simple_compile { args } {
     # Compile up program
 
     set program [lindex $args 0]
-    set output [target_compile "$srcdir/$subdir/$program.c" \
-	    "$srcdir/$subdir/$program" executable {additional_flags="-g"}]
+    set libs [lindex $args 1]
+
+    if { $libs == "" } {
+    
+	set output [target_compile "$srcdir/$subdir/$program.c" \
+		"$srcdir/$subdir/$program" executable \
+		{additional_flags="-g"}]
+    } else {
+
+	set output [target_compile "$srcdir/$subdir/$program.c" \
+		"$srcdir/$subdir/$program" executable \
+		[list libs=$libs additional_flags="-g"]]
+    }
 
     # Check for errors
 
