@@ -68,11 +68,10 @@ sub find_sibling($$)
 
 ####################################################################
 # work out the name of a size_is() variable
-sub find_size_var($$$)
+sub find_size_var($$)
 {
 	my($e) = shift;
 	my($size) = shift;
-	my($var_prefix) = shift;
 
 	my($fn) = $e->{PARENT};
 
@@ -223,13 +222,12 @@ sub union_alignment
 
 #####################################################################
 # parse an array - pull side
-sub ParseArrayPull($$$)
+sub ParseArrayPull($$)
 {
 	my $e = shift;
-	my $var_prefix = shift;
 	my $ndr_flags = shift;
 
-	my $size = find_size_var($e, util::array_size($e), $var_prefix);
+	my $size = find_size_var($e, util::array_size($e));
 	my $alloc_size = $size;
 
 	# if this is a conformant array then we use that size to allocate, and make sure
@@ -244,10 +242,10 @@ sub ParseArrayPull($$$)
 		pidl "\t\treturn;\n";
 		pidl "\t}\n";
 	} elsif (!util::is_inline_array($e)) {
-		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
-			my $size2 = substr($size, 1);
+#		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
+#			my $size2 = substr($size, 1);
 #			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {	NDR_ALLOC(ndr, $size2); }\n";
-		}
+#		}
 
 		# non fixed arrays encode the size just before the array
 		pidl "\t{\n";
@@ -269,25 +267,25 @@ sub ParseArrayPull($$$)
 		pidl "\t}\n";
 	}
 
-	if ((util::need_alloc($e) && !util::is_fixed_array($e)) ||
-	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
-		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
+#	if ((util::need_alloc($e) && !util::is_fixed_array($e)) ||
+#	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
+#		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 #			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size));\n";
-		}
-	}
+#		}
+#	}
 
-	if (($var_prefix eq "r->out." && util::has_property($e, "ref"))) {
-		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
+#	if (($var_prefix eq "r->out." && util::has_property($e, "ref"))) {
+#		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 #			pidl "\tif (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
 #			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size));\n";
 #			pidl "\t}\n";
-		}
-	}
+#		}
+#	}
 
 	pidl "\t{\n";
 
 	if (my $length = util::has_property($e, "length_is")) {
-		$length = find_size_var($e, $length, $var_prefix);
+		$length = find_size_var($e, $length);
 		pidl "\t\tguint32 _offset, _length;\n";
 		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_offset, &_offset);\n";
 		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_length, &_length);\n";
@@ -318,13 +316,12 @@ sub ParseArrayPull($$$)
 
 #####################################################################
 # parse scalars in a structure element - pull size
-sub ParseElementPullSwitch($$$$)
+sub ParseElementPullSwitch($$$)
 {
 	my($e) = shift;
-	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $switch = shift;
-	my $switch_var = find_size_var($e, $switch, $var_prefix);
+	my $switch_var = find_size_var($e, $switch);
 
 	my $cprefix = util::c_pull_prefix($e);
 
@@ -340,7 +337,7 @@ sub ParseElementPullSwitch($$$$)
 
 	my $sub_size = util::has_property($e, "subcontext");
 	if (defined $sub_size) {
-		pidl "\tndr_pull_subcontext_union_fn(ndr, subtree, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE});\n";
+		pidl "\tndr_pull_subcontext_union_fn(ndr, subtree, $sub_size, $switch_var, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE});\n";
 	} else {
 		pidl "\tndr_pull_$e->{TYPE}(ndr, subtree, $ndr_flags, _level);\n";
 	}
@@ -350,10 +347,9 @@ sub ParseElementPullSwitch($$$$)
 
 #####################################################################
 # parse scalars in a structure element - pull size
-sub ParseElementPullScalar($$$)
+sub ParseElementPullScalar($$)
 {
 	my($e) = shift;
-	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_pull_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
@@ -363,7 +359,7 @@ sub ParseElementPullScalar($$$)
 	if (util::has_property($e, "relative")) {
 		pidl "\tndr_pull_relative(ndr, subtree, ndr_pull_$e->{TYPE});\n";
 	} elsif (util::is_inline_array($e)) {
-		ParseArrayPull($e, "r->", "NDR_SCALARS");
+		ParseArrayPull($e, "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {
 		pidl "\tndr_pull_ptr(ndr, subtree, hf_ptr, &ptr_$e->{NAME});\n";
 #		pidl "\tif (ptr_$e->{NAME}) {\n";
@@ -374,12 +370,12 @@ sub ParseElementPullScalar($$$)
 	} elsif (util::need_alloc($e)) {
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
+		ParseElementPullSwitch($e, $ndr_flags, $switch);
 	} elsif (defined $sub_size) {
 		if (util::is_builtin_type($e->{TYPE})) {
-			pidl "\tndr_pull_subcontext_fn(ndr, subtree, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE});\n";
+			pidl "\tndr_pull_subcontext_fn(ndr, subtree, $sub_size, (ndr_pull_fn_t) ndr_pull_$e->{TYPE});\n";
 		} else {
-			pidl "\tndr_pull_subcontext_flags_fn(ndr, subtree, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
+			pidl "\tndr_pull_subcontext_flags_fn(ndr, subtree, $sub_size, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
 		}
 	    } elsif (util::is_builtin_type($e->{TYPE})) {
 		pidl "\tndr_pull_$e->{TYPE}(ndr, subtree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
@@ -392,10 +388,9 @@ sub ParseElementPullScalar($$$)
 
 #####################################################################
 # parse buffers in a structure element - pull side
-sub ParseElementPullBuffer($$$)
+sub ParseElementPullBuffer($$)
 {
 	my($e) = shift;
-	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_pull_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
@@ -415,14 +410,14 @@ sub ParseElementPullBuffer($$$)
 	}
 	    
 	if (util::is_inline_array($e)) {
-		ParseArrayPull($e, "r->", "NDR_BUFFERS");
+		ParseArrayPull($e, "NDR_BUFFERS");
 	} elsif (util::array_size($e)) {
-		ParseArrayPull($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
+		ParseArrayPull($e, "NDR_SCALARS|NDR_BUFFERS");
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		if ($e->{POINTERS}) {
-			ParseElementPullSwitch($e, $var_prefix, "NDR_SCALARS|NDR_BUFFERS", $switch);
+			ParseElementPullSwitch($e, "NDR_SCALARS|NDR_BUFFERS", $switch);
 		} else {
-			ParseElementPullSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
+			ParseElementPullSwitch($e, "NDR_BUFFERS", $switch);
 		}
 	} elsif (defined $sub_size) {
 		if ($e->{POINTERS}) {
@@ -502,13 +497,13 @@ sub ParseStructPull($)
 	pidl "\tndr_pull_align(ndr, $align);\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPullScalar($e, "r->", "NDR_SCALARS");
+		ParseElementPullScalar($e, "NDR_SCALARS");
 	}	
 
 	pidl "buffers:\n";
 	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPullBuffer($e, "r->", "NDR_BUFFERS");
+		ParseElementPullBuffer($e, "NDR_BUFFERS");
 	}
 
 	pidl "\tndr_pull_struct_end(ndr);\n";
@@ -550,7 +545,7 @@ sub ParseUnionPull($)
 			if ($e2->{POINTERS}) {
 				pidl "\t\tguint32 ptr_$e2->{NAME};\n";
 			}
-			ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");
+			ParseElementPullScalar($el->{DATA}, "NDR_SCALARS");
 		}
 		pidl "\t\tbreak;\n\t}\n";
 	}
@@ -572,7 +567,7 @@ sub ParseUnionPull($)
 			pidl "\tcase $el->{CASE}:\n";
 		}
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPullBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
+			ParseElementPullBuffer($el->{DATA}, "NDR_BUFFERS");
 		}
 		pidl "\t\tbreak;\n\n";
 	}
@@ -686,7 +681,7 @@ sub ParseFunctionElementPull($$)
 		} else {
 			pidl "\t{\n";
 		}
-		ParseArrayPull($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+		ParseArrayPull($e, "NDR_SCALARS|NDR_BUFFERS");
 		pidl "\t}\n";
 	} else {
 		if ($inout eq "out" && util::has_property($e, "ref")) {
@@ -698,9 +693,9 @@ sub ParseFunctionElementPull($$)
 #			pidl "\tNDR_ALLOC(ndr, r->in.$e->{NAME});\n";
 		}
 
-		ParseElementPullScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+		ParseElementPullScalar($e, "NDR_SCALARS|NDR_BUFFERS");
 		if ($e->{POINTERS}) {
-			ParseElementPullBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+			ParseElementPullBuffer($e, "NDR_SCALARS|NDR_BUFFERS");
 		}
 	}
 }
