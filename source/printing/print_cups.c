@@ -683,6 +683,8 @@ cups_job_submit(int snum, struct printjob *pjob)
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 	char 		*clientname; 	/* hostname of client for job-originating-host attribute */
 	pstring		new_jobname;
+	int		num_options = 0; 
+	cups_option_t 	*options;
 
 	DEBUG(5,("cups_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -751,6 +753,17 @@ cups_job_submit(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
         	     new_jobname);
 
+	/* 
+	 * add any options defined in smb.conf 
+	 */
+
+	num_options = 0;
+	options     = NULL;
+	num_options = cupsParseOptions(lp_cups_options(snum), num_options, &options);
+
+	if ( num_options )
+		cupsEncodeOptions(request, num_options, options); 
+
        /*
 	* Do the request and get back a response...
 	*/
@@ -781,7 +794,6 @@ cups_job_submit(int snum, struct printjob *pjob)
 
 	return (ret);
 }
-
 
 /*
  * 'cups_queue_get()' - Get all the jobs in the print queue.
