@@ -37,6 +37,7 @@
 
 #define SEC_RIGHTS_READ           0x00020019
 #define SEC_RIGHTS_FULL_CONTROL   0x000f003f
+#define SEC_RIGHTS_MAXIMUM_ALLOWED 0x02000000
 
 
 #define SEC_ACE_TYPE_ACCESS_ALLOWED	0x0
@@ -99,13 +100,17 @@ typedef struct security_ace_info
 
 } SEC_ACE;
 
+
+#define MAX_SEC_ACES 16
+
 /* SEC_ACL */
 typedef struct security_acl_info
 {
 	uint16 revision; /* 0x0002 */
 	uint16 size; /* size in bytes of the entire ACL structure */
 	uint32 num_aces; /* number of Access Control Entries */
-	SEC_ACE *ace_list;
+
+	SEC_ACE *ace;
 
 } SEC_ACL;
 

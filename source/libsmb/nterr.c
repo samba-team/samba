@@ -526,11 +526,9 @@ char *get_nt_error_msg(uint32 nt_code)
 
 	pstrcpy(msg, "Unknown NT error");
 
-        nt_code &= 0xFFFF;
-
 	while (nt_errs[idx].nt_errstr != NULL)
 	{
-		if (nt_errs[idx].nt_errcode == nt_code)
+		if ((nt_errs[idx].nt_errcode & 0xFFFFFF) == (nt_code & 0xFFFFFF))
 		{
 			pstrcpy(msg, nt_errs[idx].nt_errstr);
 			return msg;

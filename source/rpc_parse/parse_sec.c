@@ -137,13 +137,13 @@ SEC_ACL *make_sec_acl(uint16 revision, int num_aces, SEC_ACE *ace_list)
 	dst->num_aces = num_aces;
 	dst->size = 8;
 
-	if((dst->ace_list = (SEC_ACE *)malloc( sizeof(SEC_ACE) * num_aces )) == NULL) {
+	if((dst->ace = (SEC_ACE *)malloc( sizeof(SEC_ACE) * num_aces )) == NULL) {
 		free_sec_acl(&dst);
 		return NULL;
 	}
 
 	for (i = 0; i < num_aces; i++) {
-		dst->ace_list[i] = ace_list[i]; /* Structure copy. */
+		dst->ace[i] = ace_list[i]; /* Structure copy. */
 		dst->size += ace_list[i].size;
 	}
 
@@ -159,7 +159,7 @@ SEC_ACL *dup_sec_acl( SEC_ACL *src)
 	if(src == NULL)
 		return NULL;
 
-	return make_sec_acl( src->revision, src->num_aces, src->ace_list);
+	return make_sec_acl( src->revision, src->num_aces, src->ace);
 }
 
 /*******************************************************************
@@ -174,8 +174,8 @@ void free_sec_acl(SEC_ACL **ppsa)
 		return;
 
 	psa = *ppsa;
-	if (psa->ace_list != NULL)
-		free(psa->ace_list);
+	if (psa->ace != NULL)
+		free(psa->ace);
 
 	free(psa);
 	*ppsa = NULL;
@@ -229,15 +229,15 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 
 	if (UNMARSHALLING(ps) && psa->num_aces != 0) {
 		/* reading */
-		if((psa->ace_list = malloc(sizeof(psa->ace_list[0]) * psa->num_aces)) == NULL)
+		if((psa->ace = malloc(sizeof(psa->ace[0]) * psa->num_aces)) == NULL)
 			return False;
-		ZERO_STRUCTP(psa->ace_list);
+		ZERO_STRUCTP(psa->ace);
 	}
 
 	for (i = 0; i < psa->num_aces; i++) {
 		fstring tmp;
 		slprintf(tmp, sizeof(tmp)-1, "ace_list[%02d]: ", i);
-		if(!sec_io_ace(tmp, &psa->ace_list[i], ps, depth))
+		if(!sec_io_ace(tmp, &psa->ace[i], ps, depth))
 			return False;
 	}
 

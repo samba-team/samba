@@ -1087,7 +1087,7 @@ static void init_globals(void)
   Globals.bAllowTrustedDomains = True;
 
   string_set(&Globals.szTemplateShell, "/bin/false");
-  string_set(&Globals.szTemplateHomedir, "/home/%U");
+  string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
   Globals.winbind_cache_time = 15;
 
   /*
@@ -1279,6 +1279,10 @@ FN_GLOBAL_STRING(lp_nt_forms,&Globals.szNtForms)
 FN_GLOBAL_STRING(lp_nt_drivers_file,&Globals.szNtDriverFile)
 
 #ifdef WITH_LDAP
+FN_GLOBAL_STRING(lp_winbind_uid,&Globals.szWinbindUID)
+FN_GLOBAL_STRING(lp_winbind_gid,&Globals.szWinbindGID)
+FN_GLOBAL_STRING(lp_template_homedir,&Globals.szTemplateHomedir)
+FN_GLOBAL_STRING(lp_template_shell,&Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
 FN_GLOBAL_STRING(lp_ldap_suffix,&Globals.szLdapSuffix);
 FN_GLOBAL_STRING(lp_ldap_filter,&Globals.szLdapFilter);
@@ -1478,6 +1482,7 @@ FN_LOCAL_INTEGER(lp_write_cache_size,iWriteCacheSize)
 FN_LOCAL_CHAR(lp_magicchar,magic_char)
 
 
+FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 
 /* local prototypes */
 static int    strwicmp( char *psz1, char *psz2 );
