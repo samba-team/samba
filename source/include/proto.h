@@ -1078,13 +1078,13 @@ struct share_ops *locking_slow_init(int ronly);
 
 /*The following definitions come from  mangle.c  */
 
-int str_checksum(char *s);
-BOOL is_8_3(char *fname, BOOL check_case);
-void reset_mangled_stack( int size );
-BOOL check_mangled_stack(char *s);
 BOOL is_mangled( char *s );
-void mangle_name_83(char *s);
-BOOL name_map_mangle(char *OutName,BOOL need83,int snum);
+BOOL is_8_3( char *fname, BOOL check_case );
+int str_checksum( char *s );
+void reset_mangled_cache( void );
+BOOL check_mangled_cache( char *s );
+void mangle_name_83( char *s );
+BOOL name_map_mangle( char *OutName, BOOL need83, int snum );
 
 /*The following definitions come from  md4.c  */
 
