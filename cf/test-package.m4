@@ -98,13 +98,17 @@ dnl Try to find lib
     AC_MSG_RESULT(no)
   fi
   if test -n "$$1_include"; then
-    foo[INCLUDE]="-I$$1_include"
+    INCLUDE_$1="-I$$1_include"
   fi
+  AC_SUBST(INCLUDE_$1])
+  foo[INCLUDE]="$INCLUDE_$1"
   AC_SUBST(foo[INCLUDE])
   if test -n "$$1_lib"; then
-    foo[LIB]="-L$$1_lib"
+    LIB_$1="-L$$1_lib"
   fi
-  foo[LIB]="$foo[LIB] $4"
+  LIB_$1="$LIB_$1 $4"
+  AC_SUBST(LIB_$1)
+  foo[LIB]="$LIB_$1"
   AC_SUBST(foo[LIB])
 else
   AC_MSG_RESULT(no)
