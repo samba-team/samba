@@ -80,7 +80,7 @@ o   kawasa_r@itg.hitachi.co.jp
 o   Stephan Kulow <coolo@suse.de>
     * Fix string length bug in libsmbclient that caused KDE's 
       Konqueror to crash.
-    * More libsmbclient fixes.
+    * BUG 429: More libsmbclient fixes.
 
 
 o   Jim McDonough <jmcd@us.ibm.com>
