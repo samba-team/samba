@@ -141,7 +141,6 @@ all-local: $(inc_DATA)
 	done
 
 lex.o: parse.h
-parse.c: parse.h
 
 $(foo) asn1.h: asn1_files
 
