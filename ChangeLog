@@ -1,3 +1,18 @@
+Tue Aug  5 22:53:54 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/verify_init.c, init_creds_pw.c, init_creds.c,
+	prompter_posix.c: the beginning of an implementation of the cygnus
+	initial-ticket API.
+
+	* lib/krb5/get_in_tkt_pw.c: make `krb5_password_key_proc' global
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): new function that is
+ 	almost krb5_get_in_tkt but doesn't write the creds to the ccache.
+  	Small fixes in krb5_get_in_tkt
+
+	* lib/krb5/get_addrs.c (krb5_get_all_client_addrs): don't include
+ 	loopback.
+
 Mon Aug  4 20:20:48 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc: Make context global.
