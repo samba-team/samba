@@ -10,7 +10,6 @@
 
 #include <krb5.h>
 #include <des.h>
-#include <md5.h>
 #include <krb5_locl.h>
 
 extern krb5_context gssapi_krb5_context;
