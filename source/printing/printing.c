@@ -757,8 +757,6 @@ static int get_queue_status(int snum, print_status_struct *status)
 
 static int print_queue_length(int snum)
 {
-	fstring keystr;
-	TDB_DATA data, key;
 	print_status_struct status;
 
 	/* make sure the database is up to date */
