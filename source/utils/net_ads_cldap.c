@@ -32,19 +32,15 @@ struct cldap_netlogon_reply {
 	GUID guid;
 
 	char forest[MAX_DNS_LABEL];
-	char unk0[MAX_DNS_LABEL];
 	char domain[MAX_DNS_LABEL];
 	char hostname[MAX_DNS_LABEL];
 
 	char netbios_domain[MAX_DNS_LABEL];
-	char unk1[MAX_DNS_LABEL];
 	char netbios_hostname[MAX_DNS_LABEL];
 
-	char unk2[MAX_DNS_LABEL];
+	char unk[MAX_DNS_LABEL];
 	char user_name[MAX_DNS_LABEL];
-	char unk3[MAX_DNS_LABEL];
 	char site_name[MAX_DNS_LABEL];
-	char unk4[MAX_DNS_LABEL];
 	char site_name_2[MAX_DNS_LABEL];
 
 	uint32 version;
@@ -115,7 +111,7 @@ static unsigned pull_netlogon_string(char *ret, const char *ptr,
 		}
 	} while (*ptr);
 
-	return ret_len ? ret_len : 1;
+	return followed_ptr ? ret_len : ret_len + 1;
 }
 
 /*
@@ -249,13 +245,11 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	p += GUID_SIZE;
 
 	p += pull_netlogon_string(reply->forest, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->unk0, p, (const char *)os3.data);
 	p += pull_netlogon_string(reply->domain, p, (const char *)os3.data);
 	p += pull_netlogon_string(reply->hostname, p, (const char *)os3.data);
 	p += pull_netlogon_string(reply->netbios_domain, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->unk1, p, (const char *)os3.data);
 	p += pull_netlogon_string(reply->netbios_hostname, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->unk2, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->unk, p, (const char *)os3.data);
 
 	if (reply->type == SAMLOGON_AD_R) {
 		p += pull_netlogon_string(reply->user_name, p, (const char *)os3.data);
@@ -263,9 +257,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 		*reply->user_name = 0;
 	}
 
-	p += pull_netlogon_string(reply->unk3, p, (const char *)os3.data);
 	p += pull_netlogon_string(reply->site_name, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->unk4, p, (const char *)os3.data);
 	p += pull_netlogon_string(reply->site_name_2, p, (const char *)os3.data);
 
 	reply->version = IVAL(p, 0);
@@ -349,20 +341,16 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 		 (reply.flags & ADS_NDNC) ? "yes" : "no");
 
 	printf("Forest:\t\t\t%s\n", reply.forest);
-	if (*reply.unk0) printf("Unk0:\t\t\t%s\n", reply.unk0);
 	printf("Domain:\t\t\t%s\n", reply.domain);
 	printf("Domain Controller:\t%s\n", reply.hostname);
 
 	printf("Pre-Win2k Domain:\t%s\n", reply.netbios_domain);
-	if (*reply.unk1) printf("Unk1:\t\t\t%s\n", reply.unk1);
 	printf("Pre-Win2k Hostname:\t%s\n", reply.netbios_hostname);
 
-	if (*reply.unk2) printf("Unk2:\t\t\t%s\n", reply.unk2);
+	if (*reply.unk) printf("Unk:\t\t\t%s\n", reply.unk);
 	if (*reply.user_name) printf("User name:\t%s\n", reply.user_name);
 
-	if (*reply.unk3) printf("Unk3:\t\t\t%s\n", reply.unk3);
 	printf("Site Name:\t\t%s\n", reply.site_name);
-	if (*reply.unk4) printf("Unk4:\t\t\t%s\n", reply.unk4);
 	printf("Site Name (2):\t\t%s\n", reply.site_name_2);
 
 	d_printf("NT Version: %d\n", reply.version);
