@@ -51,7 +51,6 @@
 		[out,ref]    lsa_PrivArray *privs
 		);
 
-
 	/******************/
 	/* Function: 0x03 */
 
@@ -225,7 +224,7 @@
 	NTSTATUS lsa_CreateAccount (
 		[in,ref]    policy_handle *handle,
 		[in,ref]    dom_sid2 *sid,
-		[in]        uint32 access,
+		[in]        uint32 desired_access,
 		[out,ref]   policy_handle *acct_handle
 		);
 
@@ -250,7 +249,18 @@
 
 	/*************************************************/
 	/* Function: 0x0c                                */
-	NTSTATUS lsa_CreateTrustDom ();
+
+	typedef struct {
+		lsa_Name name;
+		dom_sid2 *sid;
+	} lsa_TrustInformation;
+
+	NTSTATUS lsa_CreateTrustedDomain(
+		[in,ref]     policy_handle *handle,
+		[in,ref]     lsa_TrustInformation *info,
+		[in]         uint32 desired_access,
+		[out,ref]    policy_handle *dom_handle
+		);
 
 
 	/******************/
@@ -287,11 +297,6 @@
 		uint32 count;
 		[size_is(count)] lsa_TranslatedSid *sids;
 	} lsa_TransSidArray;
-
-	typedef struct {
-		lsa_Name name;
-		dom_sid2 *sid;
-	} lsa_TrustInformation;
 
 	typedef struct {
 		uint32 count;

@@ -324,7 +324,7 @@ static BOOL test_CreateAccount(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.sid = newsid;
-	r.in.access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.acct_handle = &acct_handle;
 
 	status = dcerpc_lsa_CreateAccount(p, mem_ctx, &r);
@@ -334,6 +334,46 @@ static BOOL test_CreateAccount(struct dcerpc_pipe *p,
 	}
 
 	if (!test_Delete(p, mem_ctx, &acct_handle)) {
+		return False;
+	}
+
+	return True;
+}
+
+
+static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p, 
+				     TALLOC_CTX *mem_ctx, 
+				     struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct lsa_CreateTrustedDomain r;
+	struct lsa_TrustInformation trustinfo;
+	struct dom_sid *domsid;
+	struct policy_handle dom_handle;
+
+	printf("Testing CreateTrustedDomain\n");
+
+	if (!find_domain_sid(p, mem_ctx, handle, &domsid)) {
+		return False;
+	}
+
+	domsid->sub_auths[domsid->num_auths-1] ^= 0xF0F0F0F0;
+
+	trustinfo.sid = domsid;
+	init_lsa_Name(&trustinfo.name, "torturedomain");
+
+	r.in.handle = handle;
+	r.in.info = &trustinfo;
+	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.dom_handle = &dom_handle;
+
+	status = dcerpc_lsa_CreateTrustedDomain(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("CreateTrustedDomain failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_Delete(p, mem_ctx, &dom_handle)) {
 		return False;
 	}
 
@@ -632,6 +672,10 @@ BOOL torture_rpc_lsa(int dummy)
 	}
 
 	if (!test_CreateAccount(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_CreateTrustedDomain(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
