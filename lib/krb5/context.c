@@ -96,6 +96,11 @@ krb5_init_context(krb5_context *context)
 	    krb5_config_free_strings(etypes);
 	}
     }
+    p->time_fmt = krb5_config_get_string(p, NULL, "libdefaults", 
+					 "time_format", NULL);
+    if(p->time_fmt == NULL)
+	p->time_fmt = "%d-%b-%Y %H:%M:%S";
+    p->log_utc = krb5_config_get_bool(p, NULL, "libdefaults", "log_utc", NULL);
 #ifdef MEGA_SCHLEMM
     {
 	const char * tmp = krb5_config_get_string(p, NULL, "libdefaults", 
