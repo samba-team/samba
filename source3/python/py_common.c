@@ -144,6 +144,8 @@ BOOL py_parse_creds(PyObject *creds, char **username, char **domain,
 
 	if (creds && PyDict_Size(creds) > 0) {
 		PyObject *username_obj, *password_obj, *domain_obj;
+		PyObject *key, *value;
+		int i;
 
 		/* Check for presence of required fields */
 
@@ -166,8 +168,6 @@ BOOL py_parse_creds(PyObject *creds, char **username, char **domain,
 			return False;
 		}
 
-		/* Look for any other fields */
-
 		/* Check type of required fields */
 
 		if (!PyString_Check(username_obj)) {
@@ -183,6 +183,21 @@ BOOL py_parse_creds(PyObject *creds, char **username, char **domain,
 		if (!PyString_Check(password_obj)) {
 			*errstr = strdup("password field is not string type");
 			return False;
+		}
+
+		/* Look for any extra fields */
+
+		i = 0;
+
+		while (PyDict_Next(creds, &i, &key, &value)) {
+			if (strcmp(PyString_AsString(key), "domain") != 0 &&
+			    strcmp(PyString_AsString(key), "username") != 0 &&
+			    strcmp(PyString_AsString(key), "password") != 0) {
+				asprintf(errstr,
+					 "creds contain extra field '%s'",
+					 PyString_AsString(key));
+				return False;
+			}
 		}
 
 		/* Assign values */
