@@ -239,58 +239,68 @@ walk through the establishment of a SMB/CIFS session step by step.
 <itemizedlist>
 
 	<listitem><para>
-	<emphasis>CIFS: Common Insecurities Fail Scrutiny</emphasis> by "Hobbit", 
-	http://hr.uoregon.edu/davidrl/cifs.txt
+	<ulink url="http://hr.uoregon.edu/davidrl/cifs.txt">
+	<emphasis>CIFS: Common Insecurities Fail Scrutiny</emphasis> by "Hobbit"</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>Doing the Samba on Windows</emphasis> by Financial Review,
-	http://afr.com/it/2002/10/01/FFXDF43AP6D.html
+	<ulink url="http://afr.com/it/2002/10/01/FFXDF43AP6D.html">
+	<emphasis>Doing the Samba on Windows</emphasis> by Financial Review
+	</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>Implementing CIFS</emphasis> by Christopher R. Hertel,
-	http://ubiqx.org/cifs/
+	<ulink url="http://ubiqx.org/cifs/">
+	<emphasis>Implementing CIFS</emphasis> by Christopher R. Hertel
+	</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>Just What Is SMB?</emphasis> by Richard Sharpe,
-	http://samba.anu.edu.au/cifs/docs/what-is-smb.html
+	<ulink url="http://samba.anu.edu.au/cifs/docs/what-is-smb.html">
+	<emphasis>Just What Is SMB?</emphasis> by Richard Sharpe
+	</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>Opening Windows Everywhere</emphasis> by Mike Warfield,
-	http://www.linux-mag.com/1999-05/samba_01.html
+	<ulink url="http://www.linux-mag.com/1999-05/samba_01.html">
+	<emphasis>Opening Windows Everywhere</emphasis> by Mike Warfield
+	</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>SMB HOWTO</emphasis> by David Wood,
-	http://www.tldp.org/HOWTO/SMB-HOWTO.html
+	<ulink url="http://www.tldp.org/HOWTO/SMB-HOWTO.html">
+	<emphasis>SMB HOWTO</emphasis> by David Wood
+	</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>SMB/CIFS by The Root</emphasis> by "ledin",
-	http://www.phrack.org/phrack/60/p60-0x0b.txt
+	<ulink url="http://www.phrack.org/phrack/60/p60-0x0b.txt">
+	<emphasis>SMB/CIFS by The Root</emphasis> by "ledin"
+	</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>The Story of Samba</emphasis> by Christopher R. Hertel,
-	http://www.linux-mag.com/1999-09/samba_01.html
+	<ulink url="http://www.linux-mag.com/1999-09/samba_01.html">
+	<emphasis>The Story of Samba</emphasis> by Christopher R. Hertel
+	</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>The Unofficial Samba HOWTO</emphasis> by David Lechnyr,
-	http://hr.uoregon.edu/davidrl/samba/
+	<ulink url="http://hr.uoregon.edu/davidrl/samba/">
+	<emphasis>The Unofficial Samba HOWTO</emphasis> by David Lechnyr
+	</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>Understanding the Network Neighborhood</emphasis> by Christopher R. Hertel,
-	http://www.linux-mag.com/2001-05/smb_01.html
+	<ulink url="http://www.linux-mag.com/2001-05/smb_01.html">
+	<emphasis>Understanding the Network Neighborhood</emphasis> by Christopher R. Hertel
+	</ulink>
 	</para></listitem>
 
 	<listitem><para>
-	<emphasis>Using Samba as a PDC</emphasis> by Andrew Bartlett,
-	http://www.linux-mag.com/2002-02/samba_01.html
+	<ulink url="http://www.linux-mag.com/2002-02/samba_01.html">
+	<emphasis>Using Samba as a PDC</emphasis> by Andrew Bartlett
+	</ulink>
 	</para></listitem>
 
 </itemizedlist>
@@ -335,9 +345,8 @@ not the completely clueless user who probably sits there shivering thinking
 That's what's really irritating to me."
 </emphasis></para>
 
-<para>
--- Linus Torvalds, from an interview with BOOT Magazine, Sept 1998
-(http://hr.uoregon.edu/davidrl/boot.txt)
+<para>-- 
+<ulink url="http://hr.uoregon.edu/davidrl/boot.txt">Linus Torvalds, from an interview with BOOT Magazine, Sept 1998</ulink>
 </para>
 
 </sect1>

@@ -195,13 +195,12 @@ exists with NT4 style policy files.
 <sect3>
 <title>Administration of Win2K / XP Policies</title>
 
-<procedure>
 <title>Instructions</title>
 <para>
 Instead of using the tool called "The System Policy Editor", commonly called Poledit (from the
 executable name poledit.exe), GPOs are created and managed using a Microsoft Management Console
 (MMC) snap-in as follows:</para>
-
+<procedure>
 <step>
 <para>
 Go to the Windows 200x / XP menu <filename>Start->Programs->Administrative Tools</filename>

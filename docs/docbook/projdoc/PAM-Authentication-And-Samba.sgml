@@ -236,29 +236,29 @@ Options recognized by this module are as follows:
         migrate         -       only meaningful in an "auth" context;
                                 used to update smbpasswd file with a
                                 password used for successful authentication.
-        smbconf=&lt file &gt  -     specify an alternate path to the smb.conf
+        smbconf=&lt; file &gt;  -     specify an alternate path to the smb.conf
                                 file.
 </programlisting></para>
 
 <para><programlisting>
 Thanks go to the following people:
 
-	* Andrew Morgan &lt morgan@transmeta.com &gt, for providing the Linux-PAM
+	* Andrew Morgan &lt; morgan@transmeta.com &gt;, for providing the Linux-PAM
 	framework, without which none of this would have happened
 
-	* Christian Gafton &lt gafton@redhat.com &gt and Andrew Morgan again, for the
+	* Christian Gafton &lt; gafton@redhat.com &gt; and Andrew Morgan again, for the
 	pam_pwdb module upon which pam_smbpass was originally based
 
-	* Luke Leighton &lt lkcl@switchboard.net &gt for being receptive to the idea,
+	* Luke Leighton &lt; lkcl@switchboard.net &gt; for being receptive to the idea,
 	and for the occasional good-natured complaint about the project's status
 	that keep me working on it :)
 
 	* and of course, all the other members of the Samba team
-	&lt http://www.samba.org/samba/team.html &gt, for creating a great product
+	&lt;http://www.samba.org/samba/team.html&gt;, for creating a great product
 	and for giving this project a purpose
 
 	---------------------
-	Stephen Langasek &lt vorlon@netexpress.net &gt
+	Stephen Langasek &lt; vorlon@netexpress.net &gt;
 </programlisting></para>
 
 <para>

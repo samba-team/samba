@@ -109,20 +109,34 @@ filenames from CP850 to the iso8859-15 charset.</para>
 <sect1>
 <title>Japanese charsets</title>
 
-<para>Samba doesn't work correctly with Japanese charsets yet. Here are points of attention when setting it up:</para>
+<para>Samba doesn't work correctly with Japanese charsets yet. Here are
+points of attention when setting it up:</para>
 
-<simplelist>
-<member>You should set <command>mangling method = hash</command></member>
-<member>There are various iconv() implementations around and not all of 
-them work equally well. glibc2's iconv() has a critical problem in CP932. 
-libiconv-1.8 works with CP932 but still has some problems and does not 
-work with EUC-JP. </member>
-<member>You should set <command>dos charset = CP932</command>, not Shift_JIS, SJIS...</member>
-<member>Currently only <command>unix charset = CP932</command> will work (but still has some problems...) because of iconv() issues. <command>unix charset = EUC-JP</command> doesn't work well because of iconv() issues.</member>
-<member>Currently Samba 3.0 does not support <command>unix charset = UTF8-MAC/CAP/HEX/JIS*</command></member>
-</simplelist>
+<itemizedlist>
+
+<listitem><para>You should set <command>mangling method =
+hash</command></para></listitem>
+
+<listitem><para>There are various iconv() implementations around and not
+all of  them work equally well. glibc2's iconv() has a critical problem
+in CP932.  libiconv-1.8 works with CP932 but still has some problems and
+does not  work with EUC-JP.</para></listitem>
+
+<listitem><para>You should set <command>dos charset = CP932</command>, not
+Shift_JIS, SJIS...</para></listitem>
+
+<listitem><para>Currently only <command>unix charset = CP932</command>
+will work (but still has some problems...) because of iconv() issues.
+<command>unix charset = EUC-JP</command> doesn't work well because of
+iconv() issues.</para></listitem>
+
+<listitem><para>Currently Samba 3.0 does not support <command>unix charset
+= UTF8-MAC/CAP/HEX/JIS*</command></para></listitem>
+
+</itemizedlist>
 
 <para>More information (in Japanese) is available at: <ulink url="http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html">http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html</ulink>.</para>
+
 </sect1>
 
 </chapter>
