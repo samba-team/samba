@@ -46,12 +46,12 @@ extern struct in_addr ipzero;
   response for a reg release received. samba has asked a WINS server if it
   could release a name.
   **************************************************************************/
-static void response_name_release(struct subnet_record *d,
-								struct packet_struct *p)
+static void response_name_release(struct nmb_name *ans_name,
+			struct subnet_record *d, struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
-  char *name = nmb->question.question_name.name;
-  int   type = nmb->question.question_name.name_type;
+  char *name = ans_name->name;
+  int   type = ans_name->name_type;
   
   DEBUG(4,("response name release received\n"));
   
@@ -70,14 +70,12 @@ static void response_name_release(struct subnet_record *d,
     else
     {
       DEBUG(2,("name release for different ip! %s %s\n",
-                  inet_ntoa(found_ip),
-                  namestr(&nmb->question.question_name)));
+                  inet_ntoa(found_ip), namestr(ans_name)));
     }
   }
   else
   {
-    DEBUG(2,("name release for %s rejected!\n",
-	       namestr(&nmb->question.question_name)));
+    DEBUG(2,("name release for %s rejected!\n", namestr(ans_name)));
 
     /* XXXX PANIC! what to do if it's one of samba's own names? */
 
@@ -91,12 +89,13 @@ static void response_name_release(struct subnet_record *d,
 /****************************************************************************
 response for a reg request received
 **************************************************************************/
-static void response_name_reg(struct subnet_record *d, struct packet_struct *p)
+static void response_name_reg(struct nmb_name *ans_name,
+			struct subnet_record *d, struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
-  char *name = nmb->question.question_name.name;
-  int   type = nmb->question.question_name.name_type;
   BOOL bcast = nmb->header.nm_flags.bcast;
+  char *name = ans_name->name;
+  int   type = ans_name->name_type;
   
   DEBUG(4,("response name registration received!\n"));
   
@@ -114,8 +113,7 @@ static void response_name_reg(struct subnet_record *d, struct packet_struct *p)
   }
   else
   {
-    DEBUG(1,("name registration for %s rejected!\n",
-	       namestr(&nmb->question.question_name)));
+    DEBUG(2,("name registration for %s rejected!\n", namestr(ans_name)));
 
 	/* oh dear. we have problems. possibly unbecome a master browser. */
     name_unregister_work(d,name,type);
@@ -527,7 +525,7 @@ void debug_state_type(int state)
   (responses for certain types of operations are only expected from one host)
   ****************************************************************************/
 static BOOL response_problem_check(struct response_record *n,
-			struct nmb_packet *nmb, char *qname)
+			struct nmb_packet *nmb, char *ans_name)
 {
   switch (nmb->answers->rr_type)
   {
@@ -584,7 +582,7 @@ static BOOL response_problem_check(struct response_record *n,
                 case NAME_QUERY_SRV_CHK:
                 case NAME_QUERY_MST_CHK:
                 {
-	              if (!strequal(qname,n->name.name))
+	              if (!strequal(ans_name,n->name.name))
 	              {
 		             /* one subnet, one master browser per workgroup */
 		             /* XXXX force an election? */
@@ -694,13 +692,13 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
   {
     case NAME_RELEASE:
     {
-        response_name_release(d, p);
+        response_name_release(ans_name, d, p);
         break;
     }
 
     case NAME_REGISTER:
     {
-       	response_name_reg(d, p);
+       	response_name_reg(ans_name, d, p);
         break;
     }
 
@@ -763,9 +761,7 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
 void response_netbios_packet(struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
-  struct nmb_name *question = &nmb->question.question_name;
   struct nmb_name *ans_name = NULL;
-  char *qname = question->name;
   BOOL bcast = nmb->header.nm_flags.bcast;
   struct response_record *n;
   struct subnet_record *d = NULL;
@@ -809,7 +805,7 @@ void response_netbios_packet(struct packet_struct *p)
   debug_state_type(n->state);
 
   /* problem checking: multiple responses etc */
-  if (response_problem_check(n, nmb, qname))
+  if (response_problem_check(n, nmb, ans_name->name))
     return;
 
   /* now deal with the current state */

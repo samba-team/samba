@@ -87,22 +87,25 @@ struct subnet_record *find_subnet(struct in_addr bcast_ip)
      the source ip address. a subnet 255.255.255.255 represents the
      WINS list. */
   
-  for (d = subnetlist; d; d = d->next)
+	for (d = subnetlist; d; d = d->next)
     {
         if (ip_equal(bcast_ip, wins_ip))
 	    {
-           if (ip_equal(bcast_ip, d->bcast_ip))
-           {
-               return d;
-           }
+			if (ip_equal(bcast_ip, d->bcast_ip))
+			{
+				return d;
+			}
         }
         else if (same_net(bcast_ip, d->bcast_ip, d->mask_ip))
 	    {
-	      return(d);
+			if (!ip_equal(d->bcast_ip, wins_ip))
+			{
+				return d;
+			}
 	    }
     }
   
-  return (NULL);
+	return (NULL);
 }
 
 
