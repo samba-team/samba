@@ -4,8 +4,8 @@ RCS file: /data/cvs/samba/source/Makefile.in,v
 retrieving revision 1.470
 diff -u -r1.470 Makefile.in
 --- Makefile.in	2002/04/13 11:45:33	1.470
-+++ Makefile.in	2002/04/14 01:01:05
-@@ -787,6 +787,36 @@
++++ Makefile.in	2002/04/18 03:34:05
+@@ -787,6 +787,43 @@
  	-$(INSTALLCMD) -d ${prefix}/include
  	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
  
@@ -22,7 +22,9 @@ diff -u -r1.470 Makefile.in
 +
 +PY_LSA_PROTO_OBJ = python/py_lsa.o
 +
-+python_proto: python_spoolss_proto python_lsa_proto
++PY_COMMON_PROTO_OBJ = python/py_common.c python/py_ntsec.c
++
++python_proto: python_spoolss_proto python_lsa_proto python_common_proto
 +
 +python_spoolss_proto:
 +	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
@@ -33,6 +35,11 @@ diff -u -r1.470 Makefile.in
 +	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
 +		-h _PY_LSA_PROTO_H python/py_lsa_proto.h \
 +		$(PY_LSA_PROTO_OBJ)
++
++python_common_proto:
++	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
++		-h _PY_COMMON_PROTO_H python/py_common_proto.h \
++		$(PY_COMMON_PROTO_OBJ)
 +
 +python_ext: $(PYTHON_OBJS)
 +	@echo python python/setup.py build
@@ -48,7 +55,7 @@ RCS file: /data/cvs/samba/source/configure.in,v
 retrieving revision 1.300
 diff -u -r1.300 configure.in
 --- configure.in	2002/04/11 15:26:58	1.300
-+++ configure.in	2002/04/14 01:01:08
++++ configure.in	2002/04/18 03:34:05
 @@ -2716,7 +2716,7 @@
  builddir=`pwd`
  AC_SUBST(builddir)
