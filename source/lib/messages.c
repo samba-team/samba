@@ -91,16 +91,6 @@ static void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 }
 
 /****************************************************************************
- Return current debug level.
-****************************************************************************/
-
-void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
-{
-	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",(unsigned int)src));
-	message_send_pid(src, MSG_DEBUGLEVEL, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS), True);
-}
-
-/****************************************************************************
  Initialise the messaging functions. 
 ****************************************************************************/
 
@@ -120,7 +110,6 @@ BOOL message_init(void)
 	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
 
 	message_register(MSG_PING, ping_message);
-	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message);
 
 	return True;
 }
