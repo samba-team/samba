@@ -1,0 +1,22 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="OS2DRIVERMAP"/>os2 driver map (G)</term>
+		<listitem><para>The parameter is used to define the absolute
+		path to a file containing a mapping of Windows NT printer driver
+		names to OS/2 printer driver names.  The format is:</para>
+		
+		<para>&lt;nt driver name&gt; = &lt;os2 driver 
+		name&gt;.&lt;device name&gt;</para>
+		
+		<para>For example, a valid entry using the HP LaserJet 5
+		printer driver would appear as <command moreinfo="none">HP LaserJet 5L = LASERJET.HP 
+		LaserJet 5L</command>.</para>
+		
+		<para>The need for the file is due to the printer driver namespace 
+		problem described in the <ulink url="printing.html">Samba 
+		Printing HOWTO</ulink>.  For more details on OS/2 clients, please 
+		refer to the OS2-Client-HOWTO containing in the Samba documentation.</para>
+
+		<para>Default: <command moreinfo="none">os2 driver map = &lt;empty string&gt;
+		</command></para>
+		</listitem>
+		</samba:parameter>

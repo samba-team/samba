@@ -1,0 +1,13 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="LDAPADMINDN"/>ldap admin dn (G)</term>
+		<listitem><para> The <parameter moreinfo="none">ldap admin dn</parameter> defines the Distinguished 
+		Name (DN) name used by Samba to contact the ldap server when retreiving 
+		user account information. The <parameter moreinfo="none">ldap
+		admin dn</parameter> is used in conjunction with the admin dn password
+		stored in the <filename moreinfo="none">private/secrets.tdb</filename> file.  See the
+		<citerefentry><refentrytitle>smbpasswd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> man page for more information on how 
+		to accmplish this.
+		</para>
+                </listitem>
+                </samba:parameter>

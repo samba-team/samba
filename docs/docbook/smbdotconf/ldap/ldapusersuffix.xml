@@ -1,0 +1,10 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="LDAPUSERSUFFIX"/>ldap user suffix (G)</term>
+	        <listitem><para>It specifies where users are added to the tree.
+		</para>
+		
+	
+		
+		<para>Default : <emphasis>none</emphasis></para>
+		</listitem>
+		</samba:parameter>

@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="MANGLINGCHAR"/>mangling char (S)</term>
+		<listitem><para>This controls what character is used as 
+		the <emphasis>magic</emphasis> character in <link linkend="NAMEMANGLINGSECT">name mangling</link>. The default is a '~'
+		but this may interfere with some software. Use this option to set 
+		it to whatever you prefer.</para>
+
+		<para>Default: <command moreinfo="none">mangling char = ~</command></para>
+		<para>Example: <command moreinfo="none">mangling char = ^</command></para>
+		</listitem>
+		</samba:parameter>

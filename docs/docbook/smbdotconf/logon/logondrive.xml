@@ -1,0 +1,13 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="LOGONDRIVE"/>logon drive (G)</term>
+		<listitem><para>This parameter specifies the local path to 
+		which the home directory will be connected (see <link linkend="LOGONHOME"><parameter moreinfo="none">logon home</parameter></link>) 
+		and is only used by NT Workstations. </para>
+
+		<para>Note that this option is only useful if Samba is set up as a
+		logon server.</para>
+
+		<para>Default: <command moreinfo="none">logon drive = z:</command></para>
+  		<para>Example: <command moreinfo="none">logon drive = h:</command></para>
+		</listitem>
+		</samba:parameter>

@@ -1,0 +1,14 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="HOSTSDENY"/>hosts deny (S)</term>
+		<listitem><para>The opposite of <parameter moreinfo="none">hosts allow</parameter> 
+		- hosts listed here are <emphasis>NOT</emphasis> permitted access to 
+		services unless the specific services have their own lists to override 
+		this one. Where the lists conflict, the <parameter moreinfo="none">allow</parameter> 
+		list takes precedence.</para>
+		
+		<para>Default: <emphasis>none (i.e., no hosts specifically excluded)
+		</emphasis></para>
+
+		<para>Example: <command moreinfo="none">hosts deny = 150.203.4. badhost.mynet.edu.au
+		</command></para></listitem>
+		</samba:parameter>

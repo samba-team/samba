@@ -1,0 +1,10 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="STATCACHE"/>stat cache (G)</term>
+		<listitem><para>This parameter determines if <citerefentry><refentrytitle>smbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> will use a cache in order to 
+		speed up case insensitive name mappings. You should never need 
+		to change this parameter.</para>
+
+  		<para>Default: <command moreinfo="none">stat cache = yes</command></para>
+		</listitem>
+		</samba:parameter>

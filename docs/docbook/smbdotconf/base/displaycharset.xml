@@ -1,0 +1,13 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="DISPLAYCHARSET"/>display charset (G)</term>
+		<listitem><para>Specifies the charset that samba will use 
+		to print messages to stdout and stderr and SWAT will use. 
+		Should generally be the same as the <command moreinfo="none">unix charset</command>.
+		</para>
+
+		<para>Default: <command moreinfo="none">display charset = ASCII</command></para>
+
+		<para>Example: <command moreinfo="none">display charset = UTF8</command></para>
+
+		</listitem>
+		</samba:parameter>

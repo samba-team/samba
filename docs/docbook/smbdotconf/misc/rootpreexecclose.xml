@@ -1,0 +1,12 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="ROOTPREEXECCLOSE"/>root preexec close (S)</term>
+		<listitem><para>This is the same as the <parameter moreinfo="none">preexec close
+		</parameter> parameter except that the command is run as root.</para>
+
+		<para>See also <link linkend="PREEXEC"><parameter moreinfo="none">
+		preexec</parameter></link> and <link linkend="PREEXECCLOSE">
+		<parameter moreinfo="none">preexec close</parameter></link>.</para>
+
+		<para>Default: <command moreinfo="none">root preexec close = no</command></para>
+		</listitem>
+		</samba:parameter>

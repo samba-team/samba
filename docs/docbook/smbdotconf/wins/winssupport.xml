@@ -1,0 +1,12 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="WINSSUPPORT"/>wins support (G)</term>
+		<listitem><para>This boolean controls if the <citerefentry><refentrytitle>nmbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> process in Samba will act as a WINS server. You should 
+		not set this to <constant>yes</constant> unless you have a multi-subnetted network and 
+		you wish a particular <command moreinfo="none">nmbd</command> to be your WINS server. 
+		Note that you should <emphasis>NEVER</emphasis> set this to <constant>yes</constant>
+		on more than one machine in your network.</para>
+
+		<para>Default: <command moreinfo="none">wins support = no</command></para>
+		</listitem>
+		</samba:parameter>

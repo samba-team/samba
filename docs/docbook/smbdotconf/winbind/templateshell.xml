@@ -1,0 +1,10 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="TEMPLATESHELL"/>template shell (G)</term>
+		<listitem><para>When filling out the user information for a Windows NT 
+		user, the <citerefentry><refentrytitle>winbindd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> daemon 
+		uses this parameter to fill in the login shell for that user.</para>
+
+		<para>Default: <command moreinfo="none">template shell = /bin/false</command></para>
+		</listitem>
+		</samba:parameter>

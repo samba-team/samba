@@ -1,0 +1,12 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="NAMECACHETIMEOUT"/>name cache timeout (G)</term>
+		<listitem><para>Specifies the number of seconds it takes before 
+		entries in samba's hostname resolve cache time out. If 
+		the timeout is set to 0. the caching is disabled.
+		</para>
+
+
+		<para>Default: <command moreinfo="none">name cache timeout = 660</command></para>
+		<para>Example: <command moreinfo="none">name cache timeout = 0</command></para>
+		</listitem>
+		</samba:parameter>

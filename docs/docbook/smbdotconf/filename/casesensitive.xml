@@ -1,0 +1,7 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="CASESENSITIVE"/>case sensitive (S)</term>
+		<listitem><para>See the discussion in the section <link linkend="NAMEMANGLINGSECT">NAME MANGLING</link>.</para>
+		
+		<para>Default: <command moreinfo="none">case sensitive = no</command></para>
+		</listitem>
+		</samba:parameter>

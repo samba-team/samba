@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="LOCKSPINTIME"/>lock spin time (G)</term>
+		<listitem><para>The time in microseconds that smbd should 
+		pause before attempting to gain a failed lock.  See
+		<link linkend="LOCKSPINCOUNT"><parameter moreinfo="none">lock spin 
+		count</parameter></link> for more details.
+		</para>
+
+		<para>Default: <command moreinfo="none">lock spin time = 10</command>
+		</para></listitem>
+		</samba:parameter>

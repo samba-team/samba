@@ -1,0 +1,12 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="PRINTERADMIN"/>printer admin (S)</term>
+		<listitem><para>This is a list of users that can do anything to 
+		printers via the remote administration interfaces offered by MS-RPC 
+		(usually using a NT workstation). Note that the root user always 
+		has admin rights.</para>
+
+		<para>Default: <command moreinfo="none">printer admin = &lt;empty string&gt;</command>
+		</para>
+		<para>Example: <command moreinfo="none">printer admin = admin, @staff</command></para>
+		</listitem>
+		</samba:parameter>

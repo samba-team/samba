@@ -1,0 +1,14 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="ROOTPOSTEXEC"/>root postexec (S)</term>
+		<listitem><para>This is the same as the <parameter moreinfo="none">postexec</parameter>
+		parameter except that the command is run as root. This 
+		is useful for unmounting filesystems 
+		(such as CDROMs) after a connection is closed.</para>
+
+		<para>See also <link linkend="POSTEXEC"><parameter moreinfo="none">
+		postexec</parameter></link>.</para>
+
+		<para>Default: <command moreinfo="none">root postexec = &lt;empty string&gt;
+		</command></para>
+		</listitem>
+		</samba:parameter>

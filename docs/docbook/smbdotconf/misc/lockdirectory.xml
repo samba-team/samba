@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="LOCKDIRECTORY"/>lock directory (G)</term>
+		<listitem><para>This option specifies the directory where lock 
+		files will be placed.  The lock files are used to implement the 
+		<link linkend="MAXCONNECTIONS"><parameter moreinfo="none">max connections</parameter>
+		</link> option.</para>
+
+		<para>Default: <command moreinfo="none">lock directory = ${prefix}/var/locks</command></para>
+		<para>Example: <command moreinfo="none">lock directory = /var/run/samba/locks</command>
+		</para></listitem>
+		</samba:parameter>

@@ -1,0 +1,11 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="WORKGROUP"/>workgroup (G)</term>
+		<listitem><para>This controls what workgroup your server will 
+		appear to be in when queried by clients. Note that this parameter 
+		also controls the Domain name used with the <link linkend="SECURITYEQUALSDOMAIN"><command moreinfo="none">security = domain</command></link>
+		setting.</para>
+
+		<para>Default: <emphasis>set at compile time to WORKGROUP</emphasis></para>
+		<para>Example: <command moreinfo="none">workgroup = MYGROUP</command></para>
+		</listitem>
+		</samba:parameter>

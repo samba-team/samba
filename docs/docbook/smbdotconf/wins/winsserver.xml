@@ -1,0 +1,21 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="WINSSERVER"/>wins server (G)</term>
+		<listitem><para>This specifies the IP address (or DNS name: IP 
+		address for preference) of the WINS server that <citerefentry><refentrytitle>nmbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> should register with. If you have a WINS server on 
+		your network then you should set this to the WINS server's IP.</para>
+
+		<para>You should point this at your WINS server if you have a
+		multi-subnetted network.</para>
+
+		<para><emphasis>NOTE</emphasis>. You need to set up Samba to point 
+		to a WINS server if you have multiple subnets and wish cross-subnet 
+		browsing to work correctly.</para>
+
+		<para>See the documentation file <ulink url="improved-browsing.html">BROWSING</ulink> 
+		in the docs/ directory of your Samba source distribution.</para>
+
+		<para>Default: <emphasis>not enabled</emphasis></para>
+		<para>Example: <command moreinfo="none">wins server = 192.9.200.1</command></para>
+		</listitem>
+		</samba:parameter>

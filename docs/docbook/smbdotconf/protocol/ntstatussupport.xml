@@ -1,0 +1,14 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="NTSTATUSSUPPORT"/>nt status support (G)</term>
+		<listitem><para>This boolean parameter controls whether <ulink url="smbd.8.html">smbd(8)</ulink> will negotiate NT specific status
+		support with Windows NT/2k/XP clients. This is a developer
+		debugging option and should be left alone.
+	 	If this option is set to <constant>no</constant> then Samba offers
+		exactly the same DOS error codes that versions prior to Samba 2.2.3
+		reported.</para>
+
+		<para>You should not need to ever disable this parameter.</para>
+
+		<para>Default: <command moreinfo="none">nt status support = yes</command></para>
+		</listitem>
+		</samba:parameter>

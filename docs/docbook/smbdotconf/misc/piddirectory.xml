@@ -1,0 +1,9 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="PIDDIRECTORY"/>pid directory (G)</term>
+		<listitem><para>This option specifies the directory where pid 
+		files will be placed.  </para>
+
+		<para>Default: <command moreinfo="none">pid directory = ${prefix}/var/locks</command></para>
+		<para>Example: <command moreinfo="none">pid directory = /var/run/</command>
+		</para></listitem>
+		</samba:parameter>

@@ -1,0 +1,6 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="PRINTCAP"/>printcap (G)</term>
+		<listitem><para>Synonym for 	<link linkend="PRINTCAPNAME"><parameter moreinfo="none">
+		printcap name</parameter></link>.</para>
+		</listitem>
+		</samba:parameter>

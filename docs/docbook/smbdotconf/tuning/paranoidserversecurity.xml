@@ -1,0 +1,16 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="PARANOIDSERVERSECURITY"/>paranoid server security (G)</term>
+		<listitem><para>Some version of NT 4.x allow non-guest 
+		users with a bad passowrd. When this option is enabled, samba will not 
+		use a broken NT 4.x server as password server, but instead complain
+		to the logs and exit.  
+		</para>
+
+	        <para>Disabling this option prevents Samba from making
+	        this check, which involves deliberatly attempting a
+	        bad logon to the remote server.</para>
+
+		<para>Default: <command moreinfo="none">paranoid server security = yes</command></para>
+
+		</listitem>
+		</samba:parameter>

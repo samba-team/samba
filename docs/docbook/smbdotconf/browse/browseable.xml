@@ -1,0 +1,8 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="BROWSEABLE"/>browseable (S)</term>
+		<listitem><para>This controls whether this share is seen in 
+		the list of available shares in a net view and in the browse list.</para>
+
+		<para>Default: <command moreinfo="none">browseable = yes</command></para>
+		</listitem>
+		</samba:parameter>

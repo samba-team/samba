@@ -1,0 +1,7 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="HIDELOCALUSERS"/>hide local users(G)</term>
+		<listitem><para>This parameter toggles the hiding of local UNIX 
+		users (root, wheel, floppy, etc) from remote clients.</para>
+
+		<para>Default: <command moreinfo="none">hide local users = no</command></para></listitem>
+		</samba:parameter>

@@ -1,0 +1,6 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="WRITABLE"/>writable (S)</term>
+		<listitem><para>Synonym for <link linkend="WRITEABLE"><parameter moreinfo="none">
+		writeable</parameter></link> for people who can't spell :-).</para>
+		</listitem>
+		</samba:parameter>

@@ -1,0 +1,6 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="AUTOSERVICES"/>auto services (G)</term>
+		<listitem><para>This is a synonym for the <link linkend="PRELOAD">
+		<parameter moreinfo="none">preload</parameter></link>.</para>
+		</listitem>
+		</samba:parameter>

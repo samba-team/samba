@@ -1,0 +1,13 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="TEMPLATEHOMEDIR"/>template homedir (G)</term>
+		<listitem><para>When filling out the user information for a Windows NT 
+		user, the <ulink url="winbindd.8.html">winbindd(8)</ulink> daemon 
+		uses this parameter to fill in the home directory for that user.  
+		If the string <parameter moreinfo="none">%D</parameter> is present it is substituted 
+		with the user's Windows NT domain name.  If the string <parameter moreinfo="none">%U
+		</parameter> is present it is substituted with the user's Windows 
+		NT user name.</para>
+
+		<para>Default: <command moreinfo="none">template homedir = /home/%D/%U</command></para>
+		</listitem>
+		</samba:parameter>

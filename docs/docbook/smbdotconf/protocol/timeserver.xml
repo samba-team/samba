@@ -1,0 +1,9 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="TIMESERVER"/>time server (G)</term>
+		<listitem><para>This parameter determines if <citerefentry><refentrytitle>nmbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> advertises itself as a time server to Windows 
+		clients.</para>
+
+  		<para>Default: <command moreinfo="none">time server = no</command></para>
+		</listitem>
+		</samba:parameter>

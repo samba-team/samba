@@ -1,0 +1,6 @@
+<samba:parameter xmlns:samba="http://samba.org/common">
+		<term><anchor id="MINPASSWDLENGTH"/>min passwd length (G)</term>
+		<listitem><para>Synonym for <link linkend="MINPASSWORDLENGTH">
+		<parameter moreinfo="none">min password length</parameter></link>.</para>
+		</listitem>
+		</samba:parameter>
