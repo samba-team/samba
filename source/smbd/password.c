@@ -77,6 +77,8 @@ void invalidate_vuid(uint16 vuid)
 
 	free_server_info(&vuser->server_info);
 
+	data_blob_free(&vuser->session_key);
+
 	DLIST_REMOVE(validated_users, vuser);
 
 	/* clear the vuid from the 'cache' on each connection, and
@@ -109,25 +111,36 @@ void invalidate_all_vuids(void)
  *  @param server_info The token returned from the authentication process. 
  *   (now 'owned' by register_vuid)
  *
+ *  @param session_key The User session key for the login session (now also 'owned' by register_vuid)
+ *
+ *  @param respose_blob The NT challenge-response, if available.  (May be freed after this call)
+ *
+ *  @param smb_name The untranslated name of the user
+ *
  *  @return Newly allocated vuid, biased by an offset. (This allows us to
  *   tell random client vuid's (normally zero) from valid vuids.)
  *
  */
 
-int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB response_blob, const char *smb_name)
+int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, DATA_BLOB response_blob, const char *smb_name)
 {
 	user_struct *vuser = NULL;
 
 	/* Ensure no vuid gets registered in share level security. */
-	if(lp_security() == SEC_SHARE)
+	if(lp_security() == SEC_SHARE) {
+		data_blob_free(&session_key);
 		return UID_FIELD_INVALID;
+	}
 
 	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
-	if (num_validated_vuids >= 0xFFFF-VUID_OFFSET)
+	if (num_validated_vuids >= 0xFFFF-VUID_OFFSET) {
+		data_blob_free(&session_key);
 		return UID_FIELD_INVALID;
+	}
 
 	if((vuser = (user_struct *)malloc( sizeof(user_struct) )) == NULL) {
 		DEBUG(0,("Failed to malloc users struct!\n"));
+		data_blob_free(&session_key);
 		return UID_FIELD_INVALID;
 	}
 
@@ -156,6 +169,7 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB response_blob
 	if (vuser->n_groups) {
 		if (!(vuser->groups = memdup(server_info->groups, sizeof(gid_t) * vuser->n_groups))) {
 			DEBUG(0,("register_vuid: failed to memdup vuser->groups\n"));
+			data_blob_free(&session_key);
 			free(vuser);
 			free_server_info(&server_info);
 			return UID_FIELD_INVALID;
@@ -197,7 +211,7 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB response_blob
 		}
 	}
 
-	memcpy(vuser->session_key, server_info->session_key, sizeof(vuser->session_key));
+	vuser->session_key = session_key;
 
 	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", 
 		  (unsigned int)vuser->uid, 
@@ -211,6 +225,7 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB response_blob
 	} else {
 		DEBUG(1, ("server_info does not contain a user_token - cannot continue\n"));
 		free_server_info(&server_info);
+		data_blob_free(&session_key);
 		SAFE_FREE(vuser->homedir);
 		SAFE_FREE(vuser->unix_homedir);
 		SAFE_FREE(vuser->logon_script);

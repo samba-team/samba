@@ -179,10 +179,9 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 
 				result = NT_STATUS_OK;
 
-				if (!cli_session_setup_spnego(new_conn->cli, machine_krb5_principal, 
+				if (!NT_STATUS_IS_OK(result = cli_session_setup_spnego(new_conn->cli, machine_krb5_principal, 
 							      machine_password, 
-							      domain)) {
-					result = cli_nt_error(new_conn->cli);
+							      domain))) {
 					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
 					if (NT_STATUS_IS_OK(result)) 
 						result = NT_STATUS_UNSUCCESSFUL;

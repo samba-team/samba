@@ -654,11 +654,17 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	ZERO_STRUCT(netlogon_sess_key);
 	memcpy(netlogon_sess_key, cli->sess_key, 8);
 	
-	if (memcmp(zeros, info3->user_sess_key, 16) != 0)
+	if (memcmp(zeros, info3->user_sess_key, 16) != 0) {
 		SamOEMhash(info3->user_sess_key, netlogon_sess_key, 16);
-		
-	if (memcmp(zeros, info3->padding, 16) != 0)
+	} else {
+		memset(info3->user_sess_key, '\0', 16);
+	}
+
+	if (memcmp(zeros, info3->padding, 16) != 0) {
 		SamOEMhash(info3->padding, netlogon_sess_key, 16);
+	} else {
+		memset(info3->padding, '\0', 16);
+	}
 
         /* Return results */
 

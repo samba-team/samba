@@ -331,9 +331,9 @@ DATA_BLOB NTLMv2_generate_names_blob(const char *hostname,
 	DATA_BLOB names_blob = data_blob(NULL, 0);
 	
 	msrpc_gen(&names_blob, "aaa", 
-		  True, NTLMSSP_NAME_TYPE_DOMAIN, domain,
-		  True, NTLMSSP_NAME_TYPE_SERVER, hostname,
-		  True, 0, "");
+		  NTLMSSP_NAME_TYPE_DOMAIN, domain,
+		  NTLMSSP_NAME_TYPE_SERVER, hostname,
+		  0, "");
 	return names_blob;
 }
 
