@@ -526,6 +526,8 @@ exec
 
 fake oplocks
 
+follow symlinks
+
 force create mode
 
 force directory mode
@@ -1175,6 +1177,19 @@ at the same time you can get data corruption. Use this option
 carefully! 
 
 This option is disabled by default.
+
+.SS follow symlinks (S)
+
+This parameter allows the Samba administrator to stop smbd from
+following symbolic links in a particular share. Setting this
+parameter to "No" prevents any file or directory that is a 
+symbolic link from being followed (the user will get an error).
+This option is very useful to stop users from adding a symbolic
+link to /etc/pasword in their home directory for instance.
+However it will slow filename lookups down slightly.
+
+This option is enabled (ie. smbd will follow symbolic links)
+by default.
 
 .SS force create mode (S)
 This parameter specifies a set of UNIX mode bit permissions that
