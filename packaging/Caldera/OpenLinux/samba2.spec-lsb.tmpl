@@ -31,7 +31,7 @@ Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}.tar.gz
 #Patch0: %{Name}-%{Version}-smbmount.patch
 #Patch1: %{Name}-%{Version}-install.patch
 #Patch2: %{Name}-%{Version}-smbconf.patch
-Patch6: %{Name}-2.2.2-libsmbclient.patch
+#Patch6: %{Name}-2.2.2-libsmbclient.patch
 
 %Package doc
 Group       	: Server/Network
@@ -195,7 +195,7 @@ a clean and stable API for SMB client application development.
 #%patch0 -p1
 #%patch1 -p1
 #%patch2 -p1
-%patch6 -p1
+#%patch6 -p1
 
 # instead of patch (to help configuration) ...   ;^)
 %{fixUP} -vbT source/Makefile.in -e '
@@ -284,6 +284,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-configdir='$(DESTDIR)'%{EtcSamba} \
 	--with-codepagedir='$(DESTDIR)'/usr/share/samba/codepages \
 	--without-smbwrapper \
+	--with-libsmbclient \
 	--with-smbmount \
 	--with-pam \
 	--with-pam_smbpass \
