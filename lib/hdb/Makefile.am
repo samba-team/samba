@@ -13,6 +13,7 @@ CLEANFILES = $(BUILT_SOURCES) $(foo) hdb_asn1.h asn1_files
 
 noinst_PROGRAMS = convert_db
 LDADD = libhdb.la \
+	$(LIB_openldap) \
 	../krb5/libkrb5.la \
 	../asn1/libasn1.la \
 	../des/libdes.la \
@@ -28,12 +29,15 @@ libhdb_la_SOURCES = 				\
 		    common.c			\
 		    db.c			\
 		    ndbm.c			\
+		    hdb-ldap.c			\
 		    print.c			\
 		    $(BUILT_SOURCES)
 
+INCLUDES += $(INCLUDE_openldap)
+
 include_HEADERS = hdb.h hdb_err.h hdb_asn1.h hdb-protos.h hdb-private.h
 
-libhdb_la_LIBADD = 
+libhdb_la_LIBADD = $(LIB_openldap)
 
 $(libhdb_la_OBJECTS): $(srcdir)/hdb-protos.h $(srcdir)/hdb-private.h
 
