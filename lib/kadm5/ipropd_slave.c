@@ -239,7 +239,7 @@ receive_everything (krb5_context context, int *fd,
 	krb5_err (context, 1, ret, "db->open");
 
     do {
-	krb5_data packet, data;
+	krb5_data packet;
 	krb5_storage *sp;
 
 	ret = krb5_read_message (context, fd, &packet);
