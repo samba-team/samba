@@ -1,0 +1,13 @@
+Sun Mar 21 14:08:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/auth/sia/Makefile.in: add posix_getpw.c
+
+	* lib/auth/sia/Makefile.am: makefile for sia
+
+	* lib/auth/sia/posix_getpw.c: move from sia.c
+
+	* lib/auth/sia/sia_locl.h: merge with krb5 version
+
+	* lib/auth/sia/sia.c: merge with krb5 version
+
+	* lib/auth/sia/sia5.c: remove unused variables
