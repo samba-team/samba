@@ -46,10 +46,12 @@ static char *
 k_cell()
 {
     static char cell[64];
+
     FILE *f = fopen(_PATH_THISCELL, "r");
     if (f == 0)
 	return 0;
     fscanf(f, "%s\n", cell);
+    fclose(f);
     if (cell[0] != 0)
 	return cell;
     else
