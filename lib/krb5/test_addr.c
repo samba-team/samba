@@ -123,6 +123,7 @@ main(int argc, char **argv)
     print_addr(context, "RANGE:130.237.237.4/29");
 #ifdef HAVE_IPV6
     print_addr(context, "RANGE:fe80::209:6bff:fea0:e522/64");
+    print_addr(context, "RANGE:IPv6:fe80::209:6bff:fea0:e522/64");
     print_addr(context, "RANGE:IPv6:fe80::-IPv6:fe80::ffff:ffff:ffff:ffff");
     print_addr(context, "RANGE:fe80::-fe80::ffff:ffff:ffff:ffff");
 #endif
