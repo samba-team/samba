@@ -29,13 +29,11 @@ RCSID("$Id$");
 **  strcmp-like sorting predicate for qsort.
 */
 static int
-compare(p1, p2)
-    const void	*p1;
-    const void	*p2;
+compare(const void *p1, const void *p2)
 {
     const char	**v1;
     const char	**v2;
-
+    
     v1 = (const char **)p1;
     v2 = (const char **)p2;
     return strcmp(*v1, *v2);
@@ -46,10 +44,7 @@ compare(p1, p2)
 **  Ignore . and .. .
 */
 static int
-FindMatches(dir, file, avp)
-    char	*dir;
-    char	*file;
-    char	***avp;
+FindMatches(char *dir, char *file, char ***avp)
 {
     char	**av;
     char	**new;
@@ -73,18 +68,18 @@ FindMatches(dir, file, avp)
 	    continue;
 
 	if ((ac % MEM_INC) == 0) {
-	    if ((new = NEW(char*, ac + MEM_INC)) == NULL)
+	    if ((new = malloc(sizeof(char*) * (ac + MEM_INC))) == NULL)
 		break;
 	    if (ac) {
-		COPYFROMTO(new, av, ac * sizeof (char **));
-		DISPOSE(av);
+		memcpy(new, av, ac * sizeof (char **));
+		free(av);
 	    }
 	    *avp = av = new;
 	}
 
 	if ((av[ac] = strdup(p)) == NULL) {
 	    if (ac == 0)
-		DISPOSE(av);
+		free(av);
 	    break;
 	}
 	ac++;
@@ -100,11 +95,7 @@ FindMatches(dir, file, avp)
 /*
 **  Split a pathname into allocated directory and trailing filename parts.
 */
-static int
-SplitPath(path, dirpart, filepart)
-    char	*path;
-    char	**dirpart;
-    char	**filepart;
+static int SplitPath(char *path, char **dirpart, char **filepart)
 {
     static char	DOT[] = ".";
     char	*dpart;
@@ -114,7 +105,7 @@ SplitPath(path, dirpart, filepart)
 	if ((dpart = strdup(DOT)) == NULL)
 	    return -1;
 	if ((fpart = strdup(path)) == NULL) {
-	    DISPOSE(dpart);
+	    free(dpart);
 	    return -1;
 	}
     }
@@ -123,7 +114,7 @@ SplitPath(path, dirpart, filepart)
 	    return -1;
 	dpart[fpart - path] = '\0';
 	if ((fpart = strdup(++fpart)) == NULL) {
-	    DISPOSE(dpart);
+	    free(dpart);
 	    return -1;
 	}
     }
@@ -136,14 +127,11 @@ SplitPath(path, dirpart, filepart)
 **  Attempt to complete the pathname, returning an allocated copy.
 **  Fill in *unique if we completed it, or set it to 0 if ambiguous.
 */
-char *
-rl_complete(pathname, unique)
-    char	*pathname;
-    int		*unique;
+
+static char *
+rl_complete_filename(char *pathname, int *unique)
 {
     char	**av;
-    char	*dir;
-    char	*file;
     char	*new;
     char	*p;
     size_t	ac;
@@ -152,27 +140,24 @@ rl_complete(pathname, unique)
     size_t	j;
     size_t	len;
 
-    if (SplitPath(pathname, &dir, &file) < 0)
-	return NULL;
-    if ((ac = FindMatches(dir, file, &av)) == 0) {
-	DISPOSE(dir);
-	DISPOSE(file);
-	return NULL;
-    }
+    ac = rl_list_possib(pathname, &av);
 
     p = NULL;
-    len = strlen(file);
     if (ac == 1) {
+	char *s = strrchr(pathname, '/');
 	/* Exactly one match -- finish it off. */
 	*unique = 1;
+	if(s == NULL)
+	    len = strlen(pathname);
+	else
+	    len = strlen(s + 1);
 	j = strlen(av[0]) - len + 2;
-	if ((p = NEW(char, j + 1)) != NULL) {
-	    COPYFROMTO(p, av[0] + len, j);
-	    if ((new = NEW(char, strlen(dir) + strlen(av[0]) + 2)) != NULL) {
-		snprintf (new, sizeof(new),
-			  "%s/%s", dir, av[0]);
+	if ((p = malloc(j + 1)) != NULL) {
+	    memcpy(p, av[0] + len, j);
+	    asprintf(&new, "%s%s", pathname, p);
+	    if(new != NULL) {
 		rl_add_slash(new, p);
-		DISPOSE(new);
+		free(new);
 	    }
 	}
     }
@@ -187,8 +172,8 @@ rl_complete(pathname, unique)
   breakout:
 	    if (i > len) {
 		j = i - len + 1;
-		if ((p = NEW(char, j)) != NULL) {
-		    COPYFROMTO(p, av[0] + len, j);
+		if ((p = malloc(j)) != NULL) {
+		    memcpy(p, av[0] + len, j);
 		    p[j - 1] = '\0';
 		}
 	    }
@@ -196,21 +181,34 @@ rl_complete(pathname, unique)
     }
 
     /* Clean up and return. */
-    DISPOSE(dir);
-    DISPOSE(file);
     for (i = 0; i < ac; i++)
-	DISPOSE(av[i]);
-    DISPOSE(av);
+	free(av[i]);
+    free(av);
     return p;
 }
+
+static rl_complete_func_t complete_func = rl_complete_filename;
+
+char *
+rl_complete(char *pathname, int *unique)
+{
+    return (*complete_func)(pathname, unique);
+}
+
+rl_complete_func_t
+rl_set_complete_func(rl_complete_func_t func)
+{
+    rl_complete_func_t old = complete_func;
+    complete_func = func;
+    return old;
+}
+
 
 /*
 **  Return all possible completions.
 */
-int
-rl_list_possib(pathname, avp)
-    char	*pathname;
-    char	***avp;
+static int
+rl_list_possib_filename(char *pathname, char ***avp)
 {
     char	*dir;
     char	*file;
@@ -219,7 +217,23 @@ rl_list_possib(pathname, avp)
     if (SplitPath(pathname, &dir, &file) < 0)
 	return 0;
     ac = FindMatches(dir, file, avp);
-    DISPOSE(dir);
-    DISPOSE(file);
+    free(dir);
+    free(file);
     return ac;
+}
+
+static rl_list_possib_func_t list_possib_func = rl_list_possib_filename;
+
+int
+rl_list_possib(char *pathname, char ***avp)
+{
+    return (*list_possib_func)(pathname, avp);
+}
+
+rl_list_possib_func_t
+rl_set_list_possib_func(rl_list_possib_func_t func)
+{
+    rl_list_possib_func_t old = list_possib_func;
+    list_possib_func = func;
+    return old;
 }
