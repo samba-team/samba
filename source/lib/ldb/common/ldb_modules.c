@@ -94,7 +94,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		char *modstr, *c, *p; 
 
 		ret = ldb_search(ldb, "", LDB_SCOPE_BASE, "dn=@MODULES", attrs, &msg);
-		if (ret == 0) {
+		if (ret == 0 || (ret == 1 && msg[0]->num_elements == 0)) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db\n");
 		} else {
 			if (ret < 0) {
@@ -184,6 +184,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				continue;
 			}
 
+#ifdef _SAMBA_BUILD_
 			if (strcmp(modules[i], "samldb") == 0) {
 				current = samldb_module_init(ldb, options);
 				if (!current) {
@@ -193,6 +194,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				DLIST_ADD(ldb->modules, current);
 				continue;
 			}
+#endif
 
 #ifdef HAVE_DLOPEN_DISABLED
 			filename = talloc_asprintf(ldb, "%s.so", modules[i]);
