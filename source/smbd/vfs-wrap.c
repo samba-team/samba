@@ -404,13 +404,73 @@ int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times)
     return result;
 }
 
-int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T offset)
+int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 {
-    int result;
-
+	int result = -1;
     START_PROFILE(syscall_ftruncate);
 
-    result = sys_ftruncate(fd, offset);
+#ifdef HAVE_FTRUNCATE_EXTEND
+	result = sys_ftruncate(fd, len);
+    END_PROFILE(syscall_ftruncate);
+    return result;
+#else
+
+	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
+		extend a file with ftruncate. Provide alternate implementation
+		for this */
+
+	struct vfs_ops *vfs_ops = fsp->conn->vfs_ops;
+	SMB_STRUCT_STAT st;
+	char c = 0;
+	SMB_OFF_T currpos;
+
+	currpos = vfs_ops->lseek(fsp, (SMB_OFF_T)0, SEEK_CUR);
+	if(currpos == -1) {
+		goto done;
+	}
+
+	/* Do an fstat to see if the file is longer than
+		the requested size (call ftruncate),
+		or shorter, in which case seek to len - 1 and write 1
+		byte of zero */
+	if(vfs_ops->fstat(fsp, &st)<0) {
+		goto done;
+	}
+
+#ifdef S_ISFIFO
+	if (S_ISFIFO(st.st_mode)) {
+		result = 0;
+		goto done;
+	}
+#endif
+
+	if(st.st_size == len) {
+		result = 0;
+		goto done;
+	}
+
+	if(st.st_size > len) {
+		/* Yes this is *deliberately* sys_ftruncate ! JRA */
+		result = sys_ftruncate(fd, len);
+		goto done;
+	}
+
+	if(vfs_ops->lseek(fsp, len-1, SEEK_SET) != len -1) {
+		goto done;
+	}
+
+	if(vfs_ops->write(fsp, &c, 1)!=1) {
+		goto done;
+	}
+
+	/* Seek to where we were */
+	if(vfs_ops->lseek(fsp, currpos, SEEK_SET) != currpos) {
+		goto done;
+	}
+#endif
+
+  done:
+
     END_PROFILE(syscall_ftruncate);
     return result;
 }

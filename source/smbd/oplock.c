@@ -208,10 +208,11 @@ static void downgrade_file_oplock(files_struct *fsp)
 
 /****************************************************************************
  Remove a file oplock. Copes with level II and exclusive.
- Locks then unlocks the share mode lock.
+ Locks then unlocks the share mode lock. Client can decide to go directly
+ to none even if a "break-to-level II" was sent.
 ****************************************************************************/
 
-BOOL remove_oplock(files_struct *fsp)
+BOOL remove_oplock(files_struct *fsp, BOOL break_to_none)
 {
 	SMB_DEV_T dev = fsp->dev;
 	SMB_INO_T inode = fsp->inode;
@@ -224,7 +225,7 @@ BOOL remove_oplock(files_struct *fsp)
 		ret = False;
 	}
 
-	if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT) {
+	if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT || break_to_none) {
 		/*
 		 * Deal with a reply when a break-to-none was sent.
 		 */
@@ -837,7 +838,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
         OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
   {
     DEBUG(0,("oplock_break: client failure in oplock break in file %s\n", fsp->fsp_name));
-    remove_oplock(fsp);
+    remove_oplock(fsp,True);
     global_client_failed_oplock_break = True; /* Never grant this client an oplock again. */
   }
 
@@ -1096,6 +1097,96 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
   return False;
 }
 
+/****************************************************************************
+ This function is called on any file modification or lock request. If a file
+ is level 2 oplocked then it must tell all other level 2 holders to break to none.
+****************************************************************************/
+
+void release_level_2_oplocks_on_change(files_struct *fsp)
+{
+	share_mode_entry *share_list = NULL;
+	pid_t pid = sys_getpid();
+	int token = -1;
+	int num_share_modes = 0;
+	int i;
+
+	/*
+	 * If this file is level II oplocked then we need
+	 * to grab the shared memory lock and inform all
+	 * other files with a level II lock that they need
+	 * to flush their read caches. We keep the lock over
+	 * the shared memory area whilst doing this.
+	 */
+
+	if (!LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+		return;
+
+	if (lock_share_entry_fsp(fsp) == False) {
+		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock share mode entry for file %s.\n", fsp->fsp_name ));
+	}
+
+	num_share_modes = get_share_modes(fsp->conn, fsp->dev, fsp->inode, &share_list);
+
+	for(i = 0; i < num_share_modes; i++) {
+		share_mode_entry *share_entry = &share_list[i];
+
+		/*
+		 * As there could have been multiple writes waiting at the lock_share_entry
+		 * gate we may not be the first to enter. Hence the state of the op_types
+		 * in the share mode entries may be partly NO_OPLOCK and partly LEVEL_II
+		 * oplock. It will do no harm to re-send break messages to those smbd's
+		 * that are still waiting their turn to remove their LEVEL_II state, and
+		 * also no harm to ignore existing NO_OPLOCK states. JRA.
+		 */
+
+		if (share_entry->op_type == NO_OPLOCK)
+			continue;
+
+		/* Paranoia .... */
+		if (EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
+			DEBUG(0,("release_level_2_oplocks_on_change: PANIC. share mode entry %d is an exlusive oplock !\n", i ));
+			unlock_share_entry(fsp->conn, fsp->dev, fsp->inode);
+			abort();
+		}
+
+		/*
+		 * Check if this is a file we have open (including the
+		 * file we've been called to do write_file on. If so
+		 * then break it directly without releasing the lock.
+		 */
+
+		if (pid == share_entry->pid) {
+			files_struct *new_fsp = file_find_dit(fsp->dev, fsp->inode, &share_entry->time);
+
+			/* Paranoia check... */
+			if(new_fsp == NULL) {
+				DEBUG(0,("release_level_2_oplocks_on_change: PANIC. share mode entry %d is not a local file !\n", i ));
+				unlock_share_entry(fsp->conn, fsp->dev, fsp->inode);
+				abort();
+			}
+
+			oplock_break_level2(new_fsp, True, token);
+
+		} else {
+
+			/*
+			 * This is a remote file and so we send an asynchronous
+			 * message.
+			 */
+
+			request_oplock_break(share_entry, fsp->dev, fsp->inode);
+		}
+	}
+
+	free((char *)share_list);
+	unlock_share_entry_fsp(fsp);
+
+	/* Paranoia check... */
+	if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
+		DEBUG(0,("release_level_2_oplocks_on_change: PANIC. File %s still has a level II oplock.\n", fsp->fsp_name));
+		abort();
+	}
+}
 
 /****************************************************************************
 setup oplocks for this process

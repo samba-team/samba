@@ -2188,6 +2188,8 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
   CHECK_READ(fsp);
   CHECK_ERROR(fsp);
 
+  release_level_2_oplocks_on_change(fsp);
+
   numtoread = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
   
@@ -2568,8 +2570,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
   if(numtowrite == 0) {
-      if((nwritten = set_filelen(fsp->fd, (SMB_OFF_T)startpos)) >= 0) /* tpot vfs */
-      set_filelen_write_cache(fsp, startpos); 
+      nwritten = vfs_set_filelen(fsp, (SMB_OFF_T)startpos);
   } else
     nwritten = write_file(fsp,data,startpos,numtowrite);
   
@@ -2984,6 +2985,8 @@ int reply_lock(connection_struct *conn,
 
 	CHECK_FSP(fsp,conn);
 	CHECK_ERROR(fsp);
+
+	release_level_2_oplocks_on_change(fsp);
 
 	count = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv1);
 	offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
@@ -4239,9 +4242,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 {
   files_struct *fsp = file_fsp(inbuf,smb_vwv2);
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
-#if 0
   unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
-#endif
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   SMB_BIG_UINT count = 0, offset = 0;
@@ -4264,8 +4265,11 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
    */
   if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE))
   {
-    DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
-              fsp->fnum));
+	/* Client can insist on breaking to none. */
+	BOOL break_to_none = (oplocklevel == 0);
+
+    DEBUG(5,("reply_lockingX: oplock break reply (%u) from client for fnum = %d\n",
+              fsp->fnum, (unsigned int)oplocklevel ));
 
     /*
      * Make sure we have granted an exclusive or batch oplock on this file.
@@ -4286,7 +4290,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
       }
     }
 
-    if (remove_oplock(fsp) == False) {
+    if (remove_oplock(fsp, break_to_none) == False) {
       DEBUG(0,("reply_lockingX: error in removing oplock on file %s\n",
             fsp->fsp_name ));
     }
@@ -4303,6 +4307,13 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
       return -1;
     }
   }
+
+  /*
+   * We do this check *after* we have checked this is not a oplock break
+   * response message. JRA.
+   */
+
+  release_level_2_oplocks_on_change(fsp);
 
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */

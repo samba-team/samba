@@ -33,6 +33,7 @@ static int procnum; /* records process count number when forking */
 static struct cli_state current_cli;
 static fstring randomfname;
 static BOOL use_oplocks;
+static BOOL use_level_II_oplocks;
 
 static double create_procs(void (*fn)(int));
 
@@ -109,6 +110,7 @@ static BOOL open_nbt_connection(struct cli_state *c)
 
 	c->timeout = 120000; /* set a really long timeout (2 minutes) */
 	if (use_oplocks) c->use_oplocks = True;
+	if (use_level_II_oplocks) c->use_level_II_oplocks = True;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		printf("%s rejected the session\n",host);
@@ -1885,13 +1887,13 @@ static void run_trans2test(int dummy)
 /*
   this is a harness for some oplock tests
  */
-static void run_oplock(int dummy)
+static void run_oplock1(int dummy)
 {
 	static struct cli_state cli1;
 	char *fname = "\\lockt1.lck";
 	int fnum1;
 
-	printf("starting oplock test\n");
+	printf("starting oplock test 1\n");
 
 	if (!open_connection(&cli1)) {
 		return;
@@ -1927,7 +1929,120 @@ static void run_oplock(int dummy)
 
 	close_connection(&cli1);
 
-	printf("finished oplock test\n");
+	printf("finished oplock test 1\n");
+}
+
+static void run_oplock2(int dummy)
+{
+	static struct cli_state cli1, cli2;
+	char *fname = "\\lockt2.lck";
+	int fnum1, fnum2;
+	int saved_use_oplocks = use_oplocks;
+	char buf[4];
+
+	use_level_II_oplocks = True;
+	use_oplocks = True;
+
+	printf("starting oplock test 2\n");
+
+	if (!open_connection(&cli1)) {
+		use_level_II_oplocks = False;
+		use_oplocks = saved_use_oplocks;
+		return;
+	}
+
+	cli1.use_oplocks = True;
+	cli1.use_level_II_oplocks = True;
+
+	if (!open_connection(&cli2)) {
+		use_level_II_oplocks = False;
+		use_oplocks = saved_use_oplocks;
+		return;
+	}
+
+	cli2.use_oplocks = True;
+	cli2.use_level_II_oplocks = True;
+
+	cli_unlink(&cli1, fname);
+
+	cli_sockopt(&cli1, sockops);
+	cli_sockopt(&cli2, sockops);
+
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	/* Don't need the globals any more. */
+	use_level_II_oplocks = False;
+	use_oplocks = saved_use_oplocks;
+
+	if (fork() == 0) {
+		/* Child code */
+		fnum2 = cli_open(&cli2, fname, O_RDWR, DENY_NONE);
+		if (fnum2 == -1) {
+			printf("second open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+			exit(0);
+		}
+
+		sleep(2);
+
+		if (!cli_close(&cli2, fnum2)) {
+			printf("close2 failed (%s)\n", cli_errstr(&cli1));
+		}
+
+		exit(0);
+	}
+
+	sleep(2);
+
+	/* Ensure cli1 processes the break. */
+
+	if (cli_read(&cli1, fnum1, buf, 0, 4) != 4) {
+		printf("read on fnum1 failed (%s)\n", cli_errstr(&cli1));
+	}
+
+	/* Should now be at level II. */
+	/* Test if sending a write locks causes a break to none. */
+
+	if (!cli_lock(&cli1, fnum1, 0, 4, 0, READ_LOCK)) {
+		printf("lock failed (%s)\n", cli_errstr(&cli1));
+	}
+
+	cli_unlock(&cli, fnum1, 0, 4);
+
+	sleep(2);
+
+	if (!cli_lock(&cli1, fnum1, 0, 4, 0, WRITE_LOCK)) {
+		printf("lock failed (%s)\n", cli_errstr(&cli1));
+	}
+
+	cli_unlock(&cli, fnum1, 0, 4);
+
+	sleep(2);
+
+	cli_read(&cli1, fnum1, buf, 0, 4);
+
+#if 0
+	if (cli_write(&cli1, fnum1, 0, buf, 0, 4) != 4) {
+		printf("write on fnum1 failed (%s)\n", cli_errstr(&cli1));
+	}
+#endif
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close1 failed (%s)\n", cli_errstr(&cli1));
+	}
+
+	sleep(4);
+
+	if (!cli_unlink(&cli1, fname)) {
+		printf("unlink failed (%s)\n", cli_errstr(&cli1));
+	}
+
+	close_connection(&cli1);
+
+	printf("finished oplock test 2\n");
 }
 
 
@@ -2089,7 +2204,8 @@ static struct {
 	{"NEGNOWAIT", run_negprot_nowait, 0},
 	{"NBW95",  run_nbw95, 0},
 	{"NBWNT",  run_nbwnt, 0},
-	{"OPLOCK",  run_oplock, 0},
+	{"OPLOCK1",  run_oplock1, 0},
+	{"OPLOCK2",  run_oplock2, 0},
 	{"DIR",  run_dirtest, 0},
 	{"DENY1",  run_denytest1, 0},
 	{"DENY2",  run_denytest2, 0},
