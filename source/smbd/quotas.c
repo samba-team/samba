@@ -212,11 +212,10 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   
   *dsize = request.qf_entry.user_q.f_use ;
   
-  if ( *dfree )
-    *dfree -= *dsize ;
-  
-  if ( *dfree < 0 )
+  if ( *dfree < *dsize )
     *dfree = 0 ;
+  else
+    *dfree -= *dsize ;
   
   *bsize = 4096 ;  /* Cray blocksize */
   
@@ -348,14 +347,13 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   if (D.dqb_bsoftlimit==0)
     return(False);
   *bsize = DEV_BSIZE;
-  *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
   *dsize = D.dqb_bsoftlimit;
 
-  if(*dfree < 0)
-    {
+  if (D.dqb_curblocks > D.dqb_bsoftlimit) {
      *dfree = 0;
      *dsize = D.dqb_curblocks;
-    }
+  } else
+    *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
       
   DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %.0f, dfree %.0f, dsize %.0f\n",
          path,(double)*bsize,(double)*dfree,(double)*dsize));
