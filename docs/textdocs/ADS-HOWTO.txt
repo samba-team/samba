@@ -91,6 +91,9 @@ Step 2: Setup your /etc/krb5.conf
   address of your KDC. This usually either involves setting up a PTR
   record in your DNS server or adding your KDC to /etc/hosts.
 
+  Your KDC DNS name must be be in a domain that matches the realm,
+  e.g. realm EXAMPLE.COM, kdc server.example.com.  At least for now.
+
 
 * If all you want is kerberos support in smbclient then you can skip
 * straight to step 5 now. Step 3 is only needed if you want kerberos
