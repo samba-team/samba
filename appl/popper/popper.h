@@ -136,7 +136,9 @@
 #include <maillock.h>
 #endif
 
+#ifdef OTP
 #include <otp.h>
+#endif
 
 #if defined(KRB4_MAILDIR)
 #define POP_MAILDIR	KRB4_MAILDIR
