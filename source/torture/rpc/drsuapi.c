@@ -25,46 +25,46 @@
 
 #define TEST_MACHINE_NAME "torturetest"
 
-static BOOL test_Bind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-		      struct policy_handle *handle)
+static BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		      struct policy_handle *bind_handle)
 {
 	NTSTATUS status;
-	struct drsuapi_Bind r;
+	struct drsuapi_DsBind r;
 	BOOL ret = True;
 
 	ZERO_STRUCT(r);
-	r.out.handle = handle;
+	r.out.bind_handle = bind_handle;
 
-	status = dcerpc_drsuapi_Bind(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsBind(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_Bind level failed - %s\n", errstr);
+		printf("drsuapi_DsBind failed - %s\n", errstr);
 		ret = False;
 	}
 
 	return ret;
 }
 
-static BOOL test_Unbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			struct policy_handle *handle)
+static BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			struct policy_handle *bind_handle)
 {
 	NTSTATUS status;
-	struct drsuapi_Unbind r;
+	struct drsuapi_DsUnbind r;
 	BOOL ret = True;
 
-	r.in.handle = handle;
-	r.out.handle = handle;
+	r.in.bind_handle = bind_handle;
+	r.out.bind_handle = bind_handle;
 
-	status = dcerpc_drsuapi_Unbind(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsUnbind(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_Unbind level failed - %s\n", errstr);
+		printf("drsuapi_DsUnbind failed - %s\n", errstr);
 		ret = False;
 	}
 
@@ -77,7 +77,7 @@ BOOL torture_rpc_drsuapi(int dummy)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	struct policy_handle handle;
+	struct policy_handle bind_handle;
 
 	status = torture_rpc_connection(&p, 
 					DCERPC_DRSUAPI_NAME,
@@ -91,11 +91,11 @@ BOOL torture_rpc_drsuapi(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_drsuapi");
 
-	if (!test_Bind(p, mem_ctx, &handle)) {
+	if (!test_DsBind(p, mem_ctx, &bind_handle)) {
 		ret = False;
 	}
 
-	if (!test_Unbind(p, mem_ctx, &handle)) {
+	if (!test_DsUnbind(p, mem_ctx, &bind_handle)) {
 		ret = False;
 	}
 

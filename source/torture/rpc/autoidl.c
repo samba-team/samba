@@ -32,14 +32,14 @@ static BOOL get_policy_handle(struct dcerpc_pipe *p,
 			      struct policy_handle *handle)
 {
 	NTSTATUS status;
-	struct drsuapi_Bind r;
+	struct drsuapi_DsBind r;
 
 	ZERO_STRUCT(r);
-	r.out.handle = handle;
+	r.out.bind_handle = handle;
 
-	status = dcerpc_drsuapi_Bind(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsBind(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("drsuapi_Bind failed - %s\n", nt_errstr(status));
+		printf("drsuapi_DsBind failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
