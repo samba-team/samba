@@ -50,6 +50,14 @@ static BOOL test_ioctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		goto done;
 	}
 
+ 	printf("Trying 0xFFFF\n");
+ 	ctl.ioctl.level = RAW_IOCTL_IOCTL;
+	ctl.ioctl.in.fnum = fnum;
+	ctl.ioctl.in.request = 0xFFFF;
+
+	status = smb_raw_ioctl(cli->tree, mem_ctx, &ctl);
+	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+
  	printf("Trying QUERY_JOB_INFO\n");
  	ctl.ioctl.level = RAW_IOCTL_IOCTL;
 	ctl.ioctl.in.fnum = fnum;
