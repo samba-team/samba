@@ -32,6 +32,8 @@
  * SUCH DAMAGE. 
  */
 
+#undef ECHO
+
 #include "make_cmds.h"
 #include "parse.h"
 
@@ -41,8 +43,6 @@ static unsigned lineno = 1;
 static int getstring(void);
 
 #define YY_NO_UNPUT
-
-#undef ECHO
 
 %}
 
