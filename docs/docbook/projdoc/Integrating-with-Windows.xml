@@ -108,7 +108,7 @@ Network packets that are sent over the physical network transport
 layer communicate not via IP addresses but rather using the Media 
 Access Control address, or MAC address. IP Addresses are currently 
 32 bits in length and are typically presented as four (4) decimal 
-numbers that are separated by a dot (or period). eg: 168.192.1.1
+numbers that are separated by a dot (or period). eg: 168.192.1.1.
 </para>
 
 <para>
@@ -265,8 +265,8 @@ Starting with version 2.2.0 samba has Linux support for extensions to
 the name service switch infrastructure so that linux clients will 
 be able to obtain resolution of MS Windows NetBIOS names to IP 
 Addresses. To gain this functionality Samba needs to be compiled 
-with appropriate arguments to the make command (ie: <command>make 
-nsswitch/libnss_wins.so</command>). The resulting library should 
+with appropriate arguments to the make command (ie: <userinput>make 
+nsswitch/libnss_wins.so</userinput>). The resulting library should 
 then be installed in the <filename>/lib</filename> directory and 
 the "wins" parameter needs to be added to the "hosts:" line in 
 the <filename>/etc/nsswitch.conf</filename> file. At this point it 
@@ -393,7 +393,7 @@ frustrating for users - but it is a characteristic of the protocol.
 <para>
 The MS Windows utility that allows examination of the NetBIOS 
 name cache is called "nbtstat". The Samba equivalent of this 
-is called "nmblookup".
+is called <command>nmblookup</command>.
 </para>
 
 </sect2>

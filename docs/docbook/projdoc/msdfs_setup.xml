@@ -58,7 +58,7 @@
 	Here's an example of setting up a DFS tree on a Samba server.
 	</para>
 
-	<para><screen>
+	<para><programlisting>
 # The smb.conf file:
 [global]
 	netbios name = SMOKEY
@@ -67,13 +67,12 @@
 [dfs]
 	path = /export/dfsroot
 	msdfs root = yes
-	</screen></para>
+	</programlisting></para>
 
-	<para>
-	In the /export/dfsroot directory we set up our dfs links to other servers on the network.
-	</para>
 
-	<para>
+	<para>In the /export/dfsroot directory we set up our dfs links to 
+	other servers on the network.</para>
+
 	<screen>
 	&rootprompt;<userinput>cd /export/dfsroot</userinput>
 	&rootprompt;<userinput>chown root /export/dfsroot</userinput>
@@ -81,7 +80,6 @@
 	&rootprompt;<userinput>ln -s msdfs:storageA\\shareA linka</userinput>
 	&rootprompt;<userinput>ln -s msdfs:serverB\\share,serverC\\share linkb</userinput>
 	</screen>
-	</para>
 
 	<para>You should set up the permissions and ownership of 
 	the directory acting as the DFS root such that only designated 

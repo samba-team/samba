@@ -127,17 +127,17 @@ $(PDFDIR)/Samba-Developers-Guide.pdf: dev-doc.tex
 # DVI files
 $(DVIDIR)/Samba-HOWTO-Collection.dvi: samba-doc.tex
 	@echo "Building LaTeX sources via $(LATEX)..."
-	@$(LATEX) $< | grep 'Rerun to get cross-references right' && \
-	$(LATEX) $< | grep 'Rerun to get cross-references right' && \
-	$(LATEX) $< || echo
+	@$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< 2>&1 || echo
 	@echo "done"
 	@mv samba-doc.dvi $@
 
 $(DVIDIR)/Samba-Developers-Guide.dvi: dev-doc.tex
 	@echo "Building LaTeX sources via $(LATEX)..."
-	@$(LATEX) $< | grep 'Rerun to get cross-references right' && \
-	$(LATEX) $< | grep 'Rerun to get cross-references right' && \
-	$(LATEX) $< || echo 
+	@$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< 2>&1 || echo 
 	@echo "done"
 	@mv dev-doc.dvi $@
 

@@ -14,7 +14,8 @@
 <title>How to compile SAMBA</title>
 
 <para>
-You can obtain the samba source from the <ulink url="http://samba.org/">samba website</ulink>. To obtain a development version, 
+You can obtain the samba source from the
+<ulink url="http://samba.org/">samba website</ulink>. To obtain a development version, 
 you can download samba from CVS or using rsync.
 </para>
 
@@ -243,28 +244,28 @@ example of what you would not want to see would be:
 	configure Samba for your operating system. If you have unusual 
 	needs then you may wish to run</para>
 	
-	<para><prompt>root# </prompt><userinput>./configure --help
+	<para>&rootprompt;<userinput>./configure --help
 	</userinput></para>
 	
 	<para>first to see what special options you can enable.
 	Then executing</para>
 	
-	<para><prompt>root# </prompt><userinput>make</userinput></para>
+	<para>&rootprompt;<userinput>make</userinput></para>
 	
 	<para>will create the binaries. Once it's successfully 
 	compiled you can use </para>
 	
-	<para><prompt>root# </prompt><userinput>make install</userinput></para>
+	<para>&rootprompt;<userinput>make install</userinput></para>
 	
 	<para>to install the binaries and manual pages. You can 
 	separately install the binaries and/or man pages using</para>
 	
-	<para><prompt>root# </prompt><userinput>make installbin
+	<para>&rootprompt;<userinput>make installbin
 	</userinput></para>
 	
 	<para>and</para>
 	
-	<para><prompt>root# </prompt><userinput>make installman
+	<para>&rootprompt;<userinput>make installman
 	</userinput></para>
 
 	<para>Note that if you are upgrading for a previous version 
@@ -272,7 +273,7 @@ example of what you would not want to see would be:
 	the binaries will be renamed with a ".old" extension. You 
 	can go back to the previous version with</para>
 	
-	<para><prompt>root# </prompt><userinput>make revert
+	<para>&rootprompt;<userinput>make revert
 	</userinput></para>
 	
 	<para>if you find this version a disaster!</para>

@@ -15,7 +15,8 @@
 <sect1>
 <title>Introduction</title>
 
-<para>Please report bugs using <ulink url="https://bugzilla.samba.org/">bugzilla</ulink>.</para>
+<para>Please report bugs using
+	<ulink url="https://bugzilla.samba.org/">bugzilla</ulink>.</para>
 
 <para>
 Please take the time to read this file before you submit a bug

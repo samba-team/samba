@@ -86,17 +86,18 @@ where %L translates to the name of the Samba server and %u translates to the use
 </para>
 
 <para>
-The default for this option is \\%N\%U\profile, namely \\sambaserver\username\profile. 
-The \\N%\%U service is created automatically by the [homes] service.  If you are using
+The default for this option is <filename>\\%N\%U\profile</filename>, 
+namely <filename>\\sambaserver\username\profile</filename>. 
+The <filename>\\N%\%U</filename> service is created automatically by the [homes] service.  If you are using
 a samba server for the profiles, you _must_ make the share specified in the logon path
-browseable. Please refer to the man page for smb.conf in respect of the different
+browseable. Please refer to the man page for &smb.conf; in respect of the different
 symantics of %L and %N, as well as %U and %u.
 </para>
 
 <note>
 <para>
 MS Windows NT/2K clients at times do not disconnect a connection to a server
-between logons. It is recommended to NOT use the <command>homes</command>
+between logons. It is recommended to NOT use the <parameter>homes</parameter>
 meta-service name as part of the profile share path.
 </para>
 </note>
@@ -106,7 +107,7 @@ meta-service name as part of the profile share path.
 <title>Windows 9x / Me User Profiles</title>
 
 <para>
-To support Windows 9x / Me clients, you must use the "logon home" parameter. Samba has
+	To support Windows 9x / Me clients, you must use the <parameter>logon home</parameter> parameter. Samba has
 now been fixed so that <userinput>net use /home</userinput> now works as well, and it, too, relies
 on the <command>logon home</command> parameter.
 </para>
@@ -114,7 +115,7 @@ on the <command>logon home</command> parameter.
 <para>
 By using the logon home parameter, you are restricted to putting Win9x / Me
 profiles in the user's home directory.   But wait! There is a trick you
-can use. If you set the following in the <command>[global]</command> section of your &smb.conf; file:
+can use. If you set the following in the <parameter>[global]</parameter> section of your &smb.conf; file:
 </para>
 <para><programlisting>
 	logon home = \\%L\%U\.profiles
@@ -129,7 +130,7 @@ of your home directory called <filename>.profiles</filename> (thus making them h
 Not only that, but <userinput>net use /home</userinput> will also work, because of a feature in
 Windows 9x / Me. It removes any directory stuff off the end of the home directory area
 and only uses the server and share portion. That is, it looks like you
-specified \\%L\%U for <command>logon home</command>.
+specified <filename>\\%L\%U</filename> for <parameter>logon home</parameter>.
 </para>
 </sect3>
 
@@ -138,7 +139,7 @@ specified \\%L\%U for <command>logon home</command>.
 
 <para>
 You can support profiles for both Win9X and WinNT clients by setting both the
-<command>logon home</command> and <command>logon path</command> parameters. For example:
+<parameter>logon home</parameter> and <parameter>logon path</parameter> parameters. For example:
 </para>
 
 <para><programlisting>
@@ -151,27 +152,32 @@ You can support profiles for both Win9X and WinNT clients by setting both the
 <title>Disabling Roaming Profile Support</title>
 
 <para>
-A question often asked is "How may I enforce use of local profiles?" or
-"How do I disable Roaming Profiles?"
+	A question often asked is <quote>How may I enforce use of local profiles?</quote> or
+	<quote>How do I disable Roaming Profiles?</quote>
 </para>
 
 <para>
 There are three ways of doing this:
 </para>
 
-<itemizedlist>
-	<listitem><para>
-	<command>In smb.conf:</command> affect the following settings and ALL clients
-	will be forced to use a local profile:
-	<programlisting>
-		logon home =
-		logon path =
-	</programlisting></para></listitem>
+<variablelist>
+	<varlistentry>
+		<term>In &smb.conf;</term>
+		<listitem><para>
+		Affect the following settings and ALL clients
+		will be forced to use a local profile:
+		<programlisting>
+			logon home =
+			logon path =
+		</programlisting>
+		</para></listitem>
+	</varlistentry>
 
-	<listitem><para>
-	<command>MS Windows Registry:</command> by using the Microsoft Management Console
-	gpedit.msc to instruct your MS Windows XP machine to use only a local profile. This
-	of course modifies registry settings. The full path to the option is:
+	<varlistentry>
+		<term>MS Windows Registry:</term>
+		<listitem><para>
+		By using the Microsoft Management Console gpedit.msc to instruct your MS Windows XP machine to use only a local profile. This of course modifies registry settings. The full path to the option is:
+		<!-- FIXME: Diagram for this ? -->
 	<programlisting>
 	Local Computer Policy\
 		Computer Configuration\
@@ -182,15 +188,18 @@ There are three ways of doing this:
 	Disable:	Only Allow Local User Profiles
 	Disable:	Prevent Roaming Profile Change from Propogating to the Server
 	</programlisting>
-	</para>
-	</listitem>
+		</para> </listitem>
+	</varlistentry>
 
-	<listitem><para>
-	<command>Change of Profile Type:</command> From the start menu right click on the
-	MY Computer icon, select <emphasis>Properties</emphasis>, click on the "<emphasis>User Profiles</emphasis>
-	tab, select the profile you wish to change from Roaming type to Local, click <emphasis>Change Type</emphasis>.
-	</para></listitem>
-</itemizedlist>
+	<varlistentry>
+		<term>Change of Profile Type:</term>
+		<listitem><para>
+		From the start menu right click on the
+		My Computer icon, select <guimenuitem>Properties</guimenuitem>, click on the <guilabel>User Profiles</guilabel>
+		tab, select the profile you wish to change from Roaming type to Local, click <guibutton>Change Type</guibutton>.
+		</para></listitem>
+	</varlistentry>
+</variablelist>
 
 <para>
 Consult the MS Windows registry guide for your particular MS Windows version for more
@@ -215,12 +224,13 @@ Microsoft MS Windows Resource Kit for your version of Windows for specific infor
 
 <para>
 When a user first logs in on Windows 9X, the file user.DAT is created,
-as are folders "Start Menu", "Desktop", "Programs" and "Nethood".
+as are folders <filename>Start Menu</filename>, <filename>Desktop</filename>, 
+<filename>Programs</filename> and <filename>Nethood</filename>.
 These directories and their contents will be merged with the local
-versions stored in c:\windows\profiles\username on subsequent logins,
-taking the most recent from each.  You will need to use the [global]
-options "preserve case = yes", "short preserve case = yes" and
-"case sensitive = no" in order to maintain capital letters in shortcuts
+versions stored in <filename>c:\windows\profiles\username</filename> on subsequent logins,
+taking the most recent from each.  You will need to use the <parameter>[global]</parameter>
+options <parameter>preserve case = yes</parameter>, <parameter>short preserve case = yes</parameter> and
+<parameter>case sensitive = no</parameter> in order to maintain capital letters in shortcuts
 in any of the profile folders.
 </para>
 
@@ -233,19 +243,19 @@ and deny them write access to this file.
 <orderedlist>
 	<listitem>
         <para>
-        On the Windows 9x / Me machine, go to Control Panel -> Passwords and
-        select the User Profiles tab.  Select the required level of
-        roaming preferences.  Press OK, but do _not_ allow the computer
+		On the Windows 9x / Me machine, go to <guimenu>Control Panel</guimenu> -> <guimenuitem>Passwords</guimenuitem> and
+		select the <guilabel>User Profiles</guilabel> tab.  Select the required level of
+		roaming preferences.  Press <guibutton>OK</guibutton>, but do _not_ allow the computer
         to reboot.
         </para>
 	</listitem>
 
 	<listitem>
         <para>
-        On the Windows 9x / Me machine, go to Control Panel -> Network ->
-        Client for Microsoft Networks -> Preferences.  Select 'Log on to
-        NT Domain'.  Then, ensure that the Primary Logon is 'Client for
-        Microsoft Networks'.  Press OK, and this time allow the computer
+			On the Windows 9x / Me machine, go to <guimenu>Control Panel</guimenu> -> <guimenuitem>Network</guimenuitem> ->
+			<guimenuitem>Client for Microsoft Networks</guimenuitem> -> <guilabel>Preferences</guilabel>.  Select <guilabel>Log on to
+				NT Domain</guilabel>.  Then, ensure that the Primary Logon is <guilabel>Client for
+				Microsoft Networks</guilabel>.  Press <guibutton>OK</guibutton>, and this time allow the computer
         to reboot.
         </para>
 	</listitem>
@@ -271,15 +281,15 @@ supports it), user name and user's password.
 
 <para>
 Once the user has been successfully validated, the Windows 9x / Me machine
-will inform you that 'The user has not logged on before' and asks you
-if you wish to save the user's preferences?  Select 'yes'.
+will inform you that <computeroutput>The user has not logged on before' and asks you
+	if you wish to save the user's preferences?</computeroutput>  Select <guibutton>yes</guibutton>.
 </para>
 
 <para>
 Once the Windows 9x / Me client comes up with the desktop, you should be able
-to examine the contents of the directory specified in the "logon path"
-on the samba server and verify that the "Desktop", "Start Menu",
-"Programs" and "Nethood" folders have been created.
+to examine the contents of the directory specified in the <parameter>logon path</parameter>
+on the samba server and verify that the <filename>Desktop</filename>, <filename>Start Menu</filename>,
+<filename>Programs</filename> and <filename>Nethood</filename> folders have been created.
 </para>
 
 <para>
@@ -316,21 +326,20 @@ they will be told that they are logging in "for the first time".
 
 	<listitem>
         <para>
-        run the regedit.exe program, and look in:
+			run the <command>regedit.exe</command> program, and look in:
         </para>
 
-        <para>
-        HKEY_LOCAL_MACHINE\Windows\CurrentVersion\ProfileList
+		<para>
+			<filename>HKEY_LOCAL_MACHINE\Windows\CurrentVersion\ProfileList</filename>
         </para>
 
         <para>
         you will find an entry, for each user, of ProfilePath.  Note the
-        contents of this key (likely to be c:\windows\profiles\username),
+		contents of this key (likely to be <filename>c:\windows\profiles\username</filename>),
         then delete the key ProfilePath for the required user.
+		</para>
 
-        [Exit the registry editor].
-
-        </para>
+		<para>[Exit the registry editor].</para>
 	</listitem>
 
 	<listitem>

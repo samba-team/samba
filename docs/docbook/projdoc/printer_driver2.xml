@@ -60,12 +60,8 @@ spooled files.  They are utilized entirely by the clients.
 
 <para>
 The following MS KB article, may be of some help if you are dealing with
-Windows 2000 clients:  <emphasis>How to Add Printers with No User 
-Interaction in Windows 2000</emphasis>
-</para>
-
-<para>
-<ulink url="http://support.microsoft.com/support/kb/articles/Q189/1/05.ASP">http://support.microsoft.com/support/kb/articles/Q189/1/05.ASP</ulink>
+Windows 2000 clients:
+<ulink url="http://support.microsoft.com/support/kb/articles/Q189/1/05.ASP">How to Add Printers with No User Interaction in Windows 2000</ulink>
 </para>
 
 </sect1>
@@ -141,8 +137,8 @@ level user accounts to have write access in order to update files
 on the share.  See the <ulink url="smb.conf.5.html">smb.conf(5) 
 man page</ulink> for more information on configuring file shares.</para>
 	
-<para>The requirement for <ulink url="smb.conf.5.html#GUESTOK"><command>guest 
-ok = yes</command></ulink> depends upon how your
+<para>The requirement for <ulink url="smb.conf.5.html#GUESTOK"><parameter>guest 
+ok = yes</parameter></ulink> depends upon how your
 site is configured.  If users will be guaranteed to have 
 an account on the Samba host, then this is a non-issue.</para>
 
@@ -158,8 +154,8 @@ is not necessary.  Of course, in a workgroup environment where
 you just want to be able to print without worrying about 
 silly accounts and security, then configure the share for 
 guest access.  You'll probably want to add <ulink 
-url="smb.conf.5.html#MAPTOGUEST"><command>map to guest = Bad User
-</command></ulink> in the [global] section as well.  Make sure 
+url="smb.conf.5.html#MAPTOGUEST"><parameter>map to guest = Bad User
+</parameter></ulink> in the <parameter>[global]</parameter> section as well.  Make sure 
 you understand what this parameter does before using it 
 though. --jerry
 </para>
@@ -210,12 +206,12 @@ that all file shares are set to 'read only' by default.
 
 
 <para>
-Once you have created the required [print$] service and 
+Once you have created the required <parameter>[print$]</parameter> service and 
 associated subdirectories, simply log onto the Samba server using 
 a root (or <parameter>printer admin</parameter>) account
-from a Windows NT 4.0/2k client.  Open "Network Neighbourhood" or
-"My Network Places" and browse for the Samba host.  Once you have located
-the server, navigate to the "Printers..." folder.
+from a Windows NT 4.0/2k client.  Open <guilabel>Network Neighbourhood</guilabel> or
+<guilabel>My Network Places</guilabel> and browse for the Samba host.  Once you have located
+the server, navigate to the <guilabel>Printers...</guilabel> folder.
 You should see an initial listing of printers
 that matches the printer shares defined on your Samba host.
 </para>
@@ -233,30 +229,30 @@ which has this default driver assigned will result in
 the error message:</para>
 
 <para>
-<emphasis>Device settings cannot be displayed.  The driver 
+<errorname>Device settings cannot be displayed.  The driver 
 for the specified printer is not installed, only spooler 
 properties will be displayed.  Do you want to install the 
-driver now?</emphasis>
+driver now?</errorname>
 </para>
 
 <para>
-Click "No" in the error dialog and you will be presented with
+Click <guibutton>No</guibutton> in the error dialog and you will be presented with
 the printer properties window.  The way to assign a driver to a 
 printer is to either
 </para>
 	
-<itemizedlist>
-	<listitem><para>Use the "New Driver..." button to install 
-	a new printer driver, or</para></listitem>
+<procedure>
+	<step><para>Use the <guibutton>New Driver...</guibutton> button to install 
+				a new printer driver, or</para></step>
 	
-	<listitem><para>Select a driver from the popup list of 
-	installed drivers.  Initially this list will be empty.</para>
-	</listitem>
-</itemizedlist>
+	<step><para>Select a driver from the popup list of 
+			installed drivers.  Initially this list will be empty.</para>
+	</step>
+</procedure>
 	
 <para>If you wish to install printer drivers for client 
 operating systems other than "Windows NT x86", you will need 
-to use the "Sharing" tab of the printer properties dialog.</para>
+to use the <guilabel>Sharing</guilabel> tab of the printer properties dialog.</para>
 
 <para>Assuming you have connected with a root account, you 
 will also be able modify other printer properties such as 
@@ -267,7 +263,7 @@ on a Windows NT print server to have printers
 listed in the Printers folder which are not shared.  Samba does
 not make this distinction.  By definition, the only printers of
 which Samba is aware are those which are specified as shares in
-<filename>smb.conf</filename>.</para>
+&smb.conf;.</para>
   
 <para>Another interesting side note is that Windows NT clients do
 not use the SMB printer share, but rather can print directly 
@@ -287,15 +283,15 @@ permissions to the "Everyone" well-known group.
 <para>One issue that has arisen during the development
 phase of Samba 2.2 is the need to support driver downloads for
 100's of printers.  Using the Windows NT APW is somewhat 
-awkward to say the list.  If more than one printer are using the 
+awkward to say the least.  If more than one printer are using the 
 same driver, the <ulink url="rpcclient.1.html"><command>rpcclient's
 setdriver command</command></ulink> can be used to set the driver
 associated with an installed driver.  The following is example
 of how this could be accomplished:</para>
 		
 <para>
-<prompt>$ </prompt><userinput>rpcclient pogo -U root%secret -c "enumdrivers"</userinput>
-<programlisting> 
+<screen>
+<prompt>$ </prompt><userinput>rpcclient <replaceable>pogo</replaceable> -U root%<replaceable>secret</replaceable> -c "enumdrivers"</userinput>
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
  
 [Windows NT x86]
@@ -307,21 +303,17 @@ Printer Driver Info 1:
  
 Printer Driver Info 1:
      Driver Name: [HP LaserJet 4Si/4SiMX PS]
-</programlisting>				  
-<prompt>$ </prompt><userinput>rpcclient pogo -U root%secret -c "enumprinters"</userinput>
-<programlisting>
+<prompt>$ </prompt><userinput>rpcclient <replaceable>pogo</replaceable> -U root%<replaceable>secret</replaceable> -c "enumprinters"</userinput>
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
      flags:[0x800000]
      name:[\\POGO\hp-print]
      description:[POGO\\POGO\hp-print,NO DRIVER AVAILABLE FOR THIS PRINTER,]
      comment:[]
 				  
-</programlisting>
-<prompt>$ </prompt><userinput>rpcclient pogo -U root%secret -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""</userinput>
-<programlisting>
+<prompt>$ </prompt><userinput>rpcclient <replaceable>pogo</replaceable> -U root%<replaceable>secret</replaceable> -c "setdriver <replaceable>hp-print</replaceable> <replaceable>\"HP LaserJet 4000 Series PS\"</replaceable></userinput>
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
 Successfully set hp-print to driver HP LaserJet 4000 Series PS.
-</programlisting></para>
+</screen></para>
 </sect2>
 
 
@@ -330,9 +322,9 @@ Successfully set hp-print to driver HP LaserJet 4000 Series PS.
 <title>Adding New Printers via the Windows NT APW</title>
 	
 <para>
-By default, Samba offers all printer shares defined in <filename>smb.conf</filename>
-in the "Printers..." folder.  Also existing in this folder is the Windows NT 
-Add Printer Wizard icon.  The APW will be show only if
+By default, Samba offers all printer shares defined in &smb.conf;
+in the <filename>Printers...</filename> folder.  Also existing in this folder is the Windows NT 
+Add Printer Wizard icon.  The <acronym>APW</acronym> will be show only if
 </para>
 
 <itemizedlist>
@@ -352,15 +344,15 @@ server, the <ulink url="smb.conf.5.html#ADDPRINTERCOMMAND"><parameter>add
 printer command</parameter></ulink> must have a defined value.  The program
 hook must successfully add the printer to the system (i.e. 
 <filename>/etc/printcap</filename> or appropriate files) and 
-<filename>smb.conf</filename> if necessary.
+&smb.conf; if necessary.
 </para>
 
 <para>
 When using the APW from a client, if the named printer share does 
-not exist, <command>smbd</command> will execute the <parameter>add printer 
-command</parameter> and reparse to the <filename>smb.conf</filename>
+not exist, &smbd; will execute the <parameter>add printer 
+command</parameter> and reparse to the &smb.conf;
 to attempt to locate the new printer share.  If the share is still not defined,
-an error of "Access Denied" is returned to the client.  Note that the 
+an error of <errorname>Access Denied</errorname> is returned to the client.  Note that the 
 <parameter>add printer program</parameter> is executed under the context
 of the connected user, not necessarily a root account.
 </para>
@@ -447,7 +439,7 @@ a form of load balancing or fail over.
 
 <para>
 If you require that multiple ports be defined for some reason,
-<filename>smb.conf</filename> possesses a <ulink 
+&smb.conf; possesses a <ulink 
 url="smb.conf.5.html#ENUMPORTSCOMMAND"><parameter>enumports 
 command</parameter></ulink> which can be used to define an external program 
 that generates a listing of ports on a system.
@@ -588,6 +580,7 @@ foreach (supported architecture for a given driver)
 </sect1>
 
 <!--
+FIXME
 
   This comment from rpc_server/srv_spoolss_nt.c:_spoolss_open_printer_ex()
   needs to be added into a section probably.  This is to remind me it needs 
@@ -760,24 +753,23 @@ print queue needs to be stopped in order to see the queue status
 and remove the job:
 </para>
 
-<para><programlisting>
-
-h4: {42} % echo hi >/tmp/hi
-h4: {43} % smbclient //localhost/lw4
+<para><screen>
+<prompt>h4: {42} % </prompt><userinput>echo hi >/tmp/hi</userinput>
+<prompt>h4: {43} % </prompt><userinput>smbclient //localhost/lw4</userinput>
 added interface ip=10.0.0.4 bcast=10.0.0.255 nmask=255.255.255.0
 Password: 
 Domain=[ASTART] OS=[Unix] Server=[Samba 2.0.7]
-smb: \> print /tmp/hi
+<prompt>smb: \> </prompt><userinput>print /tmp/hi</userinput>
 putting file /tmp/hi as hi-17534 (0.0 kb/s) (average 0.0 kb/s)
-smb: \> queue
+<prompt>smb: \> </prompt><userinput>queue</userinput>
 1049     3            hi-17534
-smb: \> cancel 1049
+<prompt>smb: \> </prompt><userinput>cancel 1049</userinput>
 Error cancelling job 1049 : code 0
-smb: \> cancel 1049
+<prompt>smb: \> </prompt><userinput>cancel 1049</userinput>
 Job 1049 cancelled
-smb: \> queue
-smb: \> exit
-</programlisting></para>
+<prompt>smb: \> </prompt><userinput>queue</userinput>
+<prompt>smb: \> </prompt><userinput>exit</userinput>
+</screen></para>
 
 <para>
 The 'code 0' indicates that the job was removed.  The comment
@@ -799,9 +791,9 @@ name you are using is recognized by Samba.  For example,  you can
 use:
 </para>
 
-<para><programlisting>
-    testprns printer /etc/printcap
-</programlisting></para>
+<para><screen>
+<prompt>$ </prompt><userinput>testprns printer /etc/printcap</userinput>
+</screen></para>
 
 <para>
 Samba can get its printcap information from a file or from a program.
@@ -809,11 +801,10 @@ You can try the following to see the format of the extracted
 information:
 </para>
 
-<para><programlisting>
-    testprns -a printer /etc/printcap
-
-    testprns -a printer '|/bin/cat printcap'
-</programlisting></para>
+<para><screen>
+<prompt>$ </prompt><userinput>testprns -a printer /etc/printcap</userinput>
+<prompt>$ </prompt><userinput>testprns -a printer '|/bin/cat printcap'</userinput>
+</screen></para>
 
 </sect2>
 
@@ -848,28 +839,24 @@ to extend the printcap to multiple lines.
 Here are some examples of printcap files:
 </para>
 
-<para>
-<orderedlist>
-<listitem><para>
-pr              just printer name
-</para></listitem>
-<listitem><para>
-pr|alias        printer name and alias
-</para></listitem>
-<listitem><para>
-pr|My Printer   printer name, alias used as comment
-</para></listitem>
-<listitem><para>
-pr:sh:\        Same as pr:sh:cm= testing
+<table>
+	<tgroup cols="2" align="left">
+		<tbody>
+			<row><entry><programlisting>pr</programlisting></entry><entry>just printer name</entry></row>
+			<row><entry><programlisting>pr|alias</programlisting></entry><entry>printer name and alias</entry></row>
+			<row><entry><programlisting>pr|My Printer</programlisting></entry><entry>printer name, alias used as comment</entry></row>
+			<row><entry><programlisting>
+pr:sh:\        
   :cm= \ 
   testing
-</para></listitem>
-<listitem><para>
-pr:sh           Same as pr:sh:cm= testing
+</programlisting></entry><entry>Same as pr:sh:cm= testing</entry></row>
+			<row><entry><programlisting>
+pr:sh           
   :cm= testing
-</para></listitem>
-</orderedlist>
-</para>
+</programlisting></entry><entry>Same as pr:sh:cm= testing</entry></row>
+</tbody>
+</tgroup>
+</table>
 
 <para>
 Samba reads the printcap information when first started.  If you make
@@ -913,12 +900,12 @@ you can temporarily stop the printing of jobs.  Jobs can still be
 submitted, but they will not be printed.  Use:
 </para>
 
-<para><programlisting>
-  lpc -Pprinter stop
-</programlisting></para>
+<para><screen>
+<prompt>$ </prompt><userinput>lpc -Pprinter stop</userinput>
+</screen></para>
 
 <para>
-Now submit a print job and then use 'lpq -Pprinter' to see if the
+Now submit a print job and then use <userinput>lpq -Pprinter</userinput> to see if the
 job is in the print queue.  If it is not in the print queue then
 you will have to find out why it is not being accepted for printing.
 </para>
@@ -932,11 +919,11 @@ You can use the UNIX 'file' utitily to determine what the job
 format actually is:
 </para>
 
-<para><programlisting>
-    cd /var/spool/lpd/printer   # spool directory of print jobs
-    ls                          # find job files
-    file dfA001myhost
-</programlisting></para>
+<para><screen>
+<prompt>$ </prompt><userinput>cd /var/spool/lpd/printer   # spool directory of print jobs</userinput>
+<prompt>$ </prompt><userinput>ls                          # find job files</userinput>
+<prompt>$ </prompt><userinput>file dfA001myhost</userinput>
+</screen></para>
 
 <para>
 You should make sure that your printer supports this format OR that
@@ -1016,7 +1003,7 @@ Format Detection' on your printer.
 
 <para>
 Note that you can do some pretty magic things by using your
-imagination with the "print command" option and some shell scripts.
+imagination with the <parameter>print command</parameter> option and some shell scripts.
 Doing print accounting is easy by passing the %U option to a print
 command shell script. You could even make the print command detect
 the type of output and its size and send it to an appropriate
@@ -1025,14 +1012,6 @@ printer.
 
 </sect2>
 
-<sect2>
-<title>Real debugging</title>
-
-<para>
-If the above debug tips don't help, then maybe you need to bring in
-the bug guns, system tracing. See Tracing.txt in this directory.
-</para>
-</sect2>
 </sect1>
 
 </chapter>
