@@ -201,6 +201,9 @@ char *sql_account_query_select(const char *data, BOOL update, enum sql_search_fi
 		field_string = config_value_read(data, "username column", 
 										 CONFIG_USERNAME_DEFAULT);
 		break;
+	default:
+		field_string = "unknown";
+		break;
 	}
 
 	asprintf(&query,
