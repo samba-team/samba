@@ -137,6 +137,9 @@ krb5_append_addresses(krb5_context context,
 	    return ENOMEM;
 	dest->val = tmp;
 	for(i = 0; i < source->len; i++) {
+	    /* skip duplicates */
+	    if(krb5_address_search(context, &source->val[i], dest))
+		continue;
 	    ret = krb5_copy_address(context, 
 				    &source->val[i], 
 				    &dest->val[dest->len]);
