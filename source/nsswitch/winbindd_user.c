@@ -174,7 +174,6 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
     gid_t gid;
 
     /* Get rid from uid */
-
     if (!winbindd_idmap_get_rid_from_uid(state->request.data.uid, &user_rid,
                                          &domain)) {
         DEBUG(1, ("Could not convert uid %d to rid\n", 
@@ -182,6 +181,13 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
         return WINBINDD_ERROR;
     }
     
+    /* Check for cached uid entry */
+    if (winbindd_fetch_uid_cache_entry(domain->name, state->request.data.uid,
+				       &state->response.data.pw)) {
+            return WINBINDD_OK;
+    }
+
+
     /* Get name and name type from rid */
 
     sid_copy(&user_sid, &domain->sid);
@@ -223,6 +229,9 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
     winbindd_fill_pwent(&state->response.data.pw, user_name, 
                         state->request.data.uid, gid, gecos_name);
+
+    winbindd_fill_uid_cache_entry(domain->name, state->request.data.uid,
+				  &state->response.data.pw);
 
     return WINBINDD_OK;
 }

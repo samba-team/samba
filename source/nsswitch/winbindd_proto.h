@@ -18,7 +18,12 @@ void winbindd_fill_group_cache(char *domain_name,
                                int num_sam_entries);
 void winbindd_fill_user_cache_entry(char *domain, char *user_name, 
                                     struct winbindd_pw *pw);
+void winbindd_fill_uid_cache_entry(char *domain, uid_t uid, 
+                                    struct winbindd_pw *pw);
 void winbindd_fill_group_cache_entry(char *domain, char *group_name, 
+                                     struct winbindd_gr *gr, void *extra_data,
+                                     int extra_data_len);
+void winbindd_fill_gid_cache_entry(char *domain, gid_t gid, 
                                      struct winbindd_gr *gr, void *extra_data,
                                      int extra_data_len);
 void expire_cache(char *domain_name, char *cache_type);
@@ -30,9 +35,14 @@ BOOL winbindd_fetch_group_cache(char *domain_name,
                                 int *num_entries);
 BOOL winbindd_fetch_user_cache_entry(char *domain, char *user, 
                                      struct winbindd_pw *pw);
+BOOL winbindd_fetch_uid_cache_entry(char *domain, uid_t uid, 
+				    struct winbindd_pw *pw);
 BOOL winbindd_fetch_group_cache_entry(char *domain, char *group, 
                                       struct winbindd_gr *gr,
                                       void **extra_data, int *extra_data_len);
+BOOL winbindd_fetch_gid_cache_entry(char *domain, gid_t gid,
+				    struct winbindd_gr *gr,
+				    void **extra_data, int *extra_data_len);
 void winbindd_flush_cache(void);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */

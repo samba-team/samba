@@ -532,14 +532,23 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
     enum SID_NAME_USE name_type;
     fstring group_name;
     uint32 group_rid;
+    int extra_data_len;
 
     /* Get rid from gid */
-
     if (!winbindd_idmap_get_rid_from_gid(state->request.data.gid, &group_rid,
                                          &domain)) {
         DEBUG(1, ("Could not convert gid %d to rid\n", 
                   state->request.data.gid));
         return WINBINDD_ERROR;
+    }
+
+    /* try a cached entry */
+    if (winbindd_fetch_gid_cache_entry(domain->name, state->request.data.gid,
+				       &state->response.data.gr,
+				       &state->response.extra_data,
+				       &extra_data_len)) {
+            state->response.length += extra_data_len;
+            return WINBINDD_OK;
     }
 
     /* Get sid from gid */
@@ -570,6 +579,13 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
                                  &state->response)) {
         return WINBINDD_ERROR;
     }
+
+    /* Update cached group info */
+    winbindd_fill_gid_cache_entry(domain->name, state->request.data.gid,
+				  &state->response.data.gr,
+				  state->response.extra_data,
+				  state->response.length - 
+				  sizeof(struct winbindd_response));
 
     return WINBINDD_OK;
 }
