@@ -132,7 +132,10 @@ BOOL torture_close_connection(struct cli_state *c)
 }
 
 /* open a rpc connection to a named pipe */
-NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, const char *pipe_name)
+NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, 
+				const char *pipe_name,
+				const char *pipe_uuid, 
+				uint32 pipe_version)
 {
         struct cli_state *cli;
         NTSTATUS status;
@@ -145,9 +148,9 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, const char *pipe_name)
                 return NT_STATUS_NO_MEMORY;
 	}
  
-	status = dcerpc_pipe_open_smb(*p, pipe_name);
+	status = dcerpc_pipe_open_smb(*p, pipe_name, pipe_uuid, pipe_version);
 	if (!NT_STATUS_IS_OK(status)) {
-                printf("Open of pipe %s failed with error (%s)\n",
+                printf("Open of pipe '%s' failed with error (%s)\n",
 		       pipe_name, nt_errstr(status));
                 return status;
         }
@@ -2817,7 +2820,7 @@ static BOOL run_rename(int dummy)
 static BOOL run_pipe_number(int dummy)
 {
 	struct cli_state *cli1;
-	const char *pipe_name = "\\SPOOLSS";
+	const char *pipe_name = "\\WKSSVC";
 	int fnum;
 	int num_pipes = 0;
 

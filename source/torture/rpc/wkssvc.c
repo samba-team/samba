@@ -90,7 +90,10 @@ BOOL torture_rpc_wkssvc(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_wkssvc");
 
-	status = torture_rpc_connection(&p, "wkssvc");
+	status = torture_rpc_connection(&p, 
+					DCERPC_WKSSVC_NAME,
+					DCERPC_WKSSVC_UUID,
+					DCERPC_WKSSVC_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

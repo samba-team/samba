@@ -511,7 +511,10 @@ BOOL torture_rpc_lsa(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_lsa");
 
-	status = torture_rpc_connection(&p, "lsarpc");
+	status = torture_rpc_connection(&p, 
+					DCERPC_LSARPC_NAME, 
+					DCERPC_LSARPC_UUID, 
+					DCERPC_LSARPC_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

@@ -2,10 +2,8 @@
   miscellaneous IDL structures
 */
 
-[ uuid(0-0-0-0-0),
-  version(0.0),
-  pointer_default(unique)
-] interface misc
+[] 
+interface misc
 {
 
 	/* a domain SID. Note that unlike Samba3 this contains a pointer,

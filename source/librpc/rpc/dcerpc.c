@@ -560,7 +560,9 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	if (pkt.hdr.ptype != DCERPC_PKT_BIND_ACK) {
+	if (pkt.hdr.ptype != DCERPC_PKT_BIND_ACK ||
+	    pkt.out.bind_ack.num_results == 0 ||
+	    pkt.out.bind_ack.ctx_list[0].result != 0) {
 		status = NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -572,49 +574,30 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	return status;	
 }
 
-static const struct {
-	const char *name;
-	struct dcerpc_syntax_id syntax;
-	const struct dcerpc_syntax_id transfer_syntax;
-} known_pipes[] = {
-	{ "lsarpc"  , { "12345778-1234-abcd-ef00-0123456789ab", 0 }, DCERPC_TRANSFER_SYNTAX_V2 },
-	{ "samr"    , { "12345778-1234-abcd-ef00-0123456789ac", 1 }, DCERPC_TRANSFER_SYNTAX_V2 },
-	{ "netlogon", { "12345778-1234-abcd-ef00-01234567cffb", 1 }, DCERPC_TRANSFER_SYNTAX_V2 },
-	{ "srvsvc"  , { "4b324fc8-1670-01d3-1278-5a47bf6ee188", 3 }, DCERPC_TRANSFER_SYNTAX_V2 },
-	{ "wkssvc"  , { "6bffd098-a112-3610-9833-46c3f87e345a", 1 }, DCERPC_TRANSFER_SYNTAX_V2 },
-	{ "winreg"  , { "338cd001-2244-31f1-aaaa-900038001003", 1 }, DCERPC_TRANSFER_SYNTAX_V2 },
-	{ "spoolss" , { "12345678-1234-abcd-ef00-0123456789ab", 1 }, DCERPC_TRANSFER_SYNTAX_V2 },
-	{ "netdfs"  , { "4fc742e0-4a10-11cf-8273-00aa004ae673", 3 }, DCERPC_TRANSFER_SYNTAX_V2 },
-	{ "rpcecho" , { "60a15ec5-4de8-11d7-a637-005056a20182", 1 }, DCERPC_TRANSFER_SYNTAX_V2 },
-	{ NULL         , }
-};
-
-
-/* Perform a bind using the given well-known pipe name */
-NTSTATUS dcerpc_bind_byname(struct dcerpc_pipe *p, const char *pipe_name)
+/* Perform a bind using the given UUID and version */
+NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p, 
+			    const char *uuid, unsigned version)
 {
-	int i;
+	struct dcerpc_syntax_id syntax;
+	struct dcerpc_syntax_id transfer_syntax;
 
-	for (i=0; known_pipes[i].name; i++) {
-		if (strcasecmp(known_pipes[i].name, pipe_name) == 0)
-			break;
-	}
-	
-	if (known_pipes[i].name == NULL) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
+	syntax.uuid_str = uuid;
+	syntax.if_version = version;
 
-	return dcerpc_bind(p, &known_pipes[i].syntax, &known_pipes[i].transfer_syntax);
+	transfer_syntax.uuid_str = "8a885d04-1ceb-11c9-9fe8-08002b104860";
+	transfer_syntax.if_version = 2;
+
+	return dcerpc_bind(p, &syntax, &transfer_syntax);
 }
 
 /*
   perform a full request/response pair on a dcerpc pipe
 */
 NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
-			    uint16 opnum,
-			    TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *stub_data_in,
-			    DATA_BLOB *stub_data_out)
+			uint16 opnum,
+			TALLOC_CTX *mem_ctx,
+			DATA_BLOB *stub_data_in,
+			DATA_BLOB *stub_data_out)
 {
 	
 	struct dcerpc_packet pkt;

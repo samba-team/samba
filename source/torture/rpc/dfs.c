@@ -172,7 +172,10 @@ BOOL torture_rpc_dfs(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_dfs");
 
-	status = torture_rpc_connection(&p, "netdfs");
+	status = torture_rpc_connection(&p, 
+					DCERPC_NETDFS_NAME,
+					DCERPC_NETDFS_UUID,
+					DCERPC_NETDFS_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
