@@ -196,7 +196,9 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 	}
 	stermios.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 	stermios.c_lflag |= ICANON;
+#ifdef ONLCR
  	stermios.c_oflag &= ~(ONLCR);
+#endif
 	if (tcsetattr(0, TCSANOW, &stermios) < 0)
 	{
 		DEBUG(3, ("could not set attributes of pty\n"));
