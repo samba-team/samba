@@ -58,7 +58,8 @@ HOWTOSRC=projdoc/DOMAIN_MEMBER.sgml projdoc/NT_Security.sgml \
 	projdoc/UNIX_INSTALL.sgml projdoc/winbind.sgml projdoc/OS2-Client-HOWTO.sgml \
 	projdoc/Samba-PDC-HOWTO.sgml projdoc/ENCRYPTION.sgml \
 	projdoc/CVS-Access.sgml projdoc/Integrating-with-Windows.sgml \
-	projdoc/PAM-Authentication-And-Samba.sgml projdoc/Samba-LDAP-HOWTO.sgml
+	projdoc/PAM-Authentication-And-Samba.sgml projdoc/Samba-LDAP-HOWTO.sgml \
+	projdoc/Samba-BDC-HOWTO.sgml
 
 
 
