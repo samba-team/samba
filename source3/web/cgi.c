@@ -548,7 +548,7 @@ static void cgi_download(char *file)
 setup the cgi framework, handling the possability that this program is either
 run as a true cgi program by a web browser or is itself a mini web server
   ***************************************************************************/
-void cgi_setup(char *rootdir)
+void cgi_setup(char *rootdir, int auth_required)
 {
 	int authenticated = 0;
 	char line[1024];
@@ -586,7 +586,7 @@ void cgi_setup(char *rootdir)
 		/* ignore all other requests! */
 	}
 
-	if (!authenticated) {
+	if (auth_required && !authenticated) {
 		cgi_setup_error("401 Authorization Required", 
 				"WWW-Authenticate: Basic realm=\"root\"\r\n",
 				"You must be authenticated to use this service");

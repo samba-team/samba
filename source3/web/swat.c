@@ -432,6 +432,7 @@ int main(int argc, char *argv[])
 	extern FILE *dbf;
 	int opt;
 	char *page;
+	int auth_required = 1;
 
 	/* just in case it goes wild ... */
 	alarm(300);
@@ -440,16 +441,18 @@ int main(int argc, char *argv[])
 
 	if (!dbf) dbf = stderr;
 
-	cgi_setup(SWATDIR);
-
-	while ((opt = getopt(argc, argv,"s:")) != EOF) {
+	while ((opt = getopt(argc, argv,"s:a")) != EOF) {
 		switch (opt) {
 		case 's':
 			pstrcpy(servicesf,optarg);
 			break;	  
+		case 'a':
+			auth_required = 0;
+			break;	  
 		}
 	}
 
+	cgi_setup(SWATDIR, auth_required);
 
 	print_header();
 
