@@ -599,7 +599,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (!done_sesssetup)
     max_send = MIN(max_send,smb_bufsize);
 
-  DEBUG(1,(" Client requested max send size of %d\n", max_send));
+  DEBUG(6,("Client requested max send size of %d\n", max_send));
 
   done_sesssetup = True;
 
