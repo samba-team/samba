@@ -247,12 +247,13 @@ dnl Add modules that have to be built by default here
 dnl These have to be built static:
 default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin idmap_winbind"
 
-if test "x$enable_developer" = xyes; then
-   default_static_modules="$default_static_modules rpc_echo"
-fi
-
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_fake_perms vfs_netatalk"
+
+if test "x$enable_developer" = xyes; then
+   default_static_modules="$default_static_modules rpc_echo"
+   default_shared_modules="$default_shared_modules charset_weird"
+fi
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
@@ -3449,7 +3450,7 @@ SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC)
 
-SMB_MODULE(charset_weird, modules/developer.o, "bin/developer.$SHLIBEXT", CHARSET)
+SMB_MODULE(charset_weird, modules/developer.o, "bin/weird.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET)
 
 SMB_MODULE(auth_rhosts, \$(AUTH_RHOSTS_OBJ), "bin/rhosts.$SHLIBEXT", AUTH)
