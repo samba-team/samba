@@ -2133,8 +2133,8 @@ send_file_list(char *whichf)
        */
       if (dirname[0] == '-' && *dirlist == NULL &&
 	  transflag == 0) {
-	retrieve("/bin/ls -- %s", dirname);
-	goto out;
+	  list_file(dirname);
+	  goto out;
       }
       perror_reply(550, whichf);
       if (dout != NULL) {
