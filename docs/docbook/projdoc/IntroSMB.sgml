@@ -163,6 +163,10 @@ client file systems for Linux, both available in the Linux kernel itself.
 	Winbind (nsswitch) integration.
 	</para></listitem>
 
+	<listitem><para>
+	jCIFS (Java implementation of CIFS) is an active project headed by Chris Hertel.
+	</para></listitem>
+
 </itemizedlist>
 
 <para>
