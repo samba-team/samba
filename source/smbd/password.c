@@ -122,18 +122,12 @@ void invalidate_vuid(uint16 vuid)
   vuser->uid = (uid_t)-1;
   vuser->gid = (gid_t)-1;
 
-  vuser->n_sids = 0;
-
   /* same number of igroups as groups */
   vuser->n_groups = 0;
 
   if (vuser->groups)
     free((char *)vuser->groups);
 
-  if (vuser->sids)
-    free((char *)vuser->sids);
-
-  vuser->sids    = NULL;
   vuser->groups  = NULL;
 }
 
@@ -254,9 +248,6 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   vuser->guest = guest;
   fstrcpy(vuser->name,unix_name);
   fstrcpy(vuser->requested_name,requested_name);
-
-  vuser->n_sids = 0;
-  vuser->sids   = NULL;
 
   vuser->n_groups = 0;
   vuser->groups  = NULL;
