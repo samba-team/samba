@@ -1158,7 +1158,7 @@ rpc_group_members_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	do {
+	while (num_members > 0) {
 		int this_time = 512;
 
 		if (num_members < this_time)
@@ -1177,8 +1177,7 @@ rpc_group_members_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 
 		num_members -= this_time;
 		group_rids += 512;
-
-	} while (num_members > 0);
+	}
 
  done:
 	return result;
