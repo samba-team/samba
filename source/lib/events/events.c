@@ -262,7 +262,10 @@ void event_fd_setflags(struct fd_event *fde, uint16_t flags)
 {
 #if WITH_EPOLL
 	struct event_context *ev;
-	if (fde == NULL) return;
+	if (fde == NULL || 
+	    fde->flags == flags) {
+		return;
+	}
 	ev = fde->event_ctx;
 	if (ev->epoll_fd != -1) {
 		struct epoll_event event;
