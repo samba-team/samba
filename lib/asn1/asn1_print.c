@@ -84,7 +84,7 @@ const char *tag_names[] = {
     "UTCTime",			/* 23 */
     "GeneralizedTime",		/* 24 */
     NULL,			/* 25 */
-    NULL,			/* 26 */
+    "VisibleString",		/* 26 */
     "GeneralString"		/* 27 */
 };
 
