@@ -163,23 +163,13 @@ NTSTATUS cli_nt_login_network(struct cli_state *cli, char *domain, char *usernam
 							const char *lm_chal_resp, const char *nt_chal_resp,
 							NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
-	fstring dos_wksta_name, dos_username, dos_domain;
 	DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
 	/* indicate a "network" login */
 	ctr->switch_value = NET_LOGON_TYPE;
 
-	fstrcpy(dos_wksta_name, cli->clnt_name_slash);
-	unix_to_dos(dos_wksta_name);
-
-	fstrcpy(dos_username, username);
-	unix_to_dos(dos_username);
-
-	fstrcpy(dos_domain, domain);
-	unix_to_dos(dos_domain);
-
 	/* Create the structure needed for SAM logon. */
-	init_id_info2(&ctr->auth.id2, dos_domain, 0, smb_userid_low, 0,
-		dos_username, dos_wksta_name,
+	init_id_info2(&ctr->auth.id2, domain, 0, smb_userid_low, 0,
+		username, cli->clnt_name_slash,
 		(const uchar *)lm_chal, (const uchar *)lm_chal_resp, lm_chal_resp ? 24 : 0,
 		(const uchar *)nt_chal_resp, nt_chal_resp ? 24 : 0 );
 

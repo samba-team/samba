@@ -982,6 +982,7 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 		   const uchar * lm_chal_resp, int lm_chal_resp_len,
 		   const uchar * nt_chal_resp, int nt_chal_resp_len)
 {
+	fstring dos_wksta_name, dos_user_name, dos_domain_name;
 	int len_domain_name = strlen(domain_name);
 	int len_user_name   = strlen(user_name  );
 	int len_wksta_name  = strlen(wksta_name );
@@ -1015,9 +1016,18 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 	init_str_hdr(&id->hdr_nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);
 	init_str_hdr(&id->hdr_lm_chal_resp, lm_chal_resp_len, lm_chal_resp_len, (lm_chal_resp != NULL) ? 1 : 0);
 
-	init_unistr2(&id->uni_domain_name, domain_name, len_domain_name);
-	init_unistr2(&id->uni_user_name, user_name, len_user_name);
-	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
+	fstrcpy(dos_wksta_name, wksta_name);
+	unix_to_dos(dos_wksta_name);
+
+	fstrcpy(dos_user_name, user_name);
+	unix_to_dos(dos_user_name);
+
+	fstrcpy(dos_domain_name, domain_name);
+	unix_to_dos(dos_domain_name);
+
+	init_unistr2(&id->uni_domain_name, dos_domain_name, len_domain_name);
+	init_unistr2(&id->uni_user_name, dos_user_name, len_user_name);
+	init_unistr2(&id->uni_wksta_name, dos_wksta_name, len_wksta_name);
 
 	init_string2(&id->nt_chal_resp, (const char *)nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len);
 	init_string2(&id->lm_chal_resp, (const char *)lm_chal_resp, lm_chal_resp_len, lm_chal_resp_len);
