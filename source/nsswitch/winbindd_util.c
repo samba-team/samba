@@ -39,8 +39,7 @@ static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
 	
 	/* if its our primary domain and password server is not '*' then use the
 	   password server parameter */
-	if (strcmp(domain_name,lp_workgroup()) == 0 && 
-	    strcmp(lp_passwordserver(),"*") != 0) {
+	if (strcmp(domain_name,lp_workgroup()) == 0 && !lp_wildcard_dc()) {
 		fstrcpy(domain_controller, lp_passwordserver());
 		return True;
 	}
@@ -203,7 +202,7 @@ void establish_connections(void)
 
 	if (!server_state.pwdb_initialised) {
 		fstrcpy(server_state.controller, lp_passwordserver());
-		if (strcmp(server_state.controller,"*") == 0) {
+		if (lp_wildcard_dc()) {
 			if (!resolve_dc_name(lp_workgroup(), server_state.controller)) {
 				return;
 			}

@@ -3413,6 +3413,21 @@ BOOL lp_kernel_oplocks(void)
   return kernel_oplocks_available;
 }
 
+
+/***********************************************************
+see if the user has set a wildcard PDC name. This is true if
+security==domain and password server is either blank or *
+************************************************************/
+BOOL lp_wildcard_dc(void)
+{
+	char *p;
+	if (lp_security() != SEC_DOMAIN) return False;
+
+	p = lp_passwordserver();
+	if (! *p || strcmp(p,"*") == 0) return True;
+	return False;
+}
+
 /***********************************************************
  Functions to return the current security masks/modes. If
  set to -1 then return the create mask/mode instead.
@@ -3449,3 +3464,4 @@ int lp_force_dir_security_mode(int snum)
     return lp_force_dir_mode(snum);
   return val;
 }
+

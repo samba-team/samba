@@ -2080,6 +2080,7 @@ int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
 void lp_set_kernel_oplocks(BOOL val);
 BOOL lp_kernel_oplocks(void);
+BOOL lp_wildcard_dc(void);
 int lp_security_mask(int snum);
 int lp_force_security_mode(int snum);
 int lp_dir_security_mask(int snum);

@@ -76,7 +76,7 @@ char *get_trusted_serverlist(const char *domain)
 	{
 		pstrcpy(srv_list, lp_passwordserver());
 
-		if (strcmp(lp_passwordserver(),"*") == 0) {
+		if (lp_wildcard_dc()) {
 			struct in_addr ip;
 			extern pstring global_myname;
 
