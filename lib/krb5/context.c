@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -270,14 +270,113 @@ krb5_set_config_files(krb5_context context, char **filenames)
     return ret;
 }
 
+static krb5_error_code
+add_file(char ***pfilenames, size_t *len, char *file)
+{
+    char **pp = *pfilenames;
+    int i;
+
+    for(i = 0; i < *len; i++) {
+	if(strcmp(pp[i], file) == 0) {
+	    free(file);
+	    return 0;
+	}
+    }
+
+    pp = realloc(*pfilenames, (*len + 2) * sizeof(*pp));
+    if (pp == NULL) {
+	free(file);
+	return ENOMEM;
+    }
+
+    pp[*len] = file;
+    pp[*len + 1] = NULL;
+    *pfilenames = pp;
+    *len += 1;
+    return 0;
+}
+
+/*
+ *  `pq' isn't free, its up the the caller
+ */
+
+krb5_error_code
+krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
+{
+    krb5_error_code ret;
+    const char *p, *q;
+    char **pp;
+    int len;
+    char *fn;
+
+    pp = NULL;
+
+    len = 0;
+    p = filelist;
+    while(1) {
+	ssize_t l;
+	q = p;
+	l = strsep_copy(&q, ":", NULL, 0);
+	if(l == -1)
+	    break;
+	fn = malloc(l + 1);
+	if(fn == NULL) {
+	    krb5_free_config_files(pp);
+	    return ENOMEM;
+	}
+	l = strsep_copy(&p, ":", fn, l + 1);
+	ret = add_file(&pp, &len, fn);
+	if (ret) {
+	    krb5_free_config_files(pp);
+	    return ret;
+	}
+    }
+
+    if (pq != NULL) {
+	int i;
+
+	for (i = 0; pq[i] != NULL; i++) {
+	    fn = strdup(pq[i]);
+	    if (fn == NULL) {
+		krb5_free_config_files(pp);
+		return ENOMEM;
+	    }
+	    ret = add_file(&pp, &len, fn);
+	    if (ret) {
+		krb5_free_config_files(pp);
+		return ret;
+	    }
+	}
+    }
+
+    *ret_pp = pp;
+    return 0;
+}
+
+krb5_error_code
+krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
+{
+    krb5_error_code ret;
+    char **defpp, **pp = NULL;
+    
+    ret = krb5_get_default_config_files(&defpp);
+    if (ret)
+	return ret;
+
+    ret = krb5_prepend_config_files(filelist, defpp, &pp);
+    krb5_free_config_files(defpp);
+    if (ret) {
+	return ret;
+    }	
+    *pfilenames = pp;
+    return 0;
+}
+
 krb5_error_code 
 krb5_get_default_config_files(char ***pfilenames)
 {
-    const char *p, *q;
-    char **pp;
-    int n, i;
-
     const char *files = NULL;
+
     if (pfilenames == NULL)
         return EINVAL;
     if(!issuid())
@@ -285,36 +384,7 @@ krb5_get_default_config_files(char ***pfilenames)
     if (files == NULL)
 	files = krb5_config_file;
 
-    for(n = 0, p = files; strsep_copy(&p, ":", NULL, 0) != -1; n++);
-    pp = malloc((n + 1) * sizeof(*pp));
-    if(pp == NULL)
-	return ENOMEM;
-
-    n = 0;
-    p = files;
-    while(1) {
-	ssize_t l;
-	q = p;
-	l = strsep_copy(&q, ":", NULL, 0);
-	if(l == -1)
-	    break;
-	pp[n] = malloc(l + 1);
-	if(pp[n] == NULL) {
-	    krb5_free_config_files(pp);
-	    return ENOMEM;
-	}
-	l = strsep_copy(&p, ":", pp[n], l + 1);
-	for(i = 0; i < n; i++)
-	    if(strcmp(pp[i], pp[n]) == 0) {
-		free(pp[n]);
-		goto skip;
-	    }
-	n++;
-    skip:;
-    }
-    pp[n] = NULL;
-    *pfilenames = pp;
-    return 0;
+    return krb5_prepend_config_files(files, NULL, pfilenames);
 }
 
 void
