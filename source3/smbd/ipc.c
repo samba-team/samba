@@ -1663,6 +1663,65 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
 }
 
 /****************************************************************************
+  Set the user password (SamOEM version - gets plaintext).
+****************************************************************************/
+
+static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *data,
+				int mdrcnt,int mprcnt,
+				char **rdata,char **rparam,
+				int *rdata_len,int *rparam_len)
+{
+  fstring user;
+  fstring new_passwd;
+  struct smb_passwd *smbpw = NULL;
+  char *p = param + 2;
+
+  *rparam_len = 2;
+  *rparam = REALLOC(*rparam,*rparam_len);
+
+  *rdata_len = 0;
+
+  SSVAL(*rparam,0,NERR_badpass);
+
+  /*
+   * Check the parameter definition is correct.
+   */
+  if(!strequal(param + 2, "zsT")) {
+    DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %sn\n", param + 2));
+    return False;
+  }
+  p = skip_string(p, 1);
+
+  if(!strequal(p, "B516B16")) {
+    DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %sn\n", p));
+    return False;
+  }
+  p = skip_string(p,1);
+
+  fstrcpy(user,p);
+  p = skip_string(p,1);
+
+  if(check_oem_password( user, data, &smbpw, new_passwd, sizeof(new_passwd)) == False) {
+    return True;
+  }
+
+  /* 
+   * At this point we have the new case-sensitive plaintext
+   * password in the fstring new_passwd. If we wanted to synchronise
+   * with UNIX passwords we would call a UNIX password changing 
+   * function here. However it would have to be done as root
+   * as the plaintext of the old users password is not 
+   * available. JRA.
+   */
+ 
+  if(change_oem_password( smbpw, new_passwd)) {
+    SSVAL(*rparam,0,NERR_Success);
+  }
+
+  return(True);
+}
+
+/****************************************************************************
   delete a print job
   Form: <W> <> 
   ****************************************************************************/
@@ -3410,6 +3469,7 @@ struct
   {"WPrintDriverEnum",	205,	(BOOL (*)())api_WPrintDriverEnum,0},
   {"WPrintQProcEnum",	206,	(BOOL (*)())api_WPrintQProcEnum,0},
   {"WPrintPortEnum",	207,	(BOOL (*)())api_WPrintPortEnum,0},
+  {"SamOEMChangePassword", 214, (BOOL (*)())api_SamOEMChangePassword,0},
   {NULL,		-1,	(BOOL (*)())api_Unsupported,0}};
 
 
