@@ -147,7 +147,7 @@ done:
 	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
-	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authenticaion for user %s returned %s (PAM: %d)\n", 
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authentication for user %s returned %s (PAM: %d)\n", 
 	      state->request.data.auth.user, 
 	      state->response.data.auth.nt_status_string,
 	      state->response.data.auth.pam_error));	      
@@ -292,7 +292,7 @@ done:
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, 
-	      ("NTLM CRAP authenticaion for user [%s]\\[%s] returned %s (PAM: %d)\n", 
+	      ("NTLM CRAP authentication for user [%s]\\[%s] returned %s (PAM: %d)\n", 
 	       domain,
 	       user,
 	       state->response.data.auth.nt_status_string,
