@@ -35,11 +35,12 @@
 REG_VAL* reg_val_dup( REG_VAL *val )
 {
 	REG_VAL 	*copy = NULL;
+	TALLOC_CTX *new_mem_ctx = talloc_init(val->name);
 	
 	if ( !val ) 
 		return NULL;
 	
-	if ( !(copy = malloc( sizeof(REG_VAL) )) ) {
+	if ( !(copy = talloc( new_mem_ctx, sizeof(REG_VAL) )) ) {
 		DEBUG(0,("dup_registry_value: malloc() failed!\n"));
 		return NULL;
 	}
@@ -49,12 +50,13 @@ REG_VAL* reg_val_dup( REG_VAL *val )
 	memcpy( copy, val, sizeof(REG_VAL) );
 	if ( val->data_blk ) 
 	{
-		if ( !(copy->data_blk = memdup( val->data_blk, val->data_len )) ) {
+		if ( !(copy->data_blk = talloc_memdup( new_mem_ctx, val->data_blk, val->data_len )) ) {
 			DEBUG(0,("dup_registry_value: memdup() failed for [%d] bytes!\n",
 				val->data_len));
 			SAFE_FREE( copy );
 		}
 	}
+	copy->mem_ctx = new_mem_ctx;
 	
 	return copy;	
 }
@@ -71,8 +73,7 @@ void reg_val_free( REG_VAL *val )
 	if(val->handle->functions->free_val_backend_data)
 		val->handle->functions->free_val_backend_data(val);
 		
-	SAFE_FREE( val->data_blk );
-	SAFE_FREE( val );
+	talloc_destroy( val->mem_ctx );
 
 	return;
 }
@@ -139,7 +140,6 @@ void reg_key_free(REG_KEY *key)
 		for(i = 0; i < key->cache_values_count; i++) {
 			reg_val_free(key->cache_values[i]);
 		}
-		SAFE_FREE(key->cache_values);
 	}
 
 	if(key->cache_subkeys) {
@@ -147,12 +147,9 @@ void reg_key_free(REG_KEY *key)
 		for(i = 0; i < key->cache_subkeys_count; i++) {
 			reg_key_free(key->cache_subkeys[i]);
 		}
-		SAFE_FREE(key->cache_subkeys);
 	}
 
-	SAFE_FREE(key->path);
-	SAFE_FREE(key->name);
-	SAFE_FREE(key);
+	talloc_destroy(key->mem_ctx);
 }
 
 char *reg_val_get_path(REG_VAL *v)
@@ -170,11 +167,14 @@ const char *reg_key_get_path(REG_KEY *k)
 /* For use by the backends _ONLY_ */
 REG_KEY *reg_key_new_abs(const char *path, REG_HANDLE *h, void *data)
 {
-	REG_KEY *r = malloc(sizeof(REG_KEY));
+	REG_KEY *r;
+	TALLOC_CTX *mem_ctx = talloc_init(path);
+	r = talloc(mem_ctx, sizeof(REG_KEY));
 	ZERO_STRUCTP(r);
 	r->handle = h;
-	r->path = strdup(path);
-	r->name = strdup(strrchr(path, '\\')?strrchr(path,'\\')+1:path);
+	r->mem_ctx = mem_ctx;
+	r->path = talloc_strdup(mem_ctx, path);
+	r->name = talloc_strdup(mem_ctx, strrchr(path, '\\')?strrchr(path,'\\')+1:path);
 	r->backend_data = data;
 	r->ref = 1;
 	return r;
@@ -182,19 +182,25 @@ REG_KEY *reg_key_new_abs(const char *path, REG_HANDLE *h, void *data)
 
 REG_KEY *reg_key_new_rel(const char *name, REG_KEY *k, void *data)
 {
-	REG_KEY *r = malloc(sizeof(REG_KEY));
+	REG_KEY *r;
+	TALLOC_CTX *mem_ctx = talloc_init(name);
+	r = talloc(mem_ctx, sizeof(REG_KEY));
 	ZERO_STRUCTP(r);
 	r->handle = k->handle;
-	r->name = strdup(name);
+	r->name = talloc_strdup(mem_ctx, name);
 	r->backend_data = data;
+	r->mem_ctx = mem_ctx;
 	r->ref = 1;
 	return r;
 }
 
 REG_VAL *reg_val_new(REG_KEY *parent, void *data)
 {
-	REG_VAL *r = malloc(sizeof(REG_VAL));
+	REG_VAL *r;
+	TALLOC_CTX *mem_ctx = talloc_init("value");
+	r = talloc(mem_ctx, sizeof(REG_VAL));
 	ZERO_STRUCTP(r);
+	r->mem_ctx = mem_ctx;
 	r->handle = parent->handle;
 	r->backend_data = data;
 	r->ref = 1;
