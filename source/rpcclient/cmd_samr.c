@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.2
+   Unix SMB/CIFS implementation.
    RPC pipe client
 
    Copyright (C) Andrew Tridgell              1992-2000,
@@ -95,6 +94,54 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	}
 }
 
+static char *display_time(NTTIME nttime)
+{
+	static fstring string;
+
+	float high;
+	float low;
+	int sec;
+	int days, hours, mins, secs;
+
+	if (nttime.high==0 && nttime.low==0)
+		return "Now";
+
+	if (nttime.high==0x80000000 && nttime.low==0)
+		return "Never";
+
+	high = 65536;	
+	high = high/10000;
+	high = high*65536;
+	high = high/1000;
+	high = high * (~nttime.high);
+
+	low = ~nttime.low;	
+	low = low/(1000*1000*10);
+
+	sec=high+low;
+
+	days=sec/(60*60*24);
+	hours=(sec - (days*60*60*24)) / (60*60);
+	mins=(sec - (days*60*60*24) - (hours*60*60) ) / 60;
+	secs=sec - (days*60*60*24) - (hours*60*60) - (mins*60);
+
+	snprintf(string, sizeof(string)-1, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
+	return (string);
+}
+
+static void display_sam_unk_info_1(SAM_UNK_INFO_1 *info1)
+{
+	
+	printf("Minimum password length:                     %d\n", info1->min_length_password);
+	printf("Password uniqueness (remember x passwords):  %d\n", info1->password_history);
+	printf("flag:                                        ");
+	if(info1->flag&&2==2) printf("users must open a session to change password ");
+	printf("\n");
+
+	printf("password expire in:                          %s\n", display_time(info1->expire));
+	printf("Min password age (allow changing in x days): %s\n", display_time(info1->min_passwordage));
+}
+
 static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 {
 	fstring name;
@@ -120,11 +167,13 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Unknown 6:\t0x%x\n", info2->unknown_6);
 }
 
-void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
+static void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
 {
 	fstring tmp;
 
+	printf("index: 0x%x ", e1->user_idx);
 	printf("RID: 0x%x ", e1->rid_user);
+	printf("acb: 0x%x ", e1->acb_info);
 	
 	unistr2_to_ascii(tmp, &s1->uni_acct_name, sizeof(tmp)-1);
 	printf("Account: %s\t", tmp);
@@ -136,7 +185,39 @@ void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
 	printf("Desc: %s\n", tmp);
 }
 
-void display_sam_info_4(SAM_ENTRY4 *e4, SAM_STR4 *s4)
+static void display_sam_info_2(SAM_ENTRY2 *e2, SAM_STR2 *s2)
+{
+	fstring tmp;
+
+	printf("index: 0x%x ", e2->user_idx);
+	printf("RID: 0x%x ", e2->rid_user);
+	printf("acb: 0x%x ", e2->acb_info);
+	
+	unistr2_to_ascii(tmp, &s2->uni_srv_name, sizeof(tmp)-1);
+	printf("Account: %s\t", tmp);
+
+	unistr2_to_ascii(tmp, &s2->uni_srv_desc, sizeof(tmp)-1);
+	printf("Name: %s\n", tmp);
+
+}
+
+static void display_sam_info_3(SAM_ENTRY3 *e3, SAM_STR3 *s3)
+{
+	fstring tmp;
+
+	printf("index: 0x%x ", e3->grp_idx);
+	printf("RID: 0x%x ", e3->rid_grp);
+	printf("attr: 0x%x ", e3->attr);
+	
+	unistr2_to_ascii(tmp, &s3->uni_grp_name, sizeof(tmp)-1);
+	printf("Account: %s\t", tmp);
+
+	unistr2_to_ascii(tmp, &s3->uni_grp_desc, sizeof(tmp)-1);
+	printf("Name: %s\n", tmp);
+
+}
+
+static void display_sam_info_4(SAM_ENTRY4 *e4, SAM_STR4 *s4)
 {
 	int i;
 
@@ -148,6 +229,20 @@ void display_sam_info_4(SAM_ENTRY4 *e4, SAM_STR4 *s4)
 	printf("\n");
 
 }
+
+static void display_sam_info_5(SAM_ENTRY5 *e5, SAM_STR5 *s5)
+{
+	int i;
+
+	printf("index: 0x%x ", e5->grp_idx);
+	
+	printf("Account: ");
+	for (i=0; i<s5->grp_name.str_str_len; i++)
+		printf("%c", s5->grp_name.buffer[i]);
+	printf("\n");
+
+}
+
 /**********************************************************************
  * Query user information 
  */
@@ -368,6 +463,71 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli,
 	return result;
 }
 
+/* Query aliases a user is a member of */
+
+static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli, 
+                                          TALLOC_CTX *mem_ctx,
+                                          int argc, char **argv) 
+{
+	POLICY_HND 		connect_pol, domain_pol;
+	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
+	uint32 			user_rid, num_aliases, *alias_rids;
+	int 			i;
+	fstring			server;
+	DOM_SID			tmp_sid;
+	DOM_SID2		sid;
+	DOM_SID global_sid_Builtin;
+
+	string_to_sid(&global_sid_Builtin, "S-1-5-32");
+
+	if (argc != 3) {
+		printf("Usage: %s builtin|domain rid\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	sscanf(argv[2], "%i", &user_rid);
+
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (server);
+		
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (StrCaseCmp(argv[1], "domain")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &domain_sid, &domain_pol);
+	else if (StrCaseCmp(argv[1], "builtin")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &global_sid_Builtin, &domain_pol);
+	else
+		return NT_STATUS_OK;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	sid_copy(&tmp_sid, &domain_sid);
+	sid_append_rid(&tmp_sid, user_rid);
+	init_dom_sid2(&sid, &tmp_sid);
+
+	result = cli_samr_query_useraliases(cli, mem_ctx, &domain_pol, 1, &sid, &num_aliases, &alias_rids);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	for (i = 0; i < num_aliases; i++) {
+		printf("\tgroup rid:[0x%x]\n", alias_rids[i]);
+	}
+
+ done:
+	return result;
+}
+
 /* Query members of a group */
 
 static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli, 
@@ -476,6 +636,66 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli,
 	return result;
 }
 
+/* Enumerate domain groups */
+
+static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx,
+                                         int argc, char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 start_idx, size, num_dom_groups, i;
+	struct acct_info *dom_groups;
+	DOM_SID global_sid_Builtin;
+
+	string_to_sid(&global_sid_Builtin, "S-1-5-32");
+
+	if (argc != 2) {
+		printf("Usage: %s builtin|domain\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	/* Get sam policy handle */
+
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Get domain policy handle */
+
+	if (StrCaseCmp(argv[1], "domain")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &domain_sid, &domain_pol);
+	else if (StrCaseCmp(argv[1], "builtin")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &global_sid_Builtin, &domain_pol);
+	else
+		return NT_STATUS_OK;
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Enumerate domain groups */
+
+	start_idx = 0;
+	size = 0xffff;
+
+	result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
+					  &start_idx, size,
+					  &dom_groups, &num_dom_groups);
+
+	for (i = 0; i < num_dom_groups; i++)
+		printf("group:[%s] rid:[0x%x]\n", dom_groups[i].acct_name,
+		       dom_groups[i].rid);
+
+ done:
+	return result;
+}
+
 /* Query alias membership */
 
 static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli, 
@@ -549,6 +769,10 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	int info_level = 1;
 	SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
+	SAM_DISPINFO_2 info2;
+	SAM_DISPINFO_3 info3;
+	SAM_DISPINFO_4 info4;
+	SAM_DISPINFO_5 info5;
 
 	if (argc > 4) {
 		printf("Usage: %s [info level] [start index] [max entries]\n", argv[0]);
@@ -585,26 +809,55 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	ZERO_STRUCT(ctr);
 	ZERO_STRUCT(info1);
 
+	switch (info_level) {
+	case 1:
+		ZERO_STRUCT(info1);
 	ctr.sam.info1 = &info1;
+		break;
+	case 2:
+		ZERO_STRUCT(info2);
+		ctr.sam.info2 = &info2;
+		break;
+	case 3:
+		ZERO_STRUCT(info3);
+		ctr.sam.info3 = &info3;
+		break;
+	case 4:
+		ZERO_STRUCT(info4);
+		ctr.sam.info4 = &info4;
+		break;
+	case 5:
+		ZERO_STRUCT(info5);
+		ctr.sam.info5 = &info5;
+		break;
+	}
 
+
+	do {	
 	result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
 					 &start_idx, info_level,
 					 &num_entries, max_entries, &ctr);
-
-        if (!NT_STATUS_IS_OK(result))
-                goto done;
 
 	for (i = 0; i < num_entries; i++) {
 		switch (info_level) {
 		case 1:
 			display_sam_info_1(&ctr.sam.info1->sam[i], &ctr.sam.info1->str[i]);
 			break;
+			case 2:
+				display_sam_info_2(&ctr.sam.info2->sam[i], &ctr.sam.info2->str[i]);
+				break;
+			case 3:
+				display_sam_info_3(&ctr.sam.info3->sam[i], &ctr.sam.info3->str[i]);
+				break;
 		case 4:
 			display_sam_info_4(&ctr.sam.info4->sam[i], &ctr.sam.info4->str[i]);
 			break;
+			case 5:
+				display_sam_info_5(&ctr.sam.info5->sam[i], &ctr.sam.info5->str[i]);
+				break;
 		}
 	}
-
+	} while (!NT_STATUS_IS_OK(result));
  done:
 	return result;
 }
@@ -656,6 +909,9 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 	/* Display domain info */
 
 	switch (switch_value) {
+	case 1:
+		display_sam_unk_info_1(&ctr.info.inf1);
+		break;
 	case 2:
 		display_sam_unk_info_2(&ctr.info.inf2);
 		break;
@@ -666,6 +922,9 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 	}
 
  done:
+ 
+ 	cli_samr_close(cli, mem_ctx, &domain_pol);
+ 	cli_samr_close(cli, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -733,9 +992,14 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 	uint32 num_rids, num_names, *name_types, *rids;
 	char **names;
 	int i;
+	DOM_SID global_sid_Builtin;
 
-	if (argc < 2) {
-		printf("Usage: %s name1 [name2 [name3] [...]]\n", argv[0]);
+	string_to_sid(&global_sid_Builtin, "S-1-5-32");
+
+	if (argc < 3) {
+		printf("Usage: %s  domain|builtin name1 [name2 [name3] [...]]\n", argv[0]);
+		printf("check on the domain SID: S-1-5-21-x-y-z\n");
+		printf("or check on the builtin SID: S-1-5-32\n");
 		return NT_STATUS_OK;
 	}
 
@@ -748,9 +1012,16 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 		goto done;
 	}
 
+	if (StrCaseCmp(argv[1], "domain")==0)
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &domain_sid, &domain_pol);
+	else if (StrCaseCmp(argv[1], "builtin")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &global_sid_Builtin, &domain_pol);
+	else
+		return NT_STATUS_OK;
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -758,11 +1029,11 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 
 	/* Look up names */
 
-	num_names = argc - 1;
+	num_names = argc - 2;
 	names = (char **)talloc(mem_ctx, sizeof(char *) * num_names);
 
-	for (i = 0; i < argc - 1; i++)
-		names[i] = argv[i + 1];
+	for (i = 0; i < argc - 2; i++)
+		names[i] = argv[i + 2];
 
 	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
 				       flags, num_names, names,
@@ -911,6 +1182,86 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli,
 	return result;
 }
 
+/**********************************************************************
+ * Query user security object 
+ */
+static NTSTATUS cmd_samr_query_sec_obj(struct cli_state *cli, 
+                                    TALLOC_CTX *mem_ctx,
+                                    int argc, char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol, user_pol, *pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 info_level = 4;
+	fstring server;
+	uint32 user_rid = 0;
+	TALLOC_CTX *ctx = NULL;
+	SEC_DESC_BUF *sec_desc_buf=NULL;
+	BOOL domain = False;
+
+	ctx=talloc_init();
+	
+	if (argc > 2) {
+		printf("Usage: %s [rid|-d]\n", argv[0]);
+		printf("\tSpecify rid for security on user, -d for security on domain\n");
+		return NT_STATUS_OK;
+	}
+	
+	if (argc == 2) {
+		if (strcmp(argv[1], "-d") == 0)
+			domain = True;
+		else
+			sscanf(argv[1], "%i", &user_rid);
+	}
+
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (server);
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				  &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	if (domain || user_rid)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	if (user_rid)
+		result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+					    MAXIMUM_ALLOWED_ACCESS,
+					    user_rid, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Pick which query pol to use */
+
+	pol = &connect_pol;
+
+	if (domain)
+		pol = &domain_pol;
+
+	if (user_rid)
+		pol = &user_pol;
+
+	/* Query SAM security object */
+
+	result = cli_samr_query_sec_obj(cli, mem_ctx, pol, info_level, ctx, 
+					&sec_desc_buf);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	display_sec_desc(sec_desc_buf->sec);
+	
+done:
+	talloc_destroy(ctx);
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
@@ -920,16 +1271,19 @@ struct cmd_set samr_commands[] = {
 	{ "queryuser", 		cmd_samr_query_user, 		PIPE_SAMR,	"Query user info",         "" },
 	{ "querygroup", 	cmd_samr_query_group, 		PIPE_SAMR,	"Query group info",        "" },
 	{ "queryusergroups", 	cmd_samr_query_usergroups, 	PIPE_SAMR,	"Query user groups",       "" },
+	{ "queryuseraliases", 	cmd_samr_query_useraliases, 	PIPE_SAMR,	"Query user aliases",      "" },
 	{ "querygroupmem", 	cmd_samr_query_groupmem, 	PIPE_SAMR,	"Query group membership",  "" },
 	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	PIPE_SAMR,	"Query alias membership",  "" },
 	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	PIPE_SAMR,	"Query display info",      "" },
 	{ "querydominfo", 	cmd_samr_query_dominfo, 	PIPE_SAMR,	"Query domain info",       "" },
 	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       PIPE_SAMR,	"Enumerate domain groups", "" },
+	{ "enumalsgroups",      cmd_samr_enum_als_groups,       PIPE_SAMR,	"Enumerate alias groups",  "" },
 
 	{ "createdomuser",      cmd_samr_create_dom_user,       PIPE_SAMR,	"Create domain user",      "" },
 	{ "samlookupnames",     cmd_samr_lookup_names,          PIPE_SAMR,	"Look up names",           "" },
 	{ "samlookuprids",      cmd_samr_lookup_rids,           PIPE_SAMR,	"Look up names",           "" },
 	{ "deletedomuser",      cmd_samr_delete_dom_user,       PIPE_SAMR,	"Delete domain user",      "" },
+	{ "samquerysecobj",     cmd_samr_query_sec_obj,         PIPE_SAMR, "Query SAMR security object",   "" },
 
 	{ NULL }
 };

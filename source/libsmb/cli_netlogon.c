@@ -1,10 +1,12 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-2000
+   Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Tim Potter 2001
+   Copyright (C) Paul Ashton                       1997.
+   Copyright (C) Jeremy Allison                    1998.
+   Copyright (C) Andrew Bartlett                   2001.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -91,7 +93,8 @@ Ensure that the server credential returned matches the session key
 encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-NTSTATUS new_cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+NTSTATUS new_cli_net_auth2(struct cli_state *cli, 
+			   uint16 sec_chan, 
                            uint32 neg_flags, DOM_CHAL *srv_chal)
 {
         prs_struct qbuf, rbuf;
@@ -200,8 +203,8 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
          * Receive an auth-2 challenge response and check it.
          */
         
-	result = new_cli_net_auth2(cli, sec_chan, 0x000001ff, &srv_chal);
-
+	result = new_cli_net_auth2(cli, sec_chan, 0x000001ff, 
+				   &srv_chal);
 	if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed %s\n",
 			 get_nt_error_msg(result)));
@@ -279,7 +282,7 @@ static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
 
 /* Sam synchronisation */
 
-NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_CRED *ret_creds,
                                uint32 database_id, uint32 *num_deltas,
                                SAM_DELTA_HDR **hdr_deltas, 
                                SAM_DELTA_CTR **deltas)
@@ -303,7 +306,7 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         gen_next_creds(cli, &clnt_creds);
 
 	init_net_q_sam_sync(&q, cli->srv_name_slash, cli->clnt_name_slash + 2,
-                            &clnt_creds, database_id);
+                            &clnt_creds, ret_creds, database_id);
 
 	/* Marshall data and send request */
 
@@ -326,6 +329,8 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         *num_deltas = r.num_deltas2;
         *hdr_deltas = r.hdr_deltas;
         *deltas = r.deltas;
+
+	memcpy(ret_creds, &r.srv_creds, sizeof(*ret_creds));
 
  done:
 	prs_mem_free(&qbuf);
@@ -438,7 +443,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, cli->clnt_name_slash,
-                              (char *)cli->sess_key, lm_owf_user_pwd,
+                              cli->sess_key, lm_owf_user_pwd,
                               nt_owf_user_pwd);
 
                 break;
@@ -450,8 +455,8 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
                 generate_random_buffer(chal, 8, False);
 
-                SMBencrypt((unsigned char *)password, chal, local_lm_response);
-                SMBNTencrypt((unsigned char *)password, chal, local_nt_response);
+                SMBencrypt(password, chal, local_lm_response);
+                SMBNTencrypt(password, chal, local_nt_response);
 
                 init_id_info2(&ctr.auth.id2, lp_workgroup(), 
                               0, /* param_ctrl */
@@ -490,6 +495,9 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	result = r.status;
 
  done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
         return result;
 }
 
@@ -578,7 +586,12 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
         return result;
 }
 
-#if 0
+#if 0	/* JERRY */
+
+/*
+ * Still using old implementation in rpc_client/cli_netlogon.c
+ */
+
 /***************************************************************************
 LSA Server Password Set.
 ****************************************************************************/
@@ -662,4 +675,6 @@ password ?).\n", cli->desthost ));
 	
 	return nt_status;
 }
-#endif
+
+#endif	/* JERRY */
+

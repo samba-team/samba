@@ -342,6 +342,16 @@ NTSTATUS cli_lsa_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *pol, uint32 *enum_ctx, uint32 pref_max_length, 
                                 uint32 *num_sids, DOM_SID **sids);
+NTSTATUS cli_lsa_open_account(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 des_access, 
+			     POLICY_HND *user_pol);
+NTSTATUS cli_lsa_enum_privsaccount(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *pol, uint32 *count, LUID_ATTR **set);
+NTSTATUS cli_lsa_lookupprivvalue(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, char *name, LUID *luid);
+NTSTATUS cli_lsa_query_secobj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, uint32 sec_info, 
+			      SEC_DESC_BUF **psdb);
 BOOL fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid);
 
 /* The following definitions come from libsmb/climessage.c  */
@@ -358,14 +368,15 @@ struct cli_state *cli_netlogon_initialise(struct cli_state *cli,
 					  struct ntuser_creds *creds);
 NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, 
                               DOM_CHAL *srv_chal);
-NTSTATUS new_cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+NTSTATUS new_cli_net_auth2(struct cli_state *cli, 
+			   uint16 sec_chan, 
                            uint32 neg_flags, DOM_CHAL *srv_chal);
 NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli, 
 				uint16 sec_chan,
                                 const unsigned char mach_pwd[16]);
 NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                   uint32 query_level);
-NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_CRED *ret_creds,
                                uint32 database_id, uint32 *num_deltas,
                                SAM_DELTA_HDR **hdr_deltas, 
                                SAM_DELTA_CTR **deltas);
@@ -481,10 +492,17 @@ NTSTATUS cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                    POLICY_HND *user_pol, uint32 *num_groups, 
                                    DOM_GID **gid);
+NTSTATUS cli_samr_query_useraliases(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                   POLICY_HND *user_pol, uint32 num_sids, DOM_SID2 *sid,
+				   uint32 *num_aliases, uint32 **als_rids);
 NTSTATUS cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                  POLICY_HND *group_pol, uint32 *num_mem, 
                                  uint32 **rid, uint32 **attr);
 NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                  POLICY_HND *pol, uint32 *start_idx, 
+                                  uint32 size, struct acct_info **dom_groups,
+                                  uint32 *num_dom_groups);
+NTSTATUS cli_samr_enum_als_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                   POLICY_HND *pol, uint32 *start_idx, 
                                   uint32 size, struct acct_info **dom_groups,
                                   uint32 *num_dom_groups);
@@ -523,6 +541,9 @@ NTSTATUS cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 uchar sess_key[16], SAM_USERINFO_CTR *ctr);
 NTSTATUS cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                   POLICY_HND *user_pol);
+NTSTATUS cli_samr_query_sec_obj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                 POLICY_HND *user_pol, uint16 switch_value, 
+                                 TALLOC_CTX *ctx, SEC_DESC_BUF **sec_desc_buf);
 
 /* The following definitions come from libsmb/clisecdesc.c  */
 
@@ -2509,8 +2530,6 @@ BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
 /* The following definitions come from rpcclient/cmd_samr.c  */
 
-void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1);
-void display_sam_info_4(SAM_ENTRY4 *e4, SAM_STR4 *s4);
 
 /* The following definitions come from rpcclient/cmd_spoolss.c  */
 
@@ -2797,7 +2816,7 @@ BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int
 BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth);
 BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
                          const char *cli_name, DOM_CRED * cli_creds, 
-                         uint32 database_id);
+                         DOM_CRED *ret_creds, uint32 database_id);
 BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC * q_s, prs_struct *ps,
 		       int depth);
 BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
