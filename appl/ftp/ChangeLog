@@ -1,3 +1,7 @@
+2001-01-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ls.c (lstat_file): handle case where file lives in `/'
+
 2001-01-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpd.c (pasv): close already open passive port
