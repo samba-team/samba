@@ -99,7 +99,7 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
 	  for (i = 0;i < count;i++, p += 26)
 	    {
 	      char *sname = p;
-	      uint32 stype = IVAL(p,18);
+	      uint32 stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 	      int comment_offset = IVAL(p,22) & 0xFFFF;
 	      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
 	      
@@ -157,7 +157,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
   got_pass = True;
   
   DEBUG(0,("sync_browse_lists: Sync browse lists with %s for %s %s\n",
-	    work->work_group, name, inet_ntoa(ip)));
+	    name, work->work_group, inet_ntoa(ip)));
   
   strcpy(workgroup,work->work_group);
   strcpy(desthost,name);

@@ -165,7 +165,7 @@ void do_announce_host(int command,
 	CVAL(p,21) = MAJOR_VERSION; /* major version */
 	CVAL(p,22) = MINOR_VERSION; /* minor version */
 
-	SIVAL(p,23,server_type);
+	SIVAL(p,23,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
 	/* browse version: got from NT/AS 4.00  - Value defined in smb.h (JHT)*/
 	SSVAL(p,27,BROWSER_ELECTION_VERSION);
 	SSVAL(p,29,BROWSER_CONSTANT); /* browse signature */

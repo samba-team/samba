@@ -345,7 +345,8 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
 
       /* update our server status */
       work->ServerType &= ~SV_TYPE_POTENTIAL_BROWSER;
-      add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
+      add_server_entry(d,work,myname,work->ServerType|SV_TYPE_LOCAL_LIST_ONLY,
+				0,lp_serverstring(),True);
 
       /* add special browser name */
       add_my_name_entry(d,MSBROWSE,0x01,nb_type|NB_ACTIVE|NB_GROUP,False);
@@ -360,7 +361,8 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
       work->mst_state = MST_MSB; /* registering MSBROWSE was successful */
 
       /* add server entry on successful registration of MSBROWSE */
-      add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
+      add_server_entry(d,work,work->work_group,domain_type|SV_TYPE_LOCAL_LIST_ONLY,
+				0,myname,True);
 
       /* add master name */
       add_my_name_entry(d,work->work_group,0x1d,nb_type|NB_ACTIVE,False);
@@ -384,7 +386,8 @@ on subnet %s\n", work->work_group, inet_ntoa(d->bcast_ip)));
       DEBUG(3,("become_local_master: updating our server %s to type %x\n", 
                 myname, work->ServerType));
 
-      add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
+      add_server_entry(d,work,myname,work->ServerType|SV_TYPE_LOCAL_LIST_ONLY,
+				0,lp_serverstring(),True);
 
       /* Count the number of servers we have on our list. If it's
          less than 10 (just a heuristic) request the servers
@@ -493,8 +496,8 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
  
       /* update our server status */
       work->ServerType |= SV_TYPE_NT|SV_TYPE_DOMAIN_MASTER;
-      add_server_entry(d,work,myname,work->ServerType,0,
-                        lp_serverstring(),True);
+      add_server_entry(d,work,myname,work->ServerType|SV_TYPE_LOCAL_LIST_ONLY,
+					0, lp_serverstring(),True);
 
       DEBUG(0,("Samba is now a domain master browser for workgroup %s on subnet %s\n", 
                 work->work_group, inet_ntoa(d->bcast_ip)));
@@ -549,8 +552,8 @@ void become_logon_server(struct subnet_record *d, struct work_record *work)
  
       /* update our server status */
       work->ServerType |= SV_TYPE_NT|SV_TYPE_DOMAIN_MEMBER;
-      add_server_entry(d,work,myname,work->ServerType,0,
-                      lp_serverstring(),True);
+      add_server_entry(d,work,myname,work->ServerType|SV_TYPE_LOCAL_LIST_ONLY
+					,0, lp_serverstring(),True);
 
       /* DON'T do anything else after calling add_my_name_entry() */
       break;

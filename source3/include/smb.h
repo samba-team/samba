@@ -912,4 +912,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 /* Default client code page - 850 - Western European */
 #define DEFAULT_CLIENT_CODE_PAGE 850
 
+/* Size of buffer to use when moving files across filesystems. */
+#define COPYBUF_SIZE (8*1024)
+
 /* _SMB_H */

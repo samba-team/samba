@@ -603,6 +603,14 @@ static void disk_norm(int *bsize,int *dfree,int *dsize)
 int disk_free(char *path,int *bsize,int *dfree,int *dsize)
 {
   char *df_command = lp_dfree_command();
+  int dfree_retval;
+#ifdef QUOTAS
+  int dfreeq_retval;
+  int dfreeq = 0;
+  int bsizeq = *bsize;
+  int dsizeq = *dsize;
+#endif
+
 #ifndef NO_STATFS
 #ifdef USE_STATVFS
   struct statvfs fs;
@@ -614,15 +622,6 @@ int disk_free(char *path,int *bsize,int *dfree,int *dsize)
 #endif
 #endif
 #endif
-
-#ifdef QUOTAS
-  if (disk_quotas(path, bsize, dfree, dsize))
-    {
-      disk_norm(bsize,dfree,dsize);
-      return(((*bsize)/1024)*(*dfree));
-    }
-#endif
-
 
   /* possibly use system() to get the result */
   if (df_command && *df_command)
@@ -639,22 +638,42 @@ int disk_free(char *path,int *bsize,int *dfree,int *dsize)
       DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
 	  
       {
-	FILE *f = fopen(outfile,"r");	
-	*dsize = 0;
-	*dfree = 0;
-	*bsize = 1024;
-	if (f)
-	  {
-	    fscanf(f,"%d %d %d",dsize,dfree,bsize);
-	    fclose(f);
-	  }
-	else
-	  DEBUG(0,("Can't open %s\n",outfile));
+        FILE *f = fopen(outfile,"r");	
+        *dsize = 0;
+        *dfree = 0;
+        *bsize = 1024;
+        if (f)
+          {
+            fscanf(f,"%d %d %d",dsize,dfree,bsize);
+            fclose(f);
+          }
+        else
+          DEBUG(0,("Can't open %s\n",outfile));
       }
 	  
       unlink(outfile);
       disk_norm(bsize,dfree,dsize);
-      return(((*bsize)/1024)*(*dfree));
+      dfree_retval = ((*bsize)/1024)*(*dfree);
+#ifdef QUOTAS
+      /* Ensure we return the min value between the users quota and
+         what's free on the disk. Thanks to Albrecht Gebhardt 
+         <albrecht.gebhardt@uni-klu.ac.at> for this fix.
+      */
+      if (disk_quotas(path, &bsizeq, &dfreeq, &dsizeq))
+        {
+          disk_norm(&bsizeq, &dfreeq, &dsizeq);
+          dfreeq_retval = ((bsizeq)/1024)*(dfreeq);
+          dfree_retval =  ( dfree_retval < dfreeq_retval ) ? 
+                           dfree_retval : dfreeq_retval ;
+          /* maybe dfree and dfreeq are calculated using different bsizes 
+             so convert dfree from bsize into bsizeq */
+          *dfree = ((*dfree) * (*bsize)) / (bsizeq);
+          *dfree = ( *dfree < dfreeq ) ? *dfree : dfreeq ; 
+          *bsize = bsizeq;
+          *dsize = dsizeq;
+        }
+#endif
+      return(dfree_retval);
     }
 
 #ifdef NO_STATFS
@@ -724,7 +743,27 @@ if ((*bsize) < 512 || (*bsize)>0xFFFF) *bsize = 1024;
       *dsize = 20*1024*1024/(*bsize);
       *dfree = MAX(1,*dfree);
     }
-  return(((*bsize)/1024)*(*dfree));
+  dfree_retval = ((*bsize)/1024)*(*dfree);
+#ifdef QUOTAS
+  /* Ensure we return the min value between the users quota and
+     what's free on the disk. Thanks to Albrecht Gebhardt 
+     <albrecht.gebhardt@uni-klu.ac.at> for this fix.
+  */
+  if (disk_quotas(path, &bsizeq, &dfreeq, &dsizeq))
+    {
+      disk_norm(&bsizeq, &dfreeq, &dsizeq);
+      dfreeq_retval = ((bsizeq)/1024)*(dfreeq);
+      dfree_retval = ( dfree_retval < dfreeq_retval ) ? 
+                       dfree_retval : dfreeq_retval ;
+      /* maybe dfree and dfreeq are calculated using different bsizes 
+         so convert dfree from bsize into bsizeq */
+      *dfree = ((*dfree) * (*bsize)) / (bsizeq);
+      *dfree = ( *dfree < dfreeq ) ? *dfree : dfreeq ;
+      *bsize = bsizeq;
+      *dsize = dsizeq;
+    }
+#endif
+  return(dfree_retval);
 #endif
 }
 
