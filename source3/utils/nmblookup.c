@@ -179,7 +179,7 @@ int main(int argc,char *argv[])
 	  strcpy(lookup,"\01\02__MSBROWSE__\02");
 	  lookup_type = 1;
 	} else {
-	  lookup_type = 0x1b;
+	  lookup_type = 0x1d;
 	}
       }
 
