@@ -455,8 +455,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"distinguishedName", NULL};
 	const char *attrs2[] = {"tokenGroups", "primaryGroupID", NULL};
+	const char *group_attrs[] = {"objectSid", "cn", NULL};
 	ADS_STATUS rc;
 	int count;
+	void *res = NULL;
 	void *msg = NULL;
 	char *exp;
 	char *user_dn;
@@ -467,22 +469,30 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	char *sidstr;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
-	*num_groups = 0;
-
 	DEBUG(3,("ads: lookup_usergroups\n"));
-
-	(*num_groups) = 0;
+	*num_groups = 0;
 
 	sid_from_rid(domain, user_rid, &sid);
 
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	sidstr = sid_binstring(&sid);
-	asprintf(&exp, "(objectSid=%s)", sidstr);
+	if (!(sidstr = sid_binstring(&sid))) {
+		DEBUG(1,("lookup_usergroups(rid=%d) sid_binstring returned NULL\n", user_rid));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	if (asprintf(&exp, "(objectSid=%s)", sidstr) == -1) {
+		free(sidstr);
+		DEBUG(1,("lookup_usergroups(rid=%d) asprintf failed!\n", user_rid));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
 	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
 	free(sidstr);
+
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("lookup_usergroups(rid=%d) ads_search: %s\n", user_rid, ads_errstr(rc)));
 		goto done;
@@ -507,20 +517,86 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids) + 1;
-	(*user_gids) = (uint32 *)talloc_zero(mem_ctx, sizeof(uint32) * count);
-	(*user_gids)[(*num_groups)++] = primary_group;
+	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids);
 
-	for (i=1;i<count;i++) {
-		uint32 rid;
-		if (!sid_peek_check_rid(&domain->sid, &sids[i-1], &rid)) continue;
-		(*user_gids)[*num_groups] = rid;
-		(*num_groups)++;
+	if (msg) ads_msgfree(ads, msg);
+
+	/* there must always be at least one group in the token, 
+	   unless we are talking to a buggy Win2k server */
+	if (count == 0) {
+		/* buggy server, no tokenGroups.  Instead lookup what groups this user
+		   is a member of by DN search on member*/
+		if (asprintf(&exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
+			free(sidstr);
+			DEBUG(1,("lookup_usergroups(rid=%d) asprintf failed!\n", user_rid));
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		rc = ads_search_retry(ads, &res, exp, group_attrs);
+		free(exp);
+				
+		if (!ADS_ERR_OK(rc)) {
+			DEBUG(1,("lookup_usergroups(rid=%d) ads_search member=%s: %s\n", user_rid, user_dn, ads_errstr(rc)));
+			goto done;
+		}
+
+		count = ads_count_replies(ads, res);
+		if (count == 0) {
+			DEBUG(5,("lookup_usergroups: No supp groups found\n"));
+			goto done;
+		}
+		
+		(*user_gids) = (uint32 *)talloc_zero(mem_ctx, sizeof(uint32) * (count + 1));
+		(*user_gids)[0] = primary_group;
+		
+		*num_groups = 1;
+
+		for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
+			uint32 rid;
+			DOM_SID group_sid;
+			fstring sid_string;
+			const char *cn;
+			
+			cn = ads_pull_string(ads, mem_ctx, msg, "cn");
+			if (!cn) {
+				cn = "<CN NOT AVAILABLE>";
+			}
+
+			if (!ads_pull_sid(ads, msg, "objectSid", &group_sid)) {
+				DEBUG(1,("No sid for %s !?\n", cn));
+				continue;
+			}
+			
+			if (!sid_peek_check_rid(&domain->sid, &group_sid, &rid)) {
+				DEBUG(5,("sid for %s is out of domain or invalid\n", sid_to_string(sid_string, &sid)));
+				continue;
+			}
+			if (rid == primary_group) continue;
+
+			(*user_gids)[*num_groups] = rid;
+			(*num_groups)++;
+
+		}
+	} else {
+		(*user_gids) = (uint32 *)talloc_zero(mem_ctx, sizeof(uint32) * (count + 1));
+		(*user_gids)[0] = primary_group;
+		
+		*num_groups = 1;
+
+		for (i=0;i<count;i++) {
+			uint32 rid;
+			if (!sid_peek_check_rid(&domain->sid, &sids[i-1], &rid)) continue;
+			if (rid == primary_group) continue;
+			(*user_gids)[*num_groups] = rid;
+			(*num_groups)++;
+		}
 	}
 
 	status = NT_STATUS_OK;
 	DEBUG(3,("ads lookup_usergroups for rid=%d\n", user_rid));
 done:
+	if (res) ads_msgfree(ads, res);
 	if (msg) ads_msgfree(ads, msg);
 
 	return status;
