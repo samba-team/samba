@@ -98,9 +98,6 @@ typedef struct security_ace_info
 
 } SEC_ACE;
 
-
-#define MAX_SEC_ACES 16
-
 #define ACL_REVISION 0x3
 
 /* SEC_ACL */
