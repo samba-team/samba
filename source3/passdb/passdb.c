@@ -27,15 +27,36 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-const char *get_global_sam_name(void) 
+/******************************************************************
+ get the default domain/netbios name to be used when 
+ testing authentication.  For example, if you connect
+ to a Windows member server using a bogus domain name, the
+ Windows box will map the BOGUS\user to DOMAIN\user.  A 
+ standalone box will map to WKS\user.
+******************************************************************/
+
+const char *get_default_sam_name(void)
 {
 	/* standalone servers can only use the local netbios name */
 	if ( lp_server_role() == ROLE_STANDALONE )
 		return global_myname();
 
-	/* Windows domain members default to the DOMAIN 
+	/* Windows domain members default to the DOMAIN
 	   name when not specified */
 	return lp_workgroup();
+}
+
+/******************************************************************
+ get the default domain/netbios name to be used when dealing 
+ with our passdb list of accounts
+******************************************************************/
+
+const char *get_global_sam_name(void) 
+{
+	if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
+		return lp_workgroup();
+	}
+	return global_myname();
 }
 
 /************************************************************
