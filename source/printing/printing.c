@@ -19,9 +19,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
+#include "printing.h"
 
 extern int DEBUGLEVEL;
+
+/* Current printer interface */
+struct printif *current_printif = &generic_printif;
 
 /* 
    the printing backend revolves around a tdb database that stores the
@@ -37,33 +40,9 @@ extern int DEBUGLEVEL;
    jobids are assigned when a job starts spooling. 
 */
 
-#define NEXT_JOBID(j) ((j+1) % PRINT_MAX_JOBID > 0 ? (j+1) % PRINT_MAX_JOBID : 1)
-
-
-struct printjob {
-	pid_t pid; /* which process launched the job */
-	int sysjob; /* the system (lp) job number */
-	int fd; /* file descriptor of open file if open */
-	time_t starttime; /* when the job started spooling */
-	int status; /* the status of this job */
-	size_t size; /* the size of the job so far */
-	BOOL spooled; /* has it been sent to the spooler yet? */
-	BOOL smbjob; /* set if the job is a SMB job */
-	fstring filename; /* the filename used to spool the file */
-	fstring jobname; /* the job name given to us by the client */
-	fstring user; /* the user who started the job */
-	fstring qname; /* name of the print queue the job was sent to */
-};
-
 /* the open printing.tdb database */
 static TDB_CONTEXT *tdb;
 static pid_t local_pid;
-
-#define PRINT_MAX_JOBID 10000
-#define UNIX_JOB_START PRINT_MAX_JOBID
-
-#define PRINT_SPOOL_PREFIX "smbprn."
-#define PRINT_DATABASE_VERSION 2
 
 static int get_queue_status(int, print_status_struct *);
 
@@ -92,6 +71,13 @@ BOOL print_backend_init(void)
 	}
 	tdb_unlock_bystring(tdb, sversion);
 
+	/* select the appropriate printing interface... */
+#ifdef HAVE_LIBCUPS
+	if (strcmp(lp_printcapname(), "cups") == 0)
+		current_printif = &cups_printif;
+#endif /* HAVE_LIBCUPS */
+
+	/* do NT print initialization... */
 	return nt_printing_init();
 }
 
@@ -136,51 +122,6 @@ static BOOL print_job_store(int jobid, struct printjob *pjob)
 
 	return (tdb_store(tdb, print_key(jobid), d, TDB_REPLACE) == 0);
 }
-
-/****************************************************************************
-run a given print command 
-a null terminated list of value/substitute pairs is provided
-for local substitution strings
-****************************************************************************/
-static int print_run_command(int snum,char *command, 
-			     char *outfile,
-			     ...)
-{
-	pstring syscmd;
-	char *p, *arg;
-	int ret;
-	va_list ap;
-
-	if (!command || !*command) return -1;
-
-	if (!VALID_SNUM(snum)) {
-		DEBUG(0,("Invalid snum %d for command %s\n", snum, command));
-		return -1;
-	}
-
-	pstrcpy(syscmd, command);
-
-	va_start(ap, outfile);
-	while ((arg = va_arg(ap, char *))) {
-		char *value = va_arg(ap,char *);
-		pstring_sub(syscmd, arg, value);
-	}
-	va_end(ap);
-  
-	p = PRINTERNAME(snum);
-  
-	pstring_sub(syscmd, "%p", p);
-	standard_sub_snum(snum,syscmd);
-
-	/* Convert script args to unix-codepage */
-	dos_to_unix(syscmd, True);
-	ret = smbrun(syscmd,outfile,False);
-
-	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
-
-	return ret;
-}
-
 
 /****************************************************************************
 parse a file name from the system spooler to generate a jobid
@@ -378,11 +319,7 @@ update the internal database from the system print queue for a queue
 
 static void print_queue_update(int snum)
 {
-	char *path = lp_pathname(snum);
-	char *cmd = lp_lpqcommand(snum);
-	char **qlines;
-	pstring tmp_file;
-	int numlines, i, qcount;
+	int i, qcount;
 	print_queue_struct *queue = NULL;
 	print_status_struct status;
 	print_status_struct old_status;
@@ -446,31 +383,10 @@ static void print_queue_update(int snum)
 	slprintf(cachestr, sizeof(cachestr), "CACHE/%s", printer_name);
 	tdb_store_int(tdb, cachestr, (int)time(NULL));
 
-	slprintf(tmp_file, sizeof(tmp_file), "%s/smblpq.%d", path, local_pid);
-
-	unlink(tmp_file);
-	print_run_command(snum, cmd, tmp_file, NULL);
-
-	numlines = 0;
-	qlines = file_lines_load(tmp_file, &numlines, True);
-	unlink(tmp_file);
-
-	/* turn the lpq output into a series of job structures */
-	qcount = 0;
+        /* get the current queue using the appropriate interface */
 	ZERO_STRUCT(status);
-	if (numlines)
-		queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*(numlines+1));
 
-	if (queue) {
-		for (i=0; i<numlines; i++) {
-			/* parse the line */
-			if (parse_lpq_entry(snum,qlines[i],
-					    &queue[qcount],&status,qcount==0)) {
-				qcount++;
-			}
-		}		
-	}
-	file_lines_free(qlines);
+	qcount = (*(current_printif->queue_get))(snum, &queue, &status);
 
 	DEBUG(3, ("%d job%s in queue for %s\n", qcount, (qcount != 1) ?
 		"s" : "", printer_name));
@@ -658,17 +574,14 @@ static BOOL print_job_delete1(int jobid)
 	pjob->status = LPQ_DELETING;
 	print_job_store(jobid, pjob);
 
-	if (pjob->spooled && pjob->sysjob != -1) {
-		fstring jobstr;
-		
-		/* need to delete the spooled entry */
-		slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
-		result = print_run_command(
-			snum, 
-			lp_lprmcommand(snum), NULL,
-			"%j", jobstr,
-			"%T", http_timestring(pjob->starttime),
-			NULL);
+	if (pjob->spooled && pjob->sysjob != -1)
+		result = (*(current_printif->job_delete))(snum, pjob);
+
+	/* Delete the tdb entry if the delete suceeded or the job hasn't
+	   been spooled. */
+
+	if (result == 0) {
+		tdb_delete(tdb, print_key(jobid));
 	}
 
 	return (result == 0);
@@ -739,17 +652,14 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret = -1;
 	char *printer_name;
-	fstring jobstr;
-	BOOL owner;
 	
 	if (!pjob || !user) return False;
 
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
-	owner = is_owner(user, jobid);
 
-	if (!owner &&
+	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
@@ -757,11 +667,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	}
 
 	/* need to pause the spooled entry */
-	slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
-	ret = print_run_command(snum, 
-				lp_lppausecommand(snum), NULL,
-				"%j", jobstr,
-				NULL);
+	ret = (*(current_printif->job_pause))(snum, pjob);
 
 	if (ret != 0) {
 		*errcode = ERROR_INVALID_PARAMETER;
@@ -790,7 +696,6 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 	struct printjob *pjob = print_job_find(jobid);
 	char *printer_name;
 	int snum, ret;
-	fstring jobstr;
 	
 	if (!pjob || !user) return False;
 
@@ -805,11 +710,7 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 		return False;
 	}
 
-	slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
-	ret = print_run_command(snum, 
-				lp_lpresumecommand(snum), NULL,
-				"%j", jobstr,
-				NULL);
+	ret = (*(current_printif->job_resume))(snum, pjob);
 
 	if (ret != 0) {
 		*errcode = ERROR_INVALID_PARAMETER;
@@ -1056,10 +957,6 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret;
 	SMB_STRUCT_STAT sbuf;
-	pstring current_directory;
-	pstring print_directory;
-	char *wd, *p;
-	pstring jobname;
 
 	if (!pjob)
 		return False;
@@ -1096,30 +993,7 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 		return True;
 	}
 
-	/* we print from the directory path to give the best chance of
-           parsing the lpq output */
-	wd = sys_getwd(current_directory);
-	if (!wd) goto fail;
-
-	pstrcpy(print_directory, pjob->filename);
-	p = strrchr(print_directory,'/');
-	if (!p) goto fail;
-	*p++ = 0;
-
-	if (chdir(print_directory) != 0) goto fail;
-
-	pstrcpy(jobname, pjob->jobname);
-	pstring_sub(jobname, "'", "_");
-
-	/* send it to the system spooler */
-	ret = print_run_command(snum, 
-			  lp_printcommand(snum), NULL,
-			  "%s", p,
-  			  "%J", jobname,
-			  "%f", p,
-			  NULL);
-
-	chdir(wd);
+	ret = (*(current_printif->job_submit))(snum, pjob);
 
 	if (ret) goto fail;
 
@@ -1310,8 +1184,7 @@ BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 		return False;
 	}
 
-	ret = print_run_command(snum, lp_queuepausecommand(snum), NULL, 
-				NULL);
+	ret = (*(current_printif->queue_pause))(snum);
 
 	if (ret != 0) {
 		*errcode = ERROR_INVALID_PARAMETER;
@@ -1343,8 +1216,7 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 		return False;
 	}
 
-	ret = print_run_command(snum, lp_queueresumecommand(snum), NULL, 
-				NULL);
+	ret = (*(current_printif->queue_resume))(snum);
 
 	if (ret != 0) {
 		*errcode = ERROR_INVALID_PARAMETER;

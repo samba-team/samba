@@ -1878,8 +1878,9 @@ void pcap_printer_fn(void (*fn)(char *, char *));
 
 /*The following definitions come from  printing/print_cups.c  */
 
-void cups_printer_fn(void (*fn)(char *, char *));
-int cups_printername_ok(char *name);
+
+/*The following definitions come from  printing/print_generic.c  */
+
 
 /*The following definitions come from  printing/print_svid.c  */
 
