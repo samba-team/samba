@@ -128,6 +128,10 @@
 #define _PATH_VARRUN "/var/run/"
 #endif
 
+#ifndef _PATH_BSHELL
+#define _PATH_BSHELL "/bin/sh"
+#endif
+
 #ifndef MAXPATHLEN
 #define MAXPATHLEN (1024+4)
 #endif
