@@ -51,7 +51,7 @@ static int guid_cmp(TALLOC_CTX *mem_ctx, const struct GUID *guid, const char *uu
 /*
   fill a protocol tower
 */
-static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr, 
+static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr, 
 				struct dcesrv_ep_iface *e)
 {
 	twr->num_floors = 5;
