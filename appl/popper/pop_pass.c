@@ -12,10 +12,6 @@ static char SccsId[] = "@(#)@(#)pop_pass.c	2.3  2.3 4/2/91";
 #include <popper.h>
 RCSID("$Id$");
 
-#ifdef KERBEROS
-extern AUTH_DAT kdata;
-#endif /* KERBEROS */
-
 /* 
  *  pass:   Obtain the user password from a POP client
  */
@@ -26,6 +22,12 @@ pop_pass (POP *p)
     struct passwd  *   pw;
     char lrealm[REALM_SZ];
     int status; 
+    int i;
+
+    /* Make one string of all these parameters */
+    
+    for (i = 1; i < p->parm_count; ++i)
+	p->pop_parm[i][strlen(p->pop_parm[i])] = ' ';
 
     /*  Look for the user in the password file */
     if ((pw = k_getpwnam(p->user)) == NULL)
@@ -33,8 +35,9 @@ pop_pass (POP *p)
             "Password supplied for \"%s\" is incorrect.",p->user));
 
     if ((status = krb_get_lrealm(lrealm,1)) == KFAILURE) {
-        pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, kdata.pname, 
-                kdata.pinst, kdata.prealm, krb_get_err_text(status));
+        pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client,
+		p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
+		krb_get_err_text(status));
         return(pop_msg(p,POP_FAILURE,
             "Kerberos error:  \"%s\".", krb_get_err_text(status)));
     }
@@ -51,6 +54,16 @@ pop_pass (POP *p)
 
 	 sprintf (tkt, TKT_ROOT "_popper.%d", (int)getpid());
 	 krb_set_tkt_string (tkt);
+#ifdef SKEY
+	 if (skeyverify (&p->sk, p->pop_parm[1]) == 0)
+	     ;
+	 else if(!p->permit_passwd)
+	     return pop_msg(p, POP_FAILURE,
+			    "Password supplied for \"%s\" is incorrect.",
+			    p->user);
+	 else
+#endif
+
 	 if (krb_verify_user(p->user, "", lrealm, p->pop_parm[1], 1, "pop") &&
 	     unix_verify_user(p->user, p->pop_parm[1])) {
 	      dest_tkt ();
@@ -60,11 +73,11 @@ pop_pass (POP *p)
 	 }
 	 dest_tkt ();
     } else {
-	 if (kuserok (&kdata, p->user)) {
+	 if (kuserok (&p->kdata, p->user)) {
 	      pop_log(p, POP_FAILURE,
 		      "%s: (%s.%s@%s) tried to retrieve mail for %s.",
-		      p->client, kdata.pname, kdata.pinst, kdata.prealm,
-		      p->user);
+		      p->client, p->kdata.pname, p->kdata.pinst,
+		      p->kdata.prealm, p->user);
 	      return(pop_msg(p,POP_FAILURE,
 			     "Popping not authorized"));
 	 }
