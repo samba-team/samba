@@ -595,7 +595,7 @@ of the WINS server.
 </para>
 
 <para>For information about setting up Samba as a WINS server, read 
-<link linkend="NetworkBrowsing"/>.</para>
+	<link linkend="NetworkBrowsing">the chapter on network browsing</link>.</para>
 
 </sect2>
 </sect1>

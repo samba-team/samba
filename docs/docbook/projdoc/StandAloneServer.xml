@@ -141,7 +141,7 @@ on your system.
 
 	<listitem><para>
 	The print spooling and processing system on our print server will be CUPS.
-	(Please refer to <link linkend="CUPS-printing"></link> for more information).
+	(Please refer to <link linkend="CUPS-printing">the chapter about CUPS</link> for more information).
 	</para></listitem>
 
 	<listitem><para>

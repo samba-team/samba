@@ -474,7 +474,7 @@ that will be ignored, and a default value used instead.]
 <title>Extended Sample Configuration to Print</title>
 
 <para>
-	In <link linkend="extbsdpr"/> we show a more verbose example configuration for print related
+	In <link linkend="extbsdpr">the extended BSD configuration example</link> we show a more verbose example configuration for print related
 	settings in BSD-printing style environment . Below is a discussion
 and explanation of the various parameters. We chose to use BSD-style
 printing here, because we guess it is still the most commonly used

@@ -39,23 +39,22 @@ application knowledge that is most to be desired by many Samba users and adminis
 </para>
 
 </abstract>
-<legalnotice>
+</bookinfo>
+
+<preface>
+	<title>Legal Notice</title>
 <para>
 This documentation is distributed under the GNU General Public License (GPL) 
 version 2.  A copy of the license is included with the Samba source
 distribution.  A copy can be found on-line at <ulink 
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
+</preface>
 
-<formalpara>
+<preface>
 	<title>Attributions</title>
-	<para>
 		&attributions;
-	</para>
-</formalpara>
-
-</legalnotice>
-</bookinfo>
+</preface>
 
 <!-- Contents -->
 <toc/>
@@ -131,15 +130,16 @@ Samba has several features that you might want or might not want to use. The cha
 
 <part id="troubleshooting">
 <title>Troubleshooting</title>
+
 &Diagnosis;
 &problems;
 &BUGS;
 </part>
 
 <part id="Appendixes">
-<title>Appendixes</title>
+	<title>Appendixes</title>
 &Compiling;
-&Portability;
+	&Portability;
 &Other-Clients;
 &SPEED;
 &DNS-DHCP-Configuration;

@@ -431,7 +431,7 @@ with the version of Windows:
 	<title>Samba</title>
 
 	<para>Joining a Samba client to a domain is documented in 
-	<link linkend="domain-member-server"></link>.
+		<link linkend="domain-member-server">the domain member chapter</link>.
 	</para>
 </sect3>
 
@@ -460,7 +460,7 @@ Server, etc.
 </para>
 
 <para>
-Please refer to <link linkend="samba-pdc"></link>
+Please refer to <link linkend="samba-pdc">the chapter on setting up a PDC</link>
 for more information regarding how to create a domain
 machine account for a domain member server as well as for information
 regarding how to enable the Samba domain member machine to join the domain and
@@ -644,7 +644,7 @@ NT server in the same way as a Windows 95 or Windows 98 server would.
 </para>
 
 <para>
-Please refer to <link linkend="winbind"></link> for information on a system
+	Please refer to <link linkend="winbind">the chapter on winbind</link> for information on a system
 to automatically assign UNIX uids and gids to Windows NT Domain users and groups.
 </para>
 

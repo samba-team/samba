@@ -9,7 +9,7 @@
 
 <para>
 Before you continue reading in this section, please make sure that you are comfortable
-with configuring a Samba Domain Controller as described in <link linkend="samba-pdc"></link>.
+with configuring a Samba Domain Controller as described in <link linkend="samba-pdc">chapter on setting up Samba as a PDC</link>.
 </para>
 
 <sect1>
@@ -239,7 +239,7 @@ parameters in the <smbconfsection>[global]</smbconfsection>-section of the &smb.
 Several other things like a <smbconfsection>[homes]</smbconfsection> and a
 <smbconfsection>[netlogon]</smbconfsection> share also need to be set along with
 settings for the profile path, the users home drive, etc.. This will not be covered in this
-chapter, for more information please refer to <link linkend="samba-pdc"></link>.
+chapter, for more information please refer to <link linkend="samba-pdc">the chapter about samba as a PDC</link>.
 </para>
 
 </sect3>

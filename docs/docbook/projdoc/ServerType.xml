@@ -321,11 +321,11 @@ MS Windows through means such as setting an invalid shell in the
 
 <para>
 An alternative to assigning UIDs to Windows users on a Samba member server is
-presented in <link linkend="winbind"></link>.
+presented in <link linkend="winbind">the chapter about winbind</link>.
 </para>
 
 <para>
-For more information of being a domain member, see <link linkend="domain-member"></link>.
+	For more information of being a domain member, see <link linkend="domain-member">the chapter about domain membership</link>.
 </para>
 
 </sect3>
@@ -369,7 +369,7 @@ The following parameter may be required:
 </smbconfblock></para>
 
 <para>
-Please refer to <link linkend="domain-member"></link> and <link linkend="ads-member"></link>
+Please refer to <link linkend="domain-member">the chapter on domain membership</link>
 for more information regarding this configuration option.
 </para>
 
@@ -606,7 +606,7 @@ as a Domain Controller! This setting means we want Samba to be a domain member!
 <para>
 Guess! So many others do. But whatever you do, do NOT think that <smbconfoption><name>security</name><value>user</value></smbconfoption>
 makes Samba act as a domain member. Read the manufacturers manual before the warranty expires! See 
-<link linkend="domain-member"></link> for more information.
+<link linkend="domain-member">the chapter about domain membership</link> for more information.
 </para>
 
 </sect2>

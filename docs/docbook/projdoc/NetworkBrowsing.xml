@@ -1289,7 +1289,7 @@ Samba is capable of cross subnet browsing when configured correctly.
 </para>
 
 <para>
-	Consider a network set up as <link linkend="browsing1"/>.
+	Consider a network set up as <link linkend="browsing1">in the diagram below</link>.
 </para>
 
 <image><imagedescription>Cross subnet browsing example</imagedescription><imagefile>browsing1</imagefile></image>

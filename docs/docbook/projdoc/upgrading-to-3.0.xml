@@ -408,7 +408,7 @@ complete descriptions of new or modified parameters.
 	storage backends 
 	(<smbconfoption><name>passdb backend</name></smbconfoption>). 
 	Please refer to the &smb.conf;
-	man page and <link linkend="passdb"/> for details.  While both parameters assume sane default
+	man page and <link linkend="passdb">the chapter about account information databases</link> for details.  While both parameters assume sane default
 	values, it is likely that you will need to understand what the
 	values actually mean in order to ensure Samba operates correctly.
 	</para>
