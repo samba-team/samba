@@ -1,3 +1,7 @@
+Thu Apr  1 21:11:36 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.in: fix for writeauth.o
+
 Fri Mar 19 15:12:31 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* kx.c: add gcc-braces
