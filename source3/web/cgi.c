@@ -306,7 +306,7 @@ static BOOL cgi_handle_authorization(char *line)
 	}
 	line += 6;
 	while (line[0] == ' ') line++;
-	base64_decode(line);
+	base64_decode_inplace(line);
 	if (!(p=strchr_m(line,':'))) {
 		/*
 		 * Always give the same error so a cracker
