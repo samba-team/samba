@@ -403,6 +403,7 @@ NTSTATUS dcerpc_pipe_open_unix_stream(struct dcerpc_pipe **p,
 	strncpy(sa.sun_path, path, sizeof(sa.sun_path));
 
 	if (connect(fd, &sa, sizeof(sa)) < 0) {
+		DEBUG(0, ("Unable to connect to unix socket %s: %s\n", path, strerror(errno)));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
@@ -487,6 +488,7 @@ NTSTATUS dcerpc_pipe_open_pipe(struct dcerpc_pipe **p,
 	strncpy(sa.sun_path, full_path, sizeof(sa.sun_path));
 
 	if (connect(fd, &sa, sizeof(sa)) < 0) {
+		DEBUG(0, ("Unable to connect to unix socket %s (%s): %s\n", full_path, identifier, strerror(errno)));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
