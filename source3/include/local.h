@@ -1,3 +1,6 @@
+/* Copyright (C) 1995-1998 Samba-Team */
+/* Copyright (C) 1998 John H Terpstra <jht@aquasoft.com.au> */
+
 /* local definitions for file server */
 #ifndef _LOCAL_H
 #define _LOCAL_H
@@ -16,6 +19,11 @@
 /* This defines the section name in the configuration file that will
    refer to the special "printers" service */
 #define PRINTERS_NAME "printers"
+
+/* Yves Gaige <yvesg@hptnodur.grenoble.hp.com> requested this set this 	     */
+/* to a maximum of 8 if old smb clients break because of long printer names. */
+#define MAXPRINTERLEN 15
+
 
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
