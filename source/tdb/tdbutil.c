@@ -92,3 +92,151 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
 
     return tdb_fetch(tdb, key);
 }
+
+
+/* useful pair of routines for packing/unpacking data consisting of
+   integers and strings */
+size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
+{
+	uint16 w;
+	uint32 d;
+	int i;
+	void *p;
+	int len;
+	char *s;
+	char *buf0 = buf;
+	va_list ap;
+	char c;
+
+	va_start(ap, fmt);
+	
+	while (*fmt) {
+		switch ((c = *fmt++)) {
+		case 'w':
+			len = 2;
+			w = va_arg(ap, uint16);
+			if (bufsize >= len) {
+				SSVAL(buf, 0, w);
+			}
+			break;
+		case 'd':
+			len = 4;
+			d = va_arg(ap, uint32);
+			if (bufsize >= len) {
+				SIVAL(buf, 0, d);
+			}
+			break;
+		case 'p':
+			len = 4;
+			p = va_arg(ap, void *);
+			d = p?1:0;
+			if (bufsize >= len) {
+				SIVAL(buf, 0, d);
+			}
+			break;
+		case 'f':
+			s = va_arg(ap,char *);
+			w = strlen(s);
+			len = w + 1;
+			if (bufsize >= len) {
+				memcpy(buf, s, len);
+			}
+			break;
+		case 'B':
+			i = va_arg(ap, int);
+			s = va_arg(ap, char *);
+			len = 4+i;
+			if (bufsize >= len) {
+				SIVAL(buf, 0, i);
+				memcpy(buf+4, s, i);
+			}
+			break;
+		default:
+			DEBUG(0,("Unknown tdb_pack format %c in %s\n", 
+				 c, fmt));
+			break;
+		}
+
+		buf += len;
+		bufsize -= len;
+	}
+
+	va_end(ap);
+	return PTR_DIFF(buf, buf0);
+}
+
+
+
+/* useful pair of routines for packing/unpacking data consisting of
+   integers and strings */
+int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
+{
+	uint16 *w;
+	uint32 *d;
+	int len;
+	int *i;
+	void **p;
+	char *s, **b;
+	char *buf0 = buf;
+	va_list ap;
+	char c;
+
+	va_start(ap, fmt);
+	
+	while (*fmt) {
+		switch ((c=*fmt++)) {
+		case 'w':
+			len = 2;
+			w = va_arg(ap, uint16 *);
+			if (bufsize < len) goto no_space;
+			*w = SVAL(buf, 0);
+			break;
+		case 'd':
+			len = 4;
+			d = va_arg(ap, uint32 *);
+			if (bufsize >= len) goto no_space;
+			*d = IVAL(buf, 0);
+			break;
+		case 'p':
+			len = 4;
+			p = va_arg(ap, void **);
+			if (bufsize >= len) goto no_space;
+			*p = (void *)IVAL(buf, 0);
+			break;
+		case 'f':
+			s = va_arg(ap,char *);
+			len = strlen(buf) + 1;
+			if (bufsize < len || len > sizeof(fstring)) goto no_space;
+			memcpy(s, buf, len);
+			break;
+		case 'B':
+			i = va_arg(ap, int *);
+			b = va_arg(ap, char **);
+			len = 4;
+			if (bufsize >= len) {
+				*i = IVAL(buf, 0);
+				len += *i;
+				if (bufsize >= len) {
+					*b = (char *)malloc(*i);
+					memcpy(*b, buf+4, *i);
+				}
+			}
+			break;
+		default:
+			DEBUG(0,("Unknown tdb_unpack format %c in %s\n", 
+				 c, fmt));
+			break;
+		}
+
+		buf += len;
+		bufsize -= len;
+	}
+
+	va_end(ap);
+	return PTR_DIFF(buf, buf0);
+
+ no_space:
+	return -1;
+}
+
+
