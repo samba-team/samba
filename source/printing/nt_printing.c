@@ -467,6 +467,8 @@ int get_ntforms(nt_forms_struct **list)
 			continue;
 
 		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX));
+		unix_to_dos(form.name);
+
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddd",
 				 &i, &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
