@@ -53,8 +53,6 @@
 
 extern int DEBUGLEVEL;
 
-extern fstring global_myworkgroup;
-
 /**************************************************************************
  Groupname map functionality. The code loads a groupname map file and
  (currently) loads it into a linked list. This is slow and memory

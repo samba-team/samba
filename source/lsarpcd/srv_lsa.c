@@ -30,7 +30,6 @@
 #include "sids.h"
 
 extern int DEBUGLEVEL;
-extern fstring global_myworkgroup;
 
 /***************************************************************************
 make_reply_lookup_names
