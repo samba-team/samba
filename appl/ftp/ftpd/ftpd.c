@@ -819,12 +819,12 @@ retrieve(char *cmd, char *name)
 			char *ext;
 			char *cmd;
 		    } cmds[] = {
-			/* XXX -- fix below if %s is not last element */
-			".tar", "/bin/gtar cPf - %s",
-			".tar.gz", "/bin/gtar zcPf - %s",
-			".tar.Z", "/bin/gtar ZcPf - %s",
-			".gz", "/bin/gzip -c %s",
-			".Z", "/bin/compress -c %s",
+		        /* XXX  - make this more general */
+			".tar", "/bin/gtar cPf - ",
+			".tar.gz", "/bin/gtar zcPf - ",
+			".tar.Z", "/bin/gtar ZcPf - ",
+			".gz", "/bin/gzip -c ",
+			".Z", "/bin/compress -c ",
 			NULL, NULL
 		    };
 		    struct cmds *p;
@@ -832,9 +832,15 @@ retrieve(char *cmd, char *name)
 			char *tail = name + strlen(name) - strlen(p->ext);
 			
 			if(strcmp(tail, p->ext) == 0){
+			    strncpy(line, p->cmd, sizeof(line));
+			    line[sizeof(line) - 1] = '\0';
+			    strncat(line, name, sizeof(line)-strlen(line));
+			    line[sizeof(line) - 1] = '\0';
+			    line[strlen(line) - strlen(p->ext)] = 0; 
+#if 0
 			    sprintf(line, p->cmd, name);
 			    /* XXX */
-			    line[strlen(name) - strlen(p->ext)] = 0; 
+#endif
 			    break;
 			}
 		    }
