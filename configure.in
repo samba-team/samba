@@ -78,13 +78,13 @@ fi
 
 AC_ROKEN(10,[/usr/heimdal /usr/athena],[lib/roken],[$(top_builddir)/lib/roken/libroken.la],[-I$(top_builddir)/lib/roken -I$(top_srcdir)/lib/roken])
 
-AC_TEST_PACKAGE_NEW(openldap,[#include <ldap.h>],[-lldap -llber])
+AC_TEST_PACKAGE_NEW(openldap,[#include <ldap.h>],[-lldap -llber],,,OPENLDAP)
 
 if test "$openldap_libdir"; then
 	LIB_openldap="-rpath $openldap_libdir $LIB_openldap"
 fi
 
-AC_TEST_PACKAGE_NEW(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena)
+AC_TEST_PACKAGE_NEW(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena, KRB4)
 
 LIB_kdb=
 if test "$with_krb4" != "no"; then
@@ -105,6 +105,12 @@ if test "$with_krb4" != "no"; then
 		AC_DEFINE(HAVE_FOUR_VALUED_KRB_PUT_INT, 1,
 			[define if krb_put_int takes four arguments.])
 	fi
+	AH_BOTTOM([#if defined(HAVE_FOUR_VALUED_KRB_PUT_INT) || !defined(KRB4)
+#define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (L), (S))
+#else
+#define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (S))
+#endif
+])
 	AC_CACHE_CHECK(for KRB_VERIFY_SECURE, ac_cv_func_krb_verify_secure,
 		[AC_TRY_COMPILE([#include <krb.h>],[
 		int x = KRB_VERIFY_SECURE],
@@ -197,9 +203,7 @@ fi
 if test "$otp" = "yes"; then
 	AC_DEFINE(OTP, 1, [Define if you want OTP support in applications.])
 	LIB_otp='$(top_builddir)/lib/otp/libotp.la'
-	DIR_otp=otp
 fi
-AC_SUBST(DIR_otp)
 AC_SUBST(LIB_otp)
 AM_CONDITIONAL(OTP, test "$otp" = yes)dnl
 
@@ -209,9 +213,9 @@ AC_CHECK_MAN
 
 AC_TEST_PACKAGE_NEW(readline,
 [#include <stdio.h>
- #include <readline.h>],-lreadline)
+ #include <readline.h>],-lreadline,,, READLINE)
 
-AC_TEST_PACKAGE_NEW(hesiod,[#include <hesiod.h>],-lhesiod)
+AC_TEST_PACKAGE_NEW(hesiod,[#include <hesiod.h>],-lhesiod,,, HESIOD)
 
 KRB_C_BIGENDIAN
 AC_C_INLINE
@@ -524,11 +528,7 @@ AC_FIND_FUNC_NO_LIBS(setsockopt,,
 dnl Cray stuff
 AC_CHECK_FUNCS(getudbnam setlim)
 
-AC_TYPE_SIGNAL
-if test "$ac_cv_type_signal" = "void" ; then
-	AC_DEFINE(VOID_RETSIGTYPE, 1, [Define if signal handlers return void.])
-fi
-AC_SUBST(VOID_RETSIGTYPE)
+rk_RETSIGTYPE
 
 AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
 [#ifdef HAVE_NETDB_H
@@ -682,21 +682,7 @@ dnl
 LIB_roken="\$(top_builddir)/lib/vers/libvers.la ${LIB_roken}"
 AC_SUBST(LIB_roken)dnl
 
-AC_CACHE_CHECK(if realloc if broken, ac_cv_func_realloc_broken, [
-ac_cv_func_realloc_broken=no
-AC_TRY_RUN([
-#include <stddef.h>
-#include <stdlib.h>
-
-int main()
-{
-	return realloc(NULL, 17) == NULL;
-}
-],:, ac_cv_func_realloc_broken=yes, :)
-])
-if test "$ac_cv_func_realloc_broken" = yes ; then
-	AC_DEFINE(BROKEN_REALLOC, 1, [Define if realloc(NULL) doesn't work.])
-fi
+rk_BROKEN_REALLOC
 
 dnl AC_KRB_FUNC_GETCWD_BROKEN
 
@@ -964,20 +950,21 @@ fi
 #
 # And also something wierd has happend with dec-osf1, fallback to bsd-ptys
 
+if test "$ac_cv_func_getmsg" = yes; then
 AC_MSG_CHECKING(for streamspty)
 case "$host" in
 *-*-aix3*|*-*-sunos4*|*-*-osf*|*-*-hpux1[[01]]*)
 	krb_cv_sys_streamspty=no
 	;;
 *)
-	krb_cv_sys_streamspty="$ac_cv_func_getmsg"
+	krb_cv_sys_streamspty=yes
 	;;
 esac
+AC_MSG_RESULT($krb_cv_sys_streamspty)
+fi
 if test "$krb_cv_sys_streamspty" = yes; then
 	AC_DEFINE(STREAMSPTY, 1, [Define if you have streams ptys.])
 fi
-dnl AC_SUBST(STREAMSPTY)
-AC_MSG_RESULT($krb_cv_sys_streamspty)
 
 AC_AUTH_MODULES
 
@@ -997,6 +984,10 @@ for i in bin lib libexec sbin; do
 	done
 	AC_DEFINE_UNQUOTED($foo,"$x")
 done
+AH_BOTTOM([#undef BINDIR 
+#undef LIBDIR
+#undef LIBEXECDIR
+#undef SBINDIR])
 
 if false; then
 	# hack to shut up automake
