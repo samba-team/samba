@@ -609,14 +609,17 @@ parse_pobox (char *a0, char **host, char **user)
     int po = 0;
 
     if (a0 == NULL) {
-	struct passwd *pwd;
 
-	pwd = getpwuid (getuid ());
-	if (pwd == NULL)
-	    errx (1, "Who are you?");
-	*user = strdup (pwd->pw_name);
-	if (*user == NULL)
-	    errx (1, "strdup: out of memory");
+	*user = getenv ("USERNAME");
+	if (*user == NULL) {
+	    struct passwd *pwd = getpwuid (getuid ());
+
+	    if (pwd == NULL)
+		errx (1, "Who are you?");
+	    *user = strdup (pwd->pw_name);
+	    if (*user == NULL)
+		errx (1, "strdup: out of memory");
+	}
 	*host = get_pobox (user);
 	return;
     }
