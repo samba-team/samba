@@ -58,7 +58,6 @@ SMB_SUBSYSTEM(TORTURE_NBENCH,[],
 
 SMB_BINARY(smbtorture, [ALL], [BIN],
 		[torture/torture.o
-		torture/torture_util.o
-		libcli/raw/clirewrite.o],
+		torture/torture_util.o],
 		[],
 		[TORTURE_BASIC TORTURE_RAW TORTURE_RPC TORTURE_NBENCH CONFIG LIBCMDLINE LIBBASIC])
