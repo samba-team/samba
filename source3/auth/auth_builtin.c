@@ -85,3 +85,36 @@ BOOL auth_init_local(auth_methods **auth_method)
 	return True;
 }
 
+/****************************************************************************
+ Return an error based on username
+****************************************************************************/
+
+static NTSTATUS check_name_to_ntstatus_security(void *my_private_data,
+						const auth_usersupplied_info *user_info, 
+						const auth_authsupplied_info *auth_info,
+						auth_serversupplied_info **server_info)
+{
+	NTSTATUS nt_status;
+	fstring user;
+	long error_num;
+	fstrcpy(user, user_info->smb_name.str);
+	strlower(user);
+	error_num = strtoul(user, NULL, 16);
+	
+	DEBUG(5,("Error for user %s was %lx\n", user, error_num));
+
+	nt_status = NT_STATUS(error_num);
+	
+	return nt_status;
+}
+
+BOOL auth_init_name_to_ntstatus(auth_methods **auth_method) 
+{
+	if (!make_auth_methods(auth_method)) {
+		return False;
+	}
+
+	(*auth_method)->auth = check_name_to_ntstatus_security;
+	return True;
+}
+
