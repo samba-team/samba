@@ -247,7 +247,7 @@ krb5_start_session (struct passwd *pwd)
 	free (realm);
 	ret = krb5_cc_retrieve_cred(context, id2, 0, &mcred, &cred);
 	if(ret == 0) {
-	    ret = krb524_convert_creds_kdc(context, &cred, &c);
+	    ret = krb524_convert_creds_kdc(context, id2, &cred, &c);
 	    if(ret == 0) {
 		snprintf(krb4tkfile,sizeof(krb4tkfile),"%s%d",TKT_ROOT,
 			 getuid());
