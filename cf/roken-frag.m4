@@ -256,6 +256,7 @@ AC_BROKEN([					\
 	geteuid					\
 	getgid					\
 	gethostname				\
+	getifaddrs				\
 	getipnodebyaddr				\
 	getipnodebyname				\
 	getnameinfo				\
