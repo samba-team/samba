@@ -51,11 +51,13 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 	BOOL ret;
 	int hwm;
 
-	if (!id) return NT_STATUS_INVALID_PARAMETER;
+	if (!id)
+		return NT_STATUS_INVALID_PARAMETER;
 
 	/* Get current high water mark */
 	switch (id_type & ID_TYPEMASK) {
 		case ID_USERID:
+
 			if ((hwm = tdb_fetch_int32(idmap_tdb, HWM_USER)) == -1) {
 				return NT_STATUS_INTERNAL_DB_ERROR;
 			}
@@ -80,6 +82,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 			
 			(*id).uid = hwm;
+			DEBUG(10,("db_allocate_id: ID_USERID (*id).uid = %d\n", (unsigned int)hwm));
 
 			break;
 		case ID_GROUPID:
@@ -108,6 +111,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 			
 			(*id).gid = hwm;
+			DEBUG(10,("db_allocate_id: ID_GROUPID (*id).uid = %d\n", (unsigned int)hwm));
 			
 			break;
 		default:
@@ -140,10 +144,13 @@ static NTSTATUS internal_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	key.dptr = keystr;
 	key.dsize = strlen(keystr) + 1;
 
+	DEBUG(10,("internal_get_sid_from_id: fetching record %s\n", keystr ));
+
 	data = tdb_fetch(idmap_tdb, key);
 
 	if (data.dptr) {
 		if (string_to_sid(sid, data.dptr)) {
+			DEBUG(10,("internal_get_sid_from_id: fetching record %s -> %s\n", keystr, data.dptr ));
 			ret = NT_STATUS_OK;
 		}
 		SAFE_FREE(data.dptr);
@@ -166,6 +173,8 @@ static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID
 	key.dptr = keystr;
 	key.dsize = strlen(keystr) + 1;
 
+	DEBUG(10,("internal_get_id_from_sid: fetching record %s\n", keystr ));
+
 	data = tdb_fetch(idmap_tdb, key);
 	if (!data.dptr)
 		return ret;
@@ -180,6 +189,9 @@ static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID
 			if (type == ID_EMPTY) {
 				*id_type = ID_USERID;
 			}
+			DEBUG(10,("internal_get_id_from_sid: %s fetching record %s -> %s \n",
+						(type == ID_EMPTY) ? "ID_EMPTY" : "ID_USERID",
+						keystr, data.dptr ));
 			ret = NT_STATUS_OK;
 		}
 	}
@@ -195,6 +207,9 @@ static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID
 			if (type == ID_EMPTY) {
 				*id_type = ID_GROUPID;
 			}
+			DEBUG(10,("internal_get_id_from_sid: %s fetching record %s -> %s \n",
+						(type == ID_EMPTY) ? "ID_EMPTY" : "ID_GROUPID",
+						keystr, data.dptr ));
 			ret = NT_STATUS_OK;
 		}
 	}
@@ -241,7 +256,10 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
-	if (!sid || !id || !id_type) return NT_STATUS_INVALID_PARAMETER;
+	DEBUG(10,("db_get_id_from_sid\n"));
+
+	if (!sid || !id || !id_type)
+		return NT_STATUS_INVALID_PARAMETER;
 
 	ret = internal_get_id_from_sid(id, id_type, sid);
 	if (NT_STATUS_IS_OK(ret)) {
@@ -283,6 +301,9 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 			ugid_data.dptr = ugid_str;
 			ugid_data.dsize = strlen(ugid_str) + 1;
 
+			DEBUG(10,("db_get_id_from_sid: storing %s -> %s\n",
+					ugid_data.dptr, sid_data.dptr ));
+
 			/* Store the UID side */
 			if (tdb_store(idmap_tdb, ugid_data, sid_data, TDB_INSERT) != -1) {
 				ret = NT_STATUS_OK;
@@ -308,7 +329,10 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	fstring ksidstr;
 	fstring kidstr;
 
-	if (!sid) return NT_STATUS_INVALID_PARAMETER;
+	DEBUG(10,("db_set_mapping\n"));
+
+	if (!sid)
+		return NT_STATUS_INVALID_PARAMETER;
 
 	sid_to_string(ksidstr, sid);
 
@@ -331,12 +355,14 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	
 	data = tdb_fetch(idmap_tdb, ksid);
 	if (data.dptr) {
+		DEBUG(10,("db_set_mapping: deleting %s and %s\n", data.dptr, ksid.dptr ));
 		tdb_delete(idmap_tdb, data);
 		tdb_delete(idmap_tdb, ksid);
 		SAFE_FREE(data.dptr);
 	}
 	data = tdb_fetch(idmap_tdb, kid);
 	if (data.dptr) {
+		DEBUG(10,("db_set_mapping: deleting %s and %s\n", data.dptr, kid.dptr ));
 		tdb_delete(idmap_tdb, data);
 		tdb_delete(idmap_tdb, kid);
 		SAFE_FREE(data.dptr);
@@ -350,12 +376,15 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 		DEBUG(0, ("idb_set_mapping: tdb_store 2 error: %s\n", tdb_errorstr(idmap_tdb)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	DEBUG(10,("db_set_mapping: stored %s -> %s and %s -> %s\n", ksid.dptr, kid.dptr, kid.dptr, ksid.dptr ));
 	return NT_STATUS_OK;
 }
 
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
+
 static NTSTATUS db_idmap_init( char *params )
 {
 	SMB_STRUCT_STAT stbuf;
@@ -383,6 +412,8 @@ static NTSTATUS db_idmap_init( char *params )
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+
+	 DEBUG(10,("db_idmap_init: Opening tdbfile\n", tdbfile ));
 
 	/* Open tdb cache */
 	if (!(idmap_tdb = tdb_open_log(tdbfile, 0,
