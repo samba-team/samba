@@ -119,9 +119,9 @@ void smbw_init(void)
 /***************************************************** 
 determine if a file descriptor is a smb one
 *******************************************************/
-BOOL smbw_fd(int fd)
+int smbw_fd(int fd)
 {
-	if (smbw_busy) return False;
+	if (smbw_busy) return 0;
 	return (fd >= SMBW_FD_OFFSET);
 }
 
@@ -307,7 +307,7 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 determine if a path name (possibly relative) is in the 
 smb name space
 *******************************************************/
-BOOL smbw_path(const char *path)
+int smbw_path(const char *path)
 {
 	fstring server, share;
 	pstring s;
@@ -315,10 +315,10 @@ BOOL smbw_path(const char *path)
 	int l=strlen(SMBW_PREFIX)-1;
 
 	if (path[0] == '/' && strncmp(path,SMBW_PREFIX,l)) {
-		return False;
+		return 0;
 	}
 
-	if (smbw_busy) return False;
+	if (smbw_busy) return 0;
 
 	smbw_init();
 
@@ -328,10 +328,10 @@ BOOL smbw_path(const char *path)
 
 	if (strncmp(cwd,SMBW_PREFIX,l) == 0 &&
 	    (cwd[l] == '/' || cwd[l] == 0)) {
-		return True;
+		return 1;
 	}
 
-	return False;
+	return 0;
 }
 
 /***************************************************** 
@@ -501,14 +501,15 @@ struct smbw_dir *smbw_dir(int fd)
 /***************************************************** 
 check if a DIR* is one of ours
 *******************************************************/
-BOOL smbw_dirp(struct smbw_dir *d)
+int smbw_dirp(DIR *dirp)
 {
+	struct smbw_dir *d = (struct smbw_dir *)dirp;
 	struct smbw_dir *dir;
 
 	for (dir=smbw_dirs;dir;dir=dir->next) {
-		if (dir == d) return True;
+		if (dir == d) return 1;
 	}
-	return False;
+	return 0;
 }
 
 /***************************************************** 

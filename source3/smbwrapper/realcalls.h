@@ -1,8 +1,26 @@
-#ifdef aix
+/* 
+   Unix SMB/Netbios implementation.
+   Version 2.0
+   defintions of syscall entries
+   Copyright (C) Andrew Tridgell 1998
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
 
-#include "aix-syscall.h"
 
-#else
+/* this file is partly derived from zlibc by Alain Knaff */
 
 #define real_access(fn, mode)		(syscall(SYS_access, (fn), (mode)))
 #define real_chdir(fn)		        (syscall(SYS_chdir, (fn)))
@@ -48,5 +66,4 @@
 #define real_utime(fn, buf)		(syscall(SYS_utime, (fn), (buf)))
 #define real_utimes(fn, buf)		(syscall(SYS_utimes, (fn), (buf)))
 
-#endif
 
