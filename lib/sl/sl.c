@@ -157,7 +157,7 @@ sl_loop (SL_cmd *cmds, char *prompt)
 	    add_history(buf);
 	count = 0;
 	{
-	    char *foo;
+	    char *foo = NULL;
 	    char *p;
 
 	    for(p = strtok_r (buf, " \t", &foo);
