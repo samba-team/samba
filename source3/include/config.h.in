@@ -999,3 +999,6 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
+
+/* Define if you have the <nss_common.h> header file.  */
+#undef HAVE_NSS_COMMON_H
