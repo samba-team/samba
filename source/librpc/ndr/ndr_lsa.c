@@ -107,7 +107,7 @@ buffers:
 		NDR_CHECK(ndr_push_security_descriptor(ndr, r->sec_desc));
 	}
 	if (r->sec_qos) {
-		NDR_CHECK(ndr_push_lsa_QosInfo(ndr, ndr_flags, r->sec_qos));
+		NDR_CHECK(ndr_push_lsa_QosInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->sec_qos));
 	}
 	ndr_push_save(ndr, &_save3);
 	ndr_push_restore(ndr, &_save2);
@@ -263,7 +263,7 @@ static NTSTATUS ndr_push_lsa_TranslatedName(struct ndr_push *ndr, int ndr_flags,
 	NDR_CHECK(ndr_push_uint32(ndr, r->sid_index));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_push_lsa_Name(ndr, ndr_flags, &r->name));
+		NDR_CHECK(ndr_push_lsa_Name(ndr, NDR_BUFFERS, &r->name));
 done:
 	return NT_STATUS_OK;
 }
@@ -553,7 +553,7 @@ static NTSTATUS ndr_pull_lsa_PrivEntry(struct ndr_pull *ndr, int ndr_flags, stru
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->luid_high));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->name));
 done:
 	return NT_STATUS_OK;
 }
@@ -695,7 +695,7 @@ static NTSTATUS ndr_pull_lsa_DomainInfo(struct ndr_pull *ndr, int ndr_flags, str
 	}
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->name));
 	if (r->sid) {
 		NDR_CHECK(ndr_pull_dom_sid2(ndr, r->sid));
 	}
@@ -710,7 +710,7 @@ static NTSTATUS ndr_pull_lsa_PDAccountInfo(struct ndr_pull *ndr, int ndr_flags, 
 	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->name));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->name));
 done:
 	return NT_STATUS_OK;
 }
@@ -734,8 +734,8 @@ static NTSTATUS ndr_pull_lsa_ReplicaSourceInfo(struct ndr_pull *ndr, int ndr_fla
 	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->account));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->source));
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->account));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->source));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->account));
 done:
 	return NT_STATUS_OK;
 }
@@ -808,10 +808,10 @@ static NTSTATUS ndr_pull_lsa_DnsDomainInfo(struct ndr_pull *ndr, int ndr_flags, 
 	}
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->dns_domain));
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->dns_forest));
-		NDR_CHECK(ndr_pull_GUID(ndr, ndr_flags, &r->domain_guid));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->name));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->dns_domain));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->dns_forest));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->domain_guid));
 	if (r->sid) {
 		NDR_CHECK(ndr_pull_dom_sid2(ndr, r->sid));
 	}
@@ -945,7 +945,7 @@ NTSTATUS ndr_pull_lsa_QueryInfoPolicy(struct ndr_pull *ndr, struct lsa_QueryInfo
 	if (r->out.info) {
 	{ uint16 _level;
 	NDR_CHECK(ndr_pull_lsa_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
-	if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
@@ -1053,7 +1053,7 @@ static NTSTATUS ndr_pull_lsa_DomainInformation(struct ndr_pull *ndr, int ndr_fla
 	}
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->name));
 	if (r->sid) {
 		NDR_CHECK(ndr_pull_dom_sid2(ndr, r->sid));
 	}
@@ -1155,7 +1155,7 @@ static NTSTATUS ndr_pull_lsa_TrustInformation(struct ndr_pull *ndr, int ndr_flag
 	}
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->name));
 	if (r->sid) {
 		NDR_CHECK(ndr_pull_dom_sid2(ndr, r->sid));
 	}
@@ -1221,7 +1221,7 @@ static NTSTATUS ndr_pull_lsa_TranslatedName(struct ndr_pull *ndr, int ndr_flags,
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->sid_index));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_BUFFERS, &r->name));
 done:
 	return NT_STATUS_OK;
 }
@@ -1309,7 +1309,7 @@ static NTSTATUS ndr_pull_lsa_LUIDAttribute(struct ndr_pull *ndr, int ndr_flags, 
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->attribute));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_lsa_LUID(ndr, ndr_flags, &r->luid));
+		NDR_CHECK(ndr_pull_lsa_LUID(ndr, NDR_BUFFERS, &r->luid));
 done:
 	return NT_STATUS_OK;
 }

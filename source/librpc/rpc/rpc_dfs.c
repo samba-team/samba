@@ -53,12 +53,12 @@ NTSTATUS dcerpc_dfs_UNKNOWN3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct 
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_dfs_Info(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct dfs_Info *r)
+NTSTATUS dcerpc_dfs_GetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct dfs_GetInfo *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_DFS_INFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_dfs_Info,
-				    (ndr_pull_fn_t) ndr_pull_dfs_Info,
+	status = dcerpc_ndr_request(p, DCERPC_DFS_GETINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_dfs_GetInfo,
+				    (ndr_pull_fn_t) ndr_pull_dfs_GetInfo,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

@@ -171,13 +171,13 @@ static NTSTATUS ndr_pull_Struct1(struct ndr_pull *ndr, int ndr_flags, struct Str
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
 	{ uint16 _level;
 	NDR_CHECK(ndr_pull_echo_EnumInfo(ndr, NDR_SCALARS, &_level, &r->e));
-	if (_level != r->level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
+	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
 	}
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	{ uint16 _level;
 	NDR_CHECK(ndr_pull_echo_EnumInfo(ndr, NDR_BUFFERS, &_level, &r->e));
-	if (_level != r->level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
+	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
 	}
 done:
 	return NT_STATUS_OK;

@@ -17,11 +17,11 @@
 	/******************/
 	/* Function: 0x01 */
 	NTSTATUS dfs_Add (
-		[in]     unistr *path,
-		[in]     unistr *server,
-		[in]     unistr *share,
-		[in]     unistr *comment,
-		[in]     uint32  flags
+		[in,ref]     unistr *path,
+		[in,ref]     unistr *server,
+		[in]         unistr *share,
+		[in]         unistr *comment,
+		[in]         uint32  flags
 		);
 
 	/******************/
@@ -38,24 +38,10 @@
 
 	/******************/
 	/* Function: 0x04 */
-	NTSTATUS dfs_Info (
-		[in,ref] unistr_noterm *path,
-		[in]     unistr *server,
-		[in]     unistr *share,
-		[in]     uint16 level
-		);
-
-	/******************/
-	/* Function: 0x05 */
 
 	typedef struct {
 		unistr *path;
 	} dfs_Info1;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] dfs_Info1 *s;
-	} dfs_EnumArray1;
 
 	typedef struct {
 		unistr *path;
@@ -63,11 +49,6 @@
 		uint32 state;
 		uint32 num_stores;
 	} dfs_Info2;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] dfs_Info2 *s;
-	} dfs_EnumArray2;
 
 	typedef struct {
 		uint32 state;
@@ -84,11 +65,6 @@
 	} dfs_Info3;
 
 	typedef struct {
-		uint32 count;
-		[size_is(count)] dfs_Info3 *s;
-	} dfs_EnumArray3;
-
-	typedef struct {
 		unistr *path;
 		unistr *comment;
 		uint32 state;
@@ -99,23 +75,73 @@
 	} dfs_Info4;
 
 	typedef struct {
-		uint32 count;
-		[size_is(count)] dfs_Info4 *s;
-	} dfs_EnumArray4;
+		unistr *comment;
+	} dfs_Info100;
+
+	typedef struct {
+		uint32 state;
+	} dfs_Info101;
+
+	typedef struct {
+		uint32 timeout;
+	} dfs_Info102;
 
 	typedef struct {
 		unistr *dom_root;
 	} dfs_Info200;
 
 	typedef struct {
-		uint32 count;
-		[size_is(count)] dfs_Info200 *s;
-	} dfs_EnumArray200;
-
-	typedef struct {
 		uint32 flags;
 		unistr *dom_root;
 	} dfs_Info300;
+
+	typedef union {
+		case(1)   dfs_Info1 *info1;
+		case(2)   dfs_Info2 *info2;
+		case(3)   dfs_Info3 *info3;
+		case(4)   dfs_Info4 *info4;
+		case(100) dfs_Info100 *info100;
+		case(101) dfs_Info101 *info101;
+		case(102) dfs_Info102 *info102;
+		case(200) dfs_Info200 *info200;
+		case(300) dfs_Info300 *info300;
+	} dfs_Info;
+
+	NTSTATUS dfs_GetInfo (
+		[in,ref] unistr *path,
+		[in]     unistr *server,
+		[in]     unistr *share,
+		[in]     uint32 level,
+		[out,switch_is(level)] dfs_Info info
+		);
+
+	/******************/
+	/* Function: 0x05 */
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info1 *s;
+	} dfs_EnumArray1;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info2 *s;
+	} dfs_EnumArray2;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info3 *s;
+	} dfs_EnumArray3;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info4 *s;
+	} dfs_EnumArray4;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info200 *s;
+	} dfs_EnumArray200;
 
 	typedef struct {
 		uint32 count;
