@@ -118,7 +118,7 @@ BOOL idmap_init(void)
 		/* get any mode parameters passed in */
 		
 		if ( (pparams = strchr( remote_backend, ':' )) != NULL ) {
-			pparams = '\0';
+			*pparams = '\0';
 			pparams++;
 			fstrcpy( params, pparams );
 		}
