@@ -11,8 +11,7 @@ $doc{-valid} = "FOUND";
 $topdir = (shift @ARGV) or $topdir = ".";
 
 ##################################################
-
-print "Reading links from manpage\n";
+# Reading links from manpage
 
 open(IN,$topdir.$doc_file);
 
@@ -26,8 +25,7 @@ while(<IN>) {
 close(IN);
 
 ##################################################
-
-print "Reading documentation from manpage\n";
+# Reading documentation from manpage
 
 open(IN,$topdir.$doc_file) || die("Can't open $topdir$doc_file");
 
@@ -54,8 +52,7 @@ while(<IN>) {
 close(IN);
 
 #################################################
-
-print "Reading entries from source code\n";
+# Reading entries from source code
 
 open(SOURCE,$topdir.$source_file) || die("Can't open $topdir$source_file");
 
@@ -78,8 +75,7 @@ while ($ln = <SOURCE>) {
 close SOURCE;
 
 ##################################################
-
-print "Trying to find missing references\n";
+# Trying to find missing references
 
 foreach (keys %ref) {
 	if($ref{$_} cmp "FOUND") {
