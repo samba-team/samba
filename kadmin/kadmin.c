@@ -147,6 +147,14 @@ static SL_cmd commands[] = {
     },
     { "privs" },
     { 
+	"password-quality",
+	password_quality, 
+	"password-quality principal password",
+	"Try run the password quality function locally "
+	"(not doing RPC out to server)."
+    },
+    { "pwq" },
+    { 
 	"list",		list_princs,	"list expression...", 
 	"Lists principals in a terse format. The same as `get -t'." 
     },
