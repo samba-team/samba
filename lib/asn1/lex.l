@@ -86,13 +86,13 @@ ENUMERATED		{ return ENUMERATED; }
 EXTERNAL		{ return EXTERNAL; }
 OBJECT			{ return OBJECT; }
 IDENTIFIER		{ return IDENTIFIER; }
-[,;{}()|\"]		{ return *yytext; }
+[-,;{}()|\"]		{ return *yytext; }
 "["			{ return *yytext; }
 "]"			{ return *yytext; }
 ::=			{ return EEQUAL; }
 --			{ handle_comment(0); }
 \/\*			{ handle_comment(1); }
--?(0x)?[0-9]+		{ char *e, *y = yytext;
+0x[0-9A-Fa-f]+|[0-9]+	{ char *e, *y = yytext;
 			  yylval.constant = strtol((const char *)yytext,
 						   &e, 0);
 			  if(e == y) 
