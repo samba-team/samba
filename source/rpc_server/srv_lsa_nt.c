@@ -705,7 +705,6 @@ uint32 _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_
 {
 	struct lsa_info *info=NULL;
 	GROUP_MAP map;
-	int num_entries=0;
 	uint32 count=0;
 	int i=0;
 
