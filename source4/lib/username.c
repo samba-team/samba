@@ -185,10 +185,10 @@ struct passwd *Get_Pwnam(const char *user)
 static BOOL user_in_netgroup_list(const char *user, const char *ngname)
 {
 #ifdef HAVE_NETGROUP
-	//static char *mydomain = NULL;
+	/*	static char *mydomain = NULL; */
 	/* REWRITE: make thread safe if caching */
 	char *mydomain = NULL;
-	//if (mydomain == NULL)
+	/*if (mydomain == NULL) */
 		yp_get_default_domain(&mydomain);
 
 	if(mydomain == NULL) {
