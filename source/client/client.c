@@ -156,7 +156,6 @@ static int readfile(char *b, int size, int n, FILE *f)
       
 		if (c == '\n') { /* change all LFs to CR/LF */
 			b[i++] = '\r';
-			n++;
 		}
       
 		if(i < n)
