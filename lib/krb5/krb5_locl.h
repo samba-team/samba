@@ -52,6 +52,8 @@
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
+#include <roken.h>
+
 #include <des.h>
 #include <md4.h>
 #include <md5.h>
@@ -60,6 +62,7 @@
 #include <krb5.h>
 #include <krb5_err.h>
 #include <asn1_err.h>
+#include <hdb_err.h>
 
 void		krb5_data_zero(krb5_data *);
 void 		krb5_data_free(krb5_data *);
