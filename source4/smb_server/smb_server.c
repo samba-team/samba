@@ -44,7 +44,8 @@ BOOL req_send_oplock_break(struct tcon_context *conn, uint16 fnum, uint8 level)
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
 	SSVAL(req->out.vwv, VWV(2), fnum);
-	SSVAL(req->out.vwv, VWV(3), level);
+	SCVAL(req->out.vwv, VWV(3), LOCKING_ANDX_OPLOCK_RELEASE);
+	SCVAL(req->out.vwv, VWV(3)+1, level);
 	SIVAL(req->out.vwv, VWV(4), 0);
 	SSVAL(req->out.vwv, VWV(6), 0);
 	SSVAL(req->out.vwv, VWV(7), 0);

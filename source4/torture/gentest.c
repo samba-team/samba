@@ -736,7 +736,7 @@ static BOOL oplock_handler(struct cli_transport *transport, uint16 tid, uint16 f
 
 	if (!do_close) {
 		printf("oplock ack fnum=%d\n", fnum);
-		return cli_oplock_ack(tree, fnum, level == 1? 0x102 : 2);
+		return cli_oplock_ack(tree, fnum, level);
 	}
 
 	printf("oplock close fnum=%d\n", fnum);
