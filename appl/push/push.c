@@ -761,14 +761,15 @@ main(int argc, char **argv)
 	    port = htons(port);
 	}
     }
-    if (port == 0)
+    if (port == 0) {
 #ifdef KRB5
 	port = krb5_getportbyname (context, "kpop", "tcp", 1109);
 #elif defined(KRB4)
-    port = k_getportbyname ("kpop", "tcp", 1109);
+	port = k_getportbyname ("kpop", "tcp", htons(1109));
 #else
 #error must define KRB4 or KRB5
 #endif
+    }
 
     parse_pobox (pobox, &host, &user);
 
