@@ -949,13 +949,15 @@ telnet(f, p)
 	if (my_state_is_wont(TELOPT_ECHO))
 		send_will(TELOPT_ECHO, 1);
 
+#ifdef TIOCPKT
 #ifdef	STREAMSPTY
 	if (!really_stream)
 #endif
 		/*
 		 * Turn on packet mode
 		 */
-		(void) ioctl(p, TIOCPKT, (char *)&on);
+		ioctl(p, TIOCPKT, (char *)&on);
+#endif
 
 #if	defined(LINEMODE) && defined(KLUDGELINEMODE)
 	/*
