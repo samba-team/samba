@@ -882,16 +882,16 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 			continue;
 		}
 
-		while (!(p1 = strchr(hexchars, toupper(strhex[i]))))
+		if (!(p1 = strchr(hexchars, toupper(strhex[i]))))
 		{
-			continue;
+			break;
 		}
 
 		i++; /* next hex digit */
 
-		while (!(p2 = strchr(hexchars, toupper(strhex[i]))))
+		if (!(p2 = strchr(hexchars, toupper(strhex[i]))))
 		{
-			continue;
+			break;
 		}
 
 		/* get the two nybbles */
