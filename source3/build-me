@@ -1,0 +1,36 @@
+#!/bin/sh
+
+umask 022
+
+## Build options
+CONFIGUREOPT="--enable-debug --enable-developer --with-pam --with-libsmbclient=no --with-static-modules"
+export CONFIGUREOPT
+
+./autogen.sh
+
+case "$1" in 
+	dmalloc)
+		env CFLAGS="-Wall" ./configure \
+			--enable-dmalloc \
+			$CONFIGUREOPT
+		;;
+	insure)
+		env CFLAGS="-g" CC="insure" ./configure \
+			$CONFIGUREOPT
+		;;
+	ccache)
+		env CFLAGS="-Wall" CC="ccache gcc" ./configure \
+			$CONFIGUREOPT
+		;;
+	*)
+		env CFLAGS="-Wall" ./configure \
+			$CONFIGUREOPT
+		;;
+esac
+
+## disable optimization
+sed 's/-O //g' Makefile | sed 's/-O2 //g' > Makefile.new; /bin/mv -f Makefile.new Makefile
+
+## build
+make proto
+make all modules
