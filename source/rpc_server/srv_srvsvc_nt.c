@@ -638,11 +638,13 @@ static void init_srv_sess_0_info(SESS_INFO_0 *se0, SESS_INFO_0_STR *str0, char *
 
 static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *stot)
 {
+	struct sessionid *session_list;
 	uint32 num_entries = 0;
-	(*stot) = 1;
+	(*stot) = list_sessions(&session_list);
 
 	if (ss0 == NULL) {
 		(*snum) = 0;
+		SAFE_FREE(session_list);
 		return;
 	}
 
@@ -651,7 +653,7 @@ static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 	if (snum) {
 		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++) {
 			init_srv_sess_0_info(&ss0->info_0[num_entries],
-								 &ss0->info_0_str[num_entries], "MACHINE");
+								 &ss0->info_0_str[num_entries], session_list[(*snum)].remote_machine);
 
 			/* move on to creating next session */
 			/* move on to creating next sess */
@@ -671,6 +673,7 @@ static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 		ss0->ptr_sess_info = 0;
 		ss0->num_entries_read2 = 0;
 	}
+	SAFE_FREE(session_list);
 }
 
 /*******************************************************************
@@ -693,11 +696,13 @@ static void init_srv_sess_1_info(SESS_INFO_1 *se1, SESS_INFO_1_STR *str1,
 
 static void init_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *stot)
 {
+	struct sessionid *session_list;
 	uint32 num_entries = 0;
-	(*stot) = 1;
+	(*stot) = list_sessions(&session_list);
 
 	if (ss1 == NULL) {
 		(*snum) = 0;
+		SAFE_FREE(session_list);
 		return;
 	}
 
@@ -706,8 +711,10 @@ static void init_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 	if (snum) {
 		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++) {
 			init_srv_sess_1_info(&ss1->info_1[num_entries],
-								 &ss1->info_1_str[num_entries],
-			                     "MACHINE", "dummy_user", 1, 10, 5, 0);
+					     &ss1->info_1_str[num_entries],
+					    session_list[*snum].remote_machine,
+					     session_list[*snum].username,
+			                     1, 10, 5, 0);
 
 			/* move on to creating next session */
 			/* move on to creating next sess */
