@@ -5,8 +5,8 @@
    
    Copyright (C) 2004 Tim Potter <tpot@samba.org>
 
-     ** NOTE! The following LGPL license applies to the tdb
-     ** library. This does NOT imply that all of Samba is released
+     ** NOTE! The following LGPL license applies to the swig
+     ** definitions. This does NOT imply that all of Samba is released
      ** under the LGPL
    
    This library is free software; you can redistribute it and/or
