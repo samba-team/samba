@@ -47,8 +47,10 @@ krb5_eai_to_heim_errno(int eai_errno, int system_error)
     switch(eai_errno) {
     case EAI_NOERROR:
 	return 0;
+#ifdef EAI_ADDRFAMILY
     case EAI_ADDRFAMILY:
 	return HEIM_EAI_ADDRFAMILY;
+#endif
     case EAI_AGAIN:
 	return HEIM_EAI_AGAIN;
     case EAI_BADFLAGS:
@@ -59,8 +61,10 @@ krb5_eai_to_heim_errno(int eai_errno, int system_error)
 	return HEIM_EAI_FAMILY;
     case EAI_MEMORY:
 	return HEIM_EAI_MEMORY;
+#if defined(EAI_NODATA) && EAI_NODATA != EAI_NONAME
     case EAI_NODATA:
 	return HEIM_EAI_NODATA;
+#endif
     case EAI_NONAME:
 	return HEIM_EAI_NONAME;
     case EAI_SERVICE:
