@@ -307,6 +307,12 @@ create_reply_ticket (struct rx_header *hdr,
     krb5_storage_to_data (sp, &enc_data);
     krb5_storage_free (sp);
 
+    if (enc_data.length > max_seq_len) {
+	krb5_data_free (&enc_data);
+	make_error_reply (hdr, KAANSWERTOOLONG, reply);
+	return 0;
+    }
+
     /* encrypt it */
     des_set_key (key, schedule);
     des_pcbc_encrypt ((des_cblock *)enc_data.data,
@@ -631,7 +637,22 @@ do_getticket (struct rx_header *hdr,
 		       &paddress, session, &life, &time_sec,
 		       sname, sinstance, 
 		       &key, schedule);
-	/* XXX - check all the fields */
+
+	if (strcmp (sname, "krbtgt") != 0
+	    || strcmp (sinstance, v4_realm) != 0) {
+	    kdc_log(0, "no TGT: %s.%s for %s.%s@%s",
+		    sname, sinstance,
+		    pname, pinst, prealm);
+	    make_error_reply (hdr, KABADTICKET, reply);
+	    goto out;
+	}
+
+	if (kdc_time > krb_life_to_time(time_sec, life)) {
+	    kdc_log(0, "TGT expired: %s.%s@%s",
+		    pname, pinst, prealm);
+	    make_error_reply (hdr, KABADTICKET, reply);
+	    goto out;
+	}
     }
 
     /* decrypt the times */
