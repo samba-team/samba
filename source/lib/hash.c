@@ -28,7 +28,7 @@
 #include "includes.h"
 
 static BOOL enlarge_hash_table(hash_table *table);
-static int primes[] = 
+static unsigned primes[] = 
         {17, 37, 67, 131, 257, 521, 1031, 2053, 4099, 8209, 16411};
 
 /****************************************************************************
@@ -47,9 +47,9 @@ static int primes[] =
  ****************************************************************************
  */
 
-BOOL hash_table_init(hash_table *table, int num_buckets, compare_function compare_func)
+BOOL hash_table_init(hash_table *table, unsigned num_buckets, compare_function compare_func)
 {
-	int 	i;
+	unsigned 	i;
 	ubi_dlList 	*bucket;
 
 	table->num_elements = 0;
@@ -118,7 +118,7 @@ static hash_element *hash_chain_find(hash_table *table, ubi_dlList *hash_chain, 
 {
 	hash_element *hash_elem;
 	ubi_dlNodePtr lru_item;
-	int	i = 0;
+	unsigned int	i = 0;
 
 	for (hash_elem = (hash_element *)(ubi_dlFirst(hash_chain)); i < hash_chain->count; 
 		i++, hash_elem = (hash_element *)(ubi_dlNext(hash_elem))) {
@@ -299,7 +299,7 @@ static BOOL enlarge_hash_table(hash_table *table)
 
 void hash_clear(hash_table *table)
 {
-	int i;
+	unsigned int i;
 	ubi_dlList	*bucket = table->buckets;
 	hash_element    *hash_elem;
 	for (i = 0; i < table->size; bucket++, i++) {

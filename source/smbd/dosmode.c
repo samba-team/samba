@@ -181,7 +181,7 @@ uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
 /*******************************************************************
 chmod a file - but preserve some bits
 ********************************************************************/
-int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *st)
+int file_chmod(connection_struct *conn,char *fname, uint32 dosmode,SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st1;
 	int mask=0;
