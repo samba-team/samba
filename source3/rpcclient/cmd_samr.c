@@ -119,6 +119,22 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Unknown 6:\t0x%x\n", info2->unknown_6);
 }
 
+void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
+{
+	fstring tmp;
+
+	printf("RID: 0x%x ", e1->rid_user);
+	
+	unistr2_to_ascii(tmp, &s1->uni_acct_name, sizeof(tmp)-1);
+	printf("Account: %s\t", tmp);
+
+	unistr2_to_ascii(tmp, &s1->uni_full_name, sizeof(tmp)-1);
+	printf("Name: %s\t", tmp);
+
+	unistr2_to_ascii(tmp, &s1->uni_acct_desc, sizeof(tmp)-1);
+	printf("Desc: %s\n", tmp);
+}
+
 /**********************************************************************
  * Query user information 
  */
@@ -700,8 +716,10 @@ static uint32 cmd_samr_query_dispinfo(struct cli_state *cli, int argc,
 	BOOL got_connect_pol = False, got_domain_pol = False;
 	TALLOC_CTX *mem_ctx;
 	fstring server;
-	uint32 start_idx, size, num_dom_groups, i;
-	struct acct_info *dom_groups;
+	uint32 start_idx, max_entries, num_entries, i;
+	uint16 info_level = 1;
+	SAM_DISPINFO_CTR ctr;
+	SAM_DISPINFO_1 info1;
 
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
@@ -730,8 +748,8 @@ static uint32 cmd_samr_query_dispinfo(struct cli_state *cli, int argc,
 
 	if ((result = cli_samr_connect(cli, mem_ctx, server, 
 				       MAXIMUM_ALLOWED_ACCESS, 
-				       &connect_pol)) !=
-	    NT_STATUS_NOPROBLEMO) {
+				       &connect_pol)) 
+	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
 
@@ -740,7 +758,7 @@ static uint32 cmd_samr_query_dispinfo(struct cli_state *cli, int argc,
 	/* Get domain policy handle */
 
 	if ((result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-					   MAXIMUM_ALLOWED_ACCESS,
+					   MAXIMUM_ALLOWED_ACCESS, 
 					   &domain_sid, &domain_pol))
 	     != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -751,15 +769,21 @@ static uint32 cmd_samr_query_dispinfo(struct cli_state *cli, int argc,
 	/* Query display info */
 
 	start_idx = 0;
-	size = 0xffff;
+	max_entries = 250;
 
-	result = cli_samr_enum_dom_groups(cli, mem_ctx, &domain_pol,
-					  &start_idx, size,
-					  &dom_groups, &num_dom_groups);
+	ZERO_STRUCT(ctr);
+	ZERO_STRUCT(info1);
 
-	for (i = 0; i < num_dom_groups; i++)
-		printf("group:[%s] rid:[0x%x]\n", dom_groups[i].acct_name,
-		       dom_groups[i].rid);
+	ctr.sam.info1 = &info1;
+
+	result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
+					 &start_idx, info_level,
+					 &num_entries, max_entries, &ctr);
+
+	for (i = 0; i < num_entries; i++) {
+		display_sam_info_1(&ctr.sam.info1->sam[i],
+				   &ctr.sam.info1->str[i]);
+	}
 
  done:
 	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
