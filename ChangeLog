@@ -1,3 +1,9 @@
+2005-02-08  Love  <lha@stacken.kth.se>
+
+	* lib/krb5/keytab.c (krb5_kt_get_entry): tell what enctype the
+	caller requested to provide the user with a glue what the caller
+	was asking for.
+
 2005-02-05  Luke Howard  <lukeh@padl.com>
 
 	* lib/krb5/kcm.c: add _krb5_kcm_is_running, _krb5_kcm_noop
@@ -7,6 +13,31 @@
 
 	* kcm/config.c: allow KCM system ccache to be configured from
 	  krb5.conf, in the system_ccache stanza of [kcm]
+
+2005-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/protocol.c: use -1 as the invalid pid number
+
+	* kcm/connect.c: support SCM_CREDS (for NetBSD)
+
+	* kcm/Makefile.am: LDADD += LIB_pidfile
+	
+	* kcm/connect.c: make it possible to build on systems without
+	SO_PEERCRED (still doesn't work)
+
+	* kcm/config.c: cast argument to isdigit to unsigned char
+	
+	* lib/krb5/krb5.conf.5: document large_msg_size
+
+	* lib/krb5/context.c (init_context_from_config_file): init
+	large_msg_size to 6000
+
+	* lib/krb5/krb5.h (krb5_context_data): add large_msg_size,
+	threshold where we start to use transport protocols without tiny
+	max data transport sizes.
+
+	* lib/krb5/kcm.h: drop prototypes, they all live in krb5-private.h
+	by now
 
 2005-02-02  Luke Howard  <lukeh@padl.com>
 
