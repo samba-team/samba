@@ -40,7 +40,6 @@
 RCSID("$Id$");
 
 int forwardable;
-int preauth = 1;
 int renewable;
 int version_flag = 0;
 int help_flag = 0;
@@ -49,8 +48,6 @@ char *lifetime = NULL;
 struct getargs args[] = {
     { "forwardable",		'f', arg_flag, &forwardable, 
       "get forwardable tickets", NULL },
-    { "preauthentication",	'p', arg_negative_flag, &preauth, 
-      "disable preauthentication", NULL },
     { "renewable",		'r', arg_flag, &renewable, 
       "get renewable tickets", NULL },
     { "lifetime",		'l', arg_string, &lifetime,
@@ -78,7 +75,6 @@ main (int argc, char **argv)
     krb5_ccache  ccache;
     krb5_principal principal;
     krb5_creds cred;
-    krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
     int optind = 0;
     krb5_get_init_creds_opt opt;
 
@@ -102,10 +98,7 @@ main (int argc, char **argv)
 	krb5_get_init_creds_opt_set_forwardable (&opt, forwardable);
     if (renewable)
 	krb5_get_init_creds_opt_set_renew_life (&opt, 1 << 30);
-    if (preauth)
-	krb5_get_init_creds_opt_set_preauth_list (&opt,
-						  pre_auth_types,
-						  1);
+
     if (lifetime) {
 	int tmp = parse_time (lifetime, NULL);
 	if (tmp < 0)

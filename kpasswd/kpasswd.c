@@ -39,13 +39,10 @@
 #include "kpasswd_locl.h"
 RCSID("$Id$");
 
-static int preauth = 1;
 static int version_flag;
 static int help_flag;
 
 static struct getargs args[] = {
-    { "preauthentication",	'p', arg_negative_flag, &preauth, 
-      "disable preauthentication", NULL },
     { "version", 		0,   arg_flag, &version_flag, 
       "print version", NULL },
     { "help",			0,   arg_flag, &help_flag, 
@@ -67,7 +64,6 @@ main (int argc, char **argv)
     krb5_error_code ret;
     krb5_context context;
     krb5_principal principal;
-    krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
     int optind = 0;
     krb5_get_init_creds_opt opt;
     krb5_creds cred;
@@ -90,11 +86,6 @@ main (int argc, char **argv)
 
     krb5_get_init_creds_opt_init (&opt);
     
-    if (preauth)
-	krb5_get_init_creds_opt_set_preauth_list (&opt,
-						  pre_auth_types,
-						  1);
-
     krb5_get_init_creds_opt_set_tkt_life (&opt, 300);
 
     argc -= optind;
