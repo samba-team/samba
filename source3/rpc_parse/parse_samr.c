@@ -1614,6 +1614,7 @@ void samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO *r_u, prs_struct
 		}
 	}
 
+	prs_align(ps);
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
