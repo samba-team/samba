@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -108,4 +108,12 @@ krb5_get_init_creds_opt_set_salt(krb5_get_init_creds_opt *opt,
 {
     opt->flags |= KRB5_GET_INIT_CREDS_OPT_SALT;
     opt->salt = salt;
+}
+
+void
+krb5_get_init_creds_opt_set_anonymous(krb5_get_init_creds_opt *opt,
+				      int anonymous)
+{
+    opt->flags |= KRB5_GET_INIT_CREDS_OPT_ANONYMOUS;
+    opt->anonymous = anonymous;
 }
