@@ -478,19 +478,19 @@ char *timestring(void )
 #ifdef NO_STRFTIME
   fstrcpy(TimeBuf, asctime(tm));
 #elif defined(CLIX) || defined(CONVEX)
-  strftime(TimeBuf,100,"%m/%d/%Y %I:%M:%S %p",tm);
+  strftime(TimeBuf,100,"%Y/%m/%d %I:%M:%S %p",tm);
 #elif defined(AMPM)
-  strftime(TimeBuf,100,"%m/%d/%Y %r",tm);
+  strftime(TimeBuf,100,"%Y/%m/%d %r",tm);
 #elif defined(TZ_TIME)
   {
     int zone = TimeDiff(t);
     int absZoneMinutes = (zone<0 ? -zone : zone) / 60;
-    size_t len = strftime(TimeBuf,sizeof(TimeBuf)-6,"%m/%d/%Y %T",tm);
+    size_t len = strftime(TimeBuf,sizeof(TimeBuf)-6,"%Y/%m/%d %T",tm);
     sprintf(TimeBuf+len," %c%02d%02d",
 	    zone<0?'+':'-',absZoneMinutes/60,absZoneMinutes%60);
   }
 #else
-  strftime(TimeBuf,100,"%m/%d/%Y %T",tm);
+  strftime(TimeBuf,100,"%Y/%m/%d %T",tm);
 #endif
   return(TimeBuf);
 }

@@ -407,7 +407,8 @@ static struct enum_list enum_security[] = {{SEC_SHARE, "SHARE"},  {SEC_USER, "US
 static struct enum_list enum_printing[] = {{PRINT_SYSV, "sysv"}, {PRINT_AIX, "aix"}, 
 					   {PRINT_HPUX, "hpux"}, {PRINT_BSD, "bsd"},
 					   {PRINT_QNX, "qnx"},   {PRINT_PLP, "plp"},
-					   {PRINT_LPRNG, "lprng"}, {-1, NULL}};
+					   {PRINT_LPRNG, "lprng"}, {PRINT_SOFTQ, "softq"},
+					   {-1, NULL}};
 
 static struct enum_list enum_announce_as[] = {{ANNOUNCE_AS_NT, "NT"}, {ANNOUNCE_AS_WIN95, "win95"},
 					      {ANNOUNCE_AS_WFW, "WfW"}, {-1, NULL}};
@@ -821,6 +822,13 @@ static void init_locals(void)
       string_initial(&sDefault.szPrintcommand,"lp -r -P%p %s");
       break;
 
+    case PRINT_SOFTQ:
+      string_initial(&sDefault.szLpqcommand,"qstat -l -d%p");
+      string_initial(&sDefault.szLprmcommand,"qstat -s -j%j -c");
+      string_initial(&sDefault.szPrintcommand,"lp -d%p -s %s; rm %s");
+      string_initial(&sDefault.szLppausecommand,"qstat -s -j%j -h");
+      string_initial(&sDefault.szLpresumecommand,"qstat -s -j%j -r");
+      break;
       
     }
 }
