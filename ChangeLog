@@ -1,3 +1,10 @@
+2004-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/{keys.c,Makefile.am},lib/kadm5/{keys,set_keys}.c:
+	Move keyset parsing and password based keyset generation into hdb.
+	Requested by Andrew Bartlett <abartlet@samba.org> for hdb-ldb
+	backend.
+
 2004-10-07  Love  <lha@stacken.kth.se>
 
 	* kuser/kinit.c: adapt to new signature of
@@ -67,10 +74,28 @@
 
 	* kuser/kinit.c: make sure we don't always get renewable creds
 	
+2004-09-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/acache.c: use krb5_ccapi.h
+	
+	* lib/krb5/krb5_ccapi.h: break out krb5 api definitions to
+	separate (not installed) file
+
+	* lib/krb5/Makefile.am: add AM_CPPFLAGS to libkrb5_la_CPPFLAGS
+	since AM_CPPFLAGS overridden by target specific _CPPFLAGS
+	
 2004-09-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: make variable shorter, make error messages
 	from pkinit, make freeing easier
+	
+2004-09-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am: link libkrb5 with LIB_dlopen
+	
+	* lib/krb5/crypto.c (seed_something): avoid poking at memory that
+	is uninitialized, make valgrind unhappy. Pointd out by
+	abartlet@samba.org. While where, plug the fd leak.
 	
 2004-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
