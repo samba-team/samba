@@ -448,7 +448,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
   netr_LogonUasLogon 
 */
 static WERROR netr_LogonUasLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_LogonUasLogon *r)
+				 struct netr_LogonUasLogon *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

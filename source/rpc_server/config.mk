@@ -104,6 +104,17 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
+# Start MODULE dcerpc_lsa
+[MODULE::dcerpc_lsarpc]
+INIT_OBJ_FILES = \
+		rpc_server/lsa/dcesrv_lsa.o
+REQUIRED_SUBSYSTEMS = \
+		SAMDB \
+		DCERPC_COMMON
+# End MODULE dcerpc_lsa
+################################################
+
+################################################
 # Start SUBSYSTEM DCERPC
 [SUBSYSTEM::DCERPC]
 INIT_OBJ_FILES = \

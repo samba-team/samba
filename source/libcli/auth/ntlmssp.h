@@ -76,7 +76,7 @@ typedef struct ntlmssp_state
 	TALLOC_CTX *mem_ctx;
 	unsigned int ref_count;
 	enum NTLMSSP_ROLE role;
-	enum server_types server_role;
+	enum samr_Role server_role;
 	uint32_t expected_state;
 
 	BOOL unicode;
