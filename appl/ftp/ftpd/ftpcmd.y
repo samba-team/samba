@@ -538,7 +538,7 @@ cmd
 		}
 	| SITE SP AFSLOG CRLF check_login
 		{
-#ifdef KRB4
+#if defined(KRB4) || defined(KRB5)
 		    if(guest)
 			reply(500, "Can't be done as guest.");
 		    else if($5)
@@ -549,7 +549,7 @@ cmd
 		}
 	| SITE SP AFSLOG SP STRING CRLF check_login
 		{
-#ifdef KRB4
+#if defined(KRB4) || defined(KRB5)
 		    if(guest)
 			reply(500, "Can't be done as guest.");
 		    else if($7)
