@@ -1,5 +1,13 @@
 1999-06-23  Assar Westerlund  <assar@sics.se>
 
+	* util.c (edit_entry): look at default
+	(edit_time): always set mask even if value == 0
+
+	* kadmin_locl.h (edit_entry): update
+
+	* ank.c: make ank use the values of the default principal for
+ 	prompting
+
 	* version4.c (values_to_ent): convert key data correctly
 
 1999-05-23  Assar Westerlund  <assar@sics.se>

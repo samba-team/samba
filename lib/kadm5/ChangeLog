@@ -1,3 +1,8 @@
+1999-06-23  Assar Westerlund  <assar@sics.se>
+
+	* ent_setup.c (_kadm5_setup_entry): handle 0 == unlimited
+ 	correctly.  From Michal Vocu <michal@karlin.mff.cuni.cz>
+
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
 	* init_c.c (get_cred_cache): use get_default_username

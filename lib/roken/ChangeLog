@@ -1,3 +1,8 @@
+1999-06-23  Assar Westerlund  <assar@sics.se>
+
+	* parse_units.c (acc_units): move the special case of 0 -> 1 to
+ 	parse_something to avoid having it happen at the end of the string
+
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: add get_default_username
