@@ -277,7 +277,7 @@ BOOL create_subnets(void)
    *       server address can change.  crh
    */
 
-  if(*lp_wins_server())
+  if( wins_srv_count() )
   {
     struct in_addr real_wins_ip;
     real_wins_ip = wins_srv_ip();
