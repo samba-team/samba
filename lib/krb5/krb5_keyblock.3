@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd July 22, 2003
+.Dd January  8, 2004
 .Dt KRB5_KEYBLOCK 3
 .Os HEIMDAL
 .Sh NAME
@@ -39,7 +39,8 @@
 .Nm krb5_keyblock_get_enctype ,
 .Nm krb5_copy_keyblock_contents ,
 .Nm krb5_free_keyblock ,
-.Nm krb5_free_keyblock_contents
+.Nm krb5_free_keyblock_contents ,
+.Nm krb5_keyblock_zero
 .Nd Kerberos 5 key handling functions.
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -56,6 +57,20 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_context context"
 .Fa "const krb5_keyblock *inblock"
 .Fa "krb5_keyblock *to"
+.Fc
+.Ft void
+.Fo krb5_free_keyblock
+.Fa "krb5_context context"
+.Fa "krb5_keyblock *keyblock"
+.Fc
+.Ft void
+.Fo krb5_free_keyblock_contents
+.Fa "krb5_context context"
+.Fa "krb5_keyblock *keyblock"
+.Fc
+.Ft void
+.Fo krb5_keyblock_zero
+.Fa "krb5_keyblock *keyblock"
 .Fc
 .Sh DESCRIPTION
 .Li krb5_keyblock
@@ -80,6 +95,13 @@ free the content and the keyblock itself.
 .Pp
 .Fn krb5_free_keyblock_contents
 frees the content of the keyblock.
+.Pp
+.Fn krb5_keyblock_zero
+zeros out the keyblock to to make sure no keymaterial is in
+memory.
+Note that
+.Fn krb5_free_keyblock_contents
+also zeros out the memory.
 .\" .Sh EXAMPLES
 .Sh SEE ALSO
 .Xr krb5 3 ,
