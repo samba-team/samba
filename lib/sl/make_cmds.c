@@ -134,7 +134,6 @@ generate_commands(void)
     fprintf(c_file, "\n");
 
     {
-	struct string_list *sl;
 	struct command_list *cl, *xl;
 	char *p, *q;
 
@@ -162,13 +161,15 @@ generate_commands(void)
 
 	fprintf(c_file, "SL_cmd %s[] = {\n", table_name);
 	for(cl = commands; cl; cl = cl->next) {
-	    p = quote(cl->function);
+	    struct string_list *sl;
+	    sl = cl->aliases;
+	    p = quote(sl->string);
 	    q = quote(cl->help);
 	    fprintf(c_file, "  { %s, _%s_wrap, %s },\n", p, cl->function, q);
 	    free(p);
 	    free(q);
     
-	    for(sl = cl->aliases; sl; sl = sl->next) {
+	    for(sl = sl->next; sl; sl = sl->next) {
 		p = quote(sl->string);
 		fprintf(c_file, "  { %s },\n", p);
 		free(p);
