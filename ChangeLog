@@ -1,5 +1,10 @@
 Wed Nov 12 02:35:57 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds):
+ 	restructured and fixed.
+
+	* lib/krb5/addr_families.c (krb5_h_addr2addr): new function.
+
 	* appl/rsh/rsh_locl.h: add AUTH_BROKEN and PATH_RSH
 
 	* appl/rsh/Makefile.am: set BINDIR
