@@ -805,7 +805,7 @@ static BOOL run_locktest1(int dummy)
 		return False;
 	} else {
 		if (!check_error(__LINE__, &cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
 	}
 	t2 = time(NULL);
 
@@ -823,7 +823,7 @@ static BOOL run_locktest1(int dummy)
 		return False;
 	} else {
 		if (!check_error(__LINE__, &cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
 	}
 
 	if (!cli_close(&cli1, fnum1)) {
@@ -1007,7 +1007,7 @@ static BOOL run_locktest2(int dummy)
 		correct = False;
 	} else {
 		if (!check_error(__LINE__, &cli, ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
 	}
 
 	if (!cli_lock(&cli, fnum1, 100, 4, 0, WRITE_LOCK)) {
@@ -1025,7 +1025,7 @@ static BOOL run_locktest2(int dummy)
 	} else {
 		if (!check_error(__LINE__, &cli, 
 				 ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
 	}
 
 	if (cli_unlock(&cli, fnum1, 0, 8)) {
@@ -1034,7 +1034,7 @@ static BOOL run_locktest2(int dummy)
 	} else {
 		if (!check_error(__LINE__, &cli, 
 				 ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
 	}
 
 	if (cli_lock(&cli, fnum3, 0, 4, 0, WRITE_LOCK)) {
