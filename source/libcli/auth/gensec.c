@@ -247,6 +247,9 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 		gensec_want_feature(gensec_security, GENSEC_WANT_SIGN);
 		gensec_want_feature(gensec_security, GENSEC_WANT_SEAL);
 	}
+
+	gensec_want_feature(gensec_security, GENSEC_WANT_SESSION_KEY);
+
 	return gensec_start_mech(gensec_security);
 }
 
