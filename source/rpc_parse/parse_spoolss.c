@@ -922,9 +922,12 @@ BOOL make_spoolss_q_deleteprinterdriver(
 	DEBUG(5,("make_spoolss_q_deleteprinterdriver\n"));
 	
 	q_u->server_ptr = (server!=NULL)?1:0;
-	init_unistr2(&q_u->server, server, strlen(server));
-	init_unistr2(&q_u->arch, arch, strlen(arch));
-	init_unistr2(&q_u->driver, driver, strlen(driver));
+
+	/* these must be NULL terminated or else NT4 will
+	   complain about invalid parameters --jerry */
+	init_unistr2(&q_u->server, server, strlen(server)+1);
+	init_unistr2(&q_u->arch, arch, strlen(arch)+1);
+	init_unistr2(&q_u->driver, driver, strlen(driver)+1);
 
 	
 	return True;
