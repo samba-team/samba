@@ -1689,8 +1689,8 @@ void pcap_printer_fn(void (*fn)(char *, char *));
 
 /*The following definitions come from  pidfile.c  */
 
-void pidfile_create(char *name);
 int pidfile_pid(char *name);
+void pidfile_create(char *name);
 
 /*The following definitions come from  pipes.c  */
 
