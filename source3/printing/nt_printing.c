@@ -1431,9 +1431,8 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 
 	ZERO_STRUCTP(nt_devmode);
 
-	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, default_devicename);
-	fstrcpy(nt_devmode->devicename, adevice);
-	
+	safe_strcpy(adevice, default_devicename, sizeof(adevice));
+	fstrcpy(nt_devmode->devicename, adevice);	
 	
 	fstrcpy(nt_devmode->formname, "Letter");
 
@@ -1663,8 +1662,10 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 
 	snum = lp_servicenumber(sharename);
 
-	fstrcpy(info.servername, global_myname);
-	fstrcpy(info.printername, sharename);
+	slprintf(info.servername, sizeof(info.servername), "\\\\%s", global_myname);
+	slprintf(info.printername, sizeof(info.printername), "\\\\%s\\%s", 
+		 global_myname, sharename);
+	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
 	pstrcpy(info.comment, "");
