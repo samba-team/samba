@@ -3105,7 +3105,6 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-/*	uint32 change = q_u->change; - notused. */
 /*	SPOOL_NOTIFY_OPTION *option = q_u->option; - notused. */
 	SPOOL_NOTIFY_INFO *info = &r_u->info;
 
@@ -3123,12 +3122,8 @@ WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
 
 	DEBUG(4,("Printer type %x\n",Printer->printer_type));
 
-	/* jfm: the change value isn't used right now.
-	 * 	we will honour it when
-	 *	a) we'll be able to send notification to the client
-	 *	b) we'll have a way to communicate between the spoolss process.
-	 *
-	 *	same thing for option->flags
+	/*
+	 * 	We are now using the change value, and 
 	 *	I should check for PRINTER_NOTIFY_OPTIONS_REFRESH but as
 	 *	I don't have a global notification system, I'm sending back all the
 	 *	informations even when _NOTHING_ has changed.
