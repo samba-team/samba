@@ -1,3 +1,10 @@
+2000-06-11  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_for_creds.c (add_addrs): ignore addresses of
+	unknown type
+	* lib/krb5/get_for_creds.c (add_addrs): zero memory before
+	starting to copy memory
+
 2000-06-10  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/test_get_addrs.c: test program for get_addrs
