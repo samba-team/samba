@@ -247,10 +247,50 @@ realloc_method_data(METHOD_DATA *md)
 }
 
 static krb5_error_code
-get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
+make_etype_info_entry(ETYPE_INFO_ENTRY *ent, Key *key)
+{
+    ent->etype = key->key.keytype;
+    if(key->salt){
+	ALLOC(ent->salttype);
+#if 0
+	if(key->salt->type == hdb_pw_salt)
+	    *ent->salttype = 0; /* or 1? or NULL? */
+	else if(key->salt->type == hdb_afs3_salt)
+	    *ent->salttype = 2;
+	else {
+	    kdc_log(0, "unknown salt-type: %d", 
+		    key->salt->type);
+	    return KRB5KRB_ERR_GENERIC;
+	}
+	/* according to `the specs', we can't send a salt if
+	   we have AFS3 salted key, but that requires that you
+	   *know* what cell you are using (e.g by assuming
+	   that the cell is the same as the realm in lower
+	   case) */
+#else
+	*ent->salttype = key->salt->type;
+#endif
+	krb5_copy_data(context, &key->salt->salt,
+		       &ent->salt);
+    } else {
+	/* we return no salt type at all, as that should indicate
+	 * the default salt type and make everybody happy.  some
+	 * systems (like w2k) dislike being told the salt type
+	 * here. */
+
+	ent->salttype = NULL;
+	ent->salt = NULL;
+    }
+    return 0;
+}
+
+static krb5_error_code
+get_pa_etype_info(METHOD_DATA *md, hdb_entry *client, 
+		  ENCTYPE *etypes, unsigned int etypes_len)
 {
     krb5_error_code ret = 0;
-    int i;
+    int i, j;
+    unsigned int n = 0;
     ETYPE_INFO pa;
     unsigned char *buf;
     size_t len;
@@ -260,41 +300,39 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
     pa.val = malloc(pa.len * sizeof(*pa.val));
     if(pa.val == NULL)
 	return ENOMEM;
-    for(i = 0; i < client->keys.len; i++) {
-	pa.val[i].etype = client->keys.val[i].key.keytype;
-	if(client->keys.val[i].salt){
-	    ALLOC(pa.val[i].salttype);
-#if 0
-	    if(client->keys.val[i].salt->type == hdb_pw_salt)
-		*pa.val[i].salttype = 0; /* or 1? or NULL? */
-	    else if(client->keys.val[i].salt->type == hdb_afs3_salt)
-		*pa.val[i].salttype = 2;
-	    else {
-		free_ETYPE_INFO(&pa);
-		kdc_log(0, "unknown salt-type: %d", 
-			client->keys.val[i].salt->type);
-		return KRB5KRB_ERR_GENERIC;
-	    }
-	    /* according to `the specs', we can't send a salt if
-	       we have AFS3 salted key, but that requires that you
-	       *know* what cell you are using (e.g by assuming
-	       that the cell is the same as the realm in lower
-	       case) */
-#else
-	    *pa.val[i].salttype = client->keys.val[i].salt->type;
-#endif
-	    krb5_copy_data(context, &client->keys.val[i].salt->salt,
-			   &pa.val[i].salt);
-	} else {
-	    /* we return no salt type at all, as that should indicate
-	     * the default salt type and make everybody happy.  some
-	     * systems (like w2k) dislike being told the salt type
-	     * here. */
 
-	    pa.val[i].salttype = NULL;
-	    pa.val[i].salt = NULL;
+    for(j = 0; j < etypes_len; j++) {
+	for(i = 0; i < client->keys.len; i++) {
+	    if(client->keys.val[i].key.keytype == etypes[j])
+		if((ret = make_etype_info_entry(&pa.val[n++], 
+						&client->keys.val[i])) != 0) {
+		    free_ETYPE_INFO(&pa);
+		    return ret;
+		}
 	}
     }
+    for(i = 0; i < client->keys.len; i++) {
+	for(j = 0; j < etypes_len; j++) {
+	    if(client->keys.val[i].key.keytype == etypes[j])
+		goto skip;
+	}
+	if((ret = make_etype_info_entry(&pa.val[n++], 
+					&client->keys.val[i])) != 0) {
+	    free_ETYPE_INFO(&pa);
+	    return ret;
+	}
+      skip:;
+    }
+    
+    if(n != pa.len) {
+	char *name;
+	krb5_unparse_name(context, client->principal, &name);
+	kdc_log(0, "internal error in get_pa_etype_info(%s): %d != %d", 
+		name, n, pa.len);
+	free(name);
+	pa.len = n;
+    }
+
     len = length_ETYPE_INFO(&pa);
     buf = malloc(len);
     if (buf == NULL) {
@@ -611,7 +649,8 @@ as_rep(KDC_REQ *req,
 	pa->padata_value.length	= 0;
 	pa->padata_value.data	= NULL;
 
-	ret = get_pa_etype_info(&method_data, client); /* XXX check ret */
+	ret = get_pa_etype_info(&method_data, client, 
+				b->etype.val, b->etype.len); /* XXX check ret */
 	
 	len = length_METHOD_DATA(&method_data);
 	buf = malloc(len);
