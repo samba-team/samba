@@ -36,7 +36,7 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 
 	status = ads_find_machine_acct(ads, res, servername);
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(1, ("ads_add_printer: cannot find host %s in ads\n",
+		DEBUG(1, ("ads_find_printer_on_server: cannot find host %s in ads\n",
 			  servername));
 		return status;
 	}
