@@ -241,7 +241,7 @@ AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h t
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
-AC_CHECK_HEADERS(stdint.h)
+AC_CHECK_HEADERS(stdint.h locale.h)
 
 #
 # HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
