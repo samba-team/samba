@@ -48,6 +48,7 @@ char *keyfile;
 char *max_request_str;
 size_t max_request;
 time_t kdc_warn_pwexpire;
+char *database;
 
 #ifdef KRB4
 char *v4_realm;
@@ -72,6 +73,10 @@ static struct getargs args[] = {
 	"max-request",	0,	arg_string, &max_request, 
 	"max size for a kdc-request", "size"
     },
+    {
+	"database",	'd', 	arg_string, &database,
+	"location of database", "database"
+    },
 #ifdef KRB4
     { 
 	"v4-realm",	'r',	arg_string, &v4_realm, 
@@ -82,8 +87,6 @@ static struct getargs args[] = {
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
-
-extern const char *krb5_config_get_string(krb5_config_section*, ...);
 
 struct units byte_units[] = {
     { "megabyte", 1024 * 1024 },
@@ -123,6 +126,11 @@ configure(int argc, char **argv)
 				    NULL);
 	if(p)
 	    keyfile = strdup(p);
+    }
+
+    if(database == NULL){
+	p = krb5_config_get_string (cf, "kdc", "database", NULL);
+	if(p) database = strdup(p);
     }
     
     if(max_request_str){
