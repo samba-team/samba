@@ -1,4 +1,15 @@
+2005-03-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: Add some text about modifying the database
+	
 2005-03-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c: widen lifetime/renewal warning text field, also
+	make use of unparse_time_approx, no need to be specific to the
+	second when ticket needs to be renewed or their lifetime.
+
+	* doc/heimdal.texi: copyright maintenance, drop eay, use updated
+	UCB license
 
 	* lib/krb5/crypto.c: more static and unsigned issues
 
