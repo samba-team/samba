@@ -55,7 +55,8 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 	/* Search through list */
 
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (strcasecmp(domain_name, tmp->name) == 0)
+		if (strcasecmp(domain_name, tmp->name) == 0 ||
+		    strcasecmp(domain_name, tmp->full_name) == 0)
 			return tmp;
 	}
 
@@ -164,6 +165,9 @@ BOOL get_domain_info(void)
 			DEBUG(1,("Added domain %s (%s)\n", 
 				 domain->name, 
 				 sid_string_static(&domain->sid)));
+
+			/* this primes the connection */
+			cache_methods.domain_sid(domain, &domain->sid);
 		}
 	}
 

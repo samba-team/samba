@@ -153,6 +153,7 @@ struct winbindd_methods {
 /* Structures to hold per domain information */
 struct winbindd_domain {
 	fstring name;                          /* Domain name */	
+	fstring full_name;                     /* full Domain name (realm) */	
 	DOM_SID sid;                           /* SID for this domain */
 	struct winbindd_methods *methods;      /* lookup methods for
                                                   this domain (LDAP or

@@ -215,7 +215,26 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 	map_username(internal_username); 
 	
 	if (lp_allow_trusted_domains()) {
-		domain = client_domain;
+		char *user;
+		/* the client could have given us a workstation name
+		   or other crap for the workgroup - we really need a
+		   way of telling if this domain name is one of our
+		   trusted domain names 
+
+		   The way I do it here is by checking if the fully
+		   qualified username exists. This is rather reliant
+		   on winbind, but until we have a better method this
+		   will have to do 
+		*/
+		asprintf(&user, "%s%s%s", 
+			 client_domain, lp_winbind_separator(), 
+			 smb_name);
+		if (Get_Pwnam(user) != NULL) {
+			domain = client_domain;
+		} else {
+			domain = lp_workgroup();
+		}
+		free(user);
 	} else {
 		domain = lp_workgroup();
 	}
