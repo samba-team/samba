@@ -499,7 +499,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 				print_status_struct* status)
 {
 	int i;
-	BOOL ok;
+	BOOL ok = False;
 	pstring tok,driver,datafile,langmon,helpfile,datatype;
 	char *p;
 	char **lines = NULL;
@@ -742,7 +742,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 static int get_printerdrivernumber(int snum)
 {
 	int i;
-	BOOL ok;
+	BOOL ok = False;
 	pstring tok;
 	char *p;
 	char **lines = NULL;
