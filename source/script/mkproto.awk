@@ -41,20 +41,6 @@ END {
   }
 }
 
-# special handling for code merge of TNG to head
-/^#define OLD_NTDOMAIN 1/ {
-  printf "#if OLD_NTDOMAIN\n"
-}
-/^#undef OLD_NTDOMAIN/ {
-  printf "#endif\n"
-}
-/^#define NEW_NTDOMAIN 1/ {
-  printf "#if NEW_NTDOMAIN\n"
-}
-/^#undef NEW_NTDOMAIN/ {
-  printf "#endif\n"
-}
-
 # we handle the loadparm.c fns separately
 
 /^FN_LOCAL_BOOL/ {
