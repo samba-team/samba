@@ -22,11 +22,19 @@ interface epmapper
 
 	/* this guid indicates NDR encoding in a protocol tower */
 	const string NDR_GUID = "8a885d04-1ceb-11c9-9fe8-08002b104860";
+	const string NDR_GUID_VERSION = 1;
 
 	typedef struct {
 		GUID uuid;
 		uint16 version;
 	} epm_prot_uuid;
+
+	typedef enum {
+		EPM_PROTOCOL_TCP   = 0x07,
+		EPM_PROTOCOL_IP    = 0x09,
+		EPM_PROTOCOL_RPC_C = 0x0b,
+		EPM_PROTOCOL_UUID  = 0x0d
+	} epm_protocols;
 
 	typedef [nodiscriminant] union {
 		[case(13)] epm_prot_uuid uuid;
@@ -58,7 +66,7 @@ interface epmapper
 	} epm_towers;
 
 	typedef struct {
-		uint32  tower_length;
+		[value(ndr_size_epm_towers(&r->towers))] uint32  tower_length;
 		[subcontext(4)] epm_towers towers;
 	} epm_twr_t;
 

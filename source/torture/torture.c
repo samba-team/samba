@@ -138,11 +138,21 @@ static NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p,
 {
         NTSTATUS status;
 	char *host = lp_parm_string(-1, "torture", "host");
-	const char *port = lp_parm_string(-1, "torture", "share");
+	const char *port_str = lp_parm_string(-1, "torture", "share");
+	uint32 port = atoi(port_str);
 
-	DEBUG(2,("Connecting to dcerpc server %s:%s\n", host, port));
+	if (port == 0) {
+		status = dcerpc_epm_map_tcp_port(host, 
+						 pipe_uuid, pipe_version,
+						 &port);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
-	status = dcerpc_pipe_open_tcp(p, host, atoi(port));
+	DEBUG(2,("Connecting to dcerpc server %s:%u\n", host, port));
+
+	status = dcerpc_pipe_open_tcp(p, host, port);
 	if (!NT_STATUS_IS_OK(status)) {
                 printf("Open of pipe '%s' failed with error (%s)\n",
 		       pipe_name, nt_errstr(status));
@@ -202,14 +212,10 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
         }
 
 	/* bind to the pipe, using the uuid as the key */
-#if 1
 	status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
 				       lp_workgroup(),
 				       lp_parm_string(-1, "torture", "username"),
 				       lp_parm_string(-1, "torture", "password"));
-#else
-	status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
-#endif
 	if (!NT_STATUS_IS_OK(status)) {
 		dcerpc_pipe_close(*p);
 		return status;
