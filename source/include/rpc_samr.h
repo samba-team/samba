@@ -537,6 +537,13 @@ typedef struct sam_unknown_info_7_info
 
 } SAM_UNK_INFO_7;
 
+typedef struct sam_unknown_info_8_info
+{
+	UINT64_S seq_num;
+	NTTIME domain_create_time;
+
+} SAM_UNK_INFO_8;
+
 typedef struct sam_unknown_info_12_inf
 {
 	NTTIME duration;
@@ -564,8 +571,7 @@ typedef struct sam_unknown_info_2_inf
 	   pointer is referring to
 	 */
 
-	uint32 seq_num; /* some sort of incrementing sequence number? */
-	uint32 unknown_3; /* 0x0000 0000 */
+	UINT64_S seq_num;
 	
 	uint32 unknown_4; /* 0x0000 0001 */
 	uint32 unknown_5; /* 0x0000 0003 */
@@ -603,6 +609,7 @@ typedef struct sam_unknown_ctr_info
 		SAM_UNK_INFO_5 inf5;
 		SAM_UNK_INFO_6 inf6;
 		SAM_UNK_INFO_7 inf7;
+		SAM_UNK_INFO_8 inf8;
 		SAM_UNK_INFO_12 inf12;
 
 	} info;
