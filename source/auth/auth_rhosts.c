@@ -199,6 +199,8 @@ static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	SAM_ACCOUNT *account = NULL;
+	pstring rhostsfile;
+	const char *home;
 	
 	if (!NT_STATUS_IS_OK(nt_status = 
 			     auth_get_sam_account(user_info->internal_username.str, 
@@ -206,9 +208,8 @@ static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	pstring rhostsfile;
-	
-	char *home = pdb_get_unix_homedir(account);
+	home = pdb_get_unix_homedir(account);
+
 	if (home) {
 		slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
 		become_root();
