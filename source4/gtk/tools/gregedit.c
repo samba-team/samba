@@ -315,7 +315,7 @@ static void registry_load_root(void)
 
 	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PERFORMANCE_NLSTEXT; i++) 
 	{
-		if (!W_ERROR_IS_OK(reg_get_hive(registry, i, &root))) { continue; }
+		if (!W_ERROR_IS_OK(reg_get_predefined_key(registry, i, &root))) { continue; }
 
 		registry_load_hive(root);
 	}

@@ -74,9 +74,9 @@ BOOL reg_has_backend(const char *backend)
 }
 
 static struct {
-	enum reg_predefined_key handle;
+	uint32_t handle;
 	const char *name;
-} hkey_names[] = 
+} predef_names[] = 
 {
 	{HKEY_CLASSES_ROOT,"HKEY_CLASSES_ROOT" },
 	{HKEY_CURRENT_USER,"HKEY_CURRENT_USER" },
@@ -90,39 +90,39 @@ static struct {
 	{ 0, NULL }
 };
 
-int reg_list_predefs(TALLOC_CTX *mem_ctx, char ***hives, enum reg_predefined_key **hkeys)
+int reg_list_predefs(TALLOC_CTX *mem_ctx, char ***predefs, uint32_t **hkeys)
 {
 	int i;
-	*hives = talloc_array_p(mem_ctx, char *, ARRAY_SIZE(hkey_names));
-	*hkeys = talloc_array_p(mem_ctx, enum reg_predefined_key, ARRAY_SIZE(hkey_names));
+	*predefs = talloc_array_p(mem_ctx, char *, ARRAY_SIZE(predef_names));
+	*hkeys = talloc_array_p(mem_ctx, uint32_t, ARRAY_SIZE(predef_names));
 
-	for (i = 0; hkey_names[i].name; i++) {
-		(*hives)[i] = talloc_strdup(mem_ctx, hkey_names[i].name);
-		(*hkeys)[i] = hkey_names[i].handle;
+	for (i = 0; predef_names[i].name; i++) {
+		(*predefs)[i] = talloc_strdup(mem_ctx, predef_names[i].name);
+		(*hkeys)[i] = predef_names[i].handle;
 	}
 
 	return i;
 }
 
-const char *reg_get_hkey_name(enum reg_predefined_key hkey)
+const char *reg_get_predef_name(uint32_t hkey)
 {
 	int i;
-	for (i = 0; hkey_names[i].name; i++) {
-		if (hkey_names[i].handle == hkey) return hkey_names[i].name;
+	for (i = 0; predef_names[i].name; i++) {
+		if (predef_names[i].handle == hkey) return predef_names[i].name;
 	}
 
 	return NULL;
 }
 
-WERROR reg_get_hive_by_name(struct registry_context *ctx, const char *name, struct registry_key **key)
+WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, const char *name, struct registry_key **key)
 {
 	int i;
 	
-	for (i = 0; hkey_names[i].name; i++) {
-		if (!strcmp(hkey_names[i].name, name)) return reg_get_hive(ctx, hkey_names[i].handle, key);
+	for (i = 0; predef_names[i].name; i++) {
+		if (!strcmp(predef_names[i].name, name)) return reg_get_predefined_key(ctx, predef_names[i].handle, key);
 	}
 
-	DEBUG(1, ("No hive with name '%s'\n", name));
+	DEBUG(1, ("No predefined key with name '%s'\n", name));
 	
 	return WERR_BADFILE;
 }
@@ -134,12 +134,12 @@ WERROR reg_close (struct registry_context *ctx)
 	return WERR_OK;
 }
 
-WERROR reg_get_hive(struct registry_context *ctx, enum reg_predefined_key hkey, struct registry_key **key)
+WERROR reg_get_predefined_key(struct registry_context *ctx, uint32_t hkey, struct registry_key **key)
 {
-	WERROR ret = ctx->get_hive(ctx, hkey, key);
+	WERROR ret = ctx->get_predefined_key(ctx, hkey, key);
 
 	if (W_ERROR_IS_OK(ret)) {
-		(*key)->name = talloc_strdup(*key, reg_get_hkey_name(hkey));
+		(*key)->name = talloc_strdup(*key, reg_get_predef_name(hkey));
 		(*key)->path = ""; 
 	}
 
@@ -147,7 +147,7 @@ WERROR reg_get_hive(struct registry_context *ctx, enum reg_predefined_key hkey, 
 }
 
 /* Open a registry file/host/etc */
-WERROR reg_open_hive(struct registry_context *parent_ctx, const char *backend, const char *location, const char *credentials, struct registry_key **root)
+WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *backend, const char *location, const char *credentials, struct registry_key **root)
 {
 	struct registry_hive *rethive;
 	struct registry_key *retkey = NULL;
@@ -169,7 +169,6 @@ WERROR reg_open_hive(struct registry_context *parent_ctx, const char *backend, c
 	rethive->location = location?talloc_strdup(rethive, location):NULL;
 	rethive->functions = entry->hive_functions;
 	rethive->backend_data = NULL;
-	rethive->reg_ctx = parent_ctx;
 
 	werr = entry->hive_functions->open_hive(rethive, &retkey);
 
@@ -193,26 +192,26 @@ WERROR reg_open_hive(struct registry_context *parent_ctx, const char *backend, c
 	return WERR_OK;
 }
 
-/* Open a key by name (including the hive name!) */
+/* Open a key by name (including the predefined key name!) */
 WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, const char *name, struct registry_key **result)
 {
-	struct registry_key *hive;
+	struct registry_key *predef;
 	WERROR error;
-	int hivelength;
-	char *hivename;
+	int predeflength;
+	char *predefname;
 
-	if(strchr(name, '\\')) hivelength = strchr(name, '\\')-name;
-	else hivelength = strlen(name);
+	if(strchr(name, '\\')) predeflength = strchr(name, '\\')-name;
+	else predeflength = strlen(name);
 
-	hivename = strndup(name, hivelength);
-	error = reg_get_hive_by_name(handle, hivename, &hive);
-	SAFE_FREE(hivename);
+	predefname = strndup(name, predeflength);
+	error = reg_get_predefined_key_by_name(handle, predefname, &predef);
+	SAFE_FREE(predefname);
 
 	if(!W_ERROR_IS_OK(error)) {
 		return error;
 	}
 
-	return reg_open_key(mem_ctx, hive, name, result);
+	return reg_open_key(mem_ctx, predef, name, result);
 }
 
 /* Open a key 
@@ -484,7 +483,7 @@ WERROR reg_key_add_name_recursive_abs(struct registry_context *handle, const cha
 	else hivelength = strlen(name);
 
 	hivename = strndup(name, hivelength);
-	error = reg_get_hive_by_name(handle, hivename, &hive);
+	error = reg_get_predefined_key_by_name(handle, hivename, &hive);
 	SAFE_FREE(hivename);
 
 	if(!W_ERROR_IS_OK(error)) return error;
