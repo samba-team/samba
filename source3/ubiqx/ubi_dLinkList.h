@@ -27,6 +27,10 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_dLinkList.h,v 
+ * Revision 0.7  1998/06/02 01:38:47  crh
+ * Changed include file name from ubi_null.h to sys_include.h to make it
+ * more generic.
+ *
  * Revision 0.6  1998/05/20 04:38:05  crh
  * The C file now includes ubi_null.h.  See ubi_null.h for more info.
  *
