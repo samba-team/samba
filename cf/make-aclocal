@@ -1,4 +1,5 @@
 #! /bin/sh
+# $Id$
 
 if [ "$#" -ne 2 ]; then
 	echo "Usage: `basename $0` proto-file output"
