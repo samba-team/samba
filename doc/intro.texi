@@ -32,8 +32,8 @@ include enough backwards compatibility with Kerberos V4
 @end itemize
 
 This initial pre-version is mostly compatible with the M.I.T
-implementation, as well as DCE secd. The library is at least not totally
-different from the M.I.T @code{libkrb5}.
+implementation, as well as DCE secd. The library is at least not
+completely different from the M.I.T @code{libkrb5}.
 
 @heading Status
 
@@ -48,8 +48,8 @@ stuff
 a @code{libkrb5} library that should be possible to get to work with
 simple applications
 @item
-a GSS-API library that doesn't have all functions implemented but should
-have all the important ones for building applications that use it
+a GSS-API library that should have all the important functions for
+building applications
 @item
 Eric Young's @file{libdes}
 @item
@@ -77,7 +77,7 @@ changing passwords and a simple client
 @item
 an incredibly simple @file{kdb_edit}
 @item
-all applications can also support the Kerberos V4 protocols
+Kerberos V4 support in many of the applications.
 @end itemize
 
 @heading Bug reports
