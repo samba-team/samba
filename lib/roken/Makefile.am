@@ -6,13 +6,13 @@ INCLUDES = -I$(top_builddir)/include
 
 CLEANFILES = roken.h make-roken.c print_version.h
 
-lib_LIBRARIES = libroken.a
+lib_LTLIBRARIES = libroken.la
 
 noinst_PROGRAMS = make-roken make-print-version
 
 make_print_version_LDADD = $(LIB_krb4)
 
-libroken_a_SOURCES =				\
+libroken_la_SOURCES =				\
 	base64.c				\
 	concat.c				\
 	get_window_size.c			\
@@ -32,7 +32,7 @@ libroken_a_SOURCES =				\
 	verify.c				\
 	warnerr.c
 
-libroken_a_LIBADD = @LIBOBJS@
+libroken_la_LIBADD = @LTLIBOBJS@
 
 $(LIBOBJS) $(libroken_a_OBJECTS): roken.h
 

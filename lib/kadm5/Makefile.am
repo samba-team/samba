@@ -7,7 +7,7 @@ INCLUDES = $(WFLAGS)
 
 COMPILE_ET = ../com_err/compile_et
 
-lib_LIBRARIES = libkadm5srv.a libkadm5clnt.a
+lib_LTLIBRARIES = libkadm5srv.la libkadm5clnt.la
 sbin_PROGRAMS = dump_log replay_log
 
 libexec_PROGRAMS = ipropd-master ipropd-slave
@@ -54,8 +54,8 @@ COMMON_SOURCES =				\
 	set_keys.c				\
 	set_modifier.c
 	
-libkadm5srv_a_SOURCES = $(COMMON_SOURCES) server_glue.c
-libkadm5clnt_a_SOURCES = $(COMMON_SOURCES) client_glue.c
+libkadm5srv_la_SOURCES = $(COMMON_SOURCES) server_glue.c
+libkadm5clnt_la_SOURCES = $(COMMON_SOURCES) client_glue.c
 
 dump_log_SOURCES = dump_log.c
 
@@ -66,12 +66,12 @@ ipropd_master_SOURCES = ipropd_master.c
 ipropd_slave_SOURCES = ipropd_slave.c
 
 LDADD = \
-	libkadm5srv.a \
-	$(top_builddir)/lib/hdb/libhdb.a \
-	$(top_builddir)/lib/krb5/libkrb5.a \
-	$(top_builddir)/lib/asn1/libasn1.a \
-	$(top_builddir)/lib/des/libdes.a \
-	$(top_builddir)/lib/roken/libroken.a \
+	libkadm5srv.la \
+	$(top_builddir)/lib/hdb/libhdb.la \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(top_builddir)/lib/des/libdes.la \
+	$(top_builddir)/lib/roken/libroken.la \
 	$(DBLIB)
 
 CLEANFILES = kadm5_err.c kadm5_err.h

@@ -6,11 +6,11 @@ INCLUDES = -I$(top_builddir)/include
 
 noinst_PROGRAMS = otptest
 
-otptest_LDADD = libotp.a -L$(top_builddir)/lib/des -ldes -L$(top_builddir)/lib/roken -lroken
+otptest_LDADD = libotp.a $(top_builddir)/lib/des/libdes.la $(top_builddir)/lib/roken/libroken.la
 
-lib_LIBRARIES = libotp.a
+lib_LTLIBRARIES = libotp.la
 
-libotp_a_SOURCES = \
+libotp_la_SOURCES = \
 	otp.c \
 	otp_challenge.c \
 	otp_db.c \

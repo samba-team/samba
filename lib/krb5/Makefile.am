@@ -8,13 +8,13 @@ CFLAGS=$(WFLAGS) @CFLAGS@
 
 COMPILE_ET = ../com_err/compile_et
 
-lib_LIBRARIES = libkrb5.a
+lib_LTLIBRARIES = libkrb5.la
 
 SUFFIXES = .et .h
 
 ERR_FILES = krb5_err.c heim_err.c
 
-libkrb5_a_SOURCES = \
+libkrb5_la_SOURCES = \
 	addr_families.c \
 	address.c \
 	asn1_glue.c \
@@ -105,7 +105,7 @@ $(srcdir)/krb5-protos.h:
 
 INCLUDES = $(INCLUDE_krb4)
 
-libkrb5_a_LIBADD = ../com_err/error.o ../com_err/com_err.o
+libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
 
 man_MANS = krb5.conf.5 krb5_warn.3 krb5_openlog.3 \
 	krb5_425_conv_principal.3 krb5_build_principal.3 krb5_free_principal.3 \

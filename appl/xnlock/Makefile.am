@@ -9,9 +9,16 @@ INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4) $(X_CFLAGS) -DBINDIR=\"$(bi
 
 bin_PROGRAMS = xnlock
 if KRB4
-AFSLIB=$(top_builddir)/lib/kafs/libkafs.a $(LIB_krb4)
+AFSLIB=$(top_builddir)/lib/kafs/libkafs.a 
 else
 AFSLIB=
 endif
 
-LDADD = $(AFSLIB) $(top_builddir)/lib/krb5/libkrb5.a $(top_builddir)/lib/asn1/libasn1.a $(top_builddir)/lib/des/libdes.a $(top_builddir)/lib/roken/libroken.a $(XLIBS)
+LDADD = \
+	$(top_builddir)/lib/kafs/libkafs.a \
+	$(LIB_krb4) \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(top_builddir)/lib/des/libdes.la \
+	$(top_builddir)/lib/roken/libroken.la \
+	$(XLIBS)

@@ -4,16 +4,17 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include
 
-lib_LIBRARIES = libdes.a
+#lib_LIBRARIES = libdes.a
+lib_LTLIBRARIES = libdes.la
 include_HEADERS = des.h
 
 noinst_PROGRAMS = destest mdtest
 
 bin_PROGRAMS = des rpw speed
 
-LDADD = $(lib_LIBRARIES)
+LDADD = $(lib_LTLIBRARIES)
 
-libdes_a_SOURCES = \
+libdes_la_SOURCES = \
 	cbc3_enc.c cbc_cksm.c cbc_enc.c \
 	cfb64ede.c cfb64enc.c cfb_enc.c des_enc.c \
 	ecb3_enc.c ecb_enc.c ede_enc.c enc_read.c \

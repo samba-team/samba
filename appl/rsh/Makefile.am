@@ -12,4 +12,8 @@ rsh_SOURCES  = rsh.c common.c
 
 rshd_SOURCES = rshd.c common.c
 
-LDADD = -L$(top_builddir)/lib/krb5 -lkrb5 -L$(top_builddir)/lib/des -ldes $(LIB_krb4) -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/roken -lroken
+LDADD = $(top_builddir)/lib/krb5/libkrb5.la \
+	$(top_builddir)/lib/des/libdes.la \
+	$(LIB_krb4) \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(top_builddir)/lib/roken/libroken.la

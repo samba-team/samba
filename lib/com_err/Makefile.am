@@ -6,16 +6,16 @@ YFLAGS = -d
 
 INCLUDES = -I$(top_builddir)/include -I$(srcdir)
 
-lib_LIBRARIES = libcom_err.a
+lib_LTLIBRARIES = libcom_err.la
 
 bin_PROGRAMS = compile_et
 
 compile_et_SOURCES = compile_et.c parse.y lex.l
 
-libcom_err_a_SOURCES = error.c com_err.c
+libcom_err_la_SOURCES = error.c com_err.c
 
 CLEANFILES = lex.c parse.c parse.h
 
 $(compile_et_OBJECTS): parse.h
 
-compile_et_LDADD = -L../roken -lroken @LEXLIB@
+compile_et_LDADD = ../roken/libroken.la @LEXLIB@

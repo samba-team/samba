@@ -8,7 +8,8 @@ CFLAGS=$(WFLAGS) @CFLAGS@
 YFLAGS = -d
 #YACCFLAGS = $(YFLAGS)
 
-lib_LIBRARIES = libasn1.a
+#lib_LIBRARIES = libasn1.a
+lib_LTLIBRARIES = libasn1.la
 
 COMPILE_ET = ../com_err/compile_et
 
@@ -115,7 +116,7 @@ asn1_compile_SOURCES = parse.y lex.l main.c hash.c symbol.c gen.c \
 	gen_encode.c gen_decode.c gen_free.c gen_length.c gen_copy.c \
 	gen_glue.c
 
-libasn1_a_SOURCES = \
+libasn1_la_SOURCES = \
 	der_get.c \
 	der_put.c \
 	der_free.c \
@@ -124,7 +125,7 @@ libasn1_a_SOURCES = \
 	timegm.c \
 	$(BUILT_SOURCES)
 
-asn1_compile_LDADD = -L../roken -lroken @LEXLIB@
+asn1_compile_LDADD = ../roken/libroken.a @LEXLIB@
 
 CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
 

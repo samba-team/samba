@@ -15,15 +15,15 @@ foo = asn1_Key.x asn1_Event.x asn1_HDBFlags.x asn1_hdb_entry.x asn1_Salt.x
 
 CLEANFILES = $(BUILT_SOURCES) $(foo) hdb_asn1.h asn1_files
 
-lib_LIBRARIES = libhdb.a
+lib_LTLIBRARIES = libhdb.la
 
-libhdb_a_SOURCES = hdb.c common.c db.c ndbm.c $(BUILT_SOURCES)
+libhdb_la_SOURCES = hdb.c common.c db.c ndbm.c $(BUILT_SOURCES)
 
 include_HEADERS = hdb.h
 incdir = $(includedir)
 inc_DATA = hdb_err.h hdb_asn1.h
 
-libhdb_a_LIBADD = 
+libhdb_la_LIBADD = 
 
 idir = $(top_builddir)/include
 

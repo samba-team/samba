@@ -30,10 +30,10 @@ EXTRA_ftp_SOURCES = krb4.c kauth.c
 
 LDADD = \
 	../common/libcommon.a \
-	$(top_builddir)/lib/gssapi/libgssapi.a \
-	$(top_builddir)/lib/krb5/libkrb5.a \
-	$(top_builddir)/lib/des/libdes.a \
-	$(top_builddir)/lib/asn1/libasn1.a \
+	$(top_builddir)/lib/gssapi/libgssapi.la \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(top_builddir)/lib/des/libdes.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_krb4) \
-	$(top_builddir)/lib/roken/libroken.a \
+	$(top_builddir)/lib/roken/libroken.la \
 	$(LIB_readline)

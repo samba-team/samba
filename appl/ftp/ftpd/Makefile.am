@@ -46,12 +46,12 @@ afslib =
 endif
 
 LDADD = ../common/libcommon.a \
-	$(top_builddir)/lib/gssapi/libgssapi.a \
+	$(top_builddir)/lib/gssapi/libgssapi.la \
 	$(afslib) \
-	$(top_builddir)/lib/krb5/libkrb5.a \
-	$(top_builddir)/lib/des/libdes.a \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(top_builddir)/lib/des/libdes.la \
 	$(LIB_krb4) \
-	$(top_builddir)/lib/asn1/libasn1.a \
-	$(top_builddir)/lib/otp/libotp.a \
-	$(top_builddir)/lib/roken/libroken.a @LIB_crypt@ \
-	$(DBLIB)
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(top_builddir)/lib/otp/libotp.la \
+	$(top_builddir)/lib/roken/libroken.la \
+	@LIB_crypt@ $(DBLIB)

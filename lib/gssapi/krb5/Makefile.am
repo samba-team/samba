@@ -6,9 +6,9 @@ CFLAGS = @CFLAGS@ $(WFLAGS)
 
 INCLUDES = -I$(top_builddir)/include -I$(srcdir)/../krb5
 
-lib_LIBRARIES = libgssapi.a
+lib_LTLIBRARIES = libgssapi.la
 
-libgssapi_a_SOURCES =				\
+libgssapi_la_SOURCES =				\
 	8003.c					\
 	accept_sec_context.c			\
 	acquire_cred.c				\

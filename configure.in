@@ -29,6 +29,8 @@ AM_PROG_LEX
 AC_PROG_RANLIB
 AC_PROG_AWK
 AC_KRB_PROG_LN_S
+AM_DISABLE_SHARED
+AM_PROG_LIBTOOL
 
 if test "$GCC" = "yes"; then
 # -Wcast-align doesn't work well on alpha osf/1
@@ -91,7 +93,7 @@ fi
 ])
 if test "$otp" = "yes"; then
 	AC_DEFINE(OTP)
-	LIB_otp='-L$(top_builddir)/lib/otp -lotp'
+	LIB_otp='$(top_builddir)/lib/otp/libotp.a'
 	OTP_dir=otp
 fi
 AC_SUBST(LIB_otp)
@@ -491,8 +493,6 @@ dnl
 AC_KRB_STRUCT_SOCKADDR_SA_LEN
 
 
-dnl AC_SUBST(LIBOBJS)
-
 AC_GROK_TYPES(int8_t int16_t int32_t int64_t)
 AC_GROK_TYPES(u_int8_t u_int16_t u_int32_t u_int64_t)
 
@@ -512,7 +512,7 @@ elif test "$ac_cv_func_el_init" = yes; then
 	AC_DEFINE(HAVE_READLINE, 1)
 
 	editline_OBJS=edit_compat.o
-	LIB_readline='-L$(top_builddir)/lib/editline -leditline '"$LIB_el_init"' $(LIB_tgetent)'
+	LIB_readline='$(top_builddir)/lib/editline/libeditline.a '"$LIB_el_init"' $(LIB_tgetent)'
 
 	INCLUDE_readline='-I$(top_builddir)/lib/editline -I$(top_srcdir)/lib/editline'
 elif test "$ac_cv_func_readline" = yes; then
@@ -523,7 +523,7 @@ elif test "$ac_cv_func_readline" = yes; then
 else
 	AC_DEFINE(HAVE_READLINE, 1)
 	editline_OBJS="editline.o complete.o sysunix.o"
-	LIB_readline='-L$(top_builddir)/lib/editline -leditline $(LIB_tgetent)'
+	LIB_readline='$(top_builddir)/lib/editline/libeditline.a $(LIB_tgetent)'
 	INCLUDE_readline='-I$(top_builddir)/lib/editline -I$(top_srcdir)/lib/editline'
 fi
 AC_SUBST(LIB_tgetent)
@@ -585,6 +585,12 @@ for i in bin lib libexec sbin; do
 	AC_DEFINE_UNQUOTED($foo,"$x")
 done
 
+if false; then
+	# hack to shut up automake
+	LIBOBJS="$LIBOBJS make-print-version.o"
+fi
+LTLIBOBJS=`echo "$LIBOBJS" | sed 's/\.o/\.lo/g'`
+AC_SUBST(LTLIBOBJS)
 AC_OUTPUT(Makefile 			\
 	include/Makefile		\
 	include/kadm5/Makefile		\
