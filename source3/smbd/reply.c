@@ -1571,8 +1571,12 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   files_struct *fsp;
 
   /* If it's an IPC, pass off the pipe handler. */
-  if (IS_IPC(conn) && lp_nt_pipe_support())
-    return reply_open_pipe_and_X(conn, inbuf,outbuf,length,bufsize);
+  if (IS_IPC(conn)) {
+    if (lp_nt_pipe_support())
+	    return reply_open_pipe_and_X(conn, inbuf,outbuf,length,bufsize);
+    else
+        return (ERROR(ERRSRV,ERRaccess));
+  }
 
   /* XXXX we need to handle passed times, sattr and flags */
 

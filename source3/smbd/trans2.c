@@ -218,6 +218,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   DEBUG(3,("trans2open %s mode=%d attr=%d ofun=%d size=%d\n",
 	   fname,open_mode, open_attr, open_ofun, open_size));
 
+  if (IS_IPC(conn)) {
+		return(ERROR(ERRSRV,ERRaccess));
+  }
+
   /* XXXX we need to handle passed times, sattr and flags */
 
   unix_convert(fname,conn,0,&bad_path,NULL);
