@@ -170,6 +170,7 @@ man_MANS =					\
 	krb5_openlog.3				\
 	krb5_parse_name.3			\
 	krb5_principal_get_realm.3		\
+	krb5_set_default_realm.3		\
 	krb5_sname_to_principal.3		\
 	krb5_timeofday.3			\
 	krb5_unparse_name.3			\
