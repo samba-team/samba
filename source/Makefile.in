@@ -6,8 +6,6 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 mandir=@mandir@
-INSTALL_BIN=$(exec_prefix)/bin
-INSTALL_MAN=$(prefix)/man
 
 LIBS=@LIBS@
 CC=@CC@
@@ -22,12 +20,12 @@ srcdir=@srcdir@
 builddir=@builddir@
 SHELL=/bin/sh
 
-BASEDIR=$(prefix)/samba
-BINDIR = $(BASEDIR)/bin
-SBINDIR = $(BASEDIR)/bin
-LIBDIR = $(BASEDIR)/lib
+BASEDIR=@prefix@
+BINDIR = @bindir@
+SBINDIR = @sbindir@
+LIBDIR = @libdir@
 VARDIR = $(BASEDIR)/var
-MANDIR = $(BASEDIR)/man
+MANDIR = @mandir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
