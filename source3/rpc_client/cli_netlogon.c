@@ -91,7 +91,7 @@ BOOL cli_net_logon_ctrl2(struct cli_state *cli, NTSTATUS status_level)
     if (ok && r_l.status != 0)
     {
       /* report error code */
-      DEBUG(0,("do_net_logon_ctrl2: Error %s\n", get_nt_error_msg(r_l.status)));
+      DEBUG(0,("do_net_logon_ctrl2: Error %s\n", nt_errstr(r_l.status)));
       cli->nt_error = r_l.status;
       ok = False;
     }
@@ -153,7 +153,7 @@ NTSTATUS cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
     if (ok && !NT_STATUS_IS_OK(result))
     {
       /* report error code */
-      DEBUG(0,("cli_net_auth2: Error %s\n", get_nt_error_msg(result)));
+      DEBUG(0,("cli_net_auth2: Error %s\n", nt_errstr(result)));
       ok = False;
     }
 
@@ -242,7 +242,7 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
     if (ok && !NT_STATUS_IS_OK(r_c.status))
     {
       /* report error code */
-      DEBUG(0,("cli_net_req_chal: Error %s\n", get_nt_error_msg(r_c.status)));
+      DEBUG(0,("cli_net_req_chal: Error %s\n", nt_errstr(r_c.status)));
       ok = False;
     }
 
@@ -332,7 +332,7 @@ static NTSTATUS cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CT
 
 	if (!NT_STATUS_IS_OK(retval)) {
 		/* report error code */
-		DEBUG(0,("cli_net_sam_logon_internal: %s\n", get_nt_error_msg(r_s.status)));
+		DEBUG(0,("cli_net_sam_logon_internal: %s\n", nt_errstr(r_s.status)));
 		goto out;
 	}
 
@@ -447,7 +447,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
     if (ok && !NT_STATUS_IS_OK(r_s.status))
     {
       /* report error code */
-      DEBUG(0,("cli_net_sam_logoff: %s\n", get_nt_error_msg(r_s.status)));
+      DEBUG(0,("cli_net_sam_logoff: %s\n", nt_errstr(r_s.status)));
       ok = False;
     }
 

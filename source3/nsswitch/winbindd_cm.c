@@ -425,7 +425,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 		
 		if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, pipe_name, conn))) {
 			DEBUG(3, ("Could not open a connection to %s for %s (%s)\n", 
-				  domain, pipe_name, get_nt_error_msg(result)));
+				  domain, pipe_name, nt_errstr(result)));
 		        SAFE_FREE(conn);
 			return result;
 		}
@@ -773,7 +773,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
-			  get_nt_error_msg(result)));
+			  nt_errstr(result)));
 		
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) {

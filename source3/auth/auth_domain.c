@@ -134,7 +134,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 
         if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", remote_machine, get_nt_error_msg(result)));
+%s. Error was : %s.\n", remote_machine, nt_errstr(result)));
 		cli_nt_session_close(*cli);
 		cli_ulogoff(*cli);
 		cli_shutdown(*cli);
@@ -319,7 +319,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
                          "for user %s in domain %s to Domain controller %s. "
                          "Error was %s.\n", user_info->smb_name.str,
                          user_info->domain.str, cli->srv_name_slash, 
-                         get_nt_error_msg(nt_status)));
+                         nt_errstr(nt_status)));
 	} else {
                 char *dom_user;
 

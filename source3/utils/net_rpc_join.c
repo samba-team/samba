@@ -25,7 +25,7 @@
 
 #define CHECK_RPC_ERR(rpc, msg) \
         if (!NT_STATUS_IS_OK(result = rpc)) { \
-                DEBUG(0, (msg ": %s\n", get_nt_error_msg(result))); \
+                DEBUG(0, (msg ": %s\n", nt_errstr(result))); \
                 goto done; \
         }
 
@@ -169,7 +169,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 						  1, &names, &num_rids,
 						  &user_rids, &name_types),
 			    ("error looking up rid for user %s: %s\n",
-			     acct_name, get_nt_error_msg(result)));
+			     acct_name, nt_errstr(result)));
 
 	if (name_types[0] != SID_NAME_USER) {
 		DEBUG(0, ("%s is not a user account\n", acct_name));
@@ -185,7 +185,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 				   SEC_RIGHTS_MAXIMUM_ALLOWED,
 				   user_rid, &user_pol),
 		("could not re-open existing user %s: %s\n",
-		 acct_name, get_nt_error_msg(result)));
+		 acct_name, nt_errstr(result)));
 	
 	/* Create a random machine account password */
 

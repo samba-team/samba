@@ -249,7 +249,7 @@ BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags,
 	
 	if (status!=NT_STATUS_OK)
 	{
-		DEBUG(0,("spoolss_enum_printers: %s\n", get_nt_error_msg(status)));
+		DEBUG(0,("spoolss_enum_printers: %s\n", nt_errstr(status)));
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
 		return False;

@@ -147,7 +147,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 		return nt_status;
 	} else {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", 
-			 get_nt_error_msg(nt_status)));
+			 nt_errstr(nt_status)));
 
 		/* Display a nicer message depending on the result */
 
@@ -176,7 +176,7 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
-		DEBUG(0,("Cannot connect to server (anonymously).  Error was %s\n", get_nt_error_msg(nt_status)));
+		DEBUG(0,("Cannot connect to server (anonymously).  Error was %s\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
 }

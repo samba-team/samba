@@ -99,7 +99,7 @@ NTSTATUS cli_wks_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* check returnet status code */
 	if (NT_STATUS_IS_ERR(r_o.status)) {
 		/* report the error */
-		DEBUG(0,("WKS_R_QUERY_INFO: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("WKS_R_QUERY_INFO: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return r_o.status;
 	}

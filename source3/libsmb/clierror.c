@@ -103,7 +103,7 @@ char *cli_errstr(struct cli_state *cli)
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 		NTSTATUS status = NT_STATUS(IVAL(cli->inbuf,smb_rcls));
 
-		return get_nt_error_msg(status);
+		return nt_errstr(status);
         }
 
 	cli_dos_error(cli, &errclass, &errnum);

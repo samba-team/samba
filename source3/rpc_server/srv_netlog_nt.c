@@ -634,7 +634,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	free_user_info(&user_info);
 	
 	DEBUG(5, ("_net_sam_logon: check_password returned status %s\n", 
-		  get_nt_error_msg(status)));
+		  nt_errstr(status)));
 
 	/* Check account and password */
     

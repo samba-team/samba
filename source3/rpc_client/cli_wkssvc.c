@@ -73,7 +73,7 @@ BOOL do_wks_query_info(struct cli_state *cli,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("WKS_R_QUERY_INFO: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("WKS_R_QUERY_INFO: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rbuf);
 		return False;
 	}

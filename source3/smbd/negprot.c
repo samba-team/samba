@@ -41,7 +41,7 @@ static void get_challenge(char buff[8])
 
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&negprot_global_auth_context))) {
-		DEBUG(0, ("make_auth_context_subsystem returned %s", get_nt_error_msg(nt_status)));
+		DEBUG(0, ("make_auth_context_subsystem returned %s", nt_errstr(nt_status)));
 		smb_panic("cannot make_negprot_global_auth_context!\n");
 	}
 	DEBUG(10, ("get challenge: getting challenge\n"));

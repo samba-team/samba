@@ -611,7 +611,7 @@ static struct cli_state *init_connection(struct cli_state *cli,
                 result = sam_repl(&cli, trust_passwd, low_serial);
 
         if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(0, ("%s\n", get_nt_error_msg(result)));
+                DEBUG(0, ("%s\n", nt_errstr(result)));
                 return 1;
         }
 

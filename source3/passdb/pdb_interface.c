@@ -210,7 +210,7 @@ NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selecte
 					    = builtin_pdb_init_functions[i].init(*context, &(*context)->pdb_selected, module_location))) {
 				DEBUG(5,("pdb backend %s has a valid init\n", selected));
 			} else {
-				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, get_nt_error_msg(nt_status)));
+				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
 				(*context)->pdb_selected = NULL;
 			}
 			break;

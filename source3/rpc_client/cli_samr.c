@@ -140,7 +140,7 @@ BOOL do_samr_chgpasswd_user(struct cli_state *cli,
 
 	if (r_e.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_CHGPASSWD_USER: %s\n", get_nt_error_msg(r_e.status)));
+		DEBUG(0,("SAMR_R_CHGPASSWD_USER: %s\n", nt_errstr(r_e.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -197,7 +197,7 @@ BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name)
 
 	if (r_e.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_UNKNOWN_38: %s\n", get_nt_error_msg(r_e.status)));
+		DEBUG(0,("SAMR_R_UNKNOWN_38: %s\n", nt_errstr(r_e.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -255,7 +255,7 @@ BOOL do_samr_query_dom_info(struct cli_state *cli,
 
 	if (r_e.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_QUERY_DOMAIN_INFO: %s\n", get_nt_error_msg(r_e.status)));
+		DEBUG(0,("SAMR_R_QUERY_DOMAIN_INFO: %s\n", nt_errstr(r_e.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -323,7 +323,7 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli,
 
 	if (r_e.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_ENUM_DOM_USERS: %s\n", get_nt_error_msg(r_e.status)));
+		DEBUG(0,("SAMR_R_ENUM_DOM_USERS: %s\n", nt_errstr(r_e.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -410,7 +410,7 @@ BOOL do_samr_connect(struct cli_state *cli,
 		
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_CONNECT: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SAMR_R_CONNECT: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -471,7 +471,7 @@ BOOL do_samr_open_user(struct cli_state *cli,
 		
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_OPEN_USER: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SAMR_R_OPEN_USER: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -533,7 +533,7 @@ BOOL do_samr_open_domain(struct cli_state *cli,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_OPEN_DOMAIN: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SAMR_R_OPEN_DOMAIN: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -600,7 +600,7 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 		
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_UNKNOWN_12: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SAMR_R_UNKNOWN_12: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -681,7 +681,7 @@ BOOL do_samr_query_usergroups(struct cli_state *cli,
 		
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_QUERY_USERGROUPS: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SAMR_R_QUERY_USERGROUPS: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -747,7 +747,7 @@ BOOL do_samr_query_userinfo(struct cli_state *cli,
 		
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_R_QUERY_USERINFO: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SAMR_R_QUERY_USERINFO: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -817,7 +817,7 @@ BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	if (r_c.status != 0) {
 		/* report error code */
-		DEBUG(0,("SAMR_CLOSE_HND: %s\n", get_nt_error_msg(r_c.status)));
+		DEBUG(0,("SAMR_CLOSE_HND: %s\n", nt_errstr(r_c.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}

@@ -3120,7 +3120,7 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 			}
 			error = map_nt_error_from_unix(errno);
 			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-				get_nt_error_msg(error), directory,newname));
+				nt_errstr(error), directory,newname));
 
 			return error;
 		}
@@ -3129,7 +3129,7 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 
 		if (!NT_STATUS_IS_OK(error)) {
 			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-				get_nt_error_msg(error), directory,newname));
+				nt_errstr(error), directory,newname));
 			return error;
 		}
 
@@ -3161,7 +3161,7 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 			error = map_nt_error_from_unix(errno);
 		
 		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-			get_nt_error_msg(error), directory,newname));
+			nt_errstr(error), directory,newname));
 
 		return error;
 	} else {

@@ -603,7 +603,7 @@ BOOL prs_ntstatus(char *name, prs_struct *ps, int depth, NTSTATUS *status)
 	}
 
 	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
-		 get_nt_error_msg(*status)));
+		 nt_errstr(*status)));
 
 	ps->data_offset += sizeof(uint32);
 

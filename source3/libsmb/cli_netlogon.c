@@ -207,7 +207,7 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
 				   &srv_chal);
 	if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed %s\n",
-			 get_nt_error_msg(result)));
+			 nt_errstr(result)));
         }
 
         return result;
@@ -648,7 +648,7 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(r_s.status))
 		{
 			/* report error code */
-			DEBUG(0,("cli_net_srv_pwset: %s\n", get_nt_error_msg(nt_status)));
+			DEBUG(0,("cli_net_srv_pwset: %s\n", nt_errstr(nt_status)));
 			goto done;
 		}
 

@@ -234,7 +234,7 @@ void fetch_machine_sid(struct cli_state *cli)
 	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		fprintf(stderr, "error: %s\n", get_nt_error_msg(result));
+		fprintf(stderr, "error: %s\n", nt_errstr(result));
 	}
 
 	exit(1);
@@ -521,7 +521,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	}
 
 	if (!NT_STATUS_IS_OK(result)) {
-		printf("result was %s\n", get_nt_error_msg(result));
+		printf("result was %s\n", nt_errstr(result));
 	}
 
 	return result;
@@ -711,7 +711,7 @@ static void usage(void)
 					password, strlen(password));
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1,("Cannot connect to server.  Error was %s\n", get_nt_error_msg(nt_status)));
+		DEBUG(1,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
 		return 1;
 	}
 

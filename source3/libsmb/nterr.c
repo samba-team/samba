@@ -540,7 +540,7 @@ nt_err_code_struct nt_errs[] =
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-char *get_nt_error_msg(NTSTATUS nt_code)
+char *nt_errstr(NTSTATUS nt_code)
 {
         static pstring msg;
         int idx = 0;

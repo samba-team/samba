@@ -40,7 +40,7 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
 	
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("just_change_the_password: unable to setup creds (%s)!\n",
-			 get_nt_error_msg(result)));
+			 nt_errstr(result)));
 		return result;
 	}
 
@@ -48,7 +48,7 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("just_change_the_password: unable to change password (%s)!\n",
-			 get_nt_error_msg(result)));
+			 nt_errstr(result)));
 	}
 	return result;
 }

@@ -84,7 +84,7 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SRV_R_NET_SRV_CONN_ENUM: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SRV_R_NET_SRV_CONN_ENUM: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -164,7 +164,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 		
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SRV_R_NET_SRV_SESS_ENUM: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SRV_R_NET_SRV_SESS_ENUM: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -232,7 +232,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 		
 	if (r_o->status != 0) {
 		/* report error code */
-		DEBUG(0,("SRV_R_NET_SHARE_ENUM: %s\n", get_nt_error_msg(r_o->status)));
+		DEBUG(0,("SRV_R_NET_SHARE_ENUM: %s\n", nt_errstr(r_o->status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -314,7 +314,7 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 		
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SRV_R_NET_FILE_ENUM: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SRV_R_NET_FILE_ENUM: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
@@ -381,7 +381,7 @@ BOOL do_srv_net_srv_get_info(struct cli_state *cli,
 
 	if (r_o.status != 0) {
 		/* report error code */
-		DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o.status)));
+		DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", nt_errstr(r_o.status)));
 		prs_mem_free(&rdata);
 		return False;
 	}
