@@ -33,4 +33,4 @@ telnet: $(OBJECTS)
 
 
 clean cleandir:
-	rm -f *.o *.a telnet telnetd core
+	rm -f *.o *.a telnet \#* *~ core

@@ -68,6 +68,9 @@ void auth_encrypt_init P((char *, char *, char *, int));
 void auth_encrypt_connect P((int));
 void printd P((unsigned char *, int));
 
+char** genget P((char *name, char **table, int stlen));
+
+
 /*
  * These functions are imported from the application
  */
