@@ -360,6 +360,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		fstrcpy(user,pass->pw_name);
 		conn->force_user = True;
 		string_set(&conn->user,pass->pw_name);
+		passwd_free(&pass);
 		DEBUG(3,("Guest only user %s\n",user));
 	} else if (vuser) {
 		if (vuser->guest) {
@@ -388,9 +389,10 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		   are in share mode security */
 		add_session_user(lp_servicename(snum));
 		/* shall we let them in? */
-		if (!authorise_login(snum,user,password,&guest,&force)) {
-			DEBUG( 2, ( "Invalid username/password for %s [%s]\n", 
-				    lp_servicename(snum), user ) );
+		if (!authorise_login(snum,user,password,&guest)) {
+			DEBUG( 2, ( "Invalid username/password for [%s]\n", 
+				    lp_servicename(snum)) );
+			conn_free(conn);
 			*status = NT_STATUS_WRONG_PASSWORD;
 			return NULL;
 		}
