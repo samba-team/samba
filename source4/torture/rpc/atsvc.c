@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   test suite for lsa rpc operations
+   test suite for atsvc rpc operations
 
    Copyright (C) Tim Potter 2003
    
