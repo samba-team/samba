@@ -26,7 +26,6 @@
 
 BOOL global_machine_password_needs_changing = False;
 
-extern pstring global_myname;
 extern userdom_struct current_user_info;
 
 
@@ -172,7 +171,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		return NT_STATUS_NO_LOGON_SERVERS;
 	
 	/* Attempt connection */
-	result = cli_full_connection(cli, global_myname, remote_machine,
+	result = cli_full_connection(cli, global_myname(), remote_machine,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "",0, retry);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -250,7 +249,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 	if (is_zero_ip(*ip))
 		return NT_STATUS_NO_LOGON_SERVERS;
 
-	if (!lookup_dc_name(global_myname, domain, ip, dc_name))
+	if (!lookup_dc_name(global_myname(), domain, ip, dc_name))
 		return NT_STATUS_NO_LOGON_SERVERS;
 
 	for (i = 0; (!NT_STATUS_IS_OK(ret)) && retry && (i < 3); i++)
@@ -372,7 +371,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 				       const char *domain,
 				       uchar chal[8],
 				       auth_serversupplied_info **server_info, 
-				       char *server, char *setup_creds_as,
+				       const char *server, const char *setup_creds_as,
 				       uint16 sec_chan,
 				       unsigned char trust_passwd[16],
 				       time_t last_change_time)
@@ -481,7 +480,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	char *password_server;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
-	char *domain = lp_workgroup();
+	const char *domain = lp_workgroup();
 
 	if (!user_info || !server_info || !auth_context) {
 		DEBUG(1,("check_ntdomain_security: Critical variables not present.  Failing.\n"));
@@ -494,7 +493,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	 * password file.
 	 */
 
-	if(is_netbios_alias_or_name(user_info->domain.str)) {
+	if(is_myname(user_info->domain.str)) {
 		DEBUG(3,("check_ntdomain_security: Requested domain was for this machine.\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -528,7 +527,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	nt_status = domain_client_validate(mem_ctx, user_info, domain,
 					   (uchar *)auth_context->challenge.data, 
 					   server_info, 
-					   password_server, global_myname, SEC_CHAN_WKSTA, trust_passwd, last_change_time);
+					   password_server, global_myname(), SEC_CHAN_WKSTA, trust_passwd, last_change_time);
 	return nt_status;
 }
 
@@ -572,7 +571,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	 * password file.
 	 */
 
-	if(is_netbios_alias_or_name(user_info->domain.str)) {
+	if(is_myname(user_info->domain.str)) {
 		DEBUG(3,("check_trustdomain_security: Requested domain was for this machine.\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}

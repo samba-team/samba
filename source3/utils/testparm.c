@@ -121,7 +121,7 @@ parameter.\n" );
 			} else {
 				pstring passwd_prog;
 				pstring truncated_prog;
-				char *p;
+				const char *p;
 
 				pstrcpy( passwd_prog, lp_passwd_program());
 				p = passwd_prog;
@@ -250,8 +250,8 @@ int main(int argc, const char *argv[])
 
 	for (s=0;s<1000;s++) {
 		if (VALID_SNUM(s)) {
-			char **deny_list = lp_hostsdeny(s);
-			char **allow_list = lp_hostsallow(s);
+			const char **deny_list = lp_hostsdeny(s);
+			const char **allow_list = lp_hostsallow(s);
 			int i;
 			if(deny_list) {
 				for (i=0; deny_list[i]; i++) {

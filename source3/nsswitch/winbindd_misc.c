@@ -26,12 +26,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-extern pstring global_myname;
-
 /************************************************************************
  Routine to get the trust account password for a domain
 ************************************************************************/
-static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+static BOOL _get_trust_account_password(const char *domain, unsigned char *ret_pwd, 
 					time_t *pass_last_set_time)
 {
 	if (!secrets_fetch_trust_account_password(domain, ret_pwd, pass_last_set_time)) {

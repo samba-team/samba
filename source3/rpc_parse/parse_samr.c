@@ -631,7 +631,7 @@ static BOOL sam_io_unk_info12(char *desc, SAM_UNK_INFO_12 * u_12,
 /*******************************************************************
 inits a structure.
 ********************************************************************/
-void init_unk_info5(SAM_UNK_INFO_5 * u_5,char *server)
+void init_unk_info5(SAM_UNK_INFO_5 * u_5,const char *server)
 {
 	int len_server = strlen(server);
 
@@ -666,7 +666,7 @@ static BOOL sam_io_unk_info5(char *desc, SAM_UNK_INFO_5 * u_5,
 inits a structure.
 ********************************************************************/
 void init_unk_info2(SAM_UNK_INFO_2 * u_2,
-			char *domain, char *server,
+			const char *domain, const char *server,
 			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias)
 {
 	int len_domain = strlen(domain);

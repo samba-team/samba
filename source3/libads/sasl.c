@@ -36,7 +36,6 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	uint32 neg_flags;
 	struct berval cred, *scred;
 	ADS_STATUS status;
-	extern pstring global_myname;
 	int rc;
 
 	if (!ads->auth.password) {
@@ -97,7 +96,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		  nthash, 24,
 		  lp_workgroup(), 
 		  ads->auth.user_name, 
-		  global_myname,
+		  global_myname(),
 		  sess_key, 16,
 		  neg_flags);
 

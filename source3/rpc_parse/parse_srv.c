@@ -2686,7 +2686,7 @@ BOOL srv_io_r_net_file_close(char *desc, SRV_R_NET_FILE_CLOSE *q_n,
  Inits a SRV_INFO_100 structure.
  ********************************************************************/
 
-void init_srv_info_100(SRV_INFO_100 *sv100, uint32 platform_id, char *name)
+void init_srv_info_100(SRV_INFO_100 *sv100, uint32 platform_id, const char *name)
 {
 	DEBUG(5,("init_srv_info_100\n"));
 
@@ -2725,9 +2725,9 @@ static BOOL srv_io_info_100(char *desc, SRV_INFO_100 *sv100, prs_struct *ps, int
  Inits a SRV_INFO_101 structure.
  ********************************************************************/
 
-void init_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
+void init_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, const char *name,
 				uint32 ver_major, uint32 ver_minor,
-				uint32 srv_type, char *comment)
+				uint32 srv_type, const char *comment)
 {
 	DEBUG(5,("init_srv_info_101\n"));
 
@@ -2782,11 +2782,11 @@ static BOOL srv_io_info_101(char *desc, SRV_INFO_101 *sv101, prs_struct *ps, int
  Inits a SRV_INFO_102 structure.
  ********************************************************************/
 
-void init_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, char *name,
-				char *comment, uint32 ver_major, uint32 ver_minor,
+void init_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, const char *name,
+				const char *comment, uint32 ver_major, uint32 ver_minor,
 				uint32 srv_type, uint32 users, uint32 disc, uint32 hidden,
 				uint32 announce, uint32 ann_delta, uint32 licenses,
-				char *usr_path)
+				const char *usr_path)
 {
 	DEBUG(5,("init_srv_info_102\n"));
 

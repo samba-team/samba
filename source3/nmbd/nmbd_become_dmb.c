@@ -23,14 +23,11 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-extern char **my_netbios_names;
 extern struct in_addr allones_ip;
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
 
-static void become_domain_master_browser_bcast(char *);
+static void become_domain_master_browser_bcast(const char *);
 
 /****************************************************************************
   Fail to become a Domain Master Browser on a subnet.
@@ -53,11 +50,11 @@ workgroup %s on subnet %s\n", fail_name->name, subrec->subnet_name));
   /* Set the state back to DOMAIN_NONE. */
   work->dom_state = DOMAIN_NONE;
 
-  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname())) == NULL)
   {
     DEBUG(0,("become_domain_master_fail: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-       global_myname, work->work_group, subrec->subnet_name));
+       global_myname(), work->work_group, subrec->subnet_name));
     return;
   }
 
@@ -92,11 +89,11 @@ workgroup %s on subnet %s\n", registered_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname())) == NULL)
   {
     DEBUG(0,("become_domain_master_stage2: Error - cannot find server %s \
 in workgroup %s on subnet %s\n", 
-       global_myname, registered_name->name, subrec->subnet_name));
+       global_myname(), registered_name->name, subrec->subnet_name));
     work->dom_state = DOMAIN_NONE;
     return;
   }
@@ -112,7 +109,7 @@ in workgroup %s on subnet %s\n",
 
   if( DEBUGLVL( 0 ) )
     {
-    dbgtext( "*****\n\nSamba server %s ", global_myname );
+    dbgtext( "*****\n\nSamba server %s ", global_myname() );
     dbgtext( "is now a domain master browser for " );
     dbgtext( "workgroup %s ", work->work_group );
     dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
@@ -128,7 +125,7 @@ in workgroup %s on subnet %s\n",
        will stop us syncing with ourself if we are also
        a local master browser. */
 
-    make_nmb_name(&nmbname, global_myname, 0x20);
+    make_nmb_name(&nmbname, global_myname(), 0x20);
 
     work->dmb_name = nmbname;
     /* Pick the first interface ip address as the domain master browser ip. */
@@ -266,7 +263,7 @@ querying WINS server for name %s.\n",
   Attempt to become a domain master browser on all broadcast subnets.
   ****************************************************************************/
 
-static void become_domain_master_browser_bcast(char *workgroup_name)
+static void become_domain_master_browser_bcast(const char *workgroup_name)
 {
   struct subnet_record *subrec;
 
@@ -315,7 +312,7 @@ for domain master browser on workgroup %s\n", subrec->subnet_name, workgroup_nam
   Attempt to become a domain master browser by registering with WINS.
   ****************************************************************************/
 
-static void become_domain_master_browser_wins(char *workgroup_name)
+static void become_domain_master_browser_wins(const char *workgroup_name)
 {
   struct work_record *work;
 
@@ -391,9 +388,9 @@ void add_domain_names(time_t t)
          1.9.16p2 to 1.9.16p11 - due to a bug in namelogon.c,
          cannot provide domain master / domain logon services.
        */
-      become_domain_master_browser_wins(global_myworkgroup);
+      become_domain_master_browser_wins(lp_workgroup());
     }
     else
-      become_domain_master_browser_bcast(global_myworkgroup);
+      become_domain_master_browser_bcast(lp_workgroup());
   }
 }

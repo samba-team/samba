@@ -28,7 +28,7 @@
     results can be used.  It should be freed using ads_msgfree.
 */
 ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
-				      const char *printer, char *servername)
+				      const char *printer, const char *servername)
 {
 	ADS_STATUS status;
 	char *srv_dn, **srv_cn, *exp;
@@ -77,7 +77,7 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 	ads_mod_str(ctx, &mods, "versionNumber", prt->versionNumber);
 
 	/* now the optional ones */
-	ads_mod_strlist(ctx, &mods, "description", prt->description);
+	ads_mod_strlist(ctx, &mods, "description", (const char **)prt->description);
 	ads_mod_str(ctx, &mods, "assetNumber",prt->assetNumber);
 	ads_mod_str(ctx, &mods, "bytesPerMinute",prt->bytesPerMinute);
 	ads_mod_str(ctx, &mods, "defaultPriority",prt->defaultPriority);
@@ -93,10 +93,10 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 		     prt->operatingSystemVersion);
 	ads_mod_str(ctx, &mods, "physicalLocationObject",
 		     prt->physicalLocationObject);
-	ads_mod_strlist(ctx, &mods, "portName", prt->portName);
+	ads_mod_strlist(ctx, &mods, "portName", (const char **)prt->portName);
 	ads_mod_str(ctx, &mods, "printStartTime", prt->printStartTime);
 	ads_mod_str(ctx, &mods, "printEndTime", prt->printEndTime);
-	ads_mod_strlist(ctx, &mods, "printBinNames", prt->printBinNames);
+	ads_mod_strlist(ctx, &mods, "printBinNames", (const char **)prt->printBinNames);
 	/*... and many others */
 
 	/* do the ldap modify */
@@ -107,7 +107,6 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 
 	return status;
 }
-	
 
 /*
   add a printer to the directory

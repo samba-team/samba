@@ -316,7 +316,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 
 	if (*workstation_list) {
 		BOOL invalid_ws = True;
-		char *s = workstation_list;
+		const char *s = workstation_list;
 			
 		fstring tok;
 			
@@ -454,7 +454,7 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 	   attempt to check the password locally,
 	   unless it is one of our aliases. */
 	
-	if (!is_netbios_alias_or_name(user_info->domain.str)) {
+	if (!is_myname(user_info->domain.str)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	

@@ -23,9 +23,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-extern char **my_netbios_names;
 extern struct in_addr allones_ip;
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
@@ -47,11 +44,11 @@ workgroup %s on subnet %s\n", fail_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname())) == NULL)
   {
     DEBUG(0,("become_logon_server_fail: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-       global_myname, fail_name->name, subrec->subnet_name));
+       global_myname(), fail_name->name, subrec->subnet_name));
     work->log_state = LOGON_NONE;
     return;
   }
@@ -87,11 +84,11 @@ workgroup %s on subnet %s\n", registered_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname())) == NULL)
   {
     DEBUG(0,("become_logon_server_success: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-       global_myname, registered_name->name, subrec->subnet_name));
+       global_myname(), registered_name->name, subrec->subnet_name));
     work->log_state = LOGON_NONE;
     return;
   }
@@ -115,7 +112,7 @@ in workgroup %s on subnet %s\n",
    */
   {
 	  struct nmb_name nmbname;
-	  make_nmb_name(&nmbname,global_myworkgroup,0x1c);
+	  make_nmb_name(&nmbname,lp_workgroup(),0x1c);
 	  insert_permanent_name_into_unicast(subrec, &nmbname, 0x1c);
   }
 
@@ -152,12 +149,12 @@ void add_logon_names(void)
 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
   {
-    struct work_record *work = find_workgroup_on_subnet(subrec, global_myworkgroup);
+    struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup());
 
     if (work && (work->log_state == LOGON_NONE))
     {
       struct nmb_name nmbname;
-      make_nmb_name(&nmbname,global_myworkgroup,0x1c);
+      make_nmb_name(&nmbname,lp_workgroup(),0x1c);
 
       if (find_name_on_subnet(subrec, &nmbname, FIND_SELF_NAME) == NULL)
       {
@@ -165,7 +162,7 @@ void add_logon_names(void)
         {
           dbgtext( "add_domain_logon_names:\n" );
           dbgtext( "Attempting to become logon server " );
-          dbgtext( "for workgroup %s ", global_myworkgroup );
+          dbgtext( "for workgroup %s ", lp_workgroup() );
           dbgtext( "on subnet %s\n", subrec->subnet_name );
         }
         become_logon_server(subrec, work);

@@ -33,7 +33,6 @@
 
 extern pstring user_socket_options;
 extern BOOL AllowDebugChange;
-extern pstring global_myname;
 
 static void popt_common_callback(poptContext con, 
 			   enum poptCallbackReason reason,
@@ -84,8 +83,7 @@ static void popt_common_callback(poptContext con,
 
 	case 'n':
 		if (arg) {
-			pstrcpy(global_myname,arg);
-			strupper(global_myname);
+			set_global_myname(arg);
 		}
 		break;
 

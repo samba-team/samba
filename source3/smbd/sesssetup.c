@@ -247,7 +247,6 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	const uint8 *cryptkey;
 	BOOL got_kerberos = False;
 	NTSTATUS nt_status;
-	extern pstring global_myname;
 	char *cliname=NULL, *domname=NULL;
 
 	/* parse out the OIDs and the first sec blob */
@@ -325,14 +324,14 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		fstrcpy(dnsdomname, (SEC_ADS == lp_security())?lp_realm():"");
 		strlower(dnsdomname);
 
-		fstrcpy(dnsname, global_myname);
+		fstrcpy(dnsname, global_myname());
 		fstrcat(dnsname, ".");
 		fstrcat(dnsname, dnsdomname);
 		strlower(dnsname);
 
 		msrpc_gen(&struct_blob, "aaaaa",
 			  2, lp_workgroup(),
-			  1, global_myname,
+			  1, global_myname(),
 			  4, dnsdomname,
 			  3, dnsname,
 			  0, "");

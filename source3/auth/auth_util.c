@@ -26,7 +26,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-extern pstring global_myname;
 extern DOM_SID global_sid_World;
 extern DOM_SID global_sid_Network;
 extern DOM_SID global_sid_Builtin_Guests;

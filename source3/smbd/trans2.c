@@ -28,7 +28,6 @@ extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
 extern uint32 global_client_caps;
-extern pstring global_myname;
 
 #define get_file_size(sbuf) (sbuf.st_size)
 
@@ -3021,7 +3020,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 
 		rap_jobid = pjobid_to_rap(SNUM(fsp->conn), fsp->print_jobid);                     /* Job number */
 		SSVAL(pdata,0,rap_jobid);                     /* Job number */
-		srvstr_push( outbuf, pdata + 2, global_myname, 15, STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
+		srvstr_push( outbuf, pdata + 2, global_myname(), 15, STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
 		srvstr_push( outbuf, pdata+18, lp_servicename(SNUM(conn)), 13, STR_ASCII|STR_TERMINATE); /* Service name */
 		send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
 		return(-1);

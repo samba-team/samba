@@ -62,7 +62,7 @@ static char winbind_separator(void)
 	return sep;
 }
 
-static char *get_winbind_domain(void)
+static const char *get_winbind_domain(void)
 {
 	struct winbindd_response response;
 	static fstring winbind_domain;
@@ -206,7 +206,7 @@ static BOOL wbinfo_list_domains(void)
 	/* Display response */
 
 	if (response.extra_data) {
-		char *extra_data = (char *)response.extra_data;
+		const char *extra_data = (char *)response.extra_data;
 
 		while(next_token(&extra_data, name, ",", sizeof(fstring)))
 			d_printf("%s\n", name);
@@ -514,7 +514,7 @@ static BOOL wbinfo_auth_crap(char *username)
 static BOOL print_domain_users(void)
 {
 	struct winbindd_response response;
-	char *extra_data;
+	const char *extra_data;
 	fstring name;
 
 	/* Send request to winbind daemon */
@@ -530,7 +530,7 @@ static BOOL print_domain_users(void)
 	if (!response.extra_data)
 		return False;
 
-	extra_data = (char *)response.extra_data;
+	extra_data = (const char *)response.extra_data;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring)))
 		d_printf("%s\n", name);
@@ -545,7 +545,7 @@ static BOOL print_domain_users(void)
 static BOOL print_domain_groups(void)
 {
 	struct winbindd_response response;
-	char *extra_data;
+	const char *extra_data;
 	fstring name;
 
 	ZERO_STRUCT(response);
@@ -559,7 +559,7 @@ static BOOL print_domain_groups(void)
 	if (!response.extra_data)
 		return False;
 
-	extra_data = (char *)response.extra_data;
+	extra_data = (const char *)response.extra_data;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring)))
 		d_printf("%s\n", name);
@@ -679,7 +679,6 @@ enum {
 
 int main(int argc, char **argv)
 {
-	extern pstring global_myname;
 	int opt;
 
 	poptContext pc;
@@ -717,20 +716,14 @@ int main(int argc, char **argv)
 
 	/* Samba client initialisation */
 
-	if (!*global_myname) {
-		char *p;
-
-		fstrcpy(global_myname, myhostname());
-		p = strchr(global_myname, '.');
-		if (p)
-			*p = 0;
-	}
-
 	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
 		d_fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
 			dyn_CONFIGFILE, strerror(errno));
 		exit(1);
 	}
+
+	if (!init_names())
+		return 1;
 
 	load_interfaces();
 

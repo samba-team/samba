@@ -34,8 +34,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-extern fstring global_myworkgroup;
-extern pstring global_myname;
 extern DOM_SID global_sid_Builtin;
 
 extern rid_name domain_group_rids[];
@@ -2123,7 +2121,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			free_samr_db(info);
 			
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL), 
+			init_unk_info2(&ctr->info.inf2, lp_workgroup(), global_myname(), (uint32) time(NULL), 
 				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
@@ -2133,7 +2131,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info3(&ctr->info.inf3, nt_logout);
 			break;
 		case 0x05:
-			init_unk_info5(&ctr->info.inf5, global_myname);
+			init_unk_info5(&ctr->info.inf5, global_myname());
 			break;
 		case 0x06:
 			init_unk_info6(&ctr->info.inf6);
@@ -2564,7 +2562,7 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
 	struct samr_info *info;
 	uint32 num_entries = 2;
 	fstring dom[2];
-	char *name;
+	const char *name;
 
 	r_u->status = NT_STATUS_OK;
 	
@@ -2578,10 +2576,10 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
-		name = global_myworkgroup;
+		name = lp_workgroup();
 		break;
 	default:
-		name = global_myname;
+		name = global_myname();
 	}
 
 	fstrcpy(dom[0],name);
@@ -4313,7 +4311,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			free_samr_db(info);
 
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL), 
+			init_unk_info2(&ctr->info.inf2, lp_workgroup(), global_myname(), (uint32) time(NULL), 
 				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
@@ -4325,7 +4323,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			init_unk_info3(&ctr->info.inf3, nt_logout);
 			break;
 		case 0x05:
-			init_unk_info5(&ctr->info.inf5, global_myname);
+			init_unk_info5(&ctr->info.inf5, global_myname());
 			break;
 		case 0x06:
 			init_unk_info6(&ctr->info.inf6);

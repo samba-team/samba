@@ -247,7 +247,7 @@ static void complete_sync(struct sync_record *s)
 	unsigned type;
 	pstring comment;
 	pstring line;
-	char *ptr;
+	const char *ptr;
 	int count=0;
 
 	f = x_fopen(s->fname,O_RDONLY, 0);

@@ -134,7 +134,7 @@ static BOOL net_io_netinfo_1(char *desc, NETLOGON_INFO_1 *info, prs_struct *ps, 
 ********************************************************************/
 
 static void init_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
-				uint32 tc_status, char *trusted_dc_name)
+				uint32 tc_status, const char *trusted_dc_name)
 {
 	int len_dc_name = strlen(trusted_dc_name);
 	info->flags      = flags;
@@ -221,7 +221,7 @@ BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, in
  Inits an NET_Q_LOGON_CTRL2 structure.
 ********************************************************************/
 
-void init_net_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, char *srv_name,
+void init_net_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, const char *srv_name,
 			    uint32 query_level)
 {
 	DEBUG(5,("init_q_logon_ctrl2\n"));
@@ -240,7 +240,7 @@ void init_net_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, char *srv_name,
 void init_net_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
 			    uint32 flags, uint32 pdc_status, 
 			    uint32 logon_attempts, uint32 tc_status, 
-			    char *trusted_domain_name)
+			    const char *trusted_domain_name)
 {
 	DEBUG(5,("init_r_logon_ctrl2\n"));
 
@@ -352,7 +352,7 @@ BOOL net_io_q_logon_ctrl(char *desc, NET_Q_LOGON_CTRL *q_l, prs_struct *ps,
  Inits an NET_Q_LOGON_CTRL structure.
 ********************************************************************/
 
-void init_net_q_logon_ctrl(NET_Q_LOGON_CTRL *q_l, char *srv_name,
+void init_net_q_logon_ctrl(NET_Q_LOGON_CTRL *q_l, const char *srv_name,
 			   uint32 query_level)
 {
 	DEBUG(5,("init_q_logon_ctrl\n"));
@@ -430,7 +430,7 @@ BOOL net_io_r_logon_ctrl(char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps,
 ********************************************************************/
 
 void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
-			uint32 num_doms, char *dom_name)
+			uint32 num_doms, const char *dom_name)
 {
 	int i = 0;
 
@@ -791,8 +791,10 @@ BOOL net_io_r_auth_3(char *desc, NET_R_AUTH_3 *r_a, prs_struct *ps, int depth)
  Inits a NET_Q_SRV_PWSET.
 ********************************************************************/
 
-void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *sess_key, char *acct_name, 
-                uint16 sec_chan, char *comp_name, DOM_CRED *cred, uchar hashed_mach_pwd[16])
+void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
+		const char *logon_srv, const char *sess_key, const char *acct_name, 
+                uint16 sec_chan, const char *comp_name,
+		DOM_CRED *cred, uchar hashed_mach_pwd[16])
 {
 	unsigned char nt_cypher[16];
 	
@@ -857,9 +859,9 @@ BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, int de
  Init DOM_SID2 array from a string containing multiple sids
  *************************************************************************/
 
-static int init_dom_sid2s(TALLOC_CTX *ctx, char *sids_str, DOM_SID2 **ppsids)
+static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsids)
 {
-	char *ptr;
+	const char *ptr;
 	pstring s2;
 	int count = 0;
 
@@ -898,10 +900,10 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, char *sids_str, DOM_SID2 **ppsids)
  Inits a NET_ID_INFO_1 structure.
 ********************************************************************/
 
-void init_id_info1(NET_ID_INFO_1 *id, char *domain_name,
+void init_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				char *user_name, char *wksta_name,
-				char *sess_key,
+				const char *user_name, const char *wksta_name,
+				const char *sess_key,
 				unsigned char lm_cypher[16], unsigned char nt_cypher[16])
 {
 	int len_domain_name = strlen(domain_name);
@@ -1143,7 +1145,8 @@ static BOOL net_io_id_info2(char *desc,  NET_ID_INFO_2 *id, prs_struct *ps, int 
 ********************************************************************/
 
 void init_sam_info(DOM_SAM_INFO *sam,
-				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
+				const char *logon_srv, const char *comp_name,
+				DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
 				NET_ID_INFO_CTR *ctr)
 {
@@ -1270,7 +1273,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
  		 	 uint32 num_groups, const DOM_GID *gids,
 			 uint32 user_flgs, uchar *sess_key,
  			 const char *logon_srv, const char *logon_dom,
-			 const DOM_SID *dom_sid, char *other_sids)
+			 const DOM_SID *dom_sid, const char *other_sids)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */

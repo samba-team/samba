@@ -458,7 +458,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
   Make a pdb_context, given an array of strings
  *******************************************************************/
 
-NTSTATUS make_pdb_context_list(struct pdb_context **context, char **selected) 
+NTSTATUS make_pdb_context_list(struct pdb_context **context, const char **selected) 
 {
 	int i = 0;
 	struct pdb_methods *curmethods, *tmpmethods;
@@ -492,7 +492,7 @@ NTSTATUS make_pdb_context_string(struct pdb_context **context, const char *selec
 {
 	NTSTATUS ret;
 	char **newsel = str_list_make(selected, NULL);
-	ret = make_pdb_context_list(context, newsel);
+	ret = make_pdb_context_list(context, (const char **)newsel);
 	str_list_free(&newsel);
 	return ret;
 }

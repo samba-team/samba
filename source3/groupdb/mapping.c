@@ -840,7 +840,7 @@ convert a privilege string to a privilege array
 void convert_priv_from_text(PRIVILEGE_SET *se_priv, char *privilege)
 {
 	pstring tok;
-	char *p = privilege;
+	const char *p = privilege;
 	int i;
 	LUID_ATTR set;
 
