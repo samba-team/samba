@@ -160,5 +160,15 @@ setup(
               library_dirs = ["/usr/kerberos/lib"],
               extra_objects = obj_list),
 
+    # Moving to merge all individual extensions in to one big
+    # extension.  This is to avoid the fact that each extension is 3MB
+    # in size due to the lack of proper depedency management in Samba.
+
+    Extension(name = "samba",
+              sources = [samba_srcdir + "python/py_samba.c",
+                         samba_srcdir + "python/py_common.c"],
+              libraries = lib_list,
+              library_dirs = ["/usr/kerberos/lib"],
+              extra_objects = obj_list),
     ],
 )
