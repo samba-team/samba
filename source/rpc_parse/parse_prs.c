@@ -237,21 +237,22 @@ BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int de
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-	int i = 0;
+	int i = -1;
 	uint8 *start = (uint8*)q;
 
 	if (q == NULL) return False;
 
-	do 
+	do
 	{
+		i++;
 		RW_SVAL(ps->io, q, str->buffer[i],0);
 		q += 2;
-		i++;
-
-	} while ((i < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
+	}
+	while ((i < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
 		     (str->buffer[i] != 0));
 
-	ps->offset += i*2;
+
+	ps->offset += (i+1)*2;
 
 	dump_data(5+depth, (char *)start, i * 2);
 

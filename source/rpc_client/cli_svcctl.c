@@ -97,7 +97,8 @@ do a SVC Enumerate Services
 BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *hnd,
 				uint32 services_type, uint32 services_state,
-				uint32 buf_size, uint32 *resume_hnd)
+				uint32 buf_size, uint32 *resume_hnd,
+				ENUM_SRVC_STATUS **svcs)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -123,7 +124,6 @@ BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 	/* send the data on \PIPE\ */
 	if (rpc_api_pipe_req(cli, fnum, SVC_ENUM_SVCS_STATUS, &buf, &rbuf))
 	{
-#if 0
 		SVC_R_ENUM_SVCS_STATUS r_o;
 		BOOL p;
 
@@ -132,22 +132,19 @@ BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 		svc_io_r_enum_svcs_status("", &r_o, &rbuf, 0);
 		p = rbuf.offset != 0;
 
-		if (p && r_o.status != 0)
+		if (p && r_o.dos_status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SVC_ENUM_SVCS_STATUS: %s\n", get_nt_error_msg(r_o.status)));
-			p = False;
+			DEBUG(0,("SVC_ENUM_SVCS_STATUS: %s\n", smb_err_msg(ERRDOS, r_o.dos_status)));
+			p = r_o.dos_status != ERRmoredata;
 		}
 
 		if (p)
 		{
-			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			(*svcs) = r_o.svcs;
+			(*resume_hnd) = get_enum_hnd(&r_o.resume_hnd);
 			valid_pol = True;
 		}
-#else
-	valid_pol = True;
-#endif
 	}
 
 	prs_mem_free(&rbuf);

@@ -46,6 +46,7 @@ void cmd_svc_enum(struct client_info *info)
 	BOOL res1 = True;
 	int i;
 	uint32 resume_hnd = 0;
+	ENUM_SRVC_STATUS *svcs = NULL;
 
 	POLICY_HND sc_man_pol;
 	fstring full_keyname;
@@ -65,11 +66,20 @@ void cmd_svc_enum(struct client_info *info)
 	                        srv_name, NULL, 0x80000004,
 				&sc_man_pol) : False;
 
+	do
+	{
 	/* enumerate services */
 	res1 = res ? do_svc_enum_svcs(smb_cli, fnum,
 				&sc_man_pol,
 	                        0x00000030, 0x00000003,
-	                        0x00000200, &resume_hnd) : False;
+					0x00000080, &resume_hnd, &svcs) : False;
+
+	} while (resume_hnd != 0);
+
+	if (svcs != NULL)
+	{
+		free(svcs);
+	}
 
 #if 0
 	if (res1 && num_subkeys > 0)

@@ -343,7 +343,6 @@ void smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "smb_io_unistr");
 	depth++;
 
-	prs_align(ps);
 	prs_unistr("unistr", ps, depth, uni);
 }
 

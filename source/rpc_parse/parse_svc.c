@@ -135,6 +135,204 @@ void svc_io_q_enum_svcs_status(char *desc,  SVC_Q_ENUM_SVCS_STATUS *q_u, prs_str
 }
 
 /*******************************************************************
+makes an SVC_R_ENUM_SVCS_STATUS structure.
+********************************************************************/
+void make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c, 
+				ENUM_SRVC_STATUS *svcs, uint32 more_buf_size,
+				uint32 num_svcs, uint32 resume_hnd,
+				uint32 dos_status)
+{
+	if (r_c == NULL) return;
+
+	DEBUG(5,("make_svc_r_enum_svcs_status\n"));
+
+	r_c->svcs          = svcs;
+	r_c->more_buf_size = more_buf_size;
+	r_c->num_svcs      = num_svcs;
+	make_enum_hnd(&r_c->resume_hnd, resume_hnd);
+	r_c->dos_status = dos_status;
+}
+
+/*******************************************************************
+reads or writes a SVC_R_ENUM_SVCS_STATUS structure.
+
+this is another wierd structure.  WHY oh WHY can the microsoft teams
+not COMMUNICATE and get some CONSISTENCY TO THEIR DATA STRUCTURES!
+ARGH!
+
+********************************************************************/
+void svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_struct *ps, int depth)
+{
+	int i;
+	if (svc == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_r_enum_svcs_status");
+	depth++;
+
+	prs_align(ps);
+	
+	/*
+	 * format is actually as laid out in SVC_R_ENUM_SVCS_STATUS.
+	 * the reason for all the jumping about, which is horrible
+	 * and can be avoided, is due to the use of offsets instead
+	 * of pointers.
+	 *
+	 * if i ever find out that these offsets are in fact non-zero
+	 * tokens just like pointer-tokens, i am going to go MAD.
+	 */
+
+	if (ps->io)
+	{
+		/* reading */
+
+		uint32 buf_offset;
+		uint32 new_offset;
+
+		prs_uint32("buf_size", ps, depth, &(svc->buf_size));
+
+		buf_offset = ps->offset;
+		ps->offset = buf_offset + svc->buf_size;
+
+		prs_uint32("more_buf_size", ps, depth, &(svc->more_buf_size));
+		prs_uint32("num_svcs", ps, depth, &(svc->num_svcs));
+		smb_io_enum_hnd("resume_hnd", &(svc->resume_hnd), ps, depth); 
+		prs_uint32("dos_status", ps, depth, &(svc->dos_status));
+
+		new_offset = ps->offset;
+		ps->offset = buf_offset;
+
+		svc->svcs = Realloc(NULL, svc->num_svcs * sizeof(ENUM_SRVC_STATUS));
+
+		if (svc->svcs == NULL)
+		{
+			DEBUG(0,("svc_io_r_enum_svcs_status: Realloc failed\n"));
+			ps->offset = 0x7fffffff;
+			return;
+		}
+
+		bzero(svc->svcs, svc->num_svcs * sizeof(ENUM_SRVC_STATUS));
+
+		for (i = 0; i < svc->num_svcs; i++)
+		{
+			fstring name;
+			uint32 old_offset;
+			uint32 srvc_offset;
+			uint32 disp_offset;
+
+			prs_uint32("srvc_offset", ps, depth, &srvc_offset);
+			prs_uint32("disp_offset", ps, depth, &disp_offset);
+			svc_io_svc_status("status", &svc->svcs[i].status, ps, depth); 
+
+			old_offset = ps->offset;
+
+			ps->offset = buf_offset + srvc_offset;
+			slprintf(name, sizeof(name)-1, "srvc[%02d]", i);
+			smb_io_unistr(name, &svc->svcs[i].uni_srvc_name, ps, depth);
+
+			ps->offset = buf_offset + disp_offset;
+			slprintf(name, sizeof(name)-1, "disp[%02d]", i);
+			smb_io_unistr(name, &svc->svcs[i].uni_disp_name, ps, depth);
+
+			ps->offset = old_offset;
+		}
+
+		ps->offset = new_offset;
+	}
+	else
+	{
+		/* writing */
+
+		uint32 buf_offset;
+		uint32 old_buf_offset;
+		uint32 srvc_offset = 9 * sizeof(uint32) * svc->num_svcs;
+
+		prs_uint32_pre("buf_size", ps, depth, &svc->buf_size, &buf_offset);
+		old_buf_offset = ps->offset;
+
+		srvc_offset += old_buf_offset;
+
+		if (svc->svcs == NULL)
+		{
+			return;
+		}
+
+		for (i = 0; i < svc->num_svcs; i++)
+		{
+			fstring name;
+			uint32 old_offset;
+
+			/*
+			 * store unicode string offset and unicode string
+			 */
+
+			srvc_offset -= old_buf_offset;
+			prs_uint32("srvc_offset", ps, depth, &srvc_offset);
+			srvc_offset += old_buf_offset;
+
+			slprintf(name, sizeof(name)-1, "srvc[%02d]", i);
+
+			old_offset = ps->offset;
+			ps->offset = srvc_offset;
+			smb_io_unistr(name, &svc->svcs[i].uni_srvc_name, ps, depth);
+			srvc_offset = ps->offset;
+			ps->offset = old_offset;
+
+			/*
+			 * store unicode string offset and unicode string
+			 */
+
+			srvc_offset -= old_buf_offset;
+			prs_uint32("disp_offset", ps, depth, &srvc_offset);
+			srvc_offset += old_buf_offset;
+
+			slprintf(name, sizeof(name)-1, "disp[%02d]", i);
+
+			old_offset = ps->offset;
+			ps->offset = srvc_offset;
+			smb_io_unistr(name, &svc->svcs[i].uni_disp_name, ps, depth);
+			srvc_offset = ps->offset;
+			ps->offset = old_offset;
+
+			/*
+			 * store status info
+			 */
+
+			svc_io_svc_status("status", &svc->svcs[i].status, ps, depth); 
+		}
+
+		prs_uint32_post("buf_size", ps, depth, &svc->buf_size, buf_offset, srvc_offset - buf_offset - sizeof(uint32));
+
+		ps->offset = srvc_offset;
+
+		prs_uint32("more_buf_size", ps, depth, &(svc->more_buf_size));
+		prs_uint32("num_svcs", ps, depth, &(svc->num_svcs));
+		smb_io_enum_hnd("resume_hnd", &(svc->resume_hnd), ps, depth); 
+		prs_uint32("dos_status", ps, depth, &(svc->dos_status));
+	}
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void svc_io_svc_status(char *desc,  SVC_STATUS *svc, prs_struct *ps, int depth)
+{
+	if (svc == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_svc_status");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("svc_type", ps, depth, &(svc->svc_type));
+	prs_uint32("current_state", ps, depth, &(svc->current_state));
+	prs_uint32("controls_accepted", ps, depth, &(svc->controls_accepted));
+	prs_uint32("win32_exit_code", ps, depth, &(svc->win32_exit_code));
+	prs_uint32("svc_specific_exit_code", ps, depth, &(svc->svc_specific_exit_code));
+	prs_uint32("check_point", ps, depth, &(svc->check_point));
+	prs_uint32("wait_hint", ps, depth, &(svc->wait_hint));
+}
+
+/*******************************************************************
 makes an SVC_Q_CLOSE structure.
 ********************************************************************/
 void make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd)
@@ -180,48 +378,3 @@ void svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth)
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
-#if 0
-/*******************************************************************
-reads or writes a SEC_DESC_BUF structure.
-********************************************************************/
-void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
-{
-	uint32 off_len;
-	uint32 old_offset;
-	uint32 size;
-
-	if (sec == NULL) return;
-
-	prs_debug(ps, depth, desc, "sec_io_desc_buf");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint32_pre("max_len", ps, depth, &(sec->max_len), &off_max_len);
-
-	old_offset = ps->offset;
-
-	if (sec->len != 0 && ps->io)
-	{
-		/* reading */
-		sec->sec = malloc(sizeof(*sec->sec));
-		ZERO_STRUCTP(sec->sec);
-
-		if (sec->sec == NULL)
-		{
-			DEBUG(0,("INVALID SEC_DESC\n"));
-			ps->offset = 0xfffffffe;
-			return;
-		}
-	}
-
-	/* reading, length is non-zero; writing, descriptor is non-NULL */
-	if ((sec->len != 0 || (!ps->io)) && sec->sec != NULL)
-	{
-		sec_io_desc("sec   ", sec->sec, ps, depth);
-	}
-
-	size = ps->offset - old_offset;
-	prs_uint32_post("max_len", ps, depth, &(sec->max_len), off_max_len, size == 0 ? sec->max_len : size);
-}
-#endif
