@@ -2,14 +2,16 @@
 
 AUTOMAKE_OPTIONS = no-dependencies
 
-lib_LIBRARIES = asn1
+lib_LIBRARIES = libasn1.a
 
-asn1_SOURCES = asn1.c der_get.c der_put.c
+libasn1_a_SOURCES = asn1.c der_get.c der_put.c
 
 
 noinst_PROGRAMS = asn1_compile
 
 asn1_compile_SOURCES = parse.y lex.l main.c hash.c symbol.c gen.c
+
+asn1_compile_LDADD = @LEXLIB@
 
 parse.c: parse.y
 	$(YACC) -d $(YFLAGS) $(srcdir)/parse.y
