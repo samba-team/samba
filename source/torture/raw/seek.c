@@ -145,6 +145,26 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
+
+	printf("position_information via paths\n");
+
+	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
+	sfinfo.position_information.file.fname = fname;
+	sfinfo.position_information.in.position = 32;
+	status = smb_raw_setpathinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fnum = fnum2;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.position_information.out.position, 25);
+
+	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fname = fname;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.position_information.out.position, 0);
 	
 
 done:
