@@ -3739,14 +3739,27 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level,
-				uint32 clientmajorversion, uint32 clientminorversion,
-				NEW_BUFFER *buffer, uint32 offered,
-				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion)
+
+uint32 _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_u, SPOOL_R_GETPRINTERDRIVER2 *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	UNISTR2 *uni_arch = &q_u->architecture;
+	uint32 level = q_u->level;
+	uint32 clientmajorversion = q_u->clientmajorversion;
+/*	uint32 clientminorversion = q_u->clientminorversion; - notused. */
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+	uint32 *servermajorversion = &r_u->servermajorversion;
+	uint32 *serverminorversion = &r_u->serverminorversion;
+
 	fstring servername;
 	fstring architecture;
 	int snum;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_getprinterdriver2\n"));
 
@@ -3776,8 +3789,11 @@ uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, u
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_startpageprinter(POLICY_HND *handle)
+
+uint32 _spoolss_startpageprinter(pipes_struct *p, SPOOL_Q_STARTPAGEPRINTER *q_u, SPOOL_R_STARTPAGEPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	if (OPEN_HANDLE(Printer)) {
@@ -3791,8 +3807,11 @@ uint32 _spoolss_startpageprinter(POLICY_HND *handle)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_endpageprinter(POLICY_HND *handle)
+
+uint32 _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPOOL_R_ENDPAGEPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	if (!OPEN_HANDLE(Printer)) {
@@ -3805,16 +3824,19 @@ uint32 _spoolss_endpageprinter(POLICY_HND *handle)
 	return NT_STATUS_NO_PROBLEMO;
 }
 
-
 /********************************************************************
  * api_spoolss_getprinter
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
-				pipes_struct *p, DOC_INFO *docinfo,
-				uint32 *jobid)
+
+uint32 _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, SPOOL_R_STARTDOCPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+/* 	uint32 level = q_u->doc_info_container.level; - notused. */
+	DOC_INFO *docinfo = &q_u->doc_info_container.docinfo;
+	uint32 *jobid = &r_u->jobid;
+
 	DOC_INFO_1 *info_1 = &docinfo->doc_info_1;
 	int snum;
 	pstring jobname;
