@@ -140,7 +140,7 @@ void wins_srv_died(struct in_addr wins_ip)
 	DEBUG(4,("Marking wins server %s dead for %u seconds \n",
 		 inet_ntoa(wins_ip), DEATH_TIME));
 
-	sys_adminlog(LOG_ERR, "Cannot communicate with wins server %s. Setting offline for %u seconds.\n",
+	sys_adminlog(LOG_ERR, "Cannot communicate with WINS server %s. Setting offline for %u seconds.\n",
 			inet_ntoa(wins_ip), DEATH_TIME );
 }
 
