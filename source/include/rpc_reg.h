@@ -85,10 +85,6 @@
 #define REG_FULL_RESOURCE_DESCRIPTOR   9
 #define REG_RESOURCE_REQUIREMENTS_LIST 10
 
-/* Shutdown options */
-#define REG_FORCE_SHUTDOWN 0x001
-#define REG_REBOOT_ON_SHUTDOWN 0x100
-
 /* structure to contain registry values */
 
 typedef struct {
@@ -616,7 +612,8 @@ typedef struct q_reg_shutdown_info
 	UNIHDR hdr_msg;		/* shutdown message */
 	UNISTR2 uni_msg;	/* seconds */
 	uint32 timeout;		/* seconds */
-	uint16 flags;
+	uint8 force;		/* boolean: force shutdown */
+	uint8 reboot;		/* boolean: reboot on shutdown */
 		
 } REG_Q_SHUTDOWN;
 

@@ -1444,9 +1444,6 @@ static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_sta
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
-	uint16 flgs = 0;
-	BOOL reboot = opt_reboot;
-	BOOL force = opt_force;
 #if 0
 	poptContext pc;
 	int rc;
@@ -1472,12 +1469,6 @@ static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_sta
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 #endif
-	if (reboot) {
-		flgs |= REG_REBOOT_ON_SHUTDOWN;
-	}
-	if (force) {
-		flgs |= REG_FORCE_SHUTDOWN;
-	}
 	if (opt_comment) {
 		msg = opt_comment;
 	}
@@ -1486,7 +1477,7 @@ static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_sta
 	}
 
 	/* create an entry */
-	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, flgs);
+	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, opt_reboot, opt_force);
 
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5,("Shutdown of remote machine succeeded\n"));
