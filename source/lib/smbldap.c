@@ -936,7 +936,7 @@ int smbldap_search(struct smbldap_state *ldap_state,
 		ZERO_STRUCT(tval);
 		GetTimeOfDay(&tval);
 
-		tdiff = usec_time_diff(&tval, &ldap_state->last_rebind.tv_sec);
+		tdiff = usec_time_diff(&tval, &ldap_state->last_rebind);
 		tdiff /= 1000; /* Convert to milliseconds. */
 
 		sleep_time = lp_ldap_replication_sleep()-(int)tdiff;
