@@ -1,3 +1,10 @@
+2000-12-15  Assar Westerlund  <assar@sics.se>
+
+	* test-package.m4: s/ifval/m4_ifval/ to keep in sync with
+ 	autoconf.  from Ake Sandgren <ake@cs.umu.se>
+	* check-var.m4: s/ifval/m4_ifval/ to keep in sync with autoconf.
+  	from Ake Sandgren <ake@cs.umu.se>
+
 2000-12-13  Assar Westerlund  <assar@sics.se>
 
 	* krb-irix.m4: need to set irix to no first.  From Ake Sandgren
