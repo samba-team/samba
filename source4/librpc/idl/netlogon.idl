@@ -353,9 +353,9 @@ interface netlogon
 		NTTIME forcedlogoff;
 		uint16 minpasswdlen;
 		uint16 passwdhistorylen;
-		NTTIME pwd_must_change_time;
-		NTTIME pwd_can_change_time;
-		NTTIME domain_modify_time;
+		ULONG8 pwd_must_change_time;
+		ULONG8 pwd_can_change_time;
+		ULONG8 sequence_num;
 		NTTIME domain_create_time;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
@@ -537,7 +537,7 @@ interface netlogon
 		[case(18)] netr_DELTA_SECRET *secret;
 		[case(20)] netr_DELTA_DELETE_USER *delete_group;
 		[case(21)] netr_DELTA_DELETE_USER *delete_user;
-		[case(22)] HYPER_T *modified_count;
+		[case(22)] ULONG8 *modified_count;
 	} netr_DELTA_UNION;
 
 	typedef union {
@@ -582,7 +582,7 @@ interface netlogon
 		[in]      netr_Authenticator credential,
 		[in,out]  netr_Authenticator return_authenticator,
 		[in]      uint32 database_id,
-		[in,out]  HYPER_T domain_modify_count,
+		[in,out]  ULONG8 sequence_num,
 		[in]      uint32 preferredmaximumlength,
 		[out]     netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
@@ -602,9 +602,6 @@ interface netlogon
 		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
-#if 0
-
-
 
 	/*****************/
 	/* Function 0x09 */
@@ -616,19 +613,20 @@ interface netlogon
 	} UAS_INFO_0;
 
 	NTSTATUS netr_AccountDeltas(
-		[in][string] wchar_t *logonserver,
-		[in][string][ref] wchar_t *computername,
-		[in][ref] AUTHENTICATOR credential,
-		[in][out][ref] AUTHENTICATOR return_authenticator,
-		[out][ref][size_is(count_returned)] uint8 *Buffer,
-		[out][ref] uint32 count_returned,
-		[out][ref] uint32 total_entries,
-		[in][out][ref] UAS_INFO_0 recordid,
-		[in][long] count,
-		[in][long] level,
-		[in][long] buffersize,
+		[in]     unistr *logonserver,
+		[in]     unistr computername,
+		[in]     netr_Authenticator credential,
+		[in,out] netr_Authenticator return_authenticator,
+		[out][size_is(count_returned)] uint8 *buffer,
+		[out]    uint32 count_returned,
+		[out]    uint32 total_entries,
+		[in,out] UAS_INFO_0 recordid,
+		[in]     uint32 count,
+		[in]     uint32 level,
+		[in]     uint32 buffersize
 		);
 
+#if 0
 
 	/*****************/
 	/* Function 0x0A */
@@ -666,7 +664,7 @@ interface netlogon
 	typedef struct {
 		uint32 flags;
 		uint32 pdc_connection_status;
-		unistrtrusted_dc_name;
+		unistr trusted_dc_name;
 		uint32 tc_connection_status;
 	} NETLOGON_INFO_2;
 

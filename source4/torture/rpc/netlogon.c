@@ -240,6 +240,9 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
+/* we remember the sequence numbers so we can easily do a DatabaseDelta */
+static struct ULONG8 sequence_nums[3];
+
 /*
   try a netlogon DatabaseSync
 */
@@ -283,6 +286,71 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			}
 
 			r.in.sync_context = r.out.sync_context;
+
+			if (r.out.delta_enum_array &&
+			    r.out.delta_enum_array->num_deltas > 0 &&
+			    r.out.delta_enum_array->delta_enum[0].delta_type == 1 &&
+			    r.out.delta_enum_array->delta_enum[0].delta_union.domain) {
+				sequence_nums[r.in.database_id] = 
+					r.out.delta_enum_array->delta_enum[0].delta_union.domain->sequence_num;
+				printf("sequence_nums[%d]=0x%08x%08x\n",
+				       r.in.database_id, 
+				       sequence_nums[r.in.database_id].high,
+				       sequence_nums[r.in.database_id].low);
+			}
+		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	}
+
+	return ret;
+}
+
+
+/*
+  try a netlogon DatabaseDeltas
+*/
+static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_DatabaseDeltas r;
+	struct netr_CredentialState creds;
+	const uint32 database_ids[] = {0, 1, 2}; 
+	int i;
+	BOOL ret = True;
+
+	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
+		return False;
+	}
+
+	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computername = lp_netbios_name();
+	r.in.preferredmaximumlength = (uint32)-1;
+	ZERO_STRUCT(r.in.return_authenticator);
+
+	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
+		r.in.database_id = database_ids[i];
+		r.in.sequence_num = sequence_nums[r.in.database_id];
+		r.in.sequence_num.low -= 1;
+
+		printf("Testing DatabaseDeltas of id %d at %d\n", 
+		       r.in.database_id, r.in.sequence_num.low);
+
+		do {
+			creds_client_authenticator(&creds, &r.in.credential);
+
+			status = dcerpc_netr_DatabaseDeltas(p, mem_ctx, &r);
+			if (!NT_STATUS_IS_OK(status) &&
+			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+				printf("DatabaseDeltas - %s\n", nt_errstr(status));
+				ret = False;
+				break;
+			}
+
+			if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+				printf("Credential chaining failed\n");
+			}
+
+			r.in.sequence_num.low++;
+			r.in.sequence_num.high = 0;
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
 
@@ -326,6 +394,10 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_DatabaseSync(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_DatabaseDeltas(p, mem_ctx)) {
 		ret = False;
 	}
 
