@@ -1534,5 +1534,57 @@ done:
 	return result;
 }
 
+/* Enumerate jobs */
+
+WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			    uint32 offered, uint32 *needed,
+			    POLICY_HND *hnd, uint32 firstjob, uint32 numofjobs,
+			    uint32 level)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMJOBS q;
+	SPOOL_R_ENUMJOBS r;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enumjobs(&q, hnd, firstjob, numofjobs, level, &buffer, 
+				offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumjobs("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMJOBS, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumjobs("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
 
 /** @} **/
