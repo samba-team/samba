@@ -21,8 +21,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-
-#if STANDALONE
+#ifdef STANDALONE
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -52,7 +51,7 @@
 #define DEFAULT_HASH_SIZE 131
 #define TDB_PAGE_SIZE 0x2000
 #define FREELIST_TOP (sizeof(struct tdb_header))
-#define TDB_ALIGN(x,a) (((x) + (a)) & ~((a)-1))
+#define TDB_ALIGN(x,a) (((x) + (a)-1) & ~((a)-1))
 #define TDB_BYTEREV(x) (((x<<24)|(x&0xFF00)<<8)|((x>>8)&0xFF00)|(x>>24))
 #define TDB_DEAD(r) ((r)->magic == TDB_DEAD_MAGIC)
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
@@ -472,10 +471,11 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 
    0 is returned if the space could not be allocated
  */
-static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length)
+static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length,
+			    struct list_struct *rec)
 {
-	tdb_off rec_ptr, last_ptr;
-	struct list_struct rec, newrec;
+	tdb_off rec_ptr, last_ptr, newrec_ptr;
+	struct list_struct newrec;
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) return 0;
 
@@ -490,34 +490,47 @@ static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length)
 
 	/* keep looking until we find a freelist record big enough */
 	while (rec_ptr) {
-		if (rec_free_read(tdb, rec_ptr, &rec) == -1) goto fail;
+		if (rec_free_read(tdb, rec_ptr, rec) == -1) goto fail;
 
-		if (rec.rec_len >= length) {
+		if (rec->rec_len >= length) {
 			/* found it - now possibly split it up  */
-			if (rec.rec_len > length + MIN_REC_SIZE) {
+			if (rec->rec_len > length + MIN_REC_SIZE) {
+				/* Length of left piece */
 				length = TDB_ALIGN(length, TDB_ALIGNMENT);
 
-				newrec.rec_len = rec.rec_len
-					- (sizeof(rec) + length);
-				newrec.next = rec.next;
-				newrec.magic = TDB_FREE_MAGIC;
+				/* Right piece to go on free list */
+				newrec.rec_len = rec->rec_len
+					- (sizeof(*rec) + length);
+				newrec_ptr = rec_ptr + sizeof(*rec) + length;
 
-				rec.rec_len = length;
-				rec.next = rec_ptr + sizeof(rec) + rec.rec_len;
+				/* And left record is shortened */
+				rec->rec_len = length;
+			} else
+				newrec_ptr = 0;
 
-				/* Update split-off record */
-				if (rec_write(tdb, rec.next, &newrec) == -1
-				    || update_tailer(tdb,rec.next,&newrec)==-1)
+			/* Remove allocated record from the free list */
+			if (ofs_write(tdb, last_ptr, &rec->next) == -1)
+				goto fail;
+
+			/* Update header: do this before we drop alloc
+                           lock, otherwise tdb_free() might try to
+                           merge with us, thinking we're free.
+                           (Thanks Jeremy Allison). */
+			rec->magic = TDB_MAGIC;
+			if (rec_write(tdb, rec_ptr, rec) == -1)
+				goto fail;
+
+			/* Did we create new block? */
+			if (newrec_ptr) {
+				/* Update allocated record tailer (we
+                                   shortened it). */
+				if (update_tailer(tdb, rec_ptr, rec) == -1)
 					goto fail;
-				/* Update record we're about to allocate */
-				if (rec_write(tdb, rec_ptr, &rec) == -1
-				    || update_tailer(tdb, rec_ptr, &rec)==-1)
+
+				/* Free new record */
+				if (tdb_free(tdb, newrec_ptr, &newrec) == -1)
 					goto fail;
 			}
-
-			/* remove it from the list */
-			if (ofs_write(tdb, last_ptr, &rec.next) == -1)
-					goto fail;
 
 			/* all done - return the new record offset */
 			tdb_unlock(tdb, -1, F_WRLCK);
@@ -525,11 +538,11 @@ static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length)
 		}
 		/* move to the next record */
 		last_ptr = rec_ptr;
-		rec_ptr = rec.next;
+		rec_ptr = rec->next;
 	}
 	/* we didn't find enough space. See if we can expand the
 	   database and if we can then try again */
-	if (tdb_expand(tdb, length + sizeof(rec)) == 0) goto again;
+	if (tdb_expand(tdb, length + sizeof(*rec)) == 0) goto again;
  fail:
 	tdb_unlock(tdb, -1, F_WRLCK);
 	return 0;
@@ -777,9 +790,9 @@ static int do_delete(TDB_CONTEXT *tdb, tdb_off rec_ptr, struct list_struct*rec)
 static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 			 struct list_struct *rec)
 {
-	tdb_off next;
+	int want_next = (tlock->off != 0);
 
-	/* No traversal allows sf you've called tdb_lockkeys() */
+	/* No traversal allows if you've called tdb_lockkeys() */
 	if (tdb->lockedkeys) return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
 
 	/* Lock each chain from the start one. */
@@ -792,21 +805,19 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 				     &tlock->off) == -1)
 				goto fail;
 		} else {
-
-			/* Get a copy of previous record, to go to next. */
-			if (rec_read(tdb, tlock->off, rec) == -1) {
-				unlock_record(tdb, tlock->off);
-				goto fail;
-			}
-
-			tlock->off = rec->next;
-		
-			/* Now unlock the previous record. */
+			/* Otherwise unlock the previous record. */
 			unlock_record(tdb, tlock->off);
 		}
 
+		if (want_next) {
+			/* We have offset of old record: grab next */
+			if (rec_read(tdb, tlock->off, rec) == -1) goto fail;
+			tlock->off = rec->next;
+		}
+
 		/* Iterate through chain */
-		for (; tlock->off; tlock->off = next) {
+		while( tlock->off) {
+			tdb_off current;
 			if (rec_read(tdb, tlock->off, rec) == -1) goto fail;
 			if (!TDB_DEAD(rec)) {
 				/* Woohoo: we found one! */
@@ -814,10 +825,12 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 				return tlock->off;
 			}
 			/* Try to clean dead ones from old traverses */
-			next = rec->next;
-			do_delete(tdb, tlock->off, rec);
+			current = tlock->off;
+			tlock->off = rec->next;
+			do_delete(tdb, current, rec);
 		}
 		tdb_unlock(tdb, tlock->hash, F_WRLCK);
+		want_next = 0;
 	}
 	/* We finished iteration without finding anything */
 	return TDB_ERRCODE(TDB_SUCCESS, 0);
@@ -968,7 +981,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 	if (!tdb_keylocked(tdb, hash)) return -1;
-	tdb_lock(tdb, BUCKET(hash), F_WRLCK);
+	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1) return -1;
 
 	/* check for it existing, on insert. */
 	if (flag == TDB_INSERT) {
@@ -993,10 +1006,10 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	/* now we're into insert / modify / replace of a record which
 	 * we know could not be optimised by an in-place store (for
 	 * various reasons).  */
-	if (!(rec_ptr = tdb_allocate(tdb, key.dsize + dbuf.dsize))) goto fail;
+	if (!(rec_ptr = tdb_allocate(tdb, key.dsize + dbuf.dsize, &rec)))
+		goto fail;
 
-	/* read the newly created record, then read hash top into next ptr */
-	if (rec_free_read(tdb, rec_ptr, &rec) == -1) goto fail;
+	/* Read hash top into next ptr */
 	if (ofs_read(tdb, TDB_HASH_TOP(hash), &rec.next) == -1) goto fail;
 
 	rec.key_len = key.dsize;
