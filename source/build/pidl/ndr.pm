@@ -40,19 +40,24 @@ my %type_alignments =
      "NTTIME_hyper"   => 8
      );
 
+foreach my $k (keys %type_alignments) {
+	$typedefs{$k} = {
+		NAME => $k,
+		TYPE => "TYPEDEF",
+		DATA => {
+			TYPE => "SCALAR",
+			ALIGN => $type_alignments{$k}
+		}
+	};
+}
+
 sub is_scalar_type($)
 {
     my $type = shift;
 
-    if (defined $type_alignments{$type}) {
-	    return 1;
-    }
-    if (util::is_enum($type)) {
-	    return 1;
-    }
-    if (util::is_bitmap($type)) {
-	    return 1;
-    }
+	return 1 if (defined($typedefs{$type}) and $typedefs{$type}->{DATA}->{TYPE} eq "SCALAR");
+    return 1 if (util::is_enum($type));
+	return 1 if (util::is_bitmap($type));
 
     return 0;
 }
@@ -320,9 +325,7 @@ sub struct_alignment
 			$a = align_type($e->{TYPE}); 
 		}
 
-		if ($align < $a) {
-			$align = $a;
-		}
+		$align = $a if ($align < $a);
 	}
 
 	return $align;
@@ -334,25 +337,27 @@ sub align_type
 {
 	my $e = shift;
 
-	# Scalar type
-	if (my $ret = $type_alignments{$e}) {
-	    return $ret;
-    }
+	unless (defined($typedefs{$e})) {
+	    # it must be an external type - all we can do is guess 
+		# print "Warning: assuming alignment of unknown type '$e' is 4\n";
+	    return 4;
+	}
 
-	if (defined $typedefs{$e}) {
-		my $dt = $typedefs{$e}->{DATA};
-		if ($dt->{TYPE} eq "STRUCT" or $dt->{TYPE} eq "UNION") {
-			return struct_alignment($dt);
-		} elsif ($dt->{TYPE} eq "ENUM") {
-	    	return align_type(util::enum_type_fn(util::get_enum($e)));
-		} elsif ($dt->{TYPE} eq "BITMAP") {
-			return align_type(util::bitmap_type_fn(util::get_bitmap($e)));
-		}
-	} 
+	my $dt = $typedefs{$e}->{DATA};
 
-    # it must be an external type - all we can do is guess 
-	# print "Warning: assuming alignment of unknown type '$e' is 4\n";
-    return 4;
+	if ($dt->{TYPE} eq "STRUCT") {
+		return struct_alignment($dt);
+	} elsif($dt->{TYPE} eq "UNION") {
+		return struct_alignment($dt);
+	} elsif ($dt->{TYPE} eq "ENUM") {
+	   	return align_type(util::enum_type_fn(util::get_enum($e)));
+	} elsif ($dt->{TYPE} eq "BITMAP") {
+		return align_type(util::bitmap_type_fn(util::get_bitmap($e)));
+	} elsif ($dt->{TYPE} eq "SCALAR") {
+		return $dt->{ALIGN};
+	}
+
+	die("Internal pidl error. Typedef has unknown data type $dt->{TYPE}!");
 }
 
 #####################################################################
@@ -1299,16 +1304,14 @@ sub ParseTypePush($)
 {
 	my($data) = shift;
 
-	if (ref($data) eq "HASH") {
-		($data->{TYPE} eq "STRUCT") &&
-		    ParseStructPush($data);
-		($data->{TYPE} eq "UNION") &&
-		    ParseUnionPush($data);
-		($data->{TYPE} eq "ENUM") &&
-		    ParseEnumPush($data);
-		($data->{TYPE} eq "BITMAP") &&
-		    ParseBitmapPush($data);
-	}
+	($data->{TYPE} eq "STRUCT") &&
+	    ParseStructPush($data);
+	($data->{TYPE} eq "UNION") &&
+	    ParseUnionPush($data);
+	($data->{TYPE} eq "ENUM") &&
+	    ParseEnumPush($data);
+	($data->{TYPE} eq "BITMAP") &&
+	    ParseBitmapPush($data);
 }
 
 #####################################################################
@@ -1317,16 +1320,14 @@ sub ParseTypePrint($)
 {
 	my($data) = shift;
 
-	if (ref($data) eq "HASH") {
-		($data->{TYPE} eq "STRUCT") &&
-		    ParseStructPrint($data);
-		($data->{TYPE} eq "UNION") &&
-		    ParseUnionPrint($data);
-		($data->{TYPE} eq "ENUM") &&
-		    ParseEnumPrint($data);
-		($data->{TYPE} eq "BITMAP") &&
-		    ParseBitmapPrint($data);
-	}
+	($data->{TYPE} eq "STRUCT") &&
+	    ParseStructPrint($data);
+	($data->{TYPE} eq "UNION") &&
+	    ParseUnionPrint($data);
+	($data->{TYPE} eq "ENUM") &&
+	    ParseEnumPrint($data);
+	($data->{TYPE} eq "BITMAP") &&
+	    ParseBitmapPrint($data);
 }
 
 #####################################################################
@@ -1335,16 +1336,14 @@ sub ParseTypePull($)
 {
 	my($data) = shift;
 
-	if (ref($data) eq "HASH") {
-		($data->{TYPE} eq "STRUCT") &&
-		    ParseStructPull($data);
-		($data->{TYPE} eq "UNION") &&
-		    ParseUnionPull($data);
-		($data->{TYPE} eq "ENUM") &&
-		    ParseEnumPull($data);
-		($data->{TYPE} eq "BITMAP") &&
-		    ParseBitmapPull($data);
-	}
+	($data->{TYPE} eq "STRUCT") &&
+	    ParseStructPull($data);
+	($data->{TYPE} eq "UNION") &&
+	    ParseUnionPull($data);
+	($data->{TYPE} eq "ENUM") &&
+	    ParseEnumPull($data);
+	($data->{TYPE} eq "BITMAP") &&
+	    ParseBitmapPull($data);
 }
 
 #####################################################################
@@ -1931,14 +1930,3 @@ sub Parse($$)
 }
 
 1;
-
-#Each type can:
-#
-#- Generate push fn
-#- Generate pull fn
-#- Generate print fn
-#- Generate push array fn
-#- Generate pull array fn
-#- Generate print fn
-#- align size
-#- "push prefix"
