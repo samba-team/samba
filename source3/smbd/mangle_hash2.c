@@ -119,7 +119,7 @@ static const char *reserved_names[] =
 
    this hash needs to be fast with a low collision rate (what hash doesn't?)
 */
-static u32 mangle_hash(const char *key, unsigned length)
+static u32 mangle_hash(const char *key, unsigned int length)
 {
 	u32 value;
 	u32   i;
@@ -129,6 +129,7 @@ static u32 mangle_hash(const char *key, unsigned length)
 	   doesn't depend on the case of the long name. Note that this
 	   is the only place where we need to use a multi-byte string
 	   function */
+	length = MIN(length,sizeof(fstring)-1);
 	strncpy(str, key, length);
 	str[length] = 0;
 	strupper_m(str);

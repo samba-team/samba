@@ -272,7 +272,7 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 						vuser->user.unix_name, vuser->unix_homedir);
 		} else {
 			DEBUG(3, ("Using static (or previously created) service for user '%s'; path = '%s'\n", 
-				vuser->user.unix_name, lp_path(servicenumber) ));
+				vuser->user.unix_name, lp_pathname(servicenumber) ));
 			vuser->homes_snum = servicenumber;
 		}
 	} 
