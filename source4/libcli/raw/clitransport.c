@@ -462,8 +462,8 @@ static void smbcli_transport_process_recv(struct smbcli_transport *transport)
 		if (transport->recv_buffer.received == NBT_HDR_SIZE) {
 			/* we've got a full header */
 			transport->recv_buffer.req_size = smb_len(transport->recv_buffer.header) + NBT_HDR_SIZE;
-			transport->recv_buffer.buffer = talloc(transport,
-							       NBT_HDR_SIZE+transport->recv_buffer.req_size);
+			transport->recv_buffer.buffer = talloc_size(transport,
+								    NBT_HDR_SIZE+transport->recv_buffer.req_size);
 			if (transport->recv_buffer.buffer == NULL) {
 				smbcli_transport_dead(transport);
 				return;

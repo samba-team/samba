@@ -730,8 +730,7 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 
 		l.in.domain_handle = &domain_handle;
 		l.in.num_rids = g.out.rids->count;
-		l.in.rids = talloc(mem_ctx,
-				   g.out.rids->count * sizeof(uint32_t));
+		l.in.rids = talloc_array_p(mem_ctx, uint32_t, g.out.rids->count);
 
 		for (i=0; i<g.out.rids->count; i++)
 			l.in.rids[i] = g.out.rids->rid[i].rid;

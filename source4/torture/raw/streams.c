@@ -71,7 +71,7 @@ static BOOL check_stream(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	buf = talloc(mem_ctx, strlen(value)+11);
+	buf = talloc_size(mem_ctx, strlen(value)+11);
 	
 	ret = smbcli_read(cli->tree, fnum, buf, 0, strlen(value)+11);
 	if (ret != strlen(value)) {

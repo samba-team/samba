@@ -63,7 +63,7 @@ char *reg_val_data_string(TALLOC_CTX *mem_ctx, struct registry_value *v)
 	  return ret;
 
   case REG_BINARY:
-	  ret = talloc(mem_ctx, v->data_len * 3 + 2);
+	  ret = talloc_array(mem_ctx, 3, v->data_len+1, "REG_BINARY");
 	  asciip = ret;
 	  for (i=0; i<v->data_len; i++) { 
 		  int str_rem = v->data_len * 3 - (asciip - ret);

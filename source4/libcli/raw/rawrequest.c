@@ -83,7 +83,7 @@ struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *tran
 	/* over allocate by a small amount */
 	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
 
-	req->out.buffer = talloc(req, req->out.allocated);
+	req->out.buffer = talloc_size(req, req->out.allocated);
 	if (!req->out.buffer) {
 		return NULL;
 	}

@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	data = talloc(mem_ctx, size);
+	data = talloc_size(mem_ctx, size);
 
 	size = getxattr(argv[1], "security.ntacl", data, size);
 
