@@ -2616,6 +2616,7 @@ static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
 	return debug_parse_levels( pszParmValue );
 }
 
+#ifdef WITH_LDAP_SAM
 /***************************************************************************
  Handle the ldap machine suffix option
 ***************************************************************************/
@@ -2698,6 +2699,7 @@ static BOOL handle_ldap_suffix( char *pszParmValue, char **ptr)
        string_set(ptr, suffix); 
        return True;
 }
+#endif /* WITH_LDAP_SAM */
 
 /***************************************************************************
 initialise a copymap
