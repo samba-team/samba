@@ -160,11 +160,11 @@ BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine)
  do a reply open printer
 ****************************************************************************/
 
-NTSTATUS cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 				char *printer, uint32 localprinter, uint32 type, 
 				POLICY_HND *handle)
 {
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 	
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -183,25 +183,21 @@ NTSTATUS cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_c
 	/* turn parameters into data stream */
 	if(!spoolss_io_q_replyopenprinter("", &q_s,  &buf, 0)) {
 		DEBUG(0,("cli_spoolss_reply_open_printer: Error : failed to marshall SPOOL_Q_REPLYOPENPRINTER struct.\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SPOOLSS_REPLYOPENPRINTER, &buf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	if (!rpc_api_pipe_req(cli, SPOOLSS_REPLYOPENPRINTER, &buf, &rbuf)) 
 		goto done;
-	}
 
 	/* turn data stream into parameters*/
 	if(!spoolss_io_r_replyopenprinter("", &r_s, &rbuf, 0)) {
 		DEBUG(0,("cli_spoolss_reply_open_printer: Error : failed to unmarshall SPOOL_R_REPLYOPENPRINTER struct.\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 	
 	memcpy(handle, &r_s.handle, sizeof(r_s.handle));
-	result = werror_to_ntstatus(r_s.status);
+	result = r_s.status;
 
 done:
 	prs_mem_free(&buf);
@@ -214,10 +210,10 @@ done:
  do a reply open printer
 ****************************************************************************/
 
-NTSTATUS cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 					POLICY_HND *handle)
 {
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 	prs_struct rbuf;
 	prs_struct buf; 
 
@@ -235,25 +231,21 @@ NTSTATUS cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_
 	/* turn parameters into data stream */
 	if(!spoolss_io_q_replycloseprinter("", &q_s,  &buf, 0)) {
 		DEBUG(0,("cli_spoolss_reply_close_printer: Error : failed to marshall SPOOL_Q_REPLY_CLOSEPRINTER struct.\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SPOOLSS_REPLYCLOSEPRINTER, &buf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	if (!rpc_api_pipe_req(cli, SPOOLSS_REPLYCLOSEPRINTER, &buf, &rbuf))
 		goto done;
-	}
 
 	/* turn data stream into parameters*/
 	if(!spoolss_io_r_replycloseprinter("", &r_s, &rbuf, 0)) {
 		DEBUG(0,("cli_spoolss_reply_close_printer: Error : failed to marshall SPOOL_R_REPLY_CLOSEPRINTER struct.\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 	
 
-	result = werror_to_ntstatus(r_s.status);
+	result = r_s.status;
 	
 done:
 		prs_mem_free(&buf);
@@ -270,13 +262,13 @@ done:
  Also see cli_spolss_reply_rrpcn()
  *********************************************************************/
  
-NTSTATUS cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 					POLICY_HND *pol, uint32 condition, uint32 changd_id)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ROUTERREPLYPRINTER q;
         SPOOL_R_ROUTERREPLYPRINTER r;
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -294,25 +286,21 @@ NTSTATUS cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_
 	/* Marshall data and send request */
 	if (!spoolss_io_q_routerreplyprinter ("", &q, &qbuf, 0)) {
 		DEBUG(0,("cli_spoolss_routerreplyprinter: Unable to marshall SPOOL_Q_ROUTERREPLYPRINTER!\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 		
 		
-	if (!rpc_api_pipe_req (cli, SPOOLSS_ROUTERREPLYPRINTER, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	if (!rpc_api_pipe_req (cli, SPOOLSS_ROUTERREPLYPRINTER, &qbuf, &rbuf)) 
 		goto done;
-	}
 
 	/* Unmarshall response */
 	if (!spoolss_io_r_routerreplyprinter ("", &r, &rbuf, 0)) {
 		DEBUG(0,("cli_spoolss_routerreplyprinter: Unable to unmarshall SPOOL_R_ROUTERREPLYPRINTER!\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* Return output parameters */
-	result = werror_to_ntstatus(r.status);
+	result = r.status;
 	
 done:
 	prs_mem_free(&qbuf);
@@ -373,7 +361,7 @@ static int build_notify_data (TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printer, u
  Also see cli_spoolss_routereplyprinter()
  *********************************************************************/
 
-NTSTATUS cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 					POLICY_HND *handle, PRINTER_MESSAGE_INFO *info,
 					NT_PRINTER_INFO_LEVEL *printer)
 {
@@ -384,14 +372,14 @@ NTSTATUS cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SPOOL_NOTIFY_INFO_DATA	*notify_data = NULL;
 	uint32 			data_len;
 
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 
 	SPOOL_Q_REPLY_RRPCN q_s;
 	SPOOL_R_REPLY_RRPCN r_s;
 
 	if (!info) {
 		DEBUG(5,("cli_spoolss_reply_rrpcn: NULL printer message info pointer!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 		
 	prs_init(&buf, 1024, mem_ctx, MARSHALL);
@@ -409,7 +397,7 @@ NTSTATUS cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (info->flags && (data_len == -1)) {
 		DEBUG(0,("cli_spoolss_reply_rrpcn: Failed to build SPOOL_NOTIFY_INFO_DATA [flags == 0x%x] for printer [%s]\n",
 			info->flags, info->printer_name));
-		result = NT_STATUS_NO_MEMORY;
+		result = WERR_NOMEM;
 		goto done;
 	}
 	notify_info.version = 0x2;
@@ -425,21 +413,17 @@ NTSTATUS cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* turn parameters into data stream */
 	if(!spoolss_io_q_reply_rrpcn("", &q_s,  &buf, 0)) {
 		DEBUG(0,("cli_spoolss_reply_rrpcn: Error : failed to marshall SPOOL_Q_REPLY_RRPCN struct.\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SPOOLSS_RRPCN, &buf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	if (!rpc_api_pipe_req(cli, SPOOLSS_RRPCN, &buf, &rbuf)) 
 		goto done;
-	}
 
 	
 	/* turn data stream into parameters*/
 	if(!spoolss_io_r_reply_rrpcn("", &r_s, &rbuf, 0)) {
 		DEBUG(0,("cli_spoolss_reply_rrpcn: Error : failed to unmarshall SPOOL_R_REPLY_RRPCN struct.\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -447,7 +431,7 @@ NTSTATUS cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		DEBUG(8,("cli_spoolss_reply_rrpcn: I think the spooler resonded that the notification was ignored.\n"));
 	}
 	
-	result = werror_to_ntstatus(r_s.status);
+	result = r_s.status;
 
 done:
 	prs_mem_free(&buf);
