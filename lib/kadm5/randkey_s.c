@@ -60,7 +60,7 @@ kadm5_s_randkey_principal(void *server_handle,
     if(ret)
 	return ret;
     ret = context->db->fetch(context->context, context->db, 0, &ent);
-    if(ret == HDB_ERR_NOENTRY)
+    if(ret)
 	goto out;
 
     ret = _kadm5_set_keys_randomly (context,
