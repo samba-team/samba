@@ -1209,8 +1209,8 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 
 	pstrcpy(jobname, pjob->jobname);
 	pstring_sub(jobname, "'", "_");
-	slprintf(job_page_count, sizeof(job_page_count), "%d", pjob->page_count);
-	slprintf(job_size, sizeof(job_size), "%d", pjob->size);
+	slprintf(job_page_count, sizeof(job_page_count)-1, "%d", pjob->page_count);
+	slprintf(job_size, sizeof(job_size)-1, "%d", pjob->size);
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, 
