@@ -28,7 +28,7 @@
 static krb5_error_code krb5_mk_req2(krb5_context context, 
 				    krb5_auth_context *auth_context, 
 				    const krb5_flags ap_req_options,
-				    const char *principle,
+				    const char *principal,
 				    krb5_ccache ccache, 
 				    krb5_data *outbuf)
 {
@@ -38,9 +38,9 @@ static krb5_error_code krb5_mk_req2(krb5_context context,
 	krb5_creds 		  creds;
 	krb5_data in_data;
 	
-	retval = krb5_parse_name(context, principle, &server);
+	retval = krb5_parse_name(context, principal, &server);
 	if (retval) {
-		DEBUG(1,("Failed to parse principle %s\n", principle));
+		DEBUG(1,("Failed to parse principal %s\n", principal));
 		return retval;
 	}
 	
@@ -87,7 +87,7 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-DATA_BLOB krb5_get_ticket(char *principle)
+DATA_BLOB krb5_get_ticket(char *principal)
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -112,7 +112,7 @@ DATA_BLOB krb5_get_ticket(char *principle)
 	if ((retval = krb5_mk_req2(context, 
 				   &auth_context, 
 				   0, 
-				   principle,
+				   principal,
 				   ccdef, &packet))) {
 		goto failed;
 	}
@@ -131,7 +131,7 @@ failed:
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
- DATA_BLOB krb5_get_ticket(char *principle)
+ DATA_BLOB krb5_get_ticket(char *principal)
  {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return data_blob(NULL, 0);
