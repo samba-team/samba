@@ -112,6 +112,10 @@ typedef struct auth_methods
 			 const struct auth_usersupplied_info *user_info, 
 			 auth_serversupplied_info **server_info);
 
+	/* If you are using this interface, then you are probably
+	 * getting something wrong.  This interface is only for
+	 * security=server, and makes a number of compromises to allow
+	 * that.  It is not compatible with being a PDC.  */
 	DATA_BLOB (*get_chal)(const struct auth_context *auth_context,
 			      void **my_private_data, 
 			      TALLOC_CTX *mem_ctx);
