@@ -2229,44 +2229,60 @@ BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
 void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
-			uint16 sid_name_use, char *name, uint32 idx);
+			 uint16 sid_name_use, char *name, uint32 idx);
 void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
-				uint32 unknown);
+		      uint32 unknown);
 void init_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos);
 void init_q_open_pol(LSA_Q_OPEN_POL *r_q, uint16 system_name,
-			uint32 attributes,
-			uint32 desired_access,
-			LSA_SEC_QOS *qos);
-BOOL lsa_io_q_open_pol(char *desc, LSA_Q_OPEN_POL *r_q, prs_struct *ps, int depth);
-BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL *r_p, prs_struct *ps, int depth);
+		     uint32 attributes, uint32 desired_access,
+		     LSA_SEC_QOS *qos);
+BOOL lsa_io_q_open_pol(char *desc, LSA_Q_OPEN_POL *r_q, prs_struct *ps, 
+		       int depth);
+BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL *r_p, prs_struct *ps, 
+		       int depth);
 void init_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
-			uint32 attributes,
-			uint32 desired_access,
+			uint32 attributes, uint32 desired_access,
 			LSA_SEC_QOS *qos);
-BOOL lsa_io_q_open_pol2(char *desc, LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int depth);
-BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int depth);
-void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *q_q, const POLICY_HND *hnd, uint32 sec_info);
-BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ *q_q, prs_struct *ps, int depth);
-BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth);
+BOOL lsa_io_q_open_pol2(char *desc, LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, 
+			int depth);
+BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps, 
+			int depth);
+void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *q_q, const POLICY_HND *hnd, 
+			  uint32 sec_info);
+BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ *q_q, 
+			    prs_struct *ps, int depth);
+BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u, 
+			    prs_struct *ps, int depth);
 void init_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
-BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth);
-BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
-void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-                           uint32 enum_context, char *domain_name, DOM_SID *domain_sid,
+BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO *q_q, prs_struct *ps, 
+		    int depth);
+BOOL init_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM * q_e, POLICY_HND *pol,
+			   uint32 enum_context, uint32 preferred_len);
+BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, 
+			     prs_struct *ps, int depth);
+void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context, 
+			   char *domain_name, DOM_SID *domain_sid,
                            uint32 status);
-BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
-BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
+BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, 
+			     prs_struct *ps, int depth);
+void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e);
+BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
+		    int depth);
 void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen, 
 		       int num_entries, DOM_SID *sids);
 void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l, 
 			POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 			uint16 level);
-BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
-BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
+BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps,
+			  int depth);
+BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, 
+			  prs_struct *ps, int depth);
 void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
 			 POLICY_HND *hnd, int num_names, char **names);
-BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth);
-BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
+BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, 
+			   prs_struct *ps, int depth);
+BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, 
+			   prs_struct *ps, int depth);
 void init_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
