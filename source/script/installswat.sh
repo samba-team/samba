@@ -6,7 +6,7 @@ SRCDIR=$2/
 
 echo Installing SWAT in $SWATDIR
 
-echo Installing the Samba Web Admisistration Tool
+echo Installing the Samba Web Administration Tool
 
 for d in $SWATDIR $SWATDIR/help $SWATDIR/images $SWATDIR/include; do
 if [ ! -d $d ]; then
