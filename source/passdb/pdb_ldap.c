@@ -74,6 +74,8 @@ struct ldapsam_privates {
 
 	char *bind_dn;
 	char *bind_secret;
+
+	unsigned int num_failures;
 };
 
 #define LDAPSAM_DONT_PING_TIME 10	/* ping only all 10 seconds */
@@ -166,7 +168,7 @@ static int ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP **
 	int version;
 	BOOL ldap_v3 = False;
 
-#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+#ifdef HAVE_LDAP_INITIALIZE
 	DEBUG(10, ("ldapsam_open_connection: %s\n", ldap_state->uri));
 	
 	if ((rc = ldap_initialize(ldap_struct, ldap_state->uri)) != LDAP_SUCCESS) {
@@ -409,15 +411,18 @@ static int ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ld
 		char *ld_error = NULL;
 		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
-		DEBUG(0,
+		DEBUG(ldap_state->num_failures ? 2 : 0,
 		      ("failed to bind to server with dn= %s Error: %s\n\t%s\n",
 			       ldap_dn ? ld_error : "(unknown)", ldap_err2string(rc),
 			       ld_error));
 		SAFE_FREE(ld_error);
+		ldap_state->num_failures++;
 		return rc;
 	}
-	
-	DEBUG(2, ("ldap_connect_system: succesful connection to the LDAP server\n"));
+
+	ldap_state->num_failures = 0;
+
+	DEBUG(3, ("ldap_connect_system: succesful connection to the LDAP server\n"));
 	return rc;
 }
 
@@ -499,13 +504,23 @@ static int ldapsam_retry_open(struct ldapsam_privates *ldap_state, int *attempts
 	SMB_ASSERT(ldap_state && attempts);
 		
 	if (*attempts != 0) {
-		/* we retry after 0.5, 2, 4.5, 8, 12.5, 18, 24.5 seconds */
-		msleep((((*attempts)*(*attempts))/2)*1000);
+		unsigned int sleep_time;
+		uint8 rand_byte = 128; /* a reasonable place to start */
+
+		generate_random_buffer(&rand_byte, 1, False);
+
+		sleep_time = (((*attempts)*(*attempts))/2)*rand_byte*2; 
+		/* we retry after (0.5, 1, 2, 3, 4.5, 6) seconds
+		   on average.  
+		 */
+		DEBUG(3, ("Sleeping for %u milliseconds before reconnecting\n", 
+			  sleep_time));
+		msleep(sleep_time);
 	}
 	(*attempts)++;
 
 	if ((rc = ldapsam_open(ldap_state))) {
-		DEBUG(0,("Connection to LDAP Server failed for the %d try!\n",*attempts));
+		DEBUG(1,("Connection to LDAP Server failed for the %d try!\n",*attempts));
 		return rc;
 	} 
 	
