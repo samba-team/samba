@@ -301,7 +301,8 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
   pstring fname;
   BOOL matched;
   char *p, *pdata = *ppdata;
-  int reskey=0, prev_dirpos=0;
+  uint32 reskey=0;
+  int prev_dirpos=0;
   int mode=0;
   uint32 size=0,len;
   uint32 mdate=0, adate=0, cdate=0;
@@ -336,7 +337,14 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       prev_dirpos = TellDir(Connections[cnum].dirptr);
       dname = ReadDirName(Connections[cnum].dirptr);
 
-      reskey = TellDir(Connections[cnum].dirptr);
+      /*
+       * Due to bugs in NT client redirectors we are not using
+       * resume keys any more - set them to zero.
+       * Check out the related comments in findfirst/findnext.
+       * JRA.
+       */
+
+      reskey = 0;
 
       DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%x now at offset %d\n",
 	       Connections[cnum].dirptr,TellDir(Connections[cnum].dirptr)));
@@ -796,6 +804,7 @@ static int call_trans2findnext(char *inbuf, char *outbuf, int length, int bufsiz
   BOOL close_if_end = BITSETW(params+10,1);
   BOOL requires_resume_key = BITSETW(params+10,2);
   BOOL continue_bit = BITSETW(params+10,3);
+  pstring resume_name;
   pstring mask;
   pstring directory;
   char *p;
@@ -807,11 +816,15 @@ static int call_trans2findnext(char *inbuf, char *outbuf, int length, int bufsiz
   BOOL out_of_space = False;
   int space_remaining;
 
-  *mask = *directory = 0;
+  *mask = *directory = *resume_name = 0;
 
-  DEBUG(3,("call_trans2findnext: dirhandle = %d, max_data_bytes = %d, maxentries = %d, close_after_request=%d, close_if_end = %d requires_resume_key = %d resume_key = %d continue=%d level = %d\n",
+  pstrcpy( resume_name, params+12);
+
+  DEBUG(3,("call_trans2findnext: dirhandle = %d, max_data_bytes = %d, maxentries = %d, \
+close_after_request=%d, close_if_end = %d requires_resume_key = %d \
+resume_key = %d resume name = %s continue=%d level = %d\n",
 	   dptr_num, max_data_bytes, maxentries, close_after_request, close_if_end, 
-	   requires_resume_key, resume_key, continue_bit, info_level));
+	   requires_resume_key, resume_key, resume_name, continue_bit, info_level));
 
   switch (info_level) 
     {
@@ -839,7 +852,7 @@ static int call_trans2findnext(char *inbuf, char *outbuf, int length, int bufsiz
     return(ERROR(ERRDOS,ERRnomem));
 
   /* Check that the dptr is valid */
-  if(!(Connections[cnum].dirptr = dptr_fetch_lanman2(params, dptr_num)))
+  if(!(Connections[cnum].dirptr = dptr_fetch_lanman2(dptr_num)))
     return(ERROR(ERRDOS,ERRnofiles));
 
   string_set(&Connections[cnum].dirpath,dptr_path(dptr_num));
@@ -871,9 +884,56 @@ static int call_trans2findnext(char *inbuf, char *outbuf, int length, int bufsiz
   space_remaining = max_data_bytes;
   out_of_space = False;
 
-  /* If we have a resume key - seek to the correct position. */
-  if(requires_resume_key && !continue_bit)
-    SeekDir(Connections[cnum].dirptr, resume_key);
+  /* 
+   * Seek to the correct position. We no longer use the resume key but
+   * depend on the last file name instead.
+   */
+  if(requires_resume_key && *resume_name && !continue_bit)
+  {
+    /*
+     * Fix for NT redirector problem triggered by resume key indexes
+     * changing between directory scans. We now return a resume key of 0
+     * and instead look for the filename to continue from (also given
+     * to us by NT/95/smbfs/smbclient). If no other scans have been done between the
+     * findfirst/findnext (as is usual) then the directory pointer
+     * should already be at the correct place. Check this by scanning
+     * backwards looking for an exact (ie. case sensitive) filename match. 
+     * If we get to the beginning of the directory and haven't found it then scan
+     * forwards again looking for a match. JRA.
+     */
+
+    int current_pos, start_pos;
+    char *dname;
+    void *dirptr = Connections[cnum].dirptr;
+    start_pos = TellDir(dirptr);
+    for(current_pos = start_pos; current_pos >= 0; current_pos--)
+    {
+      SeekDir(dirptr, current_pos);
+      dname = ReadDirName(dirptr);
+      if(dname && strcsequal( resume_name, dname))
+      {
+        SeekDir(dirptr, current_pos+1);
+        break;
+      }
+    }
+
+    /*
+     * Scan forward from start if not found going backwards.
+     */
+
+    if(current_pos < 0)
+    {
+      SeekDir(dirptr, start_pos);
+      for(current_pos = start_pos; (dname = ReadDirName(dirptr)) != NULL; SeekDir(dirptr,++current_pos))
+      {
+        if(strcsequal( resume_name, dname))
+        {
+          SeekDir(dirptr, current_pos+1);
+          break;
+        }
+      } /* end for */
+    } /* end if current_pos */
+  } /* end if requires_resume_key && !continue_bit */
 
   for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++)
     {
