@@ -40,12 +40,12 @@
 
 RCSID("$Id$");
 
-static krb5_error_code
-key_proc (krb5_context context,
-	  krb5_keytype type,
-	  krb5_data *salt,
-	  krb5_const_pointer keyseed,
-	  krb5_keyblock **key)
+krb5_error_code
+krb5_password_key_proc (krb5_context context,
+			krb5_keytype type,
+			krb5_data *salt,
+			krb5_const_pointer keyseed,
+			krb5_keyblock **key)
 {
      krb5_error_code ret;
      char *password = (char *)keyseed;
@@ -77,7 +77,16 @@ krb5_get_in_tkt_with_password (krb5_context context,
 			       krb5_creds *creds,
 			       krb5_kdc_rep *ret_as_reply)
 {
-     return krb5_get_in_tkt (context, options, addrs, etypes,
-			     pre_auth_types, key_proc, password,
-			     NULL, NULL, creds, ccache, ret_as_reply);
+     return krb5_get_in_tkt (context,
+			     options,
+			     addrs,
+			     etypes,
+			     pre_auth_types,
+			     krb5_password_key_proc,
+			     password,
+			     NULL,
+			     NULL,
+			     creds,
+			     ccache,
+			     ret_as_reply);
 }
