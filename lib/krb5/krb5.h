@@ -195,6 +195,8 @@ typedef enum krb5_key_usage {
     /* initiator sign in GSSAPI CFX krb5 mechanism */
     KRB5_KU_USAGE_INITIATOR_SIGN = 25,
     /* initiator seal in GSSAPI CFX krb5 mechanism */
+    KRB5_KU_PA_SERVER_REFERRAL_DATA = 22,
+    /* encrypted server referral data */
     KRB5_KU_SAM_CHECKSUM = 25,
     /* Checksum for the SAM-CHECKSUM field */
     KRB5_KU_SAM_ENC_TRACK_ID = 26,
