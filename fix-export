@@ -12,9 +12,8 @@ echo "* Har du uppdaterat versionsnummret? Detta är version $ver. *"
 echo "*                                                           *"
 echo "*************************************************************"
 
-ed configure.in << END
-/test -z
-s,^,#,
+ed -s configure.in << END
+/test -z/s,^,#,
 w
 q
 END

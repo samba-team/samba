@@ -1,3 +1,45 @@
+Thu Mar 18 11:33:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: include Makefile.am.common
+
+	* include/kadm5/Makefile.am: include Makefile.am.common; don't
+ 	install headers from here
+
+	* include/Makefile.am: include Makefile.am.common; don't install
+ 	headers from here
+
+	* doc/Makefile.am: include Makefile.am.common
+
+	* lib/krb5/Makefile.am: include Makefile.am.common
+
+	* lib/kadm5/Makefile.am: include Makefile.am.common
+
+	* lib/hdb/Makefile.am: include Makefile.am.common
+
+	* lib/gssapi/Makefile.am: include Makefile.am.common
+
+	* lib/asn1/Makefile.am: include Makefile.am.common
+
+	* lib/Makefile.am: include Makefile.am.common
+
+	* lib/45/Makefile.am: include Makefile.am.common
+
+	* kuser/Makefile.am: include Makefile.am.common
+
+	* kpasswd/Makefile.am: include Makefile.am.common
+
+	* kdc/Makefile.am: include Makefile.am.common
+
+	* kadmin/Makefile.am: include Makefile.am.common
+
+	* appl/test/Makefile.am: include Makefile.am.common
+
+	* appl/afsutil/Makefile.am: include Makefile.am.common
+
+	* appl/Makefile.am: include Makefile.am.common
+
+	* admin/Makefile.am: include Makefile.am.common
+
 Wed Mar 17 03:04:38 1999  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/store.c (krb5_store_stringz): braces fix
@@ -308,14 +350,6 @@ Sat Dec  5 19:49:34 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 Tue Dec  1 14:44:44 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
-	* appl/rsh/rshd.c: update to new crypto framework
-
-	* appl/rsh/rsh_locl.h: update to new crypto framework
-
-	* appl/rsh/rsh.c: update to new crypto framework
-
-	* appl/rsh/common.c: update to new crypto framework
-
 	* appl/afsutil/Makefile.am: link with extra libs for aix
 
 	* kuser/Makefile.am: link with extra libs for aix
@@ -471,11 +505,6 @@ Mon Nov  2 01:15:06 1998  Assar Westerlund  <assar@sics.se>
 
 	* kdc/connect.c (handle_udp, handle_tcp): correct type of `n'
 
-	* appl/rsh/rsh.c (main): initialize host
-
-	* appl/rsh/rshd.c (recv_krb5_auth): disable `do_encrypt' if not
- 	encrypting.
-
 Tue Sep 15 18:41:38 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* admin/ktutil.c: fix printing of unrecognized keytypes
@@ -587,8 +616,6 @@ Wed Aug  5 12:39:54 1998  Assar Westerlund  <assar@emma.pdc.kth.se>
 
 Thu Jul 30 23:12:17 1998  Assar Westerlund  <assar@sics.se>
 
-	* appl/rsh/rsh.c: kludges for parsing `rsh hostname -l user'
-
 	* lib/krb5/mk_error.c (krb5_mk_error): realloc until you die
 
 Thu Jul 23 19:49:03 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
@@ -619,8 +646,6 @@ Thu Jul 23 19:49:03 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 	* admin/srvconvert.c: add keys for all possible enctypes
 
 	* admin/ktutil.c: keytype -> enctype
-
-	* appl/rsh/rshd.c: use krb5_verify_authenticator_checksum
 
 	* lib/gssapi/init_sec_context.c: get enctype from auth_context
  	keyblock
@@ -823,10 +848,6 @@ Fri May  1 07:29:52 1998  Assar Westerlund  <assar@sics.se>
 Sat Apr 18 21:43:11 1998  Johan Danielsson  <joda@puffer.pdc.kth.se>
 
 	* Release 0.0o
-
-Sat Apr 18 21:13:06 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
-
-	* appl/rsh/rsh.c: Don't try v5 if (only) `-4' is specified.
 
 Sat Apr 18 00:31:11 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
@@ -1322,12 +1343,6 @@ Sun Dec 21 09:44:05 1997  Assar Westerlund  <assar@sics.se>
  	that the checksum has to be keyed, even though later drafts do.
   	Accept unkeyed checksums to be compatible with MIT.
 
-	* appl/rsh/rshd.c (recv_krb5_auth): swap the order of the
- 	`local_user' and the `remote_user'
-
-	* appl/rsh/rsh.c (send_krb5_auth): swap the order of the
- 	`local_user' and the `remote_user'
-
 	* kadmin/kadmin_locl.h: add some prototypes.
 
 	* kadmin/util.c (edit_entry): return a value
@@ -1369,10 +1384,6 @@ Thu Dec  4 03:38:12 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 	* kdc/connect.c: Send version 5 TCP-reply as length+data.
 
 Sat Nov 29 07:10:11 1997  Assar Westerlund  <assar@sics.se>
-
-	* appl/rsh/rshd.c: updated to use getarg.
-	changed `struct fd_set' to `fd_set'.
-	implemented broken/BSD authentication (requires iruserok)
 
 	* lib/krb5/rd_req.c (krb5_rd_req): fixed obvious bug
 
@@ -1446,13 +1457,6 @@ Wed Nov 12 02:35:57 1997  Assar Westerlund  <assar@sics.se>
  	restructured and fixed.
 
 	* lib/krb5/addr_families.c (krb5_h_addr2addr): new function.
-
-	* appl/rsh/rsh_locl.h: add AUTH_BROKEN and PATH_RSH
-
-	* appl/rsh/Makefile.am: set BINDIR
-
-	* appl/rsh/rsh.c: implemented BSD-style reserved port
- 	`authentication'
 
 Wed Nov 12 01:36:01 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
@@ -2186,8 +2190,6 @@ Sun Aug 24 16:46:53 1997  Assar Westerlund  <assar@sics.se>
 
 Sun Aug 24 08:06:54 1997  Assar Westerlund  <assar@sics.se>
 
-	* appl/rsh/rshd.c: syslog remote shells
-
 	* appl/popper/pop_pass.c: log poppers
 
 	* kdc/kaserver.c: some more checks
@@ -2346,10 +2348,9 @@ Thu Aug 14 21:29:03 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 Tue Aug 12 01:29:46 1997  Assar Westerlund  <assar@sics.se>
 
-	* appl/telnet/libtelnet/kerberos5.c, appl/popper/pop_init.c,
- 	appl/rshd/rshd.c: Use `krb5_sock_to_principal'.  Send server
- 	parameter to krb5_rd_req/krb5_recvauth.  Set addresses in
- 	auth_context.
+	* appl/telnet/libtelnet/kerberos5.c, appl/popper/pop_init.c: Use
+ 	`krb5_sock_to_principal'.  Send server parameter to
+ 	krb5_rd_req/krb5_recvauth.  Set addresses in auth_context.
 
 	* lib/krb5/recvauth.c: Set addresses in auth_context if there
  	aren't any
@@ -2572,10 +2573,6 @@ Fri Jul 25 17:32:12 1997  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos5.c (tgs_rep2): make sure we also have an defined
  	`client' to return as part of the KRB-ERROR
-
-	* appl/rsh/rshd.c: implement forwarding
-
-	* appl/rsh/rsh.c: Use getarg.  Implement forwarding.
 
 Thu Jul 24 08:13:59 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
@@ -2891,7 +2888,7 @@ Sun Jul 13 02:46:27 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 Sun Jul 13 00:32:16 1997  Assar Westerlund  <assar@sics.se>
 
-	* appl/telnet, appl/rsh: Conditionalize the krb4-support.
+	* appl/telnet: Conditionalize the krb4-support.
 
 	* configure.in: Test for krb4
 
@@ -2998,8 +2995,6 @@ Wed Jul  9 07:42:04 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 Wed Jul  9 06:58:00 1997  Assar Westerlund  <assar@sics.se>
 
-	* appl/rsh/rsh.c: use the correct user for the checksum
-
 	* lib/krb5/{rd,mk}_{*}.c: more checking for addresses and stuff
 	according to pseudocode from 1510
 
@@ -3064,11 +3059,6 @@ Mon Jul  7 11:15:51 1997  Assar Westerlund  <assar@sics.se>
 	* lib/krb5/encrypt.c: add des-cbc-md4.
 	adjust krb5_encrypt and krb5_decrypt to reality
 
-	* appl/rsh/rshd.c: Now works.  Also implementd encryption and
- 	`-p'.
-	
-	* appl/rsh/common.c: new file
-
 Mon Jul  7 02:46:31 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/encrypt.c: Implement as a vector of function pointers.
@@ -3105,8 +3095,6 @@ Wed Jul  1 23:52:20 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
  	ASN1_* constant) for error.
 
 Mon Jun 30 06:08:14 1997  Assar Westerlund  <assar@sics.se>
-
-	* appl/rsh: New program.
 
 	* lib/krb5/keytab.c (krb5_kt_add_entry): change open mode to
  	O_WRONLY | O_APPEND

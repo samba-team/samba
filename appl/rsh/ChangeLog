@@ -1,0 +1,91 @@
+Thu Mar 18 11:37:24 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: include Makefile.am.common
+
+Tue Dec  1 14:44:44 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* appl/rsh/rshd.c: update to new crypto framework
+
+	* appl/rsh/rsh_locl.h: update to new crypto framework
+
+	* appl/rsh/rsh.c: update to new crypto framework
+
+	* appl/rsh/common.c: update to new crypto framework
+
+Mon Nov  2 01:15:06 1998  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rsh.c (main): initialize host
+
+	* appl/rsh/rshd.c (recv_krb5_auth): disable `do_encrypt' if not
+ 	encrypting.
+
+Thu Jul 30 23:12:17 1998  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rsh.c: kludges for parsing `rsh hostname -l user'
+
+Thu Jul 23 19:49:03 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* appl/rsh/rshd.c: use krb5_verify_authenticator_checksum
+
+Sat Apr 18 21:13:06 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* appl/rsh/rsh.c: Don't try v5 if (only) `-4' is specified.
+
+Sun Dec 21 09:44:05 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rshd.c (recv_krb5_auth): swap the order of the
+ 	`local_user' and the `remote_user'
+
+	* appl/rsh/rsh.c (send_krb5_auth): swap the order of the
+ 	`local_user' and the `remote_user'
+
+Sat Nov 29 07:10:11 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rshd.c: updated to use getarg.
+	changed `struct fd_set' to `fd_set'.
+	implemented broken/BSD authentication (requires iruserok)
+
+Wed Nov 12 02:35:57 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rsh_locl.h: add AUTH_BROKEN and PATH_RSH
+
+	* appl/rsh/Makefile.am: set BINDIR
+
+	* appl/rsh/rsh.c: implemented BSD-style reserved port
+ 	`authentication'
+
+Sun Aug 24 08:06:54 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rshd.c: syslog remote shells
+
+Tue Aug 12 01:29:46 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rshd/rshd.c: Use `krb5_sock_to_principal'.  Send server
+ 	parameter to krb5_rd_req/krb5_recvauth.  Set addresses in
+ 	auth_context.
+
+Fri Jul 25 17:32:12 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rshd.c: implement forwarding
+
+	* appl/rsh/rsh.c: Use getarg.  Implement forwarding.
+
+Sun Jul 13 00:32:16 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh: Conditionalize the krb4-support.
+
+Wed Jul  9 06:58:00 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rsh.c: use the correct user for the checksum
+
+Mon Jul  7 11:15:51 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rshd.c: Now works.  Also implementd encryption and
+ 	`-p'.
+	
+	* appl/rsh/common.c: new file
+
+Mon Jun 30 06:08:14 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh: New program.
+

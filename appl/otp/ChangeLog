@@ -1,3 +1,7 @@
+Thu Mar 18 12:08:58 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: include Makefile.am.common
+
 Thu Mar  4 19:45:40 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: DESTDIR

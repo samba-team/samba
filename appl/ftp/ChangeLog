@@ -1,3 +1,9 @@
+Thu Mar 18 12:07:09 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* ftpd/Makefile.am: include Makefile.am.common
+
+	* Makefile.am: include Makefile.am.common
+
 Tue Mar 16 22:28:37 1999  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd_locl.h: add krb5.h to get heimdal_version
