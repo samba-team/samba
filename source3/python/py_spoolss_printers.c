@@ -57,7 +57,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(spoolss_error, 
-				"unable to initialise talloc context\n");
+				"unable to init talloc context\n");
 		goto done;
 	}
 
@@ -270,14 +270,13 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 {
 	WERROR werror;
-	PyObject *result, *creds = NULL;
+	PyObject *result = NULL, *creds = NULL;
 	PRINTER_INFO_CTR ctr;
 	int level = 1, flags = PRINTER_ENUM_LOCAL, i;
 	uint32 needed, num_printers;
-	static char *kwlist[] = {"server", "name", "level", "flags", 
-				 "creds", NULL};
-	TALLOC_CTX *mem_ctx;
-	struct cli_state *cli;
+	static char *kwlist[] = {"server", "level", "flags", "creds", NULL};
+	TALLOC_CTX *mem_ctx = NULL;
+	struct cli_state *cli = NULL;
 	char *server, *errstr;
 
 	/* Parse parameters */
@@ -294,13 +293,13 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		      server, creds, cli_spoolss_initialise, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
-		return NULL;
+		goto done;
 	}
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(
-			spoolss_error, "unable to initialise talloc context\n");
-		return NULL;
+			spoolss_error, "unable to init talloc context\n");
+		goto done;
 	}
 
 	/* Call rpc function */
@@ -314,62 +313,82 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 			cli, mem_ctx, needed, NULL, flags, level,
 			&num_printers, &ctr);
 
-	/* Return value */
-	
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
-		result = NULL;
 		goto done;
 	}
 
-	result = PyList_New(num_printers);
-
+	/* Return value */
+	
 	switch (level) {
 	case 0: 
+		result = PyDict_New();
+
 		for (i = 0; i < num_printers; i++) {
 			PyObject *value;
+			fstring name;
+
+			rpcstr_pull(name, ctr.printers_0[i].printername.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_PRINTER_INFO_0(&value, &ctr.printers_0[i]);
 
-			PyList_SetItem(result, i, value);
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(0));
+
+			PyDict_SetItemString(result, name, value);
 		}
 
 		break;
 	case 1:
+		result = PyDict_New();
+
 		for(i = 0; i < num_printers; i++) {
 			PyObject *value;
+			fstring name;
+
+			rpcstr_pull(name, ctr.printers_1[i].name.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_PRINTER_INFO_1(&value, &ctr.printers_1[i]);
 
-			PyList_SetItem(result, i, value);
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(1));
+
+			PyDict_SetItemString(result, name, value);
 		}
 		
 		break;
 	case 2:
+		result = PyDict_New();
+
 		for(i = 0; i < num_printers; i++) {
 			PyObject *value;
+			fstring name;
+
+			rpcstr_pull(name, ctr.printers_2[i].printername.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_PRINTER_INFO_2(&value, &ctr.printers_2[i]);
 
-			PyList_SetItem(result, i, value);
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(2));
+
+			PyDict_SetItemString(result, name, value);
 		}
 		
 		break;
-	case 3:
-		for(i = 0; i < num_printers; i++) {
-			PyObject *value;
-
-			py_from_PRINTER_INFO_3(&value, &ctr.printers_3[i]);
-
-			PyList_SetItem(result, i, value);
-		}
-		
-		break;
+	default:
+		PyErr_SetString(spoolss_error, "unknown info level");
+		goto done;
 	}
 
 done:
-	cli_shutdown(cli);
-	talloc_destroy(mem_ctx);
+	if (cli)
+		cli_shutdown(cli);
+
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 
 	return result;
 }
@@ -402,7 +421,7 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(
-			spoolss_error, "unable to initialise talloc context\n");
+			spoolss_error, "unable to init talloc context\n");
 		return NULL;
 	}
 
