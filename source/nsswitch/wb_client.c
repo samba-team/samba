@@ -815,7 +815,7 @@ static int wb_read_sock(int fd, void *buffer, int count)
 	return result;
 }
 
-static BOOL wb_single_request(TALLOC_CTX *mem_ctx, int *fd, const char *name,
+static BOOL wb_single_request(int *fd, const char *name,
 			      int max_attempts, const char *request,
 			      char **response)
 {
@@ -877,7 +877,7 @@ static BOOL wb_single_request(TALLOC_CTX *mem_ctx, int *fd, const char *name,
 
 	response_len = strtol(&header[3], NULL, 10);
 
-	*response = talloc(mem_ctx, response_len+1);
+	*response = malloc(response_len+1);
 
 	if (wb_read_sock(*fd, *response, response_len) < 0)
 		goto retry;
@@ -889,17 +889,17 @@ static BOOL wb_single_request(TALLOC_CTX *mem_ctx, int *fd, const char *name,
 
 BOOL wb_fetchpid(const char *socket_name, pid_t *pid)
 {
-	TALLOC_CTX *mem_ctx = talloc_init("wb_fetchpid");
 	char *response;
 	int fd = -1;
 
-	if (!wb_single_request(mem_ctx, &fd, socket_name, 1,
-			       "pid\n", &response))
+	if (!wb_single_request(&fd, socket_name, 1, "pid\n", &response))
 		return False;
 
 	close(fd);
 
 	*pid = strtol(response, NULL, 0);
+
+	free(response);
 
 	return True;
 }
@@ -911,10 +911,10 @@ void wb_init_client_state(struct wb_client_state *state)
 	state->num_sam_sockets = 0;
 	state->sam_sockets = NULL;
 	state->sam_socket_sids = NULL;
-	state->domains_ctx = NULL;
-	state->users_ctx = NULL;
 	state->num_users = 0;
 	state->current_user = 0;
+	state->user_sids = NULL;
+	state->user_names = NULL;
 }
 
 void wb_destroy_client_state(struct wb_client_state *state)
@@ -927,90 +927,103 @@ void wb_destroy_client_state(struct wb_client_state *state)
 	if (state->idmap_socket > 0)
 		close(state->idmap_socket);
 
-	if (state->domains_ctx != NULL)
-		talloc_destroy(state->domains_ctx);
-
-	if (state->users_ctx != NULL)
-		talloc_destroy(state->users_ctx);
-
 	for (i=0; i<state->num_sam_sockets; i++) {
 		if (state->sam_sockets[i] != -1)
 			close(state->sam_sockets[i]);
 	}
 
-	SAFE_FREE(state->sam_sockets);
-	SAFE_FREE(state->sam_socket_sids);
+	if (state->sam_sockets != NULL)
+		free(state->sam_sockets);
+
+	if (state->sam_socket_sids != NULL)
+		free(state->sam_socket_sids);
 }
 
-static BOOL wb_lsa_request(struct wb_client_state *state,
-			   TALLOC_CTX *mem_ctx, const char *request,
+static BOOL wb_lsa_request(struct wb_client_state *state, const char *request,
 			   char **response)
 {
-	return wb_single_request(mem_ctx, &state->lsa_socket, "lsa", 4,
+	return wb_single_request(&state->lsa_socket, "lsa", 4,
 				 request, response);
 }
 
-BOOL wb_sidtoname(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
-		  const DOM_SID *sid, char **domain, char **name,
-		  enum SID_NAME_USE *type)
+BOOL wb_sidtoname(struct wb_client_state *state, const char *sid,
+		  char **domain, char **name, int *type)
 {
+	BOOL result = False;
 	fstring request;
 	char *response;
 	char *p, *q;
 
-	fstr_sprintf(request, "sidtoname %s\n", sid_string_static(sid));
+	fstr_sprintf(request, "sidtoname %s\n", sid);
 
-	if (!wb_lsa_request(state, mem_ctx, request, &response))
+	if (!wb_lsa_request(state, request, &response))
 		return False;
 
 	p = strchr(response, '\\');
 	if (p == NULL)
-		return False;
+		goto done;
 
 	*p = '\0';
-	*domain = talloc_strdup(mem_ctx, response);
+	*domain = strdup(response);
 
 	p += 1;
 	q = strchr(p, '\\');
 	if (q == NULL)
-		return False;
+		goto done;
 
 	*q = '\0';
-	*name = talloc_strdup(mem_ctx, p);
+	*name = strdup(p);
 
 	q += 1;
 	*type = strtol(q, NULL, 10);
 
-	return True;
+	result = True;
+
+ done:
+	if (response != NULL)
+		free(response);
+
+	return result;
 }
 
-BOOL wb_nametosid(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
-		  const char *name, DOM_SID *sid)
+BOOL wb_nametosid(struct wb_client_state *state, const char *name, char **sid)
 {
+	BOOL result = False;
 	fstring request;
-	char *response;
+	char *response, *p;
 
 	fstr_sprintf(request, "nametosid %s\n", name);
 
-	if (!wb_lsa_request(state, mem_ctx, request, &response))
+	if (!wb_lsa_request(state, request, &response))
 		return False;
 
-	if (!string_to_sid(sid, response))
-		return False;
+	p = strchr(response, ' ');
+	if (p == NULL)
+		goto done;
 
-	return True;
+	*p = 0;
+
+	*sid = strdup(response);
+	result = True;
+
+ done:
+	if (response != NULL)
+		free(response);
+
+	return result;
 }
 
-BOOL wb_enumtrust(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
-		  int *num, char ***names, DOM_SID **sids)
+BOOL wb_enumtrust(struct wb_client_state *state,
+		  int *num, char ***names, char ***sids)
 {
+	BOOL result = False;
 	fstring request;
 	char *p, *response;
 	int i;
 
 	fstr_sprintf(request, "enumtrust\n");
 
-	if (!wb_lsa_request(state, mem_ctx, request, &response))
+	if (!wb_lsa_request(state, request, &response))
 		return False;
 
 	*num = strtol(response, &p, 10);
@@ -1018,134 +1031,152 @@ BOOL wb_enumtrust(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
 	if (*num == 0) {
 		*names = NULL;
 		*sids = NULL;
-		return True;
+		result = True;
+		goto done;
 	}
 
 	if ( (p==NULL) || (*p != '\n') )
-		return False;
+		goto done;
 
 	p +=1;
 
-	*names = talloc(mem_ctx, (*num) * sizeof(**names));
-	*sids  = talloc(mem_ctx, (*num) * sizeof(**sids));
+	*names = malloc((*num) * sizeof(**names));
+	*sids  = malloc((*num) * sizeof(**sids));
 
 	for (i=0; i<(*num); i++) {
 		char *q = strchr(p, '\\');
 
 		if (q == NULL)
-			return False;
+			goto done;
 		*q++ = '\0';
-		(*names)[i] = talloc_strdup(mem_ctx, p);
+		(*names)[i] = strdup(p);
 
 		p = strchr(q, '\n');
 		if (p == NULL)
-			return False;
+			goto done;
 		*p++ = '\0';
-		if (!string_to_sid(&(*sids)[i], q))
-			return False;
+		(*sids)[i] = strdup(q);
 	}
-	return True;
+
+	result = True;
+
+ done:
+	if (response != NULL)
+		free(response);
+
+	return result;
 }
 
-BOOL wb_add_ourself(struct wb_client_state *state,
-		    TALLOC_CTX *mem_ctx, int *num_domains,
-		    char ***domain_names, DOM_SID **sids)
+BOOL wb_add_ourself(struct wb_client_state *state, int *num_domains,
+		    char ***domain_names, char ***sids)
 {
-	char *my_name;
-	DOM_SID my_sid;
+	char *my_name, *my_sid;
 
-	if (!wb_dominfo(state, mem_ctx, &my_name, &my_sid))
+	if (!wb_dominfo(state, &my_name, &my_sid))
 		return False;
 
-	*domain_names = talloc_realloc(mem_ctx, (*domain_names),
-				       ((*num_domains)+1) *
-				       sizeof(**domain_names));
-	*sids =         talloc_realloc(mem_ctx, (*sids),
-				       ((*num_domains)+1) * sizeof(**sids));
+	*domain_names = realloc((*domain_names),
+				((*num_domains)+1) * sizeof(**domain_names));
+	*sids =         realloc((*sids), ((*num_domains)+1) * sizeof(**sids));
 
 	(*domain_names)[*num_domains] = my_name;
-	sid_copy(&((*sids)[*num_domains]), &my_sid);
+	(*sids)[*num_domains] = my_sid;
 	*num_domains += 1;
 	return True;
 }
 
-BOOL wb_dominfo(struct wb_client_state *state,
-		TALLOC_CTX *mem_ctx, char **name, DOM_SID *sid)
+BOOL wb_dominfo(struct wb_client_state *state, char **name, char **sid)
 {
+	BOOL result = False;
 	fstring request;
 	char *response;
-	char *p;
+	char *p, *q;
 
 	fstr_sprintf(request, "dominfo\n");
 
-	if (!wb_lsa_request(state, mem_ctx, request, &response))
+	if (!wb_lsa_request(state, request, &response))
 		return False;
 
 	p = strchr(response, '\\');
 	if (p == NULL)
-		return False;
+		goto done;
 
 	*p++ = '\0';
 
-	*name = talloc_strdup(mem_ctx, response);
+	*name = strdup(response);
 
-	if (!string_to_sid(sid, p))
-		return False;
+	q = strchr(p, '\n');
+	if (q == NULL) {
+		free(*name);
+		goto done;
+	}
+	*q = '\0';
 
-	return True;
+	*sid = strdup(p);
+	result = True;
+
+ done:
+	if (response != NULL)
+		free(response);
+
+	return result;
 }
 
-static int sam_socket_num(struct wb_client_state *state, const DOM_SID *sid)
+static int sam_socket_num(struct wb_client_state *state, const char *sid)
 {
 	int i;
 
 	for (i=0; i<state->num_sam_sockets; i++) {
-		if (sid_compare(&state->sam_socket_sids[i], sid) == 0)
+		if (strcmp(state->sam_socket_sids[i], sid) == 0)
 			return i;
 	}
 
-	add_sid_to_array(sid, &state->sam_socket_sids,
-			 &state->num_sam_sockets);
+	state->sam_socket_sids = realloc(state->sam_socket_sids,
+					 (state->num_sam_sockets+1) *
+					 sizeof(*state->sam_socket_sids));
+	state->sam_socket_sids[state->num_sam_sockets] = strdup(sid);
 
-	state->sam_sockets = Realloc(state->sam_sockets,
-				     state->num_sam_sockets *
+	state->sam_sockets = realloc(state->sam_sockets,
+				     (state->num_sam_sockets+1) *
 				     sizeof(*state->sam_sockets));
 
-	state->sam_sockets[state->num_sam_sockets-1] = -1;
+	state->sam_sockets[state->num_sam_sockets] = -1;
+
+	state->num_sam_sockets += 1;
 
 	return state->num_sam_sockets-1;
 }
 
-static BOOL wb_sam_request(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
-			   const DOM_SID *sam_sid, const char *request,
-			   char **response)
+static BOOL wb_sam_request(struct wb_client_state *state, const char *sam_sid,
+			   const char *request, char **response)
 {
 	fstring socket_name;
 	int socket_index = sam_socket_num(state, sam_sid);
 
-	fstr_sprintf(socket_name, "samr-%s", sid_string_static(sam_sid));
+	fstr_sprintf(socket_name, "samr-%s", sam_sid);
 
-	return wb_single_request(mem_ctx, &state->sam_sockets[socket_index],
+	return wb_single_request(&state->sam_sockets[socket_index],
 				 socket_name, 4, request, response);
 }
 
-static BOOL wb_enumusers(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
-			 const DOM_SID *sam_sid, uint32 *resume_key,
-			 DOM_SID **sids, char ***names, int *num_users)
+static BOOL wb_enumusers(struct wb_client_state *state, const char *sam_sid,
+			 uint32 *resume_key, char ***sids, char ***names,
+			 int *num_users)
 {
+	BOOL result = False;
 	fstring request;
 	char *response, *p;
 	int i;
 
 	fstr_sprintf(request, "enumusers %d\n", *resume_key);
 
-	if (!wb_sam_request(state, mem_ctx, sam_sid, request, &response))
+	if (!wb_sam_request(state, sam_sid, request, &response))
 		return False;
 
 	if (strncmp(response, "RESUME ", strlen("RESUME ")) == 0) {
 		p = strchr(response, ' ');
 		if (p == NULL)
-			return False;
+			goto done;
 		p += 1;
 		*resume_key = strtol(p, NULL, 10);
 		p = strchr(p, ' ');
@@ -1153,11 +1184,11 @@ static BOOL wb_enumusers(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
 		*resume_key = -1;
 		p = strchr(response, ' ');
 	} else {
-		return False;
+		goto done;
 	}
 
 	if (p == NULL)
-		return False;
+		goto done;
 
 	p += 1;
 
@@ -1165,61 +1196,59 @@ static BOOL wb_enumusers(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
 
 	p = strchr(p, '\n');
 	if (p == NULL)
-		return False;
+		goto done;
 	p += 1;
 
-	*sids = talloc(mem_ctx, (*num_users) * sizeof(**sids));
-	*names = talloc(mem_ctx, (*num_users) * sizeof(**names));
+	*sids = malloc((*num_users) * sizeof(**sids));
+	*names = malloc((*num_users) * sizeof(**names));
 
 	for (i=0; i<*num_users; i++) {
 		char *q;
 
 		q = strchr(p, ' ');
 		if (q == NULL)
-			return False;
+			goto done;
 		*q = '\0';
 		q += 1;
 
-		if (!string_to_sid(&(*sids)[i], p))
-			return False;
+		(*sids)[i] = strdup(p);
 
 		p = strchr(q, '\n');
 		if (p == NULL)
-			return False;
+			goto done;
 		*p = '\0';
-		(*names)[i] = q;
+		(*names)[i] = strdup(q);
 		p += 1;
 	}
 
-	return True;
+	result = True;
+ done:
+	if (response != NULL)
+		free(response);
+
+	return result;
 }
 
 void wb_setpwent(struct wb_client_state *state)
 {
-
-	if (state->domains_ctx != NULL)
-		talloc_destroy(state->domains_ctx);
-
-	state->domains_ctx = talloc_init("wb_getpwent");
-
-	if ( (!wb_enumtrust(state, state->domains_ctx, &state->num_domains,
-			    &state->domain_names, &state->domain_sids)) ||
-	     (!wb_add_ourself(state, state->domains_ctx, &state->num_domains,
-			      &state->domain_names, &state->domain_sids)) ) {
+	if ( (!wb_enumtrust(state, &state->num_domains, &state->domain_names,
+			    &state->domain_sids)) ||
+	     (!wb_add_ourself(state, &state->num_domains, &state->domain_names,
+			      &state->domain_sids)) ) {
 		state->num_domains = 0;
 		state->current_domain = 0;
-		talloc_destroy(state->domains_ctx);
-		state->domains_ctx = NULL;
 		return;
 	}
 	state->current_domain = -1;
 	state->resume_key = -1;
 }
 
-BOOL wb_getpwent(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
-		 char **domain, char **name, DOM_SID *sid)
+BOOL wb_getpwent(struct wb_client_state *state,	char **domain, char **name,
+		 char **sid)
 {
 	if (state->current_user >= state->num_users) {
+
+		int i;
 
 		if (state->resume_key == -1) {
 			state->current_domain += 1;
@@ -1228,17 +1257,18 @@ BOOL wb_getpwent(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
 				return False;
 
 			state->resume_key = 0;
-			state->num_users = 0;
-			state->current_user = 0;
 		}
 
-		if (state->users_ctx != NULL)
-			talloc_destroy(state->users_ctx);
+		for (i=0; i<state->num_users; i++) {
+			free(state->user_sids[i]);
+			free(state->user_names[i]);
+		}
+		SAFE_FREE(state->user_sids);
+		SAFE_FREE(state->user_names);
+		state->num_users = 0;
 
-		state->users_ctx = talloc_init("wb_getpwent");
-
-		if (!wb_enumusers(state, state->users_ctx,
-				  &state->domain_sids[state->current_domain],
+		if (!wb_enumusers(state,
+				  state->domain_sids[state->current_domain],
 				  &state->resume_key, &state->user_sids,
 				  &state->user_names, &state->num_users))
 			return False;
@@ -1246,10 +1276,9 @@ BOOL wb_getpwent(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
 		state->current_user = 0;
 	}
 
-	*domain = talloc_strdup(mem_ctx,
-				state->domain_names[state->current_domain]);
-	*name = talloc_strdup(mem_ctx, state->user_names[state->current_user]);
-	sid_copy(sid, &state->user_sids[state->current_user]);
+	*domain = strdup(state->domain_names[state->current_domain]);
+	*name = strdup(state->user_names[state->current_user]);
+	*sid = strdup(state->user_sids[state->current_user]);
 
 	state->current_user += 1;
 
@@ -1258,17 +1287,30 @@ BOOL wb_getpwent(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
 
 void wb_endpwent(struct wb_client_state *state)
 {
-	if (state->domains_ctx != NULL)
-		talloc_destroy(state->domains_ctx);
-	state->domains_ctx = NULL;
+	int i;
+
 	state->num_domains = 0;
 	state->current_domain = 0;
 
-	if (state->users_ctx != NULL)
-		talloc_destroy(state->users_ctx);
-	state->users_ctx = NULL;
+	for (i=0; i<state->num_users; i++) {
+		free(state->user_sids[i]);
+		free(state->user_names[i]);
+	}
+	SAFE_FREE(state->user_sids);
+	SAFE_FREE(state->user_names);
+
 	state->num_users = 0;
 	state->current_user = 0;
+
+	for (i=0; i<state->num_domains; i++) {
+		free(state->domain_sids[i]);
+		free(state->domain_names[i]);
+	}
+	SAFE_FREE(state->domain_sids);
+	SAFE_FREE(state->domain_names);
+	
+	state->num_domains = 0;
+	state->current_domain = 0;
 
 	return;
 }

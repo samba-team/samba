@@ -293,20 +293,18 @@ struct wb_client_state {
 	int idmap_socket;
 
 	int num_sam_sockets;
-	DOM_SID *sam_socket_sids;
+	char **sam_socket_sids;
 	int *sam_sockets;
 
-	TALLOC_CTX *domains_ctx;
 	int num_domains;
-	DOM_SID *domain_sids;
+	char **domain_sids;
 	char **domain_names;
 
-	TALLOC_CTX *users_ctx;
 	int current_domain;
-	uint32 resume_key;
+	int resume_key;
 
 	int current_user, num_users;
-	DOM_SID *user_sids;
+	char **user_sids;
 	char **user_names;
 };
 

@@ -1003,6 +1003,9 @@ static BOOL restart_child(TALLOC_CTX *mem_ctx, struct winbindd_child *child)
 		_exit(0);
 	}
 
+	/* We can not share tcp connections to DCs with our parent */
+	cm_close_all_connections();
+
 	switch (child->conn.type) {
 	case WB_LSA_PROXY:
 		d.functions = lsa_functions;
@@ -1072,8 +1075,8 @@ void check_children(void)
 	struct wb_client_state state;
 
 	int num_domains;
-	char **domain_names;
-	DOM_SID *sids;
+	char **domain_names = NULL;
+	char **sid_strings = NULL;
 	int i;
 
 	mem_ctx = talloc_init("check_children");
@@ -1103,24 +1106,27 @@ void check_children(void)
 	/* We have to have one and only one lsa child */
 	SMB_ASSERT(lsa_child != NULL);
 
-	if (!wb_enumtrust(&state, mem_ctx,
-			  &num_domains, &domain_names, &sids)) {
+	if (!wb_enumtrust(&state, &num_domains, &domain_names, &sid_strings)) {
 		DEBUG(1, ("Could not list trusted domains\n"));
 		goto done;
 	}
 
-	wb_add_ourself(&state, mem_ctx, &num_domains, &domain_names, &sids);
+	wb_add_ourself(&state, &num_domains, &domain_names, &sid_strings);
 
 	for (i=0; i<num_domains; i++) {
 
+		DOM_SID sid;
 		BOOL found = False;
+
+		if (!string_to_sid(&sid, sid_strings[i]))
+			continue;
 
 		for (child = children; child != NULL; child = child->next) {
 
 			if (child->conn.type != WB_SAMR_PROXY)
 				continue;
 
-			if (sid_compare(&child->conn.sam_sid, &sids[i]) != 0)
+			if (sid_compare(&child->conn.sam_sid, &sid) != 0)
 				continue;
 
 			found = True;
@@ -1131,15 +1137,71 @@ void check_children(void)
 
 		/* New trust */
 
-		if (!new_samr_child(mem_ctx, domain_names[i], &sids[i])) {
+		if (!new_samr_child(mem_ctx, domain_names[i], &sid)) {
 			DEBUG(1, ("Could not start new child for %s\n",
 				  domain_names[i]));
 		}
+
+		SAFE_FREE(domain_names[i]);
+		SAFE_FREE(sid_strings[i]);
 	}
  done:
+	SAFE_FREE(domain_names);
+	SAFE_FREE(sid_strings);
 	wb_destroy_client_state(&state);
 	return;
-}	
+}
+
+static BOOL get_tgt(time_t *expire_time)
+{
+	BOOL result = False;
+
+#ifdef HAVE_KRB5
+
+	int ret;
+	char *machine_password = NULL;
+	char *machine_krb5_principal = NULL;
+
+	/* If there's more than an hour left, don't bother the DC. */
+	if ((*expire_time - time(NULL)) > 3600)
+		return True;
+
+	if (!secrets_init())
+		return False;
+
+	/* Use in-memory credentials cache */
+	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
+
+	machine_password = secrets_fetch_machine_password(lp_workgroup(),
+							  NULL, NULL);
+
+	if (machine_password == NULL)
+		goto done;
+
+	if (asprintf(&machine_krb5_principal, "%s$@%s",
+		     global_myname(), lp_realm()) == -1)
+		goto done;
+
+	ret = kerberos_kinit_password(machine_krb5_principal, machine_password,
+				      0 /* no time correction for now */,
+				      NULL);
+
+	if (ret != 0) {
+		DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
+		goto done;
+	}
+
+	result = True;
+
+ done:
+
+	SAFE_FREE(machine_password);
+	SAFE_FREE(machine_krb5_principal);
+
+#endif
+
+	return result;
+}
 
 void do_single_daemons(void)
 {

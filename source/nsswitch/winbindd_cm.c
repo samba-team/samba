@@ -452,6 +452,21 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 	return True;
 }
 
+void cm_close_all_connections(void)
+{
+	struct winbindd_cm_conn *conn;
+
+	for (conn = cm_conns; conn != NULL; conn = conn->next) {
+		if (conn->cli == NULL)
+			continue;
+		if (conn->cli->fd == -1)
+			continue;
+		close(conn->cli->fd);
+		conn->cli->fd = -1;
+	}
+}
+	
+
 /* Search the cache for a connection. If there is a broken one,
    shut it down properly and return NULL. */
 
