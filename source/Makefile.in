@@ -272,7 +272,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		smbd/challenge.o  lib/util_pwdb.o smbd/afsticket.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o \
-		print_cups.o
+		printing/print_cups.o
 
 MSDFS_OBJ = msdfs/msdfs.o msdfs/msdfs_tdb.o msdfs/parse_dfs_map.o
 
@@ -471,7 +471,7 @@ STATUS_OBJ = utils/status.o $(LIBSTATUS_OBJ) $(LOCKING_OBJ) \
 TESTPARM_OBJ = utils/testparm.o
 
 TESTPRNS_OBJ = utils/testprns.o printing/pcap.o printing/print_svid.o \
-		print_cups.o
+		printing/print_cups.o
 
 SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
            rpc_server/srv_lookup.o \

@@ -341,10 +341,6 @@ void ncalrpc_l_shutdown(struct msrpc_local *msrpc);
 BOOL ncalrpc_l_establish_connection(struct msrpc_local *msrpc,
 				    const char *pipe_name);
 
-/*The following definitions come from  lib/netmask.c  */
-
-int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask);
-
 /*The following definitions come from  lib/passcheck.c  */
 
 BOOL smb_password_ok(uint16 acct_ctrl,
@@ -2284,6 +2280,11 @@ void init_devicemode(NT_DEVICEMODE *nt_devmode);
 
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)(char *, char *));
+
+/*The following definitions come from  printing/print_cups.c  */
+
+void cups_printer_fn(void (*fn)(char *, char *));
+int cups_printername_ok(char *name);
 
 /*The following definitions come from  printing/printing.c  */
 
