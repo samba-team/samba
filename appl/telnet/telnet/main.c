@@ -31,11 +31,11 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char copyright[] =
-"@(#) Copyright (c) 1988, 1990, 1993\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
+static char *copyright[] = {
+    "@(#) Copyright (c) 1988, 1990, 1993\n"
+    "\tThe Regents of the University of California.  All rights reserved.\n",
+    (char*)copyright
+};
 
 #include "telnet_locl.h"
 RCSID("$Id$");
