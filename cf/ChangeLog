@@ -1,5 +1,7 @@
 2004-02-11  Love  <lha@stacken.kth.se>
 
+	* roken-frag.m4: resolv.h is even more special
+	
 	* roken-frag.m4: AC_CHECK_HEADERS(net/if.h netinet6/in6_var.h
 	sys/sysctl.h sys/proc.h, resolv.h) are all special and need extra
 	help
