@@ -1,5 +1,7 @@
 2000-04-09  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_addrs.c (find_all_addresses): apperently solaris
+	can return EINVAL when the buffer is too small.  cope.
 	* lib/asn1/Makefile.am (gen_files): add asn1_UNSIGNED.x
 	* lib/asn1/gen_locl.h (filename): add prototype
 	(init_generate): const-ize
