@@ -251,7 +251,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 #	--with-nisplus-home \
 #	--with-acl-support \
 
-make all nsswitch/libnss_wins.so torture
+make all nsswitch/libnss_wins.so torture smbfs
 
 
 %Install
@@ -267,13 +267,18 @@ mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR%{NKinetdir}
 mkdir -p $DESTDIR/{sbin,bin,usr/{sbin,bin}}
 mkdir -p $DESTDIR/%{SVIdir}
-mkdir -p $DESTDIR/usr/include
+mkdir -p $DESTDIR/usr/{include,lib}
 mkdir -p $DESTDIR/usr/share/samba/codepages/src
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
 
+make -C source install installclientlib installsmbfs
 
 strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
+# Add links for mount.smbfs
+( cd $DESTDIR/sbin; ln -s /usr/bin/smbmount mount.smbfs; \
+	ln -s /usr/bin/smbumount umount.smbfs )
+
 #mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
 
 #cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
@@ -282,14 +287,10 @@ strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 cp -p source/nsswitch/libnss_wins.so $DESTDIR/lib
 cp -p source/nsswitch/pam_winbind.so $DESTDIR/lib/security
 # Make link for wins resolver
-( cd $DESTDIR/lib; ln -s libnss_wins.so libnss_wins.so.2; cd $RPM_BUILD_DIR )
+( cd $DESTDIR/lib; ln -s libnss_wins.so libnss_wins.so.2 )
 
-# Add libsmbclient support stuff
-install -m 755 source/bin/libsmbclient.so $DESTDIR/usr/lib
+# Add libsmbclient.a support stuff
 install -m 755 source/bin/libsmbclient.a $DESTDIR/usr/lib
-ln -s libsmbclient.so $DESTDIR/usr/lib/libsmbclient.so.0
-ln -s libsmbclient.so $DESTDIR/usr/lib/libsmbclient.so.0.1
-install -m 644 source/include/libsmbclient.h $DESTDIR/usr/include
 
 cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
