@@ -1,3 +1,15 @@
+Sat Feb  8 15:59:56 1997  Assar Westerlund  <assar@pdc.kth.se>
+
+	* lib/krb/mk_rep.c, lib/krb/rd_req.c, lib/krb/store.c,
+ 	lib/krb/store.h: new files.
+
+	* lib/krb5/keytab.c: now even with some functionality.
+
+	* lib/asn1/gen.c: changed paramater from void * to Foo *
+
+	* lib/asn1/der_get.c (der_get_octet_string): Fixed bug with empty
+ 	string.
+
 Sun Jan 19 06:17:39 1997  Assar Westerlund  <assar@pdc.kth.se>
 
 	* lib/krb5/get_cred.c (krb5_get_credentials): Check for creds in
