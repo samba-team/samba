@@ -363,9 +363,9 @@ static BOOL cli_send_trans(struct cli_state *cli, int trans,
 			if (trans==SMBtrans2)
 				SSVALS(cli->outbuf,smb_sfid,fid);		/* fid */
 			if (this_lparam)			/* param[] */
-				memcpy(outparam,param,this_lparam);
+				memcpy(outparam,param+tot_param,this_lparam);
 			if (this_ldata)			/* data[] */
-				memcpy(outdata,data,this_ldata);
+				memcpy(outdata,data+tot_data,this_ldata);
 			set_message(cli->outbuf,trans==SMBtrans?8:9, /* wcnt, bcc */
 				    PTR_DIFF(outdata+this_ldata,smb_buf(cli->outbuf)),False);
 			
@@ -392,7 +392,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	int total_param=0;
 	int this_data,this_param;
 	uint8 eclass;
-    uint32 ecode;
+	uint32 ecode;
 
 	*data_len = *param_len = 0;
 
