@@ -694,8 +694,7 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
   if ( r_length < dec_pt )
     dec_pt = r_length;
 
-  if (dec_pt <= 0)
-    {
+  if (dec_pt <= 0) {
     iplace = 1;
     iconvert[0] = '0';
     iconvert[1] = '\0';
@@ -705,22 +704,24 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
     while(r_length)
       fconvert[fplace++] = result[--r_length];
 
-    while(dec_pt < 0)
-      fconvert[fplace++] = '0';
-    }
-  else
-    {
+    while ((dec_pt < 0) && (fplace < max)) {
+		fconvert[fplace++] = '0';
+		dec_pt++;
+	}
+  } else {
     int c;
 
     iplace=0;
-    for(c=dec_pt; c; iconvert[iplace++] = result[--c]);
+    for(c=dec_pt; c; iconvert[iplace++] = result[--c])
+		;
     iconvert[iplace] = '\0';
 
     result += dec_pt;
     fplace = 0;
     
-    for(c=(r_length-dec_pt); c; fconvert[fplace++] = result[--c]);
-    }
+    for(c=(r_length-dec_pt); c; fconvert[fplace++] = result[--c])
+		;
+  }
 #endif /* fcvt */
   
   /* -1 for decimal point, another -1 if we are printing a sign */
