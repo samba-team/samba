@@ -2,7 +2,7 @@
 # Makefile for tdb directory
 #
 
-CFLAGS = -DSTANDALONE -DTDB_DEBUG -O2 -DHAVE_MMAP=1
+CFLAGS = -DSTANDALONE -DTDB_DEBUG -O2 -g -DHAVE_MMAP=1
 CC = gcc
 
 PROGS = tdbtest tdbtool tdbtorture
