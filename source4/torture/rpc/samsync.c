@@ -1281,7 +1281,7 @@ BOOL torture_rpc_samsync(void)
 	}
 
 	b.flags &= ~DCERPC_AUTH_OPTIONS;
-	b.flags |= DCERPC_SCHANNEL_BDC | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+	b.flags |= DCERPC_SCHANNEL_BDC | DCERPC_SIGN;
 
 	status = dcerpc_pipe_connect_b(&samsync_state->p, &b, 
 				       DCERPC_NETLOGON_UUID,
@@ -1310,7 +1310,7 @@ BOOL torture_rpc_samsync(void)
 	}
 
 	b_netlogon_wksta.flags &= ~DCERPC_AUTH_OPTIONS;
-	b_netlogon_wksta.flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+	b_netlogon_wksta.flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN;
 
 	status = dcerpc_pipe_connect_b(&samsync_state->p_netlogon_wksta, &b_netlogon_wksta, 
 				       DCERPC_NETLOGON_UUID,
