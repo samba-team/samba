@@ -160,7 +160,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	 * and deleting again if the target is not present. JRA.
 	 */
 
-	if (kill(pid, 0) == -1) {
+	if (!process_exists(pid)) {
 		DEBUG(2,("message_send_pid: pid %d doesn't exist\n", (int)pid));
 		return False;
 	}
