@@ -574,7 +574,8 @@ as_rep(KDC_REQ *req,
 		free_EncryptedData(&enc_data);
 		continue;
 	    }
-	    
+
+	  try_next_key:
 	    ret = krb5_crypto_init(context, &pa_key->key, 0, &crypto);
 	    if (ret) {
 		kdc_log(0, "krb5_crypto_init failed: %s",
@@ -591,6 +592,9 @@ as_rep(KDC_REQ *req,
 	    krb5_crypto_destroy(context, crypto);
 	    free_EncryptedData(&enc_data);
 	    if(ret){
+		if(hdb_next_enctype2key(context, client, 
+					enc_data.etype, &pa_key) == 0)
+		    goto try_next_key;
 		e_text = "Failed to decrypt PA-DATA";
 		kdc_log (5, "Failed to decrypt PA-DATA -- %s",
 			 client_name);
@@ -639,7 +643,7 @@ as_rep(KDC_REQ *req,
 	size_t len;
 	krb5_data foo_data;
 
-    use_pa: 
+      use_pa: 
 	method_data.len = 0;
 	method_data.val = NULL;
 
@@ -696,7 +700,7 @@ as_rep(KDC_REQ *req,
 		kdc_log(5, "Using %s/%s", cet, set);
 		free(set);
 	    } else
-	    free(cet);
+		free(cet);
 	} else
 	    kdc_log(5, "Using e-types %d/%d", cetype, setype);
     }
@@ -894,7 +898,7 @@ as_rep(KDC_REQ *req,
     free_EncTicketPart(&et);
     free_EncKDCRepPart(&ek);
     free_AS_REP(&rep);
-out:
+  out:
     if(ret){
 	krb5_mk_error(context,
 		      ret,
@@ -907,7 +911,7 @@ out:
 		      reply);
 	ret = 0;
     }
-out2:
+  out2:
     krb5_free_principal(context, client_princ);
     free(client_name);
     krb5_free_principal(context, server_princ);
