@@ -208,6 +208,7 @@ typedef struct msrpc_service_fns
 	void (*service_init) (char *);
 	BOOL (*reload_services) (BOOL);
 	int (*main_init) (int, char *[]);
+	void (*idle) (void);
 
 }
 msrpc_service_fns;

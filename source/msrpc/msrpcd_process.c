@@ -64,54 +64,58 @@ extern int max_send;
 The timeout is in milli seconds
 ****************************************************************************/
 
-static BOOL receive_message_or_msrpc(int c, prs_struct *ps,
-                                   int timeout, BOOL *got_msrpc)
+static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
+				     int timeout, BOOL *got_msrpc)
 {
-  fd_set fds;
-  int selrtn;
-  struct timeval to;
-  int maxfd;
+	fd_set fds;
+	int selrtn;
+	struct timeval to;
+	int maxfd;
 
-  smb_read_error = 0;
+	smb_read_error = 0;
 
-  *got_msrpc = False;
+	*got_msrpc = False;
 
-  /*
-   * Check to see if we already have a message on the smb queue.
-   * If so - copy and return it.
-   */
-  
-  /*
-   * Setup the select read fd set.
-   */
+	/*
+	 * Check to see if we already have a message on the smb queue.
+	 * If so - copy and return it.
+	 */
 
-  FD_ZERO(&fds);
-  FD_SET(c,&fds);
-  maxfd = 0;
+	/*
+	 * Setup the select read fd set.
+	 */
 
-  to.tv_sec = timeout / 1000;
-  to.tv_usec = (timeout % 1000) * 1000;
+	FD_ZERO(&fds);
+	FD_SET(c, &fds);
+	maxfd = 0;
 
-  selrtn = sys_select(MAX(maxfd,c)+1,&fds,NULL, timeout>0?&to:NULL);
+	to.tv_sec = timeout / 1000;
+	to.tv_usec = (timeout % 1000) * 1000;
 
-  /* Check if error */
-  if(selrtn == -1) {
-    /* something is wrong. Maybe the socket is dead? */
-    smb_read_error = READ_ERROR;
-    return False;
-  } 
-    
-  /* Did we timeout ? */
-  if (selrtn == 0) {
-    smb_read_error = READ_TIMEOUT;
-    return False;
-  }
+	selrtn =
+		sys_select(MAX(maxfd, c) + 1, &fds, NULL,
+			   timeout > 0 ? &to : NULL);
 
-  if (FD_ISSET(c,&fds))
-  {
-    *got_msrpc = True;
-    return receive_msrpc(c, ps, 0);
-  }
+	/* Check if error */
+	if (selrtn == -1)
+	{
+		/* something is wrong. Maybe the socket is dead? */
+		smb_read_error = READ_ERROR;
+		return False;
+	}
+
+	/* Did we timeout ? */
+	if (selrtn == 0)
+	{
+		smb_read_error = READ_TIMEOUT;
+		return False;
+	}
+
+	if (FD_ISSET(c, &fds))
+	{
+		*got_msrpc = True;
+		return receive_msrpc(c, ps, 0);
+	}
 	return False;
 }
 
@@ -141,22 +145,22 @@ force write permissions on print services.
   process an smb from the client - split out from the process() code so
   it can be used by the oplock break code.
 ****************************************************************************/
-static void process_msrpc(rpcsrv_struct *l, const char* name,
-				prs_struct *pdu)
+static void process_msrpc(rpcsrv_struct * l, const char *name,
+			  prs_struct * pdu)
 {
-  static int trans_num;
-  int32 len = prs_buf_len(pdu);
+	static int trans_num;
+	int32 len = prs_buf_len(pdu);
 
-  DEBUG( 6, ( "got message of len 0x%x\n", len ) );
+	DEBUG(6, ("got message of len 0x%x\n", len));
 
 	dump_data(10, pdu->data, len);
 
 #ifdef WITH_VTP
-  if(trans_num == 1 && VT_Check(pdu->data)) 
-  {
-    VT_Process();
-    return;
-  }
+	if (trans_num == 1 && VT_Check(pdu->data))
+	{
+		VT_Process();
+		return;
+	}
 #endif
 
 	if (rpc_local(l, pdu->data, len, name) &&
@@ -170,47 +174,51 @@ static void process_msrpc(rpcsrv_struct *l, const char* name,
 			int selrtn;
 			struct timeval to;
 			int maxfd;
-			int timeout = SMBD_SELECT_LOOP*1000;
+			int timeout = SMBD_SELECT_LOOP * 1000;
 
 			smb_read_error = 0;
 
 			FD_ZERO(&fds);
-			FD_SET(l->c,&fds);
+			FD_SET(l->c, &fds);
 			maxfd = 0;
 
 			to.tv_sec = timeout / 1000;
 			to.tv_usec = (timeout % 1000) * 1000;
 
-			selrtn = sys_select(MAX(maxfd,l->c)+1,NULL,&fds, timeout>0?&to:NULL);
+			selrtn =
+				sys_select(MAX(maxfd, l->c) + 1, NULL, &fds,
+					   timeout > 0 ? &to : NULL);
 
 			/* Check if error */
-			if(selrtn == -1) {
+			if (selrtn == -1)
+			{
 				smb_read_error = READ_ERROR;
 				return;
-			} 
+			}
 
 			/* Did we timeout ? */
-			if (selrtn == 0) {
+			if (selrtn == 0)
+			{
 				smb_read_error = READ_TIMEOUT;
 				return;
 			}
 
-			if (FD_ISSET(l->c,&fds))
+			if (FD_ISSET(l->c, &fds))
 			{
 				if (!msrpc_send(l->c, &l->rsmb_pdu))
-				prs_free_data(&l->rsmb_pdu);
+					prs_free_data(&l->rsmb_pdu);
 				break;
 			}
 			prs_free_data(&l->rsmb_pdu);
 		}
 	}
-  trans_num++;
+	trans_num++;
 }
 
 /****************************************************************************
  reads user credentials from the socket
 ****************************************************************************/
-BOOL get_user_creds(int c, vuser_key *uk)
+BOOL get_user_creds(int c, vuser_key * uk)
 {
 	pstring buf;
 	int rl;
@@ -223,13 +231,13 @@ BOOL get_user_creds(int c, vuser_key *uk)
 
 	ZERO_STRUCT(cmd);
 
-	DEBUG(10,("get_user_creds: first request\n"));
+	DEBUG(10, ("get_user_creds: first request\n"));
 
 	rl = read(c, &buf, sizeof(len));
 
 	if (rl != sizeof(len))
 	{
-		DEBUG(0,("Unable to read length\n"));
+		DEBUG(0, ("Unable to read length\n"));
 		dump_data(0, buf, sizeof(len));
 		return False;
 	}
@@ -238,7 +246,7 @@ BOOL get_user_creds(int c, vuser_key *uk)
 
 	if (len > sizeof(buf))
 	{
-		DEBUG(0,("length %d too long\n", len));
+		DEBUG(0, ("length %d too long\n", len));
 		return False;
 	}
 
@@ -246,28 +254,28 @@ BOOL get_user_creds(int c, vuser_key *uk)
 
 	if (rl < 0)
 	{
-		DEBUG(0,("Unable to read from connection\n"));
+		DEBUG(0, ("Unable to read from connection\n"));
 		return False;
 	}
-	
+
 #ifdef DEBUG_PASSWORD
 	dump_data(100, buf, rl);
 #endif
 
- 	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_init(&ps, 0, 4, True);
- 	prs_add_data(&ps, buf, len);
+	/* make a static data parsing structure from the api_fd_reply data */
+	prs_init(&ps, 0, 4, True);
+	prs_add_data(&ps, buf, len);
 
 	if (!creds_io_cmd("creds", &cmd, &ps, 0))
 	{
-		DEBUG(0,("Unable to parse credentials\n"));
+		DEBUG(0, ("Unable to parse credentials\n"));
 		prs_free_data(&ps);
 		return False;
 	}
 
 	if (ps.offset != rl)
 	{
-		DEBUG(0,("Buffer size %d %d!\n", ps.offset, rl));
+		DEBUG(0, ("Buffer size %d %d!\n", ps.offset, rl));
 		prs_free_data(&ps);
 		return False;
 	}
@@ -289,7 +297,7 @@ BOOL get_user_creds(int c, vuser_key *uk)
 		}
 		default:
 		{
-			DEBUG(0,("unknown command %d\n", cmd.command));
+			DEBUG(0, ("unknown command %d\n", cmd.command));
 			return False;
 		}
 	}
@@ -299,8 +307,7 @@ BOOL get_user_creds(int c, vuser_key *uk)
 
 	status = new_con ? 0x0 : 0x1;
 
-	if (write(c, &status, sizeof(status)) !=
-	    sizeof(status))
+	if (write(c, &status, sizeof(status)) != sizeof(status))
 	{
 		return False;
 	}
@@ -308,40 +315,43 @@ BOOL get_user_creds(int c, vuser_key *uk)
 	return new_con;
 }
 
-static void free_srv_auth_fns_array(uint32 num_entries, srv_auth_fns **entries)
+static void free_srv_auth_fns_array(uint32 num_entries,
+				    srv_auth_fns ** entries)
 {
-	free_void_array(num_entries, (void**)entries, NULL);
+	free_void_array(num_entries, (void **)entries, NULL);
 }
 
-static srv_auth_fns* add_srv_auth_fns_to_array(uint32 *len,
-				srv_auth_fns ***array,
-				srv_auth_fns *name)
+static srv_auth_fns *add_srv_auth_fns_to_array(uint32 * len,
+					       srv_auth_fns *** array,
+					       srv_auth_fns * name)
 {
-	return (srv_auth_fns*)add_item_to_array(len,
-	                     (void***)array, (void*)name);
+	return (srv_auth_fns *) add_item_to_array(len,
+						  (void ***)array,
+						  (void *)name);
 }
 
-void close_srv_auth_array(rpcsrv_struct *l)
+void close_srv_auth_array(rpcsrv_struct * l)
 {
 	free_srv_auth_fns_array(l->num_auths, l->auth_fns);
 }
 
-void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn)
+void add_srv_auth_fn(rpcsrv_struct * l, srv_auth_fns * fn)
 {
 	add_srv_auth_fns_to_array(&l->num_auths, &l->auth_fns, fn);
-	DEBUG(10,("add_srv_auth_fn: %d\n", l->num_auths));
+	DEBUG(10, ("add_srv_auth_fn: %d\n", l->num_auths));
 }
+
 /****************************************************************************
   initialise from pipe
 ****************************************************************************/
-BOOL msrpcd_init(int c, rpcsrv_struct **l)
+BOOL msrpcd_init(int c, rpcsrv_struct ** l)
 {
 	vuser_key uk;
 	user_struct *vuser = NULL;
 
 	if (!get_user_creds(c, &uk))
 	{
-		DEBUG(0,("authentication failed\n"));
+		DEBUG(0, ("authentication failed\n"));
 		return False;
 	}
 
@@ -381,8 +391,8 @@ BOOL msrpcd_init(int c, rpcsrv_struct **l)
 	if (vuser != NULL && !vuser->guest)
 	{
 		char *user = vuser->name;
-		if (!strequal(user,lp_guestaccount(-1)) &&
-		     lp_servicenumber(user) < 0)      
+		if (!strequal(user, lp_guestaccount(-1)) &&
+		    lp_servicenumber(user) < 0)
 		{
 			int homes = lp_servicenumber(HOMES_NAME);
 			char *home = get_unixhome_dir(user);
@@ -390,7 +400,7 @@ BOOL msrpcd_init(int c, rpcsrv_struct **l)
 			{
 				pstring home_dir;
 				fstrcpy(home_dir, home);
-				lp_add_home(user,homes,home_dir);
+				lp_add_home(user, homes, home_dir);
 			}
 		}
 	}
@@ -403,102 +413,118 @@ BOOL msrpcd_init(int c, rpcsrv_struct **l)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-void msrpcd_process(msrpc_service_fns *fn, rpcsrv_struct *l, const char* name)
+void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
+		    const char *name)
 {
-    extern fstring remote_machine;
-    extern fstring local_machine;
-    extern pstring global_myname;
+	extern fstring remote_machine;
+	extern fstring local_machine;
+	extern pstring global_myname;
 
-  max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
+	max_recv = MIN(lp_maxxmit(), BUFFER_SIZE);
 
-  /* re-initialise the timezone */
-  TimeInit();
+	/* re-initialise the timezone */
+	TimeInit();
 
-    fstrcpy(remote_machine, name);
-    fstrcpy(local_machine, global_myname);
-    local_machine[15] = 0;
-    strlower(local_machine);
+	fstrcpy(remote_machine, name);
+	fstrcpy(local_machine, global_myname);
+	local_machine[15] = 0;
+	strlower(local_machine);
 
-    DEBUG(2, ("msrpc_process: client_name: %s my_name: %s\n",
-                         remote_machine, local_machine));
+	DEBUG(2, ("msrpc_process: client_name: %s my_name: %s\n",
+		  remote_machine, local_machine));
 
-    fn->reload_services(True);
-    reopen_logs();
+	fn->reload_services(True);
+	reopen_logs();
 
-  while (True)
-  {
-    int counter;
-    int service_load_counter = 0;
-    BOOL got_msrpc = False;
-	prs_struct pdu;
+	while (True)
+	{
+		int counter;
+		int service_load_counter = 0;
+		BOOL got_msrpc = False;
+		prs_struct pdu;
 
-    errno = 0;      
+		errno = 0;
 
-    for (counter=SMBD_SELECT_LOOP; 
-          !receive_message_or_msrpc(l->c, &pdu, 
-                                  SMBD_SELECT_LOOP*1000,&got_msrpc); 
-          counter += SMBD_SELECT_LOOP)
-    {
-      time_t t;
+		for (counter = SMBD_SELECT_LOOP;
+		     !receive_message_or_msrpc(l->c, &pdu,
+					       SMBD_SELECT_LOOP * 1000,
+					       &got_msrpc);
+		     counter += SMBD_SELECT_LOOP)
+		{
+			time_t t;
 
-      if (counter > 365 * 3600) /* big number of seconds. */
-      {
-        counter = 0;
-        service_load_counter = 0;
-      }
+			if (counter > 365 * 3600)	/* big number of seconds. */
+			{
+				counter = 0;
+				service_load_counter = 0;
+			}
 
-      if (smb_read_error == READ_EOF) 
-      {
-        DEBUG(3,("end of file from client\n"));
-        return;
-      }
+			if (smb_read_error == READ_EOF)
+			{
+				DEBUG(3, ("end of file from client\n"));
+				if (fn->idle != NULL)
+				{
+					fn->idle();
+				}
+				return;
+			}
 
-      if (smb_read_error == READ_ERROR) 
-      {
-        DEBUG(3,("receive error (%s) exiting\n",
-                  strerror(errno)));
-        return;
-      }
+			if (smb_read_error == READ_ERROR)
+			{
+				DEBUG(3, ("receive error (%s) exiting\n",
+					  strerror(errno)));
+				if (fn->idle != NULL)
+				{
+					fn->idle();
+				}
+				return;
+			}
 
-      t = time(NULL);
+			t = time(NULL);
 
-      /* check for smb.conf reload */
-      if (counter >= service_load_counter + SMBD_RELOAD_CHECK)
-      {
-        service_load_counter = counter;
+			/* check for smb.conf reload */
+			if (counter >=
+			    service_load_counter + SMBD_RELOAD_CHECK)
+			{
+				service_load_counter = counter;
 
-        /* reload services, if files have changed. */
-        fn->reload_services(True);
-      }
+				/* reload services, if files have changed. */
+				fn->reload_services(True);
+			}
 
-      /*
-       * If reload_after_sighup == True then we got a SIGHUP
-       * and are being asked to reload. Fix from <branko.cibej@hermes.si>
-       */
+			/*
+			 * If reload_after_sighup == True then we got a SIGHUP
+			 * and are being asked to reload. Fix from <branko.cibej@hermes.si>
+			 */
 
-      if (reload_after_sighup)
-      {
-        DEBUG(0,("Reloading services after SIGHUP\n"));
-        fn->reload_services(False);
-        reload_after_sighup = False;
-        /*
-         * Use this as an excuse to print some stats.
-         */
-      }
+			if (reload_after_sighup)
+			{
+				DEBUG(0,
+				      ("Reloading services after SIGHUP\n"));
+				fn->reload_services(False);
+				reload_after_sighup = False;
+				/*
+				 * Use this as an excuse to print some stats.
+				 */
+			}
 
-      /* automatic timeout if all connections are closed */      
-      if (counter >= IDLE_CLOSED_TIMEOUT) 
-      {
-        DEBUG( 2, ( "Closing idle connection\n" ) );
-        return;
-      }
+			/* automatic timeout if all connections are closed */
+			if (counter >= IDLE_CLOSED_TIMEOUT)
+			{
+				DEBUG(2, ("Closing idle connection\n"));
+				if (fn->idle != NULL)
+				{
+					fn->idle();
+				}
+				return;
+			}
 
-    }
+		}
 
-    if(got_msrpc)
-    {
-      process_msrpc(l, name, &pdu);
-    }
-	prs_free_data(&pdu);
-  }
+		if (got_msrpc)
+		{
+			process_msrpc(l, name, &pdu);
+		}
+		prs_free_data(&pdu);
+	}
 }

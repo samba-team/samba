@@ -124,7 +124,8 @@ static msrpc_service_fns fn_table =
 	auth_init,
 	service_init,
 	reload_msrpc,
-	main_init
+	main_init,
+	NULL
 };
 
 msrpc_service_fns *get_service_fns(void)

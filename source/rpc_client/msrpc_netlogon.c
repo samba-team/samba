@@ -37,18 +37,13 @@ extern pstring global_myworkgroup;
  Change the domain password on the PDC.
 **********************************************************/
 
-BOOL modify_trust_password(const char *domain, const char *remote_machine,
+BOOL modify_trust_password(const char *domain, const char *srv_name,
 			   const uchar orig_trust_passwd_hash[16],
 			   const uchar new_trust_passwd_hash[16],
 			   uint16 sec_chan)
 {
 	struct nmb_name calling, called;
 	fstring trust_acct;
-	fstring srv_name;
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, remote_machine);
-	strupper(srv_name);
 
 	fstrcpy(trust_acct, global_myname);
 	fstrcat(trust_acct, "$");
