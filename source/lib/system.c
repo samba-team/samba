@@ -977,3 +977,12 @@ int sys_dlclose (void *handle)
 	return 0;
 #endif
 }
+
+const char *sys_dlerror(void)
+{
+#ifdef HAVE_LIBDL
+	return dlerror();
+#else
+	return NULL;
+#endif
+}
