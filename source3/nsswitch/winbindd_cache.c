@@ -56,20 +56,40 @@ static uint32 domain_sequence_number(struct winbindd_domain *domain)
         uint16 switch_value = 2;
         NTSTATUS result;
         uint32 seqnum = DOM_SEQUENCE_NONE;
+        POLICY_HND dom_pol;
+        BOOL got_dom_pol = False;
+        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 
         if (!(mem_ctx = talloc_init()))
                 return DOM_SEQUENCE_NONE;
 
-        if (!(hnd = cm_get_sam_dom_handle(domain->name, &domain->sid)))
+        /* Get sam handle */
+
+        if (!(hnd = cm_get_sam_handle(domain->name)))
                 goto done;
 
-        result = cli_samr_query_dom_info(hnd->cli, mem_ctx, &hnd->pol,
+        /* Get domain handle */
+
+        result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol, 
+                                      des_access, &domain->sid, &dom_pol);
+
+        if (!NT_STATUS_IS_OK(result))
+                goto done;
+
+        got_dom_pol = True;
+
+        /* Query domain info */
+
+        result = cli_samr_query_dom_info(hnd->cli, mem_ctx, &dom_pol,
                                          switch_value, &ctr);
 
         if (NT_STATUS_IS_OK(result))
                 seqnum = ctr.info.inf2.seq_num;
 
  done:
+        if (got_dom_pol)
+                cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
         talloc_destroy(mem_ctx);
 
         return seqnum;
