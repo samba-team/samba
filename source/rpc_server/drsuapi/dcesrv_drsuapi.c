@@ -41,7 +41,7 @@ static NTSTATUS drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *handle;
 
-	r->out.info = NULL;
+	r->out.bind_info = NULL;
 	ZERO_STRUCTP(r->out.bind_handle);
 
 	b_state = talloc_p(dce_call->conn, struct drsuapi_bind_state);
