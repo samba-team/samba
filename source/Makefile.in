@@ -117,7 +117,7 @@ SPROGS = bin/smbd bin/lsarpcd bin/svcctld bin/spoolssd bin/samrd \
          bin/srvsvcd bin/wkssvcd bin/browserd bin/netlogond bin/winregd \
          bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
-PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap 
+PROGS2 = bin/rpcclient bin/make_smbcodepage bin/make_unicodemap 
 PROGS3 = bin/regedit bin/samedit bin/net bin/svccontrol bin/cmdat bin/ntspool
 PROGS4 = @WRAP@ @WRAP32@
 #MPROGS = @MPROGS@
@@ -1078,7 +1078,10 @@ bin/smbstatus: $(SAMBALIB) $(UBIQXLIB) $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(STATUS_OBJ) $(SAMBALIB) $(UBIQXLIB) $(LIBS)
 
-bin/smbpasswd: $(SMBPASSWD_LIBS) $(SMBPASSWD_OBJ) bin/.dummy
+bin/smbpasswd: 
+	@echo Use samedit instead.
+
+bin/realsmbpasswd: $(SMBPASSWD_LIBS) $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SMBPASSWD_OBJ) $(SMBPASSWD_LIBS) $(LIBS)
 
