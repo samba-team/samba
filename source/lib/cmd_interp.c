@@ -647,19 +647,22 @@ static void set_user_password(struct ntuser_creds *u,
 		if (password == NULL)
 		{
 			DEBUG(10, ("set_user_password: NULL pwd\n"));
-			pwd_set_nullpwd(&(u->pwd));
+			pwd_set_nullpwd(&u->pwd);
 		}
 		else
 		{
 			/* generate 16 byte hashes */
 			DEBUG(10, ("set_user_password: generate\n"));
-			pwd_make_lm_nt_16(&(u->pwd), password);
+			if (lp_encrypted_passwords())
+				pwd_make_lm_nt_16(&u->pwd, password);
+			else
+				pwd_set_cleartext(&u->pwd, password);
 		}
 	}
 	else
 	{
 		DEBUG(10, ("set_user_password: read\n"));
-		pwd_read(&(u->pwd), "Enter Password:", True);
+		pwd_read(&u->pwd, "Enter Password:", True);
 	}
 }
 
