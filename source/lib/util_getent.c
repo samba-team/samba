@@ -274,6 +274,12 @@ struct sys_userlist *get_users_in_group(const char *gname)
 		}
 	}
 	
+#if !defined(BROKEN_GETGRNAM)
+	if ((gptr = (struct group *)getgrnam(gname)) == NULL)
+		return NULL;
+	return add_members_to_userlist(list_head, gptr);
+#else
+	/* BROKEN_GETGRNAM - True64 */
 	setgrent();
 	while((gptr = getgrent()) != NULL) {
 		if (strequal(gname, gptr->gr_name)) {
@@ -284,6 +290,7 @@ struct sys_userlist *get_users_in_group(const char *gname)
 	}
 	endgrent();
 	return list_head;
+#endif
 }
 
 /****************************************************************
