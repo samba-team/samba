@@ -412,6 +412,10 @@
 #undef HAVE_LDAP
 #endif
 
+#if HAVE_GSSAPI_H
+#include <gssapi.h>
+#endif
+
 #if HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
 #endif
