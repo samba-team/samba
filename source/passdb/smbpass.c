@@ -508,11 +508,11 @@ Error was %s\n",
 	}
 
 	sprintf(new_entry, "%s:%u:", pwd->smb_name, (unsigned)pwd->smb_userid);
-	p = &new_entry[strlen(new_entry)];
+	p = (unsigned char *)&new_entry[strlen(new_entry)];
 
 	for( i = 0; i < 16; i++)
 	{
-		sprintf(&p[i*2], "%02X", pwd->smb_passwd[i]);
+		sprintf((char *)&p[i*2], "%02X", pwd->smb_passwd[i]);
 	}
 	p += 32;
 
@@ -520,12 +520,12 @@ Error was %s\n",
 
 	for( i = 0; i < 16; i++)
 	{
-		sprintf(&p[i*2], "%02X", pwd->smb_nt_passwd[i]);
+		sprintf((char *)&p[i*2], "%02X", pwd->smb_nt_passwd[i]);
 	}
 	p += 32;
 
 	*p++ = ':';
-	sprintf(p,"\n");
+	sprintf((char *)p,"\n");
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100, ("add_smbpwd_entry(%d): new_entry_len %d entry_len %d made line |%s|\n", 
