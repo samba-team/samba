@@ -324,7 +324,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       printing/printfsp.o lib/util_seaccess.o \
                smbd/build_options.o \
 	       smbd/change_trust_pw.o \
-	       $(MANGLE_OBJ)
+	       $(MANGLE_OBJ) @VFS_STATIC@
 
 SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(LIBSMB_OBJ) \
 		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) $(UBIQX_OBJ) \
