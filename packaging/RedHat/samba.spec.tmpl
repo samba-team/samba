@@ -68,10 +68,18 @@ autoheader
 autoconf
 EXTRA="-D_LARGEFILE64_SOURCE"
 %endif
+
+## Get number of cpu's, default for 1 cpu on error 
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
+if [ $NUMCPU -eq 0 ]; then
+	NUMCPU=1;
+fi 
+
+## run autogen if missing the configure script
 if [ ! -f "configure" ]; then
 	./autogen.sh
 fi
+
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--prefix=%{prefix} \
 	--localstatedir=/var \
@@ -88,9 +96,8 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-swatdir=%{prefix}/share/swat \
 	--with-libsmbclient 
 make -j${NUMCPU} proto
-make -j${NUMCPU} all nsswitch/libnss_wins.so modules
+make -j${NUMCPU} all nsswitch/libnss_wins.so 
 make -j${NUMCPU} debug2html
-make -j${NUMCPU} bin/smbspool
 
 # Remove some permission bits to avoid to many dependencies
 find examples docs -type f | xargs -r chmod -x
@@ -154,7 +161,7 @@ cd ..
 
 # Install the nsswitch wins library
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
-( cd $RPM_BUILD_ROOT/lib; ln -sf libnss_wins.so libnss_wins.so.2; )
+( cd $RPM_BUILD_ROOT/lib; ln -sf libnss_wins.so libnss_wins.so.2 )
 
 # Install winbind shared libraries
 install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
@@ -427,7 +434,6 @@ fi
 %{prefix}/share/swat/lang/*/images/*
 %{prefix}/share/swat/lang/*/include/*.html
 %{prefix}/share/swat/using_samba/*
-%attr(755,root,root) %{prefix}/lib/samba/*.msg
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/smbusers
