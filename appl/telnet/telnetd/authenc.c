@@ -38,7 +38,7 @@ RCSID("$Id$");
 #ifdef AUTHENTICATION
 
 int
-net_write(unsigned char *str, int len)
+telnet_net_write(unsigned char *str, int len)
 {
     if (nfrontp + len < netobuf + BUFSIZ) {
 	memmove(nfrontp, str, len);

@@ -537,33 +537,33 @@ getterminaltype(char *name, size_t name_sz)
 	static unsigned char sb[] =
 	{ IAC, SB, TELOPT_TSPEED, TELQUAL_SEND, IAC, SE };
 
-	net_write (sb, sizeof sb);
+	telnet_net_write (sb, sizeof sb);
 	DIAG(TD_OPTIONS, printsub('>', sb + 2, sizeof sb - 2););
     }
     if (his_state_is_will(TELOPT_XDISPLOC)) {
 	static unsigned char sb[] =
 	{ IAC, SB, TELOPT_XDISPLOC, TELQUAL_SEND, IAC, SE };
 
-	net_write (sb, sizeof sb);
+	telnet_net_write (sb, sizeof sb);
 	DIAG(TD_OPTIONS, printsub('>', sb + 2, sizeof sb - 2););
     }
     if (his_state_is_will(TELOPT_NEW_ENVIRON)) {
 	static unsigned char sb[] =
 	{ IAC, SB, TELOPT_NEW_ENVIRON, TELQUAL_SEND, IAC, SE };
 
-	net_write (sb, sizeof sb);
+	telnet_net_write (sb, sizeof sb);
 	DIAG(TD_OPTIONS, printsub('>', sb + 2, sizeof sb - 2););
     }
     else if (his_state_is_will(TELOPT_OLD_ENVIRON)) {
 	static unsigned char sb[] =
 	{ IAC, SB, TELOPT_OLD_ENVIRON, TELQUAL_SEND, IAC, SE };
 
-	net_write (sb, sizeof sb);
+	telnet_net_write (sb, sizeof sb);
 	DIAG(TD_OPTIONS, printsub('>', sb + 2, sizeof sb - 2););
     }
     if (his_state_is_will(TELOPT_TTYPE)) {
 
-	net_write (ttytype_sbbuf, sizeof ttytype_sbbuf);
+	telnet_net_write (ttytype_sbbuf, sizeof ttytype_sbbuf);
 	DIAG(TD_OPTIONS, printsub('>', ttytype_sbbuf + 2,
 				  sizeof ttytype_sbbuf - 2););
     }
@@ -638,7 +638,7 @@ _gettermname()
     if (his_state_is_wont(TELOPT_TTYPE))
 	return;
     settimer(baseline);
-    net_write (ttytype_sbbuf, sizeof ttytype_sbbuf);
+    telnet_net_write (ttytype_sbbuf, sizeof ttytype_sbbuf);
     DIAG(TD_OPTIONS, printsub('>', ttytype_sbbuf + 2,
 			      sizeof ttytype_sbbuf - 2););
     while (sequenceIs(ttypesubopt, baseline))

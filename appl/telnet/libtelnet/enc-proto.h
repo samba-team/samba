@@ -74,7 +74,6 @@ int EncryptStopInput(void);
 int EncryptStopOutput(void);
 int EncryptType(char*, char*);
 int EncryptVerbose(int);
-int net_write (unsigned char *, int);
 void decrypt_auto(int);
 void encrypt_auto(int);
 void encrypt_debug(int);

@@ -179,7 +179,7 @@ extern jmp_buf
 /* authenc.c */
 
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
-int net_write(unsigned char *str, int len);
+int telnet_net_write(unsigned char *str, int len);
 void net_encrypt(void);
 int telnet_spin(void);
 char *telnet_getenv(char *val);

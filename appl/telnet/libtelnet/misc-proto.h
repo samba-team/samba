@@ -70,7 +70,7 @@ int Ambiguous(void *s);
 /*
  * These functions are imported from the application
  */
-int net_write (unsigned char *, int);
+int telnet_net_write (unsigned char *, int);
 void net_encrypt (void);
 int telnet_spin (void);
 char *telnet_getenv (char *);

@@ -235,7 +235,7 @@ static int fb64_start(struct fb *fbp, int dir, int server)
 		*p++ = IAC;
 		*p++ = SE;
 		printsub('>', &fbp->fb_feed[2], p - &fbp->fb_feed[2]);
-		net_write(fbp->fb_feed, p - fbp->fb_feed);
+		telnet_net_write(fbp->fb_feed, p - fbp->fb_feed);
 		break;
 	default:
 		return(FAILED);
@@ -293,7 +293,7 @@ int fb64_is(unsigned char *data, int cnt, struct fb *fbp)
 		*p++ = IAC;
 		*p++ = SE;
 		printsub('>', &fbp->fb_feed[2], p - &fbp->fb_feed[2]);
-		net_write(fbp->fb_feed, p - fbp->fb_feed);
+		telnet_net_write(fbp->fb_feed, p - fbp->fb_feed);
 
 		state = fbp->state[DIR_DECRYPT-1] = IN_PROGRESS;
 		break;
@@ -318,7 +318,7 @@ int fb64_is(unsigned char *data, int cnt, struct fb *fbp)
 		*p++ = IAC;
 		*p++ = SE;
 		printsub('>', &fbp->fb_feed[2], p - &fbp->fb_feed[2]);
-		net_write(fbp->fb_feed, p - fbp->fb_feed);
+		telnet_net_write(fbp->fb_feed, p - fbp->fb_feed);
 
 		break;
 	}

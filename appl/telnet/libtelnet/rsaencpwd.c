@@ -143,7 +143,7 @@ Data(ap, type, d, c)
 	*p++ = SE;
 	if (str_data[3] == TELQUAL_IS)
 		printsub('>', &str_data[2], p - (&str_data[2]));
-	return(net_write(str_data, p - str_data));
+	return(telnet_net_write(str_data, p - str_data));
 }
 
 	int

@@ -37,7 +37,7 @@ RCSID("$Id$");
 
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
 int
-net_write(unsigned char *str, int len)
+telnet_net_write(unsigned char *str, int len)
 {
 	if (NETROOM() > len) {
 		ring_supply_data(&netoring, str, len);

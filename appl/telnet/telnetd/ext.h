@@ -75,7 +75,7 @@ extern int	ourpty, net;
 extern char	*line;
 extern int	SYNCHing;		/* we are in TELNET SYNCH mode */
 
-int net_write (unsigned char *str, int len);
+int telnet_net_write (unsigned char *str, int len);
 void net_encrypt (void);
 int telnet_spin (void);
 char *telnet_getenv (char *val);
