@@ -1202,7 +1202,7 @@ utils/net_proto.h:
 	  $(NET_OBJ1)
 
 include/tdbsam2_parse_info.h:
-	@cd $(srcdir) && perl -w script/genstruct.pl \
+	@cd $(srcdir) && @PERL@ -w script/genstruct.pl \
 	-o include/tdbsam2_parse_info.h $(CC) -E -O2 -g \
 	include/tdbsam2.h
 
