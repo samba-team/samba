@@ -1,5 +1,9 @@
 2004-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/hdb-ldap.c (LDAP_firstkey): When iterating over all
+	entries, search for samba accounts too, From: "James F. Hranicky"
+	<jfh@cise.ufl.edu>
+
 	* lib/hdb/hdb-ldap.c (krb5kdcentry_attrs): ask for attribute uid
 	too
 
