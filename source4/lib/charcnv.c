@@ -769,7 +769,7 @@ ssize_t pull_utf8_allocate(void **dest, const char *src)
 ssize_t push_string(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
 	if (!(flags & STR_ASCII) && \
-	    ((flags & STR_UNICODE || \
+	    (((flags & STR_UNICODE) || \
 	      (SVAL(base_ptr, NBT_HDR_SIZE+HDR_FLG2) & FLAGS2_UNICODE_STRINGS)))) {
 		return push_ucs2(base_ptr, dest, src, dest_len, flags);
 	}
@@ -794,7 +794,7 @@ ssize_t push_string(const void *base_ptr, void *dest, const char *src, size_t de
 ssize_t pull_string(const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	if (!(flags & STR_ASCII) && \
-	    ((flags & STR_UNICODE || \
+	    (((flags & STR_UNICODE) || \
 	      (SVAL(base_ptr, NBT_HDR_SIZE+HDR_FLG2) & FLAGS2_UNICODE_STRINGS)))) {
 		return pull_ucs2(base_ptr, dest, src, dest_len, src_len, flags);
 	}

@@ -754,7 +754,7 @@ size_t cli_req_pull_string(struct cli_request *req, TALLOC_CTX *mem_ctx,
 			   char **dest, const char *src, int byte_len, unsigned flags)
 {
 	if (!(flags & STR_ASCII) && 
-	    ((flags & STR_UNICODE || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
+	    (((flags & STR_UNICODE) || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
 		return cli_req_pull_ucs2(req, mem_ctx, dest, src, byte_len, flags);
 	}
 

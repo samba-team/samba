@@ -195,6 +195,7 @@ void *shm_setup(int size)
 BOOL wire_bad_flags(WIRE_STRING *str, int flags)
 {
 	int len;
+	if (!str || !str->s) return True;
 	len = strlen(str->s);
 	if (flags & STR_TERMINATE) len++;
 	if ((flags & STR_UNICODE) || !getenv("CLI_FORCE_ASCII")) {

@@ -483,7 +483,7 @@ static size_t req_pull_ascii(struct request_context *req, const char **dest, con
 size_t req_pull_string(struct request_context *req, const char **dest, const char *src, int byte_len, unsigned flags)
 {
 	if (!(flags & STR_ASCII) && 
-	    ((flags & STR_UNICODE || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
+	    (((flags & STR_UNICODE) || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
 		return req_pull_ucs2(req, dest, src, byte_len, flags);
 	}
 
