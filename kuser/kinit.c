@@ -83,11 +83,8 @@ main (int argc, char **argv)
       errx (1, "krb5_cc_initialize: %s",
 	    krb5_get_err_text(context, err));
 
-  cred.client = principal;
-  cred.times.endtime = 0;
-
   err = krb5_build_principal_ext (context,
-				  &cred.server,
+				  &server,
 #ifdef USE_ASN1_PRINCIPAL
 				  strlen(principal->realm),
 				  principal->realm,
@@ -110,10 +107,14 @@ main (int argc, char **argv)
 	    krb5_get_err_text(context, err));
 
 #ifdef USE_ASN1_PRINCIPAL
-  cred.server->name.name_type = KRB5_NT_SRV_INST;
+  server->name.name_type = KRB5_NT_SRV_INST;
 #else
-  cred.server->type = KRB5_NT_SRV_INST;
+  server->type = KRB5_NT_SRV_INST;
 #endif
+
+  cred.client = principal;
+  cred.server = server;
+  cred.times.endtime = 0;
 
   err = krb5_get_in_tkt_with_password (context,
 				       options.i,
@@ -128,6 +129,9 @@ main (int argc, char **argv)
       errx (1, "krb5_get_in_tkt_with_password: %s",
 	    krb5_get_err_text(context, err));
   
+  krb5_free_principal (context, principal);
+  krb5_free_principal (context, server);
+  krb5_free_ccache (context, ccache);
   krb5_free_context (context);
   return 0;
 }

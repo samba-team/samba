@@ -159,6 +159,7 @@ main (int argc, char **argv)
 	}else{
 	    print_cred(context, &creds);
 	}
+	krb5_free_creds (context, &creds);
     }
     ret = krb5_cc_end_seq_get (context, ccache, &cursor);
     if (ret)
@@ -169,7 +170,6 @@ main (int argc, char **argv)
 	errx (1, "krb5_cc_close: %s", krb5_get_err_text(context,ret));
 
     krb5_free_principal (context, principal);
-
     krb5_free_context (context);
     return 0;
 }
