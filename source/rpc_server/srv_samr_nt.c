@@ -227,7 +227,7 @@ static int setup_fake_group_map(GROUP_MAP **ret_map)
 
 	static_map[0].gid = (gid_t)-1;
 	sid_copy(&static_map[0].sid, &global_sam_sid);
-	sid_append_rid(&static_map[1].sid, DOMAIN_GROUP_RID_ADMINS);
+	sid_append_rid(&static_map[0].sid, DOMAIN_GROUP_RID_ADMINS);
 	static_map[0].sid_name_use = SID_NAME_DOM_GRP;
 	fstrcpy(static_map[0].nt_name, "Domain Admins");
 	fstrcpy(static_map[0].comment, "Administrators for the domain");
