@@ -69,7 +69,7 @@ int opt_port = 0;
 int opt_verbose = 0;
 int opt_maxusers = -1;
 const char *opt_comment = "";
-const char *opt_container = "cn=Users";
+const char *opt_container = NULL;
 int opt_flags = -1;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;

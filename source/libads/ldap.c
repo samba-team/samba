@@ -995,16 +995,85 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
  * Build an org unit string
  *  if org unit is Computers or blank then assume a container, otherwise
  *  assume a \ separated list of organisational units
+ * @param ads connection to ads server
  * @param org_unit Organizational unit
  * @return org unit string - caller must free
  **/
-char *ads_ou_string(const char *org_unit)
-{	
-	if (!org_unit || !*org_unit || strequal(org_unit, "Computers")) {
+char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
+{
+	char *ret = NULL;
+
+	if (!org_unit || !*org_unit) {
+
+		ret = ads_default_ou_string(ads, WELL_KNOWN_GUID_COMPUTERS);
+
+		/* samba4 might not yet respond to a wellknownobject-query */
+		return ret ? ret : strdup("cn=Computers");
+	}
+	
+	if (strequal(org_unit, "Computers")) {
 		return strdup("cn=Computers");
 	}
 
 	return ads_build_path(org_unit, "\\/", "ou=", 1);
+}
+
+/**
+ * Get a org unit string for a well-known GUID
+ * @param ads connection to ads server
+ * @param wknguid Well known GUID
+ * @return org unit string - caller must free
+ **/
+char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
+{
+	ADS_STATUS status;
+	void *res;
+	char *base, *wkn_dn, *ret, **wkn_dn_exp, **bind_dn_exp;
+	const char *attrs[] = {"distinguishedName", NULL};
+	int new_ln, wkn_ln, bind_ln, i;
+
+	if (wknguid == NULL) {
+		return NULL;
+	}
+
+	if (asprintf(&base, "<WKGUID=%s,%s>", wknguid, ads->config.bind_path ) == -1) {
+		DEBUG(1, ("asprintf failed!\n"));
+		return NULL;
+	}
+
+	status = ads_search_dn(ads, &res, base, attrs);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(1,("Failed while searching for: %s\n", base));
+		return NULL;
+	}
+	free(base);
+
+	if (ads_count_replies(ads, res) != 1) {
+		return NULL;
+	}
+
+	/* substitute the bind-path from the well-known-guid-search result */
+	wkn_dn = ads_get_dn(ads, res);
+	wkn_dn_exp = ldap_explode_dn(wkn_dn, 0);
+	bind_dn_exp = ldap_explode_dn(ads->config.bind_path, 0);
+
+	for (wkn_ln=0; wkn_dn_exp[wkn_ln]; wkn_ln++)
+		;
+	for (bind_ln=0; bind_dn_exp[bind_ln]; bind_ln++)
+		;
+
+	new_ln = wkn_ln - bind_ln;
+
+	ret = wkn_dn_exp[0];
+
+	for (i=1; i < new_ln; i++) {
+		char *s;
+		asprintf(&s, "%s,%s", ret, wkn_dn_exp[i]);
+		ret = strdup(s);
+		free(s);
+	}
+
+	return ret;
 }
 
 /**
@@ -1283,7 +1352,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 			machine_name));
 		exists=1;
 	} else {
-		char *ou_str = ads_ou_string(org_unit);
+		char *ou_str = ads_ou_string(ads,org_unit);
 		if (!ou_str) {
 			DEBUG(1, ("ads_add_machine_acct: ads_ou_string returned NULL (malloc failure?)\n"));
 			goto done;
