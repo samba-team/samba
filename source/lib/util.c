@@ -1299,7 +1299,7 @@ free memory, checks for NULL
 ****************************************************************************/
 void safe_free(void *p)
 {
-	if (p)
+	if (p != NULL)
 	{
 		free(p);
 	}

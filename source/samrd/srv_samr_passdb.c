@@ -39,8 +39,6 @@
 					uint32 *num_names,
 					char   ***names,
 					uint32 **type);
-	BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
-					DOM_GID **gid);
 	BOOL samr_close(  POLICY_HND *hnd);
 	BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 					uint32 *num_entries,
@@ -2095,81 +2093,58 @@ uint32 _samr_set_userinfo2(POLICY_HND *pol, uint16 switch_value,
 }
 
 
-#if 0
-
 
 /*******************************************************************
  samr_reply_query_usergroups
  ********************************************************************/
-uint32 _samr_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
-				prs_struct *rdata)
+uint32 _samr_query_usergroups(const POLICY_HND *pol,
+				uint32 *num_groups,
+				DOM_GID **gids)
 {
-	SAMR_R_QUERY_USERGROUPS r_u;
-	uint32 status = 0x0;
-
+	DOMAIN_GRP *mem_grp = NULL;
 	struct sam_passwd *sam_pass;
-	DOM_GID *gids = NULL;
-	int num_groups = 0;
 	uint32 rid;
 
 	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(pol)) == -1))
+	if (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1)
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* find the user's rid */
-	if (status == 0x0 && (rid = get_policy_samr_rid(get_global_hnd_cache(), &(pol))) == 0xffffffff)
+	rid = get_policy_samr_rid(get_global_hnd_cache(), pol);
+	if (rid == 0xffffffff)
 	{
-		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
-	if (status == 0x0)
-	{
-		become_root(True);
-		sam_pass = getsam21pwrid(rid);
-		unbecome_root(True);
+	become_root(True);
+	sam_pass = getsam21pwrid(rid);
+	unbecome_root(True);
 
-		if (sam_pass == NULL)
-		{
-			status = NT_STATUS_NO_SUCH_USER;
-		}
+	if (sam_pass == NULL)
+	{
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (status == 0x0)
+	become_root(True);
+	getusergroupsntnam(sam_pass->nt_name, &mem_grp, num_groups);
+	unbecome_root(True);
+
+	(*gids) = NULL;
+	(*num_groups) = make_dom_gids(mem_grp, *num_groups, gids);
+
+	if (mem_grp != NULL)
 	{
-		DOMAIN_GRP *mem_grp = NULL;
-
-		become_root(True);
-		getusergroupsntnam(sam_pass->nt_name, &mem_grp, &num_groups);
-		unbecome_root(True);
-
-                gids = NULL;
-		num_groups = make_dom_gids(mem_grp, num_groups, &gids);
-
-		if (mem_grp != NULL)
-		{
-			free(mem_grp);
-		}
+		free(mem_grp);
 	}
 
-	/* construct the response */
-	make_samr_r_query_usergroups(&r_u, num_groups, gids, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_query_usergroups("", &r_u, rdata, 0);
-
-	if (gids)
-	{
-		free((char *)gids);
-	}
-
-	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
-
+	return 0x0;
 }
 
+#if 0
 
 /*******************************************************************
  opens a samr alias by rid, returns a policy handle.

@@ -2633,7 +2633,7 @@ BOOL samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_s
 makes a SAMR_R_QUERY_USERGROUPS structure.
 ********************************************************************/
 BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
-		uint32 num_gids, const DOM_GID *gid, uint32 status)
+		uint32 num_gids, DOM_GID *gid, uint32 status)
 {
 	if (r_u == NULL) return False;
 
@@ -2646,7 +2646,7 @@ BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
 		r_u->ptr_1        = (num_gids != 0) ? 1 : 0;
 		r_u->num_entries2 = num_gids;
 
-		r_u->gid = (DOM_GID *) memdup(gid, num_gids * sizeof(DOM_GID));
+		r_u->gid = gid;
 	}
 	else
 	{

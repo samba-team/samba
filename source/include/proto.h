@@ -3243,7 +3243,7 @@ BOOL make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 				POLICY_HND *hnd);
 BOOL samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_struct *ps, int depth);
 BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
-		uint32 num_gids, const DOM_GID *gid, uint32 status);
+		uint32 num_gids, DOM_GID *gid, uint32 status);
 BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
 void samr_free_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u);
 BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS *q_e, POLICY_HND *pol,
@@ -3852,7 +3852,7 @@ BOOL api_brs_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_lookup.c  */
 
-int make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids);
+uint32 make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids);
 int get_domain_user_groups(DOMAIN_GRP_MEMBER **grp_members, uint32 group_rid);
 uint32 lookup_sid(DOM_SID *sid, char *name, uint32  *type);
 uint32 lookup_added_user_rids(char *nt_name,
@@ -4329,8 +4329,9 @@ uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
 uint32 _samr_set_userinfo2(POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO2_CTR *ctr);
-uint32 _samr_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
-				prs_struct *rdata);
+uint32 _samr_query_usergroups(const POLICY_HND *pol,
+				uint32 *num_groups,
+				DOM_GID **gids);
 uint32 _samr_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u,
 				prs_struct *rdata);
 uint32 _samr_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_u,
