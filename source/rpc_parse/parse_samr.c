@@ -1395,10 +1395,11 @@ BOOL make_sam_dispinfo_1(SAM_DISPINFO_1 *sam, uint32 *num_entries,
 
 	if (sam == NULL || num_entries == NULL || data_size == NULL) return False;
 
-	DEBUG(5,("make_sam_dispinfo_1\n"));
-
 	max_entries = *num_entries;
 	max_data_size = *data_size;
+
+	DEBUG(5,("make_sam_dispinfo_1: max_entries: %d max_dsize: 0x%x\n",
+	           max_entries, max_data_size));
 
 	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++)
 	{
@@ -1565,6 +1566,7 @@ BOOL make_sam_dispinfo_3(SAM_DISPINFO_3 *sam, uint32 *num_entries,
 
 		dsize += sizeof(SAM_ENTRY3);
 		dsize += (len_sam_name + len_sam_desc) * 2;
+		dsize += 14;
 	}
 
 	*num_entries = i;
@@ -1671,6 +1673,7 @@ static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 *sam, uint32 num_en
 	{
 		smb_io_string2("acct_name", &(sam->str[i].acct_name),
 			       sam->sam[i].hdr_acct_name.buffer, ps, depth);
+		prs_align(ps);
 	}
 
 	return True;
@@ -1741,6 +1744,7 @@ static BOOL sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 *sam, uint32 num_en
 	{
 		smb_io_string2("grp_name", &(sam->str[i].grp_name),
 			       sam->sam[i].hdr_grp_name.buffer, ps, depth);
+		prs_align(ps);
 	}
 
 	return True;
@@ -1759,7 +1763,7 @@ BOOL make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
 
 	DEBUG(5,("make_samr_r_query_dispinfo: level %d\n", switch_level));
 
-	r_u->total_size = 0; /* not calculated */
+	r_u->total_size = data_size; /* not calculated */
 	r_u->data_size = data_size;
 
 	r_u->switch_level = switch_level;

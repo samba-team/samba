@@ -68,8 +68,8 @@ BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level)
 		return False;
 	}
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0,    4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api NET_LOGON_CTRL2 */
 
@@ -137,8 +137,8 @@ uint32 cli_net_auth2(const char *srv_name,
 		return 0xC0000000 | NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0,    4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api NET_AUTH2 */
 
@@ -250,8 +250,8 @@ uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
   if (srv_chal == NULL || clnt_chal == NULL)
     return 0xC0000000 | NT_STATUS_INVALID_PARAMETER;
 
-  prs_init(&buf , 1024, 4, False);
-  prs_init(&rbuf, 0,    4, True );
+  prs_init(&buf , 0, 4, False);
+  prs_init(&rbuf, 0, 4, True );
 
   /* create and send a MSRPC command with api NET_REQCHAL */
 
@@ -333,8 +333,8 @@ BOOL cli_net_srv_pwset(const char* srv_name,
 
   cli_con_gen_next_creds( con, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, False);
-  prs_init(&rbuf, 0,    4, True );
+  prs_init(&buf , 0, 4, False);
+  prs_init(&rbuf, 0, 4, True );
 
   /* create and send a MSRPC command with api NET_SRV_PWSET */
 
@@ -407,8 +407,8 @@ uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
 
   cli_con_gen_next_creds( con, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, False);
-  prs_init(&rbuf, 0,    4, True );
+  prs_init(&buf , 0, 4, False);
+  prs_init(&rbuf, 0, 4, True );
 
   /* create and send a MSRPC command with api NET_SAMLOGON */
 
@@ -509,8 +509,8 @@ BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
 
   cli_con_gen_next_creds( con, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, False);
-  prs_init(&rbuf, 0,    4, True );
+  prs_init(&buf , 0, 4, False);
+  prs_init(&rbuf, 0, 4, True );
 
   /* create and send a MSRPC command with api NET_SAMLOGOFF */
 
@@ -591,8 +591,8 @@ BOOL cli_net_sam_sync( const char* srv_name, const char* myhostname,
 
 	cli_con_gen_next_creds(con, &new_clnt_cred);
 	
-	prs_init(&buf , 1024, 4, False);
-	prs_init(&rbuf, 0,    4, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 	
 	/* create and send a MSRPC command with api NET_SAM_SYNC */
 	
