@@ -127,17 +127,16 @@ verify_krb5(struct passwd *pwd,
     krb5_error_code ret;
     krb5_ccache ccache;
     krb5_principal principal;
-    krb5_realm realm;
     
     krb5_init_context(&context);
 
-    krb5_get_default_realm(context, &realm);
-    krb5_make_principal(context, &principal, realm, pwd->pw_name, NULL);
-
-    if(!krb5_kuserok(context, principal, pwd->pw_name)) {
-	syslog(LOG_AUTH|LOG_DEBUG, "krb5_kuserok failed");
+    ret = krb5_parse_name (context, pwd->pw_name, &principal);
+    if (ret) {
+	syslog(LOG_AUTH|LOG_DEBUG, "krb5_parse_name: %s", 
+	       krb5_get_err_text(context, ret));
 	goto out;
     }
+
     set_krb5ccname(pwd->pw_uid);
     ret = krb5_cc_resolve(context, krb5ccname, &ccache);
     if(ret) {
@@ -146,17 +145,18 @@ verify_krb5(struct passwd *pwd,
 	goto out;
     }
 
-    ret = krb5_verify_user(context,
-			   principal,
-			   ccache,
-			   password,
-			   TRUE,
-			   NULL);
+    ret = krb5_verify_user_lrealm(context,
+				  principal,
+				  ccache,
+				  password,
+				  TRUE,
+				  NULL);
     if(ret) {
 	syslog(LOG_AUTH|LOG_DEBUG, "krb5_verify_user: %s", 
 	       krb5_get_err_text(context, ret));
 	goto out;
     }
+
     if(chown(krb5_cc_get_name(context, ccache), pwd->pw_uid, pwd->pw_gid)) {
 	syslog(LOG_AUTH|LOG_DEBUG, "chown: %s", 
 	       krb5_get_err_text(context, errno));
@@ -164,10 +164,10 @@ verify_krb5(struct passwd *pwd,
     }
 
 #ifdef KRB4
-   if (krb5_config_get_bool(context, NULL,
-			    "libdefaults",
-			    "krb4_get_tickets",
-			    NULL)) {
+    if (krb5_config_get_bool(context, NULL,
+			     "libdefaults",
+			     "krb4_get_tickets",
+			     NULL)) {
 	CREDENTIALS c;
 	krb5_creds mcred, cred;
 
@@ -199,7 +199,6 @@ verify_krb5(struct passwd *pwd,
 			     pwd->pw_uid, pwd->pw_dir);
     }
 #endif
-    
 out:
     if(ret && !quiet)
 	printf ("%s\n", krb5_get_err_text (context, ret));
