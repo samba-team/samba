@@ -1,3 +1,7 @@
+Sat Oct 25 07:24:57 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/error/compile_et.awk: Allow specifying table-base.
+
 Tue Oct 21 20:21:40 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos5.c: Check version number of krbtgt.
