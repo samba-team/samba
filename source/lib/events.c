@@ -297,7 +297,7 @@ int event_loop_once(struct event_context *ev)
 		struct loop_event *next = le->next;
 		if (le->ref_count == 0) {
 			DLIST_REMOVE(ev->loop_events, le);
-			talloc_unlink(ev->events, le);
+			talloc_free(le);
 		} else {
 			le->ref_count++;
 			le->handler(ev, le, t);
@@ -318,7 +318,7 @@ int event_loop_once(struct event_context *ev)
 			if (ev->maxfd == fe->fd) {
 				ev->maxfd = EVENT_INVALID_MAXFD;
 			}
-			talloc_unlink(ev->events, fe);
+			talloc_free(fe);
 		} else {
 			if (fe->flags & EVENT_FD_READ) {
 				FD_SET(fe->fd, &r_fds);
@@ -399,7 +399,7 @@ int event_loop_once(struct event_context *ev)
 		struct timed_event *next = te->next;
 		if (te->ref_count == 0) {
 			DLIST_REMOVE(ev->timed_events, te);
-			talloc_unlink(ev->events, te);
+			talloc_free(te);
 		} else if (te->next_event <= t) {
 			te->ref_count++;
 			te->handler(ev, te, t);
