@@ -11,13 +11,7 @@ For more information on PAM, see http://ftp.kernel.org/pub/linux/libs/pam/
 This module authenticates a local smbpasswd user database.  If you require
 support for authenticating against a remote SMB server, or if you're
 concerned about the presence of suid root binaries on your system, it is
-recommended that you use one of the other two following modules
-
-  pam_smb - http://www.csn.ul.ie/~airlied/pam_smb/
-    authenticates against any remote SMB server
-
-  pam_ntdom - ftp://ftp.samba.org/pub/samba/pam_ntdom/
-    authenticates against an NT or Samba domain controller
+recommended that you use pam_winbind instead.
 
 Options recognized by this module are as follows:
 
