@@ -306,14 +306,15 @@ strip $DESTDIR/usr/bin/smb{mnt,umount}
 cp -p source/codepages/codepage_def.??? $DESTDIR/usr/share/samba/codepages/src
 
 # Install the nsswitch library extension file
-mv $DESTDIR/usr/sbin/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
+install -m 755 source/nsswitch/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
 # Make link for wins resolver
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so.2
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so
 
 # Add PAM smbpass and winbind facilities
-mv $DESTDIR/usr/bin/pam_smbpass.so $DESTDIR/lib/security
-mv $DESTDIR/usr/sbin/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
+install -m 755 source/bin/pam_smbpass.so $DESTDIR/lib/security
+install -m 755 source/nsswitch/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
+
 # Make link for winbind resolver
 ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
 ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
@@ -321,17 +322,21 @@ ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
 install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
 install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
 install -m 755 source/bin/debug2html $DESTDIR/usr/sbin/debug2html
+
 #lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
+
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 cp -p $VVS/smb.conf $DESTDIR%{EtcSamba}/smb.conf
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
 cp -p $VVS/smbprint $DESTDIR/usr/bin
+
 #cp -p $VVS/smbadduser.perl $DESTDIR/usr/bin/smbadduser
 #cp -p $VVS/make_smbpasswd.perl $DESTDIR/usr/bin/make_smbpasswd
 #cp -p $VVS/convertsmbpasswd.perl $DESTDIR/usr/bin/convertsmbpasswd
 #cp -p $VVS/updatesmbpasswd.perl $DESTDIR/usr/bin/updatesmbpasswd
+
 cp -p $VVS/findsmb $DESTDIR/usr/bin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
@@ -347,9 +352,11 @@ for f in testparm testprns; do
   ln -s $f $DESTDIR/usr/bin/smb$f
   ln -s $f.1 $DESTDIR/usr/man/man1/smb$f.1
 done
+
 #ln -s make_smbcodepage  $DESTDIR/usr/bin/mksmbcodepage
 #ln -s make_smbpasswd $DESTDIR/usr/bin/mksmbpasswd
 #ln -sf convert_smbpasswd $DESTDIR/usr/bin/convertsmbpasswd
+
 ln -s ../usr/bin/smbmnt $DESTDIR/sbin/mount.smbfs
 
 
@@ -363,10 +370,16 @@ cat <<EoI >$DESTDIR%{NKinetdir}/swat
 swat	stream	tcp	nowait.400 root	/usr/sbin/tcpd	swat
 EoI
 
+pushd $DESTDIR/usr/sbin
+rm -f *.so
+popd
+
 # -------------------- Documentation -------------------------------
 DOCD="$DESTDIR/%{_defaultdocdir}/samba-%{Version}"; mkdir -p $DOCD
 ln -sf ../Copyrights/GPL-2.0  $DOCD/COPYING
+
 #cp -p README README-smbmount Manifest Read-Manifest-Now $DOCD
+
 cp -p README Manifest Read-Manifest-Now $DOCD
 cp -p WHATSNEW.txt Roadmap $DOCD
 cp -a docs examples $DOCD
@@ -404,6 +417,7 @@ done
 %{mkLists} -c samba
 cat << 'EOF' | %{mkLists} -d samba
 Samba					base
+/lib/$					base
 %{LSBservedir}				config-IGNORED
 ^/(etc|var|home|tmp)			config-IGNORED
 swat					swat
@@ -411,7 +425,6 @@ swat					swat
 %{_defaultdocdir}/samba- 		doc
 tmp					IGNORED
 man					IGNORED
-lib/security				base
 /src/$					IGNORED
 /usr/private/$				IGNORED
 @default@
@@ -422,7 +435,7 @@ Samba/README.txt			base
 ^/etc					config-IGNORED
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 libnss_*				base
-pam_*.so				base
+pam_*					base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 %{_defaultdocdir}/samba- 		doc
 smb(mount|mnt|umount)			smbfs
