@@ -47,6 +47,9 @@ struct policy
 	uint32 access_mask;
 	vuser_key key;
 
+	char *name;
+
+	int type;
 	void (*free_fn)(void*);
 	void *dev;
 };
@@ -130,6 +133,72 @@ static struct policy *find_policy(struct policy_cache *cache,
 
 	return NULL;
 }
+
+/****************************************************************************
+  set the name of a POLICY_HND
+****************************************************************************/
+BOOL policy_hnd_set_name(struct policy_cache *cache,
+			 POLICY_HND *hnd, const char *name)
+{
+	struct policy *p = find_policy(cache, hnd);
+	if (!p)
+	{
+		DEBUG(3, ("Error setting name for policy\n"));
+		return False;
+	}
+	safe_free(p->name);
+	if (name)
+	{
+		DEBUG(4, ("policy pnum=%x setting name to %s\n",
+			  p->pnum, name));
+		p->name = strdup(name);
+		return (p->name != NULL);
+	}
+	else
+	{
+		DEBUG(4, ("policy pnum=%x setting name to %s\n",
+			  p->pnum, "NULL"));
+		p->name = NULL;
+		return True;
+	}
+}
+
+/****************************************************************************
+  get the name of a POLICY_HND
+****************************************************************************/
+static const char *pol_get_name(const struct policy *p)
+{
+	if (!p)
+	{
+		return "(NULL)";
+	}
+	if (p->name)
+	{
+		return p->name;
+	}
+	return "";
+}
+
+/****************************************************************************
+  get the name of a POLICY_HND, public interface
+****************************************************************************/
+const char *policy_hnd_get_name(struct policy_cache *cache,
+				const POLICY_HND *hnd)
+{
+	const char *name;
+	struct policy *p = find_policy(cache, hnd);
+
+	if (!p)
+	{
+		DEBUG(3, ("Error getting name for policy\n"));
+		return "(invalid POLICY_HND)";
+	}
+	name = pol_get_name(p);
+	DEBUG(4, ("policy(pnum=%x %s): getting name\n",
+		  p->pnum, name));
+	return name;
+}
+
 
 /****************************************************************************
   find first available policy slot.  copies a policy handle for you.
@@ -265,7 +334,8 @@ void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd)
 
 	if (p != NULL && p->open)
 	{
-		DEBUG(3,("Getting policy state pnum=%x\n", p->pnum));
+		DEBUG(3, ("policy(pnum=%x %s): Getting policy state\n",
+			  p->pnum, pol_get_name(p)));
 		return p->dev;
 	}
 
@@ -273,6 +343,74 @@ void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd)
 	return NULL;
 }
 
+/****************************************************************************
+  set the type of the state of a POLICY_HND
+****************************************************************************/
+BOOL policy_hnd_set_state_type(struct policy_cache *cache,
+			       POLICY_HND *hnd, int type)
+{
+	struct policy *p = find_policy(cache, hnd);
+
+	if (!p || !p->open)
+	{
+		DEBUG(3, ("Error setting type for policy state\n"));
+		return False;
+	}
+	DEBUG(4, ("policy(pnum=%x %s): setting type to %d\n",
+		  p->pnum, pol_get_name(p), type));
+	p->type = type;
+	return True;
+}
+
+/****************************************************************************
+  get the type of the state of a POLICY_HND
+****************************************************************************/
+int policy_hnd_get_state_type(struct policy_cache *cache,
+			      const POLICY_HND *hnd)
+{
+	struct policy *p = find_policy(cache, hnd);
+
+	if (!p || !p->open)
+	{
+		DEBUG(3, ("Error getting type for policy state\n"));
+		return -1;
+	}
+	DEBUG(4, ("policy(pnum=%x %s): getting type %d\n",
+		  p->pnum, pol_get_name(p), p->type));
+
+	return p->type;
+}
+
+/****************************************************************************
+  check the type of the state of a POLICY_HND
+****************************************************************************/
+BOOL policy_hnd_check_state_type(struct policy_cache *cache,
+				 const POLICY_HND *hnd, int type)
+{
+	struct policy *p = find_policy(cache, hnd);
+	BOOL ret;
+
+	if (!p || !p->open)
+	{
+		DEBUG(3, ("Error checking type for policy state\n"));
+		return False;
+	}
+
+	ret = (p->type==type);
+
+	if (ret)
+	{
+		DEBUG(4, ("policy(pnum=%x %s): checking if type %d is %d\n",
+			  p->pnum, pol_get_name(p), p->type, type));
+	}
+	else
+	{
+		DEBUG(3, ("policy(pnum=%x %s): type %d is not %d\n",
+			  p->pnum, pol_get_name(p), p->type, type));
+	}
+
+	return ret;
+}
 
 /****************************************************************************
   close an lsa policy
@@ -287,7 +425,7 @@ BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd)
 		return False;
 	}
 
-	DEBUG(3,("Closed policy name pnum=%x\n",  p->pnum));
+	DEBUG(3, ("policy(pnum=%x %s): Closing\n", p->pnum, pol_get_name(p)));
 
 	DLIST_REMOVE(cache->Policy, p);
 
@@ -299,6 +437,8 @@ BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd)
 	{
 		safe_free(p->dev);
 	}
+
+	safe_free(p->name);
 
 	free(p);
 

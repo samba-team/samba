@@ -256,6 +256,11 @@ BOOL lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 			            set_policy_con(get_global_hnd_cache(),
 			                                 hnd, con, 
 			                                 cli_connection_unlink);
+			if (valid_pol)
+			{
+				policy_hnd_set_name(get_global_hnd_cache(),
+						    hnd, "LSA_OPENPOL");
+			}
 		}
 	}
 
