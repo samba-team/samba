@@ -2006,10 +2006,19 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct *ps,
 
 	SMB_ASSERT_ARRAY(usr->other_sids, usr->num_other_sids);
 
-	for (i = 0; i < usr->num_other_sids; i++)
-	{
-		smb_io_dom_sid2("sids", &(usr->other_sids[i]), ps, depth);	/* other domain SIDs */
-		prs_align(ps);
+	if (usr->num_other_sids) {
+		uint32 num_other_groups = 0;
+
+		prs_uint32("num_other_groups", ps, depth, &num_other_groups);
+
+		for (i = 0; i < num_other_groups; i++) {
+			DOM_GID dummy_gid;
+			smb_io_gid("", &dummy_gid, ps, depth);
+		}
+		for (i = 0; i < usr->num_other_sids; i++) {
+			smb_io_dom_sid2("sids", &(usr->other_sids[i]), ps, depth);	/* other domain SIDs */
+			prs_align(ps);
+		}
 	}
 
 	return True;
