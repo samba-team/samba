@@ -335,7 +335,8 @@ static void popt_common_credentials_callback(poptContext con,
 			cmdline_auth_info.signing_state = -1;
 			if (strequal(arg, "off") || strequal(arg, "no") || strequal(arg, "false"))
 				cmdline_auth_info.signing_state = False;
-			else if (strequal(arg, "on") || strequal(arg, "yes") || strequal(arg, "true"))
+			else if (strequal(arg, "on") || strequal(arg, "yes") || strequal(arg, "true") ||
+					strequal(arg, "auto") )
 				cmdline_auth_info.signing_state = True;
 			else if (strequal(arg, "force") || strequal(arg, "required") || strequal(arg, "forced"))
 				cmdline_auth_info.signing_state = Required;

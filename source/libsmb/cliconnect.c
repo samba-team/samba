@@ -1025,22 +1025,27 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED)) {
-			/* Fail if signing is mandatory and we don't want to support it. */
+		/*
+		 * As signing is slow we only turn it on if either the client or
+		 * the server require it. JRA.
+		 */
+
+		if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED) {
+			/* Fail if server says signing is mandatory and we don't want to support it. */
 			if (!cli->sign_info.allow_smb_signing) {
 				DEBUG(1,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
 				return False;
 			}
 			cli->sign_info.negotiated_smb_signing = True;
-		}
-
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) && cli->sign_info.allow_smb_signing)
+			cli->sign_info.mandatory_signing = True;
+		} else if (cli->sign_info.mandatory_signing && cli->sign_info.allow_smb_signing) {
+			/* Fail if client says signing is mandatory and the server doesn't support it. */
+			if (!(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED)) {
+				DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
+				return False;
+			}
 			cli->sign_info.negotiated_smb_signing = True;
-
-		/* Fail if signing is mandatory and the server doesn't support it. */
-		if (cli->sign_info.mandatory_signing && !(cli->sign_info.negotiated_smb_signing)) {
-			DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
-			return False;
+			cli->sign_info.mandatory_signing = True;
 		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
