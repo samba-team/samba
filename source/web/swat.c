@@ -215,7 +215,20 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 
 	case P_INTEGER:
-		printf("<input type=text size=8 name=\"parm_%s\" value=%d>", make_parm_name(parm->label), *(int *)ptr);
+		if (strequal(parm->label,"log level")) {
+			int i;
+
+			printf("<input type=text size=40 name=\"parm_%s\" value=%d", 
+				make_parm_name(parm->label),*(int *)ptr);
+			for (i = 1; i < DBGC_LAST; i ++) {
+				if (((int *)ptr)[i])
+				printf(",%s:%d",debug_classname_from_index(i),((int *)ptr)[i]);
+			}
+			printf(">");
+		}  else {
+			printf("<input type=text size=8 name=\"parm_%s\" value=%d>", 
+				make_parm_name(parm->label), *(int *)ptr);
+		}
 		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%d\'\">",
 			make_parm_name(parm->label),(int)(parm->def.ivalue));
 		break;
@@ -296,6 +309,8 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 
 				case P_INTEGER:
 				case P_OCTAL:
+					if (strequal(parm->label,"log level")) 
+						break;
 					if (*(int *)ptr == (int)(parm->def.ivalue)) continue;
 					break;
 
