@@ -37,7 +37,6 @@ enum spnego_state_position {
 };
 
 struct spnego_state {
-	TALLOC_CTX *mem_ctx;
 	uint_t ref_count;
 	enum spnego_message_type expected_packet;
 	enum spnego_state_position state_position;
@@ -47,19 +46,14 @@ struct spnego_state {
 static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
 {
 	struct spnego_state *spnego_state;
-	TALLOC_CTX *mem_ctx = talloc_init("gensec_spnego_client_start");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	spnego_state = talloc_p(mem_ctx, struct spnego_state);
-		
+
+	spnego_state = talloc_p(gensec_security, struct spnego_state);		
 	if (!spnego_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_CLIENT_START;
-	spnego_state->mem_ctx = mem_ctx;
 	spnego_state->sub_sec_security = NULL;
 
 	gensec_security->private_data = spnego_state;
@@ -69,19 +63,14 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_security)
 {
 	struct spnego_state *spnego_state;
-	TALLOC_CTX *mem_ctx = talloc_init("gensec_spnego_server_start");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	spnego_state = talloc_p(mem_ctx, struct spnego_state);
-		
+
+	spnego_state = talloc_p(gensec_security, struct spnego_state);		
 	if (!spnego_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_SERVER_START;
-	spnego_state->mem_ctx = mem_ctx;
 	spnego_state->sub_sec_security = NULL;
 
 	gensec_security->private_data = spnego_state;
@@ -426,7 +415,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	*out = data_blob(NULL, 0);
 
 	if (!out_mem_ctx) {
-		out_mem_ctx = spnego_state->mem_ctx;
+		out_mem_ctx = spnego_state;
 	}
 
 	/* and switch into the state machine */
@@ -701,7 +690,7 @@ static void gensec_spnego_end(struct gensec_security *gensec_security)
 		gensec_end(&spnego_state->sub_sec_security);
 	}
 
-	talloc_destroy(spnego_state->mem_ctx);
+	talloc_free(spnego_state);
 
 	gensec_security->private_data = NULL;
 }

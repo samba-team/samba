@@ -387,14 +387,14 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			     weak_session_key.length);
 
 		/* SEND */
-		calc_ntlmv2_key(ntlmssp_state->mem_ctx, 
+		calc_ntlmv2_key(ntlmssp_state, 
 				&ntlmssp_state->send_sign_key, 
 				ntlmssp_state->session_key, send_sign_const);
 		dump_data_pw("NTLMSSP send sign key:\n",
 			     ntlmssp_state->send_sign_key.data, 
 			     ntlmssp_state->send_sign_key.length);
 		
-		calc_ntlmv2_key(ntlmssp_state->mem_ctx, 
+		calc_ntlmv2_key(ntlmssp_state, 
 				&ntlmssp_state->send_seal_key, 
 				weak_session_key, send_seal_const);
 		dump_data_pw("NTLMSSP send seal key:\n",
@@ -409,14 +409,14 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			     sizeof(ntlmssp_state->send_seal_hash));
 
 		/* RECV */
-		calc_ntlmv2_key(ntlmssp_state->mem_ctx, 
+		calc_ntlmv2_key(ntlmssp_state, 
 				&ntlmssp_state->recv_sign_key, 
 				ntlmssp_state->session_key, recv_sign_const);
 		dump_data_pw("NTLMSSP recv sign key:\n",
 			     ntlmssp_state->recv_sign_key.data, 
 			     ntlmssp_state->recv_sign_key.length);
 
-		calc_ntlmv2_key(ntlmssp_state->mem_ctx, 
+		calc_ntlmv2_key(ntlmssp_state, 
 				&ntlmssp_state->recv_seal_key, 
 				weak_session_key, recv_seal_const);
 		dump_data_pw("NTLMSSP recv seal key:\n",
