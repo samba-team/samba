@@ -10,62 +10,23 @@ New/Changed parameters in 2.2.1
 Added parameters.
 -----------------
 
-ssl egd socket
+ssl cert
 
-This variable is part of SSL-enabled Samba. This
-is only available if the SSL libraries have been compiled on your
-system and the configure option --with-ssl  was
-given at configure time.
-This option is used to define the location of the communiation socket of
-an EGD or PRNGD daemon, from which entropy can be retrieved. This option
-can be used instead of or together with the "ssl entropy file"
-directive. 255 bytes of entropy will be retrieved from the daemon.
+Synonym for ssl server cert
+
+ssl key
+
+Synonym for ssl server key
+
+ssl egd socket
 
 ssl entropy file
 
-This variable is part of SSL-enabled Samba. This
-is only available if the SSL libraries have been compiled on your
-system and the configure option --with-ssl  was
-given at configure time.
-This parameter is used to specify a file from which processes will
-read "random bytes" on startup.  In order to seed the internal pseudo
-random number generator, entropy must be provided. On system with a
-/dev/urandom device file, the processes
-will retrieve its entropy from the kernel. On systems without kernel
-entropy support, a file can be supplied that will be read on startup
-and that will be used to seed the PRNG.
-
 ssl entropy bytes
-
-This variable is part of SSL-enabled Samba. This
-is only available if the SSL libraries have been compiled on your
-system and the configure option --with-ssl  was
-given at configure time.
-This parameter is used to define the number of bytes which should
-be read from the "ssl entropy file" If a -1 is specified, the entire file will
-be read.
 
 strict allocate
 
-This is a boolean that controls the handling of
-disk space allocation in the server. When this is set to yes
-the server will change from UNIX behaviour of not committing real
-disk storage blocks when a file is extended to the Windows behaviour
-of actually forcing the disk system to allocate real storage blocks
-when a file is created or extended to be a given size. In UNIX
-terminology this means that Samba will stop creating sparse files.
-This can be slow on some systems.
-
 use mmap
-
-This global parameter determines if the tdb internals of Samba can
-depend on mmap working correctly on the running system. 
-Samba requires a coherent
-mmap/read-write system memory cache. Currently only HPUX does not have such a
-coherent cache, and so this parameter is set to false by
-default on HPUX. On all other systems this parameter should be left alone. This
-parameter is provided to help the Samba developers track down problems with
-the tdb internal code.
 
 disable spoolss
 
@@ -92,25 +53,9 @@ when "disable spoolss = yes"
 
 ldap admin dn
 
-This parameter is only available if Samba has been
-configured to include the --with-ldapsam option
-at compile time. This option should be considered experimental and
-under active development.  This parameter defines the Distinguished
-Name (DN) name used by Samba to contact the ldap
-server when retreiving user account information. This
-parameter is used in conjunction with the admin dn password
-stored in the private/secrets.tdb file.
-This parameter was renamed from ldap root.
+renamed from ldap root
 
 ldap ssl
-
-This parameter is only available if Samba has been
-configured to include the --with-ldapsam option
-at compile time. This option should be considered experimental and
-under active development. This parameter s used to define whether or not 
-Samba should use SSL when connecting to the ldap server.
-This is NOT  related to Samba SSL support which is enabled by specifying the
---with-ssl option to the configure script.
 
 winbind enum users
 
