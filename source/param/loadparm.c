@@ -217,6 +217,7 @@ typedef struct
 	int change_notify_timeout;
 	int map_to_guest;
 	int min_passwd_length;
+	BOOL use_cracklib;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
 	int iLockSpinCount;
@@ -749,6 +750,12 @@ static const struct enum_list enum_map_to_guest[] = {
  *       Any parameter that does NOT have FLAG_ADVANCED will not disply at all
  *	 Set FLAG_SHARE and FLAG_PRINT to specifically display parameters in
  *        respective views.
+ *
+ * NOTE2: Handling of duplicated (synonym) paramters:
+ *	Only the first occurance of a parameter should be enabled by FLAG_BASIC
+ *	and/or FLAG_ADVANCED. All duplicates following the first mention should be
+ *	set to FLAG_HIDE. ie: Make you must place the parameter that has the preferred
+ *	name first, and all synonyms must follow it with the FLAG_HIDE attribute.
  */
 
 static struct parm_struct parm_table[] = {
@@ -784,6 +791,7 @@ static struct parm_struct parm_table[] = {
 	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, FLAG_ADVANCED}, 
 	{"min passwd length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_ADVANCED}, 
 	{"min password length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_ADVANCED}, 
+	{"use cracklib", P_BOOL, P_GLOBAL, &Globals.use_cracklib, NULL, NULL, FLAG_ADVANCED}, 
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, FLAG_ADVANCED}, 
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED}, 
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED}, 
@@ -1153,9 +1161,9 @@ static struct parm_struct parm_table[] = {
 	{"enable rid algorithm", P_BOOL, P_GLOBAL, &Globals.bEnableRidAlgorithm, NULL, NULL, FLAG_DEPRECATED}, 
 	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED}, 
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED}, 
-	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED}, 
+	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_HIDE}, 
 	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED}, 
-	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED}, 
+	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_HIDE}, 
 	{"template primary group", P_STRING, P_GLOBAL, &Globals.szTemplatePrimaryGroup, NULL, NULL, FLAG_ADVANCED}, 
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED}, 
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED}, 
@@ -1437,6 +1445,7 @@ static void init_globals(void)
 
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
+	Globals.use_cracklib = False; 
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 	Globals.enhanced_browsing = True; 
 	Globals.iLockSpinCount = 3; /* Try 3 times. */
@@ -1681,8 +1690,8 @@ FN_GLOBAL_STRING(lp_abort_shutdown_script, &Globals.szAbortShutdownScript)
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
 FN_GLOBAL_STRING(lp_template_primary_group, &Globals.szTemplatePrimaryGroup)
-FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
-FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
+FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
+FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enable_local_accounts, &Globals.bWinbindEnableLocalAccounts)
@@ -1791,6 +1800,7 @@ FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout
 FN_GLOBAL_INTEGER(lp_change_notify_timeout, &Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
+FN_GLOBAL_BOOL(lp_use_cracklib, &Globals.use_cracklib)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
 FN_GLOBAL_INTEGER(lp_lock_sleep_time, &Globals.iLockSpinTime)

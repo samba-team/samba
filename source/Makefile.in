@@ -85,7 +85,6 @@ PRIVATEDIR = @privatedir@
 
 SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
 PRIVATE_DIR = $(PRIVATEDIR)
-DATADIR = @datadir@
 
 # This is where SWAT images and help files go
 SWATDIR = @swatdir@
@@ -202,11 +201,11 @@ UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
 
 PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o param/modconf.o
 
-KRBCLIENT_OBJ = libads/kerberos.o
+KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o 
 
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
-	     libads/ads_struct.o libads/ads_status.o \
+	     libads/ads_struct.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
 	     libads/ads_ldap.o libads/authdata.o
 
@@ -362,8 +361,9 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
                smbd/posix_acls.o lib/sysacls.o lib/server_mutex.o \
 	       smbd/process.o smbd/service.o smbd/error.o \
-	       printing/printfsp.o \
-               lib/sysquotas.o smbd/change_trust_pw.o smbd/fake_file.o \
+	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
+	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
+	       smbd/change_trust_pw.o smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o lib/afs.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
@@ -449,6 +449,8 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(SECRETS_OBJ) \
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
 		$(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
 		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) lib/dummyroot.o
+
+SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ) $(SECRETS_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
@@ -730,6 +732,12 @@ MAKEDIR = || exec false; \
 	  -o $@ 
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
+# this adds support for precompiled headers. To use it, install a snapshot
+# of gcc-3.4 and run 'make pch' before you do the main build. 
+pch:
+	rm -f $(srcdir)/include/includes.h.gch
+	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
+
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
 # would be nice if "make prefix=/opt/samba all" also rebuilt things,
@@ -746,7 +754,7 @@ dynconfig.@PICSUFFIX@: dynconfig.c Makefile
 	@echo Compiling $*.c with @PICFLAGS@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
-@POBAD_CC@	@mv $*.@PICSUFFIX@.o $@
+@POBAD_CC@	-@mv $*.@PICSUFFIX@.o $@
 
 lib/version.o: lib/version.c include/version.h
 	@echo Compiling $*.c
@@ -869,6 +877,10 @@ bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDB_LIBS) $(LDAP_LIBS)
+
+bin/smbget@EXEEXT@: $(SMBGET_OBJ) @BUILD_POPT@ bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBGET_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@  $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -1034,7 +1046,7 @@ bin/librpc_epmapper.@SHLIBEXT@: $(RPC_EPMAPPER_OBJ)
 
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo "Linking $@"
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) 
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS)
 
 # Please don't add .o files to libnss_winbind, libnss_wins, or the pam_winbind
 # libraries.  Add to the appropriate PICOBJ variable instead.

@@ -255,7 +255,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					q = ALIGN4(q, buf);
 				}
 
-				DEBUG(3,("process_logon_packet: len = %d PTR_DIFF(q, buf) = %d\n", len, PTR_DIFF(q, buf) ));
+				DEBUG(3,("process_logon_packet: len = %d PTR_DIFF(q, buf) = %ld\n", len, (unsigned long)PTR_DIFF(q, buf) ));
 
 				if (len - PTR_DIFF(q, buf) > 8) {
 					/* with NT5 clients we can sometimes

@@ -884,6 +884,40 @@ static BOOL resolve_hosts(const char *name, int name_type,
 	 */
 	struct hostent *hp;
 	
+	if ( name_type != 0x20 && name_type != 0x0) {
+		DEBUG(5, ("resolve_hosts: not appropriate for name type <0x%x>\n", name_type));
+		return False;
+	}
+
+	*return_iplist = NULL;
+	*return_count = 0;
+
+	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x%x>\n", name, name_type));
+	
+	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
+		struct in_addr return_ip;
+		putip((char *)&return_ip,(char *)hp->h_addr);
+		*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service));
+		if(*return_iplist == NULL) {
+			DEBUG(3,("resolve_hosts: malloc fail !\n"));
+			return False;
+		}
+		(*return_iplist)->ip   = return_ip;
+		(*return_iplist)->port = PORT_NONE;
+		*return_count = 1;
+		return True;
+	}
+	return False;
+}
+
+/********************************************************
+ Resolve via "ADS" method.
+*********************************************************/
+
+static BOOL resolve_ads(const char *name, int name_type,
+                         struct ip_service **return_iplist, int *return_count)
+{
+	
 #ifdef HAVE_ADS
 	if ( name_type == 0x1c ) {
 		int 			count, i = 0;
@@ -935,28 +969,11 @@ static BOOL resolve_hosts(const char *name, int name_type,
 		*return_count = i;
 				
 		return True;
-	}
+	} else 
 #endif 	/* HAVE_ADS */
-
-	*return_iplist = NULL;
-	*return_count = 0;
-
-	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x20>\n", name));
-	
-	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
-		struct in_addr return_ip;
-		putip((char *)&return_ip,(char *)hp->h_addr);
-		*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service));
-		if(*return_iplist == NULL) {
-			DEBUG(3,("resolve_hosts: malloc fail !\n"));
-			return False;
-		}
-		(*return_iplist)->ip   = return_ip;
-		(*return_iplist)->port = PORT_NONE;
-		*return_count = 1;
-		return True;
+	{ 
+		return False;
 	}
-	return False;
 }
 
 /*******************************************************************
@@ -1034,14 +1051,17 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   
   while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
 	  if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-                  /* deal with 0x20 & 0x1c names here.  The latter will result
-		     in a SRV record lookup for _ldap._tcp.<domain> if we are using 
-		     'security = ads' */
-		  if ( name_type==0x20 || name_type == 0x1c ) {
-			  if (resolve_hosts(name, name_type, return_iplist, return_count)) {
-				  result = True;
-				  goto done;
-			  }
+		  if (resolve_hosts(name, name_type, return_iplist, return_count)) {
+			  result = True;
+			  goto done;
+		  }
+	  } else if(strequal( tok, "ads")) {
+                  /* deal with 0x1c names here.  This will result in a
+		     SRV record lookup for _ldap._tcp.<domain> if we
+		     are using 'security = ads' */
+		  if (resolve_ads(name, name_type, return_iplist, return_count)) {
+		    result = True;
+		    goto done;
 		  }
 	  } else if(strequal( tok, "lmhosts")) {
 		  if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
@@ -1207,14 +1227,14 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 /*********************************************************************
  small wrapper function to get the DC list and sort it if neccessary 
 *********************************************************************/
-BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL dns_only )
+BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL ads_only )
 {
 	BOOL ordered;
 	
 	DEBUG(8,("get_sorted_dc_list: attempting lookup using [%s]\n",
-		(dns_only ? "hosts" : lp_name_resolve_order())));
+		(ads_only ? "ads" : lp_name_resolve_order())));
 	
-	if ( !get_dc_list(domain, ip_list, count, dns_only, &ordered) )
+	if ( !get_dc_list(domain, ip_list, count, ads_only, &ordered) )
 		return False;
 		
 	/* only sort if we don't already have an ordered list */
@@ -1230,11 +1250,11 @@ BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *c
 *********************************************************/
 
 BOOL get_dc_list(const char *domain, struct ip_service **ip_list, 
-                 int *count, BOOL dns_only, int *ordered)
+                 int *count, BOOL ads_only, int *ordered)
 {
 	/* defined the name resolve order to internal_name_resolve() 
 	   only used for looking up 0x1c names */
-	const char *resolve_oder = (dns_only ? "hosts" : lp_name_resolve_order());
+	const char *resolve_oder = (ads_only ? "ads" : lp_name_resolve_order());
 	
 	*ordered = False;
 		

@@ -697,7 +697,7 @@ char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n)
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in StrnCpy, called from [%s][%d]\n", fn, line));
-		return NULL;
+		return(NULL);
 	}
 
 	if (!src) {
@@ -1196,7 +1196,7 @@ char *strchr_m(const char *src, char c)
 
 	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == c)
-			return s;
+			return (char *)s;
 	}
 
 	if (!*s)
@@ -1244,7 +1244,7 @@ char *strrchr_m(const char *s, char c)
 					break;
 				}
 				/* No - we have a match ! */
-			       	return cp;
+			       	return (char *)cp;
 			}
 		} while (cp-- != s);
 		if (!got_mb)

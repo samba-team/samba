@@ -307,14 +307,14 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset, DATA_BLOB *session_key_krb5)
+int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5)
 {
 	krb5_error_code retval;
 	krb5_data packet;
 	krb5_ccache ccdef;
 	krb5_context context;
 	krb5_auth_context auth_context = NULL;
-	DATA_BLOB ret;
 	krb5_enctype enc_types[] = {
 #ifdef ENCTYPE_ARCFOUR_HMAC
 		ENCTYPE_ARCFOUR_HMAC,
@@ -356,17 +356,18 @@ DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset, DATA_BL
 
 	get_krb5_smb_session_key(context, auth_context, session_key_krb5, False);
 
-	ret = data_blob(packet.data, packet.length);
+	*ticket = data_blob(packet.data, packet.length);
+
 /* Hmm, heimdal dooesn't have this - what's the correct call? */
-/* 	krb5_free_data_contents(context, &packet); */
-	krb5_free_context(context);
-	return ret;
+#ifdef HAVE_KRB5_FREE_DATA_CONTENTS
+ 	krb5_free_data_contents(context, &packet); 
+#endif
 
 failed:
 	if ( context )
 		krb5_free_context(context);
 		
-	return data_blob(NULL, 0);
+	return retval;
 }
 
  BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote)
@@ -410,10 +411,11 @@ failed:
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
-DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset, DATA_BLOB *session_key_krb5)
- {
+int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5) 
+{
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
-	 return data_blob(NULL, 0);
- }
+	 return 1;
+}
 
 #endif

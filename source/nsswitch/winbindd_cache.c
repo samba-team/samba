@@ -107,12 +107,14 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		case SEC_ADS: {
 			extern struct winbindd_methods ads_methods;
 			/* always obey the lp_security parameter for our domain */
-			if ( strequal(lp_realm(), domain->alt_name) || strequal(lp_workgroup(), domain->name) ) {
+			if (domain->primary) {
 				domain->backend = &ads_methods;
 				break;
 			}
 
-			if ( domain->native_mode ) {
+			/* if it have either of the indications of ADS, 
+			   use ads_methods */
+			if ( domain->active_directory || domain->native_mode ) {
 				domain->backend = &ads_methods;
 				break;
 			}

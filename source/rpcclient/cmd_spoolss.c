@@ -1336,7 +1336,7 @@ static WERROR cmd_spoolss_addprinterex(struct cli_state *cli,
         slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
         strupper_m(servername);
 
-	/* Fill in the DRIVER_INFO_3 struct */
+	/* Fill in the DRIVER_INFO_2 struct */
 	ZERO_STRUCT(info2);
 #if 0	/* JERRY */
 	init_unistr( &info2.servername, 	servername);

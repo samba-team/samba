@@ -174,16 +174,19 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 			
 			if ((lp_security() == SEC_ADS) 
 				&& (new_conn->cli->protocol >= PROTOCOL_NT1 && new_conn->cli->capabilities & CAP_EXTENDED_SECURITY)) {
+				ADS_STATUS ads_status;
 				new_conn->cli->use_kerberos = True;
 				DEBUG(5, ("connecting to %s from %s with kerberos principal [%s]\n", 
 					  new_conn->controller, global_myname(), machine_krb5_principal));
 
-				result = NT_STATUS_OK;
-
-				if (!NT_STATUS_IS_OK(result = cli_session_setup_spnego(new_conn->cli, machine_krb5_principal, 
-							      machine_password, 
-							      lp_workgroup()))) {
-					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
+				ads_status = cli_session_setup_spnego(new_conn->cli, machine_krb5_principal, 
+								      machine_password, 
+								      lp_workgroup());
+				if (!ADS_ERR_OK(ads_status)) {
+					DEBUG(4,("failed kerberos session setup with %s\n", ads_errstr(ads_status)));
+					result = ads_ntstatus(ads_status);
+				} else {
+					result = NT_STATUS_OK;
 				}
 			}
 			new_conn->cli->use_kerberos = False;
@@ -405,46 +408,116 @@ static NTSTATUS get_connection_from_cache(struct winbindd_domain *domain, const 
 }
 
 /**********************************************************************************
+ We can 'sense' certain things about the DC by it's replies to certain questions.
+
+ This tells us if this particular remote server is Active Directory, and if it is
+ native mode.
 **********************************************************************************/
 
-BOOL cm_check_for_native_mode_win2k( struct winbindd_domain *domain )
+void set_dc_type_and_flags( struct winbindd_domain *domain )
 {
 	NTSTATUS 		result;
 	struct winbindd_cm_conn	conn;
 	DS_DOMINFO_CTR		ctr;
-	BOOL			ret = False;
+	TALLOC_CTX              *mem_ctx = NULL;
 	
 	ZERO_STRUCT( conn );
 	ZERO_STRUCT( ctr );
 	
+	domain->native_mode = False;
+	domain->active_directory = False;
 	
 	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn)) ) {
-		DEBUG(5, ("cm_check_for_native_mode_win2k: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
+		DEBUG(5, ("set_dc_type_and_flags: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
 			  domain->name, nt_errstr(result)));
-		return False;
+		return;
 	}
 	
 	if ( conn.cli ) {
 		if ( !NT_STATUS_IS_OK(cli_ds_getprimarydominfo( conn.cli, 
 				conn.cli->mem_ctx, DsRolePrimaryDomainInfoBasic, &ctr)) ) {
-			ret = False;
 			goto done;
 		}
 	}
 				
 	if ( (ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING) 
 			&& !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) )
-		ret = True;
+		domain->native_mode = True;
 
+	/* Cheat - shut down the DS pipe, and open LSA */
+
+	cli_nt_session_close(conn.cli);
+
+	if ( cli_nt_session_open (conn.cli, PI_LSARPC) ) {
+		char *domain_name = NULL;
+		char *dns_name = NULL;
+		DOM_SID *dom_sid = NULL;
+
+		mem_ctx = talloc_init("set_dc_type_and_flags on domain %s\n", domain->name);
+		if (!mem_ctx) {
+			DEBUG(1, ("set_dc_type_and_flags: talloc_init() failed\n"));
+			return;
+		}
+
+		result = cli_lsa_open_policy2(conn.cli, mem_ctx, True, 
+					      SEC_RIGHTS_MAXIMUM_ALLOWED,
+					      &conn.pol);
+		
+		if (NT_STATUS_IS_OK(result)) {
+			/* This particular query is exactly what Win2k clients use 
+			   to determine that the DC is active directory */
+			result = cli_lsa_query_info_policy2(conn.cli, mem_ctx, 
+							    &conn.pol,
+							    12, &domain_name,
+							    &dns_name, NULL,
+							    NULL, &dom_sid);
+		}
+
+		if (NT_STATUS_IS_OK(result)) {
+			if (domain_name)
+				fstrcpy(domain->name, domain_name);
+			
+			if (dns_name)
+				fstrcpy(domain->alt_name, dns_name);
+
+			if (dom_sid) 
+				sid_copy(&domain->sid, dom_sid);
+
+			domain->active_directory = True;
+		} else {
+			
+			result = cli_lsa_open_policy(conn.cli, mem_ctx, True, 
+						     SEC_RIGHTS_MAXIMUM_ALLOWED,
+						     &conn.pol);
+			
+			if (!NT_STATUS_IS_OK(result))
+				goto done;
+			
+			result = cli_lsa_query_info_policy(conn.cli, mem_ctx, 
+							   &conn.pol, 5, &domain_name, 
+							   &dom_sid);
+			
+			if (NT_STATUS_IS_OK(result)) {
+				if (domain_name)
+					fstrcpy(domain->name, domain_name);
+				
+				if (dom_sid) 
+					sid_copy(&domain->sid, dom_sid);
+			}
+		}
+	}
+	
 done:
-
+	
 	/* close the connection;  no other cals use this pipe and it is called only
 	   on reestablishing the domain list   --jerry */
-
+	
 	if ( conn.cli )
 		cli_shutdown( conn.cli );
 	
-	return ret;
+	talloc_destroy(mem_ctx);
+	
+	return;
 }
 
 
