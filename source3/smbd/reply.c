@@ -2283,7 +2283,12 @@ int reply_close(char *inbuf,char *outbuf)
 
   cnum = SVAL(inbuf,smb_tid);
 
+  /* If it's an IPC, pass off to the pipe handler. */
+  if (IS_IPC(cnum))
+    return reply_pipe_close(inbuf,outbuf);
+
   fnum = GETFNUM(inbuf,smb_vwv0);
+
   CHECK_FNUM(fnum,cnum);
 
   if(HAS_CACHED_ERROR(fnum)) {

@@ -118,7 +118,7 @@ BOOL bind_rpc_pipe(char *pipe_name, uint16 fnum, uint32 call_id,
 
 	if (pipe_name == NULL || abstract == NULL || transfer == NULL) return False;
 
-	DEBUG(5,("Bind RPC Pipe[%d]: %s\n", fnum, pipe_name));
+	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", fnum, pipe_name));
 
 	/* create the request RPC_HDR_RB */
 	make_rpc_hdr_rb(&hdr_rb, 
