@@ -61,7 +61,7 @@ NTSTATUS cli_wks_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 	
 	/* actual rpc call over \PIPE\wkssvc */
-	if (!rpc_api_pipe_req(cli, WKS_QUERY_INFO, &buf, &rbuf)) {
+	if (!rpc_api_pipe_req(cli, PI_SRVSVC, WKS_QUERY_INFO, &buf, &rbuf)) {
 		prs_mem_free(&buf);
 		prs_mem_free(&rbuf);
 		return NT_STATUS_UNSUCCESSFUL;

@@ -43,7 +43,7 @@ NTSTATUS cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_dfs_q_dfs_exist(&q);
 
 	if (!dfs_io_q_dfs_exist("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, DFS_EXIST, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, DFS_EXIST, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -89,7 +89,7 @@ NTSTATUS cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			   flags);
 
 	if (!dfs_io_q_dfs_add("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, DFS_ADD, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, DFS_ADD, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -132,7 +132,7 @@ NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_dfs_q_dfs_remove(&q, entrypath, servername, sharename);
 
 	if (!dfs_io_q_dfs_remove("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, DFS_REMOVE, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, DFS_REMOVE, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -178,7 +178,7 @@ NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				info_level);
 
 	if (!dfs_io_q_dfs_get_info("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, DFS_GET_INFO, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, DFS_GET_INFO, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -223,7 +223,7 @@ NTSTATUS cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_dfs_q_dfs_enum(&q, info_level, ctr);
 
 	if (!dfs_io_q_dfs_enum("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, DFS_ENUM, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, DFS_ENUM, &qbuf, &rbuf)) {
 		goto done;
 	}
 

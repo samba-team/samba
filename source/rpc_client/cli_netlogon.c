@@ -50,7 +50,7 @@ NTSTATUS cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
         /* Marshall data and send request */
 
         if (!net_io_q_req_chal("", &q,  &qbuf, 0) ||
-            !rpc_api_pipe_req(cli, NET_REQCHAL, &qbuf, &rbuf)) {
+            !rpc_api_pipe_req(cli, PI_NETLOGON, NET_REQCHAL, &qbuf, &rbuf)) {
                 goto done;
         }
 
@@ -116,7 +116,7 @@ NTSTATUS cli_net_auth2(struct cli_state *cli,
         /* turn parameters into data stream */
 
         if (!net_io_q_auth_2("", &q,  &qbuf, 0) ||
-            !rpc_api_pipe_req(cli, NET_AUTH2, &qbuf, &rbuf)) {
+            !rpc_api_pipe_req(cli, PI_NETLOGON, NET_AUTH2, &qbuf, &rbuf)) {
                 goto done;
         }
         
@@ -192,7 +192,7 @@ NTSTATUS cli_net_auth3(struct cli_state *cli,
         /* turn parameters into data stream */
 
         if (!net_io_q_auth_3("", &q,  &qbuf, 0) ||
-            !rpc_api_pipe_req(cli, NET_AUTH3, &qbuf, &rbuf)) {
+            !rpc_api_pipe_req(cli, PI_NETLOGON, NET_AUTH3, &qbuf, &rbuf)) {
                 goto done;
         }
         
@@ -317,7 +317,7 @@ NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!net_io_q_logon_ctrl2("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, NET_LOGON_CTRL2, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, NET_LOGON_CTRL2, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -363,7 +363,7 @@ NTSTATUS cli_netlogon_getdcname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!net_io_q_getdcname("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, NET_GETDCNAME, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, NET_GETDCNAME, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -437,7 +437,7 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_C
 	/* Marshall data and send request */
 
 	if (!net_io_q_sam_sync("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, NET_SAM_SYNC, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, NET_SAM_SYNC, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -498,7 +498,7 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!net_io_q_sam_deltas("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, NET_SAM_DELTAS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, NET_SAM_DELTAS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -605,7 +605,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         /* Marshall data and send request */
 
 	if (!net_io_q_sam_logon("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, NET_SAMLOGON, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, NET_SAMLOGON, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -696,7 +696,7 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
         /* Marshall data and send request */
 
 	if (!net_io_q_sam_logon("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, NET_SAMLOGON, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_NETLOGON, NET_SAMLOGON, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -776,7 +776,7 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 	
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, NET_SRVPWSET, &qbuf, &rbuf))
+	if (rpc_api_pipe_req(cli, PI_NETLOGON, NET_SRVPWSET, &qbuf, &rbuf))
 	{
 		NET_R_SRV_PWSET r_s;
 		
