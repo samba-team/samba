@@ -50,7 +50,7 @@ BOOL initialise_passgrp_db(void)
 #ifdef WITH_NISPLUS
   pwgrp_ops =  nisplus_initialise_password_grp();
 #elif defined(WITH_LDAP)
-  pwgrp_ops = ldap_initialise_password_grp();
+  pwgrp_ops = ldap_initialize_password_grp();
 #else 
   pwgrp_ops = file_initialise_password_grp();
 #endif 
