@@ -544,8 +544,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
  net_login_network:
  *************************************************************************/
 static uint32 net_login_network(NET_ID_INFO_2 *id2,
-				struct smb_passwd *smb_pass,
-				user_struct *vuser)
+				struct smb_passwd *smb_pass)
 {
 	DEBUG(5,("net_login_network: lm_len: %d nt_len: %d\n",
 		id2->hdr_lm_chal_resp.str_str_len, 
@@ -674,15 +673,17 @@ static void api_net_sam_logon( uint16 vuid,
     smb_pass = getsmbpwnam(samlogon_user);
     unbecome_root(True);
 
-    if (smb_pass == NULL)
+    if (smb_pass->acct_ctrl & ACB_PWNOTREQ)
+      status = 0;
+    else if (smb_pass == NULL)
       status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
     else if (smb_pass->acct_ctrl & ACB_DISABLED)
       status =  0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
   }
 
-  /* validate password. */
+  /* Validate password - if required. */
 
-  if (status == 0)
+  if ((status == 0) && !(smb_pass->acct_ctrl & ACB_PWNOTREQ))
   {
     switch (q_l.sam_id.logon_level)
     {
@@ -695,7 +696,7 @@ static void api_net_sam_logon( uint16 vuid,
       case NET_LOGON_TYPE:
       {
         /* network login.  lm challenge and 24 byte responses */
-        status = net_login_network(&q_l.sam_id.ctr->auth.id2, smb_pass, vuser);
+        status = net_login_network(&q_l.sam_id.ctr->auth.id2, smb_pass);
         break;
       }
     }

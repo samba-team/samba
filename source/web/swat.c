@@ -621,7 +621,6 @@ static BOOL talk_to_smbpasswd(char *old, char *new)
 		int	to_child    = fd1[1];
 		int	from_child  = fd2[0];
 		int	wstat;
-		pid_t	wpid;
 
 		close(fd1[0]); /* parent doesn't need input  side of pipe fd1 */
 		close(fd2[1]); /* parent doesn't need output side of pipe fd2 */
@@ -661,7 +660,7 @@ static BOOL talk_to_smbpasswd(char *old, char *new)
 		/*
 		 * Wait for smbpasswd to finish
 		 */
-		if ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
+		if (sys_waitpid(pid, &wstat, 0) < 0) {
 			printf("<p> problem waiting");
 		}
 
@@ -919,9 +918,8 @@ static void chg_passwd(void)
 ****************************************************************************/
 static void passwd_page(void)
 {
-	char *s, *new_name;
+	char *new_name;
 	int i;
-	extern char * get_user_name();
 
 	printf("<H2>Password Manager</H2>\n");
 
@@ -962,7 +960,7 @@ static void passwd_page(void)
 	 * If we don't have user information then there's nothing to do. It's probably
 	 * the first time through this code.
 	 */
-	if (s = cgi_variable(user)) {
+	if (cgi_variable(user)) {
 		chg_passwd();		
 	}
 
