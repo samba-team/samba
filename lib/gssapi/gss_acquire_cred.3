@@ -479,6 +479,24 @@ name with
 and then compare with
 .Xr memcmp 3 .
 .Pp
+Note that there are might be a difference between the two methods of
+comparing names. 
+The first (using
+.Fn gss_compare_name )
+will compare to (unauthenticated) names are the same.
+The second will compare if a mechanism will authenticate them as the
+same principal.
+.Pp
+For example, if
+.Fn gss_import_name
+name was used with
+.Dv GSS_C_NO_OID
+the default syntax is used for all mechanism the GSS-API
+implementation supports.
+When compare the imported name of
+.Dv GSS_C_NO_OID
+it may match serveral mechanism names (MN).
+.Pp
 The resulting name from
 .Fn gss_display_name
 must not be used for acccess control.
