@@ -818,8 +818,9 @@ sub ParseEnumPull($)
 {
 	my($enum) = shift;
 	my($type_fn) = util::enum_type_fn($enum);
+	my($type_v_decl) = util::map_type(util::enum_type_fn($enum));
 
-	pidl "\t$type_fn v;\n";
+	pidl "\t$type_v_decl v;\n";
 	start_flags($enum);
 	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, &v));\n";
 	pidl "\t*r = v;\n";
@@ -874,8 +875,9 @@ sub ParseBitmapPull($)
 {
 	my($bitmap) = shift;
 	my($type_fn) = util::bitmap_type_fn($bitmap);
+	my($type_decl) = util::bitmap_type_decl($bitmap);
 
-	pidl "\t$type_fn v;\n";
+	pidl "\t$type_decl v;\n";
 	start_flags($bitmap);
 	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, &v));\n";
 	pidl "\t*r = v;\n";
@@ -1298,7 +1300,7 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
-		my $type_decl = util::bitmap_type_fn($e->{DATA});
+		my $type_decl = util::bitmap_type_decl($e->{DATA});
 		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, $type_decl r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
@@ -1349,7 +1351,7 @@ sub ParseTypedefPull($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
-		my $type_decl = util::bitmap_type_fn($e->{DATA});
+		my $type_decl = util::bitmap_type_decl($e->{DATA});
 		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, $type_decl *r)";
 		pidl "\n{\n";
 		ParseTypePull($e->{DATA});
@@ -1393,7 +1395,7 @@ sub ParseTypedefPrint($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
-		my $type_decl = util::bitmap_type_fn($e->{DATA});
+		my $type_decl = util::bitmap_type_decl($e->{DATA});
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r)";
 		pidl "\n{\n";
 		ParseTypePrint($e->{DATA});
