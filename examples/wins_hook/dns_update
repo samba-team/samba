@@ -19,6 +19,7 @@
 # that rogue machines can't take over (or delete) important names on
 # your network.
 DOMAIN=wins.example.com.
+
 #
 # The DNS TTL to give the records (in seconds)
 #
@@ -30,6 +31,12 @@ TTL=3600
 #	03 is user
 #
 USEFUL_TYPES="20 00 03"
+#
+# The name of a cache file to use to avoid continual updates
+# of the same name and IP addresses.  If you comment this out
+# then the cache is not kept at all.
+#
+#CACHE_FILE=/usr/local/samba/var/wins_update.cache
 
 if [ $# -lt 4 ]; then
 	echo "Usage: $0 op name type ttl [ip_addr ...]" 1>&2
@@ -64,8 +71,17 @@ do
 done
 [ $do_update = 1 ] || exit 0
 
-# we delete the name completely then add all the current IPs. This
-# is more robust than trying to work out which addresses to add/delete
+if [ -n "$CACHE_FILE" ]; then
+	if [ -r "$CACHE_FILE" ]; then
+		fgrep -q -x -i "$NAME $IP_ADDRS" "$CACHE_FILE" &&
+			exit 0
+		grep -v -i "^$NAME " "$CACHE_FILE" >"$CACHE_FILE".$$
+	fi
+	echo "$NAME $IP_ADDRS" >>"$CACHE_FILE".$$
+	mv "$CACHE_FILE" "$CACHE_FILE".old 2>/dev/null
+	mv "$CACHE_FILE".$$ "$CACHE_FILE"
+fi
+
 {
 	echo update delete $NAME.$DOMAIN
 	for i in $IP_ADDRS
@@ -73,6 +89,6 @@ done
 		echo update add $NAME.$DOMAIN $TTL A $i
 	done
 	echo
-} | $NSUPDATE
+} 2>/dev/null | $NSUPDATE >/dev/null 2>&1 &
 
 exit 0
