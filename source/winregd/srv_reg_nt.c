@@ -102,7 +102,7 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 
 #endif
 /*******************************************************************
- reg_reply_unknown_1
+ _reg_close
  ********************************************************************/
 uint32 _reg_close(POLICY_HND *pol)
 {
@@ -115,7 +115,7 @@ uint32 _reg_close(POLICY_HND *pol)
 }                                 
 
 /*******************************************************************
- reg_reply_open
+ _reg_open
  ********************************************************************/
 uint32 _reg_open(POLICY_HND *pol, uint32 access_mask)
 {
@@ -166,37 +166,6 @@ uint32 _reg_open_entry(const POLICY_HND* pol, const UNISTR2* uni_name, uint32 un
 }
 
 #if 0
-
-/*******************************************************************
- api_reg_open_entry
- ********************************************************************/
-static BOOL api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
-{
-	POLICY_HND entry_pol;
-	REG_Q_OPEN_ENTRY q_u;
-	REG_R_OPEN_ENTRY r_u; 
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the reg open entry */
-	if (!reg_io_q_open_entry("", &q_u, data, 0))
-	{
-		return False;
-	}
-
-	memcpy(&r_u.pol, &q_u.pol, sizeof(POLICY_HND)); 
-
-	/* construct reply. */
-	
-	r_u.status = _reg_open_entry(&q_u.pol,&q_u.uni_name,q_u.unknown_0,q_u.access_mask,&entry_pol);
-	
-	make_reg_r_open_entry(&r_u, &entry_pol, r_u.status);
-
-	/* store the response in the SMB stream */
-	return reg_io_r_open_entry("", &r_u, rdata, 0);	
-}
-
 
 /*******************************************************************
  reg_reply_info

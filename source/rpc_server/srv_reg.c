@@ -128,6 +128,8 @@ static BOOL api_reg_open( rpcsrv_struct *p, prs_struct *data,
 static BOOL api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
+	uint32 status;
+	
 	POLICY_HND entry_pol;
 	REG_Q_OPEN_ENTRY q_u;
 	REG_R_OPEN_ENTRY r_u; 
@@ -140,14 +142,10 @@ static BOOL api_reg_open_entry( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
-	/* is that neccesary? lars*/
-	memcpy(&r_u.pol, &q_u.pol, sizeof(POLICY_HND)); 
-
 	/* construct reply. */
+	status = _reg_open_entry(&q_u.pol,&q_u.uni_name,q_u.unknown_0,q_u.access_mask,&entry_pol);
 	
-	r_u.status = _reg_open_entry(&q_u.pol,&q_u.uni_name,q_u.unknown_0,q_u.access_mask,&entry_pol);
-	
-	make_reg_r_open_entry(&r_u, &entry_pol, r_u.status);
+	make_reg_r_open_entry(&r_u, &entry_pol, status);
 
 	/* store the response in the SMB stream */
 	return reg_io_r_open_entry("", &r_u, rdata, 0);	
