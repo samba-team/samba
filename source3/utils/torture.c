@@ -242,7 +242,7 @@ static BOOL rw_torture(struct cli_state *c)
 			printf("unlink failed (%s)\n", cli_errstr(c));
 		}
 
-		if (!cli_unlock(c, fnum2, n*sizeof(int), sizeof(int), -1, F_WRLCK)) {
+		if (!cli_unlock(c, fnum2, n*sizeof(int), sizeof(int), -1)) {
 			printf("unlock failed (%s)\n", cli_errstr(c));
 		}
 	}
@@ -563,7 +563,7 @@ static void run_locktest2(int dummy)
 
 	cli_setpid(&cli, 2);
 
-	if (cli_unlock(&cli, fnum1, 0, 4, 0, F_WRLCK)) {
+	if (cli_unlock(&cli, fnum1, 0, 4, 0)) {
 		printf("unlock1 succeeded! This is a locking bug\n");
 	}
 
@@ -675,14 +675,14 @@ static void run_locktest3(int dummy)
 	for (offset=i=0;i<numops;i++) {
 		NEXT_OFFSET;
 
-		if (!cli_unlock(&cli1, fnum1, offset-1, 1, 0, F_WRLCK)) {
+		if (!cli_unlock(&cli1, fnum1, offset-1, 1, 0)) {
 			printf("unlock1 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
 			return;
 		}
 
-		if (!cli_unlock(&cli2, fnum2, offset-2, 1, 0, F_WRLCK)) {
+		if (!cli_unlock(&cli2, fnum2, offset-2, 1, 0)) {
 			printf("unlock2 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
@@ -709,6 +709,7 @@ static void run_locktest3(int dummy)
 	printf("finished locktest3\n");
 }
 
+#define EXPECTED(ret, v) if ((ret) != (v)) printf("** ")
 
 /*
   looks at overlapping locks
@@ -724,6 +725,7 @@ static void run_locktest4(int dummy)
 	if (!open_connection(&cli1) || !open_connection(&cli2)) {
 		return;
 	}
+
 	cli_sockopt(&cli1, sockops);
 	cli_sockopt(&cli2, sockops);
 
@@ -741,71 +743,117 @@ static void run_locktest4(int dummy)
 		goto fail;
 	}
 
-	      cli_lock(&cli1, fnum1, 0, 4, 0, F_WRLCK);
-	ret = cli_lock(&cli1, fnum1, 2, 4, 0, F_WRLCK);
+	ret = cli_lock(&cli1, fnum1, 0, 4, 0, WRITE_LOCK) &&
+	      cli_lock(&cli1, fnum1, 2, 4, 0, WRITE_LOCK);
+	EXPECTED(ret, False);
 	printf("the same process %s set overlapping write locks\n", ret?"can":"cannot");
 	    
-	      cli_lock(&cli1, fnum1, 10, 4, 0, F_RDLCK);
-	ret = cli_lock(&cli1, fnum1, 12, 4, 0, F_RDLCK);
+	ret = cli_lock(&cli1, fnum1, 10, 4, 0, READ_LOCK) &&
+	      cli_lock(&cli1, fnum1, 12, 4, 0, READ_LOCK);
+	EXPECTED(ret, True);
 	printf("the same process %s set overlapping read locks\n", ret?"can":"cannot");
 
-	      cli_lock(&cli1, fnum1, 20, 4, 0, F_WRLCK);
-	ret = cli_lock(&cli2, fnum2, 22, 4, 0, F_WRLCK);
+	ret = cli_lock(&cli1, fnum1, 20, 4, 0, WRITE_LOCK) &&
+	      cli_lock(&cli2, fnum2, 22, 4, 0, WRITE_LOCK);
+	EXPECTED(ret, False);
 	printf("a different connection %s set overlapping write locks\n", ret?"can":"cannot");
 	    
-	      cli_lock(&cli1, fnum1, 30, 4, 0, F_RDLCK);
-	ret = cli_lock(&cli2, fnum2, 32, 4, 0, F_RDLCK);
+	ret = cli_lock(&cli1, fnum1, 30, 4, 0, READ_LOCK) &&
+	      cli_lock(&cli2, fnum2, 32, 4, 0, READ_LOCK);
+	EXPECTED(ret, True);
 	printf("a different connection %s set overlapping read locks\n", ret?"can":"cannot");
 	
-	cli_setpid(&cli1, 1);
-	      cli_lock(&cli1, fnum1, 40, 4, 0, F_WRLCK);
-	cli_setpid(&cli1, 2);
-	ret = cli_lock(&cli1, fnum1, 42, 4, 0, F_WRLCK);
+	ret = (cli_setpid(&cli1, 1), cli_lock(&cli1, fnum1, 40, 4, 0, WRITE_LOCK)) &&
+	      (cli_setpid(&cli1, 2), cli_lock(&cli1, fnum1, 42, 4, 0, WRITE_LOCK));
+	EXPECTED(ret, False);
 	printf("a different pid %s set overlapping write locks\n", ret?"can":"cannot");
 	    
-	cli_setpid(&cli1, 1);
-	      cli_lock(&cli1, fnum1, 50, 4, 0, F_RDLCK);
-	cli_setpid(&cli1, 2);
-	ret = cli_lock(&cli1, fnum1, 52, 4, 0, F_RDLCK);
+	ret = (cli_setpid(&cli1, 1), cli_lock(&cli1, fnum1, 50, 4, 0, READ_LOCK)) &&
+	      (cli_setpid(&cli1, 2), cli_lock(&cli1, fnum1, 52, 4, 0, READ_LOCK));
+	EXPECTED(ret, True);
 	printf("a different pid %s set overlapping read locks\n", ret?"can":"cannot");
 
-	      cli_lock(&cli1, fnum1, 60, 4, 0, F_RDLCK);
-	ret = cli_lock(&cli1, fnum1, 60, 4, 0, F_RDLCK);
+	ret = cli_lock(&cli1, fnum1, 60, 4, 0, READ_LOCK) &&
+	      cli_lock(&cli1, fnum1, 60, 4, 0, READ_LOCK);
+	EXPECTED(ret, True);
 	printf("the same process %s set the same read lock twice\n", ret?"can":"cannot");
 
-	      cli_lock(&cli1, fnum1, 70, 4, 0, F_WRLCK);
-	ret = cli_lock(&cli1, fnum1, 70, 4, 0, F_WRLCK);
+	ret = cli_lock(&cli1, fnum1, 70, 4, 0, WRITE_LOCK) &&
+	      cli_lock(&cli1, fnum1, 70, 4, 0, WRITE_LOCK);
+	EXPECTED(ret, False);
 	printf("the same process %s set the same write lock twice\n", ret?"can":"cannot");
 
-	      cli_lock(&cli1, fnum1, 80, 4, 0, F_RDLCK);
-	ret = cli_lock(&cli1, fnum1, 80, 4, 0, F_WRLCK);
-	printf("the same process %s override a read lock with a write lock\n", ret?"can":"cannot");
+	ret = cli_lock(&cli1, fnum1, 80, 4, 0, READ_LOCK) &&
+	      cli_lock(&cli1, fnum1, 80, 4, 0, WRITE_LOCK);
+	EXPECTED(ret, False);
+	printf("the same process %s overlay a read lock with a write lock\n", ret?"can":"cannot");
 
-	      cli_lock(&cli1, fnum1, 90, 4, 0, F_WRLCK);
-	ret = cli_lock(&cli1, fnum1, 90, 4, 0, F_RDLCK);
-	printf("the same process %s override a write lock with a read lock\n", ret?"can":"cannot");
+	ret = cli_lock(&cli1, fnum1, 90, 4, 0, WRITE_LOCK) &&
+	      cli_lock(&cli1, fnum1, 90, 4, 0, READ_LOCK);
+	EXPECTED(ret, True);
+	printf("the same process %s overlay a write lock with a read lock\n", ret?"can":"cannot");
 
-	cli_setpid(&cli1, 1);
-	      cli_lock(&cli1, fnum1, 100, 4, 0, F_WRLCK);
-	cli_setpid(&cli1, 2);
-	ret = cli_lock(&cli1, fnum1, 100, 4, 0, F_RDLCK);
-	printf("a different pid %s override a write lock with a read lock\n", ret?"can":"cannot");
+	ret = (cli_setpid(&cli1, 1), cli_lock(&cli1, fnum1, 100, 4, 0, WRITE_LOCK)) &&
+	      (cli_setpid(&cli1, 2), cli_lock(&cli1, fnum1, 100, 4, 0, READ_LOCK));
+	EXPECTED(ret, False);
+	printf("a different pid %s overlay a write lock with a read lock\n", ret?"can":"cannot");
 
-	      cli_lock(&cli1, fnum1, 110, 4, 0, F_RDLCK);
-	      cli_lock(&cli1, fnum1, 112, 4, 0, F_RDLCK);
-        ret = cli_unlock(&cli1, fnum1, 110, 6, 0, F_RDLCK);
+	ret = cli_lock(&cli1, fnum1, 110, 4, 0, READ_LOCK) &&
+	      cli_lock(&cli1, fnum1, 112, 4, 0, READ_LOCK) &&
+	      cli_unlock(&cli1, fnum1, 110, 6, 0);
+	EXPECTED(ret, False);
 	printf("the same process %s coalesce read locks\n", ret?"can":"cannot");
 
 
-	cli_lock(&cli1, fnum1, 120, 4, 0, F_WRLCK);
-        ret = (cli_read(&cli2, fnum2, buf, 120, 4) == 4);
+	ret = cli_lock(&cli1, fnum1, 120, 4, 0, WRITE_LOCK) &&
+	      (cli_read(&cli2, fnum2, buf, 120, 4) == 4);
+	EXPECTED(ret, False);
 	printf("this server %s strict write locking\n", ret?"doesn't do":"does");
 
-	cli_lock(&cli1, fnum1, 130, 4, 0, F_RDLCK);
-        ret = (cli_write(&cli2, fnum2, 0, buf, 130, 4) == 4);
+	ret = cli_lock(&cli1, fnum1, 130, 4, 0, READ_LOCK) &&
+	      (cli_write(&cli2, fnum2, 0, buf, 130, 4) == 4);
+	EXPECTED(ret, False);
 	printf("this server %s strict read locking\n", ret?"doesn't do":"does");
 
 
+	ret = cli_lock(&cli1, fnum1, 140, 4, 0, READ_LOCK) &&
+	      cli_lock(&cli1, fnum1, 140, 4, 0, READ_LOCK) &&
+	      cli_unlock(&cli1, fnum1, 140, 4, 0) &&
+	      cli_unlock(&cli1, fnum1, 140, 4, 0);
+	EXPECTED(ret, True);
+	printf("this server %s do recursive read locking\n", ret?"does":"doesn't");
+
+
+	ret = cli_lock(&cli1, fnum1, 150, 4, 0, WRITE_LOCK) &&
+	      cli_lock(&cli1, fnum1, 150, 4, 0, READ_LOCK) &&
+	      cli_unlock(&cli1, fnum1, 150, 4, 0) &&
+	      (cli_read(&cli2, fnum2, buf, 150, 4) == 4) &&
+	      !(cli_write(&cli2, fnum2, 0, buf, 150, 4) == 4) &&
+	      cli_unlock(&cli1, fnum1, 150, 4, 0);
+	EXPECTED(ret, True);
+	printf("this server %s do recursive lock overlays\n", ret?"does":"doesn't");
+
+	ret = cli_lock(&cli1, fnum1, 160, 4, 0, READ_LOCK) &&
+	      cli_unlock(&cli1, fnum1, 160, 4, 0) &&
+	      (cli_write(&cli2, fnum2, 0, buf, 160, 4) == 4) &&		
+	      (cli_read(&cli2, fnum2, buf, 160, 4) == 4);		
+	EXPECTED(ret, True);
+	printf("the same process %s remove a read lock using write locking\n", ret?"can":"cannot");
+
+	ret = cli_lock(&cli1, fnum1, 170, 4, 0, WRITE_LOCK) &&
+	      cli_unlock(&cli1, fnum1, 170, 4, 0) &&
+	      (cli_write(&cli2, fnum2, 0, buf, 170, 4) == 4) &&		
+	      (cli_read(&cli2, fnum2, buf, 170, 4) == 4);		
+	EXPECTED(ret, True);
+	printf("the same process %s remove a write lock using read locking\n", ret?"can":"cannot");
+
+	ret = cli_lock(&cli1, fnum1, 190, 4, 0, WRITE_LOCK) &&
+	      cli_lock(&cli1, fnum1, 190, 4, 0, READ_LOCK) &&
+	      cli_unlock(&cli1, fnum1, 190, 4, 0) &&
+	      !(cli_write(&cli2, fnum2, 0, buf, 190, 4) == 4) &&		
+	      (cli_read(&cli2, fnum2, buf, 190, 4) == 4);		
+	EXPECTED(ret, True);
+	printf("the same process %s remove the first lock first\n", ret?"does":"doesn't");
 
  fail:
 	cli_close(&cli1, fnum1);
