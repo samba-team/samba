@@ -37,6 +37,7 @@ enum stdio_helper_mode {
 	NTLMSSP_CLIENT_1,
 	GSS_SPNEGO,
 	GSS_SPNEGO_CLIENT,
+	NTLM_SERVER_1,
 	NUM_HELPER_MODES
 };
 
@@ -58,6 +59,9 @@ static void manage_gss_spnego_request (enum stdio_helper_mode stdio_helper_mode,
 static void manage_gss_spnego_client_request (enum stdio_helper_mode stdio_helper_mode, 
 					      char *buf, int length);
 
+static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mode, 
+					  char *buf, int length);
+
 static const struct {
 	enum stdio_helper_mode mode;
 	const char *name;
@@ -69,6 +73,9 @@ static const struct {
 	{ NTLMSSP_CLIENT_1, "ntlmssp-client-1", manage_client_ntlmssp_request},
 	{ GSS_SPNEGO, "gss-spnego", manage_gss_spnego_request},
 	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gss_spnego_client_request},
+#ifdef DEVELOPER
+	{ NTLM_SERVER_1, "ntlm-server-1", manage_ntlm_server_1_request},
+#endif
 	{ NUM_HELPER_MODES, NULL, NULL}
 };
 
@@ -719,7 +726,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 	pass=memchr(buf,' ',length);
 	if (!pass) {
 		DEBUG(2, ("Password not found. Denying access\n"));
-		x_fprintf(x_stderr, "ERR\n");
+		x_fprintf(x_stdout, "ERR\n");
 		return;
 	}
 	*pass='\0';
@@ -1268,7 +1275,7 @@ static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper
 		/* We asked for a password and obviously got it :-) */
 
 		opt_password = strndup((const char *)request.data, request.length);
-
+		
 		if (opt_password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
 			x_fprintf(x_stdout, "BH\n");
@@ -1379,6 +1386,199 @@ static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper
  out:
 	free_spnego_data(&spnego);
 	return;
+}
+
+static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mode, 
+					 char *buf, int length) 
+{
+	char *request, *parameter;	
+	static DATA_BLOB challenge;
+	static DATA_BLOB lm_response;
+	static DATA_BLOB nt_response;
+	static char *full_username;
+	static char *username;
+	static char *domain;
+	static char *plaintext_password;
+	static BOOL ntlm_server_1_user_session_key;
+	static BOOL ntlm_server_1_lm_session_key;
+	
+	if (strequal(buf, ".")) {
+		if (!full_username && !username) {	
+			x_fprintf(x_stdout, "Error: No username supplied!\n");
+		} else if (plaintext_password) {
+			/* handle this request as plaintext */
+			if (!full_username) {
+				if (asprintf(&full_username, "%s%c%s", domain, winbind_separator(), username) == -1) {
+					x_fprintf(x_stdout, "Error: Out of memory in asprintf!\n.\n");
+					return;
+				}
+			}
+			if (check_plaintext_auth(full_username, plaintext_password, False)) {
+				x_fprintf(x_stdout, "Authenticated: Yes\n");
+			} else {
+				x_fprintf(x_stdout, "Authenticated: No\n");
+			}
+		} else if (!lm_response.data || !nt_response.data) {
+			x_fprintf(x_stdout, "Error: No password supplied!\n");
+		} else if (!challenge.data) {	
+			x_fprintf(x_stdout, "Error: No lanman-challenge supplied!\n");
+		} else {
+			char *error_string = NULL;
+			uchar lm_key[8];
+			uchar user_session_key[16];
+			uint32 flags = 0;
+
+			if (full_username && !username) {
+				fstring fstr_user;
+				fstring fstr_domain;
+				
+				if (!parse_ntlm_auth_domain_user(full_username, fstr_user, fstr_domain)) {
+					/* username might be 'tainted', don't print into our new-line deleimianted stream */
+					x_fprintf(x_stdout, "Error: Could not parse into domain and username\n");
+				}
+				SAFE_FREE(username);
+				SAFE_FREE(domain);
+				username = smb_xstrdup(fstr_user);
+				domain = smb_xstrdup(fstr_domain);
+			}
+
+			if (!domain) {
+				domain = smb_xstrdup(get_winbind_domain());
+			}
+
+			if (ntlm_server_1_lm_session_key) 
+				flags |= WBFLAG_PAM_LMKEY;
+			
+			if (ntlm_server_1_user_session_key) 
+				flags |= WBFLAG_PAM_USER_SESSION_KEY;
+
+			if (!NT_STATUS_IS_OK(
+				    contact_winbind_auth_crap(username, 
+							      domain, 
+							      global_myname(),
+							      &challenge, 
+							      &lm_response, 
+							      &nt_response, 
+							      flags, 
+							      lm_key, 
+							      user_session_key,
+							      &error_string,
+							      NULL))) {
+
+				x_fprintf(x_stdout, "Authenticated: No\n");
+				x_fprintf(x_stdout, "Authentication-Error: %s\n.\n", error_string);
+				SAFE_FREE(error_string);
+			} else {
+				static char zeros[16];
+				char *hex_lm_key;
+				char *hex_user_session_key;
+
+				x_fprintf(x_stdout, "Authenticated: Yes\n");
+
+				if (ntlm_server_1_lm_session_key 
+				    && (memcmp(zeros, lm_key, 
+					       sizeof(lm_key)) != 0)) {
+					hex_encode((const unsigned char *)lm_key,
+						   sizeof(lm_key),
+						   &hex_lm_key);
+					x_fprintf(x_stdout, "LANMAN-Session-Key: %s\n", hex_lm_key);
+					SAFE_FREE(hex_lm_key);
+				}
+
+				if (ntlm_server_1_user_session_key 
+				    && (memcmp(zeros, user_session_key, 
+					       sizeof(user_session_key)) != 0)) {
+					hex_encode((const unsigned char *)user_session_key, 
+						   sizeof(user_session_key), 
+						   &hex_user_session_key);
+					x_fprintf(x_stdout, "User-Session-Key: %s\n", hex_user_session_key);
+					SAFE_FREE(hex_user_session_key);
+				}
+			}
+		}
+		/* clear out the state */
+		challenge = data_blob(NULL, 0);
+		nt_response = data_blob(NULL, 0);
+		lm_response = data_blob(NULL, 0);
+		SAFE_FREE(full_username);
+		SAFE_FREE(username);
+		SAFE_FREE(domain);
+		SAFE_FREE(plaintext_password);
+		ntlm_server_1_user_session_key = False;
+		ntlm_server_1_lm_session_key = False;
+		x_fprintf(x_stdout, ".\n");
+
+		return;
+	}
+
+	request = buf;
+
+	parameter = strstr_m(request, ": ");
+	if (!parameter) {
+		/* Indicates a base64 encoded structure */
+		parameter = strstr_m(request, ":: ");
+		
+		if (!parameter) {
+			DEBUG(0, ("Parameter not found!\n"));
+			x_fprintf(x_stdout, "Error: Parameter not found!\n.\n");
+			return;
+		}
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+
+		base64_decode_inplace(parameter);
+	} else {
+		
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+	}
+
+	if (strequal(request, "LANMAN-Challenge")) {
+		challenge = strhex_to_data_blob(parameter);
+		if (challenge.length != 8) {
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 8)\n.\n", 
+				  parameter,
+				  (int)challenge.length);
+			challenge = data_blob(NULL, 0);
+		}
+	} else if (strequal(request, "NT-Response")) {
+		nt_response = strhex_to_data_blob(parameter);
+		if (nt_response.length < 24) {
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! (only got %d bytes, needed at least 24)\n.\n", 
+				  parameter,
+				  (int)opt_nt_response.length);
+			nt_response = data_blob(NULL, 0);
+		}
+	} else if (strequal(request, "LANMAN-Response")) {
+		lm_response = strhex_to_data_blob(parameter);
+		if (lm_response.length != 24) {
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 24)\n.\n", 
+				  parameter,
+				  (int)lm_response.length);
+			lm_response = data_blob(NULL, 0);
+		}
+	} else if (strequal(request, "Password")) {
+		plaintext_password = smb_xstrdup(parameter);
+	} else if (strequal(request, "NT-Domain")) {
+		domain = smb_xstrdup(parameter);
+	} else if (strequal(request, "Username")) {
+		username = smb_xstrdup(parameter);
+	} else if (strequal(request, "Full-Username")) {
+		full_username = smb_xstrdup(parameter);
+	} else if (strequal(request, "Request-User-Session-Key")) {
+		ntlm_server_1_user_session_key = strequal(parameter, "Yes");
+	} else if (strequal(request, "Request-LanMan-Session-Key")) {
+		ntlm_server_1_lm_session_key = strequal(parameter, "Yes");
+	} else {
+		x_fprintf(x_stdout, "Error: Unknown request %s\n", request);
+	}
+	x_fprintf(x_stdout, ".\n");
 }
 
 static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helper_function fn) 
