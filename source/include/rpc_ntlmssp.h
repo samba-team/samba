@@ -21,7 +21,7 @@
 */
 
 #ifndef _RPC_NTLMSSP_H /* RPC_NTLMSSP_H */
-#define RPC_NTLMSSP_H 
+#define _RPC_NTLMSSP_H 
 
 #include "rpc_misc.h" /* this only pulls in STRHDR */
 
@@ -118,4 +118,3 @@ typedef struct rpc_auth_ntlmssp_chk_info
 } RPC_AUTH_NTLMSSP_CHK;
 
 #endif /* RPC_NTLMSSP_H */
-
