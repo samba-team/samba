@@ -61,7 +61,7 @@ command = {
 		help = "filedescriptor to read passphrase from"
 		default = "-1"
 	}
-	help = ""
+	help = "Writes the Kerberos master key to a file used by the KDC. \nLocal (-l) mode only."
 }
 command = {
 	name = "dump"
@@ -72,7 +72,7 @@ command = {
 		help = "decrypt keys"
 	}
 	argument = "[dump-file]"
-	help = "Dumps the database in a human readable format to the specified file, or the standard out."
+	help = "Dumps the database in a human readable format to the specified file, \nor the standard out. Local (-l) mode only."
 }
 
 command = {
@@ -88,17 +88,17 @@ command = {
 		help = "realm max renewable lifetime"
 	}
 	argument = "realm..."
-	help = "Initializes the default principals for a realm. Creates the database if necessary."
+	help = "Initializes the default principals for a realm. Creates the database\nif necessary. Local (-l) mode only."
 }
 command = {
 	name = "load"
 	argument = "file"
-	help = "Loads a previously dumped file."
+	help = "Loads a previously dumped file. Local (-l) mode only."
 }
 command = {
 	name = "merge"
 	argument = "file"
-	help = "Merges the contents of a dump file into the database."
+	help = "Merges the contents of a dump file into the database. Local (-l) mode only."
 }
 command = {
 	name = "add"
