@@ -1068,6 +1068,8 @@ static int call_nt_transact_create(connection_struct *conn,
   if(params == NULL)
     return(ERROR(ERRDOS,ERRnomem));
 
+  memset((char *)params,'\0',69);
+
   p = params;
   SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
   p += 2;
