@@ -187,6 +187,8 @@ AC_PROG_AWK
 dnl Check if we use GNU ld
 LD=ld
 AC_PROG_LD_GNU
+dnl look for executable suffix
+AC_EXEEXT
 AC_PATH_PROG(passwd_program, passwd, /bin/passwd)
 AC_SUBST(passwd_program)
 
@@ -737,7 +739,7 @@ fi
 # Check if we have execl, if not we need to compile smbrun.
 AC_CHECK_FUNCS(execl)
 if test x"$ac_cv_func_execl" = x"no"; then
-    RUNPROG="bin/smbrun"
+    RUNPROG="bin/smbrun\$(EXEEXT)"
 else
     RUNPROG=""
 fi
@@ -1866,7 +1868,7 @@ AC_ARG_WITH(smbwrapper,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_SMBWRAPPER)
-	WRAPPROG="bin/smbsh"
+	WRAPPROG="bin/smbsh\$(EXEEXT)"
 	WRAP="bin/smbwrapper.$SHLIBEXT"
 
 	if test x$ATTEMPT_WRAP32_BUILD = x; then
@@ -2194,7 +2196,7 @@ if test $with_smbpasswd_sam = yes; then
 	PDBEDIT=""
 else
 	AC_MSG_RESULT(no)
-	PDBEDIT=bin/pdbedit
+	PDBEDIT="bin/pdbedit\$(EXEEXT)"
 fi
 
 ########################################################################################
@@ -3028,8 +3030,8 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
 # Check for FreeBSD problem with getgroups
 
-	WINBIND_TARGETS="bin/wbinfo"
-	WINBIND_STARGETS="bin/winbindd"
+	WINBIND_TARGETS="bin/wbinfo\$(EXEEXT)"
+	WINBIND_STARGETS="bin/winbindd\$(EXEEXT)"
 	case "$host_os" in
         *irix*)
 		WINBIND_LTARGETS="nsswitch/libns_winbind.so"

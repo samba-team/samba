@@ -939,7 +939,7 @@ static int process_root(void)
 			/* Get administrator password if not specified */
 
 			if (!got_pass) {
-				char *pass = getpass("Password: ");
+				char *pass = get_pass("Password: ",stdin_passwd_get);
 
 				if (pass)
 					pstrcpy(user_password, pass);
