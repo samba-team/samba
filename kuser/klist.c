@@ -103,10 +103,15 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	Ticket t;
 	size_t len;
 	char *s;
+
 	decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
-	krb5_enctype_to_string(context, t.enc_part.etype, &s);
-	printf("Ticket etype: %s", s);
-	free(s);
+	ret = krb5_enctype_to_string(context, t.enc_part.etype, &s);
+	if (ret == 0) {
+	    printf("Ticket etype: %s", s);
+	    free(s);
+	} else {
+	    printf("Unknown etype: %d", t.enc_part.etype);
+	}
 	if(t.enc_part.kvno)
 	    printf(", kvno %d", *t.enc_part.kvno);
 	printf("\n");
@@ -402,7 +407,6 @@ main (int argc, char **argv)
 	} else
 	    krb5_err (context, 1, ret, "krb5_cc_get_principal");
     }
-
     if (do_test)
 	exit_status = check_for_tgt (context, ccache, principal);
     else
