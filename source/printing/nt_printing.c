@@ -3519,6 +3519,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 static SEC_DESC_BUF *construct_default_printer_sdb(void)
 {
+	extern DOM_SID global_sam_sid;
 	SEC_ACE ace[3];
 	SEC_ACCESS sa;
 	SEC_ACL *psa = NULL;
@@ -3540,19 +3541,13 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	if (winbind_lookup_name(lp_workgroup(), &owner_sid, &name_type)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
-                uint32 owner_rid;
-
 		/* Backup plan - make printer owned by admins or root.
 		   This should emulate a lanman printer as security
 		   settings can't be changed. */
 
-		sid_peek_rid(&owner_sid, &owner_rid);
-
-		if (owner_rid != BUILTIN_ALIAS_RID_PRINT_OPS &&
-		    owner_rid != BUILTIN_ALIAS_RID_ADMINS &&
-		    owner_rid != DOMAIN_USER_RID_ADMIN &&
-		    !lookup_name("root", &owner_sid, &name_type)) {
-			sid_copy(&owner_sid, &global_sid_World);
+		if (!lookup_name("root", &owner_sid, &name_type)) {
+			sid_copy(&owner_sid, &global_sam_sid);
+			sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 		}
 	}
 

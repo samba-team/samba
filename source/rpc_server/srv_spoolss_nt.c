@@ -5772,7 +5772,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
 	ZERO_STRUCT(printer);
 	
 	*out_type=0;
-
+	*out_value = NULL;
 	*out_max_data_len=0;
 	*data_out=NULL;
 	*out_data_len=0;
