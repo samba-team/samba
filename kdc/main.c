@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,11 +32,18 @@
  */
 
 #include "kdc_locl.h"
+#ifdef HAVE_UTIL_H
+#include <util.h>
+#endif
 
 RCSID("$Id$");
 
 sig_atomic_t exit_flag = 0;
 krb5_context context;
+
+#ifdef HAVE_DAEMON
+int no_detach = 1;
+#endif
 
 static RETSIGTYPE
 sigterm(int sig)
@@ -95,6 +102,10 @@ main(int argc, char **argv)
 #else
     signal(SIGINT, sigterm);
     signal(SIGTERM, sigterm);
+#endif
+#ifdef HAVE_DAEMON
+    if (!no_detach)
+	daemon(0, 0);
 #endif
     pidfile(NULL);
     loop();
