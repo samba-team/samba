@@ -82,7 +82,7 @@ struct ldapsrv_partition_ops {
 	NTSTATUS (*Search)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_SearchRequest *r);
 	NTSTATUS (*Modify)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyRequest *r);
 	NTSTATUS (*Add)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_AddRequest *r);
-	NTSTATUS (*Delete)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_DeleteRequest *r);
+	NTSTATUS (*Del)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_DelRequest *r);
 	NTSTATUS (*ModifyDN)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r);
 	NTSTATUS (*Compare)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_CompareRequest *r);
 	NTSTATUS (*Abandon)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_AbandonRequest *r);
