@@ -271,6 +271,13 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
         wcp->data_size = pos + data_used - wcp->offset;
 
       /*
+       * Update the file size if changed.
+       */
+
+      if (wcp->offset + wcp->data_size > wcp->file_size)
+        wcp->file_size = wcp->offset + wcp->data_size;
+
+      /*
        * If we used all the data then
        * return here.
        */
@@ -311,6 +318,13 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 
       if(pos + n > wcp->offset + wcp->data_size)
         wcp->data_size = pos + n - wcp->offset;
+
+      /*
+       * Update the file size if changed.
+       */
+
+      if (wcp->offset + wcp->data_size > wcp->file_size)
+        wcp->file_size = wcp->offset + wcp->data_size;
 
       /*
        * We don't need to move the start of data, but we
@@ -363,10 +377,11 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
         wcp->data_size = pos + data_used - wcp->offset;
 
       /*
-       * Update the known file length.
+       * Update the file size if changed.
        */
 
-      wcp->file_size = wcp->offset + wcp->data_size;
+      if (wcp->offset + wcp->data_size > wcp->file_size)
+        wcp->file_size = wcp->offset + wcp->data_size;
 
       /*
        * If we used all the data then
@@ -419,8 +434,16 @@ len = %u\n",fsp->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigne
       if ( n <= wcp->alloc_size && n > wcp->data_size) {
         cache_flush_needed = True;
       } else {
+        ssize_t ret = real_write_file(fsp, data, pos, n);
+
         DO_PROFILE_INC(writecache_direct_writes);
-        return real_write_file(fsp, data, pos, n);
+        if (ret == -1)
+          return ret;
+
+        if (pos + ret > wcp->file_size)
+          wcp->file_size = pos + ret;
+
+        return ret;
       }
 
       write_path = 4;
@@ -446,8 +469,13 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
    */
 
   if (n > wcp->alloc_size ) {
-    if(real_write_file(fsp, data, pos, n) == -1)
+    ssize_t ret = real_write_file(fsp, data, pos, n);
+    if (ret == -1)
       return -1;
+
+    if (pos + ret > wcp->file_size)
+      wcp->file_size = pos + n;
+
     DO_PROFILE_INC(writecache_direct_writes);
     return total_written + n;
   }
@@ -470,7 +498,15 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
       DO_PROFILE_INC(writecache_num_write_caches);
     }
     wcp->data_size += n;
+
+    /*
+     * Update the file size if changed.
+     */
+
+    if (wcp->offset + wcp->data_size > wcp->file_size)
+      wcp->file_size = wcp->offset + wcp->data_size;
     DEBUG(9,("cache return %u\n", (unsigned int)n));
+
     total_written += n;
     return total_written; /* .... that's a write :) */
   }
@@ -595,7 +631,7 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
    * Ensure file size if kept up to date if write extends file.
    */
 
-  if ((ret != -1) && (wcp->offset + ret >= wcp->file_size))
+  if ((ret != -1) && (wcp->offset + ret > wcp->file_size))
     wcp->file_size = wcp->offset + ret;
 
   return ret;
