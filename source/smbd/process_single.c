@@ -71,15 +71,7 @@ static void single_terminate_connection(struct server_connection *conn, const ch
 	DEBUG(2,("single_terminate_connection: reason[%s]\n",reason));
 
 	if (conn) {
-		if (conn->service) {
-			conn->service->ops->close_connection(conn,reason);
-		}
-
-		if (conn->server_socket) {
-			DLIST_REMOVE(conn->server_socket->connection_list,conn);
-		}
-
-		server_destroy_connection(conn);
+		talloc_free(conn);
 	}
 }
 

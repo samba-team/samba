@@ -498,7 +498,7 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 				    r->in.logon.password->ntpassword.hash, 
 				    sizeof(r->in.logon.password->ntpassword.hash));
 
-		nt_status = make_auth_context_subsystem(&auth_context);
+		nt_status = make_auth_context_subsystem(pipe_state, &auth_context);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
@@ -515,7 +515,8 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 		
 	case 2:
 	case 6:
-		nt_status = make_auth_context_fixed(&auth_context, r->in.logon.network->challenge);
+		nt_status = make_auth_context_fixed(pipe_state,
+						    &auth_context, r->in.logon.network->challenge);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}

@@ -34,7 +34,7 @@ static void get_challenge(struct smbsrv_connection *smb_conn, char buff[8])
 
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 
-	nt_status = make_auth_context_subsystem(&smb_conn->negotiate.auth_context);
+	nt_status = make_auth_context_subsystem(smb_conn, &smb_conn->negotiate.auth_context);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("make_auth_context_subsystem returned %s", nt_errstr(nt_status)));

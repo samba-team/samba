@@ -512,7 +512,7 @@ BOOL make_auth_methods(struct auth_context *auth_context, struct auth_methods **
 		smb_panic("make_auth_methods: pointer to auth_method pointer is NULL!\n");
 	}
 
-	*auth_method = talloc(auth_context->mem_ctx, sizeof(**auth_method));
+	*auth_method = talloc_p(auth_context, struct auth_methods);
 	if (!*auth_method) {
 		DEBUG(0,("make_auth_method: malloc failed!\n"));
 		return False;

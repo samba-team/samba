@@ -65,7 +65,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 
 	SMB_ASSERT(challenge->length == 8);
 
-	auth_context->challenge = data_blob_talloc(auth_context->mem_ctx, 
+	auth_context->challenge = data_blob_talloc(auth_context, 
 						   challenge->data, challenge->length);
 
 	auth_context->challenge_set_by = "NTLMSSP callback (NTLM2)";
@@ -189,7 +189,8 @@ static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_secur
 	}
 
 	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&gensec_ntlmssp_state->auth_context))) {
+	nt_status = make_auth_context_subsystem(gensec_security, &gensec_ntlmssp_state->auth_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 

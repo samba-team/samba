@@ -78,7 +78,7 @@ static const uint8_t *get_ntlm_challenge(struct auth_context *auth_context)
 		uint8_t chal[8];
 		
 		generate_random_buffer(chal, sizeof(chal));
-		auth_context->challenge = data_blob_talloc(auth_context->mem_ctx, 
+		auth_context->challenge = data_blob_talloc(auth_context, 
 							   chal, sizeof(chal));
 		
 		challenge_set_by = "random";
@@ -269,7 +269,7 @@ void free_auth_context(struct auth_context **auth_context)
 			}
 		}
 
-		talloc_destroy((*auth_context)->mem_ctx);
+		talloc_free(*auth_context);
 		*auth_context = NULL;
 	}
 }
@@ -278,21 +278,15 @@ void free_auth_context(struct auth_context **auth_context)
  Make a auth_info struct
 ***************************************************************************/
 
-static NTSTATUS make_auth_context(struct auth_context **auth_context) 
+static NTSTATUS make_auth_context(TALLOC_CTX *mem_ctx, struct auth_context **auth_context) 
 {
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("authentication context");
-	
-	*auth_context = talloc(mem_ctx, sizeof(**auth_context));
+	*auth_context = talloc_p(mem_ctx, struct auth_context);
 	if (!*auth_context) {
 		DEBUG(0,("make_auth_context: talloc failed!\n"));
-		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(*auth_context);
 
-	(*auth_context)->mem_ctx = mem_ctx;
 	(*auth_context)->check_ntlm_password = check_ntlm_password;
 	(*auth_context)->get_ntlm_challenge = get_ntlm_challenge;
 	
@@ -303,7 +297,8 @@ static NTSTATUS make_auth_context(struct auth_context **auth_context)
  Make a auth_info struct for the auth subsystem
 ***************************************************************************/
 
-static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, char **text_list) 
+static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx, 
+					    struct auth_context **auth_context, char **text_list) 
 {
 	struct auth_methods *list = NULL;
 	struct auth_methods *t = NULL;
@@ -314,7 +309,7 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context(auth_context)))
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context(mem_ctx, auth_context)))
 		return nt_status;
 	
 	for (;*text_list; text_list++) {
@@ -362,7 +357,7 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
  Make a auth_context struct for the auth subsystem
 ***************************************************************************/
 
-NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context) 
+NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx, struct auth_context **auth_context) 
 {
 	char **auth_method_list = NULL; 
 	NTSTATUS nt_status;
@@ -371,7 +366,8 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_text_list(auth_context, auth_method_list))) {
+	nt_status = make_auth_context_text_list(mem_ctx, auth_context, auth_method_list);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		str_list_free(&auth_method_list);
 		return nt_status;
 	}
@@ -384,14 +380,15 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
  Make a auth_info struct with a fixed challenge
 ***************************************************************************/
 
-NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uint8_t chal[8]) 
+NTSTATUS make_auth_context_fixed(TALLOC_CTX *mem_ctx, 
+				 struct auth_context **auth_context, uint8_t chal[8]) 
 {
 	NTSTATUS nt_status;
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(auth_context))) {
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(mem_ctx, auth_context))) {
 		return nt_status;
 	}
 	
-	(*auth_context)->challenge = data_blob_talloc((*auth_context)->mem_ctx, chal, 8);
+	(*auth_context)->challenge = data_blob_talloc(*auth_context, chal, 8);
 	(*auth_context)->challenge_set_by = "fixed";
 	return nt_status;
 }
