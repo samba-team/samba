@@ -5589,6 +5589,7 @@ BOOL make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 
 	if (status == 0)
 	{
+		r_u->ptr = 1;
 		r_u->ctr = ctr;
 	}
 
@@ -5624,7 +5625,6 @@ BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struc
 		if (r_u->ctr != NULL)
 		{
 			free_samr_userinfo_ctr(r_u->ctr);
-			free(r_u->ctr);
 		}
 	}
 	return True;

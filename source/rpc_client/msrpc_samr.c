@@ -187,14 +187,14 @@ BOOL req_user_info( const POLICY_HND *pol_dom,
 				uint32 user_rid,
 				USER_INFO_FN(usr_inf))
 {
-	SAM_USER_INFO_21 usr;
+	SAM_USERINFO_CTR ctr;
 	/* send user info query, level 0x15 */
 	if (get_samr_query_userinfo( pol_dom,
-				    0x15, user_rid, &usr))
+				    0x15, user_rid, &ctr))
 	{
 		if (usr_inf != NULL)
 		{
-			usr_inf(domain, sid, user_rid, &usr);
+			usr_inf(domain, sid, user_rid, ctr.info.id21);
 		}
 		return True;
 	}
@@ -1535,12 +1535,12 @@ do a SAMR query user info
 BOOL get_samr_query_userinfo( 
 				const POLICY_HND *pol_open_domain,
 				uint32 info_level,
-				uint32 user_rid, void *usr)
+				uint32 user_rid, SAM_USERINFO_CTR *ctr)
 {
 	POLICY_HND pol_open_user;
 	BOOL ret = True;
 
-	if (pol_open_domain == NULL || usr == NULL) return False;
+	if (pol_open_domain == NULL || ctr == NULL) return False;
 
 	/* send open domain (on user sid) */
 	if (!samr_open_user( pol_open_domain,
@@ -1551,7 +1551,7 @@ BOOL get_samr_query_userinfo(
 	}
 
 	/* send user info query */
-	if (!samr_query_userinfo( &pol_open_user, info_level, usr))
+	if (!samr_query_userinfo( &pol_open_user, info_level, ctr))
 	{
 		DEBUG(5,("samr_query_userinfo: error in query user info, level 0x%x\n",
 		          info_level));

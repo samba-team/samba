@@ -2253,7 +2253,7 @@ BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 do a SAMR Query User Info
 ****************************************************************************/
 BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR **ctr)
+				SAM_USERINFO_CTR *ctr)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -2283,6 +2283,8 @@ BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value,
 		BOOL p;
 		ZERO_STRUCT(r_o);
 
+		r_o.ctr = ctr;
+
 		samr_io_r_query_userinfo("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
 		
@@ -2293,7 +2295,7 @@ BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value,
 			p = False;
 		}
 
-		if (p && (r_o.ptr == 0 || r_o.ctr == NULL))
+		if (p && r_o.ptr == 0)
 		{
 			p = False;
 		}
@@ -2307,7 +2309,6 @@ BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value,
 		if (p && r_o.ptr != 0)
 		{
 			valid_query = True;
-			(*ctr) = r_o.ctr;
 		}
 	}
 

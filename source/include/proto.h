@@ -2271,7 +2271,7 @@ BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
 				void* usr);
 BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR **ctr);
+				SAM_USERINFO_CTR *ctr);
 BOOL samr_close(  POLICY_HND *hnd);
 BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 				uint32 *num_entries,
@@ -2545,7 +2545,7 @@ BOOL set_samr_set_userinfo(
 BOOL get_samr_query_userinfo( 
 				const POLICY_HND *pol_open_domain,
 				uint32 info_level,
-				uint32 user_rid, void *usr);
+				uint32 user_rid, SAM_USERINFO_CTR *ctr);
 BOOL get_samr_query_groupinfo( 
 				const POLICY_HND *pol_open_domain,
 				uint32 info_level,

@@ -1800,11 +1800,21 @@ uint32 _samr_query_userinfo(POLICY_HND *pol, uint16 switch_value,
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	if (status == 0x0)
 	{
+		ctr->switch_value = switch_value;
 		switch (switch_value)
 		{
 			case 0x10:
 			{
-				status = get_user_info_10(ctr->info.id10, rid) ? 0 : (NT_STATUS_NO_SUCH_USER);
+				ctr->info.id = (SAM_USER_INFO_10*)Realloc(NULL,
+						 sizeof(*ctr->info.id10));
+				if (ctr->info.id == NULL)
+				{
+					status = NT_STATUS_NO_MEMORY;
+				}
+				else if (!get_user_info_10(ctr->info.id10, rid))
+				{
+					status = NT_STATUS_NO_SUCH_USER;
+				}
 				break;
 			}
 #if 0
@@ -1817,14 +1827,29 @@ uint32 _samr_query_userinfo(POLICY_HND *pol, uint16 switch_value,
 				expire.low  = 0xffffffff;
 				expire.high = 0x7fffffff;
 
-				make_sam_user_info11(ctr->info.id11, &expire, "BROOKFIELDS$", 0x03ef, 0x201, 0x0080);
+				ctr->info.id = (SAM_USER_INFO_11*)Realloc(NULL,
+						 sizeof(*ctr->info.id11));
+				make_sam_user_info11(ctr->info.id11, &expire,
+				                     "BROOKFIELDS$", /* name */
+				                     0x03ef, /* user rid */
+				                     0x201, /* group rid */
+				                     0x0080); /* acb info */
 
 				break;
 			}
 #endif
 			case 21:
 			{
-				status = get_user_info_21(ctr->info.id21, rid) ? 0 : (NT_STATUS_NO_SUCH_USER);
+				ctr->info.id = (SAM_USER_INFO_21*)Realloc(NULL,
+						 sizeof(*ctr->info.id21));
+				if (ctr->info.id == NULL)
+				{
+					status = NT_STATUS_NO_MEMORY;
+				}
+				else if (!get_user_info_21(ctr->info.id21, rid))
+				{
+					status = NT_STATUS_NO_SUCH_USER;
+				}
 				break;
 			}
 
