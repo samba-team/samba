@@ -25,21 +25,26 @@ sub tabs()
 
 #####################################################################
 # parse a properties list
-sub HeaderProperties($)
+sub HeaderProperties($$)
 {
     my($props) = shift;
+	my($ignores) = shift;
+	my $ret = "";
 
-    return;
+	return; 
 
-    foreach my $d (@{$props}) {
-	if (ref($d) ne "HASH") {
-	    pidl "/* [$d] */ ";
-	} else {
-	    foreach my $k (keys %{$d}) {
-		pidl "/* [$k($d->{$k})] */ ";
-	    }
+    foreach my $d (keys %{$props}) {
+		next if ($ignores->{$d});
+		if($props->{$d} ne "1") {
+			$ret.= "$d(" . $props->{$d} . "),";
+		} else {
+			$ret.="$d,";
+		}
 	}
-    }
+
+	if ($ret) {
+		pidl "/* [" . substr($ret, 0, -1) . "] */";
+	}
 }
 
 #####################################################################
@@ -48,7 +53,9 @@ sub HeaderElement($)
 {
     my($element) = shift;
 
-    (defined $element->{PROPERTIES}) && HeaderProperties($element->{PROPERTIES});
+    if (defined $element->{PROPERTIES}) {
+		HeaderProperties($element->{PROPERTIES}, {"in" => 1, "out" => 1});
+	}
     pidl tabs();
     HeaderType($element, $element->{TYPE}, "");
     pidl " ";
@@ -151,7 +158,9 @@ sub HeaderUnion($$)
 	my($name) = shift;
 	my %done = ();
 
-	(defined $union->{PROPERTIES}) && HeaderProperties($union->{PROPERTIES});
+	if (defined $union->{PROPERTIES}) {
+		HeaderProperties($union->{PROPERTIES}, {});
+	}
 	pidl "\nunion $name {\n";
 	$tab_depth++;
 	foreach my $e (@{$union->{ELEMENTS}}) {
@@ -235,9 +244,7 @@ sub HeaderTypedefProto($)
 	    }
     }
 
-    if (!util::has_property($d, "public")) {
-	    return;
-    }
+    return unless util::has_property($d, "public");
 
 	my $tf = NdrParser::get_typefamily($d->{DATA}{TYPE});
 
