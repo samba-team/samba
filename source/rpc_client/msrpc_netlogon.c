@@ -42,7 +42,8 @@ static uint32 domain_client_validate( char *user, char *domain,
 				char *challenge,
 				char *smb_apasswd, int smb_apasslen, 
 				char *smb_ntpasswd, int smb_ntpasslen,
-				uchar user_sess_key[16])
+				uchar user_sess_key[16],
+				char lm_pw8[8])
 {
 	unsigned char trust_passwd[16];
 	NET_ID_INFO_CTR ctr;
@@ -141,6 +142,11 @@ static uint32 domain_client_validate( char *user, char *domain,
 			((smb_apasslen != 0) ? smb_apasswd : NULL),
 			((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
 			&ctr, &info3);
+
+		if (lm_pw8 != NULL)
+		{
+			memcpy(lm_pw8, info3.padding, 8);
+		}
 	}
 
 	if (status != 0x0)
@@ -176,7 +182,8 @@ uint32 check_domain_security(char *orig_user, char *domain,
 				uchar *challenge,
 				char *smb_apasswd, int smb_apasslen,
 				char *smb_ntpasswd, int smb_ntpasslen,
-				uchar user_sess_key[16])
+				uchar user_sess_key[16],
+				char lm_pw8[8])
 {
 	fstring acct_name;
 	uint16 acct_type = 0;
@@ -206,5 +213,5 @@ uint32 check_domain_security(char *orig_user, char *domain,
 	                        challenge,
 	                        smb_apasswd, smb_apasslen,
 	                        smb_ntpasswd, smb_ntpasslen,
-	                        user_sess_key);
+	                        user_sess_key, lm_pw8);
 }

@@ -711,7 +711,6 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 		DEBUG(100,("user sess key:"));
 		dump_data(100, sess_key, 16);
 #endif
-
 		SamOEMhash((uchar *)sess_key, key, 0);
 
 #ifdef DEBUG_PASSWORD
@@ -731,7 +730,8 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 static uint32 net_login_network(NET_ID_INFO_2 *id2,
 				struct sam_passwd *sam_pass,
 				struct dcinfo *dc,
-				char sess_key[16])
+				char sess_key[16],
+				char lm_pw8[8])
 {
 	fstring user;
 	fstring domain;
@@ -754,6 +754,8 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	{
 		unsigned char key[16];
 
+		memcpy(lm_pw8, sam_pass->smb_passwd, 8);
+
 		memset(key, 0, 16);
 		memcpy(key, dc->sess_key, 8);
 
@@ -763,16 +765,21 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 
 		DEBUG(100,("user sess key:"));
 		dump_data(100, sess_key, 16);
-#endif
 
+		DEBUG(100,("lm_pw8:"));
+		dump_data(100, lm_pw8, 16);
+#endif
+		SamOEMhash((uchar *)lm_pw8, key, 3);
 		SamOEMhash((uchar *)sess_key, key, 0);
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("encrypt of user session key:"));
 		dump_data(100, sess_key, 16);
+		DEBUG(100,("encrypt of lm_pw8:"));
+		dump_data(100, lm_pw8, 16);
 #endif
 
-                  return 0x0;
+		return 0x0;
 	}
 
 	return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
@@ -791,6 +798,8 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 	fstring nt_username;
 	char *enc_user_sess_key = NULL;
 	char sess_key[16];
+	char lm_pw8[16];
+	char *padding = NULL;
 
 	NTTIME logon_time           ;
 	NTTIME logoff_time          ;
@@ -949,7 +958,8 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 			case NETWORK_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
-				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, dc, sess_key);
+				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, dc, sess_key, lm_pw8);
+				padding = lm_pw8;
 				enc_user_sess_key = sess_key;
 				break;
 			}
@@ -1010,6 +1020,9 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 
 		global_myname  , /* char *logon_srv */
 		global_sam_name, /* char *logon_dom */
+
+		padding,
+
 		&global_sam_sid, /* DOM_SID *dom_sid */
 		NULL); /* char *other_sids */
 

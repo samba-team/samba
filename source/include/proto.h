@@ -550,7 +550,7 @@ void pwdb_set_can_change_time(char *p, int max_len, time_t t);
 void pwdb_set_time_last_changed(char *p, int max_len, time_t t);
 void pwdb_set_must_change_time(char *p, int max_len, time_t t);
 void pwdb_set_last_set_time(char *p, int max_len, time_t t);
-void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl);
+void pwdb_sethexpwd(char *p, const uchar *pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl);
 void *memdup(void *p, size_t size);
 char *lock_path(char *name);
@@ -2337,7 +2337,8 @@ uint32 check_domain_security(char *orig_user, char *domain,
 				uchar *challenge,
 				char *smb_apasswd, int smb_apasslen,
 				char *smb_ntpasswd, int smb_ntpasslen,
-				uchar user_sess_key[16]);
+				uchar user_sess_key[16],
+				char lm_pw[8]);
 
 /*The following definitions come from  rpc_client/msrpc_samr.c  */
 
@@ -2814,6 +2815,8 @@ BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 
 	char *logon_srv,
 	char *logon_dom,
+
+	char *padding,
 
 	DOM_SID *dom_sid,
 	char *other_sids);

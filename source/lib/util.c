@@ -3447,7 +3447,7 @@ time_t pwdb_get_last_set_time(const char *p)
  ********************************************************************/
 static void set_time_in_string(char *p, int max_len, char *type, time_t t)
 {
-	slprintf(p, max_len, ":%s-%08X:", type, (uint32)t);
+	slprintf(p, max_len, ":%s-%08X", type, (uint32)t);
 }
 
 /*******************************************************************
@@ -3510,7 +3510,7 @@ void pwdb_set_last_set_time(char *p, int max_len, time_t t)
 /*************************************************************
  Routine to set 32 hex password characters from a 16 byte array.
 **************************************************************/
-void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl)
+void pwdb_sethexpwd(char *p, const uchar *pwd, uint16 acct_ctrl)
 {
 	if (pwd != NULL)
 	{

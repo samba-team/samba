@@ -245,13 +245,18 @@ BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("cli sess key:"));
 	dump_data(100, sess_key, 8);
+	DEBUG(100,("enc padding:"));
+	dump_data(100, user_info3->padding, 8);
 	DEBUG(100,("enc user sess key:"));
 	dump_data(100, user_info3->user_sess_key, 16);
 #endif
 
-	SamOEMhash(user_info3->user_sess_key, sess_key, False);
+	SamOEMhash(user_info3->user_sess_key, sess_key, 0);
+	SamOEMhash(user_info3->padding      , sess_key, 3);
 
 #ifdef DEBUG_PASSWORD
+	DEBUG(100,("dec paddin:"));
+	dump_data(100, user_info3->padding, 8);
 	DEBUG(100,("dec user sess key:"));
 	dump_data(100, user_info3->user_sess_key, 16);
 #endif

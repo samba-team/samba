@@ -330,7 +330,7 @@ static BOOL api_pipe_ntlmssp_verify(rpcsrv_struct *l,
 {
 	ntlmssp_auth_struct *a = (ntlmssp_auth_struct *)l->auth_info;
 	uchar *pwd = NULL;
-	uchar null_pwd[16];
+	uchar password[16];
 	uchar lm_owf[24];
 	uchar nt_owf[128];
 	size_t lm_owf_len;
@@ -340,7 +340,7 @@ static BOOL api_pipe_ntlmssp_verify(rpcsrv_struct *l,
 	size_t wks_len;
 	BOOL anonymous = False;
 
-	memset(null_pwd, 0, sizeof(null_pwd));
+	memset(password, 0, sizeof(password));
 
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
@@ -404,18 +404,22 @@ static BOOL api_pipe_ntlmssp_verify(rpcsrv_struct *l,
 	if (anonymous)
 	{
 		DEBUG(5,("anonymous user session\n"));
-		mdfour(a->user_sess_key, null_pwd, 16);
-		pwd = null_pwd;
+		mdfour(a->user_sess_key, password, 16);
+		pwd = password;
 		l->auth_validated = True;
 	}
 	else
 	{
 		DEBUG(5,("user: %s domain: %s wks: %s\n", a->user_name, a->domain, a->wks));
+		become_root(False);
 		l->auth_validated = check_domain_security(a->user_name, a->domain,
 				      (uchar*)a->ntlmssp_chal.challenge,
 				      lm_owf, lm_owf_len,
 				      nt_owf, nt_owf_len,
-				      a->user_sess_key) == 0x0;
+				      a->user_sess_key,
+				      password) == 0x0;
+		pwd = password;
+		unbecome_root(False);
 	}
 
 	if (l->auth_validated && pwd != NULL)
@@ -1065,14 +1069,15 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 	/* process the rpc header */
 	req->offset = 0x0;
 	req->io = True;
-	smb_io_rpc_hdr("", &l->hdr, req, 0);
+	smb_io_rpc_hdr("hdr", &l->hdr, req, 0);
 
 	if (req->offset == 0) return False;
 
 	last  = IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST);
 	first = IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_FIRST);
 
-	if (l->hdr.pkt_type == RPC_BIND)
+	if (l->hdr.pkt_type == RPC_BIND ||
+	    l->hdr.pkt_type == RPC_BINDRESP)
 	{
 		last = True;
 		first = True;
@@ -1100,6 +1105,7 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 
 	if (l->faulted_once_before)
 	{
+		DEBUG(10,("rpc_redir_local: faulted before (so do it again)\n"));
 		prs_free_data(&l->data_i);		
 		return api_pipe_fault_resp(l, 0x1c010002, resp);
 	}

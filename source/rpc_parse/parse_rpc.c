@@ -254,6 +254,8 @@ BOOL is_complete_pdu(prs_struct *ps)
 		return False;
 	}
 
+	DEBUG(10,("is_complete_pdu - frag_len %d\n", hdr.frag_len));
+
 	/* check that the fragment length is equal to the data length so far */
 	return hdr.frag_len == len;
 }
@@ -832,7 +834,7 @@ BOOL make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 	DEBUG(6,("dom: %s user: %s wks: %s neg_flgs: 0x%x\n",
 	          domain, user, wks, neg_flags));
 
-	offset = 0x40;
+	offset = 0;
 
 	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
 	{
@@ -927,29 +929,29 @@ BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		old_offset = ps->offset;
 
-		ps->offset = rsp->hdr_domain  .buffer + 0x1c;
+		ps->offset = rsp->hdr_domain  .buffer + 0xc;
 		prs_uint8s(True , "domain  ", ps, depth, (uint8*)rsp->domain  , MIN(rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  ))); 
 		old_offset += rsp->hdr_domain  .str_str_len;
 
-		ps->offset = rsp->hdr_usr     .buffer + 0x1c;
+		ps->offset = rsp->hdr_usr     .buffer + 0xc;
 		prs_uint8s(True , "user    ", ps, depth, (uint8*)rsp->user    , MIN(rsp->hdr_usr     .str_str_len, sizeof(rsp->user    ))); 
 		old_offset += rsp->hdr_usr     .str_str_len;
 
-		ps->offset = rsp->hdr_wks     .buffer + 0x1c;
+		ps->offset = rsp->hdr_wks     .buffer + 0xc;
 		prs_uint8s(True , "wks     ", ps, depth, (uint8*)rsp->wks     , MIN(rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     ))); 
 		old_offset += rsp->hdr_wks     .str_str_len;
 
-		ps->offset = rsp->hdr_lm_resp .buffer + 0x1c;
+		ps->offset = rsp->hdr_lm_resp .buffer + 0xc;
 		prs_uint8s(False, "lm_resp ", ps, depth, (uint8*)rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
 		old_offset += rsp->hdr_lm_resp .str_str_len;
 
-		ps->offset = rsp->hdr_nt_resp .buffer + 0x1c;
+		ps->offset = rsp->hdr_nt_resp .buffer + 0xc;
 		prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
 		old_offset += rsp->hdr_nt_resp .str_str_len;
 
 		if (rsp->hdr_sess_key.str_str_len != 0)
 		{
-			ps->offset = rsp->hdr_sess_key.buffer + 0x1c;
+			ps->offset = rsp->hdr_sess_key.buffer + 0x10;
 			old_offset += rsp->hdr_sess_key.str_str_len;
 			prs_uint8s(False, "sess_key", ps, depth, (uint8*)rsp->sess_key, MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))); 
 		}
@@ -999,8 +1001,6 @@ BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_nu
 			chk->crc32, chk->ver, chk->seq_num));
 		return False;
 	}
-	return True;
-
 	return True;
 }
 

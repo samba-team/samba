@@ -214,7 +214,7 @@ BOOL set_trust_account_password( unsigned char *md4_new_pwd)
     return False;
   } 
 
-  pwdb_gethexpwd((char *)linebuf, (char *)md4_new_pwd, 0);
+  pwdb_sethexpwd((char *)linebuf, (uchar*)md4_new_pwd, 0);
   pwdb_set_time_last_changed(&linebuf[32], 32, (unsigned)time(NULL));
 
   if(fwrite( linebuf, 1, 46, mach_passwd_fp)!= 46) {
