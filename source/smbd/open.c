@@ -555,7 +555,7 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 	share_mode_entry *old_shares = 0;
 	BOOL fcbopen = False;
 	BOOL broke_oplock;	
-	
+
 	if(GET_OPEN_MODE(share_mode) == DOS_OPEN_FCB)
 		fcbopen = True;
 	
@@ -564,6 +564,13 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 	if(num_share_modes == 0)
 		return 0;
 	
+	if (desired_access && ((desired_access & ~(SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES))==0) &&
+		((desired_access & (SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) != 0)) {
+		/* Stat open that doesn't trigger oplock breaks or share mode checks... ! JRA. */
+		*p_oplock_request = 0;
+		return num_share_modes;
+	}
+
 	/*
 	 * Check if the share modes will give us access.
 	 */
@@ -781,6 +788,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL fcbopen = False;
 	BOOL def_acl = False;
+	BOOL add_share_mode = True;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
 	int num_share_modes = 0;
@@ -803,25 +811,6 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		if (action)
 			*paction = FILE_WAS_CREATED;
 		return print_fsp_open(conn, fname);
-	}
-
-	if (desired_access && ((desired_access & ~(SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES))==0) &&
-		((desired_access & (SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) != 0)) {
-		/* Stat open that doesn't trigger oplock breaks or share mode checks... ! JRA. */
-		oplock_request = 0;
-		fsp = open_file_stat(conn, fname, psbuf);
-		if (!fsp)
-			return NULL;
-
-		fsp->desired_access = desired_access;
-		if (Access)
-			*Access = DOS_OPEN_RDONLY;
-		if (paction)
-			*paction = FILE_WAS_OPENED;
-
-		DEBUG(10,("open_file_shared: stat open for fname = %s share_mode = %x\n",
-			fname, share_mode ));
-		return fsp;
 	}
 
 	fsp = file_new(conn);
@@ -945,6 +934,16 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		file_free(fsp);
 		errno = EINVAL;
 		return NULL;
+	}
+
+	if (desired_access && ((desired_access & ~(SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES))==0) &&
+		((desired_access & (SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) != 0)) {
+		/* Stat open that doesn't trigger oplock breaks or share mode checks... ! JRA. */
+		oplock_request = 0;
+		add_share_mode = False;
+		if (file_existed) {
+			flags2 &= ~O_CREAT;
+		}
 	}
 
 	if (file_existed) {
@@ -1166,14 +1165,18 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		oplock_request = 0;
 	}
 
-	set_share_mode(fsp, port, oplock_request);
+	if (add_share_mode) {
+		set_share_mode(fsp, port, oplock_request);
+	}
 
 	if (delete_on_close) {
 		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close);
 
 		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
 			/* Remember to delete the mode we just added. */
-			del_share_mode(fsp, NULL);
+			if (add_share_mode) {
+				del_share_mode(fsp, NULL);
+			}
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
