@@ -48,7 +48,7 @@ sub IdlParse($)
     my($saved_sep) = $/;
 
     undef $/;
-    my($idl) = $parser->idl(`cpp $filename`);
+    my($idl) = $parser->idl(`cpp $filename | grep -v '^#'`);
     $/ = $saved_sep;
     util::CleanData($idl);
     return $idl;

@@ -98,7 +98,7 @@ sub ParseArrayPush($$$)
 
 	if (defined $e->{CONFORMANT_SIZE}) {
 		# the conformant size has already been pushed
-	} elsif (!util::is_fixed_array($e)) {
+	} elsif (!util::is_inline_array($e)) {
 		# we need to emit the array size
 		$res .= "\t\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
 	}
@@ -111,9 +111,9 @@ sub ParseArrayPush($$$)
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
-		$res .= "\t\tNDR_CHECK(ndr_push_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
+		$res .= "\t\tNDR_CHECK(ndr_push_array_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}, $size));\n";
 	} else {
-		$res .= "\t\tNDR_CHECK(ndr_push_array(ndr, ndr_flags, $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));\n";
+		$res .= "\t\tNDR_CHECK(ndr_push_array(ndr, $ndr_flags, $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));\n";
 	}
 }
 
@@ -156,7 +156,7 @@ sub ParseArrayPull($$$)
 		$res .= "\tif ($size > $alloc_size) {\n";
 		$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
 		$res .= "\t}\n";
-	} elsif (!util::is_fixed_array($e)) {
+	} elsif (!util::is_inline_array($e)) {
 		# non fixed arrays encode the size just before the array
 		$res .= "\t{\n";
 		$res .= "\t\tuint32 _array_size;\n";
@@ -168,7 +168,9 @@ sub ParseArrayPull($$$)
 	}
 
 	if (util::need_alloc($e) && !util::is_fixed_array($e)) {
-		$res .= "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $alloc_size, sizeof($var_prefix$e->{NAME}\[0]));\n";
+		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
+			$res .= "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $alloc_size, sizeof($var_prefix$e->{NAME}\[0]));\n";
+		}
 	}
 
 	if (my $length = util::has_property($e, "length_is")) {
@@ -182,7 +184,7 @@ sub ParseArrayPull($$$)
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
-		$res .= "\t\tNDR_CHECK(ndr_pull_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull_array_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}, $size));\n";
 	} else {
 		$res .= "\t\tNDR_CHECK(ndr_pull_array(ndr, $ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
 	}
@@ -200,6 +202,8 @@ sub ParseElementPushScalar($$$)
 
 	if (util::has_property($e, "relative")) {
 		$res .= "\tNDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, $var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE}));\n";
+	} elsif (util::is_inline_array($e)) {
+		ParseArrayPush($e, "r->", "NDR_SCALARS");
 	} elsif (my $value = util::has_property($e, "value")) {
 		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $value));\n";
 	} elsif (defined $e->{VALUE}) {
@@ -307,6 +311,8 @@ sub ParseElementPullScalar($$$)
 		$res .= "\tNDR_CHECK(ndr_pull_relative(ndr, (const void **)&$var_prefix$e->{NAME}, sizeof(*$var_prefix$e->{NAME}), (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
 	} elsif (defined $e->{VALUE}) {
 		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $e->{VALUE}));\n";
+	} elsif (util::is_inline_array($e)) {
+		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {
 		$res .= "\tNDR_CHECK(ndr_pull_uint32(ndr, &_ptr_$e->{NAME}));\n";
 		$res .= "\tif (_ptr_$e->{NAME}) {\n";
@@ -350,6 +356,8 @@ sub ParseElementPushBuffer($$$)
 	    
 	if (util::has_property($e, "relative")) {
 		$res .= "\tNDR_CHECK(ndr_push_relative(ndr, NDR_BUFFERS, $cprefix$var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE}));\n";
+	} elsif (util::is_inline_array($e)) {
+		ParseArrayPush($e, "r->", "NDR_BUFFERS");
 	} elsif (util::array_size($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
@@ -422,7 +430,9 @@ sub ParseElementPullBuffer($$$)
 		$res .= "\tif ($var_prefix$e->{NAME}) {\n";
 	}
 	    
-	if (util::array_size($e)) {
+	if (util::is_inline_array($e)) {
+		ParseArrayPull($e, "r->", "NDR_BUFFERS");
+	} elsif (util::array_size($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		if ($e->{POINTERS}) {
@@ -807,10 +817,7 @@ sub ParseFunctionPush($)
 					$res .= "\tNDR_CHECK(ndr_push_ptr(ndr, r->in.$e->{NAME}));\n";
 				}
 				$res .= "\tif (r->in.$e->{NAME}) {\n";
-				if (!util::is_scalar_type($e->{TYPE})) {
-					$res .= "\t\tint ndr_flags = NDR_SCALARS|NDR_BUFFERS;\n";
-				}
-				ParseArrayPush($e, "r->in.", "ndr_flags");
+				ParseArrayPush($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
 				$res .= "\t}\n";
 			} else {
 				ParseElementPushScalar($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
@@ -852,10 +859,7 @@ sub ParseFunctionPull($)
 				} else {
 					$res .= "\tif (r->out.$e->{NAME}) {\n";
 				}
-				if (!util::is_scalar_type($e->{TYPE})) {
-					$res .= "\t\tint ndr_flags = NDR_SCALARS|NDR_BUFFERS;\n";
-				}
-				ParseArrayPull($e, "r->out.", "ndr_flags");
+				ParseArrayPull($e, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
 				$res .= "\t}\n";
 			} else {
 				ParseElementPullScalar($e, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
@@ -893,8 +897,10 @@ sub ParseInterface($)
 		    ParseFunctionPull($d);
 	}
 	foreach my $d (@{$data}) {
-		($d->{TYPE} eq "TYPEDEF") &&
-		    ParseTypedefPrint($d);
+		if ($d->{TYPE} eq "TYPEDEF" &&
+		    !util::has_property($d->{DATA}, "noprint")) {
+			ParseTypedefPrint($d);
+		}
 	}
 }
 
