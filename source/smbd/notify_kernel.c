@@ -70,7 +70,6 @@ struct change_data {
 
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
-	BlockSignals(True, sig);
 	if (signals_received < FD_PENDING_SIZE - 1) {
 		fd_pending_array[signals_received] = (sig_atomic_t)info->si_fd;
 		signals_received++;
