@@ -65,67 +65,6 @@ static void add_name(const char *machine_name, uint32 server_type,
         DLIST_ADD(*name_list, new_name);
 }
 
-/* Return a cli_state pointing at the IPC$ share for the given server */
-
-static struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
-                                         struct user_auth_info *user_info)
-{
-        struct cli_state *cli;
-        pstring myname;
-	NTSTATUS nt_status;
-
-        get_myname(myname);
-	
-	nt_status = cli_full_connection(&cli, myname, server, server_ip, 0, "IPC$", "IPC", 
-					user_info->username, lp_workgroup(), user_info->password, 
-					CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, NULL);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		return cli;
-	} else {
-		return NULL;
-	}
-}
-
-/* Return the IP address and workgroup of a master browser on the 
-   network. */
-
-static struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user_auth_info *user_info)
-{
-	struct in_addr *ip_list;
-	struct cli_state *cli;
-	int i, count;
-	struct in_addr server_ip; 
-
-        /* Go looking for workgroups by broadcasting on the local network */ 
-
-        if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
-                return False;
-        }
-
-	for (i = 0; i < count; i++) {
-		static fstring name;
-
-		if (!name_status_find("*", 0, 0x1d, ip_list[i], name))
-			continue;
-
-                if (!find_master_ip(name, &server_ip))
-			continue;
-
-                pstrcpy(workgroup, name);
-
-                DEBUG(4, ("found master browser %s, %s\n", 
-                          name, inet_ntoa(ip_list[i])));
-
-        	if (!(cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info)))
-				continue;
-			
-			return cli;
-	}
-
-	return NULL;
-}
-
 /****************************************************************************
   display tree of smb workgroups, servers and shares
 ****************************************************************************/

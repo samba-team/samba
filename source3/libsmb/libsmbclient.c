@@ -1476,43 +1476,6 @@ dir_list_fn(file_info *finfo, const char *mask, void *state)
 
 }
 
-
-/* Return the IP address and workgroup of a master browser on the 
-   network. */
-
-static BOOL find_master_ip_bcast(pstring workgroup, struct in_addr *server_ip)
-{
-	struct in_addr *ip_list;
-	int i, count;
-
-        /* Go looking for workgroups by broadcasting on the local network */ 
-
-        if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
-                return False;
-        }
-
-	for (i = count-1; i < count; i++) {
-		static fstring name;
-
-		DEBUG(0, ("name_status_find %d %s\n", i, inet_ntoa(ip_list[i])));
-
-		if (!name_status_find("*", 0, 0x1d, ip_list[i], name))
-			continue;
-
-                if (!find_master_ip(name, server_ip))
-			continue;
-
-                pstrcpy(workgroup, name);
-
-                DEBUG(4, ("found master browser %s, %s\n", 
-                          name, inet_ntoa(ip_list[i])));
-
-                return True;
-	}
-
-	return False;
-}
-
 static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 {
 	fstring server, share, user, password;
@@ -1568,9 +1531,8 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 	if (server[0] == (char)0) {
 	    struct in_addr server_ip;
-	        DEBUG(4, ("empty server\n"));
 		if (share[0] != (char)0 || path[0] != (char)0) {
-		    DEBUG(4,("share %d path %d\n", share[0], path[0]));
+
 			errno = EINVAL;
 			if (dir) {
 				SAFE_FREE(dir->fname);
@@ -1585,22 +1547,41 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 		pstrcpy(workgroup, lp_workgroup());
 
-		if (!find_master_ip(lp_workgroup(), &server_ip)) {
+		if (!find_master_ip(workgroup, &server_ip)) {
+		    struct user_auth_info u_info;
+		    struct cli_state *cli;
+
 		    DEBUG(4, ("Unable to find master browser for workgroup %s\n", 
 			      workgroup));
-		    if (!find_master_ip_bcast(workgroup, &server_ip)) {
+
+		    /* find the name of the server ... */
+		    pstrcpy(u_info.username, user);
+		    pstrcpy(u_info.password, password);
+
+		    if (!(cli = get_ipc_connect_master_ip_bcast(workgroup, &u_info))) {
 			DEBUG(4, ("Unable to find master browser by "
 				  "broadcast\n"));
 			errno = ENOENT;
 			return NULL;
 		    }
+
+		    fstrcpy(server, cli->desthost);
+
+		    cli_shutdown(cli);
+		} else {
+		    if (!name_status_find("*", 0, 0, server_ip, server)) {
+			errno = ENOENT;
+			return NULL;
+		    }
 		}	
+
+		DEBUG(4, ("using workgroup %s %s\n", workgroup, server));
 
                /*
                 * Get a connection to IPC$ on the server if we do not already have one
                 */
 
-               srv = smbc_server(context, inet_ntoa(server_ip), "IPC$", workgroup, user, password);
+		srv = smbc_server(context, server, "IPC$", workgroup, user, password);
 
                if (!srv) {
 		   
