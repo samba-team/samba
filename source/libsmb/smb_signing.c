@@ -745,11 +745,8 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 	}
 
 	if (!signing_good(inbuf, si, good, saved_seq)) {
-		if (si->mandatory_signing) {
-			/* Mandatory signing - fail and disconnect. */
-			return False;
-		} else {
-			/* Non-mandatory signing - just turn off. */
+		if (!si->mandatory_signing && (data->send_seq_num < 3)){
+			/* Non-mandatory signing - just turn off if this is the first bad packet.. */
 			DEBUG(5, ("srv_check_incoming_message: signing negotiated but not required and client \
 isn't sending correct signatures. Turning off.\n"));
 			si->negotiated_smb_signing = False;
@@ -757,6 +754,9 @@ isn't sending correct signatures. Turning off.\n"));
 			si->doing_signing = False;
 			free_signing_context(si);
 			return True;
+		} else {
+			/* Mandatory signing or bad packet after signing started - fail and disconnect. */
+			return False;
 		}
 	} else {
 		return True;
