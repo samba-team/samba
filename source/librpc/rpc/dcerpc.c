@@ -694,7 +694,7 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 
 
 /*
-  perform a full request/response pair on a dcerpc pipe
+  perform the send size of a async dcerpc request
 */
 struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
 					uint16_t opnum,
@@ -805,7 +805,7 @@ struct event_context *dcerpc_event_context(struct dcerpc_pipe *p)
 
 
 /*
-  perform a full request/response pair on a dcerpc pipe
+  perform the receive side of a async dcerpc request
 */
 NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 			     TALLOC_CTX *mem_ctx,
@@ -1071,12 +1071,19 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	DATA_BLOB response;
 	struct ndr_pull *pull;
 	struct rpc_request_ndr ndr = req->ndr;
-	uint_t flags = req->flags;
+	uint_t flags;
+
+	/* make sure the recv code doesn't free the request, as we
+	   need to grab the flags element before it is freed */
+	talloc_increase_ref_count(req);
 
 	status = dcerpc_request_recv(req, ndr.mem_ctx, &response);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	flags = req->flags;
+	talloc_free(req);
 
 	/* prepare for ndr_pull_* */
 	pull = ndr_pull_init_blob(&response, ndr.mem_ctx);
