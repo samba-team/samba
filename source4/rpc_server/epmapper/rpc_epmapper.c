@@ -218,7 +218,7 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			return EPMAPPER_STATUS_NO_MEMORY;
 		}
 
-		if (!fill_protocol_tower(mem_ctx, &r->out.entries[i].tower->towers, &eps->e[i])) {
+		if (!fill_protocol_tower(mem_ctx, &r->out.entries[i].tower->tower, &eps->e[i])) {
 			return EPMAPPER_STATUS_NO_MEMORY;
 		}
 	}
@@ -256,11 +256,11 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	}
 	
 	if (!r->in.map_tower || r->in.max_towers == 0 ||
-	    r->in.map_tower->towers.num_floors != 5) {
+	    r->in.map_tower->tower.num_floors != 5) {
 		goto failed;
 	}
 
-	floors = r->in.map_tower->towers.floors;
+	floors = r->in.map_tower->tower.floors;
 
 	if (floors[0].lhs.protocol != EPM_PROTOCOL_UUID ||
 	    floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
@@ -289,7 +289,7 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 			}
 			break;
 		}
-		fill_protocol_tower(mem_ctx, &r->out.towers->twr->towers, &eps[i]);
+		fill_protocol_tower(mem_ctx, &r->out.towers->twr->tower, &eps[i]);
 		r->out.towers->twr->tower_length = 0;
 		return EPMAPPER_STATUS_OK;
 	}
