@@ -233,7 +233,7 @@ static int general_rap_usage(int argc, const char **argv)
 }
 
 
-static int file_usage(int argc, const char **argv)
+int net_rap_file_usage(int argc, const char **argv)
 {
 	d_printf("net rap file [misc. options] [targets]\n"\
 	"\tenumerates all open files on file server\n\n");
@@ -269,7 +269,7 @@ static int rap_file_close(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0)
-		return file_usage(argc, argv);
+		return net_rap_file_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
@@ -284,7 +284,7 @@ static int rap_file_info(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0)
-		return file_usage(argc, argv);
+		return net_rap_file_usage(argc, argv);
 	
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
@@ -297,13 +297,13 @@ static int rap_file_info(int argc, const char **argv)
 static int rap_file_user(int argc, const char **argv)
 {
 	if (argc == 0)
-		return file_usage(argc, argv);
+		return net_rap_file_usage(argc, argv);
 
 	d_printf("net rap file user not implemented yet\n");
 	return -1;
 }
 
-static int rap_file(int argc, const char **argv)
+int net_rap_file(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"CLOSE", rap_file_close},
@@ -326,10 +326,10 @@ static int rap_file(int argc, const char **argv)
 		return ret;
 	}
 	
-	return net_run_function(argc, argv, func, file_usage);
+	return net_run_function(argc, argv, func, net_rap_file_usage);
 }
 		       
-static int share_usage(int argc, const char **argv)
+int net_rap_share_usage(int argc, const char **argv)
 {
 	d_printf(RAP_SHARE_USAGE); /* command syntax */
 	return -1;
@@ -400,7 +400,7 @@ static int rap_share_add(int argc, const char **argv)
 }
 
 
-static int rap_share(int argc, const char **argv)
+int net_rap_share(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"DELETE", rap_share_delete},
@@ -425,11 +425,11 @@ static int rap_share(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, share_usage);
+	return net_run_function(argc, argv, func, net_rap_share_usage);
 }
 		    
 		
-static int session_usage(int argc, const char **argv)
+int net_rap_session_usage(int argc, const char **argv)
 {
 	d_printf(RAP_SESSION_USAGE); /* command syntax */
 	
@@ -485,7 +485,7 @@ static int rap_session_info(int argc, const char **argv)
                 return -1;
 
 	if (argc == 0) 
-                return session_usage(argc, argv);
+                return net_rap_session_usage(argc, argv);
 
 	sessname = argv[0];
 
@@ -511,14 +511,14 @@ static int rap_session_delete(int argc, const char **argv)
                 return -1;
 
 	if (argc == 0) 
-                return session_usage(argc, argv);
+                return net_rap_session_usage(argc, argv);
 
 	ret = cli_NetSessionDel(cli, argv[0]);
 	cli_shutdown(cli);
 	return ret;
 }
 
-static int rap_session(int argc, const char **argv)
+int net_rap_session(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"INFO", rap_session_info},
@@ -540,7 +540,7 @@ static int rap_session(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, session_usage);
+	return net_run_function(argc, argv, func, net_rap_session_usage);
 }
 	
 /****************************************************************************
@@ -552,7 +552,7 @@ static void display_server_func(const char *name, uint32 m, const char *comment,
 }
 
 
-static int server_usage(int argc, const char **argv)
+int net_rap_server_usage(int argc, const char **argv)
 {
 	d_printf(RAP_SERVER_USAGE); /* command syntax */
 	
@@ -560,7 +560,7 @@ static int server_usage(int argc, const char **argv)
 	return -1;
 }
 		    
-static int rap_server(int argc, const char **argv)
+int net_rap_server(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
@@ -574,7 +574,7 @@ static int rap_server(int argc, const char **argv)
 	return ret;	
 }
 		      
-static int domain_usage(int argc, const char **argv)
+int net_rap_domain_usage(int argc, const char **argv)
 {
 	d_printf(RAP_DOMAIN_USAGE); /* command syntax */
 	
@@ -583,7 +583,7 @@ static int domain_usage(int argc, const char **argv)
 }
 
 		  
-static int rap_domain(int argc, const char **argv)
+int net_rap_domain(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
@@ -597,7 +597,7 @@ static int rap_domain(int argc, const char **argv)
 	return ret;	
 }
 		      
-static int printq_usage(int argc, const char **argv)
+int net_rap_printq_usage(int argc, const char **argv)
 {
 	d_printf(RAP_PRINTQ_USAGE);
 	
@@ -665,7 +665,7 @@ static int rap_printq_info(int argc, const char **argv)
 	int ret;
 	
 	if (argc == 0) 
-                return printq_usage(argc, argv);
+                return net_rap_printq_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
@@ -681,7 +681,7 @@ static int rap_printq_delete(int argc, const char **argv)
 	int ret;
 	
 	if (argc == 0) 
-                return printq_usage(argc, argv);
+                return net_rap_printq_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
@@ -691,7 +691,7 @@ static int rap_printq_delete(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_printq(int argc, const char **argv)
+int net_rap_printq(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
@@ -711,11 +711,11 @@ static int rap_printq(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, printq_usage);
+	return net_run_function(argc, argv, func, net_rap_printq_usage);
 }
 
 	
-static int user_usage(int argc, const char **argv)
+int net_rap_user_usage(int argc, const char **argv)
 {
 	d_printf(RAP_USER_USAGE); /* command syntax */
 	
@@ -745,7 +745,7 @@ static int rap_user_delete(int argc, const char **argv)
 	int ret;
 	
 	if (argc == 0) 
-                return user_usage(argc, argv);
+                return net_rap_user_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
@@ -762,7 +762,7 @@ static int rap_user_add(int argc, const char **argv)
 	RAP_USER_INFO_1 userinfo;
 
 	if (argc == 0) 
-                return user_usage(argc, argv);
+                return net_rap_user_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -788,7 +788,7 @@ static int rap_user_info(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0) 
-                return user_usage(argc, argv);
+                return net_rap_user_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -798,7 +798,7 @@ static int rap_user_info(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_user(int argc, const char **argv)
+int net_rap_user(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"ADD", rap_user_add},
@@ -823,11 +823,11 @@ static int rap_user(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, user_usage);
+	return net_run_function(argc, argv, func, net_rap_user_usage);
 }
 
 
-static int group_usage(int argc, const char **argv)
+int net_rap_group_usage(int argc, const char **argv)
 {
 	d_printf(RAP_GROUP_USAGE); /* command syntax */
 	
@@ -850,7 +850,7 @@ static int rap_group_delete(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0) 
-                return group_usage(argc, argv);
+                return net_rap_group_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -867,7 +867,7 @@ static int rap_group_add(int argc, const char **argv)
 	RAP_GROUP_INFO_1 grinfo;
 
 	if (argc == 0) 
-                return group_usage(argc, argv);
+                return net_rap_group_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -882,7 +882,7 @@ static int rap_group_add(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_group(int argc, const char **argv)
+int net_rap_group(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"ADD", rap_group_add},
@@ -907,10 +907,10 @@ static int rap_group(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, group_usage);
+	return net_run_function(argc, argv, func, net_rap_group_usage);
 }
 
-static int groupmember_usage(int argc, const char **argv)
+int net_rap_groupmember_usage(int argc, const char **argv)
 {
 	d_printf(RAP_GROUPMEMBER_USAGE); /* command syntax */
 	
@@ -924,7 +924,7 @@ static int rap_groupmember_add(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	if (argc != 2) 
-                return groupmember_usage(argc, argv);
+                return net_rap_groupmember_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -939,7 +939,7 @@ static int rap_groupmember_delete(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	if (argc != 2) 
-                return groupmember_usage(argc, argv);
+                return net_rap_groupmember_usage(argc, argv);
 	
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -954,7 +954,7 @@ static int rap_groupmember_list(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0) 
-                return groupmember_usage(argc, argv);
+                return net_rap_groupmember_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
@@ -964,7 +964,7 @@ static int rap_groupmember_list(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_groupmember(int argc, const char **argv)
+int net_rap_groupmember(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"ADD", rap_groupmember_add},
@@ -973,10 +973,10 @@ static int rap_groupmember(int argc, const char **argv)
 		{NULL, NULL}
 	};
 	
-	return net_run_function(argc, argv, func, groupmember_usage);
+	return net_run_function(argc, argv, func, net_rap_groupmember_usage);
 }
 
-static int validate_usage(int argc, const char **argv)
+int net_rap_validate_usage(int argc, const char **argv)
 {
 	d_printf(RAP_VALIDATE_USAGE); /* command syntax */
 	
@@ -984,13 +984,13 @@ static int validate_usage(int argc, const char **argv)
 	return -1;
 }
 
-static int rap_validate(int argc, const char **argv)
+int net_rap_validate(int argc, const char **argv)
 {
 	d_printf(ERRMSG_NOT_IMPLEMENTED);
 	return 0;
 }
 
-static int service_usage(int argc, const char **argv)
+int net_rap_service_usage(int argc, const char **argv)
 {
 	d_printf(RAP_SERVICE_USAGE); /* command syntax */
 	
@@ -1010,7 +1010,7 @@ static int rap_service_delete(int argc, const char **argv)
 	return 0;
 }
 
-static int rap_service(int argc, const char **argv)
+int net_rap_service(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"ADD", rap_service_add},
@@ -1034,10 +1034,10 @@ static int rap_service(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, service_usage);
+	return net_run_function(argc, argv, func, net_rap_service_usage);
 }
 
-static int password_usage(int argc, const char **argv)
+int net_rap_password_usage(int argc, const char **argv)
 {
 	d_printf("net rap password <user> <old password> <new password> [misc_options] [targets]\n");
 	d_printf("\tchanges the password for the specified user on a remote server\n"); 
@@ -1046,13 +1046,13 @@ static int password_usage(int argc, const char **argv)
 }
 
 
-static int rap_password(int argc, const char **argv)
+int net_rap_password(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	
 	if (argc < 3) 
-                return password_usage(argc, argv);
+                return net_rap_password_usage(argc, argv);
 
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
@@ -1063,7 +1063,7 @@ static int rap_password(int argc, const char **argv)
 	return ret;
 }
 
-static int admin_usage(int argc, const char **argv)
+int net_rap_admin_usage(int argc, const char **argv)
 {
 	d_printf("net rap admin <remote command to execute> [cmd arguments [environment]] [misc_options] [targets]\n");
 	d_printf("\texecutes a remote command on an os/2 target server\n"); 
@@ -1072,7 +1072,7 @@ static int admin_usage(int argc, const char **argv)
 }
 
 
-static int rap_admin(int argc, const char **argv)
+int net_rap_admin(int argc, const char **argv)
 {
 	d_printf(ERRMSG_NOT_IMPLEMENTED);
 	return 0;
@@ -1100,7 +1100,7 @@ int net_rap_usage(int argc, const char **argv)
 	return -1;
 }
 
-static int rap_help_usage(int argc, const char **argv)
+int rap_help_usage(int argc, const char **argv)
 {
 	d_printf("\n"\
 "Usage: net rap help <function>\n"\
@@ -1114,22 +1114,22 @@ static int rap_help_usage(int argc, const char **argv)
 /*
   handle "net help rap *" subcommands
 */
-static int rap_help(int argc, const char **argv)
+static int net_rap_help(int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"FILE", file_usage},
-		{"SHARE", share_usage},
-		{"SESSION", session_usage},
-		{"SERVER", server_usage},
-		{"DOMAIN", domain_usage},
-		{"PRINTQ", printq_usage},
-		{"USER", user_usage},
-		{"GROUP", group_usage},
-		{"VALIDATE", validate_usage},
-		{"GROUPMEMBER", groupmember_usage},
-		{"ADMIN", admin_usage},
-		{"SERVICE", service_usage},
-		{"PASSWORD", password_usage},
+		{"FILE", net_rap_file_usage},
+		{"SHARE", net_rap_share_usage},
+		{"SESSION", net_rap_session_usage},
+		{"SERVER", net_rap_server_usage},
+		{"DOMAIN", net_rap_domain_usage},
+		{"PRINTQ", net_rap_printq_usage},
+		{"USER", net_rap_user_usage},
+		{"GROUP", net_rap_group_usage},
+		{"VALIDATE", net_rap_validate_usage},
+		{"GROUPMEMBER", net_rap_groupmember_usage},
+		{"ADMIN", net_rap_admin_usage},
+		{"SERVICE", net_rap_service_usage},
+		{"PASSWORD", net_rap_password_usage},
 		{NULL, NULL}};
 
 	return net_run_function(argc, argv, func, rap_help_usage);
@@ -1140,20 +1140,20 @@ static int rap_help(int argc, const char **argv)
 int net_rap(int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"FILE", rap_file},
-		{"SHARE", rap_share},
-		{"SESSION", rap_session},
-		{"SERVER", rap_server},
-		{"DOMAIN", rap_domain},
-		{"PRINTQ", rap_printq},
-		{"USER", rap_user},
-		{"GROUP", rap_group},
-		{"VALIDATE", rap_validate},
-		{"GROUPMEMBER", rap_groupmember},
-		{"ADMIN", rap_admin},
-		{"SERVICE", rap_service},	
-		{"PASSWORD", rap_password},
-		{"HELP", rap_help},
+		{"FILE", net_rap_file},
+		{"SHARE", net_rap_share},
+		{"SESSION", net_rap_session},
+		{"SERVER", net_rap_server},
+		{"DOMAIN", net_rap_domain},
+		{"PRINTQ", net_rap_printq},
+		{"USER", net_rap_user},
+		{"GROUP", net_rap_group},
+		{"VALIDATE", net_rap_validate},
+		{"GROUPMEMBER", net_rap_groupmember},
+		{"ADMIN", net_rap_admin},
+		{"SERVICE", net_rap_service},	
+		{"PASSWORD", net_rap_password},
+		{"HELP", net_rap_help},
 		{NULL, NULL}
 	};
 	

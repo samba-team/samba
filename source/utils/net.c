@@ -260,11 +260,13 @@ static int net_usage(int argc, const char **argv)
 
 static int help_usage(int argc, const char **argv)
 {
-	d_printf("\n"\
+	d_printf(
+"\n"\
 "Usage: net help <function>\n"\
 "\n"\
 "Valid functions are:\n"\
-"  RPC RAP ADS\n");
+"  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
+"  GROUPMEMBER ADMIN SERVICE PASSWORD\n");
 	return -1;
 }
 
@@ -277,6 +279,21 @@ static int net_help(int argc, const char **argv)
 		{"ADS", net_ads_usage},	
 		{"RAP", net_rap_usage},
 		{"RPC", net_rpc_usage},
+
+		{"FILE", net_rap_file_usage},
+		{"SHARE", net_rap_share_usage},
+		{"SESSION", net_rap_session_usage},
+		{"SERVER", net_rap_server_usage},
+		{"DOMAIN", net_rap_domain_usage},
+		{"PRINTQ", net_rap_printq_usage},
+		{"USER", net_rap_user_usage},
+		{"GROUP", net_rap_group_usage},
+		{"VALIDATE", net_rap_validate_usage},
+		{"GROUPMEMBER", net_rap_groupmember_usage},
+		{"ADMIN", net_rap_admin_usage},
+		{"SERVICE", net_rap_service_usage},
+		{"PASSWORD", net_rap_password_usage},
+
 		{"HELP", help_usage},
 		{NULL, NULL}};
 
@@ -288,6 +305,22 @@ static struct functable net_func[] = {
 	{"RPC", net_rpc},
 	{"RAP", net_rap},
 	{"ADS", net_ads},
+
+	/* eventually these should auto-choose the transport ... */
+	{"FILE", net_rap_file},
+	{"SHARE", net_rap_share},
+	{"SESSION", net_rap_session},
+	{"SERVER", net_rap_server},
+	{"DOMAIN", net_rap_domain},
+	{"PRINTQ", net_rap_printq},
+	{"USER", net_rap_user},
+	{"GROUP", net_rap_group},
+	{"VALIDATE", net_rap_validate},
+	{"GROUPMEMBER", net_rap_groupmember},
+	{"ADMIN", net_rap_admin},
+	{"SERVICE", net_rap_service},	
+	{"PASSWORD", net_rap_password},
+
 	{"HELP", net_help},
 	{NULL, NULL}
 };
