@@ -1,3 +1,10 @@
+2001-06-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/Makefile.am: add generation number
+	* lib/hdb/common.c: add generation number code
+	* lib/hdb/hdb.asn1: add generation number
+	* lib/hdb/print.c: use krb5_storage to make it more dynamic
+
 2001-06-21  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krbhst.c (fallback_get_hosts): do not copy trailing
@@ -7,6 +14,12 @@
 	when actually contacting the server and thus avoids one DNS lookup
 
 2001-06-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5.h: include k524_err.h
+
+	* lib/krb5/convert_creds.c (krb524_convert_creds_kdc): don't test
+	for keytype, the server will do this for us if it has anything to
+	complain about
 
 	* lib/krb5/context.c: add protocol compatible krb524 error codes
 
