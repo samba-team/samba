@@ -1,4 +1,9 @@
-2004-09-13  Love  <lha@stacken.kth.se>
+2004-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ndbm_wrap.c: undefine open so this works on solaris with large
+	file support From netbsd's pkgsrc via Gavan Fantom
+	
+2004-09-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* resolve-test.c: add --version/--help
 	
