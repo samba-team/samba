@@ -3765,7 +3765,7 @@ BOOL api_srvsvc_rpc(pipes_struct *p);
 /*The following definitions come from  rpc_server/srv_srvsvc_nt.c  */
 
 BOOL share_info_db_init(void);
-SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize);
+BOOL share_access_check(int snum, uint16 vuid, uint32 desired_access);
 uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u);
 uint32 _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u);
 uint32 _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_CONN_ENUM *r_u);

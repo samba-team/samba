@@ -158,7 +158,7 @@ static SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, int snum, size_t *
  Pull a security descriptor from the share tdb.
  ********************************************************************/
 
-SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
+static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
 {
 	prs_struct ps;
 	fstring key;
@@ -184,7 +184,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
  Store a security descriptor in the share db.
  ********************************************************************/
 
-static BOOL set_share_security(TALLOC_CTX *ctx, int snum, SEC_DESC *psd)
+static BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC *psd)
 {
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -201,13 +201,13 @@ static BOOL set_share_security(TALLOC_CTX *ctx, int snum, SEC_DESC *psd)
         goto out;
     }
  
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", share_name);
  
     if (tdb_prs_store(share_tdb, key, &ps)==0) {
         ret = True;
-        DEBUG(5,("set_share_security: stored secdesc for %s\n", lp_servicename(snum) ));
+        DEBUG(5,("set_share_security: stored secdesc for %s\n", share_name ));
     } else {
-        DEBUG(1,("set_share_security: Failed to store secdesc for %s\n", lp_servicename(snum) ));
+        DEBUG(1,("set_share_security: Failed to store secdesc for %s\n", share_name ));
     }
 
     /* Free malloc'ed memory */
@@ -240,6 +240,73 @@ static BOOL delete_share_security(int snum)
 	}
 
 	return True;
+}
+
+/*******************************************************************
+ Does this security descriptor map to a read only share ?
+********************************************************************/
+
+static BOOL read_only_share_sd(SEC_DESC *psd)
+{
+	int i;
+	SEC_ACL *ps_dacl = psd->dacl;
+
+	if (!ps_dacl)
+		return True;
+
+	for (i = 0; i < ps_dacl->num_aces; i++) {
+		SEC_ACE *psa = &ps_dacl->ace[i];
+
+		if (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED &&
+				psa->info.mask & FILE_WRITE_DATA)
+			return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Can this user access with share with the required permissions ?
+********************************************************************/
+
+BOOL share_access_check(int snum, uint16 vuid, uint32 desired_access)
+{
+	uint32 granted, status;
+	TALLOC_CTX *mem_ctx = NULL;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	struct current_user tmp_user;
+	struct current_user *puser = NULL;
+	user_struct *vuser = get_valid_user_struct(vuid);
+	BOOL ret = True;
+
+	mem_ctx = talloc_init();
+	if (mem_ctx == NULL)
+		return False;
+
+	psd = get_share_security(mem_ctx, snum, &sd_size);
+
+	if (!psd)
+		goto out;
+
+	if (vuser) {
+		ZERO_STRUCT(tmp_user);
+		tmp_user.vuid = vuid;
+		tmp_user.uid = vuser->uid;
+		tmp_user.gid = vuser->gid;
+		tmp_user.ngroups = vuser->n_groups;
+		tmp_user.groups = vuser->groups;
+		tmp_user.nt_user_token = vuser->nt_user_token;
+		puser = &tmp_user;
+	}
+
+	ret = se_access_check(psd, puser, desired_access, &granted, &status);
+
+  out:
+
+	talloc_destroy(mem_ctx);
+
+	return ret;
 }
 
 /*******************************************************************
@@ -1120,7 +1187,8 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	int snum;
 	int ret;
 	char *ptr;
-	BOOL read_only;
+	SEC_DESC *psd = NULL;
+	BOOL read_only = False;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
@@ -1139,27 +1207,76 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	if (user.uid != 0)
 		return ERROR_ACCESS_DENIED;
 
-	if (!lp_change_share_cmd())
-		return ERROR_ACCESS_DENIED;
-
 	switch (q_u->info_level) {
 	case 1:
+		/* Not enough info in a level 1 to do anything. */
 		return ERROR_ACCESS_DENIED;
-		break;
 	case 2:
-		return ERROR_ACCESS_DENIED;
+		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
+		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
+		type = q_u->info.share.info2.info_2.type;
+		read_only = False; /* No SD means "Everyone full access. */
 		break;
 	case 502:
-		/* we set sd's here. FIXME. JRA */
-		return ERROR_ACCESS_DENIED;
+		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
+		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
+		type = q_u->info.share.info502.info_502.type;
+		psd = q_u->info.share.info502.info_502_str.sd;
+		read_only = read_only_share_sd(psd);
 		break;
 	case 1005:
 		return ERROR_ACCESS_DENIED;
-		break;
 	default:
 		DEBUG(5,("_srv_net_share_set_info: unsupported switch value %d\n", q_u->info_level));
 		return NT_STATUS_INVALID_INFO_CLASS;
-		break;
+	}
+
+	/* We can only modify disk shares. */
+	if (type != STYPE_DISKTREE)
+		return ERROR_ACCESS_DENIED;
+		
+	/* Check if the pathname is valid. */
+	if (!(ptr = valid_share_pathname( pathname )))
+		return ERRbadpath;
+
+	/* Ensure share name, pathname and comment don't contain '"' characters. */
+	string_replace(share_name, '"', ' ');
+	string_replace(ptr, '"', ' ');
+	string_replace(comment, '"', ' ');
+
+	/* Only call modify function if something changed. */
+
+	if (read_only != lp_readonly(snum) || strcmp(ptr, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) {
+		if (!lp_change_share_cmd())
+			return ERROR_ACCESS_DENIED;
+
+		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
+				lp_change_share_cmd(), share_name, ptr, comment,
+				read_only ? "read only = yes" : "read only = no" );
+		dos_to_unix(command, True);  /* Convert to unix-codepage */
+
+		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
+		if ((ret = smbrun(command, NULL, False)) != 0) {
+			DEBUG(0,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));
+			return ERROR_ACCESS_DENIED;
+		}
+
+		/* Send SIGHUP to process group. */
+		kill(0, SIGHUP);
+	}
+
+	/* Replace SD if changed. */
+	if (psd) {
+		SEC_DESC *old_sd;
+		size_t sd_size;
+
+		old_sd = get_share_security(p->mem_ctx, snum, &sd_size);
+
+		if (old_sd && !sec_desc_equal(old_sd, psd)) {
+			if (!set_share_security(p->mem_ctx, share_name, psd))
+				DEBUG(0,("_srv_net_share_set_info: Failed to change security info in share %s.\n",
+					share_name ));
+		}
 	}
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
@@ -1168,7 +1285,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 }
 
 /*******************************************************************
- Net share add. Call 'add_share_command "sharename" "pathname" "comment"'
+ Net share add. Call 'add_share_command "sharename" "pathname" "comment" "read only = xxx"'
 ********************************************************************/
 
 uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u)
@@ -1183,6 +1300,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	int ret;
 	char *ptr;
 	BOOL read_only = False;
+	SEC_DESC *psd = NULL;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
@@ -1208,11 +1326,12 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		read_only = False; /* No SD means "Everyone full access. */
 		break;
 	case 502:
-		/* we set sd's here. FIXME. JRA */
 		unistr2_to_ascii(share_name, &q_u->info.share.info502.info_502_str.uni_netname, sizeof(share_name));
 		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info502.info_502.type;
+		psd = q_u->info.share.info502.info_502_str.sd;
+		read_only = read_only_share_sd(psd);
 		break;
 	case 1005:
 		/* DFS only level. */
@@ -1250,6 +1369,12 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	if ((ret = smbrun(command, NULL, False)) != 0) {
 		DEBUG(0,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
 		return ERROR_ACCESS_DENIED;
+	}
+
+	if (psd) {
+		if (!set_share_security(p->mem_ctx, share_name, psd))
+			DEBUG(0,("_srv_net_share_add: Failed to add security info to share %s.\n",
+				share_name ));
 	}
 
 	/* Send SIGHUP to process group. */
