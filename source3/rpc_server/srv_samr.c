@@ -200,6 +200,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 	static BOOL orig_done = False;
 	static int current_idx = 0;
 	static int mapped_idx = 0;
+	char *sep;
 
 	DEBUG(5, ("get_passwd_entries: retrieving a list of UNIX users\n"));
 
@@ -267,6 +268,8 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 		}
 	}
 
+	sep = lp_winbind_separator();
+
 	/* now current_idx == start_idx */
 	while ((*num_entries) < max_num_entries) {
 		int user_name_len;
@@ -275,6 +278,13 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 		/* This does the original UNIX user itself */
 		if(!orig_done) {
 			if ((pwd = getpwent()) == NULL) break;
+
+			/* Don't enumerate winbind users as they are not local */
+
+			if (strchr(pwd->pw_name, *sep) != NULL) {
+				continue;
+			}
+
 			user_name_len = strlen(pwd->pw_name);
 			pw_rid = pdb_uid_to_user_rid(pwd->pw_uid);
 			ZERO_STRUCTP(&pw_buf[(*num_entries)]);
@@ -753,6 +763,10 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	else if (strequal(sid_str, sam_sid_str))
 	{
 		char *name;
+		char *sep;
+
+		sep = lp_winbind_separator();
+
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */
 		/* thing to do, since NT member servers return their local     */
@@ -762,6 +776,13 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		while (num_entries < MAX_SAM_ENTRIES && ((grp = getgrent()) != NULL))
 		{
 			name = grp->gr_name;
+
+			/* Don't return winbind groups as they are not local! */
+
+			if (strchr(name, *sep) != NULL) {
+				continue;
+			}
+
 			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name));
 			pass[num_entries].user_rid = pdb_gid_to_group_rid(grp->gr_gid);
 			num_entries++;
