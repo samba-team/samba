@@ -96,42 +96,51 @@ usage (int ret)
 }
 
 static int
-do_connect (const char *host, int port, int nodelay)
+do_connect (const char *hostname, int port, int nodelay)
 {
-    struct hostent *h;
-    struct sockaddr_in addr;
-    char **p;
-    int s = -1;
+    struct hostent *hostent = NULL;
+    char **h;
+    int error;
+    int af;
+    int s;
 
-    h = roken_gethostbyname (host);
-    if (h == NULL)
-	errx (1, "gethostbyname: %s", hstrerror(h_errno));
-    memset (&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port   = port;
-    for (p = h->h_addr_list; *p; ++p) {
-	memcpy(&addr.sin_addr, *p, sizeof(addr.sin_addr));
+#ifdef HAVE_IPV6    
+    if (hostent == NULL)
+	hostent = getipnodebyname (hostname, AF_INET6, 0, &error);
+#endif
+    if (hostent == NULL)
+	hostent = getipnodebyname (hostname, AF_INET, 0, &error);
 
-	s = socket (AF_INET, SOCK_STREAM, 0);
+    if (hostent == NULL)
+	errx(1, "gethostbyname '%s' failed: %s", hostname, hstrerror(error));
+
+    af = hostent->h_addrtype;
+
+    for (h = hostent->h_addr_list; *h != NULL; ++h) {
+	struct sockaddr_storage sa_ss;
+	struct sockaddr *sa = (struct sockaddr *)&sa_ss;
+
+	sa->sa_family = af;
+	socket_set_address_and_port (sa, *h, port);
+
+	s = socket (af, SOCK_STREAM, 0);
 	if (s < 0)
 	    err (1, "socket");
-	if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-	    warn ("connect(%s)", host);
+	if (connect(s, sa, socket_sockaddr_size(sa)) < 0) {
+	    warn ("connect(%s)", hostname);
 	    close (s);
 	    continue;
 	} else {
 	    break;
 	}
     }
-    if (*p == NULL)
+    freehostent (hostent);
+    if (*h == NULL)
 	return -1;
-    else {
-	if(setsockopt(s, IPPROTO_TCP, TCP_NODELAY,
-		      (void *)&nodelay, sizeof(nodelay)) < 0)
-	    err (1, "setsockopt TCP_NODELAY");
-
-	return s;
-    }
+    if(setsockopt(s, IPPROTO_TCP, TCP_NODELAY,
+		  (void *)&nodelay, sizeof(nodelay)) < 0)
+	err (1, "setsockopt TCP_NODELAY");
+    return s;
 }
 
 typedef enum { INIT = 0, GREET, USER, PASS, STAT, RETR, TOP, 
