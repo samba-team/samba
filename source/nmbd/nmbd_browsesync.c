@@ -41,11 +41,16 @@ static void sync_with_lmb(struct browse_cache_record *browc)
 {                     
   struct work_record *work;
 
-  if (!(work = find_workgroup_on_subnet(unicast_subnet, browc->work_group))) {
-      DEBUG(0, ("sync_with_lmb: failed to get a \
-workgroup for a local master browser cache entry workgroup %s, server %s\n", 
-                browc->work_group, browc->lmb_name));
-      return;
+  if( !(work = find_workgroup_on_subnet(unicast_subnet, browc->work_group)) )
+  {
+    if( DEBUGLVL( 0 ) )
+    {
+      dbgtext( "sync_with_lmb:\n" );
+      dbgtext( "Failed to get a workgroup for a local master browser " );
+      dbgtext( "cache entry workgroup " );
+      dbgtext( "%s, server %s\n", browc->work_group, browc->lmb_name );
+    }
+    return;
   }
 
   /* We should only be doing this if we are a domain master browser for
@@ -53,14 +58,24 @@ workgroup for a local master browser cache entry workgroup %s, server %s\n",
 
   if(!AM_DOMAIN_MASTER_BROWSER(work))
   {
-    DEBUG(0,("sync_with_lmb: We are trying to sync with a local master browser %s \
-for workgroup %s and we are not a domain master browser on this workgroup. Error !\n",
-        browc->lmb_name, browc->work_group));
+    if( DEBUGLVL( 0 ) )
+    {
+      dbgtext( "sync_with_lmb:\n" );
+      dbgtext( "We are trying to sync with a local master browser " );
+      dbgtext( "%s for workgroup %s\n", browc->lmb_name, browc->work_group );
+      dbgtext( "and we are not a domain master browser on this workgroup.\n" );
+      dbgtext( "Error!\n" );
+    }
     return;
   }
 
-  DEBUG(2, ("sync_with_lmb: Initiating sync with local master browser %s<0x20> at IP %s for \
-workgroup %s\n", browc->lmb_name, inet_ntoa(browc->ip), browc->work_group));
+  if( DEBUGLVL( 2 ) )
+  {
+    dbgtext( "sync_with_lmb:\n" );
+    dbgtext( "Initiating sync with local master browser " );
+    dbgtext( "%s<0x20> at IP %s ", browc->lmb_name, inet_ntoa(browc->ip) );
+    dbgtext( "for workgroup %s\n", browc->work_group );
+  }
 
   sync_browse_lists(work, browc->lmb_name, 0x20, browc->ip, True, True);
 
@@ -103,9 +118,13 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 
   if(ismyip(work->dmb_addr))
   {
-    DEBUG(2,("announce_local_master_browser_to_domain_master_browser: We are both a domain \
-and a local master browser for workgroup %s. \
-Do not announce to ourselves.\n", work->work_group ));
+    if( DEBUGLVL( 2 ) )
+    {
+      dbgtext( "announce_local_master_browser_to_domain_master_browser:\n" );
+      dbgtext( "We are both a domain and a local master browser for " );
+      dbgtext( "workgroup %s.  ", work->work_group );
+      dbgtext( "Do not announce to ourselves.\n" );
+    }
     return;
   }
 
@@ -118,8 +137,13 @@ Do not announce to ourselves.\n", work->work_group ));
   strupper(p);
   p = skip_string(p,1);
 
-  DEBUG(4,("announce_local_master_browser_to_domain_master_browser: Sending local master announce \
-to %s for workgroup %s.\n", namestr(&work->dmb_name), work->work_group ));
+  if( DEBUGLVL( 4 ) )
+  {
+    dbgtext( "announce_local_master_browser_to_domain_master_browser:\n" );
+    dbgtext( "Sending local master announce to " );
+    dbgtext( "%s for workgroup %s.\n", namestr(&work->dmb_name),
+                                       work->work_group );
+  }
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
 		global_myname, 0x0, work->dmb_name.name, 0x0, 
@@ -133,8 +157,14 @@ As a local master browser, do a sync with a domain master browser.
 
 static void sync_with_dmb(struct work_record *work)
 {
-  DEBUG(2, ("sync_with_dmb: Initiating sync with domain master browser %s at IP %s for \
-workgroup %s\n", namestr(&work->dmb_name), inet_ntoa(work->dmb_addr), work->work_group));
+  if( DEBUGLVL( 2 ) )
+  {
+    dbgtext( "sync_with_dmb:\n" );
+    dbgtext( "Initiating sync with domain master browser " );
+    dbgtext( "%s ", namestr(&work->dmb_name) );
+    dbgtext( "at IP %s ", inet_ntoa(work->dmb_addr) );
+    dbgtext( "for workgroup %s\n", work->work_group );
+  }
 
   sync_browse_lists(work, work->dmb_name.name, work->dmb_name.name_type, 
                     work->dmb_addr, False, True);
@@ -151,15 +181,23 @@ static void domain_master_node_status_success(struct subnet_record *subrec,
 {
   struct work_record *work = find_workgroup_on_subnet( subrec, userdata->data);
 
-  if(work == NULL)
+  if( work == NULL )
   {
-    DEBUG(0,("domain_master_node_status_success: Unable to find workgroup %s on subnet %s.\n",
-              userdata->data, subrec->subnet_name));
+    if( DEBUGLVL( 0 ) )
+    {
+      dbgtext( "domain_master_node_status_success:\n" );
+      dbgtext( "Unable to find workgroup " );
+      dbgtext( "%s on subnet %s.\n", userdata->data, subrec->subnet_name );
+    }
     return;
   }
 
-  DEBUG(3,("domain_master_node_status_success: Success in node status for workgroup %s from ip %s\n",
-            work->work_group, inet_ntoa(from_ip) ));
+  if( DEBUGLVL( 3 ) )
+  {
+    dbgtext( "domain_master_node_status_success:\n" );
+    dbgtext( "Success in node status for workgroup " );
+    dbgtext( "%s from ip %s\n", work->work_group, inet_ntoa(from_ip) );
+  }
 
   /* Go through the list of names found at answers->rdata and look for
      the first SERVER<0x20> name. */
@@ -207,8 +245,12 @@ static void domain_master_node_status_success(struct subnet_record *subrec,
     }
   }
   else
-    DEBUG(0,("domain_master_node_status_success: Failed to find a SERVER<0x20> \
-name in reply from IP %s.\n", inet_ntoa(from_ip) ));
+    if( DEBUGLVL( 0 ) )
+    {
+      dbgtext( "domain_master_node_status_success:\n" );
+      dbgtext( "Failed to find a SERVER<0x20> name in reply from IP " );
+      dbgtext( "%s.\n", inet_ntoa(from_ip) );
+    }
 }
 
 /****************************************************************************
@@ -220,10 +262,14 @@ static void domain_master_node_status_fail(struct subnet_record *subrec,
 {
   struct userdata_struct *userdata = rrec->userdata;
 
-  DEBUG(0,("domain_master_node_status_fail: Doing a node status request to \
-the domain master browser for workgroup %s at IP %s failed. Cannot sync browser \
-lists.\n", userdata->data, inet_ntoa(rrec->packet->ip) ));
-
+  if( DEBUGLVL( 0 ) )
+  {
+    dbgtext( "domain_master_node_status_fail:\n" );
+    dbgtext( "Doing a node status request to the domain master browser\n" );
+    dbgtext( "for workgroup %s ", userdata->data );
+    dbgtext( "at IP %s failed.\n", inet_ntoa(rrec->packet->ip) );
+    dbgtext( "Cannot sync browser lists.\n" );
+  }
 }
 
 /****************************************************************************
@@ -252,9 +298,13 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
   struct userdata_struct *userdata;
   int size = sizeof(struct userdata_struct) + sizeof(fstring)+1;
 
-  if (!(work = find_workgroup_on_subnet(subrec, q_name->name))) {
-      DEBUG(0, ("find_domain_master_name_query_success: failed to find \
-workgroup %s\n", q_name->name ));
+  if( !(work = find_workgroup_on_subnet(subrec, q_name->name)) )
+  {
+    if( DEBUGLVL( 0 ) )
+      {
+      dbgtext( "find_domain_master_name_query_success:\n" );
+      dbgtext( "Failed to find workgroup %s\n", q_name->name );
+      }
     return;
   }
 
@@ -309,9 +359,14 @@ static void find_domain_master_name_query_fail(struct subnet_record *subrec,
                                     struct response_record *rrec,
                                     struct nmb_name *question_name, int fail_code)
 {
-  DEBUG(0,("find_domain_master_name_query_fail: Unable to find the Domain Master \
-Browser name %s for the workgroup %s. Unable to sync browse lists in this workgroup.\n",
-        namestr(question_name), question_name->name ));
+  if( DEBUGLVL( 0 ) )
+  {
+    dbgtext( "find_domain_master_name_query_fail:\n" );
+    dbgtext( "Unable to find the Domain Master Browser name " );
+    dbgtext( "%s for the workgroup %s.\n",
+             namestr(question_name), question_name->name );
+    dbgtext( "Unable to sync browse lists in this workgroup.\n" );
+  }
 }
 
 /****************************************************************************
@@ -328,7 +383,11 @@ void announce_and_sync_with_domain_master_browser( struct subnet_record *subrec,
   /* Only do this if we are using a WINS server. */
   if(we_are_a_wins_client() == False)
   {
-    DEBUG(10,("announce_and_sync_with_domain_master_browser: Ignoring as we are not a WINS client.\n"));
+    if( DEBUGLVL( 10 ) )
+    {
+      dbgtext( "announce_and_sync_with_domain_master_browser:\n" );
+      dbgtext( "Ignoring, as we are not a WINS client.\n" );
+    }
     return;
   }
 
@@ -364,8 +423,11 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 
   server_name[0] = 0;
 
-  DEBUG(3,("get_domain_master_name_node_status_success: Success in node status from ip %s\n",
-            inet_ntoa(from_ip) ));
+  if( DEBUGLVL( 3 ) )
+  {
+    dbgtext( "get_domain_master_name_node_status_success:\n" );
+    dbgtext( "Success in node status from ip %s\n", inet_ntoa(from_ip) );
+  }
 
   /* 
    * Go through the list of names found at answers->rdata and look for
@@ -401,10 +463,13 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 
       if(!(nb_flags & NB_GROUP) && (name_type == 0x1b))
       {
-
-        DEBUG(5,("get_domain_master_name_node_status_success: %s(%s) is a domain \
-master browser for workgroup %s. Adding this name.\n", 
-		 server_name, inet_ntoa(from_ip), qname ));
+        if( DEBUGLVL( 5 ) )
+        {
+          dbgtext( "get_domain_master_name_node_status_success:\n" );
+          dbgtext( "%s(%s) ", server_name, inet_ntoa(from_ip) );
+          dbgtext( "is a domain master browser for workgroup " );
+          dbgtext( "%s. Adding this name.\n", qname );
+        }
 
         /* 
          * If we don't already know about this workgroup, add it
@@ -430,8 +495,12 @@ master browser for workgroup %s. Adding this name.\n",
     }
   }
   else
-    DEBUG(0,("get_domain_master_name_node_status_success: Failed to find a WORKGROUP<0x1b> \
-name in reply from IP %s.\n", inet_ntoa(from_ip) ));
+    if( DEBUGLVL( 0 ) )
+    {
+      dbgtext( "get_domain_master_name_node_status_success:\n" );
+      dbgtext( "Failed to find a WORKGROUP<0x1b> name in reply from IP " );
+      dbgtext( "%s.\n", inet_ntoa(from_ip) );
+    }
 }
 
 /****************************************************************************
@@ -441,11 +510,15 @@ name in reply from IP %s.\n", inet_ntoa(from_ip) ));
 static void get_domain_master_name_node_status_fail(struct subnet_record *subrec,
                        struct response_record *rrec)
 {
-  DEBUG(0,("get_domain_master_name_node_status_fail: Doing a node status request to \
-the domain master browser at IP %s failed. Cannot get workgroup name.\n", 
-      inet_ntoa(rrec->packet->ip) ));
-
+  if( DEBUGLVL( 0 ) )
+  {
+    dbgtext( "get_domain_master_name_node_status_fail:\n" );
+    dbgtext( "Doing a node status request to the domain master browser " );
+    dbgtext( "at IP %s failed.\n", inet_ntoa(rrec->packet->ip) );
+    dbgtext( "Cannot get workgroup name.\n" );
+  }
 }
+
 /****************************************************************************
   Function called when a query for *<1b> name succeeds.
 ****************************************************************************/
@@ -466,8 +539,12 @@ static void find_all_domain_master_names_query_success(struct subnet_record *sub
   struct in_addr send_ip;
   int i;
 
-  DEBUG(5,("find_all_domain_master_names_query_succes: Got answer from WINS server of %d \
-IP addresses for Domain Master Browsers.\n", rrec->rdlength / 6 ));
+  if( DEBUGLVL( 5 ) )
+  {
+    dbgtext( "find_all_domain_master_names_query_succes:\n" );
+    dbgtext( "Got answer from WINS server of %d ", (rrec->rdlength / 6) );
+    dbgtext( "IP addresses for Domain Master Browsers.\n" );
+  }
 
   for(i = 0; i < rrec->rdlength / 6; i++)
   {
@@ -483,13 +560,20 @@ IP addresses for Domain Master Browsers.\n", rrec->rdlength / 6 ));
 
     if(ismyip( send_ip ))
     {
-      DEBUG(5,("find_all_domain_master_names_query_succes: Not sending node status \
-to our own IP %s.\n", inet_ntoa(send_ip) ));
+      if( DEBUGLVL( 5 ) )
+      {
+        dbgtext( "find_all_domain_master_names_query_succes:\n" );
+        dbgtext( "Not sending node status to our own IP " );
+        dbgtext( "%s.\n", inet_ntoa(send_ip) );
+      }
       continue;
     }
 
-    DEBUG(5,("find_all_domain_master_names_query_succes: sending node status request to \
-IP %s.\n", inet_ntoa(send_ip) ));
+    if( DEBUGLVL( 5 ) )
+    {
+      dbgtext( "find_all_domain_master_names_query_success:\n" );
+      dbgtext( "Sending node status request to IP %s.\n", inet_ntoa(send_ip) );
+    }
 
     node_status( subrec, &nmbname, send_ip, 
                  get_domain_master_name_node_status_success,
@@ -505,9 +589,13 @@ static void find_all_domain_master_names_query_fail(struct subnet_record *subrec
                                     struct response_record *rrec,
                                     struct nmb_name *question_name, int fail_code)
 {
-  DEBUG(10,("find_domain_master_name_query_fail: WINS server did not reply to a query \
-for name %s. This means it is probably not a Samba 1.9.18 or above WINS server.\n",
-        namestr(question_name) ));
+  if( DEBUGLVL( 10 ) )
+  {
+    dbgtext( "find_domain_master_name_query_fail:\n" );
+    dbgtext( "WINS server did not reply to a query for name " );
+    dbgtext( "%s.\nThis means it ", namestr(question_name) );
+    dbgtext( "is probably not a Samba 1.9.18 or above WINS server.\n" );
+  }
 }
 
 /****************************************************************************
@@ -531,8 +619,12 @@ void collect_all_workgroup_names_from_wins_server(time_t t)
   /* Check to see if we are a domain master browser on the unicast subnet. */
   if((work = find_workgroup_on_subnet( unicast_subnet, global_myworkgroup)) == NULL)
   {
-    DEBUG(0,("collect_all_workgroup_names_from_wins_server: Cannot find my workgroup %s on subnet %s.\n",
-              global_myworkgroup, unicast_subnet->subnet_name ));
+    if( DEBUGLVL( 0 ) )
+    {
+      dbgtext( "collect_all_workgroup_names_from_wins_server:\n" );
+      dbgtext( "Cannot find my workgroup %s ", global_myworkgroup );
+      dbgtext( "on subnet %s.\n", unicast_subnet->subnet_name );
+    }
     return;
   }
 
@@ -605,7 +697,7 @@ void sync_all_dmbs(time_t t)
 					      0x20, scope);
 			}
 
-			DEBUG(3,("initiating DMB<->DMB sync with %s(%s)\n",
+			DEBUG(3,("Initiating DMB<->DMB sync with %s(%s)\n",
 				 work->dmb_name.name, 
 				 inet_ntoa(work->dmb_addr)));
 			sync_browse_lists(work, 
