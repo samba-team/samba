@@ -617,6 +617,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		if ( ra_type == RA_WIN2K ) {
 			if ( 0 == strcmp( native_lanman, "Windows 2002 5.1" ) )
 				set_remote_arch( RA_WINXP );
+			else if ( 0 == strcmp( native_lanman, "Windows .NET 5.2" ) )
+				set_remote_arch( RA_WIN2K3 );
 		}
 		
 
