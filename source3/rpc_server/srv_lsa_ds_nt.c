@@ -103,7 +103,7 @@ static NTSTATUS fill_dsrole_dominfo_basic(TALLOC_CTX *ctx, DSROLE_PRIMARY_DOMAIN
 
 NTSTATUS _dsrole_get_primary_dominfo(pipes_struct *p, DS_Q_GETPRIMDOMINFO *q_u, DS_R_GETPRIMDOMINFO *r_u)
 {
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_OK;
 	uint32 level = q_u->level;
 
 	switch ( level ) {
@@ -120,7 +120,7 @@ NTSTATUS _dsrole_get_primary_dominfo(pipes_struct *p, DS_Q_GETPRIMDOMINFO *q_u, 
 			result = NT_STATUS_INVALID_LEVEL;
 	}
 
-	return NT_STATUS_OK;
+	return result;
 }
 
 
