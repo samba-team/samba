@@ -28,8 +28,6 @@ extern int ClientNMB;
 extern int ClientDGRAM;
 extern int global_nmb_port;
 
-extern int DEBUGLEVEL;
-
 extern int num_response_packets;
 
 extern struct in_addr loopback_ip;
@@ -107,12 +105,14 @@ static void debug_browse_data(char *outbuf, int len)
 
     for (j = 0; j < 16; j++)
     {
-      unsigned char x = outbuf[i+j];
+      unsigned char x;
+      if (i+j >= len)
+        break;
+
+      x = outbuf[i+j];
       if (x < 32 || x > 127) 
         x = '.';
 	    
-      if (i+j >= len)
-        break;
       DEBUGADD( 4, ( "%c", x ) );
     }
 
@@ -1263,14 +1263,21 @@ an error packet of type %x\n",
   len = SVAL(buf,smb_vwv11);
   buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 
+  if (len <= 0)
+    return;
+
+  if (buf2 + len > buf + sizeof(dgram->data)) {
+    DEBUG(2,("process_dgram: datagram from %s to %s IP %s for %s len=%d too long.\n",
+		nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
+		inet_ntoa(p->ip), smb_buf(buf),len));
+	len = (buf + sizeof(dgram->data)) - buf;
+  }
+
   DEBUG(4,("process_dgram: datagram from %s to %s IP %s for %s of type %d len=%d\n",
 	   nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
 	   inet_ntoa(p->ip), smb_buf(buf),CVAL(buf2,0),len));
 
  
-  if (len <= 0)
-    return;
-
   /* Datagram packet received for the browser mailslot */
   if (strequal(smb_buf(buf),BROWSE_MAILSLOT))
   {
@@ -1749,8 +1756,8 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
 
   *listen_number = (count*2) + 2;
 
-  if (*ppset) free(*ppset);
-  if (*psock_array) free(*psock_array);
+  SAFE_FREE(*ppset);
+  SAFE_FREE(*psock_array);
 
   *ppset = pset;
   *psock_array = sock_array;
@@ -1811,7 +1818,7 @@ BOOL listen_for_packets(BOOL run_election)
 
   BlockSignals(False, SIGTERM);
 
-  selrtn = sys_select(FD_SETSIZE,&fds,&timeout);
+  selrtn = sys_select(FD_SETSIZE,&fds,NULL,NULL,&timeout);
 
   /* We can only take signals when we are in the select - block them again here. */
 
@@ -1842,8 +1849,7 @@ BOOL listen_for_packets(BOOL run_election)
 					  DEBUG(7,("discarding nmb packet sent to broadcast socket from %s:%d\n",
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
-				  } else if ((ip_equal(loopback_ip, packet->ip) || 
-					      ismyip(packet->ip)) && packet->port == global_nmb_port) {
+				  } else if (ip_equal(loopback_ip, packet->ip) && packet->port == global_nmb_port) {
 					  DEBUG(7,("discarding own packet from %s:%d\n",
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
@@ -1929,7 +1935,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   set_message(ptr,17,17 + len,True);
   memcpy(ptr,tmp,4);
 
-  CVAL(ptr,smb_com) = SMBtrans;
+  SCVAL(ptr,smb_com,SMBtrans);
   SSVAL(ptr,smb_vwv1,len);
   SSVAL(ptr,smb_vwv11,len);
   SSVAL(ptr,smb_vwv12,70 + strlen(mailslot));

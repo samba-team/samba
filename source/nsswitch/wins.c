@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
    a WINS nsswitch module 
    Copyright (C) Andrew Tridgell 1999
    
@@ -27,7 +26,6 @@
 #undef VOLATILE
 
 #include <ns_daemon.h>
-#define NSD_LOGLEVEL NSD_LOG_MIN
 #endif
 
 #ifndef INADDRSZ
@@ -36,6 +34,7 @@
 
 static int initialised;
 
+extern BOOL AllowDebugChange;
 
 /* Use our own create socket code so we don't recurse.... */
 
@@ -64,8 +63,12 @@ static int wins_lookup_open_socket_in(void)
 
 	/* now we've got a socket - we need to bind it */
 
-	if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0)
+	if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) {
+		close(res);
 		return(-1);
+	}
+
+	set_socket_options(res,"SO_BROADCAST");
 
 	return res;
 }
@@ -74,7 +77,8 @@ static int wins_lookup_open_socket_in(void)
 static void nss_wins_init(void)
 {
 	initialised = 1;
-	DEBUGLEVEL = 10;
+	DEBUGLEVEL = 0;
+	AllowDebugChange = False;
 
 	/* needed for lp_xx() functions */
 	charset_initialise();
@@ -86,12 +90,35 @@ static void nss_wins_init(void)
 	codepage_initialise(lp_client_code_page());
 }
 
-static struct in_addr *lookup_backend(const char *name, int *count)
+static struct node_status *lookup_byaddr_backend(char *addr, int *count)
+{
+	int fd;
+	struct in_addr  ip;
+	struct nmb_name nname;
+	struct node_status *status;
+
+	if (!initialised) {
+		nss_wins_init();
+	}
+
+	fd = wins_lookup_open_socket_in();
+	if (fd == -1)
+		return NULL;
+
+	make_nmb_name(&nname, "*", 0);
+	ip = *interpret_addr2(addr);
+	status = node_status_query(fd,&nname,ip, count);
+
+	close(fd);
+	return status;
+}
+
+static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd;
 	struct in_addr *ret = NULL;
 	struct in_addr  p;
-	int j;
+	int j, flags;
 
 	if (!initialised) {
 		nss_wins_init();
@@ -103,24 +130,15 @@ static struct in_addr *lookup_backend(const char *name, int *count)
 	if (fd == -1)
 		return NULL;
 
-	set_socket_options(fd,"SO_BROADCAST");
-
-/* The next four lines commented out by JHT
-   and replaced with the four lines following */
-/*	if( !zero_ip( wins_ip ) ) {
- *		ret = name_query( fd, name, 0x20, False, True, wins_src_ip(), count );
- *		goto out;
- *	}
- */
 	p = wins_srv_ip();
-	if( !zero_ip(p) ) {
-		ret = name_query(fd,name,0x20,False,True, p, count);
+	if( !is_zero_ip(p) ) {
+		ret = name_query(fd,name,0x20,False,True, p, count, &flags);
 		goto out;
 	}
 
 	if (lp_wins_support()) {
 		/* we are our own WINS server */
-		ret = name_query(fd,name,0x20,False,True, *interpret_addr2("127.0.0.1"), count);
+		ret = name_query(fd,name,0x20,False,True, *interpret_addr2("127.0.0.1"), count, &flags);
 		goto out;
 	}
 
@@ -129,7 +147,7 @@ static struct in_addr *lookup_backend(const char *name, int *count)
 	     j >= 0;
 	     j--) {
 		struct in_addr *bcast = iface_n_bcast(j);
-		ret = name_query(fd,name,0x20,True,True,*bcast,count);
+		ret = name_query(fd,name,0x20,True,True,*bcast,count, &flags);
 		if (ret) break;
 	}
 
@@ -140,16 +158,12 @@ static struct in_addr *lookup_backend(const char *name, int *count)
 }
 
 
-/****************************************************************************
-gethostbyname() - we ignore any domain portion of the name and only
-handle names that are at most 15 characters long
-  **************************************************************************/
 #ifdef HAVE_NS_API_H
 /* IRIX version */
 
 int init(void)
 {
-	nsd_logprintf(NSD_LOGLEVEL, "init (wins)\n");
+	nsd_logprintf(NSD_LOG_MIN, "entering init (wins)\n");
 	nss_wins_init();
 	return NSD_OK;
 }
@@ -158,11 +172,14 @@ int lookup(nsd_file_t *rq)
 {
 	char *map;
 	char *key;
+	char *addr;
 	struct in_addr *ip_list;
-	int count;
-	char response[80];
+	struct node_status *status;
+	int i, count, len, size;
+	char response[1024];
+	BOOL found = False;
 
-	nsd_logprintf(NSD_LOGLEVEL, "lookup (wins)\n");
+	nsd_logprintf(NSD_LOG_MIN, "entering lookup (wins)\n");
 	if (! rq) 
 		return NSD_ERROR;
 
@@ -172,31 +189,89 @@ int lookup(nsd_file_t *rq)
 		return NSD_ERROR;
 	}
 
-	if (strcasecmp(map,"hosts.byname") != 0) {
-		rq->f_status = NS_NOTFOUND;
-		return NSD_NEXT;
-	}
-
 	key = nsd_attr_fetch_string(rq->f_attrs, "key", (char*)0);
 	if (! key || ! *key) {
 		rq->f_status = NS_FATAL;
 		return NSD_ERROR;
 	}
 
-	ip_list = lookup_backend(key, &count);
+	response[0] = '\0';
+	len = sizeof(response) - 2;
 
-	if (!ip_list) {
-		rq->f_status = NSS_STATUS_NOTFOUND;
-		return NSD_NEXT;
+	/* 
+	 * response needs to be a string of the following format
+	 * ip_address[ ip_address]*\tname[ alias]*
+	 */
+	if (strcasecmp(map,"hosts.byaddr") == 0) {
+		if ( status = lookup_byaddr_backend(key, &count)) {
+		    size = strlen(key) + 1;
+		    if (size > len) {
+			free(status);
+			return NSD_ERROR;
+		    }
+		    len -= size;
+		    strncat(response,key,size);
+		    strncat(response,"\t",1);
+		    for (i = 0; i < count; i++) {
+			/* ignore group names */
+			if (status[i].flags & 0x80) continue;
+			if (status[i].type == 0x20) {
+				size = sizeof(status[i].name) + 1;
+				if (size > len) {
+				    free(status);
+				    return NSD_ERROR;
+				}
+				len -= size;
+				strncat(response, status[i].name, size);
+				strncat(response, " ", 1);
+				found = True;
+			}
+		    }
+		    response[strlen(response)-1] = '\n';
+		    free(status);
+		}
+	} else if (strcasecmp(map,"hosts.byname") == 0) {
+	    if (ip_list = lookup_byname_backend(key, &count)) {
+		for (i = count; i ; i--) {
+		    addr = inet_ntoa(ip_list[i-1]);
+		    size = strlen(addr) + 1;
+		    if (size > len) {
+			free(ip_list);
+			return NSD_ERROR;
+		    }
+		    len -= size;
+		    if (i != 0)
+			response[strlen(response)-1] = ' ';
+		    strncat(response,addr,size);
+		    strncat(response,"\t",1);
+		}
+		size = strlen(key) + 1;
+		if (size > len) {
+		    free(ip_list);
+		    return NSD_ERROR;
+		}   
+		strncat(response,key,size);
+		strncat(response,"\n",1);
+		found = True;
+		free(ip_list);
+	    }
 	}
-	snprintf(response,79,"%s %s\n",inet_ntoa(*ip_list),key);
-	free(ip_list);
 
-	nsd_set_result(rq,NS_SUCCESS,response,strlen(response),VOLATILE);
-	return NSD_OK;
+	if (found) {
+	    nsd_logprintf(NSD_LOG_LOW, "lookup (wins %s) %s\n",map,response);
+	    nsd_set_result(rq,NS_SUCCESS,response,strlen(response),VOLATILE);
+	    return NSD_OK;
+	}
+	nsd_logprintf(NSD_LOG_LOW, "lookup (wins) not found\n");
+	rq->f_status = NS_NOTFOUND;
+	return NSD_NEXT;
 }
 
 #else
+/****************************************************************************
+gethostbyname() - we ignore any domain portion of the name and only
+handle names that are at most 15 characters long
+  **************************************************************************/
 NSS_STATUS
 _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 			  char *buffer, size_t buflen, int *errnop,
@@ -209,7 +284,7 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 		
 	memset(he, '\0', sizeof(*he));
 
-	ip_list = lookup_backend(name, &count);
+	ip_list = lookup_byname_backend(name, &count);
 	if (!ip_list) {
 		return NSS_STATUS_NOTFOUND;
 	}
@@ -244,5 +319,21 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 
 	return NSS_STATUS_SUCCESS;
 }
-#endif
 
+NSS_STATUS
+_nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
+				char *buffer, size_t buflen, int *errnop,
+				int *h_errnop)
+{
+	if(af!=AF_INET) {
+		*h_errnop = NO_DATA;
+		*errnop = EAFNOSUPPORT;
+		return NSS_STATUS_UNAVAIL;
+	}
+
+	return _nss_wins_gethostbyname_r(name,he,buffer,buflen,errnop,h_errnop);
+}
+
+
+
+#endif

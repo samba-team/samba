@@ -2,7 +2,8 @@
 #define PRINTING_H_
 
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    printing definitions
    Copyright (C) Andrew Tridgell 1992-2000
    

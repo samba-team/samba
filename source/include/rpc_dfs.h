@@ -35,20 +35,16 @@
 #define DFSFLAG_ADD_VOLUME           0x00000001
 #define DFSFLAG_RESTORE_VOLUME       0x00000002
 
-/* API errors from lmerr.h */
-#ifndef NERR_BASE
-#define NERR_BASE (2100)
-#endif
+typedef struct dfs_q_dfs_exist
+{
+  uint32 dummy;
+}
+DFS_Q_DFS_EXIST;
 
-#define NERR_DfsNoSuchVolume            (NERR_BASE+562)
-#define NERR_DfsNoSuchShare             (NERR_BASE+565)
-#define NERR_DfsNoSuchServer            (NERR_BASE+573)
-#define NERR_DfsInternalError           (NERR_BASE+590)
-#define NERR_DfsCantCreateJunctionPoint (NERR_BASE+569)
-
+/* status == 1 if dfs exists. */
 typedef struct dfs_r_dfs_exist
 {
-  uint32 dfs_exist_flag;
+	uint32 status;          /* Not a WERROR or NTSTATUS code */
 }
 DFS_R_DFS_EXIST;
 
@@ -68,7 +64,7 @@ DFS_Q_DFS_ADD;
 
 typedef struct dfs_r_dfs_add
 {
-  uint32 status;
+  WERROR status;
 }
 DFS_R_DFS_ADD;
 
@@ -85,7 +81,7 @@ DFS_Q_DFS_REMOVE;
 
 typedef struct dfs_r_dfs_remove
 {
-  uint32 status;
+  WERROR status;
 }
 DFS_R_DFS_REMOVE;
 
@@ -166,7 +162,7 @@ typedef struct dfs_r_dfs_get_info
   uint32 level;
   uint32 ptr_ctr;
   DFS_INFO_CTR ctr;
-  uint32 status;
+  WERROR status;
 }
 DFS_R_DFS_GET_INFO;
 
@@ -195,7 +191,7 @@ typedef struct dfs_r_dfs_enum
   uint32 ptr_num_entries2;
   uint32 num_entries2;
   ENUM_HND reshnd;
-  uint32 status;
+  WERROR status;
 }
 DFS_R_DFS_ENUM;
 

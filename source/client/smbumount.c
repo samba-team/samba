@@ -74,6 +74,11 @@ canonicalize (char *path)
 {
 	char *canonical = malloc (PATH_MAX + 1);
 
+	if (!canonical) {
+		fprintf(stderr, "Error! Not enough memory!\n");
+		return NULL;
+	}
+
 	if (strlen(path) > PATH_MAX) {
 		fprintf(stderr, "Mount point string too long\n");
 		return NULL;

@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
@@ -26,10 +27,8 @@
 
 #include "includes.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
-
-struct reg_info {
+struct reg_info
+{
 	/* for use by \PIPE\winreg */
 	fstring name; /* name of registry key */
 };
@@ -84,7 +83,7 @@ NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTR
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	rpcstr_pull(name,q_u->uni_name.buffer,sizeof(name),q_u->uni_name.uni_str_len*2,0);
+	fstrcpy(name, dos_unistrn2(q_u->uni_name.buffer, q_u->uni_name.uni_str_len));
 
 	DEBUG(5,("reg_open_entry: %s\n", name));
 
@@ -128,7 +127,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	rpcstr_pull(name, q_u->uni_type.buffer, sizeof(name), q_u->uni_type.uni_str_len*2, 0);
+	fstrcpy(name, dos_unistrn2(q_u->uni_type.buffer, q_u->uni_type.uni_str_len));
 
 	DEBUG(5,("reg_info: checking key: %s\n", name));
 
@@ -173,67 +172,6 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	init_reg_r_info(q_u->ptr_buf, r_u, buf, type, status);
 
 	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
-
-	return status;
-}
-
-/*******************************************************************
- reg_shutdwon
- ********************************************************************/
-
-#define SHUTDOWN_R_STRING "-r"
-#define SHUTDOWN_F_STRING "-f"
-
-
-NTSTATUS _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
-{
-	NTSTATUS status = NT_STATUS_OK;
-	pstring shutdown_script;
-	UNISTR2 unimsg = q_u->uni_msg;
-	pstring message;
-	pstring chkmsg;
-	fstring timeout;
-	fstring r;
-	fstring f;
-	
-	/* message */
-	rpcstr_pull (message, unimsg.buffer, sizeof(message), unimsg.uni_str_len*2,0);
-		/* security check */
-	alpha_strcpy (chkmsg, message, NULL, sizeof(message));
-	/* timeout */
-	snprintf(timeout, sizeof(timeout), "%d", q_u->timeout);
-	/* reboot */
-	snprintf(r, sizeof(r), (q_u->flags & REG_REBOOT_ON_SHUTDOWN)?SHUTDOWN_R_STRING:"");
-	/* force */
-	snprintf(f, sizeof(f), (q_u->flags & REG_FORCE_SHUTDOWN)?SHUTDOWN_F_STRING:"");
-
-	pstrcpy(shutdown_script, lp_shutdown_script());
-
-	if(*shutdown_script) {
-		int shutdown_ret;
-		all_string_sub(shutdown_script, "%m", chkmsg, sizeof(shutdown_script));
-		all_string_sub(shutdown_script, "%t", timeout, sizeof(shutdown_script));
-		all_string_sub(shutdown_script, "%r", r, sizeof(shutdown_script));
-		all_string_sub(shutdown_script, "%f", f, sizeof(shutdown_script));
-		shutdown_ret = smbrun(shutdown_script,NULL);
-		DEBUG(3,("_reg_shutdown: Running the command `%s' gave %d\n",shutdown_script,shutdown_ret));
-	}
-
-	return status;
-}
-
-NTSTATUS _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABORT_SHUTDOWN *r_u)
-{
-	NTSTATUS status = NT_STATUS_OK;
-	pstring abort_shutdown_script;
-
-	pstrcpy(abort_shutdown_script, lp_abort_shutdown_script());
-
-	if(*abort_shutdown_script) {
-		int abort_shutdown_ret;
-		abort_shutdown_ret = smbrun(abort_shutdown_script,NULL);
-		DEBUG(3,("_reg_abort_shutdown: Running the command `%s' gave %d\n",abort_shutdown_script,abort_shutdown_ret));
-	}
 
 	return status;
 }

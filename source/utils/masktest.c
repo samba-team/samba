@@ -23,38 +23,134 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 static fstring password;
 static fstring username;
 static int got_pass;
-
+static int max_protocol = PROTOCOL_NT1;
 static BOOL showall = False;
 static BOOL old_list = False;
 static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
+static int verbose;
+static int die_on_error;
+static int NumLoops = 0;
+
+/* a test fn for LANMAN mask support */
+int ms_fnmatch_lanman_core(char *pattern, char *string)
+{
+	char *p = pattern, *n = string;
+	char c;
+
+	if (strcmp(p,"?")==0 && strcmp(n,".")==0) goto match;
+
+	while ((c = *p++)) {
+		switch (c) {
+		case '.':
+			/* if (! *n && ! *p) goto match; */
+			if (*n != '.') goto nomatch;
+			n++;
+			break;
+
+		case '?':
+			if ((*n == '.' && n[1] != '.') || ! *n) goto next;
+			n++;
+			break;
+
+		case '>':
+			if (n[0] == '.') {
+				if (! n[1] && ms_fnmatch_lanman_core(p, n+1) == 0) goto match;
+				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
+				goto nomatch;
+			}
+			if (! *n) goto next;
+			n++;
+			break;
+
+		case '*':
+			if (! *p) goto match;
+			for (; *n; n++) {
+				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
+			}
+			break;
+
+		case '<':
+			for (; *n; n++) {
+				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
+				if (*n == '.' && !strchr(n+1,'.')) {
+					n++;
+					break;
+				}
+			}
+			break;
+
+		case '"':
+			if (*n == 0 && ms_fnmatch_lanman_core(p, n) == 0) goto match;
+			if (*n != '.') goto nomatch;
+			n++;
+			break;
+
+		default:
+			if (c != *n) goto nomatch;
+			n++;
+		}
+	}
+	
+	if (! *n) goto match;
+	
+ nomatch:
+	if (verbose) printf("NOMATCH pattern=[%s] string=[%s]\n", pattern, string);
+	return -1;
+
+next:
+	if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
+        goto nomatch;
+
+ match:
+	if (verbose) printf("MATCH   pattern=[%s] string=[%s]\n", pattern, string);
+	return 0;
+}
+
+int ms_fnmatch_lanman(char *pattern, char *string)
+{
+	if (!strpbrk(pattern, "?*<>\"")) {
+		if (strcmp(string,"..") == 0) string = ".";
+		return strcmp(pattern, string);
+	}
+
+	if (strcmp(string,"..") == 0 || strcmp(string,".") == 0) {
+		return ms_fnmatch_lanman_core(pattern, "..") &&
+			ms_fnmatch_lanman_core(pattern, ".");
+	}
+
+	return ms_fnmatch_lanman_core(pattern, string);
+}
 
 static BOOL reg_match_one(char *pattern, char *file)
 {
-	if (strcmp(file,"..") == 0) file = ".";
-	if (strcmp(pattern,".") == 0) return False;
-
 	/* oh what a weird world this is */
 	if (old_list && strcmp(pattern, "*.*") == 0) return True;
+
+	if (strcmp(pattern,".") == 0) return False;
+
+	if (max_protocol <= PROTOCOL_LANMAN2) {
+		return ms_fnmatch_lanman(pattern, file)==0;
+	}
+
+	if (strcmp(file,"..") == 0) file = ".";
 
 	return ms_fnmatch(pattern, file)==0;
 }
 
-static char *reg_test(char *pattern, char *file, char *short_name)
+static char *reg_test(char *pattern, char *long_name, char *short_name)
 {
 	static fstring ret;
 	fstrcpy(ret, "---");
 
 	pattern = 1+strrchr(pattern,'\\');
-	file = 1+strrchr(file,'\\');
 
 	if (reg_match_one(pattern, ".")) ret[0] = '+';
 	if (reg_match_one(pattern, "..")) ret[1] = '+';
-	if (reg_match_one(pattern, file) || 
+	if (reg_match_one(pattern, long_name) || 
 	    (*short_name && reg_match_one(pattern, short_name))) ret[2] = '+';
 	return ret;
 }
@@ -70,7 +166,6 @@ struct cli_state *connect_one(char *share)
 	char *server_n;
 	char *server;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
 
 	server = share+2;
 	share = strchr(server,'\\');
@@ -80,13 +175,13 @@ struct cli_state *connect_one(char *share)
 
 	server_n = server;
 	
-	ip = ipzero;
+	zero_ip(&ip);
 
 	make_nmb_name(&calling, "masktest", 0x0);
 	make_nmb_name(&called , server, 0x20);
 
  again:
-	ip = ipzero;
+	zero_ip(&ip);
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, 139) == 0) ||
@@ -94,6 +189,8 @@ struct cli_state *connect_one(char *share)
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}
+
+	c->protocol = max_protocol;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		DEBUG(0,("session request to %s failed\n", called.name));
@@ -157,7 +254,7 @@ struct cli_state *connect_one(char *share)
 static char *resultp;
 static file_info *finfo;
 
-void listfn(file_info *f, const char *s)
+void listfn(file_info *f, const char *s, void *state)
 {
 	if (strcmp(f->name,".") == 0) {
 		resultp[0] = '+';
@@ -169,14 +266,32 @@ void listfn(file_info *f, const char *s)
 	finfo = f;
 }
 
-static void get_short_name(struct cli_state *cli, 
-			   char *name, fstring short_name)
+static void get_real_name(struct cli_state *cli, 
+			  pstring long_name, fstring short_name)
 {
-	cli_list(cli, name, aHIDDEN | aDIR, listfn);
+	/* nasty hack to force level 260 listings - tridge */
+	cli->capabilities |= CAP_NT_SMBS;
+	if (max_protocol <= PROTOCOL_LANMAN1) {
+		cli_list_new(cli, "\\masktest\\*.*", aHIDDEN | aDIR, listfn, NULL);
+	} else {
+		cli_list_new(cli, "\\masktest\\*", aHIDDEN | aDIR, listfn, NULL);
+	}
 	if (finfo) {
 		fstrcpy(short_name, finfo->short_name);
 		strlower(short_name);
+		pstrcpy(long_name, finfo->name);
+		strlower(long_name);
 	}
+
+	if (*short_name == 0) {
+		fstrcpy(short_name, long_name);
+	}
+
+#if 0
+	if (!strchr(short_name,'.')) {
+		fstrcat(short_name,".");
+	}
+#endif
 }
 
 static void testpair(struct cli_state *cli, char *mask, char *file)
@@ -186,6 +301,7 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	char *res2;
 	static int count;
 	fstring short_name;
+	pstring long_name;
 
 	count++;
 
@@ -201,20 +317,17 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	resultp = res1;
 	fstrcpy(short_name, "");
 	finfo = NULL;
-	if (old_list) {
-		cli_list_old(cli, mask, aHIDDEN | aDIR, listfn);
-	} else {
-		get_short_name(cli, file, short_name);
-		finfo = NULL;
-		fstrcpy(res1, "---");
-		cli_list(cli, mask, aHIDDEN | aDIR, listfn);
-	}
+	get_real_name(cli, long_name, short_name);
+	finfo = NULL;
+	fstrcpy(res1, "---");
+	cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 
-	res2 = reg_test(mask, file, short_name);
+	res2 = reg_test(mask, long_name, short_name);
 
 	if (showall || strcmp(res1, res2)) {
-		DEBUG(0,("%s %s %d mask=[%s] file=[%s] mfile=[%s]\n",
-			 res1, res2, count, mask, file, short_name));
+		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
+			 res1, res2, count, mask, file, long_name, short_name));
+		if (die_on_error) exit(1);
 	}
 
 	cli_unlink(cli, file);
@@ -267,7 +380,11 @@ static void test_mask(int argc, char *argv[],
 		    strcmp(file+l,"..") == 0 ||
 		    strcmp(mask+l,"..") == 0) continue;
 
+		if (strspn(file+l, ".") == strlen(file+l)) continue;
+
 		testpair(cli, mask, file);
+		if (NumLoops && (--NumLoops == 0))
+		break;
 	}
 
  finished:
@@ -281,11 +398,16 @@ static void usage(void)
 "Usage:\n\
   masktest //server/share [options..]\n\
   options:\n\
+	-d debuglevel\n\
+	-n numloops\n\
         -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
+	-M max protocol\n\
         -f filechars (default %s)\n\
         -m maskchars (default %s)\n\
+        -v                             verbose mode\n\
+        -E                             die on error\n\
         -a                             show all tests\n\
 \n\
   This program tests wildcard matching between two servers. It generates\n\
@@ -305,16 +427,20 @@ static void usage(void)
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
+	extern BOOL AllowDebugChange;
 	int opt;
 	char *p;
 	int seed;
 	static pstring servicesf = CONFIGFILE;
+	extern int Protocol;
 
 	setlinebuf(stdout);
 
+	AllowDebugChange = False;
+	DEBUGLEVEL = 0;
 	dbf = stderr;
 
-	if (argv[1][0] == '-' || argc < 2) {
+	if (argc < 2 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
@@ -330,10 +456,6 @@ static void usage(void)
 
 	TimeInit();
 	charset_initialise();
-	codepage_initialise(lp_client_code_page());
-
-	lp_load(servicesf,True,False,False);
-	load_interfaces();
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
@@ -341,8 +463,23 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:")) != EOF) {
+	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vE")) != EOF) {
 		switch (opt) {
+		case 'n':
+			NumLoops = atoi(optarg);
+			break;
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			break;
+		case 'E':
+			die_on_error = 1;
+			break;
+		case 'v':
+			verbose++;
+			break;
+		case 'M':
+			max_protocol = interpret_protocol(optarg, max_protocol);
+			break;
 		case 'U':
 			pstrcpy(username,optarg);
 			p = strchr(username,'%');
@@ -379,12 +516,16 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
+	lp_load(servicesf,True,False,False);
+	load_interfaces();
+	codepage_initialise(lp_client_code_page());
 
 	cli = connect_one(share);
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);
 	}
+	Protocol = cli->protocol;
 
 	/* need to init seed after connect as clientgen uses random numbers */
 	DEBUG(0,("seed=%d\n", seed));

@@ -24,7 +24,7 @@ END {
 #      use_ldap_define = 0;
 #    }
     print ""
-    print "/*The following definitions come from ",FILENAME," */"
+    print "/* The following definitions come from",FILENAME," */"
     print ""
     current_file=FILENAME
   }
@@ -112,15 +112,15 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^TALLOC_CTX|^hash_element|^NT_DEVICEMODE|^enum nss_status|^NT_USER_TOKEN|^SAM_ACCOUNT/ ) {
+  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^TALLOC_CTX|^hash_element|^NT_DEVICEMODE|^enum.*\(|^NT_USER_TOKEN|^SAM_ACCOUNT/ ) {
     gotstart = 1;
   }
 
-  if( $0 ~ /^long|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^enum remote_arch_types|^FILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT/ ) {
+  if( $0 ~ /^long|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^FILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT/ ) {
     gotstart = 1;
   }
 
-  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T/ ) {
+  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^NTSTATUS|^WERROR|^CLI_POLICY_HND|^DATA_BLOB/ ) {
     gotstart = 1;
   }
 

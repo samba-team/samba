@@ -1,5 +1,6 @@
 /* 
    Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
@@ -27,10 +28,7 @@
 #define STRING 2
 
 /* spoolss pipe: this are the calls which are not implemented ...
-#define SPOOLSS_OPENPRINTER				0x01
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
-#define SPOOLSS_DELETEPRINTERDRIVER			0x0d
-#define SPOOLSS_GETPRINTPROCESSORDIRECTORY		0x10
 #define SPOOLSS_READPRINTER				0x16
 #define SPOOLSS_WAITFORPRINTERCHANGE			0x1c
 #define SPOOLSS_ADDPORT					0x25
@@ -61,6 +59,7 @@
 
 /* those are implemented */
 #define SPOOLSS_ENUMPRINTERS				0x00
+#define SPOOLSS_OPENPRINTER				0x01
 #define SPOOLSS_SETJOB					0x02
 #define SPOOLSS_GETJOB					0x03
 #define SPOOLSS_ENUMJOBS				0x04
@@ -71,8 +70,10 @@
 #define SPOOLSS_ADDPRINTERDRIVER			0x09
 #define SPOOLSS_ENUMPRINTERDRIVERS			0x0a
 #define SPOOLSS_GETPRINTERDRIVERDIRECTORY		0x0c
+#define SPOOLSS_DELETEPRINTERDRIVER			0x0d
 #define SPOOLSS_ADDPRINTPROCESSOR			0x0e
 #define SPOOLSS_ENUMPRINTPROCESSORS			0x0f
+#define SPOOLSS_GETPRINTPROCESSORDIRECTORY		0x10
 #define SPOOLSS_STARTDOCPRINTER				0x11
 #define SPOOLSS_STARTPAGEPRINTER			0x12
 #define SPOOLSS_WRITEPRINTER				0x13
@@ -109,6 +110,7 @@
 #define SPOOLSS_GETPRINTERDATAEX			0x4e
 #define SPOOLSS_ENUMPRINTERDATAEX			0x4f
 #define SPOOLSS_ENUMPRINTERKEY				0x50
+
 
 #define PRINTER_CONTROL_UNPAUSE		0x00000000
 #define PRINTER_CONTROL_PAUSE		0x00000001
@@ -192,8 +194,6 @@
 #define JOB_READ	STANDARD_RIGHTS_READ_ACCESS|JOB_ACCESS_ADMINISTER
 #define JOB_WRITE	STANDARD_RIGHTS_WRITE_ACCESS|JOB_ACCESS_ADMINISTER
 #define JOB_EXECUTE	STANDARD_RIGHTS_EXECUTE_ACCESS|JOB_ACCESS_ADMINISTER
-
-#define POLICY_HND_SIZE 20
 
 #define ONE_VALUE 1
 #define TWO_VALUE 2
@@ -515,6 +515,23 @@ typedef struct _printer_default
 }
 PRINTER_DEFAULT;
 
+/* SPOOL_Q_OPEN_PRINTER request to open a printer */
+typedef struct spool_q_open_printer
+{
+	uint32 printername_ptr;
+	UNISTR2 printername;
+	PRINTER_DEFAULT printer_default;
+}
+SPOOL_Q_OPEN_PRINTER;
+
+/* SPOOL_R_OPEN_PRINTER reply to an open printer */
+typedef struct spool_r_open_printer
+{
+	POLICY_HND handle;	/* handle used along all transactions (20*uint8) */
+	WERROR status;
+}
+SPOOL_R_OPEN_PRINTER;
+
 /* SPOOL_Q_OPEN_PRINTER_EX request to open a printer */
 typedef struct spool_q_open_printer_ex
 {
@@ -530,8 +547,7 @@ SPOOL_Q_OPEN_PRINTER_EX;
 typedef struct spool_r_open_printer_ex
 {
 	POLICY_HND handle;	/* handle used along all transactions (20*uint8) */
-	uint32 status;
-
+	WERROR status;
 }
 SPOOL_R_OPEN_PRINTER_EX;
 
@@ -593,7 +609,7 @@ typedef struct spool_r_getprinterdata
 	uint32 size;
 	uint8 *data;
 	uint32 needed;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_GETPRINTERDATA;
 
@@ -606,7 +622,7 @@ SPOOL_Q_DELETEPRINTERDATA;
 
 typedef struct spool_r_deleteprinterdata
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_DELETEPRINTERDATA;
 
@@ -619,7 +635,7 @@ SPOOL_Q_CLOSEPRINTER;
 typedef struct spool_r_closeprinter
 {
 	POLICY_HND handle;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_CLOSEPRINTER;
 
@@ -631,7 +647,7 @@ SPOOL_Q_STARTPAGEPRINTER;
 
 typedef struct spool_r_startpageprinter
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_STARTPAGEPRINTER;
 
@@ -643,9 +659,26 @@ SPOOL_Q_ENDPAGEPRINTER;
 
 typedef struct spool_r_endpageprinter
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENDPAGEPRINTER;
+
+
+typedef struct spool_q_deleteprinterdriver
+{
+	uint32 server_ptr;
+	UNISTR2 server;
+	UNISTR2 arch;
+	UNISTR2 driver;
+}
+SPOOL_Q_DELETEPRINTERDRIVER;
+
+typedef struct spool_r_deleteprinterdriver
+{
+	WERROR status;
+}
+SPOOL_R_DELETEPRINTERDRIVER;
+
 
 typedef struct spool_doc_info_1
 {
@@ -682,7 +715,7 @@ SPOOL_Q_STARTDOCPRINTER;
 typedef struct spool_r_startdocprinter
 {
 	uint32 jobid;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_STARTDOCPRINTER;
 
@@ -694,7 +727,7 @@ SPOOL_Q_ENDDOCPRINTER;
 
 typedef struct spool_r_enddocprinter
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENDDOCPRINTER;
 
@@ -710,7 +743,7 @@ SPOOL_Q_WRITEPRINTER;
 typedef struct spool_r_writeprinter
 {
 	uint32 buffer_written;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_WRITEPRINTER;
 
@@ -771,7 +804,7 @@ SPOOL_Q_RFFPCNEX;
 
 typedef struct spool_r_rffpcnex
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_RFFPCNEX;
 
@@ -789,7 +822,7 @@ typedef struct spool_r_rfnpcnex
 {
 	uint32 info_ptr;
 	SPOOL_NOTIFY_INFO info;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_RFNPCNEX;
 
@@ -802,7 +835,7 @@ SPOOL_Q_FCPN;
 
 typedef struct spool_r_fcpn
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_FCPN;
 
@@ -898,6 +931,24 @@ typedef struct printer_info_3
 }
 PRINTER_INFO_3;
 
+typedef struct printer_info_4
+{
+	UNISTR printername;
+	UNISTR servername;
+	uint32 attributes;
+}
+PRINTER_INFO_4;
+
+typedef struct printer_info_5
+{
+	UNISTR printername;
+	UNISTR portname;
+	uint32 attributes;
+	uint32 device_not_selected_timeout;
+	uint32 transmission_retry_timeout;
+}
+PRINTER_INFO_5;
+
 typedef struct spool_q_enumprinters
 {
 	uint32 flags;
@@ -915,6 +966,8 @@ typedef struct printer_info_ctr_info
 	PRINTER_INFO_1 *printers_1;
 	PRINTER_INFO_2 *printers_2;
 	PRINTER_INFO_3 *printers_3;
+	PRINTER_INFO_4 *printers_4;
+	PRINTER_INFO_5 *printers_5;
 }
 PRINTER_INFO_CTR;
 
@@ -923,7 +976,7 @@ typedef struct spool_r_enumprinters
 	NEW_BUFFER *buffer;
 	uint32 needed;		/* bytes needed */
 	uint32 returned;	/* number of printers */
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMPRINTERS;
 
@@ -952,7 +1005,7 @@ typedef struct spool_r_getprinter
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
-	uint32 status;
+	WERROR status;
 } SPOOL_R_GETPRINTER;
 
 typedef struct driver_info_1
@@ -1037,7 +1090,7 @@ typedef struct spool_r_getprinterdriver2
 	uint32 needed;
 	uint32 servermajorversion;
 	uint32 serverminorversion;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_GETPRINTERDRIVER2;
 
@@ -1063,7 +1116,7 @@ typedef struct spool_r_addjob
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ADDJOB;
 
@@ -1159,7 +1212,7 @@ typedef struct spool_r_enumjobs
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMJOBS;
 
@@ -1172,7 +1225,7 @@ SPOOL_Q_SCHEDULEJOB;
 
 typedef struct spool_r_schedulejob
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_SCHEDULEJOB;
 
@@ -1219,7 +1272,7 @@ typedef struct spool_r_enumports
 	NEW_BUFFER *buffer;
 	uint32 needed;		/* bytes needed */
 	uint32 returned;	/* number of printers */
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMPORTS;
 
@@ -1254,7 +1307,7 @@ SPOOL_Q_SETJOB;
 
 typedef struct spool_r_setjob
 {
-	uint32 status;
+	WERROR status;
 
 }
 SPOOL_R_SETJOB;
@@ -1276,9 +1329,13 @@ typedef struct spool_r_enumprinterdrivers
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMPRINTERDRIVERS;
+
+#define FORM_USER    0
+#define FORM_BUILTIN 1
+#define FORM_PRINTER 2
 
 typedef struct spool_form_1
 {
@@ -1307,7 +1364,7 @@ typedef struct spool_r_enumforms
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 numofforms;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMFORMS;
 
@@ -1325,7 +1382,7 @@ typedef struct spool_r_getform
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_GETFORM;
 
@@ -1506,7 +1563,7 @@ SPOOL_Q_SETPRINTER;
 
 typedef struct spool_r_setprinter
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_SETPRINTER;
 
@@ -1524,7 +1581,7 @@ SPOOL_Q_ADDPRINTER;
 
 typedef struct spool_r_addprinter
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ADDPRINTER;
 
@@ -1537,7 +1594,7 @@ SPOOL_Q_DELETEPRINTER;
 typedef struct spool_r_deleteprinter
 {
 	POLICY_HND handle;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_DELETEPRINTER;
 
@@ -1549,7 +1606,7 @@ SPOOL_Q_ABORTPRINTER;
 
 typedef struct spool_r_abortprinter
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ABORTPRINTER;
 
@@ -1570,7 +1627,7 @@ SPOOL_Q_ADDPRINTEREX;
 typedef struct spool_r_addprinterex
 {
 	POLICY_HND handle;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ADDPRINTEREX;
 
@@ -1586,7 +1643,7 @@ SPOOL_Q_ADDPRINTERDRIVER;
 
 typedef struct spool_r_addprinterdriver
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ADDPRINTERDRIVER;
 
@@ -1599,11 +1656,7 @@ DRIVER_DIRECTORY_1;
 
 typedef struct driver_info_ctr_info
 {
-	union
-	{
-		DRIVER_DIRECTORY_1 info_1;
-	}
-	driver;
+	DRIVER_DIRECTORY_1 *info1;
 }
 DRIVER_DIRECTORY_CTR;
 
@@ -1623,7 +1676,7 @@ typedef struct spool_r_getprinterdriverdirectory
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_GETPRINTERDRIVERDIR;
 
@@ -1639,7 +1692,7 @@ SPOOL_Q_ADDPRINTPROCESSOR;
 
 typedef struct spool_r_addprintprocessor
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ADDPRINTPROCESSOR;
 
@@ -1667,7 +1720,7 @@ typedef struct spool_r_enumprintprocessors
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMPRINTPROCESSORS;
 
@@ -1694,7 +1747,7 @@ typedef struct spool_r_enumprintprocdatatypes
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMPRINTPROCDATATYPES;
 
@@ -1727,7 +1780,7 @@ typedef struct spool_r_enumprintmonitors
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMPRINTMONITORS;
 
@@ -1750,7 +1803,7 @@ typedef struct spool_r_enumprinterdata
 	uint32 datasize;
 	uint8 *data;
 	uint32 realdatasize;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMPRINTERDATA;
 
@@ -1768,7 +1821,7 @@ SPOOL_Q_SETPRINTERDATA;
 
 typedef struct spool_r_setprinterdata
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_SETPRINTERDATA;
 
@@ -1783,7 +1836,7 @@ typedef struct spool_q_resetprinter
 
 typedef struct spool_r_resetprinter
 {
-	uint32 status;
+	WERROR status;
 } 
 SPOOL_R_RESETPRINTER;
 
@@ -1807,14 +1860,14 @@ typedef struct spool_q_addform
 {
 	POLICY_HND handle;
 	uint32 level;
-	uint32 level2;
+	uint32 level2;		/* This should really be part of the FORM structure */
 	FORM form;
 }
 SPOOL_Q_ADDFORM;
 
 typedef struct spool_r_addform
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ADDFORM;
 
@@ -1830,7 +1883,7 @@ SPOOL_Q_SETFORM;
 
 typedef struct spool_r_setform
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_SETFORM;
 
@@ -1843,7 +1896,7 @@ SPOOL_Q_DELETEFORM;
 
 typedef struct spool_r_deleteform
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_DELETEFORM;
 
@@ -1874,7 +1927,7 @@ typedef struct spool_r_getjob
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_GETJOB;
 
@@ -1891,7 +1944,7 @@ SPOOL_Q_REPLYOPENPRINTER;
 typedef struct spool_r_replyopenprinter
 {
 	POLICY_HND handle;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_REPLYOPENPRINTER;
 
@@ -1907,7 +1960,7 @@ SPOOL_Q_ROUTERREPLYPRINTER;
 
 typedef struct spool_r_routerreplyprinter
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ROUTERREPLYPRINTER;
 
@@ -1920,7 +1973,7 @@ SPOOL_Q_REPLYCLOSEPRINTER;
 typedef struct spool_r_replycloseprinter
 {
 	POLICY_HND handle;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_REPLYCLOSEPRINTER;
 
@@ -1939,10 +1992,9 @@ SPOOL_Q_REPLY_RRPCN;
 typedef struct spool_r_rrpcn
 {
 	uint32 unknown0;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_REPLY_RRPCN;
-
 
 typedef struct spool_q_getprinterdataex
 {
@@ -1959,7 +2011,7 @@ typedef struct spool_r_getprinterdataex
 	uint32 size;
 	uint8 *data;
 	uint32 needed;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_GETPRINTERDATAEX;
 
@@ -1978,7 +2030,7 @@ SPOOL_Q_SETPRINTERDATAEX;
 
 typedef struct spool_r_setprinterdataex
 {
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_SETPRINTERDATAEX;
 
@@ -1995,7 +2047,7 @@ typedef struct spool_r_enumprinterkey
 {
 	BUFFER5 keys;
 	uint32 needed;	/* in bytes */
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMPRINTERKEY;
 
@@ -2031,13 +2083,36 @@ typedef struct spool_r_enumprinterdataex
 	PRINTER_ENUM_VALUES_CTR ctr;
 	uint32 needed;
 	uint32 returned;
-	uint32 status;
+	WERROR status;
 }
 SPOOL_R_ENUMPRINTERDATAEX;
 
+typedef struct printprocessor_directory_1
+{
+	UNISTR name;
+}
+PRINTPROCESSOR_DIRECTORY_1;
 
+typedef struct spool_q_getprintprocessordirectory
+{
+	UNISTR2 name;
+	UNISTR2 environment;
+	uint32 level;
+	NEW_BUFFER *buffer;
+	uint32 offered;
+}
+SPOOL_Q_GETPRINTPROCESSORDIRECTORY;
+
+typedef struct spool_r_getprintprocessordirectory
+{
+	NEW_BUFFER *buffer;
+	uint32 needed;
+	WERROR status;
+}
+SPOOL_R_GETPRINTPROCESSORDIRECTORY;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
 
 #endif /* _RPC_SPOOLSS_H */
+

@@ -25,8 +25,6 @@
 #include "includes.h"
 #include "smb.h"
 
-extern int DEBUGLEVEL;
-extern struct in_addr ipzero;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -129,7 +127,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 
   memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = ANN_MasterAnnouncement;
+  SCVAL(p,0,ANN_MasterAnnouncement);
   p++;
 
   StrnCpy(p,global_myname,15);
@@ -309,7 +307,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
 
   /* First check if we already have a dmb for this workgroup. */
 
-  if(!ip_equal(work->dmb_addr, ipzero) && ip_equal(work->dmb_addr, answer_ip))
+  if(!is_zero_ip(work->dmb_addr) && ip_equal(work->dmb_addr, answer_ip))
   {
     /* Do the local master browser announcement to the domain
        master browser name and IP. */
@@ -320,7 +318,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
     return;
   }
   else
-    putip((char *)&work->dmb_addr, &ipzero);
+    zero_ip(&work->dmb_addr);
 
   /* Now initiate the node status request. */
   make_nmb_name(&nmbname,"*",0x0);

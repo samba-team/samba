@@ -26,13 +26,10 @@
 #define WINS_LIST "wins.dat"
 #define WINS_VERSION 1
 
-extern int DEBUGLEVEL;
-extern struct in_addr ipzero;
-
-
 /****************************************************************************
 possibly call the WINS hook external program when a WINS change is made
 *****************************************************************************/
+
 static void wins_hook(char *operation, struct name_record *namerec, int ttl)
 {
 	pstring command;
@@ -50,7 +47,7 @@ static void wins_hook(char *operation, struct name_record *namerec, int ttl)
 	}
 	
 	p = command;
-	p += slprintf(p, sizeof(command), "%s %s %s %02x %d", 
+	p += slprintf(p, sizeof(command)-1, "%s %s %s %02x %d", 
 		      cmd,
 		      operation, 
 		      namerec->name.name,
@@ -58,11 +55,11 @@ static void wins_hook(char *operation, struct name_record *namerec, int ttl)
 		      ttl);
 
 	for (i=0;i<namerec->data.num_ips;i++) {
-		p += slprintf(p, sizeof(command) - (p-command), " %s", inet_ntoa(namerec->data.ip[i]));
+		p += slprintf(p, sizeof(command) - (p-command) -1, " %s", inet_ntoa(namerec->data.ip[i]));
 	}
 
 	DEBUG(3,("calling wins hook for %s\n", nmb_namestr(&namerec->name)));
-	smbrun(command, NULL, False);
+	smbrun(command, NULL);
 }
 
 
@@ -300,7 +297,7 @@ BOOL initialise_wins(void)
     if(nb_flags_str[strlen(nb_flags_str)-1] == 'S')
     {
       DEBUG(5,("initialise_wins: Ignoring SELF name %s\n", line));
-      free((char *)ip_list);
+      SAFE_FREE(ip_list);
       continue;
     }
       
@@ -339,7 +336,7 @@ BOOL initialise_wins(void)
              name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
     }
 
-    free((char *)ip_list);
+    SAFE_FREE(ip_list);
   } 
     
   fclose(fp);
@@ -1281,7 +1278,7 @@ static void process_wins_dmb_query_request(struct subnet_record *subrec,
                        prdata,                        /* data to send. */
                        num_ips*6);                    /* data length. */
 
-  free(prdata);
+  SAFE_FREE(prdata);
 }
 
 /****************************************************************************
@@ -1339,7 +1336,7 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
                        reply_data_len);               /* data length. */
 
   if((prdata != rdata) && (prdata != NULL))
-    free(prdata);
+    SAFE_FREE(prdata);
 }
 
 /***********************************************************************
@@ -1597,9 +1594,9 @@ void wins_write_database(BOOL background)
 	  }
   }
 
-  slprintf(fname,sizeof(fname),"%s/%s", lp_lockdir(), WINS_LIST);
+  slprintf(fname,sizeof(fname)-1,"%s/%s", lp_lockdir(), WINS_LIST);
   all_string_sub(fname,"//", "/", 0);
-  slprintf(fnamenew,sizeof(fnamenew),"%s.%u", fname, (unsigned int)sys_getpid());
+  slprintf(fnamenew,sizeof(fnamenew)-1,"%s.%u", fname, (unsigned int)sys_getpid());
 
   if((fp = sys_fopen(fnamenew,"w")) == NULL)
   {

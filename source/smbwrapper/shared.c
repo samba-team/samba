@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static int shared_fd;
 static char *variables;
 static int shared_size;
@@ -33,15 +31,14 @@ setup the shared area
 void smbw_setup_shared(void)
 {
 	int fd;
-	pstring s, name;
+	pstring name, s;
 
-	slprintf(s,sizeof(s)-1, "%s/smbw.XXXXXX",tmpdir());
+	slprintf(name,sizeof(name)-1, "%s/smbw.XXXXXX",tmpdir());
 
-	fstrcpy(name,(char *)smbd_mktemp(s));
+	fd = smb_mkstemp(name);
 
-	/* note zero permissions! don't change this */
-	fd = sys_open(name,O_RDWR|O_CREAT|O_TRUNC|O_EXCL,0); 
 	if (fd == -1) goto failed;
+
 	unlink(name);
 
 	shared_fd = set_maxfiles(SMBW_MAX_OPEN);

@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 3.0
  *  error mapping functions
  *  Copyright (C) Andrew Tridgell 2001
  *  
@@ -43,7 +44,7 @@
 */
 
 /* NT status -> dos error map */
-const static struct {
+static struct {
 	uint8 dos_class;
 	uint32 dos_code;
 	NTSTATUS ntstatus;
@@ -609,7 +610,7 @@ const static struct {
 
 
 /* dos -> nt status error map */
-const static struct {
+static struct {
 	uint8 dos_class;
 	uint32 dos_code;
 	NTSTATUS ntstatus;
@@ -864,7 +865,7 @@ const static struct {
 };
 
 /* errmap NTSTATUS->Win32 */
-const static struct {
+static struct {
 	NTSTATUS ntstatus;
 	WERROR werror;
 } ntstatus_to_werror_map[] = {

@@ -39,7 +39,9 @@
  * vfs_ops below. JRA.
  */
 
-#define SMB_VFS_INTERFACE_VERSION 1
+/* Changed to version 2 for CIFS UNIX extensions (mknod and link added). JRA. */
+/* Changed to version 3 for POSIX acl extensions. JRA. */
+#define SMB_VFS_INTERFACE_VERSION 3
 
 /* VFS operations structure */
 
@@ -49,46 +51,83 @@ struct security_descriptor_info;
 
 struct vfs_ops {
 
-    /* Disk operations */
+	/* Disk operations */
     
-    int (*connect)(struct connection_struct *conn, char *service, char *user);
-    void (*disconnect)(struct connection_struct *conn);
-    SMB_BIG_UINT (*disk_free)(struct connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
-			      SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+	int (*connect)(struct connection_struct *conn, const char *service, const char *user);
+	void (*disconnect)(struct connection_struct *conn);
+	SMB_BIG_UINT (*disk_free)(struct connection_struct *conn, const char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
+		SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
     
-    /* Directory operations */
+	/* Directory operations */
 
-    DIR *(*opendir)(struct connection_struct *conn, char *fname);
-    struct dirent *(*readdir)(struct connection_struct *conn, DIR *dirp);
-    int (*mkdir)(struct connection_struct *conn, char *path, mode_t mode);
-    int (*rmdir)(struct connection_struct *conn, char *path);
-    int (*closedir)(struct connection_struct *conn, DIR *dir);
+	DIR *(*opendir)(struct connection_struct *conn, const char *fname);
+	struct dirent *(*readdir)(struct connection_struct *conn, DIR *dirp);
+	int (*mkdir)(struct connection_struct *conn, const char *path, mode_t mode);
+	int (*rmdir)(struct connection_struct *conn, const char *path);
+	int (*closedir)(struct connection_struct *conn, DIR *dir);
     
-    /* File operations */
+	/* File operations */
     
-    int (*open)(struct connection_struct *conn, char *fname, int flags, mode_t mode);
-    int (*close)(struct files_struct *fsp, int fd);
-    ssize_t (*read)(struct files_struct *fsp, int fd, char *data, size_t n);
-    ssize_t (*write)(struct files_struct *fsp, int fd, char *data, size_t n);
-    SMB_OFF_T (*lseek)(struct files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
-    int (*rename)(struct connection_struct *conn, char *old, char *new);
-    int (*fsync)(struct files_struct *fsp, int fd);
-    int (*stat)(struct connection_struct *conn, char *fname, SMB_STRUCT_STAT *sbuf);
-    int (*fstat)(struct files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);
-    int (*lstat)(struct connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf);
-    int (*unlink)(struct connection_struct *conn, char *path);
-    int (*chmod)(struct connection_struct *conn, char *path, mode_t mode);
-	int (*chown)(struct connection_struct *conn, char *path, uid_t uid, gid_t gid);
-	int (*chdir)(struct connection_struct *conn, char *path);
+	int (*open)(struct connection_struct *conn, const char *fname, int flags, mode_t mode);
+	int (*close)(struct files_struct *fsp, int fd);
+	ssize_t (*read)(struct files_struct *fsp, int fd, void *data, size_t n);
+	ssize_t (*write)(struct files_struct *fsp, int fd, const void *data, size_t n);
+	SMB_OFF_T (*lseek)(struct files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
+	int (*rename)(struct connection_struct *conn, const char *old, const char *new);
+	int (*fsync)(struct files_struct *fsp, int fd);
+	int (*stat)(struct connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf);
+	int (*fstat)(struct files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);
+	int (*lstat)(struct connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf);
+	int (*unlink)(struct connection_struct *conn, const char *path);
+	int (*chmod)(struct connection_struct *conn, const char *path, mode_t mode);
+	int (*fchmod)(struct files_struct *fsp, int fd, mode_t mode);
+	int (*chown)(struct connection_struct *conn, const char *path, uid_t uid, gid_t gid);
+	int (*fchown)(struct files_struct *fsp, int fd, uid_t uid, gid_t gid);
+	int (*chdir)(struct connection_struct *conn, const char *path);
 	char *(*getwd)(struct connection_struct *conn, char *buf);
-    int (*utime)(struct connection_struct *conn, char *path, struct utimbuf *times);
+	int (*utime)(struct connection_struct *conn, const char *path, struct utimbuf *times);
 	int (*ftruncate)(struct files_struct *fsp, int fd, SMB_OFF_T offset);
 	BOOL (*lock)(struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+	int (*symlink)(struct connection_struct *conn, const char *oldpath, const char *newpath);
+	int (*readlink)(struct connection_struct *conn, const char *path, char *buf, size_t bufsiz);
+	int (*link)(struct connection_struct *conn, const char *oldpath, const char *newpath);
+	int (*mknod)(struct connection_struct *conn, const char *path, mode_t mode, SMB_DEV_T dev);
+	char *(*realpath)(struct connection_struct *conn, const char *path, char *resolved_path);
+
+	/* NT ACL operations. */
 
 	size_t (*fget_nt_acl)(struct files_struct *fsp, int fd, struct security_descriptor_info **ppdesc);
-	size_t (*get_nt_acl)(struct files_struct *fsp, char *name, struct security_descriptor_info **ppdesc);
+	size_t (*get_nt_acl)(struct files_struct *fsp, const char *name, struct security_descriptor_info **ppdesc);
 	BOOL (*fset_nt_acl)(struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor_info *psd);
-	BOOL (*set_nt_acl)(struct files_struct *fsp, char *name, uint32 security_info_sent, struct security_descriptor_info *psd);
+	BOOL (*set_nt_acl)(struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor_info *psd);
+
+	/* POSIX ACL operations. */
+
+	int (*chmod_acl)(struct connection_struct *conn, const char *name, mode_t mode);
+	int (*fchmod_acl)(struct files_struct *fsp, int fd, mode_t mode);
+
+	int (*sys_acl_get_entry)(struct connection_struct *conn, SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+	int (*sys_acl_get_tag_type)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+	int (*sys_acl_get_permset)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+	void * (*sys_acl_get_qualifier)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry_d);
+	SMB_ACL_T (*sys_acl_get_file)(struct connection_struct *conn, const char *path_p, SMB_ACL_TYPE_T type);
+	SMB_ACL_T (*sys_acl_get_fd)(struct files_struct *fsp, int fd);
+	int (*sys_acl_clear_perms)(struct connection_struct *conn, SMB_ACL_PERMSET_T permset);
+	int (*sys_acl_add_perm)(struct connection_struct *conn, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+	char * (*sys_acl_to_text)(struct connection_struct *conn, SMB_ACL_T theacl, ssize_t *plen);
+	SMB_ACL_T (*sys_acl_init)(struct connection_struct *conn, int count);
+	int (*sys_acl_create_entry)(struct connection_struct *conn, SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+	int (*sys_acl_set_tag_type)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+	int (*sys_acl_set_qualifier)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, void *qual);
+	int (*sys_acl_set_permset)(struct connection_struct *conn, SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+	int (*sys_acl_valid)(struct connection_struct *conn, SMB_ACL_T theacl );
+	int (*sys_acl_set_file)(struct connection_struct *conn, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+	int (*sys_acl_set_fd)(struct files_struct *fsp, int fd, SMB_ACL_T theacl);
+	int (*sys_acl_delete_def_file)(struct connection_struct *conn, const char *path);
+	int (*sys_acl_get_perm)(struct connection_struct *conn, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+	int (*sys_acl_free_text)(struct connection_struct *conn, char *text);
+	int (*sys_acl_free_acl)(struct connection_struct *conn, SMB_ACL_T posix_acl);
+	int (*sys_acl_free_qualifier)(struct connection_struct *conn, void *qualifier, SMB_ACL_TAG_T tagtype);
 };
 
 struct vfs_options {

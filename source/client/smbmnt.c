@@ -9,6 +9,7 @@
 #include "includes.h"
 
 #include <mntent.h>
+#include <sys/utsname.h>
 
 #include <asm/types.h>
 #include <asm/posix_types.h>
@@ -30,18 +31,21 @@ static int mount_ro;
 static unsigned mount_fmask;
 static unsigned mount_dmask;
 static int user_mount;
+static char *options;
 
 static void
 help(void)
 {
         printf("\n");
-        printf("usage: smbmnt mount-point [options]\n");
+        printf("Usage: smbmnt mount-point [options]\n");
+	printf("Version %s\n\n",VERSION);
         printf("-s share       share name on server\n"
                "-r             mount read-only\n"
                "-u uid         mount as uid\n"
                "-g gid         mount as gid\n"
                "-f mask        permission mask for files\n"
                "-d mask        permission mask for directories\n"
+               "-o options     name=value, list of options\n"
                "-h             print this help text\n");
 }
 
@@ -50,7 +54,7 @@ parse_args(int argc, char *argv[], struct smb_mount_data *data, char **share)
 {
         int opt;
 
-        while ((opt = getopt (argc, argv, "s:u:g:rf:d:")) != EOF)
+        while ((opt = getopt (argc, argv, "s:u:g:rf:d:o:")) != EOF)
 	{
                 switch (opt)
 		{
@@ -76,6 +80,9 @@ parse_args(int argc, char *argv[], struct smb_mount_data *data, char **share)
                 case 'd':
                         mount_dmask = strtol(optarg, NULL, 8);
                         break;
+		case 'o':
+			options = optarg;
+			break;
                 default:
                         return -1;
                 }
@@ -127,6 +134,38 @@ static int mount_ok(char *mount_point)
         }
 
         return 0;
+}
+
+/* Tries to mount using the appropriate format. For 2.2 the struct,
+   for 2.4 the ascii version. */
+static int
+do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
+{
+	pstring opts;
+	struct utsname uts;
+	char *release, *major, *minor;
+	char *data1, *data2;
+
+	uname(&uts);
+	release = uts.release;
+	major = strsep(&release, ".");
+	minor = strsep(&release, ".");
+	if (major && minor && atoi(major) == 2 && atoi(minor) < 4) {
+		/* < 2.4, assume struct */
+		data1 = (char *) data;
+		data2 = opts;
+	} else {
+		/* >= 2.4, assume ascii but fall back on struct */
+		data1 = opts;
+		data2 = (char *) data;
+	}
+
+	slprintf(opts, sizeof(opts)-1,
+		 "version=7,uid=%d,gid=%d,file_mode=0%o,dir_mode=0%o,%s",
+		 data->uid, data->gid, data->file_mode, data->dir_mode,options);
+	if (mount(share_name, ".", "smbfs", flags, data1) == 0)
+		return 0;
+	return mount(share_name, ".", "smbfs", flags, data2);
 }
 
  int main(int argc, char *argv[])
@@ -205,8 +244,7 @@ static int mount_ok(char *mount_point)
 
 	if (mount_ro) flags |= MS_RDONLY;
 
-	if (mount(share_name, ".", "smbfs", flags, (char *)&data) < 0)
-	{
+	if (do_mount(share_name, flags, &data) < 0) {
 		switch (errno) {
 		case ENODEV:
 			fprintf(stderr, "ERROR: smbfs filesystem not supported by the kernel\n");

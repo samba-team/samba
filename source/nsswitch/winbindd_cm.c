@@ -60,9 +60,6 @@
 
 #include "winbindd.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_WINBIND
-
 /* Global list of connections.	Initially a DLIST but can become a hash
    table or whatever later. */
 
@@ -351,7 +348,7 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 	result = cli_full_connection(&(new_conn->cli), global_myname, new_conn->controller, 
 				     &dc_ip, 0, "IPC$", 
 				     "IPC", ipc_username, ipc_domain, 
-				     ipc_password);
+				     ipc_password, strlen(ipc_password));
 
 	SAFE_FREE(ipc_username);
 	SAFE_FREE(ipc_domain);
@@ -418,7 +415,6 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 				if (conn->cli) {
 					cli_shutdown(conn->cli);
 				}
-				ZERO_STRUCT(conn_temp);
 				conn_temp.next = conn->next;
 				DLIST_REMOVE(cm_conns, conn);
 				SAFE_FREE(conn);
@@ -430,7 +426,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 	}
 	
 	if (!conn) {
-		if (!(conn = malloc(sizeof(*conn))))
+		if (!(conn = (struct winbindd_cm_conn *) malloc(sizeof(struct winbindd_cm_conn))))
 			return NT_STATUS_NO_MEMORY;
 		
 		ZERO_STRUCTP(conn);

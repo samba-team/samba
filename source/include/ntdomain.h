@@ -24,7 +24,6 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
-
 /* dce/rpc support */
 #include "rpc_dce.h"
 
@@ -39,18 +38,6 @@
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
  */
-
-#define CHECK_STRUCT(data) \
-{ \
-        if ((data)->struct_start != 0xfefefefe || \
-            (data)->struct_end != 0xdcdcdcdc) \
-        { \
-                DEBUG(0,("uninitialised structure (%s, %d)\n", \
-                FUNCTION_MACRO, __LINE__)); \
-                sleep(30); \
-        } \
-}
-
  
 typedef struct _prs_struct 
 {
@@ -78,6 +65,11 @@ typedef struct _prs_struct
 
 #define MARSHALLING(ps) (!(ps)->io)
 #define UNMARSHALLING(ps) ((ps)->io)
+
+#define RPC_BIG_ENDIAN 		1
+#define RPC_LITTLE_ENDIAN	0
+
+#define RPC_PARSE_ALIGN 4
 
 typedef struct _output_data {
 	/*
@@ -132,39 +124,39 @@ typedef struct _input_data {
     prs_struct data;
 } input_data;
 
-struct msrpc_state
-{
-    fstring pipe_name;
-    struct user_creds usr;
-    struct ntdom_info nt;
-
-    int fd;
-    BOOL redirect;
-    BOOL initialised;
-    char *inbuf;
-    char *outbuf;
-
-    uint32 pid;
-};
-
 /*
  * Handle database - stored per pipe.
  */
 
 struct policy
 {
-	struct policy *next, *prev;
+    struct policy *next, *prev;
 
-	POLICY_HND pol_hnd;
+    POLICY_HND pol_hnd;
 
-	void *data_ptr;
-	void (*free_fn)(void *);
+    void *data_ptr;
+    void (*free_fn)(void *);
+
 };
 
 struct handle_list {
-	struct policy *Policy;  /* List of policies. */
-	size_t count;                   /* Current number of handles. */
-	size_t pipe_ref_count;  /* Number of pipe handles referring to this list. */
+	struct policy *Policy; 	/* List of policies. */
+	size_t count;			/* Current number of handles. */
+	size_t pipe_ref_count;	/* Number of pipe handles referring to this list. */
+};
+
+/* Domain controller authentication protocol info */
+struct dcinfo
+{
+	DOM_CHAL clnt_chal; /* Initial challenge received from client */
+	DOM_CHAL srv_chal;  /* Initial server challenge */
+	DOM_CRED clnt_cred; /* Last client credential */
+	DOM_CRED srv_cred;  /* Last server credential */
+ 
+	uchar  sess_key[8]; /* Session key */
+	uchar  md4pw[16];   /* md4(machine password) */
+
+	fstring mach_acct;  /* Machine name we've authenticated. */
 };
 
 typedef struct pipes_struct
@@ -172,7 +164,7 @@ typedef struct pipes_struct
 	struct pipes_struct *next, *prev;
 	int pnum;
 	connection_struct *conn;
-	uint16 vuid;
+	uint16 vuid; /* points to the unauthenticated user that opened this pipe. */
 	BOOL open; /* open connection */
 	uint16 device_state;
 	uint16 priority;
@@ -188,6 +180,7 @@ typedef struct pipes_struct
 	unsigned char challenge[8];
 	unsigned char ntlmssp_hash[258];
 	uint32 ntlmssp_seq_num;
+	struct dcinfo dc; /* Keeps the creds data. */
 
 	/*
 	 * Windows user info.
@@ -216,10 +209,16 @@ typedef struct pipes_struct
 	BOOL fault_state;
 	
 	/*
-	 * Set to true when we should return fault PDU's for a bad hande (transient).
+	 * Set to true when we should return fault PDU's for a bad handle.
 	 */
 	
 	BOOL bad_handle_fault_state;
+	
+	/*
+	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's
+	 */
+	
+	BOOL endian;
 	
 	/*
 	 * Struct to deal with multiple pdu inputs.
@@ -262,7 +261,8 @@ typedef struct
 struct acct_info
 {
     fstring acct_name; /* account name */
-    uint32 smb_userid; /* domain-relative RID */
+    fstring acct_desc; /* account name */
+    uint32 rid; /* domain-relative RID */
 };
 
 /*
@@ -284,11 +284,7 @@ struct acct_info
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
 #include "rpc_reg.h"
-#if OLD_NTDOMAIN
-#include "rpc_samr_old.h"
-#else
 #include "rpc_samr.h"
-#endif
 #include "rpc_srvsvc.h"
 #include "rpc_wkssvc.h"
 #include "rpc_spoolss.h"

@@ -22,8 +22,6 @@
 #define CHARSET_C
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  * Codepage definitions.
  */
@@ -205,7 +203,7 @@ static codepage_p load_client_codepage( int client_codepage )
   pstrcat(codepage_file_name, "/");
   pstrcat(codepage_file_name, "codepage.");
   slprintf(&codepage_file_name[strlen(codepage_file_name)], 
-	   sizeof(pstring)-(strlen(codepage_file_name)+1),
+	   sizeof(pstring)-(strlen(codepage_file_name)+1)-1,
 	   "%03d",
            client_codepage);
 
@@ -314,8 +312,7 @@ clean_and_exit:
 
   if(fd != -1)
     close(fd);
-  if(cp_p)
-    free((char *)cp_p);
+  SAFE_FREE(cp_p);
   return NULL;
 }
 
@@ -373,6 +370,7 @@ for code page %d failed. Using default client codepage 850\n",
 
   /* Try and load the unicode map. */
   load_dos_unicode_map(client_codepage);
+  load_unix_unicode_map("iso8859-1", False); /* This will be reset by character set = XXX */
 }
 
 /*******************************************************************
@@ -396,5 +394,5 @@ void add_char_string(char *s)
     }
   }
 
-  free(extra_chars);
+  SAFE_FREE(extra_chars);
 }

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern fstring global_sam_name;
 
 /*
@@ -140,16 +138,18 @@ LOCAL_GRP *iterate_getaliasnam(char *name, LOCAL_GRP_MEMBER **mem, int *num_mem)
  *************************************************************************/
 BOOL add_domain_alias(LOCAL_GRP **alss, int *num_alss, LOCAL_GRP *als)
 {
-	if (alss == NULL || num_alss == NULL || als == NULL)
-	{
-		return False;
-	}
+	LOCAL_GRP *talss;
 
-	(*alss) = Realloc((*alss), ((*num_alss)+1) * sizeof(LOCAL_GRP));
-	if ((*alss) == NULL)
-	{
+	if (alss == NULL || num_alss == NULL || als == NULL)
 		return False;
-	}
+
+	talss = (LOCAL_GRP *)Realloc((*alss), ((*num_alss)+1) * sizeof(LOCAL_GRP));
+    if (talss == NULL) {
+		if (*alss)
+			free(*alss);
+		return False;
+	} else
+		(*alss) = talss;
 
 	DEBUG(10,("adding alias %s(%s)\n", als->name, als->comment));
 

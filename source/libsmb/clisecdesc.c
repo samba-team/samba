@@ -19,25 +19,21 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
-
-
 
 /****************************************************************************
   query the security descriptor for a open file
-  ****************************************************************************/
-SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
+ ****************************************************************************/
+SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum, 
+			    TALLOC_CTX *mem_ctx)
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
 	int rparam_count=0, rdata_count=0;
-	TALLOC_CTX *mem_ctx;
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 
-	SIVAL(param, 0, fd);
+	SIVAL(param, 0, fnum);
 	SSVAL(param, 4, 0x7);
 
 	if (!cli_send_nt_trans(cli, 
@@ -58,12 +54,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 		goto cleanup;
 	}
 
-	if ((mem_ctx = talloc_init()) == NULL) {
-		DEBUG(0,("talloc_init failed.\n"));
-		goto cleanup;
-	}
-
-	prs_init(&pd, rdata_count, 4, mem_ctx, UNMARSHALL);
+	prs_init(&pd, rdata_count, mem_ctx, UNMARSHALL);
 	prs_append_data(&pd, rdata, rdata_count);
 	pd.data_offset = 0;
 
@@ -74,21 +65,17 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 
  cleanup:
 
-	talloc_destroy(mem_ctx);
-	safe_free(rparam);
-	safe_free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	prs_mem_free(&pd);
 	return psd;
 }
 
-
-
-
 /****************************************************************************
   set the security descriptor for a open file
-  ****************************************************************************/
-BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
+ ****************************************************************************/
+BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
@@ -102,7 +89,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 		goto cleanup;
 	}
 
-	prs_init(&pd, 0, 4, mem_ctx, MARSHALL);
+	prs_init(&pd, 0, mem_ctx, MARSHALL);
 	prs_give_memory(&pd, NULL, 0, True);
 
 	if (!sec_io_desc("sd data", &sd, &pd, 1)) {
@@ -110,7 +97,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 		goto cleanup;
 	}
 
-	SIVAL(param, 0, fd);
+	SIVAL(param, 0, fnum);
 	SSVAL(param, 4, 0x7);
 
 	if (!cli_send_nt_trans(cli, 
@@ -135,12 +122,11 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 
   cleanup:
 
-	safe_free(rparam);
-	safe_free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	talloc_destroy(mem_ctx);
 
 	prs_mem_free(&pd);
 	return ret;
 }
-

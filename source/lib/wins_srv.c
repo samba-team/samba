@@ -130,9 +130,8 @@ BOOL wins_srv_load_list( char *src )
   /* Empty the list. */
   while( NULL != (entry =(list_entry *)ubi_slRemHead( wins_srv_list )) )
     {
-    if( entry->server )
-      free( entry->server );
-    free( entry );
+    SAFE_FREE( entry->server );
+    SAFE_FREE( entry );
     }
   (void)ubi_slInitList( wins_srv_list );  /* shouldn't be needed */
 
@@ -150,7 +149,7 @@ BOOL wins_srv_load_list( char *src )
       entry->mourning = 0;
       if( NULL == (entry->server = strdup( wins_id_bufr )) )
         {
-        free( entry );
+        SAFE_FREE( entry );
         DEBUG( 0, ("wins_srv_load_list(): strdup(\"%s\") failed.\n", wins_id_bufr) );
         }
       else
@@ -185,11 +184,11 @@ struct in_addr wins_srv_ip( void )
     if( now >= entry->mourning )        /* Found a live one. */
       {
       /* If we don't have the IP, look it up. */
-      if( zero_ip( entry->ip_addr ) )
+      if( is_zero_ip( entry->ip_addr ) )
         entry->ip_addr = *interpret_addr2( entry->server );
 
       /* If we still don't have the IP then kill it, else return it. */
-      if( zero_ip( entry->ip_addr ) )
+      if( is_zero_ip( entry->ip_addr ) )
         entry->mourning = now + NECROMANCYCLE;
       else
         return( entry->ip_addr );
@@ -209,7 +208,7 @@ void wins_srv_died( struct in_addr boothill_ip )
   {
   list_entry *entry;
 
-  if( zero_ip( boothill_ip ) )
+  if( is_zero_ip( boothill_ip ) )
     {
     DEBUG( 4, ("wins_srv_died(): Got request to mark zero IP down.\n") );
     return;
@@ -225,9 +224,6 @@ void wins_srv_died( struct in_addr boothill_ip )
       entry->ip_addr.s_addr = 0;  /* Force a re-lookup at re-birth. */
       DEBUG( 2, ( "wins_srv_died(): WINS server %s appears to be down.\n", 
                   entry->server ) );
-      /* BEGIN_ADMIN_LOG */
-      sys_adminlog(LOG_CRIT,(char *)gettext("Cannot communicate with WINS server. WINS server address: %s."),entry->server);
-      /* END_ADMIN_LOG */
       return;
       }
     entry = (list_entry *)ubi_slNext( entry );

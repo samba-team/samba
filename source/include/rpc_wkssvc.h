@@ -64,7 +64,7 @@ typedef struct r_wks_query_info_info
 	uint32 ptr_1;              /* pointer 1 */
 	WKS_INFO_100 *wks100;      /* workstation info level 100 */
 
-	uint32 status;             /* return status */
+	NTSTATUS status;             /* return status */
 
 } WKS_R_QUERY_INFO;
 

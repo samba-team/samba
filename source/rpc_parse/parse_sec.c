@@ -22,10 +22,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 #define SD_HEADER_SIZE 0x14
 
@@ -71,8 +68,8 @@ void init_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 f
 	t->size = sid_size(sid) + 8;
 	t->info = mask;
 
-	ZERO_STRUCTP(&t->sid);
-	sid_copy(&t->sid, sid);
+	ZERO_STRUCTP(&t->trustee);
+	sid_copy(&t->trustee, sid);
 }
 
 /*******************************************************************
@@ -110,7 +107,7 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_dom_sid("sid  ", &psa->sid , ps, depth))
+	if(!smb_io_dom_sid("sid  ", &psa->trustee , ps, depth))
 		return False;
 
 	if(!prs_uint16_post("size ", ps, depth, &psa->size, offset_ace_size, old_offset))
@@ -123,25 +120,30 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
  Create a SEC_ACL structure.  
 ********************************************************************/
 
-SEC_ACL *make_sec_acl(uint16 revision, int num_aces, SEC_ACE *ace_list)
+SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *ace_list)
 {
 	SEC_ACL *dst;
 	int i;
 
-	if((dst = (SEC_ACL *)malloc(sizeof(SEC_ACL))) == NULL)
+	if((dst = (SEC_ACL *)talloc_zero(ctx,sizeof(SEC_ACL))) == NULL)
 		return NULL;
-
-	ZERO_STRUCTP(dst);
 
 	dst->revision = revision;
 	dst->num_aces = num_aces;
 	dst->size = 8;
 
-	if((dst->ace = (SEC_ACE *)malloc( sizeof(SEC_ACE) * num_aces )) == NULL) {
-		free_sec_acl(&dst);
+	/* Now we need to return a non-NULL address for the ace list even
+	   if the number of aces required is zero.  This is because there
+	   is a distinct difference between a NULL ace and an ace with zero
+	   entries in it.  This is achieved by checking that num_aces is a
+	   positive number. */
+
+	if ((num_aces) && 
+            ((dst->ace = (SEC_ACE *)talloc(ctx, sizeof(SEC_ACE) * num_aces)) 
+             == NULL)) {
 		return NULL;
 	}
-
+        
 	for (i = 0; i < num_aces; i++) {
 		dst->ace[i] = ace_list[i]; /* Structure copy. */
 		dst->size += ace_list[i].size;
@@ -154,31 +156,12 @@ SEC_ACL *make_sec_acl(uint16 revision, int num_aces, SEC_ACE *ace_list)
  Duplicate a SEC_ACL structure.  
 ********************************************************************/
 
-SEC_ACL *dup_sec_acl( SEC_ACL *src)
+SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src)
 {
 	if(src == NULL)
 		return NULL;
 
-	return make_sec_acl( src->revision, src->num_aces, src->ace);
-}
-
-/*******************************************************************
- Delete a SEC_ACL structure.  
-********************************************************************/
-
-void free_sec_acl(SEC_ACL **ppsa)
-{
-	SEC_ACL *psa;
-
-	if(ppsa == NULL || *ppsa == NULL)
-		return;
-
-	psa = *ppsa;
-	if (psa->ace != NULL)
-		free(psa->ace);
-
-	free(psa);
-	*ppsa = NULL;
+	return make_sec_acl(ctx, src->revision, src->num_aces, src->ace);
 }
 
 /*******************************************************************
@@ -204,9 +187,8 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 		/*
 		 * This is a read and we must allocate the stuct to read into.
 		 */
-		if((psa = (SEC_ACL *)malloc(sizeof(SEC_ACL))) == NULL)
+		if((psa = (SEC_ACL *)prs_alloc_mem(ps, sizeof(SEC_ACL))) == NULL)
 			return False;
-		ZERO_STRUCTP(psa);
 		*ppsa = psa;
 	}
 
@@ -227,11 +209,14 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	if(!prs_uint32("num_aces ", ps, depth, &psa->num_aces))
 		return False;
 
-	if (UNMARSHALLING(ps) && psa->num_aces != 0) {
-		/* reading */
-		if((psa->ace = malloc(sizeof(psa->ace[0]) * psa->num_aces)) == NULL)
+	if (UNMARSHALLING(ps)) {
+		/*
+		 * Even if the num_aces is zero, allocate memory as there's a difference
+		 * between a non-present DACL (allow all access) and a DACL with no ACE's
+		 * (allow no access).
+		 */
+		if((psa->ace = (SEC_ACE *)prs_alloc_mem(ps,sizeof(psa->ace[0]) * (psa->num_aces+1))) == NULL)
 			return False;
-		ZERO_STRUCTP(psa->ace);
 	}
 
 	for (i = 0; i < psa->num_aces; i++) {
@@ -296,7 +281,7 @@ BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2)
 
 	/* Check SID */
 
-	if (!sid_equal(&s1->sid, &s2->sid)) {
+	if (!sid_equal(&s1->trustee, &s2->trustee)) {
 		return False;
 	}
 
@@ -311,9 +296,10 @@ BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
 {
 	int i, j;
 
-	/* Trivial case */
+	/* Trivial cases */
 
 	if (!s1 && !s2) return True;
+	if (!s1 || !s2) return False;
 
 	/* Check top level stuff */
 
@@ -425,7 +411,7 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
  security descriptor new_sec.
 ********************************************************************/
 
-SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
+SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
 {
 	DOM_SID *owner_sid, *group_sid;
 	SEC_DESC_BUF *return_sdb;
@@ -434,10 +420,14 @@ SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
 	uint16 secdesc_type;
 	size_t secdesc_size;
 
-	/* Ignore changes to owner and group - APPLIANCE ONLY */
+	/* Copy over owner and group sids.  There seems to be no flag for
+	   this so just check the pointer values. */
 
-	owner_sid = old_sdb->sec->owner_sid;
-	group_sid = old_sdb->sec->grp_sid;
+	owner_sid = new_sdb->sec->owner_sid ? new_sdb->sec->owner_sid :
+		old_sdb->sec->owner_sid;
+
+	group_sid = new_sdb->sec->grp_sid ? new_sdb->sec->grp_sid :
+		old_sdb->sec->grp_sid;
 	
 	secdesc_type = new_sdb->sec->type;
 
@@ -458,21 +448,37 @@ SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
 
 	/* Create new security descriptor from bits */
 
-	psd = make_sec_desc(new_sdb->sec->revision, 
+	psd = make_sec_desc(ctx, new_sdb->sec->revision, 
 			    owner_sid, group_sid, sacl, dacl, &secdesc_size);
 
-	return_sdb = make_sec_desc_buf(secdesc_size, psd);
-
-	free_sec_desc(&psd);
+	return_sdb = make_sec_desc_buf(ctx, secdesc_size, psd);
 
 	return(return_sdb);
+}
+
+/*******************************************************************
+ Tallocs a duplicate SID. 
+********************************************************************/ 
+
+static DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, DOM_SID *src)
+{
+  DOM_SID *dst;
+
+  if(!src)
+    return NULL;
+
+  if((dst = talloc_zero(ctx, sizeof(DOM_SID))) != NULL) {
+    sid_copy( dst, src);
+  }
+
+  return dst;
 }
 
 /*******************************************************************
  Creates a SEC_DESC structure
 ********************************************************************/
 
-SEC_DESC *make_sec_desc(uint16 revision, 
+SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision, 
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size)
 {
@@ -481,10 +487,8 @@ SEC_DESC *make_sec_desc(uint16 revision,
 
 	*sd_size = 0;
 
-	if(( dst = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL)
+	if(( dst = (SEC_DESC *)talloc_zero(ctx, sizeof(SEC_DESC))) == NULL)
 		return NULL;
-
-	ZERO_STRUCTP(dst);
 
 	dst->revision = revision;
 	dst->type     = SEC_DESC_SELF_RELATIVE;
@@ -497,16 +501,16 @@ SEC_DESC *make_sec_desc(uint16 revision,
 	dst->off_sacl      = 0;
 	dst->off_dacl      = 0;
 
-	if(owner_sid && ((dst->owner_sid = sid_dup(owner_sid)) == NULL))
+	if(owner_sid && ((dst->owner_sid = sid_dup_talloc(ctx,owner_sid)) == NULL))
 		goto error_exit;
 
-	if(grp_sid && ((dst->grp_sid = sid_dup(grp_sid)) == NULL))
+	if(grp_sid && ((dst->grp_sid = sid_dup_talloc(ctx,grp_sid)) == NULL))
 		goto error_exit;
 
-	if(sacl && ((dst->sacl = dup_sec_acl(sacl)) == NULL))
+	if(sacl && ((dst->sacl = dup_sec_acl(ctx, sacl)) == NULL))
 		goto error_exit;
 
-	if(dacl && ((dst->dacl = dup_sec_acl(dacl)) == NULL))
+	if(dacl && ((dst->dacl = dup_sec_acl(ctx, dacl)) == NULL))
 		goto error_exit;
 		
 	offset = 0;
@@ -539,7 +543,7 @@ SEC_DESC *make_sec_desc(uint16 revision,
 			offset = SD_HEADER_SIZE;
 
 		dst->off_sacl = offset;
-		offset += ((sacl->size + 3) & ~3);
+		offset += ((dst->sacl->size + 3) & ~3);
 	}
 
 	if (dst->dacl != NULL) {
@@ -548,7 +552,7 @@ SEC_DESC *make_sec_desc(uint16 revision,
 			offset = SD_HEADER_SIZE;
 
 		dst->off_dacl = offset;
-		offset += ((dacl->size + 3) & ~3);
+		offset += ((dst->dacl->size + 3) & ~3);
 	}
 
 	*sd_size = (size_t)((offset == 0) ? SD_HEADER_SIZE : offset);
@@ -557,7 +561,6 @@ SEC_DESC *make_sec_desc(uint16 revision,
 error_exit:
 
 	*sd_size = 0;
-	free_sec_desc(&dst);
 	return NULL;
 }
 
@@ -565,47 +568,26 @@ error_exit:
  Duplicate a SEC_DESC structure.  
 ********************************************************************/
 
-SEC_DESC *dup_sec_desc( SEC_DESC *src)
+SEC_DESC *dup_sec_desc( TALLOC_CTX *ctx, SEC_DESC *src)
 {
 	size_t dummy;
 
 	if(src == NULL)
 		return NULL;
 
-	return make_sec_desc( src->revision, 
+	return make_sec_desc( ctx, src->revision, 
 				src->owner_sid, src->grp_sid, src->sacl,
 				src->dacl, &dummy);
-}
-
-/*******************************************************************
- Deletes a SEC_DESC structure
-********************************************************************/
-
-void free_sec_desc(SEC_DESC **ppsd)
-{
-	SEC_DESC *psd;
-
-	if(ppsd == NULL || *ppsd == NULL)
-		return;
-
-	psd = *ppsd;
-
-	free_sec_acl(&psd->dacl);
-	free_sec_acl(&psd->sacl);
-	SAFE_FREE(psd->owner_sid);
-	SAFE_FREE(psd->grp_sid);
-	free(psd);
-	*ppsd = NULL;
 }
 
 /*******************************************************************
  Creates a SEC_DESC structure with typical defaults.
 ********************************************************************/
 
-SEC_DESC *make_standard_sec_desc(DOM_SID *owner_sid, DOM_SID *grp_sid,
+SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, DOM_SID *owner_sid, DOM_SID *grp_sid,
 				 SEC_ACL *dacl, size_t *sd_size)
 {
-	return make_sec_desc(SEC_DESC_REVISION,
+	return make_sec_desc(ctx, SEC_DESC_REVISION,
 			     owner_sid, grp_sid, NULL, dacl, sd_size);
 }
 
@@ -627,9 +609,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if (psd == NULL) {
 		if(UNMARSHALLING(ps)) {
-			if((psd = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL)
+			if((psd = (SEC_DESC *)prs_alloc_mem(ps,sizeof(SEC_DESC))) == NULL)
 				return False;
-			ZERO_STRUCTP(psd);
 			*ppsd = psd;
 		} else {
 			/* Marshalling - just ignore. */
@@ -639,9 +620,16 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_desc");
 	depth++;
-
+	
+#if 0	/* JERRY */
+	/*
+	 * if alignment is needed, should be done by the the 
+	 * caller.  Not here.  This caused me problems when marshalling
+	 * printer info into a buffer.   --jerry
+	 */
 	if(!prs_align(ps))
 		return False;
+#endif
 	
 	/* start of security descriptor stored for back-calc offset purposes */
 	old_offset = prs_offset(ps);
@@ -672,9 +660,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
 				return False;
 			/* reading */
-			if((psd->owner_sid = malloc(sizeof(*psd->owner_sid))) == NULL)
+			if((psd->owner_sid = (DOM_SID *)prs_alloc_mem(ps,sizeof(*psd->owner_sid))) == NULL)
 				return False;
-			ZERO_STRUCTP(psd->owner_sid);
 		}
 
 		if(!smb_io_dom_sid("owner_sid ", psd->owner_sid , ps, depth))
@@ -691,9 +678,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			/* reading */
 			if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
 				return False;
-			if((psd->grp_sid = malloc(sizeof(*psd->grp_sid))) == NULL)
+			if((psd->grp_sid = (DOM_SID *)prs_alloc_mem(ps,sizeof(*psd->grp_sid))) == NULL)
 				return False;
-			ZERO_STRUCTP(psd->grp_sid);
 		}
 
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
@@ -735,23 +721,22 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
  Creates a SEC_DESC_BUF structure.
 ********************************************************************/
 
-SEC_DESC_BUF *make_sec_desc_buf(size_t len, SEC_DESC *sec_desc)
+SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc)
 {
 	SEC_DESC_BUF *dst;
 
-	if((dst = (SEC_DESC_BUF *)malloc(sizeof(SEC_DESC_BUF))) == NULL)
+	if((dst = (SEC_DESC_BUF *)talloc_zero(ctx, sizeof(SEC_DESC_BUF))) == NULL)
 		return NULL;
-
-	ZERO_STRUCTP(dst);
 
 	/* max buffer size (allocated size) */
 	dst->max_len = (uint32)len;
 	dst->len = (uint32)len;
-
-	if(sec_desc && ((dst->sec = dup_sec_desc(sec_desc)) == NULL)) {
-		free_sec_desc_buf(&dst);
+	
+	if(sec_desc && ((dst->sec = dup_sec_desc(ctx, sec_desc)) == NULL)) {
 		return NULL;
 	}
+
+	dst->ptr = 0x1;
 
 	return dst;
 }
@@ -760,31 +745,13 @@ SEC_DESC_BUF *make_sec_desc_buf(size_t len, SEC_DESC *sec_desc)
  Duplicates a SEC_DESC_BUF structure.
 ********************************************************************/
 
-SEC_DESC_BUF *dup_sec_desc_buf(SEC_DESC_BUF *src)
+SEC_DESC_BUF *dup_sec_desc_buf(TALLOC_CTX *ctx, SEC_DESC_BUF *src)
 {
 	if(src == NULL)
 		return NULL;
 
-	return make_sec_desc_buf( src->len, src->sec);
+	return make_sec_desc_buf( ctx, src->len, src->sec);
 }
-
-/*******************************************************************
- Deletes a SEC_DESC_BUF structure.
-********************************************************************/
-
-void free_sec_desc_buf(SEC_DESC_BUF **ppsdb)
-{
-	SEC_DESC_BUF *psdb;
-
-	if(ppsdb == NULL || *ppsdb == NULL)
-		return;
-
-	psdb = *ppsdb;
-	free_sec_desc(&psdb->sec);
-	free(psdb);
-	*ppsdb = NULL;
-}
-
 
 /*******************************************************************
  Reads or writes a SEC_DESC_BUF structure.
@@ -804,9 +771,8 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 	psdb = *ppsdb;
 
 	if (UNMARSHALLING(ps) && psdb == NULL) {
-		if((psdb = (SEC_DESC_BUF *)malloc(sizeof(SEC_DESC_BUF))) == NULL)
+		if((psdb = (SEC_DESC_BUF *)prs_alloc_mem(ps,sizeof(SEC_DESC_BUF))) == NULL)
 			return False;
-		ZERO_STRUCTP(psdb);
 		*ppsdb = psdb;
 	}
 
@@ -819,7 +785,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 	if(!prs_uint32_pre("max_len", ps, depth, &psdb->max_len, &off_max_len))
 		return False;
 
-	if(!prs_uint32    ("undoc  ", ps, depth, &psdb->undoc))
+	if(!prs_uint32    ("ptr  ", ps, depth, &psdb->ptr))
 		return False;
 
 	if(!prs_uint32_pre("len    ", ps, depth, &psdb->len, &off_len))

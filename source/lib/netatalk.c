@@ -28,8 +28,6 @@
 
 #ifdef WITH_NETATALK
  
-extern int DEBUGLEVEL;
-
 /*****************
    ntalk_resourcepath: creates the path to the netatalk resource fork for
                         a given file

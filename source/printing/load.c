@@ -48,7 +48,7 @@ static void add_auto_printers(void)
 	printers = lp_servicenumber(PRINTERS_NAME);
 
 	if (printers < 0) {
-        free(str);
+        SAFE_FREE(str);
         return;
     }
 	
@@ -60,7 +60,7 @@ static void add_auto_printers(void)
 		}
 	}
 
-    free(str);
+    SAFE_FREE(str);
 }
 
 /***************************************************************************

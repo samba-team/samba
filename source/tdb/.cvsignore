@@ -1,3 +1,5 @@
+*.po
+*.po32
 tdbtool
 tdbtest
 tdbtorture

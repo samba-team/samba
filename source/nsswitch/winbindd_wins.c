@@ -23,9 +23,6 @@
 
 #include "winbindd.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_WINBIND
-
 /* Use our own create socket code so we don't recurse.... */
 
 static int wins_lookup_open_socket_in(void)
@@ -88,7 +85,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	int fd;
 	struct in_addr *ret = NULL;
 	struct in_addr  p;
-	int j, flags = 0;
+	int j, flags;
 
 	*count = 0;
 

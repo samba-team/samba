@@ -63,6 +63,16 @@ add_dynamic_entries()
     fi
   done
 
+  # Add the Registry files
+  echo "#\n# Registry files \n#"
+  echo d none samba/docs/Registry 0755 root other
+  cd $DISTR_BASE
+  list=`find docs/Registry -type f -name "*.reg" | grep -v "/CVS$"`
+  for regfile in $list 
+  do
+	echo f none samba/$regfile=$regfile 0644 root other
+  done
+
   # Add the manpages
   echo "#\n# man pages \n#"
   echo d none /usr ? ? ?

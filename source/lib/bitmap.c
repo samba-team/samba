@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* these functions provide a simple way to allocate integers from a
    pool without repitition */
 
@@ -41,13 +39,26 @@ struct bitmap *bitmap_allocate(int n)
 	bm->n = n;
 	bm->b = (uint32 *)malloc(sizeof(bm->b[0])*(n+31)/32);
 	if (!bm->b) {
-		free(bm);
+		SAFE_FREE(bm);
 		return NULL;
 	}
 
 	memset(bm->b, 0, sizeof(bm->b[0])*(n+31)/32);
 
 	return bm;
+}
+
+/****************************************************************************
+free a bitmap.
+****************************************************************************/
+
+void bitmap_free(struct bitmap *bm)
+{
+	if (!bm)
+		return;
+
+	SAFE_FREE(bm->b);
+	SAFE_FREE(bm);
 }
 
 /****************************************************************************

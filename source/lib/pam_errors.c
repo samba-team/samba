@@ -28,7 +28,7 @@
 #endif	
 
 /* PAM -> NT_STATUS map */
-const static struct {
+static struct {
 	int pam_code;
 	NTSTATUS ntstatus;
 } pam_to_nt_status_map[] = {
@@ -58,7 +58,7 @@ const static struct {
 };
 
 /* NT_STATUS -> PAM map */
-const static struct {
+static struct {
 	NTSTATUS ntstatus;
 	int pam_code;
 } nt_status_to_pam_map[] = {
@@ -67,7 +67,6 @@ const static struct {
 	{NT_STATUS_WRONG_PASSWORD, PAM_AUTH_ERR},
 	{NT_STATUS_LOGON_FAILURE, PAM_AUTH_ERR},
 	{NT_STATUS_ACCOUNT_EXPIRED, PAM_ACCT_EXPIRED},
-	{NT_STATUS_PASSWORD_EXPIRED, PAM_AUTHTOK_EXPIRED},
 	{NT_STATUS_PASSWORD_MUST_CHANGE, PAM_NEW_AUTHTOK_REQD},
 	{NT_STATUS_OK, PAM_SUCCESS}
 };

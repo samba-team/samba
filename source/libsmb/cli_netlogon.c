@@ -25,6 +25,15 @@
 
 #include "includes.h"
 
+/* Opens a SMB connection to the netlogon pipe */
+
+struct cli_state *cli_netlogon_initialise(struct cli_state *cli, 
+					  char *system_name,
+					  struct ntuser_creds *creds)
+{
+        return cli_pipe_initialise(cli, system_name, PIPE_NETLOGON, creds);
+}
+
 /* LSA Request Challenge. Sends our challenge to server, then gets
    server response. These are used to generate the credentials. */
 
@@ -92,7 +101,7 @@ NTSTATUS new_cli_net_auth2(struct cli_state *cli,
         NET_Q_AUTH_2 q;
         NET_R_AUTH_2 r;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	extern pstring global_myname;
+        extern pstring global_myname;
 
         prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
         prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
@@ -197,8 +206,8 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
 	result = new_cli_net_auth2(cli, sec_chan, 0x000001ff, 
 				   &srv_chal);
 	if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed %s\n",
-			 nt_errstr(result)));
+                DEBUG(0,("new_cli_nt_setup_creds: auth2 challenge failed %s\n",
+			 get_nt_error_msg(result)));
         }
 
         return result;
@@ -434,7 +443,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, cli->clnt_name_slash,
-                              cli->sess_key, lm_owf_user_pwd,
+                              (char *)cli->sess_key, lm_owf_user_pwd,
                               nt_owf_user_pwd);
 
                 break;
@@ -446,8 +455,8 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
                 generate_random_buffer(chal, 8, False);
 
-                SMBencrypt(password, chal, local_lm_response);
-                SMBNTencrypt(password, chal, local_nt_response);
+                SMBencrypt((const uchar *)password, chal, local_lm_response);
+                SMBNTencrypt((const uchar *)password, chal, local_nt_response);
 
                 init_id_info2(&ctr.auth.id2, lp_workgroup(), 
                               0, /* param_ctrl */
@@ -491,7 +500,6 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         return result;
 }
-
 
 /** 
  * Logon domain user with an 'network' SAM logon 
@@ -578,11 +586,17 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
         return result;
 }
 
+#if 0	/* JERRY */
+
+/*
+ * Still using old implementation in rpc_client/cli_netlogon.c
+ */
+
 /***************************************************************************
 LSA Server Password Set.
 ****************************************************************************/
 
-NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 			   char* machine_name, uint8 hashed_mach_pwd[16])
 {
 	prs_struct rbuf;
@@ -661,4 +675,6 @@ password ?).\n", cli->desthost ));
 	
 	return nt_status;
 }
+
+#endif	/* JERRY */
 

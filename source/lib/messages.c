@@ -1,8 +1,8 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba internal messaging functions
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) 2001 by Martin Pool
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,12 +19,21 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* this module is used for internal messaging between Samba daemons. 
+/**
+   @defgroups messages Internal messaging framework
+   @{
+   @file messages.c
+
+   This module is used for internal messaging between Samba daemons. 
 
    The idea is that if a part of Samba wants to do communication with
    another Samba process then it will do a message_register() of a
    dispatch function, and use message_send_pid() to send messages to
    that process.
+
+   The dispatch function is given the pid of the sender, and it can
+   use that to reply by message_send_pid().  See ping_message() for a
+   simple example.
 
    This system doesn't have any inherent size limitations but is not
    very efficient for large messages or when messages are sent in very
@@ -57,8 +66,9 @@ static struct dispatch_fns {
 } *dispatch_fns;
 
 /****************************************************************************
-notifications come in as signals
+ Notifications come in as signals.
 ****************************************************************************/
+
 static void sig_usr1(void)
 {
 	received_signal = 1;
@@ -66,35 +76,36 @@ static void sig_usr1(void)
 }
 
 /****************************************************************************
-a useful function for testing the message system
+ A useful function for testing the message system.
 ****************************************************************************/
+
 void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-	DEBUG(1,("INFO: Received PING message from PID %d  [%s]\n",src,
-		 (const char *) buf));
+	char *msg = buf ? buf : "none";
+	DEBUG(1,("INFO: Received PING message from PID %u [%s]\n",(unsigned int)src, msg));
 	message_send_pid(src, MSG_PONG, buf, len, True);
 }
+
 /****************************************************************************
-return current debug level
+ Return current debug level.
 ****************************************************************************/
+
 void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-        int level;
-	
-	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %d\n",src));
-        level = DEBUGLEVEL;
+	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",(unsigned int)src));
 	message_send_pid(src, MSG_DEBUGLEVEL, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS), True);
 }
 
 /****************************************************************************
  Initialise the messaging functions. 
 ****************************************************************************/
+
 BOOL message_init(void)
 {
 	if (tdb) return True;
 
-	tdb = tdb_open(lock_path("messages.tdb"), 
-		       0, TDB_CLEAR_IF_FIRST, 
+	tdb = tdb_open_log(lock_path("messages.tdb"), 
+		       0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
 		       O_RDWR|O_CREAT,0600);
 
 	if (!tdb) {
@@ -110,27 +121,27 @@ BOOL message_init(void)
 	return True;
 }
 
-
 /*******************************************************************
- form a static tdb key from a pid
+ Form a static tdb key from a pid.
 ******************************************************************/
+
 static TDB_DATA message_key_pid(pid_t pid)
 {
 	static char key[20];
 	TDB_DATA kbuf;
 
-	slprintf(key, sizeof(key), "PID/%d", (int)pid);
+	slprintf(key, sizeof(key)-1, "PID/%d", (int)pid);
 	
 	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key)+1;
 	return kbuf;
 }
 
-
 /****************************************************************************
-notify a process that it has a message. If the process doesn't exist 
-then delete its record in the database
+ Notify a process that it has a message. If the process doesn't exist 
+ then delete its record in the database.
 ****************************************************************************/
+
 static BOOL message_notify(pid_t pid)
 {
 	if (kill(pid, SIGUSR1) == -1) {
@@ -146,9 +157,11 @@ static BOOL message_notify(pid_t pid)
 }
 
 /****************************************************************************
-send a message to a particular pid
+ Send a message to a particular pid.
 ****************************************************************************/
-BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
+
+BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
+		      BOOL duplicates_allowed)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -179,7 +192,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 		dbuf.dptr = p;
 		dbuf.dsize = len + sizeof(rec);
 		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-		free(p);
+		SAFE_FREE(p);
 		goto ok;
 	}
 
@@ -195,9 +208,9 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 			 */
 
 			if (!memcmp(ptr, &rec, sizeof(rec))) {
-				if (!len || (len && !memcmp( ptr + sizeof(rec), (char *)buf, len))) {
+				if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
 					DEBUG(10,("message_send_pid: discarding duplicate message.\n"));
-					free(dbuf.dptr);
+					SAFE_FREE(dbuf.dptr);
 					tdb_chainunlock(tdb, kbuf);
 					return True;
 				}
@@ -215,11 +228,11 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	memcpy((void *)((char*)p+dbuf.dsize), &rec, sizeof(rec));
 	if (len > 0) memcpy((void *)((char*)p+dbuf.dsize+sizeof(rec)), buf, len);
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize += len + sizeof(rec);
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
  ok:
 	tdb_chainunlock(tdb, kbuf);
@@ -232,11 +245,10 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	return False;
 }
 
-
-
 /****************************************************************************
-retrieve the next message for the current process
+ Retrieve the next message for the current process.
 ****************************************************************************/
+
 static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 {
 	TDB_DATA kbuf;
@@ -279,7 +291,7 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 	else
 		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
 	return True;
 
@@ -288,12 +300,12 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 	return False;
 }
 
-
 /****************************************************************************
-receive and dispatch any messages pending for this process
-notice that all dispatch handlers for a particular msg_type get called,
-so you can register multiple handlers for a message
+ Receive and dispatch any messages pending for this process.
+ Notice that all dispatch handlers for a particular msg_type get called,
+ so you can register multiple handlers for a message.
 ****************************************************************************/
+
 void message_dispatch(void)
 {
 	int msg_type;
@@ -301,24 +313,38 @@ void message_dispatch(void)
 	void *buf;
 	size_t len;
 	struct dispatch_fns *dfn;
+	int n_handled;
 
 	if (!received_signal) return;
+
+	DEBUG(10,("message_dispatch: received_signal = %d\n", received_signal));
+
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
+		DEBUG(10,("message_dispatch: received msg_type=%d src_pid=%u\n",
+			  msg_type, (unsigned int) src));
+		n_handled = 0;
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
+				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
 				dfn->fn(msg_type, src, buf, len);
+				n_handled++;
 			}
 		}
-		if (buf) free(buf);
+		if (!n_handled) {
+			DEBUG(5,("message_dispatch: warning: no handlers registed for "
+				 "msg_type %d in pid%u\n",
+				 msg_type, (unsigned int)getpid()));
+		}
+		SAFE_FREE(buf);
 	}
 }
 
-
 /****************************************************************************
-register a dispatch function for a particular message type
+ Register a dispatch function for a particular message type.
 ****************************************************************************/
+
 void message_register(int msg_type, 
 		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len))
 {
@@ -326,17 +352,25 @@ void message_register(int msg_type,
 
 	dfn = (struct dispatch_fns *)malloc(sizeof(*dfn));
 
-	ZERO_STRUCTP(dfn);
+	if (dfn != NULL) {
 
-	dfn->msg_type = msg_type;
-	dfn->fn = fn;
+		ZERO_STRUCTPN(dfn);
 
-	DLIST_ADD(dispatch_fns, dfn);
+		dfn->msg_type = msg_type;
+		dfn->fn = fn;
+
+		DLIST_ADD(dispatch_fns, dfn);
+	}
+	else {
+	
+		DEBUG(0,("message_register: Not enough memory. malloc failed!\n"));
+	}
 }
 
 /****************************************************************************
-de-register the function for a particular message type
+ De-register the function for a particular message type.
 ****************************************************************************/
+
 void message_deregister(int msg_type)
 {
 	struct dispatch_fns *dfn, *next;
@@ -345,16 +379,17 @@ void message_deregister(int msg_type)
 		next = dfn->next;
 		if (dfn->msg_type == msg_type) {
 			DLIST_REMOVE(dispatch_fns, dfn);
-			free(dfn);
+			SAFE_FREE(dfn);
 		}
 	}	
 }
 
 struct msg_all {
 	int msg_type;
-	void *buf;
+	const void *buf;
 	size_t len;
 	BOOL duplicates;
+	int		n_sent;
 };
 
 /****************************************************************************
@@ -366,22 +401,28 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 	struct connections_data crec;
 	struct msg_all *msg_all = (struct msg_all *)state;
 
+	if (dbuf.dsize != sizeof(crec))
+		return 0;
+
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
-	if (crec.cnum != -1) return 0;
+	if (crec.cnum != -1)
+		return 0;
 
 	/* if the msg send fails because the pid was not found (i.e. smbd died), 
 	 * the msg has already been deleted from the messages.tdb.*/
-	if (!message_send_pid(crec.pid, msg_all->msg_type, msg_all->buf, msg_all->len,
-							msg_all->duplicates)) {
+	if (!message_send_pid(crec.pid, msg_all->msg_type,
+			      msg_all->buf, msg_all->len,
+			      msg_all->duplicates)) {
 		
 		/* if the pid was not found delete the entry from connections.tdb */
 		if (errno == ESRCH) {
-			DEBUG(2,("pid %d doesn't exist - deleting connections %d [%s]\n",
-					crec.pid, crec.cnum, crec.name));
+			DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
+					(unsigned int)crec.pid, crec.cnum, crec.name));
 			tdb_delete(the_tdb, kbuf);
 		}
 	}
+	msg_all->n_sent++;
 	return 0;
 }
 
@@ -399,7 +440,8 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
  **/
 BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 		      const void *buf, size_t len,
-		      BOOL duplicates_allowed)
+		      BOOL duplicates_allowed,
+		      int *n_sent)
 {
 	struct msg_all msg_all;
 
@@ -407,13 +449,17 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 	msg_all.buf = buf;
 	msg_all.len = len;
 	msg_all.duplicates = duplicates_allowed;
+	msg_all.n_sent = 0;
 
 	tdb_traverse(conn_tdb, traverse_fn, &msg_all);
-
+	if (n_sent)
+		*n_sent = msg_all.n_sent;
 	return True;
 }
 
-static VOLATILE sig_atomic_t gotalarm;
+/** @} **/
+
+static SIG_ATOMIC_T gotalarm;
 
 /***************************************************************
  Signal function to tell us we timed out.
@@ -436,7 +482,7 @@ BOOL message_named_mutex(const char *name, unsigned int timeout)
 	if (!message_init())
 		return False;
 
-	key.dptr = name;
+	key.dptr = (char *)name;
 	key.dsize = strlen(name)+1;
 
 	if (timeout) {
@@ -463,7 +509,7 @@ BOOL message_named_mutex(const char *name, unsigned int timeout)
 /*
   unlock a named mutex
 */
-void message_named_mutex_release(const char *name)
+void message_named_mutex_release(char *name)
 {
 	TDB_DATA key;
 
@@ -471,5 +517,5 @@ void message_named_mutex_release(const char *name)
 	key.dsize = strlen(name)+1;
 
 	tdb_chainunlock(tdb, key);
-	DEBUG(10,("message_named_mutex_release: released mutex for %s\n", name ));
+	DEBUG(10,("message_named_mutex: released mutex for %s\n", name ));
 }

@@ -44,7 +44,7 @@ typedef struct file_info
 	time_t atime;
 	time_t ctime;
 	pstring name;
-	char short_name[13];
+	char short_name[13*3]; /* the *3 is to cope with multi-byte */
 } file_info;
 
 struct print_job_info
@@ -131,6 +131,15 @@ struct cli_state {
 
 	BOOL use_oplocks; /* should we use oplocks? */
 	BOOL use_level_II_oplocks; /* should we use level II oplocks? */
+
+	/* a oplock break request handler */
+	BOOL (*oplock_handler)(struct cli_state *cli, int fnum, unsigned char level);
+
+	BOOL force_dos_errors;
+
+	/* was this structure allocated by cli_initialise? If so, then
+			free in cli_shutdown() */
+	BOOL allocated;
 };
 
 #endif /* _CLIENT_H */

@@ -1,5 +1,6 @@
 /*=====================================================================
-  Unix SMB/CIFS implementation.
+  Unix SMB/Netbios implementation.
+  Version 2.0
   SMB client library API definitions
   Copyright (C) Andrew Tridgell 1998
   Copyright (C) Richard Sharpe 2000

@@ -70,8 +70,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
                    uint32 neg_flags, DOM_CHAL *srv_chal);
 BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16]);
-BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
-                       NET_USER_INFO_3 *user_info3);
+BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
@@ -127,7 +126,6 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
-#if OLD_NTDOMAIN
 BOOL get_samr_query_usergroups(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain, uint32 user_rid,
 				uint32 *num_groups, DOM_GID *gid);
@@ -166,7 +164,15 @@ BOOL do_samr_query_usergroups(struct cli_state *cli,
 BOOL do_samr_query_userinfo(struct cli_state *cli, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
-#endif
+
+/*The following definitions come from  rpc_client/cli_spoolss_notify.c  */
+
+BOOL spoolss_disconnect_from_client( struct cli_state *cli);
+BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
+BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, uint32 *status, POLICY_HND *handle);
+BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
+			     uint32 change_low, uint32 change_high, uint32 *status);
+BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, uint32 *status);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 

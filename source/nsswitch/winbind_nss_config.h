@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
 
@@ -37,6 +36,10 @@
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
 #endif
 
 #ifdef HAVE_SYS_SOCKET_H
@@ -94,7 +97,7 @@ NSS_STATUS _nss_winbind_getgrgid_r(gid_t gid,
 #ifndef _PSTRING
 #define _PSTRING
 #define PSTRING_LEN 1024
-#define FSTRING_LEN 128
+#define FSTRING_LEN 256
 typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
 #endif
@@ -130,11 +133,15 @@ typedef int BOOL;
 #endif
 
 /* zero a structure */
+#ifndef ZERO_STRUCT
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+#endif
 
 /* zero a structure given a pointer to the structure */
+#ifndef ZERO_STRUCTP
 #define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
-    
+#endif
+
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */
 
 #ifndef S_IFSOCK

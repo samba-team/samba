@@ -1,5 +1,8 @@
 #!/bin/sh
 #
+SMBD=/usr/local/samba/bin/smbd
+NMBD=/usr/local/samba/bin/nmbd
+
 if [ ! -d /usr/bin ]; then
 	echo "The /usr file system is not mounted."
         exit 1
@@ -19,8 +22,8 @@ case "$1" in
 
 	'start')
 	   echo "Starting Samba"
-	   /usr/local/samba/sbin/smbd
-	   /usr/local/samba/sbin/nmbd
+	   $SMBD
+	   $NMBD
 	   echo "Done."
 	   ;;
 	'stop')

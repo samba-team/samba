@@ -24,9 +24,6 @@
 static struct iface_struct *probed_ifaces;
 static int total_probed;
 
-extern int DEBUGLEVEL;
-
-struct in_addr ipzero;
 struct in_addr allones_ip;
 struct in_addr loopback_ip;
 
@@ -39,13 +36,16 @@ static struct interface *local_interfaces  = NULL;
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
-static struct interface *iface_find(struct in_addr ip)
+static struct interface *iface_find(struct in_addr ip, BOOL CheckMask)
 {
 	struct interface *i;
-	if (zero_ip(ip)) return local_interfaces;
+	if (is_zero_ip(ip))
+		return local_interfaces;
 
 	for (i=local_interfaces;i;i=i->next)
-		if (same_net(i->ip,ip,i->nmask)) return i;
+		if (CheckMask) {
+			if (same_net(i->ip,ip,i->nmask)) return i;
+		} else if ((i->ip).s_addr == ip.s_addr) return i;
 
 	return NULL;
 }
@@ -57,7 +57,7 @@ add an interface to the linked list of interfaces
 static void add_interface(struct in_addr ip, struct in_addr nmask)
 {
 	struct interface *iface;
-	if (iface_find(ip)) {
+	if (iface_find(ip, False)) {
 		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
 		return;
 	}
@@ -102,8 +102,8 @@ static void interpret_interface(char *token)
 	char *p;
 	int i, added=0;
 
-	ip = ipzero;
-	nmask = ipzero;
+	zero_ip(&ip);
+	zero_ip(&nmask);
 	
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
@@ -171,21 +171,17 @@ void load_interfaces(void)
 
 	ptr = lp_interfaces();
 
-	ipzero = *interpret_addr2("0.0.0.0");
 	allones_ip = *interpret_addr2("255.255.255.255");
 	loopback_ip = *interpret_addr2("127.0.0.1");
 
-	if (probed_ifaces) {
-		free(probed_ifaces);
-		probed_ifaces = NULL;
-	}
+	SAFE_FREE(probed_ifaces);
 
 	/* dump the current interfaces if any */
 	while (local_interfaces) {
 		struct interface *iface = local_interfaces;
 		DLIST_REMOVE(local_interfaces, local_interfaces);
 		ZERO_STRUCTPN(iface);
-		free(iface);
+		SAFE_FREE(iface);
 	}
 
 	/* probe the kernel for interfaces */
@@ -363,12 +359,12 @@ unsigned iface_hash(void)
 
 struct in_addr *iface_bcast(struct in_addr ip)
 {
-	struct interface *i = iface_find(ip);
+	struct interface *i = iface_find(ip, True);
 	return(i ? &i->bcast : &local_interfaces->bcast);
 }
 
 struct in_addr *iface_ip(struct in_addr ip)
 {
-	struct interface *i = iface_find(ip);
+	struct interface *i = iface_find(ip, True);
 	return(i ? &i->ip : &local_interfaces->ip);
 }

@@ -2,9 +2,9 @@
 #define _INCLUDES_H
 /* 
    Unix SMB/Netbios implementation.
+   Version 1.9.
    Machine customisation and include handling
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) 2002 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,28 +54,17 @@
 #endif
 #endif
 
+/* use gcc attribute to check printf fns */
 #ifdef __GNUC__
-/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
- * the parameter containing the format, and a2 the index of the first
- * argument.  **/
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
 #else
 #define PRINTF_ATTRIBUTE(a1, a2)
 #endif
 
-#ifdef __GNUC__
-/** gcc attribute used on function parameters so that it does not emit
- * warnings about them being unused. **/
-#  define UNUSED(param) param __attribute__ ((unused))
-#else
-#  define UNUSED(param) param
-/** Feel free to add definitions for other compilers here. */
-#endif
-
 #ifdef RELIANTUNIX
 /*
  * <unistd.h> has to be included before any other to get
- * large file support on Reliant UNIX
+ * large file support on Reliant UNIX. Yes, it's broken :-).
  */
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -94,11 +83,6 @@
 #include <time.h>
 #endif
 #endif
-
-#ifdef HAVE_LIBINTL_H
-#include <libintl.h>
-#endif
-
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -123,7 +107,7 @@
 #include <sys/socket.h>
 #endif
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_UNIXSOCKET
 #include <sys/un.h>
 #endif
 
@@ -221,8 +205,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
 
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
@@ -343,7 +331,19 @@
 #endif
 
 #ifdef HAVE_SYS_CAPABILITY_H
+
+#if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H)
+#define _I386_STATFS_H
+#define BROKEN_REDHAT_7_STATFS_WORKAROUND
+#endif
+
 #include <sys/capability.h>
+
+#ifdef BROKEN_REDHAT_7_STATFS_WORKAROUND
+#undef _I386_STATFS_H
+#undef BROKEN_REDHAT_7_STATFS_WORKAROUND
+#endif
+
 #endif
 
 #if defined(HAVE_RPC_RPC_H)
@@ -369,6 +369,14 @@
 #endif
 #endif /* HAVE_NETGROUP */
 
+#if defined(HAVE_SYS_IPC_H)
+#include <sys/ipc.h>
+#endif /* HAVE_SYS_IPC_H */
+
+#if defined(HAVE_SYS_SHM_H)
+#include <sys/shm.h>
+#endif /* HAVE_SYS_SHM_H */
+
 /*
  * Define VOLATILE if needed.
  */
@@ -380,18 +388,20 @@
 #endif
 
 /*
- * Define SIG_ATOMIC_T if needed.
+ * Define additional missing types
  */
-
-#if defined(HAVE_SIG_ATOMIC_T_TYPE)
-#define SIG_ATOMIC_T sig_atomic_t
+#if defined(HAVE_SIG_ATOMIC_T_TYPE) && defined(AIX)
+typedef sig_atomic_t SIG_ATOMIC_T;
+#elif defined(HAVE_SIG_ATOMIC_T_TYPE) && !defined(AIX)
+typedef sig_atomic_t VOLATILE SIG_ATOMIC_T;
 #else
-#define SIG_ATOMIC_T int
+typedef int VOLATILE SIG_ATOMIC_T;
 #endif
 
 #ifndef HAVE_SOCKLEN_T_TYPE
 typedef int socklen_t;
 #endif
+
 
 #ifndef uchar
 #define uchar unsigned char
@@ -444,6 +454,9 @@ typedef int socklen_t;
 #define int32 long
 #elif (SIZEOF_SHORT == 4)
 #define int32 short
+#else
+/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
+#define uint32 int
 #endif
 #endif
 
@@ -459,6 +472,9 @@ typedef int socklen_t;
 #define uint32 unsigned long
 #elif (SIZEOF_SHORT == 4)
 #define uint32 unsigned short
+#else
+/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
+#define uint32 unsigned
 #endif
 #endif
 
@@ -467,7 +483,11 @@ typedef int socklen_t;
  */
 
 #ifndef SMB_DEV_T
-#define SMB_DEV_T dev_t
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_DEV64_T)
+#    define SMB_DEV_T dev64_t
+#  else
+#    define SMB_DEV_T dev_t
+#  endif
 #endif
 
 /*
@@ -520,8 +540,10 @@ typedef int socklen_t;
 
 #ifdef LARGE_SMB_OFF_T
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,(v)&0xFFFFFFFF), SIVAL(p,ofs,(v)>>32))
 #else 
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
+#define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,v),SIVAL(p,ofs,0))
 #endif
 
 /*
@@ -641,7 +663,8 @@ extern int errno;
 #include "nterr.h"
 #include "secrets.h"
 #include "messages.h"
-#include "util_list.h"
+
+#include "util_getent.h"
 
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
@@ -664,6 +687,14 @@ extern int errno;
 #include "msdfs.h"
 
 #include "profile.h"
+
+#include "mapping.h"
+
+#include "rap.h"
+
+#include "popt.h"
+
+#include "mangle.h"
 
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
@@ -722,7 +753,7 @@ typedef struct smb_wpasswd {
 #endif
 
 #ifndef DEFAULT_PRINTING
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
 #define DEFAULT_PRINTING PRINT_CUPS
 #define PRINTCAP_NAME "cups"
 #elif defined(SYSV)
@@ -746,7 +777,7 @@ typedef struct smb_wpasswd {
 #define MAP_FILE 0
 #endif
 
-#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP) && !defined(WITH_TDBPWD))
+#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP) && !defined(WITH_TDB_SAM))
 #define USE_SMBPASS_DB 1
 #endif
 
@@ -840,8 +871,24 @@ int rename(const char *zfrom, const char *zto);
 time_t mktime(struct tm *t);
 #endif
 
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *d, const char *s, size_t bufsize);
+#endif
+
+#ifndef HAVE_STRLCAT
+size_t strlcat(char *d, const char *s, size_t bufsize);
+#endif
+
 #ifndef HAVE_FTRUNCATE
 int ftruncate(int f,long l);
+#endif
+
+#ifndef HAVE_STRNDUP
+char *strndup(const char *s, size_t n);
+#endif
+
+#ifndef HAVE_STRNLEN
+size_t strnlen(const char *s, size_t n);
 #endif
 
 #ifndef HAVE_STRTOUL
@@ -855,6 +902,9 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 #if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
+#ifndef HAVE_VASPRINTF_DECL
+int vasprintf(char **ptr, const char *format, va_list ap);
+#endif
 
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
 #define bzero(a,b) memset((a),'\0',(b))
@@ -862,10 +912,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 
 #ifdef REPLACE_GETPASS
 #define getpass(prompt) getsmbpass((prompt))
-#endif
-
-#ifndef HAVE_GETTEXT
-#define gettext(x) x
 #endif
 
 /*
@@ -898,16 +944,9 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 
 /* Load header file for libdl stuff */
 
-#ifdef HAVE_LIBDL
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
-
-/* dmalloc -- free heap debugger (dmalloc.org).  This should be near
- * the *bottom* of include files so as not to conflict. */
-#ifdef ENABLE_DMALLOC
-#  include <dmalloc.h>
-#endif
-
 
 /* Some POSIX definitions for those without */
  
@@ -954,13 +993,46 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #define S_IXOTH 00001           /* execute permission: other */
 #endif
 
-/* Some systems (SCO) treat UNIX domain sockets as FIFOs */
-
-#ifndef S_IFSOCK
-#define S_IFSOCK S_IFIFO
+/* For sys_adminlog(). */
+#ifndef LOG_EMERG
+#define LOG_EMERG       0       /* system is unusable */
 #endif
-#ifndef S_ISSOCK
-#define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
+
+#ifndef LOG_ALERT
+#define LOG_ALERT       1       /* action must be taken immediately */
+#endif
+
+#ifndef LOG_CRIT
+#define LOG_CRIT        2       /* critical conditions */
+#endif
+
+#ifndef LOG_ERR
+#define LOG_ERR         3       /* error conditions */
+#endif
+
+#ifndef LOG_WARNING
+#define LOG_WARNING     4       /* warning conditions */
+#endif
+
+#ifndef LOG_NOTICE
+#define LOG_NOTICE      5       /* normal but significant condition */
+#endif
+
+#ifndef LOG_INFO
+#define LOG_INFO        6       /* informational */
+#endif
+
+#ifndef LOG_DEBUG
+#define LOG_DEBUG       7       /* debug-level messages */
+#endif
+
+/* NetBSD doesn't have these */
+#ifndef SHM_R
+#define SHM_R 0400
+#endif
+
+#ifndef SHM_W
+#define SHM_W 0200
 #endif
 
 #if HAVE_KERNEL_SHARE_MODES
@@ -976,6 +1048,7 @@ extern int DEBUGLEVEL;
 
 #define MAX_SEC_CTX_DEPTH 8    /* Maximum number of security contexts */
 
+
 #ifdef GLIBC_HACK_FCNTL64
 /* this is a gross hack. 64 bit locking is completely screwed up on
    i386 Linux in glibc 2.1.95 (which ships with RedHat 7.0). This hack
@@ -988,4 +1061,39 @@ extern int DEBUGLEVEL;
 #define F_SETLKW 14
 #endif
 
+/* Needed for sys_dlopen/sys_dlsym/sys_dlclose */
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
+
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
+
+/* add varargs prototypes with printf checking */
+int fdprintf(int , char *, ...) PRINTF_ATTRIBUTE(2,3);
+#ifndef HAVE_SNPRINTF_DECL
+int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
+#endif
+#ifndef HAVE_ASPRINTF_DECL
+int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
+#endif
+
+/* we used to use these fns, but now we have good replacements
+   for snprintf and vsnprintf */
+#define slprintf snprintf
+#define vslprintf vsnprintf
+
+/* we need to use __va_copy() on some platforms */
+#ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) __va_copy(dest, src)
+#else
+#define VA_COPY(dest, src) (dest) = (src)
+#endif
+
 #endif /* _INCLUDES_H */
+

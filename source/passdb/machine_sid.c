@@ -1,10 +1,10 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Password and authentication handling
    Copyright (C) Jeremy Allison 		1996-2002
    Copyright (C) Andrew Tridgell		2002
    Copyright (C) Gerald (Jerry) Carter		2000
-   Copyright (C) Stefan (metze) Metzmacher	2002
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,43 +23,39 @@
 
 #include "includes.h"
 
-/* NOTE! the global_sam_sid is the SID of our local SAM. This is only
-   equal to the domain SID when we are a DC, otherwise its our
-   workstation SID */
-static DOM_SID *global_sam_sid=NULL;
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_PASSDB
-
 /****************************************************************************
- Read a SID from a file. This is for compatibility with the old MACHINE.SID
- style of SID storage
+ Read the machine SID from a file.
 ****************************************************************************/
-static BOOL read_sid_from_file(const char *fname, DOM_SID *sid)
+
+static BOOL read_sid_from_file(char *fname, DOM_SID *sid)
 {
 	char **lines;
 	int numlines;
 	BOOL ret;
 
-	lines = file_lines_load(fname, &numlines);
-	
+	lines = file_lines_load(fname, &numlines, False);
+
 	if (!lines || numlines < 1) {
-		if (lines) file_lines_free(lines);
+		if (lines)
+			file_lines_free(lines);
 		return False;
 	}
-	
+
 	ret = string_to_sid(sid, lines[0]);
+	if (!ret)
+		DEBUG(0,("read_sid_from_file: Failed to convert machine SID. (%s)\n", lines[0]));
 	file_lines_free(lines);
 	return ret;
 }
 
-/*
-  generate a random sid - used to build our own sid if we don't have one
-*/
+/****************************************************************************
+ Generate a random sid - used to build our own sid if we don't have one.
+****************************************************************************/
+
 static void generate_random_sid(DOM_SID *sid)
 {
 	int i;
-	uchar raw_sid_data[12];
+	unsigned char raw_sid_data[12];
 
 	memset((char *)sid, '\0', sizeof(*sid));
 	sid->sid_rev_num = 1;
@@ -73,20 +69,19 @@ static void generate_random_sid(DOM_SID *sid)
 }
 
 /****************************************************************************
- Generate the global machine sid.
+ Generate the global machine sid. Look for the MACHINE.SID file first, if
+ not found then look in smb.conf and use it to create the MACHINE.SID file.
+ Note this function will be replaced soon. JRA.
 ****************************************************************************/
 
-static BOOL pdb_generate_sam_sid(void)
+BOOL pdb_generate_sam_sid(void)
 {
 	char *fname = NULL;
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
 	BOOL is_dc = False;
+	pstring priv_dir;
 
-	if(global_sam_sid==NULL)
-		if(!(global_sam_sid=(DOM_SID *)malloc(sizeof(DOM_SID))))
-			return False;
-			
 	generate_wellknown_sids();
 
 	switch (lp_server_role()) {
@@ -99,7 +94,7 @@ static BOOL pdb_generate_sam_sid(void)
 		break;
 	}
 
-	if (secrets_fetch_domain_sid(global_myname, global_sam_sid)) {
+	if (secrets_fetch_domain_sid(global_myname, &global_sam_sid)) {
 		DOM_SID domain_sid;
 
 		/* We got our sid. If not a pdc/bdc, we're done. */
@@ -110,19 +105,19 @@ static BOOL pdb_generate_sam_sid(void)
 
 			/* No domain sid and we're a pdc/bdc. Store it */
 
-			if (!secrets_store_domain_sid(global_myworkgroup, global_sam_sid)) {
+			if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Can't store domain SID as a pdc/bdc.\n"));
 				return False;
 			}
 			return True;
 		}
 
-		if (!sid_equal(&domain_sid, global_sam_sid)) {
+		if (!sid_equal(&domain_sid, &global_sam_sid)) {
 
 			/* Domain name sid doesn't match global sam sid. Re-store global sam sid as domain sid. */
 
 			DEBUG(0,("pdb_generate_sam_sid: Mismatched SIDs as a pdc/bdc.\n"));
-			if (!secrets_store_domain_sid(global_myworkgroup, global_sam_sid)) {
+			if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Can't re-store domain SID as a pdc/bdc.\n"));
 				return False;
 			}
@@ -130,29 +125,30 @@ static BOOL pdb_generate_sam_sid(void)
 		}
 
 		return True;
-		
 	}
 
 	/* check for an old MACHINE.SID file for backwards compatibility */
-	asprintf(&fname, "%s/MACHINE.SID", lp_private_dir());
+	get_private_directory(priv_dir);
+	asprintf(&fname, "%s/MACHINE.SID", priv_dir);
 
-	if (read_sid_from_file(fname, global_sam_sid)) {
+	if (read_sid_from_file(fname, &global_sam_sid)) {
 		/* remember it for future reference and unlink the old MACHINE.SID */
-		if (!secrets_store_domain_sid(global_myname, global_sam_sid)) {
+		if (!secrets_store_domain_sid(global_myname, &global_sam_sid)) {
 			DEBUG(0,("pdb_generate_sam_sid: Failed to store SID from file.\n"));
 			SAFE_FREE(fname);
 			return False;
 		}
 		unlink(fname);
 		if (is_dc) {
-			if (!secrets_store_domain_sid(global_myworkgroup, global_sam_sid)) {
+			if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Failed to store domain SID from file.\n"));
 				SAFE_FREE(fname);
 				return False;
 			}
 		}
 
-		/* Stored the old sid from MACHINE.SID successfully.*/
+		/* Stored the old sid from MACHINE.SID successfully.
+			Patch from Stefan "metze" Metzmacher <metze@metzemix.de>*/
 		SAFE_FREE(fname);
 		return True;
 	}
@@ -160,35 +156,19 @@ static BOOL pdb_generate_sam_sid(void)
 	SAFE_FREE(fname);
 
 	/* we don't have the SID in secrets.tdb, we will need to
-           generate one and save it */
-	generate_random_sid(global_sam_sid);
+		generate one and save it */
+	generate_random_sid(&global_sam_sid);
 
-	if (!secrets_store_domain_sid(global_myname, global_sam_sid)) {
+	if (!secrets_store_domain_sid(global_myname, &global_sam_sid)) {
 		DEBUG(0,("pdb_generate_sam_sid: Failed to store generated machine SID.\n"));
 		return False;
 	}
 	if (is_dc) {
-		if (!secrets_store_domain_sid(global_myworkgroup, global_sam_sid)) {
+		if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
 			DEBUG(0,("pdb_generate_sam_sid: Failed to store generated domain SID.\n"));
 			return False;
 		}
 	}
 
 	return True;
-}   
-
-/* return our global_sam_sid */
-DOM_SID *get_global_sam_sid(void)
-{
-	if (global_sam_sid != NULL)
-		return global_sam_sid;
-	
-	/* memory for global_sam_sid is allocated in 
-	   pdb_generate_sam_sid() as needed */
-
-	if (!pdb_generate_sam_sid())
-		global_sam_sid=NULL;	
-	
-	return global_sam_sid;
 }
-

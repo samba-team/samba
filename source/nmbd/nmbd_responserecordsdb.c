@@ -26,10 +26,6 @@
 
 extern int ClientNMB;
 
-extern int DEBUGLEVEL;
-
-extern struct in_addr ipzero;
-
 int num_response_packets = 0;
 
 /***************************************************************************
@@ -83,7 +79,7 @@ void remove_response_record(struct subnet_record *subrec,
 		  (*rrec->userdata->free_fn)(rrec->userdata);
 	  } else {
 		  ZERO_STRUCTP(rrec->userdata);
-		  free((char *)rrec->userdata);
+		  SAFE_FREE(rrec->userdata);
 	  }
   }
 
@@ -92,7 +88,7 @@ void remove_response_record(struct subnet_record *subrec,
   free_packet(rrec->packet);
 
   ZERO_STRUCTP(rrec);
-  free((char *)rrec);
+  SAFE_FREE(rrec);
 
   num_response_packets--; /* count of total number of packets still around */
 }
@@ -138,7 +134,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
       {
         DEBUG(0,("make_response_queue_record: copy fail for userdata.\n"));
 	ZERO_STRUCTP(rrec);
-        free(rrec);
+        SAFE_FREE(rrec);
         return NULL;
       }
     }
@@ -150,7 +146,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
       {
         DEBUG(0,("make_response_queue_record: malloc fail for userdata.\n"));
 	ZERO_STRUCTP(rrec);
-        free(rrec);
+        SAFE_FREE(rrec);
         return NULL;
       }
       rrec->userdata->copy_fn = userdata->copy_fn;

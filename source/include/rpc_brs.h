@@ -73,7 +73,7 @@ typedef struct r_brs_query_info_info
 
 	} info;
 
-	uint32 status;             /* return status */
+	NTSTATUS status;             /* return status */
 
 } BRS_R_QUERY_INFO;
 

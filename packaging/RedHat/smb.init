@@ -13,8 +13,10 @@
 # Check that networking is up.
 [ ${NETWORKING} = "no" ] && exit 0
 
+CONFIG=/etc/samba/smb.conf
+
 # Check that smb.conf exists.
-[ -f /etc/smb.conf ] || exit 0
+[ -f $CONFIG ] || exit 0
 
 # See how we were called.
 case "$1" in
@@ -27,8 +29,16 @@ case "$1" in
 	;;
   stop)
 	echo -n "Shutting down SMB services: "
-	killproc smbd
-	killproc nmbd
+
+	## we have to get all the smbd process here instead of just the
+	## main parent (i.e. killproc) because it can take a long time
+	## for an individual process to process a TERM signal
+	smbdpids=`ps guax | grep smbd | grep -v grep | awk '{print $2}'`
+	for pid in $smbdpids; do
+		kill -TERM $pid
+	done
+	## nmbd is ok to kill using killproc()
+	killproc nmbd -TERM
 	rm -f /var/lock/subsys/smb
 	echo ""
 	;;

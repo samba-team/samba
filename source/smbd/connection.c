@@ -51,7 +51,7 @@ BOOL yield_connection(connection_struct *conn,char *name)
 	key.pid = sys_getpid();
 	key.cnum = conn?conn->cnum:-1;
 	fstrcpy(key.name, name);
-	dos_to_unix(key.name, True);           /* Convert key to unix-codepage */
+	dos_to_unix(key.name);           /* Convert key to unix-codepage */
 
 	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);
@@ -87,7 +87,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
  
-    if (crec.cnum == -1)
+	if (crec.cnum == -1)
 		return 0;
 
 	/* If the pid was not found delete the entry from connections.tdb */
@@ -159,7 +159,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	key.pid = sys_getpid();
 	key.cnum = conn?conn->cnum:-1;
 	fstrcpy(key.name, name);
-	dos_to_unix(key.name, True);           /* Convert key to unix-codepage */
+	dos_to_unix(key.name);           /* Convert key to unix-codepage */
 
 	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);

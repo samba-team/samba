@@ -29,13 +29,13 @@
  */
 
 extern BOOL		in_client;	/* Boolean for client library */
-extern struct in_addr	ipzero;		/* Any address */
 
 
 /*
  * Local functions...
  */
 
+static void		list_devices(void);
 static struct cli_state	*smb_connect(char *, char *, char *, char *, char *);
 static int		smb_print(struct cli_state *, char *, FILE *);
 
@@ -58,7 +58,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 		*server,	/* Server name */
 		*printer;	/* Printer name */
   FILE		*fp;		/* File to print */
-  int		status;		/* Status of LPD job */
+  int		status=0;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
 
   /* we expect the URI in argv[0]. Detect the case where it is in argv[1] and cope */
@@ -67,6 +67,18 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 	  argc--;
   }
 
+  if (argc == 1)
+  {
+   /*
+    * NEW!  In CUPS 1.1 the backends are run with no arguments to list the
+    *       available devices.  These can be devices served by this backend
+    *       or any other backends (i.e. you can have an SNMP backend that
+    *       is only used to enumerate the available network printers... :)
+    */
+
+    list_devices();
+    return (0);
+  }
 
   if (argc < 6 || argc > 7)
   {
@@ -102,7 +114,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     copies = atoi(argv[4]);
 
  /*
-  * Fine the URI...
+  * Find the URI...
   */
 
   if (strncmp(argv[0], "smb://", 6) == 0)
@@ -192,11 +204,33 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
   load_interfaces();
 
-  if ((cli = smb_connect(workgroup, server, printer, username, password)) == NULL)
+  do
   {
-    perror("ERROR: Unable to connect to SAMBA host");
-    return (1);
+    if ((cli = smb_connect(workgroup, server, printer, username, password)) == NULL)
+    {
+      if (getenv("CLASS") == NULL)
+      {
+        perror("ERROR: Unable to connect to SAMBA host, will retry in 60 seconds...");
+        sleep (60);
+      }
+      else
+      {
+        perror("ERROR: Unable to connect to SAMBA host, trying next printer...");
+        return (1);
+      }
+    }
   }
+  while (cli == NULL);
+
+ /*
+  * Now that we are connected to the server, ignore SIGTERM so that we
+  * can finish out any page data the driver sends (e.g. to eject the
+  * current page...  Only ignore SIGTERM if we are printing data from
+  * stdin (otherwise you can't cancel raw jobs...)
+  */
+
+  if (argc < 7)
+    CatchSignal(SIGTERM, SIG_IGN);
 
  /*
   * Queue the job...
@@ -213,6 +247,21 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   */
 
   return (status);
+}
+
+
+/*
+ * 'list_devices()' - List the available printers seen on the network...
+ */
+
+static void
+list_devices(void)
+{
+ /*
+  * Eventually, search the local workgroup for available hosts and printers.
+  */
+
+  puts("network smb \"Unknown\" \"Windows Printer via SAMBA\"");
 }
 
 
@@ -240,7 +289,7 @@ smb_connect(char *workgroup,		/* I - Workgroup */
 
   get_myname(myname);  
 
-  ip = ipzero;
+  zero_ip(&ip);
 
   make_nmb_name(&calling, myname, 0x0);
   make_nmb_name(&called, server, 0x20);
@@ -251,7 +300,7 @@ smb_connect(char *workgroup,		/* I - Workgroup */
 
   if ((c = cli_initialise(NULL)) == NULL)
   {
-    fputs("ERROR: cli_initialize() failed...\n", stderr);
+    fputs("ERROR: cli_initialise() failed...\n", stderr);
     return (NULL);
   }
 
@@ -321,8 +370,17 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   int	fnum;		/* File number */
   int	nbytes,		/* Number of bytes read */
 	tbytes;		/* Total bytes read */
-  char	buffer[8192];	/* Buffer for copy */
+  char	buffer[8192],	/* Buffer for copy */
+	*ptr;		/* Pointer into tile */
 
+
+ /*
+  * Sanitize the title...
+  */
+
+  for (ptr = title; *ptr; ptr ++)
+    if (!isalnum((int)*ptr) && !isspace((int)*ptr))
+      *ptr = '_';
 
  /*
   * Open the printer device...

@@ -24,122 +24,10 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* these are kept here to keep the string_combinations function simple */
-static char this_user[100] = "";
-static char this_salt[100] = "";
-static char this_crypted[100] = "";
-
-
-#ifdef WITH_PAM
-/*******************************************************************
-check on PAM authentication
-********************************************************************/
-
-/* We first need some helper functions */
-#include <security/pam_appl.h>
-/* Static variables used to communicate between the conversation function
- * and the server_login function
- */
-static char *PAM_username;
-static char *PAM_password;
-
-/* PAM conversation function
- * Here we assume (for now, at least) that echo on means login name, and
- * echo off means password.
- */
-static int PAM_conv(int num_msg,
-		    const struct pam_message **msg,
-		    struct pam_response **resp, void *appdata_ptr)
-{
-	int replies = 0;
-	struct pam_response *reply = NULL;
-
-#define COPY_STRING(s) (s) ? strdup(s) : NULL
-
-	reply = malloc(sizeof(struct pam_response) * num_msg);
-	if (!reply)
-		return PAM_CONV_ERR;
-
-	for (replies = 0; replies < num_msg; replies++)
-	{
-		switch (msg[replies]->msg_style)
-		{
-			case PAM_PROMPT_ECHO_ON:
-				reply[replies].resp_retcode = PAM_SUCCESS;
-				reply[replies].resp =
-					COPY_STRING(PAM_username);
-				/* PAM frees resp */
-				break;
-			case PAM_PROMPT_ECHO_OFF:
-				reply[replies].resp_retcode = PAM_SUCCESS;
-				reply[replies].resp =
-					COPY_STRING(PAM_password);
-				/* PAM frees resp */
-				break;
-			case PAM_TEXT_INFO:
-				/* fall through */
-			case PAM_ERROR_MSG:
-				/* ignore it... */
-				reply[replies].resp_retcode = PAM_SUCCESS;
-				reply[replies].resp = NULL;
-				break;
-			default:
-				/* Must be an error of some sort... */
-				free(reply);
-				return PAM_CONV_ERR;
-		}
-	}
-	if (reply)
-		*resp = reply;
-	return PAM_SUCCESS;
-}
-static struct pam_conv PAM_conversation = {
-	&PAM_conv,
-	NULL
-};
-
-
-static BOOL pam_auth(char *user, char *password)
-{
-	pam_handle_t *pamh;
-	int pam_error;
-
-	/* Now use PAM to do authentication.  For now, we won't worry about
-	 * session logging, only authentication.  Bail out if there are any
-	 * errors.  Since this is a limited protocol, and an even more limited
-	 * function within a server speaking this protocol, we can't be as
-	 * verbose as would otherwise make sense.
-	 * Query: should we be using PAM_SILENT to shut PAM up?
-	 */
-#define PAM_BAIL if (pam_error != PAM_SUCCESS) { \
-     pam_end(pamh, 0); return False; \
-   }
-	PAM_password = password;
-	PAM_username = user;
-	pam_error = pam_start("samba", user, &PAM_conversation, &pamh);
-	PAM_BAIL;
-/* Setting PAM_SILENT stops generation of error messages to syslog
- * to enable debugging on Red Hat Linux set:
- * /etc/pam.d/samba:
- *	auth required /lib/security/pam_pwdb.so nullok shadow audit
- * _OR_ change PAM_SILENT to 0 to force detailed reporting (logging)
- */
-	pam_error = pam_authenticate(pamh, PAM_SILENT);
-	PAM_BAIL;
-	/* It is not clear to me that account management is the right thing
-	 * to do, but it is not clear that it isn't, either.  This can be
-	 * removed if no account management should be done.  Alternately,
-	 * put a pam_allow.so entry in /etc/pam.conf for account handling. */
-	pam_error = pam_acct_mgmt(pamh, PAM_SILENT);
-	PAM_BAIL;
-	pam_end(pamh, PAM_SUCCESS);
-	/* If this point is reached, the user has been authenticated. */
-	return (True);
-}
-#endif
-
+static fstring this_user;
+static fstring this_salt;
+static fstring this_crypted;
 
 #ifdef WITH_AFS
 
@@ -343,7 +231,7 @@ static BOOL dfs_auth(char *user, char *password)
 	}
 
 	/*
-	 * NB. I'd like to change these to call something like become_user()
+	 * NB. I'd like to change these to call something like change_to_user()
 	 * instead but currently we don't have a connection
 	 * context to become the correct user. This is already
 	 * fairly platform specific code however, so I think
@@ -609,8 +497,7 @@ static int linux_bigcrypt(char *password, char *salt1, char *crypted)
 	StrnCpy(salt, salt1, 2);
 	crypted += 2;
 
-	for (i = strlen(password); i > 0; i -= LINUX_PASSWORD_SEG_CHARS)
-	{
+	for (i = strlen(password); i > 0; i -= LINUX_PASSWORD_SEG_CHARS) {
 		char *p = crypt(password, salt) + 2;
 		if (strncmp(p, crypted, LINUX_PASSWORD_SEG_CHARS) != 0)
 			return (0);
@@ -635,16 +522,13 @@ static char *osf1_bigcrypt(char *password, char *salt1)
 	int i;
 	int parts = strlen(password) / AUTH_CLEARTEXT_SEG_CHARS;
 	if (strlen(password) % AUTH_CLEARTEXT_SEG_CHARS)
-	{
 		parts++;
-	}
 
 	StrnCpy(salt, salt1, 2);
 	StrnCpy(result, salt1, 2);
 	result[2] = '\0';
 
-	for (i = 0; i < parts; i++)
-	{
+	for (i = 0; i < parts; i++) {
 		p1 = crypt(p2, salt);
 		strncat(result, p1 + 2,
 			AUTH_MAX_PASSWD_LENGTH - strlen(p1 + 2) - 1);
@@ -675,12 +559,9 @@ static BOOL string_combinations2(char *s, int offset, BOOL (*fn) (char *),
 #endif
 
 	if (N <= 0 || offset >= len)
-	{
 		return (fn(s));
-	}
 
-	for (i = offset; i < (len - (N - 1)); i++)
-	{
+	for (i = offset; i < (len - (N - 1)); i++) {
 		char c = s[i];
 		if (!islower(c))
 			continue;
@@ -716,16 +597,7 @@ static BOOL password_check(char *password)
 {
 
 #ifdef WITH_PAM
-	/* This falls through if the password check fails
-	   - if HAVE_CRYPT is not defined this causes an error msg
-	   saying Warning - no crypt available
-	   - if HAVE_CRYPT is defined this is a potential security hole
-	   as it may authenticate via the crypt call when PAM
-	   settings say it should fail.
-	   if (pam_auth(user,password)) return(True);
-	   Hence we make a direct return to avoid a second chance!!!
-	 */
-	return (pam_auth(this_user, password));
+	return (NT_STATUS_IS_OK(smb_pam_passcheck(this_user, password)));
 #endif /* WITH_PAM */
 
 #ifdef WITH_AFS
@@ -754,22 +626,17 @@ static BOOL password_check(char *password)
 			(strcmp
 			 (osf1_bigcrypt(password, this_salt),
 			  this_crypted) == 0);
-		if (!ret)
-		{
+		if (!ret) {
 			DEBUG(2,
 			      ("OSF1_ENH_SEC failed. Trying normal crypt.\n"));
-			ret =
-				(strcmp
-			       ((char *)crypt(password, this_salt),
-				this_crypted) == 0);
+			ret = (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
 		}
 		return ret;
 	}
 #endif /* OSF1_ENH_SEC */
 
 #ifdef ULTRIX_AUTH
-	return (strcmp((char *)crypt16(password, this_salt), this_crypted) ==
-		0);
+	return (strcmp((char *)crypt16(password, this_salt), this_crypted) == 0);
 #endif /* ULTRIX_AUTH */
 
 #ifdef LINUX_BIGCRYPT
@@ -788,9 +655,7 @@ static BOOL password_check(char *password)
 	if (strcmp(bigcrypt(password, this_salt), this_crypted) == 0)
 		return True;
 	else
-		return (strcmp
-			((char *)crypt(password, this_salt),
-			 this_crypted) == 0);
+		return (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
 #else /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 
 #ifdef HAVE_BIGCRYPT
@@ -801,8 +666,7 @@ static BOOL password_check(char *password)
 	DEBUG(1, ("Warning - no crypt available\n"));
 	return (False);
 #else /* HAVE_CRYPT */
-	return (strcmp((char *)crypt(password, this_salt), this_crypted) ==
-		0);
+	return (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
 #endif /* HAVE_CRYPT */
 #endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 }
@@ -815,12 +679,13 @@ the function pointer fn() points to a function to call when a successful
 match is found and is used to update the encrypted password file 
 return True on correct match, False otherwise
 ****************************************************************************/
+
 BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 		BOOL (*fn) (char *, char *))
 {
 	pstring pass2;
 	int level = lp_passwordlevel();
-	struct passwd *pass;
+	struct passwd *pass = NULL;
 
 	if (password)
 		password[pwlen] = 0;
@@ -830,30 +695,34 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 #endif
 
 	if (!password)
-	{
 		return (False);
-	}
 
 	if (((!*password) || (!pwlen)) && !lp_null_passwords())
-	{
 		return (False);
-	}
 
-	if (pwd && !user)
-	{
+	if (pwd && !user) {
 		pass = (struct passwd *)pwd;
 		user = pass->pw_name;
-	}
-	else
-	{
+	} else {
 		pass = Get_Pwnam(user, True);
 	}
 
+#ifdef WITH_PAM
 
-	DEBUG(4, ("Checking password for user %s (l=%d)\n", user, pwlen));
+	/*
+	 * If we're using PAM we want to short-circuit all the 
+	 * checks below and dive straight into the PAM code.
+	 */
 
-	if (!pass)
-	{
+	fstrcpy(this_user, user);
+
+	DEBUG(4, ("pass_check: Checking (PAM) password for user %s (l=%d)\n", user, pwlen));
+
+#else /* Not using PAM */
+
+	DEBUG(4, ("pass_check: Checking password for user %s (l=%d)\n", user, pwlen));
+
+	if (!pass) {
 		DEBUG(3, ("Couldn't find user %s\n", user));
 		return (False);
 	}
@@ -869,9 +738,7 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 
 		spass = getspnam(pass->pw_name);
 		if (spass && spass->sp_pwdp)
-		{
 			pstrcpy(pass->pw_passwd, spass->sp_pwdp);
-		}
 	}
 #elif defined(IA_UINFO)
 	{
@@ -881,9 +748,7 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 		   2.1. (tangent@cyberport.com) */
 		uinfo_t uinfo;
 		if (ia_openinfo(pass->pw_name, &uinfo) != -1)
-		{
 			ia_get_logpwd(uinfo, &(pass->pw_passwd));
-		}
 	}
 #endif
 
@@ -901,13 +766,10 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 		DEBUG(5, ("Checking password for user %s in OSF1_ENH_SEC\n",
 			  user));
 		mypasswd = getprpwnam(user);
-		if (mypasswd)
-		{
+		if (mypasswd) {
 			fstrcpy(pass->pw_name, mypasswd->ufld.fd_name);
 			fstrcpy(pass->pw_passwd, mypasswd->ufld.fd_encrypt);
-		}
-		else
-		{
+		} else {
 			DEBUG(5,
 			      ("OSF1_ENH_SEC: No entry for user %s in protected database !\n",
 			       user));
@@ -918,8 +780,7 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 #ifdef ULTRIX_AUTH
 	{
 		AUTHORIZATION *ap = getauthuid(pass->pw_uid);
-		if (ap)
-		{
+		if (ap) {
 			fstrcpy(pass->pw_passwd, ap->a_password);
 			endauthent();
 		}
@@ -938,16 +799,13 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 
 	fstrcpy(this_crypted, pass->pw_passwd);
 
-	if (!*this_crypted)
-	{
-		if (!lp_null_passwords())
-		{
+	if (!*this_crypted) {
+		if (!lp_null_passwords()) {
 			DEBUG(2, ("Disallowing %s with null password\n",
 				  this_user));
 			return (False);
 		}
-		if (!*password)
-		{
+		if (!*password) {
 			DEBUG(3,
 			      ("Allowing access to %s with null password\n",
 			       this_user));
@@ -955,9 +813,10 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 		}
 	}
 
+#endif /* WITH_PAM */
+
 	/* try it as it came to us */
-	if (password_check(password))
-	{
+	if (password_check(password)) {
 		if (fn)
 			fn(user, password);
 		return (True);
@@ -966,38 +825,34 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 	/* if the password was given to us with mixed case then we don't
 	   need to proceed as we know it hasn't been case modified by the
 	   client */
-	if (strhasupper(password) && strhaslower(password))
-	{
+	if (strhasupper(password) && strhaslower(password)) {
 		return (False);
 	}
 
 	/* make a copy of it */
 	StrnCpy(pass2, password, sizeof(pstring) - 1);
 
-	/* try all lowercase */
-	strlower(password);
-	if (password_check(password))
-	{
-		if (fn)
-			fn(user, password);
-		return (True);
+	/* try all lowercase if it's currently all uppercase */
+	if (strhasupper(password)) {
+		strlower(password);
+		if (password_check(password)) {
+			if (fn)
+				fn(user, password);
+			return (True);
+		}
 	}
 
 	/* give up? */
-	if (level < 1)
-	{
-
+	if (level < 1) {
 		/* restore it */
 		fstrcpy(password, pass2);
-
 		return (False);
 	}
 
 	/* last chance - all combinations of up to level chars upper! */
 	strlower(password);
 
-	if (string_combinations(password, password_check, level))
-	{
+	if (string_combinations(password, password_check, level)) {
 		if (fn)
 			fn(user, password);
 		return (True);

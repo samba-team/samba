@@ -35,9 +35,11 @@
 #include "includes.h"
 #include "smb.h"
 
+extern BOOL AllowDebugChange;
+extern int parsed_debuglevel_class[DBGC_LAST];
+
 /* these live in util.c */
 extern FILE *dbf;
-extern int DEBUGLEVEL;
 
 /***********************************************
  Here we do a set of 'hard coded' checks for bad
@@ -70,6 +72,12 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
+	if (!directory_exist(lp_piddir(), &st)) {
+		printf("ERROR: pid directory %s does not exist\n",
+		       lp_piddir());
+		ret = 1;
+	}
+
 	/*
 	 * Password server sanity checks.
 	 */
@@ -93,29 +101,37 @@ to a valid password server.\n", sec_setting );
 	if(lp_security() == SEC_USER && lp_unix_password_sync()) {
 
 		/*
-		 * Check that we have a valid lp_passwd_program().
+		 * Check that we have a valid lp_passwd_program() if not using pam.
 		 */
 
-		if(lp_passwd_program() == NULL) {
-			printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd program' \
+#ifdef WITH_PAM
+		if (!lp_pam_password_change()) {
+#endif
+
+			if(lp_passwd_program() == NULL) {
+				printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd program' \
 parameter.\n" );
-			ret = 1;
-		} else {
-			pstring passwd_prog;
-			pstring truncated_prog;
-			char *p;
-
-			pstrcpy( passwd_prog, lp_passwd_program());
-			p = passwd_prog;
-			*truncated_prog = '\0';
-			next_token(&p, truncated_prog, NULL, sizeof(pstring));
-
-			if(access(truncated_prog, F_OK) == -1) {
-				printf("ERROR: the 'unix password sync' parameter is set and the 'passwd program' (%s) \
-cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
 				ret = 1;
+			} else {
+				pstring passwd_prog;
+				pstring truncated_prog;
+				char *p;
+
+				pstrcpy( passwd_prog, lp_passwd_program());
+				p = passwd_prog;
+				*truncated_prog = '\0';
+				next_token(&p, truncated_prog, NULL, sizeof(pstring));
+
+				if(access(truncated_prog, F_OK) == -1) {
+					printf("ERROR: the 'unix password sync' parameter is set and the 'passwd program' (%s) \
+cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
+					ret = 1;
+				}
 			}
+
+#ifdef WITH_PAM
 		}
+#endif
 
 		if(lp_passwd_chat() == NULL) {
 			printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd chat' \
@@ -137,6 +153,20 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		}
 	}
 
+	if (!lp_status(-1) && lp_max_smbd_processes()) {
+		printf("ERROR: the 'max smbd processes' parameter is set and the 'status' parameter is set to 'no'.\n");
+		ret = 1;
+	}
+
+	if (strlen(lp_winbind_separator()) != 1) {
+		printf("ERROR: the 'winbind separator' parameter must be a single character.\n");
+		ret = 1;
+	}
+
+	if (*lp_winbind_separator() == '+') {
+		printf("'winbind separator = +' might cause problems with group membership.\n");
+	}
+
 	return ret;
 }   
 
@@ -146,6 +176,7 @@ static void usage(char *pname)
 	printf("\t-s                  Suppress prompt for enter\n");
 	printf("\t-h                  Print usage\n");
 	printf("\t-L servername       Set %%L macro to servername\n");
+	printf("\t-t encoding         Print parameters with encoding\n");
 	printf("\tconfigfilename      Configuration file to test\n");
 	printf("\thostname hostIP.    Hostname and Host IP address to test\n");
 	printf("\t                    against \"host allow\" and \"host deny\"\n");
@@ -163,6 +194,9 @@ int main(int argc, char *argv[])
   int s;
   BOOL silent_mode = False;
   int ret = 0;
+  pstring term_code;
+
+  *term_code = 0;
 
   TimeInit();
 
@@ -170,7 +204,7 @@ int main(int argc, char *argv[])
   
   charset_initialise();
 
-  while ((opt = getopt(argc, argv,"shL:")) != EOF) {
+  while ((opt = getopt(argc, argv,"shL:t:")) != EOF) {
   switch (opt) {
     case 's':
       silent_mode = True;
@@ -181,6 +215,9 @@ int main(int argc, char *argv[])
     case 'h':
       usage(argv[0]);
       exit(0);
+      break;
+    case 't':
+      pstrcpy(term_code,optarg);
       break;
     default:
       printf("Incorrect program usage\n");
@@ -199,6 +236,7 @@ int main(int argc, char *argv[])
 
   dbf = stdout;
   DEBUGLEVEL = 2;
+  AllowDebugChange = False;
 
   printf("Load smb config files from %s\n",configfile);
 
@@ -250,13 +288,17 @@ Level II oplocks can only be set if oplocks are also set.\n",
     }
   }
 
+  if (*term_code)
+    interpret_coding_system(term_code);
+
   if (argc < 3) {
     if (!silent_mode) {
       printf("Press enter to see a dump of your service definitions\n");
       fflush(stdout);
       getc(stdin);
     }
-    lp_dump(stdout,True, lp_numservices());
+    memcpy(DEBUGLEVEL_CLASS,parsed_debuglevel_class,sizeof(parsed_debuglevel_class));
+    lp_dump(stdout,True, lp_numservices(), _dos_to_unix_static);
   }
   
   if (argc >= 3) {

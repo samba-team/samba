@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -29,7 +28,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern int max_send;
 
 extern fstring local_machine;
@@ -37,6 +35,7 @@ extern fstring local_machine;
 #define NERR_notsupported 50
 
 extern int smb_read_error;
+extern uint32 global_client_caps;
 
 /*******************************************************************
  copies parameters and data, as needed, into the smb buffer
@@ -100,11 +99,16 @@ void send_trans_reply(char *outbuf,
 
 	set_message(outbuf,10,1+align+this_ldata+this_lparam,True);
 
-	if (buffer_too_large)
-	{
+	if (buffer_too_large) {
 		/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
-		SIVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-		SIVAL(outbuf, smb_rcls, 0x80000000 | STATUS_BUFFER_OVERFLOW);
+		if (!(global_client_caps & CAP_STATUS32 )) { 
+			/* Win9x version. */
+			SSVAL(outbuf, smb_err, ERRmoredata);
+			SCVAL(outbuf, smb_rcls, ERRDOS);
+		} else {
+			SIVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+			SIVAL(outbuf, smb_rcls, NT_STATUS_V(STATUS_BUFFER_OVERFLOW));
+		}
 	}
 
 	copy_trans_params_and_data(outbuf, align,
@@ -122,7 +126,8 @@ void send_trans_reply(char *outbuf,
 	SSVAL(outbuf,smb_vwv9,0);
 
 	show_msg(outbuf);
-	send_smb(smbd_server_fd(),outbuf);
+	if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("send_trans_reply: send_smb failed.\n");
 
 	tot_data_sent = this_ldata;
 	tot_param_sent = this_lparam;
@@ -155,7 +160,8 @@ void send_trans_reply(char *outbuf,
 		SSVAL(outbuf,smb_vwv9,0);
 
 		show_msg(outbuf);
-		send_smb(smbd_server_fd(),outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("send_trans_reply: send_smb failed.\n");
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
@@ -177,13 +183,13 @@ static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
 	}
 
 	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply)) < 0) {
-		free(rdata);
+		SAFE_FREE(rdata);
 		return False;
 	}
 
 	send_trans_reply(outbuf, NULL, 0, rdata, data_len, p->out_data.current_pdu_len > data_len);
 
-	free(rdata);
+	SAFE_FREE(rdata);
 	return True;
 }
 
@@ -387,7 +393,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		if((data = (char *)malloc(tdscnt)) == NULL) {
 			DEBUG(0,("reply_trans: data malloc fail for %d bytes !\n", tdscnt));
 			END_PROFILE(SMBtrans);
-			return(ERROR(ERRDOS,ERRnomem));
+			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
 		memcpy(data,smb_base(inbuf)+dsoff,dscnt);
 	}
@@ -396,7 +402,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		if((params = (char *)malloc(tpscnt)) == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %d bytes !\n", tpscnt));
 			END_PROFILE(SMBtrans);
-			return(ERROR(ERRDOS,ERRnomem));
+			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
 		memcpy(params,smb_base(inbuf)+psoff,pscnt);
 	}
@@ -406,7 +412,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
           DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", (int)(suwcnt * sizeof(uint16))));
 		  END_PROFILE(SMBtrans);
-		  return(ERROR(ERRDOS,ERRnomem));
+		  return(ERROR_DOS(ERRDOS,ERRnomem));
         } 
 		for (i=0;i<suwcnt;i++)
 			setup[i] = SVAL(inbuf,smb_vwv14+i*SIZEOFWORD);
@@ -418,7 +424,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
 		show_msg(outbuf);
-		send_smb(smbd_server_fd(),outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("reply_trans: send_smb failed.\n");
 	}
 
 	/* receive the rest of the trans packet */
@@ -435,14 +442,11 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
 					 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 			}
-			if (params)
-				free(params);
-			if (data)
-				free(data);
-			if (setup)
-				free(setup);
+			SAFE_FREE(params);
+			SAFE_FREE(data);
+			SAFE_FREE(setup);
 			END_PROFILE(SMBtrans);
-			return(ERROR(ERRSRV,ERRerror));
+			return(ERROR_DOS(ERRSRV,ERRerror));
 		}
 
 		show_msg(inbuf);
@@ -483,10 +487,18 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			(name[strlen(local_machine)+1] == '\\'))
 		name_offset = strlen(local_machine)+1;
 
-	if (strncmp(&name[name_offset],"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
+	if (strnequal(&name[name_offset], "\\PIPE", strlen("\\PIPE"))) {
+		name_offset += strlen("\\PIPE");
+
+		/* Win9x weirdness.  When talking to a unicode server Win9x
+		   only sends \PIPE instead of \PIPE\ */
+
+		if (name[name_offset] == '\\')
+			name_offset++;
+
 		DEBUG(5,("calling named_pipe\n"));
 		outsize = named_pipe(conn,vuid,outbuf,
-				     name+name_offset+strlen("\\PIPE\\"),setup,data,params,
+				     name+name_offset,setup,data,params,
 				     suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
 	} else {
 		DEBUG(3,("invalid pipe name\n"));
@@ -494,12 +506,9 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 
 	
-	if (data)
-		free(data);
-	if (params)
-		free(params);
-	if (setup)
-		free(setup);
+	SAFE_FREE(data);
+	SAFE_FREE(params);
+	SAFE_FREE(setup);
 	
 	if (close_on_completion)
 		close_cnum(conn,vuid);
@@ -511,10 +520,9 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	
 	if (outsize == 0) {
 		END_PROFILE(SMBtrans);
-		return(ERROR(ERRSRV,ERRnosupport));
+		return(ERROR_DOS(ERRSRV,ERRnosupport));
 	}
 	
 	END_PROFILE(SMBtrans);
 	return(outsize);
 }
-#undef OLD_NTDOMAIN

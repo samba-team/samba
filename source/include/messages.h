@@ -3,7 +3,6 @@
    Version 3.0
    messages.c header
    Copyright (C) Andrew Tridgell 2000
-   Copyright (C) 2001, 2002 by Martin Pool
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,15 +31,6 @@
 #define MSG_DEBUGLEVEL		6
 #define MSG_REQ_PROFILELEVEL	7
 #define MSG_PROFILELEVEL	8
-#define MSG_REQ_POOL_USAGE	9
-#define MSG_POOL_USAGE		10
-
-/* If dmalloc is included, set a steady-state mark */
-#define MSG_REQ_DMALLOC_MARK	11
-
-/* If dmalloc is included, dump to the dmalloc log a description of
- * what has changed since the last MARK */
-#define MSG_REQ_DMALLOC_LOG_CHANGED	12
 
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001
@@ -48,5 +38,11 @@
 /* rpc messages */
 #define MSG_PRINTER_NOTIFY 	2001
 #define MSG_PRINTER_DRVUPGRADE	2002
+
+/* smbd messages */
+#define MSG_SMB_CONF_UPDATED 3001
+#define MSG_SMB_FORCE_TDIS   3002
+#define MSG_SMB_SAM_SYNC     3003
+#define MSG_SMB_SAM_REPL     3004
 
 #endif

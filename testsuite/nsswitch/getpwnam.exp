@@ -1,26 +1,25 @@
 #
-# @(#) Test default domain users resolve using getpwnam()
+# @(#) Test domain users resolve using getpwnam()
 #
 
 load_lib util-defs.exp
-load_lib "$srcdir/config/env.exp"
-load_lib "$srcdir/config/default-nt-names.exp"
+load_lib "compile.exp"
 
 # Compile getpwnam.c
 
-set output [target_compile "$srcdir/$subdir/getpwnam.c" \
-        "$srcdir/$subdir/getpwnam" executable {additional_flags="-g"}]
-
-if {$output != ""} {
-    perror "compile getpwnam"
-    puts $output
-    return
-}
+simple_compile "getpwnam"
 
 # Test domain users
 
-foreach {user} $domain_users {
+set user_list [split [util_start "bin/wbinfo" "-u"] "\n"]
+
+verbose $user_list
+
+foreach { user } $user_list {
     set output [util_start "$srcdir/$subdir/getpwnam" "\"$user\"" ""]
+
+    verbose $output
+
     if {[regexp "PASS:" $output]} {
         pass "getpwnam $user"
     } else {

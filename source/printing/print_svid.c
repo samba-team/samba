@@ -37,8 +37,6 @@
 
 #ifdef SYSV
 
-extern int DEBUGLEVEL;
-
 typedef struct printer {
 	char *name;
 	struct printer *next;
@@ -71,6 +69,19 @@ static void populate_printers(void)
 			tmp=strchr(tmp, ' ');
 			tmp++;
 		}
+
+		/* Eat whitespace. */
+
+		while(*tmp == ' ')
+			++tmp;
+
+		/*
+		 * On HPUX there is an extra line that can be ignored.
+		 * d.thibadeau 2001/08/09
+		 */
+		if(!strncmp("remote to",tmp,9))
+			continue;
+
 		name = tmp;
 
 		/* truncate the ": ..." */
@@ -107,7 +118,7 @@ void sysv_printer_fn(void (*fn)(char *, char *))
 	if (printers == NULL)
 		populate_printers();
 	for (tmp = printers; tmp != NULL; tmp = tmp->next)
-		(fn)(unix_to_dos(tmp->name,False), "");
+		(fn)(unix_to_dos_static(tmp->name), "");
 }
 
 

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    utmp routines
    Copyright (C) T.D.Lee@durham.ac.uk 1999
    Heavily modified by Andrew Bartlett and Tridge, April 2001

@@ -65,8 +65,6 @@
 
 #include "smb.h"
 
-extern int DEBUGLEVEL;
-
 #ifdef AIX
 /*  ******************************************
      Extend for AIX system and qconfig file
@@ -114,7 +112,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); free(line))
+	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); safe_free(line))
 	{
 		if (*line == '*' || *line == 0)
 		continue;
@@ -184,7 +182,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 	if ((pfile = sys_fopen(psz, "r")) == NULL)
 	{
 	      DEBUG(0,( "Unable to open qconfig file %s for read!\n", psz));
-	      free(pName);
+	      SAFE_FREE(pName);
 	      return(False);
 	}
 	slprintf(pName, iLg + 9, "%s:",pszPrintername);
@@ -192,7 +190,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 	/*DEBUG(3,( " Looking for entry %s\n",pName));*/
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); free(line))
+	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); safe_free(line))
 	{
 		if (*line == '*' || *line == 0)
 		continue;
@@ -211,8 +209,8 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  	 {
 		  	   /* name is found without stanza device  */
 		  	   /* probably a good printer ???		*/
-		  	   free (line);
-		  	   free(pName);
+		  	   SAFE_FREE (line);
+		  	   SAFE_FREE(pName);
 		  	   fclose(pfile);
 		  	   return(True);
 		  	  }
@@ -225,15 +223,15 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  	  else if (strlocate(line,"device"))
 		  	  {
 		  		/* it's a good virtual printer */
-		  		free (line);
-		  		free(pName);
+		  		SAFE_FREE (line);
+		  		SAFE_FREE(pName);
 		  		fclose(pfile);
 		  		return(True);
 		  	  }
 		  	  break;
 		}
 	}
-	free (pName);
+	SAFE_FREE (pName);
 	fclose(pfile);
 	return(False);
 }
@@ -270,10 +268,10 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	return(False);
       }
 
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
     if (strequal(psz, "cups"))
        return (cups_printername_ok(pszPrintername));
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
 
 #ifdef SYSV
     if (strequal(psz, "lpstat"))
@@ -291,12 +289,12 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
       return(False);
     }
 
-  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); free(line))
+  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); safe_free(line))
     {
       if (*line == '#' || *line == 0)
 	continue;
 
-      unix_to_dos(line,True);
+      unix_to_dos(line);
 
       /* now we have a real printer line - cut it off at the first : */      
       p = strchr(line,':');
@@ -312,7 +310,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	    {
 	      /* normalise the case */
 	      pstrcpy(pszPrintername,p);
-	      free(line);
+	      SAFE_FREE(line);
 	      fclose(pfile);
 	      return(True);	      
 	    }
@@ -346,12 +344,12 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       return;
     }
 
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
     if (strequal(psz, "cups")) {
       cups_printer_fn(fn);
       return;
     }
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
 
 #ifdef SYSV
     if (strequal(psz, "lpstat")) {
@@ -374,7 +372,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       return;
     }
 
-  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); free(line))
+  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); safe_free(line))
     {
       if (*line == '#' || *line == 0)
 	continue;
@@ -383,7 +381,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       p = strchr(line,':');
       if (p) *p = 0;
       
-      unix_to_dos(line,True);
+      unix_to_dos(line);
 
       /* now find the most likely printer name and comment 
        this is pure guesswork, but it's better than nothing */

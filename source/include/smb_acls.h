@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2.x
    Portable SMB ACL interface
    Copyright (C) Jeremy Allison 2000
    

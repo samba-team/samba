@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "RPCCLIENT" "1" "16 April 2002" "" ""
+.TH "RPCCLIENT" "1" "02 May 2002" "" ""
 .SH NAME
 rpcclient \- tool for executing client side  MS-RPC functions
 .SH SYNOPSIS
@@ -26,7 +26,7 @@ The server can be any SMB/CIFS server. The name is
 resolved using the  \fIname resolve order\fRline from 
 \fIsmb.conf(5)\fR.
 .TP
-\fB-A|--authfile=filename\fR
+\fB-A filename\fR
 This option allows 
 you to specify a file from which to read the username and 
 password used in the connection. The format of the file is 
@@ -43,33 +43,33 @@ password used in the connection. The format of the file is
 Make certain that the permissions on the file restrict 
 access from unwanted users. 
 .TP
-\fB-c|--command='command string'\fR
+\fB-c 'command string'\fR
 execute semicolon separated commands (listed 
 below)) 
 .TP
-\fB-d|--debug=debuglevel\fR
+\fB-d debuglevel\fR
 set the debuglevel. Debug level 0 is the lowest 
 and 100 being the highest. This should be set to 100 if you are
 planning on submitting a bug report to the Samba team (see \fIBUGS.txt\fR). 
 .TP
-\fB-h|--help\fR
+\fB-h\fR
 Print a summary of command line options.
 .TP
-\fB-l|--logfile=logbasename\fR
+\fB-l logbasename\fR
 File name for log/debug files. The extension 
 \&'.client' will be appended. The log file is never removed 
 by the client.
 .TP
-\fB-N|--nopass\fR
+\fB-N\fR
 instruct \fBrpcclient\fR not to ask 
 for a password. By default, \fBrpcclient\fR will prompt 
 for a password. See also the \fI-U\fR option.
 .TP
-\fB-s|--conf=smb.conf\fR
+\fB-s smb.conf\fR
 Specifies the location of the all important 
 \fIsmb.conf\fR file. 
 .TP
-\fB-U|--user=username[%password]\fR
+\fB-U username[%password]\fR
 Sets the SMB username or username and password. 
 
 If %password is not specified, the user will be prompted. The 
@@ -92,7 +92,7 @@ via the \fBps\fR command. To be safe always allow
 \fBrpcclient\fR to prompt for a password and type 
 it in directly. 
 .TP
-\fB-W|--workgroup=domain\fR
+\fB-W domain\fR
 Set the SMB domain of the username. This 
 overrides the default domain which is the domain defined in 
 smb.conf. If the domain specified is the same as the server's NetBIOS name, 
@@ -314,7 +314,7 @@ or reported to Microsoft are fixed in Service Packs, which may
 result in incompatibilities." 
 .SH "VERSION"
 .PP
-This man page is correct for version 3.0 of the Samba 
+This man page is correct for version 2.2 of the Samba 
 suite.
 .SH "AUTHOR"
 .PP

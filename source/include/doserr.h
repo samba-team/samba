@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    DOS error code constants
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) John H Terpstra              1996-2000
@@ -164,7 +165,7 @@
 #define WERR_OBJECT_PATH_INVALID W_ERROR(161)
 #define WERR_NO_MORE_ITEMS W_ERROR(259)
 #define WERR_MORE_DATA W_ERROR(234)
-#define WERR_INVALID_OWNER W_ERROR(1307)
+#define WERR_CAN_NOT_COMPLETE W_ERROR(1003)
 #define WERR_INVALID_SECURITY_DESCRIPTOR W_ERROR(1338)
 #define WERR_UNKNOWN_PRINTER_DRIVER W_ERROR(1797)
 #define WERR_INVALID_PRINTER_NAME W_ERROR(1801)

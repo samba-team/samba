@@ -31,11 +31,8 @@ extern int ClientNMB;
 extern int ClientDGRAM;
 extern int global_nmb_port;
 
-extern int DEBUGLEVEL;
-
 extern fstring myworkgroup;
 extern char **my_netbios_names;
-extern struct in_addr ipzero;
 
 /* This is the broadcast subnets database. */
 struct subnet_record *subnetlist = NULL;
@@ -188,7 +185,7 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
     close(nmb_sock);
     close(dgram_sock);
     ZERO_STRUCTP(subrec);
-    free((char *)subrec);
+    SAFE_FREE(subrec);
     return(NULL);
   }
 
@@ -234,7 +231,7 @@ BOOL create_subnets(void)
 {    
   int num_interfaces = iface_count();
   int i;
-  struct in_addr unicast_ip;
+  struct in_addr unicast_ip, ipzero;
   extern struct in_addr loopback_ip;
 
   if(num_interfaces == 0)
@@ -282,7 +279,7 @@ BOOL create_subnets(void)
     struct in_addr real_wins_ip;
     real_wins_ip = wins_srv_ip();
 
-    if (!zero_ip(real_wins_ip))
+    if (!is_zero_ip(real_wins_ip))
     {
       unicast_ip = real_wins_ip;
     }
@@ -304,7 +301,7 @@ BOOL create_subnets(void)
   {
     /* We should not be using a WINS server at all. Set the
       ip address of the subnet to be zero. */
-    unicast_ip = ipzero;
+    zero_ip(&unicast_ip);
   }
 
   /*
@@ -316,6 +313,8 @@ BOOL create_subnets(void)
 
   unicast_subnet = make_subnet( "UNICAST_SUBNET", UNICAST_SUBNET, 
                                  unicast_ip, unicast_ip, unicast_ip);
+
+  zero_ip(&ipzero);
 
   remote_broadcast_subnet = make_subnet( "REMOTE_BROADCAST_SUBNET",
                                          REMOTE_BROADCAST_SUBNET,
@@ -349,7 +348,7 @@ BOOL we_are_a_wins_client(void)
   static int cache_we_are_a_wins_client = -1;
 
   if(cache_we_are_a_wins_client == -1)
-    cache_we_are_a_wins_client = (ip_equal(ipzero, unicast_subnet->myip) ? 
+    cache_we_are_a_wins_client = (is_zero_ip(unicast_subnet->myip) ? 
                                   False : True);
 
   return cache_we_are_a_wins_client;

@@ -23,8 +23,23 @@
 
 #include "winbindd.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_WINBIND
+/*******************************************************************
+ Duplicate a UNISTR2 string into a UNIX codepage null terminated char*
+ using a talloc context
+********************************************************************/
+
+static char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
+{
+	char *s;
+	int maxlen = (str->uni_str_len+1)*4;
+	if (!str->buffer)
+		return NULL;
+	s = (char *)talloc(ctx, maxlen); /* convervative */
+	if (!s)
+		return NULL;
+	unistr2_to_unix(s, str, maxlen);
+	return s;
+}
 
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
@@ -95,6 +110,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		for (j=0;j<count;i++, j++) {
+			/* unistr2_tdup converts to UNIX charset. */
 			(*info)[i].acct_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_acct_name);
 			(*info)[i].full_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_full_name);
 			(*info)[i].user_rid = info1.sam[j].rid_user;
@@ -334,15 +350,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	int i;
 
 	*num_groups = 0;
-
-	/* First try cached universal groups from logon */
-	*user_gids = uni_group_cache_fetch(&domain->sid, user_rid, mem_ctx, num_groups);
-	if((*num_groups > 0) && *user_gids) {
-		return NT_STATUS_OK;
-	} else {
-	    *user_gids = NULL;
-	    *num_groups = 0;
-	}
+	*user_gids = NULL;
 
 	/* Get sam handle */
 	if (!(hnd = cm_get_sam_handle(domain->name)))
@@ -561,7 +569,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 enum_ctx = 0;
-	uint32 pref_num_domains = 5;
 
 	*num_domains = 0;
 
@@ -569,8 +576,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		goto done;
 
 	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
-					&hnd->pol, &enum_ctx, &pref_num_domains,
-					num_domains, names, dom_sids);
+					&hnd->pol, &enum_ctx, num_domains, 
+					names, dom_sids);
 done:
 	return result;
 }

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -40,8 +39,6 @@
  */
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
@@ -94,7 +91,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p,0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return True;
 	}
 
@@ -167,7 +164,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 * data.
 	 */
 
-	prs_init( &outgoing_pdu, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init( &outgoing_pdu, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/* Store the header in the data stream. */
@@ -270,8 +267,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	fstring domain;
 	fstring wks;
 	BOOL guest_user = False;
-	struct smb_passwd *smb_pass = NULL;
-	struct passwd *pass = NULL;
+	SAM_ACCOUNT *sampass = NULL;
 	uchar null_smb_passwd[16];
 	uchar *smb_passwd_ptr = NULL;
 	
@@ -360,15 +356,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 	}
 
-	/*
-	 * Find the user in the unix password db.
-	 */
-
-	if(!(pass = Get_Pwnam(pipe_user_name,True))) {
-		DEBUG(1,("Couldn't find user '%s' in UNIX password database.\n",pipe_user_name));
-		return(False);
-	}
-
 	if(!guest_user) {
 
 		become_root();
@@ -381,33 +368,32 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 			return False;
 		}
 
-		if(!(smb_pass = getsmbpwnam(pipe_user_name))) {
+		pdb_init_sam(&sampass);
+
+		if(!pdb_getsampwnam(sampass, pipe_user_name)) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
 				pipe_user_name));
+			pdb_free_sam(sampass);
 			unbecome_root();
 			return False;
 		}
-
+		
 		unbecome_root();
 
-		if (smb_pass == NULL) {
-			DEBUG(1,("api_pipe_ntlmssp_verify: Couldn't find user '%s' in smb_passwd file.\n", 
-				pipe_user_name));
-			return(False);
-		}
-
-		/* Quit if the account was disabled. */
-		if((smb_pass->acct_ctrl & ACB_DISABLED) || !smb_pass->smb_passwd) {
+        /* Quit if the account was disabled. */
+        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
-			return(False);
+			pdb_free_sam(sampass);
+			return False;
 		}
-
-		if(!smb_pass->smb_nt_passwd) {
+ 
+		if(!pdb_get_nt_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
-			return(False);
+			pdb_free_sam(sampass);
+			return False;
 		}
-
-		smb_passwd_ptr = smb_pass->smb_passwd;
+ 
+        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
 	}
 
 	/*
@@ -458,20 +444,20 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	p->pipe_user.uid = pass->pw_uid;
-	p->pipe_user.gid = pass->pw_gid;
+	p->pipe_user.uid = pdb_get_uid(sampass);
+	p->pipe_user.gid = pdb_get_gid(sampass);
 
 	/* Set up pipe user group membership. */
 	initialise_groups(pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
 	get_current_groups( &p->pipe_user.ngroups, &p->pipe_user.groups);
 
 	/* Create an NT_USER_TOKEN struct for this user. */
-	p->pipe_user.nt_user_token = 
-                create_nt_token(p->pipe_user.uid,p->pipe_user.gid,
-                                p->pipe_user.ngroups, p->pipe_user.groups,
-                                guest_user, NULL);
+	p->pipe_user.nt_user_token = create_nt_token(p->pipe_user.uid,p->pipe_user.gid,
+						p->pipe_user.ngroups, p->pipe_user.groups,
+						guest_user, NULL);
 
 	p->ntlmssp_auth_validated = True;
+	pdb_free_sam(sampass);
 	return True;
 }
 
@@ -585,7 +571,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_rpc, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init( &outgoing_rpc, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 
@@ -628,7 +614,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
  Marshall a fault pdu.
 *******************************************************************/
 
-BOOL setup_fault_pdu(pipes_struct *p, uint32 status)
+BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 {
 	prs_struct outgoing_pdu;
 	RPC_HDR fault_hdr;
@@ -644,7 +630,7 @@ BOOL setup_fault_pdu(pipes_struct *p, uint32 status)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_pdu, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init( &outgoing_pdu, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
@@ -861,7 +847,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_rpc, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init( &outgoing_rpc, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
@@ -869,13 +855,13 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * auth footers.
 	 */
 
-	if(!prs_init(&out_hdr_ba, 1024, 4, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&out_hdr_ba, 1024, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("api_pipe_bind_req: malloc out_hdr_ba failed.\n"));
 		prs_mem_free(&outgoing_rpc);
 		return False;
 	}
 
-	if(!prs_init(&out_auth, 1024, 4, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&out_auth, 1024, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("pi_pipe_bind_req: malloc out_auth failed.\n"));
 		prs_mem_free(&outgoing_rpc);
 		prs_mem_free(&out_hdr_ba);
@@ -885,7 +871,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	if (p->ntlmssp_auth_requested)
 		assoc_gid = 0x7a77;
 	else
-		assoc_gid = hdr_rb.bba.assoc_gid;
+		assoc_gid = hdr_rb.bba.assoc_gid ? hdr_rb.bba.assoc_gid : 0x53f0;
 
 	/*
 	 * Create the bind response struct.
@@ -1122,6 +1108,22 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 }
 
 /****************************************************************************
+ Return a user struct for a pipe user.
+****************************************************************************/
+
+struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
+{
+	if (p->ntlmssp_auth_validated) {
+		memcpy(user, &p->pipe_user, sizeof(struct current_user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(user, &current_user, sizeof(struct current_user));
+	}
+
+	return user;
+}
+
+/****************************************************************************
  Find the correct RPC function to call for this request.
  If the pipe is authenticated then become the correct UNIX user
  before doing the call.
@@ -1131,7 +1133,6 @@ BOOL api_pipe_request(pipes_struct *p)
 {
 	int i = 0;
 	BOOL ret = False;
-	BOOL changed_user_id = False;
 
 	if (p->ntlmssp_auth_validated) {
 
@@ -1139,20 +1140,20 @@ BOOL api_pipe_request(pipes_struct *p)
 			prs_mem_free(&p->out_data.rdata);
 			return False;
 		}
-
-		changed_user_id = True;
 	}
 
 	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++) {
 		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
 		    api_fd_commands[i].fn != NULL) {
 			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i].pipe_clnt_name));
+			set_current_rpc_talloc(p->mem_ctx);
 			ret = api_fd_commands[i].fn(p);
+			set_current_rpc_talloc(NULL);
 		}
 	}
 
-	if(changed_user_id)
-		unbecome_authenticated_pipe_user(p);
+	if (p->ntlmssp_auth_validated)
+		unbecome_authenticated_pipe_user();
 
 	return ret;
 }
@@ -1171,7 +1172,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ", rpc_name, p->hdr_req.opnum));
 
-	slprintf(name, sizeof(name), "in_%s", rpc_name);
+	slprintf(name, sizeof(name)-1, "in_%s", rpc_name);
 	prs_dump(name, p->hdr_req.opnum, &p->in_data.data);
 
 	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++) {
@@ -1188,7 +1189,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		 * and not put the pipe into fault state. JRA.
 		 */
 		DEBUG(4, ("unknown\n"));
-		setup_fault_pdu(p,0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return True;
 	}
 
@@ -1204,11 +1205,11 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 	if (p->bad_handle_fault_state) {
 		DEBUG(4,("api_rpcTNP: bad handle fault return.\n"));
 		p->bad_handle_fault_state = False;
-		setup_fault_pdu(p, 0x1C00001A);
+		setup_fault_pdu(p, NT_STATUS(0x1C00001A));
 		return True;
 	}
 
-	slprintf(name, sizeof(name), "out_%s", rpc_name);
+	slprintf(name, sizeof(name)-1, "out_%s", rpc_name);
 	offset2 = prs_offset(&p->out_data.rdata);
 	prs_set_offset(&p->out_data.rdata, offset1);
 	prs_dump(name, p->hdr_req.opnum, &p->out_data.rdata);
@@ -1230,12 +1231,10 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		if (data) {
 			prs_uint8s(False, "", &p->in_data.data, 0, (unsigned char *)data,
 				   data_len);
-			free(data);
+			SAFE_FREE(data);
 		}
 
 	}
 
 	return True;
 }
-
-#undef OLD_NTDOMAIN

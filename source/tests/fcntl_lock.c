@@ -16,6 +16,10 @@
 #include <sys/fcntl.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #include <errno.h>
 
 static int sys_waitpid(pid_t pid,int *status,int options)
@@ -39,12 +43,22 @@ int main(int argc, char *argv[])
 	struct flock lock;
 	int fd, ret, status=1;
 	pid_t pid;
+	char *testdir = NULL;
+
+	testdir = getenv("TESTDIR");
+	if (testdir) chdir(testdir);
+
+	alarm(10);
 
 	if (!(pid=fork())) {
 		sleep(2);
 		fd = open(DATA, O_RDONLY);
 
-		if (fd == -1) exit(1);
+		if (fd == -1) {
+			fprintf(stderr,"ERROR: failed to open %s (errno=%d)\n", 
+				DATA, (int)errno);
+			exit(1);
+		}
 
 		lock.l_type = F_WRLCK;
 		lock.l_whence = SEEK_SET;
@@ -59,13 +73,21 @@ int main(int argc, char *argv[])
 
 		if ((ret == -1) ||
 		    (lock.l_type == F_UNLCK)) {
+			fprintf(stderr,"ERROR: lock test failed (ret=%d errno=%d)\n", ret, (int)errno);
 			exit(1);
 		} else {
 			exit(0);
 		}
 	}
 
-	fd = open(DATA, O_RDWR|O_CREAT|O_TRUNC, 0600);
+	unlink(DATA);
+	fd = open(DATA, O_RDWR|O_CREAT|O_EXCL, 0600);
+
+	if (fd == -1) {
+		fprintf(stderr,"ERROR: failed to open %s (errno=%d)\n", 
+			DATA, (int)errno);
+		exit(1);
+	}
 
 	lock.l_type = F_WRLCK;
 	lock.l_whence = SEEK_SET;
@@ -89,6 +111,11 @@ int main(int argc, char *argv[])
 #else /* defined(WIFEXITED) && defined(WEXITSTATUS) */
 	status = (status == 0) ? 0 : 1;
 #endif /* defined(WIFEXITED) && defined(WEXITSTATUS) */
+
+	if (status) {
+		fprintf(stderr,"ERROR: lock test failed with status=%d\n", 
+			status);
+	}
 
 	exit(status);
 }

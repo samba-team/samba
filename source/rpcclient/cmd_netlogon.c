@@ -1,10 +1,9 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
-   NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   
+   Unix SMB/CIFS implementation.
+   RPC pipe client
+
+   Copyright (C) Tim Potter 2000
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -20,117 +19,316 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
+#include "rpcclient.h"
 
-extern int DEBUGLEVEL;
-
-#define DEBUG_TESTING
-
-extern struct cli_state *smb_cli;
-
-extern FILE* out_hnd;
-
-
-/****************************************************************************
-experimental nt login.
-****************************************************************************/
-void cmd_netlogon_login_test(struct client_info *info)
+static NTSTATUS cmd_netlogon_logon_ctrl2(struct cli_state *cli, 
+                                         TALLOC_CTX *mem_ctx, int argc, 
+                                         char **argv)
 {
-	extern BOOL global_machine_password_needs_changing;
+	uint32 query_level = 1;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	fstring nt_user_name;
-	fstring password;
-	BOOL res = True;
-	char *nt_password;
-	unsigned char trust_passwd[16];
-
-#if 0
-	/* machine account passwords */
-	pstring new_mach_pwd;
-
-	/* initialisation */
-	new_mach_pwd[0] = 0;
-#endif
-
-	if (!next_token(NULL, nt_user_name, NULL, sizeof(nt_user_name)))
-	{
-		fstrcpy(nt_user_name, smb_cli->user_name);
-		if (nt_user_name[0] == 0)
-		{
-			fprintf(out_hnd,"ntlogin: must specify username with anonymous connection\n");
-			return;
-		}
+	if (argc > 1) {
+		fprintf(stderr, "Usage: %s\n", argv[0]);
+		return NT_STATUS_OK;
 	}
 
-	if (next_token(NULL, password, NULL, sizeof(password)))
-	{
-		nt_password = password;
-	}
-	else
-	{
-		nt_password = getpass("Enter NT Login password:");
-	}
+	result = cli_netlogon_logon_ctrl2(cli, mem_ctx, query_level);
 
-	DEBUG(5,("do_nt_login_test: username %s\n", nt_user_name));
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
-	res = res ? secrets_fetch_trust_account_password(smb_cli->domain, 
-							 trust_passwd, NULL) : False;
+	/* Display results */
 
-#if 0
-	/* check whether the user wants to change their machine password */
-	res = res ? trust_account_check(info->dest_ip, info->dest_host,
-	                                info->myhostname, smb_cli->domain,
-	                                info->mach_acct, new_mach_pwd) : False;
-#endif
-	/* open NETLOGON session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON) : False;
-
-	res = res ? cli_nt_setup_creds(smb_cli, trust_passwd) : False;
-
-#if 0 
-	/* change the machine password? */
-	if (global_machine_password_needs_changing)
-	{
-		unsigned char new_trust_passwd[16];
-		generate_random_buffer(new_trust_passwd, 16, True);
-		res = res ? cli_nt_srv_pwset(smb_cli, new_trust_passwd) : False;
-
-		if (res)
-		{
-			global_machine_password_needs_changing = !set_trust_account_password(smb_cli->domain,
-											     new_trust_passwd);
-		}
-
-		memset(new_trust_passwd, 0, 16);
-	}
-#endif
-
-	memset(trust_passwd, 0, 16);
-
-	/* do an NT login */
-	res = res ? cli_nt_login_interactive(smb_cli,
-	                 smb_cli->domain, nt_user_name,
-	                 getuid(), nt_password,
-	                 &info->dom.ctr, &info->dom.user_info3) : False;
-
-	/*** clear out the password ***/
-	memset(password, 0, sizeof(password));
-
-	/* ok!  you're logged in!  do anything you like, then... */
-
-	/* do an NT logout */
-	res = res ? cli_nt_logoff(smb_cli, &info->dom.ctr) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli);
-
-	fprintf(out_hnd,"cmd_nt_login: login (%s) test succeeded: %s\n",
-		nt_user_name, BOOLSTR(res));
+ done:
+	return result;
 }
 
+static NTSTATUS cmd_netlogon_logon_ctrl(struct cli_state *cli, 
+                                        TALLOC_CTX *mem_ctx, int argc, 
+                                        char **argv)
+{
+#if 0
+	uint32 query_level = 1;
+#endif
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (argc > 1) {
+		fprintf(stderr, "Usage: %s\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+#if 0
+	result = cli_netlogon_logon_ctrl(cli, mem_ctx, query_level);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+#endif
+
+	/* Display results */
+
+	return result;
+}
+
+/* Display sam synchronisation information */
+
+static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
+                             SAM_DELTA_CTR *deltas)
+{
+        fstring name;
+        uint32 i, j;
+
+        for (i = 0; i < num_deltas; i++) {
+                switch (hdr_deltas[i].type) {
+                case SAM_DELTA_DOMAIN_INFO:
+                        unistr2_to_unix(name,
+                                         &deltas[i].domain_info.uni_dom_name,
+                                         sizeof(name) - 1);
+                        printf("Domain: %s\n", name);
+                        break;
+                case SAM_DELTA_GROUP_INFO:
+                        unistr2_to_unix(name,
+                                         &deltas[i].group_info.uni_grp_name,
+                                         sizeof(name) - 1);
+                        printf("Group: %s\n", name);
+                        break;
+                case SAM_DELTA_ACCOUNT_INFO:
+                        unistr2_to_unix(name, 
+                                         &deltas[i].account_info.uni_acct_name,
+                                         sizeof(name) - 1);
+                        printf("Account: %s\n", name);
+                        break;
+                case SAM_DELTA_ALIAS_INFO:
+                        unistr2_to_unix(name, 
+                                         &deltas[i].alias_info.uni_als_name,
+                                         sizeof(name) - 1);
+                        printf("Alias: %s\n", name);
+                        break;
+                case SAM_DELTA_ALIAS_MEM: {
+                        SAM_ALIAS_MEM_INFO *alias = &deltas[i].als_mem_info;
+
+                        for (j = 0; j < alias->num_members; j++) {
+                                fstring sid_str;
+
+                                sid_to_string(sid_str, &alias->sids[j].sid);
+
+                                printf("%s\n", sid_str);
+                        }
+                        break;
+                }
+                case SAM_DELTA_GROUP_MEM: {
+                        SAM_GROUP_MEM_INFO *group = &deltas[i].grp_mem_info;
+
+                        for (j = 0; j < group->num_members; j++)
+                                printf("rid 0x%x, attrib 0x%08x\n", 
+                                          group->rids[j], group->attribs[j]);
+                        break;
+                }
+                case SAM_DELTA_SAM_STAMP: {
+                        SAM_DELTA_STAMP *stamp = &deltas[i].stamp;
+
+                        printf("sam sequence update: 0x%04x\n",
+                                  stamp->seqnum);
+                        break;
+                }                                  
+                default:
+                        printf("unknown delta type 0x%02x\n", 
+                                  hdr_deltas[i].type);
+                        break;
+                }
+        }
+}
+
+/* Perform sam synchronisation */
+
+static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli, 
+                                      TALLOC_CTX *mem_ctx, int argc,
+                                      char **argv)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        unsigned char trust_passwd[16];
+        uint32 database_id = 0, num_deltas;
+        SAM_DELTA_HDR *hdr_deltas;
+        SAM_DELTA_CTR *deltas;
+	DOM_CRED ret_creds;
+
+        if (argc > 2) {
+                fprintf(stderr, "Usage: %s [database_id]\n", argv[0]);
+                return NT_STATUS_OK;
+        }
+
+        if (argc == 2)
+                database_id = atoi(argv[1]);
+
+        if (!secrets_init()) {
+                fprintf(stderr, "Unable to initialise secrets database\n");
+                return result;
+        }
+
+        /* Initialise session credentials */
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
+                                                  NULL)) {
+		fprintf(stderr, "could not fetch trust account password\n");
+		goto done;
+	}        
+
+        result = cli_nt_setup_creds(cli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                fprintf(stderr, "Error initialising session creds\n");
+                goto done;
+        }
+
+	/* on first call the returnAuthenticator is empty */
+	memset(&ret_creds, 0, sizeof(ret_creds));
+ 
+        /* Synchronise sam database */
+
+	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, database_id,
+				       &num_deltas, &hdr_deltas, &deltas);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+        /* Display results */
+
+        display_sam_sync(num_deltas, hdr_deltas, deltas);
+
+ done:
+        return result;
+}
+
+/* Perform sam delta synchronisation */
+
+static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli, 
+                                        TALLOC_CTX *mem_ctx, int argc,
+                                        char **argv)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        unsigned char trust_passwd[16];
+        uint32 database_id, num_deltas, tmp;
+        SAM_DELTA_HDR *hdr_deltas;
+        SAM_DELTA_CTR *deltas;
+        UINT64_S seqnum;
+
+        if (argc != 3) {
+                fprintf(stderr, "Usage: %s database_id seqnum\n", argv[0]);
+                return NT_STATUS_OK;
+        }
+
+        database_id = atoi(argv[1]);
+        tmp = atoi(argv[2]);
+
+        seqnum.low = tmp & 0xffff;
+        seqnum.high = 0;
+
+        if (!secrets_init()) {
+                fprintf(stderr, "Unable to initialise secrets database\n");
+                goto done;
+        }
+
+        /* Initialise session credentials */
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
+                                                  NULL)) {
+		fprintf(stderr, "could not fetch trust account password\n");
+		goto done;
+	}        
+
+        result = cli_nt_setup_creds(cli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                fprintf(stderr, "Error initialising session creds\n");
+                goto done;
+        }
+
+        /* Synchronise sam database */
+
+	result = cli_netlogon_sam_deltas(cli, mem_ctx, database_id,
+					 seqnum, &num_deltas, 
+					 &hdr_deltas, &deltas);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+        /* Display results */
+
+        display_sam_sync(num_deltas, hdr_deltas, deltas);
+        
+ done:
+        return result;
+}
+
+/* Log on a domain user */
+
+static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli, 
+                                       TALLOC_CTX *mem_ctx, int argc,
+                                       char **argv)
+{
+        unsigned char trust_passwd[16];
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        int logon_type = NET_LOGON_TYPE;
+        char *username, *password;
+
+        /* Check arguments */
+
+        if (argc < 3 || argc > 4) {
+                fprintf(stderr, "Usage: samlogon <username> <password> "
+                        "[logon_type]\n");
+                return NT_STATUS_OK;
+        }
+
+        username = argv[1];
+        password = argv[2];
+
+        if (argc == 4)
+                sscanf(argv[3], "%i", &logon_type);
+
+        /* Authenticate ourselves with the domain controller */
+
+        if (!secrets_init()) {
+                fprintf(stderr, "Unable to initialise secrets database\n");
+                return result;
+        }
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
+                                                  NULL)) {
+		fprintf(stderr, "could not fetch trust account password\n");
+		goto done;
+	}        
+
+        result = cli_nt_setup_creds(cli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                fprintf(stderr, "Error initialising session creds\n");
+                goto done;
+        }
+
+        /* Perform the sam logon */
+
+        result = cli_netlogon_sam_logon(cli, mem_ctx, username, password,
+                                        logon_type);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+ done:
+        return result;
+}
+
+/* List of commands exported by this module */
+
+struct cmd_set netlogon_commands[] = {
+
+	{ "NETLOGON" },
+
+	{ "logonctrl2", cmd_netlogon_logon_ctrl2, PIPE_NETLOGON, "Logon Control 2",     "" },
+	{ "logonctrl",  cmd_netlogon_logon_ctrl,  PIPE_NETLOGON, "Logon Control",       "" },
+	{ "samsync",    cmd_netlogon_sam_sync,    PIPE_NETLOGON, "Sam Synchronisation", "" },
+	{ "samdeltas",  cmd_netlogon_sam_deltas,  PIPE_NETLOGON, "Query Sam Deltas",    "" },
+        { "samlogon",   cmd_netlogon_sam_logon,   PIPE_NETLOGON, "Sam Logon",           "" },
+
+	{ NULL }
+};

@@ -157,7 +157,6 @@ struct cli_state *connect_one(char *share)
 	char *server_n;
 	fstring server;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
 	fstring myname;
 	static int count;
 
@@ -169,7 +168,7 @@ struct cli_state *connect_one(char *share)
 
 	server_n = server;
 	
-	ip = ipzero;
+	zero_ip(&ip);
 
 	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), count++);
 
@@ -177,7 +176,7 @@ struct cli_state *connect_one(char *share)
 	make_nmb_name(&called , server, 0x20);
 
  again:
-	ip = ipzero;
+	zero_ip(&ip);
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, 139) == 0) ||
@@ -268,7 +267,7 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			}
 			cli_ulogoff(cli[server][conn]);
 			cli_shutdown(cli[server][conn]);
-			free(cli[server][conn]);
+			SAFE_FREE(cli[server][conn]);
 			cli[server][conn] = NULL;
 		}
 		cli[server][conn] = connect_one(share[server]);

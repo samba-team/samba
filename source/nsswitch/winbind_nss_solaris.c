@@ -10,12 +10,16 @@
 #include <sys/param.h>
 #include <string.h>
 #include <pwd.h>
-#include <syslog.h>
-#include <sys/syslog.h>
 #include "includes.h"
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
+#ifdef HAVE_SYS_SYSLOG_H
+#include <sys/syslog.h>
+#endif
 #include "winbind_nss_config.h"
 
-#ifdef HAVE_NSS_COMMON_H 
+#if defined(HAVE_NSS_COMMON_H) || defined(HPUX)
 
 #undef NSS_DEBUG
 
@@ -117,7 +121,7 @@ _nss_winbind_getpwuid_solwrap(nss_backend_t* be, void* args)
 
 static NSS_STATUS _nss_winbind_passwd_destr (nss_backend_t * be, void *args)
 {
-	free(be);
+	SAFE_FREE(be);
 	NSS_DEBUG("_nss_winbind_passwd_destr");
 	return NSS_STATUS_SUCCESS;
 }
@@ -241,7 +245,7 @@ _nss_winbind_getgroupsbymember_solwrap(nss_backend_t* be, void* args)
 static NSS_STATUS
 _nss_winbind_group_destr (nss_backend_t* be, void* args)
 {
-	free(be);
+	SAFE_FREE(be);
 	NSS_DEBUG("_nss_winbind_group_destr");
 	return NSS_STATUS_SUCCESS;
 }

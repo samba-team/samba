@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -46,10 +44,10 @@ static void send_election_dgram(struct subnet_record *subrec, char *workgroup_na
 
   memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = ANN_Election; /* Election opcode. */
+  SCVAL(p,0,ANN_Election); /* Election opcode. */
   p++;
 
-  CVAL(p,0) = (criterion == 0 && timeup == 0) ? 0 : ELECTION_VERSION;
+  SCVAL(p,0,((criterion == 0 && timeup == 0) ? 0 : ELECTION_VERSION));
   SIVAL(p,1,criterion);
   SIVAL(p,5,timeup*1000); /* ms - Despite what the spec says. */
   p += 13;
@@ -177,6 +175,7 @@ void run_elections(time_t t)
   
   lastime = t;
   
+  START_PROFILE(run_elections);
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
   {
     struct work_record *work;
@@ -215,6 +214,7 @@ yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
       }
     }
   }
+  END_PROFILE(run_elections);
 }
 
 /*******************************************************************
@@ -276,6 +276,7 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
   struct work_record *work;
   char *workgroup_name = dgram->dest_name.name;
 
+  START_PROFILE(election);
   server_name[15] = 0;  
 
   DEBUG(3,("process_election: Election request from %s at IP %s on subnet %s for workgroup %s.\n",
@@ -287,14 +288,14 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
   {
     DEBUG(0,("process_election: Cannot find workgroup %s on subnet %s.\n",
           workgroup_name, subrec->subnet_name ));
-    return;
+    goto done;
   }
 
   if (!strequal(work->work_group, global_myworkgroup))
   {
     DEBUG(3,("process_election: ignoring election request for workgroup %s on subnet %s as this \
 is not my workgroup.\n", work->work_group, subrec->subnet_name ));
-    return;
+    goto done;
   }
 
   if (win_election(work, version,criterion,timeup,server_name))
@@ -325,6 +326,8 @@ is not my workgroup.\n", work->work_group, subrec->subnet_name ));
         unbecome_local_master_browser(subrec, work, False);
     }
   }
+done:
+  END_PROFILE(election);
 }
 
 /****************************************************************************

@@ -45,9 +45,42 @@ char *get_user_home_dir(char *user)
 	static struct passwd *pass;
 
 	pass = Get_Pwnam(user, False);
-
 	if (!pass)
 		return(NULL);
+	/* Return home directory from struct passwd. */
+	return(pass->pw_dir);      
+}
+
+/****************************************************************************
+ Get a users home service directory.
+****************************************************************************/
+
+char *get_user_service_home_dir(char *user)
+{
+	static struct passwd *pass;
+	int snum;
+
+	/* Ensure the user exists. */
+
+	pass = Get_Pwnam(user, False);
+	if (!pass)
+		return(NULL);
+
+	/* If a path is specified in [homes] then use it instead of the
+	   user's home directory from struct passwd. */
+
+	if ((snum = lp_servicenumber(HOMES_NAME)) != -1) {
+		static pstring home_dir;
+
+		pstrcpy(home_dir, lp_pathname(snum));
+		standard_sub_home(snum, user, home_dir);
+
+		if (home_dir[0])
+			return home_dir;
+	}
+
+	/* Return home directory from struct passwd. */
+
 	return(pass->pw_dir);      
 }
 
@@ -110,13 +143,13 @@ BOOL map_username(char *user)
 
 		*dosname++ = 0;
 
-		while (isspace(*unixname))
+		while (isspace((int)*unixname))
 			unixname++;
 		if ('!' == *unixname) {
 			return_if_mapped = True;
 			unixname++;
 
-			while (*unixname && isspace(*unixname))
+			while (*unixname && isspace((int)*unixname))
 				unixname++;
 		}
     
@@ -125,7 +158,7 @@ BOOL map_username(char *user)
 
 		{
 			int l = strlen(unixname);
-			while (l && isspace(unixname[l-1])) {
+			while (l && isspace((int)unixname[l-1])) {
 				unixname[l-1] = 0;
 				l--;
 			}
@@ -206,9 +239,9 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 
 	/* try in all lower case first as this is the most
 	   common case on UNIX systems */
-	unix_to_dos(user, True);
+	unix_to_dos(user);
 	strlower(user);
-	dos_to_unix(user, True);
+	dos_to_unix(user);
 
 	ret = _Get_Pwnam(user);
 	if (ret)
@@ -227,9 +260,9 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 	}
 
 	/* finally, try in all caps if that is a new case */
-	unix_to_dos(user, True);
+	unix_to_dos(user);
 	strupper(user);
-	dos_to_unix(user, True);
+	dos_to_unix(user);
 
 	if (strcmp(user, orig_username) != 0) {
 		ret = _Get_Pwnam(user);
@@ -238,9 +271,9 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 	}
 
 	/* Try all combinations up to usernamelevel. */
-	unix_to_dos(user, True);
+	unix_to_dos(user);
 	strlower(user);
-	dos_to_unix(user, True);
+	dos_to_unix(user);
 
 	ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
 
@@ -347,54 +380,42 @@ failed with error %s\n", strerror(errno) ));
  Check if a user is in a UNIX group.
 ****************************************************************************/
 
-static BOOL user_in_unix_group_list(char *user,char *gname)
+static BOOL user_in_unix_group_list(char *user,const char *gname)
 {
-	struct group *gptr;
-	char **member;  
-	struct passwd *pass = NULL;
-	fstring unix_user;
-	
- 	DEBUG(10,("user_in_unix_group_list: checking user %s in group %s\n", user, gname));
+	struct passwd *pass = Get_Pwnam(user,False);
+	struct sys_userlist *user_list;
+	struct sys_userlist *member;
+
+	DEBUG(10,("user_in_unix_group_list: checking user %s in group %s\n", user, gname));
 
  	/*
  	 * We need to check the users primary group as this
  	 * group is implicit and often not listed in the group database.
  	 */
-
  
-	/* Since user_in_list() is passed strings in dos codepage for
-	   printer admin access checks, we must convert before doing a
-	   getpwnam(). */
-
-	fstrcpy(unix_user, user);
-	dos_to_unix(unix_user, True);		
-	pass = Get_Pwnam(unix_user, True);
-		
-	if (!pass)
-		DEBUG(10, ("getpwnam(%s) failed\n", unix_user));
-
  	if (pass) {
  		if (strequal(gname, gidtoname(pass->pw_gid))) {
  			DEBUG(10,("user_in_unix_group_list: group %s is primary group.\n", gname ));
  			return True;
  		}
  	}
-
  
- 	if ((gptr = (struct group *)getgrnam(gname)) == NULL) {
+	user_list = get_users_in_group(gname);
+ 	if (user_list == NULL) {
  		DEBUG(10,("user_in_unix_group_list: no such group %s\n", gname ));
  		return False;
  	}
- 
- 	member = gptr->gr_mem;
-  	while (member && *member) {
- 		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n", user, *member ));
-  		if (strequal(*member,user)) {
+
+	for (member = user_list; member; member = member->next) {
+ 		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n",
+			user, member->unix_name ));
+  		if (strequal(member->unix_name,user)) {
+			free_userlist(user_list);
   			return(True);
   		}
-		member++;
 	}
 
+	free_userlist(user_list);
 	return False;
 }	      
 
@@ -430,7 +451,7 @@ BOOL user_in_list(char *user,char *list)
 
 	while (next_token(&p,tok,LIST_SEP, sizeof(tok))) {
 
-		DEBUG(10,("user_in_list: checking user |%s| in group |%s|\n", user, tok));
+		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n", user, tok));
 
 		/*
 		 * Check raw username.
@@ -503,7 +524,7 @@ BOOL user_in_list(char *user,char *list)
 			BOOL ret;
  
 			/* Check to see if name is a Windows group */
-			if (winbind_lookup_name(tok, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+			if (winbind_lookup_name(NULL, tok, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
  
 				/* Check if user name is in the Windows group */
 				ret = user_in_winbind_group_list(user, tok, &winbind_answered);
@@ -533,16 +554,12 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
 	int i;
 	struct passwd *ret;
 
-#ifdef PASSWORD_LENGTH
-	len = MIN(len,PASSWORD_LENGTH);
-#endif
-
 	if (N <= 0 || offset >= len)
 		return(fn(s));
 
 	for (i=offset;i<(len-(N-1));i++) {
 		char c = s[i];
-		if (!islower(c))
+		if (!islower((int)c))
 			continue;
 		s[i] = toupper(c);
 		ret = uname_string_combinations2(s,i+1,fn,N-1);

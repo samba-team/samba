@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 
 
 static char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -180,20 +179,39 @@ the lpq output.  The lpq time looks like "23:15:07"
 
 <allan@umich.edu> June 30, 1998.
 Modified to work with the re-written parse_lpq_lprng routine.
+
+<J.P.M.v.Itegem@tue.nl> Dec 17,1999
+Modified to work with lprng 3.16
+With lprng 3.16 The lpq time looks like
+                       "23:15:07"
+                       "23:15:07.100"
+                       "1999-12-16-23:15:07"
+                       "1999-12-16-23:15:07.100"
+
 */
 static time_t LPRng_time(char *time_string)
 {
-  time_t jobtime;
-  struct tm *t;
+	time_t jobtime;
+	struct tm t;
 
-  jobtime = time(NULL);         /* default case: take current time */
-  t = localtime(&jobtime);
-  t->tm_hour = atoi(time_string);
-  t->tm_min = atoi(time_string+3);
-  t->tm_sec = atoi(time_string+6);
-  jobtime = mktime(t);
+	jobtime = time(NULL);         /* default case: take current time */
+	t = *localtime(&jobtime);
 
-  return jobtime;
+	if ( atoi(time_string) < 24 ){
+		t.tm_hour = atoi(time_string);
+		t.tm_min = atoi(time_string+3);
+		t.tm_sec = atoi(time_string+6);
+	} else {
+		t.tm_year = atoi(time_string)-1900;
+		t.tm_mon = atoi(time_string+5)-1;
+		t.tm_mday = atoi(time_string+8);
+		t.tm_hour = atoi(time_string+11);
+		t.tm_min = atoi(time_string+14);
+		t.tm_sec = atoi(time_string+17);
+	}    
+	jobtime = mktime(&t);
+
+	return jobtime;
 }
 
 

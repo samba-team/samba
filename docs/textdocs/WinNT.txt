@@ -1,5 +1,5 @@
 !==
-!== WinNT.txt for Samba release 2.2.0-alpha1 23 Nov 2000
+!== WinNT.txt for Samba release 2.2.0-alpha3 24 Mar 2001
 !==
 Contributors:	Various
 		Password Section - Copyright (C) 1997 - John H Terpstra
@@ -38,8 +38,8 @@ Add the following value:
 	EnablePlainTextPassword:REG_DWORD=1
 
 Alternatively, use the NT4_PlainPassword.reg file in this directory (either
-by double clicking on it, or run regedt32.exe and select "Import Registry
-File" from the "Registry" Menu).
+by double clicking on it, or running regedt32.exe and selecting "Import 
+Registry File" from the "Registry" Menu).
 
 The other major ramification of this feature of NT is that it can't
 browse a user level non-encrypted server unless it already has a
@@ -66,7 +66,7 @@ in the short span of time it has, it assumes it isn't and gives some
 strange error about not having enough resources (I forget what the error
 is).  A solution to this that seems to work fine for us is to click
 once on the printer, look at the bottom of the window and wait until
-it says it's ready, then clilck on "OK".
+it says it's ready, then click on "OK".
 
 By the way, this problem probably occurs in our group because the
 Samba server doesn't actually have the printers - it queues them to

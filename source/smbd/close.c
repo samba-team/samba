@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -48,17 +46,39 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
     int ret;
     pstring magic_output;
     pstring fname;
-    pstrcpy(fname,fsp->fsp_name);
+	SMB_STRUCT_STAT st;
+	int tmp_fd, outfd;
 
+    pstrcpy(fname,fsp->fsp_name);
     if (*lp_magicoutput(SNUM(conn)))
       pstrcpy(magic_output,lp_magicoutput(SNUM(conn)));
     else
       slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
 
     chmod(fname,0755);
-    ret = smbrun(fname,magic_output,False);
+    ret = smbrun(fname,&tmp_fd);
     DEBUG(3,("Invoking magic command %s gave %d\n",fname,ret));
     unlink(fname);
+	if (ret != 0 || tmp_fd == -1) {
+		if (tmp_fd != -1)
+			close(tmp_fd);
+		return;
+	}
+	outfd = open(magic_output, O_CREAT|O_EXCL|O_RDWR, 0600);
+	if (outfd == -1) {
+		close(tmp_fd);
+		return;
+	}
+
+	if (sys_fstat(tmp_fd,&st) == -1) {
+		close(tmp_fd);
+		close(outfd);
+		return;
+	}
+
+	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
+	close(tmp_fd);
+	close(outfd);
   }
 }
 
@@ -71,19 +91,17 @@ static int close_filestruct(files_struct *fsp)
 	connection_struct *conn = fsp->conn;
 	int ret = 0;
     
-	if(flush_write_cache(fsp, CLOSE_FLUSH) == -1)
-		ret = -1;
+	if (fsp->fd != -1) {
+		if(flush_write_cache(fsp, CLOSE_FLUSH) == -1)
+			ret = -1;
 
-	delete_write_cache(fsp);
+		delete_write_cache(fsp);
+	}
 
 	fsp->is_directory = False; 
-	fsp->stat_open = False; 
     
 	conn->num_files_open--;
-	if(fsp->wbmpx_ptr) {  
-		free((char *)fsp->wbmpx_ptr);
-		fsp->wbmpx_ptr = NULL; 
-	}  
+	SAFE_FREE(fsp->wbmpx_ptr);
 
 	return ret;
 }    
@@ -143,28 +161,28 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 			GET_DELETE_ON_CLOSE_FLAG(share_entry->share_mode) )
 		delete_on_close = True;
 
-	safe_free(share_entry);
+	SAFE_FREE(share_entry);
 
 	/*
 	 * NT can set delete_on_close of the last open
 	 * reference to a file.
 	 */
 
-    if (normal_close && delete_on_close) {
-        DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
-	    fsp->fsp_name));
-		if(fsp->conn->vfs_ops.unlink(conn,dos_to_unix(fsp->fsp_name, False)) != 0) {
-          /*
-           * This call can potentially fail as another smbd may have
-           * had the file open with delete on close set and deleted
-           * it when its last reference to this file went away. Hence
-           * we log this but not at debug level zero.
-           */
+	if (normal_close && delete_on_close) {
+		DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
+			fsp->fsp_name));
+		if(fsp->conn->vfs_ops.unlink(conn,dos_to_unix_static(fsp->fsp_name)) != 0) {
+			/*
+			 * This call can potentially fail as another smbd may have
+			 * had the file open with delete on close set and deleted
+			 * it when its last reference to this file went away. Hence
+			 * we log this but not at debug level zero.
+			 */
 
-          DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
+			DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
 with error %s\n", fsp->fsp_name, strerror(errno) ));
-        }
-    }
+		}
+	}
 
 	unlock_share_entry_fsp(fsp);
 
@@ -180,14 +198,22 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 		check_magic(fsp,conn);
 	}
 
+	/*
+	 * Ensure pending modtime is set after close.
+	 */
+
+	if(fsp->pending_modtime) {
+		int saved_errno = errno;
+		set_filetime(conn, fsp->fsp_name, fsp->pending_modtime);
+		errno = saved_errno;
+	}
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
 		 conn->user,fsp->fsp_name,
 		 conn->num_files_open, err ? strerror(err) : ""));
 
-	if (fsp->fsp_name) {
+	if (fsp->fsp_name)
 		string_free(&fsp->fsp_name);
-	}
 
 	file_free(fsp);
 
@@ -222,27 +248,11 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 
 		if(ok)
 			remove_pending_change_notify_requests_by_filename(fsp);
-    }
+	}
 
 	/*
 	 * Do the code common to files and directories.
 	 */
-	close_filestruct(fsp);
-	
-	if (fsp->fsp_name)
-		string_free(&fsp->fsp_name);
-	
-	file_free(fsp);
-
-	return 0;
-}
-
-/****************************************************************************
- Close a file opened with null permissions in order to read permissions.
-****************************************************************************/
-
-static int close_statfile(files_struct *fsp, BOOL normal_close)
-{
 	close_filestruct(fsp);
 	
 	if (fsp->fsp_name)
@@ -261,9 +271,5 @@ int close_file(files_struct *fsp, BOOL normal_close)
 {
 	if(fsp->is_directory)
 		return close_directory(fsp, normal_close);
-	else if(fsp->stat_open)
-		return close_statfile(fsp, normal_close);
 	return close_normal_file(fsp, normal_close);
 }
-
-#undef OLD_NTDOMAIN

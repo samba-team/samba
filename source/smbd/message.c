@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -29,8 +27,6 @@
 #include "includes.h"
 
 /* look in server.c for some explanation of these variables */
-extern int DEBUGLEVEL;
-
 
 static char msgbuf[1600];
 static int msgpos=0;
@@ -42,8 +38,7 @@ deliver the message
 ****************************************************************************/
 static void msg_deliver(void)
 {
-  pstring s;
-  fstring name;
+  pstring name;
   int i;
   int fd;
 
@@ -55,23 +50,21 @@ static void msg_deliver(void)
     }
 
   /* put it in a temporary file */
-  slprintf(s,sizeof(s)-1, "%s/msg.XXXXXX",tmpdir());
-  fstrcpy(name,(char *)smbd_mktemp(s));
+  slprintf(name,sizeof(name)-1, "%s/msg.XXXXXX",tmpdir());
+  fd = smb_mkstemp(name);
 
-  fd = sys_open(name,O_WRONLY|O_CREAT|O_TRUNC|O_EXCL,0600);
   if (fd == -1) {
     DEBUG(1,("can't open message file %s\n",name));
     return;
   }
 
   /*
-   * Incoming message is in DOS codepage format. Convert to UNIX in
-   * place.
+   * Incoming message is in DOS codepage format. Convert to UNIX.
    */
 
   if(msgpos > 0) {
     msgbuf[msgpos] = '\0'; /* Ensure null terminated. */
-    dos_to_unix(msgbuf,True);
+    pstrcpy(msgbuf,dos_to_unix_static(msgbuf));
   }
 
   for (i=0;i<msgpos;) {
@@ -88,13 +81,14 @@ static void msg_deliver(void)
     {
       fstring alpha_msgfrom;
       fstring alpha_msgto;
+      pstring s;
 
       pstrcpy(s,lp_msg_command());
-      pstring_sub(s,"%s",name);
       pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,NULL,sizeof(alpha_msgfrom)));
       pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,NULL,sizeof(alpha_msgto)));
       standard_sub_basic(s);
-      smbrun(s,NULL,False);
+      pstring_sub(s,"%s",name);
+      smbrun(s,NULL);
     }
 
   msgpos = 0;
@@ -117,7 +111,7 @@ int reply_sends(connection_struct *conn,
 
   if (! (*lp_msg_command())) {
     END_PROFILE(SMBsends);
-    return(ERROR(ERRSRV,ERRmsgoff));
+    return(ERROR_DOS(ERRSRV,ERRmsgoff));
   }
 
   outsize = set_message(outbuf,0,0,True);
@@ -158,7 +152,7 @@ int reply_sendstrt(connection_struct *conn,
 
   if (! (*lp_msg_command())) {
     END_PROFILE(SMBsendstrt);
-    return(ERROR(ERRSRV,ERRmsgoff));
+    return(ERROR_DOS(ERRSRV,ERRmsgoff));
   }
 
   outsize = set_message(outbuf,1,0,True);
@@ -192,7 +186,7 @@ int reply_sendtxt(connection_struct *conn,
 
   if (! (*lp_msg_command())) {
     END_PROFILE(SMBsendtxt);
-    return(ERROR(ERRSRV,ERRmsgoff));
+    return(ERROR_DOS(ERRSRV,ERRmsgoff));
   }
 
   outsize = set_message(outbuf,0,0,True);
@@ -223,7 +217,7 @@ int reply_sendend(connection_struct *conn,
 
   if (! (*lp_msg_command())) {
     END_PROFILE(SMBsendend);
-    return(ERROR(ERRSRV,ERRmsgoff));
+    return(ERROR_DOS(ERRSRV,ERRmsgoff));
   }
 
   outsize = set_message(outbuf,0,0,True);
@@ -235,5 +229,3 @@ int reply_sendend(connection_struct *conn,
   END_PROFILE(SMBsendend);
   return(outsize);
 }
-
-#undef OLD_NTDOMAIN

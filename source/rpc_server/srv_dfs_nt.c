@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines for Dfs
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
@@ -21,17 +22,17 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* This is the implementation of the dfs pipe. */
+/* 
+ * This is the implementation of the dfs pipe. 
+ */
 
 #include "includes.h"
 #include "nterr.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
-
 extern pstring global_myname;
 
 #define MAX_MSDFS_JUNCTIONS 256
+#ifdef WITH_MSDFS
 
 /* This function does not return a WERROR or NTSTATUS code but rather 1 if
    dfs exists, or 0 otherwise. */
@@ -61,9 +62,9 @@ WERROR _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
 	return WERR_ACCESS_DENIED;
   }
 
-  unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
-  unistr2_to_ascii(servername, &q_u->ServerName, sizeof(servername)-1);
-  unistr2_to_ascii(sharename, &q_u->ShareName, sizeof(sharename)-1);
+  unistr2_to_dos(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
+  unistr2_to_dos(servername, &q_u->ServerName, sizeof(servername)-1);
+  unistr2_to_dos(sharename, &q_u->ShareName, sizeof(sharename)-1);
 
   DEBUG(5,("init_reply_dfs_add: Request to add %s -> %s\\%s.\n",
 	   dfspath, servername, sharename));
@@ -125,12 +126,12 @@ WERROR _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u,
 	return WERR_ACCESS_DENIED;
   }
 
-  unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
+  unistr2_to_dos(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
   if(q_u->ptr_ServerName)
-    unistr2_to_ascii(servername, &q_u->ServerName, sizeof(servername)-1);
+    unistr2_to_dos(servername, &q_u->ServerName, sizeof(servername)-1);
 
   if(q_u->ptr_ShareName)
-    unistr2_to_ascii(sharename, &q_u->ShareName, sizeof(sharename)-1);
+    unistr2_to_dos(sharename, &q_u->ShareName, sizeof(sharename)-1);
 
   if(q_u->ptr_ServerName && q_u->ptr_ShareName)
     {
@@ -260,7 +261,7 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
 	  
 	  pstrcpy(path, ref->alternate_path);
 	  trim_string(path,"\\","");
-	  p = strrchr_m(path,'\\');
+	  p = strrchr(path,'\\');
 	  if(p==NULL)
 	    {
 	      DEBUG(4,("init_reply_dfs_info_3: invalid path: no \\ found in %s\n",path));
@@ -358,7 +359,7 @@ WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u,
   pstring path;
   struct junction_map jn;
 
-  unistr2_to_ascii(path, uni_path, sizeof(path)-1);
+  unistr2_to_dos(path, uni_path, sizeof(path)-1);
   if(!create_junction(path, &jn))
      return WERR_DFS_NO_SUCH_SERVER;
   
@@ -371,3 +372,6 @@ WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u,
   
   return r_u->status;
 }
+#else
+	void dfs_dummy1(void) {;} /* So some compilers don't complain. */
+#endif

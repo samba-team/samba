@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -33,8 +32,6 @@
 #undef CHECK_TYPES
 #endif
 #define CHECK_TYPES 0
-
-extern int DEBUGLEVEL;
 
 extern fstring local_machine;
 extern pstring global_myname;
@@ -463,7 +460,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 
   PACKI(desc,"W",queue->job); /* uJobId */
   if (uLevel == 1) {
-    PACKS(desc,"B21",dos_to_unix(queue->fs_user,False)); /* szUserName */
+    PACKS(desc,"B21",dos_to_unix_static(queue->fs_user)); /* szUserName */
     PACKS(desc,"B","");		/* pad */
     PACKS(desc,"B16","");	/* szNotifyName */
     PACKS(desc,"B10","PM_Q_RAW"); /* szDataType */
@@ -473,17 +470,17 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
     PACKS(desc,"z","");		/* pszStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
-    PACKS(desc,"z",dos_to_unix(queue->fs_file,False)); /* pszComment */
+    PACKS(desc,"z",dos_to_unix_static(queue->fs_file)); /* pszComment */
   }
-  if (uLevel == 2 || uLevel == 3) {
+  if (uLevel == 2 || uLevel == 3 || uLevel == 4) {
     PACKI(desc,"W",queue->priority);		/* uPriority */
-    PACKS(desc,"z",dos_to_unix(queue->fs_user,False)); /* pszUserName */
+    PACKS(desc,"z",dos_to_unix_static(queue->fs_user)); /* pszUserName */
     PACKI(desc,"W",n+1);		/* uPosition */
     PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
     PACKS(desc,"z","Samba");	/* pszComment */
-    PACKS(desc,"z",dos_to_unix(queue->fs_file,False)); /* pszDocument */
+    PACKS(desc,"z",dos_to_unix_static(queue->fs_file)); /* pszDocument */
     if (uLevel == 3) {
       PACKS(desc,"z","");	/* pszNotifyName */
       PACKS(desc,"z","PM_Q_RAW"); /* pszDataType */
@@ -495,6 +492,17 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
       PACKS(desc,"z","NULL"); /* pszDriverName */
       PackDriverData(desc);	/* pDriverData */
       PACKS(desc,"z","");	/* pszPrinterName */
+    } else if (uLevel == 4) {   /* OS2 */
+      PACKS(desc,"z","");       /* pszSpoolFileName  */
+       PACKS(desc,"z","");       /* pszPortName       */
+       PACKS(desc,"z","");       /* pszStatus         */
+       PACKI(desc,"D",0);        /* ulPagesSpooled    */
+       PACKI(desc,"D",0);        /* ulPagesSent       */
+       PACKI(desc,"D",0);        /* ulPagesPrinted    */
+       PACKI(desc,"D",0);        /* ulTimePrinted     */
+       PACKI(desc,"D",0);        /* ulExtendJobStatus */
+       PACKI(desc,"D",0);        /* ulStartPage       */
+       PACKI(desc,"D",0);        /* ulEndPage         */
     }
   }
 }
@@ -738,6 +746,8 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKS(desc,"z","WinPrint");	/* pszPrProc */
 		PACKS(desc,"z",NULL);		/* pszParms */
 		PACKS(desc,"z",NULL);		/* pszComment - don't ask.... JRA */
+		/* "don't ask" that it's done this way to fix corrupted 
+		   Win9X/ME printer comments. */
 		if (!status) {
 			PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
 		} else {
@@ -847,108 +857,109 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
 {
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *p = skip_string(str2,1);
-  char *QueueName = p;
-  int uLevel;
-  int count=0;
-  int snum;
-  char* str3;
-  struct pack_desc desc;
-  print_queue_struct *queue=NULL;
-  print_status_struct status;
-  
-  memset((char *)&status,'\0',sizeof(status));
-  memset((char *)&desc,'\0',sizeof(desc));
- 
-  p = skip_string(p,1);
-  uLevel = SVAL(p,0);
-  str3 = p + 4;
- 
-  /* remove any trailing username */
-  if ((p = strchr(QueueName,'%'))) *p = 0;
- 
-  DEBUG(3,("PrintQueue uLevel=%d name=%s\n",uLevel,QueueName));
- 
-  /* check it's a supported varient */
-  if (!prefix_ok(str1,"zWrLh")) return False;
-  if (!check_printq_info(&desc,uLevel,str2,str3)) {
-    /*
-     * Patch from Scott Moomaw <scott@bridgewater.edu>
-     * to return the 'invalid info level' error if an
-     * unknown level was requested.
-     */
-    *rdata_len = 0;
-    *rparam_len = 6;
-    *rparam = REALLOC(*rparam,*rparam_len);
-    SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
-    SSVAL(*rparam,2,0);
-    SSVAL(*rparam,4,0);
-    return(True);
-  }
- 
-  snum = lp_servicenumber(QueueName);
-  if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
-    if (pnum >= 0) {
-      lp_add_printer(QueueName,pnum);
-      snum = lp_servicenumber(QueueName);
-    }
-  }
-  
-  if (snum < 0 || !VALID_SNUM(snum)) return(False);
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *p = skip_string(str2,1);
+	char *QueueName = p;
+	int uLevel;
+	int count=0;
+	int snum;
+	char* str3;
+	struct pack_desc desc;
+	print_queue_struct *queue=NULL;
+	print_status_struct status;
+	char* tmpdata=NULL;
 
-  if (uLevel==52) {
-	  count = get_printerdrivernumber(snum);
-	  DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
-  } else {
-	  count = print_queue_status(snum, &queue,&status);
-  }
+	memset((char *)&status,'\0',sizeof(status));
+	memset((char *)&desc,'\0',sizeof(desc));
+ 
+	p = skip_string(p,1);
+	uLevel = SVAL(p,0);
+	str3 = p + 4;
+ 
+	/* remove any trailing username */
+	if ((p = strchr(QueueName,'%')))
+		*p = 0;
+ 
+	DEBUG(3,("api_DosPrintQGetInfo: uLevel=%d name=%s\n",uLevel,QueueName));
+ 
+	/* check it's a supported varient */
+	if (!prefix_ok(str1,"zWrLh"))
+		return False;
+	if (!check_printq_info(&desc,uLevel,str2,str3)) {
+		/*
+		 * Patch from Scott Moomaw <scott@bridgewater.edu>
+		 * to return the 'invalid info level' error if an
+		 * unknown level was requested.
+		 */
+		*rdata_len = 0;
+		*rparam_len = 6;
+		*rparam = REALLOC(*rparam,*rparam_len);
+		SSVALS(*rparam,0,ERRunknownlevel);
+		SSVAL(*rparam,2,0);
+		SSVAL(*rparam,4,0);
+		return(True);
+	}
+ 
+	snum = lp_servicenumber(QueueName);
+	if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
+		int pnum = lp_servicenumber(PRINTERS_NAME);
+		if (pnum >= 0) {
+			lp_add_printer(QueueName,pnum);
+			snum = lp_servicenumber(QueueName);
+		}
+	}
+  
+	if (snum < 0 || !VALID_SNUM(snum))
+		return(False);
 
-  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-  desc.base = *rdata;
-  desc.buflen = mdrcnt;
-  if (init_package(&desc,1,count)) {
-	  desc.subcount = count;
-	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
-  } else if(uLevel == 0) {
-#if 0
+	if (uLevel==52) {
+		count = get_printerdrivernumber(snum);
+		DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
+	} else {
+		count = print_queue_status(snum, &queue,&status);
+	}
+
+	if (mdrcnt > 0) {
+		*rdata = REALLOC(*rdata,mdrcnt);
+		desc.base = *rdata;
+		desc.buflen = mdrcnt;
+	} else {
+		/*
+		 * Don't return data but need to get correct length
+		 * init_package will return wrong size if buflen=0
+		 */
+		desc.buflen = getlen(desc.format);
+		desc.base = tmpdata = (char *) malloc (desc.buflen);
+	}
+
+	if (init_package(&desc,1,count)) {
+		desc.subcount = count;
+		fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
+	} 
+  
 	/*
-	 * This is a *disgusting* hack.
-	 * This is *so* bad that even I'm embarrassed (and I
-	 * have no shame). Here's the deal :
- 	 * Until we get the correct SPOOLSS code into smbd
- 	 * then when we're running with NT SMB support then
- 	 * NT makes this call with a level of zero, and then
- 	 * immediately follows it with an open request to
- 	 * the \\SRVSVC pipe. If we allow that open to
- 	 * succeed then NT barfs when it cannot open the
- 	 * \\SPOOLSS pipe immediately after and continually
- 	 * whines saying "Printer name is invalid" forever
- 	 * after. If we cause *JUST THIS NEXT OPEN* of \\SRVSVC
- 	 * to fail, then NT downgrades to using the downlevel code
- 	 * and everything works as well as before. I hate
- 	 * myself for adding this code.... JRA.
- 	 */
-
-	fail_next_srvsvc_open();
-#endif
-  }
-
-  *rdata_len = desc.usedlen;
+	 * We must set the return code to ERRbuftoosmall
+	 * in order to support lanman style printing with Win NT/2k
+	 * clients       --jerry
+	 */
+	if (!mdrcnt && lp_disable_spoolss())
+		desc.errcode = ERRbuftoosmall;
+	
+	*rdata_len = desc.usedlen;
   
-  *rparam_len = 6;
-  *rparam = REALLOC(*rparam,*rparam_len);
-  SSVALS(*rparam,0,desc.errcode);
-  SSVAL(*rparam,2,0);
-  SSVAL(*rparam,4,desc.neededlen);
-  
-  DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
+	*rparam_len = 6;
+	*rparam = REALLOC(*rparam,*rparam_len);
+	SSVALS(*rparam,0,desc.errcode);
+	SSVAL(*rparam,2,0);
+	SSVAL(*rparam,4,desc.neededlen);
 
-  if (queue) free(queue);
-  
-  return(True);
+	DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
+
+	SAFE_FREE(queue);
+	SAFE_FREE(tmpdata);
+
+	return(True);
 }
 
 /****************************************************************************
@@ -987,7 +998,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     *rdata_len = 0;
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
-    SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
+    SSVALS(*rparam,0,ERRunknownlevel);
     SSVAL(*rparam,2,0);
     SSVAL(*rparam,4,0);
     return(True);
@@ -1036,7 +1047,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
       }
   }
 
-  if (subcntarr) free(subcntarr);
+  SAFE_FREE(subcntarr);
  
   *rdata_len = desc.usedlen;
   *rparam_len = 8;
@@ -1047,11 +1058,11 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
   SSVAL(*rparam,6,queuecnt);
   
   for (i = 0; i < queuecnt; i++) {
-    if (queue && queue[i]) free(queue[i]);
+    if (queue) SAFE_FREE(queue[i]);
   }
 
-  if (queue) free(queue);
-  if (status) free(status);
+  SAFE_FREE(queue);
+  SAFE_FREE(status);
   
   return True;
 }
@@ -1121,10 +1132,16 @@ static int get_server_info(uint32 servertype,
     if (!*ptr) continue;
     
     if (count == alloced) {
+      struct srv_info_struct *ts;
+
       alloced += 10;
-      (*servers) = (struct srv_info_struct *)
+      ts = (struct srv_info_struct *)
 	Realloc(*servers,sizeof(**servers)*alloced);
-      if (!(*servers)) return(0);
+      if (!ts) {
+        DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
+        return(0);
+      }
+      else *servers = ts;
       memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
     }
     s = &(*servers)[count];
@@ -1395,7 +1412,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
   SSVAL(*rparam,4,counted);
   SSVAL(*rparam,6,counted+missed);
 
-  if (servers) free(servers);
+  SAFE_FREE(servers);
 
   DEBUG(3,("NetServerEnum domain = %s uLevel=%d counted=%d total=%d\n",
 	   domain,uLevel,counted,counted+missed));
@@ -1508,7 +1525,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
   if (uLevel > 0)
     {
       int type;
-      CVAL(p,13) = 0;
+      SCVAL(p,13,0);
       type = STYPE_DISKTREE;
       if (lp_print_ok(snum)) type = STYPE_PRINTQ;
       if (strequal("IPC$",lp_servicename(snum))) type = STYPE_IPC;
@@ -1686,16 +1703,16 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
     t = LocalTime(&unixdate);
 
     SIVAL(p,4,0);		/* msecs ? */
-    CVAL(p,8) = t->tm_hour;
-    CVAL(p,9) = t->tm_min;
-    CVAL(p,10) = t->tm_sec;
-    CVAL(p,11) = 0;		/* hundredths of seconds */
+    SCVAL(p,8,t->tm_hour);
+    SCVAL(p,9,t->tm_min);
+    SCVAL(p,10,t->tm_sec);
+    SCVAL(p,11,0);		/* hundredths of seconds */
     SSVALS(p,12,TimeDiff(unixdate)/60); /* timezone in minutes from GMT */
     SSVAL(p,14,10000);		/* timer interval in 0.0001 of sec */
-    CVAL(p,16) = t->tm_mday;
-    CVAL(p,17) = t->tm_mon + 1;
+    SCVAL(p,16,t->tm_mday);
+    SCVAL(p,17,t->tm_mon + 1);
     SSVAL(p,18,1900+t->tm_year);
-    CVAL(p,20) = t->tm_wday;
+    SCVAL(p,20,t->tm_wday);
   }
 
 
@@ -1753,7 +1770,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   {
     fstring saved_pass2;
-    struct smb_passwd *smbpw = NULL;
+    SAM_ACCOUNT *sampass = NULL;
 
     /*
      * Save the new password as change_oem_password overwrites it
@@ -1762,8 +1779,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
     fstrcpy(saved_pass2, pass2);
 
-    if (check_plaintext_password(user,pass1,strlen(pass1),&smbpw) &&
-        change_oem_password(smbpw,pass2,False))
+    if (check_plaintext_password(user,pass1,strlen(pass1),&sampass) &&
+        change_oem_password(sampass,pass2,False))
     {
       SSVAL(*rparam,0,NERR_Success);
 
@@ -1776,6 +1793,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
       if(lp_unix_password_sync() && !chgpasswd(user,pass1,saved_pass2,False))
         SSVAL(*rparam,0,NERR_badpass);
     }
+
+    pdb_free_sam(sampass);
   }
 
   /*
@@ -1804,13 +1823,14 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   if(SVAL(*rparam,0) != NERR_Success)
   {
-    struct smb_passwd *sampw = NULL;
+    SAM_ACCOUNT *sampass = NULL;
 
-    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &sampw) && 
-       change_lanman_password(sampw,(unsigned char *)pass1,(unsigned char *)pass2))
+    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &sampass) && 
+       change_lanman_password(sampass,(unsigned char *)pass1,(unsigned char *)pass2))
     {
       SSVAL(*rparam,0,NERR_Success);
     }
+    pdb_free_sam(sampass);
   }
 
   memset((char *)pass1,'\0',sizeof(fstring));
@@ -1892,6 +1912,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	char *p = skip_string(str2,1);
 	int jobid, errcode;
 	extern struct current_user current_user;
+	WERROR werr = WERR_OK;
 
 	jobid = SVAL(p,0);
 
@@ -1912,18 +1933,21 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	
 	switch (function) {
 	case 81:		/* delete */ 
-		if (print_job_delete(&current_user, jobid, &errcode)) 
+		if (print_job_delete(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(&current_user, jobid, &errcode)) 
+		if (print_job_pause(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(&current_user, jobid, &errcode)) 
+		if (print_job_resume(&current_user, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	}
+	
+	if (!W_ERROR_IS_OK(werr))
+		errcode = W_ERROR_V(werr);
 	
  out:
 	SSVAL(*rparam,0,errcode);	
@@ -1946,6 +1970,7 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 	char *QueueName = skip_string(str2,1);
 	int errcode = NERR_notsupported;
 	int snum;
+	WERROR werr = WERR_OK;
 	extern struct current_user current_user;
 
 	/* check it's a supported varient */
@@ -1965,16 +1990,17 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 
 	switch (function) {
 	case 74: /* Pause queue */
-		if (print_queue_pause(&current_user, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_pause(&current_user, snum, &werr)) errcode = NERR_Success;
 		break;
 	case 75: /* Resume queue */
-		if (print_queue_resume(&current_user, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_resume(&current_user, snum, &werr)) errcode = NERR_Success;
 		break;
 	case 103: /* Purge */
-		if (print_queue_purge(&current_user, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_purge(&current_user, snum, &werr)) errcode = NERR_Success;
 		break;
 	}
 
+	if (!W_ERROR_IS_OK(werr)) errcode = W_ERROR_V(werr);
  out:
 	SSVAL(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
@@ -1999,6 +2025,7 @@ static int check_printjob_info(struct pack_desc* desc,
 	case 1: desc->format = "WB21BB16B10zWWzDDz"; break;
 	case 2: desc->format = "WWzWWDDzz"; break;
 	case 3: desc->format = "WWzWWDDzzzzzzzzzzlz"; break;
+	case 4: desc->format = "WWzWWDDzzzzzDDDDDDD"; break;
 	default: return False;
 	}
 	if (strcmp(desc->format,id) != 0) return False;
@@ -2142,7 +2169,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 	    pstrcpy(comment,servers[i].comment);	    
 	  }
       }
-      if (servers) free(servers);
+      SAFE_FREE(servers);
 
       SCVAL(p,0,lp_major_announce_version());
       SCVAL(p,1,lp_minor_announce_version());
@@ -2754,6 +2781,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
+  char *tmpdata=NULL;
 
   uLevel = SVAL(p,2);
 
@@ -2775,9 +2803,19 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   for (i = 0; i < count; i++) {
     if (queue[i].job == job) break;
   }
-  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-  desc.base = *rdata;
-  desc.buflen = mdrcnt;
+
+  if (mdrcnt > 0) {
+    *rdata = REALLOC(*rdata,mdrcnt);
+    desc.base = *rdata;
+    desc.buflen = mdrcnt;
+  } else {
+    /*
+     * Don't return data but need to get correct length
+     *  init_package will return wrong size if buflen=0
+     */
+    desc.buflen = getlen(desc.format);
+    desc.base = tmpdata = (char *)malloc ( desc.buflen );
+  }
 
   if (init_package(&desc,1,0)) {
     if (i < count) {
@@ -2796,7 +2834,8 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   SSVAL(*rparam,2,0);
   SSVAL(*rparam,4,desc.neededlen);
 
-  if (queue) free(queue);
+  SAFE_FREE(queue);
+  SAFE_FREE(tmpdata);
 
   DEBUG(4,("WPrintJobGetInfo: errorcode %d\n",desc.errcode));
   return(True);
@@ -2865,7 +2904,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   SSVAL(*rparam,4,succnt);
   SSVAL(*rparam,6,count);
 
-  if (queue) free(queue);
+  SAFE_FREE(queue);
 
   DEBUG(4,("WPrintJobEnumerate: errorcode %d\n",desc.errcode));
   return(True);
@@ -2931,6 +2970,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   int uLevel;
   struct pack_desc desc;
   int snum;
+  char *tmpdata=NULL;
 
   memset((char *)&desc,'\0',sizeof(desc));
 
@@ -2958,9 +2998,18 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
     desc.neededlen = 0;
   }
   else {
-    if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-    desc.base = *rdata;
-    desc.buflen = mdrcnt;
+    if (mdrcnt > 0) {
+      *rdata = REALLOC(*rdata,mdrcnt);
+      desc.base = *rdata;
+      desc.buflen = mdrcnt;
+    } else {
+      /*
+       * Don't return data but need to get correct length
+       *  init_package will return wrong size if buflen=0
+       */
+      desc.buflen = getlen(desc.format);
+      desc.base = tmpdata = (char *)malloc ( desc.buflen );
+    }
     if (init_package(&desc,1,0)) {
       fill_printdest_info(conn,snum,uLevel,&desc);
     }
@@ -2974,6 +3023,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   SSVAL(*rparam,4,desc.neededlen);
 
   DEBUG(4,("WPrintDestGetInfo: errorcode %d\n",desc.errcode));
+  SAFE_FREE(tmpdata);
   return(True);
 }
 
@@ -3224,35 +3274,44 @@ struct
 	     int,int,char **,char **,int *,int *);
   int flags;
 } api_commands[] = {
-  {"RNetShareEnum",	0,	api_RNetShareEnum,0},
-  {"RNetShareGetInfo",	1,	api_RNetShareGetInfo,0},
-  {"RNetServerGetInfo",	13,	api_RNetServerGetInfo,0},
-  {"RNetGroupGetUsers", 52,	api_RNetGroupGetUsers,0},
-  {"RNetUserGetInfo",	56,	api_RNetUserGetInfo,0},
-  {"NetUserGetGroups",	59,	api_NetUserGetGroups,0},
-  {"NetWkstaGetInfo",	63,	api_NetWkstaGetInfo,0},
-  {"DosPrintQEnum",	69,	api_DosPrintQEnum,0},
-  {"DosPrintQGetInfo",	70,	api_DosPrintQGetInfo,0},
-  {"WPrintQueuePause",  74, api_WPrintQueueCtrl,0},
-  {"WPrintQueueResume", 75, api_WPrintQueueCtrl,0},
-  {"WPrintJobEnumerate",76,	api_WPrintJobEnumerate,0},
-  {"WPrintJobGetInfo",	77,	api_WPrintJobGetInfo,0},
-  {"RDosPrintJobDel",	81,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobPause",	82,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobResume",83,	api_RDosPrintJobDel,0},
-  {"WPrintDestEnum",	84,	api_WPrintDestEnum,0},
-  {"WPrintDestGetInfo",	85,	api_WPrintDestGetInfo,0},
-  {"NetRemoteTOD",	91,	api_NetRemoteTOD,0},
-  {"WPrintQueuePurge",	103,	api_WPrintQueueCtrl,0},
-  {"NetServerEnum",	104,	api_RNetServerEnum,0},
-  {"WAccessGetUserPerms",105,	api_WAccessGetUserPerms,0},
-  {"SetUserPassword",	115,	api_SetUserPassword,0},
-  {"WWkstaUserLogon",	132,	api_WWkstaUserLogon,0},
-  {"PrintJobInfo",	147,	api_PrintJobInfo,0},
-  {"WPrintDriverEnum",	205,	api_WPrintDriverEnum,0},
-  {"WPrintQProcEnum",	206,	api_WPrintQProcEnum,0},
-  {"WPrintPortEnum",	207,	api_WPrintPortEnum,0},
-  {"SamOEMChangePassword", 214, api_SamOEMChangePassword,0},
+  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum,0},
+  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo,0},
+#if 0 /* Not yet implemented. */
+  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd,0},
+#endif
+  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo,0},
+#if 0 /* Not yet implemented. */
+  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum,0},
+#endif
+  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers,0},
+#if 0 /* Not yet implemented. */
+  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum,0},
+#endif
+  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo,0},
+  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups,0},
+  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo,0},
+  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum,0},
+  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo,0},
+  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl,0},
+  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl,0},
+  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate,0},
+  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo,0},
+  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel,0},
+  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum,0},
+  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo,0},
+  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD,0},
+  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl,0},
+  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum,0},
+  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms,0},
+  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword,0},
+  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon,0},
+  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo,0},
+  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum,0},
+  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum,0},
+  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum,0},
+  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword,0},
   {NULL,		-1,	api_Unsupported,0}};
 
 
@@ -3321,13 +3380,8 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 
   send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
 
-  if (rdata )
-    free(rdata);
-  if (rparam)
-    free(rparam);
+  SAFE_FREE(rdata);
+  SAFE_FREE(rparam);
   
   return -1;
 }
-
-
-#undef OLD_NTDOMAIN

@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static char *last_ptr=NULL;
 
 void set_first_token(char *ptr)
@@ -319,9 +317,9 @@ int strwicmp(char *psz1, char *psz2)
 	/* sync the strings on first non-whitespace */
 	while (1)
 	{
-		while (isspace(*psz1))
+		while (isspace((int)*psz1))
 			psz1++;
-		while (isspace(*psz2))
+		while (isspace((int)*psz2))
 			psz2++;
 		if (toupper(*psz1) != toupper(*psz2) || *psz1 == '\0'
 		    || *psz2 == '\0')
@@ -539,103 +537,110 @@ trim the specified elements off the front and back of a string
 
 BOOL trim_string(char *s,const char *front,const char *back)
 {
-  BOOL ret = False;
-  size_t front_len = (front && *front) ? strlen(front) : 0;
-  size_t back_len = (back && *back) ? strlen(back) : 0;
-  size_t s_len;
+    BOOL ret = False;
+    size_t s_len;
+    size_t front_len;
+    size_t back_len;
+    char	*sP;
 
-  while (front_len && strncmp(s, front, front_len) == 0)
-  {
-    char *p = s;
-    ret = True;
-    while (1)
-    {
-      if (!(*p = p[front_len]))
-        break;
-      p++;
+	/* Ignore null or empty strings. */
+
+    if ( !s || (s[0] == '\0'))
+        return False;
+
+    sP	= s;
+    s_len	= strlen( s ) + 1;
+    front_len	= (front) ? strlen( front ) + 1 : 0;
+    back_len	= (back) ? strlen( back ) + 1 : 0;
+
+    /*
+     * remove "front" string from given "s", if it matches front part,
+     * repeatedly.
+     */
+    if ( front && front_len > 1 ) {
+        while (( s_len >= front_len )&&
+               ( memcmp( sP, front, front_len - 1 )) == 0 ) {
+            ret		= True;
+            sP		+= ( front_len - 1 );
+            s_len	-= ( front_len - 1 );
+        }
     }
-  }
 
-  /*
-   * We split out the multibyte code page
-   * case here for speed purposes. Under a
-   * multibyte code page we need to walk the
-   * string forwards only and multiple times.
-   * Thanks to John Blair for finding this
-   * one. JRA.
-   */
+    /*
+     * we'll memmove sP to s later, after we're done with
+     * back part removal, for minimizing copy.
+     */
 
-  if(back_len)
-  {
-    if(!global_is_multibyte_codepage)
-    {
-      s_len = strlen(s);
-      while ((s_len >= back_len) && 
-             (strncmp(s + s_len - back_len, back, back_len)==0))  
-      {
-        ret = True;
-        s[s_len - back_len] = '\0';
-        s_len = strlen(s);
-      }
-    }
-    else
-    {
 
-      /*
-       * Multibyte code page case.
-       * Keep going through the string, trying
-       * to match the 'back' string with the end
-       * of the string. If we get a match, truncate
-       * 'back' off the end of the string and
-       * go through the string again from the
-       * start. Keep doing this until we have
-       * gone through the string with no match
-       * at the string end.
-       */
+    /*
+     * We split out the multibyte code page
+     * case here for speed purposes. Under a
+     * multibyte code page we need to walk the
+     * string forwards only and multiple times.
+     * Thanks to John Blair for finding this
+     * one. JRA.
+     */
+    /*
+     * This JRA's comment is partly correct, but partly wrong.
+     * You can always check from "end" part, and if it did not match,
+     * it means there is no possibility of finding one.
+     * If you found matching point, mark them, then look from front
+     * if marking point suits multi-byte string rule.
+     * Kenichi Okuyama.
+     */
 
-      size_t mb_back_len = str_charnum(back);
-      size_t mb_s_len = str_charnum(s);
+    if ( back && back_len > 1 && s_len >= back_len) {
+        char	*bP	= sP + s_len - back_len;
+        long	b_len	= s_len;
 
-      while(mb_s_len >= mb_back_len)
-      {
-        size_t charcount = 0;
-        char *mbp = s;
-
-        /*
-         * sbcs optimization.
-         */
-        if(!global_is_multibyte_codepage) {
-          while(charcount < (mb_s_len - mb_back_len)) {
-            mbp += 1;
-            charcount++;
-          }
-        } else {
-          while(charcount < (mb_s_len - mb_back_len)) {
-            size_t skip = skip_multibyte_char(*mbp);
-            mbp += (skip ? skip : 1);
-            charcount++;
-          }
+        while (( b_len >= back_len )&&
+               ( memcmp( bP, back, back_len - 1 ) == 0 )) {
+            bP		-= ( back_len - 1 );
+            b_len	-= ( back_len - 1 );
         }
 
         /*
-         * mbp now points at mb_back_len multibyte
-         * characters from the end of s.
+         * You're here, means you ether have found match multiple times,
+         * or you found none. If you've found match, then bP should be
+         * moving.
          */
+        if ( bP != sP + s_len - back_len ) {
+            bP	+= ( back_len - 1 ); /* slide bP to first matching point. */
 
-        if(strcmp(mbp, back) == 0)
-        {
-          ret = True;
-          *mbp = '\0';
-          mb_s_len = str_charnum(s);
-          mbp = s;
+            if( !global_is_multibyte_codepage ) {
+                /* simply terminate */
+                (*bP)	= '\0';
+                s_len	= b_len;
+                ret	= True;
+            } else {
+                /* trace string from start. */
+                char	*cP	= sP;
+                while ( cP < sP + s_len - back_len ) {
+                    size_t	skip;
+                    skip	= skip_multibyte_char( *cP );
+                    cP	+= ( skip ? skip : 1 );
+                    if ( cP == bP ) {
+                        /* you found the match */
+                        (*bP)	= '\0';
+                        ret	= True;
+                        s_len	= b_len;
+                        break;
+                    }
+                    while (( cP > bP )&&( bP < sP + s_len - back_len )) {
+                        bP	+= ( back_len - 1 );
+                        b_len	+= ( back_len - 1 );
+                    }
+                }
+            }
         }
-        else
-          break;
-      } /* end while mb_s_len... */
-    } /* end else .. */
-  } /* end if back_len .. */
+    }
 
-  return(ret);
+    /* if front found matching point */
+    if ( sP != s ) {
+        /* slide string to buffer top */
+        memmove( s, sP, s_len );
+    }
+    return ret;
 }
 
 
@@ -852,29 +857,29 @@ include the terminating zero.
 
 char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
-    size_t len;
+	size_t len;
 
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
-        return NULL;
-    }
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
+		return NULL;
+	}
 
-    if (!src) {
-        *dest = 0;
-        return dest;
-    }  
+	if (!src) {
+		*dest = 0;
+		return dest;
+	}  
 
-    len = strlen(src);
+	len = strlen(src);
 
-    if (len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
-		     (int)(len-maxlength), src));
-	    len = maxlength;
-    }
+	if (len > maxlength) {
+		DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
+			(int)(len-maxlength), src));
+		len = maxlength;
+	}
       
-    memcpy(dest, src, len);
-    dest[len] = 0;
-    return dest;
+	memcpy(dest, src, len);
+	dest[len] = 0;
+	return dest;
 }  
 
 /*******************************************************************
@@ -884,39 +889,30 @@ include the terminating zero.
 
 char *safe_strcat(char *dest, const char *src, size_t maxlength)
 {
-    size_t src_len, dest_len;
+	size_t src_len, dest_len;
 
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
-        return NULL;
-    }
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
+		return NULL;
+	}
 
-    if (!src) {
-        return dest;
-    }  
+	if (!src)
+		return dest;
 
-    src_len = strlen(src);
-    dest_len = strlen(dest);
+	src_len = strlen(src);
+	dest_len = strlen(dest);
 
-    if (src_len + dest_len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
-		     (int)(src_len + dest_len - maxlength), src));
-	    if (dest_len > maxlength) {
-		    /* This really shouldn't happen -- we may have
-		     * already clobbered the buffer -- but it might if
-		     * for some reason we've been passed an unusually
-		     * short maxlength. */
-		    DEBUG(0, ("ERROR: safe_strcat: dest buffer is too long! "
-			      "%d > %d [%.50s]\n",
-			      src_len, maxlength, src));
-		    return dest;
-	    }
-	    src_len = maxlength - dest_len;
-    }
+	if (src_len + dest_len > maxlength) {
+		DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
+			(int)(src_len + dest_len - maxlength), src));
+		if (dest_len >= maxlength)
+			return dest;
+		src_len = maxlength - dest_len;
+	}
       
-    memcpy(&dest[dest_len], src, src_len);
-    dest[dest_len + src_len] = 0;
-    return dest;
+	memcpy(&dest[dest_len], src, src_len);
+	dest[dest_len + src_len] = 0;
+	return dest;
 }
 
 /*******************************************************************
@@ -929,6 +925,8 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
 {
 	size_t len, i;
+	size_t buflen;
+	smb_ucs2_t *str_ucs, *other_ucs;
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
@@ -940,22 +938,44 @@ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, si
 		return dest;
 	}  
 
-	len = strlen(src);
-	if (len >= maxlength)
-		len = maxlength - 1;
+	/* Get UCS2 version of src string*/
+
+	buflen=2*strlen(src)+2;
+	if (buflen >= (2*maxlength))
+		buflen = 2*(maxlength - 1);
+
+	str_ucs = (smb_ucs2_t*)malloc(buflen);
+	if(!str_ucs) {
+		*dest=0;
+		return dest;
+	}
+	unix_to_unicode(str_ucs, src, buflen);
+	len = strlen_w(str_ucs);
 
 	if (!other_safe_chars)
 		other_safe_chars = "";
 
-	for(i = 0; i < len; i++) {
-		int val = (src[i] & 0xff);
-		if(isupper(val) || islower(val) || isdigit(val) || strchr(other_safe_chars, val))
-			dest[i] = src[i];
-		else
-			dest[i] = '_';
+	/* Get UCS2 version of other_safe_chars string*/
+	buflen=2*strlen(other_safe_chars)+2;
+	other_ucs = (smb_ucs2_t*)malloc(buflen);
+	if(!other_ucs) {
+		*dest=0;
+		SAFE_FREE(str_ucs);
+		return dest;
 	}
+	unix_to_unicode(other_ucs, other_safe_chars, buflen);
 
-	dest[i] = '\0';
+	for(i = 0; i < len; i++) {
+		if(isupper_w(str_ucs[i]) || islower_w(str_ucs[i]) || isdigit_w(str_ucs[i]) || strchr_w(other_ucs, str_ucs[i]))
+			;
+		else
+			str_ucs[i] = (smb_ucs2_t)'_'; /*This will work*/
+
+	}
+	unicode_to_unix(dest, str_ucs, maxlength);
+
+	SAFE_FREE(other_ucs);
+	SAFE_FREE(str_ucs);
 
 	return dest;
 }
@@ -1120,8 +1140,7 @@ void string_free(char **s)
   if (!s || !(*s)) return;
   if (*s == null_string)
     *s = NULL;
-  if (*s) free(*s);
-  *s = NULL;
+  SAFE_FREE(*s);
 }
 
 /****************************************************************************
@@ -1276,7 +1295,7 @@ char *octal_string(int i)
 	if (i == -1) {
 		return "-1";
 	}
-	slprintf(ret, sizeof(ret), "0%o", i);
+	slprintf(ret, sizeof(ret)-1, "0%o", i);
 	return ret;
 }
 
@@ -1292,23 +1311,58 @@ char *string_truncate(char *s, int length)
 	return s;
 }
 
-/* Parse a string of the form DOMAIN/user into a domain and a user */
-
-void parse_domain_user(char *domuser, fstring domain, fstring user)
+/*
+  return a RFC2254 binary string representation of a buffer
+  used in LDAP filters
+  caller must free
+*/
+char *binary_string(char *buf, int len)
 {
-	char *p;
-	char *sep = lp_winbind_separator();
-	if (!sep) sep = "\\";
-	p = strchr(domuser,*sep);
-	if (!p) p = strchr(domuser,'\\');
-	if (!p) {
-		fstrcpy(domain,"");
-		fstrcpy(user, domuser);
-		return;
+	char *s;
+	int i, j;
+	const char *hex = "0123456789ABCDEF";
+	s = malloc(len * 3 + 1);
+	if (!s) return NULL;
+	for (j=i=0;i<len;i++) {
+		s[j] = '\\';
+		s[j+1] = hex[((unsigned char)buf[i]) >> 4];
+		s[j+2] = hex[((unsigned char)buf[i]) & 0xF];
+		j += 3;
 	}
-	
-	fstrcpy(user, p+1);
-	fstrcpy(domain, domuser);
-	domain[PTR_DIFF(p, domuser)] = 0;
-	strupper(domain);
+	s[j] = 0;
+	return s;
 }
+
+#ifndef HAVE_STRNLEN
+/*******************************************************************
+ Some platforms don't have strnlen
+********************************************************************/
+
+ size_t strnlen(const char *s, size_t n)
+{
+	int i;
+	for (i=0; s[i] && i<n; i++)
+		/* noop */ ;
+	return i;
+}
+#endif
+
+#ifndef HAVE_STRNDUP
+/*******************************************************************
+ Some platforms don't have strndup.
+********************************************************************/
+
+ char *strndup(const char *s, size_t n)
+{
+	char *ret;
+
+	n = strnlen(s, n);
+	ret = malloc(n+1);
+	if (!ret)
+		return NULL;
+	memcpy(ret, s, n);
+	ret[n] = 0;
+
+	return ret;
+}
+#endif

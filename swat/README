@@ -4,9 +4,9 @@ Administration Tool on your machine.
 Installation
 ------------
 
-After you compile SWAT you need to run "make install" to install the
-swat binary and the various help files and images. A default install
-would put these in:
+After compiling Samba (via a "make"), running "make install" will 
+install the swat binary and the various help files and images for 
+you. A default install would put these in:
 
 /usr/local/samba/bin/swat
 /usr/local/samba/swat/images/*
@@ -67,11 +67,16 @@ SWAT will rewrite your smb.conf file. It will rearrange the entries
 and delete all comments, include= and copy= options. If you have a
 carefully crafted smb.conf then back it up or don't use SWAT!
 
+There is also a short HOWTO for configuring secure, remote access
+to SWAT (swat does not natively support HTTPS) at your favorite
+samba.org mirror (see http://samba.org for a list) at 
+/samba/docs/swat_ssl.html
+
 
 Development
 -----------
 
-Please join the samba-technical mailing list if you want to discuss
-the development of SWAT. Note that this list is for technical developer
-discussions and is not a general help list.
+Please join the samba-technical@samba.org (http://lists.samba.org/listinfo/samba-technical)
+mailing list if you want to discuss the development of SWAT. Note that this list 
+is for technical developer discussions and is not a general help list.
 

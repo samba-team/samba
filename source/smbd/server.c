@@ -1,6 +1,6 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
+   Version 1.9.
    Main SMB server routines
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -22,7 +22,6 @@
 #include "includes.h"
 
 pstring servicesf = CONFIGFILE;
-extern pstring debugf;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 
@@ -33,8 +32,6 @@ int last_message = -1;
 
 /* a useful macro to debug the last message processed */
 #define LAST_MESSAGE() smb_fn_name(last_message)
-
-extern int DEBUGLEVEL;
 
 extern pstring user_socket_options;
 
@@ -67,7 +64,7 @@ void smbd_set_server_fd(int fd)
  Terminate signal.
 ****************************************************************************/
 
-VOLATILE sig_atomic_t got_sig_term = 0;
+SIG_ATOMIC_T got_sig_term = 0;
 
 static void sig_term(void)
 {
@@ -79,7 +76,7 @@ static void sig_term(void)
  Catch a sighup.
 ****************************************************************************/
 
-VOLATILE sig_atomic_t reload_after_sighup = 0;
+SIG_ATOMIC_T reload_after_sighup = 0;
 
 static void sig_hup(int sig)
 {
@@ -90,15 +87,17 @@ static void sig_hup(int sig)
 /****************************************************************************
   Send a SIGTERM to our process group.
 *****************************************************************************/
+
 static void  killkids(void)
 {
-	if(am_parent) kill(0,SIGTERM);
+	if(am_parent)
+		kill(0,SIGTERM);
 }
 
-
 /****************************************************************************
-  open the socket communication
+ Open the socket communication - inetd.
 ****************************************************************************/
+
 static BOOL open_sockets_inetd(void)
 {
 	/* Started from inetd. fd 0 is the socket. */
@@ -115,11 +114,11 @@ static BOOL open_sockets_inetd(void)
 	return True;
 }
 
-
 /****************************************************************************
-  open the socket communication
+ Open the socket communication.
 ****************************************************************************/
-static BOOL open_sockets(BOOL is_daemon,BOOL interactive,int port)
+
+static BOOL open_sockets(BOOL is_daemon,BOOL interactive, int port)
 {
 	int num_interfaces = iface_count();
 	int fd_listenset[FD_SETSIZE];
@@ -173,7 +172,11 @@ max can be %d\n",
 			s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
 			if(s == -1)
 				return False;
-				/* ready to listen */
+
+			/* ready to listen */
+			set_socket_options(s,"SO_KEEPALIVE"); 
+			set_socket_options(s,user_socket_options);
+
 			if (listen(s, 5) == -1) {
 				DEBUG(0,("listen: %s\n",strerror(errno)));
 				close(s);
@@ -193,6 +196,9 @@ max can be %d\n",
 			return(False);
 		
 		/* ready to listen */
+		set_socket_options(s,"SO_KEEPALIVE"); 
+		set_socket_options(s,user_socket_options);
+
 		if (listen(s, 5) == -1) {
 			DEBUG(0,("open_sockets: listen: %s\n",
 				 strerror(errno)));
@@ -220,20 +226,20 @@ max can be %d\n",
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
-		num = sys_select(FD_SETSIZE,&lfds,NULL);
+		num = sys_select(FD_SETSIZE,&lfds,NULL,NULL,NULL);
 		
 		if (num == -1 && errno == EINTR) {
-
 			if (got_sig_term) {
 				exit_server("Caught TERM signal");
 			}
 
 			/* check for sighup processing */
 			if (reload_after_sighup) {
-				unbecome_user();
+				DEBUG(0,("Got SIGHUP\n"));
+				change_to_root_user();
 				DEBUG(1,("Reloading services after SIGHUP\n"));
 				reload_services(False);
-				reload_after_sighup = 0;
+				reload_after_sighup = False;
 			}
 
 			continue;
@@ -246,7 +252,7 @@ max can be %d\n",
 		   accept on these. */
 		for( ; num > 0; num--) {
 			struct sockaddr addr;
-			int in_addrlen = sizeof(addr);
+			socklen_t in_addrlen = sizeof(addr);
 			
 			s = -1;
 			for(i = 0; i < num_interfaces; i++) {
@@ -293,10 +299,23 @@ max can be %d\n",
 				   done correctly in the process.  */
 				reset_globals_after_fork();
 
+				/* tdb needs special fork handling */
+				tdb_reopen_all();
+
 				return True; 
 			}
 			/* The parent doesn't need this socket */
 			close(smbd_server_fd()); 
+
+			/* Sun May 6 18:56:14 2001 ackley@cs.unm.edu:
+				Clear the closed fd info out of server_fd --
+				and more importantly, out of client_fd in
+				util_sock.c, to avoid a possible
+				getpeername failure if we reopen the logs
+				and use %I in the filename.
+			*/
+
+			smbd_set_server_fd(-1);
 
 			/* Force parent to check log size after
 			 * spawning child.  Fix from
@@ -321,8 +340,9 @@ max can be %d\n",
 }
 
 /****************************************************************************
-  reload the services file
-  **************************************************************************/
+ Reload the services file.
+ **************************************************************************/
+
 BOOL reload_services(BOOL test)
 {
 	BOOL ret;
@@ -362,24 +382,25 @@ BOOL reload_services(BOOL test)
 		}
 	}
 
-	reset_mangled_cache();
+	mangle_reset_cache();
 	reset_stat_cache();
 
 	/* this forces service parameters to be flushed */
-	become_service(NULL,True);
+	set_current_service(NULL,True);
 
 	return(ret);
 }
 
 #if DUMP_CORE
 /*******************************************************************
-prepare to dump a core file - carefully!
+ Prepare to dump a core file - carefully !
 ********************************************************************/
+
 static BOOL dump_core(void)
 {
 	char *p;
 	pstring dname;
-	pstrcpy(dname,debugf);
+	pstrcpy(dname,lp_logfile());
 	if ((p=strrchr(dname,'/'))) *p=0;
 	pstrcat(dname,"/corefiles");
 	mkdir(dname,0700);
@@ -412,22 +433,21 @@ static BOOL dump_core(void)
 /****************************************************************************
 update the current smbd process count
 ****************************************************************************/
+
 static void decrement_smbd_process_count(void)
 {
-	int total_smbds;
+	int32 total_smbds;
 
 	if (lp_max_smbd_processes()) {
-		tdb_lock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
-		if ((total_smbds = tdb_fetch_int(conn_tdb_ctx(), "INFO/total_smbds")) > 0)
-			tdb_store_int(conn_tdb_ctx(), "INFO/total_smbds", total_smbds - 1);
-		
-		tdb_unlock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
+		total_smbds = 0;
+		tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
 	}
 }
 
 /****************************************************************************
-exit the server
+ Exit the server.
 ****************************************************************************/
+
 void exit_server(char *reason)
 {
 	static int firsttime=1;
@@ -437,17 +457,18 @@ void exit_server(char *reason)
 	if (!firsttime) exit(0);
 	firsttime = 0;
 
-	unbecome_user();
+	change_to_root_user();
 	DEBUG(2,("Closing connections\n"));
 
 	conn_close_all();
 
-	/* delete our entry in the connections database. */
-	if (lp_status(-1)) {
-		yield_connection(NULL,"");
-	}
+	invalidate_all_vuids();
 
-    respond_to_all_remaining_local_messages();
+	/* delete our entry in the connections database. */
+	if (lp_status(-1))
+		yield_connection(NULL,"");
+
+	respond_to_all_remaining_local_messages();
 	decrement_smbd_process_count();
 
 #ifdef WITH_DFS
@@ -476,8 +497,9 @@ void exit_server(char *reason)
 }
 
 /****************************************************************************
-  initialise connect, service and file structs
+ Initialise connect, service and file structs.
 ****************************************************************************/
+
 static void init_structs(void )
 {
 	/*
@@ -508,15 +530,17 @@ static void init_structs(void )
 }
 
 /****************************************************************************
-usage on the program
+ Usage on the program.
 ****************************************************************************/
+
 static void usage(char *pname)
 {
 
-	printf("Usage: %s [-DaoPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	printf("Usage: %s [-DaioPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
 	printf("       [-O socket options] [-s services file]\n");
-	printf("\t-D                    Become a daemon\n");
+	printf("\t-D                    Become a daemon (default)\n");
 	printf("\t-a                    Append to log file (default)\n");
+	printf("\t-i                    Run interactive (not a daemon)\n");
 	printf("\t-o                    Overwrite log file, don't append\n");
 	printf("\t-h                    Print usage\n");
 	printf("\t-?                    Print usage\n");
@@ -529,13 +553,14 @@ static void usage(char *pname)
 	printf("\n");
 }
 
-
 /****************************************************************************
-  main program
+ main program.
 ****************************************************************************/
+
  int main(int argc,char *argv[])
 {
 	extern BOOL append_log;
+	extern BOOL AllowDebugChange;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
 	BOOL interactive = False;
@@ -543,6 +568,7 @@ static void usage(char *pname)
 	int port = SMB_PORT;
 	int opt;
 	extern char *optarg;
+	pstring logfile;
 	
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
@@ -566,7 +592,8 @@ static void usage(char *pname)
 
 		case 'l':
 			specified_logfile = True;
-			pstrcpy(debugf,optarg);
+			slprintf(logfile, sizeof(logfile)-1, "%s/log.smbd", optarg);
+			lp_set_logfile(logfile);
 			break;
 
 		case 'a':
@@ -590,6 +617,7 @@ static void usage(char *pname)
 				DEBUGLEVEL = 10000;
 			else
 				DEBUGLEVEL = atoi(optarg);
+			AllowDebugChange = False;
 			break;
 
 		case 'p':
@@ -617,27 +645,20 @@ static void usage(char *pname)
 	setluid(0);
 #endif
 
-	/*
-	 * gain_root_privilege uses an assert than will cause a core
-	 * dump if euid != 0. Ensure this is the case.
-	 */
-
-	if(geteuid() != (uid_t)0) {
-		fprintf(stderr, "%s: Version %s : Must have effective user id of zero to run.\n", argv[0], VERSION);
-		exit(1);
-	}
+	sec_init();
 
 	append_log = True;
 
 	TimeInit();
 
 	if(!specified_logfile) {
-		slprintf(debugf, sizeof(debugf), "%s/log.smbd", LOGFILEBASE);
+		slprintf(logfile, sizeof(logfile)-1, "%s/log.smbd", LOGFILEBASE);
+		lp_set_logfile(logfile);
 	}
 
 	pstrcpy(remote_machine, "smbd");
 
-	setup_logging(argv[0],False);
+	setup_logging(argv[0],interactive);
 
 	charset_initialise();
 
@@ -679,11 +700,12 @@ static void usage(char *pname)
 	umask(0);
 
 	init_sec_ctx();
+	init_conn_ctx();
 
 	reopen_logs();
 
-	DEBUG(1,( "smbd version %s started.\n", VERSION));
-	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-1998\n"));
+	DEBUG(0,( "smbd version %s started.\n", VERSION));
+	DEBUGADD(0,( "Copyright Andrew Tridgell and the Samba Team 1992-2002\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
@@ -704,10 +726,10 @@ static void usage(char *pname)
 	
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
-		DEBUG(0,("ERROR: failed to setup profiling\n"));
+		DEBUG(0,("ERROR: failed to setup profiling shared memory\n"));
 		return -1;
 	}
-#endif
+#endif /* WITH_PROFILE */
 
 #ifdef WITH_SSL
 	{
@@ -722,12 +744,17 @@ static void usage(char *pname)
 
 	fstrcpy(global_myworkgroup, lp_workgroup());
 
-	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
-	
 	DEBUG(3,( "loaded services\n"));
 
 	if (!is_daemon && !is_a_socket(0)) {
-		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+		if (!interactive)
+			DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+
+		/*
+		 * Setting is_daemon here prevents us from eventually calling
+		 * the open_sockets_inetd()
+		 */
+
 		is_daemon = True;
 	}
 
@@ -736,55 +763,58 @@ static void usage(char *pname)
 		become_daemon();
 	}
 
-	if (!directory_exist(lp_lockdir(), NULL)) {
+#if HAVE_SETPGID
+	/*
+	 * If we're interactive we want to set our own process group for
+	 * signal management.
+	 */
+	if (interactive)
+		setpgid( (pid_t)0, (pid_t)0);
+#endif
+
+	if (!directory_exist(lp_lockdir(), NULL))
 		mkdir(lp_lockdir(), 0755);
-	}
 
-	if (is_daemon) {
+	if (is_daemon)
 		pidfile_create("smbd");
-	}
 
-	if (!message_init()) {
+	if (!message_init())
 		exit(1);
-	}
-	register_dmalloc_msgs();
 
 	/* Setup the main smbd so that we can get messages. */
-	if (lp_status(-1)) {
+	if (lp_status(-1))
 		claim_connection(NULL,"",0,True);
-	}
 
 	/* Attempt to migrate from an old 2.0.x machine account file. */
-	if (!migrate_from_old_password_file(global_myworkgroup)) {
+	if (!migrate_from_old_password_file(global_myworkgroup))
 		DEBUG(0,("Failed to migrate from old MAC file.\n"));
+
+	if(!pdb_generate_sam_sid()) {
+		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
+		exit(1);
 	}
 
 	if (!open_sockets(is_daemon,interactive,port))
 		exit(1);
 
 	/*
-	 * everything after this point is run after the fork()
+	 * Everything after this point is run after the fork().
 	 */ 
 
-	if (!locking_init(0)) {
+	if (!locking_init(0))
 		exit(1);
-	}
 
-	if (!print_backend_init()) {
+	if (!print_backend_init())
 		exit(1);
-	}
 
-	if(!initialize_password_db()) {
+	if (!share_info_db_init())
 		exit(1);
-	}
+
+	if(!initialize_password_db(False))
+		exit(1);
 
 	/* possibly reload the services file. */
 	reload_services(True);
-
-	if(!pdb_generate_sam_sid()) {
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
-		exit(1);
-	}
 
 	if (*lp_rootdir()) {
 		if (sys_chroot(lp_rootdir()) == 0)
@@ -792,19 +822,15 @@ static void usage(char *pname)
 	}
 
 	/* Setup oplocks */
-	if (!init_oplocks()) {
+	if (!init_oplocks())
 		exit(1);
-	}
 
 	/* Setup change notify */
-	if (!init_change_notify()) {
+	if (!init_change_notify())
 		exit(1);
-	}
 
 	smbd_process();
 	
 	exit_server("normal exit");
 	return(0);
 }
-
-#undef OLD_NTDOMAIN

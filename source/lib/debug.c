@@ -82,9 +82,11 @@
 FILE   *dbf        = NULL;
 pstring debugf     = "";
 BOOL    append_log = False;
+
 int     DEBUGLEVEL_CLASS[DBGC_LAST];
 int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
-
+BOOL	AllowDebugChange = True;
+int	parsed_debuglevel_class[DBGC_LAST];
 
 /* -------------------------------------------------------------------------- **
  * Internal variables.
@@ -105,6 +107,12 @@ int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
  *                    to build the formatted output.
  *
  *  format_pos      - Marks the first free byte of the format_bufr.
+ * 
+ *
+ *  log_overflow    - When this variable is True, never attempt to check the
+ *                    size of the log. This is a hack, so that we can write
+ *                    a message using DEBUG, from open_logs() when we
+ *                    are unable to open a new log file for some reason.
  */
 
 static BOOL    stdout_logging = False;
@@ -114,6 +122,7 @@ static int     syslog_level   = 0;
 #endif
 static pstring format_bufr    = { '\0' };
 static size_t     format_pos     = 0;
+static BOOL    log_overflow   = False;
 
 /*
 * Define all the debug class selection names here. Names *MUST NOT* contain 
@@ -172,7 +181,7 @@ BOOL debug_parse_params(char **params, int *debuglevel_class)
 	/* Allow DBGC_ALL to be specifies w/o requiring its class name e.g."10"  
 	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL 
 	 */
-	if (isdigit(params[0][0])) {
+	if (isdigit((int)params[0][0])) {
 		debuglevel_class[DBGC_ALL] = atoi(params[0]);
 		i = 1; /* start processing at the next params */
 	}
@@ -217,8 +226,18 @@ BOOL debug_parse_levels(char *params_str)
 	else
 		return False;
 
+	if (AllowDebugChange == False) {
+		int old_debuglevel_class[DBGC_LAST];
+
+		/* save current debug level */
+		memcpy(old_debuglevel_class, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS));
+		if (debug_parse_params(params, debuglevel_class))
+			memcpy(parsed_debuglevel_class, debuglevel_class, sizeof(DEBUGLEVEL_CLASS));
+		memcpy(DEBUGLEVEL_CLASS, old_debuglevel_class, sizeof(old_debuglevel_class));
+		return True;
+	}
 	if (debug_parse_params(params, debuglevel_class)) {
-		debug_message(0, getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
+		debug_message(MSG_DEBUG, getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
 		return True;
 	} else
 		return False;
@@ -234,9 +253,9 @@ void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 	/* Set the new DEBUGLEVEL_CLASS array from the pased array */
 	memcpy(DEBUGLEVEL_CLASS, buf, sizeof(DEBUGLEVEL_CLASS));
 	
-	DEBUG(1,("INFO: Debug class %s level = %d   (pid %d from pid %d)\n",
+	DEBUG(1,("INFO: Debug class %s level = %d   (pid %u from pid %u)\n",
 			classname_table[DBGC_ALL],
-			DEBUGLEVEL_CLASS[DBGC_ALL], getpid(), (int)src));
+			DEBUGLEVEL_CLASS[DBGC_ALL], (unsigned int)getpid(), (unsigned int)src));
 
 	for (i=1; i<DBGC_LAST; i++) {
 		if (DEBUGLEVEL_CLASS[i])
@@ -263,6 +282,11 @@ void setup_logging(char *pname, BOOL interactive)
 {
 	message_register(MSG_DEBUG, debug_message);
 
+	/* reset to allow multiple setup calls, going from interactive to
+	   non-interactive */
+	stdout_logging = False;
+	dbf = NULL;
+
 	if (interactive) {
 		stdout_logging = True;
 		dbf = stdout;
@@ -284,44 +308,64 @@ void setup_logging(char *pname, BOOL interactive)
 /* ************************************************************************** **
  * reopen the log files
  * note that we now do this unconditionally
+ * We attempt to open the new debug fp before closing the old. This means
+ * if we run out of fd's we just keep using the old fd rather than aborting.
+ * Fix from dgibson@linuxcare.com.
  * ************************************************************************** **
  */
-void reopen_logs( void )
+
+BOOL reopen_logs( void )
 {
 	pstring fname;
 	mode_t oldumask;
+	FILE *new_dbf = NULL;
+	BOOL ret = True;
 
-	if (DEBUGLEVEL_CLASS[ DBGC_ALL ] <= 0) {
-		if (dbf) {
-			(void)fclose(dbf);
-			dbf = NULL;
-		}
-		return;
-	}
+	if (stdout_logging)
+		return True;
 
 	oldumask = umask( 022 );
   
 	pstrcpy(fname, debugf );
-	if (lp_loaded() && (*lp_logfile()))
-		pstrcpy(fname, lp_logfile());
 
-	pstrcpy( debugf, fname );
-	if (dbf)
-		(void)fclose(dbf);
+	if (lp_loaded()) {
+		char *logfname;
+
+		logfname = lp_logfile();
+		if (*logfname)
+			pstrcpy(fname, logfname);
+	}
+
+	pstrcpy(debugf, fname);
+
 	if (append_log)
-		dbf = sys_fopen( debugf, "a" );
+		new_dbf = sys_fopen( debugf, "a" );
 	else
-		dbf = sys_fopen( debugf, "w" );
+		new_dbf = sys_fopen( debugf, "w" );
+
+	if (!new_dbf) {
+		log_overflow = True;
+		DEBUG(0, ("Unable to open new log file %s: %s\n", debugf, strerror(errno)));
+		log_overflow = False;
+		if (dbf)
+			fflush(dbf);
+		ret = False;
+	} else {
+		setbuf(new_dbf, NULL);
+		if (dbf)
+			(void) fclose(dbf);
+		dbf = new_dbf;
+	}
+
 	/* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
 	 * to fix problem where smbd's that generate less
 	 * than 100 messages keep growing the log.
 	 */
 	force_check_log_size();
-	if (dbf)
-		setbuf( dbf, NULL );
 	(void)umask(oldumask);
-}
 
+	return ret;
+}
 
 /* ************************************************************************** **
  * Force a check of the log size.
@@ -358,54 +402,61 @@ BOOL need_to_check_log_size( void )
 
 void check_log_size( void )
 {
-  int         maxlog;
-  SMB_STRUCT_STAT st;
+	int         maxlog;
+	SMB_STRUCT_STAT st;
 
-  /*
-   *  We need to be root to check/change log-file, skip this and let the main
-   *  loop check do a new check as root.
-   */
+	/*
+	 *  We need to be root to check/change log-file, skip this and let the main
+	 *  loop check do a new check as root.
+	 */
 
-  if( geteuid() != 0 )
-    return;
+	if( geteuid() != 0 )
+		return;
 
-  if( !need_to_check_log_size() )
-    return;
+	if(log_overflow || !need_to_check_log_size() )
+		return;
 
-  maxlog = lp_max_log_size() * 1024;
+	maxlog = lp_max_log_size() * 1024;
 
-  if( sys_fstat( fileno( dbf ), &st ) == 0 && st.st_size > maxlog )
-    {
-    (void)fclose( dbf );
-    dbf = NULL;
-    reopen_logs();
-    if( dbf && get_file_size( debugf ) > maxlog )
-      {
-      pstring name;
+	if( sys_fstat( fileno( dbf ), &st ) == 0 && st.st_size > maxlog ) {
+		(void)reopen_logs();
+		if( dbf && get_file_size( debugf ) > maxlog ) {
+			pstring name;
 
-      (void)fclose( dbf );
-      dbf = NULL;
-      slprintf( name, sizeof(name)-1, "%s.old", debugf );
-      (void)rename( debugf, name );
-      reopen_logs();
-      }
-    }
-  /*
-   * Here's where we need to panic if dbf == NULL..
-   */
-  if(dbf == NULL) {
-    dbf = sys_fopen( "/dev/console", "w" );
-    if(dbf) {
-      DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
-            debugf ));
-    } else {
-      /*
-       * We cannot continue without a debug file handle.
-       */
-      abort();
-    }
-  }
-  debug_count = 0;
+			slprintf( name, sizeof(name)-1, "%s.old", debugf );
+			(void)rename( debugf, name );
+      
+			if (!reopen_logs()) {
+				/* We failed to reopen a log - continue using the old name. */
+				(void)rename(name, debugf);
+			}
+		}
+	}
+
+	/*
+	 * Here's where we need to panic if dbf == NULL..
+	 */
+
+	if(dbf == NULL) {
+		/* This code should only be reached in very strange
+			circumstances. If we merely fail to open the new log we
+			should stick with the old one. ergo this should only be
+			reached when opening the logs for the first time: at
+			startup or when the log level is increased from zero.
+			-dwg 6 June 2000
+		*/
+		dbf = sys_fopen( "/dev/console", "w" );
+		if(dbf) {
+			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
+					debugf ));
+		} else {
+			/*
+			 * We cannot continue without a debug file handle.
+			 */
+			abort();
+		}
+	}
+	debug_count = 0;
 } /* check_log_size */
 
 /* ************************************************************************** **
@@ -413,26 +464,14 @@ void check_log_size( void )
  * This is called by dbghdr() and format_debug_text().
  * ************************************************************************** **
  */
-#ifdef HAVE_STDARG_H
  int Debug1( char *format_str, ... )
 {
-#else
- int Debug1(va_alist)
-va_dcl
-{  
-  char *format_str;
-#endif
   va_list ap;  
   int old_errno = errno;
 
   if( stdout_logging )
     {
-#ifdef HAVE_STDARG_H
     va_start( ap, format_str );
-#else
-    va_start( ap );
-    format_str = va_arg( ap, char * );
-#endif
     if(dbf)
       (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
@@ -487,12 +526,7 @@ va_dcl
     else
       priority = priority_map[syslog_level];
       
-#ifdef HAVE_STDARG_H
     va_start( ap, format_str );
-#else
-    va_start( ap );
-    format_str = va_arg( ap, char * );
-#endif
     vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
     va_end( ap );
       
@@ -507,12 +541,7 @@ va_dcl
   if( !lp_syslog_only() )
 #endif
     {
-#ifdef HAVE_STDARG_H
     va_start( ap, format_str );
-#else
-    va_start( ap );
-    format_str = va_arg( ap, char * );
-#endif
     if(dbf)
       (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
@@ -703,7 +732,6 @@ BOOL dbghdr( int level, char *file, char *func, int line )
  *
  * ************************************************************************** **
  */
-#ifdef HAVE_STDARG_H
  BOOL dbgtext( char *format_str, ... )
   {
   va_list ap;
@@ -718,24 +746,5 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   return( True );
   } /* dbgtext */
 
-#else
- BOOL dbgtext( va_alist )
- va_dcl
-  {
-  char *format_str;
-  va_list ap;
-  pstring msgbuf;
-
-  va_start( ap );
-  format_str = va_arg( ap, char * );
-  vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
-  va_end( ap );
-
-  format_debug_text( msgbuf );
-
-  return( True );
-  } /* dbgtext */
-
-#endif
 
 /* ************************************************************************** */

@@ -73,6 +73,8 @@
 #define DACL_SECURITY_INFORMATION  0x00000004
 #define SACL_SECURITY_INFORMATION  0x00000008
 
+#define ALL_SECURITY_INFORMATION (OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|\
+									DACL_SECURITY_INFORMATION|SACL_SECURITY_INFORMATION)
 
 #ifndef _SEC_ACCESS
 /* SEC_ACCESS */
@@ -93,7 +95,7 @@ typedef struct security_ace_info
 	uint16 size;
 
 	SEC_ACCESS info;
-	DOM_SID sid;
+	DOM_SID trustee;
 
 } SEC_ACE;
 #define _SEC_ACE
@@ -101,6 +103,10 @@ typedef struct security_ace_info
 
 #ifndef ACL_REVISION
 #define ACL_REVISION 0x3
+#endif
+
+#ifndef NT4_ACL_REVISION
+#define NT4_ACL_REVISION 0x2
 #endif
 
 #ifndef _SEC_ACL
@@ -147,7 +153,7 @@ typedef struct security_descriptor_info
 typedef struct sec_desc_buf_info
 {
 	uint32 max_len;
-	uint32 undoc;
+	uint32 ptr;
 	uint32 len;
 
 	SEC_DESC *sec;

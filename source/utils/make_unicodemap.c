@@ -96,7 +96,7 @@ static size_t clean_data( char **buf, size_t *size)
     newbuf_p += (strlen(newbuf_p) + 1);
   }
 
-  free(*buf);
+  SAFE_FREE(*buf);
   *buf = newbuf;
   return num_lines;
 }
@@ -149,7 +149,7 @@ static int do_compile(const char *codepage, const char *input_file, const char *
   SMB_STRUCT_STAT st;
 
   /* Get the size of the input file. Read the entire thing into memory. */
-  if(sys_stat((char *)input_file, &st)!= 0) {
+  if(sys_stat(input_file, &st)!= 0) {
     fprintf(stderr, "%s: failed to get the file size for file %s. Error was %s\n",
             prog_name, input_file, strerror(errno));
     exit(1);
@@ -172,7 +172,7 @@ static int do_compile(const char *codepage, const char *input_file, const char *
   if(fread( buf, 1, size, fp) != size) {
     fprintf(stderr, "%s: read failed for file %s. Error was %s.\n", prog_name,
             input_file, strerror(errno));
-    free((char *)buf);
+    SAFE_FREE(buf);
     fclose(fp);
     exit(1);
   }
@@ -289,8 +289,8 @@ static int do_compile(const char *codepage, const char *input_file, const char *
 
   fclose(fp);
   
-  free(orig_buf);
-  free(output_buf);
+  SAFE_FREE(orig_buf);
+  SAFE_FREE(output_buf);
   return 0;
 }
 

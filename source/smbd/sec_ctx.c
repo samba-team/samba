@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -22,7 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern struct current_user current_user;
 
 struct sec_ctx {
@@ -61,10 +59,8 @@ static BOOL become_uid(uid_t uid)
 	/* Set effective user id */
 
 	set_effective_uid(uid);
-	current_user.uid = uid;
 
 	DO_PROFILE_INC(uid_changes);
-
 	return True;
 }
 
@@ -90,8 +86,6 @@ static BOOL become_gid(gid_t gid)
 	/* Set effective group id */
 
 	set_effective_gid(gid);
-	current_user.gid = gid;
-	
 	return True;
 }
 
@@ -110,6 +104,10 @@ static BOOL become_id(uid_t uid, gid_t gid)
 
 static void gain_root(void)
 {
+	if (non_root_mode()) {
+		return;
+	}
+
 	if (geteuid() != 0) {
 		set_effective_uid(0);
 
@@ -153,13 +151,15 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 		return -1;
 	}
 
-	if ((ngroups = sys_getgroups(ngroups,groups)) == -1)
+	if ((ngroups = sys_getgroups(ngroups,groups)) == -1) {
+		SAFE_FREE(groups);
 		return -1;
+	}
 
 	(*p_ngroups) = ngroups;
 	(*p_groups) = groups;
 
-	DEBUG( 3, ( "get_current_groups: uid %u is in %u groups: ", (unsigned int)getuid() , ngroups ) );
+	DEBUG( 3, ( "get_current_groups: user is in %u groups: ", ngroups ) );
 	for (i = 0; i < ngroups; i++ ) {
 		DEBUG( 3, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
 	}
@@ -174,15 +174,12 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 
 void delete_nt_token(NT_USER_TOKEN **pptoken)
 {
-        if (*pptoken) {
+    if (*pptoken) {
 		NT_USER_TOKEN *ptoken = *pptoken;
-                
-                safe_free( ptoken->user_sids );
-                ZERO_STRUCTP(ptoken);
-        }
-
-        safe_free(*pptoken);
-	*pptoken = NULL;
+        SAFE_FREE( ptoken->user_sids );
+        ZERO_STRUCTP(ptoken);
+    }
+    SAFE_FREE(*pptoken);
 }
 
 /****************************************************************************
@@ -202,7 +199,7 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
     ZERO_STRUCTP(token);
 
     if ((token->user_sids = (DOM_SID *)memdup( ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids )) == NULL) {
-        free(token);
+        SAFE_FREE(token);
         return NULL;
     }
 
@@ -219,6 +216,10 @@ BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
 {
 	struct sec_ctx *prev_ctx_p;
 	BOOL result = True;
+
+	if (non_root_mode()) {
+		return True;
+	}
 
 	become_root();
 
@@ -241,8 +242,7 @@ BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
 
 	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx - 1];
 
-	safe_free(prev_ctx_p->groups);
-	prev_ctx_p->groups = NULL;
+	SAFE_FREE(prev_ctx_p->groups);
 	prev_ctx_p->ngroups = 0;
 
 	get_current_groups(&prev_ctx_p->ngroups, &prev_ctx_p->groups);
@@ -278,8 +278,8 @@ BOOL push_sec_ctx(void)
 	ctx_p->uid = geteuid();
 	ctx_p->gid = getegid();
 
- 	DEBUG(3, ("push_sec_ctx(%d, %d) : sec_ctx_stack_ndx = %d\n", 
- 		  ctx_p->uid, ctx_p->gid, sec_ctx_stack_ndx ));
+ 	DEBUG(3, ("push_sec_ctx(%u, %u) : sec_ctx_stack_ndx = %d\n", 
+ 		  (unsigned int)ctx_p->uid, (unsigned int)ctx_p->gid, sec_ctx_stack_ndx ));
 
 	ctx_p->token = dup_nt_token(sec_ctx_stack[sec_ctx_stack_ndx-1].token);
 
@@ -310,14 +310,15 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	
 	/* Set the security context */
 
-	DEBUG(3, ("setting sec ctx (%d, %d) - sec_ctx_stack_ndx = %d\n", uid, gid, sec_ctx_stack_ndx));
+	DEBUG(3, ("setting sec ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
+		(unsigned int)uid, (unsigned int)gid, sec_ctx_stack_ndx));
 
 	if (ngroups) {
 		int i;
 
 		DEBUG(3, ("%d user groups: \n", ngroups));
 		for (i = 0; i < ngroups; i++) {
-			DEBUGADD(3, ("%d ", groups[i]));
+			DEBUGADD(3, ("%u ", (unsigned int)groups[i]));
 		}
 
 		DEBUG(3, ("\n"));
@@ -332,7 +333,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 
 	ctx_p->ngroups = ngroups;
 
-	safe_free(ctx_p->groups);
+	SAFE_FREE(ctx_p->groups);
 	if (token && (token == ctx_p->token))
 		smb_panic("DUPLICATE_TOKEN");
 
@@ -352,7 +353,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	current_user.gid = gid;
 	current_user.ngroups = ngroups;
 	current_user.groups = groups;
-	current_user.nt_user_token = token;
+	current_user.nt_user_token = ctx_p->token;
 }
 
 /****************************************************************************
@@ -389,7 +390,7 @@ BOOL pop_sec_ctx(void)
 	ctx_p->uid = (uid_t)-1;
 	ctx_p->gid = (gid_t)-1;
 
-	safe_free(ctx_p->groups);
+	SAFE_FREE(ctx_p->groups);
 	ctx_p->ngroups = 0;
 
 	delete_nt_token(&ctx_p->token);
@@ -416,7 +417,8 @@ BOOL pop_sec_ctx(void)
 	current_user.groups = prev_ctx_p->groups;
 	current_user.nt_user_token = prev_ctx_p->token;
 
-	DEBUG(3, ("pop_sec_ctx (%d, %d) - sec_ctx_stack_ndx = %d\n", geteuid(), getegid(), sec_ctx_stack_ndx));
+	DEBUG(3, ("pop_sec_ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
+		(unsigned int)geteuid(), (unsigned int)getegid(), sec_ctx_stack_ndx));
 
 	return True;
 }
@@ -461,4 +463,3 @@ void init_sec_ctx(void)
 	current_user.vuid = UID_FIELD_INVALID;
 	current_user.nt_user_token = NULL;
 }
-#undef OLD_NTDOMAIN

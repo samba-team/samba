@@ -49,9 +49,22 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
+typedef struct html_conversion {
+	char src;
+	char *dest;
+} html_conversion;
+
+static const html_conversion entities[] = {
+	{ '"', "&quot;" },
+	{ '&', "&amp;"  },
+	{ '<', "&lt;"   },
+	{ '>', "&gt;"   },
+	{ '\0', NULL },
+};
+
 /* we need these because we link to locking*.o */
- void become_root(BOOL save_dir) {}
- void unbecome_root(BOOL restore_dir) {}
+ void become_root(void) {}
+ void unbecome_root(void) {}
 
 /****************************************************************************
 ****************************************************************************/
@@ -75,6 +88,51 @@ static char *fix_backslash(char *str)
         }
 	*p = '\0';
 	return newstring;
+}
+
+static char *htmlentities(char *str)
+{
+	int i,j, destlen = 0;
+	int length = strlen(str);
+	/* Feel free to use a pstring if appropriate -- I haven't 
+	   checked if it's guaranteed to be long enough, and suspect it 
+	   isn't. -SRL */
+	char *dststr = NULL;
+	char *p;
+
+	for (i = 0; i < length; i++) {
+		for (j = 0; entities[j].src; j++) {
+			if (str[i] == entities[j].src) {
+				destlen += strlen(entities[j].dest);
+				break;
+			}
+		}
+		if (!entities[j].src) {
+			destlen++;
+		}
+	}
+	if (length == destlen) {
+		return(strdup(str));
+	}
+	p = dststr = malloc(destlen + 1);
+	if (!dststr) {
+		return(NULL);
+	}
+	dststr[destlen] = '\0';
+	for (i = 0; i < length; i++) {
+		for (j = 0; entities[j].src; j++) {
+			if (str[i] == entities[j].src) {
+				strncpy(p, entities[j].dest,
+				        strlen(entities[j].dest));
+				p += strlen(entities[j].dest);
+				break;
+			}
+		}
+		if (!entities[j].src) {
+			*p++ = str[i];
+		}
+	}
+	return(dststr);
 }
 
 static char *stripspace(char *str)
@@ -161,13 +219,16 @@ static void show_parameter(int snum, struct parm_struct *parm)
 {
 	int i;
 	void *ptr = parm->ptr;
+	char* str;
 
 	if (parm->class == P_LOCAL && snum >= 0) {
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
+	str = stripspace(parm->label);
+	strupper (str);
 	printf("<tr><td><A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\">Help</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s</td><td>", 
-	       stripspace(parm->label), parm->label);
+	       str, parm->label);
 
 	switch (parm->type) {
 	case P_CHAR:
@@ -179,8 +240,12 @@ static void show_parameter(int snum, struct parm_struct *parm)
 
 	case P_STRING:
 	case P_USTRING:
-		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), *(char **)ptr);
+		str = htmlentities(*(char **)ptr);
+		printf("<input type=\"text\" size=\"40\" name=\"parm_%s\" value=\"%s\">",
+			make_parm_name(parm->label), str);
+		if (str != NULL) {
+			free(str);
+		}
 		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
@@ -212,7 +277,18 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 
 	case P_INTEGER:
-		printf("<input type=text size=8 name=\"parm_%s\" value=%d>", make_parm_name(parm->label), *(int *)ptr);
+		if (strequal(parm->label,"log level")) {
+			printf("<input type=text size=40 name=\"parm_%s\" value=%d", 
+				make_parm_name(parm->label),*(int *)ptr);
+			for (i = 1; i < DBGC_LAST; i ++) {
+				if (((int *)ptr)[i])
+				printf(",%s:%d",debug_classname_from_index(i),((int *)ptr)[i]);
+			}
+			printf(">");
+		}  else {
+			printf("<input type=text size=8 name=\"parm_%s\" value=%d>", 
+				make_parm_name(parm->label), *(int *)ptr);
+		}
 		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%d\'\">",
 			make_parm_name(parm->label),(int)(parm->def.ivalue));
 		break;
@@ -293,6 +369,8 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 
 				case P_INTEGER:
 				case P_OCTAL:
+					if (strequal(parm->label,"log level")) 
+						break;
 					if (*(int *)ptr == (int)(parm->def.ivalue)) continue;
 					break;
 
@@ -326,13 +404,14 @@ static BOOL load_config(BOOL save_def)
 /****************************************************************************
   write a config file 
 ****************************************************************************/
-static void write_config(FILE *f, BOOL show_defaults)
+
+static void write_config(FILE *f, BOOL show_defaults, char *(*dos_to_ext)(const char *))
 {
 	fprintf(f, "# Samba config file created using SWAT\n");
 	fprintf(f, "# from %s (%s)\n", cgi_remote_host(), cgi_remote_addr());
 	fprintf(f, "# Date: %s\n\n", timestring(False));
 	
-	lp_dump(f, show_defaults, iNumNonAutoPrintServices);	
+	lp_dump(f, show_defaults, iNumNonAutoPrintServices, dos_to_ext);	
 }
 
 /****************************************************************************
@@ -341,6 +420,7 @@ static void write_config(FILE *f, BOOL show_defaults)
 static int save_reload(int snum)
 {
 	FILE *f;
+	struct stat st;
 
 	f = sys_fopen(servicesf,"w");
 	if (!f) {
@@ -348,9 +428,15 @@ static int save_reload(int snum)
 		return 0;
 	}
 
-	write_config(f, False);
+	/* just in case they have used the buggy xinetd to create the file */
+	if (fstat(fileno(f), &st) == 0 &&
+	    (st.st_mode & S_IWOTH)) {
+		fchmod(fileno(f), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	}
+
+	write_config(f, False, _dos_to_unix_static);
 	if (snum)
-		lp_dump_one(f, False, snum);
+		lp_dump_one(f, False, snum, _dos_to_unix_static);
 	fclose(f);
 
 	lp_killunused(NULL);
@@ -372,6 +458,10 @@ static void commit_parameter(int snum, struct parm_struct *parm, char *v)
 {
 	int i;
 	char *s;
+
+	/* lp_do_parameter() will do unix_to_dos(v). */
+	if(parm->flags & FLAG_DOS_STRING)
+		dos_to_unix(v);
 
 	if (snum < 0 && parm->class == P_LOCAL) {
 		/* this handles the case where we are changing a local
@@ -412,7 +502,7 @@ static void commit_parameters(int snum)
 ****************************************************************************/
 static void image_link(char *name,char *hlink, char *src)
 {
-	printf("<A HREF=\"%s/%s\"><img src=\"/swat/%s\" alt=\"%s\"></A>\n", 
+	printf("<A HREF=\"%s/%s\"><img border=\"0\" src=\"/swat/%s\" alt=\"%s\"></A>\n", 
 	       cgi_baseurl(), hlink, src, name);
 }
 
@@ -472,7 +562,7 @@ static void viewconfig_page(void)
 	}
 
 	printf("<p><pre>");
-	write_config(stdout, full_view);
+	write_config(stdout, full_view, _dos_to_dos_static);
 	printf("</pre>");
 	printf("</form>\n");
 }
@@ -552,8 +642,12 @@ static void shares_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
+		/* add_a_service() which is called by lp_copy_service()
+			will do unix_to_dos() conversion, so we need dos_to_unix() before the lp_copy_service(). */
+		pstring unix_share;
+		pstrcpy(unix_share, dos_to_unix_static(share));
 		load_config(False);
-		lp_copy_service(GLOBALS_SNUM, share);
+		lp_copy_service(GLOBALS_SNUM, unix_share);
 		iNumNonAutoPrintServices = lp_numservices();
 		save_reload(0);
 		snum = lp_servicenumber(share);
@@ -641,7 +735,7 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 		return ret;
 	}
 
-	if(!initialize_password_db()) {
+	if(!initialize_password_db(False)) {
 		printf("Can't setup password database vectors.\n<p>");
 		return False;
 	}
@@ -865,7 +959,7 @@ static void printers_page(void)
 	printf("<H3>Important Note:</H3>\n");
 	printf("Printer names marked with [*] in the Choose Printer drop-down box ");
 	printf("are autoloaded printers from ");
-	printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">Printcap Name</A>.\n");
+	printf("<A HREF=\"/swat/help/smb.conf.5.html#PRINTCAPNAME\" target=\"docs\">Printcap Name</A>.\n");
 	printf("Attempting to delete these printers from SWAT will have no effect.\n");
 
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
@@ -887,8 +981,12 @@ static void printers_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
+		/* add_a_service() which is called by lp_copy_service()
+			will do unix_to_dos() conversion, so we need dos_to_unix() before the lp_copy_service(). */
+		pstring unix_share;
+		pstrcpy(unix_share, dos_to_unix_static(share));
 		load_config(False);
-		lp_copy_service(GLOBALS_SNUM, share);
+		lp_copy_service(GLOBALS_SNUM, unix_share);
 		iNumNonAutoPrintServices = lp_numservices();
 		snum = lp_servicenumber(share);
 		lp_do_parameter(snum, "print ok", "Yes");
@@ -969,6 +1067,7 @@ static void printers_page(void)
 	char *page;
 
 	fault_setup(NULL);
+	umask(S_IWGRP | S_IWOTH);
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
 	set_auth_parameters(argc, argv);
@@ -998,10 +1097,12 @@ static void printers_page(void)
 		}
 	}
 
+	setup_logging(argv[0],False);
 	charset_initialise();
 	load_config(True);
 	iNumNonAutoPrintServices = lp_numservices();
 	load_printers();
+	codepage_initialise(lp_client_code_page());
 
 	cgi_setup(SWATDIR, !demo_mode);
 

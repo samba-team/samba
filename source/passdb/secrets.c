@@ -30,18 +30,14 @@ static TDB_CONTEXT *tdb;
 BOOL secrets_init(void)
 {
 	pstring fname;
-	char *p;
 
-	if (tdb) return True;
+	if (tdb)
+		return True;
 
-	pstrcpy(fname, lp_smb_passwd_file());
-	p = strrchr(fname, '/');
-	if(!p) return False;
-
-	*p = 0;
+	get_private_directory(fname);
 	pstrcat(fname,"/secrets.tdb");
 
-	tdb = tdb_open(fname, 0, 0, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));
@@ -56,11 +52,13 @@ BOOL secrets_init(void)
 void *secrets_fetch(char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	dbuf = tdb_fetch(tdb, kbuf);
-	if (size) *size = dbuf.dsize;
+	if (size)
+		*size = dbuf.dsize;
 	return dbuf.dptr;
 }
 
@@ -69,7 +67,8 @@ void *secrets_fetch(char *key, size_t *size)
 BOOL secrets_store(char *key, void *data, size_t size)
 {
 	TDB_DATA kbuf, dbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	dbuf.dptr = data;
@@ -83,7 +82,8 @@ BOOL secrets_store(char *key, void *data, size_t size)
 BOOL secrets_delete(char *key)
 {
 	TDB_DATA kbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	return tdb_delete(tdb, kbuf) == 0;
@@ -93,7 +93,8 @@ BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid)
 {
 	fstring key;
 
-	slprintf(key, sizeof(key), "%s/%s", SECRETS_DOMAIN_SID, domain);
+	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
+	strupper(key);
 	return secrets_store(key, sid, sizeof(DOM_SID));
 }
 
@@ -103,8 +104,9 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	fstring key;
 	size_t size;
 
-	slprintf(key, sizeof(key), "%s/%s", SECRETS_DOMAIN_SID, domain);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
+	strupper(key);
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
 
 	if (dyn_sid == NULL)
@@ -112,30 +114,31 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 
 	if (size != sizeof(DOM_SID))
 	{ 
-		free(dyn_sid);
+		SAFE_FREE(dyn_sid);
 		return False;
 	}
 
 	*sid = *dyn_sid;
-	free(dyn_sid);
+	SAFE_FREE(dyn_sid);
 	return True;
 }
-
 
 /************************************************************************
 form a key for fetching a domain trust password
 ************************************************************************/
+
 char *trust_keystr(char *domain)
 {
 	static fstring keystr;
 	fstring dos_domain;
 
 	fstrcpy(dos_domain, domain);
-	unix_to_dos(dos_domain, True);
+	unix_to_dos(dos_domain);
 
-	slprintf(keystr,sizeof(keystr),"%s/%s", 
+	slprintf(keystr,sizeof(keystr)-1,"%s/%s", 
 		 SECRETS_MACHINE_ACCT_PASS, dos_domain);
 
+	strupper(keystr);
 	return keystr;
 }
 
@@ -154,10 +157,8 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 		return False;
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
-
 	memcpy(ret_pwd, pass->hash, 16);
-	free(pass);
-
+	SAFE_FREE(pass);
 	return True;
 }
 
@@ -189,26 +190,67 @@ BOOL trust_password_delete(char *domain)
  from a fork call these calls will be re-done. This should be
  expanded if more variables need reseting.
  ******************************************************************/
- 
+
 void reset_globals_after_fork(void)
 {
 	unsigned char dummy;
- 
+
 	/*
 	 * Increment the global seed value to ensure every smbd starts
 	 * with a new random seed.
 	 */
- 
+
 	if (tdb) {
-		uint32 initial_val = sys_getpid();
-		tdb_change_int_atomic(tdb, "INFO/random_seed", (int *)&initial_val, 1);
+		int32 initial_val = sys_getpid();
+		tdb_change_int32_atomic(tdb, "INFO/random_seed", (int *)&initial_val, 1);
 		set_rand_reseed_data((unsigned char *)&initial_val, sizeof(initial_val));
 	}
- 
+
 	/*
 	 * Re-seed the random crypto generator, so all smbd's
 	 * started from the same parent won't generate the same
 	 * sequence.
 	 */
 	generate_random_buffer( &dummy, 1, True);
+}
+
+BOOL secrets_store_ldap_pw(char* dn, char* pw)
+{
+	fstring key;
+	char *p;
+	
+	pstrcpy(key, dn);
+	for (p=key; *p; p++)
+		if (*p == ',') *p = '/';
+	
+	return secrets_store(key, pw, strlen(pw));
+}
+
+BOOL fetch_ldap_pw(char *dn, char* pw, int len)
+{
+	fstring key;
+	char *p;
+	void *data = NULL;
+	size_t size;
+	
+	pstrcpy(key, dn);
+	for (p=key; *p; p++)
+		if (*p == ',') *p = '/';
+	
+	data=secrets_fetch(key, &size);
+	if (!size) {
+		DEBUG(0,("fetch_ldap_pw: no ldap secret retrieved!\n"));
+		return False;
+	}
+	
+	if (size > len-1)
+	{
+		DEBUG(0,("fetch_ldap_pw: ldap secret is too long (%d > %d)!\n", size, len-1));
+		return False;
+	}
+
+	memcpy(pw, data, size);
+	pw[size] = '\0';
+	
+	return True;
 }

@@ -3,9 +3,10 @@
 #
 
 load_lib util-defs.exp
-load_lib "$srcdir/config/env.exp"
 
-pass "bigfd"
+# Unimplemented - eek!
+
+untested "bigfd"
 return
 
 # Compile bigfd.c

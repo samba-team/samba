@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -22,8 +20,6 @@
 */
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 /****************************************************************************
   change a dos mode to a unix mode
@@ -111,6 +107,8 @@ mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname)
       result |= lp_force_create_mode(SNUM(conn));
     }
   }
+
+  DEBUG(3,("unix_mode(%s) returning 0%o\n",fname,(int)result ));
   return(result);
 }
 
@@ -184,7 +182,6 @@ chmod a file - but preserve some bits
 ********************************************************************/
 int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *st)
 {
-	extern struct current_user current_user;
 	SMB_STRUCT_STAT st1;
 	int mask=0;
 	mode_t tmp;
@@ -199,6 +196,8 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 
 	if (S_ISDIR(st->st_mode))
 		dosmode |= aDIR;
+	else
+		dosmode &= ~aDIR;
 
 	if (dos_mode(conn,fname,st) == dosmode)
 		return(0);
@@ -250,16 +249,21 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 
 	/* Check if we have write access. */
 	if (CAN_WRITE(conn)) {
-		if (((st->st_mode & S_IWOTH) ||
-				conn->admin_user ||
-				((st->st_mode & S_IWUSR) && current_user.uid==st->st_uid) ||
-				((st->st_mode & S_IWGRP) &&
-				in_group(st->st_gid,current_user.gid, current_user.ngroups,current_user.groups)))) {
-					/* We are allowed to become root and change the file mode. */
-					become_root();
-					ret = vfs_chmod(conn,fname,unixmode);
-					unbecome_root();
-		}
+		/*
+		 * We need to open the file with write access whilst
+		 * still in our current user context. This ensures we
+		 * are not violating security in doing the fchmod.
+		 * This file open does *not* break any oplocks we are
+		 * holding. We need to review this.... may need to
+		 * break batch oplocks open by others. JRA.
+		 */
+		files_struct *fsp = open_file_fchmod(conn,fname,st);
+		if (!fsp)
+			return -1;
+		become_root();
+		ret = conn->vfs_ops.fchmod(fsp, fsp->fd, unixmode);
+		unbecome_root();
+		close_file_fchmod(fsp);
 	}
 
 	return( ret );
@@ -278,7 +282,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 
   errno = 0;
 
-  if(conn->vfs_ops.utime(conn,dos_to_unix(fname, False), times) == 0)
+  if(conn->vfs_ops.utime(conn,dos_to_unix_static(fname), times) == 0)
     return 0;
 
   if((errno != EPERM) && (errno != EACCES))
@@ -306,7 +310,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 			 current_user.ngroups,current_user.groups)))) {
 		  /* We are allowed to become root and change the filetime. */
 		  become_root();
-		  ret = conn->vfs_ops.utime(conn,dos_to_unix(fname, False), times);
+		  ret = conn->vfs_ops.utime(conn,dos_to_unix_static(fname), times);
 		  unbecome_root();
 	  }
   }
@@ -332,5 +336,3 @@ BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime)
   
   return(True);
 } 
-
-#undef OLD_NTDOMAIN

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    simple kerberos5/SPNEGO routines
    Copyright (C) Andrew Tridgell 2001
    
@@ -216,7 +217,7 @@ BOOL parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
 */
-DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket)
+static DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket)
 {
 	ASN1_DATA data;
 	DATA_BLOB ret;
@@ -247,7 +248,7 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
 {
 	BOOL ret;
 	ASN1_DATA data;
-	int data_remaining;
+	int ata_remaining;
 
 	asn1_load(&data, blob);
 	asn1_start_tag(&data, ASN1_APPLICATION(0));
@@ -259,7 +260,6 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
 	if (data_remaining < 1) {
 		data.has_error = True;
 	} else {
-		
 		*ticket = data_blob(data.data, data_remaining);
 		asn1_read(&data, ticket->data, ticket->length);
 	}
@@ -495,7 +495,9 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 	va_end(ap);
 
 	/* allocate the space, then scan the format again to fill in the values */
-	*blob = data_blob(NULL, head_size + data_size);
+	blob->data = malloc(head_size + data_size);
+	blob->length = head_size + data_size;
+	if (!blob->data) return False;
 
 	head_ofs = 0;
 	data_ofs = head_size;
@@ -549,7 +551,7 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 
   format specifiers are:
 
-  U = unicode string (output is unix string)
+  U = unicode string (input is unix string)
   B = data blob
   b = data blob in header
   d = word (4 bytes)
@@ -620,44 +622,3 @@ BOOL msrpc_parse(DATA_BLOB *blob,
 
 	return True;
 }
-
-/**
- * Print out the NTLMSSP flags for debugging 
- */
-
-void debug_ntlmssp_flags(uint32 neg_flags)
-{
-	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_UNICODE\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_OEM) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_OEM\n"));
-	if (neg_flags & NTLMSSP_REQUEST_TARGET) 
-		DEBUG(4, ("  NTLMSSP_REQUEST_TARGET\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_SIGN\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_SEAL\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_LM_KEY\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_NETWARE) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_NETWARE\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_NTLM\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_ALWAYS_SIGN\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM2) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_NTLM2\n"));
-	if (neg_flags & NTLMSSP_CHAL_TARGET_INFO) 
-		DEBUG(4, ("  NTLMSSP_CHAL_TARGET_INFO\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_128) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_128\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) 
-		DEBUG(4, ("  NTLMSSP_NEGOTIATE_KEY_EXCH\n"));
-}
-

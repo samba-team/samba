@@ -97,6 +97,11 @@
 #define GUEST_ACCOUNT "nobody"
 #endif
 
+/* user to test password server with as invalid in security=server mode. */
+#ifndef INVALID_USER_PREFIX
+#define INVALID_USER_PREFIX "sambatest"
+#endif
+
 /* the default pager to use for the client "more" command. Users can
    override this with the PAGER environment variable */
 #ifndef PAGER
@@ -130,9 +135,6 @@
    encountered? Samba will be careful to make the core file only
    accessible to root */
 #define DUMP_CORE 1
-
-#define SMB_ALIGNMENT 1
-
 
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
@@ -172,5 +174,19 @@
 
 /* Minimum length of allowed password when changing UNIX password. */
 #define MINPASSWDLENGTH 5
+
+/* maximum ID number used for session control. This cannot be larger
+   than 62*62 for the current code */
+#define MAX_SESSION_ID 3000
+
+#ifndef SESSION_TEMPLATE
+#define SESSION_TEMPLATE "smb/%d"
+#endif
+
+/* the maximum age in seconds of a password. Should be a lp_ parameter */
+#define MAX_PASSWORD_AGE (21*24*60*60)
+
+/* Allocation roundup. */
+#define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
 
 #endif

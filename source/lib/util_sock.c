@@ -42,20 +42,20 @@ int smb_read_error = 0;
 
 BOOL is_a_socket(int fd)
 {
-  int v,l;
-  l = sizeof(int);
-  return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
+	int v;
+	socklen_t l;
+	l = sizeof(int);
+	return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
 }
 
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
-typedef struct smb_socket_option
-{
-  char *name;
-  int level;
-  int option;
-  int value;
-  int opttype;
+typedef struct smb_socket_option {
+	char *name;
+	int level;
+	int option;
+	int value;
+	int opttype;
 } smb_socket_option;
 
 smb_socket_option socket_options[] = {
@@ -97,9 +97,11 @@ smb_socket_option socket_options[] = {
 /****************************************************************************
  Print socket options.
 ****************************************************************************/
+
 static void print_socket_options(int s)
 {
-	int value, vlen = 4;
+	int value;
+	socklen_t vlen = 4;
 	smb_socket_option *p = &socket_options[0];
 
 	for (; p->name != NULL; p++) {
@@ -259,7 +261,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
     FD_ZERO(&fds);
     FD_SET(fd,&fds);
       
-    selrtn = sys_select_intr(fd+1,&fds,&timeout);
+    selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
 
     /* Check if error */
     if(selrtn == -1) {
@@ -363,7 +365,7 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
     FD_ZERO(&fds);
     FD_SET(fd,&fds);
       
-    selrtn = sys_select_intr(fd+1,&fds,&timeout);
+    selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
 
     if(selrtn <= 0)
       return selrtn;
@@ -394,12 +396,12 @@ send a keepalive packet (rfc1002)
 
 BOOL send_keepalive(int client)
 {
-  unsigned char buf[4];
+	unsigned char buf[4];
 
-  buf[0] = 0x85;
-  buf[1] = buf[2] = buf[3] = 0;
+	buf[0] = 0x85;
+	buf[1] = buf[2] = buf[3] = 0;
 
-  return(write_socket_data(client,(char *)buf,4) == 4);
+	return(write_socket_data(client,(char *)buf,4) == 4);
 }
 
 /****************************************************************************
@@ -408,78 +410,36 @@ BOOL send_keepalive(int client)
 
 ssize_t read_data(int fd,char *buffer,size_t N)
 {
-  ssize_t  ret;
-  size_t total=0;  
+	ssize_t  ret;
+	size_t total=0;  
  
-  smb_read_error = 0;
+	smb_read_error = 0;
 
-  while (total < N)
-  {
+	while (total < N) {
 #ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_read(ssl, buffer + total, N - total);
-    }else{
-      ret = sys_read(fd,buffer + total,N - total);
-    }
+		if(fd == sslFd){
+			ret = SSL_read(ssl, buffer + total, N - total);
+		}else{
+			ret = sys_read(fd,buffer + total,N - total);
+		}
 #else /* WITH_SSL */
-    ret = sys_read(fd,buffer + total,N - total);
+		ret = sys_read(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
-    if (ret == 0)
-    {
-      DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_EOF;
-      return 0;
-    }
-    if (ret == -1)
-    {
-      DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-    total += ret;
-  }
-  return (ssize_t)total;
-}
+		if (ret == 0) {
+			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_EOF;
+			return 0;
+		}
 
-/****************************************************************************
- Read data from a socket, reading exactly N bytes. 
-****************************************************************************/
-
-static ssize_t read_socket_data(int fd,char *buffer,size_t N)
-{
-  ssize_t  ret;
-  size_t total=0;  
- 
-  smb_read_error = 0;
-
-  while (total < N)
-  {
-#ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_read(ssl, buffer + total, N - total);
-    }else{
-      ret = sys_read(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
-    ret = sys_read(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
-
-    if (ret == 0)
-    {
-      DEBUG(10,("read_socket_data: recv of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_EOF;
-      return 0;
-    }
-    if (ret == -1)
-    {
-      DEBUG(0,("read_socket_data: recv failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-    total += ret;
-  }
-  return (ssize_t)total;
+		if (ret == -1) {
+			DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -521,30 +481,30 @@ ssize_t write_data(int fd,char *buffer,size_t N)
 
 ssize_t write_socket_data(int fd,char *buffer,size_t N)
 {
-  size_t total=0;
-  ssize_t ret;
+	size_t total=0;
+	ssize_t ret;
 
-  while (total < N)
-  {
+	while (total < N) {
 #ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_write(ssl,buffer + total,N - total);
-    }else{
-      ret = sys_send(fd,buffer + total,N - total, 0);
-    }
+		if(fd == sslFd){
+			ret = SSL_write(ssl,buffer + total,N - total);
+		}else{
+			ret = sys_send(fd,buffer + total,N - total, 0);
+		}
 #else /* WITH_SSL */
-    ret = sys_send(fd,buffer + total,N - total,0);
+		ret = sys_send(fd,buffer + total,N - total,0);
 #endif /* WITH_SSL */
 
-    if (ret == -1) {
-      DEBUG(0,("write_socket_data: write failure. Error = %s\n", strerror(errno) ));
-      return -1;
-    }
-    if (ret == 0) return total;
+		if (ret == -1) {
+			DEBUG(0,("write_socket_data: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0)
+			return (ssize_t)total;
 
-    total += ret;
-  }
-  return (ssize_t)total;
+		total += ret;
+	}
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -553,17 +513,17 @@ write to a socket
 
 ssize_t write_socket(int fd,char *buf,size_t len)
 {
-  ssize_t ret=0;
+	ssize_t ret=0;
 
-  DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
-  ret = write_socket_data(fd,buf,len);
+	DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
+	ret = write_socket_data(fd,buf,len);
       
-  DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
-  if(ret <= 0)
-    DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
-       (int)len, fd, strerror(errno) ));
+	DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
+	if(ret <= 0)
+		DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
+			(int)len, fd, strerror(errno) ));
 
-  return(ret);
+	return(ret);
 }
 
 /****************************************************************************
@@ -576,30 +536,29 @@ timeout is in milliseconds.
 
 static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int timeout)
 {
-  ssize_t len=0;
-  int msg_type;
-  BOOL ok = False;
+	ssize_t len=0;
+	int msg_type;
+	BOOL ok = False;
 
-  while (!ok)
-  {
-    if (timeout > 0)
-      ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout) == 4);
-    else 
-      ok = (read_socket_data(fd,inbuf,4) == 4);
+	while (!ok) {
+		if (timeout > 0)
+			ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout) == 4);
+		else 
+			ok = (read_data(fd,inbuf,4) == 4);
 
-    if (!ok)
-      return(-1);
+		if (!ok)
+			return(-1);
 
-    len = smb_len(inbuf);
-    msg_type = CVAL(inbuf,0);
+		len = smb_len(inbuf);
+		msg_type = CVAL(inbuf,0);
 
-    if (msg_type == 0x85) 
-      DEBUG(5,("Got keepalive packet\n"));
-  }
+		if (msg_type == 0x85) 
+			DEBUG(5,("Got keepalive packet\n"));
+	}
 
-  DEBUG(10,("got smb length of %d\n",len));
+	DEBUG(10,("got smb length of %d\n",len));
 
-  return(len);
+	return(len);
 }
 
 /****************************************************************************
@@ -611,23 +570,22 @@ timeout is in milliseconds.
 
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
 {
-  ssize_t len;
+	ssize_t len;
 
-  for(;;)
-  {
-    len = read_smb_length_return_keepalive(fd, inbuf, timeout);
+	for(;;) {
+		len = read_smb_length_return_keepalive(fd, inbuf, timeout);
 
-    if(len < 0)
-      return len;
+		if(len < 0)
+			return len;
 
-    /* Ignore session keepalives. */
-    if(CVAL(inbuf,0) != 0x85)
-      break;
-  }
+		/* Ignore session keepalives. */
+		if(CVAL(inbuf,0) != 0x85)
+			break;
+	}
 
-  DEBUG(10,("read_smb_length: got smb length of %d\n",len));
+	DEBUG(10,("read_smb_length: got smb length of %d\n",len));
 
-  return len;
+	return len;
 }
 
 /****************************************************************************
@@ -658,12 +616,12 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 
 		if (smb_read_error == 0)
 			smb_read_error = READ_ERROR;
-		return False;
+		return(False);
 	}
 
 	/*
 	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
-     * of header. Don't print the error if this fits.... JRA.
+	 * of header. Don't print the error if this fits.... JRA.
 	 */
 
 	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
@@ -683,7 +641,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	}
 
 	if(len > 0) {
-		ret = read_socket_data(fd,buffer+4,len);
+		ret = read_data(fd,buffer+4,len);
 		if (ret != len) {
 			if (smb_read_error == 0)
 				smb_read_error = READ_ERROR;
@@ -833,7 +791,7 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 		if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1 ) {
 			if( DEBUGLVL( dlevel ) ) {
 				dbgtext( "open_socket_in(): setsockopt: ");
-				dbgtext( "SO_REUSEPORT = %d ", val?"True":"False" );
+				dbgtext( "SO_REUSEPORT = %s ", val?"True":"False" );
 				dbgtext( "on port %d failed ", port );
 				dbgtext( "with error = %s\n", strerror(errno) );
 			}
@@ -975,7 +933,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	
 	/* Look up the host address in the address list we just got. */
 	for (i = 0; hp->h_addr_list[i]; i++) {
-		if (memcmp(hp->h_addr_list[i], (caddr_t) & addr, sizeof(addr)) == 0)
+		if (memcmp(hp->h_addr_list[i], (void *) & addr, sizeof(addr)) == 0)
 			return True;
 	}
 	
@@ -1041,7 +999,7 @@ char *get_socket_addr(int fd)
 {
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
+	socklen_t length = sizeof(sa);
 	static fstring addr_buf;
 
 	fstrcpy(addr_buf,"0.0.0.0");
@@ -1061,35 +1019,104 @@ char *get_socket_addr(int fd)
 }
 
 /*******************************************************************
- opens and connects to a unix pipe socket
+ Create protected unix domain socket.
+
+ some unixen cannot set permissions on a ux-dom-sock, so we
+ have to make sure that the directory contains the protection
+ permissions, instead.
  ******************************************************************/
-int open_pipe_sock(char *path)
+int create_pipe_sock(const char *socket_dir,
+					const char *socket_name,
+					mode_t dir_perms)
 {
-	int sock;
-	struct sockaddr_un sa;
-
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
-
-	if (sock < 0)
-	{
-		DEBUG(0, ("unix socket open failed\n"));
-		return sock;
-	}
-
-	ZERO_STRUCT(sa);
-	sa.sun_family = AF_UNIX;
-	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
-
-	DEBUG(10, ("socket open succeeded.  file name: %s\n", sa.sun_path));
-
-	if (connect(sock, (struct sockaddr*) &sa, sizeof(sa)) < 0)
-	{
-		DEBUG(0,("socket connect to %s failed\n", sa.sun_path));
-		close(sock);
-		return -1;
-	}
-
-	return sock;
+        struct sockaddr_un sunaddr;
+        struct stat st;
+        int sock;
+        mode_t old_umask;
+        pstring path;
+        
+        /* Create the socket directory or reuse the existing one */
+        
+        if (lstat(socket_dir, &st) == -1) {
+                
+                if (errno == ENOENT) {
+                        
+                        /* Create directory */
+                        
+                        if (mkdir(socket_dir, dir_perms) == -1) {
+                                DEBUG(0, ("error creating socket directory "
+                                          "%s: %s\n", socket_dir, 
+                                          strerror(errno)));
+                                return -1;
+                        }
+                        
+                } else {
+                        
+                        DEBUG(0, ("lstat failed on socket directory %s: %s\n",
+                                  socket_dir, strerror(errno)));
+                        return -1;
+                }
+                
+        } else {
+                
+                /* Check ownership and permission on existing directory */
+                
+                if (!S_ISDIR(st.st_mode)) {
+                        DEBUG(0, ("socket directory %s isn't a directory\n",
+                                  socket_dir));
+                        return -1;
+                }
+                
+                if ((st.st_uid != sec_initial_uid()) || 
+                    ((st.st_mode & 0777) != dir_perms)) {
+                        DEBUG(0, ("invalid permissions on socket directory "
+                                  "%s\n", socket_dir));
+                        return -1;
+                }
+        }
+        
+        /* Create the socket file */
+        
+        old_umask = umask(0);
+        
+        sock = socket(AF_UNIX, SOCK_STREAM, 0);
+        
+        if (sock == -1) {
+                perror("socket");
+		umask(old_umask);
+                return -1;
+        }
+        
+        snprintf(path, sizeof(path), "%s/%s", socket_dir, socket_name);
+        
+        unlink(path);
+        memset(&sunaddr, 0, sizeof(sunaddr));
+        sunaddr.sun_family = AF_UNIX;
+        safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
+        
+        if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
+                DEBUG(0, ("bind failed on pipe socket %s: %s\n",
+                          path,
+                          strerror(errno)));
+                close(sock);
+		umask(old_umask);
+                return -1;
+        }
+        
+        if (listen(sock, 5) == -1) {
+                DEBUG(0, ("listen failed on pipe socket %s: %s\n",
+                          path,
+                          strerror(errno)));
+                close(sock);
+		umask(old_umask);
+                return -1;
+        }
+        
+        umask(old_umask);
+        
+        /* Success! */
+        
+        return sock;
 }
 
 /*******************************************************************
@@ -1184,4 +1211,3 @@ int sock_exec(const char *prog)
 	close(fd[1]);
 	return fd[0];
 }
-

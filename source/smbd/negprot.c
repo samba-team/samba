@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -23,7 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern int Protocol;
 extern int max_recv;
 extern fstring global_myworkgroup;
@@ -161,15 +158,11 @@ static int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
   int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_LEVEL_II_OPLOCKS|
-                     (lp_nt_smb_support() ? CAP_NT_SMBS | CAP_RPC_REMOTE_APIS : 0) |
-                     (SMB_OFF_T_BITS == 64 ? CAP_LARGE_FILES : 0);
-
-
-/*
-  other valid capabilities which we may support at some time...
-                     CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
- */
-
+			(lp_nt_status_support() ? CAP_STATUS32 : 0)|
+			(lp_unix_extensions() ? CAP_UNIX : 0) |
+			(lp_nt_smb_support() ? CAP_NT_SMBS | CAP_RPC_REMOTE_APIS : 0) |
+			((lp_large_readwrite() && (SMB_OFF_T_BITS == 64)) ?  CAP_LARGE_READX | CAP_LARGE_WRITEX | CAP_W2K_SMBS : 0) |
+			(SMB_OFF_T_BITS == 64 ? CAP_LARGE_FILES : 0);
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
@@ -217,7 +210,7 @@ static int reply_nt1(char *outbuf)
   set_message(outbuf,17,data_len,True);
   pstrcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
 
-  CVAL(outbuf,smb_vwv1) = secword;
+  SCVAL(outbuf,smb_vwv1,secword);
   SSVALS(outbuf,smb_vwv16+1,crypt_len);
   if (doencrypt) 
 	  memcpy(smb_buf(outbuf), cryptkey, 8);
@@ -411,7 +404,8 @@ int reply_negprot(connection_struct *conn,
     {
       p = smb_buf(inbuf)+1;
       Index = 0;
-      if (lp_maxprotocol() >= supported_protocols[protocol].protocol_level)
+      if ((supported_protocols[protocol].protocol_level <= lp_maxprotocol()) &&
+	  (supported_protocols[protocol].protocol_level >= lp_minprotocol()))
 	while (p < (smb_buf(inbuf) + bcc))
 	  { 
 	    if (strequal(p,supported_protocols[protocol].proto_name))
@@ -441,5 +435,3 @@ int reply_negprot(connection_struct *conn,
   END_PROFILE(SMBnegprot);
   return(outsize);
 }
-
-#undef OLD_NTDOMAIN

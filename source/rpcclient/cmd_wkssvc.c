@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1994-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
@@ -20,15 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
@@ -55,7 +46,7 @@ void cmd_wks_query_info(struct client_info *info)
 	fstrcat(dest_wks, info->dest_host);
 	strupper(dest_wks);
 
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (next_token_nr(NULL, tmp, NULL, sizeof(tmp)))
 	{
 		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
@@ -91,4 +82,3 @@ void cmd_wks_query_info(struct client_info *info)
 		DEBUG(5,("cmd_wks_query_info: query failed\n"));
 	}
 }
-

@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.2.
    Samba system utilities for ACL support.
    Copyright (C) Jeremy Allison 2000.
    
@@ -158,7 +159,7 @@ int sys_acl_valid( SMB_ACL_T theacl )
 	return acl_valid(theacl);
 }
 
-int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	return acl_set_file(name, acltype, theacl);
 }
@@ -644,7 +645,13 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 				break;
 
 			case SMB_ACL_USER:
-				id = uidtoname(ap->a_id);
+				if ((pw = sys_getpwuid(ap->a_id)) == NULL) {
+					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
+						(long)ap->a_id);
+					id = idbuf;
+				} else {
+					id = pw->pw_name;
+				}
 			case SMB_ACL_USER_OBJ:
 				tag = "user";
 				break;
@@ -1197,7 +1204,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	 * can use the relative path.
 	 */
 
-	return sys_acl_get_file(fsp->fsp_name, SMB_ACL_TYPE_ACCESS);
+	return sys_acl_get_file(dos_to_unix_static(fsp->fsp_name), SMB_ACL_TYPE_ACCESS);
 }
 
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d)
@@ -1275,7 +1282,13 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 				break;
 
 			case SMB_ACL_USER:
-				id = uidtoname(ap->a_id);
+				if ((pw = sys_getpwuid(ap->a_id)) == NULL) {
+					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
+						(long)ap->a_id);
+					id = idbuf;
+				} else {
+					id = pw->pw_name;
+				}
 			case SMB_ACL_USER_OBJ:
 				tag = "user";
 				break;
@@ -1322,7 +1335,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 			maxlen += nbytes + 20 * (acl_d->count - i);
 
 			if ((text = Realloc(oldtext, maxlen)) == NULL) {
-				free(oldtext);
+				SAFE_FREE(oldtext);
 				errno = ENOMEM;
 				return NULL;
 			}
@@ -1852,9 +1865,7 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 	ret = acl(name, ACL_SET, acl_count, acl_p);
 
-	if (acl_buf) {
-		free(acl_buf);
-	}
+	SAFE_FREE(acl_buf);
 
 	return ret;
 }
@@ -1881,7 +1892,7 @@ int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
 	 * can use the relative path.
 	 */
 
-	return sys_acl_set_file(fsp->fsp_name, SMB_ACL_TYPE_ACCESS, acl_d);
+	return sys_acl_set_file(dos_to_unix_static(fsp->fsp_name), SMB_ACL_TYPE_ACCESS, acl_d);
 }
 
 int sys_acl_delete_def_file(const char *path)
@@ -1906,13 +1917,13 @@ int sys_acl_delete_def_file(const char *path)
 
 int sys_acl_free_text(char *text)
 {
-	free(text);
+	SAFE_FREE(text);
 	return 0;
 }
 
 int sys_acl_free_acl(SMB_ACL_T acl_d) 
 {
-	free(acl_d);
+	SAFE_FREE(acl_d);
 	return 0;
 }
 
@@ -2926,7 +2937,7 @@ int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl
 		memcpy(acl_entry->ace_id->id_data, &user_id, sizeof(uid_t));
 	}
 
-	rc = chacl(name,file_acl,file_acl->acl_len);
+	rc = chacl((char *)name,file_acl,file_acl->acl_len);
 	DEBUG(10,("errno is %d\n",errno));
 	DEBUG(10,("return code is %d\n",rc));
 	SAFE_FREE(file_acl);

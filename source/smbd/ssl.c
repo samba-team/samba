@@ -29,8 +29,8 @@
 
 #ifdef WITH_SSL  /* should always be defined if this module is compiled */
 
-#include <ssl.h>
-#include <err.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 BOOL            sslEnabled;
 SSL             *ssl = NULL;
@@ -74,12 +74,12 @@ char    buffer[256];
     return ok;
 }
 
-static RSA  *ssl_temp_rsa_cb(SSL *ssl, int export)
+static RSA  *ssl_temp_rsa_cb(SSL *ssl, int is_export, int keylength)
 {
 static RSA  *rsa = NULL;
     
     if(rsa == NULL)
-        rsa = RSA_generate_key(512, RSA_F4, NULL, NULL);
+        rsa = RSA_generate_key(keylength, RSA_F4, NULL, NULL);
     return rsa;
 }
 
@@ -89,11 +89,19 @@ static RSA  *rsa = NULL;
  */
 int sslutil_init(int isServer)
 {
-int     err;
+int     err, entropybytes;
 char    *certfile, *keyfile, *ciphers, *cacertDir, *cacertFile;
+char	*egdsocket, *entropyfile;
 
     SSL_load_error_strings();
     SSLeay_add_ssl_algorithms();
+    egdsocket = lp_ssl_egdsocket();
+    if (egdsocket != NULL && *egdsocket != 0)
+	RAND_egd(egdsocket);
+    entropyfile = lp_ssl_entropyfile();
+    entropybytes = lp_ssl_entropybytes();
+    if (entropyfile != NULL && *entropyfile != 0)
+	RAND_load_file(entropyfile, entropybytes);
     switch(lp_ssl_version()){
         case SMB_SSL_V2:    sslContext = SSL_CTX_new(SSLv2_method());   break;
         case SMB_SSL_V3:    sslContext = SSL_CTX_new(SSLv3_method());   break;
@@ -110,17 +118,17 @@ char    *certfile, *keyfile, *ciphers, *cacertDir, *cacertFile;
     if(lp_ssl_compatibility()){
         SSL_CTX_set_options(sslContext, SSL_OP_ALL);
     }
-    certfile = isServer ? lp_ssl_cert() : lp_ssl_client_cert();
+    certfile = isServer ? lp_ssl_server_cert() : lp_ssl_client_cert();
     if((certfile == NULL || *certfile == 0) && isServer){
         fprintf(stderr, "SSL: No cert file specified in config file!\n");
         fprintf(stderr, "The server MUST have a certificate!\n");
         exit(1);
     }
-    keyfile = isServer ? lp_ssl_privkey() : lp_ssl_client_privkey();
+    keyfile = isServer ? lp_ssl_server_privkey() : lp_ssl_client_privkey();
     if(keyfile == NULL || *keyfile == 0)
         keyfile = certfile;
     if(certfile != NULL && *certfile != 0){
-        if(!SSL_CTX_use_certificate_file(sslContext, certfile, SSL_FILETYPE_PEM)){
+        if(!SSL_CTX_use_certificate_chain_file(sslContext, certfile)){
             err = ERR_get_error();
             fprintf(stderr, "SSL: error reading certificate from file %s: %s\n",
                     certfile, ERR_error_string(err, NULL));
@@ -146,9 +154,11 @@ char    *certfile, *keyfile, *ciphers, *cacertDir, *cacertFile;
         cacertFile = NULL;
     if(!SSL_CTX_load_verify_locations(sslContext, cacertFile, cacertDir)){
         err = ERR_get_error();
-        fprintf(stderr, "SSL: Error error setting CA cert locations: %s\n",
-                ERR_error_string(err, NULL));
-        fprintf(stderr, "trying default locations.\n");
+	if (cacertFile || cacertDir) {
+       	    fprintf(stderr, "SSL: Error error setting CA cert locations: %s\n",
+		ERR_error_string(err, NULL));
+            fprintf(stderr, "trying default locations.\n");
+	}
         cacertFile = cacertDir = NULL;
         if(!SSL_CTX_set_default_verify_paths(sslContext)){
             err = ERR_get_error();
@@ -255,11 +265,15 @@ char            *reqHosts, *resignHosts;
     if(msg_type != 0x81){ /* first packet must be a session request */
         DEBUG( 0, ( "Client %s did not use session setup; access denied\n",
                      client_addr() ) );
-        send_smb(fd, (char *)buf);
+        if (!send_smb(fd, (char *)buf))
+          DEBUG(0, ("sslutil_negotiate_ssl: send_smb failed.\n"));
         return -1;
     }
     buf[4] = 0x8e;  /* negative session response: use SSL */
-    send_smb(fd, (char *)buf);
+    if (!send_smb(fd, (char *)buf)) {
+        DEBUG(0,("sslutil_negotiate_ssl: send_smb failed.\n"));
+        return -1;
+    }
     if(sslutil_accept(fd) != 0){
         DEBUG( 0, ( "Client %s failed SSL negotiation!\n", client_addr() ) );
         return -1;

@@ -31,8 +31,6 @@
 #include "includes.h"
 #include "smb.h"
 
-extern int DEBUGLEVEL;
-
 struct sync_record {
 	struct sync_record *next, *prev;
 	fstring workgroup;
@@ -51,7 +49,8 @@ static FILE *fp;
   This is the NetServerEnum callback.
   Note sname and comment are in UNIX codepage format.
   ******************************************************************/
-static void callback(const char *sname, uint32 stype, const char *comment)
+static void callback(const char *sname, uint32 stype, 
+                     const char *comment, void *state)
 {
 	fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
 }
@@ -73,7 +72,6 @@ static void sync_child(char *name, int nm_type,
 	struct nmb_name called, calling;
 
 	if (!cli_initialise(&cli) || !cli_connect(&cli, name, &ip)) {
-		fclose(fp);
 		return;
 	}
 
@@ -83,7 +81,6 @@ static void sync_child(char *name, int nm_type,
 	if (!cli_session_request(&cli, &calling, &called))
 	{
 		cli_shutdown(&cli);
-		fclose(fp);
 		return;
 	}
 
@@ -104,20 +101,20 @@ static void sync_child(char *name, int nm_type,
 
 	/* All the cli_XX functions take UNIX character set. */
 	fstrcpy(unix_workgroup, cli.server_domain?cli.server_domain:workgroup);
-	dos_to_unix(unix_workgroup, True);
+	dos_to_unix(unix_workgroup);
 
 	/* Fetch a workgroup list. */
 	cli_NetServerEnum(&cli, unix_workgroup,
-			  local_type|SV_TYPE_DOMAIN_ENUM,
-			  callback);
+			  local_type|SV_TYPE_DOMAIN_ENUM, 
+			  callback, NULL);
 	
 	/* Now fetch a server list. */
 	if (servers) {
 		fstrcpy(unix_workgroup, workgroup);
-		dos_to_unix(unix_workgroup, True);
+		dos_to_unix(unix_workgroup);
 		cli_NetServerEnum(&cli, unix_workgroup, 
 				  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
-				  callback);
+				  callback, NULL);
 	}
 	
 	cli_shutdown(&cli);
@@ -136,14 +133,17 @@ void sync_browse_lists(struct work_record *work,
 	struct sync_record *s;
 	static int counter;
 
+	START_PROFILE(sync_browse_lists);
 	/* Check we're not trying to sync with ourselves. This can
 	   happen if we are a domain *and* a local master browser. */
 	if (ismyip(ip)) {
+done:
+		END_PROFILE(sync_browse_lists);
 		return;
 	}
 
 	s = (struct sync_record *)malloc(sizeof(*s));
-	if (!s) return;
+	if (!s) goto done;
 
 	ZERO_STRUCTP(s);
 	
@@ -158,7 +158,7 @@ void sync_browse_lists(struct work_record *work,
 	DLIST_ADD(syncs, s);
 
 	/* the parent forks and returns, leaving the child to do the
-	   actual sync */
+	   actual sync and call END_PROFILE*/
 	CatchChild();
 	if ((s->pid = sys_fork())) return;
 
@@ -168,12 +168,16 @@ void sync_browse_lists(struct work_record *work,
 		 work->work_group, name, inet_ntoa(ip)));
 
 	fp = sys_fopen(s->fname,"w");
-	if (!fp) _exit(1);	
+	if (!fp) {
+		END_PROFILE(sync_browse_lists);
+		_exit(1);	
+	}
 
 	sync_child(name, nm_type, work->work_group, ip, local, servers,
 		   s->fname);
 
 	fclose(fp);
+	END_PROFILE(sync_browse_lists);
 	_exit(0);
 }
 
@@ -256,7 +260,7 @@ static void complete_sync(struct sync_record *s)
 		ptr = line;
 
 		/* The line is written in UNIX character set. Convert to DOS codepage. */
-		unix_to_dos(line,True);
+		unix_to_dos(line);
 
 		if (!next_token(&ptr,server,NULL,sizeof(server)) ||
 		    !next_token(&ptr,type_str,NULL, sizeof(type_str)) ||
@@ -293,7 +297,7 @@ void sync_check_completion(void)
 			complete_sync(s);
 			DLIST_REMOVE(syncs, s);
 			ZERO_STRUCTP(s);
-			free(s);
+			SAFE_FREE(s);
 		}
 	}
 }

@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
@@ -25,9 +23,9 @@
 
 #if HAVE_KERNEL_OPLOCKS_LINUX
 
-static VOLATILE SIG_ATOMIC_T signals_received;
-static VOLATILE SIG_ATOMIC_T signals_processed;
-static VOLATILE SIG_ATOMIC_T fd_pending; /* the fd of the current pending signal */
+static SIG_ATOMIC_T signals_received;
+#define FD_PENDING_SIZE 100
+static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
 
 #ifndef F_SETLEASE
 #define F_SETLEASE	1024
@@ -55,9 +53,10 @@ static VOLATILE SIG_ATOMIC_T fd_pending; /* the fd of the current pending signal
 
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
-	BlockSignals(True, sig);
-	fd_pending = (SIG_ATOMIC_T)info->si_fd;
-	signals_received++;
+	if (signals_received < FD_PENDING_SIZE - 1) {
+		fd_pending_array[signals_received] = (SIG_ATOMIC_T)info->si_fd;
+		signals_received++;
+	} /* Else signal is lost. */
 	sys_select_signal();
 }
 
@@ -97,29 +96,28 @@ static void set_capability(unsigned capability)
 	}
 }
 
-
 /****************************************************************************
-call SETLEASE. If we get EACCES then we try setting up the right capability and
-try again
+ Call SETLEASE. If we get EACCES then we try setting up the right capability and
+ try again
 ****************************************************************************/
+
 static int linux_setlease(int fd, int leasetype)
 {
 	int ret;
 
-	if (sys_fcntl_long(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {
+	if (fcntl(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {
 		DEBUG(3,("Failed to set signal handler for kernel lease\n"));
 		return -1;
 	}
 
-	ret = sys_fcntl_long(fd, F_SETLEASE, leasetype);
+	ret = fcntl(fd, F_SETLEASE, leasetype);
 	if (ret == -1 && errno == EACCES) {
 		set_capability(CAP_LEASE);
-		ret = sys_fcntl_long(fd, F_SETLEASE, leasetype);
+		ret = fcntl(fd, F_SETLEASE, leasetype);
 	}
 
 	return ret;
 }
-
 
 /****************************************************************************
  * Deal with the Linux kernel <--> smbd
@@ -128,20 +126,28 @@ static int linux_setlease(int fd, int leasetype)
 
 static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_len)
 {
-	BOOL ret = True;
+	int fd;
 	struct files_struct *fsp;
 
-	if (signals_received == signals_processed)
-		return False;
+	BlockSignals(True, RT_SIGNAL_LEASE);
+	fd = fd_pending_array[0];
+	fsp = file_find_fd(fd);
+	fd_pending_array[0] = (SIG_ATOMIC_T)-1;
+	if (signals_received > 1)
+	memmove((void *)&fd_pending_array[0], (void *)&fd_pending_array[1],
+			sizeof(SIG_ATOMIC_T)*(signals_received-1));
+	signals_received--;
+	/* now we can receive more signals */
+	BlockSignals(False, RT_SIGNAL_LEASE);
 
-	if ((fsp = file_find_fd(fd_pending)) == NULL) {
-		DEBUG(0,("Invalid file descriptor %d in kernel oplock break!\n", (int)fd_pending));
-		ret = False;
-		goto out;
+	if (fsp == NULL) {
+		DEBUG(0,("Invalid file descriptor %d in kernel oplock break!\n", (int)fd));
+		return False;
 	}
 
-	DEBUG(3,("linux_receive_local_message: kernel oplock break request received for \
-dev = %x, inode = %.0f\n", (unsigned int)fsp->dev, (double)fsp->inode ));
+	DEBUG(3,("linux_oplock_receive_message: kernel oplock break request received for \
+dev = %x, inode = %.0f fd = %d, fileid = %lu \n", (unsigned int)fsp->dev, (double)fsp->inode,
+			fd, fsp->file_id));
      
 	/*
 	 * Create a kernel oplock break message.
@@ -159,38 +165,33 @@ dev = %x, inode = %.0f\n", (unsigned int)fsp->dev, (double)fsp->inode ));
 	memcpy(buffer + KERNEL_OPLOCK_BREAK_INODE_OFFSET, (char *)&fsp->inode, sizeof(fsp->inode));	
 	memcpy(buffer + KERNEL_OPLOCK_BREAK_FILEID_OFFSET, (char *)&fsp->file_id, sizeof(fsp->file_id));	
 
- out:
-	/* now we can receive more signals */
-	fd_pending = (SIG_ATOMIC_T)-1;
-	signals_processed++;
-	BlockSignals(False, RT_SIGNAL_LEASE);
-     
-	return ret;
+	return True;
 }
 
 /****************************************************************************
  Attempt to set an kernel oplock on a file.
 ****************************************************************************/
+
 static BOOL linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
 	if (linux_setlease(fsp->fd, F_WRLCK) == -1) {
-		DEBUG(3,("set_file_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
+		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
 inode = %.0f. (%s)\n",
 			 fsp->fsp_name, fsp->fd, 
 			 (unsigned int)fsp->dev, (double)fsp->inode, strerror(errno)));
 		return False;
 	}
 	
-	DEBUG(3,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f, file_id = %lu\n",
+	DEBUG(3,("linux_set_kernel_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f, file_id = %lu\n",
 		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id));
 
 	return True;
 }
 
-
 /****************************************************************************
  Release a kernel oplock on a file.
 ****************************************************************************/
+
 static void linux_release_kernel_oplock(files_struct *fsp)
 {
 	if (DEBUGLVL(10)) {
@@ -198,8 +199,8 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 		 * Check and print out the current kernel
 		 * oplock state of this file.
 		 */
-		int state = sys_fcntl_long(fsp->fd, F_GETLEASE, 0);
-		dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %lu has kernel \
+		int state = fcntl(fsp->fd, F_GETLEASE, 0);
+		dbgtext("linux_release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %lu has kernel \
 oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
                         (double)fsp->inode, fsp->file_id, state );
 	}
@@ -209,7 +210,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 	 */
 	if (linux_setlease(fsp->fd, F_UNLCK) == -1) {
 		if (DEBUGLVL(0)) {
-			dbgtext("release_kernel_oplock: Error when removing kernel oplock on file " );
+			dbgtext("linux_release_kernel_oplock: Error when removing kernel oplock on file " );
 			dbgtext("%s, dev = %x, inode = %.0f, file_id = %lu. Error was %s\n",
 				fsp->fsp_name, (unsigned int)fsp->dev, 
 				(double)fsp->inode, fsp->file_id, strerror(errno) );
@@ -231,8 +232,8 @@ static BOOL linux_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *i
 		return False;
 	}
 
-        memcpy((char *)inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(*inode));
-        memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
+	memcpy((char *)inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(*inode));
+	memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
 	memcpy((char *)file_id, msg_start+KERNEL_OPLOCK_BREAK_FILEID_OFFSET, sizeof(*file_id));
 
 	DEBUG(3,("kernel oplock break request for file dev = %x, inode = %.0f, file_id = %lu\n", 
@@ -247,7 +248,7 @@ static BOOL linux_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *i
 
 static BOOL linux_oplock_msg_waiting(fd_set *fds)
 {
-	return signals_processed != signals_received;
+	return signals_received != 0;
 }
 
 /****************************************************************************
@@ -260,7 +261,7 @@ static BOOL linux_oplocks_available(void)
 	fd = open("/dev/null", O_RDONLY);
 	if (fd == -1)
 		return False; /* uggh! */
-	ret = sys_fcntl_long(fd, F_GETLEASE, 0);
+	ret = fcntl(fd, F_GETLEASE, 0);
 	close(fd);
 	return ret == F_UNLCK;
 }
@@ -279,13 +280,13 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 		return NULL;
 	}
 
-        act.sa_handler = NULL;
-        act.sa_sigaction = signal_handler;
-        act.sa_flags = SA_SIGINFO;
-        if (sigaction(RT_SIGNAL_LEASE, &act, NULL) != 0) {
+	act.sa_handler = NULL;
+	act.sa_sigaction = signal_handler;
+	act.sa_flags = SA_SIGINFO;
+	if (sigaction(RT_SIGNAL_LEASE, &act, NULL) != 0) {
 		DEBUG(0,("Failed to setup RT_SIGNAL_LEASE handler\n"));
 		return NULL;
-        }
+	}
 
 	koplocks.receive_message = linux_oplock_receive_message;
 	koplocks.set_oplock = linux_set_kernel_oplock;
@@ -298,12 +299,6 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 
 	return &koplocks;
 }
-
-
-
 #else
  void oplock_linux_dummy(void) {}
 #endif /* HAVE_KERNEL_OPLOCKS_LINUX */
-
-#undef OLD_NTDOMAIN
-

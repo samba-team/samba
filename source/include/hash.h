@@ -22,7 +22,7 @@
 #ifndef	_HASH_H_
 #define	_HASH_H_
 
-#define MAX_HASH_TABLE_SIZE    32768
+#define MAX_HASH_TABLE_SIZE    16384
 #define HASH_TABLE_INCREMENT  2
 
 typedef int (*compare_function)(char *, char *);

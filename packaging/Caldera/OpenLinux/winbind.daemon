@@ -1,0 +1,5 @@
+IDENT=winbind
+DESCRIPTIVE="Winbind server processes (samba)"
+CONFIGURED="no"
+ONBOOT="no"
+OPTIONS_WINBD=""

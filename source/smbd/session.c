@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 2.0
    session handling for utmp and PAM
    Copyright (C) tridge@samba.org 2001
    Copyright (C) abartlet@pcug.org.au 2001
@@ -27,15 +28,26 @@
 
 #include "includes.h"
 
-extern fstring remote_machine;
+#if defined(WITH_PAM) || defined(WITH_UTMP)
 
 static TDB_CONTEXT *tdb;
+struct sessionid {
+	fstring username;
+	fstring hostname;
+	fstring id_str;
+	uint32  id_num;
+	uint32  pid;
+};
+
 /* called when a session is created */
-BOOL session_claim(user_struct *vuser)
+BOOL session_claim(uint16 vuid)
 {
+	user_struct *vuser = get_valid_user_struct(vuid);
 	int i;
 	TDB_DATA data;
 	struct sessionid sessionid;
+	pstring dbuf;
+	int dlen;
 	uint32 pid = (uint32)sys_getpid();
 	TDB_DATA key;		
 	fstring keystr;
@@ -45,7 +57,7 @@ BOOL session_claim(user_struct *vuser)
 
 	/* don't register sessions for the guest user - its just too
 	   expensive to go through pam session code for browsing etc */
-	if (vuser->guest) {
+	if (strequal(vuser->user.unix_name,lp_guestaccount(-1))) {
 		return True;
 	}
 
@@ -77,26 +89,18 @@ BOOL session_claim(user_struct *vuser)
 		return False;
 	}
 
-	/* If 'hostname lookup' == yes, then do the DNS lookup.  This is
-           needed becouse utmp and PAM both expect DNS names 
-	   
-	   client_name() handles this case internally.
-	*/
+        /* Don't resolve the hostname in smbd as we can pause for a long
+           time while waiting for DNS timeouts to occur.  The correct
+           place to do this is in the code that displays the session
+           information. */
 
-	hostname = client_name();
-	if (strcmp(hostname, "UNKNOWN") == 0) {
-		hostname = client_addr();
-	}
+        hostname = client_addr();
 
 	fstrcpy(sessionid.username, vuser->user.unix_name);
 	fstrcpy(sessionid.hostname, hostname);
 	slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, SESSION_TEMPLATE, i);
 	sessionid.id_num = i;
 	sessionid.pid = pid;
-	sessionid.uid = vuser->uid;
-	sessionid.gid = vuser->gid;
-	fstrcpy(sessionid.remote_machine, remote_machine);
-	fstrcpy(sessionid.ip_addr, client_addr());
 
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str, sessionid.hostname)) {
 		DEBUG(1,("pam_session rejected the session for %s [%s]\n",
@@ -105,8 +109,12 @@ BOOL session_claim(user_struct *vuser)
 		return False;
 	}
 
-	data.dptr = (char *)&sessionid;
-	data.dsize = sizeof(sessionid);
+	dlen = tdb_pack(dbuf, sizeof(dbuf), "fffdd",
+			sessionid.username, sessionid.hostname, sessionid.id_str,
+			sessionid.id_num, sessionid.pid);
+
+	data.dptr = dbuf;
+	data.dsize = dlen;
 	if (tdb_store(tdb, key, data, TDB_MODIFY) != 0) {
 		DEBUG(1,("session_claim: unable to create session id record\n"));
 		return False;
@@ -124,9 +132,10 @@ BOOL session_claim(user_struct *vuser)
 }
 
 /* called when a session is destroyed */
-void session_yield(user_struct *vuser)
+void session_yield(uint16 vuid)
 {
-	TDB_DATA dbuf;
+	user_struct *vuser = get_valid_user_struct(vuid);
+	TDB_DATA data;
 	struct sessionid sessionid;
 	TDB_DATA key;		
 	fstring keystr;
@@ -142,14 +151,17 @@ void session_yield(user_struct *vuser)
 	key.dptr = keystr;
 	key.dsize = strlen(keystr)+1;
 
-	dbuf = tdb_fetch(tdb, key);
-
-	if (dbuf.dsize != sizeof(sessionid))
+	data = tdb_fetch(tdb, key);
+	if (data.dptr == NULL) {
 		return;
+	}
 
-	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
+	tdb_unpack(data.dptr, data.dsize, "fffdd",
+		   &sessionid.username, &sessionid.hostname, &sessionid.id_str,
+		   &sessionid.id_num, &sessionid.pid);
 
-	SAFE_FREE(dbuf.dptr);
+	safe_free(data.dptr);
+	data.dptr = NULL;
 
 #if WITH_UTMP	
 	if (lp_utmp()) {
@@ -163,54 +175,8 @@ void session_yield(user_struct *vuser)
 	tdb_delete(tdb, key);
 }
 
-static BOOL session_traverse(int (*fn)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *), void *state)
-{
-	if (!tdb) {
-		DEBUG(3, ("No tdb opened\n"));
-		return False;
-	}
-
-	tdb_traverse(tdb, fn, state);
-	return True;
-}
-
-struct session_list {
-	int count;
-	struct sessionid *sessions;
-};
-
-static int gather_sessioninfo(TDB_CONTEXT *stdb, TDB_DATA kbuf, TDB_DATA dbuf,
-			      void *state)
-{
-	struct session_list *sesslist = (struct session_list *) state;
-	const struct sessionid *current = (const struct sessionid *) dbuf.dptr;
-
-	sesslist->count += 1;
-	sesslist->sessions = REALLOC(sesslist->sessions, sesslist->count * 
-				      sizeof(struct sessionid));
-
-	memcpy(&sesslist->sessions[sesslist->count - 1], current, 
-	       sizeof(struct sessionid));
-	DEBUG(7,("gather_sessioninfo session from %s@%s\n", 
-		 current->username, current->remote_machine));
-	return 0;
-}
-
-int list_sessions(struct sessionid **session_list)
-{
-	struct session_list sesslist;
-
-	sesslist.count = 0;
-	sesslist.sessions = NULL;
-	
-	if (!session_traverse(gather_sessioninfo, (void *) &sesslist)) {
-		DEBUG(3, ("Session traverse failed\n"));
-		SAFE_FREE(sesslist.sessions);
-		*session_list = NULL;
-		return 0;
-	}
-
-	*session_list = sesslist.sessions;
-	return sesslist.count;
-}
-		
+#else
+ /* null functions - no session support needed */
+ BOOL session_claim(uint16 vuid) { return True; }
+ void session_yield(uint16 vuid) {} 
+#endif

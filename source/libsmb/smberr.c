@@ -22,12 +22,21 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* error code stuff - put together by Merik Karman
    merik@blackadder.dsh.oz.au */
 
-typedef struct
+
+/* There is a big list of error codes and their meanings at:
+
+   http://msdn.microsoft.com/library/default.asp?url=/library/en-us/debug/errlist_7oz7.asp
+
+   and if you don't like MSDN try:
+
+   http://www.siris.gr/computers/library/error.htm
+
+*/
+
+typedef const struct
 {
   char *name;
   int code;
@@ -36,35 +45,39 @@ typedef struct
 
 /* Dos Error Messages */
 err_code_struct dos_msgs[] = {
-  {"ERRbadfunc",1,"Invalid function."},
-  {"ERRbadfile",2,"File not found."},
-  {"ERRbadpath",3,"Directory invalid."},
-  {"ERRnofids",4,"No file descriptors available"},
-  {"ERRnoaccess",5,"Access denied."},
-  {"ERRbadfid",6,"Invalid file handle."},
-  {"ERRbadmcb",7,"Memory control blocks destroyed."},
-  {"ERRnomem",8,"Insufficient server memory to perform the requested function."},
-  {"ERRbadmem",9,"Invalid memory block address."},
-  {"ERRbadenv",10,"Invalid environment."},
+  {"ERRbadfunc",ERRbadfunc,"Invalid function."},
+  {"ERRbadfile",ERRbadfile,"File not found."},
+  {"ERRbadpath",ERRbadpath,"Directory invalid."},
+  {"ERRnofids",ERRnofids,"No file descriptors available"},
+  {"ERRnoaccess",ERRnoaccess,"Access denied."},
+  {"ERRbadfid",ERRbadfid,"Invalid file handle."},
+  {"ERRbadmcb",ERRbadmcb,"Memory control blocks destroyed."},
+  {"ERRnomem",ERRnomem,"Insufficient server memory to perform the requested function."},
+  {"ERRbadmem",ERRbadmem,"Invalid memory block address."},
+  {"ERRbadenv",ERRbadenv,"Invalid environment."},
   {"ERRbadformat",11,"Invalid format."},
-  {"ERRbadaccess",12,"Invalid open mode."},
-  {"ERRbaddata",13,"Invalid data."},
-  {"ERR",14,"reserved."},
-  {"ERRbaddrive",15,"Invalid drive specified."},
-  {"ERRremcd",16,"A Delete Directory request attempted  to  remove  the  server's  current directory."},
-  {"ERRdiffdevice",17,"Not same device."},
-  {"ERRnofiles",18,"A File Search command can find no more files matching the specified criteria."},
-  {"ERRbadshare",32,"The sharing mode specified for an Open conflicts with existing  FIDs  on the file."},
-  {"ERRlock",33,"A Lock request conflicted with an existing lock or specified an  invalid mode,  or an Unlock requested attempted to remove a lock held by another process."},
-  {"ERRunsup", 50, "The operation is unsupported"},
-  {"ERRnosuchshare", 67, "You specified an invalid share name"},
-  {"ERRfilexists",80,"The file named in a Create Directory, Make  New  File  or  Link  request already exists."},
-  {"ERRbadpipe",230,"Pipe invalid."},
-  {"ERRpipebusy",231,"All instances of the requested pipe are busy."},
-  {"ERRpipeclosing",232,"Pipe close in progress."},
-  {"ERRnotconnected",233,"No process on other end of pipe."},
-  {"ERRmoredata",234,"There is more data to be returned."},
-  {"ERRinvgroup",2455,"Invalid workgroup (try the -W option)"},
+  {"ERRbadaccess",ERRbadaccess,"Invalid open mode."},
+  {"ERRbaddata",ERRbaddata,"Invalid data."},
+  {"ERRres",ERRres,"reserved."},
+  {"ERRbaddrive",ERRbaddrive,"Invalid drive specified."},
+  {"ERRremcd",ERRremcd,"A Delete Directory request attempted  to  remove  the  server's  current directory."},
+  {"ERRdiffdevice",ERRdiffdevice,"Not same device."},
+  {"ERRnofiles",ERRnofiles,"A File Search command can find no more files matching the specified criteria."},
+  {"ERRbadshare",ERRbadshare,"The sharing mode specified for an Open conflicts with existing  FIDs  on the file."},
+  {"ERRlock",ERRlock,"A Lock request conflicted with an existing lock or specified an  invalid mode,  or an Unlock requested attempted to remove a lock held by another process."},
+  {"ERRunsup", ERRunsup, "The operation is unsupported"},
+  {"ERRnosuchshare", ERRnosuchshare, "You specified an invalid share name"},
+  {"ERRfilexists",ERRfilexists,"The file named in a Create Directory, Make  New  File  or  Link  request already exists."},
+  {"ERRinvalidname",ERRinvalidname, "Invalid name"},
+  {"ERRbadpipe",ERRbadpipe,"Pipe invalid."},
+  {"ERRpipebusy",ERRpipebusy,"All instances of the requested pipe are busy."},
+  {"ERRpipeclosing",ERRpipeclosing,"Pipe close in progress."},
+  {"ERRnotconnected",ERRnotconnected,"No process on other end of pipe."},
+  {"ERRmoredata",ERRmoredata,"There is more data to be returned."},
+  {"ERRinvgroup",ERRinvgroup,"Invalid workgroup (try the -W option)"},
+  {"ERRlogonfailure",ERRlogonfailure,"Logon failure"},
+  {"ERRdiskfull",ERRdiskfull,"Disk full"},
+  {"ERRgeneral",ERRgeneral, "General failure"},
   {NULL,-1,NULL}};
 
 /* Server Error Messages */
@@ -126,7 +139,7 @@ err_code_struct hard_msgs[] = {
   {NULL,-1,NULL}};
 
 
-struct
+const struct
 {
   int code;
   char *class;
@@ -145,37 +158,99 @@ struct
 
 
 /****************************************************************************
-return a SMB error string from a SMB buffer
+return a SMB error name from a class and code
 ****************************************************************************/
-char *smb_errstr(char *inbuf)
+char *smb_dos_err_name(uint8 class, uint16 num)
 {
-  static pstring ret;
-  int class = CVAL(inbuf,smb_rcls);
-  int num = SVAL(inbuf,smb_err);
-  int i,j;
-
-  for (i=0;err_classes[i].class;i++)
-    if (err_classes[i].code == class)
-      {
-	if (err_classes[i].err_msgs)
-	  {
-	    err_code_struct *err = err_classes[i].err_msgs;
-	    for (j=0;err[j].name;j++)
-	      if (num == err[j].code)
-		{
-		  if (DEBUGLEVEL > 0)
-		    slprintf(ret, sizeof(ret) - 1, "%s - %s (%s)",err_classes[i].class,
-			    err[j].name,err[j].message);
-		  else
-		    slprintf(ret, sizeof(ret) - 1, "%s - %s",err_classes[i].class,err[j].name);
-		  return ret;
+	static pstring ret;
+	int i,j;
+	
+	for (i=0;err_classes[i].class;i++)
+		if (err_classes[i].code == class) {
+			if (err_classes[i].err_msgs) {
+				err_code_struct *err = err_classes[i].err_msgs;
+				for (j=0;err[j].name;j++)
+					if (num == err[j].code) {
+						return err[j].name;
+					}
+			}
+			slprintf(ret, sizeof(ret) - 1, "%d",num);
+			return ret;
 		}
-	  }
+	
+	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error class (%d,%d)",class,num);
+	return(ret);
+}
 
-	slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].class,num);
-	return ret;
-      }
-  
-  slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",class,num);
-  return(ret);
+/* Return a string for a DOS error */
+
+char *get_dos_error_msg(WERROR result)
+{
+	uint16 errnum;
+
+	errnum = W_ERROR_V(result);
+
+	return smb_dos_err_name(ERRDOS, errnum);
+}
+
+/****************************************************************************
+return a SMB error class name as a string.
+****************************************************************************/
+char *smb_dos_err_class(uint8 class)
+{
+	static pstring ret;
+	int i;
+	
+	for (i=0;err_classes[i].class;i++) {
+		if (err_classes[i].code == class) {
+			return err_classes[i].class;
+		}
+	}
+		
+	slprintf(ret, sizeof(ret) - 1, "Error: Unknown class (%d)",class);
+	return(ret);
+}
+
+/****************************************************************************
+return a SMB string from an SMB buffer
+****************************************************************************/
+char *smb_dos_errstr(char *inbuf)
+{
+	static pstring ret;
+	int class = CVAL(inbuf,smb_rcls);
+	int num = SVAL(inbuf,smb_err);
+	int i,j;
+	
+	for (i=0;err_classes[i].class;i++)
+		if (err_classes[i].code == class) {
+			if (err_classes[i].err_msgs) {
+				err_code_struct *err = err_classes[i].err_msgs;
+				for (j=0;err[j].name;j++)
+					if (num == err[j].code) {
+						if (DEBUGLEVEL > 0)
+							slprintf(ret, sizeof(ret) - 1, "%s - %s (%s)",
+								 err_classes[i].class,
+								 err[j].name,err[j].message);
+						else
+							slprintf(ret, sizeof(ret) - 1, "%s - %s",
+								 err_classes[i].class,err[j].name);
+						return ret;
+					}
+			}
+			
+			slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].class,num);
+			return ret;
+		}
+	
+	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",class,num);
+	return(ret);
+}
+
+/*****************************************************************************
+map a unix errno to a win32 error
+ *****************************************************************************/
+WERROR map_werror_from_unix(int error)
+{
+	NTSTATUS status = map_nt_error_from_unix(error);
+	return ntstatus_to_werror(status);
 }

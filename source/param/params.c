@@ -98,8 +98,6 @@
  *  bSize       - The size of the global buffer <bufr>.
  */
 
-extern int DEBUGLEVEL;
-
 static char *bufr  = NULL;
 static int   bSize = 0;
 
@@ -121,8 +119,8 @@ static int mygetc(myFILE *f)
 static void myfile_close(myFILE *f)
 {
 	if (!f) return;
-	if (f->buf) free(f->buf);
-	free(f);
+	SAFE_FREE(f->buf);
+	SAFE_FREE(f);
 }
 
 /* -------------------------------------------------------------------------- **
@@ -198,7 +196,7 @@ static int Continuation( char *line, int pos )
   int pos2 = 0;
 
   pos--;
-  while( (pos >= 0) && isspace(line[pos]) )
+  while( (pos >= 0) && isspace((int)line[pos]) )
      pos--;
 
   /* we should recognize if `\` is part of a multibyte character or not. */
@@ -252,13 +250,16 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
     /* Check that the buffer is big enough for the next character. */
     if( i > (bSize - 2) )
       {
-      bSize += BUFR_INC;
-      bufr   = Realloc( bufr, bSize );
-      if( NULL == bufr )
+      char *tb;
+
+      tb = Realloc( bufr, bSize +BUFR_INC );
+      if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
         return( False );
         }
+      bufr = tb;
+      bSize += BUFR_INC;
       }
 
     /* Handle a single character. */
@@ -271,7 +272,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
           DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
           return( False );
           }
-        if( !sfunc( unix_to_dos(bufr,True) ) )            /* Got a valid name.  Deal with it. */
+        if( !sfunc( unix_to_dos(bufr) ) )            /* Got a valid name.  Deal with it. */
           return( False );
         (void)EatComment( InFile );     /* Finish off the line.             */
         return( True );
@@ -346,13 +347,16 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
 
     if( i > (bSize - 2) )       /* Ensure there's space for next char.    */
       {
-      bSize += BUFR_INC;
-      bufr   = Realloc( bufr, bSize );
-      if( NULL == bufr )
+      char *tb;
+ 
+      tb = Realloc( bufr, bSize + BUFR_INC );
+      if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
         return( False );
         }
+      bufr = tb;
+      bSize += BUFR_INC;
       }
 
     switch( c )
@@ -432,7 +436,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
           c = 0;
         else
           {
-          for( end = i; (end >= 0) && isspace(bufr[end]); end-- )
+          for( end = i; (end >= 0) && isspace((int)bufr[end]); end-- )
             ;
           c = mygetc( InFile );
           }
@@ -537,7 +541,7 @@ static myFILE *OpenConfFile( char *FileName )
     DEBUG( lvl,
       ("%s Unable to open configuration file \"%s\":\n\t%s\n",
       func, FileName, strerror(errno)) );
-    free(ret);
+    SAFE_FREE(ret);
     return NULL;
     }
 
@@ -587,7 +591,7 @@ BOOL pm_process( char *FileName,
       return( False );
       }
     result = Parse( InFile, sfunc, pfunc );
-    free( bufr );
+    SAFE_FREE( bufr );
     bufr  = NULL;
     bSize = 0;
     }

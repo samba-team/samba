@@ -21,12 +21,10 @@
 
 #include "includes.h"
 
-
-extern int DEBUGLEVEL;
-
 /****************************************************************************
-normalise for DOS usage 
+ Normalise for DOS usage.
 ****************************************************************************/
+
 static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	/* check if the disk is beyond the max disk size */
@@ -63,7 +61,7 @@ static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,
 
 
 /****************************************************************************
-  return number of 1K blocks available on a path and total number 
+ Return number of 1K blocks available on a path and total number.
 ****************************************************************************/
 
 static SMB_BIG_UINT disk_free(char *path, BOOL small_query, 
@@ -88,7 +86,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 		char **lines;
 		pstring syscmd;
 
-		slprintf(syscmd, sizeof(syscmd), "%s %s", dfree_command, path);
+		slprintf(syscmd, sizeof(syscmd)-1, "%s %s", dfree_command, path);
 		DEBUG (3, ("disk_free: Running command %s\n", syscmd));
 
 		lines = file_lines_pload(syscmd, NULL, True);
@@ -157,12 +155,12 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 	return(dfree_retval);
 }
 
-
 /****************************************************************************
-wrap it to get filenames right
+ Wrap it to get filenames right.
 ****************************************************************************/
-SMB_BIG_UINT sys_disk_free(char *path, BOOL small_query, 
+
+SMB_BIG_UINT sys_disk_free(const char *path, BOOL small_query, 
                            SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
-	return(disk_free(dos_to_unix(path,False),small_query, bsize,dfree,dsize));
+	return(disk_free(dos_to_unix_static(path),small_query, bsize,dfree,dsize));
 }

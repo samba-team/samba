@@ -25,7 +25,12 @@
 #ifndef _SMB_H
 #define _SMB_H
 
+#if defined(LARGE_SMB_OFF_T)
+#define BUFFER_SIZE (128*1024)
+#else /* no large readwrite possible */
 #define BUFFER_SIZE (0xFFFF)
+#endif
+
 #define SAFETY_MARGIN 1024
 #define LARGE_WRITEX_HDR_SIZE 65
 
@@ -51,6 +56,14 @@ typedef int BOOL;
 #define DEF_CREATE_MASK (0755)
 #endif
 
+/* string manipulation flags - see clistr.c and srvstr.c */
+#define STR_TERMINATE 1
+#define STR_CONVERT 2
+#define STR_UPPER 4
+#define STR_ASCII 8
+#define STR_UNICODE 16
+#define STR_NOALIGN 32
+
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
 
@@ -72,12 +85,12 @@ implemented */
 #define pSETDIR '\377'
 
 /* these define the attribute byte as seen by DOS */
-#define aRONLY (1L<<0)
-#define aHIDDEN (1L<<1)
-#define aSYSTEM (1L<<2)
-#define aVOLID (1L<<3)
-#define aDIR (1L<<4)
-#define aARCH (1L<<5)
+#define aRONLY (1L<<0)          /* 0x01 */
+#define aHIDDEN (1L<<1)         /* 0x02 */
+#define aSYSTEM (1L<<2)         /* 0x04 */
+#define aVOLID (1L<<3)          /* 0x08 */
+#define aDIR (1L<<4)            /* 0x10 */
+#define aARCH (1L<<5)           /* 0x20 */
 
 /* deny modes */
 #define DENY_DOS 0
@@ -100,7 +113,7 @@ implemented */
 #define GET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
 #define SET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
 #define GET_DENY_MODE(x) (((x)>>SHARE_MODE_SHIFT) & SHARE_MODE_MASK)
-#define SET_DENY_MODE(x) ((x)<<SHARE_MODE_SHIFT)
+#define SET_DENY_MODE(x) (((x) & SHARE_MODE_MASK) <<SHARE_MODE_SHIFT)
 
 /* Sync on open file (not sure if used anymore... ?) */
 #define FILE_SYNC_OPENMODE (1<<14)
@@ -115,11 +128,6 @@ implemented */
 #define DELETE_ON_CLOSE_FLAG (1<<16)
 #define GET_DELETE_ON_CLOSE_FLAG(x) (((x) & DELETE_ON_CLOSE_FLAG) ? True : False)
 #define SET_DELETE_ON_CLOSE_FLAG(x) ((x) ? DELETE_ON_CLOSE_FLAG : 0)
-
-/* was delete access requested in NT open ? */
-#define DELETE_ACCESS_REQUESTED (1<<17)
-#define GET_DELETE_ACCESS_REQUESTED(x) (((x) & DELETE_ACCESS_REQUESTED) ? True : False)
-#define SET_DELETE_ACCESS_REQUESTED(x) ((x) ? DELETE_ACCESS_REQUESTED : 0)
 
 /* open disposition values */
 #define FILE_EXISTS_FAIL 0
@@ -145,123 +153,12 @@ implemented */
 #define STYPE_IPC       3	/* Interprocess communication (IPC) */
 #define STYPE_HIDDEN    0x80000000 /* share is a hidden one (ends with $) */
 
-/* SMB X/Open error codes for the ERRDOS error class */
-#define ERRbadfunc 1 /* Invalid function (or system call) */
-#define ERRbadfile 2 /* File not found (pathname error) */
-#define ERRbadpath 3 /* Directory not found */
-#define ERRnofids 4 /* Too many open files */
-#define ERRnoaccess 5 /* Access denied */
-#define ERRbadfid 6 /* Invalid fid */
-#define ERRnomem 8 /* Out of memory */
-#define ERRbadmem 9 /* Invalid memory block address */
-#define ERRbadenv 10 /* Invalid environment */
-#define ERRbadaccess 12 /* Invalid open mode */
-#define ERRbaddata 13 /* Invalid data (only from ioctl call) */
-#define ERRres 14 /* reserved */
-#define ERRbaddrive 15 /* Invalid drive */
-#define ERRremcd 16 /* Attempt to delete current directory */
-#define ERRdiffdevice 17 /* rename/move across different filesystems */
-#define ERRnofiles 18 /* no more files found in file search */
-#define ERRbadshare 32 /* Share mode on file conflict with open mode */
-#define ERRlock 33 /* Lock request conflicts with existing lock */
-#define ERRunsup 50 /* Request unsupported, returned by Win 95, RJS 20Jun98 */
-#define ERRnosuchshare 67 /* You specified an invalid share name */
-#define ERRfilexists 80 /* File in operation already exists */
-#define ERRcannotopen 110 /* Cannot open the file specified */
-#define ERRunknownlevel 124
-#define ERRnotlocked 158 /* This region is not locked by this locking context. */
-#define ERRrename 183
-#define ERRbadpipe 230 /* Named pipe invalid */
-#define ERRpipebusy 231 /* All instances of pipe are busy */
-#define ERRpipeclosing 232 /* named pipe close in progress */
-#define ERRnotconnected 233 /* No process on other end of named pipe */
-#define ERRmoredata 234 /* More data to be returned */
-#define ERRbaddirectory 267 /* Invalid directory name in a path. */
-#define ERRunknownipc 2142
-#define ERRbuftoosmall 2123
-
-#define ERROR_SUCCESS                     (0)
-#define ERROR_INVALID_FUNCTION		  (1)
-#define ERROR_ACCESS_DENIED		  (5)
-#define ERROR_INVALID_HANDLE		  (6)
-#define ERROR_NOT_ENOUGH_MEMORY		  (8)
-#define ERROR_INVALID_PARAMETER		 (87)
-#define ERROR_INSUFFICIENT_BUFFER	(122)
-#define ERROR_INVALID_NAME		(123)
-#define ERROR_INVALID_LEVEL		(124)
-#define ERROR_MORE_DATA         (234)
-#define ERROR_NO_MORE_ITEMS		(259)
-#define ERROR_EAS_DIDNT_FIT		(275) /* Extended attributes didn't fit */
-#define ERROR_EAS_NOT_SUPPORTED		(282) /* Extended attributes not supported */
-#define ERROR_NOTIFY_ENUM_DIR	       (1022) /* Buffer too small to return change notify. */
-#define ERROR_UNKNOWN_PRINTER_DRIVER   (1797)
-#define ERROR_INVALID_PRINTER_NAME     (1801)
-#define ERROR_PRINTER_ALREADY_EXISTS   (1802)
-#define ERROR_INVALID_DATATYPE	       (1804)
-#define ERROR_INVALID_ENVIRONMENT      (1805)
-
-/* here's a special one from observing NT */
-#define ERRnoipc 66 /* don't support ipc */
-
-/* Error codes for the ERRSRV class */
-
-#define ERRerror 1 /* Non specific error code */
-#define ERRbadpw 2 /* Bad password */
-#define ERRbadtype 3 /* reserved */
-#define ERRaccess 4 /* No permissions to do the requested operation */
-#define ERRinvnid 5 /* tid invalid */
-#define ERRinvnetname 6 /* Invalid servername */
-#define ERRinvdevice 7 /* Invalid device */
-#define ERRqfull 49 /* Print queue full */
-#define ERRqtoobig 50 /* Queued item too big */
-#define ERRinvpfid 52 /* Invalid print file in smb_fid */
-#define ERRsmbcmd 64 /* Unrecognised command */
-#define ERRsrverror 65 /* smb server internal error */
-#define ERRfilespecs 67 /* fid and pathname invalid combination */
-#define ERRbadlink 68 /* reserved */
-#define ERRbadpermits 69 /* Access specified for a file is not valid */
-#define ERRbadpid 70 /* reserved */
-#define ERRsetattrmode 71 /* attribute mode invalid */
-#define ERRpaused 81 /* Message server paused */
-#define ERRmsgoff 82 /* Not receiving messages */
-#define ERRnoroom 83 /* No room for message */
-#define ERRrmuns 87 /* too many remote usernames */
-#define ERRtimeout 88 /* operation timed out */
-#define ERRnoresource  89 /* No resources currently available for request. */
-#define ERRtoomanyuids 90 /* too many userids */
-#define ERRbaduid 91 /* bad userid */
-#define ERRuseMPX 250 /* temporarily unable to use raw mode, use MPX mode */
-#define ERRuseSTD 251 /* temporarily unable to use raw mode, use standard mode */
-#define ERRcontMPX 252 /* resume MPX mode */
-#define ERRbadPW /* reserved */
-#define ERRnosupport 0xFFFF
-#define ERRunknownsmb 22 /* from NT 3.5 response */
-
-
-/* Error codes for the ERRHRD class */
-
-#define ERRnowrite 19 /* read only media */
-#define ERRbadunit 20 /* Unknown device */
-#define ERRnotready 21 /* Drive not ready */
-#define ERRbadcmd 22 /* Unknown command */
-#define ERRdata 23 /* Data (CRC) error */
-#define ERRbadreq 24 /* Bad request structure length */
-#define ERRseek 25
-#define ERRbadmedia 26
-#define ERRbadsector 27
-#define ERRnopaper 28
-#define ERRwrite 29 /* write fault */
-#define ERRread 30 /* read fault */
-#define ERRgeneral 31 /* General hardware failure */
-#define ERRwrongdisk 34
-#define ERRFCBunavail 35
-#define ERRsharebufexc 36 /* share buffer exceeded */
-#define ERRdiskfull 39
+#include "doserr.h"
 
 #ifndef _PSTRING
 
 #define PSTRING_LEN 1024
-#define FSTRING_LEN 128
+#define FSTRING_LEN 256
 
 typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
@@ -277,8 +174,8 @@ typedef char fstring[FSTRING_LEN];
 typedef uint16 smb_ucs2_t;
 
 /* ucs2 string types. */
-typedef smb_ucs2_t wpstring[1024];
-typedef smb_ucs2_t wfstring[128];
+typedef smb_ucs2_t wpstring[PSTRING_LEN];
+typedef smb_ucs2_t wfstring[FSTRING_LEN];
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
@@ -302,6 +199,45 @@ typedef struct nttime_info
 
 } NTTIME;
 
+#ifndef TIME_T_MIN
+#define TIME_T_MIN ((time_t)0 < (time_t) -1 ? (time_t) 0 \
+                    : ~ (time_t) 0 << (sizeof (time_t) * CHAR_BIT - 1))
+#endif
+#ifndef TIME_T_MAX
+#define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
+#endif
+
+
+/* the following rather strange looking definitions of NTSTATUS and WERROR
+   and there in order to catch common coding errors where different error types
+   are mixed up. This is especially important as we slowly convert Samba
+   from using BOOL for internal functions
+*/
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
+typedef struct {uint32 v;} NTSTATUS;
+#define NT_STATUS(x) ((NTSTATUS) { x })
+#define NT_STATUS_V(x) ((x).v)
+#else
+typedef uint32 NTSTATUS;
+#define NT_STATUS(x) (x)
+#define NT_STATUS_V(x) (x)
+#endif
+ 
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
+typedef struct {uint32 v;} WERROR;
+#define W_ERROR(x) ((WERROR) { x })
+#define W_ERROR_V(x) ((x).v)
+#else
+typedef uint32 WERROR;
+#define W_ERROR(x) (x)
+#define W_ERROR_V(x) (x)
+#endif
+ 
+#define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
+#define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
+#define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
+#define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
+
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */
 #define ACB_HOMDIRREQ  0x0002  /* 1 = Home directory required */
@@ -316,57 +252,6 @@ typedef struct nttime_info
 #define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
  
 #define MAX_HOURS_LEN 32
-
-struct sam_passwd
-{
-	time_t logon_time;            /* logon time */
-	time_t logoff_time;           /* logoff time */
-	time_t kickoff_time;          /* kickoff time */
-	time_t pass_last_set_time;    /* password last set time */
-	time_t pass_can_change_time;  /* password can change time */
-	time_t pass_must_change_time; /* password must change time */
-
-	char *smb_name;     /* username string */
-	char *full_name;    /* user's full name string */
-	char *home_dir;     /* home directory string */
-	char *dir_drive;    /* home directory drive string */
-	char *logon_script; /* logon script string */
-	char *profile_path; /* profile path string */
-	char *acct_desc  ;  /* user description string */
-	char *workstations; /* login from workstations string */
-	char *unknown_str ; /* don't know what this is, yet. */
-	char *munged_dial ; /* munged path name and dial-back tel number */
-
-	uid_t smb_userid;       /* this is actually the unix uid_t */
-	gid_t smb_grpid;        /* this is actually the unix gid_t */
-	uint32 user_rid;      /* Primary User ID */
-	uint32 group_rid;     /* Primary Group ID */
-
-	unsigned char *smb_passwd; /* Null if no password */
-	unsigned char *smb_nt_passwd; /* Null if no password */
-
-	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-	uint32 unknown_3; /* 0x00ff ffff */
-
-	uint16 logon_divs; /* 168 - number of hours in a week */
-	uint32 hours_len; /* normally 21 bytes */
-	uint8 hours[MAX_HOURS_LEN];
-
-	uint32 unknown_5; /* 0x0002 0000 */
-	uint32 unknown_6; /* 0x0000 04ec */
-};
-
-struct smb_passwd
-{
-	uid_t smb_userid;     /* this is actually the unix uid_t */
-	char *smb_name;     /* username string */
-
-	unsigned char *smb_passwd; /* Null if no password */
-	unsigned char *smb_nt_passwd; /* Null if no password */
-
-	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-	time_t pass_last_set_time;    /* password last set time */
-};
 
 
 struct sam_disp_info
@@ -479,24 +364,11 @@ typedef struct domain_grp_member_info
 
 } DOMAIN_GRP_MEMBER;
 
-/* DOM_CHAL - challenge info */
-typedef struct chal_info
-{
-  uchar data[8]; /* credentials */
-} DOM_CHAL;
-
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
 typedef struct time_info
 {
   uint32 time;
 } UTIME;
-
-/* DOM_CREDs - timestamped client or server credentials */
-typedef struct cred_info
-{  
-  DOM_CHAL challenge; /* credentials */
-  UTIME timestamp;    /* credential time-stamp */
-} DOM_CRED;
 
 /* Structure used when SMBwritebmpx is active */
 typedef struct
@@ -536,6 +408,7 @@ typedef struct files_struct
 	write_cache *wcp;
 	struct timeval open_time;
 	int share_mode;
+	uint32 desired_access;
 	time_t pending_modtime;
 	int oplock_type;
 	int sent_oplock_break;
@@ -547,9 +420,15 @@ typedef struct files_struct
 	BOOL modified;
 	BOOL is_directory;
 	BOOL directory_delete_on_close;
-	BOOL stat_open;
 	char *fsp_name;
 } files_struct;
+
+/* used to hold an arbitrary blob of data */
+typedef struct data_blob {
+	uint8 *data;
+	size_t length;
+	void (*free)(struct data_blob *data_blob);
+} DATA_BLOB;
 
 /*
  * Structure used to keep directory state information around.
@@ -575,6 +454,7 @@ typedef struct
 
 /* Include VFS stuff */
 
+#include "smb_acls.h"
 #include "vfs.h"
 
 typedef struct connection_struct
@@ -596,6 +476,7 @@ typedef struct connection_struct
 	struct vfs_ops vfs_ops;                   /* Filesystem operations */
 	/* Handle on dlopen() call */
 	void *dl_handle;
+	void *vfs_private;
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */
@@ -635,19 +516,6 @@ struct current_user
 #define NO_BREAK_SENT 0
 #define EXCLUSIVE_BREAK_SENT 1
 #define LEVEL_II_BREAK_SENT 2
-
-/* Domain controller authentication protocol info */
-struct dcinfo
-{
-  DOM_CHAL clnt_chal; /* Initial challenge received from client */
-  DOM_CHAL srv_chal;  /* Initial server challenge */
-  DOM_CRED clnt_cred; /* Last client credential */
-  DOM_CRED srv_cred;  /* Last server credential */
-
-  uchar  sess_key[8]; /* Session key */
-  uchar  md4pw[16];   /* md4(machine password) */
-};
-
 
 typedef struct {
 	fstring smb_name; /* user name from the client */
@@ -703,12 +571,12 @@ struct interface
 };
 
 /* struct returned by get_share_modes */
-typedef struct
-{
+typedef struct {
 	pid_t pid;
 	uint16 op_port;
 	uint16 op_type;
 	int share_mode;
+	uint32 desired_access;
 	struct timeval time;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
@@ -723,79 +591,81 @@ typedef struct
 	void (*fn)(share_mode_entry *, char*)
 
 /*
- * Each implementation of the password database code needs
- * to support the following operations.
+ * bit flags representing initialized fields in SAM_ACCOUNT
  */
+#define FLAG_SAM_UNINIT		0x00000000
+#define FLAG_SAM_UID		0x00000001
+#define FLAG_SAM_GID		0x00000002
+#define FLAG_SAM_SMBHOME	0x00000004
+#define FLAG_SAM_PROFILE	0x00000008
+#define FLAG_SAM_LOGONSCRIPT	0x00000010
+#define FLAG_SAM_DRIVE		0x00000020
 
-struct passdb_ops {
-  /*
-   * Password database ops.
-   */
-  void *(*startsmbpwent)(BOOL);
-  void (*endsmbpwent)(void *);
-  SMB_BIG_UINT (*getsmbpwpos)(void *);
-  BOOL (*setsmbpwpos)(void *, SMB_BIG_UINT);
+#define IS_SAM_UNIX_USER(x) \
+	(((x)->init_flag & SAM_ACCT_UNIX_UID) \
+	 && ((x)->init_flag & SAM_ACCT_UNIX_GID))
 
-  /*
-   * smb password database query functions.
-   */
-  struct smb_passwd *(*getsmbpwnam)(char *);
-  struct smb_passwd *(*getsmbpwuid)(uid_t);
-  struct smb_passwd *(*getsmbpwrid)(uint32);
-  struct smb_passwd *(*getsmbpwent)(void *);
+#define IS_SAM_SET(x, flag) 	((x)->init_flag & (flag))
 
-  /*
-   * smb password database modification functions.
-   */
-  BOOL (*add_smbpwd_entry)(struct smb_passwd *);
-  BOOL (*mod_smbpwd_entry)(struct smb_passwd *, BOOL);
-  BOOL (*del_smbpwd_entry)(const char *);
+		
+typedef struct sam_passwd
+{
+	/* initiailization flags */
+	uint32 init_flag;
 
-  /*
-   * Functions that manupulate a struct sam_passwd.
-   */
-  struct sam_passwd *(*getsam21pwent)(void *);
+	time_t logon_time;            /* logon time */
+	time_t logoff_time;           /* logoff time */
+	time_t kickoff_time;          /* kickoff time */
+	time_t pass_last_set_time;    /* password last set time */
+	time_t pass_can_change_time;  /* password can change time */
+	time_t pass_must_change_time; /* password must change time */
 
-  /*
-   * sam password database query functions.
-   */
-  struct sam_passwd *(*getsam21pwnam)(char *);
-  struct sam_passwd *(*getsam21pwuid)(uid_t);
-  struct sam_passwd *(*getsam21pwrid)(uint32);
+	pstring username;     /* UNIX username string */
+	pstring domain;       /* Windows Domain name */
+	pstring nt_username;  /* Windows username string */
+	pstring full_name;    /* user's full name string */
+	pstring home_dir;     /* home directory string */
+	pstring dir_drive;    /* home directory drive string */
+	pstring logon_script; /* logon script string */
+	pstring profile_path; /* profile path string */
+	pstring acct_desc  ;  /* user description string */
+	pstring workstations; /* login from workstations string */
+	pstring unknown_str ; /* don't know what this is, yet. */
+	pstring munged_dial ; /* munged path name and dial-back tel number */
 
-  /*
-   * sam password database modification functions.
-   */
-  BOOL (*add_sam21pwd_entry)(struct sam_passwd *);
-  BOOL (*mod_sam21pwd_entry)(struct sam_passwd *, BOOL);
+	uid_t uid;          /* this is actually the unix uid_t */
+	gid_t gid;          /* this is actually the unix gid_t */
+	uint32 user_rid;    /* Primary User ID */
+	uint32 group_rid;   /* Primary Group ID */
 
-  /*
-   * sam query display info functions.
-   */
-  struct sam_disp_info *(*getsamdispnam)(char *);
-  struct sam_disp_info *(*getsamdisprid)(uint32);
-  struct sam_disp_info *(*getsamdispent)(void *);
+	unsigned char *lm_pw; /* Null if no password */
+	unsigned char *nt_pw; /* Null if no password */
 
-#if 0
-  /*
-   * password checking functions
-   */
-  struct smb_passwd *(*smb_password_chal  )(char *username, char lm_pass[24], char nt_pass[24], char chal[8]);
-  struct smb_passwd *(*smb_password_check )(char *username, char lm_hash[16], char nt_hash[16]);
-  struct passwd     *(*unix_password_check)(char *username, char *pass, int pass_len);
-#endif
-};
+	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+	uint32 unknown_3; /* 0x00ff ffff */
+
+	uint16 logon_divs; /* 168 - number of hours in a week */
+	uint32 hours_len; /* normally 21 bytes */
+	uint8 hours[MAX_HOURS_LEN];
+
+	uint32 unknown_5; /* 0x0002 0000 */
+	uint32 unknown_6; /* 0x0000 04ec */
+	
+} SAM_ACCOUNT;
+
 
 /*
  * Flags for local user manipulation.
  */
 
-#define LOCAL_ADD_USER 0x1
-#define LOCAL_DELETE_USER 0x2
-#define LOCAL_DISABLE_USER 0x4
-#define LOCAL_ENABLE_USER 0x8
-#define LOCAL_TRUST_ACCOUNT 0x10
-#define LOCAL_SET_NO_PASSWORD 0x20
+#define LOCAL_ADD_USER 		0x01
+#define LOCAL_DELETE_USER 	0x02
+#define LOCAL_DISABLE_USER 	0x04
+#define LOCAL_ENABLE_USER 	0x08
+#define LOCAL_TRUST_ACCOUNT 	0x10
+#define LOCAL_SET_NO_PASSWORD 	0x20
+#define LOCAL_SET_LDAP_ADMIN_PW 0x40
+#define LOCAL_GET_DOM_SID	0x80
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {
@@ -812,7 +682,7 @@ struct connections_data {
 	gid_t gid;
 	char name[24];
 	char addr[24];
-	char machine[128];
+	char machine[FSTRING_LEN];
 	time_t start;
 };
 
@@ -828,9 +698,9 @@ struct locking_data {
 		int num_share_mode_entries;
 		share_mode_entry dummy; /* Needed for alignment. */
 	} u;
-	/* the following two entries are implicit
-		share_mode_entry modes[num_share_mode_entries];
-		char file_name[];
+	/* the following two entries are implicit 
+	   share_mode_entry modes[num_share_mode_entries];
+           char file_name[];
 	*/
 };
 
@@ -1167,7 +1037,7 @@ struct bitmap {
 #define FILE_READ_ATTRIBUTES  0x080
 #define FILE_WRITE_ATTRIBUTES 0x100
 
-#define  FILE_ALL_ACCESS   0x1FF
+#define FILE_ALL_ACCESS       0x1FF
 
 /* the desired access to use when opening a pipe */
 #define DESIRED_ACCESS_PIPE 0x2019f
@@ -1175,44 +1045,44 @@ struct bitmap {
 /* Generic access masks & rights. */
 #define SPECIFIC_RIGHTS_MASK 0x00FFFFL
 #define STANDARD_RIGHTS_MASK 0xFF0000L
-#define DELETE_ACCESS        (1L<<16)
-#define READ_CONTROL_ACCESS  (1L<<17)
-#define WRITE_DAC_ACCESS     (1L<<18)
-#define WRITE_OWNER_ACCESS   (1L<<19)
-#define SYNCHRONIZE_ACCESS   (1L<<20)
+#define DELETE_ACCESS        (1L<<16) /* 0x00010000 */
+#define READ_CONTROL_ACCESS  (1L<<17) /* 0x00020000 */
+#define WRITE_DAC_ACCESS     (1L<<18) /* 0x00040000 */
+#define WRITE_OWNER_ACCESS   (1L<<19) /* 0x00080000 */
+#define SYNCHRONIZE_ACCESS   (1L<<20) /* 0x00100000 */
 
 /* Combinations of standard masks. */
-#define STANDARD_RIGHTS_ALL_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS)
-#define STANDARD_RIGHTS_EXECUTE_ACCESS (READ_CONTROL_ACCESS)
-#define STANDARD_RIGHTS_READ_ACCESS (READ_CONTROL_ACCESS)
-#define STANDARD_RIGHTS_REQUIRED_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS)
-#define STANDARD_RIGHTS_WRITE_ACCESS (READ_CONTROL_ACCESS)
+#define STANDARD_RIGHTS_ALL_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS) /* 0x001f0000 */
+#define STANDARD_RIGHTS_EXECUTE_ACCESS (READ_CONTROL_ACCESS) /* 0x00020000 */
+#define STANDARD_RIGHTS_READ_ACCESS (READ_CONTROL_ACCESS) /* 0x00200000 */
+#define STANDARD_RIGHTS_REQUIRED_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS) /* 0x000f0000 */
+#define STANDARD_RIGHTS_WRITE_ACCESS (READ_CONTROL_ACCESS) /* 0x00020000 */
 
-#define SYSTEM_SECURITY_ACCESS (1L<<24)
-#define MAXIMUM_ALLOWED_ACCESS (1L<<25)
-#define GENERIC_ALL_ACCESS   (1<<28)
-#define GENERIC_EXECUTE_ACCESS  (1<<29)
-#define GENERIC_WRITE_ACCESS   (1<<30)
-#define GENERIC_READ_ACCESS   (((unsigned)1)<<31)
+#define SYSTEM_SECURITY_ACCESS (1L<<24)	          /* 0x01000000 */
+#define MAXIMUM_ALLOWED_ACCESS (1L<<25)	          /* 0x02000000 */
+#define GENERIC_ALL_ACCESS     (1<<28)            /* 0x10000000 */
+#define GENERIC_EXECUTE_ACCESS (1<<29)            /* 0x20000000 */
+#define GENERIC_WRITE_ACCESS   (1<<30)            /* 0x40000000 */
+#define GENERIC_READ_ACCESS   (((unsigned)1)<<31) /* 0x80000000 */
 
 /* Mapping of generic access rights for files to specific rights. */
 
 #define FILE_GENERIC_ALL (STANDARD_RIGHTS_REQUIRED_ACCESS| SYNCHRONIZE_ACCESS|FILE_ALL_ACCESS)
 
 #define FILE_GENERIC_READ (STANDARD_RIGHTS_READ_ACCESS|FILE_READ_DATA|FILE_READ_ATTRIBUTES|\
-                                                        FILE_READ_EA|SYNCHRONIZE_ACCESS)
+							FILE_READ_EA|SYNCHRONIZE_ACCESS)
 
 #define FILE_GENERIC_WRITE (STANDARD_RIGHTS_WRITE_ACCESS|FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|\
-                                                        FILE_WRITE_EA|FILE_APPEND_DATA|SYNCHRONIZE_ACCESS)
+							FILE_WRITE_EA|FILE_APPEND_DATA|SYNCHRONIZE_ACCESS)
 
 #define FILE_GENERIC_EXECUTE (STANDARD_RIGHTS_EXECUTE_ACCESS|FILE_READ_ATTRIBUTES|\
-                                                                FILE_EXECUTE|SYNCHRONIZE_ACCESS)
+								FILE_EXECUTE|SYNCHRONIZE_ACCESS)
 
 /* Mapping of access rights to UNIX perms. */
-#define UNIX_ACCESS_RWX         FILE_GENERIC_ALL
-#define UNIX_ACCESS_R           FILE_GENERIC_READ
-#define UNIX_ACCESS_W           FILE_GENERIC_WRITE
-#define UNIX_ACCESS_X           FILE_GENERIC_EXECUTE
+#define UNIX_ACCESS_RWX		FILE_GENERIC_ALL
+#define UNIX_ACCESS_R 		FILE_GENERIC_READ
+#define UNIX_ACCESS_W		FILE_GENERIC_WRITE
+#define UNIX_ACCESS_X		FILE_GENERIC_EXECUTE
 
 #if 0
 /*
@@ -1250,7 +1120,9 @@ struct bitmap {
 #define FILE_ATTRIBUTE_ARCHIVE aARCH
 #define FILE_ATTRIBUTE_NORMAL 0x80L
 #define FILE_ATTRIBUTE_TEMPORARY 0x100L
+#define FILE_ATTRIBUTE_SPARSE 0x200L
 #define FILE_ATTRIBUTE_COMPRESSED 0x800L
+#define FILE_ATTRIBUTE_NONINDEXED 0x2000L
 #define SAMBA_ATTRIBUTES_MASK 0x7F
 
 /* Flags - combined with attributes. */
@@ -1304,9 +1176,10 @@ struct bitmap {
 /* Acconding to testing, this actually sets the security attribute! */
 #define FILE_PERSISTENT_ACLS 0x08
 /* These entries added from cifs9f --tsb */
-#define FILE_FILE_COMPRESSION 0x08
-#define FILE_VOLUME_QUOTAS 0x10
-#define FILE_DEVICE_IS_MOUNTED 0x20
+#define FILE_FILE_COMPRESSION 0x10
+#define FILE_VOLUME_QUOTAS 0x20
+/* I think this is wrong. JRA #define FILE_DEVICE_IS_MOUNTED 0x20 */
+#define FILE_VOLUME_SPARSE_FILE 0x40
 #define FILE_VOLUME_IS_COMPRESSED 0x8000
 
 /* ChangeNotify flags. */
@@ -1330,10 +1203,6 @@ struct bitmap {
 
 
 #define SMB_SUCCESS 0  /* The request was successful. */
-#define ERRDOS 0x01 /*  Error is from the core DOS operating system set. */
-#define ERRSRV 0x02  /* Error is generated by the server network file manager.*/
-#define ERRHRD 0x03  /* Error is an hardware error. */
-#define ERRCMD 0xFF  /* Command was not in the "SMB" format. */
 
 #ifdef HAVE_STDARG_H
 int slprintf(char *str, int n, char *format, ...)
@@ -1402,17 +1271,21 @@ char *strdup(char *s);
 #define SV_TYPE_DOMAIN_ENUM         0x80000000
 #define SV_TYPE_ALL                 0xFFFFFFFF  
 
-/* what server type are we currently  - JHT Says we ARE 4.20 */
-/* this was set by JHT in liaison with Jeremy Allison early 1997 */
-/* setting to 4.20 at same time as announcing ourselves as NT Server */
-/* History: */
-/* Version 4.0 - never made public */
-/* Version 4.10 - New to 1.9.16p2, lost in space 1.9.16p3 to 1.9.16p9 */
-/*		- Reappeared in 1.9.16p11 with fixed smbd services */
-/* Version 4.20 - To indicate that nmbd and browsing now works better */
+/* This was set by JHT in liaison with Jeremy Allison early 1997
+ * History:
+ * Version 4.0 - never made public
+ * Version 4.10 - New to 1.9.16p2, lost in space 1.9.16p3 to 1.9.16p9
+ *		- Reappeared in 1.9.16p11 with fixed smbd services
+ * Version 4.20 - To indicate that nmbd and browsing now works better
+ * Version 4.50 - Set at release of samba-2.2.0 by JHT
+ *
+ *  Note: In the presence of NT4.X do not set above 4.9
+ *        Setting this above 4.9 can have undesired side-effects.
+ *        This may change again in Samba-3.0 after further testing. JHT
+ */
 
 #define DEFAULT_MAJOR_VERSION 0x04
-#define DEFAULT_MINOR_VERSION 0x02
+#define DEFAULT_MINOR_VERSION 0x05
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
@@ -1422,6 +1295,7 @@ char *strdup(char *s);
    
 #define FLAGS2_LONG_PATH_COMPONENTS   0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES    0x0002
+#define FLAGS2_IS_LONG_NAME           0x0040
 #define FLAGS2_DFS_PATHNAMES          0x1000
 #define FLAGS2_READ_PERMIT_NO_EXECUTE 0x2000
 #define FLAGS2_32_BIT_ERROR_CODES     0x4000 
@@ -1442,7 +1316,10 @@ char *strdup(char *s);
 #define CAP_LOCK_AND_READ    0x0100
 #define CAP_NT_FIND          0x0200
 #define CAP_DFS              0x1000
+#define CAP_W2K_SMBS         0x2000
 #define CAP_LARGE_READX      0x4000
+#define CAP_LARGE_WRITEX     0x8000
+#define CAP_UNIX             0x800000 /* Capabilities for UNIX extensions. Created by HP. */
 #define CAP_EXTENDED_SECURITY 0x80000000
 
 /* protocol types. It assumes that higher protocols include lower protocols
@@ -1469,6 +1346,12 @@ enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 ,PRINT_TEST,PRINT_VLP
 #endif /* DEVELOPER */
 };
+
+/* LDAP schema types */
+enum schema_types {SCHEMA_COMPAT, SCHEMA_AD, SCHEMA_SAMBA};
+
+/* LDAP SSL options */
+enum ldap_ssl_types {LDAP_SSL_ON, LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_SAMBA};
@@ -1519,7 +1402,7 @@ extern int global_is_multibyte_codepage;
 #define COPYBUF_SIZE (8*1024)
 
 /* 
- * Integers used to override error codes. 
+ * Values used to override error codes. 
  */
 extern int unix_ERR_class;
 extern int unix_ERR_code;
@@ -1593,8 +1476,8 @@ extern int chain_size;
 
 /*
  * Oplock break command code to send over the udp socket.
- * The same message is sent for both exlusive and level II breaks.
- *
+ * The same message is sent for both exlusive and level II breaks. 
+ * 
  * The form of this is :
  *
  *  0     2       2+pid   2+pid+dev 2+pid+dev+ino
@@ -1602,14 +1485,14 @@ extern int chain_size;
  *  | cmd| pid    | dev   |  inode | fileid  |
  *  +----+--------+-------+--------+---------+
  */
- 
+
 #define OPLOCK_BREAK_CMD 0x1
 #define OPLOCK_BREAK_PID_OFFSET 2
 #define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define OPLOCK_BREAK_FILEID_OFFSET (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 #define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
- 
+
 #define KERNEL_OPLOCK_BREAK_CMD 0x2
 #define LEVEL_II_OPLOCK_BREAK_CMD 0x3
 
@@ -1633,6 +1516,7 @@ extern int chain_size;
 #define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define KERNEL_OPLOCK_BREAK_FILEID_OFFSET (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 #define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
+
 
 /* if a kernel does support oplocks then a structure of the following
    typee is used to describe how to interact with the kernel */
@@ -1695,28 +1579,13 @@ struct pwd_info
 
 	uchar smb_lm_owf[24];
 	uchar smb_nt_owf[128];
-	size_t nt_owf_len;
+	uint32 nt_owf_len;
 
 	uchar lm_cli_chal[8];
 	uchar nt_cli_chal[128];
-	size_t nt_cli_chal_len;
+	uint32 nt_cli_chal_len;
 
 	uchar sess_key[16];
-};
-
-struct ntdom_info
-{
-	unsigned char sess_key[16];        /* Current session key. */
-	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */
-	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */
-	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
-	uint32 ntlmssp_seq_num;            /* ntlmssp sequence number */
-	DOM_CRED clnt_cred;                /* Client credential. */
-
-	int max_recv_frag;
-	int max_xmit_frag;
-
-	vuser_key key;
 };
 
 /*
@@ -1732,6 +1601,7 @@ struct ncacn_np
 };
 
 #include "rpc_creds.h"
+#include "rpc_misc.h"
 #include "rpc_secdes.h"
 #include "nt_printing.h"
 
@@ -1751,17 +1621,20 @@ typedef struct user_struct
 	gid_t *groups;
 
 	NT_USER_TOKEN *nt_user_token;
-        BOOL printer_admin;
 
-	/* per-user authentication information on NT RPCs */
-	/* lkclXXXX - THIS SHOULD NOT BE HERE! */
-	struct dcinfo dc;
+	int session_id; /* used by utmp and pam session code */
 } user_struct;
+
+struct unix_error_map {
+	int unix_error;
+	int dos_class;
+	int dos_code;
+	NTSTATUS nt_error;
+};
 
 #include "ntdomain.h"
 
 #include "client.h"
-#include "rpcclient.h"
 
 /*
  * Size of new password account encoding string. DO NOT CHANGE.
@@ -1793,6 +1666,8 @@ typedef struct user_struct
 #define NEVER_MAP_TO_GUEST 0
 #define MAP_TO_GUEST_ON_BAD_USER 1
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
+
+#define SAFE_NETBIOS_CHARS ". -_"
 
 #include "nsswitch/winbindd_nss.h"
 

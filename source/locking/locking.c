@@ -98,14 +98,13 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 
-BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-             SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
-             int *eclass,uint32 *ecode)
+static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
 {
-	BOOL ok = False;
+	NTSTATUS status;
 
 	if (!lp_locking(SNUM(conn)))
-		return(True);
+		return NT_STATUS_OK;
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
@@ -114,12 +113,12 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-			      lock_pid, sys_getpid(), conn->cnum, 
-			      offset, count, 
-			      lock_type);
+		status = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
+				  lock_pid, sys_getpid(), conn->cnum, 
+				  offset, count, 
+				  lock_type);
 
-		if (ok && lp_posix_locking(SNUM(conn))) {
+		if (NT_STATUS_IS_OK(status) && lp_posix_locking(SNUM(conn))) {
 
 			/*
 			 * Try and get a POSIX lock on this range.
@@ -127,9 +126,8 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 			 * overlapping on a different fd. JRA.
 			 */
 
-			ok = set_posix_lock(fsp, offset, count, lock_type);
-
-			if (!ok) {
+			if (!set_posix_lock(fsp, offset, count, lock_type)) {
+				status = NT_STATUS_LOCK_NOT_GRANTED;
 				/*
 				 * We failed to map - we must now remove the brl
 				 * lock entry.
@@ -141,31 +139,58 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		}
 	}
 
-	if (!ok) {
-		*eclass = ERRDOS;
-		*ecode = ERRlock;
-		return False;
+	return status;
+}
+
+/****************************************************************************
+ Utility function called by locking requests. This is *DISGISTING*. It also
+ appears to be "What Windows Does" (tm). Andrew, ever wonder why Windows 2000
+ is so slow on the locking tests...... ? This is the reason. Much though I hate
+ it, we need this. JRA.
+****************************************************************************/
+
+NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
+{
+	int j, maxj = lp_lock_spin_count();
+	int sleeptime = lp_lock_sleep_time();
+	NTSTATUS status, ret;
+
+	if (maxj <= 0)
+		maxj = 1;
+
+	ret = NT_STATUS_OK; /* to keep dumb compilers happy */
+
+	for (j = 0; j < maxj; j++) {
+		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
+			return status;
+		}
+		/* if we do fail then return the first error code we got */
+		if (j == 0) {
+			ret = status;
+		}
+		if (sleeptime)
+			sys_usleep(sleeptime);
 	}
-	return True; /* Got lock */
+	return ret;
 }
 
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-               SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       int *eclass,uint32 *ecode)
+NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+		   SMB_BIG_UINT count,SMB_BIG_UINT offset)
 {
 	BOOL ok = False;
 	
 	if (!lp_locking(SNUM(conn)))
-		return(True);
+		return NT_STATUS_OK;
 	
 	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
-		*eclass = ERRDOS;
-		*ecode = ERRbadfid;
-		return False;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 	
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
@@ -182,17 +207,15 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
-		*eclass = ERRDOS;
-		*ecode = ERRnotlocked;
-		return False;
+		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
 
 	if (!lp_posix_locking(SNUM(conn)))
-		return True;
+		return NT_STATUS_OK;
 
 	(void)release_posix_lock(fsp, offset, count);
 
-	return True; /* Did unlock */
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -400,12 +423,16 @@ static char *share_mode_str(int num, share_mode_entry *e)
 	static pstring share_str;
 
 	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: \
-pid = %u, share_mode = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, dev = 0x%x, inode = %.0f",
-	num, e->pid, e->share_mode, e->op_port, e->op_type, e->share_file_id,
+pid = %u, share_mode = 0x%x, desired_access = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, dev = 0x%x, inode = %.0f",
+	num, e->pid, e->share_mode, (unsigned int)e->desired_access, e->op_port, e->op_type, e->share_file_id,
 	(unsigned int)e->dev, (double)e->inode );
 
 	return share_str;
 }
+
+/*******************************************************************
+ Print out a share mode table.
+********************************************************************/
 
 static void print_share_mode_table(struct locking_data *data)
 {
@@ -506,6 +533,7 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 	memset(e, '\0', sizeof(share_mode_entry));
 	e->pid = sys_getpid();
 	e->share_mode = fsp->share_mode;
+	e->desired_access = fsp->desired_access;
 	e->op_port = port;
 	e->op_type = op_type;
 	memcpy(x, &fsp->open_time, sizeof(struct timeval));
@@ -516,7 +544,7 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 
 /*******************************************************************
  Check if two share mode entries are identical, ignoring oplock 
- and port info. 
+ and port info and desired_access.
 ********************************************************************/
 
 BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)

@@ -198,10 +198,6 @@ static void register_name_timeout_response(struct subnet_record *subrec,
       DEBUG(2,("register_name_timeout_response: WINS server at address %s is not \
 responding.\n", inet_ntoa(rrec->packet->ip)));
 
-     /* BEGIN_ADMIN_LOG */
-     sys_adminlog(LOG_CRIT,(char *)gettext("Cannot communicate with WINS server. WINS server address: %s."),inet_ntoa(rrec->packet->ip));
-     /* END_ADMIN_LOG */
-
       /* Keep trying to contact the WINS server periodically. This allows
          us to work correctly if the WINS server is down temporarily when
          we come up. */
@@ -313,12 +309,12 @@ static BOOL multihomed_register_name( struct nmb_name *nmbname, uint16 nb_flags,
       DEBUG(0,("multihomed_register_name: Failed to send packet trying to \
 register name %s IP %s\n", nmb_namestr(nmbname), inet_ntoa(ip_list[i]) ));
 
-      free((char *)ip_list);
+      SAFE_FREE(ip_list);
       return True;
     }
   }
 
-  free((char *)ip_list);
+  SAFE_FREE(ip_list);
 
   return False;
 }

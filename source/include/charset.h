@@ -54,11 +54,11 @@ extern void charset_initialise(void);
 #undef isspace
 #endif
 
-#define toupper(c) (upper_char_map[(c&0xff)] & 0xff)
-#define tolower(c) (lower_char_map[(c&0xff)] & 0xff)
-#define isupper(c) ((c&0xff) != tolower(c&0xff))
-#define islower(c) ((c&0xff) != toupper(c&0xff))
-#define isdoschar(c) (dos_char_map[(c&0xff)] != 0)
+#define toupper(c) (upper_char_map[((c)&0xff)] & 0xff)
+#define tolower(c) (lower_char_map[((c)&0xff)] & 0xff)
+#define isupper(c) (((c)&0xff) != tolower((c)&0xff))
+#define islower(c) (((c)&0xff) != toupper((c)&0xff))
+#define isdoschar(c) (dos_char_map[((c)&0xff)] != 0)
 #define isspace(c) ((c)==' ' || (c) == '\t')
 
 /* this is used to determine if a character is safe to use in

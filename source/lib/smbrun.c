@@ -24,63 +24,40 @@
 /* need to move this from here!! need some sleep ... */
 struct current_user current_user;
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
-This is a utility function of smbrun(). It must be called only from
-the child as it may leave the caller in a privileged state.
+This is a utility function of smbrun().
 ****************************************************************************/
-static BOOL setup_stdout_file(char *outfile,BOOL shared)
+
+static int setup_out_fd(void)
 {  
-  int fd;
-  SMB_STRUCT_STAT st;
-  mode_t mode = S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH;
-  int flags = O_RDWR|O_CREAT|O_TRUNC|O_EXCL;
+	int fd;
+	pstring path;
 
-  close(1);
+	slprintf(path, sizeof(path)-1, "%s/smb.XXXXXX", tmpdir());
 
-  if (shared) {
-	/* become root - unprivileged users can't delete these files */
-	gain_root_privilege();
-	gain_root_group_privilege();
-  }
+	/* now create the file */
+	fd = smb_mkstemp(path);
 
-  if(sys_stat(outfile, &st) == 0) {
-    /* Check we're not deleting a device file. */ 
-    if(st.st_mode & S_IFREG)
-      unlink(outfile);
-    else
-      flags = O_RDWR;
-  }
-  /* now create the file */
-  fd = sys_open(outfile,flags,mode);
+	if (fd == -1) {
+		DEBUG(0,("setup_out_fd: Failed to create file %s. (%s)\n",
+			path, strerror(errno) ));
+		return -1;
+	}
 
-  if (fd == -1) return False;
+	DEBUG(10,("setup_out_fd: Created tmp file %s\n", path ));
 
-  if (fd != 1) {
-    if (dup2(fd,1) != 1) {
-      DEBUG(2,("Failed to create stdout file descriptor\n"));
-      close(fd);
-      return False;
-    }
-    close(fd);
-  }
-  return True;
+	/* Ensure file only kept around by open fd. */
+	unlink(path);
+	return fd;
 }
-
 
 /****************************************************************************
 run a command being careful about uid/gid handling and putting the output in
-outfile (or discard it if outfile is NULL).
-
-if shared is True then ensure the file will be writeable by all users
-but created such that its owned by root. This overcomes a security hole.
-
-if shared is not set then open the file with O_EXCL set
+outfd (or discard it if outfd is NULL).
 ****************************************************************************/
-int smbrun(char *cmd,char *outfile,BOOL shared)
+
+int smbrun(char *cmd, int *outfd)
 {
-	int fd;
 	pid_t pid;
 	uid_t uid = current_user.uid;
 	gid_t gid = current_user.gid;
@@ -90,32 +67,13 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	 */
 	oplock_set_capability(False, False);
 
-#ifndef HAVE_EXECL
-	{
-	int ret;
-	pstring syscmd;  
-	char *path = lp_smbrun();
-	
-	/* in the old method we use system() to execute smbrun which then
-	   executes the command (using system() again!). This involves lots
-	   of shell launches and is very slow. It also suffers from a
-	   potential security hole */
-	if (!file_exist(path,NULL)) {
-		DEBUG(0,("SMBRUN ERROR: Can't find %s. Installation problem?\n",path));
-		return(1);
+	/* point our stdout at the file we want output to go into */
+
+	if (outfd && ((*outfd = setup_out_fd()) == -1)) {
+		return -1;
 	}
 
-	slprintf(syscmd,sizeof(syscmd)-1,"%s %d %d \"(%s 2>&1) > %s\"",
-		 path,(int)uid,(int)gid,cmd,
-		 outfile?outfile:"/dev/null");
-	
-	DEBUG(5,("smbrun - running %s ",syscmd));
-	ret = system(syscmd);
-	DEBUG(5,("gave %d\n",ret));
-	return(ret);
-	}
-#else
-	/* in this newer method we will exec /bin/sh with the correct
+	/* in this method we will exec /bin/sh with the correct
 	   arguments, after first setting stdout to point at the file */
 
 	/*
@@ -128,6 +86,10 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	if ((pid=sys_fork()) < 0) {
 		DEBUG(0,("smbrun: fork failed with error %s\n", strerror(errno) ));
 		CatchChild(); 
+		if (outfd) {
+			close(*outfd);
+			*outfd = -1;
+		}
 		return errno;
     }
 
@@ -152,13 +114,24 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 
 		if (wpid != pid) {
 			DEBUG(2,("waitpid(%d) : %s\n",(int)pid,strerror(errno)));
+			if (outfd) {
+				close(*outfd);
+				*outfd = -1;
+			}
 			return -1;
 		}
+
+		/* Reset the seek pointer. */
+		if (outfd) {
+			sys_lseek(*outfd, 0, SEEK_SET);
+		}
+
 #if defined(WIFEXITED) && defined(WEXITSTATUS)
 		if (WIFEXITED(status)) {
 			return WEXITSTATUS(status);
 		}
 #endif
+
 		return status;
 	}
 	
@@ -169,10 +142,15 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	   pipeline or anything else the config file specifies */
 	
 	/* point our stdout at the file we want output to go into */
-	if (outfile && !setup_stdout_file(outfile,shared)) {
-		exit(80);
+	if (outfd) {
+		close(1);
+		if (dup2(*outfd,1) != 1) {
+			DEBUG(2,("Failed to create stdout file descriptor\n"));
+			close(*outfd);
+			exit(80);
+		}
 	}
-	
+
 	/* now completely lose our privileges. This is a fairly paranoid
 	   way of doing it, but it does work on all systems that I know of */
 
@@ -189,13 +167,15 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 #ifndef __INSURE__
 	/* close all other file descriptors, leaving only 0, 1 and 2. 0 and
 	   2 point to /dev/null from the startup code */
+	{
+	int fd;
 	for (fd=3;fd<256;fd++) close(fd);
+	}
 #endif
 
 	execl("/bin/sh","sh","-c",cmd,NULL);  
 	
 	/* not reached */
 	exit(82);
-#endif
 	return 1;
 }

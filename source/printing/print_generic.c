@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    printing command routines
    Copyright (C) Andrew Tridgell 1992-2000
    
@@ -80,6 +81,8 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	pstring_sub(syscmd, "%p", p);
 	standard_sub_snum(snum,syscmd);
 
+	/* Convert script args to unix-codepage */
+	dos_to_unix(syscmd);
 	ret = smbrun(syscmd,outfd);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -155,7 +158,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 		return 0;
 
 	pstrcpy(print_directory, pjob->filename);
-	p = strrchr_m(print_directory,'/');
+	p = strrchr(print_directory,'/');
 	if (!p)
 		return 0;
 	*p++ = 0;
@@ -170,13 +173,13 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, 
-			lp_printcommand(snum), NULL,
-			"%s", p,
-			"%J", jobname,
-			"%f", p,
-			"%z", job_size,
-			"%c", job_page_count,
-			NULL);
+			  lp_printcommand(snum), NULL,
+			  "%s", p,
+  			  "%J", jobname,
+			  "%f", p,
+			  "%z", job_size,
+			  "%c", job_page_count,
+			  NULL);
 
 	chdir(wd);
 
@@ -195,7 +198,9 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 	print_queue_struct *queue = NULL;
 	fstring printer_name;
               
+	/* Convert printer name (i.e. share name) to unix-codepage */
 	fstrcpy(printer_name, lp_servicename(snum));
+	dos_to_unix(printer_name);
 	
 	print_run_command(snum, lp_lpqcommand(snum), &fd, NULL);
 
@@ -206,7 +211,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 	}
 	
 	numlines = 0;
-	qlines = fd_lines_load(fd, &numlines);
+	qlines = fd_lines_load(fd, &numlines, True);
 	close(fd);
 
 	/* turn the lpq output into a series of job structures */

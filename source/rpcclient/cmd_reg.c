@@ -4,6 +4,7 @@
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1994-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Simo Sorce 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,20 +21,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
-
-extern int DEBUGLEVEL;
-
-extern struct cli_state *smb_cli;
-extern int smb_tidx;
-
-extern FILE* out_hnd;
+#include "rpcclient.h"
 
 /*
  * keys.  of the form:
@@ -54,10 +43,12 @@ extern FILE* out_hnd;
  *
  */
 
+#if 0 /* Simo: reg functions need to be updated to the new cmd interface */
+
 /****************************************************************************
 nt registry enum
 ****************************************************************************/
-void cmd_reg_enum(struct client_info *info)
+static void cmd_reg_enum(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res1 = True;
@@ -91,7 +82,7 @@ void cmd_reg_enum(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_enum: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regenum <key_name>\n");
 		return;
@@ -224,7 +215,7 @@ void cmd_reg_enum(struct client_info *info)
 /****************************************************************************
 nt registry query key
 ****************************************************************************/
-void cmd_reg_query_key(struct client_info *info)
+static void cmd_reg_query_key(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res1 = True;
@@ -250,7 +241,7 @@ void cmd_reg_query_key(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_enum: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regquery key_name\n");
 		return;
@@ -324,7 +315,7 @@ void cmd_reg_query_key(struct client_info *info)
 /****************************************************************************
 nt registry create value
 ****************************************************************************/
-void cmd_reg_create_val(struct client_info *info)
+static void cmd_reg_create_val(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -349,7 +340,7 @@ void cmd_reg_create_val(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_create_val: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regcreate <val_name> <val_type> <val>\n");
 		return;
@@ -363,7 +354,7 @@ void cmd_reg_create_val(struct client_info *info)
 		return;
 	}
 	
-	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (!next_token_nr(NULL, tmp, NULL, sizeof(tmp)))
 	{
 		fprintf(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
 		return;
@@ -377,7 +368,7 @@ void cmd_reg_create_val(struct client_info *info)
 		return;
 	}
 
-	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (!next_token_nr(NULL, tmp, NULL, sizeof(tmp)))
 	{
 		fprintf(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
 		return;
@@ -470,7 +461,7 @@ void cmd_reg_create_val(struct client_info *info)
 /****************************************************************************
 nt registry delete value
 ****************************************************************************/
-void cmd_reg_delete_val(struct client_info *info)
+static void cmd_reg_delete_val(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -484,7 +475,7 @@ void cmd_reg_delete_val(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_delete_val: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regdelete <val_name>\n");
 		return;
@@ -545,7 +536,7 @@ void cmd_reg_delete_val(struct client_info *info)
 /****************************************************************************
 nt registry delete key
 ****************************************************************************/
-void cmd_reg_delete_key(struct client_info *info)
+static void cmd_reg_delete_key(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -559,7 +550,7 @@ void cmd_reg_delete_key(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_delete_key: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regdeletekey <key_name>\n");
 		return;
@@ -623,7 +614,7 @@ void cmd_reg_delete_key(struct client_info *info)
 /****************************************************************************
 nt registry create key
 ****************************************************************************/
-void cmd_reg_create_key(struct client_info *info)
+static void cmd_reg_create_key(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -640,7 +631,7 @@ void cmd_reg_create_key(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_create_key: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regcreate <key_name> [key_class]\n");
 		return;
@@ -654,7 +645,7 @@ void cmd_reg_create_key(struct client_info *info)
 		return;
 	}
 	
-	if (!next_token(NULL, key_class, NULL, sizeof(key_class)))
+	if (!next_token_nr(NULL, key_class, NULL, sizeof(key_class)))
 	{
 		memset(key_class, 0, sizeof(key_class));
 	}
@@ -716,7 +707,7 @@ void cmd_reg_create_key(struct client_info *info)
 /****************************************************************************
 nt registry security info
 ****************************************************************************/
-void cmd_reg_test_key_sec(struct client_info *info)
+static void cmd_reg_test_key_sec(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -735,7 +726,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "reggetsec <key_name>\n");
 		return;
@@ -811,7 +802,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 /****************************************************************************
 nt registry security info
 ****************************************************************************/
-void cmd_reg_get_key_sec(struct client_info *info)
+static void cmd_reg_get_key_sec(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -830,7 +821,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "reggetsec <key_name>\n");
 		return;
@@ -898,3 +889,125 @@ void cmd_reg_get_key_sec(struct client_info *info)
 		DEBUG(5,("cmd_reg_get_key_sec: query failed\n"));
 	}
 }
+
+#endif /* 0 */
+
+/****************************************************************************
+nt registry shutdown
+****************************************************************************/
+static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                 int argc, char **argv)
+{
+	extern char *optarg;
+	extern int optind;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	fstring msg;
+	uint32 timeout = 20;
+	uint16 flgs = 0;
+	int opt;
+
+	*msg = 0;
+	optind = 0; /* TODO: test if this hack works on other systems too --simo */
+
+	while ((opt = getopt(argc, argv, "m:t:rf")) != EOF)
+	{
+		fprintf (stderr, "[%s]\n", argv[argc-1]);
+	
+		switch (opt)
+		{
+			case 'm':
+			{
+				safe_strcpy(msg, optarg, sizeof(msg)-1);
+				fprintf (stderr, "[%s|%s]\n", optarg, msg);
+				break;
+			}
+			case 't':
+			{
+				timeout = atoi(optarg);
+				fprintf (stderr, "[%s|%d]\n", optarg, timeout);
+			break;
+			}
+			case 'r':
+			{
+				flgs |= 0x100;
+			break;
+			}
+			case 'f':
+			{
+				flgs |= 0x001;
+				break;
+			}
+		}
+	}
+
+	/* create an entry */
+	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, flgs);
+
+	if (NT_STATUS_IS_OK(result))
+		DEBUG(5,("cmd_reg_shutdown: query succeeded\n"));
+	else
+		DEBUG(5,("cmd_reg_shutdown: query failed\n"));
+
+	return result;
+}
+
+/****************************************************************************
+abort a shutdown
+****************************************************************************/
+static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli, 
+                                       TALLOC_CTX *mem_ctx, int argc, 
+                                       char **argv)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	result = cli_reg_abort_shutdown(cli, mem_ctx);
+
+	if (NT_STATUS_IS_OK(result))
+		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));
+	else
+		DEBUG(5,("cmd_reg_abort_shutdown: query failed\n"));
+
+	return result;
+}
+
+
+/* List of commands exported by this module */
+struct cmd_set reg_commands[] = {
+
+	{ "REG"  },
+
+	{ "shutdown",		cmd_reg_shutdown,		PIPE_WINREG, "Remote Shutdown",
+				"[-m message] [-t timeout] [-r] [-f] (-r == reboot, -f == force)" },
+				
+	{ "abortshutdown",	cmd_reg_abort_shutdown,		PIPE_WINREG, "Abort Shutdown",
+				"" },				
+/*
+	{ "regenum",		cmd_reg_enum,			"Registry Enumeration",
+				"<keyname>" },
+				
+	{ "regdeletekey",	cmd_reg_delete_key,		"Registry Key Delete",
+				"<keyname>" },
+				
+	{ "regcreatekey",	cmd_reg_create_key,		"Registry Key Create",
+				"<keyname> [keyclass]" },
+				
+	{ "regqueryval",	cmd_reg_query_info,		"Registry Value Query",
+				"<valname>" },
+				
+	{ "regquerykey",	cmd_reg_query_key,		"Registry Key Query",
+				"<keyname>" },
+				
+	{ "regdeleteval",	cmd_reg_delete_val,		"Registry Value Delete",
+				"<valname>" },
+	
+	{ "regcreateval",	cmd_reg_create_val,		"Registry Key Create",
+				"<valname> <valtype> <value>" },
+	
+	{ "reggetsec",		cmd_reg_get_key_sec,		"Registry Key Security",
+				"<keyname>" },
+	
+	{ "regtestsec",		cmd_reg_test_key_sec,		"Test Registry Key Security",
+				"<keyname>" },
+*/
+	{ NULL }
+};

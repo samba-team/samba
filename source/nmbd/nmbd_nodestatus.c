@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
  Deal with a successful node status response.
 ****************************************************************************/
@@ -52,7 +50,7 @@ name %s.\n", nmb_namestr(answer_name), nmb_namestr(question_name)));
   /* Just send the whole answer resource record for the success function
      to parse. */
   if(rrec->success_fn)
-    (*rrec->success_fn)(subrec, rrec->userdata, nmb->answers, p->ip);
+    (*(node_status_success_function)rrec->success_fn)(subrec, rrec->userdata, nmb->answers, p->ip);
 
   /* Ensure we don't retry. */
   remove_response_record(subrec, rrec);

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -29,7 +28,6 @@
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
 
-extern int DEBUGLEVEL;
 static pipes_struct *chain_p;
 static int pipes_open;
 
@@ -42,10 +40,13 @@ static int pipes_open;
  * writers more than I hate the Windows spooler service driver
  * writers. This gets around a combination of bugs in the spooler
  * and the HP 8500 PCL driver that causes a spooler spin. JRA.
+ *
+ * bumped up from 20 -> 64 after viewing traffic from WordPerfect 
+ * 2002 running on NT 4.- SP6
  */
 
 #ifndef MAX_OPEN_SPOOLSS_PIPES
-#define MAX_OPEN_SPOOLSS_PIPES 20
+#define MAX_OPEN_SPOOLSS_PIPES 64
 #endif
 static int current_spoolss_pipes_open;
 
@@ -97,7 +98,7 @@ void init_rpc_pipe_hnd(void)
 {
 	bmap = bitmap_allocate(MAX_OPEN_PIPES);
 	if (!bmap)
-		exit_server("out of memory in init_rpc_pipe_hnd\n");
+		exit_server("out of memory in init_rpc_pipe_hnd");
 }
 
 /****************************************************************************
@@ -122,7 +123,7 @@ static BOOL pipe_init_outgoing_data(pipes_struct *p)
 	 * Initialize the outgoing RPC data buffer.
 	 * we will use this as the raw data area for replying to rpc requests.
 	 */	
-	if(!prs_init(&o_data->rdata, MAX_PDU_FRAG_LEN, 4, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&o_data->rdata, MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
 		return False;
 	}
@@ -149,7 +150,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		is_spoolss_pipe = True;
 
 	if (is_spoolss_pipe && current_spoolss_pipes_open >= MAX_OPEN_SPOOLSS_PIPES) {
-		DEBUG(4,("open_rpc_pipe_p: spooler bug workaround. Denying open on pipe %s\n",
+		DEBUG(10,("open_rpc_pipe_p: spooler bug workaround. Denying open on pipe %s\n",
 			pipe_name ));
 		return NULL;
 	}
@@ -170,7 +171,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	next_pipe = (i+1) % MAX_OPEN_PIPES;
 
 	for (p = Pipes; p; p = p->next)
-		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
+		DEBUG(5,("open_rpc_pipe_p: name %s pnum=%x\n", p->name, p->pnum));  
 
 	p = (pipes_struct *)malloc(sizeof(*p));
 
@@ -181,7 +182,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	if ((p->mem_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
@@ -192,6 +193,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		return NULL;
 	}
 
+
 	DLIST_ADD(Pipes, p);
 
 	/*
@@ -201,7 +203,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	 * change the type to UNMARSALLING before processing the stream.
 	 */
 
-	if(!prs_init(&p->in_data.data, MAX_PDU_FRAG_LEN, 4, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&p->in_data.data, MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
 		return NULL;
 	}
@@ -227,6 +229,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	p->pipe_bound = False;
 	p->fault_state = False;
+	p->endian = RPC_LITTLE_ENDIAN;
 
 	/*
 	 * Initialize the incoming RPC struct.
@@ -246,7 +249,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	/*
 	 * Initialize the outgoing RPC data buffer with no memory.
 	 */	
-	prs_init(&p->out_data.rdata, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init(&p->out_data.rdata, 0, p->mem_ctx, MARSHALL);
 	
 	ZERO_STRUCT(p->pipe_user);
 
@@ -266,6 +269,11 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	if (is_spoolss_pipe)
 		current_spoolss_pipes_open++;
+
+	/*
+	 * The connection can be idled whilst this pipe is open
+	 * if there are no handles open. JRA.
+	 */
 
 	return chain_p;
 }
@@ -320,13 +328,16 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 		return -1;
 	}
 
-	prs_init( &rpc_in, 0, 4, p->mem_ctx, UNMARSHALL);
+	prs_init( &rpc_in, 0, p->mem_ctx, UNMARSHALL);
+	prs_set_endian_data( &rpc_in, p->endian);
+
 	prs_give_memory( &rpc_in, (char *)&p->in_data.current_in_pdu[0],
 					p->in_data.pdu_received_len, False);
 
 	/*
 	 * Unmarshall the header as this will tell us how much
 	 * data we need to read to get the complete pdu.
+	 * This also sets the endian flag in rpc_in.
 	 */
 
 	if(!smb_io_rpc_hdr("", &p->hdr, &rpc_in, 0)) {
@@ -348,16 +359,51 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	}
 
 	/*
-	 * If there is no data in the incoming buffer and it's a requst pdu then
-	 * ensure that the FIRST flag is set. If not then we have
-	 * a stream missmatch.
+	 * If there's not data in the incoming buffer this should be the start of a new RPC.
 	 */
 
-	if((p->hdr.pkt_type == RPC_REQUEST) && (prs_offset(&p->in_data.data) == 0) && !(p->hdr.flags & RPC_FLG_FIRST)) {
-		DEBUG(0,("unmarshall_rpc_header: FIRST flag not set in first PDU !\n"));
-		set_incoming_fault(p);
-		prs_mem_free(&rpc_in);
-		return -1;
+	if(prs_offset(&p->in_data.data) == 0) {
+
+		/*
+		 * AS/U doesn't set FIRST flag in a BIND packet it seems.
+		 */
+
+		if ((p->hdr.pkt_type == RPC_REQUEST) && !(p->hdr.flags & RPC_FLG_FIRST)) {
+			/*
+			 * Ensure that the FIRST flag is set. If not then we have
+			 * a stream missmatch.
+			 */
+
+			DEBUG(0,("unmarshall_rpc_header: FIRST flag not set in first PDU !\n"));
+			set_incoming_fault(p);
+			prs_mem_free(&rpc_in);
+			return -1;
+		}
+
+		/*
+		 * If this is the first PDU then set the endianness
+		 * flag in the pipe. We will need this when parsing all
+		 * data in this RPC.
+		 */
+
+		p->endian = rpc_in.bigendian_data;
+
+		DEBUG(5,("unmarshall_rpc_header: using %sendian RPC\n",
+				p->endian == RPC_LITTLE_ENDIAN ? "little-" : "big-" ));
+
+	} else {
+
+		/*
+		 * If this is *NOT* the first PDU then check the endianness
+		 * flag in the pipe is the same as that in the PDU.
+		 */
+
+		if (p->endian != rpc_in.bigendian_data) {
+			DEBUG(0,("unmarshall_rpc_header: FIRST endianness flag (%d) different in next PDU !\n", (int)p->endian));
+			set_incoming_fault(p);
+			prs_mem_free(&rpc_in);
+			return -1;
+		}
 	}
 
 	/*
@@ -389,6 +435,23 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	prs_mem_free(&rpc_in);
 
 	return 0; /* No extra data processed. */
+}
+
+/****************************************************************************
+ Call this to free any talloc'ed memory. Do this before and after processing
+ a complete PDU.
+****************************************************************************/
+
+void free_pipe_context(pipes_struct *p)
+{
+	if (p->mem_ctx) {
+		DEBUG(3,("free_pipe_context: destroying talloc pool of size %u\n", talloc_pool_size(p->mem_ctx) ));
+		talloc_destroy_pool(p->mem_ctx);
+	} else {
+		p->mem_ctx = talloc_init();
+		if (p->mem_ctx == NULL)
+			p->fault_state = True;
+	}
 }
 
 /****************************************************************************
@@ -443,8 +506,12 @@ authentication failed. Denying the request.\n", p->name));
 
 	/*
 	 * Check the data length doesn't go over the 15Mb limit.
+	 * increased after observing a bug in the Windows NT 4.0 SP6a
+	 * spoolsv.exe when the response to a GETPRINTERDRIVER2 RPC
+	 * will not fit in the initial buffer of size 0x1068   --jerry 22/01/2002
 	 */
-	if (prs_offset(&p->in_data.data) + data_len > 15*1024*1024) {
+	
+	if(prs_offset(&p->in_data.data) + data_len > 15*1024*1024) {
 		DEBUG(0,("process_request_pdu: rpc data buffer too large (%u) + (%u)\n",
 				(unsigned int)prs_data_size(&p->in_data.data), (unsigned int)data_len ));
 		set_incoming_fault(p);
@@ -498,8 +565,12 @@ authentication failed. Denying the request.\n", p->name));
 		 * Process the complete data stream here.
 		 */
 
+		free_pipe_context(p);
+
 		if(pipe_init_outgoing_data(p))
 			ret = api_pipe_request(p);
+
+		free_pipe_context(p);
 
 		/*
 		 * We have consumed the whole data stream. Set back to
@@ -529,23 +600,24 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 	char *data_p = (char *)&p->in_data.current_in_pdu[0];
 	BOOL reply = False;
 
-	if (p->mem_ctx) {
-		talloc_destroy_pool(p->mem_ctx);
-	} else {
-		p->mem_ctx = talloc_init();
-		if (p->mem_ctx == NULL)
-			p->fault_state = True;
-	}
-
 	if(p->fault_state) {
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			p->name ));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return (ssize_t)data_len;
 	}
 
-	prs_init( &rpc_in, 0, 4, p->mem_ctx, UNMARSHALL);
+	prs_init( &rpc_in, 0, p->mem_ctx, UNMARSHALL);
+
+	/*
+	 * Ensure we're using the corrent endianness for both the 
+	 * RPC header flags and the raw data we will be reading from.
+	 */
+
+	prs_set_endian_data( &rpc_in, p->endian);
+	prs_set_endian_data( &p->in_data.data, p->endian);
+
 	prs_give_memory( &rpc_in, data_p, (uint32)data_len, False);
 
 	DEBUG(10,("process_complete_pdu: processing packet type %u\n",
@@ -575,10 +647,13 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 			break;
 	}
 
+	/* Reset to little endian. Probably don't need this but it won't hurt. */
+	prs_set_endian_data( &p->in_data.data, RPC_LITTLE_ENDIAN);
+
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
 		set_incoming_fault(p);
-		setup_fault_pdu(p,0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		prs_mem_free(&rpc_in);
 	} else {
 		/*
@@ -734,10 +809,15 @@ ssize_t read_from_pipe(pipes_struct *p, char *data, size_t n)
 	 * read request.
 	 */
 
+	/*
+	 * This condition should result in the connection being closed.
+	 * Netapp filers seem to set it to 0xffff which results in domain
+	 * authentications failing.  Just ignore it so things work.
+	 */
+
 	if(n > MAX_PDU_FRAG_LEN) {
-		DEBUG(0,("read_from_pipe: loo large read (%u) requested on pipe %s. We can \
-only service %d sized reads.\n", (unsigned int)n, p->name, MAX_PDU_FRAG_LEN ));
-		return -1;
+		DEBUG(5,("read_from_pipe: too large read (%u) requested on \
+pipe %s. We can only service %d sized reads.\n", (unsigned int)n, p->name, MAX_PDU_FRAG_LEN ));
 	}
 
 	/*
@@ -757,7 +837,7 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 
 		memcpy( data, &p->out_data.current_pdu[p->out_data.current_pdu_sent], (size_t)data_returned);
 		p->out_data.current_pdu_sent += (uint32)data_returned;
-		return data_returned;
+		goto out;
 	}
 
 	/*
@@ -771,9 +851,10 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 
 	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
 		/*
-		 * We have sent all possible data. Return 0.
+		 * We have sent all possible data, return 0.
 		 */
-		return 0;
+		data_returned = 0;
+		goto out;
 	}
 
 	/*
@@ -792,6 +873,9 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 
 	memcpy( data, p->out_data.current_pdu, (size_t)data_returned);
 	p->out_data.current_pdu_sent += (uint32)data_returned;
+
+  out:
+
 	return data_returned;
 }
 
@@ -880,8 +964,8 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 
 	ZERO_STRUCTP(p);
 
-	free(p);
-	
+	SAFE_FREE(p);
+
 	return True;
 }
 
@@ -922,5 +1006,3 @@ pipes_struct *get_rpc_pipe(int pnum)
 
 	return NULL;
 }
-
-#undef OLD_NTDOMAIN

@@ -19,8 +19,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static int gotalarm;
 
 /***************************************************************
@@ -52,9 +50,10 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   lock.l_pid = 0;
 
   alarm(waitsecs);
+  /* Note we must *NOT* use sys_fcntl here ! JRA */
   ret = fcntl(fd, SMB_F_SETLKW, &lock);
   alarm(0);
-  CatchSignal(SIGALRM, SIGNAL_CAST SIG_DFL);
+  CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 
   if (gotalarm) {
     DEBUG(0, ("do_file_lock: failed to %s file.\n",
@@ -282,13 +281,24 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
   if (feof(f))
     return(NULL);
 
+  if (maxlen <2) return(NULL);
+
   if (!s2)
     {
+      char *t;
+
       maxlen = MIN(maxlen,8);
-      s = (char *)Realloc(s,maxlen);
+      t = (char *)Realloc(s,maxlen);
+      if (!t) {
+        DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
+        SAFE_FREE(s);
+        return(NULL);
+      } else
+        s = t;
     }
 
-  if (!s || maxlen < 2) return(NULL);
+  if (!s)
+    return(NULL);
 
   *s = 0;
 
@@ -313,7 +323,7 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
 	  return(s);
 	case EOF:
 	  if (len <= 0 && !s2) 
-	    free(s);
+	    SAFE_FREE(s);
 	  return(len>0?s:NULL);
 	case ' ':
 	  if (start_of_line)
@@ -323,12 +333,18 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
 	  s[len++] = c;
 	  s[len] = 0;
 	}
-      if (!s2 && len > maxlen-3)
-	{
-	  maxlen *= 2;
-	  s = (char *)Realloc(s,maxlen);
-	  if (!s) return(NULL);
-	}
+      if (!s2 && len > maxlen-3) {
+        char *t;
+
+        maxlen *= 2;
+        t = (char *)Realloc(s,maxlen);
+        if (!t) {
+          DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
+          SAFE_FREE(s);
+          return(NULL);
+        } else
+          s = t;
+      }
     }
   return(s);
 }
@@ -340,7 +356,7 @@ load from a pipe into memory
 char *file_pload(char *syscmd, size_t *size)
 {
 	int fd, n;
-	char *p;
+	char *p, *tp;
 	pstring buf;
 	size_t total;
 	
@@ -351,11 +367,14 @@ char *file_pload(char *syscmd, size_t *size)
 	total = 0;
 
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		p = Realloc(p, total + n + 1);
-		if (!p) {
+		tp = Realloc(p, total + n + 1);
+		if (!tp) {
+			DEBUG(0,("file_pload: failed to exand buffer!\n"));
 			close(fd);
+			SAFE_FREE(p);
 			return NULL;
-		}
+		} else
+			p = tp;
 		memcpy(p+total, buf, n);
 		total += n;
 	}
@@ -368,20 +387,14 @@ char *file_pload(char *syscmd, size_t *size)
 	return p;
 }
 
-
 /****************************************************************************
-load a file into memory
-****************************************************************************/
-char *file_load(char *fname, size_t *size)
+load a file into memory from a fd.
+****************************************************************************/ 
+
+char *fd_load(int fd, size_t *size)
 {
-	int fd;
 	SMB_STRUCT_STAT sbuf;
 	char *p;
-
-	if (!fname || !*fname) return NULL;
-	
-	fd = open(fname,O_RDONLY);
-	if (fd == -1) return NULL;
 
 	if (sys_fstat(fd, &sbuf) != 0) return NULL;
 
@@ -389,14 +402,32 @@ char *file_load(char *fname, size_t *size)
 	if (!p) return NULL;
 
 	if (read(fd, p, sbuf.st_size) != sbuf.st_size) {
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 	p[sbuf.st_size] = 0;
 
-	close(fd);
-
 	if (size) *size = sbuf.st_size;
+
+	return p;
+}
+
+/****************************************************************************
+load a file into memory
+****************************************************************************/
+char *file_load(char *fname, size_t *size)
+{
+	int fd;
+	char *p;
+
+	if (!fname || !*fname) return NULL;
+	
+	fd = open(fname,O_RDONLY);
+	if (fd == -1) return NULL;
+
+	p = fd_load(fd, size);
+
+	close(fd);
 
 	return p;
 }
@@ -418,7 +449,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, BOOL convert
 
 	ret = (char **)malloc(sizeof(ret[0])*(i+2));
 	if (!ret) {
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}	
 	memset(ret, 0, sizeof(ret[0])*(i+2));
@@ -436,7 +467,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, BOOL convert
 
 	if (convert) {
 		for (i = 0; ret[i]; i++)
-			unix_to_dos(ret[i], True);
+			unix_to_dos(ret[i]);
 	}
 
 	return ret;
@@ -454,6 +485,22 @@ char **file_lines_load(char *fname, int *numlines, BOOL convert)
 	size_t size;
 
 	p = file_load(fname, &size);
+	if (!p) return NULL;
+
+	return file_lines_parse(p, size, numlines, convert);
+}
+
+/****************************************************************************
+load a fd into memory and return an array of pointers to lines in the file
+must be freed with file_lines_free(). If convert is true calls unix_to_dos on
+the list.
+****************************************************************************/
+char **fd_lines_load(int fd, int *numlines, BOOL convert)
+{
+	char *p;
+	size_t size;
+
+	p = fd_load(fd, &size);
 	if (!p) return NULL;
 
 	return file_lines_parse(p, size, numlines, convert);
@@ -482,8 +529,8 @@ free lines loaded with file_lines_load
 void file_lines_free(char **lines)
 {
 	if (!lines) return;
-	free(lines[0]);
-	free(lines);
+	SAFE_FREE(lines[0]);
+	SAFE_FREE(lines);
 }
 
 

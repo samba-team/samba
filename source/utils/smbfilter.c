@@ -26,17 +26,15 @@
 #define SECURITY_SET  0
 
 /* this forces non-unicode */
-#define CAPABILITY_MASK CAP_UNICODE
+#define CAPABILITY_MASK (CAP_NT_SMBS | CAP_RPC_REMOTE_APIS)
 #define CAPABILITY_SET  0
 
 /* and non-unicode for the client too */
-#define CLI_CAPABILITY_MASK CAP_UNICODE
+#define CLI_CAPABILITY_MASK 0
 #define CLI_CAPABILITY_SET  0
 
 static char *netbiosname;
 static char packet[BUFFER_SIZE];
-
-extern int DEBUGLEVEL;
 
 static void filter_reply(char *buf)
 {
@@ -120,7 +118,7 @@ static void filter_child(int c, struct in_addr dest_ip)
 		if (s != -1) FD_SET(s, &fds);
 		if (c != -1) FD_SET(c, &fds);
 
-		num = sys_select_intr(MAX(s+1, c+1),&fds,NULL);
+		num = sys_select_intr(MAX(s+1, c+1),&fds,NULL,NULL,NULL);
 		if (num <= 0) continue;
 		
 		if (c != -1 && FD_ISSET(c, &fds)) {
@@ -179,12 +177,12 @@ static void start_filter(char *desthost)
 		fd_set fds;
 		int num;
 		struct sockaddr addr;
-		int in_addrlen = sizeof(addr);
+		socklen_t in_addrlen = sizeof(addr);
 		
 		FD_ZERO(&fds);
 		FD_SET(s, &fds);
 
-		num = sys_select_intr(s+1,&fds,NULL);
+		num = sys_select_intr(s+1,&fds,NULL,NULL,NULL);
 		if (num > 0) {
 			c = accept(s, &addr, &in_addrlen);
 			if (c != -1) {

@@ -22,10 +22,6 @@
 
 #include "includes.h"
 
-#include <sys/shm.h>
-
-extern int DEBUGLEVEL;
-
 #define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
 
 static int shm_id;
@@ -85,7 +81,7 @@ void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len)
 #else
 	level = 0;
 #endif
-	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %d\n",src));
+	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %u\n",(unsigned int)src));
 	message_send_pid(src, MSG_PROFILELEVEL, &level, sizeof(int), True);
 }
 
@@ -132,10 +128,12 @@ BOOL profile_setup(BOOL rdonly)
 		return False;
 	}
 
+#if 0
 	if (shm_ds.shm_perm.cuid != 0 || shm_ds.shm_perm.cgid != 0) {
 		DEBUG(0,("ERROR: root did not create the shmem\n"));
 		return False;
 	}
+#endif
 
 	if (shm_ds.shm_segsz != sizeof(*profile_h)) {
 		DEBUG(0,("WARNING: profile size is %d (expected %d). Deleting\n",

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  * NOTE. All these functions are abstracted into a structure
  * that points to the correct function for the selected database. JRA.

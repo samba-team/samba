@@ -128,8 +128,14 @@ void nb_write(int handle, int size, int offset)
 		return;
 	}
 	if (cli_smbwrite(c, ftable[i].fd, buf, offset, size) != size) {
-		printf("(%d) write failed on handle %d\n", 
-		       line_count, handle);
+		printf("(%d) write failed on handle %d, fd %d \
+errno %d (%s)\n", line_count, handle, ftable[i].fd, errno, strerror(errno));
+		if (errno == ENOSPC) {
+			printf("Halting.\n");
+			fflush(stdout);
+			fflush(stderr);
+			exit(3);
+		}
 	}
 }
 
@@ -147,8 +153,8 @@ void nb_read(int handle, int size, int offset)
 	}
 	if ((ret=cli_read(c, ftable[i].fd, buf, offset, size)) != size) {
 #if NBDEBUG
-		printf("(%d) read failed on handle %d ofs=%d size=%d res=%d\n", 
-		       line_count, handle, offset, size, ret);
+		printf("(%d) read failed on handle %d ofs=%d size=%d res=%d fd %d errno %d (%s)\n",
+			line_count, handle, offset, size, ret, ftable[i].fd, errno, strerror(errno));
 #endif
 	}
 }

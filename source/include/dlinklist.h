@@ -37,17 +37,17 @@
 	}\
 }
 
-
-/* remove an element from a list */
+/* remove an element from a list - element doesn't have to be in list. */
 #define DLIST_REMOVE(list, p) \
 { \
 	if ((p) == (list)) { \
 		(list) = (p)->next; \
 		if (list) (list)->prev = NULL; \
 	} else { \
-		(p)->prev->next = (p)->next; \
+		if ((p)->prev) (p)->prev->next = (p)->next; \
 		if ((p)->next) (p)->next->prev = (p)->prev; \
 	} \
+	if ((p) && ((p) != (list))) (p)->next = (p)->prev = NULL; \
 }
 
 /* promote an element to the top of the list */
@@ -55,4 +55,25 @@
 { \
           DLIST_REMOVE(list, p) \
           DLIST_ADD(list, p) \
+}
+
+/* hook into the end of the list - needs a tmp pointer */
+#define DLIST_ADD_END(list, p, tmp) \
+{ \
+		if (!(list)) { \
+			(list) = (p); \
+			(p)->next = (p)->prev = NULL; \
+		} else { \
+			for ((tmp) = (list); (tmp)->next; (tmp) = (tmp)->next) ; \
+			(tmp)->next = (p); \
+			(p)->next = NULL; \
+			(p)->prev = (tmp); \
+		} \
+}
+
+/* demote an element to the top of the list, needs a tmp pointer */
+#define DLIST_DEMOTE(list, p, tmp) \
+{ \
+		DLIST_REMOVE(list, p) \
+		DLIST_ADD_END(list, p, tmp) \
 }

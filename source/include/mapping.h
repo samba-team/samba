@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Jean François Micouleau      1998-2001.
@@ -19,37 +20,13 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#define PRIV_ALL_INDEX		5
-
-#define SE_PRIV_NONE		0x0000
-#define SE_PRIV_ADD_MACHINES	0x0006
-#define SE_PRIV_SEC_PRIV	0x0008
-#define SE_PRIV_TAKE_OWNER	0x0009
-#define SE_PRIV_ADD_USERS	0xff01
-#define SE_PRIV_PRINT_OPERATOR	0xff03
-#define SE_PRIV_ALL		0xffff
-
-#define ENUM_ONLY_MAPPED True
-#define ENUM_ALL_MAPPED False
-
-#define MAPPING_WITH_PRIV True
-#define MAPPING_WITHOUT_PRIV False
-
-#define PR_NONE                0x0000
-#define PR_LOG_ON_LOCALLY      0x0001
-#define PR_ACCESS_FROM_NETWORK 0x0002
-#define PR_LOG_ON_BATCH_JOB    0x0004
-#define PR_LOG_ON_SERVICE      0x0010
-
-
 typedef struct _GROUP_MAP {
 	gid_t gid;
 	DOM_SID sid;
 	enum SID_NAME_USE sid_name_use;
 	fstring nt_name;
 	fstring comment;
-	uint32 systemaccount;
-	PRIVILEGE_SET priv_set;
+	uint32 privilege;
 } GROUP_MAP;
 
 typedef struct _PRIVS {
@@ -58,3 +35,14 @@ typedef struct _PRIVS {
 	char *description;
 } PRIVS;
 
+#define SE_PRIV_NONE		0x0000
+#define SE_PRIV_ADD_USERS	0x0001
+#define SE_PRIV_ADD_MACHINES	0x0002
+#define SE_PRIV_PRINT_OPERATOR	0x0004
+#define SE_PRIV_ALL		0xffff
+
+#define PRIV_ALL_INDEX		4
+
+
+#define ENUM_ONLY_MAPPED True
+#define ENUM_ALL_MAPPED False

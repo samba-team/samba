@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -23,7 +21,7 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
+#define CHECK_PATH_ON_TCONX 1
 
 extern struct timeval smb_last_time;
 extern int case_default;
@@ -38,11 +36,11 @@ extern fstring remote_machine;
 
 
 /****************************************************************************
-load parameters specific to a connection/service
+ Load parameters specific to a connection/service.
 ****************************************************************************/
-BOOL become_service(connection_struct *conn,BOOL do_chdir)
+
+BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
 {
-	extern char magic_char;
 	static connection_struct *last_conn;
 	int snum;
 
@@ -73,15 +71,49 @@ BOOL become_service(connection_struct *conn,BOOL do_chdir)
 	short_case_preserve = lp_shortpreservecase(snum);
 	case_mangle = lp_casemangle(snum);
 	case_sensitive = lp_casesensitive(snum);
-	magic_char = lp_magicchar(snum);
 	use_mangled_map = (*lp_mangled_map(snum) ? True:False);
 	return(True);
 }
 
+/****************************************************************************
+ Add a home service. Returns the new service number or -1 if fail.
+****************************************************************************/
+
+int add_home_service(char *service, char *homedir)
+{
+	int iHomeService;
+	int iService;
+	fstring new_service;
+	char *usr_p = NULL;
+
+	if (!service || !homedir)
+		return -1;
+
+	if ((iHomeService = lp_servicenumber(HOMES_NAME)) < 0)
+		return -1;
+
+	/*
+	 * If this is a winbindd provided username, remove
+	 * the domain component before adding the service.
+	 * Log a warning if the "path=" parameter does not
+	 * include any macros.
+	 */
+
+	fstrcpy(new_service, service); 
+
+	if ((usr_p = strchr(service,*lp_winbind_separator())) != NULL)
+		fstrcpy(new_service, usr_p+1);
+
+	lp_add_home(new_service,iHomeService,homedir);
+	iService = lp_servicenumber(new_service);
+
+	return iService;
+}
 
 /****************************************************************************
-  find a service entry. service is always in dos codepage
+ Find a service entry. service is always in dos codepage.
 ****************************************************************************/
+
 int find_service(char *service)
 {
    int iService;
@@ -93,7 +125,7 @@ int find_service(char *service)
    /* now handle the special case of a home directory */
    if (iService < 0)
    {
-      char *phome_dir = get_user_home_dir(service);
+      char *phome_dir = get_user_service_home_dir(service);
 
       if(!phome_dir)
       {
@@ -102,21 +134,13 @@ int find_service(char *service)
          * be a Windows to unix mapped user name.
          */
         if(map_username(service))
-          phome_dir = get_user_home_dir(service);
+          phome_dir = get_user_service_home_dir(service);
       }
 
       DEBUG(3,("checking for home directory %s gave %s\n",service,
             phome_dir?phome_dir:"(NULL)"));
 
-      if (phome_dir)
-      {   
-        int iHomeService;
-        if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
-        {
-          lp_add_home(service,iHomeService,phome_dir);
-          iService = lp_servicenumber(service);
-        }
-      }
+      iService = add_home_service(service,phome_dir);
    }
 
    /* If we still don't have a service, attempt to add it as a printer. */
@@ -189,8 +213,11 @@ int find_service(char *service)
 
 
 /****************************************************************************
-  make a connection to a service
+ Make a connection to a service. This function is designed to be called
+ AS ROOT and will return to being root on exit ! Modified current_user conn
+ and vuid elements.
 ****************************************************************************/
+
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
 {
 	int snum;
@@ -198,14 +225,24 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	BOOL guest = False;
 	BOOL force = False;
 	connection_struct *conn;
+#if !CHECK_PATH_ON_TCONX
+	struct stat st;
+#endif
+	uid_t euid;
 	int ret;
-	fstring dos_username;
+
+	/* This must ONLY BE CALLED AS ROOT. As it exits this function as root. */
+
+	if (!non_root_mode() && ((euid = geteuid()) != 0)) {
+		DEBUG(0,("make_connection: PANIC ERROR. Called as nonroot (%u)\n", (unsigned int)euid ));
+		smb_panic("make_connection: PANIC ERROR. Called as nonroot\n");
+	}
 
 	strlower(service);
 
 	snum = find_service(service);
 	if (snum < 0) {
-		if (strequal(service,"IPC$")) {
+		if (strequal(service,"IPC$") || strequal(service,"ADMIN$")) {
 			DEBUG(3,("refusing IPC connection\n"));
 			*ecode = ERRnoipc;
 			return NULL;
@@ -219,26 +256,29 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if (strequal(service,HOMES_NAME)) {
 		if (*user && Get_Pwnam(user,True)) {
+			fstring dos_username;
 			fstrcpy(dos_username, user);
-			unix_to_dos(dos_username, True);
+			unix_to_dos(dos_username);
 			return(make_connection(dos_username,user,password,
 					       pwlen,dev,vuid,ecode));
 		}
 
 		if(lp_security() != SEC_SHARE) {
 			if (validated_username(vuid)) {
+				fstring dos_username;
 				fstrcpy(user,validated_username(vuid));
 				fstrcpy(dos_username, user);
-				unix_to_dos(dos_username, True);
+				unix_to_dos(dos_username);
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
 			/* Security = share. Try with current_user_info.smb_name
 			 * as the username.  */
 			if(*current_user_info.smb_name) {
+				fstring dos_username;
 				fstrcpy(user,current_user_info.smb_name);
 				fstrcpy(dos_username, user);
-				unix_to_dos(dos_username, True);
+				unix_to_dos(dos_username);
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		}
@@ -252,7 +292,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	/* you can only connect to the IPC$ service as an ipc device */
-	if (strequal(service,"IPC$"))
+	if (strequal(service,"IPC$") || strequal(service,"ADMIN$"))
 		pstrcpy(dev,"IPC");
 	
 	if (*dev == '?' || !*dev) {
@@ -285,6 +325,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		add_session_user(service);
 	}
 
+
 	/* shall we let them in? */
 	if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid)) {
 		DEBUG( 2, ( "Invalid username/password for %s [%s]\n", service, user ) );
@@ -292,11 +333,12 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
   
+	add_session_user(user);
+		
 	conn = conn_new();
 	if (!conn) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		*ecode = ERRnoresource;
-		conn_free(conn);
 		return NULL;
 	}
 
@@ -310,9 +352,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
 
-	fstrcpy(dos_username, user);
-	unix_to_dos(dos_username, True);
-
 	conn->read_only = lp_readonly(snum);
 
 	{
@@ -320,13 +359,13 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
 		pstring_sub(list,"%S",service);
 
-		if (user_in_list(dos_username,list))
+		if (user_in_list(user,list))
 			conn->read_only = True;
 		
 		StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
 		pstring_sub(list,"%S",service);
 		
-		if (user_in_list(dos_username,list))
+		if (user_in_list(user,list))
 			conn->read_only = False;    
 	}
 
@@ -336,7 +375,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	   marked read_only. Changed as I don't think this is needed,
 	   but old code left in case there is a problem here.
 	*/
-	if (user_in_list(dos_username,lp_admin_users(snum)) 
+	if (user_in_list(user,lp_admin_users(snum)) 
 #if 0
 	    && !conn->read_only
 #endif
@@ -357,7 +396,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->service = snum;
 	conn->used = True;
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
-	conn->ipc = (strncmp(dev,"IPC",3) == 0);
+	conn->ipc = ((strncmp(dev,"IPC",3) == 0) || strequal(dev,"ADMIN$"));
 	conn->dirptr = NULL;
 	conn->veto_list = NULL;
 	conn->hide_list = NULL;
@@ -430,7 +469,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			 * Otherwise, the meaning of the '+' would be ignored.
 			 */
 			if (conn->force_user && user_must_be_member) {
-				if (user_in_group_list( dos_username, gname )) {
+				if (user_in_group_list( user, gname )) {
 						conn->gid = gid;
 						DEBUG(3,("Forced group %s for member %s\n",gname,user));
 				}
@@ -457,9 +496,20 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->groups = NULL;
 	
 	/* Find all the groups this uid is in and
-	   store them. Used by become_user() */
+	   store them. Used by change_to_user() */
 	initialise_groups(conn->user, conn->uid, conn->gid); 
 	get_current_groups(&conn->ngroups,&conn->groups);
+
+#ifdef HAVE_GETGROUPS_TOO_MANY_EGIDS
+	/*
+	 * Some OSes, like FreeBSD return EGID as group 0 from getgroups
+	 * and ignore group 0 on setgroups.
+	 * get_current_groups returns group 0 as 0, which is wrong.
+	 * We set it to gid here to prevent the token creation below
+	 * from creating an incorrect token (SID for local group 0).
+	 */
+	if (conn->ngroups) conn->groups[0] = conn->gid;
+#endif /* HAVE_GETGROUPS_TOO_MANY_EGIDS */
 		
 	/* check number of connections */
 	if (!claim_connection(conn,
@@ -471,34 +521,41 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		conn_free(conn);
 		return NULL;
 	}  
+		
+	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
+					      conn->ngroups, conn->groups,
+					      guest, NULL);
 
-    conn->nt_user_token = create_nt_token(conn->uid, conn->gid,
-                                        conn->ngroups, conn->groups, guest, NULL);
+	/*
+	 * New code to check if there's a share security descripter
+	 * added from NT server manager. This is done after the
+	 * smb.conf checks are done as we need a uid and token. JRA.
+	 */
 
+	{
+		BOOL can_write = share_access_check(conn, snum, vuid, FILE_WRITE_DATA);
+
+		if (!can_write) {
+			if (!share_access_check(conn, snum, vuid, FILE_READ_DATA)) {
+				/* No access, read or write. */
+				*ecode = ERRaccess;
+				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
+					service ));
+				yield_connection(conn, lp_servicename(SNUM(conn)));
+				conn_free(conn);
+				return NULL;
+			} else {
+				conn->read_only = True;
+			}
+		}
+	}
 	/* Initialise VFS function pointers */
 
-	if (*lp_vfsobj(SNUM(conn))) {
-
-#ifdef HAVE_LIBDL
-
-	    /* Loadable object file */
-
-	    if (!vfs_init_custom(conn)) {
-	    	DEBUG(0, ("vfs_init failed\n"));
-		    conn_free(conn);
-			return NULL;
-	    }
-#else
-	    DEBUG(0, ("No libdl present - cannot use VFS objects\n"));
-	    conn_free(conn);
-	    return NULL;
-#endif
-
-	} else {
-
-	    /* Normal share - initialise with disk access functions */
-
-	    vfs_init_default(conn);
+	if (!smbd_vfs_init(conn)) {
+		DEBUG(0, ("smbd_vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
+		yield_connection(conn, lp_servicename(SNUM(conn)));
+		conn_free(conn);
+		return NULL;
 	}
 
 	/* execute any "root preexec = " line */
@@ -507,16 +564,17 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
 		DEBUG(5,("cmd=%s\n",cmd));
-		ret = smbrun(cmd,NULL,False);
+		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			yield_connection(conn, lp_servicename(SNUM(conn)));
 			conn_free(conn);
 			*ecode = ERRsrverror;
 			return NULL;
 		}
 	}
 	
-	if (!become_user(conn, conn->vuid)) {
+	if (!change_to_user(conn, conn->vuid)) {
 		DEBUG(0,("Can't become connected user!\n"));
 		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
@@ -524,21 +582,59 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
 	
+	/* execute any "preexec = " line */
+	if (*lp_preexec(SNUM(conn))) {
+		pstring cmd;
+		pstrcpy(cmd,lp_preexec(SNUM(conn)));
+		standard_sub_conn(conn,cmd);
+		ret = smbrun(cmd,NULL);
+		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			yield_connection(conn, lp_servicename(SNUM(conn)));
+			conn_free(conn);
+			*ecode = ERRsrverror;
+			return NULL;
+		}
+	}
+
+	/*
+	 * FIXME!!!! Reenabled this code since it current;y breaks 
+	 * move_driver_to_download_area() by keeping the root path 
+	 * of the connection at /tmp.  I'll work on a real fix, but this
+	 * will keep people happy for a temporary meaure.  --jerry
+	 */ 
+#if CHECK_PATH_ON_TCONX
+	/* win2000 does not check the permissions on the directory
+	   during the tree connect, instead relying on permission
+	   check during individual operations. To match this behaviour
+	   I have disabled this chdir check (tridge) */
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
-		DEBUG(0,("Can't change directory to %s (%s)\n",
+		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
+			 remote_machine, conn->client_address,
 			 conn->connectpath,strerror(errno)));
-		unbecome_user();
+		change_to_root_user();
 		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRnosuchshare;
 		return NULL;
 	}
+#else
+	/* the alternative is just to check the directory exists */
+	if (stat(conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
+		DEBUG(0,("%s is not a directory\n", conn->connectpath));
+		change_to_root_user();
+		yield_connection(conn, lp_servicename(SNUM(conn)));
+		conn_free(conn);
+		*ecode = ERRnosuchshare;
+		return NULL;
+	}
+#endif
 	
 	string_set(&conn->origpath,conn->connectpath);
 	
 #if SOFTLINK_OPTIMISATION
-	/* resolve any soft links early */
-	{
+	/* resolve any soft links early if possible */
+	if (vfs_ChDir(conn,conn->connectpath) == 0) {
 		pstring s;
 		pstrcpy(s,conn->connectpath);
 		vfs_GetWd(conn,s);
@@ -547,22 +643,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 #endif
 	
-	add_session_user(user);
-		
-	/* execute any "preexec = " line */
-	if (*lp_preexec(SNUM(conn))) {
-		pstring cmd;
-		pstrcpy(cmd,lp_preexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd);
-		ret = smbrun(cmd,NULL,False);
-		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
-			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			conn_free(conn);
-			*ecode = ERRsrverror;
-			return NULL;
-		}
-	}
-
 	/*
 	 * Print out the 'connected as' stuff here as we need
 	 * to know the effective uid and gid we will be using.
@@ -577,7 +657,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 	
 	/* we've finished with the sensitive stuff */
-	unbecome_user();
+	change_to_root_user();
 	
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
@@ -589,6 +669,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	/* Invoke VFS make connection hook */
 
 	if (conn->vfs_ops.connect) {
+		DEBUG(10,("calling vfs_ops.connect for service %s (options = %s)\n", service, lp_vfs_options(SNUM(conn)) ));
 		if (conn->vfs_ops.connect(conn, service, user) < 0)
 			return NULL;
 	}
@@ -596,15 +677,15 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	return(conn);
 }
 
-
 /****************************************************************************
-close a cnum
+ Close a cnum
 ****************************************************************************/
+
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
 	DirCacheFlush(SNUM(conn));
 
-	unbecome_user();
+	change_to_root_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 remote_machine,conn->client_address,
@@ -625,23 +706,26 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	/* execute any "postexec = " line */
 	if (*lp_postexec(SNUM(conn)) && 
-	    become_user(conn, vuid))  {
+	    change_to_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
-		smbrun(cmd,NULL,False);
-		unbecome_user();
+		smbrun(cmd,NULL);
 	}
 
-	unbecome_user();
+	change_to_root_user();
 	/* execute any "root postexec = " line */
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
-		smbrun(cmd,NULL,False);
+		smbrun(cmd,NULL);
 	}
+
+	/* make sure we leave the directory available for unmount */
+	vfs_ChDir(conn, "/");
+
 	conn_free(conn);
 }
 
-#undef OLD_NTDOMAIN
+

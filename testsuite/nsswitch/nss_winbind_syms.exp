@@ -14,33 +14,24 @@
 #    _nss_winbind_getpwuid_r
 #    _nss_winbind_setgrent
 #    _nss_winbind_setpwent
+#    _nss_winbind_initgroups
 #
 # This test also has the nice side-effect of showing any unresolved symbols 
 # in the library.
 #
 
 load_lib util-defs.exp
+load_lib compile.exp
 
-# Compile nss_winbind_syms.c
-
-set output [target_compile "$srcdir/$subdir/nss_winbind_syms.c" \
-        "$srcdir/$subdir/nss_winbind_syms" executable \
-        {"libs=-ldl" "additional_flags=-g"}]
-
-if {$output != ""} {
-    perror "compile nss_winbind_syms.c"
-    puts $output
-    return
-}
-
-# Run load-dl.c
+simple_compile "nss_winbind_syms" "-ldl"
 
 set output [util_start "$srcdir/$subdir/nss_winbind_syms" \
         "nsswitch/libnss_winbind.so"]
 
-if {[regexp "FAIL:" $output]} {
+verbose $output
+
+if { [regexp "FAIL:" $output] } {
     fail "run nss_winbind_syms"
-    puts $output
     return
 }
 

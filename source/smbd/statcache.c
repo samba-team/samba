@@ -3,7 +3,7 @@
    Version 3.0
    stat cache code
    Copyright (C) Andrew Tridgell 1992-2000
-   Copyright (C) Jeremy Allison 1999-200
+   Copyright (C) Jeremy Allison 1999-2000
    
    
    This program is free software; you can redistribute it and/or modify
@@ -221,11 +221,11 @@ BOOL reset_stat_cache( void )
 	static BOOL initialised;
 	if (!lp_stat_cache()) return True;
 
-	if (!initialised) {
-		initialised = True;
-		return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
+	if (initialised) {
+		hash_clear(&stat_cache);
 	}
-	hash_clear(&stat_cache);
-	return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
 
+	initialised = hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, 
+				       (compare_function)(strcmp));
+	return initialised;
 } /* reset_stat_cache  */

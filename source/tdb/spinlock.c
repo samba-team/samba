@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba database functions
    Copyright (C) Anton Blanchard                   2001
    
@@ -18,11 +17,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-#if STANDALONE
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#if STANDALONE
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>

@@ -27,13 +27,10 @@
 
 extern int ClientNMB;
 
-extern int DEBUGLEVEL;
-
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern char **my_netbios_names;
 extern uint16 samba_nb_type;
-extern struct in_addr ipzero;
 
 int workgroup_count = 0; /* unique index key: one for each workgroup */
 
@@ -52,7 +49,7 @@ static void add_workgroup(struct subnet_record *subrec, struct work_record *work
   Create an empty workgroup.
   **************************************************************************/
 
-static struct work_record *create_workgroup(char *name, int ttl)
+static struct work_record *create_workgroup(const char *name, int ttl)
 {
   struct work_record *work;
   struct subnet_record *subrec;
@@ -103,7 +100,7 @@ static struct work_record *create_workgroup(char *name, int ttl)
 
   /* No known domain master browser as yet. */
   *work->dmb_name.name = '\0';
-  putip((char *)&work->dmb_addr, &ipzero);
+  zero_ip(&work->dmb_addr);
 
   /* WfWg  uses 01040b01 */
   /* Win95 uses 01041501 */
@@ -180,7 +177,7 @@ struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec,
   **************************************************************************/
 
 struct work_record *create_workgroup_on_subnet(struct subnet_record *subrec,
-                                               fstring name, int ttl)
+                                               const char *name, int ttl)
 {
   struct work_record *work = NULL;
 

@@ -24,9 +24,10 @@
 #include "includes.h"
 
 /****************************************************************************
-issue a single SMBread and don't wait for a reply
+Issue a single SMBread and don't wait for a reply.
 ****************************************************************************/
-static void cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
+
+static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
 			   size_t size, int i)
 {
 	memset(cli->outbuf,'\0',smb_size);
@@ -34,117 +35,216 @@ static void cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 
 	set_message(cli->outbuf,10,0,True);
 		
-	CVAL(cli->outbuf,smb_com) = SMBreadX;
+	SCVAL(cli->outbuf,smb_com,SMBreadX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 	SIVAL(cli->outbuf,smb_vwv3,offset);
 	SSVAL(cli->outbuf,smb_vwv5,size);
 	SSVAL(cli->outbuf,smb_vwv6,size);
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
-	cli_send_smb(cli);
+	return cli_send_smb(cli);
 }
 
 /****************************************************************************
-  read from a file
+Issue a single SMBreadraw and don't wait for a reply.
 ****************************************************************************/
-size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
+
+static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset, 
+			   size_t size, int i)
+{
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,10,0,True);
+		
+	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,fnum);
+	SIVAL(cli->outbuf,smb_vwv1,offset);
+	SSVAL(cli->outbuf,smb_vwv2,size);
+	SSVAL(cli->outbuf,smb_vwv3,size);
+	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
+
+	return cli_send_smb(cli);
+}
+
+/****************************************************************************
+  Read size bytes at offset offset using SMBreadX.
+****************************************************************************/
+
+ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
 {
 	char *p;
-	int total = -1;
-	int issued=0;
-	int received=0;
-/*
- * There is a problem in this code when mpx is more than one.
- * for some reason files can get corrupted when being read.
- * Until we understand this fully I am serializing reads (one
- * read/one reply) for now. JRA.
- */
-#if 0
-	int mpx = MAX(cli->max_mux-1, 1); 
-#else
-	int mpx = 1;
-#endif
-	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
-	int mid;
-	int blocks = (size + (block-1)) / block;
+	int size2;
+	int readsize;
+	ssize_t total = 0;
 
-	if (size == 0) return 0;
+	if (size == 0) 
+		return 0;
 
-	while (received < blocks) {
-		int size2;
+	/*
+	 * Set readsize to the maximum size we can handle in one readX,
+	 * rounded down to a multiple of 1024.
+	 */
 
-		while (issued - received < mpx && issued < blocks) {
-			int size1 = MIN(block, size-issued*block);
-			cli_issue_read(cli, fnum, offset+issued*block, size1, issued);
-			issued++;
+	readsize = (cli->max_xmit - (smb_size+32)) & ~1023;
+
+	while (total < size) {
+		readsize = MIN(readsize, size-total);
+
+		/* Issue a read and receive a reply */
+
+		if (!cli_issue_read(cli, fnum, offset, readsize, 0))
+			return -1;
+
+		if (!cli_receive_smb(cli))
+			return -1;
+
+		/* Check for error.  Make sure to check for DOS and NT
+                   errors. */
+
+                if (cli_is_error(cli)) {
+                        NTSTATUS status = NT_STATUS_OK;
+                        uint8 eclass = 0;
+			uint32 ecode = 0;
+
+                        if (cli_is_nt_error(cli))
+                                status = cli_nt_error(cli);
+                        else
+                                cli_dos_error(cli, &eclass, &ecode);
+
+                        if ((eclass == ERRDOS && ecode == ERRmoredata) ||
+                            NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES))
+                                return -1;
 		}
 
-		if (!cli_receive_smb(cli)) {
-			return total;
-		}
-
-		received++;
-		mid = SVAL(cli->inbuf, smb_mid) - cli->mid;
 		size2 = SVAL(cli->inbuf, smb_vwv5);
 
-		if (CVAL(cli->inbuf,smb_rcls) != 0) {
-			blocks = MIN(blocks, mid-1);
-			continue;
-		}
-
-		if (size2 <= 0) {
-			blocks = MIN(blocks, mid-1);
-			/* this distinguishes EOF from an error */
-			total = MAX(total, 0);
-			continue;
-		}
-
-		if (size2 > block) {
-			DEBUG(0,("server returned more than we wanted!\n"));
+		if (size2 > readsize) {
+			DEBUG(5,("server returned more than we wanted!\n"));
+			return -1;
+		} else if (size2 < 0) {
+			DEBUG(5,("read return < 0!\n"));
 			return -1;
 		}
-		if (mid >= issued) {
-			DEBUG(0,("invalid mid from server!\n"));
-			return -1;
-		}
+
+		/* Copy data into buffer */
+
 		p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
+		memcpy(buf + total, p, size2);
 
-		memcpy(buf+mid*block, p, size2);
+		total += size2;
+		offset += size2;
 
-		total = MAX(total, mid*block + size2);
+		/*
+		 * If the server returned less than we asked for we're at EOF.
+		 */
+
+		if (size2 < readsize)
+			break;
 	}
 
-	while (received < issued) {
-		cli_receive_smb(cli);
-		received++;
-	}
-	
 	return total;
 }
 
+/****************************************************************************
+ Tester for the readraw call.
+****************************************************************************/
+
+ssize_t cli_readraw(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
+{
+	char *p;
+	int size2;
+	size_t readsize;
+	ssize_t total = 0;
+
+	if (size == 0) 
+		return 0;
+
+	/*
+	 * Set readsize to the maximum size we can handle in one readraw.
+	 */
+
+	readsize = 0xFFFF;
+
+	while (total < size) {
+		readsize = MIN(readsize, size-total);
+
+		/* Issue a read and receive a reply */
+
+		if (!cli_issue_readraw(cli, fnum, offset, readsize, 0))
+			return -1;
+
+		if (!client_receive_smb(cli->fd, cli->inbuf, cli->timeout))
+			return -1;
+
+		size2 = smb_len(cli->inbuf);
+
+		if (size2 > readsize) {
+			DEBUG(5,("server returned more than we wanted!\n"));
+			return -1;
+		} else if (size2 < 0) {
+			DEBUG(5,("read return < 0!\n"));
+			return -1;
+		}
+
+		/* Copy data into buffer */
+
+		if (size2) {
+			p = cli->inbuf + 4;
+			memcpy(buf + total, p, size2);
+		}
+
+		total += size2;
+		offset += size2;
+
+		/*
+		 * If the server returned less than we asked for we're at EOF.
+		 */
+
+		if (size2 < readsize)
+			break;
+	}
+
+	return total;
+}
 
 /****************************************************************************
 issue a single SMBwrite and don't wait for a reply
 ****************************************************************************/
-static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint16 mode, char *buf,
+
+static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint16 mode, char *buf,
 			    size_t size, int i)
 {
 	char *p;
 
+	if (size > cli->bufsize) {
+		cli->outbuf = realloc(cli->outbuf, size + 1024);
+		cli->inbuf = realloc(cli->inbuf, size + 1024);
+		if (cli->outbuf == NULL || cli->inbuf == NULL)
+			return False;
+		cli->bufsize = size + 1024;
+	}
+
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,12,size,True);
+	if (size > 0xFFFF)
+		set_message(cli->outbuf,14,0,True);
+	else
+		set_message(cli->outbuf,12,0,True);
 	
-	CVAL(cli->outbuf,smb_com) = SMBwriteX;
+	SCVAL(cli->outbuf,smb_com,SMBwriteX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 
 	SIVAL(cli->outbuf,smb_vwv3,offset);
@@ -152,17 +252,19 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	SSVAL(cli->outbuf,smb_vwv7,mode);
 
 	SSVAL(cli->outbuf,smb_vwv8,(mode & 0x0008) ? size : 0);
+	SSVAL(cli->outbuf,smb_vwv9,((size>>16)&1));
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
 	
 	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
 	memcpy(p, buf, size);
+	cli_setup_bcc(cli, p+size);
 
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 	
 	show_msg(cli->outbuf);
-	cli_send_smb(cli);
+	return cli_send_smb(cli);
 }
 
 /****************************************************************************
@@ -172,6 +274,7 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
               0x0004 use raw named pipe protocol
               0x0008 start of message mode named pipe protocol
 ****************************************************************************/
+
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
 		  char *buf, off_t offset, size_t size)
@@ -185,45 +288,40 @@ ssize_t cli_write(struct cli_state *cli,
 
 	while (received < blocks) {
 
-		while ((issued - received < mpx) && (issued < blocks))
-		{
+		while ((issued - received < mpx) && (issued < blocks)) {
 			int bsent = issued * block;
 			int size1 = MIN(block, size - bsent);
 
-			cli_issue_write(cli, fnum, offset + bsent,
+			if (!cli_issue_write(cli, fnum, offset + bsent,
 			                write_mode,
 			                buf + bsent,
-					size1, issued);
+					size1, issued))
+				return -1;
 			issued++;
 		}
 
 		if (!cli_receive_smb(cli))
-		{
 			return bwritten;
-		}
 
 		received++;
 
-		if (CVAL(cli->inbuf,smb_rcls) != 0)
-		{
+		if (cli_is_error(cli))
 			break;
-		}
 
 		bwritten += SVAL(cli->inbuf, smb_vwv2);
+		bwritten += (((int)(SVAL(cli->inbuf, smb_vwv4)))>>16);
 	}
 
 	while (received < issued && cli_receive_smb(cli))
-	{
 		received++;
-	}
 	
 	return bwritten;
 }
 
-
 /****************************************************************************
   write to a file using a SMBwrite and not bypassing 0 byte writes
 ****************************************************************************/
+
 ssize_t cli_smbwrite(struct cli_state *cli,
 		     int fnum, char *buf, off_t offset, size_t size1)
 {
@@ -236,9 +334,9 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		set_message(cli->outbuf,5, 3 + size,True);
+		set_message(cli->outbuf,5, 0,True);
 
-		CVAL(cli->outbuf,smb_com) = SMBwrite;
+		SCVAL(cli->outbuf,smb_com,SMBwrite);
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
 		
@@ -249,25 +347,29 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		
 		p = smb_buf(cli->outbuf);
 		*p++ = 1;
-		SSVAL(p, 0, size);
-		memcpy(p+2, buf, size);
+		SSVAL(p, 0, size); p += 2;
+		memcpy(p, buf, size); p += size;
+
+		cli_setup_bcc(cli, p);
 		
-		cli_send_smb(cli);
-		if (!cli_receive_smb(cli)) {
+		if (!cli_send_smb(cli))
 			return -1;
-		}
+
+		if (!cli_receive_smb(cli))
+			return -1;
 		
-		if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		if (cli_is_error(cli))
 			return -1;
-		}
 
 		size = SVAL(cli->inbuf,smb_vwv0);
-		if (size == 0) break;
+		if (size == 0)
+			break;
 
 		size1 -= size;
 		total += size;
+		offset += size;
+
 	} while (size1);
 
 	return total;
 }
-

@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -22,8 +20,6 @@
 */
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 /*
    This module implements directory related functions for Samba.
@@ -248,10 +244,9 @@ static void dptr_close_internal(dptr_struct *dptr)
   }
 
   /* Lanman 2 specific code */
-  if (dptr->wcard)
-    free(dptr->wcard);
+  SAFE_FREE(dptr->wcard);
   string_set(&dptr->path,"");
-  free((char *)dptr);
+  SAFE_FREE(dptr);
 }
 
 /****************************************************************************
@@ -440,7 +435,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
 
       if(dptr->dnum == -1 || dptr->dnum > 254) {
         DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
-        free((char *)dptr);
+        SAFE_FREE(dptr);
         return -1;
       }
     }
@@ -469,7 +464,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
 
       if(dptr->dnum == -1 || dptr->dnum < 255) {
         DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
-        free((char *)dptr);
+        SAFE_FREE(dptr);
         return -1;
       }
     }
@@ -564,6 +559,12 @@ BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int di
   return True;
 }
 
+static BOOL mangle_mask_match(connection_struct *conn, char *filename, char *mask)
+{
+	mangle_map(filename,True,False,SNUM(conn));
+	return mask_match(filename,mask,False);
+}
+
 /****************************************************************************
  Get an 8.3 directory entry.
 ****************************************************************************/
@@ -590,7 +591,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
 
   if (!conn->dirptr)
     return(False);
-  
+
   while (!found)
   {
     dname = ReadDirName(conn->dirptr);
@@ -609,14 +610,13 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
     */
     if ((strcmp(mask,"*.*") == 0) ||
 	mask_match(filename,mask,False) ||
-        (name_map_mangle(filename,True,False,SNUM(conn)) &&
-         mask_match(filename,mask,False)))
+        mangle_mask_match(conn,filename,mask))
     {
       if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
         continue;
 
-      if (!is_8_3(filename, False)) {
-	      name_map_mangle(filename,True,False,SNUM(conn));
+      if (!mangle_is_8_3(filename, False)) {
+	      mangle_map(filename,True,False,SNUM(conn));
       }
 
       pstrcpy(fname,filename);
@@ -627,7 +627,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
       pstrcpy(pathreal,path);
       pstrcat(path,fname);
       pstrcat(pathreal,dname);
-      if (conn->vfs_ops.stat(conn,dos_to_unix(pathreal, False), &sbuf) != 0)
+      if (conn->vfs_ops.stat(conn,dos_to_unix_static(pathreal), &sbuf) != 0)
       {
         DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",path, strerror(errno) ));
         continue;
@@ -665,57 +665,146 @@ typedef struct
 } Dir;
 
 
+
+/*******************************************************************
+check to see if a user can read a file. This is only approximate,
+it is used as part of the "hide unreadable" option. Don't
+use it for anything security sensitive
+********************************************************************/
+
+static BOOL user_can_read_file(connection_struct *conn, char *name)
+{
+	extern struct current_user current_user;
+	SMB_STRUCT_STAT ste;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	files_struct *fsp;
+	int smb_action;
+	int access_mode;
+	NTSTATUS status;
+	uint32 access_granted;
+
+	ZERO_STRUCT(ste);
+
+	/*
+	 * If user is a member of the Admin group
+	 * we never hide files from them.
+	 */
+
+	if (conn->admin_user)
+		return True;
+
+	/* If we can't stat it does not show it */
+	if (vfs_stat(conn, name, &ste) != 0)
+		return False;
+
+	/* Pseudo-open the file (note - no fd's created). */
+
+	if(S_ISDIR(ste.st_mode))	
+		 fsp = open_directory(conn, name, &ste, 0, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+			unix_mode(conn,aRONLY|aDIR, name), &smb_action);
+	else
+		fsp = open_file_shared1(conn, name, &ste, FILE_READ_ATTRIBUTES, SET_DENY_MODE(DENY_NONE), 
+                                (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
+
+	if (!fsp)
+		return False;
+
+	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
+	sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
+	close_file(fsp, False);
+
+	/* No access if SD get failed. */
+	if (!sd_size)
+		return False;
+
+	return se_access_check(psd, current_user.nt_user_token, FILE_READ_DATA,
+                                 &access_granted, &status);
+}
+
 /*******************************************************************
  Open a directory.
 ********************************************************************/
 
 void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
-  Dir *dirp;
-  char *n;
-  DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix(name,False));
-  int used=0;
+	Dir *dirp;
+	char *n;
+	DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix_static(name));
+	int used=0;
+  
+	if (!p)
+		return(NULL);
+	dirp = (Dir *)malloc(sizeof(Dir));
+	if (!dirp) {
+		DEBUG(0,("Out of memory in OpenDir\n"));
+		conn->vfs_ops.closedir(conn,p);
+		return(NULL);
+	}
 
-  if (!p) return(NULL);
-  dirp = (Dir *)malloc(sizeof(Dir));
-  if (!dirp) {
-    conn->vfs_ops.closedir(conn,p);
-    return(NULL);
-  }
-  dirp->pos = dirp->numentries = dirp->mallocsize = 0;
-  dirp->data = dirp->current = NULL;
+	dirp->pos = dirp->numentries = dirp->mallocsize = 0;
+	dirp->data = dirp->current = NULL;
 
-  while ((n = vfs_readdirname(conn, p)))
-  {
-    int l;
+	while (True) {
+		int l;
+		BOOL normal_entry = True;
 
-    l = strlen(n)+1;
+		if (used == 0) {
+			n = ".";
+			normal_entry = False;
+		} else if (used == 2) {
+			n = "..";
+			normal_entry = False;
+		} else {
+			n = vfs_readdirname(conn, p);
+			if (n == NULL)
+				break;
+			if ((strcmp(".",n) == 0) ||(strcmp("..",n) == 0))
+				continue;
+			normal_entry = True;
+		}
 
-    /* Return value of vfs_readdirname has already gone through 
-       unix_to_dos() */
+		l = strlen(n)+1;
 
-    /* If it's a vetoed file, pretend it doesn't even exist */
-    if (use_veto && conn && IS_VETO_PATH(conn, n)) continue;
+		/* Return value of vfs_readdirname has already gone through 
+			unix_to_dos() */
 
-    if (used + l > dirp->mallocsize) {
-      int s = MAX(used+l,used+2000);
-      char *r;
-      r = (char *)Realloc(dirp->data,s);
-      if (!r) {
-	DEBUG(0,("Out of memory in OpenDir\n"));
-	break;
-      }
-      dirp->data = r;
-      dirp->mallocsize = s;
-      dirp->current = dirp->data;
-    }
-    pstrcpy(dirp->data+used,n);
-    used += l;
-    dirp->numentries++;
-  }
+		/* If it's a vetoed file, pretend it doesn't even exist */
+		if (normal_entry && use_veto && conn && IS_VETO_PATH(conn, n))
+			continue;
 
-  conn->vfs_ops.closedir(conn,p);
-  return((void *)dirp);
+		/* Honour _hide unreadable_ option */
+		if (normal_entry && conn && lp_hideunreadable(SNUM(conn))) {
+			char *entry;
+			int ret=0;
+      
+			if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
+				ret = user_can_read_file(conn, entry);
+				SAFE_FREE(entry);
+			}
+			if (!ret)
+				continue;
+		}
+
+		if (used + l > dirp->mallocsize) {
+			int s = MAX(used+l,used+2000);
+			char *r;
+			r = (char *)Realloc(dirp->data,s);
+			if (!r) {
+				DEBUG(0,("Out of memory in OpenDir\n"));
+				break;
+											}
+			dirp->data = r;
+			dirp->mallocsize = s;
+			dirp->current = dirp->data;
+		}
+		pstrcpy(dirp->data+used,n);
+		used += l;
+		dirp->numentries++;
+	}
+
+	conn->vfs_ops.closedir(conn,p);
+	return((void *)dirp);
 }
 
 
@@ -727,8 +816,8 @@ void CloseDir(void *p)
 {
   Dir *dirp = (Dir *)p;
   if (!dirp) return;    
-  if (dirp->data) free(dirp->data);
-  free(dirp);
+  SAFE_FREE(dirp->data);
+  SAFE_FREE(dirp);
 }
 
 /*******************************************************************
@@ -837,7 +926,7 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum )
 
   /* Free excess cache entries. */
   while( DIRCACHESIZE < dir_cache->count )
-    free( ubi_dlRemTail( dir_cache ) );
+    safe_free( ubi_dlRemTail( dir_cache ) );
 
 }
 
@@ -889,9 +978,7 @@ void DirCacheFlush(int snum)
 	    NULL != entry; )  {
 		next = ubi_dlNext( entry );
 		if( entry->snum == snum )
-			free( ubi_dlRemThis( dir_cache, entry ) );
+			safe_free( ubi_dlRemThis( dir_cache, entry ) );
 		entry = (dir_cache_entry *)next;
 	}
 }
-
-#undef OLD_NTDOMAIN

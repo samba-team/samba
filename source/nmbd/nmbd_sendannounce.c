@@ -27,7 +27,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern char **my_netbios_names;
@@ -48,9 +47,9 @@ void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_ad
 
   memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = ANN_ResetBrowserState;
+  SCVAL(p,0,ANN_ResetBrowserState);
   p++;
-  CVAL(p,0) = reset_type;
+  SCVAL(p,0,reset_type);
   p++;
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
@@ -75,10 +74,10 @@ to subnet %s\n", work->work_group, subrec->subnet_name));
 
   memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = ANN_AnnouncementRequest;
+  SCVAL(p,0,ANN_AnnouncementRequest);
   p++;
 
-  CVAL(p,0) = work->token; /* (local) Unique workgroup token id. */
+  SCVAL(p,0,work->token); /* (local) Unique workgroup token id. */
   p++;
   StrnCpy(p,global_myname,15);
   strupper(p);
@@ -104,17 +103,17 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
   memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf+1;
 
-  CVAL(outbuf,0) = announce_type;
+  SCVAL(outbuf,0,announce_type);
 
   /* Announcement parameters. */
-  CVAL(p,0) = updatecount;
+  SCVAL(p,0,updatecount);
   SIVAL(p,1,announce_interval*1000); /* Milliseconds - despite the spec. */
 
   StrnCpy(p+5,server_name,15);
   strupper(p+5);
 
-  CVAL(p,21) = lp_major_announce_version(); /* Major version. */
-  CVAL(p,22) = lp_minor_announce_version(); /* Minor version. */
+  SCVAL(p,21,lp_major_announce_version()); /* Major version. */
+  SCVAL(p,22,lp_minor_announce_version()); /* Minor version. */
 
   SIVAL(p,23,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
   /* Browse version: got from NT/AS 4.00  - Value defined in smb.h (JHT). */
@@ -146,8 +145,8 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
 
   SSVAL(p,0,announce_type);
   SIVAL(p,2,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
-  CVAL(p,6) = lp_major_announce_version(); /* Major version. */
-  CVAL(p,7) = lp_minor_announce_version(); /* Minor version. */
+  SCVAL(p,6,lp_major_announce_version()); /* Major version. */
+  SCVAL(p,7,lp_minor_announce_version()); /* Minor version. */
   SSVAL(p,8,announce_interval);            /* In seconds - according to spec. */
 
   p += 10;
@@ -589,7 +588,7 @@ for workgroup %s on subnet %s.\n", global_myworkgroup, FIRST_SUBNET->subnet_name
 
   memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = ANN_MasterAnnouncement;
+  SCVAL(p,0,ANN_MasterAnnouncement);
   p++;
 
   StrnCpy(p,global_myname,15);

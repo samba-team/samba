@@ -26,8 +26,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -54,13 +52,14 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   pstring ascuser;
   char *unicomp; /* Unicode computer name. */
 
+  START_PROFILE(domain_logon);
   memset(outbuf, 0, sizeof(outbuf));
 
   if (!lp_domain_logons())
   {
     DEBUG(3,("process_logon_packet: Logon packet received from IP %s and domain \
 logons are not enabled.\n", inet_ntoa(p->ip) ));
-    return;
+    goto done;
   }
 
   pstrcpy(my_name, global_myname);
@@ -102,7 +101,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       send_mailslot(True, getdc, 
                     outbuf,PTR_DIFF(q,outbuf),
 		    global_myname, 0x0,
-                    dgram->source_name.name,
+					machine,
                     dgram->source_name.name_type,
                     p->ip, *iface_ip(p->ip), p->port);  
       break;
@@ -112,6 +111,12 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
     {
       char *q = buf + 2;
       char *machine = q;
+
+      if (!lp_domain_master())
+      {  
+         /* We're not Primary Domain Controller -- ignore this */
+         goto done;
+      }
 
       getdc = skip_string(machine,1);
       q = skip_string(getdc,1);
@@ -186,7 +191,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
                   dgram->source_name.name,
                   dgram->source_name.name_type,
                   p->ip, *iface_ip(p->ip), p->port);  
-      return;
+      goto done;
     }
 
     case SAMLOGON:
@@ -281,7 +286,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
     default:
     {
       DEBUG(3,("process_logon_packet: Unknown domain request %d\n",code));
-      return;
+      goto done;
     }
   }
+done:
+  END_PROFILE(domain_logon);
 }

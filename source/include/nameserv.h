@@ -421,6 +421,13 @@ struct res_rec {
   char rdata[MAX_DGRAM_SIZE];
 };
 
+#define NM_FLAGS_RS 0x80 /* Response. Cheat     */
+#define NM_FLAGS_AA 0x40 /* Authoritative       */
+#define NM_FLAGS_TC 0x20 /* Truncated           */
+#define NM_FLAGS_RD 0x10 /* Recursion Desired   */
+#define NM_FLAGS_RA 0x08 /* Recursion Available */
+#define NM_FLAGS_B  0x01 /* Broadcast           */
+
 /* An nmb packet. */
 struct nmb_packet
 {
@@ -507,6 +514,7 @@ struct packet_struct
 /* NETLOGON opcodes */
 
 #define QUERYFORPDC	 7 /* Query for PDC. */
+#define SAM_UAS_CHANGE  10 /* Announce change to UAS or SAM. */
 #define QUERYFORPDC_R	12 /* Response to Query for PDC. */
 #define SAMLOGON	18
 #define SAMLOGON_R	19
@@ -567,10 +575,6 @@ extern struct subnet_record *remote_broadcast_subnet;
 #define FIRST_SUBNET subnetlist
 #define NEXT_SUBNET_EXCLUDING_UNICAST(x) ((x)->next)
 #define NEXT_SUBNET_INCLUDING_UNICAST(x) (get_next_subnet_maybe_unicast((x)))
-
-/* Standard nameserver file on UNIX*/
-#define NAME_SERVER_FILE "/etc/resolv.conf"
-#define NAME_SERVER_NUM 3 /* The number of nameservers that are parsed out of resolv.conf */
 
 /* To be removed. */
 enum state_type { TEST };

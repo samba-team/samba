@@ -2,15 +2,13 @@
 
 # This file goes through all the necessary steps to build a release package.
 # syntax:
-#     mkrelease.sh [5] [clean] [targets ....]
-#
-# You may specify 5 to build for IRIX 5.3
+#     mkrelease.sh [clean]
 #
 # You can specify clean to do a make clean before building. Make clean
 # will also run configure and generate the required Makefile.
 #
-# You can specify which targets to build. If targets are specified, the
-# specified targets will be built but inst packages will not be generated.
+# This will build an smbd.noquota, smbd.profile, nmbd.profile and the
+# entire package with quota support and acl support.
 
 doclean=""
 SGI_ABI=-n32
@@ -21,35 +19,22 @@ if [ ! -f ../../source/Makefile ]; then
   doclean="clean"
 fi
 
-if [ "$1" = "clean" ]; then
+if [ "$1" = "clean" ] || [ "$1" = "cleanonly" ]; then
   doclean=$1
-  shift
-elif [ "$1" = "5" ]; then
-  SGI_ABI=-32
-  ISA=""
-  shift
-fi
-
-# check again in case they put the args in the wrong order
-
-if [ "$1" = "clean" ]; then
-  doclean=$1
-  shift
-elif [ "$1" = "5" ]; then
-  SGI_ABI=-32
-  ISA=""
   shift
 fi
 
 export SGI_ABI ISA CC
 
-if [ "$doclean" = "clean" ]; then
+if [ "$doclean" = "clean" ] || [ "$doclean" = "cleanonly" ]; then
   cd ../../source
   if [ -f Makefile ]; then
     make distclean
   fi
+  rm -rf bin/*.profile bin/*.noquota
   cd ../packaging/SGI
   rm -rf bins catman html codepages swat samba.idb samba.spec
+  if [ "$doclean" = "cleanonly" ]; then exit 0 ; fi
 fi
 
 # create the catman versions of the manual pages
@@ -67,7 +52,7 @@ fi
 cd ../../source
 if [ "$doclean" = "clean" ]; then
   echo Create SGI specific Makefile
-  ./configure --prefix=/usr/samba --mandir=/usr/share/catman --with-smbwrapper
+  ./configure --prefix=/usr/samba --sbindir=/usr/samba/bin --mandir=/usr/share/catman --with-acl-support --with-quotas --with-smbwrapper
   errstat=$?
   if [ $errstat -ne 0 ]; then
     echo "Error $errstat creating Makefile\n";
@@ -80,7 +65,29 @@ fi
 #
 echo Making binaries
 
-make "CFLAGS=-O -g3" $*
+echo "=====================  Making Profile versions ======================="
+make clean
+make -P "CFLAGS=-O -g3 -woff 1188 -D WITH_PROFILE" CHECK bin/smbd bin/nmbd
+errstat=$?
+if [ $errstat -ne 0 ]; then
+  echo "Error $errstat building profile sources\n";
+  exit $errstat;
+fi
+mv  bin/smbd bin/smbd.profile
+mv  bin/nmbd bin/nmbd.profile
+
+echo "=====================  Making No Quota versions ======================="
+make clean
+make -P "CFLAGS=-O -g3 -woff 1188 -D QUOTAOBJS=smbd/noquotas.o" CHECK bin/smbd
+errstat=$?
+if [ $errstat -ne 0 ]; then
+  echo "Error $errstat building noquota sources\n";
+  exit $errstat;
+fi
+mv  bin/smbd bin/smbd.noquota
+
+echo "=====================  Making Regular versions ======================="
+make -P "CFLAGS=-O -g3 -woff 1188" all libsmbclient
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
@@ -88,13 +95,6 @@ if [ $errstat -ne 0 ]; then
 fi
 
 cd ../packaging/SGI
-
-#
-# Don't generate packages if targets were specified
-#
-if [ "$1" != "" ]; then
-  exit 0;
-fi
 
 # generate the packages
 #

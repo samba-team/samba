@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -22,8 +20,6 @@
 */
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
 
 /* set these to define the limits of the server. NOTE These are on a
    per-client basis. Thus any one machine can't connect to more than
@@ -169,17 +165,15 @@ void conn_free(connection_struct *conn)
 {
 	/* Free vfs_connection_struct */
 	    
-#ifdef HAVE_LIBDL
 	if (conn->dl_handle != NULL) {
 		/* Close dlopen() handle */
-		dlclose(conn->dl_handle);
+		sys_dlclose(conn->dl_handle);
 	}
-#endif /* HAVE_LIBDL */
 
 	DLIST_REMOVE(Connections, conn);
 
 	if (conn->ngroups && conn->groups) {
-		free(conn->groups);
+		SAFE_FREE(conn->groups);
 		conn->groups = NULL;
 		conn->ngroups = 0;
 	}
@@ -198,7 +192,35 @@ void conn_free(connection_struct *conn)
 	num_open--;
 
 	ZERO_STRUCTP(conn);
-	free(conn);
+	SAFE_FREE(conn);
 }
 
-#undef OLD_NTDOMAIN
+
+/****************************************************************************
+receive a smbcontrol message to forcibly unmount a share
+the message contains just a share name and all instances of that
+share are unmounted
+the special sharename '*' forces unmount of all shares
+****************************************************************************/
+void msg_force_tdis(int msg_type, pid_t pid, void *buf, size_t len)
+{
+	connection_struct *conn, *next;
+	fstring sharename;
+
+	fstrcpy(sharename, buf);
+
+	if (strcmp(sharename, "*") == 0) {
+		DEBUG(1,("Forcing close of all shares\n"));
+		conn_close_all();
+		return;
+	}
+
+	for (conn=Connections;conn;conn=next) {
+		next=conn->next;
+		if (strequal(lp_servicename(conn->service), sharename)) {
+			DEBUG(1,("Forcing close of share %s cnum=%d\n",
+				 sharename, conn->cnum));
+			close_cnum(conn, (uint16)-1);
+		}
+	}
+}

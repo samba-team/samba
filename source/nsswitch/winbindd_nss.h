@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
 
@@ -22,6 +21,10 @@
    Boston, MA  02111-1307, USA.   
 */
 
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if(x) {free(x); x=NULL;} } while(0)
+#endif
+
 #ifndef _WINBINDD_NTDOM_H
 #define _WINBINDD_NTDOM_H
 
@@ -31,16 +34,22 @@
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 
+/* Update this when you change the interface.  */
+
+#define WINBIND_INTERFACE_VERSION 4
+
 /* Socket commands */
 
 enum winbindd_cmd {
 
+	WINBINDD_INTERFACE_VERSION,    /* Always a well known value */
+
 	/* Get users and groups */
 
-	WINBINDD_GETPWNAM_FROM_USER,
-	WINBINDD_GETPWNAM_FROM_UID,
-	WINBINDD_GETGRNAM_FROM_GROUP,
-	WINBINDD_GETGRNAM_FROM_GID,
+	WINBINDD_GETPWNAM,
+	WINBINDD_GETPWUID,
+	WINBINDD_GETGRNAM,
+	WINBINDD_GETGRGID,
 	WINBINDD_GETGROUPS,
 
 	/* Enumerate users and groups */
@@ -55,13 +64,13 @@ enum winbindd_cmd {
 	/* PAM authenticate and password change */
 
 	WINBINDD_PAM_AUTH,
-        WINBINDD_PAM_AUTH_CRAP,
+	WINBINDD_PAM_AUTH_CRAP,
 	WINBINDD_PAM_CHAUTHTOK,
 
 	/* List various things */
 
-        WINBINDD_LIST_USERS,         /* List w/o rid->id mapping */
-        WINBINDD_LIST_GROUPS,        /* Ditto */
+	WINBINDD_LIST_USERS,         /* List w/o rid->id mapping */
+	WINBINDD_LIST_GROUPS,        /* Ditto */
 	WINBINDD_LIST_TRUSTDOM,
 
 	/* SID conversion */
@@ -69,7 +78,7 @@ enum winbindd_cmd {
 	WINBINDD_LOOKUPSID,
 	WINBINDD_LOOKUPNAME,
 
-	/* S*RS functions */
+	/* Lookup functions */
 
 	WINBINDD_SID_TO_UID,       
 	WINBINDD_SID_TO_GID,
@@ -79,6 +88,16 @@ enum winbindd_cmd {
 	/* Miscellaneous other stuff */
 
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
+	WINBINDD_PING,              /* Just tell me winbind is running */
+	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
+	WINBINDD_DOMAIN_NAME,       /* The domain this winbind server is a member of (lp_workgroup()) */
+
+	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
+
+	/* WINS commands */
+
+	WINBINDD_WINS_BYIP,
+	WINBINDD_WINS_BYNAME,
 
 	/* Placeholder for end of cmd list */
 
@@ -88,10 +107,12 @@ enum winbindd_cmd {
 /* Winbind request structure */
 
 struct winbindd_request {
+	uint32 length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
 	pid_t pid;               /* pid of calling process */
 
 	union {
+		fstring winsreq;     /* WINS request */
 		fstring username;    /* getpwnam */
 		fstring groupname;   /* getgrnam */
 		uid_t uid;           /* getpwuid, uid_to_sid */
@@ -103,6 +124,7 @@ struct winbindd_request {
                 struct {
                         unsigned char chal[8];
                         fstring user;
+                        fstring domain;
                         fstring lm_resp;
                         uint16 lm_resp_len;
                         fstring nt_resp;
@@ -114,10 +136,13 @@ struct winbindd_request {
                     fstring newpass;
                 } chauthtok;         /* pam_winbind passwd module */
 		fstring sid;         /* lookupsid, sid_to_[ug]id */
-		fstring name;        /* lookupname */
+		struct {
+			fstring dom_name;       /* lookupname */
+			fstring name;       
+		} name;
 		uint32 num_entries;  /* getpwent, getgrent */
 	} data;
-        fstring domain;      /* {set,get,end}{pw,gr}ent() */
+	fstring domain;      /* {set,get,end}{pw,gr}ent() */
 };
 
 /* Response values */
@@ -133,13 +158,16 @@ struct winbindd_response {
     
 	/* Header information */
 
-	int length;                           /* Length of response */
+	uint32 length;                        /* Length of response */
 	enum winbindd_result result;          /* Result code */
 
 	/* Fixed length return data */
 	
 	union {
+		int interface_version;  /* Try to ensure this is always in the same spot... */
 		
+		fstring winsresp;		/* WINS response */
+
 		/* getpwnam, getpwuid */
 		
 		struct winbindd_pw {
@@ -163,16 +191,29 @@ struct winbindd_response {
 		} gr;
 
 		uint32 num_entries; /* getpwent, getgrent */
-		struct {
+		struct winbindd_sid {
 			fstring sid;        /* lookupname, [ug]id_to_sid */
 			int type;
 		} sid;
-		struct {
-			fstring name;       /* lookupsid */
+		struct winbindd_name {
+			fstring dom_name;       /* lookupsid */
+			fstring name;       
 			int type;
 		} name;
 		uid_t uid;          /* sid_to_uid */
 		gid_t gid;          /* sid_to_gid */
+		struct winbindd_info {
+			char winbind_separator;
+			fstring samba_version;
+		} info;
+		fstring domain_name;
+
+		struct auth_reply {
+			uint32 nt_status;
+			fstring nt_status_string;
+			fstring error_string;
+			int pam_error;
+		} auth;
 	} data;
 
 	/* Variable length return data */

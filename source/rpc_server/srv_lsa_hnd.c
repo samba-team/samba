@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -30,6 +29,16 @@
 #endif
 
 /****************************************************************************
+ Hack as handles need to be persisant over lsa pipe closes so long as a samr
+ pipe is open. JRA.
+****************************************************************************/
+
+static BOOL is_samr_lsa_pipe(const char *pipe_name)
+{
+	return (strstr(pipe_name, "samr") || strstr(pipe_name, "lsa"));
+}
+
+/****************************************************************************
  Initialise a policy handle list on a pipe. Handle list is shared between all
  pipes of the same name.
 ****************************************************************************/
@@ -40,7 +49,8 @@ BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
 	struct handle_list *hl = NULL;
 
 	for (plist = get_first_pipe(); plist; plist = get_next_pipe(plist)) {
-		if (strequal( plist->name, pipe_name)) {
+		if (strequal( plist->name, pipe_name) ||
+			(is_samr_lsa_pipe(plist->name) && is_samr_lsa_pipe(pipe_name))) {
 			if (!plist->pipe_handles) {
 				pstring msg;
 				slprintf(msg, sizeof(msg)-1, "init_pipe_handles: NULL pipe_handle pointer in pipe %s",
@@ -125,6 +135,14 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 	DLIST_ADD(p->pipe_handles->Policy, pol);
 	p->pipe_handles->count++;
 
+	/*
+	 * Ensure we don't idle this connection if a handle is open.
+	 * Increment the number of files open on the first handle create.
+	 */
+
+	if (p->pipe_handles->count == 1)
+		p->conn->num_files_open++;
+
 	*hnd = pol->pol_hnd;
 	
 	DEBUG(4,("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
@@ -159,7 +177,6 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *h
 	dump_data(4, (char *)hnd, sizeof(*hnd));
 
 	p->bad_handle_fault_state = True;
-
 	return NULL;
 }
 
@@ -191,6 +208,15 @@ BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 		(*pol->free_fn)(pol->data_ptr);
 
 	p->pipe_handles->count--;
+
+	/*
+	 * Ensure we can idle this connection if this is the last handle.
+	 * Decrement the number of files open on the last handle delete.
+	 */
+
+	if (p->pipe_handles->count == 0)
+		p->conn->num_files_open--;
+
 
 	DLIST_REMOVE(p->pipe_handles->Policy, pol);
 
@@ -224,4 +250,3 @@ void close_policy_by_pipe(pipes_struct *p)
 		DEBUG(10,("close_policy_by_pipe: deleted handle list for pipe %s\n", p->name ));
 	}
 }
-#undef OLD_NTDOMAIN

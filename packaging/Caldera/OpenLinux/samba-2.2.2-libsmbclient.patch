@@ -1,0 +1,12 @@
+--- samba-2.2.2/source/Makefile.in.orig	Wed Oct 10 08:13:13 2001
++++ samba-2.2.2/source/Makefile.in	Wed Oct 10 08:16:46 2001
+@@ -608,7 +608,8 @@
+ 
+ libsmbclient: $(LIBSMBCLIENT_PICOBJS)
+ 	@echo Linking libsmbclient shared library bin/$@.@SHLIBEXT@
+-	@$(SHLD) @LDSHFLAGS@ -o  bin/$@.@SHLIBEXT@ \
++	@$(SHLD) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ \
++		-Wl,-soname,libsmbclient.so.$(LIBSMBCLIENT_MAJOR) \
+ 		$(LIBSMBCLIENT_PICOBJS) $(LIBS)
+ 	@echo Linking libsmbclient non-shared library bin/$@.a
+ 	@-$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS)
