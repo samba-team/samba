@@ -4182,6 +4182,80 @@ enum remote_arch_types get_remote_arch()
   return ra_type;
 }
 
+
+/*******************************************************************
+skip past some unicode strings in a buffer
+********************************************************************/
+char *skip_unicode_string(char *buf,int n)
+{
+  while (n--)
+  {
+    while (*buf)
+      buf += 2;
+    buf += 2;
+  }
+  return(buf);
+}
+
+/*******************************************************************
+Return a ascii version of a unicode string
+Hack alert: uses fixed buffer and only handles ascii strings
+********************************************************************/
+#define MAXUNI 1024
+char *unistr(char *buf)
+{
+	static char lbufs[8][MAXUNI];
+	static int nexti;
+	char *lbuf = lbufs[nexti];
+	char *p;
+	nexti = (nexti+1)%8;
+	for (p = lbuf; *buf && p -lbuf < MAXUNI-2; p++, buf += 2)
+		*p = *buf;
+	*p = 0;
+	return lbuf;
+}
+
+/*******************************************************************
+strncpy for unicode strings
+********************************************************************/
+int unistrncpy(char *dst, char *src, int len)
+{
+	int num_wchars = 0;
+
+	while (*src && len > 0)
+	{
+		*dst++ = *src++;
+		*dst++ = *src++;
+		len--;
+		num_wchars++;
+	}
+	*dst++ = 0;
+	*dst++ = 0;
+
+	return num_wchars;
+}
+
+
+/*******************************************************************
+strcpy for unicode strings.  returns length (in num of wide chars)
+********************************************************************/
+int unistrcpy(char *dst, char *src)
+{
+	int num_wchars = 0;
+
+	while (*src)
+	{
+		*dst++ = *src++;
+		*dst++ = *src++;
+		num_wchars++;
+	}
+	*dst++ = 0;
+	*dst++ = 0;
+
+	return num_wchars;
+}
+
+
 /*******************************************************************
 safe string copy into a fstring
 ********************************************************************/
@@ -4231,3 +4305,42 @@ void pstrcpy(char *dest, char *src)
              strlen(src)));
     }
 }  
+
+
+/*******************************************************************
+align a pointer to a multiple of 4 bytes
+********************************************************************/
+char *align4(char *q, char *base)
+{
+	if ((q - base) & 3)
+	{
+		q += 4 - ((q - base) & 3);
+	}
+	return q;
+}
+
+/*******************************************************************
+align a pointer to a multiple of 2 bytes
+********************************************************************/
+char *align2(char *q, char *base)
+{
+	if ((q - base) & 1)
+	{
+		q++;
+	}
+	return q;
+}
+
+/*******************************************************************
+align a pointer to a multiple of align_offset bytes.  looks like it
+will work for offsets of 0, 2 and 4...
+********************************************************************/
+char *align_offset(char *q, char *base, int align_offset)
+{
+	if (align_offset != 0 && ((q - base) & (align_offset-1)))
+	{
+		q += align_offset - ((q - base) & (align_offset));
+	}
+	return q;
+}
+

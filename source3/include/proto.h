@@ -565,7 +565,9 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
 /*The following definitions come from  params.c  */
 
-BOOL pm_process(char *pszFileName,BOOL (*sfunc)(char *),BOOL (*pfunc)(char *,char *));
+BOOL pm_process( char *FileName,
+                 BOOL (*sfunc)(char *),
+                 BOOL (*pfunc)(char *, char *) );
 
 /*The following definitions come from  password.c  */
 
@@ -986,5 +988,12 @@ void file_unlock(int fd);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch();
+char *skip_unicode_string(char *buf,int n);
+char *unistr(char *buf);
+int unistrncpy(char *dst, char *src, int len);
+int unistrcpy(char *dst, char *src);
 void fstrcpy(char *dest, char *src);
 void pstrcpy(char *dest, char *src);
+char *align4(char *q, char *base);
+char *align2(char *q, char *base);
+char *align_offset(char *q, char *base, int align_offset);
