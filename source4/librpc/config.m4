@@ -17,6 +17,7 @@ SMB_SUBSYSTEM(LIBNDR_RAW,[],
 		librpc/gen_ndr/ndr_spoolss.o
 		librpc/gen_ndr/ndr_wkssvc.o
 		librpc/gen_ndr/ndr_srvsvc.o
+		librpc/gen_ndr/ndr_svcctl.o
 		librpc/gen_ndr/ndr_atsvc.o
 		librpc/gen_ndr/ndr_eventlog.o
 		librpc/gen_ndr/ndr_epmapper.o
