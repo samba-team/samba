@@ -475,8 +475,7 @@ void init_unistr(UNISTR *str, const char *buf)
 {
 	size_t len;
 
-	if (buf == NULL)
-	{
+	if (buf == NULL) {
 		str->buffer = NULL;
 		return;
 	}
@@ -484,21 +483,19 @@ void init_unistr(UNISTR *str, const char *buf)
 
 	len = strlen(buf) + 1;
 
-    	if (!parse_misc_talloc)
+	if (!parse_misc_talloc)
 		parse_misc_talloc = talloc_init();
 
 	if (len < MAX_UNISTRLEN)
 		len = MAX_UNISTRLEN;
 	len *= sizeof(uint16);
 
-    	str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
+	str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
 	if (str->buffer == NULL)
-		smb_panic("init_unistr2: malloc fail\n");
+		smb_panic("init_unistr: malloc fail\n");
 
 	/* store the string (null-terminated copy) */
 	dos_struni2((char *)str->buffer, buf, len);
-
-	return;
 }
 
 /*******************************************************************
