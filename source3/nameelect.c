@@ -407,7 +407,7 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
      not a workgroup
    */
 
-  if ((!work) || (!d)) return;
+  if (!work || !d) return;
   
   DEBUG(2,("Becoming domain master for %s %s (currently at stage %d)\n",
 					work->work_group,inet_ntoa(d->bcast_ip),work->dom_state));
