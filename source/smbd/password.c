@@ -131,6 +131,10 @@ void invalidate_vuid(uint16 vuid)
     free((char *)vuser->groups);
 
   vuser->groups  = NULL;
+
+    if (vuser->usr.gids != NULL)
+	    free (vuser->usr.gids);
+  vuser->usr.gids  = NULL;
 }
 
 
