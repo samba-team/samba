@@ -20,8 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-
+#include "printing.h"
 
 static char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 			      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Err"};
@@ -280,6 +279,9 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
   }
 
   fstrcpy(buf->fs_file,tokarr[LPRNG_FILETOK]);
+  if ((LPRNG_FILETOK + 1 < LPRNG_TOTALTOK) &&
+		  (strncmp(PRINT_SPOOL_PREFIX, buf->fs_file, strlen(PRINT_SPOOL_PREFIX)) == 0))
+    buf->fs_file[0] = '\0';
 
   if ((LPRNG_FILETOK + 1) != LPRNG_TOTALTOK) {
     int i;
@@ -288,7 +290,8 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
       /* FIXME: Using fstrcat rather than other means is a bit
        * inefficient; this might be a problem for enormous queues with
        * many fields. */
-      fstrcat(buf->fs_file, " ");
+      if (buf->fs_file[0] != '\0')
+        fstrcat(buf->fs_file, " ");
       fstrcat(buf->fs_file, tokarr[i]);
     }
     /* Ensure null termination. */
