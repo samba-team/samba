@@ -44,5 +44,23 @@
 #ifndef HAVE_STRTOK_R
 #define strtok_r _sl_strtok_r
 #endif
+#ifndef HAVE_SNPRINTF
+#define snprintf _sl_snprintf
+#endif
+#ifndef HAVE_ASPRINTF
+#define asprintf _sl_asprintf
+#endif
+#ifndef HAVE_ASNPRINTF
+#define asnprintf _sl_asnprintf
+#endif
+#ifndef HAVE_VASPRINTF
+#define vasprintf _sl_vasprintf
+#endif
+#ifndef HAVE_VASNPRINTF
+#define vasnprintf _sl_vasnprintf
+#endif
+#ifndef HAVE_VSNPRINTF
+#define vsnprintf _sl_vsnprintf
+#endif
 
 #endif /* __roken_rename_h__ */
