@@ -1771,8 +1771,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 	if(CVAL(inbuf, smb_wct) != 19 + (setup_count/2)) {
 		DEBUG(2,("Invalid smb_wct %d in nttrans call (should be %d)\n",
 			CVAL(inbuf, smb_wct), 19 + (setup_count/2)));
-		END_PROFILE(SMBnttrans);
-		return ERROR_DOS(ERRSRV,ERRerror);
+		goto bad_param;
 	}
     
 	/* Allocate the space for the setup, the maximum needed parameters and data */
@@ -1799,21 +1798,38 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 	num_data_sofar = data_count;
 
 	if (parameter_count > total_parameter_count || data_count > total_data_count)
-		exit_server("reply_nttrans: invalid sizes in packet.");
+		goto bad_param;
 
 	if(setup) {
-		memcpy( setup, &inbuf[smb_nt_SetupStart], setup_count);
 		DEBUG(10,("reply_nttrans: setup_count = %d\n", setup_count));
+		if ((smb_nt_SetupStart + setup_count < smb_nt_SetupStart) ||
+				(smb_nt_SetupStart + setup_count < setup_count))
+			goto bad_param;
+		if (smb_nt_SetupStart + setup_count > length)
+			goto bad_param;
+
+		memcpy( setup, &inbuf[smb_nt_SetupStart], setup_count);
 		dump_data(10, setup, setup_count);
 	}
 	if(params) {
-		memcpy( params, smb_base(inbuf) + parameter_offset, parameter_count);
 		DEBUG(10,("reply_nttrans: parameter_count = %d\n", parameter_count));
+		if ((parameter_offset + parameter_count < parameter_offset) ||
+				(parameter_offset + parameter_count < parameter_count))
+			goto bad_param;
+		if (smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length)
+			goto bad_param;
+
+		memcpy( params, smb_base(inbuf) + parameter_offset, parameter_count);
 		dump_data(10, params, parameter_count);
 	}
 	if(data) {
-		memcpy( data, smb_base(inbuf) + data_offset, data_count);
 		DEBUG(10,("reply_nttrans: data_count = %d\n",data_count));
+		if ((data_offset + data_count < data_offset) || (data_offset + data_count < data_count))
+			goto bad_param;
+		if (smb_base(inbuf) + data_offset + data_count > inbuf + length)
+			goto bad_param;
+
+		memcpy( data, smb_base(inbuf) + data_offset, data_count);
 		dump_data(10, data, data_count);
 	}
 
@@ -1826,6 +1842,8 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 
 		while( num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
 			BOOL ret;
+			uint32 parameter_displacement;
+			uint32 data_displacement;
 
 			ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
 
@@ -1837,25 +1855,57 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 					DEBUG(0,("reply_nttrans: %s in getting secondary nttrans response.\n",
 						(smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 				}
-				SAFE_FREE(params);
-				SAFE_FREE(data);
-				SAFE_FREE(setup);
-				END_PROFILE(SMBnttrans);
-				return ERROR_DOS(ERRSRV,ERRerror);
+				goto bad_param;
 			}
       
 			/* Revise total_params and total_data in case they have changed downwards */
-			total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
-			total_data_count = IVAL(inbuf, smb_nts_TotalDataCount);
-			num_params_sofar += (parameter_count = IVAL(inbuf,smb_nts_ParameterCount));
-			num_data_sofar += ( data_count = IVAL(inbuf, smb_nts_DataCount));
-			if (num_params_sofar > total_parameter_count || num_data_sofar > total_data_count)
-				exit_server("reply_nttrans2: data overflow in secondary nttrans packet");
+			if (IVAL(inbuf, smb_nts_TotalParameterCount) < total_parameter_count)
+				total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
+			if (IVAL(inbuf, smb_nts_TotalDataCount) < total_data_count)
+				total_data_count = IVAL(inbuf, smb_nts_TotalDataCount);
 
-			memcpy( &params[ IVAL(inbuf, smb_nts_ParameterDisplacement)], 
-				smb_base(inbuf) + IVAL(inbuf, smb_nts_ParameterOffset), parameter_count);
-			memcpy( &data[IVAL(inbuf, smb_nts_DataDisplacement)],
-				smb_base(inbuf)+ IVAL(inbuf, smb_nts_DataOffset), data_count);
+			parameter_count = IVAL(inbuf,smb_nts_ParameterCount);
+			parameter_offset = IVAL(inbuf, smb_nts_ParameterOffset);
+			parameter_displacement = IVAL(inbuf, smb_nts_ParameterDisplacement);
+			num_params_sofar += parameter_count;
+
+			data_count = IVAL(inbuf, smb_nts_DataCount);
+			data_displacement = IVAL(inbuf, smb_nts_DataDisplacement);
+			data_offset = IVAL(inbuf, smb_nts_DataDisplacement);
+			num_data_sofar += data_count;
+
+			if (num_params_sofar > total_parameter_count || num_data_sofar > total_data_count) {
+				DEBUG(0,("reply_nttrans2: data overflow in secondary nttrans packet"));
+				goto bad_param;
+			}
+
+			if (parameter_count) {
+				if (parameter_displacement + parameter_count >= total_parameter_count)
+					goto bad_param;
+				if ((parameter_displacement + parameter_count < parameter_displacement) ||
+						(parameter_displacement + parameter_count < parameter_count))
+					goto bad_param;
+				if (smb_base(inbuf) + parameter_offset + parameter_count >= inbuf + bufsize)
+					goto bad_param;
+				if (parameter_displacement + params < params)
+					goto bad_param;
+
+				memcpy( &params[parameter_displacement], smb_base(inbuf) + parameter_offset, parameter_count);
+			}
+
+			if (data_count) {
+				if (data_displacement + data_count >= total_data_count)
+					goto bad_param;
+				if ((data_displacement + data_count < data_displacement) ||
+						(data_displacement + data_count < data_count))
+					goto bad_param;
+				if (smb_base(inbuf) + data_offset + data_count >= inbuf + bufsize)
+					goto bad_param;
+				if (data_displacement + data < data)
+					goto bad_param;
+
+				memcpy( &data[data_displacement], smb_base(inbuf)+ data_offset, data_count);
+			}
 		}
 	}
 
@@ -1933,4 +1983,12 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 	return outsize; /* If a correct response was needed the call_nt_transact_xxxx 
 				calls have already sent it. If outsize != -1 then it is
 				returning an error packet. */
+
+ bad_param:
+
+	SAFE_FREE(params);
+	SAFE_FREE(data);
+	SAFE_FREE(setup);
+	END_PROFILE(SMBnttrans);
+	return ERROR_DOS(ERRDOS,ERRinvalidparam);
 }
