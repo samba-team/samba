@@ -1562,19 +1562,19 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	/* Fill in the level */
 	switch (r->in.level) {
-	case GroupInfoAll:
+	case GROUPINFOALL:
 		QUERY_STRING(msg, all.name.string,        "sAMAccountName");
 		r->out.info->all.attributes = 7; /* Do like w2k3 */
 		QUERY_UINT  (msg, all.num_members,      "numMembers")
 		QUERY_STRING(msg, all.description.string, "description");
 		break;
-	case GroupInfoName:
+	case GROUPINFONAME:
 		QUERY_STRING(msg, name.string,            "sAMAccountName");
 		break;
-	case GroupInfoX:
+	case GROUPINFOX:
 		r->out.info->unknown.unknown = 7;
 		break;
-	case GroupInfoDescription:
+	case GROUPINFODESCRIPTION:
 		QUERY_STRING(msg, description.string, "description");
 		break;
 	default:
@@ -1612,15 +1612,15 @@ static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	}
 
 	switch (r->in.level) {
-	case GroupInfoDescription:
+	case GROUPINFODESCRIPTION:
 		SET_STRING(msg, description.string,         "description");
 		break;
-	case GroupInfoName:
+	case GROUPINFONAME:
 		/* On W2k3 this does not change the name, it changes the
 		 * sAMAccountName attribute */
 		SET_STRING(msg, name.string,                "sAMAccountName");
 		break;
-	case GroupInfoX:
+	case GROUPINFOX:
 		/* This does not do anything obviously visible in W2k3 LDAP */
 		break;
 	default:
@@ -1987,15 +1987,15 @@ static NTSTATUS samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 	ZERO_STRUCTP(r->out.info);
 
 	switch(r->in.level) {
-	case AliasInfoAll:
+	case ALIASINFOALL:
 		QUERY_STRING(msg, all.name.string, "sAMAccountName");
 		QUERY_UINT  (msg, all.num_members, "numMembers");
 		QUERY_STRING(msg, all.description.string, "description");
 		break;
-	case AliasInfoName:
+	case ALIASINFONAME:
 		QUERY_STRING(msg, name.string, "sAMAccountName");
 		break;
-	case AliasInfoDescription:
+	case ALIASINFODESCRIPTION:
 		QUERY_STRING(msg, description.string, "description");
 		break;
 	default:
@@ -2033,10 +2033,10 @@ static NTSTATUS samr_SetAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	}
 
 	switch (r->in.level) {
-	case AliasInfoDescription:
+	case ALIASINFODESCRIPTION:
 		SET_STRING(msg, description.string,         "description");
 		break;
-	case AliasInfoName:
+	case ALIASINFONAME:
 		/* On W2k3 this does not change the name, it changes the
 		 * sAMAccountName attribute */
 		SET_STRING(msg, name.string,                "sAMAccountName");
