@@ -1686,6 +1686,7 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename);
 NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode);
 void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);
+void get_printer_subst_params(int snum, fstring *printername, fstring *sharename, fstring *portname);
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
@@ -1701,6 +1702,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
 BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
 BOOL print_access_check(struct current_user *user, int snum,
 			uint32 required_access);
+BOOL print_time_access_check(int snum);
 #endif
 
 /*The following definitions come from  printing/pcap.c  */

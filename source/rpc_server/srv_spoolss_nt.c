@@ -28,10 +28,6 @@
 extern int DEBUGLEVEL;
 extern pstring global_myname;
 
-#ifndef SAMBA_PRINTER_PORT_NAME
-#define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
-#endif
-
 #ifndef MAX_OPEN_PRINTER_EXS
 #define MAX_OPEN_PRINTER_EXS 50
 #endif
@@ -3339,7 +3335,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	job_info->totalpages=0;
 	job_info->pagesprinted=0;
 
-	make_systemtime(&(job_info->submitted), t);
+	make_systemtime(&job_info->submitted, t);
 }
 
 /****************************************************************************

@@ -285,4 +285,9 @@ typedef struct _form
        UNISTR2 name;
 } FORM;
 */
+
+#ifndef SAMBA_PRINTER_PORT_NAME
+#define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
+#endif 
+
 #endif /* NT_PRINTING_H_ */
