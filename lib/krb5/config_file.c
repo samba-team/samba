@@ -231,7 +231,7 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent)
 	p = buf;
 	while(isspace((unsigned char)*p))
 	    ++p;
-	if (*p == '#' || *p == ';')
+	if (*p == '#' || *p == ';' || *p == '\0')
 	    continue;
 	while(isspace((unsigned char)*p))
 	    ++p;
@@ -509,8 +509,9 @@ krb5_config_vget_strings(krb5_context context,
     int nstr = 0;
     krb5_config_binding *b = NULL;
     const char *p;
+
     while((p = krb5_config_vget_next(context, c, &b, 
-				     krb5_config_string, args))){
+				     krb5_config_string, args))) {
 	char *tmp = strdup(p);
 	char *pos = NULL;
 	char *s;
