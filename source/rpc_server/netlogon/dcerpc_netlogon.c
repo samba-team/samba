@@ -294,7 +294,14 @@ static NTSTATUS netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALL
 					struct netr_ServerAuthenticate *r)
 {
 	struct netr_ServerAuthenticate3 r3;
-	uint32 negotiate_flags, rid;
+	uint32_t rid;
+	/* TODO: 
+	 * negotiate_flags is used as an [in] parameter
+	 * so it need to be initialised.
+	 *
+	 * (I think ... = 0; seems wrong here --metze)
+	 */
+	uint32 negotiate_flags = 0;  
 
 	r3.in.server_name = r->in.server_name;
 	r3.in.account_name = r->in.account_name;
