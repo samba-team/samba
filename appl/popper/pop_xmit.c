@@ -24,18 +24,17 @@ pop_xmit (POP *p)
     int                     id, pid;
 
     /*  Create a temporary file into which to copy the user's message */
-    mktemp(strcpy(temp_xmit,POP_TMPXMIT));
-#ifdef DEBUG
-    if(p->debug)
-        pop_log(p, POP_DEBUG,
-            "Creating temporary file for sending a mail message \"%s\"\n",
-                temp_xmit);
-#endif /* DEBUG */
-    if ((tmp = fopen(temp_xmit, "w+")) == NULL)
+    if ((tmp = fdopen(mkstemp(temp_xmit), "w+")) == NULL)
         return (pop_msg(p, POP_FAILURE,
 			"Unable to create temporary message file \"%s\": %s",
 			temp_xmit,
 			strerror(errno)));
+#ifdef DEBUG
+    if(p->debug)
+        pop_log(p, POP_DEBUG,
+		"Creating temporary file for sending a mail message \"%s\"\n",
+                temp_xmit);
+#endif /* DEBUG */
 
     /*  Tell the client to start sending the message */
     pop_msg(p,POP_SUCCESS,"Start sending the message.");

@@ -41,8 +41,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
 
     /* First create a unique file.  Would prefer mkstemp, but Ultrix...*/
     strcpy(template,POP_TMPDROP);
-    mktemp(template);
-    if ( (tf=fopen(template,"w+")) == NULL ) {	/* failure, bail out	*/
+    if ((tf=fdopen(mkstemp(template),"w+")) == NULL) {	/* failure, bail out */
         pop_log(p,POP_PRIORITY,
             "Unable to create temporary temporary maildrop '%s': %s",template,
 		strerror(errno));
