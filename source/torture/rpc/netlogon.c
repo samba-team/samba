@@ -280,6 +280,7 @@ struct samlogon_state {
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
 	struct creds_CredentialState creds;
+
 	DATA_BLOB chall;
 };
 
@@ -374,14 +375,16 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 	}
 		
 	/* find and decyrpt the session keys, return in parameters above */
-	if (r->in.validation_level == 2) {
-		base = &r->out.validation.sam2->base;
-	} else if (r->in.validation_level == 3) {
-		base = &r->out.validation.sam3->base;
-	} else if (r->in.validation_level == 6) {
-		base = &r->out.validation.sam6->base;
-	} else {
-		base = NULL;
+	switch (r->in.validation_level) {
+		case 2:
+			base = &r->out.validation.sam2->base;
+		break;
+		case 3:
+			base = &r->out.validation.sam3->base;
+		break;
+		case 6:
+			base = &r->out.validation.sam6->base;
+		break;
 	}
 
 	if (r->in.validation_level != 6) {
