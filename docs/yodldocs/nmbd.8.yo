@@ -28,216 +28,163 @@ and if its own NetBIOS name is specified it will respond with the IP
 number of the host it is running on.  Its "own NetBIOS name" is by
 default the primary DNS name of the host it is running on, but this
 can be overriden with the bf(-n) option (see em(OPTIONS) below). Thus
-nmbd will reply to broadcast queries for its own name(s).
+nmbd will reply to broadcast queries for its own name(s). Additional
+names for nmbd to respond on can be set via parameters in the
+bf(smb.conf (5)) configuration file.
 
-bf(nmbd) can also be used as a WINS (Windows Internet Name Server)
-server. What this basically means is that it will act as a WINS database
-server, responding to all name registration requests that it receives that are not broadcasts, as long as it can
-resolve the name.  Resolvable names include all names in the NetBIOS
-hosts file (if any, see .B \-H below), its own name, and any other
-names that it may have learned about from other browsers on the
-network.  A change to previous versions is that nmbd will now no
-longer do this automatically by default.
+nmbd can also be used as a WINS (Windows Internet Name Server)
+server. What this basically means is that it will act as a WINS
+database server, creating a database from name registration requests
+that it receives and replying to queries from clients for these names.
 
-.SH OPTIONS
-.B \-B
+In addition, nmbd can act as a WINS proxy, relaying broadcast queries
+from clients that do not understand how to talk the WINS protocol to a
+WIN server.
 
-.RS 3
-This option is obsolete. Please use the "interfaces" option in smb.conf instead.
-.RE
+manpageoptions()
 
-.B \-I
+startdit()
 
-.RS 3
-This option is obsolete. Please use the "interfaces" option in smb.conf instead.
-.RE
+dit(bf(-D)) If specified, this parameter causes the server to operate
+as a daemon. That is, it detaches itself and runs in the background,
+fielding requests on the appropriate port. By default, the server will
+NOT operate as a daemon. nmbd can also be operated from the inetd
+meta-daemon, although this is not recommended.
 
-.B \-D
+dit(bf(-a)) If this parameter is specified, each new connection will
+append log messages to the log file.  This is the default.
 
-.RS 3
-If specified, this parameter causes the server to operate as a daemon. That is,
-it detaches itself and runs in the background, fielding requests on the 
-appropriate port.
+dit(bf(-o)) If this parameter is specified, the log files will be
+overwritten when opened.  By default, the log files will be appended
+to.
 
-By default, the server will NOT operate as a daemon.
-.RE
+dit(bf(-H filename)) NetBIOS lmhosts file.
 
-.B \-C comment string
+The lmhosts file is a list of NetBIOS names to IP addresses that is
+loaded by the nmbd server and used via the name resolution mechanism
+em(name resolve order) described in bf(smbd.conf (5)) to resolve any
+NetBIOS name queries needed by the server. Note that the contents of
+this file are em(NOT) used by nmbd to answer any name queries, adding
+a line to this file affects name NetBIOS resolution from this host
+em(ONLY).
 
-.RS 3
-This option is obsolete. Please use the "server string" option in smb.conf 
-instead.
-.RE
+The default path to this file is compiled into Samba as part of the
+build process. Common defaults are em(/usr/local/samba/lib/lmhosts),
+em(/usr/samba/lib/lmhosts) or em(/etc/lmhosts). See the bf(lmhosts
+(5)) man page for details on the contents of this file.
 
-.B \-G
+dit(bf(-d debuglevel)) debuglevel is an integer from 0 to 10.
 
-.RS 3
-This option is obsolete. Please use the "workgroup" option in smb.conf instead.
-.RE
+The default value if this parameter is not specified is zero.
 
-.B \-H
-.I NetBIOS hosts file
+The higher this value, the more detail will be logged to the log files
+about the activities of the server. At level 0, only critical errors
+and serious warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of information about
+operations carried out.
 
-.RS 3
-It may be useful in some situations to be able to specify a list of
-NetBIOS names for which the server should send a reply if queried.  
-This option allows you to specify a file containing such a list. 
-The syntax of the hosts file is similar to the standard /etc/hosts file
-format, but has some extensions.
+Levels above 1 will generate considerable amounts of log data, and
+should only be used when investigating a problem. Levels above 3 are
+designed for use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.
 
-The file contains three columns. Lines beginning with a # are ignored
-as comments. The first column is an IP address, or a hostname. If it
-is a hostname then it is interpreted as the IP address returned by
-gethostbyname() when read. An IP address of 0.0.0.0 will be
-interpreted as the server's own IP address.
+dit(bf(-l logfile)) The bf(-l) parameter specifies a path and base
+filename into which operational data from the running nmbd server will
+be logged.  The actual log file name is generated by appending the
+extension ".nmb" to the specified base name.  For example, if the name
+specified was "log" then the file log.nmb would contain the debugging
+data.
 
-The second column is a NetBIOS name. This is the name that the server
-will respond to. It must be less than 20 characters long.
+The default log file path is is compiled into Samba as part of the
+build process. Common defaults are em(/usr/local/samba/var/log.nmb),
+em(/usr/samba/var/log.nmb) or em(/var/log/log.nmb).
 
-The third column is optional, and is intended for flags. Currently the
-only flag supported is M, which means that this name is the default 
-NetBIOS name for this machine. This has the same effect as specifying the
-.B \-n
-option to
-.BR nmbd .
+dit(bf(-n primary NetBIOS name)) This option allows you to override
+the NetBIOS name that Samba uses for itself. This is identical to
+setting the bf(netbios name) parameter in the smb.conf file
+but will override the setting in the smb.conf file.
 
-NOTE: The G and S flags are now obsolete and are replaced by the
-"interfaces" and "remote announce" options in smb.conf.
+dit(bf(-p UDP port number)) UDP port number is a positive integer value.
 
-The default hosts file name is set at compile time, typically as
-.I /etc/lmhosts,
-but this may be changed in the Samba Makefile.
+This option changes the default UDP port number (normally 137) that
+nmbd responds to name queries on. Don't use this option unless you are
+an expert, in which case you won't need help!
 
-After startup the server waits for queries, and will answer queries for
-any name known to it. This includes all names in the NetBIOS hosts file, 
-its own name, and any other names it may have learned about from other 
-browsers on the network.
+dit(bf(-s configuration file)) The default configuration file name is
+set at build time, typically as em(/usr/local/samba/lib/smb.conf), but
+this may be changed when Samba is autoconfigured.
 
-The primary intention of the
-.B \-H
-option is to allow a mapping from NetBIOS names to internet domain names.
+The file specified contains the configuration details required by the
+server.  See bf(smb.conf (5)) for more information.
 
-.B Example:
+dit(bf(-i scope)) This specifies a NetBIOS scope that the server will use
+to communicate with when generating NetBIOS names. For details on the
+use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
+are em(very) rarely used, only set this parameter if you are the
+system administrator in charge of all the NetBIOS systems you
+communicate with.
 
-        # This is a sample NetBIOS hosts file
+dit(bf(-h)) Prints the help information (usage) for nmbd.
 
-        # DO NOT USE THIS FILE AS-IS
-        # YOU MAY INCONVENIENCE THE OWNERS OF THESE IPs
-        # if you want to include a name with a space in it then 
-        # use double quotes.
+endit()
 
-        # next add a NetBIOS alias for a faraway host
-        arvidsjaur.anu.edu.au ARVIDSJAUR
+manpagefiles()
 
-        # finally put in an IP for a hard to find host
-        130.45.3.213 FREDDY
+bf(/etc/inetd.conf)
 
-.RE
-.B \-N
+If the server is to be run by the inetd meta-daemon, this file must
+contain suitable startup information for the meta-daemon.
 
-.RS 3
-This option is obsolete. Please use the "interfaces" option in smb.conf instead.
-.RE
+bf(/etc/rc)
 
-.B \-d
-.I debuglevel
+(or whatever initialisation script your system uses).
 
-.RS 3
-This option sets the debug level. See
-.BR smb.conf (5).
-.RE
+If running the server as a daemon at startup, this file will need to
+contain an appropriate startup sequence for the server.
 
-.B \-l
-.I log file
+bf(/usr/local/samba/lib/smb.conf)
 
-.RS 3
-The
-.I log file
-parameter specifies a path and base filename into which operational data 
-from the running 
-.B nmbd
-server will be logged.
-The actual log file name is generated by appending the extension ".nmb" to 
-the specified base name.
-For example, if the name specified was "log" then the file log.nmb would
-contain the debugging data.
+This is the default location of the em(smb.conf) server configuration
+file. Other common places that systems install this file are
+em(/usr/samba/lib/smb.conf) and em(/etc/smb.conf).
 
-The default log file is specified at compile time, typically as
-.I /var/log/log.nmb.
-.RE
+manpagesection(SIGNALS)
 
-.B \-n
-.I NetBIOS name
+nmbd will accept SIGHUP, which will cause it to dump out it's
+namelists into the file namelist.debug in the
+em(/usr/local/samba/var/locks) directory (or the em(var/locks)
+directory configured under wherever Samba was configured to install
+itself). This will also cause nmbd to dump out it's server database in
+the log.nmb file.  Also new in version 1.9.18 and above is the ability
+to raise the debug log level of nmbd by sending it a SIGUSR1 (tt(kill
+-USR1 <nmbd-pid>)) and to lower the nmbd log level by sending it a
+SIGUSR2 (tt(kill -USR2 <nmbd-pid>)). This is to allow transient
+problems to be diagnosed, whilst still running at a normally low log
+level.
 
-.RS 3
-This option allows you to override the NetBIOS name that Samba uses for itself. 
-.RE
+manpagesection(VERSION)
 
-.B \-a
+This man page is (mostly) correct for version 2.0 of the Samba suite,
+plus some of the recent patches to it. These notes will necessarily
+lag behind development of the software, so it is possible that your
+version of the server has extensions or parameter semantics that
+differ from or are not covered by this man page. Please notify these
+to the address below for rectification.
 
-.RS 3
-If this parameter is specified, the log files will be appended to with each 
-new connection.  This is the default.
-.RE
+manpageseealso()
 
-.B \-o
+bf(inetd (8)), bf(smbd (8)), bf(smb.conf (5)), bf(smbclient (1)),
+bf(testparm (1)), bf(testprns (1)), and the Internet RFC's
+bf(rfc1001.txt), bf(rfc1002.txt). In addition the CIFS (formerly SMB)
+specification is available as a link from the Web page :
+url(http://samba.anu.edu.au/cifs/)(http://samba.anu.edu.au/cifs/).
 
-.RS 3
-Overwrite existing log files instead of appending to them.  (This was the
-default until version 2.0.0.)
-.RE
+manpageauthor()
 
-.B \-p
-.I port number
-.RS 3
+The original Samba software and related utilities were created by
+Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed.
 
-port number is a positive integer value.
-
-Don't use this option unless you are an expert, in which case you
-won't need help!
-.RE
-
-.B \-s
-.I configuration file
-
-.RS 3
-The default configuration file name is set at compile time, typically as
-.I /etc/smb.conf,
-but this may be changed in the Samba Makefile.
-
-The file specified contains the configuration details required by the server.
-See
-.BR smb.conf (5)
-for more information.
-.RE
-.SH SIGNALS
-
-In version 1.9.18 and above, nmbd will accept SIGHUP, which will cause it to dump out
-it's namelists into the file namelist.debug in the SAMBA/var/locks directory. This
-will also cause nmbd to dump out it's server database in the log.nmb file.
-Also new in version 1.9.18 and above is the ability to raise the debug log
-level of nmbd by sending it a SIGUSR1 (kill -USR1 <nmbd-pid>) and to lower
-the nmbd log level by sending it a SIGUSR2 (kill -USR2 <nmbd-pid>). This
-is to allow transient problems to be diagnosed, whilst still running at
-a normally low log level.
-
-.SH VERSION
-
-This man page is (mostly) correct for version 1.9.16 of the Samba
-suite, plus some of the recent patches to it. These notes will
-necessarily lag behind development of the software, so it is possible
-that your version of the server has extensions or parameter semantics
-that differ from or are not covered by this man page. Please notify
-these to the address below for rectification.
-.SH SEE ALSO
-.BR inetd (8),
-.BR smbd (8), 
-.BR smb.conf (5),
-.BR smbclient (1),
-.BR testparm (1), 
-.BR testprns (1)
-.SH CREDITS
-The original Samba software and related utilities were created by 
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Andrew is also the Keeper
-of the Source for this project.
-
+See bf(samba (8)) to find out how to get a full list of contributors
+and details on how to submit bug reports, comments etc.

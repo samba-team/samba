@@ -309,14 +309,16 @@ are using a non-standard port number.
 Lastly, edit the configuration file to provide suitable services. To
 start with, the following two services should be all you need:
 
-tt([homes])
+tt(
+[homes]
   writable = yes
 
-tt([printers])
+[printers]
  writable = no
  printable = yes
  path = /tmp
  public = yes
+)
 
 This will allow you to connect to your home directory and print to any
 printer supported by the host (user privileges permitting).
@@ -344,15 +346,6 @@ lag behind development of the software, so it is possible that your
 version of the server has extensions or parameter semantics that
 differ from or are not covered by this man page. Please notify these
 to the address below for rectification.
-
-manpageseealso()
-
-bf(hosts_access (5)), bf(inetd (8)), bf(nmbd (8)), bf(smb.conf (5)),
-bf(smbclient (1)), bf(testparm (1)), bf(testprns (1)), and the
-Internet RFC's bf(rfc1001.txt), bf(rfc1002.txt). In addition the
-CIFS (formerly SMB) specification is available as a link from the
-Web page :
-url(http://samba.anu.edu.au/cifs/)(http://samba.anu.edu.au/cifs/).
 
 manpagesection(DIAGNOSTICS)
 
@@ -393,6 +386,15 @@ waiting for an incoming smb before issuing them. It is possible to
 make the signal handlers safe by un-blocking the signals before the
 select call and re-blocking them after, however this would affect
 performance.
+
+manpageseealso()
+
+bf(hosts_access (5)), bf(inetd (8)), bf(nmbd (8)), bf(smb.conf (5)),
+bf(smbclient (1)), bf(testparm (1)), bf(testprns (1)), and the
+Internet RFC's bf(rfc1001.txt), bf(rfc1002.txt). In addition the
+CIFS (formerly SMB) specification is available as a link from the
+Web page :
+url(http://samba.anu.edu.au/cifs/)(http://samba.anu.edu.au/cifs/).
 
 manpageauthor()
 
