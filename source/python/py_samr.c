@@ -18,9 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "Python.h"
-
 #include "python/py_samr.h"
 
 /* 
@@ -327,11 +324,31 @@ static PyMethodDef samr_methods[] = {
 
 	/* Open/close samr connect handles */
 	
-	{ "connect", samr_connect, METH_VARARGS | METH_KEYWORDS, 
+	{ "connect", (PyCFunction)samr_connect, 
+	  METH_VARARGS | METH_KEYWORDS, 
 	  "Open a connect handle" },
 	
 	{ NULL }
 };
+
+static struct const_vals {
+	char *name;
+	uint32 value;
+} module_const_vals[] = {
+	{ NULL }
+};
+
+static void const_init(PyObject *dict)
+{
+	struct const_vals *tmp;
+	PyObject *obj;
+
+	for (tmp = module_const_vals; tmp->name; tmp++) {
+		obj = PyInt_FromLong(tmp->value);
+		PyDict_SetItemString(dict, tmp->name, obj);
+		Py_DECREF(obj);
+	}
+}
 
 void initsamr(void)
 {
@@ -358,7 +375,7 @@ void initsamr(void)
 
 	/* Initialise constants */
 
-//	const_init(dict);
+	const_init(dict);
 
 	/* Do samba initialisation */
 

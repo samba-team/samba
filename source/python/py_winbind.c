@@ -578,11 +578,11 @@ success." },
 	{ NULL }
 };
 
-static struct winbind_const {
+static struct const_vals {
 	char *name;
 	uint32 value;
 	char *docstring;
-} winbind_const_vals[] = {
+} module_const_vals[] = {
 
 	/* Well known RIDs */
 	
@@ -606,10 +606,10 @@ static struct winbind_const {
 
 static void const_init(PyObject *dict)
 {
-	struct winbind_const *tmp;
+	struct const_vals *tmp;
 	PyObject *obj;
 
-	for (tmp = winbind_const_vals; tmp->name; tmp++) {
+	for (tmp = module_const_vals; tmp->name; tmp++) {
 		obj = PyInt_FromLong(tmp->value);
 		PyDict_SetItemString(dict, tmp->name, obj);
 		Py_DECREF(obj);

@@ -18,9 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "Python.h"
-
 #include "python/py_lsa.h"
 
 PyObject *new_lsa_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -300,15 +297,18 @@ static PyMethodDef lsa_hnd_methods[] = {
 
 	/* SIDs<->names */
 
-	{ "lookup_sids", lsa_lookup_sids, METH_VARARGS | METH_KEYWORDS,
+	{ "lookup_sids", (PyCFunction)lsa_lookup_sids, 
+	  METH_VARARGS | METH_KEYWORDS,
 	  "Convert sids to names." },
 
-	{ "lookup_names", lsa_lookup_names, METH_VARARGS | METH_KEYWORDS,
+	{ "lookup_names", (PyCFunction)lsa_lookup_names, 
+	  METH_VARARGS | METH_KEYWORDS,
 	  "Convert names to sids." },
 
 	/* Trusted domains */
 
-	{ "enum_trusted_domains", lsa_enum_trust_dom, METH_VARARGS, 
+	{ "enum_trusted_domains", (PyCFunction)lsa_enum_trust_dom, 
+	  METH_VARARGS, 
 	  "Enumerate trusted domains." },
 
 	{ NULL }
@@ -346,17 +346,39 @@ static PyMethodDef lsa_methods[] = {
 
 	/* Open/close lsa handles */
 	
-	{ "open_policy", lsa_open_policy, METH_VARARGS | METH_KEYWORDS, 
+	{ "open_policy", (PyCFunction)lsa_open_policy, 
+	  METH_VARARGS | METH_KEYWORDS, 
 	  "Open a policy handle" },
 	
-	{ "close", lsa_close, METH_VARARGS, "Close a policy handle" },
+	{ "close", (PyCFunction)lsa_close, 
+	  METH_VARARGS, 
+	  "Close a policy handle" },
 
 	{ NULL }
 };
 
+static struct const_vals {
+	char *name;
+	uint32 value;
+} module_const_vals[] = {
+	{ NULL }
+};
+
+static void const_init(PyObject *dict)
+{
+	struct const_vals *tmp;
+	PyObject *obj;
+
+	for (tmp = module_const_vals; tmp->name; tmp++) {
+		obj = PyInt_FromLong(tmp->value);
+		PyDict_SetItemString(dict, tmp->name, obj);
+		Py_DECREF(obj);
+	}
+}
+
 /*
  * Module initialisation 
-*/
+ */
 
 void initlsa(void)
 {
@@ -379,7 +401,7 @@ void initlsa(void)
 
 	/* Initialise constants */
 
-//	const_init(dict);
+	const_init(dict);
 
 	/* Do samba initialisation */
 
