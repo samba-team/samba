@@ -2190,6 +2190,88 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
 	}
 }
 
+/****************************************************************************
+ display sam sync structure
+ ****************************************************************************/
+void display_sam_unk_info_2(FILE *out_hnd, enum action_type action,
+				SAM_UNK_INFO_2 *info2)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring name;
+			unistr2_to_ascii(name, &(info2->uni_domain), sizeof(name)-1); 
+			fprintf(out_hnd, "Domain:\t%s\n", name);
+
+			unistr2_to_ascii(name, &(info2->uni_server), sizeof(name)-1); 
+			fprintf(out_hnd, "Server:\t%s\n", name);
+
+			fprintf(out_hnd, "Total Users:\t%d\n", info2->num_domain_usrs);
+			fprintf(out_hnd, "Total Groups:\t%d\n", info2->num_domain_grps);
+			fprintf(out_hnd, "Total Aliases:\t%d\n", info2->num_local_grps);
+
+			fprintf(out_hnd, "Sequence No:\t%d\n", info2->seq_num);
+
+			fprintf(out_hnd, "Unknown 0:\t0x%x\n", info2->unknown_0);
+			fprintf(out_hnd, "Unknown 1:\t0x%x\n", info2->unknown_1);
+			fprintf(out_hnd, "Unknown 2:\t0x%x\n", info2->unknown_2);
+			fprintf(out_hnd, "Unknown 3:\t0x%x\n", info2->unknown_3);
+			fprintf(out_hnd, "Unknown 4:\t0x%x\n", info2->unknown_4);
+			fprintf(out_hnd, "Unknown 5:\t0x%x\n", info2->unknown_5);
+			fprintf(out_hnd, "Unknown 6:\t0x%x\n", info2->unknown_6);
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display sam sync structure
+ ****************************************************************************/
+void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
+				uint32 switch_value, SAM_UNK_CTR *ctr)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tSAM Domain Info\n"); 
+			fprintf(out_hnd, "\t---------------\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			switch (switch_value)
+			{
+				case 2:
+				{
+					display_sam_unk_info_2(out_hnd, ACTION_HEADER   , &ctr->info.inf2);
+					display_sam_unk_info_2(out_hnd, ACTION_ENUMERATE, &ctr->info.inf2);
+					display_sam_unk_info_2(out_hnd, ACTION_FOOTER   , &ctr->info.inf2);
+					break;
+				}
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
 
 #if COPY_THIS_TEMPLATE
 /****************************************************************************

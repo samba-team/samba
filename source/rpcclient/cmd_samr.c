@@ -988,7 +988,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	res = next_token(NULL, group_name, NULL, sizeof(group_name)) != NULL;
+	res = next_token(NULL, group_name, NULL, sizeof(group_name));
 	group_names[0] = group_name;
 
 	while (res && next_token(NULL, tmp, NULL, sizeof(tmp)))
@@ -1054,7 +1054,8 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 	if (group_type == SID_NAME_ALIAS)
 	{
-		fprintf(out_hnd, "%s is a local alias, not a group.  Use addaliasmem command instead\n");
+		fprintf(out_hnd, "%s is a local alias, not a group.  Use addaliasmem command instead\n",
+			group_name);
 		return;
 	}
 	res1 = res2 ? samr_query_lookup_names(smb_cli, fnum,
@@ -1575,6 +1576,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 	fstring info_str;
 	uint32 switch_value = 2;
 	uint32 ace_perms = 0x304; /* absolutely no idea. */
+	SAM_UNK_CTR ctr;
 
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
@@ -1615,7 +1617,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 
 	/* send a samr 0x8 command */
 	res = res ? samr_query_dom_info(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain, switch_value) : False;
+	            &info->dom.samr_pol_open_domain, switch_value, &ctr) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
 	            &info->dom.samr_pol_connect) : False;
@@ -1629,6 +1631,9 @@ void cmd_sam_query_dominfo(struct client_info *info)
 	if (res)
 	{
 		DEBUG(5,("cmd_sam_query_dominfo: succeeded\n"));
+		display_sam_unk_ctr(out_hnd, ACTION_HEADER   , switch_value, &ctr);
+		display_sam_unk_ctr(out_hnd, ACTION_ENUMERATE, switch_value, &ctr);
+		display_sam_unk_ctr(out_hnd, ACTION_FOOTER   , switch_value, &ctr);
 	}
 	else
 	{

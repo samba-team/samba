@@ -490,7 +490,8 @@ BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name)
 do a SAMR unknown 0x8 command
 ****************************************************************************/
 BOOL samr_query_dom_info(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *domain_pol, uint16 switch_value)
+				POLICY_HND *domain_pol, uint16 switch_value,
+				SAM_UNK_CTR *ctr)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -519,6 +520,7 @@ BOOL samr_query_dom_info(struct cli_state *cli, uint16 fnum,
 		SAMR_R_QUERY_DOMAIN_INFO r_e;
 		BOOL p;
 
+		r_e.ctr = ctr;
 		samr_io_r_query_dom_info("", &r_e, &rdata, 0);
 
 		p = rdata.offset != 0;

@@ -1871,7 +1871,8 @@ BOOL samr_chgpasswd_user(struct cli_state *cli, uint16 fnum,
 		char lm_newpass[516], uchar lm_oldhash[16]);
 BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name);
 BOOL samr_query_dom_info(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *domain_pol, uint16 switch_value);
+				POLICY_HND *domain_pol, uint16 switch_value,
+				SAM_UNK_CTR *ctr);
 BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 size,
 				struct acct_info **sam,
@@ -3285,6 +3286,10 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
 				SAM_DELTA_HDR *deltas,
 				SAM_DELTA_CTR *ctr,
 				uint32 num);
+void display_sam_unk_info_2(FILE *out_hnd, enum action_type action,
+				SAM_UNK_INFO_2 *info2);
+void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
+				uint32 switch_value, SAM_UNK_CTR *ctr);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
