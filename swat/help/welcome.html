@@ -1,37 +1,45 @@
-Welcome to SWAT!<p>
+<h3>Welcome to SWAT!</h3>
 
-This is the first release of the Samba Web Administration Tool. This tool 
-is being improved so you may find some things look rough at this stage.<p>
+Please choose a configuration action using one of the above buttons
 
-SWAT demands authentication before showing you this page, so that only 
-authenticated users can modify your smb.conf!<p>
-
-Here are some features of SWAT:
+<h3>Documentation</h3>
 
 <ul>
-<li> Built in mini web server so you don't need a web server installed to
-manage a Samba server, you just need a browser.
-<li> Linked into the master source code so it automatically makes available new
-parameters as they are added to Samba.
-<li> Direct links to the html version of the smb.conf man page for help
-on parameters.
-<li> Layout and dialog building is done automatically based on the type 
-of the smb.conf parameter being changed.
-<li> Password and account management built in.
+ <li><b>Daemons</b>
+   <ul>
+    <li><a href="/swat/help/smbd.8.html" target="docs">smbd</a> - the SMB daemon
+    <li><a href="/swat/help/nmbd.8.html" target="docs">nmbd</a> - the NetBIOS nameserver
+   </ul>
+ <li><b>Administrative Utilities</b>
+   <ul>
+    <li><a href="/swat/help/smbstatus.1.html" target="docs">smbstatus</a> - monitoring Samba
+    <li><a href="/swat/help/swat.8.html" target="docs">SWAT</a> - web configuration tool
+    <li><a href="/swat/help/smbpasswd.8.html" target="docs">smbpasswd</a> - managing SMB passwords
+    <li><a href="/swat/help/make_smbcodepage.1.html" target="docs">make_smbcodepage</a> - codepage creation
+    <li><a href="/swat/help/testparm.1.html" target="docs">testparm</a> - validating your config file
+    <li><a href="/swat/help/testprns.1.html" target="docs">testprns</a> - testing printer configuration
+   </ul>
+ <li><b>General Utilities</b>
+   <ul>
+    <li><a href="/swat/help/nmblookup.1.html" target="docs">nmblookup</a> - NetBIOS name query tool
+    <li><a href="/swat/help/smbtar.1.html" target="docs">smbtar</a> - SMB backup tool
+    <li><a href="/swat/help/smbclient.1.html" target="docs">smbclient</a> - command line SMB client
+   </ul>
+ <li><b>Configuration Files</b>
+   <ul>
+    <li><a href="/swat/help/smb.conf.5.html" target="docs">smb.conf</a> - the main Samba configuration file
+    <li><a href="/swat/help/lmhosts.5.html" target="docs">lmhosts</a> - NetBIOS hosts file
+    <li><a href="/swat/help/smbpasswd.5.html" target="docs">smbpasswd</a> - SMB password file
+   </ul>
+ <li><b>Miscellaneous</b>
+   <ul>
+    <li><a href="/swat/help/samba.7.html" target="docs">Samba introduction</a>
+    <li><a href="/swat/help/DOMAIN_MEMBER.html" target="docs">Joining a NT Domain</a>
+    <li><a href="/swat/help/smbrun.1.html" target="docs">smbrun</a> - internal smbd utility
+   </ul>
 </ul>
 
-
-<H2>Features</H2>
-
-Here are some of the features we want to eventually incorporate.<p>
-
-<ul>
-<li> Secure authentication.
-<li> Running the disgnosis steps from DIAGNOSIS.txt.
-<li> GUI wizard style config building.
-</ul>
-
-<H2>Feedback</H2>
+<h3>Feedback</h3>
 
 Please join the <A
 HREF="http://samba.org/listproc/">samba</A> mailing
