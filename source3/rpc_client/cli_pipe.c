@@ -330,7 +330,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 		RPC_AUTH_NETSEC_CHK chk;
 		prs_struct netsec_verf;
 
-		char *dp = prs_data_p(rdata) + len - auth_len;
+		char *dp = prs_data_p(rdata) + fragment_start + len - auth_len;
 		
 		if(dp - prs_data_p(rdata) > prs_data_size(rdata)) {
 			DEBUG(0,("rpc_auth_pipe: auth data > data size !\n"));
