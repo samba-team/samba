@@ -129,10 +129,10 @@ BOOL rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk)
 creates an RPC_AUTH_NETSEC_CHK structure.
 ********************************************************************/
 BOOL make_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk,
-				uchar sig[8],
-				uchar data1[8],
-				uchar data3[8],
-				uchar data8[8])
+				const uchar sig[8],
+				const uchar data1[8],
+				const uchar data3[8],
+				const uchar data8[8])
 {
 	if (chk == NULL) return False;
 

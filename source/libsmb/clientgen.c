@@ -3920,3 +3920,4 @@ BOOL get_any_dc_name(const char *domain, char *srv_name)
 
 	return True;
 }
+

@@ -9,6 +9,10 @@ AC_SUBST(SHELL)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(HOST_OS)
+AC_SUBST(LIBMSRPC)
+AC_SUBST(LIBMSRPC32)
+AC_SUBST(LIBSMB)
+AC_SUBST(LIBSMB32)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
@@ -266,6 +270,8 @@ case "$host_os" in
 		;;
 		*irix*) AC_DEFINE(IRIX)
 			ATTEMPT_WRAP32_BUILD=yes
+			ATTEMPT_LIBSMB32_BUILD=yes
+			ATTEMPT_LIBMSRPC32_BUILD=yes
 		;;
 		*aix*) AC_DEFINE(AIX);;
 		*hpux*) AC_DEFINE(HPUX);;
@@ -647,6 +653,73 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/sysv_ipc.c"],
 if test x"$samba_cv_HAVE_SYSV_IPC" = x"yes"; then
     AC_DEFINE(HAVE_SYSV_IPC)
 fi
+
+#################################################
+# check for libmsrpc support
+AC_MSG_CHECKING(whether to use libmsrpc)
+AC_ARG_WITH(libmsrpc,
+[  --with-libmsrpc     Include libmsrpc support (default)
+  --without-libmsrpc  Don't include libmsrpc support ],
+[ case "$withval" in
+  no)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LIBMSRPC)
+	LIBMSRPC="bin/libmsrpc.so"
+
+	if test x$ATTEMPT_LIBMSRPC32_BUILD = x; then
+		LIBMSRPC32=""
+	else
+			LIBMSRPC32=bin/libmsrpc.32.so
+	fi
+
+# Conditions under which libmsrpc should not be built.
+
+	if test x$PICFLAG = x; then
+	   echo No support for PIC code - disabling libmsrpc
+	   LIBMSRPC=""
+	   LIBMSRPC32=""
+	fi
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(yes)
+)
+
+#################################################
+# check for libsmb support
+AC_MSG_CHECKING(whether to use libsmb)
+AC_ARG_WITH(libsmb,
+[  --with-libsmb     Include SMB libsmb support (default)
+  --without-libsmb  Don't include SMB libsmb support ],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LIBSMB)
+	LIBSMB="bin/libsmb.so"
+
+	if test x$ATTEMPT_LIBSMB32_BUILD = x; then
+		LIBSMB32=""
+	else
+			LIBSMB32=bin/libsmb.32.so
+	fi
+
+# Conditions under which libsmb should not be built.
+
+	if test x$PICFLAG = x; then
+	   echo No support for PIC code - disabling libsmb
+	   LIBSMB=""
+	   LIBSMB32=""
+	fi
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(yes)
+)
+
 
 #################################################
 # check for smbwrapper support

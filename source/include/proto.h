@@ -194,9 +194,6 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep);
 BOOL lookupsmbgrpnam(const char *unix_grp_name, DOM_NAME_MAP *grp);
 BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP *gmep);
 BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep);
-const struct passwd *map_nt_and_unix_username(const char *domain,
-				const char *ntuser,
-				char *unix_user, char *nt_user);
 
 /*The following definitions come from  lib/doscalls.c  */
 
@@ -2910,10 +2907,10 @@ BOOL make_rpc_auth_netsec_resp(RPC_AUTH_NETSEC_RESP *rsp, uint32 flags);
 BOOL smb_io_rpc_auth_netsec_resp(char *desc, RPC_AUTH_NETSEC_RESP *rsp, prs_struct *ps, int depth);
 BOOL rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk);
 BOOL make_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk,
-				uchar sig[8],
-				uchar data1[8],
-				uchar data3[8],
-				uchar data8[8]);
+				const uchar sig[8],
+				const uchar data1[8],
+				const uchar data3[8],
+				const uchar data8[8]);
 BOOL smb_io_rpc_auth_netsec_chk(char *desc, RPC_AUTH_NETSEC_CHK *chk, prs_struct *ps, int depth);
 BOOL netsec_encode(struct netsec_auth_struct *a,
 				RPC_AUTH_NETSEC_CHK *verf,
