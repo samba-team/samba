@@ -339,11 +339,11 @@ Common restrictions that are frequently used include:
 <para>
 <indexterm><primary>Account Controls</primary></indexterm>
 <itemizedlist>
-	<listitem>Logon hours</listitem>
-	<listitem>Password aging</listitem>
-	<listitem>Permitted logon from certain machines only</listitem>
-	<listitem>Account type (local or global)</listitem>
-	<listitem>User rights</listitem>
+	<listitem><para>Logon hours</para></listitem>
+	<listitem><para>Password aging</para></listitem>
+	<listitem><para>Permitted logon from certain machines only</para></listitem>
+	<listitem><para>Account type (local or global)</para></listitem>
+	<listitem><para>User rights</para></listitem>
 </itemizedlist>
 </para>
 

@@ -33,7 +33,7 @@ network clients.
 
 <figure id="domain-example"><title>An Example Domain.</title>
 <mediaobject>
-<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/domain" width="4in" height="3in" scalefit="1"/></imageobject>
+<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/domain" width="4in" scalefit="1"/></imageobject>
 <imageobject><imagedata fileref="projdoc/imagefiles/domain.png" scale="50" scalefit="1"/></imageobject>
 </mediaobject>
 </figure>
@@ -243,7 +243,7 @@ LDAP-based user and machine account backend.
 
 <para>
 New to Samba-3 is the ability to use a backend database that holds the same type of data as
-the NT4-style SAM database (one of the registry files)<footnote>See also <link linkend="passdb"/>.</footnote>.
+the NT4-style SAM database (one of the registry files)<footnote><para>See also <link linkend="passdb"/>.</para></footnote>.
 </para>
 
 <para>
@@ -292,12 +292,12 @@ management requirements. Samba can act as a NT4-style DC in a Windows 2000/XP
 environment. However, there are certain compromises:
 
 <itemizedlist>
-	<listitem>No machine policy files.</listitem>
-	<listitem>No Group Policy Objects.</listitem>
-	<listitem>No synchronously executed AD logon scripts.</listitem>
-	<listitem>Can't use Active Directory management tools to manage users and machines.</listitem>
-	<listitem>Registry changes tattoo the main registry, while with AD they do not leave permanent changes in effect.</listitem>
-	<listitem>Without AD you cannot perform the function of exporting specific applications to specific users or groups.</listitem>
+	<listitem><para>No machine policy files.</para></listitem>
+	<listitem><para>No Group Policy Objects.</para></listitem>
+	<listitem><para>No synchronously executed AD logon scripts.</para></listitem>
+	<listitem><para>Can't use Active Directory management tools to manage users and machines.</para></listitem>
+	<listitem><para>Registry changes tattoo the main registry, while with AD they do not leave permanent changes in effect.</para></listitem>
+		<listitem><para>Without AD you cannot perform the function of exporting specific applications to specific users or groups.</para></listitem>
 </itemizedlist>
 </para>
 
@@ -407,7 +407,7 @@ A Domain Controller is an SMB/CIFS server that:
 It is rather easy to configure Samba to provide these. Each Samba Domain Controller must provide
 the NETLOGON service that Samba calls the <smbconfoption><name>domain logons</name></smbconfoption> functionality
 (after the name of the parameter in the &smb.conf; file). Additionally, one server in a Samba-3
-Domain must advertise itself as the Domain Master Browser<footnote>See <link linkend="NetworkBrowsing"/>.</footnote>.
+Domain must advertise itself as the Domain Master Browser<footnote><para>See <link linkend="NetworkBrowsing"/>.</para></footnote>.
 This causes the Primary Domain Controller to claim a domain-specific NetBIOS name that identifies it as a
 Domain Master Browser for its given domain or workgroup. Local master browsers in the same domain or workgroup on
 broadcast-isolated subnets then ask for a complete copy of the browse list for the whole wide area network.
@@ -829,7 +829,7 @@ Create a user without the <quote>$</quote>. Then use <command>vipw</command> to 
 the <quote>$</quote>. Or create the whole entry with vipw if you like; make sure you use a unique user login ID.
 </para>
 
-<para><note>The machine account must have the exact name that the workstation has.</note></para>
+<note><para>The machine account must have the exact name that the workstation has.</para></note>
 
 <note><para>
 The UNIX tool <command>vipw</command> is a common tool for directly editing the <filename>/etc/passwd</filename> file.

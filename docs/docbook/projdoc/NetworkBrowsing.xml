@@ -92,12 +92,12 @@ The technologies (or methods) employed in making all of this work include:
 </para>
 
 <itemizedlist>
-	<listitem>MS Windows machines register their presence to the network.</listitem>
-	<listitem>Machines announce themselves to other machines on the network.</listitem>
-	<listitem>One or more machine on the network collates the local announcements.</listitem>
-	<listitem>The client machine finds the machine that has the collated list of machines.</listitem>
-	<listitem>The client machine is able to resolve the machine names to IP addresses.</listitem>
-	<listitem>The client machine is able to connect to a target machine.</listitem>
+	<listitem><para>MS Windows machines register their presence to the network.</para></listitem>
+	<listitem><para>Machines announce themselves to other machines on the network.</para></listitem>
+	<listitem><para>One or more machine on the network collates the local announcements.</para></listitem>
+	<listitem><para>The client machine finds the machine that has the collated list of machines.</para></listitem>
+	<listitem><para>The client machine is able to resolve the machine names to IP addresses.</para></listitem>
+	<listitem><para>The client machine is able to connect to a target machine.</para></listitem>
 </itemizedlist>
 
 <para>
@@ -1062,17 +1062,17 @@ are:
 </para>
 
 <itemizedlist>
-	<listitem>WINS &smbmdash; the best tool.</listitem>
-	<listitem>LMHOSTS &smbmdash; static and hard to maintain.</listitem>
-	<listitem>Broadcast &smbmdash; uses UDP and cannot resolve names across remote segments.</listitem>
+	<listitem><para>WINS &smbmdash; the best tool.</para></listitem>
+	<listitem><para>LMHOSTS &smbmdash; static and hard to maintain.</para></listitem>
+	<listitem><para>Broadcast &smbmdash; uses UDP and cannot resolve names across remote segments.</para></listitem>
 </itemizedlist>
 
 <para>
 Alternative means of name resolution include:
 </para>
 <itemizedlist>
-<listitem>Static <filename>/etc/hosts</filename> &smbmdash;  hard to maintain, and lacks name_type info.</listitem>
-<listitem>DNS &smbmdash; is a good choice but lacks essential name_type info.</listitem>
+<listitem><para>Static <filename>/etc/hosts</filename> &smbmdash;  hard to maintain, and lacks name_type info.</para></listitem>
+<listitem><para>DNS &smbmdash; is a good choice but lacks essential name_type info.</para></listitem>
 </itemizedlist>
 
 <para>
@@ -1437,7 +1437,7 @@ as shown in <link linkend="brsex3"/>.
 	<tgroup cols="3" align="left">
 		<colspec align="left"/>
 		<colspec align="left"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify" colwidth="1*"/>
 
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>

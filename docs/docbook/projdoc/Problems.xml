@@ -236,13 +236,13 @@ If you do post a message to one of the lists, please observe the following guide
 	<listitem><para>In addition to the version, if you obtained Samba via
 	CVS, mention the date when you last checked it out.</para></listitem>
 
-	<listitem><para> Try and make your questions clear and brief. Lots of long, 
+	<listitem><para>Try and make your questions clear and brief. Lots of long, 
 	convoluted questions get deleted before	they are completely read!
 	Do not post HTML encoded messages. Most people on mailing lists simply delete
 	them.
 	</para></listitem>
 
-	<listitem><para> If you run one of those nifty <quote>I'm on holidays</quote> things when
+	<listitem><para>If you run one of those nifty <quote>I'm on holidays</quote> things when
 	you are away, make sure its configured to not answer mailing list traffic. Auto-responses
 	to mailing lists really irritate the thousands of people who end up having to deal
 	with such bad netiquet bahavior.
@@ -262,7 +262,7 @@ If you do post a message to one of the lists, please observe the following guide
 
 	<listitem><para>If you have a complete Netmon trace (from the opening of
 	the pipe to the error), you can send the *.CAP file as well.</para></listitem> 
-	    `
+	    
 	<listitem><para>Please think carefully before attaching a document to an email.
 	Consider pasting the relevant parts into the body of the message. The Samba
 	mailing lists go to a huge number of people. Do they all need a copy of your 

@@ -986,11 +986,13 @@ so far:
 	<para>
 	<quote>
 	We are seeing lots of errors in the Samba logs, like:
+</quote>
 <programlisting>
 tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
  0x4d6f4b61 at offset=36116
 </programlisting>
 
+<quote>
 	What do these mean?
 	</quote>
 	</para>

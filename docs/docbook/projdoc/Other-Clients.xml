@@ -48,9 +48,9 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 		<para>Basically, you need three components:</para>
 		
 		<itemizedlist>
-			<listitem>The File and Print Client (IBM Peer)</listitem>
-			<listitem>TCP/IP (Internet support) </listitem>
-			<listitem>The <quote>NetBIOS over TCP/IP</quote> driver (TCPBEUI)</listitem>
+			<listitem><para>The File and Print Client (IBM Peer)</para></listitem>
+			<listitem><para>TCP/IP (Internet support) </para></listitem>
+			<listitem><para>The <quote>NetBIOS over TCP/IP</quote> driver (TCPBEUI)</para></listitem>
 		</itemizedlist>
 		
 		<para>Installing the first two together with the base operating 

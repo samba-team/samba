@@ -298,7 +298,7 @@ generally fit into three basic categories. <link linkend="majtypes"/> shows the 
 <table frame="all" id="majtypes"><title>The Three Major Site Types</title>
 <tgroup cols="2">
 	<colspec align="left"/>
-	<colspec align="justify" colspec="1*"/>
+	<colspec align="justify" colwidth="1*"/>
 	<thead>
 	<row><entry>Number of Users</entry><entry>Description</entry></row>
 	</thead>
