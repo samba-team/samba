@@ -208,7 +208,7 @@ Join a domain.  If the account already exists on the server, and
 [TYPE] is MEMBER, the machine will attempt to join automatically. 
 (Assuming that the machine has been created in server manager)
 Otherwise, a password will be prompted for, and a new account may
-be created.</param>
+be created.</para>
 
 <para>
 [TYPE] may be PDC, BDC or MEMBER to specify the type of server
@@ -224,6 +224,7 @@ using the old style of domain joining - you need to create a trust
 account in server manager first.</para>
 </refsect2>
 
+<refsect2>
 <title>[RPC|ADS] USER</title>
 
 <refsect3>
