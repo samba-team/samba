@@ -52,7 +52,7 @@ NTSTATUS cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
   /**************** Long-term Session key **************/
 
   /* calculate the session key */
-  cred_session_key(&clnt_chal, &srv_chal, (char *)mach_pwd, cli->sess_key);
+  cred_session_key(&clnt_chal, &srv_chal, (uchar *)mach_pwd, cli->sess_key);
   memset((char *)cli->sess_key+8, '\0', 8);
 
   /******************* Authenticate 2 ********************/

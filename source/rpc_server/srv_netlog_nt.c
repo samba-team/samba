@@ -223,7 +223,7 @@ NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u
 
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 (char *)p->dc.md4pw, p->dc.sess_key);
+				(uchar *)p->dc.md4pw, p->dc.sess_key);
 
 		/* Save the machine account name. */
 		fstrcpy(p->dc.mach_acct, mach_acct);

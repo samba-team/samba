@@ -7943,6 +7943,7 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
+	WERROR result;
 
 	/* that's an [in out] buffer */
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
@@ -7954,12 +7955,12 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	switch(level) {
 	case 1:
-		return getprintprocessordirectory_level_1
+		result = getprintprocessordirectory_level_1
 		  (&q_u->name, &q_u->environment, buffer, offered, needed);
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		result = WERR_UNKNOWN_LEVEL;
 	}
 
-	return WERR_ACCESS_DENIED;
+	return result;
 }
 

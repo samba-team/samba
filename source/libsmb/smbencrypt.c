@@ -59,7 +59,7 @@ void E_md4hash(const uchar *passwd, uchar *p16)
 	int16 wpwd[129];
 	
 	/* Password cannot be longer than 128 characters */
-	len = strlen(passwd);
+	len = strlen((const char *)passwd);
 	if(len > 128)
 		len = 128;
 	/* Password must be converted to NT unicode - null terminated. */

@@ -1249,7 +1249,7 @@ static char *sj_to_hex_static(const char *from)
     const unsigned char *sp;
     unsigned char *dp;
     
-    sp = from;
+    sp = (const uchar *)from;
     dp = (unsigned char*) cvtbuf;
     while (*sp && (((char *)dp)- cvtbuf < sizeof(cvtbuf)-7)) {
 	if (is_kana(*sp)) {
@@ -1321,7 +1321,7 @@ static char *sj_to_cap_static(const char *from)
     const unsigned char *sp;
     unsigned char *dp;
 
-    sp = from;
+    sp = (const uchar *)from;
     dp = (unsigned char*) cvtbuf;
     while (*sp && (((char *)dp) - cvtbuf < sizeof(cvtbuf)-4)) {
 	if (*sp >= 0x80) {

@@ -474,7 +474,7 @@ static void gotalarm_sig(void)
   lock the messaging tdb based on a string - this is used as a primitive form of mutex
   between smbd instances. 
 */
-BOOL message_named_mutex(char *name, unsigned int timeout)
+BOOL message_named_mutex(const char *name, unsigned int timeout)
 {
 	TDB_DATA key;
 	int ret;
@@ -482,7 +482,7 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 	if (!message_init())
 		return False;
 
-	key.dptr = name;
+	key.dptr = (char *)name;
 	key.dsize = strlen(name)+1;
 
 	if (timeout) {
