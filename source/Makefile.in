@@ -492,7 +492,8 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(RPCCLIENT_OBJ) $(LIBSMB_OBJ) $(SMBWRAPPER_OBJ) \
 		$(SMBPASSWD_OBJ) $(SIDDB_OBJ) \
 		$(RPC_SRVUTIL_OBJ) \
-		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ)
+		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+		$(PASSDB_OBJ) $(SAMPASSDB_OBJ) $(GROUPDB_OBJ)
 
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
@@ -785,7 +786,7 @@ installdirs:
 	$(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(CODEPAGEDIR)
 
 install-libs: all installdirs
-	@list='$(SAMBA_LIBS)'; for p in $$list; do \
+	@list='$(SMBPWLIB) $(SAMBA_LIBS)'; for p in $$list; do \
 	  echo Installing $$p in $(LIBDIR) using libtool; \
 	  $(LIBTOOL) --mode=install $(INSTALL) $$p $(LIBDIR); \
 	done
@@ -894,7 +895,7 @@ Makefile: $(srcdir)/Makefile.in config.status \
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck
 # So something depends on libtool, so it gets rebuild, if needed
-$(SAMBA_LIBS): libtool
+$(SAMBA_LIBS) $(SMBPWLIB): libtool
 
 # note that nothing depends on config.h, so will probably be rebuilt
 # only when explicitly requested, unless dependency tracking is enabled
