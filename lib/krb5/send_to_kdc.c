@@ -84,6 +84,33 @@ send_and_recv (int fd,
 }
 
 static int
+send_and_recv_udp(int fd, 
+		  time_t tmout,
+		  const krb5_data *send,
+		  krb5_data *recv)
+{
+    return send_and_recv(fd, tmout, 1, send, recv);
+}
+
+static int
+send_and_recv_tcp(int fd, 
+		  time_t tmout,
+		  const krb5_data *Send,
+		  krb5_data *recv)
+{
+    unsigned char len[4];
+    k_put_int(len, Send->length, 4);
+    send(fd, len, sizeof(len), 0);
+    if(send_and_recv(fd, tmout, 0, Send, recv))
+	return -1;
+    if(recv->length < 4)
+	return -1;
+    memmove(recv->data, (char*)recv->data + 4, recv->length - 4);
+    recv->length -= 4;
+    return 0;
+}
+
+static int
 send_and_recv_http(int fd, 
 		   time_t tmout,
 		   const krb5_data *send,
@@ -166,11 +193,16 @@ krb5_sendto_kdc (krb5_context context,
 	     char *addr;
 	     char *colon;
 	     int http_flag = 0;
+	     int tcp_flag = 0;
 	     int sa_size;
 
 	     if(strncmp(p, "http://", 7) == 0){
 		 p += 7;
 		 http_flag = 1;
+		 port = htons(80);
+	     }else if(strncmp(p, "tcp/", 4) == 0){
+		 p += 4;
+		 tcp_flag = 1;
 	     }
 	     colon = strchr (p, ':');
 	     if (colon)
@@ -189,7 +221,7 @@ krb5_sendto_kdc (krb5_context context,
 	     while ((addr = *hostent->h_addr_list++)) {
 		 int family = hostent->h_addrtype;
 		    
-		 if(http_flag)
+		 if(http_flag || tcp_flag)
 		     fd = socket(family, SOCK_STREAM, 0);
 		 else
 		     fd = socket(family, SOCK_DGRAM, 0);
@@ -214,10 +246,13 @@ krb5_sendto_kdc (krb5_context context,
 		 if(http_flag)
 		     ret = send_and_recv_http(fd, context->kdc_timeout,
 					      send, receive);
-		 else
+		 else if(tcp_flag)
 			
-		     ret = send_and_recv (fd, context->kdc_timeout, 1,
-					  send, receive);
+		     ret = send_and_recv_tcp (fd, context->kdc_timeout,
+					      send, receive);
+		 else
+		     ret = send_and_recv_udp (fd, context->kdc_timeout,
+					      send, receive);
 		 close (fd);
 		 if(ret == 0 && receive->length != 0)
 		     goto out;
