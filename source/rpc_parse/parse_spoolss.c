@@ -3794,7 +3794,7 @@ BOOL spoolss_io_r_getprinterdriverdir(char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r
 		case 1:
 		{
 			DRIVER_DIRECTORY_1 *driver_info_1;
-			driver_info_1=&(r_u->driver.driver_info_1);
+			driver_info_1=&(r_u->ctr.driver.info_1);
 			
 			bufsize_required = size_of_relative_string(&(driver_info_1->name));
 			break;
@@ -3830,7 +3830,7 @@ BOOL spoolss_io_r_getprinterdriverdir(char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r
 			case 1:
 			{
 				DRIVER_DIRECTORY_1 *info;
-				info = &(r_u->driver.driver_info_1);
+				info = &(r_u->ctr.driver.info_1);
 				prs_unistr("name", ps, depth, &(info->name));
 				/*smb_io_printer_driver_dir_1(desc, info, ps, depth, &start_offset, &end_offset);*/
 				break;

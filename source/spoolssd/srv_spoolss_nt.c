@@ -3033,32 +3033,32 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 	return add_a_printer_driver(driver, level);
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getprinterdriverdirectory(SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *rdata)
+uint32 _spoolss_getprinterdriverdirectory( const UNISTR2 *name,
+				const UNISTR2 *uni_environment,
+				uint32 level,
+				DRIVER_DIRECTORY_CTR *ctr,
+				uint32 *offered)
 {
-	SPOOL_R_GETPRINTERDRIVERDIR r_u;
 	pstring chaine;
 	pstring long_archi;
 	pstring archi;
 
-	offered=buf_size;
-	level=level;
-	status=0x0;
-	
-	unistr2_to_ascii(long_archi, &(environment), sizeof(long_archi)-1);
+	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 	get_short_archi(archi, long_archi);
 		
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\print$\\%s", global_myname, archi);
+	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\print$\\%s",
+	                                 global_myname, archi);
 
 	DEBUG(4,("printer driver directory: [%s]\n", chaine));
 							    
-	make_unistr(&(driver.driver_info_1.name), chaine);
+	make_unistr(&(ctr->driver.info_1.name), chaine);
 
-	spoolss_io_r_getprinterdriverdir("", &r_u, rdata, 0);
+	return 0x0;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

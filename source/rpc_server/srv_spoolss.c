@@ -95,7 +95,7 @@ static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
 {
 	int snum;
 	int pnum = find_printer_index_by_hnd(hnd);
-	int n_services=lp_numservices();
+	int n_services = lp_numservices();
 		
 	if (OPEN_HANDLE(pnum))
 	{
@@ -103,7 +103,7 @@ static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
 		 {
 		   case PRINTER_HANDLE_IS_PRINTER:		   
 			DEBUG(4,("short name:%s\n", Printer[pnum].dev.printername));			
-			for (snum=0;snum<n_services; snum++)
+			for (snum = 0;snum<n_services; snum++)
 			{
 				if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
 				{
@@ -115,7 +115,7 @@ static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
 					   )
 					{
 						DEBUG(4,("Printer found: %s[%x]\n",lp_servicename(snum),snum));
-						*number=snum;
+						*number = snum;
 						return True;
 						break;	
 					}
@@ -280,7 +280,7 @@ static void construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
 	DEBUGADD(8,("getting printer characteristics\n"));
 
 	get_a_printer(&printer, 2, lp_servicename(snum));
-	ntdevmode=(printer.info_2)->devmode;
+	ntdevmode = (printer.info_2)->devmode;
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
 	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, 
@@ -316,7 +316,7 @@ static void construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
 
 	if (ntdevmode->private != NULL)
 	{
-		devmode->private=(uint8 *)malloc(devmode->driverextra*sizeof(uint8));
+		devmode->private = (uint8 *)malloc(devmode->driverextra*sizeof(uint8));
 		memcpy(devmode->private, ntdevmode->private, devmode->driverextra);
 	}
 
@@ -384,8 +384,8 @@ static void api_spoolss_getprinter(rpcsrv_struct *p, prs_struct *data,
 	                                &r_u.ctr, &q_u.offered, &r_u.needed);
 
 	memcpy(&r_u.handle, &q_u.handle, sizeof(&r_u.handle));
-	r_u.offered=q_u.offered;
-	r_u.level=q_u.level;
+	r_u.offered = q_u.offered;
+	r_u.level = q_u.level;
 	safe_free(q_u.buffer);
 
 	spoolss_io_r_getprinter("",&r_u,rdata,0);
@@ -594,21 +594,21 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	struct tm *t;
 	time_t unixdate = time(NULL);
 	
-	t=gmtime(&unixdate);
+	t = gmtime(&unixdate);
 	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
 
-	job_info->jobid=queue->job;	
+	job_info->jobid = queue->job;	
 	make_unistr(&(job_info->printername), lp_servicename(snum));
 	make_unistr(&(job_info->machinename), temp_name);
 	make_unistr(&(job_info->username), queue->user);
 	make_unistr(&(job_info->document), queue->file);
 	make_unistr(&(job_info->datatype), "RAW");
 	make_unistr(&(job_info->text_status), "");
-	job_info->status=queue->status;
-	job_info->priority=queue->priority;
-	job_info->position=position;
-	job_info->totalpages=0;
-	job_info->pagesprinted=0;
+	job_info->status = queue->status;
+	job_info->priority = queue->priority;
+	job_info->position = position;
+	job_info->totalpages = 0;
+	job_info->pagesprinted = 0;
 
 	make_systemtime(&(job_info->submitted), t);
 }
@@ -626,15 +626,15 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	struct tm *t;
 	time_t unixdate = time(NULL);
 
-	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
+	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0 )
 	{
 		return (False);
 	}	
 	
-	t=gmtime(&unixdate);
+	t = gmtime(&unixdate);
 	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
 
-	job_info->jobid=queue->job;
+	job_info->jobid = queue->job;
 	
 	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter.info_2->printername);
 	make_unistr(&(job_info->printername), chaine);
@@ -650,21 +650,21 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	
 /* and here the security descriptor */
 
-	job_info->status=queue->status;
-	job_info->priority=queue->priority;
-	job_info->position=position;
-	job_info->starttime=0;
-	job_info->untiltime=0;
-	job_info->totalpages=0;
-	job_info->size=queue->size;
+	job_info->status = queue->status;
+	job_info->priority = queue->priority;
+	job_info->position = position;
+	job_info->starttime = 0;
+	job_info->untiltime = 0;
+	job_info->totalpages = 0;
+	job_info->size = queue->size;
 	make_systemtime(&(job_info->submitted), t);
-	job_info->timeelapsed=0;
-	job_info->pagesprinted=0;
+	job_info->timeelapsed = 0;
+	job_info->pagesprinted = 0;
 
-	devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE));
+	devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE));
 	ZERO_STRUCTP(devmode);	
 	construct_dev_mode(devmode, snum, global_myname);			
-	job_info->devmode=devmode;
+	job_info->devmode = devmode;
 
 	free_a_printer(ntprinter, 2);
 	return (True);
@@ -791,8 +791,8 @@ static void api_spoolss_enumports(rpcsrv_struct *p, prs_struct *data,
 	
 	spoolss_io_q_enumports("", &q_u, data, 0);
 
-	r_u.offered=q_u.buf_size;
-	r_u.level=q_u.level;
+	r_u.offered = q_u.buf_size;
+	r_u.level = q_u.level;
 	r_u.status = _spoolss_enumports(&q_u.name,
 				q_u.level,
 				&r_u.ctr,
@@ -843,41 +843,23 @@ static void api_spoolss_addprinterdriver(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_getprinterdriverdirectory(SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *rdata)
-{
-	SPOOL_R_GETPRINTERDRIVERDIR r_u;
-	pstring chaine;
-	pstring long_archi;
-	pstring archi;
-
-	r_u.offered=q_u->buf_size;
-	r_u.level=q_u->level;
-	r_u.status=0x0;
-	
-	unistr2_to_ascii(long_archi, &(q_u->environment), sizeof(long_archi)-1);
-	get_short_archi(archi, long_archi);
-		
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\print$\\%s", global_myname, archi);
-
-	DEBUG(4,("printer driver directory: [%s]\n", chaine));
-							    
-	make_unistr(&(r_u.driver.driver_info_1.name), chaine);
-
-	spoolss_io_r_getprinterdriverdir("", &r_u, rdata, 0);
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_getprinterdriverdirectory(rpcsrv_struct *p, prs_struct *data,
                                                   prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTERDRIVERDIR q_u;
+	SPOOL_R_GETPRINTERDRIVERDIR r_u;
 	
 	spoolss_io_q_getprinterdriverdir("", &q_u, data, 0);
 	
-	spoolss_reply_getprinterdriverdirectory(&q_u, rdata);
-	
-	spoolss_io_free_buffer(&(q_u.buffer));
+	r_u.offered = q_u.buf_size;
+	r_u.level = q_u.level;
+	r_u.status = _spoolss_getprinterdriverdirectory(&q_u.name,
+	                        &q_u.environment,
+				q_u.level,
+				&r_u.ctr,
+				&r_u.offered);
+	spoolss_io_free_buffer(&q_u.buffer);
+	spoolss_io_r_getprinterdriverdir("", &r_u, rdata, 0);
 }
 
 /****************************************************************************
@@ -889,7 +871,7 @@ static void spoolss_reply_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_stru
 	
 	uint32 type;
 	fstring value;
-	uint8 *data=NULL;
+	uint8 *data = NULL;
 	
 	uint32 param_index;
 	uint32 biggest_valuesize;
@@ -907,35 +889,35 @@ static void spoolss_reply_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_stru
 		get_a_printer(&printer, 2, lp_servicename(snum));
 
 		/* The NT machine wants to know the biggest size of value and data */	
-		if ( (q_u->valuesize==0) && (q_u->datasize==0) )
+		if ( (q_u->valuesize == 0) && (q_u->datasize == 0) )
 		{
 			DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
 			
-			r_u.valuesize=0;
-			r_u.realvaluesize=0;
-			r_u.type=0;
-			r_u.datasize=0;
-			r_u.realdatasize=0;
-			r_u.status=0;
+			r_u.valuesize = 0;
+			r_u.realvaluesize = 0;
+			r_u.type = 0;
+			r_u.datasize = 0;
+			r_u.realdatasize = 0;
+			r_u.status = 0;
 			
-			param_index=0;
-			biggest_valuesize=0;
-			biggest_datasize=0;
+			param_index = 0;
+			biggest_valuesize = 0;
+			biggest_datasize = 0;
 			
 			while (get_specific_param_by_index(printer, 2, param_index, value, &data, &type, &data_len))
 			{
-				if (strlen(value) > biggest_valuesize) biggest_valuesize=strlen(value);
-				if (data_len  > biggest_datasize)  biggest_datasize=data_len;
+				if (strlen(value) > biggest_valuesize) biggest_valuesize = strlen(value);
+				if (data_len  > biggest_datasize)  biggest_datasize = data_len;
 
 				param_index++;
 			}
 			
 			/* I wrote it, I didn't designed the protocol */
-			if (biggest_valuesize!=0)
+			if (biggest_valuesize!= 0)
 			{
 				SIVAL(&(r_u.value),0, 2*(biggest_valuesize+1) );
 			}
-			r_u.data=(uint8 *)malloc(4*sizeof(uint8));
+			r_u.data = (uint8 *)malloc(4*sizeof(uint8));
 			SIVAL(r_u.data, 0, biggest_datasize );
 		}
 		else
@@ -945,37 +927,37 @@ static void spoolss_reply_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_stru
 			 * that's the number of bytes not the number of unicode chars
 			 */
 			 
-			r_u.valuesize=q_u->valuesize;
-			r_u.datasize=q_u->datasize;
+			r_u.valuesize = q_u->valuesize;
+			r_u.datasize = q_u->datasize;
 
 			if (get_specific_param_by_index(printer, 2, q_u->index, value, &data, &type, &data_len))
 			{
 				make_unistr(&(r_u.value), value);
-				r_u.data=data;
+				r_u.data = data;
 				
-				r_u.type=type;
+				r_u.type = type;
 
 				/* the length are in bytes including leading NULL */
-				r_u.realvaluesize=2*(strlen(value)+1);
-				r_u.realdatasize=data_len;
+				r_u.realvaluesize = 2*(strlen(value)+1);
+				r_u.realdatasize = data_len;
 				
-				r_u.status=0;
+				r_u.status = 0;
 			}
 			else
 			{
-				r_u.valuesize=0;
-				r_u.realvaluesize=0;
-				r_u.datasize=0;
-				r_u.realdatasize=0;
-				r_u.type=0;
-				r_u.status=0x0103; /* ERROR_NO_MORE_ITEMS */
+				r_u.valuesize = 0;
+				r_u.realvaluesize = 0;
+				r_u.datasize = 0;
+				r_u.realdatasize = 0;
+				r_u.type = 0;
+				r_u.status = 0x0103; /* ERROR_NO_MORE_ITEMS */
 			}		
 		}
 		
 		free_a_printer(printer, 2);
 	}
 	spoolss_io_r_enumprinterdata("", &r_u, rdata, 0);
-	if (r_u.data!=NULL) free(r_u.data);
+	if (r_u.data!= NULL) free(r_u.data);
 }
 
 /****************************************************************************
@@ -998,8 +980,8 @@ static void spoolss_reply_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_PARAM *param = NULL;
 		
-	int pnum=0;
-	int snum=0;
+	int pnum = 0;
+	int snum = 0;
 	
 	DEBUG(5,("spoolss_reply_setprinterdata\n"));
 
@@ -1043,9 +1025,9 @@ static void api_spoolss_setprinterdata(rpcsrv_struct *p, prs_struct *data,
 static void spoolss_reply_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata)
 {
        SPOOL_R_ADDFORM r_u;
-       int pnum=0;
-       int count=0;
-       nt_forms_struct *list=NULL;
+       int pnum = 0;
+       int count = 0;
+       nt_forms_struct *list = NULL;
 
        DEBUG(5,("spoolss_reply_addform\n"));
 
@@ -1053,7 +1035,7 @@ static void spoolss_reply_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata)
 
        if (OPEN_HANDLE(pnum))
        {
-	       count=get_ntforms(&list);
+	       count = get_ntforms(&list);
 
 	       add_a_form(&list, q_u->form, &count);
 
@@ -1083,9 +1065,9 @@ static void api_spoolss_addform(rpcsrv_struct *p, prs_struct *data,
 static void spoolss_reply_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata)
 {
 	SPOOL_R_SETFORM r_u;
-	int pnum=0;
-	int count=0;
-	nt_forms_struct *list=NULL;
+	int pnum = 0;
+	int count = 0;
+	nt_forms_struct *list = NULL;
 
  	DEBUG(5,("spoolss_reply_setform\n"));
 
@@ -1093,7 +1075,7 @@ static void spoolss_reply_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata)
 
 	if (OPEN_HANDLE(pnum))
 	{
-		count=get_ntforms(&list);
+		count = get_ntforms(&list);
 
 		update_a_form(&list, q_u->form, count);
 
@@ -1143,7 +1125,7 @@ static void spoolss_reply_enumprintprocessors(SPOOL_Q_ENUMPRINTPROCESSORS *q_u, 
 	
 	make_unistr(&(info_1->name), "winprint");
 	
-	r_u.info_1=info_1;
+	r_u.info_1 = info_1;
 	
 	spoolss_io_r_enumprintprocessors("", &r_u, rdata, 0);
 	
@@ -1190,7 +1172,7 @@ static void spoolss_reply_enumprintmonitors(SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_
 	
 	make_unistr(&(info_1->name), "Local Port");
 	
-	r_u.info_1=info_1;
+	r_u.info_1 = info_1;
 	
 	spoolss_io_r_enumprintmonitors("", &r_u, rdata, 0);
 	
@@ -1219,22 +1201,22 @@ static void spoolss_reply_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata)
 	int snum;
 	int count;
 	int i;
-	print_queue_struct *queue=NULL;
+	print_queue_struct *queue = NULL;
 	print_status_struct status;
-	JOB_INFO_1 *job_info_1=NULL;
-	JOB_INFO_2 *job_info_2=NULL;
+	JOB_INFO_1 *job_info_1 = NULL;
+	JOB_INFO_2 *job_info_2 = NULL;
 
 	DEBUG(4,("spoolss_reply_getjob\n"));
 	
 	bzero(&status,sizeof(status));
 
-	r_u.offered=q_u->buf_size;
+	r_u.offered = q_u->buf_size;
 
 	if (get_printer_snum(&(q_u->handle), &snum))
 	{
-		count=get_printqueue(snum, NULL, &queue, &status);
+		count = get_printqueue(snum, NULL, &queue, &status);
 		
-		r_u.level=q_u->level;
+		r_u.level = q_u->level;
 		
 		DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", count, status.status, status.message));
 		
@@ -1242,36 +1224,36 @@ static void spoolss_reply_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata)
 		{
 			case 1:
 			{
-				job_info_1=(JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
+				job_info_1 = (JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
 
-				for (i=0; i<count; i++)
+				for (i = 0; i<count; i++)
 				{
-					if (queue[i].job==(int)q_u->jobid)
+					if (queue[i].job == (int)q_u->jobid)
 					{
 						fill_job_info_1(job_info_1, &(queue[i]), i, snum);
 					}
 				}
-				r_u.job.job_info_1=job_info_1;
+				r_u.job.job_info_1 = job_info_1;
 				break;
 			}
 			case 2:
 			{
-				job_info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
+				job_info_2 = (JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
 
-				for (i=0; i<count; i++)
+				for (i = 0; i<count; i++)
 				{
-					if (queue[i].job==(int)q_u->jobid)
+					if (queue[i].job == (int)q_u->jobid)
 					{
 						fill_job_info_2(job_info_2, &(queue[i]), i, snum);
 					}
 				}
-				r_u.job.job_info_2=job_info_2;
+				r_u.job.job_info_2 = job_info_2;
 				break;
 			}
 		}
 	}
 
-	r_u.status=0x0;
+	r_u.status = 0x0;
 
 	spoolss_io_r_getjob("",&r_u,rdata,0);
 	switch (r_u.level)
@@ -1309,7 +1291,7 @@ static void api_spoolss_getjob(rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
-struct api_struct api_spoolss_cmds[] =
+struct api_struct api_spoolss_cmds[] = 
 {
  {"SPOOLSS_OPENPRINTEREX",             SPOOLSS_OPENPRINTEREX,             api_spoolss_open_printer_ex           },
  {"SPOOLSS_GETPRINTERDATA",            SPOOLSS_GETPRINTERDATA,            api_spoolss_getprinterdata            },

@@ -4953,7 +4953,11 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name,
 uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 				uint32 level,
 				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
-uint32 _spoolss_getprinterdriverdirectory(SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *rdata);
+uint32 _spoolss_getprinterdriverdirectory( const UNISTR2 *name,
+				const UNISTR2 *uni_environment,
+				uint32 level,
+				DRIVER_DIRECTORY_CTR *ctr,
+				uint32 *offered);
 uint32 _spoolss_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *rdata);
 uint32 _spoolss_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *rdata);
 uint32 _spoolss_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata);

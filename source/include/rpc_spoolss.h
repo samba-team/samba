@@ -1357,16 +1357,24 @@ typedef struct spool_q_getprinterdriverdirectory
 typedef struct driver_directory_1
 {
 	UNISTR name;
+
 } DRIVER_DIRECTORY_1 ;
+
+typedef struct driver_info_ctr_info
+{
+	union {
+		DRIVER_DIRECTORY_1 info_1;
+	} driver;
+
+} DRIVER_DIRECTORY_CTR;
 
 typedef struct spool_r_getprinterdriverdirectory
 {
 	uint32 level;
-	union {
-		DRIVER_DIRECTORY_1 driver_info_1;
-	} driver;
+	DRIVER_DIRECTORY_CTR ctr;
 	uint32 offered;
 	uint32 status;
+
 } SPOOL_R_GETPRINTERDRIVERDIR;
 
 typedef struct spool_q_enumprintprocessors
