@@ -276,6 +276,8 @@ sub ParseElementPullBuffer($$$)
 		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
+	} elsif ($e->{POINTERS}) {
+		$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, NDR_SCALARS|NDR_BUFFERS, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
 		$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
