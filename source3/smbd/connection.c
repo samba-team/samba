@@ -114,8 +114,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 {
 	struct connections_key key;
 	struct connections_data crec;
-	TDB_DATA kbuf, dbuf, lockkey;
-	BOOL rec_locked = False;
+	TDB_DATA kbuf, dbuf;
 	BOOL ret = True;
 
 	if (!tdb) {
@@ -136,22 +135,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		cs.curr_connections = 0;
 		cs.name = lp_servicename(SNUM(conn));
 		cs.Clear = Clear;
-
-		lockkey.dptr = cs.name;
-		lockkey.dsize = strlen(cs.name)+1;
-
-		/*
-		 * Go through and count the connections with hash chain representing the service name
-		 * locked. This is slow but removes race conditions. JRA.
-		 */
-
-		if (tdb_chainlock(tdb, lockkey)) {
-			DEBUG(0,("claim_connection: tdb_chainlock failed %s\n",
-				tdb_errorstr(tdb) ));
-			return False;
-		}
-
-		rec_locked = True;
 
 		if (tdb_traverse(tdb, count_fn, &cs) == -1) {
 			DEBUG(0,("claim_connection: traverse of connections.tdb failed with error %s.\n",
@@ -204,9 +187,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	}
 
   out:
-
-	if (rec_locked)
-		tdb_chainunlock(tdb, lockkey);
 
 	return ret;
 }
