@@ -304,7 +304,11 @@ BOOL add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_us
 	}
 	
 	map.gid=gid;
-	string_to_sid(&map.sid, sid);
+	if (!string_to_sid(&map.sid, sid)) {
+		DEBUG(0, ("string_to_sid failed: %s", sid));
+		return False;
+	}
+	
 	map.sid_name_use=sid_name_use;
 	fstrcpy(map.nt_name, nt_name);
 	fstrcpy(map.comment, comment);
