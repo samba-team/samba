@@ -51,6 +51,7 @@ file transfer program
 .Op Fl g
 .Op Fl p
 .Op Fl l
+.Op Fl -no-gss-bindings
 .Op Ar host
 .Sh DESCRIPTION
 .Nm Ftp
@@ -97,6 +98,8 @@ Turn on passive mode.
 Enables debugging.
 .It Fl g
 Disables file name globbing.
+.It .Fl -no-gss-bindings
+use GSS-API bindings when talking to peer (ie make sure IP addresses match).
 .It Fl l
 Disables command line editing.
 .El
