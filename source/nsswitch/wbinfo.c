@@ -28,7 +28,7 @@
 
 /* Prototypes from common.h - only needed #if TNG */
 
-enum nss_status winbindd_request(int req_type, 
+NSS_STATUS winbindd_request(int req_type, 
 				 struct winbindd_request *request,
 				 struct winbindd_response *response);
 

@@ -73,3 +73,4 @@ void sma_free(SMA_REGION *region, void *address);
 void sma_init_page(SMA_REGION *region, size_t size);
 
 #endif /* SMA_H */
+

@@ -135,14 +135,14 @@ static int create_sock(void)
 
             if (mkdir(WINBINDD_SOCKET_DIR, 0755) == -1) {
                 DEBUG(0, ("error creating socket directory %s: %s\n",
-                          WINBINDD_SOCKET_DIR, sys_errlist[errno]));
+                          WINBINDD_SOCKET_DIR, strerror(errno)));
                 return -1;
             }
 
         } else {
 
             DEBUG(0, ("lstat failed on socket directory %s: %s\n",
-                      WINBINDD_SOCKET_DIR, sys_errlist[errno]));
+                      WINBINDD_SOCKET_DIR, strerror(errno)));
             return -1;
         }
 
@@ -185,7 +185,7 @@ static int create_sock(void)
     if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
         DEBUG(0, ("bind failed on winbind socket %s: %s\n",
                   path,
-                  sys_errlist[errno]));
+                  strerror(errno)));
         close(sock);
         return -1;
     }
@@ -193,7 +193,7 @@ static int create_sock(void)
     if (listen(sock, 5) == -1) {
         DEBUG(0, ("listen failed on winbind socket %s: %s\n",
                   path,
-                  sys_errlist[errno]));
+                  strerror(errno)));
         close(sock);
         return -1;
     }
@@ -391,7 +391,7 @@ static void client_read(struct winbindd_cli_state *state)
 	if (n == -1 || n == 0) {
 		DEBUG(5,("read failed on sock %d, pid %d: %s\n",
 			 state->sock, state->pid, 
-			 (n == -1) ? sys_errlist[errno] : "EOF"));
+			 (n == -1) ? strerror(errno) : "EOF"));
 		
 		state->finished = True;
 		return;
@@ -436,7 +436,7 @@ static void client_write(struct winbindd_cli_state *state)
 		
 		DEBUG(3,("write failed on sock %d, pid %d: %s\n",
 			 state->sock, state->pid, 
-			 (num_written == -1) ? sys_errlist[errno] : "EOF"));
+			 (num_written == -1) ? strerror(errno) : "EOF"));
 		
 		state->finished = True;
 
@@ -635,8 +635,7 @@ int main(int argc, char **argv)
 
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
-
-	setenv(WINBINDD_DONT_ENV, "1", 1);
+	SETENV(WINBINDD_DONT_ENV, "1", 1);
 
 	/* Initialise samba/rpc client stuff */
 

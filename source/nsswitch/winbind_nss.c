@@ -28,7 +28,7 @@
 /* Prototypes from common.c */
 
 void init_request(struct winbindd_request *req,int rq_type);
-enum nss_status winbindd_request(int req_type, 
+NSS_STATUS winbindd_request(int req_type, 
 				 struct winbindd_request *request,
 				 struct winbindd_response *response);
 int write_sock(void *buffer, int count);
@@ -49,6 +49,16 @@ static char *get_static(char **buffer, int *buflen, int len)
 	if ((buffer == NULL) || (buflen == NULL) || (*buflen < len)) {
 		return NULL;
 	}
+
+	/* Some architectures, like Sparc, need pointers aligned on 
+	   boundaries */
+#if _ALIGNMENT_REQUIRED
+	{
+		int mod = len % _MAX_ALIGNMENT;
+		if(mod != 0)
+			len += _MAX_ALIGNMENT - mod;
+	}
+#endif
 
 	/* Return an index into the static buffer */
 
@@ -109,7 +119,7 @@ BOOL next_token(char **ptr, char *buff, char *sep, size_t bufsize)
    the static data passed to us by libc to put strings and stuff in.
    Return NSS_STATUS_TRYAGAIN if we run out of memory. */
 
-static enum nss_status fill_pwent(struct passwd *result,
+static NSS_STATUS fill_pwent(struct passwd *result,
 				  struct winbindd_pw *pw,
 				  char **buffer, int *buflen)
 {
@@ -283,7 +293,7 @@ static int num_pw_cache;                 /* Current size of pwd cache */
 
 /* Rewind "file pointer" to start of ntdom password database */
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_setpwent(void)
 {
 	if (num_pw_cache > 0) {
@@ -296,7 +306,7 @@ _nss_winbind_setpwent(void)
 
 /* Close ntdom password database "file pointer" */
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_endpwent(void)
 {
 	if (num_pw_cache > 0) {
@@ -311,16 +321,17 @@ _nss_winbind_endpwent(void)
 
 #define MAX_GETPWENT_USERS 250
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_getpwent_r(struct passwd *result, char *buffer, 
 			size_t buflen, int *errnop)
 {
-	enum nss_status ret;
+	NSS_STATUS ret;
 	struct winbindd_request request;
 	static int called_again;
 
 	/* Return an entry from the cache if we have one, or if we are
 	   called again because we exceeded our static buffer.  */
+
 
 	if ((ndx_pw_cache < num_pw_cache) || called_again) {
 		goto return_result;
@@ -388,17 +399,16 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 /* Return passwd struct from uid */
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 			size_t buflen, int *errnop)
 {
-	enum nss_status ret;
+	NSS_STATUS ret;
 	static struct winbindd_response response;
 	struct winbindd_request request;
-	static int keep_response;
+	static int keep_response=0;
 
 	/* If our static buffer needs to be expanded we are called again */
-
 	if (!keep_response) {
 
 		/* Call for the first time */
@@ -444,11 +454,11 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 /* Return passwd struct from username */
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 			size_t buflen, int *errnop)
 {
-	enum nss_status ret;
+	NSS_STATUS ret;
 	static struct winbindd_response response;
 	struct winbindd_request request;
 	static int keep_response;
@@ -512,7 +522,7 @@ static int num_gr_cache;                 /* Current size of grp cache */
 
 /* Rewind "file pointer" to start of ntdom group database */
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_setgrent(void)
 {
 	if (num_gr_cache > 0) {
@@ -525,7 +535,7 @@ _nss_winbind_setgrent(void)
 
 /* Close "file pointer" for ntdom group database */
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_endgrent(void)
 {
 	if (num_gr_cache > 0) {
@@ -540,11 +550,11 @@ _nss_winbind_endgrent(void)
 
 #define MAX_GETGRENT_USERS 250
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_getgrent_r(struct group *result,
 			char *buffer, size_t buflen, int *errnop)
 {
-	enum nss_status ret;
+	NSS_STATUS ret;
 	static struct winbindd_request request;
 	static int called_again;
 
@@ -625,12 +635,12 @@ _nss_winbind_getgrent_r(struct group *result,
 
 /* Return group struct from group name */
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_getgrnam_r(const char *name,
 			struct group *result, char *buffer,
 			size_t buflen, int *errnop)
 {
-	enum nss_status ret;
+	NSS_STATUS ret;
 	static struct winbindd_response response;
 	struct winbindd_request request;
 	static int keep_response;
@@ -687,12 +697,12 @@ _nss_winbind_getgrnam_r(const char *name,
 
 /* Return group struct from gid */
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_getgrgid_r(gid_t gid,
 			struct group *result, char *buffer,
 			size_t buflen, int *errnop)
 {
-	enum nss_status ret;
+	NSS_STATUS ret;
 	static struct winbindd_response response;
 	struct winbindd_request request;
 	static int keep_response;
@@ -747,12 +757,12 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 /* Initialise supplementary groups */
 
-enum nss_status
+NSS_STATUS
 _nss_winbind_initgroups(char *user, gid_t group, long int *start,
 			long int *size, gid_t *groups, long int limit,
 			int *errnop)
 {
-	enum nss_status ret;
+	NSS_STATUS ret;
 	struct winbindd_request request;
 	struct winbindd_response response;
 	int i;

@@ -218,6 +218,20 @@ AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)
 # For experimental utmp support
 AC_CHECK_HEADERS(utmp.h utmpx.h)
 
+# Check for winbind nsswitch module name: solaris or glibc 
+AC_CHECK_HEADERS(nss_common.h,nssmodule=nss_winbind.so.1,nssmodule=libnss_winbind.so)
+AC_SUBST(nssmodule) 
+
+# Check to decide winbind pam module name: solaris or linux
+case "$host_os" in 
+	*linux*) pam_winbind=pam_winbind.so;;
+	*solaris*) pam_winbind=pam_winbind.so.1;;
+	*) pam_winbind=pam_winbind.so;;
+esac
+AC_SUBST(pam_winbind)
+AC_CHECK_HEADERS(security/_pam_macros.h)
+AC_CHECK_HEADERS(features.h)
+
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
 AC_CHECK_SIZEOF(short,cross)
@@ -399,6 +413,7 @@ AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readd
 AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
 AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
 AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
+AC_CHECK_FUNCS(setenv putenv)
 
 #
 # stat64 family may need <sys/stat.h> on some systems, notably ReliantUNIX
@@ -1314,7 +1329,7 @@ AC_ARG_WITH(pam,
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_PAM)
     LIBS="$LIBS -lpam"
-    pam_modules="$pam_modules nsswitch/pam_winbind.so"
+    pam_modules="$pam_modules nsswitch/$pam_winbind"
     ;;
   *)
     AC_MSG_RESULT(no)
