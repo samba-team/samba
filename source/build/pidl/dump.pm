@@ -79,6 +79,19 @@ sub DumpStruct($)
 
 
 #####################################################################
+# dump a struct
+sub DumpEnum($)
+{
+    my($enum) = shift;
+    my($res);
+
+    $res .= "enum";
+    
+    return $res;
+}
+
+
+#####################################################################
 # dump a union element
 sub DumpUnionElement($)
 {
@@ -126,6 +139,8 @@ sub DumpType($)
 	    ($res .= DumpStruct($data));
 	($data->{TYPE} eq "UNION") &&
 	    ($res .= DumpUnion($data));
+	($data->{TYPE} eq "ENUM") &&
+	    ($res .= DumpEnum($data));
     } else {
 	$res .= "$data";
     }
