@@ -225,7 +225,7 @@ char	proctitle[BUFSIZ];	/* initial part of title */
 			*(file) == '/' ? "" : curdir(), file); \
 		else \
 		    syslog(LOG_INFO, "%s %s%s = %ld bytes", \
-			cmd, (*(file) == '/') ? "" : curdir(), file, cnt); \
+			cmd, (*(file) == '/') ? "" : curdir(), file, (long)cnt); \
 	}
 
 static void	 ack (char *);
@@ -1789,9 +1789,11 @@ myoob(int signo)
 	if (strcmp(cp, "STAT\r\n") == 0) {
 		if (file_size != (off_t) -1)
 			reply(213, "Status: %ld of %ld bytes transferred",
-			    byte_count, file_size);
+			      (long)byte_count,
+			      (long)file_size);
 		else
-			reply(213, "Status: %ld bytes transferred", byte_count);
+			reply(213, "Status: %ld bytes transferred"
+			      (long)byte_count);
 	}
 #endif
 }

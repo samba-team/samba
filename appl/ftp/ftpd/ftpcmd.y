@@ -671,8 +671,9 @@ rcmd
 		{
 			fromname = (char *) 0;
 			restart_point = $3;	/* XXX $3 is only "int" */
-			reply(350, "Restarting at %ld. %s", restart_point,
-			    "Send STORE or RETRIEVE to initiate transfer.");
+			reply(350, "Restarting at %ld. %s",
+			      (long)restart_point,
+			      "Send STORE or RETRIEVE to initiate transfer.");
 		}
 	;
 
