@@ -376,7 +376,7 @@ sub align_type
 	my $dt = $typedefs{$e}->{DATA};
 
 	return $dt->{ALIGN} if ($dt->{ALIGN});
-	return $typefamily{$dt->{TYPE}}->{ALIGN}($dt);
+	return $typefamily{$dt->{TYPE}}->{ALIGN}->($dt);
 }
 
 #####################################################################
@@ -1468,7 +1468,7 @@ sub ParseTypedefPush($)
 
 	pidl "{";
 	indent;
-	$typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_BODY}($e->{DATA});
+	$typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_BODY}->($e->{DATA});
 	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}";
@@ -1510,7 +1510,7 @@ sub ParseTypedefPull($)
 
 	pidl "{";
 	indent;
-	$typefamily{$e->{DATA}->{TYPE}}->{PULL_FN_BODY}($e->{DATA});
+	$typefamily{$e->{DATA}->{TYPE}}->{PULL_FN_BODY}->($e->{DATA});
 	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}";
@@ -1550,7 +1550,7 @@ sub ParseTypedefPrint($)
 		indent;
 	}
 
-	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}($e->{DATA});
+	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($e->{DATA});
 	deindent;
 	pidl "}";
 }
