@@ -2683,12 +2683,11 @@ BOOL receive_smb(int fd,char *buffer,int timeout)
   if (len == -1)
     return(False);
 
-  if (len > BUFFER_SIZE)
-    {
-      DEBUG(0,("Invalid packet length! (%d bytes)\n",len));
-      if (len > BUFFER_SIZE + (SAFETY_MARGIN/2))
-	exit(1);
-    }
+  if (len > BUFFER_SIZE) {
+    DEBUG(0,("Invalid packet length! (%d bytes)\n",len));
+    if (len > BUFFER_SIZE + (SAFETY_MARGIN/2))
+      exit(1);
+  }
 
   ok = (read_data(fd,buffer+4,len) == len);
 

@@ -2394,7 +2394,8 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 
   if (ChDir(pcon->connectpath) != 0)
     {
-      DEBUG(0,("Can't change directory to %s\n",pcon->connectpath));
+      DEBUG(0,("Can't change directory to %s (%s)\n",
+	       pcon->connectpath,strerror(errno)));
       pcon->open = False;
       unbecome_user();
       if (!IS_IPC(cnum)) {
@@ -3721,8 +3722,8 @@ void process(void )
 	  extern int keepalive;
 
 	  /* check for socket failure */
-	  if (errno == EBADF) {
-	    DEBUG(3,("%s Bad file descriptor - exiting\n",timestring()));
+	  if (errno) {
+	    DEBUG(3,("receive_smb error (%s) exiting\n",strerror(errno)));
 	    return;
 	  }
 
