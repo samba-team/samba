@@ -92,6 +92,16 @@ int main(int argc, char **argv)
     fprintf(f, "#ifndef __BITS_H__\n");
     fprintf(f, "#define __BITS_H__\n");
     fprintf(f, "\n");
+    fprintf(f, "#ifdef HAVE_INTTYPES_H\n");
+    fprintf(f, "#include <inttypes.h>\n");
+    fprintf(f, "#endif\n");
+    fprintf(f, "#ifdef HAVE_SYS_BITYPES_H\n");
+    fprintf(f, "#include <sys/bitypes.h>\n");
+    fprintf(f, "#endif\n");
+    fprintf(f, "#ifdef HAVE_NETINET_IN6_MACHTYPES_H\n");
+    fprintf(f, "#include <netinet/in6_machtypes.h>\n");
+    fprintf(f, "#endif\n");
+    fprintf(f, "\n");
     fprintf(f, "/* For compatibility with various type definitions */\n");
     fprintf(f, "#ifndef __BIT_TYPES_DEFINED__\n");
     fprintf(f, "#define __BIT_TYPES_DEFINED__\n");
