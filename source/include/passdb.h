@@ -277,7 +277,7 @@ typedef struct sam_trust_passwd {
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 7
+#define PASSDB_INTERFACE_VERSION 8
 
 typedef struct pdb_context 
 {
@@ -408,6 +408,8 @@ typedef struct pdb_context
 	/* privileges functions */
 
 	NTSTATUS (*pdb_lsa_create_account)(struct pdb_context *context, const DOM_SID *sid);
+
+	NTSTATUS (*pdb_lsa_enumerate_accounts)(struct pdb_context *context, DOM_SID **sid, int *sid_count);
 
 	NTSTATUS (*pdb_add_privilege_to_sid)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
 
@@ -550,6 +552,8 @@ typedef struct pdb_methods
 	/* privileges functions */
 
 	NTSTATUS (*lsa_create_account)(struct pdb_methods *methods, const DOM_SID *sid);
+
+	NTSTATUS (*lsa_enumerate_accounts)(struct pdb_methods *methods, DOM_SID **sid, int *num_entries);
 
 	NTSTATUS (*add_privilege_to_sid)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
 

@@ -1295,21 +1295,18 @@ static NTSTATUS tdbsam_remove_privilege_from_sid(struct pdb_methods *my_methods,
 		goto done;
 	}
 
-	if (data.dptr) {
-		priv_list = strdup(data.dptr);
-		if (!priv_list) {
-			DEBUG(0, ("tdbsam_remove_sid_from_privilege: Out of Memory!\n"));
-			SAFE_FREE(data.dptr);
-			goto done;
-		}
-		SAFE_FREE(data.dptr);
+	priv_list = strdup(data.dptr);
+	SAFE_FREE(data.dptr);
+	if (!priv_list) {
+		DEBUG(0, ("tdbsam_remove_sid_from_privilege: Out of Memory!\n"));
+		goto done;
 	}
 
 	/* remove the given privilege */
 	p = priv_list;
 
 	do {
-		p += (p == data.dptr)?0:1;
+		p += (p == priv_list)?0:1;
 		if ((StrnCaseCmp(p, priv_name, priv_name_len)) == 0)	{
 			break;
 		}
@@ -1471,6 +1468,43 @@ static int tdbsam_traverse_single_privilege(TDB_CONTEXT *t, TDB_DATA key, TDB_DA
 	return 0;
 }
 
+static int tdbsam_traverse_accounts(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
+{
+	struct priv_traverse_2 *pt = (struct priv_traverse_2 *)state;
+	int  prefixlen = strlen(PRIVPREFIX);
+
+	if (*(data.dptr) == 0) return 0;
+
+	/* check we have a PRIV_+SID entry */
+	if (strncmp(key.dptr, PRIVPREFIX, prefixlen) == 0) {
+
+		fstring sid_str;
+		/* add to privilege_set if any of the sid in the token
+		 * contain the privilege */
+
+		fstrcpy(sid_str, &key.dptr[strlen(PRIVPREFIX)]);
+
+		/* add the discovered sid */
+		DOM_SID tmpsid;
+
+		if (!string_to_sid(&tmpsid, sid_str)) {
+			DEBUG(3, ("Could not convert SID\n"));
+			return 0;
+		}
+
+		add_sid_to_array(&tmpsid, pt->sid_list, pt->sid_count);
+
+		if (pt->sid_list == NULL) {
+			pt->status = NT_STATUS_NO_MEMORY;
+			return 1;
+		}
+
+		pt->status = NT_STATUS_OK;
+	}
+
+	return 0;
+}
+
 static NTSTATUS tdbsam_get_privilege_set(struct pdb_methods *my_methods, DOM_SID *user_sids, int num_sids, PRIVILEGE_SET *privset)
 {
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
@@ -1541,6 +1575,33 @@ static NTSTATUS tdbsam_get_privilege_entry(struct pdb_methods *my_methods, const
 	return pt.status;
 }	
 
+static NTSTATUS tdbsam_lsa_enumerate_accounts(struct pdb_methods *my_methods, DOM_SID **sid_list, int *sid_count)
+{
+	TDB_CONTEXT *pwd_tdb = NULL;
+	struct priv_traverse_2 pt;
+	
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
+
+	if (!(pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_RDONLY)))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	pt.status = NT_STATUS_NO_MORE_ENTRIES;
+	pt.sid_list = sid_list;
+	pt.sid_count = sid_count;
+	pt.privname = NULL;
+
+	tdb_traverse(pwd_tdb, tdbsam_traverse_accounts, &pt);
+
+	if (!NT_STATUS_IS_OK(pt.status)) {
+		SAFE_FREE(*sid_list);
+		*sid_list = NULL;
+		*sid_count = 0;
+	}
+
+	tdb_close(pwd_tdb);
+	return pt.status;
+}
+
 
 
 
@@ -1574,6 +1635,7 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->update_trust_passwd = tdbsam_update_trust_passwd;
 	(*pdb_method)->delete_trust_passwd = tdbsam_delete_trust_passwd;
 	(*pdb_method)->lsa_create_account = tdbsam_lsa_create_account;
+	(*pdb_method)->lsa_enumerate_accounts = tdbsam_lsa_enumerate_accounts;
 	(*pdb_method)->add_privilege_to_sid = tdbsam_add_privilege_to_sid;
 	(*pdb_method)->remove_privilege_from_sid = tdbsam_remove_privilege_from_sid;
 	(*pdb_method)->get_privilege_set = tdbsam_get_privilege_set;

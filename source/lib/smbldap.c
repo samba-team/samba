@@ -159,6 +159,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 /* privileges */
 
 ATTRIB_MAP_ENTRY privilege_attr_list[] = {
+	{ LDAP_ATTR_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_PRIV_LIST,		"sambaPrivilegeList"	},
 	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}

@@ -811,7 +811,7 @@ static NTSTATUS add_privileges(auth_serversupplied_info **server_info)
 	PRIVILEGE_SET *privs = NULL;
 
 	init_privilege(&privs);
-	if (!pdb_get_privilege_set((*server_info)->ptok->user_sids, (*server_info)->ptok->num_sids, privs))
+	if (!NT_STATUS_IS_OK(pdb_get_privilege_set((*server_info)->ptok->user_sids, (*server_info)->ptok->num_sids, privs)))
 		DEBUG(1, ("Could not add privileges\n"));
 
 	(*server_info)->privs = privs;

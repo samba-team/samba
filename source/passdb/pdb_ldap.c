@@ -2694,6 +2694,73 @@ done:
 	return ret;
 }
 
+static NTSTATUS ldapsam_lsa_enumerate_accounts(struct pdb_methods *my_methods, DOM_SID **sid_list, int *sid_count)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	LDAPMessage *entry = NULL;
+	fstring filter;
+	char **attr_list;
+	int rc;
+
+	*sid_list = NULL;
+	*sid_count = 0;
+
+	pstr_sprintf(filter, "(|(objectclass=%s)(objectclass=%s))", LDAP_OBJ_SAMBASAMACCOUNT, LDAP_OBJ_GROUPMAP);
+	attr_list = get_attr_list(privilege_attr_list);
+	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter,
+			    attr_list, 0, &ldap_state->result);
+	free_attr_list(attr_list);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0, ("ldapsam_lsa_enumerate_accounts: LDAP search failed: %s\n", ldap_err2string(rc)));
+		DEBUG(3, ("ldapsam_lsa_enumerate_accounts: Query was: %s, %s\n", lp_ldap_suffix(), filter));
+		goto done;
+	}
+
+	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, ldap_state->result) == 0) {
+		ret = NT_STATUS_NO_MORE_ENTRIES;
+		goto done;
+	}
+
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, ldap_state->result);
+
+	do {
+		DOM_SID tmpsid;
+		pstring sid_string;
+
+		if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, LDAP_ATTRIBUTE_SID, sid_string)) {
+			DEBUG(3, ("ldapsam_lsa_enumerate_accounts: No sambaSID when searching for sambaSID !?\n"));
+			ret = NT_STATUS_NO_MORE_ENTRIES;
+			goto done;
+		}
+
+		/* add the discovered sid */
+
+		if (!string_to_sid(&tmpsid, sid_string)) {
+			DEBUG(3, ("Could not convert SID\n"));
+			continue;
+		}
+
+		add_sid_to_array(&tmpsid, sid_list, sid_count);
+
+		if (sid_list == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+	} while((entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct, entry)) != NULL);
+
+
+	ret = NT_STATUS_OK;
+
+done:
+	ldap_msgfree(ldap_state->result);
+	ldap_state->result = NULL;
+	return ret;
+}
+
 static NTSTATUS ldapsam_modify_privilege_list_for_sid(struct pdb_methods *my_methods, const char *privname, const DOM_SID *sid, int ldap_op)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
@@ -2979,7 +3046,7 @@ static NTSTATUS ldapsam_get_privilege_entry(struct pdb_methods *my_methods, cons
 	}
 
 	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, ldap_state->result) == 0) {
-		DEBUG(3, ("ldapsam_get_privilege_entry: No such privilege (%s) in ldap tree\n", privname));
+		DEBUG(3, ("ldapsam_get_privilege_entry: No such privilege [%s] in ldap tree\n", privname));
 		goto done;
 	}
 
@@ -2998,17 +3065,17 @@ static NTSTATUS ldapsam_get_privilege_entry(struct pdb_methods *my_methods, cons
 
 		if (!string_to_sid(&tmpsid, sid_string)) {
 			DEBUG(3, ("Could not convert SID\n"));
-			continue;
+		} else {
+
+			add_sid_to_array(&tmpsid, sid_list, sid_count);
+
+			if (sid_list == NULL) {
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
 		}
 
-		add_sid_to_array(&tmpsid, sid_list, sid_count);
-
-		if (sid_list == NULL) {
-			ret = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-	} while ((entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct, ldap_state->result)) != NULL);
+	} while ((entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct, entry)) != NULL);
 
 	ret = NT_STATUS_OK;
 done:
@@ -3121,6 +3188,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->enum_group_mapping = ldapsam_enum_group_mapping;
 
 	(*pdb_method)->lsa_create_account = ldapsam_lsa_create_account;
+	(*pdb_method)->lsa_enumerate_accounts = ldapsam_lsa_enumerate_accounts;
 	(*pdb_method)->add_privilege_to_sid = ldapsam_add_privilege_to_sid;
 	(*pdb_method)->remove_privilege_from_sid = ldapsam_remove_privilege_from_sid;
 	(*pdb_method)->get_privilege_set = ldapsam_get_privilege_set;
