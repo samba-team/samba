@@ -25,34 +25,37 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
+	uint32 needed = 0;
 
 	r.in.flags = 0x02;
-	r.in.server = "\\\\movingforward";
+	r.in.server = "";
 	r.in.level = 1;
-	r.in.buffer = NULL;
-	r.in.offered = 0;
+	r.in.buf = NULL;
+	r.in.offered = needed;
+	r.out.needed = &needed;
 
 	status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
-
 	if (NT_STATUS_IS_ERR(status)) {
-		printf("OpenPrinter failed - %s\n", nt_errstr(status));
+		printf("EnumPrinters failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
 	if (NT_STATUS_V(status) == 0x0000007a) {
-		struct uint8_buf buffer;
-
-		r.in.offered = r.out.needed;
-		buffer.size = r.out.needed;
-		buffer.data = talloc(mem_ctx, buffer.size);
-		memset(buffer.data, 0xfe, buffer.size);
-		r.in.buffer = &buffer;
+		r.in.buf = talloc(mem_ctx, needed);
+		if (!r.in.buf) {
+			return False;
+		}
+		memset(r.in.buf, 0xfe, needed);
+		r.in.offered = needed;
 		status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenPrinter failed - %s\n", nt_errstr(status));
-		return False;
+		printf("EnumPrinters failed - %s\n", nt_errstr(status));
+	}
+
+	if (r.out.info) {
+		NDR_PRINT_UNION_DEBUG(spoolss_PrinterEnum, r.in.level, r.out.info);
 	}
 	
 	return True;

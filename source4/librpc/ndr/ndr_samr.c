@@ -38,7 +38,7 @@ NTSTATUS ndr_push_samr_Shutdown(struct ndr_push *ndr, struct samr_Shutdown *r)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_push_samr_Name(struct ndr_push *ndr, int ndr_flags, struct samr_Name *r)
+NTSTATUS ndr_push_samr_Name(struct ndr_push *ndr, int ndr_flags, struct samr_Name *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_align(ndr, 4));
@@ -510,7 +510,7 @@ NTSTATUS ndr_pull_samr_Shutdown(struct ndr_pull *ndr, struct samr_Shutdown *r)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_Name(struct ndr_pull *ndr, int ndr_flags, struct samr_Name *r)
+NTSTATUS ndr_pull_samr_Name(struct ndr_pull *ndr, int ndr_flags, struct samr_Name *r)
 {
 	uint32 _ptr_name;
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -549,7 +549,7 @@ NTSTATUS ndr_pull_samr_LookupDomain(struct ndr_pull *ndr, struct samr_LookupDoma
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_SamEntry(struct ndr_pull *ndr, int ndr_flags, struct samr_SamEntry *r)
+NTSTATUS ndr_pull_samr_SamEntry(struct ndr_pull *ndr, int ndr_flags, struct samr_SamEntry *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -562,7 +562,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_SamArray(struct ndr_pull *ndr, int ndr_flags, struct samr_SamArray *r)
+NTSTATUS ndr_pull_samr_SamArray(struct ndr_pull *ndr, int ndr_flags, struct samr_SamArray *r)
 {
 	uint32 _ptr_entries;
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -618,7 +618,7 @@ NTSTATUS ndr_pull_samr_OpenDomain(struct ndr_pull *ndr, struct samr_OpenDomain *
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo1(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo1 *r)
+NTSTATUS ndr_pull_samr_DomInfo1(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo1 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -633,7 +633,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo2(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo2 *r)
+NTSTATUS ndr_pull_samr_DomInfo2(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo2 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -657,7 +657,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo3(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo3 *r)
+NTSTATUS ndr_pull_samr_DomInfo3(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo3 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -668,7 +668,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo4(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo4 *r)
+NTSTATUS ndr_pull_samr_DomInfo4(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo4 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -680,7 +680,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo5(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo5 *r)
+NTSTATUS ndr_pull_samr_DomInfo5(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo5 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -692,7 +692,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo6(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo6 *r)
+NTSTATUS ndr_pull_samr_DomInfo6(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo6 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -704,7 +704,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo7(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo7 *r)
+NTSTATUS ndr_pull_samr_DomInfo7(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo7 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -715,7 +715,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo8(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo8 *r)
+NTSTATUS ndr_pull_samr_DomInfo8(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo8 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -727,7 +727,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo9(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo9 *r)
+NTSTATUS ndr_pull_samr_DomInfo9(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo9 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -738,7 +738,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo11(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo11 *r)
+NTSTATUS ndr_pull_samr_DomInfo11(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo11 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -765,7 +765,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo12(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo12 *r)
+NTSTATUS ndr_pull_samr_DomInfo12(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo12 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -778,7 +778,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomInfo13(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo13 *r)
+NTSTATUS ndr_pull_samr_DomInfo13(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo13 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -792,7 +792,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_DomainInfo *r)
+NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_DomainInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
@@ -916,7 +916,7 @@ NTSTATUS ndr_pull_samr_QueryDomainInfo(struct ndr_pull *ndr, struct samr_QueryDo
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level;
+	{ uint16 _level = r->in.level;
 	NDR_CHECK(ndr_pull_samr_DomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
 	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
@@ -1040,7 +1040,7 @@ NTSTATUS ndr_pull_samr_OpenGroup(struct ndr_pull *ndr, struct samr_OpenGroup *r)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_GroupInfoAll(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoAll *r)
+NTSTATUS ndr_pull_samr_GroupInfoAll(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoAll *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1056,7 +1056,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_GroupInfoName(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoName *r)
+NTSTATUS ndr_pull_samr_GroupInfoName(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoName *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1068,7 +1068,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_GroupInfoX(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoX *r)
+NTSTATUS ndr_pull_samr_GroupInfoX(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoX *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1079,7 +1079,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_GroupInfoDesciption(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoDesciption *r)
+NTSTATUS ndr_pull_samr_GroupInfoDesciption(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoDesciption *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1091,7 +1091,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_GroupInfo *r)
+NTSTATUS ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_GroupInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
@@ -1151,7 +1151,7 @@ NTSTATUS ndr_pull_samr_QueryGroupInfo(struct ndr_pull *ndr, struct samr_QueryGro
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level;
+	{ uint16 _level = r->in.level;
 	NDR_CHECK(ndr_pull_samr_GroupInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
 	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
@@ -1211,7 +1211,7 @@ NTSTATUS ndr_pull_samr_OpenAlias(struct ndr_pull *ndr, struct samr_OpenAlias *r)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_AliasInfoAll(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoAll *r)
+NTSTATUS ndr_pull_samr_AliasInfoAll(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoAll *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1226,7 +1226,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_AliasInfoName(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoName *r)
+NTSTATUS ndr_pull_samr_AliasInfoName(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoName *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1238,7 +1238,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_AliasInfoDescription(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoDescription *r)
+NTSTATUS ndr_pull_samr_AliasInfoDescription(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoDescription *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1250,7 +1250,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_AliasInfo *r)
+NTSTATUS ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_AliasInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
@@ -1302,7 +1302,7 @@ NTSTATUS ndr_pull_samr_QueryAliasInfo(struct ndr_pull *ndr, struct samr_QueryAli
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level;
+	{ uint16 _level = r->in.level;
 	NDR_CHECK(ndr_pull_samr_AliasInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
 	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
@@ -1362,7 +1362,7 @@ NTSTATUS ndr_pull_samr_DELETE_DOM_USER(struct ndr_pull *ndr, struct samr_DELETE_
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo1(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo1 *r)
+NTSTATUS ndr_pull_samr_UserInfo1(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo1 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1381,7 +1381,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo2(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo2 *r)
+NTSTATUS ndr_pull_samr_UserInfo2(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo2 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1397,7 +1397,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo3(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo3 *r)
+NTSTATUS ndr_pull_samr_UserInfo3(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo3 *r)
 {
 	uint32 _ptr_logon_hours;
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -1455,7 +1455,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo4(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo4 *r)
+NTSTATUS ndr_pull_samr_UserInfo4(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo4 *r)
 {
 	uint32 _ptr_logon_hours;
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -1489,7 +1489,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo5(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo5 *r)
+NTSTATUS ndr_pull_samr_UserInfo5(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo5 *r)
 {
 	uint32 _ptr_logon_hours;
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -1547,7 +1547,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo6(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo6 *r)
+NTSTATUS ndr_pull_samr_UserInfo6(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo6 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1561,7 +1561,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo7(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo7 *r)
+NTSTATUS ndr_pull_samr_UserInfo7(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo7 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1573,7 +1573,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo8(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo8 *r)
+NTSTATUS ndr_pull_samr_UserInfo8(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo8 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1585,7 +1585,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo9(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo9 *r)
+NTSTATUS ndr_pull_samr_UserInfo9(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo9 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1596,7 +1596,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo10(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo10 *r)
+NTSTATUS ndr_pull_samr_UserInfo10(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo10 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1610,7 +1610,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo11(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo11 *r)
+NTSTATUS ndr_pull_samr_UserInfo11(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo11 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1622,7 +1622,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo12(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo12 *r)
+NTSTATUS ndr_pull_samr_UserInfo12(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo12 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1634,7 +1634,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo13(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo13 *r)
+NTSTATUS ndr_pull_samr_UserInfo13(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo13 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1646,7 +1646,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo14(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo14 *r)
+NTSTATUS ndr_pull_samr_UserInfo14(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo14 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1658,7 +1658,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo16(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo16 *r)
+NTSTATUS ndr_pull_samr_UserInfo16(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo16 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1669,7 +1669,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo17(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo17 *r)
+NTSTATUS ndr_pull_samr_UserInfo17(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo17 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1680,7 +1680,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo20(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo20 *r)
+NTSTATUS ndr_pull_samr_UserInfo20(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo20 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1692,7 +1692,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo21(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo21 *r)
+NTSTATUS ndr_pull_samr_UserInfo21(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo21 *r)
 {
 	uint32 _ptr_buffer;
 	uint32 _ptr_logon_hours;
@@ -1789,7 +1789,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_UserInfo *r)
+NTSTATUS ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_UserInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
@@ -1961,7 +1961,7 @@ NTSTATUS ndr_pull_samr_QueryUserInfo(struct ndr_pull *ndr, struct samr_QueryUser
 		r->out.info = NULL;
 	}
 	if (r->out.info) {
-	{ uint16 _level;
+	{ uint16 _level = r->in.level;
 	NDR_CHECK(ndr_pull_samr_UserInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
 	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
