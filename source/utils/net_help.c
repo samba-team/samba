@@ -121,9 +121,14 @@ int net_help_share(int argc, const char **argv)
 	 "\tenumerates all exported resources (network shares) "
 	 "on target server\n\n"
 	 "net [<method>] share ADD <name=serverpath> [misc. options] [targets]"
-	 "\n\tAdds a share from a server (makes the export active)\n\n"
-	 "net [<method>] share DELETE <sharename> [misc. options] [targets]"
-	 "\n\tDeletes a share from a server (makes the export inactive)\n\n"
+	"\n\tadds a share from a server (makes the export active)\n\n"
+	"net [<method>] share DELETE <sharename> [misc. options] [targets]"
+	"\n\tdeletes a share from a server (makes the export inactive)\n\n"
+	"net [<method>] share ALLOWEDUSERS [<filename>] "
+	"[misc. options] [targets]"
+	"\n\tshows a list of all shares together with all users allowed to"
+	"\n\taccess them. This needs the output of 'net usersidlist' on"
+	"\n\tstdin or in <filename>.\n"
 	 "net [<method>] share MIGRATE FILES <sharename> [misc. options] [targets]"
 	 "\n\tMigrates files from remote to local server\n\n"
 	 "net [<method>] share MIGRATE SHARES <sharename> [misc. options] [targets]"
@@ -217,6 +222,7 @@ static int net_usage(int argc, const char **argv)
 		 "  net changesecretpw\tto change the machine password in the local secrets database only\n"\
 		 "                    \tthis requires the -f flag as a safety barrier\n"\
 		 "  net status\t\tShow server status\n"\
+		"  net usersidlist\tto get a list of all users with their SIDs\n"
 		 "\n"\
 		 "  net ads <command>\tto run ADS commands\n"\
 		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\
@@ -254,6 +260,7 @@ int net_help(int argc, const char **argv)
 		{"PASSWORD", net_rap_password_usage},
 		{"TIME", net_time_usage},
 		{"LOOKUP", net_lookup_usage},
+		{"USERSIDLIST", net_usersidlist_usage},
 #ifdef WITH_FAKE_KASERVER
 		{"AFSKEY", net_afskey_usage},
 #endif

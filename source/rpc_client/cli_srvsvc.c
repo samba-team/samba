@@ -225,6 +225,94 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+WERROR cli_srvsvc_net_share_get_info(struct cli_state *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *sharename,
+				     uint32 info_level,
+				     SRV_SHARE_INFO *info)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_SHARE_GET_INFO q;
+	SRV_R_NET_SHARE_GET_INFO r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_srv_q_net_share_get_info(&q, cli->srv_name_slash, sharename,
+				      info_level);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_share_get_info("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_GET_INFO, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!srv_io_r_net_share_get_info("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	ZERO_STRUCTP(info);
+
+	info->switch_value = info_level;
+
+	switch(info_level) {
+	case 502:
+	{
+		SRV_SHARE_INFO_502 *info502 = &info->share.info502;
+		SH_INFO_502_STR *info502_str = &info502->info_502_str;
+		
+		char *s;
+
+		info->share.info502 = r.info.share.info502;
+
+		/* Duplicate strings */
+
+		s = unistr2_tdup(mem_ctx, &info502_str->uni_netname);
+		if (s)
+			init_unistr2(&info502_str->uni_netname,
+				     s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info502_str->uni_remark);
+		if (s)
+			init_unistr2(&info502_str->uni_remark,
+				     s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info502_str->uni_path);
+		if (s)
+			init_unistr2(&info502_str->uni_path,
+				     s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info502_str->uni_passwd);
+		if (s)
+			init_unistr2(&info502_str->uni_passwd,
+				     s, UNI_STR_TERMINATE);
+
+		info502_str->sd = dup_sec_desc(mem_ctx, info502_str->sd);
+		break;
+	}
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 WERROR cli_srvsvc_net_share_del(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				const char *sharename)
 {
