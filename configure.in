@@ -370,8 +370,6 @@ AC_CHECK_FUNCS(sysconf sysctl timegm ttyname ttyslot umask uname)
 AC_CHECK_FUNCS(unlockpt vasnprintf vasprintf vhangup)
 AC_CHECK_FUNCS(yp_get_default_domain)
 
-AC_BROKEN(geteuid getgid getegid)
-
 AC_TYPE_SIGNAL
 if test "$ac_cv_type_signal" = "void" ; then
 	AC_DEFINE(VOID_RETSIGTYPE, 1)
@@ -417,13 +415,13 @@ AC_NEED_PROTO([
 vasnprintf)dnl
 fi
 
-AC_BROKEN(chown daemon err errx fchown flock fnmatch getcwd)
-AC_BROKEN(getdtablesize getopt getusershell inet_aton)
-AC_BROKEN(initgroups iruserok lstat memmove mkstemp)
-AC_BROKEN(putenv rcmd readv setegid setenv)
-AC_BROKEN(seteuid strcasecmp strncasecmp strdup strerror)
-AC_BROKEN(strftime strlwr strnlen strsep strtok_r strupr swab)
-AC_BROKEN(unsetenv verr verrx vsyslog vwarn vwarnx warn warnx writev)
+AC_BROKEN(chown daemon err errx fchown flock fnmatch)
+AC_BROKEN(getcwd getdtablesize gethostname geteuid getgid getegid)
+AC_BROKEN(getopt getusershell inet_aton initgroups iruserok lstat memmove)
+AC_BROKEN(mkstemp putenv rcmd readv setegid setenv seteuid)
+AC_BROKEN(strcasecmp strncasecmp strdup strerror strftime strlwr strnlen)
+AC_BROKEN(strsep strtok_r strupr swab unsetenv verr verrx vsyslog)
+AC_BROKEN(vwarn vwarnx warn warnx writev)
 
 AC_FIND_FUNC_NO_LIBS(crypt, crypt)dnl
 
