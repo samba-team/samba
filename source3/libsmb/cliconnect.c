@@ -750,7 +750,6 @@ BOOL cli_ulogoff(struct cli_state *cli)
 /****************************************************************************
  Send a tconX.
 ****************************************************************************/
-
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen)
 {
@@ -1342,4 +1341,46 @@ name *SMBSERVER with error %s\n", desthost, cli_errstr(cli) ));
 	}
 
 	return True;
+}
+
+
+
+
+
+/****************************************************************************
+ Send an old style tcon.
+****************************************************************************/
+NTSTATUS cli_raw_tcon(struct cli_state *cli, 
+		      const char *service, const char *pass, const char *dev,
+		      uint16 *max_xmit, uint16 *tid)
+{
+	char *p;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf, 0, 0, True);
+	SCVAL(cli->outbuf,smb_com,SMBtcon);
+	cli_setup_packet(cli);
+
+	p = smb_buf(cli->outbuf);
+	*p++ = 4; p += clistr_push(cli, p, service, -1, STR_TERMINATE | STR_NOALIGN);
+	*p++ = 4; p += clistr_push(cli, p, pass, -1, STR_TERMINATE | STR_NOALIGN);
+	*p++ = 4; p += clistr_push(cli, p, dev, -1, STR_TERMINATE | STR_NOALIGN);
+
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+
+	if (cli_is_error(cli)) {
+		return cli_nt_error(cli);
+	}
+
+	*max_xmit = SVAL(cli->inbuf, smb_vwv0);
+	*tid = SVAL(cli->inbuf, smb_vwv1);
+
+	return NT_STATUS_OK;
 }

@@ -977,6 +977,43 @@ static BOOL run_tcon_test(int dummy)
 
 
 /*
+ checks for old style tcon support
+ */
+static BOOL run_tcon2_test(int dummy)
+{
+	static struct cli_state *cli;
+	uint16 cnum, max_xmit;
+	char *service;
+	NTSTATUS status;
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+	cli_sockopt(cli, sockops);
+
+	printf("starting tcon2 test\n");
+
+	asprintf(&service, "\\\\%s\\%s", host, share);
+
+	status = cli_raw_tcon(cli, service, password, "?????", &max_xmit, &cnum);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("tcon2 failed : %s\n", cli_errstr(cli));
+	} else {
+		printf("tcon OK : max_xmit=%d cnum=%d tid=%d\n", 
+		       (int)max_xmit, (int)cnum, SVAL(cli->inbuf, smb_tid));
+	}
+
+	if (!torture_close_connection(cli)) {
+		return False;
+	}
+
+	printf("Passed tcon2 test\n");
+	return True;
+}
+
+
+/*
   This test checks that 
 
   1) the server supports multiple locking contexts on the one SMB
@@ -4137,6 +4174,7 @@ static struct {
 	{"CASETABLE", torture_casetable, 0},
 	{"ERRMAPEXTRACT", run_error_map_extract, 0},
 	{"PIPE_NUMBER", run_pipe_number, 0},
+	{"TCON2",  run_tcon2_test, 0},
 	{NULL, NULL, 0}};
 
 
