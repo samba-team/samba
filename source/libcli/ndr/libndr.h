@@ -58,10 +58,6 @@ struct ndr_push_save {
 	uint32 offset;
 };
 
-#define NDR_BASE_MARSHALL_SIZE 1024
-
-
-
 #define LIBNDR_FLAG_BIGENDIAN 1
 
 
