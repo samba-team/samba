@@ -1431,16 +1431,17 @@ void smb_panic(const char *why)
 					  WEXITSTATUS(result)));
 	}
 	DEBUG(0,("PANIC: %s\n", why));
-	DEBUG(0, ("%d stack frames:\n", backtrace_size));
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
 	/* get the backtrace (stack frames) */
 	backtrace_size = backtrace(backtrace_stack,BACKTRACE_STACK_SIZE);
 	backtrace_strings = backtrace_symbols(backtrace_stack, backtrace_size);
+
+	DEBUG(0, ("BACKTRACE: %d stack frames:\n", backtrace_size));
 	
 	if (backtrace_strings) {
 		for (i = 0; i < backtrace_size; i++)
-			DEBUG(0, (" #%u %s\n", i, backtrace_strings[i]));
+			DEBUGADD(0, (" #%u %s\n", i, backtrace_strings[i]));
 
 		SAFE_FREE(backtrace_strings);
 	}
