@@ -2298,6 +2298,8 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 		DEBUG(3,("received %d entries (eos=%d resume=%d)\n",
 			 ff_searchcount,ff_eos,ff_resume_key));
 
+		if (ff_searchcount > 0) loop_count = 0;
+
 		First = False;
 	}
 
