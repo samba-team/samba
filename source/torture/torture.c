@@ -3459,7 +3459,7 @@ static BOOL run_opentest(int dummy)
 		}
 	}
 
-	printf("Attribute open test #8 passed.\n");
+	printf("Attribute open test #8 %s.\n", correct ? "passed" : "failed");
 
 	cli_unlink(&cli1, fname);
 
