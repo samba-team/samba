@@ -177,8 +177,10 @@ static int smb_pam_passchange_conv(int num_msg,
 {
 	int replies = 0;
 	struct pam_response *reply = NULL;
+	fstring oldpw_prompt;
 	fstring newpw_prompt;
 	fstring repeatpw_prompt;
+	fstring prompt_ret;
 	char *p = lp_passwd_chat();
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)appdata_ptr;
 
@@ -197,12 +199,17 @@ static int smb_pam_passchange_conv(int num_msg,
 		return PAM_CONV_ERR;
 	}
 
-	/* Get the prompts. We're running as root so we only get 2 prompts. */
+	/* Get the prompts. */
 
+	if (!next_token(&p, oldpw_prompt, NULL, sizeof(fstring)))
+		return PAM_CONV_ERR;
+	strlower(oldpw_prompt);
 	if (!next_token(&p, newpw_prompt, NULL, sizeof(fstring)))
 		return PAM_CONV_ERR;
+	strlower(newpw_prompt);
 	if (!next_token(&p, repeatpw_prompt, NULL, sizeof(fstring)))
 		return PAM_CONV_ERR;
+	strlower(repeatpw_prompt);
 
 	reply = malloc(sizeof(struct pam_response) * num_msg);
 	if (!reply)
@@ -219,15 +226,27 @@ static int smb_pam_passchange_conv(int num_msg,
 
 		case PAM_PROMPT_ECHO_OFF:
 			reply[replies].resp_retcode = PAM_SUCCESS;
+			if (!msg[replies]->msg) {
+				free(reply);
+				reply = NULL;
+				return PAM_CONV_ERR;
+			}
+
 			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: Replied: %s\n", msg[replies]->msg));
-			if (ms_fnmatch( newpw_prompt, msg[replies]->msg) == 0) {
+
+			fstrcpy(prompt_ret, msg[replies]->msg);
+			strlower(prompt_ret);
+
+			if (ms_fnmatch( oldpw_prompt, prompt_ret) == 0) {
+				reply[replies].resp = COPY_STRING(udp->PAM_password);
+			} else if (ms_fnmatch( newpw_prompt, prompt_ret) == 0) {
 				reply[replies].resp = COPY_STRING(udp->PAM_newpassword);
-			} else if (ms_fnmatch(repeatpw_prompt, msg[replies]->msg) == 0) {
+			} else if (ms_fnmatch(repeatpw_prompt, prompt_ret) == 0) {
 				reply[replies].resp = COPY_STRING(udp->PAM_newpassword);
 			} else {
 				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
-				DEBUG(5,("smb_pam_passchange_conv: Prompts available:\n NewPW: \"%s\"\n \
-RepeatPW: \"%s\"\n",newpw_prompt,repeatpw_prompt));
+				DEBUG(5,("smb_pam_passchange_conv: Prompts available:\n OldPW: \"%s\"\nNewPW: \"%s\"\n \
+RepeatPW: \"%s\"\n",oldpw_prompt, newpw_prompt,repeatpw_prompt));
 				free(reply);
 				reply = NULL;
 				return PAM_CONV_ERR;
