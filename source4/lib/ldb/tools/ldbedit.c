@@ -173,7 +173,7 @@ static int save_ldif(struct ldb_context *ldb,
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = *msgs[i];
 
-		ldif_write_file(ldb, f, &ldif);
+		ldb_ldif_write_file(ldb, f, &ldif);
 	}
 
 	return 0;
@@ -243,7 +243,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 		return -1;
 	}
 
-	while ((ldif = ldif_read_file(ldb, f))) {
+	while ((ldif = ldb_ldif_read_file(ldb, f))) {
 		msgs2 = ldb_realloc_p(ldb, msgs2, struct ldb_message *, count2+1);
 		if (!msgs2) {
 			fprintf(stderr, "out of memory");
