@@ -311,11 +311,11 @@ configure(int argc, char **argv)
 	enable_http = krb5_config_get_bool(context, cf, "kdc", 
 					   "enable-http", NULL);
     check_ticket_addresses = 
-	krb5_config_get_bool(context, cf, "kdc", 
-			     "check-ticket-addresses", NULL);
+	krb5_config_get_bool_default(context, cf, TRUE, "kdc", 
+				     "check-ticket-addresses", NULL);
     allow_null_ticket_addresses = 
-	krb5_config_get_bool(context, cf, "kdc", 
-			     "allow-null-ticket-addresses", NULL);
+	krb5_config_get_bool_default(context, cf, TRUE, "kdc", 
+				     "allow-null-ticket-addresses", NULL);
 
     allow_anonymous = 
 	krb5_config_get_bool(context, cf, "kdc", 
