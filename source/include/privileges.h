@@ -25,6 +25,15 @@
 #ifndef PRIVILEGES_H
 #define PRIVILEGES_H
 
+/* privilege bitmask */
+
+#define SE_PRIV_MASKSIZE 4
+
+typedef struct {
+	uint32 mask[SE_PRIV_MASKSIZE];
+} SE_PRIV;
+
+
 /* common privilege defines */
 
 #define SE_END				{ { 0x00000000, 0x00000000, 0x00000000, 0x00000000 } }
@@ -48,36 +57,14 @@
 #define SE_DISK_OPERATOR		{ { 0x00000080, 0x00000000, 0x00000000, 0x00000000 } }
 #define SE_REMOTE_SHUTDOWN		{ { 0x00000100, 0x00000000, 0x00000000, 0x00000000 } }
 
-#if 0	/* not needed currently */
+/* defined in lib/privilegs.c */
 
-#define SE_ASSIGN_PRIMARY_TOKEN	
-#define SE_CREATE_TOKEN		
-#define SE_LOCK_MEMORY		
-#define SE_INCREASE_QUOTA	
-#define SE_UNSOLICITED_INPUT
-#define SE_TCB	
-#define SE_SECURITY	
-#define SE_TAKE_OWNERSHIP
-#define SE_LOAD_DRIVER	
-#define SE_SYSTEM_PROFILE	
-#define SE_SYSTEM_TIME	
-#define SE_PROF_SINGLE_PROCESS	
-#define SE_INC_BASE_PRIORITY
-#define SE_CREATE_PAGEFILE
-#define SE_CREATE_PERMANENT	
-#define SE_BACKUP
-#define SE_RESTORE
-#define SE_SHUTDOWN	
-#define SE_DEBUG
-#define SE_AUDIT	
-#define SE_SYSTEM_ENVIRONMENT	
-#define SE_CHANGE_NOTIFY
-#define SE_REMOTE_SHUTDOWN
-#define SE_UNDOCK
-#define SE_SYNC_AGENT	
-#define SE_ENABLE_DELEGATION
+extern const SE_PRIV se_machine_account;
+extern const SE_PRIV se_print_operator;
+extern const SE_PRIV se_add_users;
+extern const SE_PRIV se_disk_operators;
+extern const SE_PRIV se_remote_shutdown;
 
-#endif	/* not needed currently */
 
 /*
  * These are used in Lsa replies (srv_lsa_nt.c)
@@ -114,12 +101,6 @@ typedef struct privilege_set
 	uint32 control;
 	LUID_ATTR *set;
 } PRIVILEGE_SET;
-
-#define SE_PRIV_MASKSIZE 4
-
-typedef struct {
-	uint32 mask[SE_PRIV_MASKSIZE];
-} SE_PRIV;
 
 typedef struct _PRIVS {
 	SE_PRIV se_priv;

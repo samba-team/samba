@@ -23,6 +23,37 @@
 /********************************************************************
 ********************************************************************/
 
+static NTSTATUS sid_to_name(struct cli_state *cli, 
+			    TALLOC_CTX *mem_ctx,
+			    DOM_SID *sid, fstring name)
+{
+	POLICY_HND pol;
+	uint32 *sid_types;
+	NTSTATUS result;
+	char **domains, **names;
+
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
+		
+	if ( !NT_STATUS_IS_OK(result) )
+		return result;
+
+	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, 1, sid, &domains, &names, &sid_types);
+	
+	if ( NT_STATUS_IS_OK(result) ) {
+		if ( *domains[0] )
+			fstr_sprintf( name, "%s\\%s", domains[0], names[0] );
+		else
+			fstrcpy( name, names[0] );
+	}
+
+	cli_lsa_close(cli, mem_ctx, &pol);
+	return result;
+}
+
+/********************************************************************
+********************************************************************/
+
 static NTSTATUS name_to_sid(struct cli_state *cli, 
 			    TALLOC_CTX *mem_ctx,
 			    DOM_SID *sid, const char *name)
@@ -41,20 +72,14 @@ static NTSTATUS name_to_sid(struct cli_state *cli,
 	result = cli_lsa_open_policy(cli, mem_ctx, True, 
 		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
 		
-	if (!NT_STATUS_IS_OK(result))
+	if ( !NT_STATUS_IS_OK(result) )
 		return result;
 
 	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, &sids, &sid_types);
 	
-	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Failed to convert \"%s\" to a SID [%s]\n",
-			name, nt_errstr(result));
-		goto done;
-	}
+	if ( NT_STATUS_IS_OK(result) )
+		sid_copy( sid, &sids[0] );
 
-	sid_copy( sid, &sids[0] );
-
-done:
 	cli_lsa_close(cli, mem_ctx, &pol);
 	return result;
 }
@@ -143,6 +168,7 @@ static NTSTATUS enum_privileges_for_accounts( TALLOC_CTX *ctx, struct cli_state 
 	DOM_SID *sids;
 	uint32 count=0;
 	int i;
+	fstring name;
 
 	result = cli_lsa_enum_sids(cli, ctx, pol, &enum_context, 
 		pref_max_length, &count, &sids);
@@ -151,8 +177,16 @@ static NTSTATUS enum_privileges_for_accounts( TALLOC_CTX *ctx, struct cli_state 
 		return result;
 		
 	for ( i=0; i<count; i++ ) {
-
-		d_printf("%s\n", sid_string_static(&sids[i]));
+	
+		/* try to convert the SID to a name.  Fall back to 
+		   printing the raw SID if necessary */
+		   
+		result = sid_to_name( cli, ctx, &sids[i], name );
+		if ( !NT_STATUS_IS_OK (result) )
+			fstrcpy( name, sid_string_static(&sids[i]) );
+			
+		d_printf("%s\n", name);
+		
 		result = enum_privileges_for_user( ctx, cli, pol, &sids[i] );
 		
 		if ( !NT_STATUS_IS_OK(result) )

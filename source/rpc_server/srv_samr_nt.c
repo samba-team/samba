@@ -1,14 +1,14 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
+ *  Copyright (C) Andrew Tridgell                   1992-1997,
+ *  Copyright (C) Luke Kenneth Casson Leighton      1996-1997,
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Marc Jacobsen			    1999,
- *  Copyright (C) Jeremy Allison               2001-2002,
- *  Copyright (C) Jean François Micouleau      1998-2001,
+ *  Copyright (C) Jeremy Allison                    2001-2002,
+ *  Copyright (C) Jean François Micouleau          1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
- *  Copyright (C) Gerald (Jerry) Carter             2003 - 2004,
+ *  Copyright (C) Gerald (Jerry) Carter             2003-2004,
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2221,8 +2221,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	uint32 new_rid = 0;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
-	BOOL can_add_machines = False;
-	SE_PRIV se_machineop = SE_MACHINE_ACCOUNT;
+	BOOL can_add_account;
+	SE_PRIV se_rights;
 
 	/* Get the domain SID stored in the domain policy */
 	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted))
@@ -2246,14 +2246,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 
 	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
 	strlower_m(account);
-	
-	/* check to see if we are a domain admin */
-	
-	can_add_machines = user_has_privileges( p->pipe_user.nt_user_token, &se_machineop );
-	
-	DEBUG(5, ("_samr_create_user: %s is%s a member of the Domain Admins group\n",
-		p->pipe_user_name, can_add_machines ? "" : " not"));
-
+		
 	pdb_init_sam(&sam_pass);
 
 	become_root();
@@ -2266,13 +2259,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	}
 
 	pdb_free_sam(&sam_pass);
-
-	/*
-	 * NB. VERY IMPORTANT ! This call must be done as the current pipe user,
-	 * *NOT* surrounded by a become_root()/unbecome_root() call. This ensures
-	 * that only people with write access to the smbpasswd file will be able
-	 * to create a user. JRA.
-	 */   
 	
 	/*********************************************************************
 	 * HEADS UP!  If we have to create a new user account, we have to get 
@@ -2287,26 +2273,37 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	pw = Get_Pwnam(account);
 	
-	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
-	
-	if ( can_add_machines )				
-		become_root();
-	
-	if ( !pw ) {
-		/* 
-		 * we can't check both the ending $ and the acb_info.
-		 * 
-		 * UserManager creates trust accounts (ending in $,
-		 * normal that hidden accounts) with the acb_info equals to ACB_NORMAL.
-		 * JFM, 11/29/2001
-		 */
-		if (account[strlen(account)-1] == '$')
-			pstrcpy(add_script, lp_addmachine_script());		
-		else 
-			pstrcpy(add_script, lp_adduser_script());
+	/* 
+	 * we can't check both the ending $ and the acb_info.
+	 * 
+	 * UserManager creates trust accounts (ending in $,
+	 * normal that hidden accounts) with the acb_info equals to ACB_NORMAL.
+	 * JFM, 11/29/2001
+	 */
 
+	if (account[strlen(account)-1] == '$') {
+		se_priv_copy( &se_rights, &se_machine_account );
+		pstrcpy(add_script, lp_addmachine_script());
+	}
+	else {
+		se_priv_copy( &se_rights, &se_add_users );
+		pstrcpy(add_script, lp_adduser_script());
+	}
+		
+	can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+
+	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
+		p->pipe_user_name, can_add_account ? "True":"False" ));
+		
+	/********** BEGIN Admin BLOCK **********/
+	
+	if ( can_add_account )
+		become_root();
+				
+	if ( !pw ) {
 		if (*add_script) {
   			int add_ret;
+			
   			all_string_sub(add_script, "%u", account, sizeof(add_script));
   			add_ret = smbrun(add_script,NULL);
  			DEBUG(3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
@@ -2323,28 +2320,32 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
 
-	if ( !NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pass, account, new_rid)) ) {
-		if ( can_add_machines )
-			unbecome_root();
-		return nt_status;
+	nt_status = pdb_init_sam_new(&sam_pass, account, new_rid);
+
+	/* this code is order such that we have no unnecessary retuns 
+	   out of the admin block of code */	
+	   
+	if ( NT_STATUS_IS_OK(nt_status) ) {
+	 	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
+	
+		if ( !(ret = pdb_add_sam_account(sam_pass)) ) {
+	 		pdb_free_sam(&sam_pass);
+ 			DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
+				account));
+			nt_status = NT_STATUS_ACCESS_DENIED;
+		}
 	}
 		
- 	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
-	
-	ret = pdb_add_sam_account(sam_pass);
-	
-	if ( can_add_machines )				
+	if ( can_add_account )
 		unbecome_root();
-		
-	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
 
- 	if ( !ret ) {
- 		pdb_free_sam(&sam_pass);
- 		DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
- 			  account));
- 		return NT_STATUS_ACCESS_DENIED;		
- 	}
- 	
+	/********** END Admin BLOCK **********/
+	
+	/* now check for failure */
+	
+	if ( !NT_STATUS_IS_OK(nt_status) )
+		return nt_status;
+			
 	/* Get the user's SID */
 	
 	sid_copy(&sid, pdb_get_user_sid(sam_pass));
@@ -3515,6 +3516,10 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 {
 	DOM_SID alias_sid;
 	uint32 acc_granted;
+	SE_PRIV se_rights;
+	BOOL can_add_accounts;
+	BOOL ret;
+
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted)) 
@@ -3525,11 +3530,23 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	}
 		
 	DEBUG(10, ("sid is %s\n", sid_string_static(&alias_sid)));
+	
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 
-	if (!pdb_add_aliasmem(&alias_sid, &q_u->sid.sid))
-		return NT_STATUS_ACCESS_DENIED;
-
-	return NT_STATUS_OK;
+	/******** BEGIN SeAddUsers BLOCK *********/
+	
+	if ( can_add_accounts )
+		become_root();
+	
+	ret = pdb_add_aliasmem(&alias_sid, &q_u->sid.sid);
+	
+	if ( can_add_accounts )
+		unbecome_root();
+		
+	/******** END SeAddUsers BLOCK *********/
+	
+	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
 /*********************************************************************
@@ -3540,6 +3557,9 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 {
 	DOM_SID alias_sid;
 	uint32 acc_granted;
+	SE_PRIV se_rights;
+	BOOL can_add_accounts;
+	BOOL ret;
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted)) 
@@ -3552,10 +3572,22 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	DEBUG(10, ("_samr_del_aliasmem:sid is %s\n",
 		   sid_string_static(&alias_sid)));
 
-	if (!pdb_del_aliasmem(&alias_sid, &q_u->sid.sid))
-		return NT_STATUS_ACCESS_DENIED;
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+
+	/******** BEGIN SeAddUsers BLOCK *********/
 	
-	return NT_STATUS_OK;
+	if ( can_add_accounts )
+		become_root();
+
+	ret = pdb_del_aliasmem(&alias_sid, &q_u->sid.sid);
+	
+	if ( can_add_accounts )
+		unbecome_root();
+		
+	/******** END SeAddUsers BLOCK *********/
+	
+	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
 /*********************************************************************
@@ -3576,6 +3608,8 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	SAM_ACCOUNT *sam_user=NULL;
 	BOOL check;
 	uint32 acc_granted;
+	SE_PRIV se_rights;
+	BOOL can_add_accounts;
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted)) 
@@ -3636,6 +3670,14 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 		return NT_STATUS_MEMBER_IN_GROUP;
 	}
 
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+
+	/******** BEGIN SeAddUsers BLOCK *********/
+	
+	if ( can_add_accounts )
+		become_root();
+		
 	/* 
 	 * ok, the group exist, the user exist, the user is not in the group,
 	 *
@@ -3644,6 +3686,11 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 
 	smb_add_user_group(grp_name, pwd->pw_name);
 
+	if ( can_add_accounts )
+		unbecome_root();
+		
+	/******** END SeAddUsers BLOCK *********/
+	
 	/* check if the user has been added then ... */
 	if(!user_in_unix_group_list(pwd->pw_name, grp_name)) {
 		passwd_free(&pwd);
@@ -3667,6 +3714,8 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	fstring grp_name;
 	struct group *grp;
 	uint32 acc_granted;
+	SE_PRIV se_rights;
+	BOOL can_add_accounts;
 
 	/*
 	 * delete the group member named q_u->rid
@@ -3710,9 +3759,23 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	}
+	
 
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+
+	/******** BEGIN SeAddUsers BLOCK *********/
+	
+	if ( can_add_accounts )
+		become_root();
+		
 	smb_delete_user_group(grp_name, pdb_get_username(sam_pass));
 
+	if ( can_add_accounts )
+		unbecome_root();
+		
+	/******** END SeAddUsers BLOCK *********/
+	
 	/* check if the user has been removed then ... */
 	if (user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
@@ -3764,6 +3827,9 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	DOM_SID user_sid;
 	SAM_ACCOUNT *sam_pass=NULL;
 	uint32 acc_granted;
+	SE_PRIV se_rights;
+	BOOL can_add_accounts;
+	BOOL ret;
 
 	DEBUG(5, ("_samr_delete_dom_user: %d\n", __LINE__));
 
@@ -3786,21 +3852,39 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
+	
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 
-	/* First delete the samba side */
-	if (!pdb_delete_sam_account(sam_pass)) {
+	/******** BEGIN SeAddUsers BLOCK *********/
+	
+	if ( can_add_accounts )
+		become_root();
+
+	/* First delete the samba side....
+	   code is order to prevent unnecessary returns out of the admin 
+	   block of code */
+	   
+	if ( (ret = pdb_delete_sam_account(sam_pass)) == True ) {
+		/*
+		 * Now delete the unix side ....
+		 * note: we don't check if the delete really happened
+		 * as the script is not necessary present
+		 * and maybe the sysadmin doesn't want to delete the unix side
+		 */
+		smb_delete_user( pdb_get_username(sam_pass) );
+	}
+	
+	if ( can_add_accounts )
+		unbecome_root();
+		
+	/******** END SeAddUsers BLOCK *********/
+		
+	if ( !ret ) {
 		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_CANNOT_DELETE;
 	}
-
-	/* Now delete the unix side */
-	/*
-	 * note: we don't check if the delete really happened
-	 * as the script is not necessary present
-	 * and maybe the sysadmin doesn't want to delete the unix side
-	 */
-	smb_delete_user(pdb_get_username(sam_pass));
 
 
 	pdb_free_sam(&sam_pass);
@@ -3825,6 +3909,9 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	struct group *grp;
 	GROUP_MAP map;
 	uint32 acc_granted;
+	SE_PRIV se_rights;
+	BOOL can_add_accounts;
+	BOOL ret;
 
 	DEBUG(5, ("samr_delete_dom_group: %d\n", __LINE__));
 
@@ -3857,17 +3944,33 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if ( (grp=getgrgid(gid)) == NULL)
 		return NT_STATUS_NO_SUCH_GROUP;
 
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+
+	/******** BEGIN SeAddUsers BLOCK *********/
+	
+	if ( can_add_accounts )
+		become_root();
+
 	/* delete mapping first */
-	if(!pdb_delete_group_mapping_entry(group_sid))
-		return NT_STATUS_ACCESS_DENIED;
+	
+	if ( (ret = pdb_delete_group_mapping_entry(group_sid)) == True ) {
+		smb_delete_group( grp->gr_name );
+	}
+
+	if ( can_add_accounts )
+		unbecome_root();
 		
-	/* we can delete the UNIX group */
-	smb_delete_group(grp->gr_name);
-
-	/* check if the group has been successfully deleted */
-	if ( (grp=getgrgid(gid)) != NULL)
+	/******** END SeAddUsers BLOCK *********/
+	
+	if ( !ret ) {
+		DEBUG(5,("_samr_delete_dom_group: Failed to delete mapping entry for group %s.\n", 
+			group_sid_str));
 		return NT_STATUS_ACCESS_DENIED;
-
+	}
+	
+	/* don't check that the unix group has been deleted.  Work like 
+	   _samr_delet_dom_user() */
 
 	if (!close_policy_hnd(p, &q_u->group_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
@@ -3883,6 +3986,9 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 {
 	DOM_SID alias_sid;
 	uint32 acc_granted;
+	SE_PRIV se_rights;
+	BOOL can_add_accounts;
+	BOOL ret;
 
 	DEBUG(5, ("_samr_delete_dom_alias: %d\n", __LINE__));
 
@@ -3901,8 +4007,23 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 		
 	DEBUG(10, ("lookup on Local SID\n"));
 
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+
+	/******** BEGIN SeAddUsers BLOCK *********/
+	
+	if ( can_add_accounts )
+		become_root();
+
 	/* Have passdb delete the alias */
-	if (!pdb_delete_alias(&alias_sid))
+	ret = pdb_delete_alias(&alias_sid);
+	
+	if ( can_add_accounts )
+		unbecome_root();
+		
+	/******** END SeAddUsers BLOCK *********/
+
+	if ( !ret )
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (!close_policy_hnd(p, &q_u->alias_pol))
@@ -3925,6 +4046,9 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	struct samr_info *info;
 	uint32 acc_granted;
 	gid_t gid;
+	SE_PRIV se_rights;
+	BOOL can_add_accounts;
+	NTSTATUS result;
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &dom_sid, &acc_granted)) 
@@ -3937,32 +4061,53 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
-	/* TODO: check if allowed to create group and add a become_root/unbecome_root pair.*/
-
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
 	/* check if group already exist */
 	if ((grp=getgrnam(name)) != NULL)
 		return NT_STATUS_GROUP_EXISTS;
 
-	/* we can create the UNIX group */
-	if (smb_create_group(name, &gid) != 0)
-		return NT_STATUS_ACCESS_DENIED;
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 
-	/* check if the group has been successfully created */
-	if ((grp=getgrgid(gid)) == NULL)
-		return NT_STATUS_ACCESS_DENIED;
+	/******** BEGIN SeAddUsers BLOCK *********/
+	
+	if ( can_add_accounts )
+		become_root();
+	
+	/* check that we successfully create the UNIX group */
+	
+	result = NT_STATUS_ACCESS_DENIED;
+	if ( (smb_create_group(name, &gid) == 0) && ((grp=getgrgid(gid)) != NULL) ) {
+	
+		/* so far, so good */
+		
+		result = NT_STATUS_OK;
+		
+		r_u->rid = pdb_gid_to_group_rid( grp->gr_gid );
 
-	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
+		/* add the group to the mapping table */
+		
+		sid_copy( &info_sid, get_global_sam_sid() );
+		sid_append_rid( &info_sid, r_u->rid );
+		sid_to_string( sid_string, &info_sid );
+		
+		/* reset the error code if we fail to add the mapping entry */
+		
+		if ( !add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL) )
+			result = NT_STATUS_ACCESS_DENIED;
+	}
 
-	/* add the group to the mapping table */
-	sid_copy(&info_sid, get_global_sam_sid());
-	sid_append_rid(&info_sid, r_u->rid);
-	sid_to_string(sid_string, &info_sid);
-
-	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL))
-		return NT_STATUS_ACCESS_DENIED;
-
+	if ( can_add_accounts )
+		unbecome_root();
+		
+	/******** END SeAddUsers BLOCK *********/
+	
+	/* check if we should bail out here */
+	
+	if ( !NT_STATUS_IS_OK(result) )
+		return result;
+	
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -3987,6 +4132,8 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	uint32 acc_granted;
 	gid_t gid;
 	NTSTATUS result;
+	SE_PRIV se_rights;
+	BOOL can_add_accounts;
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid, &acc_granted)) 
@@ -3999,12 +4146,23 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
-	/* TODO: check if allowed to create group  and add a become_root/unbecome_root pair.*/
-
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
+
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+
+	/******** BEGIN SeAddUsers BLOCK *********/
+	
+	if ( can_add_accounts )
+		become_root();
 
 	/* Have passdb create the alias */
 	result = pdb_create_alias(name, &r_u->rid);
+
+	if ( can_add_accounts )
+		unbecome_root();
+		
+	/******** END SeAddUsers BLOCK *********/
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
