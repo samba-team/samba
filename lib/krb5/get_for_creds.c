@@ -94,6 +94,8 @@ krb5_fwd_tgt_creds (krb5_context	context,
     krb5_creds creds;
     krb5_error_code ret;
 
+    flags |= KDC_OPT_FORWARDED;
+
     if (forwardable)
 	flags |= KDC_OPT_FORWARDABLE;
 
