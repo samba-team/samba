@@ -65,6 +65,8 @@ LOCKDIR = @lockdir@
 
 # libsmbclient support here
 BLDSHARED = @BLDSHARED@
+LIBSMBCLIENT_MAJOR=0
+LIBSMBCLIENT_MINOR=1
 
 # The directory where code page definition files go
 CODEPAGEDIR = @codepagedir@
@@ -604,15 +606,14 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@echo Linking shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
 
-bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
-	@echo Linking libsmbclient shared library $@
-	$(SHLD) @LDSHFLAGS@ -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS)
+libsmbclient: $(LIBSMBCLIENT_PICOBJS)
+	@echo Linking libsmbclient shared library bin/$@.@SHLIBEXT@
+	@$(SHLD) @LDSHFLAGS@ -o \
+		bin/$@.@SHLIBEXT@.$(LIBSMBCLIENT_MAJOR).$(LIBSMBCLIENT_MINOR) \
+		$(LIBSMBCLIENT_PICOBJS) $(LIBS)
+	@echo Linking libsmbclient non-shared library bin/$@.a
+	@-$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS)
  
-bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
-	@echo Linking libsmbclient non-shared library $@
-	-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS)
- 
-libsmbclient: @LIBSMBCLIENT_SHARED@
 
 
 bin/smbsh: $(SMBSH_OBJ) bin/.dummy
@@ -668,7 +669,7 @@ installswat: installdirs
 
  
 installclientlib:
-	-$(INSTALLCMD) bin/libsmbclient.so $(LIBDIR)
+	-$(INSTALLCMD) bin/libsmbclient.so.$(LIBSMBCLIENT_MAJOR).$(LIBSMBCLIENT_MINOR) $(LIBDIR)
 	-$(INSTALLCMD) -d ${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
 
@@ -696,9 +697,8 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@
+	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@* */*.a
 
-#proto: rpc_client_proto
 proto: 
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
