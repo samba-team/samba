@@ -49,7 +49,7 @@ void sys_select_signal(void)
 
 /*******************************************************************
 like select() but avoids the signal race using a pipe
-it also guuarantees that fds on return only ever contains bits set
+it also guarantees that fds on return only ever contains bits set
 for file descriptors that were readable
 ********************************************************************/
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
