@@ -69,6 +69,7 @@ PRIVATEDIR = @privatedir@
 
 SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
 PRIVATE_DIR = $(PRIVATEDIR)
+DATADIR = @datadir@
 
 # This is where SWAT images and help files go
 SWATDIR = @swatdir@
