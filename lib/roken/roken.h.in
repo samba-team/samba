@@ -47,6 +47,10 @@ char *strerror(int eno);
 char *hstrerror(int herr);
 #endif
 
+#ifndef HAVE_H_ERRNO
+extern int h_errno;
+#endif
+
 #ifndef HAVE_HERROR
 void herror(char *s);
 #endif
