@@ -1,3 +1,8 @@
+2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* acquire_cred.c: use
+	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
+
 2003-09-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* copy_ccache.c: rename
