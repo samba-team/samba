@@ -300,8 +300,12 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 		s = talloc_asprintf(mem_ctx, "%s@", GUID_string(mem_ctx, b->object));
 	}
 
-	s = talloc_asprintf_append(s, "%s:%s", t_name, b->host);
+	s = talloc_asprintf_append(s, "%s:", t_name);
 	if (!s) return NULL;
+
+	if (b->host) {
+		s = talloc_asprintf_append(s, "%s", b->host);
+	}
 
 	if ((!b->options || !b->options[0]) && !b->flags) {
 		return s;
@@ -438,6 +442,69 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	return NT_STATUS_OK;
 }
 
+static const char *floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor)
+{
+	switch (floor->lhs.protocol) {
+	case EPM_PROTOCOL_TCP:
+		if (floor->rhs.tcp.port == 0) return NULL;
+		return talloc_asprintf(mem_ctx, "%d", floor->rhs.tcp.port);
+		
+	case EPM_PROTOCOL_UDP:
+		if (floor->rhs.udp.port == 0) return NULL;
+		return talloc_asprintf(mem_ctx, "%d", floor->rhs.udp.port);
+
+	case EPM_PROTOCOL_HTTP:
+		if (floor->rhs.http.port == 0) return NULL;
+		return talloc_asprintf(mem_ctx, "%d", floor->rhs.http.port);
+
+	case EPM_PROTOCOL_IP:
+		if (floor->rhs.ip.address == 0) {
+			return NULL; 
+		}
+
+		{
+         	struct in_addr in;
+			in.s_addr = htonl(floor->rhs.ip.address);
+            return talloc_strdup(mem_ctx, inet_ntoa(in));
+		}
+
+	case EPM_PROTOCOL_NCACN:
+		return NULL;
+
+	case EPM_PROTOCOL_NCADG:
+		return NULL;
+
+	case EPM_PROTOCOL_SMB:
+		return talloc_strdup(mem_ctx, floor->rhs.smb.unc);
+
+	case EPM_PROTOCOL_PIPE:
+		return talloc_strdup(mem_ctx, floor->rhs.pipe.path);
+
+	case EPM_PROTOCOL_NETBIOS:
+		return talloc_strdup(mem_ctx, floor->rhs.netbios.name);
+
+	case EPM_PROTOCOL_NCALRPC:
+		return NULL;
+		
+	case EPM_PROTOCOL_VINES_SPP:
+		return talloc_asprintf(mem_ctx, "%d", floor->rhs.vines_spp.port);
+		
+	case EPM_PROTOCOL_VINES_IPC:
+		return talloc_asprintf(mem_ctx, "%d", floor->rhs.vines_ipc.port);
+		
+	case EPM_PROTOCOL_STREETTALK:
+		return talloc_strdup(mem_ctx, floor->rhs.streettalk.streettalk);
+		
+	case EPM_PROTOCOL_UNIX_DS:
+		return talloc_strdup(mem_ctx, floor->rhs.unix_ds.path);
+		
+	case EPM_PROTOCOL_NULL:
+		return NULL;
+	}
+
+	return NULL;
+}
+
 static NTSTATUS floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor,  const char *data)
 {
 	switch (floor->lhs.protocol) {
@@ -464,12 +531,13 @@ static NTSTATUS floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor,
  		  	memset(&hints, 0, sizeof(struct addrinfo));
 
 			hints.ai_family = AF_INET;
+			hints.ai_protocol = PF_INET;
 
 			if (getaddrinfo(data, NULL, &hints, &res) < 0) {
 				return NT_STATUS_BAD_NETWORK_NAME;
 			}
 
-			floor->rhs.ip.address = ntohl(((struct in_addr *)res->ai_addr)->s_addr);
+			floor->rhs.ip.address = ntohl(((struct sockaddr_in *)res->ai_addr)->sin_addr.s_addr);
 
 			freeaddrinfo(res);
 		}
@@ -536,6 +604,67 @@ static NTSTATUS floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
+NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower, struct dcerpc_binding *binding)
+{
+	int i;
+
+	binding->transport = -1;
+	binding->object = NULL;
+	binding->options = NULL;
+	binding->host = NULL;
+	binding->flags = 0;
+
+	/* Find a transport that matches this tower */
+	for (i=0;i<ARRAY_SIZE(transports);i++) {
+		int j;
+		if (transports[i].num_protocols != tower->num_floors - 2) {
+			continue; 
+		}
+		
+		for (j = 0; j < transports[i].num_protocols; j++) {
+			if (transports[i].protseq[j] != tower->floors[j+2].lhs.protocol) {
+				break;
+			}
+		}
+
+		if (j == transports[i].num_protocols) {
+			binding->transport = transports[i].transport;
+			break;
+		}
+	}
+
+	if (binding->transport == -1) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (tower->num_floors < 1) {
+		return NT_STATUS_OK;
+	}
+
+	/* Set object uuid */
+	if (!uuid_all_zero(&tower->floors[0].lhs.info.uuid.uuid)) {
+		binding->object = talloc_p(mem_ctx, struct GUID);
+		*binding->object = tower->floors[0].lhs.info.uuid.uuid;
+	}
+
+	/* Ignore floor 1, it contains the NDR version info */
+	
+	binding->options = talloc_array_p(mem_ctx, const char *, 2);
+
+	/* Set endpoint */
+	if (tower->num_floors >= 3) {
+		binding->options[0] = floor_get_rhs_data(mem_ctx, &tower->floors[tower->num_floors-1]);
+	} else {
+		binding->options[0] = NULL;
+	}
+	binding->options[1] = NULL;
+
+	/* Set network address */
+	if (tower->num_floors >= 4) {
+		binding->host = floor_get_rhs_data(mem_ctx, &tower->floors[tower->num_floors-2]);
+	}
+	return NT_STATUS_OK;
+}
 
 NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower **tower)
 {
@@ -570,6 +699,8 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	(*tower)->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
 	if (binding->object) {
 		(*tower)->floors[0].lhs.info.uuid.uuid = *binding->object;
+	} else {
+		ZERO_STRUCT((*tower)->floors[0].lhs.info.uuid.uuid);
 	}
 	(*tower)->floors[0].lhs.info.uuid.version = 0;
 	
@@ -584,6 +715,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	/* Floor 2 to num_protocols */
 	for (i = 0; i < num_protocols; i++) {
 		(*tower)->floors[2 + i].lhs.protocol = protseq[i];
+		ZERO_STRUCT((*tower)->floors[2 + i].rhs);
 	}
 
 	/* The top floor contains the endpoint */
