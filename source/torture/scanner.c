@@ -191,7 +191,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 
 BOOL torture_trans2_scan(int dummy)
 {
-	static struct cli_state cli;
+	static struct cli_state *cli;
 	int op, level;
 	const char *fname = "\\scanner.dat";
 	int fnum, dnum;
@@ -202,26 +202,26 @@ BOOL torture_trans2_scan(int dummy)
 		return False;
 	}
 
-	fnum = cli_open(&cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
+	fnum = cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
 			 DENY_NONE);
-	dnum = cli_open(&cli, "\\", O_RDONLY, DENY_NONE);
+	dnum = cli_open(cli, "\\", O_RDONLY, DENY_NONE);
 
 	for (op=OP_MIN; op<=OP_MAX; op++) {
 		printf("Scanning op=%d\n", op);
 		for (level = 0; level <= 50; level++) {
-			scan_trans2(&cli, op, level, fnum, dnum, fname);
+			scan_trans2(cli, op, level, fnum, dnum, fname);
 		}
 
 		for (level = 0x100; level <= 0x130; level++) {
-			scan_trans2(&cli, op, level, fnum, dnum, fname);
+			scan_trans2(cli, op, level, fnum, dnum, fname);
 		}
 
 		for (level = 1000; level < 1050; level++) {
-			scan_trans2(&cli, op, level, fnum, dnum, fname);
+			scan_trans2(cli, op, level, fnum, dnum, fname);
 		}
 	}
 
-	torture_close_connection(&cli);
+	torture_close_connection(cli);
 
 	printf("trans2 scan finished\n");
 	return True;
@@ -393,7 +393,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 
 BOOL torture_nttrans_scan(int dummy)
 {
-	static struct cli_state cli;
+	static struct cli_state *cli;
 	int op, level;
 	const char *fname = "\\scanner.dat";
 	int fnum, dnum;
@@ -404,26 +404,26 @@ BOOL torture_nttrans_scan(int dummy)
 		return False;
 	}
 
-	fnum = cli_open(&cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
+	fnum = cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
 			 DENY_NONE);
-	dnum = cli_open(&cli, "\\", O_RDONLY, DENY_NONE);
+	dnum = cli_open(cli, "\\", O_RDONLY, DENY_NONE);
 
 	for (op=OP_MIN; op<=OP_MAX; op++) {
 		printf("Scanning op=%d\n", op);
 		for (level = 0; level <= 50; level++) {
-			scan_nttrans(&cli, op, level, fnum, dnum, fname);
+			scan_nttrans(cli, op, level, fnum, dnum, fname);
 		}
 
 		for (level = 0x100; level <= 0x130; level++) {
-			scan_nttrans(&cli, op, level, fnum, dnum, fname);
+			scan_nttrans(cli, op, level, fnum, dnum, fname);
 		}
 
 		for (level = 1000; level < 1050; level++) {
-			scan_nttrans(&cli, op, level, fnum, dnum, fname);
+			scan_nttrans(cli, op, level, fnum, dnum, fname);
 		}
 	}
 
-	torture_close_connection(&cli);
+	torture_close_connection(cli);
 
 	printf("nttrans scan finished\n");
 	return True;
