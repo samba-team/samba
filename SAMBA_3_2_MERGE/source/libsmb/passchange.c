@@ -28,14 +28,14 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 			    char *err_str, size_t err_str_len)
 {
 	struct nmb_name calling, called;
-	struct cli_state cli;
+	struct cli_state *cli;
 	struct in_addr ip;
 	struct ntuser_creds creds;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
 
 	*err_str = '\0';
-
+;
 	if ( !(mem_ctx = talloc_init( "resolve_name" )) ) {
 		DEBUG(0,("remote_password_change: talloc_init() failed\n"));
 		return False;
@@ -48,64 +48,67 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 		return False;
 	}
  
-	ZERO_STRUCT(cli);
+	cli = NULL;
  
-	if (!cli_initialise(&cli) || !cli_connect(&cli, remote_machine, &ip)) {
-		slprintf(err_str, err_str_len-1, "unable to connect to SMB server on machine %s. Error was : %s.\n",
-			remote_machine, cli_errstr(&cli) );
-		talloc_destroy( mem_ctx );
-		return False;
-	}
-  
 	make_nmb_name(&calling, global_myname() , 0x0);
 	make_nmb_name(&called , remote_machine, 0x20);
-	
-	if (!cli_session_request(&cli, &calling, &called)) {
-		slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",
-			remote_machine, cli_errstr(&cli) );
-		result = False;
-		goto out;
-	}
-  
-	cli.protocol = PROTOCOL_NT1;
 
-	if (!cli_negprot(&cli)) {
-		slprintf(err_str, err_str_len-1, "machine %s rejected the negotiate protocol. Error was : %s.\n",        
-			remote_machine, cli_errstr(&cli) );
-		result = False;
-		goto out;
+	/* have to open a new connection */
+	if (!(cli=cli_state_init()) || !cli_socket_connect(cli, remote_machine, &ip)) {
+		DEBUG(0,("Connection to %s failed\n", remote_machine));
+		return False;
 	}
-  
+
+	if (!cli_transport_establish(cli, &calling, &called)) {
+		DEBUG(1,("session request to %s failed (%s)\n", called.name, cli_errstr(cli->tree)));
+		cli_shutdown(cli);
+		return False;
+	}
+
+	DEBUG(4,(" session request ok\n"));
+
+	if (NT_STATUS_IS_ERR(cli_negprot(cli))) {
+		DEBUG(1,("protocol negotiation failed\n"));
+		cli_shutdown(cli);
+		return False;
+	}
+
+	result = cli_session_setup(cli, user_name, old_passwd, lp_workgroup());
+
 	/* Given things like SMB signing, restrict anonymous and the like, 
 	   try an authenticated connection first */
-	if (!cli_session_setup(&cli, user_name, old_passwd, strlen(old_passwd)+1, old_passwd, strlen(old_passwd)+1, "")) {
+	if (NT_STATUS_IS_ERR(result)) {
 		/*
 		 * We should connect as the anonymous user here, in case
 		 * the server has "must change password" checked...
 		 * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
 		 */
 
-		if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
-			slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",        
-				 remote_machine, cli_errstr(&cli) );
-			result = False;
+		result = cli_session_setup( cli, "", "", "" );
+		if ( NT_STATUS_IS_ERR(result) ) {
+			slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",
+				 remote_machine, cli_errstr(cli->tree) );
 			goto out;
 		}
 
+#if 0	/* FIXME */
 		init_creds(&creds, "", "", NULL);
 		cli_init_creds(&cli, &creds);
 	} else {
 		init_creds(&creds, user_name, "", old_passwd);
 		cli_init_creds(&cli, &creds);
+#endif
 	}
 
-	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
-		slprintf(err_str, err_str_len-1, "machine %s rejected the tconX on the IPC$ share. Error was : %s.\n",
-			remote_machine, cli_errstr(&cli) );
-		result = False;
-		goto out;
+	if (NT_STATUS_IS_ERR(cli_send_tconX(cli, "IPC$", "IPC", ""))) {
+		DEBUG(1,("tree connect failed: %s\n", cli_errstr(cli->tree)));
+		cli_shutdown(cli);
+		return False;
 	}
 
+	DEBUG(4,(" tconx ok\n"));
+
+#if 0	/* FIXME! temporily commented out */
 	/* Try not to give the password away to easily */
 
 	cli.pipe_auth_flags = AUTH_PIPE_NTLMSSP;
@@ -116,7 +119,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 		if (lp_client_lanman_auth()) {
 			if (!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
 				slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
-					 remote_machine, cli_errstr(&cli) );
+					 remote_machine, cli_errstr(cli->tree) );
 				result = False;
 				goto out;
 			}
@@ -154,8 +157,11 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 			goto out;
 		}
 	}
+
+#endif	/* FIXME! */
+
 out:
-	cli_shutdown(&cli);
+	cli_shutdown(cli);
 	talloc_destroy( mem_ctx );
-	return result;
+	return !NT_STATUS_IS_ERR(result);
 }
