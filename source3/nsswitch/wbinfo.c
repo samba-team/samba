@@ -27,9 +27,9 @@
 
 /* Prototypes from common.h */
 
-enum nss_status winbindd_request(int req_type, 
-				 struct winbindd_request *request,
-				 struct winbindd_response *response);
+NSS_STATUS winbindd_request(int req_type, 
+			    struct winbindd_request *request,
+			    struct winbindd_response *response);
 
 /* List groups a user is a member of */
 
@@ -37,7 +37,8 @@ static BOOL wbinfo_get_usergroups(char *user)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-	int result, i;
+	NSS_STATUS result;
+	int i;
 	
 	ZERO_STRUCT(response);
 
@@ -69,8 +70,8 @@ static BOOL wbinfo_list_domains(void)
 
 	/* Send request */
 
-	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -126,8 +127,8 @@ static BOOL wbinfo_uid_to_sid(uid_t uid)
 	/* Send request */
 
 	request.data.uid = uid;
-	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -151,8 +152,8 @@ static BOOL wbinfo_gid_to_sid(gid_t gid)
 	/* Send request */
 
 	request.data.gid = gid;
-	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -176,8 +177,8 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
-	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -199,8 +200,8 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
-	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -224,8 +225,8 @@ static BOOL wbinfo_lookupsid(char *sid)
 	/* Send off request */
 
 	fstrcpy(request.data.sid, sid);
-	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -249,8 +250,8 @@ static BOOL wbinfo_lookupname(char *name)
 	ZERO_STRUCT(response);
 
 	fstrcpy(request.data.name, name);
-	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -267,7 +268,7 @@ static BOOL wbinfo_auth(char *username)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-        enum winbindd_result result;
+        NSS_STATUS result;
         char *p;
 
 	/* Send off request */
@@ -290,9 +291,9 @@ static BOOL wbinfo_auth(char *username)
 	/* Display response */
 
         printf("plaintext password authentication %s\n", 
-               (result == WINBINDD_OK) ? "succeeded" : "failed");
+               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-        return result == WINBINDD_OK;
+        return result == NSS_STATUS_SUCCESS;
 }
 
 /* Authenticate a user with a challenge/response */
@@ -301,7 +302,7 @@ static BOOL wbinfo_auth_crap(char *username)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-        enum winbindd_result result;
+        NSS_STATUS result;
         fstring pass;
         char *p;
 
@@ -322,10 +323,10 @@ static BOOL wbinfo_auth_crap(char *username)
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         
-        SMBencrypt(pass, request.data.auth_crap.chal, 
-                   request.data.auth_crap.lm_resp);
-        SMBNTencrypt(pass, request.data.auth_crap.chal,
-                     request.data.auth_crap.nt_resp);
+        SMBencrypt((uchar *)pass, request.data.auth_crap.chal, 
+                   (uchar *)request.data.auth_crap.lm_resp);
+        SMBNTencrypt((uchar *)pass, request.data.auth_crap.chal,
+                     (uchar *)request.data.auth_crap.nt_resp);
 
         request.data.auth_crap.lm_resp_len = 24;
         request.data.auth_crap.nt_resp_len = 24;
@@ -335,9 +336,9 @@ static BOOL wbinfo_auth_crap(char *username)
 	/* Display response */
 
         printf("challenge/response password authentication %s\n", 
-               (result == WINBINDD_OK) ? "succeeded" : "failed");
+               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-        return result == WINBINDD_OK;
+        return result == NSS_STATUS_SUCCESS;
 }
 
 /* Print domain users */
@@ -351,8 +352,8 @@ static BOOL print_domain_users(void)
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -379,8 +380,8 @@ static BOOL print_domain_groups(void)
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
