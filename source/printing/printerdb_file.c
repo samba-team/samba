@@ -761,29 +761,24 @@ static WERROR file_get_secdesc(TALLOC_CTX *mem_ctx, const char *printername, SEC
 	prs_struct ps;
 	WERROR result = WERR_OK;
 
-	if (asprintf(&filename, "%s/%s/%s", file_root, SECDESC_PREFIX, printername) < 0)
+	filename = talloc_asprintf(mem_ctx, "%s/%s/%s", file_root,
+				   SECDESC_PREFIX, printername);
+
+	if (filename == NULL)
 		return WERR_NOMEM;
 
-	if (!read_complete_file(mem_ctx, filename, &buf, &len)) {
-		result = WERR_INVALID_SECURITY_DESCRIPTOR;
-		goto done;
-	}
+	if (!read_complete_file(mem_ctx, filename, &buf, &len))
+		return WERR_INVALID_SECURITY_DESCRIPTOR;
 
-	if (!prs_init(&ps, 0, mem_ctx, UNMARSHALL)) {
-		result = WERR_NOMEM;
-		goto done;
-	}
+	if (!prs_init(&ps, 0, mem_ctx, UNMARSHALL))
+		return WERR_NOMEM;
 
 	prs_give_memory(&ps, buf, len, True);
 
-	if (!sec_io_desc_buf("file_get_secdesc", secdesc_ctr, &ps, 1)) {
-		result = WERR_NOMEM;
-		goto done;
-	}
+	result = sec_io_desc_buf("file_get_secdesc", secdesc_ctr, &ps, 1) ?
+		WERR_OK : WERR_NOMEM;
 
-done:
-	if (&ps)
-		prs_mem_free(&ps);
+	prs_mem_free(&ps);
 	return result;
 }
 
@@ -793,7 +788,10 @@ WERROR file_set_secdesc(TALLOC_CTX *mem_ctx, const char *printername, SEC_DESC_B
 	char *filename;
 	WERROR result = WERR_OK;
 
-	if (asprintf(&filename, "%s/%s/%s", file_root, SECDESC_PREFIX, printername) < 0)
+	filename = talloc_asprintf(mem_ctx, "%s/%s/%s", file_root,
+				   SECDESC_PREFIX, printername);
+
+	if (filename == NULL)
 		return WERR_NOMEM;
 
 	prs_init(&ps, (uint32)sec_desc_size(secdesc_ctr->sec) +
@@ -811,9 +809,7 @@ WERROR file_set_secdesc(TALLOC_CTX *mem_ctx, const char *printername, SEC_DESC_B
 	}
 
 done:
-	if (&ps)
-		prs_mem_free(&ps);
-
+	prs_mem_free(&ps);
 	return result;
 }
 
