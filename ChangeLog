@@ -1,3 +1,8 @@
+2004-06-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/connect.c (handle_tcp): note who is what that closed the
+	connection on us
+
 2004-06-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* admin/get.c (kt_get): catch errors from krb5_parse_name
