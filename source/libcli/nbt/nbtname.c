@@ -114,7 +114,7 @@ static NTSTATUS decompress_name(char *name, enum nbt_name_type *type)
   compress a name component
  */
 static uint8_t *compress_name(TALLOC_CTX *mem_ctx, 
-			      uint8_t *name, enum nbt_name_type type)
+			      const uint8_t *name, enum nbt_name_type type)
 {
 	uint8_t *cname;
 	int i;
@@ -211,7 +211,7 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name 
 {
 	uint_t num_components;
 	uint8_t *components[MAX_COMPONENTS];
-	char *dname, *dscope=NULL, *p;
+	char *dscope=NULL, *p;
 	uint8_t *cname;
 	int i;
 
@@ -219,14 +219,12 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name 
 		return NT_STATUS_OK;
 	}
 
-	dname = strupper_talloc(ndr, r->name);
-	NT_STATUS_HAVE_NO_MEMORY(dname);
 	if (r->scope) {
-		dscope = strupper_talloc(ndr, r->scope);
+		dscope = talloc_strdup(ndr, r->scope);
 		NT_STATUS_HAVE_NO_MEMORY(dscope);
 	}
 
-	cname = compress_name(ndr, dname, r->type);
+	cname = compress_name(ndr, r->name, r->type);
 	NT_STATUS_HAVE_NO_MEMORY(cname);
 
 	/* form the base components */

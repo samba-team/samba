@@ -38,6 +38,7 @@ static struct {
 	BOOL node_status;
 	BOOL root_port;
 	BOOL lookup_by_ip;
+	BOOL case_sensitive;
 } options;
 
 /*
@@ -178,6 +179,10 @@ static void process_one(const char *name)
 	char *node_name, *p;
 	struct nbt_name_socket *nbtsock;
 	NTSTATUS status;
+
+	if (!options.case_sensitive) {
+		name = strupper_talloc(tmp_ctx, name);
+	}
 	
 	if (options.find_master) {
 		node_type = NBT_NAME_MASTER;
@@ -258,6 +263,9 @@ int main(int argc,char *argv[])
 
 		{ "lookup-by-ip", 'A', POPT_ARG_VAL, &options.lookup_by_ip, 
 		  True, "Do a node status on <name> as an IP Address" },
+
+		{ "case-sensitive", 0, POPT_ARG_VAL, &options.case_sensitive, 
+		  True, "Don't uppercase the name before sending" },
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0 }
