@@ -656,10 +656,21 @@ ou: idmap
 	      </indexterm>
 		The system is ready to join the Domain. Execute the following:
 <screen>
-net rpc join -U root%not24et
+&rootprompt; net rpc join -U root%not24et
 Joined domain MEGANET2.
 </screen>
 		This indicates that the Domain join succeeded.
+		</para></step>
+
+		<step><para>
+		<indexterm><primary>wbinfo</primary></indexterm>
+		Just joining the Domain is not quite enough, you must now provide a privilidged set
+		of credentials through which <command>winbindd</command> can interact with the ADS
+		Domain servers. Execute the following to implant the necessary credentials:
+<screen>
+&rootprompt; wbinfo --set-auth-user=Administrator%not24get
+</screen>
+-		The configuration is now ready to obtain ADS Domain user and group information.
 		</para></step>
 
 		<step><para>
