@@ -216,7 +216,7 @@ int smbw_dir_open(const char *fname)
 		smbw_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_ALL,
 				   smbw_server_add, NULL);
 		*p = '#';
-	} else if (strcmp(srv->cli.dev,"IPC") == 0) {
+	} else if ((strcmp(srv->cli.dev,"IPC") == 0) || (strcasecmp(share,"IPC$") == 0)) {
 		DEBUG(4,("doing NetShareEnum\n"));
 		smbw_share_add(".",0,"", NULL);
 		smbw_share_add("..",0,"", NULL);
@@ -412,7 +412,8 @@ int smbw_chdir(const char *name)
 		goto failed;
 	}
 
-	if (strncmp(srv->cli.dev,"IPC",3) &&
+	if (strncmp(srv->cli.dev,"IPC",3) && 
+	    strcasecmp(share, "IPC$") &&
 	    strncmp(srv->cli.dev,"LPT",3) &&
 	    !smbw_getatr(srv, path, 
 			 &mode, NULL, NULL, NULL, NULL, NULL)) {
