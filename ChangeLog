@@ -1,5 +1,9 @@
 2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kuser/klist.c: make -a and -n aliases for -v
+
+	* lib/krb5/write_message.c: ws
+
 	* kdc/hprop-common.c: nuke extra definitions of
 	krb5_read_priv_message et.al
 

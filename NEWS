@@ -10,7 +10,8 @@ Changes in release 0.3a:
 
  * make kinit fallback to v4 if given a v4 KDC
 
- * make klist work better with v4 and v5
+ * make klist work better with v4 and v5, and add some more MIT
+   compatibility options
 
  * make the kdc listen on the krb524 (4444) port for compatibility
    with MIT krb5 clients
