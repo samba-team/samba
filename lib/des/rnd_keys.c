@@ -182,6 +182,9 @@ sigALRM(int sig)
     if (igdata < gsize)
 	gdata[igdata++] ^= counter & 0xff;
 
+#ifndef HAVE_SIGACTION
+    signal(SIGALRM, sigALRM); /* Reinstall SysV signal handler */
+#endif
     SIGRETURN(0);
 }
 
