@@ -60,6 +60,8 @@ process_request(krb5_context context,
     KDC_REQ req;
     krb5_error_code err;
     int i;
+
+    gettimeofday(&now, NULL);
     if (maybe_AS_REQ(buf, len)){
 	i = decode_AS_REQ(buf, len, &req);
 	if(i >= 0){
