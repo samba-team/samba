@@ -31,6 +31,7 @@ struct sesssetup_state {
 	union smb_sesssetup setup;
 	NTSTATUS session_key_err;
 	struct smb_composite_sesssetup *io;
+	struct smbcli_request *req;
 };
 
 
@@ -134,10 +135,9 @@ static void request_handler(struct smbcli_request *req)
 			smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
 		}
 
-		req = smb_raw_session_setup_send(session, &state->setup);
-		req->async.fn = request_handler;
-		req->async.private = c;
-		c->req = req;
+		state->req = smb_raw_session_setup_send(session, &state->setup);
+		state->req->async.fn = request_handler;
+		state->req->async.private = c;
 		return;
 	}
 
@@ -338,7 +338,6 @@ struct smbcli_composite *smb_composite_sesssetup_send(struct smbcli_session *ses
 {
 	struct smbcli_composite *c;
 	struct sesssetup_state *state;
-	struct smbcli_request *req = NULL;
 
 	c = talloc_zero(session, struct smbcli_composite);
 	if (c == NULL) goto failed;
@@ -361,19 +360,18 @@ struct smbcli_composite *smb_composite_sesssetup_send(struct smbcli_session *ses
 
 	/* see what session setup interface we will use */
 	if (session->transport->negotiate.protocol < PROTOCOL_NT1) {
-		req = session_setup_old(c, session, io);
+		state->req = session_setup_old(c, session, io);
 	} else if (!session->transport->options.use_spnego ||
 		   !(io->in.capabilities & CAP_EXTENDED_SECURITY)) {
-		req = session_setup_nt1(c, session, io);
+		state->req = session_setup_nt1(c, session, io);
 	} else {
-		req = session_setup_spnego(c, session, io);
+		state->req = session_setup_spnego(c, session, io);
 	}
 
-	if (req == NULL) goto failed;
+	if (state->req == NULL) goto failed;
 
-	req->async.fn = request_handler;
-	req->async.private = c;
-	c->req = req;
+	state->req->async.fn = request_handler;
+	state->req->async.private = c;
 
 	return c;
 

@@ -36,10 +36,8 @@ struct smbcli_composite {
 	/* the internal stage */
 	uint16_t stage;
 
-	/* the currently running sub-request */
-	void *req;
-
-	/* a private pointer for use by the composite code */
+	/* a private pointer for use by the composite function
+	   implementation */
 	void *private;
 
 	/* status code when finished */

@@ -34,6 +34,7 @@ static void loadfile_handler(struct smbcli_request *req);
 
 struct loadfile_state {
 	struct smb_composite_loadfile *io;
+	struct smbcli_request *req;
 	union smb_open *io_open;
 	union smb_read *io_read;
 };
@@ -44,7 +45,7 @@ struct loadfile_state {
 static NTSTATUS setup_close(struct smbcli_composite *c, 
 			    struct smbcli_tree *tree, uint16_t fnum)
 {
-	struct smbcli_request *req;
+	struct loadfile_state *state = c->private;
 	union smb_close *io_close;
 
 	/* nothing to read, setup the close */
@@ -55,13 +56,12 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 	io_close->close.in.fnum = fnum;
 	io_close->close.in.write_time = 0;
 
-	req = smb_raw_close_send(tree, io_close);
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	state->req = smb_raw_close_send(tree, io_close);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	/* call the handler again when the close is done */
-	req->async.fn = loadfile_handler;
-	req->async.private = c;
-	c->req = req;
+	state->req->async.fn = loadfile_handler;
+	state->req->async.private = c;
 	c->stage = LOADFILE_CLOSE;
 
 	return NT_STATUS_OK;
@@ -75,11 +75,10 @@ static NTSTATUS loadfile_open(struct smbcli_composite *c,
 			      struct smb_composite_loadfile *io)
 {
 	struct loadfile_state *state = c->private;
-	struct smbcli_request *req = c->req;
-	struct smbcli_tree *tree = req->tree;
+	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 
-	status = smb_raw_open_recv(req, c, state->io_open);
+	status = smb_raw_open_recv(state->req, c, state->io_open);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	/* don't allow stupidly large loads */
@@ -108,13 +107,12 @@ static NTSTATUS loadfile_open(struct smbcli_composite *c,
 	state->io_read->readx.in.remaining = 0;
 	state->io_read->readx.out.data     = io->out.data;
 
-	req = smb_raw_read_send(tree, state->io_read);
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	state->req = smb_raw_read_send(tree, state->io_read);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	/* call the handler again when the first read is done */
-	req->async.fn = loadfile_handler;
-	req->async.private = c;
-	c->req = req;
+	state->req->async.fn = loadfile_handler;
+	state->req->async.private = c;
 	c->stage = LOADFILE_READ;
 
 	talloc_free(state->io_open);
@@ -131,11 +129,10 @@ static NTSTATUS loadfile_read(struct smbcli_composite *c,
 			      struct smb_composite_loadfile *io)
 {
 	struct loadfile_state *state = c->private;
-	struct smbcli_request *req = c->req;
-	struct smbcli_tree *tree = req->tree;
+	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 
-	status = smb_raw_read_recv(req, state->io_read);
+	status = smb_raw_read_recv(state->req, state->io_read);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	/* we might be done */
@@ -149,13 +146,12 @@ static NTSTATUS loadfile_read(struct smbcli_composite *c,
 	state->io_read->readx.in.mincnt = MIN(32768, io->out.size - state->io_read->readx.in.offset);
 	state->io_read->readx.out.data = io->out.data + state->io_read->readx.in.offset;
 
-	req = smb_raw_read_send(tree, state->io_read);
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	state->req = smb_raw_read_send(tree, state->io_read);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	/* call the handler again when the read is done */
-	req->async.fn = loadfile_handler;
-	req->async.private = c;
-	c->req = req;
+	state->req->async.fn = loadfile_handler;
+	state->req->async.private = c;
 
 	return NT_STATUS_OK;
 }
@@ -166,10 +162,10 @@ static NTSTATUS loadfile_read(struct smbcli_composite *c,
 static NTSTATUS loadfile_close(struct smbcli_composite *c, 
 			       struct smb_composite_loadfile *io)
 {
+	struct loadfile_state *state = c->private;
 	NTSTATUS status;
-	struct smbcli_request *req = c->req;
 
-	status = smbcli_request_simple_recv(req);
+	status = smbcli_request_simple_recv(state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	c->state = SMBCLI_REQUEST_DONE;
@@ -221,7 +217,6 @@ struct smbcli_composite *smb_composite_loadfile_send(struct smbcli_tree *tree,
 						     struct smb_composite_loadfile *io)
 {
 	struct smbcli_composite *c;
-	struct smbcli_request *req;
 	struct loadfile_state *state;
 
 	c = talloc_zero(tree, struct smbcli_composite);
@@ -250,13 +245,12 @@ struct smbcli_composite *smb_composite_loadfile_send(struct smbcli_tree *tree,
 	state->io_open->ntcreatex.in.fname            = io->in.fname;
 
 	/* send the open on its way */
-	req = smb_raw_open_send(tree, state->io_open);
-	if (req == NULL) goto failed;
+	state->req = smb_raw_open_send(tree, state->io_open);
+	if (state->req == NULL) goto failed;
 
 	/* setup the callback handler */
-	req->async.fn = loadfile_handler;
-	req->async.private = c;
-	c->req = req;
+	state->req->async.fn = loadfile_handler;
+	state->req->async.private = c;
 	c->stage = LOADFILE_OPEN;
 
 	return c;
