@@ -2039,11 +2039,7 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
   char *buf1,*abuf;
   SMB_OFF_T total = 0;
 
-#ifdef LARGE_SMB_OFF_T
   DEBUG(4,("transfer_file n=%.0f  (head=%d) called\n",(double)n,headlen));
-#else /* LARGE_SMB_OFF_T */
-  DEBUG(4,("transfer_file n=%d  (head=%d) called\n",(int)n,headlen));
-#endif /* LARGE_SMB_OFF_T */
 
   if (size == 0) {
     size = lp_readsize();
@@ -4508,11 +4504,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
     }
   }
 
-#ifdef LARGE_SMB_OFF_T
   DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
-#else
-  DEBUG(8,("fcntl_lock %d %d %d %d %d\n",fd,op,(int)offset,(int)count,type));
-#endif
 
   lock.l_type = type;
   lock.l_whence = SEEK_SET;
@@ -4546,13 +4538,8 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
   /* a lock set or unset */
   if (ret == -1)
   {
-#ifdef LARGE_SMB_OFF_T
     DEBUG(3,("lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
           (double)offset,(double)count,op,type,strerror(errno)));
-#else
-    DEBUG(3,("lock failed at offset %d count %d op %d type %d (%s)\n",
-	     (int)offset,(int)count,op,type,strerror(errno)));
-#endif
 
     /* perhaps it doesn't support this sort of locking?? */
     if (errno == EINVAL)

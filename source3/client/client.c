@@ -466,19 +466,11 @@ static void display_finfo(file_info *finfo)
 {
   if (do_this_one(finfo)) {
     time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
-#ifdef LARGE_SMB_OFF_T
     DEBUG(0,("  %-30s%7.7s%.0f  %s",
        CNV_LANG(finfo->name),
 	   attrib_string(finfo->mode),
 	   (double)finfo->size,
 	   asctime(LocalTime(&t))));
-#else /* LARGE_SMB_OFF_T */
-    DEBUG(0,("  %-30s%7.7s%10d  %s",
-  	   CNV_LANG(finfo->name),
-	   attrib_string(finfo->mode),
-	   (int)finfo->size,
-	   asctime(LocalTime(&t))));
-#endif /* LARGE_SMB_OFF_T */
     dir_total += finfo->size;
   }
 }
@@ -1202,17 +1194,10 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
     }
 
 
-#ifdef LARGE_SMB_OFF_T
   DEBUG(2,("getting file %s of size %.0f bytes as %s ",
 	   CNV_LANG(finfo.name),
 	   (double)finfo.size,
 	   lname));
-#else /* LARGE_SMB_OFF_T */
-  DEBUG(2,("getting file %s of size %d bytes as %s ",
-	   CNV_LANG(finfo.name),
-	   (int)finfo.size,
-	   lname));
-#endif /* LARGE_SMB_OFF_T */
 
   while (nread < finfo.size && !close_done)
     {
@@ -1221,12 +1206,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
 
       p=NULL;
       
-#ifdef LARGE_SMB_OFF_T
       DEBUG(3,("nread=%d max_xmit=%d fsize=%.0f\n",nread,max_xmit,(double)finfo.size));
-#else /* LARGE_SMB_OFF_T */
-      DEBUG(3,("nread=%d max_xmit=%d fsize=%d\n",nread,max_xmit,
-	       (int)finfo.size));
-#endif /* LARGE_SMB_OFF_T */
 
       /* 3 possible read types. readbraw if a large block is required.
 	 readX + close if not much left and read if neither is supported */
@@ -1904,12 +1884,7 @@ static void do_put(char *rname,char *lname,file_info *finfo)
   if (finfo->size < 0)
     finfo->size = file_size(lname);
   
-#ifdef LARGE_SMB_OFF_T
   DEBUG(1,("putting file %s of size %.0f bytes as %s ",lname,(double)finfo->size,CNV_LANG(rname)));
-#else /* LARGE_SMB_OFF_T */
-  DEBUG(1,("putting file %s of size %d bytes as %s ",lname,
-	   (int)finfo->size,CNV_LANG(rname)));
-#endif /* LARGE_SMB_OFF_T */
   
   if (!maxwrite)
     maxwrite = writebraw_supported?MAX(max_xmit,BUFFER_SIZE):(max_xmit-200);

@@ -339,13 +339,8 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
 	 else
 	 {
 	    /* erase old pid */
-#ifdef LARGE_SMB_OFF_T
             DEBUG(5,("smb_shm_register_process : erasing stale record for pid %d (seek_back = %.0f)\n",
                       (int)other_pid, (double)seek_back));
-#else
-            DEBUG(5,("smb_shm_register_process : erasing stale record for pid %d (seek_back = %d)\n",
-                      (int)other_pid, (int)seek_back));
-#endif
 	    other_pid = (pid_t)0;
 	    erased_slot = sys_lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
 	    write(smb_shm_processes_fd, &other_pid, sizeof(other_pid));
@@ -367,13 +362,8 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
    if(free_slot < 0)
       free_slot = sys_lseek(smb_shm_processes_fd, 0, SEEK_END);
 
-#ifdef LARGE_SMB_OFF_T
    DEBUG(5,("smb_shm_register_process : writing record for pid %d at offset %.0f\n",
          (int)pid, (double)free_slot));
-#else /* LARGE_SMB_OFF_T */
-   DEBUG(5,("smb_shm_register_process : writing record for pid %d at offset %d\n",
-         (int)pid,(int)free_slot));
-#endif /* LARGE_SMB_OFF_T */
 
    sys_lseek(smb_shm_processes_fd, free_slot, SEEK_SET);
    if(write(smb_shm_processes_fd, &pid, sizeof(pid)) < 0)
@@ -411,13 +401,8 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
       if(other_pid == pid)
       {
         /* erase pid */
-#ifdef LARGE_SMB_OFF_T
         DEBUG(5,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %.0f)\n",
                      (int)other_pid, (double)seek_back));
-#else /* LARGE_SMB_OFF_T */
-        DEBUG(5,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %d)\n",
-                     (int)other_pid, (int)seek_back));
-#endif /* LARGE_SMB_OFF_T */
         other_pid = (pid_t)0;
         erased_slot = sys_lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
         if(write(smb_shm_processes_fd, &other_pid, sizeof(other_pid)) < 0)
@@ -782,12 +767,7 @@ struct shmem_ops *smb_shm_open(int ronly)
 	if (!*file_name) return(False);
 	pstrcat(file_name, "/SHARE_MEM_FILE");
    
-#ifdef LARGE_SMB_OFF_T
    DEBUG(5,("smb_shm_open : using shmem file %s to be of size %.0f\n",file_name,(double)size));
-#else /* LARGE_SMB_OFF_T */
-   DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",
-	    file_name,(int)size));
-#endif /* LARGE_SMB_OFF_T */
 
    smb_shm_fd = open(file_name, read_only?O_RDONLY:(O_RDWR|O_CREAT),
 		     SHM_FILE_MODE);
@@ -859,13 +839,8 @@ struct shmem_ops *smb_shm_open(int ronly)
    {
       /* the existing file has a different size and we are not the first opener.
 	 Since another process is still using it, we will use the file size */
-#ifdef LARGE_SMB_OFF_T
       DEBUG(0,("WARNING smb_shm_open : filesize (%.0f) != expected size (%.0f), using filesize\n",
             (double)filesize, (double)size));
-#else /* LARGE_SMB_OFF_T */
-      DEBUG(0,("WARNING smb_shm_open : filesize (%d) != expected size (%d), using filesize\n",
-            (int)filesize,(int)size));
-#endif /* LARGE_SMB_OFF_T */
 
       size = filesize;
    }

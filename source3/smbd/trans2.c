@@ -1584,11 +1584,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
   DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
   DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
-#ifdef LARGE_SMB_OFF_T
   DEBUG(6,("size: %.0f ", (double)size));
-#else /* LARGE_SMB_OFF_T */
-  DEBUG(6,("size: %x "   , (int)size));
-#endif /* LARGE_SMB_OFF_T */
   DEBUG(6,("mode: %x\n"  , mode));
 
   /* get some defaults (no modifications) if any info is zero. */
