@@ -3039,7 +3039,7 @@ static uint32 save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 	/*
 	 * When the DEVMODE is already set on the printer, don't try to unpack it.
 	 */
-	if (!printer->info_2->devmode) {
+	if (!printer->info_2->devmode && param->data_len) {
 		/*
 		 * Set devmode on printer info, so entire printer initialization can be 
 		 * saved to tdb.
