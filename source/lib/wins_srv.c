@@ -115,6 +115,7 @@ void wins_srv_alive(struct in_addr wins_ip, struct in_addr src_ip)
 			fstrcpy(src_name, inet_ntoa(src_ip));
 			DEBUG(4,("Reviving wins server %s for source %s\n", 
 				 inet_ntoa(wins_ip), src_name));
+			sys_adminlog(LOG_INFO, "Attempting to use wins server %s once more.\n", inet_ntoa(wins_ip) );
 			DLIST_REMOVE(dead_servers, d);
 			return;
 		}
@@ -143,8 +144,11 @@ void wins_srv_died(struct in_addr wins_ip, struct in_addr src_ip)
 
 	fstrcpy(src_name, inet_ntoa(src_ip));
 
-	DEBUG(4,("Marking wins server %s dead for %u seconds from source %s\n", 
-		 inet_ntoa(wins_ip), DEATH_TIME, src_name));
+	DEBUG(4,("Marking wins server %s dead for %u seconds from source %s\n",
+			inet_ntoa(wins_ip), DEATH_TIME, src_name));
+
+	sys_adminlog(LOG_ERR, "Cannot communicate with wins server %s. Setting offline for %u seconds.\n",
+			inet_ntoa(wins_ip), DEATH_TIME );
 
 	DLIST_ADD(dead_servers, d);
 }
