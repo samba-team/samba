@@ -55,7 +55,7 @@ RCSID("$Id$");
 #define DECL(X) {#X, T_##X}
 
 static struct stot{
-    char *name;
+    const char *name;
     int type;
 }stot[] = {
     DECL(A),
@@ -81,6 +81,15 @@ string_to_type(const char *name)
     return -1;
 }
 
+static const char *
+type_to_string(int type)
+{
+    struct stot *p = stot;
+    for(p = stot; p->name; p++)
+	if(type == p->type)
+	    return p->name;
+    return NULL;
+}
 
 void
 dns_free_data(struct dns_reply *r)
@@ -241,7 +250,7 @@ parse_reply(unsigned char *data, int len)
     return r;
 }
 
-static int
+static struct dns_reply *
 dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
     unsigned char reply[1024];
@@ -252,12 +261,14 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
     if (_resolve_debug) {
         old_options = _res.options;
 	_res.options |= RES_DEBUG;
-	fprintf(stderr, "dns_lookup(%s, %s)\n", domain, type_name);
+	fprintf(stderr, "dns_lookup(%s, %d, %s)\n", domain,
+		rr_class, type_to_string(rr_type));
     }
     len = res_search(domain, rr_class, rr_type, reply, sizeof(reply));
     if (_resolve_debug) {
         _res.options = old_options;
-	fprintf(stderr, "dns_lookup(%s, %s) --> %d\n", domain, type_name, len);
+	fprintf(stderr, "dns_lookup(%s, %d, %s) --> %d\n",
+		domain, rr_class, type_to_string(rr_type), len);
     }
     if (len >= 0)
 	r = parse_reply(reply, len);
@@ -295,16 +306,6 @@ dns_free_data(struct dns_reply *r)
 #endif
 
 #ifdef TEST
-static char *
-type_to_string(int type)
-{
-    struct stot *p = stot;
-    for(p = stot; p->name; p++)
-	if(type == p->type)
-	    return p->name;
-    return NULL;
-}
-
 int 
 main(int argc, char **argv)
 {
