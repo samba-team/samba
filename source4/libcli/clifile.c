@@ -494,7 +494,7 @@ NTSTATUS cli_unlock64(struct cli_tree *tree, int fnum, SMB_OFF_T offset,
 /****************************************************************************
  Do a SMBgetattrE call.
 ****************************************************************************/
-NTSTATUS cli_getattrE(struct cli_tree *tree, int fd,
+NTSTATUS cli_getattrE(struct cli_tree *tree, int fnum,
 		      uint16 *attr, size_t *size,
 		      time_t *c_time, time_t *a_time, time_t *m_time)
 {		
@@ -502,7 +502,7 @@ NTSTATUS cli_getattrE(struct cli_tree *tree, int fd,
 	NTSTATUS status;
 
 	parms.getattre.level = RAW_FILEINFO_GETATTRE;
-	parms.getattre.in.fnum = fd;
+	parms.getattre.in.fnum = fnum;
 
 	status = smb_raw_fileinfo(tree, NULL, &parms);
 
