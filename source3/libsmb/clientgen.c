@@ -713,24 +713,39 @@ BOOL cli_session_setup(struct cli_state *cli,
 		fstrcpy(ntpword, "");
 		ntpasslen=1;
 	} 
-	else if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0'))
+	else if ((passlen == 0 || passlen == 1) && (pass[0] == '\0'))
 	{
 		/* Null session connect. */
-		pword[0] = '\0';
+		pword  [0] = '\0';
 		ntpword[0] = '\0';
 	}
 	else if (passlen == 24 && ntpasslen == 24)
 	{
-		/* encrypted password send, implicit from 24-byte lengths */
-		memcpy(pword, pass, 24);
-		memcpy(ntpword, ntpass, 24);
+		if (IS_BITS_SET_ALL(cli->sec_mode, 2))
+		{
+			/* encrypted password, implicit from 24-byte lengths */
+			memcpy(pword  , pass  , 24);
+			memcpy(ntpword, ntpass, 24);
+		}
+		else
+		{
+			DEBUG(0,("cli_session_setup: encrypted passwords not supported by server\n"));
+			return False;
+		}
 	}
-	else
+	else if (ntpasslen == 0 || !IS_BITS_SET_ALL(cli->sec_mode, 2))
 	{
-		/* plain-text password send */
+		/* plain-text password: server doesn't support encrypted. */
 		fstrcpy(pword, pass);
 		fstrcpy(ntpword, "");
 		ntpasslen = 0;
+	}
+	else /* passlen != 0 && ntpasslen != 0 && server supports encryption */
+	{
+		/* plain-text password requesting to be encrypted */
+		uchar *key = (uchar *)cli->cryptkey;
+		SMBencrypt  ((uchar *)pass  , key,(uchar *)pword  );
+		SMBNTencrypt((uchar *)ntpass, key,(uchar *)ntpword);
 	}
 
 	/* send a session setup command */
