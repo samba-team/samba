@@ -132,8 +132,9 @@ struct vfs_ops skel_ops = {
 
 /* VFS initialisation - return vfs_ops function pointer structure */
 
-struct vfs_ops *vfs_init(void)
+struct vfs_ops *vfs_init(int *vfs_version)
 {
+	*vfs_version = SMB_VFS_INTERFACE_VERSION;
 	return(&skel_ops);
 }
 
