@@ -42,20 +42,31 @@ gss_krb5_get_remotekey(const gss_ctx_id_t context_handle,
     krb5_keyblock *skey;
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    krb5_auth_con_getremotesubkey(gssapi_krb5_context,
-				  context_handle->auth_context, 
-				  &skey);
-    if(skey == NULL)
-	krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
-				     context_handle->auth_context, 
-				     &skey);
-    if(skey == NULL)
-	krb5_auth_con_getkey(gssapi_krb5_context,
-			     context_handle->auth_context, 
-			     &skey);
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
-    if(skey == NULL)
-	return GSS_KRB5_S_KG_NO_SUBKEY; /* XXX */
+    if (context_handle->more_flags & ACCEPTOR_SUBKEY) {
+	if (context_handle->more_flags & LOCAL)
+	    krb5_auth_con_getremotesubkey(gssapi_krb5_context,
+					  context_handle->auth_context, 
+					  &skey);
+	else
+	    krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
+					 context_handle->auth_context, 
+					 &skey);
+    } else {
+	krb5_auth_con_getremotesubkey(gssapi_krb5_context,
+				      context_handle->auth_context, 
+				      &skey);
+	if(skey == NULL)
+	    krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
+					 context_handle->auth_context, 
+					 &skey);
+	if(skey == NULL)
+	    krb5_auth_con_getkey(gssapi_krb5_context,
+				 context_handle->auth_context, 
+				 &skey);
+	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+	if(skey == NULL)
+	    return GSS_KRB5_S_KG_NO_SUBKEY; /* XXX */
+    }
     *key = skey;
     return 0;
 }
@@ -427,14 +438,9 @@ OM_uint32 gss_unwrap
 				    conf_state, qop_state, key);
       break;
   default :
-#ifdef HAVE_GSSAPI_CFX
       ret = _gssapi_unwrap_cfx (minor_status, context_handle,
 				input_message_buffer, output_message_buffer,
 				conf_state, qop_state, key);
-#else
-      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
-      ret = GSS_S_FAILURE;
-#endif
       break;
   }
   krb5_free_keyblock (gssapi_krb5_context, key);
