@@ -303,7 +303,7 @@ doit_conn (int fd, int meta_sock, int flags,
 	return 1;
     }
 
-    sock2 = accept (sock, (struct sockaddr *)&thisaddr, &addrlen);
+    sock2 = accept (sock, (struct sockaddr *)thisaddr, &addrlen);
     if (sock2 < 0) {
 	syslog (LOG_ERR, "accept: %m");
 	return 1;
