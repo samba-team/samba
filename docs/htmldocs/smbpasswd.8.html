@@ -24,7 +24,7 @@
 <p><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
      
-<p><strong>smbpasswd</strong> [<a href="smbpasswd.8.html#minusa">-a</a>] [<a href="smbpasswd.8.html#minusd">-d</a>] [<a href="smbpasswd.8.html#minuse">-e</a>] [<a href="smbpasswd.8.html#minusD">-D debug level</a>] [<a href="smbpasswd.8.html#minusn">-n</a>] [<a href="smbpasswd.8.html#minusr">-r remote_machine</a>] [<a href="smbpasswd.8.html#minusR">-R name resolve order</a>] [<a href="smbpasswd.8.html#minusm">-m</a>] [<a href="smbpasswd.8.html#minusj">-j DOMAIN</a>] [<a href="smbpasswd.8.html#minusU">-U username</a>] [<a href="smbpasswd.8.html#minush">-h</a>] [<a href="smbpasswd.8.html#minuss">-s</a>] <a href="smbpasswd.8.html#username">username</a>
+<p><strong>smbpasswd</strong> [<a href="smbpasswd.8.html#minusa">-a</a>] [<a href="smbpasswd.8.html#minusx">-x</a>] [<a href="smbpasswd.8.html#minusd">-d</a>] [<a href="smbpasswd.8.html#minuse">-e</a>] [<a href="smbpasswd.8.html#minusD">-D debug level</a>] [<a href="smbpasswd.8.html#minusn">-n</a>] [<a href="smbpasswd.8.html#minusr">-r remote_machine</a>] [<a href="smbpasswd.8.html#minusR">-R name resolve order</a>] [<a href="smbpasswd.8.html#minusm">-m</a>] [<a href="smbpasswd.8.html#minusj">-j DOMAIN</a>] [<a href="smbpasswd.8.html#minusU">-U username</a>] [<a href="smbpasswd.8.html#minush">-h</a>] [<a href="smbpasswd.8.html#minuss">-s</a>] <a href="smbpasswd.8.html#username">username</a>
 <p><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -72,6 +72,11 @@ option is ignored if the username following already exists in the
 regular change password command. Note that the user to be added
 <strong>must</strong> already exist in the system password file (usually /etc/passwd)
 else the request to add the user will fail.
+<p>This option is only available when running <strong>smbpasswd</strong> as
+root.
+<p><a name="minusx"></a>
+<p></p><dt><strong><strong>-x</strong></strong><dd> This option specifies that the username following should
+be deleted from the local <a href="smbpasswd.5.html"><strong>smbpasswd</strong></a> file.
 <p>This option is only available when running <strong>smbpasswd</strong> as
 root.
 <p><a name="minusd"></a>

@@ -5,7 +5,7 @@ smbpasswd \- change a users SMB password
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbpasswd\fP [-a] [-d] [-e] [-D debug level] [-n] [-r remote_machine] [-R name resolve order] [-m] [-j DOMAIN] [-U username] [-h] [-s] username
+\fBsmbpasswd\fP [-a] [-x] [-d] [-e] [-D debug level] [-n] [-r remote_machine] [-R name resolve order] [-m] [-j DOMAIN] [-U username] [-h] [-s] username
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -58,6 +58,13 @@ option is ignored if the username following already exists in the
 regular change password command\&. Note that the user to be added
 \fBmust\fP already exist in the system password file (usually /etc/passwd)
 else the request to add the user will fail\&.
+.IP 
+This option is only available when running \fBsmbpasswd\fP as
+root\&.
+.IP 
+.IP "\fB-x\fP" 
+This option specifies that the username following should
+be deleted from the local \fBsmbpasswd\fP file\&.
 .IP 
 This option is only available when running \fBsmbpasswd\fP as
 root\&.
