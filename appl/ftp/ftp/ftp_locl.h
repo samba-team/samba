@@ -5,6 +5,8 @@
 #include <config.h>
 #endif
 
+#include <protos.h>
+
 #include <sys/bitypes.h>
 #include <sys/cdefs.h>
 
