@@ -1069,8 +1069,8 @@ int msrpc_main(int argc,char *argv[]);
 /*The following definitions come from  msrpc/msrpcd_process.c  */
 
 BOOL get_user_creds(int c, struct user_creds *usr);
-BOOL msrpcd_init(int c, pipes_struct *p);
-void msrpcd_process(int c, pipes_struct *p);
+BOOL msrpcd_init(int c, msrpc_pipes_struct *p);
+void msrpcd_process(int c, msrpc_pipes_struct *p);
 
 /*The following definitions come from  netlogond/netlogond.c  */
 
@@ -3781,7 +3781,6 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 			      connection_struct *conn, uint16 vuid);
 BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority);
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
-void rpcsrv_free_temp(rpcsrv_struct *l);
 BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
 pipes_struct *get_rpc_pipe(int pnum);

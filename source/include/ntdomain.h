@@ -133,6 +133,17 @@ typedef struct rpcsrv_struct
 
 } rpcsrv_struct;
 
+typedef struct msrpc_pipes_struct
+{
+	uint16 vuid;
+	fstring name;
+	fstring pipe_srv_name;
+
+	/* local, server-side rpc state processing */
+	rpcsrv_struct *l;
+
+} msrpc_pipes_struct;
+
 typedef struct pipes_struct
 {
 	struct pipes_struct *next, *prev;
@@ -147,9 +158,6 @@ typedef struct pipes_struct
 
 	/* remote, server-side rpc redirection */
 	struct msrpc_state *m;
-
-	/* local, server-side rpc state processing */
-	rpcsrv_struct *l;
 
 } pipes_struct;
 

@@ -43,6 +43,20 @@
 
 extern int DEBUGLEVEL;
 
+/*******************************************************************
+ frees all temporary data used in construction of pdu
+ ********************************************************************/
+static void rpcsrv_free_temp(rpcsrv_struct *l)
+{
+	prs_free_data(&l->data_i);		
+
+	prs_free_data(&l->rhdr );
+	prs_free_data(&l->rfault );
+	prs_free_data(&l->rauth  );
+	prs_free_data(&l->rverf  );
+	prs_free_data(&l->rntlm  );		
+}
+
 static void NTLMSSPcalc_p( rpcsrv_struct *p, unsigned char *data, int len)
 {
     unsigned char *hash = p->ntlmssp_hash;
@@ -298,13 +312,11 @@ static BOOL api_pipe_ntlmssp_verify(rpcsrv_struct *l)
 	else
 	{
 		DEBUG(5,("user: %s domain: %s wks: %s\n", l->user_name, l->domain, l->wks));
-		become_root(False);
 		l->ntlmssp_validated = check_domain_security(l->user_name, l->domain,
 				      (uchar*)l->ntlmssp_chal.challenge,
 				      lm_owf, lm_owf_len,
 				      nt_owf, nt_owf_len,
 				      l->user_sess_key) == 0x0;
-		unbecome_root(False);
 	}
 
 	if (l->ntlmssp_validated && pwd != NULL)

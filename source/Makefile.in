@@ -139,9 +139,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/passchange.o 
 
-RPC_SRVUTIL_OBJ = \
-		rpc_server/srv_pipe_hnd.o \
-		rpc_server/srv_pipe_srv.o 
+RPC_SRVUTIL_OBJ = rpc_server/srv_pipe_srv.o 
 
 RPC_SERVER_OBJ = \
 		rpc_server/srv_pipe_hnd.o \

@@ -322,7 +322,6 @@ static void init_structs(void)
 #if 0
 	conn_init();
 #endif
-	init_rpc_pipe_hnd(); /* for RPC pipes */
 	if (!init_policy_hnd(MAX_SERVER_POLICY_HANDLES)) 
 	{
 		exit_server("could not allocate policy handles\n");
@@ -363,7 +362,7 @@ int msrpc_main(int argc,char *argv[])
 	int opt;
 	extern char *optarg;
 	int ClientMSRPC = -1;
-	pipes_struct static_pipe;
+	msrpc_pipes_struct p;
 	
 	pstrcpy(remote_machine, pipe_name);
 
@@ -551,12 +550,12 @@ int msrpc_main(int argc,char *argv[])
 	msrpc_service_init(argv[0]);
 	dbgflush();
 
-	ZERO_STRUCT(static_pipe);
-	fstrcpy(static_pipe.name, pipe_name);
-	if (msrpcd_init(ClientMSRPC, &static_pipe))
+	ZERO_STRUCT(p);
+	fstrcpy(p.name, pipe_name);
+	if (msrpcd_init(ClientMSRPC, &p))
 	{
 		reload_services(True);
-		msrpcd_process(ClientMSRPC, &static_pipe);
+		msrpcd_process(ClientMSRPC, &p);
 	}
 	if (ClientMSRPC != -1)
 	{

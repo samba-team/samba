@@ -142,7 +142,7 @@ static prs_struct pdu;
   process an smb from the client - split out from the process() code so
   it can be used by the oplock break code.
 ****************************************************************************/
-static void process_msrpc(pipes_struct *p, int c)
+static void process_msrpc(msrpc_pipes_struct *p, int c)
 {
   static int trans_num;
   int32 len = prs_buf_len(&pdu);
@@ -319,7 +319,7 @@ BOOL get_user_creds(int c, struct user_creds *usr)
 /****************************************************************************
   initialise from pipe
 ****************************************************************************/
-BOOL msrpcd_init(int c, pipes_struct *p)
+BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 {
 	struct user_creds usr;
 	gid_t *groups = NULL;
@@ -393,7 +393,7 @@ BOOL msrpcd_init(int c, pipes_struct *p)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-void msrpcd_process(int c, pipes_struct *p)
+void msrpcd_process(int c, msrpc_pipes_struct *p)
 {
   max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 

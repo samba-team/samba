@@ -84,7 +84,6 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	pipes_struct *p;
 	static int next_pipe;
 	struct msrpc_state *m = NULL;
-	struct rpcsrv_struct *l = NULL;
 	user_struct *vuser = get_valid_user_struct(vuid);
 	struct user_creds usr;
 
@@ -123,7 +122,8 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	i = bitmap_find(bmap, next_pipe);
 
-	if (i == -1) {
+	if (i == -1)
+	{
 		DEBUG(0,("ERROR! Out of pipe structures\n"));
 		return NULL;
 	}
@@ -144,32 +144,6 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		DEBUG(5,("open pipes: msrpc redirect failed\n"));
 		return NULL;
 	}
-#if 0
-	}
-	else
-	{
-		l = malloc(sizeof(*l));
-		if (l == NULL)
-		{
-			DEBUG(5,("open pipes: local msrpc malloc failed\n"));
-			return NULL;
-		}
-		ZERO_STRUCTP(l);
-		l->rhdr.data  = NULL;
-		l->rdata.data = NULL;
-		l->rhdr.offset  = 0;
-		l->rdata.offset = 0;
-		
-		prs_init(&l->smb_pdu, 0, 4, True);
-		prs_init(&l->rsmb_pdu, 0, 4, False);
-
-		l->ntlmssp_validated = False;
-		l->ntlmssp_auth      = False;
-
-		memcpy(l->user_sess_key, vuser->user_sess_key,
-		       sizeof(l->user_sess_key));
-	}
-#endif
 
 	p = (pipes_struct *)malloc(sizeof(*p));
 	if (!p) return NULL;
@@ -184,7 +158,6 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	p->pnum = i;
 	p->m = m;
-	p->l = l;
 
 	p->open = True;
 	p->device_state = 0;
@@ -254,20 +227,6 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state)
 	return False;
 }
 
-/*******************************************************************
- frees all temporary data used in construction of pdu
- ********************************************************************/
-void rpcsrv_free_temp(rpcsrv_struct *l)
-{
-	prs_free_data(&l->data_i);		
-
-	prs_free_data(&l->rhdr );
-	prs_free_data(&l->rfault );
-	prs_free_data(&l->rauth  );
-	prs_free_data(&l->rverf  );
-	prs_free_data(&l->rntlm  );		
-}
-
 /****************************************************************************
   close an rpc pipe
 ****************************************************************************/
@@ -298,19 +257,6 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 		{
 			DEBUG(4,("FAILED\n"));
 		}
-	}
-
-	if (p->l != NULL)
-	{
-		DEBUG(4,("closed msrpc local: OK\n"));
-
-		prs_free_data(&p->l->rdata);
-		rpcsrv_free_temp(p->l);
-
-		prs_free_data(&p->l->smb_pdu );
-		prs_free_data(&p->l->rsmb_pdu);
-
-		free(p->l);
 	}
 
 	ZERO_STRUCTP(p);
