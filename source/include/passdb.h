@@ -32,7 +32,7 @@
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 2
+#define PASSDB_INTERFACE_VERSION 3
 
 /* use this inside a passdb module */
 #define PDB_MODULE_VERSIONING_MAGIC \

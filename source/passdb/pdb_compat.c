@@ -48,7 +48,7 @@ uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
 	return (0);
 }
 
-BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid)
+BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid, enum pdb_value_state flag)
 {
 	DOM_SID u_sid;
 	const DOM_SID *global_sam_sid;
@@ -66,7 +66,7 @@ BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid)
 	if (!sid_append_rid(&u_sid, rid))
 		return False;
 
-	if (!pdb_set_user_sid(sampass, &u_sid))
+	if (!pdb_set_user_sid(sampass, &u_sid, flag))
 		return False;
 
 	DEBUG(10, ("pdb_set_user_sid_from_rid:\n\tsetting user sid %s from rid %d\n", 
@@ -75,7 +75,7 @@ BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid)
 	return True;
 }
 
-BOOL pdb_set_group_sid_from_rid (SAM_ACCOUNT *sampass, uint32 grid)
+BOOL pdb_set_group_sid_from_rid (SAM_ACCOUNT *sampass, uint32 grid, enum pdb_value_state flag)
 {
 	DOM_SID g_sid;
 	const DOM_SID *global_sam_sid;
@@ -93,7 +93,7 @@ BOOL pdb_set_group_sid_from_rid (SAM_ACCOUNT *sampass, uint32 grid)
 	if (!sid_append_rid(&g_sid, grid))
 		return False;
 
-	if (!pdb_set_group_sid(sampass, &g_sid))
+	if (!pdb_set_group_sid(sampass, &g_sid, flag))
 		return False;
 
 	DEBUG(10, ("pdb_set_group_sid_from_rid:\n\tsetting group sid %s from rid %d\n", 

@@ -45,7 +45,6 @@ static void pdb_fill_default_sam(SAM_ACCOUNT *user)
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
 
-	user->private.init_flag		    = FLAG_SAM_UNINIT;
 	user->private.uid = user->private.gid	    = -1;
 
 	user->private.logon_time            = (time_t)0;
@@ -177,15 +176,15 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 
 	pdb_fill_default_sam(sam_account);
 
-	pdb_set_username(sam_account, pwd->pw_name);
-	pdb_set_fullname(sam_account, pwd->pw_gecos);
+	pdb_set_username(sam_account, pwd->pw_name, PDB_SET);
+	pdb_set_fullname(sam_account, pwd->pw_gecos, PDB_SET);
 
-	pdb_set_unix_homedir(sam_account, pwd->pw_dir);
+	pdb_set_unix_homedir(sam_account, pwd->pw_dir, PDB_SET);
 
-	pdb_set_domain (sam_account, lp_workgroup());
+	pdb_set_domain (sam_account, lp_workgroup(), PDB_DEFAULT);
 
-	pdb_set_uid(sam_account, pwd->pw_uid);
-	pdb_set_gid(sam_account, pwd->pw_gid);
+	pdb_set_uid(sam_account, pwd->pw_uid, PDB_SET);
+	pdb_set_gid(sam_account, pwd->pw_gid, PDB_SET);
 	
 	/* When we get a proper uid -> SID and SID -> uid allocation
 	   mechinism, we should call it here.  
@@ -200,29 +199,29 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 
 	/* Ensure this *must* be set right */
 	if (strcmp(pwd->pw_name, guest_account) == 0) {
-		if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST)) {
+		if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		if (!pdb_set_group_sid_from_rid(sam_account, DOMAIN_GROUP_RID_GUESTS)) {
+		if (!pdb_set_group_sid_from_rid(sam_account, DOMAIN_GROUP_RID_GUESTS, PDB_DEFAULT)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else {
 
 		if (!pdb_set_user_sid_from_rid(sam_account, 
-					       fallback_pdb_uid_to_user_rid(pwd->pw_uid))) {
+					       fallback_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
 			DEBUG(0,("Can't set User SID from RID!\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
 		/* call the mapping code here */
 		if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
-			if (!pdb_set_group_sid(sam_account,&map.sid)){
+			if (!pdb_set_group_sid(sam_account,&map.sid, PDB_SET)){
 				DEBUG(0,("Can't set Group SID!\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 		} 
 		else {
-			if (!pdb_set_group_sid_from_rid(sam_account,pdb_gid_to_group_rid(pwd->pw_gid))) {
+			if (!pdb_set_group_sid_from_rid(sam_account,pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
 				DEBUG(0,("Can't set Group SID\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 			}
@@ -237,34 +236,34 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 							    lp_logon_path(), 
 							    pwd->pw_name, global_myname, 
 							    pwd->pw_uid, pwd->pw_gid), 
-				     False);
+				     PDB_DEFAULT);
 		
 		pdb_set_homedir(sam_account, 
 				talloc_sub_specified((sam_account)->mem_ctx, 
 						       lp_logon_home(),
 						       pwd->pw_name, global_myname, 
 						       pwd->pw_uid, pwd->pw_gid),
-				False);
+				PDB_DEFAULT);
 		
 		pdb_set_dir_drive(sam_account, 
 				  talloc_sub_specified((sam_account)->mem_ctx, 
 							 lp_logon_drive(),
 							 pwd->pw_name, global_myname, 
 							 pwd->pw_uid, pwd->pw_gid),
-				  False);
+				  PDB_DEFAULT);
 		
 		pdb_set_logon_script(sam_account, 
 				     talloc_sub_specified((sam_account)->mem_ctx, 
 							    lp_logon_script(),
 							    pwd->pw_name, global_myname, 
 							    pwd->pw_uid, pwd->pw_gid), 
-				     False);
-		if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL)) {
+				     PDB_DEFAULT);
+		if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL, PDB_DEFAULT)) {
 			DEBUG(1, ("Failed to set 'normal account' flags for user %s.\n", pwd->pw_name));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else {
-		if (!pdb_set_acct_ctrl(sam_account, ACB_WSTRUST)) {
+		if (!pdb_set_acct_ctrl(sam_account, ACB_WSTRUST, PDB_DEFAULT)) {
 			DEBUG(1, ("Failed to set 'trusted workstation account' flags for user %s.\n", pwd->pw_name));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -842,7 +841,7 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	
 	if (pdb_getsampwsid(sam_user, psid)) {
 		
-		if (!(pdb_get_init_flag(sam_user) & FLAG_SAM_UID)) { 
+		if (!IS_SAM_SET(sam_user,PDB_UID)&&!IS_SAM_CHANGED(sam_user,PDB_UID)) {
 			pdb_free_sam(&sam_user);
 			return False;
 		}
@@ -1037,7 +1036,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 				return False;
 			}
 
-	        	if (!pdb_set_username(sam_pass, user_name)) {
+	        	if (!pdb_set_username(sam_pass, user_name, PDB_CHANGED)) {
 	                	slprintf(err_str, err_str_len - 1, "Failed to set username for user %s.\n", user_name);
 	               	 	pdb_free_sam(&sam_pass);
 	               	 	return False;
@@ -1051,19 +1050,19 @@ BOOL local_password_change(const char *user_name, int local_flags,
 	/* the 'other' acb bits not being changed here */
 	other_acb =  (pdb_get_acct_ctrl(sam_pass) & (!(ACB_WSTRUST|ACB_DOMTRUST|ACB_SVRTRUST|ACB_NORMAL)));
 	if (local_flags & LOCAL_TRUST_ACCOUNT) {
-		if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST | other_acb) ) {
+		if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST | other_acb, PDB_CHANGED) ) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;
 		}
 	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
-		if (!pdb_set_acct_ctrl(sam_pass, ACB_DOMTRUST | other_acb)) {
+		if (!pdb_set_acct_ctrl(sam_pass, ACB_DOMTRUST | other_acb, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'domain trust account' flags for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;
 		}
 	} else {
-		if (!pdb_set_acct_ctrl(sam_pass, ACB_NORMAL | other_acb)) {
+		if (!pdb_set_acct_ctrl(sam_pass, ACB_NORMAL | other_acb, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'normal account' flags for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;
@@ -1076,13 +1075,13 @@ BOOL local_password_change(const char *user_name, int local_flags,
 	 */
 
 	if (local_flags & LOCAL_DISABLE_USER) {
-		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED)) {
+		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'disabled' flag for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;
 		}
 	} else if (local_flags & LOCAL_ENABLE_USER) {
-		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED))) {
+		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to unset 'disabled' flag for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;
@@ -1090,7 +1089,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 	}
 	
 	if (local_flags & LOCAL_SET_NO_PASSWORD) {
-		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ)) {
+		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'no password required' flag for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;
@@ -1106,13 +1105,13 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		 * don't create them disabled). JRA.
 		 */
 		if ((pdb_get_lanman_passwd(sam_pass)==NULL) && (pdb_get_acct_ctrl(sam_pass)&ACB_DISABLED)) {
-			if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED))) {
+			if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
 				slprintf(err_str, err_str_len-1, "Failed to unset 'disabled' flag for user %s.\n", user_name);
 				pdb_free_sam(&sam_pass);
 				return False;
 			}
 		}
-		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ))) {
+		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ), PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to unset 'no password required' flag for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;

@@ -60,6 +60,30 @@ void bitmap_free(struct bitmap *bm)
 }
 
 /****************************************************************************
+talloc a bitmap
+****************************************************************************/
+struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
+{
+	struct bitmap *bm;
+
+	if (!mem_ctx) return NULL;
+
+	bm = (struct bitmap *)talloc(mem_ctx, sizeof(*bm));
+
+	if (!bm) return NULL;
+	
+	bm->n = n;
+	bm->b = (uint32 *)talloc(mem_ctx, sizeof(bm->b[0])*(n+31)/32);
+	if (!bm->b) {
+		return NULL;
+	}
+
+	memset(bm->b, 0, sizeof(bm->b[0])*(n+31)/32);
+
+	return bm;
+}
+
+/****************************************************************************
 set a bit in a bitmap
 ****************************************************************************/
 BOOL bitmap_set(struct bitmap *bm, unsigned i)

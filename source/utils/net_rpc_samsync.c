@@ -199,62 +199,62 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 	   desc, workstations, profile. */
 
 	unistr2_to_ascii(s, &delta->uni_acct_name, sizeof(s) - 1);
-	pdb_set_nt_username(account, s);
+	pdb_set_nt_username(account, s, PDB_CHANGED);
 
 	/* Unix username is the same - for sainity */
-	pdb_set_username(account, s);
+	pdb_set_username(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_full_name, sizeof(s) - 1);
-	pdb_set_fullname(account, s);
+	pdb_set_fullname(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_home_dir, sizeof(s) - 1);
-	pdb_set_homedir(account, s, True);
+	pdb_set_homedir(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_dir_drive, sizeof(s) - 1);
-	pdb_set_dir_drive(account, s, True);
+	pdb_set_dir_drive(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_logon_script, sizeof(s) - 1);
-	pdb_set_logon_script(account, s, True);
+	pdb_set_logon_script(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_acct_desc, sizeof(s) - 1);
-	pdb_set_acct_desc(account, s);
+	pdb_set_acct_desc(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_workstations, sizeof(s) - 1);
-	pdb_set_workstations(account, s);
+	pdb_set_workstations(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_profile, sizeof(s) - 1);
-	pdb_set_profile_path(account, s, True);
+	pdb_set_profile_path(account, s, PDB_CHANGED);
 
 	/* User and group sid */
 
-	pdb_set_user_sid_from_rid(account, delta->user_rid);
-	pdb_set_group_sid_from_rid(account, delta->group_rid);
+	pdb_set_user_sid_from_rid(account, delta->user_rid, PDB_CHANGED);
+	pdb_set_group_sid_from_rid(account, delta->group_rid, PDB_CHANGED);
 
 	/* Logon and password information */
 
-	pdb_set_logon_time(account, nt_time_to_unix(&delta->logon_time), True);
+	pdb_set_logon_time(account, nt_time_to_unix(&delta->logon_time), PDB_CHANGED);
 	pdb_set_logoff_time(account, nt_time_to_unix(&delta->logoff_time),
-			    True);
-	pdb_set_logon_divs(account, delta->logon_divs);
+			    PDB_CHANGED);
+	pdb_set_logon_divs(account, delta->logon_divs, PDB_CHANGED);
 
 	/* TODO: logon hours */
 	/* TODO: bad password count */
 	/* TODO: logon count */
 
 	pdb_set_pass_last_set_time(
-		account, nt_time_to_unix(&delta->pwd_last_set_time));
+		account, nt_time_to_unix(&delta->pwd_last_set_time), PDB_CHANGED);
 
-	pdb_set_kickoff_time(account, get_time_t_max(), True);
+	pdb_set_kickoff_time(account, get_time_t_max(), PDB_CHANGED);
 
 	/* Decode hashes from password hash */
 	sam_pwd_hash(delta->user_rid, delta->pass.buf_lm_pwd, lm_passwd, 0);
 	sam_pwd_hash(delta->user_rid, delta->pass.buf_nt_pwd, nt_passwd, 0);
-	pdb_set_nt_passwd(account, nt_passwd);
-	pdb_set_lanman_passwd(account, lm_passwd);
+	pdb_set_nt_passwd(account, nt_passwd, PDB_CHANGED);
+	pdb_set_lanman_passwd(account, lm_passwd, PDB_CHANGED);
 
 	/* TODO: account expiry time */
 
-	pdb_set_acct_ctrl(account, delta->acb_info);
+	pdb_set_acct_ctrl(account, delta->acb_info, PDB_CHANGED);
 	return NT_STATUS_OK;
 }
 
