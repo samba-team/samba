@@ -1820,15 +1820,18 @@ sub ParseFunctionElementPull($$)
 			pidl "NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_$e->{NAME}));";
 			pidl "r->$inout.$e->{NAME} = NULL;";
 			pidl "if (_ptr_$e->{NAME}) {";
+			indent;
 		} elsif ($inout eq "out" && util::has_property($e, "ref")) {
 			pidl "if (r->$inout.$e->{NAME}) {";
-		} else {
-			pidl "{";
+			indent;
 		}
-		indent;
+
 		ParseArrayPull($e, "ndr", "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
-		deindent;
-		pidl "}";
+
+		if (need_wire_pointer($e) or ($inout eq "out" and util::has_property($e, "ref"))) {
+			deindent;
+			pidl "}";
+		}
 	} else {
 		if ($inout eq "out" && util::has_property($e, "ref")) {
 			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
