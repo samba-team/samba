@@ -71,10 +71,18 @@ static krb5_error_code create_keytab(krb5_context context,
 
 		entry.principal = host_princ;
 		entry.vno       = kvno;
-		/* this will have to be detected in configure...heimdal
-		   calls it keyblock, MIT calls it key, but it does not
-		   matter we are creating keytabs with MIT */
-		entry.keyblock  = *key;
+
+#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
+#error krb5_keytab_entry has no key or keyblock member
+#endif
+
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY /* MIT */
+		entry.key = *key; 
+#endif
+
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK /* Heimdal */
+		entry.keyblock = *key;
+#endif
 
 		DEBUG(10,("adding keytab-entry for (%s) with encryption type (%d)\n",
 				host_princ_s, enctypes[i]));
