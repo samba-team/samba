@@ -342,6 +342,9 @@ static BOOL cgi_handle_authorization(char *line)
 			 * Password was ok.
 			 */
 			
+			if ( initgroups(pass->pw_name, pass->pw_gid) != 0 )
+				goto err;
+
 			become_user_permanently(pass->pw_uid, pass->pw_gid);
 			
 			/* Save the users name */
