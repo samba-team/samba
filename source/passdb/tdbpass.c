@@ -89,10 +89,10 @@ static struct tdb_enum_info tdb_ent;
 static void *startsamtdbpwent(BOOL update)
 {
   /* Open tdb passwd */
-  if (!(tdb_ent.passwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, update ? O_RDWR : O_RDONLY, 0600)))
+  if (!(tdb_ent.passwd_tdb = tdb_open_log(lp_tdb_passwd_file(), 0, 0, update ? O_RDWR : O_RDONLY, 0600)))
   {
      DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
-     if (!(tdb_ent.passwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
+     if (!(tdb_ent.passwd_tdb = tdb_open_log(lp_tdb_passwd_file(), 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
      {
          DEBUG(0, ("Unable to creat TDB passwd (smbpasswd.tdb) !!!"));
 	 return NULL;
@@ -177,7 +177,7 @@ static BOOL del_samtdbpwd_entry(const char *name)
   TDB_DATA key;
   fstring keystr;
 
-  if (!(pwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR, 0600)))
+  if (!(pwd_tdb = tdb_open_log(lp_tdb_passwd_file(), 0, 0, O_RDWR, 0600)))
   {
      DEBUG(0, ("Unable to open TDB passwd!"));
      return False;
@@ -217,7 +217,7 @@ static BOOL mod_samtdb21pwd_entry(struct sam_passwd* newpwd, BOOL override)
   int unknown_str_len = (newpwd->unknown_str) ? (strlen (newpwd->unknown_str) + 1) : 0;
   int munged_dial_len = (newpwd->munged_dial) ? (strlen (newpwd->munged_dial) + 1) : 0;
   
-  if (!(pwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR, 0600)))
+  if (!(pwd_tdb = tdb_open_log(lp_tdb_passwd_file(), 0, 0, O_RDWR, 0600)))
   {
      DEBUG(0, ("Unable to open TDB passwd!"));
      return False;
@@ -328,7 +328,7 @@ static BOOL add_samtdb21pwd_entry(struct sam_passwd *newpwd)
   int unknown_str_len = (newpwd->unknown_str) ? (strlen (newpwd->unknown_str) + 1) : 1;
   int munged_dial_len = (newpwd->munged_dial) ? (strlen (newpwd->munged_dial) + 1) : 1;
   
-  if (!(pwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR, 0600)))
+  if (!(pwd_tdb = tdb_open_log(lp_tdb_passwd_file(), 0, 0, O_RDWR, 0600)))
   {
      DEBUG(0, ("Unable to open TDB passwd!"));
      return False;
@@ -456,7 +456,7 @@ static struct sam_passwd *getsamtdb21pwnam(char *name)
   TDB_DATA key;
   fstring keystr;
 
-  if (!(pwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDONLY, 0600)))
+  if (!(pwd_tdb = tdb_open_log(lp_tdb_passwd_file(), 0, 0, O_RDONLY, 0600)))
   {
      DEBUG(0, ("Unable to open TDB passwd!"));
      return False;

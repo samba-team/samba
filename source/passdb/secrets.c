@@ -41,7 +41,7 @@ BOOL secrets_init(void)
 	*p = 0;
 	pstrcat(fname,"/secrets.tdb");
 
-	tdb = tdb_open(fname, 0, 0, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(fname, 0, 0, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));

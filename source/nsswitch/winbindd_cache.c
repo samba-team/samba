@@ -39,7 +39,7 @@ void winbindd_cache_init(void)
 {
 	/* Open tdb cache */
 	unlink(lock_path("winbindd_cache.tdb"));
-	if (!(cache_tdb = tdb_open(lock_path("winbindd_cache.tdb"), 0, 
+	if (!(cache_tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 0, 
 				   TDB_NOLOCK,
 				   O_RDWR | O_CREAT, 0600))) {
 		DEBUG(0, ("Unable to open tdb cache - user and group caching "

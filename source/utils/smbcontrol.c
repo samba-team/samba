@@ -127,7 +127,7 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 	pid_t pid;
 	TDB_CONTEXT *the_tdb;
 
-	the_tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
+	the_tdb = tdb_open_log(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
 	if (!the_tdb) {
 		fprintf(stderr,"Failed to open connections database in send_message.\n");
 		return False;
