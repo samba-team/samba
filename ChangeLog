@@ -19,6 +19,9 @@
 	* lib/asn1/der.h (decode_unsigned, encode_unsigned,
 	length_unsigned): add prototypes
 
+	* lib/asn1/k5.asn1: update pre-authentication types
+	* lib/krb5/krb5_err.et: add some error codes from pkinit
+
 2000-04-05  Assar Westerlund  <assar@sics.se>
 
 	* lib/hdb/hdb.c: add support for hdb methods (aka back-ends).
