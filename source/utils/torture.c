@@ -310,6 +310,8 @@ static void run_netbench(void)
 		printf("."); fflush(stdout);
 	}
 
+	printf("+"); fflush(stdout);
+
 	for (i=0;i<numops;i++) {
 		slprintf(fname, sizeof(fname) - 1, "\\%03d%05d.doc", i, pid);
 		cli_unlink(&cli, fname);
