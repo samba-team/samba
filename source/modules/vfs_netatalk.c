@@ -148,7 +148,7 @@ static void atalk_add_to_list(name_compare_entry **list)
 static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 {
 	char *dpath;
-	struct dirent *dent = 0;
+	SMB_STRUCT_DIRENT *dent = 0;
 	DIR *dir;
 
 	if (!path) return;
@@ -156,7 +156,7 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 	dir = opendir(path);
 	if (!dir) return;
 
-	while (NULL != (dent = readdir(dir))) {
+	while (NULL != (dent = sys_readdir(dir))) {
 		if (strcmp(dent->d_name, ".") == 0 ||
 		    strcmp(dent->d_name, "..") == 0)
 			continue;
