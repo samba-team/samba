@@ -2593,7 +2593,7 @@ static char **remote_completion(const char *text, int len)
 	if (len >= PATH_MAX)
 		return(NULL);
 
-	info.matches = (char **)malloc(sizeof(info.matches[0])*MAX_COMPLETIONS);
+	info.matches = malloc_array_p(char *, MAX_COMPLETIONS);
 	if (!info.matches) return NULL;
 	info.matches[0] = NULL;
 
@@ -2673,7 +2673,7 @@ static char **completion_fn(const char *text, int start, int end)
 		char **matches;
 		int i, len, samelen = 0, count=1;
 
-		matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+		matches = malloc_array_p(char *, MAX_COMPLETIONS);
 		if (!matches) return NULL;
 		matches[0] = NULL;
 

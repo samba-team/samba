@@ -33,7 +33,7 @@ struct sys_grent * getgrent_list(void)
 	struct sys_grent *gent;
 	struct group *grp;
 	
-	gent = (struct sys_grent *) malloc(sizeof(struct sys_grent));
+	gent = malloc_p(struct sys_grent);
 	if (gent == NULL) {
 		DEBUG (0, ("Out of memory in getgrent_list!\n"));
 		return NULL;
@@ -67,7 +67,7 @@ struct sys_grent * getgrent_list(void)
 			;
 		
 		/* alloc space for gr_mem string pointers */
-		if ((gent->gr_mem = (char **) malloc((num+1) * sizeof(char *))) == NULL)
+		if ((gent->gr_mem = malloc_array_p(char *, num+1)) == NULL)
 			goto err;
 
 		memset(gent->gr_mem, '\0', (num+1) * sizeof(char *));
@@ -80,7 +80,7 @@ struct sys_grent * getgrent_list(void)
 		
 		grp = getgrent();
 		if (grp) {
-			gent->next = (struct sys_grent *) malloc(sizeof(struct sys_grent));
+			gent->next = malloc_p(struct sys_grent);
 			if (gent->next == NULL)
 				goto err;
 			gent = gent->next;
@@ -134,7 +134,7 @@ struct sys_pwent * getpwent_list(void)
 	struct sys_pwent *pent;
 	struct passwd *pwd;
 	
-	pent = (struct sys_pwent *) malloc(sizeof(struct sys_pwent));
+	pent = malloc_p(struct sys_pwent);
 	if (pent == NULL) {
 		DEBUG (0, ("Out of memory in getpwent_list!\n"));
 		return NULL;
@@ -170,7 +170,7 @@ struct sys_pwent * getpwent_list(void)
 
 		pwd = getpwent();
 		if (pwd) {
-			pent->next = (struct sys_pwent *) malloc(sizeof(struct sys_pwent));
+			pent->next = malloc_p(struct sys_pwent);
 			if (pent->next == NULL)
 				goto err;
 			pent = pent->next;
@@ -223,7 +223,7 @@ static struct sys_userlist *add_members_to_userlist(struct sys_userlist *list_he
 		;
 
 	for (i = 0; i < num_users; i++) {
-		struct sys_userlist *entry = (struct sys_userlist *)malloc(sizeof(*entry));
+		struct sys_userlist *entry = malloc_p(struct sys_userlist);
 		if (entry == NULL) {
 			free_userlist(list_head);
 			return NULL;

@@ -253,8 +253,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		time_t t;
 		unsigned i;
 
-		v = (char*)malloc(sizeof(char) * 
-				  (databuf.dsize - TIMEOUT_LEN));
+		v = malloc_array_p(char, databuf.dsize - TIMEOUT_LEN);
 				
 		SAFE_FREE(databuf.dptr);
 		sscanf(entry_buf, CACHE_DATA_FMT, (int*)&i, v);
@@ -338,7 +337,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		}
 		entry = strndup(databuf.dptr, databuf.dsize);
 		SAFE_FREE(databuf.dptr);
-		valstr = (char*)malloc(sizeof(char) * (databuf.dsize - TIMEOUT_LEN));
+		valstr = malloc_array_p(char, databuf.dsize - TIMEOUT_LEN);
 		sscanf(entry, CACHE_DATA_FMT, (int*)(&i), valstr);
 		timeout = i;
 		

@@ -168,7 +168,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 		goto done;
 	}
 
-	r->out.buffer = (DATA_BLOB *)talloc(mem_ctx, sizeof(DATA_BLOB));
+	r->out.buffer = talloc_p(mem_ctx, DATA_BLOB);
 
 	if (!r->out.buffer) {
 		result = WERR_NOMEM;

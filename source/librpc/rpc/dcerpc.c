@@ -541,7 +541,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	pkt.u.bind.max_recv_frag = 5840;
 	pkt.u.bind.assoc_group_id = 0;
 	pkt.u.bind.num_contexts = 1;
-	pkt.u.bind.ctx_list = talloc(mem_ctx, sizeof(pkt.u.bind.ctx_list[0]));
+	pkt.u.bind.ctx_list = talloc_p(mem_ctx, struct dcerpc_ctx_list);
 	if (!pkt.u.bind.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -620,7 +620,7 @@ NTSTATUS dcerpc_alter(struct dcerpc_pipe *p,
 	pkt.u.alter.max_recv_frag = 0x2000;
 	pkt.u.alter.assoc_group_id = 0;
 	pkt.u.alter.num_contexts = 1;
-	pkt.u.alter.ctx_list = talloc(mem_ctx, sizeof(pkt.u.alter.ctx_list[0]));
+	pkt.u.alter.ctx_list = talloc_p(mem_ctx, struct dcerpc_ctx_list);
 	if (!pkt.u.alter.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}

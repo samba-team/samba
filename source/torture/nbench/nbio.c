@@ -281,7 +281,7 @@ void nb_createx(const char *fname,
 
 	if (!NT_STATUS_IS_OK(ret)) return;
 
-	f = malloc(sizeof(struct ftable));
+	f = malloc_p(struct ftable);
 	f->handle = handle;
 	f->fd = io.ntcreatex.out.fnum;
 

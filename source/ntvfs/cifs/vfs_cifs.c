@@ -121,7 +121,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	private = talloc(req->tcon, sizeof(struct cvfs_private));
+	private = talloc_p(req->tcon, struct cvfs_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}

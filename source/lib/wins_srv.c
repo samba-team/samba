@@ -204,7 +204,7 @@ char **wins_srv_tags(void)
 	if (lp_wins_support()) {
 		/* give the caller something to chew on. This makes
 		   the rest of the logic simpler (ie. less special cases) */
-		ret = (char **)malloc(sizeof(char *)*2);
+		ret = malloc_array_p(char *, 2);
 		if (!ret) return NULL;
 		ret[0] = strdup("*");
 		ret[1] = NULL;

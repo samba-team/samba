@@ -83,7 +83,7 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 		return;
 	}
 
-	iface = (struct interface *)malloc(sizeof(*iface));
+	iface = malloc_p(struct interface);
 	if (!iface) return;
 	
 	ZERO_STRUCTPN(iface);

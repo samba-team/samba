@@ -281,7 +281,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 		if (s[0] == '\n') i++;
 	}
 
-	ret = (char **)malloc(sizeof(ret[0])*(i+2));
+	ret = malloc_array_p(char *, i+2);
 	if (!ret) {
 		SAFE_FREE(p);
 		return NULL;

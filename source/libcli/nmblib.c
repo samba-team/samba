@@ -333,7 +333,7 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
 				struct res_rec **recs, int count)
 {
   int i;
-  *recs = (struct res_rec *)malloc(sizeof(**recs)*count);
+  *recs = malloc_array_p(struct res_rec, count);
   if (!*recs) return(False);
 
   memset((char *)*recs,'\0',sizeof(**recs)*count);
@@ -523,7 +523,7 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
   struct nmb_packet *copy_nmb;
   struct packet_struct *pkt_copy;
 
-  if(( pkt_copy = (struct packet_struct *)malloc(sizeof(*packet))) == NULL)
+  if(( pkt_copy = malloc_p(struct packet_struct)) == NULL)
   {
     DEBUG(0,("copy_nmb_packet: malloc fail.\n"));
     return NULL;

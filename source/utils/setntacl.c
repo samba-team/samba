@@ -75,7 +75,7 @@ static void setntacl(char *filename, struct security_descriptor *sd)
 	fgets(line, sizeof(line), stdin);
 	sd->group_sid = dom_sid_parse_talloc(mem_ctx, line);
 
-	acl = talloc(mem_ctx, sizeof(struct security_acl));
+	acl = talloc_p(mem_ctx, struct security_acl);
 
 	acl->revision = 2;
 	acl->size = 0;
