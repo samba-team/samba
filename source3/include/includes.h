@@ -868,6 +868,60 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #include <dlfcn.h>
 #endif
 
+/* Some POSIX definitions for those without */
+ 
+#ifndef S_IFDIR
+#define S_IFDIR         0x4000
+#endif
+#ifndef S_ISDIR
+#define S_ISDIR(mode)   ((mode & 0xF000) == S_IFDIR)
+#endif
+#ifndef S_IRWXU
+#define S_IRWXU 00700           /* read, write, execute: owner */
+#endif
+#ifndef S_IRUSR
+#define S_IRUSR 00400           /* read permission: owner */
+#endif
+#ifndef S_IWUSR
+#define S_IWUSR 00200           /* write permission: owner */
+#endif
+#ifndef S_IXUSR
+#define S_IXUSR 00100           /* execute permission: owner */
+#endif
+#ifndef S_IRWXG
+#define S_IRWXG 00070           /* read, write, execute: group */
+#endif
+#ifndef S_IRGRP
+#define S_IRGRP 00040           /* read permission: group */
+#endif
+#ifndef S_IWGRP
+#define S_IWGRP 00020           /* write permission: group */
+#endif
+#ifndef S_IXGRP
+#define S_IXGRP 00010           /* execute permission: group */
+#endif
+#ifndef S_IRWXO
+#define S_IRWXO 00007           /* read, write, execute: other */
+#endif
+#ifndef S_IROTH
+#define S_IROTH 00004           /* read permission: other */
+#endif
+#ifndef S_IWOTH
+#define S_IWOTH 00002           /* write permission: other */
+#endif
+#ifndef S_IXOTH
+#define S_IXOTH 00001           /* execute permission: other */
+#endif
+
+/* Some systems (SCO) treat UNIX domain sockets as FIFOs */
+
+#ifndef S_IFSOCK
+#define S_IFSOCK S_IFIFO
+#endif
+#ifndef S_ISSOCK
+#define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
+#endif
+
 #if HAVE_KERNEL_SHARE_MODES
 #ifndef LOCK_MAND 
 #define LOCK_MAND	32	/* This is a mandatory flock */
