@@ -1,4 +1,4 @@
-mailto(samba-bugs@samba.org)
+mailto(samba@samba.org)
 manpage(Samba htmlcommand((7)))(7)(23 Oct 1998)(Samba)()
 
 label(NAME)
@@ -25,7 +25,7 @@ described in a separate manual page. It is strongly recommended that
 you read the documentation that comes with Samba and the manual pages
 of those components that you use. If the manual pages aren't clear
 enough then please send a patch or bug report
-to email(samba-bugs@samba.org).
+to email(samba@samba.org).
 
 startdit() 
 
@@ -110,7 +110,7 @@ url(http://samba.org/listproc)(http://samba.org/listproc)
 for details on how to do this.
 
 If you have patches to submit or bugs to report then you may mail them
-directly to email(samba-bugs@samba.org). Note, however, that due to
+directly to email(samba@samba.org). Note, however, that due to
 the enormous popularity of this package the Samba Team may take some
 time to respond to mail. We prefer patches in em(diff -u) format.
 
@@ -134,7 +134,7 @@ label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
-Andrew Tridgell email(samba-bugs@samba.org). Samba is now developed
+Andrew Tridgell email(samba@samba.org). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 
@@ -143,4 +143,4 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 url(bf(ftp://ftp.icce.rug.nl/pub/unix/))(ftp://ftp.icce.rug.nl/pub/unix/))
 and updated for the Samba2.0 release by Jeremy Allison.
-email(samba-bugs@samba.org).
+email(samba@samba.org).
