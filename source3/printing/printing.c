@@ -163,7 +163,7 @@ static void print_unix_job(int snum, print_queue_struct *q)
 	fstrcpy(pj.filename, "");
 	fstrcpy(pj.jobname, q->fs_file);
 	fstrcpy(pj.user, q->fs_user);
-	pj.snum = snum;
+	fstrcpy(pj.queuename, lp_servicename(snum));
 
 	print_job_store(jobid, &pj);
 }
@@ -185,7 +185,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 
-	if (ts->snum != pjob.snum) {
+	if (!strequal(lp_servicename(ts->snum), pjob.queuename)) {
 		/* this isn't for the queue we are looking at */
 		ts->total_jobs++;
 		return 0;
@@ -556,7 +556,7 @@ int print_job_snum(int jobid)
 	struct printjob *pjob = print_job_find(jobid);
 	if (!pjob) return -1;
 
-	return pjob->snum;
+	return find_service(pjob->queuename);
 }
 
 /****************************************************************************
@@ -624,6 +624,10 @@ static BOOL print_job_delete1(int jobid)
 		return True;
 
 	snum = print_job_snum(jobid);
+	if (snum == -1) {
+		DEBUG(5,("print_job_delete1: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
 
 	/* Hrm - we need to be able to cope with deleting a job before it
 	   has reached the spooler. */
@@ -676,7 +680,12 @@ BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode)
 	int snum = print_job_snum(jobid);
 	char *printer_name;
 	BOOL owner;
-	
+
+	if (snum == -1) {
+		DEBUG(5,("print_job_delete: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
+
 	owner = is_owner(user, jobid);
 	
 	/* Check access against security descriptor or whether the user
@@ -720,6 +729,14 @@ BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
+	if (snum == -1) {
+		DEBUG(5,("print_job_pause: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
+	if (snum == -1) {
+		DEBUG(5,("print_job_resume: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
 
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
@@ -984,7 +1001,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		fstrcpy(pjob.user, uidtoname(user->uid));
 	}
 
-	pjob.snum = snum;
+	fstrcpy(pjob.queuename, lp_servicename(snum));
 
 	/* lock the database */
 	tdb_lock_bystring(tdb, "INFO/nextjob");
@@ -1088,6 +1105,10 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 		return False;
 
 	snum = print_job_snum(jobid);
+	if (snum == -1) {
+		DEBUG(5,("print_job_end: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
 
 	if (normal_close && (sys_fstat(pjob->fd, &sbuf) == 0)) {
 		pjob->size = sbuf.st_size;
@@ -1155,7 +1176,8 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 
 	/* maybe it isn't for this queue */
-	if (ts->snum != pjob.snum) return 0;
+	if (!strequal(lp_servicename(ts->snum), pjob.queuename))
+		return 0;
 
 	if (ts->qcount >= ts->maxcount) return 0;
 
@@ -1191,7 +1213,8 @@ static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, 
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 
 	/* maybe it isn't for this queue */
-	if (ts->snum != pjob.snum) return 0;
+	if (!strequal(lp_servicename(ts->snum), pjob.queuename))
+		return 0;
 
 	ts->count++;
 

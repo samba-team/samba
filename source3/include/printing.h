@@ -42,7 +42,7 @@ struct printjob {
 	fstring filename; /* the filename used to spool the file */
 	fstring jobname; /* the job name given to us by the client */
 	fstring user; /* the user who started the job */
-	int snum;     /* service number of printer for this job */
+	fstring queuename; /* service number of printer for this job */
 };
 
 /* Information for print interfaces */
@@ -71,6 +71,6 @@ extern struct printif	cups_printif;
 #define MAX_CACHE_VALID_TIME 3600
 
 #define PRINT_SPOOL_PREFIX "smbprn."
-#define PRINT_DATABASE_VERSION 3
+#define PRINT_DATABASE_VERSION 4
 
 #endif /* PRINTING_H_ */
