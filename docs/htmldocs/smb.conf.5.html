@@ -3168,6 +3168,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#CSCPOLICY"
+><TT
+CLASS="PARAMETER"
+><I
+>csc policy</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#DEFAULTCASE"
 ><TT
 CLASS="PARAMETER"
@@ -4466,7 +4478,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1458"
+NAME="AEN1462"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -6406,6 +6418,40 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
+></DD
+><DT
+><A
+NAME="CSCPOLICY"
+></A
+>csc policy (S)</DT
+><DD
+><P
+>This stands for <EM
+>client-side caching 
+		policy</EM
+>, and specifies how clients capable of offline
+		caching will cache the files in the share. The valid values
+		are: manual, documents, programs, disable.</P
+><P
+>These values correspond to those used on Windows
+		servers.</P
+><P
+>For example, shares containing roaming profiles can have
+		offline caching disabled using <B
+CLASS="COMMAND"
+>csc policy = disable
+		</B
+>.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>csc policy = manual</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>csc policy = programs</B
+></P
 ></DD
 ><DT
 ><A
@@ -19328,7 +19374,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6100"
+NAME="AEN6117"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19358,7 +19404,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6106"
+NAME="AEN6123"
 ></A
 ><H2
 >VERSION</H2
@@ -19369,7 +19415,7 @@ NAME="AEN6106"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6109"
+NAME="AEN6126"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19448,7 +19494,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6129"
+NAME="AEN6146"
 ></A
 ><H2
 >AUTHOR</H2

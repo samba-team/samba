@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "19 February 2002" "" ""
+.TH "SMB.CONF" "5" "10 April 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -1080,6 +1080,9 @@ each parameter for details. Note that some are synonyms.
 \fIcreate mode\fR
 .TP 0.2i
 \(bu
+\fIcsc policy\fR
+.TP 0.2i
+\(bu
 \fIdefault case\fR
 .TP 0.2i
 \(bu
@@ -2106,6 +2109,23 @@ Example: \fBcreate mask = 0775\fR
 \fBcreate mode (S)\fR
 This is a synonym for \fI create mask\fR.
 .TP
+\fBcsc policy (S)\fR
+This stands for \fBclient-side caching 
+policy\fR, and specifies how clients capable of offline
+caching will cache the files in the share. The valid values
+are: manual, documents, programs, disable.
+
+These values correspond to those used on Windows
+servers.
+
+For example, shares containing roaming profiles can have
+offline caching disabled using \fBcsc policy = disable
+\fR\&.
+
+Default: \fBcsc policy = manual\fR
+
+Example: \fBcsc policy = programs\fR
+.TP
 \fBdeadtime (G)\fR
 The value of the parameter (a decimal integer) 
 represents the number of minutes of inactivity before a connection 
@@ -2876,7 +2896,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory  security mode (S)\fR
+\fBforce directory\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -7163,7 +7183,7 @@ again.
 
 Default: \fBwinbind cache type = 15\fR
 .TP
-\fBwinbind enum users\fR
+\fBwinbind enum\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of users through the
@@ -7182,7 +7202,7 @@ usernames.
 
 Default: \fBwinbind enum users = yes \fR
 .TP
-\fBwinbind enum groups\fR
+\fBwinbind enum\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of groups through the
