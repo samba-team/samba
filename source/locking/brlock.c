@@ -118,13 +118,11 @@ delete a record if it is for a dead process
 static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct lock_struct *locks;
-	struct lock_key *key;
 	int count, i;
 
 	tdb_chainlock(tdb, kbuf);
 
 	locks = (struct lock_struct *)dbuf.dptr;
-	key = (struct lock_key *)kbuf.dptr;
 
 	count = dbuf.dsize / sizeof(*locks);
 	for (i=0; i<count; i++) {
