@@ -2665,10 +2665,11 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 {
   files_struct *fsp = file_fsp(inbuf,smb_vwv2);
   SMB_OFF_T startpos = IVAL(inbuf,smb_vwv3);
-  size_t numtowrite = SVAL(inbuf,smb_vwv10);
+  size_t numtowrite = SVAL(inbuf,smb_vwv10)|(((size_t)SVAL(inbuf,smb_vwv9))<<16);
   BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
   ssize_t nwritten = -1;
   unsigned int smb_doff = SVAL(inbuf,smb_vwv11);
+  unsigned int smblen = smb_len(inbuf);
   char *data;
   START_PROFILE(SMBwriteX);
 
@@ -2682,7 +2683,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);
 
-  if(smb_doff > smb_len(inbuf)) {
+  if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
     END_PROFILE(SMBwriteX);
     return(ERROR(ERRDOS,ERRbadmem));
   }
