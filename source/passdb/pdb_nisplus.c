@@ -130,19 +130,7 @@ static char *make_nisname_from_user_rid(uint32 rid, char *pfile)
 {
 	static pstring nisname;
 
-	slprintf(nisname, sizeof(nisname)-1, "[user_rid=%d]%s", rid, pfile);
-
-	return nisname;
-}
-
-/***************************************************************
- make_nisname_from_uid
- ****************************************************************/
-static char *make_nisname_from_uid(int uid, char *pfile)
-{
-	static pstring nisname;
-
-	slprintf(nisname, sizeof(nisname)-1, "[uid=%d]%s", uid, pfile);
+       slprintf(nisname, sizeof(nisname)-1, "[user_rid=%d],%s", rid, pfile);
 
 	return nisname;
 }
@@ -154,7 +142,7 @@ static char *make_nisname_from_name(char *user_name, char *pfile)
 {
 	static pstring nisname;
 
-	slprintf(nisname, sizeof(nisname)-1, "[name=%s]%s", user_name, pfile);
+       slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s", user_name, pfile);
 
 	return nisname;
 }
