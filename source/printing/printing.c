@@ -807,7 +807,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		return -1;
 	}
 
-	if (print_queue_length(snum) > lp_maxprintjobs(snum)) {
+	if (lp_maxprintjobs(snum) && print_queue_length(snum) > lp_maxprintjobs(snum)) {
 		errno = ENOSPC;
 		return -1;
 	}
