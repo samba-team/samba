@@ -1070,6 +1070,12 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 			close(fd);
 			continue;
 		} 
+
+		if(new_file == True) {
+			close(fd);
+			continue;
+		} 
+
 		pstrcpy( fname, &buf[10]);
 		close(fd);
       
