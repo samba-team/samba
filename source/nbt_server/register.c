@@ -238,6 +238,7 @@ void nbtd_register_names(struct nbt_server *nbtsrv)
 
 	aliases = lp_netbios_aliases();
 	while (aliases && aliases[0]) {
+		nbtd_register_name(nbtsrv, aliases[0], NBT_NAME_CLIENT, nb_flags);
 		nbtd_register_name(nbtsrv, aliases[0], NBT_NAME_SERVER, nb_flags);
 		aliases++;
 	}
