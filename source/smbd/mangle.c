@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Name mangling with persistent tdb
    Copyright (C) Simo Sorce 2001
+   Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -272,7 +273,10 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 			pos--;
 			if (pos == 0)
 			{
-				DEBUG(0, ("mangle: unable to mangle file name!\n"));
+				char *unmangled_unix = acnv_u2ux(unmangled);
+
+				DEBUG(0, ("mangle: unable to mangle file name (%s)!\n",unmangled_unix));
+				SAFE_FREE(unmangled_unix);
 				goto done;
 			}
 			strncpy_w(temp, umpref, pos);
@@ -301,8 +305,10 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 		{
 			if (tdb_error(mangle_tdb) != TDB_ERR_EXISTS)
 			{
-				DEBUG(0, ("mangle: database store error: %s\n",
-					tdb_errorstr(mangle_tdb)));
+				char *unmangled_unix = acnv_u2ux(unmangled);
+				DEBUG(0, ("mangle: database store error: %s for filename: %s\n",
+					tdb_errorstr(mangle_tdb), unmangled_unix));
+				SAFE_FREE(unmangled_unix);
 				goto done;
 			}
 		}
@@ -310,7 +316,10 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 		/* lock the mangle counter for this prefix */		
 		if (tdb_chainlock(mangle_tdb, klock))
 		{
-			DEBUG(0,("mangle: failed to lock database\n!"));
+			char *unmangled_unix = acnv_u2ux(unmangled);
+
+			DEBUG(0,("mangle: failed to lock database for filename %s\n!", unmangled_unix));
+			SAFE_FREE(unmangled_unix);
 			goto done;
 		}
 		tclock = True;
@@ -318,8 +327,11 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 		data = tdb_fetch(mangle_tdb, klock);
 		if (!data.dptr)
 		{
-			DEBUG(0, ("mangle: database retrieval error: %s\n",
-					tdb_errorstr(mangle_tdb)));
+			char *unmangled_unix = acnv_u2ux(unmangled);
+
+			DEBUG(0, ("mangle: database retrieval error: %s for filename: %s\n",
+				  tdb_errorstr(mangle_tdb), unmangled_unix));
+			SAFE_FREE(unmangled_unix);
 			goto done;
 		}
 		c = *((uint32 *)data.dptr);
@@ -327,7 +339,10 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 		
 		if (c > MANGLE_COUNTER_MAX)
 		{
-			DEBUG(0, ("mangle: error, counter overflow!\n"));
+			char *unmangled_unix = acnv_u2ux(unmangled);
+
+			DEBUG(0, ("mangle: error, counter overflow (max=%d, counter=%d) for file: [%s] prefix (dos charset): [%s]!\n", MANGLE_COUNTER_MAX, c, unmangled_unix, prefix));
+			SAFE_FREE(unmangled_unix);
 			goto done;
 		}
 			
@@ -340,7 +355,10 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 		if (!ud83_len) goto done;
 		if (ud83_len > 8)
 		{
-			DEBUG(0, ("mangle: darn, logic error aborting!\n"));
+			char *unmangled_unix = acnv_u2ux(unmangled);
+
+			DEBUG(0, ("mangle: darn, logic error aborting!  Filename was %s\n", unmangled_unix));
+			SAFE_FREE(unmangled_unix);
 			goto done;
 		}
 			
@@ -353,8 +371,11 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 
 		if (tdb_store(mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
 		{
-			DEBUG(0, ("mangle: database store error: %s\n",
-					tdb_errorstr(mangle_tdb)));
+			char *unmangled_unix = acnv_u2ux(unmangled);
+
+			DEBUG(0, ("mangle: database store error: %s for filename: %s\n",
+					tdb_errorstr(mangle_tdb), unmangled_unix));
+			SAFE_FREE(unmangled_unix);
 			goto done;
 		}
 
@@ -367,8 +388,10 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 		data.dptr = mufname;
 		if (tdb_store(mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
 		{
-			DEBUG(0, ("mangle: database store failed: %s\n",
-					tdb_errorstr(mangle_tdb)));
+			char *unmangled_unix = acnv_u2ux(unmangled);
+			DEBUG(0, ("mangle: database store failed: %s for filename: %s\n",
+					tdb_errorstr(mangle_tdb), unmangled_unix));
+			SAFE_FREE(unmangled_unix);
 
 			/* try to delete the mangled key entry to avoid later inconsistency */
 			slprintf(keystr, sizeof(keystr)-1, "%s%s", MANGLED_PREFIX, mufname);
@@ -393,8 +416,10 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 		/* store the counter */
 		if(tdb_store(mangle_tdb, klock, data, TDB_REPLACE) != TDB_SUCCESS)
 		{
-			DEBUG(0, ("mangle: database store failed: %s\n",
-					tdb_errorstr(mangle_tdb)));
+			char *unmangled_unix = acnv_u2ux(unmangled);
+			DEBUG(0, ("mangle: database store failed: %s for filename: %s\n", 
+					tdb_errorstr(mangle_tdb), unmangled_unix));
+			SAFE_FREE(unmangled_unix);
 			/* try to delete the mangled and long key entry to avoid later inconsistency */
 			slprintf(keystr, sizeof(keystr)-1, "%s%s", MANGLED_PREFIX, mufname);
 			key.dptr = keystr;
