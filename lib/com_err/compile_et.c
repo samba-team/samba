@@ -45,7 +45,6 @@ RCSID("$Id$");
 
 int numerror;
 extern FILE *yyin;
-FILE *c_file, *h_file;
 
 extern void yyparse(void);
 
@@ -64,16 +63,18 @@ extern int yydebug = 1;
 char *filename;
 char hfn[128];
 char cfn[128];
-char fn[128];
 
-void prologue()
+struct error_code *codes;
+
+int
+generate_c(void)
 {
-    char *p;
-    snprintf(fn, sizeof(fn), "__%s__", hfn);
-    for(p = fn; *p; p++)
-	if(!isalnum(*p))
-	    *p = '_';
-    
+    int n;
+    struct error_code *ec;
+    FILE *c_file = fopen(cfn, "w");
+    if(c_file == NULL)
+	return 1;
+
     fprintf(c_file, "/* Generated from %s */\n", filename);
     if(id_str) 
 	fprintf(c_file, "/* %s */\n", id_str);
@@ -85,6 +86,56 @@ void prologue()
 
     fprintf(c_file, "static const char *text[] = {\n");
 
+    for(ec = codes, n = 0; ec; ec = ec->next, n++) {
+	while(n < ec->number) {
+	    fprintf(c_file, "\t/* %03d */ \"Reserved %s error (%d)\",\n",
+		    n, name, n);
+	    n++;
+	    
+	}
+	fprintf(c_file, "\t/* %03d */ \"%s\",\n", ec->number, ec->string);
+    }
+
+    fprintf(c_file, "\tNULL\n");
+    fprintf(c_file, "};\n");
+    fprintf(c_file, "\n");
+    fprintf(c_file, 
+	    "void initialize_%s_error_table_r(struct error_table **list)\n", 
+	    name);
+    fprintf(c_file, "{\n");
+    fprintf(c_file, 
+	    "    initialize_error_table_r(list, text, "
+	    "%s_num_errors, ERROR_TABLE_BASE_%s);\n", name, name);
+    fprintf(c_file, "}\n");
+    fprintf(c_file, "\n");
+    fprintf(c_file, "void initialize_%s_error_table(void)\n", name);
+    fprintf(c_file, "{\n");
+    fprintf(c_file,
+	    "    init_error_table(text, ERROR_TABLE_BASE_%s, "
+	    "%s_num_errors);\n", name, name);
+    fprintf(c_file, "}\n");
+
+    fclose(c_file);
+    return 0;
+}
+
+int
+generate_h(void)
+{
+    int n;
+    struct error_code *ec;
+    char fn[128];
+    FILE *h_file = fopen(hfn, "w");
+    char *p;
+
+    if(h_file == NULL)
+	return 1;
+
+    snprintf(fn, sizeof(fn), "__%s__", hfn);
+    for(p = fn; *p; p++)
+	if(!isalnum(*p))
+	    *p = '_';
+    
     fprintf(h_file, "/* Generated from %s */\n", filename);
     if(id_str) 
 	fprintf(h_file, "/* %s */\n", id_str);
@@ -105,6 +156,26 @@ void prologue()
     fprintf(h_file, "typedef enum %s_error_number{\n", name);
     fprintf(h_file, "\tERROR_TABLE_BASE_%s = %ld,\n", name, base);
     fprintf(h_file, "\t%s_err_base = %ld,\n", name, base);
+
+    for(ec = codes; ec; ec = ec->next) {
+	fprintf(h_file, "\t%s = %ld,\n", ec->name, base + ec->number);
+    }
+
+    fprintf(h_file, "\t%s_num_errors = %d\n", name, number);
+    fprintf(h_file, "} %s_error_number;\n", name);
+    fprintf(h_file, "\n");
+    fprintf(h_file, "#endif /* %s */\n", fn);
+
+
+    fclose(h_file);
+    return 0;
+}
+
+int
+generate(void)
+{
+    if(generate_c() || generate_h())
+	return 1;
 }
 
 int
@@ -131,42 +202,14 @@ main(int argc, char **argv)
     strncpy(Basename, p, sizeof(Basename));
     Basename[sizeof(Basename) - 1] = '\0';
     
-    Basename[strcspn(Basename, "._")] = '\0';
+    Basename[strcspn(Basename, ".")] = '\0';
     
-    snprintf(hfn, sizeof(hfn), "%s_err.h", Basename);
-    h_file = fopen(hfn, "w");
-    snprintf(cfn, sizeof(cfn), "%s_err.c", Basename);
-    c_file = fopen(cfn, "w");
+    snprintf(hfn, sizeof(hfn), "%s.h", Basename);
+    snprintf(cfn, sizeof(cfn), "%s.c", Basename);
     
     yyparse();
-    
-    fprintf(c_file, "\tNULL\n");
-    fprintf(c_file, "};\n");
-    fprintf(c_file, "\n");
-    fprintf(c_file, 
-	    "void initialize_%s_error_table_r(struct error_table **list)\n", 
-	    name);
-    fprintf(c_file, "{\n");
-    fprintf(c_file, 
-	    "    initialize_error_table_r(list, text, "
-	    "%s_num_errors, ERROR_TABLE_BASE_%s);\n", name, name);
-    fprintf(c_file, "}\n");
-    fprintf(c_file, "\n");
-    fprintf(c_file, "void initialize_%s_error_table(void)\n", name);
-    fprintf(c_file, "{\n");
-    fprintf(c_file,
-	    "    init_error_table(text, ERROR_TABLE_BASE_%s, "
-	    "%s_num_errors);\n", name, name);
-    fprintf(c_file, "}\n");
-    
-    fprintf(h_file, "\t%s_num_errors = %d\n", name, number);
-    fprintf(h_file, "} %s_error_number;\n", name);
-    fprintf(h_file, "\n");
-    fprintf(h_file, "#endif /* %s */\n", fn);
-
-    fclose(h_file);
-    fclose(c_file);
     if(numerror)
 	return 1;
-    return 0;
+
+    return generate();
 }
