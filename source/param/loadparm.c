@@ -4304,3 +4304,14 @@ BOOL lp_use_sendfile(int snum)
 {
 	return (_lp_use_sendfile(snum) && !srv_is_signing_active());
 }
+
+/*******************************************************************
+ Turn off storing DOS attributes if this share doesn't support it.
+********************************************************************/
+
+void set_store_dos_attributes(int snum, BOOL val)
+{
+	if (!LP_SNUM_OK(snum))
+		return;
+	ServicePtrs[(snum)]->bStoreDosAttributes = val;
+}
