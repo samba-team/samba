@@ -136,6 +136,12 @@ AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnin
 	CFLAGS="${CFLAGS} -g -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
+AC_ARG_ENABLE(gtkdeveloper, [  --enable-gtkdeveloper  Turn on developer warnings and debugging, except -Wstrict-prototypes and -Wshadow (default=no)],
+    [if eval "test x$enable_gtkdeveloper = xyes"; then
+        developer=yes
+	CFLAGS="${CFLAGS} -g -Wall -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    fi])
+
 experimental=no
 AC_ARG_ENABLE(experimental, [  --enable-experimental Turn on experimental features (default=no)],
     [if eval "test x$enable_experimental = xyes"; then
