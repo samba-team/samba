@@ -1,3 +1,7 @@
+1999-06-15  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c (tn): use get_default_username
+
 1999-05-14  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/state.c (telrcv): magic patch to make it work against

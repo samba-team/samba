@@ -1,3 +1,11 @@
+1999-06-15  Assar Westerlund  <assar@sics.se>
+
+	* get_default_username.c: new file
+
+	* roken.h.in (get_default_username): add prototype
+
+	* Makefile.am: add get_default_username
+
 1999-05-08  Assar Westerlund  <assar@sics.se>
 
 	* xdbm.h: also try <db.h> with DB_DBM_HSEARCH == 1

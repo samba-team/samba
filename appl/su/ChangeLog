@@ -1,3 +1,7 @@
+1999-06-15  Assar Westerlund  <assar@sics.se>
+
+	* su.c (main): conditionalize `getlogin'
+
 1999-05-11  Assar Westerlund  <assar@sics.se>
 
 	* su.c (verfiy_krb5): get the name out of the ccache before
