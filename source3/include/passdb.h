@@ -29,7 +29,7 @@
 
 typedef struct pdb_context 
 {
-    struct pdb_methods *pdb_methods;
+	struct pdb_methods *pdb_methods;
 	struct pdb_methods *pwent_methods;
 	
 	/* These functions are wrappers for the functions listed above.
@@ -60,7 +60,7 @@ typedef struct pdb_context
 typedef struct pdb_methods 
 {
 	const char *name; /* What name got this module */
-    struct pdb_context *parent;
+	struct pdb_context *parent;
 
 	/* Use macros from dlinklist.h on these two */
 	struct pdb_methods *next;
