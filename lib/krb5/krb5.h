@@ -236,6 +236,7 @@ typedef struct krb5_context_data{
     krb5_enctype *etypes;
     char *default_realm;
     time_t max_skew;
+    time_t kdc_timeout;
     krb5_config_section *cf;
     struct error_table *et_list;
     krb5_cc_ops *cc_ops;
