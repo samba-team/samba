@@ -570,7 +570,7 @@ static void api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 		{
 			DEBUG(5,("unknown info level in Lsa Query: %d\n",
 			          q_i.info_class));
-			break;
+			return;
 		}
 	}
 
