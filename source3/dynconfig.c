@@ -64,6 +64,7 @@ pstring dyn_LIBDIR = LIBDIR;
  * Not writable, but used to set a default in the parameter table.
  **/
 const pstring dyn_LOCKDIR = LOCKDIR;
+const pstring dyn_PIDDIR  = PIDDIR;
 
 const pstring dyn_DRIVERFILE = DRIVERFILE;
 

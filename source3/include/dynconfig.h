@@ -31,6 +31,7 @@ extern pstring dyn_CONFIGFILE;
 extern pstring dyn_LOGFILEBASE, dyn_LMHOSTSFILE;
 extern pstring dyn_LIBDIR;
 extern const pstring dyn_LOCKDIR; 
+extern const pstring dyn_PIDDIR;
 extern const pstring dyn_DRIVERFILE; 
 extern const pstring dyn_SMB_PASSWD_FILE;
 extern const pstring dyn_PRIVATE_DIR;
