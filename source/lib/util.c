@@ -867,9 +867,7 @@ BOOL yesno(char *p)
 void *malloc_(size_t size)
 {
 #undef malloc
-	/* If we don't add an amount here the glibc memset seems to write
-	   one byte over. */
-	return malloc(size+16);
+	return malloc(size);
 #define malloc(s) __ERROR_DONT_USE_MALLOC_DIRECTLY
 }
 
@@ -880,9 +878,7 @@ void *malloc_(size_t size)
 static void *calloc_(size_t count, size_t size)
 {
 #undef calloc
-	/* If we don't add an amount here the glibc memset seems to write
-	   one byte over. */
-	return calloc(count+1, size);
+	return calloc(count, size);
 #define calloc(n,s) __ERROR_DONT_USE_CALLOC_DIRECTLY
 }
 
@@ -893,9 +889,7 @@ static void *calloc_(size_t count, size_t size)
 static void *realloc_(void *ptr, size_t size)
 {
 #undef realloc
-	/* If we don't add an amount here the glibc memset seems to write
-	   one byte over. */
-	return realloc(ptr, size+16);
+	return realloc(ptr, size);
 #define realloc(p,s) __ERROR_DONT_USE_RELLOC_DIRECTLY
 }
 
