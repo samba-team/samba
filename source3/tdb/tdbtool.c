@@ -111,23 +111,23 @@ static void print_data(unsigned char *buf,int len)
 
 static void help(void)
 {
-	printf("
-tdbtool: 
-  create    dbname     : create a database
-  open      dbname     : open an existing database
-  erase                : erase the database
-  dump                 : dump the database as strings
-  insert    key  data  : insert a record
-  store     key  data  : store a record (replace)
-  show      key        : show a record by key
-  delete    key        : delete a record by key
-  list                 : print the database hash table and freelist
-  free                 : print the database freelist
-  1 | first            : print the first record
-  n | next             : print the next record
-  q | quit             : terminate
-  \\n                   : repeat 'next' command
-");
+	printf("\n"
+"tdbtool: \n"
+"  create    dbname     : create a database\n"
+"  open      dbname     : open an existing database\n"
+"  erase                : erase the database\n"
+"  dump                 : dump the database as strings\n"
+"  insert    key  data  : insert a record\n"
+"  store     key  data  : store a record (replace)\n"
+"  show      key        : show a record by key\n"
+"  delete    key        : delete a record by key\n"
+"  list                 : print the database hash table and freelist\n"
+"  free                 : print the database freelist\n"
+"  1 | first            : print the first record\n"
+"  n | next             : print the next record\n"
+"  q | quit             : terminate\n"
+"  \\n                   : repeat 'next' command\n"
+"\n");
 }
 
 static void terror(char *why)
