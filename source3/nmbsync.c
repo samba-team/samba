@@ -84,8 +84,8 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   
   if (cli_call_api(PIPE_LANMAN,
            PTR_DIFF(p,param), /* param count */
-           8, /*data count */,
-           0, /* setup count */,
+           8, /*data count */
+           0, /* setup count */
            0, /* mprcount - whatever that is */
            BUFFER_SIZE - SAFETY_MARGIN, /* mdrcount - whatever that is */
 		   &rprcnt,&rdrcnt,
