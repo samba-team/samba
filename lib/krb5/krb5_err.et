@@ -74,25 +74,29 @@ prefix KRB5_KDC_ERR
 error_code CLIENT_NOT_TRUSTED,	"Client not trusted"
 error_code KDC_NOT_TRUSTED,	"KDC not trusted"
 error_code INVALID_SIG,		"Invalid signature"
-error_code KEY_TOO_WEAK,	"Key too weak"
+error_code KEY_SIZE,		"Key size too small/key too weak"
 error_code CERTIFICATE_MISMATCH, "Certificate mismatch"
 
 prefix KRB5_AP_ERR
 error_code USER_TO_USER_REQUIRED, "User to user required"
 
 index 70
-prefix KRB5_KDC_ERR
+prefix KDC_ERROR
 error_code CANT_VERIFY_CERTIFICATE, "Cannot verify certificate"
 error_code INVALID_CERTIFICATE,	"Invalid certificate"
 error_code REVOKED_CERTIFICATE,	"Revoked certificate"
 error_code REVOCATION_STATUS_UNKNOWN, "Revocation status unknown"
 error_code REVOCATION_STATUS_UNAVAILABLE, "Revocation status unknown"
 error_code CLIENT_NAME_MISMATCH,	"Client name mismatch"
+index 75
 error_code KDC_NAME_MISMATCH,	"KDC name mismatch"
 
-# 77-79 are reserved
+# 76-79 are reserved
 
-# 80-81 is IAKERB errors
+index 80
+prefix KRB_IAKERB
+error_code ERR_KDC_NOT_FOUND,	"IAKERB proxy could not find a KDC"
+error_code ERR_KDC_NO_RESPONSE,	"IAKERB proxy never reeived a response from a KDC"
 
 # 82-127 are reserved
 
@@ -193,6 +197,7 @@ error_code KRB5_FCC_INTERNAL,		"Internal file credentials cache error"
 error_code KRB5_CC_WRITE,		"Error writing to credentials cache file"
 error_code KRB5_CC_NOMEM,		"No more memory to allocate (in credentials cache code)"
 error_code KRB5_CC_FORMAT,		"Bad format in credentials cache"
+error_code KRB5_CC_NOT_KTYPE,		"No credentials found with supported encryption types"
 
 # errors for dual tgt library calls
 error_code KRB5_INVALID_FLAGS,		"Invalid KDC option combination (library internal error)"
@@ -237,6 +242,17 @@ error_code KRB5_GET_IN_TKT_LOOP,  "Looping detected inside krb5_get_in_tkt"
 error_code KRB5_CONFIG_NODEFREALM,	"Configuration file does not specify default realm"
 
 error_code KRB5_SAM_UNSUPPORTED,  "Bad SAM flags in obtain_sam_padata"
-error_code KRB5_KT_NAME_TOOLONG,	"Keytab name too long"
+error_code KRB5_SAM_INVALID_ETYPE,  "Invalid encryption type in SAM challenge"
+error_code KRB5_SAM_NO_CHECKSUM,  "Missing checksum in SAM challenge"
+error_code KRB5_SAM_BAD_CHECKSUM,  "Bad checksum in SAM challenge"
+
+index 238
+error_code KRB5_OBSOLETE_FN,	"Program called an obsolete, deleted function"
+
+index 245
+error_code KRB5_ERR_BAD_S2K_PARAMS, "Invalid key generation parameters from KDC"
+error_code KRB5_ERR_NO_SERVICE,	"Service not available"
+error_code KRB5_CC_NOSUPP,      "Credential cache function not supported"
+error_code KRB5_DELTAT_BADFORMAT,	"Invalid format of Kerberos lifetime or clock skew string"
 
 end
