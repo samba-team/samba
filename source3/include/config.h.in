@@ -617,6 +617,9 @@
 /* Define if you have the getgrnam function.  */
 #undef HAVE_GETGRNAM
 
+/* Define if you have the getgrouplist function.  */
+#undef HAVE_GETGROUPLIST
+
 /* Define if you have the getnetgrent function.  */
 #undef HAVE_GETNETGRENT
 
