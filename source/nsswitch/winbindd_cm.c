@@ -294,6 +294,7 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 	SAFE_FREE(ipc_domain);
 	SAFE_FREE(ipc_password);
 	SAFE_FREE(machine_password);
+	SAFE_FREE(machine_krb5_principal);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		add_failed_connection_entry(domain->name, new_conn->controller, result);
