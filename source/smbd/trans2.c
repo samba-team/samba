@@ -622,7 +622,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				*(p+2) = 0;
 			}
 			p += 2 + 24;
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, p, fname, -1, 0);
 			SIVAL(q,0,len);
 			p += len;
 			len = PTR_DIFF(p, pdata);
@@ -643,7 +643,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 16;
 			SIVAL(p,0,nt_extmode); p += 4;
 			p += 4;
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, p, fname, -1, 0);
 			SIVAL(p, -4, len);
 			p += len;
 			len = PTR_DIFF(p, pdata);
@@ -666,7 +666,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 4;
 			SIVAL(p,0,0); p += 4;
 
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, p, fname, -1, 0);
 			SIVAL(p, -4, len);
 			p += len;
 
@@ -680,7 +680,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			p += 4;
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
+			/* this must *not* be null terminated or w2k gets in a loop trying to set an
+			   acl on a dir (tridge) */
+			len = srvstr_push(outbuf, p, fname, -1, 0);
 			SIVAL(p, -4, len);
 			p += len;
 			len = PTR_DIFF(p, pdata);
