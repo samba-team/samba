@@ -891,7 +891,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		pstrcpy(fname,dname);      
 
 		if(!(got_match = *got_exact_match = exact_match(fname, mask, conn->case_sensitive)))
-			got_match = mask_match(fname, mask, conn->case_sensitive);
+			got_match = mask_match_smbd(fname, mask, conn->case_sensitive);
 
 		if(!got_match && !mangle_is_8_3(fname, False)) {
 
@@ -906,7 +906,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			pstrcpy( newname, fname);
 			mangle_map( newname, True, False, SNUM(conn));
 			if(!(got_match = *got_exact_match = exact_match(newname, mask, conn->case_sensitive)))
-				got_match = mask_match(newname, mask, conn->case_sensitive);
+				got_match = mask_match_smbd(newname, mask, conn->case_sensitive);
 		}
 
 		if(got_match) {

@@ -1622,7 +1622,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 					}
 				}
 
-				if(!mask_match(fname, mask, conn->case_sensitive))
+				if(!mask_match_smbd(fname, mask, conn->case_sensitive))
 					continue;
 				
 				if (sys_direntry) {
@@ -3904,7 +3904,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					}
 				}
 
-				if(!mask_match(fname, mask, conn->case_sensitive))
+				if(!mask_match_smbd(fname, mask, conn->case_sensitive))
 					continue;
 				
 				if (sysdir_entry) {
@@ -4243,7 +4243,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 				pstring fname;
 				pstrcpy(fname,dname);
     
-				if(!mask_match(fname, mask, conn->case_sensitive))
+				if(!mask_match_smbd(fname, mask, conn->case_sensitive))
 					continue;
 
 				error = ERRnoaccess;
