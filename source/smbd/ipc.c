@@ -2945,20 +2945,31 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   if (api_fd_commands[i].subcommand != -1)
   {
     RPC_HDR hdr;
+
+    /* process the rpc header */
     char *q = smb_io_rpc_hdr(True, &hdr, data, data, 4, 0);
     
+	/* bind request received */
     if ((bind_req = ((q != NULL) && (hdr.pkt_type == RPC_BIND))))
     {
       RPC_HDR_RB hdr_rb;
 
+      /* decode the bind request */
       char *p = smb_io_rpc_hdr_rb(True, &hdr_rb, q, data, 4, 0);
 
       if ((bind_req = (p != NULL)))
       {
         RPC_HDR_BA hdr_ba;
+        fstring ack_pipe_name;
+
+        /* name has to be \PIPE\xxxxx */
+        strcpy(ack_pipe_name, "\\PIPE\\");
+        strcat(ack_pipe_name, api_fd_commands[i].pipename);
+
+        /* make a bind acknowledgement */
         make_rpc_hdr_ba(&hdr_ba,
                hdr_rb.bba.max_tsize, hdr_rb.bba.max_rsize, hdr_rb.bba.assoc_gid,
-               api_fd_commands[i].pipename,
+               ack_pipe_name,
                0x1, 0x0, 0x0,
                &(hdr_rb.transfer));
 

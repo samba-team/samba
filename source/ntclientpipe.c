@@ -182,13 +182,32 @@ BOOL bind_rpc_pipe(char *pipe_name, uint16 fnum, uint32 call_id,
 		if (p)
 		{
 			/* check the transfer syntax */
-			valid_ack = hdr_ba.transfer.version == transfer->version &&
-			        memcmp(hdr_ba.transfer.data, transfer->data,
-			        sizeof(transfer->version));
+			valid_ack = (hdr_ba.transfer.version == transfer->version) &&
+			        (memcmp(hdr_ba.transfer.data, transfer->data,
+			                sizeof(transfer->version)) ==0);
 			if (!valid_ack)
 			{
 				DEBUG(2,("bind_rpc_pipe: transfer syntax differs\n"));
 				p = NULL;
+			}
+		}
+		
+		if (p)
+		{
+			/* check the results */
+			valid_ack = (hdr_ba.res.num_results == 0x1) &&
+			            (hdr_ba.res.result == 0);
+			
+			if (!valid_ack)
+			{
+				DEBUG(2,("bind_rpc_pipe: bind denied results: %d reason: %x\n",
+				          hdr_ba.res.num_results,
+			              hdr_ba.res.reason));
+				p = NULL;
+			}
+			else
+			{
+				DEBUG(5,("bind_rpc_pipe: accepted!\n"));
 			}
 		}
 	}
