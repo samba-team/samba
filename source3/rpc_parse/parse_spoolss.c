@@ -1264,6 +1264,48 @@ BOOL spoolss_io_r_deleteprinterdata(char *desc, SPOOL_R_DELETEPRINTERDATA *r_u, 
 }
 
 /*******************************************************************
+ * read a structure.
+ * called from spoolss_q_deleteprinterdataex (srv_spoolss.c)
+ ********************************************************************/
+
+BOOL spoolss_io_q_deleteprinterdataex(char *desc, SPOOL_Q_DELETEPRINTERDATAEX *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterdataex");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+	if (!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+	
+	if (!smb_io_unistr2("keyname  ", &q_u->keyname, True, ps, depth))
+		return False;
+	if (!smb_io_unistr2("valuename", &q_u->valuename, True, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * write a structure.
+ * called from spoolss_r_deleteprinterdataex (srv_spoolss.c)
+ ********************************************************************/
+
+BOOL spoolss_io_r_deleteprinterdataex(char *desc, SPOOL_R_DELETEPRINTERDATAEX *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdataex");
+	depth++;
+	
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  * write a structure.
  * called from spoolss_r_getprinterdata (srv_spoolss.c)
  ********************************************************************/
@@ -6874,6 +6916,44 @@ BOOL spoolss_io_r_enumprinterkey(char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_st
 	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
 		return False;
 
+	if(!prs_werror("status",     ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * read a structure.
+ ********************************************************************/  
+
+BOOL spoolss_io_q_deleteprinterkey(char *desc, SPOOL_Q_DELETEPRINTERKEY *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterkey");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+		
+	if(!smb_io_unistr2("", &q_u->keyname, True, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/  
+
+BOOL spoolss_io_r_deleteprinterkey(char *desc, SPOOL_R_DELETEPRINTERKEY *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterkey");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+		
 	if(!prs_werror("status",     ps, depth, &r_u->status))
 		return False;
 
