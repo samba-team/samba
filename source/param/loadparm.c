@@ -573,7 +573,7 @@ static struct parm_struct parm_table[] =
   {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT|FLAG_DOS_STRING},
   {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_DOS_STRING},
   {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
-  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,              handle_netbios_name,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
+  {"netbios name",     P_UGSTRING,P_GLOBAL, NULL,                       handle_netbios_name,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
   {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  FLAG_DOS_STRING},
   {"netbios scope",    P_UGSTRING,P_GLOBAL, global_scope,               NULL,   NULL,  FLAG_DOS_STRING},
   {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
@@ -1934,6 +1934,7 @@ BOOL lp_file_list_changed(void)
 /***************************************************************************
  Run standard_sub_basic on netbios name... needed because global_myname
  is not accessed through any lp_ macro.
+ Note: We must *NOT* use string_set() here as ptr points to global_myname.
 ***************************************************************************/
 
 static BOOL handle_netbios_name(char *pszParmValue,char **ptr)
@@ -1944,7 +1945,6 @@ static BOOL handle_netbios_name(char *pszParmValue,char **ptr)
 
 	standard_sub_basic(netbios_name);
 	strupper(netbios_name);
-	string_set(ptr,netbios_name);
 
 	/*
 	 * Convert from UNIX to DOS string - the UNIX to DOS converter
