@@ -208,6 +208,8 @@ typedef struct
 	int min_passwd_length;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
+	int iLockSpinCount;
+	int iLockSpinTime;
 #ifdef WITH_LDAP_SAM
 	int ldap_port;
 	int ldap_ssl;
@@ -972,6 +974,8 @@ static struct parm_struct parm_table[] = {
 	{"fake oplocks", P_BOOL, P_LOCAL, &sDefault.bFakeOplocks, NULL, NULL, FLAG_SHARE},
 	{"kernel oplocks", P_BOOL, P_GLOBAL, &Globals.bKernelOplocks, NULL, NULL, FLAG_GLOBAL},
 	{"locking", P_BOOL, P_LOCAL, &sDefault.bLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
+	{"lock spin count", P_INTEGER, P_GLOBAL, &Globals.iLockSpinCount, NULL, NULL, FLAG_GLOBAL},
+	{"lock spin time", P_INTEGER, P_GLOBAL, &Globals.iLockSpinTime, NULL, NULL, FLAG_GLOBAL},
 	
 	{"oplocks", P_BOOL, P_LOCAL, &sDefault.bOpLocks, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"level2 oplocks", P_BOOL, P_LOCAL, &sDefault.bLevel2OpLocks, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
@@ -1327,6 +1331,8 @@ static void init_globals(void)
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 	Globals.enhanced_browsing = True; 
+	Globals.iLockSpinCount = 3; /* Try 2 times. */
+	Globals.iLockSpinTime = 10; /* usec. */
 #ifdef MMAP_BLACKLIST
 	Globals.bUseMmap = False;
 #else
@@ -1638,6 +1644,8 @@ FN_GLOBAL_INTEGER(lp_stat_cache_size, &Globals.stat_cache_size)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
+FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
+FN_GLOBAL_INTEGER(lp_lock_sleep_time, &Globals.iLockSpinTime)
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)

@@ -1352,7 +1352,7 @@ int brl_forall(BRLOCK_FN(fn));
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type, BOOL check_self);
-NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type);
 NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		   SMB_BIG_UINT count,SMB_BIG_UINT offset);
@@ -1926,6 +1926,8 @@ int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
 int lp_min_passwd_length(void);
 int lp_oplock_break_wait_time(void);
+int lp_lock_spin_count(void);
+int lp_lock_sleep_time(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );

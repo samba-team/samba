@@ -162,7 +162,7 @@
 #define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
 
 #define SMB_ROUNDUP(x,g) (((x)+((g)-1))&~((g)-1))
-#define SMB_ROUNDUP_ALLOCATION(s) (SMB_ROUNDUP((SMB_OFF_T)((s)+1), ((SMB_OFF_T)SMB_ROUNDUP_ALLOCATION_SIZE)))
+#define SMB_ROUNDUP_ALLOCATION(s) ((s) ? (SMB_ROUNDUP((SMB_OFF_T)((s)+1), ((SMB_OFF_T)SMB_ROUNDUP_ALLOCATION_SIZE))) : 0 )
 
 /* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
 #define smb_buf(buf) (buf + smb_size + CVAL(buf,smb_wct)*2)
