@@ -848,6 +848,9 @@ krb5_verify_user(krb5_context context,
 extern const char krb5_config_file[];
 extern const char krb5_defkeyname[];
 
+void		krb5_data_zero(krb5_data *);
+void 		krb5_data_free(krb5_data *);
+
 void krb5_free_context(krb5_context context);
 
 krb5_error_code
