@@ -189,11 +189,10 @@ cd source
 
 %ifarch ia64
 libtoolize --copy --force     # get it to recognize IA-64
-autoconf
-autoheader
-EXTRA="-D_LARGEFILE64_SOURCE"
 %endif
 
+autoconf
+autoheader
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--prefix=%{prefix} \
