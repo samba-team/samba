@@ -228,14 +228,3 @@ encode_generalized_time (unsigned char *p, int len, time_t *t)
   ret += l;
   return ret;
 }
-
-int
-fix_dce(int reallen, int *len)
-{
-    if(reallen == 0)
-	return 1;
-    if(*len < reallen)
-	return -1;
-    *len = reallen;
-    return 0;
-}
