@@ -722,7 +722,7 @@ static struct cli_state *connect_one(char *share)
 							    &ip, 0,
 							    share, "?????",  
 							    username, global_myworkgroup,
-							    password, 0))) {
+							    password, 0, NULL))) {
 		return c;
 	} else {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));

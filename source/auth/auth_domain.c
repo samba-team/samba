@@ -88,8 +88,7 @@ static NTSTATUS rpc_resolve_dc(const char *server,
 		   way to find it, but until we have a RPC call that does this
 		   it will have to do */
 		if (!name_status_find("*", 0x20, 0x20, to_ip, remote_machine)) {
-			DEBUG(2, ("connect_to_domain_password_server: Can't "
-				  "resolve name for IP %s\n", server));
+			DEBUG(2, ("rpc_resolve_dc: Can't resolve name for IP %s\n", server));
 			return NT_STATUS_NO_LOGON_SERVERS;
 		}
 
@@ -100,7 +99,7 @@ static NTSTATUS rpc_resolve_dc(const char *server,
 	fstrcpy(remote_machine, server);
 	strupper(remote_machine);
 	if (!resolve_name(remote_machine, dest_ip, 0x20)) {
-		DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", 
+		DEBUG(1,("rpc_resolve_dc: Can't resolve address for %s\n", 
 			 remote_machine));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
@@ -126,18 +125,20 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 						  const char *server, 
 						  const char *setup_creds_as,
 						  uint16 sec_chan,
-						  const unsigned char *trust_passwd)
+						  const unsigned char *trust_passwd,
+						  BOOL *retry)
 {
 	struct in_addr dest_ip;
 	fstring remote_machine;
         NTSTATUS result;
 	uint32 neg_flags = 0x000001ff;
 
-	if (lp_security() == SEC_ADS) {
+	*retry = False;
+
+	if (lp_security() == SEC_ADS)
 		result = ads_resolve_dc(remote_machine, &dest_ip);
-	} else {
+	else
 		result = rpc_resolve_dc(server, remote_machine, &dest_ip);
-	}
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2,("connect_to_domain_password_server: unable to resolve DC: %s\n", 
@@ -165,12 +166,14 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	 * ACCESS_DENIED errors if 2 auths are done from the same machine. JRA.
 	 */
 
+	*retry = True;
+
 	if (!grab_server_mutex(server))
 		return NT_STATUS_NO_LOGON_SERVERS;
 	
 	/* Attempt connection */
 	result = cli_full_connection(cli, global_myname, remote_machine,
-				     &dest_ip, 0, "IPC$", "IPC", "", "", "",0);
+				     &dest_ip, 0, "IPC$", "IPC", "", "", "",0, retry);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		release_server_mutex();
@@ -235,7 +238,10 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 				      uint16 sec_chan,
 				      const unsigned char *trust_passwd)
 {
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	BOOL retry = True;
 	fstring dc_name;
+	int i;
 
 	/*
 	 * Ignore addresses we have already tried.
@@ -247,7 +253,10 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 	if (!lookup_dc_name(global_myname, domain, ip, dc_name))
 		return NT_STATUS_NO_LOGON_SERVERS;
 
-	return connect_to_domain_password_server(cli, dc_name, setup_creds_as, sec_chan, trust_passwd);
+	for (i = 0; (!NT_STATUS_IS_OK(ret)) && retry && (i < 3); i++)
+		ret = connect_to_domain_password_server(cli, dc_name, setup_creds_as,
+				sec_chan, trust_passwd, &retry);
+	return ret;
 }
 
 /***********************************************************************
@@ -371,7 +380,11 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		if(lp_security() != SEC_ADS && strequal(remote_machine, "*")) {
 			nt_status = find_connect_pdc(&cli, domain, setup_creds_as, sec_chan, trust_passwd, last_change_time);
 		} else {
-			nt_status = connect_to_domain_password_server(&cli, remote_machine, setup_creds_as, sec_chan, trust_passwd);
+			int i;
+			BOOL retry = False;
+			for (i = 0; !NT_STATUS_IS_OK(nt_status) && retry && (i < 3); i++)
+				nt_status = connect_to_domain_password_server(&cli, remote_machine, setup_creds_as,
+						sec_chan, trust_passwd, &retry);
 		}
 	}
 

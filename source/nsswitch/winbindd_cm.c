@@ -392,6 +392,8 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	NTSTATUS result;
 	char *ipc_username, *ipc_domain, *ipc_password;
 	struct in_addr dc_ip;
+	int i;
+	BOOL retry = True;
 
 	ZERO_STRUCT(dc_ip);
 
@@ -446,10 +448,22 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	DEBUG(5, ("connecting to %s from %s with username [%s]\\[%s]\n", 
 	      new_conn->controller, global_myname, ipc_domain, ipc_username));
 
-	result = cli_full_connection(&(new_conn->cli), global_myname, new_conn->controller, 
-				     &dc_ip, 0, "IPC$", 
-				     "IPC", ipc_username, ipc_domain, 
-				     ipc_password, 0);
+	for (i = 0; retry && (i < 3); i++) {
+		
+		if (!secrets_named_mutex(new_conn->controller, 10)) {
+			DEBUG(0,("cm_open_connection: mutex grab failed for %s\n", new_conn->controller));
+			continue;
+		}
+
+		result = cli_full_connection(&(new_conn->cli), global_myname, new_conn->controller, 
+			&dc_ip, 0, "IPC$", "IPC", ipc_username, ipc_domain, 
+			ipc_password, 0, &retry);
+
+		secrets_named_mutex_release(new_conn->controller);
+
+		if (NT_STATUS_IS_OK(result))
+			break;
+	}
 
 	SAFE_FREE(ipc_username);
 	SAFE_FREE(ipc_domain);
