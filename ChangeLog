@@ -1,3 +1,22 @@
+Sun May 24 05:22:17 1998  Assar Westerlund  <assar@sics.se>
+
+	* Release 0.0q
+
+	* lib/krb5/aname_to_localname.c: new file
+
+	* lib/gssapi/init_sec_context.c (repl_mutual): no output token
+
+	* lib/gssapi/display_name.c (gss_display_name): zero terminate
+ 	output.
+
+Sat May 23 19:11:07 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/gssapi/display_status.c: new file
+
+	* Makefile.am: send -I to aclocal
+
+	* configure.in: remove duplicate setenv
+
 Sat May 23 04:55:19 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kadmin/util.c (foreach_principal): Check for expression before
