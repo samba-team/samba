@@ -297,7 +297,7 @@ uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 	LSA_Q_OPEN_POL q_o;
 	LSA_SEC_QOS qos;
 	struct cli_connection *con = NULL;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	if (!cli_connection_init(system_name, PIPE_LSARPC, &con)) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -365,7 +365,7 @@ uint32 lsa_close(POLICY_HND *hnd)
         prs_struct rbuf;
         prs_struct buf;
         LSA_Q_CLOSE q_c;
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
         if (hnd == NULL) return False;
 
@@ -419,7 +419,7 @@ uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 	prs_struct buf;
 	LSA_Q_LOOKUP_SIDS q_l;
 	TALLOC_CTX *ctx = talloc_init();
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q_l);
 
@@ -454,7 +454,7 @@ uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 		LSA_R_LOOKUP_SIDS r_l;
 		DOM_R_REF ref;
 		LSA_TRANS_NAME_ENUM t_names;
-		BOOL p, valid_response;
+		BOOL p, valid_response = False;
 
 		r_l.dom_ref = &ref;
 		r_l.names = &t_names;
@@ -576,7 +576,7 @@ uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
 	LSA_Q_LOOKUP_NAMES q_l;
 	BOOL valid_response = False;
 	TALLOC_CTX *ctx = talloc_init();
-	uint32 result;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
 	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
 
