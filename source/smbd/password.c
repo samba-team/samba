@@ -1636,8 +1636,8 @@ BOOL server_validate(char *user, char *domain,
          * need to detect this as some versions of NT4.x are broken. JRA.
          */
 
-        if (cli_session_setup(&cli, user, badpass, sizeof(badpass), badpass, sizeof(badpass),
-                                                         domain)) {
+        if (cli_session_setup(&cli, user, (char *)badpass, sizeof(badpass), 
+                              (char *)badpass, sizeof(badpass), domain)) {
           if ((SVAL(cli.inbuf,smb_vwv2) & 1) == 0) {
             DEBUG(0,("server_validate: password server %s allows users as non-guest \
 with a bad password.\n", cli.desthost));
