@@ -1,5 +1,12 @@
 Sat Mar  8 11:41:07 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/krb5/error/error.c: Try strerror if error code wasn't found.
+
+	* lib/krb5/get_in_tkt.c: Remove realm parameter from
+ 	krb5_get_salt.
+
+	* lib/krb5/context.c: Initialize error table.
+
 	* kdc: The beginnings of a kdc.
 
 Sat Mar  8 08:16:28 1997  Assar Westerlund  <assar@sics.se>
