@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-extern char *__progname;
+extern const char *__progname;
 
 #ifndef __GNUC__
 #define __attribute__(x)
