@@ -1754,7 +1754,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 		*mode = SVAL(rdata, 32);
 	}
 	if (size) {
-		*size = IVAL(rdata, 40);
+		*size = IVAL(rdata, 48);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);
@@ -1826,7 +1826,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		*mode = SVAL(rdata, 32);
 	}
 	if (size) {
-		*size = IVAL(rdata, 40);
+		*size = IVAL(rdata, 48);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);
