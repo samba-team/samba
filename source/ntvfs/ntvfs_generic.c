@@ -149,6 +149,13 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 	union smb_setfileinfo *sf;
 	uint_t state;
 
+	/* this is really strange, but matches w2k3 */
+	if (io->generic.level == RAW_OPEN_T2OPEN &&
+	    io->t2open.in.open_func != OPENX_OPEN_FUNC_OPEN &&
+	    NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -159,7 +166,7 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 		io->openold.out.attrib     = io2->generic.out.attrib;
 		io->openold.out.write_time = nt_time_to_unix(io2->generic.out.write_time);
 		io->openold.out.size       = io2->generic.out.size;
-		io->openold.out.rmode      = DOS_OPEN_RDWR;
+		io->openold.out.rmode      = io->openold.in.flags;
 		break;
 
 	case RAW_OPEN_OPENX:
@@ -181,6 +188,18 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 		}
 		break;
 
+	case RAW_OPEN_T2OPEN:
+		io->t2open.out.fnum       = io2->openx.out.fnum;
+		io->t2open.out.attrib     = io2->openx.out.attrib;
+		io->t2open.out.write_time = 0;
+		io->t2open.out.size       = io2->openx.out.size;
+		io->t2open.out.access     = io->t2open.in.open_mode;
+		io->t2open.out.ftype      = io2->openx.out.ftype;
+		io->t2open.out.devstate   = io2->openx.out.devstate;
+		io->t2open.out.action     = io2->openx.out.action;
+		io->t2open.out.unknown    = 0;
+		break;
+
 	case RAW_OPEN_MKNEW:
 	case RAW_OPEN_CREATE:
 		io->mknew.out.fnum = io2->generic.out.fnum;
@@ -191,7 +210,6 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 		io->ctemp.out.fnum  = io2->generic.out.fnum;
 		io->ctemp.out.name = talloc_strdup(req, io2->generic.in.fname + 
 						   strlen(io->ctemp.in.directory) + 1);
-		write_time = io->ctemp.in.write_time;
 		break;
 
 	default:
@@ -217,7 +235,7 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 		sf = talloc_p(req, union smb_setfileinfo);			
 		sf->generic.level            = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
 		sf->generic.file.fnum        = io2->generic.out.fnum;
-		sf->end_of_file_info.in.size = io->openx.in.size;
+		sf->end_of_file_info.in.size = set_size;
 		status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
 		if (NT_STATUS_IS_OK(status)) {
 			io->openx.out.size = io->openx.in.size;
@@ -262,17 +280,17 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 	
 		switch (io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) {
 		case OPENX_MODE_ACCESS_READ:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
+			io2->generic.in.access_mask = STANDARD_RIGHTS_READ_ACCESS;
 			io->openx.out.access = OPENX_MODE_ACCESS_READ;
 			break;
 		case OPENX_MODE_ACCESS_WRITE:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
+			io2->generic.in.access_mask = STANDARD_RIGHTS_WRITE_ACCESS;
 			io->openx.out.access = OPENX_MODE_ACCESS_WRITE;
 			break;
 		case OPENX_MODE_ACCESS_RDWR:
 		case OPENX_MODE_ACCESS_FCB:
 		case OPENX_MODE_ACCESS_EXEC:
-			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
+			io2->generic.in.access_mask = STANDARD_RIGHTS_ALL_ACCESS;
 			io->openx.out.access = OPENX_MODE_ACCESS_RDWR;
 			break;
 		default:
@@ -402,8 +420,10 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE |
 				NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_DELETE;
 			break;
-		case 0x70: /* FCB mode */
-			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+		case OPEN_FLAGS_DENY_MASK:
+			io2->generic.in.share_access = 
+				NTCREATEX_SHARE_ACCESS_READ|
+				NTCREATEX_SHARE_ACCESS_WRITE;
 			break;
 		default:
 			DEBUG(2,("ntvfs_map_open(OPEN): invalid DENY 0x%x\n",
@@ -415,6 +435,19 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		status = ntvfs->ops->openfile(ntvfs, req, io2);
 		break;
 
+	case RAW_OPEN_T2OPEN:
+		io2->generic.level         = RAW_OPEN_OPENX;
+		io2->openx.in.flags        = io->t2open.in.flags;
+		io2->openx.in.open_mode    = io->t2open.in.open_mode;
+		io2->openx.in.search_attrs = 0;
+		io2->openx.in.file_attrs   = io->t2open.in.file_attrs;
+		io2->openx.in.write_time   = io->t2open.in.write_time;
+		io2->openx.in.open_func    = OPENX_OPEN_FUNC_OPEN;
+		io2->openx.in.size         = io->t2open.in.size;
+		io2->openx.in.timeout      = io->t2open.in.timeout;
+		io2->openx.in.fname        = io->t2open.in.fname;
+		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		break;
 
 	case RAW_OPEN_MKNEW:
 		io2->generic.in.file_attr = io->mknew.in.attrib;
