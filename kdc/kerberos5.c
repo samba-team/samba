@@ -590,17 +590,18 @@ as_rep(KDC_REQ *req,
 					      &enc_data,
 					      &ts_data);
 	    krb5_crypto_destroy(context, crypto);
-	    free_EncryptedData(&enc_data);
 	    if(ret){
 		if(hdb_next_enctype2key(context, client, 
 					enc_data.etype, &pa_key) == 0)
 		    goto try_next_key;
+		free_EncryptedData(&enc_data);
 		e_text = "Failed to decrypt PA-DATA";
 		kdc_log (5, "Failed to decrypt PA-DATA -- %s",
 			 client_name);
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		continue;
 	    }
+	    free_EncryptedData(&enc_data);
 	    ret = decode_PA_ENC_TS_ENC(ts_data.data,
 				       ts_data.length,
 				       &p,
