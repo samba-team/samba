@@ -1,3 +1,9 @@
+1999-12-30  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in (sockaddr_storage): change padding so that we have
+ 	one char[] of pad and then an unsigned long[] (for alignment and
+ 	padding).  this works much better in practice.
+
 1999-12-22  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in (sockaddr_storage): drop leading underscore on
