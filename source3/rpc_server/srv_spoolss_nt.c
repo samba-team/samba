@@ -2832,18 +2832,27 @@ uint32 _spoolss_endpageprinter(const POLICY_HND *handle)
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
-				 uint32 vuid, DOC_INFO *docinfo, uint32 *jobid)
+uint32 _spoolss_startdocprinter(const POLICY_HND *handle, uint32 level,
+				pipes_struct *p, DOC_INFO *docinfo, 
+				uint32 *jobid)
 {
 	DOC_INFO_1 *info_1 = &docinfo->doc_info_1;
 	int snum;
 	pstring jobname;
 	fstring datatype;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	struct current_user user;
 
 	if (!OPEN_HANDLE(Printer))
 	{
 		return ERROR_INVALID_HANDLE;
+	}
+
+	if (p->ntlmssp_auth_validated) {
+		memcpy(&user, &p->pipe_user, sizeof(user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(&user, &current_user, sizeof(user));
 	}
 
 	/*
@@ -2876,7 +2885,7 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 
 	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
 	
-	Printer->jobid = print_job_start(snum, vuid, jobname);
+	Printer->jobid = print_job_start(&user, snum, jobname);
 
 	/* need to map error codes properly - for now give out of
 	   memory as I don't know the correct codes (tridge) */
@@ -2938,10 +2947,18 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
  *
  ********************************************************************/
 static uint32 control_printer(const POLICY_HND *handle, uint32 command,
-			      uint16 vuid)
+			      pipes_struct *p)
 {
+	struct current_user user;
 	int snum;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+
+	if (p->ntlmssp_auth_validated) {
+		memcpy(&user, &p->pipe_user, sizeof(user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(&user, &current_user, sizeof(user));
+	}
 
 	if (!OPEN_HANDLE(Printer))
 		return ERROR_INVALID_HANDLE;
@@ -2951,18 +2968,18 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command,
 
 	switch (command) {
 	case PRINTER_CONTROL_PAUSE:
-		if (print_queue_pause(snum, vuid)) {
+		if (print_queue_pause(&user, snum)) {
 			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_RESUME:
 	case PRINTER_CONTROL_UNPAUSE:
-		if (print_queue_resume(snum, vuid)) {
+		if (print_queue_resume(&user, snum)) {
 			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_PURGE:
-		if (print_queue_purge(snum, vuid)) {
+		if (print_queue_purge(&user, snum)) {
 			return 0;
 		}
 		break;
@@ -3065,7 +3082,7 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   DEVMODE_CTR devmode_ctr,
 			   SEC_DESC_BUF *secdesc_ctr,
-			   uint32 command, uint16 vuid)
+			   uint32 command, pipes_struct *p)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
@@ -3075,7 +3092,7 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 	/* check the level */	
 	switch (level) {
 		case 0:
-			return control_printer(handle, command, vuid);
+			return control_printer(handle, command, p);
 			break;
 		case 2:
 			return update_printer(handle, level, info, devmode_ctr.devmode);
@@ -3346,11 +3363,12 @@ uint32 _spoolss_schedulejob( const POLICY_HND *handle, uint32 jobid)
 uint32 _spoolss_setjob( const POLICY_HND *handle,
 				uint32 jobid,
 				uint32 level,
-		                uint32 vuid,
+		                pipes_struct *p,
 				JOB_INFO *ctr,
 				uint32 command)
 
 {
+	struct current_user user;
 	int snum;
 	print_status_struct prt_status;
 		
@@ -3364,16 +3382,23 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 		return ERROR_INVALID_PRINTER_NAME;
 	}
 	
+	if (p->ntlmssp_auth_validated) {
+		memcpy(&user, &p->pipe_user, sizeof(user));
+	} else {
+		extern struct current_user current_user;
+	        memcpy(&user, &current_user, sizeof(user));
+	}
+
 	switch (command) {
 	case JOB_CONTROL_CANCEL:
 	case JOB_CONTROL_DELETE:
-		if (print_job_delete(vuid, jobid)) return 0x0;
+		if (print_job_delete(&user, jobid)) return 0x0;
 		break;
 	case JOB_CONTROL_PAUSE:
-		if (print_job_pause(vuid, jobid)) return 0x0;
+		if (print_job_pause(&user, jobid)) return 0x0;
 		break;
 	case JOB_CONTROL_RESUME:
-		if (print_job_resume(vuid, jobid)) return 0x0;
+		if (print_job_resume(&user, jobid)) return 0x0;
 		break;
 	default:
 		return ERROR_INVALID_LEVEL;
