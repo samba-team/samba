@@ -144,7 +144,7 @@ sub process_file($)
 	}
 
 	if ($opt_eparser) {
-		my($parser) = util::ChangeExtension($output, "_ethereal.c");
+		my($parser) = dirname($output) . "/packet-dcerpc-$basename.c";
 		util::FileSave($parser, IdlEParser::Parse($pidl));
 	}
 
