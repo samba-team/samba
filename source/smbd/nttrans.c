@@ -713,7 +713,7 @@ static int call_nt_transact_create(connection_struct *conn,
   mode_t unixmode;
   int pnum = -1;
   int fmode=0,rmode=0;
-  off_t file_len = 0;
+  SMB_OFF_T file_len = 0;
   SMB_STRUCT_STAT sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
