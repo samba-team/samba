@@ -15,6 +15,11 @@ static char SccsId[] = "@(#)@(#)pop_pass.c	2.3  2.3 4/2/91";
 #include <pwd.h>
 #include "popper.h"
 
+#ifdef KERBEROS
+#include <krb.h>
+extern AUTH_DAT kdata;
+#endif /* KERBEROS */
+
 /* 
  *  pass:   Obtain the user password from a POP client
  */
@@ -22,8 +27,44 @@ static char SccsId[] = "@(#)@(#)pop_pass.c	2.3  2.3 4/2/91";
 int pop_pass (p)
 POP     *   p;
 {
+#ifdef KERBEROS
+    char lrealm[REALM_SZ];
+    int status; 
+#else
     register struct passwd  *   pw;
     char *crypt();
+#endif /* KERBEROS */
+
+#ifdef KERBEROS
+    if ((status = krb_get_lrealm(lrealm,1)) == KFAILURE) {
+        pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, kdata.pname, 
+                kdata.pinst, kdata.prealm, krb_err_txt[status]);
+        return(pop_msg(p,POP_FAILURE,
+            "Kerberos error:  \"%s\".", krb_err_txt[status]));
+    }
+
+    if (strcmp(kdata.prealm,lrealm))  {
+         pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) realm not accepted.", 
+                 p->client, kdata.pname, kdata.pinst, kdata.prealm);
+         return(pop_msg(p,POP_FAILURE,
+                     "Kerberos realm \"%s\" not accepted.", kdata.prealm));
+    }
+
+    if (strcmp(kdata.pinst,"")) {
+        pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) instance not accepted.", 
+                 p->client, kdata.pname, kdata.pinst, kdata.prealm);
+        return(pop_msg(p,POP_FAILURE,
+              "Must use null Kerberos(tm) instance -  \"%s.%s\" not accepted.",
+              kdata.pname, kdata.pinst));
+    }
+
+    /*  Build the name of the user's maildrop */
+    (void)sprintf(p->drop_name,"%s/%s",POP_MAILDIR,p->user);
+    
+    /*  Make a temporary copy of the user's maildrop */
+    if (pop_dropcopy(p, 0) != POP_SUCCESS) return (POP_FAILURE);
+
+#else /* !KERBEROS */
 
     /*  Look for the user in the password file */
     if ((pw = getpwnam(p->user)) == NULL)
@@ -46,6 +87,8 @@ POP     *   p;
     /*  Make a temporary copy of the user's maildrop */
     /*    and set the group and user id */
     if (pop_dropcopy(p,pw) != POP_SUCCESS) return (POP_FAILURE);
+
+#endif /* !KERBEROS */
 
     /*  Get information about the maildrop */
     if (pop_dropinfo(p) != POP_SUCCESS) return(POP_FAILURE);

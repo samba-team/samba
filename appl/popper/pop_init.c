@@ -18,6 +18,12 @@ static char SccsId[] = "@(#)@(#)pop_init.c	2.1  2.1 3/18/91";
 #include <arpa/inet.h>
 #include "popper.h"
 
+#ifdef KERBEROS
+#include <krb.h>
+    
+AUTH_DAT kdata;
+#endif /* KERBEROS */
+
 extern int      errno;
 
 /* 
@@ -183,6 +189,43 @@ char    **      argmessage;
     else if (p->debug)
         pop_log(p,POP_PRIORITY,"Debugging turned on");
 #endif DEBUG
+
+    return(authenticate(p, &cs));
+}
+
+authenticate(p, addr)
+     POP     *p;
+     struct sockaddr_in *addr;
+{
+
+#ifdef KERBEROS
+    Key_schedule schedule;
+    KTEXT_ST ticket;
+    char instance[INST_SZ];  
+    char version[9];
+    int auth;
+  
+    strcpy(instance, "*");
+    auth = krb_recvauth(0L, 0, &ticket, "pop", instance,
+                        addr, (struct sockaddr_in *) NULL,
+                        &kdata, "", schedule, version);
+    
+    if (auth != KSUCCESS) {
+        pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s", 
+                krb_err_txt[auth]);
+        pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, 
+                kdata.pname, kdata.pinst, kdata.prealm, krb_err_txt[auth]);
+        exit(-1);
+    }
+
+#ifdef DEBUG
+    pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", kdata.pname, 
+            kdata.pinst, kdata.prealm, inet_ntoa(addr->sin_addr));
+#endif /* DEBUG */
+
+    strcpy(p->user, kdata.pname);
+
+#endif /* KERBEROS */
 
     return(POP_SUCCESS);
 }

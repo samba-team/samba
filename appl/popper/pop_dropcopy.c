@@ -68,8 +68,10 @@ struct passwd	*	pwp;
     }
 
     /* Now give this file to the user	*/
-    (void) chown(template,pwp->pw_uid, pwp->pw_gid);
-    (void) chmod(template,0600);
+    if (pwp) {
+    	(void) chown(template,pwp->pw_uid, pwp->pw_gid);
+    	(void) chmod(template,0600);
+    }
 
     /* Now link this file to the temporary maildrop.  If this fails it
      * is probably because the temporary maildrop already exists.  If so,
@@ -81,9 +83,10 @@ struct passwd	*	pwp;
     (void) unlink(template);
 
     /* Now we run as the user. */
-    (void) setuid(pwp->pw_uid);
-    (void) setgid(pwp->pw_gid);
-
+    if (pwp) {
+    	(void) setuid(pwp->pw_uid);
+    	(void) setgid(pwp->pw_gid);
+    }
 #ifdef DEBUG
     if(p->debug)pop_log(p,POP_DEBUG,"uid = %d, gid = %d",getuid(),getgid());
 #endif DEBUG

@@ -21,8 +21,10 @@ static char SccsId[] = "@(#)@(#)pop_user.c	2.1  2.1 3/18/91";
 int pop_user (p)
 POP     *   p;
 {
+#ifndef KERBEROS
     /*  Save the user name */
     (void)strcpy(p->user, p->pop_parm[1]);
+#endif /* KERBEROS */
 
     /*  Tell the user that the password is required */
     return (pop_msg(p,POP_SUCCESS,"Password required for %s.",p->user));
