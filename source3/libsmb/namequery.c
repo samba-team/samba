@@ -298,6 +298,44 @@ BOOL name_register(int fd, const char *name, int name_type,
   return True;
 }
 
+
+/*
+  comparison function used by sort_ip_list
+*/
+static int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
+{
+	int max_bits1=0, max_bits2=0;
+	int num_interfaces = iface_count();
+	int i;
+
+	for (i=0;i<num_interfaces;i++) {
+		struct in_addr ip;
+		int bits1, bits2;
+		ip = *iface_n_bcast(i);
+		bits1 = matching_quad_bits((uchar *)&ip1->s_addr, (uchar *)&ip.s_addr);
+		bits2 = matching_quad_bits((uchar *)&ip2->s_addr, (uchar *)&ip.s_addr);
+		max_bits1 = MAX(bits1, max_bits1);
+		max_bits2 = MAX(bits2, max_bits2);
+	}	
+
+	return max_bits2 - max_bits1;
+}
+
+/*
+  sort an IP list so that names that are close to one of our interfaces 
+  are at the top. This prevents the problem where a WINS server returns an IP that
+  is not reachable from our subnet as the first match
+*/
+static void sort_ip_list(struct in_addr *iplist, int count)
+{
+	if (count <= 1) {
+		return;
+	}
+
+	qsort(iplist, count, sizeof(struct in_addr), QSORT_CAST ip_compare);	
+}
+
+
 /****************************************************************************
  Do a netbios name query to find someones IP.
  Returns an array of IP addresses or NULL if none.
@@ -474,6 +512,9 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	if (timed_out) {
 		*timed_out = True;
 	}
+
+	/* sort the ip list so we choose close servers first if possible */
+	sort_ip_list(ip_list, *count);
 
 	return ip_list;
 }
