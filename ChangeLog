@@ -1,5 +1,10 @@
 2001-01-29  Assar Westerlund  <assar@sics.se>
 
+	* tools/krb5-config.in: use @LIB_des_appl@
+	* tools/Makefile.am (krb5-config): add LIB_des_appl
+	* configure.in (LIB_des): set correctly
+	(LIB_des_appl): add for the use by krb5-config.in
+
 	* lib/krb5/store_fd.c (fd_fetch, fd_store): use net_{read,write}
 	to make sure of not dropping data when doing it over a socket.
 	(this might break when used with ordinary files on win32)
