@@ -36,7 +36,6 @@
 RCSID("$Id$");
 
 void yyerror (char *s);
-long name2number(const char *str);
 void error_message(char *, ...);
 
 struct string_list* append_string(struct string_list*, char*);
@@ -129,31 +128,6 @@ flag		: STRING
 
 
 %%
-
-long
-name2number(const char *str)
-{
-    const char *p;
-    long base = 0;
-    const char *x = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	"abcdefghijklmnopqrstuvwxyz0123456789_";
-    if(strlen(str) > 4) {
-	yyerror("table name too long");
-	return 0;
-    }
-    for(p = str; *p; p++){
-	char *q = strchr(x, *p);
-	if(q == NULL) {
-	    yyerror("invalid character in table name");
-	    return 0;
-	}
-	base = (base << 6) + (q - x) + 1;
-    }
-    base <<= 8;
-    if(base > 0x7fffffff)
-	base = -(0xffffffff - base + 1);
-    return base;
-}
 
 void
 yyerror (char *s)
