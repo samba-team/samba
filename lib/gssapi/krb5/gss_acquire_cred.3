@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\" 
-.Dd March 19, 2003
+.Dd April  2, 2003
 .Dt GSS_ACQUIRE_CRED 3
 .Os HEIMDAL
 .Sh NAME
@@ -76,7 +76,7 @@
 .Nm gss_wrap_size_limit
 .Nd Generic Security Service Application Program Interface library
 .Sh LIBRARY
-gssapi library (libgssapi, -lgssapi)
+GSS-API library (libgssapi, -lgssapi)
 .Sh SYNOPSIS
 .Fd #include <gssapi.h>
 .Pp
@@ -358,21 +358,21 @@ gssapi library (libgssapi, -lgssapi)
 .Fa "OM_uint32 * max_input_size"
 .Fc
 .Sh DESCRIPTION
-.Nm gssapi
+.Nm GSS-API
 uses standardized C API for
-.Nm gssapi
+.Nm GSS-API
 described in
 .Li RFC1509
 and
 .Li RFC2744 .
 .Pp
-Heimdals gssapis implementation supports the following mechanisms
+Heimdals GSS-API implementation supports the following mechanisms
 .Bl -bullet
 .It
 .Li GSS_KRB5_MECHANISM
 .El
 .Pp
-Gssapi have some generic name types
+GSS-API have some generic name types
 .Bl -bullet
 .It
 .Li GSS_C_NT_USER_NAME
@@ -388,7 +388,7 @@ Gssapi have some generic name types
 .Li GSS_C_NT_EXPORT_NAME
 .El
 .Pp
-Gssapi implementations that supports Kerberos 5 have some additional
+GSS-API implementations that supports Kerberos 5 have some additional
 name types
 .Bl -bullet
 .It
@@ -402,7 +402,7 @@ name types
 .El
 .Pp
 .Fn gss_display_name
-takes the gssapi name in
+takes the gss name in
 .Fa input_name
 and put a printable form in
 .Fa output_name_buffer .
@@ -424,14 +424,14 @@ Access control should be done with the result of
 .Fn gss_seal ,
 and
 .Fn gss_unseal
-are part of the GSSAPI V1 interface and are obsolete. The functions
+are part of the GSS-API V1 interface and are obsolete. The functions
 should not be used for new applications.
 They are provided so that version 1 applications can link against the
 library.
 .Pp
 .Fn gss_krb5_copy_ccache
 is an extension to the
-.Nm gssapi
+.Nm GSS-API
 API.
 The function will extract the krb5 credential that are transfered from
 the initiator to the acceptor when using token delegation in the
