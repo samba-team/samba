@@ -689,15 +689,14 @@ static void dce_partial_advance(struct dcesrv_connection *dce_conn, uint32 offse
 	DATA_BLOB blob;
 
 	if (dce_conn->partial_input.length == offset) {
-		free(dce_conn->partial_input.data);
-		dce_conn->partial_input = data_blob(NULL, 0);
+		data_blob_free(&dce_conn->partial_input);
 		return;
 	}
 
 	blob = dce_conn->partial_input;
 	dce_conn->partial_input = data_blob(blob.data + offset,
-				       blob.length - offset);
-	free(blob.data);
+					    blob.length - offset);
+	data_blob_free(&blob);
 }
 
 /*
@@ -839,6 +838,32 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 {
 	NTSTATUS status;
+
+	/* handle the very common case that the input contains a full packet and there
+	   is no partial packet pending. In this case we can avoid a copy of the
+	   data */
+	if (dce_conn->partial_input.length == 0) {
+		dce_conn->partial_input = *data;
+		/* make sure that dce_partial_advance doesn't free this data */
+		dce_conn->partial_input.free = NULL;
+		while (dce_full_packet(&dce_conn->partial_input)) {
+			status = dcesrv_input_process(dce_conn);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+		if (dce_conn->partial_input.length) {
+			/* there was some data left over. We have to copy this
+			   as the caller may free the data */
+			dce_conn->partial_input = 
+				data_blob(dce_conn->partial_input.data,
+					  dce_conn->partial_input.length);
+			if (!dce_conn->partial_input.data) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		return NT_STATUS_OK;
+	}
 
 	dce_conn->partial_input.data = Realloc(dce_conn->partial_input.data,
 					  dce_conn->partial_input.length + data->length);
