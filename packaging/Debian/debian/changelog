@@ -1,15 +1,16 @@
-samba (3.0beta1-1) unstable; urgency=low
+samba (3.0.0beta1-1.1) unstable; urgency=low
 
   * Local build.
 
- -- Debian User <somebody@somewhere>  Sat, 31 May 2003 22:49:18 -0400
+ -- Debian User <someone@somewhere.com>  Sun,  8 Jun 2003 15:24:18 -0400
 
-samba (2.999+3.0.alpha24-4) unstable; urgency=low
+samba (3.0.0beta1-1) unstable; urgency=low
 
+  * New upstream version.
   * Build-depend on python-dev >= 2.2 instead of on just python-dev
     (without version).
 
- -- Eloy A. Paris <peloy@debian.org>  Sat, 31 May 2003 18:46:05 -0400
+ -- Eloy A. Paris <peloy@debian.org>  Sun,  8 Jun 2003 14:35:25 -0400
 
 samba (2.999+3.0.alpha24-3) unstable; urgency=low
 
