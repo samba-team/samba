@@ -510,14 +510,14 @@ kadm5_ad_chpass_principal(void *server_handle,
     krb5_data_zero (&result_code_string);
     krb5_data_zero (&result_string);
 
-    ret = krb5_set_password (context->context, 
-			     context->ccache,
-			     password,
-			     principal,
-			     &result_code,
-			     &result_code_string,
-			     &result_string);
-
+    ret = krb5_set_password_using_ccache (context->context, 
+					  context->ccache,
+					  password,
+					  principal,
+					  &result_code,
+					  &result_code_string,
+					  &result_string);
+    
     krb5_data_free (&result_code_string);
     krb5_data_free (&result_string);
 
@@ -1247,13 +1247,13 @@ kadm5_ad_randkey_principal(void *server_handle,
     krb5_data_zero (&result_code_string);
     krb5_data_zero (&result_string);
 
-    ret = krb5_set_password (context->context, 
-			     context->ccache,
-			     password,
-			     principal,
-			     &result_code,
-			     &result_code_string,
-			     &result_string);
+    ret = krb5_set_password_using_ccache (context->context, 
+					  context->ccache,
+					  password,
+					  principal,
+					  &result_code,
+					  &result_code_string,
+					  &result_string);
 
     krb5_data_free (&result_code_string);
     krb5_data_free (&result_string);

@@ -87,13 +87,13 @@ change_password(krb5_context context,
 	return 1;
     }
 
-    ret = krb5_set_password (context, id, pwbuf,
-			     principal,
-			     &result_code,
-			     &result_code_string,
-			     &result_string);
+    ret = krb5_set_password_using_ccache (context, id, pwbuf,
+					  principal,
+					  &result_code,
+					  &result_code_string,
+					  &result_string);
     if (ret) {
-	krb5_warn (context, ret, "krb5_set_password");
+	krb5_warn (context, ret, "krb5_set_password_using_ccache");
 	return 1;
     }
 
