@@ -36,6 +36,7 @@ struct cache_entry {
 
 static struct winbind_cache *wcache;
 
+/* flush the cache */
 void wcache_flush_cache(void)
 {
 	extern BOOL opt_nocache;
@@ -500,7 +501,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 	if (!cache->tdb) goto do_query;
 
-	sidstr = ads_sid_binstring(sid);
+	sidstr = sid_binstring(sid);
 
 	centry = wcache_fetch(cache, domain, "SIDTONAME/%s/%s", domain->name, sidstr);
 	if (!centry) goto do_query;

@@ -663,3 +663,20 @@ BOOL non_mappable_sid(DOM_SID *sid)
 
 	return False;
 }
+
+/*
+  return the binary string representation of a DOM_SID
+  caller must free
+*/
+char *sid_binstring(DOM_SID *sid)
+{
+	char *buf, *s;
+	int len = sid_size(sid);
+	buf = malloc(len);
+	if (!buf) return NULL;
+	sid_linearize(buf, len, sid);
+	s = binary_string(buf, len);
+	free(buf);
+	return s;
+}
+
