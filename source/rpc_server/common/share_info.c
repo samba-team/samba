@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_srvsvc.h"
 
 /* 
     Here are common server info functions used by some dcerpc server interfaces
@@ -52,7 +53,7 @@ uint32_t dcesrv_common_get_share_permissions(TALLOC_CTX *mem_ctx, struct dcesrv_
 /* This hardcoded value should go into a ldb database! */
 uint32_t dcesrv_common_get_share_max_users(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
 {
-	return 10;
+	return lp_max_connections(snum);
 }
 
 /* This hardcoded value should go into a ldb database! */
@@ -72,18 +73,33 @@ uint32_t dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context
 	 * ADMIN$, IPC$, C$, D$, E$ ...  are type |= 0x80000000
 	 * this ones are hidden in NetShareEnum, but shown in NetShareEnumAll
 	 */
-	if (strcasecmp(lp_servicename(snum), "IPC$") == 0) {
-		return 3;
+	uint32_t share_type = 0;
+
+	if (!lp_browseable(snum)) {
+		share_type |= STYPE_HIDDEN;
 	}
+
+	if (strcasecmp(lp_fstype(snum), "IPC") == 0) {
+		share_type |= STYPE_IPC;
+		return share_type;
+	}
+
 	if (lp_print_ok(snum)) {
-		return 1;
+		share_type |= STYPE_PRINTQ;
+		return share_type;
 	}
-	return 0;
+
+	share_type |= STYPE_DISKTREE;
+
+	return share_type;
 }
 
 /* This hardcoded value should go into a ldb database! */
 const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
 {
+	if (strcasecmp(lp_fstype(snum), "IPC") == 0) {
+		return talloc_strdup(mem_ctx, "");
+	}
 	return talloc_strdup(mem_ctx, "C:\\");
 }
 
