@@ -746,6 +746,12 @@ static const struct enum_list enum_map_to_guest[] = {
  *       Any parameter that does NOT have FLAG_ADVANCED will not disply at all
  *	 Set FLAG_SHARE and FLAG_PRINT to specifically display parameters in
  *        respective views.
+ *
+ * NOTE2: Handling of duplicated (synonym) paramters:
+ *	Only the first occurance of a parameter should be enabled by FLAG_BASIC
+ *	and/or FLAG_ADVANCED. All duplicates following the first mention should be
+ *	set to FLAG_HIDE. ie: Make you must place the parameter that has the preferred
+ *	name first, and all synonyms must follow it with the FLAG_HIDE attribute.
  */
 
 static struct parm_struct parm_table[] = {
@@ -1147,9 +1153,9 @@ static struct parm_struct parm_table[] = {
 	{"enable rid algorithm", P_BOOL, P_GLOBAL, &Globals.bEnableRidAlgorithm, NULL, NULL, FLAG_DEPRECATED}, 
 	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED}, 
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED}, 
-	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED}, 
+	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_HIDE}, 
 	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED}, 
-	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED}, 
+	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_HIDE}, 
 	{"template primary group", P_STRING, P_GLOBAL, &Globals.szTemplatePrimaryGroup, NULL, NULL, FLAG_ADVANCED}, 
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED}, 
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED}, 
