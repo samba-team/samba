@@ -22,7 +22,7 @@
 is a program for managing keytabs.
 .Ar command
 can be one of the following:
-.Bl -tag -width Ds
+.Bl -tag -width srvconvert
 .It add Xo
 .Op Fl p Ar principal
 .Op Fl -principal= Ns Ar principal
@@ -67,21 +67,25 @@ to
 .It get Xo
 .Op Fl p Ar admin principal
 .Op Fl -principal= Ns Ar admin principal
-.Oo Fl e Ar enctype \*(Ba Xo
-.Fl -enctypes= Ns Ar enctype
-.Xc
-.Oc
+.Op Fl e Ar enctype
+.Op Fl -enctypes= Ns Ar enctype
 .Op Fl r Ar realm
 .Op Fl -realm= Ns Ar realm
 .Op Fl a Ar admin server
 .Op Fl -admin-server= Ns Ar admin server
 .Op Fl s Ar server port
 .Op Fl -server-port= Ns Ar server port
-.Ar principal
+.Ar principal ...
 .Xc
-Get a key for
-.Nm principal
-and store it in a keytab.
+For each
+.Ar principal ,
+generate a new key for it (creating it if it doesn't already exist),
+and put that key in the keytab.
+.Pp
+If no
+.Ar realm
+is specified, the realm to operate on is taken from the first
+principal.
 .It list Xo
 .Op Fl -keys
 .Op Fl -timestamp
