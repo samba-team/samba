@@ -818,6 +818,20 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
+ #ifdef HAVE_KRB5
+	if (!kerberos_derive_salting_principal(machine_account)) {
+		DEBUG(1,("Failed to determine salting principal\n"));
+		ads_destroy(&ads);
+		return -1;
+	}
+
+	if (!kerberos_derive_cifs_salting_principals()) {
+		DEBUG(1,("Failed to determine salting principals\n"));
+		ads_destroy(&ads);
+		return -1;
+	}
+#endif
+
 	nt_status = pdb_init_trustpw_talloc(ctx, &trust);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1,("Could not initialise trust password\n"));
