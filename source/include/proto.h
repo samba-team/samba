@@ -1772,7 +1772,7 @@ void wins_write_database(BOOL background);
 /*The following definitions come from  nmbd/nmbd_workgroupdb.c  */
 
 struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec, 
-                                             fstring name);
+                                             const char *name);
 struct work_record *create_workgroup_on_subnet(struct subnet_record *subrec,
                                                fstring name, int ttl);
 void update_workgroup_ttl(struct work_record *work, int ttl);
