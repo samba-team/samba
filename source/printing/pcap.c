@@ -112,7 +112,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); SAFE_FREE(line))
+	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); safe_free(line))
 	{
 		if (*line == '*' || *line == 0)
 		continue;
@@ -190,7 +190,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 	/*DEBUG(3,( " Looking for entry %s\n",pName));*/
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); SAFE_FREE(line))
+	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); safe_free(line))
 	{
 		if (*line == '*' || *line == 0)
 		continue;
@@ -289,7 +289,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
       return(False);
     }
 
-  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); SAFE_FREE(line))
+  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); safe_free(line))
     {
       if (*line == '#' || *line == 0)
 	continue;
@@ -372,7 +372,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       return;
     }
 
-  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); SAFE_FREE(line))
+  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); safe_free(line))
     {
       if (*line == '#' || *line == 0)
 	continue;
