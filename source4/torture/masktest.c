@@ -216,7 +216,8 @@ static void get_real_name(struct cli_state *cli,
 
 	f_info_hit = False;
 
-	cli_list_new(cli, mask, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
+	cli_list_new(cli->tree, mask, 
+		     FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
 		     listfn, NULL);
 
 	if (f_info_hit) {
@@ -244,18 +245,19 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 
 	fstrcpy(res1, "---");
 
-	fnum = cli_open(cli, file, O_CREAT|O_TRUNC|O_RDWR, 0);
+	fnum = cli_open(cli->tree, file, O_CREAT|O_TRUNC|O_RDWR, 0);
 	if (fnum == -1) {
 		DEBUG(0,("Can't create %s\n", file));
 		return;
 	}
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 
 	resultp = res1;
 	fstrcpy(short_name, "");
 	get_real_name(cli, long_name, short_name);
 	fstrcpy(res1, "---");
-	cli_list(cli, mask, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
+	cli_list(cli->tree, mask, 
+		 FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
 		 listfn, NULL);
 
 	res2 = reg_test(cli, mask, long_name, short_name);
@@ -266,7 +268,7 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 		if (die_on_error) exit(1);
 	}
 
-	cli_unlink(cli, file);
+	cli_unlink(cli->tree, file);
 
 	if (count % 100 == 0) DEBUG(0,("%d\n", count));
 }
@@ -279,9 +281,9 @@ static void test_mask(int argc, char *argv[],
 	int mc_len = strlen(maskchars);
 	int fc_len = strlen(filechars);
 
-	cli_mkdir(cli, "\\masktest");
+	cli_mkdir(cli->tree, "\\masktest");
 
-	cli_unlink(cli, "\\masktest\\*");
+	cli_unlink(cli->tree, "\\masktest\\*");
 
 	if (argc >= 2) {
 		while (argc >= 2) {
@@ -324,7 +326,7 @@ static void test_mask(int argc, char *argv[],
 	}
 
  finished:
-	cli_rmdir(cli, "\\masktest");
+	cli_rmdir(cli->tree, "\\masktest");
 }
 
 

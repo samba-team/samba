@@ -81,8 +81,9 @@ static BOOL cli_list_new_callback(void *private, union smb_search_data *file)
 	return True;
 }
 
-int cli_list_new(struct cli_state *cli, const char *Mask, uint16 attribute, 
-		 void (*fn)(file_info *, const char *, void *), void *caller_state)
+int cli_list_new(struct cli_tree *tree, const char *Mask, uint16 attribute, 
+		 void (*fn)(file_info *, const char *, void *), 
+		 void *caller_state)
 {
 	union smb_search_first first_parms;
 	union smb_search_next next_parms;
@@ -104,7 +105,7 @@ int cli_list_new(struct cli_state *cli, const char *Mask, uint16 attribute,
 	
 	mask = talloc_strdup(state.mem_ctx, Mask);
 
-	if (cli->transport->negotiate.capabilities & CAP_NT_SMBS) {
+	if (tree->session->transport->negotiate.capabilities & CAP_NT_SMBS) {
 		level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	} else {
 		level = RAW_SEARCH_STANDARD;
@@ -122,7 +123,7 @@ int cli_list_new(struct cli_state *cli, const char *Mask, uint16 attribute,
 			first_parms.t2ffirst.in.flags = FLAG_TRANS2_FIND_CLOSE_IF_END;
 			first_parms.t2ffirst.in.storage_type = 0;
 			
-			status = smb_raw_search_first(cli->tree, 
+			status = smb_raw_search_first(tree, 
 						      state.mem_ctx, &first_parms,
 						      (void*)&state, cli_list_new_callback);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -148,7 +149,7 @@ int cli_list_new(struct cli_state *cli, const char *Mask, uint16 attribute,
 			next_parms.t2fnext.in.resume_key = 0;
 			next_parms.t2fnext.in.flags = FLAG_TRANS2_FIND_CONTINUE | FLAG_TRANS2_FIND_CLOSE_IF_END;
 			
-			status = smb_raw_search_next(cli->tree, 
+			status = smb_raw_search_next(tree, 
 						     state.mem_ctx,
 						     &next_parms,
 						     (void*)&state, 
@@ -223,8 +224,9 @@ static BOOL cli_list_old_callback(void *private, union smb_search_data *file)
 	return True;
 }
 
-int cli_list_old(struct cli_state *cli, const char *Mask, uint16 attribute, 
-		 void (*fn)(file_info *, const char *, void *), void *caller_state)
+int cli_list_old(struct cli_tree *tree, const char *Mask, uint16 attribute, 
+		 void (*fn)(file_info *, const char *, void *), 
+		 void *caller_state)
 {
 	union smb_search_first first_parms;
 	union smb_search_next next_parms;
@@ -254,10 +256,11 @@ int cli_list_old(struct cli_state *cli, const char *Mask, uint16 attribute,
 			first_parms.search_first.in.search_attrib = attribute;
 			first_parms.search_first.in.pattern = mask;
 			
-			status = smb_raw_search_first(cli->tree, state.mem_ctx, 
-							   &first_parms,
-							   (void*)&state, 
-							   cli_list_old_callback);
+			status = smb_raw_search_first(tree, state.mem_ctx, 
+						      &first_parms,
+						      (void*)&state, 
+						      cli_list_old_callback);
+
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_destroy(state.mem_ctx);
 				return -1;
@@ -274,10 +277,10 @@ int cli_list_old(struct cli_state *cli, const char *Mask, uint16 attribute,
 			next_parms.search_next.in.search_attrib = attribute;
 			next_parms.search_next.in.search_id = state.status;
 			
-			status = smb_raw_search_next(cli->tree, state.mem_ctx,
-							  &next_parms,
-							  (void*)&state, 
-							  cli_list_old_callback);
+			status = smb_raw_search_next(tree, state.mem_ctx,
+						     &next_parms,
+						     (void*)&state, 
+						     cli_list_old_callback);
 			
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_destroy(state.mem_ctx);
@@ -304,10 +307,10 @@ int cli_list_old(struct cli_state *cli, const char *Mask, uint16 attribute,
  This auto-switches between old and new style.
 ****************************************************************************/
 
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
+int cli_list(struct cli_tree *tree, const char *Mask,uint16 attribute, 
 	     void (*fn)(file_info *, const char *, void *), void *state)
 {
-	if (cli->transport->negotiate.protocol <= PROTOCOL_LANMAN1)
-		return cli_list_old(cli, Mask, attribute, fn, state);
-	return cli_list_new(cli, Mask, attribute, fn, state);
+	if (tree->session->transport->negotiate.protocol <= PROTOCOL_LANMAN1)
+		return cli_list_old(tree, Mask, attribute, fn, state);
+	return cli_list_new(tree, Mask, attribute, fn, state);
 }

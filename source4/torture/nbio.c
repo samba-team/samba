@@ -118,7 +118,7 @@ void nb_setup(struct cli_state *cli)
 
 void nb_unlink(const char *fname)
 {
-	if (!cli_unlink(c, fname)) {
+	if (!cli_unlink(c->tree, fname)) {
 #if NBDEBUG
 		printf("(%d) unlink %s failed (%s)\n", 
 		       line_count, fname, cli_errstr(c));
@@ -139,7 +139,7 @@ void nb_createx(const char *fname,
 		desired_access = SA_RIGHT_FILE_READ_DATA | SA_RIGHT_FILE_WRITE_DATA;
 	}
 
-	fd = cli_nt_create_full(c, fname, 0, 
+	fd = cli_nt_create_full(c->tree, fname, 0, 
 				desired_access,
 				0x0,
 				NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
@@ -147,7 +147,7 @@ void nb_createx(const char *fname,
 				create_options, 0);
 	if (fd == -1 && handle != -1) {
 		printf("ERROR: cli_nt_create_full failed for %s - %s\n",
-		       fname, cli_errstr(c));
+		       fname, cli_errstr(c->tree));
 		exit(1);
 	}
 	if (fd != -1 && handle == -1) {
@@ -175,7 +175,7 @@ void nb_writex(int handle, int offset, int size, int ret_size)
 	if (buf[0] == 0) memset(buf, 1, sizeof(buf));
 
 	i = find_handle(handle);
-	if (!bypass_io && cli_write(c, ftable[i].fd, 0, buf, offset, size) != ret_size) {
+	if (!bypass_io && cli_write(c->tree, ftable[i].fd, 0, buf, offset, size) != ret_size) {
 		printf("(%d) ERROR: write failed on handle %d, fd %d \
 errno %d (%s)\n", line_count, handle, ftable[i].fd, errno, strerror(errno));
 		exit(1);
@@ -189,7 +189,7 @@ void nb_readx(int handle, int offset, int size, int ret_size)
 	int i, ret;
 
 	i = find_handle(handle);
-	if (!bypass_io && (ret=cli_read(c, ftable[i].fd, buf, offset, size)) != ret_size) {
+	if (!bypass_io && (ret=cli_read(c->tree, ftable[i].fd, buf, offset, size)) != ret_size) {
 		printf("(%d) ERROR: read failed on handle %d ofs=%d size=%d res=%d fd %d errno %d (%s)\n",
 			line_count, handle, offset, size, ret, ftable[i].fd, errno, strerror(errno));
 		exit(1);
@@ -201,7 +201,7 @@ void nb_close(int handle)
 {
 	int i;
 	i = find_handle(handle);
-	if (!cli_close(c, ftable[i].fd)) {
+	if (!cli_close(c->tree, ftable[i].fd)) {
 		printf("(%d) close failed on handle %d\n", line_count, handle);
 		exit(1);
 	}
@@ -210,18 +210,18 @@ void nb_close(int handle)
 
 void nb_rmdir(const char *fname)
 {
-	if (!cli_rmdir(c, fname)) {
+	if (!cli_rmdir(c->tree, fname)) {
 		printf("ERROR: rmdir %s failed (%s)\n", 
-		       fname, cli_errstr(c));
+		       fname, cli_errstr(c->tree));
 		exit(1);
 	}
 }
 
 void nb_rename(const char *old, const char *new)
 {
-	if (!cli_rename(c, old, new)) {
+	if (!cli_rename(c->tree, old, new)) {
 		printf("ERROR: rename %s %s failed (%s)\n", 
-		       old, new, cli_errstr(c));
+		       old, new, cli_errstr(c->tree));
 		exit(1);
 	}
 }
@@ -229,21 +229,21 @@ void nb_rename(const char *old, const char *new)
 
 void nb_qpathinfo(const char *fname)
 {
-	cli_qpathinfo(c, fname, NULL, NULL, NULL, NULL, NULL);
+	cli_qpathinfo(c->tree, fname, NULL, NULL, NULL, NULL, NULL);
 }
 
 void nb_qfileinfo(int fnum)
 {
 	int i;
 	i = find_handle(fnum);
-	cli_qfileinfo(c, ftable[i].fd, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	cli_qfileinfo(c->tree, ftable[i].fd, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
 void nb_qfsinfo(int level)
 {
 	int bsize, total, avail;
 	/* this is not the right call - we need cli_qfsinfo() */
-	cli_dskattr(c, &bsize, &total, &avail);
+	cli_dskattr(c->tree, &bsize, &total, &avail);
 }
 
 static void find_fn(file_info *finfo, const char *name, void *state)
@@ -253,7 +253,7 @@ static void find_fn(file_info *finfo, const char *name, void *state)
 
 void nb_findfirst(const char *mask)
 {
-	cli_list(c, mask, 0, find_fn, NULL);
+	cli_list(c->tree, mask, 0, find_fn, NULL);
 }
 
 void nb_flush(int fnum)
@@ -269,7 +269,7 @@ void nb_deltree(const char *dname)
 {
 	int total_deleted;
 
-	total_deleted = cli_deltree(c, dname);
+	total_deleted = cli_deltree(c->tree, dname);
 
 	if (total_deleted == -1) {
 		printf("Failed to cleanup tree %s - exiting\n", dname);
@@ -282,6 +282,6 @@ void nb_deltree(const char *dname)
 
 void nb_cleanup(void)
 {
-	cli_rmdir(c, "clients");
+	cli_rmdir(c->tree, "clients");
 	children[nbio_id].done = 1;
 }

@@ -98,7 +98,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	uint16 fnum, fnum2;
 
 	/* cleanup */
-	cli_unlink(cli, fname);
+	cli_unlink(cli->tree, fname);
 
 	cli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
 
@@ -133,7 +133,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 	CHECK_VAL(break_info.count, 0);
 
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 
 	/*
 	  with a batch oplock we get a break
@@ -159,7 +159,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.count, 1);
 
 
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 
 	printf("if we close on break then the unlink can succeed\n");
 	ZERO_STRUCT(break_info);
@@ -184,7 +184,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("a self read should not cause a break\n");
 	ZERO_STRUCT(break_info);
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 	cli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
@@ -207,7 +207,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("a 2nd open should give a break\n");
 	ZERO_STRUCT(break_info);
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 	cli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
@@ -230,7 +230,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("a 2nd open should get an oplock when we close instead of ack\n");
 	ZERO_STRUCT(break_info);
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 	cli_oplock_handler(cli->transport, oplock_handler_close, cli->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
@@ -257,8 +257,8 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	
 
 done:
-	cli_close(cli, fnum);
-	cli_unlink(cli, fname);
+	cli_close(cli->tree, fnum);
+	cli_unlink(cli->tree, fname);
 	return ret;
 }
 

@@ -25,14 +25,15 @@
 /***************************************************************************
  Return an error message from the last response
 ****************************************************************************/
-const char *cli_errstr(struct cli_state *cli)
+const char *cli_errstr(struct cli_tree *tree)
 {   
-	switch (cli->transport->error.etype) {
+	switch (tree->session->transport->error.etype) {
 	case ETYPE_DOS:
-		return dos_errstr(cli->transport->error.e.dos.eclass, 
-				  cli->transport->error.e.dos.ecode);
+		return dos_errstr(
+			tree->session->transport->error.e.dos.eclass, 
+			tree->session->transport->error.e.dos.ecode);
 	case ETYPE_NT:
-		return nt_errstr(cli->transport->error.e.nt_status);
+		return nt_errstr(tree->session->transport->error.e.nt_status);
 
 	case ETYPE_SOCKET:
 		return "socket_error";
@@ -48,15 +49,16 @@ const char *cli_errstr(struct cli_state *cli)
 
 
 /* Return the 32-bit NT status code from the last packet */
-NTSTATUS cli_nt_error(struct cli_state *cli)
+NTSTATUS cli_nt_error(struct cli_tree *tree)
 {
-	switch (cli->transport->error.etype) {
+	switch (tree->session->transport->error.etype) {
 	case ETYPE_NT:
-		return cli->transport->error.e.nt_status;
+		return tree->session->transport->error.e.nt_status;
 
 	case ETYPE_DOS:
-		return dos_to_ntstatus(cli->transport->error.e.dos.eclass,
-				       cli->transport->error.e.dos.ecode);
+		return dos_to_ntstatus(
+			tree->session->transport->error.e.dos.eclass,
+			tree->session->transport->error.e.dos.ecode);
 	case ETYPE_SOCKET:
 		return NT_STATUS_UNSUCCESSFUL;
 
@@ -87,13 +89,13 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 
 
 /* Return true if the last packet was an error */
-BOOL cli_is_error(struct cli_state *cli)
+BOOL cli_is_error(struct cli_tree *tree)
 {
-	return NT_STATUS_IS_ERR(cli_nt_error(cli));
+	return NT_STATUS_IS_ERR(cli_nt_error(tree));
 }
 
 /* Return true if the last error was a DOS error */
-BOOL cli_is_dos_error(struct cli_state *cli)
+BOOL cli_is_dos_error(struct cli_tree *tree)
 {
-	return cli->transport->error.etype == ETYPE_DOS;
+	return tree->session->transport->error.etype == ETYPE_DOS;
 }

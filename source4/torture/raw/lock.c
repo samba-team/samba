@@ -50,18 +50,18 @@ static BOOL test_lock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
 
-	if (cli_deltree(cli, BASEDIR) == -1 ||
-	    !cli_mkdir(cli, BASEDIR)) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli));
+	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
+	    !cli_mkdir(cli->tree, BASEDIR)) {
+		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_LOCK_LOCK\n");
 	io.generic.level = RAW_LOCK_LOCK;
 	
-	fnum = cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
+		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -133,9 +133,9 @@ static BOOL test_lock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
-	cli_deltree(cli, BASEDIR);
+	cli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -152,18 +152,18 @@ static BOOL test_lockx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
 
-	if (cli_deltree(cli, BASEDIR) == -1 ||
-	    !cli_mkdir(cli, BASEDIR)) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli));
+	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
+	    !cli_mkdir(cli->tree, BASEDIR)) {
+		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_LOCK_LOCKX\n");
 	io.generic.level = RAW_LOCK_LOCKX;
 	
-	fnum = cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
+		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -182,9 +182,9 @@ static BOOL test_lockx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
-	cli_deltree(cli, BASEDIR);
+	cli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -202,9 +202,9 @@ static BOOL test_pidhigh(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\test.txt";
 	char c = 1;
 
-	if (cli_deltree(cli, BASEDIR) == -1 ||
-	    !cli_mkdir(cli, BASEDIR)) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli));
+	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
+	    !cli_mkdir(cli->tree, BASEDIR)) {
+		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
 
@@ -213,15 +213,15 @@ static BOOL test_pidhigh(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	cli->session->pid = 1;
 	
-	fnum = cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
+		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
 
-	if (cli_write(cli, fnum, 0, &c, 0, 1) != 1) {
-		printf("Failed to write 1 byte - %s\n", cli_errstr(cli));
+	if (cli_write(cli->tree, fnum, 0, &c, 0, 1) != 1) {
+		printf("Failed to write 1 byte - %s\n", cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -239,8 +239,8 @@ static BOOL test_pidhigh(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (cli_read(cli, fnum, &c, 0, 1) != 1) {
-		printf("Failed to read 1 byte - %s\n", cli_errstr(cli));
+	if (cli_read(cli->tree, fnum, &c, 0, 1) != 1) {
+		printf("Failed to read 1 byte - %s\n", cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -249,7 +249,7 @@ static BOOL test_pidhigh(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	cli->session->pid = 2;
 
-	if (cli_read(cli, fnum, &c, 0, 1) == 1) {
+	if (cli_read(cli->tree, fnum, &c, 0, 1) == 1) {
 		printf("pid is incorrect handled for read with lock!\n");
 		ret = False;
 		goto done;
@@ -257,7 +257,7 @@ static BOOL test_pidhigh(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	cli->session->pid = 0x10001;
 
-	if (cli_read(cli, fnum, &c, 0, 1) != 1) {
+	if (cli_read(cli->tree, fnum, &c, 0, 1) != 1) {
 		printf("High pid is used on this server!\n");
 		ret = False;
 	} else {
@@ -265,9 +265,9 @@ static BOOL test_pidhigh(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 done:
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
-	cli_deltree(cli, BASEDIR);
+	cli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 

@@ -118,20 +118,20 @@ static void qfileinfo_aliases(struct cli_state *cli)
 	t2.in.params = data_blob(NULL, 4);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli, fname);
+	cli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli));
+		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
 	}
 
-	cli_write(cli, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
 
 	SSVAL(t2.in.params.data, 0, fnum);
 
 	gen_aliases(cli, &t2, 2);
 
-	cli_close(cli, fnum);
-	cli_unlink(cli, fname);
+	cli_close(cli->tree, fnum);
+	cli_unlink(cli->tree, fname);
 }
 
 
@@ -158,14 +158,14 @@ static void qpathinfo_aliases(struct cli_state *cli)
 	t2.in.params = data_blob_talloc(mem_ctx, NULL, 6);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli, fname);
+	cli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli));
+		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
 	}
 
-	cli_write(cli, fnum, 0, (char *)&t2, 0, sizeof(t2));
-	cli_close(cli, fnum);
+	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	cli_close(cli->tree, fnum);
 
 	SIVAL(t2.in.params.data, 2, 0);
 
@@ -174,7 +174,7 @@ static void qpathinfo_aliases(struct cli_state *cli)
 
 	gen_aliases(cli, &t2, 0);
 
-	cli_unlink(cli, fname);
+	cli_unlink(cli->tree, fname);
 	talloc_destroy(mem_ctx);
 }
 
@@ -202,14 +202,14 @@ static void findfirst_aliases(struct cli_state *cli)
 	t2.in.params = data_blob_talloc(mem_ctx, NULL, 12);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli, fname);
+	cli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli));
+		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
 	}
 
-	cli_write(cli, fnum, 0, (char *)&t2, 0, sizeof(t2));
-	cli_close(cli, fnum);
+	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	cli_close(cli->tree, fnum);
 
 	SSVAL(t2.in.params.data, 0, 0);
 	SSVAL(t2.in.params.data, 2, 1);
@@ -222,7 +222,7 @@ static void findfirst_aliases(struct cli_state *cli)
 
 	gen_aliases(cli, &t2, 6);
 
-	cli_unlink(cli, fname);
+	cli_unlink(cli->tree, fname);
 	talloc_destroy(mem_ctx);
 }
 
@@ -314,21 +314,21 @@ static void setfileinfo_aliases(struct cli_state *cli)
 	t2.in.params = data_blob(NULL, 6);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli, fname);
+	cli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli));
+		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
 	}
 
-	cli_write(cli, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
 
 	SSVAL(t2.in.params.data, 0, fnum);
 	SSVAL(t2.in.params.data, 4, 0);
 
 	gen_set_aliases(cli, &t2, 2);
 
-	cli_close(cli, fnum);
-	cli_unlink(cli, fname);
+	cli_close(cli->tree, fnum);
+	cli_unlink(cli->tree, fname);
 }
 
 /* look for setpathinfo aliases */
@@ -354,15 +354,15 @@ static void setpathinfo_aliases(struct cli_state *cli)
 	t2.in.params = data_blob_talloc(mem_ctx, NULL, 4);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli, fname);
+	cli_unlink(cli->tree, fname);
 
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli));
+		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
 	}
 
-	cli_write(cli, fnum, 0, (char *)&t2, 0, sizeof(t2));
-	cli_close(cli, fnum);
+	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	cli_close(cli->tree, fnum);
 
 	SSVAL(t2.in.params.data, 2, 0);
 
@@ -371,8 +371,8 @@ static void setpathinfo_aliases(struct cli_state *cli)
 
 	gen_set_aliases(cli, &t2, 0);
 
-	if (!cli_unlink(cli, fname)) {
-		printf("unlink: %s\n", cli_errstr(cli));
+	if (!cli_unlink(cli->tree, fname)) {
+		printf("unlink: %s\n", cli_errstr(cli->tree));
 	}
 	talloc_destroy(mem_ctx);
 }

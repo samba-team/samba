@@ -539,8 +539,8 @@ static BOOL ensurepath(char *fname)
     {
       safe_strcat(partpath, p, strlen(fname) + 1);
 
-      if (!cli_chkpath(cli, partpath)) {
-	if (!cli_mkdir(cli, partpath))
+      if (!cli_chkpath(cli->tree, partpath)) {
+	if (!cli_mkdir(cli->tree, partpath))
 	  {
 	    DEBUG(0, ("Error mkdirhiering\n"));
 	    return False;
@@ -578,7 +578,7 @@ static void do_setrattr(char *name, uint16 attr, int set)
 {
 	uint16 oldattr;
 
-	if (!cli_getatr(cli, name, &oldattr, NULL, NULL)) return;
+	if (!cli_getatr(cli->tree, name, &oldattr, NULL, NULL)) return;
 
 	if (set == ATTRSET) {
 		attr |= oldattr;
@@ -586,8 +586,8 @@ static void do_setrattr(char *name, uint16 attr, int set)
 		attr = oldattr & ~attr;
 	}
 
-	if (!cli_setatr(cli, name, attr, 0)) {
-		DEBUG(1,("setatr failed: %s\n", cli_errstr(cli)));
+	if (!cli_setatr(cli->tree, name, attr, 0)) {
+		DEBUG(1,("setatr failed: %s\n", cli_errstr(cli->tree)));
 	}
 }
 
@@ -644,13 +644,13 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       return;
     }
 
-  fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
+  fnum = cli_open(cli->tree, rname, O_RDONLY, DENY_NONE);
 
   dos_clean_name(rname);
 
   if (fnum == -1) {
 	  DEBUG(0,("%s opening remote file %s (%s)\n",
-		   cli_errstr(cli),rname, cur_dir));
+		   cli_errstr(cli->tree),rname, cur_dir));
 	  return;
   }
 
@@ -663,8 +663,8 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
   safe_strcpy(finfo.name,rname, strlen(rname));
   if (!finfo1) {
 	  size_t size;
-	  if (!cli_getattrE(cli, fnum, &finfo.mode, &size, NULL, &finfo.atime, &finfo.mtime)) {
-		  DEBUG(0, ("getattrE: %s\n", cli_errstr(cli)));
+	  if (!cli_getattrE(cli->tree, fnum, &finfo.mode, &size, NULL, &finfo.atime, &finfo.mtime)) {
+		  DEBUG(0, ("getattrE: %s\n", cli_errstr(cli->tree)));
 		  return;
 	  }
 	  finfo.size = size;
@@ -702,10 +702,10 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	      
 	      DEBUG(3,("nread=%.0f\n",(double)nread));
 	      
-	      datalen = cli_read(cli, fnum, data, nread, read_size);
+	      datalen = cli_read(cli->tree, fnum, data, nread, read_size);
 	      
 	      if (datalen == -1) {
-		      DEBUG(0,("Error reading file %s : %s\n", rname, cli_errstr(cli)));
+		      DEBUG(0,("Error reading file %s : %s\n", rname, cli_errstr(cli->tree)));
 		      break;
 	      }
 	      
@@ -750,7 +750,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       ntarf++;
     }
   
-  cli_close(cli, fnum);
+  cli_close(cli->tree, fnum);
 
   if (shallitime)
     {
@@ -966,7 +966,7 @@ static int get_file(file_info2 finfo)
   DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, (int)finfo.size));
 
   if (ensurepath(finfo.name) && 
-      (fnum=cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
+      (fnum=cli_open(cli->tree, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
       DEBUG(0, ("abandoning restore\n"));
       return(False);
   }
@@ -983,7 +983,7 @@ static int get_file(file_info2 finfo)
     dsize = MIN(dsize, rsize);  /* Should be only what is left */
     DEBUG(5, ("writing %i bytes, bpos = %i ...\n", dsize, bpos));
 
-    if (cli_write(cli, fnum, 0, buffer_p + bpos, pos, dsize) != dsize) {
+    if (cli_write(cli->tree, fnum, 0, buffer_p + bpos, pos, dsize) != dsize) {
 	    DEBUG(0, ("Error writing remote file\n"));
 	    return 0;
     }
@@ -1036,7 +1036,7 @@ static int get_file(file_info2 finfo)
 
   /* Now close the file ... */
 
-  if (!cli_close(cli, fnum)) {
+  if (!cli_close(cli->tree, fnum)) {
 	  DEBUG(0, ("Error closing remote file\n"));
 	  return(False);
   }
@@ -1045,7 +1045,7 @@ static int get_file(file_info2 finfo)
 
   DEBUG(5, ("Updating creation date on %s\n", finfo.name));
 
-  if (!cli_setatr(cli, finfo.name, finfo.mode, finfo.mtime)) {
+  if (!cli_setatr(cli->tree, finfo.name, finfo.mode, finfo.mtime)) {
 	  if (tar_real_noisy) {
 		  DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
 		  /*return(False); */ /* Ignore, as Win95 does not allow changes */

@@ -90,18 +90,18 @@ static BOOL test_read(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (cli_deltree(cli, BASEDIR) == -1 ||
-	    !cli_mkdir(cli, BASEDIR)) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli));
+	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
+	    !cli_mkdir(cli->tree, BASEDIR)) {
+		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_READ_READ\n");
 	io.generic.level = RAW_READ_READ;
 	
-	fnum = cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
+		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -129,7 +129,7 @@ static BOOL test_read(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 	io.read.in.fnum = fnum;
 
-	cli_write(cli, fnum, 0, test_data, 0, strlen(test_data));
+	cli_write(cli->tree, fnum, 0, test_data, 0, strlen(test_data));
 
 	printf("Trying small read\n");
 	io.read.in.fnum = fnum;
@@ -165,7 +165,7 @@ static BOOL test_read(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.read.out.nread, 0);
 
 	setup_buffer(buf, seed, maxsize);
-	cli_write(cli, fnum, 0, buf, 0, maxsize);
+	cli_write(cli->tree, fnum, 0, buf, 0, maxsize);
 	memset(buf, 0, maxsize);
 
 	printf("Trying large read\n");
@@ -178,7 +178,7 @@ static BOOL test_read(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying locked region\n");
 	cli->session->pid++;
-	if (!cli_lock(cli, fnum, 103, 1, 0, WRITE_LOCK)) {
+	if (!cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK)) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -192,9 +192,9 @@ static BOOL test_read(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	
 
 done:
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
-	cli_deltree(cli, BASEDIR);
+	cli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -216,18 +216,18 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (cli_deltree(cli, BASEDIR) == -1 ||
-	    !cli_mkdir(cli, BASEDIR)) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli));
+	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
+	    !cli_mkdir(cli->tree, BASEDIR)) {
+		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_READ_LOCKREAD\n");
 	io.generic.level = RAW_READ_LOCKREAD;
 	
-	fnum = cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
+		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -260,7 +260,7 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 	io.lockread.in.fnum = fnum;
 
-	cli_write(cli, fnum, 0, test_data, 0, strlen(test_data));
+	cli_write(cli->tree, fnum, 0, test_data, 0, strlen(test_data));
 
 	printf("Trying small read\n");
 	io.lockread.in.fnum = fnum;
@@ -270,7 +270,7 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	cli_unlock(cli, fnum, 0, 1);
+	cli_unlock(cli->tree, fnum, 0, 1);
 
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -286,7 +286,7 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	io.lockread.in.count = strlen(test_data);
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
-	cli_unlock(cli, fnum, 0, strlen(test_data));
+	cli_unlock(cli->tree, fnum, 0, strlen(test_data));
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -305,7 +305,7 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.lockread.out.nread, 0);
 
 	setup_buffer(buf, seed, maxsize);
-	cli_write(cli, fnum, 0, buf, 0, maxsize);
+	cli_write(cli->tree, fnum, 0, buf, 0, maxsize);
 	memset(buf, 0, maxsize);
 
 	printf("Trying large read\n");
@@ -313,16 +313,16 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	io.lockread.in.count = ~0;
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
-	cli_unlock(cli, fnum, 1, strlen(test_data));
+	cli_unlock(cli->tree, fnum, 1, strlen(test_data));
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_BUFFER(buf, seed, io.lockread.out.nread);
-	cli_unlock(cli, fnum, 0, 0xFFFF);
+	cli_unlock(cli->tree, fnum, 0, 0xFFFF);
 
 
 	printf("Trying locked region\n");
 	cli->session->pid++;
-	if (!cli_lock(cli, fnum, 103, 1, 0, WRITE_LOCK)) {
+	if (!cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK)) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -336,8 +336,8 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	
 
 done:
-	cli_close(cli, fnum);
-	cli_deltree(cli, BASEDIR);
+	cli_close(cli->tree, fnum);
+	cli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -359,17 +359,17 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (cli_deltree(cli, BASEDIR) == -1 ||
-	    !cli_mkdir(cli, BASEDIR)) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli));
+	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
+	    !cli_mkdir(cli->tree, BASEDIR)) {
+		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_READ_READX\n");
 	
-	fnum = cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
+		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -404,7 +404,7 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 	io.readx.in.fnum = fnum;
 
-	cli_write(cli, fnum, 0, test_data, 0, strlen(test_data));
+	cli_write(cli->tree, fnum, 0, test_data, 0, strlen(test_data));
 
 	printf("Trying small read\n");
 	io.readx.in.fnum = fnum;
@@ -449,7 +449,7 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 
 	setup_buffer(buf, seed, maxsize);
-	cli_write(cli, fnum, 0, buf, 0, maxsize);
+	cli_write(cli->tree, fnum, 0, buf, 0, maxsize);
 	memset(buf, 0, maxsize);
 
 	printf("Trying large read\n");
@@ -489,7 +489,7 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying locked region\n");
 	cli->session->pid++;
-	if (!cli_lock(cli, fnum, 103, 1, 0, WRITE_LOCK)) {
+	if (!cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK)) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -511,7 +511,7 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readx.out.nread, 0);
 
-	if (!cli_lock64(cli, fnum, io.readx.in.offset, 1, 0, WRITE_LOCK)) {
+	if (!cli_lock64(cli->tree, fnum, io.readx.in.offset, 1, 0, WRITE_LOCK)) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -523,8 +523,8 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 #endif
 
 done:
-	cli_close(cli, fnum);
-	cli_deltree(cli, BASEDIR);
+	cli_close(cli->tree, fnum);
+	cli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -546,17 +546,17 @@ static BOOL test_readbraw(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (cli_deltree(cli, BASEDIR) == -1 ||
-	    !cli_mkdir(cli, BASEDIR)) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli));
+	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
+	    !cli_mkdir(cli->tree, BASEDIR)) {
+		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_READ_READBRAW\n");
 	
-	fnum = cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
+		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -588,7 +588,7 @@ static BOOL test_readbraw(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.readbraw.out.nread, 0);
 	io.readbraw.in.fnum = fnum;
 
-	cli_write(cli, fnum, 0, test_data, 0, strlen(test_data));
+	cli_write(cli->tree, fnum, 0, test_data, 0, strlen(test_data));
 
 	printf("Trying small read\n");
 	io.readbraw.in.fnum = fnum;
@@ -626,7 +626,7 @@ static BOOL test_readbraw(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.readbraw.out.nread, 0);
 
 	setup_buffer(buf, seed, maxsize);
-	cli_write(cli, fnum, 0, buf, 0, maxsize);
+	cli_write(cli->tree, fnum, 0, buf, 0, maxsize);
 	memset(buf, 0, maxsize);
 
 	printf("Trying large read\n");
@@ -660,7 +660,7 @@ static BOOL test_readbraw(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying locked region\n");
 	cli->session->pid++;
-	if (!cli_lock(cli, fnum, 103, 1, 0, WRITE_LOCK)) {
+	if (!cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK)) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -696,8 +696,8 @@ static BOOL test_readbraw(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 #endif
 
 done:
-	cli_close(cli, fnum);
-	cli_deltree(cli, BASEDIR);
+	cli_close(cli->tree, fnum);
+	cli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 

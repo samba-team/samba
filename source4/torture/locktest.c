@@ -144,7 +144,7 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NS
 		if (cli[server][conn]) {
 			for (f=0;f<NFILES;f++) {
 				if (fnum[server][conn][f] != -1) {
-					cli_close(cli[server][conn], fnum[server][conn][f]);
+					cli_close(cli[server][conn]->tree, fnum[server][conn][f]);
 					fnum[server][conn][f] = -1;
 				}
 			}
@@ -177,10 +177,10 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_LOCK:
 		/* set a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_lock64(cli[server][conn], 
+			ret[server] = cli_lock64(cli[server][conn]->tree, 
 						 fnum[server][conn][f],
 						 start, len, LOCK_TIMEOUT, op);
-			status[server] = cli_nt_error(cli[server][conn]);
+			status[server] = cli_nt_error(cli[server][conn]->tree);
 			if (!exact_error_codes && 
 			    NT_STATUS_EQUAL(status[server], 
 					    NT_STATUS_FILE_LOCK_CONFLICT)) {
@@ -200,10 +200,10 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_UNLOCK:
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_unlock64(cli[server][conn], 
+			ret[server] = cli_unlock64(cli[server][conn]->tree, 
 						   fnum[server][conn][f],
 						   start, len);
-			status[server] = cli_nt_error(cli[server][conn]);
+			status[server] = cli_nt_error(cli[server][conn]->tree);
 		}
 		if (showall || 
 		    (!hide_unlock_fails && !NT_STATUS_EQUAL(status[0],status[1]))) {
@@ -219,11 +219,11 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_REOPEN:
 		/* reopen the file */
 		for (server=0;server<NSERVERS;server++) {
-			cli_close(cli[server][conn], fnum[server][conn][f]);
+			cli_close(cli[server][conn]->tree, fnum[server][conn][f]);
 			fnum[server][conn][f] = -1;
 		}
 		for (server=0;server<NSERVERS;server++) {
-			fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
+			fnum[server][conn][f] = cli_open(cli[server][conn]->tree, FILENAME,
 							 O_RDWR|O_CREAT,
 							 DENY_NONE);
 			if (fnum[server][conn][f] == -1) {
@@ -250,12 +250,12 @@ static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	for (conn=0;conn<NCONNECTIONS;conn++)
 	for (f=0;f<NFILES;f++) {
 		if (fnum[server][conn][f] != -1) {
-			cli_close(cli[server][conn], fnum[server][conn][f]);
+			cli_close(cli[server][conn]->tree, fnum[server][conn][f]);
 			fnum[server][conn][f] = -1;
 		}
 	}
 	for (server=0;server<NSERVERS;server++) {
-		cli_unlink(cli[server][0], FILENAME);
+		cli_unlink(cli[server][0]->tree, FILENAME);
 	}
 }
 
@@ -267,7 +267,7 @@ static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	for (server=0;server<NSERVERS;server++)
 	for (conn=0;conn<NCONNECTIONS;conn++)
 	for (f=0;f<NFILES;f++) {
-		fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
+		fnum[server][conn][f] = cli_open(cli[server][conn]->tree, FILENAME,
 						 O_RDWR|O_CREAT,
 						 DENY_NONE);
 		if (fnum[server][conn][f] == -1) {
