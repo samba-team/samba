@@ -58,7 +58,7 @@ static void decode_printer_info_0(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         inf=(PRINTER_INFO_0 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_0));
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_0));
 
-        buffer->prs.data_offset=0;
+	prs_set_offset(&buffer->prs,0);
 
         for (i=0; i<returned; i++) {
                 smb_io_printer_info_0("", buffer, &inf[i], 0);
@@ -78,7 +78,7 @@ static void decode_printer_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         inf=(PRINTER_INFO_1 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_1));
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_1));
 
-        buffer->prs.data_offset=0;
+	prs_set_offset(&buffer->prs,0);
 
         for (i=0; i<returned; i++) {
                 smb_io_printer_info_1("", buffer, &inf[i], 0);
@@ -98,7 +98,7 @@ static void decode_printer_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         inf=(PRINTER_INFO_2 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_2));
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_2));
 
-        buffer->prs.data_offset=0;
+	prs_set_offset(&buffer->prs,0);
 
         for (i=0; i<returned; i++) {
 		/* a little initialization as we go */
@@ -120,7 +120,7 @@ static void decode_printer_info_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         inf=(PRINTER_INFO_3 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_3));
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_3));
 
-        buffer->prs.data_offset=0;
+	prs_set_offset(&buffer->prs,0);
 
         for (i=0; i<returned; i++) {
 		inf[i].secdesc = NULL;
@@ -181,7 +181,7 @@ static void decode_printer_driver_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         inf=(DRIVER_INFO_1 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_1));
 	memset(inf, 0, returned*sizeof(DRIVER_INFO_1));
 
-        buffer->prs.data_offset=0;
+	prs_set_offset(&buffer->prs,0);
 
         for (i=0; i<returned; i++) {
                 smb_io_printer_driver_info_1("", buffer, &(inf[i]), 0);
@@ -201,7 +201,7 @@ static void decode_printer_driver_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         inf=(DRIVER_INFO_2 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_2));
 	memset(inf, 0, returned*sizeof(DRIVER_INFO_2));
 
-        buffer->prs.data_offset=0;
+	prs_set_offset(&buffer->prs,0);
 
         for (i=0; i<returned; i++) {
                 smb_io_printer_driver_info_2("", buffer, &(inf[i]), 0);
@@ -221,7 +221,7 @@ static void decode_printer_driver_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         inf=(DRIVER_INFO_3 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_3));
 	memset(inf, 0, returned*sizeof(DRIVER_INFO_3));
 
-        buffer->prs.data_offset=0;
+	prs_set_offset(&buffer->prs,0);
 
         for (i=0; i<returned; i++) {
                 smb_io_printer_driver_info_3("", buffer, &(inf[i]), 0);
@@ -1424,7 +1424,7 @@ static void decode_forms_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 	int i;
 
 	*forms = (FORM_1 *)talloc(mem_ctx, num_forms * sizeof(FORM_1));
-	buffer->prs.data_offset = 0;
+	prs_set_offset(&buffer->prs,0);
 
 	for (i = 0; i < num_forms; i++)
 		smb_io_form_1("", buffer, &((*forms)[i]), 0);
@@ -1506,7 +1506,7 @@ static void decode_jobs_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 	uint32 i;
 
 	*jobs = (JOB_INFO_1 *)talloc(mem_ctx, num_jobs * sizeof(JOB_INFO_1));
-	buffer->prs.data_offset = 0;
+	prs_set_offset(&buffer->prs,0);
 
 	for (i = 0; i < num_jobs; i++) 
 		smb_io_job_info_1("", buffer, &((*jobs)[i]), 0);
@@ -1518,7 +1518,7 @@ static void decode_jobs_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 	uint32 i;
 
 	*jobs = (JOB_INFO_2 *)talloc(mem_ctx, num_jobs * sizeof(JOB_INFO_2));
-	buffer->prs.data_offset = 0;
+	prs_set_offset(&buffer->prs,0);
 
 	for (i = 0; i < num_jobs; i++) 
 		smb_io_job_info_2("", buffer, &((*jobs)[i]), 0);

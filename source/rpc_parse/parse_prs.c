@@ -134,7 +134,8 @@ void prs_mem_free(prs_struct *ps)
 
 void prs_mem_clear(prs_struct *ps)
 {
-	memset(ps->data_p, '\0', (size_t)ps->buffer_size);
+	if (ps->buffer_size)
+		memset(ps->data_p, '\0', (size_t)ps->buffer_size);
 }
 
 /*******************************************************************
@@ -143,11 +144,13 @@ void prs_mem_clear(prs_struct *ps)
 
 char *prs_alloc_mem(prs_struct *ps, size_t size)
 {
-	char *ret = talloc(ps->mem_ctx, size);
+	char *ret = NULL;
 
-	if (ret)
-		memset(ret, '\0', size);
-
+	if (size) {
+		ret = talloc(ps->mem_ctx, size);
+		if (ret)
+			memset(ret, '\0', size);
+	}
 	return ret;
 }
 
@@ -308,7 +311,7 @@ BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 
 /*******************************************************************
  Get the data pointer (external interface).
- ********************************************************************/
+********************************************************************/
 
 char *prs_data_p(prs_struct *ps)
 {
@@ -357,10 +360,13 @@ BOOL prs_set_offset(prs_struct *ps, uint32 offset)
 
 BOOL prs_append_prs_data(prs_struct *dst, prs_struct *src)
 {
+	if (prs_offset(src) == 0)
+		return True;
+
 	if(!prs_grow(dst, prs_offset(src)))
 		return False;
 
-	memcpy(&dst->data_p[dst->data_offset], prs_data_p(src), (size_t)prs_offset(src));
+	memcpy(&dst->data_p[dst->data_offset], src->data_p, (size_t)prs_offset(src));
 	dst->data_offset += prs_offset(src);
 
 	return True;
@@ -378,7 +384,7 @@ BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uin
 	if(!prs_grow(dst, len))
 		return False;
 	
-	memcpy(&dst->data_p[dst->data_offset], prs_data_p(src)+start, (size_t)len);
+	memcpy(&dst->data_p[dst->data_offset], src->data_p + start, (size_t)len);
 	dst->data_offset += len;
 
 	return True;
@@ -388,8 +394,11 @@ BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uin
  Append the data from a buffer into a parse_struct.
  ********************************************************************/
 
-BOOL prs_append_data(prs_struct *dst, char *src, uint32 len)
+BOOL prs_copy_data_in(prs_struct *dst, char *src, uint32 len)
 {
+	if (len == 0)
+		return True;
+
 	if(!prs_grow(dst, len))
 		return False;
 
@@ -397,6 +406,39 @@ BOOL prs_append_data(prs_struct *dst, char *src, uint32 len)
 	dst->data_offset += len;
 
 	return True;
+}
+
+/*******************************************************************
+ Copy some data from a parse_struct into a buffer.
+ ********************************************************************/
+
+BOOL prs_copy_data_out(char *dst, prs_struct *src, uint32 len)
+{
+	if (len == 0)
+		return True;
+
+	if(!prs_mem_get(src, len))
+		return False;
+
+	memcpy(dst, &src->data_p[src->data_offset], (size_t)len);
+	src->data_offset += len;
+
+	return True;
+}
+
+/*******************************************************************
+ Copy all the data from a parse_struct into a buffer.
+ ********************************************************************/
+
+BOOL prs_copy_all_data_out(char *dst, prs_struct *src)
+{
+	uint32 len = prs_offset(src);
+
+	if (!len)
+		return True;
+
+	prs_set_offset(src, 0);
+	return prs_copy_data_out(dst, src, len);
 }
 
 /*******************************************************************
@@ -1049,7 +1091,7 @@ BOOL prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 	else { /* unmarshalling */
 	
 		uint32 alloc_len = 0;
-		q = prs_data_p(ps) + prs_offset(ps);
+		q = ps->data_p + prs_offset(ps);
 
 		/*
 		 * Work out how much space we need and talloc it.
@@ -1242,7 +1284,7 @@ int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
     TDB_DATA kbuf, dbuf;
     kbuf.dptr = keystr;
     kbuf.dsize = strlen(keystr)+1;
-    dbuf.dptr = prs_data_p(ps);
+    dbuf.dptr = ps->data_p;
     dbuf.dsize = prs_offset(ps);
     return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 }
@@ -1272,7 +1314,7 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
 {
 	char *q;
 
-	q = prs_data_p(ps);
+	q = ps->data_p;
         q = &q[offset];
 
 #ifdef DEBUG_PASSWORD
