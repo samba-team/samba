@@ -674,9 +674,9 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
     }
   } else {
     if(newpwd->acct_ctrl & ACB_PWNOTREQ)
-      sprintf((char *)&p[i*2], "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+      sprintf(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
     else
-      sprintf((char *)&p[i*2], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      sprintf(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
   
   p += 32;

@@ -1085,8 +1085,7 @@ static file_fd_struct *fd_get_new(void)
       return fd_ptr;
     }
   }
-  DEBUG(1,("ERROR! Out of file_fd structures - perhaps increase MAX_OPEN_FILES?\
-n"));
+  DEBUG(1,("ERROR! Out of file_fd structures - perhaps increase MAX_OPEN_FILES?\n"));
   return 0;
 }
 

@@ -41,7 +41,7 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsi
 BOOL check_oem_password(char *user, unsigned char *data,
                         struct smb_passwd **psmbpw, char *new_passwd,
                         int new_passwd_size);
-BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL flag);
+BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override);
 
 /*The following definitions come from  client.c  */
 
@@ -1547,7 +1547,7 @@ BOOL pm_process( char *FileName,
 
 void generate_next_challenge(char *challenge);
 BOOL set_challenge(char *challenge);
-BOOL last_challenge(char *challenge);
+BOOL last_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);

@@ -405,7 +405,7 @@ static int session_trust_account(char *inbuf, char *outbuf, char *user,
       return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
     }
 
-    if (!smb_password_ok(smb_trust_acct, smb_passwd, smb_nt_passwd))
+    if (!smb_password_ok(smb_trust_acct, (unsigned char *)smb_passwd, (unsigned char *)smb_nt_passwd))
     {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
       SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);

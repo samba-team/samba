@@ -151,7 +151,7 @@ static uint32 do_reseed(unsigned char *md4_outbuf)
   if (pw && pw->pw_passwd) {
 	  int i;
 	  unsigned char md4_tmp[16];
-	  mdfour(md4_tmp, pw->pw_passwd, strlen(pw->pw_passwd));
+	  mdfour(md4_tmp, (unsigned char *)pw->pw_passwd, strlen(pw->pw_passwd));
 	  for (i=0;i<16;i++)
 		  md4_inbuf[8+i] ^= md4_tmp[i];
   }

@@ -755,7 +755,8 @@ static void init_globals(void)
   Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
   Globals.bTimeServer = False;
   Globals.bBindInterfacesOnly = False;
-  Globals.bNetWkstaUserLogon = True;
+  Globals.bNetWkstaUserLogon = False; /* This is now set to false by default as
+                                         the code in password.c protects us from this bug. */
   Globals.bUnixPasswdSync = False;
   Globals.bPasswdChatDebug = False;
 
