@@ -1,3 +1,4 @@
+%{
 /*
  * Copyright (c) 1997 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
@@ -38,7 +39,6 @@
 
 /* $Id$ */
 
-%{
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
