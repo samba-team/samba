@@ -219,6 +219,7 @@ des_rand_data(unsigned char *data, int size)
     setitimer(ITIMER_REAL, &otv, 0);
 #else
     kill(pid, SIGKILL);
+    waitpid(pid, NULL, 0);
 #endif
     sigaction(SIGALRM, &osa, 0);
 }
