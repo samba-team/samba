@@ -522,10 +522,17 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	 * and domain logons begin to fail.  -- jerry
 	 */
 
+	/* XXXX hack to get standard_sub_basic() to use sam logon username */
+	/* possibly a better way would be to do a become_user() call */
+	sam_logon_in_ssb = True;
+	pstrcpy(samlogon_user, nt_username);
+
 	become_root();
 	sam_pass = getsam21pwnam(nt_username);
 	unbecome_root();
 	smb_pass = pdb_sam_to_smb(sam_pass);
+
+	sam_logon_in_ssb = False;
         
 	if ((smb_pass=pdb_sam_to_smb(sam_pass)) == NULL)
 		return NT_STATUS_NO_SUCH_USER;
@@ -561,50 +568,23 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 		DOM_GID *gids = NULL;
 		int num_gids = 0;
 		NTTIME dummy_time;
-		pstring logon_script;
-		pstring profile_path;
-		pstring home_dir;
-		pstring home_drive;
 		pstring my_name;
 		pstring my_workgroup;
 		pstring domain_groups;
 		uint32 r_uid;
 		uint32 r_gid;
-		fstring full_name;
 	
 		/* set up pointer indicating user/password failed to be found */
 		usr_info->ptr_user_info = 0;
         
 		dummy_time.low  = 0xffffffff;
 		dummy_time.high = 0x7fffffff;
-        
-		/* XXXX hack to get standard_sub_basic() to use sam logon username */
-		/* possibly a better way would be to do a become_user() call */
-		sam_logon_in_ssb = True;
-		pstrcpy(samlogon_user, nt_username);
 
-		pstrcpy(logon_script, sam_pass->logon_script);
-		standard_sub_advanced(-1, nt_username, "", sam_pass->smb_grpid, logon_script);
-	
-		pstrcpy(profile_path, sam_pass->profile_path);
-		standard_sub_advanced(-1, nt_username, "", sam_pass->smb_grpid, profile_path);
-        
 		pstrcpy(my_workgroup, lp_workgroup());
-        
-		pstrcpy(home_drive, sam_pass->dir_drive);
-		standard_sub_advanced(-1, nt_username, "", sam_pass->smb_grpid, home_drive);
-
-		pstrcpy(home_dir, sam_pass->home_dir);
-		standard_sub_advanced(-1, nt_username, "", sam_pass->smb_grpid, home_dir);
         
 		pstrcpy(my_name, global_myname);
 		strupper(my_name);
 
-		pstrcpy(full_name, sam_pass->full_name );
-		if( !*full_name ) {
-			fstrcpy(full_name, "<Full Name>");
-		}
-        
 		/*
 		 * This is the point at which we get the group
 		 * database - we should be getting the gid_t list
@@ -621,42 +601,44 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 		gids = NULL;
 		num_gids = make_dom_gids(p->mem_ctx, domain_groups, &gids);
         
-		sam_logon_in_ssb = False;
-        
 		if (pdb_name_to_rid(nt_username, &r_uid, &r_gid))
+		{
 			init_net_user_info3(p->mem_ctx, usr_info,
-								&dummy_time, /* logon_time */
-								&dummy_time, /* logoff_time */
-								&dummy_time, /* kickoff_time */
-								&dummy_time, /* pass_last_set_time */
-								&dummy_time, /* pass_can_change_time */
-								&dummy_time, /* pass_must_change_time */
+					&dummy_time, /* logon_time */
+					&dummy_time, /* logoff_time */
+					&dummy_time, /* kickoff_time */
+					&dummy_time, /* pass_last_set_time */
+					&dummy_time, /* pass_can_change_time */
+					&dummy_time, /* pass_must_change_time */
                                 
-								nt_username , /* user_name */
-								full_name,	/* full_name */
-								logon_script    , /* logon_script */
-								profile_path    , /* profile_path */
-								home_dir        , /* home_dir */
-								home_drive      , /* dir_drive */
+					nt_username , /* user_name */
+					sam_pass->full_name,	/* full_name */
+					sam_pass->logon_script    , /* logon_script */
+					sam_pass->profile_path    , /* profile_path */
+					sam_pass->home_dir        , /* home_dir */
+					sam_pass->dir_drive      , /* dir_drive */
+                               
+					0, /* logon_count */
+					0, /* bad_pw_count */
                                 
-								0, /* logon_count */
-								0, /* bad_pw_count */
+					r_uid   , /* RID user_id */
+					r_gid   , /* RID group_id */
+					num_gids,    /* uint32 num_groups */
+					gids    , /* DOM_GID *gids */
+					0x20    , /* uint32 user_flgs (?) */
+                               
+					NULL, /* char sess_key[16] */
                                 
-								r_uid   , /* RID user_id */
-								r_gid   , /* RID group_id */
-								num_gids,    /* uint32 num_groups */
-								gids    , /* DOM_GID *gids */
-								0x20    , /* uint32 user_flgs (?) */
+					my_name     , /* char *logon_srv */
+					my_workgroup, /* char *logon_dom */
                                 
-								NULL, /* char sess_key[16] */
-                                
-								my_name     , /* char *logon_srv */
-								my_workgroup, /* char *logon_dom */
-                                
-								&global_sam_sid,     /* DOM_SID *dom_sid */
-								NULL); /* char *other_sids */
-        else
+					&global_sam_sid,     /* DOM_SID *dom_sid */
+					NULL); /* char *other_sids */
+		}
+		else
+		{
 			return NT_STATUS_NO_SUCH_USER;
+		}
         
     }
 
