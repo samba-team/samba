@@ -604,6 +604,12 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 		return;
 
 	DEBUG(level, ("tdb(%s): %s", tdb->name ? tdb->name : "unknown", ptr));
+
+	if (tdb->ecode == TDB_ERR_CORRUPT || tdb->ecode == TDB_ERR_IO)
+		smb_panic("corrupt tdb\n");
+	if (tdb->ecode == TDB_ERR_IO)
+		smb_panic("i/o error on tdb.\n");
+
 	SAFE_FREE(ptr);
 }
 
