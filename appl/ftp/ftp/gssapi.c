@@ -81,6 +81,7 @@ gss_decode(void *app_data, void *buf, int len, int level)
     gss_qop_t qop_state;
     int conf_state;
     struct gss_data *d = app_data;
+    size_t ret_len;
 
     input.length = len;
     input.value = buf;
@@ -93,7 +94,9 @@ gss_decode(void *app_data, void *buf, int len, int level)
     if(GSS_ERROR(maj_stat))
 	return -1;
     memmove(buf, output.value, output.length);
-    return output.length;
+    ret_len = output.length;
+    gss_release_buffer(&min_stat, &output);
+    return ret_len;
 }
 
 static int
