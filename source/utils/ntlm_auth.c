@@ -464,7 +464,7 @@ static BOOL check_auth_crap(void)
    and valid authentication types
 */
 
-static DATA_BLOB get_challenge(void) 
+static const DATA_BLOB get_challenge(void) 
 {
 	static DATA_BLOB chal;
 	if (opt_challenge.length)
