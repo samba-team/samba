@@ -12760,19 +12760,39 @@ CLASS="PARAMETER"
 		on what local methods are used for password control (such as NIS 
 		etc).</P
 ><P
->The string can contain the macros <TT
+>Note that this parameter only is only used if the <A
+HREF="#UNIXPASSWORDSYNC"
+><TT
 CLASS="PARAMETER"
 ><I
->%o</I
+>unix 
+		password sync</I
 ></TT
-> 
-		and <TT
+></A
+> parameter is set to <TT
+CLASS="CONSTANT"
+>yes</TT
+>. This 
+		sequence is then called <EM
+>AS ROOT</EM
+> when the SMB password 
+		in the smbpasswd file is being changed, without access to the old 
+		password cleartext. This means that root must be able to reset the user's password
+ 		without knowing the text of the previous password. In the presence of NIS/YP, 
+		this means that the <A
+HREF="#PASSWDPROGRAM"
+>passwd program</A
+> must be 
+		executed on the NIS master.
+		</P
+><P
+>The string can contain the macro <TT
 CLASS="PARAMETER"
 ><I
 >%n</I
 ></TT
-> which are substituted for the old 
-		and new passwords respectively. It can also contain the standard 
+> which is substituted 
+		for the new password.  The chat sequence can also contain the standard 
 		macros <TT
 CLASS="CONSTANT"
 >\n</TT
@@ -12784,41 +12804,18 @@ CLASS="CONSTANT"
 >		\t</TT
 > and <TT
 CLASS="CONSTANT"
->%s</TT
+>\s</TT
 > to give line-feed, 
-		carriage-return, tab and space.</P
-><P
->The string can also contain a '*' which matches 
-		any sequence of characters.</P
-><P
->Double quotes can be used to collect strings with spaces 
+		carriage-return, tab and space.  The chat sequence string can also contain 
+		a '*' which matches any sequence of characters.
+		Double quotes can be used to collect strings with spaces 
 		in them into a single string.</P
 ><P
 >If the send string in any part of the chat sequence 
 		is a full stop ".",  then no string is sent. Similarly, 
 		if the expect string is a full stop then no string is expected.</P
 ><P
->Note that if the <A
-HREF="#UNIXPASSWORDSYNC"
-><TT
-CLASS="PARAMETER"
-><I
->unix 
-		password sync</I
-></TT
-></A
-> parameter is set to <TT
-CLASS="CONSTANT"
->true</TT
->, then this 
-		sequence is called <EM
->AS ROOT</EM
-> when the SMB password 
-		in the smbpasswd file is being changed, without access to the old 
-		password cleartext. In this case the old password cleartext is set 
-		to "" (the empty string).</P
-><P
->Also, if the <A
+>If the <A
 HREF="#PAMPASSWORDCHANGE"
 ><TT
 CLASS="PARAMETER"
@@ -18886,7 +18883,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5955"
+NAME="AEN5953"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18916,7 +18913,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5961"
+NAME="AEN5959"
 ></A
 ><H2
 >VERSION</H2
@@ -18927,7 +18924,7 @@ NAME="AEN5961"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5964"
+NAME="AEN5962"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19006,7 +19003,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5984"
+NAME="AEN5982"
 ></A
 ><H2
 >AUTHOR</H2

@@ -5053,32 +5053,32 @@
 		<para>This chat sequence is often quite site specific, depending 
 		on what local methods are used for password control (such as NIS 
 		etc).</para>
+		<para>Note that this parameter only is only used if the <link 
+		linkend="UNIXPASSWORDSYNC"><parameter>unix 
+		password sync</parameter></link> parameter is set to <constant>yes</constant>. This 
+		sequence is then called <emphasis>AS ROOT</emphasis> when the SMB password 
+		in the smbpasswd file is being changed, without access to the old 
+		password cleartext. This means that root must be able to reset the user's password
+ 		without knowing the text of the previous password. In the presence of NIS/YP, 
+		this means that the <link linkend="PASSWDPROGRAM">passwd program</link> must be 
+		executed on the NIS master.
+		</para>
 
-		<para>The string can contain the macros <parameter>%o</parameter> 
-		and <parameter>%n</parameter> which are substituted for the old 
-		and new passwords respectively. It can also contain the standard 
+
+		<para>The string can contain the macro <parameter>%n</parameter> which is substituted 
+		for the new password.  The chat sequence can also contain the standard 
 		macros <constant>\n</constant>, <constant>\r</constant>, <constant>
-		\t</constant> and <constant>%s</constant> to give line-feed, 
-		carriage-return, tab and space.</para>
-
-		<para>The string can also contain a '*' which matches 
-		any sequence of characters.</para>
-
-		<para>Double quotes can be used to collect strings with spaces 
+		\t</constant> and <constant>\s</constant> to give line-feed, 
+		carriage-return, tab and space.  The chat sequence string can also contain 
+		a '*' which matches any sequence of characters.
+		Double quotes can be used to collect strings with spaces 
 		in them into a single string.</para>
 
 		<para>If the send string in any part of the chat sequence 
 		is a full stop ".",  then no string is sent. Similarly, 
 		if the expect string is a full stop then no string is expected.</para>
 
-		<para>Note that if the <link linkend="UNIXPASSWORDSYNC"><parameter>unix 
-		password sync</parameter></link> parameter is set to <constant>true</constant>, then this 
-		sequence is called <emphasis>AS ROOT</emphasis> when the SMB password 
-		in the smbpasswd file is being changed, without access to the old 
-		password cleartext. In this case the old password cleartext is set 
-		to "" (the empty string).</para>
-
-  		<para>Also, if the <link linkend="PAMPASSWORDCHANGE"><parameter>pam
+  		<para>If the <link linkend="PAMPASSWORDCHANGE"><parameter>pam
  		password change</parameter></link> parameter is set to true, the chat pairs
                 may be matched in any order, and sucess is determined by the PAM result, 
                 not any particular output. The \n macro is ignored for PAM conversions.
