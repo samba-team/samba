@@ -189,7 +189,7 @@ NTSTATUS auth_init_plugin(struct auth_context *auth_context, const char *param, 
 	trim_string(plugin_name, " ", " ");
 
 	DEBUG(5, ("Trying to load auth plugin %s\n", plugin_name));
-	dl_handle = sys_dlopen(plugin_name, RTLD_NOW | RTLD_GLOBAL );
+	dl_handle = sys_dlopen(plugin_name, RTLD_NOW );
 	if (!dl_handle) {
 		DEBUG(0, ("Failed to load auth plugin %s using sys_dlopen (%s)\n", plugin_name, sys_dlerror()));
 		return NT_STATUS_UNSUCCESSFUL;
