@@ -124,6 +124,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	BOOL ret = True;
 	ssize_t written;
 	time_t t;
+	struct smb_flush flsh;
 
 	printf("Testing delayed update of write time using 2 connections\n");
 
@@ -231,10 +232,24 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
 
 
-	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
+	printf("Doing a 10 byte write to extend the file and see if this changes the last write time.\n");
 
-	if (written != 1) {
+	written =  smbcli_write(cli->tree, fnum1, 0, "0123456789", 1, 10);
+
+	if (written != 10) {
 		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		return False;
+	}
+
+	/* Just to prove to tridge that the an smbflush has no effect on
+	   the write time :-). The setfileinfo IS STICKY. JRA. */
+
+	printf("Doing flush after write\n");
+
+	flsh.in.fnum = fnum1;
+	status = smb_raw_flush(cli->tree, &flsh);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("smbflush failed: %s\n", nt_errstr(status)));
 		return False;
 	}
 
