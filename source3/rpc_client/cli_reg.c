@@ -35,12 +35,69 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL do_reg_open_policy(struct cli_state *cli, uint16 unknown_0, uint32 level,
+BOOL do_reg_connect(struct cli_state *cli, char *full_keyname,
+				POLICY_HND *reg_hnd,
+				POLICY_HND *key_hnd)
+{
+	fstring key_name;
+	char *srch;
+	BOOL res1;
+	BOOL res;
+	BOOL hklm = False;
+	BOOL hku  = False;
+
+	if (full_keyname == NULL)
+	{
+		return False;
+	}
+
+	srch = "HKLM";
+	if (strnequal(full_keyname, srch, strlen(srch)))
+	{
+		full_keyname += strlen(srch);
+		if (*full_keyname == '\\')
+		{
+			full_keyname++;
+			fstrcpy(key_name, full_keyname);
+		}
+		else if (*full_keyname != 0)
+		{
+			return False;
+		}
+	}
+
+	/* open registry receive a policy handle */
+
+	if (hklm)
+	{
+		res = res ? do_reg_open_hklm(cli,
+				0x84E0, 0x02000000,
+				reg_hnd) : False;
+	}
+	
+	if (hku)
+	{
+		res = res ? do_reg_open_hku(cli,
+				0x84E0, 0x02000000,
+				reg_hnd) : False;
+	}
+
+	/* open an entry */
+	res1 = res  ? do_reg_open_entry(cli, reg_hnd,
+	                         key_name, 0x02000000, key_hnd) : False;
+
+	return res1 && res;
+}
+
+/****************************************************************************
+do a REG Open Policy
+****************************************************************************/
+BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
-	REG_Q_OPEN_POLICY q_o;
+	REG_Q_OPEN_HKLM q_o;
 	BOOL valid_pol = False;
 
 	if (hnd == NULL) return False;
@@ -48,30 +105,30 @@ BOOL do_reg_open_policy(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
-	/* create and send a MSRPC command with api REG_OPEN_POLICY */
+	/* create and send a MSRPC command with api REG_OPEN_HKLM */
 
-	DEBUG(4,("REG Open Policy\n"));
+	DEBUG(4,("REG Open HKLM\n"));
 
-	make_reg_q_open_pol(&q_o, unknown_0, level);
+	make_reg_q_open_hklm(&q_o, unknown_0, level);
 
 	/* turn parameters into data stream */
-	reg_io_q_open_policy("", &q_o, &buf, 0);
+	reg_io_q_open_hklm("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_OPEN_POLICY, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, REG_OPEN_HKLM, &buf, &rbuf))
 	{
-		REG_R_OPEN_POLICY r_o;
+		REG_R_OPEN_HKLM r_o;
 		BOOL p;
 
 		ZERO_STRUCT(r_o);
 
-		reg_io_r_open_policy("", &r_o, &rbuf, 0);
+		reg_io_r_open_hklm("", &r_o, &rbuf, 0);
 		p = rbuf.offset != 0;
 
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_OPEN_POLICY: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,("REG_OPEN_HKLM: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -90,14 +147,14 @@ BOOL do_reg_open_policy(struct cli_state *cli, uint16 unknown_0, uint32 level,
 }
 
 /****************************************************************************
-do a REG Open Unknown 4
+do a REG Open HKU
 ****************************************************************************/
-BOOL do_reg_open_unk_4(struct cli_state *cli, uint16 unknown_0, uint32 level,
+BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
-	REG_Q_OPEN_UNK_4 q_o;
+	REG_Q_OPEN_HKU q_o;
 	BOOL valid_pol = False;
 
 	if (hnd == NULL) return False;
@@ -105,30 +162,30 @@ BOOL do_reg_open_unk_4(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
-	/* create and send a MSRPC command with api REG_OPEN_UNK_4 */
+	/* create and send a MSRPC command with api REG_OPEN_HKU */
 
-	DEBUG(4,("REG Open Unknown4\n"));
+	DEBUG(4,("REG Open HKU\n"));
 
-	make_reg_q_open_unk_4(&q_o, unknown_0, level);
+	make_reg_q_open_hku(&q_o, unknown_0, level);
 
 	/* turn parameters into data stream */
-	reg_io_q_open_unk_4("", &q_o, &buf, 0);
+	reg_io_q_open_hku("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_OPEN_UNK_4, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, REG_OPEN_HKU, &buf, &rbuf))
 	{
-		REG_R_OPEN_UNK_4 r_o;
+		REG_R_OPEN_HKU r_o;
 		BOOL p;
 
 		ZERO_STRUCT(r_o);
 
-		reg_io_r_open_unk_4("", &r_o, &rbuf, 0);
+		reg_io_r_open_hku("", &r_o, &rbuf, 0);
 		p = rbuf.offset != 0;
 
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_OPEN_UNK_4: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,("REG_OPEN_HKU: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 

@@ -26,8 +26,8 @@
 
 
 /* winreg pipe defines */
-#define REG_OPEN_POLICY     0x02
-#define REG_OPEN_UNK_4      0x04
+#define REG_OPEN_HKLM       0x02
+#define REG_OPEN_HKU        0x04
 #define REG_UNK_B           0x0B
 #define REG_UNK_1A          0x1a
 #define REG_QUERY_KEY       0x10
@@ -42,7 +42,7 @@
 #define REG_CLOSE           0x05
 
 
-/* REG_Q_OPEN_POLICY */
+/* REG_Q_OPEN_HKLM   */
 typedef struct q_reg_open_policy_info
 {
 	uint32 ptr;
@@ -50,18 +50,18 @@ typedef struct q_reg_open_policy_info
 	uint16 unknown_1; /* random.  changes */
 	uint32 level;     /* 0x0000 0002 - 32 bit unknown */
 
-} REG_Q_OPEN_POLICY;
+} REG_Q_OPEN_HKLM  ;
 
-/* REG_R_OPEN_POLICY */
+/* REG_R_OPEN_HKLM   */
 typedef struct r_reg_open_policy_info
 {
 	POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
-} REG_R_OPEN_POLICY;
+} REG_R_OPEN_HKLM;
 
 
-/* REG_Q_OPEN_UNK_4 */
+/* REG_Q_OPEN_HKU */
 typedef struct q_reg_open_unk4_info
 {
 	uint32 ptr;
@@ -69,15 +69,15 @@ typedef struct q_reg_open_unk4_info
 	uint16 unknown_1; /* random.  changes */
 	uint32 level;     /* 0x0000 0002 - 32 bit unknown */
 
-} REG_Q_OPEN_UNK_4;
+} REG_Q_OPEN_HKU;
 
-/* REG_R_OPEN_UNK_4 */
+/* REG_R_OPEN_HKU */
 typedef struct r_reg_open_unk4_info
 {
 	POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
-} REG_R_OPEN_UNK_4;
+} REG_R_OPEN_HKU;
 
 
 /* REG_Q_UNK_B */
@@ -206,10 +206,17 @@ typedef struct q_reg_create_key_info
 	uint32 unknown_0; /* 0x0000 000C */
 
 	uint32 ptr2;
-	uint32 unk_len1; /* 0x0000 0014 */
-	uint32 unk_len2; /* 0x0000 0014 */
-	uint32 unknown_1; /* 0x0002 0000 */
-	BUFFER2 buf_unk;  /* 01 00 00 80   00 00 00 00   00 00 00 00   00 00 00 00   00 00 00 00  */
+	uint32 sec_len1; /* 0x14 - length of security descriptor, bytes */
+	uint32 sec_len2; /* 0x14 - length of security descriptor, bytes */
+	uint32 sec_len3; /* 0x0 - length of security descriptor, bytes */
+	uint32 sec_len4; /* 0x14 - length of security descriptor, bytes */
+	uint32 sec_len5; /* 0x0 - length of security descriptor, bytes */
+	uint32 sec_len6; /* 0x14 - length of security descriptor, bytes */
+#if 0
+	SEC_DES sec_desc;
+#else
+	uint8 buf_unk[20];  /* 01 00 00 80   00 00 00 00   00 00 00 00   00 00 00 00   00 00 00 00  */
+#endif
 
 	uint32 unknown_2; /* 0x0000 0000 */
 

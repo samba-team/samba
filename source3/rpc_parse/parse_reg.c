@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_open_pol(REG_Q_OPEN_POLICY *q_o,
+void make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
 				uint16 unknown_0, uint32 level)
 {
 	q_o->ptr = 1;
@@ -42,11 +42,11 @@ void make_reg_q_open_pol(REG_Q_OPEN_POLICY *q_o,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_open_policy(char *desc,  REG_Q_OPEN_POLICY *r_q, prs_struct *ps, int depth)
+void reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL) return;
 
-	prs_debug(ps, depth, desc, "reg_io_q_open_policy");
+	prs_debug(ps, depth, desc, "reg_io_q_open_hklm");
 	depth++;
 
 	prs_align(ps);
@@ -64,11 +64,11 @@ void reg_io_q_open_policy(char *desc,  REG_Q_OPEN_POLICY *r_q, prs_struct *ps, i
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_open_policy(char *desc,  REG_R_OPEN_POLICY *r_r, prs_struct *ps, int depth)
+void reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL) return;
 
-	prs_debug(ps, depth, desc, "reg_io_r_open_policy");
+	prs_debug(ps, depth, desc, "reg_io_r_open_hklm");
 	depth++;
 
 	prs_align(ps);
@@ -156,11 +156,14 @@ void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 	q_c->unknown_0 = 0x0000000C;
 
 	q_c->ptr2 = 1;
-	q_c->unk_len1 = 0x14;
-	q_c->unk_len2 = 0x14;
-	q_c->unknown_1 = 0x00020000;
+	q_c->sec_len1 = 0x14;
+	q_c->sec_len2 = 0x14;
+	q_c->sec_len3 = 0x0;
+	q_c->sec_len4 = 0x14;
+	q_c->sec_len5 = 0x0;
+	q_c->sec_len6 = 0x14;
 
-	make_buffer2(&q_c->buf_unk, data, sizeof(data));
+	memcpy(&q_c->buf_unk, data, sizeof(q_c->buf_unk));
 
 	q_c->unknown_2 = 0x00000000;
 }
@@ -199,10 +202,13 @@ void reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int
 	prs_uint32("ptr2", ps, depth, &(r_q->ptr2));
 	if (r_q->ptr2)
 	{
-		prs_uint32("unk_len1", ps, depth, &(r_q->unk_len1));
-		prs_uint32("unk_len2", ps, depth, &(r_q->unk_len2));
-		prs_uint32("unknown_1", ps, depth, &(r_q->unknown_1));
-		smb_io_buffer2("buf_unk", &r_q->buf_unk, 1, ps, depth);
+		prs_uint32("sec_len1", ps, depth, &(r_q->sec_len1));
+		prs_uint32("sec_len2", ps, depth, &(r_q->sec_len2));
+		prs_uint32("sec_len3", ps, depth, &(r_q->sec_len3));
+		prs_uint32("sec_len4", ps, depth, &(r_q->sec_len4));
+		prs_uint32("sec_len5", ps, depth, &(r_q->sec_len5));
+		prs_uint32("sec_len6", ps, depth, &(r_q->sec_len6));
+		prs_uint8s(False, "buf_unk", ps, depth, r_q->buf_unk, sizeof(r_q->buf_unk));
 		prs_align(ps);
 
 		prs_uint32("unknown_2", ps, depth, &(r_q->unknown_2));
@@ -389,7 +395,7 @@ void reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth)
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_open_unk_4(REG_Q_OPEN_UNK_4 *q_o,
+void make_reg_q_open_hku(REG_Q_OPEN_HKU *q_o,
 				uint16 unknown_0, uint32 level)
 {
 	q_o->ptr = 1;
@@ -401,11 +407,11 @@ void make_reg_q_open_unk_4(REG_Q_OPEN_UNK_4 *q_o,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_open_unk_4(char *desc,  REG_Q_OPEN_UNK_4 *r_q, prs_struct *ps, int depth)
+void reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL) return;
 
-	prs_debug(ps, depth, desc, "reg_io_q_open_unk_4");
+	prs_debug(ps, depth, desc, "reg_io_q_open_hku");
 	depth++;
 
 	prs_align(ps);
@@ -423,11 +429,11 @@ void reg_io_q_open_unk_4(char *desc,  REG_Q_OPEN_UNK_4 *r_q, prs_struct *ps, int
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_open_unk_4(char *desc,  REG_R_OPEN_UNK_4 *r_r, prs_struct *ps, int depth)
+void reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL) return;
 
-	prs_debug(ps, depth, desc, "reg_io_r_open_unk_4");
+	prs_debug(ps, depth, desc, "reg_io_r_open_hku");
 	depth++;
 
 	prs_align(ps);

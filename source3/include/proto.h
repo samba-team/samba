@@ -1295,9 +1295,12 @@ void cli_nt_session_close(struct cli_state *cli);
 
 /*The following definitions come from  rpc_client/cli_reg.c  */
 
-BOOL do_reg_open_policy(struct cli_state *cli, uint16 unknown_0, uint32 level,
+BOOL do_reg_connect(struct cli_state *cli, char *full_keyname,
+				POLICY_HND *reg_hnd,
+				POLICY_HND *key_hnd);
+BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL do_reg_open_unk_4(struct cli_state *cli, uint16 unknown_0, uint32 level,
+BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
 BOOL do_reg_unk_b(struct cli_state *cli, POLICY_HND *hnd);
 BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
@@ -1609,10 +1612,10 @@ BOOL prs_uint16_post(char *name, prs_struct *ps, int depth,
 
 /*The following definitions come from  rpc_parse/parse_reg.c  */
 
-void make_reg_q_open_pol(REG_Q_OPEN_POLICY *q_o,
+void make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
 				uint16 unknown_0, uint32 level);
-void reg_io_q_open_policy(char *desc,  REG_Q_OPEN_POLICY *r_q, prs_struct *ps, int depth);
-void reg_io_r_open_policy(char *desc,  REG_R_OPEN_POLICY *r_r, prs_struct *ps, int depth);
+void reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth);
+void reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth);
 void make_reg_q_unk_b(REG_Q_UNK_B *q_u, POLICY_HND *pol);
 void reg_io_q_unk_b(char *desc,  REG_Q_UNK_B *r_q, prs_struct *ps, int depth);
 void reg_io_r_unk_b(char *desc,  REG_R_UNK_B *r_r, prs_struct *ps, int depth);
@@ -1632,10 +1635,10 @@ void reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int d
 void make_reg_q_unk_1a(REG_Q_UNK_1A *q_o, POLICY_HND *hnd);
 void reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth);
 void reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth);
-void make_reg_q_open_unk_4(REG_Q_OPEN_UNK_4 *q_o,
+void make_reg_q_open_hku(REG_Q_OPEN_HKU *q_o,
 				uint16 unknown_0, uint32 level);
-void reg_io_q_open_unk_4(char *desc,  REG_Q_OPEN_UNK_4 *r_q, prs_struct *ps, int depth);
-void reg_io_r_open_unk_4(char *desc,  REG_R_OPEN_UNK_4 *r_r, prs_struct *ps, int depth);
+void reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int depth);
+void reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int depth);
 void make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd);
 void reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth);
 void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth);
