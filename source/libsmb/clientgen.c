@@ -28,6 +28,17 @@
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
 
+/*
+ * Change the port number used to call on 
+ */
+int cli_set_port(struct cli_state *cli, int port)
+{
+	if (port > 0)
+	  cli -> port = port;
+
+	return cli -> port;
+}
+
 /****************************************************************************
 recv an smb
 ****************************************************************************/
@@ -2377,9 +2388,10 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 		cli->dest_ip = *ip;
 	}
 
+        if (cli -> port == 0) cli -> port = 139;  /* Set to default */
 
 	cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
-				  139, cli->timeout);
+				  cli -> port, cli->timeout);
 	if (cli->fd == -1)
 		return False;
 
@@ -2405,6 +2417,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
 	ZERO_STRUCTP(cli);
 
+	cli->port = 0;
 	cli->fd = -1;
 	cli->cnum = -1;
 	cli->pid = (uint16)getpid();

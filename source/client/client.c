@@ -29,6 +29,7 @@
 
 struct cli_state *cli;
 extern BOOL in_client;
+static int port = SMB_PORT;
 pstring cur_dir = "\\";
 pstring cd_path = "";
 static pstring service;
@@ -1647,7 +1648,8 @@ struct cli_state *do_connect(char *server, char *share)
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server_n, &ip)) {
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) == 0) ||
+	    !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}
@@ -1909,7 +1911,6 @@ static int do_message_op(void)
 {
 	fstring base_directory;
 	char *pname = argv[0];
-	int port = SMB_PORT;
 	int opt;
 	extern FILE *dbf;
 	extern char *optarg;

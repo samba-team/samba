@@ -72,6 +72,7 @@ struct pwd_info
 };
 
 struct cli_state {
+	int port;
 	int fd;
 	uint16 cnum;
 	uint16 pid;
