@@ -99,6 +99,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	DOM_SID user_sid;
 	fstring name_domain, name_user, name, gecos_name;
 	enum SID_NAME_USE name_type;
+        struct winbindd_domain *domain;
 	
 	DEBUG(3, ("[%5d]: getpwnam %s\n", state->pid,
 		  state->request.data.username));
@@ -115,6 +116,11 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 		return WINBINDD_ERROR;
 	}
 	
+        if ((domain = find_domain_from_name(name_domain)) == NULL) {
+                DEBUG(5, ("No such domain: %s\n", name_domain));
+                return WINBINDD_ERROR;
+        }
+
 	/* Check for cached user entry */
 
 	if (winbindd_fetch_user_cache_entry(name_domain, name_user,
@@ -124,7 +130,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	
 	slprintf(name, sizeof(name) - 1, "%s\\%s", name_domain, name_user);
 	
-	/* Get rid and name type from name.  The following costs 1 packet */
+	/* Get rid and name type from name */
 
 	if (!winbindd_lookup_sid_by_name(name, &user_sid, &name_type)) {
 		DEBUG(1, ("user '%s' does not exist\n", name_user));
@@ -143,9 +149,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
     
 	sid_split_rid(&user_sid, &user_rid);
 	
-	/* The following costs 3 packets */
-
-	if (!winbindd_lookup_userinfo(name_domain, user_rid, &user_info)) {
+	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
 		return WINBINDD_ERROR;
@@ -229,7 +233,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 	/* Get some user info */
 	
-	if (!winbindd_lookup_userinfo(domain->name, user_rid, &user_info)) {
+	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));
 		return WINBINDD_ERROR;

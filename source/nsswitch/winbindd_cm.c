@@ -85,7 +85,7 @@ struct winbindd_cm_conn {
         /* Specific pipe stuff - move into a union? */
 
         enum sam_pipe_type sam_pipe_type; /* Domain, user, group etc  */
-        uint32 user_rid;
+        uint32 user_rid, group_rid;
 };
 
 /* Global list of connections.  Initially a DLIST but can become a hash
@@ -414,8 +414,69 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
 
 /* Return a SAM policy handle on a domain group */
 
-CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, char *group)
+CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
+                                        uint32 group_rid)
 {
-        DEBUG(0, ("get_sam_group_handle(): not implemented\n"));
-        return NULL;
+        struct winbindd_cm_conn *conn, *basic_conn = NULL;
+        static CLI_POLICY_HND hnd;
+        NTSTATUS result;
+        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+
+        /* Look for existing connections */
+
+        for (conn = cm_conns; conn; conn = conn->next) {
+                if (strequal(conn->domain, domain) &&
+                    strequal(conn->pipe_name, PIPE_SAMR) &&
+                    conn->sam_pipe_type == SAM_PIPE_GROUP &&
+                    conn->group_rid == group_rid)
+                        goto ok;
+        }
+
+        /* Create a domain handle to open a user handle from */
+
+        if (!cm_get_sam_dom_handle(domain, domain_sid))
+                return NULL;
+
+        for (conn = cm_conns; conn; conn = conn->next) {
+                if (strequal(conn->domain, domain) &&
+                    strequal(conn->pipe_name, PIPE_SAMR) &&
+                    conn->sam_pipe_type == SAM_PIPE_DOM)
+                        basic_conn = conn;
+        }
+        
+        if (!basic_conn) {
+                DEBUG(0, ("No domain sam handle was created!\n"));
+                return NULL;
+        }
+
+        if (!(conn = (struct winbindd_cm_conn *)
+              malloc(sizeof(struct winbindd_cm_conn))))
+                return NULL;
+        
+        ZERO_STRUCTP(conn);
+
+        fstrcpy(conn->domain, basic_conn->domain);
+        fstrcpy(conn->controller, basic_conn->controller);
+        fstrcpy(conn->pipe_name, basic_conn->pipe_name);
+        
+        conn->sam_pipe_type = SAM_PIPE_GROUP;
+        conn->cli = basic_conn->cli;
+        conn->group_rid = group_rid;
+
+        result = cli_samr_open_group(conn->cli, conn->cli->mem_ctx,
+                                    &basic_conn->pol, des_access, group_rid,
+                                    &conn->pol);
+
+        if (!NT_STATUS_IS_OK(result))
+                return NULL;
+
+        /* Add to list */
+
+        DLIST_ADD(cm_conns, conn);
+
+ ok:
+        hnd.pol = conn->pol;
+        hnd.cli = conn->cli;
+
+        return &hnd;
 }
