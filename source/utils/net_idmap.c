@@ -235,6 +235,57 @@ static int net_idmap_restore(int argc, const char **argv)
 	return NT_STATUS_IS_OK(net_idmap_fixup_hwm()) ? 0 : -1;
 }
 
+/***********************************************************
+ Delete a SID mapping from a winbindd_idmap.tdb
+ **********************************************************/
+static int net_idmap_delete(int argc, const char **argv)
+{
+	TDB_CONTEXT *idmap_tdb;
+	TDB_DATA key, data;
+	fstring sid;
+
+	if (argc != 2)
+		return net_help_idmap(argc, argv);
+
+	idmap_tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDWR, 0);
+
+	if (idmap_tdb == NULL) {
+		d_printf("Could not open idmap: %s\n", argv[0]);
+		return -1;
+	}
+
+	fstrcpy(sid, argv[1]);
+
+	if (strncmp(sid, "S-1-5-", strlen("S-1-5-")) != 0) {
+		d_printf("Can only delete SIDs, %s is does not start with "
+			 "S-1-5-\n", sid);
+		return -1;
+	}
+
+	key.dptr = sid;
+	key.dsize = strlen(key.dptr)+1;
+
+	data = tdb_fetch(idmap_tdb, key);
+
+	if (data.dptr == NULL) {
+		d_printf("Could not find sid %s\n", argv[1]);
+		return -1;
+	}
+
+	if (tdb_delete(idmap_tdb, key) != 0) {
+		d_printf("Could not delete key %s\n", argv[1]);
+		return -1;
+	}
+
+	if (tdb_delete(idmap_tdb, data) != 0) {
+		d_printf("Could not delete key %s\n", data.dptr);
+		return -1;
+	}
+
+	return 0;
+}
+
+
 int net_help_idmap(int argc, const char **argv)
 {
 	d_printf("net idmap dump filename"\
@@ -242,6 +293,8 @@ int net_help_idmap(int argc, const char **argv)
 
 	d_printf("net idmap restore"\
 		 "\n  Restore entries from stdin to current local idmap\n");
+
+	/* Deliberately *not* document net idmap delete */
 
 	return -1;
 }
@@ -254,6 +307,7 @@ int net_idmap(int argc, const char **argv)
 	struct functable func[] = {
 		{"dump", net_idmap_dump},
 		{"restore", net_idmap_restore},
+		{"delete", net_idmap_delete},
 		{"help", net_help_idmap},
 		{NULL, NULL}
 	};
