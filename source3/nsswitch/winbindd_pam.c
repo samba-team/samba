@@ -206,8 +206,6 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 {
 	char *oldpass, *newpass;
 	fstring domain, user;
-	uchar nt_oldhash[16];
-	uchar lm_oldhash[16];
 	CLI_POLICY_HND *hnd;
 
 	DEBUG(3, ("[%5d]: pam chauthtok %s\n", state->pid,
