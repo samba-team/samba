@@ -12,28 +12,53 @@
   <title>Migrating NetWare 4.11 Server to Samba-3</title>
 
 	<para>
+	<indexterm><primary>Novell</primary></indexterm>
+	<indexterm><primary>SuSE</primary></indexterm>
+	<indexterm><primary>Ximian</primary></indexterm>
+	<indexterm><primary>FLOSS</primary><see>Free-Libre/Open Source Software</see></indexterm>
+	<indexterm><primary>Free-Libre/Open Source Software</primary></indexterm>
 	Novell is a company any seasoned IT manager has to admire. Since the acquisition of
 	the SuSE Linux company, the acquisition on Ximian, and other moves that are friendly
 	to the FLOSS (Free-Libre/Open Source Software) movement, Novell are emerging out of
-	a deep regression that almost saw the company disappear into obscurity.
+	a deep regression that almost saw the company disappear into obscurity. The now Linux
+	friendly Novell's SUSE Linux is being used as a host to which NetWare servers are being
+	migrated. It is in many ways ironic that Novell are today hosting NetWare on top of
+	Linux. At the same time older NetWare servers are still being migrated to Samba servers.
+	It will be interesting to see what will become of NetWare over time.
 	</para>
 
 	<para>
+	<indexterm><primary>Red Hat</primary></indexterm>
+	<indexterm><primary>Debian</primary></indexterm>
+	<indexterm><primary>Gentoo</primary></indexterm>
+	<indexterm><primary>Mandrake</primary></indexterm>
+	Whatever flavor of Linux is preferred in your environment, whether Red Hat, Debian,
+	Gentoo, Mandrake, SUSE (Novell) the information in this chapter should be read with
+	appropriate cognizance that file locations may vary a little; even so the information
+	in this chapter should provide something of value.
+	</para>
+
+	<para>
+	<indexterm><primary>migration</primary></indexterm>
 	This chapter was contributed by Misty Stanley-Jones, a UNIX administrator of many
 	years who surfaced on the Samba mailing list with a barrage of questions, and who
 	regularly now helps other administrators to solve thorny Samba migration questions.
 	</para>
 
 	<para>
+	<indexterm><primary>NetWare</primary></indexterm>
+	<indexterm><primary>NLM</primary></indexterm>
+	<indexterm><primary>NetWare</primary></indexterm>
+	<indexterm><primary>Mars_NWE</primary></indexterm>
 	One wonders how many NetWare servers remain in active service. Many are being migrated
-	to Samba on Linux. SUSE Linux Enterprise Server 9 is an ideal target platform to which
-	a NetWare server may be migrated. The migration method of choice is much dependant on
-	the tools that the administrator finds most natural to use. The old-hand NetWare guru
-	will likely want to use the tools that are part of the Mars_NWE (Martin Stovers NetWare
-	Emulator) open source package. The MS Windows administrator will likely make use of the
-	NWConv utility that is a part of Windows NT4 Server, while the die-hard UNIX administrator
-	will have a natural inclination to use the NetWare NLM for <command>rsync</command> to
-	migrate files from the NetWare server to the Samba server. Whatever your tool of choice,
+	to Samba on Linux. Red Hat Linux, SUSE Linux 9.x and SUSE Linux Enterprise Server 9 are
+	ideal target platforms to which a NetWare server may be migrated. The migration method
+	of choice is much dependant on the tools that the administrator finds most natural to use.
+	The old-hand NetWare guru will likely want to use the tools like the NetWare NLM for
+	<command>rsync</command> to migrate files from the NetWare server to the Samba server.
+	The UNIX administrator might prefer tools that are part of the Mars_NWE (Martin Stovers NetWare
+	Emulator) open source package. The MS Windows network administrator will likely make use of the
+	NWConv utility that is a part of Windows NT4 Server. Whatever your tool of choice,
 	migration will be filled with joyous and challenging moments - though probably not
 	concurrently.
 	</para>
@@ -47,6 +72,7 @@
 	<title>Introduction</title>
 
 	<para>
+	<indexterm><primary>Novell</primary></indexterm>
 	Misty Stanley-Jones was recruited by Abmas Inc. to administer a network that had
 	not received much attention for some years and was much in need of a make-over.
 	As a brand-new sysadmin to this company, she inherited a very old Novell file server,
@@ -92,6 +118,7 @@
 	  </itemizedlist>
 
 	<para>
+	<indexterm><primary>payroll</primary></indexterm>
 	At one point disk space had filled up to 100% causing the payroll database
 	to become corrupt. This caused the accounting department to be down for over
 	a week and necessitated deployment of another file server. The replacement
@@ -105,13 +132,13 @@
 	<para>
 	Misty has provided this summary of her migration experience in the hope
 	that it will help someone to avoid the challenges she faced. Perhaps her
-	configuration files and background will accellerate your learning as you
+	configuration files and background will accelerate your learning as you
 	grapple with a similar migration challenge.
 	</para>
 
 	<para>
 	After presenting a cost-benefit report to management, as well as an estimated
-	time-to-completion, approval was given procede with the solution proposed.
+	time-to-completion, approval was given proceed with the solution proposed.
 	The server was built from purchased components. The total project cost
 	was $3000. A brief description of the configuration follows:
 	</para>
@@ -142,7 +169,7 @@
 
 	<para>
 	The new system has operated for six months without problems. Over the past months
-	much attention has been focussed on cleaning up desktops and user profiles.
+	much attention has been focused on cleaning up desktops and user profiles.
 	</para>
 
 	</sect2>
@@ -152,6 +179,10 @@
 	<title>Dissection and Discussion</title>
 
 	<para>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>e-Directory</primary></indexterm>
+	<indexterm><primary>authentication</primary></indexterm>
+	<indexterm><primary>identity management</primary></indexterm>
 	A decision to use LDAP was made even though I know nothing about LDAP except that
 	I had been reading the book <quote>LDAP System Administration</quote>, by Gerald Carter.
 	LDAP seemed to provide some of the functionality of Novell's e-Directory Services
@@ -159,6 +190,9 @@
 	</para>
 
 	<para>
+	<indexterm><primary>database</primary></indexterm>
+	<indexterm><primary>RPM</primary></indexterm>
+	<indexterm><primary>tree</primary></indexterm>
 	Building the LDAP database took a while, and a lot of trial and error. Following
 	LDAP System Administration's guidance, I installed OpenLDAP (from RPM later I compiled
 	a more current version from source) and built my initial LDAP tree.
@@ -168,8 +202,17 @@
 	<title>Technical Issues</title>
 
 	<para>
+	<indexterm><primary>white-pages</primary></indexterm>
+	<indexterm><primary>inetOrgPerson</primary></indexterm>
+	<indexterm><primary>OpenLDAP</primary></indexterm>
+	<indexterm><primary>/etc/passwd</primary></indexterm>
+	<indexterm><primary>/etc/shadow</primary></indexterm>
+	<indexterm><primary>LDIF</primary></indexterm>
+	<indexterm><primary>IMAP</primary></indexterm>
+	<indexterm><primary>POP3</primary></indexterm>
+	<indexterm><primary>SMTP</primary></indexterm>
 	The first challenge was to create a company white-pages, followed by manually
-	entering everything from the printed company diretory. This used only the inetOrgPerson
+	entering everything from the printed company directory. This used only the inetOrgPerson
 	objectclass from the OpenLDAP schemas. The next step was to write a shell script which
 	would look at the <filename>/etc/passwd</filename> and <filename>/etc/shadow</filename>
 	files on our mail server, and create a LDIF file from which the information could be
@@ -367,6 +410,7 @@ access to attrs=namingcontexts
 </example>
 
 	<para>
+	<indexterm><primary>/etc/ldap.conf</primary></indexterm>
 	The <filename>/etc/ldap.conf</filename> file used is listed in <link linkend="ch8ldap"/>.
 	</para>
 
@@ -430,12 +474,17 @@ shadow:   files ldap
 	</para>
 
 	<para>
+	<indexterm><primary>PAM</primary></indexterm>
+	<indexterm><primary>NSS</primary></indexterm>
 	In my setup, users authenticate via PAM and NSS using LDAP-based accounts.
 	This works out of the box with the configuration files in this chapter. It
 	enables you to have no local accounts for users (it is highly advisable 
-	to have a local account for the root user).  Gotchas include:
+	to have a local account for the root user).  Traps for the unwary include:
 	</para>
 
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>authenticate</primary></indexterm>
+	<indexterm><primary>DNS</primary></indexterm>
 	<itemizedlist>
 		<listitem>
 			<para>
@@ -445,7 +494,7 @@ shadow:   files ldap
 
 		<listitem>
 			<para>
-			If failover is configured incorrectly weird behavior can occur. For example, 
+			If fail-over is configured incorrectly weird behavior can occur. For example, 
 			DNS failing to resolve.
 			</para>
 		</listitem>
@@ -459,6 +508,9 @@ shadow:   files ldap
 	<para>
 	The following services authenticate using LDAP:
 	</para>
+	<indexterm><primary>UNIX</primary></indexterm>
+	<indexterm><primary>Postfix</primary></indexterm>
+	<indexterm><primary>Courier-IMAP</primary></indexterm>
 	<simplelist>
 		<member><para>UNIX login/ssh</para></member>
 		<member><para>Postfix (SMTP)</para></member>
@@ -466,11 +518,15 @@ shadow:   files ldap
 	</simplelist>
 
 	<para>
+	<indexterm><primary>white-pages</primary></indexterm>
+	<indexterm><primary>Windows Address Book</primary></indexterm>
 	Company-wide White-Pages can be searched using a LDAP client
 	such as the one in the Windows Address Book.
 	</para>
 
 	<para>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>smbldap-tools</primary></indexterm>
 	Having gained a solid understanding of LDAP, and a relatively workable LDAP tree
 	thus far, it was time to configure Samba. I compiled the latest stable SAMBA and
 	also installed the latest <command>smbldap-tools</command> from 
@@ -681,14 +737,20 @@ shadow:   files ldap
 </smbconfexample>
 
 	<para>
+	<indexterm><primary>Qbasic</primary></indexterm>
+	<indexterm><primary>Rbase</primary></indexterm>
+	<indexterm><primary>drive letters</primary></indexterm>
 	Most of these shares are only used by one company group, but they are required
 	because of some ancient Qbasic and Rbase applications were that written expecting
-	their own drive lettes.
+	their own drive letters.
 	</para>
 
 	<para>
+	<indexterm><primary>rsync</primary></indexterm>
+	<indexterm><primary>rsyncd.conf</primary></indexterm>
+	<indexterm><primary>synchronize</primary></indexterm>
 	Note: During the process of building the new server, I kept data files up-to-date
-	with the Novell server via use of rsync.  On a separate system (my workstation
+	with the Novell server via use of <command>rsync</command>.  On a separate system (my workstation
 	in fact) which could be rebooted whenever necessary, I set up a mount point to the
 	Novell server via <command>ncpmount</command>. I then created a
 	<filename>rsyncd.conf</filename> to share that mount point out to my new server,
@@ -696,7 +758,7 @@ shadow:   files ldap
 	I will include it in an appendix. The reason I had to have the
 	<command>rsync</command> daemon running on a system which could be rebooted
 	frequently is because <constant>ncpfs</constant> has a nasty habit of creating
-	stale mountpoints which cannot be recovered without a reboot.  The reason for
+	stale mount points which cannot be recovered without a reboot.  The reason for
 	hourly synchronization is because some part of the chain was very slow and
 	performance-heavy (whether <command>rsync</command> itself, the network, or
 	the Novell server I am not sure probably the Novell server).
@@ -716,8 +778,8 @@ shadow:   files ldap
 The Idealx smbldap-tools package can be configured using a script called 
 <command>configure.pl</command> that is provided as part of the tool. See Chapter 6
 for an example of its use. Many administrators, like Misty, choose to do this manually
-so as to mantain greater awareness of how the tool-chain works, and possibly to avoid
-undesirable actions from occuring un-noticed.
+so as to maintain greater awareness of how the tool-chain works, and possibly to avoid
+undesirable actions from occurring un-noticed.
 </para></note>
 
 	<para>
@@ -914,14 +976,15 @@ smbpasswd="/usr/bin/smbpasswd"
 </example>
 
 	<para>
-	NOTES: I chose not to take advantage of the TLS capability of this. 
+	<indexterm><primary>TLS</primary></indexterm>
+	NOTE: I chose not to take advantage of the TLS capability of this. 
 	Eventually I may go back and tweak it.  Also I chose not to take advantage
 	of the master/slave configuration as I heard horror stories that it was
 	unstable.  My slave servers are replicas only.
 	</para>
 
 	<para>
-	The /etc/smbldap-tools/smbldap_bind.conf file is shown here:
+	The <filename>/etc/smbldap-tools/smbldap_bind.conf</filename> file is shown here:
 <screen>
 # smbldap_bind.conf
 #
@@ -995,6 +1058,11 @@ ou: Idmap
 	</para>
 
 	<para>
+	<indexterm><primary>Windows</primary></indexterm>
+	<indexterm><primary>POSIX</primary></indexterm>
+	<indexterm><primary>smbldap-groupadd</primary></indexterm>
+	<indexterm><primary>RID</primary></indexterm>
+	<indexterm><primary>sambaGroupMapping</primary></indexterm>
 	With the LDAP directory now intialized it is time to create the Windows and POSIX
 	(UNIX) group accounts as well as the mappings from Windows groups to UNIX groups.
 	The easiest way to do this is to use <command>smbldap-groupadd</command> command.
@@ -1004,25 +1072,36 @@ ou: Idmap
 	</para>
 
 	<para>
+	<indexterm><primary>group mapping</primary></indexterm>
+	<indexterm><primary>smbldap-groupmod</primary></indexterm>
+	<indexterm><primary>memberUID</primary></indexterm>
 	After I had my group mappings in place, I added users to the groups (the users
 	don't really have to exist yet). I used the <command>smbldap-groupmod</command>
 	command to accomplish this. It can also be done manually by adding memberUID
-	atttributes to the group entries in LDAP.
+	attributes to the group entries in LDAP.
 	</para>
 
 	<para>
+	<indexterm><primary>sambaSamAccount</primary></indexterm>
+	<indexterm><primary>posixAccount</primary></indexterm>
+	<indexterm><primary>smbldap-usermod</primary></indexterm>
 	The most monumental task of all was adding the sambaSamAccount information to each
 	already-existent posixAccount entry.  I did it one at a time as I moved people onto
 	the new server, by issuing the command:
 <screen>
 &rootprompt; smbldap-usermod -a -P username
 </screen>
+	<indexterm><primary>NetWare</primary></indexterm>
+	<indexterm><primary>LDIF</primary></indexterm>
+	<indexterm><primary>slapcat</primary></indexterm>
 	I completed that step for every user after asking the person what their current
-	Novell password was. The wiser way to have done it would probably be to dump the
+	NetWare password was. The wiser way to have done it would probably be to dump the
 	entire database to an LDIF file. This can be done by executing:
 <screen>
 &rootprompt; slapcat &gt; somefile.ldif
 </screen>
+	<indexterm><primary>Perl</primary></indexterm>
+	<indexterm><primary>objectClass</primary></indexterm>
 	Then update the LDIF file created by using a Perl script to parse and add the
 	appropriate attributes and objectClasses to each entry, followed by re-importing
 	the entire database into the LDAP directory. 
@@ -1083,7 +1162,7 @@ loginShell: /bin/false
 
 	<para>
 	Then I went over to a spare Windows NT machine and joined it to the MEGANET2 domain.
-	It worked, and the machine's account entry under OU=COMPUTERS looks like this:
+	It worked, and the machine's account entry under ou=Computers looks like this:
 <screen>
 dn:uid=w2kengrspare$,ou=Computers,ou=MEGANET2,dc=abmas,dc=biz
 objectClass: top
@@ -1111,6 +1190,7 @@ sambaAcctFlags: [W          ]
 	</para>
 
 	<para>
+	<indexterm><primary>netlogon</primary></indexterm>
 	So now I can log in with a test user from the machine w2kengrspare. It's all fine and
 	good, but that user is in no groups yet so has pretty boring access.  We can fix that
 	by writing the login script! To write the login script, I used
@@ -1121,6 +1201,7 @@ sambaAcctFlags: [W          ]
 	</para>
 
 	<para>
+	<indexterm><primary>Kixtart</primary></indexterm>
 	I downloaded Kixtart and put the following files in my [netlogon] share:
 <screen>
 KIX32.EXE
@@ -1134,6 +1215,7 @@ kxrpc.exe &lt;-- Probably useless as it has to run on the server and can
 	</para>
 
 	<para>
+	<indexterm><primary>logon.kix</primary></indexterm>
 	I then wrote the <filename>logon.kix</filename> file that is shown in
 	<link linkend="ch8kix"/>. I chose to keep it all in one file, but it
 	can be split up and linked via include directives.
@@ -1339,7 +1421,7 @@ ENDIF
 	share if they are not in the “Laptop” group. I also add printers on a
 	group-by-group basis, and if applicable I setthe group printer. For this to
 	be effective, the print drivers must be installed on the Samba server in the
-	[print$] share. Ample documentation exists about how to do that so I did not
+	<filename>[print$]</filename> share. Ample documentation exists about how to do that so I did not
 	cover it.
 	</para>
 
@@ -1355,14 +1437,15 @@ ENDIF
 	<para>
 	Also of note for Win9x is that the drive mappings and printer setup will not
 	work because they rely on RPC. One merely has to put the appropriate settings
-	into the c:\autoexec.bat file or map the drives manually.  One option would
+	into the <filename>c:\autoexec.bat</filename> file or map the drives manually.  One option would
 	be to check the OS as part of the Kixtart script, and if it is Win9x and if
-	it is the first login, copy a pre-made autoexec.bat to the C: drive. I only
+	it is the first login, copy a pre-made <filename>autoexec.bat</filename> to the <filename>C:</filename> drive. I only
 	have three such machines and one is going away in the very near future, so it
 	was easier to do it by hand.
 	</para>
 
 	<para>
+	<indexterm><primary>upgrade</primary></indexterm>
 	At this point I was able to add the users. This is the part that really falls
 	into “upgrade. I moved the users over one group at a time, starting with the
 	people who used the least amount of resources on the network. With each group
@@ -1415,7 +1498,7 @@ ENDIF
 
 		<step><para>
 			If it doesn't look right (the dead giveaway is the desktop background)
-			shut down the computer without logging out (powercycle) and try logging
+			shut down the computer without logging out (power cycle) and try logging
 			in as the user again. If it still doesn't work, repeat the steps above.
 			I only had to ever repeat it once.
 		</para></step>
@@ -1485,7 +1568,7 @@ ENDIF
 	<para>
 	Printing from legacy applications &smbmdash; I found out that Novell sent its jobs to
 	the printer in a raw format. CUPS sends them in Postscript by default. I had
-	to make a second printer definition forone printer and tell CUPS specifically
+	to make a second printer definition for one printer and tell CUPS specifically
 	to send raw data to the printer, and assign this printer to the LPT port with
 	Kixtart's version of the “net use”command.
 	</para>
@@ -1497,7 +1580,7 @@ ENDIF
 	multiple Linux member servers, a mechanized saw, a pen plotter, and legacy
 	applications written in Qbasic and R:Base, just to name a few. I actually
 	ended up making some of these applications work better (or work again, as
-	some of them had stopped functioning on the oldserver) because as part of
+	some of them had stopped functioning on the old server) because as part of
 	the process I had to find out how things were supposed to work.
 	</para>
 
