@@ -124,6 +124,7 @@ _krb5_extract_ticket(krb5_context context,
 		     krb5_addresses *addrs,
 		     unsigned nonce,
 		     krb5_boolean allow_server_mismatch,
+		     krb5_boolean ignore_cname,
 		     krb5_decrypt_proc decrypt_proc,
 		     krb5_const_pointer decryptarg)
 {
@@ -133,20 +134,26 @@ _krb5_extract_ticket(krb5_context context,
     time_t tmp_time;
     krb5_timestamp sec_now;
 
-    /* compare client */
-
     ret = principalname2krb5_principal (&tmp_principal,
 					rep->kdc_rep.cname,
 					rep->kdc_rep.crealm);
     if (ret)
 	goto out;
-    tmp = krb5_principal_compare (context, tmp_principal, creds->client);
-    krb5_free_principal (context, tmp_principal);
-    if (!tmp) {
-	ret = KRB5KRB_AP_ERR_MODIFIED;
-	goto out;
+
+    /* compare client */
+
+    if (!ignore_cname) {
+	tmp = krb5_principal_compare (context, tmp_principal, creds->client);
+	if (!tmp) {
+	    krb5_free_principal (context, tmp_principal);
+	    ret = KRB5KRB_AP_ERR_MODIFIED;
+	    goto out;
+	}
     }
-    
+
+    krb5_free_principal (context, creds->client);
+    creds->client = tmp_principal;
+
     /* extract ticket */
     {
 	unsigned char *buf;
@@ -741,6 +748,7 @@ krb5_get_in_cred(krb5_context context,
 			       NULL, 
 			       nonce, 
 			       FALSE, 
+			       opts.b.request_anonymous,
 			       decrypt_proc, 
 			       decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
