@@ -1,3 +1,9 @@
+2004-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/telnetd.c: call setprogname to make libvers happy
+
+	* telnet/main.c: call setprogname to make libvers happy
+
 2003-09-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnet/externs.h: export Scheduler and scheduler_lockout_tty
