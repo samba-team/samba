@@ -1,27 +1,15 @@
 #!/bin/sh
-# if you wish to make html versions of the man pages then add the
-# argument html when calling this script. You must have rman installed.
-#
 
 if [ ! -d catman ]; then
    mkdir catman
 fi
 
-if [ "$1" = "html" ]; then
-  if [ ! -d html ]; then
-     mkdir html
-  fi
-fi
-
 
 FILES="*.?"
 
-cd ../../docs
+cd ../../docs/manpages
 for FILE in  $FILES ; do
-   neqn $FILE | tbl | nroff -man > ../packaging/SGI/catman/`basename $FILE`
-   compress -f ../packaging/SGI/catman/`basename $FILE`
-   if [ "$1" = "html" ]; then
-      rman -f html -r "%s.%s.html"  $FILE > ../packaging/SGI/html/$FILE.html
-   fi
+   neqn $FILE | tbl | nroff -man > ../../packaging/SGI/catman/`basename $FILE`
+   compress -f ../../packaging/SGI/catman/`basename $FILE`
 done
-cd ../packaging/SGI
+cd ../../packaging/SGI
