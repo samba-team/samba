@@ -36,8 +36,6 @@ static int
 parse_args(int argc, char *argv[], struct smb_mount_data *data, char **share)
 {
         int opt;
-        struct passwd *pwd;
-        struct group  *grp;
 
         while ((opt = getopt (argc, argv, "s:")) != EOF)
 	{
