@@ -7,6 +7,8 @@ fi
 host=$1
 bindir=%bindir%
 set `$bindir/kx $host`
-disp=:$1
-auth=$2
+pid=$1
+disp=:$2
+auth=$3
+kill -USR1 $pid
 $bindir/rsh -n $host "env DISPLAY=$disp XAUTHORITY=$auth xterm -T $host -n $host &"
