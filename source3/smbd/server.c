@@ -636,6 +636,8 @@ static BOOL init_structs(void )
 	/* shall I run as a daemon */
 	static BOOL is_daemon = False;
 	static BOOL interactive = False;
+	static BOOL Fork = True;
+	static BOOL log_stdout = False;
 	static char *ports = NULL;
 	int opt;
 	poptContext pc;
@@ -644,6 +646,8 @@ static BOOL init_structs(void )
 		POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
 	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
+	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
+	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
 	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug},
@@ -682,7 +686,17 @@ static BOOL init_structs(void )
 
 	set_remote_machine_name("smbd");
 
-	setup_logging(argv[0],interactive);
+	if (interactive) {
+		Fork = False;
+		log_stdout = True;
+	}
+
+	if (log_stdout && Fork) {
+		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
+		exit(1);
+	}
+
+	setup_logging(argv[0],log_stdout);
 
 	/* we want to re-seed early to prevent time delays causing
            client problems at a later date. (tridge) */
@@ -771,7 +785,7 @@ static BOOL init_structs(void )
 
 	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
-		become_daemon();
+		become_daemon(Fork);
 	}
 
 #if HAVE_SETPGID

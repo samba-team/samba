@@ -16,6 +16,8 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>winbindd</command>
+		<arg choice="opt">-F</arg>
+		<arg choice="opt">-S</arg>
 		<arg choice="opt">-i</arg>
 		<arg choice="opt">-B</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
@@ -106,6 +108,28 @@ group:          files winbind
 
 	<variablelist>
 		<varlistentry>
+		<term>-F</term>
+		<listitem><para>If specified, this parameter causes
+		the main <command>winbindd</command> process to not daemonize,
+		i.e. double-fork and disassociate with the terminal.
+		Child processes are still created as normal to service
+		each connection request, but the main process does not
+		exit. This operation mode is suitable for running
+		<command>winbindd</command> under process supervisors such
+		as <command>supervise</command> and <command>svscan</command>
+		from Daniel J. Bernstein's <command>daemontools</command>
+		package, or the AIX process monitor.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-S</term>
+		<listitem><para>If specified, this parameter causes
+		<command>winbindd</command> to log to standard output rather
+		than a file.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>-d debuglevel</term>
 		<listitem><para>Sets the debuglevel to an integer between 
 		0 and 100. 0 is for no debugging and 100 is for reams and 
@@ -118,7 +142,10 @@ group:          files winbind
 		<listitem><para>Tells <command>winbindd</command> to not 
 		become a daemon and detach from the current terminal. This 
 		option is used by developers when interactive debugging 
-		of <command>winbindd</command> is required. </para></listitem>
+		of <command>winbindd</command> is required.
+		<command>winbindd</command> also logs to standard output,
+		as if the <command>-S</command> parameter had been given.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
