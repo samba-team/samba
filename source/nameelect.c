@@ -77,7 +77,7 @@ void check_master_browser(time_t t)
 
 		for (work = d->workgrouplist; work; work = work->next)
 		{
-			if (!AM_MASTER(work))
+			if (strequal(work->work_group, lp_workgroup()) && !AM_MASTER(work))
 			{
 				if (lp_preferred_master())
 				{

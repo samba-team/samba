@@ -403,7 +403,7 @@ void announce_master(time_t t)
   for (d = subnetlist; d; d = d->next)
     {
       /* Try and find our workgroup on this subnet */
-      struct work_record *work = find_workgroupstruct(d, lp_workgroup(), True);
+      struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
 
       if (work)
         {
