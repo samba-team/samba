@@ -247,6 +247,7 @@ typedef struct
 	BOOL bReadPrediction;
 	BOOL bReadbmpx;
 	BOOL bSyslogOnly;
+	BOOL bAdminLog;
 	BOOL bBrowseList;
 	BOOL bNISHomeMap;
 	BOOL bTimeServer;
@@ -793,6 +794,8 @@ static struct parm_struct parm_table[] = {
 #endif /* WITH_SSL */
 
 	{"Logging Options", P_SEP, P_SEPARATOR},
+
+	{"admin log", P_BOOL, P_GLOBAL, &Globals.bAdminLog, NULL, NULL, 0},
 	{"log level", P_INTEGER, P_GLOBAL, &DEBUGLEVEL_CLASS[DBGC_ALL], handle_debug_list, NULL, 0},
 	{"debuglevel", P_INTEGER, P_GLOBAL, &DEBUGLEVEL_CLASS[DBGC_ALL], handle_debug_list, NULL, 0},
 	{"syslog", P_INTEGER, P_GLOBAL, &Globals.syslog, NULL, NULL, 0},
@@ -1285,6 +1288,7 @@ static void init_globals(void)
 	Globals.bStripDot = False;
 	Globals.syslog = 1;
 	Globals.bSyslogOnly = False;
+	Globals.bAdminLog = False;
 	Globals.bTimestampLogs = True;
 	Globals.bDebugHiresTimestamp = False;
 	Globals.bDebugPid = False;
@@ -1607,6 +1611,7 @@ FN_GLOBAL_BOOL(lp_strip_dot, &Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted, &Globals.bUpdateEncrypt)
 FN_GLOBAL_BOOL(lp_syslog_only, &Globals.bSyslogOnly)
+FN_GLOBAL_BOOL(lp_admin_log, &Globals.bAdminLog)
 FN_GLOBAL_BOOL(lp_timestamp_logs, &Globals.bTimestampLogs)
 FN_GLOBAL_BOOL(lp_debug_hires_timestamp, &Globals.bDebugHiresTimestamp)
 FN_GLOBAL_BOOL(lp_debug_pid, &Globals.bDebugPid)
