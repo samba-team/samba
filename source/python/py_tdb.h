@@ -21,9 +21,6 @@
 #ifndef _PY_TDB_H
 #define _PY_TDB_H
 
-#include "includes.h"
-#include "Python.h"
-
-#include "python/py_common_proto.h"
+#include "python/py_common.h"
 
 #endif /* _PY_TDB_H */

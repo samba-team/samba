@@ -21,7 +21,10 @@
 #ifndef _PY_CONV_H
 #define _PY_CONV_H
 
-enum pyconv_types { PY_UNISTR, PY_UINT32, PY_UINT16, PY_STRING, PY_UID, PY_GID };
+#include "python/py_common.h"
+
+enum pyconv_types { PY_UNISTR, PY_UNISTR2, PY_UINT32, PY_UINT16, PY_STRING, 
+		    PY_UID, PY_GID };
 
 struct pyconv {
 	char *name;		/* Name of member */

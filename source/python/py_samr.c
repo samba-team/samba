@@ -157,7 +157,7 @@ static PyObject *samr_enum_dom_groups(PyObject *self, PyObject *args,
 	samr_domain_hnd_object *domain_hnd = (samr_domain_hnd_object *)self;
 	static char *kwlist[] = { NULL };
 	TALLOC_CTX *mem_ctx;
-	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
+/*	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS; */
 	uint32 start_idx, size, num_dom_groups;
 	struct acct_info *dom_groups;
 	NTSTATUS result;
