@@ -1,3 +1,24 @@
+1999-09-14  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): return
+ 	KRB5_LIBOS_PWDINTR when interrupted
+
+	* lib/krb5/get_in_tkt_pw.c (krb5_password_key_proc): check return
+ 	value from des_read_pw_string
+
+	* kuser/kinit.c (main): don't print any error if reading the
+ 	password was interrupted
+
+	* kpasswd/kpasswd.c (main): don't print any error if reading the
+ 	password was interrupted
+
+	* kdc/string2key.c (main): check the return value from fgets
+
+	* kdc/kstash.c (main): check return value from des_read_pw_string
+
+	* admin/ktutil.c (kt_add): check the return-value from fgets and
+ 	overwrite the password for paranoid reasons
+
 1999-09-13  Assar Westerlund  <assar@sics.se>
 
 	* kdc/hpropd.c (main): remove bogus error with `--print'.  remove
