@@ -2727,14 +2727,6 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	struct nmb_name calling, called;
 	BOOL connected_ok = False;
 
-	ZERO_STRUCTP(cli);
-
-	if (!cli_initialise(cli))
-	{
-		DEBUG(0,("cli_connect_serverlist: unable to initialize client connection.\n"));
-		return False;
-	}
-
 	/*
 	* Treat each name in the 'password server =' line as a potential
 	* PDC/BDC. Contact each in turn and try and authenticate.
@@ -2742,6 +2734,14 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 
 	while(p && next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine)))
 	{
+		ZERO_STRUCTP(cli);
+
+		if (!cli_initialise(cli))
+		{
+			DEBUG(0,("cli_connect_serverlist: unable to initialize client connection.\n"));
+			return False;
+		}
+
 		standard_sub_basic(remote_machine);
 		strupper(remote_machine);
 
