@@ -28,7 +28,7 @@ Contents
 
      * SECTION ONE: General information
           All about Samba - what it is, how to get it, related sources of
-          information.
+          information, how to understand the version numbering scheme.
      * SECTION TWO: Compiling and installing Samba on a Unix host
           Common problems that arise when building and installing Samba under
           Unix.
@@ -116,6 +116,51 @@ Note that binaries are NOT included in any of the above. Samba is distributed
 ONLY in source form, though binaries may be available from other sites. Recent
 versions of some Linux distributions, for example, do contain Samba binaries
 for that platform.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 5: What do the version numbers mean?
+
+It is not recommended that you run a version of Samba with the word "alpha"
+in its name unless you know what you are doing and are willing to do some 
+debugging. Many, many people just get the latest recommended stable release 
+version and are happy. If you are brave, by all means take the plunge and 
+help with the testing and development - but don't install it on your 
+departmental server. Samba is typically very stable and safe, and this is
+mostly due to the policy of many public releases.
+
+1) when major changes are made the version number is increased. For example,
+the transition from 1.9.15 to 1.9.16. However, this version number will not
+appear immediately and people should continue to use 1.9.15 for production
+systems (see next point.)
+
+2) just after major changes are made the software is considered
+unstable, and a series of alpha releases are distributed, for example
+1.9.16alpha1. These are for testing by those who know what they are doing.
+The "alpha" in the filename will hopefully scare off those who are just
+looking for the latest version to install.
+
+3) when Andrew thinks that the alphas have stabilised to the point where he
+would recommend new users install it, he renames it to the same version
+number without the alpha, for example 1.9.16. 
+
+4) inevitably bugs are found in the "stable" releases and minor 
+patch levels are released which give us the pXX series, for example 
+1.9.16p2. 
+
+So the progression goes:
+
+			1.9.15p7 	
+			1.9.15p8
+			1.9.16alpha1
+			  :
+			1.9.16alpha20
+			1.9.16
+			1.9.16p1
+
+The above system means that whenever someone looks on our ftp site
+they will be able to grab the highest numbered release without an
+alpha in the name and be sure of getting the current recommended
+version.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 4: What platforms are supported?
