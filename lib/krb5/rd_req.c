@@ -181,7 +181,7 @@ krb5_verify_authenticator_checksum(krb5_context context,
     krb5_authenticator authenticator;
     krb5_crypto crypto;
     
-    ret = krb5_auth_getauthenticator (context,
+    ret = krb5_auth_con_getauthenticator (context,
 				      ac,
 				      &authenticator);
     if(ret)
