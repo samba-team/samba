@@ -37,6 +37,15 @@ static void samr_handle_destroy(struct dcesrv_connection *conn, struct dcesrv_ha
 	talloc_free(h->data);
 }
 
+/*
+  This is a bad temporary hack until we have at least some kind of schema
+  support
+*/
+static char *ldb_hexstr(TALLOC_CTX *mem_ctx, uint32 val)
+{
+	return talloc_asprintf(mem_ctx, "0x%.8x", val);
+}
+
 /* 
   samr_Connect 
 
@@ -1090,8 +1099,10 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	/* search for the group record */
 	ret = samdb_search(d_state->sam_ctx,
 			   mem_ctx, d_state->domain_dn, &msgs, attrs,
-			   "(&(objectSid=%s)(objectclass=group))", 
-			   sidstr);
+			   "(&(objectSid=%s)(objectclass=group)"
+			   "(grouptype=%s))",
+			   sidstr, ldb_hexstr(mem_ctx,
+					      GTYPE_SECURITY_GLOBAL_GROUP));
 	if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -1297,7 +1308,54 @@ static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_AddGroupMember *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct samr_domain_state *d_state;
+	struct ldb_message mod;
+	char *membersidstr;
+	const char *memberdn;
+	struct ldb_message **msgs;
+	const char * const attrs[2] = { "dn", NULL };
+	int ret;
+
+	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
+
+	a_state = h->data;
+	d_state = a_state->domain_state;
+
+	membersidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid,
+				       r->in.rid);
+	if (membersidstr == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	/* In native mode, AD can also nest domain groups. Not sure yet
+	 * whether this is also available via RPC. */
+	ret = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
+			   &msgs, attrs, "(&(objectSid=%s)(objectclass=user))",
+			   membersidstr);
+
+	if (ret == 0)
+		return NT_STATUS_NO_SUCH_USER;
+
+	if (ret > 1)
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+	memberdn = samdb_result_string(msgs[0], "dn", NULL);
+
+	if (memberdn == NULL)
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_reference(mem_ctx, a_state->account_dn);
+
+	if (samdb_msg_add_addval(d_state->sam_ctx, mem_ctx, &mod, "member",
+				 memberdn) != 0)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	if (samdb_modify(a_state->sam_ctx, mem_ctx, &mod) != 0)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1334,7 +1392,54 @@ static NTSTATUS samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_DeleteGroupMember *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct samr_domain_state *d_state;
+	struct ldb_message mod;
+	char *membersidstr;
+	const char *memberdn;
+	struct ldb_message **msgs;
+	const char * const attrs[2] = { "dn", NULL };
+	int ret;
+
+	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
+
+	a_state = h->data;
+	d_state = a_state->domain_state;
+
+	membersidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid,
+				       r->in.rid);
+	if (membersidstr == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	/* In native mode, AD can also nest domain groups. Not sure yet
+	 * whether this is also available via RPC. */
+	ret = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
+			   &msgs, attrs, "(&(objectSid=%s)(objectclass=user))",
+			   membersidstr);
+
+	if (ret == 0)
+		return NT_STATUS_NO_SUCH_USER;
+
+	if (ret > 1)
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+	memberdn = samdb_result_string(msgs[0], "dn", NULL);
+
+	if (memberdn == NULL)
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_reference(mem_ctx, a_state->account_dn);
+
+	if (samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, &mod, "member",
+				 memberdn) != 0)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	if (samdb_modify(a_state->sam_ctx, mem_ctx, &mod) != 0)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1344,7 +1449,73 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_QueryGroupMember *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct ldb_message **res;
+	struct ldb_message_element *el;
+	struct samr_ridArray *array;
+	const char * const attrs[2] = { "member", NULL };
+	int ret;
+
+	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
+
+	a_state = h->data;
+
+	/* pull the member attribute */
+	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "dn=%s", a_state->account_dn);
+
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	array = talloc_p(mem_ctx, struct samr_ridArray);
+
+	if (array == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(array);
+
+	el = ldb_msg_find_element(res[0], "member");
+
+	if (el != NULL) {
+		int i;
+
+		array->count = el->num_values;
+
+		array->rids = talloc_array_p(mem_ctx, uint32,
+					     el->num_values);
+		if (array->rids == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		array->unknown = talloc_array_p(mem_ctx, uint32,
+						el->num_values);
+		if (array->unknown == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		for (i=0; i<el->num_values; i++) {
+			struct ldb_message **res2;
+			const char * const attrs2[2] = { "objectSid", NULL };
+			ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL,
+					   &res2, attrs2, "dn=%s",
+					   (char *)el->values[i].data);
+			if (ret != 1)
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+			array->rids[i] =
+				samdb_result_rid_from_sid(mem_ctx, res2[0],
+							  "objectSid", 0);
+
+			if (array->rids[i] == 0)
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+			array->unknown[i] = 7; /* Not sure what this is.. */
+		}
+	}
+
+	r->out.rids = array;
+
+	return NT_STATUS_OK;
 }
 
 

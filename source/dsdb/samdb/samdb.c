@@ -711,6 +711,60 @@ int samdb_msg_add_delete(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 }
 
 /*
+  add a add attribute value to a message
+*/
+int samdb_msg_add_addval(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			 const char *attr_name, const char *value)
+{
+	struct ldb_wrap *sam_ctx = ctx;
+	struct ldb_message_element *el;
+	char *a, *v;
+	int ret;
+	a = talloc_strdup(mem_ctx, attr_name);
+	if (a == NULL)
+		return -1;
+	v = talloc_strdup(mem_ctx, value);
+	if (v == NULL)
+		return -1;
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
+	ret = ldb_msg_add_string(sam_ctx->ldb, msg, a, v);
+	if (ret != 0)
+		return ret;
+	el = ldb_msg_find_element(msg, a);
+	if (el == NULL)
+		return -1;
+	el->flags = LDB_FLAG_MOD_ADD;
+	return 0;
+}
+
+/*
+  add a delete attribute value to a message
+*/
+int samdb_msg_add_delval(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			 const char *attr_name, const char *value)
+{
+	struct ldb_wrap *sam_ctx = ctx;
+	struct ldb_message_element *el;
+	char *a, *v;
+	int ret;
+	a = talloc_strdup(mem_ctx, attr_name);
+	if (a == NULL)
+		return -1;
+	v = talloc_strdup(mem_ctx, value);
+	if (v == NULL)
+		return -1;
+	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
+	ret = ldb_msg_add_string(sam_ctx->ldb, msg, a, v);
+	if (ret != 0)
+		return ret;
+	el = ldb_msg_find_element(msg, a);
+	if (el == NULL)
+		return -1;
+	el->flags = LDB_FLAG_MOD_DELETE;
+	return 0;
+}
+
+/*
   add a uint_t element to a message
 */
 int samdb_msg_add_uint(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
