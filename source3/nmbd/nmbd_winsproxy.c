@@ -94,13 +94,17 @@ returned for name %s.\n", namestr(nmbname) ));
 
   if(namerec && original_packet->packet.nmb.header.nm_flags.bcast)
   {
-    for( i = 0; i < namerec->num_ips; i++)
+    for( i = 0; i < namerec->data.num_ips; i++)
     {
-      if(same_net( namerec->ip[i], orig_broadcast_subnet->myip, orig_broadcast_subnet->mask_ip ))
+      if( same_net( namerec->data.ip[i],
+                    orig_broadcast_subnet->myip,
+                    orig_broadcast_subnet->mask_ip ) )
       {
-        DEBUG(5,("wins_proxy_name_query_request_success: name %s is a WINS proxy name and is also \
-on the same subnet (%s) as the requestor. Not replying.\n", 
-                  namestr(&namerec->name), orig_broadcast_subnet->subnet_name ));
+        DEBUG( 5, ( "wins_proxy_name_query_request_success: name %s is a WINS \
+proxy name and is also on the same subnet (%s) as the requestor. \
+Not replying.\n",
+                    namestr(&namerec->name),
+                    orig_broadcast_subnet->subnet_name ) );
         return;
       }
     }

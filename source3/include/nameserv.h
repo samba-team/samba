@@ -85,16 +85,16 @@ enum netbios_reply_type_code { NMB_QUERY, NMB_STATUS, NMB_REG, NMB_REG_REFRESH,
 #define NB_FLGMSK 0xE0
 
 /* NetBIOS flag identifier. */
-#define NAME_GROUP(p)     ((p)->nb_flags & NB_GROUP)
-#define NAME_BFLAG(p)     (((p)->nb_flags & NB_NODETYPEMASK) == NB_BFLAG)
-#define NAME_PFLAG(p)     (((p)->nb_flags & NB_NODETYPEMASK) == NB_PFLAG)
-#define NAME_MFLAG(p)     (((p)->nb_flags & NB_NODETYPEMASK) == NB_MFLAG)
-#define NAME_HFLAG(p)     (((p)->nb_flags & NB_NODETYPEMASK) == NB_HFLAG)
+#define NAME_GROUP(p)  ((p)->data.nb_flags & NB_GROUP)
+#define NAME_BFLAG(p) (((p)->data.nb_flags & NB_NODETYPEMASK) == NB_BFLAG)
+#define NAME_PFLAG(p) (((p)->data.nb_flags & NB_NODETYPEMASK) == NB_PFLAG)
+#define NAME_MFLAG(p) (((p)->data.nb_flags & NB_NODETYPEMASK) == NB_MFLAG)
+#define NAME_HFLAG(p) (((p)->data.nb_flags & NB_NODETYPEMASK) == NB_HFLAG)
 
 /* Samba name state for a name in a namelist. */
-#define NAME_IS_ACTIVE(p) ((p)->nb_flags & NB_ACTIVE)
-#define NAME_IN_CONFLICT(p)  ((p)->nb_flags & NB_CONFL)
-#define NAME_IS_DEREGISTERING(p)     ((p)->nb_flags & NB_DEREG)
+#define NAME_IS_ACTIVE(p)        ((p)->data.nb_flags & NB_ACTIVE)
+#define NAME_IN_CONFLICT(p)      ((p)->data.nb_flags & NB_CONFL)
+#define NAME_IS_DEREGISTERING(p) ((p)->data.nb_flags & NB_DEREG)
 
 /* Error codes for NetBIOS requests. */
 #define FMT_ERR   0x1       /* Packet format error. */
@@ -168,22 +168,17 @@ enum logon_state
   LOGON_SRV
 };
 
+struct subnet_record;
+
 /* A netbios name structure. */
 struct nmb_name {
-  char name[17];
-  char scope[64];
+  char         name[17];
+  char         scope[64];
   unsigned int name_type;
 };
 
-/* This is the structure used for the local netbios name list. */
-struct name_record
+struct nmb_data
 {
-  struct name_record *next;
-  struct name_record *prev;
-
-  struct subnet_record *subnet;
-
-  struct nmb_name name;    /* The netbios name. */
   uint16 nb_flags;         /* Netbios flags. */
   int num_ips;             /* Number of ip entries. */
   struct in_addr *ip;      /* The ip list for this name. */
@@ -194,7 +189,15 @@ struct name_record
   time_t refresh_time; /* The time the record should be refreshed. */
 };
 
-struct subnet_record;
+/* This is the structure used for the local netbios name list. */
+struct name_record
+{
+  struct name_record *next;
+  struct name_record *prev;
+  struct subnet_record *subnet;
+  struct nmb_name name;    /* The netbios name. */
+  struct nmb_data data;    /* The netbios data. */
+};
 
 /* Browser cache for synchronising browse lists. */
 struct browse_cache_record

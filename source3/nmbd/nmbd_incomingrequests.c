@@ -114,7 +114,9 @@ group release name %s from IP %s on subnet %s with no group bit set.\n",
   namerec = find_name_on_subnet(subrec, &nmb->question.question_name, FIND_ANY_NAME);
 
   /* We only care about someone trying to release one of our names. */
-  if (namerec && ((namerec->source == SELF_NAME) || (namerec->source == PERMANENT_NAME)))
+  if( namerec
+   && ( (namerec->data.source == SELF_NAME)
+     || (namerec->data.source == PERMANENT_NAME) ) )
   {
     rcode = ACT_ERR;
     DEBUG(0, ("process_name_release_request: Attempt to release name %s from IP %s \
@@ -236,7 +238,7 @@ IP %s on subnet %s\n", namestr(question), inet_ntoa(from_ip), subrec->subnet_nam
    * later to queries.
    */
 
-  if((namerec != NULL) && (namerec->source == WINS_PROXY_NAME))
+  if((namerec != NULL) && (namerec->data.source == WINS_PROXY_NAME))
   {
     remove_name_from_namelist( subrec, namerec );
     namerec = NULL;
@@ -246,10 +248,10 @@ IP %s on subnet %s\n", namestr(question), inet_ntoa(from_ip), subrec->subnet_nam
   {
     /* Unique name. */
 
-    if ((namerec != NULL) && 
-        ((namerec->source == SELF_NAME) || (namerec->source == PERMANENT_NAME) ||
-          NAME_GROUP(namerec))
-       )
+    if( (namerec != NULL)
+     && ( (namerec->data.source == SELF_NAME)
+       || (namerec->data.source == PERMANENT_NAME)
+       || NAME_GROUP(namerec) ) )
     {
       /* No-one can register one of Samba's names, nor can they
          register a name that's a group name as a unique name */
@@ -260,7 +262,7 @@ IP %s on subnet %s\n", namestr(question), inet_ntoa(from_ip), subrec->subnet_nam
     else if(namerec != NULL)
     {
       /* Update the namelist record with the new information. */
-      namerec->ip[0] = from_ip;
+      namerec->data.ip[0] = from_ip;
       update_name_ttl(namerec, ttl);
 
       DEBUG(3,("process_name_registration_request: Updated name record %s \
@@ -272,9 +274,10 @@ with IP %s on subnet %s\n",namestr(&namerec->name),inet_ntoa(from_ip), subrec->s
   {
     /* Group name. */
 
-    if((namerec != NULL) && !NAME_GROUP(namerec) &&
-        ((namerec->source == SELF_NAME) || (namerec->source == PERMANENT_NAME))
-      )
+    if( (namerec != NULL)
+     && !NAME_GROUP(namerec)
+     && ( (namerec->data.source == SELF_NAME)
+       || (namerec->data.source == PERMANENT_NAME) ) )
     {
       /* Disallow group names when we have a unique name. */
       send_name_registration_response(ACT_ERR, 0, p);  
@@ -350,7 +353,8 @@ subnet %s - name not found.\n", namestr(&nmb->question.question_name),
 
   while (buf < bufend) 
   {
-    if ((namerec->source == SELF_NAME) || (namerec->source == PERMANENT_NAME))
+    if( (namerec->data.source == SELF_NAME)
+     || (namerec->data.source == PERMANENT_NAME) )
     {
       int name_type = namerec->name.name_type;
       
@@ -367,19 +371,19 @@ subnet %s - name not found.\n", namestr(&nmb->question.question_name),
         
         /* Put the name type and netbios flags in the buffer. */
         buf[15] = name_type;
-        set_nb_flags(&buf[16],namerec->nb_flags);
+        set_nb_flags( &buf[16],namerec->data.nb_flags );
         buf[16] |= NB_ACTIVE; /* all our names are active */
 
         buf += 18;
-      
+
         names_added++;
       }
     }
 
     /* Remove duplicate names. */
-    qsort(buf0,names_added,18,QSORT_CAST status_compare);
+    qsort( buf0, names_added, 18, QSORT_CAST status_compare );
 
-    for (i=1;i<names_added;i++)
+    for( i=1; i < names_added ; i++ )
     {
       if (memcmp(buf0 + 18*i,buf0 + 18*(i-1),16) == 0) 
       {
@@ -470,7 +474,9 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
 
 
   /* Check if it is a name that expired */
-  if (namerec && ((namerec->death_time != PERMANENT_TTL) && (namerec->death_time < p->timestamp)))
+  if( namerec
+   && ( (namerec->data.death_time != PERMANENT_TTL)
+     && (namerec->data.death_time < p->timestamp) ) )
   {
     DEBUG(5,("process_name_query_request: expired name %s\n", namestr(&namerec->name)));
     namerec = NULL;
@@ -487,11 +493,17 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
      * into the namelist if we were configured as a WINS proxy.
      */
 
-    if (!bcast || 
-        (bcast && ((name_type == 0x1b) || (namerec->source == SELF_NAME) || 
-        (namerec->source == PERMANENT_NAME) || 
-        ((namerec->source == WINS_PROXY_NAME) && ((name_type == 0) || (name_type == 0x20)))))
-       )
+    if( !bcast
+     || ( bcast
+       && ( (name_type == 0x1b)
+         || (namerec->data.source == SELF_NAME)
+         || (namerec->data.source == PERMANENT_NAME)
+         || ( (namerec->data.source == WINS_PROXY_NAME)
+           && ( (name_type == 0) || (name_type == 0x20) ) 
+            )
+          )
+        )
+      )
     {
       
       /* The requested name is a directed query, or it's SELF or PERMANENT or WINS_PROXY, 
@@ -505,11 +517,11 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
        * replies to a broadcast query.
        */
 
-      if(namerec->source == WINS_PROXY_NAME)
+      if( namerec->data.source == WINS_PROXY_NAME )
       {
-        for( i = 0; i < namerec->num_ips; i++)
+        for( i = 0; i < namerec->data.num_ips; i++)
         {
-          if(same_net( namerec->ip[i], subrec->myip, subrec->mask_ip ))    
+          if(same_net( namerec->data.ip[i], subrec->myip, subrec->mask_ip ))    
           {
             DEBUG(5,("process_name_query_request: name %s is a WINS proxy name and is also \
 on the same subnet (%s) as the requestor. Not replying.\n", 
@@ -519,30 +531,30 @@ on the same subnet (%s) as the requestor. Not replying.\n",
         }   
       }     
 
-      ttl = (namerec->death_time != PERMANENT_TTL) ?
-                     namerec->death_time - p->timestamp : lp_max_ttl();
+      ttl = (namerec->data.death_time != PERMANENT_TTL) ?
+                     namerec->data.death_time - p->timestamp : lp_max_ttl();
 
       /* Copy all known ip addresses into the return data. */
       /* Optimise for the common case of one IP address so 
          we don't need a malloc. */
 
-      if(namerec->num_ips == 1 )
+      if( namerec->data.num_ips == 1 )
         prdata = rdata;
       else
       {
-        if((prdata = (char *)malloc( namerec->num_ips * 6 )) == NULL)
+        if((prdata = (char *)malloc( namerec->data.num_ips * 6 )) == NULL)
         {
           DEBUG(0,("process_name_query_request: malloc fail !\n"));
           return;
         }
       }
 
-      for( i = 0; i < namerec->num_ips; i++)
+      for( i = 0; i < namerec->data.num_ips; i++ )
       {
-        set_nb_flags(&prdata[i*6],namerec->nb_flags);
-        putip((char *)&prdata[2+(i*6)], &namerec->ip[i]);
+        set_nb_flags(&prdata[i*6],namerec->data.nb_flags);
+        putip((char *)&prdata[2+(i*6)], &namerec->data.ip[i]);
       }
-      reply_data_len = namerec->num_ips * 6;
+      reply_data_len = namerec->data.num_ips * 6;
       success = True;
     }
   }

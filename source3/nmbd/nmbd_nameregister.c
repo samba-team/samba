@@ -372,16 +372,16 @@ BOOL refresh_name(struct subnet_record *subrec, struct name_record *namerec,
    * only be done once).
    */
 
-  for( i = 0; i < namerec->num_ips; i++)
+  for( i = 0; i < namerec->data.num_ips; i++)
   {
     if(queue_refresh_name( subrec,
         register_name_response,
         register_name_timeout_response,
-        (i == (namerec->num_ips - 1)) ? success_fn : NULL,
-        (i == (namerec->num_ips - 1)) ? fail_fn : NULL,
-        (i == (namerec->num_ips - 1)) ? userdata : NULL,
+        (i == (namerec->data.num_ips - 1)) ? success_fn : NULL,
+        (i == (namerec->data.num_ips - 1)) ? fail_fn : NULL,
+        (i == (namerec->data.num_ips - 1)) ? userdata : NULL,
         namerec,
-        namerec->ip[i]) == NULL)
+        namerec->data.ip[i]) == NULL)
     {
       DEBUG(0,("refresh_name: Failed to send packet trying to refresh name %s\n",
             namestr(&namerec->name)));

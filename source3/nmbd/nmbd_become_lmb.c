@@ -67,7 +67,7 @@ static void remove_permanent_name_from_unicast( struct subnet_record *subrec,
   {
     /* Remove this broadcast subnet IP address from the name. */
     remove_ip_from_name_record( namerec, subrec->myip);
-    if(namerec->num_ips == 0)
+    if(namerec->data.num_ips == 0)
       remove_name_from_namelist( unicast_subnet, namerec);
   }
 }

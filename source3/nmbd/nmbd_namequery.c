@@ -37,7 +37,8 @@ static void query_name_response(struct subnet_record *subrec,
 {
   struct nmb_packet *nmb = &p->packet.nmb;
   BOOL success = False;
-  struct nmb_name *question_name = &rrec->packet->packet.nmb.question.question_name;
+  struct nmb_name *question_name = 
+                           &rrec->packet->packet.nmb.question.question_name;
   struct in_addr answer_ip;
 
   /* Ensure we don't retry the query but leave the response record cleanup
@@ -157,8 +158,9 @@ static BOOL query_local_namelists(struct subnet_record *subrec, struct nmb_name 
   if((namerec = find_name_on_subnet(subrec, nmbname, FIND_ANY_NAME))==NULL)
     return False;
 
-  if(NAME_IS_ACTIVE(namerec) && ((namerec->source == SELF_NAME) || 
-                              (namerec->source == LMHOSTS_NAME)) )
+  if( NAME_IS_ACTIVE(namerec)
+   && ( (namerec->data.source == SELF_NAME)
+     || (namerec->data.source == LMHOSTS_NAME) ) )
   {
     *namerecp = namerec;
     return True;
@@ -198,23 +200,23 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
     rrec.rr_type = RR_TYPE_NB;
     rrec.rr_class = RR_CLASS_IN;
     rrec.ttl = PERMANENT_TTL;
-    rrec.rdlength = namerec->num_ips * 6;
+    rrec.rdlength = namerec->data.num_ips * 6;
     if(rrec.rdlength > MAX_DGRAM_SIZE)
     {
       DEBUG(0,("query_name: nmbd internal error - there are %d ip addresses for name %s.\n",
-               namerec->num_ips, namestr(&nmbname) ));
+               namerec->data.num_ips, namestr(&nmbname) ));
       return False;
     }
 
-    for( i = 0; i < namerec->num_ips; i++)
+    for( i = 0; i < namerec->data.num_ips; i++)
     {
-      set_nb_flags( &rrec.rdata[i*6], namerec->nb_flags );
-      putip( &rrec.rdata[(i*6) + 2], (char *)&namerec->ip[i]);
+      set_nb_flags( &rrec.rdata[i*6], namerec->data.nb_flags );
+      putip( &rrec.rdata[(i*6) + 2], (char *)&namerec->data.ip[i]);
     }
 
     /* Call the success function directly. */
     if(success_fn)
-      (*success_fn)(subrec, userdata, &nmbname, namerec->ip[0], &rrec);
+      (*success_fn)(subrec, userdata, &nmbname, namerec->data.ip[0], &rrec);
     return False;
   }
 
