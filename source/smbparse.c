@@ -73,6 +73,7 @@ char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int 
 
 	q = align_offset(q, base, align);
 	
+	DBG_RW_CVAL("num_auths ", depth, base, io, q, sid->num_auths); q++;
 	DBG_RW_CVAL("sid_no    ", depth, base, io, q, sid->sid_no); q++; 
 	DBG_RW_CVAL("num_auths ", depth, base, io, q, sid->num_auths); q++;
 
@@ -279,8 +280,11 @@ char* smb_io_chal(BOOL io, DOM_CHAL *chal, char *q, char *base, int align, int d
 
 	q = align_offset(q, base, align);
 	
+	DBG_RW_IVAL("data[0]", depth, base, io, q, chal->data[0]); q += 4;
+	DBG_RW_IVAL("data[1]", depth, base, io, q, chal->data[1]); q += 4;
+/*
 	DBG_RW_PCVAL("data", depth, base, io, q, chal->data, 8); q += 8;
-
+*/
 	return q;
 }
 
@@ -510,9 +514,7 @@ char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align, 
 
 	q = align_offset(q, base, align);
 	
-
 	DBG_RW_SVAL("uni_dom_max_len", depth, base, io, q, d_q->uni_dom_max_len); q += 2; /* domain name string length * 2 */
-	DBG_RW_SVAL("padding        ", depth, base, io, q, d_q->padding        ); q += 2; /* 2 padding bytes */
 	DBG_RW_SVAL("uni_dom_str_len", depth, base, io, q, d_q->uni_dom_str_len); q += 2; /* domain name string length * 2 */
 
 	DBG_RW_IVAL("buffer_dom_name", depth, base, io, q, d_q->buffer_dom_name); q += 4; /* undocumented domain name string buffer pointer */

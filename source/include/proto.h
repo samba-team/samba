@@ -63,10 +63,10 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
 /*The following definitions come from  credentials.c  */
 
 void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
-		       char *session_key);
-void cred_create(char *session_key, DOM_CHAL *stored_cred, UTIME timestamp, 
+		       uint32 session_key[2]);
+void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred);
-int cred_assert(DOM_CHAL *cred, char *session_key, DOM_CHAL *stored_cred,
+int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
 		UTIME timestamp);
 
 /*The following definitions come from  dir.c  */
@@ -665,7 +665,7 @@ int make_rpc_reply(char *inbuf, char *q, int data_len);
 void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate);
 void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
 void make_unistr(UNISTR *str, char *buf);
-void make_unistr2(UNISTR2 *str, char *buf, int len, char terminate);
+void make_unistr2(UNISTR2 *str, char *buf, int len);
 void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
 void make_dom_sid2(DOM_SID2 *sid2, char *sid_str);
 

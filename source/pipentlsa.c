@@ -59,14 +59,13 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
 	int domlen = strlen(dom_name);
 
 	d_q->uni_dom_max_len = domlen * 2;
-	d_q->padding = 0;
 	d_q->uni_dom_str_len = domlen * 2;
 
-	d_q->buffer_dom_name = 0; /* domain buffer pointer */
-	d_q->buffer_dom_sid  = 0; /* domain sid pointer */
+	d_q->buffer_dom_name = 1; /* domain buffer pointer */
+	d_q->buffer_dom_sid  = 1; /* domain sid pointer */
 
-	/* NOT null-terminated: 4-terminated instead! */
-	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen, 4);
+	/* this string is supposed to be character short */
+	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
 
 	make_dom_sid(&(d_q->dom_sid), dom_sid);
 }

@@ -394,7 +394,7 @@ typedef struct log_info
 /* DOM_CHAL - challenge info */
 typedef struct chal_info
 {
-  uint8 data[8]; /* credentials */
+  uint32 data[2]; /* credentials */
 
 } DOM_CHAL;
 
@@ -492,7 +492,6 @@ typedef struct rpc_hdr_info
 typedef struct dom_query_info
 {
   uint16 uni_dom_max_len; /* domain name string length * 2 */
-  uint16 padding;         /* 2 padding bytes? */
   uint16 uni_dom_str_len; /* domain name string length * 2 */
   uint32 buffer_dom_name; /* undocumented domain name string buffer pointer */
   uint32 buffer_dom_sid; /* undocumented domain SID string buffer pointer */
@@ -1018,8 +1017,8 @@ struct dcinfo
   DOM_CHAL clnt_cred; /* Last client credential */
   DOM_CHAL srv_cred;  /* Last server credential */
 
-  char  sess_key[8]; /* Session key */
-  uchar md4pw[16];   /* md4(machine password) */
+  uint32 sess_key[2]; /* Session key */
+  uchar  md4pw[16];   /* md4(machine password) */
 };
 
 typedef struct

@@ -180,18 +180,15 @@ void make_unistr(UNISTR *str, char *buf)
 	PutUniCode((char *)(str->buffer), buf);
 }
 
-void make_unistr2(UNISTR2 *str, char *buf, int len, char terminate)
+void make_unistr2(UNISTR2 *str, char *buf, int len)
 {
 	/* set up string lengths. add one if string is not null-terminated */
-	str->uni_max_len = len + (terminate != 0 ? 1 : 0);
+	str->uni_max_len = len;
 	str->undoc       = 0;
 	str->uni_str_len = len;
 
 	/* store the string (null-terminated copy) */
 	PutUniCode((char *)str->buffer, buf);
-
-	/* overwrite the last character: some strings are terminated with 4 not 0 */
-	str->buffer[len] = (uint16)terminate;
 }
 
 void make_dom_rid2(DOM_RID2 *rid2, uint32 rid)
