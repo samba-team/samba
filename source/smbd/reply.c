@@ -703,12 +703,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     smb_apasswd[smb_apasslen] = 0;
-    pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
-    /*
-     * Incoming user is in DOS codepage format. Convert
-     * to UNIX.
-     */
-    dos_to_unix(user,True);
+    srvstr_pull(inbuf, user, smb_buf(inbuf)+smb_apasslen, sizeof(user), -1, STR_TERMINATE|STR_CONVERT);
   
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
       smb_apasslen = strlen(smb_apasswd);
@@ -1839,10 +1834,12 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
   SMB_STRUCT_STAT sbuf;
+  char *p;
+
   START_PROFILE(SMBctemp);
 
   createmode = SVAL(inbuf,smb_vwv0);
-  pstrcpy(fname,smb_buf(inbuf)+1);
+  srvstr_pull(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
   pstrcat(fname,"/TMXXXXXX");
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
@@ -1872,10 +1869,12 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  outsize = set_message(outbuf,1,2 + strlen(fname2),True);
+  outsize = set_message(outbuf,1,0,True);
   SSVAL(outbuf,smb_vwv0,fsp->fnum);
   CVAL(smb_buf(outbuf),0) = 4;
-  pstrcpy(smb_buf(outbuf) + 1,fname2);
+  p = smb_buf(outbuf) + 1;
+  p += srvstr_push(inbuf, outbuf, p, fname2, -1, STR_TERMINATE|STR_CONVERT);
+  set_message_end(outbuf, p);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
@@ -3363,7 +3362,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   int outsize;
   START_PROFILE(SMBmkdir);
  
-  pstrcpy(directory,smb_buf(inbuf) + 1);
+  srvstr_pull(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), -1, STR_TERMINATE);
 
   outsize=mkdir_internal(conn, inbuf, outbuf, directory);
   if(outsize == 0)
@@ -3538,7 +3537,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   SMB_STRUCT_STAT sbuf;
   START_PROFILE(SMBrmdir);
 
-  pstrcpy(directory,smb_buf(inbuf) + 1);
+  srvstr_pull(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), -1, STR_TERMINATE);
 
   RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
 
@@ -4163,9 +4162,8 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     END_PROFILE(pathworks_setdir);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
-  
-  pstrcpy(newdir,smb_buf(inbuf) + 1);
-  strlower(newdir);
+
+  srvstr_pull(inbuf, newdir, smb_buf(inbuf) + 1, sizeof(newdir), -1, STR_TERMINATE|STR_CONVERT);
   
   if (strlen(newdir) == 0) {
 	  ok = True;
