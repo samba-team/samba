@@ -4583,10 +4583,14 @@ do some standard substitutions in a string
 ****************************************************************************/
 void standard_sub(int cnum,char *str,uint16 vuid)
 {
-  user_struct *vuser = get_valid_user_struct(vuid);
-
   if (VALID_CNUM(cnum)) {
     char *p, *s, *home;
+    struct passwd *pass;
+    char *username = sesssetup_user;
+    user_struct *vuser = get_valid_user_struct(vuid);
+
+    if(vuser != NULL)
+      pstrcpy( sesssetup_user, vuser->requested_name);
 
     for ( s=str ; (p=strchr(s, '%')) != NULL ; s=p ) {
       switch (*(p+1)) {
@@ -4598,24 +4602,29 @@ void standard_sub(int cnum,char *str,uint16 vuid)
         case 'P' : string_sub(p,"%P",Connections[cnum].connectpath); break;
         case 'S' : string_sub(p,"%S",lp_servicename(Connections[cnum].service)); break;
         case 'g' : string_sub(p,"%g",gidtoname(Connections[cnum].gid)); break;
+        case 'G' :
+        {
+          if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
+            string_sub(p,"%G",gidtoname(pass->pw_gid));
+          else
+            p += 2;
+          break;
+        }
         case 'u' : string_sub(p,"%u",Connections[cnum].user); break;
+        case 'U' : string_sub(p,"%U", username); break;
 	/* 
          * Patch from jkf@soton.ac.uk
-	 * Left the %N (NIS server name) in standard_sub_basic as it 
-	 * is a feature for logon servers, hence uses the username. 
 	 * The %p (NIS server path) code is here as it is used
 	 * instead of the default "path =" string in [homes] and so
 	 * needs the service name, not the username. 
          */
+        case 'N' : string_sub(p,"%N", automount_server(username)); break;
 	case 'p' : string_sub(p,"%p",automount_path(lp_servicename(Connections[cnum].service))); break;
         case '\0' : p++; break; /* don't run off the end of the string */
         default  : p+=2; break;
       }
     }
   }
-  if(vuser != NULL)
-    pstrcpy( sesssetup_user, vuser->requested_name);
-
   standard_sub_basic(str);
 }
 

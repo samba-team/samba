@@ -3990,32 +3990,16 @@ void standard_sub_basic(char *str)
 {
 	char *s, *p;
 	char pidstr[10];
-	struct passwd *pass;
-	char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
 
 	for (s = str ; s && *s && (p = strchr(s,'%')); s = p )
 	{
 		switch (*(p+1))
 		{
-			case 'G' :
-			{
-				if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
-				{
-					string_sub(p,"%G",gidtoname(pass->pw_gid));
-				}
-				else
-				{
-					p += 2;
-				}
-				break;
-			}
-			case 'N' : string_sub(p,"%N", automount_server(username)); break;
 			case 'I' : string_sub(p,"%I", client_addr()); break;
 			case 'L' : string_sub(p,"%L", local_machine); break;
 			case 'M' : string_sub(p,"%M", client_name()); break;
 			case 'R' : string_sub(p,"%R", remote_proto); break;
 			case 'T' : string_sub(p,"%T", timestring()); break;
-			case 'U' : string_sub(p,"%U", username); break;
 			case 'a' : string_sub(p,"%a", remote_arch); break;
 			case 'd' :
 			{
