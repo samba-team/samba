@@ -533,9 +533,9 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
   ubi_cacheEntryPtr new_entry;
   char             *s1;
   char             *s2;
-  int               mangled_len;
-  int               raw_len;
-  int               i;
+  size_t               mangled_len;
+  size_t               raw_len;
+  size_t               i;
 
   /* If the cache isn't initialized, give up. */
   if( !mc_initialized )
@@ -594,6 +594,7 @@ BOOL check_mangled_cache( char *s )
   ubi_cacheEntryPtr FoundPtr;
   char             *ext_start = NULL;
   char             *found_name;
+  char             *saved_ext = NULL;
 
   /* If the cache isn't initialized, give up. */
   if( !mc_initialized )
@@ -607,15 +608,21 @@ BOOL check_mangled_cache( char *s )
     ext_start = strrchr( s, '.' );
     if( ext_start )
       {
+      if((saved_ext = strdup(ext_start)) == NULL)
+        return False;
+
       *ext_start = '\0';
       FoundPtr = ubi_cacheGet( mangled_cache, (ubi_trItemPtr)s );
-      *ext_start = '.';
       }
     }
 
   /* Okay, if we haven't found it we're done. */
   if( !FoundPtr )
+    {
+    if(saved_ext)
+      free(saved_ext);
     return( False );
+    }
 
   /* If we *did* find it, we need to copy it into the string buffer. */
   found_name = (char *)(FoundPtr + 1);
@@ -624,8 +631,11 @@ BOOL check_mangled_cache( char *s )
   DEBUG( 3, ("Found %s on mangled stack ", s) );
 
   (void)pstrcpy( s, found_name );
-  if( ext_start )
-    (void)pstrcat( s, ext_start );
+  if( saved_ext )
+    {
+    (void)pstrcat( s, saved_ext );
+    free(saved_ext);
+    }
 
   DEBUG( 3, ("as %s\n", s) );
 
