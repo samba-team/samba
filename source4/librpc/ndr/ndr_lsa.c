@@ -688,26 +688,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_AuditSettings(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditSettings *r)
-{
-	uint32 _conformant_size;
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_conformant_size));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->count > _conformant_size) {
-		return ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, "Bad conformant size %u should be %u", _conformant_size, r->count);
-	}
-		NDR_ALLOC_N_SIZE(ndr, r->settings, _conformant_size, sizeof(r->settings[0]));
-		NDR_CHECK(ndr_pull_array_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->settings, r->count));
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_lsa_AuditEventsInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditEventsInfo *r)
 {
 	uint32 _ptr_settings;
@@ -721,11 +701,20 @@ NTSTATUS ndr_pull_lsa_AuditEventsInfo(struct ndr_pull *ndr, int ndr_flags, struc
 	} else {
 		r->settings = NULL;
 	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->settings) {
-		NDR_CHECK(ndr_pull_lsa_AuditSettings(ndr, NDR_SCALARS|NDR_BUFFERS, r->settings));
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
+		NDR_ALLOC_N_SIZE(ndr, r->settings, r->count, sizeof(r->settings[0]));
+		NDR_CHECK(ndr_pull_array_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->settings, r->count));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1981,11 +1970,6 @@ void ndr_print_lsa_AuditSettings(struct ndr_print *ndr, const char *name, struct
 {
 	ndr_print_struct(ndr, name, "lsa_AuditSettings");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_ptr(ndr, "settings", r->settings);
-	ndr->depth++;
-		ndr_print_array_uint32(ndr, "settings", r->settings, r->count);
-	ndr->depth--;
 	ndr->depth--;
 }
 
@@ -1997,9 +1981,10 @@ void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, stru
 	ndr_print_ptr(ndr, "settings", r->settings);
 	ndr->depth++;
 	if (r->settings) {
-		ndr_print_lsa_AuditSettings(ndr, "settings", r->settings);
+		ndr_print_array_uint32(ndr, "settings", r->settings, r->count);
 	}
 	ndr->depth--;
+	ndr_print_uint32(ndr, "count", r->count);
 	ndr->depth--;
 }
 
