@@ -1,3 +1,7 @@
+Sat Mar 27 17:33:03 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* snprintf.c (vasnprintf): correct check if realloc returns NULL
+
 Sat Mar 27 12:37:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: link print_version with -ldes to avoid unresolved
