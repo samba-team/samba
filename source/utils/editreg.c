@@ -543,9 +543,88 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
 
 /* Make, delete keys */
 
+
+
 int nt_delete_val_list(VAL_LIST *vl)
 {
 
+  return 1;
+}
+
+int nt_delete_val_key(VAL_KEY *val_key)
+{
+
+  return 1;
+}
+
+int nt_delete_key_list(KEY_LIST *key_list)
+{
+
+  return 1;
+}
+
+int nt_delete_sid(DOM_SID *sid)
+{
+
+  if (sid) free(sid);
+  return 1;
+
+}
+
+int nt_delete_ace(ACE *ace)
+{
+
+  if (ace) {
+    nt_delete_sid(ace->trustee);
+    free(ace);
+  }
+  return 1;
+
+}
+
+int nt_delete_acl(ACL *acl)
+{
+
+  if (acl) {
+    int i;
+
+    for (i=0; i<acl->num_aces; i++)
+      nt_delete_ace(acl->aces[i]);
+
+    free(acl);
+  }
+  return 1;
+}
+
+int nt_delete_sec_desc(SEC_DESC *sec_desc)
+{
+
+  if (sec_desc) {
+
+    nt_delete_sid(sec_desc->owner);
+    nt_delete_sid(sec_desc->group);
+    nt_delete_acl(sec_desc->sacl);
+    nt_delete_acl(sec_desc->dacl);
+    free(sec_desc);
+
+  }
+  return 1;
+}
+
+int nt_delete_key_sec_desc(KEY_SEC_DESC *key_sec_desc)
+{
+
+  if (key_sec_desc) {
+    key_sec_desc->ref_cnt--;
+    if (key_sec_desc->ref_cnt<=0) {
+      /*
+       * There should always be a next and prev, even if they point to us 
+       */
+      key_sec_desc->next->prev = key_sec_desc->prev;
+      key_sec_desc->prev->next = key_sec_desc->next;
+      nt_delete_sec_desc(key_sec_desc->sec_desc);
+    }
+  }
   return 1;
 }
 
@@ -571,6 +650,16 @@ int nt_delete_reg_key(REG_KEY *key)
  * the ref count. If we modify an SD, we copy the old one, dec the ref count
  * and make the change. We also want to be able to check for equality so
  * we can reduce the number of SDs in use.
+ */
+
+/*
+ * Code to parse registry specification from command line or files
+ *
+ * Format:
+ * [cmd:]key:type:value
+ *
+ * cmd = a|d|c|add|delete|change|as|ds|cs
+ *
  */
 
 
@@ -815,6 +904,77 @@ char *val_to_str(unsigned int val, VAL_STR *val_array)
 
 }
 
+/*
+ * Convert from UniCode to Ascii ... Does not take into account other lang
+ * Restrict by ascii_max if > 0
+ */
+int uni_to_ascii(unsigned char *uni, unsigned char *ascii, int ascii_max, 
+		 int uni_max)
+{
+  int i = 0; 
+
+  while (i < ascii_max && !(!uni[i*2] && !uni[i*2+1])) {
+    if (uni_max > 0 && (i*2) >= uni_max) break;
+    ascii[i] = uni[i*2];
+    i++;
+
+  }
+
+  ascii[i] = '\0';
+
+  return i;
+}
+
+/*
+ * Convert a data value to a string for display
+ */
+int data_to_ascii(unsigned char *datap, int len, int type, char *ascii, int ascii_max)
+{ 
+  unsigned char *asciip;
+  int i;
+
+  switch (type) {
+  case REG_TYPE_REGSZ:
+    fprintf(stderr, "Len: %d\n", len);
+    return uni_to_ascii(datap, ascii, len, ascii_max);
+    break;
+
+  case REG_TYPE_EXPANDSZ:
+    return uni_to_ascii(datap, ascii, len, ascii_max);
+    break;
+
+  case REG_TYPE_BIN:
+    asciip = ascii;
+    for (i=0; (i<len)&&(i+1)*3<ascii_max; i++) { 
+      int str_rem = ascii_max - ((int)asciip - (int)ascii);
+      asciip += snprintf(asciip, str_rem, "%02x", *(unsigned char *)(datap+i));
+      if (i < len && str_rem > 0)
+	*asciip = ' '; asciip++;	
+    }
+    *asciip = '\0';
+    return ((int)asciip - (int)ascii);
+    break;
+
+  case REG_TYPE_DWORD:
+    if (*(int *)datap == 0)
+      return snprintf(ascii, ascii_max, "0");
+    else
+      return snprintf(ascii, ascii_max, "0x%x", *(int *)datap);
+    break;
+
+  case REG_TYPE_MULTISZ:
+
+    break;
+
+  default:
+    return 0;
+    break;
+  } 
+
+  return len;
+
+}
+
 REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size);
 
 int nt_set_regf_input_file(REGF *regf, char *filename)
@@ -859,27 +1019,6 @@ int nt_free_regf(REGF *regf)
   free(regf);
 
   return 1;
-}
-
-/*
- * Convert from UniCode to Ascii ... Does not take into account other lang
- * Restrict by ascii_max if > 0
- */
-int uni_to_ascii(unsigned char *uni, unsigned char *ascii, int ascii_max, 
-		 int uni_max)
-{
-  int i = 0; 
-
-  while (i < ascii_max && !(!uni[i*2] && !uni[i*2+1])) {
-    if (uni_max > 0 && (i*2) >= uni_max) break;
-    ascii[i] = uni[i*2];
-    i++;
-
-  }
-
-  ascii[i] = '\0';
-
-  return i;
 }
 
 /* Get the header of the registry. Return a pointer to the structure 
@@ -1284,6 +1423,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
       bcopy(&dat_off, dtmp, dat_len);
     }
 
+    tmp->data_len = dat_len;
   }
 
   val_type = val_to_str(dat_type, reg_type_names);
@@ -1657,10 +1797,15 @@ int print_sec(SEC_DESC *sec_desc)
 int print_val(char *path, char *val_name, int val_type, int data_len, 
 	      void *data_blk, int terminal, int first, int last)
 {
+  char data_asc[1024];
+
+  bzero(data_asc, sizeof(data_asc));
   if (!terminal && first)
     fprintf(stdout, "%s\n", path);
-  fprintf(stdout, "  %s : %s : \n", (val_name?val_name:"<No Name>"), 
-		   val_to_str(val_type, reg_type_names));
+  data_to_ascii((unsigned char *)data_blk, data_len, val_type, data_asc, 
+		sizeof(data_asc) - 1);
+  fprintf(stdout, "  %s : %s : %s\n", (val_name?val_name:"<No Name>"), 
+		   val_to_str(val_type, reg_type_names), data_asc);
   return 1;
 }
 
