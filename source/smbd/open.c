@@ -1169,6 +1169,11 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 			 * Try and create the directory.
 			 */
 
+			if(conn->read_only) {
+				DEBUG(2,("open_directory: failing create on read-only share\n"));
+				return -1;
+			}
+
 			if(dos_mkdir(fname, unix_mode(conn,aDIR)) < 0) {
 				DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
