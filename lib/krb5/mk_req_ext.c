@@ -43,6 +43,5 @@ krb5_mk_req_extended(krb5_context context,
 
   r = krb5_build_ap_req (context, in_creds, ap_req_options,
 			 authenticator, outbuf);
-  krb5_data_free (&authenticator);
   return r;
 }
