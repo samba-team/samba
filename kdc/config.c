@@ -38,7 +38,7 @@
 
 #include "kdc_locl.h"
 #include <getarg.h>
-#include <parse_units.h>
+#include <parse_bytes.h>
 
 RCSID("$Id$");
 
@@ -110,15 +110,6 @@ static struct getargs args[] = {
 
 static int num_args = sizeof(args) / sizeof(args[0]);
 
-struct units byte_units[] = {
-    { "megabyte", 1024 * 1024 },
-    { "mbyte", 1024 * 1024 },
-    { "kilobyte", 1024 },
-    { "kbyte", 1024 },
-    { "byte", 1 },
-    { NULL, 0 }
-};
-
 static void
 usage(int ret)
 {
@@ -172,7 +163,7 @@ configure(int argc, char **argv)
     }
     
     if(max_request_str){
-	max_request = parse_units(max_request_str, byte_units, NULL);
+	max_request = parse_bytes(max_request_str, NULL);
     }
 
     if(max_request == 0){
@@ -182,7 +173,7 @@ configure(int argc, char **argv)
 				    "max-request",
 				    NULL);
 	if(p)
-	    max_request = parse_units(max_request_str, byte_units, NULL);
+	    max_request = parse_bytes(p, NULL);
     }
     
     if(require_preauth == -1)
@@ -228,7 +219,6 @@ configure(int argc, char **argv)
 					      "kdc",
 					      "kdc_warn_pwexpire",
 					      NULL);
-end:
     kdc_openlog(cf);
     if(cf)
 	krb5_config_file_free (context, cf);
