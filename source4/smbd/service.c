@@ -356,26 +356,37 @@ void service_close_listening_sockets(struct server_context *srv_ctx)
   TDB_CLEAR_IF_FIRST. Unfortunately TDB_CLEAR_IF_FIRST is not
   efficient on unix systems due to the lack of scaling of the byte
   range locking system. So instead of putting the burden on tdb to
-  cleanup tmp files, this function deletes them. You need to expand
-  the list here as appropriate.
+  cleanup tmp files, this function deletes them. 
 */
 void service_cleanup_tmp_files(void)
 {
-	const char *list[] = { 
-		"openfiles.tdb",
-		"brlock.tdb",
-		"unexpected.tdb"};
-	int i;
-	for (i=0;i<ARRAY_SIZE(list);i++) {
-		char *path = lock_path(NULL, list[i]);
-		int ret;
-		ret = unlink(path);
-		if (ret == -1 && 
-		    errno != ENOENT &&
-		    errno != ENOTDIR) {
-			DEBUG(0,("Failed to cleanup '%s'\n", path));
-			smb_panic("unable to cleanup temporary files\n");
-		}
-		talloc_free(path);
+	char *path;
+	DIR *dir;
+	struct dirent *de;
+	TALLOC_CTX *mem_ctx = talloc_init("service_cleanup_tmp_files");
+
+	path = smbd_tmp_path(mem_ctx, NULL);
+
+	dir = opendir(path);
+	if (!dir) {
+		talloc_free(mem_ctx);
+		return;
 	}
+
+	for (de=readdir(dir);de;de=readdir(dir)) {
+		char *fname = talloc_asprintf(mem_ctx, "%s/%s", path, de->d_name);
+		int ret = unlink(fname);
+		if (ret == -1 &&
+		    errno != ENOENT &&
+		    errno != EISDIR &&
+		    errno != EISDIR) {
+			DEBUG(0,("Unabled to delete '%s' - %s\n", 
+				 fname, strerror(errno)));
+			smb_panic("unable to cleanup tmp files");
+		}
+		talloc_free(fname);
+	}
+	closedir(dir);
+
+	talloc_free(mem_ctx);
 }

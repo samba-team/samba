@@ -82,10 +82,9 @@ struct brl_context *brl_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid,
 		return NULL;
 	}
 
-	path = lock_path(brl, "brlock.tdb");
+	path = smbd_tmp_path(brl, "brlock.tdb");
 	brl->w = tdb_wrap_open(brl, path, 0,  
-			       TDB_DEFAULT,
-			       O_RDWR|O_CREAT, 0600);
+			       TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	talloc_free(path);
 	if (brl->w == NULL) {
 		talloc_free(brl);
