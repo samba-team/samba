@@ -68,9 +68,6 @@ get_creds(krb5_context context, const char *keytab_str,
     krb5_principal client;
     krb5_error_code ret;
     krb5_get_init_creds_opt init_opts;
-#if 0
-    krb5_preauthtype preauth = KRB5_PADATA_ENC_TIMESTAMP;
-#endif
     krb5_creds creds;
     char *server;
     char keytab_buf[256];
@@ -95,9 +92,6 @@ get_creds(krb5_context context, const char *keytab_str,
     if (ret) krb5_err(context, 1, ret, "krb5_sname_to_principal");
 
     krb5_get_init_creds_opt_init(&init_opts);
-#if 0
-    krb5_get_init_creds_opt_set_preauth_list(&init_opts, &preauth, 1);
-#endif
 
     asprintf (&server, "%s/%s", IPROP_NAME, host);
     if (server == NULL)
