@@ -503,7 +503,7 @@ int smb_ldap_search(struct smb_ldap_privates *ldap_state,
 			continue;
 		
 		rc = ldap_search_s(ldap_state->ldap_struct, base, scope, 
-				   filter, attrs, attrsonly, res);
+				   filter, (char **)attrs, attrsonly, res);
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
