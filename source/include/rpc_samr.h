@@ -152,13 +152,6 @@ typedef struct logon_hours_info
 
 } LOGON_HRS;
 
-/* SAM_USER_INFO_16 */
-typedef struct sam_user_info_16
-{
-	uint16 acb_info; /* account info (ACB_xxxx bit-mask) */
-
-} SAM_USER_INFO_16;
-
 /* SAM_USER_INFO_23 */
 typedef struct sam_user_info_23
 {
@@ -1123,38 +1116,6 @@ typedef struct r_samr_query_usergroup_info
 
 } SAMR_R_QUERY_USERGROUPS;
 
-
-/* SAM_USERINFO_CTR - sam user info */
-typedef struct sam_userinfo2_ctr_info
-{
-	uint16 switch_value;      
-
-	union
-	{
-		SAM_USER_INFO_16 *id16; /* auth-level 0x10 */
-		void* id; /* to make typecasting easy */
-
-	} info;
-
-} SAM_USERINFO2_CTR;
-
-/* SAMR_Q_SET_USERINFO2 - set sam info */
-typedef struct q_samr_set_user_info2
-{
-	POLICY_HND pol;          /* policy handle associated with user */
-	uint16 switch_value;      /* 0x0010 */
-
-	SAM_USERINFO2_CTR *ctr;
-
-} SAMR_Q_SET_USERINFO2;
-
-/* SAMR_R_SET_USERINFO2 - set sam info */
-typedef struct r_samr_set_user_info2
-{
-	uint32 status;         /* return status */
-
-} SAMR_R_SET_USERINFO2;
-
 /* SAM_USERINFO_CTR - sam user info */
 typedef struct sam_userinfo_ctr_info
 {
@@ -1173,6 +1134,24 @@ typedef struct sam_userinfo_ctr_info
 	} info;
 
 } SAM_USERINFO_CTR;
+
+
+/* SAMR_Q_SET_USERINFO2 - set sam info */
+typedef struct q_samr_set_user_info2
+{
+	POLICY_HND pol;          /* policy handle associated with user */
+	uint16 switch_value;      /* 0x0010 */
+
+	SAM_USERINFO_CTR *ctr;
+
+} SAMR_Q_SET_USERINFO2;
+
+/* SAMR_R_SET_USERINFO2 - set sam info */
+typedef struct r_samr_set_user_info2
+{
+	uint32 status;         /* return status */
+
+} SAMR_R_SET_USERINFO2;
 
 /* SAMR_Q_SET_USERINFO - set sam info */
 typedef struct q_samr_set_user_info

@@ -791,12 +791,10 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u);
 BOOL make_samr_r_set_userinfo(SAMR_R_SET_USERINFO *r_u, uint32 status);
 BOOL samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *ps, int depth);
-BOOL samr_io_userinfo2_ctr(char *desc,  SAM_USERINFO2_CTR *ctr, prs_struct *ps, int depth);
-void free_samr_userinfo2_ctr(SAM_USERINFO2_CTR *ctr);
 BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
 				POLICY_HND *hnd,
 				uint16 switch_value, 
-				SAM_USERINFO2_CTR *ctr);
+				SAM_USERINFO_CTR *ctr);
 BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 *q_u, prs_struct *ps, int depth);
 void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u);
 BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 *r_u,

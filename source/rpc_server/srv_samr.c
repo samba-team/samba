@@ -665,7 +665,7 @@ static void api_samr_set_userinfo2( rpcsrv_struct *p, prs_struct *data, prs_stru
 {
 	SAMR_Q_SET_USERINFO2 q_u;
 	SAMR_R_SET_USERINFO2 r_u;
-	SAM_USERINFO2_CTR ctr;
+	SAM_USERINFO_CTR ctr;
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);

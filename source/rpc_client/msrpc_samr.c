@@ -58,7 +58,7 @@ uint32 lookup_sam_domainname(const char *srv_name,
 
 	if (! res1)
 	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 	return 0x0;
 }
@@ -85,7 +85,7 @@ uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
 	}
 	else if (!get_any_dc_name(domain, srv_name))
 	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	if (num_rids)
@@ -104,7 +104,7 @@ uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
 	if (!num_names || !names || !num_rids || (!types && !rids))
 	{
 		/* Not sure, wether that's a good error-code */
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	/* establish a connection. */
@@ -122,7 +122,7 @@ uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
 
 	if (! res1)
 	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 	if (types) 
 	{
@@ -132,7 +132,7 @@ uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
 		if (*types == NULL)
 		{
 			safe_free(my_types);
-			return NT_STATUS_NONE_MAPPED | 0xC0000000;
+			return NT_STATUS_NONE_MAPPED;
 		}
 		for(i = 0; i < num; i++)
 		{
@@ -167,7 +167,7 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 	}
 	else if (!get_any_dc_name(domain, srv_name))
 	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	/* establish a connection. */
@@ -187,7 +187,7 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 
 	if (!res1 || num_rids != 1)
 	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	*rid = rids[0];
@@ -219,7 +219,7 @@ uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
 
 	if (!get_any_dc_name(domain, srv_name))
 	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	/* establish a connection. */
@@ -232,7 +232,7 @@ uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
 
 	if (rid_mem == NULL)
 	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	for (i = 0; i < 1; i++)
@@ -251,7 +251,7 @@ uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
 
 	if (!res1 || num_names != 1)
 	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	fstrcpy(name, names[0]);
@@ -1221,8 +1221,8 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 	BOOL res1 = True;
 	char pwbuf[516];
 	SAM_USER_INFO_24 *p24;
-	SAM_USER_INFO_16 *p16;
-	SAM_USER_INFO_16 usr16;
+	SAM_USER_INFO_10 *p10;
+	SAM_USERINFO_CTR ctr;
 
 	if (pol_dom == NULL || acct_name == NULL) return False;
 
@@ -1236,12 +1236,12 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 		samr_close(&pol_open_user);
 	}
 
-	if (ret != 0 && ret != (NT_STATUS_USER_EXISTS | 0xC0000000))
+	if (ret != 0 && ret != (NT_STATUS_USER_EXISTS))
 	{
 		return False;
 	}
 
-	if (ret == (NT_STATUS_USER_EXISTS | 0xC0000000))
+	if (ret == (NT_STATUS_USER_EXISTS))
 	{
 		uint32 num_rids;
 		const char *names[1];
@@ -1273,6 +1273,7 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 	if (IS_BITS_SET_SOME(acb_info, ACB_NORMAL | ACB_DOMTRUST) &&
 	    password == NULL)
 	{
+		DEBUG(10,("create_samr_dom_user: null password\n"));
 		return True;
 	}
 
@@ -1288,31 +1289,36 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 		
 	res1 = set_samr_set_userinfo( pol_dom, 0x18, *rid, (void*)p24);
 
-	if (res1 == False)
+	if (!res1)
 	{
+		DEBUG(10,("sam_set_userinfo: failed\n"));
 		return False;
 	}
+
+	DEBUG(10,("create_samr_dom_user: succeeded\n"));
+
+	ZERO_STRUCT(ctr);
 
 	/* send set user info */
-	res1 = get_samr_query_userinfo( pol_dom, 0x10, *rid, (void*)&usr16);
+	res1 = get_samr_query_userinfo( pol_dom, 0x10, *rid, &ctr);
 
 	if (res1 == False)
 	{
 		return False;
 	}
 
-	if (usr16.acb_info != acb_info)
+	p10 = ctr.info.id10;
+
+	if (p10 != NULL && p10->acb_info != acb_info)
 	{
-		p16 = (SAM_USER_INFO_16 *) malloc(sizeof(SAM_USER_INFO_16));
-		if (p16 == NULL)
-		{
-			return False;
-		}
-		p16->acb_info = acb_info;
+		p10->acb_info = acb_info;
 
-		res1 = set_samr_set_userinfo2( pol_dom, 0x10, *rid, (void*)p16);
+		res1 = set_samr_set_userinfo2( pol_dom, 0x10, *rid, (void*)p10);
 	}
-
+	else
+	{	
+		free_samr_userinfo_ctr(&ctr);
+	}
 	return res1;
 }
 
@@ -1616,13 +1622,15 @@ BOOL set_samr_set_userinfo(
 /****************************************************************************
 do a SAMR query user info
 ****************************************************************************/
-BOOL get_samr_query_userinfo( 
-				const POLICY_HND *pol_open_domain,
+BOOL get_samr_query_userinfo( const POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, SAM_USERINFO_CTR *ctr)
 {
 	POLICY_HND pol_open_user;
 	BOOL ret = True;
+
+	DEBUG(10,("get_samr_query_userinfo: info_level: %d rid: %x\n",
+	            info_level, user_rid));
 
 	if (pol_open_domain == NULL || ctr == NULL) return False;
 

@@ -81,7 +81,7 @@ static BOOL tdb_store_user(TDB_CONTEXT *tdb, uint32 rid, SAM_USER_INFO_21 *usr)
 	return True;
 }
 
-static BOOL tdb_set_userinfo_16(TDB_CONTEXT *tdb, uint32 rid,
+static BOOL tdb_set_userinfo_10(TDB_CONTEXT *tdb, uint32 rid,
 				uint16 acb_info)
 {
 	SAM_USER_INFO_21 usr;
@@ -600,19 +600,19 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 }
 
 /*******************************************************************
- set_user_info_16
+ set_user_info_10
  ********************************************************************/
-static BOOL set_user_info_16(TDB_CONTEXT *usr_tdb, uint32 rid,
-				const SAM_USER_INFO_16 *id16)
+static BOOL set_user_info_10(TDB_CONTEXT *usr_tdb, uint32 rid,
+				const SAM_USER_INFO_10 *id16)
 {
-	return tdb_set_userinfo_16(usr_tdb, rid, id16->acb_info);
+	return tdb_set_userinfo_10(usr_tdb, rid, id16->acb_info);
 }
 
 /*******************************************************************
  samr_reply_set_userinfo2
  ********************************************************************/
 uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO2_CTR *ctr)
+				SAM_USERINFO_CTR *ctr)
 {
 	TDB_CONTEXT *tdb_usr = NULL;
 	uint32 rid = 0x0;
@@ -638,8 +638,8 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 	{
 		case 16:
 		{
-			SAM_USER_INFO_16 *id16 = ctr->info.id16;
-			if (!set_user_info_16(tdb_usr, rid, id16))
+			SAM_USER_INFO_10 *id10 = ctr->info.id10;
+			if (!set_user_info_10(tdb_usr, rid, id10))
 			{
 				return NT_STATUS_ACCESS_DENIED;
 			}

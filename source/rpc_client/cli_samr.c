@@ -2213,7 +2213,7 @@ BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
 	prs_struct rdata;
 
 	SAMR_Q_SET_USERINFO2 q_o;
-	SAM_USERINFO2_CTR ctr;
+	SAM_USERINFO_CTR ctr;
 	BOOL valid_query = False;
 
 	ctr.info.id = usr;

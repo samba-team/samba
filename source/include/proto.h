@@ -3414,7 +3414,7 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
 uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO2_CTR *ctr);
+				SAM_USERINFO_CTR *ctr);
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				uint32 *num_groups,
 				DOM_GID **gids);
@@ -3524,7 +3524,7 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
 uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO2_CTR *ctr);
+				SAM_USERINFO_CTR *ctr);
 uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				const UNISTR2 *uni_username,
 				uint16 acb_info, uint32 access_mask, 

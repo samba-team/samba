@@ -1967,16 +1967,16 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 }
 
 /*******************************************************************
- set_user_info_16
+ set_user_info_10
  ********************************************************************/
-static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, uint32 rid)
+static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
 	struct sam_passwd new_pwd;
 
-	if (id16 == NULL)
+	if (id10 == NULL)
 	{
-		DEBUG(5, ("set_user_info_16: NULL id16\n"));
+		DEBUG(5, ("set_user_info_10: NULL id10\n"));
 		return False;
 	}
 	if (pwd == NULL)
@@ -1986,7 +1986,7 @@ static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, uint32 rid)
 
 	copy_sam_passwd(&new_pwd, pwd);
 
-	new_pwd.acct_ctrl = id16->acb_info;
+	new_pwd.acct_ctrl = id10->acb_info;
 
 	return mod_sam21pwd_entry(&new_pwd, True);
 }
@@ -1995,7 +1995,7 @@ static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, uint32 rid)
  samr_reply_set_userinfo2
  ********************************************************************/
 uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO2_CTR *ctr)
+				SAM_USERINFO_CTR *ctr)
 {
 	DOM_SID sid;
 	uint32 rid = 0x0;
@@ -2025,8 +2025,8 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 	{
 		case 16:
 		{
-			SAM_USER_INFO_16 *id16 = ctr->info.id16;
-			if (!set_user_info_16(id16, rid))
+			SAM_USER_INFO_10 *id10 = ctr->info.id10;
+			if (!set_user_info_10(id10, rid))
 			{
 				return NT_STATUS_ACCESS_DENIED;
 			}

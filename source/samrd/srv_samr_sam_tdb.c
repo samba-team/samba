@@ -143,7 +143,7 @@ static uint32 tdb_samr_connect( POLICY_HND *pol, uint32 ace_perms)
 	}
 
 	become_root(True);
-	sam_tdb = tdb_open(passdb_path("sam.tdb"), 0, 0, O_RDWR, 0644);
+	sam_tdb = tdb_open(passdb_path("sam.tdb"), 0, 0, O_RDONLY, 0644);
 	unbecome_root(True);
 
 	if (sam_tdb == NULL)

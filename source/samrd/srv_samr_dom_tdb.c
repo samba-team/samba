@@ -85,10 +85,40 @@ static int tdb_user21_traverse(TDB_CONTEXT *tdb,
 	return 0;
 }
 
-/*******************************************************************
-  This next function should be replaced with something that
-  dynamically returns the correct user info..... JRA.
- ********************************************************************/
+static uint32 open_dom_dbs(const DOM_SID *sid, int perms,
+			TDB_CONTEXT **usr_tdb,
+			TDB_CONTEXT **grp_tdb,
+			TDB_CONTEXT **als_tdb)
+{
+	fstring usr;
+	fstring grp;
+	fstring als;
+	fstring tmp;
+
+	sid_to_string(tmp, sid);
+
+	slprintf(usr, sizeof(usr)-1, "%s.usr.tdb", tmp);
+	slprintf(als, sizeof(als)-1, "%s.als.tdb", tmp);
+	slprintf(grp, sizeof(grp)-1, "%s.grp.tdb", tmp);
+
+	DEBUG(10,("opening domain %s with ", tmp));
+	DEBUGADD(10, ("rdonly: %s ", BOOLSTR(IS_BITS_SET_ALL(perms, O_RDONLY))));
+	DEBUGADD(10, ("wronly: %s", BOOLSTR(IS_BITS_SET_ALL(perms, O_WRONLY))));
+	DEBUGADD(10, ("rdwr: %s", BOOLSTR(IS_BITS_SET_ALL(perms, O_RDWR))));
+	DEBUGADD(10, ("\n"));
+
+	(*usr_tdb) = tdb_open(passdb_path(usr),0,0,perms, 0644);
+	(*grp_tdb) = tdb_open(passdb_path(grp),0,0,perms, 0644);
+	(*als_tdb) = tdb_open(passdb_path(als),0,0,perms, 0644);
+	if ((*usr_tdb) == NULL || (*grp_tdb) == NULL || (*als_tdb) == NULL)
+	{
+		tdb_close(*usr_tdb);
+		tdb_close(*grp_tdb);
+		tdb_close(*als_tdb);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	return NT_STATUS_NOPROBLEMO;
+}
 
 /*******************************************************************
  samr_reply_open_domain
@@ -102,9 +132,6 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 	TDB_CONTEXT *usr_tdb = NULL;
 	TDB_CONTEXT *grp_tdb = NULL;
 	TDB_CONTEXT *als_tdb = NULL;
-	fstring usr;
-	fstring grp;
-	fstring als;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_tdbsam(get_global_hnd_cache(), connect_pol, &dom_tdb))
@@ -118,38 +145,44 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sid_to_string(usr, sid);
-	sid_to_string(grp, sid);
-	sid_to_string(als, sid);
-
-	safe_strcat(usr, ".usr.tdb", sizeof(usr)-1);
-	safe_strcat(grp, ".grp.tdb", sizeof(grp)-1);
-	safe_strcat(als, ".als.tdb", sizeof(als)-1);
-
-	DEBUG(0,("TODO: no request write access, no GET write access...\n"));
-
-	if (sid_equal(sid, &global_sid_S_1_5_20))
+	if (ace_perms == SEC_RIGHTS_MAXIMUM_ALLOWED)
 	{
-		als_tdb = tdb_open(passdb_path(als),0,0,O_RDWR, 0644);
-		if (als_tdb == NULL)
+		uint32 status;
+
+		DEBUG(10,("_samr_open_domain: max perms requested\n"));
+
+		status = open_dom_dbs(sid, O_RDWR,
+		                      &usr_tdb, &grp_tdb, &als_tdb);
+		if (status != 0x0)
 		{
-			close_policy_hnd(get_global_hnd_cache(), domain_pol);
-			return NT_STATUS_ACCESS_DENIED;
+			status = open_dom_dbs(sid, O_RDONLY,
+					      &usr_tdb, &grp_tdb, &als_tdb);
+		}
+		if (status != 0x0)
+		{
+			return status;
 		}
 	}
 	else
 	{
+		int perms = 0;
+		BOOL perms_read;
+		BOOL perms_write;
+		uint32 status;
 
-		usr_tdb = tdb_open(passdb_path(usr),0,0,O_RDWR, 0644);
-		grp_tdb = tdb_open(passdb_path(grp),0,0,O_RDWR, 0644);
-		als_tdb = tdb_open(passdb_path(als),0,0,O_RDWR, 0644);
-		if (usr_tdb == NULL || grp_tdb == NULL || als_tdb == NULL)
+		perms_write = IS_BITS_SET_SOME(ace_perms,
+		                SEC_RIGHTS_WRITE_OWNER|SEC_RIGHTS_WRITE_DAC);
+		perms_read = IS_BITS_SET_ALL(ace_perms, SEC_RIGHTS_READ);
+
+		if (perms_write              ) perms = O_WRONLY;
+		if (perms_read               ) perms = O_RDONLY;
+		if (perms_write && perms_read) perms = O_RDWR;
+
+		status = open_dom_dbs(sid, perms,
+		                      &usr_tdb, &grp_tdb, &als_tdb);
+		if (status != 0x0)
 		{
-			tdb_close(usr_tdb);
-			tdb_close(grp_tdb);
-			tdb_close(als_tdb);
-			close_policy_hnd(get_global_hnd_cache(), domain_pol);
-			return NT_STATUS_ACCESS_DENIED;
+			return status;
 		}
 	}
 

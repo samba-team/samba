@@ -4970,24 +4970,6 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 *usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL sam_io_user_info16(char *desc,  SAM_USER_INFO_16 *usr, prs_struct *ps, int depth)
-{
-	if (usr == NULL) return False;
-
-	prs_debug(ps, depth, desc, "sam_io_user_info16");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint16("acb_info", ps, depth, &(usr->acb_info));
-	prs_align(ps);
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
 static BOOL sam_io_user_info23(char *desc,  SAM_USER_INFO_23 *usr, prs_struct *ps, int depth)
 {
 	if (usr == NULL) return False;
@@ -5735,68 +5717,12 @@ BOOL samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *p
 
 
 /*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL samr_io_userinfo2_ctr(char *desc,  SAM_USERINFO2_CTR *ctr, prs_struct *ps, int depth)
-{
-	if (ctr == NULL) return False;
-
-	prs_debug(ps, depth, desc, "samr_io_userinfo2_ctr");
-	depth++;
-
-	prs_uint16("switch_value", ps, depth, &(ctr->switch_value));
-	prs_align(ps);
-
-	switch (ctr->switch_value)
-	{
-		case 16:
-		{
-			if (ps->io)
-			{
-				/* reading */
-				ctr->info.id = (SAM_USER_INFO_16*)Realloc(NULL,
-						 sizeof(*ctr->info.id16));
-			}
-			if (ctr->info.id == NULL)
-			{
-				DEBUG(2,("samr_io_q_query_userinfo2: info pointer not initialised\n"));
-				return False;
-			}
-			sam_io_user_info16("", ctr->info.id16, ps, depth);
-			break;
-		}
-		default:
-		{
-			DEBUG(2,("samr_io_userinfo2_ctr: unknown switch level\n"));
-			break;
-		}
-			
-	}
-
-	prs_align(ps);
-
-	return True;
-}
-
-/*******************************************************************
-frees a structure.
-********************************************************************/
-void free_samr_userinfo2_ctr(SAM_USERINFO2_CTR *ctr)
-{
-	if (ctr->info.id == NULL)
-	{
-		free(ctr->info.id);
-	}
-	ctr->info.id = NULL;
-}
-
-/*******************************************************************
 makes a SAMR_Q_SET_USERINFO2 structure.
 ********************************************************************/
 BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
 				POLICY_HND *hnd,
 				uint16 switch_value, 
-				SAM_USERINFO2_CTR *ctr)
+				SAM_USERINFO_CTR *ctr)
 {
 	if (q_u == NULL || hnd == NULL) return False;
 
@@ -5831,7 +5757,7 @@ BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 *q_u, prs_struct *
 	prs_align(ps);
 
 	prs_uint16("switch_value ", ps, depth, &(q_u->switch_value )); 
-	samr_io_userinfo2_ctr("ctr", q_u->ctr, ps, depth);
+	samr_io_userinfo_ctr("ctr", q_u->ctr, ps, depth);
 
 	if (!ps->io)
 	{
@@ -5847,7 +5773,7 @@ frees a structure.
 ********************************************************************/
 void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u)
 {
-	free_samr_userinfo2_ctr(q_u->ctr);
+	free_samr_userinfo_ctr(q_u->ctr);
 }
 
 /*******************************************************************
