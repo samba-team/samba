@@ -1888,7 +1888,6 @@ Using builtin directory structure
 adding new entry: dc=abmas,dc=biz
 adding new entry: ou=People,dc=abmas,dc=biz
 adding new entry: ou=Groups,dc=abmas,dc=biz
-adding new entry: ou=Idmap,dc=abmas,dc=biz
 adding new entry: ou=Computers,dc=abmas,dc=biz
 adding new entry: uid=Administrator,ou=People,dc=abmas,dc=biz
 adding new entry: uid=nobody,ou=People,dc=abmas,dc=biz
@@ -1915,6 +1914,30 @@ adding new entry: cn=Domain Computers,ou=Groups,dc=abmas,dc=biz
 Shutting down ldap-server                            done
 Starting ldap-server                                 done
 </screen>
+		</para></step>
+
+	  <step><para><indexterm>
+		<primary>slapcat</primary>
+	      </indexterm>
+		So that we can use a global IDMAP repository the LDAP directory must have a container object for IDMAP data. 
+		There are several ways you can check that your LDAP database is able to receive IDMAP information. One of 
+		the simplest is to execute:
+<screen>
+&rootprompt; slapcat | grep -i idmap
+dn: ou=Idmap,dc=abmas,dc=biz
+ou: idmap
+</screen>
+	      <indexterm>
+		<primary>ldapadd</primary>
+	      </indexterm>
+	        If the execution of this command does not return IDMAP entries, you need to create an LDIF
+		template file (see <link linkend="ch9-ldifadd"/>). You can add the required entries using 
+		the following command:
+<screen>
+&rootprompt; ldapadd -x -D "cn=Manager,dc=abmas,dc=biz" \
+		-w not24get &lt; /etc/openldap/idmap.LDIF
+</screen>
+		Samba automatically populates this LDAP directory container when it needs to.
 		</para></step>
 
 	  <step><para><indexterm>
@@ -2769,6 +2792,16 @@ smb: \> q
 	<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
 	<smbconfoption><name>write list</name><value>Administrator, chrisr</value></smbconfoption>
 </smbconfexample>
+
+<example id="ch6-ldifadd">
+<title>LDIF IDMAP Add-On Load File &smbmdash; File: /etc/openldap/idmap.LDIF</title>
+<screen>
+dn: ou=Idmap,dc=abmas,dc=biz
+objectClass: organizationalUnit
+ou: idmap
+structuralObjectClass: organizationalUnit
+</screen>
+</example>
 
 </sect1>
 
