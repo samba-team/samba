@@ -1257,6 +1257,7 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 {
 	int len = 0;
+	int extra_len = 0;
 	NT_DEVICEMODE devmode;
 
 	ZERO_STRUCT(devmode);
@@ -1304,8 +1305,13 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 			  &devmode.panningheight,
 			  &devmode.private);
 	
-	if (devmode.private)		
-		len += tdb_unpack(buf+len, buflen-len, "B", &devmode.driverextra, &devmode.private);
+	if (devmode.private) {
+		/* the len in tdb_unpack is an int value and
+		 * devmoce.driverextra is only a short
+		 */
+		len += tdb_unpack(buf+len, buflen-len, "B", &extra_len, &devmode.private);
+		devmode.driverextra=(uint16)extra_len;
+	}
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
 
