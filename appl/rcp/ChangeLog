@@ -1,5 +1,7 @@
 2001-06-14  Assar Westerlund  <assar@sics.se>
 
+	* rcp.c: add some const replace a few malloc/snprintf with
+	asprintf
 	* rcp.c (sizestr): remove and use snprintf to do this correctly
 	instead
 
