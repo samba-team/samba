@@ -78,6 +78,7 @@ extern struct timeval now;
 krb5_error_code as_rep (KDC_REQ*, krb5_data*, const char*, struct sockaddr*);
 void configure (int, char**);
 hdb_entry* db_fetch (krb5_principal);
+void free_ent(hdb_entry *);
 void kdc_log (int, const char*, ...);
 char* kdc_log_msg (int, const char*, ...);
 char* kdc_log_msg_va (int, const char*, va_list);
@@ -92,11 +93,11 @@ krb5_error_code check_flags(hdb_entry *client, const char *client_name,
 
 #ifdef KRB4
 hdb_entry* db_fetch4 (const char*, const char*, const char*);
-krb5_error_code do_524 (Ticket*, krb5_data*, const char*, struct sockaddr*);
+krb5_error_code do_524 (const Ticket*, krb5_data*, const char*, struct sockaddr*);
 krb5_error_code do_version4 (unsigned char*, size_t, krb5_data*, const char*, 
 			     struct sockaddr_in*);
-krb5_error_code encode_v4_ticket (void*, size_t, EncTicketPart*, 
-				  PrincipalName*, size_t*);
+krb5_error_code encode_v4_ticket (void*, size_t, const EncTicketPart*, 
+				  const PrincipalName*, size_t*);
 krb5_error_code encrypt_v4_ticket (void*, size_t, des_cblock*, EncryptedData*);
 krb5_error_code get_des_key(hdb_entry*, krb5_boolean, Key**);
 int maybe_version4 (unsigned char*, int);
