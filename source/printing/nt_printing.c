@@ -2404,7 +2404,7 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
  Allocate and initialize a new slot.
 ***************************************************************************/
  
-static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
+int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 {
 	NT_PRINTER_KEY	*d;
 	int		key_index;
