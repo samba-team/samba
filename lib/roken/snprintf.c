@@ -435,6 +435,9 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 	*arg = state->s - state->str;
 	break;
       }
+      case '\0' :
+	  --format;
+	  /* FALLTHROUGH */
       case '%' :
 	if ((*state->append_char)(state, c))
 	  return -1;
