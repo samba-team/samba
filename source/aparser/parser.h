@@ -48,6 +48,7 @@ typedef struct _prs_struct
 	BOOL is_dynamic; /* Do we own this memory or not ? */
 	uint32 data_offset; /* Current working offset into data. */
 	uint32 buffer_size; /* Current size of the buffer. */
+	uint32 grow_size; /* size requested via prs_grow() calls */
 	char *data_p; /* The buffer itself. */
 } prs_struct;
 

@@ -46,6 +46,8 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 	uint32 new_size;
 	char *new_data;
 
+	ps->grow_size = MAX(ps->grow_size, ps->data_offset + extra_space);
+
 	if(ps->data_offset + extra_space <= ps->buffer_size)
 		return True;
 
@@ -267,7 +269,7 @@ void dump_data(int level,char *buf1,int len)
  ********************************************************************/
 BOOL prs_pointer(char *desc, prs_struct *ps, int depth, void **p)
 {
-	uint32 v;
+	uint32 v = (*p) ? 1 : 0;
 	if (!prs_uint32(desc, ps, depth, &v)) return False;
 	*p = (void *) (v ? 1 : 0);
 	return True;
