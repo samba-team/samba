@@ -716,7 +716,7 @@ AC_ARG_WITH(dfs,
 AC_MSG_CHECKING(whether to use Kerberos IV)
 AC_ARG_WITH(krb4,
 [  --with-krb4=base-dir     Include Kerberos IV support
-  --whithout-krb4          Don't include Kerbers IV support (default)],
+  --without-krb4          Don't include Kerberos IV support (default)],
 [   AC_MSG_RESULT(yes)
     AC_DEFINE(KRB4_AUTH)
     AC_CHECK_LIB(resolv, dn_expand)
