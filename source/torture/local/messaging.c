@@ -24,24 +24,24 @@
 
 enum {MY_PING=1000, MY_PONG, MY_EXIT};
 
-static void ping_message(void *msg_ctx, void *private, 
+static void ping_message(struct messaging_context *msg, void *private, 
 			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
 {
 	NTSTATUS status;
-	status = messaging_send(msg_ctx, src, MY_PONG, data);
+	status = messaging_send(msg, src, MY_PONG, data);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("pong failed - %s\n", nt_errstr(status));
 	}
 }
 
-static void pong_message(void *msg_ctx, void *private, 
+static void pong_message(struct messaging_context *msg, void *private, 
 			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
 {
 	int *count = private;
 	(*count)++;
 }
 
-static void exit_message(void *msg_ctx, void *private, 
+static void exit_message(struct messaging_context *msg, void *private, 
 			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
 {
 	talloc_free(private);
@@ -54,13 +54,13 @@ static void exit_message(void *msg_ctx, void *private,
 static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 {
 	struct event_context *ev = event_context_init(mem_ctx);
-	void *msg_ctx;
+	struct messaging_context *msg_ctx;
 	int ping_count = 0;
 	int pong_count = 0;
 	BOOL ret = True;
 
 	if (fork() == 0) {
-		void *msg_ctx2 = messaging_init(mem_ctx, 1, ev);
+		struct messaging_context *msg_ctx2 = messaging_init(mem_ctx, 1, ev);
 	
 		if (!msg_ctx2) {
 			exit(1);

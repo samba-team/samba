@@ -25,7 +25,7 @@
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1
 
-struct messaging_state {
+struct messaging_context {
 	servid_t server_id;
 	struct socket_context *sock;
 	char *path;
@@ -43,13 +43,13 @@ struct dispatch_fn {
 	struct dispatch_fn *next, *prev;
 	uint32_t msg_type;
 	void *private;
-	void (*fn)(void *msg_ctx, void *private, 
+	void (*fn)(struct messaging_context *msg, void *private, 
 		   uint32_t msg_type, servid_t server_id, DATA_BLOB *data);
 };
 
 /* an individual message */
 struct messaging_rec {
-	struct messaging_state *msg;
+	struct messaging_context *msg;
 	struct socket_context *sock;
 	struct fd_event *fde;
 	const char *path;
@@ -70,12 +70,12 @@ struct messaging_rec {
 /*
  A useful function for testing the message system.
 */
-static void ping_message(void *msg_ctx, void *private, 
+static void ping_message(struct messaging_context *msg, void *private, 
 			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
 {
 	DEBUG(1,("INFO: Received PING message from server %u [%.*s]\n",
 		 (uint_t)src, data->length, data->data?(const char *)data->data:""));
-	messaging_send(msg_ctx, src, MSG_PONG, data);
+	messaging_send(msg, src, MSG_PONG, data);
 }
 
 /* 
@@ -93,7 +93,7 @@ static char *messaging_path(TALLOC_CTX *mem_ctx, servid_t server_id)
 /*
   dispatch a fully received message
 */
-static void messaging_dispatch(struct messaging_state *msg, struct messaging_rec *rec)
+static void messaging_dispatch(struct messaging_context *msg, struct messaging_rec *rec)
 {
 	struct dispatch_fn *d, *next;
 	for (d=msg->dispatch;d;d=next) {
@@ -118,7 +118,7 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
 				 time_t t, uint16_t flags)
 {
 	struct messaging_rec *rec = fde->private;
-	struct messaging_state *msg = rec->msg;
+	struct messaging_context *msg = rec->msg;
 	NTSTATUS status;
 
 	if (rec->ndone < sizeof(rec->header)) {
@@ -189,7 +189,7 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
 static int rec_destructor(void *ptr)
 {
 	struct messaging_rec *rec = ptr;
-	struct messaging_state *msg = rec->msg;
+	struct messaging_context *msg = rec->msg;
 	event_remove_fd(msg->event.ev, rec->fde);
 	return 0;
 }
@@ -200,7 +200,7 @@ static int rec_destructor(void *ptr)
 static void messaging_listen_handler(struct event_context *ev, struct fd_event *fde, 
 				     time_t t, uint16_t flags)
 {
-	struct messaging_state *msg = fde->private;
+	struct messaging_context *msg = fde->private;
 	struct messaging_rec *rec;
 	NTSTATUS status;
 	struct fd_event fde2;
@@ -234,11 +234,10 @@ static void messaging_listen_handler(struct event_context *ev, struct fd_event *
 /*
   Register a dispatch function for a particular message type.
 */
-void messaging_register(void *ctx, void *private,
+void messaging_register(struct messaging_context *msg, void *private,
 			uint32_t msg_type, 
-			void (*fn)(void *, void *, uint32_t, servid_t, DATA_BLOB *))
+			void (*fn)(struct messaging_context *, void *, uint32_t, servid_t, DATA_BLOB *))
 {
-	struct messaging_state *msg = ctx;
 	struct dispatch_fn *d;
 
 	d = talloc_p(msg, struct dispatch_fn);
@@ -251,9 +250,8 @@ void messaging_register(void *ctx, void *private,
 /*
   De-register the function for a particular message type.
 */
-void messaging_deregister(void *ctx, uint32_t msg_type, void *private)
+void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void *private)
 {
-	struct messaging_state *msg = ctx;
 	struct dispatch_fn *d, *next;
 
 	for (d = msg->dispatch; d; d = next) {
@@ -329,7 +327,7 @@ static void messaging_send_handler(struct event_context *ev, struct fd_event *fd
 static void messaging_backoff_handler(struct event_context *ev, struct timed_event *te, time_t t)
 {
 	struct messaging_rec *rec = te->private;
-	struct messaging_state *msg = rec->msg;
+	struct messaging_context *msg = rec->msg;
 	NTSTATUS status;
 	struct fd_event fde;
 
@@ -363,9 +361,8 @@ static void messaging_backoff_handler(struct event_context *ev, struct timed_eve
 /*
   Send a message to a particular server
 */
-NTSTATUS messaging_send(void *msg_ctx, servid_t server, uint32_t msg_type, DATA_BLOB *data)
+NTSTATUS messaging_send(struct messaging_context *msg, servid_t server, uint32_t msg_type, DATA_BLOB *data)
 {
-	struct messaging_state *msg = msg_ctx;
 	struct messaging_rec *rec;
 	NTSTATUS status;
 	struct fd_event fde;
@@ -431,9 +428,9 @@ NTSTATUS messaging_send(void *msg_ctx, servid_t server, uint32_t msg_type, DATA_
 /*
   destroy the messaging context
 */
-static int messaging_destructor(void *msg_ctx)
+static int messaging_destructor(void *ptr)
 {
-	struct messaging_state *msg = msg_ctx;
+	struct messaging_context *msg = ptr;
 	event_remove_fd(msg->event.ev, msg->event.fde);
 	unlink(msg->path);
 	return 0;
@@ -442,13 +439,13 @@ static int messaging_destructor(void *msg_ctx)
 /*
   create the listening socket and setup the dispatcher
 */
-void *messaging_init(TALLOC_CTX *mem_ctx, servid_t server_id, struct event_context *ev)
+struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, servid_t server_id, struct event_context *ev)
 {
-	struct messaging_state *msg;
+	struct messaging_context *msg;
 	NTSTATUS status;
 	struct fd_event fde;
 
-	msg = talloc_p(mem_ctx, struct messaging_state);
+	msg = talloc_p(mem_ctx, struct messaging_context);
 	if (msg == NULL) {
 		return NULL;
 	}

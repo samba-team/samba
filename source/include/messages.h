@@ -22,6 +22,8 @@
 #ifndef _MESSAGES_H_
 #define _MESSAGES_H_
 
+struct messaging_context;
+
 /* general messages */
 #define MSG_DEBUG		1
 #define MSG_PING		2
