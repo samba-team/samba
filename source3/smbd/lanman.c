@@ -441,7 +441,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
   /* the client expects localtime */
   t -= TimeDiff(t);
 
-  PACKI(desc,"W",pjobid_to_rap(snum,queue->job)); /* uJobId */
+  PACKI(desc,"W",pjobid_to_rap(lp_const_servicename(snum),queue->job)); /* uJobId */
   if (uLevel == 1) {
     PACKS(desc,"B21",queue->fs_user); /* szUserName */
     PACKS(desc,"B","");		/* pad */
@@ -549,7 +549,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 	PACKS(desc, "z", driver.info_3->monitorname); /* language monitor */
 	
 	fstrcpy(location, "\\\\%L\\print$\\WIN40\\0");
-	standard_sub_basic( NULL, location, sizeof(location)-1 );
+	standard_sub_basic( "", location, sizeof(location)-1 );
 	PACKS(desc,"z", location);                          /* share to retrieve files */
 	
 	PACKS(desc,"z", driver.info_3->defaultdatatype);    /* default data type */
@@ -2122,11 +2122,12 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	char *p = skip_string(str2,1);
 	uint32 jobid;
 	int snum;
+	fstring sharename;
 	int errcode;
 	extern struct current_user current_user;
 	WERROR werr = WERR_OK;
 
-	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
 		return False;
 
 	/* check it's a supported varient */
@@ -2137,7 +2138,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	*rparam = REALLOC(*rparam,*rparam_len);	
 	*rdata_len = 0;
 
-	if (!print_job_exists(snum, jobid)) {
+	if (!print_job_exists(sharename, jobid)) {
 		errcode = NERR_JobNotFound;
 		goto out;
 	}
@@ -2257,11 +2258,12 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	char *p = skip_string(str2,1);
 	uint32 jobid;
 	int snum;
+	fstring sharename;
 	int uLevel = SVAL(p,2);
 	int function = SVAL(p,4);
 	int place, errcode;
 
-	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
 		return False;
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam,*rparam_len);
@@ -2273,7 +2275,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	    (!check_printjob_info(&desc,uLevel,str2)))
 		return(False);
 
-	if (!print_job_exists(snum, jobid)) {
+	if (!print_job_exists(sharename, jobid)) {
 		errcode=NERR_JobNotFound;
 		goto out;
 	}
@@ -2939,6 +2941,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   int count;
   int i;
   int snum;
+  fstring sharename;
   uint32 jobid;
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
@@ -2956,7 +2959,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if (strcmp(str1,"WWrLh") != 0) return False;
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-  if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+  if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
     return False;
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
