@@ -16,7 +16,7 @@ pop_sendline(POP *p, char *buffer)
 {
     char        *   bp;
 
-    /*  Byte stuff lines that begin with the temirnation octet */
+    /*  Byte stuff lines that begin with the termination octet */
     if (*buffer == POP_TERMINATE) 
       fputc(POP_TERMINATE,p->output);
 
