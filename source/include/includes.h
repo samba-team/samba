@@ -392,6 +392,9 @@
 #ifdef HAVE_GICONV
 #include <giconv.h>
 #endif
+#ifdef HAVE_BICONV
+#include <biconv.h>
+#endif
 #endif
 
 #if HAVE_KRB5_H
