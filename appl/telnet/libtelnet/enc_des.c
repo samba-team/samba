@@ -219,7 +219,7 @@ fb64_start(fbp, dir, server)
 		/*
 		 * Create a random feed and send it over.
 		 */
-#if OLD
+#ifndef OLD_DES_RANDOM_KEY
 		des_new_random_key(fbp->temp_feed);
 #else
 		/*
