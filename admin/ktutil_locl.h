@@ -69,5 +69,6 @@ extern krb5_context context;
 extern krb5_keytab keytab;
 
 int srvconv(int argc, char **argv);
+int srvcreate(int argc, char **argv);
 
 #endif /* __KTUTIL_LOCL_H__ */
