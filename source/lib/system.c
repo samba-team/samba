@@ -933,10 +933,40 @@ static char **extract_args(const char *command)
 }
 
 /**************************************************************************
+ Wrapper for fork. Ensures that mypid is reset. Used so we can write
+ a sys_getpid() that only does a system call *once*.
+****************************************************************************/
+
+static pid_t mypid = (pid_t)-1;
+
+pid_t sys_fork(void)
+{
+	pid_t forkret = fork();
+
+	if (forkret == (pid_t)0) /* Child - reset mypid so sys_getpid does a system call. */
+		mypid = (pid_t) -1;
+
+	return forkret;
+}
+
+/**************************************************************************
+ Wrapper for getpid. Ensures we only do a system call *once*.
+****************************************************************************/
+
+pid_t sys_getpid(void)
+{
+	if (mypid == (pid_t)-1)
+		mypid = getpid();
+
+	return mypid;
+}
+
+/**************************************************************************
  Wrapper for popen. Safer as it doesn't search a path.
  Modified from the glibc sources.
  modified by tridge to return a file descriptor. We must kick our FILE* habit
 ****************************************************************************/
+
 typedef struct _popen_list
 {
 	int fd;
@@ -974,7 +1004,7 @@ int sys_popen(const char *command)
 	if(!(argl = extract_args(command)))
 		goto err_exit;
 
-	entry->child_pid = fork();
+	entry->child_pid = sys_fork();
 
 	if (entry->child_pid == -1) {
 		goto err_exit;

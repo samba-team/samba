@@ -135,7 +135,7 @@ static void create_printer_hnd(POLICY_HND *hnd)
 	SIVAL(hnd->data, 4 , prt_hnd_low ); /* second bit is incrementing */
 	SIVAL(hnd->data, 8 , prt_hnd_high); /* second bit is incrementing */
 	SIVAL(hnd->data, 12, time(NULL));   /* something random */
-	SIVAL(hnd->data, 16, getpid());     /* something more random */
+	SIVAL(hnd->data, 16, sys_getpid());     /* something more random */
 }
 
 /****************************************************************************

@@ -421,7 +421,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   extern int global_smbpid;
 
   if (pid == (pid_t)-1)
-    pid = getpid();
+    pid = sys_getpid();
 
   errno = 0;
   last_message = type;

@@ -87,7 +87,7 @@ static int reply_lanman1(char *outbuf)
   SSVAL(outbuf,smb_vwv4,1);
   SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
 				 readbraw writebraw (possibly) */
-  SIVAL(outbuf,smb_vwv6,getpid());
+  SIVAL(outbuf,smb_vwv6,sys_getpid());
   SSVAL(outbuf,smb_vwv10, TimeDiff(t)/60);
 
   put_dos_date(outbuf,smb_vwv8,t);
@@ -133,7 +133,7 @@ static int reply_lanman2(char *outbuf)
 
   set_message(outbuf,13,crypt_len,True);
   SSVAL(outbuf,smb_vwv1,secword); 
-  SIVAL(outbuf,smb_vwv6,getpid());
+  SIVAL(outbuf,smb_vwv6,sys_getpid());
   if (doencrypt) 
 	  memcpy(smb_buf(outbuf), cryptkey, 8);
 
@@ -226,7 +226,7 @@ static int reply_nt1(char *outbuf)
   SSVAL(outbuf,smb_vwv2+1,1); /* num vcs */
   SIVAL(outbuf,smb_vwv3+1,0xffff); /* max buffer. LOTS! */
   SIVAL(outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
-  SIVAL(outbuf,smb_vwv7+1,getpid()); /* session key */
+  SIVAL(outbuf,smb_vwv7+1,sys_getpid()); /* session key */
   SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
   put_long_date(outbuf+smb_vwv11+1,t);
   SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);

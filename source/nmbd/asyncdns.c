@@ -140,7 +140,7 @@ void start_async_dns(void)
 		return;
 	}
 
-	child_pid = fork();
+	child_pid = sys_fork();
 
 	if (child_pid) {
 		fd_in = fd1[0];

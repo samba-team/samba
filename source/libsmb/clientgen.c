@@ -172,7 +172,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->port = 0;
 	cli->fd = -1;
 	cli->cnum = -1;
-	cli->pid = (uint16)getpid();
+	cli->pid = (uint16)sys_getpid();
 	cli->mid = 1;
 	cli->vuid = UID_FIELD_INVALID;
 	cli->protocol = PROTOCOL_NT1;

@@ -72,7 +72,7 @@ static void daemonize(void)
 
 	signal( SIGTERM, exit_parent );
 
-	if ((child_pid = fork()) < 0) {
+	if ((child_pid = sys_fork()) < 0) {
 		fprintf(stderr,"could not fork\n");
 	}
 
@@ -437,7 +437,7 @@ static void init_mount(void)
 		args[i++] = xstrdup(tmp);
 	}
 
-	if (fork() == 0) {
+	if (sys_fork() == 0) {
 		if (file_exist(BINDIR "/smbmnt", NULL)) {
 			execv(BINDIR "/smbmnt", args);
 			fprintf(stderr,"execv of %s failed. Error was %s.", BINDIR "/smbmnt", strerror(errno));
