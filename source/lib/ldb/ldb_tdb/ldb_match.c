@@ -140,7 +140,7 @@ static int ldb_val_equal_objectclass(struct ldb_context *ldb,
 				     const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
-	int i;
+	unsigned int i;
 
 	if (ldb_val_equal_case_insensitive(v1, v2) == 1) {
 		return 1;
@@ -149,7 +149,7 @@ static int ldb_val_equal_objectclass(struct ldb_context *ldb,
 	for (i=0;i<ltdb->cache.subclasses.num_elements;i++) {
 		struct ldb_message_element *el = &ltdb->cache.subclasses.elements[i];
 		if (ldb_attr_cmp(el->name, v2->data) == 0) {
-			int j;
+			unsigned int j;
 			for (j=0;j<el->num_values;j++) {
 				if (ldb_val_equal_objectclass(ldb, v1, &el->values[j])) {
 					return 1;
@@ -259,7 +259,7 @@ static int match_leaf(struct ldb_context *ldb,
 		      const char *base,
 		      enum ldb_scope scope)
 {
-	int i, j;
+	unsigned int i, j;
 
 	if (!scope_match(msg->dn, base, scope)) {
 		return 0;
@@ -304,7 +304,8 @@ int ldb_message_match(struct ldb_context *ldb,
 		      const char *base,
 		      enum ldb_scope scope)
 {
-	int v, i;
+	unsigned int i;
+	int v;
 
 	switch (tree->operation) {
 	case LDB_OP_SIMPLE:

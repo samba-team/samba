@@ -69,7 +69,7 @@ int ltdb_pack_data(struct ldb_context *ldb,
 		   const struct ldb_message *message,
 		   struct TDB_DATA *data)
 {
-	int i, j, real_elements=0;
+	unsigned int i, j, real_elements=0;
 	size_t size;
 	char *p;
 	size_t len;
@@ -141,7 +141,7 @@ int ltdb_pack_data(struct ldb_context *ldb,
 void ltdb_unpack_data_free(struct ldb_context *ldb,
 			   struct ldb_message *message)
 {
-	int i;
+	unsigned int i;
 
 	for (i=0;i<message->num_elements;i++) {
 		if (message->elements[i].values) ldb_free(ldb, message->elements[i].values);
@@ -166,7 +166,7 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 {
 	char *p;
 	unsigned int remaining;
-	int i, j;
+	unsigned int i, j;
 	unsigned format;
 	size_t len;
 

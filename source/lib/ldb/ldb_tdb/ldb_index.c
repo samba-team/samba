@@ -46,7 +46,7 @@ struct dn_list {
 */
 static void dn_list_free(struct ldb_context *ldb, struct dn_list *list)
 {
-	int i;
+	unsigned int i;
 	for (i=0;i<list->count;i++) {
 		ldb_free(ldb, list->dn[i]);
 	}
@@ -80,7 +80,7 @@ static char *ldb_dn_key(struct ldb_context *ldb,
 static int ldb_msg_find_idx(const struct ldb_message *msg, const char *attr,
 			    int *v_idx, const char *key)
 {
-	int i, j;
+	unsigned int i, j;
 	for (i=0;i<msg->num_elements;i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, key) == 0) {
 			const struct ldb_message_element *el = 
@@ -113,7 +113,8 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 				struct dn_list *list)
 {
 	char *dn = NULL;
-	int ret, i, j;
+	int ret;
+	unsigned int i, j;
 	struct ldb_message msg;
 
 	list->count = 0;
@@ -186,7 +187,7 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 				     struct dn_list *list)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
-	int i;
+	unsigned int i;
 	int ret;
 	const char *target = tree->u.simple.value.data;
 	static int list_union(struct ldb_context *, 
@@ -200,7 +201,7 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 	for (i=0;i<ltdb->cache.subclasses.num_elements;i++) {
 		struct ldb_message_element *el = &ltdb->cache.subclasses.elements[i];
 		if (ldb_attr_cmp(el->name, target) == 0) {
-			int j;
+			unsigned int j;
 			for (j=0;j<el->num_values;j++) {
 				struct ldb_parse_tree tree2;
 				struct dn_list list2;
@@ -252,7 +253,7 @@ static int list_intersect(struct ldb_context *ldb,
 			  struct dn_list *list, const struct dn_list *list2)
 {
 	struct dn_list list3;
-	int i;
+	unsigned int i;
 
 	if (list->count == 0 || list2->count == 0) {
 		/* 0 & X == 0 */
@@ -293,7 +294,7 @@ static int list_intersect(struct ldb_context *ldb,
 static int list_union(struct ldb_context *ldb, 
 		      struct dn_list *list, const struct dn_list *list2)
 {
-	int i;
+	unsigned int i;
 	char **d;
 	unsigned int count = list->count;
 
@@ -343,7 +344,8 @@ static int ltdb_index_dn_or(struct ldb_context *ldb,
 			    const struct ldb_message *index_list,
 			    struct dn_list *list)
 {
-	int ret, i;
+	unsigned int i;
+	int ret;
 	
 	ret = -1;
 	list->dn = NULL;
@@ -416,7 +418,8 @@ static int ltdb_index_dn_and(struct ldb_context *ldb,
 			     const struct ldb_message *index_list,
 			     struct dn_list *list)
 {
-	int ret, i;
+	unsigned int i;
+	int ret;
 	
 	ret = -1;
 	list->dn = NULL;
@@ -499,8 +502,7 @@ static int ldb_index_filter(struct ldb_context *ldb, struct ldb_parse_tree *tree
 			    const struct dn_list *dn_list, 
 			    const char * const attrs[], struct ldb_message ***res)
 {
-	int i;
-	unsigned int count = 0;
+	unsigned int count = 0, i;
 
 	for (i=0;i<dn_list->count;i++) {
 		struct ldb_message msg;
@@ -608,7 +610,7 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 			       char *dn)
 {
 	struct ldb_val *v2;
-	int i;
+	unsigned int i;
 
 	/* for multi-valued attributes we can end up with repeats */
 	for (i=0;i<msg->elements[idx].num_values;i++) {
@@ -640,7 +642,8 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 {
 	struct ldb_message msg;
 	char *dn_key;
-	int ret, i, added=0, added_dn=0;
+	int ret, added=0, added_dn=0;
+	unsigned int i;
 
 	dn_key = ldb_dn_key(ldb, el->name, &el->values[v_idx]);
 	if (!dn_key) {
@@ -704,7 +707,8 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 int ltdb_index_add(struct ldb_context *ldb, const struct ldb_message *msg)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
-	int ret, i, j;
+	int ret;
+	unsigned int i, j;
 
 	if (ltdb->cache.indexlist.num_elements == 0) {
 		/* no indexed fields */
@@ -737,7 +741,8 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 {
 	struct ldb_message msg;
 	char *dn_key;
-	int ret, i, j;
+	int ret, i;
+	unsigned int j;
 
 	dn_key = ldb_dn_key(ldb, el->name, &el->values[v_idx]);
 	if (!dn_key) {
@@ -794,7 +799,8 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 int ltdb_index_del(struct ldb_context *ldb, const struct ldb_message *msg)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
-	int ret, i, j;
+	int ret;
+	unsigned int i, j;
 
 	/* find the list of indexed fields */	
 	if (ltdb->cache.indexlist.num_elements == 0) {

@@ -44,7 +44,7 @@ static int modify_record(struct ldb_context *ldb,
 {
 	struct ldb_message mod;
 	struct ldb_message_element *el;
-	int i;
+	unsigned int i;
 	int count = 0;
 
 	mod.dn = msg1->dn;

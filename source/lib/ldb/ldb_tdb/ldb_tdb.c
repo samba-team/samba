@@ -324,7 +324,7 @@ failed:
 */
 static int find_element(const struct ldb_message *msg, const char *name)
 {
-	int i;
+	unsigned int i;
 	for (i=0;i<msg->num_elements;i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, name) == 0) {
 			return i;
@@ -345,7 +345,7 @@ static int msg_add_element(struct ldb_context *ldb,
 			   struct ldb_message *msg, struct ldb_message_element *el)
 {
 	struct ldb_message_element *e2;
-	int i;
+	unsigned int i;
 
 	e2 = ldb_realloc_p(ldb, msg->elements, struct ldb_message_element, 
 		       msg->num_elements+1);
@@ -385,7 +385,7 @@ static int msg_add_element(struct ldb_context *ldb,
 static int msg_delete_attribute(struct ldb_context *ldb,
 				struct ldb_message *msg, const char *name)
 {
-	int i, count=0;
+	unsigned int i, count=0;
 	struct ldb_message_element *el2;
 
 	el2 = ldb_malloc_array_p(ldb, struct ldb_message_element, msg->num_elements);
@@ -419,15 +419,16 @@ static int msg_delete_element(struct ldb_context *ldb,
 			      const char *name,
 			      const struct ldb_val *val)
 {
-	int i;
+	unsigned int i;
+	int found;
 	struct ldb_message_element *el;
 
-	i = find_element(msg, name);
-	if (i == -1) {
+	found = find_element(msg, name);
+	if (found == -1) {
 		return -1;
 	}
 
-	el = &msg->elements[i];
+	el = &msg->elements[found];
 
 	for (i=0;i<el->num_values;i++) {
 		if (ldb_val_equal(ldb, msg->elements[i].name, &el->values[i], val)) {
@@ -459,7 +460,8 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 	struct ltdb_private *ltdb = ldb->private_data;
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_message msg2;
-	int ret, i, j;
+	unsigned i, j;
+	int ret;
 
 	tdb_key = ltdb_key(ldb, msg->dn);
 	if (!tdb_key.dptr) {

@@ -122,7 +122,7 @@ char *ldb_base64_encode(struct ldb_context *ldb, const char *buf, int len)
 */
 int ldb_should_b64_encode(const struct ldb_val *val)
 {
-	int i;
+	unsigned int i;
 	uint8_t *p = val->data;
 
 	if (val->length == 0 || p[0] == ' ' || p[0] == ':') {
@@ -146,7 +146,7 @@ int ldb_should_b64_encode(const struct ldb_val *val)
 static int fold_string(int (*fprintf_fn)(void *, const char *, ...), void *private_data,
 			const char *buf, size_t length, int start_pos)
 {
-	int i;
+	unsigned int i;
 	int total=0, ret;
 
 	for (i=0;i<length;i++) {
@@ -201,7 +201,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 		   void *private_data,
 		   const struct ldb_ldif *ldif)
 {
-	int i, j;
+	unsigned int i, j;
 	int total=0, ret;
 	const struct ldb_message *msg;
 
@@ -410,7 +410,7 @@ static int next_attr(char **s, const char **attr, struct ldb_val *value)
 void ldb_ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *ldif)
 {
 	struct ldb_message *msg = &ldif->msg;
-	int i;
+	unsigned int i;
 	for (i=0;i<msg->num_elements;i++) {
 		if (msg->elements[i].name) ldb_free(ldb, msg->elements[i].name);
 		if (msg->elements[i].values) ldb_free(ldb, msg->elements[i].values);
