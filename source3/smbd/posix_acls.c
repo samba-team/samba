@@ -1881,6 +1881,8 @@ static int nt_ace_comp( SEC_ACE *a1, SEC_ACE *a2)
 
 size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
+	extern DOM_SID global_sid_Builtin_Administrators;
+	extern DOM_SID global_sid_Builtin_Users;
 	connection_struct *conn = fsp->conn;
 	SMB_STRUCT_STAT sbuf;
 	SEC_ACE *nt_ace_list = NULL;
@@ -1895,6 +1897,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	SMB_ACL_T dir_acl = NULL;
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
+	size_t num_profile_acls = 0;
  
 	*ppdesc = NULL;
 
@@ -1939,7 +1942,14 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	 * Get the owner, group and world SIDs.
 	 */
 
-	create_file_sids(&sbuf, &owner_sid, &group_sid);
+	if (lp_profile_acls(SNUM(fsp->conn))) {
+		/* For WXP SP1 the owner must be administrators. */
+		sid_copy(&owner_sid, &global_sid_Builtin_Administrators);
+		sid_copy(&group_sid, &global_sid_Builtin_Users);
+		num_profile_acls = 2;
+	} else {
+		create_file_sids(&sbuf, &owner_sid, &group_sid);
+	}
 
 	/* Create the canon_ace lists. */
 	file_ace = canonicalise_acl( fsp, posix_acl, &sbuf,  &owner_sid, &group_sid);
@@ -1963,7 +1973,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	}
 
 	/* Allocate the ace list. */
-	if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
+	if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_profile_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
 		DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
 		goto done;
 	}
@@ -1986,12 +1996,28 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 0);
 		}
 
+		/* The User must have access to a profile share - even if we can't map the SID. */
+		if (lp_profile_acls(SNUM(fsp->conn))) {
+			SEC_ACCESS acc;
+			init_sec_access(&acc,FILE_GENERIC_ALL);
+			init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc, 0);
+		}
+
 		ace = dir_ace;
 
 		for (i = 0; i < num_dir_acls; i++, ace = ace->next) {
 			SEC_ACCESS acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
 			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 
 					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+		}
+
+		/* The User must have access to a profile share - even if we can't map the SID. */
+		if (lp_profile_acls(SNUM(fsp->conn))) {
+			SEC_ACCESS acc;
+			init_sec_access(&acc,FILE_GENERIC_ALL);
+			init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc,
+					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
+					SEC_ACE_FLAG_INHERIT_ONLY);
 		}
 
 		/*
