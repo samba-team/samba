@@ -115,6 +115,8 @@ BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 
 static void async_processing(char *buffer, int buffer_len)
 {
+	DEBUG(10,("async_processing: Doing async processing.\n"));
+
 	/* check for oplock messages (both UDP and kernel) */
 	if (receive_local_message(buffer, buffer_len, 1)) {
 		process_local_message(buffer, buffer_len);
