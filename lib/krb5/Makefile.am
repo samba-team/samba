@@ -41,6 +41,7 @@ libkrb5_la_SOURCES = \
 	convert_creds.c \
 	constants.c \
 	context.c \
+	copy_host_realm.c \
 	crc.c \
 	creds.c \
 	crypto.c \
