@@ -1408,7 +1408,7 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return False;
-		SIVAL(*data, 0, 0x03);
+		SIVAL(*data, 0, 2);
 		*needed = 0x4;
 		return True;
 	}
