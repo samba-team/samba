@@ -1,3 +1,8 @@
+2001-09-17  Assar Westerlund  <assar@sics.se>
+
+	* snprintf.c: rename 'struct state' -> 'struct snprintf_test' to
+	avoid collision with resolv.h on aix
+
 2001-09-04  Assar Westerlund  <assar@sics.se>
 
 	* parse_bytes-test.c, parse_bytes.c, parse_bytes.h, parse_units.c,
