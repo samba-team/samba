@@ -58,7 +58,7 @@ void invalidate_vuid(struct smbsrv_connection *smb, uint16_t vuid)
 
 	session_yield(vuser);
 
-	talloc_destroy(vuser->session_info->mem_ctx);
+	free_session_info(&vuser->session_info);
 
 	DLIST_REMOVE(smb->users.validated_users, vuser);
 

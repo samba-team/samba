@@ -160,8 +160,6 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 			return NT_STATUS_NO_MEMORY;
 		}
 		
-		dump_data_pw("ntlmssp hash:\n", ntlmssp_state->ntlmssp_hash,
-			     sizeof(ntlmssp_state->ntlmssp_hash));
 		NTLMSSPcalc_ap(ntlmssp_state->ntlmssp_hash, sig->data+4, sig->length-4);
 	}
 	dump_data_pw("calculated ntlmssp signature\n", sig->data, sig->length);

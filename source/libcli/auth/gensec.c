@@ -23,46 +23,14 @@
 
 #include "includes.h"
 
-static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
-	.name		= "ntlmssp",
-	.sasl_name	= "NTLM",
-	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
-	.oid            = OID_NTLMSSP,
-	.client_start   = gensec_ntlmssp_client_start,
-	.update 	= gensec_ntlmssp_update,
-	.seal 		= gensec_ntlmssp_seal_packet,
-	.sign		= gensec_ntlmssp_sign_packet,
-	.check_sig	= gensec_ntlmssp_check_packet,
-	.unseal		= gensec_ntlmssp_unseal_packet,
-	.session_key	= gensec_ntlmssp_session_key,
-	.end		= gensec_ntlmssp_end
-};
+/* the list of currently registered GENSEC backends */
+const static struct gensec_security_ops **generic_security_ops;
+static int num_backends;
 
-
-static const struct gensec_security_ops gensec_spnego_security_ops = {
-	.name		= "spnego",
-	.sasl_name	= "GSS-SPNEGO",
-	.oid            = OID_SPNEGO,
-	.client_start   = gensec_spnego_client_start,
-	.update 	= gensec_spnego_update,
-	.seal 		= gensec_spnego_seal_packet,
-	.sign		= gensec_spnego_sign_packet,
-	.check_sig	= gensec_spnego_check_packet,
-	.unseal		= gensec_spnego_unseal_packet,
-	.session_key	= gensec_spnego_session_key,
-	.end		= gensec_spnego_end
-};
-
-static const struct gensec_security_ops *generic_security_ops[] = {
-	&gensec_ntlmssp_security_ops,
-	&gensec_spnego_security_ops,
-	NULL
-};
-
-const struct gensec_security_ops *gensec_security_by_authtype(uint8_t auth_type)
+static const struct gensec_security_ops *gensec_security_by_authtype(uint8_t auth_type)
 {
 	int i;
-	for (i=0; generic_security_ops[i]; i++) {
+	for (i=0; i < num_backends; i++) {
 		if (generic_security_ops[i]->auth_type == auth_type) {
 			return generic_security_ops[i];
 		}
@@ -71,10 +39,10 @@ const struct gensec_security_ops *gensec_security_by_authtype(uint8_t auth_type)
 	return NULL;
 }
 
-const struct gensec_security_ops *gensec_security_by_oid(const char *oid)
+static const struct gensec_security_ops *gensec_security_by_oid(const char *oid)
 {
 	int i;
-	for (i=0; generic_security_ops[i]; i++) {
+	for (i=0; i < num_backends; i++) {
 		if (generic_security_ops[i]->oid &&
 		    (strcmp(generic_security_ops[i]->oid, oid) == 0)) {
 			return generic_security_ops[i];
@@ -84,10 +52,10 @@ const struct gensec_security_ops *gensec_security_by_oid(const char *oid)
 	return NULL;
 }
 
-const struct gensec_security_ops *gensec_security_by_sasl_name(const char *sasl_name)
+static const struct gensec_security_ops *gensec_security_by_sasl_name(const char *sasl_name)
 {
 	int i;
-	for (i=0; generic_security_ops[i]; i++) {
+	for (i=0; i < num_backends; i++) {
 		if (generic_security_ops[i]->sasl_name 
 		    && (strcmp(generic_security_ops[i]->sasl_name, sasl_name) == 0)) {
 			return generic_security_ops[i];
@@ -97,8 +65,359 @@ const struct gensec_security_ops *gensec_security_by_sasl_name(const char *sasl_
 	return NULL;
 }
 
-const struct gensec_security_ops **gensec_security_all(void)
+static const struct gensec_security_ops *gensec_security_by_name(const char *name)
 {
+	int i;
+	for (i=0; i < num_backends; i++) {
+		if (generic_security_ops[i]->name 
+		    && (strcmp(generic_security_ops[i]->name, name) == 0)) {
+			return generic_security_ops[i];
+		}
+	}
+
+	return NULL;
+}
+
+const struct gensec_security_ops **gensec_security_all(int *num_backends_out)
+{
+	*num_backends_out = num_backends;
 	return generic_security_ops;
 }
 
+static NTSTATUS gensec_start(struct gensec_security **gensec_security) 
+{
+	TALLOC_CTX *mem_ctx;
+	/* awaiting a correct fix from metze */
+	if (!gensec_init()) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	mem_ctx = talloc_init("gensec_security struct");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(*gensec_security) = talloc_p(mem_ctx, struct gensec_security);
+	if (!(*gensec_security)) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(*gensec_security)->mem_ctx = mem_ctx;
+	(*gensec_security)->ops = NULL;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gensec_client_start(struct gensec_security **gensec_security)
+{
+	NTSTATUS status;
+	status = gensec_start(gensec_security);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	(*gensec_security)->gensec_role = GENSEC_CLIENT;
+	(*gensec_security)->password_callback = NULL;
+
+	ZERO_STRUCT((*gensec_security)->user);
+
+	return status;
+}
+
+NTSTATUS gensec_server_start(struct gensec_security **gensec_security)
+{
+	NTSTATUS status;
+	status = gensec_start(gensec_security);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	(*gensec_security)->gensec_role = GENSEC_SERVER;
+
+	return status;
+}
+
+static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security) 
+{
+	NTSTATUS status;
+	switch (gensec_security->gensec_role) {
+	case GENSEC_CLIENT:
+		if (gensec_security->ops->client_start) {
+			status = gensec_security->ops->client_start(gensec_security);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(1, ("Faild to start GENSEC client mech %s: %s\n",
+					  gensec_security->ops->name, nt_errstr(status))); 
+			}
+			return status;
+		}
+	case GENSEC_SERVER:
+		if (gensec_security->ops->server_start) {
+			status = gensec_security->ops->server_start(gensec_security);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(1, ("Faild to start GENSEC server mech %s: %s\n",
+					  gensec_security->ops->name, nt_errstr(status))); 
+			}
+			return status;
+		}
+	}
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
+NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
+				       uint8_t authtype) 
+{
+	gensec_security->ops = gensec_security_by_authtype(authtype);
+	if (!gensec_security->ops) {
+		DEBUG(1, ("Could not find GENSEC backend for authtype=%d\n", (int)authtype));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return gensec_start_mech(gensec_security);
+}
+
+NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security, 
+				  const char *mech_oid) 
+{
+	gensec_security->ops = gensec_security_by_oid(mech_oid);
+	if (!gensec_security->ops) {
+		DEBUG(1, ("Could not find GENSEC backend for oid=%s\n", mech_oid));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return gensec_start_mech(gensec_security);
+}
+
+NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security, 
+					const char *sasl_name) 
+{
+	gensec_security->ops = gensec_security_by_sasl_name(sasl_name);
+	if (!gensec_security->ops) {
+		DEBUG(1, ("Could not find GENSEC backend for sasl_name=%s\n", sasl_name));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return gensec_start_mech(gensec_security);
+}
+
+/*
+  wrappers for the gensec function pointers
+*/
+NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security, 
+			      TALLOC_CTX *mem_ctx, 
+			      uint8_t *data, size_t length, DATA_BLOB *sig)
+{
+	return gensec_security->ops->unseal_packet(gensec_security, mem_ctx, data, length, sig);
+}
+
+NTSTATUS gensec_check_packet(struct gensec_security *gensec_security, 
+			     TALLOC_CTX *mem_ctx, 
+			     const uint8_t *data, size_t length, 
+			     const DATA_BLOB *sig)
+{
+	return gensec_security->ops->check_packet(gensec_security, mem_ctx, data, length, sig);
+}
+
+NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security, 
+			    TALLOC_CTX *mem_ctx, 
+			    uint8_t *data, size_t length, 
+			    DATA_BLOB *sig)
+{
+	return gensec_security->ops->seal_packet(gensec_security, mem_ctx, data, length, sig);
+}
+
+NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security, 
+			    TALLOC_CTX *mem_ctx, 
+			    const uint8_t *data, size_t length, 
+			    DATA_BLOB *sig)
+{
+	return gensec_security->ops->sign_packet(gensec_security, mem_ctx, data, length, sig);
+}
+
+NTSTATUS gensec_session_key(struct gensec_security *gensec_security, 
+			    DATA_BLOB *session_key)
+{
+	return gensec_security->ops->session_key(gensec_security, session_key);
+}
+
+NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
+			     struct auth_session_info **session_info)
+{
+	return gensec_security->ops->session_info(gensec_security, session_info);
+}
+
+/**
+ * Next state function for the GENSEC state machine
+ * 
+ * @param gensec_security GENSEC State
+ * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
+ * @param in The request, as a DATA_BLOB
+ * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
+ * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent, 
+ *                or NT_STATUS_OK if the user is authenticated. 
+ */
+
+NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
+		       const DATA_BLOB in, DATA_BLOB *out) 
+{
+	return gensec_security->ops->update(gensec_security, out_mem_ctx, in, out);
+}
+
+void gensec_end(struct gensec_security **gensec_security)
+{
+	if ((*gensec_security)->ops) {
+		(*gensec_security)->ops->end(*gensec_security);
+	}
+	(*gensec_security)->private_data = NULL;
+	talloc_destroy((*gensec_security)->mem_ctx);
+	
+	gensec_security = NULL;
+}
+
+/** 
+ * Set a username on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+NTSTATUS gensec_set_username(struct gensec_security *gensec_security, const char *user) 
+{
+	gensec_security->user.name = talloc_strdup(gensec_security->mem_ctx, user);
+	if (!gensec_security->user.name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Set a domain on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+NTSTATUS gensec_set_domain(struct gensec_security *gensec_security, const char *domain) 
+{
+	gensec_security->user.domain = talloc_strdup(gensec_security->mem_ctx, domain);
+	if (!gensec_security->user.domain) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Set the password outright on GENSEC context - ensures it is talloc()ed, and that we will
+ * not do a callback
+ *
+ */
+
+NTSTATUS gensec_set_password(struct gensec_security *gensec_security,
+			     const char *password) 
+{
+	gensec_security->user.password = talloc_strdup(gensec_security->mem_ctx, password);
+	if (!gensec_security->user.password) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Set a password callback, if the gensec module we use demands a password
+ */
+
+void gensec_set_password_callback(struct gensec_security *gensec_security, 
+				  gensec_password_callback callback, void *callback_private_data) 
+{
+	gensec_security->password_callback = callback;
+	gensec_security->password_callback_private = callback_private_data;
+}
+
+/**
+ * Get (or call back for) a password.
+ */
+
+NTSTATUS gensec_get_password(struct gensec_security *gensec_security,
+			     TALLOC_CTX *mem_ctx, 
+			     char **password) 
+{
+	if (gensec_security->user.password) {
+		*password = talloc_strdup(mem_ctx, gensec_security->user.password);
+		if (!*password) {
+			return NT_STATUS_NO_MEMORY;
+		} else {
+			return NT_STATUS_OK;
+		}
+	}
+	if (!gensec_security->password_callback) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return gensec_security->password_callback(gensec_security, mem_ctx, password);
+}
+
+/*
+  register a GENSEC backend. 
+
+  The 'name' can be later used by other backends to find the operations
+  structure for this backend.
+*/
+static NTSTATUS gensec_register(const void *_ops)
+{
+	const struct gensec_security_ops *ops = _ops;
+	
+	if (gensec_security_by_name(ops->name) != NULL) {
+		/* its already registered! */
+		DEBUG(0,("GENSEC backend '%s' already registered\n", 
+			 ops->name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	generic_security_ops = Realloc(generic_security_ops, sizeof(generic_security_ops[0]) * (num_backends+1));
+	if (!generic_security_ops) {
+		smb_panic("out of memory in gensec_register");
+	}
+
+	generic_security_ops[num_backends] = ops;
+
+	num_backends++;
+
+	DEBUG(3,("GENSEC backend '%s' registered\n", 
+		 ops->name));
+
+	return NT_STATUS_OK;
+}
+
+/*
+  return the GENSEC interface version, and the size of some critical types
+  This can be used by backends to either detect compilation errors, or provide
+  multiple implementations for different smbd compilation options in one module
+*/
+const struct gensec_critical_sizes *gensec_interface_version(void)
+{
+	static const struct gensec_critical_sizes critical_sizes = {
+		GENSEC_INTERFACE_VERSION,
+		sizeof(struct gensec_security_ops),
+		sizeof(struct gensec_security),
+	};
+
+	return &critical_sizes;
+}
+
+/*
+  initialise the GENSEC subsystem
+*/
+BOOL gensec_init(void)
+{
+	static BOOL initialised;
+	NTSTATUS status;
+
+	/* this is *completly* the wrong way to do this */
+	if (initialised) {
+		return True;
+	}
+
+	status = register_subsystem("gensec", gensec_register); 
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	/* FIXME: Perhaps panic if a basic backend, such as NTLMSSP, fails to initialise? */
+	gensec_ntlmssp_init();
+	gensec_spengo_init();
+	gensec_dcerpc_schannel_init();
+
+	initialised = True;
+	DEBUG(3,("GENSEC subsystem version %d initialised\n", GENSEC_INTERFACE_VERSION));
+	return True;
+}

@@ -503,6 +503,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
 		dcerpc_pipe_close(*p);
+		*p = NULL;
 		return status;
 	}
 
@@ -569,6 +570,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 		DEBUG(0,("Failed to bind to uuid %s - %s\n", 
 			 pipe_uuid, nt_errstr(status)));
 		dcerpc_pipe_close(*p);
+		*p = NULL;
 		return status;
 	}
  
@@ -697,8 +699,8 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 {
 	struct cli_tree *tree;
 
-	if (p->security_state.generic_state.ops) {
-		return p->security_state.generic_state.ops->session_key(&p->security_state.generic_state, session_key);
+	if (p->security_state.generic_state) {
+		return gensec_session_key(p->security_state.generic_state, session_key);
 	}
 	
 	tree = dcerpc_smb_tree(p);

@@ -35,6 +35,7 @@ enum stdio_helper_mode {
 	SQUID_2_5_NTLMSSP,
 	NTLMSSP_CLIENT_1,
 	GSS_SPNEGO_CLIENT,
+	GSS_SPNEGO_SERVER,
 	NTLM_SERVER_1,
 	NUM_HELPER_MODES
 };
@@ -44,19 +45,19 @@ enum stdio_helper_mode {
 
 
 typedef void (*stdio_helper_function)(enum stdio_helper_mode stdio_helper_mode, 
-				     char *buf, int length);
+				      char *buf, int length, void **private);
 
 static void manage_squid_basic_request (enum stdio_helper_mode stdio_helper_mode, 
-					char *buf, int length);
+					char *buf, int length, void **private);
 
-static void manage_squid_ntlmssp_request (enum stdio_helper_mode stdio_helper_mode, 
-					  char *buf, int length);
-
-static void manage_gensec_client_request (enum stdio_helper_mode stdio_helper_mode, 
-					  char *buf, int length);
+static void manage_gensec_request (enum stdio_helper_mode stdio_helper_mode, 
+				   char *buf, int length, void **private);
 
 static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mode, 
-					  char *buf, int length);
+					  char *buf, int length, void **private);
+
+static void manage_squid_request(enum stdio_helper_mode helper_mode, 
+				 stdio_helper_function fn, void *private);
 
 static const struct {
 	enum stdio_helper_mode mode;
@@ -65,9 +66,10 @@ static const struct {
 } stdio_helper_protocols[] = {
 	{ SQUID_2_4_BASIC, "squid-2.4-basic", manage_squid_basic_request},
 	{ SQUID_2_5_BASIC, "squid-2.5-basic", manage_squid_basic_request},
-	{ SQUID_2_5_NTLMSSP, "squid-2.5-ntlmssp", manage_squid_ntlmssp_request},
-	{ NTLMSSP_CLIENT_1, "ntlmssp-client-1", manage_gensec_client_request},
-	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gensec_client_request},
+	{ SQUID_2_5_NTLMSSP, "squid-2.5-ntlmssp", manage_gensec_request},
+	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gensec_request},
+	{ GSS_SPNEGO_SERVER, "gss-spnego-server", manage_gensec_request},
+	{ NTLMSSP_CLIENT_1, "ntlmssp-client-1", manage_gensec_request},
 	{ NTLM_SERVER_1, "ntlm-server-1", manage_ntlm_server_1_request},
 	{ NUM_HELPER_MODES, NULL, NULL}
 };
@@ -172,149 +174,8 @@ static NTSTATUS local_pw_check_specified(const char *username,
 	
 }
 
-static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
-{
-	NTSTATUS nt_status;
-	uint8 lm_pw[16], nt_pw[16];
-	uint8_t *lm_pwd, *nt_pwd;
-
-	E_md4hash(opt_password, nt_pw);
-	if (E_deshash(opt_password, lm_pw)) {
-		lm_pwd = lm_pw;
-	} else {
-			lm_pwd = NULL;
-	}
-	nt_pwd = nt_pw;
-		
-	nt_status = ntlm_password_check(ntlmssp_state->mem_ctx, 
-					&ntlmssp_state->chal,
-					&ntlmssp_state->lm_resp,
-					&ntlmssp_state->nt_resp, 
-					NULL, NULL,
-					ntlmssp_state->user, 
-					ntlmssp_state->user, 
-					ntlmssp_state->domain,
-					lm_pwd, nt_pwd, user_session_key, lm_session_key);
-	
-	if (NT_STATUS_IS_OK(nt_status)) {
-		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state->mem_ctx, 
-							      "%s%c%s", ntlmssp_state->domain, 
-							      *lp_winbind_separator(), 
-							      ntlmssp_state->user);
-	} else {
-		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
-			  ntlmssp_state->domain, ntlmssp_state->user, ntlmssp_state->workstation, 
-			  nt_errstr(nt_status)));
-		ntlmssp_state->auth_context = NULL;
-	}
-	return nt_status;
-}
-
-static NTSTATUS ntlm_auth_start_ntlmssp_server(struct ntlmssp_state **ntlmssp_state) 
-{
-	NTSTATUS status = ntlmssp_server_start(ntlmssp_state);
-	
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
-			  nt_errstr(status)));
-		return status;
-	}
-
-	/* Have we been given a local password, or should we ask winbind? */
-	if (opt_password) {
-		(*ntlmssp_state)->check_password = local_pw_check;
-		(*ntlmssp_state)->get_domain = lp_workgroup;
-		(*ntlmssp_state)->get_global_myname = global_myname;
-	} else {
-		DEBUG(0, ("Winbind not supported in Samba4 ntlm_auth yet, specify --password\n"));
-		exit(1);
-	}
-	return NT_STATUS_OK;
-}
-
-static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
-					 char *buf, int length) 
-{
-	static struct ntlmssp_state *ntlmssp_state = NULL;
-	DATA_BLOB request, reply;
-	NTSTATUS nt_status;
-
-	if (strlen(buf) < 2) {
-		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
-		x_fprintf(x_stdout, "BH\n");
-		return;
-	}
-
-	if (strlen(buf) > 3) {
-		request = base64_decode_data_blob(buf + 3);
-	} else {
-		request = data_blob(NULL, 0);
-	}
-
-	if ((strncmp(buf, "PW ", 3) == 0)) {
-		/* The calling application wants us to use a local password (rather than winbindd) */
-
-		opt_password = strndup((const char *)request.data, request.length);
-
-		if (opt_password == NULL) {
-			DEBUG(1, ("Out of memory\n"));
-			x_fprintf(x_stdout, "BH\n");
-			data_blob_free(&request);
-			return;
-		}
-
-		x_fprintf(x_stdout, "OK\n");
-		data_blob_free(&request);
-		return;
-	}
-
-	if (strncmp(buf, "YR", 2) == 0) {
-		if (ntlmssp_state)
-			ntlmssp_end(&ntlmssp_state);
-	} else if (strncmp(buf, "KK", 2) == 0) {
-		
-	} else {
-		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
-		x_fprintf(x_stdout, "BH\n");
-		return;
-	}
-
-	if (!ntlmssp_state) {
-		if (!NT_STATUS_IS_OK(nt_status = ntlm_auth_start_ntlmssp_server(&ntlmssp_state))) {
-			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
-			return;
-		}
-	}
-
-	DEBUG(10, ("got NTLMSSP packet:\n"));
-	dump_data(10, (const char *)request.data, request.length);
-
-	nt_status = ntlmssp_update(ntlmssp_state, NULL, request, &reply);
-	
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		char *reply_base64 = base64_encode_data_blob(reply);
-		x_fprintf(x_stdout, "TT %s\n", reply_base64);
-		SAFE_FREE(reply_base64);
-		data_blob_free(&reply);
-		DEBUG(10, ("NTLMSSP challenge\n"));
-	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
-		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
-		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
-
-		ntlmssp_end(&ntlmssp_state);
-	} else if (!NT_STATUS_IS_OK(nt_status)) {
-		x_fprintf(x_stdout, "NA %s\n", nt_errstr(nt_status));
-		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
-	} else {
-		x_fprintf(x_stdout, "AF %s\n", (char *)ntlmssp_state->auth_context);
-		DEBUG(10, ("NTLMSSP OK!\n"));
-	}
-
-	data_blob_free(&request);
-}
-
 static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode, 
-				       char *buf, int length) 
+				       char *buf, int length, void **private) 
 {
 	char *user, *pass;	
 	user=buf;
@@ -340,16 +201,14 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 	}
 }
 
-static void manage_gensec_client_request(enum stdio_helper_mode stdio_helper_mode, 
-					 char *buf, int length) 
+/* This is a bit hairy, but the basic idea is to do a password callback
+   to the calling application.  The callback comes from within gensec */
+
+static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mode, 
+					 char *buf, int length, void **private)  
 {
 	DATA_BLOB in;
-	DATA_BLOB out;
-	char *out_base64;
-	static struct gensec_security gensec_state;
-	NTSTATUS nt_status;
-	BOOL first = False;
-
+	struct gensec_security **gensec_state = (struct gensec_security **)private;
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
@@ -364,11 +223,10 @@ static void manage_gensec_client_request(enum stdio_helper_mode stdio_helper_mod
 
 	if (strncmp(buf, "PW ", 3) == 0) {
 
-		/* We asked for a password and obviously got it :-) */
-
-		opt_password = strndup((const char *)in.data, in.length);
+		(*gensec_state)->password_callback_private = talloc_strndup((*gensec_state)->mem_ctx, 
+									    (const char *)in.data, in.length);
 		
-		if (opt_password == NULL) {
+		if ((*gensec_state)->password_callback_private == NULL) {
 			DEBUG(1, ("Out of memory\n"));
 			x_fprintf(x_stdout, "BH\n");
 			data_blob_free(&in);
@@ -379,39 +237,124 @@ static void manage_gensec_client_request(enum stdio_helper_mode stdio_helper_mod
 		data_blob_free(&in);
 		return;
 	}
+	DEBUG(1, ("Asked for (and expected) a password\n"));
+	x_fprintf(x_stdout, "BH\n");
+	data_blob_free(&in);
+}
+
+/* 
+ * Callback for gensec, to ask the calling application for a password.  Uses the above function
+ * for the stdio part of this.
+ */
+
+static NTSTATUS get_password(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx, 
+			     char **password) 
+{
+	*password = NULL;
+	
+	/* Ask for a password */
+	x_fprintf(x_stdout, "PW\n");
+	gensec_security->password_callback_private = NULL;
+
+	manage_squid_request(NUM_HELPER_MODES /* bogus */, manage_gensec_get_pw_request, &gensec_security);
+	*password = (char *)gensec_security->password_callback_private;
+	if (*password) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode, 
+				  char *buf, int length, void **private) 
+{
+	DATA_BLOB in;
+	DATA_BLOB out = data_blob(NULL, 0);
+	char *out_base64 = NULL;
+	const char *reply_arg = NULL;
+	struct gensec_security **gensec_state = (struct gensec_security **)private;
+	NTSTATUS nt_status;
+	BOOL first = False;
+	const char *reply_code;
+	
+	if (strlen(buf) < 2) {
+		DEBUG(1, ("query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (strlen(buf) > 3) {
+		in = base64_decode_data_blob(buf + 3);
+	} else {
+		in = data_blob(NULL, 0);
+	}
+
 	if (strncmp(buf, "YR", 2) == 0) {
-		if (gensec_state.ops) {
-			gensec_state.ops->end(&gensec_state);
-			gensec_state.ops = NULL;
+		if (gensec_state && *gensec_state) {
+			gensec_end(gensec_state);
+			*gensec_state = NULL;
 		}
+	} else if ( (strncmp(buf, "OK", 2) == 0)) {
+		/* do nothing */
+		data_blob_free(&in);
+		return;
 	} else if ( (strncmp(buf, "TT ", 3) != 0) &&
-	     (strncmp(buf, "AF ", 3) != 0) &&
-	     (strncmp(buf, "NA ", 3) != 0) ) {
+		    (strncmp(buf, "KK ", 3) != 0) &&
+		    (strncmp(buf, "AF ", 3) != 0) &&
+		    (strncmp(buf, "NA ", 3) != 0) && 
+		    (strncmp(buf, "PW ", 3) != 0)) {
 		DEBUG(1, ("SPNEGO request [%s] invalid\n", buf));
 		x_fprintf(x_stdout, "BH\n");
 		data_blob_free(&in);
 		return;
 	}
 
-	if (!opt_password) {
-		x_fprintf(x_stdout, "PW\n");
-		data_blob_free(&in);
-		return;
-	}
-
 	/* setup gensec */
-	if (!gensec_state.ops) {
-		if (stdio_helper_mode == GSS_SPNEGO_CLIENT) {
-			gensec_state.ops = gensec_security_by_oid(OID_SPNEGO);
-		} else if (stdio_helper_mode == NTLMSSP_CLIENT_1) {
-			gensec_state.ops = gensec_security_by_oid(OID_NTLMSSP);
-		} else {
-			exit(1);
+	if (!(gensec_state && *gensec_state)) {
+		switch (stdio_helper_mode) {
+		case GSS_SPNEGO_CLIENT:
+		case NTLMSSP_CLIENT_1:
+			/* setup the client side */
+			
+			if (!NT_STATUS_IS_OK(gensec_client_start(gensec_state))) {
+				exit(1);
+			}
+			gensec_set_username(*gensec_state, opt_username);
+			gensec_set_domain(*gensec_state, opt_domain);		
+			if (opt_password) {
+				if (!NT_STATUS_IS_OK(gensec_set_password(*gensec_state, opt_password))) {
+					DEBUG(1, ("Out of memory\n"));
+					x_fprintf(x_stdout, "BH\n");
+					data_blob_free(&in);
+					return;
+				}
+			} else {
+				gensec_set_password_callback(*gensec_state, get_password, NULL);
+			}
+			
+			break;
+		case GSS_SPNEGO_SERVER:
+		case SQUID_2_5_NTLMSSP:
+			if (!NT_STATUS_IS_OK(gensec_server_start(gensec_state))) {
+				exit(1);
+			}
+			break;
+		default:
+			abort();
 		}
-		gensec_state.user.name = opt_username;
-		gensec_state.user.domain = opt_domain;
-		gensec_state.user.password = opt_password;
-		nt_status = gensec_state.ops->client_start(&gensec_state);
+
+		switch (stdio_helper_mode) {
+		case GSS_SPNEGO_CLIENT:
+		case GSS_SPNEGO_SERVER:
+			nt_status = gensec_start_mech_by_oid(*gensec_state, OID_SPNEGO);
+			break;
+		case NTLMSSP_CLIENT_1:
+		case SQUID_2_5_NTLMSSP:
+			nt_status = gensec_start_mech_by_oid(*gensec_state, OID_NTLMSSP);
+			break;
+		default:
+			abort();
+		}
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("SPENGO login failed to initialise: %s\n", nt_errstr(nt_status)));
@@ -423,33 +366,104 @@ static void manage_gensec_client_request(enum stdio_helper_mode stdio_helper_mod
 		}
 	}
 	
-	/* update */
+	if (strncmp(buf, "PW ", 3) == 0) {
 
-	nt_status = gensec_state.ops->update(&gensec_state, NULL, in, &out);
-	
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-
-		out_base64 = base64_encode_data_blob(out);
-		if (first) {
-			x_fprintf(x_stdout, "YR %s\n", out_base64);
-		} else { 
-			x_fprintf(x_stdout, "KK %s\n", out_base64);
+		if (!NT_STATUS_IS_OK(gensec_set_password(*gensec_state, 
+							 talloc_strndup((*gensec_state)->mem_ctx, 
+									(const char *)in.data, 
+									in.length)))) {
+			DEBUG(1, ("Out of memory\n"));
+			x_fprintf(x_stdout, "BH\n");
+			data_blob_free(&in);
+			return;
 		}
-		SAFE_FREE(out_base64);
 
-
-	} else if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("SPENGO login failed: %s\n", nt_errstr(nt_status)));
-		x_fprintf(x_stdout, "BH\n");
-	} else {
-		x_fprintf(x_stdout, "AF\n");
+		x_fprintf(x_stdout, "OK\n");
+		data_blob_free(&in);
+		return;
 	}
 
+	/* update */
+
+	nt_status = gensec_update(*gensec_state, NULL, in, &out);
+	
+	/* don't leak 'bad password'/'no such user' info to the network client */
+	nt_status = nt_status_squash(nt_status);
+
+	if (out.length) {
+		out_base64 = base64_encode_data_blob(out);
+	} else {
+		out_base64 = NULL;
+	}
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		reply_arg = "*";
+		if (first) {
+			reply_code = "YR";
+		} else if ((*gensec_state)->gensec_role == GENSEC_CLIENT) { 
+			reply_code = "KK";
+		} else if ((*gensec_state)->gensec_role == GENSEC_SERVER) { 
+			reply_code = "TT";
+		} else {
+			abort();
+		}
+
+
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
+		reply_code = "BH";
+		reply_arg = nt_errstr(nt_status);
+		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_UNSUCCESSFUL)) {
+		reply_code = "BH";
+		reply_arg = nt_errstr(nt_status);
+		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
+		reply_code = "NA";
+		reply_arg = nt_errstr(nt_status);
+		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
+	} else if /* OK */ ((*gensec_state)->gensec_role == GENSEC_SERVER) {
+		struct auth_session_info *session_info;
+
+		nt_status = gensec_session_info(*gensec_state, &session_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			reply_code = "BH";
+			reply_arg = nt_errstr(nt_status);
+			DEBUG(1, ("GENSEC failed to retreive the session info: %s\n", nt_errstr(nt_status)));
+		} else {
+
+			reply_code = "AF";
+			reply_arg = talloc_asprintf((*gensec_state)->mem_ctx, 
+						    "%s%s%s", session_info->server_info->domain, 
+						    lp_winbind_separator(), session_info->server_info->account_name);
+			talloc_destroy(session_info->mem_ctx);
+		}
+	} else if ((*gensec_state)->gensec_role == GENSEC_SERVER) {
+		reply_code = "AF";
+		reply_arg = NULL;
+	} else {
+		abort();
+	}
+
+	switch (stdio_helper_mode) {
+	case GSS_SPNEGO_SERVER:
+		if (out_base64) {
+			x_fprintf(x_stdout, "%s %s %s\n", reply_code, out_base64, reply_arg);
+		} else {
+			x_fprintf(x_stdout, "%s %s\n", reply_code, reply_arg);
+		}
+	default:
+		if (out_base64) {
+			x_fprintf(x_stdout, "%s %s\n", reply_code, out_base64);
+		} else {
+			x_fprintf(x_stdout, "%s %s\n", reply_code, reply_arg);
+		}
+	}
+
+	SAFE_FREE(out_base64);
 	return;
 }
 
 static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mode, 
-					 char *buf, int length) 
+					 char *buf, int length, void **private) 
 {
 	char *request, *parameter;	
 	static DATA_BLOB challenge;
@@ -643,7 +657,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	}
 }
 
-static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helper_function fn) 
+static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helper_function fn, void *private) 
 {
 	char buf[SQUID_BUFFER_SIZE+1];
 	int length;
@@ -684,16 +698,16 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helpe
 		return;
 	}
 	
-	fn(helper_mode, buf, length);
+	fn(helper_mode, buf, length, private);
 }
-
 
 static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_function fn) {
 	/* initialize FDescs */
 	x_setbuf(x_stdout, NULL);
 	x_setbuf(x_stderr, NULL);
+	void *private = NULL;
 	while(1) {
-		manage_squid_request(stdio_mode, fn);
+		manage_squid_request(stdio_mode, fn, &private);
 	}
 }
 

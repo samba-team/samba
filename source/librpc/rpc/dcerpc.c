@@ -42,9 +42,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(void)
 	p->mem_ctx = mem_ctx;
 	p->call_id = 1;
 	p->security_state.auth_info = NULL;
-	ZERO_STRUCT(p->security_state.generic_state.user);
-	p->security_state.generic_state.private_data = NULL;
-	p->security_state.generic_state.ops = NULL;
+	p->security_state.generic_state = NULL;
 	p->binding_string = NULL;
 	p->flags = 0;
 	p->srv_max_xmit_frag = 0;
@@ -60,8 +58,8 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
 	if (!p) return;
 	p->reference_count--;
 	if (p->reference_count <= 0) {
-		if (p->security_state.generic_state.ops) {
-			p->security_state.generic_state.ops->end(&p->security_state.generic_state);
+		if (p->security_state.generic_state) {
+			gensec_end(&p->security_state.generic_state);
 		}
 		p->transport.shutdown_pipe(p);
 		talloc_destroy(p->mem_ctx);
@@ -132,7 +130,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	DATA_BLOB auth_blob;
 
 	/* non-signed packets are simpler */
-	if (!p->security_state.auth_info || !p->security_state.generic_state.ops) {
+	if (!p->security_state.auth_info || !p->security_state.generic_state) {
 		return dcerpc_pull(blob, mem_ctx, pkt);
 	}
 
@@ -186,21 +184,19 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	/* check signature or unseal the packet */
 	switch (p->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = p->security_state
-			.generic_state.ops->unseal(&p->security_state.generic_state, 
-						   mem_ctx, 
-						   pkt->u.response.stub_and_verifier.data, 
-						   pkt->u.response.stub_and_verifier.length, 
-						   &auth.credentials);
+		status = gensec_unseal_packet(p->security_state.generic_state, 
+					      mem_ctx, 
+					      pkt->u.response.stub_and_verifier.data, 
+					      pkt->u.response.stub_and_verifier.length, 
+					      &auth.credentials);
 		break;
-
+		
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = p->security_state
-			.generic_state.ops->check_sig(&p->security_state.generic_state, 
-						     mem_ctx, 
-						     pkt->u.response.stub_and_verifier.data, 
-						     pkt->u.response.stub_and_verifier.length, 
-						     &auth.credentials);
+		status = gensec_check_packet(p->security_state.generic_state, 
+					     mem_ctx, 
+					     pkt->u.response.stub_and_verifier.data, 
+					     pkt->u.response.stub_and_verifier.length, 
+					     &auth.credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_NONE:
@@ -232,7 +228,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	struct ndr_push *ndr;
 
 	/* non-signed packets are simpler */
-	if (!p->security_state.auth_info || !p->security_state.generic_state.ops) {
+	if (!p->security_state.auth_info || !p->security_state.generic_state) {
 		return dcerpc_push_auth(blob, mem_ctx, pkt, p->security_state.auth_info);
 	}
 
@@ -257,21 +253,19 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	/* sign or seal the packet */
 	switch (p->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = p->security_state
-			.generic_state.ops->seal(&p->security_state.generic_state, 
-						 mem_ctx, 
-						 ndr->data + DCERPC_REQUEST_LENGTH, 
-						 ndr->offset - DCERPC_REQUEST_LENGTH,
-						 &p->security_state.auth_info->credentials);
+		status = gensec_seal_packet(p->security_state.generic_state, 
+					    mem_ctx, 
+					    ndr->data + DCERPC_REQUEST_LENGTH, 
+					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    &p->security_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = p->security_state
-			.generic_state.ops->sign(&p->security_state.generic_state, 
-						 mem_ctx, 
-						 ndr->data + DCERPC_REQUEST_LENGTH, 
-						 ndr->offset - DCERPC_REQUEST_LENGTH,
-						 &p->security_state.auth_info->credentials);
+		status = gensec_sign_packet(p->security_state.generic_state, 
+					    mem_ctx, 
+					    ndr->data + DCERPC_REQUEST_LENGTH, 
+					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    &p->security_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_NONE:

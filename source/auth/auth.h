@@ -96,6 +96,8 @@ struct auth_serversupplied_info
 struct auth_session_info 
 {
 	TALLOC_CTX *mem_ctx;
+
+	int refcount;
 	/* NT group information taken from the info3 structure */
 	
 	NT_USER_TOKEN *nt_user_token;
@@ -117,7 +119,8 @@ struct auth_context {
 	BOOL challenge_may_be_modified;
 
 	struct auth_methods *challenge_set_method; 
-	/* What order are the various methods in?   Try to stop it changing under us */ 
+
+	/* methods, in the order they should be called */
 	struct auth_methods *auth_method_list;	
 
 	TALLOC_CTX *mem_ctx;
@@ -165,15 +168,6 @@ struct auth_init_function_entry {
 	struct auth_init_function_entry *prev, *next;
 };
 
-struct auth_ntlmssp_state
-{
-	TALLOC_CTX *mem_ctx;
-	struct auth_context *auth_context;
-	struct auth_serversupplied_info *server_info;
-	struct ntlmssp_state *ntlmssp_state;
-};
-
-#define auth_ops __XXX_ERROR_BLA
 struct auth_operations {
 	/* the name of the backend */
 	const char *name;
@@ -188,11 +182,9 @@ struct auth_critical_sizes {
 	int sizeof_auth_operations;
 	int sizeof_auth_methods;
 	int sizeof_auth_context;
-	int sizeof_auth_ntlmssp_state;
 	int sizeof_auth_usersupplied_info;
 	int sizeof_auth_serversupplied_info;
 	int sizeof_auth_str;
-	int sizeof_auth_unistr;
 };
 
 #endif /* _SMBAUTH_H_ */

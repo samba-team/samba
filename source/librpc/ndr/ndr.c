@@ -741,7 +741,7 @@ NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32_t leve
 /*
   pull a struct from a blob using NDR
 */
-NTSTATUS ndr_pull_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+NTSTATUS ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			      NTSTATUS (*fn)(struct ndr_pull *, int , void *))
 {
 	struct ndr_pull *ndr;

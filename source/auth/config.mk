@@ -5,6 +5,8 @@
 [MODULE::auth_sam]
 INIT_OBJ_FILES = \
 		auth/auth_sam.o
+REQUIRED_SUBSYSTEMS = \
+		SAMDB
 # End MODULE auth_sam
 #######################
 
@@ -22,7 +24,6 @@ INIT_OBJ_FILES = \
 INIT_OBJ_FILES = \
 		auth/auth.o
 ADD_OBJ_FILES = \
-		auth/auth_ntlmssp.o \
 		auth/auth_util.o \
 		auth/pampass.o \
 		auth/pass_check.o

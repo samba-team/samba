@@ -54,7 +54,8 @@ SMB_SUBSYSTEM(LIBCLI_AUTH,[],
 		libcli/auth/kerberos_verify.o
 		libcli/auth/clikrb5.o
 		libcli/auth/gensec.o
-		libcli/auth/gensec_ntlmssp.o])
+		libcli/auth/gensec_ntlmssp.o],
+		[], [AUTH SCHANNELDB])
 
 SMB_SUBSYSTEM(LIBCLI_NMB,[],
 		[libcli/unexpected.o

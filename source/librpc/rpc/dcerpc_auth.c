@@ -56,15 +56,14 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	if (!p->security_state.generic_state.ops) {
-		
-		p->security_state.generic_state.ops = gensec_security_by_authtype(auth_type);
-		if (!p->security_state.generic_state.ops) {
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto done;
+	if (!p->security_state.generic_state) {
+		status = gensec_client_start(&p->security_state.generic_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
-		status = p->security_state.generic_state.ops->client_start(&p->security_state.generic_state);
+		status = gensec_start_mech_by_authtype(p->security_state.generic_state, auth_type);
+
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -90,10 +89,10 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
 		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_NONE;
 	}
 
-	status = p->security_state.generic_state.ops->update(&p->security_state.generic_state, mem_ctx,
-							     p->security_state.auth_info->credentials,
-							     &credentials);
-
+	status = gensec_update(p->security_state.generic_state, mem_ctx,
+			       p->security_state.auth_info->credentials,
+			       &credentials);
+	
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
 	}
@@ -105,9 +104,9 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
 		goto done;
 	}
 
-	status = p->security_state.generic_state.ops->update(&p->security_state.generic_state, mem_ctx,
-							     p->security_state.auth_info->credentials,
-							     &credentials);
+	status = gensec_update(p->security_state.generic_state, mem_ctx,
+			       p->security_state.auth_info->credentials,
+			       &credentials);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;

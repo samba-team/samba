@@ -19,9 +19,19 @@ INIT_OBJ_FILES = \
 ADD_OBJ_FILES = \
 		rpc_server/samr/samr_utils.o
 REQUIRED_SUBSYSTEMS = \
+		DCERPC_COMMON \
 		LIBLDB
 #
 # End SUBSYSTEM SAMDB
+################################################
+
+################################################
+# Start SUBSYSTEM SCHANNELDB
+[SUBSYSTEM::SCHANNELDB]
+INIT_OBJ_FILES = \
+		rpc_server/netlogon/schannel_state.o
+#
+# End SUBSYSTEM SCHANNELDB
 ################################################
 
 ################################################
@@ -98,10 +108,9 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_netlogon]
 INIT_OBJ_FILES = \
 		rpc_server/netlogon/dcerpc_netlogon.o
-ADD_OBJ_FILES = \
-		rpc_server/netlogon/schannel_state.o
 REQUIRED_SUBSYSTEMS = \
-		DCERPC_COMMON
+		DCERPC_COMMON \
+		SCHANNELDB
 # End MODULE dcerpc_netlogon
 ################################################
 
@@ -135,10 +144,9 @@ INIT_OBJ_FILES = \
 ADD_OBJ_FILES = \
 		rpc_server/dcerpc_tcp.o \
 		rpc_server/dcesrv_auth.o \
-		rpc_server/dcesrv_crypto.o \
-		rpc_server/dcesrv_crypto_ntlmssp.o \
-		rpc_server/dcesrv_crypto_schannel.o \
 		rpc_server/handles.o
+REQUIRED_SUBSYSTEMS = \
+		LIBCLI_AUTH
 #
 # End SUBSYSTEM DCERPC
 ################################################

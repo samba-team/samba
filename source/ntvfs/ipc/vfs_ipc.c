@@ -243,9 +243,9 @@ static NTSTATUS ipc_open_generic(struct smbsrv_request *req, const char *fname,
 
 	/* tell the RPC layer the session_info */
 	if (req->user_ctx->vuser) {
-		/* 
-		 * TODO:  we need to reference count the entire session_info
-		 */
+		/* The session info is refcount-increased in the 
+		   dcesrv_endpoint_search_connect() function */
+
 		session_info = req->user_ctx->vuser->session_info;
 	}
 
