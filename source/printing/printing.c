@@ -579,10 +579,12 @@ static uint32 print_parse_jobid(char *fname)
  List a unix job in the print database.
 ****************************************************************************/
 
-static void print_unix_job(int snum, print_queue_struct *q)
+static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
 {
-	uint32 jobid = q->job + UNIX_JOB_START;
 	struct printjob pj, *old_pj;
+
+	if (jobid == (uint32)-1)
+		jobid = q->job + UNIX_JOB_START;
 
 	/* Preserve the timestamp on an existing unix print job */
 
@@ -597,11 +599,14 @@ static void print_unix_job(int snum, print_queue_struct *q)
 	pj.status = q->status;
 	pj.size = q->size;
 	pj.spooled = True;
-	pj.smbjob = False;
-	fstrcpy(pj.filename, "");
-	fstrcpy(pj.jobname, q->fs_file);
-	fstrcpy(pj.user, q->fs_user);
-	fstrcpy(pj.queuename, lp_const_servicename(snum));
+	pj.smbjob = (old_pj != NULL ? True : False);
+	fstrcpy(pj.filename, old_pj ? old_pj->filename : "");
+	if (jobid < UNIX_JOB_START)
+		fstrcpy(pj.jobname, old_pj ? old_pj->jobname : "Remote Downlevel Document");
+	else
+		fstrcpy(pj.jobname, old_pj ? old_pj->jobname : q->fs_file);
+	fstrcpy(pj.user, old_pj ? old_pj->user : q->fs_user);
+	fstrcpy(pj.queuename, old_pj ? old_pj->queuename : lp_const_servicename(snum));
 
 	pjob_store(snum, jobid, &pj);
 }
@@ -879,7 +884,7 @@ static void print_queue_update(int snum)
 
 		if (jobid == (uint32)-1) {
 			/* assume its a unix print job */
-			print_unix_job(snum, &queue[i]);
+			print_unix_job(snum, &queue[i], jobid);
 			continue;
 		}
 
@@ -889,7 +894,7 @@ static void print_queue_update(int snum)
 			/* err, somethings wrong. Probably smbd was restarted
 			   with jobs in the queue. All we can do is treat them
 			   like unix jobs. Pity. */
-			print_unix_job(snum, &queue[i]);
+			print_unix_job(snum, &queue[i], jobid);
 			continue;
 		}
 
