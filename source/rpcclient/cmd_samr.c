@@ -867,7 +867,6 @@ void cmd_sam_create_dom_alias(struct client_info *info, int argc, char *argv[])
 	                        acct_name, acct_desc, &alias_rid) : False;
 
 	res = res ? samr_close( &pol_dom) : False;
-
 	res = res ? samr_close( &sam_pol) : False;
 
 	if (res && res1)
@@ -1287,7 +1286,6 @@ void cmd_sam_create_dom_group(struct client_info *info, int argc, char *argv[])
 	                        acct_name, acct_desc, &group_rid) : False;
 
 	res = res ? samr_close( &pol_dom) : False;
-
 	res = res ? samr_close( &sam_pol) : False;
 
 	if (res && res1)
@@ -1441,9 +1439,8 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 				sam_display_group_members);
 	}
 
-	res = res ? samr_close( &sam_pol) : False;
-
 	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
 
 	if (res1)
 	{
@@ -1526,9 +1523,8 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 				sam_display_group_info);
 	}
 
-	res = res ? samr_close( &sam_pol) : False;
-
 	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
 
 	if (res1)
 	{
@@ -1649,8 +1645,8 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 		res1 = False;
 	}
 
-	res = res ? samr_close( &sam_pol) : False;
 	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
 
 	if (res1)
 	{
@@ -1771,9 +1767,9 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 					    switch_value, rid[0], usr);
 		}
 	}
-	res = res ? samr_close( &sam_pol) : False;
 
 	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
 
 	if (res1)
 	{
@@ -1956,9 +1952,9 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 					    switch_value, rid[0], usr);
 		}
 	}
-	res = res ? samr_close( &sam_pol) : False;
 
 	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
 
 	if (res1)
 	{
@@ -2147,9 +2143,8 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 				sam_display_alias_members);
 	}
 
-	res = res ? samr_close( &sam_pol) : False;
-
 	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
 
 	if (res1)
 	{
@@ -2232,9 +2227,8 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 				sam_display_alias_info);
 	}
 
-	res = res ? samr_close( &sam_pol) : False;
-
 	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
 
 	if (res1)
 	{

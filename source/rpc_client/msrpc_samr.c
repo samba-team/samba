@@ -418,8 +418,8 @@ BOOL msrpc_sam_query_user( const char* srv_name,
 		res1 = False;
 	}
 
-	res = res ? samr_close( &sam_pol) : False;
 	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
 
 	return res1;
 }
@@ -549,9 +549,8 @@ BOOL sam_query_dominfo(const char* srv_name,
 	/* send a samr 0x8 command */
 	res2 = res ? samr_query_dom_info( &pol_dom, switch_value, ctr) : False;
 
-	res1 = res1 ? samr_close( &sam_pol) : False;
-
-	res = res ? samr_close( &pol_dom) : False;
+	res1 = res1 ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
 
 	if (res2)
 	{
@@ -1067,8 +1066,8 @@ uint32 msrpc_sam_enum_aliases( const char* srv_name,
 		}
 	}
 
-	res = res ? samr_close(&sam_pol) : False;
 	res = res ? samr_close(&pol_dom) : False;
+	res = res ? samr_close(&sam_pol) : False;
 
 	if (res)
 	{
@@ -1646,8 +1645,8 @@ BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 	res1 = res ? samr_query_dispinfo( &pol_dom, switch_value, 
 		    num_entries, ctr) : False;
 
-	res = res ? samr_close(&sam_pol) : False;
 	res = res ? samr_close(&pol_dom) : False;
+	res = res ? samr_close(&sam_pol) : False;
 
 	if (res1 && disp_fn != NULL)
 	{
