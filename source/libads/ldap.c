@@ -178,6 +178,19 @@ int ads_connect(ADS_STRUCT *ads)
 
 
 /*
+  do a general ADS search
+*/
+int ads_search(ADS_STRUCT *ads, void **res, 
+	       const char *exp, 
+	       const char **attrs)
+{
+	*res = NULL;
+	return ldap_search_s(ads->ld, ads->bind_path, 
+			     LDAP_SCOPE_SUBTREE, exp, (char **)attrs, 0, (LDAPMessage **)res);
+}
+
+
+/*
   find a machine account given a hostname 
 */
 int ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
@@ -188,9 +201,7 @@ int ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 	/* the easiest way to find a machine account anywhere in the tree
 	   is to look for hostname$ */
 	asprintf(&exp, "(samAccountName=%s$)", host);
-	*res = NULL;
-	ret = ldap_search_s(ads->ld, ads->bind_path, 
-			    LDAP_SCOPE_SUBTREE, exp, NULL, 0, (LDAPMessage **)res);
+	ret = ads_search(ads, res, exp, NULL);
 	free(exp);
 	return ret;
 }
@@ -320,7 +331,6 @@ void ads_dump(ADS_STRUCT *ads, void *res)
 	char *field;
 	LDAPMessage *msg;
 	BerElement *b;
-	char *this_dn;
 	struct {
 		char *name;
 		void (*handler)(const char *, struct berval **);
@@ -332,12 +342,6 @@ void ads_dump(ADS_STRUCT *ads, void *res)
     
 	for (msg = ldap_first_entry(ads->ld, (LDAPMessage *)res); 
 	     msg; msg = ldap_next_entry(ads->ld, msg)) {
-		this_dn = ldap_get_dn(ads->ld, (LDAPMessage *)res);
-		if (this_dn) {
-			printf("Dumping: %s\n", this_dn);
-		}
-		ldap_memfree(this_dn);
-
 		for (field = ldap_first_attribute(ads->ld, msg, &b); 
 		     field;
 		     field = ldap_next_attribute(ads->ld, msg, b)) {

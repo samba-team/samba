@@ -76,6 +76,69 @@ int net_ads_usage(void)
 	return -1;
 }
 
+	
+
+static ADS_STRUCT *ads_startup(void)
+{
+	ADS_STRUCT *ads;
+	int rc;
+	ads = ads_init(NULL, NULL, NULL);
+
+	rc = ads_connect(ads);
+	if (rc) {
+		d_printf("ads_connect: %s\n", ads_errstr(rc));
+		return NULL;
+	}
+	return ads;
+}
+
+
+
+static int net_ads_user(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	int rc;
+	void *res;
+	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
+
+	if (!(ads = ads_startup())) return -1;
+	rc = ads_search(ads, &res, "(objectclass=user)", attrs);
+	if (rc) {
+		d_printf("ads_search: %s\n", ads_errstr(rc));
+		return -1;
+	}
+
+	if (ads_count_replies(ads, res) == 0) {
+		d_printf("No users found\n");
+		return -1;
+	}
+
+	ads_dump(ads, res);
+	return 0;
+}
+
+static int net_ads_group(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	int rc;
+	void *res;
+	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
+
+	if (!(ads = ads_startup())) return -1;
+	rc = ads_search(ads, &res, "(objectclass=group)", attrs);
+	if (rc) {
+		d_printf("ads_search: %s\n", ads_errstr(rc));
+		return -1;
+	}
+
+	if (ads_count_replies(ads, res) == 0) {
+		d_printf("No groups found\n");
+		return -1;
+	}
+
+	ads_dump(ads, res);
+	return 0;
+}
 
 static int net_ads_status(int argc, const char **argv)
 {
@@ -84,13 +147,7 @@ static int net_ads_status(int argc, const char **argv)
 	extern pstring global_myname;
 	void *res;
 
-	ads = ads_init(NULL, NULL, NULL);
-
-	rc = ads_connect(ads);
-	if (rc) {
-		d_printf("ads_connect: %s\n", ads_errstr(rc));
-		return -1;
-	}
+	if (!(ads = ads_startup())) return -1;
 
 	rc = ads_find_machine_acct(ads, &res, global_myname);
 	if (rc) {
@@ -114,16 +171,10 @@ static int net_ads_leave(int argc, const char **argv)
 	int rc;
 	extern pstring global_myname;
 
+	if (!(ads = ads_startup())) return -1;
+
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
-		return -1;
-	}
-
-	ads = ads_init(NULL, NULL, NULL);
-
-	rc = ads_connect(ads);
-	if (rc) {
-		d_printf("ads_connect: %s\n", ads_errstr(rc));
 		return -1;
 	}
 
@@ -154,13 +205,7 @@ static int net_ads_join(int argc, const char **argv)
 
 	password = generate_random_password(15);
 
-	ads = ads_init(NULL, NULL, NULL);
-
-	rc = ads_connect(ads);
-	if (rc) {
-		d_printf("ads_connect: %s\n", ads_errstr(rc));
-		return -1;
-	}
+	if (!(ads = ads_startup())) return -1;
 
 	rc = ads_join_realm(ads, global_myname);
 	if (rc) {
@@ -190,6 +235,8 @@ int net_ads(int argc, const char **argv)
 		{"JOIN", net_ads_join},
 		{"LEAVE", net_ads_leave},
 		{"STATUS", net_ads_status},
+		{"USER", net_ads_user},
+		{"GROUP", net_ads_group},
 		{NULL, NULL}
 	};
 	
