@@ -1230,12 +1230,12 @@ tt(	browseable = Yes)
 tt(	browseable = No)
 
 label(casesensitive)
-dit(bf(case sensitive (G)))
+dit(bf(case sensitive (S)))
 
 See the discussion in the section link(bf(NAME MANGLING))(NAMEMANGLING).
 
 label(casesignames)
-dit(bf(casesignames (G)))
+dit(bf(casesignames (S)))
 
 Synonym for link(bf("case sensitive"))(casesensitive).
 
@@ -5178,7 +5178,7 @@ tt(	shared mem size = 1048576)
 tt(	shared mem size = 5242880 ; Set to 5mb for a large number of files.)
 
 label(shortpreservecase)
-dit(bf(short preserve case (G)))
+dit(bf(short preserve case (S)))
 
 This boolean parameter controls if new files which conform to 8.3
 syntax, that is all in upper case and of suitable length, are created
