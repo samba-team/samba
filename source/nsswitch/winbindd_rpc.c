@@ -106,7 +106,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			   This should really be made into a 'winbind
 			   force group' smb.conf parameter or
 			   something like that. */
-			(*info)[i].user_sid 
+			(*info)[i].group_sid 
 				= rid_to_talloced_sid(domain, 
 						      mem_ctx, 
 						      DOMAIN_GROUP_RID_USERS);
