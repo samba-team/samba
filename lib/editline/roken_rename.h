@@ -44,5 +44,11 @@
 #ifndef HAVE_STRDUP
 #define strdup _editline_strdup
 #endif
+#ifndef HAVE_ASPRINTF
+#define snprintf _editline_snprintf
+#endif
+#ifndef HAVE_ASPRINTF
+#define asprintf _editline_asprintf
+#endif
 
 #endif /* __roken_rename_h__ */
