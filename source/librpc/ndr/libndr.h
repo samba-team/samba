@@ -207,6 +207,9 @@ enum ndr_err_code {
 #define ndr_size_NTTIME(t, p, flags) ndr_size_uint64(t, p, flags)
 #define ndr_size_NTTIME_1sec(t, p, flags) ndr_size_NTTIME(t, p, flags)
 
+#define ndr_size_WERROR(t, p, flags) ndr_size_uint32(t, p, flags)
+#define ndr_size_NTSTATUS(t, p, flags) ndr_size_uint32(t, p, flags)
+
 /* these are used to make the error checking on each element in libndr
    less tedious, hopefully making the code more readable */
 #define NDR_CHECK(call) do { NTSTATUS _status; \
