@@ -1,3 +1,7 @@
+Sat Mar 13 23:31:35 1999  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (SOURCES): add glob.c
+
 Thu Mar 11 15:02:21 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* iruserok.c: move innetgr() to separate file
