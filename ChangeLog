@@ -1,3 +1,13 @@
+2003-03-17  Assar Westerlund  <assar@kth.se>
+
+	* kdc/kdc.8: document --kerberos4-cross-realm
+	* kdc/kerberos4.c: pay attention to enable_v4_cross_realm
+	* kdc/kdc_locl.h (enable_v4_cross_realm): add
+	* kdc/524.c (encode_524_response): check the enable_v4_cross_realm
+	flag before giving out v4 tickets for foreign v5 principals
+	* kdc/config.c: add --enable-kerberos4-cross-realm option (default
+	to off)
+
 2003-03-17  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/Makefile.am (man_MANS) += krb5_aname_to_localname.3
