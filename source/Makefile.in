@@ -894,11 +894,17 @@ python_common_proto:
 		$(PY_COMMON_PROTO_OBJ)
 
 python_ext: $(PYTHON_OBJS)
+	@if test -z "$(PYTHON)"; then \
+		echo Use the option --with-python to configure python; \
+		exit 1; fi
 	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
-	LIBS="$(LIBS)" \
+x1	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py build
 
 python_install: $(PYTHON_OBJS)
+	@if test -z "$(PYTHON)"; then \
+		echo Use the option --with-python to configure python; \
+		exit 1; fi
 	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
 	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py install
