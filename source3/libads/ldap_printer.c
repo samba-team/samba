@@ -85,8 +85,7 @@ static BOOL map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		return False;
 
 	if (value->size && *((smb_ucs2_t *) value->data_p)) {
-		pull_ucs2_talloc(ctx, (void **) &str_value, 
-				 (const smb_ucs2_t *) value->data_p);
+		pull_ucs2_talloc(ctx, &str_value, (const smb_ucs2_t *) value->data_p);
 		status = ads_mod_str(ctx, mods, value->valuename, str_value);
 		return ADS_ERR_OK(status);
 	}
@@ -155,9 +154,8 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 
 		cur_str = (smb_ucs2_t *) value->data_p;
 		for (i=0; i < num_vals; i++)
-			cur_str += pull_ucs2_talloc(ctx, 
-						    (void **) &str_values[i], 
-						    cur_str);
+			cur_str += pull_ucs2_talloc(ctx, &str_values[i],
+			                            cur_str);
 
 		status = ads_mod_strlist(ctx, mods, value->valuename, 
 					 (const char **) str_values);
