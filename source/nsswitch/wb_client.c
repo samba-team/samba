@@ -258,6 +258,8 @@ int winbind_initgroups(char *user, gid_t gid)
 
 	fstrcpy(request.data.username, user);
 
+	ZERO_STRUCT(response);
+
 	result = winbindd_request(WINBINDD_INITGROUPS, &request, &response);
 
 	if (result == NSS_STATUS_SUCCESS) {
@@ -294,6 +296,10 @@ int winbind_initgroups(char *user, gid_t gid)
 			return -1;
 		}
 	}
+
+	/* Free response data if necessary */
+
+	safe_free(response.extra_data);
 
 	return result;
 }
