@@ -5,6 +5,7 @@
 2000-04-03  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am: set version to 10:0:0
+	* lib/45/mk_req.c (krb_mk_req): const-ize the arguments
 	
 2000-03-30  Assar Westerlund  <assar@sics.se>
 
