@@ -17,13 +17,12 @@ string, with one character per field."""
 __author__ = 'Martin Pool <mbp@sourcefrog.net>'
 
 import unittest
-# import tdbutil
+import oldtdbutil
 import samba.tdbpack
 
-packer = samba.tdbpack.pack
-unpacker = samba.tdbpack.unpack
-
-
+both_unpackers = (samba.tdbpack.unpack, oldtdbutil.unpack)
+both_packers = (samba.tdbpack.pack, oldtdbutil.pack)
+    
 class PackTests(unittest.TestCase):
     symm_cases = [('B', ['hello' * 51], '\xff\0\0\0' + 'hello' * 51),
              ('w', [42], '\x2a\0'),
@@ -78,11 +77,13 @@ class PackTests(unittest.TestCase):
     def test_symmetric(self):
         """Cookbook of symmetric pack/unpack tests
         """
-        for format, values, expected in self.symm_cases:
-            self.assertEquals(packer(format, values), expected)
-            out, rest = unpacker(format, expected)
-            self.assertEquals(rest, '')
-            self.assertEquals(list(values), list(out))
+        for packer in both_packers:
+            for unpacker in both_unpackers:
+                for format, values, expected in self.symm_cases:
+                    self.assertEquals(packer(format, values), expected)
+                    out, rest = unpacker(format, expected)
+                    self.assertEquals(rest, '')
+                    self.assertEquals(list(values), list(out))
         
     
     def test_pack(self):
@@ -100,25 +101,30 @@ class PackTests(unittest.TestCase):
                  # as if you called list()
                  ]
 
-        for format, values, expected in cases:
-            self.assertEquals(packer(format, values), expected)
+        for packer in both_packers:
+            for format, values, expected in cases:
+                self.assertEquals(packer(format, values), expected)
 
     def test_unpack_extra(self):
         # Test leftover data
-        for format, values, packed in self.symm_cases:
-            out, rest = unpacker(format, packed + 'hello sailor!')
-            self.assertEquals(rest, 'hello sailor!')
-            self.assertEquals(list(values), list(out))
+        for unpacker in both_unpackers:
+            for format, values, packed in self.symm_cases:
+                out, rest = unpacker(format, packed + 'hello sailor!')
+                self.assertEquals(rest, 'hello sailor!')
+                self.assertEquals(list(values), list(out))
         
 
     def test_unpack(self):
         """Cookbook of tricky unpack tests"""
         cases = [
+                 # Apparently I couldn't think of any tests that weren't
+                 # symmetric :-/
                  ]
-        for format, values, expected in cases:
-            out, rest = unpacker(format, expected)
-            self.assertEquals(rest, '')
-            self.assertEquals(list(values), list(out))
+        for unpacker in both_unpackers:
+            for format, values, expected in cases:
+                out, rest = unpacker(format, expected)
+                self.assertEquals(rest, '')
+                self.assertEquals(list(values), list(out))
 
 
     def test_pack_failures(self):
@@ -141,7 +147,7 @@ class PackTests(unittest.TestCase):
                  ('f', [2], TypeError),
                  ('P', [None], TypeError),
                  ('P', (), IndexError),
-                 ('f', [packer], TypeError),
+                 ('f', [hex], TypeError),
                  ('fw', ['hello'], IndexError),
                  ('f', [u'hello'], TypeError),
                  ('B', [2], TypeError),
@@ -153,10 +159,11 @@ class PackTests(unittest.TestCase):
                  ('fQ', ['2'], IndexError),
                  (2, [2], TypeError),
                  ({}, {}, TypeError)]
-        for format, values, throwable_class in cases:
-            def do_pack():
-                packer(format, values)
-            self.assertRaises(throwable_class, do_pack)
+        for packer in both_packers:
+            for format, values, throwable_class in cases:
+                def do_pack():
+                    packer(format, values)
+                self.assertRaises(throwable_class, do_pack)
 
 
     def test_unpack_failures(self):
@@ -182,10 +189,11 @@ class PackTests(unittest.TestCase):
                  ('B', 'foobar', IndexError),
                  ('BB', '\x01\0\0\0a\x01', IndexError),
                  ]
-        
-        for format, values, throwable_class in cases:
-            def do_unpack():
-                unpacker(format, values)
+
+        for unpacker in both_unpackers:
+            for format, values, throwable_class in cases:
+                def do_unpack():
+                    unpacker(format, values)
             self.assertRaises(throwable_class, do_unpack)
 
         
