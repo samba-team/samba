@@ -59,7 +59,6 @@ struct pyconv py_DRIVER_INFO_6[] = {
 	{ "data_file", PY_UNISTR, offsetof(DRIVER_INFO_6, datafile) },
 	{ "config_file", PY_UNISTR, offsetof(DRIVER_INFO_6, configfile) },
 	{ "help_file", PY_UNISTR, offsetof(DRIVER_INFO_6, helpfile) },
-	/* dependentfiles */
 	{ "monitor_name", PY_UNISTR, offsetof(DRIVER_INFO_6, monitorname) },
 	{ "default_datatype", PY_UNISTR, offsetof(DRIVER_INFO_6, defaultdatatype) },
 	/* driver_date */
