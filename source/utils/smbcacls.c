@@ -281,10 +281,12 @@ static SEC_DESC *sec_desc_parse(char *str)
 
 		if (strncmp(tok,"REVISION:", 9) == 0) {
 			revision = strtol(tok+9, NULL, 16);
+			continue;
 		}
 
 		if (strncmp(tok,"TYPE:", 5) == 0) {
 			type = strtol(tok+5, NULL, 16);
+			continue;
 		}
 
 		if (strncmp(tok,"OWNER:", 6) == 0) {
@@ -294,6 +296,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 				printf("Failed to parse owner sid\n");
 				return NULL;
 			}
+			continue;
 		}
 
 		if (strncmp(tok,"GROUP:", 6) == 0) {
@@ -303,6 +306,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 				printf("Failed to parse group sid\n");
 				return NULL;
 			}
+			continue;
 		}
 
 		if (strncmp(tok,"ACL:", 4) == 0) {
@@ -312,7 +316,11 @@ static SEC_DESC *sec_desc_parse(char *str)
 				printf("Failed to parse ACL\n");
 				return NULL;
 			}
+			continue;
 		}
+
+		printf("Failed to parse security descriptor\n");
+		return NULL;
 	}
 
 	ret = make_sec_desc(revision, owner_sid, grp_sid, 
@@ -405,11 +413,8 @@ static void cacl_set(struct cli_state *cli, char *filename,
 	unsigned sd_size;
 
 	sd = sec_desc_parse(acl);
-	if (!sd) {
-		printf("Failed to parse security descriptor\n");
-		return;
-	}
 
+	if (!sd) return;
 	if (test_args) return;
 
 	/* the desired access below is the only one I could find that works with
@@ -426,6 +431,8 @@ static void cacl_set(struct cli_state *cli, char *filename,
 	switch (mode) {
 	case ACL_DELETE:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
+			BOOL found = False;
+
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sec_ace_equal(&sd->dacl->ace[i],
 						  &old->dacl->ace[j])) {
@@ -440,8 +447,16 @@ static void cacl_set(struct cli_state *cli, char *filename,
 						old->dacl = NULL;
 						old->off_dacl = 0;
 					}
+					found = True;
 					break;
 				}
+			}
+
+			if (!found) {
+				fstring str;
+
+				SidToString(str, &sd->dacl->ace[i].sid);
+				printf("ACL for SID %s not found\n", str);
 			}
 		}
 		break;
@@ -475,10 +490,9 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		break;
 
 	case ACL_SET:
-		free_sec_desc(&old);
-		old = sd;
+ 		free_sec_desc(&old);
+ 		old = sd;
 		break;
-		
 	}
 
 	if (sd != old) {
