@@ -215,9 +215,9 @@ AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
 17)
 
 AC_BROKEN(chown daemon err errx fchown flock getcwd)
-AC_BROKEN(getdtablesize getusershell inet_aton initgroups)
+AC_BROKEN(getdtablesize getopt getusershell inet_aton initgroups)
 AC_BROKEN(lstat memmove mkstemp putenv rcmd readv setegid setenv)
-AC_BROKEN(seteuid strcasecmp strdup strerror strftime)
+AC_BROKEN(seteuid setenv seteuid strcasecmp strdup strerror strftime)
 AC_BROKEN(strlwr strnlen strsep strtok_r strupr unsetenv)
 AC_BROKEN(verr verrx vsyslog vwarn vwarnx warn warnx writev)
 
