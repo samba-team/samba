@@ -1,3 +1,12 @@
+1999-05-21  Assar Westerlund  <assar@sics.se>
+
+	* ftp/extern.h (sendrequest): update prototype
+
+	* ftp/cmds.c: update calls to sendrequest and recvrequest to send
+ 	"b" when appropriate
+
+	* ftp/ftp.c (sendrequest): add argument for mode to open file in.
+
 1999-05-08  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpcmd.y: rename getline -> ftpd_getline

@@ -1,3 +1,13 @@
+1999-05-21  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_default_principal.c (get_logname): also try
+ 	$USERNAME
+	
+	* lib/asn1/Makefile.am (asn1_files): add $(EXEEXT)
+
+	* lib/krb5/principal.c (USE_RESOLVER): try to define only if we
+	have a libresolv (currently by checking for res_search)
+
 1999-05-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/connect.c (handle_tcp): remove %-escapes in request

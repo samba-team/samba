@@ -1,3 +1,7 @@
+1999-05-21  Assar Westerlund  <assar@sics.se>
+
+	* server.c (handle_v5): read sendauth version correctly.
+
 1999-05-14  Assar Westerlund  <assar@sics.se>
 
 	* version4.c (error_code): try to handle really old krb4

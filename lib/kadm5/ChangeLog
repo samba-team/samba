@@ -1,3 +1,7 @@
+1999-05-21  Assar Westerlund  <assar@sics.se>
+
+	* init_c.c (get_cred_cache): use $USERNAME
+
 1999-05-05  Johan Danielsson  <joda@pdc.kth.se>
 
 	* send_recv.c: cleanup _kadm5_client_{send,recv}
