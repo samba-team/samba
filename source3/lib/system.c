@@ -106,13 +106,28 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 A send wrapper that will deal with EINTR.
 ********************************************************************/
 
-int sys_send(int s, const void *msg, size_t len, int flags)
+ssize_t sys_send(int s, const void *msg, size_t len, int flags)
 {
 	ssize_t ret;
 
 	do {
 		errno = 0;
 		ret = send(s, msg, len, flags);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A recvfrom wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
+{
+	ssize_t ret;
+
+	do {
+		errno = 0;
+		ret = recvfrom(s, buf, len, flags, from, fromlen);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
 }
