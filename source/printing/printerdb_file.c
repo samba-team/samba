@@ -188,14 +188,17 @@ BOOL file_printerdb_init(char *param)
 	TALLOC_CTX *mem_ctx = talloc_init("file_printerdb_init");
 	int i;
 	BOOL result = False;
+	char *default_dir;
 
 	if (mem_ctx == NULL)
 		goto done;
 
-	file_root = talloc_asprintf(mem_ctx, "%s/%s", dyn_LIBDIR, "printerdb");
+	default_dir = talloc_asprintf(mem_ctx, "%s/%s", dyn_LOCKDIR, "printerdb");
 
 	if ((param != NULL) && (param[0] != '\0')) {
 		file_root = SMB_STRDUP(param);
+	} else {
+		file_root = SMB_STRDUP(default_dir);
 	}
 
 	if (file_root == NULL) {
