@@ -2154,6 +2154,71 @@ static BOOL run_trans2test(int dummy)
 	return correct;
 }
 
+
+/****************************************************************************
+check for existance of a trans2 call
+****************************************************************************/
+static BOOL scan_trans2(struct cli_state *cli, int op, int level)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = op;
+	pstring param;
+	char *rparam=NULL, *rdata=NULL;
+
+	param_len = 6;
+	SSVAL(param, 0, level);
+	SSVAL(param, 2, level);
+	SSVAL(param, 4, level);
+
+	if (!cli_send_trans(cli, SMBtrans2, 
+                            NULL,                           /* name */
+                            -1, 0,                          /* fid, flags */
+                            &setup, 1, 0,                   /* setup, length, max */
+                            param, param_len, 2,            /* param, length, max */
+                            NULL, data_len, cli->max_xmit   /* data, length, max */
+                           )) {
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+                               &rparam, &param_len,
+                               &rdata, &data_len)) {
+		printf("recv failed op=%d level=%d %s\n", op, level, cli_errstr(cli));
+		return False;
+	}
+
+	if (rdata) free(rdata);
+	if (rparam) free(rparam);
+	return True;
+}
+
+
+static BOOL run_trans2_scan(int dummy)
+{
+	static struct cli_state cli;
+	int op, level;
+
+	printf("starting trans2 scan test\n");
+
+	if (!open_connection(&cli)) {
+		return False;
+	}
+
+	for (op=1; op<200; op++) {
+		for (level = 1; level < 300; level++) {
+			scan_trans2(&cli, op, level);
+		}
+	}
+
+	close_connection(&cli);
+
+	printf("trans2 scan finished\n");
+	return True;
+}
+
+
+
 /*
   This checks new W2K calls.
 */
@@ -3162,6 +3227,7 @@ static struct {
 	{"OPEN", run_opentest, 0},
 	{"DELETE", run_deletetest, 0},
 	{"W2K", run_w2ktest, 0},
+	{"TRANS2SCAN", run_trans2_scan, 0},
 	{NULL, NULL, 0}};
 
 
