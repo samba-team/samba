@@ -191,14 +191,16 @@ krb5_init_context(krb5_context *context)
     krb5_error_code ret;
     char **files;
 
+    *context = NULL;
+
     p = calloc(1, sizeof(*p));
     if(!p)
 	return ENOMEM;
 
     p->mutex = malloc(sizeof(HEIMDAL_MUTEX));
     if (p->mutex == NULL) {
-	ret = ENOMEM;
-	goto out;
+	free(p);
+	return ENOMEM;
     }
     HEIMDAL_MUTEX_init(p->mutex);
 
@@ -241,10 +243,9 @@ out:
 void KRB5_LIB_FUNCTION
 krb5_free_context(krb5_context context)
 {
-    if (context->mutex) {
-	HEIMDAL_MUTEX_destroy(context->mutex);
-	free(context->mutex);
-    }
+    krb5_clear_error_string(context);
+    HEIMDAL_MUTEX_destroy(context->mutex);
+    free(context->mutex);
     if (context->default_cc_name)
 	free(context->default_cc_name);
     free(context->etypes);
@@ -254,7 +255,6 @@ krb5_free_context(krb5_context context)
     free_error_table (context->et_list);
     free(context->cc_ops);
     free(context->kt_types);
-    krb5_clear_error_string(context);
     if(context->warn_dest != NULL)
 	krb5_closelog(context, context->warn_dest);
     krb5_set_extra_addresses(context, NULL);
