@@ -40,6 +40,11 @@
 
 RCSID("$Id$");
 
+/*
+ * Take the `body' and encode it into `padata' using the credentials
+ * in `creds'.
+ */
+
 static krb5_error_code
 make_pa_tgs_req(krb5_context context, 
 		krb5_auth_context ac,
@@ -47,15 +52,39 @@ make_pa_tgs_req(krb5_context context,
 		PA_DATA *padata,
 		krb5_creds *creds)
 {
-    unsigned char buf[1024];
+    u_char *buf;
+    size_t buf_size;
     size_t len;
     krb5_data in_data;
     krb5_error_code ret;
 
-    encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
-			body, &len);
+    buf_size = 1024;
+    buf = malloc (buf_size);
+    if (buf == NULL)
+	return ENOMEM;
+
+    do {
+	ret = encode_KDC_REQ_BODY(buf + buf_size - 1, buf_size,
+				  body, &len);
+	if (ret){
+	    if (ret == ASN1_OVERFLOW) {
+		u_char *tmp;
+
+		buf_size *= 2;
+		tmp = realloc (buf, buf_size);
+		if (tmp == NULL) {
+		    ret = ENOMEM;
+		    goto out;
+		}
+		buf = tmp;
+	    } else {
+		goto out;
+	    }
+	}
+    } while (ret == ASN1_OVERFLOW);
+
     in_data.length = len;
-    in_data.data = buf + sizeof(buf) - len;
+    in_data.data   = buf + buf_size - len;
     {
 	Ticket ticket;
 	ret = decode_Ticket(creds->ticket.data, creds->ticket.length, 
@@ -74,16 +103,88 @@ make_pa_tgs_req(krb5_context context,
 	}
 	free_Ticket(&ticket);
 	    
-	
 	ret = krb5_mk_req_extended(context, &ac, 0, &in_data, creds, 
 				   &padata->padata_value);
 
     }
+out:
+    free (buf);
     if(ret)
 	return ret;
     padata->padata_type = pa_tgs_req;
     return 0;
 }
+
+/*
+ *
+ */
+
+static krb5_error_code
+init_tgs_req1(krb5_context context,
+	      krb5_authdata *authdata,
+	      krb5_creds *krbtgt,
+	      krb5_keyblock **subkey,
+	      TGS_REQ *t)
+{
+    krb5_error_code ret;
+    krb5_auth_context ac;
+    krb5_keyblock *key = NULL;
+
+    ret = krb5_auth_con_init(context, &ac);
+    if(ret)
+	return ret;
+    ret = krb5_generate_subkey (context, &krbtgt->session, &key);
+    if (ret)
+	goto out;
+    ret = krb5_auth_con_setlocalsubkey(context, ac, key);
+    if (ret)
+	goto out;
+
+    if(authdata->len){
+	size_t len;
+	unsigned char *buf;
+	krb5_enctype etype;
+
+	len = length_AuthorizationData(authdata);
+	buf = malloc(len);
+	if (buf == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+	ret = encode_AuthorizationData(buf + len - 1, len, authdata, &len);
+	ALLOC(t->req_body.enc_authorization_data, 1);
+	if (t->req_body.enc_authorization_data == NULL) {
+	    free (buf);
+	    ret = ENOMEM;
+	    goto out;
+	}
+	krb5_keytype_to_etype(context, key->keytype, &etype);
+	krb5_encrypt_EncryptedData(context, buf, len, etype, 0, 
+				   key, t->req_body.enc_authorization_data);
+	free (buf);
+    } else {
+	t->req_body.enc_authorization_data = NULL;
+    }
+
+    ret = make_pa_tgs_req(context,
+			  ac,
+			  &t->req_body, 
+			  t->padata->val,
+			  krbtgt);
+out:
+    if (ret == 0)
+	*subkey = key;
+    else
+	krb5_free_keyblock (context, key);
+    krb5_auth_con_free(context, ac);
+    return ret;
+}
+
+/*
+ * Create a tgs-req in `t' with `addresses', `flags', `second_ticket'
+ * (if not-NULL), `in_creds', `krbtgt', and returning the generated
+ * subkey in `subkey'.
+ */
 
 static krb5_error_code
 init_tgs_req (krb5_context context,
@@ -103,19 +204,19 @@ init_tgs_req (krb5_context context,
     t->pvno = 5;
     t->msg_type = krb_tgs_req;
     if (in_creds->session.keytype) {
-	krb5_enctype *foo;
+	krb5_enctype *etypes;
 
 	ret = krb5_keytype_to_etypes(context,
 				     in_creds->session.keytype,
-				     &foo);
+				     &etypes);
 	if (ret)
 	    return ret;
 
 	ret = krb5_init_etype(context,
 			      &t->req_body.etype.len,
 			      &t->req_body.etype.val,
-			      foo);
-	free (foo);
+			      etypes);
+	free (etypes);
     } else {
 	ret = krb5_init_etype(context, 
 			      &t->req_body.etype.len, 
@@ -123,27 +224,27 @@ init_tgs_req (krb5_context context,
 			      NULL);
     }
     if (ret)
-	goto fail;
+	goto out;
     t->req_body.addresses = addresses;
     t->req_body.kdc_options = flags.b;
     ret = copy_Realm(&in_creds->server->realm, &t->req_body.realm);
     if (ret)
-	goto fail;
+	goto out;
     ALLOC(t->req_body.sname, 1);
     if (t->req_body.sname == NULL) {
 	ret = ENOMEM;
-	goto fail;
+	goto out;
     }
     ret = copy_PrincipalName(&in_creds->server->name, t->req_body.sname);
     if (ret)
-	goto fail;
+	goto out;
 
     /* req_body.till should be NULL if there is no endtime specified,
        but old MIT code (like DCE secd) doesn't like that */
     ALLOC(t->req_body.till, 1);
     if(t->req_body.till == NULL){
 	ret = ENOMEM;
-	goto fail;
+	goto out;
     }
     *t->req_body.till = in_creds->times.endtime;
     
@@ -152,68 +253,33 @@ init_tgs_req (krb5_context context,
 	ALLOC(t->req_body.additional_tickets, 1);
 	if (t->req_body.additional_tickets == NULL) {
 	    ret = ENOMEM;
-	    goto fail;
+	    goto out;
 	}
 	ALLOC_SEQ(t->req_body.additional_tickets, 1);
 	if (t->req_body.additional_tickets->val == NULL) {
 	    ret = ENOMEM;
-	    goto fail;
+	    goto out;
 	}
 	ret = copy_Ticket(second_ticket, t->req_body.additional_tickets->val); 
 	if (ret)
-	    goto fail;
+	    goto out;
     }
     ALLOC(t->padata, 1);
     if (t->padata == NULL) {
 	ret = ENOMEM;
-	goto fail;
+	goto out;
     }
     ALLOC_SEQ(t->padata, 1);
     if (t->padata->val == NULL) {
 	ret = ENOMEM;
-	goto fail;
+	goto out;
     }
 
-    {
-	krb5_auth_context ac;
-	krb5_keyblock *key;
-	ret = krb5_auth_con_init(context, &ac);
-	if(ret)
-	    return ret;
-	ret = krb5_generate_subkey (context, &krbtgt->session, &key);
-	ret = krb5_auth_con_setlocalsubkey(context, ac, key);
-	if(ret == ENOMEM)
-	    /* XXX */;
+    ret = init_tgs_req1 (context, &in_creds->authdata, krbtgt, subkey, t);
 
-	if(in_creds->authdata.len){
-	    size_t len;
-	    unsigned char *buf;
-	    krb5_enctype etype;
-	    len = length_AuthorizationData(&in_creds->authdata);
-	    buf = malloc(len);
-	    ret = encode_AuthorizationData(buf + len - 1, len, &in_creds->authdata, &len);
-	    ALLOC(t->req_body.enc_authorization_data, 1);
-	    krb5_keytype_to_etype(context, key->keytype, &etype);
-	    krb5_encrypt_EncryptedData(context, buf, len, etype, 0, 
-				       key, t->req_body.enc_authorization_data);
-	}else
-	    t->req_body.enc_authorization_data = NULL;
-    
-
-	ret = make_pa_tgs_req(context,
-			      ac,
-			      &t->req_body, 
-			      t->padata->val,
-			      krbtgt);
-	if(ret)
-	    goto fail;
-	*subkey = key;
-
-	krb5_auth_con_free(context, ac);
-    }
-    return 0;
-fail:
-    free_TGS_REQ (t);
+out:
+    if (ret)
+	free_TGS_REQ (t);
     return ret;
 }
 
@@ -311,8 +377,9 @@ get_cred_kdc(krb5_context context,
     KRB_ERROR error;
     krb5_error_code ret;
     unsigned nonce;
-    unsigned char buf[1024];
     krb5_keyblock *subkey = NULL;
+    u_char *buf = NULL;
+    size_t buf_size;
     size_t len;
     Ticket second_ticket;
     
@@ -342,13 +409,38 @@ get_cred_kdc(krb5_context context,
     if (ret)
 	goto out;
 
-    ret = encode_TGS_REQ  (buf + sizeof (buf) - 1, sizeof(buf),
-			   &req, &enc.length);
+    buf_size = 1024;
+    buf = malloc (buf_size);
+    if (buf == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+
+    do {
+	ret = encode_TGS_REQ  (buf + buf_size - 1, buf_size,
+			       &req, &enc.length);
+	if (ret) {
+	    if (ret == ASN1_OVERFLOW) {
+		u_char *tmp;
+
+		buf_size *= 2;
+		tmp = realloc (buf, buf_size);
+		if (tmp == NULL) {
+		    ret = ENOMEM;
+		    goto out;
+		}
+		buf = tmp;
+	    } else {
+		goto out;
+	    }
+	}
+    } while (ret == ASN1_OVERFLOW);
+
     /* don't free addresses */
     req.req_body.addresses = NULL;
     free_TGS_REQ(&req);
 
-    enc.data = buf + sizeof(buf) - enc.length;
+    enc.data = buf + buf_size - enc.length;
     if (ret)
 	goto out;
     
@@ -402,6 +494,8 @@ out:
 	krb5_free_keyblock_contents(context, subkey);
 	free(subkey);
     }
+    if (buf)
+	free (buf);
     return ret;
     
 }
