@@ -43,9 +43,25 @@ static BOOL ldb_close_registry(REG_HANDLE *h)
 	return True;
 }
 
+static BOOL ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
+{
+	ldb_search();
+}
+
 static REG_KEY *ldb_open_key(REG_HANDLE *h, const char *name)
 {
-	/* FIXME */
+	struct ldb_context *c = h->backend_data;
+	char *path;
+	struct ldb_message **msg;
+	REG_KEY *key = NULL;
+	(dn=key=Systems,
+	if(ldb_search(c, NULL, LDP_SCOPE_BASE, "", NULL,&msg) > 0) {
+		key = reg_key_new_abs(name, h, base);
+	}
+
+	ldap_search_free(c, msg);
+
+	return key;
 }
 
 static REG_OPS reg_backend_ldb = {
@@ -53,6 +69,7 @@ static REG_OPS reg_backend_ldb = {
 	.open_registry = ldb_open_registry,
 	.close_registry = ldb_close_registry,
 	.open_key = ldb_open_key,
+	.fetch_subkeys = ldb_fetch_subkeys,
 };
 
 NTSTATUS reg_ldb_init(void)

@@ -22,12 +22,39 @@
 
 #include "includes.h"
 
+enum handle_types { HTYPE_REGKEY, HTYPE_REGVAL };
+
+struct _privatedata {
+	REG_HANDLE *registry;
+};
+
+
+/* this function is called when the client disconnects the endpoint */
+static void winreg_unbind(struct dcesrv_connection *dc, const struct dcesrv_interface *di) 
+{
+	struct _privatedata *data = dc->private;
+	reg_free(data->registry);
+}
+
+static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_interface *di) 
+{
+	struct _privatedata *data;
+	data = talloc(dc->mem_ctx, sizeof(struct _privatedata));
+	data->registry = reg_open("nt4", "/home/aurelia/jelmer/NTUSER.DAT", False);
+	dc->conn->private = data;
+	return NT_STATUS_OK;
+}
+
+#define DCESRV_INTERFACE_WINREG_BIND winreg_bind
+#define DCESRV_INTERFACE_WINREG_UNBIND winreg_unbind
+
 /* 
   winreg_OpenHKCR 
 */
 static NTSTATUS winreg_OpenHKCR(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_OpenHKCR *r)
 {
+	
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -38,7 +65,20 @@ static NTSTATUS winreg_OpenHKCR(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static NTSTATUS winreg_OpenHKCU(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_OpenHKCU *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct _privatedata *data = dce_call->conn->private;
+	REG_KEY *k = reg_open_key(reg_get_root(data->registry), "\\HKEY_CURRENT_USER");
+
+	if(!k) {
+		r->out.result = WERR_BADFILE;
+	} else {
+		struct dcesrv_handle *h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY);
+		h->data = k;
+		r->out.handle = &(h->wire_handle);
+	}
+
+	r->out.result = WERR_OK;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -178,6 +218,11 @@ static NTSTATUS winreg_NotifyChangeKeyValue(struct dcesrv_call_state *dce_call, 
 static NTSTATUS winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_OpenKey *r)
 {
+	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	if(!h) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 

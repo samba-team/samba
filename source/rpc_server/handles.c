@@ -32,7 +32,7 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection *dce_conn,
 	struct dcesrv_handle *h;
 
 	mem_ctx = talloc_init("rpc handle type %d\n", handle_type);
-	if (!mem_ctx) {
+if (!mem_ctx) {
 		return NULL;
 	}
 	h = talloc(mem_ctx, sizeof(*h));
