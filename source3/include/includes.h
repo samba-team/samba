@@ -968,6 +968,12 @@ typedef int mode_t;
 #define HAVE_VFORK 1
 #endif
 
+/* For UnixWare 2.x's ia_uinfo routines. (tangent@cyberport.com) */
+#ifdef IA_UINFO
+#include <iaf.h>
+#include <ia.h>
+#endif
+
 
 /*******************************************************************
 end of the platform specific sections

@@ -887,6 +887,15 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
     if (spass && spass->sp_pwdp)
       pass->pw_passwd = spass->sp_pwdp;
   }
+#elif defined(IA_UINFO)
+  {
+      /* Need to get password with SVR4.2's ia_ functions instead of
+         get{sp,pw}ent functions. Required by UnixWare 2.x, tested on 
+         version 2.1. (tangent@cyberport.com) */
+      uinfo_t uinfo;
+      if (ia_openinfo(pass->pw_name, &uinfo) != -1)
+        ia_get_logpwd(uinfo, &(pass->pw_passwd));
+  }
 #endif
 
 #ifdef SecureWare
