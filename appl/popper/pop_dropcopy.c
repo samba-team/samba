@@ -51,7 +51,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     if ( (tf=fopen(template,"w+")) == NULL ) {	/* failure, bail out	*/
         pop_log(p,POP_PRIORITY,
             "Unable to create temporary temporary maildrop '%s': %s",template,
-		k_strerror(errno));
+		strerror(errno));
         return pop_msg(p,POP_FAILURE,
 		"System error, can't create temporary file.");
     }
@@ -84,7 +84,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     if ((dfd = open(p->temp_drop,O_RDWR|O_APPEND|O_CREAT,0600)) == -1){
         pop_log(p,POP_PRIORITY,
             "Unable to open temporary maildrop '%s': %s",p->temp_drop,
-		k_strerror(errno));
+		strerror(errno));
         return pop_msg(p,POP_FAILURE,
 		"System error, can't open temporary file, do you own it?");
     }
@@ -98,7 +98,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
             /* NOTREACHED */
         default:
             return pop_msg(p,POP_FAILURE,"flock: '%s': %s", p->temp_drop,
-		k_strerror(errno));
+		strerror(errno));
             /* NOTREACHED */
         }
     
@@ -112,7 +112,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
         if (k_flock (mfd, K_LOCK_EX) == -1) {
             (void)close(mfd) ;
             return pop_msg(p,POP_FAILURE, "flock: '%s': %s", p->temp_drop,
-		k_strerror(errno));
+		strerror(errno));
         }
 
         /*  Copy the actual mail drop into the temporary mail drop */

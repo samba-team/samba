@@ -69,7 +69,7 @@ pop_updt (POP *p)
     if ( k_flock(mfd, K_LOCK_EX) == -1 ) {
         (void)fclose(md) ;
         return pop_msg(p,POP_FAILURE, "flock: '%s': %s", p->temp_drop,
-		       k_strerror(errno));
+		       strerror(errno));
     }
 
     /* Go to the right places */

@@ -65,7 +65,7 @@ int krb4_adat(char *auth)
     len = krb_mk_safe(&cs, msg, sizeof(cs), &auth_dat.session, 
 		      &ctrl_addr, &his_addr);
     if(len < 0){
-	reply(535, "Error creating reply: %s.", k_strerror(errno));
+	reply(535, "Error creating reply: %s.", strerror(errno));
 	return -1;
     }
     base64_encode(msg, len, &p);
@@ -258,7 +258,7 @@ int krb4_write(int fd, void *data, int length)
 				&auth_dat.session,
 				&ctrl_addr, &his_addr);
 	if(bytes == -1){
-	    reply(535, "Failed to make packet: %s.", k_strerror(errno));
+	    reply(535, "Failed to make packet: %s.", strerror(errno));
 	    return -1;
 	}
 	data_buffer[0] = (bytes >> 24) & 0xff;

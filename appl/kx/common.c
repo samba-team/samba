@@ -13,7 +13,7 @@ do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
      if (ret == 0)
 	  return 0;
      if (ret < 0) {
-	  fprintf (stderr, "%s: read: %s\n", prog, k_strerror (errno));
+	  fprintf (stderr, "%s: read: %s\n", prog, strerror (errno));
 	  return ret;
      }
 #ifndef NOENCRYPTION
@@ -22,7 +22,7 @@ do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
 #endif
      ret = krb_net_write (fd2, buf, ret);
      if (ret < 0) {
-	  fprintf (stderr, "%s: write: %s\n", prog, k_strerror (errno));
+	  fprintf (stderr, "%s: write: %s\n", prog, strerror (errno));
 	  return ret;
      }
      return 1;
@@ -53,7 +53,7 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
 
     ret = select (max(fd1, fd2)+1, &fdset, NULL, NULL, NULL);
     if (ret < 0 && errno != EINTR) {
-      fprintf (stderr, "%s: select: %s\n", prog, k_strerror (errno));
+      fprintf (stderr, "%s: select: %s\n", prog, strerror (errno));
       return 1;
     }
     if (FD_ISSET(fd1, &fdset)) {
@@ -97,7 +97,7 @@ get_local_xsocket (unsigned dnr)
 
      fd = socket (AF_UNIX, SOCK_STREAM, 0);
      if (fd < 0) {
-	  fprintf (stderr, "%s: socket: %s\n", prog, k_strerror(errno));
+	  fprintf (stderr, "%s: socket: %s\n", prog, strerror(errno));
 	  return fd;
      }    
      addr.sun_family = AF_UNIX;
@@ -105,12 +105,12 @@ get_local_xsocket (unsigned dnr)
      unlink (addr.sun_path);
      if(bind (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 	  fprintf (stderr, "%s: bind: %s\n", prog,
-		   k_strerror(errno));
+		   strerror(errno));
 	  return -1;
      }
      if (listen (fd, SOMAXCONN) < 0) {
 	  fprintf (stderr, "%s: listen: %s\n", prog,
-		   k_strerror(errno));
+		   strerror(errno));
 	  return -1;
      }
      return fd;
@@ -128,14 +128,14 @@ connect_local_xsocket (unsigned dnr)
 
      fd = socket (AF_UNIX, SOCK_STREAM, 0);
      if (fd < 0) {
-	  fprintf (stderr, "%s: socket: %s\n", prog, k_strerror(errno));
+	  fprintf (stderr, "%s: socket: %s\n", prog, strerror(errno));
 	  return fd;
      }    
      addr.sun_family = AF_UNIX;
      sprintf (addr.sun_path, "/tmp/.X11-unix/X%u", dnr);
      if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 	  fprintf (stderr, "%s: connect: %s\n", prog,
-		   k_strerror(errno));
+		   strerror(errno));
 	  return -1;
      }
      return fd;

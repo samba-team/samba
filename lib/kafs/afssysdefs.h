@@ -39,6 +39,7 @@
 #endif
 
 #if defined(__linux)
+#define AFS_SYSCALL	137
 /* Kent Engström <kent@lysator.liu.se> 1995-08-22
    Linux has no SIGSYS signal. Furthermore, the normal
    kernels have no support for AFS. I'm not sure about

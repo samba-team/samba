@@ -42,19 +42,19 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule)
 
      s = socket (AF_INET, SOCK_STREAM, 0);
      if (s < 0) {
-	  fprintf (stderr, "%s: socket failed: %s\n", prog, k_strerror(errno));
+	  fprintf (stderr, "%s: socket failed: %s\n", prog, strerror(errno));
 	  return -1;
      }
      if (connect (s, (struct sockaddr *)&thataddr, sizeof(thataddr)) < 0) {
 	  fprintf (stderr, "%s: connect(%s) failed: %s\n", prog, host,
-		   k_strerror(errno));
+		   strerror(errno));
 	  return -1;
      }
      addrlen = sizeof(thisaddr);
      if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
 	 addrlen != sizeof(thisaddr)) {
 	  fprintf (stderr, "%s: getsockname(%s) failed: %s\n",
-		   prog, host, k_strerror(errno));
+		   prog, host, strerror(errno));
 	  return -1;
      }
      status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
@@ -68,7 +68,7 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule)
      }
      if (read (s, &b, sizeof(b)) != sizeof(b)) {
 	  fprintf (stderr, "%s: read: %s\n", prog,
-		   k_strerror(errno));
+		   strerror(errno));
 	  return -1;
      }
      if (b) {
@@ -96,7 +96,7 @@ active (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
 	  return 1;
      if (write (kxd, &zero, sizeof(zero)) != sizeof(zero)) {
 	  fprintf (stderr, "%s: write: %s\n", prog,
-		   k_strerror(errno));
+		   strerror(errno));
 	  return 1;
      }
      return copy_encrypted (fd, kxd, iv, schedule);
@@ -143,30 +143,30 @@ doit (char *host, int passivep)
 	  rendez_vous = socket (AF_INET, SOCK_STREAM, 0);
 	  if (rendez_vous < 0) {
 	       fprintf (stderr, "%s: socket failed: %s\n", prog,
-			k_strerror(errno));
+			strerror(errno));
 	       return 1;
 	  }
 	  memset (&newaddr, 0, sizeof(newaddr));
 	  if (bind (rendez_vous, (struct sockaddr *)&newaddr,
 		    sizeof(newaddr)) < 0) {
-	       fprintf (stderr, "%s: bind: %s\n", prog, k_strerror(errno));
+	       fprintf (stderr, "%s: bind: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
 	  addrlen = sizeof(newaddr);
 	  if (getsockname (rendez_vous, (struct sockaddr *)&newaddr,
 			   &addrlen) < 0) {
 	       fprintf (stderr, "%s: getsockname: %s\n", prog,
-			k_strerror(errno));
+			strerror(errno));
 	       return 1;
 	  }
 	  if (listen (rendez_vous, SOMAXCONN) < 0) {
-	       fprintf (stderr, "%s: listen: %s\n", prog, k_strerror(errno));
+	       fprintf (stderr, "%s: listen: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
 	  if (write (otherside, &b, sizeof(b)) != sizeof(b) ||
 	      write (otherside, &newaddr.sin_port, sizeof(newaddr.sin_port))
 	      != sizeof(newaddr.sin_port)) {
-	       fprintf (stderr, "%s: write: %s\n", prog, k_strerror(errno));
+	       fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
 	  close (otherside);
@@ -188,13 +188,13 @@ doit (char *host, int passivep)
 		    continue;
 	       else {
 		    fprintf (stderr, "%s: accept: %s\n", prog,
-			     k_strerror(errno));
+			     strerror(errno));
 		    return 1;
 	       }
 	  child = fork ();
 	  if (child < 0) {
 	       fprintf (stderr, "%s: fork: %s\n", prog,
-			k_strerror(errno));
+			strerror(errno));
 	       continue;
 	  } else if (child == 0) {
 	       close (rendez_vous);

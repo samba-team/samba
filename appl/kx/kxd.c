@@ -80,7 +80,7 @@ doit_conn (int fd, struct sockaddr_in *thataddr,
   sock = socket (AF_INET, SOCK_STREAM, 0);
   if (sock < 0) {
     char msg[200];
-    sprintf (msg, "socket: %s", k_strerror(errno));
+    sprintf (msg, "socket: %s", strerror(errno));
     return fatal (sock, msg);
   }
   if (connect (sock, (struct sockaddr *)thataddr,
@@ -137,13 +137,13 @@ doit(int sock)
 			 continue;
 		    else {
 			 char msg[200];
-			 sprintf (msg, "accept: %s\n", k_strerror (errno));
+			 sprintf (msg, "accept: %s\n", strerror (errno));
 			 return fatal (sock, msg);
 		    }
 	       child = fork ();
 	       if (child < 0) {
 		    char msg[200];
-		    sprintf (msg, "fork: %s\n", k_strerror (errno));
+		    sprintf (msg, "fork: %s\n", strerror (errno));
 		    return fatal(sock, msg);
 	       } else if (child == 0) {
 		    close (localx);
