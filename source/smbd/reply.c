@@ -61,6 +61,49 @@ static void overflow_attack(int len)
 
 
 /****************************************************************************
+  does _both_ nt->unix and unix->unix username remappings.
+****************************************************************************/
+static BOOL map_nt_and_unix_username(const char *domain, char *user)
+{
+	DOM_NAME_MAP gmep;
+	fstring nt_username;
+
+	/*
+	 * Pass the user through the NT -> unix user mapping
+	 * function.
+	 */
+   
+	memset(nt_username, 0, sizeof(nt_username));
+	if (domain != NULL)
+	{
+		slprintf(nt_username, sizeof(nt_username)-1, "%s\\%s",
+		         domain, user);
+	}
+	else
+	{
+		fstrcpy(nt_username, user);
+	}
+	if (!lookupsmbpwntnam(nt_username, &gmep))
+	{
+		return False;
+	}
+
+	fstrcpy(user, gmep.unix_name);
+
+	/*
+	 * Pass the user through the unix -> unix user mapping
+	 * function.
+	 */
+
+	(void)map_username(user);
+
+	/*
+	 * Do any UNIX username case mangling.
+	 */
+	return Get_Pwnam( user, True) != NULL;
+}
+
+/****************************************************************************
   reply to an special message 
 ****************************************************************************/
 int reply_special(char *inbuf,char *outbuf)
@@ -220,17 +263,10 @@ int reply_tcon(connection_struct *conn,
 
 	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
-	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
-	 */
-   
-	(void)map_username(user);
-
-	/*
-	 * Do any UNIX username case mangling.
-	 */
-	(void)Get_Pwnam( user, True);
+	if (!map_nt_and_unix_username(global_myworkgroup, user))
+	{
+		return(connection_error(inbuf,outbuf,ERRbadpw));
+	}
 
 	conn = make_connection(service,user,password,pwlen,dev,vuid,&ecode);
   
@@ -300,18 +336,11 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	StrnCpy(devicename,path + strlen(path) + 1,6);
 	DEBUG(4,("Got device type %s\n",devicename));
 
-	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
-	 */
-	
-	(void)map_username(user);
-	
-	/*
-	 * Do any UNIX username case mangling.
-	 */
-	(void)Get_Pwnam(user, True);
-	
+	if (!map_nt_and_unix_username(global_myworkgroup, user))
+	{
+		return(connection_error(inbuf,outbuf,ERRbadpw));
+	}
+
 	conn = make_connection(service,user,password,passlen,devicename,vuid,&ecode);
 	
 	if (!conn)
@@ -642,17 +671,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   pstrcpy( orig_user, user);
 
-  /*
-   * Pass the user through the NT -> unix user mapping
-   * function.
-   */
-   
-  (void)map_username(user);
-
-  /*
-   * Do any UNIX username case mangling.
-   */
-  (void)Get_Pwnam( user, True);
+	if (!map_nt_and_unix_username(domain, user))
+	{
+		return(ERROR(ERRSRV,ERRbadpw));
+	}
 
   add_session_user(user);
 

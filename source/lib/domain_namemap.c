@@ -273,6 +273,9 @@ static void delete_map_list(ubi_slList *map_list)
 ***************************************************************************/
 static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 {
+	int ret = False;
+	fstring sid_str;
+
 	if (!map_domain_name_to_sid(&grp->sid, &(grp->nt_domain)))
 	{
 		DEBUG(0,("make_mydomain_sid: unknown domain %s\n",
@@ -294,7 +297,7 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 			          grp->unix_name, grp->nt_name));
 			return False;
 		}
-		return True;
+		ret = True;
 	}
 	else if (lookup_wk_user_name(grp->nt_name, grp->nt_domain, &grp->sid, &grp->type) == 0x0)
 	{
@@ -304,7 +307,7 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 			          grp->nt_domain, grp->nt_name));
 			return False;
 		}
-		return True;
+		ret = True;
 	}
 	else if (lookup_wk_group_name(grp->nt_name, grp->nt_domain, &grp->sid, &grp->type) == 0x0)
 	{
@@ -314,12 +317,10 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 			          grp->nt_domain, grp->nt_name));
 			return False;
 		}
-		return True;
+		ret = True;
 	}
 	else
 	{
-		BOOL ret;
-		fstring sid_str;
 		switch (type)
 		{
 			case DOM_MAP_USER:
@@ -340,45 +341,57 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 		}
 
 		ret = pwdb_unixid_to_sam_sid(grp->unix_id, grp->type, &grp->sid);
-		sid_to_string(sid_str, &grp->sid);
-		DEBUG(10,("nt name %s gid %d mapped to %s\n",
-		           grp->nt_name, grp->unix_id, sid_str));
-		return ret;
 	}
 
-	return False;
+	sid_to_string(sid_str, &grp->sid);
+	DEBUG(10,("nt name %s\\%s gid %d mapped to %s\n",
+	           grp->nt_domain, grp->nt_name, grp->unix_id, sid_str));
+	return ret;
 }
 
 /**************************************************************************
  makes a group sid out of an nt domain, nt group name or a unix group name.
 ***************************************************************************/
-static BOOL unix_name_to_group_info(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
+static BOOL unix_name_to_nt_name_info(DOM_NAME_MAP *map, DOM_MAP_TYPE type)
 {
-	struct group *gptr = NULL;
-
 	/*
 	 * Attempt to get the unix gid_t for this name.
 	 */
 
-	DEBUG(5,("unix_name_to_group_info: unix_name:%s\n", grp->unix_name));
+	DEBUG(5,("unix_name_to_nt_name_info: unix_name:%s\n", map->unix_name));
 
-	gptr = (struct group *)getgrnam(grp->unix_name);
-	if (gptr == NULL)
+	if (type == DOM_MAP_USER)
 	{
-		DEBUG(0,("unix_name_to_group_info: getgrnam for group %s\
-failed. Error was %s.\n", grp->unix_name, strerror(errno) ));
-		return False;
+		struct passwd *pwptr = Get_Pwnam(map->unix_name, False);
+		if (pwptr == NULL)
+		{
+			DEBUG(0,("unix_name_to_nt_name_info: Get_Pwnam for user %s\
+failed. Error was %s.\n", map->unix_name, strerror(errno) ));
+			return False;
+		}
+
+		map->unix_id = (uint32)pwptr->pw_uid;
+	}
+	else
+	{
+		struct group *gptr = getgrnam(map->unix_name);
+		if (gptr == NULL)
+		{
+			DEBUG(0,("unix_name_to_nt_name_info: getgrnam for group %s\
+failed. Error was %s.\n", map->unix_name, strerror(errno) ));
+			return False;
+		}
+
+		map->unix_id = (uint32)gptr->gr_gid;
 	}
 
-	grp->unix_id = (uint32)gptr->gr_gid;
-
-	DEBUG(5,("unix_name_to_group_info: unix gid:%d\n", grp->unix_id));
+	DEBUG(5,("unix_name_to_nt_name_info: unix gid:%d\n", map->unix_id));
 
 	/*
 	 * Now map the name to an NT SID+RID.
 	 */
 
-	if (grp->nt_domain != NULL && !strequal(grp->nt_domain, global_sam_name))
+	if (map->nt_domain != NULL && !strequal(map->nt_domain, global_sam_name))
 	{
 		/* Must add client-call lookup code here, to 
 		 * resolve remote domain's sid and the group's rid,
@@ -394,15 +407,15 @@ failed. Error was %s.\n", grp->unix_name, strerror(errno) ));
 		 * RIDs in a foriegn domain.
 		 */
 
-		if (!map_domain_name_to_sid(&grp->sid, &(grp->nt_domain)))
+		if (!map_domain_name_to_sid(&map->sid, &(map->nt_domain)))
 		{
-			DEBUG(0,("unix_name_to_group_info: no known sid for %s\n",
-				  grp->nt_domain));
+			DEBUG(0,("unix_name_to_nt_name_info: no known sid for %s\n",
+				  map->nt_domain));
 			return False;
 		}
 	}
 
-	return make_mydomain_sid(grp, type);
+	return make_mydomain_sid(map, type);
 }
 
 static BOOL make_name_entry(name_map_entry **new_ep,
@@ -440,7 +453,7 @@ static BOOL make_name_entry(name_map_entry **new_ep,
 	 * look up the group names, make the Group-SID and unix gid
 	 */
  
-	if (!unix_name_to_group_info(&(*new_ep)->grp, type))
+	if (!unix_name_to_nt_name_info(&(*new_ep)->grp, type))
 	{
 		delete_name_entry((*new_ep));
 		return False;
@@ -559,7 +572,7 @@ static ubi_slList *load_name_map(DOM_MAP_TYPE type)
 		pstring unixname;
 		pstring nt_name;
 		fstring nt_domain;
-		fstring nt_group;
+		fstring ntname;
 		char *p;
 
 		DEBUG(10,("Read line |%s|\n", s));
@@ -589,21 +602,24 @@ static ubi_slList *load_name_map(DOM_MAP_TYPE type)
 		if (p == NULL)
 		{
 			memset(nt_domain, 0, sizeof(nt_domain));
-			fstrcpy(nt_group, nt_name);
+			fstrcpy(ntname, nt_name);
 		}
 		else
 		{
 			*p = 0;
 			p++;
 			fstrcpy(nt_domain, nt_name);
-			fstrcpy(nt_group , p);
+			fstrcpy(ntname , p);
 		}
 
-		if (make_name_entry(&new_ep, nt_domain, nt_group, unixname, type))
+		if (make_name_entry(&new_ep, nt_domain, ntname, unixname, type))
 		{
 			ubi_slAddTail(map_list, (ubi_slNode *)new_ep);
 			DEBUG(5,("unixname = %s, ntname = %s\\%s type = %d\n",
-				  unixname, nt_domain, nt_group, new_ep->grp.type));
+				  new_ep->grp.unix_name,
+			          new_ep->grp.nt_domain,
+			          new_ep->grp.nt_name,
+			          new_ep->grp.type));
 		}
 	}
 
@@ -647,7 +663,7 @@ static BOOL map_unixname(DOM_MAP_TYPE type,
 		if (strequal(gmep->grp.unix_name, unixname))
 		{
 			copy_grp_map_entry(grp_info, &gmep->grp);
-			DEBUG(7,("map_unixname: Mapping unix group %s to nt group %s.\n",
+			DEBUG(7,("map_unixname: Mapping unix name %s to nt group %s.\n",
 			       gmep->grp.unix_name, gmep->grp.nt_name ));
 			return True;
 		}
@@ -680,7 +696,7 @@ static BOOL map_ntname(DOM_MAP_TYPE type, char *ntname, char *ntdomain,
 		    strequal(gmep->grp.nt_domain, ntdomain))
 		{
 			copy_grp_map_entry(grp_info, &gmep->grp);
-			DEBUG(7,("map_ntname: Mapping unix group %s to nt group %s.\n",
+			DEBUG(7,("map_ntname: Mapping unix name %s to nt name %s.\n",
 			       gmep->grp.unix_name, gmep->grp.nt_name ));
 			return True;
 		}
@@ -711,7 +727,7 @@ static BOOL map_sid(DOM_MAP_TYPE type,
 		if (sid_equal(&gmep->grp.sid, psid))
 		{
 			copy_grp_map_entry(grp_info, &gmep->grp);
-			DEBUG(7,("map_sid: Mapping unix group %s to nt group %s.\n",
+			DEBUG(7,("map_sid: Mapping unix name %s to nt name %s.\n",
 			       gmep->grp.unix_name, gmep->grp.nt_name ));
 			return True;
 		}
@@ -744,7 +760,7 @@ static BOOL map_unixid(DOM_MAP_TYPE type, uint32 unix_id, DOM_NAME_MAP *grp_info
 		if (gmep->grp.unix_id == unix_id)
 		{
 			copy_grp_map_entry(grp_info, &gmep->grp);
-			DEBUG(7,("map_unixid: Mapping unix group %s to nt group %s type %d\n",
+			DEBUG(7,("map_unixid: Mapping unix name %s to nt name %s type %d\n",
 			       gmep->grp.unix_name, gmep->grp.nt_name, gmep->grp.type));
 			return True;
 		}
