@@ -207,8 +207,8 @@ crypt_md5(pw, salt)
 		    MD5Update(&ctx, pw+j, 1);
 
 	/* Now make the output string */
-	snprintf (passwd, sizeof(passwd),
-		  "%s%.*s$", magic, sl, sp);
+	strcpy(passwd, magic); /* sizeof(passwd) > sizeof(magic) */
+	strncat(passwd, sp, sl); /* ok, since sl <= 8 */
 
 	MD5Final(final,&ctx);
 
