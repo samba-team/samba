@@ -49,7 +49,7 @@ char *strerror(int eno);
 char *hstrerror(int herr);
 #endif
 
-#ifndef HAVE_H_ERRNO
+#ifdef NEED_H_ERRNO_DECLARATION
 extern int h_errno;
 #endif
 
