@@ -1,6 +1,12 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Change in alpha7
+
+- added "net ads info" to probe basic into on your ads server without
+  any authentication
+- improved some error handling
+
 Changes in alpha6
 
 - added "net time zone" command (tridge)
