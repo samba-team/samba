@@ -74,7 +74,6 @@
 		[case(DS_ROLE_BASIC_INFORMATION)] dssetup_DsRolePrimaryDomInfoBasic	basic;
 		[case(DS_ROLE_UPGRADE_STATUS)]    dssetup_DsRoleUpgradeStatus    	upgrade;
 		[case(DS_ROLE_OP_STATUS)]         dssetup_DsRoleOpStatus		opstatus;
-		[default] ;
 	} dssetup_DsRoleInfo;
 
 	WERROR dssetup_DsRoleGetPrimaryDomainInformation(
