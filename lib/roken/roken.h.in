@@ -108,6 +108,10 @@
 #include <paths.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <roken-common.h>
 
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
@@ -388,3 +392,7 @@ struct hostent* roken_gethostbyaddr(const void*, size_t, int);
 #endif
 
 void set_progname(char *argv0);
+
+#ifdef __cplusplus
+}
+#endif
