@@ -453,7 +453,7 @@ Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
         exit(1);
       }
 
-      sprintf(new_entry, "%s:%u:", pwd->pw_name, pwd->pw_uid);
+      sprintf(new_entry, "%s:%u:", pwd->pw_name, (unsigned)pwd->pw_uid);
       p = &new_entry[strlen(new_entry)];
       for( i = 0; i < 16; i++)
         sprintf(&p[i*2], "%02X", new_p16[i]);
