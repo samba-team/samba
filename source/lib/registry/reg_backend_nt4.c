@@ -935,13 +935,6 @@ static WERROR vk_to_val(TALLOC_CTX *mem_ctx, struct registry_key *parent, VK_HDR
 		}
 
 
-		if(tmp->data_type == REG_SZ) {
-			char *ret;
-	    	dat_len = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, dtmp, dat_len, (void **)&ret);
-			dtmp = ret;
-		}
-
-
 		tmp->data_blk = dtmp;
 		tmp->data_len = dat_len;
 	}

@@ -57,11 +57,10 @@ char *reg_val_data_string(TALLOC_CTX *mem_ctx, struct registry_value *v)
   if(v->data_len == 0) return talloc_strdup(mem_ctx, "");
 
   switch (v->data_type) {
-  case REG_SZ:
-	  return talloc_strndup(mem_ctx, v->data_blk, v->data_len);
-
   case REG_EXPAND_SZ:
-	  return talloc_strndup(mem_ctx, v->data_blk, v->data_len);
+  case REG_SZ:
+      convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, v->data_blk, v->data_len, (void **)&ret);
+	  return ret;
 
   case REG_BINARY:
 	  ret = talloc(mem_ctx, v->data_len * 3 + 2);
@@ -120,8 +119,7 @@ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *da
 	{
 		case REG_SZ:
 		case REG_EXPAND_SZ:
-			(*value)->data_blk = talloc_strdup(mem_ctx, data_str);
-			(*value)->data_len = strlen(data_str);
+      		(*value)->data_len = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, data_str, strlen(data_str), &(*value)->data_blk);
 			break;
 		case REG_DWORD:
 			(*value)->data_len = sizeof(uint32);

@@ -360,10 +360,16 @@ static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return result;
 	}
 
+	/* Just asking for the size of the buffer */
 	r->out.type = &val->data_type;
-	r->out.size = r->in.size;
 	r->out.length = &val->data_len;
-	r->out.data = val->data_blk;
+	if (!r->in.data) {
+		r->out.size = talloc_p(mem_ctx, uint32);
+		*r->out.size = val->data_len;
+	} else {
+		r->out.size = r->in.size;
+		r->out.data = val->data_blk;
+	}
 
 	return WERR_OK;
 }
