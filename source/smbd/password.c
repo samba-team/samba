@@ -1395,7 +1395,7 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, un
   if (ip_equal(ipzero, *ip))
 	  return False;
 
-  if (!lookup_pdc_name(global_myname, lp_workgroup(), ip, dc_name))
+  if (!lookup_dc_name(global_myname, lp_workgroup(), ip, dc_name))
 	  return False;
 
   return connect_to_domain_password_server(pcli, dc_name, trust_passwd);

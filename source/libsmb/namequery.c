@@ -927,7 +927,7 @@ BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
         if (strcmp(dest_host,"*") == 0) {
                 extern pstring global_myname;
                 ret = resolve_name(lp_workgroup(), ip, 0x1B);
-                lookup_pdc_name(global_myname, lp_workgroup(), ip, dest_host);
+                lookup_dc_name(global_myname, lp_workgroup(), ip, dest_host);
         } else {
                 ret = resolve_name(dest_host, ip, 0x20);
         }
@@ -966,31 +966,32 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 }
 
 /********************************************************
- Lookup a PDC name given a Domain name and IP address.
+ Lookup a DC name given a Domain name and IP address.
 *********************************************************/
 
-BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name)
+BOOL lookup_dc_name(const char *srcname, const char *domain, 
+		    struct in_addr *dc_ip, char *ret_name)
 {
 #if !defined(I_HATE_WINDOWS_REPLY_CODE)
 
-  fstring pdc_name;
-  BOOL ret;
+	fstring dc_name;
+	BOOL ret;
 
-  /*
-   * Due to the fact win WinNT *sucks* we must do a node status
-   * query here... JRA.
-   */
+	/*
+	 * Due to the fact win WinNT *sucks* we must do a node status
+	 * query here... JRA.
+	 */
 
-  *pdc_name = '\0';
+	*dc_name = '\0';
 
-  ret = name_status_find(domain, 0x1b, 0x20,*pdc_ip,pdc_name);
+	ret = name_status_find(domain, 0x1c, 0x20, *dc_ip, dc_name);
 
-  if(ret && *pdc_name) {
-    fstrcpy(ret_name, pdc_name);
-    return True;
-  }
+	if(ret && *dc_name) {
+		fstrcpy(ret_name, dc_name);
+		return True;
+	}
 
-  return False;
+	return False;
 
 #else /* defined(I_HATE_WINDOWS_REPLY_CODE) */
 
@@ -1019,7 +1020,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 	
 	/* Find out the transient UDP port we have been allocated. */
 	if(getsockname(sock, (struct sockaddr *)&sock_name, &sock_len)<0) {
-		DEBUG(0,("lookup_pdc_name: Failed to get local UDP port. Error was %s\n",
+		DEBUG(0,("lookup_dc_name: Failed to get local UDP port. Error was %s\n",
 			 strerror(errno)));
 		close(sock);
 		return False;
@@ -1096,7 +1097,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 	GetTimeOfDay(&tval);
 	
 	if (!send_packet(&p)) {
-		DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
+		DEBUG(0,("lookup_dc_name: send_packet failed.\n"));
 		close(sock);
 		return False;
 	}
@@ -1112,7 +1113,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			if (!retries)
 				break;
 			if (!send_packet(&p)) {
-				DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
+				DEBUG(0,("lookup_dc_name: send_packet failed.\n"));
 				close(sock);
 				return False;
 			}
@@ -1129,7 +1130,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			buf -= 4;
 
 			if (CVAL(buf,smb_com) != SMBtrans) {
-				DEBUG(0,("lookup_pdc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)
+				DEBUG(0,("lookup_dc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)
 					 CVAL(buf,smb_com), (unsigned int)SMBtrans ));
 				free_packet(p_ret);
 				continue;
@@ -1139,17 +1140,17 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 			
 			if (len <= 0) {
-				DEBUG(0,("lookup_pdc_name: datagram len < 0 (%d)\n", len ));
+				DEBUG(0,("lookup_dc_name: datagram len < 0 (%d)\n", len ));
 				free_packet(p_ret);
 				continue;
 			}
 
-			DEBUG(4,("lookup_pdc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
+			DEBUG(4,("lookup_dc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
 				 nmb_namestr(&dgram2->source_name),nmb_namestr(&dgram2->dest_name),
 				 inet_ntoa(p_ret->ip), smb_buf(buf),SVAL(buf2,0),len));
 
 			if(SVAL(buf2,0) != QUERYFORPDC_R) {
-				DEBUG(0,("lookup_pdc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
+				DEBUG(0,("lookup_dc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
 					 (unsigned int)SVAL(buf,0), (unsigned int)QUERYFORPDC_R ));
 				free_packet(p_ret);
 				continue;

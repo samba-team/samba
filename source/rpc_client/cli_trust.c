@@ -213,7 +213,7 @@ account password for domain %s.\n", domain));
 
       for(i = 0; i < count; i++) {
         fstring dc_name;
-        if(!lookup_pdc_name(global_myname, domain, &ip_list[i], dc_name))
+        if(!lookup_dc_name(global_myname, domain, &ip_list[i], dc_name))
           continue;
         if((res = modify_trust_password( domain, dc_name,
                                          old_trust_passwd_hash, new_trust_passwd_hash)))

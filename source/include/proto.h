@@ -1223,7 +1223,8 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
                                 struct in_addr *ip);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);
-BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name);
+BOOL lookup_dc_name(const char *srcname, const char *domain, 
+		    struct in_addr *dc_ip, char *ret_name);
 BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count);
 BOOL get_dmb_list(struct in_addr **ip_list, int *count);
 
