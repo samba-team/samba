@@ -89,7 +89,7 @@ static int num_connections_open = 0;
 int oplock_sock = -1;
 uint16 oplock_port = 0;
 /* Current number of oplocks we have outstanding. */
-uint32 global_oplocks_open = 0;
+int32 global_oplocks_open = 0;
 #endif /* USE_OPLOCKS */
 
 BOOL global_oplock_break = False;
@@ -2606,6 +2606,9 @@ BOOL oplock_break(uint32 dev, uint32 inode)
   time_t start_time;
   BOOL shutdown_server = False;
 
+  DEBUG(5,("oplock_break: called for dev = %x, inode = %x. Current \
+global_oplocks_open = %d\n", dev, inode, global_oplocks_open));
+
   if(inbuf == NULL)
   {
     inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -2766,6 +2769,9 @@ dev = %x, inode = %x\n", fnum, dev, inode));
               global_oplocks_open));
     abort();
   }
+
+  DEBUG(5,("oplock_break: returning success for dev = %x, inode = %x. Current \
+global_oplocks_open = %d\n", dev, inode, global_oplocks_open));
 
   return True;
 }
