@@ -204,11 +204,12 @@ int krb4_read(int fd, void *data, int length)
     }
 
     while(length){
-	if(krb_net_read(fd, &len, 4) < 4){
+	unsigned char tmp[4];
+	if(krb_net_read(fd, tmp, 4) < 4){
 	    reply(400, "Unexpected end of file.\n");
 	    return -1;
 	}
-	len = ntohl(len);
+	len = (tmp[0] << 24) | (tmp[1] << 16) | (tmp[2] << 8) | tmp[3];
 	krb_net_read(fd, data_buffer, len);
 	if(data_protection == prot_safe)
 	    kerror = krb_rd_safe(data_buffer, len, &auth_dat.session, 
