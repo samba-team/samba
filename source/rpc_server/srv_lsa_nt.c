@@ -490,6 +490,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 {
 	struct lsa_info *info;
 	uint32 enum_context = q_u->enum_context;
+	int i = 0;
 
 	/*
 	 * preferred length is set to 5 as a "our" preferred length
@@ -498,6 +499,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	 * it needs further investigation how to optimally choose this value
 	 */
 	uint32 max_num_domains = q_u->preferred_len < 5 ? q_u->preferred_len : 10;
+	SAM_TRUST_PASSWD *trust = NULL;
 	TRUSTDOM **trust_doms;
 	uint32 num_domains;
 	NTSTATUS nt_status;
@@ -509,15 +511,47 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	if (!(info->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	nt_status = secrets_get_trusted_domains(p->mem_ctx, (int *)&enum_context, max_num_domains, (int *)&num_domains, &trust_doms);
+	trust_doms = talloc_zero(p->mem_ctx, sizeof(*trust_doms) * max_num_domains);
 
-	if (!NT_STATUS_IS_OK(nt_status) &&
-	    !NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES) &&
-	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
+	/* Init trust password */
+	nt_status = pdb_init_trustpw_talloc(p->mem_ctx, &trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Could not initialise trust password\n"));
 		return nt_status;
-	} else {
-		r_u->status = nt_status;
 	}
+
+	/* Accessing passdb requires root privileges */
+	become_root();
+
+	/* Start trust passwords enumeration */
+	nt_status = pdb_settrustpwent();
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Unable to start trusts enumeration\n"));
+		return nt_status;
+	}
+
+	nt_status = pdb_gettrustpwent(trust);
+	while ((NT_STATUS_IS_OK(nt_status) ||
+		NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES)) &&
+	       i < enum_context + max_num_domains) {
+		
+		if (i >= enum_context && i < enum_context + max_num_domains) {
+			TRUSTDOM *trust_dom = talloc(p->mem_ctx, sizeof(TRUSTDOM));
+			trust_dom->name = talloc_strdup_w(p->mem_ctx, pdb_get_tp_domain_name(trust));
+			sid_copy(&trust_dom->sid, pdb_get_tp_domain_sid(trust));
+			trust_doms[i - enum_context] = trust_dom;
+		}
+		i++;
+		nt_status = pdb_gettrustpwent(trust);
+	}
+
+	/* End trust passwords enumeration */
+	pdb_endtrustpwent();
+
+	/* Become user back again */
+	unbecome_root();
+	
+	num_domains = i;
 
 	/* set up the lsa_enum_trust_dom response */
 	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, max_num_domains, num_domains, trust_doms);
