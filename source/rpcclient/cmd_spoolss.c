@@ -521,7 +521,7 @@ static WERROR cmd_spoolss_setprinter(struct cli_state *cli,
 
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
 	strupper_m(servername);
-	fstrcpy(printername, argv[1]);
+	slprintf(printername, sizeof(servername)-1, "%s\\%s", servername, argv[1]);
 	fstrcpy(user, cli->user_name);
 
 	/* get a printer handle */
@@ -591,7 +591,7 @@ static WERROR cmd_spoolss_setprintername(struct cli_state *cli,
 
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
 	strupper_m(servername);
-	fstrcpy(printername, argv[1]);
+	slprintf(printername, sizeof(printername)-1, "%s\\%s", servername, argv[1]);
 	fstrcpy(user, cli->user_name);
 
 	/* get a printer handle */
@@ -1036,7 +1036,7 @@ static WERROR cmd_spoolss_getdriver(struct cli_state *cli,
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
 	strupper_m(servername);
 	fstrcpy(user, cli->user_name);
-	fstrcpy(printername, argv[1]);
+	slprintf(printername, sizeof(servername)-1, "%s\\%s", servername, argv[1]);
 	if (argc == 3)
 		info_level = atoi(argv[2]);
 
