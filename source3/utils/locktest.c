@@ -28,11 +28,12 @@ static fstring username;
 static fstring workgroup;
 static int got_pass;
 static int numops = 1000;
+static BOOL showall;
 
 #define FILENAME "locktest.dat"
 #define LOCKRANGE 100
 
-#define READ_PCT 75
+#define READ_PCT 50
 #define LOCK_PCT 45
 #define UNLOCK_PCT 45
 
@@ -45,7 +46,7 @@ static int numops = 1000;
 static void test_locks(struct cli_state *cli[2][2])
 {
 	int fnum[2][2][2];
-	int server, conn, f; 
+	int server, conn, f, n; 
 
 	cli_unlink(cli[0][0], FILENAME);
 	cli_unlink(cli[1][0], FILENAME);
@@ -63,7 +64,7 @@ static void test_locks(struct cli_state *cli[2][2])
 		}
 	}
 
-	while (numops--) {
+	for (n=0; n<numops; n++) {
 		int start, len, op, r;
 		BOOL ret1, ret2;
 
@@ -81,7 +82,7 @@ static void test_locks(struct cli_state *cli[2][2])
 		}
 
 		r = random() % 100;
-		
+
 		if (r < LOCK_PCT) {
 			/* set a lock */
 			ret1 = cli_lock(cli[0][conn], 
@@ -90,11 +91,12 @@ static void test_locks(struct cli_state *cli[2][2])
 			ret2 = cli_lock(cli[1][conn], 
 					fnum[1][conn][f],
 					start, len, 0, op);
-			if (ret1 != ret2) {
-				printf("lock(%d): server1 gave %d  server2 gave %d\n", 
-					numops, (int)ret1, (int)ret2);
-				return;
+			if (showall || ret1 != ret2) {
+				printf("%5d lock   conn=%d f=%d %d:%d op=%s -> %d:%d\n",
+				       n, conn, f, start, len, op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
+				       ret1, ret2);
 			}
+			if (ret1 != ret2) return;
 		} else if (r < LOCK_PCT+UNLOCK_PCT) {
 			/* unset a lock */
 			/* set a lock */
@@ -104,10 +106,10 @@ static void test_locks(struct cli_state *cli[2][2])
 			ret2 = cli_unlock(cli[1][conn], 
 					  fnum[1][conn][f],
 					  start, len);
-			if (ret1 != ret2) {
-				printf("unlock(%d): server1 gave %d  server2 gave %d\n", 
-					numops, (int)ret1, (int)ret2);
-				return;
+			if (showall || ret1 != ret2) {
+				printf("%5d unlock conn=%d f=%d %d:%d       -> %d:%d\n",
+				       n, conn, f, start, len,
+				       ret1, ret2);
 			}
 		} else {
 			/* reopen the file */
@@ -127,9 +129,14 @@ static void test_locks(struct cli_state *cli[2][2])
 				printf("failed to reopen on share2\n");
 				return;
 			}
+			if (showall) {
+				printf("%5d reopen conn=%d f=%d\n",
+				       n, conn, f);
+			}
+			if (ret1 != ret2) return;
 		}
-		if (numops % 100 == 0) {
-			printf("%d\n", numops);
+		if (n % 100 == 0) {
+			printf("%d\n", n);
 		}
 	}
 }
@@ -238,6 +245,8 @@ static void usage(void)
   options:\n\
         -U user%%pass\n\
         -s seed\n\
+        -o numops\n\
+        -a          (show all ops)\n\
 ");
 }
 
@@ -288,7 +297,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:a")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -304,6 +313,9 @@ static void usage(void)
 			break;
 		case 'o':
 			numops = atoi(optarg);
+			break;
+		case 'a':
+			showall = True;
 			break;
 		case 'h':
 			usage();
