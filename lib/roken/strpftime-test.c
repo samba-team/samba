@@ -246,8 +246,8 @@ main(int argc, char **argv)
 
 	    len = strftime (buf, sizeof(buf), tests[i].vals[j].format, tm);
 	    if (len != strlen (buf)) {
-		printf ("length of strftime(\"%s\") = %d (\"%s\")\n",
-			tests[i].vals[j].format, len,
+		printf ("length of strftime(\"%s\") = %lu (\"%s\")\n",
+			tests[i].vals[j].format, (unsigned long)len,
 			buf);
 		++ret;
 		continue;
