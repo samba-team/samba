@@ -57,9 +57,6 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
     krb5_appdefault_boolean(context, appname, realm, "proxiable", FALSE, &b);
     krb5_get_init_creds_opt_set_proxiable (opt, b);
 
-    krb5_appdefault_boolean(context, appname, realm, "anonymous", FALSE, &b);
-    krb5_get_init_creds_opt_set_anonymous (opt, b);
-
     krb5_appdefault_time(context, appname, realm, "ticket_life", 0, &t);
     if(t != 0)
 	krb5_get_init_creds_opt_set_tkt_life(opt, t);
@@ -69,6 +66,9 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
 	krb5_get_init_creds_opt_set_renew_life(opt, t);
 
 #if 0
+    krb5_appdefault_boolean(context, appname, realm, "anonymous", FALSE, &b);
+    krb5_get_init_creds_opt_set_anonymous (opt, b);
+
     krb5_get_init_creds_opt_set_etype_list(opt, enctype, 
 					   etype_str.num_strings);
 
