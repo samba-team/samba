@@ -32,7 +32,9 @@ NTSTATUS dcom_simple_init(void)
 
 	GUID_from_string(DCERPC_IUNKNOWN_UUID, &iid);
 
-	simple_class.class_object = dcom_new_local_ifacep(NULL, dcom_interface_by_iid(&iid), &simple_classobject, NULL);
+	simple_class.class_object = dcom_new_local_ifacep(talloc_autofree_context(),
+							  dcom_interface_by_iid(&iid), 
+							  &simple_classobject, NULL);
 
 	GUID_from_string("5e9ddec7-5767-11cf-beab-00aa006c3606", &simple_class.clsid);
 	return dcom_register_class(&simple_class);
