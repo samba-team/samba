@@ -1700,9 +1700,14 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
                                   (iterate_fsp->share_mode | DELETE_ON_CLOSE_FLAG) :
                                   (iterate_fsp->share_mode & ~DELETE_ON_CLOSE_FLAG) );
 
+            DEBUG(10,("call_trans2setfilepathinfo: Changing share mode for fnum %d, file %s\
+dev = %x, inode = %.0f from %x to %x\n", 
+                    iterate_fsp->fnum, iterate_fsp->fsp_name, (unsigned int)dev, 
+                    (double)inode, iterate_fsp->share_mode, new_share_mode ));
+
             if(modify_share_mode(token, iterate_fsp, new_share_mode)==False)
               DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close for fnum %d, \
-dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
+dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode));
           }
 
           unlock_share_entry(fsp->conn, dev, inode, token);
