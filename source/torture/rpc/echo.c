@@ -56,7 +56,7 @@ static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	int i;
 	NTSTATUS status;
-	char *data_in, *data_out;
+	uint8_t *data_in, *data_out;
 	int len = 1 + (random() % 5000);
 	struct echo_EchoData r;
 
@@ -104,7 +104,7 @@ static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	NTSTATUS status;
 	int len = 200000 + (random() % 5000);
-	char *data_out;
+	uint8_t *data_out;
 	struct echo_SourceData r;
 
 	printf("\nTesting SourceData\n");
@@ -138,7 +138,7 @@ static BOOL test_sinkdata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	int i;
 	NTSTATUS status;
-	char *data_in;
+	uint8_t *data_in;
 	int len = 200000 + (random() % 5000);
 	struct echo_SinkData r;
 

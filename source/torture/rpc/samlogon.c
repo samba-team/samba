@@ -344,25 +344,25 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 		   sizeof(lm_key)) != 0) {
 		printf("LM Key does not match expectations!\n");
 		printf("lm_key:\n");
-		dump_data(1, (const char *)lm_key, 8);
+		dump_data(1, lm_key, 8);
 		printf("expected:\n");
-		dump_data(1, (const char *)lm_hash, 8);
+		dump_data(1, lm_hash, 8);
 		pass = False;
 	}
 
 	switch (break_which) {
 	case NO_NT:
 	{
-		char lm_key_expected[16];
+		uint8_t lm_key_expected[16];
 		memcpy(lm_key_expected, lm_hash, 8);
 		memset(lm_key_expected+8, '\0', 8);
 		if (memcmp(lm_key_expected, user_session_key, 
 			   16) != 0) {
 			printf("NT Session Key does not match expectations (should be first-8 LM hash)!\n");
 			printf("user_session_key:\n");
-			dump_data(1, (const char *)user_session_key, sizeof(user_session_key));
+			dump_data(1, user_session_key, sizeof(user_session_key));
 			printf("expected:\n");
-			dump_data(1, (const char *)lm_key_expected, sizeof(lm_key_expected));
+			dump_data(1, lm_key_expected, sizeof(lm_key_expected));
 			pass = False;
 		}
 		break;
@@ -372,9 +372,9 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 			   sizeof(user_session_key)) != 0) {
 			printf("NT Session Key does not match expectations!\n");
 			printf("user_session_key:\n");
-			dump_data(1, (const char *)user_session_key, 16);
+			dump_data(1, user_session_key, 16);
 			printf("expected:\n");
-			dump_data(1, (const char *)session_key.data, session_key.length);
+			dump_data(1, session_key.data, session_key.length);
 			pass = False;
 		}
 	}
@@ -437,22 +437,22 @@ static BOOL test_ntlm_in_lm(struct samlogon_state *samlogon_state, char **error_
 		   sizeof(lm_key)) != 0) {
 		printf("LM Key does not match expectations!\n");
  		printf("lm_key:\n");
-		dump_data(1, (const char *)lm_key, 8);
+		dump_data(1, lm_key, 8);
 		printf("expected:\n");
-		dump_data(1, (const char *)lm_hash, 8);
+		dump_data(1, lm_hash, 8);
 		pass = False;
 	}
 	if (memcmp(lm_hash, user_session_key, 8) != 0) {
-		char lm_key_expected[16];
+		uint8_t lm_key_expected[16];
 		memcpy(lm_key_expected, lm_hash, 8);
 		memset(lm_key_expected+8, '\0', 8);
 		if (memcmp(lm_key_expected, user_session_key, 
 			   16) != 0) {
 			printf("NT Session Key does not match expectations (should be first-8 LM hash)!\n");
 			printf("user_session_key:\n");
-			dump_data(1, (const char *)user_session_key, sizeof(user_session_key));
+			dump_data(1, user_session_key, sizeof(user_session_key));
 			printf("expected:\n");
-			dump_data(1, (const char *)lm_key_expected, sizeof(lm_key_expected));
+			dump_data(1, lm_key_expected, sizeof(lm_key_expected));
 			pass = False;
 		}
 	}
@@ -471,21 +471,21 @@ static BOOL test_ntlm_in_both(struct samlogon_state *samlogon_state, char **erro
 	DATA_BLOB nt_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
 	DATA_BLOB session_key = data_blob_talloc(samlogon_state->mem_ctx, NULL, 16);
 
-	char lm_key[8];
-	char lm_hash[16];
-	char user_session_key[16];
-	char nt_hash[16];
+	uint8_t lm_key[8];
+	uint8_t lm_hash[16];
+	uint8_t user_session_key[16];
+	uint8_t nt_hash[16];
 	
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(user_session_key);
 
 	SMBNTencrypt(samlogon_state->password, samlogon_state->chall.data, 
 		     nt_response.data);
-	E_md4hash(samlogon_state->password, (uint8_t *)nt_hash);
-	SMBsesskeygen_ntv1((const uint8_t *)nt_hash, 
+	E_md4hash(samlogon_state->password, nt_hash);
+	SMBsesskeygen_ntv1(nt_hash, 
 			   session_key.data);
 
-	lm_good = E_deshash(samlogon_state->password, (uint8_t *)lm_hash); 
+	lm_good = E_deshash(samlogon_state->password, lm_hash); 
 	if (!lm_good) {
 		ZERO_STRUCT(lm_hash);
 	}
@@ -518,7 +518,7 @@ static BOOL test_ntlm_in_both(struct samlogon_state *samlogon_state, char **erro
  		printf("user_session_key:\n");
 		dump_data(1, user_session_key, 16);
  		printf("expected:\n");
-		dump_data(1, (const char *)session_key.data, session_key.length);
+		dump_data(1, session_key.data, session_key.length);
 		pass = False;
 	}
 
@@ -584,18 +584,18 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 			   sizeof(user_session_key)) != 0) {
 			printf("USER (LMv2) Session Key does not match expectations!\n");
 			printf("user_session_key:\n");
-			dump_data(1, (const char *)user_session_key, 16);
+			dump_data(1, user_session_key, 16);
 			printf("expected:\n");
-			dump_data(1, (const char *)lmv2_session_key.data, ntlmv2_session_key.length);
+			dump_data(1, lmv2_session_key.data, ntlmv2_session_key.length);
 			pass = False;
 		}
 		if (memcmp(lmv2_session_key.data, lm_session_key, 
 			   sizeof(lm_session_key)) != 0) {
 			printf("LM (LMv2) Session Key does not match expectations!\n");
 			printf("lm_session_key:\n");
-			dump_data(1, (const char *)lm_session_key, 8);
+			dump_data(1, lm_session_key, 8);
 			printf("expected:\n");
-			dump_data(1, (const char *)lmv2_session_key.data, 8);
+			dump_data(1, lmv2_session_key.data, 8);
 			pass = False;
 		}
 		break;
@@ -604,18 +604,18 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 			   sizeof(user_session_key)) != 0) {
 			printf("USER (NTLMv2) Session Key does not match expectations!\n");
 			printf("user_session_key:\n");
-			dump_data(1, (const char *)user_session_key, 16);
+			dump_data(1, user_session_key, 16);
 			printf("expected:\n");
-			dump_data(1, (const char *)ntlmv2_session_key.data, ntlmv2_session_key.length);
+			dump_data(1, ntlmv2_session_key.data, ntlmv2_session_key.length);
 			pass = False;
 		}
 		if (memcmp(ntlmv2_session_key.data, lm_session_key, 
 			   sizeof(lm_session_key)) != 0) {
 			printf("LM (NTLMv2) Session Key does not match expectations!\n");
 			printf("lm_session_key:\n");
-			dump_data(1, (const char *)lm_session_key, 8);
+			dump_data(1, lm_session_key, 8);
 			printf("expected:\n");
-			dump_data(1, (const char *)ntlmv2_session_key.data, 8);
+			dump_data(1, ntlmv2_session_key.data, 8);
 			pass = False;
 		}
 	}
@@ -752,17 +752,17 @@ static BOOL test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 		   sizeof(lm_key)) != 0) {
 		printf("LM Key does not match expectations!\n");
  		printf("lm_key:\n");
-		dump_data(1, (const char *)lm_key, 8);
+		dump_data(1, lm_key, 8);
 		printf("expected:\n");
-		dump_data(1, (const char *)lm_hash, 8);
+		dump_data(1, lm_hash, 8);
 		pass = False;
 	}
 	if (memcmp(nt_key, user_session_key, 16) != 0) {
 		printf("NT Session Key does not match expectations (should be first-8 LM hash)!\n");
 		printf("user_session_key:\n");
-		dump_data(1, (const char *)user_session_key, sizeof(user_session_key));
+		dump_data(1, user_session_key, sizeof(user_session_key));
 		printf("expected:\n");
-		dump_data(1, (const char *)nt_key, sizeof(nt_key));
+		dump_data(1, nt_key, sizeof(nt_key));
 		pass = False;
 	}
         return pass;

@@ -74,7 +74,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 
 	DEBUG(5, ("auth_context challenge set by %s\n", auth_context->challenge_set_by));
 	DEBUG(5, ("challenge is: \n"));
-	dump_data(5, (const char *)auth_context->challenge.data, auth_context->challenge.length);
+	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
 	return NT_STATUS_OK;
 }
 
