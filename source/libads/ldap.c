@@ -903,11 +903,11 @@ static void dump_sd(const char *filed, struct berval **values)
 /*
   dump a string result from ldap
 */
-static void dump_string(const char *field, struct berval **values)
+static void dump_string(const char *field, char **values)
 {
 	int i;
 	for (i=0; values[i]; i++) {
-		printf("%s: %s\n", field, values[i]->bv_val);
+		printf("%s: %s\n", field, values[i]);
 	}
 }
 
@@ -946,7 +946,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 	if (!handlers[i].name) {
 		if (!values) /* first time, indicate string conversion */
 			return True;
-		dump_string(field, (struct berval **) values);
+		dump_string(field, (char **)values);
 	}
 	return False;
 }
