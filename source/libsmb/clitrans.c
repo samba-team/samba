@@ -46,7 +46,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,14+lsetup,0,True);
-	CVAL(cli->outbuf,smb_com) = trans;
+	SCVAL(cli->outbuf,smb_com,trans);
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
 
@@ -101,7 +101,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 			this_ldata = MIN(ldata-tot_data,cli->max_xmit - (500+this_lparam));
 
 			set_message(cli->outbuf,trans==SMBtrans?8:9,0,True);
-			CVAL(cli->outbuf,smb_com) = trans==SMBtrans ? SMBtranss : SMBtranss2;
+			SCVAL(cli->outbuf,smb_com,(trans==SMBtrans ? SMBtranss : SMBtranss2));
 			
 			outparam = smb_buf(cli->outbuf);
 			outdata = outparam+this_lparam;
@@ -271,7 +271,7 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,19+lsetup,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBnttrans;
+	SCVAL(cli->outbuf,smb_com,SMBnttrans);
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
 
@@ -319,7 +319,7 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 			this_ldata = MIN(ldata-tot_data,cli->max_xmit - (500+this_lparam));
 
 			set_message(cli->outbuf,18,0,True);
-			CVAL(cli->outbuf,smb_com) = SMBnttranss;
+			SCVAL(cli->outbuf,smb_com,SMBnttranss);
 
 			/* XXX - these should probably be aligned */
 			outparam = smb_buf(cli->outbuf);

@@ -66,8 +66,8 @@ int reply_special(char *inbuf,char *outbuf)
 	
 	switch (msg_type) {
 	case 0x81: /* session request */
-		CVAL(outbuf,0) = 0x82;
-		CVAL(outbuf,3) = 0;
+		SCVAL(outbuf,0,0x82);
+		SCVAL(outbuf,3,0);
 		if (name_len(inbuf+4) > 50 || 
 		    name_len(inbuf+4 + name_len(inbuf + 4)) > 50) {
 			DEBUG(0,("Invalid name length in session request\n"));
@@ -100,7 +100,7 @@ int reply_special(char *inbuf,char *outbuf)
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 
 			   no thanks! */
-			CVAL(outbuf, 0) = 0x83;
+			SCVAL(outbuf, 0,0x83);
 			break;
 		}
 
@@ -120,8 +120,8 @@ int reply_special(char *inbuf,char *outbuf)
 		
 	case 0x89: /* session keepalive request 
 		      (some old clients produce this?) */
-		CVAL(outbuf,0) = SMBkeepalive;
-		CVAL(outbuf,3) = 0;
+		SCVAL(outbuf,0,SMBkeepalive);
+		SCVAL(outbuf,3,0);
 		break;
 		
 	case 0x82: /* positive session response */
@@ -651,7 +651,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     if (strlen(directory) == 0)
       pstrcpy(directory,"./");
     memset((char *)status,'\0',21);
-    CVAL(status,0) = dirtype;
+    SCVAL(status,0,dirtype);
   }
   else
   {
@@ -735,7 +735,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   if (numentries == 0 || !ok)
   {
-    CVAL(outbuf,smb_rcls) = ERRDOS;
+    SCVAL(outbuf,smb_rcls,ERRDOS);
     SSVAL(outbuf,smb_err,ERRnofiles);
     dptr_close(&dptr_num);
   }
@@ -746,7 +746,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   if(ok && expect_close && numentries == 0 && status_len == 0)
   {
-    CVAL(outbuf,smb_rcls) = ERRDOS;
+    SCVAL(outbuf,smb_rcls,ERRDOS);
     SSVAL(outbuf,smb_err,ERRnofiles);
     /* Also close the dptr - we know it's gone */
     dptr_close(&dptr_num);
@@ -758,7 +758,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   SSVAL(outbuf,smb_vwv0,numentries);
   SSVAL(outbuf,smb_vwv1,3 + numentries * DIR_STRUCT_SIZE);
-  CVAL(smb_buf(outbuf),0) = 5;
+  SCVAL(smb_buf(outbuf),0,5);
   SSVAL(smb_buf(outbuf),1,numentries*DIR_STRUCT_SIZE);
 
   if (Protocol >= PROTOCOL_NT1) {
@@ -888,11 +888,11 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   SSVAL(outbuf,smb_vwv6,rmode);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+    SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
   }
     
   if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+    SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
   END_PROFILE(SMBopen);
   return(outsize);
 }
@@ -988,11 +988,11 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
    */
 
   if (core_oplock_request && lp_fake_oplocks(SNUM(conn))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+    SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
   }
 
   if(core_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+    SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
   }
 
   set_message(outbuf,15,0,True);
@@ -1103,11 +1103,11 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   SSVAL(outbuf,smb_vwv0,fsp->fnum);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+    SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
   }
  
   if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+    SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
  
   DEBUG( 2, ( "new file %s\n", fname ) );
   DEBUG( 3, ( "mknew %s fd=%d dmode=%d umode=%o\n",
@@ -1192,11 +1192,11 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   outsize = set_message_end(outbuf, p);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-	  CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+	  SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
   }
   
   if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-	  CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+	  SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 
   DEBUG( 2, ( "created temp file %s\n", fname ) );
   DEBUG( 3, ( "ctemp %s fd=%d dmode=%d umode=%o\n",
@@ -1624,7 +1624,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   outsize += nread;
   SSVAL(outbuf,smb_vwv0,nread);
   SSVAL(outbuf,smb_vwv5,nread+3);
-  CVAL(smb_buf(outbuf),0) = 1;
+  SCVAL(smb_buf(outbuf),0,1);
   SSVAL(smb_buf(outbuf),1,nread);
   
   DEBUG( 3, ( "read fnum=%d num=%d nread=%d\n",
@@ -1742,8 +1742,8 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	}
 
 	/* force the error type */
-	CVAL(inbuf,smb_com) = SMBwritec;
-	CVAL(outbuf,smb_com) = SMBwritec;
+	SCVAL(inbuf,smb_com,SMBwritec);
+	SCVAL(outbuf,smb_com,SMBwritec);
 
 	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
 		END_PROFILE(SMBwritebraw);
@@ -1764,7 +1764,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	total_written = nwritten;
 
 	/* Return a message to the redirector to tell it to send more bytes */
-	CVAL(outbuf,smb_com) = SMBwritebraw;
+	SCVAL(outbuf,smb_com,SMBwritebraw);
 	SSVALS(outbuf,smb_vwv0,-1);
 	outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
 	if (!send_smb(smbd_server_fd(),outbuf))
@@ -1780,7 +1780,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 	/* Set up outbuf to return the correct return */
 	outsize = set_message(outbuf,1,0,True);
-	CVAL(outbuf,smb_com) = SMBwritec;
+	SCVAL(outbuf,smb_com,SMBwritec);
 	SSVAL(outbuf,smb_vwv0,total_written);
 
 	if (numtowrite != 0) {
@@ -1805,7 +1805,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		nwritten = write_file(fsp,inbuf+4,startpos+nwritten,numtowrite);
 
 		if (nwritten < (ssize_t)numtowrite) {
-			CVAL(outbuf,smb_rcls) = ERRHRD;
+			SCVAL(outbuf,smb_rcls,ERRHRD);
 			SSVAL(outbuf,smb_err,ERRdiskfull);      
 		}
 
@@ -1966,7 +1966,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	SSVAL(outbuf,smb_vwv0,nwritten);
 
 	if (nwritten < (ssize_t)numtowrite) {
-		CVAL(outbuf,smb_rcls) = ERRHRD;
+		SCVAL(outbuf,smb_rcls,ERRHRD);
 		SSVAL(outbuf,smb_err,ERRdiskfull);      
 	}
   
@@ -2062,7 +2062,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
     SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);
 
   if (nwritten < (ssize_t)numtowrite) {
-    CVAL(outbuf,smb_rcls) = ERRHRD;
+    SCVAL(outbuf,smb_rcls,ERRHRD);
     SSVAL(outbuf,smb_err,ERRdiskfull);      
   }
 
@@ -2578,7 +2578,7 @@ int reply_printqueue(connection_struct *conn,
 
 	SSVAL(outbuf,smb_vwv0,0);
 	SSVAL(outbuf,smb_vwv1,0);
-	CVAL(smb_buf(outbuf),0) = 1;
+	SCVAL(smb_buf(outbuf),0,1);
 	SSVAL(smb_buf(outbuf),1,0);
   
 	DEBUG(3,("printqueue start_index=%d max_count=%d\n",
@@ -2601,10 +2601,10 @@ int reply_printqueue(connection_struct *conn,
 
 		for (i=first;i<first+num_to_get;i++) {
 			put_dos_date2(p,0,queue[i].time);
-			CVAL(p,4) = (queue[i].status==LPQ_PRINTING?2:3);
+			SCVAL(p,4,(queue[i].status==LPQ_PRINTING?2:3));
 			SSVAL(p,5, queue[i].job);
 			SIVAL(p,7,queue[i].size);
-			CVAL(p,11) = 0;
+			SCVAL(p,11,0);
 			srvstr_push(outbuf, p+12, queue[i].user, 16, STR_ASCII);
 			p += 28;
 		}
@@ -2613,7 +2613,7 @@ int reply_printqueue(connection_struct *conn,
 			outsize = set_message(outbuf,2,28*count+3,False); 
 			SSVAL(outbuf,smb_vwv0,count);
 			SSVAL(outbuf,smb_vwv1,(max_count>0?first+count:first-1));
-			CVAL(smb_buf(outbuf),0) = 1;
+			SCVAL(smb_buf(outbuf),0,1);
 			SSVAL(smb_buf(outbuf),1,28*count);
 		}
 
@@ -3557,7 +3557,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   }
   
   outsize = set_message(outbuf,0,0,True);
-  CVAL(outbuf,smb_reh) = CVAL(inbuf,smb_reh);
+  SCVAL(outbuf,smb_reh,CVAL(inbuf,smb_reh));
   
   DEBUG(3,("setdir %s\n", newdir));
 
@@ -4044,7 +4044,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 	/* If this fails we need to send an SMBwriteC response,
 		not an SMBwritebmpx - set this up now so we don't forget */
-	CVAL(outbuf,smb_com) = SMBwritec;
+	SCVAL(outbuf,smb_com,SMBwritec);
 
 	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK,False)) {
 		END_PROFILE(SMBwriteBmpx);
@@ -4087,7 +4087,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 	/* We are returning successfully, set the message type back to
 		SMBwritebmpx */
-	CVAL(outbuf,smb_com) = SMBwriteBmpx;
+	SCVAL(outbuf,smb_com,SMBwriteBmpx);
   
 	outsize = set_message(outbuf,1,0,True);
   
@@ -4104,7 +4104,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 		/* Now the secondary */
 		outsize = set_message(outbuf,1,0,True);
-		CVAL(outbuf,smb_com) = SMBwritec;
+		SCVAL(outbuf,smb_com,SMBwritec);
 		SSVAL(outbuf,smb_vwv0,nwritten);
 	}
 
@@ -4142,7 +4142,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 	data = smb_base(inbuf) + smb_doff;
 
 	/* We need to send an SMBwriteC response, not an SMBwritebs */
-	CVAL(outbuf,smb_com) = SMBwritec;
+	SCVAL(outbuf,smb_com,SMBwritec);
 
 	/* This fd should have an auxiliary struct attached,
 		check that it does */

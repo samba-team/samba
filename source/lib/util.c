@@ -311,10 +311,10 @@ void smb_setlen(char *buf,int len)
 {
   _smb_setlen(buf,len);
 
-  CVAL(buf,4) = 0xFF;
-  CVAL(buf,5) = 'S';
-  CVAL(buf,6) = 'M';
-  CVAL(buf,7) = 'B';
+  SCVAL(buf,4,0xFF);
+  SCVAL(buf,5,'S');
+  SCVAL(buf,6,'M');
+  SCVAL(buf,7,'B');
 }
 
 /*******************************************************************
@@ -324,7 +324,7 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 {
 	if (zero)
 		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
-	CVAL(buf,smb_wct) = num_words;
+	SCVAL(buf,smb_wct,num_words);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
 	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
 	return (smb_size + num_words*2 + num_bytes);
@@ -494,7 +494,7 @@ void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,ti
       push_ascii(buf+1,mask2,11, 0);
 
   memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
-  CVAL(buf,21) = mode;
+  SCVAL(buf,21,mode);
   put_dos_date(buf,22,date);
   SSVAL(buf,26,size & 0xFFFF);
   SSVAL(buf,28,(size >> 16)&0xFFFF);

@@ -1614,8 +1614,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,size);
 			SIVAL(pdata,16,sbuf.st_nlink);
-			CVAL(pdata,20) = 0;
-			CVAL(pdata,21) = (mode&aDIR)?1:0;
+			SCVAL(pdata,20,0);
+			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			break;
 
 		case SMB_FILE_EA_INFORMATION:
@@ -1678,8 +1678,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,size);
 			SIVAL(pdata,16,sbuf.st_nlink);
-			CVAL(pdata,20) = delete_pending;
-			CVAL(pdata,21) = (mode&aDIR)?1:0;
+			SCVAL(pdata,20,delete_pending);
+			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			pdata += 24;
 			SINO_T(pdata,0,(SMB_INO_T)sbuf.st_ino); 
 			pdata += 8; /* index number */
@@ -1728,7 +1728,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 		case SMB_FILE_DISPOSITION_INFORMATION:
 			data_size = 1;
-			CVAL(pdata,0) = delete_pending;
+			SCVAL(pdata,0,delete_pending);
 			break;
 
 		case SMB_FILE_POSITION_INFORMATION:

@@ -269,7 +269,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	
 	set_message(outbuf,17,0,True);
 	
-	CVAL(outbuf,smb_vwv1) = secword;
+	SCVAL(outbuf,smb_vwv1,secword);
 	
 	Protocol = PROTOCOL_NT1;
 	

@@ -71,7 +71,7 @@ int cli_send_mailslot(int dgram_sock, BOOL unique, char *mailslot,
   set_message(ptr,17,17 + len,True);
   memcpy(ptr,tmp,4);
 
-  CVAL(ptr,smb_com) = SMBtrans;
+  SCVAL(ptr,smb_com,SMBtrans);
   SSVAL(ptr,smb_vwv1,len);
   SSVAL(ptr,smb_vwv11,len);
   SSVAL(ptr,smb_vwv12,70 + strlen(mailslot));
