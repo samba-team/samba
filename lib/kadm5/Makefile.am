@@ -8,8 +8,9 @@ INCLUDES = $(WFLAGS)
 COMPILE_ET = ../com_err/compile_et
 
 lib_LIBRARIES = libkadm5srv.a libkadm5clnt.a
+sbin_PROGRAMS = dump_log replay_log
 
-noinst_PROGRAMS = dump_log replay_log
+libexec_PROGRAMS = ipropd-master ipropd-slave
 
 incdir = $(includedir)/kadm5
 idir = $(top_builddir)/include/kadm5
@@ -63,6 +64,14 @@ dump_log_LDADD = libkadm5srv.a -L$(top_builddir)/lib/hdb -lhdb -L$(top_builddir)
 replay_log_SOURCES = replay_log.c
 
 replay_log_LDADD = libkadm5srv.a -L$(top_builddir)/lib/hdb -lhdb -L$(top_builddir)/lib/krb5 -lkrb5 -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/des -ldes -L$(top_builddir)/lib/roken -lroken
+
+ipropd_master_SOURCES = ipropd_master.c
+
+ipropd_master_LDADD = libkadm5srv.a -L$(top_builddir)/lib/hdb -lhdb -L$(top_builddir)/lib/krb5 -lkrb5 -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/des -ldes -L$(top_builddir)/lib/roken -lroken
+
+ipropd_slave_SOURCES = ipropd_slave.c
+
+ipropd_slave_LDADD = libkadm5srv.a -L$(top_builddir)/lib/hdb -lhdb -L$(top_builddir)/lib/krb5 -lkrb5 -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/des -ldes -L$(top_builddir)/lib/roken -lroken
 
 CLEANFILES = kadm5_err.c kadm5_err.h
 
