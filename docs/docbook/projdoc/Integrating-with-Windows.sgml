@@ -517,7 +517,7 @@ if the TCP/IP setup has been given at least one WINS Server IP Address.
 
 <para>
 To configure Samba to be a WINS server the following parameter needs 
-to be added to the <filename>smb.conf</filename> file:
+to be added to the &smb.conf; file:
 </para>
 
 <para><programlisting>
@@ -526,7 +526,7 @@ to be added to the <filename>smb.conf</filename> file:
 
 <para>
 To configure Samba to use a WINS server the following parameters are 
-needed in the smb.conf file:
+needed in the &smb.conf; file:
 </para>
 
 <para><programlisting>

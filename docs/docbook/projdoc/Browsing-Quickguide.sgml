@@ -44,7 +44,7 @@ implements browse list collation using unicast UDP.
 
 <para>
 Secondly, in those networks where Samba is the only SMB server technology
-wherever possible nmbd should be configured on one (1) machine as the WINS
+wherever possible &nmbd; should be configured on one (1) machine as the WINS
 server. This makes it easy to manage the browsing environment. If each network
 segment is configured with it's own Samba WINS server, then the only way to
 get cross segment browsing to work is by using the 
@@ -65,7 +65,7 @@ been committed, but it still needs maturation.
 
 <para>
 Right now samba WINS does not support MS-WINS replication. This means that
-when setting up Samba as a WINS server there must only be one nmbd configured
+when setting up Samba as a WINS server there must only be one &nmbd; configured
 as a WINS server on the network. Some sites have used multiple Samba WINS
 servers for redundancy (one server per subnet) and then used 
 <command>remote browse sync</command> and <command>remote announce</command>
@@ -294,11 +294,12 @@ To configure Samba to register with a WINS server just add
 "wins server = a.b.c.d" to your smb.conf file [globals] section.
 </para>
 
-<para>
-<emphasis>DO NOT EVER</emphasis> use both "wins support = yes" together
-with "wins server = a.b.c.d" particularly not using it's own IP address.
-Specifying both will cause nmbd to refuse to start!
-</para>
+<important><para>
+Never use both <command>wins support = yes</command> together
+with <command>wins server = a.b.c.d</command>
+particularly not using it's own IP address.
+Specifying both will cause &nmbd; to refuse to start!
+</para></important>
 
 </sect1>
 

@@ -74,12 +74,12 @@ its netbios name. If you don't get this right then you will get a
 </para>
 
 <para>
-If all you want is kerberos support in smbclient then you can skip
-straight to <link linkend="ads-test-smbclient">Test with smbclient</link> now. 
+If all you want is kerberos support in &smbclient; then you can skip
+straight to <link linkend="ads-test-smbclient">Test with &smbclient;</link> now. 
 <link linkend="ads-create-machine-account">Creating a computer account</link> 
 and <link linkend="ads-test-server">testing your servers</link>
 is only needed if you want kerberos
-support for smbd and winbindd.
+support for &smbd; and &winbindd;.
 </para>
 
 </sect1>
@@ -120,11 +120,11 @@ server? Does it have an encoding type of DES-CBC-MD5 ?
 </sect1>
 
 <sect1 id="ads-test-smbclient">
-<title>Testing with smbclient</title>
+<title>Testing with &smbclient;</title>
 
 <para>
 On your Samba server try to login to a Win2000 server or your Samba
-server using smbclient and kerberos. Use smbclient as usual, but
+server using &smbclient; and kerberos. Use &smbclient; as usual, but
 specify the <parameter>-k</parameter> option to choose kerberos authentication.
 </para>
 

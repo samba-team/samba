@@ -297,8 +297,7 @@
 	<para>If you want to set up a share that allows users full control
 	in modifying the permission bits on their files and directories and
 	doesn't force any particular bits to be set 'on', then set the following
-	parameters in the <ulink url="smb.conf.5.html"><filename>smb.conf(5)
-	</filename></ulink> file in that share specific section :</para>
+	parameters in the &smb.conf; file in that share specific section :</para>
 
 	<para><parameter>security mask = 0777</parameter></para>
 	<para><parameter>force security mode = 0</parameter></para>
