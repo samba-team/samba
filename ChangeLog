@@ -1,3 +1,9 @@
+2004-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/der_get.c: 1.28.2.16: (der_get_oid): handle all oid
+	components being smaller then 127 and allocate one extra element
+	since first byte is split to to elements.
+	
 2004-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/k5.asn1: ETYPE_DIGEST_MD5_NONE, ETYPE_CRAM_MD5_NONE:
