@@ -1186,12 +1186,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   if (!ok)
   {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-
+    set_bad_path_error(errno, bad_path);
     END_PROFILE(SMBgetatr);
     return(UNIXERROR(ERRDOS,ERRbadfile));
   }
@@ -1245,12 +1240,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   if (!ok)
   {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-
+    set_bad_path_error(errno, bad_path);
     END_PROFILE(SMBsetatr);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
@@ -1394,12 +1384,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       {
         if(dptr_num == -2)
         {
-          if((errno == ENOENT) && bad_path)
-          {
-            unix_ERR_class = ERRDOS;
-            unix_ERR_code = ERRbadpath;
-          }
-	 	 END_PROFILE(SMBsearch);
+          set_bad_path_error(errno, bad_path);
+          END_PROFILE(SMBsearch);
           return (UNIXERROR(ERRDOS,ERRnofids));
         }
 		END_PROFILE(SMBsearch);
@@ -1570,11 +1556,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
   if (!fsp)
   {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
+    set_bad_path_error(errno, bad_path);
     END_PROFILE(SMBopen);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
@@ -1665,11 +1647,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
       
   if (!fsp)
   {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
+    set_bad_path_error(errno, bad_path);
     END_PROFILE(SMBopenX);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
@@ -1804,11 +1782,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   if (!fsp)
   {
-    if((errno == ENOENT) && bad_path) 
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
+    set_bad_path_error(errno, bad_path);
     END_PROFILE(SMBcreate);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
@@ -1878,10 +1852,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	close(tmpfd);
 
 	if (!fsp) {
-		if((errno == ENOENT) && bad_path) {
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadpath;
-		}
+		set_bad_path_error(errno, bad_path);
 		END_PROFILE(SMBctemp);
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
@@ -3568,11 +3539,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   if (!ok)
   {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
+    set_bad_path_error(errno, bad_path);
     END_PROFILE(SMBrmdir);
     return(UNIXERROR(ERRDOS,ERRbadpath));
   }

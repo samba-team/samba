@@ -243,10 +243,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
     
 	if (!check_name(fname,conn)) {
-		if((errno == ENOENT) && bad_path) {
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadpath;
-		}
+		set_bad_path_error(errno, bad_path);
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
@@ -256,10 +253,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 			oplock_request, &rmode,&smb_action);
       
 	if (!fsp) {
-		if((errno == ENOENT) && bad_path) {
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadpath;
-		}
+		set_bad_path_error(errno, bad_path);
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
@@ -886,10 +880,7 @@ close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
 
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 	if(!check_name(directory,conn)) {
-		if((errno == ENOENT) && bad_path) {
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadpath;
-		}
+		set_bad_path_error(errno, bad_path);
 
 #if 0
 		/* Ugly - NT specific hack - maybe not needed ? (JRA) */
@@ -1515,6 +1506,18 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 }
 
 /****************************************************************************
+ Utility function to set bad path error.
+****************************************************************************/
+
+void set_bad_path_error(int err, BOOL bad_path)
+{
+	if((err == ENOENT) && bad_path) {
+		unix_ERR_class = ERRDOS;
+		unix_ERR_code = ERRbadpath;
+	}
+}
+
+/****************************************************************************
   Reply to a TRANS2_QFILEPATHINFO or TRANSACT2_QFILEINFO (query file info by
   file name or file id).
 ****************************************************************************/
@@ -1561,14 +1564,20 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			 */
 			fname = fsp->fsp_name;
 			unix_convert(fname,conn,0,&bad_path,&sbuf);
-			if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && 
-					(INFO_LEVEL_IS_UNIX(info_level) ? vfs_lstat(conn,fname,&sbuf) : vfs_stat(conn,fname,&sbuf)))) {
-				DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+			if (!check_name(fname,conn)) {
+				DEBUG(3,("call_trans2qfilepathinfo: check_name of %s failed (%s)\n",fname,strerror(errno)));
+				set_bad_path_error(errno, bad_path);
+				return(UNIXERROR(ERRDOS,ERRbadpath));
+			}
 
-				if((errno == ENOENT) && bad_path) {
-					unix_ERR_class = ERRDOS;
-					unix_ERR_code = ERRbadpath;
-				}
+			if (INFO_LEVEL_IS_UNIX(info_level) && vfs_lstat(conn,fname,&sbuf)) {
+				DEBUG(3,("call_trans2qfilepathinfo: vfs_lstat of %s failed (%s)\n",fname,strerror(errno)));
+				set_bad_path_error(errno, bad_path);
+				return(UNIXERROR(ERRDOS,ERRbadpath));
+			}
+			else if (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf)) {
+				DEBUG(3,("call_trans2qfilepathinfo: vfs_stat of %s failed (%s)\n",fname,strerror(errno)));
+				set_bad_path_error(errno, bad_path);
 				return(UNIXERROR(ERRDOS,ERRbadpath));
 			}
 
@@ -1609,10 +1618,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		if (!check_name(fname,conn) || (!VALID_STAT(sbuf) &&
 			(INFO_LEVEL_IS_UNIX(info_level) ? vfs_lstat(conn,fname,&sbuf) : vfs_stat(conn,fname,&sbuf)))) {
 			DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-			if((errno == ENOENT) && bad_path) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
-			}
+			set_bad_path_error(errno, bad_path);
 			return(UNIXERROR(ERRDOS,ERRbadpath));
 		}
 	}
@@ -2241,10 +2247,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			unix_convert(fname,conn,0,&bad_path,&sbuf);
 			if (!check_name(fname,conn) || (!VALID_STAT(sbuf))) {
 				DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-				if((errno == ENOENT) && bad_path) {
-					unix_ERR_class = ERRDOS;
-					unix_ERR_code = ERRbadpath;
-				}
+				set_bad_path_error(errno, bad_path);
 				return(UNIXERROR(ERRDOS,ERRbadpath));
 			}
 		} else if (fsp && fsp->print_file) {
@@ -2286,10 +2289,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		pstrcpy(fname,&params[6]);
 		unix_convert(fname,conn,0,&bad_path,&sbuf);
 		if(!check_name(fname, conn)) {
-			if((errno == ENOENT) && bad_path) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
-			}
+			set_bad_path_error(errno, bad_path);
 			return(UNIXERROR(ERRDOS,ERRbadpath));
 		}
 
@@ -2300,10 +2300,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		if(!VALID_STAT(sbuf) && !INFO_LEVEL_IS_UNIX(info_level)) {
 
 			DEBUG(3,("stat of %s failed (%s)\n", fname, strerror(errno)));
-			if((errno == ENOENT) && bad_path) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
-			}
+			set_bad_path_error(errno, bad_path);
 			return(UNIXERROR(ERRDOS,ERRbadpath));
 		}    
 	}
@@ -2844,10 +2841,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
   
 	if(ret < 0) {
 		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
-		if((errno == ENOENT) && bad_path) {
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadpath;
-		}
+		set_bad_path_error(errno, bad_path);
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
