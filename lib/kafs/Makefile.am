@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4) $(AFS_EXTRA_DEFS)
+INCLUDES += $(INCLUDE_krb4) $(AFS_EXTRA_DEFS) -DROKEN_RENAME
 
 if KRB4
 AFSLIBS = libkafs.la
@@ -54,7 +54,7 @@ if KRB5
 afskrb5_c = afskrb5.c
 endif
 
-libkafs_la_SOURCES = afssys.c afskrb.c $(afskrb5_c) common.c $(AIX_SRC) kafs_locl.h afssysdefs.h
+libkafs_la_SOURCES = afssys.c afskrb.c $(afskrb5_c) common.c $(AIX_SRC) kafs_locl.h afssysdefs.h resolve.c
 #afslib_so_SOURCES = afslib.c
 
 EXTRA_libkafs_la_SOURCES = afskrb5.c dlfcn.c afslib.c dlfcn.h
@@ -69,3 +69,6 @@ afslib.so: afslib.o
 	ld -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp $(AFS_EXTRA_LD) afslib.o -lc
 
 $(OBJECTS): ../../include/config.h
+
+resolve.c:
+	$(LN_S) $(srcdir)/../roken/resolve.c .
