@@ -27,11 +27,14 @@ struct IUnknown_AddRef;
 struct IUnknown_Release;
 struct IUnknown_QueryInterface;
 
-struct dcom_oxid_mapping;
-
 struct dcom_context 
 {
-	struct dcom_oxid_mapping *oxids;
+	struct dcom_oxid_mapping {
+		struct dcom_oxid_mapping *prev, *next;
+		struct DUALSTRINGARRAY bindings;
+		HYPER_T oxid;
+		struct dcerpc_pipe *pipe;
+	} *oxids;
 	const char *domain;
 	const char *user;
 	const char *password;
