@@ -365,17 +365,19 @@ size_t sec_desc_size(SEC_DESC *psd)
 
 	offset = SEC_DESC_HEADER_SIZE;
 
+	/* don't align */
+
 	if (psd->owner_sid != NULL)
-		offset += ((sid_size(psd->owner_sid) + 3) & ~3);
+		offset += sid_size(psd->owner_sid);
 
 	if (psd->grp_sid != NULL)
-		offset += ((sid_size(psd->grp_sid) + 3) & ~3);
+		offset += sid_size(psd->grp_sid);
 
 	if (psd->sacl != NULL)
-		offset += ((psd->sacl->size + 3) & ~3);
+		offset += psd->sacl->size;
 
 	if (psd->dacl != NULL)
-		offset += ((psd->dacl->size + 3) & ~3);
+		offset += psd->dacl->size;
 
 	return offset;
 }
@@ -643,7 +645,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 		if (offset == 0)
 			offset = SEC_DESC_HEADER_SIZE;
 
-		offset += ((sid_size(dst->owner_sid) + 3) & ~3);
+		offset += sid_size(dst->owner_sid);
 	}
 
 	if (dst->grp_sid != NULL) {
@@ -651,7 +653,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 		if (offset == 0)
 			offset = SEC_DESC_HEADER_SIZE;
 
-		offset += ((sid_size(dst->grp_sid) + 3) & ~3);
+		offset += sid_size(dst->grp_sid);
 	}
 
 	if (dst->sacl != NULL) {
@@ -659,7 +661,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 		offset_acl = SEC_DESC_HEADER_SIZE;
 
 		dst->off_sacl  = offset_acl;
-		offset_acl    += ((dst->sacl->size + 3) & ~3);
+		offset_acl    += dst->sacl->size;
 		offset        += dst->sacl->size;
 		offset_sid    += dst->sacl->size;
 	}
@@ -670,7 +672,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 			offset_acl = SEC_DESC_HEADER_SIZE;
 
 		dst->off_dacl  = offset_acl;
-		offset_acl    += ((dst->dacl->size + 3) & ~3);
+		offset_acl    += dst->dacl->size;
 		offset        += dst->dacl->size;
 		offset_sid    += dst->dacl->size;
 	}
@@ -752,7 +754,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "sec_io_desc");
 	depth++;
 
-#if 0	/* JERRY */
+#if 0	
 	/*
 	 * if alignment is needed, should be done by the the 
 	 * caller.  Not here.  This caused me problems when marshalling
@@ -823,9 +825,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
 			return False;
-		if(!prs_align(ps))
-			return False;
-
 		ps->data_offset = tmp_offset;
 	}
 
@@ -836,8 +835,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			return False;
 		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
 			return False;
-		if(!prs_align(ps))
-			return False;
 	}
 
 	max_offset = MAX(max_offset, prs_offset(ps));
@@ -846,8 +843,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
 			return False;
 		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
-			return False;
-		if(!prs_align(ps))
 			return False;
 	}
 
