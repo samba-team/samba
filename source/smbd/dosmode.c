@@ -196,6 +196,8 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 
 	if (S_ISDIR(st->st_mode))
 		dosmode |= aDIR;
+	else
+		dosmode &= ~aDIR;
 
 	if (dos_mode(conn,fname,st) == dosmode)
 		return(0);

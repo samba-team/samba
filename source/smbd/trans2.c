@@ -2742,6 +2742,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
 	DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
 	DEBUG(6,("size: %.0f ", (double)size));
+	if (S_ISDIR(sbuf.st_mode))
+		dosmode |= aDIR;
+	else
+		dosmode &= ~aDIR;
+
 	DEBUG(6,("dosmode: %x\n"  , dosmode));
 
 	if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
