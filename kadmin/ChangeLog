@@ -1,5 +1,12 @@
 2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
 
+	* version4.c (handle_v4): check for termination
+
+	* server.c (v5_loop): check for termination
+
+	* kadm_conn.c (wait_term): if we're doing something, set just set
+	a flag otherwise exit rightaway
+
 	* server.c: use krb5_read_priv_message; (v5_loop): check for EOF
 
 2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
