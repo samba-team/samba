@@ -35,6 +35,7 @@ extern int DEBUGLEVEL;
 extern FILE* out_hnd;
 
 extern struct cli_state *smb_cli;
+extern struct user_credentials *usr_creds;
 extern int smb_tidx;
 
 /****************************************************************************
@@ -127,7 +128,7 @@ void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[
 	strupper(srv_name);
 
 	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
-		printer_name, srv_name, smb_cli->user_name));
+		printer_name, srv_name, usr_creds->user_name));
 
 	DEBUG(5, ("cmd_spoolss_open_printer_ex: smb_cli->fd:%d\n", smb_cli->fd));
 
@@ -137,7 +138,7 @@ void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[
 	res = res ? spoolss_open_printer_ex(smb_cli, nt_pipe_fnum, 
 	                        printer_name,
 	                        0, 0, 0,
-	                        srv_name, smb_cli->user_name,
+	                        srv_name, usr_creds->user_name,
 	                        &hnd) : False;
 
 	res = res ? spoolss_closeprinter(smb_cli, nt_pipe_fnum, &hnd) : False;
@@ -255,10 +256,10 @@ void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 	strupper(srv_name);
 
 	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
-		printer_name, srv_name, smb_cli->user_name));
+		printer_name, srv_name, usr_creds->user_name));
 
 	if (msrpc_spoolss_enum_jobs(smb_cli,
-				srv_name, smb_cli->user_name, printer_name,
+				srv_name, usr_creds->user_name, printer_name,
 				level, &num, &ctr,
 				spool_job_info_ctr))
 	{

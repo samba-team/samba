@@ -48,7 +48,7 @@ void cmd_lsa_enum_trust_dom(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_lsa_enum_trust_dom: server:%s\n", srv_name));
@@ -106,7 +106,7 @@ void cmd_lsa_query_info(struct client_info *info, int argc, char *argv[])
 	ZERO_STRUCT(info->dom.level5_sid);
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_lsa_query_info: server:%s\n", srv_name));
@@ -180,7 +180,7 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_lsa_lookup_names: server: %s\n", srv_name));
@@ -251,7 +251,7 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_lsa_lookup_sids: server: %s\n", srv_name));

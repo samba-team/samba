@@ -31,6 +31,14 @@ extern int DEBUGLEVEL;
  * set the port that will be used for connections by the client
  */
 
+void copy_user_creds(struct user_credentials *to, const struct user_credentials *from)
+{
+	safe_strcpy(to->domain   , from->domain   , sizeof(from->domain   )-1);
+	safe_strcpy(to->user_name, from->user_name, sizeof(from->user_name)-1);
+	memcpy(&to->pwd, &from->pwd, sizeof(from->pwd));
+	to->ntlmssp_flags = from->ntlmssp_flags;
+};
+	
 int cli_set_port(struct cli_state *cli, int port)
 {
 
@@ -585,7 +593,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 		
 		if (cli->rap_error == 0) {
 			DEBUG(4,("NetWkstaUserLogon success\n"));
-			cli->privilages = SVAL(p, 24);
+			cli->privileges = SVAL(p, 24);
 			fstrcpy(cli->eff_name,p+2);
 		} else {
 			DEBUG(1,("NetwkstaUserLogon gave error %d\n", cli->rap_error));
@@ -1003,10 +1011,10 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 			                  cli->nt_cli_chal,
 			                  &cli->nt_cli_chal_len,
 			                  cli->calling.name,
-			                  cli->domain);
+			                  cli->usr.domain);
 			
 			nt_owf_gen(pword, nt_owf);
-			ntv2_owf_gen(nt_owf, cli->user_name, cli->domain, kr);
+			ntv2_owf_gen(nt_owf, cli->usr.user_name, cli->usr.domain, kr);
 
 			/* lm # */
 			memcpy(pword, cli->lm_cli_chal, 8);
@@ -1063,7 +1071,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return False;
 	}
 
-	fstrcpy(cli->user_name, user);
+	fstrcpy(cli->usr.user_name, user);
 
 	return cli_calc_session_pwds(cli, pword, ntpword,
 				pass, &passlen,
@@ -2698,6 +2706,15 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 /****************************************************************************
 initialise a client structure
 ****************************************************************************/
+void cli_init_creds(struct cli_state *cli, const struct user_credentials *usr)
+{
+	copy_user_creds(&cli->usr, usr);
+	cli->ntlmssp_cli_flgs = usr->ntlmssp_flags;
+}
+
+/****************************************************************************
+initialise a client structure
+****************************************************************************/
 struct cli_state *cli_initialise(struct cli_state *cli)
 {
 	if (!cli) {
@@ -2913,7 +2930,7 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 	DEBUG(5,("cli_reestablish_connection: %s connecting to %s (ip %s) - %s [%s]\n",
 		 nmb_namestr(&calling), nmb_namestr(&called), 
 		 inet_ntoa(cli->dest_ip),
-		 cli->user_name, cli->domain));
+		 cli->usr.user_name, cli->usr.domain));
 
 	cli->fd = -1;
 
@@ -2951,7 +2968,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s] with NTLM%s\n",
 		          callingstr, calledstr, inet_ntoa(*dest_ip),
-	              cli->user_name, cli->domain,
+	              cli->usr.user_name, cli->usr.domain,
 			cli->use_ntlmv2 ? "v2" : "v1"));
 
 	/* establish connection */
@@ -2991,10 +3008,10 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		return False;
 	}
 
-	if (cli->domain[0] == 0)
+	if (cli->usr.domain[0] == 0)
 	{
-		safe_strcpy(cli->domain, cli->server_domain,
-		            sizeof(cli->domain));
+		safe_strcpy(cli->usr.domain, cli->server_domain,
+		            sizeof(cli->usr.domain));
 	}
 
 	if (IS_BITS_SET_ALL(cli->capabilities, CAP_EXTENDED_SECURITY))
@@ -3064,10 +3081,10 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		buf_len = PTR_DIFF(p, pwd_buf);
 
 		/* first session negotiation stage */
-		if (!cli_session_setup_x(cli, cli->user_name,
+		if (!cli_session_setup_x(cli, cli->usr.user_name,
 			       pwd_buf, buf_len,
 			       NULL, 0,
-			       cli->domain))
+			       cli->usr.domain))
 		{
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
@@ -3103,17 +3120,17 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (cli->use_ntlmv2 != False)
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
-			pwd_make_lm_nt_owf2(&(cli->pwd), cli->cryptkey,
-			           cli->user_name, calling->name, cli->domain);
+			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
+			           cli->usr.user_name, calling->name, cli->usr.domain);
 		}
 		else
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
-			pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
+			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey);
 		}
 
-		create_ntlmssp_resp(&cli->pwd, cli->domain,
-				     cli->user_name, cli->calling.name,
+		create_ntlmssp_resp(&cli->usr.pwd, cli->usr.domain,
+				     cli->usr.user_name, cli->calling.name,
 				     cli->ntlmssp_cli_flgs,
 				     &auth_resp);
 		prs_link(NULL, &auth_resp, NULL);
@@ -3172,10 +3189,10 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		*p_oem++ = gssapi_len & 0xff;
 
 		/* second session negotiation stage */
-		if (!cli_session_setup_x(cli, cli->user_name,
+		if (!cli_session_setup_x(cli, cli->usr.user_name,
 			       pwd_buf, buf_len,
 			       NULL, 0,
-			       cli->domain))
+			       cli->usr.domain))
 		{
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
@@ -3202,12 +3219,12 @@ BOOL cli_establish_connection(struct cli_state *cli,
 			}
 		}
 	}
-	else if (cli->pwd.cleartext || cli->pwd.null_pwd)
+	else if (cli->usr.pwd.cleartext || cli->usr.pwd.null_pwd)
 	{
 		fstring passwd, ntpasswd;
 		int pass_len = 0, ntpass_len = 0;
 
-		if (cli->pwd.null_pwd)
+		if (cli->usr.pwd.null_pwd)
 		{
 			/* attempt null session */
 			passwd[0] = ntpasswd[0] = 0;
@@ -3216,15 +3233,15 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		else
 		{
 			/* attempt clear-text session */
-			pwd_get_cleartext(&(cli->pwd), passwd);
+			pwd_get_cleartext(&(cli->usr.pwd), passwd);
 			pass_len = strlen(passwd);
 		}
 
 		/* attempt clear-text session */
-		if (!cli_session_setup(cli, cli->user_name,
+		if (!cli_session_setup(cli, cli->usr.user_name,
 	                       passwd, pass_len,
 	                       ntpasswd, ntpass_len,
-	                       cli->domain))
+	                       cli->usr.domain))
 		{
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
@@ -3257,23 +3274,23 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (cli->use_ntlmv2 != False)
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
-			pwd_make_lm_nt_owf2(&(cli->pwd), cli->cryptkey,
-			           cli->user_name, calling->name, cli->domain);
+			pwd_make_lm_nt_owf2(&(cli->usr.pwd), cli->cryptkey,
+			           cli->usr.user_name, calling->name, cli->usr.domain);
 		}
 		else
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
-			pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
+			pwd_make_lm_nt_owf(&(cli->usr.pwd), cli->cryptkey);
 		}
 
-		pwd_get_lm_nt_owf(&(cli->pwd), lm_sess_pwd, nt_sess_pwd,
+		pwd_get_lm_nt_owf(&(cli->usr.pwd), lm_sess_pwd, nt_sess_pwd,
 		                  &nt_sess_pwd_len, cli->sess_key);
 
 		/* attempt encrypted session */
-		if (!cli_session_setup_x(cli, cli->user_name,
+		if (!cli_session_setup_x(cli, cli->usr.user_name,
 			               (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
 			               (char*)nt_sess_pwd, nt_sess_pwd_len,
-			               cli->domain))
+			               cli->usr.domain))
 		{
 			DEBUG(1,("failed session setup\n"));
 
@@ -3384,7 +3401,7 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 		 */
 		make_nmb_name(&stupid_smbserver_called , "*SMBSERVER", 0x20, scope);
 
-		pwd_set_nullpwd(&cli->pwd);
+		pwd_set_nullpwd(&cli->usr.pwd);
 
 		if (!cli_establish_connection(cli, remote_machine, &dest_ip,
 					      &calling, &called,

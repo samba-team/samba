@@ -55,9 +55,7 @@ BOOL synchronise_passdb(void)
 		return False;
 	}
 
-	pstrcpy(cli.domain, lp_workgroup());
-
-	if (!trust_get_passwd(trust_passwd, cli.domain, global_myname))
+	if (!trust_get_passwd(trust_passwd, lp_workgroup(), global_myname))
 	{
 		return False;
 	}

@@ -481,6 +481,7 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
+BOOL resolve_srv_name(const char* srv_name, fstring dest_host, struct in_addr *ip);
 
 /*The following definitions come from  lib/util_array.c  */
 
@@ -668,6 +669,7 @@ void unistr2_free(UNISTR2 *name);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
+void copy_user_creds(struct user_credentials *to, const struct user_credentials *from);
 int cli_set_port(struct cli_state *cli, int port);
 char *cli_errstr(struct cli_state *cli);
 void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
@@ -747,6 +749,7 @@ BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
+void cli_init_creds(struct cli_state *cli, const struct user_credentials *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_close_socket(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
