@@ -17,8 +17,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "../utils/net_proto.h"
- 
 #define NET_FLAGS_MASTER 1
 #define NET_FLAGS_DMB 2
 

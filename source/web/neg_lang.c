@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "../web/swat_proto.h"
 
 /*
   during a file download we first check to see if there is a language

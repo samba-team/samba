@@ -639,8 +639,6 @@ MAKEDIR = || exec false; \
 	  exec false; fi || exec false
 
 .c.o:
-	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
-	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
 	  -o $@ 
