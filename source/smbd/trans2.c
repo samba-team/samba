@@ -3304,7 +3304,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	SSVAL(params,0,0);
 
-	if (fsp) {
+	if (fsp && fsp->pending_modtime) {
 		/* the pending modtime overrides the current modtime */
 		sbuf.st_mtime = fsp->pending_modtime;
 	}
