@@ -31,7 +31,9 @@ verify if we know this partner
 BOOL check_partner(int assoc)
 {
 	int i;
-	
+
+	DEBUG(0,("check_partner: total_current_partners: %d\n", total_current_partners));
+
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==assoc)
 			return True;
@@ -44,6 +46,8 @@ add a new entry to the list
 ********************************************************************/
 BOOL add_partner(int client_assoc, int server_assoc, BOOL pull, BOOL push)
 {
+	DEBUG(0,("add_partner: total_current_partners: %d\n", total_current_partners));
+
 	if (total_current_partners==64)
 		return False;
 
@@ -63,6 +67,8 @@ remove an entry to the list
 BOOL remove_partner(int client_assoc)
 {
 	int i,j;
+
+	DEBUG(0,("remove_partner: total_current_partners: %d\n", total_current_partners));
 
 	for (i=0; current_partners[i].client_assoc!=client_assoc && i<total_current_partners; i++)
 		;
@@ -91,6 +97,8 @@ BOOL update_server_partner(int client_assoc, int server_assoc)
 {
 	int i;
 	
+	DEBUG(0,("update_server_partner: total_current_partners: %d\n", total_current_partners));
+
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==client_assoc) {
 			current_partners[i].server_assoc=server_assoc;
@@ -107,6 +115,8 @@ BOOL check_pull_partner(int assoc)
 {
 	int i;
 	
+	DEBUG(0,("check_pull_partner: total_current_partners: %d\n", total_current_partners));
+
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==assoc &&
 		    current_partners[i].pull_partner==True)
@@ -122,6 +132,8 @@ BOOL check_push_partner(int assoc)
 {
 	int i;
 	
+	DEBUG(0,("check_push_partner: total_current_partners: %d\n", total_current_partners));
+
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==assoc &&
 		    current_partners[i].push_partner==True)
@@ -137,6 +149,8 @@ int get_server_assoc(int assoc)
 {
 	int i;
 	
+	DEBUG(0,("get_server_assoc: total_current_partners: %d\n", total_current_partners));
+
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==assoc)
 			return current_partners[i].server_assoc;
@@ -152,6 +166,8 @@ BOOL write_server_assoc_table(int client_assoc, struct in_addr partner, struct i
 {
 	int i;
 	
+	DEBUG(0,("write_server_assoc_table: total_current_partners: %d\n", total_current_partners));
+
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==client_assoc) {
 			current_partners[i].partner_server=partner;
@@ -169,6 +185,8 @@ BOOL get_server_assoc_table(int client_assoc, struct in_addr *partner, struct in
 {
 	int i;
 	
+	DEBUG(0,("get_server_assoc_table: total_current_partners: %d\n", total_current_partners));
+
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==client_assoc) {
 			partner->s_addr=current_partners[i].partner_server.s_addr;

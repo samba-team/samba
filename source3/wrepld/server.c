@@ -304,17 +304,49 @@ static struct wins_packet_struct *read_wins_packet(int fd, int timeout)
 {
 	struct wins_packet_struct *p;
 	GENERIC_PACKET *q;
-	char buf[4096];
+	struct BUFFER inbuf;
+	ssize_t len=0;
+	size_t total=0;  
+	ssize_t ret;
+	BOOL ok = False;
 
-	if (!receive_smb(fd, buf, timeout))
+	inbuf.buffer=NULL;
+	inbuf.length=0;
+	inbuf.offset=0;
+
+	if(!grow_buffer(&inbuf, 4))
 		return NULL;
+
+	ok = (read(fd, inbuf.buffer,4) == 4);
+	if (!ok)
+		return NULL;
+	len = smb_len(inbuf.buffer);
+
+	if (len<=0)
+		return NULL;
+
+	if(!grow_buffer(&inbuf, len))
+		return NULL;
+		
+	while (total < len) {
+		ret = read(fd, inbuf.buffer + total + 4, len - total);
+		if (ret == 0) {
+			DEBUG(10,("read_socket_data: recv of %d returned 0. Error = %s\n", (int)(len - total), strerror(errno) ));
+			return NULL;
+		}
+		if (ret == -1) {
+			DEBUG(0,("read_socket_data: recv failure for %d. Error = %s\n", (int)(len - total), strerror(errno) ));
+			return NULL;
+		}
+		total += ret;
+	}
 
 	q = (GENERIC_PACKET *)talloc(mem_ctx, sizeof(GENERIC_PACKET));
 	p = (struct wins_packet_struct *)talloc(mem_ctx, sizeof(*p));
 	if (q==NULL || p==NULL)
 		return NULL;
 
-	decode_generic_packet(buf, q);
+	decode_generic_packet(&inbuf, q);
 
 	q->fd=fd;
 	
@@ -403,7 +435,10 @@ static BOOL listen_for_wins_packets(void)
 
 				/* accept and add the new socket to the listen set */
 				new_s=accept(s, &addr, &in_addrlen);
-					
+
+				if (new_s < 0)
+					continue;
+	
 				DEBUG(5,("listen_for_wins_packets: new connection, old: %d, new : %d\n", s, new_s));
 				
 				set_socket_options(new_s, "SO_KEEPALIVE");
