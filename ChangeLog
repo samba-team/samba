@@ -1,5 +1,11 @@
 Sat Jul 12 17:14:12 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_cred.c, lib/krb5/get_in_tkt.c: generate a random nonce.
+
+	* lib/krb5/encrypt.c: Made `generate_random_block' global.
+
+	* appl/test: Added gssapi_client and gssapi_server.
+
 	* lib/krb5/data.c: Add `krb5_data_zero'
 
 	* appl/test/tcp_client.c: try `mk_safe' and `mk_priv'
