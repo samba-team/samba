@@ -22,6 +22,7 @@
 
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_orpc.h"
 
 NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DUALSTRINGARRAY *ar)
 {

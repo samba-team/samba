@@ -3,7 +3,7 @@
 # Copyright tridge@samba.org 2000
 # released under the GNU GPL
 
-package IdlHeader;
+package NdrHeader;
 
 use strict;
 use needed;
@@ -337,30 +337,10 @@ sub HeaderFnProto($$)
 	
     pidl "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, struct $name *r);\n";
 
-	if (util::has_property($interface, "object")) {
-		pidl "NTSTATUS dcom_$interface->{NAME}_$name (struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $name *r);\n";
-	} else {
-	    pidl "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
-    	pidl "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
-	}
+    pidl "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
+   	pidl "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
+
     pidl "\n";
-}
-
-#####################################################################
-# generate vtable structure for DCOM interface
-sub HeaderVTable($)
-{
-	my $interface = shift;
-	pidl "struct dcom_$interface->{NAME}_vtable {\n";
- 	if (defined($interface->{BASE})) {
-		pidl "\tstruct dcom_$interface->{BASE}\_vtable base;\n";
-	}
-
-	my $data = $interface->{DATA};
-	foreach my $d (@{$data}) {
-		pidl "\tNTSTATUS (*$d->{NAME}) (struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $d->{NAME} *r);\n" if ($d->{TYPE} eq "FUNCTION");
-	}
-	pidl "};\n\n";
 }
 
 #####################################################################
@@ -439,9 +419,6 @@ sub HeaderInterface($)
 	    HeaderFnProto($interface, $d);
     }
 	
-	(util::has_property($interface, "object")) &&
-		HeaderVTable($interface);
-
     pidl "#endif /* _HEADER_NDR_$interface->{NAME} */\n";
 }
 

@@ -27,7 +27,7 @@ REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \
 		NDR_OXIDRESOLVER \
 		NDR_REMACT \
-		LIBDCOM
+		LIBCOM
 # End MODULE dcerpc_dcom
 ################################################
 

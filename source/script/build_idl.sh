@@ -4,7 +4,7 @@ FULLBUILD=$1
 
 [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
 
-PIDL="$PERL ./build/pidl/pidl.pl --output librpc/gen_ndr/ndr_ --parse --header --parser --server --client --swig --odl"
+PIDL="$PERL ./build/pidl/pidl.pl --output librpc/gen_ndr/ndr_ --parse --header --parser --server --client --dcom-proxy --com-header --swig --odl"
 
 if [ x$FULLBUILD = xFULL ]; then
       echo Rebuilding all idl files in librpc/idl
@@ -14,7 +14,7 @@ fi
 
 list=""
 
-for f in librpc/idl/*.idl; do
+for f in librpc/idl/*.idl ; do
     basename=`basename $f .idl`
     ndr="librpc/gen_ndr/ndr_$basename.c"
     # blergh - most shells don't have the -nt function

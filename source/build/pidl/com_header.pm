@@ -1,0 +1,131 @@
+# COM Header generation
+# (C) 2005 Jelmer Vernooij <jelmer@samba.org>
+
+package COMHeader;
+
+use typelist;
+
+use strict;
+
+sub GetArgumentProtoList($)
+{
+	my $f = shift;
+	my $res = "";
+
+	foreach my $a (@{$f->{ELEMENTS}}) {
+
+		$res .= ", " . typelist::mapType($a) . " ";
+
+		my $l = $a->{POINTERS};
+		$l-- if ($a->{TYPE} eq "string");
+		foreach my $i (1..$l) {
+			$res .= "*";
+		}
+
+		if (defined $a->{ARRAY_LEN} && 
+		!util::is_constant($a->{ARRAY_LEN}) &&
+		!$a->{POINTERS}) {
+			$res .= "*";
+		}
+		$res .= $a->{NAME};
+		if (defined $a->{ARRAY_LEN} && util::is_constant($a->{ARRAY_LEN})) {
+			$res .= "[$a->{ARRAY_LEN}]";
+		}
+	}
+
+	return $res;
+}
+
+sub GetArgumentList($)
+{
+	my $f = shift;
+	my $res = "";
+
+	foreach my $a (@{$f->{ELEMENTS}}) {
+		$res .= ", $a->{NAME}";
+	}
+
+	return $res;
+}
+
+#####################################################################
+# generate vtable structure for COM interface
+sub HeaderVTable($)
+{
+	my $interface = shift;
+	my $res;
+	$res .= "#define " . uc($interface->{NAME}) . "_METHODS \\\n";
+	if (defined($interface->{BASE})) {
+		$res .= "\t" . uc($interface->{BASE} . "_METHODS") . "\\\n";
+	}
+
+	my $data = $interface->{DATA};
+	foreach my $d (@{$data}) {
+		$res .= "\t" . typelist::mapScalarType($d->{RETURN_TYPE}) . " (*$d->{NAME}) (struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . GetArgumentProtoList($d) . ");\\\n" if ($d->{TYPE} eq "FUNCTION");
+	}
+	$res .= "\n";
+	$res .= "struct $interface->{NAME}_vtable {\n";
+	$res .= "\t" . uc($interface->{NAME}) . "_METHODS\n";
+	$res .= "};\n\n";
+
+	return $res;
+}
+
+sub ParseInterface($)
+{
+	my $if = shift;
+	my $res;
+
+	$res .="\n\n/* $if->{NAME} */\n";
+
+	$res .="#define COM_" . uc($if->{NAME}) . "_UUID $if->{PROPERTIES}->{uuid}\n\n";
+
+	$res .="struct $if->{NAME}_vtable;\n\n";
+
+	$res .="struct $if->{NAME} {
+	struct com_context *ctx;
+	struct $if->{NAME}_vtable *vtable;
+	void *object_data;
+};\n\n";
+
+	$res.=HeaderVTable($if);
+
+	foreach my $d (@{$if->{DATA}}) {
+		next if ($d->{TYPE} ne "FUNCTION");
+
+		$res .= "#define $if->{NAME}_$d->{NAME}(interface, mem_ctx" . GetArgumentList($d) . ") ";
+
+		$res .= "((interface)->vtable->$d->{NAME}(interface, mem_ctx" . GetArgumentList($d) . "))";
+
+		$res .="\n";
+	}
+
+	return $res;
+}
+
+sub ParseCoClass($)
+{
+	my $c = shift;
+	return "#define CLSID_$c->{NAME} $c->{PROPERTIES}->{uuid}\n\n";
+}
+
+sub Parse($)
+{
+	my $idl = shift;
+	my $res = "";
+
+	foreach my $x (@{$idl})
+	{
+		if ($x->{TYPE} eq "INTERFACE" && util::has_property($x, "object")) {
+			$res.=ParseInterface($x);
+		} 
+
+		if ($x->{TYPE} eq "COCLASS") {
+			$res.=ParseCoClass($x);
+		}
+	}
+
+	return $res;
+}
+
+1;

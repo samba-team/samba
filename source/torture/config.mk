@@ -59,11 +59,11 @@ REQUIRED_SUBSYSTEMS = \
 
 #################################
 # Start SUBSYSTEM TORTURE_DCOM
-[SUBSYSTEM::TORTURE_DCOM]
+[SUBSYSTEM::TORTURE_COM]
 ADD_OBJ_FILES = \
-		torture/dcom/simple.o
+		torture/com/simple.o
 REQUIRED_SUBSYSTEMS = \
-		LIBDCOM
+		LIBCOM
 # End SUBSYSTEM TORTURE_DCOM
 #################################
 
@@ -196,6 +196,7 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_LOCAL \
 		TORTURE_NBENCH \
 		TORTURE_LDAP \
+		TORTURE_COM \
 		TORTURE_NBT \
 		CONFIG \
 		LIBCMDLINE \

@@ -1,9 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-
-   Running objects database
-
-   Copyright (C) Jelmer Vernooij 2004
+   COM standard objects
+   Copyright (C) Jelmer Vernooij					  2004-2005.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,21 +18,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "system/filesys.h"
-#include "rpc_server/dcerpc_server.h"
-#include "librpc/gen_ndr/ndr_rot.h"
-#include "rpc_server/common/common.h"
+#ifndef _COM_H /* _COM_H */
+#define _COM_H 
 
-struct tdb_wrap *openrodb(TALLOC_CTX *mem_ctx)
+struct com_context 
 {
-	struct tdb_wrap *wrap;
-	char *rodb_name = NULL;
-	
-	rodb_name = smbd_tmp_path(mem_ctx, "rot.tdb");
-	wrap = tdb_wrap_open(mem_ctx, rodb_name, 0, 0, O_RDWR|O_CREAT, 0600);
-	SAFE_FREE(rodb_name);
+};
 
-	return wrap;
-}
+typedef struct IUnknown *(*get_class_object_function) (const struct GUID *clsid);
 
+#endif /* _COM_H */

@@ -2416,6 +2416,9 @@ static struct {
 	{"LOCAL-IDTREE", torture_local_idtree, 0},
 	{"LOCAL-SOCKET", torture_local_socket, 0},
 
+	/* COM (Component Object Model) testers */
+	{"COM-SIMPLE", torture_com_simple, 0 },
+
 	/* ldap testers */
 	{"LDAP-BASIC", torture_ldap_basic, 0},
 

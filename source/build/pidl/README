@@ -13,20 +13,32 @@ After a parse tree is present, pidl will call one of it's backends
 (which one depends on the options given on the command-line). Here is 
 a list of current backends:
 
-client.pm - Generates client call functions in C
+-- Generic --
 dump.pm - Converts the parse tree back to an IDL file
-eparser.pm - Generates a parser for the ethereal network sniffer
+validator.pm  - Validates the parse tree
+
+-- DCE/RPC+NDR --
+client.pm - Generates client call functions in C
+eparser.pm - Generates a parser for the ethereal network sniffer by 
+				applying regexes to the output of parser.pm
+swig.pm	- Generates SWIG interface files (.i)
 header.pm - Generates a header file with structures
 parser.pm - Generates pull/push functions for parsing 
 server.pm - Generates server side implementation in C
 template.pm - Generates stubs in C for server implementation
-validator.pm  - Validates the parse tree
-proxy.pm - Generates proxy object for DCOM (client-side)
-stub.pm - Generates stub call handler for DCOM (server-side)
 
-Other files in this directory are:
+-- COM / DCOM --
+odl.pm - Generates IDL structures from ODL structures for use in 
+			the NDR parser generator
+dcom_proxy.pm - Generates proxy object for DCOM (client-side)
+dcom_stub.pm - Generates stub call handler for DCOM (server-side)
+com_header.pm - Generates header file for COM interface(s)
+
+-- Utility modules --
 tables.pl - Generates a table of available interfaces from a list of IDL files 
 util.pm - Misc utility functions used by *.pm and pidl.pl
+typelist.pm - Utility functions for keeping track of known types and their 
+				representation in C
 
 Tips for hacking on pidl:
  - Look at the pidl's parse tree by using the --keep option and looking 

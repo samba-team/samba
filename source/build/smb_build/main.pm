@@ -30,7 +30,6 @@ sub smb_build_main($)
 		"auth/config.mk",
 		"nsswitch/config.mk",
 		"lib/basic.mk",
-		"lib/dcom/config.mk",
 		"lib/socket/config.mk",
 		"lib/ldb/config.mk",
 		"lib/talloc/config.mk",
@@ -58,6 +57,8 @@ sub smb_build_main($)
 		"libcli/libsmb.mk",
 		"libcli/config.mk",
 		"libcli/security/config.mk",
+		"lib/dcom/config.mk",
+		"lib/com/config.mk",
 		"scripting/swig/config.mk",
 	);
 

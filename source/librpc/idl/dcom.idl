@@ -159,10 +159,10 @@ interface IRemUnknown : IUnknown
 	interface ISystemActivator : IClassActivator
 {
 	WERROR ISystemActivatorRemoteCreateInstance([in] hyper unknown1,  /* OXID ? */
-											  [in] MInterfacePointer iface,
+											  [in] MInterfacePointer iface1,
 											  [in] hyper unknown2,
 											  [out] uint32 unknown3, 
-											  [out] MInterfacePointer iface);
+											  [out] MInterfacePointer iface2);
 }
 
 
@@ -270,7 +270,7 @@ object,
 	object
 ] interface ICoffeeMachine : IUnknown
 {
-	[helpstring("method MakeCoffee")] WERROR MakeCoffee(BSTR *flavor);
+	[helpstring("method MakeCoffee")] WERROR MakeCoffee(unistr *flavor);
 }
 
 [

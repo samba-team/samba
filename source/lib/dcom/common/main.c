@@ -117,7 +117,7 @@ WERROR dcom_init(struct dcom_context **ctx, const char *domain, const char *user
 	return WERR_OK;
 }
 
-static struct dcom_object_exporter *oxid_mapping_by_oxid (struct dcom_context *ctx, uint64_t oxid)
+struct dcom_object_exporter *oxid_mapping_by_oxid (struct dcom_context *ctx, uint64_t oxid)
 {
 	struct dcom_object_exporter *m;
 	
@@ -144,7 +144,7 @@ WERROR dcom_ping(struct dcom_context *ctx)
 	return WERR_OK;
 }
 
-static WERROR dcom_create_object_remote(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface_p ***ip, WERROR *results)
+static WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface_p ***ip, WERROR *results)
 {
 	uint16_t protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 	struct dcerpc_pipe *p;
@@ -153,6 +153,10 @@ static WERROR dcom_create_object_remote(struct dcom_context *ctx, struct GUID *c
 	struct RemoteActivation r;
 	struct DUALSTRINGARRAY dualstring;
 	int i;
+
+	if (!server) {
+		return com_create_object(ctx, clsid, num_ifaces, iid, ip, results);
+	}
 
 	status = dcom_connect_host(ctx, &p, server);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -208,60 +212,7 @@ static WERROR dcom_create_object_remote(struct dcom_context *ctx, struct GUID *c
 	return WERR_OK;
 }
 
-WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface_p ***ip, WERROR *results)
-{
-	struct dcom_interface_p *factory, *iunk = NULL;
-	struct QueryInterface qr;
-	struct Release rr;
-	struct CreateInstance cr;
-	WERROR error;
-	int i;
-	NTSTATUS status;
-
-	if (server != NULL) {
-		return dcom_create_object_remote(ctx, clsid, server, num_ifaces, iid, ip, results);
-	}
-	
-	/* Obtain class object */
-	error = dcom_get_class_object(ctx, clsid, server, iid, &factory);
-	if (!W_ERROR_IS_OK(error)) {
-		DEBUG(3, ("Unable to obtain class object for %s\n", GUID_string(NULL, clsid)));
-		return error;
-	}
-
-	dcom_OBJREF_from_ifacep(ctx, &cr.in.pUnknown->obj, factory);
-
-	GUID_from_string(DCERPC_ICLASSFACTORY_UUID, cr.in.iid);
-	
-	/* Run IClassFactory::CreateInstance() */
-	status = dcom_IClassFactory_CreateInstance(factory, ctx, &cr);
-	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(3, ("Error while calling IClassFactory::CreateInstance : %s\n", nt_errstr(status)));
-		return ntstatus_to_werror(status);
-	}
-	
-	/* Release class object */
-	status = dcom_IUnknown_Release(factory, ctx, &rr);
-	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(3, ("Error freeing class factory: %s\n", nt_errstr(status)));
-		return ntstatus_to_werror(status);
-	}
-	
-	/* Do one or more QueryInterface calls */
-	for (i = 0; i < num_ifaces; i++) {
-		qr.in.iid = &iid[i];
-		status = dcom_IUnknown_QueryInterface(iunk, ctx, &qr);
-		if (NT_STATUS_IS_ERR(status)) {
-			DEBUG(4, ("Error obtaining interface %s : %s\n", GUID_string(NULL, &iid[i]), nt_errstr(status)));
-			return ntstatus_to_werror(status);
-		}
-		results[i] = qr.out.result;
-	}
-
-	return WERR_OK;
-}
-
-WERROR dcom_get_class_object_remote(struct dcom_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface_p **ip)
+WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface_p **ip)
 {
 	struct dcom_object_exporter *m;
 	struct RemoteActivation r;
@@ -270,6 +221,10 @@ WERROR dcom_get_class_object_remote(struct dcom_context *ctx, struct GUID *clsid
 	NTSTATUS status;
 	struct pMInterfacePointer pm;
 	uint16_t protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
+
+	if (!server) {
+		return com_get_class_object(ctx, clsid, iid, ip);
+	}
 
 	status = dcom_connect_host(ctx, &p, server);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -309,36 +264,6 @@ WERROR dcom_get_class_object_remote(struct dcom_context *ctx, struct GUID *clsid
 	m = oxid_mapping_by_oxid(ctx, r.out.pOxid);
 	m->bindings = *r.out.pdsaOxidBindings;
 
-	return WERR_OK;
-}
-
-WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface_p **ip)
-{
-	const struct dcom_class *c;
-	struct QueryInterface qi;
-	NTSTATUS status;
-	
-	if (server != NULL) {
-		return dcom_get_class_object_remote(ctx, clsid, server, iid, ip);
-	}
-
-	c = dcom_class_by_clsid(clsid);
-	if (!c) {
-		/* FIXME: Better error code.. */
-		return WERR_DEST_NOT_FOUND;
-	}
-	
-	qi.in.iid = iid;
-
-	status = dcom_IUnknown_QueryInterface(c->class_object, ctx, &qi );
-	if (NT_STATUS_IS_ERR(status)) {
-		return ntstatus_to_werror(status);
-	}
-
-	if (!W_ERROR_IS_OK(qi.out.result)) { return qi.out.result; }
-
-	dcom_ifacep_from_OBJREF(ctx, ip, &qi.out.data->obj);
-	
 	return WERR_OK;
 }
 
@@ -548,27 +473,4 @@ NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface
 uint64_t dcom_get_current_oxid(void)
 {
 	return getpid();
-}
-
-struct dcom_interface_p *dcom_new_local_ifacep(struct dcom_context *ctx, const struct GUID *iid, void *vtable, struct dcom_object *object)
-{
-	struct dcom_interface_p *ip = talloc(ctx, struct dcom_interface_p);
-	const struct dcom_interface *iface = dcom_interface_by_iid(iid);
-
-	if (!iface) {
-		DEBUG (1, ("Unable to find interface with IID %s\n", GUID_string(ctx, iid)));
-		return NULL;
-	}
-
-	ip->ctx = ctx;
-	ip->interface = iface;
-	ip->vtable = vtable;
-	ip->ipid = GUID_random();
-	ip->object = object;
-	ip->objref_flags = 0;
-	ip->orpc_flags = 0;
-	ip->ox = NULL;
-	ip->private_references = 1;
-	
-	return ip;
 }
