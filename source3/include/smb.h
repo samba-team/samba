@@ -836,6 +836,72 @@ typedef struct lsa_r_sam_logoff_info
 
 } LSA_R_SAM_LOGOFF;
 
+
+/* SH_INFO_1 (pointers to level 1 share info strings) */
+typedef struct ptr_share_info1
+{
+	uint32 ptr_shi1_netname; /* pointer to net name. */
+	uint32 shi1_type;        /* type of share.  0 - undocumented. */
+	uint32 ptr_shi1_remark;  /* pointer to comment. */
+
+} SH_INFO_1;
+
+/* SH_INFO_1_STR (level 1 share info strings) */
+typedef struct str_share_info1
+{
+	UNISTR2 uni_shi1_netname; /* unicode string of net name */
+	UNISTR2 uni_shi1_remark;  /* unicode string of comment. */
+
+} SH_INFO_1_STR;
+
+/* oops - this is going to take up a *massive* amount of stack. */
+/* the UNISTR2s already have 1024 uint16 chars in them... */
+#define MAX_SHARE_ENTRIES 32
+
+/* SHARE_INFO_1_CONTAINER  */
+typedef struct share_info_ctr
+{
+	uint32 num_entries_read;                     /* EntriesRead */
+	uint32 ptr_share_info;                       /* Buffer */
+	SH_INFO_1     info_1    [MAX_SHARE_ENTRIES]; /* share entry pointers */
+	SH_INFO_1_STR info_1_str[MAX_SHARE_ENTRIES]; /* share entry strings */
+	uint32 num_entries_read2;                    /* EntriesRead2 */
+
+} SHARE_INFO_1_CTR;
+
+
+/* SRV_Q_NET_SHARE_ENUM */
+typedef struct q_net_share_enum_info
+{
+	uint32 ptr_srv_name;         /* pointer (to server name?) */
+	UNISTR2 uni_srv_name;        /* server name */
+
+	uint32 share_level;          /* share level */
+	uint32 switch_value;         /* switch value */
+
+	uint32* ptr_share_info;      /* pointer to SHARE_INFO_1_CTR */
+	SHARE_INFO_1_CTR share_info; /* share info with 0 entries */
+
+	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
+
+} SRV_Q_NET_SHARE_ENUM;
+
+
+/* SRV_R_NET_SHARE_ENUM */
+typedef struct r_net_share_enum_info
+{
+	uint32 share_level;          /* share level */
+	uint32 switch_value;         /* switch value */
+
+	uint32* ptr_share_info;      /* pointer to SHARE_INFO_1_CTR */
+	SHARE_INFO_1_CTR share_info; /* share info with 0 entries */
+
+	uint32 status;               /* return status */
+
+} SRV_R_NET_SHARE_ENUM;
+
+
+
 /*
 
 Yet to be turned into structures:
@@ -931,6 +997,7 @@ typedef struct
   time_t atime;
   time_t ctime;
   pstring name;
+
 } file_info;
 
 
