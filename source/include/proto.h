@@ -1127,7 +1127,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 
 /*The following definitions come from  libsmb/clisecdesc.c  */
 
-SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd);
+SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd, TALLOC_CTX *mem_ctx);
 BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd);
 
 /*The following definitions come from  libsmb/clistr.c  */

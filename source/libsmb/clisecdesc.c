@@ -28,12 +28,11 @@
 /****************************************************************************
   query the security descriptor for a open file
   ****************************************************************************/
-SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
+SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd, TALLOC_CTX *mem_ctx)
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
 	int rparam_count=0, rdata_count=0;
-	TALLOC_CTX *mem_ctx=NULL;
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 
@@ -58,11 +57,6 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 		goto cleanup;
 	}
 
-	if ((mem_ctx = talloc_init()) == NULL) {
-		DEBUG(0,("talloc_init failed.\n"));
-		goto cleanup;
-	}
-
 	prs_init(&pd, rdata_count, mem_ctx, UNMARSHALL);
 	prs_append_data(&pd, rdata, rdata_count);
 	pd.data_offset = 0;
@@ -74,16 +68,12 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 
  cleanup:
 
-	talloc_destroy(mem_ctx);
 	safe_free(rparam);
 	safe_free(rdata);
 
 	prs_mem_free(&pd);
 	return psd;
 }
-
-
-
 
 /****************************************************************************
   set the security descriptor for a open file
@@ -143,4 +133,3 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 	prs_mem_free(&pd);
 	return ret;
 }
-
