@@ -92,7 +92,7 @@ get_xsockets (int *unix_socket, int *tcp_socket)
      char *dir, *p;
 
      dir = strdup (X_UNIX_PATH);
-     p = strchr (dir, '/');
+     p = strrchr (dir, '/');
      if (p)
        *p = '\0';
 
