@@ -76,7 +76,8 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	}		
 
 	if (strequal(user_info->domain.str, get_global_sam_name())) {
-		DEBUG(3,("check_winbind_security: Not using winbind, requested domain was for this SAM.\n"));
+		DEBUG(3,("check_winbind_security: Not using winbind, requested domain [%s] was for this SAM.\n",
+			user_info->domain.str));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
