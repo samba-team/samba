@@ -4380,7 +4380,7 @@ static WERROR construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fst
  * convert an array of ascii string to a UNICODE string
  ********************************************************************/
 
-static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *servername)
+static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, char *servername)
 {
 	int i=0;
 	int j=0;
@@ -4393,23 +4393,31 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 
 	while (True) 
 	{
-		if (char_array == NULL)
+		if ( !char_array )
 			v = "";
-		else {
+		else 
+		{
 			v = char_array[i];
-			if (!v) v = ""; /* hack to handle null lists */
+			if (!v) 
+				v = ""; /* hack to handle null lists */
 		}
 		
 		if ( !strlen(v) ) 
 			break;
-			
-		slprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
 		
+		/* hack to allow this to be used in places other than when generating 
+		   the list of dependent files */
+		   
+		if ( servername )
+			slprintf( line, sizeof(line)-1, "\\\\%s%s", servername, v );
+		else
+			pstrcpy( line, v );
+			
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
 		
-		if((tuary=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
+		if ( (tuary=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL ) {
 			DEBUG(2,("init_unistr_array: Realloc error\n" ));
-			return;
+			return 0;
 		} else
 			*uni_array = tuary;
 			
@@ -4422,6 +4430,10 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 	}
 	
 	DEBUGADD(6,("last one:done\n"));
+
+	/* return size of array in uint16's */
+		
+	return j+1;
 }
 
 /********************************************************************
@@ -4440,29 +4452,29 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->name, driver.info_3->name );	
 	init_unistr( &info->architecture, driver.info_3->environment );
 
-    if (strlen(driver.info_3->driverpath)) {
-        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
-        init_unistr( &info->driverpath, temp );
-    } else
-        init_unistr( &info->driverpath, "" );
+	if (strlen(driver.info_3->driverpath)) {
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+		init_unistr( &info->driverpath, temp );
+	} else
+		init_unistr( &info->driverpath, "" );
     
-    if (strlen(driver.info_3->datafile)) {
-        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
-        init_unistr( &info->datafile, temp );
-    } else
-        init_unistr( &info->datafile, "" );
+	if (strlen(driver.info_3->datafile)) {
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		init_unistr( &info->datafile, temp );
+	} else
+		init_unistr( &info->datafile, "" );
 
-    if (strlen(driver.info_3->configfile)) {
-        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
-        init_unistr( &info->configfile, temp );	
-    } else
-        init_unistr( &info->configfile, "" );
+	if (strlen(driver.info_3->configfile)) {
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		init_unistr( &info->configfile, temp );	
+	} else
+		init_unistr( &info->configfile, "" );
 
-    if (strlen(driver.info_3->helpfile)) {
-        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
-        init_unistr( &info->helpfile, temp );
-    } else
-        init_unistr( &info->helpfile, "" );
+	if (strlen(driver.info_3->helpfile)) {
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+		init_unistr( &info->helpfile, temp );
+	} else
+		init_unistr( &info->helpfile, "" );
 
 	init_unistr( &info->monitorname, driver.info_3->monitorname );
 	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
@@ -7976,46 +7988,56 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 
 WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPOOL_R_ENUMPRINTERKEY *r_u)
 {
-	fstring key;
-	uint16  *enumkeys = NULL;
-	char*   ptr = NULL;
-	int     i;
-	int	printerkey_len = strlen(SPOOL_PRINTERDATA_KEY)+1;	
-
+	fstring 	key;
+	fstring		*keynames;
+	uint16  	*enumkeys = NULL;
+	int		printerkey_len;
+	int		i;
+	POLICY_HND	*handle = &q_u->handle;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	NT_PRINTER_DATA	*data;
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 		snum = 0;
+	WERROR		status;
+	
+	
 	DEBUG(4,("_spoolss_enumprinterkey\n"));
 
+	if (!Printer) {
+		DEBUG(2,("_spoolss_enumprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
+
+	if ( !get_printer_snum(p,handle, &snum) )
+		return WERR_BADFID;
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(status))
+		return status;
+		
 	unistr2_to_ascii( key, &q_u->key, sizeof(key)-1 );
 
-	/* 
-	 * we only support enumating all keys (key == "")
-	 * Of course, the only key we support is the "PrinterDriverData" 
-	 * key
-	 */
+	/* enumerating all keys if (key == "") */
 
+	data = &printer->info_2->data;
+	
 	if ( !strlen( key ) )
 	{
+		keynames = talloc_zero( p->mem_ctx, (data->num_keys+1)*sizeof(fstring) );
+		
+		/* make an array of all the keynames */
+		
+		for ( i=0; i<data->num_keys; i++ )
+			fstrcpy( keynames[i], data->keys[i].name );
+		fstrcpy( keynames[i], "" );
+		
+		printerkey_len = init_unistr_array( &enumkeys,  keynames, NULL );
+		
 		r_u->needed = printerkey_len*2;
 		
 		if ( q_u->size < r_u->needed )
 			return WERR_MORE_DATA;
-	
-		if ( !(enumkeys = talloc( p->mem_ctx, printerkey_len*2 )) ) {
-			DEBUG(0,("_spoolss_enumprinterkey: talloc() failed for [%d] bytes!\n",
-				printerkey_len));
-			return WERR_NOMEM;
-		}
-		
-		ptr = SPOOL_PRINTERDATA_KEY;
-		for ( i=0; i<(printerkey_len-1); i++ )
-		{
-			enumkeys[i] = (uint16)(*ptr);
-			ptr++;
-		}
-
-		/* tag of '\0's */
-		
-		enumkeys[i] = 0x0;
-	
+				
 		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, printerkey_len, enumkeys))
 			return WERR_BADFILE;
 			
