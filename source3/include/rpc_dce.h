@@ -61,8 +61,14 @@ enum RPC_PKT_TYPE
 
 /* Netlogon schannel auth type and level */
 #define NETSEC_AUTH_TYPE 0x44
-#define NETSEC_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
+#define NETSEC_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
+#define NETSEC_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
 #define RPC_AUTH_NETSEC_CHK_LEN 0x20
+
+/* The 7 here seems to be required to get Win2k not to downgrade us
+   to NT4.  Actually, anything other than 1ff would seem to do... */
+#define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
+ 
 #define NETLOGON_NEG_SCHANNEL    0x40000000
 
 enum netsec_direction
@@ -239,13 +245,14 @@ typedef struct rpc_auth_netsec_chk_info
 	uint8 sig  [8]; /* 77 00 7a 00 ff ff 00 00 */
 	uint8 packet_digest[8]; /* checksum over the packet, MD5'ed with session key */
 	uint8 seq_num[8]; /* verifier, seq num */
-	uint8 data8[8]; /* random 8-byte nonce */
+	uint8 confounder[8]; /* random 8-byte nonce */
 } RPC_AUTH_NETSEC_CHK;
 
 struct netsec_auth_struct
 {
 	uchar sess_key[16];
 	uint32 seq_num;
+	int auth_flags;
 };
 
 /* RPC_BIND_REQ - ms req bind */
