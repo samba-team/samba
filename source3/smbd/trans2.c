@@ -313,106 +313,78 @@ static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, con
  Set or delete an extended attribute.
 ****************************************************************************/
 
-static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname,
-			char *pdata, int total_data)
+static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, struct ea_list *ea_list)
 {
-	unsigned int namelen;
-	unsigned int ealen;
-	int ret;
-	fstring unix_ea_name;
-
 	if (!lp_ea_support(SNUM(conn))) {
 		return NT_STATUS_EAS_NOT_SUPPORTED;
 	}
 
-	if (total_data < 8) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	while (ea_list) {
+		int ret;
+		fstring unix_ea_name;
 
-	if (IVAL(pdata,0) > total_data) {
-		DEBUG(10,("set_ea: bad total data size (%u) > %u\n", IVAL(pdata,0), (unsigned int)total_data));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+		fstrcpy(unix_ea_name, "user."); /* All EA's must start with user. */
+		fstrcat(unix_ea_name, ea_list->ea.name);
 
-	pdata += 4;
-	namelen = CVAL(pdata,1);
-	ealen = SVAL(pdata,2);
-	pdata += 4;
-	if (total_data < 8 + namelen + 1 + ealen) {
-		DEBUG(10,("set_ea: bad total data size (%u) < 8 + namelen (%u) + 1 + ealen (%u)\n",
-			(unsigned int)total_data, namelen, ealen));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+		canonicalize_ea_name(conn, fsp, fname, unix_ea_name);
 
-	if (pdata[namelen] != '\0') {
-		DEBUG(10,("set_ea: ea name not null terminated\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+		DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, ea_list->ea.value.length));
 
-	fstrcpy(unix_ea_name, "user."); /* All EA's must start with user. */
-	pull_ascii(&unix_ea_name[5], pdata, sizeof(fstring) - 5, -1, STR_TERMINATE);
-	pdata += (namelen + 1);
-
-	canonicalize_ea_name(conn, fsp, fname, unix_ea_name);
-
-	DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, ealen));
-	if (ealen) {
-		DEBUG(10,("set_ea: data :\n"));
-		dump_data(10, pdata, ealen);
-	}
-
-	if (samba_private_attr_name(unix_ea_name)) {
-		DEBUG(10,("set_ea: ea name %s is a private Samba name.\n", unix_ea_name));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (ealen == 0) {
-		/* Remove the attribute. */
-		if (fsp && (fsp->fd != -1)) {
-			DEBUG(10,("set_ea: deleting ea name %s on file %s by file descriptor.\n",
-				unix_ea_name, fsp->fsp_name));
-			ret = SMB_VFS_FREMOVEXATTR(fsp, fsp->fd, unix_ea_name);
-		} else {
-			DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
-				unix_ea_name, fname));
-			ret = SMB_VFS_REMOVEXATTR(conn, fname, unix_ea_name);
+		if (samba_private_attr_name(unix_ea_name)) {
+			DEBUG(10,("set_ea: ea name %s is a private Samba name.\n", unix_ea_name));
+			return NT_STATUS_ACCESS_DENIED;
 		}
+
+		if (ea_list->ea.value.length == 0) {
+			/* Remove the attribute. */
+			if (fsp && (fsp->fd != -1)) {
+				DEBUG(10,("set_ea: deleting ea name %s on file %s by file descriptor.\n",
+					unix_ea_name, fsp->fsp_name));
+				ret = SMB_VFS_FREMOVEXATTR(fsp, fsp->fd, unix_ea_name);
+			} else {
+				DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
+					unix_ea_name, fname));
+				ret = SMB_VFS_REMOVEXATTR(conn, fname, unix_ea_name);
+			}
 #ifdef ENOATTR
-		/* Removing a non existent attribute always succeeds. */
-		if (ret == -1 && errno == ENOATTR) {
-			DEBUG(10,("set_ea: deleting ea name %s didn't exist - succeeding by default.\n", unix_ea_name));
-			ret = 0;
-		}
+			/* Removing a non existent attribute always succeeds. */
+			if (ret == -1 && errno == ENOATTR) {
+				DEBUG(10,("set_ea: deleting ea name %s didn't exist - succeeding by default.\n",
+						unix_ea_name));
+				ret = 0;
+			}
 #endif
-	} else {
-		if (fsp && (fsp->fd != -1)) {
-			DEBUG(10,("set_ea: setting ea name %s on file %s by file descriptor.\n",
-				unix_ea_name, fsp->fsp_name));
-			ret = SMB_VFS_FSETXATTR(fsp, fsp->fd, unix_ea_name, pdata, ealen, 0);
 		} else {
-			DEBUG(10,("set_ea: setting ea name %s on file %s.\n",
-				unix_ea_name, fname));
-			ret = SMB_VFS_SETXATTR(conn, fname, unix_ea_name, pdata, ealen, 0);
+			if (fsp && (fsp->fd != -1)) {
+				DEBUG(10,("set_ea: setting ea name %s on file %s by file descriptor.\n",
+					unix_ea_name, fsp->fsp_name));
+				ret = SMB_VFS_FSETXATTR(fsp, fsp->fd, unix_ea_name,
+							ea_list->ea.value.data, ea_list->ea.value.length, 0);
+			} else {
+				DEBUG(10,("set_ea: setting ea name %s on file %s.\n",
+					unix_ea_name, fname));
+				ret = SMB_VFS_SETXATTR(conn, fname, unix_ea_name,
+							ea_list->ea.value.data, ea_list->ea.value.length, 0);
+			}
 		}
-	}
 
-	if (ret == -1) {
+		if (ret == -1) {
 #ifdef ENOTSUP
-		if (errno == ENOTSUP) {
-			return NT_STATUS_EAS_NOT_SUPPORTED;
-		}
+			if (errno == ENOTSUP) {
+				return NT_STATUS_EAS_NOT_SUPPORTED;
+			}
 #endif
-		return map_nt_error_from_unix(errno);
-	}
+			return map_nt_error_from_unix(errno);
+		}
 
+	}
 	return NT_STATUS_OK;
 }
-
 /****************************************************************************
- Read a list of EA's from an incoming data buffer. Create an ea_list with them.
+ Read a list of EA names from an incoming data buffer. Create an ea_list with them.
 ****************************************************************************/
 
-static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
+static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
 {
 	struct ea_list *ea_list_head = NULL;
 	size_t offset = 4;
@@ -426,15 +398,83 @@ static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t d
 		if (offset + namelen >= data_size) {
 			break;
 		}
-		eal->ea.name = TALLOC_ARRAY(ctx, char, namelen + 1);
-		if (!eal->ea.name) {
-			break;
+		/* Ensure the name is null terminated. */
+		if (pdata[offset + namelen] != '\0') {
+			return NULL;
 		}
-		memcpy(eal->ea.name, pdata + offset, namelen);
-		eal->ea.name[namelen] = '\0';
+		pull_ascii_talloc(ctx, &eal->ea.name, &pdata[offset]);
+		if (!eal->ea.name) {
+			return NULL;
+		}
 
 		offset += (namelen + 1); /* Go past the name + terminating zero. */
 		DLIST_ADD_END(ea_list_head, eal, tmp);
+		DEBUG(10,("read_ea_name_list: read ea name %s\n", eal->ea.name));
+	}
+
+	return ea_list_head;
+}
+
+/****************************************************************************
+ Read a list of EA names and data from an incoming data buffer. Create an ea_list with them.
+****************************************************************************/
+
+static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
+{
+	struct ea_list *ea_list_head = NULL;
+	size_t offset = 4;
+
+	if (data_size < 10) {
+		return NULL;
+	}
+
+        if (IVAL(pdata,0) > data_size) {
+                DEBUG(10,("read_ea_list: bad total data size (%u) > %u\n", IVAL(pdata,0), (unsigned int)data_size));
+		return NULL;
+        }
+
+	/* Each entry must be at least 6 bytes in length. */
+	while (offset + 6 <= data_size) {
+		struct ea_list *tmp;
+		struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
+		uint16 val_len;
+		unsigned int namelen;
+
+		eal->ea.flags = CVAL(pdata,offset);
+		namelen = CVAL(pdata,offset + 1);
+		val_len = SVAL(pdata,offset + 2);
+
+		if (offset + 4 + namelen + 1 + val_len > data_size) {
+			return NULL;
+		}
+
+		/* Ensure the name is null terminated. */
+		if (pdata[offset + 4 + namelen] != '\0') {
+			return NULL;
+		}
+		pull_ascii_talloc(ctx, &eal->ea.name, pdata + offset);
+		if (!eal->ea.name) {
+			return NULL;
+		}
+
+		eal->ea.value = data_blob(NULL, (size_t)val_len + 1);
+		if (!eal->ea.value.data) {
+			break;
+		}
+
+		memcpy(eal->ea.value.data, pdata + offset + 4 + namelen + 1, val_len);
+
+		/* Ensure we're null terminated just in case we print the value. */
+		eal->ea.value.data[val_len] = '\0';
+		/* But don't count the null. */
+		eal->ea.value.length--;
+
+		offset += 4 + namelen + 1 + val_len;
+
+		DLIST_ADD_END(ea_list_head, eal, tmp);
+
+		DEBUG(10,("read_ea_name_list: read ea name %s\n", eal->ea.name));
+		dump_data(10, eal->ea.value.data, eal->ea.value.length);
 	}
 
 	return ea_list_head;
@@ -464,31 +504,34 @@ static size_t ea_list_size(struct ea_list *ealist)
 
 /****************************************************************************
  Return a union of EA's from a file list and a list of names.
+ The TALLOC context for the two lists *MUST* be identical as we steal
+ memory from one list to another. JRA.
 ****************************************************************************/
 
 static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *file_list, size_t *total_ea_len)
 {
 	struct ea_list *nlistp, *flistp;
 
-	for (flistp = file_list; flistp;) {
-		struct ea_list *rem_entry = flistp;
-
-		for (nlistp = name_list; nlistp; nlistp = nlistp->next) {
+	for (nlistp = name_list; nlistp; nlistp = nlistp->next) {
+		for (flistp = file_list; flistp; flistp = flistp->next) {
 			if (strequal(nlistp->ea.name, flistp->ea.name)) {
 				break;
 			}
 		}
 
-		flistp = flistp->next;
-
-		if (nlistp == NULL) {
-			/* Remove this entry from file ea list. */
-			DLIST_REMOVE(file_list, rem_entry);
+		if (flistp) {
+			/* Copy the data from this entry. */
+			nlistp->ea.flags = flistp->ea.flags;
+			nlistp->ea.value = flistp->ea.value;
+		} else {
+			/* Null entry. */
+			nlistp->ea.flags = 0;
+			ZERO_STRUCT(nlistp->ea.value);
 		}
 	}
 
-	*total_ea_len = ea_list_size(file_list);
-	return file_list;
+	*total_ea_len = ea_list_size(name_list);
+	return name_list;
 }
 
 /****************************************************************************
@@ -737,8 +780,9 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 
 	/* Realloc the size of parameters and data we will return */
 	params = SMB_REALLOC(*pparams, 28);
-	if( params == NULL )
-		return(ERROR_DOS(ERRDOS,ERRnomem));
+	if( params == NULL ) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	*pparams = params;
 
 	memset((char *)params,'\0',28);
@@ -876,7 +920,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				 BOOL dont_descend,char **ppdata, 
 				 char *base_data, int space_remaining, 
 				 BOOL *out_of_space, BOOL *got_exact_match,
-				 int *last_entry_off)
+				 int *last_entry_off, struct ea_list *name_list, TALLOC_CTX *ea_ctx)
 {
 	const char *dname;
 	BOOL found = False;
@@ -1104,14 +1148,62 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SCVAL(p,0,0); p += 1; /* Extra zero byte ? - why.. */
 			break;
 
-#if 0
 		case SMB_FIND_EA_LIST:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_EA_SIZE\n"));
+		{
+			struct ea_list *file_list = NULL;
+			size_t ea_len = 0;
+
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_EA_LIST\n"));
+			if (!name_list) {
+				return False;
+			}
 			if(requires_resume_key) {
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-#endif
+			put_dos_date2(p,l2_fdateCreation,cdate);
+			put_dos_date2(p,l2_fdateLastAccess,adate);
+			put_dos_date2(p,l2_fdateLastWrite,mdate);
+			SIVAL(p,l2_cbFile,(uint32)file_size);
+			SIVAL(p,l2_cbFileAlloc,(uint32)allocation_size);
+			SSVAL(p,l2_attrFile,mode);
+			p += l2_cbList; /* p now points to the EA area. */
+
+			file_list = get_ea_list_from_file(ea_ctx, conn, NULL, pathreal, &ea_len);
+			name_list = ea_list_union(name_list, file_list, &ea_len);
+
+			/* We need to determine if this entry will fit in the space available. */
+			/* Max string size is 255 bytes. */
+			if (PTR_DIFF(p + 255 + ea_len,pdata) > space_remaining) {
+				/* Move the dirptr back to prev_dirpos */
+				dptr_SeekDir(conn->dirptr, prev_dirpos);
+				*out_of_space = True;
+				DEBUG(9,("get_lanman2_dir_entry: out of space\n"));
+				return False; /* Not finished - just out of space */
+			}
+
+			/* Push the ea_data followed by the name. */
+			p += fill_ea_buffer(ea_ctx, p, space_remaining, conn, name_list);
+			nameptr = p;
+			len = srvstr_push(outbuf, p + 1, fname, -1, STR_TERMINATE | STR_NOALIGN);
+			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS) {
+				if (len > 2) {
+					len -= 2;
+				} else {
+					len = 0;
+				}
+			} else {
+				if (len > 1) {
+					len -= 1;
+				} else {
+					len = 0;
+				}
+			}
+			SCVAL(nameptr,0,len);
+			p += len + 1;
+			SCVAL(p,0,0); p += 1; /* Extra zero byte ? - why.. */
+			break;
+		}
 
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_BOTH_DIRECTORY_INFO\n"));
@@ -1412,6 +1504,8 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	int space_remaining;
 	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
+	TALLOC_CTX *ea_ctx = NULL;
+	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 
 	if (total_params < 12) {
@@ -1433,6 +1527,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	switch (info_level) {
 		case SMB_FIND_INFO_STANDARD:
 		case SMB_FIND_EA_SIZE:
+		case SMB_FIND_EA_LIST:
 		case SMB_FIND_FILE_DIRECTORY_INFO:
 		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
 		case SMB_FIND_FILE_NAMES_INFO:
@@ -1478,29 +1573,66 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
 
+	if (info_level == SMB_FIND_EA_LIST) {
+		uint32 ea_size;
+                                                                                                                                                        
+		if (total_data < 4) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+                                                                                                                                                        
+		ea_size = IVAL(pdata,0);
+		if (ea_size != total_data) {
+			DEBUG(4,("call_trans2findfirst: Rejecting EA request with incorrect \
+total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		if (!lp_ea_support(SNUM(conn))) {
+			return ERROR_DOS(ERRDOS,ERReasnotsupported);
+		}
+                                                                                                                                                        
+		if ((ea_ctx = talloc_init("findnext_ea_list")) == NULL) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+                                                                                                                                                        
+		/* Pull out the list of names. */
+		ea_list = read_ea_name_list(ea_ctx, pdata, ea_size);
+		if (!ea_list) {
+			talloc_destroy(ea_ctx);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	}
+
 	pdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
-	if( pdata == NULL )
-		return(ERROR_DOS(ERRDOS,ERRnomem));
+	if( pdata == NULL ) {
+		talloc_destroy(ea_ctx);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	*ppdata = pdata;
 	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
 	params = SMB_REALLOC(*pparams, 10);
-	if (params == NULL)
-		return ERROR_DOS(ERRDOS,ERRnomem);
+	if (params == NULL) {
+		talloc_destroy(ea_ctx);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	*pparams = params;
 
 	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid));
-	if (dptr_num < 0)
+	if (dptr_num < 0) {
+		talloc_destroy(ea_ctx);
 		return(UNIXERROR(ERRDOS,ERRbadfile));
+	}
 
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
 	if (!dptr_set_wcard_and_attributes(dptr_num, mask, dirtype)) {
 		dptr_close(&dptr_num);
-		return ERROR_DOS(ERRDOS,ERRnomem);
+		talloc_destroy(ea_ctx);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, mask, dirtype));
@@ -1530,7 +1662,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 					mask,dirtype,info_level,
 					requires_resume_key,dont_descend,
 					&p,pdata,space_remaining, &out_of_space, &got_exact_match,
-					&last_entry_off);
+					&last_entry_off, ea_list, ea_ctx);
 		}
 
 		if (finished && out_of_space)
@@ -1552,6 +1684,8 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
 	}
   
+	talloc_destroy(ea_ctx);
+
 	/* Check if we can close the dirptr */
 	if(close_after_first || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
@@ -1641,6 +1775,8 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 	BOOL dont_descend = False;
 	BOOL out_of_space = False;
 	int space_remaining;
+	TALLOC_CTX *ea_ctx = NULL;
+	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 
 	if (total_params < 12) {
@@ -1678,6 +1814,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	switch (info_level) {
 		case SMB_FIND_INFO_STANDARD:
 		case SMB_FIND_EA_SIZE:
+		case SMB_FIND_EA_LIST:
 		case SMB_FIND_FILE_DIRECTORY_INFO:
 		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
 		case SMB_FIND_FILE_NAMES_INFO:
@@ -1691,29 +1828,66 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
 
+	if (info_level == SMB_FIND_EA_LIST) {
+		uint32 ea_size;
+
+		if (total_data < 4) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		ea_size = IVAL(pdata,0);
+		if (ea_size != total_data) {
+			DEBUG(4,("call_trans2findnext: Rejecting EA request with incorrect \
+total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+                                                                                                                                                     
+		if (!lp_ea_support(SNUM(conn))) {
+			return ERROR_DOS(ERRDOS,ERReasnotsupported);
+		}
+                                                                                                                                                     
+		if ((ea_ctx = talloc_init("findnext_ea_list")) == NULL) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+                                                                                                                                                     
+		/* Pull out the list of names. */
+		ea_list = read_ea_name_list(ea_ctx, pdata, ea_size);
+		if (!ea_list) {
+			talloc_destroy(ea_ctx);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	}
+
 	pdata = SMB_REALLOC( *ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
-	if(pdata == NULL)
-		return ERROR_DOS(ERRDOS,ERRnomem);
+	if(pdata == NULL) {
+		talloc_destroy(ea_ctx);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	*ppdata = pdata;
 	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
 	params = SMB_REALLOC(*pparams, 6*SIZEOFWORD);
-	if( params == NULL )
-		return ERROR_DOS(ERRDOS,ERRnomem);
+	if( params == NULL ) {
+		talloc_destroy(ea_ctx);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	*pparams = params;
 
 	/* Check that the dptr is valid */
-	if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num)))
+	if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num))) {
+		talloc_destroy(ea_ctx);
 		return ERROR_DOS(ERRDOS,ERRnofiles);
+	}
 
 	string_set(&conn->dirpath,dptr_path(dptr_num));
 
 	/* Get the wildcard mask from the dptr */
 	if((p = dptr_wcard(dptr_num))== NULL) {
 		DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
+		talloc_destroy(ea_ctx);
 		return ERROR_DOS(ERRDOS,ERRnofiles);
 	}
 
@@ -1784,7 +1958,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 						mask,dirtype,info_level,
 						requires_resume_key,dont_descend,
 						&p,pdata,space_remaining, &out_of_space, &got_exact_match,
-						&last_entry_off);
+						&last_entry_off, ea_list, ea_ctx);
 		}
 
 		if (finished && out_of_space)
@@ -1806,6 +1980,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
 	}
   
+	talloc_destroy(ea_ctx);
+
 	/* Check if we can close the dirptr */
 	if(close_after_request || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
@@ -1856,8 +2032,9 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 	}
 
 	pdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
-	if ( pdata == NULL )
-		return ERROR_DOS(ERRDOS,ERRnomem);
+	if ( pdata == NULL ) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	*ppdata = pdata;
 	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
@@ -2570,7 +2747,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 
 		/* Pull out the list of names. */
-		ea_list = read_ea_list(ea_ctx, pdata, ea_size);
+		ea_list = read_ea_name_list(ea_ctx, pdata, ea_size);
 		if (!ea_list) {
 			talloc_destroy(ea_ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -3408,10 +3585,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (fnum %d) info_level=%d totdata=%d\n",
 		tran_call,fname, fsp ? fsp->fnum : -1, info_level,total_data));
 
-	/* Realloc the parameter and data sizes */
+	/* Realloc the parameter size */
 	params = SMB_REALLOC(*pparams,2);
-	if(params == NULL)
-		return ERROR_DOS(ERRDOS,ERRnomem);
+	if(params == NULL) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	*pparams = params;
 
 	SSVAL(params,0,0);
@@ -3445,10 +3623,25 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		}
 
 		case SMB_INFO_SET_EA:
-			status = set_ea(conn, fsp, fname, pdata, total_data);
-			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
+		{
+			struct ea_list *ea_list = NULL;
+			TALLOC_CTX *ctx = talloc_init("SMB_INFO_SET_EA");
+			if (!ctx) {
+				return ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
+			ea_list = read_ea_list(ctx, pdata, total_data);
+			if (!ea_list) {
+				talloc_destroy(ctx);
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+			status = set_ea(conn, fsp, fname, ea_list);
+			talloc_destroy(ctx);
+
+			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK)) {
 				return ERROR_NT(status);
+			}
 			break;
+		}
 
 #if 0
 		/* The following 2 info levels are only valid on query, not set. Remove them. JRA. */
@@ -4179,8 +4372,9 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 
 	/* Realloc the parameter and data sizes */
 	params = SMB_REALLOC(*pparams,2);
-	if(params == NULL)
-		return ERROR_DOS(ERRDOS,ERRnomem);
+	if(params == NULL) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	*pparams = params;
 
 	SSVAL(params,0,0);
@@ -4220,8 +4414,9 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 
 	/* Realloc the parameter and data sizes */
 	params = SMB_REALLOC(*pparams,6);
-	if(params == NULL) 
-		return ERROR_DOS(ERRDOS,ERRnomem);
+	if(params == NULL) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	*pparams = params;
 
 	SSVAL(params,0,fnf_handle);
@@ -4253,8 +4448,9 @@ static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char 
 
 	/* Realloc the parameter and data sizes */
 	params = SMB_REALLOC(*pparams,4);
-	if(params == NULL)
-		return ERROR_DOS(ERRDOS,ERRnomem);
+	if(params == NULL) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	*pparams = params;
 
 	SSVAL(params,0,0); /* No changes */
@@ -4321,8 +4517,9 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
 			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
 		pdata = SMB_REALLOC(*ppdata, 32);
-		if(pdata == NULL)
-			return ERROR_DOS(ERRDOS,ERRnomem);
+		if(pdata == NULL) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
 		*ppdata = pdata;
 
 		/* NOTE - THIS IS ASCII ONLY AT THE MOMENT - NOT SURE IF OS/2
@@ -4480,7 +4677,7 @@ int reply_trans2(connection_struct *conn,
 		SAFE_FREE(params);
 		SAFE_FREE(data); 
 		END_PROFILE(SMBtrans2);
-		return ERROR_DOS(ERRDOS,ERRnomem);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
 	/* Copy the param and data bytes sent with this request into
