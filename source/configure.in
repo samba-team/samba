@@ -126,7 +126,6 @@ AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(BLDSHARED)
-AC_SUBST(POBAD_CC)   dnl This handles C compilers that don't like .po 
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -726,8 +725,7 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 PICFLAG=""
-PICSUFFIX="po"
-POBAD_CC="#"
+PICSUFFIX="po.o"
 SHLIBEXT="so"
 # Assume non-shared by default and override below
 BLDSHARED="false" 
@@ -740,20 +738,10 @@ case "$host_os" in
 			PICFLAG="-fPIC"
 		;;
 		*solaris*) AC_DEFINE(SUNOS5)
-			BLDSHARED="true"
-			LDSHFLAGS="-shared"
-			PICFLAG="-KPIC"
-			PICSUFFIX="po.o"
 				;;
 		*sunos*) AC_DEFINE(SUNOS4)
-			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-h,\$@ -G"
-			PICFLAG="-KPIC"  # Is this correct for SunOS?
 		;;
 		*bsd*) LDSHFLAGS="-shared -Bshareable"
-			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-soname,\@ -shared"
-			PICFLAG="-fPIC"
 		;;
 		*irix*) AC_DEFINE(IRIX)
 			case "$host_os" in
@@ -761,9 +749,6 @@ case "$host_os" in
 			;;
 			esac
 			ATTEMPT_WRAP32_BUILD=yes
-			#BLDSHARED="true"          # Leave out for now
-			#LDSHFLAGS="-Wl,-soname,\$@ -shared"
-			#PICFLAG="-fPIC"
 		;;
 		*aix*) AC_DEFINE(AIX)
 			# AIX is too ugly for now

@@ -460,7 +460,7 @@ MAKEDIR = || exec false; \
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
 	  -o $*.@PICSUFFIX@ 
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@.o
-@POBAD_CC@	@mv $*.po.o $@
+	@mv $*.po.o $@
 
 # this is for IRIX
 .c.po32: 
