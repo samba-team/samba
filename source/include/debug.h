@@ -79,17 +79,17 @@ extern int DEBUGLEVEL;
  * at the start of the file (after #include "includes.h") will default to
  * using index zero, so it will behaive just like it always has. 
  */
-#define DBGC_ALL              0     /* index equivalent to DEBUGLEVEL */
+#define DBGC_ALL		0 /* index equivalent to DEBUGLEVEL */
 
-#define DBGC_TDB              1
-#define DBGC_PRINTDRIVERS     2
-#define DBGC_LANMAN           3
-#define DBGC_SMB              4
-#define DBGC_RPC              5
-#define DBGC_RPC_HDR          6
-#define DBGC_PASSDB           7
-#define DBGC_AUTH             8
-#define DBGC_BDC              9
+#define DBGC_TDB		1
+#define DBGC_PRINTDRIVERS	2
+#define DBGC_LANMAN		3
+#define DBGC_SMB		4
+#define DBGC_RPC_SRV		5
+#define DBGC_RPC_CLI		6
+#define DBGC_PASSDB		7
+#define DBGC_AUTH		8
+#define DBGC_WINBIND		9
 
 
 /* So you can define DBGC_CLASS before including debug.h */
