@@ -48,29 +48,48 @@
 
 #endif /* !_SPLINT_ */
 
+/* We need a number of different prototypes for our 
+   non-existant fuctions */
 char * __unsafe_string_function_usage_here__(void);
 
-#if 0 && defined __GNUC__ && __GNUC__ >= 2 && defined __OPTIMIZE__
+size_t __unsafe_string_function_usage_here_size_t__(void);
 
-#define pstrcpy(d,s) ((sizeof(d) != sizeof(pstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcpy((d), (s),sizeof(pstring)-1))
-#define pstrcat(d,s) ((sizeof(d) != sizeof(pstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcat((d), (s),sizeof(pstring)-1))
-#define fstrcpy(d,s) ((sizeof(d) != sizeof(fstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcpy((d),(s),sizeof(fstring)-1))
-#define fstrcat(d,s) ((sizeof(d) != sizeof(fstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcat((d),(s),sizeof(fstring)-1))
+size_t __unsafe_string_function_usage_here_char__(void);
 
-#define fstrterminate(d) ((sizeof(d) != sizeof(fstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : (((d)[sizeof(fstring)-1]) = '\0'))
-#define pstrterminate(d) ((sizeof(d) != sizeof(pstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : (((d)[sizeof(pstring)-1]) = '\0'))
+#ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
-#define wpstrcpy(d,s) ((sizeof(d) != sizeof(wpstring) && sizeof(d) != sizeof(smb_ucs2_t *)) ? __unsafe_string_function_usage_here__() : safe_strcpy_w((d),(s),sizeof(wpstring)))
-#define wpstrcat(d,s) ((sizeof(d) != sizeof(wpstring) && sizeof(d) != sizeof(smb_ucs2_t *)) ? __unsafe_string_function_usage_here__() : safe_strcat_w((d),(s),sizeof(wpstring)))
-#define wfstrcpy(d,s) ((sizeof(d) != sizeof(wfstring) && sizeof(d) != sizeof(smb_ucs2_t *)) ? __unsafe_string_function_usage_here__() : safe_strcpy_w((d),(s),sizeof(wfstring)))
-#define wfstrcat(d,s) ((sizeof(d) != sizeof(wfstring) && sizeof(d) != sizeof(smb_ucs2_t *)) ? __unsafe_string_function_usage_here__() : safe_strcat_w((d),(s),sizeof(wfstring)))
+/* if the compiler will optimize out function calls, then use this to tell if we are 
+   have the correct types (this works only where sizeof() returns the size of the buffer, not
+   the size of the pointer). */
 
-#else
+#define CHECK_STRING_SIZE(d, len) (sizeof(d) != (len) && sizeof(d) != sizeof(char *))
 
-#define pstrcpy(d,s) safe_strcpy((d), (s),sizeof(pstring)-1)
-#define pstrcat(d,s) safe_strcat((d), (s),sizeof(pstring)-1)
-#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
-#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
+#define fstrterminate(d) (CHECK_STRING_SIZE(d, sizeof(fstring)) \
+    ? __unsafe_string_function_usage_here_char__() \
+    : (((d)[sizeof(fstring)-1]) = '\0'))
+#define pstrterminate(d) (CHECK_STRING_SIZE(d, sizeof(pstring)) \
+    ? __unsafe_string_function_usage_here_char__() \
+    : (((d)[sizeof(pstring)-1]) = '\0'))
+
+#define wpstrcpy(d,s) ((sizeof(d) != sizeof(wpstring) && sizeof(d) != sizeof(smb_ucs2_t *)) \
+    ? __unsafe_string_function_usage_here__() \
+    : safe_strcpy_w((d),(s),sizeof(wpstring)))
+#define wpstrcat(d,s) ((sizeof(d) != sizeof(wpstring) && sizeof(d) != sizeof(smb_ucs2_t *)) \
+    ? __unsafe_string_function_usage_here__() \
+    : safe_strcat_w((d),(s),sizeof(wpstring)))
+#define wfstrcpy(d,s) ((sizeof(d) != sizeof(wfstring) && sizeof(d) != sizeof(smb_ucs2_t *)) \
+    ? __unsafe_string_function_usage_here__() \
+    : safe_strcpy_w((d),(s),sizeof(wfstring)))
+#define wfstrcat(d,s) ((sizeof(d) != sizeof(wfstring) && sizeof(d) != sizeof(smb_ucs2_t *)) \
+    ? __unsafe_string_function_usage_here__() \
+    : safe_strcat_w((d),(s),sizeof(wfstring)))
+
+#define push_pstring_base(dest, src, pstring_base) \
+    (CHECK_STRING_SIZE(pstring_base, sizeof(pstring)) \
+    ? __unsafe_string_function_usage_here_size_t__() \
+    : push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE))
+
+#else /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
 
 #define fstrterminate(d) (((d)[sizeof(fstring)-1]) = '\0')
 #define pstrterminate(d) (((d)[sizeof(pstring)-1]) = '\0')
@@ -80,12 +99,10 @@ char * __unsafe_string_function_usage_here__(void);
 #define wfstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wfstring))
 #define wfstrcat(d,s) safe_strcat_w((d),(s),sizeof(wfstring))
 
-#endif
+#define push_pstring_base(dest, src, pstring_base) \
+    push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE)
 
-/* replace some string functions with multi-byte
-   versions */
-#define strlower(s) strlower_m(s)
-#define strupper(s) strupper_m(s)
+#endif /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
 
 /* the addition of the DEVELOPER checks in safe_strcpy means we must
  * update a lot of code. To make this a little easier here are some
@@ -93,8 +110,109 @@ char * __unsafe_string_function_usage_here__(void);
 #define pstrcpy_base(dest, src, pstring_base) \
     safe_strcpy(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1)
 
-#define push_pstring_base(dest, src, pstring_base) \
-    push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE)
+#define safe_strcpy_base(dest, src, base, size) \
+    safe_strcpy(dest, src, size-PTR_DIFF(dest,base)-1)
+
+/* String copy functions - macro hell below adds 'type checking' (limited, but the best we can
+   do in C) and may tag with function name/number to record the last 'clobber region' on
+   that string */
+
+#define pstrcpy(d,s) safe_strcpy((d), (s),sizeof(pstring)-1)
+#define pstrcat(d,s) safe_strcat((d), (s),sizeof(pstring)-1)
+#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
+#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
+
+/* the addition of the DEVELOPER checks in safe_strcpy means we must
+ * update a lot of code. To make this a little easier here are some
+ * functions that provide the lengths with less pain */
+#define pstrcpy_base(dest, src, pstring_base) \
+    safe_strcpy(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1)
+
+
+/* inside the _fn varients of these is a call to 'clobber_region' - which might
+   destory the stack on a buggy function.  Help the debugging process by putting
+   the function and line it was last called from into a static buffer
+
+   But only for developers */
+
+#ifdef DEVELOPER
+#define overmalloc_safe_strcpy(dest,src,maxlength)	safe_strcpy_fn(__FUNCTION__,__LINE__,dest,src,maxlength)
+#define safe_strcpy(dest,src,maxlength)	safe_strcpy_fn2(__FUNCTION__,__LINE__,dest,src,maxlength)
+#define safe_strcat(dest,src,maxlength)	safe_strcat_fn2(__FUNCTION__,__LINE__,dest,src,maxlength)
+#define push_string(base_ptr, dest, src, dest_len, flags) push_string_fn2(__FUNCTION__, __LINE__, base_ptr, dest, src, dest_len, flags)
+#define pull_string(base_ptr, dest, src, dest_len, src_len, flags) pull_string_fn2(__FUNCTION__, __LINE__, base_ptr, dest, src, dest_len, src_len, flags)
+#define clistr_push(cli, dest, src, dest_len, flags) clistr_push_fn2(__FUNCTION__, __LINE__, cli, dest, src, dest_len, flags)
+#define clistr_pull(cli, dest, src, dest_len, src_len, flags) clistr_pull_fn2(__FUNCTION__, __LINE__, cli, dest, src, dest_len, src_len, flags)
+
+#define alpha_strcpy(dest,src,other_safe_chars,maxlength) alpha_strcpy_fn(__FUNCTION__,__LINE__,dest,src,other_safe_chars,maxlength)
+#define StrnCpy(dest,src,n)		StrnCpy_fn(__FUNCTION__,__LINE__,dest,src,n)
+
+#else
+
+#define overmalloc_safe_strcpy(dest,src,maxlength)	safe_strcpy_fn(NULL,0,dest,src,maxlength)
+#define safe_strcpy(dest,src,maxlength)	safe_strcpy_fn2(NULL,0,dest,src,maxlength)
+#define safe_strcat(dest,src,maxlength)	safe_strcat_fn2(NULL,0,dest,src,maxlength)
+#define push_string(base_ptr, dest, src, dest_len, flags) push_string_fn2(NULL, 0, base_ptr, dest, src, dest_len, flags)
+#define pull_string(base_ptr, dest, src, dest_len, src_len, flags) pull_string_fn2(NULL, 0, base_ptr, dest, src, dest_len, src_len, flags)
+#define clistr_push(cli, dest, src, dest_len, flags) clistr_push_fn2(NULL, 0, cli, dest, src, dest_len, flags)
+#define clistr_pull(cli, dest, src, dest_len, src_len, flags) clistr_pull_fn2(NULL, 0, cli, dest, src, dest_len, src_len, flags)
+
+#define alpha_strcpy(dest,src,other_safe_chars,maxlength) alpha_strcpy_fn(NULL,0,dest,src,other_safe_chars,maxlength)
+#define StrnCpy(dest,src,n)		StrnCpy_fn(NULL,0,dest,src,n)
+#endif /* DEVELOPER */
+
+
+#ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
+
+/* if the compiler will optimize out function calls, then use this to tell if we are 
+   have the correct types (this works only where sizeof() returns the size of the buffer, not
+   the size of the pointer). */
+
+#define safe_strcpy_fn2(fn_name, fn_line, d, s, max_len) \
+    (CHECK_STRING_SIZE(d, max_len+1) \
+    ? __unsafe_string_function_usage_here__() \
+    : safe_strcpy_fn(fn_name, fn_line, (d), (s), (max_len)))
+
+#define safe_strcat_fn2(fn_name, fn_line, d, s, max_len) \
+    (CHECK_STRING_SIZE(d, max_len+1) \
+    ? __unsafe_string_function_usage_here__() \
+    : safe_strcat_fn(fn_name, fn_line, (d), (s), (max_len)))
+
+#define push_string_fn2(fn_name, fn_line, base_ptr, dest, src, dest_len, flags) \
+    (CHECK_STRING_SIZE(dest, dest_len) \
+    ? __unsafe_string_function_usage_here_size_t__() \
+    : push_string_fn(fn_name, fn_line, base_ptr, dest, src, dest_len, flags))
+
+#define pull_string_fn2(fn_name, fn_line, base_ptr, dest, src, dest_len, src_len, flags) \
+    (CHECK_STRING_SIZE(dest, dest_len) \
+    ? __unsafe_string_function_usage_here_size_t__() \
+    : pull_string_fn(fn_name, fn_line, base_ptr, dest, src, dest_len, src_len, flags))
+
+#define clistr_push_fn2(fn_name, fn_line, cli, dest, src, dest_len, flags) \
+    (CHECK_STRING_SIZE(dest, dest_len) \
+    ? __unsafe_string_function_usage_here_size_t__() \
+    : clistr_push_fn(fn_name, fn_line, cli, dest, src, dest_len, flags))
+
+#define clistr_pull_fn2(fn_name, fn_line, cli, dest, src, dest_len, srclen, flags) \
+    (CHECK_STRING_SIZE(dest, dest_len) \
+    ? __unsafe_string_function_usage_here_size_t__() \
+    : clistr_pull_fn(fn_name, fn_line, cli, dest, src, dest_len, srclen, flags))
+
+#else
+
+#define safe_strcpy_fn2 safe_strcpy_fn
+#define safe_strcat_fn2 safe_strcat_fn
+#define push_string_fn2 push_string_fn
+#define pull_string_fn2 pull_string_fn
+#define clistr_push_fn2 clistr_push_fn
+#define clistr_pull_fn2 clistr_pull_fn
+
+#endif
+
+/* replace some string functions with multi-byte
+   versions */
+#define strlower(s) strlower_m(s)
+#define strupper(s) strupper_m(s)
 
 #define safe_strcpy_base(dest, src, base, size) \
     safe_strcpy(dest, src, size-PTR_DIFF(dest,base)-1)

@@ -21,6 +21,11 @@
 
 #include "includes.h"
 
+#ifdef DEVELOPER
+const char *global_clobber_region_function;
+unsigned int global_clobber_region_line;
+#endif
+
 /**
  * Get the next token from a string, return False if none found.
  * Handles double-quotes.
@@ -73,7 +78,7 @@ parameter so you can pass NULL. This is useful for user interface code
 but beware the fact that it is not re-entrant!
 **/
 
-static char *last_ptr=NULL;
+static const char *last_ptr=NULL;
 
 BOOL next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
@@ -410,32 +415,33 @@ size_t count_chars(const char *s,char c)
 }
 
 /**
-Return True if a string consists only of one particular character.
-**/
-
-BOOL str_is_all(const char *s,char c)
+ * In developer builds, clobber a region of memory.
+ *
+ * If we think a string buffer is longer than it really is, this ought
+ * to make the failure obvious, by segfaulting (if in the heap) or by
+ * killing the return address (on the stack), or by trapping under a
+ * memory debugger.
+ *
+ * This is meant to catch possible string overflows, even if the
+ * actual string copied is not big enough to cause an overflow.
+ **/
+void clobber_region(const char *fn, unsigned int line, char *dest, size_t len)
 {
-	smb_ucs2_t *ptr;
-
-	if(s == NULL)
-		return False;
-	if(!*s)
-		return False;
-  
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	for(ptr=tmpbuf;*ptr;ptr++)
-		if(*ptr!=UCS2_CHAR(c))
-			return False;
-
-	return True;
+#ifdef DEVELOPER
+	/* F1 is odd and 0xf1f1f1f1 shouldn't be a valid pointer */
+	memset(dest, 0xF1, len);
+	global_clobber_region_function = fn;
+	global_clobber_region_line = line;
+#endif
 }
+
 
 /**
  Safe string copy into a known length string. maxlength does not
  include the terminating zero.
 **/
 
-char *safe_strcpy(char *dest,const char *src, size_t maxlength)
+char *safe_strcpy_fn(const char *fn, int line, char *dest,const char *src, size_t maxlength)
 {
 	size_t len;
 
@@ -444,13 +450,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 		return NULL;
 	}
 
-#ifdef DEVELOPER
-	/* We intentionally write out at the extremity of the destination
-	 * string.  If the destination is too short (e.g. pstrcpy into mallocd
-	 * or fstring) then this should cause an error under a memory
-	 * checker. */
-	dest[maxlength] = '\0';
-#endif
+	clobber_region(fn,line,dest, maxlength+1);
 
 	if (!src) {
 		*dest = 0;
@@ -474,8 +474,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
  Safe string cat into a string. maxlength does not
  include the terminating zero.
 **/
-
-char *safe_strcat(char *dest, const char *src, size_t maxlength)
+char *safe_strcat_fn(const char *fn, int line, char *dest, const char *src, size_t maxlength)
 {
 	size_t src_len, dest_len;
 
@@ -490,6 +489,8 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 	src_len = strlen(src);
 	dest_len = strlen(dest);
 
+	clobber_region(fn, line, dest + dest_len, maxlength + 1 - dest_len);
+
 	if (src_len + dest_len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
 			 (int)(src_len + dest_len - maxlength), src));
@@ -499,7 +500,7 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 		dest[maxlength] = 0;
 		return NULL;
 	}
-	
+
 	memcpy(&dest[dest_len], src, src_len);
 	dest[dest_len + src_len] = 0;
 	return dest;
@@ -511,10 +512,11 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
  and replaces with '_'. Deliberately does *NOT* check for multibyte
  characters. Don't change it !
 **/
-
-char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
+char *alpha_strcpy_fn(const char *fn, int line, char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
 {
 	size_t len, i;
+
+	clobber_region(fn, line, dest, maxlength);
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
@@ -550,12 +552,15 @@ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, si
  Like strncpy but always null terminates. Make sure there is room!
  The variable n should always be one less than the available size.
 **/
-
-char *StrnCpy(char *dest,const char *src,size_t n)
+char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n)
 {
 	char *d = dest;
+
+	clobber_region(fn, line, dest, n+1);
+
 	if (!dest)
 		return(NULL);
+	
 	if (!src) {
 		*dest = 0;
 		return(dest);
@@ -566,15 +571,18 @@ char *StrnCpy(char *dest,const char *src,size_t n)
 	return(dest);
 }
 
+#if 0
 /**
  Like strncpy but copies up to the character marker.  always null terminates.
  returns a pointer to the character marker in the source string (src).
 **/
 
-char *strncpyn(char *dest, const char *src, size_t n, char c)
+static char *strncpyn(char *dest, const char *src, size_t n, char c)
 {
 	char *p;
 	size_t str_len;
+
+	clobber_region(dest, n+1);
 
 	p = strchr_m(src, c);
 	if (p == NULL) {
@@ -588,6 +596,7 @@ char *strncpyn(char *dest, const char *src, size_t n, char c)
 
 	return p;
 }
+#endif
 
 /**
  Routine to get hex characters and turn them into a 16 byte array.
@@ -898,7 +907,7 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
  Use with caution!
 **/
 
-smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,
+static smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,
 				const smb_ucs2_t *insert)
 {
 	smb_ucs2_t *r, *rp;
@@ -956,11 +965,12 @@ smb_ucs2_t *all_string_sub_wa(smb_ucs2_t *s, const char *pattern,
 	return all_string_sub_w(s, p, i);
 }
 
+#if 0
 /**
  Splits out the front and back at a separator.
 **/
 
-void split_at_last_component(char *path, char *front, char sep, char *back)
+static void split_at_last_component(char *path, char *front, char sep, char *back)
 {
 	char *p = strrchr_m(path, sep);
 
@@ -979,6 +989,7 @@ void split_at_last_component(char *path, char *front, char sep, char *back)
 			back[0] = 0;
 	}
 }
+#endif
 
 /**
  Write an octal as a string.
@@ -998,7 +1009,7 @@ const char *octal_string(int i)
  Truncate a string at a specified length.
 **/
 
-char *string_truncate(char *s, int length)
+char *string_truncate(char *s, unsigned int length)
 {
 	if (s && strlen(s) > length)
 		s[length] = 0;
@@ -1157,11 +1168,12 @@ char *binary_string(char *buf, int len)
 	return ret;
 }
 
+#if 0
 /**
  Just a typesafety wrapper for snprintf into a fstring.
 **/
 
- int fstr_sprintf(fstring s, const char *fmt, ...)
+static int fstr_sprintf(fstring s, const char *fmt, ...)
 {
 	va_list ap;
 	int ret;
@@ -1171,6 +1183,7 @@ char *binary_string(char *buf, int len)
 	va_end(ap);
 	return ret;
 }
+#endif
 
 #ifndef HAVE_STRNDUP
 /**
@@ -1642,12 +1655,3 @@ char * base64_encode_data_blob(DATA_BLOB data)
     return result;
 }
 
-#ifdef VALGRIND
-size_t valgrind_strlen(const char *s)
-{
-	size_t count;
-	for(count = 0; *s++; count++)
-		;
-	return count;
-}
-#endif
