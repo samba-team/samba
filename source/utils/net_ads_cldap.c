@@ -59,7 +59,7 @@ struct cldap_netlogon_reply {
 */
 static unsigned pull_netlogon_string(struct netlogon_string *ret,const char *d)
 {
-	char *s, *p = (char *)d;
+	char *p = (char *)d;
 
 	ZERO_STRUCTP(ret);
 
@@ -342,8 +342,8 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 	d_print_netlogon_string("Unknown Field", &reply.unk0);
 
 	d_printf("NT Version: %d\n", reply.version);
-	d_printf("LMNT Token: %0.2x\n", reply.lmnt_token);
-	d_printf("LM20 Token: %0.2x\n", reply.lm20_token);
+	d_printf("LMNT Token: %.2x\n", reply.lmnt_token);
+	d_printf("LM20 Token: %.2x\n", reply.lm20_token);
 
 	cldap_reply_free(&reply);
 	
