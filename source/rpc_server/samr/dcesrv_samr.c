@@ -169,14 +169,14 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	c_state = h->data;
 
-	if (r->in.domain->string == NULL) {
+	if (r->in.domain_name->string == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	sidstr = samdb_search_string(c_state->sam_ctx,
 				     mem_ctx, NULL, "objectSid",
 				     "(&(name=%s)(objectclass=domain))",
-				     r->in.domain->string);
+				     r->in.domain_name->string);
 	if (sidstr == NULL) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
@@ -184,7 +184,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
 	if (sid == NULL) {
 		DEBUG(0,("samdb: Invalid sid '%s' for domain %s\n",
-			 sidstr, r->in.domain->string));
+			 sidstr, r->in.domain_name->string));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -383,7 +383,7 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 	info->force_logoff_time = 0x8000000000000000LL;
 
 	info->comment.string = samdb_result_string(res[0], "comment", NULL);
-	info->domain.string  = samdb_result_string(res[0], "name", NULL);
+	info->domain_name.string  = samdb_result_string(res[0], "name", NULL);
 
 	info->primary.string = lp_netbios_name();
 	info->sequence_num = 0;

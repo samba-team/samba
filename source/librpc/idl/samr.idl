@@ -84,7 +84,7 @@
 
 	NTSTATUS samr_LookupDomain (
 		[in,ref]  policy_handle *connect_handle,		
-		[in,ref]  samr_String *domain,
+		[in,ref]  samr_String *domain_name,
 		[out]     dom_sid2 *sid
 		);
 
@@ -142,7 +142,7 @@
 	typedef struct {
 		NTTIME force_logoff_time;
 		samr_String comment;
-		samr_String domain;  /* domain name */
+		samr_String domain_name;
 		samr_String primary; /* PDC name if this is a BDC */
 		udlong sequence_num;
 		uint32 unknown2;
@@ -1087,7 +1087,7 @@
 	/************************/
 	/* Function    0x38     */
 	NTSTATUS samr_GetDomPwInfo(
-		[in]        samr_String *name,
+		[in]        samr_String *domain_name,
 		[out]       samr_PwInfo info
 		);
 

@@ -111,7 +111,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	/* prepare samr_LookupDomain */
 	d_name.string = r->samr.in.domain_name;
 	ld.in.connect_handle = &p_handle;
-	ld.in.domain = &d_name;
+	ld.in.domain_name = &d_name;
 
 	/* 3. do a samr_LookupDomain to get the domain sid */
 	status = dcerpc_samr_LookupDomain(c.pdc.out.dcerpc_pipe, mem_ctx, &ld);

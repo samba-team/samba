@@ -142,7 +142,7 @@ struct test_join *torture_join_domain(const char *machine_name,
 
 	name.string = domain;
 	l.in.connect_handle = &handle;
-	l.in.domain = &name;
+	l.in.domain_name = &name;
 
 	status = dcerpc_samr_LookupDomain(join->p, join, &l);
 	if (!NT_STATUS_IS_OK(status)) {
