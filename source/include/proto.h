@@ -1329,8 +1329,8 @@ void lp_talloc_free(void);
 char *lp_logfile(void);
 char *lp_smbrun(void);
 char *lp_configfile(void);
-char *lp_tdb_passwd_file(void);
 char *lp_smb_passwd_file(void);
+char *lp_private_dir(void);
 char *lp_passdb_module_path(void);
 char *lp_serverstring(void);
 char *lp_printcapname(void);
@@ -1635,9 +1635,9 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid);
 BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type);
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid);
 BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type);
-void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from);
-void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from);
-void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from);
+void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from);
+void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from);
+void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from);
 BOOL local_password_change(char *user_name, int local_flags,
 			   char *new_passwd, 
 			   char *err_str, size_t err_str_len,
@@ -1672,6 +1672,7 @@ char* pdb_get_munged_dial (SAM_ACCOUNT *sampass);
 uint32 pdb_get_unknown3 (SAM_ACCOUNT *sampass);
 uint32 pdb_get_unknown5 (SAM_ACCOUNT *sampass);
 uint32 pdb_get_unknown6 (SAM_ACCOUNT *sampass);
+void pdb_set_mem_ownership (SAM_ACCOUNT *sampass, BOOL flag);
 BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags);
 BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t mytime);
 BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t mytime);
@@ -1693,6 +1694,9 @@ BOOL pdb_set_logon_script (SAM_ACCOUNT *sampass, char *logon_script);
 BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path);
 BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive);
 BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir);
+BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc);
+BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations);
+BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial);
 BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, BYTE *pwd);
 BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, BYTE *pwd);
 
@@ -1707,6 +1711,18 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid);
 BOOL pdb_add_sam_account (SAM_ACCOUNT *sampass);
 BOOL pdb_update_sam_account (SAM_ACCOUNT *sampass, BOOL override);
 BOOL pdb_delete_sam_account (char* username);
+
+/*The following definitions come from  passdb/pdb_tdb.c  */
+
+BOOL pdb_setsampwent(BOOL update);
+void pdb_endsampwent(void);
+SAM_ACCOUNT* pdb_getsampwent(void);
+SAM_ACCOUNT* pdb_getsampwnam (char *name);
+SAM_ACCOUNT* pdb_getsampwuid (uid_t uid);
+SAM_ACCOUNT* pdb_getsampwrid (uint32 rid);
+BOOL pdb_delete_sam_account(char *name);
+BOOL pdb_update_sam_account (SAM_ACCOUNT *newpwd, BOOL override);
+BOOL pdb_add_sam_account (SAM_ACCOUNT *newpwd);
 
 /*The following definitions come from  passdb/secrets.c  */
 
@@ -3171,14 +3187,14 @@ uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 le
 			      uint32 *needed, uint32 *returned);
 uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
-uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, 
+uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level,
 				uint32 clientmajorversion, uint32 clientminorversion,
 				NEW_BUFFER *buffer, uint32 offered,
 				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion);
 uint32 _spoolss_startpageprinter(POLICY_HND *handle);
 uint32 _spoolss_endpageprinter(POLICY_HND *handle);
 uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
-				pipes_struct *p, DOC_INFO *docinfo, 
+				pipes_struct *p, DOC_INFO *docinfo,
 				uint32 *jobid);
 uint32 _spoolss_enddocprinter(POLICY_HND *handle);
 uint32 _spoolss_writeprinter( POLICY_HND *handle,
@@ -3195,7 +3211,7 @@ uint32 _spoolss_fcpn(POLICY_HND *handle);
 uint32 _spoolss_addjob(POLICY_HND *handle, uint32 level,
 		       NEW_BUFFER *buffer, uint32 offered,
 		       uint32 *needed);
-uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			  
+uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			
 			  NEW_BUFFER *buffer, uint32 offered,
 			  uint32 *needed, uint32 *returned);
 uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid);
@@ -3204,12 +3220,12 @@ uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
 uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
 				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
-uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level, 
-			       NEW_BUFFER *buffer, uint32 offered, 
+uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
+			       NEW_BUFFER *buffer, uint32 offered,
 			       uint32 *needed, uint32 *numofforms);
 uint32 _spoolss_getform( POLICY_HND *handle, uint32 level, UNISTR2 *uni_formname, NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
-uint32 _spoolss_enumports( UNISTR2 *name, uint32 level, 
-			   NEW_BUFFER *buffer, uint32 offered, 
+uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
+			   NEW_BUFFER *buffer, uint32 offered,
 			   uint32 *needed, uint32 *returned);
 uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
@@ -3219,7 +3235,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 				 uint32 level, const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
 uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
-					NEW_BUFFER *buffer, uint32 offered, 
+					NEW_BUFFER *buffer, uint32 offered,
 					uint32 *needed);
 uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
@@ -3243,16 +3259,16 @@ uint32 _spoolss_setform( POLICY_HND *handle,
 				uint32 level,
 				const FORM *form);
 uint32 _spoolss_enumprintprocessors(UNISTR2 *name, UNISTR2 *environment, uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered, 
+				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
 uint32 _spoolss_enumprintprocdatatypes(UNISTR2 *name, UNISTR2 *processor, uint32 level,
-					NEW_BUFFER *buffer, uint32 offered, 
+					NEW_BUFFER *buffer, uint32 offered,
 					uint32 *needed, uint32 *returned);
 uint32 _spoolss_enumprintmonitors(UNISTR2 *name,uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered, 
+				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
 uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
-			NEW_BUFFER *buffer, uint32 offered, 
+			NEW_BUFFER *buffer, uint32 offered,
 			uint32 *needed);
 #endif
 
