@@ -358,6 +358,16 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
   return sidstr_out;
 }
 
+/*
+  useful function for debug lines
+*/
+const char *sid_string_static(DOM_SID *sid)
+{
+	static fstring sid_str;
+	sid_to_string(sid_str, sid);
+	return sid_str;
+}
+
 /*****************************************************************
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/  
@@ -531,9 +541,9 @@ BOOL sid_parse(char *inbuf, size_t len, DOM_SID *sid)
 
 
 /*****************************************************************
- Compare the domain portion of two sids.
+ Compare the auth portion of two sids.
 *****************************************************************/  
-int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
+int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int i;
 
@@ -570,9 +580,25 @@ int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
 		if (sid1->sub_auths[i] != sid2->sub_auths[i])
 			return sid1->sub_auths[i] - sid2->sub_auths[i];
 
-	return sid_compare_domain(sid1, sid2);
+	return sid_compare_auth(sid1, sid2);
 }
 
+/*****************************************************************
+see if 2 SIDs are in the same domain
+this just compares the leading sub-auths
+*****************************************************************/  
+int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
+{
+	int n, i;
+
+	n = MIN(sid1->num_auths, sid2->num_auths);
+
+	for (i = n-1; i >= 0; --i)
+		if (sid1->sub_auths[i] != sid2->sub_auths[i])
+			return sid1->sub_auths[i] - sid2->sub_auths[i];
+
+	return sid_compare_auth(sid1, sid2);
+}
 
 /*****************************************************************
  Compare two sids.
