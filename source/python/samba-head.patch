@@ -33,6 +33,7 @@ diff -u -r1.458 Makefile.in
 +python_ext: $(PYTHON_OBJS)
 +	@echo python python/setup.py build
 +	@PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
++		SRCDIR="$(srcdir)/" \
 +		python python/setup.py build
 +
 +
