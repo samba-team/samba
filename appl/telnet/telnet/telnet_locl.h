@@ -55,6 +55,9 @@
 #endif
 #include <errno.h>
 #include <setjmp.h>
+#ifdef HAVE_BSDSETJMP_H
+#include <bsdsetjmp.h>
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
