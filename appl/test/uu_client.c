@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,7 +63,7 @@ proto (int sock, const char *hostname, const char *service)
 
     status = krb5_init_context(&context);
     if (status)
-	krb5_err(context, 1, status, "krb5_init_context");
+	errx(1, "krb5_init_context failed: %d", status);
 
     status = krb5_cc_default (context, &ccache);
     if (status)
