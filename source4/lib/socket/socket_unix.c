@@ -50,6 +50,33 @@ static void unixdom_close(struct socket_context *sock)
 	close(sock->fd);
 }
 
+static NTSTATUS unixdom_connect_complete(struct socket_context *sock, uint32_t flags)
+{
+	int error=0, ret;
+	socklen_t len = sizeof(error);
+
+	/* check for any errors that may have occurred - this is needed
+	   for non-blocking connect */
+	ret = getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &error, &len);
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	if (error != 0) {
+		return map_nt_error_from_unix(error);
+	}
+
+	if (!(flags & SOCKET_FLAG_BLOCK)) {
+		ret = set_blocking(sock->fd, False);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
+
+	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS unixdom_connect(struct socket_context *sock,
 				const char *my_address, int my_port,
 				const char *srv_address, int srv_port,
@@ -66,21 +93,12 @@ static NTSTATUS unixdom_connect(struct socket_context *sock,
 	srv_addr.sun_family = AF_UNIX;
 	strncpy(srv_addr.sun_path, srv_address, sizeof(srv_addr.sun_path));
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, False);
-		if (ret == -1) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
-
 	ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	if (ret == -1) {
 		return unixdom_error(errno);
 	}
 
-	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
-
-	return NT_STATUS_OK;
+	return unixdom_connect_complete(sock, flags);
 }
 
 static NTSTATUS unixdom_listen(struct socket_context *sock,
@@ -252,6 +270,7 @@ static const struct socket_ops unixdom_ops = {
 
 	.fn_init		= unixdom_init,
 	.fn_connect		= unixdom_connect,
+	.fn_connect_complete	= unixdom_connect_complete,
 	.fn_listen		= unixdom_listen,
 	.fn_accept		= unixdom_accept,
 	.fn_recv		= unixdom_recv,

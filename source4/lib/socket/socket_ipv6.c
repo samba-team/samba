@@ -50,6 +50,33 @@ static void ipv6_tcp_close(struct socket_context *sock)
 	close(sock->fd);
 }
 
+static NTSTATUS ipv6_tcp_connect_complete(struct socket_context *sock, uint32_t flags)
+{
+	int error=0, ret;
+	socklen_t len = sizeof(error);
+
+	/* check for any errors that may have occurred - this is needed
+	   for non-blocking connect */
+	ret = getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &error, &len);
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	if (error != 0) {
+		return map_nt_error_from_unix(error);
+	}
+
+	if (!(flags & SOCKET_FLAG_BLOCK)) {
+		ret = set_blocking(sock->fd, False);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
+
+	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
 				 const char *my_address, int my_port,
 				 const char *srv_address, int srv_port,
@@ -87,16 +114,7 @@ static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, False);
-		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-	}
-
-	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
-
-	return NT_STATUS_OK;
+	return ipv6_tcp_connect_complete(sock, flags);
 }
 
 static NTSTATUS ipv6_tcp_listen(struct socket_context *sock,
@@ -333,6 +351,7 @@ static const struct socket_ops ipv6_tcp_ops = {
 
 	.fn_init		= ipv6_tcp_init,
 	.fn_connect		= ipv6_tcp_connect,
+	.fn_connect_complete	= ipv6_tcp_connect_complete,
 	.fn_listen		= ipv6_tcp_listen,
 	.fn_accept		= ipv6_tcp_accept,
 	.fn_recv		= ipv6_tcp_recv,
