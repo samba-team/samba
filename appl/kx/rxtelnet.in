@@ -1,12 +1,24 @@
 #!/bin/sh
 # $Id$
+#
+usage="Usage: $0 [-l username] [-t args_to_telnet] [-x args_to_xterm] host"
+while true
+do
+  case $1 in
+  -l) telnet_args="${telnet_args} -l $2 "; title="${2}@"; shift 2;;
+  -t) telnet_args="${telnet_args} $2 "; shift 2;;
+  -x) xterm_args="${xterm_args} $2 "; shift 2;;
+  -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
+  *) break;;
+  esac
+done
 if test $# -lt 1; then
-  echo "Usage: $0 host [arguments to telnet]"
+  echo $usage
   exit 1
 fi
 host=$1
+title="${title}${host}"
 shift
-telnet_args=$*
 bindir=%bindir%
 pdc_trams=`dirname $0`
 PATH=$pdc_trams:$bindir:$PATH
@@ -32,7 +44,7 @@ for i in $*; do
   done
 done
 if test -n "$term"; then
-  ($term -title $host -name $host -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host; kill -USR2 $pid) &
+  ($term -title $title -name $title $xterm_args -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host; kill -USR2 $pid) &
 else
   env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host
   kill -USR2 $pid
