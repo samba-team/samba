@@ -158,6 +158,50 @@ hdb_etype2key(krb5_context context,
     return hdb_next_etype2key(context,e, etype, key);
 }
 
+/* this is really ugly, bus has to be this way until the crypto
+   framework gets fixed */
+
+Key *
+hdb_unseal_key(Key *key, des_key_schedule master_key)
+{
+    des_cblock iv;
+    int num = 0;
+    Key *new_key;
+
+    new_key = malloc(sizeof(*new_key));
+    copy_Key(key, new_key);
+    memset(&iv, 0, sizeof(iv));
+    des_cfb64_encrypt(key->key.keyvalue.data, 
+		      new_key->key.keyvalue.data, 
+		      key->key.keyvalue.length, 
+		      master_key, &iv, &num, 0);
+    return new_key;
+}
+
+void
+hdb_seal_key(Key *key, des_key_schedule master_key)
+{
+    des_cblock iv;
+    int num = 0;
+
+    memset(&iv, 0, sizeof(iv));
+    des_cfb64_encrypt(key->key.keyvalue.data, 
+		      key->key.keyvalue.data, 
+		      key->key.keyvalue.length, 
+		      master_key, &iv, &num, 1);
+}
+
+void
+hdb_free_key(Key *key)
+{
+    memset(key->key.keyvalue.data, 
+	   0,
+	   key->key.keyvalue.length);
+    free_Key(key);
+    free(key);
+}
+
+
 krb5_error_code
 hdb_lock(int fd, int operation)
 {
