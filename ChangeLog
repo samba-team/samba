@@ -1,3 +1,12 @@
+2003-05-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/name-45-test.c: need to use empty krb5.conf for some
+	tests
+
+	* lib/asn1/check-gen.c: there is no \e escape sequence; replace
+	everything with hex-codes, and cast to unsigned char* to make some
+	compilers happy
+
 2003-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/get_in_tkt.c (make_pa_enc_timestamp): make sure first
