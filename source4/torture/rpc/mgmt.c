@@ -96,7 +96,7 @@ static BOOL test_inq_princ_name(struct dcerpc_pipe *p,
 	int i;
 	BOOL ret = False;
 
-	for (i=0;i<30;i++) {
+	for (i=0;i<100;i++) {
 		r.in.authn_proto = i;  /* DCERPC_AUTH_TYPE_* */
 		r.in.princ_name_size = 100;
 

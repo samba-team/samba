@@ -48,6 +48,16 @@ static NTSTATUS tcp_raw_recv(struct dcerpc_pipe *p,
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
+	/* this could be a ncacn_http endpoint - this doesn't work
+	   yet, but it goes close */
+	if (strncmp(blob1.data, "ncacn_http/1.0", 14) == 0) {
+		memmove(blob1.data, blob1.data+14, 2);
+		ret = read_data(tcp->fd, blob1.data+2, 14);
+		if (ret != 14) {
+			return NT_STATUS_NET_WRITE_FAULT;
+		}
+	}
+
 	/* we might have recieved a partial fragment, in which case we
 	   need to pull the rest of it */
 	frag_length = SVAL(blob1.data, 8);
