@@ -90,7 +90,7 @@ BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
 #endif
 
   /* Process the new password. */
-  cred_hash3( processed_new_pwd, new_hashof_mach_pwd, cli->sess_key, 0);
+  cred_hash3( processed_new_pwd, new_hashof_mach_pwd, cli->sess_key, 1);
 
   /* send client srv_pwset challenge */
   return cli_net_srv_pwset(cli, processed_new_pwd);

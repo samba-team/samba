@@ -1773,6 +1773,7 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd);
 void *machine_password_lock( char *domain, char *name, BOOL update);
 BOOL machine_password_unlock( void *token );
+BOOL machine_password_delete( char *domain, char *name );
 BOOL get_machine_account_password( void *mach_tok, unsigned char *ret_pwd,
                                    time_t *last_change_time);
 BOOL set_machine_account_password( void *mach_tok, unsigned char *md4_new_pwd);
