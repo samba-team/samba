@@ -6,22 +6,21 @@ INCLUDES += $(INCLUDE_krb4) $(X_CFLAGS)
 
 WFLAGS += $(WFLAGS_NOIMPLICITINT)
 
-X_PROGS_BIN_PROGS     = kx
-X_PROGS_BIN_SCRPTS    = rxterm rxtelnet tenletxr
-X_PROGS_LIBEXEC_PROGS = kxd
+if HAVE_X
+
+bin_PROGRAMS = kx
+bin_SCRIPTS = rxterm rxtelnet tenletxr
+libexec_PROGRAMS = kxd
+
+else
+
+bin_PROGRAMS = 
+bin_SCRIPTS = 
+libexec_PROGRAMS = 
+
+endif
 
 CLEANFILES = rxterm rxtelnet tenletxr
-
-MAKE_X_PROGS_BIN_PROGS     = @MAKE_X_PROGS_BIN_PROGS@
-MAKE_X_PROGS_BIN_SCRPTS    = @MAKE_X_PROGS_BIN_SCRPTS@
-MAKE_X_PROGS_LIBEXEC_PROGS = @MAKE_X_PROGS_LIBEXEC_PROGS@
-
-bin_PROGRAMS     = $(MAKE_X_PROGS_BIN_PROGS)
-bin_SCRIPTS      = $(MAKE_X_PROGS_BIN_SCRPTS)
-libexec_PROGRAMS = $(MAKE_X_PROGS_LIBEXEC_PROGS)
-
-EXTRA_PROGRAMS         = $(X_PROGS_BIN_PROGS) $(X_PROGS_LIBEXEC_PROGS)
-EXTRA_SCRIPTS          = $(X_PROGS_BIN_SCRPTS)
 
 if NEED_WRITEAUTH
 XauWriteAuth_c = writeauth.c
