@@ -879,13 +879,14 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	pkt.ptype = DCERPC_PKT_REQUEST;
 	pkt.call_id = req->call_id;
 	pkt.auth_length = 0;
+	pkt.pfc_flags = 0;
 	pkt.u.request.alloc_hint = remaining;
 	pkt.u.request.context_id = 0;
 	pkt.u.request.opnum = opnum;
 	if (object) {
 		pkt.object.object = *object;
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_ORPC;
-		/* FIXME: pfc_cflags is reset below! */
+		printf("OBJECT: %s\n", GUID_string(NULL, object));
 	}
 
 	DLIST_ADD(p->pending, req);
@@ -896,7 +897,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 		BOOL last_frag = False;
 
 		first_packet = False;
-		pkt.pfc_flags = 0;
+		pkt.pfc_flags &= ~(DCERPC_PFC_FLAG_FIRST |DCERPC_PFC_FLAG_LAST);
 
 		if (remaining == stub_data->length) {
 			pkt.pfc_flags |= DCERPC_PFC_FLAG_FIRST;
@@ -974,7 +975,7 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
   perform a full request/response pair on a dcerpc pipe
 */
 NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
-			struct OBJREF *object,
+			struct GUID *object,
 			uint16_t opnum,
 			TALLOC_CTX *mem_ctx,
 			DATA_BLOB *stub_data_in,
@@ -1141,7 +1142,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_pipe *p,
   call dcerpc_ndr_request_recv() to receive the answer
 */
 struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
-						struct OBJREF *object,
+						struct GUID *object,
 					    uint32_t opnum,
 					    TALLOC_CTX *mem_ctx,
 					    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
@@ -1278,7 +1279,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
   standard format
 */
 NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
-				struct OBJREF *object,
+				struct GUID *object,
 			    uint32_t opnum,
 			    TALLOC_CTX *mem_ctx,
 			    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
