@@ -402,6 +402,14 @@ struct timeval timeval_zero(void)
 }
 
 /*
+  return True if a timeval is zero
+*/
+BOOL timeval_is_zero(struct timeval *tv)
+{
+	return tv->tv_sec == 0 && tv->tv_usec == 0;
+}
+
+/*
   return a timeval for the current time
 */
 struct timeval timeval_current(void)
