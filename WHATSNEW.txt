@@ -107,19 +107,32 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 1606: Force smbd to disable sendfile with DOS clients 
       and ensure that the chained header is filled in for ...&X 
       commands.
+    * BUG 1602: Fix access to shares when all symlink support 
+      has been disabled.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Tighten the cache consistency with the ntprinters.tdb entry 
+      an the in memory cache associated with open printer handles.
+    * Make sure that register_messages_flags() doesn't overwrite 
+      the originally registers flags.
 
 
 o   Steve French <sfrench@us.ibm.com>
-    o prevent infinite recusion in reopen_logs() when expanding 
+    * prevent infinite recusion in reopen_logs() when expanding 
       the smb.conf variable %I.
       
+o   Luke Howard <lukeh@padl.com>
+    * Correctly use uid_to_sid() and gid_to_sid() in 
+      pdb_set_sam_sids().
+
 
 o   Volker Lendecke <vl@samba.org>
-    o Improved NT->AFS ACL mapping VFS module.
+    * Improved NT->AFS ACL mapping VFS module.
 
 
 o   Lars Mueller <lmuelle@suse.de>
-    o Fix compiler warnings in the kerberos client code.
+    * Fix compiler warnings in the kerberos client code.
     
 
 o   James Peach <jpeach@sgi.com>
@@ -127,6 +140,10 @@ o   James Peach <jpeach@sgi.com>
       supported by the server's OS.
     * Allow SWAT to search for index.html when searving html files 
       in a directory.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 1474: Fix build of --with-expsma stuff on Solaris.
 
 
 Changes since 3.0.5

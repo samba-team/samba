@@ -1183,7 +1183,7 @@ void start_background_queue(void)
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
 
 		claim_connection( NULL, "smbd lpq backend", 0, False, 
-			FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINTING );
+			FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
 
 		if (!locking_init(0)) {
 			exit(1);
