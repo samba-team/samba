@@ -4,6 +4,8 @@ AUTOMAKE_OPTIONS = foreign no-dependencies
 
 AM_CFLAGS += $(WFLAGS)
 
+ACLOCAL = @ACLOCAL@ -I cf
+
 CLEANFILES = roken.h make-roken.c
 
 lib_LTLIBRARIES = libroken.la
