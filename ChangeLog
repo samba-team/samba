@@ -1,26 +1,19 @@
-2002-08-28  Jacques Vidrine  <nectar@kth.se>
+2002-08-28  Johan Danielsson  <joda@pdc.kth.se>
 
-	* lib/krb5/krb5.conf.5: document the options related to
-	dns-locate.
-	* lib/krb5/verify_krb5_conf.c: check for `krb4_get_tickets' in
-	[appdefaults] (for kinit) rather than [libdefaults].
-	* lib/krb5/context.c: rename the `srv_lookup' option to
-	`dns_lookup_kdc'.
-	* lib/krb5/get_host_realm.c: add a knob `dns_lookup_realm'
-	to control global use of dns-locate for domain to realm
-	mappings.  add a special token to control use of dns-locate
-	on a domain-by-domain basis in the [domain_realms] section.
-	add a knob `dns_lookup_realm_labels' to specify which labels
-	(e.g. `_kerberos') to use with dns-locate.
-	* lib/krb5/verify_krb5_conf.c: check for new options related
-	to dns-locate
+	* kdc/config.c: add detach options
 
-2002-08-27  Assar Westerlund  <assar@kth.se>
+	* kdc/main.c: maybe detach from console?
 
-	* acconfig.h: remove _GNU_SOURCE - it's now added by configure
-	* configure.in: define _GNU_SOURCE when running tests - it's
-	needed to see all the extensions that we test for on glibc-based
-	systems such as Linux
+	* kdc/kdc.8: markup changes
+
+	* configure.in: AC_TEST_PACKAGE_NEW -> rk_TEST_PACKAGE
+
+	* configure.in: use rk_TELNET, rename some other macros, and don't
+	add -ldes to krb4 link command
+
+	* kuser/kinit.1: whitespace fix (from NetBSD)
+
+	* include/bits.c: we may need unistd.h for ssize_t
 
 2002-08-26  Assar Westerlund  <assar@kth.se>
 
