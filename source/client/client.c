@@ -389,8 +389,9 @@ static void init_do_list_queue(void)
 		DEBUG(0,("malloc fail for size %d\n",
 			 (int)do_list_queue_size));
 		reset_do_list_queue();
+	} else {
+		memset(do_list_queue, 0, do_list_queue_size);
 	}
-	memset(do_list_queue, 0, do_list_queue_size);
 }
 
 static void adjust_do_list_queue(void)
@@ -525,8 +526,16 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 		
 		while (! do_list_queue_empty())
 		{
-			cli_list(cli, do_list_queue_head(), attribute,
-				 do_list_helper);
+			/*
+			 * Need to copy head so that it doesn't become
+			 * invalid inside the call to cli_list.  This
+			 * would happen if the list were expanded
+			 * during the call.
+			 * Fix from E. Jay Berkenbilt (ejb@ql.org)
+			 */
+			pstring head;
+			pstrcpy(head, do_list_queue_head());
+			cli_list(cli, head, attribute, do_list_helper);
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo))
 			{
