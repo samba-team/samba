@@ -482,7 +482,7 @@ BOOL msrpc_lsa_set_secret(const char *srv_name,
 BOOL msrpc_lsa_query_secret(const char *srv_name,
 			    const char *secret_name,
 			    STRING2 * secret, NTTIME * last_update);
-BOOL secret_get_data(const STRING2 *secret, uchar *data, size_t len);
+BOOL secret_get_data(const STRING2 *secret, uchar *data, uint32 *len);
 BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
 				  const char *secret_name,
 				  uchar trust_passwd[16],

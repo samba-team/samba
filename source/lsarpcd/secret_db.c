@@ -206,13 +206,7 @@ BOOL secret_init_db(void)
 	sec.curinfo.value.ptr_secret = 0x1;
 	make_strhdr2(&sec.curinfo.value.hdr_secret, 24, 24, 1);
 
-	sec.curinfo.value.enc_secret.str_max_len = 24;
-	sec.curinfo.value.enc_secret.undoc = 0;
-	sec.curinfo.value.enc_secret.str_str_len = 24;
-
-	SIVAL(sec.curinfo.value.enc_secret.buffer, 0, 16);
-	SIVAL(sec.curinfo.value.enc_secret.buffer, 4, 0x01);
-	memcpy(sec.curinfo.value.enc_secret.buffer + 8, trust_passwd, 16);
+	secret_store_data( &sec.curinfo.value.enc_secret, trust_passwd, 16);
 
 	sec.oldinfo.ptr_update = 1;
 	sec.oldinfo.last_update = crt;
