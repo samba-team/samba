@@ -77,6 +77,7 @@
 
 #include "hdb.h"
 
+extern require_enc_timestamp;
 extern sig_atomic_t exit_flag;
 
 extern struct timeval now;
