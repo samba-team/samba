@@ -685,17 +685,17 @@ bin/smbclient: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(CLIENT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmount: $(SAMBA_LIBS) $(MOUNT_OBJ) bin/.dummy
+bin/smbmount: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(MOUNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(SMBLIB) $(NMBLIB) $(MOUNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmnt: $(SAMBA_LIBS) $(MNT_OBJ) bin/.dummy
+bin/smbmnt: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(MNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(MNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbumount: $(SAMBA_LIBS) $(UMOUNT_OBJ) bin/.dummy
+bin/smbumount: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(UMOUNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(UMOUNT_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/testparm: $(SAMBALIB) $(TESTPARM_OBJ) bin/.dummy
 	@echo Linking $@
