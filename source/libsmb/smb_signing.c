@@ -405,7 +405,9 @@ static void simple_free_signing_context(struct smb_sign_info *si)
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
 
-BOOL cli_simple_set_signing(struct cli_state *cli, const DATA_BLOB user_session_key, const DATA_BLOB response)
+BOOL cli_simple_set_signing(struct cli_state *cli,
+			    const DATA_BLOB user_session_key,
+			    const DATA_BLOB response, int initial_send_seq_num)
 {
 	struct smb_basic_signing_context *data;
 
@@ -443,7 +445,7 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const DATA_BLOB user_session_
 	dump_data_pw("MAC ssession key is:\n", data->mac_key.data, data->mac_key.length);
 
 	/* Initialise the sequence number */
-	data->send_seq_num = 0;
+	data->send_seq_num = initial_send_seq_num;
 
 	/* Initialise the list of outstanding packets */
 	data->outstanding_packet_list = NULL;

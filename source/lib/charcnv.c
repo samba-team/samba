@@ -1011,11 +1011,11 @@ size_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-size_t pull_utf8_allocate(void **dest, const char *src)
+size_t pull_utf8_allocate(char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_allocate(NULL, CH_UTF8, CH_UNIX, src, src_len, dest);	
+	return convert_string_allocate(NULL, CH_UTF8, CH_UNIX, src, src_len, (void **)dest);	
 }
  
 /**

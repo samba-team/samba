@@ -95,6 +95,7 @@ struct winbindd_domain {
 	fstring alt_name;                      /* alt Domain name (if any) */
 	DOM_SID sid;                           /* SID for this domain */
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
+	BOOL primary;                           /* is this our primary domain ? */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
@@ -153,7 +154,7 @@ struct winbindd_methods {
 	/* convert a sid to a user or group name */
 	NTSTATUS (*sid_to_name)(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				DOM_SID *sid,
+				const DOM_SID *sid,
 				char **name,
 				enum SID_NAME_USE *type);
 

@@ -21,11 +21,11 @@
 
 #include "includes.h"
 
-/* set these to define the limits of the server. NOTE These are on a
-   per-client basis. Thus any one machine can't connect to more than
-   MAX_CONNECTIONS services, but any number of machines may connect at
-   one time. */
-#define MAX_CONNECTIONS 128
+/* The connections bitmap is expanded in increments of BITMAP_BLOCK_SZ. The
+ * maximum size of the bitmap is the largest positive integer, but you will hit
+ * the "max connections" limit, looong before that.
+ */
+#define BITMAP_BLOCK_SZ 128
 
 static connection_struct *Connections;
 
@@ -38,7 +38,7 @@ init the conn structures
 ****************************************************************************/
 void conn_init(void)
 {
-	bmap = bitmap_allocate(MAX_CONNECTIONS);
+	bmap = bitmap_allocate(BITMAP_BLOCK_SZ);
 }
 
 /****************************************************************************
@@ -96,12 +96,35 @@ connection_struct *conn_new(void)
 	TALLOC_CTX *mem_ctx;
 	connection_struct *conn;
 	int i;
+        int find_offset = 1;
 
-	i = bitmap_find(bmap, 1);
+find_again:
+	i = bitmap_find(bmap, find_offset);
 	
 	if (i == -1) {
-		DEBUG(1,("ERROR! Out of connection structures\n"));	       
-		return NULL;
+                /* Expand the connections bitmap. */
+                int             oldsz = bmap->n;
+                int             newsz = bmap->n + BITMAP_BLOCK_SZ;
+                struct bitmap * nbmap;
+
+                if (newsz <= 0) {
+                        /* Integer wrap. */
+		        DEBUG(0,("ERROR! Out of connection structures\n"));
+                        return NULL;
+                }
+
+		DEBUG(4,("resizing connections bitmap from %d to %d\n",
+                        oldsz, newsz));
+
+                nbmap = bitmap_allocate(newsz);
+
+                bitmap_copy(nbmap, bmap);
+                bitmap_free(bmap);
+
+                bmap = nbmap;
+                find_offset = oldsz; /* Start next search in the new portion. */
+
+                goto find_again;
 	}
 
 	if ((mem_ctx=talloc_init("connection_struct"))==NULL) {

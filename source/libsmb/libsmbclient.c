@@ -144,7 +144,7 @@ decode_urlpart(char *segment, size_t sizeof_segment)
     free(new_usegment);
 
     /* realloc it with unix charset */
-    pull_utf8_allocate((void**)&new_usegment, new_segment);
+    pull_utf8_allocate(&new_usegment, new_segment);
 
     /* this assumes (very safely) that removing %aa sequences
        only shortens the string */

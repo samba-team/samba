@@ -75,7 +75,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	int attempts = 0;
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
-	const char *contact_domain;
+	struct winbindd_domain *contact_domain;
 	BOOL retry;
 
 	/* Ensure null termination */
@@ -96,11 +96,6 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	/* Parse domain and username */
 	
 	parse_domain_user(state->request.data.auth.user, name_domain, name_user);
-	if ( !*name_domain ) {
-		DEBUG(5,("no domain separator (%s) in username (%s) - failing auth\n", lp_winbind_separator(), state->request.data.auth.user));
-		result = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
 
 	/* do password magic */
 	
@@ -112,18 +107,36 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	lm_resp = data_blob_talloc(mem_ctx, local_lm_response, sizeof(local_lm_response));
 	nt_resp = data_blob_talloc(mem_ctx, local_nt_response, sizeof(local_nt_response));
 	
-	if ( !get_trust_pw(name_domain, trust_passwd, &last_change_time, &sec_channel_type) ) {
+	/* what domain should we contact? */
+	
+	if ( IS_DC ) {
+		if (!(contact_domain = find_domain_from_name(name_domain))) {
+			DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n", 
+				  state->request.data.auth.user, name_domain, name_user, name_domain)); 
+			result = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+		
+	} else {
+		if (is_myname(name_domain)) {
+			DEBUG(3, ("Authentication for domain %s (local domain to this server) not supported at this stage\n", name_domain));
+			result =  NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+
+		if (!(contact_domain = find_our_domain())) {
+			DEBUG(1, ("Authenticatoin for [%s] -> [%s]\\[%s] in our domain failed - we can't find our domain!\n", 
+				  state->request.data.auth.user, name_domain, name_user)); 
+			result = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+	}
+
+	if ( !get_trust_pw(contact_domain->name, trust_passwd, &last_change_time, &sec_channel_type) ) {
 		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		goto done;
 	}
 
-	/* what domain should we contact? */
-	
-	if ( IS_DC )
-		contact_domain = name_domain;
-	else
-		contact_domain = lp_workgroup();
-		
 	/* check authentication loop */
 
 	do {
@@ -187,7 +200,10 @@ done:
 	
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-	fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
+
+	/* we might have given a more useful error above */
+	if (!*state->response.data.auth.error_string) 
+		fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authentication for user %s returned %s (PAM: %d)\n", 
@@ -214,10 +230,10 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
         NET_USER_INFO_3 info3;
         struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
-	char *user = NULL;
-	const char *domain = NULL;
+	char *name_user = NULL;
+	const char *name_domain = NULL;
 	const char *workstation;
-	const char *contact_domain;
+	struct winbindd_domain *contact_domain;
 	DOM_CRED ret_creds;
 	int attempts = 0;
 	BOOL retry;
@@ -248,7 +264,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-        if (pull_utf8_talloc(mem_ctx, &user, state->request.data.auth_crap.user) == (size_t)-1) {
+        if (pull_utf8_talloc(mem_ctx, &name_user, state->request.data.auth_crap.user) == (size_t)-1) {
 		DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -261,24 +277,19 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 			result = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
-		domain = dom;
+		name_domain = dom;
 	} else if (lp_winbind_use_default_domain()) {
-		domain = lp_workgroup();
+		name_domain = lp_workgroup();
 	} else {
 		DEBUG(5,("no domain specified with username (%s) - failing auth\n", 
-			 user));
-		result = NT_STATUS_INVALID_PARAMETER;
+			 name_user));
+		result = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
 
 	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n", (unsigned long)state->pid,
-		  domain, user));
+		  name_domain, name_user));
 	   
-	if ( !get_trust_pw(domain, trust_passwd, &last_change_time, &sec_channel_type) ) {
-		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		goto done;
-	}
-
 	if (*state->request.data.auth_crap.workstation) {
 		char *wrk = NULL;
 		if (pull_utf8_talloc(mem_ctx, &wrk, state->request.data.auth_crap.workstation) == (size_t)-1) {
@@ -305,11 +316,37 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	
 	/* what domain should we contact? */
 	
-	if ( IS_DC )
-		contact_domain = domain;
-	else
-		contact_domain = lp_workgroup();
+
+	/* what domain should we contact? */
 	
+	if ( IS_DC ) {
+		if (!(contact_domain = find_domain_from_name(name_domain))) {
+			DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n", 
+				  state->request.data.auth.user, name_domain, name_user, name_domain)); 
+			result = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+		
+	} else {
+		if (is_myname(name_domain)) {
+			DEBUG(3, ("Authentication for domain %s (local domain to this server) not supported at this stage\n", name_domain));
+			result =  NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+
+		if (!(contact_domain = find_our_domain())) {
+			DEBUG(1, ("Authenticatoin for [%s] -> [%s]\\[%s] in our domain failed - we can't find our domain!\n", 
+				  state->request.data.auth.user, name_domain, name_user)); 
+			result = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+	}
+		
+	if ( !get_trust_pw(contact_domain->name, trust_passwd, &last_change_time, &sec_channel_type) ) {
+		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto done;
+	}
+
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
@@ -326,7 +363,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 		result = cli_netlogon_sam_network_logon(cli, mem_ctx,
 							&ret_creds,
-							user, domain,
+							name_user, name_domain,
 							workstation,
 							state->request.data.auth_crap.chal, 
 							lm_resp, nt_resp, 
@@ -350,7 +387,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) ) {
 			DEBUG(3,("winbindd_pam_auth_crap: sam_logon returned ACCESS_DENIED.  Maybe the trust account "
 				"password was changed and we didn't know it.  Killing connections to domain %s\n",
-				domain));
+				contact_domain->name));
 			winbindd_cm_flush();
 			retry = True;
 			cli = NULL;
@@ -362,10 +399,36 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
         
 	if (NT_STATUS_IS_OK(result)) {
 		netsamlogon_cache_store( cli->mem_ctx, &info3 );
-		wcache_invalidate_samlogon(find_domain_from_name(domain), &info3);
+		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 		
 		if (state->request.flags & WBFLAG_PAM_INFO3_NDR) {
 			result = append_info3_as_ndr(mem_ctx, state, &info3);
+		} else if (state->request.flags & WBFLAG_PAM_UNIX_NAME) {
+			/* ntlm_auth should return the unix username, per 
+			   'winbind use default domain' settings and the like */
+			
+			fstring username_out;
+			const char *nt_username, *nt_domain;
+			if (!(nt_username = unistr2_tdup(mem_ctx, &(info3.uni_user_name)))) {
+				/* If the server didn't give us one, just use the one we sent them */
+				nt_username = name_user;
+			}
+			
+			if (!(nt_domain = unistr2_tdup(mem_ctx, &(info3.uni_logon_dom)))) {
+				/* If the server didn't give us one, just use the one we sent them */
+				nt_domain = name_domain;
+			}
+
+			fill_domain_username(username_out, nt_domain, nt_username);
+
+			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
+
+			/* this interface is in UTF8 */
+			if (push_utf8_allocate((char **)&state->response.extra_data, username_out) == -1) {
+				result = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			state->response.length +=  strlen(state->response.extra_data)+1;
 		}
 		
 		if (state->request.flags & WBFLAG_PAM_NTKEY) {
@@ -392,8 +455,8 @@ done:
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, 
 	      ("NTLM CRAP authentication for user [%s]\\[%s] returned %s (PAM: %d)\n", 
-	       domain,
-	       user,
+	       name_domain,
+	       name_user,
 	       state->response.data.auth.nt_status_string,
 	       state->response.data.auth.pam_error));	      
 
@@ -411,9 +474,18 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	char *oldpass, *newpass;
 	fstring domain, user;
 	CLI_POLICY_HND *hnd;
+	TALLOC_CTX *mem_ctx;
+	struct winbindd_domain *contact_domain;
 
 	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request.data.chauthtok.user));
+
+	if (!(mem_ctx = talloc_init("winbind password change for (utf8) %s", 
+				    state->request.data.chauthtok.user))) {
+		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	/* Setup crap */
 
@@ -421,8 +493,11 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	parse_domain_user(state->request.data.chauthtok.user, domain, user);
-	if ( !*domain ) {
-		result = NT_STATUS_INVALID_PARAMETER;
+
+	if (!(contact_domain = find_domain_from_name(domain))) {
+		DEBUG(3, ("Cannot change password for [%s] -> [%s]\\[%s] as %s is not a trusted domain\n", 
+			  state->request.data.chauthtok.user, domain, user, domain)); 
+		result = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
 
@@ -433,18 +508,18 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	/* Get sam handle */
 
-	if ( NT_STATUS_IS_ERR(result = cm_get_sam_handle(domain, &hnd)) ) {
+	if ( NT_STATUS_IS_ERR(result = cm_get_sam_handle(contact_domain, &hnd)) ) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
 		goto done;
 	}
 
 	if (!cli_oem_change_password(hnd->cli, user, newpass, oldpass)) {
-		DEBUG(1, ("password change failed for user %s/%s\n", domain, 
-			  user));
+ 		DEBUG(1, ("password change failed for user %s/%s\n", domain, 
+ 			  user));
 		result = NT_STATUS_WRONG_PASSWORD;
 	} else {
 		result = NT_STATUS_OK;
-	}
+ 	}
 
 done:    
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
@@ -458,6 +533,9 @@ done:
 	       user,
 	       state->response.data.auth.nt_status_string,
 	       state->response.data.auth.pam_error));	      
+
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }

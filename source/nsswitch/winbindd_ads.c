@@ -325,7 +325,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 /* convert a sid to a user or group name */
 static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
-			    DOM_SID *sid,
+			    const DOM_SID *sid,
 			    char **name,
 			    enum SID_NAME_USE *type)
 {
@@ -351,24 +351,14 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		      const char *dn,
 		      char **name, uint32 *name_type, DOM_SID *sid)
 {
-	char *ldap_exp;
 	void *res = NULL;
 	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
 			       "objectSid", "sAMAccountType", NULL};
 	ADS_STATUS rc;
 	uint32 atype;
-	char *escaped_dn = escape_ldap_string_alloc(dn);
-
 	DEBUG(3,("ads: dn_lookup\n"));
 
-	if (!escaped_dn) {
-		return False;
-	}
-
-	asprintf(&ldap_exp, "(distinguishedName=%s)", escaped_dn);
-	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
-	SAFE_FREE(ldap_exp);
-	SAFE_FREE(escaped_dn);
+	rc = ads_search_retry_dn(ads, &res, dn, attrs);
 
 	if (!ADS_ERR_OK(rc) || !res) {
 		goto failed;
@@ -488,6 +478,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	char *ldap_exp;
 	ADS_STRUCT *ads;
 	const char *group_attrs[] = {"objectSid", NULL};
+	char *escaped_dn;
 
 	DEBUG(3,("ads: lookup_usergroups_alt\n"));
 
@@ -498,15 +489,24 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 		goto done;
 	}
 
+	if (!(escaped_dn = escape_ldap_string_alloc(user_dn))) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
 	/* buggy server, no tokenGroups.  Instead lookup what groups this user
 	   is a member of by DN search on member*/
-	if (asprintf(&ldap_exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
+
+	if (!(ldap_exp = talloc_asprintf(mem_ctx, "(&(member=%s)(objectClass=group))", escaped_dn))) {
 		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
-		return NT_STATUS_NO_MEMORY;
+		SAFE_FREE(escaped_dn);
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
-	
+
+	SAFE_FREE(escaped_dn);
+
 	rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
-	free(ldap_exp);
 	
 	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
@@ -554,8 +554,6 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 done:
 	if (res) 
 		ads_msgfree(ads, res);
-	if (msg) 
-		ads_msgfree(ads, msg);
 
 	return status;
 }
@@ -567,18 +565,15 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  uint32 *num_groups, DOM_SID ***user_gids)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"distinguishedName", NULL};
-	const char *attrs2[] = {"tokenGroups", "primaryGroupID", NULL};
+	const char *attrs[] = {"tokenGroups", "primaryGroupID", NULL};
 	ADS_STATUS rc;
 	int count;
-	void *msg = NULL;
-	char *ldap_exp;
+	LDAPMessage *msg = NULL;
 	char *user_dn;
 	DOM_SID *sids;
 	int i;
 	DOM_SID *primary_group;
 	uint32 primary_group_rid;
-	char *sidstr;
 	fstring sid_string;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
@@ -589,49 +584,34 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	
 	if (!ads) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		status = NT_STATUS_SERVER_DISABLED;
 		goto done;
 	}
 
-	if (!(sidstr = sid_binstring(sid))) {
-		DEBUG(1,("lookup_usergroups(sid=%s) sid_binstring returned NULL\n", sid_to_string(sid_string, sid)));
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
-		free(sidstr);
-		DEBUG(1,("lookup_usergroups(sid=%s) asprintf failed!\n", sid_to_string(sid_string, sid)));
-		status = NT_STATUS_NO_MEMORY;
+	rc = ads_sid_to_dn(ads, mem_ctx, sid, &user_dn);
+	if (!ADS_ERR_OK(rc)) {
+		status = ads_ntstatus(rc);
 		goto done;
 	}
 
-	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
-	free(ldap_exp);
-	free(sidstr);
-
-	if (!ADS_ERR_OK(rc) || !msg) {
-		DEBUG(1,("lookup_usergroups(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
+	rc = ads_search_retry_dn(ads, (void**)&msg, user_dn, attrs);
+	if (!ADS_ERR_OK(rc)) {
+		status = ads_ntstatus(rc);
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", 
+			 sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
-
-	user_dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
-	if (!user_dn) {
-		DEBUG(1,("lookup_usergroups(sid=%s) ads_search did not return a a distinguishedName!\n", sid_to_string(sid_string, sid)));
-		if (msg) 
-			ads_msgfree(ads, msg);
-		goto done;
-	}
-
-	if (msg) 
-		ads_msgfree(ads, msg);
-
-	rc = ads_search_retry_dn(ads, &msg, user_dn, attrs2);
-	if (!ADS_ERR_OK(rc) || !msg) {
-		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
+	
+	if (!msg) {
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: NULL msg\n", 
+			 sid_to_string(sid_string, sid)));
+		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group_rid)) {
-		DEBUG(1,("%s: No primary group for sid=%s !?\n", domain->name, sid_to_string(sid_string, sid)));
+		DEBUG(1,("%s: No primary group for sid=%s !?\n", 
+			 domain->name, sid_to_string(sid_string, sid)));
 		goto done;
 	}
 
@@ -690,12 +670,17 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	char *ldap_exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *sidstr;
-	const char *attrs[] = {"member", NULL};
 	char **members;
 	int i, num_members;
 	fstring sid_string;
+	BOOL more_values;
+	const char **attrs;
+	uint32 first_usn;
+	uint32 current_usn;
+	int num_retries = 0;
 
-	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, sid_string_static(group_sid)));
+	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, 
+		  sid_string_static(group_sid)));
 
 	*num_names = 0;
 
@@ -709,34 +694,82 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	sidstr = sid_binstring(group_sid);
 
 	/* search for all members of the group */
-	asprintf(&ldap_exp, "(objectSid=%s)",sidstr);
-	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
-	free(ldap_exp);
-	free(sidstr);
-
-	if (!ADS_ERR_OK(rc) || !res) {
-		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
+	if (!(ldap_exp = talloc_asprintf(mem_ctx, "(objectSid=%s)",sidstr))) {
+		SAFE_FREE(sidstr);
+		DEBUG(1, ("ads: lookup_groupmem: tallloc_asprintf for ldap_exp failed!\n"));
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+	SAFE_FREE(sidstr);
 
-	count = ads_count_replies(ads, res);
-	if (count == 0) {
-		status = NT_STATUS_OK;
-		goto done;
-	}
+	members = NULL;
+	num_members = 0;
 
-	members = ads_pull_strings(ads, mem_ctx, res, "member");
-	if (!members) {
-		/* no members? ok ... */
-		status = NT_STATUS_OK;
-		goto done;
-	}
+	attrs = talloc(mem_ctx, 3 * sizeof(*attrs));
+	attrs[1] = talloc_strdup(mem_ctx, "usnChanged");
+	attrs[2] = NULL;
+		
+	do {
+		if (num_members == 0) 
+			attrs[0] = talloc_strdup(mem_ctx, "member");
 
+		DEBUG(10, ("Searching for attrs[0] = %s, attrs[1] = %s\n", attrs[0], attrs[1]));
+
+		rc = ads_search_retry(ads, &res, ldap_exp, attrs);
+
+		if (!ADS_ERR_OK(rc) || !res) {
+			DEBUG(1,("ads: lookup_groupmem ads_search: %s\n",
+				 ads_errstr(rc)));
+			status = ads_ntstatus(rc);
+			goto done;
+		}
+
+		count = ads_count_replies(ads, res);
+		if (count == 0)
+			break;
+
+		if (num_members == 0) {
+			if (!ads_pull_uint32(ads, res, "usnChanged", &first_usn)) {
+				DEBUG(1, ("ads: lookup_groupmem could not pull usnChanged!\n"));
+				goto done;
+			}
+		}
+
+		if (!ads_pull_uint32(ads, res, "usnChanged", &current_usn)) {
+			DEBUG(1, ("ads: lookup_groupmem could not pull usnChanged!\n"));
+			goto done;
+		}
+
+		if (first_usn != current_usn) {
+			DEBUG(5, ("ads: lookup_groupmem USN on this record changed"
+				  " - restarting search\n"));
+			if (num_retries < 5) {
+				num_retries++;
+				num_members = 0;
+				continue;
+			} else {
+				DEBUG(5, ("ads: lookup_groupmem USN on this record changed"
+					  " - restarted search too many times, aborting!\n"));
+				status = NT_STATUS_UNSUCCESSFUL;
+				goto done;
+			}
+		}
+
+		members = ads_pull_strings_range(ads, mem_ctx, res,
+						 "member",
+						 members,
+						 &attrs[0],
+						 &num_members,
+						 &more_values);
+
+		if ((members == NULL) || (num_members == 0))
+			break;
+
+	} while (more_values);
+		
 	/* now we need to turn a list of members into rids, names and name types 
 	   the problem is that the members are in the form of distinguised names
 	*/
-	for (i=0;members[i];i++) /* noop */ ;
-	num_members = i;
 
 	(*sid_mem) = talloc_zero(mem_ctx, sizeof(**sid_mem) * num_members);
 	(*name_types) = talloc_zero(mem_ctx, sizeof(**name_types) * num_members);
@@ -763,12 +796,12 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	status = NT_STATUS_OK;
 	DEBUG(3,("ads lookup_groupmem for sid=%s\n", sid_to_string(sid_string, group_sid)));
 done:
+
 	if (res) 
 		ads_msgfree(ads, res);
 
 	return status;
 }
-
 
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
@@ -809,13 +842,12 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				DOM_SID **dom_sids)
 {
 	NTSTATUS 		result = NT_STATUS_UNSUCCESSFUL;
-	DS_DOMAIN_TRUSTS	*domains = NULL;
+	struct ds_domain_trust	*domains = NULL;
 	int			count = 0;
 	int			i;
 	struct cli_state	*cli = NULL;
 				/* i think we only need our forest and downlevel trusted domains */
 	uint32			flags = DS_DOMAIN_IN_FOREST | DS_DOMAIN_DIRECT_OUTBOUND;
-	char 			*contact_domain_name;
 
 	DEBUG(3,("ads: trusted_domains\n"));
 
@@ -824,15 +856,15 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	*names       = NULL;
 	*dom_sids    = NULL;
 		
-	contact_domain_name = *domain->alt_name ? domain->alt_name : domain->name;
-	if ( !NT_STATUS_IS_OK(result = cm_fresh_connection(contact_domain_name, PI_NETLOGON, &cli)) ) {
+	if ( !NT_STATUS_IS_OK(result = cm_fresh_connection(domain, PI_NETLOGON, &cli)) ) {
 		DEBUG(5, ("trusted_domains: Could not open a connection to %s for PIPE_NETLOGON (%s)\n", 
-			  contact_domain_name, nt_errstr(result)));
+			  domain->name, nt_errstr(result)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	if ( NT_STATUS_IS_OK(result) )
-		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, &domains, (unsigned int *)&count );
+		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, 
+						    flags, &domains, (unsigned int *)&count );
 	
 	if ( NT_STATUS_IS_OK(result) && count) {
 	
@@ -859,27 +891,10 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		/* Copy across names and sids */
 
 		for (i = 0; i < count; i++) {
-			fstring tmp;
-			fstring tmp2;
+			(*names)[i] = domains[i].netbios_domain;
+			(*alt_names)[i] = domains[i].dns_domain;
 
-			(*names)[i] = NULL;
-			(*alt_names)[i] = NULL;
-			ZERO_STRUCT( (*dom_sids)[i] );
-
-			if ( domains[i].netbios_ptr ) {
-				unistr2_to_ascii(tmp, &domains[i].netbios_domain, sizeof(tmp) - 1);
-				(*names)[i] = talloc_strdup(mem_ctx, tmp);
-			}
-			
-			if ( domains[i].dns_ptr ) {
-				unistr2_to_ascii(tmp2, &domains[i].dns_domain, sizeof(tmp2) - 1);
-				(*alt_names)[i] = talloc_strdup(mem_ctx, tmp2);
-			}
-			
-			/* sometimes we will get back a NULL SID from this call */
-			
-			if ( domains[i].sid_ptr )
-				sid_copy(&(*dom_sids)[i], &domains[i].sid.sid);
+			sid_copy(&(*dom_sids)[i], &domains[i].sid);
 		}
 
 		*num_domains = count;	
@@ -887,8 +902,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 done:
 
-	SAFE_FREE( domains );
-	
 	/* remove connection;  This is a special case to the \NETLOGON pipe */
 	
 	if ( cli )
@@ -934,7 +947,7 @@ static NTSTATUS alternate_name(struct winbindd_domain *domain)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	TALLOC_CTX *ctx;
-	char *workgroup;
+	const char *workgroup;
 
 	DEBUG(3,("ads: alternate_name\n"));
 

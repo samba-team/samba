@@ -45,8 +45,8 @@ sub modify_account
 	my $ldap_master=connect_ldap_master();
 	my $modify = $ldap_master->modify ("uid=$login,$basedn",
 		changes => [
-			replace => [lmpassword => "$lmpwd"],
-			replace => [ntpassword => "$ntpwd"],
+			replace => [sambaLMPassword => "$lmpwd"],
+			replace => [sambaNTpassword => "$ntpwd"],
 			replace => [gecos => "$gecos"],
 			replace => [sambaHomePath => "$homedir"]
 		]

@@ -197,6 +197,12 @@ static int profile_dump(void)
 	d_printf("write_count:                    %u\n", profile_p->syscall_write_count);
 	d_printf("write_time:                     %u\n", profile_p->syscall_write_time);
 	d_printf("write_bytes:                    %u\n", profile_p->syscall_write_bytes);
+	d_printf("pread_count:                    %u\n", profile_p->syscall_pread_count);
+	d_printf("pread_time:                     %u\n", profile_p->syscall_pread_time);
+	d_printf("pread_bytes:                    %u\n", profile_p->syscall_pread_bytes);
+	d_printf("pwrite_count:                   %u\n", profile_p->syscall_pwrite_count);
+	d_printf("pwrite_time:                    %u\n", profile_p->syscall_pwrite_time);
+	d_printf("pwrite_bytes:                   %u\n", profile_p->syscall_pwrite_bytes);
 #ifdef WITH_SENDFILE
 	d_printf("sendfile_count:                 %u\n", profile_p->syscall_sendfile_count);
 	d_printf("sendfile_time:                  %u\n", profile_p->syscall_sendfile_time);

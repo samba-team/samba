@@ -217,7 +217,7 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /** Lookup a list of sids */
 
 NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *pol, int num_sids, DOM_SID *sids, 
+                             POLICY_HND *pol, int num_sids, const DOM_SID *sids, 
                              char ***domains, char ***names, uint32 **types)
 {
 	prs_struct qbuf, rbuf;

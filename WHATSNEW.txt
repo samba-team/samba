@@ -1,346 +1,424 @@
-                      WHATS NEW IN Samba 3.0.1
-                         December 15, 2003
+                   WHATS NEW IN Samba 3.0.2pre1
+                         January XX, 2004
                   ===============================
 
-This is the latest stable release of Samba. This is the 
-version that all production Samba servers should be running 
-for all current bug-fixes.  Some of the more common bugs in
-3.0.0 addressed  in the release include:
+This is a preview release of the Samba 3.0.2 code base and is
+provided for testing only.  This release is *not* intended for
+production servers.  Use at your own risk.
 
-  * Substitution problems with smb.conf variables.
-  * Errors in return codes which caused some applications
-    to fail to open files.
-  * General Protection Faults on Windows 2000/XP clients
-    using Samba point-n-print features.
-  * Several miscellaneous crash bugs.
-  * Access problems when enumerating group mappings are 
-    stored in an LDAP Directory.
-  * Several common SWAT bugs when writing changes to 
-    smb.conf.
-  * Internal inconsistencies when 'winbind use default 
-    domain = yes'
+There have been several bug fixes since the 3.0.1 release that
+we feel are important to make available to the Samba community
+for wider testings.  See the "Changes" section for details on
+exact updates.
 
 
 ######################################################################
 Changes
 #######
-Changes since 3.0.1rc2
+Changes since 3.0.1
 ----------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
-details:
+details.  The list of changes per contributor are as follows:
 
-1)  Fix uninitialized variable in passdb.c.
-2)  Fix formal parameter type in get_static() in nsswitch/wins.c.
-3)  Fix problem mounting directories when mount.cifs is installed 
-    with the setuid bit on.
-4)  Fix bug that prevent --mandir from overriding the defaults
-    given in the --with-fhs macro.
-5)  Fix bug in in-memory Kerberos keytab detection routines 
-    in configure.in
+    Parameter Name              Action
+    --------------              ------
+    ldap replication sleep      New
 
 
-Changes since 3.0.1rc1
------------------------
+Commits
+-------
 
-1)  Update version string in smbldap-tools Makefile to 0.8.2.
-2)  Correct a problem with "net rpc vampire" mis-parsing the 
-    alias member info reply.
-3)  Ensure the ${libdir} is created by the installclientlib script.
-4)  Fix detection of Windows 2003 client architecture in the smb.conf
-    %a variable.
-5)  Ensure that smbd calls the add user script for a missing UNIX 
-    user on kerberos auth call (bug 445).
-6)  Fix bugs in hosts allow/deny when using a mismatched 
-    network/netmask pair.
-7)  Protect alloc_sub_basic() from crashing when the source string 
-    is NULL (partial work on bug 687).
-8)  Fix spinlocks on IRIX.
-9)  Corrected some bad destination paths when running "configure 
-    --with-fhs".
-10) Add packaging files for Fedora Core 1.
-11) Correct bug in SWAT install script for non-english languages.
-12) Support character set ISO-8859-1 internally (bug 558).
-13) Fixed more LDAP access errors when looking up group mappings 
-    (bug 281).
-14) Fix UNISTR2 length bug in LsaQueryInfo(3) that caused SID 
-    resolution to fail on local files on on domain members 
-    (bug 875).
+o   Jeremy Allison <jra@samba.org>
+    * Tidy up of NTLMSSP code.
+    * Fixes for SMB signing errors
+    * BUG 815: Workaround NT4 bug to support plaintext
+      password logins and UNICODE.
+
+    
+o   Petri Asikainen <paca@sci.fi>
+    * BUG 330, 387:Fix single valued attribute updates when 
+      working with Novell NDS.
+    
+       
+o   Andrew Bartlet <abartlet@samba.org>
+    * Correctly handle per-pipe NTLMSSP inside a NULL session.
+    * Fix segfault in gencache 
+    * Fix early free() of encrypted_session_key.
+    * Change DC lookup routines to more carefully separate
+      DNS names (realms) from NetBIOS domain names.
+    * Add new sid_to_dn() utility function for internal winbindd use.
+    * Refactor cli_ds_enum_domain_trusts().
+    * BUG 707: Implement range retrieval of ADS attributes (based on 
+      work from Volker <vl@samba.org> and Guenther Deschner 
+      <gd@suse.com>).
+    * Automatically initialize the signing engine if a session key is 
+      available.
+    * BUG 916: Do not perform a + -> ' ' substitution for squid URL 
+      encoded strings, only form input in SWAT.
+    * Ensure Samba resets the NTLMSSP state for new negotiate packets.
+    * Add 2-byte alignments in net_samlogon() queries to parse odd-length
+      plain text passwords.
+    * Allow Windows groups with no members in winbindd.
+    * Allow normal authentication in the absence of a server 
+      generated session key.
+    * More optimizations for looking up UNIX group lists.
+    * Clean up error codes and return values for pam_winbindd
+      and winbindd PAM interface.
+    * Fix restring return values in ntlm_auth tool.
+
+    
+o   Dmitry Butskoj <buc@odusz.elektra.ru>
+    * Fix for special files being hidden from admins.
+    
+    
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix bug in the lanman session key generation.  Caused 
+      "decode_pw: incorrect password length" error messages.
+    * Save the right case for the located user name in 
+      fill_sam_account().  Fixes %U/%u expansion for win9x clients.
+    * BUG 897: Add well known rid for pre win2k compatible access
+      group.
+    * BUG 887: Correct typo in delete user script example.
+    * Use short lived TALLOC_CTX* for allocating printer objects 
+      from the print handle cache.
+    
+      
+o   Guenther Deschner <gd@suse.com>
+    * Install smbwrapper.so should be put into the $(libdir) 
+      and not $(bindir).
+    * Add the capability to specify the new user password 
+      for 'net ads password' on the command line.
+    * Correctly detect AFS headers on SuSE
+	
+o   James Flemer <jflemer@uvm.edu>
+    * Fix AIX compile bug by linking HAVE_ATTR_LIST to HAVE_SYS_ATTRIBUTES_H.
+    
+    
+o   Volker Lendecke <vl@samba.org>
+    * BUG 583: Ensure that user names always contain the short version 
+      of the domain name.
+    * Fix our parsing of the LDAP uri.
+    * Don't show the 'afs username map' in the SWAT basic view.
+    * Fix SMB signing issues in relation to failed NTLMSSP logins.
+    * BUG 924: Fix return codes in smbtorture harness.
+    * Always lower-case usernames before handing it to AFS code.
+
+    
+o   Jianliang Lu <j.lu@tiesse.com>
+    * Ensure we delete the group mapping before calling the delete 
+      group script.
+    * Define well known RID for managing the  "Power Users" group.
+
+    
+o   Stefan Metzmacher <metze@metzemix.de>
+    * Implement LDAP rebind sleep patch.
+    * Revert to 2.2 quota code because of so many broken quota files 
+      out there.
+    
+o   James Peach <jpeach@sgi.com>
+    * BUG 889: Change smbd to use pread/pwrite on platforms that 
+      support these calls. Can lead to a significant speed increase.
 
 
-Changes since 3.0.1pre3
------------------------
+o   Tim Potter <tpot@samba.org>
+    * BUG 924: Fix typo in RW2 torture test.
 
-Removed Parameters
-  * hide local users
-  
-Added Parameters
-  * passwd chat timeout
+o   Richard Sharpe <shape@samba.org>
+    * Small fixes to torture.c to cleanup the error handling 
+      and prevent crashes.
 
-1)  Fix for pdbedit error code returns (bug 763).
-2)  Make sure we only enumerate group mapping entries  (not 
+            
+o   J. Tournier <jerome.tournier@IDEALX.com>
+    * Small fixes for the smbldap-tool scripts.
+    
+    
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Put functions for generating SQL queries in pdb_sql.c
+    * Add pgSQL backend (based on patch by Hamish Friedlander)
+    
+
+
+Changes since 3.0.0
+----------------------
+
+    Parameter Name              Action
+    --------------              ------
+    hide local users            Removed
+    mangled map                 Deprecated
+    mangled stack               Removed
+    passwd chat timeout         New
+
+commits
+-------
+
+o   Change the interface for init_unistr2 to not take a length 
+    but a flags field.  We were assuming that 
+    2*strlen(mb_string) == length of ucs2-le string.  (bug 480).
+o   Allow d_printf() to handle strings with escaped quotation 
+    marks since the msg file includes the escape character (bug 489).
+o   Fix bad html table row termination in SWAT wizard code (bug 413).
+o   Fix to parse the level-2 strings.
+o   Fix for "valid users = %S" in [homes].  Fix read/write 
+    list as well. 
+o   Change AC_CHECK_LIB_EXT to prepend libraries instead of append.  
+    This is the same way AC_CHECK_LIB works (bug 508).
+o   Testparm output fixes for clarity.
+o   Fix broken wins hook functionality -- i18n bug (bug 528).
+o   Take care of condition where DOS and NT error codes must differ.
+o   Default to using only built-in charsets when a working iconv 
+    implementation cannot be located.
+o   Wrap internals of sys_setgroups() so the sys_XX() call can 
+    be done unconditionally (bug 550).
+o   Remove duplicate smbspool link on SWAT's front page (bug 541).
+o   Save and restore CFLAGS before/after AC_PROG_CC.  Ensures that
+    --enable-debug=[yes|no] works correctly.
+o   Allow ^C to interrupt smbpasswd if using our getpass 
+    (e.g. smbpasswd command).
+o   Support signing only on RPC's (bug 167).
+o   Correct bug that prevented  Excel 2000 clients from opening 
+    files marked as read-only.
+o   Portability fix bugs 546 - 549).
+o   Explicitly initialize the value of AR for vendor makes that don't
+    do this (e.g. HPUX 11).  (bug 552).
+o   More i18n fixes for SWAT (bug 413).
+o   Change the cwd before the postexec script to ensure that a
+    umount will succeed.
+o   Correct double free that caused winbindd to crash when a DC 
+    is rebooted (bug 437).
+o   Fix incorrect mode sum (bug 562).
+o   Canonicalize SMB_INFO_ALLOCATION in the same was as
+    SMB_FS_FULL_SIZE_INFORMATION (bug 564).
+o   Add script to generate *msg files.
+o   Add Dutch SWAT translation file.
+o   Make sure to call get_user_groups() with the full winbindd 
+    name for a user if he/she has one (bug 406).
+o   Fix up error code returns from Samba4 tester. Ensure invalid 
+    paths are validated the same way.  
+o   Allow Samba3 to pass the Samba4 RAW-READ tests.
+o   Refuse to configure if --with-expsam=$BACKEND was used but no 
+    libraries were found for $BACKEND.
+o   Move sysquotas autoconf tests to a separate file.
+o   Match W2K w.r.t. writelock and writeclose.  Samba4 torture 
+    tester
+o   Make sure that the files that contain the static_init_$subsystem; 
+    macro get recompiled after configure by removing the object 
+    files.
+o   Ensure canceling a blocking lock returns the correct error 
+    message.
+o   Match Samba 2.2 behavior; make ACB_NORMAL the default ACB value.
+o   Updated Japanese welcome file in SWAT.
+o   Fix to  nt-time <-> unix-time functions reversible.
+o   Ensure that winbindd uses the the escaped DN when querying
+    an AD ldap server.
+o   Fix portability issues when compiling (bug 505, 550)
+o   Compile fix for tdbbackup when Samba needs to override 
+    non-C99 compliant implementations of snprintf().
+o   Use @PICSUFFIX@ instead of .po in Makefile.in (bug 574).
+o   Make sure we break out of samsync loop on error.
+o   Ensure error code path doesn't free unmalloc()'d memory
+    (bug 628).
+o   Add configure test for krb5_keytab_entry keyblock vs key 
+    member (bug 636).
+o   Fixed spinlocks.
+o   Modified testparm so that all output so all debug output goes 
+    to stderr, and all file processing goes to stdout.
+o   Fix error return code for BUFFER_TOO_SMALL in smbcacls 
+    and smbcquotas.
+o   Fix "NULL dest in safe_strcpy()" log message by ensuring that 
+    we have a devmode before copying a string to the devicename.
+o   Support mapping REALM.COM\user to a local user account (without 
+    running winbindd)  for compatibility with 2.2.x release.
+o   Ensure we don't use mmap() on blacklisted systems.
+o   fixed a number of bugs and memory leaks in the AIX 
+    winbindd shim
+o   Call initgroups() in SWAT before becomming the user so that
+    secondary group permissions can be used when writing to 
+    smb.conf.
+o   Fix signing problems when reverse connecting back to a 
+    client for printer notify
+o   Fix signing problems caused by a miss-sequence bug.
+o   Missing map in errormap for ERROR_MORE_DATA -> ERRDOS, ERRmoredata.
+    Fixes NEXUS tools running on Win9x clients (bug 64).
+o   Don't leave the domain field uninitialized in cli_lsa.c if some 
+    SID could not be mapped.
+o   Fix segfault in mount.cifs helper when there is no options 
+    specified during mount.
+o   Change the \n after the password prompt to go to tty instead 
+    of stdout (bug 668).
+o   Stop net -P from prompting for machine account password (bug 451).
+o   Change in behavior to Not only change the effective uid but also
+    the real uid when becoming unprivileged.
+o   Cope with Exchange 5.5 cleartext pop password auth.
+o   New files for support of initshutdown pipe.  Win2k doesn't 
+    respond properly to all requests on the winreg pipe, so we need 
+    to handle this new pipe (bug 534).
+o   Added more va_copy() checks in configure.in.
+o   Include fixes for libsmbclient build problems.
+o   Missing UNIX -> DOS codepage conversion in lanman.c.
+o   Allow DFMS-S filenames can now have arbitrary case (bug 667).
+o   Parameterize the listen backlog in smbd and make it larger by
+    default. A backlog of 5 is way too small these days.
+o   Check for an invalid fid before dereferencing the fsp pointer
+    (bug 696).
+o   Remove invalid memory frees and return codes in pdb_ldap.c.
+o   Prompt for password when invoking --set-auth-user and no 
+    password is given.
+o   Bind the nmbd sending socket to the 'socket address'.
+o   Re-order link command for smbd, rpcclient and smbpasswd to ensure 
+    $LDFLAGS occurs before any library specification (bug 661).
+o   Fix large number of printf() calls for 64-bit size_t.
+o   Fix AC_CHECK_MEMBER so that SLES8 does correctly finds the 
+    keyblock in the krb5 structs.
+o   Remove #include <compat.h> in hopes to avoid problems with 
+    apache header files.
+o   Correct winbindd build problems on HP-UX 11.
+o   Lowercase netgroups lookups (bug 703).
+o   Use the actual size of the buffer in strftime instead of a made
+    up value which just happens to be less than sizeof(fstring).  
+    (bug 713).
+o   Add ldaplibs to pdbedit link line (bug 651).
+o   Fix crash bug in smbclient completion (bug 659).
+o   Fix packet length for browse list reply (bug 771).
+o   Fix coredump in cli_get_backup_list().
+o   Make sure that we expand %N (bug 612).
+o   Allow rpcclient adddriver command to specify printer driver 
+    version (bug 514).
+o   Compile tdbdump by default.
+o   Apply patches to fix iconv detection for FreeBSD.
+o   Do not allow the 'guest account' to be added to a passdb backend 
+    using smbpasswd or pdbedit (bug 624).
+o   Save LDFLAGS during iconv detection (bug 57).
+o   Run krb5 logins through the username map if the winbindd 
+    lookup fails (bug 698).
+o   Add const for lp_set_name_resolve_order() to avoid compiler 
+    warnings (bug 471).
+o   Add support for the %i macro in smb.conf to stand in for the for
+    the local IP address to which a client connected.
+o   Allow winbindd to match local accounts to domain SID when 
+    'winbind trusted domains only = yes' (bug 680).
+o   Remove code in idmap_ldap that searches the user suffix and group 
+    suffix.  It's not needed and provides inconsistent functionality 
+    from the tdb backend.
+o   Patch to handle munged dial string for Windows 200 TSE.
+o   Correct the "smbldap_open: cannot access when not root error"
+    messages when looking up group information (bug 281).
+o   Skip over the winbind separator when looking up a user.
+    This fixes the bug that prevented local users from
+    matching an AD user when not running winbindd (bug 698).
+o   Fix a problem with configure on *BSD systems. Make sure
+    we add -liconv etc to LDFLAGS.
+o   Fix core dump bug when "security = server" and the authentication
+    server goes away.
+o   Correct crash bug due to an empty munged dial string.
+o   Show files locked by a specific user (smbstatus -u 'user') 
+    (bug 590).
+o   Fix bug preventing print jobs from display in the queue
+    monitor used by Windows NT and later clients (bug 660).
+o   Fix several reported problems with point-n-print from
+    Windows 2000/XP clients due to a bug in the EnumPrinterDataEx()
+    reply (bug 338, 527 & 643).
+o   Fix a handful of potential memory leaks in the LDAP code used
+    by ldapsam[_compat] and the LDAP idmap backend.
+o   Fix for pdbedit error code returns (bug 763).
+o   Make sure we only enumerate group mapping entries  (not 
     /etc/group) even when doing local aliases.
-3)  Relax check on the pipe name in a dce/rpc bind response to work 
+o   Relax check on the pipe name in a dce/rpc bind response to work 
     around issues with establishing trusts to a Windows 2003 domain.
-4)  Ensure we mangle names ending in '.' in hash2 mangling method.
-5)  Correct parsing issues with munged dial string.
-6)  Fix bugs in quota support for XFS.
-7)  Add a cleaner method for applications that need to provide name->SID
+o   Ensure we mangle names ending in '.' in hash2 mangling method.
+o   Correct parsing issues with munged dial string.
+o   Fix bugs in quota support for XFS.
+o   Add a cleaner method for applications that need to provide name->SID
     mappings to do this via NSS rather than having to know the
     winbindd pipe protocol.
-8)  Adds a variant of the winbindd_getgroups() call called 
+o   Adds a variant of the winbindd_getgroups() call called 
     winbindd_getusersids() that provides direct SID->SIDs listing of a 
     users supplementary groups. This is enough to allow non-Samba 
     applications to do ACL checking.
-9)  Make sure we don't append the 'ldap suffix' when writing out the 
+o   Make sure we don't append the 'ldap suffix' when writing out the 
     'ldap XXX suffix' values in SWAT (bug 328).
-10) Fix renames across file systems.
-11) Ensure that items in a list of strings containing whitespace are 
+o   Fix renames across file systems.
+o   Ensure that items in a list of strings containing whitespace are 
     written out surrounded by single quotes.  This means that both 
     double and single quotes are now used to surround strings in 
     smb.conf (bug 481).
-12) Enable SWAT to correctly determine if winbindd is running (bug 
+o   Enable SWAT to correctly determine if winbindd is running (bug 
     398).
-13) Include WWW-Authenticate field in 401 response for bad auth 
+o   Include WWW-Authenticate field in 401 response for bad auth 
     attempt (bug 629).
-14) Add support for NTLM2 (NTLMv2 session security).
-15) Add support for variable-length session keys.
-16) More privilege fixes for group enumeration in LDAP (bug 281).
-17) Use the dns name (or IP) as the originating client name when
+o   Add support for NTLM2 (NTLMv2 session security).
+o   Add support for variable-length session keys.
+o   More privilege fixes for group enumeration in LDAP (bug 281).
+o   Use the dns name (or IP) as the originating client name when
     using CUPS (bug 467).
-18) Fix various SMB signing bugs.
-19) Fix ACL propagation on a DFS root (bug 263).
-20) Disable NTLM2 for RPC pipes.
-21) Allow the client to specify the NTLM2 flags got NTLMSSP 
+o   Fix various SMB signing bugs.
+o   Fix ACL propagation on a DFS root (bug 263).
+o   Disable NTLM2 for RPC pipes.
+o   Allow the client to specify the NTLM2 flags got NTLMSSP 
     authentication.
-22) Change the name of the job passed off to cups from "Test Page" to 
+o   Change the name of the job passed off to cups from "Test Page" to 
     "smbprn.00000033 Test Page" so that we can get the smb jobid back.  
     This allow users to delete jobs with cups printing backend (partial 
     work on bug 770).
-23) Fix build of winbindd with static pdb modules.
-24) Retrieve the correct ACL group bits if the file has an ACL 
+o   Fix build of winbindd with static pdb modules.
+o   Retrieve the correct ACL group bits if the file has an ACL 
     (bug 802).
-25) Implement "net rpc group members": Get members of a domain group 
+o   Implement "net rpc group members": Get members of a domain group 
     in human-readable format.
-26) Add MacOSX (Darwin) specific charset module code.
-27) Use samr_dispinfo(level == 1) for enumerating domain users so we 
+o   Add MacOSX (Darwin) specific charset module code.
+o   Use samr_dispinfo(level == 1) for enumerating domain users so we 
     can include the full name in gecos field (bug 587).
-28) Add support for winbind's NSS library on FeeeBSD 5.1 (bug 797).
-29) Implement 'net rpc group list [global|local|builtin]*' for a 
+o   Add support for winbind's NSS library on FeeeBSD 5.1 (bug 797).
+o   Implement 'net rpc group list [global|local|builtin]*' for a 
     select listing of the respective user databases.
-30) Don't automatically set NT status code flag unless client tells 
+o   Don't automatically set NT status code flag unless client tells 
     us it can cope.
-31) Add 'net status [sessions|shares] [parseable]'.
-32) Don't mistake pre-existing UNIX jobs for smb jobs (remainder of  
+o   Add 'net status [sessions|shares] [parseable]'.
+o   Don't mistake pre-existing UNIX jobs for smb jobs (remainder of  
     bug 770).
-33) Add 'Replicator' and 'RAS Servers' to list of builtin SIDs 
-    (bug 608).
-34) Fix inverted logic in hosts allow/deny checks caused by s/strcmp/strequal/
+o   Add 'Replicator' and 'RAS Servers' to list of builtin SIDs 
+   (bug 608).
+o   Fix inverted logic in hosts allow/deny checks caused by s/strcmp/strequal/
     (bug 846).
-35) Implement correct version SamrRemoveSidForeignDomain() (bug 252).
-36) Fix typo in 'hash' mangling algorithm.
-37) Support munged dial for ldapsam (bug 800).
-38) Fix process_incoming_data() to return the number of bytes handled this 
+o   Implement correct version SamrRemoveSidForeignDomain() (bug 252).
+o   Fix typo in 'hash' mangling algorithm.
+o   Support munged dial for ldapsam (bug 800).
+o   Fix process_incoming_data() to return the number of bytes handled this 
     call whether we have a complete PDU or not; fixes bug with multiple 
     PDU request rpc's broken over SMBwriteX calls each.
-39) Fix incorrect smb flags2 for connections to pre-NT servers (causes
+o   Fix incorrect smb flags2 for connections to pre-NT servers (causes
     smbclient to fail to OS2 for example) (bug 821).
-
-    
-
-Changes since 3.0.1pre2
------------------------
-
-Please refer to the CVS log for the SAMBA_3_0 branch for complete
-details:
-
-1)  Skip over the winbind separator when looking up a user.
-    This fixes the bug that prevented local users from
-    matching an AD user when not running winbindd (bug 698).
-2)  Fix a problem with configure on *BSD systems. Make sure
-    we add -liconv etc to LDFLAGS.
-3)  Fix core dump bug when "security = server" and the authentication
-    server goes away.
-4)  Correct crash bug due to an empty munged dial string.
-5)  Show files locked by a specific user (smbstatus -u 'user') 
-    (bug 590).
-6)  Fix bug preventing print jobs from display in the queue
-    monitor used by Windows NT and later clients (bug 660).
-7)  Fix several reported problems with point-n-print from
-    Windows 2000/XP clients due to a bug in the EnumPrinterDataEx()
-    reply (bug 338, 527 & 643).
-8)  Fix a handful of potential memory leaks in the LDAP code used
-    by ldapsam[_compat] and the LDAP idmap backend.
-
-
-Changes since 3.0.1pre1
------------------------
-
-1)  Match Samba 2.2 behavior; make ACB_NORMAL the default ACB value.
-2)  Updated Japanese welcome file in SWAT.
-3)  Fix to  nt-time <-> unix-time functions reversible.
-4)  Ensure that winbindd uses the the escaped DN when querying
-    an AD ldap server.
-5)  Fix portability issues when compiling (bug 505, 550)
-6)  Compile fix for tdbbackup when Samba needs to override 
-    non-C99 compliant implementations of snprintf().
-7)  Use @PICSUFFIX@ instead of .po in Makefile.in (bug 574).
-8)  Make sure we break out of samsync loop on error.
-9)  Ensure error code path doesn't free unmalloc()'d memory
-    (bug 628).
-10) Add configure test for krb5_keytab_entry keyblock vs key 
-    member (bug 636).
-11) Fixed spinlocks.
-12) Modified testparm so that all output so all debug output goes 
-    to stderr, and all file processing goes to stdout.
-13) Fix error return code for BUFFER_TOO_SMALL in smbcacls 
-    and smbcquotas.
-14) Fix "NULL dest in safe_strcpy()" log message by ensuring that 
-    we have a devmode before copying a string to the devicename.
-15) Support mapping REALM.COM\user to a local user account (without 
-    running winbindd)  for compatibility with 2.2.x release.
-16) Ensure we don't use mmap() on blacklisted systems.
-17) fixed a number of bugs and memory leaks in the AIX 
-    winbindd shim
-18) Call initgroups() in SWAT before becomming the user so that
-    secondary group permissions can be used when writing to 
-    smb.conf.
-19) Fix signing problems when reverse connecting back to a 
-    client for printer notify
-20) Fix signing problems caused by a miss-sequence bug.
-21) Missing map in errormap for ERROR_MORE_DATA -> ERRDOS, ERRmoredata.
-    Fixes NEXUS tools running on Win9x clients (bug 64).
-22) Don't leave the domain field uninitialized in cli_lsa.c if some 
-    SID could not be mapped.
-23) Fix segfault in mount.cifs helper when there is no options 
-    specified during mount.
-24) Change the \n after the password prompt to go to tty instead 
-    of stdout (bug 668).
-25) Stop net -P from prompting for machine account password (bug 451).
-26) Change in behavior to Not only change the effective uid but also
-    the real uid when becoming unprivileged.
-27) Cope with Exchange 5.5 cleartext pop password auth.
-28) New files for support of initshutdown pipe.  Win2k doesn't 
-    respond properly to all requests on the winreg pipe, so we need 
-    to handle this new pipe (bug 534).
-29) Added more va_copy() checks in configure.in.
-30) Include fixes for libsmbclient build problems.
-31) Missing UNIX -> DOS codepage conversion in lanman.c.
-32) Allow DFMS-S filenames can now have arbitrary case (bug 667).
-33) Parameterize the listen backlog in smbd and make it larger by
-    default. A backlog of 5 is way too small these days.
-34) Check for an invalid fid before dereferencing the fsp pointer
-    (bug 696).
-35) Remove invalid memory frees and return codes in pdb_ldap.c.
-36) Prompt for password when invoking --set-auth-user and no 
-    password is given.
-37) Bind the nmbd sending socket to the 'socket address'.
-38) Re-order link command for smbd, rpcclient and smbpasswd to ensure 
-    $LDFLAGS occurs before any library specification (bug 661).
-39) Fix large number of printf() calls for 64-bit size_t.
-40) Fix AC_CHECK_MEMBER so that SLES8 does correctly finds the 
-    keyblock in the krb5 structs.
-41) Remove #include <compat.h> in hopes to avoid problems with 
-    apache header files.
-42) Correct winbindd build problems on HP-UX 11.
-43) Lowercase netgroups lookups (bug 703).
-44) Use the actual size of the buffer in strftime instead of a made
-    up value which just happens to be less than sizeof(fstring).  
-    (bug 713).
-45) Add ldaplibs to pdbedit link line (bug 651).
-46) Fix crash bug in smbclient completion (bug 659).
-47) Fix packet length for browse list reply (bug 771).
-48) Fix coredump in cli_get_backup_list().
-49) Make sure that we expand %N (bug 612).
-50) Allow rpcclient adddriver command to specify printer driver 
-    version (bug 514).
-51) Compile tdbdump by default.
-52) Apply patches to fix iconv detection for FreeBSD.
-53) Do not allow the 'guest account' to be added to a passdb backend 
-    using smbpasswd or pdbedit (bug 624).
-54) Save LDFLAGS during iconv detection (bug 57).
-55) Run krb5 logins through the username map if the winbindd 
-    lookup fails (bug 698).
-56) Add const for lp_set_name_resolve_order() to avoid compiler 
-    warnings (bug 471).
-57) Add support for the %i macro in smb.conf to stand in for the for
-    the local IP address to which a client connected.
-58) Allow winbindd to match local accounts to domain SID when 
-    'winbind trusted domains only = yes' (bug 680).
-59) Remove code in idmap_ldap that searches the user suffix and group 
-    suffix.  It's not needed and provides inconsistent functionality 
-    from the tdb backend.
-60) Patch to handle munged dial string for Windows 200 TSE.
-61) Correct the "smbldap_open: cannot access when not root error"
-    messages when looking up group information (bug 281).
-
-
-    
-Changes since 3.0.0
--------------------
-
-Modified parameters
-  * mangled map (deprecated)
-  
-Removed Parameters
-  * mangled stack (unused)
-
-
-1)  Change the interface for init_unistr2 to not take a length 
-    but a flags field.  We were assuming that 
-    2*strlen(mb_string) == length of ucs2-le string.  (bug 480).
-2)  Allow d_printf() to handle strings with escaped quotation 
-    marks since the msg file includes the escape character (bug 489).
-3)  Fix bad html table row termination in SWAT wizard code (bug 413).
-4)  Fix to parse the level-2 strings.
-5)  Fix for "valid users = %S" in [homes].  Fix read/write 
-    list as well. 
-6)  Change AC_CHECK_LIB_EXT to prepend libraries instead of append.  
-    This is the same way AC_CHECK_LIB works (bug 508).
-7)  Testparm output fixes for clarity.
-8)  Fix broken wins hook functionality -- i18n bug (bug 528).
-9)  Take care of condition where DOS and NT error codes must differ.
-10) Default to using only built-in charsets when a working iconv 
-    implementation cannot be located.
-11) Wrap internals of sys_setgroups() so the sys_XX() call can 
-    be done unconditionally (bug 550).
-12) Remove duplicate smbspool link on SWAT's front page (bug 541).
-13) Save and restore CFLAGS before/after AC_PROG_CC.  Ensures that
-    --enable-debug=[yes|no] works correctly.
-14) Allow ^C to interrupt smbpasswd if using our getpass 
-    (e.g. smbpasswd command).
-15) Support signing only on RPC's (bug 167).
-16) Correct bug that prevented  Excel 2000 clients from opening 
-    files marked as read-only.
-17) Portability fix bugs 546 - 549).
-18) Explicitly initialize the value of AR for vendor makes that don't
-    do this (e.g. HPUX 11).  (bug 552).
-19) More i18n fixes for SWAT (bug 413).
-20) Change the cwd before the postexec script to ensure that a
-    umount will succeed.
-21) Correct double free that caused winbindd to crash when a DC 
-    is rebooted (bug 437).
-22) Fix incorrect mode sum (bug 562).
-23) Canonicalize SMB_INFO_ALLOCATION in the same was as
-    SMB_FS_FULL_SIZE_INFORMATION (bug 564).
-24) Add script to generate *msg files.
-25) Add Dutch SWAT translation file.
-26) Make sure to call get_user_groups() with the full winbindd 
-    name for a user if he/she has one (bug 406).
-27) Fix up error code returns from Samba4 tester. Ensure invalid 
-    paths are validated the same way.  
-28) Allow Samba3 to pass the Samba4 RAW-READ tests.
-29) Refuse to configure if --with-expsam=$BACKEND was used but no 
-    libraries were found for $BACKEND.
-30) Move sysquotas autoconf tests to a separate file.
-31) Match W2K w.r.t. writelock and writeclose.  Samba4 torture 
-    tester
-32) Make sure that the files that contain the static_init_$subsystem; 
-    macro get recompiled after configure by removing the object 
-    files.
-33) Ensure canceling a blocking lock returns the correct error 
-    message.
-
+o   Update version string in smbldap-tools Makefile to 0.8.2.
+o   Correct a problem with "net rpc vampire" mis-parsing the 
+    alias member info reply.
+o   Ensure the ${libdir} is created by the installclientlib script.
+o   Fix detection of Windows 2003 client architecture in the smb.conf
+    %a variable.
+o   Ensure that smbd calls the add user script for a missing UNIX 
+    user on kerberos auth call (bug 445).
+o   Fix bugs in hosts allow/deny when using a mismatched 
+    network/netmask pair.
+o   Protect alloc_sub_basic() from crashing when the source string 
+    is NULL (partial work on bug 687).
+o   Fix spinlocks on IRIX.
+o   Corrected some bad destination paths when running "configure 
+    --with-fhs".
+o   Add packaging files for Fedora Core 1.
+o   Correct bug in SWAT install script for non-english languages.
+o   Support character set ISO-8859-1 internally (bug 558).
+o   Fixed more LDAP access errors when looking up group mappings 
+    (bug 281).
+o   Fix UNISTR2 length bug in LsaQueryInfo(3) that caused SID 
+    resolution to fail on local files on on domain members 
+    (bug 875).
+o   Fix uninitialized variable in passdb.c.
+o   Fix formal parameter type in get_static() in nsswitch/wins.c.
+o   Fix problem mounting directories when mount.cifs is installed 
+    with the setuid bit on.
+o   Fix bug that prevent --mandir from overriding the defaults
+    given in the --with-fhs macro.
+o   Fix bug in in-memory Kerberos keytab detection routines 
+    in configure.in
 
 
 ######################################################################

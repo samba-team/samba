@@ -551,7 +551,7 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 /* get a local (alias) group from it's SID */
 
-BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+BOOL get_local_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
 {
 	BOOL ret;
 	
@@ -562,7 +562,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 	/* The group is in the mapping table */
 	become_root();
-	ret = pdb_getgrsid(map, sid);
+	ret = pdb_getgrsid(map, *sid);
 	unbecome_root();
 	
 	if ( !ret )
@@ -585,7 +585,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 		uint32 alias_rid;
 		struct group *grp;
 
-		sid_peek_rid(&sid, &alias_rid);
+		sid_peek_rid(sid, &alias_rid);
 		map->gid=pdb_group_rid_to_gid(alias_rid);
 		
 		grp = getgrgid(map->gid);
@@ -599,7 +599,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 		fstrcpy(map->nt_name, grp->gr_name);
 		fstrcpy(map->comment, "Local Unix Group");
 
-		sid_copy(&map->sid, &sid);
+		sid_copy(&map->sid, sid);
 	}
 #endif
 
@@ -608,7 +608,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 /* get a builtin group from it's SID */
 
-BOOL get_builtin_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+BOOL get_builtin_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
 {
 	struct group *grp;
 	BOOL ret;
@@ -620,7 +620,7 @@ BOOL get_builtin_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 	}
 
 	become_root();
-	ret = pdb_getgrsid(map, sid);
+	ret = pdb_getgrsid(map, *sid);
 	unbecome_root();
 	
 	if ( !ret )
@@ -690,7 +690,7 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
  Get the member users of a group and
  all the users who have that group as primary.
             
- give back an array of uid
+ give back an array of SIDS
  return the grand number of users
 
 
@@ -698,21 +698,21 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 
 ****************************************************************************/
         
-BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
+BOOL get_sid_list_of_group(gid_t gid, DOM_SID **sids, int *num_sids)
 {
 	struct group *grp;
 	struct passwd *pwd;
 	int i=0;
 	char *gr;
-	uid_t *u;
+	DOM_SID *s;
  
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
 		return(False);
 	}
 
-	*num_uids = 0;
-	*uid=NULL;
+	*num_sids = 0;
+	*sids=NULL;
 	
 	if ( (grp=getgrgid(gid)) == NULL)
 		return False;
@@ -721,39 +721,74 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
 	DEBUG(10, ("getting members\n"));
         
 	while (gr && (*gr != (char)'\0')) {
-		u = Realloc((*uid), sizeof(uid_t)*(*num_uids+1));
-		if (!u) {
-			DEBUG(0,("get_uid_list_of_group: unable to enlarge uid list!\n"));
+		SAM_ACCOUNT *group_member_acct = NULL;
+		BOOL found_user;
+		s = Realloc((*sids), sizeof(**sids)*(*num_sids+1));
+		if (!s) {
+			DEBUG(0,("get_uid_list_of_group: unable to enlarge SID list!\n"));
 			return False;
 		}
-		else (*uid) = u;
+		else (*sids) = s;
 
-		if( (pwd=getpwnam_alloc(gr)) !=NULL) {
-			(*uid)[*num_uids]=pwd->pw_uid;
-			(*num_uids)++;
-			passwd_free(&pwd);
+		if (!NT_STATUS_IS_OK(pdb_init_sam(&group_member_acct))) {
+			continue;
 		}
+
+		become_root();
+		found_user = pdb_getsampwnam(group_member_acct, gr);
+		unbecome_root();
+	
+		if (found_user) {
+			sid_copy(&(*sids)[*num_sids], pdb_get_user_sid(group_member_acct));
+			(*num_sids)++;
+		}
+	
+		pdb_free_sam(&group_member_acct);
+
 		gr = grp->gr_mem[++i];
 	}
-	DEBUG(10, ("got [%d] members\n", *num_uids));
+	DEBUG(10, ("got [%d] members\n", *num_sids));
+
+	winbind_off();
 
 	setpwent();
 	while ((pwd=getpwent()) != NULL) {
 		if (pwd->pw_gid==gid) {
-			u = Realloc((*uid), sizeof(uid_t)*(*num_uids+1));
-			if (!u) {
-				DEBUG(0,("get_uid_list_of_group: unable to enlarge uid list!\n"));
+			SAM_ACCOUNT *group_member_acct = NULL;
+			BOOL found_user;
+			s = Realloc((*sids), sizeof(**sids)*(*num_sids+1));
+			if (!s) {
+				DEBUG(0,("get_sid_list_of_group: unable to enlarge SID list!\n"));
+				winbind_on();
 				return False;
 			}
-			else (*uid) = u;
-			(*uid)[*num_uids]=pwd->pw_uid;
-
-			(*num_uids)++;
+			else (*sids) = s;
+			
+			if (!NT_STATUS_IS_OK(pdb_init_sam(&group_member_acct))) {
+				continue;
+			}
+			
+			become_root();
+			found_user = pdb_getsampwnam(group_member_acct, pwd->pw_name);
+			unbecome_root();
+			
+			if (found_user) {
+				sid_copy(&(*sids)[*num_sids], pdb_get_user_sid(group_member_acct));
+				(*num_sids)++;
+			} else {
+				DEBUG(4,("get_sid_list_of_group: User %s [uid == %lu] has no samba account\n",
+					 pwd->pw_name, (unsigned long)pwd->pw_uid));
+				if (algorithmic_uid_to_sid(&(*sids)[*num_sids], pwd->pw_uid))
+					(*num_sids)++;
+			}
+	
+			pdb_free_sam(&group_member_acct);
 		}
 	}
 	endpwent();
-	DEBUG(10, ("got primary groups, members: [%d]\n", *num_uids));
+	DEBUG(10, ("got primary groups, members: [%d]\n", *num_sids));
 
+	winbind_on();
         return True;
 }
 

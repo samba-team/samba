@@ -53,7 +53,7 @@ if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) || ($Options{'h'}) ) {
   print "  -S    surname\n";
   print "  -P    ends by invoking smbldap-passwd.pl\n";
   print " For samba users:\n";
-  print "  -a    add sambaSAMAccount objectclass\n";
+  print "  -a    add sambaSamAccount objectclass\n";
   print "  -e    expire date (\"YYYY-MM-DD HH:MM:SS\")\n";
   print "  -A    can change password ? 0 if no, 1 if yes\n";
   print "  -B    must change password ? 0 if no, 1 if yes\n";
@@ -107,7 +107,7 @@ if (defined($tmp = $Options{'a'})) {
 	# apply changes
 	my $modify = $ldap_master->modify ( "$dn",
                                                                                 changes => [
-                                                                                                        add => [objectClass => 'sambaSAMAccount'],
+                                                                                                        add => [objectClass => 'sambaSamAccount'],
                                                                                                         add => [sambaPwdLastSet => "$valpwdlastset"],
                                                                                                         add => [sambaLogonTime => '0'],
                                                                                                         add => [sambaLogoffTime => '2147483647'],

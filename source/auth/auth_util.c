@@ -926,21 +926,38 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	fstring dom_user;
 	struct passwd *passwd;
 
-	fstr_sprintf(dom_user, "%s%s%s",
-		     domain, lp_winbind_separator(), username);
+	fstr_sprintf(dom_user, "%s%s%s", domain, lp_winbind_separator(), 
+		username);
 
 	passwd = Get_Pwnam(dom_user);
+	
+	if ( passwd ) {
+		char *p;
+		
+		/* make sure we get the case of the username correct */
+		/* work around 'winbind use default domain = yes' */
+		
+		p = strchr( passwd->pw_name, *lp_winbind_separator() );
+		if ( !p ) 
+			fstr_sprintf(dom_user, "%s%s%s", domain, 
+				lp_winbind_separator(), passwd->pw_name);
+		else 
+			fstrcpy( dom_user, passwd->pw_name );
+	}
+	else {
+		/* if the lookup for DOMAIN\username failed, try again 
+		   with just 'username'.  This is need for accessing the server
+		   as a trust user that actually maps to a local account */
 
-	/* if the lookup for DOMAIN\username failed, try again 
-	   with just 'username'.  This is need for accessing the server
-	   as a trust user that actually maps to a local account */
-
-	if ( !passwd ) {
 		fstrcpy( dom_user, username );
 		passwd = Get_Pwnam( dom_user );
+		
+		/* make sure we get the case of the username correct */
+		if ( passwd )
+			fstrcpy( dom_user, passwd->pw_name );
 	}
 
-	if (passwd == NULL)
+	if ( !passwd )
 		return NT_STATUS_NO_SUCH_USER;
 
 	*uid = passwd->pw_uid;
@@ -953,6 +970,9 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	                                 --jerry              */
 	   
 	*found_username = talloc_strdup(mem_ctx, dom_user);
+	
+	DEBUG(5,("fill_sam_account: located username was [%s]\n",
+		*found_username));
 
 	return pdb_init_sam_pw(sam_account, passwd);
 }
@@ -1058,7 +1078,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	if (!(nt_domain = unistr2_tdup(mem_ctx, &(info3->uni_logon_dom)))) {
 		/* If the server didn't give us one, just use the one we sent them */
-		domain = domain;
+		nt_domain = domain;
 	}
 	
 	/* try to fill the SAM account..  If getpwnam() fails, then try the 

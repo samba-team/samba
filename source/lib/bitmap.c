@@ -84,6 +84,20 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 }
 
 /****************************************************************************
+copy as much of the source bitmap as will fit in the destination bitmap.
+****************************************************************************/
+
+int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src)
+{
+        int count = MIN(dst->n, src->n);
+
+        SMB_ASSERT(dst->b != src->b);
+	memcpy(dst->b, src->b, sizeof(dst->b[0])*(count+31)/32);
+
+        return count;
+}
+
+/****************************************************************************
 set a bit in a bitmap
 ****************************************************************************/
 BOOL bitmap_set(struct bitmap *bm, unsigned i)

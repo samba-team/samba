@@ -1,7 +1,6 @@
-
 /*
  * MySQL password backend for samba
- * Copyright (C) Jelmer Vernooij 2002
+ * Copyright (C) Jelmer Vernooij 2002-2004
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -21,37 +20,6 @@
 #include "includes.h"
 #include <mysql/mysql.h>
 
-#define CONFIG_TABLE_DEFAULT				"user"
-#define CONFIG_LOGON_TIME_DEFAULT			"logon_time"
-#define CONFIG_LOGOFF_TIME_DEFAULT			"logoff_time"
-#define CONFIG_KICKOFF_TIME_DEFAULT			"kickoff_time"
-#define CONFIG_PASS_LAST_SET_TIME_DEFAULT		"pass_last_set_time"
-#define CONFIG_PASS_CAN_CHANGE_TIME_DEFAULT		"pass_can_change_time"
-#define CONFIG_PASS_MUST_CHANGE_TIME_DEFAULT 		"pass_must_change_time"
-#define CONFIG_USERNAME_DEFAULT 			"username"
-#define CONFIG_DOMAIN_DEFAULT				"domain"
-#define CONFIG_NT_USERNAME_DEFAULT  			"nt_username"
-#define CONFIG_FULLNAME_DEFAULT				"nt_fullname"
-#define CONFIG_HOME_DIR_DEFAULT				"home_dir"
-#define CONFIG_DIR_DRIVE_DEFAULT			"dir_drive"
-#define CONFIG_LOGON_SCRIPT_DEFAULT			"logon_script"
-#define CONFIG_PROFILE_PATH_DEFAULT			"profile_path"
-#define CONFIG_ACCT_DESC_DEFAULT			"acct_desc"
-#define CONFIG_WORKSTATIONS_DEFAULT			"workstations"
-#define CONFIG_UNKNOWN_STR_DEFAULT			"unknown_str"
-#define CONFIG_MUNGED_DIAL_DEFAULT			"munged_dial"
-#define CONFIG_USER_SID_DEFAULT				"user_sid"
-#define CONFIG_GROUP_SID_DEFAULT			"group_sid"
-#define CONFIG_LM_PW_DEFAULT				"lm_pw"
-#define CONFIG_NT_PW_DEFAULT				"nt_pw"
-#define CONFIG_PLAIN_PW_DEFAULT				"NULL"
-#define CONFIG_ACCT_CTRL_DEFAULT			"acct_ctrl"
-#define CONFIG_UNKNOWN_3_DEFAULT			"unknown_3"
-#define CONFIG_LOGON_DIVS_DEFAULT			"logon_divs"
-#define CONFIG_HOURS_LEN_DEFAULT			"hours_len"
-#define CONFIG_BAD_PASSWORD_COUNT_DEFAULT		"bad_password_count"
-#define CONFIG_LOGON_COUNT_DEFAULT			"logon_count"
-#define CONFIG_UNKNOWN_6_DEFAULT			"unknown_6"
 #define CONFIG_HOST_DEFAULT				"localhost"
 #define CONFIG_USER_DEFAULT				"samba"
 #define CONFIG_PASS_DEFAULT				""
@@ -69,14 +37,6 @@ typedef struct pdb_mysql_data {
 	const char *location;
 } pdb_mysql_data;
 
-/* Used to construct insert and update queries */
-
-typedef struct pdb_mysql_query {
-	char update;
-	TALLOC_CTX *mem_ctx;
-	char *part1;
-	char *part2;
-} pdb_mysql_query;
 #define SET_DATA(data,methods) { \
 	if(!methods){ \
 		DEBUG(0, ("invalid methods!\n")); \
@@ -89,125 +49,13 @@ typedef struct pdb_mysql_query {
 		} \
 }
 
-static void pdb_mysql_int_field(struct pdb_methods *m,
-					struct pdb_mysql_query *q, const char *name, int value)
+#define config_value( data, name, default_value ) \
+  lp_parm_const_string( GLOBAL_SECTION_SNUM, (data)->location, name, default_value )
+
+static long xatol(const char *d)
 {
-	if (!name || strchr(name, '\''))
-		return;                 /* This field shouldn't be set by us */
-
-	if (q->update) {
-		q->part1 =
-			talloc_asprintf_append(q->mem_ctx, q->part1,
-								   "%s = %d,", name, value);
-	} else {
-		q->part1 =
-			talloc_asprintf_append(q->mem_ctx, q->part1, "%s,", name);
-		q->part2 =
-			talloc_asprintf_append(q->mem_ctx, q->part2, "%d,", value);
-	}
-}
-
-static NTSTATUS pdb_mysql_string_field(struct pdb_methods *methods,
-					   struct pdb_mysql_query *q,
-					   const char *name, const char *value)
-{
-	char *esc_value;
-	struct pdb_mysql_data *data;
-	char *tmp_value;
-
-	SET_DATA(data, methods);
-
-	if (!name || !value || !strcmp(value, "") || strchr(name, '\''))
-		return NT_STATUS_INVALID_PARAMETER;   /* This field shouldn't be set by module */
-
-	esc_value = malloc(strlen(value) * 2 + 1);
-
-	tmp_value = smb_xstrdup(value);
-	mysql_real_escape_string(data->handle, esc_value, tmp_value,
-							 strlen(tmp_value));
-	SAFE_FREE(tmp_value);
-
-	if (q->update) {
-		q->part1 =
-			talloc_asprintf_append(q->mem_ctx, q->part1,
-								   "%s = '%s',", name, esc_value);
-	} else {
-		q->part1 =
-			talloc_asprintf_append(q->mem_ctx, q->part1, "%s,", name);
-		q->part2 =
-			talloc_asprintf_append(q->mem_ctx, q->part2, "'%s',",
-								   esc_value);
-	}
-
-	SAFE_FREE(esc_value);
-
-	return NT_STATUS_OK;
-}
-
-#define config_value(data,name,default_value) \
-	lp_parm_const_string(GLOBAL_SECTION_SNUM, (data)->location, name, default_value)
-
-static const char * config_value_write(pdb_mysql_data * data, const char *name, const char *default_value) {
-	char const *v = NULL;
-	char const *swrite = NULL;
-
-	v = lp_parm_const_string(GLOBAL_SECTION_SNUM, data->location, name, default_value);
-
-	if (!v)
-		return NULL;
-
-	swrite = strrchr(v, ':');
-
-	/* Default to the same field as read field */
-	if (!swrite)
-		return v;
-
-	swrite++;
-
-	/* If the field is 0 chars long, we shouldn't write to it */
-	if (!strlen(swrite) || !strcmp(swrite, "NULL"))
-		return NULL;
-
-	/* Otherwise, use the additionally specified */
-	return swrite;
-}
-
-static const char * config_value_read(pdb_mysql_data * data, const char *name, const char *default_value)
-{
-	char *v = NULL;
-	char *swrite;
-
-	v = lp_parm_talloc_string(GLOBAL_SECTION_SNUM, data->location, name, default_value);
-
-	if (!v)
-		return "NULL";
-
-	swrite = strrchr(v, ':');
-
-	/* If no write is specified, there are no problems */
-	if (!swrite) {
-		if (strlen(v) == 0)
-			return "NULL";
-		return (const char *)v;
-	}
-
-	/* Otherwise, we have to cut the ':write_part' */
-	*swrite = '\0';
-	if (strlen(v) == 0)
-		return "NULL";
-
-	return (const char *)v;
-}
-
-/* Wrapper for atol that returns 0 if 'a' points to NULL */
-static long xatol(const char *a)
-{
-	long ret = 0;
-
-	if (a != NULL)
-		ret = atol(a);
-
-	return ret;
+	if(!d) return 0;
+	return atol(d);
 }
 
 static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
@@ -285,72 +133,8 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	asprintf(&query,
-			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s",
-			 config_value_read(data, "logon time column",
-							   CONFIG_LOGON_TIME_DEFAULT),
-			 config_value_read(data, "logoff time column",
-							   CONFIG_LOGOFF_TIME_DEFAULT),
-			 config_value_read(data, "kickoff time column",
-							   CONFIG_KICKOFF_TIME_DEFAULT),
-			 config_value_read(data, "pass last set time column",
-							   CONFIG_PASS_LAST_SET_TIME_DEFAULT),
-			 config_value_read(data, "pass can change time column",
-							   CONFIG_PASS_CAN_CHANGE_TIME_DEFAULT),
-			 config_value_read(data, "pass must change time column",
-							   CONFIG_PASS_MUST_CHANGE_TIME_DEFAULT),
-			 config_value_read(data, "username column",
-							   CONFIG_USERNAME_DEFAULT),
-			 config_value_read(data, "domain column",
-							   CONFIG_DOMAIN_DEFAULT),
-			 config_value_read(data, "nt username column",
-							   CONFIG_NT_USERNAME_DEFAULT),
-			 config_value_read(data, "fullname column",
-							   CONFIG_FULLNAME_DEFAULT),
-			 config_value_read(data, "home dir column",
-							   CONFIG_HOME_DIR_DEFAULT),
-			 config_value_read(data, "dir drive column",
-							   CONFIG_DIR_DRIVE_DEFAULT),
-			 config_value_read(data, "logon script column",
-							   CONFIG_LOGON_SCRIPT_DEFAULT),
-			 config_value_read(data, "profile path column",
-							   CONFIG_PROFILE_PATH_DEFAULT),
-			 config_value_read(data, "acct desc column",
-							   CONFIG_ACCT_DESC_DEFAULT),
-			 config_value_read(data, "workstations column",
-							   CONFIG_WORKSTATIONS_DEFAULT),
-			 config_value_read(data, "unknown string column",
-							   CONFIG_UNKNOWN_STR_DEFAULT),
-			 config_value_read(data, "munged dial column",
-							   CONFIG_MUNGED_DIAL_DEFAULT),
-			 config_value_read(data, "user sid column",
-							   CONFIG_USER_SID_DEFAULT),
-			 config_value_read(data, "group sid column",
-							   CONFIG_GROUP_SID_DEFAULT),
-			 config_value_read(data, "lanman pass column",
-							   CONFIG_LM_PW_DEFAULT),
-			 config_value_read(data, "nt pass column",
-							   CONFIG_NT_PW_DEFAULT),
-			 config_value_read(data, "plain pass column",
-							   CONFIG_PLAIN_PW_DEFAULT),
-			 config_value_read(data, "acct ctrl column",
-							   CONFIG_ACCT_CTRL_DEFAULT),
-			 config_value_read(data, "unknown 3 column",
-							   CONFIG_UNKNOWN_3_DEFAULT),
-			 config_value_read(data, "logon divs column",
-							   CONFIG_LOGON_DIVS_DEFAULT),
-			 config_value_read(data, "hours len column",
-							   CONFIG_HOURS_LEN_DEFAULT),
-			 config_value_read(data, "bad password count column",
-							   CONFIG_BAD_PASSWORD_COUNT_DEFAULT),
-			 config_value_read(data, "logon count column",
-							   CONFIG_LOGON_COUNT_DEFAULT),
-			 config_value_read(data, "unknown 6 column",
-							   CONFIG_UNKNOWN_6_DEFAULT),
-			 config_value(data, "table", CONFIG_TABLE_DEFAULT)
-				 );
-	DEBUG(5, ("Executing query %s\n", query));
-	
+	query = sql_account_query_select(data->location, update, SQL_SEARCH_NONE, NULL);
+
 	ret = mysql_query(data->handle, query);
 	SAFE_FREE(query);
 
@@ -416,7 +200,7 @@ static NTSTATUS mysqlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * 
 }
 
 static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOUNT * user,
-						 const char *field, const char *sname)
+						 enum sql_search_field field, const char *sname)
 {
 	char *esc_sname;
 	char *query;
@@ -433,10 +217,6 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 		return NT_STATUS_NO_MEMORY; 
 	}
 
-	DEBUG(5,
-		  ("mysqlsam_select_by_field: getting data where %s = %s(nonescaped)\n",
-		   field, sname));
-
 	tmp_sname = smb_xstrdup(sname);
 	
 	/* Escape sname */
@@ -451,71 +231,8 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	asprintf(&query,
-			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
-			 config_value_read(data, "logon time column",
-							   CONFIG_LOGON_TIME_DEFAULT),
-			 config_value_read(data, "logoff time column",
-							   CONFIG_LOGOFF_TIME_DEFAULT),
-			 config_value_read(data, "kickoff time column",
-							   CONFIG_KICKOFF_TIME_DEFAULT),
-			 config_value_read(data, "pass last set time column",
-							   CONFIG_PASS_LAST_SET_TIME_DEFAULT),
-			 config_value_read(data, "pass can change time column",
-							   CONFIG_PASS_CAN_CHANGE_TIME_DEFAULT),
-			 config_value_read(data, "pass must change time column",
-							   CONFIG_PASS_MUST_CHANGE_TIME_DEFAULT),
-			 config_value_read(data, "username column",
-							   CONFIG_USERNAME_DEFAULT),
-			 config_value_read(data, "domain column",
-							   CONFIG_DOMAIN_DEFAULT),
-			 config_value_read(data, "nt username column",
-							   CONFIG_NT_USERNAME_DEFAULT),
-			 config_value_read(data, "fullname column",
-							   CONFIG_FULLNAME_DEFAULT),
-			 config_value_read(data, "home dir column",
-							   CONFIG_HOME_DIR_DEFAULT),
-			 config_value_read(data, "dir drive column",
-							   CONFIG_DIR_DRIVE_DEFAULT),
-			 config_value_read(data, "logon script column",
-							   CONFIG_LOGON_SCRIPT_DEFAULT),
-			 config_value_read(data, "profile path column",
-							   CONFIG_PROFILE_PATH_DEFAULT),
-			 config_value_read(data, "acct desc column",
-							   CONFIG_ACCT_DESC_DEFAULT),
-			 config_value_read(data, "workstations column",
-							   CONFIG_WORKSTATIONS_DEFAULT),
-			 config_value_read(data, "unknown string column",
-							   CONFIG_UNKNOWN_STR_DEFAULT),
-			 config_value_read(data, "munged dial column",
-							   CONFIG_MUNGED_DIAL_DEFAULT),
-			 config_value_read(data, "user sid column",
-							   CONFIG_USER_SID_DEFAULT),
-			 config_value_read(data, "group sid column",
-							   CONFIG_GROUP_SID_DEFAULT),
-			 config_value_read(data, "lanman pass column",
-							   CONFIG_LM_PW_DEFAULT),
-			 config_value_read(data, "nt pass column",
-							   CONFIG_NT_PW_DEFAULT),
-			 config_value_read(data, "plain pass column",
-							   CONFIG_PLAIN_PW_DEFAULT),
-			 config_value_read(data, "acct ctrl column",
-							   CONFIG_ACCT_CTRL_DEFAULT),
-			 config_value_read(data, "unknown 3 column",
-							   CONFIG_UNKNOWN_3_DEFAULT),
-			 config_value_read(data, "logon divs column",
-							   CONFIG_LOGON_DIVS_DEFAULT),
-			 config_value_read(data, "hours len column",
-							   CONFIG_HOURS_LEN_DEFAULT),
-			 config_value_read(data, "bad password count column",
-							   CONFIG_BAD_PASSWORD_COUNT_DEFAULT),
-			 config_value_read(data, "logon count column",
-							   CONFIG_LOGON_COUNT_DEFAULT),
-			 config_value_read(data, "unknown 6 column",
-							   CONFIG_UNKNOWN_6_DEFAULT),
-			 config_value(data, "table", CONFIG_TABLE_DEFAULT), field,
-			 esc_sname);
-	
+	query = sql_account_query_select(data->location, True, field, esc_sname);
+
 	SAFE_FREE(esc_sname);
 
 	DEBUG(5, ("Executing query %s\n", query));
@@ -561,8 +278,7 @@ static NTSTATUS mysqlsam_getsampwnam(struct pdb_methods *methods, SAM_ACCOUNT * 
 	}
 
 	return mysqlsam_select_by_field(methods, user,
-			config_value_read(data, "username column",
-				CONFIG_USERNAME_DEFAULT), sname);
+			SQL_SEARCH_USER_NAME, sname);
 }
 
 
@@ -580,9 +296,7 @@ static NTSTATUS mysqlsam_getsampwsid(struct pdb_methods *methods, SAM_ACCOUNT * 
 
 	sid_to_string(sid_str, sid);
 
-	return mysqlsam_select_by_field(methods, user,
-			config_value_read(data, "user sid column",
-				CONFIG_USER_SID_DEFAULT), sid_str);
+	return mysqlsam_select_by_field(methods, user, SQL_SEARCH_USER_SID, sid_str);
 }
 
 /***************************************************************************
@@ -631,10 +345,7 @@ static NTSTATUS mysqlsam_delete_sam_account(struct pdb_methods *methods,
 
 	SAFE_FREE(tmp_sname);
 
-	asprintf(&query, "DELETE FROM %s WHERE %s = '%s'",
-			 config_value(data, "table", CONFIG_TABLE_DEFAULT),
-			 config_value_read(data, "username column",
-							   CONFIG_USERNAME_DEFAULT), esc);
+	query = sql_account_query_delete(data->location, esc);
 
 	SAFE_FREE(esc);
 
@@ -656,11 +367,8 @@ static NTSTATUS mysqlsam_delete_sam_account(struct pdb_methods *methods,
 static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							 const SAM_ACCOUNT * newpwd, char isupdate)
 {
-	pstring temp;
-	char *field;
 	struct pdb_mysql_data *data;
-	pdb_mysql_query query;
-	fstring sid_str;
+	char *query;
 
 	if (!methods) {
 		DEBUG(0, ("invalid methods!\n"));
@@ -673,200 +381,18 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 		DEBUG(0, ("invalid handle!\n"));
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	query.update = isupdate;
 
-	/* I know this is somewhat overkill but only the talloc 
-	 * functions have asprint_append and the 'normal' asprintf 
-	 * is a GNU extension */
-	query.mem_ctx = talloc_init("mysqlsam_replace_sam_account");
-	query.part2 = talloc_asprintf(query.mem_ctx, "%s", "");
-	if (query.update) {
-		query.part1 =
-			talloc_asprintf(query.mem_ctx, "UPDATE %s SET ",
-							config_value(data, "table",
-										 CONFIG_TABLE_DEFAULT));
-	} else {
-		query.part1 =
-			talloc_asprintf(query.mem_ctx, "INSERT INTO %s (",
-							config_value(data, "table",
-										 CONFIG_TABLE_DEFAULT));
-	}
-
-	pdb_mysql_int_field(methods, &query,
-						config_value_write(data, "acct ctrl column",
-										   CONFIG_ACCT_CTRL_DEFAULT),
-						pdb_get_acct_ctrl(newpwd));
-
-	if (pdb_get_init_flags(newpwd, PDB_LOGONTIME) != PDB_DEFAULT) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data,
-											   "logon time column",
-											   CONFIG_LOGON_TIME_DEFAULT),
-							pdb_get_logon_time(newpwd));
-	}
-
-	if (pdb_get_init_flags(newpwd, PDB_LOGOFFTIME) != PDB_DEFAULT) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data,
-											   "logoff time column",
-											   CONFIG_LOGOFF_TIME_DEFAULT),
-							pdb_get_logoff_time(newpwd));
-	}
-
-	if (pdb_get_init_flags(newpwd, PDB_KICKOFFTIME) != PDB_DEFAULT) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data,
-											   "kickoff time column",
-											   CONFIG_KICKOFF_TIME_DEFAULT),
-							pdb_get_kickoff_time(newpwd));
-	}
-
-	if (pdb_get_init_flags(newpwd, PDB_CANCHANGETIME) != PDB_DEFAULT) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data,
-											   "pass can change time column",
-											   CONFIG_PASS_CAN_CHANGE_TIME_DEFAULT),
-							pdb_get_pass_can_change_time(newpwd));
-	}
-
-	if (pdb_get_init_flags(newpwd, PDB_MUSTCHANGETIME) != PDB_DEFAULT) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data,
-											   "pass must change time column",
-											   CONFIG_PASS_MUST_CHANGE_TIME_DEFAULT),
-							pdb_get_pass_must_change_time(newpwd));
-	}
-
-	if (pdb_get_pass_last_set_time(newpwd)) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data,
-											   "pass last set time column",
-											   CONFIG_PASS_LAST_SET_TIME_DEFAULT),
-							pdb_get_pass_last_set_time(newpwd));
-	}
-
-	if (pdb_get_hours_len(newpwd)) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data,
-											   "hours len column",
-											   CONFIG_HOURS_LEN_DEFAULT),
-							pdb_get_hours_len(newpwd));
-	}
-
-	if (pdb_get_logon_divs(newpwd)) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data,
-											   "logon divs column",
-											   CONFIG_LOGON_DIVS_DEFAULT),
-							pdb_get_logon_divs(newpwd));
-	}
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data, "user sid column",
-											  CONFIG_USER_SID_DEFAULT),
-						   sid_to_string(sid_str, 
-										 pdb_get_user_sid(newpwd)));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data, "group sid column",
-											  CONFIG_GROUP_SID_DEFAULT),
-						   sid_to_string(sid_str,
-										 pdb_get_group_sid(newpwd)));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data, "username column",
-											  CONFIG_USERNAME_DEFAULT),
-						   pdb_get_username(newpwd));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data, "domain column",
-											  CONFIG_DOMAIN_DEFAULT),
-						   pdb_get_domain(newpwd));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data,
-											  "nt username column",
-											  CONFIG_NT_USERNAME_DEFAULT),
-						   pdb_get_nt_username(newpwd));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data, "fullname column",
-											  CONFIG_FULLNAME_DEFAULT),
-						   pdb_get_fullname(newpwd));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data,
-											  "logon script column",
-											  CONFIG_LOGON_SCRIPT_DEFAULT),
-						   pdb_get_logon_script(newpwd));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data,
-											  "profile path column",
-											  CONFIG_PROFILE_PATH_DEFAULT),
-						   pdb_get_profile_path(newpwd));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data, "dir drive column",
-											  CONFIG_DIR_DRIVE_DEFAULT),
-						   pdb_get_dir_drive(newpwd));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data, "home dir column",
-											  CONFIG_HOME_DIR_DEFAULT),
-						   pdb_get_homedir(newpwd));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data,
-											  "workstations column",
-											  CONFIG_WORKSTATIONS_DEFAULT),
-						   pdb_get_workstations(newpwd));
-
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data,
-											  "unknown string column",
-											  CONFIG_UNKNOWN_STR_DEFAULT),
-						   pdb_get_workstations(newpwd));
-
-	pdb_sethexpwd(temp, pdb_get_lanman_passwd(newpwd),
-				  pdb_get_acct_ctrl(newpwd));
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data,
-											  "lanman pass column",
-											  CONFIG_LM_PW_DEFAULT), temp);
-
-	pdb_sethexpwd(temp, pdb_get_nt_passwd(newpwd),
-				  pdb_get_acct_ctrl(newpwd));
-	pdb_mysql_string_field(methods, &query,
-						   config_value_write(data, "nt pass column",
-											  CONFIG_NT_PW_DEFAULT), temp);
-
-	if (query.update) {
-		query.part1[strlen(query.part1) - 1] = '\0';
-		query.part1 =
-			talloc_asprintf_append(query.mem_ctx, query.part1,
-								   " WHERE %s = '%s'",
-								   config_value_read(data,
-													 "user sid column",
-													 CONFIG_USER_SID_DEFAULT),
-								   sid_to_string(sid_str, pdb_get_user_sid (newpwd)));
-	} else {
-		query.part2[strlen(query.part2) - 1] = ')';
-		query.part1[strlen(query.part1) - 1] = ')';
-		query.part1 =
-			talloc_asprintf_append(query.mem_ctx, query.part1,
-								   " VALUES (%s", query.part2);
-	}
-
-	DEBUG(0, ("%s\n", query.part1));
+	query = sql_account_query_update(data->location, newpwd, isupdate);
+	
 	/* Execute the query */
-	if (mysql_query(data->handle, query.part1)) {
+	if (mysql_query(data->handle, query)) {
 		DEBUG(0,
-			  ("Error executing %s, %s\n", query.part1,
+			  ("Error executing %s, %s\n", query,
 			   mysql_error(data->handle)));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	talloc_destroy(query.mem_ctx);
+	SAFE_FREE(query);
+
 	return NT_STATUS_OK;
 }
 
@@ -886,7 +412,6 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 {
 	NTSTATUS nt_status;
 	struct pdb_mysql_data *data;
-	const char *sid_column, *username_column;
 
 	mysqlsam_debug_level = debug_add_class("mysqlsam");
 	if (mysqlsam_debug_level == -1) {
@@ -944,11 +469,8 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	sid_column = config_value_read(data, "user sid column", CONFIG_USER_SID_DEFAULT);
-	username_column = config_value_read(data, "username column", CONFIG_USERNAME_DEFAULT);
-	if(!strcmp(sid_column,"NULL") || !strcmp(username_column, "NULL")) {
-		DEBUG(0,("Please specify both a valid 'user sid column' and a valid 'username column' in smb.conf\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+	if(!sql_account_config_valid(data->location)) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
 	/* Process correct entry in $HOME/.my.conf */

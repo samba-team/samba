@@ -122,7 +122,7 @@ dn: uid=$adminName,$usersdn
 cn: $adminName
 sn: $adminName
 objectClass: inetOrgPerson
-objectClass: sambaSAMAccount
+objectClass: sambaSamAccount
 objectClass: posixAccount
 gidNumber: 512
 uid: $adminName
@@ -149,7 +149,7 @@ dn: uid=$guestName,$usersdn
 cn: $guestName
 sn: $guestName
 objectClass: inetOrgPerson
-objectClass: sambaSAMAccount
+objectClass: sambaSamAccount
 objectClass: posixAccount
 gidNumber: 514
 uid: $guestName

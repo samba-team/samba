@@ -4,7 +4,7 @@
 ## ChangeLog for SMBLDAP-TOOLS
 
 2003-11-18:
-	. new option '-a' to smbldap-usermod.pl that allow adding the sambaSAMAccount
+	. new option '-a' to smbldap-usermod.pl that allow adding the sambaSamAccount
 	  objectclass to an existing posixAccount
 2003-11-07:
 	. patch that allow adding user to a group when the group is in a higher level depth
@@ -38,13 +38,13 @@
 2003-09-18: Patch from Alexander Bergolth <leo@strike.wu-wien.ac.at>
 	. options "-u", "-g", "-s" and "-c" are now functionnal
 	. the existence of samba account was made on sambaAccount and
-	  not sambaSAMAccount as it should be for samba3
+	  not sambaSamAccount as it should be for samba3
 	. new function read_user_entry to smbldap_tools.pm that returns
 	  a Net::LDAP:Entry object of the user
 	. Use this object to get the dn and user attributes instead of
 	  producing an ldif and searching for attributes within that ldif
 2003-09-15:
-	. change machine account creation to not add the sambaSAMAccount objectclass.
+	. change machine account creation to not add the sambaSamAccount objectclass.
 	  It is now added directly by samba when joigning the domain
 	. new option in smbldap-usermod.pl: '-e' to set an expire date
 	. Start_tls support activated when ldapSSL is set to 1

@@ -82,7 +82,7 @@ done:
 
 NTSTATUS cli_ds_enum_domain_trusts(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 				  const char *server, uint32 flags, 
-				  DS_DOMAIN_TRUSTS **trusts, uint32 *num_domains)
+				  struct ds_domain_trust **trusts, uint32 *num_domains)
 {
 	prs_struct qbuf, rbuf;
 	DS_Q_ENUM_DOM_TRUSTS q;
@@ -118,12 +118,32 @@ NTSTATUS cli_ds_enum_domain_trusts(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		int i;
 	
 		*num_domains = r.num_domains;
-		*trusts = (DS_DOMAIN_TRUSTS*)smb_xmalloc(r.num_domains*sizeof(DS_DOMAIN_TRUSTS));
-		
-		memcpy( *trusts, r.domains.trusts, r.num_domains*sizeof(DS_DOMAIN_TRUSTS) );
-		for ( i=0; i<r.num_domains; i++ ) {
-			copy_unistr2( &(*trusts)[i].netbios_domain, &r.domains.trusts[i].netbios_domain );
-			copy_unistr2( &(*trusts)[i].dns_domain,     &r.domains.trusts[i].dns_domain );
+		*trusts = (struct ds_domain_trust*)talloc(mem_ctx, r.num_domains*sizeof(**trusts));
+
+		for ( i=0; i< *num_domains; i++ ) {
+			(*trusts)[i].flags = r.domains.trusts[i].flags;
+			(*trusts)[i].parent_index = r.domains.trusts[i].parent_index;
+			(*trusts)[i].trust_type = r.domains.trusts[i].trust_type;
+			(*trusts)[i].trust_attributes = r.domains.trusts[i].trust_attributes;
+			(*trusts)[i].guid = r.domains.trusts[i].guid;
+
+			if (&r.domains.trusts[i].sid_ptr) {
+				sid_copy(&(*trusts)[i].sid, &r.domains.trusts[i].sid.sid);
+			} else {
+				ZERO_STRUCT((*trusts)[i].sid);
+			}
+
+			if (&r.domains.trusts[i].netbios_ptr) {
+				(*trusts)[i].netbios_domain = unistr2_tdup( mem_ctx, &r.domains.trusts[i].netbios_domain );
+			} else {
+				(*trusts)[i].netbios_domain = NULL;
+			}
+
+			if (&r.domains.trusts[i].dns_ptr) {
+				(*trusts)[i].dns_domain = unistr2_tdup( mem_ctx, &r.domains.trusts[i].dns_domain );
+			} else {
+				(*trusts)[i].dns_domain = NULL;
+			}
 		}
 	}
 	

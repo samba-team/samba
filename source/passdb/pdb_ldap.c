@@ -1252,8 +1252,14 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 						     LDAP_EXOP_MODIFY_PASSWD,
 						     bv, NULL, NULL, &retoid, 
 						     &retdata)) != LDAP_SUCCESS) {
-			DEBUG(0,("ldapsam_modify_entry: LDAP Password could not be changed for user %s: %s\n",
-				pdb_get_username(newpwd),ldap_err2string(rc)));
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+					&ld_error);
+			DEBUG(0,("ldapsam_modify_entry: LDAP Password could not be changed for user %s: %s\n\t%s\n",
+				pdb_get_username(newpwd), ldap_err2string(rc), ld_error?ld_error:"unknown"));
+			SAFE_FREE(ld_error);
+			ber_bvfree(bv);
+			return NT_STATUS_UNSUCCESSFUL;
 		} else {
 			DEBUG(3,("ldapsam_modify_entry: LDAP Password changed for user %s\n",pdb_get_username(newpwd)));
 #ifdef DEBUG_PASSWORD
@@ -1633,9 +1639,6 @@ static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
 	int rc;
 	char **attr_list;
 
-	DEBUG(2, ("ldapsam_search_one_group: searching for:[%s]\n", filter));
-
-
 	attr_list = get_attr_list(groupmap_attr_list);
 	rc = smbldap_search(ldap_state->smbldap_state, 
 			    lp_ldap_group_suffix (), scope,
@@ -1687,7 +1690,11 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_SID)));
 		return False;
 	}
-	string_to_sid(&map->sid, temp);
+	
+	if (!string_to_sid(&map->sid, temp)) {
+		DEBUG(1, ("SID string [%s] could not be read as a valid SID\n", temp));
+		return False;
+	}
 
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_TYPE), temp)) {
@@ -1743,6 +1750,7 @@ static BOOL init_ldap_from_group(LDAP *ldap_struct,
 	*mods = NULL;
 
 	sid_to_string(tmp, &map->sid);
+
 	smbldap_make_mod(ldap_struct, existing, mods, 
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_SID), tmp);
 	pstr_sprintf(tmp, "%i", map->sid_name_use);
@@ -2356,7 +2364,10 @@ and will risk BDCs having inconsistant SIDs\n"));
 				 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), 
 				 domain_sid_string)) {
 		BOOL found_sid;
-		string_to_sid(&ldap_domain_sid, domain_sid_string);
+		if (!string_to_sid(&ldap_domain_sid, domain_sid_string)) {
+			DEBUG(1, ("pdb_init_ldapsam: SID [%s] could not be read as a valid SID\n", domain_sid_string));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		found_sid = secrets_fetch_domain_sid(ldap_state->domain_name, &secrets_domain_sid);
 		if (!found_sid || !sid_equal(&secrets_domain_sid, &ldap_domain_sid)) {
 			/* reset secrets.tdb sid */

@@ -85,6 +85,20 @@ static char *grab_line(FILE *f, int *cl)
 	return ret;
 }
 
+/**
+ URL encoded strings can have a '+', which should be replaced with a space
+
+ (This was in rfc1738_unescape(), but that broke the squid helper)
+**/
+
+void plus_to_space_unescape(char *buf)
+{
+	char *p=buf;
+
+	while ((p=strchr_m(p,'+')))
+		*p = ' ';
+}
+
 /***************************************************************************
   load all the variables passed to the CGI program. May have multiple variables
   with the same name and the same or different values. Takes a file parameter
@@ -130,7 +144,9 @@ void cgi_load_variables(void)
 			    !variables[num_variables].value)
 				continue;
 
+			plus_to_space_unescape(variables[num_variables].value);
 			rfc1738_unescape(variables[num_variables].value);
+			plus_to_space_unescape(variables[num_variables].name);
 			rfc1738_unescape(variables[num_variables].name);
 
 #ifdef DEBUG_COMMENTS
@@ -161,7 +177,9 @@ void cgi_load_variables(void)
 			    !variables[num_variables].value)
 				continue;
 
+			plus_to_space_unescape(variables[num_variables].value);
 			rfc1738_unescape(variables[num_variables].value);
+			plus_to_space_unescape(variables[num_variables].name);
 			rfc1738_unescape(variables[num_variables].name);
 
 #ifdef DEBUG_COMMENTS
