@@ -404,7 +404,7 @@ rpc_info_internals(const DOM_SID *domain_sid, const char *domain_name,
 		TALLOC_CTX *ctx = talloc_init("rpc_info_internals");
 		d_printf("Domain Name: %s\n", unistr2_tdup(ctx, &ctr.info.inf2.uni_domain));
 		d_printf("Domain SID: %s\n", sid_str);
-		d_printf("Sequence number: %u\n", ctr.info.inf2.seq_num);
+		d_printf("Sequence number: %u\n", ctr.info.inf2.seq_num.low);
 		d_printf("Num users: %u\n", ctr.info.inf2.num_domain_usrs);
 		d_printf("Num domain groups: %u\n", ctr.info.inf2.num_domain_grps);
 		d_printf("Num local groups: %u\n", ctr.info.inf2.num_local_grps);
@@ -1428,7 +1428,7 @@ rpc_alias_add_internals(const DOM_SID *domain_sid, const char *domain_name,
 	ALIAS_INFO_CTR alias_info;
 
 	if (argc != 1) {
-		d_printf("Group name must be specified\n");
+		d_printf("Alias name must be specified\n");
 		rpc_group_usage(argc, argv);
 		return NT_STATUS_OK;
 	}
@@ -1465,9 +1465,9 @@ rpc_alias_add_internals(const DOM_SID *domain_sid, const char *domain_name,
 	
  done:
 	if (NT_STATUS_IS_OK(result))
-		DEBUG(5, ("add group succeeded\n"));
+		DEBUG(5, ("add alias succeeded\n"));
 	else
-		d_printf("add group failed: %s\n", nt_errstr(result));
+		d_printf("add alias failed: %s\n", nt_errstr(result));
 
 	return result;
 }

@@ -288,7 +288,7 @@ static int net_idmap_delete(int argc, const char **argv)
 
 int net_help_idmap(int argc, const char **argv)
 {
-	d_printf("net idmap dump filename"\
+	d_printf("net idmap dump <tdbfile>"\
 		 "\n  Dump current id mapping\n");
 
 	d_printf("net idmap restore"\
