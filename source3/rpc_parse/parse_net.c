@@ -2285,6 +2285,184 @@ static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+static BOOL net_io_sam_dom_info(char *desc, SAM_DELTA_DOM *info,
+				      prs_struct *ps, int depth)
+{
+	int i;
+
+	prs_debug(ps, depth, desc, "net_io_sam_dom_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("unknown1", ps, depth, &info->unknown1))
+                return False;
+	if (!prs_uint32("unknown2", ps, depth, &info->unknown2))
+                return False;
+	if (!prs_uint32("unknown3", ps, depth, &info->unknown3))
+                return False;
+	if (!prs_uint32("unknown4", ps, depth, &info->unknown4))
+                return False;
+	if (!prs_uint32("count1", ps, depth, &info->count1))
+                return False;
+	if (!prs_uint32("ptr1", ps, depth, &info->ptr1))
+                return False;
+
+	if (!prs_uint16("count2", ps, depth, &info->count2))
+                return False;
+	if (!prs_uint16("count3", ps, depth, &info->count3))
+                return False;
+
+	if (!prs_uint32("ptr2", ps, depth, &info->ptr2))
+                return False;
+	if (!prs_uint32("ptr3", ps, depth, &info->ptr3))
+                return False;
+
+	if (!prs_uint32("unknown4b", ps, depth, &info->unknown4b))
+                return False;
+	if (!prs_uint32("unknown5", ps, depth, &info->unknown5))
+                return False;
+	if (!prs_uint32("unknown6", ps, depth, &info->unknown6))
+                return False;
+	if (!prs_uint32("unknown7", ps, depth, &info->unknown7))
+                return False;
+	if (!prs_uint32("unknown8", ps, depth, &info->unknown8))
+                return False;
+	if (!prs_uint32("unknown9", ps, depth, &info->unknown9))
+                return False;
+	if (!prs_uint32("unknown10", ps, depth, &info->unknown10))
+                return False;
+	if (!prs_uint32("unknown11", ps, depth, &info->unknown11))
+                return False;
+	if (!prs_uint32("unknown12", ps, depth, &info->unknown12))
+                return False;
+
+	if (!prs_uint32("unknown13", ps, depth, &info->unknown13))
+                return False;
+	if (!prs_uint32("unknown14", ps, depth, &info->unknown14))
+                return False;
+	if (!prs_uint32("unknown15", ps, depth, &info->unknown15))
+                return False;
+	if (!prs_uint32("unknown16", ps, depth, &info->unknown16))
+                return False;
+	if (!prs_uint32("unknown17", ps, depth, &info->unknown17))
+                return False;
+
+	for (i=0; i<info->count2; i++)
+		if (!prs_uint32("unknown18", ps, depth, &info->unknown18))
+	                return False;
+
+	if (!prs_uint32("unknown19", ps, depth, &info->unknown19))
+                return False;
+
+	for (i=0; i<info->count1; i++)
+		if (!prs_uint32("unknown20", ps, depth, &info->unknown20))
+        	        return False;
+
+	if (!prs_uint32("ptr4", ps, depth, &info->ptr4))
+                return False;
+
+	if (!smb_io_unistr2("domain_name", &info->domain_name, True, ps, depth))
+                return False;
+
+	if(!smb_io_dom_sid2("domain_sid", &info->domain_sid, ps, depth))
+		return False;
+
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL net_io_sam_privs_info(char *desc, SAM_DELTA_PRIVS *info,
+				      prs_struct *ps, int depth)
+{
+	int i;
+
+	prs_debug(ps, depth, desc, "net_io_sam_privs_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("buf_size", ps, depth, &info->buf_size))
+                return False;
+
+	if(!sec_io_desc("sec_desc", &info->sec_desc, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("sid", &info->sid, ps, depth))
+		return False;
+
+	if(!prs_uint32("priv_count", ps, depth, &info->priv_count))
+                return False;
+	if(!prs_uint32("reserved1", ps, depth, &info->reserved1))
+                return False;
+
+	if(!prs_uint32("ptr1", ps, depth, &info->ptr1))
+                return False;
+	if(!prs_uint32("ptr2", ps, depth, &info->ptr2))
+                return False;
+
+	if(!prs_uint32("unknown1", ps, depth, &info->unknown1))
+                return False;
+	if(!prs_uint32("unknown2", ps, depth, &info->unknown2))
+                return False;
+	if(!prs_uint32("unknown3", ps, depth, &info->unknown3))
+                return False;
+	if(!prs_uint32("unknown4", ps, depth, &info->unknown4))
+                return False;
+	if(!prs_uint32("unknown5", ps, depth, &info->unknown5))
+                return False;
+	if(!prs_uint32("unknown6", ps, depth, &info->unknown6))
+                return False;
+	if(!prs_uint32("unknown7", ps, depth, &info->unknown7))
+                return False;
+	if(!prs_uint32("unknown8", ps, depth, &info->unknown8))
+                return False;
+	if(!prs_uint32("unknown9", ps, depth, &info->unknown9))
+                return False;
+
+	if(!prs_uint32("buf_size2", ps, depth, &info->buf_size2))
+                return False;
+	if(!prs_uint32("ptr3", ps, depth, &info->ptr3))
+                return False;
+
+	for (i=0; i<12; i++)
+		if(!prs_uint32("unknown10", ps, depth, &info->unknown10))
+	                return False;
+
+	if(!prs_uint32("attribute_count", ps, depth, &info->attribute_count))
+                return False;
+
+	info->attributes = talloc(ps->mem_ctx, sizeof(uint32) * info->attribute_count);
+
+	for (i=0; i<info->attribute_count; i++)
+		if(!prs_uint32("attributes", ps, depth, &info->attributes[i]))
+	                return False;
+
+	if(!prs_uint32("privlist_count", ps, depth, &info->privlist_count))
+                return False;
+
+	info->hdr_privslist = talloc(ps->mem_ctx, sizeof(UNIHDR) * info->privlist_count);
+	info->uni_privslist = talloc(ps->mem_ctx, sizeof(UNISTR2) * info->privlist_count);
+
+	for (i=0; i<info->privlist_count; i++)
+		if(!smb_io_unihdr("hdr_privslist", &info->hdr_privslist[i], ps, depth))
+			return False;
+
+	for (i=0; i<info->privlist_count; i++)
+		if (!smb_io_unistr2("uni_privslist", &info->uni_privslist[i], True, ps, depth))
+			return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
 static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
 				 SAM_DELTA_CTR * delta, uint16 type,
 				 prs_struct *ps, int depth)
@@ -2292,70 +2470,56 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
 	prs_debug(ps, depth, desc, "net_io_sam_delta_ctr");
 	depth++;
 
-	switch (type)
-        {
+	switch (type) {
                 /* Seen in sam deltas */
-
                 case SAM_DELTA_SAM_STAMP:
-                {
-                        if (!net_io_sam_delta_stamp("", &delta->stamp,
-                                                    ps, depth))
+                        if (!net_io_sam_delta_stamp("", &delta->stamp, ps, depth))
                                 return False;
                         break;
-                }
 
 		case SAM_DELTA_DOMAIN_INFO:
-		{
-			if (!net_io_sam_domain_info("", &delta->domain_info,
-                                                    ps, depth))
+			if (!net_io_sam_domain_info("", &delta->domain_info, ps, depth))
                                 return False;
 			break;
-		}
+
 		case SAM_DELTA_GROUP_INFO:
-		{
-			if (!net_io_sam_group_info("", &delta->group_info,
-                                                   ps, depth))
+			if (!net_io_sam_group_info("", &delta->group_info, ps, depth))
                                 return False;
 			break;
-		}
+
 		case SAM_DELTA_ACCOUNT_INFO:
-		{
-			if (!net_io_sam_account_info("", sess_key,
-                                                     &delta->account_info,
-                                                     ps, depth))
+			if (!net_io_sam_account_info("", sess_key, &delta->account_info, ps, depth))
                                 return False;
 			break;
-		}
+
 		case SAM_DELTA_GROUP_MEM:
-		{
-			if (!net_io_sam_group_mem_info("", 
-                                                       &delta->grp_mem_info,
-                                                       ps, depth))
+			if (!net_io_sam_group_mem_info("", &delta->grp_mem_info, ps, depth))
                                 return False;
 			break;
-		}
+
 		case SAM_DELTA_ALIAS_INFO:
-		{
-                        if (!net_io_sam_alias_info("", &delta->alias_info,
-                                                   ps, depth))
+                        if (!net_io_sam_alias_info("", &delta->alias_info, ps, depth))
                                 return False;
 			break;
-		}
+
+		case SAM_DELTA_DOM_INFO:
+                        if (!net_io_sam_dom_info("", &delta->dom_info, ps, depth))
+                                return False;
+			break;
+
 		case SAM_DELTA_ALIAS_MEM:
-		{
-			if (!net_io_sam_alias_mem_info("", 
-                                                       &delta->als_mem_info,
-                                                       ps, depth))
+			if (!net_io_sam_alias_mem_info("", &delta->als_mem_info, ps, depth))
                                 return False;
 			break;
-		}
-		default:
-		{
-			DEBUG(0,
-			      ("Replication error: Unknown delta type 0x%x\n",
-			       type));
+
+		case SAM_DELTA_PRIVS_INFO:
+			if (!net_io_sam_privs_info("", &delta->privs_info, ps, depth))
+                                return False;
 			break;
-		}
+
+		default:
+			DEBUG(0, ("Replication error: Unknown delta type 0x%x\n", type));
+			break;
 	}
 
 	return True;
