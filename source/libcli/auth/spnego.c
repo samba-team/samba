@@ -346,7 +346,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		mechType = spnego.negTokenInit.mechTypes;
 		for (i=0; mechType && mechType[i]; i++) {
-			nt_status = gensec_client_start(&spnego_state->sub_sec_security);
+			nt_status = gensec_subcontext_start(gensec_security,
+							    &spnego_state->sub_sec_security);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				break;
 			}
