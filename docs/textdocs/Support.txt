@@ -33,7 +33,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       34
+    EUROPE                                       35
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1403,32 +1403,32 @@ http://www.alcove.fr    Phone number: +33 01 40 85 80 06
 ------------------------------------------------------------------------------
 BERLIN - GERMANY
 
-Name:                   innominate GbR
-Address:                Soldiner Str. 96, 13359 Berlin; Bundesland: Berlin;
-Country: Germany
-Phone:                  +49 30 49308195,  +49 177 2649655 (mobil)
-Fax:                    +49 30 49308196
-EMail:                  innominate@poboxes.com
+Name:                   innominate
+                        Multifunktionale Serverloesungen und IT-Dienstleistungen
 
-Contact        :        Sascha Ottolski
+Address:                Stresemannstraﬂe 128, 10117 Berlin
+Country:                Germany
+Phone:                  +49 30 202 90 477 
+Fax:                    +49 30 202 90 249 
+EMail:                  info@innominate.de
+Web:                    http://innominate.de
 
 Type of support:        vor Ort, Email, Fernzugriff ueber Internet/ISDN,
                   
-Special
-expertise: Wir verfuegen ueber umfangreiche Erfahrung mit Samba, vor allem
-           in Internet- und Intranetumgebungen. Neben Beratung, Dienstleistung 
-           und Schulung bieten wir auch individuell vorkonfigurierte
-           Kommunikationsserver ("Lingo") auf der Basis von Linux an.
-           Neben anderen Modulen (ISDN/Internet/Intranet/Email/Proxy
-           u.a.) ist in Lingo ein Fileserver-Modul auf Samba-Basis inklusive
-           einem mehrstufigen Firewallsystem enthalten.
-           Auﬂerdem verfuegt Lingo ueber eine grafische Administrations-
-           oberflaeche, mit der z.B. das Hinzufuegen von neuen Benutzern
-           von jedem Client per WWW-Browser moeglich ist.
+Wir verfuegen ueber umfangreiche Erfahrung mit Samba, vor allem
+in Intranetumgebungen. Neben Beratung, Dienstleistung 
+und Schulung bieten wir auch individuell vorkonfigurierte
+Kommunikationsserver ("Lingo") auf der Basis von Linux an.
+Neben anderen Modulen (ISDN/Internet/Intranet/Email/Proxy
+u.a.) ist in Lingo ein Fileserver-Modul auf Samba-Basis inklusive
+einem mehrstufigen Firewallsystem enthalten.
+Auﬂerdem verfuegt Lingo ueber eine grafische Administrations-
+oberflaeche, mit der z.B. das Hinzufuegen von neuen Benutzern
+von jedem Client per WWW-Browser moeglich ist.
                 
-Sample prices:  - Komplettpreise fuer Lingo nach Vereinbarung
-                - 120 DM/Stunde fuer Dienstleistung
-                - Schulung nach Vereinbarung
+Prices:                 Komplettpreise fuer Lingo nach Vereinbarung
+                        120 DM/Stunde fuer Dienstleistung
+                        Schulung nach Vereinbarung
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -1545,6 +1545,18 @@ CONSYS is a software company. We have experience especially with SCO Unix
 and other Unix systems, as well as with Windows 95 and NT.
 We are a Premium Partner of SCO and know and have used samba for four years.
 Our engineers know a lot about the installation of SCO Unix.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+GREECE
+
+Yiorgos Adamopoulos
+Electrical and Computer Engineer
+email: adamo@InterWorks.org
+
+I can provide Samba support for the following operating systems throughout the
+whole of Greece:  Windows 3.11/95/NT, Ultrix, HP-UX, NetBSD, OpenBSD, SunOS,
+Solaris, Linux, Irix.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
