@@ -152,6 +152,14 @@ gss_accept_sec_context
     goto failure;
   }
 
+  kret = krb5_copy_principal (gssapi_krb5_context,
+			      ticket->server,
+			      &(*context_handle)->target);
+  if (kret) {
+    ret = GSS_S_FAILURE;
+    goto failure;
+  }
+
   if (src_name) {
     kret = krb5_copy_principal (gssapi_krb5_context,
 				ticket->client,
