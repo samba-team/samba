@@ -88,11 +88,9 @@ enum {
   AP_OPTS_MUTUAL_REQUIRED = 2
 };
 
-typedef struct krb5_address{
-    int type;
-    krb5_data address;
-} krb5_address;
+typedef HostAddress krb5_address;
 
+/* typedef HostAddresses krb5_addresses; */
 typedef struct krb5_addresses {
     int number;
     krb5_address *addrs;
@@ -100,14 +98,7 @@ typedef struct krb5_addresses {
 
 typedef enum krb5_keytype { KEYTYPE_DES = 1 } krb5_keytype;
 
-#ifndef yet
-typedef struct krb5_keyblock{
-    krb5_keytype keytype;
-    krb5_data keyvalue;
-} krb5_keyblock;
-#else
 typedef EncryptionKey krb5_keyblock;
-#endif
 
 struct krb5_cc_ops;
 
