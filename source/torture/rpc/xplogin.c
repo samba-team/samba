@@ -1021,7 +1021,7 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 	struct smbcli_transport *transport;
 
         struct dcerpc_pipe *netlogon_pipe;
-	struct creds_CredentialState netlogon_creds;
+	struct creds_CredentialState *netlogon_creds;
 
 	struct dcerpc_pipe *netlogon_schannel_pipe;
 
@@ -1032,13 +1032,18 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 	if (mem_ctx == NULL)
 		return False;
 
+	netlogon_creds = talloc_p(mem_ctx, struct creds_CredentialState);
+	if (!netlogon_creds) {
+		return False;
+	}
+
 	if (!NT_STATUS_IS_OK(after_negprot(&transport, dcname, 139,
 					   wksname)))
 		return False;
 
 	if (!NT_STATUS_IS_OK(setup_netlogon_creds(transport, &netlogon_pipe,
 						  wksname, domain, wkspwd,
-						  &netlogon_creds)))
+						  netlogon_creds)))
 		return False;
 
 	if (!NT_STATUS_IS_OK(test_enumtrusts(transport)))
@@ -1063,13 +1068,13 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 						   DCERPC_NETLOGON_UUID,
 						   DCERPC_NETLOGON_VERSION,
 						   "", "", "",
-						   netlogon_creds.session_key);
+						   netlogon_creds);
 
 	if (!NT_STATUS_IS_OK(status))
                 return False;
 
 	status = torture_samlogon(netlogon_schannel_pipe,
-				  &netlogon_creds, wksname, domain,
+				  netlogon_creds, wksname, domain,
 				  user1name, user1pw);
 
 	if (!NT_STATUS_IS_OK(status))
@@ -1078,7 +1083,7 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 	talloc_free(netlogon_pipe);
 
 	status = torture_samlogon(netlogon_schannel_pipe,
-				  &netlogon_creds, wksname, domain,
+				  netlogon_creds, wksname, domain,
 				  user2name, user2pw);
 
 	if (!NT_STATUS_IS_OK(status))
