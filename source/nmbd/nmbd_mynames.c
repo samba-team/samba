@@ -98,40 +98,15 @@ BOOL register_my_workgroup_and_names(void)
 	  register_my_workgroup_one_subnet(subrec);
   }
 
-  /* If we are not a WINS client, we still need to add the magic Samba
+  /* We still need to add the magic Samba
      names and the netbios names to the unicast subnet directly. This is
      to allow unicast node status requests and queries to still work
      in a broadcast only environment. */
 
-  if(we_are_a_wins_client() == False)
+  add_samba_names_to_subnet(unicast_subnet);
+
+  for (i=0; my_netbios_names[i]; i++)
   {
-    add_samba_names_to_subnet(unicast_subnet);
-
-    for (i=0; my_netbios_names[i]; i++)
-    {
-      for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-      {
-        /*
-         * Ensure all the IP addresses are added if we are multihomed.
-         */
-        struct nmb_name nmbname;
-
-        make_nmb_name(&nmbname, my_netbios_names[i],0x20);
-        insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
-
-        make_nmb_name(&nmbname, my_netbios_names[i],0x3);
-        insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
-
-        make_nmb_name(&nmbname, my_netbios_names[i],0x0);
-        insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
-      }
-    }
-
-    /*
-     * Add the WORKGROUP<0> and WORKGROUP<1e> group names to the unicast subnet
-     * also for the same reasons.
-     */
-
     for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
     {
       /*
@@ -139,12 +114,34 @@ BOOL register_my_workgroup_and_names(void)
        */
       struct nmb_name nmbname;
 
-      make_nmb_name(&nmbname, global_myworkgroup, 0x0);
-      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
+      make_nmb_name(&nmbname, my_netbios_names[i],0x20);
+      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
-      make_nmb_name(&nmbname, global_myworkgroup, 0x1e);
-      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
+      make_nmb_name(&nmbname, my_netbios_names[i],0x3);
+      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
+
+      make_nmb_name(&nmbname, my_netbios_names[i],0x0);
+      insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
     }
+  }
+
+  /*
+   * Add the WORKGROUP<0> and WORKGROUP<1e> group names to the unicast subnet
+   * also for the same reasons.
+   */
+
+  for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
+  {
+    /*
+     * Ensure all the IP addresses are added if we are multihomed.
+     */
+    struct nmb_name nmbname;
+
+    make_nmb_name(&nmbname, global_myworkgroup, 0x0);
+    insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
+
+    make_nmb_name(&nmbname, global_myworkgroup, 0x1e);
+    insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
   }
 
   /*
