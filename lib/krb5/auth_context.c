@@ -134,6 +134,42 @@ krb5_auth_con_setaddrs(krb5_context context,
 
 
 krb5_error_code
+krb5_auth_con_setaddrs_from_fd (krb5_context context,
+				krb5_auth_context auth_context,
+				int fd)
+{
+    krb5_address *lptr = NULL, *rptr = NULL;
+    krb5_address local_k_address, remote_k_address;
+    struct sockaddr_in local_addr, remote_addr;
+    int len;
+
+    if (auth_context->local_address == NULL) {
+	len = sizeof (local_addr);
+	if (getsockname (fd, (struct sockaddr *)&local_addr, &len) < 0)
+	    return errno;
+	local_k_address.addr_type = AF_INET;
+	local_k_address.address.length = sizeof(local_addr.sin_addr);
+	local_k_address.address.data   = &local_addr.sin_addr;
+	lptr = &local_k_address;
+    }
+
+    if (auth_context->remote_address == NULL) {
+	len = sizeof (remote_addr);
+	if (getpeername (fd, (struct sockaddr *)&remote_addr, &len) < 0)
+	    return errno;
+	remote_k_address.addr_type = AF_INET;
+	remote_k_address.address.length = sizeof(remote_addr.sin_addr);
+	remote_k_address.address.data   = &remote_addr.sin_addr;
+	rptr = &remote_k_address;
+    }
+
+    return krb5_auth_con_setaddrs (context,
+				   auth_context,
+				   lptr,
+				   rptr);
+}
+
+krb5_error_code
 krb5_auth_con_getaddrs(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_address **local_addr,
