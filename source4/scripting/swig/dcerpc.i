@@ -127,7 +127,7 @@ PyObject *policy_handle_to_python(struct policy_handle *handle)
 	return PyString_FromStringAndSize((char *)handle, sizeof(*handle));
 }
 
-struct security_descriptor *security_descriptor_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
+struct security_descriptor *security_descriptor_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 {
 	return NULL;
 }
@@ -137,7 +137,7 @@ PyObject *security_descriptor_to_python(struct security_descriptor *obj)
 	return Py_None;
 }
 
-struct dom_sid2 *dom_sid2_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
+struct dom_sid2 *dom_sid2_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 {
 	return NULL;
 }
@@ -163,7 +163,7 @@ PyObject *string_to_python(char *obj)
 	return PyString_FromString(obj);
 }
 
-struct samr_Password *samr_Password_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
+struct samr_Password *samr_Password_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 {
 	return NULL;
 }
@@ -228,5 +228,5 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
                              const char *username,
                              const char *password);
 
-%include "librpc/gen_ndr/samr.i"
 %include "librpc/gen_ndr/lsa.i"
+%include "librpc/gen_ndr/samr.i"
