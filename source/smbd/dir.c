@@ -715,7 +715,8 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 		return False;
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd, &psd);
+	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd,
+			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, True);
 
 	/* No access if SD get failed. */
@@ -768,7 +769,8 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 		return False;
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd, &psd);
+	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd,
+			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, False);
 
 	/* No access if SD get failed. */

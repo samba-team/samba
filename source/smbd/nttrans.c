@@ -964,13 +964,12 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
  Reply to a NT_TRANSACT_CREATE call to open a pipe.
 ****************************************************************************/
 
-static int do_nt_transact_create_pipe( connection_struct *conn,
-					char *inbuf, char *outbuf, int length, 
-					int bufsize, char **ppsetup, char **ppparams, 
-					char **ppdata)
+static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+                                  char **ppsetup, uint32 setup_count,
+				  char **ppparams, uint32 parameter_count,
+				  char **ppdata, uint32 data_count)
 {
 	pstring fname;
-	int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
 	char *params = *ppparams;
 	int ret;
 	int pnum = -1;
@@ -980,12 +979,12 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 	 * Ensure minimum number of parameters sent.
 	 */
 
-	if(total_parameter_count < 54) {
-		DEBUG(0,("do_nt_transact_create_pipe - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
+	if(parameter_count < 54) {
+		DEBUG(0,("do_nt_transact_create_pipe - insufficient parameters (%u)\n", (unsigned int)parameter_count));
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
-	srvstr_pull(inbuf, fname, params+53, sizeof(fname), total_parameter_count-53, STR_TERMINATE);
+	srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
 
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
 		return ret;
@@ -1091,15 +1090,14 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
  Reply to a NT_TRANSACT_CREATE call (needs to process SD's).
 ****************************************************************************/
 
-static int call_nt_transact_create(connection_struct *conn,
-					char *inbuf, char *outbuf, int length, 
-					int bufsize, char **ppsetup, char **ppparams, 
-					char **ppdata)
+static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+                                  char **ppsetup, uint32 setup_count,
+				  char **ppparams, uint32 parameter_count,
+				  char **ppdata, uint32 data_count)
 {
 	pstring fname;
 	char *params = *ppparams;
 	char *data = *ppdata;
-	int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
 	/* Breakout the oplock request bits so we can set the reply bits separately. */
 	int oplock_request = 0;
 	mode_t unixmode;
@@ -1135,7 +1133,10 @@ static int call_nt_transact_create(connection_struct *conn,
 	if (IS_IPC(conn)) {
 		if (lp_nt_pipe_support())
 			return do_nt_transact_create_pipe(conn, inbuf, outbuf, length, 
-					bufsize, ppsetup, ppparams, ppdata);
+					bufsize,
+					ppsetup, setup_count,
+					ppparams, parameter_count,
+					ppdata, data_count);
 		else
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
@@ -1144,8 +1145,8 @@ static int call_nt_transact_create(connection_struct *conn,
 	 * Ensure minimum number of parameters sent.
 	 */
 
-	if(total_parameter_count < 54) {
-		DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
+	if(parameter_count < 54) {
+		DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)parameter_count));
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
@@ -1189,7 +1190,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_pull(inbuf, fname, params+53, sizeof(fname), total_parameter_count-53, STR_TERMINATE);
+			srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
 
 			/*
 			 * Check to see if this is a mac fork of some kind.
@@ -1218,9 +1219,9 @@ static int call_nt_transact_create(connection_struct *conn,
 		}
 
 		srvstr_pull(inbuf, &fname[dir_name_len], params+53, sizeof(fname)-dir_name_len, 
-				total_parameter_count-53, STR_TERMINATE);
+				parameter_count-53, STR_TERMINATE);
 	} else {
-		srvstr_pull(inbuf, fname, params+53, sizeof(fname), total_parameter_count-53, STR_TERMINATE);
+		srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
 
 		/*
 		 * Check to see if this is a mac fork of some kind.
@@ -1467,11 +1468,10 @@ int reply_nttranss(connection_struct *conn,
  don't allow a directory to be opened.
 ****************************************************************************/
 
-static int call_nt_transact_notify_change(connection_struct *conn,
-				   char *inbuf, char *outbuf, int length,
-				   int bufsize, 
-				   char **ppsetup, 
-				   char **ppparams, char **ppdata)
+static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
+                                  char **ppsetup, uint32 setup_count,
+				  char **ppparams, uint32 parameter_count,
+				  char **ppdata, uint32 data_count)
 {
 	char *setup = *ppsetup;
 	files_struct *fsp;
@@ -1501,17 +1501,22 @@ name = %s\n", fsp->fsp_name ));
  Reply to an NT transact rename command.
 ****************************************************************************/
 
-static int call_nt_transact_rename(connection_struct *conn,
-				   char *inbuf, char *outbuf, int length, 
-                                   int bufsize,
-                                   char **ppsetup, char **ppparams, char **ppdata)
+static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+                                  char **ppsetup, uint32 setup_count,
+				  char **ppparams, uint32 parameter_count,
+				  char **ppdata, uint32 data_count)
 {
 	char *params = *ppparams;
 	pstring new_name;
-	files_struct *fsp = file_fsp(params, 0);
-	BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
+	files_struct *fsp = NULL;
+	BOOL replace_if_exists = False;
 	NTSTATUS status;
 
+        if(parameter_count < 4)
+		return ERROR_DOS(ERRDOS,ERRbadfunc);
+
+	fsp = file_fsp(params, 0);
+	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
 	srvstr_pull(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE);
 
@@ -1557,15 +1562,13 @@ static size_t get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
 }
 
 /****************************************************************************
- Reply to query a security descriptor - currently this is not implemented (it
- is planned to be though). Right now it just returns the same thing NT would
- when queried on a FAT filesystem. JRA.
+ Reply to query a security descriptor.
 ****************************************************************************/
 
-static int call_nt_transact_query_security_desc(connection_struct *conn,
-                                                char *inbuf, char *outbuf, 
-                                                int length, int bufsize, 
-                                                char **ppsetup, char **ppparams, char **ppdata)
+static int call_nt_transact_query_security_desc(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
+                                  char **ppsetup, uint32 setup_count,
+				  char **ppparams, uint32 parameter_count,
+				  char **ppdata, uint32 data_count)
 {
 	uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
 	char *params = *ppparams;
@@ -1573,12 +1576,18 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
+	uint32 security_info_wanted;
 	TALLOC_CTX *mem_ctx;
+	files_struct *fsp = NULL;
 
-	files_struct *fsp = file_fsp(params,0);
+        if(parameter_count < 8)
+		return ERROR_DOS(ERRDOS,ERRbadfunc);
 
+	fsp = file_fsp(params,0);
 	if(!fsp)
 		return ERROR_DOS(ERRDOS,ERRbadfid);
+
+	security_info_wanted = IVAL(params,4);
 
 	DEBUG(3,("call_nt_transact_query_security_desc: file = %s\n", fsp->fsp_name ));
 
@@ -1598,7 +1607,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 	if (!lp_nt_acl_support(SNUM(conn)))
 		sd_size = get_null_nt_acl(mem_ctx, &psd);
 	else
-		sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd, &psd);
+		sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd, security_info_wanted, &psd);
 
 	if (sd_size == 0) {
 		talloc_destroy(mem_ctx);
@@ -1665,23 +1674,21 @@ security descriptor.\n"));
 }
 
 /****************************************************************************
- Reply to set a security descriptor. Map to UNIX perms.
+ Reply to set a security descriptor. Map to UNIX perms or POSIX ACLs.
 ****************************************************************************/
 
-static int call_nt_transact_set_security_desc(connection_struct *conn,
-									char *inbuf, char *outbuf, int length,
-									int bufsize, char **ppsetup, 
-									char **ppparams, char **ppdata)
+static int call_nt_transact_set_security_desc(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+                                  char **ppsetup, uint32 setup_count,
+				  char **ppparams, uint32 parameter_count,
+				  char **ppdata, uint32 data_count)
 {
-	uint32 total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
 	char *params= *ppparams;
 	char *data = *ppdata;
-	uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
 	files_struct *fsp = NULL;
 	uint32 security_info_sent = 0;
 	NTSTATUS nt_status;
 
-	if(total_parameter_count < 8)
+	if(parameter_count < 8)
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 
 	if((fsp = file_fsp(params,0)) == NULL)
@@ -1695,10 +1702,10 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 	DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
 		(unsigned int)security_info_sent ));
 
-	if (total_data_count == 0)
+	if (data_count == 0)
 		return ERROR_DOS(ERRDOS, ERRnoaccess);
 
-	if (!NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, total_data_count, security_info_sent)))
+	if (!NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, data_count, security_info_sent)))
 		return ERROR_NT(nt_status);
 
   done:
@@ -1710,12 +1717,11 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 /****************************************************************************
  Reply to NT IOCTL
 ****************************************************************************/
-static int call_nt_transact_ioctl(connection_struct *conn,
-				  char *inbuf, char *outbuf, int length,
-                                  int bufsize, 
-                                  char **ppsetup, int setup_count,
-				  char **ppparams, int parameter_count,
-				  char **ppdata, int data_count)
+
+static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
+                                  char **ppsetup, uint32 setup_count,
+				  char **ppparams, uint32 parameter_count,
+				  char **ppdata, uint32 data_count)
 {
 	unsigned fnum, control;
 	static BOOL logged_message;
@@ -1835,12 +1841,10 @@ static int call_nt_transact_ioctl(connection_struct *conn,
  Reply to get user quota 
 ****************************************************************************/
 
-static int call_nt_transact_get_user_quota(connection_struct *conn,
-						char *inbuf, char *outbuf, 
-						int length, int bufsize, 
-						char **ppsetup, int setup_count,
-						char **ppparams, int params_count,
-						char **ppdata, int data_count)
+static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
+                                  char **ppsetup, uint32 setup_count,
+				  char **ppparams, uint32 parameter_count,
+				  char **ppdata, uint32 data_count)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
 	uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
@@ -1872,8 +1876,8 @@ static int call_nt_transact_get_user_quota(connection_struct *conn,
 	 * Ensure minimum number of parameters sent.
 	 */
 
-	if (params_count < 4) {
-		DEBUG(0,("TRANSACT_GET_USER_QUOTA: requires %d >= 4 bytes parameters\n",params_count));
+	if (parameter_count < 4) {
+		DEBUG(0,("TRANSACT_GET_USER_QUOTA: requires %d >= 4 bytes parameters\n",parameter_count));
 		return ERROR_DOS(ERRDOS,ERRinvalidparam);
 	}
 	
@@ -2086,12 +2090,10 @@ static int call_nt_transact_get_user_quota(connection_struct *conn,
  Reply to set user quota
 ****************************************************************************/
 
-static int call_nt_transact_set_user_quota(connection_struct *conn,
-						char *inbuf, char *outbuf, 
-						int length, int bufsize, 
-						char **ppsetup, int setup_count,
-						char **ppparams, int params_count,
-						char **ppdata, int data_count)
+static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
+                                  char **ppsetup, uint32 setup_count,
+				  char **ppparams, uint32 parameter_count,
+				  char **ppdata, uint32 data_count)
 {
 	char *params = *ppparams;
 	char *pdata = *ppdata;
@@ -2114,8 +2116,8 @@ static int call_nt_transact_set_user_quota(connection_struct *conn,
 	 * Ensure minimum number of parameters sent.
 	 */
 
-	if (params_count < 2) {
-		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= 2 bytes parameters\n",params_count));
+	if (parameter_count < 2) {
+		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= 2 bytes parameters\n",parameter_count));
 		return ERROR_DOS(ERRDOS,ERRinvalidparam);
 	}
 	
@@ -2403,8 +2405,10 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 		case NT_TRANSACT_CREATE:
 			START_PROFILE_NESTED(NT_transact_create);
 			outsize = call_nt_transact_create(conn, inbuf, outbuf,
-					length, bufsize, 
-					&setup, &params, &data);
+							length, bufsize, 
+							&setup, setup_count,
+							&params, total_parameter_count, 
+							&data, total_data_count);
 			END_PROFILE_NESTED(NT_transact_create);
 			break;
 		case NT_TRANSACT_IOCTL:
@@ -2412,56 +2416,64 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 			outsize = call_nt_transact_ioctl(conn, inbuf, outbuf,
 							 length, bufsize, 
 							 &setup, setup_count,
-							 &params, parameter_count, 
-							 &data, data_count);
+							 &params, total_parameter_count, 
+							 &data, total_data_count);
 			END_PROFILE_NESTED(NT_transact_ioctl);
 			break;
 		case NT_TRANSACT_SET_SECURITY_DESC:
 			START_PROFILE_NESTED(NT_transact_set_security_desc);
 			outsize = call_nt_transact_set_security_desc(conn, inbuf, outbuf, 
-					length, bufsize, 
-					&setup, &params, &data);
+							 length, bufsize, 
+							 &setup, setup_count,
+							 &params, total_parameter_count, 
+							 &data, total_data_count);
 			END_PROFILE_NESTED(NT_transact_set_security_desc);
 			break;
 		case NT_TRANSACT_NOTIFY_CHANGE:
 			START_PROFILE_NESTED(NT_transact_notify_change);
 			outsize = call_nt_transact_notify_change(conn, inbuf, outbuf, 
-					length, bufsize, 
-					&setup, &params, &data);
+							 length, bufsize, 
+							 &setup, setup_count,
+							 &params, total_parameter_count, 
+							 &data, total_data_count);
 			END_PROFILE_NESTED(NT_transact_notify_change);
 			break;
 		case NT_TRANSACT_RENAME:
 			START_PROFILE_NESTED(NT_transact_rename);
 			outsize = call_nt_transact_rename(conn, inbuf, outbuf,
-					length, bufsize,
-					&setup, &params, &data);
+							 length, bufsize, 
+							 &setup, setup_count,
+							 &params, total_parameter_count, 
+							 &data, total_data_count);
 			END_PROFILE_NESTED(NT_transact_rename);
 			break;
 
 		case NT_TRANSACT_QUERY_SECURITY_DESC:
 			START_PROFILE_NESTED(NT_transact_query_security_desc);
 			outsize = call_nt_transact_query_security_desc(conn, inbuf, outbuf, 
-					length, bufsize, 
-					&setup, &params, &data);
+							 length, bufsize, 
+							 &setup, setup_count,
+							 &params, total_parameter_count, 
+							 &data, total_data_count);
 			END_PROFILE_NESTED(NT_transact_query_security_desc);
 			break;
 #ifdef HAVE_SYS_QUOTAS
 		case NT_TRANSACT_GET_USER_QUOTA:
 			START_PROFILE_NESTED(NT_transact_get_user_quota);
 			outsize = call_nt_transact_get_user_quota(conn, inbuf, outbuf, 
-						length, bufsize,
-						&setup, setup_count,
-						&params, parameter_count, 
-						&data, data_count);
+							 length, bufsize, 
+							 &setup, setup_count,
+							 &params, total_parameter_count, 
+							 &data, total_data_count);
 			END_PROFILE_NESTED(NT_transact_get_user_quota);
 			break;
 		case NT_TRANSACT_SET_USER_QUOTA:
 			START_PROFILE_NESTED(NT_transact_set_user_quota);
 			outsize = call_nt_transact_set_user_quota(conn, inbuf, outbuf, 
-						length, bufsize, 
-						&setup, setup_count,
-						&params, parameter_count, 
-						&data, data_count);
+							 length, bufsize, 
+							 &setup, setup_count,
+							 &params, total_parameter_count, 
+							 &data, total_data_count);
 			END_PROFILE_NESTED(NT_transact_set_user_quota);
 			break;					
 #endif /* HAVE_SYS_QUOTAS */

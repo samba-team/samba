@@ -47,7 +47,8 @@
 /* Changed to version 4 for cascaded VFS interface. Alexander Bokovoy. */
 /* Changed to version 5 for sendfile addition. JRA. */
 /* Changed to version 6 for the new module system, fixed cascading and quota functions. --metze */
-#define SMB_VFS_INTERFACE_VERSION 6
+/* Version 7 to include the get_nt_acl info parameter. JRA. */
+#define SMB_VFS_INTERFACE_VERSION 7
 
 
 /* to bug old modules witch are trying to compile with the old functions */
@@ -218,8 +219,8 @@ struct vfs_ops {
 		
 		/* NT ACL operations. */
 		
-		size_t (*fget_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, struct security_descriptor_info **ppdesc);
-		size_t (*get_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, struct security_descriptor_info **ppdesc);
+		size_t (*fget_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd,  uint32 security_info, struct security_descriptor_info **ppdesc);
+		size_t (*get_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name,  uint32 security_info, struct security_descriptor_info **ppdesc);
 		BOOL (*fset_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor_info *psd);
 		BOOL (*set_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor_info *psd);
 		
