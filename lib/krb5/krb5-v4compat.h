@@ -84,6 +84,10 @@ struct credentials {
 int
 _krb5_krb_time_to_life(time_t start, time_t end);
 
+time_t
+_krb5_krb_life_to_time(int start, int life_);
+
 #define krb_time_to_life	_krb5_krb_time_to_life
+#define krb_life_to_time	_krb5_krb_life_to_time
 
 #endif /*  __KRB5_V4COMPAT_H__ */

@@ -79,6 +79,26 @@ _krb5_krb_time_to_life(time_t start, time_t end)
     
 }
 
+time_t
+_krb5_krb_life_to_time(int start, int life_)
+{
+    unsigned char life = (unsigned char) life_;
+
+#if 0    
+    if (krb_no_long_lifetimes)
+	return start + life*5*60;
+#endif
+
+    if (life == TKTLIFENOEXPIRE)
+	return NEVERDATE;
+    if (life < TKTLIFEMINFIXED)
+	return start + life*5*60;
+    if (life > TKTLIFEMAXFIXED)
+	return start + MAXTKTLIFETIME;
+    return start + _tkt_lifetimes[life - TKTLIFEMINFIXED];
+}
+
+
 /* Convert the v5 credentials in `in_cred' to v4-dito in `v4creds'.
  * This is done by sending them to the 524 function in the KDC.  If
  * `in_cred' doesn't contain a DES session key, then a new one is
