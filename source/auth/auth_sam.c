@@ -162,12 +162,9 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		}		
 	}
 
-	nt_pw = pdb_get_nt_passwd(sampass);
-	lm_pw = pdb_get_lanman_passwd(sampass);
-	
 	auth_flags = user_info->auth_flags;
 
-	if (nt_pw == NULL) {
+	if (IS_SAM_DEFAULT(sampass, PDB_NTPASSWD)) {
 		DEBUG(3,("sam_password_ok: NO NT password stored for user %s.\n", 
 			 pdb_get_username(sampass)));
 		/* No return, we want to check the LM hash below in this case */
@@ -175,6 +172,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 	}
 	
 	if (auth_flags & AUTH_FLAG_NTLMv2_RESP) {
+		nt_pw = pdb_get_nt_passwd(sampass);
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it (ie. does it exist in the smbpasswd file).
 		*/
@@ -191,7 +189,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 	} else if (auth_flags & AUTH_FLAG_NTLM_RESP) {
-		if (lp_ntlm_auth()) {				
+		if (lp_ntlm_auth()) {		
+			nt_pw = pdb_get_nt_passwd(sampass);
 			/* We have the NT MD4 hash challenge available - see if we can
 			   use it (ie. does it exist in the smbpasswd file).
 			*/
@@ -211,13 +210,14 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		}
 	}
 	
-	if (lm_pw == NULL) {
+	if (IS_SAM_DEFAULT(sampass, PDB_LMPASSWD)) {
 		DEBUG(3,("sam_password_ok: NO LanMan password set for user %s (and no NT password supplied)\n",pdb_get_username(sampass)));
 		auth_flags &= (~AUTH_FLAG_LM_RESP);		
 	}
 	
 	if (auth_flags & AUTH_FLAG_LM_RESP) {
-		
+		lm_pw = pdb_get_lanman_passwd(sampass);
+			
 		if (user_info->lm_resp.length != 24) {
 			DEBUG(2,("sam_password_ok: invalid LanMan password length (%d) for user %s\n", 
 				 user_info->nt_resp.length, pdb_get_username(sampass)));		
@@ -235,7 +235,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		{
 			return NT_STATUS_OK;
 		} else {
-			if (lp_ntlm_auth()) {				
+			if (lp_ntlm_auth() && (!IS_SAM_DEFAULT(sampass, PDB_NTPASSWD))) {				
+				nt_pw = pdb_get_nt_passwd(sampass);
 				/* Apparently NT accepts NT responses in the LM field
 				   - I think this is related to Win9X pass-though authentication
 				*/
