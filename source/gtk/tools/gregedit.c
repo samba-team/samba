@@ -26,8 +26,6 @@
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 
-GtkWidget *openfilewin;
-GtkWidget *savefilewin;
 GtkTreeStore *store_keys;
 GtkListStore *store_vals;
 GtkWidget *tree_keys;
@@ -250,7 +248,6 @@ static GtkWidget* create_NewKeyDialog (GtkWidget **name_entry)
   return NewKeyDialog;
 }
 
-
 static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *arg2)
 {
 	GtkTreeIter firstiter, iter, tmpiter;
@@ -259,11 +256,11 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 	WERROR error;
 	int i;
 
-    gtk_tree_model_iter_children(GTK_TREE_MODEL(store_keys), &firstiter, parent);
+	gtk_tree_model_iter_children(GTK_TREE_MODEL(store_keys), &firstiter, parent);
 
-    /* See if this row has ever had a name gtk_tree_store_set()'ed to it.
-       If not, read the directory contents */
-    gtk_tree_model_get(GTK_TREE_MODEL(store_keys), &firstiter, 0, &name, -1);
+	/* See if this row has ever had a name gtk_tree_store_set()'ed to it.
+       	   If not, read the directory contents */
+	gtk_tree_model_get(GTK_TREE_MODEL(store_keys), &firstiter, 0, &name, -1);
 
 	if(name) return;
 
@@ -337,10 +334,16 @@ static void registry_load_root(void)
 
 static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
-	gint result = gtk_dialog_run(GTK_DIALOG(create_openfilewin()));
+	GtkWidget *openfilewin;
+	gint result;
 	char *filename, *tmp;
 	struct registry_key *root;
 	WERROR error;
+
+	openfilewin = create_openfilewin();
+
+	result = gtk_dialog_run(GTK_DIALOG(openfilewin));
+
 	switch(result) {
 	case GTK_RESPONSE_OK:
 		filename = strdup(gtk_file_selection_get_filename(GTK_FILE_SELECTION(openfilewin)));
@@ -363,8 +366,7 @@ static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 	gtk_widget_destroy(openfilewin);
 }
 
-static void on_open_gconf_activate                       (GtkMenuItem     *menuitem,
-  		                                      gpointer         user_data)
+static void on_open_gconf_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	struct registry_key *root;
 	WERROR error = reg_open_hive(NULL, "gconf", NULL, NULL, &root);
@@ -403,9 +405,9 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 	}
 
 	error = reg_open_remote(&registry, 
-				gtk_rpc_binding_dialog_get_username(GTK_RPC_BINDING_DIALOG(rpcwin)), 
-				gtk_rpc_binding_dialog_get_password(GTK_RPC_BINDING_DIALOG(rpcwin)), 
-				gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx));
+			gtk_rpc_binding_dialog_get_username(GTK_RPC_BINDING_DIALOG(rpcwin)), 
+			gtk_rpc_binding_dialog_get_password(GTK_RPC_BINDING_DIALOG(rpcwin)), 
+			gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx));
 
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, error);
@@ -424,8 +426,7 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 }
 
 
-static void on_save_activate                       (GtkMenuItem     *menuitem,
-													gpointer         user_data)
+static void on_save_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	WERROR error = reg_save(registry, NULL);
 	if(!W_ERROR_IS_OK(error)) {
@@ -434,12 +435,11 @@ static void on_save_activate                       (GtkMenuItem     *menuitem,
 }
 
 
-static void on_save_as_activate                    (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_save_as_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	gint result;
 	WERROR error;
-	create_savefilewin();
+	GtkWidget *savefilewin = create_savefilewin();
 	result = gtk_dialog_run(GTK_DIALOG(savefilewin));
 	switch(result) {
 	case GTK_RESPONSE_OK:
@@ -457,15 +457,13 @@ static void on_save_as_activate                    (GtkMenuItem     *menuitem,
 }
 
 
-static void on_quit_activate                       (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_quit_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	gtk_main_quit();
 }
 
 
-static void on_delete_value_activate                     (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_delete_value_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	WERROR error;
 	GtkTreeIter iter;
@@ -485,8 +483,7 @@ static void on_delete_value_activate                     (GtkMenuItem     *menui
 	}
 }
 
-static void on_delete_key_activate                     (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_delete_key_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	WERROR error;
 	GtkTreeIter iter, parentiter;
@@ -510,12 +507,11 @@ static void on_delete_key_activate                     (GtkMenuItem     *menuite
 	}
 }
 
-static void on_add_key_activate                     (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_add_key_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	GtkWidget *entry;
-    GtkDialog *addwin = GTK_DIALOG(create_NewKeyDialog(&entry));
-    gint result = gtk_dialog_run(addwin);
+	GtkDialog *addwin = GTK_DIALOG(create_NewKeyDialog(&entry));
+	gint result = gtk_dialog_run(addwin);
 
 	if (result == GTK_RESPONSE_OK)
 	{
@@ -527,17 +523,17 @@ static void on_add_key_activate                     (GtkMenuItem     *menuitem,
 		}
 	}
 
-    gtk_widget_destroy(GTK_WIDGET(addwin));
+	gtk_widget_destroy(GTK_WIDGET(addwin));
 }
 
 static void on_value_activate(GtkTreeView *treeview, GtkTreePath *arg1,
          GtkTreeViewColumn *arg2, gpointer user_data)
 {
 	GtkWidget *entry_name, *entry_type, *entry_value;
-    GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog(&entry_name, &entry_type, &entry_value));
+	GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog(&entry_name, &entry_type, &entry_value));
 	GtkTreeIter iter;
 	struct registry_value *value;
-    gint result;
+	gint result;
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(store_vals), &iter, arg1);
 
@@ -562,16 +558,14 @@ static void on_value_activate(GtkTreeView *treeview, GtkTreePath *arg1,
 			gtk_show_werror(NULL, error);
 		}
 	}
-    gtk_widget_destroy(GTK_WIDGET(addwin));
-
+	gtk_widget_destroy(GTK_WIDGET(addwin));
 }
 
-static void on_set_value_activate                     (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_set_value_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	GtkWidget *entry_name, *entry_type, *entry_value;
-    GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog(&entry_name, &entry_type, &entry_value));
-    gint result = gtk_dialog_run(addwin);
+	GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog(&entry_name, &entry_type, &entry_value));
+	gint result = gtk_dialog_run(addwin);
 	if (result == GTK_RESPONSE_OK) 
 	{
 		WERROR error;
@@ -585,27 +579,25 @@ static void on_set_value_activate                     (GtkMenuItem     *menuitem
 			gtk_show_werror(NULL, error);
 		}
 	}
-    gtk_widget_destroy(GTK_WIDGET(addwin));
+	gtk_widget_destroy(GTK_WIDGET(addwin));
 }
 
-static void on_find_activate                     (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_find_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-    GtkDialog *findwin = GTK_DIALOG(create_FindDialog());
-    /*gint result = gtk_dialog_run(findwin);
-      FIXME */
-    gtk_widget_destroy(GTK_WIDGET(findwin));
+	GtkDialog *findwin = GTK_DIALOG(create_FindDialog());
+	/*gint result = gtk_dialog_run(findwin);
+	FIXME */
+	gtk_widget_destroy(GTK_WIDGET(findwin));
 }
 
-static void on_about_activate                      (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_about_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
     GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog("gregedit"));
     gtk_dialog_run(aboutwin);
     gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
 
-gboolean on_key_activate(GtkTreeSelection *selection,
+static gboolean on_key_activate(GtkTreeSelection *selection,
                                              GtkTreeModel *model,
                                              GtkTreePath *path,
                                              gboolean path_currently_selected,
@@ -923,6 +915,7 @@ static GtkWidget* create_mainwindow(void)
 
 static GtkWidget* create_openfilewin (void)
 {
+	GtkWidget *openfilewin;
 	GtkWidget *ok_button;
 	GtkWidget *cancel_button;
 
@@ -940,6 +933,7 @@ static GtkWidget* create_openfilewin (void)
 
 static GtkWidget* create_savefilewin (void)
 {
+	GtkWidget *savefilewin;
 	GtkWidget *ok_button;
 	GtkWidget *cancel_button;
 
@@ -967,7 +961,7 @@ static int gregedit_load_defaults(void)
 	return 0;
 }
 
- int main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int ret;
 

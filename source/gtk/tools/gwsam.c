@@ -175,18 +175,13 @@ static void on_disconnect_activate (GtkMenuItem *menuitem, gpointer user_data)
 	gtk_window_set_title (GTK_WINDOW (mainwin), "User Manager");
 }
 
-void
-on_quit_activate                      (GtkMenuItem     *menuitem,
-									   gpointer         user_data)
+static void on_quit_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	if(sam_pipe)dcerpc_pipe_close(sam_pipe);
 	gtk_main_quit();
 }
 
-
-void
-on_account_activate                    (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_account_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	//FIXME
 }
