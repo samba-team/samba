@@ -281,6 +281,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 	struct ndr_push *ndr;
+	uint32_t payload_length;
 
 	/* non-signed packets are simple */
 	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.gensec_security) {
@@ -306,6 +307,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	dce_conn->auth_state.auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
 	ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
 
+	payload_length = ndr->offset - DCERPC_REQUEST_LENGTH;
 	
 	dce_conn->auth_state.auth_info->credentials
 		= data_blob_talloc(call->mem_ctx, NULL, 
@@ -332,7 +334,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 		status = gensec_seal_packet(dce_conn->auth_state.gensec_security, 
 					    call->mem_ctx,
 					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    payload_length,
 					    blob->data,
 					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
 					      &dce_conn->auth_state.auth_info->credentials);
@@ -342,7 +344,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 		status = gensec_sign_packet(dce_conn->auth_state.gensec_security, 
 					    call->mem_ctx,
 					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    payload_length,
 					    blob->data,
 					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
 					    &dce_conn->auth_state.auth_info->credentials);
