@@ -174,8 +174,7 @@ generate_h(void)
 int
 generate(void)
 {
-    if(generate_c() || generate_h())
-	return 1;
+    return generate_c() || generate_h();
 }
 
 int
