@@ -45,20 +45,27 @@ RCSID("$Id$");
 #include <roken.h>
 #include "getarg.h"
 
-static void
-print_arg (struct getargs *arg)
+static size_t
+print_arg (int longp, struct getargs *arg)
 {
     switch (arg->type) {
     case arg_integer:
-	fprintf (stderr, " n]");
-	break;
+	if (longp) {
+	    fprintf (stderr, "=n");
+	} else {
+	    fprintf (stderr, " n");
+	}
+	return 2;
     case arg_string:
-	fprintf (stderr, " s]");
-	break;
+	if (longp) {
+	    fprintf (stderr, "=s");
+	} else {
+	    fprintf (stderr, " s");
+	}
+	return 2;
     case arg_flag:
     case arg_negative_flag:
-	fprintf (stderr, "]");
-	break;
+	return 0;
     default:
 	abort ();
     }
@@ -79,12 +86,14 @@ arg_printusage (struct getargs *args,
 	if (args[i].long_name) {
 	    len += 2 + strlen(args[i].long_name);
 	    fprintf (stderr, " [--%s", args[i].long_name);
-	    print_arg (&args[i]);
+	    len += print_arg (1, &args[i]);
+	    putc (']', stderr);
 	}
 	if (args[i].short_name) {
 	    len += 2;
 	    fprintf (stderr, " [-%c", args[i].short_name);
-	    print_arg (&args[i]);
+	    len += print_arg (0, &args[i]);
+	    putc (']', stderr);
 	}
 	if (args[i].long_name && args[i].short_name)
 	    len += 4;
@@ -101,6 +110,7 @@ arg_printusage (struct getargs *args,
 	    if (args[i].short_name) {
 		fprintf (stderr, "-%c", args[i].short_name);
 		count += 2;
+		count += print_arg (0, &args[i]);
 	    }
 	    if (args[i].short_name && args[i].long_name) {
 		fprintf (stderr, " or ");
@@ -109,6 +119,7 @@ arg_printusage (struct getargs *args,
 	    if (args[i].long_name) {
 		fprintf (stderr, "--%s", args[i].long_name);
 		count += 2 + strlen(args[i].long_name);
+		count += print_arg (1, &args[i]);
 	    }
 	    while(count++ <= max_len)
 		putc (' ', stderr);
@@ -282,11 +293,11 @@ int bar_int;
 char *baz_string;
 
 struct getargs args[] = {
-    { NULL, '1', arg_flag, &flag1, NULL },
-    { NULL, '2', arg_flag, &flag2, NULL },
-    { "foo", 'f', arg_flag, &foo_flag, NULL },
-    { "bar", 'b', arg_integer, &bar_int, NULL },
-    { "baz", 'x', arg_string, &baz_string, NULL },
+    { NULL, '1', arg_flag, &flag1, "one" },
+    { NULL, '2', arg_flag, &flag2, "two" },
+    { "foo", 'f', arg_flag, &foo_flag, "foo" },
+    { "bar", 'b', arg_integer, &bar_int, "bar" },
+    { "baz", 'x', arg_string, &baz_string, "baz" },
 };
 
 int main(int argc, char **argv)
@@ -299,5 +310,6 @@ int main(int argc, char **argv)
     printf("foo_flag = %d\n", foo_flag);  
     printf("bar_int = %d\n", bar_int);
     printf("baz_flag = %s\n", baz_string);
+    arg_printusage (args, 5, "nothing here");
 }
 #endif
