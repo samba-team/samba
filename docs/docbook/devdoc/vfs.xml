@@ -671,7 +671,7 @@ static int example_connect(vfs_handle_struct *handle,
 	}
 
 	/* init out private data */
-	data-&gt;some_string = strdup(conn-&gt;mem_ctx,&quot;test&quot;);
+	data-&gt;some_string = strdup(&quot;test&quot;);
 	if (!data-&gt;some_string) {
 		DEBUG(0,(&quot;strdup() failed\n&quot;));
 		return -1;
