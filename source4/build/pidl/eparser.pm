@@ -20,6 +20,7 @@ sub is_scalar_type($)
     return 1, if ($type eq "char");
     return 1, if ($type eq "uint16");
     return 1, if ($type eq "hyper");
+    return 1, if ($type eq "wchar_t");
 
     return 0;
 }
