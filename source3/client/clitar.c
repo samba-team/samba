@@ -206,6 +206,16 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
   oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.uid);
   oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.gid);
   oct_it((SMB_BIG_UINT) size, 13, hb.dbuf.size);
+  if (size > (SMB_BIG_UINT)077777777777LL) {    
+
+	  /* This is a non-POSIX compatible extention to store files
+	     greater than 8GB. */
+
+	  memset(hb.dbuf.size, 0, 4);
+	  hb.dbuf.size[0]=128;
+	  for (i = 8, jp=(char*)&size; i; i--)
+		  hb.dbuf.size[i+3] = *(jp++);
+  }
   oct_it((SMB_BIG_UINT) mtime, 13, hb.dbuf.mtime);
   memcpy(hb.dbuf.chksum, "        ", sizeof(hb.dbuf.chksum));
   memset(hb.dbuf.linkname, 0, NAMSIZ);
