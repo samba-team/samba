@@ -125,8 +125,8 @@ static BOOL          ct_initialized = False;
 
 static ubi_cacheRoot mangled_cache[1] =  { { { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0 } };
 static BOOL          mc_initialized   = False;
-#define MANGLED_CACHE_MAX_ENTRIES 0
-#define MANGLED_CACHE_MAX_MEMORY  16384
+#define MANGLED_CACHE_MAX_ENTRIES 1024
+#define MANGLED_CACHE_MAX_MEMORY  0
 
 
 /* -------------------------------------------------------------------------- **
@@ -289,23 +289,27 @@ static BOOL is_illegal_name( char *name )
  * ************************************************************************** **
  */
 BOOL is_mangled( char *s )
-  {
-  char *magic;
+{
+	char *magic;
+	BOOL ret = False;
 
-  if( !ct_initialized )
-    init_chartest();
+	if( !ct_initialized )
+		init_chartest();
 
-  magic = strchr( s, magic_char );
-  while( magic && magic[1] && magic[2] )          /* 3 chars, 1st is magic. */
-    {
-    if( ('.' == magic[3] || '/' == magic[3] || !(magic[3]))          /* Ends with '.' or nul or '/' ?  */
-     && isbasechar( toupper(magic[1]) )           /* is 2nd char basechar?  */
-     && isbasechar( toupper(magic[2]) ) )         /* is 3rd char basechar?  */
-      return( True );                           /* If all above, then true, */
-    magic = strchr( magic+1, magic_char );      /*    else seek next magic. */
-    }
-  return( False );
-  } /* is_mangled */
+	magic = strchr( s, magic_char );
+	while( magic && magic[1] && magic[2] ) {
+		/* 3 chars, 1st is magic. */
+		if( ('.' == magic[3] || '/' == magic[3] || !(magic[3]))          /* Ends with '.' or nul or '/' ?  */
+				&& isbasechar( toupper(magic[1]) )           /* is 2nd char basechar?  */
+				&& isbasechar( toupper(magic[2]) ) )         /* is 3rd char basechar?  */
+			ret = ( True );                           /* If all above, then true, */
+		magic = strchr( magic+1, magic_char );      /*    else seek next magic. */
+	}
+
+	DEBUG(10,("is_mangled: %s : %s\n", s, ret ? "True" : "False"));
+
+	return ret;
+} /* is_mangled */
 
 /* ************************************************************************** **
  * Return True if the name is a valid DOS name in 8.3 DOS format.
@@ -445,6 +449,8 @@ static signed int cache_compare( ubi_btItemPtr ItemPtr, ubi_btNodePtr NodePtr )
   {
   char *Key1 = (char *)ItemPtr;
   char *Key2 = (char *)(((ubi_cacheEntryPtr)NodePtr) + 1);
+
+  DEBUG(100,("cache_compare: %s %s\n", Key1, Key2));
 
   return( StrCaseCmp( Key1, Key2 ) );
   } /* cache_compare */
