@@ -340,6 +340,13 @@ int reply_negprot(connection_struct *conn,
   char *p;
   int bcc = SVAL(smb_buf(inbuf),-2);
   int arch = ARCH_ALL;
+#ifdef WITH_PROFILE
+  struct timeval starttime;
+  struct timeval endtime;
+
+  GetTimeOfDay(&starttime);
+  INC_PROFILE_COUNT(SMBnegprot_count);
+#endif
 
   p = smb_buf(inbuf)+1;
   while (p < (smb_buf(inbuf) + bcc))
@@ -437,6 +444,10 @@ int reply_negprot(connection_struct *conn,
   
   DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
+#ifdef WITH_PROFILE
+  GetTimeOfDay(&endtime);
+  ADD_PROFILE_COUNT(SMBnegprot_time,TvalDiff(&starttime,&endtime));
+#endif
   return(outsize);
 }
 

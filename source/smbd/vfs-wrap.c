@@ -64,6 +64,10 @@ DIR *vfswrap_opendir(char *fname)
 {
     DIR *result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_opendir_count);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if (fname == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_opendir()\n");
@@ -77,6 +81,10 @@ DIR *vfswrap_opendir(char *fname)
 struct dirent *vfswrap_readdir(DIR *dirp)
 {
     struct dirent *result;
+
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_readdir_count);
+#endif
 
 #ifdef VFS_CHECK_NULL
     if (dirp == NULL) {
@@ -92,6 +100,10 @@ int vfswrap_mkdir(char *path, mode_t mode)
 {
     int result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_mkdir_count);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_mkdir()\n");
@@ -106,6 +118,10 @@ int vfswrap_rmdir(char *path)
 {
     int result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_rmdir_count);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_rmdir()\n");
@@ -119,6 +135,10 @@ int vfswrap_rmdir(char *path)
 int vfswrap_closedir(DIR *dirp)
 {
     int result;
+
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_closedir_count);
+#endif
 
 #ifdef VFS_CHECK_NULL
     if (dirp == NULL) {
@@ -136,6 +156,10 @@ int vfswrap_open(char *fname, int flags, mode_t mode)
 {
     int result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_open_count);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if (fname == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_open()\n");
@@ -150,6 +174,10 @@ int vfswrap_close(int fd)
 {
     int result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_close_count);
+#endif
+
     result = close(fd);
     return result;
 }
@@ -157,6 +185,11 @@ int vfswrap_close(int fd)
 ssize_t vfswrap_read(int fd, char *data, size_t n)
 {
     ssize_t result;
+
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_read_count);
+    ADD_PROFILE_COUNT(syscall_read_bytes,n);
+#endif
 
 #ifdef VFS_CHECK_NULL
     if (data == NULL) {
@@ -172,6 +205,11 @@ ssize_t vfswrap_write(int fd, char *data, size_t n)
 {
     ssize_t result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_write_count);
+    ADD_PROFILE_COUNT(syscall_write_bytes,n);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if (data == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_write()\n");
@@ -186,6 +224,10 @@ SMB_OFF_T vfswrap_lseek(int filedes, SMB_OFF_T offset, int whence)
 {
     SMB_OFF_T result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_lseek_count);
+#endif
+
     result = sys_lseek(filedes, offset, whence);
     return result;
 }
@@ -193,6 +235,10 @@ SMB_OFF_T vfswrap_lseek(int filedes, SMB_OFF_T offset, int whence)
 int vfswrap_rename(char *old, char *new)
 {
     int result;
+
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_rename_count);
+#endif
 
 #ifdef VFS_CHECK_NULL
     if ((old == NULL) || (new == NULL)) {
@@ -207,6 +253,10 @@ int vfswrap_rename(char *old, char *new)
 int vfswrap_fsync(int fd)
 {
 #ifdef HAVE_FSYNC
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_fsync_count);
+#endif
+
     return fsync(fd);
 #else
 	return 0;
@@ -216,6 +266,10 @@ int vfswrap_fsync(int fd)
 int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf)
 {
     int result;
+
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_stat_count);
+#endif
 
 #ifdef VFS_CHECK_NULL
     if ((fname == NULL) || (sbuf == NULL)) {
@@ -230,6 +284,10 @@ int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf)
 int vfswrap_fstat(int fd, SMB_STRUCT_STAT *sbuf)
 {
     int result;
+
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_fstat_count);
+#endif
 
 #ifdef VFS_CHECK_NULL
     if (sbuf == NULL) {
@@ -246,6 +304,10 @@ int vfswrap_lstat(char *path,
 {
     int result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_lstat_count);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if ((path == NULL) || (sbuf == NULL)) {
 	smb_panic("NULL pointer passed to vfswrap_lstat()\n");
@@ -259,6 +321,10 @@ int vfswrap_lstat(char *path,
 int vfswrap_unlink(char *path)
 {
     int result;
+
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_unlink_count);
+#endif
 
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
@@ -274,6 +340,10 @@ int vfswrap_chmod(char *path, mode_t mode)
 {
     int result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_chmod_count);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_chmod()\n");
@@ -288,6 +358,10 @@ int vfswrap_chown(char *path, uid_t uid, gid_t gid)
 {
     int result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_chown_count);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_chown()\n");
@@ -300,6 +374,10 @@ int vfswrap_chown(char *path, uid_t uid, gid_t gid)
 
 int vfswrap_chdir(char *path)
 {
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_chdir_count);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_chdir()\n");
@@ -311,6 +389,10 @@ int vfswrap_chdir(char *path)
 
 char *vfswrap_getwd(char *path)
 {
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_getwd_count);
+#endif
+
 #ifdef VFS_CHECK_NULL
     if (path == NULL) {
 	smb_panic("NULL pointer passed to vfswrap_getwd()\n");
@@ -323,6 +405,10 @@ char *vfswrap_getwd(char *path)
 int vfswrap_utime(char *path, struct utimbuf *times)
 {
     int result;
+
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_utime_count);
+#endif
 
 #ifdef VFS_CHECK_NULL
     if ((path == NULL) || (times == NULL)) {
@@ -338,12 +424,20 @@ int vfswrap_ftruncate(int fd, SMB_OFF_T offset)
 {
     int result;
 
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_ftruncate_count);
+#endif
+
     result = sys_ftruncate(fd, offset);
     return result;
 }
 
 BOOL vfswrap_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(syscall_fcntl_lock_count);
+#endif
+
 	return fcntl_lock(fd, op, offset, count,type);
 }
 

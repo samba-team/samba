@@ -30,28 +30,6 @@ extern BOOL case_sensitive;
  Stat cache code used in unix_convert.
 *****************************************************************************/
 
-static int global_stat_cache_lookups;
-static int global_stat_cache_misses;
-static int global_stat_cache_hits;
-
-/****************************************************************************
- Stat cache statistics code.
-*****************************************************************************/
-
-void print_stat_cache_statistics(void)
-{
-  double eff;
-
-  if(global_stat_cache_lookups == 0)
-    return;
-
-  eff = (100.0* (double)global_stat_cache_hits)/(double)global_stat_cache_lookups;
-
-  DEBUG(0,("stat cache stats: lookups = %d, hits = %d, misses = %d, \
-stat cache was %f%% effective.\n", global_stat_cache_lookups,
-       global_stat_cache_hits, global_stat_cache_misses, eff ));
-}
-
 typedef struct {
   int name_len;
   char names[2]; /* This is extended via malloc... */
@@ -175,13 +153,18 @@ BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath,
   namelen = strlen(name);
 
   *start = name;
-  global_stat_cache_lookups++;
+
+#ifdef WITH_PROFILE
+  INC_PROFILE_COUNT(statcache_lookups);
+#endif
 
   /*
    * Don't lookup trivial valid directory entries.
    */
   if((*name == '\0') || (strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)) {
-    global_stat_cache_misses++;
+#ifdef WITH_PROFILE
+    INC_PROFILE_COUNT(statcache_misses);
+#endif
     return False;
   }
 
@@ -202,17 +185,23 @@ BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath,
         /*
          * We reached the end of the name - no match.
          */
-        global_stat_cache_misses++;
+#ifdef WITH_PROFILE
+	INC_PROFILE_COUNT(statcache_misses);
+#endif
         return False;
       }
       if((*chk_name == '\0') || (strcmp(chk_name, ".") == 0)
                           || (strcmp(chk_name, "..") == 0)) {
-        global_stat_cache_misses++;
+#ifdef WITH_PROFILE
+	INC_PROFILE_COUNT(statcache_misses);
+#endif
         return False;
       }
     } else {
       scp = (stat_cache_entry *)(hash_elem->value);
-      global_stat_cache_hits++;
+#ifdef WITH_PROFILE
+      INC_PROFILE_COUNT(statcache_hits);
+#endif
       trans_name = scp->names+scp->name_len+1;
       if(conn->vfs_ops.stat(dos_to_unix(trans_name,False), pst) != 0) {
         /* Discard this entry - it doesn't exist in the filesystem.  */
