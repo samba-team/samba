@@ -76,10 +76,9 @@ void E_deshash(const char *passwd, uchar p16[16])
 {
 	fstring dospwd; 
 	ZERO_STRUCT(dospwd);
-	ZERO_STRUCTP(p16);
 	
 	/* Password must be converted to DOS charset - null terminated, uppercase. */
-	push_ascii(dospwd, (const char *)passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
+	push_ascii(dospwd, passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
 
 	/* Only the fisrt 14 chars are considered, password need not be null terminated. */
 	E_P16(dospwd, p16);
@@ -324,7 +323,8 @@ static DATA_BLOB NTLMv2_generate_response(uchar ntlm_v2_hash[16],
 BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
 		      const DATA_BLOB server_chal, 
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-		      DATA_BLOB *session_key) 
+		      DATA_BLOB *lm_session_key, 
+		      DATA_BLOB *nt_session_key) 
 {
 	uchar nt_hash[16];
 	uchar ntlm_v2_hash[16];
@@ -338,18 +338,30 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 		return False;
 	}
 	
-	*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 64 /* pick a number, > 8 */);
+	if (nt_response) {
+		*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 64 /* pick a number, > 8 */);
+		if (nt_session_key) {
+			*nt_session_key = data_blob(NULL, 16);
+			
+			/* The NTLMv2 calculations also provide a session key, for signing etc later */
+			/* use only the first 16 bytes of nt_response for session key */
+			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, nt_session_key->data);
+		}
+	}
 	
 	/* LMv2 */
 	
-	*lm_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 8);
+	if (lm_response) {
+		*lm_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 8);
+		if (lm_session_key) {
+			*lm_session_key = data_blob(NULL, 16);
+			
+			/* The NTLMv2 calculations also provide a session key, for signing etc later */
+			/* use only the first 16 bytes of nt_response for session key */
+			SMBsesskeygen_ntv2(ntlm_v2_hash, lm_response->data, lm_session_key->data);
+		}
+	}
 	
-	*session_key = data_blob(NULL, 16);
-	
-	/* The NTLMv2 calculations also provide a session key, for signing etc later */
-	/* use only the first 16 bytes of nt_response for session key */
-	SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, session_key->data);
-
 	return True;
 }
 

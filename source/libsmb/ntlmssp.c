@@ -501,7 +501,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		if (!SMBNTLMv2encrypt(ntlmssp_state->user, 
 				      ntlmssp_state->domain, 
 				      ntlmssp_state->password, challenge_blob, 
-				      &lm_response, &nt_response, &session_key)) {
+				      &lm_response, &nt_response, NULL, &session_key)) {
 			data_blob_free(&challenge_blob);
 			return NT_STATUS_NO_MEMORY;
 		}
