@@ -2001,6 +2001,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				return ERROR_DOS(ERRDOS,ERRnoaccess);
 			}
 
+			/* we have to also set the delete flag in our fsp */
+			if (delete_on_close) {
+				fsp->share_mode |= DELETE_ON_CLOSE_FLAG;
+			} else {
+				fsp->share_mode &= ~DELETE_ON_CLOSE_FLAG;
+			}
+
 			/*
 			 * Release the lock.
 			 */
