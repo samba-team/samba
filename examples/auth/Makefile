@@ -18,10 +18,10 @@ default: $(AUTH_OBJS)
 # Pattern rules
 
 %.so: %.lo
-	$(LIBTOOL) $(CC) -shared -o $@ $< $(LDFLAGS)
+	$(LIBTOOL) --mode=link $(CC) -shared -o $@ $< $(LDFLAGS)
 
 %.lo: %.c
-	$(LIBTOOL) $(CC) $(CPPFLAGS) $(CFLAGS) -c $<
+	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
 # Misc targets
 
