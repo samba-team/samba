@@ -26,6 +26,32 @@ BOOL global_machine_password_needs_changing = False;
 extern pstring global_myname;
 extern userdom_struct current_user_info;
 
+static char *mutex_server_name;
+
+static BOOL grab_server_mutex(const char *name)
+{
+	mutex_server_name = strdup(name);
+	if (!mutex_server_name) {
+		DEBUG(0,("grab_server_mutex: malloc failed for %s\n", name));
+		return False;
+	}
+	if (!message_named_mutex(name, 20)) {
+		DEBUG(10,("grab_server_mutex: failed for %s\n", name));
+		SAFE_FREE(mutex_server_name);
+		return False;
+	}
+
+	return True;
+}
+
+static void release_server_mutex(void)
+{
+	if (mutex_server_name) {
+		message_named_mutex_release(mutex_server_name);
+		SAFE_FREE(mutex_server_name);
+	}
+}
+
 /**
  * Connect to a remote server for domain security authenticaion.
  *
@@ -87,18 +113,21 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	/* we use a mutex to prevent two connections at once - when a NT PDC gets
 	   two connections where one hasn't completed a negprot yet it will send a 
 	   TCP reset to the first connection (tridge) */
-	if (!message_named_mutex(server, 20)) {
-		DEBUG(1,("connect_to_domain_password_server: domain mutex failed for %s\n", server));
+
+	/*
+	 * With NT4.x DC's *all* authentication must be serialized to avoid
+	 * ACCESS_DENIED errors if 2 auths are done from the same machine. JRA.
+	 */
+
+	if (!grab_server_mutex(server))
 		return NT_STATUS_UNSUCCESSFUL;
-	}
 	
 	/* Attempt connection */
 	result = cli_full_connection(cli, global_myname, server,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "", 0);
 
-	message_named_mutex_release(server);
-	
 	if (!NT_STATUS_IS_OK(result)) {
+		release_server_mutex();
 		return result;
 	}
 
@@ -121,12 +150,14 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		cli_nt_session_close(*cli);
 		cli_ulogoff(*cli);
 		cli_shutdown(*cli);
+		release_server_mutex();
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	snprintf((*cli)->mach_acct, sizeof((*cli)->mach_acct) - 1, "%s$", setup_creds_as);
 
 	if (!(*cli)->mach_acct) {
+		release_server_mutex();
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -138,8 +169,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		cli_nt_session_close(*cli);
 		cli_ulogoff(*cli);
 		cli_shutdown(*cli);
+		release_server_mutex();
 		return result;
 	}
+
+	/* We exit here with the mutex *locked*. JRA */
 
 	return NT_STATUS_OK;
 }
@@ -406,6 +440,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	cli_nt_session_close(cli);
 	cli_ulogoff(cli);
 	cli_shutdown(cli);
+	release_server_mutex();
 	return nt_status;
 }
 
