@@ -1,3 +1,7 @@
+1999-06-23  Assar Westerlund  <assar@sics.se>
+
+	* version4.c (values_to_ent): convert key data correctly
+
 1999-05-23  Assar Westerlund  <assar@sics.se>
 
 	* init.c (create_random_entry): more correct setting of mask
