@@ -646,7 +646,8 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 			printf("You need to have status=yes in your smb config file\n");
 		return(0);
 	}  else if (verbose) {
-		printf("Opened status file %s\n", fname);
+		slprintf (fname, sizeof(fname)-1, "%s/%s", lp_lockdir(), "connections.tdb");
+		printf("Opened %s\n", fname);
 	}
 
 	if (locks_only) goto locks;
