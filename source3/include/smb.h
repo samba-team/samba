@@ -1563,6 +1563,9 @@ extern int unix_ERR_code;
 
 #define CMD_REPLY 0x8000
 
+/* useful macros */
+#define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+
 #endif /* _SMB_H */
 
 #include "ntdomain.h"
