@@ -199,7 +199,14 @@ int smbw_dir_open(const char *fname)
 	slprintf(mask, sizeof(mask)-1, "%s\\*", path);
 	all_string_sub(mask,"\\\\","\\",0);
 
-	if ((p=strstr(srv->server_name,"#1D"))) {
+	if ((p=strstr(srv->server_name,"#01"))) {
+		*p = 0;
+		smbw_server_add(".",0,"");
+		smbw_server_add("..",0,"");
+		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_DOMAIN_ENUM,
+				  smbw_server_add);
+		*p = '#';
+	} else if ((p=strstr(srv->server_name,"#1D"))) {
 		DEBUG(4,("doing NetServerEnum\n"));
 		*p = 0;
 		smbw_server_add(".",0,"");
@@ -223,10 +230,12 @@ int smbw_dir_open(const char *fname)
 			goto failed;
 		}
 	} else {
+#if 0
 		if (strcmp(path,"\\") == 0) {
 			smbw_share_add(".",0,"");
 			smbw_share_add("..",0,"");
 		}
+#endif
 		if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, 
 			     smbw_dir_add) < 0) {
 			errno = smbw_errno(&srv->cli);
