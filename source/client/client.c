@@ -1,9 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB client
-   Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Simo Sorce 2001-2002
-   Copyright (C) Jelmer Vernooij 2003
+   Copyright (C) Andrew Tridgell          1994-1998
+   Copyright (C) Simo Sorce               2001-2002
+   Copyright (C) Jelmer Vernooij          2003
+   Copyright (C) Gerald (Jerry) Carter    2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -96,19 +97,23 @@ static unsigned int put_total_time_ms = 0;
 /* totals globals */
 static double dir_total;
 
+
 struct client_connection {
 	struct client_connection *prev, *next;
+	struct client_connection *parent;
 	struct cli_state *cli;
+	pstring mntpath;
 };
 
 struct cli_state *cli;
-struct client_connection *connections;
+static struct client_connection *connections;
 
 /********************************************************************
  Return a connection to a server.
 ********************************************************************/
 
-static struct cli_state *do_connect(const char *server, const char *share)
+static struct cli_state *do_connect( const char *server, const char *share,
+                                     BOOL show_sessetup )
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
@@ -200,13 +205,15 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		d_printf("Anonymous login successful\n");
 	}
 
-	if (*c->server_domain) {
-		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_type));
-	} else if (*c->server_os || *c->server_type){
-		DEBUG(1,("OS=[%s] Server=[%s]\n",
-			 c->server_os,c->server_type));
-	}		
+	if ( show_sessetup ) {
+		if (*c->server_domain) {
+			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
+				c->server_domain,c->server_os,c->server_type));
+		} else if (*c->server_os || *c->server_type){
+			DEBUG(1,("OS=[%s] Server=[%s]\n",
+				 c->server_os,c->server_type));
+		}		
+	}
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, sharename, "?????",
@@ -225,18 +232,28 @@ static struct cli_state *do_connect(const char *server, const char *share)
  Add a new connection to the list
 ********************************************************************/
 
-static struct cli_state* add_new_connection( const char *server, const char *share )
+static struct cli_state* cli_cm_connect( const char *server, const char *share,
+                                         BOOL show_hdr )
 {
-	struct client_connection *node;
+	struct client_connection *node, *pparent, *p;
 	
 	node = SMB_XMALLOC_P( struct client_connection );
 	
-	node->cli = do_connect( server, share );
+	node->cli = do_connect( server, share, show_hdr );
 
 	if ( !node->cli ) {
 		SAFE_FREE( node );
 		return NULL;
 	}
+
+	pparent = NULL;
+	for ( p=connections; p; p=p->next ) {
+		if ( strequal(cli->desthost, p->cli->desthost) && strequal(cli->share, p->cli->share) )
+			pparent = p;
+	}
+	
+	node->parent = pparent;
+	pstrcpy( node->mntpath, cur_dir );
 
 	DLIST_ADD( connections, node );
 
@@ -248,7 +265,7 @@ static struct cli_state* add_new_connection( const char *server, const char *sha
  Return a connection to a server.
 ********************************************************************/
 
-static struct cli_state* find_connection ( const char *server, const char *share )
+static struct cli_state* cli_cm_find( const char *server, const char *share )
 {
 	struct client_connection *p;
 
@@ -258,6 +275,51 @@ static struct cli_state* find_connection ( const char *server, const char *share
 	}
 
 	return NULL;
+}
+
+/****************************************************************************
+ open a client connection to a \\server\share.  Set's the current *cli 
+ global variable as a side-effect (but only if the connection is successful).
+****************************************************************************/
+
+struct cli_state* cli_cm_open( const char *server, const char *share, BOOL show_hdr )
+{
+	struct cli_state *c;
+	
+	/* try to reuse an existing connection */
+
+	c = cli_cm_find( server, share );
+	
+	if ( !c )
+		c = cli_cm_connect( server, share, show_hdr );
+
+	return c;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+struct cli_state* cli_cm_current( void )
+{
+	return cli;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+const char* cli_cm_get_mntpath( struct cli_state *pcli )
+{
+	struct client_connection *p;
+	
+	for ( p=connections; p; p=p->next ) {
+		if ( strequal(pcli->desthost, p->cli->desthost) && strequal(pcli->share, p->cli->share) )
+			break;
+	}
+	
+	if ( !p )
+		return NULL;
+		
+	return p->mntpath;
 }
 
 /****************************************************************************
@@ -374,9 +436,15 @@ static void send_message(void)
 static int do_dskattr(void)
 {
 	int total, bsize, avail;
+	struct cli_state *targetcli;
+	pstring targetpath;
 
-	if (!cli_dskattr(cli, &bsize, &total, &avail)) {
-		d_printf("Error in dskattr: %s\n",cli_errstr(cli)); 
+	if ( !cli_resolve_path( cli, cur_dir, &targetcli, targetpath ) ) {
+		d_printf("Error in dskattr: %s\n", cli_errstr(cli));
+	}
+
+	if (!cli_dskattr(targetcli, &bsize, &total, &avail)) {
+		d_printf("Error in dskattr: %s\n",cli_errstr(targetcli)); 
 		return 1;
 	}
 
@@ -406,31 +474,44 @@ static int do_cd(char *newdir)
 	char *p = newdir;
 	pstring saved_dir;
 	pstring dname;
+	pstring targetpath;
+	struct cli_state *targetcli;
       
 	dos_format(newdir);
 
-	/* Save the current directory in case the
-	   new directory is invalid */
+	/* Save the current directory in case the new directory is invalid */
+
 	pstrcpy(saved_dir, cur_dir);
+
 	if (*p == '\\')
 		pstrcpy(cur_dir,p);
 	else
 		pstrcat(cur_dir,p);
+
 	if (*(cur_dir+strlen(cur_dir)-1) != '\\') {
 		pstrcat(cur_dir, "\\");
 	}
+
 	dos_clean_name(cur_dir);
-	pstrcpy(dname,cur_dir);
+	pstrcpy( dname, cur_dir );
 	pstrcat(cur_dir,"\\");
 	dos_clean_name(cur_dir);
 	
-	if (!strequal(cur_dir,"\\")) {
-		if (!cli_chkpath(cli, dname)) {
-			d_printf("cd %s: %s\n", dname, cli_errstr(cli));
+	if ( !cli_resolve_path( cli, dname, &targetcli, targetpath ) ) {
+		d_printf("cd %s: %s\n", dname, cli_errstr(cli));
+		pstrcpy(cur_dir,saved_dir);
+	}
+
+	pstrcat( targetpath, "\\" );
+	dos_clean_name( targetpath );
+
+	if ( !strequal(targetpath,"\\") ) {	
+		if ( !cli_chkpath(targetcli, targetpath) ) {
+			d_printf("cd %s: %s\n", dname, cli_errstr(targetcli));
 			pstrcpy(cur_dir,saved_dir);
 		}
 	}
-	
+
 	pstrcpy(cd_path,cur_dir);
 
 	return 0;
@@ -444,7 +525,7 @@ static int cmd_cd(void)
 {
 	pstring buf;
 	int rc = 0;
-
+		
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
 		rc = do_cd(buf);
 	else
@@ -668,6 +749,8 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
 {
 	static int in_do_list = 0;
+	struct cli_state *targetcli;
+	pstring targetpath;
 
 	if (in_do_list && rec) {
 		fprintf(stderr, "INTERNAL ERROR: do_list called recursively when the recursive flag is true\n");
@@ -694,7 +777,15 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			 */
 			pstring head;
 			pstrcpy(head, do_list_queue_head());
-			cli_list(cli, head, attribute, do_list_helper, NULL);
+			
+			/* check for dfs */
+			
+			if ( !cli_resolve_path( cli, head, &targetcli, targetpath ) ) {
+				d_printf("do_list: [%s] %s\n", head, cli_errstr(cli));
+				continue;
+			}
+			
+			cli_list(targetcli, targetpath, attribute, do_list_helper, NULL);
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo)) {
 				char* next_file = do_list_queue_head();
@@ -713,9 +804,15 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			}
 		}
 	} else {
-		if (cli_list(cli, mask, attribute, do_list_helper, NULL) == -1) {
-			d_printf("%s listing %s\n", cli_errstr(cli), mask);
+		/* check for dfs */
+			
+		if ( cli_resolve_path( cli, mask, &targetcli, targetpath ) ) {
+			if (cli_list(targetcli, targetpath, attribute, do_list_helper, NULL) == -1) 
+				d_printf("%s listing %s\n", cli_errstr(targetcli), targetpath);
 		}
+		else
+			d_printf("do_list: [%s] %s\n", mask, cli_errstr(cli));
+		
 	}
 
 	in_do_list = 0;
@@ -2663,32 +2760,6 @@ static int cmd_logon(void)
 
 
 /****************************************************************************
- Add a connection to a new //server/share path
-****************************************************************************/
-
-static int cmd_add_connect(void)
-{
-	pstring path;
-	struct cli_state *new_cli;
-
-	if ( !next_token_nr(NULL, path, NULL, sizeof(path)) ) {
-		d_printf("connect <uncpath>\n");
-		return 0;
-	}
-
-	string_replace(path, '/','\\');
-
-	new_cli = add_new_connection( "", path );
-
-	/* if successful, set this as the current connection */
-
-	if ( new_cli ) 
-		cli = new_cli;
-
-	return 0;
-}
-
-/****************************************************************************
  list active connections
 ****************************************************************************/
 
@@ -2706,53 +2777,20 @@ static int cmd_list_connect(void)
 }
 
 /****************************************************************************
- set the current active_connection
+ display the current active client connection
 ****************************************************************************/
 
-static int cmd_set_connect(void)
+static int cmd_show_connect( void )
 {
-	pstring path;
-	char *server, *share;
-	struct cli_state *c;
-
-	if ( !next_token_nr(NULL, path, NULL, sizeof(path)) ) {
-		d_printf("setconnect <uncpath>\n");
-		return 0;
-	}
-
-	if ( strlen(path) < 5 ) {
-		d_printf("Invalid UNC path [%s]\n", path );
+	struct cli_state *targetcli;
+	pstring targetpath;
+	
+	if ( !cli_resolve_path( cli, cur_dir, &targetcli, targetpath ) ) {
+		d_printf("showconnect %s: %s\n", cur_dir, cli_errstr(cli));
 		return 1;
 	}
-
-
-	string_replace(path, '/','\\');
-
-	share = strrchr_m( path, '\\' );
-	if ( !share ) {
-		d_printf("Invalid UNC path [%s]\n", path );
-		return 1;
-	};
-
-	*share = '\0';
-	share++;
-
-	if ( path[0] != '\\' ||  path[1]!='\\' ) {
-		d_printf("Invalid UNC path [%s]\n", path );
-		return 1;
-	}
-
-	server = path+2;
-
-	c = find_connection( server, share );
-	if ( !c ) {
-		d_printf("Cannot find existing connection for //%s/%s\n",
-			server, share);
-		return 1;
-	}
-
-	cli = c;
-
+	
+	d_printf("//%s/%s\n", targetcli->desthost, targetcli->share);
 	return 0;
 }
 
@@ -2827,9 +2865,8 @@ static struct
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
   {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
-  {"addconnect",cmd_add_connect,"add a connection to a new //server/share",{COMPL_NONE,COMPL_NONE}},
   {"listconnect",cmd_list_connect,"list open connections",{COMPL_NONE,COMPL_NONE}},
-  {"setconnect",cmd_set_connect,"set the current active connection",{COMPL_NONE,COMPL_NONE}},
+  {"showconnect",cmd_show_connect,"display the current active connection",{COMPL_NONE,COMPL_NONE}},
   
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
@@ -2904,7 +2941,7 @@ static int process_command_string(char *cmd)
 	/* establish the connection if not already */
 	
 	if (!cli) {
-		cli = add_new_connection(desthost, service);
+		cli = cli_cm_connect(desthost, service, True);
 		if (!cli)
 			return 0;
 	}
@@ -3220,7 +3257,7 @@ static int process(char *base_directory)
 {
 	int rc = 0;
 
-	cli = add_new_connection(desthost, service);
+	cli = cli_cm_connect(desthost, service, True);
 	if (!cli) {
 		return 1;
 	}
@@ -3243,7 +3280,7 @@ static int process(char *base_directory)
 
 static int do_host_query(char *query_host)
 {
-	cli = add_new_connection(query_host, "IPC$");
+	cli = cli_cm_connect(query_host, "IPC$", True);
 	if (!cli)
 		return 1;
 
@@ -3256,7 +3293,7 @@ static int do_host_query(char *query_host)
 
 		cli_shutdown(cli);
 		port = 139;
-		cli = add_new_connection(query_host, "IPC$");
+		cli = cli_cm_connect(query_host, "IPC$", True);
 	}
 
 	if (cli == NULL) {
@@ -3281,7 +3318,7 @@ static int do_tar_op(char *base_directory)
 
 	/* do we already have a connection? */
 	if (!cli) {
-		cli = add_new_connection(desthost, service);	
+		cli = cli_cm_connect(desthost, service, True);
 		if (!cli)
 			return 1;
 	}

@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    client RAP calls
-   Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Andrew Tridgell         1994-1998
+   Copyright (C) Gerald (Jerry) Carter   2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -641,9 +642,65 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	return True;
 }
 
+
+/****************************************************************************
+send a qpathinfo BASIC_INFO call
+****************************************************************************/
+BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name, 
+                          SMB_STRUCT_STAT *sbuf, uint32 *attributes )
+{
+	unsigned int param_len = 0;
+	unsigned int data_len = 0;
+	uint16 setup = TRANSACT2_QPATHINFO;
+	char param[sizeof(pstring)+6];
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_QUERY_FILE_BASIC_INFO);
+	p += 6;
+	p += clistr_push(cli, p, name, sizeof(pstring)-6, STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		NULL,                        /* name */
+		-1, 0,                       /* fid, flags */
+		&setup, 1, 0,                /* setup, length, max */
+		param, param_len, 2,         /* param, length, max */
+		NULL,  0, cli->max_xmit      /* data, length, max */
+		)) {
+			return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return False;
+	}
+
+	if (data_len < 36) {
+		SAFE_FREE(rdata);
+		SAFE_FREE(rparam);
+		return False;
+	}
+
+	sbuf->st_atime = interpret_long_date( rdata+8 );
+	sbuf->st_mtime = interpret_long_date( rdata+16 );
+	sbuf->st_ctime = interpret_long_date( rdata+24 );
+	
+	*attributes = IVAL( rdata, 32 );
+	
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
+	
+	return True;
+}
+
 /****************************************************************************
 send a qfileinfo call
 ****************************************************************************/
+
 BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutdata, uint32 *poutlen)
 {
 	unsigned int data_len = 0;
