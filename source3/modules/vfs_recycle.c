@@ -280,7 +280,7 @@ static BOOL recycle_create_dir(connection_struct *conn, const char *dname)
 
 	/* Create directory tree if neccessary */
 	for(token = strtok(tok_str, "/"); token; token = strtok(NULL, "/")) {
-		safe_strcat(new_dir, token, len);
+		safe_strcat(new_dir, token, len - 1);
 		if (recycle_directory_exist(conn, new_dir))
 			DEBUG(10, ("recycle.bin: dir %s already exists\n", new_dir));
 		else {
@@ -291,7 +291,7 @@ static BOOL recycle_create_dir(connection_struct *conn, const char *dname)
 				goto done;
 			}
 		}
-		safe_strcat(new_dir, "/", len);
+		safe_strcat(new_dir, "/", len - 1);
 		}
 
 	ret = True;
@@ -463,11 +463,11 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	/* extract filename and path */
 	path_name = (char *)malloc(PATH_MAX);
 	ALLOC_CHECK(path_name, done);
-	safe_strcpy(path_name, file_name, PATH_MAX);
+	safe_strcpy(path_name, file_name, PATH_MAX - 1);
 	base = strrchr(path_name, '/');
 	if (base == NULL) {
 		base = file_name;
-		safe_strcpy(path_name, "/", PATH_MAX);
+		safe_strcpy(path_name, "/", PATH_MAX - 1);
 	}
 	else {
 		*base = '\0';
@@ -496,12 +496,12 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 
 	temp_name = (char *)malloc(PATH_MAX);
 	ALLOC_CHECK(temp_name, done);
-	safe_strcpy(temp_name, recbin->repository, PATH_MAX);
+	safe_strcpy(temp_name, recbin->repository, PATH_MAX -1 );
 
 	/* see if we need to recreate the original directory structure in the recycle bin */
 	if (recbin->keep_dir_tree == True) {
-		safe_strcat(temp_name, "/", PATH_MAX);
-		safe_strcat(temp_name, path_name, PATH_MAX);
+		safe_strcat(temp_name, "/", PATH_MAX -1 );
+		safe_strcat(temp_name, path_name, PATH_MAX - 1);
 	}
 
 	exist = recycle_directory_exist(conn, temp_name);
