@@ -438,7 +438,7 @@
  */
 
 #ifndef SMB_INO_T
-#  ifdef HAVE_INO64_T
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)
 #    define SMB_INO_T ino64_t
 #  else
 #    define SMB_INO_T ino_t
@@ -446,7 +446,7 @@
 #endif
 
 #ifndef LARGE_SMB_INO_T
-#  if defined(HAVE_INO64_T) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
+#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
 #    define LARGE_SMB_INO_T 1
 #  endif
 #endif
@@ -458,7 +458,7 @@
 #endif
 
 #ifndef SMB_OFF_T
-#  ifdef HAVE_OFF64_T
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)
 #    define SMB_OFF_T off64_t
 #  else
 #    define SMB_OFF_T off_t
@@ -473,7 +473,7 @@
  */
 
 #ifndef LARGE_SMB_OFF_T
-#  if defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
+#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
 #    define LARGE_SMB_OFF_T 1
 #  endif
 #endif
@@ -489,7 +489,7 @@
  */
 
 #ifndef SMB_STRUCT_STAT
-#  if defined(HAVE_STAT64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STAT64) && defined(HAVE_OFF64_T)
 #    define SMB_STRUCT_STAT struct stat64
 #  else
 #    define SMB_STRUCT_STAT struct stat
@@ -501,7 +501,7 @@
  */
 
 #ifndef SMB_STRUCT_DIRENT
-#  if defined(HAVE_STRUCT_DIRENT64)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIRENT64)
 #    define SMB_STRUCT_DIRENT struct dirent64
 #  else
 #    define SMB_STRUCT_DIRENT struct dirent
@@ -513,7 +513,7 @@
  */
 
 #ifndef SMB_STRUCT_FLOCK
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_STRUCT_FLOCK struct flock64
 #  else
 #    define SMB_STRUCT_FLOCK struct flock
@@ -521,7 +521,7 @@
 #endif
 
 #ifndef SMB_F_SETLKW
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_F_SETLKW F_SETLKW64
 #  else
 #    define SMB_F_SETLKW F_SETLKW
@@ -529,7 +529,7 @@
 #endif
 
 #ifndef SMB_F_SETLK
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_F_SETLK F_SETLK64
 #  else
 #    define SMB_F_SETLK F_SETLK
@@ -537,7 +537,7 @@
 #endif
 
 #ifndef SMB_F_GETLK
-#  if defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
 #    define SMB_F_GETLK F_GETLK64
 #  else
 #    define SMB_F_GETLK F_GETLK

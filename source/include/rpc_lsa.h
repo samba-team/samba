@@ -51,7 +51,7 @@ enum SID_NAME_USE
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
 
-#define LSA_MAX_GROUPS 32
+#define LSA_MAX_GROUPS 96
 #define LSA_MAX_SIDS 32
 
 /* DOM_QUERY - info class 3 and 5 LSA Query response */

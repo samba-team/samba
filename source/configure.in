@@ -56,12 +56,14 @@ case "$host_os" in
         CPPFLAGS="$CPPFLAGS -Ae"
       fi
 #
-# Defines needed for HPUX large file support..
+# Defines needed for HPUX support.
 #
       case `uname -r` in
-			*10*|*11*)
-        		AC_MSG_RESULT([enabling large file support])
-				CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
+			*9*|*10*)
+				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE"
+				;;
+			*11*)
+				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_LARGEFILE64_SOURCE"
 				;;
       esac
       ;;
@@ -1456,6 +1458,31 @@ if test $space = no; then
     space=yes
     AC_DEFINE(STAT_STATFS2_FS_DATA)
   fi
+fi
+
+#
+# As a gating factor for large file support, in order to
+# use <4GB files we must have the following minimal support
+# available.
+# long long, a 64 bit off_t or off64_t, a 64 bit ino_t or
+# ino64_t. If we don't have all of these then disable large
+# file support.
+#
+echo "checking if large file support can be enabled"
+AC_TRY_COMPILE([
+#if defined(HAVE_LONGLONG) && (defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))) && (defined(HAVE_INO64_T) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8)))
+#include <sys/types.h>
+#else
+__COMPILE_ERROR_
+#endif
+],
+[int i],
+samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=yes,samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=no)
+if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
+    echo "yes"
+    AC_DEFINE(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
+else
+    echo "no"
 fi
 
 echo "checking configure summary"
