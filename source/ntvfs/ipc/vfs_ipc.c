@@ -388,7 +388,7 @@ static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	status = dcesrv_output(p->dce_conn, &data);
+	status = dcesrv_output_blob(p->dce_conn, &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -611,7 +611,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *t
 	  async calls. Again, we only expect NT_STATUS_OK. If the call fails then
 	  the error is encoded at the dcerpc level
 	*/
-	status = dcesrv_output(p->dce_conn, &trans->out.data);
+	status = dcesrv_output_blob(p->dce_conn, &trans->out.data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

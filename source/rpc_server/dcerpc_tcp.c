@@ -54,6 +54,21 @@ static void terminate_rpc_session(struct rpc_server_context *r, const char *reas
 	r->model_ops->terminate_rpc_connection(r, reason);
 }
 
+
+/*
+  write_fn callback for dcesrv_output()
+*/
+static ssize_t dcerpc_write_fn(void *private, const void *buf, size_t count)
+{
+	struct fd_event *fde = private;
+	ssize_t ret;
+	ret = write(fde->fd, buf, count);
+	if (ret == -1 && errno == EINTR) {
+		return 0;
+	}
+	return ret;
+}
+
 /*
   called when a RPC socket becomes writable
 */
@@ -61,26 +76,16 @@ static void dcerpc_write_handler(struct event_context *ev, struct fd_event *fde,
 				 time_t t, uint16 flags)
 {
 	struct rpc_server_context *r = fde->private;
-	DATA_BLOB blob;
 	NTSTATUS status;
 
-	blob = data_blob(NULL, 0x4000);
-	if (!blob.data) {
-		terminate_rpc_session(r, "out of memory");
-		return;
-	}
-
-	status = dcesrv_output(r->dce_conn, &blob);
-
-	if (NT_STATUS_IS_OK(status)) {
-		write_data(fde->fd, blob.data, blob.length);
+	status = dcesrv_output(r->dce_conn, fde, dcerpc_write_fn);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* TODO: destroy fd_event? */
 	}
 
 	if (!r->dce_conn->call_list || !r->dce_conn->call_list->replies) {
 		fde->flags &= ~EVENT_FD_WRITE;
 	}
-
-	data_blob_free(&blob);
 }
 
 /*
