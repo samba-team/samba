@@ -1,6 +1,13 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha5
+
+- added "net time" command (tridge)
+- allow client tools to specify a hostname of form HOST#xx (tridge)
+- added wbinfo --set-auth-user (tpot)
+- added lsaquerysecobj to rpcclient (tpot)
+
 Changes in alpha4
 
 - fixed nexus/win9x user list (jfm)
