@@ -376,13 +376,13 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.46 NAME 'sambaStringListOption'
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
 
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.50 NAME 'sambaPrivName' 
-	SUP name )
+##attributetype ( 1.3.6.1.4.1.7165.2.1.50 NAME 'sambaPrivName' 
+##	SUP name )
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.52 NAME 'sambaPrivilegeList'
-	DESC 'Privileges List'
-	EQUALITY caseIgnoreIA5Match
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} )
+##attributetype ( 1.3.6.1.4.1.7165.2.1.52 NAME 'sambaPrivilegeList'
+##	DESC 'Privileges List'
+##	EQUALITY caseIgnoreIA5Match
+##	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} )
 
 attributetype ( 1.3.6.1.4.1.7165.2.1.53 NAME 'sambaTrustFlags'
 	DESC 'Trust Password Flags'
@@ -483,10 +483,11 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.12 NAME 'sambaConfigOption' SUP top STRUCTURA
 	      sambaStringListoption $ description ) )
 
 
-objectclass ( 1.3.6.1.4.1.7165.2.2.13 NAME 'sambaPrivilege' SUP top AUXILIARY
-	DESC 'Samba Privilege'
-	MUST ( sambaSID )
-	MAY ( sambaPrivilegeList ) )
+## retired during privilege rewrite
+##objectclass ( 1.3.6.1.4.1.7165.2.2.13 NAME 'sambaPrivilege' SUP top AUXILIARY
+##	DESC 'Samba Privilege'
+##	MUST ( sambaSID )
+##	MAY ( sambaPrivilegeList ) )
 
 objectclass ( 1.3.6.1.4.1.7165.2.2.15 NAME 'sambaAccountPolicy' SUP top STRUCTURAL
 	DESC 'Samba Account Policy'
