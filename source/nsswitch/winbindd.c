@@ -57,6 +57,57 @@ static BOOL reload_services_file(BOOL test)
 	return(ret);
 }
 
+#if DUMP_CORE
+
+/**************************************************************************** **
+ Prepare to dump a core file - carefully!
+ **************************************************************************** */
+
+static BOOL dump_core(void)
+{
+	char *p;
+	pstring dname;
+	pstrcpy( dname, debugf );
+	if ((p=strrchr(dname,'/')))
+		*p=0;
+	pstrcat( dname, "/corefiles" );
+	mkdir( dname, 0700 );
+	sys_chown( dname, getuid(), getgid() );
+	chmod( dname, 0700 );
+	if ( chdir(dname) )
+		return( False );
+	umask( ~(0700) );
+ 
+#ifdef HAVE_GETRLIMIT
+#ifdef RLIMIT_CORE
+	{
+		struct rlimit rlp;
+		getrlimit( RLIMIT_CORE, &rlp );
+		rlp.rlim_cur = MAX( 4*1024*1024, rlp.rlim_cur );
+		setrlimit( RLIMIT_CORE, &rlp );
+		getrlimit( RLIMIT_CORE, &rlp );
+		DEBUG( 3, ( "Core limits now %d %d\n", (int)rlp.rlim_cur, (int)rlp.rlim_max ) );
+	}
+#endif
+#endif
+ 
+	DEBUG(0,("Dumping core in %s\n",dname));
+	abort();
+	return( True );
+} /* dump_core */
+#endif
+
+/**************************************************************************** **
+ Handle a fault..
+ **************************************************************************** */
+
+static void fault_quit(void)
+{
+#if DUMP_CORE
+	dump_core();
+#endif
+}
+
 static void winbindd_status(void)
 {
 	struct winbindd_cli_state *tmp;
@@ -685,7 +736,14 @@ int main(int argc, char **argv)
 
  	CatchSignal(SIGUSR1, SIG_IGN);
 
+	TimeInit();
+
 	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
+	setup_logging("winbindd", interactive);
+
+	charset_initialise(); /* For *&#^%'s sake don't remove this */
+
+	fault_setup((void (*)(void *))fault_quit );
 
 	/* Initialise for running in non-root mode */
 
@@ -725,9 +783,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	setup_logging("winbindd", interactive);
-	reopen_logs();
-
 	if (!*global_myname) {
 		char *p;
 
@@ -737,13 +792,17 @@ int main(int argc, char **argv)
 			*p = 0;
 	}
 
-	TimeInit();
-	charset_initialise(); /* For *&#^%'s sake don't remove this */
+	reopen_logs();
+
+	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
+	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );
 
 	if (!reload_services_file(False)) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}
+
+	codepage_initialise(lp_client_code_page());
 
 	if (new_debuglevel != -1)
 		DEBUGLEVEL = new_debuglevel;

@@ -77,6 +77,3 @@ void fault_setup(void (*fn)(void *))
 	CatchSignal(SIGBUS,SIGNAL_CAST sig_fault);
 #endif
 }
-
-
-
