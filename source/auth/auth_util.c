@@ -239,11 +239,12 @@ NTSTATUS make_user_info_netlogon_interactive(struct auth_usersupplied_info **use
 NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info, 
                                       const char *smb_name,
                                       const char *client_domain, 
+				      const char *remote_machine,
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
 	return make_user_info_map(user_info, smb_name, 
 				  client_domain, 
-				  sub_get_remote_machine(), 
+				  remote_machine,
 				  lm_resp.data ? &lm_resp : NULL, 
 				  nt_resp.data ? &nt_resp : NULL, 
 				  NULL, NULL, NULL,
