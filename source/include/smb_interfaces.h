@@ -1696,7 +1696,7 @@ struct smb_notify {
 
 enum smb_search_level {RAW_SEARCH_GENERIC                 = 0xF000, 
 		   RAW_SEARCH_SEARCH,                 /* SMBsearch */ 
-		   RAW_SEARCH_FCLOSE,				  /* SMBfclose */
+		   RAW_SEARCH_FCLOSE,		      /* SMBfclose */
 		   RAW_SEARCH_STANDARD                = SMB_FIND_STANDARD,
 		   RAW_SEARCH_EA_SIZE                 = SMB_FIND_EA_SIZE,
 		   RAW_SEARCH_DIRECTORY_INFO          = SMB_FIND_DIRECTORY_INFO,
