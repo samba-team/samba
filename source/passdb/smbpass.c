@@ -25,7 +25,6 @@ extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 
-static char s_readbuf[1024];
 static int pw_file_lock_depth;
 
 enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
@@ -66,13 +65,13 @@ static void *startsmbfilepwent_internal(const char *pfile, enum pwf_access_type 
       int i, fd = -1;
 
       for(i = 0; i < 5; i++) {
-	if((fd = sys_open(pfile, O_CREAT|O_TRUNC|O_EXCL|O_RDWR, 0600))!=-1)
-	  break;
-	sys_usleep(200); /* Spin, spin... */
+        if((fd = sys_open(pfile, O_CREAT|O_TRUNC|O_EXCL|O_RDWR, 0600))!=-1)
+          break;
+        sys_usleep(200); /* Spin, spin... */
       }
       if(fd == -1) {
-	DEBUG(0,("startsmbfilepwent_internal: too many race conditions creating file %s\n", pfile));
-	return NULL;
+        DEBUG(0,("startsmbfilepwent_internal: too many race conditions creating file %s\n", pfile));
+        return NULL;
       }
       close(fd);
       open_mode = "r+b";
@@ -114,22 +113,22 @@ static void *startsmbfilepwent_internal(const char *pfile, enum pwf_access_type 
        */
 
       if (sys_stat(pfile,&sbuf1) != 0) {
-	DEBUG(0, ("startsmbfilepwent_internal: unable to stat file %s. Error was %s\n", pfile, strerror(errno)));
-	pw_file_unlock(fileno(fp), lock_depth);
-	fclose(fp);
-	return False;
+        DEBUG(0, ("startsmbfilepwent_internal: unable to stat file %s. Error was %s\n", pfile, strerror(errno)));
+        pw_file_unlock(fileno(fp), lock_depth);
+        fclose(fp);
+        return False;
       }
 
       if (sys_fstat(fileno(fp),&sbuf2) != 0) {
-	DEBUG(0, ("startsmbfilepwent_internal: unable to fstat file %s. Error was %s\n", pfile, strerror(errno)));
-	pw_file_unlock(fileno(fp), lock_depth);
-	fclose(fp);
-	return False;
+        DEBUG(0, ("startsmbfilepwent_internal: unable to fstat file %s. Error was %s\n", pfile, strerror(errno)));
+        pw_file_unlock(fileno(fp), lock_depth);
+        fclose(fp);
+        return False;
       }
 
       if( sbuf1.st_ino == sbuf2.st_ino) {
-	/* No race. */
-	break;
+        /* No race. */
+        break;
       }
 
       /*
@@ -147,7 +146,7 @@ static void *startsmbfilepwent_internal(const char *pfile, enum pwf_access_type 
   }
 
   /* Set a buffer to do more efficient reads */
-  setvbuf(fp, s_readbuf, _IOFBF, sizeof(s_readbuf));
+  setvbuf(fp, (char *)NULL, _IOLBF, 0);
 
   /* Make sure it is only rw by the owner */
   chmod(pfile, 0600);
@@ -368,6 +367,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 
     if (*p == '[')
 	{
+      unsigned char *end_p = (unsigned char *)strchr((char *)p, ']');
       pw_buf.acct_ctrl = pdb_decode_acct_ctrl((char*)p);
 
       /* Must have some account type set. */
@@ -375,8 +375,8 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
         pw_buf.acct_ctrl = ACB_NORMAL;
 
       /* Now try and get the last change time. */
-      if(*p == ']')
-        p++;
+      if(end_p)
+        p = end_p + 1;
       if(*p == ':') {
         p++;
         if(*p && (StrnCaseCmp((char *)p, "LCT-", 4)==0)) {
@@ -594,7 +594,8 @@ char *format_new_smbpasswd_entry(struct smb_passwd *newpwd)
 
   /* Add the account encoding and the last change time. */
   slprintf((char *)p, new_entry_length - 1 - (p - new_entry),  "%s:LCT-%08X:\n",
-           pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN), (uint32)time(NULL));
+           pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN),
+           (uint32)newpwd->pass_last_set_time);
 
   return new_entry;
 }
