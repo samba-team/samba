@@ -764,3 +764,18 @@ BUGS:
      trans2 and other calls
   handle servers that don't have the setattre call in torture
   add max file coponent length test and max path len test
+
+case-insenstive idea:
+  all filenames on disk lowercase
+  real case in extended attribute
+  keep cache of what dirs are all lowercase
+  when searching for name, don't search if dir is definately all lowercase
+  when creating file, use dnotify to tell if someone else creates at
+  same time
+
+solve del *.* idea:
+  make mangle cache dynamic size
+  fill during a dir scan
+  setup a timer
+  destroy cache after 30 sec
+  destroy if a 2nd dir scan happens on same dir
