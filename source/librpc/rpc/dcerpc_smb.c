@@ -65,14 +65,8 @@ static void smb_read_callback(struct smbcli_request *req)
 	smb = state->p->transport.private;
 	io = state->io;
 
-	if (!NT_STATUS_IS_OK(req->status)) {
-		pipe_dead(state->p, req->status);
-		talloc_free(state);
-		return;
-	}
-
 	status = smb_raw_read_recv(state->req, io);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		pipe_dead(state->p, status);
 		talloc_free(state);
 		return;
@@ -89,6 +83,7 @@ static void smb_read_callback(struct smbcli_request *req)
 	}
 
 	frag_length = dcerpc_get_frag_length(&state->data);
+
 	if (frag_length <= state->received) {
 		state->data.length = state->received;
 		state->p->transport.recv_data(state->p, &state->data, NT_STATUS_OK);
@@ -99,25 +94,27 @@ static void smb_read_callback(struct smbcli_request *req)
 	/* initiate another read request, as we only got part of a fragment */
 	state->data.data = talloc_realloc(state->data.data, frag_length);
 
-	io->readx.in.mincnt = frag_length - state->received;
+	io->readx.in.mincnt = MIN(state->p->srv_max_xmit_frag, 
+				  frag_length - state->received);
 	io->readx.in.maxcnt = io->readx.in.mincnt;
 	io->readx.out.data = state->data.data + state->received;
 
-	req = smb_raw_read_send(smb->tree, io);
-	if (req == NULL) {
+	state->req = smb_raw_read_send(smb->tree, io);
+	if (state->req == NULL) {
 		pipe_dead(state->p, NT_STATUS_NO_MEMORY);
 		talloc_free(state);
 		return;
 	}
 
-	req->async.fn = smb_read_callback;
-	req->async.private = state;
+	state->req->async.fn = smb_read_callback;
+	state->req->async.private = state;
 }
 
 /*
-  trigger a read request from the server
+  trigger a read request from the server, possibly with some initial
+  data in the read buffer
 */
-static NTSTATUS send_read_request(struct dcerpc_pipe *p)
+static NTSTATUS send_read_request_continue(struct dcerpc_pipe *p, DATA_BLOB *blob)
 {
 	struct smb_private *smb = p->transport.private;
 	union smb_read *io;
@@ -130,18 +127,31 @@ static NTSTATUS send_read_request(struct dcerpc_pipe *p)
 	}
 
 	state->p = p;
-	state->received = 0;
-	state->data = data_blob_talloc(state, NULL, 0x2000);
+	if (blob == NULL) {
+		state->received = 0;
+		state->data = data_blob_talloc(state, NULL, 0x2000);
+	} else {
+		uint32_t frag_length = blob->length>=16?
+			dcerpc_get_frag_length(blob):0x2000;
+		state->received = blob->length;
+		state->data = data_blob_talloc(state, NULL, frag_length);
+		if (!state->data.data) {
+			talloc_free(state);
+			return NT_STATUS_NO_MEMORY;
+		}
+		memcpy(state->data.data, blob->data, blob->length);
+	}
+
 	state->io = talloc_p(state, union smb_read);
 
 	io = state->io;
 	io->generic.level = RAW_READ_READX;
 	io->readx.in.fnum = smb->fnum;
-	io->readx.in.mincnt = state->data.length;
-	io->readx.in.maxcnt = state->data.length;
+	io->readx.in.mincnt = state->data.length - state->received;
+	io->readx.in.maxcnt = io->readx.in.mincnt;
 	io->readx.in.offset = 0;
 	io->readx.in.remaining = 0;
-	io->readx.out.data = state->data.data;
+	io->readx.out.data = state->data.data + state->received;
 	req = smb_raw_read_send(smb->tree, io);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -155,6 +165,96 @@ static NTSTATUS send_read_request(struct dcerpc_pipe *p)
 	return NT_STATUS_OK;
 }
 
+
+/*
+  trigger a read request from the server
+*/
+static NTSTATUS send_read_request(struct dcerpc_pipe *p)
+{
+	return send_read_request_continue(p, NULL);
+}
+
+/* 
+   this holds the state of an in-flight trans call
+*/
+struct smb_trans_state {
+	struct dcerpc_pipe *p;
+	struct smbcli_request *req;
+	struct smb_trans2 *trans;
+};
+
+/*
+  called when a trans request has completed
+*/
+static void smb_trans_callback(struct smbcli_request *req)
+{
+	struct smb_trans_state *state = req->async.private;
+	struct dcerpc_pipe *p = state->p;
+	NTSTATUS status;
+
+	status = smb_raw_trans_recv(req, state, state->trans);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		pipe_dead(p, status);
+		return;
+	}
+
+	if (!NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+		p->transport.recv_data(p, &state->trans->out.data, NT_STATUS_OK);
+		talloc_free(state);
+		return;
+	}
+
+	/* there is more to receive - setup a readx */
+	send_read_request_continue(p, &state->trans->out.data);
+	talloc_free(state);
+}
+
+/*
+  send a SMBtrans style request
+*/
+static NTSTATUS smb_send_trans_request(struct dcerpc_pipe *p, DATA_BLOB *blob)
+{
+        struct smb_private *smb = p->transport.private;
+        struct smb_trans2 *trans;
+        uint16 setup[2];
+	struct smb_trans_state *state;
+
+	state = talloc_p(smb, struct smb_trans_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->p = p;
+	state->trans = talloc_p(state, struct smb_trans2);
+	trans = state->trans;
+
+        trans->in.data = *blob;
+        trans->in.params = data_blob(NULL, 0);
+        
+        setup[0] = TRANSACT_DCERPCCMD;
+        setup[1] = smb->fnum;
+
+        trans->in.max_param = 0;
+        trans->in.max_data = 0x8000;
+        trans->in.max_setup = 0;
+        trans->in.setup_count = 2;
+        trans->in.flags = 0;
+        trans->in.timeout = 0;
+        trans->in.setup = setup;
+        trans->in.trans_name = "\\PIPE\\";
+
+        state->req = smb_raw_trans_send(smb->tree, trans);
+	if (state->req == NULL) {
+		talloc_free(state);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->req->async.fn = smb_trans_callback;
+	state->req->async.private = state;
+
+        return NT_STATUS_OK;
+}
 
 /*
   called when a write request has completed
@@ -174,11 +274,15 @@ static void smb_write_callback(struct smbcli_request *req)
 /* 
    send a packet to the server
 */
-static NTSTATUS smb_send_request(struct dcerpc_pipe *p, DATA_BLOB *blob)
+static NTSTATUS smb_send_request(struct dcerpc_pipe *p, DATA_BLOB *blob, BOOL trigger_read)
 {
 	struct smb_private *smb = p->transport.private;
 	union smb_write io;
 	struct smbcli_request *req;
+
+	if (trigger_read) {
+		return smb_send_trans_request(p, blob);
+	}
 
 	io.generic.level = RAW_WRITE_WRITEX;
 	io.writex.in.fnum = smb->fnum;
@@ -195,6 +299,10 @@ static NTSTATUS smb_send_request(struct dcerpc_pipe *p, DATA_BLOB *blob)
 
 	req->async.fn = smb_write_callback;
 	req->async.private = p;
+
+	if (trigger_read) {
+		send_read_request(p);
+	}
 
 	return NT_STATUS_OK;
 }

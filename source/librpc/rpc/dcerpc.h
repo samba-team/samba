@@ -52,7 +52,7 @@ struct dcerpc_pipe {
 		const char *(*peer_name)(struct dcerpc_pipe *);
 
 		/* send a request to the server */
-		NTSTATUS (*send_request)(struct dcerpc_pipe *, DATA_BLOB *);
+		NTSTATUS (*send_request)(struct dcerpc_pipe *, DATA_BLOB *, BOOL trigger_read);
 
 		/* send a read request to the server */
 		NTSTATUS (*send_read)(struct dcerpc_pipe *);

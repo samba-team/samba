@@ -352,7 +352,7 @@ static void full_request_recv(struct dcerpc_pipe *p, DATA_BLOB *blob,
 }
 
 /*
-  perform a synchronous request - used for the bind code
+  perform a single pdu synchronous request - used for the bind code
   this cannot be mixed with normal async requests
 */
 static NTSTATUS full_request(struct dcerpc_pipe *p, 
@@ -373,12 +373,10 @@ static NTSTATUS full_request(struct dcerpc_pipe *p,
 	p->transport.recv_data = full_request_recv;
 	p->full_request_private = state;
 
-	status = p->transport.send_request(p, request_blob);
+	status = p->transport.send_request(p, request_blob, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	p->transport.send_read(p);
 
 	while (NT_STATUS_IS_OK(state->status) && state->reply_blob) {
 		struct event_context *ctx = p->transport.event_context(p);
@@ -563,7 +561,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	}
 
 	/* send it on its way */
-	status = p->transport.send_request(p, &blob);
+	status = p->transport.send_request(p, &blob, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -757,7 +755,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 			return req;
 		}
 		
-		req->status = p->transport.send_request(p, &blob);
+		req->status = p->transport.send_request(p, &blob, False);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
 			return req;
@@ -783,16 +781,14 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 		return req;
 	}
 
-	/* send the pdu */
-	req->status = p->transport.send_request(p, &blob);
+	/* send the final pdu */
+	req->status = p->transport.send_request(p, &blob, True);
 
 	if (!NT_STATUS_IS_OK(req->status)) {
 		req->state = RPC_REQUEST_DONE;
 	}
 
 	DLIST_ADD(p->pending, req);
-
-	p->transport.send_read(p);
 
 	return req;
 }

@@ -199,10 +199,23 @@ static void tcp_io_handler(struct event_context *ev, struct fd_event *fde,
 }
 
 /* 
+   initiate a read request 
+*/
+static NTSTATUS tcp_send_read(struct dcerpc_pipe *p)
+{
+	struct tcp_private *tcp = p->transport.private;
+
+	tcp->recv.pending_count++;
+	if (tcp->recv.pending_count == 1) {
+		tcp->fde->flags |= EVENT_FD_READ;
+	}
+	return NT_STATUS_OK;
+}
+
+/* 
    send an initial pdu in a multi-pdu sequence
 */
-static NTSTATUS tcp_send_request(struct dcerpc_pipe *p, 
-				 DATA_BLOB *data)
+static NTSTATUS tcp_send_request(struct dcerpc_pipe *p, DATA_BLOB *data, BOOL trigger_read)
 {
 	struct tcp_private *tcp = p->transport.private;
 	struct tcp_blob *blob;
@@ -222,20 +235,10 @@ static NTSTATUS tcp_send_request(struct dcerpc_pipe *p,
 
 	tcp->fde->flags |= EVENT_FD_WRITE;
 
-	return NT_STATUS_OK;
-}
-
-/* 
-   initiate a read request 
-*/
-static NTSTATUS tcp_send_read(struct dcerpc_pipe *p)
-{
-	struct tcp_private *tcp = p->transport.private;
-
-	tcp->recv.pending_count++;
-	if (tcp->recv.pending_count == 1) {
-		tcp->fde->flags |= EVENT_FD_READ;
+	if (trigger_read) {
+		tcp_send_read(p);
 	}
+
 	return NT_STATUS_OK;
 }
 
