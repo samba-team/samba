@@ -32,6 +32,14 @@ ADD_OBJ_FILES = \
 # End SUBSYSTEM LIBCRYPTO
 ##############################
 
+################################################
+# Start SUBSYSTEM LIBCOMPRESSION
+[SUBSYSTEM::LIBCOMPRESSION]
+INIT_OBJ_FILES = \
+		lib/compression/mszip.o
+# End SUBSYSTEM LIBCOMPRESION
+################################################
+
 ##############################
 # Start SUBSYSTEM SOCKET_WRAPPER
 [SUBSYSTEM::SOCKET_WRAPPER]

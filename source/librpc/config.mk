@@ -7,7 +7,7 @@ ADD_OBJ_FILES = \
 		librpc/ndr/ndr_basic.o \
 		librpc/ndr/ndr_compression.o \
 		librpc/ndr/ndr_misc.o
-REQUIRED_SUBSYSTEMS = LIBCLI_UTILS EXT_LIB_ZLIB
+REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBCOMPRESSION
 # End SUBSYSTEM LIBNDR_RAW
 ################################################
 
