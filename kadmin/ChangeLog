@@ -1,5 +1,7 @@
 2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
 
+	* version4.c: change log strings to match the v5 counterparts
+
 	* mod.c: allow setting kvno
 
 	* kadmind.c: if stdin is not a socket create and listen to sockets

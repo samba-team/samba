@@ -1,3 +1,39 @@
+2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ipropd_slave.c: no need to call gethostname, since
+	sname_to_principal will
+
+	* send_recv.c: assert that we have a connected socket
+
+	* get_princs_c.c: call _kadm5_connect
+
+	* rename_c.c: call _kadm5_connect
+
+	* randkey_c.c: call _kadm5_connect
+
+	* privs_c.c: call _kadm5_connect
+
+	* modify_c.c: call _kadm5_connect
+
+	* get_c.c: call _kadm5_connect
+
+	* delete_c.c: call _kadm5_connect
+
+	* create_c.c: call _kadm5_connect
+
+	* chpass_c.c: call _kadm5_connect
+
+	* private.h: add more fields to client context; remove prototypes
+
+	* admin.h: remove prototypes
+
+	* kadm5-protos.h: move public prototypes here
+
+	* kadm5-private.h: move private prototypes here
+
+	* init_c.c: break out connection code to separate function, and
+	defer calling it until we actually do something
+
 2000-07-07  Assar Westerlund  <assar@sics.se>
 
 	* set_keys.c (make_keys): also support `[kadmin]use_v4_salt' for

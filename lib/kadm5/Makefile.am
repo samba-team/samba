@@ -12,7 +12,8 @@ libexec_PROGRAMS = ipropd-master ipropd-slave
 kadm5includedir = $(includedir)/kadm5
 buildkadm5include = $(buildinclude)/kadm5
 
-kadm5include_HEADERS = kadm5_err.h admin.h private.h
+kadm5include_HEADERS = kadm5_err.h admin.h private.h \
+	kadm5-protos.h kadm5-private.h
 
 install-build-headers:: $(kadm5include_HEADERS)
 	@foo='$(kadm5include_HEADERS)'; \
