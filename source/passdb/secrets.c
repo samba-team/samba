@@ -71,11 +71,11 @@ static void *secrets_fetch(const char *key, size_t *size)
  Routine to fetch the plaintext machine account password for a realm
 the password is assumed to be a null terminated ascii string
 ************************************************************************/
-char *secrets_fetch_machine_password(void)
+char *secrets_fetch_machine_password(const char *domain)
 {
 	char *key;
 	char *ret;
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, lp_workgroup());
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
 	strupper(key);
 	ret = (char *)secrets_fetch(key, NULL);
 	free(key);

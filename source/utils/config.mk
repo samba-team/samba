@@ -12,3 +12,17 @@ REQUIRED_SUBSYSTEMS = \
 		LIBSMB
 # End BINARY ndrdump
 #################################
+
+#################################
+# Start BINARY ntlm_auth
+[BINARY::ntlm_auth]
+OBJ_FILES = \
+		utils/ntlm_auth.o
+REQUIRED_SUBSYSTEMS = \
+		CONFIG \
+		LIBCMDLINE \
+		LIBBASIC \
+		LIBSMB \
+		LIBRPC
+# End BINARY ntlm_auth
+#################################

@@ -219,6 +219,11 @@ BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 /* read from a ASN1 buffer, advancing the buffer pointer */
 BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 {
+	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len) {
+		data->has_error = True;
+		return False;
+	}
+
 	if (data->ofs + len > data->length) {
 		data->has_error = True;
 		return False;
@@ -315,17 +320,17 @@ int asn1_tag_remaining(ASN1_DATA *data)
 BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 {
 	uint8_t b;
-	pstring aoid;
-	fstring el;
+	char *oid = NULL;
+	TALLOC_CTX *mem_ctx = talloc_init("asn1_read_OID");
+	if (!mem_ctx) {
+		return False;
+	}
 
 	if (!asn1_start_tag(data, ASN1_OID)) return False;
 	asn1_read_uint8(data, &b);
 
-	aoid[0] = 0;
-	snprintf(el, sizeof(el), "%u",  b/40);
-	pstrcat(aoid, el);
-	snprintf(el, sizeof(el), " %u",  b%40);
-	pstrcat(aoid, el);
+	oid = talloc_asprintf_append(mem_ctx, oid, "%u",  b/40);
+	oid = talloc_asprintf_append(mem_ctx, oid, " %u",  b%40);
 
 	while (asn1_tag_remaining(data) > 0) {
 		uint_t v = 0;
@@ -333,15 +338,15 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 			asn1_read_uint8(data, &b);
 			v = (v<<7) | (b&0x7f);
 		} while (!data->has_error && b & 0x80);
-		snprintf(el, sizeof(el), " %u",  v);
-		pstrcat(aoid, el);
+		oid = talloc_asprintf_append(mem_ctx, oid, " %u",  v);
 	}
 
 	asn1_end_tag(data);
 
-	*OID = strdup(aoid);
+	*OID = strdup(oid);
+	talloc_destroy(mem_ctx);
 
-	return !data->has_error;
+	return (*OID && !data->has_error);
 }
 
 /* check that the next object ID is correct */
@@ -365,6 +370,10 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 	int len;
 	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) return False;
 	len = asn1_tag_remaining(data);
+	if (len < 0) {
+		data->has_error = True;
+		return False;
+	}
 	*s = malloc(len+1);
 	if (! *s) {
 		data->has_error = True;
@@ -383,6 +392,10 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 	ZERO_STRUCTP(blob);
 	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
 	len = asn1_tag_remaining(data);
+	if (len < 0) {
+		data->has_error = True;
+		return False;
+	}
 	*blob = data_blob(NULL, len);
 	asn1_read(data, blob->data, len);
 	asn1_end_tag(data);

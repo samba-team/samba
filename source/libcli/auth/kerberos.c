@@ -54,11 +54,11 @@ kerb_prompter(krb5_context ctx, void *data,
   simulate a kinit, putting the tgt in the default cache location
   remus@snapserver.com
 */
-int kerberos_kinit_password(const char *principal, const char *password, int time_offset)
+int kerberos_kinit_password(const char *principal, const char *password, int time_offset, time_t *expire_time)
 {
-	krb5_context ctx;
+	krb5_context ctx = NULL;
 	krb5_error_code code = 0;
-	krb5_ccache cc;
+	krb5_ccache cc = NULL;
 	krb5_principal me;
 	krb5_creds my_creds;
 
@@ -102,6 +102,9 @@ int kerberos_kinit_password(const char *principal, const char *password, int tim
 		return code;
 	}
 	
+	if (expire_time)
+		*expire_time = (time_t) my_creds.times.endtime;
+
 	krb5_cc_close(ctx, cc);
 	krb5_free_cred_contents(ctx, &my_creds);
 	krb5_free_principal(ctx, me);
@@ -126,7 +129,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 		return KRB5_LIBOS_CANTREADPWD;
 	}
 	
-	ret = kerberos_kinit_password(s, ads->auth.password, ads->auth.time_offset);
+	ret = kerberos_kinit_password(s, ads->auth.password, ads->auth.time_offset, &ads->auth.expire);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
@@ -136,5 +139,37 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	return ret;
 }
 
+int ads_kdestroy(const char *cc_name)
+{
+	krb5_error_code code;
+	krb5_context ctx = NULL;
+	krb5_ccache cc = NULL;
+
+	if ((code = krb5_init_context (&ctx))) {
+		DEBUG(3, ("ads_kdestroy: kdb5_init_context rc=%d\n", code));
+		return code;
+	}
+  
+	if (!cc_name) {
+		if ((code = krb5_cc_default(ctx, &cc))) {
+			krb5_free_context(ctx);
+			return code;
+		}
+	} else {
+		if ((code = krb5_cc_resolve(ctx, cc_name, &cc))) {
+			DEBUG(3, ("ads_kdestroy: krb5_cc_resolve rc=%d\n",
+				  code));
+			krb5_free_context(ctx);
+			return code;
+		}
+	}
+
+	if ((code = krb5_cc_destroy (ctx, cc))) {
+		DEBUG(3, ("ads_kdestroy: krb5_cc_destroy rc=%d\n", code));
+	}
+
+	krb5_free_context (ctx);
+	return code;
+}
 
 #endif
