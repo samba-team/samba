@@ -190,7 +190,7 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 						-1, 0,                          /* fid, flags */
 						&setup, 1, 0,                   /* setup, length, max */
 						param, param_len, 2,            /* param, length, max */
-						&data,  data_len, cli->max_xmit /* data, length, max */
+						(char *)&data,  data_len, cli->max_xmit /* data, length, max */
 						)) {
 		return False;
 	}
