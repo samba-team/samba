@@ -51,15 +51,6 @@ usage (void)
   exit (1);
 }
 
-static void
-strlwr (char *s)
-{
-  while(*s) {
-    *s = tolower(*s);
-    s++;
-  }
-}
-
 static int
 renew (int argc, char **argv, OtpAlgorithm *alg)
 {

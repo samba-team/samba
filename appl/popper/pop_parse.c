@@ -47,7 +47,7 @@ pop_parse(POP *p, char *buf)
     if (i == 0) return (-1);
 
     /*  Convert the first token (POP command) to lower case */
-    pop_lower(p->pop_command);
+    strlwr(p->pop_command);
 
     /*  Return the number of tokens extracted minus the command itself */
     return (i-1);

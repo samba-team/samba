@@ -17,7 +17,7 @@ pop_xtnd (POP *p)
     xtnd_table  *   x;
 
     /*  Convert the XTND subcommand to lower case */
-    pop_lower(p->pop_subcommand);
+    strlwr(p->pop_subcommand);
 
     /*  Search for the subcommand in the XTND command table */
     if ((x = pop_get_subcommand(p)) == NULL) return(POP_FAILURE);
