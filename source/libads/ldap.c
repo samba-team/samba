@@ -1661,7 +1661,7 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 	}
 	if (!attr) {
 		ber_free(ptr, 0);
-		/* nothing here - this feild is just empty */
+		/* nothing here - this field is just empty */
 		*more_strings = False;
 		return NULL;
 	}
@@ -1720,7 +1720,8 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 
 	if (*more_strings) {
 		*next_attribute = talloc_asprintf(mem_ctx,
-						  "member;range=%d-*", 
+						  "%s;range=%d-*", 
+						  field,
 						  *num_strings);
 		
 		if (!*next_attribute) {
