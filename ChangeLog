@@ -1,3 +1,7 @@
+2001-07-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/mkey.c: more set_error_string
+
 2001-07-12  Assar Westerlund  <assar@sics.se>
 
 	* lib/hdb/Makefile.am (libhdb_la_LIBADD): add required library
