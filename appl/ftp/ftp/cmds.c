@@ -1233,6 +1233,7 @@ user(int argc, char **argv)
 {
 	char acct[80];
 	int n, aflag = 0;
+	char tmp[256];
 
 	if (argc < 2)
 		(void) another(&argc, &argv, "username");
@@ -1243,9 +1244,14 @@ user(int argc, char **argv)
 	}
 	n = command("USER %s", argv[1]);
 	if (n == CONTINUE) {
-		if (argc < 3 )
-			argv[2] = getpass("Password: "), argc++;
-		n = command("PASS %s", argv[2]);
+	    if (argc < 3 ) {
+		des_read_pw_string (tmp,
+				    sizeof(tmp),
+				    "Password: ", 0);
+		argv[2] = tmp;
+		argc++;
+	    }
+	    n = command("PASS %s", argv[2]);
 	}
 	if (n == CONTINUE) {
 		if (argc < 4) {
