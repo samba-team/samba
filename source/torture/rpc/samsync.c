@@ -209,7 +209,8 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 
 #define TEST_UINT64_EQUAL(i1, i2) do {\
 	if (i1 != i2) {\
-              printf("uint64 mismatch: " #i1 ": 0x%08x%08x (%lld) != " #i2 ": 0x%08x%08x (%lld)\n", \
+              printf("%s: uint64 mismatch: " #i1 ": 0x%08x%08x (%lld) != " #i2 ": 0x%08x%08x (%lld)\n", \
+		     __location__, \
 		     (uint32_t)(i1 >> 32), (uint32_t)(i1 & 0xFFFFFFFF), i1, \
                      (uint32_t)(i2 >> 32), (uint32_t)(i2 & 0xFFFFFFFF), i2);\
 	      ret = False;\
@@ -217,15 +218,15 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 } while (0)
 #define TEST_INT_EQUAL(i1, i2) do {\
 	if (i1 != i2) {\
-	      printf("integer mismatch: " #i1 ":%d != " #i2 ": %d\n", \
-		     i1, i2);\
+	      printf("%s: integer mismatch: " #i1 ":%d != " #i2 ": %d\n", \
+		     __location__, i1, i2);\
 	      ret = False;\
 	} \
 } while (0)
 #define TEST_TIME_EQUAL(t1, t2) do {\
 	if (t1 != t2) {\
-	      printf("NTTIME mismatch: " #t1 ":%s != " #t2 ": %s\n", \
-		     nt_time_string(mem_ctx, t1),  nt_time_string(mem_ctx, t2));\
+	      printf("%s: NTTIME mismatch: " #t1 ":%s != " #t2 ": %s\n", \
+		     __location__, nt_time_string(mem_ctx, t1),  nt_time_string(mem_ctx, t2));\
 	      ret = False;\
 	} \
 } while (0)
@@ -233,16 +234,16 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 #define TEST_STRING_EQUAL(s1, s2) do {\
 	if (!((!s1.string || s1.string[0]=='\0') && (!s2.string || s2.string[0]=='\0')) \
 	    && strcmp_safe(s1.string, s2.string) != 0) {\
-	      printf("string mismatch: " #s1 ":%s != " #s2 ": %s\n", \
-		     s1.string, s2.string);\
+	      printf("%s: string mismatch: " #s1 ":%s != " #s2 ": %s\n", \
+		     __location__, s1.string, s2.string);\
 	      ret = False;\
 	} \
 } while (0)
 
 #define TEST_SID_EQUAL(s1, s2) do {\
 	if (!dom_sid_equal(s1, s2)) {\
-	      printf("dom_sid mismatch: " #s1 ":%s != " #s2 ": %s\n", \
-		     dom_sid_string(mem_ctx, s1), dom_sid_string(mem_ctx, s2));\
+	      printf("%s: dom_sid mismatch: " #s1 ":%s != " #s2 ": %s\n", \
+		     __location__, dom_sid_string(mem_ctx, s1), dom_sid_string(mem_ctx, s2));\
 	      ret = False;\
 	} \
 } while (0)
