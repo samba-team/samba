@@ -420,7 +420,7 @@ static int process_root(int argc, char *argv[])
 			if((sampass != False) && (pdb_get_lanman_passwd(sampass) != NULL)) {
 				new_passwd = xstrdup("XXXX"); /* Don't care. */
 			}
-			pdb_clear_sam(sampass);
+			pdb_free_sam(sampass);
 		}
 
 		if(!new_passwd)
@@ -451,7 +451,7 @@ static int process_root(int argc, char *argv[])
 		if((ret != False) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) )
 			printf(" User has no password flag set.");
 		printf("\n");
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 	}
 
  done:

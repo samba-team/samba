@@ -105,7 +105,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 
 	if (!pdb_setsampwent(False)) {
 		DEBUG(0, ("get_sampwd_entries: Unable to open passdb.\n"));
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
 	}
 
@@ -146,7 +146,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
     }
 
 	pdb_endsampwent();
-	pdb_clear_sam(pwd);
+	pdb_free_sam(pwd);
 
 	return (*num_entries) > 0;
 }
@@ -217,7 +217,7 @@ static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 
 	*total_entries = *num_entries;
 	
-	pdb_clear_sam(pwd);
+	pdb_free_sam(pwd);
 
 	return True;
 }
@@ -1419,12 +1419,12 @@ uint32 _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_U
 
 	/* check that the RID exists in our domain. */
 	if (ret == False) {
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
         	return NT_STATUS_NO_SUCH_USER;
 	}
 
 	samr_clear_sam_passwd(sampass);
-	pdb_clear_sam(sampass);
+	pdb_free_sam(sampass);
 
 	/* Get the domain SID stored in the domain policy */
 	if(!get_lsa_policy_samr_sid(p, &domain_pol, &sid))
@@ -1470,7 +1470,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 
 	if (ret==False) {
 		DEBUG(4,("User 0x%x not found\n", user_rid));
-		pdb_clear_sam(smbpass);
+		pdb_free_sam(smbpass);
 		return False;
 	}
 
@@ -1479,7 +1479,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 	init_sam_user_info10(id10, pdb_get_acct_ctrl(smbpass) );
 
 	samr_clear_sam_passwd(smbpass);
-	pdb_clear_sam(smbpass);
+	pdb_free_sam(smbpass);
 
 	return True;
 }
@@ -1510,20 +1510,20 @@ static uint32 get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, uint32 
 
 	if (ret == False) {
 		DEBUG(4, ("User 0x%x not found\n", user_rid));
-		pdb_clear_sam(smbpass);
+		pdb_free_sam(smbpass);
 		return (geteuid() == (uid_t)0) ? NT_STATUS_NO_SUCH_USER : NT_STATUS_ACCESS_DENIED;
 	}
 
 	DEBUG(3,("User:[%s] 0x%x\n", pdb_get_username(smbpass), pdb_get_acct_ctrl(smbpass) ));
 
 	if ( pdb_get_acct_ctrl(smbpass) & ACB_DISABLED) {
-		pdb_clear_sam(smbpass);
+		pdb_free_sam(smbpass);
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
 	init_sam_user_info12(id12, pdb_get_lanman_passwd(smbpass), pdb_get_nt_passwd(smbpass));
 	
-	pdb_clear_sam(smbpass);
+	pdb_free_sam(smbpass);
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -1548,7 +1548,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 
 	if (ret == False) {
 		DEBUG(4,("User 0x%x not found\n", user_rid));
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return False;
 	}
 
@@ -1558,7 +1558,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 
 	init_sam_user_info21A(id21, sampass);
 	
-	pdb_clear_sam(sampass);
+	pdb_free_sam(sampass);
 
 	return True;
 }
@@ -1800,7 +1800,7 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
 	unbecome_root();
 	if (ret == True) {
 		/* machine account exists: say so */
-		pdb_clear_sam(sam_pass);
+		pdb_free_sam(sam_pass);
 		return NT_STATUS_USER_EXISTS;
 	}
 
@@ -1835,7 +1835,7 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
 	    sizeof(err_str), msg_str, sizeof(msg_str))) {
 		DEBUG(0, ("%s\n", err_str));
 		close_policy_hnd(p, user_pol);
-		pdb_clear_sam(sam_pass);
+		pdb_free_sam(sam_pass);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1845,27 +1845,27 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
  	if (ret == False) {
 		/* account doesn't exist: say so */
 		close_policy_hnd(p, user_pol);
-		pdb_clear_sam(sam_pass);
+		pdb_free_sam(sam_pass);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Get the domain SID stored in the domain policy */
 	if(!get_lsa_policy_samr_sid(p, &dom_pol, &sid)) {
 		close_policy_hnd(p, user_pol);
-		pdb_clear_sam(sam_pass);
+		pdb_free_sam(sam_pass);
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* append the user's RID to it */
 	if(!sid_append_rid(&sid, pdb_get_user_rid(sam_pass) )) {
 		close_policy_hnd(p, user_pol);
-		pdb_clear_sam(sam_pass);
+		pdb_free_sam(sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	/* associate the user's SID with the new handle. */
 	if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL) {
-		pdb_clear_sam(sam_pass);
+		pdb_free_sam(sam_pass);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1874,14 +1874,14 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, user_pol, free_samr_info, (void *)info)) {
-		pdb_clear_sam(sam_pass);
+		pdb_free_sam(sam_pass);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	r_u->user_rid=sam_pass->user_rid;
 	r_u->unknown_0 = 0x000703ff;
 
-	pdb_clear_sam(sam_pass);
+	pdb_free_sam(sam_pass);
 
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -2077,24 +2077,24 @@ static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
 	ret = pdb_getsampwrid(pwd, rid);
 	
 	if(ret==False) {
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
 	}
 
 	if (id10 == NULL) {
 		DEBUG(5, ("set_user_info_10: NULL id10\n"));
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
 	}
 
 	pdb_set_acct_ctrl(pwd, id10->acb_info);
 
 	if(!pdb_update_sam_account(pwd, True)) {
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
 	}
 
-	pdb_clear_sam(pwd);
+	pdb_free_sam(pwd);
 
 	return True;
 }
@@ -2111,13 +2111,13 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 	pdb_init_sam(&pwd);
 
 	if(!pdb_getsampwrid(pwd, rid)) {
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
 	}
 
 	if (id12 == NULL) {
 		DEBUG(2, ("set_user_info_12: id12 is NULL\n"));
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
 	}
  
@@ -2125,11 +2125,11 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 	pdb_set_nt_passwd     (pwd, id12->nt_pwd);
  
 	if(!pdb_update_sam_account(pwd, True)) {
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
  	}
 
-	pdb_clear_sam(pwd);
+	pdb_free_sam(pwd);
 	return True;
 }
 
@@ -2151,8 +2151,8 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 	pdb_init_sam(&new_pwd);
  
 	if (!pdb_getsampwrid(pwd, rid)) {
-		pdb_clear_sam(pwd);
-		pdb_clear_sam(new_pwd);
+		pdb_free_sam(pwd);
+		pdb_free_sam(new_pwd);
 		return False;
 	}
  
@@ -2169,13 +2169,13 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
  
 	/* write the change out */
 	if(!pdb_update_sam_account(new_pwd, True)) {
-		pdb_clear_sam(pwd);
-		pdb_clear_sam(new_pwd);
+		pdb_free_sam(pwd);
+		pdb_free_sam(new_pwd);
 		return False;
  	}
 
-	pdb_clear_sam(pwd);
-	pdb_clear_sam(new_pwd);
+	pdb_free_sam(pwd);
+	pdb_free_sam(new_pwd);
 
 	return True;
 }
@@ -2203,20 +2203,20 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	pdb_init_sam(&new_pwd);
  
 	if (pdb_getsampwrid(pwd, rid)) {
-		pdb_clear_sam(pwd);
-		pdb_clear_sam(new_pwd);
+		pdb_free_sam(pwd);
+		pdb_free_sam(new_pwd);
 		return False;
  	}
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
 	copy_sam_passwd(new_pwd, pwd);
-	pdb_clear_sam(pwd);
+	pdb_free_sam(pwd);
 	
 	copy_id23_to_sam_passwd(new_pwd, id23);
  
 	if (!decode_pw_buffer((char*)id23->pass, buf, 256, &len, nt_hash, lm_hash)) {
-		pdb_clear_sam(new_pwd);
+		pdb_free_sam(new_pwd);
 		return False;
  	}
   
@@ -2232,7 +2232,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 		/* update the UNIX password */
 		if (lp_unix_password_sync() )
 			if(!chgpasswd(pdb_get_username(new_pwd), "", buf, True)) {
-				pdb_clear_sam(new_pwd);
+				pdb_free_sam(new_pwd);
 				return False;
 			}
 	}
@@ -2240,11 +2240,11 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	memset(buf, 0, sizeof(buf));
  
 	if(!pdb_update_sam_account(new_pwd, True)) {
-		pdb_clear_sam(new_pwd);
+		pdb_free_sam(new_pwd);
 		return False;
 	}
  
-	pdb_clear_sam(new_pwd);
+	pdb_free_sam(new_pwd);
 
 	return True;
 }
@@ -2265,7 +2265,7 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
  	pdb_init_sam(&pwd);
  
 	if (!pdb_getsampwrid(pwd, rid)) {
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
  	}
 	
@@ -2274,7 +2274,7 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 	memset(buf, 0, sizeof(buf));
  
 	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len, nt_hash, lm_hash)) {
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
  	}
 
@@ -2290,7 +2290,7 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 		/* update the UNIX password */
 		if (lp_unix_password_sync())
 			if(!chgpasswd(pdb_get_username(pwd), "", buf, True)) {
-				pdb_clear_sam(pwd);
+				pdb_free_sam(pwd);
 				return False;
 			}
 	}
@@ -2301,11 +2301,11 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
  
 	/* update the SAMBA password */
 	if(!pdb_update_sam_account(pwd, True)) {
-		pdb_clear_sam(pwd);
+		pdb_free_sam(pwd);
 		return False;
  	}
 
-	pdb_clear_sam(pwd);
+	pdb_free_sam(pwd);
 
 	return True;
 }
@@ -2364,14 +2364,14 @@ uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_
 	unbecome_root();
 	if(ret == False) {
 		DEBUG(0,("_samr_set_userinfo: Unable to get smbpasswd entry for uid %u\n", (unsigned int)user.uid ));
-		pdb_clear_sam(sam_pass);
+		pdb_free_sam(sam_pass);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 		
 	memset(sess_key, '\0', 16);
 	mdfour(sess_key, pdb_get_nt_passwd(sam_pass), 16);
 
-	pdb_clear_sam(sam_pass);
+	pdb_free_sam(sam_pass);
 
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value) {

@@ -674,7 +674,6 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 char *octal_string(int i);
 char *string_truncate(char *s, int length);
-void parse_domain_user(char *domuser, fstring domain, fstring user);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
@@ -1668,6 +1667,45 @@ int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 void free_response(struct winbindd_response *response);
 
+/*The following definitions come from  nsswitch/winbindd_glue.c  */
+
+BOOL wb_lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
+		     CLI_POLICY_HND *pol);
+BOOL wb_lsa_enum_trust_dom(CLI_POLICY_HND *hnd, uint32 *enum_ctx,
+			   uint32 * num_doms, char ***names, DOM_SID **sids);
+BOOL wb_lsa_query_info_pol(CLI_POLICY_HND *hnd, uint16 info_class,
+			   fstring domain_name, DOM_SID *domain_sid);
+BOOL wb_lsa_lookup_names(CLI_POLICY_HND *hnd, int num_names, char **names,
+			 DOM_SID **sids, uint32 **types, int *num_sids);
+BOOL wb_lsa_lookup_sids(CLI_POLICY_HND *hnd, int num_sids, DOM_SID *sids,
+			char ***names, uint32 **types, int *num_names);
+BOOL wb_lsa_close(CLI_POLICY_HND *hnd);
+BOOL wb_samr_close(CLI_POLICY_HND *hnd);
+BOOL wb_samr_connect(char *srv_name, uint32 access_mask, 
+		  CLI_POLICY_HND *connect_pol);
+BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
+			 DOM_SID *sid, CLI_POLICY_HND *domain_pol);
+void wb_free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr);
+uint32 wb_samr_enum_dom_groups(CLI_POLICY_HND *pol, uint32 *start_idx, 
+			       uint32 size, struct acct_info **sam,
+			       uint32 *num_sam_groups);
+BOOL wb_get_samr_query_userinfo(CLI_POLICY_HND *pol, uint32 info_level,
+				uint32 user_rid, SAM_USERINFO_CTR *ctr);
+BOOL wb_samr_open_user(CLI_POLICY_HND *pol, uint32 access_mask, uint32 rid,
+		       POLICY_HND *user_pol);
+BOOL wb_samr_query_usergroups(CLI_POLICY_HND *pol, uint32 *num_groups,
+			      DOM_GID **gid);
+BOOL wb_get_samr_query_groupinfo(CLI_POLICY_HND *pol, uint32 info_level,
+			      uint32 group_rid, GROUP_INFO_CTR *ctr);
+BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
+			   uint32 *num_names, uint32 **rid_mem, 
+			   char ***names, uint32 **name_types);
+BOOL wb_samr_query_dom_info(CLI_POLICY_HND *pol, uint16 switch_value,
+			    SAM_UNK_CTR *ctr);
+BOOL wb_samr_query_dispinfo(CLI_POLICY_HND *pol, uint32 *start_ndx, 
+			    uint16 info_level, uint32 *num_entries,
+			    SAM_DISPINFO_CTR *ctr);
+
 /*The following definitions come from  param/loadparm.c  */
 
 void lp_talloc_free(void);
@@ -1989,7 +2027,8 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 
 BOOL initialize_password_db(BOOL reload);
 BOOL pdb_init_sam(SAM_ACCOUNT **user);
-BOOL pdb_clear_sam(SAM_ACCOUNT *user);
+BOOL pdb_free_sam(SAM_ACCOUNT *user);
+BOOL pdb_reset_sam(SAM_ACCOUNT *user);
 struct sam_disp_info *pdb_sam_to_dispinfo(SAM_ACCOUNT *user);
 char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pdb_decode_acct_ctrl(const char *p);
