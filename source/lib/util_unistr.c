@@ -189,6 +189,19 @@ char *unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	return origdest;
 }
 
+/*******************************************************************
+ Skip past some unicode strings in a buffer.
+********************************************************************/
+
+char *skip_unicode_string(char *buf,int n)
+{
+	while (n--) {
+		while (*buf)
+			buf += 2;
+		buf += 2;
+	}
+	return(buf);
+}
 
 /*******************************************************************
  Skip a UNICODE string in a little endian buffer.
@@ -206,6 +219,25 @@ char *skip_unibuf(char *srcbuf, int len)
 	return (char *)src;
 }
 
+
+/*******************************************************************
+ Strcpy for unicode strings.  returns length (in num of wide chars)
+********************************************************************/
+
+int unistrcpy(char *dst, char *src)
+{
+	int num_wchars = 0;
+	uint16 *wsrc = (uint16 *)src;
+	uint16 *wdst = (uint16 *)dst;
+
+	while (*wsrc) {
+		*wdst++ = *wsrc++;
+		num_wchars++;
+	}
+	*wdst = 0;
+
+	return num_wchars;
+}
 
 /*******************************************************************
  UNICODE strcpy between buffers.

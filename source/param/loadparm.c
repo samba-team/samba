@@ -140,6 +140,7 @@ typedef struct
   char *szLogonHome;
   char *szSmbrun;
   char *szWINSserver;
+  char *szWINSHook;
   char *szCodingSystem;
   char *szInterfaces;
   char *szRemoteAnnounce;
@@ -784,6 +785,7 @@ static struct parm_struct parm_table[] =
   {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL,   NULL,  0},
   {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL,   NULL,  FLAG_BASIC},
   {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL,  FLAG_BASIC},
+  {"wins hook",        P_STRING,  P_GLOBAL, &Globals.szWINSHook, NULL,   NULL,  0},
 
   {"Locking Options", P_SEP, P_SEPARATOR},
 
@@ -1343,6 +1345,7 @@ FN_GLOBAL_STRING(lp_ntusrname_map,&Globals.szNTusernameMap)
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_remote_browse_sync,&Globals.szRemoteBrowseSync) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
+FN_GLOBAL_STRING(lp_wins_hook,&Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)

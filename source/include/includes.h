@@ -351,6 +351,16 @@
 #endif
 
 /*
+ * Define VOLATILE if needed.
+ */
+
+#if defined(HAVE_VOLATILE)
+#define VOLATILE volatile
+#else
+#define VOLATILE
+#endif
+
+/*
  * Define SIG_ATOMIC_T if needed.
  */
 

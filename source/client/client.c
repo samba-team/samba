@@ -1841,9 +1841,9 @@ struct cli_state *do_connect(char *server, char *share, int smb_port)
 	
 	ip = ipzero;
 
-	make_nmb_name(&calling, global_myname, 0x0, "");
-	make_nmb_name(&called , server, name_type, "");
-	make_nmb_name(&stupid_smbserver_called , "*SMBSERVER", 0x20, scope);
+	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&called , server, name_type);
+	make_nmb_name(&stupid_smbserver_called , "*SMBSERVER", 0x20);
 
 	fstrcpy(smb_cli->usr.user_name, username);
 	fstrcpy(smb_cli->usr.domain, workgroup);
@@ -2058,8 +2058,8 @@ static int do_message_op(void)
 
 	ip = ipzero;
 
-	make_nmb_name(&calling, global_myname, 0x0, "");
-	make_nmb_name(&called , desthost, name_type, "");
+	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&called , desthost, name_type);
 
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
@@ -2208,9 +2208,6 @@ static int do_message_op(void)
 		switch (opt) {
 		case 's':
 			pstrcpy(servicesf, optarg);
-			break;
-		case 'B':
-			iface_set_default(NULL,optarg,NULL);
 			break;
 		case 'O':
 			pstrcpy(user_socket_options,optarg);

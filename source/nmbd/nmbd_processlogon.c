@@ -50,8 +50,9 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   uint32 domainsidsize;
   BOOL short_request = False;
   char *getdc;
-  char *uniuser; /* Unicode user name. */
   pstring ascuser;
+  pstring asccomp;
+  char *uniuser; /* Unicode user name. */
   char *unicomp; /* Unicode computer name. */
 
   memset(outbuf, 0, sizeof(outbuf));
@@ -216,14 +217,15 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
        * Let's ignore the SID.
        */
 
-      pstrcpy(ascuser, dos_unistr(uniuser));
+      unibuf_to_ascii(ascuser, uniuser, sizeof(ascuser)-1);
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       fstrcpy(reply_name+2,my_name); 
 
+      unibuf_to_ascii(asccomp, unicomp, sizeof(asccomp)-1);
       DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-	       dos_unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
+	       asccomp,inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
 	       SAMLOGON_R ,lmnttoken));
 
       /* Construct reply. */

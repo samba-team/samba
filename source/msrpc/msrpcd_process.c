@@ -45,25 +45,8 @@ extern int max_send;
 
 
 /****************************************************************************
-  Do a select on an two fd's - with timeout. 
-
-  If a local udp message has been pushed onto the
-  queue (this can only happen during oplock break
-  processing) return this first.
-
-  If a pending smb message has been pushed onto the
-  queue (this can only happen during oplock break
-  processing) return this next.
-
-  If the first smbfd is ready then read an smb from it.
-  if the second (loopback UDP) fd is ready then read a message
-  from it and setup the buffer header to identify the length
-  and from address.
-  Returns False on timeout or error.
-  Else returns True.
-
-The timeout is in milli seconds
-****************************************************************************/
+ select on a timeout on the dce/rpc socket.
+ ****************************************************************************/
 
 static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 				     int timeout, BOOL *got_msrpc)

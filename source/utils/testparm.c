@@ -38,7 +38,6 @@
 /* these live in util.c */
 extern FILE *dbf;
 extern int DEBUGLEVEL;
-extern pstring myhostname;
 
 /***********************************************
  Here we do a set of 'hard coded' checks for bad
@@ -104,12 +103,6 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
   DEBUGLEVEL = 2;
 
   printf("Load smb config files from %s\n",configfile);
-
-  if(!get_myname(myhostname,NULL))
-  {
-    printf("Failed to get my hostname.\n");
-    return(1);
-  }
 
   if (!lp_load(configfile,False,True,False))
     {
