@@ -918,11 +918,12 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 
 /*******************************************************************
  Paranoid strcpy into a buffer of given length (includes terminating
- zero. Strips out all but 'a-Z0-9' and replaces with '_'. Deliberately
- does *NOT* check for multibyte characters. Don't change it !
+ zero. Strips out all but 'a-Z0-9' and the character in other_safe_chars
+ and replaces with '_'. Deliberately does *NOT* check for multibyte
+ characters. Don't change it !
 ********************************************************************/
 
-char *alpha_strcpy(char *dest, const char *src, size_t maxlength)
+char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
 {
 	size_t len, i;
 
@@ -940,9 +941,12 @@ char *alpha_strcpy(char *dest, const char *src, size_t maxlength)
 	if (len >= maxlength)
 		len = maxlength - 1;
 
+	if (!other_safe_chars)
+		other_safe_chars = "";
+
 	for(i = 0; i < len; i++) {
 		int val = (src[i] & 0xff);
-		if(isupper(val) ||islower(val) || isdigit(val))
+		if(isupper(val) || islower(val) || isdigit(val) || strchr(other_safe_chars, val))
 			dest[i] = src[i];
 		else
 			dest[i] = '_';
