@@ -217,7 +217,11 @@
 	<title>LDAP Server Configuration</title>
 
 	<para>
-	The <filename>/etc/openldap/slapd.conf</filename> file Misty used is shown here:
+	The <filename>/etc/openldap/slapd.conf</filename> file Misty used is shown in <link linkend="ch8slapd"/>.
+	</para>
+
+<example id="ch8slapd">
+<title>OpenLDAP Control File &smbmdash; slapd.conf Part A</title>
 <screen>
 #/usr/local/etc/openldap/slapd.conf
 #
@@ -249,6 +253,7 @@ modulepath  /usr/lib/openldap/modules
 # Logging parameters
 #######################################################################
 loglevel 256
+
 #######################################################################
 # SASL and TLS options
 #######################################################################
@@ -256,11 +261,17 @@ sasl-host     ldap.corp.abmas.org
 sasl-realm    DIGEST-MD5
 sasl-secprops   none
 TLSCipherSuite HIGH:MEDIUM:+SSLV2
-TLSCertificateFile  /etc/ssl/certs/private/abmas-cert.pem
+TLSCertificateFile    /etc/ssl/certs/private/abmas-cert.pem
 TLSCertificateKeyFile /etc/ssl/certs/private/abmas-key.pem
 password-hash   {SSHA}
 defaultsearchbase "dc=abmas,dc=biz"
+</screen>
+</example>
 
+
+<example id="ch8slapd2">
+<title>OpenLDAP Control File &smbmdash; slapd.conf Part B</title>
+<screen>
 #######################################################################
 # bdb database definitions
 #######################################################################
@@ -303,7 +314,12 @@ replica         host=ns.abmas.org:389
                 credentials=verysecret
                 bindmethod=simple
                 tls=yes
+</screen>
+</example>
 
+<example id="ch8slapd3">
+<title>OpenLDAP Control File &smbmdash; slapd.conf Part C</title>
+<screen>
 #######################################################################
 # ACL section
 #######################################################################
@@ -348,10 +364,14 @@ access to *
 access to attrs=namingcontexts
   by anonymous read
 </screen>
-	</para>
+</example>
 
 	<para>
-	The <filename>/etc/ldap.conf</filename> file used is listed here:
+	The <filename>/etc/ldap.conf</filename> file used is listed in <link linkend="ch8ldap"/>.
+	</para>
+
+<example id="ch8ldap">
+<title>NSS LDAP Control File &smbmdash; /etc/ldap.conf</title>
 <screen>
 # /etc/ldap.conf
 # This file is present on every *NIX client that authenticates to LDAP.
@@ -392,10 +412,10 @@ ssl start_tls
 tls_cacertfile /etc/ssl/certs/private/abmas-cert.pem
 ...
 </screen>
-	</para>
+</example>
 
 	<para>
-	The Name Server Switch control file has the following contents:
+	The Name Server Switch control file <filename>/etc/nsswitch.conf</filename> has the following contents:
 <screen>
 # /etc/nsswitch.conf
 # This file controls the resolve order for system databases.
@@ -458,195 +478,207 @@ shadow:   files ldap
 	</para>
 
 	<para>
-	The Samba &smb.conf; file was configured as shown here:
-<screen>
-# Global parameters
-[global]
-        workgroup = CORP
-        netbios name = CORPSRV
-        server string = Corp File Server
-        passdb backend = ldapsam:ldap://localhost
-        pam password change = Yes
-        username map = /etc/samba/smbusers
-        log level = 1
-        log file = /data/samba/log/%m.log
-        name resolve order = wins host bcast
-        time server = Yes
-        printcap name = cups
-        show add printer wizard = No
-        add user script = /opt/IDEALX/sbin/smbldap-useradd -m "%u"
-        add group script = /opt/IDEALX/sbin/smbldap-groupadd -p "%g"
-        add user to group script = 
-		/opt/IDEALX/sbin/smbldap-groupmod -m "%u" "%g"
-        delete user from group script = 
-		/opt/IDEALX/sbin/smbldap-groupmod -x "%u" "%g"
-        set primary group script = 
-		/opt/IDEALX/sbin/smbldap-usermod -g "%g" "%u"
-        add machine script = /usr/local/sbin/smbldap-useradd -w "%m"
-        logon script = logon.bat
-        logon path = \\%L\profiles\%U\%a
-        logon drive = H:
-        logon home = \\%L\%U
-        domain logons = Yes
-        wins support = Yes
-        ldap admin dn = cn=Manager,dc=abmas,dc=biz
-        ldap group suffix = ou=Groups
-        ldap idmap suffix = ou=People
-        ldap machine suffix = ou=People
-        ldap passwd sync = Yes
-        ldap suffix = ou=CORP,dc=abmas,dc=biz
-        ldap ssl = no
-        ldap user suffix = ou=People
-        remote announce = 192.168.2.255/CORP
-        remote browse sync = 192.168.2.255
-        admin users = root, "@Domain Admins"
-        printer admin = "@Domain Admins"
-        force printername = Yes
-
-[netlogon]
-        comment = Network logon service
-        path = /data/samba/netlogon
-        write list = "@Domain Admins"
-        guest ok = Yes
-
-[profiles]
-        comment = Roaming Profile Share
-        path = /data/samba/profiles/
-        read only = No
-        profile acls = Yes
-        veto files = desktop.ini
-        browseable = No
-
-[homes]
-        comment = Home Directories
-        valid users = %S
-        read only = No
-        create mask = 0770
-        veto files = desktop.ini
-        hide files = desktop.ini
-        browseable = No
-
-[software]
-        comment = Software for %a computers
-        path = /data/samba/shares/software/%a
-        guest ok = Yes
-
-[public]
-        comment = Public Files
-        path = /data/samba/shares/public
-        read only = No
-        guest ok = Yes
-
-[PDF]
-        comment = Location of documents printed to PDFCreator printer
-        path = /data/samba/shares/pdf
-        guest ok = Yes
-
-[EVERYTHING]
-        comment = All shares
-        path = /data/samba
-        valid users = "@Domain Admins"
-        read only = No
-
-[CDROM]
-        comment = CD-ROM on CORPSRV
-        path = /mnt
-        guest ok = Yes
-
-[print$]
-        comment = Printer Drivers Share
-        path = /data/samba/drivers
-        write list = root
-        browseable = No
-
-[printers]
-        comment = All Printers
-        path = /data/samba/spool
-        create mask = 0644
-        printable = Yes
-        browseable = No
-
-[acct_hp8500]
-        comment = "Accounting Color Laser Printer"
-        path = /data/samba/spool/private
-        valid users = @acct, @acct_admin, @hr, "@Domain Admins",\
-                 @Receptionist, dwayne, terri, danae, jerry
-        create mask = 0644
-        printable = Yes
-        copy = printers
-
-[plotter]
-        comment = Engineering Plotter
-        path = /data/samba/spool
-        create mask = 0644
-        printable = Yes
-        use client driver = Yes
-        copy = printers
-
-[APPS]
-        path = /data/samba/shares/Apps
-        force group = "Domain Users"
-        read only = No
-
-[ACCT]
-        path = /data/samba/shares/Accounting
-        valid users = @acct, "@Domain Admins"
-        force group = acct
-        read only = No
-        create mask = 0660
-        directory mask = 0770
-
-[ACCT_ADMIN]
-        path = /data/samba/shares/Acct_Admin
-        valid users = @”acct_admin”
-        force group = acct_admin
-
-[HR_PR]
-        path = /data/samba/shares/HR_PR
-        valid users = @hr, @acct_admin
-        force group = hr
-
-[ENGR]
-        path = /data/samba/shares/Engr
-        valid users = @engr, @receptionist, @truss, "@Domain Admins", cheri
-        force group = engr
-        read only = No
-        create mask = 0770
-
-[DATA]
-        path = /data/samba/shares/DATA
-        valid users = @engr, @receptionist, @truss, "@Domain Admins", cheri
-        force group = engr
-        read only = No
-        create mask = 0770
-        copy = engr
-
-[X]
-        path = /data/samba/shares/X
-        valid users = @engr, @acct
-        force group = engr
-        read only = No
-        create mask = 0770
-        copy = engr
-
-[NETWORK]
-        path = /data/samba/shares/network
-        valid users = "@Domain Users"
-        read only = No
-        create mask = 0770
-        guest ok = Yes
-
-[UTILS]
-        path = /data/samba/shares/Utils
-        write list = "@Domain Admins"
-
-[SYS]
-        path = /data/samba/shares/SYS
-        valid users = chad
-        read only = No
-        browseable = No
-</screen>
+	The Samba &smb.conf; file was configured as shown in <link linkend="ch8smbconf"/>.
 	</para>
+
+<smbconfexample id="ch8smbconf">
+<title>Samba Configuration File &smbmdash; smb.conf Part A</title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>MEGANET2</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>MASSIVE</value></smbconfoption>
+<smbconfoption><name>server string</name><value>Corp File Server</value></smbconfoption>
+<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://localhost</value></smbconfoption>
+<smbconfoption><name>pam password change</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
+<smbconfoption><name>log level</name><value>1</value></smbconfoption>
+<smbconfoption><name>log file</name><value>/data/samba/log/%m.log</value></smbconfoption>
+<smbconfoption><name>name resolve order</name><value>wins host bcast</value></smbconfoption>
+<smbconfoption><name>time server</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
+<smbconfoption><name>add user script</name><value>/opt/IDEALX/sbin/smbldap-useradd -m "%u"</value></smbconfoption>
+<smbconfoption><name>add group script</name><value>/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</value></smbconfoption>
+<smbconfoption><name>add user to group script</name><value></value></smbconfoption>
+<member><parameter>/opt/IDEALX/sbin/smbldap-groupmod -m "%u" "%g"</parameter></member>
+<smbconfoption><name>delete user from group script</name><value></value></smbconfoption>
+<member><parameter>/opt/IDEALX/sbin/smbldap-groupmod -x "%u" "%g"</parameter></member>
+<smbconfoption><name>set primary group script</name><value></value></smbconfoption>
+<member><parameter>/opt/IDEALX/sbin/smbldap-usermod -g "%g" "%u"</parameter></member>
+<smbconfoption><name>add machine script</name><value>/usr/local/sbin/smbldap-useradd -w "%m"</value></smbconfoption>
+<smbconfoption><name>logon script</name><value>logon.bat</value></smbconfoption>
+<smbconfoption><name>logon path</name><value>\\%L\profiles\%U\%a</value></smbconfoption>
+<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
+<smbconfoption><name>logon home</name><value>\\%L\%U</value></smbconfoption>
+<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>wins support</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>ldap admin dn</name><value>cn=Manager,dc=abmas,dc=biz</value></smbconfoption>
+<smbconfoption><name>ldap group suffix</name><value>ou=Groups</value></smbconfoption>
+<smbconfoption><name>ldap idmap suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap passwd sync</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>ldap suffix</name><value>ou=MEGANET2,dc=abmas,dc=biz</value></smbconfoption>
+<smbconfoption><name>ldap ssl</name><value>no</value></smbconfoption>
+<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>admin users</name><value>root, "@Domain Admins"</value></smbconfoption>
+<smbconfoption><name>printer admin</name><value>"@Domain Admins"</value></smbconfoption>
+<smbconfoption><name>force printername</name><value>Yes</value></smbconfoption>
+</smbconfexample>
+
+<smbconfexample id="ch8smbconf2">
+<title>Samba Configuration File &smbmdash; smb.conf Part B</title>
+<smbconfsection>[netlogon]</smbconfsection>
+<smbconfoption><name>comment</name><value>Network logon service</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba/netlogon</value></smbconfoption>
+<smbconfoption><name>write list</name><value>"@Domain Admins"</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+
+<smbconfsection>[profiles]</smbconfsection>
+<smbconfoption><name>comment</name><value>Roaming Profile Share</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba/profiles/</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>profile acls</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>veto files</name><value>desktop.ini</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+
+<smbconfsection>[homes]</smbconfsection>
+<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
+<smbconfoption><name>veto files</name><value>desktop.ini</value></smbconfoption>
+<smbconfoption><name>hide files</name><value>desktop.ini</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+
+<smbconfsection>[software]</smbconfsection>
+<smbconfoption><name>comment</name><value>Software for %a computers</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba/shares/software/%a</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+
+<smbconfsection>[public]</smbconfsection>
+<smbconfoption><name>comment</name><value>Public Files</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba/shares/public</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+
+<smbconfsection>[PDF]</smbconfsection>
+<smbconfoption><name>comment</name><value>Location of documents printed to PDFCreator printer</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba/shares/pdf</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+</smbconfexample>
+
+<smbconfexample id="ch8smbconf3">
+<title>Samba Configuration File &smbmdash; smb.conf Part C</title>
+<smbconfsection>[EVERYTHING]</smbconfsection>
+<smbconfoption><name>comment</name><value>All shares</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>"@Domain Admins"</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+
+<smbconfsection>[CDROM]</smbconfsection>
+<smbconfoption><name>comment</name><value>CD-ROM on MASSIVE</value></smbconfoption>
+<smbconfoption><name>path</name><value>/mnt</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+
+<smbconfsection>[print$]</smbconfsection>
+<smbconfoption><name>comment</name><value>Printer Drivers Share</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba/drivers</value></smbconfoption>
+<smbconfoption><name>write list</name><value>root</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+
+<smbconfsection>[printers]</smbconfsection>
+<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba/spool</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0644</value></smbconfoption>
+<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+
+<smbconfsection>[acct_hp8500]</smbconfsection>
+<smbconfoption><name>comment</name><value>"Accounting Color Laser Printer"</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba/spool/private</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>@acct, @acct_admin, @hr, "@Domain Admins",\</value></smbconfoption>
+<member><parameter>@Receptionist, dwayne, terri, danae, jerry</parameter></member>
+<smbconfoption><name>create mask</name><value>0644</value></smbconfoption>
+<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>copy</name><value>printers</value></smbconfoption>
+
+<smbconfsection>[plotter]</smbconfsection>
+<smbconfoption><name>comment</name><value>Engineering Plotter</value></smbconfoption>
+<smbconfoption><name>path</name><value>/data/samba/spool</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0644</value></smbconfoption>
+<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>copy</name><value>printers</value></smbconfoption>
+</smbconfexample>
+
+<smbconfexample id="ch8smbconf4">
+<title>Samba Configuration File &smbmdash; smb.conf Part D</title>
+<smbconfsection>[APPS]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/Apps</value></smbconfoption>
+<smbconfoption><name>force group</name><value>"Domain Users"</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+
+<smbconfsection>[ACCT]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/Accounting</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>@acct, "@Domain Admins"</value></smbconfoption>
+<smbconfoption><name>force group</name><value>acct</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0660</value></smbconfoption>
+<smbconfoption><name>directory mask</name><value>0770</value></smbconfoption>
+
+<smbconfsection>[ACCT_ADMIN]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/Acct_Admin</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>@”acct_admin”</value></smbconfoption>
+<smbconfoption><name>force group</name><value>acct_admin</value></smbconfoption>
+
+<smbconfsection>[HR_PR]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/HR_PR</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>@hr, @acct_admin</value></smbconfoption>
+<smbconfoption><name>force group</name><value>hr</value></smbconfoption>
+
+<smbconfsection>[ENGR]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/Engr</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>@engr, @receptionist, @truss, "@Domain Admins", cheri</value></smbconfoption>
+<smbconfoption><name>force group</name><value>engr</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
+
+<smbconfsection>[DATA]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/DATA</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>@engr, @receptionist, @truss, "@Domain Admins", cheri</value></smbconfoption>
+<smbconfoption><name>force group</name><value>engr</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
+<smbconfoption><name>copy</name><value>engr</value></smbconfoption>
+</smbconfexample>
+
+<smbconfexample id="ch8smbconf5">
+<title>Samba Configuration File &smbmdash; smb.conf Part E</title>
+<smbconfsection>[X]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/X</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>@engr, @acct</value></smbconfoption>
+<smbconfoption><name>force group</name><value>engr</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
+<smbconfoption><name>copy</name><value>engr</value></smbconfoption>
+
+<smbconfsection>[NETWORK]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/network</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>"@Domain Users"</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0770</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+
+<smbconfsection>[UTILS]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/Utils</value></smbconfoption>
+<smbconfoption><name>write list</name><value>"@Domain Admins"</value></smbconfoption>
+
+<smbconfsection>[SYS]</smbconfsection>
+<smbconfoption><name>path</name><value>/data/samba/shares/SYS</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>chad</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+</smbconfexample>
 
 	<para>
 	Most of these shares are only used by one company group, but they are required
@@ -692,8 +724,16 @@ undesirable actions from occuring un-noticed.
 	Now Samba is ready for use. Now configure the smbldap-tools. There are two
 	relevant files, which are usually put into the directory
 	<filename>/etc/smbldap-tools</filename>. The main file,
-	<filename>smbldap.conf</filename> is shown here:
+	<filename>smbldap.conf</filename> is shown in <link linkend="ch8ideal"/>.
+	</para>
+
+<example id="ch8ideal">
+<title>Idealx smbldap-tools Control File &smbmdash; Part A</title>
 <screen>
+#########
+#
+# located in /etc/smbldap-tools/smbldap.conf
+#
 ##############################################################################
 #
 # General Configuration
@@ -735,7 +775,12 @@ ldapTLS="0"
 # How to verify the server's certificate (none, optional or require)
 # see "man Net::LDAP" in start_tls section for more details
 verify=""
+</screen>
+</example>
 
+<example id="ch8ideal2">
+<title>Idealx smbldap-tools Control File &smbmdash; Part B</title>
+<screen>
 # CA certificate
 # see "man Net::LDAP" in start_tls section for more details
 cafile=""
@@ -749,7 +794,7 @@ clientkey=""
 
 # LDAP Suffix
 # Ex: suffix=dc=IDEALX,dc=ORG
-suffix="ou=CORP,dc=abmas,dc=biz"
+suffix="ou=MEGANET2,dc=abmas,dc=biz"
 
 # Where are stored Users
 # Ex: usersdn="ou=Users,dc=IDEALX,dc=ORG"
@@ -771,7 +816,12 @@ sambaUnixIdPooldn="ou=People,${suffix}"
 
 # Default scope Used
 scope="sub"
+</screen>
+</example>
 
+<example id="ch8ideal3">
+<title>Idealx smbldap-tools Control File &smbmdash; Part C</title>
+<screen>
 # Unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA)
 hash_encrypt="SSHA"
 
@@ -811,7 +861,12 @@ skeletonDir="/etc/skel"
 # you don't want password to be enable for defaultMaxPasswordAge days (be
 # careful to the sambaPwdMustChange attribute's value)
 defaultMaxPasswordAge="45"
+</screen>
+</example>
 
+<example id="ch8ideal4">
+<title>Idealx smbldap-tools Control File &smbmdash; Part D</title>
+<screen>
 ##############################################################################
 #
 # SAMBA Configuration
@@ -856,7 +911,7 @@ mailDomain="abmas.org"
 with_smbpasswd="0"
 smbpasswd="/usr/bin/smbpasswd"
 </screen>
-	</para>
+</example>
 
 	<para>
 	NOTES: I chose not to take advantage of the TLS capability of this. 
@@ -889,7 +944,7 @@ masterPw="verysecret"
 	</para>
 
 	<para>
-	We can now run the “<command>smbldap-populate</command> command which will populate
+	We can now run the <command>smbldap-populate</command> command which will populate
 	the LDAP tree with the appropriate default users, groups, and UID and GID pools.
 	It will create a user called Administrator with UID=0 and GID=0 matching the
 	Domain Admins group. This is fine you can still log in a root to a Windows system,
@@ -1027,10 +1082,10 @@ loginShell: /bin/false
 	</para>
 
 	<para>
-	Then I went over to a spare Windows NT machine and joined it to the CORP domain.
+	Then I went over to a spare Windows NT machine and joined it to the MEGANET2 domain.
 	It worked, and the machine's account entry under OU=COMPUTERS looks like this:
 <screen>
-dn:uid=w2kengrspare$,ou=Computers,ou=CORP,dc=abmas,dc=biz
+dn:uid=w2kengrspare$,ou=Computers,ou=MEGANET2,dc=abmas,dc=biz
 objectClass: top
 objectClass: inetOrgPerson
 objectClass: posixAccount
@@ -1079,9 +1134,13 @@ kxrpc.exe &lt;-- Probably useless as it has to run on the server and can
 	</para>
 
 	<para>
-	I then wrote the following <filename>logon.kix</filename> file.
-	I chose to keep it all in one file, but it can be split up and
-	linked via include directives.
+	I then wrote the <filename>logon.kix</filename> file that is shown in
+	<link linkend="ch8kix"/>. I chose to keep it all in one file, but it
+	can be split up and linked via include directives.
+	</para>
+
+<example id="ch8kix">
+<title>Kixstart Control File &smbmdash; Part A</title>
 <screen>
 break on
 
@@ -1120,8 +1179,13 @@ ENDIF
 
 $RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\Abmas\FIRST_LOGIN")
 IF NOT $RETURNCODE = 0
+</screen>
+</example>
 
-  IF NOT INGROUP("CORPSRV\Laptop")
+<example id="ch8kix2">
+<title>Kixstart Control File &smbmdash; Part B</title>
+<screen>
+  IF NOT INGROUP("MASSIVE\Laptop")
     $RETURNCODE=EXISTKEY("HKEY_CURRENT_USER\Abmas\profile_copied")
     IF NOT $RETURNCODE = 0
       IF EXIST("\\corpsrv\profiles\@userID\WinXP")
@@ -1156,6 +1220,12 @@ CurrentVersion\Explorer\User Shell Folders", "My Music",
 Windows\CurrentVersion\Explorer\User Shell Folders", "My eBooks",
 "\\corpsrv\@userID\My eBooks", "REG_SZ")
       ENDIF
+</screen>
+</example>
+
+<example id="ch8kix3">
+<title>Kixstart Control File &smbmdash; Part C</title>
+<screen>
       $SELECTION =MESSAGEBOX("Changes were made to your registry.
 You must now log out. Please save any open files and click OK",
 "Log Out Necessary", 0)
@@ -1167,7 +1237,7 @@ You must now log out. Please save any open files and click OK",
   ENDIF
 ENDIF
 
-IF INGROUP("CORP\Domain Admins")
+IF INGROUP("MEGANET2\Domain Admins")
   USE Z: \\corpsrv\everything
   SETCONSOLE("show")
 ELSE
@@ -1176,12 +1246,12 @@ ELSE
 ENDIF
 
 
-IF INGROUP("CORPSRV\Acct_Admin","CORPSRV\HR")
-  USE I: \\CORP\HR_PR
+IF INGROUP("MASSIVE\Acct_Admin","MASSIVE\HR")
+  USE I: \\MEGANET2\HR_PR
   ; Eventually ABRA mapping will be here
 ENDIF
 
-IF INGROUP("CORP\Acct")
+IF INGROUP("MEGANET2\Acct")
 ; Set up printer
 $RETURNVALUE = existkey("HKEY_CURRENT_USER\Printers\,,corpsrv,acct_hp8500")
 IF NOT $RETURNVALUE = 0
@@ -1192,8 +1262,13 @@ ENDIF
   USE M: \\corpsrv\ACCT
 
 ENDIF
+</screen>
+</example>
 
-IF INGROUP("CORP\Engr","CORP\Truss","CORP\Receptionist")
+<example id="ch8kix4">
+<title>Kixstart Control File &smbmdash; Part D</title>
+<screen>
+IF INGROUP("MEGANET2\Engr","MEGANET2\Truss","MEGANET2\Receptionist")
 $RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Printers\,,corpsrv,engr_hp1300")
 IF NOT $RETURNVALUE = 0
   ADDPRINTERCONNECTION("\\corpsrv\engr_hp1300")
@@ -1222,8 +1297,13 @@ USE LPT3: "\\corpsrv\engr_legacy_printer"
 ;SET "PATH=L:\ENGINEER\MATLST;u:;h:;g:\ifsapp\runtime;
 c:\orawin95\bin;%PATH%;"
 ENDIF
+</screen>
+</example>
 
-IF INGROUP("CORP\Truss")
+<example id="ch8kix5">
+<title>Kixstart Control File &smbmdash; Part E</title>
+<screen>
+IF INGROUP("MEGANET2\Truss")
   ; Don't set up a default printer, they choose which one they want
 $RETURNVALUE =
 EXISTKEY("HKEY_CURRENT_USER\Printers\Connections\,,corpsrv,truss_hp4")
@@ -1251,7 +1331,8 @@ IF $RETURNVALUE = 0
   DELKEY("HKEY_CURRENT_USER\Abmas\FIRST_LOGIN")
 ENDIF
 </screen>
-	</para>
+</example>
+
 
 	<para>
 	As you can see in the script, I redirect the My Documents to the user's home
@@ -1316,7 +1397,7 @@ ENDIF
 
 		<step><para>
 			Select the user's local profile <constant>(COMPUTERNAME\username)</constant>,
-			and click the <command>Copy To</command>”button.
+			and click the <command>Copy To</command> button.
 		</para></step>
 
 		<step><para>
