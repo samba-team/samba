@@ -5,7 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Shirish Kalele                    2000,
  *  Copyright (C) Jeremy Allison                    2001,
- *  Copyright (C) Anthony Liguori                   2003.
+ *  Copyright (C) Jim McDonough                     2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

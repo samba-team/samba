@@ -5,7 +5,6 @@
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1997-2000
    Copyright (C) Jean François Micouleau      1998-2001
-   Copyright (C) Anthony Liguori              2002
    Copyright (C) Jim McDonough                2002
    
    

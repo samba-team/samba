@@ -4,7 +4,7 @@
    idmap LDAP backend
 
    Copyright (C) Tim Potter 		2000
-   Copyright (C) Anthony Liguori 	2003
+   Copyright (C) Jim McDonough		2003
    Copyright (C) Simo Sorce 		2003
    Copyright (C) Gerald Carter 		2003
    
