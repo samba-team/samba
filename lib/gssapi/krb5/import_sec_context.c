@@ -194,6 +194,13 @@ gss_import_sec_context (
     else
 	(*context_handle)->lifetime = GSS_C_INDEFINITE;
 
+    ret = gssapi_msg_order_create(minor_status,
+				  &(*context_handle)->order,
+				  gssapi_msg_order_f((*context_handle)->flags),
+				  0, 0);
+    if (ret)
+	goto failure;
+
     return GSS_S_COMPLETE;
 
 failure:
@@ -207,6 +214,8 @@ failure:
 	krb5_free_address (gssapi_krb5_context, localp);
     if (remotep)
 	krb5_free_address (gssapi_krb5_context, remotep);
+    if((*context_handle)->order)
+	gssapi_msg_order_destroy(&(*context_handle)->order);
     HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
     free (*context_handle);
     *context_handle = GSS_C_NO_CONTEXT;
