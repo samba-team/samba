@@ -1435,9 +1435,9 @@ BOOL domain_client_validate( char *user, char *domain,
   }
 
   /*
-   * Get the machine account password.
+   * Get the machine account password for our primary domain
    */
-  if (!get_trust_account_password(domain, trust_passwd, NULL))
+  if (!get_trust_account_password(lp_workgroup(), trust_passwd, NULL))
   {
     return False;
   }
