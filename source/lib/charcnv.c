@@ -73,6 +73,12 @@ static size_t convert_string(smb_iconv_t descriptor,
 	size_t retval;
 	char* inbuf = (char*)src;
 	char* outbuf = (char*)dest;
+	static int initialised;
+	
+	if (!initialised) {
+		initialised = 1;
+		init_iconv(NULL, NULL);
+	}
 
 	if (descriptor == (smb_iconv_t)-1) {
 		/* conversion not supported, use as is */
