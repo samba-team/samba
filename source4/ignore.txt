@@ -1,4 +1,0 @@
-all_info.out.fname
-compression_info.out.*_shift
-internal_information.out.*
-stream_info.out.streams[i].size
