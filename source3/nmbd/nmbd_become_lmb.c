@@ -544,6 +544,11 @@ void set_workgroup_local_master_browser_name( struct work_record *work, char *ne
   DEBUG(5,("set_workgroup_local_master_browser_name: setting local master name to '%s' \
 for workgroup %s.\n", newname, work->work_group ));
 
+#if 0
+  /*
+   * Apparently some sites use the workgroup name as the local
+   * master browser name. Arrrrggghhhhh ! (JRA).
+   */
   if(strequal( work->work_group, newname))
   {
     DEBUG(5, ("set_workgroup_local_master_browser_name: Refusing to set \
@@ -551,6 +556,7 @@ local_master_browser_name for workgroup %s to workgroup name.\n",
          work->work_group ));
     return;
   }
+#endif
 
   StrnCpy(work->local_master_browser_name, newname,
             sizeof(work->local_master_browser_name)-1);
