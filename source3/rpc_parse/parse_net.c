@@ -984,7 +984,7 @@ void make_net_user_info3(NET_USER_INFO_3 *usr,
 
 	usr->num_groups2 = num_groups;
 
-	ASSERT_ARRAY(usr->gids, num_groups);
+	SMB_ASSERT_ARRAY(usr->gids, num_groups);
 
 	for (i = 0; i < num_groups; i++)
 	{
@@ -1060,7 +1060,7 @@ void net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int de
 
 		prs_align(ps);
 		prs_uint32("num_groups2   ", ps, depth, &(usr->num_groups2));        /* num groups */
-		ASSERT_ARRAY(usr->gids, usr->num_groups2);
+		SMB_ASSERT_ARRAY(usr->gids, usr->num_groups2);
 		for (i = 0; i < usr->num_groups2; i++)
 		{
 			smb_io_gid("", &(usr->gids[i]), ps, depth); /* group info */
@@ -1071,7 +1071,7 @@ void net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int de
 
 		smb_io_dom_sid2("", &(usr->dom_sid), ps, depth);           /* domain SID */
 
-		ASSERT_ARRAY(usr->other_sids, usr->num_other_sids);
+		SMB_ASSERT_ARRAY(usr->other_sids, usr->num_other_sids);
 
 		for (i = 0; i < usr->num_other_sids; i++)
 		{

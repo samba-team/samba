@@ -1191,8 +1191,8 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
   trust_password_unlock();
 
   /* 
-   * Here we should check the last change time to see if the machine
-   * password needs changing..... TODO... JRA. 
+   * Here we check the last change time to see if the machine
+   * password needs changing. JRA. 
    */
 
   if(time(NULL) > lct + lp_machine_password_timeout())

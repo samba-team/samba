@@ -379,7 +379,7 @@ char *StrCpy(char *dest,char *src)
   char *d = dest;
 
   /* I don't want to get lazy with these ... */
-  ASSERT(dest && src);
+  SMB_ASSERT(dest && src);
 
   if (!dest) return(NULL);
   if (!src) {

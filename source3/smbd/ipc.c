@@ -373,7 +373,7 @@ va_dcl
   }
 #if CHECK_TYPES
   str = va_arg(args,char*);
-  ASSERT(strncmp(str,p->curpos,strlen(str)) == 0);
+  SMB_ASSERT(strncmp(str,p->curpos,strlen(str)) == 0);
 #endif
   stringneeded = -1;
 

@@ -94,7 +94,7 @@ BOOL lookup_wellknown_sid_from_name(char *windows_name, DOM_SID *psid)
     rnp = &builtin_alias_rids[i];
     if(strequal(rnp->name, windows_name)) {
       string_to_sid( psid, "S-1-5-32" );
-      ASSERT_ARRAY(psid->sub_auths, psid->num_auths+1);
+      SMB_ASSERT_ARRAY(psid->sub_auths, psid->num_auths+1);
       psid->sub_auths[psid->num_auths++] = rnp->rid;
       return True;
     }
@@ -104,7 +104,7 @@ BOOL lookup_wellknown_sid_from_name(char *windows_name, DOM_SID *psid)
     rnp = &domain_user_rids[i];
     if(strequal(rnp->name, windows_name)) {
       *psid = global_machine_sid;
-      ASSERT_ARRAY(psid->sub_auths, psid->num_auths+1);
+      SMB_ASSERT_ARRAY(psid->sub_auths, psid->num_auths+1);
       psid->sub_auths[psid->num_auths++] = rnp->rid;
       return True;
     }
@@ -114,7 +114,7 @@ BOOL lookup_wellknown_sid_from_name(char *windows_name, DOM_SID *psid)
     rnp = &domain_group_rids[i];
     if(strequal(rnp->name, windows_name)) {
       *psid = global_machine_sid;
-      ASSERT_ARRAY(psid->sub_auths, psid->num_auths+1);
+      SMB_ASSERT_ARRAY(psid->sub_auths, psid->num_auths+1);
       psid->sub_auths[psid->num_auths++] = rnp->rid;
       return True;
     }

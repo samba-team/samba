@@ -82,7 +82,7 @@ void lsa_io_dom_r_ref(char *desc,  DOM_R_REF *r_r, prs_struct *ps, int depth)
 
 	smb_io_unihdr2("", &(r_r->hdr_dom_name), ps, depth); /* domain name unicode string header */
 
-	ASSERT_ARRAY(r_r->hdr_ref_dom, r_r->num_ref_doms_1-1);
+	SMB_ASSERT_ARRAY(r_r->hdr_ref_dom, r_r->num_ref_doms_1-1);
 
 	for (i = 0; i < r_r->num_ref_doms_1-1; i++)
 	{
@@ -91,7 +91,7 @@ void lsa_io_dom_r_ref(char *desc,  DOM_R_REF *r_r, prs_struct *ps, int depth)
 
 	smb_io_unistr("", &(r_r->uni_dom_name), ps, depth); /* domain name unicode string */
 
-	ASSERT_ARRAY(r_r->ref_dom, r_r->num_ref_doms_2);
+	SMB_ASSERT_ARRAY(r_r->ref_dom, r_r->num_ref_doms_2);
 
 	for (i = 0; i < r_r->num_ref_doms_2; i++)
 	{
@@ -417,7 +417,7 @@ void lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen, prs_struct *ps, int depth)
 	prs_uint32("ptr_sid_enum", ps, depth, &(sen->ptr_sid_enum)); 
 	prs_uint32("num_entries2", ps, depth, &(sen->num_entries2)); 
 
-	ASSERT_ARRAY(sen->ptr_sid, sen->num_entries);
+	SMB_ASSERT_ARRAY(sen->ptr_sid, sen->num_entries);
 
 	for (i = 0; i < sen->num_entries; i++)
 	{	
@@ -426,7 +426,7 @@ void lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen, prs_struct *ps, int depth)
 		prs_uint32(temp, ps, depth, &(sen->ptr_sid[i])); /* domain SID pointers to be looked up. */
 	}
 
-	ASSERT_ARRAY(sen->sid, sen->num_entries);
+	SMB_ASSERT_ARRAY(sen->sid, sen->num_entries);
 
 	for (i = 0; i < sen->num_entries; i++)
 	{
@@ -475,7 +475,7 @@ void lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct *ps, in
 	prs_uint32("ptr_trans_names", ps, depth, &(trn->ptr_trans_names));
 	prs_uint32("num_entries2   ", ps, depth, &(trn->num_entries2));
 
-	ASSERT_ARRAY(trn->ptr_name, trn->num_entries);
+	SMB_ASSERT_ARRAY(trn->ptr_name, trn->num_entries);
 
 	for (i = 0; i < trn->num_entries; i++)
 	{	
@@ -537,7 +537,7 @@ void lsa_io_q_lookup_rids(char *desc,  LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, i
 	prs_uint32("buffer_dom_sid ", ps, depth, &(q_r->buffer_dom_sid)); /* undocumented domain SID buffer pointer */
 	prs_uint32("buffer_dom_name", ps, depth, &(q_r->buffer_dom_name)); /* undocumented domain name buffer pointer */
 
-	ASSERT_ARRAY(q_r->lookup_name, q_r->num_entries);
+	SMB_ASSERT_ARRAY(q_r->lookup_name, q_r->num_entries);
 
 	for (i = 0; i < q_r->num_entries; i++)
 	{
@@ -567,7 +567,7 @@ void lsa_io_r_lookup_rids(char *desc,  LSA_R_LOOKUP_RIDS *r_r, prs_struct *ps, i
 	prs_uint32("undoc_buffer", ps, depth, &(r_r->undoc_buffer));
 	prs_uint32("num_entries2", ps, depth, &(r_r->num_entries2));
 
-	ASSERT_ARRAY(r_r->dom_rid, r_r->num_entries2);
+	SMB_ASSERT_ARRAY(r_r->dom_rid, r_r->num_entries2);
 
 	for (i = 0; i < r_r->num_entries2; i++)
 	{
