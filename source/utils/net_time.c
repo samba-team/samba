@@ -73,13 +73,13 @@ static time_t nettime(int *zone)
 	return cli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL, zone);
 }
 
-/* return a time as a string ready to be passed to date -u */
+/* return a time as a string ready to be passed to /bin/date */
 static char *systime(time_t t)
 {
 	static char s[100];
 	struct tm *tm;
 
-	tm = gmtime(&t);
+	tm = localtime(&t);
 	
 	snprintf(s, sizeof(s), "%02d%02d%02d%02d%04d.%02d", 
 		 tm->tm_mon+1, tm->tm_mday, tm->tm_hour, 
@@ -92,7 +92,7 @@ int net_time_usage(int argc, const char **argv)
 	d_printf(
 "net time\n\tdisplays time on a server\n\n"\
 "net time system\n\tdisplays time on a server in a format ready for /bin/date\n\n"\
-"net time set\n\truns /bin/date -u with the time from the server\n\n"\
+"net time set\n\truns /bin/date with the time from the server\n\n"\
 "net time zone\n\tdisplays the timezone in hours from GMT on the remote computer\n\n"\
 "\n");
 	general_rap_usage(argc, argv);
@@ -110,7 +110,7 @@ static int net_time_set(int argc, const char **argv)
 	/* yes, I know this is cheesy. Use "net time system" if you want to 
 	   roll your own. I'm putting this in as it works on a large number
 	   of systems and the user has a choice in whether its used or not */
-	asprintf(&cmd, "/bin/date -u %s", systime(t));
+	asprintf(&cmd, "/bin/date %s", systime(t));
 	system(cmd);
 	free(cmd);
 
