@@ -290,8 +290,8 @@ pipes_struct *get_rpc_pipe(int pnum)
 
 	for (p=Pipes;p;p=p->next)
 	{
-		DEBUG(5,("pipe name %s pnum=%x (pipes_open=%d)\n", 
-		          p->name, p->pnum, pipes_open));  
+		DEBUG(5,("pipe name %s pnum=%x (pipes_open=%d) (open=%s)\n", 
+		          p->name, p->pnum, pipes_open, BOOLSTR(p->open)));  
 	}
 
 	for (p=Pipes;p;p=p->next)

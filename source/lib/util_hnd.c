@@ -497,9 +497,6 @@ BOOL close_policy_hnd(POLICY_HND *hnd)
 
 	bitmap_clear(bmap, p->pnum);
 
-	ZERO_STRUCTP(p);
-	ZERO_STRUCTP(hnd);
-
 	switch (p->type)
 	{
 		case POL_SVC_INFO:
@@ -519,6 +516,7 @@ BOOL close_policy_hnd(POLICY_HND *hnd)
 		}
 		case POL_CLI_INFO:
 		{
+			DEBUG(10,("policy connection\n"));
 			if (p->dev.con->free_con != NULL)
 			{
 				p->dev.con->free_con(p->dev.con->con);
@@ -527,6 +525,9 @@ BOOL close_policy_hnd(POLICY_HND *hnd)
 			break;
 		}
 	}
+
+	ZERO_STRUCTP(p);
+	ZERO_STRUCTP(hnd);
 
 	free(p);
 

@@ -207,12 +207,15 @@ void cli_connection_free(struct cli_connection *con)
 	void *oldcli = NULL;
 	int i;
 
+	DEBUG(10,("cli_connection_free: %d\n", __LINE__));
+
 	if (con->msrpc.cli != NULL)
 	{
 		switch (con->type)
 		{
 			case MSRPC_LOCAL:
 			{
+				DEBUG(10,("msrpc locak connection\n"));
 				msrpc_use_del(con->srv_name, NULL, False, &closed);
 				oldcli = con->msrpc.local;
 				con->msrpc.local = NULL;
@@ -220,6 +223,7 @@ void cli_connection_free(struct cli_connection *con)
 			}
 			case MSRPC_SMB:
 			{
+				DEBUG(10,("msrpc smb connection\n"));
 				if (con->msrpc.smb->cli != NULL)
 				{
 					cli_nt_session_close(con->msrpc.smb->cli,
