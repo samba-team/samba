@@ -36,9 +36,9 @@ extern pstring myname;
 
 /****************************************************************************
    process a domain logon packet
-
    **************************************************************************/
-void process_logon_packet(struct packet_struct *p,char *buf,int len)
+void process_logon_packet(struct packet_struct *p,char *buf,int len, 
+			  char *mailslot)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	pstring my_name;
@@ -57,9 +57,9 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 	uint32 domainsidsize;
 	uint16 requestcount;
 	char *domainsid;
+	char *getdc;
 	char *uniuser; /* Unicode user name */
 	pstring ascuser;
-	char *mailslot;
 	char *unicomp; /* Unicode computer name */
 	struct smb_passwd *smb_pass; /* To check if machine account exists */
 
@@ -83,8 +83,8 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 			char *machine = q;
 			char *user = skip_string(machine,1);
 
-			mailslot = skip_string(user,1);
-			q = skip_string(mailslot,1);
+			getdc = skip_string(user,1);
+			q = skip_string(getdc,1);
 			unknown_byte = CVAL(q,0);
 			request_count = SVAL(q,1);
 			token = SVAL(q,3);
@@ -107,9 +107,12 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 
 			dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
-			send_mailslot_reply(True, mailslot, ClientDGRAM,
+			send_mailslot_reply(True, getdc, ClientDGRAM,
 			                    outbuf,PTR_DIFF(q,outbuf),
-			                    my_name,&dgram->source_name.name[0],0x20,0,
+			                    dgram->dest_name.name,
+					    dgram->source_name.name,
+					    dgram->dest_name.name_type,
+					    dgram->source_name.name_type,
 			                    p->ip, *iface_ip(p->ip));  
 			break;
 		}
@@ -119,8 +122,8 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 			char *q = buf + 2;
 			char *machine = q;
 
-			mailslot = skip_string(machine,1);
-			unicomp = skip_string(mailslot,1);
+			getdc = skip_string(machine,1);
+			unicomp = skip_string(getdc,1);
 
 			q = align2(unicomp, buf);
 
@@ -138,14 +141,18 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 			strcpy(reply_name,my_name);
 			strcpy(q, reply_name); q = skip_string(q, 1); /* PDC name */
 
-			q = align2(q, buf);
+			if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
+				q = align2(q, buf);
 
-			PutUniCode(q, my_name); q = skip_unicode_string(q, 1); /* PDC name */
-			PutUniCode(q, lp_workgroup()); q = skip_unicode_string(q, 1); /* Domain name. */
+				PutUniCode(q, my_name); /* PDC name */
+				q = skip_unicode_string(q, 1); 
+				PutUniCode(q, lp_workgroup()); /* Domain name*/
+				q = skip_unicode_string(q, 1); 
 
-			SIVAL(q, 0, ntversion); q += 4;
-			SSVAL(q, 0, lmnttoken); q += 2;
-			SSVAL(q, 0, lm20token); q += 2;
+				SIVAL(q, 0, ntversion); q += 4;
+				SSVAL(q, 0, lmnttoken); q += 2;
+				SSVAL(q, 0, lm20token); q += 2;
+			}
 
 			DEBUG(3,("GETDC request from %s(%s), reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 			          machine,inet_ntoa(p->ip), reply_name, lp_workgroup(),
@@ -154,9 +161,12 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 
 			dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
-			send_mailslot_reply(True, mailslot,ClientDGRAM,
+			send_mailslot_reply(True, getdc,ClientDGRAM,
 			                    outbuf,PTR_DIFF(q,outbuf),
-			                    my_name,&dgram->source_name.name[0],0x20,0,
+			                    dgram->dest_name.name,
+					    dgram->source_name.name,
+					    dgram->dest_name.name_type,
+					    dgram->source_name.name_type,
 			                    p->ip, *iface_ip(p->ip));  
 			return;
 		}
@@ -168,8 +178,8 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 			requestcount = SVAL(q, 0); q += 2;
 			unicomp = q;
 			uniuser = skip_unicode_string(unicomp,1);
-			mailslot = skip_unicode_string(uniuser,1);
-			q = skip_string(mailslot,1);
+			getdc = skip_unicode_string(uniuser,1);
+			q = skip_string(getdc,1);
 			allowableaccount = IVAL(q, 0); q += 4;
 			domainsidsize = IVAL(q, 0); q += 4;
 			domainsid = q;
@@ -221,9 +231,12 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 
 			dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
-			send_mailslot_reply(True, mailslot,ClientDGRAM,
+			send_mailslot_reply(True, getdc,ClientDGRAM,
 			                    outbuf,PTR_DIFF(q,outbuf),
-			                    my_name,&dgram->source_name.name[0],0x20,0,
+			                    dgram->dest_name.name,
+					    dgram->source_name.name,
+					    dgram->dest_name.name_type,
+					    dgram->source_name.name_type,
 			                    p->ip, *iface_ip(p->ip));  
 			break;
 		}

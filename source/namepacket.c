@@ -382,13 +382,13 @@ static void process_dgram(struct packet_struct *p)
 
    /* datagram packet received for the domain log on mailslot */
    if (strequal(smb_buf(buf),NET_LOGON_MAILSLOT)) {
-     process_logon_packet(p,buf2,len);
+     process_logon_packet(p,buf2,len, NET_LOGON_MAILSLOT);
      return;
    }
 
    /* datagram packet received for the NT domain log on mailslot */
    if (strequal(smb_buf(buf),NT_LOGON_MAILSLOT)) {
-     process_logon_packet(p,buf2,len);
+     process_logon_packet(p,buf2,len, NT_LOGON_MAILSLOT);
      return;
    }
 }
