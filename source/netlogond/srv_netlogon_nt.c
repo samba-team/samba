@@ -35,11 +35,11 @@ extern pstring global_myname;
 /******************************************************************
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
-static uint32 direct_samr_userinfo(const UNISTR2 * uni_user,
+static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 				   uint16 level,
 				   SAM_USERINFO_CTR * ctr,
 				   DOM_GID ** gids,
-				   uint32 * num_grps, BOOL set)
+				   uint32 *num_grps, BOOL set)
 {
 	POLICY_HND sam_pol;
 	POLICY_HND dom_pol;
@@ -384,8 +384,8 @@ static uint32 net_login_network(NET_ID_INFO_2 * id2,
 /*************************************************************************
  _net_req_chal
  *************************************************************************/
-uint32 _net_req_chal(const UNISTR2 * uni_logon_server,
-		     const UNISTR2 * uni_logon_client,
+uint32 _net_req_chal(const UNISTR2 *uni_logon_server,
+		     const UNISTR2 *uni_logon_client,
 		     const DOM_CHAL * clnt_chal,
 		     DOM_CHAL * srv_chal, uint16 remote_pid)
 {
@@ -504,11 +504,11 @@ static BOOL make_netinfo_2(NETLOGON_INFO_2 * info, uint32 flags,
 /*************************************************************************
  _net_logon_ctrl2
  *************************************************************************/
-uint32 _net_logon_ctrl2(const UNISTR2 * uni_server_name,
+uint32 _net_logon_ctrl2(const UNISTR2 *uni_server_name,
 			uint32 function_code,
 			uint32 query_level,
 			uint32 switch_value,
-			uint32 * reply_switch_value,
+			uint32 *reply_switch_value,
 			NETLOGON_INFO * logon_info)
 {
 	/* lkclXXXX - guess what - absolutely no idea what these are! */
@@ -553,7 +553,7 @@ uint32 _net_logon_ctrl2(const UNISTR2 * uni_server_name,
 /*************************************************************************
  _net_trust_dom_list
  *************************************************************************/
-uint32 _net_trust_dom_list(const UNISTR2 * uni_server_name,
+uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
 			   uint32 function_code, BUFFER2 * uni_trust_dom_name)
 {
 	char **doms = NULL;
@@ -578,7 +578,10 @@ uint32 _net_trust_dom_list(const UNISTR2 * uni_server_name,
 /*************************************************************************
  _net_auth
  *************************************************************************/
-uint32 _net_auth(const DOM_LOG_INFO * clnt_id,
+uint32 _net_auth(const UNISTR2 *uni_logon_srv,
+		 const UNISTR2 *uni_acct_name,
+		 uint16 sec_chan,
+		 const UNISTR2 *uni_comp_name,
 		 const DOM_CHAL * clnt_chal,
 		 DOM_CHAL * srv_chal, uint16 remote_pid)
 {
@@ -590,8 +593,7 @@ uint32 _net_auth(const DOM_LOG_INFO * clnt_id,
 
 	srv_time.time = 0;
 
-	unistr2_to_ascii(trust_name, &clnt_id->uni_comp_name,
-			 sizeof(trust_name) - 1);
+	unistr2_to_ascii(trust_name, uni_comp_name, sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -794,7 +796,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
 		      NET_USER_INFO_CTR * uctr, uint16 remote_pid,
-		      uint32 * auth_resp)
+		      uint32 *auth_resp)
 {
 	UNISTR2 *uni_samusr = NULL;
 	UNISTR2 *uni_domain = NULL;
@@ -992,8 +994,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* interactive login. */
 				status =
 					net_login_interactive(&
-							      (sam_id->
-							       ctr->auth.id1),
+							      (sam_id->ctr->
+							       auth.id1),
 							      &dc);
 				(*auth_resp) = 1;
 				break;
@@ -1003,10 +1005,10 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* network login.  lm challenge and 24 byte responses */
 				status =
 					net_login_network(&
-							  (sam_id->ctr->
-							   auth.id2),
-							  acb_info, &dc,
-usr_sess_key, lm_pw8);
+							  (sam_id->ctr->auth.
+							   id2), acb_info,
+							  &dc, usr_sess_key,
+lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = usr_sess_key;
 				(*auth_resp) = 1;
@@ -1144,16 +1146,16 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
 /*************************************************************************
  _net_sam_sync
  *************************************************************************/
-uint32 _net_sam_sync(const UNISTR2 * uni_srv_name,
-		     const UNISTR2 * uni_cli_name,
+uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
+		     const UNISTR2 *uni_cli_name,
 		     DOM_CRED * cli_creds,
 		     DOM_CRED * srv_creds,
 		     uint32 database_id,
 		     uint32 restart_state,
-		     uint32 * sync_context,
+		     uint32 *sync_context,
 		     uint32 max_size,
-		     uint32 * num_deltas,
-		     uint32 * num_deltas2,
+		     uint32 *num_deltas,
+		     uint32 *num_deltas2,
 		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas,
 		     uint16 remote_pid)
 {

@@ -1243,19 +1243,22 @@ msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  netlogond/srv_netlogon_nt.c  */
 
-uint32 _net_req_chal(const UNISTR2 * uni_logon_server,
-		     const UNISTR2 * uni_logon_client,
+uint32 _net_req_chal(const UNISTR2 *uni_logon_server,
+		     const UNISTR2 *uni_logon_client,
 		     const DOM_CHAL * clnt_chal,
 		     DOM_CHAL * srv_chal, uint16 remote_pid);
-uint32 _net_logon_ctrl2(const UNISTR2 * uni_server_name,
+uint32 _net_logon_ctrl2(const UNISTR2 *uni_server_name,
 			uint32 function_code,
 			uint32 query_level,
 			uint32 switch_value,
-			uint32 * reply_switch_value,
+			uint32 *reply_switch_value,
 			NETLOGON_INFO * logon_info);
-uint32 _net_trust_dom_list(const UNISTR2 * uni_server_name,
+uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
 			   uint32 function_code, BUFFER2 * uni_trust_dom_name);
-uint32 _net_auth(const DOM_LOG_INFO * clnt_id,
+uint32 _net_auth(const UNISTR2 *uni_logon_srv,
+		 const UNISTR2 *uni_acct_name,
+		 uint16 sec_chan,
+		 const UNISTR2 *uni_comp_name,
 		 const DOM_CHAL * clnt_chal,
 		 DOM_CHAL * srv_chal, uint16 remote_pid);
 uint32 _net_auth_2(const DOM_LOG_INFO * clnt_id,
@@ -1270,19 +1273,19 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
 		      NET_USER_INFO_CTR * uctr, uint16 remote_pid,
-		      uint32 * auth_resp);
+		      uint32 *auth_resp);
 uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
 		       DOM_CRED * srv_creds, uint16 remote_pid);
-uint32 _net_sam_sync(const UNISTR2 * uni_srv_name,
-		     const UNISTR2 * uni_cli_name,
+uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
+		     const UNISTR2 *uni_cli_name,
 		     DOM_CRED * cli_creds,
 		     DOM_CRED * srv_creds,
 		     uint32 database_id,
 		     uint32 restart_state,
-		     uint32 * sync_context,
+		     uint32 *sync_context,
 		     uint32 max_size,
-		     uint32 * num_deltas,
-		     uint32 * num_deltas2,
+		     uint32 *num_deltas,
+		     uint32 *num_deltas2,
 		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas,
 		     uint16 remote_pid);
 

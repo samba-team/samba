@@ -37,7 +37,7 @@ extern pstring global_myname;
  api_net_req_chal
  *************************************************************************/
 static BOOL api_net_req_chal(rpcsrv_struct * p,
-			     prs_struct * data, prs_struct * rdata)
+			     prs_struct *data, prs_struct *rdata)
 {
 	NET_Q_REQ_CHAL q_r;
 	NET_R_REQ_CHAL r_c;
@@ -62,7 +62,7 @@ static BOOL api_net_req_chal(rpcsrv_struct * p,
  api_net_auth
  *************************************************************************/
 static BOOL api_net_auth(rpcsrv_struct * p,
-			 prs_struct * data, prs_struct * rdata)
+			 prs_struct *data, prs_struct *rdata)
 {
 	NET_Q_AUTH q_a;
 	NET_R_AUTH r_a;
@@ -77,8 +77,11 @@ static BOOL api_net_auth(rpcsrv_struct * p,
 	}
 
 	r_a.status =
-		_net_auth(&q_a.clnt_id, &q_a.clnt_chal, &r_a.srv_chal,
-			  p->key.pid);
+		_net_auth(&q_a.clnt_id.uni_logon_srv,
+			  &q_a.clnt_id.uni_acct_name,
+			  q_a.clnt_id.sec_chan,
+			  &q_a.clnt_id.uni_comp_name,
+			  &q_a.clnt_chal, &r_a.srv_chal, p->key.pid);
 
 	/* store the response in the SMB stream */
 	return net_io_r_auth("", &r_a, rdata, 0);
@@ -88,7 +91,7 @@ static BOOL api_net_auth(rpcsrv_struct * p,
  api_net_auth_2
  *************************************************************************/
 static BOOL api_net_auth_2(rpcsrv_struct * p,
-			   prs_struct * data, prs_struct * rdata)
+			   prs_struct *data, prs_struct *rdata)
 {
 	NET_Q_AUTH_2 q_a;
 	NET_R_AUTH_2 r_a;
@@ -114,7 +117,7 @@ static BOOL api_net_auth_2(rpcsrv_struct * p,
  api_net_srv_pwset
  *************************************************************************/
 static BOOL api_net_srv_pwset(rpcsrv_struct * p,
-			      prs_struct * data, prs_struct * rdata)
+			      prs_struct *data, prs_struct *rdata)
 {
 	NET_Q_SRV_PWSET q_a;
 	NET_R_SRV_PWSET r_s;
@@ -140,7 +143,7 @@ static BOOL api_net_srv_pwset(rpcsrv_struct * p,
  api_net_sam_logoff
  *************************************************************************/
 static BOOL api_net_sam_logoff(rpcsrv_struct * p,
-			       prs_struct * data, prs_struct * rdata)
+			       prs_struct *data, prs_struct *rdata)
 {
 	NET_Q_SAM_LOGOFF q_l;
 	NET_R_SAM_LOGOFF r_s;
@@ -172,7 +175,7 @@ static BOOL api_net_sam_logoff(rpcsrv_struct * p,
  api_net_sam_sync
  *************************************************************************/
 static BOOL api_net_sam_sync(rpcsrv_struct * p,
-			     prs_struct * data, prs_struct * rdata)
+			     prs_struct *data, prs_struct *rdata)
 {
 	NET_Q_SAM_SYNC q_s;
 	NET_R_SAM_SYNC r_s;
@@ -194,16 +197,15 @@ static BOOL api_net_sam_sync(rpcsrv_struct * p,
 	}
 
 	status = _net_sam_sync(&q_s.uni_srv_name,
-				       &q_s.uni_cli_name,
-				       &q_s.cli_creds,
-				       &srv_creds,
-				       q_s.database_id,
-				       q_s.restart_state,
-				       &q_s.sync_context,
-				       q_s.max_size,
-				       &num_deltas,
-				       &num_deltas2, hdr_deltas, deltas,
-				       p->key.pid);
+			       &q_s.uni_cli_name,
+			       &q_s.cli_creds,
+			       &srv_creds,
+			       q_s.database_id,
+			       q_s.restart_state,
+			       &q_s.sync_context,
+			       q_s.max_size,
+			       &num_deltas,
+			       &num_deltas2, hdr_deltas, deltas, p->key.pid);
 
 	make_r_sam_sync(&r_s, &srv_creds,
 			q_s.sync_context,
@@ -217,7 +219,7 @@ static BOOL api_net_sam_sync(rpcsrv_struct * p,
  api_net_sam_logon
  *************************************************************************/
 static BOOL api_net_sam_logon(rpcsrv_struct * p,
-			      prs_struct * data, prs_struct * rdata)
+			      prs_struct *data, prs_struct *rdata)
 {
 	NET_Q_SAM_LOGON q_l;
 	NET_R_SAM_LOGON r_s;
@@ -255,7 +257,7 @@ static BOOL api_net_sam_logon(rpcsrv_struct * p,
  api_net_trust_dom_list
  *************************************************************************/
 static BOOL api_net_trust_dom_list(rpcsrv_struct * p,
-				   prs_struct * data, prs_struct * rdata)
+				   prs_struct *data, prs_struct *rdata)
 {
 	NET_Q_TRUST_DOM_LIST q_t;
 	NET_R_TRUST_DOM_LIST r_t;
@@ -281,7 +283,7 @@ static BOOL api_net_trust_dom_list(rpcsrv_struct * p,
  api_net_logon_ctrl2
  *************************************************************************/
 static BOOL api_net_logon_ctrl2(rpcsrv_struct * p,
-				prs_struct * data, prs_struct * rdata)
+				prs_struct *data, prs_struct *rdata)
 {
 	NET_Q_LOGON_CTRL2 q_l;
 	NET_R_LOGON_CTRL2 r_l;
