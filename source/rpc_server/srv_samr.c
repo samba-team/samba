@@ -220,61 +220,18 @@ static void api_samr_enum_dom_users( rpcsrv_struct *p, prs_struct *data, prs_str
 }
 
 /*******************************************************************
- samr_reply_add_groupmem
- ********************************************************************/
-static void samr_reply_add_groupmem(SAMR_Q_ADD_GROUPMEM *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_ADD_GROUPMEM r_e;
-	DOM_SID group_sid;
-	uint32 group_rid;
-	fstring group_sid_str;
-
-	r_e.status = 0x0;
-
-	/* find the policy handle.  open a policy on it. */
-	if (r_e.status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->pol, &group_sid))
-	{
-		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-	else
-	{
-		sid_to_string(group_sid_str, &group_sid);
-		sid_split_rid(&group_sid, &group_rid);
-	}
-
-	if (r_e.status == 0x0)
-	{
-		DEBUG(10,("sid is %s\n", group_sid_str));
-
-		if (sid_equal(&group_sid, &global_sam_sid))
-		{
-			DEBUG(10,("lookup on Domain SID\n"));
-
-			become_root(True);
-			r_e.status = add_group_member(group_rid, q_u->rid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-			unbecome_root(True);
-		}
-		else
-		{
-			r_e.status = 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
-		}
-	}
-
-	/* store the response in the SMB stream */
-	samr_io_r_add_groupmem("", &r_e, rdata, 0);
-
-	DEBUG(5,("samr_add_groupmem: %d\n", __LINE__));
-}
-
-/*******************************************************************
  api_samr_add_groupmem
  ********************************************************************/
 static void api_samr_add_groupmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_ADD_GROUPMEM q_e;
+	SAMR_R_ADD_GROUPMEM r_e;
+
 	samr_io_q_add_groupmem("", &q_e, data, 0);
-	samr_reply_add_groupmem(&q_e, rdata);
+
+	r_e.status = _samr_add_groupmem(&q_e.pol, q_e.rid, q_e.unknown);
+
+	samr_io_r_add_groupmem("", &r_e, rdata, 0);
 }
 
 /*******************************************************************
