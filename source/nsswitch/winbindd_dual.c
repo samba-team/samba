@@ -166,6 +166,9 @@ void do_dual_daemon(void)
 		_exit(0);
 	}
 	
+	if (!winbind_setup_common()) 
+		_exit(0);
+
 	dual_daemon_pipe = -1;
 	opt_dual_daemon = False;
 
