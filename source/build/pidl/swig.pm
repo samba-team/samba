@@ -205,7 +205,10 @@ sub FieldToPython($$)
 	    if ($e->{ARRAY_LEN} or util::has_property($e, "size_is")) {
 		$result .= ArrayToPython($e, $prefix);
 	    } else {
-		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_to_python(*s->$prefix$e->{NAME}));\n";
+		$result .= "\tif (s->$prefix$e->{NAME})\n";
+		$result .= "\t\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_to_python(*s->$prefix$e->{NAME}));\n";
+		$result .= "\telse\n";
+		$result .= "\t\tPyDict_SetItemString(obj, \"$e->{NAME}\", Py_None);\n";
 	    }
 	}
     } else {
