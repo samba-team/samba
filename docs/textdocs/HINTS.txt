@@ -1,5 +1,5 @@
 !==
-!== HINTS.txt for Samba release 2.2.0 17 Apr 2001
+!== HINTS.txt for Samba release 2.2.0a 23 Jun 2001
 !==
 Contributor:	Many
 Updated:	Not for a long time!

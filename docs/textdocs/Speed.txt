@@ -1,5 +1,5 @@
 !==
-!== Speed.txt for Samba release 2.2.0 17 Apr 2001
+!== Speed.txt for Samba release 2.2.0a 23 Jun 2001
 !==
 
 Subject:	Samba performance issues
