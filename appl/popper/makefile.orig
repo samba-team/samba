@@ -1,6 +1,6 @@
 #@(#)@(#)Makefile	2.5  2.5 4/3/91
 
-CC = gcc #-static
+CC = gcc -g #-static
 
 CSRCS		=	pop_dele.c pop_dropcopy.c pop_dropinfo.c \
 			pop_get_command.c pop_get_subcommand.c pop_init.c \
