@@ -685,30 +685,19 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NET_Q_SRV_PWSET q_s;
 	uint16 sec_chan_type = 2;
 	NTSTATUS nt_status;
-	char *mach_acct;
 
 	gen_next_creds( cli, &new_clnt_cred);
 	
 	prs_init(&qbuf , 1024, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0,    mem_ctx, UNMARSHALL);
 	
-	/* create and send a MSRPC command with api NET_SRV_PWSET */
-	
-	mach_acct = talloc_asprintf(mem_ctx, "%s$", machine_name);
-	
-	if (!mach_acct) {
-		DEBUG(0,("talloc_asprintf failed!\n"));
-		nt_status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
 	DEBUG(4,("cli_net_srv_pwset: srv:%s acct:%s sc: %d mc: %s clnt %s %x\n",
-		 cli->srv_name_slash, mach_acct, sec_chan_type, machine_name,
+		 cli->srv_name_slash, cli->mach_acct, sec_chan_type, machine_name,
 		 credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
 	
         /* store the parameters */
 	init_q_srv_pwset(&q_s, cli->srv_name_slash, (const char *)cli->sess_key,
-			 mach_acct, sec_chan_type, machine_name, 
+			 cli->mach_acct, sec_chan_type, machine_name, 
 			 &new_clnt_cred, hashed_mach_pwd);
 	
 	/* turn parameters into data stream */
