@@ -40,16 +40,38 @@
 
 RCSID("$Id$");
 
+/*
+ * Return a NULL-terminated list of default realms in `realms'.
+ * Free this memory with krb5_free_host_realm.
+ */
+
+krb5_error_code
+krb5_get_default_realms (krb5_context context,
+			 krb5_realm **realms)
+{
+    if (context->default_realms == NULL)
+	return KRB5_CONFIG_NODEFREALM;
+
+    return krb5_copy_host_realm (context,
+				 context->default_realms,
+				 realms);
+}
+
+/*
+ * Return the first default realm.  For compatability.
+ */
+
 krb5_error_code
 krb5_get_default_realm(krb5_context context,
 		       krb5_realm *realm)
 {
     char *res;
 
-    if (context->default_realm == NULL)
+    if (context->default_realms == NULL
+	|| context->default_realms[0] == NULL)
 	return KRB5_CONFIG_NODEFREALM;
 
-    res = strdup (context->default_realm);
+    res = strdup (context->default_realms[0]);
     if (res == NULL)
 	return ENOMEM;
     *realm = res;
