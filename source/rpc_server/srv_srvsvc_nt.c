@@ -1589,6 +1589,7 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	struct current_user user;
 	fstring user_name;
 	connection_struct *conn = NULL;
+	BOOL became_user = False; 
 
 	ZERO_STRUCT(st);
 
@@ -1611,6 +1612,13 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		r_u->status = (uint32)ecode;
 		goto error_exit;
 	}
+
+	if (!become_user(conn, conn->vuid)) {
+		DEBUG(0,("_srv_net_file_query_secdesc: Can't become connected user!\n"));
+		r_u->status = ERRnoaccess;
+		goto error_exit;
+	}
+    became_user = True;
 
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
 	unix_convert(filename, conn, NULL, &bad_path, &st);
@@ -1647,7 +1655,7 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	psd->dacl->revision = (uint16) NT4_ACL_REVISION;
 
 	close_file(fsp, True);
-
+	unbecome_user();
 	close_cnum(conn, user.vuid);
 	return r_u->status;
 
@@ -1656,6 +1664,9 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	if(fsp) {
 		close_file(fsp, True);
 	}
+
+	if (became_user)
+		unbecome_user();
 
 	if (conn) 
 		close_cnum(conn, user.vuid);

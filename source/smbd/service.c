@@ -36,7 +36,7 @@ extern fstring remote_machine;
 
 
 /****************************************************************************
-load parameters specific to a connection/service
+ Load parameters specific to a connection/service.
 ****************************************************************************/
 
 BOOL set_current_service(connection_struct *conn,BOOL do_chdir)

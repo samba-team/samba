@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* what user is current? */
 extern struct current_user current_user;
 
@@ -384,7 +382,7 @@ BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	*name_type = SID_NAME_UNKNOWN;
 
 	if (!winbind_lookup_name(name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
-		BOOL ret;
+		BOOL ret = False;
 
 		DEBUG(10, ("lookup_name: winbind lookup for %s failed - trying local\n", name));
 
