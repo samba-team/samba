@@ -14,17 +14,19 @@
 ]
 interface IRemoteActivation
 {
-	typedef struct {
-		/* Looks very much like a protocol tower to me, but it appears 
-		   to be aligned differently then it is in epmapper -jelmer
-		  */
-		uint8 FIXME[12];
-	} floor_tmp;
+	typedef enum 
+	{
+		RPC_C_IMP_LEVEL_DEFAULT = 0,
+		RPC_C_IMP_LEVEL_ANONYMOUS = 1,
+		RPC_C_IMP_LEVEL_IDENTIFY = 2,
+		RPC_C_IMP_LEVEL_IMPERSONATE = 3,
+		RPC_C_IMP_LEVEL_DELEGATE = 4
+	} imp_levels;
 
 	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
-	HRESULT RemoteActivation (
-			[in] ORPCTHIS ORPCthis,
-			[out] ORPCTHAT ORPCthat,
+	WERROR RemoteActivation (
+			[in] ORPCTHIS this,
+			[out] ORPCTHAT that,
 			[in] GUID Clsid,
 			[in, unique] unistr *pwszObjectName,
 			[in, unique] MInterfacePointer *pObjectStorage,
@@ -33,13 +35,13 @@ interface IRemoteActivation
 			[in] uint32 Interfaces,
 			[in, unique,size_is(Interfaces)] GUID *pIIDs,
 			[in] uint16 num_protseqs,
-			[in, size_is(num_protseqs)] floor_tmp protseq[],
+			[in, size_is(num_protseqs)] uint16 protseq[],
 			[out] HYPER_T pOxid,
 			[out] DUALSTRINGARRAY *pdsaOxidBindings,
 			[out] IPID ipidRemUnknown,
-			[out] uint32 pAuthnHint,
-			[out] COMVERSION pServerVersion,
-			[out] HRESULT phr,
+			[out] uint32 AuthnHint,
+			[out] COMVERSION ServerVersion,
+			[out] HRESULT hr,
 			[out,size_is(Interfaces)] MInterfacePointer ifaces[],
 			[out,size_is(Interfaces)] HRESULT results[]
 			);
