@@ -6564,6 +6564,7 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	struct current_user user;
 	fstring driver_name;
+	uint32 version;
 
 	ZERO_STRUCT(driver);
 
