@@ -115,7 +115,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	BOOL ret = True;
 
 	if (!tdb) {
-		tdb = tdb_open(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST, 
+		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST, 
 			       O_RDWR | O_CREAT, 0644);
 	}
 	if (!tdb)
