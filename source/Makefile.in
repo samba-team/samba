@@ -619,11 +619,11 @@ bin/.dummy:
 bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(LIBS) 
+	  $(AUTHLIBS) $(LIBS) @BUILD_POPT@
 
 bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/wrepld: $(WREPL_OBJ) bin/.dummy
 	@echo Linking $@
