@@ -499,7 +499,7 @@
 		samr_Name home_drive;
 		samr_Name logon_script;
 		samr_Name profile;
-		samr_Name descriptiom;
+		samr_Name description;
 		samr_Name workstations;
 		NTTIME last_logon;
 		NTTIME last_logoff;
@@ -543,7 +543,7 @@
 	} samr_UserInfo12;
 
 	typedef struct {
-		samr_Name descriptiom;
+		samr_Name description;
 	} samr_UserInfo13;
 
 	typedef struct {
@@ -627,9 +627,14 @@
 		[out,switch_is(level)]    samr_UserInfo *info
 		);
 
+
 	/************************/
 	/* Function    0x25     */
-	NTSTATUS samr_SET_USERINFO();
+	NTSTATUS samr_SetUserInfo(
+		[in,ref]                   policy_handle *handle,
+		[in]                       uint16 level,
+		[in,ref,switch_is(level)]  samr_UserInfo *info
+		);
 
 	/************************/
 	/* Function    0x26     */

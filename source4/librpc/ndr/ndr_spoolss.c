@@ -241,31 +241,31 @@ buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (level) {
 	case 1:
-		NDR_CHECK(ndr_push_spoolss_PrinterInfo1(ndr, ndr_flags, &r->info1));
+		NDR_CHECK(ndr_push_spoolss_PrinterInfo1(ndr, NDR_BUFFERS, &r->info1));
 	break;
 
 	case 2:
-		NDR_CHECK(ndr_push_spoolss_PrinterInfo2(ndr, ndr_flags, &r->info2));
+		NDR_CHECK(ndr_push_spoolss_PrinterInfo2(ndr, NDR_BUFFERS, &r->info2));
 	break;
 
 	case 3:
-		NDR_CHECK(ndr_push_spoolss_PrinterInfo3(ndr, ndr_flags, &r->info3));
+		NDR_CHECK(ndr_push_spoolss_PrinterInfo3(ndr, NDR_BUFFERS, &r->info3));
 	break;
 
 	case 4:
-		NDR_CHECK(ndr_push_spoolss_PrinterInfo4(ndr, ndr_flags, &r->info4));
+		NDR_CHECK(ndr_push_spoolss_PrinterInfo4(ndr, NDR_BUFFERS, &r->info4));
 	break;
 
 	case 5:
-		NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, ndr_flags, &r->info5));
+		NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, NDR_BUFFERS, &r->info5));
 	break;
 
 	case 6:
-		NDR_CHECK(ndr_push_spoolss_PrinterInfo6(ndr, ndr_flags, &r->info6));
+		NDR_CHECK(ndr_push_spoolss_PrinterInfo6(ndr, NDR_BUFFERS, &r->info6));
 	break;
 
 	case 7:
-		NDR_CHECK(ndr_push_spoolss_PrinterInfo7(ndr, ndr_flags, &r->info7));
+		NDR_CHECK(ndr_push_spoolss_PrinterInfo7(ndr, NDR_BUFFERS, &r->info7));
 	break;
 
 	default:

@@ -429,11 +429,6 @@ struct srvsvc_NetShare1004 {
 	const char *comment;
 };
 
-struct srvsvc_NetShareCtr1004 {
-	uint32 count;
-	struct srvsvc_NetShare1004 *array;
-};
-
 union srvsvc_NetShareUnion {
 /* [case(0)] */ struct srvsvc_NetShareCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetShareCtr1 *ctr1;

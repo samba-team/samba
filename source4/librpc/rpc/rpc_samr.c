@@ -780,21 +780,21 @@ NTSTATUS dcerpc_samr_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, s
 	return status;
 }
 
-NTSTATUS dcerpc_samr_SET_USERINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_SET_USERINFO *r)
+NTSTATUS dcerpc_samr_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_SetUserInfo *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(samr_SET_USERINFO, r);		
+		NDR_PRINT_IN_DEBUG(samr_SetUserInfo, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_SET_USERINFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_SET_USERINFO,
-				    (ndr_pull_fn_t) ndr_pull_samr_SET_USERINFO,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_SETUSERINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_SetUserInfo,
+				    (ndr_pull_fn_t) ndr_pull_samr_SetUserInfo,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(samr_SET_USERINFO, r);		
+		NDR_PRINT_OUT_DEBUG(samr_SetUserInfo, r);		
 	}
 	if (NT_STATUS_IS_OK(status)) status = r->out.result;
 

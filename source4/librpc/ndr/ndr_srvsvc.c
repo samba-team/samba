@@ -4391,20 +4391,6 @@ void ndr_print_srvsvc_NetShare1004(struct ndr_print *ndr, const char *name, stru
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetShareCtr1004(struct ndr_print *ndr, const char *name, struct srvsvc_NetShareCtr1004 *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetShareCtr1004");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_ptr(ndr, "array", r->array);
-	ndr->depth++;
-	if (r->array) {
-		ndr_print_array(ndr, "array", r->array, sizeof(r->array[0]), r->count, (ndr_print_fn_t)ndr_print_srvsvc_NetShare1004);
-	}
-	ndr->depth--;
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetShareUnion(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetShareUnion *r)
 {
 	ndr_print_union(ndr, name, level, "srvsvc_NetShareUnion");
