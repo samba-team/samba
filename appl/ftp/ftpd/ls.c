@@ -107,6 +107,7 @@ free_fileinfo(struct fileinfo *f)
 #define LS_DISP_LONG	(1 << 8)
 #define LS_DISP_COLUMN	(2 << 8)
 #define LS_DISP_CROSS	(3 << 8)
+#define LS_IGNORE_DOTDIR (1 << 10)
 
 #ifndef S_ISTXT
 #define S_ISTXT S_ISVTX
@@ -630,11 +631,12 @@ list_dir(FILE *out, const char *directory, int flags)
 	void *tmp;
 
 	if(ent->d_name[0] == '.') {
+	    if (ent->d_name[1] == 0 && flags & LS_IGNORE_DOTDIR) /* Ignore . */
+	        continue;
+	    if (ent->d_name[1] == '.' && ent->d_name[2] == 0
+		&& flags & LS_IGNORE_DOTDIR) /* Ignore .. */
+	        continue;
 	    if (flags & LS_IGNORE_DOT)
-	        continue;
-	    if (ent->d_name[1] == 0) /* Ignore . */
-	        continue;
-	    if (ent->d_name[1] == '.' && ent->d_name[2] == 0) /* Ignore .. */
 	        continue;
 	}
 	tmp = realloc(files, (n_files + 1) * sizeof(*files));
@@ -661,7 +663,7 @@ list_dir(FILE *out, const char *directory, int flags)
 void
 builtin_ls(FILE *out, const char *file)
 {
-    int flags = LS_SORT_NAME | LS_IGNORE_DOT | LS_DISP_LONG;
+    int flags = LS_SORT_NAME | LS_IGNORE_DOT | LS_IGNORE_DOTDIR | LS_DISP_LONG;
 
     if(*file == '-') {
 	const char *p;
@@ -671,6 +673,8 @@ builtin_ls(FILE *out, const char *file)
 		flags = (flags & ~LS_DISP_MODE);
 		break;
 	    case 'a':
+		flags &= ~(LS_IGNORE_DOT | LS_IGNORE_DOTDIR);
+		break;
 	    case 'A':
 		flags &= ~LS_IGNORE_DOT;
 		break;
