@@ -158,6 +158,7 @@
 #undef HAVE_STRCASECMP
 #undef HAVE_STRUCT_DIRENT64
 #undef HAVE_TRUNCATED_SALT
+#undef BROKEN_NISPLUS_INCLUDE_FILES
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -695,6 +696,9 @@
 
 /* Define if you have the <rpc/rpc.h> header file.  */
 #undef HAVE_RPC_RPC_H
+
+/* Define if you have the <rpcsvc/nis.h> header file.  */
+#undef HAVE_RPCSVC_NIS_H
 
 /* Define if you have the <rpcsvc/yp_prot.h> header file.  */
 #undef HAVE_RPCSVC_YP_PROT_H

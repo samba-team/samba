@@ -108,9 +108,9 @@ AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/if.h)
-AC_CHECK_HEADERS(compat.h rpc/rpc.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h sys/param.h ctype.h )
-AC_CHECK_HEADERS(sys/wait.h sys/resource.h sys/ioctl.h sys/mode.h sys/mman.h)
-AC_CHECK_HEADERS(sys/filio.h string.h strings.h stdlib.h sys/socket.h)
+AC_CHECK_HEADERS(compat.h rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
+AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/mode.h)
+AC_CHECK_HEADERS(sys/mman.h sys/filio.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 #
@@ -829,6 +829,18 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
 if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
     AC_DEFINE(HAVE_TRUNCATED_SALT)
 fi
+
+AC_CACHE_CHECK([for broken nisplus include files],samba_cv_BROKEN_NISPLUS_INCLUDE_FILES,[
+AC_TRY_COMPILE([#include <sys/acl.h>
+#if defined(HAVE_RPCSVC_NIS_H)
+#include <rpcsvc/nis.h>
+#endif],
+[return 0;],
+samba_cv_BROKEN_NISPLUS_INCLUDE_FILES=no,samba_cv_BROKEN_NISPLUS_INCLUDE_FILES=yes)])
+if test x"$samba_cv_BROKEN_NISPLUS_INCLUDE_FILES" = x"yes"; then
+    AC_DEFINE(BROKEN_NISPLUS_INCLUDE_FILES)
+fi
+
 
 #################################################
 # check for smbwrapper support

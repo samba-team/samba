@@ -23,11 +23,13 @@
 
 #ifdef WITH_NISPLUS
 
+#ifdef BROKEN_NISPLUS_INCLUDE_FILES
+
 /*
  * The following lines are needed due to buggy include files
- * in Solaris 2.6 which define GROUP in both /usr/include/acl.h and
+ * in Solaris 2.6 which define GROUP in both /usr/include/sys/acl.h and
  * also in /usr/include/rpcsvc/nis.h. The definitions conflict. JRA.
- * Also GROUP_OBJ is defined as 0x4 in /usr/include/acl.h and as
+ * Also GROUP_OBJ is defined as 0x4 in /usr/include/sys/acl.h and as
  * an enum in /usr/include/rpcsvc/nis.h.
  */
 
@@ -37,6 +39,8 @@
 
 #if defined(GROUP_OBJ)
 #undef GROUP_OBJ
+#endif
+
 #endif
 
 #include <rpcsvc/nis.h>
