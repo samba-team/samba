@@ -244,6 +244,9 @@ void namecache_flush(void)
 {
 	int result;
 
+	if (!namecache_tdb)
+		return;
+
 	result = tdb_traverse(namecache_tdb, tdb_traverse_delete_fn, NULL);
 
 	if (result == -1)
