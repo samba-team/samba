@@ -59,6 +59,14 @@ krb5_free_principal(krb5_context context,
     }
 }
 
+void
+krb5_principal_set_type(krb5_context context,
+			krb5_principal principal,
+			int type)
+{
+    princ_type(principal) = type;
+}
+
 int
 krb5_principal_get_type(krb5_context context,
 			krb5_principal principal)
