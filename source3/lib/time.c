@@ -129,10 +129,34 @@ static int get_serverzone(void)
 
 /* Re-read the smb serverzone value */
 
+static struct timeval start_time_hires;
+
 void TimeInit(void)
 {
-        done_serverzone_init = False;
-        get_serverzone();
+	done_serverzone_init = False;
+	get_serverzone();
+	/* Save the start time of this process. */
+	GetTimeOfDay(&start_time_hires);
+}
+
+/**********************************************************************
+ Return a timeval struct of the uptime of this process. As TimeInit is
+ done before a daemon fork then this is the start time from the parent
+ daemon start. JRA.
+***********************************************************************/
+
+void get_process_uptime(struct timeval *ret_time)
+{
+	struct timeval time_now_hires;
+
+	GetTimeOfDay(&time_now_hires);
+	ret_time->tv_sec = time_now_hires.tv_sec - start_time_hires.tv_sec;
+	ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
+	if (time_now_hires.tv_usec < start_time_hires.tv_usec) {
+		ret_time->tv_sec -= 1;
+		ret_time->tv_usec = 1000000 + (time_now_hires.tv_usec - start_time_hires.tv_usec);
+	} else
+		ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
 }
 
 /*******************************************************************

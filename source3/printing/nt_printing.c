@@ -2651,10 +2651,11 @@ void get_printer_subst_params(int snum, fstring *printername, fstring *sharename
 
 static uint32 rev_changeid(void)
 {
-	static time_t start_time;
-	if (start_time == 0)
-		start_time = time(NULL);
-	return (((time(NULL) - start_time)+1)*1000);
+	struct timeval tv;
+
+	get_process_uptime(&tv);
+	/* This value is in ms * 100 */
+	return (tv.tv_sec * 100000) + (tv.tv_usec / 10);
 }
 
 /*
