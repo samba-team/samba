@@ -334,11 +334,11 @@ static struct key_type {
     krb5_cksumtype best_cksumtype;
     const char *name;
 } km [] = {
-    { KEYTYPE_NULL,	NULL,		ETYPE_NULL,
+    { KEYTYPE_NULL,	NULL,			ETYPE_NULL,
       CKSUMTYPE_NONE,		"null" },
-    { KEYTYPE_DES,	DES_random_key,	ETYPE_DES_CBC_MD5,
+    { KEYTYPE_DES,	DES_random_key,		ETYPE_DES_CBC_MD5,
       CKSUMTYPE_RSA_MD5_DES,	"des" },
-    { KEYTYPE_DES3,	DES3_random_key,ETYPE_DES3_CBC_MD5,
+    { KEYTYPE_DES3,	DES3_random_key,	ETYPE_DES3_CBC_SHA1,
       CKSUMTYPE_HMAC_SHA1_DES3, "des3" }
 };
 
@@ -418,12 +418,12 @@ krb5_keytype_to_etype(krb5_context context, krb5_keytype ktype,
 krb5_error_code
 krb5_keytype_to_cksumtype(krb5_context context,
 			  krb5_keytype ktype,
-			  krb5_enctype *etype)
+			  krb5_cksumtype *ctype)
 {
     struct key_type *k = find_key_type(ktype);
     if(k == NULL)
 	return KRB5_PROG_KEYTYPE_NOSUPP;
-    *etype = k->best_cksumtype;
+    *ctype = k->best_cksumtype;
     return 0;
 }
 
