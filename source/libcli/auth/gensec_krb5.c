@@ -234,10 +234,7 @@ static int gensec_krb5_destory(void *ptr)
 	struct gensec_krb5_state *gensec_krb5_state = ptr;
 
 	if (gensec_krb5_state->ticket.length) { 
-	/* Hmm, early heimdal dooesn't have this - correct call would be krb5_data_free */
-#ifdef HAVE_KRB5_FREE_DATA_CONTENTS
-		krb5_free_data_contents(gensec_krb5_state->krb5_context, &gensec_krb5_state->ticket); 
-#endif
+		kerberos_free_data_contents(gensec_krb5_state->krb5_context, &gensec_krb5_state->ticket); 
 	}
 	if (gensec_krb5_state->krb5_ccache) {
 		/* current heimdal - 0.6.3, which we need anyway, fixes segfaults here */
@@ -334,7 +331,10 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	gensec_krb5_state = gensec_security->private_data;
 	gensec_krb5_state->state_position = GENSEC_KRB5_CLIENT_START;
 
-	/* TODO: This is effecivly a static/global variable... */ 
+	/* TODO: This is effecivly a static/global variable... 
+	 
+	   TODO: If the user set a username, we should use an in-memory CCACHE (see below)
+	*/ 
 	ret = krb5_cc_default(gensec_krb5_state->krb5_context, &gensec_krb5_state->krb5_ccache);
 	if (ret) {
 		DEBUG(1,("krb5_cc_default failed (%s)\n",
@@ -391,6 +391,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		case ENOENT:
 		{
 			char *password;
+			char *ccache_string;
 			time_t kdc_time = 0;
 			nt_status = gensec_get_password(gensec_security, 
 							gensec_security, 
@@ -398,9 +399,23 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				return nt_status;
 			}
+			
+			/* this string should be unique */
+			ccache_string = talloc_asprintf(gensec_krb5_state, "MEMORY:%s:%s:%s", 
+							gensec_get_client_principal(gensec_security, gensec_krb5_state), 
+							gensec_get_target_principal(gensec_security, gensec_krb5_state), 
+							generate_random_str(gensec_krb5_state, 16));
+
+			ret = krb5_cc_resolve(gensec_krb5_state->krb5_context, ccache_string, &gensec_krb5_state->krb5_ccache);
+			if (ret) {
+				DEBUG(1,("failed to generate a new krb5 keytab (%s): %s\n", 
+					 ccache_string,
+					 error_message(ret)));
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 
 			ret = kerberos_kinit_password_cc(gensec_krb5_state->krb5_context, gensec_krb5_state->krb5_ccache, 
-						      gensec_get_client_principal(gensec_security, gensec_security), 
+						      gensec_get_client_principal(gensec_security, gensec_krb5_state), 
 						      password, NULL, &kdc_time);
 
 			/* cope with ticket being in the future due to clock skew */
