@@ -18,6 +18,7 @@ popper \- pop 3 server
 .SH SYNOPSIS
 .B /usr/etc/popper
 [ -d ]
+[ -a ]
 [ -k ]
 [ -t trace-file]
 [ -i ]
@@ -33,7 +34,9 @@ send electronic mail on behalf of a client.
 The 
 .B \-d
 flag sets the socket to debugging and turns on debugging.  All debugging
-information is saved using syslog(8).  The 
+information is saved using syslog(8).  
+.PP
+The 
 .B \-t trace\-file
 flag turns on debugging and saves the trace information in
 .I trace\-file
@@ -42,6 +45,12 @@ using fprintf(s).
 The
 .B \-k
 flag tells popper to talk the kerberised POP protocol (KPOP).
+.PP
+The
+.B \-a
+flag tells popper not to accept any cleartext passwords, but only OTPs.
+.PP
+The
 .B \-i
 flag tells popper it has not been started by inetd and should create
 its own socket and listen on it.  This is useful for debugging.
