@@ -184,6 +184,20 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
+# Start MODULE dcerpc_dssetup
+[MODULE::dcerpc_dssetup]
+INIT_FUNCTION = dcerpc_server_dssetup_init
+SUBSYSTEM = DCERPC
+INIT_OBJ_FILES = \
+		rpc_server/dssetup/dcesrv_dssetup.o
+REQUIRED_SUBSYSTEMS = \
+		SAMDB \
+		DCERPC_COMMON \
+		NDR_DSSETUP
+# End MODULE dcerpc_dssetup
+################################################
+
+################################################
 # Start SUBSYSTEM DCERPC
 [SUBSYSTEM::DCERPC]
 INIT_OBJ_FILES = \
