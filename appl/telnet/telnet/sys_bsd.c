@@ -836,9 +836,11 @@ process_rings(netin, netout, netex, ttyin, ttyout, poll)
     if (netin) {
 	FD_SET(net, &ibits);
     }
+#if !defined(SO_OOBINLINE)
     if (netex) {
 	FD_SET(net, &xbits);
     }
+#endif
 #ifdef __CYGWIN32__
     FD_SET(tout, &obits);
 #endif
