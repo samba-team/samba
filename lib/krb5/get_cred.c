@@ -87,7 +87,7 @@ out:
     free (buf);
     if(ret)
 	return ret;
-    padata->padata_type = pa_tgs_req;
+    padata->padata_type = KRB5_PADATA_TGS_REQ;
     return 0;
 }
 
@@ -191,6 +191,10 @@ init_tgs_req (krb5_context context,
 	ret = ENOMEM;
 	goto fail;
     }
+
+    /* some versions of some code might require that the client be
+       present in TGS-REQs, but this is clearly against the spec */
+
     ret = copy_PrincipalName(&in_creds->server->name, t->req_body.sname);
     if (ret)
 	goto fail;

@@ -340,7 +340,7 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
     free_EncryptedData(&encdata);
     if (ret)
 	return ret;
-    pa->padata_type = pa_enc_timestamp;
+    pa->padata_type = KRB5_PADATA_ENC_TIMESTAMP;
     pa->padata_value.length = 0;
     krb5_data_copy(&pa->padata_value,
 		   buf + sizeof(buf) - len,
@@ -582,10 +582,10 @@ set_ptypes(krb5_context context,
 			   NULL);
 	for(i = 0; i < md.len; i++){
 	    switch(md.val[i].padata_type){
-	    case pa_enc_timestamp:
+	    case KRB5_PADATA_ENC_TIMESTAMP:
 		*ptypes = ptypes2;
 		break;
-	    case pa_etype_info:
+	    case KRB5_PADATA_ETYPE_INFO:
 		*preauth = &preauth2;
 		ALLOC_SEQ(*preauth, 1);
 		(*preauth)->val[0].type = KRB5_PADATA_ENC_TIMESTAMP;
@@ -594,6 +594,8 @@ set_ptypes(krb5_context context,
 				       md.val[i].padata_value.length,
 				       &(*preauth)->val[0].info,
 				       NULL);
+		break;
+	    default:
 		break;
 	    }
 	}
@@ -714,12 +716,12 @@ krb5_get_in_cred(krb5_context context,
     if(rep.kdc_rep.padata){
 	int index = 0;
 	pa = krb5_find_padata(rep.kdc_rep.padata->val, rep.kdc_rep.padata->len, 
-			      pa_pw_salt, &index);
+			      KRB5_PADATA_PW_SALT, &index);
 	if(pa == NULL) {
 	    index = 0;
 	    pa = krb5_find_padata(rep.kdc_rep.padata->val, 
 				  rep.kdc_rep.padata->len, 
-				  pa_afs3_salt, &index);
+				  KRB5_PADATA_AFS3_SALT, &index);
 	}
     }
     if(pa) {
