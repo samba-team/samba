@@ -1433,59 +1433,48 @@ ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
 		  char *buf, off_t offset, size_t size)
 {
-	int total = -1;
-	int issued=0;
-	int received=0;
+	int bwritten = 0;
+	int issued = 0;
+	int received = 0;
 	int mpx = MAX(cli->max_mux-1, 1);
 	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
-	int mid;
 	int blocks = (size + (block-1)) / block;
 
-	if (size == 0) return 0;
-
 	while (received < blocks) {
-		int size2;
 
-		while (issued - received < mpx && issued < blocks) {
-			int size1 = MIN(block, size-issued*block);
-			cli_issue_write(cli, fnum, offset+issued*block,
+		while ((issued - received < mpx) && (issued < blocks))
+		{
+			int bsent = issued * block;
+			int size1 = MIN(block, size - bsent);
+
+			cli_issue_write(cli, fnum, offset + bsent,
 			                write_mode,
-			                buf + issued*block,
+			                buf + bsent,
 					size1, issued);
 			issued++;
 		}
 
-		if (!cli_receive_smb(cli)) {
-			return total;
+		if (!cli_receive_smb(cli))
+		{
+			return bwritten;
 		}
 
 		received++;
-		mid = SVAL(cli->inbuf, smb_mid) - cli->mid;
-		size2 = SVAL(cli->inbuf, smb_vwv2);
 
-		if (CVAL(cli->inbuf,smb_rcls) != 0) {
-			blocks = MIN(blocks, mid-1);
-			continue;
+		if (CVAL(cli->inbuf,smb_rcls) != 0)
+		{
+			break;
 		}
 
-		if (size2 <= 0) {
-			blocks = MIN(blocks, mid-1);
-			/* this distinguishes EOF from an error */
-			total = MAX(total, 0);
-			continue;
-		}
-
-		total += size2;
-
-		total = MAX(total, mid*block + size2);
+		bwritten += SVAL(cli->inbuf, smb_vwv2);
 	}
 
-	while (received < issued) {
-		cli_receive_smb(cli);
+	while (received < issued && cli_receive_smb(cli))
+	{
 		received++;
 	}
 	
-	return total;
+	return bwritten;
 }
 
 
