@@ -67,6 +67,8 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 		      kadm5_config_params *params,
 		      krb5_context context)
 {
+    krb5_error_code ret;
+
     *ctx = malloc(sizeof(**ctx));
     if(*ctx == NULL)
 	return ENOMEM;
@@ -85,17 +87,17 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 						   "tcp", 749);
     if(params->mask & KADM5_CONFIG_ADMIN_SERVER)
 	(*ctx)->admin_server = strdup(params->admin_server);
-    else{
-	const char *h = krb5_config_get_string(context,
-					       NULL, 
-					       "realms", 
-					       (*ctx)->realm, 
-					       "admin_server", 
-					       NULL);
-	if(h == NULL)
-	    return KADM5_NO_SRV; /* XXX */
-	(*ctx)->admin_server = strdup(h);
+    else {
+	char **hostlist;
+
+	ret = krb5_get_krb_admin_hst (context, &(*ctx)->realm, &hostlist);
+	if (ret)
+	    return ret;
+	(*ctx)->admin_server = strdup(*hostlist);
+	krb5_free_krbhst (context, hostlist);
     }
+    if ((*ctx)->admin_server == NULL)
+	return ENOMEM;
 	    
     return 0;
 }
@@ -166,7 +168,7 @@ get_new_cache(krb5_context context,
     switch(ret){
     case 0:
 	break;
-    case KRB5KDC_ERR_NONE: /* XXX hack in krb5_get_init_creds_password */
+    case KRB5_LIBOS_PWDINTR:	/* don't print anything if it was just C-c:ed */
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KRB_AP_ERR_MODIFIED:
 	return KADM5_BAD_PASSWORD;
