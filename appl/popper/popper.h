@@ -14,6 +14,14 @@
  *  Header file for the POP programs
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#define DEBUG
+#define RETURN_PATH_HANDLING
+#endif
+
+#define KERBEROS
+
 #include <syslog.h>
 #include "version.h"
 
