@@ -311,16 +311,14 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 	return KRB5_BADMSGTYPE;
     }
 
-#if 0
     if (dh_key_info->algorithm.parameters == NULL) {
 	krb5_set_error_string(context, "PKINIT missing algorithm parameter "
 			      "in clientPublicValue");
 	return KRB5_BADMSGTYPE;
     }
-#endif
 
-    ret = decode_DomainParameters(dh_key_info->algorithm.parameters.data,
-				  dh_key_info->algorithm.parameters.length,
+    ret = decode_DomainParameters(dh_key_info->algorithm.parameters->data,
+				  dh_key_info->algorithm.parameters->length,
 				  &dhparam,
 				  NULL);
     if (ret) {
