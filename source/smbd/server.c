@@ -529,10 +529,11 @@ usage on the program
 static void usage(char *pname)
 {
 
-	printf("Usage: %s [-DaoPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	printf("Usage: %s [-DaioPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
 	printf("       [-O socket options] [-s services file]\n");
-	printf("\t-D                    Become a daemon\n");
+	printf("\t-D                    Become a daemon (default)\n");
 	printf("\t-a                    Append to log file (default)\n");
+	printf("\t-i                    Run interactive (not a daemon)\n");
 	printf("\t-o                    Overwrite log file, don't append\n");
 	printf("\t-h                    Print usage\n");
 	printf("\t-?                    Print usage\n");
@@ -554,6 +555,7 @@ static void usage(char *pname)
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
+	BOOL interactive = False;
 	BOOL specified_logfile = False;
 	int port = SMB_PORT;
 	int opt;
@@ -570,7 +572,7 @@ static void usage(char *pname)
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?Vaof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dip:h?Vaof:")) )
 		switch (opt)  {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
@@ -596,6 +598,10 @@ static void usage(char *pname)
 
 		case 'D':
 			is_daemon = True;
+			break;
+
+		case 'i':
+			interactive = True;
 			break;
 
 		case 'd':
@@ -643,7 +649,7 @@ static void usage(char *pname)
 
 	pstrcpy(remote_machine, "smbd");
 
-	setup_logging(argv[0],False);
+	setup_logging(argv[0],interactive);
 
 	charset_initialise();
 
@@ -688,7 +694,7 @@ static void usage(char *pname)
 	reopen_logs();
 
 	DEBUG(1,( "smbd version %s started.\n", VERSION));
-	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-1998\n"));
+	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-2002\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
@@ -736,7 +742,7 @@ static void usage(char *pname)
 		is_daemon = True;
 	}
 
-	if (is_daemon) {
+	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
 		become_daemon();
 	}

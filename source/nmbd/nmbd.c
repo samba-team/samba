@@ -630,10 +630,11 @@ static BOOL init_structs(void)
 static void usage(char *pname)
 {
 
-  printf( "Usage: %s [-DaohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
+  printf( "Usage: %s [-DaiohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
   printf( "       [-n name] [-p port] [-s configuration file]\n" );
-  printf( "\t-D                    Become a daemon\n" );
+  printf( "\t-D                    Become a daemon (default)\n" );
   printf( "\t-a                    Append to log file (default)\n" );
+  printf( "\t-i                    Run interactive (not a daemon)\n" );
   printf( "\t-o                    Overwrite log file, don't append\n" );
   printf( "\t-h                    Print usage\n" );
   printf( "\t-V                    Print version\n" );
@@ -656,6 +657,7 @@ static void usage(char *pname)
   extern FILE *dbf;
   extern char *optarg;
   extern BOOL  append_log;
+  BOOL opt_interactive = False;
   pstring logfile;
 
   append_log = True;  /* Default, override with '-o' option. */
@@ -672,7 +674,6 @@ static void usage(char *pname)
 
   slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", LOGFILEBASE);
   lp_set_logfile(logfile);
-  setup_logging( argv[0], False );
 
   charset_initialise();
 
@@ -709,7 +710,7 @@ static void usage(char *pname)
 #endif
 
   while( EOF != 
-         (opt = getopt( argc, argv, "Vaos:T:I:C:bAB:N:Rn:l:d:Dp:hSH:G:f:" )) )
+         (opt = getopt( argc, argv, "Vaos:T:I:C:bAB:N:Rn:l:d:Dip:hSH:G:f:" )) )
     {
       switch (opt)
         {
@@ -740,6 +741,9 @@ static void usage(char *pname)
         case 'o':
           append_log = False;
           break;
+        case 'i':
+          opt_interactive = True;
+          break;
         case 'D':
           is_daemon = True;
           break;
@@ -768,10 +772,11 @@ static void usage(char *pname)
         }
     }
 
+  setup_logging( argv[0], opt_interactive );
   reopen_logs();
 
   DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
-  DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1998\n" ) );
+  DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-2002\n" ) );
 
   if ( !reload_nmbd_services(False) )
     return(-1);
@@ -806,7 +811,7 @@ static void usage(char *pname)
     is_daemon = True;
   }
   
-  if (is_daemon)
+  if (is_daemon && !opt_interactive)
   {
     DEBUG( 2, ( "Becoming a daemon.\n" ) );
     become_daemon();
