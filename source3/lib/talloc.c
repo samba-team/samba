@@ -45,7 +45,13 @@
  * memory it contains all in one allocation, which might be a bit
  * faster and perhaps use less memory overhead.
  *
- * That smells like a premature optimization, though.  -- mbp */
+ * That smells like a premature optimization, though.  -- mbp
+ **/
+
+/**
+ * If you want testing for memory corruption, link with dmalloc or use
+ * Insure++.  It doesn't seem useful to duplicate them here.
+ **/
 
 #include "includes.h"
 
