@@ -106,7 +106,33 @@ static NTSTATUS gensec_start(struct gensec_security **gensec_security)
 	(*gensec_security)->mem_ctx = mem_ctx;
 	(*gensec_security)->ops = NULL;
 
+	(*gensec_security)->subcontext = False;
 	return NT_STATUS_OK;
+}
+
+/** 
+ * Start a GENSEC subcontext, with a copy of the properties of the parent
+ *
+ * @note Used by SPENGO in particular, for the actual implementation mechanism
+ */
+
+NTSTATUS gensec_subcontext_start(struct gensec_security *parent, 
+				 struct gensec_security **gensec_security)
+{
+	NTSTATUS status;
+	
+	(*gensec_security) = talloc_p(parent->mem_ctx, struct gensec_security);
+	if (!(*gensec_security)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(**gensec_security) = *parent;
+	(*gensec_security)->ops = NULL;
+	(*gensec_security)->private_data = NULL;
+
+	(*gensec_security)->subcontext = True;
+
+	return status;
 }
 
 NTSTATUS gensec_client_start(struct gensec_security **gensec_security)
@@ -162,34 +188,50 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
+/** 
+ * Start a GENSEC sub-mechanism by DCERPC allocated 'auth type' number 
+ */
+
 NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
 				       uint8_t authtype) 
 {
 	gensec_security->ops = gensec_security_by_authtype(authtype);
 	if (!gensec_security->ops) {
-		DEBUG(1, ("Could not find GENSEC backend for authtype=%d\n", (int)authtype));
+		DEBUG(3, ("Could not find GENSEC backend for authtype=%d\n", (int)authtype));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return gensec_start_mech(gensec_security);
 }
+
+/** 
+ * Start a GENSEC sub-mechanism by OID, used in SPNEGO
+ *
+ * @note This should also be used when you wish to just start NLTMSSP (for example), as it uses a
+ *       well-known #define to hook it in.
+ */
 
 NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security, 
 				  const char *mech_oid) 
 {
 	gensec_security->ops = gensec_security_by_oid(mech_oid);
 	if (!gensec_security->ops) {
-		DEBUG(1, ("Could not find GENSEC backend for oid=%s\n", mech_oid));
+		DEBUG(3, ("Could not find GENSEC backend for oid=%s\n", mech_oid));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return gensec_start_mech(gensec_security);
 }
+
+/** 
+ * Start a GENSEC sub-mechanism by a well know SASL name
+ *
+ */
 
 NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security, 
 					const char *sasl_name) 
 {
 	gensec_security->ops = gensec_security_by_sasl_name(sasl_name);
 	if (!gensec_security->ops) {
-		DEBUG(1, ("Could not find GENSEC backend for sasl_name=%s\n", sasl_name));
+		DEBUG(3, ("Could not find GENSEC backend for sasl_name=%s\n", sasl_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return gensec_start_mech(gensec_security);
@@ -264,8 +306,11 @@ void gensec_end(struct gensec_security **gensec_security)
 		(*gensec_security)->ops->end(*gensec_security);
 	}
 	(*gensec_security)->private_data = NULL;
-	talloc_destroy((*gensec_security)->mem_ctx);
-	
+
+	if (!(*gensec_security)->subcontext) {
+		/* don't destory this if this is a subcontext - it belongs to the parent */
+		talloc_destroy((*gensec_security)->mem_ctx);
+	}
 	gensec_security = NULL;
 }
 

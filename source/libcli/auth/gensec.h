@@ -72,6 +72,7 @@ struct gensec_security {
 	void *private_data;
 	struct gensec_user user;
 	enum gensec_role gensec_role;
+	BOOL subcontext;
 };
 
 /* this structure is used by backends to determine the size of some critical types */
