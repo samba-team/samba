@@ -1,5 +1,5 @@
 !==
-!== PRINTER_DRIVER.txt for Samba release TNG-alpha 09 Apr 2000
+!== PRINTER_DRIVER.txt for Samba release TNG-alpha 10 Apr 2000
 !==
 ==========================================================================
 	Supporting the famous PRINTER$ share

@@ -1,4 +1,4 @@
-          WHATS NEW IN Samba (The Next Generation) 2.1
+          WHATS NEW IN Samba (The Next Generation) 2.2
           ============================================
 
 This is an ALPHA release of Samba TNG, the UNIX based SMB/CIFS file,
@@ -15,12 +15,22 @@ future, you will not need Samba TNG or any of its functionality,
 and your assistance is not being solicited in the development of
 this project.
 
+[lkcl: There is, however, a large enough Windows 9x user-base
+to warrant ensuring that Samba TNG remains compatible, it's just that
+personally i will not touch it with a ten foot barge pole (I got
+as far as setting up a vmware session called win98, and it's still
+empty).  This is a personal view, not held by any other Samba
+Team members who are cracking the whip in my direction, and I
+keep getting into trouble over this.  I apologise sincerely and
+wholeheartedly to all Windows 9x users for any offense and
+inconvenience I may have caused to anyone using this stupid OS.]
+
+
 Major changes in Samba TNG
 --------------------------
 
 There are many major changes in Samba TNG.  Here are some of them:
 
-=====================================================================
 
 1). Windows NT (tm) Primary Domain Controller compatibility
 -----------------------------------------------------------
@@ -41,6 +51,8 @@ the following Windows NT (tm) tools and services:
 - Event Log
 - Service Control Manager
 - Registry Editor
+- Command Scheduler
+- NT-style Printing
 
 A command-line tool named rpcclient, with a command-syntax similar to
 smbclient, has over sixty five commands that provide equivalent
@@ -55,7 +67,7 @@ names for these, suggestions are welcomed.
 ---------------
 
 Samba is now self-configuring using GNU autoconf and libtool, removing
-the need for people installing Samba to have to hand configure
+the need for people installing Samba to have to hand-configured
 Makefiles, as was needed in previous versions.
 
 You now configure Samba by running "./configure" then "make".  See
@@ -63,7 +75,7 @@ docs/textdocs/UNIX_INSTALL.txt for details.
 
 The use of libtool dramatically reduces the size of samba binaries.
 As we are using libtool in a slightly different way from usual,
-you may encounter run-time or compilation errors, so please repoty
+you may encounter run-time or compilation errors, so please report
 them to us.
 
 4). New SAM Database Daemons
@@ -72,18 +84,39 @@ them to us.
 The SAM database daemon, samrd, is being considered "legacy", and
 the aim is to replace it.  To this end, some new SAM database
 daemons are being developed - samrtdbd and samrnt5ldapd.
-They need to be run with their counterparts, netlogontdbd or
-netlogonnt5ldapd.  None of these are build as part of the standard
+They will need to be run with their counterparts, netlogontdbd or
+netlogonnt5ldapd.  None of these are built as part of the standard
 make, they have to be explicitly built because they are in
-development.
+development: samrd and lsarpcd are compiled by default.
+
+5). pam_ntdom and winbindd
+--------------------------
+
+The Windows Bind Daemon and the Plugin Authentication Module for NT
+Domains are now part of the Samba TNG Development effort.  
+
+winbindd presents, when installed using nsswitch, a unix-like view
+of a Windows NT Domain environment, allowing Unix applications and
+the Unix Operating system to enumerate NT users, groups and aliases
+as Unix users and groups.
+
+pam_ntdom, when installed as part of a PAM-enabled Unix Authentication
+system, allows Unix users to be authenticated against a Windows NT
+Domain environment.
+
+@begin marketing-speak
+	" The powerful combination of winbindd and pam_ntdom allows Unix
+	  to be integrated seamlessly into Windows NT Domain environments,
+	  which moves us closer to the Holy Grail of 'Single Sign-on'. "
+@end marketing-speak
 
 
 =====================================================================
 
 NOTE - Some important information
----------------------------------------
+---------------------------------
 
-Samba TNG up to alpha-0.3 required that the samba server be joined
+Samba TNG up to alpha-0.3 required that the samba server be joined.
 to its own Domain.  This requirement has been removed.
 
 It is important that you read the source/README file for
@@ -131,19 +164,7 @@ NOTE - Known Bugs
 It is *not* recommended that this version of Samba be run in a
 production environment, for at least the following reasons:
 
-1) nmbd is known to fork() every 20 minutes, resulting in an extra
-process that hangs around.  It has also been reported, in a large
-network neighbourhood environment with "wins support = no"
-and "wins server = x.x.x.x" to flood the WINS server with about
-3 requests per second to resolve every single name in the
-network neighbourhood.  Be Warned!
-
-This issue appears to have been resolved, cause unknown, fix unknown.
-
-You can avoid this by using a stable, production release of nmbd, such
-as can be found in 2.0.6a or later.
-
-2) The new MSRPC architecture forks() one MSRPC daemon per incoming
+1) The new MSRPC architecture forks() one MSRPC daemon per incoming
 service request.  The msrpc daemon stays around for as long as
 the remote server maintains a connection to it.  An investigation
 is underway to attempt to minimise the number of outstanding
@@ -155,21 +176,10 @@ Connection reuse has now been added and debugged: the number of
 incoming connections is reduced but still fairly large.
 
 
-3) The Samba TNG code base was cut from the 2.0 development tree
-approximately eighteen months ago.  That means that it does not have
-any of the file and print server improvements or bug-fixes since
-that time.  The use of Samba TNG as a file and print server is
-therefore not recommended, and can be avoided by setting user
-profiles and home directories to be on another Windows NT (tm) or
-compatible file server.
-
-This release now has Samba CVS main smbd code, as of April 3rd 2000.
-
-
 =====================================================================
 
 If you have problems, or think you have found a bug please email 
-a report to :
+a full, detailed report to:
 
         samba-technical@samba.org
 
