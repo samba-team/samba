@@ -264,6 +264,24 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 }
 
 /****************************************************************************
+ Close a 'stat file' opened internally.
+****************************************************************************/
+
+static int close_stat(files_struct *fsp)
+{
+	/*
+	 * Do the code common to files and directories.
+	 */
+	close_filestruct(fsp);
+
+	if (fsp->fsp_name)
+		string_free(&fsp->fsp_name);
+
+	file_free(fsp);
+	return 0;
+}
+
+/****************************************************************************
  Close a directory opened by an NT SMB call. 
 ****************************************************************************/
   
@@ -271,5 +289,8 @@ int close_file(files_struct *fsp, BOOL normal_close)
 {
 	if(fsp->is_directory)
 		return close_directory(fsp, normal_close);
-	return close_normal_file(fsp, normal_close);
+	else if (fsp->is_stat)
+		return close_stat(fsp);
+	else
+		return close_normal_file(fsp, normal_close);
 }
