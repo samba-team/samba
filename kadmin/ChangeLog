@@ -1,3 +1,11 @@
+2003-08-18  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmind.c (main): use krb5_prepend_config_files_default, now all
+	options in kdc.conf is parsed, not just [kdc]key-file=
+	
+	* kadmin.c (main): use krb5_prepend_config_files_default, now all
+	options in kdc.conf is parsed, not just [kdc]key-file=
+	
 2003-04-14  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* util.c: cast argument to tolower to unsigned char, from
