@@ -180,6 +180,7 @@ typedef struct krb5_ccache_data *krb5_ccache;
 typedef struct krb5_context_data *krb5_context;
 
 typedef Realm krb5_realm;
+typedef const char *krb5_const_realm; /* stupid language */
 typedef Principal krb5_principal_data;
 typedef struct Principal *krb5_principal;
 typedef const struct Principal *krb5_const_principal;
@@ -877,8 +878,8 @@ krb5_princ_set_realm(krb5_context context,
 
 krb5_error_code
 krb5_make_principal(krb5_context context,
-		    krb5_principal *pruincipal,
-		    krb5_realm realm,
+		    krb5_principal *principal,
+		    krb5_const_realm realm,
 		    ...);
 
 krb5_error_code
@@ -887,26 +888,24 @@ krb5_build_principal(krb5_context context,
 		     int rlen,
 		     const char *realm,
 		     ...);
-
 krb5_error_code
-krb5_build_principal_va(krb5_context context,
-			krb5_principal *principal,
+krb5_build_principal_va(krb5_context context, 
+			krb5_principal *principal, 
 			int rlen,
-			const char *realm,
+			krb5_const_realm realm,
 			va_list ap);
-
 krb5_error_code
 krb5_build_principal_va_ext(krb5_context context, 
 			    krb5_principal *principal, 
 			    int rlen,
-			    const char *realm,
+			    krb5_const_realm realm,
 			    va_list ap);
 
 krb5_error_code
 krb5_build_principal_ext(krb5_context context,
 			 krb5_principal *principal,
 			 int rlen,
-			 const char *realm,
+			 krb5_const_realm realm,
 			 ...);
 
 krb5_error_code
