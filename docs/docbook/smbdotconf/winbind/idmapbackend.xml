@@ -13,6 +13,6 @@
 
 	<para>Default: <command moreinfo="none">idmap backend = &lt;empty string&gt;</command></para>
 
-	<para>Example: <command moreinfo="none">idmap backend = ldapsam://ldapslave.example.com</command></para>
+	<para>Example: <command moreinfo="none">idmap backend = ldap:ldap://ldapslave.example.com</command></para>
 </listitem>
 </samba:parameter>
