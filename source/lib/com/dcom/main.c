@@ -30,6 +30,16 @@
 
 #define DCOM_NEGOTIATED_PROTOCOLS { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NCALRPC }
 
+struct dcom_client_context *dcom_client_init(struct com_context *ctx, const char *domain, const char *user, const char *password)
+{
+	ctx->dcom = talloc(ctx, struct dcom_client_context);
+	ctx->dcom->domain = domain;
+	ctx->dcom->user = user;
+	ctx->dcom->password = password;
+
+	return ctx->dcom;
+}
+
 static NTSTATUS dcerpc_binding_from_STRINGBINDING(TALLOC_CTX *mem_ctx, struct dcerpc_binding *b, struct STRINGBINDING *bd)
 {
 	char *host, *endpoint;
