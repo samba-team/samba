@@ -164,7 +164,7 @@ static const char *attr[] = {"uid", "pwdLastSet", "logonTime",
 			     "smbHome", "scriptPath",
 			     "profilePath", "description",
 			     "userWorkstations", "rid", "ntSid",
-			     "primaryGroupID", "lmPassword",
+			     "primaryGroupID", "primaryGroupSid", "lmPassword",
 			     "ntPassword", "acctFlags",
 			     "domain", "objectClass", 
 			     "uidNumber", "gidNumber", 
@@ -1667,24 +1667,36 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		if (get_single_attribute(ldap_state->ldap_struct, entry, "ntSid", temp)) {
 			pdb_set_user_sid_from_string(sampass, temp, PDB_SET);
 		}
+		if (get_single_attribute(ldap_state->ldap_struct, entry, "primaryGroupSid", temp)) {
+			pdb_set_group_sid_from_string(sampass, temp, PDB_SET);
+		} else {
+			pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
+		}
 	} else {
 		if (get_single_attribute(ldap_state->ldap_struct, entry, "rid", temp)) {
 			user_rid = (uint32)atol(temp);
 			pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
+		}
+		if (get_single_attribute(ldap_state->ldap_struct, entry, "primaryGroupID", temp)) {
+			uint32 group_rid;
+			group_rid = (uint32)atol(temp);
+
+			if (group_rid > 0) {
+				/* for some reason, we often have 0 as a primary group RID.
+				   Make sure that we treat this just as a 'default' value
+				*/
+				pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
+			} else {
+				pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
+			}
+		} else {
+			pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 		}
 	}
 
 	if (pdb_get_init_flags(sampass,PDB_USERSID) == PDB_DEFAULT) {
 		DEBUG(1, ("no rid or ntSid attribute found for this user %s\n", username));
 		return False;
-	}
-
-	if (!get_single_attribute(ldap_state->ldap_struct, entry, "primaryGroupID", temp)) {
-		pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
-	} else {
-		uint32 group_rid;
-		group_rid = (uint32)atol(temp);
-		pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	}
 
 	/* 
@@ -1952,15 +1964,16 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	if (need_update(sampass, PDB_USERSID)) {
 		fstring sid_string;
 		fstring dom_sid_string;
-		const DOM_SID *user_sid;
-		user_sid = pdb_get_user_sid(sampass);
+		const DOM_SID *user_sid = pdb_get_user_sid(sampass);
 		
 		if (ldap_state->use_ntsid) {
 			make_ldap_mod(ldap_state->ldap_struct, existing, mods,
 				      "ntSid", sid_to_string(sid_string, user_sid));
 		} else {
 			if (!sid_peek_check_rid(get_global_sam_sid(), user_sid, &rid)) {
-				DEBUG(1, ("User's SID (%s) is not for this domain (%s), cannot add to LDAP!\n", sid_to_string(sid_string, user_sid), sid_to_string(dom_sid_string, get_global_sam_sid())));
+				DEBUG(1, ("User's SID (%s) is not for this domain (%s), cannot add to LDAP!\n", 
+					  sid_to_string(sid_string, user_sid), 
+					  sid_to_string(dom_sid_string, get_global_sam_sid())));
 				return False;
 			}
 			slprintf(temp, sizeof(temp) - 1, "%i", rid);
@@ -1974,10 +1987,24 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	   'free' to hang off the unix primary group makes life easier */
 
 	if (need_update(sampass, PDB_GROUPSID)) {
-		rid = pdb_get_group_rid(sampass);
-		slprintf(temp, sizeof(temp) - 1, "%i", rid);
-		make_ldap_mod(ldap_state->ldap_struct, existing, mods,
-			      "primaryGroupID", temp);
+		fstring sid_string;
+		fstring dom_sid_string;
+		const DOM_SID *group_sid = pdb_get_group_sid(sampass);
+		
+		if (ldap_state->use_ntsid) {
+			make_ldap_mod(ldap_state->ldap_struct, existing, mods,
+				      "primaryGroupSid", sid_to_string(sid_string, group_sid));
+		} else {
+			if (!sid_peek_check_rid(get_global_sam_sid(), group_sid, &rid)) {
+				DEBUG(1, ("User's Primary Group SID (%s) is not for this domain (%s), cannot add to LDAP!\n", 
+					  sid_to_string(sid_string, group_sid), 
+					  sid_to_string(dom_sid_string, get_global_sam_sid())));
+				return False;
+			}
+			slprintf(temp, sizeof(temp) - 1, "%i", rid);
+			make_ldap_mod(ldap_state->ldap_struct, existing, mods,
+				      "primaryGroupID", temp);
+		}
 	}
 
 	/* displayName, cn, and gecos should all be the same
@@ -2389,7 +2416,8 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 	{ "lmPassword", "ntPassword", "pwdLastSet", "logonTime", "logoffTime",
 	  "kickoffTime", "pwdCanChange", "pwdMustChange", "acctFlags",
 	  "displayName", "smbHome", "homeDrive", "scriptPath", "profilePath",
-	  "userWorkstations", "primaryGroupID", "domain", "rid", "ntSid", NULL };
+	  "userWorkstations", "primaryGroupID", "primaryGroupSid", "domain", 
+	  "rid", "ntSid", NULL };
 
 	if (!sam_acct) {
 		DEBUG(0, ("sam_acct was NULL!\n"));
