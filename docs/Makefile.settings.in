@@ -14,6 +14,7 @@ THUMBPDF = @THUMBPDF@
 PDFLATEX = TEXINPUTS=xslt/latex:.: @PDFLATEX@ --file-line-error-style
 LATEX = TEXINPUTS=xslt/latex:.: @LATEX@ --file-line-error-style
 RM = @RM@
+PERL = @PERL@
 ifndef DEBUG_LATEX
 PDFLATEX += --interaction nonstopmode
 LATEX += --interaction nonstopmode
