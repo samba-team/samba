@@ -329,10 +329,10 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	struct smb_passwd *smbpw;
 	BOOL ret;
 	
-	become_root(0);
+	become_root();
 	smbpw = getsmbpwnam(user);
-	unbecome_root(0);
-	
+	unbecome_root();
+
 	if(smbpw == NULL) {
 		DEBUG(0,("getsmbpwnam returned NULL\n"));
 		return False;

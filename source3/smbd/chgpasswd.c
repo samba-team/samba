@@ -412,13 +412,17 @@ static BOOL chat_with_program(char *passwordprogram, char *name,
 		alarm(20);
 
 		if (as_root)
-			become_root(False);
+			become_root();
+
 		DEBUG(3,
 		      ("Dochild for user %s (uid=%d,gid=%d)\n", name,
 		       (int)getuid(), (int)getgid()));
 		chstat =
 			dochild(master, slavedev, name, passwordprogram,
 				as_root);
+
+		if (as_root)
+			unbecome_root();
 
 		/*
 		 * The child should never return from dochild() ....
@@ -546,9 +550,9 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 
 	*psmbpw = NULL;
 
-	become_root(0);
+	become_root();
 	smbpw = getsmbpwnam(user);
-	unbecome_root(0);
+	unbecome_root();
 
 	if (smbpw == NULL)
 	{
@@ -644,9 +648,9 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, uchar * pass1,
 	smbpw->smb_nt_passwd = NULL;	/* We lose the NT hash. Sorry. */
 
 	/* Now write it into the file. */
-	become_root(0);
+	become_root();
 	ret = mod_smbpwd_entry(smbpw, False);
-	unbecome_root(0);
+	unbecome_root();
 
 	return ret;
 }
@@ -713,9 +717,9 @@ BOOL check_oem_password(char *user,
 
 	BOOL nt_pass_set = (ntdata != NULL && nthash != NULL);
 
-	become_root(False);
+	become_root();
 	*psmbpw = smbpw = getsmbpwnam(user);
-	unbecome_root(False);
+	unbecome_root();
 
 	if (smbpw == NULL)
 	{
@@ -878,9 +882,9 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd,
 	smbpw->smb_nt_passwd = new_nt_p16;
 
 	/* Now write it into the file. */
-	become_root(0);
+	become_root();
 	ret = mod_smbpwd_entry(smbpw, override);
-	unbecome_root(0);
+	unbecome_root();
 
 	memset(new_passwd, '\0', strlen(new_passwd));
 
@@ -897,9 +901,9 @@ BOOL check_plaintext_password(char *user, char *old_passwd,
 	struct smb_passwd *smbpw = NULL;
 	uchar old_pw[16], old_ntpw[16];
 
-	become_root(False);
+	become_root();
 	*psmbpw = smbpw = getsmbpwnam(user);
-	unbecome_root(False);
+	unbecome_root();
 
 	if (smbpw == NULL)
 	{

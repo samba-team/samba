@@ -270,9 +270,9 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 		in_group(sb.st_gid,current_user.gid,
 			 current_user.ngroups,current_user.groups)))) {
 		  /* We are allowed to become root and change the filetime. */
-		  become_root(False);
+		  become_root();
 		  ret = conn->vfs_ops.utime(dos_to_unix(fname, False), times);
-		  unbecome_root(False);
+		  unbecome_root();
 	  }
   }
 
