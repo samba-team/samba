@@ -76,7 +76,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	 * translated path.
 	 */
 
-	translated_path = strdup(orig_translated_path);
+	translated_path = SMB_STRDUP(orig_translated_path);
 	if (!translated_path)
 		return;
 
@@ -88,7 +88,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	}
 
 	if(case_sensitive) {
-		original_path = strdup(full_orig_name);
+		original_path = SMB_STRDUP(full_orig_name);
 	} else {
 		original_path = strdup_upper(full_orig_name);
 	}
@@ -179,7 +179,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 		return False;
 
 	if (conn->case_sensitive) {
-		chk_name = strdup(name);
+		chk_name = SMB_STRDUP(name);
 		if (!chk_name) {
 			DEBUG(0, ("stat_cache_lookup: strdup failed!\n"));
 			return False;

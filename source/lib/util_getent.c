@@ -33,7 +33,7 @@ struct sys_grent * getgrent_list(void)
 	struct sys_grent *gent;
 	struct group *grp;
 	
-	gent = (struct sys_grent *) malloc(sizeof(struct sys_grent));
+	gent = SMB_MALLOC_P(struct sys_grent);
 	if (gent == NULL) {
 		DEBUG (0, ("Out of memory in getgrent_list!\n"));
 		return NULL;
@@ -53,11 +53,11 @@ struct sys_grent * getgrent_list(void)
 		int i,num;
 		
 		if (grp->gr_name) {
-			if ((gent->gr_name = strdup(grp->gr_name)) == NULL)
+			if ((gent->gr_name = SMB_STRDUP(grp->gr_name)) == NULL)
 				goto err;
 		}
 		if (grp->gr_passwd) {
-			if ((gent->gr_passwd = strdup(grp->gr_passwd)) == NULL)
+			if ((gent->gr_passwd = SMB_STRDUP(grp->gr_passwd)) == NULL)
 				goto err;
 		}
 		gent->gr_gid = grp->gr_gid;
@@ -67,20 +67,20 @@ struct sys_grent * getgrent_list(void)
 			;
 		
 		/* alloc space for gr_mem string pointers */
-		if ((gent->gr_mem = (char **) malloc((num+1) * sizeof(char *))) == NULL)
+		if ((gent->gr_mem = SMB_MALLOC_ARRAY(char *, num+1)) == NULL)
 			goto err;
 
 		memset(gent->gr_mem, '\0', (num+1) * sizeof(char *));
 
 		for (i=0; i < num; i++) {
-			if ((gent->gr_mem[i] = strdup(grp->gr_mem[i])) == NULL)
+			if ((gent->gr_mem[i] = SMB_STRDUP(grp->gr_mem[i])) == NULL)
 				goto err;
 		}
 		gent->gr_mem[num] = NULL;
 		
 		grp = getgrent();
 		if (grp) {
-			gent->next = (struct sys_grent *) malloc(sizeof(struct sys_grent));
+			gent->next = SMB_MALLOC_P(struct sys_grent);
 			if (gent->next == NULL)
 				goto err;
 			gent = gent->next;
@@ -134,7 +134,7 @@ struct sys_pwent * getpwent_list(void)
 	struct sys_pwent *pent;
 	struct passwd *pwd;
 	
-	pent = (struct sys_pwent *) malloc(sizeof(struct sys_pwent));
+	pent = SMB_MALLOC_P(struct sys_pwent);
 	if (pent == NULL) {
 		DEBUG (0, ("Out of memory in getpwent_list!\n"));
 		return NULL;
@@ -146,31 +146,31 @@ struct sys_pwent * getpwent_list(void)
 	while (pwd != NULL) {
 		memset(pent, '\0', sizeof(struct sys_pwent));
 		if (pwd->pw_name) {
-			if ((pent->pw_name = strdup(pwd->pw_name)) == NULL)
+			if ((pent->pw_name = SMB_STRDUP(pwd->pw_name)) == NULL)
 				goto err;
 		}
 		if (pwd->pw_passwd) {
-			if ((pent->pw_passwd = strdup(pwd->pw_passwd)) == NULL)
+			if ((pent->pw_passwd = SMB_STRDUP(pwd->pw_passwd)) == NULL)
 				goto err;
 		}
 		pent->pw_uid = pwd->pw_uid;
 		pent->pw_gid = pwd->pw_gid;
 		if (pwd->pw_gecos) {
-			if ((pent->pw_gecos = strdup(pwd->pw_gecos)) == NULL)
+			if ((pent->pw_gecos = SMB_STRDUP(pwd->pw_gecos)) == NULL)
 				goto err;
 		}
 		if (pwd->pw_dir) {
-			if ((pent->pw_dir = strdup(pwd->pw_dir)) == NULL)
+			if ((pent->pw_dir = SMB_STRDUP(pwd->pw_dir)) == NULL)
 				goto err;
 		}
 		if (pwd->pw_shell) {
-			if ((pent->pw_shell = strdup(pwd->pw_shell)) == NULL)
+			if ((pent->pw_shell = SMB_STRDUP(pwd->pw_shell)) == NULL)
 				goto err;
 		}
 
 		pwd = getpwent();
 		if (pwd) {
-			pent->next = (struct sys_pwent *) malloc(sizeof(struct sys_pwent));
+			pent->next = SMB_MALLOC_P(struct sys_pwent);
 			if (pent->next == NULL)
 				goto err;
 			pent = pent->next;
@@ -223,12 +223,12 @@ static struct sys_userlist *add_members_to_userlist(struct sys_userlist *list_he
 		;
 
 	for (i = 0; i < num_users; i++) {
-		struct sys_userlist *entry = (struct sys_userlist *)malloc(sizeof(*entry));
+		struct sys_userlist *entry = SMB_MALLOC_P(struct sys_userlist);
 		if (entry == NULL) {
 			free_userlist(list_head);
 			return NULL;
 		}
-		entry->unix_name = (char *)strdup(grp->gr_mem[i]);
+		entry->unix_name = (char *)SMB_STRDUP(grp->gr_mem[i]);
 		if (entry->unix_name == NULL) {
 			SAFE_FREE(entry);
 			free_userlist(list_head);

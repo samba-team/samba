@@ -72,8 +72,8 @@ static char *wins_srv_keystr(struct in_addr wins_ip, struct in_addr src_ip)
 {
 	char *keystr = NULL, *wins_ip_addr = NULL, *src_ip_addr = NULL;
 
-	wins_ip_addr = strdup(inet_ntoa(wins_ip));
-	src_ip_addr = strdup(inet_ntoa(src_ip));
+	wins_ip_addr = SMB_STRDUP(inet_ntoa(wins_ip));
+	src_ip_addr = SMB_STRDUP(inet_ntoa(src_ip));
 
 	if ( !wins_ip_addr || !src_ip_addr ) {
 		DEBUG(0,("wins_srv_keystr: malloc error\n"));
@@ -212,9 +212,9 @@ char **wins_srv_tags(void)
 	if (lp_wins_support()) {
 		/* give the caller something to chew on. This makes
 		   the rest of the logic simpler (ie. less special cases) */
-		ret = (char **)malloc(sizeof(char *)*2);
+		ret = SMB_MALLOC_ARRAY(char *, 2);
 		if (!ret) return NULL;
-		ret[0] = strdup("*");
+		ret[0] = SMB_STRDUP("*");
 		ret[1] = NULL;
 		return ret;
 	}
@@ -242,8 +242,8 @@ char **wins_srv_tags(void)
 		}
 
 		/* add it to the list */
-		ret = (char **)Realloc(ret, (count+2) * sizeof(char *));
-		ret[count] = strdup(t_ip.tag);
+		ret = SMB_REALLOC_ARRAY(ret, char *, count+2);
+		ret[count] = SMB_STRDUP(t_ip.tag);
 		if (!ret[count]) break;
 		count++;
 	}

@@ -884,7 +884,7 @@ rpc_user_info_internals(const DOM_SID *domain_sid, const char *domain_name,
 
 	/* Look up rids */
 
-	rids = (uint32 *)talloc(mem_ctx, sizeof(uint32) * num_rids);
+	rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
 
 	for (i = 0; i < num_rids; i++)
                 rids[i] = user_gids[i].g_rid;
@@ -2805,7 +2805,7 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 	pstring mask;
 	char *dst = NULL;
 
-	dst = strdup(opt_destination?opt_destination:"127.0.0.1");
+	dst = SMB_STRDUP(opt_destination?opt_destination:"127.0.0.1");
 
 	init_enum_hnd(&hnd, 0);
 
@@ -2989,7 +2989,7 @@ static struct full_alias *server_aliases;
 static void push_alias(TALLOC_CTX *mem_ctx, struct full_alias *alias)
 {
 	if (server_aliases == NULL)
-		server_aliases = malloc(100 * sizeof(struct full_alias));
+		server_aliases = SMB_MALLOC_ARRAY(struct full_alias, 100);
 
 	server_aliases[num_server_aliases] = *alias;
 	num_server_aliases += 1;
@@ -3053,8 +3053,7 @@ rpc_fetch_domain_aliases(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			alias.members = NULL;
 
 			if (alias.num_members > 0) {
-				alias.members = malloc(alias.num_members *
-						       sizeof(DOM_SID));
+				alias.members = SMB_MALLOC_ARRAY(DOM_SID, alias.num_members);
 
 				for (j = 0; j < alias.num_members; j++)
 					sid_copy(&alias.members[j],
@@ -3183,7 +3182,7 @@ static void init_user_token(NT_USER_TOKEN *token, DOM_SID *user_sid)
 
 	token->num_sids = 4;
 
-	token->user_sids = malloc(4 * sizeof(DOM_SID));
+	token->user_sids = SMB_MALLOC_ARRAY(DOM_SID, 4);
 
 	token->user_sids[0] = *user_sid;
 	sid_copy(&token->user_sids[1], &global_sid_World);
@@ -3212,8 +3211,7 @@ static void add_sid_to_token(NT_USER_TOKEN *token, DOM_SID *sid)
 	if (is_sid_in_token(token, sid))
 		return;
 
-	token->user_sids = Realloc(token->user_sids,
-				   (token->num_sids+1) * sizeof(DOM_SID));
+	token->user_sids = SMB_REALLOC_ARRAY(token->user_sids, DOM_SID, token->num_sids+1);
 
 	sid_copy(&token->user_sids[token->num_sids], sid);
 
@@ -3392,7 +3390,7 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 		*num_tokens += 1;
 	}
 
-	result = malloc(*num_tokens * sizeof(struct user_token));
+	result = SMB_MALLOC_ARRAY(struct user_token, *num_tokens);
 
 	if (result == NULL) {
 		DEBUG(1, ("Could not malloc sid array\n"));
@@ -3467,9 +3465,7 @@ static BOOL get_user_tokens_from_file(FILE *f,
 		/* And a new user... */
 
 		*num_tokens += 1;
-		*tokens = Realloc(*tokens,
-				  *num_tokens *
-				  sizeof(struct user_token));
+		*tokens = SMB_REALLOC_ARRAY(*tokens, struct user_token, *num_tokens);
 		if (*tokens == NULL) {
 			DEBUG(0, ("Could not realloc tokens\n"));
 			return False;
@@ -3587,9 +3583,8 @@ static void collect_share(const char *name, uint32 m,
 		return;
 
 	share_list->num_shares += 1;
-	share_list->shares = Realloc(share_list->shares,
-				     share_list->num_shares * sizeof(char *));
-	share_list->shares[share_list->num_shares-1] = strdup(name);
+	share_list->shares = SMB_REALLOC_ARRAY(share_list->shares, char *, share_list->num_shares);
+	share_list->shares[share_list->num_shares-1] = SMB_STRDUP(name);
 }
 
 static void rpc_share_userlist_usage(void)

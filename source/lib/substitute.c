@@ -224,7 +224,7 @@ static char * realloc_expand_env_var(char *str, char *p)
 
 	r = p + 3;
 	copylen = q - r;
-	envname = (char *)malloc(copylen + 1 + 4); /* reserve space for use later add %$() chars */
+	envname = (char *)SMB_MALLOC(copylen + 1 + 4); /* reserve space for use later add %$() chars */
 	if (envname == NULL) return NULL;
 	strncpy(envname,r,copylen);
 	envname[copylen] = '\0';
@@ -508,7 +508,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 		return NULL;
 	}
 	
-	a_string = strdup(str);
+	a_string = SMB_STRDUP(str);
 	if (a_string == NULL) {
 		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
 		return NULL;
@@ -526,7 +526,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			t = realloc_string_sub(t, "%U", r);
 			break;
 		case 'G' :
-			r = strdup(smb_name);
+			r = SMB_STRDUP(smb_name);
 			if (r == NULL) goto error;
 			if ((pass = Get_Pwnam(r))!=NULL) {
 				t = realloc_string_sub(t, "%G", gidtoname(pass->pw_gid));
@@ -623,7 +623,7 @@ char *alloc_sub_specified(const char *input_string,
 	char *a_string, *ret_string;
 	char *b, *p, *s, *t;
 
-	a_string = strdup(input_string);
+	a_string = SMB_STRDUP(input_string);
 	if (a_string == NULL) {
 		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
 		return NULL;
@@ -700,7 +700,7 @@ char *alloc_sub_advanced(int snum, const char *user,
 	char *a_string, *ret_string;
 	char *b, *p, *s, *t, *h;
 
-	a_string = strdup(str);
+	a_string = SMB_STRDUP(str);
 	if (a_string == NULL) {
 		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
 		return NULL;

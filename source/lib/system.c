@@ -1096,7 +1096,7 @@ static char **extract_args(const char *command)
 	for( argcl = 1; ptr; ptr = strtok(NULL, " \t"))
 		argcl++;
 
-	if((argl = (char **)malloc((argcl + 1) * sizeof(char *))) == NULL)
+	if((argl = (char **)SMB_MALLOC((argcl + 1) * sizeof(char *))) == NULL)
 		return NULL;
 
 	/*
@@ -1178,7 +1178,7 @@ int sys_popen(const char *command)
 		goto err_exit;
 	}
 
-	if((entry = (popen_list *)malloc(sizeof(popen_list))) == NULL)
+	if((entry = SMB_MALLOC_P(popen_list)) == NULL)
 		goto err_exit;
 
 	ZERO_STRUCTP(entry);

@@ -387,7 +387,7 @@ static void init_do_list_queue(void)
 {
 	reset_do_list_queue();
 	do_list_queue_size = 1024;
-	do_list_queue = malloc(do_list_queue_size);
+	do_list_queue = SMB_MALLOC(do_list_queue_size);
 	if (do_list_queue == 0) { 
 		d_printf("malloc fail for size %d\n",
 			 (int)do_list_queue_size);
@@ -425,7 +425,7 @@ static void add_to_do_list_queue(const char* entry)
 		do_list_queue_size *= 2;
 		DEBUG(4,("enlarging do_list_queue to %d\n",
 			 (int)do_list_queue_size));
-		dlq = Realloc(do_list_queue, do_list_queue_size);
+		dlq = SMB_REALLOC(do_list_queue, do_list_queue_size);
 		if (! dlq) {
 			d_printf("failure enlarging do_list_queue to %d bytes\n",
 				 (int)do_list_queue_size);
@@ -704,7 +704,7 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	DEBUG(1,("getting file %s of size %.0f as %s ", 
 		 rname, (double)size, lname));
 
-	if(!(data = (char *)malloc(read_size))) { 
+	if(!(data = (char *)SMB_MALLOC(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
 		cli_close(cli, fnum);
 		return 1;
@@ -1112,7 +1112,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	DEBUG(1,("putting file %s as %s ",lname,
 		 rname));
   
-	buf = (char *)malloc(maxwrite);
+	buf = (char *)SMB_MALLOC(maxwrite);
 	if (!buf) {
 		d_printf("ERROR: Not enough memory!\n");
 		return 1;
@@ -1325,7 +1325,7 @@ static int file_find(struct file_list **list, const char *directory,
 					return -1;
 				}
 			}
-			entry = (struct file_list *) malloc(sizeof (struct file_list));
+			entry = SMB_MALLOC_P(struct file_list);
 			if (!entry) {
 				d_printf("Out of memory in file_find\n");
 				closedir(dir);
@@ -2698,7 +2698,7 @@ static void completion_remote_filter(file_info *f, const char *mask, void *state
 
 	if ((info->count < MAX_COMPLETIONS - 1) && (strncmp(info->text, f->name, info->len) == 0) && (strcmp(f->name, ".") != 0) && (strcmp(f->name, "..") != 0)) {
 		if ((info->dirmask[0] == 0) && !(f->mode & aDIR))
-			info->matches[info->count] = strdup(f->name);
+			info->matches[info->count] = SMB_STRDUP(f->name);
 		else {
 			pstring tmp;
 
@@ -2709,7 +2709,7 @@ static void completion_remote_filter(file_info *f, const char *mask, void *state
 			pstrcat(tmp, f->name);
 			if (f->mode & aDIR)
 				pstrcat(tmp, "/");
-			info->matches[info->count] = strdup(tmp);
+			info->matches[info->count] = SMB_STRDUP(tmp);
 		}
 		if (info->matches[info->count] == NULL)
 			return;
@@ -2740,7 +2740,7 @@ static char **remote_completion(const char *text, int len)
 	if (len >= PATH_MAX)
 		return(NULL);
 
-	info.matches = (char **)malloc(sizeof(info.matches[0])*MAX_COMPLETIONS);
+	info.matches = SMB_MALLOC_ARRAY(char *,MAX_COMPLETIONS);
 	if (!info.matches) return NULL;
 	info.matches[0] = NULL;
 
@@ -2761,9 +2761,9 @@ static char **remote_completion(const char *text, int len)
 		goto cleanup;
 
 	if (info.count == 2)
-		info.matches[0] = strdup(info.matches[1]);
+		info.matches[0] = SMB_STRDUP(info.matches[1]);
 	else {
-		info.matches[0] = malloc(info.samelen+1);
+		info.matches[0] = SMB_MALLOC(info.samelen+1);
 		if (!info.matches[0])
 			goto cleanup;
 		strncpy(info.matches[0], info.matches[1], info.samelen);
@@ -2818,7 +2818,7 @@ static char **completion_fn(const char *text, int start, int end)
 		char **matches;
 		int i, len, samelen = 0, count=1;
 
-		matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+		matches = SMB_MALLOC_ARRAY(char *, MAX_COMPLETIONS);
 		if (!matches) {
 			return NULL;
 		}
@@ -2827,7 +2827,7 @@ static char **completion_fn(const char *text, int start, int end)
 		len = strlen(text);
 		for (i=0;commands[i].fn && count < MAX_COMPLETIONS-1;i++) {
 			if (strncmp(text, commands[i].name, len) == 0) {
-				matches[count] = strdup(commands[i].name);
+				matches[count] = SMB_STRDUP(commands[i].name);
 				if (!matches[count])
 					goto cleanup;
 				if (count == 1)
@@ -2844,10 +2844,10 @@ static char **completion_fn(const char *text, int start, int end)
 		case 1:
 			goto cleanup;
 		case 2:
-			matches[0] = strdup(matches[1]);
+			matches[0] = SMB_STRDUP(matches[1]);
 			break;
 		default:
-			matches[0] = malloc(samelen+1);
+			matches[0] = SMB_MALLOC(samelen+1);
 			if (!matches[0])
 				goto cleanup;
 			strncpy(matches[0], matches[1], samelen);

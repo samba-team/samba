@@ -60,7 +60,7 @@ static NTSTATUS cmd_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	size = atoi(argv[1]);
-	in_data = malloc(size);
+	in_data = SMB_MALLOC(size);
 
 	for (i = 0; i < size; i++)
 		in_data[i] = i & 0xff;
@@ -129,7 +129,7 @@ static NTSTATUS cmd_echo_sink_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	size = atoi(argv[1]);
-	in_data = malloc(size);
+	in_data = SMB_MALLOC(size);
 
 	for (i = 0; i < size; i++)
 		in_data[i] = i & 0xff;

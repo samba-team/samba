@@ -55,7 +55,7 @@ static struct node_status *parse_node_status(char *p, int *num_names, struct nod
 	if (*num_names == 0)
 		return NULL;
 
-	ret = (struct node_status *)malloc(sizeof(struct node_status)* (*num_names));
+	ret = SMB_MALLOC_ARRAY(struct node_status,*num_names);
 	if (!ret)
 		return NULL;
 
@@ -478,8 +478,8 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 				continue;
 			}
 			
-			tmp_ip_list = (struct in_addr *)Realloc( ip_list, sizeof( ip_list[0] )
-								 * ( (*count) + nmb2->answers->rdlength/6 ) );
+			tmp_ip_list = SMB_REALLOC_ARRAY( ip_list, struct in_addr,
+						(*count) + nmb2->answers->rdlength/6 );
 			
 			if (!tmp_ip_list) {
 				DEBUG(0,("name_query: Realloc failed.\n"));
@@ -655,7 +655,7 @@ static BOOL convert_ip2service( struct ip_service **return_iplist, struct in_add
 		return False;
 		
 	/* copy the ip address; port will be PORT_NONE */
-	if ( (*return_iplist = (struct ip_service*)malloc(count*sizeof(struct ip_service))) == NULL ) {
+	if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, count)) == NULL ) {
 		DEBUG(0,("convert_ip2service: malloc failed for %d enetries!\n", count ));
 		return False;
 	}
@@ -868,8 +868,8 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 		if ((name_type2 != -1) && (name_type != name_type2))
 			continue;
 
-		*return_iplist = (struct ip_service *)realloc((*return_iplist),
-			sizeof(struct ip_service) * ((*return_count)+1));
+		*return_iplist = SMB_REALLOC_ARRAY((*return_iplist), struct ip_service,
+					(*return_count)+1);
 
 		if ((*return_iplist) == NULL) {
 			DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
@@ -919,7 +919,7 @@ static BOOL resolve_hosts(const char *name, int name_type,
 	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
 		struct in_addr return_ip;
 		putip((char *)&return_ip,(char *)hp->h_addr);
-		*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service));
+		*return_iplist = SMB_MALLOC_P(struct ip_service);
 		if(*return_iplist == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			return False;
@@ -958,7 +958,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 			return False;
 				
 		count = count_chars(list, ' ') + 1;
-		if ( (*return_iplist = malloc(count * sizeof(struct ip_service))) == NULL ) {
+		if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, count)) == NULL ) {
 			DEBUG(0,("resolve_hosts: malloc failed for %d entries\n", count ));
 			return False;
 		}
@@ -1029,7 +1029,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 
 	if (allzeros || allones || is_address) {
   
-		if ( (*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service))) == NULL ) {
+		if ( (*return_iplist = SMB_MALLOC_P(struct ip_service)) == NULL ) {
 			DEBUG(0,("internal_resolve_name: malloc fail !\n"));
 			return False;
 		}
@@ -1333,8 +1333,7 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 			return False;
 		}
 		
-		if ( (return_iplist = (struct ip_service *)
-				malloc(num_addresses * sizeof(struct ip_service))) == NULL ) {
+		if ( (return_iplist = SMB_MALLOC_ARRAY(struct ip_service, num_addresses)) == NULL ) {
 			DEBUG(3,("get_dc_list: malloc fail !\n"));
 			return False;
 		}

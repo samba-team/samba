@@ -1351,7 +1351,7 @@ int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 		pstring path2;
 		clistr_pull(cli, path2, p, 
 			    sizeof(path2), len, STR_ASCII);
-		*tmp_path = strdup(path2);
+		*tmp_path = SMB_STRDUP(path2);
 	}
 
 	return SVAL(cli->inbuf,smb_vwv0);
@@ -1402,7 +1402,7 @@ static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigne
 	size_t ea_namelen = strlen(ea_name);
 
 	data_len = 4 + 4 + ea_namelen + 1 + ea_len;
-	data = malloc(data_len);
+	data = SMB_MALLOC(data_len);
 	if (!data) {
 		return False;
 	}
@@ -1558,7 +1558,7 @@ static BOOL cli_get_ea_list(struct cli_state *cli,
 		goto out;
 	}
 
-	ea_list = (struct ea_struct *)talloc(ctx, num_eas*sizeof(struct ea_struct));
+	ea_list = TALLOC_ARRAY(ctx, struct ea_struct, num_eas);
 	if (!ea_list) {
 		goto out;
 	}

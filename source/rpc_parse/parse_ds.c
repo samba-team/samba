@@ -29,7 +29,7 @@ static BOOL ds_io_dominfobasic( const char *desc, prs_struct *ps, int depth, DSR
 	DSROLE_PRIMARY_DOMAIN_INFO_BASIC *p = *basic;
 	
 	if ( UNMARSHALLING(ps) )
-		p = *basic = (DSROLE_PRIMARY_DOMAIN_INFO_BASIC *)prs_alloc_mem(ps, sizeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC));
+		p = *basic = PRS_ALLOC_MEM(ps, DSROLE_PRIMARY_DOMAIN_INFO_BASIC, 1);
 		
 	if ( !p )
 		return False;
@@ -208,7 +208,7 @@ static BOOL ds_io_dom_trusts_ctr( const char *desc, prs_struct *ps, int depth, D
 	
 	/* allocate the domain trusts array are parse it */
 	
-	ctr->trusts = (DS_DOMAIN_TRUSTS*)talloc(ps->mem_ctx, sizeof(DS_DOMAIN_TRUSTS)*ctr->max_count);
+	ctr->trusts = TALLOC_ARRAY(ps->mem_ctx, DS_DOMAIN_TRUSTS, ctr->max_count);
 	
 	if ( !ctr->trusts )
 		return False;

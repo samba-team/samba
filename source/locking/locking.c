@@ -679,7 +679,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		pstrcat(fname, fsp->fsp_name);
 
 		size = sizeof(*data) + sizeof(share_mode_entry) + strlen(fname) + 1;
-		p = (char *)malloc(size);
+		p = (char *)SMB_MALLOC(size);
 		if (!p)
 			return False;
 		data = (struct locking_data *)p;
@@ -711,7 +711,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		fsp->fsp_name, data->u.num_share_mode_entries ));
 
 	size = dbuf.dsize + sizeof(share_mode_entry);
-	p = malloc(size);
+	p = SMB_MALLOC(size);
 	if (!p) {
 		SAFE_FREE(dbuf.dptr);
 		return False;
@@ -1161,7 +1161,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 		/* we'll need to create a new record */
 
 		size = sizeof(*data) + sizeof(deferred_open_entry) + strlen(fname) + 1;
-		p = (char *)malloc(size);
+		p = (char *)SMB_MALLOC(size);
 		if (!p)
 			return False;
 		data = (struct deferred_open_data *)p;
@@ -1193,7 +1193,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 		fname, data->u.num_deferred_open_entries ));
 
 	size = dbuf.dsize + sizeof(deferred_open_entry);
-	p = malloc(size);
+	p = SMB_MALLOC(size);
 	if (!p) {
 		SAFE_FREE(dbuf.dptr);
 		return False;

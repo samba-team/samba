@@ -97,7 +97,7 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 	if ( subkey_len && subkeyname2[subkey_len-1] == '\\' )
 		subkeyname2[subkey_len-1] = '\0';
 
-	if ((regkey=(REGISTRY_KEY*)malloc(sizeof(REGISTRY_KEY))) == NULL)
+	if ((regkey=SMB_MALLOC_P(REGISTRY_KEY)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 		
 	ZERO_STRUCTP( regkey );
@@ -373,7 +373,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	/* couple of hard coded registry values */
 	
 	if ( strequal(name, "RefusePasswordChange") ) {
-		if ( (val = (REGISTRY_VALUE*)malloc(sizeof(REGISTRY_VALUE))) == NULL ) {
+		if ( (val = SMB_MALLOC_P(REGISTRY_VALUE)) == NULL ) {
 			DEBUG(0,("_reg_info: malloc() failed!\n"));
 			return NT_STATUS_NO_MEMORY;
 		}

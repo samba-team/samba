@@ -115,7 +115,7 @@ static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 
  again:
 
-	val = talloc_realloc(mem_ctx, val, attr_size);
+	val = TALLOC_REALLOC_ARRAY(mem_ctx, val, char, attr_size);
 	if (!val) {
 		return False;
 	}
@@ -169,8 +169,8 @@ static struct ea_list *get_ea_list(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		return NULL;
 	}
 
-	for (i = 0, ea_namelist = talloc(mem_ctx, ea_namelist_size); i < 6;
-			ea_namelist = talloc_realloc(mem_ctx, ea_namelist, ea_namelist_size), i++) {
+	for (i = 0, ea_namelist = TALLOC(mem_ctx, ea_namelist_size); i < 6;
+			ea_namelist = TALLOC_REALLOC_ARRAY(mem_ctx, ea_namelist, char, ea_namelist_size), i++) {
 		if (fsp && fsp->fd != -1) {
 			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fd, ea_namelist, ea_namelist_size);
 		} else {
@@ -196,7 +196,7 @@ static struct ea_list *get_ea_list(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			if (strnequal(p, "system.", 7) || samba_private_attr_name(p))
 				continue;
 		
-			listp = talloc(mem_ctx, sizeof(struct ea_list));
+			listp = TALLOC_P(mem_ctx, struct ea_list);
 			if (!listp)
 				return NULL;
 
@@ -672,7 +672,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	/* Realloc the size of parameters and data we will return */
-	params = Realloc(*pparams, 28);
+	params = SMB_REALLOC(*pparams, 28);
 	if( params == NULL )
 		return(ERROR_DOS(ERRDOS,ERRnomem));
 	*pparams = params;
@@ -1418,7 +1418,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
 
-	pdata = Realloc(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	pdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if( pdata == NULL )
 		return(ERROR_DOS(ERRDOS,ERRnomem));
 
@@ -1426,7 +1426,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
-	params = Realloc(*pparams, 10);
+	params = SMB_REALLOC(*pparams, 10);
 	if (params == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	*pparams = params;
@@ -1438,7 +1438,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
-	if(!(wcard = strdup(mask))) {
+	if(!(wcard = SMB_STRDUP(mask))) {
 		dptr_close(&dptr_num);
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
@@ -1617,7 +1617,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
 
-	pdata = Realloc( *ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	pdata = SMB_REALLOC( *ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(pdata == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
 
@@ -1625,7 +1625,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
-	params = Realloc(*pparams, 6*SIZEOFWORD);
+	params = SMB_REALLOC(*pparams, 6*SIZEOFWORD);
 	if( params == NULL )
 		return ERROR_DOS(ERRDOS,ERRnomem);
 
@@ -1836,7 +1836,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		return ERROR_DOS(ERRSRV,ERRinvdevice);
 	}
 
-	pdata = Realloc(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	pdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if ( pdata == NULL )
 		return ERROR_DOS(ERRDOS,ERRnomem);
 
@@ -2519,13 +2519,13 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		file_size = 0;
 	}
 
-	params = Realloc(*pparams,2);
+	params = SMB_REALLOC(*pparams,2);
 	if (params == NULL)
 	  return ERROR_DOS(ERRDOS,ERRnomem);
 	*pparams = params;
 	memset((char *)params,'\0',2);
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
-	pdata = Realloc(*ppdata, data_size); 
+	pdata = SMB_REALLOC(*ppdata, data_size); 
 	if ( pdata == NULL )
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	*ppdata = pdata;
@@ -3302,7 +3302,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		tran_call,fname, fsp ? fsp->fnum : -1, info_level,total_data));
 
 	/* Realloc the parameter and data sizes */
-	params = Realloc(*pparams,2);
+	params = SMB_REALLOC(*pparams,2);
 	if(params == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	*pparams = params;
@@ -4028,7 +4028,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	}
 
 	/* Realloc the parameter and data sizes */
-	params = Realloc(*pparams,2);
+	params = SMB_REALLOC(*pparams,2);
 	if(params == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	*pparams = params;
@@ -4068,7 +4068,7 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 	}
 
 	/* Realloc the parameter and data sizes */
-	params = Realloc(*pparams,6);
+	params = SMB_REALLOC(*pparams,6);
 	if(params == NULL) 
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	*pparams = params;
@@ -4101,7 +4101,7 @@ static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char 
 	DEBUG(3,("call_trans2findnotifynext\n"));
 
 	/* Realloc the parameter and data sizes */
-	params = Realloc(*pparams,4);
+	params = SMB_REALLOC(*pparams,4);
 	if(params == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	*pparams = params;
@@ -4168,7 +4168,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 
 	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
 			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
-		pdata = Realloc(*ppdata, 32);
+		pdata = SMB_REALLOC(*ppdata, 32);
 		if(pdata == NULL)
 			return ERROR_DOS(ERRDOS,ERRnomem);
 		*ppdata = pdata;
@@ -4319,9 +4319,9 @@ int reply_trans2(connection_struct *conn,
     
 	/* Allocate the space for the maximum needed parameters and data */
 	if (total_params > 0)
-		params = (char *)malloc(total_params);
+		params = (char *)SMB_MALLOC(total_params);
 	if (total_data > 0)
-		data = (char *)malloc(total_data);
+		data = (char *)SMB_MALLOC(total_data);
   
 	if ((total_params && !params)  || (total_data && !data)) {
 		DEBUG(2,("Out of memory in reply_trans2\n"));

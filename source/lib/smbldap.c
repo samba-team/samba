@@ -239,7 +239,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		i++;
 	i++;
 
-	names = (char**)malloc( sizeof(char*)*i );
+	names = SMB_MALLOC_ARRAY( char*, i );
 	if ( !names ) {
 		DEBUG(0,("get_attr_list: out of memory\n"));
 		return NULL;
@@ -247,7 +247,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 
 	i = 0;
 	while ( table[i].attrib != LDAP_ATTR_LIST_END ) {
-		names[i] = strdup( table[i].name );
+		names[i] = SMB_STRDUP( table[i].name );
 		i++;
 	}
 	names[i] = NULL;
@@ -295,7 +295,7 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 	if (!size) {
 		/* Upgrade 2.2 style entry */
 		char *p;
-	        char* old_style_key = strdup(*dn);
+	        char* old_style_key = SMB_STRDUP(*dn);
 		char *data;
 		fstring old_style_pw;
 		
@@ -408,7 +408,7 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 #endif
 
 	if (mods == NULL) {
-		mods = (LDAPMod **) malloc(sizeof(LDAPMod *));
+		mods = SMB_MALLOC_P(LDAPMod *);
 		if (mods == NULL) {
 			DEBUG(0, ("make_a_mod: out of memory!\n"));
 			return;
@@ -422,19 +422,19 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 	}
 
 	if (mods[i] == NULL) {
-		mods = (LDAPMod **) Realloc (mods, (i + 2) * sizeof (LDAPMod *));
+		mods = SMB_REALLOC_ARRAY (mods, LDAPMod *, i + 2);
 		if (mods == NULL) {
 			DEBUG(0, ("make_a_mod: out of memory!\n"));
 			return;
 		}
-		mods[i] = (LDAPMod *) malloc(sizeof(LDAPMod));
+		mods[i] = SMB_MALLOC_P(LDAPMod);
 		if (mods[i] == NULL) {
 			DEBUG(0, ("make_a_mod: out of memory!\n"));
 			return;
 		}
 		mods[i]->mod_op = modop;
 		mods[i]->mod_values = NULL;
-		mods[i]->mod_type = strdup(attribute);
+		mods[i]->mod_type = SMB_STRDUP(attribute);
 		mods[i + 1] = NULL;
 	}
 
@@ -445,8 +445,7 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 		if (mods[i]->mod_values != NULL) {
 			for (; mods[i]->mod_values[j] != NULL; j++);
 		}
-		mods[i]->mod_values = (char **)Realloc(mods[i]->mod_values,
-					       (j + 2) * sizeof (char *));
+		mods[i]->mod_values = SMB_REALLOC_ARRAY(mods[i]->mod_values, char *, j + 2);
 					       
 		if (mods[i]->mod_values == NULL) {
 			DEBUG (0, ("make_a_mod: Memory allocation failure!\n"));
@@ -574,7 +573,7 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 		return;
 	}
 
-	t = smb_xmalloc(sizeof(*t));
+	t = SMB_XMALLOC_P(struct smbldap_state_lookup);
 	ZERO_STRUCTP(t);
 	
 	DLIST_ADD_END(smbldap_state_lookup_list, t, tmp);
@@ -718,11 +717,11 @@ static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
 		DEBUG(5,("rebind_proc_with_state: Rebinding as \"%s\"\n", 
 			  ldap_state->bind_dn));
 
-		*whop = strdup(ldap_state->bind_dn);
+		*whop = SMB_STRDUP(ldap_state->bind_dn);
 		if (!*whop) {
 			return LDAP_NO_MEMORY;
 		}
-		*credp = strdup(ldap_state->bind_secret);
+		*credp = SMB_STRDUP(ldap_state->bind_secret);
 		if (!*credp) {
 			SAFE_FREE(*whop);
 			return LDAP_NO_MEMORY;
@@ -1211,7 +1210,7 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 
 NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, const char *location, struct smbldap_state **smbldap_state) 
 {
-	*smbldap_state = talloc_zero(mem_ctx, sizeof(**smbldap_state));
+	*smbldap_state = TALLOC_ZERO_P(mem_ctx, struct smbldap_state);
 	if (!*smbldap_state) {
 		DEBUG(0, ("talloc() failed for ldapsam private_data!\n"));
 		return NT_STATUS_NO_MEMORY;

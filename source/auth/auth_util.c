@@ -132,7 +132,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 
 	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
 
-	*user_info = malloc(sizeof(**user_info));
+	*user_info = SMB_MALLOC_P(auth_usersupplied_info);
 	if (!user_info) {
 		DEBUG(0,("malloc failed for user_info (size %lu)\n", (unsigned long)sizeof(*user_info)));
 		return NT_STATUS_NO_MEMORY;
@@ -142,7 +142,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 
 	DEBUG(5,("making strings for %s's user_info struct\n", internal_username));
 
-	(*user_info)->smb_name.str = strdup(smb_name);
+	(*user_info)->smb_name.str = SMB_STRDUP(smb_name);
 	if ((*user_info)->smb_name.str) { 
 		(*user_info)->smb_name.len = strlen(smb_name);
 	} else {
@@ -150,7 +150,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	(*user_info)->internal_username.str = strdup(internal_username);
+	(*user_info)->internal_username.str = SMB_STRDUP(internal_username);
 	if ((*user_info)->internal_username.str) { 
 		(*user_info)->internal_username.len = strlen(internal_username);
 	} else {
@@ -158,7 +158,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*user_info)->domain.str = strdup(domain);
+	(*user_info)->domain.str = SMB_STRDUP(domain);
 	if ((*user_info)->domain.str) { 
 		(*user_info)->domain.len = strlen(domain);
 	} else {
@@ -166,7 +166,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*user_info)->client_domain.str = strdup(client_domain);
+	(*user_info)->client_domain.str = SMB_STRDUP(client_domain);
 	if ((*user_info)->client_domain.str) { 
 		(*user_info)->client_domain.len = strlen(client_domain);
 	} else {
@@ -174,7 +174,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*user_info)->wksta_name.str = strdup(wksta_name);
+	(*user_info)->wksta_name.str = SMB_STRDUP(wksta_name);
 	if ((*user_info)->wksta_name.str) { 
 		(*user_info)->wksta_name.len = strlen(wksta_name);
 	} else {
@@ -523,7 +523,7 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	int i;
 	int sid_ndx;
 	
-	if ((ptoken = malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+	if ((ptoken = SMB_MALLOC_P(NT_USER_TOKEN)) == NULL) {
 		DEBUG(0, ("create_nt_token: Out of memory allocating token\n"));
 		nt_status = NT_STATUS_NO_MEMORY;
 		return nt_status;
@@ -533,7 +533,7 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 
 	ptoken->num_sids = n_groupSIDs + 5;
 
-	if ((ptoken->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptoken->num_sids )) == NULL) {
+	if ((ptoken->user_sids = SMB_MALLOC_ARRAY( DOM_SID, ptoken->num_sids )) == NULL) {
 		DEBUG(0, ("create_nt_token: Out of memory allocating SIDs\n"));
 		nt_status = NT_STATUS_NO_MEMORY;
 		return nt_status;
@@ -610,7 +610,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 		return NULL;
 	}
 
-	group_sids = malloc(sizeof(DOM_SID) * ngroups);
+	group_sids = SMB_MALLOC_ARRAY(DOM_SID, ngroups);
 	if (!group_sids) {
 		DEBUG(0, ("create_nt_token: malloc() failed for DOM_SID list!\n"));
 		return NULL;
@@ -685,7 +685,7 @@ static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
 	
 	if (n_unix_groups > 0) {
 	
-		*groups   = malloc(sizeof(DOM_SID) * n_unix_groups);
+		*groups   = SMB_MALLOC_ARRAY(DOM_SID, n_unix_groups);
 		
 		if (!*groups) {
 			DEBUG(0, ("get_user_group: malloc() failed for DOM_SID list!\n"));
@@ -715,7 +715,7 @@ static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
 
 static NTSTATUS make_server_info(auth_serversupplied_info **server_info)
 {
-	*server_info = malloc(sizeof(**server_info));
+	*server_info = SMB_MALLOC_P(auth_serversupplied_info);
 	if (!*server_info) {
 		DEBUG(0,("make_server_info: malloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -1244,7 +1244,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	
 	/* Create a 'combined' list of all SIDs we might want in the SD */
 	
-	all_group_SIDs = malloc(sizeof(DOM_SID) * (info3->num_groups2 + info3->num_other_sids + n_lgroupSIDs));
+	all_group_SIDs = SMB_MALLOC_ARRAY(DOM_SID,info3->num_groups2 + info3->num_other_sids + n_lgroupSIDs);
 	
 	if (!all_group_SIDs) {
 		DEBUG(0, ("malloc() failed for DOM_SID list!\n"));
@@ -1393,7 +1393,7 @@ BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
 		smb_panic("make_auth_methods: pointer to auth_method pointer is NULL!\n");
 	}
 
-	*auth_method = talloc(auth_context->mem_ctx, sizeof(**auth_method));
+	*auth_method = TALLOC_P(auth_context->mem_ctx, auth_methods);
 	if (!*auth_method) {
 		DEBUG(0,("make_auth_method: malloc failed!\n"));
 		return False;
@@ -1428,7 +1428,7 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
 	if (!ptoken)
 		return NULL;
 
-    if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
+    if ((token = SMB_MALLOC_P(NT_USER_TOKEN)) == NULL)
         return NULL;
 
     ZERO_STRUCTP(token);

@@ -73,7 +73,7 @@ static int add_fd(SMBCFILE * file)
                         return -1;
                 }
 
-                f = malloc(sizeof(struct smbc_compat_fdlist));
+                f = SMB_MALLOC_P(struct smbc_compat_fdlist);
                 if (!f) {
                         errno = ENOMEM;
                         return -1;

@@ -469,7 +469,7 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 		decode_sid_name_use(group_type, map.sid_name_use);
 		DEBUG(11,("enum_group_mapping: returning group %s of type %s\n", map.nt_name ,group_type));
 
-		mapt=(GROUP_MAP *)Realloc((*rmap), (entries+1)*sizeof(GROUP_MAP));
+		mapt= SMB_REALLOC_ARRAY((*rmap), GROUP_MAP, entries+1);
 		if (!mapt) {
 			DEBUG(0,("enum_group_mapping: Unable to enlarge group map!\n"));
 			SAFE_FREE(*rmap);
@@ -613,7 +613,7 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		asprintf(&new_memberstring, "%s %s", (char *)(dbuf.dptr),
 			 string_sid);
 	} else {
-		new_memberstring = strdup(string_sid);
+		new_memberstring = SMB_STRDUP(string_sid);
 	}
 
 	if (new_memberstring == NULL)
@@ -753,7 +753,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		return tdb_delete(tdb, kbuf) == 0 ?
 			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 
-	member_string = strdup("");
+	member_string = SMB_STRDUP("");
 
 	if (member_string == NULL) {
 		SAFE_FREE(sids);
@@ -1292,7 +1292,7 @@ NTSTATUS pdb_default_enum_aliases(struct pdb_methods *methods,
 	if (*num_aliases > max_entries)
 		*num_aliases = max_entries;
 
-	*info = malloc(sizeof(struct acct_info) * (*num_aliases));
+	*info = SMB_MALLOC_ARRAY(struct acct_info, *num_aliases);
 
 	for (i=0; i<*num_aliases; i++) {
 		fstrcpy((*info)[i].acct_name, map[i+start_idx].nt_name);

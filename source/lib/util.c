@@ -23,6 +23,9 @@
 
 #include "includes.h"
 
+/* Max allowable allococation - 256mb - 0x10000000 */
+#define MAX_ALLOC_SIZE (1024*1024*256)
+
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 #ifdef WITH_NISPLUS_HOME
 #ifdef BROKEN_NISPLUS_INCLUDE_FILES
@@ -79,7 +82,7 @@ static char **smb_my_netbios_names;
 BOOL set_global_myname(const char *myname)
 {
 	SAFE_FREE(smb_myname);
-	smb_myname = strdup(myname);
+	smb_myname = SMB_STRDUP(myname);
 	if (!smb_myname)
 		return False;
 	strupper_m(smb_myname);
@@ -98,7 +101,7 @@ const char *global_myname(void)
 BOOL set_global_myworkgroup(const char *myworkgroup)
 {
 	SAFE_FREE(smb_myworkgroup);
-	smb_myworkgroup = strdup(myworkgroup);
+	smb_myworkgroup = SMB_STRDUP(myworkgroup);
 	if (!smb_myworkgroup)
 		return False;
 	strupper_m(smb_myworkgroup);
@@ -117,7 +120,7 @@ const char *lp_workgroup(void)
 BOOL set_global_scope(const char *scope)
 {
 	SAFE_FREE(smb_scope);
-	smb_scope = strdup(scope);
+	smb_scope = SMB_STRDUP(scope);
 	if (!smb_scope)
 		return False;
 	strupper_m(smb_scope);
@@ -151,7 +154,7 @@ static BOOL allocate_my_netbios_names_array(size_t number)
 	free_netbios_names_array();
 
 	smb_num_netbios_names = number + 1;
-	smb_my_netbios_names = (char **)malloc( sizeof(char *) * smb_num_netbios_names );
+	smb_my_netbios_names = SMB_MALLOC_ARRAY( char *, smb_num_netbios_names );
 
 	if (!smb_my_netbios_names)
 		return False;
@@ -164,7 +167,7 @@ static BOOL set_my_netbios_names(const char *name, int i)
 {
 	SAFE_FREE(smb_my_netbios_names[i]);
 
-	smb_my_netbios_names[i] = strdup(name);
+	smb_my_netbios_names[i] = SMB_STRDUP(name);
 	if (!smb_my_netbios_names[i])
 		return False;
 	strupper_m(smb_my_netbios_names[i]);
@@ -301,7 +304,7 @@ void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
 			return;
 	}
 	
-	*gids = Realloc(*gids, (*num+1) * sizeof(gid_t));
+	*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num+1);
 
 	if (*gids == NULL)
 		return;
@@ -351,7 +354,7 @@ const char *get_numlist(const char *p, uint32 **num, int *count)
 	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':') {
 		uint32 *tn;
 		
-		tn = Realloc((*num), ((*count)+1) * sizeof(uint32));
+		tn = SMB_REALLOC_ARRAY((*num), uint32, (*count)+1);
 		if (tn == NULL) {
 			SAFE_FREE(*num);
 			return NULL;
@@ -727,7 +730,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 	size_t num_to_read_thistime;
 	size_t num_written = 0;
 
-	if ((buf = malloc(TRANSFER_BUF_SIZE)) == NULL)
+	if ((buf = SMB_MALLOC(TRANSFER_BUF_SIZE)) == NULL)
 		return -1;
 
 	while (total < n) {
@@ -855,6 +858,82 @@ BOOL yesno(char *p)
 	return(False);
 }
 
+#if defined(PARANOID_MALLOC_CHECKER)
+
+/****************************************************************************
+ Internal malloc wrapper. Externally visible.
+****************************************************************************/
+
+void *malloc_(size_t size)
+{
+#undef malloc
+	/* If we don't add an amount here the glibc memset seems to write
+	   one byte over. */
+	return malloc(size+16);
+#define malloc(s) __ERROR_DONT_USE_MALLOC_DIRECTLY
+}
+
+/****************************************************************************
+ Internal calloc wrapper. Not externally visible.
+****************************************************************************/
+
+static void *calloc_(size_t count, size_t size)
+{
+#undef calloc
+	/* If we don't add an amount here the glibc memset seems to write
+	   one byte over. */
+	return calloc(count+1, size);
+#define calloc(n,s) __ERROR_DONT_USE_CALLOC_DIRECTLY
+}
+
+/****************************************************************************
+ Internal realloc wrapper. Not externally visible.
+****************************************************************************/
+
+static void *realloc_(void *ptr, size_t size)
+{
+#undef realloc
+	/* If we don't add an amount here the glibc memset seems to write
+	   one byte over. */
+	return realloc(ptr, size+16);
+#define realloc(p,s) __ERROR_DONT_USE_RELLOC_DIRECTLY
+}
+
+#endif /* PARANOID_MALLOC_CHECKER */
+
+/****************************************************************************
+ Type-safe malloc.
+****************************************************************************/
+
+void *malloc_array(size_t el_size, unsigned int count)
+{
+	if (count >= MAX_ALLOC_SIZE/el_size) {
+		return NULL;
+	}
+
+#if defined(PARANOID_MALLOC_CHECKER)
+	return malloc_(el_size*count);
+#else
+	return malloc(el_size*count);
+#endif
+}
+
+/****************************************************************************
+ Type-safe calloc.
+****************************************************************************/
+
+void *calloc_array(size_t size, size_t nmemb)
+{
+	if (nmemb >= MAX_ALLOC_SIZE/size) {
+		return NULL;
+	}
+#if defined(PARANOID_MALLOC_CHECKER)
+	return calloc_(nmemb, size);
+#else
+	return calloc(nmemb, size);
+#endif
+}
+
 /****************************************************************************
  Expand a pointer to be a particular size.
 ****************************************************************************/
@@ -869,10 +948,17 @@ void *Realloc(void *p,size_t size)
 		return NULL;
 	}
 
+#if defined(PARANOID_MALLOC_CHECKER)
+	if (!p)
+		ret = (void *)malloc_(size);
+	else
+		ret = (void *)realloc_(p,size);
+#else
 	if (!p)
 		ret = (void *)malloc(size);
 	else
 		ret = (void *)realloc(p,size);
+#endif
 
 	if (!ret)
 		DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
@@ -880,17 +966,16 @@ void *Realloc(void *p,size_t size)
 	return(ret);
 }
 
-void *Realloc_zero(void *ptr, size_t size)
+/****************************************************************************
+ Type-safe realloc.
+****************************************************************************/
+
+void *realloc_array(void *p,size_t el_size, unsigned int count)
 {
-	void *tptr = NULL;
-		
-	tptr = Realloc(ptr, size);
-	if(tptr == NULL)
+	if (count >= MAX_ALLOC_SIZE/el_size) {
 		return NULL;
-
-	memset((char *)tptr,'\0',size);
-
-	return tptr;
+	}
+	return Realloc(p,el_size*count);
 }
 
 /****************************************************************************
@@ -1595,8 +1680,7 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
 	if(num_entries == 0)
 		return;
 
-	if(( (*ppname_array) = (name_compare_entry *)malloc(
-					(num_entries + 1) * sizeof(name_compare_entry))) == NULL) {
+	if(( (*ppname_array) = SMB_MALLOC_ARRAY(name_compare_entry, num_entries + 1)) == NULL) {
 		DEBUG(0,("set_namearray: malloc fail\n"));
 		return;
 	}
@@ -1619,7 +1703,7 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
 			break;
 
 		(*ppname_array)[i].is_wild = ms_has_wild(nameptr);
-		if(((*ppname_array)[i].name = strdup(nameptr)) == NULL) {
+		if(((*ppname_array)[i].name = SMB_STRDUP(nameptr)) == NULL) {
 			DEBUG(0,("set_namearray: malloc fail (1)\n"));
 			return;
 		}
@@ -2115,14 +2199,18 @@ int smb_mkstemp(char *template)
  malloc that aborts with smb_panic on fail or zero size.
  *****************************************************************/  
 
-void *smb_xmalloc(size_t size)
+void *smb_xmalloc_array(size_t size, unsigned int count)
 {
 	void *p;
 	if (size == 0)
-		smb_panic("smb_xmalloc: called with zero size.\n");
-	if ((p = malloc(size)) == NULL) {
-		DEBUG(0, ("smb_xmalloc() failed to allocate %lu bytes\n", (unsigned long)size));
-		smb_panic("smb_xmalloc: malloc fail.\n");
+		smb_panic("smb_xmalloc_array: called with zero size.\n");
+        if (count >= MAX_ALLOC_SIZE/size) {
+                smb_panic("smb_xmalloc: alloc size too large.\n");
+        }
+	if ((p = SMB_MALLOC(size*count)) == NULL) {
+		DEBUG(0, ("smb_xmalloc_array failed to allocate %lu * %lu bytes\n",
+			(unsigned long)size, (unsigned long)count));
+		smb_panic("smb_xmalloc_array: malloc fail.\n");
 	}
 	return p;
 }
@@ -2134,7 +2222,7 @@ void *smb_xmalloc(size_t size)
 void *smb_xmemdup(const void *p, size_t size)
 {
 	void *p2;
-	p2 = smb_xmalloc(size);
+	p2 = SMB_XMALLOC_ARRAY(unsigned char,size);
 	memcpy(p2, p, size);
 	return p2;
 }
@@ -2145,10 +2233,19 @@ void *smb_xmemdup(const void *p, size_t size)
 
 char *smb_xstrdup(const char *s)
 {
+#if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strdup
+#undef strdup
+#endif
+#endif
 	char *s1 = strdup(s);
+#if defined(PARANOID_MALLOC_CHECKER)
+#define strdup(s) __ERROR_DONT_USE_STRDUP_DIRECTLY
+#endif
 	if (!s1)
 		smb_panic("smb_xstrdup: malloc fail\n");
 	return s1;
+
 }
 
 /**
@@ -2157,7 +2254,15 @@ char *smb_xstrdup(const char *s)
 
 char *smb_xstrndup(const char *s, size_t n)
 {
+#if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strndup
+#undef strndup
+#endif
+#endif
 	char *s1 = strndup(s, n);
+#if defined(PARANOID_MALLOC_CHECKER)
+#define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
+#endif
 	if (!s1)
 		smb_panic("smb_xstrndup: malloc fail\n");
 	return s1;
@@ -2189,7 +2294,7 @@ void *memdup(const void *p, size_t size)
 	void *p2;
 	if (size == 0)
 		return NULL;
-	p2 = malloc(size);
+	p2 = SMB_MALLOC(size);
 	if (!p2)
 		return NULL;
 	memcpy(p2, p, size);

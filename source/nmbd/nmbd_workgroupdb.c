@@ -71,7 +71,7 @@ static struct work_record *create_workgroup(const char *name, int ttl)
 	struct subnet_record *subrec;
 	int t = -1;
   
-	if((work = (struct work_record *)malloc(sizeof(*work))) == NULL) {
+	if((work = SMB_MALLOC_P(struct work_record)) == NULL) {
 		DEBUG(0,("create_workgroup: malloc fail !\n"));
 		return NULL;
 	}

@@ -232,14 +232,12 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 	/* Allocate memory for list of names */
 
 	if (num_entries > 0) {
-		if (!(trn->name = (LSA_TRANS_NAME *)talloc(ctx, sizeof(LSA_TRANS_NAME) *
-							  num_entries))) {
+		if (!(trn->name = TALLOC_ARRAY(ctx, LSA_TRANS_NAME, num_entries))) {
 			DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
 			return;
 		}
 
-		if (!(trn->uni_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2) * 
-							num_entries))) {
+		if (!(trn->uni_name = TALLOC_ARRAY(ctx, UNISTR2, num_entries))) {
 			DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
 			return;
 		}
@@ -418,7 +416,7 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 
 
 	/* associate the domain SID with the (unique) handle. */
-	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
+	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(info);
@@ -463,7 +461,7 @@ NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *
 	}
 
 	/* associate the domain SID with the (unique) handle. */
-	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
+	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(info);
@@ -550,7 +548,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		info->id2.auditing_enabled = 1;
 		info->id2.count1 = 7;
 		info->id2.count2 = 7;
-		if ((info->id2.auditsettings = (uint32 *)talloc(p->mem_ctx,7*sizeof(uint32))) == NULL)
+		if ((info->id2.auditsettings = TALLOC_ARRAY(p->mem_ctx,uint32, 7)) == NULL)
 			return NT_STATUS_NO_MEMORY;
 		for (i = 0; i < 7; i++)
 			info->id2.auditsettings[i] = 3;
@@ -649,8 +647,8 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_
 		DEBUG(5,("_lsa_lookup_sids: truncating SID lookup list to %d\n", num_entries));
 	}
 
-	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
-	names = (LSA_TRANS_NAME_ENUM *)talloc_zero(p->mem_ctx, sizeof(LSA_TRANS_NAME_ENUM));
+	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
+	names = TALLOC_ZERO_P(p->mem_ctx, LSA_TRANS_NAME_ENUM);
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle)) {
 		r_u->status = NT_STATUS_INVALID_HANDLE;
@@ -698,8 +696,8 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 		DEBUG(5,("_lsa_lookup_names: truncating name lookup list to %d\n", num_entries));
 	}
 		
-	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
-	rids = (DOM_RID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_RID2)*num_entries);
+	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
+	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID2, num_entries);
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle)) {
 		r_u->status = NT_STATUS_INVALID_HANDLE;
@@ -768,7 +766,7 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	if (enum_context >= PRIV_ALL_INDEX)
 		return NT_STATUS_NO_MORE_ENTRIES;
 
-	entries = (LSA_PRIV_ENTRY *)talloc_zero(p->mem_ctx, sizeof(LSA_PRIV_ENTRY) * (PRIV_ALL_INDEX));
+	entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, PRIV_ALL_INDEX);
 	if (entries==NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -887,8 +885,8 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	if (q_u->enum_context >= num_entries)
 		return NT_STATUS_NO_MORE_ENTRIES;
 
-	sids->ptr_sid = (uint32 *)talloc_zero(p->mem_ctx, (num_entries-q_u->enum_context)*sizeof(uint32));
-	sids->sid = (DOM_SID2 *)talloc_zero(p->mem_ctx, (num_entries-q_u->enum_context)*sizeof(DOM_SID2));
+	sids->ptr_sid = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_entries-q_u->enum_context);
+	sids->sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_entries-q_u->enum_context);
 
 	if (sids->ptr_sid==NULL || sids->sid==NULL) {
 		SAFE_FREE(map);
@@ -960,7 +958,7 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* associate the user/group SID with the (unique) handle. */
-	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
+	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(info);

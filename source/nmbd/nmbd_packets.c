@@ -184,7 +184,7 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
 	struct nmb_packet *nmb = NULL;
 
 	/* Allocate the packet_struct we will return. */
-	if((packet = (struct packet_struct *)malloc(sizeof(*packet))) == NULL) {
+	if((packet = SMB_MALLOC_P(struct packet_struct)) == NULL) {
 		DEBUG(0,("create_and_init_netbios_packet: malloc fail (1) for packet struct.\n"));
 		return NULL;
 	}
@@ -230,7 +230,7 @@ static BOOL create_and_init_additional_record(struct packet_struct *packet,
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
 
-	if((nmb->additional = (struct res_rec *)malloc(sizeof(struct res_rec))) == NULL) {
+	if((nmb->additional = SMB_MALLOC_P(struct res_rec)) == NULL) {
 		DEBUG(0,("initiate_name_register_packet: malloc fail for additional record.\n"));
 		return False;
 	}
@@ -534,7 +534,7 @@ void queue_wins_refresh(struct nmb_name *nmbname,
 	DEBUG(6,("Refreshing name %s IP %s with WINS server %s using tag '%s'\n",
 		 nmb_namestr(nmbname), ip_str, inet_ntoa(wins_ip), tag));
 
-	userdata = (struct userdata_struct *)malloc(sizeof(*userdata) + strlen(tag) + 1);
+	userdata = (struct userdata_struct *)SMB_MALLOC(sizeof(*userdata) + strlen(tag) + 1);
 	if (!userdata) {
 		DEBUG(0,("Failed to allocate userdata structure!\n"));
 		return;
@@ -1645,7 +1645,7 @@ static BOOL create_listen_fdset(fd_set **ppset, int **psock_array, int *listen_n
 	struct subnet_record *subrec = NULL;
 	int count = 0;
 	int num = 0;
-	fd_set *pset = (fd_set *)malloc(sizeof(fd_set));
+	fd_set *pset = SMB_MALLOC_P(fd_set);
 
 	if(pset == NULL) {
 		DEBUG(0,("create_listen_fdset: malloc fail !\n"));
@@ -1662,7 +1662,7 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
 		return True;
 	}
 
-	if((sock_array = (int *)malloc(((count*2) + 2)*sizeof(int))) == NULL) {
+	if((sock_array = SMB_MALLOC_ARRAY(int, (count*2) + 2)) == NULL) {
 		DEBUG(0,("create_listen_fdset: malloc fail for socket array.\n"));
 		return True;
 	}

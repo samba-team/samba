@@ -51,7 +51,7 @@ static void add_name(const char *machine_name, uint32 server_type,
         struct name_list **name_list = (struct name_list **)state;
         struct name_list *new_name;
 
-        new_name = (struct name_list *)malloc(sizeof(struct name_list));
+        new_name = SMB_MALLOC_P(struct name_list);
 
         if (!new_name)
                 return;

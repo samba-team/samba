@@ -1401,8 +1401,8 @@ BOOL samr_io_r_enum_dom_users(const char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
 			return False;
 
 		if (UNMARSHALLING(ps) && (r_u->num_entries2 != 0)) {
-			r_u->sam = (SAM_ENTRY *)prs_alloc_mem(ps,sizeof(SAM_ENTRY)*r_u->num_entries2);
-			r_u->uni_acct_name = (UNISTR2 *)prs_alloc_mem(ps,sizeof(UNISTR2)*r_u->num_entries2);
+			r_u->sam = PRS_ALLOC_MEM(ps,SAM_ENTRY, r_u->num_entries2);
+			r_u->uni_acct_name = PRS_ALLOC_MEM(ps,UNISTR2, r_u->num_entries2);
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_acct_name == NULL) && r_u->num_entries2 != 0) {
@@ -1506,11 +1506,11 @@ NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_en
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	sam->sam=(SAM_ENTRY1 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY1));
+	sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY1, num_entries);
 	if (!sam->sam)
 		return NT_STATUS_NO_MEMORY;
 
-	sam->str=(SAM_STR1 *)talloc(ctx, num_entries*sizeof(SAM_STR1));
+	sam->str=TALLOC_ARRAY(ctx, SAM_STR1, num_entries);
 	if (!sam->str)
 		return NT_STATUS_NO_MEMORY;
 
@@ -1584,16 +1584,12 @@ static BOOL sam_io_sam_dispinfo_1(const char *desc, SAM_DISPINFO_1 * sam,
 
 	if (UNMARSHALLING(ps) && num_entries > 0) {
 
-		if ((sam->sam = (SAM_ENTRY1 *)
-		     prs_alloc_mem(ps, sizeof(SAM_ENTRY1) *
-				   num_entries)) == NULL) {
+		if ((sam->sam = PRS_ALLOC_MEM(ps, SAM_ENTRY1, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_ENTRY1\n"));
 			return False;
 		}
 
-		if ((sam->str = (SAM_STR1 *)
-		     prs_alloc_mem(ps, sizeof(SAM_STR1) * 
-				   num_entries)) == NULL) {
+		if ((sam->str = PRS_ALLOC_MEM(ps, SAM_STR1, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_STR1\n"));
 			return False;
 		}
@@ -1633,10 +1629,10 @@ NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_en
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY2 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY2))))
+	if (!(sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY2, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR2 *)talloc(ctx, num_entries*sizeof(SAM_STR2))))
+	if (!(sam->str=TALLOC_ARRAY(ctx, SAM_STR2, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
@@ -1697,16 +1693,12 @@ static BOOL sam_io_sam_dispinfo_2(const char *desc, SAM_DISPINFO_2 * sam,
 
 	if (UNMARSHALLING(ps) && num_entries > 0) {
 
-		if ((sam->sam = (SAM_ENTRY2 *)
-		     prs_alloc_mem(ps, sizeof(SAM_ENTRY2) *
-				   num_entries)) == NULL) {
+		if ((sam->sam = PRS_ALLOC_MEM(ps, SAM_ENTRY2, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_ENTRY2\n"));
 			return False;
 		}
 
-		if ((sam->str = (SAM_STR2 *)
-		     prs_alloc_mem(ps, sizeof(SAM_STR2) * 
-				   num_entries)) == NULL) {
+		if ((sam->str = PRS_ALLOC_MEM(ps, SAM_STR2, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_STR2\n"));
 			return False;
 		}
@@ -1743,10 +1735,10 @@ NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_en
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY3 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY3))))
+	if (!(sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY3, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR3 *)talloc(ctx, num_entries*sizeof(SAM_STR3))))
+	if (!(sam->str=TALLOC_ARRAY(ctx, SAM_STR3, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
@@ -1788,16 +1780,12 @@ static BOOL sam_io_sam_dispinfo_3(const char *desc, SAM_DISPINFO_3 * sam,
 
 	if (UNMARSHALLING(ps) && num_entries > 0) {
 
-		if ((sam->sam = (SAM_ENTRY3 *)
-		     prs_alloc_mem(ps, sizeof(SAM_ENTRY3) *
-				   num_entries)) == NULL) {
+		if ((sam->sam = PRS_ALLOC_MEM(ps, SAM_ENTRY3, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_ENTRY3\n"));
 			return False;
 		}
 
-		if ((sam->str = (SAM_STR3 *)
-		     prs_alloc_mem(ps, sizeof(SAM_STR3) * 
-				   num_entries)) == NULL) {
+		if ((sam->str = PRS_ALLOC_MEM(ps, SAM_STR3, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_STR3\n"));
 			return False;
 		}
@@ -1836,10 +1824,10 @@ NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 num_en
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY4 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY4))))
+	if (!(sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY4, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR4 *)talloc(ctx, num_entries*sizeof(SAM_STR4))))
+	if (!(sam->str=TALLOC_ARRAY(ctx, SAM_STR4, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
@@ -1880,16 +1868,12 @@ static BOOL sam_io_sam_dispinfo_4(const char *desc, SAM_DISPINFO_4 * sam,
 
 	if (UNMARSHALLING(ps) && num_entries > 0) {
 
-		if ((sam->sam = (SAM_ENTRY4 *)
-		     prs_alloc_mem(ps, sizeof(SAM_ENTRY4) *
-				   num_entries)) == NULL) {
+		if ((sam->sam = PRS_ALLOC_MEM(ps, SAM_ENTRY4, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_ENTRY4\n"));
 			return False;
 		}
 
-		if ((sam->str = (SAM_STR4 *)
-		     prs_alloc_mem(ps, sizeof(SAM_STR4) * 
-				   num_entries)) == NULL) {
+		if ((sam->str = PRS_ALLOC_MEM(ps, SAM_STR4, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_STR4\n"));
 			return False;
 		}
@@ -1926,10 +1910,10 @@ NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 num_en
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY5 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY5))))
+	if (!(sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY5, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR5 *)talloc(ctx, num_entries*sizeof(SAM_STR5))))
+	if (!(sam->str=TALLOC_ARRAY(ctx, SAM_STR5, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
@@ -1970,16 +1954,12 @@ static BOOL sam_io_sam_dispinfo_5(const char *desc, SAM_DISPINFO_5 * sam,
 
 	if (UNMARSHALLING(ps) && num_entries > 0) {
 
-		if ((sam->sam = (SAM_ENTRY5 *)
-		     prs_alloc_mem(ps, sizeof(SAM_ENTRY5) *
-				   num_entries)) == NULL) {
+		if ((sam->sam = PRS_ALLOC_MEM(ps, SAM_ENTRY5, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_ENTRY5\n"));
 			return False;
 		}
 
-		if ((sam->str = (SAM_STR5 *)
-		     prs_alloc_mem(ps, sizeof(SAM_STR5) * 
-				   num_entries)) == NULL) {
+		if ((sam->str = PRS_ALLOC_MEM(ps, SAM_STR5, num_entries)) == NULL) {
 			DEBUG(0, ("out of memory allocating SAM_STR5\n"));
 			return False;
 		}
@@ -2354,7 +2334,7 @@ static BOOL samr_group_info_ctr(const char *desc, GROUP_INFO_CTR **ctr,
 				prs_struct *ps, int depth)
 {
 	if (UNMARSHALLING(ps))
-		*ctr = (GROUP_INFO_CTR *)prs_alloc_mem(ps,sizeof(GROUP_INFO_CTR));
+		*ctr = PRS_ALLOC_MEM(ps,GROUP_INFO_CTR,1);
 
 	if (*ctr == NULL)
 		return False;
@@ -2929,7 +2909,7 @@ BOOL samr_io_r_query_groupmem(const char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 			if(!prs_uint32("num_rids", ps, depth, &r_u->num_rids))
 				return False;
 			if (UNMARSHALLING(ps) && r_u->num_rids != 0) {
-				r_u->rid = (uint32 *)prs_alloc_mem(ps,sizeof(r_u->rid[0])*r_u->num_rids);
+				r_u->rid = PRS_ALLOC_MEM(ps,uint32,r_u->num_rids);
 				if (r_u->rid == NULL)
 					return False;
 			}
@@ -2945,7 +2925,7 @@ BOOL samr_io_r_query_groupmem(const char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 				return False;
 
 			if (UNMARSHALLING(ps) && r_u->num_attrs != 0) {
-				r_u->attr = (uint32 *)prs_alloc_mem(ps,sizeof(r_u->attr[0])*r_u->num_attrs);
+				r_u->attr = PRS_ALLOC_MEM(ps,uint32,r_u->num_attrs);
 				if (r_u->attr == NULL)
 					return False;
 			}
@@ -3046,7 +3026,7 @@ BOOL samr_io_gids(const char *desc, uint32 *num_gids, DOM_GID ** gid,
 
 	if ((*num_gids) != 0) {
 		if (UNMARSHALLING(ps)) {
-			(*gid) = (DOM_GID *)prs_alloc_mem(ps,sizeof(DOM_GID)*(*num_gids));
+			(*gid) = PRS_ALLOC_MEM(ps,DOM_GID,*num_gids);
 		}
 
 		if ((*gid) == NULL) {
@@ -3201,8 +3181,8 @@ BOOL samr_io_r_enum_domains(const char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 			return False;
 
 		if (UNMARSHALLING(ps)) {
-			r_u->sam = (SAM_ENTRY *)prs_alloc_mem(ps,sizeof(SAM_ENTRY)*r_u->num_entries2);
-			r_u->uni_dom_name = (UNISTR2 *)prs_alloc_mem(ps,sizeof(UNISTR2)*r_u->num_entries2);
+			r_u->sam = PRS_ALLOC_MEM(ps,SAM_ENTRY,r_u->num_entries2);
+			r_u->uni_dom_name = PRS_ALLOC_MEM(ps,UNISTR2,r_u->num_entries2);
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_dom_name == NULL) && r_u->num_entries2 != 0) {
@@ -3340,8 +3320,8 @@ BOOL samr_io_r_enum_dom_groups(const char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
 			return False;
 
 		if (UNMARSHALLING(ps)) {
-			r_u->sam = (SAM_ENTRY *)prs_alloc_mem(ps,sizeof(SAM_ENTRY)*r_u->num_entries2);
-			r_u->uni_grp_name = (UNISTR2 *)prs_alloc_mem(ps,sizeof(UNISTR2)*r_u->num_entries2);
+			r_u->sam = PRS_ALLOC_MEM(ps,SAM_ENTRY,r_u->num_entries2);
+			r_u->uni_grp_name = PRS_ALLOC_MEM(ps,UNISTR2,r_u->num_entries2);
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_grp_name == NULL) && r_u->num_entries2 != 0) {
@@ -3474,8 +3454,8 @@ BOOL samr_io_r_enum_dom_aliases(const char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 			return False;
 
 		if (UNMARSHALLING(ps) && (r_u->num_entries2 > 0)) {
-			r_u->sam = (SAM_ENTRY *)prs_alloc_mem(ps,sizeof(SAM_ENTRY)*r_u->num_entries2);
-			r_u->uni_grp_name = (UNISTR2 *)prs_alloc_mem(ps,sizeof(UNISTR2)*r_u->num_entries2);
+			r_u->sam = PRS_ALLOC_MEM(ps,SAM_ENTRY,r_u->num_entries2);
+			r_u->uni_grp_name = PRS_ALLOC_MEM(ps,UNISTR2,r_u->num_entries2);
 		}
 
 		if (r_u->num_entries2 != 0 && 
@@ -3832,11 +3812,11 @@ BOOL samr_io_q_query_useraliases(const char *desc, SAMR_Q_QUERY_USERALIASES * q_
 		return False;
 
 	if (UNMARSHALLING(ps) && (q_u->num_sids2 != 0)) {
-		q_u->ptr_sid = (uint32 *)prs_alloc_mem(ps,sizeof(q_u->ptr_sid[0])*q_u->num_sids2);
+		q_u->ptr_sid = PRS_ALLOC_MEM(ps,uint32,q_u->num_sids2);
 		if (q_u->ptr_sid == NULL)
 			return False;
 
-		q_u->sid = (DOM_SID2 *)prs_alloc_mem(ps, sizeof(q_u->sid[0]) * q_u->num_sids2);
+		q_u->sid = PRS_ALLOC_MEM(ps, DOM_SID2, q_u->num_sids2);
 		if (q_u->sid == NULL)
 			return False;
 	}
@@ -3907,7 +3887,7 @@ BOOL samr_io_rids(const char *desc, uint32 *num_rids, uint32 **rid,
 	if ((*num_rids) != 0) {
 		if (UNMARSHALLING(ps)) {
 			/* reading */
-			(*rid) = (uint32 *)prs_alloc_mem(ps,sizeof(uint32)*(*num_rids));
+			(*rid) = PRS_ALLOC_MEM(ps,uint32, *num_rids);
 		}
 		if ((*rid) == NULL)
 			return False;
@@ -4038,7 +4018,7 @@ void init_samr_q_lookup_rids(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_RIDS * q_u,
 	q_u->flags = flags;
 	q_u->ptr = 0;
 	q_u->num_rids2 = num_rids;
-	q_u->rid = (uint32 *)talloc_zero(ctx, num_rids * sizeof(q_u->rid[0]));
+	q_u->rid = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids );
 	if (q_u->rid == NULL) {
 		q_u->num_rids1 = 0;
 		q_u->num_rids2 = 0;
@@ -4082,7 +4062,7 @@ BOOL samr_io_q_lookup_rids(const char *desc, SAMR_Q_LOOKUP_RIDS * q_u,
 		return False;
 
 	if (UNMARSHALLING(ps) && (q_u->num_rids2 != 0)) {
-		q_u->rid = (uint32 *)prs_alloc_mem(ps, sizeof(q_u->rid[0])*q_u->num_rids2);
+		q_u->rid = PRS_ALLOC_MEM(ps, uint32, q_u->num_rids2);
 		if (q_u->rid == NULL)
 			return False;
 	}
@@ -4163,11 +4143,11 @@ BOOL samr_io_r_lookup_rids(const char *desc, SAMR_R_LOOKUP_RIDS * r_u,
 
 
 		if (UNMARSHALLING(ps) && (r_u->num_names2 != 0)) {
-			r_u->hdr_name = (UNIHDR *) prs_alloc_mem(ps, r_u->num_names2 * sizeof(r_u->hdr_name[0]));
+			r_u->hdr_name = PRS_ALLOC_MEM(ps, UNIHDR, r_u->num_names2);
 			if (r_u->hdr_name == NULL)
 				return False;
 
-			r_u->uni_name = (UNISTR2 *)prs_alloc_mem(ps, r_u->num_names2 * sizeof(r_u->uni_name[0]));
+			r_u->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, r_u->num_names2);
 			if (r_u->uni_name == NULL)
 				return False;
 		}
@@ -4198,7 +4178,7 @@ BOOL samr_io_r_lookup_rids(const char *desc, SAMR_R_LOOKUP_RIDS * r_u,
 			return False;
 
 		if (UNMARSHALLING(ps) && (r_u->num_types2 != 0)) {
-			r_u->type = (uint32 *)prs_alloc_mem(ps, r_u->num_types2 * sizeof(r_u->type[0]));
+			r_u->type = PRS_ALLOC_MEM(ps, uint32, r_u->num_types2);
 			if (r_u->type == NULL)
 				return False;
 		}
@@ -4624,7 +4604,7 @@ BOOL samr_io_r_query_aliasmem(const char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 		if(!prs_uint32("num_sids1", ps, depth, &r_u->num_sids1))
 			return False;
 
-		ptr_sid = talloc(ps->mem_ctx, sizeof(uint32) * r_u->num_sids1);
+		ptr_sid = TALLOC_ARRAY(ps->mem_ctx, uint32, r_u->num_sids1);
 		if (!ptr_sid) {
 			return False;
 		}
@@ -4636,7 +4616,7 @@ BOOL samr_io_r_query_aliasmem(const char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 		}
 		
 		if (UNMARSHALLING(ps)) {
-			r_u->sid = talloc(ps->mem_ctx, r_u->num_sids1 * sizeof(DOM_SID2));
+			r_u->sid = TALLOC_ARRAY(ps->mem_ctx, DOM_SID2, r_u->num_sids1);
 		}
 		
 		for (i = 0; i < r_u->num_sids1; i++) {
@@ -4674,10 +4654,10 @@ NTSTATUS init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 	q_u->ptr = 0;
 	q_u->num_names2 = num_names;
 
-	if (!(q_u->hdr_name = (UNIHDR *)talloc_zero(ctx, num_names * sizeof(UNIHDR))))
+	if (!(q_u->hdr_name = TALLOC_ZERO_ARRAY(ctx, UNIHDR, num_names)))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(q_u->uni_name = (UNISTR2 *)talloc_zero(ctx, num_names * sizeof(UNISTR2))))
+	if (!(q_u->uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_names)))
 		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < num_names; i++) {
@@ -4722,10 +4702,8 @@ BOOL samr_io_q_lookup_names(const char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 		return False;
 
 	if (UNMARSHALLING(ps) && (q_u->num_names2 != 0)) {
-		q_u->hdr_name = (UNIHDR *)prs_alloc_mem(ps, sizeof(UNIHDR) *
-							q_u->num_names2);
-		q_u->uni_name = (UNISTR2 *)prs_alloc_mem(ps, sizeof(UNISTR2) *
-							 q_u->num_names2);
+		q_u->hdr_name = PRS_ALLOC_MEM(ps, UNIHDR, q_u->num_names2);
+		q_u->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, q_u->num_names2);
 		if (!q_u->hdr_name || !q_u->uni_name)
 			return False;
 	}
@@ -4765,9 +4743,9 @@ NTSTATUS init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 		r_u->ptr_rids = 1;
 		r_u->num_rids2 = num_rids;
 
-		if (!(r_u->rids = (uint32 *)talloc_zero(ctx, sizeof(uint32)*num_rids)))
+		if (!(r_u->rids = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
 			return NT_STATUS_NO_MEMORY;
-		if (!(r_u->types = (uint32 *)talloc_zero(ctx, sizeof(uint32)*num_rids)))
+		if (!(r_u->types = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
 			return NT_STATUS_NO_MEMORY;
 
 		if (!r_u->rids || !r_u->types)
@@ -4834,7 +4812,7 @@ BOOL samr_io_r_lookup_names(const char *desc, SAMR_R_LOOKUP_NAMES * r_u,
 		}
 
 		if (UNMARSHALLING(ps))
-			r_u->rids = (uint32 *)prs_alloc_mem(ps, sizeof(uint32)*r_u->num_rids2);
+			r_u->rids = PRS_ALLOC_MEM(ps, uint32, r_u->num_rids2);
 
 		if (!r_u->rids) {
 			DEBUG(0, ("NULL rids in samr_io_r_lookup_names\n"));
@@ -4863,7 +4841,7 @@ BOOL samr_io_r_lookup_names(const char *desc, SAMR_R_LOOKUP_NAMES * r_u,
 		}
 
 		if (UNMARSHALLING(ps))
-			r_u->types = (uint32 *)prs_alloc_mem(ps, sizeof(uint32)*r_u->num_types2);
+			r_u->types = PRS_ALLOC_MEM(ps, uint32, r_u->num_types2);
 
 		if (!r_u->types) {
 			DEBUG(0, ("NULL types in samr_io_r_lookup_names\n"));
@@ -6282,7 +6260,7 @@ NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 
 	switch (switch_value) {
 	case 0x10:
-		ctr->info.id10 = (SAM_USER_INFO_10 *)talloc_zero(ctx,sizeof(SAM_USER_INFO_10));
+		ctr->info.id10 = TALLOC_ZERO_P(ctx,SAM_USER_INFO_10);
 		if (ctr->info.id10 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -6298,7 +6276,7 @@ NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 			expire.low = 0xffffffff;
 			expire.high = 0x7fffffff;
 
-			ctr->info.id = (SAM_USER_INFO_11 *) talloc_zero(ctx,sizeof(*ctr->info.id11));
+			ctr->info.id = TALLOC_ZERO_P(ctx,SAM_USER_INFO_11);
 			init_sam_user_info11(ctr->info.id11, &expire,
 					     "BROOKFIELDS$",	/* name */
 					     0x03ef,	/* user rid */
@@ -6309,7 +6287,7 @@ NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 		}
 #endif
 	case 0x12:
-		ctr->info.id12 = (SAM_USER_INFO_12 *)talloc_zero(ctx,sizeof(SAM_USER_INFO_12));
+		ctr->info.id12 = TALLOC_ZERO_P(ctx,SAM_USER_INFO_12);
 		if (ctr->info.id12 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -6318,7 +6296,7 @@ NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 	case 21:
 		{
 			SAM_USER_INFO_21 *cusr;
-			cusr = (SAM_USER_INFO_21 *)talloc_zero(ctx,sizeof(SAM_USER_INFO_21));
+			cusr = TALLOC_ZERO_P(ctx,SAM_USER_INFO_21);
 			ctr->info.id21 = cusr;
 			if (ctr->info.id21 == NULL)
 				return NT_STATUS_NO_MEMORY;
@@ -6377,7 +6355,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 	depth++;
 
 	if (UNMARSHALLING(ps)) {
-		ctr = (SAM_USERINFO_CTR *)prs_alloc_mem(ps,sizeof(SAM_USERINFO_CTR));
+		ctr = PRS_ALLOC_MEM(ps,SAM_USERINFO_CTR,1);
 		if (ctr == NULL)
 			return False;
 		*ppctr = ctr;
@@ -6397,7 +6375,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 	switch (ctr->switch_value) {
 	case 0x10:
 		if (UNMARSHALLING(ps))
-			ctr->info.id10 = (SAM_USER_INFO_10 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_10));
+			ctr->info.id10 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_10,1);
 		if (ctr->info.id10 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
 			return False;
@@ -6406,7 +6384,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 		break;
 	case 0x11:
 		if (UNMARSHALLING(ps))
-			ctr->info.id11 = (SAM_USER_INFO_11 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_11));
+			ctr->info.id11 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_11,1);
 
 		if (ctr->info.id11 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
@@ -6416,7 +6394,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 		break;
 	case 0x12:
 		if (UNMARSHALLING(ps))
-			ctr->info.id12 = (SAM_USER_INFO_12 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_12));
+			ctr->info.id12 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_12,1);
 
 		if (ctr->info.id12 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
@@ -6426,7 +6404,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 		break;
 	case 20:
 		if (UNMARSHALLING(ps))
-			ctr->info.id20 = (SAM_USER_INFO_20 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_20));
+			ctr->info.id20 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_20,1);
 
 		if (ctr->info.id20 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
@@ -6436,7 +6414,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 		break;
 	case 21:
 		if (UNMARSHALLING(ps))
-			ctr->info.id21 = (SAM_USER_INFO_21 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_21));
+			ctr->info.id21 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_21,1);
 
 		if (ctr->info.id21 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
@@ -6446,7 +6424,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 		break;
 	case 23:
 		if (UNMARSHALLING(ps))
-			ctr->info.id23 = (SAM_USER_INFO_23 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_23));
+			ctr->info.id23 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_23,1);
 
 		if (ctr->info.id23 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
@@ -6456,7 +6434,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 		break;
 	case 24:
 		if (UNMARSHALLING(ps))
-			ctr->info.id24 = (SAM_USER_INFO_24 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_24));
+			ctr->info.id24 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_24,1);
 
 		if (ctr->info.id24 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
@@ -6466,7 +6444,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 		break;
 	case 25:
 		if (UNMARSHALLING(ps))
-			ctr->info.id25 = (SAM_USER_INFO_25 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_25));
+			ctr->info.id25 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_25,1);
 
 		if (ctr->info.id25 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
@@ -7356,7 +7334,7 @@ BOOL samr_io_q_set_domain_info(const char *desc, SAMR_Q_SET_DOMAIN_INFO *q_u,
 	if(!prs_align(ps))
 		return False;
 
-	if ((q_u->ctr = (SAM_UNK_CTR *)prs_alloc_mem(ps, sizeof(SAM_UNK_CTR))) == NULL)
+	if ((q_u->ctr = PRS_ALLOC_MEM(ps, SAM_UNK_CTR, 1)) == NULL)
 		return False;
 	
 	switch (q_u->switch_value) {

@@ -85,7 +85,7 @@ void web_set_lang(const char *lang_string)
 		count++;
 		lang_num++;
 	}
-	pl = (struct pri_list *)malloc(sizeof(struct pri_list) * lang_num);
+	pl = SMB_MALLOC_ARRAY(struct pri_list, lang_num);
 	for (i = 0; i < lang_num; i++) {
 		char *pri_code;
 		if ((pri_code=strstr(lang_list[i], ";q="))) {
@@ -95,7 +95,7 @@ void web_set_lang(const char *lang_string)
 		} else {
 			pl[i].pri = 1;
 		}
-		pl[i].string = strdup(lang_list[i]);
+		pl[i].string = SMB_STRDUP(lang_list[i]);
 	}
 	str_list_free(&lang_list);
 

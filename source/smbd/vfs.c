@@ -188,7 +188,7 @@ NTSTATUS smb_register_vfs(int version, const char *name, vfs_op_tuple *vfs_op_tu
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	entry = smb_xmalloc(sizeof(struct vfs_init_function_entry));
+	entry = SMB_XMALLOC_P(struct vfs_init_function_entry);
 	entry->name = smb_xstrdup(name);
 	entry->vfs_op_tuples = vfs_op_tuples;
 
@@ -261,7 +261,7 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 		return False;
 	}
 
-	handle = (vfs_handle_struct *)talloc_zero(conn->mem_ctx,sizeof(vfs_handle_struct));
+	handle = TALLOC_ZERO_P(conn->mem_ctx,vfs_handle_struct);
 	if (!handle) {
 		DEBUG(0,("talloc_zero() failed!\n"));
 		SAFE_FREE(module_name);
@@ -684,7 +684,7 @@ static void array_promote(char *array,int elsize,int element)
 	if (element == 0)
 		return;
 
-	p = (char *)malloc(elsize);
+	p = (char *)SMB_MALLOC(elsize);
 
 	if (!p) {
 		DEBUG(5,("array_promote: malloc fail\n"));
@@ -879,7 +879,7 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 				pstrcat(tmp_fname, last_component);
 #ifdef REALPATH_TAKES_NULL
 				SAFE_FREE(resolved_name);
-				resolved_name = strdup(tmp_fname);
+				resolved_name = SMB_STRDUP(tmp_fname);
 				if (!resolved_name) {
 					DEBUG(0,("reduce_name: malloc fail for %s\n", tmp_fname));
 					errno = saved_errno;

@@ -33,7 +33,7 @@ static char *mutex_server_name;
 
 BOOL grab_server_mutex(const char *name)
 {
-	mutex_server_name = strdup(name);
+	mutex_server_name = SMB_STRDUP(name);
 	if (!mutex_server_name) {
 		DEBUG(0,("grab_server_mutex: malloc failed for %s\n", name));
 		return False;

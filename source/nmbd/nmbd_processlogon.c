@@ -577,8 +577,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					return;
 				}
 
-				db_info = (struct sam_database_info *)
-						malloc(sizeof(struct sam_database_info) * db_count);
+				db_info = SMB_MALLOC_ARRAY(struct sam_database_info, db_count);
 
 				if (db_info == NULL) {
 					DEBUG(3, ("out of memory allocating info for %d databases\n", db_count));

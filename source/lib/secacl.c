@@ -32,7 +32,7 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *a
 	SEC_ACL *dst;
 	int i;
 
-	if((dst = (SEC_ACL *)talloc_zero(ctx,sizeof(SEC_ACL))) == NULL)
+	if((dst = TALLOC_ZERO_P(ctx,SEC_ACL)) == NULL)
 		return NULL;
 
 	dst->revision = revision;
@@ -46,7 +46,7 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *a
 	   positive number. */
 
 	if ((num_aces) && 
-            ((dst->ace = (SEC_ACE *)talloc(ctx, sizeof(SEC_ACE) * num_aces)) 
+            ((dst->ace = TALLOC_ARRAY(ctx, SEC_ACE, num_aces)) 
              == NULL)) {
 		return NULL;
 	}

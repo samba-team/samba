@@ -55,7 +55,7 @@ static void decode_printer_info_0(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         uint32 i;
         PRINTER_INFO_0  *inf;
 
-        inf=(PRINTER_INFO_0 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_0));
+        inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_0, returned);
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_0));
 
 	prs_set_offset(&buffer->prs,0);
@@ -75,7 +75,7 @@ static void decode_printer_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         uint32 i;
         PRINTER_INFO_1  *inf;
 
-        inf=(PRINTER_INFO_1 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_1));
+        inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_1, returned);
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_1));
 
 	prs_set_offset(&buffer->prs,0);
@@ -95,7 +95,7 @@ static void decode_printer_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         uint32 i;
         PRINTER_INFO_2  *inf;
 
-        inf=(PRINTER_INFO_2 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_2));
+        inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_2, returned);
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_2));
 
 	prs_set_offset(&buffer->prs,0);
@@ -117,7 +117,7 @@ static void decode_printer_info_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         uint32 i;
         PRINTER_INFO_3  *inf;
 
-        inf=(PRINTER_INFO_3 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_3));
+        inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_3, returned);
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_3));
 
 	prs_set_offset(&buffer->prs,0);
@@ -138,7 +138,7 @@ static void decode_printer_info_7(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 	uint32 i;
 	PRINTER_INFO_7  *inf;
 
-	inf=(PRINTER_INFO_7 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_7));
+	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_7, returned);
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_7));
 
 	prs_set_offset(&buffer->prs,0);
@@ -159,7 +159,7 @@ static void decode_port_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         uint32 i;
         PORT_INFO_1 *inf;
 
-        inf=(PORT_INFO_1*)talloc(mem_ctx, returned*sizeof(PORT_INFO_1));
+        inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_1, returned);
 	memset(inf, 0, returned*sizeof(PORT_INFO_1));
 
         prs_set_offset(&buffer->prs, 0);
@@ -179,7 +179,7 @@ static void decode_port_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         uint32 i;
         PORT_INFO_2 *inf;
 
-        inf=(PORT_INFO_2*)talloc(mem_ctx, returned*sizeof(PORT_INFO_2));
+        inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_2, returned);
 	memset(inf, 0, returned*sizeof(PORT_INFO_2));
 
         prs_set_offset(&buffer->prs, 0);
@@ -199,7 +199,7 @@ static void decode_printer_driver_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         uint32 i;
         DRIVER_INFO_1 *inf;
 
-        inf=(DRIVER_INFO_1 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_1));
+        inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_1, returned);
 	memset(inf, 0, returned*sizeof(DRIVER_INFO_1));
 
 	prs_set_offset(&buffer->prs,0);
@@ -219,7 +219,7 @@ static void decode_printer_driver_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         uint32 i;
         DRIVER_INFO_2 *inf;
 
-        inf=(DRIVER_INFO_2 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_2));
+        inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_2, returned);
 	memset(inf, 0, returned*sizeof(DRIVER_INFO_2));
 
 	prs_set_offset(&buffer->prs,0);
@@ -239,7 +239,7 @@ static void decode_printer_driver_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         uint32 i;
         DRIVER_INFO_3 *inf;
 
-        inf=(DRIVER_INFO_3 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_3));
+        inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_3, returned);
 	memset(inf, 0, returned*sizeof(DRIVER_INFO_3));
 
 	prs_set_offset(&buffer->prs,0);
@@ -259,7 +259,7 @@ static void decode_printerdriverdir_1 (TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 {
 	DRIVER_DIRECTORY_1 *inf;
  
-        inf=(DRIVER_DIRECTORY_1 *)talloc(mem_ctx, sizeof(DRIVER_DIRECTORY_1));
+        inf=TALLOC_P(mem_ctx, DRIVER_DIRECTORY_1);
 	memset(inf, 0, sizeof(DRIVER_DIRECTORY_1));
 
         prs_set_offset(&buffer->prs, 0);
@@ -1499,7 +1499,7 @@ static void decode_forms_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 {
 	int i;
 
-	*forms = (FORM_1 *)talloc(mem_ctx, num_forms * sizeof(FORM_1));
+	*forms = TALLOC_ARRAY(mem_ctx, FORM_1, num_forms);
 	prs_set_offset(&buffer->prs,0);
 
 	for (i = 0; i < num_forms; i++)
@@ -1581,7 +1581,7 @@ static void decode_jobs_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 {
 	uint32 i;
 
-	*jobs = (JOB_INFO_1 *)talloc(mem_ctx, num_jobs * sizeof(JOB_INFO_1));
+	*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_1, num_jobs);
 	prs_set_offset(&buffer->prs,0);
 
 	for (i = 0; i < num_jobs; i++) 
@@ -1593,7 +1593,7 @@ static void decode_jobs_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 {
 	uint32 i;
 
-	*jobs = (JOB_INFO_2 *)talloc(mem_ctx, num_jobs * sizeof(JOB_INFO_2));
+	*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_2, num_jobs);
 	prs_set_offset(&buffer->prs,0);
 
 	for (i = 0; i < num_jobs; i++) 
@@ -2016,7 +2016,7 @@ WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	value->data_p = talloc_memdup(mem_ctx, r.data, r.needed);
+	value->data_p = TALLOC_MEMDUP(mem_ctx, r.data, r.needed);
 	value->type = r.type;
 	value->size = r.size;
 
@@ -2071,7 +2071,7 @@ WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	value->data_p = talloc_memdup(mem_ctx, r.data, r.needed);
+	value->data_p = TALLOC_MEMDUP(mem_ctx, r.data, r.needed);
 	value->type = r.type;
 	value->size = r.needed;
 
@@ -2226,7 +2226,7 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (value) {
 		rpcstr_pull(value->valuename, r.value, sizeof(value->valuename), -1,
 			    STR_TERMINATE);
-		value->data_p = talloc_memdup(mem_ctx, r.data, r.realdatasize);
+		value->data_p = TALLOC_MEMDUP(mem_ctx, r.data, r.realdatasize);
 		value->type = r.type;
 		value->size = r.realdatasize;
 	}
@@ -2483,7 +2483,7 @@ WERROR cli_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Copy results */
 	
 	if (keylist) {
-		*keylist = (uint16 *)malloc(r.keys.buf_len * 2);
+		*keylist = SMB_MALLOC_ARRAY(uint16, r.keys.buf_len);
 		memcpy(*keylist, r.keys.buffer, r.keys.buf_len * 2);
 		if (len)
 			*len = r.keys.buf_len * 2;

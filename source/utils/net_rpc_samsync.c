@@ -595,7 +595,7 @@ fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_members = talloc_zero(t, sizeof(char *) * delta->num_members);
+	nt_members = TALLOC_ZERO_ARRAY(t, char *, delta->num_members);
 
 	for (i=0; i<delta->num_members; i++) {
 		NTSTATUS nt_status;

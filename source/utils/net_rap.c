@@ -198,7 +198,7 @@ static int rap_share_add(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 
-	sharename = strdup(argv[0]);
+	sharename = SMB_STRDUP(argv[0]);
 	p = strchr(sharename, '=');
 	*p = 0;
 	strlcpy(sinfo.share_name, sharename, sizeof(sinfo.share_name));

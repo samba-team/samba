@@ -853,13 +853,13 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (r.num_entries2) {
 		/* allocate memory needed to return received data */	
-		*rids = (uint32*)talloc(mem_ctx, sizeof(uint32) * r.num_entries2);
+		*rids = TALLOC_ARRAY(mem_ctx, uint32, r.num_entries2);
 		if (!*rids) {
 			DEBUG(0, ("Error in cli_samr_enum_dom_users(): out of memory\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
 		
-		*dom_users = (char**)talloc(mem_ctx, sizeof(char*) * r.num_entries2);
+		*dom_users = TALLOC_ARRAY(mem_ctx, char*, r.num_entries2);
 		if (!*dom_users) {
 			DEBUG(0, ("Error in cli_samr_enum_dom_users(): out of memory\n"));
 			return NT_STATUS_NO_MEMORY;
@@ -931,8 +931,7 @@ NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (*num_dom_groups == 0)
 		goto done;
 
-	if (!((*dom_groups) = (struct acct_info *)
-	      talloc(mem_ctx, sizeof(struct acct_info) * *num_dom_groups))) {
+	if (!((*dom_groups) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_dom_groups))) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -1014,8 +1013,7 @@ NTSTATUS cli_samr_enum_als_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (*num_dom_aliases == 0)
 		goto done;
 
-	if (!((*dom_aliases) = (struct acct_info *)
-	      talloc(mem_ctx, sizeof(struct acct_info) * *num_dom_aliases))) {
+	if (!((*dom_aliases) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_dom_aliases))) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -1096,7 +1094,7 @@ NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!(*sids = talloc(mem_ctx, sizeof(DOM_SID) * *num_mem))) {
+	if (!(*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_mem))) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1654,8 +1652,8 @@ NTSTATUS cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	*num_names = r.num_names1;
-	*names = talloc(mem_ctx, sizeof(char *) * r.num_names1);
-	*name_types = talloc(mem_ctx, sizeof(uint32) * r.num_names1);
+	*names = TALLOC_ARRAY(mem_ctx, char *, r.num_names1);
+	*name_types = TALLOC_ARRAY(mem_ctx, uint32, r.num_names1);
 
 	for (i = 0; i < r.num_names1; i++) {
 		fstring tmp;
@@ -1724,8 +1722,8 @@ NTSTATUS cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	*num_rids = r.num_rids1;
-	*rids = talloc(mem_ctx, sizeof(uint32) * r.num_rids1);
-	*rid_types = talloc(mem_ctx, sizeof(uint32) * r.num_rids1);
+	*rids = TALLOC_ARRAY(mem_ctx, uint32, r.num_rids1);
+	*rid_types = TALLOC_ARRAY(mem_ctx, uint32, r.num_rids1);
 
 	for (i = 0; i < r.num_rids1; i++) {
 		(*rids)[i] = r.rids[i];

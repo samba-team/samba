@@ -766,7 +766,7 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 
 	mem_ctx = talloc_init("NTLMSSP context");
 	
-	*ntlmssp_state = talloc_zero(mem_ctx, sizeof(**ntlmssp_state));
+	*ntlmssp_state = TALLOC_ZERO_P(mem_ctx, NTLMSSP_STATE);
 	if (!*ntlmssp_state) {
 		DEBUG(0,("ntlmssp_server_start: talloc failed!\n"));
 		talloc_destroy(mem_ctx);
@@ -1075,7 +1075,7 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 
 	mem_ctx = talloc_init("NTLMSSP Client context");
 	
-	*ntlmssp_state = talloc_zero(mem_ctx, sizeof(**ntlmssp_state));
+	*ntlmssp_state = TALLOC_ZERO_P(mem_ctx, NTLMSSP_STATE);
 	if (!*ntlmssp_state) {
 		DEBUG(0,("ntlmssp_client_start: talloc failed!\n"));
 		talloc_destroy(mem_ctx);

@@ -190,7 +190,7 @@ static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, 
 
 	kbuf = message_key_pid(pid);
 
-	dbuf.dptr = (void *)malloc(len + sizeof(rec));
+	dbuf.dptr = (void *)SMB_MALLOC(len + sizeof(rec));
 	if (!dbuf.dptr)
 		return False;
 
@@ -468,7 +468,7 @@ void message_register(int msg_type,
 {
 	struct dispatch_fns *dfn;
 
-	dfn = (struct dispatch_fns *)malloc(sizeof(*dfn));
+	dfn = SMB_MALLOC_P(struct dispatch_fns);
 
 	if (dfn != NULL) {
 

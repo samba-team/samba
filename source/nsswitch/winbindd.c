@@ -357,8 +357,7 @@ static void new_connection(int listen_sock, BOOL privileged)
 	
 	/* Create new connection structure */
 	
-	if ((state = (struct winbindd_cli_state *) 
-             malloc(sizeof(*state))) == NULL)
+	if ((state = SMB_MALLOC_P(struct winbindd_cli_state)) == NULL)
 		return;
 	
 	ZERO_STRUCTP(state);

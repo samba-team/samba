@@ -174,7 +174,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	for (i=0;enctypes[i];i++) {
 		krb5_keyblock *key = NULL;
 
-		if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
+		if (!(key = SMB_MALLOC_P(krb5_keyblock))) {
 			goto out;
 		}
 	

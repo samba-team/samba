@@ -531,7 +531,7 @@ int get_ntforms(nt_forms_struct **list)
 		if (ret != dbuf.dsize) 
 			continue;
 
-		tl = Realloc(*list, sizeof(nt_forms_struct)*(n+1));
+		tl = SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1);
 		if (!tl) {
 			DEBUG(0,("get_ntforms: Realloc fail.\n"));
 			return 0;
@@ -601,7 +601,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	}
 
 	if (update==False) {
-		if((tl=Realloc(*list, (n+1)*sizeof(nt_forms_struct))) == NULL) {
+		if((tl=SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1)) == NULL) {
 			DEBUG(0,("add_a_form: failed to enlarge forms list!\n"));
 			return False;
 		}
@@ -710,7 +710,7 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0)
 			continue;
 		
-		if((fl = Realloc(*list, sizeof(fstring)*(total+1))) == NULL) {
+		if((fl = SMB_REALLOC_ARRAY(*list, fstring, total+1)) == NULL) {
 			DEBUG(0,("get_ntdrivers: failed to enlarge list!\n"));
 			return -1;
 		}
@@ -766,7 +766,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	char    *buf = NULL;
 	ssize_t byte_count;
 
-	if ((buf=malloc(PE_HEADER_SIZE)) == NULL) {
+	if ((buf=SMB_MALLOC(PE_HEADER_SIZE)) == NULL) {
 		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed bytes = %d\n",
 				fname, PE_HEADER_SIZE));
 		goto error_exit;
@@ -822,7 +822,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 			goto error_exit;
 
 		SAFE_FREE(buf);
-		if ((buf=malloc(section_table_bytes)) == NULL) {
+		if ((buf=SMB_MALLOC(section_table_bytes)) == NULL) {
 			DEBUG(0,("get_file_version: PE file [%s] section table malloc failed bytes = %d\n",
 					fname, section_table_bytes));
 			goto error_exit;
@@ -846,7 +846,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 					goto error_exit;
 
 				SAFE_FREE(buf);
-				if ((buf=malloc(section_bytes)) == NULL) {
+				if ((buf=SMB_MALLOC(section_bytes)) == NULL) {
 					DEBUG(0,("get_file_version: PE file [%s] version malloc failed bytes = %d\n",
 							fname, section_bytes));
 					goto error_exit;
@@ -906,7 +906,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 
 		/* Allocate a bit more space to speed up things */
 		SAFE_FREE(buf);
-		if ((buf=malloc(VS_NE_BUF_SIZE)) == NULL) {
+		if ((buf=SMB_MALLOC(VS_NE_BUF_SIZE)) == NULL) {
 			DEBUG(0,("get_file_version: NE file [%s] malloc failed bytes  = %d\n",
 					fname, PE_HEADER_SIZE));
 			goto error_exit;
@@ -1728,7 +1728,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	if (len != buflen) {
 		char *tb;
 
-		tb = (char *)Realloc(buf, len);
+		tb = (char *)SMB_REALLOC(buf, len);
 		if (!tb) {
 			DEBUG(0,("add_a_printer_driver_3: failed to enlarge buffer\n!"));
 			ret = -1;
@@ -1793,7 +1793,7 @@ static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 	fstrcpy(info.configfile, "");
 	fstrcpy(info.helpfile, "");
 
-	if ((info.dependentfiles=(fstring *)malloc(2*sizeof(fstring))) == NULL)
+	if ((info.dependentfiles= SMB_MALLOC_ARRAY(fstring, 2)) == NULL)
 		return WERR_NOMEM;
 
 	memset(info.dependentfiles, '\0', 2*sizeof(fstring));
@@ -1850,8 +1850,7 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	while (len < dbuf.dsize) {
 		fstring *tddfs;
 
-		tddfs = (fstring *)Realloc(driver.dependentfiles,
-							 sizeof(fstring)*(i+2));
+		tddfs = SMB_REALLOC_ARRAY(driver.dependentfiles, fstring, i+2);
 		if (tddfs == NULL) {
 			DEBUG(0,("get_a_printer_driver_3: failed to enlarge buffer!\n"));
 			break;
@@ -2133,7 +2132,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	if (buflen != len) {
 		char *tb;
 
-		tb = (char *)Realloc(buf, len);
+		tb = (char *)SMB_REALLOC(buf, len);
 		if (!tb) {
 			DEBUG(0,("update_a_printer_2: failed to enlarge buffer!\n"));
 			ret = WERR_NOMEM;
@@ -2175,7 +2174,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 {
 
 	char adevice[MAXDEVICENAME];
-	NT_DEVICEMODE *nt_devmode = (NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE));
+	NT_DEVICEMODE *nt_devmode = SMB_MALLOC_P(NT_DEVICEMODE);
 
 	if (nt_devmode == NULL) {
 		DEBUG(0,("construct_nt_devicemode: malloc fail.\n"));
@@ -2395,7 +2394,7 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	
 	/* allocate another slot in the NT_PRINTER_KEY array */
 	
-	d = Realloc( data->keys, sizeof(NT_PRINTER_KEY)*(data->num_keys+1) );
+	d = SMB_REALLOC_ARRAY( data->keys, NT_PRINTER_KEY, data->num_keys+1);
 	if ( d )
 		data->keys = d;
 	
@@ -2404,7 +2403,7 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	/* initialze new key */
 	
 	data->num_keys++;
-	data->keys[key_index].name = strdup( name );
+	data->keys[key_index].name = SMB_STRDUP( name );
 	
 	ZERO_STRUCTP( &data->keys[key_index].values );
 	
@@ -2487,7 +2486,7 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **su
 
 			/* found a match, so allocate space and copy the name */
 			
-			if ( !(ptr = Realloc( subkeys_ptr, (num_subkeys+2)*sizeof(fstring))) ) {
+			if ( !(ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
 				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
 					num_subkeys+1));
 				SAFE_FREE( subkeys );
@@ -2550,9 +2549,14 @@ static void map_single_multi_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name,
 
 	/* a multi-sz has to have a null string terminator, i.e., the last
 	   string must be followed by two nulls */
-	str_size = (strlen(multi_sz) + 2) * sizeof(smb_ucs2_t);
-	conv_strs = calloc(str_size, 1);
+	str_size = strlen(multi_sz) + 2;
+	conv_strs = SMB_CALLOC_ARRAY(smb_ucs2_t, str_size);
+	if (!conv_strs) {
+		return;
+	}
 
+	/* Change to byte units. */
+	str_size *= sizeof(smb_ucs2_t);
 	push_ucs2(NULL, conv_strs, multi_sz, str_size, 
 		  STR_TERMINATE | STR_NOALIGN);
 
@@ -3773,7 +3777,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	if (buflen < len) {
 		char *tb;
 
-		tb = (char *)Realloc(buf, len);
+		tb = (char *)SMB_REALLOC(buf, len);
 		if (!tb) {
 			DEBUG(0, ("update_driver_init_2: failed to enlarge buffer!\n"));
 			ret = -1;
@@ -3897,7 +3901,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, uint8 *data, ui
 		if ((ctx = talloc_init("save_driver_init_2")) == NULL)
 			return WERR_NOMEM;
 
-		if ((nt_devmode = (NT_DEVICEMODE*)malloc(sizeof(NT_DEVICEMODE))) == NULL) {
+		if ((nt_devmode = SMB_MALLOC_P(NT_DEVICEMODE)) == NULL) {
 			status = WERR_NOMEM;
 			goto done;
 		}
@@ -4014,7 +4018,7 @@ NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2
 	if ( !printer )
 		return NULL;
 	
-	if ( !(copy = (NT_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(NT_PRINTER_INFO_LEVEL_2))) )
+	if ( !(copy = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL_2)) )
 		return NULL;
 		
 	memcpy( copy, printer, sizeof(NT_PRINTER_INFO_LEVEL_2) );
@@ -4062,7 +4066,7 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 
 	switch (level) {
 		case 2:
-			if ((printer = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL))) == NULL) {
+			if ((printer = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL)) == NULL) {
 				DEBUG(0,("get_a_printer: malloc fail.\n"));
 				return WERR_NOMEM;
 			}
@@ -4123,7 +4127,7 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				/* save a copy in cache */
 				if ( print_hnd && (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER)) {
 					if ( !print_hnd->printer_info )
-						print_hnd->printer_info = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL));
+						print_hnd->printer_info = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL);
 
 					if ( print_hnd->printer_info ) {
 						/* make sure to use the handle's talloc ctx here since 

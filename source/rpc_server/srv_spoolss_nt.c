@@ -238,7 +238,7 @@ static SPOOL_NOTIFY_OPTION *dup_spool_notify_option(SPOOL_NOTIFY_OPTION *sp)
 	if (!sp)
 		return NULL;
 
-	new_sp = (SPOOL_NOTIFY_OPTION *)malloc(sizeof(SPOOL_NOTIFY_OPTION));
+	new_sp = SMB_MALLOC_P(SPOOL_NOTIFY_OPTION);
 	if (!new_sp)
 		return NULL;
 
@@ -585,7 +585,7 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 
 	DEBUG(10,("open_printer_hnd: name [%s]\n", name));
 
-	if((new_printer=(Printer_entry *)malloc(sizeof(Printer_entry))) == NULL)
+	if((new_printer=SMB_MALLOC_P(Printer_entry)) == NULL)
 		return False;
 
 	ZERO_STRUCTP(new_printer);
@@ -733,7 +733,7 @@ static void notify_string(struct spoolss_notify_msg *msg,
 	init_unistr2(&unistr, msg->notify.data, UNI_STR_TERMINATE);
 
 	data->notify_data.data.length = msg->len * 2;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, msg->len * 2);
+	data->notify_data.data.string = TALLOC_ARRAY(mem_ctx, uint16, msg->len);
 
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -770,7 +770,7 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 		return;
 
 	data->notify_data.data.length = prs_offset(&ps);
-	data->notify_data.data.string = talloc(mem_ctx, prs_offset(&ps));
+	data->notify_data.data.string = TALLOC(mem_ctx, prs_offset(&ps));
 
 	prs_copy_all_data_out((char *)data->notify_data.data.string, &ps);
 
@@ -928,7 +928,7 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	if ( i == ctr->num_groups ) {
 		ctr->num_groups++;
 
-		if ( !(groups = talloc_realloc( ctr->ctx, ctr->msg_groups, sizeof(SPOOLSS_NOTIFY_MSG_GROUP)*ctr->num_groups)) ) {
+		if ( !(groups = TALLOC_REALLOC_ARRAY( ctr->ctx, ctr->msg_groups, SPOOLSS_NOTIFY_MSG_GROUP, ctr->num_groups)) ) {
 			DEBUG(0,("notify_msg_ctr_addmsg: talloc_realloc() failed!\n"));
 			return 0;
 		}
@@ -946,7 +946,7 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	
 	msg_grp->num_msgs++;
 	
-	if ( !(msg_list =  talloc_realloc( ctr->ctx, msg_grp->msgs, sizeof(SPOOLSS_NOTIFY_MSG)*msg_grp->num_msgs )) ) {
+	if ( !(msg_list = TALLOC_REALLOC_ARRAY( ctr->ctx, msg_grp->msgs, SPOOLSS_NOTIFY_MSG, msg_grp->num_msgs )) ) {
 		DEBUG(0,("notify_msg_ctr_addmsg: talloc_realloc() failed for new message [%d]!\n", msg_grp->num_msgs));
 		return 0;
 	}
@@ -958,7 +958,7 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	/* need to allocate own copy of data */
 	
 	if ( msg->len != 0 ) 
-		msg_grp->msgs[new_slot].notify.data = talloc_memdup( ctr->ctx, msg->notify.data, msg->len );
+		msg_grp->msgs[new_slot].notify.data = TALLOC_MEMDUP( ctr->ctx, msg->notify.data, msg->len );
 	
 	return ctr->num_groups;
 }
@@ -1016,7 +1016,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		
 		/* allocate the max entries possible */
 		
-		data = talloc( mem_ctx, msg_group->num_msgs*sizeof(SPOOL_NOTIFY_INFO_DATA) );
+		data = TALLOC_ARRAY( mem_ctx, SPOOL_NOTIFY_INFO_DATA, msg_group->num_msgs);
 		ZERO_STRUCTP(data);
 		
 		/* build the array of change notifications */
@@ -1436,7 +1436,7 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 	
 	/* bulk copy first */
 	
-	d = talloc_memdup(ctx, devmode, sizeof(DEVICEMODE));
+	d = TALLOC_MEMDUP(ctx, devmode, sizeof(DEVICEMODE));
 	if (!d)
 		return NULL;
 		
@@ -1444,7 +1444,7 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 	
 	len = unistrlen(devmode->devicename.buffer);
 	if (len != -1) {
-		d->devicename.buffer = talloc(ctx, len*2);
+		d->devicename.buffer = TALLOC_ARRAY(ctx, uint16, len);
 		if (unistrcpy(d->devicename.buffer, devmode->devicename.buffer) != len)
 			return NULL;
 	}
@@ -1452,12 +1452,12 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 
 	len = unistrlen(devmode->formname.buffer);
 	if (len != -1) {
-		d->devicename.buffer = talloc(ctx, len*2);
+		d->devicename.buffer = TALLOC_ARRAY(ctx, uint16, len);
 		if (unistrcpy(d->formname.buffer, devmode->formname.buffer) != len)
 			return NULL;
 	}
 
-	d->private = talloc_memdup(ctx, devmode->private, devmode->driverextra);
+	d->private = TALLOC_MEMDUP(ctx, devmode->private, devmode->driverextra);
 	
 	return d;
 }
@@ -1894,7 +1894,7 @@ BOOL convert_devicemode(const char *printername, const DEVICEMODE *devmode,
 	if ((devmode->driverextra != 0) && (devmode->private != NULL)) {
 		SAFE_FREE(nt_devmode->private);
 		nt_devmode->driverextra=devmode->driverextra;
-		if((nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra * sizeof(uint8))) == NULL)
+		if((nt_devmode->private=SMB_MALLOC_ARRAY(uint8, nt_devmode->driverextra)) == NULL)
 			return False;
 		memcpy(nt_devmode->private, devmode->private, nt_devmode->driverextra);
 	}
@@ -2235,11 +2235,11 @@ static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printe
 		
 		/* special case for 0 length values */
 		if ( data_len ) {
-			if ( (*data  = (uint8 *)talloc_memdup(ctx, regval_data_p(val), data_len)) == NULL )
+			if ( (*data  = (uint8 *)TALLOC_MEMDUP(ctx, regval_data_p(val), data_len)) == NULL )
 				return WERR_NOMEM;
 		}
 		else {
-			if ( (*data  = (uint8 *)talloc_zero(ctx, in_size)) == NULL )
+			if ( (*data  = (uint8 *)TALLOC_ZERO(ctx, in_size)) == NULL )
 				return WERR_NOMEM;
 		}
 	}
@@ -2286,7 +2286,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		
 	if (!StrCaseCmp(value, "W3SvcInstalled")) {
 		*type = 0x4;
-		if((*data = (uint8 *)talloc_zero(ctx, 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)TALLOC_ZERO(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
 		*needed = 0x4;
 		return WERR_OK;
@@ -2294,7 +2294,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "BeepEnabled")) {
 		*type = 0x4;
-		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)TALLOC(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;			
@@ -2303,7 +2303,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "EventLog")) {
 		*type = 0x4;
-		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
 		/* formally was 0x1b */
 		SIVAL(*data, 0, 0x0);
@@ -2313,7 +2313,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "NetPopup")) {
 		*type = 0x4;
-		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;
@@ -2322,7 +2322,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "MajorVersion")) {
 		*type = 0x4;
-		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
 
 		/* Windows NT 4.0 seems to not allow uploading of drivers
@@ -2341,7 +2341,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "MinorVersion")) {
 		*type = 0x4;
-		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0);
 		*needed = 0x4;
@@ -2359,7 +2359,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		*type = 0x3;
 		*needed = 0x114;
 
-		if((*data = (uint8 *)talloc(ctx, (*needed)*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)TALLOC(ctx, *needed)) == NULL)
 			return WERR_NOMEM;
 		ZERO_STRUCTP( *data );
 		
@@ -2378,7 +2378,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		const char *string="C:\\PRINTERS";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);		
-		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
+		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
 			return WERR_NOMEM;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		
@@ -2394,7 +2394,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		const char *string="Windows NT x86";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);	
-		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
+		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
 			return WERR_NOMEM;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		for (i=0; i<strlen(string); i++) {
@@ -2406,7 +2406,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "DsPresent")) {
 		*type = 0x4;
-		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x01);
 		*needed = 0x4;
@@ -2420,7 +2420,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 			return WERR_BADFILE;
 		*type = 0x1;			
 		*needed = 2*(strlen(hostname)+1);	
-		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
+		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
 			return WERR_NOMEM;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		for (i=0; i<strlen(hostname); i++) {
@@ -2495,7 +2495,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 		if ( strequal(value, "ChangeId") ) {
 			*type = REG_DWORD;
 			*needed = sizeof(uint32);
-			if ( (*data = (uint8*)talloc(p->mem_ctx, sizeof(uint32))) == NULL) {
+			if ( (*data = (uint8*)TALLOC(p->mem_ctx, sizeof(uint32))) == NULL) {
 				status = WERR_NOMEM;
 				goto done;
 			}
@@ -2517,7 +2517,7 @@ done:
 		/* reply this param doesn't exist */
 		
 		if ( *out_size ) {
-			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL) {
+			if((*data=(uint8 *)TALLOC_ZERO_ARRAY(p->mem_ctx, uint8, *out_size)) == NULL) {
 				if ( printer ) 
 					free_a_printer( &printer, 2 );
 				return WERR_NOMEM;
@@ -2764,7 +2764,7 @@ void spoolss_notify_server_name(int snum,
 	len = rpcstr_push(temp, printer->info_2->servername, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -2799,7 +2799,7 @@ void spoolss_notify_printer_name(int snum,
 	len = rpcstr_push(temp, p, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -2825,7 +2825,7 @@ void spoolss_notify_share_name(int snum,
 	len = rpcstr_push(temp, lp_servicename(snum), sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -2853,7 +2853,7 @@ void spoolss_notify_port_name(int snum,
 	len = rpcstr_push(temp, printer->info_2->portname, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -2880,7 +2880,7 @@ void spoolss_notify_driver_name(int snum,
 	len = rpcstr_push(temp, printer->info_2->drivername, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -2909,7 +2909,7 @@ void spoolss_notify_comment(int snum,
 		len = rpcstr_push(temp, printer->info_2->comment, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -2936,7 +2936,7 @@ void spoolss_notify_location(int snum,
 	len = rpcstr_push(temp, printer->info_2->location,sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -2975,7 +2975,7 @@ void spoolss_notify_sepfile(int snum,
 	len = rpcstr_push(temp, printer->info_2->sepfile, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -3002,7 +3002,7 @@ void spoolss_notify_print_processor(int snum,
 	len = rpcstr_push(temp,  printer->info_2->printprocessor, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -3029,7 +3029,7 @@ void spoolss_notify_parameters(int snum,
 	len = rpcstr_push(temp,  printer->info_2->parameters, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -3056,7 +3056,7 @@ void spoolss_notify_datatype(int snum,
 	len = rpcstr_push(temp, printer->info_2->datatype, sizeof(pstring)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -3216,7 +3216,7 @@ static void spoolss_notify_username(int snum,
 	len = rpcstr_push(temp, queue->fs_user, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -3256,7 +3256,7 @@ static void spoolss_notify_job_name(int snum,
 	len = rpcstr_push(temp, queue->fs_file, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -3306,7 +3306,7 @@ static void spoolss_notify_job_status_string(int snum,
 	len = rpcstr_push(temp, p, sizeof(temp) - 2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -3404,7 +3404,7 @@ static void spoolss_notify_submitted_time(int snum,
 	len = sizeof(SYSTEMTIME);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
@@ -3626,7 +3626,7 @@ static BOOL construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((tid=(SPOOL_NOTIFY_INFO_DATA *)Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+		if((tid=SMB_REALLOC_ARRAY(info->data, SPOOL_NOTIFY_INFO_DATA, info->count+1)) == NULL) {
 			DEBUG(2,("construct_notify_printer_info: failed to enlarge buffer info->data!\n"));
 			return False;
 		} else 
@@ -3682,7 +3682,7 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue,
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((tid=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+		if((tid=SMB_REALLOC_ARRAY(info->data, SPOOL_NOTIFY_INFO_DATA, info->count+1)) == NULL) {
 			DEBUG(2,("construct_notify_jobs_info: failed to enlarg buffer info->data!\n"));
 			return False;
 		}
@@ -3966,7 +3966,7 @@ static BOOL construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
 
 	/* it's the first time, add it to the list */
 	if (session_counter==NULL) {
-		if((session_counter=(counter_printer_0 *)malloc(sizeof(counter_printer_0))) == NULL) {
+		if((session_counter=SMB_MALLOC_P(counter_printer_0)) == NULL) {
 			free_a_printer(&ntprinter, 2);
 			return False;
 		}
@@ -4160,7 +4160,7 @@ DEVICEMODE *construct_dev_mode(int snum)
 		goto done;
 	}
 
-	if ((devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE))) == NULL) {
+	if ((devmode = SMB_MALLOC_P(DEVICEMODE)) == NULL) {
 		DEBUG(2,("construct_dev_mode: malloc fail.\n"));
 		goto done;
 	}
@@ -4257,7 +4257,7 @@ static BOOL construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **
 		return False;
 
 	*pp_printer = NULL;
-	if ((printer = (PRINTER_INFO_3 *)malloc(sizeof(PRINTER_INFO_3))) == NULL) {
+	if ((printer = SMB_MALLOC_P(PRINTER_INFO_3)) == NULL) {
 		DEBUG(2,("construct_printer_info_3: malloc fail.\n"));
 		return False;
 	}
@@ -4386,7 +4386,7 @@ static WERROR enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 
 			if (construct_printer_info_1(NULL, flags, &current_prt, snum)) {
-				if((tp=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1))) == NULL) {
+				if((tp=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_1, *returned +1)) == NULL) {
 					DEBUG(2,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
 					SAFE_FREE(printers);
 					*returned=0;
@@ -4475,7 +4475,7 @@ static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, 
 	 * undocumented RPC call.
 	 */
 	
-	if((printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1))) == NULL)
+	if((printer=SMB_MALLOC_P(PRINTER_INFO_1)) == NULL)
 		return WERR_NOMEM;
 
 	*returned=1;
@@ -4559,7 +4559,7 @@ static WERROR enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint3
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
 			if (construct_printer_info_2(NULL, &current_prt, snum)) {
-				if((tp=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2))) == NULL) {
+				if((tp=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_2, *returned +1)) == NULL) {
 					DEBUG(2,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
 					SAFE_FREE(printers);
 					*returned = 0;
@@ -4735,7 +4735,7 @@ static WERROR getprinter_level_0(Printer_entry *print_hnd, int snum, NEW_BUFFER 
 {
 	PRINTER_INFO_0 *printer=NULL;
 
-	if((printer=(PRINTER_INFO_0*)malloc(sizeof(PRINTER_INFO_0))) == NULL)
+	if((printer=SMB_MALLOC_P(PRINTER_INFO_0)) == NULL)
 		return WERR_NOMEM;
 
 	construct_printer_info_0(print_hnd, printer, snum);
@@ -4768,7 +4768,7 @@ static WERROR getprinter_level_1(Printer_entry *print_hnd, int snum, NEW_BUFFER 
 {
 	PRINTER_INFO_1 *printer=NULL;
 
-	if((printer=(PRINTER_INFO_1*)malloc(sizeof(PRINTER_INFO_1))) == NULL)
+	if((printer=SMB_MALLOC_P(PRINTER_INFO_1)) == NULL)
 		return WERR_NOMEM;
 
 	construct_printer_info_1(print_hnd, PRINTER_ENUM_ICON8, printer, snum);
@@ -4801,7 +4801,7 @@ static WERROR getprinter_level_2(Printer_entry *print_hnd, int snum, NEW_BUFFER 
 {
 	PRINTER_INFO_2 *printer=NULL;
 
-	if((printer=(PRINTER_INFO_2*)malloc(sizeof(PRINTER_INFO_2)))==NULL)
+	if((printer=SMB_MALLOC_P(PRINTER_INFO_2))==NULL)
 		return WERR_NOMEM;
 	
 	construct_printer_info_2(print_hnd, printer, snum);
@@ -4868,7 +4868,7 @@ static WERROR getprinter_level_4(Printer_entry *print_hnd, int snum, NEW_BUFFER 
 {
 	PRINTER_INFO_4 *printer=NULL;
 
-	if((printer=(PRINTER_INFO_4*)malloc(sizeof(PRINTER_INFO_4)))==NULL)
+	if((printer=SMB_MALLOC_P(PRINTER_INFO_4))==NULL)
 		return WERR_NOMEM;
 
 	if (!construct_printer_info_4(print_hnd, printer, snum))
@@ -4902,7 +4902,7 @@ static WERROR getprinter_level_5(Printer_entry *print_hnd, int snum, NEW_BUFFER 
 {
 	PRINTER_INFO_5 *printer=NULL;
 
-	if((printer=(PRINTER_INFO_5*)malloc(sizeof(PRINTER_INFO_5)))==NULL)
+	if((printer=SMB_MALLOC_P(PRINTER_INFO_5))==NULL)
 		return WERR_NOMEM;
 
 	if (!construct_printer_info_5(print_hnd, printer, snum))
@@ -4933,7 +4933,7 @@ static WERROR getprinter_level_7(Printer_entry *print_hnd, int snum, NEW_BUFFER 
 {
 	PRINTER_INFO_7 *printer=NULL;
 
-	if((printer=(PRINTER_INFO_7*)malloc(sizeof(PRINTER_INFO_7)))==NULL)
+	if((printer=SMB_MALLOC_P(PRINTER_INFO_7))==NULL)
 		return WERR_NOMEM;
 
 	if (!construct_printer_info_7(print_hnd, printer, snum))
@@ -5135,7 +5135,7 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
 
 		/* add one extra unit16 for the second terminating NULL */
 		
-		if ( (tuary=Realloc(*uni_array, (j+1+strlen(line)+2)*sizeof(uint16))) == NULL ) {
+		if ( (tuary=SMB_REALLOC_ARRAY(*uni_array, uint16, j+1+strlen(line)+2)) == NULL ) {
 			DEBUG(2,("init_unistr_array: Realloc error\n" ));
 			return 0;
 		} else
@@ -5411,7 +5411,7 @@ static WERROR getprinterdriver2_level1(fstring servername, fstring architecture,
 	DRIVER_INFO_1 *info=NULL;
 	WERROR status;
 	
-	if((info=(DRIVER_INFO_1 *)malloc(sizeof(DRIVER_INFO_1))) == NULL)
+	if((info=SMB_MALLOC_P(DRIVER_INFO_1)) == NULL)
 		return WERR_NOMEM;
 	
 	status=construct_printer_driver_info_1(info, snum, servername, architecture, version);
@@ -5448,7 +5448,7 @@ static WERROR getprinterdriver2_level2(fstring servername, fstring architecture,
 	DRIVER_INFO_2 *info=NULL;
 	WERROR status;
 	
-	if((info=(DRIVER_INFO_2 *)malloc(sizeof(DRIVER_INFO_2))) == NULL)
+	if((info=SMB_MALLOC_P(DRIVER_INFO_2)) == NULL)
 		return WERR_NOMEM;
 	
 	status=construct_printer_driver_info_2(info, snum, servername, architecture, version);
@@ -6434,7 +6434,7 @@ static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 	JOB_INFO_1 *info;
 	int i;
 	
-	info=(JOB_INFO_1 *)malloc(*returned*sizeof(JOB_INFO_1));
+	info=SMB_MALLOC_ARRAY(JOB_INFO_1,*returned);
 	if (info==NULL) {
 		SAFE_FREE(queue);
 		*returned=0;
@@ -6484,7 +6484,7 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 	WERROR result;
 	DEVICEMODE *devmode = NULL;
 	
-	info=(JOB_INFO_2 *)malloc(*returned*sizeof(JOB_INFO_2));
+	info=SMB_MALLOC_ARRAY(JOB_INFO_2,*returned);
 	if (info==NULL) {
 		*returned=0;
 		result = WERR_NOMEM;
@@ -6676,7 +6676,7 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 			return WERR_NOMEM;
 
 		if(ndrivers != 0) {
-			if((tdi1=(DRIVER_INFO_1 *)Realloc(driver_info_1, (*returned+ndrivers) * sizeof(DRIVER_INFO_1))) == NULL) {
+			if((tdi1=SMB_REALLOC_ARRAY(driver_info_1, DRIVER_INFO_1, *returned+ndrivers )) == NULL) {
 				DEBUG(0,("enumprinterdrivers_level1: failed to enlarge driver info buffer!\n"));
 				SAFE_FREE(driver_info_1);
 				SAFE_FREE(list);
@@ -6755,7 +6755,7 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 			return WERR_NOMEM;
 
 		if(ndrivers != 0) {
-			if((tdi2=(DRIVER_INFO_2 *)Realloc(driver_info_2, (*returned+ndrivers) * sizeof(DRIVER_INFO_2))) == NULL) {
+			if((tdi2=SMB_REALLOC_ARRAY(driver_info_2, DRIVER_INFO_2, *returned+ndrivers )) == NULL) {
 				DEBUG(0,("enumprinterdrivers_level2: failed to enlarge driver info buffer!\n"));
 				SAFE_FREE(driver_info_2);
 				SAFE_FREE(list);
@@ -6835,7 +6835,7 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 			return WERR_NOMEM;
 
 		if(ndrivers != 0) {
-			if((tdi3=(DRIVER_INFO_3 *)Realloc(driver_info_3, (*returned+ndrivers) * sizeof(DRIVER_INFO_3))) == NULL) {
+			if((tdi3=SMB_REALLOC_ARRAY(driver_info_3, DRIVER_INFO_3, *returned+ndrivers )) == NULL) {
 				DEBUG(0,("enumprinterdrivers_level3: failed to enlarge driver info buffer!\n"));
 				SAFE_FREE(driver_info_3);
 				SAFE_FREE(list);
@@ -6988,7 +6988,7 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 
 	switch (level) {
 	case 1:
-		if ((forms_1=(FORM_1 *)malloc(*numofforms * sizeof(FORM_1))) == NULL) {
+		if ((forms_1=SMB_MALLOC_ARRAY(FORM_1, *numofforms)) == NULL) {
 			*numofforms=0;
 			return WERR_NOMEM;
 		}
@@ -7192,7 +7192,7 @@ static WERROR enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		close(fd);
 
 		if(numlines) {
-			if((ports=(PORT_INFO_1 *)malloc( numlines * sizeof(PORT_INFO_1) )) == NULL) {
+			if((ports=SMB_MALLOC_ARRAY( PORT_INFO_1, numlines )) == NULL) {
 				DEBUG(10,("Returning WERR_NOMEM [%s]\n", 
 					  dos_errstr(WERR_NOMEM)));
 				file_lines_free(qlines);
@@ -7212,7 +7212,7 @@ static WERROR enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	} else {
 		*returned = 1; /* Sole Samba port returned. */
 
-		if((ports=(PORT_INFO_1 *)malloc( sizeof(PORT_INFO_1) )) == NULL)
+		if((ports=SMB_MALLOC_P(PORT_INFO_1)) == NULL)
 			return WERR_NOMEM;
 	
 		DEBUG(10,("enumports_level_1: port name %s\n", SAMBA_PRINTER_PORT_NAME));
@@ -7291,7 +7291,7 @@ static WERROR enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		close(fd);
 
 		if(numlines) {
-			if((ports=(PORT_INFO_2 *)malloc( numlines * sizeof(PORT_INFO_2) )) == NULL) {
+			if((ports=SMB_MALLOC_ARRAY( PORT_INFO_2, numlines)) == NULL) {
 				file_lines_free(qlines);
 				return WERR_NOMEM;
 			}
@@ -7310,7 +7310,7 @@ static WERROR enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 		*returned = 1;
 
-		if((ports=(PORT_INFO_2 *)malloc( sizeof(PORT_INFO_2) )) == NULL)
+		if((ports=SMB_MALLOC_P(PORT_INFO_2)) == NULL)
 			return WERR_NOMEM;
 	
 		DEBUG(10,("enumports_level_2: port name %s\n", SAMBA_PRINTER_PORT_NAME));
@@ -7390,7 +7390,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	int	snum;
 	WERROR err = WERR_OK;
 
-	if ((printer = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL))) == NULL) {
+	if ((printer = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL)) == NULL) {
 		DEBUG(0,("spoolss_addprinterex_level_2: malloc fail.\n"));
 		return WERR_NOMEM;
 	}
@@ -7719,7 +7719,7 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	if (!(short_archi = get_short_archi(long_archi)))
 		return WERR_INVALID_ENVIRONMENT;
 
-	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
+	if((info=SMB_MALLOC_P(DRIVER_DIRECTORY_1)) == NULL)
 		return WERR_NOMEM;
 
 	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", pservername, short_archi);
@@ -7887,7 +7887,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 		*out_max_value_len=(in_value_len/sizeof(uint16));
 		
-		if((*out_value=(uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL)
+		if((*out_value=(uint16 *)TALLOC_ZERO(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL)
 		{
 			result = WERR_NOMEM;
 			goto done;
@@ -7902,7 +7902,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		
 		/* only allocate when given a non-zero data_len */
 		
-		if ( in_data_len && ((*data_out=(uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) )
+		if ( in_data_len && ((*data_out=(uint8 *)TALLOC_ZERO(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) )
 		{
 			result = WERR_NOMEM;
 			goto done;
@@ -7923,7 +7923,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	
 		/* name */
 		*out_max_value_len=(in_value_len/sizeof(uint16));
-		if ( (*out_value = (uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL ) 
+		if ( (*out_value = (uint16 *)TALLOC_ZERO(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL ) 
 		{
 			result = WERR_NOMEM;
 			goto done;
@@ -7938,7 +7938,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		/* data - counted in bytes */
 
 		*out_max_data_len = in_data_len;
-		if ( (*data_out = (uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) 
+		if ( (*data_out = (uint8 *)TALLOC_ZERO(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) 
 		{
 			result = WERR_NOMEM;
 			goto done;
@@ -8323,7 +8323,7 @@ static WERROR enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 {
 	PRINTPROCESSOR_1 *info_1=NULL;
 	
-	if((info_1 = (PRINTPROCESSOR_1 *)malloc(sizeof(PRINTPROCESSOR_1))) == NULL)
+	if((info_1 = SMB_MALLOC_P(PRINTPROCESSOR_1)) == NULL)
 		return WERR_NOMEM;
 
 	(*returned) = 0x1;
@@ -8390,7 +8390,7 @@ static WERROR enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 {
 	PRINTPROCDATATYPE_1 *info_1=NULL;
 	
-	if((info_1 = (PRINTPROCDATATYPE_1 *)malloc(sizeof(PRINTPROCDATATYPE_1))) == NULL)
+	if((info_1 = SMB_MALLOC_P(PRINTPROCDATATYPE_1)) == NULL)
 		return WERR_NOMEM;
 
 	(*returned) = 0x1;
@@ -8450,7 +8450,7 @@ static WERROR enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint
 {
 	PRINTMONITOR_1 *info_1=NULL;
 	
-	if((info_1 = (PRINTMONITOR_1 *)malloc(sizeof(PRINTMONITOR_1))) == NULL)
+	if((info_1 = SMB_MALLOC_P(PRINTMONITOR_1)) == NULL)
 		return WERR_NOMEM;
 
 	(*returned) = 0x1;
@@ -8482,7 +8482,7 @@ static WERROR enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 {
 	PRINTMONITOR_2 *info_2=NULL;
 	
-	if((info_2 = (PRINTMONITOR_2 *)malloc(sizeof(PRINTMONITOR_2))) == NULL)
+	if((info_2 = SMB_MALLOC_P(PRINTMONITOR_2)) == NULL)
 		return WERR_NOMEM;
 
 	(*returned) = 0x1;
@@ -8557,7 +8557,7 @@ static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum,
 	BOOL found=False;
 	JOB_INFO_1 *info_1=NULL;
 
-	info_1=(JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
+	info_1=SMB_MALLOC_P(JOB_INFO_1);
 
 	if (info_1 == NULL) {
 		return WERR_NOMEM;
@@ -8608,7 +8608,7 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	DEVICEMODE 	*devmode = NULL;
 	NT_DEVICEMODE	*nt_devmode = NULL;
 
-	info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
+	info_2=SMB_MALLOC_P(JOB_INFO_2);
 
 	ZERO_STRUCTP(info_2);
 
@@ -8640,7 +8640,7 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	if ( !(nt_devmode=print_job_devmode( lp_const_servicename(snum), jobid )) )
 		devmode = construct_dev_mode(snum);
 	else {
-		if ((devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE))) != NULL) {
+		if ((devmode = SMB_MALLOC_P(DEVICEMODE)) != NULL) {
 			ZERO_STRUCTP( devmode );
 			convert_nt_devicemode( devmode, nt_devmode );
 		}
@@ -8818,7 +8818,7 @@ done:
 		
 		if ( *out_size ) 
 		{
-			if( (*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL ) {
+			if( (*data=(uint8 *)TALLOC_ZERO(p->mem_ctx, *out_size*sizeof(uint8))) == NULL ) {
 				status = WERR_NOMEM;
 				goto done;
 			}
@@ -9177,7 +9177,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	num_entries = regval_ctr_numvals( &p_data->keys[key_index].values );
 	if ( num_entries )
 	{
-		if ( (enum_values=talloc(p->mem_ctx, num_entries*sizeof(PRINTER_ENUM_VALUES))) == NULL )
+		if ( (enum_values=TALLOC_ARRAY(p->mem_ctx, PRINTER_ENUM_VALUES, num_entries)) == NULL )
 		{
 			DEBUG(0,("_spoolss_enumprinterdataex: talloc() failed to allocate memory for [%lu] bytes!\n",
 				(unsigned long)num_entries*sizeof(PRINTER_ENUM_VALUES)));
@@ -9209,7 +9209,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		
 		data_len = regval_size( val );
 		if ( data_len ) {
-			if ( !(enum_values[i].data = talloc_memdup(p->mem_ctx, regval_data_p(val), data_len)) ) 
+			if ( !(enum_values[i].data = TALLOC_MEMDUP(p->mem_ctx, regval_data_p(val), data_len)) ) 
 			{
 				DEBUG(0,("talloc_memdup failed to allocate memory [data_len=%d] for data!\n", 
 					data_len ));
@@ -9272,7 +9272,7 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 	if (!get_short_archi(long_archi))
 		return WERR_INVALID_ENVIRONMENT;
 
-	if((info=(PRINTPROCESSOR_DIRECTORY_1 *)malloc(sizeof(PRINTPROCESSOR_DIRECTORY_1))) == NULL)
+	if((info=SMB_MALLOC_P(PRINTPROCESSOR_DIRECTORY_1)) == NULL)
 		return WERR_NOMEM;
 
 	pstrcpy(path, "C:\\WINNT\\System32\\spool\\PRTPROCS\\W32X86");

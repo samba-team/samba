@@ -215,12 +215,12 @@ static BOOL recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 
 	mode = S_IRUSR | S_IWUSR | S_IXUSR;
 
-	tmp_str = strdup(dname);
+	tmp_str = SMB_STRDUP(dname);
 	ALLOC_CHECK(tmp_str, done);
 	tok_str = tmp_str;
 
 	len = strlen(dname)+1;
-	new_dir = (char *)malloc(len + 1);
+	new_dir = (char *)SMB_MALLOC(len + 1);
 	ALLOC_CHECK(new_dir, done);
 	*new_dir = '\0';
 
@@ -389,11 +389,11 @@ static int recycle_unlink(vfs_handle_struct *handle, connection_struct *conn, co
 	base = strrchr(file_name, '/');
 	if (base == NULL) {
 		base = file_name;
-		path_name = strdup("/");
+		path_name = SMB_STRDUP("/");
 		ALLOC_CHECK(path_name, done);
 	}
 	else {
-		path_name = strdup(file_name);
+		path_name = SMB_STRDUP(file_name);
 		ALLOC_CHECK(path_name, done);
 		path_name[base - file_name] = '\0';
 		base++;
@@ -422,7 +422,7 @@ static int recycle_unlink(vfs_handle_struct *handle, connection_struct *conn, co
 	if (recycle_keep_dir_tree(handle) == True) {
 		asprintf(&temp_name, "%s/%s", repository, path_name);
 	} else {
-		temp_name = strdup(repository);
+		temp_name = SMB_STRDUP(repository);
 	}
 	ALLOC_CHECK(temp_name, done);
 

@@ -207,7 +207,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Convert arguments to sids */
 
-	sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) * (argc - 1));
+	sids = TALLOC_ARRAY(mem_ctx, DOM_SID, argc - 1);
 
 	if (!sids) {
 		printf("could not allocate memory for %d sids\n", argc - 1);

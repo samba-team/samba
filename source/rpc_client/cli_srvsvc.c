@@ -120,8 +120,7 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	switch(info_level) {
 	case 1:
-		ctr->share.info1 = (SRV_SHARE_INFO_1 *)talloc(
-			mem_ctx, sizeof(SRV_SHARE_INFO_1) * ctr->num_entries);
+		ctr->share.info1 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_1, ctr->num_entries);
 		
 		memset(ctr->share.info1, 0, sizeof(SRV_SHARE_INFO_1));
 
@@ -148,8 +147,7 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		break;
 	case 2:
-		ctr->share.info2 = (SRV_SHARE_INFO_2 *)talloc(
-			mem_ctx, sizeof(SRV_SHARE_INFO_2) * ctr->num_entries);
+		ctr->share.info2 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_2, ctr->num_entries);
 		
 		memset(ctr->share.info2, 0, sizeof(SRV_SHARE_INFO_2));
 
@@ -183,8 +181,7 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		break;
 	/* adding info-level 502 here */
 	case 502:
-		ctr->share.info502 = (SRV_SHARE_INFO_502 *)talloc(
-			mem_ctx, sizeof(SRV_SHARE_INFO_502) * ctr->num_entries);
+		ctr->share.info502 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_502, ctr->num_entries);
 		
 		memset(ctr->share.info502, 0, sizeof(SRV_SHARE_INFO_502));
 
@@ -492,8 +489,7 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	switch(file_level) {
 	case 3:
-		ctr->file.info3 = (SRV_FILE_INFO_3 *)talloc(
-			mem_ctx, sizeof(SRV_FILE_INFO_3) * ctr->num_entries);
+		ctr->file.info3 = TALLOC_ARRAY(mem_ctx, SRV_FILE_INFO_3, ctr->num_entries);
 
 		memset(ctr->file.info3, 0, 
 		       sizeof(SRV_FILE_INFO_3) * ctr->num_entries);

@@ -899,7 +899,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 				END_PROFILE(SMBsearch);
 				return ERROR_DOS(ERRDOS,ERRnofids);
 			}
-			dptr_set_wcard(dptr_num, strdup(mask));
+			dptr_set_wcard(dptr_num, SMB_STRDUP(mask));
 			dptr_set_attr(dptr_num, dirtype);
 		} else {
 			dirtype = dptr_attr(dptr_num);
@@ -4945,7 +4945,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		if(fsp->wbmpx_ptr != NULL)
 			wbms = fsp->wbmpx_ptr; /* Use an existing struct */
 		else
-			wbms = (write_bmpx_struct *)malloc(sizeof(write_bmpx_struct));
+			wbms = SMB_MALLOC_P(write_bmpx_struct);
 		if(!wbms) {
 			DEBUG(0,("Out of memory in reply_readmpx\n"));
 			END_PROFILE(SMBwriteBmpx);

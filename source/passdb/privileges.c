@@ -121,7 +121,7 @@ NTSTATUS privilege_enum_account_with_right(const char *right,
 	*count = i;
 
 	/* allocate and parse */
-	*sids = malloc(sizeof(DOM_SID) * *count);
+	*sids = SMB_MALLOC_ARRAY(DOM_SID, *count);
 	if (! *sids) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -154,7 +154,7 @@ static NTSTATUS privilege_set_accounts_with_right(const char *right,
 	}
 
 	/* allocate the maximum size that we might use */
-	data.dptr = malloc(count * ((MAXSUBAUTHS*11) + 30));
+	data.dptr = SMB_MALLOC(count * ((MAXSUBAUTHS*11) + 30));
 	if (!data.dptr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -210,7 +210,7 @@ NTSTATUS privilege_add_account_right(const char *right,
 	}
 
 	/* add it in */
-	current_sids = Realloc(current_sids, sizeof(current_sids[0]) * (current_count+1));
+	current_sids = SMB_REALLOC_ARRAY(current_sids, DOM_SID, current_count+1);
 	if (!current_sids) {
 		privilege_unlock_right(right);
 		return NT_STATUS_NO_MEMORY;
@@ -323,14 +323,14 @@ NTSTATUS privilege_enum_account_rights(DOM_SID *sid,
 		right = key.dptr;
 		
 		if (privilege_sid_has_right(sid, right)) {
-			(*rights) = (char **)Realloc(*rights,sizeof(char *) * ((*count)+1));
+			(*rights) = SMB_REALLOC_ARRAY(*rights,char *, (*count)+1);
 			if (! *rights) {
 				safe_free(nextkey.dptr);
 				free(key.dptr);
 				return NT_STATUS_NO_MEMORY;
 			}
 
-			(*rights)[*count] = strdup(right);
+			(*rights)[*count] = SMB_STRDUP(right);
 			(*count)++;
 		}
 
