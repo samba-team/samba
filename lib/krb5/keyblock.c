@@ -42,8 +42,10 @@ void
 krb5_free_keyblock_contents(krb5_context context,
 			    krb5_keyblock *keyblock)
 {
-    memset(keyblock->keyvalue.data, 0, keyblock->keyvalue.length);
-    krb5_data_free (&keyblock->keyvalue);
+    if(keyblock){
+	memset(keyblock->keyvalue.data, 0, keyblock->keyvalue.length);
+	krb5_data_free (&keyblock->keyvalue);
+    }
 }
 
 void
