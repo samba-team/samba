@@ -218,7 +218,7 @@ int find_service(fstring service)
  do some basic sainity checks on the share.  
  This function modifies dev, ecode.
 ****************************************************************************/
-static NTSTATUS share_sanity_checks(int snum, pstring dev) 
+static NTSTATUS share_sanity_checks(int snum, fstring dev) 
 {
 	
 	if (!lp_snum_ok(snum) || 
@@ -233,9 +233,9 @@ static NTSTATUS share_sanity_checks(int snum, pstring dev)
 	
 	if (dev[0] == '?' || !dev[0]) {
 		if (lp_print_ok(snum)) {
-			pstrcpy(dev,"LPT1:");
+			fstrcpy(dev,"LPT1:");
 		} else {
-			pstrcpy(dev,"A:");
+			fstrcpy(dev,"A:");
 		}
 	}
 
@@ -248,7 +248,7 @@ static NTSTATUS share_sanity_checks(int snum, pstring dev)
 
 	/* Behave as a printer if we are supposed to */
 	if (lp_print_ok(snum) && (strcmp(dev, "A:") == 0)) {
-		pstrcpy(dev, "LPT1:");
+		fstrcpy(dev, "LPT1:");
 	}
 
 	return NT_STATUS_OK;
@@ -326,7 +326,7 @@ static void set_admin_user(connection_struct *conn, gid_t *groups, size_t n_grou
 
 static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					       DATA_BLOB password, 
-					       char *dev, NTSTATUS *status)
+					       fstring dev, NTSTATUS *status)
 {
 	struct passwd *pass = NULL;
 	BOOL guest = False;
@@ -747,7 +747,7 @@ connection_struct *make_connection_with_chdir(const char *service_in, DATA_BLOB 
 ****************************************************************************/
 
 connection_struct *make_connection(const char *service_in, DATA_BLOB password, 
-				   char *dev, uint16 vuid, NTSTATUS *status)
+				   fstring dev, uint16 vuid, NTSTATUS *status)
 {
 	uid_t euid;
 	user_struct *vuser = NULL;

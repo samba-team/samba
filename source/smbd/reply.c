@@ -148,7 +148,7 @@ int reply_tcon(connection_struct *conn,
 	const char *service;
 	pstring service_buf;
 	pstring password;
-	pstring dev;
+	fstring dev;
 	int outsize = 0;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int pwlen=0;
@@ -204,7 +204,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 {
 	fstring service;
 	DATA_BLOB password;
-	pstring devicename;
+	fstring devicename;
 	NTSTATUS nt_status;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int passlen = SVAL(inbuf,smb_vwv3);

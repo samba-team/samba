@@ -1840,6 +1840,8 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	struct current_user user;
 	connection_struct *conn = NULL;
 	BOOL became_user = False; 
+	fstring dev;
+	fstrcpy(dev, "A:");
 
 	ZERO_STRUCT(st);
 
@@ -1853,7 +1855,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	get_current_user(&user, p);
 
 	become_root();
-	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, dev, user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1943,8 +1945,11 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	struct current_user user;
 	connection_struct *conn = NULL;
 	BOOL became_user = False;
+	fstring dev;
+	fstrcpy(dev, "A:");
 
 	ZERO_STRUCT(st);
+
 
 	r_u->status = WERR_OK;
 
@@ -1956,7 +1961,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	get_current_user(&user, p);
 
 	become_root();
-	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, dev, user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
