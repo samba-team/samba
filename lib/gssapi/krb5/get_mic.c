@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -85,12 +85,7 @@ OM_uint32 gss_get_mic
   md5_finito (&md5, hash);
 
   memset (&zero, 0, sizeof(zero));
-#if 0
-  memcpy (&key, context_handle->auth_context->key.keyvalue.data,
-	  sizeof(key));
-#endif
-  memcpy (&key, context_handle->auth_context->local_subkey->keyvalue.data,
-	  sizeof(key));
+  gss_krb5_getsomekey(context_handle, &key);
   des_set_key (&key, schedule);
   des_cbc_cksum ((des_cblock *)hash,
 		 (des_cblock *)hash, sizeof(hash), schedule, &zero);
