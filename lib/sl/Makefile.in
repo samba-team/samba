@@ -31,6 +31,7 @@ libdir = @libdir@
 bindir = @bindir@
 includedir = @includedir@
 
+LIB_tgetent = @LIB_tgetent@
 LIB_DEPS = @lib_deps_yes@ @LIB_readline@ -lc
 build_symlink_command   = @build_symlink_command@
 install_symlink_command = @install_symlink_command@
