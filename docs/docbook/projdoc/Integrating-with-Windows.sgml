@@ -8,7 +8,7 @@
 <title>Integrating MS Windows networks with Samba</title>
  
 <para>
-This section deals with NetBIOS over TCP/IP name to IP address resolution. If you
+This section deals with NetBIOS over TCP/IP name to IP address resolution. If
 your MS Windows clients are NOT configured to use NetBIOS over TCP/IP then this
 section does not apply to your installation. If your installation involves use of
 NetBIOS over TCP/IP then this section may help you to resolve networking problems.
@@ -307,7 +307,7 @@ One further point of clarification should be noted, the <filename>/etc/hosts</fi
 file and the DNS records do not provide the NetBIOS name type information 
 that MS Windows clients depend on to locate the type of service that may 
 be needed. An example of this is what happens when an MS Windows client 
-wants to locate a domain logon server. It find this service and the IP 
+wants to locate a domain logon server. It finds this service and the IP 
 address of a server that provides it by performing a lookup (via a 
 NetBIOS broadcast) for enumeration of all machines that have 
 registered the name type *&lt;1c&gt;. A logon request is then sent to each 
@@ -385,7 +385,7 @@ This file is usually located in MS Windows NT 4.0 or
 2000 in <filename>C:\WINNT\SYSTEM32\DRIVERS\ETC</filename> and contains 
 the IP Address and the machine name in matched pairs. The 
 <filename>LMHOSTS</filename> file performs NetBIOS name 
-to IP address mapping oriented.
+to IP address mapping.
 </para>
 
 <para>
@@ -493,7 +493,7 @@ every way the equivalent of the Unix/Linux <filename>/etc/hosts</filename> file.
 <para>
 This capability is configured in the TCP/IP setup area in the network 
 configuration facility. If enabled an elaborate name resolution sequence 
-is followed the precise nature of which isdependant on what the NetBIOS 
+is followed the precise nature of which is dependant on what the NetBIOS 
 Node Type parameter is configured to. A Node Type of 0 means use 
 NetBIOS broadcast (over UDP broadcast) is first used if the name 
 that is the subject of a name lookup is not found in the NetBIOS name 

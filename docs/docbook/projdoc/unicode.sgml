@@ -36,9 +36,9 @@ store one character).
 </para>
 
 <para>
-A standardised multibyte charset is unicode, info available at 
+A standardised multibyte charset is unicode, info is available at 
 <ulink url="http://www.unicode.org/">www.unicode.org</ulink>. 
-Big advantage of using a multibyte charset is that you only need one; no 
+A big advantage of using a multibyte charset is that you only need one; no 
 need to make sure two computers use the same charset when they are 
 communicating.
 </para>

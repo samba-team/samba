@@ -34,7 +34,7 @@ or by editing individual files that are located in <filename>/etc/pam.d</filenam
 	If the PAM authentication module (loadable link library file) is located in the
 	default location then it is not necessary to specify the path. In the case of
 	Linux, the default location is <filename>/lib/security</filename>. If the module
-	is located other than default then the path may be specified as:
+	is located outside the default then the path must be specified as:
 	
 	<programlisting>
 	auth       required      /other_path/pam_strange_module.so
