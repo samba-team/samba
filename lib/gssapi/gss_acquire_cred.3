@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -60,9 +60,10 @@
 .Nm gss_inquire_mechs_for_name ,
 .Nm gss_inquire_names_for_mech ,
 .Nm gss_krb5_ccache_name ,
-.Nm gss_krb5_copy_ccache ,
 .Nm gss_krb5_compat_des3_mic ,
+.Nm gss_krb5_copy_ccache ,
 .Nm gss_krb5_extract_authz_data_from_sec_context ,
+.Nm gss_krb5_get_tkt_flags ,
 .Nm gss_process_context_token ,
 .Nm gss_release_buffer ,
 .Nm gss_release_cred ,
@@ -303,6 +304,12 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "gss_ctx_id_t context_handle"
 .Fa "int ad_type"
 .Fa "gss_buffer_t ad_data"
+.Fc
+.Ft OM_uint32
+.Fo gss_krb5_get_tkt_flags
+.Fa "OM_uint32 *minor_status"
+.Fa "gss_ctx_id_t context_handle"
+.Fa "OM_uint32 *tkt_flags"
 .Fc
 .Ft OM_uint32
 .Fo gss_process_context_token
@@ -617,6 +624,11 @@ Tha caller must free the returned buffer
 with
 .Fn gss_release_buffer
 upon success.
+.Pp
+.Fn gss_krb5_get_tkt_flags
+return the ticket flags for the kerberos ticket receive when
+authenticating the initiator.
+Only valid on the acceptor context.
 .Pp
 .Fn gss_krb5_compat_des3_mic
 turns on or off the compatibility with older version of Heimdal using
