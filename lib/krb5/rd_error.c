@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 krb5_error_code
 krb5_rd_error(krb5_context context,
-	      krb5_data msg,
+	      krb5_data *msg,
 	      KRB_ERROR *result)
 {
     
@@ -51,6 +51,6 @@ krb5_rd_error(krb5_context context,
     ret = decode_KRB_ERROR(msg->data, msg->length, result, &len);
     if(ret)
 	return ret;
-    msg.error_code += KRB5KDC_ERR_NONE;
+    result->error_code += KRB5KDC_ERR_NONE;
     return 0;    
 }
