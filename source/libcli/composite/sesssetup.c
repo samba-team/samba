@@ -180,12 +180,8 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 	state->setup.nt1.in.os           = "Unix";
 	state->setup.nt1.in.lanman       = "Samba";
 	state->setup.nt1.in.user         = cli_credentials_get_username(io->in.credentials);
-	if (state->setup.nt1.in.user == NULL) return NULL;
 	state->setup.nt1.in.domain       = cli_credentials_get_domain(io->in.credentials);
-	if (state->setup.nt1.in.domain == NULL) return NULL;
 
-	state->setup.old.in.domain  = cli_credentials_get_domain(io->in.credentials);
-	state->setup.old.in.user    = cli_credentials_get_username(io->in.credentials);
 	if (!password) {
 		state->setup.nt1.in.password1 = data_blob(NULL, 0);
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
