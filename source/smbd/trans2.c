@@ -1347,7 +1347,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			 * Original code - this is an open file.
 			 */
 			CHECK_FSP(fsp,conn);
-			CHECK_ERROR(fsp);
 
 			fname = fsp->fsp_name;
 			if (vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
@@ -1687,7 +1686,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		put_long_date(pdata+8,sbuf.st_atime);
 		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
 		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
-		SOFF_T(pdata,32,0x20); /* Allocation size. */
+		SOFF_T(pdata,32,(SMB_OFF_T)0x20); /* Allocation size. */
 		SOFF_T(pdata,40,size);
 		SIVAL(pdata,48,mode);
 		SIVAL(pdata,52,0); /* ??? */
@@ -1787,7 +1786,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
        * Original code - this is an open file.
        */
       CHECK_FSP(fsp,conn);
-      CHECK_ERROR(fsp);
 
       fname = fsp->fsp_name;
       fd = fsp->fd;
