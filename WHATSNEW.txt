@@ -262,18 +262,18 @@ Profiling support.
 Support for collection of profile information. A shared 
 memory area has been created which contains counters for
 the number of calls to and the amount of time spent in
-various system calls and smb transactions. See the file
-profile.h for a complete listing of the information 
+various system calls, smb transactions and nmbd activity. See 
+the file profile.h for a complete listing of the information 
 collected. Sample code for a samba pmda (collection agent
 for Performance Co-Pilot) has been included in the pcp
 directory. 
 
-To enable the profile data collection code in samba, you 
-must compile samba with profile support (run configure with 
-the --with-profile option). On startup, collection of data
-is disabled. To begin collecting data use the smbcontrol
+To enable the profile data collection code in samba, you must 
+compile samba with profile data support (run configure with 
+the --with-profiling-data option). On startup, collection of 
+data is disabled. To begin collecting data use the smbcontrol
 program to turn on profiling (see the smbcontrol man page).
-Profile information collection can be enabled for all smbd
+Profile information collection can be enabled for nmbd, all smbd
 processes or one or more selected processes. The profiling
 data collected is the aggragate for all processes that have
 profiling enabled.
