@@ -673,7 +673,7 @@ installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
 installswat: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir) \
+	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 installclientlib:
 	-$(INSTALLCMD) bin/libsmbclient.so $(LIBDIR)
