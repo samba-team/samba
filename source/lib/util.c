@@ -23,6 +23,14 @@
 
 #include "includes.h"
 
+#ifdef HAVE_BFD_H
+#include <bfd.h>
+#endif
+
+#ifdef HAVE_LIBUNWIND_H
+#include <libunwind.h>
+#endif
+
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 #ifdef WITH_NISPLUS_HOME
 #ifdef BROKEN_NISPLUS_INCLUDE_FILES
@@ -1362,6 +1370,17 @@ gid_t nametogid(const char *name)
  Something really nasty happened - panic !
 ********************************************************************/
 
+#if 0
+
+static int found;
+
+static void
+find_address_in_section(bfd *abfd, asection *section, void *data)
+{
+}
+
+#endif
+
 void smb_panic(const char *why)
 {
 	char *cmd;
@@ -1398,6 +1417,98 @@ void smb_panic(const char *why)
 					  WEXITSTATUS(result)));
 	}
 	DEBUG(0,("PANIC: %s\n", why));
+
+#if 0
+
+#ifdef HAVE_LIBUNWIND
+#ifdef HAVE_LIBBFD
+
+	{
+	  bfd *abfd;
+	  long symcount;
+	  unsigned int size, num_frames = 0;
+	  asymbol **syms=NULL;		/* Symbol table.  */
+	  unw_context_t uc;
+	  unw_cursor_t cursor;
+
+	  bfd_init();
+
+	  if ((abfd = bfd_openr("/proc/self/exe", NULL)) == NULL) {
+	    DEBUG(5, ("bfd_openr() failed\n"));
+	    goto out;
+	  }
+
+#if 0
+
+	  DEBUG(0, ("**here\n"));
+
+	  if (bfd_check_format(abfd, bfd_archive)) {
+	    DEBUG(5, ("bfd_check_format() not an archive\n"));
+	    goto out;
+	  }
+
+	  DEBUG(0, ("**here\n"));
+	  DEBUG(0, ("flags = %x\n", bfd_get_file_flags (abfd)));
+	
+	  if ((bfd_get_file_flags (abfd) & HAS_SYMS) == 0) {
+	    DEBUG(5, ("no symbols in executable\n"));
+	    goto out;
+	  }
+
+	  DEBUG(0, ("**here\n"));
+
+#endif
+
+	  symcount = bfd_read_minisymbols(abfd, FALSE, &syms, &size);
+	  if (symcount == 0)
+	    symcount = bfd_read_minisymbols(abfd, TRUE /* dynamic */,
+					    &syms, &size); 
+
+	  DEBUG(0, ("**here\n"));
+
+	  if (symcount < 0) {
+	    DEBUG(5, ("error reading symbols\n"));
+	    goto out;
+	  }
+
+#define UNW_LOCAL_ONLY	  /* Optimise for unwinding only local processes */
+
+	  DEBUG(0, ("**here\n"));
+
+	  unw_getcontext(&uc);
+	  unw_init_local(&cursor, &uc);
+	  while (unw_step(&cursor) > 0) {
+	    unw_word_t ip;
+	    fstring s;
+	    bfd_vma pc;
+
+	  DEBUG(0, ("**here\n"));
+
+	    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+	    DEBUG(0, ("ip = 0x08%x\n", (void *) ip));
+	    slprintf(s, sizeof(s) - 1, "0x%08x", ip);
+
+	    pc = bfd_scan_vma(s, NULL, 16);
+
+	    found = False;
+	    bfd_map_over_sections(abfd, find_address_in_section, NULL);
+	    DEBUG(0, (" #%d %s [0x%08x]\n", num_frames,
+		      found ? "found": "<unknown>", ip));
+	    num_frames++;		  
+	  }
+
+	  out:
+	  DEBUG(0, ("outta here!\n"));
+	}
+#endif
+
+
+	{
+	}
+
+#endif
+
+#endif
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
 	/* get the backtrace (stack frames) */
