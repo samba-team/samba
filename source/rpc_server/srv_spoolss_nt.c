@@ -1058,6 +1058,19 @@ uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 	return result;
 }
 
+
+/********************************************************************
+ * _spoolss_deleteprinterdriver
+ ********************************************************************/
+
+uint32 _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
+				    SPOOL_R_DELETEPRINTERDRIVER *r_u)
+{
+	/* Always fail for now */
+	return NT_STATUS_ACCESS_VIOLATION;
+}
+
+
 /********************************************************************
  GetPrinterData on a printer server Handle.
 ********************************************************************/

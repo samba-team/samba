@@ -1310,12 +1310,60 @@ done:
 }
 
 
+static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **argv)
+{
+	uint32 			result = NT_STATUS_UNSUCCESSFUL;
+	fstring			servername;
+	TALLOC_CTX		*mem_ctx = NULL;
+	
+	/* parse the command arguements */
+	if (argc != 3)
+	{
+		printf ("Usage: %s <arch> <driver>\n", argv[0]);
+		return NT_STATUS_NOPROBLEMO;
+        }
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("cmd_spoolss_deletedriver: talloc_init returned NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (servername);
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* make the call to remove the driver */
+	if ((result = cli_spoolss_deleteprinterdriver(cli, mem_ctx, argv[1], argv[2])) != NT_STATUS_NO_PROBLEMO)
+	{
+		printf ("Failed to remove %s driver %s!\n", argv[1], argv[2]);
+		goto done;;
+	}
+	printf ("%s driver %s removed.\n", argv[1], argv[2]);
+		
+
+done:
+	/* cleanup */
+	cli_nt_session_close (cli);
+	talloc_destroy(mem_ctx);
+	
+	return result;		
+}
+
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
 	{ "SPOOLSS", 		NULL, 				"" },
 	{ "adddriver",		cmd_spoolss_addprinterdriver,	"Add a print driver" },
 	{ "addprinter",		cmd_spoolss_addprinterex,	"Add a printer" },
+	{ "deldriver",		cmd_spoolss_deletedriver,	"Delete a printer driver" },
 	{ "enumdata",		cmd_spoolss_not_implemented,	"Enumerate printer data (*)" },
 	{ "enumjobs",		cmd_spoolss_not_implemented,	"Enumerate print jobs (*)" },
 	{ "enumports", 		cmd_spoolss_enum_ports, 	"Enumerate printer ports" },
