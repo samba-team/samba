@@ -50,28 +50,28 @@
 #define DOMAIN_GROUP_RID_GUESTS        (0x00000202L)
 
 /* RIDs - well-known aliases ... */
-#define DOMAIN_ALIAS_RID_ADMINS        (0x00000220L)
-#define DOMAIN_ALIAS_RID_USERS         (0x00000221L)
-#define DOMAIN_ALIAS_RID_GUESTS        (0x00000222L)
-#define DOMAIN_ALIAS_RID_POWER_USERS   (0x00000223L)
+#define BUILTIN_ALIAS_RID_ADMINS        (0x00000220L)
+#define BUILTIN_ALIAS_RID_USERS         (0x00000221L)
+#define BUILTIN_ALIAS_RID_GUESTS        (0x00000222L)
+#define BUILTIN_ALIAS_RID_POWER_USERS   (0x00000223L)
 
-#define DOMAIN_ALIAS_RID_ACCOUNT_OPS   (0x00000224L)
-#define DOMAIN_ALIAS_RID_SYSTEM_OPS    (0x00000225L)
-#define DOMAIN_ALIAS_RID_PRINT_OPS     (0x00000226L)
-#define DOMAIN_ALIAS_RID_BACKUP_OPS    (0x00000227L)
+#define BUILTIN_ALIAS_RID_ACCOUNT_OPS   (0x00000224L)
+#define BUILTIN_ALIAS_RID_SYSTEM_OPS    (0x00000225L)
+#define BUILTIN_ALIAS_RID_PRINT_OPS     (0x00000226L)
+#define BUILTIN_ALIAS_RID_BACKUP_OPS    (0x00000227L)
 
-#define DOMAIN_ALIAS_RID_REPLICATOR    (0x00000228L)
+#define BUILTIN_ALIAS_RID_REPLICATOR    (0x00000228L)
 
 /*
  * Masks for mappings between unix uid and gid types and
  * NT RIDS.
  */
 
-/* Take the 3 bottom bits. */
-#define RID_TYPE_MASK 7
-#define RID_MULTIPLIER 8
+/* Take the bottom bit. */
+#define RID_TYPE_MASK 1
+#define RID_MULTIPLIER 2
 
-/* The two common types for now. */
+/* The two common types. */
 #define USER_RID_TYPE 0
 #define GROUP_RID_TYPE 1
 

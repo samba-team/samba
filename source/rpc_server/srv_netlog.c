@@ -691,7 +691,6 @@ static void api_net_sam_logon( int uid,
     pstring my_name;
     pstring my_workgroup;
     pstring domain_groups;
-    pstring other_sids;
     uint32 r_uid;
     uint32 r_gid;
 
@@ -708,7 +707,6 @@ static void api_net_sam_logon( int uid,
     pstrcpy(logon_script, lp_logon_script());
     pstrcpy(profile_path, lp_logon_path());
 
-    pstrcpy(other_sids, lp_domain_other_sids());
     pstrcpy(my_workgroup, lp_workgroup());
 
     pstrcpy(home_drive, lp_logon_drive());
@@ -767,7 +765,7 @@ static void api_net_sam_logon( int uid,
                           my_workgroup, /* char *logon_dom */
 
                           &global_machine_sid,     /* DOM_SID *dom_sid */
-                          other_sids); /* char *other_sids */
+                          NULL); /* char *other_sids */
     }
     else
     {
