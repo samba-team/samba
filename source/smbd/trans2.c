@@ -1431,7 +1431,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	SMB_OFF_T allocation_size=0;
 	unsigned int data_size;
 	SMB_STRUCT_STAT sbuf;
-	pstring fname;
+	pstring fname, dos_fname;
 	char *base_name;
 	char *p;
 	SMB_OFF_T pos = 0;
@@ -1552,6 +1552,13 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		sbuf.st_mtime &= ~1;
 	}
 
+	/* NT expects the name to be in an exact form */
+	if (strequal(fname,".")) {
+		pstrcpy(dos_fname, "\\");
+	} else {
+		snprintf(dos_fname, sizeof(dos_fname), "\\%s", fname);
+	}
+
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
 		case SMB_INFO_QUERY_EA_SIZE:
@@ -1645,16 +1652,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 		case SMB_QUERY_FILE_NAME_INFO:
 			/*
-			 * The first part of this code is essential
-			 * to get security descriptors to work on mapped
-			 * drives. Don't ask how I discovered this unless
-			 * you like hearing about me suffering.... :-). JRA.
+			  this must be *exactly* right for ACLs on mapped drives to work
 			 */
-			if(strequal(".", fname)) {
-				len = srvstr_push(outbuf, pdata+4, "\\", -1, STR_TERMINATE);
-			} else {
-				len = srvstr_push(outbuf, pdata+4, fname, -1, STR_TERMINATE);
-			}
+			len = srvstr_push(outbuf, pdata+4, dos_fname, -1, STR_UNICODE);
 			data_size = 4 + len;
 			SIVAL(pdata,0,len);
 			break;
@@ -1697,7 +1697,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,0,mode); /* is this the right sort of mode info? */
 			pdata += 4;
 			pdata += 4; /* alignment */
-			len = srvstr_push(outbuf, pdata+4, fname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, pdata+4, dos_fname, -1, STR_TERMINATE);
 			SIVAL(pdata,0,len);
 			pdata += 4 + len;
 			data_size = PTR_DIFF(pdata,(*ppdata));
@@ -1718,12 +1718,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		case SMB_FILE_NAME_INFORMATION:
 			/* Pathname with leading '\'. */
 			{
-				pstring new_fname;
 				size_t byte_len;
-
-				pstrcpy(new_fname, "\\");
-				pstrcat(new_fname, fname);
-				byte_len = dos_PutUniCode(pdata+4,new_fname,max_data_bytes,False);
+				byte_len = dos_PutUniCode(pdata+4,dos_fname,max_data_bytes,False);
 				SIVAL(pdata,0,byte_len);
 				data_size = 4 + byte_len;
 				break;
@@ -1753,9 +1749,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	/* Not yet finished... JRA */
 	case 1018:
 		{
-			pstring new_fname;
-			size_t byte_len;
-
 			put_long_date(pdata,c_time);
 			put_long_date(pdata+8,sbuf.st_atime);
 			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
