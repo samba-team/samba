@@ -1,8 +1,82 @@
-              WHATS NEW IN Samba 2.2.1a:  11th July 2001
+              WHATS NEW IN Samba 2.2.2:  3rd October 2001
               ==========================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
+
+New/Changed parameters in 2.2.1
+-------------------------------
+
+Added parameters.
+-----------------
+
+ssl cert
+
+Synonym for ssl server cert
+
+ssl key
+
+Synonym for ssl server key
+
+ssl egd socket
+
+ssl entropy file
+
+ssl entropy bytes
+
+strict allocate
+
+use mmap
+
+disable spoolss
+
+Enabling this parameter will disables Samba's support for the SPOOLSS set 
+of MS-RPC's and will yield identical behavior as Samba 2.0.x. Windows NT/2000 
+clients will downgrade to using Lanman style printing commands. Windows 9x/ME 
+will be uneffected by the parameter. However, this will also disable the 
+ability to upload printer drivers to a Samba server via the Windows NT Add 
+Printer Wizard or by using the NT printer properties dialog window. It will 
+also disable the capability of Windows NT/2000 clients to download print 
+drivers from the Samba host upon demand.  Be very careful about enabling this 
+parameter. 
+
+use client driver
+
+This parameter applies only to Windows NT/2000
+clients.  It has no affect on Windows 95/98/ME clients.  When
+serving a printer to Windows NT/2000 clients without first installing
+a valid printer driver on the Samba host, the client will be required
+to install a local printer driver.  From this point on, the client
+will treat the print as a local printer and not a network printer
+connection.  This is much the same behavior that will occur
+when "disable spoolss = yes"
+
+ldap admin dn
+
+renamed from ldap root
+
+ldap ssl
+
+winbind enum users
+
+winbind enum groups
+
+
+Removed parameters.
+-------------------
+
+share modes
+ldap root
+ldap root passwd
+
+Changes in 2.2.1
+-----------------
+
+
+Older release notes for Samba 2.2.x follow.
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.1a follow :
 
 This is a minor bugfix release for 2.2.1, *NOT* security related.
 
@@ -14,6 +88,9 @@ machine into a domain. Automatically adding machines (using the
 native Windows tools) into a Samba domain worked correctly.
 
 2.2.1a fixes this single problem.
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.1 follow :
 
 New/Changed parameters in 2.2.1
 -------------------------------
@@ -99,8 +176,6 @@ Changes in 2.2.1
      TCP stack early ack specification error.
 31). Changed lock & persistant tdb directory to /var/cache/samba by default on
      RedHat and Mandrake as they clear the /var/lock/samba directory on reboot.
-
-Older release notes for Samba 2.2.x follow.
 
 -----------------------------------------------------------------------------
 The release notes for 2.2.0a follow :
