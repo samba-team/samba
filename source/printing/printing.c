@@ -602,7 +602,6 @@ void pjob_delete(int snum, const char *sharename, uint32 jobid)
 	/* Remove from printing.tdb */
 
 	tdb_delete(pdb->tdb, print_key(jobid));
-	remove_from_jobs_changed(snum, jobid);
 	release_print_db(pdb);
 	rap_jobid_delete(snum, jobid);
 }
@@ -1250,7 +1249,7 @@ static void print_queue_update(int snum)
 	fstrcpy(ctx.lpqcommand, lp_lpqcommand(snum));
 	
 	/* 
-	 * Make sure that the backgroup queue process exists.  
+	 * Make sure that the background queue process exists.  
 	 * Otherwise just do the update ourselves 
 	 */
 	   

@@ -26,30 +26,6 @@
  * Generic printing interface definitions...
  */
 
-static int generic_job_delete(int snum, struct printjob *pjob);
-static int generic_job_pause(int snum, struct printjob *pjob);
-static int generic_job_resume(int snum, struct printjob *pjob);
-static int generic_job_submit(int snum, struct printjob *pjob);
-static int generic_queue_get(const char *printer_name,
-			     enum printing_types printing_type,
-			     const char *lpq_command,
-			     print_queue_struct **q,
-			     print_status_struct *status);
-static int generic_queue_pause(int snum);
-static int generic_queue_resume(int snum);
-
-
-struct printif	generic_printif =
-		{
-		  generic_queue_get,
-		  generic_queue_pause,
-		  generic_queue_resume,
-		  generic_job_delete,
-		  generic_job_pause,
-		  generic_job_resume,
-		  generic_job_submit,
-		};
-
 /****************************************************************************
 run a given print command 
 a null terminated list of value/substitute pairs is provided
@@ -254,3 +230,19 @@ static int generic_queue_resume(int snum)
 	return print_run_command(snum, PRINTERNAME(snum),
 				 lp_queueresumecommand(snum), NULL, NULL);
 }
+
+/****************************************************************************
+ * Generic printing interface definitions...
+ ***************************************************************************/
+
+struct printif	generic_printif =
+{
+	generic_queue_get,
+	generic_queue_pause,
+	generic_queue_resume,
+	generic_job_delete,
+	generic_job_pause,
+	generic_job_resume,
+	generic_job_submit,
+};
+
