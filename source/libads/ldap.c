@@ -62,6 +62,8 @@ int ads_connect(ADS_STRUCT *ads)
 	int version = LDAP_VERSION3;
 	int rc;
 
+	ads->last_attempt = time(NULL);
+
 	ads->ld = ldap_open(ads->ldap_server, ads->ldap_port);
 	if (!ads->ld) {
 		return errno;
@@ -75,6 +77,50 @@ int ads_connect(ADS_STRUCT *ads)
 	return rc;
 }
 
+/*
+  a wrapper around ldap_search_s that retries depending on the error code
+  this is supposed to catch dropped connections and auto-reconnect
+*/
+int ads_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, const char *exp,
+		     const char **attrs, void **res)
+{
+	struct timeval timeout;
+	int rc = -1, rc2;
+	int count = 3;
+
+	if (!ads->ld &&
+	    time(NULL) - ads->last_attempt < ADS_RECONNECT_TIME) {
+		return LDAP_SERVER_DOWN;
+	}
+
+	while (count--) {
+		*res = NULL;
+		timeout.tv_sec = ADS_SEARCH_TIMEOUT;
+		timeout.tv_usec = 0;
+		if (ads->ld) {
+			rc = ldap_search_ext_s(ads->ld, bind_path, scope, exp, attrs, 0, NULL, NULL, 
+					       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
+			if (rc == 0) return rc;
+		}
+
+		if (*res) ads_msgfree(ads, *res);
+		*res = NULL;
+		DEBUG(1,("Reopening ads connection after error %s\n", ads_errstr(rc)));
+		if (ads->ld) {
+			/* we should unbind here, but that seems to trigger openldap bugs :(
+			   ldap_unbind(ads->ld); 
+			*/
+		}
+		ads->ld = NULL;
+		rc2 = ads_connect(ads);
+		if (rc2) {
+			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n", ads_errstr(rc)));
+			return rc2;
+		}
+	}
+	DEBUG(1,("ads reopen failed after error %s\n", ads_errstr(rc)));
+	return rc;
+}
 
 /*
   do a general ADS search
@@ -83,9 +129,7 @@ int ads_search(ADS_STRUCT *ads, void **res,
 	       const char *exp, 
 	       const char **attrs)
 {
-	*res = NULL;
-	return ldap_search_s(ads->ld, ads->bind_path, 
-			     LDAP_SCOPE_SUBTREE, exp, (char **)attrs, 0, (LDAPMessage **)res);
+	return ads_search_retry(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, exp, attrs, res);
 }
 
 /*
@@ -95,9 +139,7 @@ int ads_search_dn(ADS_STRUCT *ads, void **res,
 		  const char *dn, 
 		  const char **attrs)
 {
-	*res = NULL;
-	return ldap_search_s(ads->ld, dn, 
-			     LDAP_SCOPE_BASE, "(objectclass=*)", (char **)attrs, 0, (LDAPMessage **)res);
+	return ads_search_retry(ads, dn, LDAP_SCOPE_BASE, "(objectclass=*)", attrs, res);
 }
 
 /*
@@ -535,11 +577,13 @@ BOOL ads_USN(ADS_STRUCT *ads, uint32 *usn)
 	const char *attrs[] = {"highestCommittedUSN", NULL};
 	int rc;
 	void *res;
+	BOOL ret;
 
-	rc = ldap_search_s(ads->ld, "", 
-			   LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, (LDAPMessage **)&res);
+	rc = ads_search_retry(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (rc || ads_count_replies(ads, res) != 1) return False;
-	return ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
+	ret = ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
+	ads_msgfree(ads, res);
+	return ret;
 }
 
 
