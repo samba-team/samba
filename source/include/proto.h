@@ -4557,7 +4557,7 @@ BOOL remove_oplock(files_struct *fsp, BOOL break_to_none);
 int setup_oplock_select_set( fd_set *fds);
 BOOL process_local_message(char *buffer, int buf_size);
 BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token);
-BOOL request_oplock_break(share_mode_entry *share_entry);
+BOOL request_oplock_break(share_mode_entry *share_entry, BOOL async);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
 void release_level_2_oplocks_on_change(files_struct *fsp);
 BOOL init_oplocks(void);
