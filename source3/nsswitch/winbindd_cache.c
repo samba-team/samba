@@ -634,7 +634,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	unsigned int i;
+	unsigned int i, retry;
 
 	if (!cache->tdb)
 		goto do_query;
@@ -675,10 +675,29 @@ do_query:
 		return NT_STATUS_SERVER_DISABLED;
 	}
 
-	DEBUG(10,("query_user_list: [Cached] - doing backend query for list for domain %s\n",
-		domain->name ));
+	/* Put the query_user_list() in a retry loop.  There appears to be
+	 * some bug either with Windows 2000 or Samba's handling of large
+	 * rpc replies.  This manifests itself as sudden disconnection
+	 * at a random point in the enumeration of a large (60k) user list.
+	 * The retry loop simply tries the operation again. )-:  It's not
+	 * pretty but an acceptable workaround until we work out what the
+	 * real problem is. */
 
-	status = domain->backend->query_user_list(domain, mem_ctx, num_entries, info);
+	retry = 0;
+	do {
+
+		DEBUG(10,("query_user_list: [Cached] - doing backend query for list for domain %s\n",
+			domain->name ));
+
+		status = domain->backend->query_user_list(domain, mem_ctx, num_entries, info);
+		if (!NT_STATUS_IS_OK(status))
+			DEBUG(3, ("query_user_list: returned 0x%08x, retrying\n", NT_STATUS_V(status)));
+			if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL)) {
+				DEBUG(3, ("query_user_list: flushing connection cache\n"));
+				winbindd_cm_flush();
+			}
+
+	} while (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) && (retry++ < 5));
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
@@ -878,7 +897,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	fstring uname;
 	DOM_SID *sid2;
 
-	if (!cache->tdb) goto do_query;
+	if (!cache->tdb)
+		goto do_query;
 
 	fstrcpy(uname, name);
 	strupper(uname);

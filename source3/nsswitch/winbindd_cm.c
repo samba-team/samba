@@ -659,3 +659,34 @@ void winbindd_cm_status(void)
 	else
 		DEBUG(0, ("\tNo active connections\n"));
 }
+
+/* Close all cached connections */
+
+void winbindd_cm_flush(void)
+{
+	struct winbindd_cm_conn *conn, tmp;
+
+	/* Flush connection cache */
+
+	for (conn = cm_conns; conn; conn = conn->next) {
+
+		if (!connection_ok(conn))
+			continue;
+
+		DEBUG(10, ("Closing connection to %s on %s\n",
+			conn->pipe_name, conn->controller));
+
+		if (conn->cli)
+			cli_shutdown(conn->cli);
+
+		tmp.next = conn->next;
+
+		DLIST_REMOVE(cm_conns, conn);
+		SAFE_FREE(conn);
+		conn = &tmp;
+	}
+
+	/* Flush failed connection cache */
+
+	flush_negative_conn_cache();
+}
