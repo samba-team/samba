@@ -1,5 +1,11 @@
 Changes in release 0.3a:
 
+ * modularise the handling of the master key, and allow for other
+   encryption types. This makes it easier to import a database from
+   some other source without having to re-encrypt all keys.
+
+ * allow for better control over which encryption types are created
+
  * make kinit fallback to v4 if given a v4 KDC
 
  * make klist work better with v4 and v5

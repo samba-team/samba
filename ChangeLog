@@ -1,3 +1,25 @@
+2000-07-05  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/hprop.c: only get master key if we're actually going to use
+	it; enable reading of MIT krb5 dump files
+	
+	* kdc/mit_dump.c: read MIT krb5 dump files
+	
+	* lib/hdb/mkey.c (read_master_mit): fix this
+	
+	* kdc/kstash.c: make this work with the new mkey code
+	
+	* lib/hdb/Makefile.am: add mkey.c, and bump version number
+	
+	* lib/hdb/hdb.h: rewrite master key handling
+	
+	* lib/hdb/mkey.c: rewrite master key handling
+	
+	* lib/krb5/crypto.c: add some more pseudo crypto types
+	
+	* lib/krb5/krb5.h: change some funny etypes to use negative
+	numbers, and add some more
+
 2000-07-02  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/keytab_keyfile.c (akf_add_entry): remove unused
