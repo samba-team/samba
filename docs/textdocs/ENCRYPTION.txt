@@ -2,7 +2,7 @@
 !== ENCRYPTION.txt for Samba release 2.0.3 28 Feb 1999
 !==
 Contributor:	Jeremy Allison <samba-bugs@samba.org>
-Updated:	March 19, 1998
+Updated:	April 19, 1999
 Note:		Please refer to WinNT.txt also
 
 Subject:	LanManager / Samba Password Encryption.
@@ -177,10 +177,11 @@ chmod 600 smbpasswd.
 
 The format of the smbpasswd file is
 
-username:uid:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:Long name:user home dir:user shell
+username:uid:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[Account type]:LCT-<last-change-time>:Long name
 
-Although only the username, uid, and XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-sections are significant and are looked at in the Samba code.
+Although only the username, uid, XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX,
+[Account type] and last-change-time sections are significant and
+are looked at in the Samba code.
 
 It is *VITALLY* important that there by 32 'X' characters between the
 two ':' characters in the XXX sections - the smbpasswd and Samba code 
@@ -202,7 +203,7 @@ NO PASSWORD
 Eg. To clear the password for user bob, his smbpasswd file entry would
 look like :
 
-bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:Bob's full name:/bobhome:/bobshell
+bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U          ]:LCT-00000000:Bob's full name:/bobhome:/bobshell
 
 If you are allowing users to use the smbpasswd command to set their own
 passwords, you may want to give users NO PASSWORD initially so they do
@@ -313,7 +314,7 @@ If this fails then you will find that you will need entries that look
 like this:
 
 # SMB password file.
-tridge:148:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:Andrew Tridgell:/home/tridge:/bin/tcsh
+tridge:148:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U          ]:LCT-00000000:Andrew Tridgell:/home/tridge:/bin/tcsh
 
 note that the uid and username fields must be right. Also, you must get
 the number of X's right (there should be 32).
