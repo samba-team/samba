@@ -636,16 +636,33 @@ static NTSTATUS test_LookupName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_LookupNames n;
-	struct samr_Name sname;
+	struct samr_Name sname[2];
 
-	init_samr_Name(&sname, name);
+	init_samr_Name(&sname[0], name);
 
 	n.in.handle = domain_handle;
 	n.in.num_names = 1;
-	n.in.names = &sname;
+	n.in.names = sname;
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (NT_STATUS_IS_OK(status)) {
 		*rid = n.out.rids.ids[0];
+	} else {
+		return status;
+	}
+
+	init_samr_Name(&sname[1], "xxNONAMExx");
+	n.in.num_names = 2;
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (!NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		printf("LookupNames[2] failed - %s\n", nt_errstr(status));		
+		return status;
+	}
+
+	init_samr_Name(&sname[1], "xxNONAMExx");
+	n.in.num_names = 0;
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupNames[0] failed - %s\n", nt_errstr(status));		
 	}
 
 	return status;
@@ -842,7 +859,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Hash nt_verifier, lm_verifier;
 	char *oldpass = *password;
-	char *newpass = samr_rand_pass(mem_ctx);	
+	char *newpass = samr_rand_pass(mem_ctx);
 	uint8 old_nt_hash[16], new_nt_hash[16];
 	uint8 old_lm_hash[16], new_lm_hash[16];
 
@@ -1331,7 +1348,6 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("CreateUser failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
 
 	q.in.handle = user_handle;
 	q.in.level = 16;
