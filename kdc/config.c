@@ -138,19 +138,9 @@ configure(int argc, char **argv)
 	    max_request = parse_units(max_request_str, byte_units, NULL);
     }
     
-    if(require_preauth == -1){
-	p = krb5_config_get_string (cf, 
-				    "kdc",
-				    "require-preauth",
-				    NULL);
-    
-	if(p){
-	    if(strcasecmp(p, "true") == 0 || strcasecmp(p, "yes") == 0)
-		require_preauth = 1;
-	    else if(strcasecmp(p, "false") == 0 || strcasecmp(p, "no") == 0)
-		require_preauth = 0;
-	}
-    }
+    if(require_preauth == -1)
+	require_preauth = krb5_config_get_bool(cf, "kdc", 
+					       "require-preauth", NULL);
 #ifdef KRB4
     if(v4_realm == NULL){
 	p = krb5_config_get_string (cf, 
@@ -162,15 +152,10 @@ configure(int argc, char **argv)
     }
 #endif
 
-    p = krb5_config_get_string (cf,
-				"kdc",
-				"kdc_warn_pwexpire",
-				NULL);
-    if (p)
-	kdc_warn_pwexpire = parse_time (p);
-    else
-	kdc_warn_pwexpire = 0;
-    
+    kdc_warn_pwexpire = krb5_config_get_time (cf,
+					      "kdc",
+					      "kdc_warn_pwexpire",
+					      NULL);
 end:
     kdc_openlog(cf);
     if(cf)
