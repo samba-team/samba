@@ -159,8 +159,13 @@ static BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * 
 							  atol(xmlNodeListGetString
 								   (doc, cur->xmlChildrenNode, 1)), PDB_SET);
 
-		else if (!strcmp(cur->name, "unknown_5") && cur->ns == ns)
-			pdb_set_unknown_5(u,
+		else if (!strcmp(cur->name, "bad_password_count") && cur->ns == ns)
+			pdb_set_bad_password_count(u,
+							  atol(xmlNodeListGetString
+								   (doc, cur->xmlChildrenNode, 1)), PDB_SET);
+
+		else if (!strcmp(cur->name, "logon_count") && cur->ns == ns)
+			pdb_set_logon_count(u,
 							  atol(xmlNodeListGetString
 								   (doc, cur->xmlChildrenNode, 1)), PDB_SET);
 
@@ -495,7 +500,8 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 		xmlNewChild(user, data->ns, "hours_len",
 					iota(pdb_get_hours_len(u)));
 
-	xmlNewChild(user, data->ns, "unknown_5", iota(pdb_get_unknown_5(u)));
+	xmlNewChild(user, data->ns, "bad_password_count", iota(pdb_get_bad_password_count(u)));
+	xmlNewChild(user, data->ns, "logon_count", iota(pdb_get_logon_count(u)));
 	xmlNewChild(user, data->ns, "unknown_6", iota(pdb_get_unknown_6(u)));
 	xmlSaveFile(data->location, data->doc);
 

@@ -314,12 +314,20 @@ uint32 pdb_get_unknown_3 (const SAM_ACCOUNT *sampass)
 		return (-1);
 }
 
-uint32 pdb_get_unknown_5 (const SAM_ACCOUNT *sampass)
+uint16 pdb_get_bad_password_count(const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->private.unknown_5);
+		return (sampass->private.bad_password_count);
 	else
-		return (-1);
+		return 0;
+}
+
+uint16 pdb_get_logon_count(const SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->private.logon_count);
+	else
+		return 0;
 }
 
 uint32 pdb_get_unknown_6 (const SAM_ACCOUNT *sampass)
@@ -984,14 +992,24 @@ BOOL pdb_set_unknown_3 (SAM_ACCOUNT *sampass, uint32 unkn, enum pdb_value_state 
 	return pdb_set_init_flags(sampass, PDB_UNKNOWN3, flag);
 }
 
-BOOL pdb_set_unknown_5 (SAM_ACCOUNT *sampass, uint32 unkn, enum pdb_value_state flag)
+BOOL pdb_set_bad_password_count(SAM_ACCOUNT *sampass, uint16 bad_password_count, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private.unknown_5 = unkn;
+	sampass->private.bad_password_count = bad_password_count;
 
-	return pdb_set_init_flags(sampass, PDB_UNKNOWN5, flag);
+	return pdb_set_init_flags(sampass, PDB_BAD_PASSWORD_COUNT, flag);
+}
+
+BOOL pdb_set_logon_count(SAM_ACCOUNT *sampass, uint16 logon_count, enum pdb_value_state flag)
+{
+	if (!sampass)
+		return False;
+
+	sampass->private.logon_count = logon_count;
+
+	return pdb_set_init_flags(sampass, PDB_LOGON_COUNT, flag);
 }
 
 BOOL pdb_set_unknown_6 (SAM_ACCOUNT *sampass, uint32 unkn, enum pdb_value_state flag)

@@ -5411,7 +5411,6 @@ static BOOL sam_io_user_info24(const char *desc, SAM_USER_INFO_24 * usr,
  init_sam_user_info23
 
  unknown_3 = 0x09f8 27fa
- unknown_5 = 0x0001 0000
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -5438,7 +5437,8 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			uint32 unknown_3,
 			uint16 logon_divs,
 			LOGON_HRS * hrs,
-			uint32 unknown_5,
+			uint16 bad_password_count,
+			uint16 logon_count,
 			char newpass[516], uint32 unknown_6)
 {
 	int len_user_name = user_name != NULL ? user_name->uni_str_len : 0;
@@ -5487,11 +5487,11 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 		usr->passmustchange=0;
 	}
 
-
 	ZERO_STRUCT(usr->padding1);
 	ZERO_STRUCT(usr->padding2);
 
-	usr->unknown_5 = unknown_5;	/* 0x0001 0000 */
+	usr->bad_password_count = bad_password_count;
+	usr->logon_count = logon_count;
 
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
 
@@ -5516,7 +5516,6 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
  init_sam_user_info23
 
  unknown_3 = 0x09f8 27fa
- unknown_5 = 0x0001 0000
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -5534,7 +5533,7 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			   char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
 			   uint32 group_rid, uint32 acb_info,
 			   uint32 unknown_3, uint16 logon_divs,
-			   LOGON_HRS * hrs, uint32 unknown_5,
+			   LOGON_HRS * hrs, uint16 bad_password_count, uint16 logon_count,
 			   char newpass[516], uint32 unknown_6)
 {
 	int len_user_name = user_name != NULL ? strlen(user_name) : 0;
@@ -5586,7 +5585,8 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	ZERO_STRUCT(usr->padding1);
 	ZERO_STRUCT(usr->padding2);
 
-	usr->unknown_5 = unknown_5;	/* 0x0001 0000 */
+	usr->bad_password_count = bad_password_count;
+	usr->logon_count = logon_count;
 
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
 
@@ -5678,7 +5678,9 @@ static BOOL sam_io_user_info23(const char *desc, SAM_USER_INFO_23 * usr,
 	if(!prs_uint32("ptr_logon_hrs ", ps, depth, &usr->ptr_logon_hrs))
 		return False;
 
-	if(!prs_uint32("unknown_5     ", ps, depth, &usr->unknown_5))
+	if(!prs_uint16("bad_password_count     ", ps, depth, &usr->bad_password_count))
+		return False;
+	if(!prs_uint16("logon_count     ", ps, depth, &usr->logon_count))
 		return False;
 
 	if(!prs_uint8s(False, "padding1      ", ps, depth, usr->padding1, sizeof(usr->padding1)))
@@ -5865,7 +5867,6 @@ static BOOL sam_io_user_info25(const char *desc, SAM_USER_INFO_25 * usr, prs_str
  init_sam_user_info21W
 
  unknown_3 = 0x00ff ffff
- unknown_5 = 0x0002 0000
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -5895,7 +5896,9 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 			   uint32 unknown_3,
 			   uint16 logon_divs,
 			   LOGON_HRS * hrs,
-			   uint32 unknown_5, uint32 unknown_6)
+			   uint16 bad_password_count,
+			   uint16 logon_count,
+			   uint32 unknown_6)
 {
 	int len_user_name = user_name != NULL ? user_name->uni_str_len : 0;
 	int len_full_name = full_name != NULL ? full_name->uni_str_len : 0;
@@ -5936,14 +5939,14 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
-	usr->unknown_5 = unknown_5;	/* 0x0002 0000 */
+	usr->bad_password_count = bad_password_count;
+	usr->logon_count = logon_count;
 
 	if (nt_time_is_zero(pass_must_change_time)) {
 		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
 	} else {
 		usr->passmustchange=0;
 	}
-
 
 	ZERO_STRUCT(usr->padding1);
 	ZERO_STRUCT(usr->padding2);
@@ -5969,7 +5972,6 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
  init_sam_user_info21
 
  unknown_3 = 0x00ff ffff
- unknown_5 = 0x0002 0000
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -6086,14 +6088,14 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 
 	usr->logon_divs = pdb_get_logon_divs(pw); 
 	usr->ptr_logon_hrs = pdb_get_hours(pw) ? 1 : 0;
-	usr->unknown_5 = pdb_get_unknown_5(pw); /* 0x0002 0000 */
+	usr->bad_password_count = pdb_get_bad_password_count(pw);
+	usr->logon_count = pdb_get_logon_count(pw);
 
 	if (pdb_get_pass_must_change_time(pw) == 0) {
 		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
 	} else {
 		usr->passmustchange=0;
 	}
-
 
 	ZERO_STRUCT(usr->padding1);
 	ZERO_STRUCT(usr->padding2);
@@ -6192,7 +6194,9 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 	if(!prs_uint32("ptr_logon_hrs ", ps, depth, &usr->ptr_logon_hrs))
 		return False;
 
-	if(!prs_uint32("unknown_5     ", ps, depth, &usr->unknown_5))
+	if(!prs_uint16("bad_password_count     ", ps, depth, &usr->bad_password_count))
+		return False;
+	if(!prs_uint16("logon_count     ", ps, depth, &usr->logon_count))
 		return False;
 
 	if(!prs_uint8s(False, "padding1      ", ps, depth, usr->padding1, sizeof(usr->padding1)))
