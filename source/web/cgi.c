@@ -26,8 +26,6 @@
 /* set the expiry on fixed pages */
 #define EXPIRY_TIME (60*60*24*7)
 
-#define CGI_LOGGING 0
-
 #ifdef DEBUG_COMMENTS
 extern void print_title(char *fmt, ...);
 #endif
@@ -327,7 +325,6 @@ static void base64_decode(char *s)
 	d[n] = 0;
 }
 
-
 /***************************************************************************
 handle a http authentication line
   ***************************************************************************/
@@ -336,11 +333,17 @@ static BOOL cgi_handle_authorization(char *line)
 	char *p, *user, *user_pass;
 	struct passwd *pass = NULL;
 	BOOL ret = False;
+	BOOL got_name = False;
+	BOOL tested_pass = False;
+	fstring default_user_lookup;
+	fstring default_user_pass;
+
+	/* Dummy user lookup to take the same time as a valid user. */
+	fstrcpy(default_user_lookup, "zzzz bibble");
+	fstrcpy(default_user_pass, "123456789");
 
 	if (strncasecmp(line,"Basic ", 6)) {
-		cgi_setup_error("401 Bad Authorization", "", 
-				"Only basic authorization is understood");
-		return False;
+		goto err;
 	}
 	line += 6;
 	while (line[0] == ' ') line++;
@@ -350,9 +353,7 @@ static BOOL cgi_handle_authorization(char *line)
 		 * Always give the same error so a cracker
 		 * cannot tell why we fail.
 		 */
-		cgi_setup_error("401 Bad Authorization", "", 
-				"username/password must be supplied");
-		return False;
+		goto err;
 	}
 	*p = 0;
 	user = line;
@@ -367,14 +368,15 @@ static BOOL cgi_handle_authorization(char *line)
 		 * Always give the same error so a cracker
 		 * cannot tell why we fail.
 		 */
-		cgi_setup_error("401 Bad Authorization", "",
-				"username/password must be supplied");
-		return False;
+		got_name = True;
+		goto err;
 	}
 
 	/*
 	 * Validate the password they have given.
 	 */
+
+	tested_pass = True;
 
 	if((ret = pass_check(user, user_pass, strlen(user_pass), NULL, NULL)) == True) {
 
@@ -394,7 +396,20 @@ static BOOL cgi_handle_authorization(char *line)
 		C_user = strdup(user);
 	}
 
-	return ret;
+  err:
+
+	/* Always take the same time. */
+	if (!got_name)
+		Get_Pwnam(default_user_lookup,False);
+
+	if (!tested_pass)
+		pass_check(default_user_lookup, default_user_pass,
+					strlen(default_user_pass), NULL, NULL);
+
+	cgi_setup_error("401 Bad Authorization", "", 
+			"username or password incorrect");
+
+	return False;
 }
 
 /***************************************************************************
@@ -478,9 +493,6 @@ void cgi_setup(char *rootdir, int auth_required)
 	char line[1024];
 	char *url=NULL;
 	char *p;
-#if CGI_LOGGING
-	FILE *f;
-#endif
 
 	if (chdir(rootdir)) {
 		cgi_setup_error("400 Server Error", "",
@@ -502,19 +514,9 @@ void cgi_setup(char *rootdir, int auth_required)
 				"Samba is configured to deny access from this client\n<br>Check your \"hosts allow\" and \"hosts deny\" options in smb.conf ");
 	}
 
-#if CGI_LOGGING
-	f = sys_fopen("/tmp/cgi.log", "a");
-	if (f) fprintf(f,"\n[Date: %s   %s (%s)]\n", 
-		       http_timestring(time(NULL)),
-		       get_socket_name(1), get_socket_addr(1));
-#endif
-
 	/* we are a mini-web server. We need to read the request from stdin
 	   and handle authentication etc */
 	while (fgets(line, sizeof(line)-1, stdin)) {
-#if CGI_LOGGING
-		if (f) fputs(line, f);
-#endif
 		if (line[0] == '\r' || line[0] == '\n') break;
 		if (strncasecmp(line,"GET ", 4)==0) {
 			got_request = True;
@@ -534,9 +536,6 @@ void cgi_setup(char *rootdir, int auth_required)
 		}
 		/* ignore all other requests! */
 	}
-#if CGI_LOGGING
-	if (f) fclose(f);
-#endif
 
 	if (auth_required && !authenticated) {
 		cgi_auth_error();
