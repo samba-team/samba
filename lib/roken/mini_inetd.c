@@ -119,7 +119,7 @@ mini_inetd (int port)
     for (i = 0, a = ai; a != NULL; a = a->ai_next) {
 	fds[i] = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (fds[i] < 0) {
-	    warn (1, "socket");
+	    warn ("socket");
 	    continue;
 	}
 	socket_set_reuseaddr (fds[i], 1);
