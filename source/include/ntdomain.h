@@ -24,6 +24,10 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
+/* 
+ * A bunch of stuff that was put into smb.h
+ * in the NTDOM branch - it didn't belong there.
+ */
 
 /* dce/rpc support */
 #include "rpc_dce.h"
@@ -33,19 +37,6 @@
 
 /* security descriptor structures */
 #include "rpc_secdes.h" 
-
-/* different dce/rpc pipes */
-#include "rpc_lsa.h"
-#include "rpc_netlogon.h"
-#include "rpc_reg.h"
-#include "rpc_samr.h"
-#include "rpc_srvsvc.h"
-#include "rpc_wkssvc.h"
-
-/* 
- * A bunch of stuff that was put into smb.h
- * in the NTDOM branch - it didn't belong there.
- */
  
 typedef struct _prs_struct 
 {
@@ -156,5 +147,14 @@ struct acct_info
     fstring acct_name; /* account name */
     uint32 smb_userid; /* domain-relative RID */
 };
+
+/* different dce/rpc pipes */
+#include "rpc_lsa.h"
+#include "rpc_netlogon.h"
+#include "rpc_reg.h"
+#include "rpc_samr.h"
+#include "rpc_srvsvc.h"
+#include "rpc_wkssvc.h"
+#include "rpc_spoolss.h"
 
 #endif /* _NT_DOMAIN_H */
