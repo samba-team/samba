@@ -16,6 +16,7 @@ RANLIB = @RANLIB@
 LN_S = @LN_S@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
 YACC = @YACC@
 LEX = @LEX@
 
@@ -106,7 +107,7 @@ $(LIBNAME).a: $(LIB_OBJECTS)
 
 $(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
 	rm -f $@
-	$(LDSHARED) -o $@ $(LIB_OBJECTS) $(LIB_DEPS)
+	$(LDSHARED) $(LD_FLAGS) -o $@ $(LIB_OBJECTS) $(LIB_DEPS)
 	@build_symlink_command@
 
 $(OBJECTS): ../../include/config.h
