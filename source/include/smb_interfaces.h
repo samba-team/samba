@@ -1911,7 +1911,7 @@ union smb_search_close {
 
 	/* SMBfindclose interface */
 	struct {
-		enum search_level level;
+		enum search_close_level level;
 		
 		struct {
 			uint16 handle;
