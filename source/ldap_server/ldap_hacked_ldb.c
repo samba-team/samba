@@ -53,7 +53,7 @@
 static NTSTATUS convert_values(TALLOC_CTX *mem_ctx,
 			       struct ldb_message_element *elem,
 			       struct ldap_attribute *attrs,
-			       struct ldb_wrap *samdb,
+			       struct ldb_context *samdb,
 			       const char **dn,
 			       struct ldap_SearchRequest *r)
 {
@@ -130,7 +130,7 @@ DEBUG(0, (__location__": convert_values(ncname): nc dn = '%s'\n", nc_filter));
 
 		
 		/* first the NC stuff */
-		count = ldb_search(samdb->ldb, "", LDB_SCOPE_BASE, nc_filter, s_attrs, &res);
+		count = ldb_search(samdb, "", LDB_SCOPE_BASE, nc_filter, s_attrs, &res);
 		if (count != 1) {
 			DEBUG(0, (__location__": convert_values(ncname): nc_count: %d \n", count));
 			return NT_STATUS_FOOBAR;
@@ -158,7 +158,7 @@ DEBUG(0, (__location__": convert_values(ncname): dn='%s'\n",*dn));
 
 		dom_filter = talloc_asprintf(mem_ctx, "(dn=%s)", dom_dn);
 DEBUG(0, (__location__": convert_values(ncname): dom dn = '%s'\n", dom_filter));
-		count = ldb_search(samdb->ldb, "", LDB_SCOPE_BASE, dom_filter, s_attrs, &res);
+		count = ldb_search(samdb, "", LDB_SCOPE_BASE, dom_filter, s_attrs, &res);
 		if (count != 1) {
 			DEBUG(0, (__location__": convert_values(ncname): dom_count: %d \n", count));
 			return NT_STATUS_OK;
@@ -281,7 +281,7 @@ static NTSTATUS hacked_wellknown_Search(struct ldapsrv_partition *partition, str
 }
 
 static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-				     struct ldap_SearchRequest *r, struct ldb_wrap *samdb)
+				     struct ldap_SearchRequest *r, struct ldb_context *samdb)
 {
 	NTSTATUS status;
 	void *local_ctx;
@@ -334,7 +334,7 @@ static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsr
 	}
 DEBUG(0,("hacked basedn: %s\n", basedn_str));
 DEBUGADD(0,("hacked filter: %s\n", r->filter));
-	count = ldb_search(samdb->ldb, basedn_str, scope, r->filter, attrs, &res);
+	count = ldb_search(samdb, basedn_str, scope, r->filter, attrs, &res);
 	talloc_steal(samdb, res);
 
 	if (count < 1) {
@@ -450,11 +450,11 @@ queue_reply2:
 	} else if (count == 0) {
 		DEBUG(10,("hacked_Search: no results\n"));
 		result = LDAP_NO_SUCH_OBJECT;
-		errstr = ldb_errstring(samdb->ldb);	
+		errstr = ldb_errstring(samdb);	
 	} else if (count == -1) {
 		DEBUG(10,("hacked_Search: error\n"));
 		result = LDAP_OTHER;
-		errstr = ldb_errstring(samdb->ldb);
+		errstr = ldb_errstring(samdb);
 	}
 
 	done = &done_r->msg.r.SearchResultDone;
@@ -473,7 +473,7 @@ static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 {
 	NTSTATUS status;
 	void *local_ctx;
-	struct ldb_wrap *samdb;
+	struct ldb_context *samdb;
 #if 0
 	struct ldap_dn *basedn;
 	struct ldap_Result *done;
@@ -531,7 +531,7 @@ static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		attrs[i] = NULL;
 	}
 
-	count = ldb_search(samdb->ldb, basedn->dn, scope, r->filter, attrs, &res);
+	count = ldb_search(samdb, basedn->dn, scope, r->filter, attrs, &res);
 	talloc_steal(samdb, res);
 
 	if (count < 1) {
@@ -591,11 +591,11 @@ reply:
 		} else if (count == 0) {
 			DEBUG(10,("hldb_Search: no results\n"));
 			result = LDAP_NO_SUCH_OBJECT;
-			errstr = ldb_errstring(samdb->ldb);
+			errstr = ldb_errstring(samdb);
 		} else if (count == -1) {
 			DEBUG(10,("hldb_Search: error\n"));
 			result = LDAP_OTHER;
-			errstr = ldb_errstring(samdb->ldb);
+			errstr = ldb_errstring(samdb);
 		}
 	}
 
@@ -619,7 +619,7 @@ static NTSTATUS hldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	struct ldap_Result *add_result;
 	struct ldapsrv_reply *add_reply;
 	int ldb_ret;
-	struct ldb_wrap *samdb;
+	struct ldb_context *samdb;
 	struct ldb_message *msg = NULL;
 	int result = LDAP_SUCCESS;
 	const char *errstr = NULL;
@@ -686,7 +686,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(add_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_add(samdb->ldb, msg);
+		ldb_ret = ldb_add(samdb, msg);
 		if (ldb_ret == 0) {
 			DEBUG(0,("hldb_Add: added: '%s'\n", msg->dn));
 			result = LDAP_SUCCESS;
@@ -696,7 +696,7 @@ reply:
 		 	 * or if the object was not found, return the most probable error
 		 	 */
 			result = LDAP_OPERATIONS_ERROR;
-			errstr = ldb_errstring(samdb->ldb);
+			errstr = ldb_errstring(samdb);
 		}
 	}
 
@@ -719,7 +719,7 @@ static NTSTATUS hldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	struct ldap_Result *del_result;
 	struct ldapsrv_reply *del_reply;
 	int ldb_ret;
-	struct ldb_wrap *samdb;
+	struct ldb_context *samdb;
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 
@@ -739,7 +739,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(del_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_delete(samdb->ldb, dn->dn);
+		ldb_ret = ldb_delete(samdb, dn->dn);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
 			errstr = NULL;
@@ -748,7 +748,7 @@ reply:
 			 * or if the object was not found, return the most probable error
 			 */
 			result = LDAP_NO_SUCH_OBJECT;
-			errstr = ldb_errstring(samdb->ldb);
+			errstr = ldb_errstring(samdb);
 		}
 	}
 
@@ -771,7 +771,7 @@ static NTSTATUS hldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	struct ldap_Result *modify_result;
 	struct ldapsrv_reply *modify_reply;
 	int ldb_ret;
-	struct ldb_wrap *samdb;
+	struct ldb_context *samdb;
 	struct ldb_message *msg = NULL;
 	int result = LDAP_SUCCESS;
 	const char *errstr = NULL;
@@ -849,7 +849,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(modify_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_modify(samdb->ldb, msg);
+		ldb_ret = ldb_modify(samdb, msg);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
 			errstr = NULL;
@@ -859,7 +859,7 @@ reply:
 		 	 */
 		 		result = LDAP_ATTRIBUTE_OR_VALUE_EXISTS;
 			result = LDAP_OPERATIONS_ERROR;
-			errstr = ldb_errstring(samdb->ldb);
+			errstr = ldb_errstring(samdb);
 			if (strcmp("Type or value exists", errstr) ==0){
 				result = LDAP_ATTRIBUTE_OR_VALUE_EXISTS;
 			}
@@ -886,7 +886,7 @@ static NTSTATUS hldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	struct ldap_Result *compare;
 	struct ldapsrv_reply *compare_r;
 	int result = LDAP_SUCCESS;
-	struct ldb_wrap *samdb;
+	struct ldb_context *samdb;
 	struct ldb_message **res = NULL;
 	const char *attrs[1];
 	const char *errstr = NULL;
@@ -915,7 +915,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(compare_r);
 
 	if (result == LDAP_SUCCESS) {
-		count = ldb_search(samdb->ldb, dn->dn, LDB_SCOPE_BASE, filter, attrs, &res);
+		count = ldb_search(samdb, dn->dn, LDB_SCOPE_BASE, filter, attrs, &res);
 		talloc_steal(samdb, res);
 		if (count == 1) {
 			DEBUG(10,("hldb_Compare: matched\n"));
@@ -931,7 +931,7 @@ reply:
 			DEBUG(10,("hldb_Compare: %d results: %s\n", count, errstr));
 		} else if (count == -1) {
 			result = LDAP_OTHER;
-			errstr = ldb_errstring(samdb->ldb);
+			errstr = ldb_errstring(samdb);
 			DEBUG(10,("hldb_Compare: error: %s\n", errstr));
 		}
 	}
@@ -954,7 +954,7 @@ static NTSTATUS hldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsr
 	struct ldap_Result *modifydn;
 	struct ldapsrv_reply *modifydn_r;
 	int ldb_ret;
-	struct ldb_wrap *samdb;
+	struct ldb_context *samdb;
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 	const char *newdn = NULL;
@@ -1020,7 +1020,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(modifydn_r);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_rename(samdb->ldb, olddn->dn, newdn);
+		ldb_ret = ldb_rename(samdb, olddn->dn, newdn);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
 			errstr = NULL;
@@ -1029,7 +1029,7 @@ reply:
 			 * or if the object was not found, return the most probable error
 			 */
 			result = LDAP_NO_SUCH_OBJECT;
-			errstr = ldb_errstring(samdb->ldb);
+			errstr = ldb_errstring(samdb);
 		}
 	}
 

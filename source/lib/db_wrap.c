@@ -33,6 +33,13 @@
 #include "lib/ldb/include/ldb.h"
 #include "db_wrap.h"
 
+struct ldb_wrap {
+	struct ldb_context *ldb;
+
+	const char *url;
+	struct ldb_wrap *next, *prev;
+};
+
 static struct ldb_wrap *ldb_list;
 static struct tdb_wrap *tdb_list;
 
@@ -55,53 +62,52 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 	free(s);
 }
 
-
 /* destroy the last connection to a ldb */
 static int ldb_wrap_destructor(void *ctx)
 {
 	struct ldb_wrap *w = ctx;
-	ldb_close(w->ldb);
 	DLIST_REMOVE(ldb_list, w);
 	return 0;
 }				 
 
 /*
   wrapped connection to a ldb database
-  to close just talloc_free() the ldb_wrap pointer
+  to close just talloc_free() the returned ldb_context
  */
-struct ldb_wrap *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
+struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 				  const char *url,
 				  unsigned int flags,
 				  const char *options[])
 {
+	struct ldb_context *ldb;
 	struct ldb_wrap *w;
 
-	for (w=ldb_list;w;w=w->next) {
+	for (w = ldb_list; w; w = w->next) {
 		if (strcmp(url, w->url) == 0) {
-			return talloc_reference(mem_ctx, w);
+			return talloc_reference(mem_ctx, w->ldb);
 		}
 	}
 
-	w = talloc(mem_ctx, struct ldb_wrap);
-	if (w == NULL) {
+	ldb = ldb_connect(url, flags, options);
+	if (ldb == NULL) {
 		return NULL;
 	}
 
+	w = talloc(ldb, struct ldb_wrap);
+	if (w == NULL) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	w->ldb = ldb;
 	w->url = talloc_strdup(w, url);
 
-	w->ldb = ldb_connect(url, flags, options);
-	if (w->ldb == NULL) {
-		talloc_free(w);
-		return NULL;
-	}
-	talloc_steal(w, w->ldb);
-
 	talloc_set_destructor(w, ldb_wrap_destructor);
-	ldb_set_debug(w->ldb, ldb_wrap_debug, NULL);
+	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
 
 	DLIST_ADD(ldb_list, w);
 
-	return w;
+	return ldb;
 }
 
 

@@ -780,16 +780,6 @@ failed:
 	return -1;
 }
 
-/*
-  close database
-*/
-static int ltdb_close(struct ldb_module *module)
-{
-	struct ldb_context *ldb = module->ldb;
-	talloc_free(ldb);
-	return 0;
-}
-		      
 
 /*
   return extended error information
@@ -806,7 +796,6 @@ static const char *ltdb_errstring(struct ldb_module *module)
 
 static const struct ldb_module_ops ltdb_ops = {
 	"tdb",
-	ltdb_close, 
 	ltdb_search,
 	ltdb_search_free,
 	ltdb_add,

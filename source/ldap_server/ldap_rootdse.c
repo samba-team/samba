@@ -59,7 +59,7 @@ static void rootdse_db_debug(void *context, enum ldb_debug_level level, const ch
 static int rootdse_db_destructor(void *ctx)
 {
 	struct rootdse_db_context *rd_ctx = ctx;
-	ldb_close(rd_ctx->ldb);
+	talloc_free(rd_ctx->ldb);
 	*(rd_ctx->static_ptr) = NULL;
 	return 0;
 }				 

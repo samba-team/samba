@@ -20,13 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct ldb_wrap {
-	struct ldb_context *ldb;
-
-	const char *url;
-	struct ldb_wrap *next, *prev;
-};
-
 
 struct tdb_wrap {
 	struct tdb_context *tdb;

@@ -434,6 +434,6 @@ static void usage(void)
 		}
 	}
 
-	ldb_close(ldb);
+	talloc_free(ldb);
 	return 0;
 }

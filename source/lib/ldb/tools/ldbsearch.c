@@ -176,6 +176,6 @@ static int do_search(struct ldb_context *ldb,
 		ret = do_search(ldb, basedn, scope, argv[0], attrs);
 	}
 
-	ldb_close(ldb);
+	talloc_free(ldb);
 	return ret;
 }

@@ -68,16 +68,6 @@ static const char *lldb_option_find(const struct lldb_private *lldb, const char 
 #endif
 
 /*
-  close/free the connection
-*/
-static int lldb_close(struct ldb_module *module)
-{
-	struct ldb_context *ldb = module->ldb;
-	talloc_free(ldb);
-	return 0;
-}
-
-/*
   rename a record
 */
 static int lldb_rename(struct ldb_module *module, const char *olddn, const char *newdn)
@@ -468,7 +458,6 @@ static const char *lldb_errstring(struct ldb_module *module)
 
 static const struct ldb_module_ops lldb_ops = {
 	"ldap",
-	lldb_close, 
 	lldb_search,
 	lldb_search_free,
 	lldb_add,

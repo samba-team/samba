@@ -64,8 +64,6 @@ formatted input
 
 dit(bf(ldb_connect(3))) connect to a ldb backend
 
-dit(bf(ldb_close(3))) close a connection to a ldb backend
-
 dit(bf(ldb_search(3))) perform a database search
 
 dit(bf(ldb_search_free(3))) free the results of a ldb_search

@@ -41,12 +41,6 @@ struct private_data {
 	const char *error_string;
 };
 
-static int timestamps_close(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_close\n");
-	return ldb_next_close(module);
-}
-
 static int timestamps_search(struct ldb_module *module, const char *base,
 				  enum ldb_scope scope, const char *expression,
 				  const char * const *attrs, struct ldb_message ***res)
@@ -106,40 +100,42 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_add_record\n");
 
-	if (msg->dn[0] != '@') { /* do not manipulate our control entries */
-		timeval = time(NULL);
-	 	tm = gmtime(&timeval);
-		if (!tm) {
-			return -1;
-		}
-
-		msg2 = talloc(module, struct ldb_message);
-		if (!msg2) {
-			return -1;
-		}
-
-		/* formatted like: 20040408072012.0Z */
-		timestr = talloc_asprintf(msg2, "%04u%02u%02u%02u%02u%02u.0Z",
-					  tm->tm_year+1900, tm->tm_mon+1,
-					  tm->tm_mday, tm->tm_hour, tm->tm_min,
-					  tm->tm_sec);
-		if (!timestr) {
-			return -1;
-		}
-
-		msg2->dn = msg->dn;
-		msg2->num_elements = msg->num_elements;
-		msg2->private_data = msg->private_data;
-		msg2->elements = talloc_array(msg2, struct ldb_message_element, msg2->num_elements);
-		for (i = 0; i < msg2->num_elements; i++) {
-			msg2->elements[i] = msg->elements[i];
-		}
-
-		add_time_element(module, msg2, "createTimestamp", timestr, LDB_FLAG_MOD_ADD);
-		add_time_element(module, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_ADD);
-		add_time_element(module, msg2, "whenCreated", timestr, LDB_FLAG_MOD_ADD);
-		add_time_element(module, msg2, "whenChanged", timestr, LDB_FLAG_MOD_ADD);
+	if (msg->dn[0] == '@') { /* do not manipulate our control entries */
+		return ldb_next_add_record(module, msg);
 	}
+
+	timeval = time(NULL);
+ 	tm = gmtime(&timeval);
+	if (!tm) {
+		return -1;
+	}
+
+	msg2 = talloc(module, struct ldb_message);
+	if (!msg2) {
+		return -1;
+	}
+
+	/* formatted like: 20040408072012.0Z */
+	timestr = talloc_asprintf(msg2, "%04u%02u%02u%02u%02u%02u.0Z",
+				  tm->tm_year+1900, tm->tm_mon+1,
+				  tm->tm_mday, tm->tm_hour, tm->tm_min,
+				  tm->tm_sec);
+	if (!timestr) {
+		return -1;
+	}
+
+	msg2->dn = msg->dn;
+	msg2->num_elements = msg->num_elements;
+	msg2->private_data = msg->private_data;
+	msg2->elements = talloc_array(msg2, struct ldb_message_element, msg2->num_elements);
+	for (i = 0; i < msg2->num_elements; i++) {
+		msg2->elements[i] = msg->elements[i];
+	}
+
+	add_time_element(module, msg2, "createTimestamp", timestr, LDB_FLAG_MOD_ADD);
+	add_time_element(module, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_ADD);
+	add_time_element(module, msg2, "whenCreated", timestr, LDB_FLAG_MOD_ADD);
+	add_time_element(module, msg2, "whenChanged", timestr, LDB_FLAG_MOD_ADD);
 
 	if (msg2) {
 		ret = ldb_next_add_record(module, msg2);
@@ -162,39 +158,41 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_modify_record\n");
 
-	if (msg->dn[0] != '@') { /* do not manipulate our control entries */
-		timeval = time(NULL);
- 		tm = gmtime(&timeval);
-		if (!tm) {
-			return -1;
-		}
-
-		msg2 = talloc(module, struct ldb_message);
-		if (!msg2) {
-			return -1;
-		}
-
-		/* formatted like: 20040408072012.0Z */
-		timestr = talloc_asprintf(msg2, 
-					"%04u%02u%02u%02u%02u%02u.0Z",
-					tm->tm_year+1900, tm->tm_mon+1,
-					tm->tm_mday, tm->tm_hour, tm->tm_min,
-					tm->tm_sec);
-		if (!timestr) {
-			return -1;
-		}
-
-		msg2->dn = msg->dn;
-		msg2->num_elements = msg->num_elements;
-		msg2->private_data = msg->private_data;
-		msg2->elements = talloc_array(msg2, struct ldb_message_element, msg2->num_elements);
-		for (i = 0; i < msg2->num_elements; i++) {
-			msg2->elements[i] = msg->elements[i];
-		}
-
-		add_time_element(module, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_REPLACE);
-		add_time_element(module, msg2, "whenChanged", timestr, LDB_FLAG_MOD_REPLACE);
+	if (msg->dn[0] == '@') { /* do not manipulate our control entries */
+		return ldb_next_modify_record(module, msg);
 	}
+
+	timeval = time(NULL);
+ 	tm = gmtime(&timeval);
+	if (!tm) {
+		return -1;
+	}
+
+	msg2 = talloc(module, struct ldb_message);
+	if (!msg2) {
+		return -1;
+	}
+
+	/* formatted like: 20040408072012.0Z */
+	timestr = talloc_asprintf(msg2, 
+				"%04u%02u%02u%02u%02u%02u.0Z",
+				tm->tm_year+1900, tm->tm_mon+1,
+				tm->tm_mday, tm->tm_hour, tm->tm_min,
+				tm->tm_sec);
+	if (!timestr) {
+		return -1;
+	}
+
+	msg2->dn = msg->dn;
+	msg2->num_elements = msg->num_elements;
+	msg2->private_data = msg->private_data;
+	msg2->elements = talloc_array(msg2, struct ldb_message_element, msg2->num_elements);
+	for (i = 0; i < msg2->num_elements; i++) {
+		msg2->elements[i] = msg->elements[i];
+	}
+
+	add_time_element(module, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_REPLACE);
+	add_time_element(module, msg2, "whenChanged", timestr, LDB_FLAG_MOD_REPLACE);
 
 	if (msg2) {
 		ret = ldb_next_modify_record(module, msg2);
@@ -247,9 +245,15 @@ static const char *timestamps_errstring(struct ldb_module *module)
 	return ldb_next_errstring(module);
 }
 
+static int timestamps_destructor(void *module_ctx)
+{
+	struct ldb_module *ctx = module_ctx;
+	/* put your clean-up functions here */
+	return 0;
+}
+
 static const struct ldb_module_ops timestamps_ops = {
 	"timestamps",
-	timestamps_close, 
 	timestamps_search,
 	timestamps_search_free,
 	timestamps_add_record,
@@ -287,6 +291,8 @@ struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *o
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &timestamps_ops;
+
+	talloc_set_destructor (ctx, timestamps_destructor);
 
 	return ctx;
 }

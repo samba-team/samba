@@ -159,12 +159,6 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
 				const char *options[]);
 
 /*
-  close the connection to the database
-*/
-int ldb_close(struct ldb_context *ldb);
-
-
-/*
   search the database given a LDAP-like search expression
 
   return the number of records found, or -1 on error

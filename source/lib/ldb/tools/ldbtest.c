@@ -323,8 +323,8 @@ static void start_test_index(struct ldb_context **ldb)
 		exit(1);
 	}
 
-	if (ldb_close(*ldb) != 0) {
-		printf("ldb_close failed - %s\n", ldb_errstring(*ldb));
+	if (talloc_free(*ldb) != 0) {
+		printf("failed to free/close ldb database");
 		exit(1);
 	}
 
@@ -427,7 +427,7 @@ static void usage(void)
 
 	start_test_index(&ldb);
 
-	ldb_close(ldb);
+	talloc_free(ldb);
 
 	return 0;
 }

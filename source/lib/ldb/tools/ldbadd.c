@@ -153,7 +153,7 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 		}
 	}
 
-	ldb_close(ldb);
+	talloc_free(ldb);
 
 	printf("Added %d records with %d failures\n", count, failures);
 	
