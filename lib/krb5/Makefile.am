@@ -67,6 +67,7 @@ libkrb5_a_SOURCES = \
 	send_to_kdc.c \
 	sendauth.c \
 	set_default_realm.c \
+	sock_principal.c \
 	store.c \
 	store_emem.c \
 	store_fd.c \
