@@ -920,7 +920,7 @@ sub ParseElementPushBuffer($$)
 			ParseSwitchPush($e, $ndr, $var_prefix, $ndr_flags, $switch);
 		}
 
-		pidl "NDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
+		pidl "NDR_CHECK(ndr_push_$e->{TYPE}($ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
 
 	if (defined $sub_size) {
