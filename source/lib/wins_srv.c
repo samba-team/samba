@@ -167,7 +167,7 @@ BOOL wins_srv_load_list( char *src )
     }
 
   count = ubi_slCount( wins_srv_list );
-  DEBUGADD( 4, ( "%d WINS server%s listed.\n", count, (1==count)?"":"s" ) );
+  DEBUGADD( 4, ( "%d WINS server%s listed.\n", (int)count, (1==count)?"":"s" ) );
 
   return( (count > 0) ? True : False );
   } /* wins_srv_load_list */
