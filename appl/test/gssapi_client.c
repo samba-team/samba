@@ -145,7 +145,7 @@ proto (int sock, const char *hostname, const char *service)
 				 &context_hdl,
 				 server,
 				 GSS_C_NO_OID,
-				 GSS_C_MUTUAL_FLAG | GSS_C_SEQUENCE_FLAG,
+				 GSS_C_MUTUAL_FLAG | GSS_C_SEQUENCE_FLAG
 				 | GSS_C_DELEG_FLAG,
 				 0,
 				 &input_chan_bindings,
