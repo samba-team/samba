@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "registry.h"
 #include <gconf/gconf-client.h>
 
 static WERROR gerror_to_werror(GError *error)
