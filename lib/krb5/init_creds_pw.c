@@ -438,7 +438,7 @@ change_password (krb5_context context,
     asprintf (&p, "%s: %.*s\n",
 	      result_code ? "Error" : "Success",
 	      (int)result_string.length,
-	      (char*)result_string.data);
+	      result_string.length > 0 ? (char*)result_string.data : "");
 
     ret = (*prompter) (context, data, NULL, p, 0, NULL);
     free (p);
