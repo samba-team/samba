@@ -9,13 +9,7 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_dropinfo.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <errno.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include "popper.h"
+#include <popper.h>
 
 extern int      errno;
 
@@ -24,8 +18,8 @@ extern int      errno;
  *  it for use by the other POP routines.
  */
 
-pop_dropinfo(p)
-POP     *   p;
+int
+pop_dropinfo(POP *p)
 {
     char                    buffer[BUFSIZ];         /*  Read buffer */
     MsgInfoList         *   mp;                     /*  Pointer to message 

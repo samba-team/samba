@@ -9,10 +9,7 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_get_command.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <string.h>
-#include "popper.h"
+#include <popper.h>
 
 /* 
  *  get_command:    Extract the command from an input line form a POP client
@@ -39,10 +36,8 @@ static state_table states[] = {
         (state) 0,  NULL,   0,  0,  NULL,       {halt,  halt},
 };
 
-state_table *pop_get_command(p,mp)
-POP             *   p;
-register char   *   mp;         /*  Pointer to unparsed line 
-                                    received from the client */
+state_table *
+pop_get_command(POP *p, char *mp)
 {
     state_table     *   s;
     char                buf[MAXMSGLINELEN];
@@ -76,14 +71,20 @@ register char   *   mp;         /*  Pointer to unparsed line
              && s->ValidCurrentState == p->CurrentState) {
 
             /*  Were too few parameters passed to the command? */
-            if (p->parm_count < s->min_parms)
-                return((state_table *)pop_msg(p,POP_FAILURE,
-                    "Too few arguments for the %s command.",p->pop_command));
+            if (p->parm_count < s->min_parms) {
+                pop_msg(p,POP_FAILURE,
+			"Too few arguments for the %s command.",
+			p->pop_command);
+		return NULL;
+	    }
 
             /*  Were too many parameters passed to the command? */
-            if (p->parm_count > s->max_parms)
-                return((state_table *)pop_msg(p,POP_FAILURE,
-                    "Too many arguments for the %s command.",p->pop_command));
+            if (p->parm_count > s->max_parms) {
+                pop_msg(p,POP_FAILURE,
+			"Too many arguments for the %s command.",
+			p->pop_command);
+		return NULL;
+	   }
 
             /*  Return a pointer to the entry for this command in 
                 the command/state table */
@@ -91,6 +92,7 @@ register char   *   mp;         /*  Pointer to unparsed line
         }
     }
     /*  The client command was not located in the command/state table */
-    return((state_table *)pop_msg(p,POP_FAILURE,
-        "Unknown command: \"%s\".",p->pop_command));
+    pop_msg(p,POP_FAILURE,
+	    "Unknown command: \"%s\".",p->pop_command);
+    return NULL;
 }

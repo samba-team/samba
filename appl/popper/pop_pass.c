@@ -9,14 +9,9 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_pass.c	2.3  2.3 4/2/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <string.h>
-#include <pwd.h>
-#include "popper.h"
+#include <popper.h>
 
 #ifdef KERBEROS
-#include <krb.h>
 extern AUTH_DAT kdata;
 #endif /* KERBEROS */
 
@@ -24,16 +19,21 @@ extern AUTH_DAT kdata;
  *  pass:   Obtain the user password from a POP client
  */
 
-int pop_pass (p)
-POP     *   p;
+int
+pop_pass (POP *p)
 {
+    struct passwd  *   pw;
 #ifdef KERBEROS
     char lrealm[REALM_SZ];
     int status; 
 #else
-    register struct passwd  *   pw;
     char *crypt();
 #endif /* KERBEROS */
+
+    /*  Look for the user in the password file */
+    if ((pw = getpwnam(p->user)) == NULL)
+        return (pop_msg(p,POP_FAILURE,
+            "Password supplied for \"%s\" is incorrect.",p->user));
 
 #ifdef KERBEROS
     if ((status = krb_get_lrealm(lrealm,1)) == KFAILURE) {
@@ -43,6 +43,16 @@ POP     *   p;
             "Kerberos error:  \"%s\".", krb_get_err_text(status)));
     }
 
+    if (kuserok (&kdata, p->user)) {
+	 pop_log(p, POP_FAILURE,
+		 "%s: (%s.%s@%s) tried to retrieve mail for %s.",
+		 p->client, kdata.pname, kdata.pinst, kdata.prealm,
+		 p->user);
+	 return(pop_msg(p,POP_FAILURE,
+			"Popping not authorized"));
+    }
+
+#if 0
     if (strcmp(kdata.prealm,lrealm))  {
          pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) realm not accepted.", 
                  p->client, kdata.pname, kdata.pinst, kdata.prealm);
@@ -57,19 +67,9 @@ POP     *   p;
               "Must use null Kerberos(tm) instance -  \"%s.%s\" not accepted.",
               kdata.pname, kdata.pinst));
     }
-
-    /*  Build the name of the user's maildrop */
-    (void)sprintf(p->drop_name,"%s/%s",POP_MAILDIR,p->user);
-    
-    /*  Make a temporary copy of the user's maildrop */
-    if (pop_dropcopy(p, 0) != POP_SUCCESS) return (POP_FAILURE);
+#endif
 
 #else /* !KERBEROS */
-
-    /*  Look for the user in the password file */
-    if ((pw = getpwnam(p->user)) == NULL)
-        return (pop_msg(p,POP_FAILURE,
-            "Password supplied for \"%s\" is incorrect.",p->user));
 
     /*  We don't accept connections from users with null passwords */
     if (pw->pw_passwd == NULL)
@@ -81,14 +81,14 @@ POP     *   p;
         return (pop_msg(p,POP_FAILURE,
             "Password supplied for \"%s\" is incorrect.",p->user));
 
+#endif /* !KERBEROS */
+
     /*  Build the name of the user's maildrop */
     (void)sprintf(p->drop_name,"%s/%s",POP_MAILDIR,p->user);
 
     /*  Make a temporary copy of the user's maildrop */
     /*    and set the group and user id */
     if (pop_dropcopy(p,pw) != POP_SUCCESS) return (POP_FAILURE);
-
-#endif /* !KERBEROS */
 
     /*  Get information about the maildrop */
     if (pop_dropinfo(p) != POP_SUCCESS) return(POP_FAILURE);

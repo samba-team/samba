@@ -9,16 +9,14 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_lower.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <ctype.h>
+#include <popper.h>
 
 /* 
  *  lower:  Convert a string to lowercase
  */
 
-pop_lower (buf)
-char        *   buf;
+void
+pop_lower (char *buf)
 {
     char        *   mp;
 

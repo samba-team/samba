@@ -21,10 +21,34 @@
 #define RETURN_PATH_HANDLING
 #endif
 
-#define KERBEROS
+/* Common include files */
 
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <ctype.h>
+#include <fcntl.h>
+#include <pwd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/file.h>
+#include <sys/time.h>
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+#include <sys/wait.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 #include <syslog.h>
 #include "version.h"
+
+#define KERBEROS
 
 #ifdef KERBEROS
 #include <krb.h>
@@ -69,7 +93,9 @@
 #include <maillock.h>
 #endif
 
-#if defined(_PATH_MAILDIR)
+#if defined(KRB4_MAILDIR)
+#define POP_MAILDIR	KRB4_MAILDIR
+#elif defined(_PATH_MAILDIR)
 #define POP_MAILDIR     _PATH_MAILDIR
 #elif defined(MAILDIR)
 #define POP_MAILDIR	MAILDIR

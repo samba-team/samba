@@ -9,16 +9,14 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_list.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include "popper.h"
+#include <popper.h>
 
 /* 
  *  list:   List the contents of a POP maildrop
  */
 
-int pop_list (p)
-POP     *   p;
+int
+pop_list (POP *p)
 {
     MsgInfoList         *   mp;         /*  Pointer to message info list */
     register int            i;

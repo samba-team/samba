@@ -9,18 +9,40 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_send.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <string.h>
-#include "popper.h"
+#include <popper.h>
+
+/*
+ *  sendline:   Send a line of a multi-line response to a client.
+ */
+void
+pop_sendline(POP *p, char *buffer)
+{
+    char        *   bp;
+
+    /*  Byte stuff lines that begin with the temirnation octet */
+    if (*buffer == POP_TERMINATE) (void)fputc(POP_TERMINATE,p->output);
+
+    /*  Look for a <NL> in the buffer */
+    if (bp = strchr(buffer,NEWLINE)) *bp = 0;
+
+    /*  Send the line to the client */
+    (void)fputs(buffer,p->output);
+
+#ifdef DEBUG
+    if(p->debug)pop_log(p,POP_DEBUG,"Sending line \"%s\"",buffer);
+#endif /* DEBUG */
+
+    /*  Put a <CR><NL> if a newline was removed from the buffer */
+    if (bp) (void)fputs ("\r\n",p->output);
+}
 
 /* 
  *  send:   Send the header and a specified number of lines 
  *          from a mail message to a POP client.
  */
 
-pop_send(p)
-POP     *   p;
+int
+pop_send(POP *p)
 {
     MsgInfoList         *   mp;         /*  Pointer to message info list */
     register int            msg_num;
@@ -127,30 +149,4 @@ POP     *   p;
     (void)fflush(p->output);
 
     return(POP_SUCCESS);
-}
-
-/*
- *  sendline:   Send a line of a multi-line response to a client.
- */
-pop_sendline(p,buffer)
-POP         *   p;
-char        *   buffer;
-{
-    char        *   bp;
-
-    /*  Byte stuff lines that begin with the temirnation octet */
-    if (*buffer == POP_TERMINATE) (void)fputc(POP_TERMINATE,p->output);
-
-    /*  Look for a <NL> in the buffer */
-    if (bp = strchr(buffer,NEWLINE)) *bp = 0;
-
-    /*  Send the line to the client */
-    (void)fputs(buffer,p->output);
-
-#ifdef DEBUG
-    if(p->debug)pop_log(p,POP_DEBUG,"Sending line \"%s\"",buffer);
-#endif /* DEBUG */
-
-    /*  Put a <CR><NL> if a newline was removed from the buffer */
-    if (bp) (void)fputs ("\r\n",p->output);
 }

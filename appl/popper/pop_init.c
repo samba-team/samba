@@ -9,18 +9,9 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_init.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <errno.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include "popper.h"
+#include <popper.h>
 
 #ifdef KERBEROS
-#include <krb.h>
-    
 AUTH_DAT kdata;
 #endif /* KERBEROS */
 
@@ -34,10 +25,8 @@ extern int      errno;
  *  init:   Start a Post Office Protocol session
  */
 
-pop_init(p,argcount,argmessage)
-POP     *       p;
-int             argcount;
-char    **      argmessage;
+int
+pop_init(POP *p,int argcount,char **argmessage)
 {
 
     struct sockaddr_in      cs;                 /*  Communication parameters */
@@ -202,9 +191,8 @@ char    **      argmessage;
     return(authenticate(p, &cs));
 }
 
-authenticate(p, addr)
-     POP     *p;
-     struct sockaddr_in *addr;
+int
+authenticate(POP *p, struct sockaddr_in *addr)
 {
 
 #ifdef KERBEROS
@@ -231,8 +219,6 @@ authenticate(p, addr)
     pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", kdata.pname, 
             kdata.pinst, kdata.prealm, inet_ntoa(addr->sin_addr));
 #endif /* DEBUG */
-
-    strcpy(p->user, kdata.pname);
 
 #endif /* KERBEROS */
 

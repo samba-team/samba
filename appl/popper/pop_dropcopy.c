@@ -9,16 +9,7 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_dropcopy.c	2.6  2.6 4/3/91";
 #endif /* not lint */
 
-#include <errno.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <pwd.h>
-#include "popper.h"
+#include <popper.h>
 
 extern int      errno;
 
@@ -27,9 +18,8 @@ extern int      errno;
  *  save a stream pointer for it.
  */
 
-pop_dropcopy(p,pwp)
-POP     *   p;
-struct passwd	*	pwp;
+int
+pop_dropcopy(POP *p, struct passwd *pwp)
 {
     int                     mfd;                    /*  File descriptor for 
                                                         the user's maildrop */

@@ -9,11 +9,7 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_msg.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <string.h>
-#include <stdarg.h>
-#include "popper.h"
+#include <popper.h>
 
 /* 
  *  msg:    Send a formatted line to the POP client

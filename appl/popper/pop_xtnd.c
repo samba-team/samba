@@ -9,9 +9,7 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_xtnd.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include "popper.h"
+#include <popper.h>
 
 /* 
  *  xtnd:   Handle extensions to the POP protocol suite
@@ -19,8 +17,8 @@ static char SccsId[] = "@(#)@(#)pop_xtnd.c	2.1  2.1 3/18/91";
 
 extern  xtnd_table  *   pop_get_subcommand();
 
-int pop_xtnd (p)
-POP     *   p;
+int
+pop_xtnd (POP *p)
 {
     xtnd_table  *   x;
 

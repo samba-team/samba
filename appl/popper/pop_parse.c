@@ -9,20 +9,15 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_parse.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <ctype.h>
-#include "popper.h"
+#include <popper.h>
 
 /* 
  *  parse:  Parse a raw input line from a POP client 
  *  into null-delimited tokens
  */
 
-pop_parse(p,buf)
-POP         *   p;
-char        *   buf;        /*  Pointer to a message containing 
-                                the line from the client */
+int
+pop_parse(POP *p, char *buf)
 {
     char            *   mp;
     register int        i;

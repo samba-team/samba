@@ -9,15 +9,7 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_updt.c	2.3  2.3 3/20/91";
 #endif /* not lint */
 
-#include <errno.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include "popper.h"
+#include <popper.h>
 
 extern int      errno;
 
@@ -28,8 +20,8 @@ static char standard_error[] =
  *  updt:   Apply changes to a user's POP maildrop
  */
 
-int pop_updt (p)
-POP     *   p;
+int
+pop_updt (POP *p)
 {
     FILE                *   md;                     /*  Stream pointer for 
                                                         the user's maildrop */

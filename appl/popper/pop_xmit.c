@@ -9,27 +9,15 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_xmit.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif /* HAVE_CONFIG_H */
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <sys/time.h>
-#ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif /* HAVE_SYS_RESOURCE_H */
-#include <sys/wait.h>
-#include <fcntl.h>
-#include "popper.h"
+#include <popper.h>
 
 /*
  *  xmit:   POP XTND function to receive a message from 
  *          a client and send it in the mail
  */
 
-pop_xmit (p)
-POP     *   p;
+int
+pop_xmit (POP *p)
 {
     FILE                *   tmp;                    /*  File descriptor for 
                                                         temporary file */

@@ -9,10 +9,7 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_get_subcommand.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <string.h>
-#include "popper.h"
+#include <popper.h>
 
 /* 
  *  get_subcommand: Extract a POP XTND subcommand from a client input line
@@ -23,8 +20,8 @@ static xtnd_table subcommands[] = {
         NULL
 };
 
-xtnd_table *pop_get_subcommand(p)
-POP     *   p;
+xtnd_table *
+pop_get_subcommand(POP *p)
 {
     xtnd_table      *   s;
 
@@ -34,16 +31,20 @@ POP     *   p;
         if (strcmp(s->subcommand,p->pop_subcommand) == 0) {
 
             /*  Were too few parameters passed to the subcommand? */
-            if ((p->parm_count-1) < s->min_parms)
-                return((xtnd_table *)pop_msg(p,POP_FAILURE,
-                    "Too few arguments for the %s %s command.",
-                        p->pop_command,p->pop_subcommand));
+            if ((p->parm_count-1) < s->min_parms) {
+		 pop_msg(p,POP_FAILURE,
+			 "Too few arguments for the %s %s command.",
+			 p->pop_command,p->pop_subcommand);
+		 return NULL;
+	    }
 
             /*  Were too many parameters passed to the subcommand? */
-            if ((p->parm_count-1) > s->max_parms)
-                return((xtnd_table *)pop_msg(p,POP_FAILURE,
-                    "Too many arguments for the %s %s command.",
-                        p->pop_command,p->pop_subcommand));
+            if ((p->parm_count-1) > s->max_parms) {
+                pop_msg(p,POP_FAILURE,
+			"Too many arguments for the %s %s command.",
+                        p->pop_command,p->pop_subcommand);
+		return NULL;
+	    }
 
             /*  Return a pointer to the entry for this subcommand 
                 in the XTND command table */
@@ -51,6 +52,7 @@ POP     *   p;
         }
     }
     /*  The client subcommand was not located in the XTND command table */
-    return((xtnd_table *)pop_msg(p,POP_FAILURE,
-        "Unknown command: \"%s %s\".",p->pop_command,p->pop_subcommand));
+    pop_msg(p,POP_FAILURE,
+	    "Unknown command: \"%s %s\".",p->pop_command,p->pop_subcommand);
+    return NULL;
 }

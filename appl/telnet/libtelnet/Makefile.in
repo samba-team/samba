@@ -24,7 +24,6 @@ SOURCES=auth.c encrypt.c genget.c \
 	getent.c herror.c memmove.c setenv.c strcasecmp.c \
 	strchr.c strdup.c strerror.c strftime.c strrchr.c
 
-
 OBJECTS=auth.o encrypt.o genget.o enc_des.o misc.o kerberos.o read_password.o \
 	$(LIBOBJS)
 
@@ -35,7 +34,6 @@ libtop = @libtop@
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
 	@KRBINCPATH@ -I.. -I$(srcdir)/.. $<
-
 
 libtelnet.a: $(OBJECTS)
 	$(AR) cr libtelnet.a $(OBJECTS)

@@ -9,10 +9,7 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)pop_dele.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <ctype.h>
-#include "popper.h"
+#include <popper.h>
 
 /* 
  *  dele:   Delete a message from the POP maildrop

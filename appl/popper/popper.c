@@ -9,15 +9,7 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)popper.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif /* HAVE_CONFIG_H */
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <setjmp.h>
-#include "popper.h"
+#include <popper.h>
 
 extern  state_table *   pop_get_command();
 
@@ -64,9 +56,8 @@ tgets(char *str, int size, FILE *fp, int timeout)
 /* 
  *  popper: Handle a Post Office Protocol version 3 session
  */
-main (argc, argv)
-int         argc;
-char    **  argv;
+int
+main (int argc, char **argv)
 {
     POP                 p;
     state_table     *   s;
@@ -133,11 +124,8 @@ char    **  argv;
 /*
  *  Perform a case-insensitive string comparision
  */
-#include <ctype.h>
-strncasecmp(str1,str2,len)
-register char   *   str1;
-register char   *   str2;
-register int        len;
+int
+strncasecmp(char *str1, char *str2,int len)
 {
     register int    i;
     char            a,
