@@ -255,6 +255,9 @@ int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, i
 		len++;
 	}
 
+	/* ucs2 is always a multiple of 2 bytes */
+	dest_len &= ~1;
+
 	len += convert_string(&unix_to_ucs2, src, src_len, dest, dest_len);
 	return len;
 }
@@ -285,6 +288,9 @@ int pull_ucs2(const void *base_ptr, char *dest, const void *src, int dest_len, i
 
 	if (flags & STR_TERMINATE) src_len = strlen_w(src)*2+2;
 
+	/* ucs2 is always a multiple of 2 bytes */
+	src_len &= ~1;
+	
 	ret = convert_string(&ucs2_to_unix, src, src_len, dest, dest_len);
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
 
