@@ -42,8 +42,7 @@ ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, char *buf, off_t offset,
 	 * Set readsize to the maximum size we can handle in one readX,
 	 * rounded down to a multiple of 1024.
 	 */
-	readsize = (tree->session->transport->negotiate.max_xmit - 
-		    (MIN_SMB_SIZE+32)) & ~1023;
+	readsize = (tree->session->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32));
 	if (readsize > 0xFFFF) readsize = 0xFFFF;
 
 	while (total < size) {
@@ -87,7 +86,7 @@ ssize_t smbcli_write(struct smbcli_tree *tree,
 		     const uint8_t *buf, off_t offset, size_t size)
 {
 	union smb_write parms;
-	int block = (tree->session->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32)) & ~1023;
+	int block = (tree->session->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32));
 	ssize_t total = 0;
 
 	if (size == 0) {
