@@ -343,6 +343,7 @@ typedef struct {
   EncKDCRepPart part2;
 } krb5_kdc_rep;
 
+extern char *heimdal_version, *heimdal_long_version;
 
 typedef struct krb5_log_facility{
     int len;
