@@ -32,6 +32,9 @@
  *  Author: Andrew Tridgell
  */
 
+#ifndef _LDB_H_
+#define _LDB_H_ 1
+
 /*
   major restrictions as compared to normal LDAP:
 
@@ -46,7 +49,6 @@
 
 */
 
-
 /*
   an individual lump of data in a result comes in this format. The
   pointer will usually be to a UTF-8 string if the application is
@@ -57,6 +59,9 @@ struct ldb_val {
 	unsigned int length;
 	void *data;
 };
+
+#include "ldb_parse.h"
+
 
 /* these flags are used in ldd_message_element.flags fields. The
    LDA_FLAGS_MOD_* flags are used in ldap_modify() calls to specify
@@ -130,7 +135,23 @@ struct ldb_backend_ops {
 	int (*modify_record)(struct ldb_context *, const struct ldb_message *);
 	int (*delete_record)(struct ldb_context *, const char *);
 	const char * (*errstring)(struct ldb_context *);
+
+	/* this is called when the alloc ops changes to ensure we 
+	   don't have any old allocated data in the context */
+	void (*cache_free)(struct ldb_context *);
 };
+
+
+/*
+  the user can optionally supply a allocator function. It is presumed
+  it will act like a modern realloc(), with a context ptr to allow
+  for pool allocators
+*/
+struct ldb_alloc_ops {
+	void *(*alloc)(void *context, void *ptr, size_t size);
+	void *context;
+};
+
 
 /*
   every ldb connection is started by establishing a ldb_context
@@ -141,6 +162,9 @@ struct ldb_context {
 
 	/* the operations provided by the backend */
 	const struct ldb_backend_ops *ops;
+
+	/* memory allocation info */
+	struct ldb_alloc_ops alloc_ops;
 };
 
 
@@ -209,19 +233,21 @@ const char *ldb_errstring(struct ldb_context *ldb);
 /*
   casefold a string (should be UTF8, but at the moment it isn't)
 */
-char *ldb_casefold(const char *s);
+char *ldb_casefold(struct ldb_context *ldb, const char *s);
 
 /*
   ldif manipulation functions
 */
-int ldif_write(int (*fprintf_fn)(void *, const char *, ...), 
+int ldif_write(struct ldb_context *ldb,
+	       int (*fprintf_fn)(void *, const char *, ...), 
 	       void *private_data,
 	       const struct ldb_ldif *ldif);
-void ldif_read_free(struct ldb_ldif *);
-struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data);
-struct ldb_ldif *ldif_read_file(FILE *f);
-struct ldb_ldif *ldif_read_string(const char *s);
-int ldif_write_file(FILE *f, const struct ldb_ldif *msg);
+void ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *);
+struct ldb_ldif *ldif_read(struct ldb_context *ldb, 
+			   int (*fgetc_fn)(void *), void *private_data);
+struct ldb_ldif *ldif_read_file(struct ldb_context *ldb, FILE *f);
+struct ldb_ldif *ldif_read_string(struct ldb_context *ldb, const char *s);
+int ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *msg);
 
 
 /* useful functions for ldb_message structure manipulation */
@@ -238,10 +264,12 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 				 struct ldb_val *val);
 
 /* add a new empty element to a ldb_message */
-int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags);
+int ldb_msg_add_empty(struct ldb_context *ldb,
+		      struct ldb_message *msg, const char *attr_name, int flags);
 
 /* add a element to a ldb_message */
-int ldb_msg_add(struct ldb_message *msg, 
+int ldb_msg_add(struct ldb_context *ldb, 
+		struct ldb_message *msg, 
 		const struct ldb_message_element *el, 
 		int flags);
 
@@ -264,3 +292,26 @@ double ldb_msg_find_double(const struct ldb_message *msg,
 const char *ldb_msg_find_string(const struct ldb_message *msg, 
 				const char *attr_name,
 				const char *default_value);
+
+
+/*
+  this allows the user to choose their own allocation function
+  the allocation function should behave like a modern realloc() 
+  function, which means that:
+     malloc(size)       == alloc(context, NULL, size)
+     free(ptr)          == alloc(context, ptr, 0)
+     realloc(ptr, size) == alloc(context, ptr, size)
+  The context argument is provided to allow for pool based allocators,
+  which often take a context argument
+*/
+int ldb_set_alloc(struct ldb_context *ldb,
+		  void *(*alloc)(void *context, void *ptr, size_t size),
+		  void *context);
+
+
+/* these are used as type safe versions of the ldb allocation functions */
+#define ldb_malloc_p(ldb, type) (type *)ldb_malloc(ldb, sizeof(type))
+#define ldb_malloc_array_p(ldb, type, count) (type *)ldb_realloc_array(ldb, NULL, sizeof(type), count)
+#define ldb_realloc_p(ldb, p, type, count) (type *)ldb_realloc_array(ldb, p, sizeof(type), count)
+
+#endif

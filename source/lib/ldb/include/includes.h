@@ -18,11 +18,5 @@
 #include <sys/time.h>
 #include <time.h>
 #include "ldb.h"
-#include "ldb_parse.h"
-
-#define malloc_p(type) (type *)malloc(sizeof(type))
-#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
-#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
-
 #include "tdb/tdb.h"
 #include "proto.h"

@@ -50,24 +50,24 @@ static int ltdb_baseinfo_init(struct ldb_context *ldb)
 
 	msg.num_elements = 1;
 	msg.elements = &el;
-	msg.dn = strdup(LTDB_BASEINFO);
+	msg.dn = ldb_strdup(ldb, LTDB_BASEINFO);
 	if (!msg.dn) {
 		errno = ENOMEM;
 		return -1;
 	}
-	el.name = strdup(LTDB_SEQUENCE_NUMBER);
+	el.name = ldb_strdup(ldb, LTDB_SEQUENCE_NUMBER);
 	if (!el.name) {
-		free(msg.dn);
+		ldb_free(ldb, msg.dn);
 		errno = ENOMEM;
 		return -1;
 	}
 	el.values = &val;
 	el.num_values = 1;
 	el.flags = 0;
-	val.data = strdup("0");
+	val.data = ldb_strdup(ldb, "0");
 	if (!val.data) {
-		free(el.name);
-		free(msg.dn);
+		ldb_free(ldb, el.name);
+		ldb_free(ldb, msg.dn);
 		errno = ENOMEM;
 		return -1;
 	}
@@ -75,9 +75,9 @@ static int ltdb_baseinfo_init(struct ldb_context *ldb)
 	
 	ret = ltdb_store(ldb, &msg, TDB_INSERT);
 
-	free(msg.dn);
-	free(el.name);
-	free(val.data);
+	ldb_free(ldb, msg.dn);
+	ldb_free(ldb, el.name);
+	ldb_free(ldb, val.data);
 
 	return ret;
 }
@@ -88,6 +88,8 @@ static int ltdb_baseinfo_init(struct ldb_context *ldb)
 void ltdb_cache_free(struct ldb_context *ldb)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_alloc_ops alloc = ldb->alloc_ops;
+	ldb->alloc_ops.alloc = NULL;
 
 	ltdb->sequence_number = 0;
 	ltdb_search_dn1_free(ldb, &ltdb->cache.baseinfo);
@@ -95,8 +97,10 @@ void ltdb_cache_free(struct ldb_context *ldb)
 	ltdb_search_dn1_free(ldb, &ltdb->cache.subclasses);
 	ltdb_search_dn1_free(ldb, &ltdb->cache.attributes);
 
-	if (ltdb->cache.last_attribute.name) free(ltdb->cache.last_attribute.name);
+	ldb_free(ldb, ltdb->cache.last_attribute.name);
 	memset(&ltdb->cache, 0, sizeof(ltdb->cache));
+
+	ldb->alloc_ops = alloc;
 }
 
 /*
@@ -106,20 +110,23 @@ int ltdb_cache_load(struct ldb_context *ldb)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
 	double seq;
+	struct ldb_alloc_ops alloc = ldb->alloc_ops;
+
+	ldb->alloc_ops.alloc = NULL;
 
 	ltdb_search_dn1_free(ldb, &ltdb->cache.baseinfo);
 	
 	if (ltdb_search_dn1(ldb, LTDB_BASEINFO, &ltdb->cache.baseinfo) == -1) {
-		return -1;
+		goto failed;
 	}
 	
 	/* possibly initialise the baseinfo */
 	if (!ltdb->cache.baseinfo.dn) {
 		if (ltdb_baseinfo_init(ldb) != 0) {
-			return -1;
+			goto failed;
 		}
 		if (ltdb_search_dn1(ldb, LTDB_BASEINFO, &ltdb->cache.baseinfo) != 1) {
-			return -1;
+			goto failed;
 		}
 	}
 
@@ -127,11 +134,11 @@ int ltdb_cache_load(struct ldb_context *ldb)
 	   in the database then assume the rest of the cache is OK */
 	seq = ldb_msg_find_double(&ltdb->cache.baseinfo, LTDB_SEQUENCE_NUMBER, 0);
 	if (seq == ltdb->sequence_number) {
-		return 0;
+		goto done;
 	}
 	ltdb->sequence_number = seq;
 
-	if (ltdb->cache.last_attribute.name) free(ltdb->cache.last_attribute.name);
+	ldb_free(ldb, ltdb->cache.last_attribute.name);
 	memset(&ltdb->cache.last_attribute, 0, sizeof(ltdb->cache.last_attribute));
 
 	ltdb_search_dn1_free(ldb, &ltdb->cache.indexlist);
@@ -139,16 +146,22 @@ int ltdb_cache_load(struct ldb_context *ldb)
 	ltdb_search_dn1_free(ldb, &ltdb->cache.attributes);
 
 	if (ltdb_search_dn1(ldb, LTDB_INDEXLIST, &ltdb->cache.indexlist) == -1) {
-		return -1;
+		goto failed;
 	}
 	if (ltdb_search_dn1(ldb, LTDB_SUBCLASSES, &ltdb->cache.subclasses) == -1) {
-		return -1;
+		goto failed;
 	}
 	if (ltdb_search_dn1(ldb, LTDB_ATTRIBUTES, &ltdb->cache.attributes) == -1) {
-		return -1;
+		goto failed;
 	}
 
+done:
+	ldb->alloc_ops = alloc;
 	return 0;
+
+failed:
+	ldb->alloc_ops = alloc;
+	return -1;
 }
 
 
@@ -164,7 +177,7 @@ int ltdb_increase_sequence_number(struct ldb_context *ldb)
 	char *s = NULL;
 	int ret;
 
-	asprintf(&s, "%.0f", ltdb->sequence_number+1);
+	ldb_asprintf(ldb, &s, "%.0f", ltdb->sequence_number+1);
 	if (!s) {
 		errno = ENOMEM;
 		return -1;
@@ -172,8 +185,8 @@ int ltdb_increase_sequence_number(struct ldb_context *ldb)
 
 	msg.num_elements = 1;
 	msg.elements = &el;
-	msg.dn = strdup(LTDB_BASEINFO);
-	el.name = strdup(LTDB_SEQUENCE_NUMBER);
+	msg.dn = ldb_strdup(ldb, LTDB_BASEINFO);
+	el.name = ldb_strdup(ldb, LTDB_SEQUENCE_NUMBER);
 	el.values = &val;
 	el.num_values = 1;
 	el.flags = LDB_FLAG_MOD_REPLACE;
@@ -182,9 +195,9 @@ int ltdb_increase_sequence_number(struct ldb_context *ldb)
 
 	ret = ltdb_modify_internal(ldb, &msg);
 
-	free(s);
-	free(msg.dn);
-	free(el.name);
+	ldb_free(ldb, s);
+	ldb_free(ldb, msg.dn);
+	ldb_free(ldb, el.name);
 
 	if (ret == 0) {
 		ltdb->sequence_number += 1;
@@ -244,9 +257,9 @@ int ltdb_attribute_flags(struct ldb_context *ldb, const char *attr_name)
 		attrs += strspn(attrs, " ,");
 	}
 
-	if (ltdb->cache.last_attribute.name) free(ltdb->cache.last_attribute.name);
+	if (ltdb->cache.last_attribute.name) ldb_free(ldb, ltdb->cache.last_attribute.name);
 
-	ltdb->cache.last_attribute.name = strdup(attr_name);
+	ltdb->cache.last_attribute.name = ldb_strdup(ldb, attr_name);
 	ltdb->cache.last_attribute.flags = ret;
 	
 	return ret;
