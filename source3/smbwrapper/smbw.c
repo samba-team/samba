@@ -529,7 +529,7 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 	}
 	if (fd == -1) {
 		/* it might be a directory. Maybe we should use chkpath? */
-		eno = smbw_error(&srv->cli);
+		eno = smbw_errno(&srv->cli);
 		fd = smbw_dir_open(fname);
 		if (fd == -1) errno = eno;
 		smbw_busy--;
