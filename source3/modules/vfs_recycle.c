@@ -219,7 +219,7 @@ static BOOL recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 	ALLOC_CHECK(tmp_str, done);
 	tok_str = tmp_str;
 
-	len = strlen(dname);
+	len = strlen(dname)+1;
 	new_dir = (char *)malloc(len + 1);
 	ALLOC_CHECK(new_dir, done);
 	*new_dir = '\0';
