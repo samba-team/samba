@@ -1090,7 +1090,7 @@ int smbw_access(const char *name, int mode)
 {
 	struct stat st;
 	/* how do we map this properly ?? */
-	return smbw_stat(name, &st) == 0;
+	return smbw_stat(name, &st);
 }
 
 /***************************************************** 
