@@ -116,6 +116,10 @@ proj-doc:
 	@mv -f samba-doc.pdf ../Samba-HOWTO-Collection.pdf
 	@/bin/mv -f samba-doc.html ../htmldocs/Samba-HOWTO-Collection.html
 
+proj-doc-ps:
+	sgmltools -b ps projdoc/samba-doc.sgml
+	mv projdoc/samba-doc.ps .
+
 
 ## generate all HTML man pages
 man-html-all: $(SGMLMANSRC)

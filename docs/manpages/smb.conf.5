@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "13 June 2002" "" ""
+.TH "SMB.CONF" "5" "17 June 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -3522,7 +3522,9 @@ The default is to use the stand LDAPS port 636.
 
 See Also: ldap ssl
 
-Default : \fBldap port = 636\fR
+Default : \fBldap port = 636 ; if ldap ssl = on\fR
+
+Default : \fBldap port = 389 ; if ldap ssl = off\fR
 .TP
 \fBldap server (G)\fR
 This parameter is only available if Samba has been

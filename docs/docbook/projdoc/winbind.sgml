@@ -432,7 +432,7 @@ This package includes the header files needed to compile pam-aware applications.
 </para>
 
 <para>
-[I have no idea which SOlaris packages are quired for PAM libraries and
+[I have no idea which Solaris packages are quired for PAM libraries and
 development files.  If you know, please mail me the information and I will include
 it in the next revision of this HOWTO.  --jerry@samba.org]
 </para>
@@ -484,7 +484,7 @@ It necessary to make the following symbolic link:
 <para>
 The <filename>.2</filename> extension is due to the version of glibc used on your Linux host.
 for most modern systems, the file extension is correct.  However, some other operating systems,
-SOlaris 7/8 being the most common, the destination filename should be replaced with
+Solaris 7/8 being the most common, the destination filename should be replaced with
 <filename>/lib/nss_winbind.so.1</filename>
 </para>
 
