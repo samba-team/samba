@@ -191,13 +191,13 @@ struct nmb_data
 
 /* This is the structure used for the local netbios name list. */
 struct name_record
-{
-  struct name_record *next;
-  struct name_record *prev;
+  {
+  ubi_trNode            node[1];
+
   struct subnet_record *subnet;
-  struct nmb_name name;    /* The netbios name. */
-  struct nmb_data data;    /* The netbios data. */
-};
+  struct nmb_name       name;    /* The netbios name. */
+  struct nmb_data       data;    /* The netbios data. */
+  };
 
 /* Browser cache for synchronising browse lists. */
 struct browse_cache_record
@@ -404,9 +404,9 @@ struct subnet_record
   char  *subnet_name;      /* For Debug identification. */
   enum subnet_type type;   /* To catagorize the subnet. */
 
-  struct work_record *workgrouplist; /* List of workgroups. */
-  struct name_record *namelist;      /* List of netbios names. */
-  struct response_record *responselist; /* List of responses expected. */
+  struct work_record     *workgrouplist; /* List of workgroups. */
+  ubi_trRoot              namelist[1];   /* List of netbios names. */
+  struct response_record *responselist;  /* List of responses expected. */
 
   BOOL namelist_changed;
   BOOL work_changed;

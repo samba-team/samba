@@ -155,13 +155,15 @@ void release_my_names(void)
   {
     struct name_record *namerec, *nextnamerec;
 
-    for (namerec = subrec->namelist; namerec; namerec = nextnamerec)
+    for (namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+         namerec;
+         namerec = nextnamerec)
     {
-      nextnamerec = namerec->next;
+      nextnamerec = (struct name_record *)ubi_trNext( namerec );
       if( (namerec->data.source == SELF_NAME)
        && !NAME_IS_DEREGISTERING(namerec) )
-        release_name(subrec, namerec, standard_success_release,
-                     NULL, NULL);
+        release_name( subrec, namerec, standard_success_release,
+                      NULL, NULL);
     }
   }
 }
@@ -178,7 +180,9 @@ void refresh_my_names(time_t t)
   {
     struct name_record *namerec;
 	  
-    for (namerec = subrec->namelist; namerec; namerec = namerec->next)
+    for( namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+         namerec;
+         namerec = (struct name_record *)ubi_trNext( namerec ) )
     {
       /* Each SELF name has an individual time to be refreshed. */
       if( (namerec->data.source == SELF_NAME)

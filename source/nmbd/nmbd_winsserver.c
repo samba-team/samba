@@ -1147,9 +1147,11 @@ static void process_wins_dmb_query_request(struct subnet_record *subrec,
    */
 
   num_ips = 0;
-  for(namerec = subrec->namelist; namerec; namerec = namerec->next)
+  for( namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+       namerec;
+       namerec = (struct name_record *)ubi_trNext( namerec ) )
   {
-    if(namerec->name.name_type == 0x1b)
+    if( namerec->name.name_type == 0x1b )
       num_ips += namerec->data.num_ips;
   }
 
@@ -1175,7 +1177,9 @@ static void process_wins_dmb_query_request(struct subnet_record *subrec,
    */ 
 
   num_ips = 0;
-  for(namerec = subrec->namelist; namerec; namerec = namerec->next)
+  for( namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+       namerec;
+       namerec = (struct name_record *)ubi_trNext( namerec ) )
   {
     if(namerec->name.name_type == 0x1b)
     {
@@ -1550,7 +1554,10 @@ void wins_write_database(void)
 
   DEBUG(4,("wins_write_database: Dump of WINS name list.\n"));
  
-  for (namerec = wins_server_subnet->namelist; namerec; namerec = namerec->next)
+  for( namerec 
+           = (struct name_record *)ubi_trFirst( wins_server_subnet->namelist );
+       namerec;
+       namerec = (struct name_record *)ubi_trNext( namerec ) )
   {
     int i;
     struct tm *tm;
