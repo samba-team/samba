@@ -1078,7 +1078,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	if (!(nt_domain = unistr2_tdup(mem_ctx, &(info3->uni_logon_dom)))) {
 		/* If the server didn't give us one, just use the one we sent them */
-		domain = domain;
+		nt_domain = domain;
 	}
 	
 	/* try to fill the SAM account..  If getpwnam() fails, then try the 
