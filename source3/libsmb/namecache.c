@@ -91,19 +91,20 @@ static TDB_DATA namecache_value(struct in_addr *ip_list, int num_names,
 {
 	TDB_DATA retval;
 	struct nc_value *value;
-	int size;
-
-	size = sizeof(struct nc_value);
+	int size = sizeof(struct nc_value);
 
 	if (num_names > 0)
 		size += sizeof(struct in_addr) * (num_names-1);
 
 	value = (struct nc_value *)malloc(size);
-		
+
+	memset(value, 0, size);
+
 	value->expiry = expiry;
 	value->count = num_names;
 
-	memcpy(value->ip_list, ip_list, sizeof(*ip_list));
+	if (ip_list)
+		memcpy(value->ip_list, ip_list, sizeof(*ip_list));
 
 	retval.dptr = (char *)value;
 	retval.dsize = size;
