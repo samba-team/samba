@@ -523,7 +523,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		break;
 
 	case LIBNDR_FLAG_STR_NULLTERM:
-		len1 = strnlen_w(ndr->data+ndr->offset, 
+		len1 = strnlen_w((const smb_ucs2_t *)ndr->data+ndr->offset, 
 				 (ndr->data_size - ndr->offset)/2);
 		if (len1*2+2 <= ndr->data_size - ndr->offset) {
 			len1++;
