@@ -84,8 +84,12 @@ static BOOL open_policy_hnd(void)
 	/* Open policy handle */
 
 	if (!got_policy_hnd) {
+
+		/* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
+		   but NT sends 0x2000000 so we might as well do it too. */
+
 		if (cli_lsa_open_policy(&lsa_cli, True, 
-					SEC_RIGHTS_MAXIMUM_ALLOWED, &pol)
+					GENERIC_EXECUTE_ACCESS, &pol)
 		    != NT_STATUS_NOPROBLEMO) {
 			return False;
 		}
