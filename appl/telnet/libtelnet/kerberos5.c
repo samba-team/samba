@@ -69,14 +69,11 @@ RCSID("$Id$");
 #include <socks.h>
 #endif
 
-/* kerberos 5 include files (ext-proto.h) will get an appropriate stdlib.h
-   and string.h/strings.h */
-
 #include "encrypt.h"
 #include "auth.h"
 #include "misc.h"
 
-extern auth_debug_mode;
+extern int auth_debug_mode;
 
 /* where should this really reside? */
 
@@ -98,8 +95,6 @@ void kerberos5_forward (Authenticator *);
 
 static unsigned char str_data[1024] = { IAC, SB, TELOPT_AUTHENTICATION, 0,
 			  		AUTHTYPE_KERBEROS_V5, };
-/*static unsigned char str_name[1024] = { IAC, SB, TELOPT_AUTHENTICATION,
-					TELQUAL_NAME, };*/
 
 #define	KRB_AUTH		0	/* Authentication data follows */
 #define	KRB_REJECT		1	/* Rejected (reason might follow) */
@@ -121,11 +116,6 @@ static  krb5_ticket *ticket;
 
 static krb5_context context;
 static krb5_auth_context auth_context;
-
-/* some compilers can't hack void *, so we use the Kerberos krb5_pointer,
-   which is either void * or char *, depending on the compiler. */
-
-des_cblock	session_key;
 
 static int
 Data(Authenticator *ap, int type, void *d, int c)
@@ -172,7 +162,7 @@ kerberos5_init(Authenticator *ap, int server)
 static int
 kerberos5_send(char *name, Authenticator *ap)
 {
-    krb5_error_code r;
+    krb5_error_code ret;
     krb5_ccache ccache;
     int ap_opts;
     krb5_data cksum_data;
@@ -186,11 +176,13 @@ kerberos5_send(char *name, Authenticator *ap)
 	return(0);
     }
     
-    if (r = krb5_cc_default(context, &ccache)) {
+    ret = krb5_cc_default(context, &ccache);
+    if (ret) {
 	if (auth_debug_mode) {
-	    printf("Kerberos V5: could not get default ccache\r\n");
+	    printf("Kerberos V5: could not get default ccache: %s\r\n",
+		   krb5_get_err_text (context, ret));
 	}
-	return(0);
+	return 0;
     }
 	
     if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL)
@@ -205,14 +197,14 @@ kerberos5_send(char *name, Authenticator *ap)
 
     cksum_data.length = sizeof(foo);
     cksum_data.data   = foo;
-    r = krb5_mk_req(context, &auth_context, ap_opts, 
-		    "host", RemoteHostName, 
-		    &cksum_data, ccache, &auth);
+    ret = krb5_mk_req(context, &auth_context, ap_opts, 
+		      "host", RemoteHostName, 
+		      &cksum_data, ccache, &auth);
 
-    if (r) {
+    if (ret) {
 	if (auth_debug_mode) {
 	    printf("Kerberos V5: mk_req failed (%s)\r\n",
-		   krb5_get_err_text(context, r));
+		   krb5_get_err_text(context, ret));
 	}
 	return(0);
     }
@@ -248,11 +240,12 @@ kerberos5_send_oneway(Authenticator *ap)
 void
 kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 {
-    int r;
+    krb5_error_code ret;
     krb5_data outbuf;
     krb5_keyblock *key_block;
     char *name;
     krb5_principal server;
+    krb5_authenticator authenticator;
 
     if (cnt-- < 1)
 	return;
@@ -263,43 +256,60 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 
 	auth_context = NULL;
 
-	r = krb5_auth_con_init (context, &auth_context);
-	if (r)
-	    abort ();
+	ret = krb5_auth_con_init (context, &auth_context);
+	if (ret) {
+	    Data(ap, KRB_REJECT, "krb5_auth_con_init failed", -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    if (auth_debug_mode)
+		printf("Kerberos V5: krb5_auth_con_init failed (%s)\r\n",
+		       krb5_get_err_text(context, ret));
+	    return;
+	}
 
+	ret = krb5_auth_con_setaddrs_from_fd (context,
+					      auth_context,
+					      0);
+	if (ret) {
+	    Data(ap, KRB_REJECT, "krb5_auth_con_setaddrs_from_fd failed", -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    if (auth_debug_mode)
+		printf("Kerberos V5: "
+		       "krb5_auth_con_setaddrs_from_fd failed (%s)\r\n",
+		       krb5_get_err_text(context, ret));
+	    return;
+	}
 
-	r = krb5_auth_con_setaddrs_from_fd (context,
-					    auth_context,
-					    0);
-	if (r)
-	    abort ();
+	ret = krb5_sock_to_principal (context,
+				      0,
+				      "host",
+				      KRB5_NT_SRV_HST,
+				      &server);
+	if (ret) {
+	    Data(ap, KRB_REJECT, "krb5_sock_to_principal failed", -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    if (auth_debug_mode)
+		printf("Kerberos V5: "
+		       "krb5_sock_to_principal failed (%s)\r\n",
+		       krb5_get_err_text(context, ret));
+	    return;
+	}
 
-	r = krb5_sock_to_principal (context,
-				    0,
-				    "host",
-				    KRB5_NT_SRV_HST,
-				    &server);
-	if (r)
-	    abort ();
-
-
-	r = krb5_rd_req(context,
-			&auth_context,
-			&auth, 
-			server,
-			NULL,
-			NULL,
-			&ticket);
+	ret = krb5_rd_req(context,
+			  &auth_context,
+			  &auth, 
+			  server,
+			  NULL,
+			  NULL,
+			  &ticket);
 	krb5_free_principal (context, server);
 
-	if (r) {
+	if (ret) {
 	    char *errbuf;
-	errout:
 
 	    authdat = 0;
 	    asprintf(&errbuf,
 		     "Read req failed: %s",
-		     krb5_get_err_text(context, r));
+		     krb5_get_err_text(context, ret));
 	    Data(ap, KRB_REJECT, errbuf, -1);
 	    if (auth_debug_mode)
 		printf("%s\r\n", errbuf);
@@ -307,76 +317,118 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	    return;
 	}
 
-	r = krb5_auth_con_getkey(context, auth_context, &key_block);
-	if(r){
-	    abort ();
+	ret = krb5_auth_con_getkey(context, auth_context, &key_block);
+	if (ret) {
+	    Data(ap, KRB_REJECT, "krb5_auth_con_getkey failed", -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    if (auth_debug_mode)
+		printf("Kerberos V5: "
+		       "krb5_auth_con_getkey failed (%s)\r\n",
+		       krb5_get_err_text(context, ret));
+	    return;
 	}
 	
-	{
-	    krb5_authenticator authenticator;
+	ret = krb5_auth_getauthenticator (context,
+					  auth_context,
+					  &authenticator);
+	if (ret) {
+	    Data(ap, KRB_REJECT, "krb5_auth_getauthenticator failed", -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    if (auth_debug_mode)
+		printf("Kerberos V5: "
+		       "krb5_auth_getauthenticator failed (%s)\r\n",
+		       krb5_get_err_text(context, ret));
+	    return;
+	}
 
-	    r = krb5_auth_getauthenticator (context,
-					    auth_context,
-					    &authenticator);
-	    if (r)
-		abort ();
-	    if (authenticator->cksum) {
-		char foo[2];
+	if (authenticator->cksum) {
+	    char foo[2];
 
-		foo[0] = ap->type;
-		foo[1] = ap->way;
+	    foo[0] = ap->type;
+	    foo[1] = ap->way;
 
-		r = krb5_verify_checksum (context,
-					  foo,
-					  sizeof(foo),
-					  key_block,
-					  authenticator->cksum);
-		if (r) {
-		    Data(ap, KRB_REJECT, "No checksum", -1);
-		    if (auth_debug_mode)
-			printf ("No checksum\r\n");
-		    krb5_free_authenticator (context,
-					     &authenticator);
-
-		    return;
-		}
+	    ret = krb5_verify_checksum (context,
+					foo,
+					sizeof(foo),
+					key_block,
+					authenticator->cksum);
+	    if (ret) {
+		Data(ap, KRB_REJECT, "No checksum", -1);
+		if (auth_debug_mode)
+		    printf ("No checksum\r\n");
+		krb5_free_authenticator (context,
+					 &authenticator);
+		
+		return;
 	    }
-	    krb5_free_authenticator (context,
-				     &authenticator);
+	}
+	krb5_free_authenticator (context,
+				 &authenticator);
+
+	ret = krb5_auth_con_getremotesubkey (context,
+					     auth_context,
+					     &key_block);
+
+	if (ret) {
+	    Data(ap, KRB_REJECT, "krb5_auth_con_getremotesubkey failed", -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    if (auth_debug_mode)
+		printf("Kerberos V5: "
+		       "krb5_auth_con_getremotesubkey failed (%s)\r\n",
+		       krb5_get_err_text(context, ret));
+	    return;
 	}
 
 	if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) {
-	    r = krb5_mk_rep(context, &auth_context, &outbuf);
-	    if(r){
-	      abort ();
+	    ret = krb5_mk_rep(context, &auth_context, &outbuf);
+	    if (ret) {
+		Data(ap, KRB_REJECT,
+		     "krb5_mk_rep failed", -1);
+		auth_finished(ap, AUTH_REJECT);
+		if (auth_debug_mode)
+		    printf("Kerberos V5: "
+			   "krb5_mk_rep failed (%s)\r\n",
+			   krb5_get_err_text(context, ret));
+		return;
 	    }
 	    Data(ap, KRB_RESPONSE, outbuf.data, outbuf.length);
 	}
 	if (krb5_unparse_name(context, ticket->client, &name))
 	    name = 0;
-	Data(ap, KRB_ACCEPT, name, name ? -1 : 0);
-	if (auth_debug_mode) {
-	    printf("Kerberos5 identifies him as ``%s''\r\n",
-		   name ? name : "");
+
+	if(UserNameRequested && krb5_kuserok(context,
+					     ticket->client,
+					     UserNameRequested)) {
+	    Data(ap, KRB_ACCEPT, name, name ? -1 : 0);
+	    if (auth_debug_mode) {
+		printf("Kerberos5 identifies him as ``%s''\r\n",
+		       name ? name : "");
+	    }
+
+	    if(key_block->keytype == KEYTYPE_DES) {
+		Session_Key skey;
+
+		skey.type = SK_DES;
+		skey.length = 8;
+		skey.data = key_block->keyvalue.data;
+		encrypt_session_key(&skey, 0);
+	    }
+
+	} else {
+	    char *msg;
+
+	    asprintf (&msg, "user `%s' is not authorized to "
+		      "login as `%s'", 
+		      name ? name : "<unknown>",
+		      UserNameRequested ? UserNameRequested : "<nobody>");
+	    if (msg == NULL)
+		Data(ap, KRB_REJECT, NULL, 0);
+	    else {
+		Data(ap, KRB_REJECT, (void *)msg, -1);
+		free(msg);
+	    }
 	}
 	auth_finished(ap, AUTH_USER);
-
-	r = krb5_auth_con_getremotesubkey (context,
-					   auth_context,
-					   &key_block);
-
-	if(key_block->keytype == KEYTYPE_DES){
-	  Session_Key skey;
-
-	  skey.type = SK_DES;
-	  skey.length = 8;
-	  skey.data = key_block->keyvalue.data;
-	  encrypt_session_key(&skey, 0);
-#if 0
-	    memcpy(&session_key, key_block->contents.data,
-		   sizeof(session_key));
-#endif
-	}
 
 	krb5_free_keyblock(context, key_block);
 	
@@ -397,34 +449,38 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	snprintf (ccname, sizeof(ccname),
 		  "FILE:/tmp/krb5cc_%u", pwd->pw_uid);
 
-	r = krb5_cc_resolve (context, ccname, &ccache);
-	if (r) {
+	ret = krb5_cc_resolve (context, ccname, &ccache);
+	if (ret) {
 	    if (auth_debug_mode)
-		printf ("Kerberos V5: could not get ccache\r\n");
+		printf ("Kerberos V5: could not get ccache: %s\r\n",
+			krb5_get_err_text(context, ret));
 	    break;
 	}
 
-	r = krb5_cc_initialize (context,
-				ccache,
-				ticket->client);
-	if (r) {
+	ret = krb5_cc_initialize (context,
+				  ccache,
+				  ticket->client);
+	if (ret) {
 	    if (auth_debug_mode)
-		printf ("Kerberos V5: could not init ccache\r\n");
+		printf ("Kerberos V5: could not init ccache: %s\r\n",
+			krb5_get_err_text(context, ret));
 	    break;
 	}
 
-
-	r = krb5_rd_cred (context,
-			  auth_context,
-			  ccache,
-			  &inbuf);
-	if(r) {
+	ret = krb5_rd_cred (context,
+			    auth_context,
+			    ccache,
+			    &inbuf);
+	if(ret) {
 	    char *errbuf;
 
 	    asprintf (&errbuf,
 		      "Read forwarded creds failed: %s",
-		      krb5_get_err_text (context, r));
-	    Data(ap, KRB_FORWARD_REJECT, errbuf, -1);
+		      krb5_get_err_text (context, ret));
+	    if(errbuf == NULL)
+		Data(ap, KRB_FORWARD_REJECT, NULL, 0);
+	    else
+		Data(ap, KRB_FORWARD_REJECT, errbuf, -1);
 	    if (auth_debug_mode)
 		printf("Could not read forwarded credentials: %s\r\n",
 		       errbuf);
@@ -448,7 +504,6 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 void
 kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 {
-    Session_Key skey;
     static int mutual_complete = 0;
 
     if (cnt-- < 1)
@@ -462,7 +517,11 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 	    printf("[ Kerberos V5 refuses authentication ]\r\n");
 	auth_send_retry();
 	return;
-    case KRB_ACCEPT:
+    case KRB_ACCEPT: {
+	krb5_error_code ret;
+	Session_Key skey;
+	krb5_keyblock *keyblock;
+	
 	if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL &&
 	    !mutual_complete) {
 	    printf("[ Kerberos V5 accepted you, but didn't provide mutual authentication! ]\r\n");
@@ -473,62 +532,52 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 	    printf("[ Kerberos V5 accepts you as ``%.*s'' ]\r\n", cnt, data);
 	else
 	    printf("[ Kerberos V5 accepts you ]\r\n");
+	      
+	ret = krb5_auth_con_getlocalsubkey (context,
+					    auth_context,
+					    &keyblock);
+	if (ret)
+	    ret = krb5_auth_con_getkey (context,
+					auth_context,
+					&keyblock);
+	if(ret) {
+	    printf("[ krb5_auth_con_getkey: %s ]\r\n",
+		   krb5_get_err_text(context, ret));
+	    auth_send_retry();
+	    return;
+	}
+	      
+	skey.type = SK_DES;
+	skey.length = 8;
+	skey.data = keyblock->keyvalue.data;
+	encrypt_session_key(&skey, 0);
+	krb5_free_keyblock (context, keyblock);
 	auth_finished(ap, AUTH_USER);
 #ifdef	FORWARD
 	if (forward_flags & OPTS_FORWARD_CREDS)
 	    kerberos5_forward(ap);
 #endif	/* FORWARD */
 	break;
+    }
     case KRB_RESPONSE:
 	if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) {
 	    /* the rest of the reply should contain a krb_ap_rep */
-#if 0
-	  /*krb5_ap_rep_enc_part*/ void *reply;
-#endif
-	  EncAPRepPart *reply;
-	    krb5_data inbuf;
-	    krb5_error_code r;
+	  krb5_ap_rep_enc_part *reply;
+	  krb5_data inbuf;
+	  krb5_error_code ret;
 	    
-	    inbuf.length = cnt;
-	    inbuf.data = (char *)data;
+	  inbuf.length = cnt;
+	  inbuf.data = (char *)data;
 
-	    if (r = krb5_rd_rep(context, auth_context, &inbuf, &reply)) {
-		printf("[ Mutual authentication failed: %s ]\r\n",
-		       krb5_get_err_text (context, r));
-		auth_send_retry();
-		return;
-	    }
-#if 0
-	    if (reply->ctime != authenticator.ctime ||
-		reply->cusec != authenticator.cusec) {
-		printf("[ Mutual authentication failed (mismatched KRB_AP_REP) ]\r\n");
-		auth_send_retry();
-		return;
-	    }
-#endif
-	    krb5_free_ap_rep_enc_part(context, reply);
-	    {
-	      Session_Key skey;
-	      krb5_keyblock *keyblock;
-	      
-	      r = krb5_auth_con_getlocalsubkey (context,
-						auth_context,
-						&keyblock);
-	      if (r)
-		  r = krb5_auth_con_getkey (context,
-					    auth_context,
-					    &keyblock);
-	      if (r) {
-		abort ();
-	      }
-	      
-	      skey.type = SK_DES;
-	      skey.length = 8;
-	      skey.data = keyblock->keyvalue.data;
-	      encrypt_session_key(&skey, 0);
-	      krb5_free_keyblock (context, keyblock);
-	    }
-	    mutual_complete = 1;
+	  ret = krb5_rd_rep(context, auth_context, &inbuf, &reply);
+	  if (ret) {
+	      printf("[ Mutual authentication failed: %s ]\r\n",
+		     krb5_get_err_text (context, ret));
+	      auth_send_retry();
+	      return;
+	  }
+	  krb5_free_ap_rep_enc_part(context, reply);
+	  mutual_complete = 1;
 	}
 	return;
 #ifdef	FORWARD
