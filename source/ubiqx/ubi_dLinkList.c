@@ -24,7 +24,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_dLinkList.c,v 
+ * Log: ubi_dLinkList.c,v
+ * Revision 0.10  1998/07/24 07:30:20  crh
+ * Added the ubi_dlNewList() macro.
+ *
  * Revision 0.9  1998/06/04 21:29:27  crh
  * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
  * This is more "standard", and is what people expect.  Weird, eh?

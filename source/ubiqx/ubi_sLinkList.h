@@ -26,7 +26,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_sLinkList.h,v 
+ * Log: ubi_sLinkList.h,v
+ * Revision 0.9  1998/07/24 07:30:20  crh
+ * Added the ubi_slNewList() macro.
+ *
  * Revision 0.8  1998/06/04 21:29:27  crh
  * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
  * This is more "standard", and is what people expect.  Weird, eh?
@@ -57,7 +60,7 @@
  * Initial Revision.
  *
  * -------------------------------------------------------------------------- **
- *  This module implements a singly-linked list which may also be used as a 
+ *  This module implements a singly-linked list which may also be used as a
  *  queue or a stack.  For a queue, entries are added at the tail and removed
  *  from the head of the list.  For a stack, the entries are entered and
  *  removed from the head of the list.  A traversal of the list will always
@@ -71,9 +74,14 @@
  *         zeroing it out.  One sure way to initialize the header is to call
  *         ubi_slInit().  Another option would be something like this:
  *
- *         static ubi_slList MyList = { NULL, (ubi_slNodePtr)&MyList, 0 };
+ *           ubi_slNewList( MyList );
  *
- *         See ubi_slInit() and the ubi_slList structure for more info.
+ *         Which translates to:
+ *
+ *           ubi_slList MyList[1] = { NULL, (ubi_slNodePtr)MyList, 0 };
+ *
+ *         See ubi_slInit(), ubi_slNewList(), and the ubi_slList structure
+ *         for more info.
  *
  *        + Also, note that this module is similar to the ubi_dLinkList
  *          module.  There are three key differences:
@@ -84,7 +92,7 @@
  *            is not done in ubi_dLinkList.
  *          - The ubi_slRemove() function, by necessity, removed the 'next'
  *            node.  In ubi_dLinkList, the ubi_dlRemove() function removes
- *            the 'current' node. 
+ *            the 'current' node.
  *
  * ========================================================================== **
  */
@@ -117,9 +125,13 @@ typedef struct
 
 typedef ubi_slList *ubi_slListPtr;
 
+
 /* ========================================================================== **
  * Macros...
  * 
+ *  ubi_slNewList - Macro used to declare and initialize a list header in
+ *                  one step.
+ *
  *  ubi_slCount   - Returns the current number of entries in the list.
  *
  *  ubi_slAddHead - Add a new node at the head of the list.
@@ -143,10 +155,11 @@ typedef ubi_slList *ubi_slListPtr;
  *  Add and Rem macros are nothing more than nice front-ends to the
  *  Insert and Remove functions.
  *
- *  Also note that there the First, Next and Last macros do no parameter
- *  checking!
+ *  Also note that the First, Next and Last macros do no parameter checking!
  *
  */
+
+#define ubi_slNewList( L ) ubi_slList (L)[1] = {{ NULL, (ubi_slNodePtr)(L), 0 }}
 
 #define ubi_slCount( L ) (((ubi_slListPtr)(L))->count)
 

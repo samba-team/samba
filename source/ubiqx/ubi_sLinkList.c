@@ -24,7 +24,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_sLinkList.c,v 
+ * Log: ubi_sLinkList.c,v
+ * Revision 0.9  1998/07/24 07:30:20  crh
+ * Added the ubi_slNewList() macro.
+ *
  * Revision 0.8  1998/06/04 21:29:27  crh
  * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
  * This is more "standard", and is what people expect.  Weird, eh?
@@ -63,15 +66,20 @@
  *  mind-numbingly simple, but I'm surprised by the number of programs out
  *  there which re-implement this a dozen or so times.
  *
- *  Notes:  When the list header is initialized, the Tail pointer is set to
- *          point to the Head pointer.  This simplifies things a great deal,
- *          except that you can't initialize a stack or queue by simply
- *          zeroing it out.  One sure way to initialize the header is to call
- *          ubi_slInit().  Another option would be something like this:
+ *  Note:  When the list header is initialized, the Tail pointer is set to
+ *         point to the Head pointer.  This simplifies things a great deal,
+ *         except that you can't initialize a stack or queue by simply
+ *         zeroing it out.  One sure way to initialize the header is to call
+ *         ubi_slInit().  Another option would be something like this:
  *
- *          static ubi_slList MyList = { NULL, (ubi_slNodePtr)&MyList, 0 };
+ *           ubi_slNewList( MyList );
  *
- *          See ubi_slInit() and the ubi_slList structure for more info.
+ *         Which translates to:
+ *
+ *           ubi_slList MyList[1] = { NULL, (ubi_slNodePtr)MyList, 0 };
+ *
+ *         See ubi_slInit(), ubi_slNewList(), and the ubi_slList structure
+ *         for more info.
  *
  *        + Also, note that this module is similar to the ubi_dLinkList
  *          module.  There are three key differences:
