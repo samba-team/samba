@@ -561,6 +561,13 @@ BOOL name_register_wins(const char *name, int name_type)
   int num_interfaces = iface_count();
   struct in_addr sendto_ip;
 
+  /* 
+   * Check if we have any interfaces, prevents a segfault later
+   */
+
+  if (num_interfaces <= 0)
+    return False;         /* Should return some indication of the problem */
+
   /*
    * Do a broadcast register ...
    */
