@@ -5,6 +5,7 @@
 .ix*
 .proto.check
 .proto.stamp
+autom4te.cache
 ID
 ID
 Makefile
