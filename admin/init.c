@@ -92,9 +92,9 @@ init(int argc, char **argv)
 			     "kadmin",
 			     NULL);
 	ent.expires = 0;
-	ent.u.s.forwardable = 1;
-	ent.u.s.renewable = 1;
-	ent.u.s.server = 1;
+	ent.flags.b.forwardable = 1;
+	ent.flags.b.renewable = 1;
+	ent.flags.b.server = 1;
 	db->store(context, db, &ent);
 	hdb_free_entry(context, &ent);
 
@@ -116,7 +116,7 @@ init(int argc, char **argv)
 			     "kadmin",
 			     NULL);
 	ent.expires = 0;
-	ent.u.s.locked = 1;
+	ent.flags.b.locked = 1;
 	db->store(context, db, &ent);
 	hdb_free_entry(context, &ent);
     }
