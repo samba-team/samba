@@ -136,7 +136,7 @@ int samdb_search(void *ctx,
 		 const char *basedn,
 		 struct ldb_message ***res,
 		 const char * const *attrs,
-		 const char *format, ...)
+		 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
 	va_list ap;
 	int count;
@@ -193,7 +193,7 @@ const char *samdb_search_string(void *ctx,
 				TALLOC_CTX *mem_ctx,
 				const char *basedn,
 				const char *attr_name,
-				const char *format, ...)
+				const char *format, ...) _PRINTF_ATTRIBUTE(5,6)
 {
 	va_list ap;
 	const char *str;
@@ -214,7 +214,7 @@ uint_t samdb_search_uint(void *ctx,
 			 uint_t default_value,
 			 const char *basedn,
 			 const char *attr_name,
-			 const char *format, ...)
+			 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
 	va_list ap;
 	int count;
@@ -240,7 +240,7 @@ int64_t samdb_search_int64(void *ctx,
 			   int64_t default_value,
 			   const char *basedn,
 			   const char *attr_name,
-			   const char *format, ...)
+			   const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
 	va_list ap;
 	int count;
@@ -267,7 +267,7 @@ int samdb_search_string_multiple(void *ctx,
 				 const char *basedn,
 				 const char ***strs,
 				 const char *attr_name,
-				 const char *format, ...)
+				 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
 	va_list ap;
 	int count, i;
@@ -406,7 +406,7 @@ NTTIME samdb_result_allow_pwd_change(void *ctx, TALLOC_CTX *mem_ctx,
 		return 0;
 	}
 
-	minPwdAge = samdb_search_int64(ctx, mem_ctx, 0, "minPwdAge", "dn=%s", domain_dn);
+	minPwdAge = samdb_search_int64(ctx, mem_ctx, 0, NULL, "minPwdAge", "dn=%s", domain_dn);
 
 	/* yes, this is a -= not a += as minPwdAge is stored as the negative
 	   of the number of 100-nano-seconds */
@@ -429,9 +429,9 @@ NTTIME samdb_result_force_pwd_change(void *ctx, TALLOC_CTX *mem_ctx,
 		return 0;
 	}
 
-	maxPwdAge = samdb_search_int64(ctx, mem_ctx, 0, "maxPwdAge", "dn=%s", domain_dn);
+	maxPwdAge = samdb_search_int64(ctx, mem_ctx, 0, NULL, "maxPwdAge", "dn=%s", domain_dn);
 	if (maxPwdAge == 0) {
-		attr_time = 0;
+		return 0;
 	} else {
 		attr_time -= maxPwdAge;
 	}
