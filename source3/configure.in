@@ -38,6 +38,8 @@ AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc          enable heap debugging [defau
 if test "x$enable_dmalloc" = xyes
 then
 	AC_DEFINE(ENABLE_DMALLOC, 1, [Define to turn on dmalloc debugging])
+	AC_DEFINE(DMALLOC_FUNC_CHECK, 1, 
+                  [Define to check invariants around some common functions])
 	LIBS="$LIBS -ldmalloc"	
 fi
 
