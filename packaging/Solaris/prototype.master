@@ -16,8 +16,8 @@ i r.swat=./r.swat
 # Stuff that goes into the system areas of the filesystem.
 #
 d none /etc ? ? ?
-d initscript /etc/init.d ? ? ?
-f initscript /etc/init.d/samba.server=packaging/Solaris/samba.server 0744 root sys
+d none /etc/init.d ? ? ?
+f none /etc/init.d/samba.server=packaging/Solaris/samba.server 0744 root sys
 d initscript /etc/rc3.d ? ? ?
 s initscript /etc/rc3.d/S99samba.server=../init.d/samba.server
 #
@@ -38,14 +38,6 @@ d none samba/docs 0755 root other
 # Stuff that goes into lib
 #
 f none samba/lib/smb.conf.example=examples/smb.conf.default 0644 root other
-d none samba/lib/regeditscripts 0755 root other
-f none samba/lib/regeditscripts/NT4-Locking.reg=docs/NT4-Locking.reg 0444 root other
-f none samba/lib/regeditscripts/NT4_PlainPassword.reg=docs/NT4_PlainPassword.reg 0444 root other
-f none samba/lib/regeditscripts/Win95_PlainPassword.reg=docs/Win95_PlainPassword.reg 0444 root other
-f none samba/lib/regeditscripts/Win98_PlainPassword.reg=docs/Win98_PlainPassword.reg 0444 root other
-f none samba/lib/regeditscripts/Win9X-CacheHandling.reg=docs/Win9X-CacheHandling.reg 0444 root other
-f none samba/lib/regeditscripts/Win2000_PlainPassword.reg=docs/Win2000_PlainPassword.reg 0444 root other
-f none samba/lib/regeditscripts/WindowsTerminalServer.reg=docs/WindowsTerminalServer.reg 0444 root other
 #
 # Random files 
 f none samba/docs/Samba-HOWTO-Collection.pdf=docs/Samba-HOWTO-Collection.pdf 0644 root other
