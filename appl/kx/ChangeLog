@@ -1,3 +1,8 @@
+1999-12-06  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (recv_conn): type correctness
+	* kx.c (connect_host): typo
+
 1999-12-05  Assar Westerlund  <assar@sics.se>
 
 	* common.c (INADDR_LOOPBACK): remove.  now in roken.
