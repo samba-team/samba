@@ -213,6 +213,11 @@
 	/******************/
 	/* Function: 0x11 */
 	WERROR winreg_QueryValue(
+		[in,ref] policy_handle *handle,
+		[in] winreg_String valuename,
+		[out,ref] uint32 *type, 
+		[out] uint8 *data,
+		[in,out] uint32 *val_length
 	);
 
 	/******************/
@@ -329,7 +334,7 @@
 	);
 
 	/******************/
-	/* Function: 0x21 */
+	/* Function: 0x22 */
 	WERROR winreg_QueryMultipleValues2(
 	);
 }

@@ -53,7 +53,7 @@ static BOOL test_GetNumRecords(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struc
 static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t offset)
 {
 	NTSTATUS status;
-	struct eventlog_ReadEventLog r;
+	struct eventlog_ReadEventLogW r;
 
 	printf("\ntesting ReadEventLog\n");
 
@@ -62,7 +62,7 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 	r.in.handle = handle;
 	r.in.number_of_bytes = 0x0;
 
-	status = dcerpc_eventlog_ReadEventLog(p, mem_ctx, &r);
+	status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ReadEventLog failed - %s\n", nt_errstr(status));
@@ -81,7 +81,7 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 
 	r.in.number_of_bytes = r.out.real_size;
 
-	status = dcerpc_eventlog_ReadEventLog(p, mem_ctx, &r);
+	status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ReadEventLog failed - %s\n", nt_errstr(status));
@@ -114,7 +114,7 @@ BOOL test_CloseEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle)
 {
 	NTSTATUS status;
-	struct eventlog_OpenEventLog r;
+	struct eventlog_OpenEventLogW r;
 	struct eventlog_OpenUnknown0 unknown0;
 
 	printf("\ntesting OpenEventLog\n");
@@ -129,7 +129,7 @@ static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 	r.in.unknown3 = 0x00000001;
 	r.out.handle = handle;
 
-	status = dcerpc_eventlog_OpenEventLog(p, mem_ctx, &r);
+	status = dcerpc_eventlog_OpenEventLogW(p, mem_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenEventLog failed - %s\n", nt_errstr(status));

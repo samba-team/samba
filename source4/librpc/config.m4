@@ -10,6 +10,9 @@ SMB_SUBSYSTEM(LIBNDR_RAW,[],
 		librpc/gen_ndr/ndr_dcerpc.o
 		librpc/gen_ndr/ndr_echo.o
 		librpc/gen_ndr/ndr_exchange.o
+		librpc/gen_ndr/ndr_dsbackup.o
+		librpc/gen_ndr/ndr_dsrole.o
+		librpc/gen_ndr/ndr_efs.o
 		librpc/gen_ndr/ndr_misc.o
 		librpc/gen_ndr/ndr_lsa.o
 		librpc/gen_ndr/ndr_lsads.o
@@ -24,6 +27,10 @@ SMB_SUBSYSTEM(LIBNDR_RAW,[],
 		librpc/gen_ndr/ndr_atsvc.o
 		librpc/gen_ndr/ndr_eventlog.o
 		librpc/gen_ndr/ndr_epmapper.o
+		librpc/gen_ndr/ndr_dbgidl.o
+		librpc/gen_ndr/ndr_dssetup.o
+		librpc/gen_ndr/ndr_msgsvc.o
+		librpc/gen_ndr/ndr_wins.o
 		librpc/gen_ndr/ndr_winreg.o
 		librpc/gen_ndr/ndr_mgmt.o
 		librpc/gen_ndr/ndr_protected_storage.o

@@ -45,11 +45,11 @@ interface browser
 	NTSTATUS BrowserrSetNetlogonState();
 
 	/******************/
-	/* Function  0x10 */
+	/* Function  0x0a */
 	NTSTATUS BrowserrQueryEmulatedDomains();
 
 	/******************/
-	/* Function  0x11 */
+	/* Function  0x0b */
 	NTSTATUS BrowserrServerEnumEx();
 
 }
