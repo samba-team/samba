@@ -1,3 +1,20 @@
+Thu May 28 21:28:06 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/kerberos5.c: Optionally compare client address to addresses
+ 	in ticket.
+
+	* kdc/connect.c: Pass client address to as_rep() and tgs_rep().
+
+	* kdc/config.c: Add check_ticket_addresses, and
+ 	allow_null_ticket_addresses variables.
+
+Tue May 26 14:03:42 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/kadm5/create_s.c: possibly make DES keys version 4 salted
+
+	* lib/kadm5/set_keys.c: check config file for kadmin/use_v4_salt
+ 	before zapping version 4 salts
+
 Sun May 24 05:22:17 1998  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.0q
