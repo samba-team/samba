@@ -762,6 +762,8 @@ extern int errno;
 
 #include "mangle.h"
 
+#include "nsswitch/winbind_client.h"
+
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.

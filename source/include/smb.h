@@ -1623,8 +1623,6 @@ struct unix_error_map {
 
 #define SAFE_NETBIOS_CHARS ". -_"
 
-#include "nsswitch/winbindd_nss.h"
-
 /* generic iconv conversion structure */
 typedef struct {
 	size_t (*direct)(void *cd, char **inbuf, size_t *inbytesleft,
