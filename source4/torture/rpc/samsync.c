@@ -583,9 +583,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		lsa_blob1.data = q.out.new_val->buf->data;
 		lsa_blob1.length = q.out.new_val->buf->length;
 
-		lsa_blob_out = data_blob(NULL, lsa_blob1.length);
-
-		sess_crypt_blob(&lsa_blob_out, &lsa_blob1, &session_key, 0);
+		lsa_blob_out = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key);
 		
 		if (new->secret.length != lsa_blob_out.length) {
 			printf("Returned secret %s doesn't match: %d != %d\n",

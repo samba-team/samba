@@ -131,3 +131,80 @@ char *sess_decrypt_string(DATA_BLOB *blob, const DATA_BLOB *session_key)
 
 	return ret;
 }
+
+/*
+  a convenient wrapper around sess_crypt_blob() for DATA_BLOBs, using the LSA convention
+
+  note that we round the length to a multiple of 8. This seems to be needed for 
+  compatibility with windows
+
+  caller should free using data_blob_free()
+*/
+DATA_BLOB sess_encrypt_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob_in, const DATA_BLOB *session_key)
+{
+	DATA_BLOB ret, src;
+	int dlen = (blob_in->length+7) & ~7;
+
+	src = data_blob_talloc(mem_ctx, NULL, 8+dlen);
+	if (!src.data) {
+		return data_blob(NULL, 0);
+	}
+
+	ret = data_blob(NULL, 8+dlen);
+	if (!ret.data) {
+		data_blob_free(&src);
+		return data_blob(NULL, 0);
+	}
+
+	SIVAL(src.data, 0, blob_in->length);
+	SIVAL(src.data, 4, 1);
+	memset(src.data+8, 0, dlen);
+	memcpy(src.data+8, blob_in->data, blob_in->length);
+
+	sess_crypt_blob(&ret, &src, session_key, True);
+	
+	data_blob_free(&src);
+
+	return ret;
+}
+
+/*
+  a convenient wrapper around sess_crypt_blob() for strings, using the LSA convention
+
+  caller should free the returned string
+*/
+DATA_BLOB sess_decrypt_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const DATA_BLOB *session_key)
+{
+	DATA_BLOB out;
+	int slen;
+	DATA_BLOB ret;
+
+	if (blob->length < 8) {
+		return data_blob(NULL, 0);
+	}
+	
+	out = data_blob_talloc(mem_ctx, NULL, blob->length);
+	if (!out.data) {
+		return data_blob(NULL, 0);
+	}
+
+	sess_crypt_blob(&out, blob, session_key, False);
+
+	slen = IVAL(out.data, 0);
+	if (slen > blob->length - 8) {
+		DEBUG(0,("Invalid crypt length %d\n", slen));
+		return data_blob(NULL, 0);
+	}
+
+	if (IVAL(out.data, 4) != 1) {
+		DEBUG(0,("Unexpected revision number %d in session crypted string\n",
+			 IVAL(out.data, 4)));
+		return data_blob(NULL, 0);
+	}
+		
+	ret = data_blob_talloc(mem_ctx, out.data+8, slen);
+
+	data_blob_free(&out);
+
+	return ret;
+}
