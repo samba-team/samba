@@ -118,11 +118,11 @@ void smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a DOM_SID structure.
 ********************************************************************/
-void smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth)
+BOOL smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth)
 {
 	int i;
 
-	if (sid == NULL) return;
+	if (sid == NULL) return False;
 
 	prs_debug(ps, depth, desc, "smb_io_dom_sid");
 	depth++;
@@ -143,6 +143,8 @@ void smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth)
 	if (sid->num_auths > MAXSUBAUTHS) sid->num_auths = MAXSUBAUTHS;
 
 	prs_uint32s(False, "sub_auths ", ps, depth, sid->sub_auths, sid->num_auths);
+
+	return True;
 }
 
 /*******************************************************************
@@ -150,7 +152,7 @@ creates a DOM_SID2 structure.
 ********************************************************************/
 void make_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid)
 {
-        sid_copy(&sid2->sid, sid);
+        sid2->sid = *sid;
 	sid2->num_auths = sid2->sid.num_auths;
 }
 
@@ -1047,5 +1049,4 @@ void smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth)
 
 	prs_unistr3(True, "unistr", name, ps, depth);
 }
-
 

@@ -97,8 +97,7 @@ typedef struct security_acl_info
 	uint16 revision; /* 0x0002 */
 	uint16 size; /* size in bytes of the entire ACL structure */
 	uint32 num_aces; /* number of Access Control Entries */
-
-	SEC_ACE *ace;
+	SEC_ACE *ace_list;
 
 } SEC_ACL;
 
@@ -133,4 +132,3 @@ typedef struct sec_desc_buf_info
 } SEC_DESC_BUF;
 
 #endif /* _RPC_SECDES_H */
-

@@ -739,7 +739,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 	 */
 
 	uint32 sec_buf_size;
-	SEC_DESC_BUF sec_buf;
+	SEC_DESC_BUF *psdb;
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
@@ -771,32 +771,28 @@ void cmd_reg_test_key_sec(struct client_info *info)
 	res3 = res ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 				 key_name, 0x02000000, &key_pol) : False;
 
-	/* query key sec info.  first call sets sec_buf_size. */
+	/* Get the size. */
 	sec_buf_size = 0;
-	ZERO_STRUCT(sec_buf);
 
 	res4 = res3 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
-				&sec_buf_size, &sec_buf) : False;
+				&sec_buf_size, &psdb) : False;
 	
-	if (res4)
-	{
-		free_sec_desc_buf(&sec_buf);
-	}
+	free_sec_desc_buf(&psdb);
 
 	res4 = res4 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
-				&sec_buf_size, &sec_buf) : False;
+				&sec_buf_size, &psdb) : False;
 
-	if (res4 && sec_buf.len > 0 && sec_buf.sec != NULL)
+	if (res4 && psdb->len > 0 && psdb->sec != NULL)
 	{
-		display_sec_desc(out_hnd, ACTION_HEADER   , sec_buf.sec);
-		display_sec_desc(out_hnd, ACTION_ENUMERATE, sec_buf.sec);
-		display_sec_desc(out_hnd, ACTION_FOOTER   , sec_buf.sec);
+		display_sec_desc(out_hnd, ACTION_HEADER   , psdb->sec);
+		display_sec_desc(out_hnd, ACTION_ENUMERATE, psdb->sec);
+		display_sec_desc(out_hnd, ACTION_FOOTER   , psdb->sec);
 
 		res4 = res4 ? do_reg_set_key_sec(smb_cli, fnum, &key_pol,
-				sec_buf_size, sec_buf.sec) : False;
+				psdb) : False;
 
-		free_sec_desc_buf(&sec_buf);
 	}
+	free_sec_desc_buf(&psdb);
 
 	/* close the key handle */
 	if ((*key_name) != 0)
@@ -840,7 +836,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 	 */
 
 	uint32 sec_buf_size;
-	SEC_DESC_BUF sec_buf;
+	SEC_DESC_BUF *psdb;
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
@@ -872,29 +868,25 @@ void cmd_reg_get_key_sec(struct client_info *info)
 	res3 = res ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
 				 key_name, 0x02000000, &key_pol) : False;
 
-	/* query key sec info.  first call sets sec_buf_size. */
+	/* Get the size. */
 	sec_buf_size = 0;
-	ZERO_STRUCT(sec_buf);
 
 	res4 = res3 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
-				&sec_buf_size, &sec_buf) : False;
+				&sec_buf_size, &psdb) : False;
 	
-	if (res4)
-	{
-		free_sec_desc_buf(&sec_buf);
-	}
+	free_sec_desc_buf(&psdb);
 
 	res4 = res4 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
-				&sec_buf_size, &sec_buf) : False;
+				&sec_buf_size, &psdb) : False;
 
-	if (res4 && sec_buf.len > 0 && sec_buf.sec != NULL)
+	if (res4 && psdb->len > 0 && psdb->sec != NULL)
 	{
-		display_sec_desc(out_hnd, ACTION_HEADER   , sec_buf.sec);
-		display_sec_desc(out_hnd, ACTION_ENUMERATE, sec_buf.sec);
-		display_sec_desc(out_hnd, ACTION_FOOTER   , sec_buf.sec);
+		display_sec_desc(out_hnd, ACTION_HEADER   , psdb->sec);
+		display_sec_desc(out_hnd, ACTION_ENUMERATE, psdb->sec);
+		display_sec_desc(out_hnd, ACTION_FOOTER   , psdb->sec);
 
-		free(sec_buf.sec);
 	}
+	free_sec_desc_buf(&psdb);
 
 	/* close the key handle */
 	if ((*key_name) != 0)
