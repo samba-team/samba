@@ -831,7 +831,7 @@ ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
 		   need to reset it to NULL before doing ldap modify */
 		mods[ADS_MODLIST_ALLOC_SIZE] = (LDAPMod *) -1;
 	
-	return mods;
+	return (ADS_MODLIST)mods;
 }
 
 
@@ -868,7 +868,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		memset(&modlist[curmod], 0, 
 		       ADS_MODLIST_ALLOC_SIZE*sizeof(LDAPMod *));
 		modlist[curmod+ADS_MODLIST_ALLOC_SIZE] = (LDAPMod *) -1;
-		*mods = modlist;
+		*mods = (ADS_MODLIST)modlist;
 	}
 		
 	if (!(modlist[curmod] = TALLOC_ZERO_P(ctx, LDAPMod)))
@@ -1006,7 +1006,7 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
 
-	ret = ldap_add_s(ads->ld, utf8_dn, mods);
+	ret = ldap_add_s(ads->ld, utf8_dn, (LDAPMod**)mods);
 	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
