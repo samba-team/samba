@@ -283,22 +283,12 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 
 /* Store a SID in a domain indexed by name in the cache. */
 
-static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE type)
+static void store_sid_by_name_in_cache(struct winbindd_domain *domain,
+				       const char *name, 
+				       DOM_SID *sid, enum SID_NAME_USE type)
 {
-	fstring domain_str;
-	char *p;
 	struct winbindd_sid sid_val;
-	struct winbindd_domain *domain;
-
-	/* Get name from domain. */
-	fstrcpy( domain_str, name);
-	p = strchr(domain_str, '\\');
-	if (p)
-		*p = '\0';
-
-	if ((domain = find_domain_from_name(domain_str)) == NULL)
-        return;
-
+	
 	sid_to_string(sid_val.sid, sid);
 	sid_val.type = (int)type;
 
@@ -310,21 +300,11 @@ static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME
 
 /* Lookup a SID in a domain indexed by name in the cache. */
 
-static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE *type)
+static BOOL winbindd_lookup_sid_by_name_in_cache(struct winbindd_domain *domain,
+						 const char *name, 
+						 DOM_SID *sid, enum SID_NAME_USE *type)
 {
-	fstring domain_str;
-	char *p;
 	struct winbindd_sid sid_ret;
-	struct winbindd_domain *domain;
-
-	/* Get name from domain. */
-	fstrcpy( domain_str, name);
-	p = strchr(domain_str, '\\');
-	if (p)
-		*p = '\0';
-
-	if ((domain = find_domain_from_name(domain_str)) == NULL)
-                return False;
 
 	if (!winbindd_fetch_sid_cache_entry(domain, name, &sid_ret))
 		return False;
@@ -340,23 +320,21 @@ static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enu
 
 /* Store a name in a domain indexed by SID in the cache. */
 
-static void store_name_by_sid_in_cache(DOM_SID *sid, fstring name, enum SID_NAME_USE type)
+static void store_name_by_sid_in_cache(struct winbindd_domain *domain,
+				       DOM_SID *sid, 
+				       const char *name, enum SID_NAME_USE type)
 {
 	fstring sid_str;
 	uint32 rid;
 	DOM_SID domain_sid;
 	struct winbindd_name name_val;
-	struct winbindd_domain *domain;
 
 	/* Split sid into domain sid and user rid */
 	sid_copy(&domain_sid, sid);
 	sid_split_rid(&domain_sid, &rid);
 
-	if ((domain = find_domain_from_sid(&domain_sid)) == NULL)
-        return;
-
 	sid_to_string(sid_str, sid);
-	fstrcpy( name_val.name, name );
+	fstrcpy(name_val.name, name );
 	name_val.type = (int)type;
 
 	DEBUG(10,("store_name_by_sid_in_cache: storing cache entry SID %s -> %s\n",
@@ -398,15 +376,10 @@ static BOOL winbindd_lookup_name_by_sid_in_cache(DOM_SID *sid, fstring name, enu
 
 /* Lookup a sid in a domain from a name */
 
-BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *type)
+BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
+				 const char *name, DOM_SID *sid, enum SID_NAME_USE *type)
 {
-	int num_sids = 0, num_names = 1;
-	DOM_SID *sids = NULL;
-	uint32 *types = NULL;
-	CLI_POLICY_HND *hnd;
 	NTSTATUS result;
-	TALLOC_CTX *mem_ctx;
-	BOOL rv = False;
         
 	/* Don't bother with machine accounts */
         
@@ -414,55 +387,29 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 		return False;
 
 	/* First check cache. */
-	if (winbindd_lookup_sid_by_name_in_cache(name, sid, type)) {
+	if (winbindd_lookup_sid_by_name_in_cache(domain, name, sid, type)) {
 		if (*type == SID_NAME_USE_NONE)
 			return False; /* Negative cache hit. */
 		return True;
 	}
 	/* Lookup name */
-        
-	if (!(mem_ctx = talloc_init()))
-		return False;
-        
-	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-		goto done;
-        
-	result = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 
-				num_names, (char **)&name, &sids, 
-				&types, &num_sids);
+	result = domain->methods->name_to_sid(domain, name, sid, type);
         
 	/* Return rid and type if lookup successful */
-        
 	if (NT_STATUS_IS_OK(result)) {
-                
-		/* Return sid */
-                
-		if ((sid != NULL) && (sids != NULL))
-			sid_copy(sid, &sids[0]);
-                
-		/* Return name type */
-                
-		if ((type != NULL) && (types != NULL))
-			*type = types[0];
-
-		/* Store the forward and reverse map of this lookup in the cache. */
-                store_sid_by_name_in_cache(name, &sids[0], types[0]);
-		store_name_by_sid_in_cache(&sids[0], name, types[0]);
+                store_sid_by_name_in_cache(domain, name, sid, *type);
+		store_name_by_sid_in_cache(domain, sid, name, *type);
 	} else {
-		/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
+		/* JRA. Here's where we add the -ve cache store with a
+                   name type of SID_NAME_USE_NONE. */
 		DOM_SID nullsid;
 
 		ZERO_STRUCT(nullsid);
-		store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
+		store_sid_by_name_in_cache(domain, name, &nullsid, SID_NAME_USE_NONE);
 		*type = SID_NAME_UNKNOWN;
 	}
 
-	rv = NT_STATUS_IS_OK(result);
-
- done:
-	talloc_destroy(mem_ctx);
-        
-	return rv;
+	return NT_STATUS_IS_OK(result);
 }
 
 /**
@@ -489,6 +436,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
 	BOOL rv = False;
+	struct winbindd_domain *domain;
 
 	/* First check cache. */
 	if (winbindd_lookup_name_by_sid_in_cache(sid, name, type)) {
@@ -498,6 +446,12 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 			return False; /* Negative cache hit. */
 		} else 
 			return True;
+	}
+
+	domain = find_domain_from_sid(sid);
+	if (!domain) {
+		DEBUG(1,("Can't find domain from sid\n"));
+		return False;
 	}
 
 	/* Lookup name */
@@ -526,13 +480,13 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 		if ((type != NULL) && (types != NULL))
 			*type = types[0];
 
-		store_sid_by_name_in_cache(names[0], sid, types[0]);
-		store_name_by_sid_in_cache(sid, names[0], types[0]);
+		store_sid_by_name_in_cache(domain, names[0], sid, types[0]);
+		store_name_by_sid_in_cache(domain, sid, names[0], types[0]);
 	} else {
 		/* OK, so we tried to look up a name in this sid, and
 		 * didn't find it.  Therefore add a negative cache
 		 * entry.  */
-		store_name_by_sid_in_cache(sid, "", SID_NAME_USE_NONE);
+		store_name_by_sid_in_cache(domain, sid, "", SID_NAME_USE_NONE);
 		*type = SID_NAME_UNKNOWN;
 		fstrcpy(name, name_deadbeef);
 	}
@@ -817,7 +771,7 @@ BOOL check_domain_env(char *domain_env, char *domain)
 
 /* Parse a string of the form DOMAIN/user into a domain and a user */
 
-void parse_domain_user(char *domuser, fstring domain, fstring user)
+void parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
 	char *p;
 	char *sep = lp_winbind_separator();

@@ -98,6 +98,11 @@ struct winbindd_methods {
 				    TALLOC_CTX *mem_ctx,
 				    uint32 *start_ndx, uint32 *num_entries, 
 				    struct acct_info **info);
+
+	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,
+				const char *name,
+				DOM_SID *sid,
+				enum SID_NAME_USE *type);
 };
 
 /* Structures to hold per domain information */

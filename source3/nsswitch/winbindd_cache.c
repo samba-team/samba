@@ -150,7 +150,7 @@ static BOOL cache_domain_expired(struct winbindd_domain *domain,
 }
 
 static void set_cache_sequence_number(struct winbindd_domain *domain, 
-                                      char *cache_type, char *subkey)
+                                      const char *cache_type, const char *subkey)
 {
 	fstring keystr;
 
@@ -161,7 +161,7 @@ static void set_cache_sequence_number(struct winbindd_domain *domain,
 }
 
 static uint32 get_cache_sequence_number(struct winbindd_domain *domain, 
-                                        char *cache_type, char *subkey)
+                                        const char *cache_type, const char *subkey)
 {
 	fstring keystr;
 	uint32 seq_num;
@@ -178,7 +178,7 @@ static uint32 get_cache_sequence_number(struct winbindd_domain *domain,
 
 /* Fill the user or group cache with supplied data */
 
-static void store_cache(struct winbindd_domain *domain, char *cache_type,
+static void store_cache(struct winbindd_domain *domain, const char *cache_type,
 			void *sam_entries, int buflen)
 {
 	fstring keystr;
@@ -229,8 +229,8 @@ void winbindd_store_group_cache(struct winbindd_domain *domain,
 		    num_sam_entries * sizeof(struct acct_info));
 }
 
-static void store_cache_entry(struct winbindd_domain *domain, char *cache_type,
-                              char *name, void *buf, int len)
+static void store_cache_entry(struct winbindd_domain *domain, const char *cache_type,
+                              const char *name, void *buf, int len)
 {
 	fstring keystr;
 
@@ -261,13 +261,13 @@ void winbindd_store_name_cache_entry(struct winbindd_domain *domain,
 /* Fill a SID cache entry */
 
 void winbindd_store_sid_cache_entry(struct winbindd_domain *domain, 
-                                     char *name, struct winbindd_sid *sid)
+				    const char *name, struct winbindd_sid *sid)
 {
 	if (lp_winbind_cache_time() == 0) 
 		return;
 
 	store_cache_entry(domain, CACHE_TYPE_SID, name, sid, 
-		sizeof(struct winbindd_sid));
+			  sizeof(struct winbindd_sid));
 
 	set_cache_sequence_number(domain, CACHE_TYPE_SID, name);
 }
@@ -451,7 +451,8 @@ BOOL winbindd_fetch_group_cache(struct winbindd_domain *domain,
 }
 
 static BOOL fetch_cache_entry(struct winbindd_domain *domain, 
-                              char *cache_type, char *name, void *buf, int len)
+                              const char *cache_type, 
+			      const char *name, void *buf, int len)
 {
 	TDB_DATA data;
 	fstring keystr;
@@ -476,9 +477,8 @@ static BOOL fetch_cache_entry(struct winbindd_domain *domain,
 }
 
 /* Fetch an individual SID cache entry */
-
 BOOL winbindd_fetch_sid_cache_entry(struct winbindd_domain *domain, 
-                                     char *name, struct winbindd_sid *sid)
+				    const char *name, struct winbindd_sid *sid)
 {
 	uint32 seq_num;
 
