@@ -3,7 +3,7 @@
 
    Winbind status program.
 
-   Copyright (C) Tim Potter      2000-2002
+   Copyright (C) Tim Potter      2000-2003
    Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
@@ -486,9 +486,18 @@ static BOOL wbinfo_auth_crap(char *username)
 		
 	parse_wbinfo_domain_user(username, name_domain, name_user);
 
-	fstrcpy(request.data.auth_crap.user, name_user);
+	if (push_utf8_fstring(request.data.auth_crap.user, name_user) == -1) {
+		d_printf("unable to create utf8 string for '%s'\n",
+			 name_user);
+		return False;
+	}
 
-	fstrcpy(request.data.auth_crap.domain, name_domain);
+	if (push_utf8_fstring(request.data.auth_crap.domain, 
+			      name_domain) == -1) {
+		d_printf("unable to create utf8 string for '%s'\n",
+			 name_domain);
+		return False;
+	}
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         

@@ -226,10 +226,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 	/* Ensure null termination */
-	state->request.data.auth_crap.user[sizeof(state->request.data.auth_crap.user)-1]='\0';
-
-	/* Ensure null termination */
-	state->request.data.auth_crap.domain[sizeof(state->request.data.auth_crap.domain)-1]='\0';
+	state->request.data.auth_crap.user[sizeof(state->request.data.auth_crap.user)-1]=0;
+	state->request.data.auth_crap.domain[sizeof(state->request.data.auth_crap.domain)-1]=0;
 
 	if (!(mem_ctx = talloc_init("winbind pam auth crap for (utf8) %s", state->request.data.auth_crap.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
@@ -239,12 +237,16 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
         if (pull_utf8_talloc(mem_ctx, &user, state->request.data.auth_crap.user) == (size_t)-1) {
 		DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	if (*state->request.data.auth_crap.domain) {
 		char *dom = NULL;
 		if (pull_utf8_talloc(mem_ctx, &dom, state->request.data.auth_crap.domain) == (size_t)-1) {
 			DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 		domain = dom;
 	} else if (lp_winbind_use_default_domain()) {
@@ -268,6 +270,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		char *wrk = NULL;
 		if (pull_utf8_talloc(mem_ctx, &wrk, state->request.data.auth_crap.workstation) == (size_t)-1) {
 			DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 		workstation = wrk;
 	} else {
