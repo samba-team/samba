@@ -28,7 +28,7 @@ static pstring username;
 static pstring owner_username;
 static fstring server;
 static int got_pass;
-static int test_args;
+static int test_args = FALSE;
 static TALLOC_CTX *ctx;
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
@@ -36,7 +36,7 @@ static TALLOC_CTX *ctx;
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
-static int numeric;
+static BOOL numeric = FALSE;
 
 enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
@@ -735,45 +735,37 @@ static struct cli_state *connect_one(const char *share)
 	}
 }
 
-
-static void usage(void)
-{
-	printf(
-"Usage: smbcacls //server1/share1 filename [options]\n\
-\n\
-\t-D <acls>               delete an acl\n\
-\t-M <acls>               modify an acl\n\
-\t-A <acls>               add an acl\n\
-\t-S <acls>               set acls\n\
-\t-C username             change ownership of a file\n\
-\t-G username             change group ownership of a file\n\
-\t-n                      don't resolve sids or masks to names\n\
-\t-h                      print help\n\
-\t-d debuglevel           set debug output level\n\
-\t-U username             user to autheticate as\n\
-\n\
-The username can be of the form username%%password or\n\
-workgroup\\username%%password.\n\n\
-An acl is of the form ACL:<SID>:type/flags/mask\n\
-You can string acls together with spaces, commas or newlines\n\
-");
-}
-
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc,char *argv[])
+ int main(int argc, const char *argv[])
 {
 	char *share;
-	pstring filename;
-	extern char *optarg;
-	extern int optind;
 	int opt;
 	char *p;
 	enum acl_mode mode = SMB_ACL_SET;
-	char *the_acl = NULL;
+	static const char *the_acl = NULL;
 	enum chown_mode change_mode = REQUEST_NONE;
 	int result;
+	fstring path;
+	fstring filename;
+	poptContext pc;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{ "delete", 'D', POPT_ARG_STRING, NULL, 'D', "Delete an acl", "ACL" },
+		{ "modify", 'M', POPT_ARG_STRING, NULL, 'M', "Modify an acl", "ACL" },
+		{ "add", 'A', POPT_ARG_STRING, NULL, 'A', "Add an acl", "ACL" },
+		{ "set", 'S', POPT_ARG_STRING, NULL, 'S', "Set acls", "ACLS" },
+		{ "chown", 'C', POPT_ARG_STRING, NULL, 'C', "Change ownership of a file", "USERNAME" },
+		{ "chgrp", 'G', POPT_ARG_STRING, NULL, 'G', "Change group ownership of a file", "GROUPNAME" },
+		{ "numeric", 'n', POPT_ARG_VAL, &numeric, TRUE, "Don't resolve sids or masks to names" },
+		{ "test-args", 't', POPT_ARG_VAL, &test_args, TRUE, "Test arguments"},
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+		{"username", 'U', POPT_ARG_STRING, NULL, 'U', "User to authenticate as", "user%password" },
+		{ NULL }
+	};
 
 	struct cli_state *cli;
 
@@ -783,20 +775,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	dbf = x_stderr;
 
-	if (argc < 3 || argv[1][0] == '-') {
-		usage();
-		talloc_destroy(ctx);
-		exit(EXIT_PARSE_ERROR);
-	}
-
 	setup_logging(argv[0],True);
-
-	share = argv[1];
-	pstrcpy(filename, argv[2]);
-	all_string_sub(share,"/","\\",0);
-
-	argc -= 2;
-	argv += 2;
 
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
@@ -812,11 +791,14 @@ You can string acls together with spaces, commas or newlines\n\
 			       strlen(password));
 		}
 	}
+	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
+	
+	poptSetOtherOptionHelp(pc, "//server1/share1 filename [options]");
 
-	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:C:G:td:")) != EOF) {
+	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'U':
-			pstrcpy(username,optarg);
+			pstrcpy(username,poptGetOptArg(pc));
 			p = strchr_m(username,'%');
 			if (p) {
 				*p = 0;
@@ -826,75 +808,60 @@ You can string acls together with spaces, commas or newlines\n\
 			break;
 
 		case 'S':
-			the_acl = optarg;
+			the_acl = poptGetOptArg(pc);
 			mode = SMB_ACL_SET;
 			break;
 
 		case 'D':
-			the_acl = optarg;
+			the_acl = poptGetOptArg(pc);
 			mode = SMB_ACL_DELETE;
 			break;
 
 		case 'M':
-			the_acl = optarg;
+			the_acl = poptGetOptArg(pc);
 			mode = SMB_ACL_MODIFY;
 			break;
 
 		case 'A':
-			the_acl = optarg;
+			the_acl = poptGetOptArg(pc);
 			mode = SMB_ACL_ADD;
 			break;
 
 		case 'C':
-			pstrcpy(owner_username,optarg);
+			pstrcpy(owner_username,poptGetOptArg(pc));
 			change_mode = REQUEST_CHOWN;
 			break;
 
 		case 'G':
-			pstrcpy(owner_username,optarg);
+			pstrcpy(owner_username,poptGetOptArg(pc));
 			change_mode = REQUEST_CHGRP;
 			break;
-
-		case 'n':
-			numeric = 1;
-			break;
-
-		case 't':
-			test_args = 1;
-			break;
-
-		case 'h':
-			usage();
-			talloc_destroy(ctx);
-			exit(EXIT_PARSE_ERROR);
-
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-
-		default:
-			printf("Unknown option %c (%d)\n", (char)opt, opt);
-			talloc_destroy(ctx);
-			exit(EXIT_PARSE_ERROR);
 		}
 	}
 
-	argc -= optind;
-	argv += optind;
-
-	if (argc > 0) {
-		usage();
-		talloc_destroy(ctx);
-		exit(EXIT_PARSE_ERROR);
-	}
-
 	/* Make connection to server */
+	if(!poptPeekArg(pc)) { 
+		poptPrintUsage(pc, stderr, 0);
+		return -1;
+	}
+	
+	fstrcpy(path, poptGetArg(pc));
+	
+	if(!poptPeekArg(pc)) { 
+		poptPrintUsage(pc, stderr, 0);	
+		return -1;
+	}
+	
+	fstrcpy(filename, poptGetArg(pc));
 
-	fstrcpy(server,share+2);
+	all_string_sub(path,"/","\\",0);
+
+	fstrcpy(server,path+2);
 	share = strchr_m(server,'\\');
 	if (!share) {
 		share = strchr_m(server,'/');
 		if (!share) {
+			printf("Invalid argument: %s\n", share);
 			return -1;
 		}
 	}
@@ -934,4 +901,3 @@ You can string acls together with spaces, commas or newlines\n\
 
 	return result;
 }
-
