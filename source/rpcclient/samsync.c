@@ -130,6 +130,7 @@ static NTSTATUS sam_repl(struct cli_state *cli, unsigned char trust_passwde[16],
 static void usage(void)
 {
 	printf("Usage: samsync [options]\n");
+	printf("Version: %s\n", VERSION);
 
 	printf("\t-d debuglevel         set the debuglevel\n");
 	printf("\t-h                    Print this help message.\n");

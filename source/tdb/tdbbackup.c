@@ -55,6 +55,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include "tdb.h"
+#include "version.h"
 
 static int failed;
 
@@ -228,6 +229,7 @@ static int verify_tdb(const char *fname, const char *bak_name)
 static void usage(void)
 {
 	printf("Usage: tdbbackup [options] <fname...>\n\n");
+	printf("Version: %s\n", VERSION);
 	printf("   -h            this help message\n");
 	printf("   -s suffix     set the backup suffix\n");
 	printf("   -v            veryify mode (restore if corrupt)\n");
