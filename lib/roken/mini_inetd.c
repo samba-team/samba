@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -118,8 +118,10 @@ mini_inetd (int port)
 
     for (i = 0, a = ai; a != NULL; a = a->ai_next, ++i) {
 	fds[i] = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
-	if (fds[i] < 0)
-	    err (1, "socket");
+	if (fds[i] < 0) {
+	    warn (1, "socket");
+	    continue;
+	}
 	socket_set_reuseaddr (fds[i], 1);
 	if (bind (fds[i], a->ai_addr, a->ai_addrlen) < 0)
 	    err (1, "bind");
