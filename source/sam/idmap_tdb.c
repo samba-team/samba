@@ -435,7 +435,7 @@ static struct idmap_methods db_methods = {
 
 };
 
-NTSTATUS idmap_tdb_init()
+NTSTATUS idmap_tdb_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "tdb", &db_methods);
 }
