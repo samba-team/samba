@@ -87,6 +87,7 @@ o   Guenther Deschner <gd@suse.com>
       and not $(bindir).
     * Add the capability to specify the new user password 
       for 'net ads password' on the command line.
+    * Correctly detect AFS headers on SuSE
 	
 o   James Flemer <jflemer@uvm.edu>
     * Fix AIX compile bug by linking HAVE_ATTR_LIST to HAVE_SYS_ATTRIBUTES_H.
