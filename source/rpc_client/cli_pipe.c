@@ -719,9 +719,9 @@ BOOL cli_rcv_pdu(struct cli_connection *con,
 	/* with a little help by Scummer */
 	num_read = cli_read_one(cli, fnum, readbuf, 0, 0x18);
 	DEBUG(5, ("cli_pipe: read header (size:%d)\n", num_read));
-	prs_append_data(rdata, readbuf, num_read);
 	if (num_read != 0x18)
 		return False;
+	prs_append_data(rdata, readbuf, num_read);
 	if (!rpc_check_hdr(rdata, &rhdr, &first, &last, &len))
 	{
 		return False;
