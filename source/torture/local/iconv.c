@@ -23,6 +23,7 @@
 
 #include "includes.h"
 
+#if HAVE_NATIVE_ICONV
 /*
   generate a UTF-16LE buffer for a given unicode codepoint
 */
@@ -240,7 +241,6 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	}
 	
 	if (memcmp(buf3, inbuf, size) != 0) {
-		int i;
 		printf("pull bytes mismatch:\n");
 		show_buf("inbuf", inbuf, size);
 		show_buf(" buf3", buf3, size);
@@ -305,3 +305,12 @@ BOOL torture_local_iconv(int dummy)
 }
 
 
+#else
+
+BOOL torture_local_iconv(int dummy) 
+{
+	printf("No native iconv library - can't run iconv test\n");
+	return True;
+}
+
+#endif
