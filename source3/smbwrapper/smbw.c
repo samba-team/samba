@@ -607,6 +607,38 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 
 
 /***************************************************** 
+a wrapper for pread()
+*******************************************************/
+ssize_t smbw_pread(int fd, void *buf, size_t count, off_t ofs)
+{
+	struct smbw_file *file;
+	int ret;
+
+	DEBUG(4,("%s %d\n", 
+		 __FUNCTION__, (int)count));
+
+	smbw_busy++;
+
+	file = smbw_file(fd);
+	if (!file) {
+		errno = EBADF;
+		smbw_busy--;
+		return -1;
+	}
+	
+	ret = cli_read(&file->srv->cli, file->f->cli_fd, buf, ofs, count);
+
+	if (ret == -1) {
+		errno = smbw_errno(&file->srv->cli);
+		smbw_busy--;
+		return -1;
+	}
+
+	smbw_busy--;
+	return ret;
+}
+
+/***************************************************** 
 a wrapper for read()
 *******************************************************/
 ssize_t smbw_read(int fd, void *buf, size_t count)
@@ -626,7 +658,8 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 		return -1;
 	}
 	
-	ret = cli_read(&file->srv->cli, file->f->cli_fd, buf, file->f->offset, count);
+	ret = cli_read(&file->srv->cli, file->f->cli_fd, buf, 
+		       file->f->offset, count);
 
 	if (ret == -1) {
 		errno = smbw_errno(&file->srv->cli);
@@ -639,6 +672,8 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 	smbw_busy--;
 	return ret;
 }
+
+	
 
 /***************************************************** 
 a wrapper for write()
@@ -669,6 +704,38 @@ ssize_t smbw_write(int fd, void *buf, size_t count)
 	}
 
 	file->f->offset += ret;
+
+	smbw_busy--;
+	return ret;
+}
+
+/***************************************************** 
+a wrapper for pwrite()
+*******************************************************/
+ssize_t smbw_pwrite(int fd, void *buf, size_t count, off_t ofs)
+{
+	struct smbw_file *file;
+	int ret;
+
+	DEBUG(4,("%s\n", __FUNCTION__));
+
+	smbw_busy++;
+
+	file = smbw_file(fd);
+	if (!file) {
+		DEBUG(3,("bad fd in read\n"));
+		errno = EBADF;
+		smbw_busy--;
+		return -1;
+	}
+	
+	ret = cli_write(&file->srv->cli, file->f->cli_fd, buf, ofs, count);
+
+	if (ret == -1) {
+		errno = smbw_errno(&file->srv->cli);
+		smbw_busy--;
+		return -1;
+	}
 
 	smbw_busy--;
 	return ret;
@@ -877,7 +944,7 @@ int smbw_utime(const char *fname, void *buf)
 	pstring path;
 	uint32 mode;
 
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
+	DEBUG(4,("%s (%s, 0x%x)\n", __FUNCTION__, fname, (unsigned)buf));
 
 	if (!fname) {
 		errno = EINVAL;
@@ -903,7 +970,8 @@ int smbw_utime(const char *fname, void *buf)
 		goto failed;
 	}
 
-	if (!cli_setatr(&srv->cli, path, mode, tbuf->modtime)) {
+	if (!cli_setatr(&srv->cli, path, mode, 
+			tbuf?tbuf->modtime:time(NULL))) {
 		errno = smbw_errno(&srv->cli);
 		goto failed;
 	}
