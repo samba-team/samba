@@ -6,7 +6,7 @@
 
 package IdlEParser;
 
-use ndr;
+use ndr_parser;
 use strict;
 
 # the list of needed functions
