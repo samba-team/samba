@@ -44,16 +44,28 @@ RCSID("$Id$");
  */
 
 
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
 #include <signal.h>
 #include <errno.h>
+#ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
+#endif
+
+#include <roken.h>
 
 #include "ring.h"
 
@@ -644,16 +656,14 @@ TerminalSpeeds(ispeed, ospeed)
 TerminalWindowSize(rows, cols)
     long *rows, *cols;
 {
-#ifdef	TIOCGWINSZ
     struct winsize ws;
 
-    if (ioctl(fileno(stdin), TIOCGWINSZ, (char *)&ws) >= 0) {
+    if (get_window_size (STDIN_FILENO, &ws) == 0) {
 	*rows = ws.ws_row;
 	*cols = ws.ws_col;
 	return 1;
-    }
-#endif	/* TIOCGWINSZ */
-    return 0;
+    } else
+	return 0;
 }
 
     int
