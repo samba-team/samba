@@ -99,7 +99,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	a.in.server_name = NULL;
 	a.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
-	a.in.secure_challenge_type = SEC_CHAN_BDC;
+	a.in.secure_channel_type = SEC_CHAN_BDC;
 	a.in.computer_name = lp_netbios_name();
 
 	printf("Testing ServerAuthenticate\n");
@@ -118,6 +118,64 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				   struct netr_CredentialState *creds)
+{
+	NTSTATUS status;
+	struct netr_ServerReqChallenge r;
+	struct netr_ServerAuthenticate2 a;
+	const char *plain_pass;
+	uint8 mach_pwd[16];
+	uint32 negotiate_flags = 0;
+
+	printf("Testing ServerReqChallenge\n");
+
+	r.in.server_name = NULL;
+	r.in.computer_name = lp_netbios_name();
+	generate_random_buffer(r.in.credentials.data, sizeof(r.in.credentials.data), False);
+
+	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerReqChallenge - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	plain_pass = secrets_fetch_machine_password();
+	if (!plain_pass) {
+		printf("Unable to fetch machine password!\n");
+		return False;
+	}
+
+	E_md4hash(plain_pass, mach_pwd);
+
+	creds_client_init(creds, &r.in.credentials, &r.out.credentials, mach_pwd,
+			  &a.in.credentials);
+
+	a.in.server_name = NULL;
+	a.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
+	a.in.secure_channel_type = SEC_CHAN_BDC;
+	a.in.computer_name = lp_netbios_name();
+	a.in.negotiate_flags = &negotiate_flags;
+	a.out.negotiate_flags = &negotiate_flags;
+
+	printf("Testing ServerAuthenticate2\n");
+
+	status = dcerpc_netr_ServerAuthenticate2(p, mem_ctx, &a);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerAuthenticate2 - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!creds_client_check(creds, &a.out.credentials)) {
+		printf("Credential chaining failed\n");
+		return False;
+	}
+
+	printf("negotiate_flags=0x%08x\n", negotiate_flags);
+
+	return True;
+}
+
 /*
   try a netlogon SamLogon
 */
@@ -131,7 +189,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	const char *password = lp_parm_string(-1, "torture", "password");
 	struct netr_CredentialState creds;
 
-	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
+	if (!test_SetupCredentials2(p, mem_ctx, &creds)) {
 		return False;
 	}
 
@@ -194,7 +252,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
-	r.in.secure_challenge_type = SEC_CHAN_BDC;
+	r.in.secure_channel_type = SEC_CHAN_BDC;
 	r.in.computer_name = lp_netbios_name();
 
 	password = generate_random_str(8);
@@ -508,6 +566,86 @@ static BOOL test_GetAnyDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
+/*
+  try a netlogon LogonControl2
+*/
+static BOOL test_LogonControl2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_LogonControl2 r;
+	BOOL ret = True;
+	int i;
+
+	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+
+	r.in.function_code = NETLOGON_CONTROL_REDISCOVER;
+	r.in.data.domain = lp_workgroup();
+
+	for (i=1;i<4;i++) {
+		r.in.level = i;
+
+		printf("Testing LogonControl2 level %d function %d\n", 
+		       i, r.in.function_code);
+
+		status = dcerpc_netr_LogonControl2(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonControl - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	r.in.function_code = NETLOGON_CONTROL_TC_QUERY;
+	r.in.data.domain = lp_workgroup();
+
+	for (i=1;i<4;i++) {
+		r.in.level = i;
+
+		printf("Testing LogonControl2 level %d function %d\n", 
+		       i, r.in.function_code);
+
+		status = dcerpc_netr_LogonControl2(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonControl - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	r.in.function_code = NETLOGON_CONTROL_TRANSPORT_NOTIFY;
+	r.in.data.domain = lp_workgroup();
+
+	for (i=1;i<4;i++) {
+		r.in.level = i;
+
+		printf("Testing LogonControl2 level %d function %d\n", 
+		       i, r.in.function_code);
+
+		status = dcerpc_netr_LogonControl2(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonControl - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
+	r.in.data.debug_level = ~0;
+
+	for (i=1;i<4;i++) {
+		r.in.level = i;
+
+		printf("Testing LogonControl2 level %d function %d\n", 
+		       i, r.in.function_code);
+
+		status = dcerpc_netr_LogonControl2(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonControl - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
+
 BOOL torture_rpc_netlogon(int dummy)
 {
         NTSTATUS status;
@@ -568,6 +706,10 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_GetAnyDCName(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_LogonControl2(p, mem_ctx)) {
 		ret = False;
 	}
 
