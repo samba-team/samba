@@ -101,9 +101,7 @@
 #include <krb5.h>
 #include <krb5-private.h> /* for _krb5_{get,put}_int */
 #endif
-#ifdef KRB4
 #include <kafs.h>
-#endif
 
 #ifndef _PATH_NOLOGIN
 #define _PATH_NOLOGIN   "/etc/nologin"
