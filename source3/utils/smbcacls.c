@@ -541,7 +541,7 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 {
 	if (sec_ace_equal(ace1, ace2)) return 0;
-	if (ace1->type != ace2->type) return ace1->type - ace2->type;
+	if (ace1->type != ace2->type) return ace2->type - ace1->type;
 	if (sid_compare(&ace1->sid, &ace2->sid)) return sid_compare(&ace1->sid, &ace2->sid);
 	if (ace1->flags != ace2->flags) return ace1->flags - ace2->flags;
 	if (ace1->info.mask != ace2->info.mask) return ace1->info.mask - ace2->info.mask;
