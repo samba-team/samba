@@ -476,6 +476,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	pstring temp;
 	LOGIN_CACHE	*cache_entry = NULL;
 	int pwHistLen;
+	pstring		tmpstring;
 
 	/*
 	 * do a little initialization
@@ -635,9 +636,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_DRIVE), dir_drive)) 
 	{
-		pdb_set_dir_drive( sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_drive()),
-			PDB_DEFAULT );
+		pdb_set_dir_drive( sampass, lp_logon_drive(), PDB_DEFAULT );
 	} else {
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	}
@@ -649,7 +648,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
 			PDB_DEFAULT );
 	} else {
-		pdb_set_homedir(sampass, homedir, PDB_SET);
+		pstrcpy( tmpstring, homedir );
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
@@ -659,7 +660,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()), 
 			PDB_DEFAULT );
 	} else {
-		pdb_set_logon_script(sampass, logon_script, PDB_SET);
+		pstrcpy( tmpstring, logon_script );
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
 	}
 
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
@@ -669,7 +672,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			talloc_sub_basic( sampass->mem_ctx, username, lp_logon_path()),
 			PDB_DEFAULT );
 	} else {
-		pdb_set_profile_path(sampass, profile_path, PDB_SET);
+		pstrcpy( tmpstring, profile_path );
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
 	}
 
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
