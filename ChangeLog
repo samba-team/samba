@@ -1,3 +1,15 @@
+2000-04-08  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/mk_safe.c (krb5_mk_safe): increment local sequence
+	number after the fact and only increment it if we were successful
+	* lib/krb5/mk_priv.c (krb5_mk_priv): increment local sequence
+	number after the fact and only increment it if we were successful
+	* lib/krb5/krb5.h (krb5_auth_context_data): make sequence number
+	unsigned
+
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password):
+	`in_tkt_service' can be NULL
+
 2000-04-06  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1/parse.y: regonize INTEGER (0..UNIT_MAX).
