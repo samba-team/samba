@@ -1,3 +1,7 @@
+Mon Apr 19 12:32:04 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* configure.in: add appl/su
+
 Sun Apr 18 15:46:53 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/cache.c: add krb5_cc_get_type that returns type of a
