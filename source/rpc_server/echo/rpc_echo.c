@@ -119,9 +119,11 @@ struct echo_TestSleep_private {
 	struct echo_TestSleep *r;
 };
 
-static void echo_TestSleep_handler(struct event_context *ev, struct timed_event *te, struct timeval t)
+static void echo_TestSleep_handler(struct event_context *ev, struct timed_event *te, 
+				   struct timeval t, void *private)
 {
-	struct echo_TestSleep_private *p = te->private;
+	struct echo_TestSleep_private *p = talloc_get_type(private, 
+							   struct echo_TestSleep_private);
 	struct echo_TestSleep *r = p->r;
 	NTSTATUS status;
 
@@ -136,7 +138,6 @@ static void echo_TestSleep_handler(struct event_context *ev, struct timed_event 
 
 static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
 {
-	struct timed_event te;
 	struct echo_TestSleep_private *p;
 
 	if (!(dce_call->state_flags & DCESRV_CALL_STATE_FLAG_MAY_ASYNC)) {
@@ -154,11 +155,9 @@ static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 	p->dce_call	= dce_call;
 	p->r		= r;
 
-	te.handler	= echo_TestSleep_handler;
-	te.private	= p;
-	te.next_event	= timeval_add(&dce_call->time, r->in.seconds, 0);
-
-	event_add_timed(dce_call->event_ctx, &te, p);
+	event_add_timed(dce_call->event_ctx, p, 
+			timeval_add(&dce_call->time, r->in.seconds, 0),
+			echo_TestSleep_handler, p);
 
 	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 	return 0;

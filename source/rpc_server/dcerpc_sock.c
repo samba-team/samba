@@ -112,7 +112,7 @@ void dcesrv_sock_recv(struct stream_connection *conn, struct timeval t, uint16_t
 	}
 
 	if (dce_conn->call_list && dce_conn->call_list->replies) {
-		conn->event.fde->flags |= EVENT_FD_WRITE;
+		EVENT_FD_WRITEABLE(conn->event.fde);
 	}
 }
 
@@ -128,7 +128,7 @@ void dcesrv_sock_send(struct stream_connection *conn, struct timeval t, uint16_t
 	}
 
 	if (!dce_conn->call_list || !dce_conn->call_list->replies) {
-		conn->event.fde->flags &= ~EVENT_FD_WRITE;
+		EVENT_FD_NOT_WRITEABLE(conn->event.fde);
 	}
 }
 

@@ -33,6 +33,15 @@ ADD_OBJ_FILES = \
 ##############################
 
 ##############################
+# Start SUBSYSTEM LIBEVENTS
+[SUBSYSTEM::LIBEVENTS]
+NOPROTO = YES
+INIT_OBJ_FILES = lib/events.o
+REQUIRED_SUBSYSTEMS = LIBTALLOC
+# End SUBSYSTEM LIBEVENTS
+##############################
+
+##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
 INIT_OBJ_FILES = lib/version.o
@@ -62,7 +71,6 @@ ADD_OBJ_FILES = \
 		lib/pam_errors.o \
 		intl/lang_tdb.o \
 		lib/mutex.o \
-		lib/events.o \
 		lib/server_mutex.o \
 		lib/idtree.o \
 		lib/unix_privs.o \

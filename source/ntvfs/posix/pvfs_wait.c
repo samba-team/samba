@@ -86,9 +86,9 @@ static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uin
   receive a timeout on a message wait
 */
 static void pvfs_wait_timeout(struct event_context *ev, 
-			      struct timed_event *te, struct timeval t)
+			      struct timed_event *te, struct timeval t, void *private)
 {
-	struct pvfs_wait *pwait = te->private;
+	struct pvfs_wait *pwait = talloc_get_type(private, struct pvfs_wait);
 	struct smbsrv_request *req = pwait->req;
 
 	pwait->reason = PVFS_WAIT_TIMEOUT;
@@ -124,7 +124,6 @@ static int pvfs_wait_destructor(void *ptr)
 			void (*fn)(void *, enum pvfs_wait_notice),
 			void *private)
 {
-	struct timed_event te;
 	struct pvfs_wait *pwait;
 
 	pwait = talloc(pvfs, struct pvfs_wait);
@@ -141,10 +140,8 @@ static int pvfs_wait_destructor(void *ptr)
 	pwait->pvfs = pvfs;
 
 	/* setup a timer */
-	te.next_event = end_time;
-	te.handler = pvfs_wait_timeout;
-	te.private = pwait;
-	pwait->te = event_add_timed(pwait->ev, &te, pwait);
+	pwait->te = event_add_timed(pwait->ev, pwait, end_time, 
+				    pvfs_wait_timeout, pwait);
 
 	/* register with the messaging subsystem for this message
 	   type */

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 
 enum {MY_PING=1000, MY_PONG, MY_EXIT};
 
@@ -131,7 +132,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	talloc_free(msg_ctx);
 
-	event_context_destroy(ev);
+	talloc_free(ev);
 	return ret;
 }
 

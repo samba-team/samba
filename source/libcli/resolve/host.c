@@ -83,9 +83,9 @@ static void run_child(struct composite_context *c, int fd)
   handle a read event on the pipe
 */
 static void pipe_handler(struct event_context *ev, struct fd_event *fde, 
-			 struct timeval t, uint16_t flags)
+			 struct timeval t, uint16_t flags, void *private)
 {
-	struct composite_context *c = talloc_get_type(fde->private, struct composite_context);
+	struct composite_context *c = talloc_get_type(private, struct composite_context);
 	struct host_state *state = talloc_get_type(c->private, struct host_state);
 	char address[128];
 	int ret;
@@ -136,7 +136,6 @@ struct composite_context *resolve_name_host_send(struct nbt_name *name,
 	struct host_state *state;
 	NTSTATUS status;
 	int fd[2] = { -1, -1 };
-	struct fd_event fde;
 	int ret;
 
 	c = talloc_zero(NULL, struct composite_context);
@@ -161,11 +160,8 @@ struct composite_context *resolve_name_host_send(struct nbt_name *name,
 
 	/* we need to put the child in our event context so
 	   we know when the gethostbyname() has finished */
-	fde.fd = state->child_fd;
-	fde.flags = EVENT_FD_READ;
-	fde.handler = pipe_handler;
-	fde.private = c;
-	state->fde = event_add_fd(c->event_ctx, &fde, state);
+	state->fde = event_add_fd(c->event_ctx, state, state->child_fd, EVENT_FD_READ, 
+				  pipe_handler, c);
 	if (state->fde == NULL) {
 		close(fd[0]);
 		close(fd[1]);

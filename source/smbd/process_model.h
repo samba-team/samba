@@ -58,6 +58,4 @@ struct model_ops {
 struct process_model_critical_sizes {
 	int interface_version;
 	int sizeof_model_ops;
-	int sizeof_event_context;
-	int sizeof_fd_event;
 };

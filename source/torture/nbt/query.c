@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "libcli/nbt/libnbt.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 

@@ -49,11 +49,11 @@ static int nbt_name_request_destructor(void *ptr)
 		req->te = NULL;
 	}
 	if (req->nbtsock->send_queue == NULL) {
-		req->nbtsock->fde->flags &= ~EVENT_FD_WRITE;
+		EVENT_FD_NOT_WRITEABLE(req->nbtsock->fde);
 	}
 	if (req->nbtsock->num_pending == 0 && 
 	    req->nbtsock->incoming.handler == NULL) {
-		req->nbtsock->fde->flags &= ~EVENT_FD_READ;
+		EVENT_FD_NOT_READABLE(req->nbtsock->fde);
 	}
 	return 0;
 }
@@ -86,12 +86,12 @@ static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 			talloc_free(req);
 		} else {
 			req->state = NBT_REQUEST_WAIT;
-			nbtsock->fde->flags |= EVENT_FD_READ;
+			EVENT_FD_READABLE(nbtsock->fde);
 			nbtsock->num_pending++;
 		}
 	}
 
-	nbtsock->fde->flags &= ~EVENT_FD_WRITE;
+	EVENT_FD_NOT_WRITEABLE(nbtsock->fde);
 	talloc_free(tmp_ctx);
 	return;
 
@@ -210,9 +210,9 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
   handle fd events on a nbt_name_socket
 */
 static void nbt_name_socket_handler(struct event_context *ev, struct fd_event *fde,
-				    struct timeval t, uint16_t flags)
+				    struct timeval t, uint16_t flags, void *private)
 {
-	struct nbt_name_socket *nbtsock = talloc_get_type(fde->private, 
+	struct nbt_name_socket *nbtsock = talloc_get_type(private, 
 							  struct nbt_name_socket);
 	if (flags & EVENT_FD_WRITE) {
 		nbt_name_socket_send(nbtsock);
@@ -231,7 +231,6 @@ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 {
 	struct nbt_name_socket *nbtsock;
 	NTSTATUS status;
-	struct fd_event fde;
 
 	nbtsock = talloc(mem_ctx, struct nbt_name_socket);
 	if (nbtsock == NULL) goto failed;
@@ -255,11 +254,9 @@ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	nbtsock->num_pending = 0;
 	nbtsock->incoming.handler = NULL;
 
-	fde.fd = socket_get_fd(nbtsock->sock);
-	fde.flags = 0;
-	fde.handler = nbt_name_socket_handler;
-	fde.private = nbtsock;
-	nbtsock->fde = event_add_fd(nbtsock->event_ctx, &fde, nbtsock);
+	nbtsock->fde = event_add_fd(nbtsock->event_ctx, nbtsock, 
+				    socket_get_fd(nbtsock->sock), 0,
+				    nbt_name_socket_handler, nbtsock);
 	
 	return nbtsock;
 
@@ -272,9 +269,9 @@ failed:
   handle a request timeout
 */
 static void nbt_name_socket_timeout(struct event_context *ev, struct timed_event *te,
-				    struct timeval t)
+				    struct timeval t, void *private)
 {
-	struct nbt_name_request *req = talloc_get_type(te->private, 
+	struct nbt_name_request *req = talloc_get_type(private, 
 						       struct nbt_name_request);
 	nbt_name_request_destructor(req);
 	if (req->num_replies == 0) {
@@ -299,7 +296,6 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 					       BOOL allow_multiple_replies)
 {
 	struct nbt_name_request *req;
-	struct timed_event te;
 	int id;
 	NTSTATUS status;
 
@@ -335,10 +331,8 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	request->name_trn_id = id;
 	req->name_trn_id     = id;
 
-	te.next_event = timeout;
-	te.handler = nbt_name_socket_timeout;
-	te.private = req;
-	req->te = event_add_timed(nbtsock->event_ctx, &te, req);
+	req->te = event_add_timed(nbtsock->event_ctx, req, timeout,
+				  nbt_name_socket_timeout, req);
 	
 	talloc_set_destructor(req, nbt_name_request_destructor);	
 
@@ -358,7 +352,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 		NDR_PRINT_DEBUG(nbt_name_packet, request);
 	}
 
-	nbtsock->fde->flags |= EVENT_FD_WRITE;
+	EVENT_FD_WRITEABLE(nbtsock->fde);
 
 	return req;
 
@@ -403,7 +397,7 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 
 	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
 
-	nbtsock->fde->flags |= EVENT_FD_WRITE;
+	EVENT_FD_WRITEABLE(nbtsock->fde);
 
 	return NT_STATUS_OK;
 
@@ -442,7 +436,7 @@ NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
 {
 	nbtsock->incoming.handler = handler;
 	nbtsock->incoming.private = private;
-	nbtsock->fde->flags |= EVENT_FD_READ;
+	EVENT_FD_READABLE(nbtsock->fde);
 	return NT_STATUS_OK;
 }
 

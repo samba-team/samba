@@ -415,7 +415,7 @@ static void ldapsrv_recv(struct stream_connection *conn, struct timeval t,
 	}
 
 	if ((ldap_conn->out_buffer.length > 0)||(ldap_conn->sasl_out_buffer.length > 0)) {
-		conn->event.fde->flags |= EVENT_FD_WRITE;
+		EVENT_FD_WRITEABLE(conn->event.fde);
 	}
 
 	return;
@@ -437,7 +437,7 @@ static void ldapsrv_send(struct stream_connection *conn, struct timeval t,
 	}
 
 	if (ldap_conn->out_buffer.length == 0 && ldap_conn->sasl_out_buffer.length == 0) {
-		conn->event.fde->flags &= ~EVENT_FD_WRITE;
+		EVENT_FD_NOT_WRITEABLE(conn->event.fde);
 	}
 
 	return;

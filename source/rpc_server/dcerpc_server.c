@@ -878,7 +878,7 @@ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	if (call->conn->call_list && call->conn->call_list->replies) {
 		if (call->conn->srv_conn &&
 		    call->conn->srv_conn->event.fde) {
-			call->conn->srv_conn->event.fde->flags |= EVENT_FD_WRITE;
+			EVENT_FD_WRITEABLE(call->conn->srv_conn->event.fde);
 		}
 	}
 

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 
