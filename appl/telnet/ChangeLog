@@ -54,6 +54,9 @@
 
 2000-12-07  Assar Westerlund  <assar@sics.se>
 
+	* telnetd/telnetd.h: move include files around to avoid getting SE
+	from sys/*.h on HP to override SE from telnet.h
+
 	* telnetd/sys_term.c (scrub_env): remove some const-ness
 	* telnetd/sys_term.c (scrub_env): add LOGNAME and POSIXLY_CORRECT
 	to the list of authorized environment variables to be compatible
