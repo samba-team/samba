@@ -241,8 +241,14 @@ BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 
 BOOL asn1_read_BOOLEAN(ASN1_DATA *data, BOOL *v)
 {
+	uint8_t tmp = 0;
 	asn1_start_tag(data, ASN1_BOOLEAN);
-	asn1_read_uint8(data, (uint8 *)v);
+	asn1_read_uint8(data, &tmp);
+	if (tmp == 0xFF) {
+		*v = True;
+	} else {
+		*v = False;
+	}
 	asn1_end_tag(data);
 	return !data->has_error;
 }
