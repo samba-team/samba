@@ -212,7 +212,7 @@ as_rep(krb5_context context,
 	    }
 	}
 	/* XXX */
-	if(found_pa == 0 && require_enc_timestamp)
+	if(found_pa == 0 && require_preauth)
 	    goto use_pa;
 	/* We come here if we found a pa-enc-timestamp, but if there
            was some problem with it, other than too large skew */
@@ -221,7 +221,7 @@ as_rep(krb5_context context,
 	    e_text = NULL;
 	    goto out;
 	}
-    }else if (require_enc_timestamp) {
+    }else if (require_preauth) {
 	PA_DATA foo;
 	u_char buf[16];
 	size_t len;
