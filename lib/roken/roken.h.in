@@ -437,7 +437,7 @@ typedef unsigned short sa_family_t;
 
 struct sockaddr_storage {
     u_int8_t		__ss_len;
-    sa_familiy_t	__ss_family;
+    sa_family_t		__ss_family;
     char		pad[sizeof(struct sockaddr_in)
 			   - sizeof(u_int8_t) - sizeof(sa_family_t)];
 };
