@@ -91,6 +91,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 {
 	static BOOL set_lock_msg;
 	blocking_lock_record *blr;
+	BOOL my_lock_ctx = False;
 	NTSTATUS status;
 
 	if(in_chained_smb() ) {
@@ -127,7 +128,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 	/* Add a pending lock record for this. */
 	status = brl_lock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
 			lock_pid, sys_getpid(), blr->fsp->conn->cnum,
-			offset, count, PENDING_LOCK);
+			offset, count, PENDING_LOCK, &my_lock_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("push_blocking_lock_request: failed to add PENDING_LOCK record.\n"));
@@ -302,6 +303,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	NTSTATUS status;
 	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 	files_struct *fsp = blr->fsp;
+	BOOL my_lock_ctx = False;
 
 	numtoread = SVAL(inbuf,smb_vwv1);
 	startpos = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv2);
@@ -309,8 +311,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
 	data = smb_buf(outbuf) + 3;
  
-	status = do_lock_spin( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, 
-			  startpos, READ_LOCK);
+	status = do_lock_spin( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, startpos, READ_LOCK, &my_lock_ctx);
 	if (NT_STATUS_V(status)) {
 		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
 			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
@@ -371,13 +372,13 @@ static BOOL process_lock(blocking_lock_record *blr)
 	NTSTATUS status;
 	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 	files_struct *fsp = blr->fsp;
+	BOOL my_lock_ctx = False;
 
 	count = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv1);
 	offset = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
 
 	errno = 0;
-	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, 
-			 offset, WRITE_LOCK);
+	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &my_lock_ctx);
 	if (NT_STATUS_IS_ERR(status)) {
 		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
 			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
@@ -428,6 +429,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 	uint16 lock_pid;
 	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	char *data;
+	BOOL my_lock_ctx = False;
 	NTSTATUS status = NT_STATUS_OK;
 
 	data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
@@ -450,7 +452,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 		 */
 		errno = 0;
 		status = do_lock_spin(fsp,conn,lock_pid,count,offset, 
-				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
+				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK), &my_lock_ctx);
 		if (NT_STATUS_IS_ERR(status)) break;
 	}
 
