@@ -25,8 +25,9 @@
 
 #include "includes.h"
 
- int winbindd_request(int req_type, struct winbindd_request *request,
-		     struct winbindd_response *response);
+NSS_STATUS winbindd_request(int req_type,
+                                 struct winbindd_request *request,
+                                 struct winbindd_response *response);
 
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */

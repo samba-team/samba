@@ -67,7 +67,7 @@ void E_md4hash(uchar *passwd, uchar *p16)
 	if(len > 128)
 		len = 128;
 	/* Password must be converted to NT unicode - null terminated. */
-	push_ucs2(NULL, wpwd, passwd, 256, STR_UNICODE|STR_NOALIGN|STR_TERMINATE);
+	push_ucs2(NULL, wpwd, (const char *)passwd, 256, STR_UNICODE|STR_NOALIGN|STR_TERMINATE);
 	/* Calculate length in bytes */
 	len = strlen_w(wpwd) * sizeof(int16);
 
@@ -125,8 +125,8 @@ void ntv2_owf_gen(const uchar owf[16],
 	push_ucs2(NULL, dom_u, domain_n, (domain_l+1)*2, STR_UNICODE|STR_NOALIGN|STR_TERMINATE|STR_UPPER);
 
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
-	hmac_md5_update(user_u, user_l * 2, &ctx);
-	hmac_md5_update(dom_u, domain_l * 2, &ctx);
+	hmac_md5_update((const unsigned char *)user_u, user_l * 2, &ctx);
+	hmac_md5_update((const unsigned char *)dom_u, domain_l * 2, &ctx);
 	hmac_md5_final(kr_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
@@ -228,7 +228,7 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
 	hmac_md5_update(srv_chal, srv_chal_len, &ctx);
 	hmac_md5_update(cli_chal, cli_chal_len, &ctx);
-	hmac_md5_final(resp_buf, &ctx);
+	hmac_md5_final((unsigned char *)resp_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, cli_chal, resp_buf\n"));
@@ -245,7 +245,7 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
 	hmac_md5_update(nt_resp, 16, &ctx);
-	hmac_md5_final(sess_key, &ctx);
+	hmac_md5_final((unsigned char *)sess_key, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv2:\n"));
@@ -256,7 +256,7 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 void SMBsesskeygen_ntv1(const uchar kr[16],
 			const uchar * nt_resp, char sess_key[16])
 {
-	mdfour(sess_key, kr, 16);
+	mdfour((unsigned char *)sess_key, kr, 16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv1:\n"));
@@ -270,7 +270,7 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 		      int new_pw_len, BOOL nt_pass_set)
 {
-	generate_random_buffer(buffer, 516, True);
+	generate_random_buffer((unsigned char *)buffer, 516, True);
 
 	if (nt_pass_set) {
 		new_pw_len *= 2;
@@ -388,7 +388,7 @@ void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
 		SIVAL(buf, i * 2, pwd->buffer[i]);
 	}
 	/* Calculate the MD4 hash (NT compatible) of the password */
-	mdfour(nt_p16, buf, pwd->uni_str_len * 2);
+	mdfour(nt_p16, (const unsigned char *)buf, pwd->uni_str_len * 2);
 
 	/* clear out local copy of user's password (just being paranoid). */
 	ZERO_STRUCT(buf);

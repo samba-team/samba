@@ -48,7 +48,7 @@ void init_request(struct winbindd_request *request, int request_type)
         static char *domain_env;
         static BOOL initialised;
 
-	request->cmd = request_type;
+	request->cmd = (enum winbindd_cmd)request_type;
 	request->pid = getpid();
 	request->domain[0] = '\0';
 

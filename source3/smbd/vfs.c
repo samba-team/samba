@@ -356,7 +356,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 		while ( len_to_write > 0) {
 			SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),len_to_write);
 
-			retlen = vfs_ops->write(fsp,fsp->fd,zero_space,current_len_to_write);
+			retlen = vfs_ops->write(fsp,fsp->fd,(const char *)zero_space,current_len_to_write);
 			if (retlen <= 0) {
 				/* Write fail - return to original size. */
 				int save_errno = errno;

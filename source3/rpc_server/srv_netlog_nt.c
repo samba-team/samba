@@ -535,8 +535,8 @@ static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, cha
 #endif
 
 		generate_random_buffer(user_info.chal, 8, False);
-		SMBOWFencrypt(lm_pwd, user_info.chal, local_lm_response);
-		SMBOWFencrypt(nt_pwd, user_info.chal, local_nt_response);
+		SMBOWFencrypt((const unsigned char *)lm_pwd, user_info.chal, local_lm_response);
+		SMBOWFencrypt((const unsigned char *)nt_pwd, user_info.chal, local_nt_response);
 		user_info.lm_resp.buffer = (uint8 *)local_lm_response;
 		user_info.lm_resp.len = 24;
 		user_info.nt_resp.buffer = (uint8 *)local_nt_response;
@@ -633,7 +633,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 	DEBUG(10,("Attempting validation level %d for mapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
 
-	status = _net_logon_any(q_u->sam_id.ctr, nt_username, nt_domain, p->dc.sess_key);
+	status = _net_logon_any(q_u->sam_id.ctr, nt_username, nt_domain, (char *)p->dc.sess_key);
 
 	/* Check account and password */
     

@@ -812,8 +812,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   if (!guest) {
 	  valid_password = (pass_check_smb(user, domain, 
-					   smb_apasswd, smb_apasslen, 
-					   smb_ntpasswd, smb_ntpasslen) == NT_STATUS_NOPROBLEMO);
+					   (unsigned char *)smb_apasswd, smb_apasslen, 
+					   (unsigned char *)smb_ntpasswd, smb_ntpasslen) == NT_STATUS_NOPROBLEMO);
 
     /* The true branch will be executed if 
        (1) the NT password failed (or was not tried), and 
