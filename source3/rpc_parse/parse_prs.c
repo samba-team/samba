@@ -617,22 +617,24 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		str->buffer = (uint16 *)prs_alloc_mem(ps,str->uni_str_len * sizeof(uint16));
+		str->buffer = (uint16 *)prs_alloc_mem(ps,str->uni_max_len * sizeof(uint16));
 		if (str->buffer == NULL)
 			return False;
+		memset(str->buffer, '\0', str->uni_max_len * sizeof(uint16));
 	}
+
+	/* If the string is empty, we don't have anything to stream */
+	if (str->uni_str_len==0)
+		return True;
 
 	p = (char *)str->buffer;
 
 	/* If we're using big-endian, reverse to get little-endian. */
-	if(ps->bigendian_data)
-	{
+	if(ps->bigendian_data) {
 		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, 
 			     ps->io, ps->bigendian_data, q, p, 
 			     str->uni_str_len)
-	}
-	else
-	{
+	} else {
 		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, 
 			     ps->io, q, p, str->uni_str_len * sizeof(uint16))
 	}
