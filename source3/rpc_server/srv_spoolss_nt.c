@@ -4148,14 +4148,50 @@ static BOOL construct_printer_info_5(PRINTER_INFO_5 *printer, int snum)
 }
 
 /********************************************************************
- * construct_printer_info_5
- * fill a printer_info_5 struct
+ * construct_printer_info_7
+ * fill a printer_info_7 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_7(PRINTER_INFO_7 *printer)
+static BOOL construct_printer_info_7(PRINTER_INFO_7 *printer, int snum)
 {
+#ifdef HAVE_ADS
+	char *guid_str = NULL;
+	GUID guid;
+	ADS_STRUCT *ads;
+	ADS_STATUS ads_rc;
+	void *res = NULL;
+	char *prt_dn;
+	const char *attrs[] = {"objectGUID", NULL};
+	
+	printer->action = SPOOL_DS_UNPUBLISH;
+
+	ads = ads_init(NULL, NULL, lp_ads_server());
+	ads_rc = ads_connect(ads);
+	ads_rc = ads_find_printer_on_server(ads, &res, lp_servicename(snum),
+					    global_myname());
+	if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
+		prt_dn = ads_get_dn(ads, res);
+		ads_msgfree(ads, res);
+		if (prt_dn && 
+		    ADS_ERR_OK(ads_search_dn(ads, &res, prt_dn, attrs))) {
+			ads_rc = ads_search_dn(ads, &res, prt_dn, attrs);
+			ads_memfree(ads, prt_dn);
+			ads_pull_guid(ads, res, &guid);
+			printer->action = SPOOL_DS_PUBLISH;
+		}
+	}
+
+	ads_msgfree(ads, res);
+	
+	asprintf(&guid_str, "{%s}", uuid_string_static(guid));
+	strupper(guid_str);
+	init_unistr(&printer->guid, guid_str);
+
+#else
+	printer->action = SPOOL_DS_UNPUBLISH;
 	init_unistr(&printer->guid, "");
-	printer->action = 0;
+#endif
+
 	return True;
 }
 
@@ -4722,7 +4758,7 @@ static WERROR getprinter_level_7(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	if((printer=(PRINTER_INFO_7*)malloc(sizeof(PRINTER_INFO_7)))==NULL)
 		return WERR_NOMEM;
 
-	if (!construct_printer_info_7(printer))
+	if (!construct_printer_info_7(printer, snum))
 		return WERR_NOMEM;
 	
 	/* check the required size. */	

@@ -2540,7 +2540,8 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	map_dword_into_ctr(ctr, SPOOL_REG_PRIORITY, info2->priority);
 
 	map_bool_into_ctr(ctr, SPOOL_REG_PRINTKEEPPRINTEDJOBS,
-			  (info2->attributes & 0x100));
+			  (info2->attributes & 
+			   PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS));
 
 	switch (info2->attributes & 0x3) {
 	case 0:
@@ -2583,10 +2584,11 @@ WERROR nt_printer_publish(int snum, int action)
 	if (!W_ERROR_IS_OK(win_rc))
 		return win_rc;
 
-	if ((SPOOL_DS_PUBLISH == action) || (SPOOL_DS_UPDATE == action) ||
-	    (SPOOL_DS_REPUBLISH == action)) {
+	if ((SPOOL_DS_PUBLISH == action) || (SPOOL_DS_UPDATE == action)) {
 		if (!(map_nt_printer_info2_to_dsspooler(printer->info_2)))
 			return WERR_NOMEM;
+
+		printer->info_2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
 
 		win_rc = mod_a_printer(*printer, 2);
 		if (!W_ERROR_IS_OK(win_rc)) {
@@ -2600,13 +2602,22 @@ WERROR nt_printer_publish(int snum, int action)
 						  &printer->info_2->data);
 		ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
 			    lp_servicename(snum));
+	} else {
+		printer->info_2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
+		win_rc = mod_a_printer(*printer, 2);
+		if (!W_ERROR_IS_OK(win_rc)) {
+			DEBUG(3, ("nt_printer_publish: err %d saving data\n",
+				  W_ERROR_V(win_rc)));
+			free_a_printer(&printer, 2);
+			return win_rc;
+		}
 	}
 
 	ads = ads_init(NULL, NULL, lp_ads_server());
 
 	ads_rc = ads_connect(ads);
 
-	if ((SPOOL_DS_UNPUBLISH == action) || (SPOOL_DS_REPUBLISH == action)) {
+	if (SPOOL_DS_UNPUBLISH == action) {
 		ads_rc = ads_find_printer_on_server(ads, &res, 
 				printer->info_2->sharename, global_myname());
 		if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
@@ -2617,8 +2628,7 @@ WERROR nt_printer_publish(int snum, int action)
 		}
 	}
 
-	if ((SPOOL_DS_PUBLISH == action) || (SPOOL_DS_UPDATE == action) ||
-	    (SPOOL_DS_REPUBLISH == action)) {
+	if ((SPOOL_DS_PUBLISH == action) || (SPOOL_DS_UPDATE == action)) {
 		ads_find_machine_acct(ads, &res, global_myname());
 		srv_dn = ldap_get_dn(ads->ld, res);
 		ads_msgfree(ads, res);
