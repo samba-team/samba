@@ -672,6 +672,9 @@
 /* Define if you have the setnetgrent function.  */
 #undef HAVE_SETNETGRENT
 
+/* Define if you have the setpgid function.  */
+#undef HAVE_SETPGID
+
 /* Define if you have the setpriv function.  */
 #undef HAVE_SETPRIV
 

@@ -817,6 +817,15 @@ static void usage(char *pname)
     become_daemon();
   }
 
+#if HAVE_SETPGID
+  /*
+   * If we're interactive we want to set our own process group for 
+   * signal management.
+   */
+  if (opt_interactive)
+    setpgid( (pid_t)0, (pid_t)0 );
+#endif
+
 #ifndef SYNC_DNS
   /* Setup the async dns. We do it here so it doesn't have all the other
      stuff initialised and thus chewing memory and sockets */
