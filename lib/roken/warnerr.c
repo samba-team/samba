@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan 
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan 
  * (Royal Institute of Technology, Stockholm, Sweden).  
  * All rights reserved.
  * 
@@ -43,14 +43,17 @@ RCSID("$Id$");
 const char *__progname;
 #endif
 
+#ifndef HAVE_GETPROGNAME
 const char *
-get_progname(void)
+getprogname(void)
 {
     return __progname;
 }
+#endif
 
+#ifndef HAVE_SETPROGNAME
 void
-set_progname(char *argv0)
+setprogname(const char *argv0)
 {
 #ifndef HAVE___PROGNAME
     char *p;
@@ -63,6 +66,19 @@ set_progname(char *argv0)
 	p++;
     __progname = p;
 #endif
+}
+#endif /* HAVE_SETPROGNAME */
+
+void
+set_progname(char *argv0)
+{
+    setprogname ((const char *)argv0);
+}
+
+const char *
+get_progname (void)
+{
+    return getprogname ();
 }
 
 void
