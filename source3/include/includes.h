@@ -449,7 +449,9 @@ typedef int socklen_t;
 #define uint32 unsigned long
 #elif (SIZEOF_SHORT == 4)
 #define uint32 unsigned short
-#endif
+#else
+/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
+#define uint32 unsigned
 #endif
 
 /*
