@@ -977,7 +977,11 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t)
 	timeout.tv_sec = t/1000;
 	timeout.tv_usec = 1000*(t%1000);
 
-	sys_select(fd+1,&fds,&timeout);
+	if (sys_select(fd+1,&fds,&timeout) == -1) {
+		/* errno should be EBADF or EINVAL. */
+		DEBUG(0,("select returned -1, errno = %s (%d)\n", strerror(errno), errno));
+		return NULL;
+	}
 
 	if (FD_ISSET(fd,&fds)) 
 		return(read_packet(fd,type));
