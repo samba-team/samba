@@ -453,7 +453,6 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
 	for (i = 0; i < num_users; i++) {
 		struct getpwent_user *name_list = NULL;
-		fstring domain_user_name;
 		uint32 result;
 
 		/* Do we need to fetch another chunk of users? */
@@ -535,7 +534,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
 		} else
 			DEBUG(1, ("could not lookup domain user %s\n",
-				  domain_user_name));
+				  name_list[ent->sam_entry_index].name));
 	}
 
 	/* Out of domains */
