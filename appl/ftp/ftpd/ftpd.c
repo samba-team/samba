@@ -36,6 +36,7 @@
 #ifdef KRB5
 #include <krb5.h>
 #endif
+#include "getarg.h"
 
 RCSID("$Id$");
 
@@ -143,7 +144,6 @@ static RETSIGTYPE	 lostconn (int);
 static int	 receive_data (FILE *, FILE *);
 static void	 send_data (FILE *, FILE *);
 static struct passwd * sgetpwnam (char *);
-static void	 usage(void);
 
 static char *
 curdir(void)
@@ -195,223 +195,232 @@ parse_auth_level(char *str)
  * Print usage and die.
  */
 
+static int debug_flag;
+static int interactive_flag;
+static char *guest_umask_string;
+static int logflag;
+static char *port_string;
+static char *umask_string;
+static char *auth_string;
+
+int use_builtin_ls;
+
+static int help_flag;
+static int version_flag;
+
+struct getargs args[] = {
+    { NULL, 'a', arg_string, &auth_string, "required authentication" },
+    { NULL, 'i', arg_flag, &interactive_flag, "don't assume stdin is a socket" },
+    { NULL, 'p', arg_string, &port_string, "what port to listen to" },
+    { NULL, 'g', arg_string, &guest_umask_string, "umask for guest logins" },
+    { NULL, 'l', arg_flag, &logflag, "log more stuff" },
+    { NULL, 't', arg_integer, &ftpd_timeout, "initial timeout" },
+    { NULL, 'T', arg_integer, &maxtimeout, "max timeout" },
+    { NULL, 'u', arg_string, &umask_string, "umask for user logins" },
+    { NULL, 'd', arg_flag, &debug_flag, "enable debugging" },
+    { NULL, 'v', arg_flag, &debug_flag, "enable debugging" },
+    { "builtin-ls", 0, arg_flag, &use_builtin_ls, "use built-in ls to list files" },
+    { "version", 0, arg_flag, &version_flag },
+    { "help", 'h', arg_flag, &help_flag }
+};
+
+static int num_args = sizeof(args) / sizeof(args[0]);
+
 static void
-usage (void)
+usage (int code)
 {
-    fprintf (stderr,
-	     "Usage: %s [-d] [-i] [-g guest_umask] [-l] [-p port]"
-	     " [-t timeout] [-T max_timeout] [-u umask] [-v]"
-	     " [-a auth_level] \n",
-	     __progname);
-    exit (1);
+    arg_printusage(args, num_args, NULL, "");
+    exit (code);
 }
 
 int
 main(int argc, char **argv)
 {
-	int addrlen, ch, on = 1, tos;
-	char *cp, line[LINE_MAX];
-	FILE *fd;
-	int not_inetd = 0;
-	int port;
-	struct servent *sp;
+    int addrlen, ch, on = 1, tos;
+    char *cp, line[LINE_MAX];
+    FILE *fd;
+    int port;
+    struct servent *sp;
 
-	set_progname (argv[0]);
+    int optind = 0;
+
+    set_progname (argv[0]);
 
 #ifdef KRB4
-	/* detach from any tickets and tokens */
-	{
-	    char tkfile[1024];
-	    snprintf(tkfile, sizeof(tkfile),
-		     "/tmp/ftp_%u", (unsigned)getpid());
-	    krb_set_tkt_string(tkfile);
-	    if(k_hasafs())
-		k_setpag();
-	}
+    /* detach from any tickets and tokens */
+    {
+	char tkfile[1024];
+	snprintf(tkfile, sizeof(tkfile),
+		 "/tmp/ftp_%u", (unsigned)getpid());
+	krb_set_tkt_string(tkfile);
+	if(k_hasafs())
+	    k_setpag();
+    }
 #endif
+    if(getarg(args, num_args, argc, argv, &optind))
+	usage(1);
+	
+    if(help_flag)
+	usage(0);
+	
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
+    }
+
+    if(auth_string)
+	auth_level = parse_auth_level(auth_string);
+    {
+	char *p;
+	long val = 0;
+	    
+	if(guest_umask_string) {
+	    val = strtol(guest_umask_string, &p, 8);
+	    if (*p != '\0' || val < 0)
+		warnx("bad value for -g");
+	    else
+		guest_umask = val;
+	}
+	if(umask_string) {
+	    val = strtol(umask_string, &p, 8);
+	    if (*p != '\0' || val < 0)
+		warnx("bad value for -u");
+	    else
+		defumask = val;
+	}
+    }
+    if(port_string) {
+	sp = getservbyname(port_string, "tcp");
+	if(sp)
+	    port = sp->s_port;
+	else
+	    if(isdigit(port_string[0]))
+		port = htons(atoi(port_string));
+	    else
+		warnx("bad value for -p");
+    } else {
 	sp = getservbyname("ftp", "tcp");
 	if(sp)
 	    port = sp->s_port;
 	else
 	    port = htons(21);
-
-	while ((ch = getopt(argc, argv, "a:dg:ilp:t:T:u:v")) != EOF) {
-		switch (ch) {
-		case 'a':
-		    auth_level = parse_auth_level(optarg);
-		    break;
-		case 'd':
-		    debug = 1;
-		    break;
-
-		case 'i':
-		    not_inetd = 1;
-		    break;
-		case 'g':
-		    {
-			long val = 0;
-
-			val = strtol(optarg, &optarg, 8);
-			if (*optarg != '\0' || val < 0)
-			    warnx("bad value for -g");
-			else
-			    guest_umask = val;
-			break;
-		    }
-		case 'l':
-		    logging++;	/* > 1 == extra logging */
-		    break;
-
-		case 'p':
-		    sp = getservbyname(optarg, "tcp");
-		    if(sp)
-			port = sp->s_port;
-		    else
-			if(isdigit(optarg[0]))
-			    port = htons(atoi(optarg));
-			else
-			    warnx("bad value for -p");
-		    break;
+    }
 		    
-		case 't':
-		    ftpd_timeout = atoi(optarg);
-		    if (maxtimeout < ftpd_timeout)
-			maxtimeout = ftpd_timeout;
-		    break;
+    if (maxtimeout < ftpd_timeout)
+	maxtimeout = ftpd_timeout;
 
-		case 'T':
-		    maxtimeout = atoi(optarg);
-		    if (ftpd_timeout > maxtimeout)
-			ftpd_timeout = maxtimeout;
-		    break;
+#if 0
+    if (ftpd_timeout > maxtimeout)
+	ftpd_timeout = maxtimeout;
+#endif
 
-		case 'u':
-		    {
-			long val = 0;
 
-			val = strtol(optarg, &optarg, 8);
-			if (*optarg != '\0' || val < 0)
-			    warnx("bad value for -u");
-			else
-			    defumask = val;
-			break;
-		    }
+    if(interactive_flag)
+	mini_inetd (port);
 
-		case 'v':
-		    debug = 1;
-		    break;
-
-		default:
-		    usage ();
-		}
-	}
-
-	if(not_inetd)
-	    mini_inetd (port);
-
-	/*
-	 * LOG_NDELAY sets up the logging connection immediately,
-	 * necessary for anonymous ftp's that chroot and can't do it later.
-	 */
-	openlog("ftpd", LOG_PID | LOG_NDELAY, LOG_FTP);
-	addrlen = sizeof(his_addr_ss);
-	if (getpeername(STDIN_FILENO, his_addr, &addrlen) < 0) {
-		syslog(LOG_ERR, "getpeername (%s): %m",argv[0]);
-		exit(1);
-	}
-	addrlen = sizeof(ctrl_addr_ss);
-	if (getsockname(STDIN_FILENO, ctrl_addr, &addrlen) < 0) {
-		syslog(LOG_ERR, "getsockname (%s): %m",argv[0]);
-		exit(1);
-	}
+    /*
+     * LOG_NDELAY sets up the logging connection immediately,
+     * necessary for anonymous ftp's that chroot and can't do it later.
+     */
+    openlog("ftpd", LOG_PID | LOG_NDELAY, LOG_FTP);
+    addrlen = sizeof(his_addr_ss);
+    if (getpeername(STDIN_FILENO, his_addr, &addrlen) < 0) {
+	syslog(LOG_ERR, "getpeername (%s): %m",argv[0]);
+	exit(1);
+    }
+    addrlen = sizeof(ctrl_addr_ss);
+    if (getsockname(STDIN_FILENO, ctrl_addr, &addrlen) < 0) {
+	syslog(LOG_ERR, "getsockname (%s): %m",argv[0]);
+	exit(1);
+    }
 #if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
-	tos = IPTOS_LOWDELAY;
-	if (setsockopt(STDIN_FILENO, IPPROTO_IP, IP_TOS,
-		       (void *)&tos, sizeof(int)) < 0)
-		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
+    tos = IPTOS_LOWDELAY;
+    if (setsockopt(STDIN_FILENO, IPPROTO_IP, IP_TOS,
+		   (void *)&tos, sizeof(int)) < 0)
+	syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
 #endif
-	data_source->sa_family = ctrl_addr->sa_family;
-	socket_set_port (data_source,
-			 htons(ntohs(socket_get_port(ctrl_addr)) - 1));
+    data_source->sa_family = ctrl_addr->sa_family;
+    socket_set_port (data_source,
+		     htons(ntohs(socket_get_port(ctrl_addr)) - 1));
 
-	/* set this here so it can be put in wtmp */
-	snprintf(ttyline, sizeof(ttyline), "ftp%u", (unsigned)getpid());
+    /* set this here so it can be put in wtmp */
+    snprintf(ttyline, sizeof(ttyline), "ftp%u", (unsigned)getpid());
 
 
-	/*	freopen(_PATH_DEVNULL, "w", stderr); */
-	signal(SIGPIPE, lostconn);
-	signal(SIGCHLD, SIG_IGN);
+    /*	freopen(_PATH_DEVNULL, "w", stderr); */
+    signal(SIGPIPE, lostconn);
+    signal(SIGCHLD, SIG_IGN);
 #ifdef SIGURG
-	if (signal(SIGURG, myoob) == SIG_ERR)
-	    syslog(LOG_ERR, "signal: %m");
+    if (signal(SIGURG, myoob) == SIG_ERR)
+	syslog(LOG_ERR, "signal: %m");
 #endif
 
-	/* Try to handle urgent data inline */
+    /* Try to handle urgent data inline */
 #if defined(SO_OOBINLINE) && defined(HAVE_SETSOCKOPT)
-	if (setsockopt(0, SOL_SOCKET, SO_OOBINLINE, (void *)&on,
-		       sizeof(on)) < 0)
-		syslog(LOG_ERR, "setsockopt: %m");
+    if (setsockopt(0, SOL_SOCKET, SO_OOBINLINE, (void *)&on,
+		   sizeof(on)) < 0)
+	syslog(LOG_ERR, "setsockopt: %m");
 #endif
 
 #ifdef	F_SETOWN
-	if (fcntl(fileno(stdin), F_SETOWN, getpid()) == -1)
-		syslog(LOG_ERR, "fcntl F_SETOWN: %m");
+    if (fcntl(fileno(stdin), F_SETOWN, getpid()) == -1)
+	syslog(LOG_ERR, "fcntl F_SETOWN: %m");
 #endif
-	dolog(his_addr);
-	/*
-	 * Set up default state
-	 */
-	data = -1;
-	type = TYPE_A;
-	form = FORM_N;
-	stru = STRU_F;
-	mode = MODE_S;
-	tmpline[0] = '\0';
+    dolog(his_addr);
+    /*
+     * Set up default state
+     */
+    data = -1;
+    type = TYPE_A;
+    form = FORM_N;
+    stru = STRU_F;
+    mode = MODE_S;
+    tmpline[0] = '\0';
 
-	/* If logins are disabled, print out the message. */
-	if ((fd = fopen(_PATH_NOLOGIN,"r")) != NULL) {
-		while (fgets(line, sizeof(line), fd) != NULL) {
-			if ((cp = strchr(line, '\n')) != NULL)
-				*cp = '\0';
-			lreply(530, "%s", line);
-		}
-		fflush(stdout);
-		fclose(fd);
-		reply(530, "System not available.");
-		exit(0);
+    /* If logins are disabled, print out the message. */
+    if ((fd = fopen(_PATH_NOLOGIN,"r")) != NULL) {
+	while (fgets(line, sizeof(line), fd) != NULL) {
+	    if ((cp = strchr(line, '\n')) != NULL)
+		*cp = '\0';
+	    lreply(530, "%s", line);
 	}
-	if ((fd = fopen(_PATH_FTPWELCOME, "r")) != NULL) {
-		while (fgets(line, sizeof(line), fd) != NULL) {
-			if ((cp = strchr(line, '\n')) != NULL)
-				*cp = '\0';
-			lreply(220, "%s", line);
-		}
-		fflush(stdout);
-		fclose(fd);
-		/* reply(220,) must follow */
+	fflush(stdout);
+	fclose(fd);
+	reply(530, "System not available.");
+	exit(0);
+    }
+    if ((fd = fopen(_PATH_FTPWELCOME, "r")) != NULL) {
+	while (fgets(line, sizeof(line), fd) != NULL) {
+	    if ((cp = strchr(line, '\n')) != NULL)
+		*cp = '\0';
+	    lreply(220, "%s", line);
 	}
-	gethostname(hostname, sizeof(hostname));
+	fflush(stdout);
+	fclose(fd);
+	/* reply(220,) must follow */
+    }
+    gethostname(hostname, sizeof(hostname));
 	
-	reply(220, "%s FTP server (%s"
+    reply(220, "%s FTP server (%s"
 #ifdef KRB5
-	      "+%s"
+	  "+%s"
 #endif
 #ifdef KRB4
-	      "+%s"
+	  "+%s"
 #endif
-	      ") ready.", hostname, version
+	  ") ready.", hostname, version
 #ifdef KRB5
-	      ,heimdal_version
+	  ,heimdal_version
 #endif
 #ifdef KRB4
-	      ,krb4_version
+	  ,krb4_version
 #endif
-	      );
+	  );
 
-	setjmp(errcatch);
-	for (;;)
-	    yyparse();
-	/* NOTREACHED */
+    setjmp(errcatch);
+    for (;;)
+	yyparse();
+    /* NOTREACHED */
 }
 
 static RETSIGTYPE
@@ -940,6 +949,7 @@ retrieve(char *cmd, char *name)
 		closefunc = fclose;
 		st.st_size = 0;
 		if(fin == NULL){
+		    int save_errno = errno;
 		    struct cmds {
 			const char *ext;
 			const char *cmd;
@@ -986,7 +996,8 @@ retrieve(char *cmd, char *name)
 			closefunc = ftpd_pclose;
 			st.st_size = -1;
 			cmd = line;
-		    }
+		    } else
+			errno = save_errno;
 		}
 	} else {
 		snprintf(line, sizeof(line), cmd, name);
@@ -2066,6 +2077,30 @@ static char *onefile[] = {
 	"",
 	0
 };
+
+void
+list_file(const char *file)
+{
+    if(use_builtin_ls) {
+	FILE *dout;
+	dout = dataconn(file, -1, "w");
+	if (dout == NULL)
+	    return;
+	set_buffer_size(fileno(dout), 0);
+	builtin_ls(dout, file);
+	reply(226, "Transfer complete.");
+	fclose(dout);
+	data = -1;
+	pdata = -1;
+    } else {
+#ifdef HAVE_LS_A
+	char *cmd = "/bin/ls -lA";
+#else
+	char *cmd = "/bin/ls -la";
+#endif
+	retrieve(cmd, file);
+    }
+}
 
 void
 send_file_list(char *whichf)
