@@ -1,3 +1,18 @@
+Sat Mar  8 06:58:09 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/Makefile.am: Add asn1_glue.c and error/*.c to libkrb5.
+
+	* lib/krb5/get_in_tkt.c: Moved some functions to asn1_glue.c.
+
+	* lib/krb5/asn1_glue.c: Moved some asn1-stuff here.
+	
+	* lib/krb5/{cache,keytab}.c: Use new storage functions.
+
+	* lib/krb5/krb5.h: Protypes for new storage functions.
+
+	* lib/krb5/krb5.h: Make krb5_{ret,store}_* functions able to write
+ 	data to more than file descriptors.
+
 Sat Mar  8 01:01:17 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/encrypt.c: New file.
@@ -7,6 +22,10 @@ Sat Mar  8 01:01:17 1997  Assar Westerlund  <assar@sics.se>
 	* configure.in: Test for big endian, random, rand, setitimer
 
 	* lib/asn1/gen.c: perhaps even decodes bitstrings
+
+Thu Mar  6 19:05:29 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/config_file.y: Better return values on error.
 
 Sat Feb  8 15:59:56 1997  Assar Westerlund  <assar@pdc.kth.se>
 
