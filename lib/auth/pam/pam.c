@@ -50,6 +50,7 @@ RCSID("$Id$");
 #include <string.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 #define PAM_SM_AUTH
 #define PAM_SM_SESSION

@@ -41,6 +41,7 @@
 RCSID("$Id$");
 #endif
 #include <unistd.h>
+#include <sys/types.h>
 #include <pwd.h>
 #include <krb.h>
 #include <kafs.h>
