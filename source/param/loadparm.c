@@ -622,7 +622,8 @@ static struct enum_list enum_csc_policy[] = {
 	{CSC_POLICY_MANUAL, "manual"},
 	{CSC_POLICY_DOCUMENTS, "documents"},
 	{CSC_POLICY_PROGRAMS, "programs"},
-	{CSC_POLICY_DISABLE, "disable"}
+	{CSC_POLICY_DISABLE, "disable"},
+	{-1, NULL}
 };
 
 /* 
