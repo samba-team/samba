@@ -85,6 +85,14 @@ char *cli_errstr(struct cli_state *cli)
 		return cli_error_message;
 	}
 
+	/* Was it server timeout ? */
+	if (cli->fd == -1 &&  cli->timeout > 0 && cli->smb_read_error == READ_TIMEOUT) {
+		slprintf(cli_error_message, sizeof(cli_error_message) - 1,
+			"Call timed out: server did not respond after %d milliseconds",
+			cli->timeout);
+		return cli_error_message;
+	}
+
 	/* Case #1: RAP error */
 	if (cli->rap_error) {
 		for (i = 0; rap_errmap[i].message != NULL; i++) {
