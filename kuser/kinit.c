@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -58,6 +58,7 @@ char *keytab_str	= NULL;
 extern int do_afslog;
 extern int get_v4_tgt;
 #endif
+int fcache_version;
 
 struct getargs args[] = {
 #ifdef KRB4
@@ -105,6 +106,9 @@ struct getargs args[] = {
 
     { "enctypes",	'e', arg_strings, &etype_str,
       "encryption type to use", "enctype" },
+
+    { "fcache-version", 0,   arg_integer, &fcache_version,
+      "file cache version to create" },
 
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -221,6 +225,9 @@ main (int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    if(fcache_version)
+	krb5_set_fcache_version(context, fcache_version);
 
     if(cred_cache) 
 	ret = krb5_cc_resolve(context, cred_cache, &ccache);
