@@ -444,20 +444,17 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	return True;
 }
 
-BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, char nt_hash[16])
+BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key)
 {
 	uchar bufhdr[8];
 	int datalen;
 
-	uchar key[16];
-	uchar *keyptr = key;
-	uchar *keyend = key + sizeof(key);
+	const uchar *keyptr = key;
+	const uchar *keyend = key + 16;
 
 	uchar *outbuf = (uchar *)out->buffer;
 	const uchar *inbuf = (const uchar *)in->buffer;
 	const uchar *inbufend;
-
-	mdfour(key, nt_hash, 16);
 
 	smbhash(bufhdr, inbuf, keyptr, 0);
 	datalen = IVAL(bufhdr, 0);

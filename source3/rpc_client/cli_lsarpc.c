@@ -332,7 +332,7 @@ BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 	lsa_io_q_open_pol2("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, LSA_OPENPOLICY2, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, LSA_OPENPOLICY2, &buf, &rbuf))
 	{
 		LSA_R_OPEN_POL2 r_o;
 		BOOL p;
@@ -376,14 +376,6 @@ BOOL lsa_open_secret( const POLICY_HND *hnd,
 	LSA_Q_OPEN_SECRET q_o;
 	BOOL valid_pol = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -399,7 +391,7 @@ BOOL lsa_open_secret( const POLICY_HND *hnd,
 	lsa_io_q_open_secret("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, LSA_OPENSECRET, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, LSA_OPENSECRET, &buf, &rbuf))
 	{
 		LSA_R_OPEN_SECRET r_o;
 		BOOL p;
@@ -439,14 +431,6 @@ BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 	LSA_Q_QUERY_SECRET q_q;
 	BOOL valid_info = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -462,7 +446,7 @@ BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 	lsa_io_q_query_secret("", &q_q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, LSA_QUERYSECRET, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, LSA_QUERYSECRET, &buf, &rbuf))
 	{
 		LSA_R_QUERY_SECRET r_q;
 		BOOL p;
@@ -481,11 +465,19 @@ BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 		    (r_q.info.value.ptr_secret != 0) &&
 		    (r_q.info.ptr_update != 0))
 		{
+			uchar sess_key[16];
 			STRING2 enc_secret;
 			memcpy(&enc_secret,  &(r_q.info.value.enc_secret), sizeof(STRING2));
 			memcpy(last_update, &(r_q.info.last_update),      sizeof(NTTIME));
+			if (!cli_get_usr_sesskey(hnd, sess_key))
+			{
+				return False;
+			}
+#ifdef DEBUG_PASSWORD
+			dump_data(100, sess_key, 16);
+#endif
 			valid_info = nt_decrypt_string2(secret, &enc_secret,
-			             (char*)(cli->usr.pwd.smb_nt_pwd));
+			             sess_key);
 		}
 	}
 
@@ -511,14 +503,6 @@ BOOL lsa_lookup_names( POLICY_HND *hnd,
 	LSA_Q_LOOKUP_NAMES q_l;
 	BOOL valid_response = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -535,7 +519,7 @@ BOOL lsa_lookup_names( POLICY_HND *hnd,
 	lsa_io_q_lookup_names("", &q_l, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, LSA_LOOKUPNAMES, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, LSA_LOOKUPNAMES, &buf, &rbuf))
 	{
 		LSA_R_LOOKUP_NAMES r_l;
 		DOM_R_REF ref;
@@ -650,14 +634,6 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 	LSA_Q_LOOKUP_SIDS q_l;
 	BOOL valid_response = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	ZERO_STRUCT(q_l);
 
 	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
@@ -689,7 +665,7 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 	lsa_io_q_lookup_sids("", &q_l, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, LSA_LOOKUPSIDS, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, LSA_LOOKUPSIDS, &buf, &rbuf))
 	{
 		LSA_R_LOOKUP_SIDS r_l;
 		DOM_R_REF ref;
@@ -803,14 +779,6 @@ BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 	LSA_Q_QUERY_INFO q_q;
 	BOOL valid_response = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	ZERO_STRUCTP(domain_sid);
 	domain_name[0] = 0;
 
@@ -830,7 +798,7 @@ BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 	lsa_io_q_query("", &q_q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, LSA_QUERYINFOPOLICY, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, LSA_QUERYINFOPOLICY, &buf, &rbuf))
 	{
 		LSA_R_QUERY_INFO r_q;
 		BOOL p;
@@ -920,14 +888,6 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 	LSA_Q_ENUM_TRUST_DOM q_q;
 	BOOL valid_response = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL || num_doms == NULL || names == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -935,7 +895,7 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 
 	/* create and send a MSRPC command with api LSA_ENUMTRUSTDOM */
 
-	DEBUG(4,("LSA Query Info Policy\n"));
+	DEBUG(4,("LSA Enum Trusted Domains\n"));
 
 	/* store the parameters */
 	make_q_enum_trust_dom(&q_q, hnd, *enum_ctx, 0xffffffff);
@@ -944,7 +904,7 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 	lsa_io_q_enum_trust_dom("", &q_q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, LSA_ENUMTRUSTDOM, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, LSA_ENUMTRUSTDOM, &buf, &rbuf))
 	{
 		LSA_R_ENUM_TRUST_DOM r_q;
 		BOOL p;
@@ -1002,14 +962,6 @@ BOOL lsa_close(POLICY_HND *hnd)
 	LSA_Q_CLOSE q_c;
 	BOOL valid_close = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
@@ -1026,7 +978,7 @@ BOOL lsa_close(POLICY_HND *hnd)
 	lsa_io_q_close("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, LSA_CLOSE, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, LSA_CLOSE, &buf, &rbuf))
 	{
 		LSA_R_CLOSE r_c;
 		BOOL p;
@@ -1069,5 +1021,4 @@ BOOL lsa_close(POLICY_HND *hnd)
 
 	return valid_close;
 }
-
 
