@@ -815,12 +815,9 @@ void smbd_process_async(struct smbsrv_connection *smb_conn)
 void smbsrv_accept(struct server_connection *conn)
 {
 	struct smbsrv_connection *smb_conn;
-	TALLOC_CTX *mem_ctx;
 	char *socket_addr;
 
 	DEBUG(5,("smbsrv_accept\n"));
-
-	mem_ctx = talloc_init("smbsrv_context");
 
 	smb_conn = talloc_p(conn, struct smbsrv_connection);
 	if (!smb_conn) return;
