@@ -2958,10 +2958,12 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, u
 		 * Only allow delete on close for writable files.
 		 */
 
-		if (dosmode & aRONLY) {
-			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but file attribute is readonly.\n",
-				fsp->fsp_name ));
-			return NT_STATUS_CANNOT_DELETE;
+		if (!lp_delete_readonly(SNUM(fsp->conn))) {
+			if (dosmode & aRONLY) {
+				DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but file attribute is readonly.\n",
+					fsp->fsp_name ));
+				return NT_STATUS_CANNOT_DELETE;
+			}
 		}
 
 		/*
