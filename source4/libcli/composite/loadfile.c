@@ -45,7 +45,7 @@ struct loadfile_state {
 static NTSTATUS setup_close(struct smbcli_composite *c, 
 			    struct smbcli_tree *tree, uint16_t fnum)
 {
-	struct loadfile_state *state = c->private;
+	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
 	union smb_close *io_close;
 
 	/* nothing to read, setup the close */
@@ -74,7 +74,7 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 static NTSTATUS loadfile_open(struct smbcli_composite *c, 
 			      struct smb_composite_loadfile *io)
 {
-	struct loadfile_state *state = c->private;
+	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 
@@ -128,7 +128,7 @@ static NTSTATUS loadfile_open(struct smbcli_composite *c,
 static NTSTATUS loadfile_read(struct smbcli_composite *c, 
 			      struct smb_composite_loadfile *io)
 {
-	struct loadfile_state *state = c->private;
+	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 
@@ -162,7 +162,7 @@ static NTSTATUS loadfile_read(struct smbcli_composite *c,
 static NTSTATUS loadfile_close(struct smbcli_composite *c, 
 			       struct smb_composite_loadfile *io)
 {
-	struct loadfile_state *state = c->private;
+	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
 	NTSTATUS status;
 
 	status = smbcli_request_simple_recv(state->req);
@@ -183,7 +183,7 @@ static NTSTATUS loadfile_close(struct smbcli_composite *c,
 static void loadfile_handler(struct smbcli_request *req)
 {
 	struct smbcli_composite *c = req->async.private;
-	struct loadfile_state *state = c->private;
+	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
@@ -271,7 +271,7 @@ NTSTATUS smb_composite_loadfile_recv(struct smbcli_composite *c, TALLOC_CTX *mem
 	status = smb_composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct loadfile_state *state = c->private;
+		struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
 		talloc_steal(mem_ctx, state->io->out.data);
 	}
 
