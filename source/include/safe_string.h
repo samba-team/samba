@@ -50,7 +50,7 @@
 
 char * __unsafe_string_function_usage_here__(void);
 
-#if 0 && defined __GNUC__ && __GNUC__ >= 2 && defined __OPTIMIZE__
+#ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
 #define pstrcpy(d,s) ((sizeof(d) != sizeof(pstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcpy((d), (s),sizeof(pstring)-1))
 #define pstrcat(d,s) ((sizeof(d) != sizeof(pstring) && sizeof(d) != sizeof(char *)) ? __unsafe_string_function_usage_here__() : safe_strcat((d), (s),sizeof(pstring)-1))
