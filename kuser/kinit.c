@@ -200,7 +200,7 @@ static struct getargs args[] = {
       "keytab to use", "keytabname" },
 
     { "lifetime",	'l', arg_string, &lifetime,
-      "lifetime of tickets", "seconds"},
+      "lifetime of tickets", "time"},
 
     { "proxiable",	'p', arg_flag, &proxiable_flag,
       "get proxiable tickets" },
@@ -212,13 +212,13 @@ static struct getargs args[] = {
       "get renewable tickets" },
 
     { "renewable-life",	'r', arg_string, &renew_life,
-      "renewable lifetime of tickets", "seconds" },
+      "renewable lifetime of tickets", "time" },
 
     { "server", 	'S', arg_string, &server,
       "server to get ticket for", "principal" },
 
     { "start-time",	's', arg_string, &start_str,
-      "when ticket gets valid", "seconds" },
+      "when ticket gets valid", "time" },
 
     { "use-keytab",     'k', arg_flag, &use_keytab,
       "get key from keytab" },
