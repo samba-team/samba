@@ -184,14 +184,21 @@ int under_dfs(connection_struct *conn, const char *path)
 	dfs_internal_table *list=dfs_struct.table;
 	
 	snum=SNUM(conn);
-	snprintf(fullpath, sizeof(fullpath), "\\%s\\%s\\%s", global_myname, 
-	         lp_servicename(snum), path);
+	if (path[0] != '\\')
+	{
+		snprintf(fullpath, sizeof(fullpath), "\\%s\\%s\\%s",
+		           global_myname, lp_servicename(snum), path);
+	}
+	else
+	{
+		safe_strcpy(fullpath, path, sizeof(fullpath));
+	}
 	
 	strupper(fullpath);
 	
 	path_len=strlen(fullpath); 
 
-	DEBUG(0,("looking for: [%s]\n", fullpath));
+	DEBUG(2,("DFS looking for: [%s]\n", fullpath));
 	for(i=0; i<dfs_struct.size; i++)
 	{ 
 		file_len=list[i].localpath_length;
@@ -199,16 +206,16 @@ int under_dfs(connection_struct *conn, const char *path)
  
 		DEBUG(6,("checking against [%s][%d]\n", list[i].localpath,i));
 		
-		if(file_len==path_len && !strncasecmp(list[i].localpath, fullpath, file_len))
+		if(file_len==path_len && !StrnCaseCmp(list[i].localpath, fullpath, file_len))
 		{
-			DEBUG(0,("found one linked to [%s]\n", list[i].sharename));
+			DEBUG(2,("found one linked to [%s]\n", list[i].sharename));
 			ok=True;
 			break;
 		}
  
-		if(mangled_len==path_len && !strncasecmp(list[i].mangledpath, fullpath, mangled_len))
+		if(mangled_len==path_len && !StrnCaseCmp(list[i].mangledpath, fullpath, mangled_len))
 		{
-			DEBUG(0,("found one mangled linked to [%s]\n", list[i].sharename));
+			DEBUG(2,("found one mangled linked to [%s]\n", list[i].sharename));
 			ok=True;
 			break;
 		}
