@@ -49,6 +49,7 @@ init_des_key(hdb_entry *ent)
     ent->keys.len++;
     memset(k, 0, sizeof(*k));
     krb5_generate_random_keyblock(context, KEYTYPE_DES, &k->key);
+    seal_key(k);
 }
 
 void
@@ -56,10 +57,13 @@ set_keys(hdb_entry *ent, char *password)
 {
     krb5_data salt;
     int i;
+
     memset(&salt, 0, sizeof(salt));
     krb5_get_salt(ent->principal, &salt);
-    for(i = 0; i < ent->keys.len; i++)
+    for(i = 0; i < ent->keys.len; i++) {
 	krb5_string_to_key(password, &salt, &ent->keys.val[i].key); /* XXX */
+	seal_key(&ent->keys.val[i]);
+    }
     krb5_data_free(&salt);
     ent->kvno++;
 }    
