@@ -35,9 +35,9 @@
 		uint32 stringoffset;
 		[size_is(num_of_strings)] eventlog_String bla[*];
 		uint32 sid_length;
-		[length_is(sid_length)] dom_sid *sids;
+		[length_is(sid_length)] dom_sid *sids[];
 		uint32 data_length;
-		[length_is(data_length)] uint8 *data;
+		[length_is(data_length)] uint8 *data[];
 		unistr *source_name;
 		unistr *machine_name;
 	} eventlog_Record;
@@ -101,7 +101,7 @@
 								   [in] 		uint32 flags,
 								   [in]			uint32 offset,
 								   [in,out]		uint32 number_of_bytes,
-								   [out,size_is(number_of_bytes),ref]		uint8 *data,
+								   [out,ref,size_is(number_of_bytes)]		uint8 *data[],
 								   [out]		uint32 sent_size,
 								   [out]		uint32 real_size
 								  );

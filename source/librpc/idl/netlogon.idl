@@ -87,7 +87,7 @@ interface netlogon
 	typedef struct {
 		uint16 size;
 		uint16 length;
-		[size_is(size/2),length_is(length/2)] uint16 *bindata;
+		[size_is(size/2),length_is(length/2)] uint16 *bindata[];
 	} netr_AcctLockStr;
 
 	typedef struct {
@@ -108,7 +108,7 @@ interface netlogon
 	typedef [flag(NDR_PAHEX)] struct {
 		uint16 length;
 		[value(r->length)] uint16 size;
-		[size_is(size),length_is(length)] uint8 *data;
+		[size_is(size),length_is(length)] uint8 *data[];
 	} netr_ChallengeResponse;
 
 	typedef [flag(NDR_PAHEX)] struct {
@@ -157,7 +157,7 @@ interface netlogon
 		uint32 rid;
 		uint32 primary_gid;
 		uint32 group_count;
-		[size_is(group_count)] netr_GroupMembership *groupids;
+		[size_is(group_count)] netr_GroupMembership *groupids[];
 		uint32 user_flags;
 		netr_UserSessionKey key;
 		netr_String logon_server;
@@ -180,13 +180,13 @@ interface netlogon
 	typedef [public] struct {
 		netr_SamBaseInfo base;
 		uint32 sidcount;
-		[size_is(sidcount)] netr_SidAttr *sids;
+		[size_is(sidcount)] netr_SidAttr *sids[];
 	} netr_SamInfo3;
 
 	typedef struct {
 		netr_SamBaseInfo base;
 		uint32 sidcount;
-		[size_is(sidcount)] netr_SidAttr *sids;
+		[size_is(sidcount)] netr_SidAttr *sids[];
 		netr_String forest;
 		netr_String principle;
 		uint32 unknown4[20];
@@ -194,12 +194,12 @@ interface netlogon
 
 	typedef struct {
 		uint32 pac_size;
-		[size_is(pac_size)] uint8 *pac;
+		[size_is(pac_size)] uint8 *pac[];
 		netr_String logon_domain;
 		netr_String logon_server;
 		netr_String principal_name;
 		uint32 auth_size;
-		[size_is(auth_size)] uint8 *auth;
+		[size_is(auth_size)] uint8 *auth[];
 		netr_UserSessionKey user_session_key;
 		uint32 expansionroom[10];
 		netr_String unknown1;
@@ -357,7 +357,7 @@ interface netlogon
 		uint32 DataLength;
 
 		/* netr_USER_KEYS encrypted with the session key */
-		[size_is(DataLength)][flag(NDR_PAHEX)] uint8 *SensitiveData;
+		[size_is(DataLength)][flag(NDR_PAHEX)] uint8 *SensitiveData[];
 	} netr_USER_PRIVATE_INFO;
 
 	typedef struct {
@@ -454,8 +454,8 @@ interface netlogon
 	} netr_DELTA_RENAME;
 
 	typedef struct {
-		[size_is(num_rids)] uint32 *rids;
-		[size_is(num_rids)] uint32 *attribs;
+		[size_is(num_rids)] uint32 *rids[];
+		[size_is(num_rids)] uint32 *attribs[];
 		uint32 num_rids;
 		uint32 unknown1;
 		uint32 unknown2;
@@ -500,7 +500,7 @@ interface netlogon
 		NTTIME auditretentionperiod;
 		bool8 auditingmode;
 		uint32 maxauditeventcount;
-		[size_is(maxauditeventcount+1)] uint32 *eventauditoptions;
+		[size_is(maxauditeventcount+1)] uint32 *eventauditoptions[];
 		netr_String primary_domain_name;
 		dom_sid2 *sid;
 		netr_QUOTA_LIMITS quota_limits;
@@ -521,7 +521,7 @@ interface netlogon
 	typedef struct {
 		netr_String domain_name;
 		uint32 num_controllers;
-		[size_is(num_controllers)] netr_String *controller_names;
+		[size_is(num_controllers)] netr_String *controller_names[];
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
 		netr_String unknown1;
@@ -541,8 +541,8 @@ interface netlogon
 	typedef struct {
 		uint32 privilege_entries;
 		uint32 privilege_control;
-		[size_is(privilege_entries)] uint32 *privilege_attrib;
-		[size_is(privilege_entries)] netr_String *privilege_name;
+		[size_is(privilege_entries)] uint32 *privilege_attrib[];
+		[size_is(privilege_entries)] netr_String *privilege_name[];
 		netr_QUOTA_LIMITS quotalimits;
 		uint32 system_flags;
 		uint32 SecurityInformation;
@@ -568,7 +568,7 @@ interface netlogon
 	typedef struct {
 		uint32 len;
 		uint32 maxlen;
-		[size_is(maxlen)][length_is(len)] uint8 *cipher_data;
+		[size_is(maxlen)][length_is(len)] uint8 *cipher_data[];
 	} netr_CIPHER_VALUE;
 
 	typedef struct {
@@ -671,7 +671,7 @@ interface netlogon
 
 	typedef struct {
 		uint32 num_deltas;
-		[size_is(num_deltas)] netr_DELTA_ENUM *delta_enum;
+		[size_is(num_deltas)] netr_DELTA_ENUM *delta_enum[];
 	} netr_DELTA_ENUM_ARRAY;
 
 
@@ -883,7 +883,7 @@ interface netlogon
 		[in]     unistr computername,
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
-		[in][size_is(change_log_entry_size)] uint8 *change_log_entry,
+		[in][size_is(change_log_entry_size)] uint8 *change_log_entry[],
 		[in]     uint32 change_log_entry_size,
 		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
@@ -953,13 +953,13 @@ interface netlogon
 
 	typedef struct {
 		uint32 length;
-		[size_is(length)] uint8 *data;
+		[size_is(length)] uint8 *data[];
 	} netr_Blob;
 
 	typedef [flag(NDR_PAHEX)] struct {
 		uint16 length;
 		uint16 size;
-		[size_is(size/2),length_is(length/2)] uint16 *data;
+		[size_is(size/2),length_is(length/2)] uint16 *data[];
 	} netr_BinaryString;
 
 	typedef struct {
@@ -995,7 +995,7 @@ interface netlogon
 	typedef struct {
 		netr_DomainTrustInfo domaininfo;
 		uint32 num_trusts;
-		[size_is(num_trusts)] netr_DomainTrustInfo *trusts;
+		[size_is(num_trusts)] netr_DomainTrustInfo *trusts[];
 		uint32 unknown[14]; /* room for expansion? */
 	} netr_DomainInfo1;
 
@@ -1136,7 +1136,7 @@ interface netlogon
 		[in]                 unistr           *server_name,
 		[in]                 netr_TrustFlags  trust_flags,
 		[out]                uint32           count,
-		[out,size_is(count)] netr_DomainTrust *trusts
+		[out,size_is(count)] netr_DomainTrust *trusts[]
 		);
 
 
