@@ -357,6 +357,8 @@ tgs_rep(krb5_context context,
 	if(ret) 
 	    return ret;
 
+	tgt = &ticket->tkt;
+
 	{
 	    krb5_authenticator auth;
 	    size_t len;
@@ -366,13 +368,15 @@ tgs_rep(krb5_context context,
 		return KRB5KRB_AP_ERR_INAPP_CKSUM;
 	    /* XXX */
 	    if (auth->cksum->cksumtype != CKSUMTYPE_RSA_MD4 &&
-		auth->cksum->cksumtype != CKSUMTYPE_RSA_MD5)
+		auth->cksum->cksumtype != CKSUMTYPE_RSA_MD5 &&
+		auth->cksum->cksumtype != CKSUMTYPE_RSA_MD5_DES)
 		return KRB5KRB_AP_ERR_INAPP_CKSUM;
 		
 	    /* XXX */
 	    encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
 				b, &len);
 	    ret = krb5_verify_checksum(context, buf + sizeof(buf) - len, len,
+				       &tgt->key,
 				       auth->cksum);
 	    if(ret)
 		return ret;
@@ -387,8 +391,6 @@ tgs_rep(krb5_context context,
 	    /* do foreign realm stuff */
 	    return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	}
-
-	tgt = &ticket->tkt;
 
 	client = db_fetch(context, &tgt->cname, tgt->crealm);
 	if(client == NULL)
