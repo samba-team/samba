@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    filename handling routines
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Jeremy Allison 1999-200
+   Copyright (C) Jeremy Allison 1999-2004
    Copyright (C) Ying Chen 2000
    
    This program is free software; you can redistribute it and/or modify
@@ -392,9 +392,10 @@ BOOL check_name(pstring name,connection_struct *conn)
 	errno = 0;
 
 	if (IS_VETO_PATH(conn, name))  {
-		if(strcmp(name, ".") && strcmp(name, "..")) {
+		/* Is it not dot or dot dot. */
+		if (!((name[0] == '.') && (!name[1] || (name[1] == '.' && !name[2])))) {
 			DEBUG(5,("file path name %s vetoed\n",name));
-			return(0);
+			return False;
 		}
 	}
 
@@ -412,7 +413,7 @@ BOOL check_name(pstring name,connection_struct *conn)
 		if ( (SMB_VFS_LSTAT(conn,name,&statbuf) != -1) &&
 				(S_ISLNK(statbuf.st_mode)) ) {
 			DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
-			ret=0; 
+			ret = False; 
 		}
 	}
 #endif
@@ -464,8 +465,11 @@ static BOOL scan_directory(const char *path, char *name, size_t maxlength,
 
 	/* now scan for matching names */
 	while ((dname = ReadDirName(cur_dir))) {
-		if (*dname == '.' && (strequal(dname,".") || strequal(dname,"..")))
+
+		/* Is it dot or dot dot. */
+		if ((dname[0] == '.') && (!dname[1] || (dname[1] == '.' && !dname[2]))) {
 			continue;
+		}
 
 		/*
 		 * At this point dname is the unmangled name.
