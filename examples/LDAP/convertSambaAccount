@@ -5,23 +5,50 @@
 ##
 ## Copyright Gerald (Jerry) Carter	2003
 ##
-## Usage: convertSambaAccount <Domain SID> <input ldif> <output ldif>
+## Usage: convertSambaAccount --sid=<Domain SID> \
+##       --input=<input ldif> --output=<output ldif> \
+##       --changetype=[modify|add]
 ##
 
 
 use strict;
 use Net::LDAP::LDIF;
+use Getopt::Long;
 
-my ( $domain, $domsid );
+
+##############################################################################
+## local variables
+
+my ( $domain, $domsid, $changetype );
 my ( $ldif, $ldif2 );
 my ( $entry, @objclasses, $obj );
 my ( $is_samba_account, $is_samba_group );
 my ( %attr_map, %group_attr_map, $key );
+my ( @dels, $deletion, @adds, $addition );
+my ( $result, %options );
 
-if ( $#ARGV != 2 ) {
-	print "Usage: convertSambaAccount domain_sid input_ldif output_ldif\n";
-	exit 1;
+
+##############################################################################
+## Print the option usage
+
+sub usage {
+
+	print "convertSambaAccount <options>\n";
+	print "Options:\n";
+	print "  --input        input LDIF filename\n";
+	print "  --output       output LDIF filename\n";
+	print "  --sid          domain SID\n";
+	print "  --changetype   [modify|add] (default is 'add')\n";
 }
+
+
+##############################################################################
+##                               MAIN DRIVER                                ##
+##############################################################################
+
+##
+## hashes to map old attribute names to new ones 
+##
 
 %attr_map = ( 
 	lmPassword	=> 'sambaLMPassword',
@@ -46,12 +73,54 @@ if ( $#ARGV != 2 ) {
 	ntGroupType	=> 'sambaGroupType',
 );
 
-$domsid = $ARGV[0];
+##
+## process command line args
+##
 
-$ldif = Net::LDAP::LDIF->new ($ARGV[1], "r")
-	or die $!;
-$ldif2 = Net::LDAP::LDIF->new ($ARGV[2], "w")
-	or die $!;
+$result = GetOptions(\%options, 
+			"input=s", 
+			"output=s", 
+			"sid=s",
+			"changetype=s");
+
+if (!$result && ($#ARGV != -1)) {
+	usage();
+	exit 1;
+}
+
+
+if ( !defined( $options{'sid'} ) ) {
+	print "You must provide a domain sid\n";
+	exit 1;
+}
+
+$domsid = $options{'sid'};
+
+$changetype = 'add';
+if ( defined( $options{'changetype'} ) ) {
+	$changetype = $options{'changetype'};
+}
+
+##
+## open files
+##
+
+$ldif = Net::LDAP::LDIF->new ($options{'input'}, "r") or die $!;
+
+if ( "$changetype" eq "add" ) {
+	$ldif2 = Net::LDAP::LDIF->new ($options{'output'}, "w") or die $!;
+}
+elsif ( "$changetype" eq "modify" ) {
+	open( OUTPUT, ">$options{'output'}" ) or die $!;
+}
+else {
+	print "Bad changetype!\n";
+	exit 1;
+}
+
+##
+## process LDIF 
+##
 
 while ( !$ldif->eof ) {
 	undef ( $entry );
@@ -71,6 +140,8 @@ while ( !$ldif->eof ) {
 	@objclasses = $entry->get_value( "objectClass" );
 	undef ( $is_samba_account );
 	undef ( $is_samba_group );
+	@adds = ();
+	@dels = ();
 	foreach $obj ( @objclasses ) {
 		if ( "$obj" eq "sambaAccount" ) {
 			$is_samba_account = 1;
@@ -84,6 +155,8 @@ while ( !$ldif->eof ) {
 		## start editing the sambaAccount
 		##
 
+		@dels = ( 'objectclass: sambaAccount', 'rid' );
+		@adds = ('objectclass: sambaSamAccount', "sambaSID: " .  ${domsid} . "-" . ${entry}->get_value( 'rid' ) );
 		$entry->delete( 'objectclass' => [ 'sambaAccount' ] );
 		$entry->add( 'objectclass' => 'sambaSamAccount' );
 
@@ -91,6 +164,8 @@ while ( !$ldif->eof ) {
 		$entry->delete( 'rid' );
 	
 		if ( $entry->get_value( "primaryGroupID" ) ) {
+			push @adds, "sambaPrimaryGroupSID: " . $domsid."-".$entry->get_value( "primaryGroupID" );
+			push @dels, "primaryGroupID";
 			$entry->add( 'sambaPrimaryGroupSID' => $domsid."-".$entry->get_value( "primaryGroupID" ) );
 			$entry->delete( 'primaryGroupID' );
 		}
@@ -98,6 +173,8 @@ while ( !$ldif->eof ) {
 
 		foreach $key ( keys %attr_map ) {
 			if ( defined($entry->get_value($key)) ) {
+				push @adds, "$attr_map{$key}: " . $entry->get_value($key);
+				push @dels, "$key";
 				$entry->add( $attr_map{$key} => $entry->get_value($key) );
 				$entry->delete( $key );
 			}
@@ -105,13 +182,39 @@ while ( !$ldif->eof ) {
 	} elsif ( defined ( $is_samba_group ) ) {
 		foreach $key ( keys %group_attr_map ) {
 			if ( defined($entry->get_value($key)) ) {
+				push @adds, "$group_attr_map{$key}: " . $entry->get_value($key);
+				push @dels, "$key";
 				$entry->add( $group_attr_map{$key} => $entry->get_value($key) );
 				$entry->delete( $key );
 			}
 		}
 	}
 	
-	$ldif2->write_entry( $entry );
+	## see if we should write full entries or only the changes
+	
+	if ( "$changetype" eq "add" ) {
+		$ldif2->write_entry( $entry );
+	}
+	else {
+		if ( defined ( $is_samba_account ) || defined ( $is_samba_group ) ){
+			if ( @adds + @dels > 0 ) {
+				print OUTPUT "dn: " . $entry->dn . "\n";
+				foreach $addition (@adds) {
+					$addition =~ /(^\w+):/;
+					print OUTPUT "add: " . $1  . "\n";
+					print OUTPUT "$addition\n-\n";
+				}
+				foreach $deletion (@dels) {
+					if ( $deletion =~ /^(\w+):\s(.*)/ ) {
+						print OUTPUT "delete: $1\n$1: $2\n-\n";
+					} else {
+						print OUTPUT "delete: $deletion\n-\n"
+					}
+				}
+				print OUTPUT "\n"
+			}
+		}
+	}
 }
 
 
