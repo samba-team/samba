@@ -59,6 +59,48 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
+static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			    struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_CreateUser r;
+	struct samr_DeleteUser d;
+	struct policy_handle acct_handle;
+	uint32 rid;
+	struct samr_Name name;
+
+	name.name = "samrtorturetest";
+
+	r.in.handle = handle;
+	r.in.username = &name;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.acct_handle = &acct_handle;
+	r.out.rid = &rid;
+
+	printf("Testing CreateUser(%s)\n", r.in.username->name);
+
+	status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) && 
+	    !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+		printf("CreateUser failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+
+	printf("Testing DeleteUser\n");
+
+	d.in.handle = &acct_handle;
+	d.out.handle = &acct_handle;
+
+	status = dcerpc_samr_DeleteUser(p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeleteUser failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				struct policy_handle *handle)
 {
@@ -400,11 +442,9 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-#if 0
 	if (!test_CreateUser(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
-#endif
 
 	if (!test_QuerySecurity(p, mem_ctx, &domain_handle)) {
 		ret = False;

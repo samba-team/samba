@@ -996,18 +996,16 @@ struct spoolss_EnumPrinterData {
 		struct policy_handle *handle;
 		uint32 enum_index;
 		uint32 value_offered;
-		DATA_BLOB *buffer;
-		uint32 *buf_size;
+		uint32 *data_size;
 	} in;
 
 	struct {
-		uint32 value_len;
-		const char *value_name;
+		DATA_BLOB value;
 		uint32 value_needed;
 		uint32 printerdata_type;
-		DATA_BLOB *buffer;
-		uint32 *buf_size;
-		NTSTATUS result;
+		DATA_BLOB data;
+		uint32 *data_size;
+		WERROR result;
 	} out;
 
 };
