@@ -747,6 +747,8 @@ scripting/swig/python/_tdb.so: scripting/swig/python/tdb.py scripting/swig/pytho
 	\$(SHLD) \$(LDSHFLAGS) -o scripting/swig/python/_tdb.so scripting/swig/python/tdb_wrap.po \\
 		\$(PYTHON_TDB_PICOBJ)
 
+everything: all
+
 etags:
 	etags `find \$(srcdir) -name \"*.[ch]\"`
 
