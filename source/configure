@@ -11316,16 +11316,61 @@ else
     echo "no"
 fi
 
+# sometimes getopt_long cannot parse same arguments twice
+# e.g. on certain versions of CygWin32
+echo $ac_n "checking for working getopt_long""... $ac_c" 1>&6
+echo "configure:11323: checking for working getopt_long" >&5
+if eval "test \"\${samba_cv_HAVE_GETOPT_LONG+set}\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  
+if test "$cross_compiling" = yes; then
+  samba_cv_HAVE_GETOPT_LONG=cross
+else
+  cat > conftest.$ac_ext <<EOF
+#line 11332 "configure"
+#include "confdefs.h"
+#include <getopt.h>
+main() {
+    int i, x = 0; char *argv[] = { "x", "--xx" };
+    struct option o[] = {{"xx", 0, 0, 1}, {0,0,0,0}};
+    getopt_long(2, argv, "x", o, &i) == 1 ? x++ : 0; optind = 0;
+    getopt_long(2, argv, "x", o, &i) == 1 ? x++ : 0;
+    exit(x == 2 ? 0 : 1);
+}
+EOF
+if { (eval echo configure:11343: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+then
+  samba_cv_HAVE_GETOPT_LONG=yes
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -fr conftest*
+  samba_cv_HAVE_GETOPT_LONG=no
+fi
+rm -fr conftest*
+fi
+
+fi
+
+echo "$ac_t""$samba_cv_HAVE_GETOPT_LONG" 1>&6
+if test x"$samba_cv_HAVE_GETOPT_LONG" = x"yes"; then
+    cat >> confdefs.h <<\EOF
+#define HAVE_GETOPT_LONG 1
+EOF
+
+fi
+
 echo "checking configure summary"
 if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 11325 "configure"
+#line 11370 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:11329: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11374: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else

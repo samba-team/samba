@@ -192,6 +192,7 @@
 #undef USE_RENEWABLE_AFS_TICKET
 #undef WITH_NT5LDAP
 #undef WITH_TDBSURS
+#undef HAVE_GETOPT_LONG
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -700,8 +701,8 @@
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
 
-/* Define if you have the getopt_long function.  */
-#undef HAVE_GETOPT_LONG
+/* Define if you have the <getopt.h> header file.  */
+#undef HAVE_GETOPT_H
 
 /* Define if you have the <glob.h> header file.  */
 #undef HAVE_GLOB_H
