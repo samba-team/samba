@@ -1,3 +1,6 @@
+!==
+!== NT-Guest-Access.txt for Samba release 2.0.3 28 Feb 1999
+!==
 > Hi folks ... I don't know if you have seen this, have corrected this yet
 > or it is my configuration.
 > I am using our company PDC for passwd authentication and it works OK

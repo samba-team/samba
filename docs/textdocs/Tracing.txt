@@ -1,5 +1,5 @@
 !==
-!== Tracing.txt for Samba release 2.0.1 07 Feb 1999
+!== Tracing.txt for Samba release 2.0.3 28 Feb 1999
 !==
 Contributor:	Andrew Tridgell <samba-bugs@samba.org>
 Date:		Old
