@@ -529,31 +529,6 @@ static void usage(char *pname)
 
 	charset_initialise();
 
-	/* make absolutely sure we run as root - to handle cases where people
-	   are crazy enough to have it setuid */
-
-	gain_root_privilege();
-	gain_root_group_privilege();
-
-	fault_setup((void (*)(void *))exit_server);
-	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
-
-	/* we are never interested in SIGPIPE */
-	BlockSignals(True,SIGPIPE);
-
-#if defined(SIGFPE)
-	/* we are never interested in SIGFPE */
-	BlockSignals(True,SIGFPE);
-#endif
-
-	/* we want total control over the permissions on created files,
-	   so set our umask to 0 */
-	umask(0);
-
-	dos_GetWd(OriginalDir);
-
-	init_uid();
-
 	/* this is for people who can't start the program correctly */
 	while (argc > 1 && (*argv[1] != '-')) {
 		argv++;
@@ -561,7 +536,7 @@ static void usage(char *pname)
 	}
 
 	while ( EOF != (opt = getopt(argc, argv, "O:i:l:s:d:Dp:h?VPaof:")) )
-		switch (opt)  {
+	  switch (opt) {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
 			break;
@@ -622,7 +597,32 @@ static void usage(char *pname)
 			DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
 			usage(argv[0]);
 			exit(1);
-		}
+	  }
+
+	/* make absolutely sure we run as root - to handle cases where people
+	   are crazy enough to have it setuid */
+
+	gain_root_privilege();
+	gain_root_group_privilege();
+
+	fault_setup((void (*)(void *))exit_server);
+	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
+
+	/* we are never interested in SIGPIPE */
+	BlockSignals(True,SIGPIPE);
+
+#if defined(SIGFPE)
+	/* we are never interested in SIGFPE */
+	BlockSignals(True,SIGFPE);
+#endif
+
+	/* we want total control over the permissions on created files,
+	   so set our umask to 0 */
+	umask(0);
+
+	dos_GetWd(OriginalDir);
+
+	init_uid();
 
 	reopen_logs();
 
