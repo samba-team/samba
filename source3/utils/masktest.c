@@ -204,9 +204,10 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	if (old_list) {
 		cli_list_old(cli, mask, aHIDDEN | aDIR, listfn);
 	} else {
-		cli_list(cli, mask, aHIDDEN | aDIR, listfn);
-		finfo = NULL;
 		get_short_name(cli, file, short_name);
+		finfo = NULL;
+		fstrcpy(res1, "---");
+		cli_list(cli, mask, aHIDDEN | aDIR, listfn);
 	}
 
 	res2 = reg_test(mask, file, short_name);
@@ -218,7 +219,7 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 
 	cli_unlink(cli, file);
 
-	if (count % 500 == 0) DEBUG(0,("%d\n", count));
+	if (count % 100 == 0) DEBUG(0,("%d\n", count));
 }
 
 static void test_mask(int argc, char *argv[], 
