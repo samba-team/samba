@@ -510,17 +510,13 @@ static void process(void)
 	static BOOL log_stdout = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		POPT_COMMON_SAMBA
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base },
 		{ "daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools, etc)" },
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Run interactive (not a daemon)" },
 		{ "port", 'p', POPT_ARG_INT, &wins_port, 'p', "Listen on the specified port" },
-		{ 0, 0, 0, 0 }
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
 	};
 	int opt;
 	poptContext pc;

@@ -515,7 +515,6 @@ static struct functable net_func[] = {
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
 		{"workgroup",	'w', POPT_ARG_STRING, &opt_target_workgroup},
-		{"myworkgroup",	'W', POPT_ARG_STRING, &opt_workgroup},
 		{"user",	'U', POPT_ARG_STRING, &opt_user_name, 'U'},
 		{"ipaddress",	'I', POPT_ARG_STRING, 0,'I'},
 		{"port",	'p', POPT_ARG_INT,    &opt_port},
@@ -532,8 +531,6 @@ static struct functable net_func[] = {
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		POPT_COMMON_SAMBA
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{ 0, 0, 0, 0}
 	};
 

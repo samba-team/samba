@@ -2589,15 +2589,7 @@ static void remember_query_host(const char *arg,
 	int rc = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		POPT_COMMON_SAMBA
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options }, 
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_netbios_name },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_scope },
-		POPT_CREDENTIALS
+
 		{ "name-resolve", 'R', POPT_ARG_STRING, &new_name_resolve_order, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
 		{ "message", 'M', POPT_ARG_STRING, NULL, 'M', "Send message", "HOST" },
 		{ "ip-address", 'I', POPT_ARG_STRING, NULL, 'I', "Use this IP to connect to", "IP" },
@@ -2610,7 +2602,9 @@ static void remember_query_host(const char *arg,
 		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
 		{ "send-buffer", 'b', POPT_ARG_INT, NULL, 'b', "Changes the transmit/send buffer", "BYTES" },
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
-		{ 0, 0, 0, 0 }
+		POPT_COMMON_SAMBA
+		POPT_CREDENTIALS
+		POPT_TABLEEND
 	};
 	
 
@@ -2720,7 +2714,7 @@ static void remember_query_host(const char *arg,
 
 	pstrcpy(username, cmdline_auth_info.username);
 	pstrcpy(password, cmdline_auth_info.password);
-	pstrcpy(workgroup, cmdline_auth_info.workgroup);
+	pstrcpy(workgroup, lp_workgroup());
 	use_kerberos = cmdline_auth_info.use_kerberos;
 	got_pass = cmdline_auth_info.got_pass;
 

@@ -439,14 +439,13 @@ enum {
 	OPT_NT_KEY
 };
 
-int main(int argc, const char **argv)
+ int main(int argc, const char **argv)
 {
 	int opt;
 
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-
 		{ "helper-protocol", 0, POPT_ARG_STRING, &helper_protocol, OPT_DOMAIN, "operate as a stdio-based helper", "helper protocol to use"},
  		{ "username", 0, POPT_ARG_STRING, &username, OPT_USERNAME, "username"},
  		{ "domain", 0, POPT_ARG_STRING, &domain, OPT_DOMAIN, "domain name"},
@@ -457,10 +456,9 @@ int main(int argc, const char **argv)
 		{ "password", 0, POPT_ARG_STRING, &password, OPT_PASSWORD, "User's plaintext password"},		
 		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retreive LM session key"},
 		{ "request-nt-key", 0, POPT_ARG_NONE, &request_nt_key, OPT_NT_KEY, "Retreive NT session key"},
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
-		{ 0, 0, 0, 0 }
+		POPT_COMMON_SAMBA
+		POPT_CREDENTIALS
+		POPT_TABLEEND
 	};
 
 	/* Samba client initialisation */

@@ -247,14 +247,12 @@ static BOOL print_tree(struct user_auth_info *user_info)
 {
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_credentials },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{ "broadcast", 'b', POPT_ARG_VAL, &use_bcast, True, "Use broadcast instead of using the master browser" },
 		{ "domains", 'D', POPT_ARG_VAL, &level, LEV_WORKGROUP, "List only domains (workgroups) of tree" },
 		{ "servers", 'S', POPT_ARG_VAL, &level, LEV_SERVER, "List domains(workgroups) and servers of tree" },
-		{ 0 }
+		POPT_COMMON_SAMBA
+		POPT_CREDENTIALS
+		POPT_TABLEEND
 	};
 	poptContext pc;
 	

@@ -24,11 +24,8 @@
 
 #include "includes.h"
 
-static fstring password;
-static pstring username;
 static pstring owner_username;
 static fstring server;
-static int got_pass;
 static int test_args = False;
 static TALLOC_CTX *ctx;
 
@@ -716,19 +713,19 @@ static struct cli_state *connect_one(const char *share)
 	NTSTATUS nt_status;
 	zero_ip(&ip);
 	
-	if (!got_pass) {
+	if (!cmdline_auth_info.got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			fstrcpy(password, pass);
-			got_pass = True;
+			pstrcpy(cmdline_auth_info.password, pass);
+			cmdline_auth_info.got_pass = True;
 		}
 	}
 
 	if (NT_STATUS_IS_OK(nt_status = cli_full_connection(&c, global_myname(), server, 
 							    &ip, 0,
 							    share, "?????",  
-							    username, lp_workgroup(),
-							    password, 0, NULL))) {
+							    cmdline_auth_info.username, lp_workgroup(),
+							    cmdline_auth_info.password, 0, NULL))) {
 		return c;
 	} else {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
@@ -743,7 +740,6 @@ static struct cli_state *connect_one(const char *share)
 {
 	char *share;
 	int opt;
-	char *p;
 	enum acl_mode mode = SMB_ACL_SET;
 	static char *the_acl = NULL;
 	enum chown_mode change_mode = REQUEST_NONE;
@@ -759,12 +755,10 @@ static struct cli_state *connect_one(const char *share)
 		{ "set", 'S', POPT_ARG_STRING, NULL, 'S', "Set acls", "ACLS" },
 		{ "chown", 'C', POPT_ARG_STRING, NULL, 'C', "Change ownership of a file", "USERNAME" },
 		{ "chgrp", 'G', POPT_ARG_STRING, NULL, 'G', "Change group ownership of a file", "GROUPNAME" },
-		{ "numeric", 'n', POPT_ARG_VAL, &numeric, True, "Don't resolve sids or masks to names" },
-		{ "test-args", 't', POPT_ARG_VAL, &test_args, True, "Test arguments"},
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
-		{"username", 'U', POPT_ARG_STRING, NULL, 'U', "User to authenticate as", "user%password" },
+		{ "numeric", 0, POPT_ARG_NONE, &numeric, True, "Don't resolve sids or masks to names" },
+		{ "test-args", 't', POPT_ARG_NONE, &test_args, True, "Test arguments"},
+		POPT_COMMON_SAMBA
+		POPT_CREDENTIALS
 		{ NULL }
 	};
 
@@ -781,33 +775,12 @@ static struct cli_state *connect_one(const char *share)
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
-	if (getenv("USER")) {
-		pstrcpy(username,getenv("USER"));
-
-		if ((p=strchr_m(username,'%'))) {
-			*p = 0;
-			fstrcpy(password,p+1);
-			got_pass = True;
-			memset(strchr_m(getenv("USER"), '%') + 1, 'X',
-			       strlen(password));
-		}
-	}
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
 	
 	poptSetOtherOptionHelp(pc, "//server1/share1 filename");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-		case 'U':
-			pstrcpy(username,poptGetOptArg(pc));
-			p = strchr_m(username,'%');
-			if (p) {
-				*p = 0;
-				fstrcpy(password, p+1);
-				got_pass = 1;
-			}
-			break;
-
 		case 'S':
 			the_acl = smb_xstrdup(poptGetOptArg(pc));
 			mode = SMB_ACL_SET;
