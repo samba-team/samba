@@ -453,7 +453,7 @@ int net_groupmap_delete(int argc, const char **argv)
 				return -1;
 			}		
 		}
-		if ( !StrnCaseCmp(argv[i], "sid", strlen("sid")) ) {
+		else if ( !StrnCaseCmp(argv[i], "sid", strlen("sid")) ) {
 			fstrcpy( sid_string, get_string_param( argv[i] ) );
 			if ( !sid_string[0] ) {
 				d_printf("must supply a SID\n");
