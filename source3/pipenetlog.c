@@ -524,19 +524,13 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		pstrcpy(dom_sid     , lp_domainsid   ());
 		pstrcpy(my_workgroup, lp_workgroup   ());
 
-		pstrcpy(my_name     , myname           );
-		strupper(my_name);
-
-		pstrcpy(home_drive  , "a:"             );
-
-#if (defined(NETGROUP) && defined(AUTOMOUNT))
-		pstrcpy(home_dir    , vuser->home_share);
-#else
-		pstrcpy(home_dir    , "\\\\%L\\%U");
-#endif
-		standard_sub_basic(home_dir);
+		pstrcpy(home_drive  , lp_logon_drive ());
+		pstrcpy(home_dir    , lp_logon_home  ());
 
 		sam_logon_in_ssb = False;
+
+		pstrcpy(my_name     , myname           );
+		strupper(my_name);
 
 		make_lsa_user_info(&usr_info,
 
@@ -603,9 +597,6 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 	if ((vuser = get_valid_user_struct(uid)) == NULL) return False;
 
 	DEBUG(3,("Username of UID %d is %s\n", vuser->uid, vuser->name));
-#if defined(NETGROUP) && defined(AUTOMOUNT)
-	DEBUG(3,("HOMESHR for %s is %s\n", vuser->name, vuser->home_share));
-#endif
 
 	switch (opnum)
 	{

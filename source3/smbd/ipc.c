@@ -1999,9 +1999,6 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
     /* get NIS home of a previously validated user - simeon */
     user_struct *vuser = get_valid_user_struct(vuid);
     DEBUG(3,("  Username of UID %d is %s\n", vuser->uid, vuser->name));
-#if (defined(NETGROUP) && defined(AUTOMOUNT))
-    DEBUG(3,("  HOMESHR for %s is %s\n", vuser->name, vuser->home_share));
-#endif
 
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
@@ -2059,19 +2056,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,0xffffffff);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		if (*lp_logon_path())
-		{
-			strcpy(p2,lp_logon_path());
-		}
-		else
-		{
-#if (defined(NETGROUP) && defined(AUTOMOUNT))
-			strcpy(p2, vuser->home_share);
-#else
-			strcpy(p2,"\\\\%L\\%U");
-#endif
-		}
-		standard_sub_basic(p2);
+		strcpy(p2, lp_logon_path());
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		strcpy(p2,"");
@@ -2107,19 +2092,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		SSVAL(p,42,
 		Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		if (*lp_logon_path())
-		{
-			strcpy(p2,lp_logon_path());
-		}
-		else
-		{
-#if (defined(NETGROUP) && defined(AUTOMOUNT))
-            strcpy(p2, vuser->home_share);
-#else
-			strcpy(p2,"\\\\%L\\%U");
-#endif
-		}
-		standard_sub_basic(p2);
+		strcpy(p2,lp_logon_path());
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
