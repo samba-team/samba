@@ -45,7 +45,7 @@ all: telnet
 	@KRBINCPATH@ -I.. -I$(srcdir)/.. $<
 
 telnet: $(OBJECTS)
-	$(CC) -o telnet $(OBJECTS) $(LIBS) ../libtelnet/libtelnet.a $(KLIB)
+	$(CC) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(LIBS) $(KLIB)
 
 install: all
 	$(MKDIRHIER) $(prefix)/bin

@@ -50,7 +50,7 @@ $(OBJECTS): ../config.h
 	@KRBINCPATH@ -I.. -I$(srcdir)/.. -I. -I$(srcdir) $<
 
 telnetd: $(OBJECTS)
-	$(CC) -o telnetd $(OBJECTS) $(LIBS) ../libtelnet/libtelnet.a $(KLIB)
+	$(CC) -o telnetd $(OBJECTS) ../libtelnet/libtelnet.a $(LIBS) $(KLIB)
 
 install: all
 	$(MKDIRHIER) $(prefix)/libexec
