@@ -678,6 +678,8 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	struct lsa_OpenSecret r2;
 	struct lsa_SetSecret r3;
 	struct lsa_QuerySecret r4;
+	struct lsa_SetSecret r5;
+	struct lsa_QuerySecret r6;
 	struct policy_handle sec_handle, sec_handle2;
 	struct lsa_Delete d;
 	struct lsa_DATA_BUF buf1;
@@ -689,6 +691,8 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	DATA_BLOB blob1, blob2;
 	const char *secret1 = "abcdef12345699qwerty";
 	char *secret2;
+ 	const char *secret3 = "ABCDEF12345699QWERTY";
+	char *secret4;
 	char *secname[2];
 	int i;
 
@@ -782,6 +786,62 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 			
 			if (strcmp(secret1, secret2) != 0) {
 				printf("Returned secret doesn't match\n");
+				ret = False;
+			}
+		}
+		
+		enc_key = sess_encrypt_string(secret3, &session_key);
+		
+		r5.in.handle = &sec_handle;
+		r5.in.new_val = &buf1;
+		r5.in.old_val = NULL;
+		r5.in.new_val->data = enc_key.data;
+		r5.in.new_val->length = enc_key.length;
+		r5.in.new_val->size = enc_key.length;
+		
+		printf("Testing SetSecret\n");
+		
+		status = dcerpc_lsa_SetSecret(p, mem_ctx, &r5);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("SetSecret failed - %s\n", nt_errstr(status));
+			ret = False;
+		}
+		
+		data_blob_free(&enc_key);
+		
+		ZERO_STRUCT(new_mtime);
+		ZERO_STRUCT(old_mtime);
+		
+		/* fetch the secret back again */
+		r6.in.handle = &sec_handle;
+		r6.in.new_val = &bufp1;
+		r6.in.new_mtime = &new_mtime;
+		r6.in.old_val = NULL;
+		r6.in.old_mtime = NULL;
+		
+		bufp1.buf = NULL;
+		
+		status = dcerpc_lsa_QuerySecret(p, mem_ctx, &r6);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QuerySecret failed - %s\n", nt_errstr(status));
+			ret = False;
+		}
+		
+		if (r6.out.new_val->buf == NULL) {
+			printf("No secret buffer returned\n");
+			ret = False;
+		} else {
+			blob1.data = r6.out.new_val->buf->data;
+			blob1.length = r6.out.new_val->buf->length;
+			
+			blob2 = data_blob(NULL, blob1.length);
+			
+			secret4 = sess_decrypt_string(&blob1, &session_key);
+			
+			printf("returned secret '%s'\n", secret3);
+			
+			if (strcmp(secret3, secret4) != 0) {
+				printf("Returned secret %s doesn't match %s\n", secret4, secret3);
 				ret = False;
 			}
 		}
