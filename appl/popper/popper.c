@@ -7,7 +7,7 @@
 #ifndef lint
 static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
 static char SccsId[] = "@(#)@(#)popper.c	2.1  2.1 3/18/91";
-#endif not lint
+#endif /* not lint */
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -99,4 +99,4 @@ register int        len;
     }
     return(0);
 }
-#endif STRNCASECMP
+#endif /* STRNCASECMP */
