@@ -3,36 +3,157 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBGROUPEDIT" "8" "08 January 2002" "" ""
+.TH "SMBGROUPEDIT" "8" "10 January 2002" "" ""
 .SH NAME
-smbgroupedit \- Tool for mapping UNIX groups to Windows groups
+smbgroupedit \- Query/set/change UNIX - Windows NT group mapping
 .SH SYNOPSIS
 .sp
-\fBsmbroupedit\fR [ \fB-v\fR ] 
+\fBsmbroupedit\fR [ \fB-v [l|s]\fR ]  [ \fB-a UNIX-groupname [-d NT-groupname|-p prividge|\fR ] 
 .SH "DESCRIPTION"
 .PP
-This program is part of the Samba suite.
+This program is part of the Samba
+suite.
+.PP
+The smbgroupedit command allows for mapping unix groups
+to NT Builtin, Domain, or Local groups. Also
+allows setting privileges for that group, such as saAddUser,
+etc.
 .SH "OPTIONS"
 .TP
-\fB-v\fR
-Print the current set of UNIX to Windows
-group mappings.
+\fB-v[l|s]\fR
+This option will list all groups available
+in the Windows NT domain in which samba is operating.
+.RS
+.TP
+\fB-l\fR
+give a long listing, of the format:
+
+.sp
+.nf
+"NT Group Name"
+    SID            :
+    Unix group     :
+    Group type     :
+    Comment        :
+    Privilege      :
+.sp
+.fi
+
+For examples,
+
+.sp
+.nf
+Users
+    SID : S-1-5-32-545
+    Unix group: -1
+    Group type: Local group
+    Comment :
+    Privilege : No privilege
+.sp
+.fi
+.TP
+\fB-s\fR
+display a short listing of the format:
+
+.sp
+.nf
+NTGroupName(SID) -> UnixGroupName
+.sp
+.fi
+
+For example,
+
+.sp
+.nf
+Users (S-1-5-32-545) -> -1
+.sp
+.fi
+.RE
 .SH "FILES"
+.PP
+.SH "EXIT STATUS"
+.PP
+\fBsmbgroupedit\fR returns a status of 0 if the
+operation completed successfully, and a value of 1 in the event
+of a failure.
+.SH "EXAMPLES"
+.PP
+To make a subset of your samba PDC users members of
+the 'Domain Admins' Global group:
+.IP 1. 
+create a unix group (usually in
+\fI/etc/group\fR), let's call it domadm.
+.IP 2. 
+add to this group the users that you want to be
+domain administrators. For example if you want joe, john and mary,
+your entry in \fI/etc/group\fR will look like:
+
+domadm:x:502:joe,john,mary
+.IP 3. 
+map this domadm group to the 'domain admins' group:
+.RS
+.IP 1. 
+Get the SID for the Windows NT "Domain Admins"
+group:
+
+.sp
+.nf
+root# \fBsmbgroupedit -vs | grep "Domain Admins"\fR
+Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -> -1
+.sp
+.fi
+.IP 2. 
+map the unix domadm group to the Windows NT
+"Domain Admins" group, by running the command:
+
+.sp
+.nf
+root# \fBsmbgroupedit \\
+-c S-1-5-21-1108995562-3116817432-1375597819-512 \\
+-u domadm\fR
+.sp
+.fi
+
+\fBwarning:\fR don't copy and paste this sample, the
+Domain Admins SID (the S-1-5-21-...-512) is different for every PDC.
+.RE
+.PP
+To verify that you mapping has taken effect:
+.PP
+.PP
+.sp
+.nf
+root# \fBsmbgroupedit -vs|grep "Domain Admins"\fR
+Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -> domadm
+.sp
+.fi
+.PP
+.PP
+To give access to a certain directory on a domain member machine (an
+NT/W2K or a samba server running winbind) to some users who are member
+of a group on your samba PDC, flag that group as a domain group:
+.PP
+.PP
+.sp
+.nf
+root# \fBsmbgroupedit -a unixgroup -td\fR
+.sp
+.fi
 .PP
 .SH "VERSION"
 .PP
-This man page is incomplete for version 3.0 of 
+This man page is correct for the 3.0alpha releases of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-samba(7)
+smb.conf(5)
 .SH "AUTHOR"
 .PP
-The original Samba software and related utilities 
+The original Samba software and related utilities
 were created by Andrew Tridgell. Samba is now developed
-by the Samba Team as an Open Source project similar 
+by the Samba Team as an Open Source project similar
 to the way the Linux kernel is developed.
 .PP
-The original Samba man pages were written by Karl Auer. 
+\fBsmbgroupedit\fR was written by Jean Francois Micouleau.
 The current set of manpages and documentation is maintained
 by the Samba Team in the same fashion as the Samba source code.

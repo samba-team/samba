@@ -36,12 +36,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >wbinfo</B
->  [-u] [-g] [-n name] [-s sid] [-U uid] [-G gid] [-S sid] [-Y sid] [-t] [-m]</P
+>  [-u] [-g] [-n name] [-s sid] [-U uid] [-G gid] [-S sid] [-Y sid] [-t] [-m] [-a user%password] [-p]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN21"
+NAME="AEN23"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -78,7 +78,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN32"
+NAME="AEN34"
 ></A
 ><H2
 >OPTIONS</H2
@@ -227,13 +227,29 @@ CLASS="COMMAND"
 		NT domain the server is a Primary Domain Controller for.
 		</P
 ></DD
+><DT
+>-a username%password</DT
+><DD
+><P
+>Attempt to authenticate a user via winbindd. 
+                This checks both authenticaion methods and reports its results.
+		</P
+></DD
+><DT
+>-p</DT
+><DD
+><P
+>Attempt a simple 'ping' check that the winbindd
+                is indeed alive.
+		</P
+></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN88"
+NAME="AEN98"
 ></A
 ><H2
 >EXIT STATUS</H2
@@ -252,7 +268,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN93"
+NAME="AEN103"
 ></A
 ><H2
 >VERSION</H2
@@ -263,7 +279,7 @@ NAME="AEN93"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN96"
+NAME="AEN106"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -281,7 +297,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN101"
+NAME="AEN111"
 ></A
 ><H2
 >AUTHOR</H2

@@ -52,7 +52,7 @@ SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 	manpages/smb.conf.5.sgml manpages/pdbedit.8.sgml \
 	manpages/wbinfo.1.sgml manpages/smbcacls.1.sgml \
 	manpages/smbsh.1.sgml manpages/winbindd.8.sgml \
-	manpages/make_unicodemap.1.sgml manpages./smbgroupedit.8.sgml \
+	manpages/make_unicodemap.1.sgml manpages/smbgroupedit.8.sgml \
 	manpages/net.8.sgml
 
 HOWTOSRC=projdoc/DOMAIN_MEMBER.sgml projdoc/NT_Security.sgml \

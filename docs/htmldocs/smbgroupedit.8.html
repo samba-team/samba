@@ -24,7 +24,7 @@ NAME="AEN5"
 ></A
 ><H2
 >Name</H2
->smbgroupedit&nbsp;--&nbsp;Tool for mapping UNIX groups to Windows groups</DIV
+>smbgroupedit&nbsp;--&nbsp;Query/set/change UNIX - Windows NT group mapping</DIV
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
@@ -36,22 +36,32 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbroupedit</B
->  [-v]</P
+>  [-v [l|s]] [-a UNIX-groupname [-d NT-groupname|-p prividge|]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN12"
+NAME="AEN13"
 ></A
 ><H2
 >DESCRIPTION</H2
 ><P
->This program is part of the Samba suite.</P
+>This program is part of the <A
+HREF="samba.7.html"
+TARGET="_top"
+>Samba</A
+>
+suite.</P
+><P
+>The  smbgroupedit  command  allows for mapping unix groups
+to NT Builtin, Domain, or Local groups.  Also
+allows setting privileges for that group, such as saAddUser,
+etc.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN15"
+NAME="AEN18"
 ></A
 ><H2
 >OPTIONS</H2
@@ -61,12 +71,101 @@ NAME="AEN15"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
->-v</DT
+>-v[l|s]</DT
 ><DD
 ><P
->Print the current set of UNIX to Windows
-		group mappings.
+>This option will list all groups available
+		in the Windows NT domain in which samba is operating.
 		</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-l</DT
+><DD
+><P
+>give a long listing, of the format:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>"NT Group Name"
+    SID            :
+    Unix group     :
+    Group type     :
+    Comment        :
+    Privilege      :</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>For examples,</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>Users
+    SID : S-1-5-32-545
+    Unix group: -1
+    Group type: Local group
+    Comment :
+    Privilege : No privilege</PRE
+></TD
+></TR
+></TABLE
+></P
+></DD
+><DT
+>-s</DT
+><DD
+><P
+>display a short listing of the format:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>NTGroupName(SID) -&#62; UnixGroupName</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>For example,</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>Users (S-1-5-32-545) -&#62; -1</PRE
+></TD
+></TR
+></TABLE
+></P
+></DD
+></DL
+></DIV
 ></DD
 ></DL
 ></DIV
@@ -74,7 +173,7 @@ CLASS="VARIABLELIST"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN22"
+NAME="AEN44"
 ></A
 ><H2
 >FILES</H2
@@ -84,45 +183,219 @@ NAME="AEN22"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN25"
+NAME="AEN47"
+></A
+><H2
+>EXIT STATUS</H2
+><P
+><B
+CLASS="COMMAND"
+>smbgroupedit</B
+> returns a status of 0 if the
+operation completed successfully, and a value of 1 in the event
+of a failure.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN51"
+></A
+><H2
+>EXAMPLES</H2
+><P
+>To make a subset of your samba PDC users members of
+the 'Domain Admins'  Global group:</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>create a unix group (usually in
+	<TT
+CLASS="FILENAME"
+>/etc/group</TT
+>), let's call it <TT
+CLASS="CONSTANT"
+>domadm</TT
+>.
+	</P
+></LI
+><LI
+><P
+>add to this group the users that you want to be
+	domain administrators. For example if you want joe, john and mary,
+	your entry in <TT
+CLASS="FILENAME"
+>/etc/group</TT
+> will look like:
+	</P
+><P
+>domadm:x:502:joe,john,mary</P
+></LI
+><LI
+><P
+>map this domadm group to the 'domain admins' group:
+	</P
+><P
+></P
+><OL
+TYPE="a"
+><LI
+><P
+>Get the SID for the Windows NT "Domain Admins"
+		group:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+><TT
+CLASS="PROMPT"
+>root# </TT
+><B
+CLASS="COMMAND"
+>smbgroupedit -vs | grep "Domain Admins"</B
+>
+Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -&#62; -1</PRE
+></TD
+></TR
+></TABLE
+></P
+></LI
+><LI
+><P
+>map the unix domadm group to the Windows NT
+		"Domain Admins" group, by running the command:
+		</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+><TT
+CLASS="PROMPT"
+>root# </TT
+><B
+CLASS="COMMAND"
+>smbgroupedit \
+-c S-1-5-21-1108995562-3116817432-1375597819-512 \
+-u domadm</B
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>		<EM
+>warning:</EM
+> don't copy and paste this sample, the
+		Domain Admins SID (the S-1-5-21-...-512) is different for every PDC.
+		</P
+></LI
+></OL
+></LI
+></OL
+><P
+>To verify that you mapping has taken effect:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+><TT
+CLASS="PROMPT"
+>root# </TT
+><B
+CLASS="COMMAND"
+>smbgroupedit -vs|grep "Domain Admins"</B
+>
+Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -&#62; domadm</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>To give access to a certain directory on a domain member machine (an
+NT/W2K or a samba server running winbind) to some users who are member
+of a group on your samba PDC, flag that group as a domain group:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+><TT
+CLASS="PROMPT"
+>root# </TT
+><B
+CLASS="COMMAND"
+>smbgroupedit -a unixgroup -td</B
+></PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN90"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is incomplete for version 3.0 of 
-	the Samba suite.</P
+>This man page is correct for the 3.0alpha releases of
+the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN28"
+NAME="AEN93"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
->	<A
-HREF="samba.7.html"
+><A
+HREF="smb.conf.5.html"
 TARGET="_top"
->samba(7)</A
->
-	</P
+>smb.conf(5)</A
+></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN32"
+NAME="AEN97"
 ></A
 ><H2
 >AUTHOR</H2
 ><P
->The original Samba software and related utilities 
-	were created by Andrew Tridgell. Samba is now developed
-	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</P
+>The original Samba software and related utilities
+were created by Andrew Tridgell. Samba is now developed
+by the Samba Team as an Open Source project similar
+to the way the Linux kernel is developed.</P
 ><P
->The original Samba man pages were written by Karl Auer. 
-	The current set of manpages and documentation is maintained
-	by the Samba Team in the same fashion as the Samba source code.</P
+><B
+CLASS="COMMAND"
+>smbgroupedit</B
+> was written by Jean Francois Micouleau.
+The current set of manpages and documentation is maintained
+by the Samba Team in the same fashion as the Samba source code.</P
 ></DIV
 ></BODY
 ></HTML
