@@ -71,12 +71,15 @@
 #define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
-#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
+#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
 
-#define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
+#define CHECK_FSP(fsp,conn) do {\
+			extern struct current_user current_user;\
+			if (!FNUM_OK(fsp,conn)) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
 			else if((fsp)->fd == -1) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess))
+				return(ERROR_DOS(ERRDOS,ERRbadaccess));\
+			} while(0)
 
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
 				return(ERROR_DOS(ERRDOS,ERRbadaccess))
