@@ -104,7 +104,7 @@ EXTRA_libroken_la_SOURCES =	\
 	getusershell.c		\
 	glob.hin		\
 	hstrerror.c		\
-	ifaddrs.h		\
+	ifaddrs.hin		\
 	inet_aton.c		\
 	inet_ntop.c		\
 	inet_pton.c		\
