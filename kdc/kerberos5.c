@@ -410,8 +410,8 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
 	ent->s2kparams->data = malloc(ent->s2kparams->length);
 	if (ent->s2kparams->data == NULL)
 	    return ENOMEM;
-	_krb5_put_int(ent->s2kparams->data,
-		      _krb5_AES_string_to_default_iterator,
+	_krb5_put_int(ent->s2kparams->data, 
+		      _krb5_AES_string_to_default_iterator, 
 		      ent->s2kparams->length);
 	break;
 #endif
@@ -473,12 +473,13 @@ get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client,
 
     for(j = 0; j < etypes_len; j++) {
 	for(i = 0; i < client->keys.len; i++) {
-	    if(client->keys.val[i].key.keytype == etypes[j])
+	    if(client->keys.val[i].key.keytype == etypes[j]) {
 		if((ret = make_etype_info2_entry(&pa.val[n++], 
 						 &client->keys.val[i])) != 0) {
 		    free_ETYPE_INFO2(&pa);
 		    return ret;
 		}
+	    }
 	}
     }
     for(i = 0; i < client->keys.len; i++) {
@@ -486,7 +487,7 @@ get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client,
 	    if(client->keys.val[i].key.keytype == etypes[j])
 		goto skip;
 	}
-	if((ret = make_etype_info2_entry(&pa.val[n++], 
+	if((ret = make_etype_info2_entry(&pa.val[n++],
 					 &client->keys.val[i])) != 0) {
 	    free_ETYPE_INFO2(&pa);
 	    return ret;
@@ -841,7 +842,9 @@ as_rep(KDC_REQ *req,
 		    client_name);
 	    break;
 	}
+#ifdef PKINIT
     preauth_done:
+#endif
 	if(found_pa == 0 && require_preauth)
 	    goto use_pa;
 	/* We come here if we found a pa-enc-timestamp, but if there
