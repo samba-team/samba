@@ -431,10 +431,8 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
  than POSIX.
 *******************************************************************/
 
-int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
+int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times)
 {
-	extern struct current_user current_user;
-	SMB_STRUCT_STAT sb;
 	int ret = -1;
 
 	errno = 0;
@@ -454,21 +452,12 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 	   (as DOS does).
 	 */
 
-	if(SMB_VFS_STAT(conn,fname,&sb) != 0)
-		return -1;
-
 	/* Check if we have write access. */
-	if (CAN_WRITE(conn)) {
-		if (((sb.st_mode & S_IWOTH) || conn->admin_user ||
-			((sb.st_mode & S_IWUSR) && current_user.uid==sb.st_uid) ||
-			((sb.st_mode & S_IWGRP) &&
-				in_group(sb.st_gid,current_user.gid,
-					current_user.ngroups,current_user.groups)))) {
-			/* We are allowed to become root and change the filetime. */
-			become_root();
-			ret = SMB_VFS_UTIME(conn,fname, times);
-			unbecome_root();
-		}
+	if (can_write_to_file(conn, fname)) {
+		/* We are allowed to become root and change the filetime. */
+		become_root();
+		ret = SMB_VFS_UTIME(conn,fname, times);
+		unbecome_root();
 	}
 
 	return ret;
@@ -478,7 +467,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
  Change a filetime - possibly allowing DOS semantics.
 *******************************************************************/
 
-BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime)
+BOOL set_filetime(connection_struct *conn, const char *fname, time_t mtime)
 {
 	struct utimbuf times;
 
