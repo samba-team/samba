@@ -72,7 +72,14 @@ char *cli_errstr(struct cli_state *cli)
         uint8 errclass;
         int i;
 
-        /* Case #1: 32-bit NT errors */
+        /* Case #1: RAP error */
+	for (i = 0; rap_errmap[i].message != NULL; i++) {
+		if (rap_errmap[i].err == cli->rap_error) {
+			return rap_errmap[i].message;
+		}
+	} 
+
+        /* Case #2: 32-bit NT errors */
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
                 NTSTATUS status = NT_STATUS(IVAL(cli->inbuf,smb_rcls));
 
@@ -81,17 +88,10 @@ char *cli_errstr(struct cli_state *cli)
 
         cli_dos_error(cli, &errclass, &errnum);
 
-        /* Case #2: SMB error */
+        /* Case #3: SMB error */
 
         if (errclass != 0)
                 return cli_smb_errstr(cli);
-
-        /* Case #3: RAP error */
-	for (i = 0; rap_errmap[i].message != NULL; i++) {
-		if (rap_errmap[i].err == cli->rap_error) {
-			return rap_errmap[i].message;
-		}
-	} 
 
 	slprintf(cli_error_message, sizeof(cli_error_message) - 1, "code %d", 
                  cli->rap_error);
