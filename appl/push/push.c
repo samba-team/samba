@@ -55,26 +55,6 @@ static int do_leave;
 static int do_version;
 static int do_help;
 
-static ssize_t
-net_read (int fd, void *v, size_t len)
-{
-#if defined(KRB5)
-    return krb5_net_read (context, &fd, v, len);
-#elif defined(KRB4)
-    return krb_net_read (fd, v, len);
-#endif
-}
-
-static ssize_t
-net_write (int fd, const void *v, size_t len)
-{
-#if defined(KRB5)
-    return krb5_net_write (context, &fd, v, len);
-#elif defined(KRB4)
-    return krb_net_write (fd, v, len);
-#endif
-}
-
 struct getargs args[] = {
 #ifdef KRB4
     { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
