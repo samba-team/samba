@@ -813,9 +813,20 @@ BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	const char *lm_pw, *nt_pw;
+	uint16 acb_flags;
 
 	if (!pdb_context) {
 		return False;
+	}
+
+	/* disable acccounts with no passwords */
+	lm_pw = pdb_get_lanman_passwd( sam_acct );
+	nt_pw = pdb_get_lanman_passwd( sam_acct );
+	if ( !lm_pw || !nt_pw ) {
+		acb_flags = pdb_get_acct_ctrl( sam_acct ) | ACB_DISABLED;
+		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
+		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_add_sam_account(pdb_context, sam_acct));
@@ -824,9 +835,20 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct)
 BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	const char *lm_pw, *nt_pw;
+	uint16 acb_flags;
 
 	if (!pdb_context) {
 		return False;
+	}
+
+	/* disable acccounts with no passwords */
+	lm_pw = pdb_get_lanman_passwd( sam_acct );
+	nt_pw = pdb_get_lanman_passwd( sam_acct );
+	if ( !lm_pw || !nt_pw ) {
+		acb_flags = pdb_get_acct_ctrl( sam_acct ) | ACB_DISABLED;
+		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_SET );
+		pdb_set_init_flags(sam_acct, PDB_ACCTCTRL, PDB_SET);
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_update_sam_account(pdb_context, sam_acct));

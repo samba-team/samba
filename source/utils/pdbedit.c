@@ -47,6 +47,7 @@
 #define BIT_RESERV_7	0x00800000
 #define BIT_IMPORT	0x01000000
 #define BIT_EXPORT	0x02000000
+#define BIT_FIX_INIT    0x04000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x00401F00
@@ -226,6 +227,39 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
 		pdb_free_sam(&sam_pwent);
 		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
+	}
+	if (check) pdb_free_sam(&sam_pwent);
+	
+	in->pdb_endsampwent(in);
+	return 0;
+}
+
+/*********************************************************
+ Fix a list of Users for uninitialised passwords
+**********************************************************/
+static int fix_users_list (struct pdb_context *in)
+{
+	SAM_ACCOUNT *sam_pwent=NULL;
+	BOOL check, ret;
+	
+	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False));
+	if (!check) {
+		return 1;
+	}
+
+	check = True;
+	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
+
+	while (check && (ret = NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent)))) {
+		if (!pdb_update_sam_account(sam_pwent)) {
+			DEBUG(0, ("Update of user %s failed!\n", pdb_get_username(sam_pwent)));
+		}
+		pdb_free_sam(&sam_pwent);
+		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
+		if (!check) {
+			DEBUG(0, ("Failed to initialise new SAM_ACCOUNT structure (out of memory?)\n"));
+		}
+			
 	}
 	if (check) pdb_free_sam(&sam_pwent);
 	
@@ -550,6 +584,7 @@ int main (int argc, char **argv)
 	static char *backend_in = NULL;
 	static char *backend_out = NULL;
 	static BOOL transfer_groups = False;
+	static BOOL  force_initialised_password = False;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
 	static char *account_control = NULL;
@@ -587,6 +622,7 @@ int main (int argc, char **argv)
 		{"account-policy",	'P', POPT_ARG_STRING, &account_policy, 0,"value of an account policy (like maximum password age)",NULL},
 		{"value",       'C', POPT_ARG_LONG, &account_policy_value, 'C',"set the account policy to this value", NULL},
 		{"account-control",	'c', POPT_ARG_STRING, &account_control, 0, "Values of account control", NULL},
+		{"force-initialized-passwords", 0, POPT_ARG_NONE, &force_initialised_password, 0, "Force initialization of corrupt password strings in a passdb backend", NULL},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -631,6 +667,7 @@ int main (int argc, char **argv)
 			(machine ? BIT_MACHINE : 0) +
 			(user_name ? BIT_USER : 0) +
 			(list_users ? BIT_LIST : 0) +
+			(force_initialised_password ? BIT_FIX_INIT : 0) +
 			(modify_user ? BIT_MODIFY : 0) +
 			(add_user ? BIT_CREATE : 0) +
 			(delete_user ? BIT_DELETE : 0) +
@@ -654,6 +691,10 @@ int main (int argc, char **argv)
 	
 	/* the lowest bit options are always accepted */
 	checkparms = setparms & ~MASK_ALWAYS_GOOD;
+
+	if (checkparms & BIT_FIX_INIT) {
+		return fix_users_list(bdef);
+	}
 
 	/* account policy operations */
 	if ((checkparms & BIT_ACCPOLICY) && !(checkparms & ~(BIT_ACCPOLICY + BIT_ACCPOLVAL))) {
