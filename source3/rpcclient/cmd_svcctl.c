@@ -241,3 +241,74 @@ void cmd_svc_enum(struct client_info *info)
 	}
 }
 
+/****************************************************************************
+nt start service 
+****************************************************************************/
+void cmd_svc_start(struct client_info *info)
+{
+	uint16 fnum;
+	BOOL res = True;
+	BOOL res1 = True;
+	fstring svc_name;
+	fstring tmp;
+	BOOL res2 = True;
+	POLICY_HND pol_svc;
+	POLICY_HND pol_scm;
+	uint32 argc = 0;
+	char **argv = NULL;
+	
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->myhostname);
+	strupper(srv_name);
+
+	DEBUG(4,("cmd_svc_info: server:%s\n", srv_name));
+
+	if (!next_token(NULL, svc_name, NULL, sizeof(svc_name)))
+	{
+		report(out_hnd,"svcstart <service name> [arg 0] [arg 1]...]\n");
+		return;
+	}
+
+	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	{
+		add_chars_to_array(&argc, &argv, tmp);
+	}
+
+	/* open SVCCTL session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
+
+	/* open service control manager receive a policy handle */
+	res = res ? svc_open_sc_man(smb_cli, fnum,
+	                        srv_name, NULL, 0x80000000,
+				&pol_scm) : False;
+
+	res1 = res ? svc_open_service(smb_cli, fnum,
+				       &pol_scm,
+				       svc_name, 0x80000010,
+				       &pol_svc) : False;
+	res2 = res1 ? svc_start_service(smb_cli, fnum,
+				       &pol_svc, argc, argv) : False;
+
+	res1 = res1 ? svc_close(smb_cli, fnum, &pol_svc) : False;
+	res  = res  ? svc_close(smb_cli, fnum, &pol_scm) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res2)
+	{
+		report(out_hnd,"Started Service %s\n", svc_name);
+		DEBUG(5,("cmd_svc_start: succeeded\n"));
+	}
+	else
+		report(out_hnd,"Failed Service Startup (%s)\n", svc_name);
+	{
+		DEBUG(5,("cmd_svc_start: failed\n"));
+	}
+
+	free_char_array(argc, argv);
+
+}
+

@@ -146,6 +146,13 @@ commands[] =
 		{COMPL_SVCLST, COMPL_NONE}
 	},
 
+	{
+		"svcstart",
+		cmd_svc_start,
+		"<service> [arg 0] [arg 1] ... Start Service",
+		{COMPL_SVCLST, COMPL_NONE}
+	},
+
 	/*
 	 * scheduler
 	 */

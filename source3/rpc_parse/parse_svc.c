@@ -179,6 +179,34 @@ BOOL svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps,
 }
 
 /*******************************************************************
+makes an SVC_Q_START_SERVICE structure.
+********************************************************************/
+BOOL make_svc_q_start_service(SVC_Q_START_SERVICE *q_c, POLICY_HND *hnd,
+				uint32 argc,
+				char **argv)
+{
+	uint32 i;
+
+	if (q_c == NULL || hnd == NULL) return False;
+
+	DEBUG(5,("make_svc_q_query_svc_config\n"));
+
+	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
+	q_c->argc = argc;
+	q_c->ptr_args = 1;
+	q_c->argc2 = argc;
+
+	for (i = 0; i < argc; i++)
+	{
+		size_t len_argv = argv[i] != NULL ? strlen(argv[i])+1 : 0;
+		q_c->ptr_argv[i] = argv[i] != NULL ? 1 : 0;
+		make_unistr2(&(q_c->argv[i]), argv[i], len_argv);
+	}
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes a SVC_Q_START_SERVICE structure.
 ********************************************************************/
 BOOL svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps, int depth)
@@ -193,9 +221,9 @@ BOOL svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps
 
 	prs_align(ps);
 	prs_uint32("argc    ", ps, depth, &(q_s->argc    ));
-	prs_uint32("ptr_argv", ps, depth, &(q_s->ptr_argv));
+	prs_uint32("ptr_args", ps, depth, &(q_s->ptr_args));
 
-	if (q_s->ptr_argv != 0)
+	if (q_s->ptr_args != 0)
 	{
 		uint32 i;
 
@@ -203,12 +231,16 @@ BOOL svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps
 
 		if (q_s->argc2 > MAX_SVC_ARGS)
 		{
-			q_s->argc = q_s->argc2 = MAX_SVC_ARGS;
+			return False;
 		}
 
 		for (i = 0; i < q_s->argc2; i++)
 		{
-			smb_io_unistr2("", &(q_s->argv[i]), 1, ps, depth); 
+			prs_uint32("", ps, depth, &(q_s->ptr_argv[i])); 
+		}
+		for (i = 0; i < q_s->argc2; i++)
+		{
+			smb_io_unistr2("", &(q_s->argv[i]), q_s->ptr_argv[i], ps, depth); 
 			prs_align(ps);
 		}
 	}
