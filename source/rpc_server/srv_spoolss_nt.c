@@ -7280,6 +7280,10 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		enum_values[num_entries].value_len = (strlen(value)+1) * 2;
 		enum_values[num_entries].type      = type;
 		
+#if 0	/* JERRY - I think think was a bad assumption based on bad
+	   offset values when I first implemented it.  Commented out.
+	   We should not be adding an extra NULL to the end of a string
+	   just send what the client set in the first place. */
 		/* 
 		 * NULL terminate REG_SZ
 		 * FIXME!!!  We should not be correctly problems in the way
@@ -7295,6 +7299,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 			else
 				add_len = data_len % 2;
 		}
+#endif
 		
 		if (!(enum_values[num_entries].data=talloc_zero(p->mem_ctx, data_len+add_len))) {
 			DEBUG(0,("talloc_realloc failed to allocate more memory for data!\n"));
