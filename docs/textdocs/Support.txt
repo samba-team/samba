@@ -241,16 +241,20 @@ LE12 8DX
 TELEPHONE 01509-620922
 FAX       01509-620933
 
-Contact David Robinson
+Contact Samantha Hull
 
 We are unix orientated but also specialise in pc to unix communications, we 
 know and understand pc-nfs, (hence our interest in samba).
-we support  sunos, solaris 1.x and 2.x, hp-ux 9.0 and 10.0, osf (or dec unix, 
+we support sunos, solaris 1.x and 2.x, hp-ux 9.0 and 10.0, osf (or dec unix, 
 whichever you prefer), winnt, wfwg and win95.
 
 We are already talking to a couple of very large samba users here in the uk. 
-we would like to support them (and many more), would you please contact me on:
-david@tectonic.demon.co.uk
+Tectonic are in the process of creating the UK SAMBA USER GROUP and would
+appreciate any feedback or queries.
+
+For samba support, and for details on the UK SAMBA USER GROUP, please contact
+me at: sam@tectonic.demon.co.uk
+
 ----------------------------------------------------------
 
 ----------------------------------------------------------
