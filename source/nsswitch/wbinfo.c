@@ -567,18 +567,10 @@ static BOOL wbinfo_auth_crap(char *username)
 		
 	parse_wbinfo_domain_user(username, name_domain, name_user);
 
-	if (push_utf8_fstring(request.data.auth_crap.user, name_user) == -1) {
-		d_printf("unable to create utf8 string for '%s'\n",
-			 name_user);
-		return False;
-	}
+	fstrcpy(request.data.auth_crap.user, name_user);
 
-	if (push_utf8_fstring(request.data.auth_crap.domain, 
-			      name_domain) == -1) {
-		d_printf("unable to create utf8 string for '%s'\n",
-			 name_domain);
-		return False;
-	}
+	fstrcpy(request.data.auth_crap.domain, 
+			      name_domain);
 
 	generate_random_buffer(request.data.auth_crap.chal, 8);
         
