@@ -1,5 +1,13 @@
 Mon Sep 22 11:44:27 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/krb5/get_in_tkt.c: Fix a lot of etype/keytype misuse.
+
+	* lib/krb5/encrypt.c: Add des3-cbc-md5, and des3-cbc-sha1. Add
+ 	many *_to_* functions.
+
+	* lib/krb5/str2key.c: Add des3 string-to-key. Add ktype argument
+ 	to krb5_string_to_key().
+
 	* lib/krb5/checksum.c: Some cleanup, and added: 
 	  - rsa-md5-des3 
 	  - hmac-sha1-des3 
