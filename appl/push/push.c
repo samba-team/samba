@@ -473,7 +473,6 @@ do_v5 (char *host,
 			 NULL,
 			 NULL);
     krb5_free_principal (context, server);
-    krb5_cc_close (context, ccache);
     if (ret) {
 	warnx ("krb5_sendauth: %s",
 	       krb5_get_err_text (context, ret));
