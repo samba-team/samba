@@ -92,11 +92,13 @@ kt_list(int argc, char **argv)
     return 0;
 }
 
+static int help(int argc, char **argv);
 
 static SL_cmd cmds[] = {
     { "list",		kt_list,	"list [keytab]",	"" },
     { "srvconvert",	srvconv,	"srvconvert [flags]",	"" },
     { "srv2keytab" },
+    { "help",		help,		"help",			"" },
     { NULL, 	NULL,		NULL, 			NULL }
 };
 
@@ -112,6 +114,13 @@ static struct getargs args[] = {
 static int num_args = sizeof(args) / sizeof(args[0]);
 
 krb5_context context;
+
+static int
+help(int argc, char **argv)
+{
+    sl_help(cmds, argc, argv);
+    return 0;
+}
 
 void
 usage(int status)
