@@ -139,18 +139,22 @@ rl_complete_filename(char *pathname, int *unique)
     size_t	i;
     size_t	j;
     size_t	len;
-
+    char *s;
+    
     ac = rl_list_possib(pathname, &av);
+    if(ac == 0)
+	return NULL;
+
+    s = strrchr(pathname, '/');
+    if(s == NULL)
+	len = strlen(pathname);
+    else
+	len = strlen(s + 1);
 
     p = NULL;
     if (ac == 1) {
-	char *s = strrchr(pathname, '/');
 	/* Exactly one match -- finish it off. */
 	*unique = 1;
-	if(s == NULL)
-	    len = strlen(pathname);
-	else
-	    len = strlen(s + 1);
 	j = strlen(av[0]) - len + 2;
 	if ((p = malloc(j + 1)) != NULL) {
 	    memcpy(p, av[0] + len, j);
