@@ -534,8 +534,22 @@ static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 
 	/* Send notify updates for what has changed */
 
-	if ( ret && (old_data.dsize == 0 || old_data.dsize == sizeof(*pjob)) )
-		pjob_store_notify( snum, jobid, (struct printjob *)old_data.dptr, pjob );
+	if ( ret ) {
+		struct printjob old_pjob;
+
+		if ( old_data.dsize )
+		{
+			if ( unpack_pjob( old_data.dptr, old_data.dsize, &old_pjob ) != -1 )
+			{
+				pjob_store_notify( snum, jobid, &old_pjob , pjob );
+				free_nt_devicemode( &old_pjob.nt_devmode );
+			}
+		}
+		else {
+			/* new job */
+			pjob_store_notify( snum, jobid, NULL, pjob );
+		}
+	}
 
 done:
 	SAFE_FREE( old_data.dptr );
