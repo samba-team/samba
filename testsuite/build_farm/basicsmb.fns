@@ -37,6 +37,7 @@ test_smb_conf_setup() {
     echo "    BUILD_FARM=$pwd"
     echo "    WHOAMI=$whoami"
     echo "    LOGLEVEL=$loglevel"
+    echo "    TREE=$tree"
 
     case "$prefix" in
     /usr*|/|//)
