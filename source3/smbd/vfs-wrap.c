@@ -66,6 +66,14 @@ int vfswrap_rmdir(char *path)
     return result;
 }
 
+int vfswrap_closedir(DIR *dirp)
+{
+    int result;
+    
+    result = closedir(path);
+    return result;
+}
+
 /* File operations */
     
 int vfswrap_open(char *fname, int flags, mode_t mode)

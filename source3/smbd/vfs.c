@@ -53,6 +53,7 @@ struct vfs_syminfo vfs_syminfo[] = {
     {"vfs_readdir",    &dl_ops.readdir},
     {"vfs_mkdir",      &dl_ops.mkdir},
     {"vfs_rmdir",      &dl_ops.rmdir},
+    {"vfs_closedir",   &dl_ops.closedir},
 
     /* File operations */
 
@@ -95,6 +96,7 @@ struct vfs_ops default_vfs_ops = {
     vfswrap_readdir,
     vfswrap_mkdir,
     vfswrap_rmdir,
+    vfswrap_closedir,
 
     /* File operations */
 
