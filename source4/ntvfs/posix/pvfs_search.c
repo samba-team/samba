@@ -552,11 +552,6 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	/* not matching any entries is an error */
-	if (reply_count == 0) {
-		return NT_STATUS_NO_MORE_ENTRIES;
-	}
-
 	io->t2fnext.out.count = reply_count;
 	io->t2fnext.out.end_of_search = pvfs_list_eos(dir, search->current_index) ? 1 : 0;
 
