@@ -58,78 +58,78 @@ adds information retrieved from a NetServerEnum call
 ****************************************************************************/
 static BOOL add_info(struct domain_record *d, struct work_record *work, int servertype)
 {
-	char *rparam = NULL;
-	char *rdata = NULL;
-	int rdrcnt,rprcnt;
-	char *p;
-	pstring param;
-	int uLevel = 1;
-	int count = -1;
-
-	/* now send a SMBtrans command with api ServerEnum? */
-	p = param;
-	SSVAL(p,0,0x68); /* api number */
-	p += 2;
-	strcpy(p,"WrLehDz");
-	p = skip_string(p,1);
-
-	strcpy(p,"B16BBDz");
-
-	p = skip_string(p,1);
-	SSVAL(p,0,uLevel);
-	SSVAL(p,2,0x2000); /* buf length */
-	p += 4;
-	SIVAL(p,0,servertype);
-	p += 4;
-
-	strcpy(p, work->work_group);
-	p = skip_string(p,1);
-
-	if (cli_call_api(PTR_DIFF(p,param),0, 8,10000,
-			 &rprcnt,&rdrcnt, param,NULL,
-			 &rparam,&rdata))
+  char *rparam = NULL;
+  char *rdata = NULL;
+  int rdrcnt,rprcnt;
+  char *p;
+  pstring param;
+  int uLevel = 1;
+  int count = -1;
+  
+  /* now send a SMBtrans command with api ServerEnum? */
+  p = param;
+  SSVAL(p,0,0x68); /* api number */
+  p += 2;
+  strcpy(p,"WrLehDz");
+  p = skip_string(p,1);
+  
+  strcpy(p,"B16BBDz");
+  
+  p = skip_string(p,1);
+  SSVAL(p,0,uLevel);
+  SSVAL(p,2,0x2000); /* buf length */
+  p += 4;
+  SIVAL(p,0,servertype);
+  p += 4;
+  
+  strcpy(p, work->work_group);
+  p = skip_string(p,1);
+  
+  if (cli_call_api(PTR_DIFF(p,param),0, 8,10000,
+		   &rprcnt,&rdrcnt, param,NULL,
+		   &rparam,&rdata))
+    {
+      int res = SVAL(rparam,0);
+      int converter=SVAL(rparam,2);
+      int i;
+      
+      if (res == 0)
 	{
-		int res = SVAL(rparam,0);
-		int converter=SVAL(rparam,2);
-		int i;
-
-		if (res == 0)
+	  count=SVAL(rparam,4);
+	  p = rdata;
+	  
+	  for (i = 0;i < count;i++, p += 26)
+	    {
+	      char *sname = p;
+	      uint32 stype = IVAL(p,18);
+	      int comment_offset = IVAL(p,22) & 0xFFFF;
+	      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+	      
+	      struct work_record *w = work;
+	      
+	      DEBUG(4, ("\t%-16.16s     %08x    %s\n", sname, stype, cmnt));
+	      
+	      if (stype & SV_TYPE_DOMAIN_ENUM)
 		{
-			count=SVAL(rparam,4);
-			p = rdata;
-
-			for (i = 0;i < count;i++, p += 26)
+		  /* creates workgroup on remote subnet */
+		  if ((w = find_workgroupstruct(d,sname, False)))
+		    {
+		      if (ip_equal(bcast_ip, d->bcast_ip))
 			{
-				char *sname = p;
-				uint32 stype = IVAL(p,18);
-				int comment_offset = IVAL(p,22) & 0xFFFF;
-				char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
-
-				struct work_record *w = work;
-
-				DEBUG(4, ("\t%-16.16s     %08x    %s\n", sname, stype, cmnt));
-
-				if (stype & SV_TYPE_DOMAIN_ENUM)
-				{
-					/* creates workgroup on remote subnet */
-					if ((w = find_workgroupstruct(d,sname, False)))
-					{
-						if (ip_equal(bcast_ip, d->bcast_ip))
-						{
-							announce_request(w, d->bcast_ip);
-						}
-					}
-				}
-
-				add_server_entry(d,w,sname,stype,lp_max_ttl(),cmnt,False);
+			  announce_request(w, d->bcast_ip);
 			}
+		    }
 		}
+	      
+	      add_server_entry(d,w,sname,stype,lp_max_ttl(),cmnt,False);
+	    }
 	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return(True);
+    }
+  
+  if (rparam) free(rparam);
+  if (rdata) free(rdata);
+  
+  return(True);
 }
 
 

@@ -39,10 +39,6 @@ extern  pstring ServerComment;
 
 /* here are my election parameters */
 
-/* NTAS uses 2, NT uses 1, WfWg uses 0 */
-#define MAINTAIN_LIST    2
-#define ELECTION_VERSION 2
-
 extern time_t StartupTime;
 
 #define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
@@ -124,29 +120,29 @@ void browser_gone(char *work_name, struct in_addr ip)
 void send_election(struct domain_record *d, char *group,uint32 criterion,
 		   int timeup,char *name)
 {
-	pstring outbuf;
-	char *p;
+  pstring outbuf;
+  char *p;
 
-	if (!d) return;
-
-	DEBUG(2,("Sending election to %s for workgroup %s\n",
+  if (!d) return;
+  
+  DEBUG(2,("Sending election to %s for workgroup %s\n",
 	   inet_ntoa(d->bcast_ip),group));	   
 
-	bzero(outbuf,sizeof(outbuf));
-	p = outbuf;
-	CVAL(p,0) = 8; /* election */
-	p++;
+  bzero(outbuf,sizeof(outbuf));
+  p = outbuf;
+  CVAL(p,0) = 8; /* election */
+  p++;
 
-	CVAL(p,0) = (criterion == 0 && timeup == 0) ? 0 : ELECTION_VERSION;
-	SIVAL(p,1,criterion);
-	SIVAL(p,5,timeup*1000); /* ms - despite the spec */
-	p += 13;
-	strcpy(p,name);
-	strupper(p);
-	p = skip_string(p,1);
-
-	send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		 name,group,0,0x1e,d->bcast_ip,myip);
+  CVAL(p,0) = (criterion == 0 && timeup == 0) ? 0 : ELECTION_VERSION;
+  SIVAL(p,1,criterion);
+  SIVAL(p,5,timeup*1000); /* ms - despite the spec */
+  p += 13;
+  strcpy(p,name);
+  strupper(p);
+  p = skip_string(p,1);
+  
+  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
+		      name,group,0,0x1e,d->bcast_ip,myip);
 }
 
 
@@ -155,46 +151,46 @@ void send_election(struct domain_record *d, char *group,uint32 criterion,
   ******************************************************************/
 static void become_master(struct domain_record *d, struct work_record *work)
 {
-	uint32 domain_type = SV_TYPE_DOMAIN_ENUM | SV_TYPE_SERVER_UNIX | 0x00400000;
+  uint32 domain_type = SV_TYPE_DOMAIN_ENUM | SV_TYPE_SERVER_UNIX | 0x00400000;
 
-	if (!work) return;
-
-	DEBUG(2,("Becoming master for %s\n",work->work_group));
-
-	work->ServerType |= SV_TYPE_MASTER_BROWSER;
-	work->ServerType &= ~SV_TYPE_POTENTIAL_BROWSER;
-	work->ElectionCriterion |= 0x5;
-
-	/* add browse, master and general names to database or register with WINS */
-	add_name_entry(MSBROWSE        ,0x01,NB_ACTIVE|NB_GROUP);
-	add_name_entry(work->work_group,0x1d,NB_ACTIVE         );
-
-	if (lp_domain_master())
+  if (!work) return;
+  
+  DEBUG(2,("Becoming master for %s\n",work->work_group));
+  
+  work->ServerType |= SV_TYPE_MASTER_BROWSER;
+  work->ServerType &= ~SV_TYPE_POTENTIAL_BROWSER;
+  work->ElectionCriterion |= 0x5;
+  
+  /* add browse, master and general names to database or register with WINS */
+  add_name_entry(MSBROWSE        ,0x01,NB_ACTIVE|NB_GROUP);
+  add_name_entry(work->work_group,0x1d,NB_ACTIVE         );
+  
+  if (lp_domain_master())
+    {
+      DEBUG(4,("Domain master: adding names...\n"));
+      
+      /* add domain master and domain member names or register with WINS */
+      add_name_entry(work->work_group,0x1b,NB_ACTIVE         );
+      add_name_entry(work->work_group,0x1c,NB_ACTIVE|NB_GROUP);
+      
+      work->ServerType |= SV_TYPE_DOMAIN_MASTER;
+      
+      if (lp_domain_logons())
 	{
-		DEBUG(4,("Domain master: adding names...\n"));
-
-		/* add domain master and domain member names or register with WINS */
-		add_name_entry(work->work_group,0x1b,NB_ACTIVE         );
-		add_name_entry(work->work_group,0x1c,NB_ACTIVE|NB_GROUP);
-
-		work->ServerType |= SV_TYPE_DOMAIN_MASTER;
-
-		if (lp_domain_logons())
-		{
-			work->ServerType |= SV_TYPE_DOMAIN_CTRL;
-			work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
-		}
+	  work->ServerType |= SV_TYPE_DOMAIN_CTRL;
+	  work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
 	}
-
-	/* update our server status */
-	add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
-	add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
-
-	if (ip_equal(bcast_ip, d->bcast_ip))
-	{
-		/* ask all servers on our local net to announce to us */
-		announce_request(work, d->bcast_ip);
-	}
+    }
+  
+  /* update our server status */
+  add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
+  add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+  
+  if (ip_equal(bcast_ip, d->bcast_ip))
+    {
+      /* ask all servers on our local net to announce to us */
+      announce_request(work, d->bcast_ip);
+    }
 }
 
 
@@ -203,18 +199,18 @@ static void become_master(struct domain_record *d, struct work_record *work)
   ******************************************************************/
 void become_nonmaster(struct domain_record *d, struct work_record *work)
 {
-	DEBUG(2,("Becoming non-master for %s\n",work->work_group));
-
-	work->ServerType &= ~SV_TYPE_MASTER_BROWSER;
-	work->ServerType &= ~SV_TYPE_DOMAIN_MASTER;
-	work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
-
-	work->ElectionCriterion &= ~0x4;
-
-	remove_name_entry(work->work_group,0x1b);
-	remove_name_entry(work->work_group,0x1c);
-	remove_name_entry(work->work_group,0x1d);
-	remove_name_entry(MSBROWSE        ,0x01);
+  DEBUG(2,("Becoming non-master for %s\n",work->work_group));
+  
+  work->ServerType &= ~SV_TYPE_MASTER_BROWSER;
+  work->ServerType &= ~SV_TYPE_DOMAIN_MASTER;
+  work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
+  
+  work->ElectionCriterion &= ~0x4;
+  
+  remove_name_entry(work->work_group,0x1b);
+  remove_name_entry(work->work_group,0x1c);
+  remove_name_entry(work->work_group,0x1d);
+  remove_name_entry(MSBROWSE        ,0x01);
 }
 
 
@@ -223,37 +219,37 @@ void become_nonmaster(struct domain_record *d, struct work_record *work)
   ******************************************************************/
 void run_elections(void)
 {
-	time_t t = time(NULL);
-	static time_t lastime = 0;
-
-	struct domain_record *d;
-
-	/* send election packets once a second */
-	if (lastime && t-lastime <= 0) return;
-
-	lastime = t;
-
-	for (d = domainlist; d; d = d->next)
+  time_t t = time(NULL);
+  static time_t lastime = 0;
+  
+  struct domain_record *d;
+  
+  /* send election packets once a second */
+  if (lastime && t-lastime <= 0) return;
+  
+  lastime = t;
+  
+  for (d = domainlist; d; d = d->next)
+    {
+      struct work_record *work;
+      for (work = d->workgrouplist; work; work = work->next)
 	{
-		struct work_record *work;
-		for (work = d->workgrouplist; work; work = work->next)
+	  if (work->RunningElection)
+	    {
+	      send_election(d,work->work_group, work->ElectionCriterion,
+			    t-StartupTime,myname);
+	      
+	      if (work->ElectionCount++ >= 4)
 		{
-			if (work->RunningElection)
-			{
-				send_election(d,work->work_group, work->ElectionCriterion,
-							  t-StartupTime,myname);
-
-				if (work->ElectionCount++ >= 4)
-				{
-					/* I won! now what :-) */
-					DEBUG(2,(">>> Won election on %s <<<\n",work->work_group));
-
-					work->RunningElection = False;
-					become_master(d, work);
-				}
-			}
+		  /* I won! now what :-) */
+		  DEBUG(2,(">>> Won election on %s <<<\n",work->work_group));
+		  
+		  work->RunningElection = False;
+		  become_master(d, work);
 		}
+	    }
 	}
+    }
 }
 
 
@@ -289,56 +285,56 @@ static BOOL win_election(struct work_record *work,int version,uint32 criterion,
   ******************************************************************/
 void process_election(struct packet_struct *p,char *buf)
 {
-	struct dgram_packet *dgram = &p->packet.dgram;
-	struct in_addr ip = dgram->header.source_ip;
-	struct domain_record *d = find_domain(ip);
-	int version = CVAL(buf,0);
-	uint32 criterion = IVAL(buf,1);
-	int timeup = IVAL(buf,5)/1000;
-	char *name = buf+13;
-	struct work_record *work;
+  struct dgram_packet *dgram = &p->packet.dgram;
+  struct in_addr ip = dgram->header.source_ip;
+  struct domain_record *d = find_domain(ip);
+  int version = CVAL(buf,0);
+  uint32 criterion = IVAL(buf,1);
+  int timeup = IVAL(buf,5)/1000;
+  char *name = buf+13;
+  struct work_record *work;
 
-	if (!d) return;
+  if (!d) return;
+  
+  name[15] = 0;  
 
-	name[15] = 0;  
-
-	DEBUG(3,("Election request from %s vers=%d criterion=%08x timeup=%d\n",
-		name,version,criterion,timeup));
-
-	if (same_context(dgram)) return;
-
-    for (work = d->workgrouplist; work; work = work->next)
+  DEBUG(3,("Election request from %s vers=%d criterion=%08x timeup=%d\n",
+	   name,version,criterion,timeup));
+  
+  if (same_context(dgram)) return;
+  
+  for (work = d->workgrouplist; work; work = work->next)
+    {
+      if (listening_name(work, &dgram->dest_name) && 
+	  strequal(work->work_group, lp_workgroup()) &&
+	  ip_equal(d->bcast_ip, bcast_ip))
 	{
-		if (listening_name(work, &dgram->dest_name) && 
-		    strequal(work->work_group, lp_workgroup()) &&
-			ip_equal(d->bcast_ip, bcast_ip))
+	  if (win_election(work, version,criterion,timeup,name))
+	    {
+	      if (!work->RunningElection)
 		{
-			if (win_election(work, version,criterion,timeup,name))
-			{
-				if (!work->RunningElection)
-				{
-					work->needelection = True;
-					work->ElectionCount=0;
-				}
-			}
-			else
-			{
-				work->needelection = False;
-
-				if (work->RunningElection)
-				{
-					work->RunningElection = False;
-					DEBUG(3,(">>> Lost election on %s <<<\n",work->work_group));
-
-					/* if we are the master then remove our masterly names */
-					if (AM_MASTER(work))
-					{
-						become_nonmaster(d, work);
-					}
-				}
-			}
+		  work->needelection = True;
+		  work->ElectionCount=0;
 		}
+	    }
+	  else
+	    {
+	      work->needelection = False;
+	      
+	      if (work->RunningElection)
+		{
+		  work->RunningElection = False;
+		  DEBUG(3,(">>> Lost election on %s <<<\n",work->work_group));
+		  
+		  /* if we are the master then remove our masterly names */
+		  if (AM_MASTER(work))
+		    {
+		      become_nonmaster(d, work);
+		    }
+		}
+	    }
 	}
+    }
 }
 
 

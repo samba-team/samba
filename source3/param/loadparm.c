@@ -149,6 +149,7 @@ typedef struct
    int os_level;
    int max_ttl;
    BOOL bWINSsupport;
+   BOOL bWINSproxy;
    BOOL bPreferredMaster;
    BOOL bDomainMaster;
    BOOL bDomainLogons;
@@ -163,7 +164,6 @@ typedef struct
    BOOL bReadbmpx;
    BOOL bSyslogOnly;
    BOOL bBrowseList;
-   BOOL bProxyNameResolution;
 } global;
 
 static global Globals;
@@ -414,13 +414,13 @@ struct parm_struct
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL},
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL},
   {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL},
+  {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL},
   {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL},
   {"preferred master", P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL},
   {"prefered master",  P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL},
   {"domain master",    P_BOOL,    P_GLOBAL, &Globals.bDomainMaster,     NULL},
   {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL},
   {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL},
-  {"proxy name resolution",P_BOOL,P_GLOBAL,&Globals.bProxyNameResolution,NULL},
 
   {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL},
   {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL},
@@ -578,8 +578,8 @@ static void init_globals(void)
   Globals.bDomainMaster = False;
   Globals.bDomainLogons = False;
   Globals.bBrowseList = True;
-  Globals.bProxyNameResolution = True;
   Globals.bWINSsupport = True;
+  Globals.bWINSproxy = False;
 
 #ifdef KANJI
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
@@ -706,6 +706,7 @@ FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript)
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
+FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
 FN_GLOBAL_BOOL(lp_domain_master,&Globals.bDomainMaster)
 FN_GLOBAL_BOOL(lp_domain_logons,&Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_preferred_master,&Globals.bPreferredMaster)
@@ -721,7 +722,6 @@ FN_GLOBAL_BOOL(lp_strip_dot,&Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords,&Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
-FN_GLOBAL_BOOL(lp_proxy_name_resolution,&Globals.bProxyNameResolution)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)

@@ -144,15 +144,15 @@ static void fault_continue(void)
   ******************************************************************/
 static void expire_names_and_servers(void)
 {
-	static time_t lastrun = 0;
-	time_t t = time(NULL);
-
-	if (!lastrun) lastrun = t;
-	if (t < lastrun + 5) return;
-	lastrun = t;
-
-	expire_names(t);
-	expire_servers(t);
+  static time_t lastrun = 0;
+  time_t t = time(NULL);
+  
+  if (!lastrun) lastrun = t;
+  if (t < lastrun + 5) return;
+  lastrun = t;
+  
+  expire_names(t);
+  expire_servers(t);
 }
 
 /*****************************************************************************
@@ -285,6 +285,7 @@ static void process(void)
 
   while (True)
     {
+      time_t t = time(NULL);
       run_election = check_elections();
       listen_for_packets(run_election);
 
@@ -296,7 +297,8 @@ static void process(void)
       announce_master();
 
       expire_names_and_servers();
-      expire_netbios_response_entries(time(NULL)-10);
+      expire_netbios_response_entries(t-10);
+      refresh_my_names(t);
 
       write_browse_list();
       do_browser_lists();

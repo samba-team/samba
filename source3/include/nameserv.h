@@ -20,6 +20,10 @@
    
 */
 
+/* NTAS uses 2, NT uses 1, WfWg uses 0 */
+#define MAINTAIN_LIST    2
+#define ELECTION_VERSION 2
+
 #define MAX_DGRAM_SIZE (80*18+64)
 #define MIN_DGRAM_SIZE 12
 
@@ -38,6 +42,8 @@
 #define NB_MFLAG  0x40
 #define NB__FLAG  0x60
 #define NB_FLGMSK 0x60
+
+#define REFRESH_TIME (15*60)
 
 #define NAME_PERMANENT(p) ((p) & NB_PERM)
 #define NAME_ACTIVE(p)    ((p) & NB_ACTIVE)

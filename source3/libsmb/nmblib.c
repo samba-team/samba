@@ -472,7 +472,7 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
   
   length = read_udp_socket(fd,buf,sizeof(buf));
   if (length < MIN_DGRAM_SIZE) return(NULL);
-  
+
   packet = (struct packet_struct *)malloc(sizeof(*packet));
   if (!packet) return(NULL);
 

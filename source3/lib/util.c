@@ -1820,11 +1820,10 @@ int read_udp_socket(int fd,char *buf,int len)
   bzero((char *)&sock,socklen);
   bzero((char *)&lastip,sizeof(lastip));
   ret = recvfrom(fd,buf,len,0,&sock,&socklen);
-  if (ret <= 0)
-    {
-      DEBUG(2,("read socket failed. ERRNO=%d\n",errno));
-      return(0);
-    }
+  if (ret <= 0) {
+    DEBUG(2,("read socket failed. ERRNO=%d\n",errno));
+    return(0);
+  }
 
   lastip = *(struct in_addr *) &sock.sa_data[2];
   lastport = ntohs(((struct sockaddr_in *)&sock)->sin_port);
