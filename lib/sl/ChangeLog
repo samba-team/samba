@@ -1,5 +1,7 @@
 Mon May 25 02:54:13 1998  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.in (clean): try to remove shared library debris
+
 	* Makefile.in: make symlink magic work
 
 Sun Apr 19 10:00:26 1998  Assar Westerlund  <assar@sics.se>

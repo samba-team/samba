@@ -1,3 +1,7 @@
+Mon May 25 05:27:07 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (clean): try to remove shared library debris
+
 Sat May 23 20:54:28 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: link with DBLIB
