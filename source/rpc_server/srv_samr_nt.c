@@ -931,7 +931,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		for (; (num_entries < max_entries) && (grp != NULL); grp = grp->next) {
 			uint32 trid;
 			
-			if(!get_group_from_gid(grp->gr_gid, &smap, MAPPING_WITHOUT_PRIV))
+			if(!get_group_map_from_gid(grp->gr_gid, &smap, MAPPING_WITHOUT_PRIV))
 				continue;
 			
 			if (smap.sid_name_use!=SID_NAME_ALIAS) {
