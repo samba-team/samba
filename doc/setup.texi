@@ -20,6 +20,7 @@
 * Setting up DNS::
 * Using LDAP to store the database::
 * Using Samba LDAP password database::
+* Providing Kerberos credentials to servers and programs::
 @end menu
 
 A
@@ -773,7 +774,7 @@ configuration file.
 Make sure you include the schema:
 
 @example
-include /usr/local/etc/openldap/schema/krb5-kdc.schema
+include /usr/local/etc/openldap/schema/hdb.schema
 @end example
 
 Start the slapd with the local listener (as well as the default TCP/IP
@@ -843,7 +844,7 @@ Now consider adding indexes to the database to speed up the access.
 @url{https://sec.miljovern.no/bin/view/Info/TroubleshootingGuide}
 
 
-@node Using Samba LDAP password database, , Using LDAP to store the database, Setting up a realm
+@node Using Samba LDAP password database, Providing Kerberos credentials to servers and programs, Using LDAP to store the database, Setting up a realm
 @section Using Samba LDAP password database
 @cindex Samba
 
@@ -851,4 +852,46 @@ Write text here.
 
 Note that the samba domain and the realm realm can have diffrent names
 since arcfour's string to key function principal/realm independent.
+
+
+@node Providing Kerberos credentials to servers and programs, , Using Samba LDAP password database, Setting up a realm
+@section Providing Kerberos credentials to servers and programs
+
+Some service require Kerberos credentials when they start to make
+connections to other services or use them when they have started.
+
+The easiest way to get ticket for the a service is to store the key in
+a keytab. Both ktutil get and kadmin ext can be used to get a
+keytab. ktutil get is better in that way it changes the key/password
+for the user. This the problem with the ktutil. It ktutil is used for
+the same service principal on several hosts, they keytab will only
+useful on the last host. In that case, run the command on host and
+copy the keytab around to all other hosts that needs it.
+
+@example
+host# ktutil -k /etc/krb5-service.keytab \
+      get -p lha/admin@@EXAMPLE.ORG service-principal@@EXAMPLE.ORG
+lha/admin@@EXAMPLE.ORG's Password: 
+@end example
+
+To get a Kerberos credential file for the service, use kinit in the
+--keytab mode, this will not ask for a password but rather that the
+key from the keytab.
+
+@example
+service@@host$ kinit --cache=/var/run/service_krb5_cache \
+               --keytab=/etc/krb5-service.keytab \
+       service-principal@@EXAMPLE.ORG
+@end example
+
+Long running services might need credentials longer then the expiration
+time of the tickets. kinit can run in a mode that refreshes the
+tickets before the expire. This is useful for services that write into
+AFS and other distributed file systems using Kerberos.
+
+@example
+service@@host$ kinit --cache=/var/run/service_krb5_cache \
+               --keytab=/etc/krb5-service.keytab \
+       service-principal@@EXAMPLE.ORG script-to-start-service
+@end example
 
