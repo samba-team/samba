@@ -24,7 +24,7 @@ construction.  The following VFS modules are given:
 		recycle bin :
 
 		        vfs object = /usr/local/samba/lib/recycle.so
-		        vfs module options= recycle=.recycle
+		        vfs options= recycle=.recycle
 
 	block/
 
