@@ -1,3 +1,16 @@
+2000-07-27  Assar Westerlund  <assar@sics.se>
+
+	* kdc/hprop.c (dump_database): write an empty message to signal
+	end of dump
+
+2000-07-26  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/changepw.c (krb5_change_password): try to be more
+	careful when not to resend
+
+	* lib/hdb/db3.c: always create a cursor with db3.  From Derrick J
+	Brashear <shadow@dementia.org>
+
 2000-07-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/Makefile.am: bump version to 12:0:1
