@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -84,7 +84,8 @@ parse_something (const char *s, const struct units *units,
 	    ++p;
 
 	val = strtod (p, &next); /* strtol(p, &next, 0); */
-	if (val == 0 && p == next) {
+	if (p == next) {
+	    val = 0;
 	    if(!accept_no_val_p)
 		return -1;
 	    no_val_p = 1;
