@@ -1,3 +1,7 @@
+2001-11-01  Assar Westerlund  <assar@sics.se>
+
+	* add strsep, and bump version to 3:3:3
+
 2001-10-27  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkafs_la_LDFLAGS): set version to 3:2:3
