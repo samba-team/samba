@@ -432,6 +432,8 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(int pid);
 int get_unixgroups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups);
+BOOL get_unix_grps(int *p_ngroups, struct group **p_groups);
+void free_unix_grps(int ngroups, struct group *p_groups);
 char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
 BOOL nametogid(const char *name, gid_t *gid);
@@ -2068,7 +2070,6 @@ void make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
 void reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth);
 void make_reg_r_info(REG_R_INFO *r_r,
 				uint32 level, char *os_type,
-				uint32 unknown_0, uint32 unknown_1,
 				uint32 status);
 void reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth);
 void make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
@@ -2186,7 +2187,7 @@ void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
 				uint16 acb_mask, uint16 unk_1, uint32 size);
 void samr_io_q_enum_dom_users(char *desc,  SAMR_Q_ENUM_DOM_USERS *q_e, prs_struct *ps, int depth);
 void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
-		uint32 unk_0,
+		uint32 next_idx,
 		uint32 num_sam_entries, SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES], uint32 status);
 void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struct *ps, int depth);
 void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
