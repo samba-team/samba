@@ -122,7 +122,7 @@ PyObject *HYPER_T_to_python(HYPER_T obj)
 /* Conversion functions for types that we don't want generated automatically.
    This is mostly security realted stuff in misc.idl */
 
-char *string_ptr_from_python(PyObject *obj)
+char *string_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 {
 	if (obj == Py_None)
 		return NULL;
@@ -130,7 +130,7 @@ char *string_ptr_from_python(PyObject *obj)
 	return PyString_AsString(obj);
 }
 
-PyObject *string_ptr_to_python(char *obj)
+PyObject *string_ptr_to_python(TALLOC_CTX *mem_ctx, char *obj)
 {
 	if (obj == NULL) {
 		Py_INCREF(Py_None);
@@ -140,27 +140,35 @@ PyObject *string_ptr_to_python(char *obj)
 	return PyString_FromString(obj);
 }
 
-struct policy_handle *policy_handle_ptr_from_python(PyObject *obj)
+struct policy_handle *policy_handle_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 {
 	return (struct policy_handle *)PyString_AsString(obj);
 }
 
-PyObject *policy_handle_ptr_to_python(struct policy_handle *handle)
+PyObject *policy_handle_ptr_to_python(TALLOC_CTX *mem_ctx, struct policy_handle *handle)
 {
 	return PyString_FromStringAndSize((char *)handle, sizeof(*handle));
 }
 
-struct security_descriptor *security_descriptor_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
+PyObject *dom_sid_ptr_to_python(TALLOC_CTX *mem_ctx, struct dom_sid *obj)
 {
-	return NULL;
+	return PyString_FromString(dom_sid_string(mem_ctx, obj));
 }
 
-PyObject *dom_sid_ptr_to_python(struct dom_sid *obj)
+struct dom_sid *dom_sid_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 {
-	return PyString_FromString("<sid>");
+	return dom_sid_parse_talloc(mem_ctx, PyString_AsString(obj));
 }
 
-PyObject *security_acl_ptr_to_python(struct security_acl *obj)
+#define dom_sid2_ptr_to_python dom_sid_ptr_to_python
+#define dom_sid2_ptr_from_python dom_sid_ptr_from_python
+
+void dom_sid_from_python(TALLOC_CTX *mem_ctx, struct dom_sid *sid, PyObject *obj)
+{
+	memset(sid, 0, sizeof(struct dom_sid)); // XXX
+}
+
+PyObject *security_acl_ptr_to_python(TALLOC_CTX *mem_ctx, struct security_acl *obj)
 {
 	PyObject *result = PyDict_New();
 	PyObject *ace_list;
@@ -182,7 +190,7 @@ PyObject *security_acl_ptr_to_python(struct security_acl *obj)
 		PyDict_SetItem(ace, PyString_FromString("type"), PyInt_FromLong(obj->aces[i].type));
 		PyDict_SetItem(ace, PyString_FromString("flags"), PyInt_FromLong(obj->aces[i].flags));
 		PyDict_SetItem(ace, PyString_FromString("access_mask"), PyInt_FromLong(obj->aces[i].access_mask));
-		PyDict_SetItem(ace, PyString_FromString("trustee"), dom_sid_ptr_to_python(&obj->aces[i].trustee));
+		PyDict_SetItem(ace, PyString_FromString("trustee"), dom_sid_ptr_to_python(mem_ctx, &obj->aces[i].trustee));
 
 		PyList_SetItem(ace_list, i, ace);
 	}
@@ -190,6 +198,32 @@ PyObject *security_acl_ptr_to_python(struct security_acl *obj)
 	PyDict_SetItem(result, PyString_FromString("aces"), ace_list);
 
 	return result;
+}
+
+struct security_acl *security_acl_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
+{
+	struct security_acl *acl = talloc(mem_ctx, sizeof(struct security_acl));
+	PyObject *ace_list;
+	int i, len;
+
+	acl->revision = PyInt_AsLong(PyDict_GetItem(obj, PyString_FromString("revision")));
+	acl->size = PyInt_AsLong(PyDict_GetItem(obj, PyString_FromString("size")));
+	ace_list = PyDict_GetItem(obj, PyString_FromString("aces"));
+
+	len = PyList_Size(ace_list);
+	acl->num_aces = len;
+	acl->aces = talloc(mem_ctx, len * sizeof(struct security_ace));
+
+	for (i = 0; i < len; i++) {
+		acl->aces[i].type = PyInt_AsLong(PyDict_GetItem(obj, PyString_FromString("type")));
+		acl->aces[i].flags = PyInt_AsLong(PyDict_GetItem(obj, PyString_FromString("flags")));
+		acl->aces[i].size = 0;
+		acl->aces[i].access_mask = PyInt_AsLong(PyDict_GetItem(obj, PyString_FromString("access_mask")));
+
+		dom_sid_from_python(mem_ctx, &acl->aces[i].trustee, PyDict_GetItem(obj, PyString_FromString("trustee")));
+	}
+
+	return acl;
 }
 
 PyObject *security_descriptor_ptr_to_python(TALLOC_CTX *mem_ctx, struct security_descriptor *obj)
@@ -204,24 +238,29 @@ PyObject *security_descriptor_ptr_to_python(TALLOC_CTX *mem_ctx, struct security
 	PyDict_SetItem(result, PyString_FromString("revision"), PyInt_FromLong(obj->revision));
 	PyDict_SetItem(result, PyString_FromString("type"), PyInt_FromLong(obj->type));
 
-	PyDict_SetItem(result, PyString_FromString("owner_sid"), dom_sid_ptr_to_python(obj->owner_sid));
-	PyDict_SetItem(result, PyString_FromString("group_sid"), dom_sid_ptr_to_python(obj->group_sid));
+	PyDict_SetItem(result, PyString_FromString("owner_sid"), dom_sid_ptr_to_python(mem_ctx, obj->owner_sid));
+	PyDict_SetItem(result, PyString_FromString("group_sid"), dom_sid_ptr_to_python(mem_ctx, obj->group_sid));
 
-	PyDict_SetItem(result, PyString_FromString("sacl"), security_acl_ptr_to_python(obj->sacl));
-	PyDict_SetItem(result, PyString_FromString("dacl"), security_acl_ptr_to_python(obj->dacl));
+	PyDict_SetItem(result, PyString_FromString("sacl"), security_acl_ptr_to_python(mem_ctx, obj->sacl));
+	PyDict_SetItem(result, PyString_FromString("dacl"), security_acl_ptr_to_python(mem_ctx, obj->dacl));
 
 	return result;
 }
 
-struct dom_sid2 *dom_sid2_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
+struct security_descriptor *security_descriptor_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 {
-	return NULL;
-}
+	struct security_descriptor *sd = talloc(mem_ctx, sizeof(struct security_descriptor));
 
-PyObject *dom_sid2_ptr_to_python(TALLOC_CTX *mem_ctx, struct dom_sid2 *obj)
-{
-	Py_INCREF(Py_None);
-	return Py_None;
+	sd->revision = PyInt_AsLong(PyDict_GetItem(obj, PyString_FromString("revision")));
+	sd->type = PyInt_AsLong(PyDict_GetItem(obj, PyString_FromString("type")));
+
+	sd->owner_sid = security_descriptor_ptr_from_python(mem_ctx, PyDict_GetItem(obj, PyString_FromString("owner_sid")));
+	sd->group_sid = security_descriptor_ptr_from_python(mem_ctx, PyDict_GetItem(obj, PyString_FromString("group_sid")));
+
+	sd->sacl = security_acl_ptr_from_python(mem_ctx, PyDict_GetItem(obj, PyString_FromString("sacl")));
+	sd->dacl = security_acl_ptr_from_python(mem_ctx, PyDict_GetItem(obj, PyString_FromString("dacl")));
+
+	return sd;
 }
 
 struct samr_Password *samr_Password_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
@@ -229,7 +268,7 @@ struct samr_Password *samr_Password_ptr_from_python(TALLOC_CTX *mem_ctx, PyObjec
 	return NULL;
 }
 
-PyObject *samr_Password_ptr_to_python(struct samr_Password *obj)
+PyObject *samr_Password_ptr_to_python(TALLOC_CTX *mem_ctx, struct samr_Password *obj)
 {
 	Py_INCREF(Py_None);
 	return Py_None;

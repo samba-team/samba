@@ -47,12 +47,12 @@ sub XFromPython($$)
     # Special cases
 
     if (($e->{TYPE} eq "policy_handle" || $e->{TYPE} eq "string") && $e->{POINTERS} == 1) {
-	$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python($obj);\n";
+	$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, $obj);\n";
 	return $result;
     }
 
     if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
-	$result .= "\ts->$prefix$e->{NAME} = policy_handle_ptr_from_python($obj);\n";
+	$result .= "\ts->$prefix$e->{NAME} = policy_handle_ptr_from_python(mem_ctx, $obj);\n";
 	return $result;
     }
 
@@ -94,12 +94,12 @@ sub XToPython($$)
     # Special cases
 
     if ($e->{TYPE} eq "policy_handle" && $e->{POINTERS} == 1) {
-	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), policy_handle_ptr_to_python(s->$prefix$e->{NAME}));\n";
+	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), policy_handle_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
 	return $result;
     }
 
     if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
-	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), string_ptr_to_python(s->$prefix$e->{NAME}));\n";
+	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), string_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
 	return $result;
     }
 
