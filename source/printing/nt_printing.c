@@ -1833,39 +1833,40 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 	ZERO_STRUCT(info3);
 	get_a_printer_driver_3(&info3, model, "Windows 4.0", 0);
 	
-    DEBUGADD(10,("info3->name            [%s]\n", info3->name));
-    DEBUGADD(10,("info3->datafile        [%s]\n", info3->datafile));
-    DEBUGADD(10,("info3->helpfile        [%s]\n", info3->helpfile));
-    DEBUGADD(10,("info3->monitorname     [%s]\n", info3->monitorname));
-    DEBUGADD(10,("info3->defaultdatatype [%s]\n", info3->defaultdatatype));
+	DEBUGADD(10,("info3->name            [%s]\n", info3->name));
+	DEBUGADD(10,("info3->datafile        [%s]\n", info3->datafile));
+	DEBUGADD(10,("info3->helpfile        [%s]\n", info3->helpfile));
+	DEBUGADD(10,("info3->monitorname     [%s]\n", info3->monitorname));
+	DEBUGADD(10,("info3->defaultdatatype [%s]\n", info3->defaultdatatype));
 	for (i=0; info3->dependentfiles && *info3->dependentfiles[i]; i++) {
-    DEBUGADD(10,("info3->dependentfiles  [%s]\n", info3->dependentfiles[i]));
-    }
-    DEBUGADD(10,("info3->environment     [%s]\n", info3->environment));
-    DEBUGADD(10,("info3->driverpath      [%s]\n", info3->driverpath));
-    DEBUGADD(10,("info3->configfile      [%s]\n", info3->configfile));
+		DEBUGADD(10,("info3->dependentfiles  [%s]\n", info3->dependentfiles[i]));
+	}
+	DEBUGADD(10,("info3->environment     [%s]\n", info3->environment));
+	DEBUGADD(10,("info3->driverpath      [%s]\n", info3->driverpath));
+	DEBUGADD(10,("info3->configfile      [%s]\n", info3->configfile));
 
 	/*pstrcat(line, info3->name);             pstrcat(line, ":");*/
-	trim_string(info3->configfile, "\\print$\\WIN40\\0\\", 0);
-	pstrcat(line, info3->configfile);
-    pstrcat(line, ":");
+	trim_string(info3->driverpath, "\\print$\\WIN40\\0\\", 0);
+	pstrcat(line, info3->driverpath);
+	pstrcat(line, ":");
 	trim_string(info3->datafile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->datafile);
-    pstrcat(line, ":");
+	pstrcat(line, ":");
 	trim_string(info3->helpfile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->helpfile);
-    pstrcat(line, ":");
+	pstrcat(line, ":");
 	trim_string(info3->monitorname, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->monitorname);
-    pstrcat(line, ":");
+	pstrcat(line, ":");
 	pstrcat(line, "RAW");                /*info3->defaultdatatype);*/
-    pstrcat(line, ":");
+	pstrcat(line, ":");
 
-	for (i=0; info3->dependentfiles &&
-		 *info3->dependentfiles[i]; i++) {
+	for (i=0; info3->dependentfiles && *info3->dependentfiles[i]; i++) {
+
 		if (i) pstrcat(line, ",");               /* don't end in a "," */
 		trim_string(info3->dependentfiles[i], "\\print$\\WIN40\\0\\", 0);
 		pstrcat(line, info3->dependentfiles[i]);
+
 	}
 	
 	free(info3);
