@@ -26,7 +26,7 @@ possibilities and in particular how to deploy tools like pam_smbpass.so to your 
 </para>
 
 <note><para>
-The use of Winbind require more than PAM configuration alone. Please refer to: <link linkend="winbind"></link>
+The use of Winbind require more than PAM configuration alone. Please refer to <link linkend="winbind">the Winbind chapter</link>.
 </para></note>
 
 <sect1>
