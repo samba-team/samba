@@ -722,7 +722,7 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
 {
   pstring fname;
   int fd;
-  ret = True;
+  int ret = True;
 
   *ptok = (share_lock_token)-1;
 
