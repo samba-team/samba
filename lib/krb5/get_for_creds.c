@@ -76,6 +76,46 @@ fail:
     return ret;
 }
 
+/*
+ *
+ */
+
+krb5_error_code
+krb5_fwd_tgt_creds (krb5_context	context,
+		    krb5_auth_context	auth_context,
+		    const char		*hostname,
+		    krb5_principal	client,
+		    krb5_principal	server,
+		    krb5_ccache		ccache,
+		    int			forwardable,
+		    krb5_data		*out_data)
+{
+    krb5_flags flags = 0;
+    krb5_creds creds;
+    krb5_error_code ret;
+
+    if (forwardable)
+	flags |= KDC_OPT_FORWARDABLE;
+
+    
+    memset (&creds, 0, sizeof(creds));
+    creds.client = client;
+    creds.server = server;
+
+    ret = krb5_get_forwarded_creds (context,
+				    auth_context,
+				    ccache,
+				    flags,
+				    hostname,
+				    &creds,
+				    out_data);
+    return ret;
+}
+
+/*
+ *
+ */
+
 krb5_error_code
 krb5_get_forwarded_creds (krb5_context	    context,
 			  krb5_auth_context auth_context,
@@ -128,7 +168,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 			     &out_creds);
     krb5_free_addresses (context, &addrs);
     if (ret)
-	goto out2;
+	return ret;
 
     memset (&cred, 0, sizeof(cred));
     cred.pvno = 5;
@@ -195,7 +235,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     ALLOC(krb_cred_info->caddr, 1);
     copy_HostAddresses (&out_creds->addresses, krb_cred_info->caddr);
 
-    krb5_free_creds_contents (context, out_creds);
+    krb5_free_creds (context, out_creds);
 
     /* encode EncKrbCredPart */
 
