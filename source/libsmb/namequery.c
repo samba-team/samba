@@ -1223,7 +1223,7 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
  a domain.
 *********************************************************/
 
-BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count,  int *ordered)
+BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, BOOL *ordered)
 {
 
 	*ordered = False;
