@@ -17,6 +17,18 @@
 static des_key_schedule sequence_seed;
 static u_int32_t sequence_index[2];
 
+/*
+ * In case the generator does not get inited use this for backup.
+ */
+static int initialized;
+static des_cblock default_seed = {0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef};
+static void
+do_initialize()
+{
+  des_set_odd_parity(&default_seed);
+  des_set_random_generator_seed(&default_seed);
+}
+
 #define zero_long_long(ll) do { ll[0] = ll[1] = 0; } while (0)
 
 #define incr_long_long(ll) do { if (++ll[0] == 0) ++ll[1]; } while (0)
@@ -37,6 +49,7 @@ des_set_random_generator_seed(des_cblock *seed)
 {
   des_key_sched(seed, sequence_seed);
   zero_long_long(sequence_index);
+  initialized = 1;
 }
 
 /*
@@ -47,6 +60,9 @@ des_set_random_generator_seed(des_cblock *seed)
 int
 des_new_random_key(des_cblock *key)
 {
+  if (!initialized)
+    do_initialize();
+
  try_again:
   des_generate_random_block(key);
   /* random key must have odd parity and not be weak */
