@@ -137,8 +137,9 @@ SAM password change
 void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
-	char *new_passwd;
-	char *new_passwd2;
+	char *pwd;
+	fstring new_passwd;
+	fstring new_passwd2;
 	uchar nt_oldhash[16];
 	uchar lm_oldhash[16];
 	fstring acct_name;
@@ -174,12 +175,23 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 				 nt_oldhash);
 	}
 
-	new_passwd = (char *)getpass("New Password: ");
-	new_passwd2 = (char *)getpass("retype: ");
+	report(out_hnd,"User: %s Domain: %s\n", acct_name, domain);
 
-	if ((new_passwd != NULL && new_passwd2 != NULL &&
-	     !strequal(new_passwd, new_passwd2)) ||
-	    (new_passwd != new_passwd2))
+	pwd = (char *)getpass("New Password: ");
+	ZERO_STRUCT(new_passwd);
+	if (pwd != NULL)
+	{
+		fstrcpy(new_passwd, pwd);
+	}
+
+	pwd = (char *)getpass("retype: ");
+	ZERO_STRUCT(new_passwd2);
+	if (pwd != NULL)
+	{
+		fstrcpy(new_passwd2, pwd);
+	}
+	
+	if (!strequal(new_passwd, new_passwd2))
 	{
 		report(out_hnd, "New passwords differ!\n");
 		return;
