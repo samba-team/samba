@@ -4176,7 +4176,8 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 	clean_up_driver_struct(driver, level);
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	move_driver_to_download_area(driver, level, &user);
+	if(!move_driver_to_download_area(driver, level, &user))
+		return ERROR_ACCESS_DENIED;
 
 	if (add_a_printer_driver(driver, level)!=0)
 		return ERROR_ACCESS_DENIED;
@@ -4190,7 +4191,7 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 ****************************************************************************/
 static void fill_driverdir_1(DRIVER_DIRECTORY_1 *info, char *name)
 {
-	init_unistr(&(info->name), name);
+	init_unistr(&info->name, name);
 }
 
 /****************************************************************************
