@@ -1,9 +1,9 @@
-Copyright (C) 1997-1998 - Samba-Team
+Copyright (C) 1997-1999 - Samba-Team
 
 The Samba-Team are committed to an aggressive program to deliver quality
 controlled software to a well defined roadmap.
 
-The current Samba release 2.0.0 is called the "Domain Client Release"
+The current Samba release 2.0.4 is called the "NT Security update".
 
 It correctly implements the Windows NT specific SMB calls,
 and will operate correctly as a client in a Windows NT
@@ -23,6 +23,9 @@ are in place:
 ----------------------------------------------------------------------------
 2.0.x       -   "NT Security update" - Allowing Windows NT Clients to
                 manipulate file security and ownership using native tools.
+
+Note that the "NT Security update" part of the Roadmap has been
+achieved with the Samba 2.0.4 release.
 
 2.0.xx      -   "Thin Server" mode, allowing a Samba server to be
                 inserted into a network with no UNIX setup required.
