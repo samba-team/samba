@@ -589,6 +589,7 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
  *
  * ************************************************************************** **
  */
+
 BOOL check_mangled_cache( char *s )
 {
   ubi_cacheEntryPtr FoundPtr;
@@ -613,7 +614,11 @@ BOOL check_mangled_cache( char *s )
 
       *ext_start = '\0';
       FoundPtr = ubi_cacheGet( mangled_cache, (ubi_trItemPtr)s );
-      *ext_start = '.';
+      /* 
+       * At this point s is the name without the
+       * extension. We re-add the extension if saved_ext
+       * is not null, before freeing saved_ext.
+       */
     }
   }
 
@@ -622,6 +627,7 @@ BOOL check_mangled_cache( char *s )
   {
     if(saved_ext)
     {
+      /* Replace the saved_ext as it was truncated. */
       (void)pstrcat( s, saved_ext );
       free(saved_ext);
     }
@@ -637,6 +643,7 @@ BOOL check_mangled_cache( char *s )
   (void)pstrcpy( s, found_name );
   if( saved_ext )
   {
+    /* Replace the saved_ext as it was truncated. */
     (void)pstrcat( s, saved_ext );
     free(saved_ext);
   }
