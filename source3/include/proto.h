@@ -366,6 +366,7 @@ int sys_dlclose (void *handle);
 
 TALLOC_CTX *talloc_init(void);
 void *talloc(TALLOC_CTX *t, size_t size);
+void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size);
 void talloc_destroy_pool(TALLOC_CTX *t);
 void talloc_destroy(TALLOC_CTX *t);
 size_t talloc_pool_size(TALLOC_CTX *t);
@@ -1820,8 +1821,8 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	     BOOL add_ipc);
 void lp_resetnumservices(void);
 int lp_numservices(void);
-void lp_dump(FILE * f, BOOL show_defaults, int maxtoprint);
-void lp_dump_one(FILE * f, BOOL show_defaults, int snum);
+void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint, char *(*dos_to_ext)(char *, BOOL));
+void lp_dump_one(FILE * f, BOOL show_defaults, int snum, char *(*dos_to_ext)(char *, BOOL));
 int lp_servicenumber(char *pszServiceName);
 char *volume_label(int snum);
 int lp_server_role(void);
