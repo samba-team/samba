@@ -101,7 +101,8 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	reload_services(True);
 
 #endif
-	nt_status = make_user_info_map(&user_info, 
+	nt_status = make_user_info_map(ntlmssp_state,
+				       &user_info, 
 				       gensec_ntlmssp_state->ntlmssp_state->user, 
 				       gensec_ntlmssp_state->ntlmssp_state->domain, 
 				       gensec_ntlmssp_state->ntlmssp_state->workstation, 
