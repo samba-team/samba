@@ -20,6 +20,7 @@ TESTS =						\
 	derived-key-test			\
 	store-test				\
 	parse-name-test				\
+	test_acl				\
 	test_cc					\
 	test_config				\
 	test_time				\
@@ -157,7 +158,9 @@ man_MANS =					\
 	kerberos.8				\
 	krb5.3					\
 	krb5.conf.5				\
+	krb524_convert_creds_kdc.3		\
 	krb5_425_conv_principal.3		\
+	krb5_acl_match_file.3			\
 	krb5_address.3				\
 	krb5_aname_to_localname.3		\
 	krb5_appdefault.3			\
