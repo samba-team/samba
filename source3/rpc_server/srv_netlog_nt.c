@@ -477,6 +477,15 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
     else
         memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
     
+	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
+	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
+
+	/* store the user information, if there is any. */
+	r_u->user = usr_info;
+	r_u->switch_value = 0; /* indicates no info */
+	r_u->auth_resp = 1; /* authoritative response */
+	r_u->switch_value = 3; /* indicates type of validation user info */
+
     /* find the username */
     
 	switch (q_u->sam_id.logon_level) {
@@ -593,19 +602,5 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
                             NULL); /* char *other_sids */
     }
 
-	/* XXXX maybe we want to say 'no', reject the client's credentials */
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
-
-	/* store the user information, if there is any. */
-	r_u->user = usr_info;
-	if (status == NT_STATUS_NOPROBLEMO && usr_info != NULL && usr_info->ptr_user_info != 0)
-		r_u->switch_value = 3; /* indicates type of validation user info */
-	else
-		r_u->switch_value = 0; /* indicates no info */
-
-	r_u->status = status;
-	r_u->auth_resp = 1; /* authoritative response */
-
-    return r_u->status;
+    return status;
 }
