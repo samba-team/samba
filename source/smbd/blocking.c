@@ -565,8 +565,6 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
   }
 }
 
-static BOOL unlock_received;
-
 /****************************************************************************
  Set a flag as an unlock request affects one of our pending locks.
 *****************************************************************************/
@@ -590,12 +588,6 @@ unsigned blocking_locks_timeout(unsigned default_timeout)
 	/* note that we avoid the time() syscall if there are no blocking locks */
 	if (!blr)
 		return timeout;
-
-	/* If we've had an unlock that might affect us, check immediately. */
-	if (unlock_received) {
-		unlock_received = False;
-		return 0;
-	}
 
 	t = time(NULL);
 
