@@ -13,11 +13,11 @@ AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
 AC_PROG_AWK
 
+AC_CANONICAL_SYSTEM
 
 PICFLAG="-fpic"
 HOST_OS="$host_os"
 
-AC_CANONICAL_SYSTEM
 case "$host_os" in
 	*linux*)   AC_DEFINE(LINUX)
                    LDSHFLAGS="-shared";;
