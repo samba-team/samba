@@ -798,11 +798,14 @@ char *Strstr(char *s, char *p);
 #define SV_TYPE_DOMAIN_ENUM         0x80000000
 #define SV_TYPE_ALL                 0xFFFFFFFF  
 
-/* what server type are we currently  - JHT Says we ARE 4.10 */
-/* this was set by JHT in liaison with Andrew Tridgell early 1996 */
-/* setting to 4.10 at same time as announcing ourselves as NT Server */
+/* What server type are we currently  - JHT Says we ARE 4.20 */
+/* History: */
+/* Version 4.0 - never made public */
+/* Version 4.10 - New to 1.9.16p2, lost in space 1.9.16p3 to 1.9.16p9 */
+/*		- Reappeared in 1.9.16p11 with fixed smbd services */
+/* Version 4.20 - To indicate that nmbd and browsing now works better */
 #define MAJOR_VERSION 0x04
-#define MINOR_VERSION 0x01
+#define MINOR_VERSION 0x02
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
