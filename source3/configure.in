@@ -777,7 +777,6 @@ case "$host_os" in
 			PICFLAG="-fPIC"
 		;;
 		*sco*) 
-			DYNEXP="-Wl,-Bexport"
         		AC_DEFINE(SCO)
 		;;
 		*unixware*) AC_DEFINE(UNIXWARE)
