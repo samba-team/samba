@@ -517,6 +517,22 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor 
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
+enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot)
+{
+	int i;
+
+	/* Find a transport that has 'prot' as 4th protocol */
+	for (i=0;i<ARRAY_SIZE(transports);i++) {
+		if (transports[i].num_protocols >= 2 && 
+			transports[i].protseq[1] == prot) {
+			return transports[i].transport;
+		}
+	}
+	
+	/* Unknown transport */
+	return -1;
+}
+
 enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
 {
 	int i;
