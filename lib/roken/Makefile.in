@@ -102,6 +102,7 @@ OBJECTS = \
 	mini_inetd.o \
 	parse_time.o \
 	parse_units.o \
+	roken_gethostby.o \
 	signal.o \
 	snprintf.o \
 	strcasecmp.o \
