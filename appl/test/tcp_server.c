@@ -89,7 +89,7 @@ proto (int sock, const char *service)
     if (status)
 	krb5_err (context, 1, status, "krb5_unparse_name");
 
-    printf ("User is `%s'\n", name);
+    fprintf (stderr, "User is `%s'\n", name);
     free (name);
 
     krb5_data_zero (&data);
@@ -119,7 +119,7 @@ proto (int sock, const char *service)
     if (status)
 	krb5_err (context, 1, status, "krb5_rd_safe");
 
-    printf ("safe packet: %.*s\n", (int)data.length,
+    fprintf (stderr, "safe packet: %.*s\n", (int)data.length,
 	    (char *)data.data);
 
     n = krb5_net_read (context, &sock, &net_len, 4);
@@ -146,7 +146,7 @@ proto (int sock, const char *service)
     if (status)
 	krb5_err (context, 1, status, "krb5_rd_priv");
 
-    printf ("priv packet: %.*s\n", (int)data.length,
+    fprintf (stderr, "priv packet: %.*s\n", (int)data.length,
 	    (char *)data.data);
 
     return 0;

@@ -134,7 +134,7 @@ proto (int sock, const char *service)
     if (GSS_ERROR(maj_stat))
 	gss_err (1, min_stat, "gss_display_name");
 
-    printf ("User is `%.*s'\n", (int)name_token.length,
+    fprintf (stderr, "User is `%.*s'\n", (int)name_token.length,
 	    (char *)name_token.value);
 
     /* write something back */
