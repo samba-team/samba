@@ -39,7 +39,7 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	NTSTATUS status;
-	int fnum;
+	int fnum1, fnum2;
 	BOOL ret = True;
 	struct smbcli_request *req;
 	struct timeval tv;
@@ -53,10 +53,10 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.access_mask = SA_RIGHT_FILE_READ_DATA;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
@@ -64,12 +64,18 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = BASEDIR "\\open.dat";
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum1 = io.ntcreatex.out.fnum;
+
+	/* and a 2nd open, this will not conflict */
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.fnum;
 
 	tv = timeval_current();
 
 	/* send an open that will conflict */
-	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.share_access = 0;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
@@ -87,8 +93,11 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	tv = timeval_current();
 	req = smb_raw_open_send(cli->tree, &io);
 	
-	/* and close the file */
-	smbcli_close(cli->tree, fnum);
+	/* and close the first file */
+	smbcli_close(cli->tree, fnum1);
+
+	/* then the 2nd file */
+	smbcli_close(cli->tree, fnum2);
 
 	/* see if the async open succeeded */
 	status = smb_raw_open_recv(req, mem_ctx, &io);

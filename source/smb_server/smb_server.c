@@ -66,7 +66,7 @@ static void construct_reply(struct smbsrv_request *req);
 receive a SMB request header from the wire, forming a request_context
 from the result
 ****************************************************************************/
-static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
+static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn, struct timeval t)
 {
 	NTSTATUS status;
 	ssize_t len;
@@ -138,7 +138,7 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
 	}
 
 	/* we have a full packet */
-	GetTimeOfDay(&req->request_time);
+	req->request_time = t;
 	req->chained_fnum = -1;
 	req->in.allocated = req->in.size;
 	req->in.hdr = req->in.buffer + NBT_HDR_SIZE;
@@ -721,7 +721,7 @@ static void smbsrv_recv(struct server_connection *conn, struct timeval t, uint16
 
 	DEBUG(10,("smbsrv_recv\n"));
 
-	status = receive_smb_request(smb_conn);
+	status = receive_smb_request(smb_conn, t);
 	if (NT_STATUS_IS_ERR(status)) {
 		conn->event.fde->flags = 0;
 		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
@@ -808,7 +808,7 @@ void smbd_process_async(struct smbsrv_connection *smb_conn)
 {
 	NTSTATUS status;
 	
-	status = receive_smb_request(smb_conn);
+	status = receive_smb_request(smb_conn, timeval_current());
 	if (NT_STATUS_IS_ERR(status)) {
 		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 	}
