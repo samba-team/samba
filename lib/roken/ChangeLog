@@ -1,3 +1,12 @@
+2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken-common.h: make `extern "C"' into a macro, this make emacs
+	much happier
+
+	* vis.c: strvis implementation from NetBSD
+
+	* roken.h.in: add prototypes for strvis*
+
 2000-12-05  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ifaddrs.h: fix freeifaddrs prototype, and add ifa_broadaddr
