@@ -1462,13 +1462,30 @@ NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_en
 	ZERO_STRUCTP(sam->str);
 
 	for (i = 0; i < num_entries ; i++) {
+		const char *username;
+		const char *fullname;
+		const char *acct_desc;
+
 		DEBUG(11, ("init_sam_dispinfo_1: entry: %d\n",i));
 		
 		pwd=disp_user_info[i+start_idx].sam;
 		
-		len_sam_name = strlen(pdb_get_username(pwd));
-		len_sam_full = strlen(pdb_get_fullname(pwd));
-		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
+		username = pdb_get_username(pwd);
+		fullname = pdb_get_fullname(pwd);
+		acct_desc = pdb_get_acct_desc(pwd);
+		
+		if (!username) 
+			username = "";
+
+		if (!fullname) 
+			fullname = "";
+		
+		if (!acct_desc) 
+			acct_desc = "";
+
+		len_sam_name = strlen(username);
+		len_sam_full = strlen(fullname);
+		len_sam_desc = strlen(acct_desc);
 
 		init_sam_entry1(&sam->sam[i], start_idx + i + 1,
 				len_sam_name, len_sam_full, len_sam_desc,

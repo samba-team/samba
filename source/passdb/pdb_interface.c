@@ -30,6 +30,7 @@ const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
 	{ "tdbsam_nua", pdb_init_tdbsam_nua },
 	{ "ldapsam", pdb_init_ldapsam },
 	{ "ldapsam_nua", pdb_init_ldapsam_nua },
+	{ "unixsam", pdb_init_unixsam },
 	{ "plugin", pdb_init_plugin },
 	{ NULL, NULL}
 };
@@ -42,7 +43,12 @@ static BOOL context_setsampwent(struct pdb_context *context, BOOL update)
 	}
 
 	context->pwent_methods = context->pdb_methods;
-	
+
+	if (!context->pwent_methods) {
+		/* No passdbs at all */
+		return True;
+	}
+
 	while(!(context->pwent_methods->setsampwent(context->pwent_methods, update))){
 		context->pwent_methods = context->pwent_methods->next;
 		if(context->pwent_methods == NULL)return False;
@@ -83,7 +89,7 @@ static BOOL context_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
 		if(context->pwent_methods == NULL)return False;
 	
 		if(!context->pwent_methods->setsampwent){
-			DEBUG(0, ("invalid context->pwent_methods->setsampwent\n"));
+			DEBUG(5, ("invalid context->pwent_methods->setsampwent\n"));
 			return False;
 		}
 
@@ -251,7 +257,11 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 
 	if (!*methods) {
 		DEBUG(0,("failed to select passdb backed!\n"));
-		return nt_status;
+		if (NT_STATUS_IS_OK(nt_status)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		} else {
+			return nt_status;
+		}
 	}
 	return NT_STATUS_OK;
 }

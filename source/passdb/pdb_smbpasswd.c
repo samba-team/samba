@@ -1218,7 +1218,8 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 /*********************************************************************
  Create a SAM_ACCOUNT from a smb_passwd struct
  ********************************************************************/
-static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state, SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw_buf)
+static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state, 
+			      SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw_buf)
 {
 	struct passwd *pwfile;
 	
@@ -1242,73 +1243,25 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state, SAM_AC
 		
 	} else {
 
-		uint32 grid;
-		GROUP_MAP map;
-	
-		/* Verify in system password file...
-		   FIXME!!!  This is where we should look up an internal
-		   mapping of allocated uid for machine accounts as well 
-		   --jerry */ 
 		pwfile = getpwnam_alloc(pw_buf->smb_name);
 		if (pwfile == NULL) {
 			DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid %u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
 			return False;
 		}
 
-		pdb_set_uid (sam_pass, pwfile->pw_uid);
-		pdb_set_gid (sam_pass, pwfile->pw_gid);
-		
-		pdb_set_fullname(sam_pass, pwfile->pw_gecos);		
-	
-		pdb_set_user_rid(sam_pass, fallback_pdb_uid_to_user_rid (pwfile->pw_uid));
-
-		if (get_group_map_from_gid(pwfile->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
-			sid_peek_rid(&map.sid, &grid);
-		} else { 
-			grid=pdb_gid_to_group_rid(pwfile->pw_gid);
-		}
-
-		pdb_set_group_rid(sam_pass, grid); 
-
-		/* check if this is a user account or a machine account */
-		if (pw_buf->smb_name[strlen(pw_buf->smb_name)-1] != '$')
-		{
-			pstring 	str;
-			
-			pstrcpy(str, lp_logon_path());
-			standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
-			pdb_set_profile_path(sam_pass, str, False);
-			
-			pstrcpy(str, lp_logon_home());
-			standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
-			pdb_set_homedir(sam_pass, str, False);
-			
-			pstrcpy(str, lp_logon_drive());
-			standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
-			pdb_set_dir_drive(sam_pass, str, False);
-			
-			pstrcpy(str, lp_logon_script());
-			standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
-			pdb_set_logon_script(sam_pass, str, False);
-			
-		} else {
-			/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
-			/*pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); */
+		if (!NT_STATUS_IS_OK(pdb_fill_sam_pw(sam_pass, pwfile))) {
+			return False;
 		}
 		
 		passwd_free(&pwfile);
 	}
 	
-	pdb_set_username (sam_pass, pw_buf->smb_name);
 	pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd);
 	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd);			
 	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl);
 	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time);
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time, True);
-	pdb_set_domain (sam_pass, lp_workgroup());
 	
-	pdb_set_dir_drive     (sam_pass, lp_logon_drive(), False);
-
 #if 0	/* JERRY */
 	/* the smbpasswd format doesn't have a must change time field, so
 	   we can't get this right. The best we can do is to set this to 

@@ -138,7 +138,7 @@ typedef struct
 	char *szAddGroupScript;
 	char *szDelGroupScript;
 	char *szAddUserToGroupScript;
-	char *szDelUserToGroupScript;
+	char *szDelUserFromGroupScript;
 	char *szAddMachineScript;
 	char *szShutdownScript;
 	char *szAbortShutdownScript;
@@ -893,7 +893,7 @@ static struct parm_struct parm_table[] = {
 	{"add group script", P_STRING, P_GLOBAL, &Globals.szAddGroupScript, NULL, NULL, 0},
 	{"delete group script", P_STRING, P_GLOBAL, &Globals.szDelGroupScript, NULL, NULL, 0},
 	{"add user to group script", P_STRING, P_GLOBAL, &Globals.szAddUserToGroupScript, NULL, NULL, 0},
-	{"delete user from group script", P_STRING, P_GLOBAL, &Globals.szDelUserToGroupScript, NULL, NULL, 0},
+	{"delete user from group script", P_STRING, P_GLOBAL, &Globals.szDelUserFromGroupScript, NULL, NULL, 0},
 	{"add machine script", P_STRING, P_GLOBAL, &Globals.szAddMachineScript, NULL, NULL, 0},
 	{"shutdown script", P_STRING, P_GLOBAL, &Globals.szShutdownScript, NULL, NULL, 0},
 	{"abort shutdown script", P_STRING, P_GLOBAL, &Globals.szAbortShutdownScript, NULL, NULL, 0},
@@ -1187,7 +1187,7 @@ static void init_globals(void)
 
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
-	string_set(&Globals.szPassdbBackend, "smbpasswd");
+	string_set(&Globals.szPassdbBackend, "smbpasswd unixsam");
 
 	/* use the new 'hash2' method by default */
 	string_set(&Globals.szManglingMethod, "hash2");
@@ -1416,6 +1416,8 @@ static char *lp_string(const char *s)
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
  char *fn_name(void) {return(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""));}
+#define FN_GLOBAL_CONST_STRING(fn_name,ptr) \
+ const char *fn_name(void) {return(*(const char **)(ptr) ? *(const char **)(ptr) : "");}
 #define FN_GLOBAL_LIST(fn_name,ptr) \
  char **fn_name(void) {return(*(char ***)(ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
@@ -1475,10 +1477,10 @@ FN_GLOBAL_STRING(lp_workgroup, &Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
 FN_GLOBAL_STRING(lp_ads_server, &Globals.szADSserver)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
-FN_GLOBAL_STRING(lp_logon_script, &Globals.szLogonScript)
-FN_GLOBAL_STRING(lp_logon_path, &Globals.szLogonPath)
-FN_GLOBAL_STRING(lp_logon_drive, &Globals.szLogonDrive)
-FN_GLOBAL_STRING(lp_logon_home, &Globals.szLogonHome)
+FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
+FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
+FN_GLOBAL_CONST_STRING(lp_logon_drive, &Globals.szLogonDrive)
+FN_GLOBAL_CONST_STRING(lp_logon_home, &Globals.szLogonHome)
 FN_GLOBAL_STRING(lp_remote_announce, &Globals.szRemoteAnnounce)
 FN_GLOBAL_STRING(lp_remote_browse_sync, &Globals.szRemoteBrowseSync)
 FN_GLOBAL_STRING(lp_wins_server_list, &Globals.szWINSserver)
@@ -1495,7 +1497,7 @@ FN_GLOBAL_STRING(lp_guestaccount, &Globals.szGuestaccount)
 FN_GLOBAL_STRING(lp_addgroup_script, &Globals.szAddGroupScript)
 FN_GLOBAL_STRING(lp_delgroup_script, &Globals.szDelGroupScript)
 FN_GLOBAL_STRING(lp_addusertogroup_script, &Globals.szAddUserToGroupScript)
-FN_GLOBAL_STRING(lp_deluserfromgroup_script, &Globals.szDelUserToGroupScript)
+FN_GLOBAL_STRING(lp_deluserfromgroup_script, &Globals.szDelUserFromGroupScript)
 
 FN_GLOBAL_STRING(lp_addmachine_script, &Globals.szAddMachineScript)
 
@@ -3873,7 +3875,7 @@ char *lp_printername(int snum)
 
 #define P_LIST_ABS 16 /* P_LIST Allocation Block Size */
 
-char **lp_list_make(char *string)
+char **lp_list_make(const char *string)
 {
 	char **list, **rlist;
 	char *str, *s;
@@ -3891,7 +3893,7 @@ char **lp_list_make(char *string)
 	list = NULL;
 	
 	str = s;
-	while (next_token(&str, tok, LIST_SEP, sizeof(pstring)))
+	while (next_token(&str, tok, LIST_SEP, sizeof(tok)))
 	{		
 		if (num == lsize) {
 			lsize += P_LIST_ABS;

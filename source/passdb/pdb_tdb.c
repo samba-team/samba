@@ -86,12 +86,11 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	uint8	*hours;
 	static uint8	*lm_pw_ptr, *nt_pw_ptr;
 	uint32		len = 0;
-	uint32		lmpwlen, ntpwlen, hourslen;
+	uint32		lm_pw_len, nt_pw_len, hourslen;
 	BOOL ret = True;
-	BOOL setflag;
 	pstring sub_buffer;
 	struct passwd *pw;
-	uid_t uid;
+	uid_t uid = -1;
 	gid_t gid = -1; /* This is what standard sub advanced expects if no gid is known */
 	
 	if(sampass == NULL || buf == NULL) {
@@ -121,8 +120,8 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		&munged_dial_len, &munged_dial,
 		&user_rid,
 		&group_rid,
-		&lmpwlen, &lm_pw_ptr,
-		&ntpwlen, &nt_pw_ptr,
+		&lm_pw_len, &lm_pw_ptr,
+		&nt_pw_len, &nt_pw_ptr,
 		&acct_ctrl,
 		&unknown_3,
 		&logon_divs,
@@ -152,6 +151,8 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		uid = pw->pw_uid;
 		gid = pw->pw_gid;
 		
+		pdb_set_unix_homedir(sampass, pw->pw_dir);
+
 		passwd_free(&pw);
 
 		pdb_set_uid(sampass, uid);
@@ -165,66 +166,72 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	pdb_set_pass_must_change_time(sampass, pass_must_change_time, True);
 	pdb_set_pass_last_set_time(sampass, pass_last_set_time);
 
-	pdb_set_username     (sampass, username);
+	pdb_set_username     (sampass, username); 
 	pdb_set_domain       (sampass, domain);
 	pdb_set_nt_username  (sampass, nt_username);
 	pdb_set_fullname     (sampass, fullname);
 
-	if (homedir) setflag = True;
-	else {
-		setflag = False;
-		pstrcpy(sub_buffer, lp_logon_home());
-		/* standard_sub_advanced() assumes pstring is passed!! */
-		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
-		homedir = strdup(sub_buffer);
-		if(!homedir) { ret = False; goto done; }
-		DEBUG(5,("Home directory set back to %s\n", homedir));
+	if (homedir) {
+		pdb_set_homedir(sampass, homedir, True);
 	}
-	pdb_set_homedir(sampass, homedir, setflag);
+	else {
+		pdb_set_homedir(sampass, 
+				standard_sub_specified(sampass->mem_ctx, 
+						       lp_logon_home(),
+						       username, domain, 
+						       uid, gid),
+				False);
+	}
 
-	if (dir_drive) setflag = True;
+	if (dir_drive) 	
+		pdb_set_dir_drive(sampass, dir_drive, True);
 	else {
-		setflag = False;
-		pstrcpy(sub_buffer, lp_logon_drive());
-		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
-		dir_drive = strdup(sub_buffer);
-		if(!dir_drive) { ret = False; goto done; }
-		DEBUG(5,("Drive set back to %s\n", dir_drive));
+		pdb_set_dir_drive(sampass, 
+				  standard_sub_specified(sampass->mem_ctx, 
+							 lp_logon_drive(),
+							 username, domain, 
+							 uid, gid),
+				  False);
 	}
-	pdb_set_dir_drive(sampass, dir_drive, setflag);
 
-	if (logon_script) setflag = True;
+	if (logon_script) 
+		pdb_set_logon_script(sampass, logon_script, True);
 	else {
-		setflag = False;
-		pstrcpy(sub_buffer, lp_logon_script());
-		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
-		logon_script = strdup(sub_buffer);
-		if(!logon_script) { ret = False; goto done; }
-		DEBUG(5,("Logon script set back to %s\n", logon_script));
+		pdb_set_logon_script(sampass, 
+				     standard_sub_specified(sampass->mem_ctx, 
+							    lp_logon_script(),
+							    username, domain, 
+							    uid, gid),
+				  False);
 	}
-	pdb_set_logon_script(sampass, logon_script, setflag);
 
-	if (profile_path) setflag = True;
-	else {
-		setflag = False;
-		pstrcpy(sub_buffer, lp_logon_path());
-		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
-		profile_path = strdup(sub_buffer);
-		if(!profile_path) { ret = False; goto done; }
-		DEBUG(5,("Profile path set back to %s\n", profile_path));
+	if (profile_path) {	
+		pdb_set_profile_path(sampass, profile_path, True);
+	} else {
+		pdb_set_profile_path(sampass, 
+				     standard_sub_specified(sampass->mem_ctx, 
+							    lp_logon_path(),
+							    username, domain, 
+							    uid, gid),
+				     False);
 	}
-	pdb_set_profile_path(sampass, profile_path, setflag);
 
 	pdb_set_acct_desc    (sampass, acct_desc);
 	pdb_set_workstations (sampass, workstations);
 	pdb_set_munged_dial  (sampass, munged_dial);
-	if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr)) {
-		ret = False;
-		goto done;
+
+	if (lm_pw_ptr && lm_pw_len == LM_HASH_LEN) {
+		if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr)) {
+			ret = False;
+			goto done;
+		}
 	}
-	if (!pdb_set_nt_passwd(sampass, nt_pw_ptr)) {
-		ret = False;
-		goto done;
+
+	if (nt_pw_ptr && nt_pw_len == NT_HASH_LEN) {
+		if (!pdb_set_nt_passwd(sampass, nt_pw_ptr)) {
+			ret = False;
+			goto done;
+		}
 	}
 
 	pdb_set_user_rid(sampass, user_rid);

@@ -279,6 +279,58 @@ void standard_sub_advanced(int snum, const char *user, const char *connectpath, 
 	standard_sub_basic(smb_name, str);
 }
 
+const char *standard_sub_specified(TALLOC_CTX *mem_ctx, const char *input_string,
+				   const char *username,
+				   const char *domain,
+				   uid_t uid,
+				   gid_t gid) 
+{
+	pstring input_pstring;
+	char *p, *s;
+
+	pstrcpy(input_pstring, input_string);
+	
+	for (s=input_pstring; (p=strchr_m(s, '%')); s=p) {
+
+		int l = sizeof(pstring) - (int)(p-input_pstring);
+		
+		switch (*(p+1)) {
+		case 'U' : 
+			string_sub(p,"%U",username,l);
+			break;
+		case 'u' : 
+			string_sub(p,"%u",username,l);
+			break;
+		case 'G' :
+		case 'g' :
+			if (gid != -1) {
+				string_sub(p,"%G",gidtoname(gid),l);
+				string_sub(p,"%g",gidtoname(gid),l);
+			} else {
+				string_sub(p,"%G","NO_GROUP",l);
+				string_sub(p,"%g","NO_GROUP",l);
+			}
+			break;
+		case 'D' :
+			string_sub(p,"%D", domain,l);
+			break;
+		case 'N' : 
+			string_sub(p,"%N", automount_server(username),l); 
+			break;
+		case '\0': 
+			p++; 
+			break; /* don't run off the end of the string */
+			
+		default: p+=2; 
+			break;
+		}
+	}
+
+	standard_sub_basic(username, input_pstring);
+	
+	return talloc_strdup(mem_ctx, input_pstring);
+}
+
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/

@@ -196,7 +196,7 @@ LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 PASSDB_OBJ = passdb/passdb.o passdb/pdb_interface.o passdb/pdb_get_set.o \
 		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
 		passdb/pdb_tdb.o passdb/pdb_ldap.o passdb/pdb_plugin.o \
-		passdb/pdb_nisplus.o
+		passdb/pdb_nisplus.o passdb/pdb_unix.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
