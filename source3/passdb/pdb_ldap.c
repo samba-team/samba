@@ -2,6 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 2.9.
    LDAP protocol helper functions for SAMBA
+   Copyright (C) Gerald Carter 2001
    Copyright (C) Shahms King 2001
    Copyright (C) Jean François Micouleau 1998
    
@@ -51,8 +52,7 @@
 #define SAM_ACCOUNT struct sam_passwd
 #endif
 
-struct ldap_enum_info
-{
+struct ldap_enum_info {
 	LDAP *ldap_struct;
 	LDAPMessage *result;
 	LDAPMessage *entry;
@@ -61,11 +61,14 @@ struct ldap_enum_info
 static struct ldap_enum_info global_ldap_ent;
 
 
+extern pstring samlogon_user;
+extern BOOL sam_logon_in_ssb;
+
+
 /*******************************************************************
  open a connection to the ldap server.
 ******************************************************************/
-static BOOL
-ldap_open_connection (LDAP ** ldap_struct)
+static BOOL ldap_open_connection (LDAP ** ldap_struct)
 {
 	int port;
 	int version, rc;
@@ -82,7 +85,7 @@ ldap_open_connection (LDAP ** ldap_struct)
 
 	if ((*ldap_struct = ldap_init(lp_ldap_server(), port)) == NULL)	{
 		DEBUG(0, ("The LDAP server is not responding !\n"));
-		return (False);
+		return False;
 	}
 
 	/* Connect to older servers using SSL and V2 rather than Start TLS */
@@ -110,25 +113,31 @@ ldap_open_connection (LDAP ** ldap_struct)
 			}
 			if ((rc = ldap_start_tls_s (*ldap_struct, NULL, NULL)) != LDAP_SUCCESS)
 			{
-				DEBUG(0,
-				      ("Failed to issue the StartTLS instruction: %s\n",
+				DEBUG(0,("Failed to issue the StartTLS instruction: %s\n",
 				       ldap_err2string(rc)));
 				return False;
 			}
 			DEBUG (2, ("StartTLS issued: using a TLS connection\n"));
 			break;
+			
 		case LDAP_SSL_ON:
 			if (ldap_set_option (*ldap_struct, LDAP_OPT_X_TLS, &tls) != LDAP_SUCCESS)
 			{
 				DEBUG(0, ("Failed to setup a TLS session\n"));
 			}
 			break;
+			
 		case LDAP_SSL_OFF:
 		default:
+			/* 
+			 * No special needs to setup options prior to the LDAP
+			 * bind (which should be called next via ldap_connect_system()
+			 */
+			break;
 	}
 
 	DEBUG(2, ("ldap_open_connection: connection opened\n"));
-	return (True);
+	return True;
 }
 
 /*******************************************************************
@@ -150,15 +159,19 @@ static BOOL ldap_connect_system(LDAP * ldap_struct)
 
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
 	   (OpenLDAP) doesnt' seem to support it */
+	   
+	DEBUG(10,("ldap_connect_system: Binding to ldap server as \"%s\"\n",
+		lp_ldap_admin_dn()));
+		
 	if ((rc = ldap_simple_bind_s(ldap_struct, lp_ldap_admin_dn(), 
 		ldap_secret)) != LDAP_SUCCESS)
 	{
 		DEBUG(0, ("Bind failed: %s\n", ldap_err2string(rc)));
-		return (False);
+		return False;
 	}
 	
 	DEBUG(2, ("ldap_connect_system: succesful connection to the LDAP server\n"));
-	return (True);
+	return True;
 }
 
 /*******************************************************************
@@ -171,8 +184,7 @@ static int ldap_search_one_user (LDAP * ldap_struct, const char *filter, LDAPMes
 
 	DEBUG(2, ("ldap_search_one_user: searching for:[%s]\n", filter));
 
-	rc = ldap_search_s (ldap_struct, lp_ldap_suffix (), scope, 
-		filter, NULL, 0, result);
+	rc = ldap_search_s(ldap_struct, lp_ldap_suffix (), scope, filter, NULL, 0, result);
 
 	if (rc != LDAP_SUCCESS)	{
 		DEBUG(0,("ldap_search_one_user: Problem during the LDAP search: %s\n", 
@@ -180,7 +192,8 @@ static int ldap_search_one_user (LDAP * ldap_struct, const char *filter, LDAPMes
 		DEBUG(3,("ldap_search_one_user: Query was: %s, %s\n", lp_ldap_suffix(), 
 			filter));
 	}
-	return (rc);
+	
+	return rc;
 }
 
 /*******************************************************************
@@ -192,12 +205,13 @@ static int ldap_search_one_user_by_name (LDAP * ldap_struct, const char *user,
 	pstring filter;
 	
 	/*
-	   in the filter expression, replace %u with the real name
-	   so in ldap filter, %u MUST exist :-)
+	 * in the filter expression, replace %u with the real name
+	 * so in ldap filter, %u MUST exist :-)
 	 */
 	pstrcpy(filter, lp_ldap_filter());
 
-	/* have to use this here because $ is filtered out
+	/* 
+	 * have to use this here because $ is filtered out
 	   * in pstring_sub
 	 */
 	all_string_sub(filter, "%u", user, sizeof(pstring));
@@ -215,8 +229,14 @@ static int ldap_search_one_user_by_uid(LDAP * ldap_struct, int uid,
 	pstring filter;
 
 	/* Get the username from the system and look that up in the LDAP */
-	user = sys_getpwuid(uid);
+	
+	if ((user = sys_getpwuid(uid)) == NULL) {
+		DEBUG(3,("ldap_search_one_user_by_uid: Failed to locate uid [%d]\n", uid));
+		return LDAP_NO_SUCH_OBJECT;
+	}
+	
 	pstrcpy(filter, lp_ldap_filter());
+	
 	all_string_sub(filter, "%u", user->pw_name, sizeof(pstring));
 
 	return ldap_search_one_user(ldap_struct, filter, result);
@@ -232,6 +252,7 @@ static int ldap_search_one_user_by_rid (LDAP * ldap_struct, uint32 rid,
 	int rc;
 
 	/* check if the user rid exsists, if not, try searching on the uid */
+	
 	snprintf(filter, sizeof(filter) - 1, "rid=%i", rid);
 	rc = ldap_search_one_user(ldap_struct, filter, result);
 	
@@ -245,20 +266,23 @@ static int ldap_search_one_user_by_rid (LDAP * ldap_struct, uint32 rid,
 /*******************************************************************
 search an attribute and return the first value found.
 ******************************************************************/
-static void get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
+static BOOL get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 		     char *attribute, char *value)
 {
-	char **valeurs;
+	char **values;
 
-	if ((valeurs = ldap_get_values (ldap_struct, entry, attribute)) != NULL) {
-		pstrcpy(value, valeurs[0]);
-		ldap_value_free(valeurs);
-		DEBUG (2, ("get_single_attribute: [%s] = [%s]\n", attribute, value));
-	}
-	else {
+	if ((values = ldap_get_values (ldap_struct, entry, attribute)) == NULL) {
 		value = NULL;
-		DEBUG (2, ("get_single_attribute: [%s] = [NULL]\n", attribute));
+		DEBUG (2, ("get_single_attribute: [%s] = [<does not exist>]\n", attribute));
+		
+		return False;
 	}
+
+	pstrcpy(value, values[0]);
+	ldap_value_free(values);
+	DEBUG (2, ("get_single_attribute: [%s] = [%s]\n", attribute, value));
+		
+	return True;
 }
 
 /************************************************************************
@@ -298,7 +322,7 @@ static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, c
 
 	if (mods[i] == NULL)
 	{
-		mods = (LDAPMod **) realloc (mods, (i + 2) * sizeof (LDAPMod *));
+		mods = (LDAPMod **) Realloc (mods, (i + 2) * sizeof (LDAPMod *));
 		if (mods == NULL)
 		{
 			DEBUG(0, ("make_a_mod: out of memory!\n"));
@@ -322,7 +346,7 @@ static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, c
 		if (mods[i]->mod_values != NULL) {
 			for (; mods[i]->mod_values[j] != NULL; j++);
 		}
-		mods[i]->mod_values = (char **)realloc(mods[i]->mod_values,
+		mods[i]->mod_values = (char **)Realloc(mods[i]->mod_values,
 					       (j + 2) * sizeof (char *));
 					       
 		if (mods[i]->mod_values == NULL) {
@@ -350,25 +374,45 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 			pass_last_set_time, 
 			pass_can_change_time, 
 			pass_must_change_time;
-	static pstring username;
-	static pstring domain;
-	static pstring nt_username;
-	static pstring fullname;
-	static pstring homedir;
-	static pstring dir_drive;
-	static pstring logon_script;
-	static pstring profile_path;
-	static pstring acct_desc;
-	static pstring munged_dial;
-	static pstring workstations;
+	pstring 	username, 
+			domain,
+			nt_username,
+			fullname,
+			homedir,
+			dir_drive,
+			logon_script,
+			profile_path,
+			acct_desc,
+			munged_dial,
+			workstations;
 	struct passwd *sys_user;
-	uint32 user_rid, group_rid;
-	static uint8 smblmpwd[16];
-	static uint8 smbntpwd[16];
-	uint16 acct_ctrl, logon_divs;
+	uint32 		user_rid, 
+			group_rid;
+	uint8 		smblmpwd[16],
+			smbntpwd[16];
+	uint16 		acct_ctrl, 
+			logon_divs;
 	uint32 hours_len;
-	uint8 *hours;
+	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
+	gid_t 		gid = getegid();
+
+
+	/*
+	 * do a little initialization
+	 */
+	username[0] 	= '\0';
+	domain[0] 	= '\0';
+	nt_username[0] 	= '\0';
+	fullname[0] 	= '\0';
+	homedir[0] 	= '\0';
+	dir_drive[0] 	= '\0';
+	logon_script[0] = '\0';
+	profile_path[0] = '\0';
+	acct_desc[0] 	= '\0';
+	munged_dial[0] 	= '\0';
+	workstations[0] = '\0';
+	 
 
 	if (sampass == NULL || ldap_struct == NULL || entry == NULL) {
 		DEBUG(0, ("init_sam_from_ldap: NULL parameters found!\n"));
@@ -378,10 +422,10 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	get_single_attribute(ldap_struct, entry, "uid", username);
 	DEBUG(2, ("Entry found for user: %s\n", username));
 
+	pstrcpy(samlogon_user, username);
+	
 	pstrcpy(nt_username, username);
 
-	get_single_attribute(ldap_struct, entry, "sambaDomain", domain);
-	if (!domain)
 		pstrcpy(domain, lp_workgroup());
 
 	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
@@ -405,43 +449,53 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	/* recommend that 'gecos' and 'displayName' should refer to the same
 	   * attribute OID.  userFullName depreciated, only used by Samba
 	   * primary rules of LDAP: don't make a new attribute when one is already defined
-	   * that fits your needs; using gecos then displayName then cn rather than 'userFullName'
+	 * that fits your needs; using cn then displayName rather than 'userFullName'
 	 */
 
-	get_single_attribute(ldap_struct, entry, "gecos", fullname);
+	sam_logon_in_ssb = True;
 
-	if (!fullname) {
+	if (!get_single_attribute(ldap_struct, entry, "cn", fullname)) {
 		get_single_attribute(ldap_struct, entry, "displayName", fullname);
-		get_single_attribute(ldap_struct, entry, "cn", fullname);
 	}
 
-	get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive);
-	DEBUG(5,("homeDrive is set to %s\n",dir_drive));
-	if (!*dir_drive) {
+
+	if (!get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive)) {
 		pstrcpy(dir_drive, lp_logon_drive());
+		standard_sub_advanced(-1, username, "", gid, username, dir_drive);
 		DEBUG(5,("homeDrive fell back to %s\n",dir_drive));
+		pdb_set_dir_drive(sampass, dir_drive, False);
 	}
+	else
+		pdb_set_dir_drive(sampass, dir_drive, True);
 
-	get_single_attribute(ldap_struct, entry, "smbHome", homedir);
-	DEBUG(5,("smbHome is set to %s\n",homedir));
-	if (!*homedir) {
+	if (!get_single_attribute(ldap_struct, entry, "smbHome", homedir)) {
 		pstrcpy(homedir, lp_logon_home());
+		standard_sub_advanced(-1, username, "", gid, username, homedir);
 		DEBUG(5,("smbHome fell back to %s\n",homedir));
+		pdb_set_homedir(sampass, homedir, False);
 	}
+	else
+		pdb_set_homedir(sampass, homedir, True);
 
-	get_single_attribute(ldap_struct, entry, "scriptPath", logon_script);
-	DEBUG(5,("scriptPath is set to %s\n",logon_script));
-	if (!*logon_script) {
+	if (!get_single_attribute(ldap_struct, entry, "scriptPath", logon_script)) {
 		pstrcpy(logon_script, lp_logon_script());
+		standard_sub_advanced(-1, username, "", gid, username, logon_script);
 		DEBUG(5,("scriptPath fell back to %s\n",logon_script));
+		pdb_set_logon_script(sampass, logon_script, False);
 	}
+	else
+		pdb_set_logon_script(sampass, logon_script, True);
 
-	get_single_attribute(ldap_struct, entry, "profilePath", profile_path);
-	DEBUG(5,("profilePath is set to %s\n",profile_path));
-	if (!*profile_path) {
+	if (!get_single_attribute(ldap_struct, entry, "profilePath", profile_path)) {
 		pstrcpy(profile_path, lp_logon_path());
+		standard_sub_advanced(-1, username, "", gid, username, profile_path);
 		DEBUG(5,("profilePath fell back to %s\n",profile_path));
+		pdb_set_profile_path(sampass, profile_path, False);
 	}
+	else
+		pdb_set_profile_path(sampass, profile_path, True);
+		
+	sam_logon_in_ssb = False;
 
 	get_single_attribute(ldap_struct, entry, "description", acct_desc);
 	get_single_attribute(ldap_struct, entry, "userWorkstations", workstations);
@@ -452,20 +506,19 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 
 
 	/* These values MAY be in LDAP, but they can also be retrieved through 
-	   *  sys_getpw*() which is how we're doing it (if you use nss_ldap, then 
-	   *  these values will be stored in LDAP as well, but if not, we want the
-	   *  local values to override the LDAP for this anyway 
-	   *  homeDirectory attribute
+	 *  sys_getpw*() which is how we're doing it 
 	 */
 	sys_user = sys_getpwnam(username);
-	if (sys_user == NULL)
+	if (sys_user == NULL) {
+		DEBUG (2,("init_sam_from_ldap: User [%s] does not ave a uid!\n", username));
 		return False;
+	}
 
 
 	/* FIXME: hours stuff should be cleaner */
+	
 	logon_divs = 168;
 	hours_len = 21;
-	hours = malloc(sizeof(hours) * hours_len);
 	memset(hours, 0xff, hours_len);
 
 	get_single_attribute (ldap_struct, entry, "lmPassword", temp);
@@ -504,13 +557,10 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 
 	pdb_set_fullname(sampass, fullname);
 
-	pdb_set_logon_script(sampass, logon_script);
-	pdb_set_profile_path(sampass, profile_path);
-	pdb_set_dir_drive(sampass, dir_drive);
-	pdb_set_homedir(sampass, homedir);
 	pdb_set_acct_desc(sampass, acct_desc);
 	pdb_set_workstations(sampass, workstations);
 	pdb_set_munged_dial(sampass, munged_dial);
+	
 	if (!pdb_set_nt_passwd(sampass, smbntpwd))
 		return False;
 	if (!pdb_set_lanman_passwd(sampass, smblmpwd))
@@ -549,12 +599,6 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, const SAM_ACCO
 	make_a_mod(mods, ldap_state, "uid", pdb_get_username(sampass));
 	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
 
-	/* not sure about using this for the nt_username */
-	make_a_mod(mods, ldap_state, "sambaDomain", pdb_get_domain(sampass));
-
-	slprintf(temp, sizeof(temp) - 1, "%i", pdb_get_uid(sampass));
-	make_a_mod(mods, ldap_state, "uidNumber", temp);
-
 	slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_last_set_time(sampass));
 	make_a_mod(mods, ldap_state, "pwdLastSet", temp);
 
@@ -581,38 +625,45 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, const SAM_ACCO
 
 	make_a_mod(mods, ldap_state, "displayName", pdb_get_fullname(sampass));
 	make_a_mod(mods, ldap_state, "cn", pdb_get_fullname(sampass));
-
-	make_a_mod(mods, ldap_state, "smbHome", pdb_get_homedir(sampass));
-	make_a_mod(mods, ldap_state, "homeDrive", pdb_get_dirdrive(sampass));
-	make_a_mod(mods, ldap_state, "scriptPath", pdb_get_logon_script(sampass));
-	make_a_mod(mods, ldap_state, "profilePath", pdb_get_profile_path(sampass));
 	make_a_mod(mods, ldap_state, "description", pdb_get_acct_desc(sampass));
 	make_a_mod(mods, ldap_state, "userWorkstations", pdb_get_workstations(sampass));
 
-	if ( !sampass->user_rid )
+	/*
+	 * Only updates fields which have been set (not defaults from smb.conf)
+	 */
+
+	if (IS_SAM_SET(sampass, FLAG_SAM_SMBHOME))
+	make_a_mod(mods, ldap_state, "smbHome", pdb_get_homedir(sampass));
+		
+	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE))
+	make_a_mod(mods, ldap_state, "homeDrive", pdb_get_dirdrive(sampass));
+		
+	if (IS_SAM_SET(sampass, FLAG_SAM_LOGONSCRIPT))
+	make_a_mod(mods, ldap_state, "scriptPath", pdb_get_logon_script(sampass));
+
+	if (IS_SAM_SET(sampass, FLAG_SAM_PROFILE))
+	make_a_mod(mods, ldap_state, "profilePath", pdb_get_profile_path(sampass));
+
+
+	if ( !sampass->user_rid)
 		slprintf(temp, sizeof(temp) - 1, "%i", pdb_uid_to_user_rid(pdb_get_uid(sampass)));
 	else
 		slprintf(temp, sizeof(temp) - 1, "%i", sampass->user_rid);
 	make_a_mod(mods, ldap_state, "rid", temp);
 
-	if ( !sampass->group_rid) {
-		GROUP_MAP map;
-	
-		if (get_group_map_from_gid(pdb_get_gid(sampass), &map, MAPPING_WITHOUT_PRIV)) {
-			sid_peek_rid(&map.sid, &sampass->group_rid);
-		}
-		else 
-			sampass->group_rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
-	}
-
-	slprintf(temp, sizeof(temp) - 1, "%i", sampass->group_rid);
+	if ( !sampass->group_rid)
+		slprintf(temp, sizeof(temp) - 1, "%i", pdb_gid_to_group_rid(pdb_get_gid(sampass)));
+	else
+		slprintf(temp, sizeof(temp) - 1, "%i", sampass->group_rid);
 	make_a_mod(mods, ldap_state, "primaryGroupID", temp);
 
 	/* FIXME: Hours stuff goes in LDAP  */
 	pdb_sethexpwd (temp, pdb_get_lanman_passwd(sampass), pdb_get_acct_ctrl(sampass));
 	make_a_mod (mods, ldap_state, "lmPassword", temp);
+	
 	pdb_sethexpwd (temp, pdb_get_nt_passwd(sampass), pdb_get_acct_ctrl(sampass));
 	make_a_mod (mods, ldap_state, "ntPassword", temp);
+	
 	make_a_mod (mods, ldap_state, "acctFlags", pdb_encode_acct_ctrl (pdb_get_acct_ctrl(sampass),
 		NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
@@ -714,8 +765,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT * user, const char *sname)
 		ldap_unbind(ldap_struct);
 		return False;
 	}
-	if (ldap_search_one_user_by_name(ldap_struct, sname, &result) !=
-	    LDAP_SUCCESS)
+	if (ldap_search_one_user_by_name(ldap_struct, sname, &result) != LDAP_SUCCESS)
 	{
 		ldap_unbind(ldap_struct);
 		return False;
@@ -916,7 +966,8 @@ BOOL pdb_add_sam_account(const SAM_ACCOUNT * newpwd)
 	LDAPMessage *result;
 	pstring dn;
 	LDAPMod **mods;
-	int ldap_op = LDAP_MOD_ADD;
+	int 		ldap_op;
+	uint32		num_result;
 
 	if (!ldap_open_connection(&ldap_struct))	/* open a connection to the server */
 	{
@@ -928,16 +979,6 @@ BOOL pdb_add_sam_account(const SAM_ACCOUNT * newpwd)
 		ldap_unbind(ldap_struct);
 		return False;
 	}
-
-	if (pdb_get_username(newpwd) != NULL) {
-		slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", 
-			pdb_get_username(newpwd), lp_ldap_suffix ());
-	}
-	else
-	{
-		return False;
-	}
-
 
 	rc = ldap_search_one_user_by_name (ldap_struct, pdb_get_username(newpwd), &result);
 
@@ -952,10 +993,18 @@ BOOL pdb_add_sam_account(const SAM_ACCOUNT * newpwd)
 
 	slprintf (filter, sizeof (filter) - 1, "uid=%s", pdb_get_username(newpwd));
 	rc = ldap_search_one_user(ldap_struct, filter, &result);
-	if (ldap_count_entries(ldap_struct, result) == 1)
-	{
+	num_result = ldap_count_entries(ldap_struct, result);
+	
+	if (num_result > 1) {
+		DEBUG (0, ("More than one user with that uid exists: bailing out!\n"));
+		return False;
+	}
+	
+	/* Check if we need to update an existing entry */
+	if (num_result == 1) {
 		char *tmp;
 		LDAPMessage *entry;
+		
 		DEBUG(3,("User exists without samba properties: adding them\n"));
 		ldap_op = LDAP_MOD_REPLACE;
 		entry = ldap_first_entry (ldap_struct, result);
@@ -963,10 +1012,11 @@ BOOL pdb_add_sam_account(const SAM_ACCOUNT * newpwd)
 		slprintf (dn, sizeof (dn) - 1, "%s", tmp);
 		ldap_memfree (tmp);
 	}
-	else
-	{
-		DEBUG (3, ("More than one user with that uid exists: bailing out!\n"));
-		return False;
+	else {
+		/* Check if we need to add an entry */
+		DEBUG(3,("Adding new user\n"));
+		ldap_op = LDAP_MOD_ADD;
+		slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", pdb_get_username(newpwd), lp_ldap_suffix ());
 	}
 
 	ldap_msgfree(result);

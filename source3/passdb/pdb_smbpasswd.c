@@ -34,7 +34,7 @@
 struct smb_passwd
 {
         uid_t smb_userid;     /* this is actually the unix uid_t */
-        const char *smb_name;     /* username string */
+        char *smb_name;     /* username string */
 
         const unsigned char *smb_passwd; /* Null if no password */
         const unsigned char *smb_nt_passwd; /* Null if no password */
@@ -1149,7 +1149,7 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 	ZERO_STRUCTP(smb_pw);
 
 	smb_pw->smb_userid=uid;
-	smb_pw->smb_name=pdb_get_username(sampass);
+	smb_pw->smb_name=(char*)pdb_get_username(sampass);
 
 	smb_pw->smb_passwd=pdb_get_lanman_passwd(sampass);
 	smb_pw->smb_nt_passwd=pdb_get_nt_passwd(sampass);
@@ -1234,7 +1234,7 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time);
 	pdb_set_domain (sam_pass, lp_workgroup());
 	
-	pdb_set_dir_drive     (sam_pass, lp_logon_drive());
+	pdb_set_dir_drive     (sam_pass, lp_logon_drive(), False);
 
 #if 0	/* JERRY */
 	/* the smbpasswd format doesn't have a must change time field, so
@@ -1250,19 +1250,19 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 		
 		pstrcpy(str, lp_logon_path());
 		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
-		pdb_set_profile_path(sam_pass, str);
+		pdb_set_profile_path(sam_pass, str, False);
 		
 		pstrcpy(str, lp_logon_home());
 		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
-		pdb_set_homedir(sam_pass, str);
+		pdb_set_homedir(sam_pass, str, False);
 		
 		pstrcpy(str, lp_logon_drive());
 		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
-		pdb_set_dir_drive(sam_pass, str);
+		pdb_set_dir_drive(sam_pass, str, False);
 		
 		pstrcpy(str, lp_logon_script());
 		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
-		pdb_set_logon_script(sam_pass, str);
+		pdb_set_logon_script(sam_pass, str, False);
 		
 	} else {
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
