@@ -254,6 +254,23 @@ PyObject *string_ptr_to_python(TALLOC_CTX *mem_ctx, char *obj)
 #define dom_sid2_ptr_to_python dom_sid_ptr_to_python
 #define dom_sid2_ptr_from_python dom_sid_ptr_from_python
 
+void DATA_BLOB_from_python(TALLOC_CTX *mem_ctx, DATA_BLOB *s,
+			   PyObject *obj, char name)
+{
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return;
+	}
+
+	if (!PyString_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting string value for key '%s'", name);
+		return;
+	}
+
+	s->length = PyString_Size(obj);
+	s->data = PyString_AsString(obj);
+}
+
 void DATA_BLOB_ptr_from_python(TALLOC_CTX *mem_ctx, DATA_BLOB **s, 
 			       PyObject *obj, char *name)
 {
