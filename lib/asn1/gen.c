@@ -1,4 +1,7 @@
-/* $Id$ */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,21 +13,33 @@ FILE *headerfile, *codefile, *logfile;
 
 #define STEM "asn1"
 
+static char *orig_filename;
+
 void
 init_generate (char *filename)
 {
+    orig_filename = filename;
     headerfile = fopen (STEM ".h", "w");
+    if (headerfile == NULL) {
+	fprintf (stderr, "Could not open " STEM ".h" "\n");
+	exit (1);
+    }
     fprintf (headerfile,
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n",
 	     filename);
     logfile = fopen(STEM "_files", "w");
+    if (logfile == NULL) {
+	fprintf (stderr, "Could not open " STEM "_files" "\n");
+	exit (1);
+    }
 }
 
 void
 close_generate ()
 {
   fclose (headerfile);
+  fprintf (logfile, "\n");
   fclose (logfile);
 }
 
@@ -865,6 +880,10 @@ generate_type (Symbol *s)
     char *filename = malloc(strlen(STEM) + strlen(s->gen_name) + 4);
     sprintf(filename, "%s_%s.c", STEM, s->gen_name);
     codefile = fopen (filename, "w");
+    if (codefile == NULL) {
+	fprintf (stderr, "Could not create %s\n", filename);
+	exit (1);
+    }
     fprintf(logfile, "%s ", filename);
     free(filename);
     fprintf (codefile, 
@@ -875,7 +894,7 @@ generate_type (Symbol *s)
 	     "#include <time.h>\n"
 	     "#include <der.h>\n"
 	     "#include <" STEM ".h>\n\n",
-	     filename);
+	     orig_filename);
     generate_type_header (s);
     generate_type_encode (s);
     generate_type_decode (s);
