@@ -38,6 +38,7 @@
 
 #ifdef _SAMBA_BUILD_
 #include "system/filesys.h"
+#include "system/time.h"
 #endif
 
 static const char *ldb_url;
