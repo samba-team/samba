@@ -154,7 +154,7 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/util_str.o lib/util_unistr.o \
 		lib/util_file.o \
 		lib/util_sock.o lib/util_sec.o lib/util_array.o \
-		lib/vagent.o lib/util_hnd.o \
+		lib/vagent.o \
 		tdb/tdb.o
 
 STUB_UID_OBJ = lib/stub_uid.o
@@ -173,11 +173,12 @@ LIBSMB_OBJ = libsmb/clientgen.o \
              libsmb/smberr.o libsmb/credentials.o \
 		libsmb/pwd_cache.o \
 	     lib/crc32.o lib/md5.o lib/hmacmd5.o \
-		passdb/smbpassfile.o \
+		lib/util_hnd.o passdb/smbpassfile.o \
                  rpc_parse/parse_creds.o \
                 rpc_parse/parse_net.o \
 		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
                  rpc_parse/parse_vuid.o \
+           lib/vuser.o lib/vuser_db.o \
 		 rpc_parse/parse_misc.o
 
 RPC_SRVUTIL_OBJ = rpc_server/srv_pipe_srv.o \
@@ -254,8 +255,6 @@ SIDDB_OBJ = lib/sids.o
 PROFILE_OBJ = profile/profile.o
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
-		lib/vuser.o \
-		lib/vuser_db.o \
             lib/set_uid.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
             smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
@@ -272,8 +271,6 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
 
 MSRPCD_OBJ = msrpc/msrpcd.o \
 		msrpc/msrpcd_process.o \
-		lib/vuser.o \
-		lib/vuser_db.o \
 		lib/set_vuid.o \
 		lib/set_uid.o
 
@@ -431,13 +428,12 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_subnetdb.o nmbd/nmbd_winsproxy.o nmbd/nmbd_winsserver.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
-NMBD_OBJ = $(NMBD_OBJ1) lib/vuser.o lib/vuser_db.o
+NMBD_OBJ = $(NMBD_OBJ1) 
 NMBD_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(UBIQXLIB)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
            rpc_server/srv_lookup.o \
-           lib/vuser.o lib/vuser_db.o \
            $(SIDDB_OBJ) \
            $(UNIXPASSDB_OBJ) \
            $(STUB_UID_OBJ)
@@ -447,52 +443,21 @@ SMBRUN_OBJ = utils/smbrun.o
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o
 
-MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o \
-		rpc_parse/parse_prs.o \
-		rpc_parse/parse_vuid.o \
-		rpc_parse/parse_net.o \
-		rpc_parse/parse_misc.o \
-		libsmb/smbdes.o \
-           lib/vuser.o lib/vuser_db.o
+MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o
 
-MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o \
-		rpc_parse/parse_prs.o \
-		rpc_parse/parse_vuid.o \
-		rpc_parse/parse_net.o \
-		rpc_parse/parse_misc.o \
-		libsmb/smbdes.o \
-           lib/vuser.o lib/vuser_db.o
+MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o
 
 STATUS_OBJ = utils/status.o $(LIBSTATUS_OBJ) $(LOCKING_OBJ) \
-		rpc_parse/parse_prs.o \
-		rpc_parse/parse_vuid.o \
-		rpc_parse/parse_net.o \
-		rpc_parse/parse_misc.o \
-		libsmb/smbdes.o \
-           lib/vuser.o lib/vuser_db.o  \
              $(PROFILE_OBJ)  $(STUB_UID_OBJ)
 
-TESTPARM_OBJ = utils/testparm.o \
-		rpc_parse/parse_prs.o \
-		rpc_parse/parse_vuid.o \
-		rpc_parse/parse_net.o \
-		rpc_parse/parse_misc.o \
-		libsmb/smbdes.o \
-		lib/vuser.o lib/vuser_db.o 
+TESTPARM_OBJ = utils/testparm.o
 
-TESTPRNS_OBJ = utils/testprns.o $(PRINTING_OBJ) \
-		rpc_parse/parse_prs.o \
-		rpc_parse/parse_vuid.o \
-		rpc_parse/parse_net.o \
-		rpc_parse/parse_misc.o \
-		libsmb/smbdes.o \
-           lib/vuser.o lib/vuser_db.o 
+TESTPRNS_OBJ = utils/testprns.o printing/pcap.o printing/print_svid.o
 
 SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
 		libsmb/clienttrust.o \
            rpc_server/srv_lookup.o \
 		rpc_client/cli_netlogon_sync.o \
-           lib/vuser.o lib/vuser_db.o  \
            $(SIDDB_OBJ) $(STUB_UID_OBJ)
 SMBPASSWD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
@@ -518,7 +483,6 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 		rpcclient/cmd_spoolss.o \
 		rpcclient/cmd_eventlog.o \
            $(SIDDB_OBJ) \
-           lib/vuser.o lib/vuser_db.o  \
 		$(STUB_UID_OBJ)
 RPCCLIENT_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
@@ -526,8 +490,7 @@ SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o
 
-CLIENT_OBJ = client/client.o client/clitar.o  \
-           lib/vuser.o lib/vuser_db.o 
+CLIENT_OBJ = client/client.o client/clitar.o
 CLIENT_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB)
 
 MOUNT_OBJ = client/smbmount.o client/clientutil.o \
@@ -542,23 +505,11 @@ UMOUNT_OBJ = client/smbumount.o \
 NMB_AGENT_OBJ = utils/nmb-agent.o \
                  $(RPC_PARSE_OBJ2)
 
-NMBLOOKUP_OBJ = utils/nmblookup.o \
-		rpc_parse/parse_prs.o \
-		rpc_parse/parse_vuid.o \
-		rpc_parse/parse_net.o \
-		rpc_parse/parse_misc.o \
-		libsmb/smbdes.o \
-           lib/vuser.o lib/vuser_db.o
+NMBLOOKUP_OBJ = utils/nmblookup.o
 
 #$(RPC_PARSE_OBJ2)
 
-DEBUG2HTML_OBJ = utils/debug2html.o \
-		rpc_parse/parse_prs.o \
-		rpc_parse/parse_vuid.o \
-		rpc_parse/parse_net.o \
-		rpc_parse/parse_misc.o \
-		libsmb/smbdes.o \
-           lib/vuser.o lib/vuser_db.o
+DEBUG2HTML_OBJ = utils/debug2html.o 
 
 SMB_AGENT_OBJ = utils/smb-agent.o  \
 			$(RPC_PARSE_OBJ2) rpc_client/cli_use.o

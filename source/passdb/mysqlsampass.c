@@ -51,10 +51,10 @@ void *mysql_fill_sam_passwd( MYSQL_ROW *row )
 
 	/* 'Researched' from sampass.c =) */
 
-	pstrcpy(logon_script , lp_logon_script       (UID_FIELD_INVALID));
-	pstrcpy(profile_path , lp_logon_path         (UID_FIELD_INVALID));
-	pstrcpy(home_drive   , lp_logon_drive        (UID_FIELD_INVALID));
-	pstrcpy(home_dir     , lp_logon_home         (UID_FIELD_INVALID));
+	pstrcpy(logon_script , lp_logon_script       (NULL));
+	pstrcpy(profile_path , lp_logon_path         (NULL));
+	pstrcpy(home_drive   , lp_logon_drive        (NULL));
+	pstrcpy(home_dir     , lp_logon_home         (NULL));
 	pstrcpy(workstations , "");
 
 	user->full_name    = full_name;

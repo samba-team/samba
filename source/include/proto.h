@@ -813,7 +813,7 @@ BOOL check_vuser_ok(struct uid_cache *cache, user_struct *vuser,int snum);
 /*The following definitions come from  lib/vuser_db.c  */
 
 BOOL tdb_delete_vuid( const vuser_key *uk);
-BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct *usr);
+BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
 BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
 BOOL vuid_init_db(void);
 
@@ -1675,10 +1675,10 @@ int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
 int lp_ldap_port(void);
 int lp_ldap_protocol_version(void);
-char *lp_logon_script(const vuser_key* );
-char *lp_logon_path(const vuser_key* );
-char *lp_logon_drive(const vuser_key* );
-char *lp_logon_home(const vuser_key* );
+char *lp_logon_script(const user_struct* );
+char *lp_logon_path(const user_struct* );
+char *lp_logon_drive(const user_struct* );
+char *lp_logon_home(const user_struct* );
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );

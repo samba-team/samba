@@ -65,14 +65,21 @@ BOOL tdb_delete_vuid( const vuser_key *uk)
 	return True;
 }
 
-BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct *usr)
+BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr)
 {
 	prs_struct key;
 	prs_struct data;
 	vuser_key k = *uk;
 
-	ZERO_STRUCTP(usr);
-
+	if (usr != NULL)
+	{
+		(*usr) = (user_struct *)malloc(sizeof(**usr));
+		if ((*usr) == NULL)
+		{
+			return False;
+		}
+		ZERO_STRUCTP((*usr));
+	}
 	if (tdb == NULL)
 	{
 		if (!vuid_init_db())
@@ -93,7 +100,7 @@ BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct *usr)
 
 	if (usr != NULL)
 	{
-		if (!vuid_io_user_struct("usr", usr, &data, 0))
+		if (!vuid_io_user_struct("usr", (*usr), &data, 0))
 		{
 			prs_free_data(&key);
 			prs_free_data(&data);

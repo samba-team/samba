@@ -46,7 +46,7 @@ END {
 
 /^FN_VUSER_STRING/ {
   split($0,a,"[,()]")
-  printf "char *%s(const vuser_key* );\n", a[2]
+  printf "char *%s(const user_struct* );\n", a[2]
 }
 
 /^FN_LOCAL_BOOL/ {

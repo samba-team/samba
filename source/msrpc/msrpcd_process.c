@@ -361,7 +361,6 @@ BOOL msrpcd_init(int c, rpcsrv_struct **l)
 	if ((*l) == NULL)
 	{
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 		return False;
 	}
 
@@ -388,7 +387,6 @@ BOOL msrpcd_init(int c, rpcsrv_struct **l)
 	}
 
 	vuid_free_user_struct(vuser);
-	safe_free(vuser);
 
 	return True;
 }

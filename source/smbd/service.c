@@ -422,7 +422,6 @@ connection_struct *make_connection(char *service,char *user,
 		pstrcpy(s,lp_pathname(snum));
 		standard_sub(conn,vuser, s);
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 		string_set(&conn->connectpath,s);
 		DEBUG(3,("Connect path is %s\n",s));
 	}
@@ -461,7 +460,6 @@ connection_struct *make_connection(char *service,char *user,
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
 		standard_sub(conn,vuser, cmd);
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 		DEBUG(5,("cmd=%s\n",cmd));
 		smbrun(cmd,NULL,False);
 	}
@@ -520,7 +518,6 @@ connection_struct *make_connection(char *service,char *user,
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
 		standard_sub(conn,vuser, cmd);
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 		smbrun(cmd,NULL,False);
 	}
 	
@@ -639,7 +636,6 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
 		standard_sub(conn,vuser, cmd);
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 		smbrun(cmd,NULL,False);
 		unbecome_user();
 	}
@@ -653,7 +649,6 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
 		standard_sub(conn,vuser, cmd);
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 		smbrun(cmd,NULL,False);
 	}
 	

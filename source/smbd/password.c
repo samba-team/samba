@@ -252,7 +252,6 @@ BOOL authorise_login(int snum, char *user, char *domain,
 			if (!user_list)
 			{
 				vuid_free_user_struct(vuser);
-				safe_free(vuser);
 				return False;
 			}
 
@@ -337,7 +336,6 @@ BOOL authorise_login(int snum, char *user, char *domain,
 			tdb_store_vuid(key, vuser);
 		}
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 
 	} /* not guest only */
 

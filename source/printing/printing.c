@@ -99,7 +99,6 @@ static char *build_print_command(connection_struct *conn, const vuser_key *key,
   		user_struct *vuser = get_valid_user_struct(key);
 		standard_sub(conn, vuser, syscmd);
   		vuid_free_user_struct(vuser);
-  		safe_free(vuser);
   	}
 
 	return (syscmd);
@@ -1002,7 +1001,6 @@ int get_printqueue(int snum, connection_struct *conn, const vuser_key *key,
   		user_struct *vuser = get_valid_user_struct(key);
 		standard_sub(conn, vuser, syscmd);
   		vuid_free_user_struct(vuser);
-  		safe_free(vuser);
   	}
 
 	slprintf(outfile,sizeof(outfile)-1, "%s/lpq.%08x",tmpdir(),str_checksum(syscmd));
@@ -1097,7 +1095,6 @@ void del_printqueue(connection_struct *conn,const vuser_key *key,
   		user_struct *vuser = get_valid_user_struct(key);
 		standard_sub(conn, vuser, syscmd);
   		vuid_free_user_struct(vuser);
-  		safe_free(vuser);
   	}
 
   ret = smbrun(syscmd,NULL,False);
@@ -1141,7 +1138,6 @@ void status_printjob(connection_struct *conn,const vuser_key *key,
   		user_struct *vuser = get_valid_user_struct(key);
 		standard_sub(conn, vuser, syscmd);
   		vuid_free_user_struct(vuser);
-  		safe_free(vuser);
   	}
 
   ret = smbrun(syscmd,NULL,False);
@@ -1201,7 +1197,6 @@ uint32 status_printqueue(connection_struct *conn,const vuser_key *key,
   		user_struct *vuser = get_valid_user_struct(key);
 		standard_sub(conn, vuser, syscmd);
   		vuid_free_user_struct(vuser);
-  		safe_free(vuser);
   	}
 
 

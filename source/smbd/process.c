@@ -447,7 +447,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         {
           pstrcpy( sesssetup_user, vuser->requested_name);
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 	}
       }
 

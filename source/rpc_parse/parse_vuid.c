@@ -147,4 +147,5 @@ void vuid_free_user_struct(user_struct *r_u)
 		free(r_u->groups);
 		r_u->groups = NULL;
 	}
+	safe_free(r_u);
 }

@@ -380,7 +380,6 @@ BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
 	}
 	memcpy(usr_sess_key, vuser->usr.user_sess_key, 16);
 	vuid_free_user_struct(vuser);
-	safe_free(vuser);
 	return True;
 }
 

@@ -83,7 +83,6 @@ BOOL become_userk(connection_struct *conn, const vuser_key *key)
 	{
 		DEBUG(4,("Skipping become_user - already user\n"));
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 		return(True);
 	}
 
@@ -94,7 +93,6 @@ BOOL become_userk(connection_struct *conn, const vuser_key *key)
 	if((vuser != NULL) && !check_vuser_ok(&conn->uid_cache, vuser, snum))
 	{
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 		return False;
 	}
 
@@ -145,7 +143,6 @@ BOOL become_userk(connection_struct *conn, const vuser_key *key)
 	}
 	
 	vuid_free_user_struct(vuser);
-	safe_free(vuser);
 
 	return become_unix_sec_ctx(key, conn, uid, gid, ngroups, groups);
 }

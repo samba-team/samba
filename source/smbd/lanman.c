@@ -89,7 +89,6 @@ static int CopyExpanded(connection_struct *conn,  const vuser_key *key,
 	vuser = get_valid_user_struct(key);
 	standard_sub(conn,vuser, buf);
 	vuid_free_user_struct(vuser);
-	safe_free(vuser);
 	StrnCpy(*dst,buf,*n);
 	l = strlen(*dst) + 1;
 	(*dst) += l;
@@ -119,7 +118,6 @@ static int StrlenExpanded(connection_struct *conn,
 	vuser = get_valid_user_struct(key);
 	standard_sub(conn,vuser, buf);
 	vuid_free_user_struct(vuser);
-	safe_free(vuser);
 	return strlen(buf) + 1;
 }
 
@@ -2015,7 +2013,6 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 	StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
 	p2 = skip_string(p2,1);
 	vuid_free_user_struct(vuser);
-	safe_free(vuser);
 
       }
     }
@@ -2313,7 +2310,6 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		default:
 		{
 			vuid_free_user_struct(vuser);
-			safe_free(vuser);
 			return False;
 		}
 	}
@@ -2321,7 +2317,6 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	if (strcmp(p2,str2) != 0)
 	{
 		vuid_free_user_struct(vuser);
-		safe_free(vuser);
 		return False;
 	}
 
@@ -2364,7 +2359,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, lp_logon_path(&key));
+		pstrcpy(p2, lp_logon_path(vuser));
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
@@ -2400,7 +2395,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2,lp_logon_path(&key));
+		pstrcpy(p2,lp_logon_path(vuser));
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
@@ -2441,7 +2436,6 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	SSVAL(*rparam,4,*rdata_len);	/* is this right?? */
 
 	vuid_free_user_struct(vuser);
-	safe_free(vuser);
 
 	return(True);
 }
@@ -2555,10 +2549,9 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
 
 /* JHT - By calling lp_logon_script() and standard_sub() we have */
 /* made sure all macros are fully substituted and available */
-    logon_script = lp_logon_script(&key);
+    logon_script = lp_logon_script(vuser);
     standard_sub( conn, vuser, logon_script );
 	vuid_free_user_struct(vuser);
-	safe_free(vuser);
     PACKS(&desc,"z", logon_script);		/* script path */
 /* End of JHT mods */
 
