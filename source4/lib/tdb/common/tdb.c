@@ -1762,7 +1762,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	TDB_CONTEXT *tdb;
 	struct stat st;
 	int rev = 0, locked = 0;
-	unsigned char *vp;
+	uint8_t *vp;
 	u32 vertest;
 
 	if (!(tdb = calloc(1, sizeof *tdb))) {
@@ -1841,7 +1841,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		}
 		rev = (tdb->flags & TDB_CONVERT);
 	}
-	vp = (unsigned char *)&tdb->header.version;
+	vp = (uint8_t *)&tdb->header.version;
 	vertest = (((u32)vp[0]) << 24) | (((u32)vp[1]) << 16) |
 		  (((u32)vp[2]) << 8) | (u32)vp[3];
 	tdb->flags |= (vertest==TDB_VERSION) ? TDB_BIGENDIAN : 0;

@@ -124,7 +124,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 						  const char *server, 
 						  const char *setup_creds_as,
 						  uint16_t sec_chan,
-						  const unsigned char *trust_passwd,
+						  const uint8_t *trust_passwd,
 						  BOOL *retry)
 {
 	struct in_addr dest_ip;
@@ -235,7 +235,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 				      struct in_addr *ip, 
 				      const char *setup_creds_as, 
 				      uint16_t sec_chan,
-				      const unsigned char *trust_passwd)
+				      const uint8_t *trust_passwd)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	BOOL retry = True;
@@ -266,7 +266,7 @@ static NTSTATUS find_connect_dc(struct cli_state **cli,
 				 const char *domain,
 				 const char *setup_creds_as,
 				 uint16_t sec_chan,
-				 unsigned char *trust_passwd, 
+				 uint8_t *trust_passwd, 
 				 time_t last_change_time)
 {
 	struct in_addr dc_ip;
@@ -294,7 +294,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 				       auth_serversupplied_info **server_info, 
 				       const char *server, const char *setup_creds_as,
 				       uint16_t sec_chan,
-				       unsigned char trust_passwd[16],
+				       uint8_t trust_passwd[16],
 				       time_t last_change_time)
 {
 	fstring remote_machine;
@@ -399,7 +399,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	char *password_server;
-	unsigned char trust_passwd[16];
+	uint8_t trust_passwd[16];
 	time_t last_change_time;
 	const char *domain = lp_workgroup();
 
@@ -477,7 +477,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 					   auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	unsigned char trust_md4_password[16];
+	uint8_t trust_md4_password[16];
 	char *trust_password;
 	time_t last_change_time;
 	DOM_SID sid;

@@ -155,7 +155,7 @@ static struct cmd_line *get_cmd_line(int fd)
 {
   struct cmd_line *cl = (CMD_LINE *)smb_xmalloc(sizeof(CMD_LINE));
   int i = 0, rc;
-  unsigned char ch;
+  uint8_t ch;
 
   cl->len = INIT_ALLOC;
 
@@ -662,7 +662,7 @@ static CMD_FILE *cmd_file_create(const char *file)
  * Sec Desc print functions 
  */
 
-char *str_type(unsigned char type);
+char *str_type(uint8_t type);
 
 static int nt_apply_reg_command_file(REG_HANDLE *r, const char *cmd_file_name)
 {

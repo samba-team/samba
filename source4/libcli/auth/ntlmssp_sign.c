@@ -27,16 +27,16 @@
 #define SRV_SIGN "session key to server-to-client signing key magic constant"
 #define SRV_SEAL "session key to server-to-client sealing key magic constant"
 
-static void NTLMSSPcalc_ap( unsigned char *hash, unsigned char *data, int len)
+static void NTLMSSPcalc_ap( uint8_t *hash, uint8_t *data, int len)
 {
-    unsigned char index_i = hash[256];
-    unsigned char index_j = hash[257];
+    uint8_t index_i = hash[256];
+    uint8_t index_j = hash[257];
     int ind;
 
     for (ind = 0; ind < len; ind++)
     {
-        unsigned char tc;
-        unsigned char t;
+        uint8_t tc;
+        uint8_t t;
 
         index_i++;
         index_j += hash[index_i];
@@ -53,19 +53,19 @@ static void NTLMSSPcalc_ap( unsigned char *hash, unsigned char *data, int len)
     hash[257] = index_j;
 }
 
-static void calc_hash(unsigned char hash[258], const char *key, size_t key_len)
+static void calc_hash(uint8_t hash[258], const char *key, size_t key_len)
 {
-	unsigned char j = 0;
+	uint8_t j = 0;
 	int ind;
 
 	for (ind = 0; ind < 256; ind++)
 	{
-		hash[ind] = (unsigned char)ind;
+		hash[ind] = (uint8_t)ind;
 	}
 
 	for (ind = 0; ind < 256; ind++)
 	{
-		unsigned char tc;
+		uint8_t tc;
 
 		j += (hash[ind] + key[ind%key_len]);
 
@@ -97,7 +97,7 @@ static void calc_hash(unsigned char hash[258], const char *key, size_t key_len)
 
 
 
-static void calc_ntlmv2_hash(unsigned char hash[258], unsigned char subkey[16],
+static void calc_ntlmv2_hash(uint8_t hash[258], uint8_t subkey[16],
 			     DATA_BLOB session_key, 
 			     const char *constant)
 {
@@ -365,7 +365,7 @@ NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
 */
 NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 {
-	unsigned char p24[24];
+	uint8_t p24[24];
 	ZERO_STRUCT(p24);
 
 	DEBUG(3, ("NTLMSSP Sign/Seal - Initialising with flags:\n"));

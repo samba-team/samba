@@ -80,7 +80,7 @@ static void usage(void)
 /****************************************************************************
 turn a node status flags field into a string
 ****************************************************************************/
-static char *node_status_flags(unsigned char flags)
+static char *node_status_flags(uint8_t flags)
 {
 	static fstring ret;
 	fstrcpy(ret,"");

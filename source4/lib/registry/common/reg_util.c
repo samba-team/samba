@@ -55,7 +55,7 @@ char *reg_val_data_string(REG_VAL *v)
 	  asciip = ret;
 	  for (i=0; i<reg_val_size(v); i++) { 
 		  int str_rem = reg_val_size(v) * 3 - (asciip - ret);
-		  asciip += snprintf(asciip, str_rem, "%02x", *(unsigned char *)(reg_val_data_blk(v)+i));
+		  asciip += snprintf(asciip, str_rem, "%02x", *(uint8_t *)(reg_val_data_blk(v)+i));
 		  if (i < reg_val_size(v) && str_rem > 0)
 			  *asciip = ' '; asciip++;	
 	  }
