@@ -19,6 +19,7 @@ libkrb5_a_SOURCES = address.c asn1_glue.c auth_context.c \
 	store_fd.c store_mem.c str2key.c net_write.c net_read.c recvauth.c \
 	verify_user.c generate_subkey.c generate_seq_number.c
 
+CLEANFILES = config_file.c
 libkrb5_a_LIBADD = error/error.o error/krb5_err.o error/asn1_err.o error/hdb_err.o
 
 config_file.c: config_file.y
