@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000, 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,6 +63,25 @@ krb5_eai_to_heim_errno(int eai_errno)
 	return HEIM_EAI_SOCKTYPE;
     case EAI_SYSTEM:
 	return errno;
+    default:
+	return HEIM_EAI_UNKNOWN; /* XXX */
+    }
+}
+
+krb5_error_code
+krb5_h_errno_to_heim_errno(int eai_errno)
+{
+    switch(eai_errno) {
+    case 0:
+	return 0;
+    case HOST_NOT_FOUND:
+	return HEIM_EAI_NONAME;
+    case TRY_AGAIN:
+	return HEIM_EAI_AGAIN;
+    case NO_RECOVERY:
+	return HEIM_EAI_FAIL;
+    case NO_DATA:
+	return HEIM_EAI_NONAME;
     default:
 	return HEIM_EAI_UNKNOWN; /* XXX */
     }
