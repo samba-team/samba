@@ -768,20 +768,22 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   SearchEmpty:
 
-	if (numentries == 0 || !ok) {
-		SCVAL(outbuf,smb_rcls,ERRDOS);
-		SSVAL(outbuf,smb_err,ERRnofiles);
-		dptr_close(&dptr_num);
-	}
-
 	/* If we were called as SMBffirst with smb_search_id == NULL
 		and no entries were found then return error and close dirptr 
 		(X/Open spec) */
 
 	if(ok && expect_close && numentries == 0 && status_len == 0) {
-		SCVAL(outbuf,smb_rcls,ERRDOS);
-		SSVAL(outbuf,smb_err,ERRnofiles);
+		if (Protocol < PROTOCOL_NT1) {
+			SCVAL(outbuf,smb_rcls,ERRDOS);
+			SSVAL(outbuf,smb_err,ERRnofiles);
+		}
 		/* Also close the dptr - we know it's gone */
+		dptr_close(&dptr_num);
+	} else if (numentries == 0 || !ok) {
+		if (Protocol < PROTOCOL_NT1) {
+			SCVAL(outbuf,smb_rcls,ERRDOS);
+			SSVAL(outbuf,smb_err,ERRnofiles);
+		}
 		dptr_close(&dptr_num);
 	}
 
