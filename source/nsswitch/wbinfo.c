@@ -1074,7 +1074,7 @@ int main(int argc, char **argv)
 				goto done;
 			}
 			break;
-		case 'P':
+		case 'p':
 			if (!wbinfo_ping()) {
 				d_printf("could not ping winbindd!\n");
 				goto done;
