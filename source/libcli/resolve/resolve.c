@@ -27,17 +27,17 @@
 struct resolve_state {
 	struct nbt_name name;
 	const char **methods;
-	struct smbcli_composite *req;
+	struct composite_context *req;
 	const char *reply_addr;
 };
 
-static struct smbcli_composite *setup_next_method(struct smbcli_composite *c);
+static struct composite_context *setup_next_method(struct composite_context *c);
 
 /* pointers to the resolver backends */
 static const struct resolve_method {
 	const char *name;
-	struct smbcli_composite *(*send_fn)(struct nbt_name *, struct event_context *);
-	NTSTATUS (*recv_fn)(struct smbcli_composite *, TALLOC_CTX *, const char **);
+	struct composite_context *(*send_fn)(struct nbt_name *, struct event_context *);
+	NTSTATUS (*recv_fn)(struct composite_context *, TALLOC_CTX *, const char **);
 } methods[] = {
 	{ "bcast", resolve_name_bcast_send, resolve_name_bcast_recv },
 	{ "wins",  resolve_name_wins_send, resolve_name_wins_recv },
@@ -63,9 +63,9 @@ static const struct resolve_method *find_method(const char *name)
 /*
   handle completion of one name resolve method
 */
-static void resolve_handler(struct smbcli_composite *req)
+static void resolve_handler(struct composite_context *req)
 {
-	struct smbcli_composite *c = req->async.private;
+	struct composite_context *c = req->async.private;
 	struct resolve_state *state = talloc_get_type(c->private, struct resolve_state);
 	const struct resolve_method *method = find_method(state->methods[0]);
 
@@ -90,10 +90,10 @@ static void resolve_handler(struct smbcli_composite *req)
 }
 
 
-static struct smbcli_composite *setup_next_method(struct smbcli_composite *c)
+static struct composite_context *setup_next_method(struct composite_context *c)
 {
 	struct resolve_state *state = talloc_get_type(c->private, struct resolve_state);
-	struct smbcli_composite *req = NULL;
+	struct composite_context *req = NULL;
 
 	do {
 		const struct resolve_method *method = find_method(state->methods[0]);
@@ -114,13 +114,13 @@ static struct smbcli_composite *setup_next_method(struct smbcli_composite *c)
 /*
   general name resolution - async send
  */
-struct smbcli_composite *resolve_name_send(struct nbt_name *name, struct event_context *event_ctx)
+struct composite_context *resolve_name_send(struct nbt_name *name, struct event_context *event_ctx)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct resolve_state *state;
 	NTSTATUS status;
 
-	c = talloc_zero(NULL, struct smbcli_composite);
+	c = talloc_zero(NULL, struct composite_context);
 	if (c == NULL) goto failed;
 
 	state = talloc(c, struct resolve_state);
@@ -156,12 +156,12 @@ failed:
 /*
   general name resolution method - recv side
  */
-NTSTATUS resolve_name_recv(struct smbcli_composite *c, 
+NTSTATUS resolve_name_recv(struct composite_context *c, 
 			   TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
 	NTSTATUS status;
 
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct resolve_state *state = talloc_get_type(c->private, struct resolve_state);
@@ -177,6 +177,6 @@ NTSTATUS resolve_name_recv(struct smbcli_composite *c,
  */
 NTSTATUS resolve_name(struct nbt_name *name, TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
-	struct smbcli_composite *c = resolve_name_send(name, NULL);
+	struct composite_context *c = resolve_name_send(name, NULL);
 	return resolve_name_recv(c, mem_ctx, reply_addr);
 }

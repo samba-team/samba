@@ -74,7 +74,7 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
 static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_event *fde, 
 					struct timeval t, uint16_t flags)
 {
-	struct smbcli_composite *c = talloc_get_type(fde->private, struct smbcli_composite);
+	struct composite_context *c = talloc_get_type(fde->private, struct composite_context);
 	struct clisocket_connect *conn = talloc_get_type(c->private, struct clisocket_connect);
 	int i;
 	
@@ -153,14 +153,14 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
 
   this is the async send side of the interface
 */
-struct smbcli_composite *smbcli_sock_connect_send(struct smbcli_socket *sock, 
+struct composite_context *smbcli_sock_connect_send(struct smbcli_socket *sock, 
 						  const char *host_addr, int port)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 	struct clisocket_connect *conn;
 	int i;
 
-	c = talloc_zero(sock, struct smbcli_composite);
+	c = talloc_zero(sock, struct composite_context);
 	if (c == NULL) return NULL;
 
 	c->event_ctx = sock->event.ctx;
@@ -219,10 +219,10 @@ failed:
 /*
   finish a smbcli_sock_connect_send() operation
 */
-NTSTATUS smbcli_sock_connect_recv(struct smbcli_composite *c)
+NTSTATUS smbcli_sock_connect_recv(struct composite_context *c)
 {
 	NTSTATUS status;
-	status = smb_composite_wait(c);
+	status = composite_wait(c);
 	talloc_free(c);
 	return status;
 }
@@ -235,7 +235,7 @@ NTSTATUS smbcli_sock_connect_recv(struct smbcli_composite *c)
 */
 NTSTATUS smbcli_sock_connect(struct smbcli_socket *sock, const char *host_addr, int port)
 {
-	struct smbcli_composite *c;
+	struct composite_context *c;
 
 	c = smbcli_sock_connect_send(sock, host_addr, port);
 	if (c == NULL) {
