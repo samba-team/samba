@@ -40,8 +40,8 @@
 .Tn TELNET
 protocol server
 .Sh SYNOPSIS
-.Nm /usr/libexec/telnetd
-.Op Fl BUhlkns
+.Nm telnetd
+.Op Fl BUhklns
 .Op Fl D Ar debugmode
 .Op Fl I Ns Ar initid
 .Op Fl S Ar tos
@@ -137,16 +137,7 @@ All user verification will happen through the
 program.
 .El
 .It Fl B
-Specifies bftp server mode.  In this mode,
-.Nm telnetd
-causes login to start a
-.Xr bftp 1
-session rather than the user's
-normal shell.  In bftp daemon mode normal
-logins are not supported, and it must be used
-on a port other than the normal
-.Tn TELNET
-port.
+Ignored.
 .It Fl D Ar debugmode
 This option may be used for debugging purposes.
 This allows
@@ -222,22 +213,9 @@ it.
 .Dv DONT SUPPRESS-GO-AHEAD
 and
 .Dv DONT ECHO . )
-The
-.Fl k
-option is most useful when there are remote clients
-that do not support kludge linemode, but pass the heuristic
-(if they respond with
-.Dv WILL TIMING-MARK
-in response to a
-.Dv DO TIMING-MARK)
-for kludge linemode support.
+.It Fl k
 .It Fl l
-Specifies line mode.  Tries to force clients to use line-
-at-a-time mode.
-If the
-.Dv LINEMODE
-option is not supported, it will go
-into kludge linemode.
+Ignored.
 .It Fl n
 Disable
 .Dv TCP
@@ -536,9 +514,7 @@ the data stream.
 (if supported)
 .Sh "SEE ALSO"
 .Xr telnet 1 ,
-.Xr login 1 ,
-.Xr bftp 1
-(if supported)
+.Xr login 1
 .Sh STANDARDS
 .Bl -tag -compact -width RFC-1572
 .It Cm RFC-854
