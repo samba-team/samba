@@ -63,8 +63,6 @@ static int cmd_help(void);
 time_t newer_than = 0;
 int archive_level = 0;
 
-extern pstring debugf;
-
 BOOL translation = False;
 
 static BOOL have_ip;
@@ -2402,6 +2400,7 @@ static int do_message_op(void)
 	extern char tar_type;
 	pstring term_code;
 	pstring new_name_resolve_order;
+	pstring logfile;
 	char *p;
 	int rc = 0;
 
@@ -2569,7 +2568,8 @@ static int do_message_op(void)
 			port = atoi(optarg);
 			break;
 		case 'l':
-			slprintf(debugf,sizeof(debugf)-1, "%s.client",optarg);
+			slprintf(logfile,sizeof(logfile)-1, "%s.client",optarg);
+			lp_set_logfile(logfile);
 			break;
 		case 'h':
 			usage(pname);

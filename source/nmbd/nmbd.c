@@ -26,8 +26,6 @@
 
 #include "includes.h"
 
-extern pstring debugf;
-
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;
 int global_nmb_port = -1;
@@ -103,7 +101,7 @@ static BOOL dump_core(void)
 {
   char *p;
   pstring dname;
-  pstrcpy( dname, debugf );
+  pstrcpy( dname, lp_logfile() );
   if ((p=strrchr_m(dname,'/')))
     *p=0;
   pstrcat( dname, "/corefiles" );
@@ -662,6 +660,7 @@ static void usage(char *pname)
   extern char *optarg;
   extern BOOL  append_log;
   BOOL opt_interactive = False;
+  pstring logfile;
 
   append_log = True;  /* Default, override with '-o' option. */
 
@@ -672,7 +671,8 @@ static void usage(char *pname)
 
   sys_srandom(time(NULL) ^ sys_getpid());
 
-  slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
+  slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
+  lp_set_logfile(logfile);
 
   /* this is for people who can't start the program correctly */
   while (argc > 1 && (*argv[1] != '-'))
@@ -728,7 +728,8 @@ static void usage(char *pname)
           strupper(global_myname);
           break;
         case 'l':
-          slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", optarg);
+          slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", optarg);
+          lp_set_logfile(logfile);
           break;
         case 'a':
           append_log = True;
