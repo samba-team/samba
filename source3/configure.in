@@ -117,7 +117,7 @@ fi
 
 # stupid glibc has the functions but no declaration. grrrr.
 AC_CACHE_CHECK([for setresuid declaration],samba_cv_have_setresuid_decl,[
-    AC_TRY_COMPILE([#include <unistd.h>],[int i = setresuid],
+    AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)setresuid],
         samba_cv_have_setresuid_decl=yes,samba_cv_have_setresuid_decl=no)])
 if test x"$samba_cv_have_setresuid_decl" = x"yes"; then
     AC_DEFINE(HAVE_SETRESUID_DECL)
@@ -125,7 +125,7 @@ fi
 
 # stupid glibc has the functions but no declaration. grrrr.
 AC_CACHE_CHECK([for crypt declaration],samba_cv_have_crypt_decl,[
-    AC_TRY_COMPILE([#include <unistd.h>],[int i = crypt],
+    AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)crypt],
         samba_cv_have_crypt_decl=yes,samba_cv_have_crypt_decl=no)])
 if test x"$samba_cv_have_crypt_decl" = x"yes"; then
     AC_DEFINE(HAVE_CRYPT_DECL)

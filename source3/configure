@@ -2891,7 +2891,7 @@ else
 #include "confdefs.h"
 #include <unistd.h>
 int main() {
-int i = setresuid
+int i = (int)setresuid
 ; return 0; }
 EOF
 if { (eval echo configure:2898: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
@@ -2926,7 +2926,7 @@ else
 #include "confdefs.h"
 #include <unistd.h>
 int main() {
-int i = crypt
+int i = (int)crypt
 ; return 0; }
 EOF
 if { (eval echo configure:2933: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
