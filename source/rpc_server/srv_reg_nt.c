@@ -29,15 +29,15 @@
 
 struct reg_info
 {
-    /* for use by \PIPE\winreg */
-    fstring name; /* name of registry key */
+	/* for use by \PIPE\winreg */
+	fstring name; /* name of registry key */
 };
 
 static void free_reg_info(void *ptr)
 {
 	struct reg_info *info = (struct reg_info *)ptr;
 
-	safe_free(info);
+	SAFE_FREE(info);
 }
 
 /*******************************************************************
@@ -124,7 +124,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 	DEBUG(5,("_reg_info: %d\n", __LINE__));
 
-	if (find_policy_by_hnd(p, &q_u->pol, NULL) == -1)
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
 	fstrcpy(name, dos_unistrn2(q_u->uni_type.buffer, q_u->uni_type.uni_str_len));

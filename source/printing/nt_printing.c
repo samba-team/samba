@@ -1572,36 +1572,36 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
 	slprintf(directory, sizeof(directory)-1, "\\print$\\%s\\%d\\", architecture, driver->cversion);
 
-    /* .inf files do not always list a file for each of the four standard files. 
-     * Don't prepend a path to a null filename, or client claims:
-     *   "The server on which the printer resides does not have a suitable 
-     *   <printer driver name> printer driver installed. Click OK if you 
-     *   wish to install the driver on your local machine."
-     */
+	/* .inf files do not always list a file for each of the four standard files. 
+	 * Don't prepend a path to a null filename, or client claims:
+	 *   "The server on which the printer resides does not have a suitable 
+	 *   <printer driver name> printer driver installed. Click OK if you 
+	 *   wish to install the driver on your local machine."
+	 */
 	if (strlen(driver->driverpath)) {
-    	fstrcpy(temp_name, driver->driverpath);
-    	slprintf(driver->driverpath, sizeof(driver->driverpath)-1, "%s%s", directory, temp_name);
-    }
+		fstrcpy(temp_name, driver->driverpath);
+		slprintf(driver->driverpath, sizeof(driver->driverpath)-1, "%s%s", directory, temp_name);
+	}
 
 	if (strlen(driver->datafile)) {
-    	fstrcpy(temp_name, driver->datafile);
-    	slprintf(driver->datafile, sizeof(driver->datafile)-1, "%s%s", directory, temp_name);
-    }
+		fstrcpy(temp_name, driver->datafile);
+		slprintf(driver->datafile, sizeof(driver->datafile)-1, "%s%s", directory, temp_name);
+	}
 
 	if (strlen(driver->configfile)) {
-    	fstrcpy(temp_name, driver->configfile);
-    	slprintf(driver->configfile, sizeof(driver->configfile)-1, "%s%s", directory, temp_name);
-    }
+		fstrcpy(temp_name, driver->configfile);
+		slprintf(driver->configfile, sizeof(driver->configfile)-1, "%s%s", directory, temp_name);
+	}
 
 	if (strlen(driver->helpfile)) {
-    	fstrcpy(temp_name, driver->helpfile);
-    	slprintf(driver->helpfile, sizeof(driver->helpfile)-1, "%s%s", directory, temp_name);
-    }
+		fstrcpy(temp_name, driver->helpfile);
+		slprintf(driver->helpfile, sizeof(driver->helpfile)-1, "%s%s", directory, temp_name);
+	}
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
-            fstrcpy(temp_name, driver->dependentfiles[i]);
-            slprintf(driver->dependentfiles[i], sizeof(driver->dependentfiles[i])-1, "%s%s", directory, temp_name);
+			fstrcpy(temp_name, driver->dependentfiles[i]);
+			slprintf(driver->dependentfiles[i], sizeof(driver->dependentfiles[i])-1, "%s%s", directory, temp_name);
 		}
 	}
 
@@ -1798,42 +1798,43 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 	
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
-	if (!tdb_exists(tdb_drivers, kbuf)) return False;
+	if (!tdb_exists(tdb_drivers, kbuf))
+		return False;
 
 	ZERO_STRUCT(info3);
 	get_a_printer_driver_3(&info3, model, "Windows 4.0", 0);
 	
-    DEBUGADD(10,("info3->name            [%s]\n", info3->name));
-    DEBUGADD(10,("info3->datafile        [%s]\n", info3->datafile));
-    DEBUGADD(10,("info3->helpfile        [%s]\n", info3->helpfile));
-    DEBUGADD(10,("info3->monitorname     [%s]\n", info3->monitorname));
-    DEBUGADD(10,("info3->defaultdatatype [%s]\n", info3->defaultdatatype));
+	DEBUGADD(10,("info3->name            [%s]\n", info3->name));
+	DEBUGADD(10,("info3->datafile        [%s]\n", info3->datafile));
+	DEBUGADD(10,("info3->helpfile        [%s]\n", info3->helpfile));
+	DEBUGADD(10,("info3->monitorname     [%s]\n", info3->monitorname));
+	DEBUGADD(10,("info3->defaultdatatype [%s]\n", info3->defaultdatatype));
 	for (i=0; info3->dependentfiles && *info3->dependentfiles[i]; i++) {
-    DEBUGADD(10,("info3->dependentfiles  [%s]\n", info3->dependentfiles[i]));
-    }
-    DEBUGADD(10,("info3->environment     [%s]\n", info3->environment));
-    DEBUGADD(10,("info3->driverpath      [%s]\n", info3->driverpath));
-    DEBUGADD(10,("info3->configfile      [%s]\n", info3->configfile));
+		DEBUGADD(10,("info3->dependentfiles  [%s]\n", info3->dependentfiles[i]));
+	}
+	DEBUGADD(10,("info3->environment     [%s]\n", info3->environment));
+	DEBUGADD(10,("info3->driverpath      [%s]\n", info3->driverpath));
+	DEBUGADD(10,("info3->configfile      [%s]\n", info3->configfile));
 
 	/*pstrcat(line, info3->name);             pstrcat(line, ":");*/
 	trim_string(info3->configfile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->configfile);
-    pstrcat(line, ":");
+	pstrcat(line, ":");
 	trim_string(info3->datafile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->datafile);
-    pstrcat(line, ":");
+	pstrcat(line, ":");
 	trim_string(info3->helpfile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->helpfile);
-    pstrcat(line, ":");
+	pstrcat(line, ":");
 	trim_string(info3->monitorname, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->monitorname);
-    pstrcat(line, ":");
+	pstrcat(line, ":");
 	pstrcat(line, "RAW");                /*info3->defaultdatatype);*/
-    pstrcat(line, ":");
+	pstrcat(line, ":");
 
-	for (i=0; info3->dependentfiles &&
-		 *info3->dependentfiles[i]; i++) {
-		if (i) pstrcat(line, ",");               /* don't end in a "," */
+	for (i=0; info3->dependentfiles && *info3->dependentfiles[i]; i++) {
+		if (i)
+			pstrcat(line, ",");               /* don't end in a "," */
 		trim_string(info3->dependentfiles[i], "\\print$\\WIN40\\0\\", 0);
 		pstrcat(line, info3->dependentfiles[i]);
 	}
@@ -1844,8 +1845,9 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 }
 
 /****************************************************************************
-debugging function, dump at level 6 the struct in the logs
+ Debugging function, dump at level 6 the struct in the logs.
 ****************************************************************************/
+
 static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 {
 	uint32 result;
@@ -1975,9 +1977,10 @@ static int pack_specifics(NT_PRINTER_PARAM *param, char *buf, int buflen)
 
 
 /****************************************************************************
-delete a printer - this just deletes the printer info file, any open
-handles are not affected
+ Delete a printer - this just deletes the printer info file, any open
+ handles are not affected.
 ****************************************************************************/
+
 uint32 del_a_printer(char *sharename)
 {
 	pstring key;
