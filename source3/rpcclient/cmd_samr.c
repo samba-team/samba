@@ -658,19 +658,11 @@ SAM create domain user.
 ****************************************************************************/
 void cmd_sam_create_dom_user(struct client_info *info)
 {
-	uint16 fnum;
-	fstring srv_name;
 	fstring domain;
 	fstring acct_name;
-	fstring acct_desc;
 	fstring sid;
 	DOM_SID sid1;
-	BOOL res = True;
-	BOOL res1 = True;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 user_rid; 
-	POLICY_HND sam_pol;
-	POLICY_HND pol_dom;
 	uint16 acb_info;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
@@ -684,18 +676,9 @@ void cmd_sam_create_dom_user(struct client_info *info)
 	}
 
 
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
-
 	if (!next_token(NULL, acct_name, NULL, sizeof(acct_name)))
 	{
-		report(out_hnd, "createuser: <acct name> [acct description]\n");
-	}
-
-	if (!next_token(NULL, acct_desc, NULL, sizeof(acct_desc)))
-	{
-		acct_desc[0] = 0;
+		report(out_hnd, "createuser: <acct name>\n");
 	}
 
 	if (acct_name[strlen(acct_name)-1] == '$')
@@ -707,44 +690,16 @@ void cmd_sam_create_dom_user(struct client_info *info)
 		acb_info = ACB_NORMAL;
 	}
 	report(out_hnd, "SAM Create Domain User\n");
-	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
-	                  domain, acct_name, acct_desc);
+	report(out_hnd, "Domain: %s Name: %s\n",
+	                  domain, acct_name);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
-	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x02000000,
-				&sam_pol) : False;
-
-	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &sam_pol, ace_perms, &sid1,
-	            &pol_dom) : False;
-
-	/* create a domain user */
-	res1 = res ? create_samr_domain_user(smb_cli, fnum, 
-				&pol_dom,
-	                        acct_name, acb_info, &user_rid) : False;
-
-	res = res ? samr_close(smb_cli, fnum,
-	            &pol_dom) : False;
-
-	res = res ? samr_close(smb_cli, fnum,
-	            &sam_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
-
-	if (res && res1)
+	if (msrpc_sam_create_dom_user(smb_cli, &sid1,
+	                              acct_name, acb_info, &user_rid))
 	{
-		DEBUG(5,("cmd_sam_create_dom_user: succeeded\n"));
 		report(out_hnd, "Create Domain User: OK\n");
 	}
 	else
 	{
-		DEBUG(5,("cmd_sam_create_dom_user: failed\n"));
 		report(out_hnd, "Create Domain User: FAILED\n");
 	}
 }
@@ -2136,7 +2091,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 	report(out_hnd, "From: %s Domain: %s SID: %s\n",
 	                  info->myhostname, domain, sid);
 
-	if (sam_query_dominfo(info, &sid1, switch_value, &ctr))
+	if (sam_query_dominfo(smb_cli, &sid1, switch_value, &ctr))
 	{
 		DEBUG(5,("cmd_sam_query_dominfo: succeeded\n"));
 		display_sam_unk_ctr(out_hnd, ACTION_HEADER   , switch_value, &ctr);

@@ -1425,3 +1425,59 @@ BOOL get_samr_query_aliasinfo(struct cli_state *cli, uint16 fnum,
 	return samr_close(cli, fnum,&pol_open_alias) && ret;
 }
 
+/****************************************************************************
+SAM create domain user.
+****************************************************************************/
+BOOL msrpc_sam_create_dom_user(struct cli_state *cli, DOM_SID *sid1,
+				char *acct_name, uint16 acb_info,
+				uint32 *rid)
+{
+	uint16 fnum;
+	fstring srv_name;
+	BOOL res = True;
+	BOOL res1 = True;
+	BOOL res2 = True;
+	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	uint32 user_rid; 
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, cli->desthost);
+	strupper(srv_name);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(cli, PIPE_SAMR, &fnum) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(cli, fnum, 
+				srv_name, 0x02000000,
+				&sam_pol) : False;
+
+	/* connect to the domain */
+	res1 = res ? samr_open_domain(cli, fnum, 
+	            &sam_pol, ace_perms, sid1,
+	            &pol_dom) : False;
+
+	/* create a domain user */
+	res2 = res1 ? create_samr_domain_user(cli, fnum, 
+				&pol_dom,
+	                        acct_name, acb_info, &user_rid) : False;
+
+	res1 = res1 ? samr_close(cli, fnum, &pol_dom) : False;
+	res  = res  ? samr_close(cli, fnum, &sam_pol) : False;
+
+	/* close the session */
+	cli_nt_session_close(cli, fnum);
+
+	if (res2)
+	{
+		DEBUG(5,("cmd_sam_create_dom_user: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_create_dom_user: failed\n"));
+	}
+
+	return res2;
+}
