@@ -1,3 +1,16 @@
+2003-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss_acquire_cred.3: document gss_krb5_compat_des3_mic
+	
+	* compat.c (gss_krb5_compat_des3_mic): enable turning on/off des3
+	mic compat
+	(_gss_DES3_get_mic_compat): handle [gssapi]correct_des3_mic too
+
+	* gssapi.h (gss_krb5_compat_des3_mic): new function, turn on/off
+	des3 mic compat
+	(GSS_C_KRB5_COMPAT_DES3_MIC): cpp symbol that exists if
+	gss_krb5_compat_des3_mic exists
+	
 2003-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am:  (libgssapi_la_LDFLAGS): update major
