@@ -547,6 +547,7 @@ static struct enum_list enum_security[] = {
 	{SEC_USER, "USER"},
 	{SEC_SERVER, "SERVER"},
 	{SEC_DOMAIN, "DOMAIN"},
+	{SEC_ADS, "ADS"},
 	{-1, NULL}
 };
 
