@@ -438,6 +438,7 @@ AM_CONDITIONAL(have_glob_h, test "$ac_cv_func_glob_working" = yes)
 dnl these should happen after tests for *snprintf
 
 AC_FIND_FUNC_NO_LIBS2(dbopen, $berkeley_db, [
+#include <stdio.h>
 #if defined(HAVE_DB_185_H)
 #include <db_185.h>
 #elif defined(HAVE_DB_H)
