@@ -423,6 +423,35 @@ gss_auth(void *app_data, char *host)
 	    context_established = 1;
 	}
     }
+
+    {
+	gss_name_t targ_name;
+
+	maj_stat = gss_inquire_context(&min_stat,
+				       d->context_hdl,
+				       NULL,
+				       &targ_name,
+				       NULL,
+				       NULL,
+				       NULL,
+				       NULL,
+				       NULL);
+	if (GSS_ERROR(maj_stat) == 0) {
+	    gss_buffer_desc name;
+	    maj_stat = gss_display_name (&min_stat,
+					 targ_name,
+					 &name,
+					 NULL);
+	    if (GSS_ERROR(maj_stat) == 0) {
+		printf("Authenticated to <%s>\n", (char *)name.value);
+		gss_release_buffer(&min_stat, &name);
+	    }
+	    gss_release_name(&min_stat, &targ_name);
+	} else
+	    printf("Failed to get gss name of peer.\n");
+    }	    
+
+
     return AUTH_OK;
 }
 
