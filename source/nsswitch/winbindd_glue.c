@@ -42,6 +42,8 @@ BOOL wb_lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
 	pol->cli = (struct cli_state *)malloc(sizeof(struct cli_state));
 	pol->mem_ctx = talloc_init();
 
+	ZERO_STRUCTP(pol->cli);
+
 	if (!pol->cli || !pol->mem_ctx)
 		return False;
 
@@ -183,6 +185,9 @@ BOOL wb_samr_connect(char *server, uint32 access_mask, CLI_POLICY_HND *pol)
 	ZERO_STRUCTP(pol);
 
 	pol->cli = (struct cli_state *)malloc(sizeof(struct cli_state));
+
+	ZERO_STRUCTP(pol->cli);
+
 	pol->mem_ctx = talloc_init();
 
 	if (!pol->cli || !pol->mem_ctx)

@@ -530,11 +530,6 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
         }
     }
     
-    /* Free memory */
-
-    if (types != NULL) free(types);
-    if (sids != NULL) free(sids);
-
     return res;
 }
 
@@ -569,11 +564,6 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
             *type = types[0];
         }
     }
-
-    /* Free memory */
-
-    safe_free(types);
-    free_char_array(num_names, names);
 
     return res;
 }
