@@ -528,7 +528,7 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;  /* Best I can think of ... */
+    errno = EINVAL;  /* Best I can think of ... */
     return -1;
 
   }
@@ -636,7 +636,7 @@ int smbc_creat(const char *path, mode_t mode)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -655,7 +655,7 @@ ssize_t smbc_read(int fd, void *buf, size_t count)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -715,7 +715,7 @@ ssize_t smbc_write(int fd, void *buf, size_t count)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -769,7 +769,7 @@ int smbc_close(int fd)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -822,7 +822,7 @@ int smbc_unlink(const char *fname)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;  /* Best I can think of ... */
+    errno = EINVAL;  /* Best I can think of ... */
     return -1;
 
   }
@@ -913,7 +913,7 @@ int smbc_rename(const char *oname, const char *nname)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;  /* Best I can think of ... */
+    errno = EINVAL;  /* Best I can think of ... */
     return -1;
 
   }
@@ -980,7 +980,7 @@ off_t smbc_lseek(int fd, off_t offset, int whence)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -1107,7 +1107,7 @@ BOOL smbc_getatr(struct smbc_server *srv, char *path,
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -1145,7 +1145,7 @@ int smbc_stat(const char *fname, struct stat *st)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;  /* Best I can think of ... */
+    errno = EINVAL;  /* Best I can think of ... */
     return -1;
 
   }
@@ -1229,7 +1229,7 @@ int smbc_fstat(int fd, struct stat *st)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -1448,7 +1448,7 @@ int smbc_opendir(const char *fname)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -1754,7 +1754,7 @@ int smbc_closedir(int fd)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -1805,7 +1805,7 @@ struct smbc_dirent *smbc_readdir(unsigned int fd)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return NULL;
 
   }
@@ -1876,7 +1876,7 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -1971,7 +1971,7 @@ int smbc_mkdir(const char *fname, mode_t mode)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -2055,7 +2055,7 @@ int smbc_rmdir(const char *fname)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -2151,7 +2151,7 @@ off_t smbc_telldir(int fd)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -2225,7 +2225,7 @@ int smbc_lseekdir(int fd, off_t offset)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -2287,7 +2287,7 @@ int smbc_fstatdir(int fd, struct stat *st)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -2312,7 +2312,7 @@ int smbc_print_file(const char *fname, const char *printq)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -2386,7 +2386,7 @@ int smbc_open_print_job(const char *fname)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -2420,7 +2420,7 @@ int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
@@ -2470,7 +2470,7 @@ int smbc_unlink_print_job(const char *fname, int id)
 
   if (!smbc_initialized) {
 
-    errno = EUCLEAN;
+    errno = EINVAL;
     return -1;
 
   }
