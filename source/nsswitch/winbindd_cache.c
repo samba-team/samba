@@ -585,7 +585,7 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 
 static void wcache_save_name_to_sid(struct winbindd_domain *domain, 
 				    NTSTATUS status, 
-				    const char *name, DOM_SID *sid, 
+				    const char *name, const DOM_SID *sid, 
 				    enum SID_NAME_USE type)
 {
 	struct cache_entry *centry;
@@ -604,7 +604,7 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 }
 
 static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS status, 
-				    DOM_SID *sid, const char *name, enum SID_NAME_USE type)
+				    const DOM_SID *sid, const char *name, enum SID_NAME_USE type)
 {
 	struct cache_entry *centry;
 	fstring sid_string;
@@ -972,7 +972,7 @@ do_query:
    given */
 static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
-			    DOM_SID *sid,
+			    const DOM_SID *sid,
 			    char **name,
 			    enum SID_NAME_USE *type)
 {
