@@ -22,8 +22,8 @@
    Boston, MA  02111-1307, USA.   
 */
 
-#ifndef _NTDOM_CONFIG_H
-#define _NTDOM_CONFIG_H
+#ifndef _WINBIND_NSS_CONFIG_H
+#define _WINBIND_NSS_CONFIG_H
 
 /* Include header files from data in config.h file */
 
