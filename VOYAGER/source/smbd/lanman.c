@@ -1655,9 +1655,8 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
-	BOOL ret;
 
-	GROUP_MAP *group_list;
+	struct sys_grent *grlist, *grent;
 	int num_entries;
  
 	if (strcmp(str1,"WrLeh") != 0)
@@ -1673,13 +1672,10 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 	if (strcmp("B21",str2) != 0)
 		return False;
 
-	/* get list of domain groups SID_DOMAIN_GRP=2 */
-	become_root();
-	ret = pdb_enum_group_mapping(SID_NAME_DOM_GRP , &group_list, &num_entries, False);
-	unbecome_root();
-	
-	if( !ret ) {
-		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));	
+	grlist = getgrent_list(NULL, NULL);
+
+	if( grlist == NULL ) {
+		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));
 		return False;
 	}
 
@@ -1692,19 +1688,28 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 
 	p = *rdata;
 
-	for(i=resume_context; i<num_entries; i++) {	
-		char* name=group_list[i].nt_name;
-		if( ((PTR_DIFF(p,*rdata)+21) <= *rdata_len) ) {
-			/* truncate the name at 21 chars. */
-			memcpy(p, name, 21); 
-			DEBUG(10,("adding entry %d group %s\n", i, p));
-			p += 21; 
-		} else {
+	i = 0;
+
+	for(grent = grlist; grent != NULL; grent = grent->next, i++) {
+		char *name;
+
+		if (i<resume_context)
+			continue;
+
+		if( ((PTR_DIFF(p,*rdata)+21) > *rdata_len) ) {
 			/* set overflow error */
 			DEBUG(3,("overflow on entry %d group %s\n", i, name));
 			errflags=234;
 			break;
 		}
+
+		unix_groupname_to_ntname(grent->gr_name, &name);
+
+		/* truncate the name at 21 chars. */
+		memcpy(p, name, 21); 
+		DEBUG(10,("adding entry %d group %s\n", i, p));
+		p += 21;
+		SAFE_FREE(name);
 	}
 
 	*rdata_len = PTR_DIFF(p,*rdata);
