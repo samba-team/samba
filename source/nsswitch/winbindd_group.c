@@ -150,7 +150,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 	/* Allocate buffer */
 
-	if (!buf) {
+	if (!buf && buf_len != 0) {
 		if (!(buf = malloc(buf_len))) {
 			DEBUG(1, ("out of memory\n"));
 			result = False;
