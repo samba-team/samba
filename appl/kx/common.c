@@ -68,23 +68,6 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
      }
 }
 
-/*
- * Signal handler that justs waits for the children when they die.
- */
-
-RETSIGTYPE
-childhandler (int sig)
-{
-     pid_t pid;
-     int status;
-
-     do { 
-       pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
-     } while(pid > 0);
-     signal (SIGCHLD, childhandler);
-     SIGRETURN(0);
-}
-
 #ifndef X_UNIX_PATH
 #define X_UNIX_PATH "/tmp/.X11-unix/X"
 #endif
