@@ -1,5 +1,9 @@
 README for Samba Password Database (PDB) examples
 ====================================================
+8-8-2002 Jelmer Vernooij <jelmer@samba.org>
+
+Added mysql and xml modules. See README in xml/ and mysql/ for details.
+
 21-6-2002 Stefan (metze) Metzmacher <metze@metzemix.de>
 
 I have added an interface versioning.

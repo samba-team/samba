@@ -254,15 +254,15 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam_winbind.so everything
 (cd tdb; make tdbdump tdbtest tdbtorture tdbtool)
 
-cd ../examples/VFS
-CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
-        --prefix='$(DESTDIR)/usr' \
-        --localstatedir='$(DESTDIR)/var' \
-        --libdir='$(DESTDIR)%{EtcSamba}' \
-        --sbindir='$(DESTDIR)/usr/sbin'
-make
-cd block
-make
+#cd ../examples/VFS
+#CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
+#        --prefix='$(DESTDIR)/usr' \
+#        --localstatedir='$(DESTDIR)/var' \
+#        --libdir='$(DESTDIR)%{EtcSamba}' \
+#        --sbindir='$(DESTDIR)/usr/sbin'
+#make
+#cd block
+#make
 
 %Install
 %{mkDESTDIR}
@@ -305,10 +305,10 @@ do
 	install -m 755 source/tdb/$i $DESTDIR/usr/sbin
 done
 # Add VFS Modules
-for i in audit.so recycle.so block/block.so
-do
-	install -m755 $i $DESTDIR/lib/samba
-done
+#for i in audit.so recycle.so block/block.so
+#do
+#	install -m755 $i $DESTDIR/lib/samba
+#done
 
 #mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
 

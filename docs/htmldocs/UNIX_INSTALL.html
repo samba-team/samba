@@ -478,7 +478,7 @@ CLASS="REPLACEABLE"
 ></TT
 ></P
 ><P
->Your should get back a list of shares available on 
+>You should get back a list of shares available on 
 	your server. If you don't then something is incorrectly setup. 
 	Note that this method can also be used to see what shares 
 	are available on other LanManager clients (such as WfWg).</P
@@ -656,8 +656,8 @@ NAME="AEN166"
 >By default Samba uses a blank scope ID. This means 
 		all your windows boxes must also have a blank scope ID. 
 		If you really want to use a non-blank scope ID then you will 
-		need to use the -i &lt;scope&gt; option to nmbd, smbd, and 
-		smbclient. All your PCs will need to have the same setting for 
+		need to use the 'netbios scope' smb.conf option.
+                All your PCs will need to have the same setting for 
 		this to work. I do not recommend scope IDs.</P
 ></DIV
 ><DIV
@@ -778,40 +778,19 @@ NAME="AEN182"
 		its open. A client may ask for DENY_NONE, DENY_READ, DENY_WRITE 
 		or DENY_ALL. There are also special compatibility modes called 
 		DENY_FCB and  DENY_DOS.</P
-><P
->You can disable share modes using "share modes = no". 
-		This may be useful on a heavily loaded server as the share 
-		modes code is very slow. See also the FAST_SHARE_MODES 
-		option in the Makefile for a way to do full share modes 
-		very fast using shared memory (if your OS supports it).</P
 ></DIV
 ><DIV
 CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN192"
+NAME="AEN191"
 >Mapping Usernames</A
 ></H2
 ><P
 >If you have different usernames on the PCs and 
 		the unix server then take a look at the "username map" option. 
 		See the smb.conf man page for details.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><HR><H2
-CLASS="SECT2"
-><A
-NAME="AEN195"
->Other Character Sets</A
-></H2
-><P
->If you have problems using filenames with accented 
-		characters in them (like the German, French or Scandinavian 
-		character sets) then I recommend you look at the "valid chars" 
-		option in smb.conf and also take a look at the validchars 
-		package in the examples directory.</P
 ></DIV
 ></DIV
 ></DIV

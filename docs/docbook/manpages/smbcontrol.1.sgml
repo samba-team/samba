@@ -76,7 +76,7 @@
 		<constant>force-election</constant>, <constant>ping
 		</constant>, <constant>profile</constant>, <constant>
 		debuglevel</constant>, <constant>profilelevel</constant>, 
-		or <constant>printer-notify</constant>.</para>
+		or <constant>printnotify</constant>.</para>
 
 		<para>The <constant>close-share</constant> message-type sends a 
 		message to smbd which will then close the client connections to
@@ -119,11 +119,55 @@
 		setting is returned by a  "profilelevel" message. This can be sent 
 		to any smbd or nmbd destinations.</para>
 
-		<para>The <constant>printer-notify</constant> message-type sends a 
+		<para>The <constant>printnotify</constant> message-type sends a 
 		message to smbd which in turn sends a printer notify message to 
-		any Windows NT clients connected to  a printer.  This message-type 
-		takes an argument of the printer name to  send notify messages to.   
-		This message can only be sent to <constant>smbd</constant>.</para>
+		any Windows NT clients connected to  a printer. This message-type
+		takes the following arguments:
+
+		<variablelist>
+
+		    <varlistentry>
+		    <term>queuepause printername</term>
+		    <listitem><para>Send a queue pause change notify
+		    message to the printer specified.</para></listitem>
+ 		    </varlistentry>
+
+		    <varlistentry>
+		    <term>queueresume printername</term>
+		    <listitem><para>Send a queue resume change notify
+		    message for the printer specified.</para></listitem>
+ 		    </varlistentry>
+
+		    <varlistentry>
+		    <term>jobpause printername unixjobid</term>
+		    <listitem><para>Send a job pause change notify
+		    message for the printer and unix jobid
+		    specified.</para></listitem> 
+ 		    </varlistentry>
+
+		    <varlistentry>
+		    <term>jobresume printername unixjobid</term>
+		    <listitem><para>Send a job resume change notify
+		    message for the printer and unix jobid
+		    specified.</para></listitem>  
+		    </varlistentry>
+
+		    <varlistentry>
+		    <term>jobdelete printername unixjobid</term>
+		    <listitem><para>Send a job delete change notify
+		    message for the printer and unix jobid
+		    specified.</para></listitem> 
+		    </varlistentry>
+
+		</variablelist>
+
+		Note that this message only sends notification that an
+		event has occured.  It doesn't actually cause the
+		event to happen.
+
+		This message can only be sent to <constant>smbd</constant>. 
+		</para>
+
 		</listitem>
 		</varlistentry>
 

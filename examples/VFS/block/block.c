@@ -3,6 +3,7 @@
  * Block access from links to dev mount points specified in PARAMCONF file
  *
  * Copyright (C) Ronald Kuetemeier, 2001
+ * Copyright (C) Alexander Bokovoy, 2002
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,93 +48,29 @@
 
 
 
-DIR *block_opendir(struct connection_struct *conn, char *fname);
-int block_connect(struct connection_struct *conn, const char *service, const char *user);    
-void block_disconnect(struct connection_struct *conn);    
+static DIR *block_opendir(connection_struct *conn, char *fname);
+static int block_connect(connection_struct *conn, const char *service, const char *user);    
+static void block_disconnect(connection_struct *conn);    
 
+static struct smb_vfs_handle_struct *block_handle;
 
 /* VFS operations */
 
 
-extern struct vfs_ops default_vfs_ops;   /* For passthrough operation */
+static struct vfs_ops default_vfs_ops;   /* For passthrough operation */
 
-struct vfs_ops execute_vfs_ops = {
+static vfs_op_tuple block_vfs_ops[] = {
     
 	/* Disk operations */
 
-	block_connect,
-	block_disconnect,
-	NULL,					/* disk free */
+	{block_connect,		SMB_VFS_OP_CONNECT,	SMB_VFS_LAYER_TRANSPARENT},
+	{block_disconnect,	SMB_VFS_OP_DISCONNECT,	SMB_VFS_LAYER_TRANSPARENT},
 
 	/* Directory operations */
 
-	block_opendir,
-	NULL,					/* readdir */
-	NULL,					/* mkdir */
-	NULL,					/* rmdir */
-	NULL,					/* closedir */
-
-	/* File operations */
-
-	NULL,					/* open */
-	NULL,					/* close */
-	NULL,					/* read  */
-	NULL,					/* write */
-	NULL,					/* lseek */
-	NULL,					/* rename */
-	NULL,					/* fsync */
-	NULL,					/* stat  */
-	NULL,					/* fstat */
-	NULL,					/* lstat */
-	NULL,					/* unlink */
-	NULL,					/* chmod */
-	NULL,					/* fchmod */
-	NULL,					/* chown */
-	NULL,					/* fchown */
-	NULL,					/* chdir */
-	NULL,					/* getwd */
-	NULL,					/* utime */
-	NULL,					/* ftruncate */
-	NULL,					/* lock */
-	NULL,					/* symlink */
-	NULL,					/* readlink */
-	NULL,					/* link */
-	NULL,					/* mknod */
-	NULL,					/* realpath */
-
-	/* NT ACL operations */
-
-	NULL,					/* fget_nt_acl */
-	NULL,					/* get_nt_acl */
-	NULL,					/* fset_nt_acl */
-	NULL,					/* set_nt_acl */
-
-	/* POSIX ACL operations. */
-
-	NULL,					/* chmod_acl */
-	NULL,					/* fchmod_acl */
-	NULL,					/* sys_acl_get_entry */
-	NULL,					/* sys_acl_get_tag_type */
-	NULL,					/* sys_acl_get_permset */
-	NULL,					/* sys_acl_get_qualifier */
-	NULL,					/* sys_acl_get_file */
-	NULL,					/* sys_acl_get_fd */
-	NULL,					/* sys_acl_clear_perms */
-	NULL,					/* sys_acl_add_perm */
-	NULL,					/* sys_acl_to_text */
-	NULL,					/* sys_acl_init */
-	NULL,					/* sys_acl_create_entry */
-	NULL,					/* sys_acl_set_tag_type */
-	NULL,					/* sys_acl_set_qualifier */
-	NULL,					/* sys_acl_set_permset */
-	NULL,					/* sys_acl_valid */
-	NULL,					/* sys_acl_set_file */
-	NULL,					/* sys_acl_set_fd */
-	NULL,					/* sys_acl_delete_def_file */
-	NULL,					/* sys_acl_get_perm */
-	NULL,					/* sys_acl_free_text */
-	NULL,					/* sys_acl_free_acl */
-	NULL					/* sys_acl_free_qualifier */
+	{block_opendir,		SMB_VFS_OP_OPENDIR,	SMB_VFS_LAYER_TRANSPARENT},
+	
+	{NULL,			SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
 
 
@@ -145,13 +82,13 @@ extern BOOL pm_process(char *FileName, BOOL (*sfunc)(char *), BOOL(*pfunc)(char 
 
 //functions
 
-BOOL enter_pblock_mount(char *dir);
-BOOL get_section(char *sect);
-BOOL get_parameter_value(char *param, char *value);
-BOOL load_param(void);
-BOOL search(struct stat *stat_buf);
-BOOL dir_search(char *link, char *dir);
-BOOL enter_pblock_dir(char *dir);
+static BOOL enter_pblock_mount(char *dir);
+static BOOL get_section(char *sect);
+static BOOL get_parameter_value(char *param, char *value);
+static BOOL load_param(void);
+static BOOL search(struct stat *stat_buf);
+static BOOL dir_search(char *link, char *dir);
+static BOOL enter_pblock_dir(char *dir);
 
 
 
@@ -176,7 +113,7 @@ static struct block_dir *pblock_dir = NULL;
  * Load the conf file into a table
  */
 
-BOOL load_param(void)
+static BOOL load_param(void)
 {
 
 	if ((pm_process(PARAMCONF,&get_section,&get_parameter_value)) == TRUE)
@@ -194,7 +131,7 @@ BOOL load_param(void)
  * 
  */
 
-BOOL enter_pblock_mount(char *dir)
+static BOOL enter_pblock_mount(char *dir)
 {
 	struct stat stat_buf;
 	static struct block_dir *tmp_pblock;
@@ -242,7 +179,7 @@ BOOL enter_pblock_mount(char *dir)
  * 
  */
 
-BOOL enter_pblock_dir(char *dir)
+static BOOL enter_pblock_dir(char *dir)
 {
 	static struct block_dir *tmp_pblock;
 	
@@ -285,7 +222,7 @@ BOOL enter_pblock_dir(char *dir)
  * Function callback for config section names 
  */
 
-BOOL get_section(char *sect)
+static BOOL get_section(char *sect)
 {
 	return TRUE;	
 }
@@ -297,7 +234,7 @@ BOOL get_section(char *sect)
  *
  */
 
-BOOL get_parameter_value(char *param, char *value)
+static BOOL get_parameter_value(char *param, char *value)
 {
 	int i = 0, maxargs = sizeof(params) / sizeof(char *);
 
@@ -327,24 +264,25 @@ BOOL get_parameter_value(char *param, char *value)
 
 
 
-/* VFS initialisation function.  Return initialised vfs_ops structure
+/* VFS initialisation function.  Return initialised vfs_op_tuple array
    back to SAMBA. */
 
-struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
+vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
+			struct smb_vfs_handle_struct *vfs_handle)
 {
-	struct vfs_ops tmp_ops;
-
 	*vfs_version = SMB_VFS_INTERFACE_VERSION;
 	
-	memcpy(&tmp_ops, def_vfs_ops, sizeof(struct vfs_ops));
+	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
+	
+	block_handle = vfs_handle;
 
-	/* Override the ones we want. */
-	tmp_ops.connect = block_connect;
-	tmp_ops.disconnect = block_disconnect;
-	tmp_ops.opendir = block_opendir;
+	return block_vfs_ops;
+}
 
-	memcpy(&execute_vfs_ops, &tmp_ops, sizeof(struct vfs_ops));
-	return(&execute_vfs_ops);
+
+/* VFS finalization function. */
+void vfs_done(connection_struct *conn)
+{
 }
 
 
@@ -352,7 +290,7 @@ struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
  * VFS connect and param file loading
  */
 
-int block_connect(struct connection_struct *conn, char *service, char *user)
+static int block_connect(connection_struct *conn, const char *service, const char *user)
 {
 	if((load_param()) == FALSE)
 	{
@@ -372,7 +310,7 @@ int block_connect(struct connection_struct *conn, char *service, char *user)
  */
 
 
-void block_disconnect(struct connection_struct *conn)
+static void block_disconnect(struct connection_struct *conn)
 {
 	
 	struct block_dir *tmp_pblock = (pblock_mountp == NULL ? pblock_dir : pblock_mountp);
@@ -403,7 +341,7 @@ void block_disconnect(struct connection_struct *conn)
  * VFS opendir
  */
 
-DIR *block_opendir(struct connection_struct *conn, char *fname)
+static DIR *block_opendir(struct connection_struct *conn, char *fname)
 {
 
 	char *dir_name = NULL; 
@@ -437,7 +375,7 @@ DIR *block_opendir(struct connection_struct *conn, char *fname)
  * Find mount point to block in list
  */
 
-BOOL search(struct stat *stat_buf)
+static BOOL search(struct stat *stat_buf)
 {
 	struct block_dir *tmp_pblock = pblock_mountp;
 
@@ -459,7 +397,7 @@ BOOL search(struct stat *stat_buf)
  * Find dir in list to block id the starting point is link from a share
  */
 
-BOOL dir_search(char *link, char *dir)
+static BOOL dir_search(char *link, char *dir)
 {
 	char buf[PATH_MAX +1], *ext_path;
 	int len = 0;

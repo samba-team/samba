@@ -170,7 +170,7 @@ CLASS="CONSTANT"
 >, 
 		or <TT
 CLASS="CONSTANT"
->printer-notify</TT
+>printnotify</TT
 >.</P
 ><P
 >The <TT
@@ -246,15 +246,68 @@ CLASS="CONSTANT"
 ><P
 >The <TT
 CLASS="CONSTANT"
->printer-notify</TT
+>printnotify</TT
 > message-type sends a 
 		message to smbd which in turn sends a printer notify message to 
-		any Windows NT clients connected to  a printer.  This message-type 
-		takes an argument of the printer name to  send notify messages to.   
+		any Windows NT clients connected to  a printer. This message-type
+		takes the following arguments:
+
+		<P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>queuepause printername</DT
+><DD
+><P
+>Send a queue pause change notify
+		    message to the printer specified.</P
+></DD
+><DT
+>queueresume printername</DT
+><DD
+><P
+>Send a queue resume change notify
+		    message for the printer specified.</P
+></DD
+><DT
+>jobpause printername unixjobid</DT
+><DD
+><P
+>Send a job pause change notify
+		    message for the printer and unix jobid
+		    specified.</P
+></DD
+><DT
+>jobresume printername unixjobid</DT
+><DD
+><P
+>Send a job resume change notify
+		    message for the printer and unix jobid
+		    specified.</P
+></DD
+><DT
+>jobdelete printername unixjobid</DT
+><DD
+><P
+>Send a job delete change notify
+		    message for the printer and unix jobid
+		    specified.</P
+></DD
+></DL
+></DIV
+>
+
+		Note that this message only sends notification that an
+		event has occured.  It doesn't actually cause the
+		event to happen.
+
 		This message can only be sent to <TT
 CLASS="CONSTANT"
 >smbd</TT
->.</P
+>. 
+		</P
 ></DD
 ><DT
 >parameters</DT
@@ -268,7 +321,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN81"
+NAME="AEN102"
 ></A
 ><H2
 >VERSION</H2
@@ -279,7 +332,7 @@ NAME="AEN81"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN84"
+NAME="AEN105"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -305,7 +358,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN91"
+NAME="AEN112"
 ></A
 ><H2
 >AUTHOR</H2

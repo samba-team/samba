@@ -1,4 +1,4 @@
-##########################################################################
+#########################################################################
 # Makefile.in for Samba - rewritten for autoconf support
 # Copyright Andrew Tridgell 1992-1998
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
@@ -52,7 +52,7 @@ INSTALLPERMS = 0755
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
-LOGFILEBASE = $(VARDIR)
+LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(LIBDIR)/smb.conf
 LMHOSTSFILE = $(LIBDIR)/lmhosts
 DRIVERFILE = $(LIBDIR)/printers.def
@@ -110,7 +110,7 @@ TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest \
 SHLIBS = @LIBSMBCLIENT@
 
 SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd \
-	  $(srcdir)/script/findsmb
+	  $(builddir)/script/findsmb
 
 QUOTAOBJS=@QUOTAOBJS@
 
@@ -129,7 +129,7 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/util_getent.o lib/util_pw.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o lib/dprintf.o \
 	  lib/xfile.o lib/wins_srv.o \
-	  lib/util_str.o lib/util_sid.o \
+	  lib/util_str.o lib/util_sid.o lib/util_uuid.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
@@ -138,7 +138,9 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/md5.o lib/hmacmd5.o lib/iconv.o lib/smbpasswd.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
-	  $(TDB_OBJ) 
+	  lib/adt_tree.o lib/popt_common.o $(TDB_OBJ) 
+
+LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o
 
 READLINE_OBJ = lib/readline.o
 
@@ -166,16 +168,20 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o libsmb/errormap.o libsmb/clirap2.o \
 	     libsmb/passchange.o libsmb/unexpected.o libsmb/doserr.o \
-	     $(RPC_PARSE_OBJ1)
+	     libsmb/namecache.o $(RPC_PARSE_OBJ1)
 
-LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o \
-	       libsmb/cli_netlogon.o libsmb/cli_srvsvc.o libsmb/cli_wkssvc.o \
-	       libsmb/cli_dfs.o libsmb/cli_reg.o \
-	       rpc_client/cli_pipe.o libsmb/cli_spoolss.o libsmb/cli_spoolss_notify.o 
+LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
+	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
+	       rpc_client/cli_wkssvc.o rpc_client/cli_dfs.o \
+	       rpc_client/cli_reg.o rpc_client/cli_pipe.o \
+	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o 
 
 LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
 
 LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
+
+REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
+               registry/reg_db.o
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
@@ -184,7 +190,7 @@ RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
 		 rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
-                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
+                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o $(REGISTRY_OBJ)
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -261,7 +267,8 @@ SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
 	   $(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
 	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) \
 	   $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
-	   $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
+	   $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
+	   $(LIB_SMBD_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -278,7 +285,7 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
 NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
-           $(PROFILE_OBJ) $(LIB_OBJ)
+           $(PROFILE_OBJ) $(LIB_OBJ) $(SECRETS_OBJ)
 
 WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
              wrepld/partners.o
@@ -438,7 +445,8 @@ PROTO_OBJ = $(SMBD_OBJ1) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
 	    $(QUOTAOBJS) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(MSDFS_OBJ) \
-	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
+	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
+	    $(LIB_SMBD_OBJ) 
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) \
 	    $(LIB_OBJ) $(NSSWINS_OBJ)
@@ -451,16 +459,9 @@ LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.po)
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
-               lib/debug.o lib/util_sid.o lib/messages.o lib/util_str.o \
-               lib/wins_srv.o lib/substitute.o lib/select.o lib/util.o \
-               nsswitch/wb_client.o nsswitch/wb_common.o \
-               lib/system.o lib/util_file.o \
-               lib/genrand.o lib/username.o lib/util_getent.o lib/charcnv.o lib/time.o \
-               lib/md4.o lib/util_unistr.o lib/signal.o lib/talloc.o \
-               lib/ms_fnmatch.o lib/util_sock.o lib/smbrun.o \
-               lib/util_sec.o lib/snprintf.o \
-               ubiqx/ubi_sLinkList.o libsmb/smbencrypt.o libsmb/smbdes.o \
-               $(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
+               libsmb/smbencrypt.o libsmb/smbdes.o libsmb/nterr.o \
+               $(PARAM_OBJ) $(LIB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+               $(SECRETS_OBJ) $(UBIQX_OBJ)
 
 PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
 
