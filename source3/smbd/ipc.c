@@ -1660,9 +1660,53 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
   return(True);
 }
 
+/***********************************************************
+ Code to check a plaintext password against smbpasswd entries.
+***********************************************************/
+
+static BOOL check_plaintext_password(char *user,char *old_passwd,
+                                     int old_passwd_size, struct smb_passwd **psmbpw)
+{
+  struct smb_passwd *smbpw = NULL;
+  uchar old_pw[16],old_ntpw[16];
+
+  become_root(False);
+  *psmbpw = smbpw = getsmbpwnam(user);
+  unbecome_root(False);
+
+  if (smbpw == NULL) {
+    DEBUG(0,("check_plaintext_password: getsmbpwnam returned NULL\n"));
+    return False;
+  }
+
+  if (smbpw->acct_ctrl & ACB_DISABLED) {
+    DEBUG(0,("check_plaintext_password: account %s disabled.\n", user));
+    return(False);
+  }
+
+  nt_lm_owf_gen(old_passwd,old_ntpw,old_pw);
+
+#ifdef DEBUG_PASSWORD
+  DEBUG(100,("check_plaintext_password: smbpw->smb_nt_passwd \n"));
+  dump_data(100,smbpw->smb_nt_passwd,16);
+  DEBUG(100,("check_plaintext_password: old_ntpw \n"));
+  dump_data(100,old_ntpw,16);
+  DEBUG(100,("check_plaintext_password: smbpw->smb_passwd \n"));
+  dump_data(100,smbpw->smb_passwd,16);
+  DEBUG(100,("check_plaintext_password: old_pw\n"));
+  dump_data(100,old_pw,16);
+#endif
+
+  if(memcmp(smbpw->smb_nt_passwd,old_ntpw,16) && memcmp(smbpw->smb_passwd,old_pw,16))
+    return(False);
+  else
+    return(True);
+}
+
 /****************************************************************************
-  set the user password
-  ****************************************************************************/
+ Set the user password.
+*****************************************************************************/
+
 static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
@@ -1704,20 +1748,59 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   (void)Get_Pwnam( user, True);
 
   /*
-   * Attempt the plaintext password change first.
-   * Older versions of Windows seem to do this.
+   * Attempt to verify the old password against smbpasswd entries
+   * Win98 clients send old and new password in plaintext for this call.
    */
 
-  if (password_ok(user, pass1,strlen(pass1),NULL) &&
-      chgpasswd(user,pass1,pass2,False))
   {
-    SSVAL(*rparam,0,NERR_Success);
+    fstring saved_pass2;
+    struct smb_passwd *smbpw = NULL;
+
+    /*
+     * Save the new password as change_oem_password overwrites it
+     * with zeros.
+     */
+
+    fstrcpy(saved_pass2, pass2);
+
+    if (check_plaintext_password(user,pass1,strlen(pass1),&smbpw) &&
+        change_oem_password(smbpw,pass2,False))
+    {
+      SSVAL(*rparam,0,NERR_Success);
+
+      /*
+       * If unix password sync was requested, attempt to change
+       * the /etc/passwd database also. Return failure if this cannot
+       * be done.
+       */
+
+      if(lp_unix_password_sync() && !chgpasswd(user,pass1,saved_pass2,False))
+        SSVAL(*rparam,0,NERR_badpass);
+    }
+  }
+
+  /*
+   * If the above failed, attempt the plaintext password change.
+   * This tests against the /etc/passwd database only.
+   */
+
+  if(SVAL(*rparam,0) != NERR_Success)
+  {
+    if (password_ok(user, pass1,strlen(pass1),NULL) &&
+        chgpasswd(user,pass1,pass2,False))
+    {
+      SSVAL(*rparam,0,NERR_Success);
+    }
   }
 
   /*
    * If the plaintext change failed, attempt
-   * the encrypted. NT will generate this
-   * after trying the samr method.
+   * the old encrypted method. NT will generate this
+   * after trying the samr method. Note that this
+   * method is done as a last resort as this
+   * password change method loses the NT password hash
+   * and cannot change the UNIX password as no plaintext
+   * is received.
    */
 
   if(SVAL(*rparam,0) != NERR_Success)

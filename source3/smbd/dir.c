@@ -790,38 +790,32 @@ int TellDir(void *p)
   return(dirp->pos);
 }
 
+/*******************************************************************************
+ This section manages a global directory cache.
+ (It should probably be split into a separate module.  crh)
+********************************************************************************/
 
-/* -------------------------------------------------------------------------- **
- * This section manages a global directory cache.
- * (It should probably be split into a separate module.  crh)
- * -------------------------------------------------------------------------- **
- */
-
-typedef struct
-  {
+typedef struct {
   ubi_dlNode  node;
   char       *path;
   char       *name;
   char       *dname;
   int         snum;
-  } dir_cache_entry;
+} dir_cache_entry;
 
 static ubi_dlNewList( dir_cache );
 
+/*****************************************************************************
+ Add an entry to the directory cache.
+ Input:  path  -
+         name  -
+         dname -
+         snum  -
+ Output: None.
+*****************************************************************************/
+
 void DirCacheAdd( char *path, char *name, char *dname, int snum )
-  /* ------------------------------------------------------------------------ **
-   * Add an entry to the directory cache.
-   *
-   *  Input:  path  -
-   *          name  -
-   *          dname -
-   *          snum  -
-   *
-   *  Output: None.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
+{
   int               pathlen;
   int               namelen;
   dir_cache_entry  *entry;
@@ -852,27 +846,23 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum )
   while( DIRCACHESIZE < dir_cache->count )
     free( ubi_dlRemTail( dir_cache ) );
 
-  } /* DirCacheAdd */
+}
 
+/*****************************************************************************
+ Search for an entry to the directory cache.
+ Input:  path  -
+         name  -
+         snum  -
+ Output: The dname string of the located entry, or NULL if the entry was
+         not found.
+
+ Notes:  This uses a linear search, which is is okay because of
+         the small size of the cache.  Use a splay tree or hash
+         for large caches.
+*****************************************************************************/
 
 char *DirCacheCheck( char *path, char *name, int snum )
-  /* ------------------------------------------------------------------------ **
-   * Search for an entry to the directory cache.
-   *
-   *  Input:  path  -
-   *          name  -
-   *          snum  -
-   *
-   *  Output: The dname string of the located entry, or NULL if the entry was
-   *          not found.
-   *
-   *  Notes:  This uses a linear search, which is is okay because of
-   *          the small size of the cache.  Use a splay tree or hash
-   *          for large caches.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
+{
   dir_cache_entry *entry;
 
   for( entry = (dir_cache_entry *)ubi_dlFirst( dir_cache );
@@ -889,18 +879,15 @@ char *DirCacheCheck( char *path, char *name, int snum )
     }
 
   return(NULL);
-  } /* DirCacheCheck */
+}
+
+/*****************************************************************************
+ Remove all cache entries which have an snum that matches the input.
+ Input:  snum  -
+ Output: None.
+*****************************************************************************/
 
 void DirCacheFlush(int snum)
-  /* ------------------------------------------------------------------------ **
-   * Remove all cache entries which have an snum that matches the input.
-   *
-   *  Input:  snum  -
-   *
-   *  Output: None.
-   *
-   * ------------------------------------------------------------------------ **
-   */
 {
 	dir_cache_entry *entry;
 	ubi_dlNodePtr    next;
@@ -912,11 +899,4 @@ void DirCacheFlush(int snum)
 			free( ubi_dlRemThis( dir_cache, entry ) );
 		entry = (dir_cache_entry *)next;
 	}
-} /* DirCacheFlush */
-
-/* -------------------------------------------------------------------------- **
- * End of the section that manages the global directory cache.
- * -------------------------------------------------------------------------- **
- */
-
-
+}
