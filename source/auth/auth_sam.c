@@ -225,7 +225,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			}
 		} else {
 			DEBUG(2,("sam_password_ok: NTLMv1 passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
-			/* no return, becouse we might pick up LMv2 in the LM feild */
+			/* no return, because we might pick up LMv2 in the LM feild */
 		}
 	}
 	
@@ -420,7 +420,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Can't use the talloc version here, becouse the returned struct gets
+	/* Can't use the talloc version here, because the returned struct gets
 	   kept on the server_info */
 	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sampass))) {
 		return nt_status;
