@@ -8,7 +8,7 @@ manpagename(make_codepage)(Construct a codepage file for Samba)
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(make_smbcodepage) [c|d] codepage inputfile outputfile
+bf(make_smbcodepage) [link(c|d)(cord)] link(codepage)(codepage) link(inputfile)(inputfile) link(outputfile)(outputfile)
 
 label(DESCRIPTION)
 manpagedescription()
@@ -23,18 +23,22 @@ manpageoptions()
 
 startdit()
 
+label(cord)
 dit(c|d) This tells make_smbcodepage if it is compiling (c) a text
 format code page file to binary, or (d) de-compiling a binary codepage
 file to text.
 
+label(codepage)
 dit(codepage) This is the codepage we are processing (a number, eg. 850).
 
+label(inputfile)
 dit(inputfile) This is the input file to process. In the 'c' case this
 will be a text codepage definition file such as the ones found in the
 Samba em(source/codepages) directory. In the 'd' case this will be the
 binary format codepage definition file normally found in the
 em(lib/codepages) directory in the Samba install directory path.
 
+label(outputfile)
 dit(outputfile) This is the output file to produce.
 
 endit()

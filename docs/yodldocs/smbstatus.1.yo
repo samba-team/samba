@@ -8,7 +8,7 @@ manpagename(smbstatus)(report on current Samba connections)
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(smbstatus) [-b] [-d] [-L] [-p] [-S] [-s configuration file] [-u username]
+bf(smbstatus) [link(-b)(minusb)] [link(-d)(minusd)] [link(-L)(minusL)] [link(-p)(minusp)] [link(-S)(minusS)] [link(-s configuration file)(minuss)] [link(-u username)(minusu)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -23,22 +23,29 @@ manpageoptions()
 
 startdit()
 
+label(minusb)
 dit(bf(-b)) gives brief output.
 
+label(minusd)
 dit(bf(-d)) gives verbose output.
 
+label(minusL)
 dit(bf(-L)) causes smbstatus to only list locks.
 
+label(minusp)
 dit(bf(-p)) print a list of url(bf(smbd))(smbd.8.html)
 processes and exit. Useful for scripting.
 
+label(minusS)
 dit(bf(-S)) causes smbstatus to only list shares.
 
+label(minuss)
 dit(bf(-s configuration file)) The default configuration file name is
 determined at compile time. The file specified contains the
 configuration details required by the server. See url(bf(smb.conf
 (5)))(smb.conf.5.html) for more information.
 
+label(minusu)
 dit(bf(-u username)) selects information relevant to em(username)
 only.
 

@@ -8,7 +8,7 @@ manpagename(smbtar)(shell script for backing up SMB/CIFS shares directly to UNIX
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(smbtar) -s server [-p password] [-x service] [-X] [-d directory] [-u user] [-t tape] [-b blocksize] [-N filename] [-i] [-r] [-l log level] [-v] filenames
+bf(smbtar) link(-s server)(minuss) [link(-p password)(minusp)] [link(-x service)(minusx)] [link(-X)(minusX)] [link(-d directory)(minusd)] [link(-u user)(minusu)] [link(-t tape)(minust)] [link(-b blocksize)(minusb)] [link(-N filename)(minusN)] [link(-i)(minusi)] [link(-r)(minusr)] [link(-l log level)(minusl)] [link(-v)(minusv)] filenames
 
 label(DESCRIPTION)
 manpagedescription()
@@ -24,22 +24,29 @@ manpageoptions()
 
 startdit()
 
+label(minuss)
 dit(bf(-s server)) The SMB/CIFS server that the share resides upon.
 
+label(minusx)
 dit(bf(-x service)) The share name on the server to connect
 to. The default is tt(backup).
 
+label(minusX)
 dit(bf(-X)) Exclude mode. Exclude filenames... from tar create or
 restore.
 
+label(minusd)
 dit(bf(-d directory)) Change to initial em(directory) before restoring
 / backing up files.
 
+label(minusv)
 dit(bf(-v)) Verbose mode.
 
+label(minusp)
 dit(bf(-p password)) The password to use to access a share. Default:
 none
 
+label(minusu)
 dit(bf(-u user)) The user id to connect as. Default: UNIX login name.
 
 label(minust)
@@ -47,19 +54,24 @@ dit(bf(-t tape)) Tape device. May be regular file or tape
 device. Default: em(TAPE) environmental variable; if not set, a file
 called tt(tar.out).
 
+label(minusb)
 dit(bf(-b blocksize)) Blocking factor. Defaults to 20. See bf(tar (1))
 for a fuller explanation.
 
+label(minusN)
 dit(bf(-N filename)) Backup only files newer than filename. Could be
 used (for example) on a log file to implement incremental backups.
 
+label(minusi)
 dit(bf(-i)) Incremental mode; tar files are only backed up if they
 have the archive bit set. The archive bit is reset after each file is
 read.
 
+label(minusr)
 dit(bf(-r)) Restore. Files are restored to the share from the tar
 file.
 
+label(minusl)
 dit(bf(-l log level)) Log (debug) level. Corresponds to the
 url(bf(-d))(smbclient.1.html#minusd) flag of url(bf(smbclient
 (1)))(smbclient.1.html).

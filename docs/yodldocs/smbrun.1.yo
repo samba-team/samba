@@ -8,7 +8,7 @@ manpagename(smbrun)(interface program between smbd and external programs)
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(smbrun) shell-command
+bf(smbrun) link(shell-command)(shellcommand)
 
 label(DESCRIPTION)
 manpagedescription()
@@ -29,6 +29,7 @@ manpageoptions()
 
 startdit()
 
+label(shellcommand)
 dit(bf(shell-command)) The shell command to execute.  The command
 should have a fully-qualified path.
 

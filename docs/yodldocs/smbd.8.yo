@@ -8,8 +8,7 @@ manpagename(smbd)(server to provide SMB/CIFS services to clients)
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(smbd) [-D] [-a] [-o] [-d debuglevel] [-l log file] [-p port number]
-[-O socket options] [-s configuration file] [-i scope] [-P] [-h]
+bf(smbd) [link(-D)(minusD)] [link(-a)(minusa)] [link(-o)(minuso)] [link(-d debuglevel)(minusd)] [link(-l log file)(minusl)] [link(-p port number)(minusp)] [link(-O socket options)(minusO)] [link(-s configuration file)(minuss)] [link(-i scope)(minusi)] [link(-P)(minusP)] [link(-h)(minush)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -51,6 +50,7 @@ manpageoptions()
 
 startdit()
 
+label(minusD)
 dit(bf(-D)) If specified, this parameter causes the server to operate as a
 daemon. That is, it detaches itself and runs in the background,
 fielding requests on the appropriate port. Operating the server as a
@@ -59,13 +59,16 @@ more than casual use file and print services.
 
 By default, the server will NOT operate as a daemon. 
 
+label(minusa)
 dit(bf(-a)) If this parameter is specified, each new connection will
 append log messages to the log file.  This is the default.
 
+label(minuso)
 dit(bf(-o)) If this parameter is specified, the log files will be
 overwritten when opened.  By default, the log files will be appended
 to.
 
+label(minusd)
 dit(bf(-d debuglevel)) debuglevel is an integer from 0 to 10.
 
 The default value if this parameter is not specified is zero.
@@ -81,18 +84,25 @@ should only be used when investigating a problem. Levels above 3 are
 designed for use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.
 
-dit(bf(-l log file)) If specified, em(logfile) specifies a log
-filename into which informational and debug messages from the running
-server will be logged. The log file generated is never removed by the
-server although its size may be controlled by the url(bf(max log
-size))(smb.conf.5.html#maxlogsize) option in the url(bf(smb.conf
+Note that specifying this parameter here will override the url(bf(log
+level))(smb.conf.5.html#loglevel) parameter in the url(bf(smb.conf
+(5)))(smb.conf.5.html) file.
+
+label(minusl) 
+dit(bf(-l log file)) If specified, em(log file) specifies
+a log filename into which informational and debug messages from the
+running server will be logged. The log file generated is never removed
+by the server although its size may be controlled by the url(bf(max
+log size))(smb.conf.5.html#maxlogsize) option in the url(bf(smb.conf
 (5)))(smb.conf.5.html) file.  The default log file name is specified
 at compile time.
 
+label(minusO)
 dit(bf(-O socket options)) See the url(bf(socket
 options))(smb.conf.5.html#socketoptions) parameter in the
 url(bf(smb.conf (5)))(smb.conf.5.html) file for details.
 
+label(minusp)
 dit(bf(-p port number)) port number is a positive integer value.  The
 default value if this parameter is not specified is 139.
 
@@ -112,6 +122,7 @@ rfc1002.txt section 4.3.5.
 This parameter is not normally specified except in the above
 situation.
 
+label(minuss)
 dit(bf(-s configuration file)) The default configuration file name is
 determined at compile time.
 
@@ -121,6 +132,7 @@ information such as what printcap file to use, as well as descriptions
 of all the services that the server is to provide. See bf(smb.conf
 (5)) for more information.
 
+label(minusi)
 dit(bf(-i scope)) This specifies a NetBIOS scope that the server will use
 to communicate with when generating NetBIOS names. For details on the
 use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
@@ -128,8 +140,10 @@ are em(very) rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with.
 
+label(minush)
 dit(bf(-h)) Prints the help information (usage) for smbd.
 
+label(minusP)
 dit(bf(-P)) Passive option. Causes smbd not to send any network traffic
 out. Used for debugging by the developers only.
 

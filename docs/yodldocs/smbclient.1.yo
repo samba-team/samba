@@ -193,6 +193,10 @@ letter 'A', then em(all) debug messages will be printed. This setting
 is for developers only (and people who em(really) want to know how the
 code works internally).
 
+Note that specifying this parameter here will override the url(bf(log
+level))(smb.conf.5.html#loglevel) parameter in the url(bf(smb.conf
+(5)))(smb.conf.5.html) file.
+
 label(minusP)
 dit(bf(-P)) If this option is specified, the service requested will be
 connected to as a printer service rather than as a normal filespace

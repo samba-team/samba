@@ -8,7 +8,7 @@ manpagename(testparm)(check an smb.conf configuration file for internal correctn
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(testparm) [configfilename [hostname hostIP] ]
+bf(testparm) [link(configfilename)(configfilename) [link(hostname)(hostname) link(hostIP)(hostIP)] ]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -33,10 +33,12 @@ manpageoptions()
 
 startdit()
 
+label(configfilename)
 dit(bf(configfilename)) This is the name of the configuration file to
 check. If this parameter is not present then the default
 url(bf(smb.conf))(smb.conf.5.html) file will be checked.
 
+label(hostname)
 dit(bf(hostname)) If this parameter and the following are specified,
 then testparm will examine the url(bf("hosts
 allow"))(smb.conf.5.html#hostsallow) and url(bf("hosts
@@ -46,6 +48,7 @@ with this IP address would be allowed acces to the
 url(bf(smbd))(smbd.8.html) server. If this parameter is supplied, the
 hostIP parameter must also be supplied.
 
+label(hostIP)
 dit(bf(hostIP)) This is the IP address of the host specified in the
 previous parameter. This address must be supplied if the hostname
 parameter is supplied.
