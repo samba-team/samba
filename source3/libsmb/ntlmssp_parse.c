@@ -234,9 +234,9 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 				pull_string(NULL, p, blob->data + ptr, sizeof(p), 
 					    len1, 
 					    STR_UNICODE|STR_NOALIGN);
-				(*ps) = strdup(p);
+				(*ps) = smb_xstrdup(p);
 			} else {
-				(*ps) = NULL;
+				(*ps) = smb_xstrdup("");
 			}
 			break;
 		case 'A':
@@ -255,9 +255,9 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 				pull_string(NULL, p, blob->data + ptr, sizeof(p), 
 					    len1, 
 					    STR_ASCII|STR_NOALIGN);
-				(*ps) = strdup(p);
+				(*ps) = smb_xstrdup(p);
 			} else {
-				(*ps) = NULL;
+				(*ps) = smb_xstrdup("");
 			}
 			break;
 		case 'B':
