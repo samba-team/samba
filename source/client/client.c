@@ -929,7 +929,7 @@ static void do_mget(struct clilist_file_info *finfo)
 		strlower(discard_const_p(char, finfo->name));
 	}
 	
-	if (!directory_exist(finfo->name,NULL) && 
+	if (!directory_exist(finfo->name) && 
 	    mkdir(finfo->name,0777) != 0) {
 		d_printf("failed to create directory %s\n",finfo->name);
 		pstrcpy(cur_dir,saved_curdir);
@@ -1301,15 +1301,11 @@ static int cmd_put(const char **cmd_ptr)
 	
 	dos_clean_name(rname);
 
-	{
-		struct stat st;
-		/* allow '-' to represent stdin
-		   jdblair, 24.jun.98 */
-		if (!file_exist(lname,&st) &&
-		    (strcmp(lname,"-"))) {
-			d_printf("%s does not exist\n",lname);
-			return 1;
-		}
+	/* allow '-' to represent stdin
+	   jdblair, 24.jun.98 */
+	if (!file_exist(lname) && (strcmp(lname,"-"))) {
+		d_printf("%s does not exist\n",lname);
+		return 1;
 	}
 
 	return do_put(rname, lname, False);
@@ -2479,7 +2475,6 @@ static int cmd_reput(const char **cmd_ptr)
 	pstring remote_name;
 	fstring buf;
 	char *p = buf;
-	struct stat st;
 	
 	pstrcpy(remote_name, cur_dir);
 	pstrcat(remote_name, "\\");
@@ -2490,7 +2485,7 @@ static int cmd_reput(const char **cmd_ptr)
 	}
 	pstrcpy(local_name, p);
   
-	if (!file_exist(local_name, &st)) {
+	if (!file_exist(local_name)) {
 		d_printf("%s does not exist\n", local_name);
 		return 1;
 	}

@@ -269,7 +269,7 @@ NTSTATUS dcesrv_sock_init(struct dcesrv_context *dce_ctx,
 	NTSTATUS status;
 
 	/* Make sure the directory for NCALRPC exists */
-	if (!directory_exist(lp_ncalrpc_dir(), NULL)) {
+	if (!directory_exist(lp_ncalrpc_dir())) {
 		mkdir(lp_ncalrpc_dir(), 0755);
 	}
 

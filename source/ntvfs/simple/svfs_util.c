@@ -182,13 +182,3 @@ uint16_t svfs_unix_to_dos_attrib(mode_t mode)
 	return ret;
 }
 
-/*
-  build a file_id from a stat struct
-*/
-uint64_t svfs_file_id(struct stat *st)
-{
-	uint64_t ret = st->st_ino;
-	ret <<= 32;
-	ret |= st->st_dev;
-	return ret;
-}
