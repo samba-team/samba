@@ -124,6 +124,7 @@ static ADS_STRUCT *ads_startup(void)
 	ADS_STATUS status;
 	BOOL need_password = False;
 	BOOL second_time = False;
+	char *realm;
 	
 	ads = ads_init(NULL, NULL, opt_host);
 
@@ -149,6 +150,16 @@ retry:
 	}
 
 	ads->auth.user_name = strdup(opt_user_name);
+
+	/*
+	 * If the username is of the form "name@realm", 
+	 * extract the realm and convert to upper case.
+	 */
+	if (realm = strchr(ads->auth.user_name, '@')) {
+		*realm++ = '\0';
+		ads->auth.realm = strdup(realm);
+		strupper(ads->auth.realm);
+	}
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status)) {
