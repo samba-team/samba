@@ -34,7 +34,7 @@ LIB = $(LIBNAME).$(LIBEXT)
 LIB2 = $(LIBPREFIX)el_compat.a
 LIBS = $(LIB) @el_yes@ $(LIB2)
 
-LIB_DEPS = @lib_deps_yes@ -lc
+LIB_DEPS = @lib_deps_yes@ @LIB_tgetent@ -lc
 build_symlink_command   = @build_symlink_command@
 install_symlink_command = @install_symlink_command@
 install_symlink_command2 = @install_symlink_command2@
