@@ -8,8 +8,8 @@ chkconfig samba off
 #
 # add SAMBA deamons to inetd.conf
 #
-cp /etc/inetd.conf /etc/inetd.O
-sed -e "/^netbios/D" -e "/^#SAMBA/D" /etc/inetd.O > /etc/inetd.conf
+cp /etc/inetd.conf /etc/inetd.conf.O
+sed -e "/^netbios/D" -e "/^#SAMBA/D" /etc/inetd.conf.O > /etc/inetd.conf
 echo '#SAMBA services' >> /etc/inetd.conf
 echo netbios-ssn stream tcp  nowait  root    /usr/samba/bin/smbd smbd  >> /etc/inetd.conf
 echo netbios-ns  dgram udp   wait    root    /usr/samba/bin/nmbd nmbd -S >> /etc/inetd.conf

@@ -233,7 +233,6 @@ while (@swatfiles) {
 
 print IDB "d 0755 root sys usr/samba/var $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "d 0755 root sys usr/samba/var/locks $SRCPFX/packaging/SGI $PKG.sw.base\n";
-print IDB "f 0644 root sys usr/samba/var/locks/STATUS..LCK $SRCPFX/packaging/SGI/STATUS..LCK $PKG.sw.base\n";
 
 if ($PKG eq "samba_irix") {
   while(@books) {

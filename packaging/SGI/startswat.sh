@@ -2,8 +2,8 @@
 #
 # add SWAT deamon to inetd.conf
 #
-cp /etc/inetd.conf /etc/inetd.O
-sed -e "/^swat/D" -e "/^#SWAT/D" /etc/inetd.O > /etc/inetd.conf
+cp /etc/inetd.conf /etc/inetd.conf.O
+sed -e "/^swat/D" -e "/^#SWAT/D" /etc/inetd.conf.O > /etc/inetd.conf
 echo '#SWAT services' >> /etc/inetd.conf
 echo swat stream tcp  nowait  root    /usr/samba/bin/swat swat >> /etc/inetd.conf
 

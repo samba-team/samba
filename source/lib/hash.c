@@ -320,9 +320,5 @@ BOOL hash_clear(hash_table *table)
 		free((char *) table->buckets);
 	table->buckets = NULL;
 
-	/* Reinitialize the hash table. */
-	if(!hash_table_init(table, 0, table->comp_func))
-		return False;
-
 	return True;
 }
