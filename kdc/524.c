@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -81,7 +81,8 @@ do_524(Ticket *t, krb5_data *reply, const char *from)
 	kdc_log(0, "Failed to decrypt ticket from %s for %s", from, spn);
 	goto out;
     }
-    ret = decode_EncTicketPart(et_data.data, et_data.length, &et, &len);
+    ret = krb5_decode_EncTicketPart(context, et_data.data, et_data.length, 
+				    &et, &len);
     krb5_data_free(&et_data);
     if(ret){
 	kdc_log(0, "Failed to decode ticket from %s for %s", from, spn);
