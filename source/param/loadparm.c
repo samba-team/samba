@@ -246,7 +246,6 @@ typedef struct
 	BOOL bUpdateEncrypt;
 	int  clientSchannel;
 	int  serverSchannel;
-	BOOL bStripDot;
 	BOOL bNullPasswords;
 	BOOL bObeyPamRestrictions;
 	BOOL bLoadPrinters;
@@ -965,7 +964,6 @@ static struct parm_struct parm_table[] = {
 	{"default devmode", P_BOOL, P_LOCAL, &sDefault.bDefaultDevmode, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 
 	{"Filename Handling", P_SEP, P_SEPARATOR}, 
-	{"strip dot", P_BOOL, P_GLOBAL, &Globals.bStripDot, NULL, NULL, FLAG_ADVANCED}, 
 	{"mangling method", P_STRING, P_GLOBAL, &Globals.szManglingMethod, NULL, NULL, FLAG_ADVANCED}, 
 	{"mangle prefix", P_INTEGER, P_GLOBAL, &Globals.mangle_prefix, NULL, NULL, FLAG_ADVANCED}, 
 
@@ -1387,7 +1385,6 @@ static void init_globals(void)
 	Globals.bReadbmpx = False;
 	Globals.bNullPasswords = False;
 	Globals.bObeyPamRestrictions = False;
-	Globals.bStripDot = False;
 	Globals.syslog = 1;
 	Globals.bSyslogOnly = False;
 	Globals.bTimestampLogs = True;
@@ -1718,7 +1715,6 @@ FN_GLOBAL_BOOL(lp_large_readwrite, &Globals.bLargeReadwrite)
 FN_GLOBAL_BOOL(lp_writeraw, &Globals.bWriteRaw)
 FN_GLOBAL_BOOL(lp_null_passwords, &Globals.bNullPasswords)
 FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &Globals.bObeyPamRestrictions)
-FN_GLOBAL_BOOL(lp_strip_dot, &Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted, &Globals.bUpdateEncrypt)
 FN_GLOBAL_INTEGER(lp_client_schannel, &Globals.clientSchannel)

@@ -1,5 +1,5 @@
-                   WHATS NEW IN Samba 3.0.0 RC3
-                          September 8, 2003
+                    WHATS NEW IN Samba 3.0.0RC4 
+                        September 11, 2003
                   ==============================
 
 This is the third release candidate snapshot of Samba 3.0.0. A release 
@@ -82,11 +82,18 @@ License.
 
 
 ######################################################################
-Changes since 3.0rc2
+Changes since 3.0rc3
 ####################
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details:
+
+1)  
+
+
+
+Changes since 3.0rc2
+####################
 
 1)  Remove Perl module dependencies in generated RedHat 8/9 RPMS.
 2)  Update mount helper to take synonyms for file_mode and 
@@ -560,11 +567,12 @@ Removed Parameters (order alphabetically):
   * domain guest group
   * force unknown acl user
   * nt smb support
-  * post script
+  * postscript
   * printer driver
   * printer driver file
   * printer driver location
   * status
+  * strip dot
   * total print jobs
   * use rhosts
   * valid chars
@@ -655,7 +663,7 @@ New Parameters (new parameters have been grouped by function):
   General Configuration
   ---------------------
   * preload modules
-  * privatedir
+  * private dir
 
 Modified Parameters (changes in behavior):
 
