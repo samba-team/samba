@@ -1,9 +1,11 @@
 #!/bin/sh
+#
+# $Id: swat.postrm,v 1.2.4.1 2003/06/01 04:30:10 peloy Exp $
+#
 
 case "$1" in
 	purge)
 		update-inetd --remove '/usr/sbin/swat$'
-		exit 0
 		;;
 	remove)
 		;;
@@ -14,6 +16,8 @@ case "$1" in
 		exit 0
 		;;
 esac
+
+#DEBHELPER#
 
 exit 0
 

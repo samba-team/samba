@@ -1,6 +1,11 @@
 #!/bin/sh
+#
+# $Id: samba-common.postrm,v 1.2.4.1 2003/06/01 04:30:10 peloy Exp $
+#
 
 if [ "$1" = purge ]; then
 	# Remove any files left in /etc/samba/
 	rm -Rf /etc/samba/
 fi
+
+#DEBHELPER#

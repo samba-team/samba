@@ -2,8 +2,11 @@ usr/bin/smbclient
 usr/bin/smbtar
 usr/bin/rpcclient
 usr/bin/smbspool
+usr/bin/smbtree
+usr/bin/smbcacls
 usr/share/man/man1/smbclient.1
 usr/share/man/man1/smbtar.1
 usr/share/man/man1/rpcclient.1
 usr/share/man/man8/smbspool.8
+usr/share/man/man1/smbcacls.1
 usr/lib/cups/backend/smb
