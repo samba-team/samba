@@ -1278,7 +1278,7 @@ time_t timegm(struct tm *tm);
 
 #if defined(HAVE_KRB5)
 
-#ifndef KRB5_SET_REAL_TIME
+#ifndef HAVE_KRB5_SET_REAL_TIME
 krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
 #endif
 
