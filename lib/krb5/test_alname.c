@@ -121,10 +121,10 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    if (argc != 2)
+    if (argc != 1)
 	errx(1, "first argument should be a local user that in root .k5login");
 
-    user = argv[1];
+    user = argv[0];
 
     ret = krb5_init_context(&context);
     if (ret)
