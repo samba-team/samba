@@ -307,6 +307,7 @@ if [ -f $i ]; then
 	echo "Moving $i to $newname"
 	mv $i $newname
 fi
+done
 
 # Remove the transient tdb files.
 if [ -e /var/cache/samba/brlock.tdb ]; then
@@ -348,7 +349,7 @@ fi
 
 # Add swat entry to xinetd.d if needed.
 if [ -d $RPM_BUILD_ROOT/etc/xinetd.d ]; then
-    mv /etc/samba/samba.xinetd /etc/xinetd.d/swat
+	mv /etc/samba/samba.xinetd /etc/xinetd.d/swat
 else
 	rm -f /etc/samba/samba.xinetd
 fi
@@ -364,15 +365,15 @@ fi
 
 %preun
 if [ $1 = 0 ] ; then
-    /sbin/chkconfig --del smb
+	/sbin/chkconfig --del smb
 
-    # We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
-    if [ -e /var/cache/samba/browse.dat ]; then
-	    rm -f /var/cache/samba/browse.dat
-    fi
-    if [ -e /var/cache/samba/wins.dat ]; then
-	    rm -f /var/cache/samba/wins.dat
-    fi
+	# We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
+	if [ -e /var/cache/samba/browse.dat ]; then
+		rm -f /var/cache/samba/browse.dat
+	fi
+	if [ -e /var/cache/samba/wins.dat ]; then
+		rm -f /var/cache/samba/wins.dat
+	fi
 
 	# Remove the transient tdb files.
 	if [ -e /var/cache/samba/brlock.tdb ]; then
