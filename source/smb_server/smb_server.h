@@ -168,21 +168,9 @@ struct substitute_context {
  * information associated with a SMB server connection 
  */
 struct smbsrv_connection {
-	/* this is the context for a SMB socket associated with the socket itself */
-	struct {
-		/* the open file descriptor */
-		int fd; 
-	
-		/* the last read error on the socket, if any (replaces smb_read_error global) */
-		int read_error;
-	
-		/* a count of the number of packets we have received. We
-		 * actually only care about zero/non-zero at this stage */
-		unsigned pkt_count;
-	
-		/* the network address of the client */
-		char *client_addr;
-	} socket;
+	/* a count of the number of packets we have received. We
+	 * actually only care about zero/non-zero at this stage */
+	unsigned pkt_count;
 
 	/* context that has been negotiated between the client and server */
 	struct {
