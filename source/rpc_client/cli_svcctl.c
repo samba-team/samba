@@ -97,15 +97,19 @@ do a SVC Enumerate Services
 BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *hnd,
 				uint32 services_type, uint32 services_state,
-				uint32 buf_size, uint32 *resume_hnd,
-				ENUM_SRVC_STATUS **svcs)
+				uint32 *buf_size, uint32 *resume_hnd,
+				uint32 *dos_error,
+				ENUM_SRVC_STATUS **svcs, uint32 *num_svcs)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	SVC_Q_ENUM_SVCS_STATUS q_o;
 	BOOL valid_pol = False;
 
-	if (hnd == NULL) return False;
+	if (hnd == NULL || buf_size == NULL || dos_error == NULL || num_svcs == NULL)
+	{
+		return False;
+	}
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -116,7 +120,7 @@ BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 
 	make_svc_q_enum_svcs_status(&q_o, hnd,
 	                            services_type, services_state,
-	                            buf_size, *resume_hnd);
+	                            *buf_size, *resume_hnd);
 
 	/* turn parameters into data stream */
 	svc_io_q_enum_svcs_status("", &q_o, &buf, 0);
@@ -136,13 +140,16 @@ BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 		{
 			/* report error code */
 			DEBUG(0,("SVC_ENUM_SVCS_STATUS: %s\n", smb_err_msg(ERRDOS, r_o.dos_status)));
-			p = r_o.dos_status != ERRmoredata;
+			p = r_o.dos_status == ERRmoredata;
 		}
 
 		if (p)
 		{
 			(*svcs) = r_o.svcs;
+			(*num_svcs) = r_o.num_svcs;
 			(*resume_hnd) = get_enum_hnd(&r_o.resume_hnd);
+			(*buf_size) = r_o.more_buf_size;
+			(*dos_error) = r_o.dos_status;
 			valid_pol = True;
 		}
 	}

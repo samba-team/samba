@@ -1785,8 +1785,9 @@ BOOL do_svc_open_sc_man(struct cli_state *cli, uint16 fnum,
 BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *hnd,
 				uint32 services_type, uint32 services_state,
-				uint32 buf_size, uint32 *resume_hnd,
-				ENUM_SRVC_STATUS **svcs);
+				uint32 *buf_size, uint32 *resume_hnd,
+				uint32 *dos_error,
+				ENUM_SRVC_STATUS **svcs, uint32 *num_svcs);
 BOOL do_svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
@@ -2768,6 +2769,7 @@ void display_reg_value_info(FILE *out_hnd, enum action_type action,
 				char *val_name, uint32 val_type, BUFFER2 *value);
 void display_reg_key_info(FILE *out_hnd, enum action_type action,
 				char *key_name, time_t key_mod_time);
+void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *svc);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
