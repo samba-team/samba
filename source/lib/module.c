@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    module loading system
 
-   Copyright (C) Jelmer Vernooij 2002
+   Copyright (C) Jelmer Vernooij 2002-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,12 +22,32 @@
 #include "includes.h"
 
 #ifdef HAVE_DLOPEN
-int smb_load_module(const char *module_name)
+
+/* Load module (or directory with modules) recursively. 
+ * Includes running the init_module() function */
+NTSTATUS smb_load_module(const char *module_name)
 {
 	void *handle;
-	init_module_function *init;
-	int status;
+	init_module_function init;
+	NTSTATUS status;
 	const char *error;
+	struct stat st;
+	DIR *dir;
+	struct dirent *dirent;
+
+	stat(module_name, &st);
+
+	/* If the argument is a directory, recursively load all files / 
+	 * directories in it */
+
+	/* How about symlinks pointing to themselves - wouldn't we rather 
+	 * want to use wildcards here? */
+	if(S_ISDIR(st.st_mode)) {
+		dir = opendir(module_name);
+		while(dirent = readdir(dir)) {
+			smb_load_module(dirent->d_name);
+		}
+	}
 
 	/* Always try to use LAZY symbol resolving; if the plugin has 
 	 * backwards compatibility, there might be symbols in the 
@@ -37,17 +57,17 @@ int smb_load_module(const char *module_name)
 
 	if(!handle) {
 		DEBUG(0, ("Error loading module '%s': %s\n", module_name, sys_dlerror()));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	init = sys_dlsym(handle, "init_module");
+	init = (init_module_function)sys_dlsym(handle, "init_module");
 
 	/* we must check sys_dlerror() to determine if it worked, because
            sys_dlsym() can validly return NULL */
 	error = sys_dlerror();
 	if (error) {
 		DEBUG(0, ("Error trying to resolve symbol 'init_module' in %s: %s\n", module_name, error));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	status = init();
@@ -65,7 +85,7 @@ int smb_load_modules(const char **modules)
 	int success = 0;
 
 	for(i = 0; modules[i]; i++){
-		if(smb_load_module(modules[i])) {
+		if(NT_STATUS_IS_OK(smb_load_module(modules[i]))) {
 			success++;
 		}
 	}
@@ -75,47 +95,18 @@ int smb_load_modules(const char **modules)
 	return success;
 }
 
-int smb_probe_module(const char *subsystem, const char *module)
-{
-	char *full_path;
-	int rc;
-	TALLOC_CTX *mem_ctx;
-	
-	/* Check for absolute path */
-	if(module[0] == '/')return smb_load_module(module);
-	
-	mem_ctx = talloc_init("smb_probe_module");
-	if (!mem_ctx) {
-		DEBUG(0,("No memory for loading modules\n"));
-		return False;
-	}
-	full_path = talloc_strdup(mem_ctx, lib_path(mem_ctx, subsystem));
-	full_path = talloc_asprintf(mem_ctx, "%s/%s.%s", 
-		full_path, module, shlib_ext());
-	
-	rc = smb_load_module(full_path);
-	talloc_destroy(mem_ctx);
-	return rc;
-}
-
 #else /* HAVE_DLOPEN */
 
-int smb_load_module(const char *module_name)
+NTSTATUS smb_load_module(const char *module_name)
 {
-	DEBUG(0,("This samba executable has not been built with plugin support"));
-	return False;
+	DEBUG(0,("This samba executable has not been built with plugin support\n"));
+	return NT_STATUS_NOT_SUPPORTED;
 }
 
 int smb_load_modules(const char **modules)
 {
-	DEBUG(0,("This samba executable has not been built with plugin support"));
-	return False;
-}
-
-int smb_probe_module(const char *subsystem, const char *module)
-{
-	DEBUG(0,("This samba executable has not been built with plugin support, not probing")); 
-	return False;
+	DEBUG(0,("This samba executable has not been built with plugin support\n"));
+	return -1;
 }
 
 #endif /* HAVE_DLOPEN */
@@ -124,5 +115,38 @@ void init_modules(void)
 {
 	if(lp_preload_modules()) 
 		smb_load_modules(lp_preload_modules());
-	/* FIXME: load static modules */
+}
+
+struct subsystem {
+	char *name;
+	register_backend_function callback;
+	struct subsystem *prev, *next;
+};
+
+struct subsystem *subsystems = NULL;
+
+void register_subsystem(const char *name, register_backend_function callback) 
+{
+	struct subsystem *s;
+
+	s = smb_xmalloc(sizeof(struct subsystem));
+
+	s->name = smb_xstrdup(name);
+	s->callback = callback;
+	s->prev = s->next = NULL;
+
+	DLIST_ADD(subsystems, s);
+}
+
+NTSTATUS register_backend(const char *subsystem, void *args)
+{
+	/* Find the specified subsystem */
+	struct subsystem *s = subsystems;
+
+	while(s) {
+		if(!strcmp(subsystem, s->name)) return s->callback(args);
+		s = s->next;
+	}
+
+	return NT_STATUS_NOT_IMPLEMENTED;
 }

@@ -759,10 +759,11 @@ extern int errno;
 #include "ntlmssp.h"
 
 #include "auth.h"
-
 #include "passdb.h"
 
 #include "session.h"
+
+#include "module.h"
 
 #include "asn_1.h"
 

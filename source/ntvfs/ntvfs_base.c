@@ -28,8 +28,6 @@
  * can be more than one backend with the same name, as long as they
  * have different typesx */
 static struct {
-	const char *name;
-	enum ntvfs_type type;
 	struct ntvfs_ops *ops;
 } *backends = NULL;
 static int num_backends;
@@ -42,13 +40,15 @@ static int num_backends;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-BOOL ntvfs_register(const char *name, enum ntvfs_type type, struct ntvfs_ops *ops)
+static NTSTATUS ntvfs_register(void *_ops)
 {
-	if (ntvfs_backend_byname(name, type) != NULL) {
+	struct ntvfs_ops *ops = _ops;
+	
+	if (ntvfs_backend_byname(ops->name, ops->type) != NULL) {
 		/* its already registered! */
 		DEBUG(2,("NTVFS backend '%s' for type %d already registered\n", 
-			 name, (int)type));
-		return False;
+			 ops->name, (int)ops->type));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
 	backends = Realloc(backends, sizeof(backends[0]) * (num_backends+1));
@@ -56,13 +56,12 @@ BOOL ntvfs_register(const char *name, enum ntvfs_type type, struct ntvfs_ops *op
 		smb_panic("out of memory in ntvfs_register");
 	}
 
-	backends[num_backends].name = smb_xstrdup(name);
-	backends[num_backends].type = type;
 	backends[num_backends].ops = smb_xmemdup(ops, sizeof(*ops));
+	backends[num_backends].ops->name = smb_xstrdup(ops->name);
 
 	num_backends++;
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 
@@ -74,8 +73,8 @@ struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntvfs_type type)
 	int i;
 
 	for (i=0;i<num_backends;i++) {
-		if (backends[i].type == type && 
-		    strcmp(backends[i].name, name) == 0) {
+		if (backends[i].ops->type == type && 
+		    strcmp(backends[i].ops->name, name) == 0) {
 			return backends[i].ops;
 		}
 	}
@@ -105,19 +104,10 @@ int ntvfs_interface_version(struct ntvfs_critical_sizes *sizes)
 */
 BOOL ntvfs_init(void)
 {
-	/* initialise our 3 basic backends. These are assumed to be
-	 * present and are always built in */
-	if (!posix_vfs_init() ||
-	    !ipc_vfs_init() ||
-	    !print_vfs_init()) {
-		return False;
-	}
-	/* initialize optional backends, e.g. CIFS. We allow failures here. */
-	cifs_vfs_init();
+	register_subsystem("ntvfs", ntvfs_register); 
 
-#if WITH_NTVFS_STFS
-	tank_vfs_init();
-#endif
+	/* FIXME: Perhaps panic if a basic backend, such as IPC, fails to initialise? */
+	static_init_ntvfs;
 
 	DEBUG(3,("NTVFS version %d initialised\n", NTVFS_INTERFACE_VERSION));
 	return True;

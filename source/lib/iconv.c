@@ -63,8 +63,9 @@ static struct charset_functions builtin_functions[] = {
 
 static struct charset_functions *charsets = NULL;
 
-BOOL smb_register_charset(struct charset_functions *funcs) 
+static NTSTATUS charset_register_backend(void *_funcs) 
 {
+	struct charset_functions *funcs = (struct charset_functions *)_funcs;
 	struct charset_functions *c = charsets;
 
 	DEBUG(5, ("Attempting to register new charset %s\n", funcs->name));
@@ -72,7 +73,7 @@ BOOL smb_register_charset(struct charset_functions *funcs)
 	while(c) {
 		if(!strcasecmp(c->name, funcs->name)){ 
 			DEBUG(2, ("Duplicate charset %s, not registering\n", funcs->name));
-			return False;
+			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 		c = c->next;
 	}
@@ -80,7 +81,7 @@ BOOL smb_register_charset(struct charset_functions *funcs)
 	funcs->next = funcs->prev = NULL;
 	DEBUG(5, ("Registered charset %s\n", funcs->name));
 	DLIST_ADD(charsets, funcs);
-	return True;
+	return NT_STATUS_OK;
 }
 
 static void lazy_initialize_iconv(void)
@@ -90,8 +91,10 @@ static void lazy_initialize_iconv(void)
 
 	if (!initialized) {
 		initialized = True;
+		register_subsystem("charset", charset_register_backend);
+		
 		for(i = 0; builtin_functions[i].name; i++) 
-			smb_register_charset(&builtin_functions[i]);
+			register_backend("charset", &builtin_functions[i]);
 	}
 }
 

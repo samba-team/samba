@@ -23,7 +23,7 @@
   This is the default backend
 */
 
-#include "includes.h"
+#include "include/includes.h"
 
 /*
   connect to a share - used when a tree_connect operation comes
@@ -126,12 +126,15 @@ static NTSTATUS pvfs_unlink(struct ntvfs_context *ctx, const char *name, uint16 
 /*
   initialialise the POSIX disk backend, registering ourselves with the ntvfs subsystem
  */
-BOOL posix_vfs_init(void)
+NTSTATUS ntvfs_posix_init(void)
 {
-	BOOL ret;
+	NTSTATUS ret;
 	struct ntvfs_ops ops;
 
 	ZERO_STRUCT(ops);
+
+	ops.name = "default";
+	ops.type = NTVFS_DISK;
 	
 	/* fill in all the operations */
 	ops.connect = pvfs_connect;
@@ -140,12 +143,11 @@ BOOL posix_vfs_init(void)
 
 	/* register ourselves with the NTVFS subsystem. We register under the name 'default'
 	   as we wish to be the default backend */
-	ret = ntvfs_register("default", NTVFS_DISK, &ops);
+	ret = register_backend("ntvfs", &ops);
 
-	if (!ret) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register POSIX backend!\n"));
-		return False;
 	}
 
-	return True;
+	return ret;
 }
