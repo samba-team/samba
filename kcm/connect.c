@@ -86,7 +86,7 @@ update_client_creds(int s, kcm_client *peer)
 	socklen_t pclen;
 	struct ucred pc;
 
-	if (getsockopt(d[index].s, SOL_SOCKET, SO_PEERCRED, (void *)&pc,
+	if (getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&pc,
 		       &pclen) != 0) {
 	    krb5_warn(kcm_context, errno, "failed to determine peer identity");
 	    return 1;
