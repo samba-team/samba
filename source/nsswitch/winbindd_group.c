@@ -905,9 +905,14 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 				continue;
 			}
 
-			/* Check it is a domain group */
+			/* Check it is a domain group or an alias
+                           (domain local group) in a win2k native mode
+                           domain. */
+			
+			if (!(sid_type == SID_NAME_DOM_GRP ||
+			      (domain->native_mode && 
+			       sid_type == SID_NAME_ALIAS))) {
 
-			if (sid_type != SID_NAME_DOM_GRP) {
 				DEBUG(10, ("winbindd_getgroups: sid type %d "
 					   "for %s is not a domain group\n",
 					   sid_type,
