@@ -1,0 +1,9 @@
+Thu Mar 26 03:49:12 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* ftp/*, ftpd/*: Changes for new framework.
+
+	* ftp/gssapi.c: GSS-API backend for the new security framework.
+
+	* ftp/krb4.c: Updated for new framework.
+
+	* ftp/security.{c,h}: New unified security framework.
