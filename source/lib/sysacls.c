@@ -636,7 +636,7 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d)
 
 int sys_acl_valid(SMB_ACL_T acl_d)
 {
-	if (aclsort(acl_d->count, 0, acl_d->acl) != 0) {
+	if (aclsort(acl_d->count, 1, acl_d->acl) != 0) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -726,7 +726,7 @@ int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 		return -1;
 	}
 
-	if (aclsort(acl_count, 0, acl_p) != 0) {
+	if (aclsort(acl_count, 1, acl_p) != 0) {
 		errno = EINVAL;
 		ret = -1;
 	} else {
@@ -742,7 +742,7 @@ int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
 {
-	if (aclsort(acl_d->count, 0, acl_d->acl) != 0) {
+	if (aclsort(acl_d->count, 1, acl_d->acl) != 0) {
 		errno = EINVAL;
 		return -1;
 	}
