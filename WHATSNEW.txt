@@ -24,7 +24,7 @@ See the cvs log for SAMBA_2_2 for more details
 5)  Fix bug with sendfile profiling support in smbstatus output
 6)  Correct bug in "hide unreadable" smb.conf parameter that 
     resulted in incorrect directory listings 
-7)  Fix bug in group enumerationg in winbindd
+7)  Fix bug in group enumeration in winbindd
 8)  Correct build issues with libsmbclient on Solaris
 9)  Fix memory leak and bad pointer dereference in password
     changing code in smbd
@@ -33,7 +33,7 @@ See the cvs log for SAMBA_2_2 for more details
     of processes
 12) Ensure we return disk full by default on short writes
 13) Don't delete jobs submitted after the lpq time
-14) Fix reference count bug where smbd's would not terminate 
+14) Fix reference count bug where smbds would not terminate 
     with no open resources
 15) Performance fix when using quota support on HP-UX
 16) Fixes for --with-ldapsam
@@ -41,7 +41,7 @@ See the cvs log for SAMBA_2_2 for more details
     * add support for rebinding to the master directory server
       for password changes when "ldap server" points to a read-only 
       slave
-17) Add -W and -X comand line flags to smbpasswd for extracting and
+17) Add -W and -X command line flags to smbpasswd for extracting and
     setting the machine/domain SID in secrets.tdb.  See the 
     smbpasswd(8) man page for details.
 18) Added (c) Luke Howard to winbind_nss_solaris.c for coded 
