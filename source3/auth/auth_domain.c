@@ -46,6 +46,8 @@ static NTSTATUS ads_resolve_dc(fstring remote_machine,
 		return NT_STATUS_NO_LOGON_SERVERS;		
 	}
 
+	DEBUG(4,("ads_resolve_dc: realm=%s\n", ads->realm));
+
 #ifdef HAVE_ADS
 	/* a full ads_connect() is actually overkill, as we don't srictly need
 	   to do the SASL auth in order to get the info we need, but libads
@@ -57,10 +59,10 @@ static NTSTATUS ads_resolve_dc(fstring remote_machine,
 
 	fstrcpy(remote_machine, ads->ldap_server_name);
 	strupper(remote_machine);
-	*dest_ip = *interpret_addr2(ads->ldap_server);
+	*dest_ip = ads->ldap_ip;
 	ads_destroy(&ads);
 	
-	if (!*remote_machine) {
+	if (!*remote_machine || is_zero_ip(*dest_ip)) {
 		return NT_STATUS_NO_LOGON_SERVERS;		
 	}
 
@@ -166,8 +168,8 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		return NT_STATUS_NO_LOGON_SERVERS;
 	
 	/* Attempt connection */
-	result = cli_full_connection(cli, global_myname, server,
-				     &dest_ip, 0, "IPC$", "IPC", "", "", "", 0);
+	result = cli_full_connection(cli, global_myname, remote_machine,
+				     &dest_ip, 0, "IPC$", "IPC", "", "", "");
 
 	if (!NT_STATUS_IS_OK(result)) {
 		release_server_mutex();
