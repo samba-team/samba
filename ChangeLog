@@ -1,5 +1,7 @@
 Sun Mar  9 21:01:12 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/rd_req.c: do some checks on times
+
 	* lib/krb/{mk_priv.c, rd_priv.c, sendauth.c, decrypt.c,
 	address.c}: new files
 
