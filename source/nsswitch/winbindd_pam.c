@@ -96,11 +96,6 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	/* Parse domain and username */
 	
 	parse_domain_user(state->request.data.auth.user, name_domain, name_user);
-	if ( !*name_domain ) {
-		DEBUG(5,("no domain separator (%s) in username (%s) - failing auth\n", lp_winbind_separator(), state->request.data.auth.user));
-		result = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
 
 	/* do password magic */
 	
@@ -119,11 +114,23 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* what domain should we contact? */
 	
-	if ( IS_DC )
+	if ( IS_DC ) {
+		if (!find_domain_from_name(name_domain)) {
+			DEBUG(3, ("Cannot change password for [%s] -> [%s]\\[%s] as %s is not a trusted domain\n", 
+				  state->request.data.auth.user, name_domain, name_user, name_domain)); 
+			result = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
 		contact_domain = name_domain;
-	else
-		contact_domain = lp_workgroup();
 		
+	} else {
+		if (is_myname(name_domain)) {
+			DEBUG(3, ("Authentication for domain %s (local domain to this server) not supported at this stage\n", name_domain));
+			result =  NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+		contact_domain = lp_workgroup();
+	}
 	/* check authentication loop */
 
 	do {
@@ -305,11 +312,23 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	
 	/* what domain should we contact? */
 	
-	if ( IS_DC )
+	if ( IS_DC ) {
+		if (!find_domain_from_name(domain)) {
+			DEBUG(3, ("Cannot change password for [%s] -> [%s]\\[%s] as %s is not a trusted domain\n", 
+				  state->request.data.auth.user, domain, user, domain)); 
+			result = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
 		contact_domain = domain;
-	else
+	} else {
+		if (is_myname(domain)) {
+			DEBUG(3, ("Authentication for domain %s (local domain to this server) not supported at this stage\n", domain));
+			result =  NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
 		contact_domain = lp_workgroup();
-	
+	}
+		
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
@@ -447,8 +466,11 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	parse_domain_user(state->request.data.chauthtok.user, domain, user);
-	if ( !*domain ) {
-		result = NT_STATUS_INVALID_PARAMETER;
+
+	if (!find_domain_from_name(domain)) {
+		DEBUG(3, ("Cannot change password for [%s] -> [%s]\\[%s] as %s is not a trusted domain\n", 
+			  state->request.data.chauthtok.user, domain, user, domain)); 
+		result = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
 
