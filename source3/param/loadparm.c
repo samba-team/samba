@@ -396,7 +396,6 @@ typedef struct
 	BOOL bBlockingLocks;
 	BOOL bInheritPerms;
 	BOOL bMSDfsRoot;
-	BOOL bRestrictAclWithMask;
 
 	char dummy[3];		/* for alignment */
 }
@@ -455,12 +454,12 @@ static service sDefault = {
 	0,			/* iWriteCacheSize */
 	0744,			/* iCreate_mask */
 	0000,			/* iCreate_force_mode */
-	-1,			/* iSecurity_mask */
-	-1,			/* iSecurity_force_mode */
+	0777,			/* iSecurity_mask */
+	0,			/* iSecurity_force_mode */
 	0755,			/* iDir_mask */
 	0000,			/* iDir_force_mode */
-	-1,			/* iDir_Security_mask */
-	-1,			/* iDir_Security_force_mode */
+	777,			/* iDir_Security_mask */
+	0,			/* iDir_Security_force_mode */
 	0,			/* iMaxConnections */
 	CASE_LOWER,		/* iDefaultCase */
 	DEFAULT_PRINTING,	/* iPrinting */
@@ -510,7 +509,6 @@ static service sDefault = {
 	True,			/* bBlockingLocks */
 	False,			/* bInheritPerms */
 	False,			/* bMSDfsRoot */
-	False,			/* bRestrictAclWithMask */
 
 	""			/* dummy */
 };
@@ -794,7 +792,6 @@ static struct parm_struct parm_table[] = {
 	{"nt smb support", P_BOOL, P_GLOBAL, &Globals.bNTSmbSupport, NULL, NULL, 0},
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, 0},
 	{"nt acl support", P_BOOL, P_GLOBAL, &Globals.bNTAclSupport, NULL, NULL, 0},
-	{"restrict acl with mask", P_BOOL, P_LOCAL, &sDefault.bRestrictAclWithMask, NULL, NULL, FLAG_SHARE},
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, 0},
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, 0},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, 0},
@@ -1679,15 +1676,14 @@ FN_LOCAL_BOOL(lp_dos_filetime_resolution, bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
-FN_LOCAL_BOOL(lp_restrict_acl_with_mask, bRestrictAclWithMask)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
-FN_LOCAL_INTEGER(_lp_security_mask, iSecurity_mask)
-FN_LOCAL_INTEGER(_lp_force_security_mode, iSecurity_force_mode)
+FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
+FN_LOCAL_INTEGER(lp_force_security_mode, iSecurity_force_mode)
 FN_LOCAL_INTEGER(lp_dir_mask, iDir_mask)
 FN_LOCAL_INTEGER(lp_force_dir_mode, iDir_force_mode)
-FN_LOCAL_INTEGER(_lp_dir_security_mask, iDir_Security_mask)
-FN_LOCAL_INTEGER(_lp_force_dir_security_mode, iDir_Security_force_mode)
+FN_LOCAL_INTEGER(lp_dir_security_mask, iDir_Security_mask)
+FN_LOCAL_INTEGER(lp_force_dir_security_mode, iDir_Security_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections, iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase, iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace, iMinPrintSpace)
@@ -3614,43 +3610,6 @@ int lp_minor_announce_version(void)
 void lp_set_name_resolve_order(char *new_order)
 {
 	Globals.szNameResolveOrder = new_order;
-}
-
-/***********************************************************
- Functions to return the current security masks/modes. If
- set to -1 then return the create mask/mode instead.
-************************************************************/
-
-int lp_security_mask(int snum)
-{
-	int val = _lp_security_mask(snum);
-	if (val == -1)
-		return lp_create_mask(snum);
-	return val;
-}
-
-int lp_force_security_mode(int snum)
-{
-	int val = _lp_force_security_mode(snum);
-	if (val == -1)
-		return lp_force_create_mode(snum);
-	return val;
-}
-
-int lp_dir_security_mask(int snum)
-{
-	int val = _lp_dir_security_mask(snum);
-	if (val == -1)
-		return lp_dir_mask(snum);
-	return val;
-}
-
-int lp_force_dir_security_mode(int snum)
-{
-	int val = _lp_force_dir_security_mode(snum);
-	if (val == -1)
-		return lp_force_dir_mode(snum);
-	return val;
 }
 
 char *lp_printername(int snum)
