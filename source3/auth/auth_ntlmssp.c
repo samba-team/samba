@@ -131,7 +131,7 @@ NTSTATUS auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 }
 
 NTSTATUS auth_ntlmssp_update(AUTH_NTLMSSP_STATE *auth_ntlmssp_state, 
-			     DATA_BLOB request, DATA_BLOB *reply) 
+			     const DATA_BLOB request, DATA_BLOB *reply) 
 {
 	return ntlmssp_server_update(auth_ntlmssp_state->ntlmssp_state, request, reply);
 }

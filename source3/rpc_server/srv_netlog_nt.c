@@ -668,7 +668,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		fstring group_sid_string;
 		uchar user_sess_key[16];
 		uchar netlogon_sess_key[16];
-		
+
 		sampw = server_info->sam_account;
 
 		/* set up pointer indicating user/password failed to be found */
