@@ -22,7 +22,7 @@
 
 /* Enumerate jobs */
 
-PyObject *spoolss_enumjobs(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_enumjobs(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -87,7 +87,7 @@ PyObject *spoolss_enumjobs(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Set job command */
 
-PyObject *spoolss_setjob(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_setjob(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -116,7 +116,7 @@ PyObject *spoolss_setjob(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Get job */
 
-PyObject *spoolss_getjob(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_getjob(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -161,7 +161,7 @@ PyObject *spoolss_getjob(PyObject *self, PyObject *args, PyObject *kw)
 /* Start page printer.  This notifies the spooler that a page is about to be
    printed on the specified printer. */
 
-PyObject *spoolss_startpageprinter(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_startpageprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -189,7 +189,7 @@ PyObject *spoolss_startpageprinter(PyObject *self, PyObject *args, PyObject *kw)
 /* End page printer.  This notifies the spooler that a page has finished
    being printed on the specified printer. */
 
-PyObject *spoolss_endpageprinter(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_endpageprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -217,7 +217,7 @@ PyObject *spoolss_endpageprinter(PyObject *self, PyObject *args, PyObject *kw)
 /* Start doc printer.  This notifies the spooler that a document is about to be
    printed on the specified printer. */
 
-PyObject *spoolss_startdocprinter(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_startdocprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -326,7 +326,7 @@ PyObject *spoolss_startdocprinter(PyObject *self, PyObject *args, PyObject *kw)
 /* End doc printer.  This notifies the spooler that a document has finished
    being printed on the specified printer. */
 
-PyObject *spoolss_enddocprinter(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_enddocprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -352,7 +352,7 @@ PyObject *spoolss_enddocprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Write data to a printer */
 
-PyObject *spoolss_writeprinter(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_writeprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;

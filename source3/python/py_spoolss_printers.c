@@ -110,7 +110,7 @@ PyObject *spoolss_closeprinter(PyObject *self, PyObject *args)
 
 /* Fetch printer information */
 
-PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -176,7 +176,7 @@ PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Set printer information */
 
-PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;

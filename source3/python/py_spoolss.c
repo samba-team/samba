@@ -73,7 +73,7 @@ Example:
 >>> spoolss.closeprinter(hnd)
 "},
 
-	{ "addprinterex", spoolss_addprinterex, METH_VARARGS, 
+	{ "addprinterex", (PyCFunction)spoolss_addprinterex, METH_VARARGS, 
 	  "addprinterex()"},
 
 	/* Server enumeratation functions */
@@ -154,7 +154,7 @@ static PyMethodDef spoolss_hnd_methods[] = {
 
 	/* Printer info */
 
-	{ "getprinter", (PyCFunction)spoolss_getprinter, 
+	{ "getprinter", (PyCFunction)spoolss_hnd_getprinter, 
            METH_VARARGS | METH_KEYWORDS,
 	  "getprinter([level]) -> dict
 
@@ -168,7 +168,7 @@ Example:
  'flags': 8388608}
 "},
 
-	{ "setprinter", (PyCFunction)spoolss_setprinter, 
+	{ "setprinter", (PyCFunction)spoolss_hnd_setprinter, 
           METH_VARARGS | METH_KEYWORDS,
 	  "setprinter(dict) -> None
 
@@ -177,7 +177,7 @@ Set printer information.
 
 	/* Printer drivers */
 
-	{ "getprinterdriver", (PyCFunction)spoolss_getprinterdriver, 
+	{ "getprinterdriver", (PyCFunction)spoolss_hnd_getprinterdriver, 
 	  METH_VARARGS | METH_KEYWORDS, 
 	  "getprinterdriver([level = 1, arch = \"Windows NT x86\"] -> dict
 
@@ -186,85 +186,85 @@ Return a dictionary of printer driver information.
 
 	/* Forms */
 
-	{ "enumforms", (PyCFunction)spoolss_enumforms, 
+	{ "enumforms", (PyCFunction)spoolss_hnd_enumforms, 
           METH_VARARGS | METH_KEYWORDS,
 	  "enumforms([level = 1]) -> list
 
 Return a list of forms supported by a printer.
 "},
 
-	{ "setform", (PyCFunction)spoolss_setform, 
+	{ "setform", (PyCFunction)spoolss_hnd_setform, 
           METH_VARARGS | METH_KEYWORDS,
 	  "setform(dict) -> None
 
 Set the form given by the dictionary argument.
 "},
 
-	{ "addform", (PyCFunction)spoolss_addform, 
+	{ "addform", (PyCFunction)spoolss_hnd_addform, 
           METH_VARARGS | METH_KEYWORDS,
 	  "Insert a form" },
 
-	{ "getform", (PyCFunction)spoolss_getform, 
+	{ "getform", (PyCFunction)spoolss_hnd_getform, 
           METH_VARARGS | METH_KEYWORDS,
 	  "Fetch form properties" },
 
-	{ "deleteform", (PyCFunction)spoolss_deleteform, 
+	{ "deleteform", (PyCFunction)spoolss_hnd_deleteform, 
           METH_VARARGS | METH_KEYWORDS,
 	  "Delete a form" },
 
         /* Job related methods */
 
-        { "enumjobs", (PyCFunction)spoolss_enumjobs, 
+        { "enumjobs", (PyCFunction)spoolss_hnd_enumjobs, 
           METH_VARARGS | METH_KEYWORDS,
           "Enumerate jobs" },
 
-        { "setjob", (PyCFunction)spoolss_setjob, 
+        { "setjob", (PyCFunction)spoolss_hnd_setjob, 
           METH_VARARGS | METH_KEYWORDS,
           "Set job information" },
 
-        { "getjob", (PyCFunction)spoolss_getjob, 
+        { "getjob", (PyCFunction)spoolss_hnd_getjob, 
           METH_VARARGS | METH_KEYWORDS,
           "Get job information" },
 
-        { "startpageprinter", (PyCFunction)spoolss_startpageprinter, 
+        { "startpageprinter", (PyCFunction)spoolss_hnd_startpageprinter, 
            METH_VARARGS | METH_KEYWORDS,
           "Notify spooler that a page is about to be printed." },
 
-        { "endpageprinter", (PyCFunction)spoolss_endpageprinter, 
+        { "endpageprinter", (PyCFunction)spoolss_hnd_endpageprinter, 
            METH_VARARGS | METH_KEYWORDS,
           "Notify spooler that a page is about to be printed." },
 
-        { "startdocprinter", (PyCFunction)spoolss_startdocprinter, 
+        { "startdocprinter", (PyCFunction)spoolss_hnd_startdocprinter, 
            METH_VARARGS | METH_KEYWORDS,
           "Notify spooler that a document is about to be printed." },
 
-        { "enddocprinter", (PyCFunction)spoolss_enddocprinter, 
+        { "enddocprinter", (PyCFunction)spoolss_hnd_enddocprinter, 
            METH_VARARGS | METH_KEYWORDS,
           "Notify spooler that a document is about to be printed." },
 
-        { "writeprinter", (PyCFunction)spoolss_writeprinter,
+        { "writeprinter", (PyCFunction)spoolss_hnd_writeprinter,
           METH_VARARGS | METH_KEYWORDS,
           "Write job data to a printer." },
 
         /* Printer data */
 
-        { "getprinterdata", (PyCFunction)spoolss_getprinterdata,
+        { "getprinterdata", (PyCFunction)spoolss_hnd_getprinterdata,
            METH_VARARGS | METH_KEYWORDS,
           "Get printer data." },
 
-        { "setprinterdata", (PyCFunction)spoolss_setprinterdata,
+        { "setprinterdata", (PyCFunction)spoolss_hnd_setprinterdata,
            METH_VARARGS | METH_KEYWORDS,
           "Set printer data." },
 
-        { "enumprinterdata", (PyCFunction)spoolss_enumprinterdata,
+        { "enumprinterdata", (PyCFunction)spoolss_hnd_enumprinterdata,
            METH_VARARGS | METH_KEYWORDS,
           "Enumerate printer data." },
 
-        { "deleteprinterdata", (PyCFunction)spoolss_deleteprinterdata,
+        { "deleteprinterdata", (PyCFunction)spoolss_hnd_deleteprinterdata,
            METH_VARARGS | METH_KEYWORDS,
           "Delete printer data." },
 
-        { "deleteprinterdataex", (PyCFunction)spoolss_deleteprinterdataex,
+        { "deleteprinterdataex", (PyCFunction)spoolss_hnd_deleteprinterdataex,
            METH_VARARGS | METH_KEYWORDS,
           "Delete printer data." },
 
