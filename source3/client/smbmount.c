@@ -827,8 +827,6 @@ static void parse_mount_smb(int argc, char **argv)
 	else
 		setenv("CLI_FORCE_ASCII", "true", 1);
 
-	TimeInit();
-	
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
 	if (getenv("USER")) {

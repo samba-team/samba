@@ -667,8 +667,6 @@ static void usage(char *pname)
 
 	append_log = True;
 
-	TimeInit();
-
 	if(!specified_logfile) {
 		slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd",
 			 dyn_LOGFILEBASE);

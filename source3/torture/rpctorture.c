@@ -292,8 +292,6 @@ enum client_action
 
 	setup_logging(pname, True);
 
-	TimeInit();
-
 	myumask = umask(0);
 	umask(myumask);
 

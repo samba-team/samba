@@ -548,7 +548,6 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	int profile_only = 0, new_debuglevel = -1;
 	TDB_CONTEXT *tdb;
 
-	TimeInit();
 	setup_logging(argv[0],True);
 	
 	DEBUGLEVEL = 0;

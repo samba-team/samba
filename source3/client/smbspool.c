@@ -187,8 +187,6 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
   setup_logging("smbspool", True);
 
-  TimeInit();
-
   in_client = True;   /* Make sure that we tell lp_load we are */
 
   if (!lp_load(dyn_CONFIGFILE, True, False, False))

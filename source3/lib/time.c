@@ -27,7 +27,6 @@
   */
 
 
-int serverzone=0;
 int extra_time_offset = 0;
 
 #ifndef CHAR_BIT
@@ -105,21 +104,36 @@ static int TimeZone(time_t t)
 
 }
 
+static BOOL done_serverzone_init;
 
-/*******************************************************************
-init the time differences
-********************************************************************/
-void TimeInit(void)
+/* Return the smb serverzone value */
+
+static int get_serverzone(void)
 {
-  serverzone = TimeZone(time(NULL));
+        static int serverzone;
 
-  if ((serverzone % 60) != 0) {
-	  DEBUG(1,("WARNING: Your timezone is not a multiple of 1 minute.\n"));
-  }
+        if (!done_serverzone_init) {
+                serverzone = TimeZone(time(NULL));
 
-  DEBUG(4,("Serverzone is %d\n",serverzone));
+                if ((serverzone % 60) != 0) {
+                        DEBUG(1,("WARNING: Your timezone is not a multiple of 1 minute.\n"));
+                }
+
+                DEBUG(4,("Serverzone is %d\n",serverzone));
+
+                done_serverzone_init = True;
+        }
+
+        return serverzone;
 }
 
+/* Re-read the smb serverzone value */
+
+void TimeInit(void)
+{
+        done_serverzone_init = False;
+        get_serverzone();
+}
 
 /*******************************************************************
 return the same value as TimeZone, but it should be more efficient.
@@ -284,7 +298,7 @@ time_t nt_time_to_unix(NTTIME *nt)
   ret = (time_t)(d+0.5);
 
   /* this takes us from kludge-GMT to real GMT */
-  ret -= serverzone;
+  ret -= get_serverzone();
   ret += LocTimeDiff(ret);
 
   return(ret);
@@ -331,7 +345,7 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	}		
 
 	/* this converts GMT to kludge-GMT */
-	t -= LocTimeDiff(t) - serverzone; 
+	t -= LocTimeDiff(t) - get_serverzone(); 
 
 	d = (double)(t);
 	d += TIME_FIXUP_CONSTANT;

@@ -188,8 +188,6 @@ int main(int argc, char *argv[])
 
   *term_code = 0;
 
-  TimeInit();
-
   setup_logging(argv[0],True);
   
   while ((opt = getopt(argc, argv,"shL:t:")) != EOF) {

@@ -217,8 +217,6 @@ int main (int argc, char **argv)
 
 	enum SID_NAME_USE sid_type;
 
-	TimeInit();
-	
 	setup_logging("groupedit", True);
 
 	if (argc < 2) {

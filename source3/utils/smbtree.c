@@ -338,8 +338,6 @@ static BOOL print_tree(struct user_auth_info *user_info)
 
 	setup_logging(argv[0],True);
 
-	TimeInit();
-
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 

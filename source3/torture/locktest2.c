@@ -558,8 +558,6 @@ static void usage(void)
 	argc -= 4;
 	argv += 4;
 
-	TimeInit();
-
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
