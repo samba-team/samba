@@ -85,6 +85,81 @@ minutes to stabilise, particularly across network segments.
 </sect1>
 
 <sect1>
+<title>How browsing functions and how to deploy stable and 
+dependable browsing using Samba</title>
+
+
+<para>
+As stated above, MS Windows machines register their NetBIOS names 
+(i.e.: the machine name for each service type in operation) on start 
+up. Also, as stated above, the exact method by which this name registration 
+takes place is determined by whether or not the MS Windows client/server 
+has been given a WINS server address, whether or not LMHOSTS lookup 
+is enabled, or if DNS for NetBIOS name resolution is enabled, etc.
+</para>
+
+<para>
+In the case where there is no WINS server all name registrations as 
+well as name lookups are done by UDP broadcast. This isolates name 
+resolution to the local subnet, unless LMHOSTS is used to list all 
+names and IP addresses. In such situations Samba provides a means by 
+which the samba server name may be forcibly injected into the browse 
+list of a remote MS Windows network (using the "remote announce" parameter).
+</para>
+
+<para>
+Where a WINS server is used, the MS Windows client will use UDP 
+unicast to register with the WINS server. Such packets can be routed 
+and thus WINS allows name resolution to function across routed networks.
+</para>
+
+<para>
+During the startup process an election will take place to create a 
+local master browser if one does not already exist. On each NetBIOS network 
+one machine will be elected to function as the domain master browser. This 
+domain browsing has nothing to do with MS security domain control. 
+Instead, the domain master browser serves the role of contacting each local 
+master browser (found by asking WINS or from LMHOSTS) and exchanging browse 
+list contents. This way every master browser will eventually obtain a complete 
+list of all machines that are on the network. Every 11-15 minutes an election 
+is held to determine which machine will be the master browser. By the nature of 
+the election criteria used, the machine with the highest uptime, or the 
+most senior protocol version, or other criteria, will win the election 
+as domain master browser.
+</para>
+
+<para>
+Clients wishing to browse the network make use of this list, but also depend 
+on the availability of correct name resolution to the respective IP 
+address/addresses. 
+</para>
+
+<para>
+Any configuration that breaks name resolution and/or browsing intrinsics 
+will annoy users because they will have to put up with protracted 
+inability to use the network services.
+</para>
+
+<para>
+Samba supports a feature that allows forced synchonisation 
+of browse lists across routed networks using the "remote 
+browse sync" parameter in the smb.conf file. This causes Samba 
+to contact the local master browser on a remote network and 
+to request browse list synchronisation. This effectively bridges 
+two networks that are separated by routers. The two remote 
+networks may use either broadcast based name resolution or WINS 
+based name resolution, but it should be noted that the "remote 
+browse sync" parameter provides browse list synchronisation - and 
+that is distinct from name to address resolution, in other 
+words, for cross subnet browsing to function correctly it is 
+essential that a name to address resolution mechanism be provided. 
+This mechanism could be via DNS, <filename>/etc/hosts</filename>, 
+and so on.
+</para>
+
+</sect1>
+
+<sect1>
 <title>Use of the "Remote Announce" parameter</title>
 <para>
 The "remote announce" parameter of smb.conf can be used to forcibly ensure

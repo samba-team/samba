@@ -8,8 +8,15 @@
 		</affiliation>
 	</author>
 </chapterinfo>
+<title>Samba as Stand-Alone Server</title
 
-<title>Samba as Stand-Alone server (User and Share security level)</title>
+<para>
+In this section the function and purpose of Samba's <emphasis>security</emphasis>
+modes are described.
+</para>
+
+<sect1>
+<Title>User and Share security level</title>
 
 <para>
 A SMB server tells the client at startup what "security level" it is
@@ -22,6 +29,9 @@ everything is initiated and controlled by the client, and the server
 can only tell the client what is available and whether an action is
 allowed. 
 </para>
+
+<sect2>
+<title>User Level Security</title>
 
 <para>
 I'll describe user level security first, as its simpler. In user level
@@ -53,6 +63,11 @@ maintain multiple authentication contexts in this way (WinDD is an
 example of an application that does this)
 </para>
 
+</sect2>
+
+<sect2>
+<title>Share Level Security>
+
 <para>
 Ok, now for share level security. In share level security the client
 authenticates itself separately for each share. It will send a
@@ -78,6 +93,11 @@ line. The password is then checked in turn against these "possible
 usernames". If a match is found then the client is authenticated as
 that user.
 </para>
+
+</sect2>
+
+<sect2>
+<title>Server Level Security</title>
 
 <para>
 Finally "server level" security. In server level security the samba
@@ -113,4 +133,204 @@ That real authentication server can be another Samba server or can be a
 Windows NT server, the later natively capable of encrypted password support.
 </para>
 
+<sect3>
+<title>Configuring Samba for Seemless Windows Network Integration</title>
+
+<para>
+MS Windows clients may use encrypted passwords as part of a challenege/response
+authentication model (a.k.a. NTLMv1) or alone, or clear text strings for simple
+password based authentication. It should be realized that with the SMB protocol
+the password is passed over the network either in plain text or encrypted, but
+not both in the same authentication requests.
+</para>
+
+<para>
+When encrypted passwords are used a password that has been entered by the user
+is encrypted in two ways:
+</para>
+
+<itemizedlist>
+	<listitem><para>An MD4 hash of the UNICODE of the password
+	string.  This is known as the NT hash.
+	</para></listitem>
+
+	<listitem><para>The password is converted to upper case,
+	and then padded or trucated to 14 bytes.  This string is 
+	then appended with 5 bytes of NULL characters and split to
+	form two 56 bit DES keys to encrypt a "magic" 8 byte value.
+	The resulting 16 bytes for the LanMan hash.
+	</para></listitem>	
+</itemizedlist>
+
+<para>
+MS Windows 95 pre-service pack 1, MS Windows NT versions 3.x and version 4.0
+pre-service pack 3 will use either mode of password authentication. All
+versions of MS Windows that follow these versions no longer support plain
+text passwords by default.
+</para>
+
+<para>
+MS Windows clients have a habit of dropping network mappings that have been idle
+for 10 minutes or longer. When the user attempts to use the mapped drive
+connection that has been dropped, the client re-establishes the connection using
+a cached copy of the password.
+</para>
+
+<para>
+When Microsoft changed the default password mode, support was dropped for caching
+of the plain text password. This means that when the registry parameter is changed
+to re-enable use of plain text passwords it appears to work, but when a dropped
+service connection mapping attempts to revalidate it will fail if the remote
+authentication server does not support encrypted passwords.  This means that it
+is definitely not a good idea to re-enable plain text password support in such clients.
+</para>
+
+<para>
+The following parameters can be used to work around the issue of Windows 9x client
+upper casing usernames and password before transmitting them to the SMB server
+when using clear text authentication.
+</para>
+
+<para><programlisting>
+	<ulink url="smb.conf.5.html#PASSWORDLEVEL">passsword level</ulink> = <replaceable>integer</replaceable>
+	<ulink url="smb.conf.5.html#USERNAMELEVEL">username level</ulink> = <replaceable>integer</replaceable>
+</programlisting></para>
+
+<para>
+By default Samba will lower case the username before attempting to lookup the user
+in the database of local system accounts.  Because UNIX usernames conventionally
+only contain lower case character, the <parameter>username level</parameter> parameter
+is rarely needed.
+</para>
+
+<para>
+However, passwords on UNIX systems often make use of mixed case characters. 
+This means that in order for a user on a Windows 9x client to connect to a Samba
+server using clear text authentication, the <parameter>password level</parameter>
+must be set to the maximum number of upper case letter which <emphasis>could</emphasis>
+appear is a password.  Note that is the server OS uses the traditional DES version
+of crypt(), then a <parameter>password level</parameter> of 8 will result in case
+insensitive passwords as seen from Windows users.  This will also result in longer
+login times as Samba hash to compute the permutations of the password string and 
+try them one by one until a match is located (or all combinations fail).
+</para>
+
+<para>
+The best option to adopt is to enable support for encrypted passwords 
+where ever Samba is used. There are three configuration possibilities 
+for support of encrypted passwords:
+</para>
+
+</sect3>
+<sect3>
+<title>Use MS Windows NT as an authentication server</title>
+
+<para>
+This method involves the additions of the following parameters in the smb.conf file:
+</para>
+
+<para><programlisting>
+	encrypt passwords = Yes
+	security = server
+	password server = "NetBIOS_name_of_PDC"
+</programlisting></para>
+
+
+<para>
+There are two ways of identifying whether or not a username and 
+password pair was valid or not. One uses the reply information provided 
+as part of the authentication messaging process, the other uses 
+just and error code.
+</para>
+
+<para>
+The down-side of this mode of configuration is the fact that 
+for security reasons Samba will send the password server a bogus 
+username and a bogus password and if the remote server fails to 
+reject the username and password pair then an alternative mode 
+of identification of validation is used. Where a site uses password 
+lock out after a certain number of failed authentication attempts 
+this will result in user lockouts.
+</para>
+
+<para>
+Use of this mode of authentication does require there to be 
+a standard Unix account for the user, this account can be blocked 
+to prevent logons by other than MS Windows clients.
+</para>
+
+</sect3>
+</sect2>
+
+<sect2>
+<title>Domain Level Security</title>
+
+<para>
+When samba is operating in <emphasis>security = domain</emphasis> mode this means that
+the Samba server has a domain security trust account (a machine account) and will cause
+all authentication requests to be passed through to the domain controllers.
+</para>
+
+<sect3>
+<title>Samba as a member of an MS Windows NT security domain</title>
+
+<para>
+This method involves additon of the following paramters in the smb.conf file:
+</para>
+
+<para><programlisting>
+	encrypt passwords = Yes
+	security = domain
+	workgroup = "name of NT domain"
+	password server = *
+</programlisting></para>
+
+<para>
+The use of the "*" argument to "password server" will cause samba to locate the
+domain controller in a way analogous to the way this is done within MS Windows NT.
+This is the default behaviour.
+</para>
+
+<para>
+In order for this method to work the Samba server needs to join the 
+MS Windows NT security domain. This is done as follows:
+</para>
+
+<itemizedlist>
+	<listitem><para>On the MS Windows NT domain controller using 
+	the Server Manager add a machine account for the Samba server.
+	</para></listitem>
+	
+	<listitem><para>Next, on the Linux system execute: 
+	<command>smbpasswd -r PDC_NAME -j DOMAIN_NAME</command>
+	</para></listitem>
+</itemizedlist>
+
+<para>
+Use of this mode of authentication does require there to be a standard Unix account
+for the user in order to assign a uid once the account has been authenticated by
+the remote Windows DC.  This account can be blocked to prevent logons by other than
+MS Windows clients by things such as setting an invalid shell in the
+<filename>/etc/passwd</filename> entry. 
+</para>
+
+<para>
+An alternative to assigning UIDs to Windows users on a Samba member server is
+presented in the <ulink url="winbind.html">Winbind Overview</ulink> chapter
+in this HOWTO collection.
+</para>
+
+</sect3>
+</sect2>
+
+<sect2>
+<title>ADS Level Security</title>
+
+<para>
+For information about the configuration option please refer to the entire section entitled
+<emphasis>Samba as an ADS Domain Member.</emphasis>
+</para>
+
+</sect2>
+</sect1>
 </chapter>

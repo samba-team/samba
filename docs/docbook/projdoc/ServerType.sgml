@@ -45,6 +45,13 @@ that control security mode are: "security = user" and "security = share".
 </para>
 
 <para>
+No special action is needed other than to create user accounts. Stand-alone
+servers do NOT provide network logon services, meaning that machines that
+use this server do NOT perform a domain logon but instead make use only of
+the MS Windows logon which is local to the MS Windows workstation/server.
+</para>
+
+<para>
 Samba tends to blur the distinction a little in respect of what is
 a stand alone server. This is because the authentication database may be
 local or on a remote server, even if from the samba protocol perspective

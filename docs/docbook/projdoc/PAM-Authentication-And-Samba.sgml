@@ -11,8 +11,6 @@
 			</address>
                 </affiliation>
         </author>
- 
- 
         <pubdate> (Jun 21 2001) </pubdate>
 </chapterinfo>
  
@@ -42,6 +40,19 @@ PAM is configured either through one file <filename>/etc/pam.conf</filename> (So
 or by editing individual files that are located in <filename>/etc/pam.d</filename>.
 </para>
 
+<note>
+	<para>
+	If the PAM authentication module (loadable link library file) is located in the
+	default location then it is not necessary to specify the path. In the case of
+	Linux, the default location is <filename>/lib/security</filename>. If the module
+	is located other than default then the path may be specified as:
+	
+	<programlisting>
+	eg: "auth       required      /other_path/pam_strange_module.so"
+	</programlisting>
+	</para>
+</note>
+
 <para>
 The following is an example <filename>/etc/pam.d/login</filename> configuration file. 
 This example had all options been uncommented is probably not usable 
@@ -51,20 +62,20 @@ by commenting them out except the calls to <filename>pam_pwdb.so</filename>.
 </para>
 
 <para><programlisting>
-#%PAM-1.0
-# The PAM configuration file for the `login' service
-#
-auth 		required	pam_securetty.so
-auth 		required	pam_nologin.so
-# auth 		required	pam_dialup.so
-# auth 		optional	pam_mail.so
-auth		required	pam_pwdb.so shadow md5
-# account    	requisite  	pam_time.so
-account		required	pam_pwdb.so
-session		required	pam_pwdb.so
-# session 	optional	pam_lastlog.so
-# password   	required   	pam_cracklib.so retry=3
-password	required	pam_pwdb.so shadow md5
+	#%PAM-1.0
+	# The PAM configuration file for the `login' service
+	#
+	auth 		required	pam_securetty.so
+	auth 		required	pam_nologin.so
+	# auth 		required	pam_dialup.so
+	# auth 		optional	pam_mail.so
+	auth		required	pam_pwdb.so shadow md5
+	# account    	requisite  	pam_time.so
+	account		required	pam_pwdb.so
+	session		required	pam_pwdb.so
+	# session 	optional	pam_lastlog.so
+	# password   	required   	pam_cracklib.so retry=3
+	password	required	pam_pwdb.so shadow md5
 </programlisting></para>
 
 <para>
@@ -73,19 +84,19 @@ sample system include:
 </para>
 
 <para><programlisting>
-$ /bin/ls /lib/security
-pam_access.so    pam_ftp.so          pam_limits.so     
-pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
-pam_cracklib.so  pam_group.so        pam_listfile.so   
-pam_nologin.so   pam_rootok.so       pam_tally.so      
-pam_deny.so      pam_issue.so        pam_mail.so       
-pam_permit.so    pam_securetty.so    pam_time.so       
-pam_dialup.so    pam_lastlog.so      pam_mkhomedir.so  
-pam_pwdb.so      pam_shells.so       pam_unix.so       
-pam_env.so       pam_ldap.so         pam_motd.so       
-pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
-pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
-pam_userdb.so    pam_warn.so         pam_unix_session.so
+	$ /bin/ls /lib/security
+	pam_access.so    pam_ftp.so          pam_limits.so     
+	pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
+	pam_cracklib.so  pam_group.so        pam_listfile.so   
+	pam_nologin.so   pam_rootok.so       pam_tally.so      
+	pam_deny.so      pam_issue.so        pam_mail.so       
+	pam_permit.so    pam_securetty.so    pam_time.so       
+	pam_dialup.so    pam_lastlog.so      pam_mkhomedir.so  
+	pam_pwdb.so      pam_shells.so       pam_unix.so       
+	pam_env.so       pam_ldap.so         pam_motd.so       
+	pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
+	pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
+	pam_userdb.so    pam_warn.so         pam_unix_session.so
 </programlisting></para>
 
 <para>
@@ -110,13 +121,13 @@ source distribution.
 </para>
 
 <para><programlisting>
-#%PAM-1.0
-# The PAM configuration file for the `login' service
-#
-auth		required	pam_smbpass.so nodelay
-account		required	pam_smbpass.so nodelay
-session		required	pam_smbpass.so nodelay
-password	required	pam_smbpass.so nodelay
+	#%PAM-1.0
+	# The PAM configuration file for the `login' service
+	#
+	auth		required	pam_smbpass.so nodelay
+	account		required	pam_smbpass.so nodelay
+	session		required	pam_smbpass.so nodelay
+	password	required	pam_smbpass.so nodelay
 </programlisting></para>
 
 <para>
@@ -125,13 +136,13 @@ Linux system. The default condition uses <filename>pam_pwdb.so</filename>.
 </para>
 
 <para><programlisting>
-#%PAM-1.0
-# The PAM configuration file for the `samba' service
-#
-auth       required     /lib/security/pam_pwdb.so nullok nodelay shadow audit
-account    required     /lib/security/pam_pwdb.so audit nodelay
-session    required     /lib/security/pam_pwdb.so nodelay
-password   required     /lib/security/pam_pwdb.so shadow md5
+	#%PAM-1.0
+	# The PAM configuration file for the `samba' service
+	#
+	auth       required     /lib/security/pam_pwdb.so nullok nodelay shadow audit
+	account    required     /lib/security/pam_pwdb.so audit nodelay
+	session    required     /lib/security/pam_pwdb.so nodelay
+	password   required     /lib/security/pam_pwdb.so shadow md5
 </programlisting></para>
 
 <para>
@@ -143,13 +154,13 @@ program.
 </para>
 
 <para><programlisting>
-#%PAM-1.0
-# The PAM configuration file for the `samba' service
-#
-auth       required     /lib/security/pam_smbpass.so nodelay
-account    required     /lib/security/pam_pwdb.so audit nodelay
-session    required     /lib/security/pam_pwdb.so nodelay
-password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
+	#%PAM-1.0
+	# The PAM configuration file for the `samba' service
+	#
+	auth       required     /lib/security/pam_smbpass.so nodelay
+	account    required     /lib/security/pam_pwdb.so audit nodelay
+	session    required     /lib/security/pam_pwdb.so nodelay
+	password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
 </programlisting></para>
 
 <note><para>PAM allows stacking of authentication mechanisms. It is 
