@@ -760,3 +760,102 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
         return WINBINDD_OK;
 }
+
+/* Initialise user supplementary groups.  This function is not documented in 
+   the glibc documentation.  If not defined in the nss module a compatability 
+   call that uses {set,get,end}grent() to achieve the same thing is run. */
+
+enum winbindd_result winbindd_initgroups(struct winbindd_cli_state *state)
+{
+	fstring name_domain, name_user, name;
+	DOM_SID user_sid;
+	enum SID_NAME_USE name_type;
+	uint32 user_rid, num_groups, num_gids;
+	DOM_GID *user_groups = NULL;
+	struct winbindd_domain *domain;
+	enum winbindd_result result;
+	gid_t *gid_list;
+	int i;
+	
+	if (state == NULL) return WINBINDD_ERROR;
+
+	/* Parse domain and username */
+
+	parse_domain_user(state->request.data.username, name_domain, 
+			  name_user);
+
+	/* Reject names that don't have a domain - i.e name_domain contains 
+	   the entire name. */
+ 
+	if (strequal(name_domain, "")) {
+		return WINBINDD_ERROR;
+	}
+
+	/* Get info for the domain */
+	
+	if ((domain = find_domain_from_name(name_domain)) == NULL) {
+		DEBUG(0, ("could not find domain entry for domain %s\n", 
+			  name_domain));
+		return WINBINDD_ERROR;
+	}
+
+	if (!domain_handles_open(domain)) {
+		return False;
+	}
+
+	slprintf(name, sizeof(name) - 1, "%s\\%s", name_domain, name_user);
+	
+	/* Get rid and name type from name.  The following costs 1 packet */
+
+	if (!winbindd_lookup_sid_by_name(name, &user_sid, &name_type)) {
+		DEBUG(1, ("user '%s' does not exist\n", name_user));
+		return WINBINDD_ERROR;
+	}
+
+	if (name_type != SID_NAME_USER) {
+		DEBUG(1, ("name '%s' is not a user name: %d\n", name_user, 
+			  name_type));
+		return WINBINDD_ERROR;
+	}
+
+	sid_split_rid(&user_sid, &user_rid);
+
+	if (!winbindd_lookup_usergroups(domain, user_rid, &num_groups,
+					&user_groups)) {
+		return WINBINDD_ERROR;
+	}
+
+	/* Copy data back to client */
+
+	num_gids = 0;
+	gid_list = malloc(sizeof(gid_t) * num_groups);
+
+	if (state->response.extra_data) {
+		result = WINBINDD_ERROR;
+		goto done;
+	}
+
+	for (i = 0; i < num_groups; i++) {
+		if (!winbindd_idmap_get_gid_from_rid(
+			domain->name, user_groups[i].g_rid, 
+			&gid_list[num_gids])) {
+
+			DEBUG(1, ("unable to convert group rid %d to gid\n", 
+				  user_groups[i].g_rid));
+			continue;
+		}
+			
+		num_gids++;
+	}
+
+	state->response.data.num_entries = num_gids;
+	state->response.extra_data = gid_list;
+	state->response.length += num_gids * sizeof(gid_t);
+
+	result = WINBINDD_OK;
+
+ done:
+	safe_free(user_groups);
+
+	return result;
+}

@@ -390,7 +390,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 enum nss_status
 _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
-                      size_t buflen, int *errnop)
+			size_t buflen, int *errnop)
 {
 	enum nss_status ret;
 	static struct winbindd_response response;
@@ -627,8 +627,8 @@ _nss_winbind_getgrent_r(struct group *result,
 
 enum nss_status
 _nss_winbind_getgrnam_r(const char *name,
-                      struct group *result, char *buffer,
-                      size_t buflen, int *errnop)
+			struct group *result, char *buffer,
+			size_t buflen, int *errnop)
 {
 	enum nss_status ret;
 	static struct winbindd_response response;
@@ -689,8 +689,8 @@ _nss_winbind_getgrnam_r(const char *name,
 
 enum nss_status
 _nss_winbind_getgrgid_r(gid_t gid,
-                      struct group *result, char *buffer,
-                      size_t buflen, int *errnop)
+			struct group *result, char *buffer,
+			size_t buflen, int *errnop)
 {
 	enum nss_status ret;
 	static struct winbindd_response response;
@@ -742,5 +742,63 @@ _nss_winbind_getgrgid_r(gid_t gid,
 	}
 
 	free_response(&response);
+	return ret;
+}
+
+/* Initialise supplementary groups */
+
+enum nss_status
+_nss_winbind_initgroups(char *user, gid_t group, long int *start,
+			long int *size, gid_t *groups, long int limit,
+			int *errnop)
+{
+	enum nss_status ret;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int i;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	strncpy(request.data.username, user,
+		sizeof(request.data.username) - 1);
+
+	ret = winbindd_request(WINBINDD_INITGROUPS, &request, &response);
+
+	if (ret == NSS_STATUS_SUCCESS) {
+		int num_gids = response.data.num_entries;
+		gid_t *gid_list = (gid_t *)response.extra_data;
+
+		/* Copy group list to client */
+
+		for (i = 0; i < num_gids; i++) {
+
+			fprintf(stderr, "processing gid %d\n", gid_list[i]);
+
+			/* Skip primary group */
+
+			if (gid_list[i] == group) continue;
+
+			/* Add to buffer */
+
+			if (*start == *size && limit <= 0) {
+				groups = realloc(
+					groups, 2 * (*size) * sizeof(*groups));
+				if (!groups) goto done;
+				*size *= 2;
+			}
+
+			groups[*start] = gid_list[i];
+			*start += 1;
+
+			/* Filled buffer? */
+
+			if (*start == limit) goto done;
+		}
+	}
+	
+	/* Back to your regularly scheduled programming */
+
+ done:
 	return ret;
 }

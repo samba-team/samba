@@ -56,6 +56,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_initgroups(struct winbindd_cli_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_idmap.c  */
 
@@ -118,6 +119,9 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
                                  enum SID_NAME_USE *type);
 BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
                               uint32 user_rid, SAM_USERINFO_CTR *user_info);
+BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
+				uint32 user_rid, uint32 *num_groups,
+				DOM_GID **user_groups);
 BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
                               uint32 group_rid, GROUP_INFO_CTR *info);
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,

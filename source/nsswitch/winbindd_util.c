@@ -509,6 +509,32 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
 				       user_rid, user_info);
 }                                   
 
+/* Lookup groups a user is a member of.  I wish Unix had a call like this! */
+
+BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
+				uint32 user_rid, uint32 *num_groups,
+				DOM_GID **user_groups)
+{
+	POLICY_HND user_pol;
+	BOOL result;
+
+        if (!samr_open_user(&domain->sam_dom_handle, 
+			    SEC_RIGHTS_MAXIMUM_ALLOWED,
+			    user_rid, &user_pol)) {
+		return False;
+	}
+
+	if (!samr_query_usergroups(&user_pol, num_groups, user_groups)) {
+		result = False;
+		goto done;
+	}
+
+	result = True;
+done:
+	samr_close(&user_pol);
+	return True;
+}
+
 /* Lookup group information from a rid */
 
 BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
@@ -687,6 +713,7 @@ static struct cmdstr_table cmdstr_table[] = {
 	{ WINBINDD_SETPWENT, "setpwent" },
 	{ WINBINDD_ENDPWENT, "endpwent" },
 	{ WINBINDD_GETPWENT, "getpwent" },
+	{ WINBINDD_INITGROUPS, "initgroups" },
 
 	/* Group functions */
 
