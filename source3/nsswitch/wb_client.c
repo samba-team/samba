@@ -283,3 +283,17 @@ int winbind_getgroups(const char *user, gid_t **list)
 
 	return wb_getgroups(user, list);
 }
+
+/**********************************************************************
+ simple wrapper function to see if winbindd is alive
+**********************************************************************/
+
+BOOL winbind_ping( void )
+{
+	NSS_STATUS result;
+
+	result = winbindd_request(WINBINDD_PING, NULL, NULL);
+
+	return result == NSS_STATUS_SUCCESS;
+}
+

@@ -216,9 +216,6 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	/* do what win2k does.  Always map unknown domains to our own
 	   and let the "passdb backend" handle unknown users */
 
-	/* FIXME!!!! grr...this is a broken check currently since is_trusted_domain()
-	   is useless without winbindd   --jerry */
-
 	if ( !is_trusted_domain(domain) ) 
 		domain = get_global_sam_name();
 	
