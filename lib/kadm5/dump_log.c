@@ -72,7 +72,7 @@ print_entry(kadm5_server_context *server_context,
 
     strftime(t, sizeof(t), "%Y-%m-%d %H:%M:%S", localtime(&timestamp));
 
-    if(op < kadm_get || op > kadm_get_princs) {
+    if(op < kadm_get || op > kadm_nop) {
 	printf("unknown op: %d\n", op);
 	sp->seek(sp, end, SEEK_SET);
 	return;
@@ -132,11 +132,11 @@ print_entry(kadm5_server_context *server_context,
 	    printf("    expires = %s\n", t);
 	}
 	if(mask & KADM5_PW_EXPIRATION) {
-	    if(ent.valid_end == NULL) {
+	    if(ent.pw_end == NULL) {
 		strcpy(t, "never");
 	    } else {
 		strftime(t, sizeof(t), "%Y-%m-%d %H:%M:%S", 
-			 localtime(ent.valid_end));
+			 localtime(ent.pw_end));
 	    }
 	    printf("    password exp = %s\n", t);
 	}
@@ -207,10 +207,11 @@ print_entry(kadm5_server_context *server_context,
     sp->seek(sp, end, SEEK_SET);
 }
 
-char *realm;
-int version_flag;
-int help_flag;
-struct getargs args[] = {
+static char *realm;
+static int version_flag;
+static int help_flag;
+
+static struct getargs args[] = {
     { "realm", 'r', arg_string, &realm },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
