@@ -263,6 +263,8 @@ create_reply_ticket (struct rx_header *hdr,
     krb5_data enc_data;
     des_key_schedule schedule;
     struct rx_header reply_hdr;
+    des_cblock zero;
+    size_t pad;
 
     /* create the ticket */
     ekey = unseal_key(skey);
@@ -296,8 +298,12 @@ create_reply_ticket (struct rx_header *hdr,
     krb5_store_stringz (sp, sinstance);
     sp->store (sp, ticket.dat, ticket.length);
     sp->store (sp, label, strlen(label));
-    krb5_store_int32 (sp, 0); /* XXX */
-    krb5_store_int32 (sp, 0); /* XXX */
+
+    /* pad to DES block */
+    memset (zero, 0, sizeof(zero));
+    pad = (8 - sp->seek (sp, 0, SEEK_CUR) % 8) % 8;
+    sp->store (sp, zero, pad);
+
     krb5_storage_to_data (sp, &enc_data);
     krb5_storage_free (sp);
 
@@ -341,6 +347,7 @@ unparse_auth_args (krb5_storage *sp,
 	return ENOMEM;
     memcpy (*name, data.data, data.length);
     (*name)[data.length] = '\0';
+    krb5_data_free (&data);
 
     krb5_ret_xdr_data (sp, &data);
     *instance = malloc(data.length + 1);
@@ -348,6 +355,7 @@ unparse_auth_args (krb5_storage *sp,
 	return ENOMEM;
     memcpy (*instance, data.data, data.length);
     (*instance)[data.length] = '\0';
+    krb5_data_free (&data);
 
     krb5_ret_int32 (sp, &tmp);
     *start_time = tmp;
@@ -417,7 +425,7 @@ do_authenticate (struct rx_header *hdr,
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);
-	return;
+	goto out;
     }
 
     /* try to decode the `request' */
@@ -473,14 +481,14 @@ out:
 	free (name);
     if (instance)
 	free (instance);
-    if (ckey)
-	hdb_free_key (ckey);
-    if (skey)
-	hdb_free_key (ckey);
-    if (client_entry)
+    if (client_entry) {
 	hdb_free_entry (context, client_entry);
-    if (server_entry)
+	free (client_entry);
+    }
+    if (server_entry) {
 	hdb_free_entry (context, server_entry);
+	free (server_entry);
+    }
 }
 
 static krb5_error_code
@@ -505,6 +513,7 @@ unparse_getticket_args (krb5_storage *sp,
 	return ENOMEM;
     memcpy (*auth_domain, data.data, data.length);
     (*auth_domain)[data.length] = '\0';
+    krb5_data_free (&data);
 
     krb5_ret_xdr_data (sp, ticket);
 
@@ -514,6 +523,7 @@ unparse_getticket_args (krb5_storage *sp,
 	return ENOMEM;
     memcpy (*name, data.data, data.length);
     (*name)[data.length] = '\0';
+    krb5_data_free (&data);
 
     krb5_ret_xdr_data (sp, &data);
     *instance = malloc(data.length + 1);
@@ -521,6 +531,7 @@ unparse_getticket_args (krb5_storage *sp,
 	return ENOMEM;
     memcpy (*instance, data.data, data.length);
     (*instance)[data.length] = '\0';
+    krb5_data_free (&data);
 
     krb5_ret_xdr_data (sp, times);
 
@@ -592,7 +603,7 @@ do_getticket (struct rx_header *hdr,
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);
-	return;
+	goto out;
     }
 
     /* decrypt the incoming ticket */
@@ -677,14 +688,14 @@ out:
 	free (name);
     if (instance)
 	free (instance);
-    if (krbtgt_entry)
+    if (krbtgt_entry) {
 	hdb_free_entry (context, krbtgt_entry);
-    if (server_entry)
+	free (krbtgt_entry);
+    }
+    if (server_entry) {
 	hdb_free_entry (context, server_entry);
-    if (kkey)
-	hdb_free_key (kkey);
-    if (skey)
-	hdb_free_key (skey);
+	free (server_entry);
+    }
 }
 
 krb5_error_code
