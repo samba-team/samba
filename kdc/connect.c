@@ -371,6 +371,8 @@ loop(void)
 	    else{
 		d = tmp;
 		memset(d + ndescr, 0, 4 * sizeof(*d));
+		for(i = ndescr; i < ndescr + 4; i++)
+		    d[i].s = -1;
 		min_free = ndescr;
 		ndescr += 4;
 	    }
