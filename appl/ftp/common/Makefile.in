@@ -36,4 +36,3 @@ clean cleandir:
 
 distclean: 
 	rm -f Makefile
-	rm -rf CVS

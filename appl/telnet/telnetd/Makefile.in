@@ -60,5 +60,4 @@ clean cleandir:
 
 distclean: clean
 	rm -f Makefile *~
-	rm -rf CVS
 

@@ -36,4 +36,3 @@ distclean:
 	for i in $(SUBDIRS); \
 	do (cd $$i && $(MAKE) $(MFLAGS) distclean); done
 	rm -f Makefile config.status config.cache config.log config.h *~
-	rm -rf CVS

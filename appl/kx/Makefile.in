@@ -67,7 +67,6 @@ mostlyclean: clean
 
 distclean: clean
 	rm -f Makefile *.tab.c *~
-	rm -rf CVS
 
 realclean: distclean
 	rm -f TAGS
