@@ -57,14 +57,34 @@ def test_Connect(handle):
 
     result = dcerpc.samr_Connect5(pipe, r)
 
-    print result    
+    return result['handle']
+    
+def test_QuerySecurity(pipe, handle):
 
-# parse command line
+    print 'testing samr_QuerySecurity'
+
+    r = {}
+    r['handle'] = handle
+    r['sec_info'] = 7
+
+    result = dcerpc.samr_QuerySecurity(pipe, r)
+    print result
+
+# Parse command line
+
 parser = OptionParser()
-parser.add_option("-b", "--binding", action="store", type="string", dest="binding")
-parser.add_option("-d", "--domain", action="store", type="string", dest="domain")
-parser.add_option("-u", "--username", action="store", type="string", dest="username")
-parser.add_option("-p", "--password", action="store", type="string", dest="password")
+
+parser.add_option("-b", "--binding", action="store", type="string",
+                  dest="binding")
+
+parser.add_option("-d", "--domain", action="store", type="string",
+                  dest="domain")
+
+parser.add_option("-u", "--username", action="store", type="string",
+                  dest="username")
+
+parser.add_option("-p", "--password", action="store", type="string",
+                  dest="password")
 
 (options, args) = parser.parse_args()
 
@@ -75,15 +95,18 @@ if not options.username or not options.password or not options.domain:
    parser.error('You must supply a domain, username and password')
 
 
-binding=options.binding
-domain=options.domain
-username=options.username
-password=options.password
+binding = options.binding
+domain = options.domain
+username = options.username
+password = options.password
 
-# Connect to server
+print 'Connecting...'
 
 pipe = dcerpc.pipe_connect(binding,
 	dcerpc.DCERPC_SAMR_UUID, dcerpc.DCERPC_SAMR_VERSION,
 	domain, username, password)
 
-test_Connect(pipe)
+handle = test_Connect(pipe)
+test_QuerySecurity(pipe, handle)
+
+print 'Done'
