@@ -149,6 +149,14 @@ AC_SUBST(SMBWRAPPER)
 AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
+AC_SUBST(LSA_DYNAMIC)
+AC_SUBST(NETLOG_DYNAMIC)
+AC_SUBST(SAMR_DYNAMIC)
+AC_SUBST(SVC_DYNAMIC)
+AC_SUBST(WKS_DYNAMIC)
+AC_SUBST(REG_DYNAMIC)
+AC_SUBST(SPOOLSS_DYNAMIC)
+AC_SUBST(DFS_DYNAMIC)
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -177,6 +185,52 @@ then
 	AC_DEFINE(DMALLOC_FUNC_CHECK, 1, 
                   [Define to check invariants around some common functions])
 	LIBS="$LIBS -ldmalloc"	
+fi
+
+AC_ARG_ENABLE(dynrpc,  [  --enable-dynrpc         Enable dynamic RPC modules [default=no]])
+
+if test x$enable_dynrpc = xyes
+then
+	enable_dynrpc=lsa,samr,reg,wks,netlog,dfs
+fi
+
+if test x$enable_dynrpc != xno
+then
+	for i in `echo $enable_dynrpc | sed -e's/,/ /g'` 
+         do case $i in lsa)
+	  LSA_DYNAMIC=yes
+          AC_DEFINE(RPC_LSA_DYNAMIC, 1,
+                    [Define to make the LSA pipe dynamic])
+	 ;; samr)
+          SAMR_DYNAMIC=yes
+	  AC_DEFINE(RPC_SAMR_DYNAMIC, 1, 
+	            [Define to make the SAMR pipe dynamic])
+	 ;; svc)
+          SVC_DYNAMIC=yes
+	  AC_DEFINE(RPC_SVC_DYNAMIC, 1, 
+	            [Define to make the SRVSVC pipe dynamic])
+	 ;; wks)
+          WKS_DYNAMIC=yes
+	  AC_DEFINE(RPC_WKS_DYNAMIC, 1, 
+	            [Define to make the WKSSVC pipe dynamic])
+	 ;; netlog)
+          NETLOG_DYNAMIC=yes
+	  AC_DEFINE(RPC_NETLOG_DYNAMIC, 1, 
+	            [Define to make the NETLOGON pipe dynamic])
+	 ;; reg)
+          REG_DYNAMIC=yes
+	  AC_DEFINE(RPC_REG_DYNAMIC, 1, 
+	            [Define to make the WINREG pipe dynamic])
+	 ;; spoolss)
+          SPOOLSS_DYNAMIC=yes
+	  AC_DEFINE(RPC_SPOOLSS_DYNAMIC, 1, 
+	            [Define to make the SPOOLSS pipe dynamic])
+	 ;; dfs)
+          DFS_DYNAMIC=yes
+	  AC_DEFINE(RPC_DFS_DYNAMIC, 1, 
+	            [Define to make the NETDFS pipe dynamic])
+	 ;; esac
+         done
 fi
 
 dnl Checks for programs.
@@ -1025,7 +1079,6 @@ if test $ac_cv_shlib_works = no; then
    BLDSHARED=false
 fi
 fi
-
 
 # this updates our target list if we can build shared libs
 if test $BLDSHARED = true; then

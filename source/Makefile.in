@@ -3,6 +3,7 @@
 # Copyright Andrew Tridgell 1992-1998
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
 # Copyright Andrew Barteltt 2002
+# Copyright (C) 2003 Anthony Liguori <aliguor@us.ibm.com>
 ###########################################################################
 
 prefix=@prefix@
@@ -49,6 +50,7 @@ SBINDIR = @sbindir@
 LIBDIR = @libdir@
 VFSLIBDIR = $(LIBDIR)/vfs
 PDBLIBDIR = $(LIBDIR)/pdb
+RPCLIBDIR = $(LIBDIR)/rpc
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
@@ -97,7 +99,8 @@ PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
 PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\" -DDRIVERFILE=\"$(DRIVERFILE)\" 
 PATH_FLAGS3 = $(PATH_FLAGS2) -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
 PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
-PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" -DLOGFILEBASE=\"$(LOGFILEBASE)\" 
+PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" \
+	      -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\"
 PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGDIR)\"
 PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 
@@ -201,20 +204,72 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 
 LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
 
-LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
-
 REGOBJS_OBJ = registry/reg_objects.o
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
                registry/reg_db.o 
 
-RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
-                 rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
-                 rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o rpc_server/srv_reg_nt.o \
-                 rpc_server/srv_samr.o rpc_server/srv_samr_nt.o rpc_server/srv_samr_util.o \
-		 rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
-                 rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
-                 rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
-                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o 
+RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o
+
+RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o
+
+RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
+               rpc_server/srv_samr_util.o
+
+RPC_REG_OBJ =  rpc_server/srv_reg.o rpc_server/srv_reg_nt.o
+
+RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
+
+RPC_WKS_OBJ =  rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
+
+RPC_DFS_OBJ =  rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o
+RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o 
+
+RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o rpc_server/srv_util.o \
+               rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
+
+RPC_SERVER_OBJ = $(RPC_PIPE_OBJ)
+
+ifeq (@LSA_DYNAMIC@,yes)
+		RPC_MODULES := $(RPC_MODULES) bin/librpc_lsarpc.@SHLIBEXT@
+else
+		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_LSA_OBJ)
+endif
+ifeq (@NETLOG_DYNAMIC@,yes)
+		RPC_MODULES := $(RPC_MODULES) bin/librpc_NETLOGON.@SHLIBEXT@
+else
+		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_NETLOG_OBJ)
+endif
+ifeq (@SAMR_DYNAMIC@,yes)
+		RPC_MODULES := $(RPC_MODULES) bin/librpc_samr.@SHLIBEXT@
+else
+		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_SAMR_OBJ)
+endif
+ifeq (@SVC_DYNAMIC@,yes)
+		RPC_MODULES := $(RPC_MODULES) bin/librpc_srvsvc.@SHLIBEXT@
+else
+		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_SVC_OBJ)
+endif
+ifeq (@WKS_DYNAMIC@,yes)
+		RPC_MODULES := $(RPC_MODULES) bin/librpc_wkssvc.@SHLIBEXT@
+else
+		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_WKS_OBJ)
+endif
+ifeq (@REG_DYNAMIC@,yes)
+		RPC_MODULES := $(RPC_MODULES) bin/librpc_winreg.@SHLIBEXT@
+else
+		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_REG_OBJ)
+endif
+ifeq (@SPOOLSS_DYNAMIC@,yes)
+		RPC_MODULES := $(RPC_MODULES) bin/librpc_spoolss.@SHLIBEXT@
+else
+		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_SPOOLSS_OBJ)
+endif
+ifeq (@DFS_DYNAMIC@,yes)
+		RPC_MODULES := $(RPC_MODULES) bin/librpc_netdfs.@SHLIBEXT@
+else
+		RPC_SERVER_OBJ := $(RPC_SERVER_OBJ) $(RPC_DFS_OBJ)
+endif
+
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -494,12 +549,14 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
 	    $(SMBW_OBJ1) $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
 	    $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) \
-	    $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) \
+	    $(RPC_PIPE_OBJ) $(RPC_PARSE_OBJ) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
 	    $(QUOTAOBJS) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(MSDFS_OBJ) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
-	    $(LIB_SMBD_OBJ) $(SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ)
+	    $(LIB_SMBD_OBJ) $(SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
+	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) \
+	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) \
 	    $(LIB_OBJ) $(NSSWINS_OBJ)
@@ -590,8 +647,8 @@ nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/libnss_win
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
-modules: SHOWFLAGS proto_exists $(VFS_MODULES) $(PDB_MODULES) $(MODULES)
-
+modules: SHOWFLAGS proto_exists $(VFS_MODULES) $(PDB_MODULES) $(MODULES) \
+	 $(RPC_MODULES)
 everything: all libsmbclient debug2html smbfilter talloctort
 
 .SUFFIXES:
@@ -837,6 +894,46 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 
 libsmbclient: bin/libsmbclient.a bin/libsmbclient.@SHLIBEXT@
 
+bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_LSA_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_samr.@SHLIBEXT@: $(RPC_SAMR_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SAMR_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_srvsvc.@SHLIBEXT@: $(RPC_SVC_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVC_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_wkssvc.@SHLIBEXT@: $(RPC_WKS_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_WKS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_NETLOGON.@SHLIBEXT@: $(RPC_NETLOG_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NETLOG_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_winreg.@SHLIBEXT@: $(RPC_REG_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_REG_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_spoolss.@SHLIBEXT@: $(RPC_SPOOLSS_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SPOOLSS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_netdfs.@SHLIBEXT@: $(RPC_DFS_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_DFS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
 nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(NSS_OBJ) -lc \
@@ -942,6 +1039,7 @@ installbin: all installdirs
 installmodules: all installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(PDB_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(RPC_MODULES)
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)

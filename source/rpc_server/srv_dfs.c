@@ -3,8 +3,9 @@
  *  RPC Pipe client / server routines for Dfs
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Shirish Kalele               2000.
- *  Copyright (C) Jeremy Allison				2001.
+ *  Copyright (C) Shirish Kalele                    2000,
+ *  Copyright (C) Jeremy Allison                    2001,
+ *  Copyright (C) Anthony Liguori                   2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -157,21 +158,20 @@ static BOOL api_dfs_enum(pipes_struct *p)
 \pipe\netdfs commands
 ********************************************************************/
 
-struct api_struct api_netdfs_cmds[] =
+#ifdef RPC_DFS_DYNAMIC
+int rpc_pipe_init(void)
+#else
+int rpc_dfs_init(void)
+#endif
 {
-	{"DFS_EXIST",        DFS_EXIST,               api_dfs_exist    },
-	{"DFS_ADD",          DFS_ADD,                 api_dfs_add      },
-	{"DFS_REMOVE",       DFS_REMOVE,              api_dfs_remove   },
-	{"DFS_GET_INFO",     DFS_GET_INFO,            api_dfs_get_info },
-	{"DFS_ENUM",         DFS_ENUM,                api_dfs_enum     },
-	{NULL,               0,                       NULL             }
-};
-
-/*******************************************************************
-receives a netdfs pipe and responds.
-********************************************************************/
-
-BOOL api_netdfs_rpc(pipes_struct *p)
-{
-	return api_rpcTNP(p, "api_netdfs_rpc", api_netdfs_cmds);
+  struct api_struct api_netdfs_cmds[] =
+    {
+      {"DFS_EXIST",        DFS_EXIST,               api_dfs_exist    },
+      {"DFS_ADD",          DFS_ADD,                 api_dfs_add      },
+      {"DFS_REMOVE",       DFS_REMOVE,              api_dfs_remove   },
+      {"DFS_GET_INFO",     DFS_GET_INFO,            api_dfs_get_info },
+      {"DFS_ENUM",         DFS_ENUM,                api_dfs_enum     }
+    };
+  return rpc_pipe_register_commands("netdfs", "netdfs", api_netdfs_cmds,
+				    sizeof(api_netdfs_cmds) / sizeof(struct api_struct));
 }

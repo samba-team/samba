@@ -3,10 +3,11 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Marc Jacobsen	   		    2000.
- *  Copyright (C) Jeremy Allison		    2001.
- *  Copyright (C) Gerald Carter 		    2002.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Marc Jacobsen	   		    2000,
+ *  Copyright (C) Jeremy Allison		    2001,
+ *  Copyright (C) Gerald Carter 		    2002,
+ *  Copyright (C) Anthony Liguori                   2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -371,29 +372,29 @@ static BOOL api_reg_save_key(pipes_struct *p)
 /*******************************************************************
  array of \PIPE\reg operations
  ********************************************************************/
-static struct api_struct api_reg_cmds[] =
-{
-	{ "REG_CLOSE"              , REG_CLOSE              , api_reg_close            },
-	{ "REG_OPEN_ENTRY"         , REG_OPEN_ENTRY         , api_reg_open_entry       },
-	{ "REG_OPEN_HKCR"          , REG_OPEN_HKCR          , api_reg_open_hkcr        },
-	{ "REG_OPEN_HKLM"          , REG_OPEN_HKLM          , api_reg_open_hklm        },
-	{ "REG_OPEN_HKU"     	   , REG_OPEN_HKU           , api_reg_open_hku         },
-	{ "REG_ENUM_KEY"           , REG_ENUM_KEY           , api_reg_enum_key         },
-	{ "REG_ENUM_VALUE"         , REG_ENUM_VALUE         , api_reg_enum_value       },
-	{ "REG_QUERY_KEY"          , REG_QUERY_KEY          , api_reg_query_key        },
-	{ "REG_INFO"               , REG_INFO               , api_reg_info             },
-	{ "REG_SHUTDOWN"           , REG_SHUTDOWN           , api_reg_shutdown         },
-	{ "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
-	{ "REG_UNKNOWN_1A"         , REG_UNKNOWN_1A         , api_reg_unknown_1a       },
-	{ "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         },
-	{ NULL                     , 0                      , NULL                     }
-};
 
-/*******************************************************************
- receives a reg pipe and responds.
- ********************************************************************/
-
-BOOL api_reg_rpc(pipes_struct *p)
+#ifdef RPC_REG_DYNAMIC
+int rpc_pipe_init(void)
+#else
+int rpc_reg_init(void)
+#endif
 {
-	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds);
+  static struct api_struct api_reg_cmds[] =
+    {
+      { "REG_CLOSE"              , REG_CLOSE              , api_reg_close            },
+      { "REG_OPEN_ENTRY"         , REG_OPEN_ENTRY         , api_reg_open_entry       },
+      { "REG_OPEN_HKCR"          , REG_OPEN_HKCR          , api_reg_open_hkcr        },
+      { "REG_OPEN_HKLM"          , REG_OPEN_HKLM          , api_reg_open_hklm        },
+      { "REG_OPEN_HKU"           , REG_OPEN_HKU           , api_reg_open_hku         },
+      { "REG_ENUM_KEY"           , REG_ENUM_KEY           , api_reg_enum_key         },
+      { "REG_ENUM_VALUE"         , REG_ENUM_VALUE         , api_reg_enum_value       },
+      { "REG_QUERY_KEY"          , REG_QUERY_KEY          , api_reg_query_key        },
+      { "REG_INFO"               , REG_INFO               , api_reg_info             },
+      { "REG_SHUTDOWN"           , REG_SHUTDOWN           , api_reg_shutdown         },
+      { "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
+      { "REG_UNKNOWN_1A"         , REG_UNKNOWN_1A         , api_reg_unknown_1a       },
+      { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         }
+    };
+  return rpc_pipe_register_commands("winreg", "winreg", api_reg_cmds,
+				    sizeof(api_reg_cmds) / sizeof(struct api_struct));
 }
