@@ -87,7 +87,7 @@ while ( !$ldif->eof ) {
 	$entry->delete( 'rid' );
 	
 	if ( $entry->get_value( "primaryGroupID" ) ) {
-		$entry->add( 'primaryGroupSID' => $domsid."-".$entry->get_value( "primaryGroupID" ) );
+		$entry->add( 'sambaPrimaryGroupSID' => $domsid."-".$entry->get_value( "primaryGroupID" ) );
 		$entry->delete( 'primaryGroupID' );
 	}
 	
