@@ -619,8 +619,10 @@ doit_v5 (const char *host, int port, const char *user,
 
 #ifdef KRB4
 static int use_v4		= 0;
+#ifdef HAVE_KRB_ENABLE_DEBUG
 static int krb_debug_flag	= 0;
-#endif
+#endif /* HAVE_KRB_ENABLE_DEBUG */
+#endif /* KRB4 */
 #ifdef KRB5
 static int use_v5		= 0;
 #endif
@@ -637,9 +639,11 @@ struct getargs args[] = {
 #ifdef KRB4
     { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
       NULL },
+#ifdef HAVE_KRB_ENABLE_DEBUG
     { "krb4-debug", 'D', arg_flag,	&krb_debug_flag,
       "enable krb4 debugging" },
-#endif
+#endif /* HAVE_KRB_ENABLE_DEBUG */
+#endif /* KRB4 */
 #ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
       NULL },
@@ -727,7 +731,7 @@ main(int argc, char **argv)
     if (!passive_flag)
 	passive_flag = check_for_passive (getenv("DISPLAY"));
 
-#ifdef KRB4
+#if defined(HAVE_KERNEL_ENABLE_DEBUG)
     if (krb_debug_flag)
 	krb_enable_debug ();
 #endif
