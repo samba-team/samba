@@ -796,6 +796,9 @@
 /* Define if you have the <nss.h> header file.  */
 #undef HAVE_NSS_H
 
+/* Define if you have the <nss_common.h> header file.  */
+#undef HAVE_NSS_COMMON_H
+
 /* Define if you have the <poll.h> header file.  */
 #undef HAVE_POLL_H
 
@@ -999,6 +1002,3 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
-
-/* Define if you have the <nss_common.h> header file.  */
-#undef HAVE_NSS_COMMON_H

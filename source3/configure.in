@@ -175,7 +175,7 @@ exit(1);
     *linux*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
        AC_TRY_RUN([
 #include <unistd.h>
 #include <sys/utsname.h>
@@ -213,7 +213,7 @@ main() {
 ], [LINUX_LFS_SUPPORT=yes], [LINUX_LFS_SUPPORT=no], [LINUX_LFS_SUPPORT=cross])
         CPPFLAGS="$old_CPPFLAGS"
         if test x$LINUX_LFS_SUPPORT = xyes ; then
-          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
         fi
        AC_MSG_RESULT([$LINUX_LFS_SUPPORT])
 		;;
