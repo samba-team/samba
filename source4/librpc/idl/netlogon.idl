@@ -266,7 +266,7 @@ interface netlogon
 	NTSTATUS netr_ServerAuthenticate(
 		[in]        unistr *server_name,
 		[in]        unistr username,
-		[in]        uint16 secure_challenge_type,
+		[in]        uint16 secure_channel_type,
 		[in]        unistr computer_name,
 		[in,out]    netr_Credential credentials
 		);
@@ -278,7 +278,7 @@ interface netlogon
 	NTSTATUS netr_ServerPasswordSet(
 		[in]  unistr *server_name,
 		[in]  unistr username,
-		[in]  uint16 secure_challenge_type,
+		[in]  uint16 secure_channel_type,
 		[in]  unistr computer_name,
 		[in]  netr_Authenticator credential,
 		[in]  netr_Password new_password,
@@ -695,6 +695,12 @@ interface netlogon
 		[case(3)]  netr_NETLOGON_INFO_3 *info3;
 	} netr_CONTROL_QUERY_INFORMATION;
 
+	/* function_code values */
+	const int NETLOGON_CONTROL_REDISCOVER       = 5;
+	const int NETLOGON_CONTROL_TC_QUERY         = 6;
+	const int NETLOGON_CONTROL_TRANSPORT_NOTIFY = 7;
+	const int NETLOGON_CONTROL_SET_DBFLAG       = 65534;
+
 	WERROR netr_LogonControl(
 		[in]   unistr *logon_server,
 		[in]   uint32 function_code,
@@ -712,25 +718,23 @@ interface netlogon
 		[out] unistr *dcname
 		);
 
-#if 0
-
-	typedef [switch_type(long)] union {
-		[case(5)] unistr *unknown;
-		[case(6)] unistr *unknown;
-		[case(0xfffe)] uint32 unknown;
-		[case(7)] unistry*unknown;
-	} CONTROL_DATA_INFORMATION;
-
 
 	/*****************/
 	/* Function 0x0E */
 
-	NTSTATUS netr_LogonControl2(
-		[in][string] wchar_t *logon_server,
-		[in] uint32 function_code,
-		[in] uint32 level,
-		[in][ref] CONTROL_DATA_INFORMATION *data,
-		[out][ref] CONTROL_QUERY_INFORMATION *query
+	typedef union {
+		[case(NETLOGON_CONTROL_REDISCOVER)]        unistr *domain;
+		[case(NETLOGON_CONTROL_TC_QUERY)]          unistr *domain;
+		[case(NETLOGON_CONTROL_TRANSPORT_NOTIFY)]  unistr *domain;
+		[case(NETLOGON_CONTROL_SET_DBFLAG)]        uint32 debug_level;
+	} netr_CONTROL_DATA_INFORMATION;
+
+	WERROR netr_LogonControl2(
+		[in]    unistr *logon_server,
+		[in]    uint32 function_code,
+		[in]    uint32 level,
+		[in][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  data,
+		[out][switch_is(level)]        netr_CONTROL_QUERY_INFORMATION query
 		);
 
 
@@ -738,15 +742,15 @@ interface netlogon
 	/* Function 0x0F */
 
 	NTSTATUS netr_ServerAuthenticate2(
-		[in][string] wchar_t *logon_server,
-		[in] unistr username,
-		[in] uint16 secure_channel_type,
-		[in] unistr computername,
-		[in][ref] CREDENTIAL *client_chal,
-		[out][ref] CREDENTIAL *server_chal,
-		[in][out][ref] uint32 *negotiate_flags,
+		[in]         unistr *server_name,
+		[in]         unistr username,
+		[in]         uint16 secure_channel_type,
+		[in]         unistr computer_name,
+		[in,out]     netr_Credential credentials,
+		[in,out,ref] uint32 *negotiate_flags
 		);
 
+#if 0
 
 	/*****************/
 	/* Function 0x10 */
