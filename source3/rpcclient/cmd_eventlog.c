@@ -32,7 +32,6 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct cli_state *smb_cli;
 extern FILE* out_hnd;
 
 
@@ -40,9 +39,8 @@ extern FILE* out_hnd;
 ****************************************************************************/
 void cmd_eventlog(struct client_info *info, int argc, char *argv[])
 {
-	uint16 nt_pipe_fnum;
-	BOOL res  = True;
-	BOOL res1 = True;
+	BOOL res1  = True;
+	BOOL res = True;
 	POLICY_HND hnd;
 	uint32 number = 0;
 	uint32 flags;
@@ -52,43 +50,43 @@ void cmd_eventlog(struct client_info *info, int argc, char *argv[])
 	
 	char *journal = NULL;
 	
-	flags=EVENTLOG_READ_SEQUENTIAL|EVENTLOG_READ_BACKWARD;
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	flags = EVENTLOG_READ_SEQUENTIAL|EVENTLOG_READ_BACKWARD;
 
 	if (argc > 1)
 	{
 		journal = argv[1];
 	}
 
-	/* open scheduler session. */
-	res1 = res1 ? cli_nt_session_open(smb_cli, PIPE_EVENTLOG, &nt_pipe_fnum) : False;
-
-	res1 = res1 ? do_event_open(smb_cli, nt_pipe_fnum, journal, &hnd) : False;
-
-	res = res1 ? do_event_numofeventlogrec(smb_cli, nt_pipe_fnum, &hnd, &number) : False;
+	res = res ? event_open(srv_name, journal, &hnd) : False;
+	res1 = res ? event_numofeventlogrec(&hnd, &number) : False;
 	
 	fprintf(out_hnd, "Number of events: %d\n", number);
 
 	display_eventlog_eventrecord(out_hnd, ACTION_HEADER, &ev);
 
-	for (offset = 0; offset < number && res; offset++)
+	for (offset = 0; offset < number && res1; offset++)
 	{
 		num_of_bytes=0;
 	
 		/* try once with a empty buffer */
-		res = res ? do_event_readeventlog(smb_cli, nt_pipe_fnum, &hnd, number, 
-						  flags, offset, &num_of_bytes, &ev) : False;
+		res1 = res1 ? event_readeventlog(&hnd, number, 
+						  flags, offset,
+					          &num_of_bytes, &ev) : False;
 	
 		/* and try again with the correct size */
-		res = res ? do_event_readeventlog(smb_cli, nt_pipe_fnum, &hnd, number, 
-						  flags, offset, &num_of_bytes, &ev) : False;
+		res1 = res1 ? event_readeventlog(&hnd, number, 
+						  flags, offset,
+		                                  &num_of_bytes, &ev) : False;
 
 		display_eventlog_eventrecord(out_hnd, ACTION_ENUMERATE, &ev);
 	}
 
 	display_eventlog_eventrecord(out_hnd, ACTION_FOOTER, &ev);
 			
-	res1 = res1 ? do_event_close(smb_cli, nt_pipe_fnum, &hnd): False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	res = res ? event_close(&hnd): False;
 }

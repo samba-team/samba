@@ -27,13 +27,20 @@ extern int DEBUGLEVEL;
 
 /****************************************************************************
 ****************************************************************************/
-BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hnd)
+BOOL event_open(const char* srv_name, const char *log, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	EVENTLOG_Q_OPEN q;
 	BOOL p = False;
 	BOOL valid_pol = False;
+	
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_EVENTLOG, &con))
+	{
+		return False;
+	}
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -45,7 +52,7 @@ BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hn
 	eventlog_io_q_open("", &q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, EVENTLOG_OPEN, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, EVENTLOG_OPEN, &buf, &rbuf))
 	{
 		EVENTLOG_R_OPEN r;
 
@@ -55,7 +62,7 @@ BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hn
 		if (p && r.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("do_event_open: %s\n", get_nt_error_msg(r.status)));
+			DEBUG(0,("event_open: %s\n", get_nt_error_msg(r.status)));
 			p = False;
 		}
 
@@ -63,7 +70,9 @@ BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hn
 		{
 			/*copy handle */
 			memcpy(hnd->data, r.pol.data, sizeof(hnd->data));
-			valid_pol = True;
+			valid_pol = register_policy_hnd(hnd) &&
+			            set_policy_con(hnd, con, 
+			                                 cli_connection_unlink);
 		}
 	}
 
@@ -75,7 +84,7 @@ BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hn
 
 /****************************************************************************
 ****************************************************************************/
-BOOL do_event_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
+BOOL event_close( POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -92,7 +101,7 @@ BOOL do_event_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 	eventlog_io_q_close("", &q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, EVENTLOG_CLOSE, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, EVENTLOG_CLOSE, &buf, &rbuf))
 	{
 		EVENTLOG_R_CLOSE r;
 
@@ -102,7 +111,7 @@ BOOL do_event_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 		if (p && r.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("do_event_close: %s\n", get_nt_error_msg(r.status)));
+			DEBUG(0,("event_close: %s\n", get_nt_error_msg(r.status)));
 			p = False;
 		}
 
@@ -111,12 +120,14 @@ BOOL do_event_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
 
+	close_policy_hnd(hnd);
+
 	return p;
 }
 
 /****************************************************************************
 ****************************************************************************/
-BOOL do_event_numofeventlogrec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *number)
+BOOL event_numofeventlogrec( POLICY_HND *hnd, uint32 *number)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -133,7 +144,7 @@ BOOL do_event_numofeventlogrec(struct cli_state *cli, uint16 fnum, POLICY_HND *h
 	eventlog_io_q_numofeventlogrec("", &q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, EVENTLOG_NUMOFEVENTLOGRECORDS, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, EVENTLOG_NUMOFEVENTLOGRECORDS, &buf, &rbuf))
 	{
 		EVENTLOG_R_NUMOFEVENTLOGREC r;
 
@@ -143,7 +154,7 @@ BOOL do_event_numofeventlogrec(struct cli_state *cli, uint16 fnum, POLICY_HND *h
 		if (p && r.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("do_event_close: %s\n", get_nt_error_msg(r.status)));
+			DEBUG(0,("event_close: %s\n", get_nt_error_msg(r.status)));
 			p = False;
 		}
 
@@ -161,7 +172,7 @@ BOOL do_event_numofeventlogrec(struct cli_state *cli, uint16 fnum, POLICY_HND *h
 
 /****************************************************************************
 ****************************************************************************/
-BOOL do_event_readeventlog(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, 
+BOOL event_readeventlog(POLICY_HND *hnd, 
                            uint32 number, uint32 flags, uint32 offset, 
 			   uint32 *number_of_bytes, EVENTLOGRECORD *ev)
 {
@@ -181,7 +192,7 @@ BOOL do_event_readeventlog(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	eventlog_io_q_readeventlog("", &q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, EVENTLOG_READEVENTLOG, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, EVENTLOG_READEVENTLOG, &buf, &rbuf))
 	{
 		r.event=ev;
 		eventlog_io_r_readeventlog("", &r, &rbuf, 0);

@@ -1804,10 +1804,10 @@ BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
 
 /*The following definitions come from  rpc_client/cli_eventlog.c  */
 
-BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hnd);
-BOOL do_event_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
-BOOL do_event_numofeventlogrec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *number);
-BOOL do_event_readeventlog(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, 
+BOOL event_open(const char* srv_name, const char *log, POLICY_HND *hnd);
+BOOL event_close( POLICY_HND *hnd);
+BOOL event_numofeventlogrec( POLICY_HND *hnd, uint32 *number);
+BOOL event_readeventlog(POLICY_HND *hnd, 
                            uint32 number, uint32 flags, uint32 offset, 
 			   uint32 *number_of_bytes, EVENTLOGRECORD *ev);
 
@@ -2344,7 +2344,7 @@ BOOL brs_io_r_query_info(char *desc,  BRS_R_QUERY_INFO *r_u, prs_struct *ps, int
 
 /*The following definitions come from  rpc_parse/parse_eventlog.c  */
 
-BOOL make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal, char *unk);
+BOOL make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, const char *journal, char *unk);
 BOOL eventlog_io_q_open(char *desc, EVENTLOG_Q_OPEN *q_u, prs_struct *ps, int depth);
 BOOL eventlog_io_r_open(char *desc, EVENTLOG_R_OPEN *r_u, prs_struct *ps, int depth);
 BOOL make_eventlog_q_close(EVENTLOG_Q_CLOSE *q_u, POLICY_HND *pol);

@@ -27,7 +27,7 @@ extern int DEBUGLEVEL;
 
 /*******************************************************************
 ********************************************************************/  
-BOOL make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal, char *unk)
+BOOL make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, const char *journal, char *unk)
 {
 	int len_journal = journal != NULL ? strlen(journal) : 0;
 	int len_unk = unk != NULL ? strlen(unk) : 0;
