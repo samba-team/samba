@@ -1,0 +1,12 @@
+initgroups
+nss_winbind_syms
+getgrent_r
+getgrgid
+getgrnam
+getpwent_r
+getpwnam
+wbtorture
+leaktest?
+getpwuid
+getent_pwent
+getent_grent
