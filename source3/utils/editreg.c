@@ -298,6 +298,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 *************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
 #include <sys/types.h>
@@ -437,12 +438,14 @@ int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, char *path,
       return 0;
     }
   }
+  return 1;
 }
 
 int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
 		    key_print_f key_print, val_print_f val_print)
 {
-  int pathlen = strlen(path);
+  int path_len = strlen(path);
+  char *new_path;
 
   if (!regf || !key_tree)
     return -1;
@@ -463,12 +466,21 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
    * Now, iterate through the keys in the key list
    */
 
+  new_path = (char *)malloc(path_len + 1 + strlen(key_tree->name) + 1);
+  if (!new_path) return 0; /* Errors? */
+  new_path[0] = '\0';
+  strcat(new_path, path);
+  strcat(new_path, "\\");
+  strcat(new_path, key_tree->name);
+
   if (key_tree->sub_keys && 
-      !nt_key_list_iterator(regf, key_tree->sub_keys, bf, path, key_print, 
+      !nt_key_list_iterator(regf, key_tree->sub_keys, bf, new_path, key_print, 
 			    val_print)) {
+    free(new_path);
     return 0;
   } 
 
+  free(new_path);
   return 1;
 }
 
@@ -734,7 +746,7 @@ int nt_set_regf_output_file(REGF *regf, char *filename)
 
 /* Create a regf structure and init it */
 
-REGF *nt_create_regf()
+REGF *nt_create_regf(void)
 {
   REGF *tmp = (REGF *)malloc(sizeof(REGF));
   if (!tmp) return tmp;
@@ -746,7 +758,7 @@ REGF *nt_create_regf()
 /* If you add stuff to REGF, add the relevant free bits here  */
 int nt_free_regf(REGF *regf)
 {
-  if (!regf) return;
+  if (!regf) return 0;
 
   if (regf->regfile_name) free(regf->regfile_name);
   if (regf->outfile_name) free(regf->outfile_name);
@@ -763,6 +775,7 @@ int nt_free_regf(REGF *regf)
 
   free(regf);
 
+  return 1;
 }
 
 /*
@@ -842,7 +855,7 @@ int valid_regf_hdr(REGF_HDR *regf_hdr)
  */
 VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 {
-  char val_name[1024], data_value[1024];
+  char val_name[1024];
   int nam_len, dat_len, flag, dat_type, dat_off, vk_id;
   char *val_type;
   VAL_KEY *tmp = NULL; 
@@ -851,7 +864,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 
   if ((vk_id = SVAL(&vk_hdr->VK_ID)) != REG_VK_ID) {
     fprintf(stderr, "Unrecognized VK header ID: %0X, block: %0X, %s\n",
-	    vk_id, vk_hdr, regf->regfile_name);
+	    vk_id, (int)vk_hdr, regf->regfile_name);
     return NULL;
   }
 
@@ -894,7 +907,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 
     tmp->data_blk = dtmp;
 
-    if (dat_len&0x80000000 == 0 ) { /* The data is pointed to by the offset */
+    if ((dat_len&0x80000000) == 0) { /* The data is pointed to by the offset */
       char *dat_ptr = LOCN(regf->base, dat_off);
       bcopy(dat_ptr, dtmp, dat_len);
     }
@@ -969,7 +982,7 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
 
   if ((lf_id = SVAL(&lf_hdr->LF_ID)) != REG_LF_ID) {
     fprintf(stderr, "Unrecognized LF Header format: %0X, Block: %0X, %s.\n",
-	    lf_id, lf_hdr, regf->regfile_name);
+	    lf_id, (int)lf_hdr, regf->regfile_name);
     return NULL;
   }
 
@@ -990,7 +1003,6 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
 
   for (i=0; i<count; i++) {
     NK_HDR *nk_hdr;
-    int nk_off;
 
     nk_off = IVAL(&lf_hdr->hr[i].nk_off);
     nk_hdr = (NK_HDR *)LOCN(regf->base, nk_off);
@@ -1014,8 +1026,7 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
 REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 {
   REG_KEY *tmp = NULL;
-  KEY_LIST *key_list;
-  int rec_size, name_len, clsname_len, lf_off, val_off, val_count, sk_off;
+  int name_len, clsname_len, lf_off, val_off, val_count, sk_off;
   unsigned int nk_id;
   LF_HDR *lf_hdr;
   VL_TYPE *vl;
@@ -1026,7 +1037,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 
   if ((nk_id = SVAL(&nk_hdr->NK_ID)) != REG_NK_ID) {
     fprintf(stderr, "Unrecognized NK Header format: %08X, Block: %0X. %s\n", 
-	    nk_id, nk_hdr, regf->regfile_name);
+	    nk_id, (int)nk_hdr, regf->regfile_name);
     return NULL;
   }
 
@@ -1044,7 +1055,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
    */
 
   if (-size < (sizeof(NK_HDR) - 1 + name_len)) {
-    fprintf(stderr, "Incorrect NK_HDR size: %d, %0X\n", -size, nk_hdr);
+    fprintf(stderr, "Incorrect NK_HDR size: %d, %0X\n", -size, (int)nk_hdr);
     fprintf(stderr, "Sizeof NK_HDR: %d, name_len %d, clsname_len %d\n",
 	    sizeof(NK_HDR), name_len, clsname_len);
     /*return NULL;*/
@@ -1111,7 +1122,6 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
   val_count = IVAL(&nk_hdr->val_cnt);
 
   if (val_count) {
-    int val_off;
 
     val_off = IVAL(&nk_hdr->val_off);
     vl = (VL_TYPE *)LOCN(regf->base, val_off);
@@ -1164,7 +1174,6 @@ int nt_load_registry(REGF *regf)
 {
   REGF_HDR *regf_hdr;
   unsigned int regf_id, hbin_id;
-  unsigned int hbin_off;
   HBIN_HDR *hbin_hdr;
   NK_HDR *first_key;
 
@@ -1304,6 +1313,7 @@ int main(int argc, char *argv[])
    * to iterate over it.
    */
 
-  nt_key_iterator(regf, regf->root, 0, "\\", print_key, NULL);
+  nt_key_iterator(regf, regf->root, 0, "", print_key, NULL);
+  return 0;
 }
 
