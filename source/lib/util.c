@@ -1307,11 +1307,12 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
   lock.l_len = count;
   lock.l_pid = 0;
 
-  errno = 0;
+  do {
+	  errno = 0;
+	  ret = fcntl(fd,op,&lock);
+  } while (ret == -1 && errno == EINTR);
 
-  ret = fcntl(fd,op,&lock);
-
-  if (errno != 0)
+  if (ret == -1 && errno != 0)
     DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
 
   /* a lock query */

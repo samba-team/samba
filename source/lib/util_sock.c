@@ -223,10 +223,10 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
       if(fd == sslFd){
         readret = SSL_read(ssl, buf + nread, maxcnt - nread);
       }else{
-        readret = read(fd, buf + nread, maxcnt - nread);
+        readret = sys_read(fd, buf + nread, maxcnt - nread);
       }
 #else /* WITH_SSL */
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = sys_read(fd, buf + nread, maxcnt - nread);
 #endif /* WITH_SSL */
 
       if (readret == 0) {
@@ -280,10 +280,10 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
     if(fd == sslFd){
       readret = SSL_read(ssl, buf + nread, maxcnt - nread);
     }else{
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = sys_read(fd, buf + nread, maxcnt - nread);
     }
 #else /* WITH_SSL */
-    readret = read(fd, buf+nread, maxcnt-nread);
+    readret = sys_read(fd, buf+nread, maxcnt-nread);
 #endif /* WITH_SSL */
 
     if (readret == 0) {
@@ -335,10 +335,10 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
       if(fd == sslFd){
         readret = SSL_read(ssl, buf + nread, maxcnt - nread);
       }else{
-        readret = read(fd, buf + nread, maxcnt - nread);
+        readret = sys_read(fd, buf + nread, maxcnt - nread);
       }
 #else /* WITH_SSL */
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = sys_read(fd, buf + nread, maxcnt - nread);
 #endif /* WITH_SSL */
 
       if (readret <= 0)
@@ -372,10 +372,10 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
     if(fd == sslFd){
       readret = SSL_read(ssl, buf + nread, maxcnt - nread);
     }else{
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = sys_read(fd, buf + nread, maxcnt - nread);
     }
 #else /* WITH_SSL */
-    readret = read(fd, buf+nread, maxcnt-nread);
+    readret = sys_read(fd, buf+nread, maxcnt-nread);
 #endif /* WITH_SSL */
 
     if (readret <= 0)
@@ -394,12 +394,12 @@ send a keepalive packet (rfc1002)
 
 BOOL send_keepalive(int client)
 {
-  unsigned char buf[4];
+	unsigned char buf[4];
 
-  buf[0] = 0x85;
-  buf[1] = buf[2] = buf[3] = 0;
+	buf[0] = 0x85;
+	buf[1] = buf[2] = buf[3] = 0;
 
-  return(write_socket_data(client,(char *)buf,4) == 4);
+	return(write_socket_data(client,(char *)buf,4) == 4);
 }
 
 /****************************************************************************
@@ -408,38 +408,36 @@ BOOL send_keepalive(int client)
 
 ssize_t read_data(int fd,char *buffer,size_t N)
 {
-  ssize_t  ret;
-  size_t total=0;  
+	ssize_t  ret;
+	size_t total=0;  
  
-  smb_read_error = 0;
+	smb_read_error = 0;
 
-  while (total < N)
-  {
+	while (total < N) {
 #ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_read(ssl, buffer + total, N - total);
-    }else{
-      ret = read(fd,buffer + total,N - total);
-    }
+		if(fd == sslFd){
+			ret = SSL_read(ssl, buffer + total, N - total);
+		}else{
+			ret = sys_read(fd,buffer + total,N - total);
+		}
 #else /* WITH_SSL */
-    ret = read(fd,buffer + total,N - total);
+		ret = sys_read(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
-    if (ret == 0)
-    {
-      DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_EOF;
-      return 0;
-    }
-    if (ret == -1)
-    {
-      DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-    total += ret;
-  }
-  return (ssize_t)total;
+		if (ret == 0) {
+			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_EOF;
+			return 0;
+		}
+
+		if (ret == -1) {
+			DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -456,10 +454,10 @@ ssize_t write_data(int fd,char *buffer,size_t N)
 		if(fd == sslFd){
 			ret = SSL_write(ssl,buffer + total,N - total);
 		} else {
-			ret = write(fd,buffer + total,N - total);
+			ret = sys_write(fd,buffer + total,N - total);
 		}
 #else /* WITH_SSL */
-		ret = write(fd,buffer + total,N - total);
+		ret = sys_write(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
 		if (ret == -1) {
@@ -481,30 +479,30 @@ ssize_t write_data(int fd,char *buffer,size_t N)
 
 ssize_t write_socket_data(int fd,char *buffer,size_t N)
 {
-  size_t total=0;
-  ssize_t ret;
+	size_t total=0;
+	ssize_t ret;
 
-  while (total < N)
-  {
+	while (total < N) {
 #ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_write(ssl,buffer + total,N - total);
-    }else{
-      ret = send(fd,buffer + total,N - total, 0);
-    }
+		if(fd == sslFd){
+			ret = SSL_write(ssl,buffer + total,N - total);
+		}else{
+			ret = sys_send(fd,buffer + total,N - total, 0);
+		}
 #else /* WITH_SSL */
-    ret = send(fd,buffer + total,N - total,0);
+		ret = sys_send(fd,buffer + total,N - total,0);
 #endif /* WITH_SSL */
 
-    if (ret == -1) {
-      DEBUG(0,("write_socket_data: write failure. Error = %s\n", strerror(errno) ));
-      return -1;
-    }
-    if (ret == 0) return total;
+		if (ret == -1) {
+			DEBUG(0,("write_socket_data: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0)
+			return (ssize_t)total;
 
-    total += ret;
-  }
-  return (ssize_t)total;
+		total += ret;
+	}
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -513,17 +511,17 @@ write to a socket
 
 ssize_t write_socket(int fd,char *buf,size_t len)
 {
-  ssize_t ret=0;
+	ssize_t ret=0;
 
-  DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
-  ret = write_socket_data(fd,buf,len);
+	DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
+	ret = write_socket_data(fd,buf,len);
       
-  DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
-  if(ret <= 0)
-    DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
-       (int)len, fd, strerror(errno) ));
+	DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
+	if(ret <= 0)
+		DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
+			(int)len, fd, strerror(errno) ));
 
-  return(ret);
+	return(ret);
 }
 
 /****************************************************************************
@@ -536,30 +534,29 @@ timeout is in milliseconds.
 
 static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int timeout)
 {
-  ssize_t len=0;
-  int msg_type;
-  BOOL ok = False;
+	ssize_t len=0;
+	int msg_type;
+	BOOL ok = False;
 
-  while (!ok)
-  {
-    if (timeout > 0)
-      ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout) == 4);
-    else 
-      ok = (read_data(fd,inbuf,4) == 4);
+	while (!ok) {
+		if (timeout > 0)
+			ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout) == 4);
+		else 
+			ok = (read_data(fd,inbuf,4) == 4);
 
-    if (!ok)
-      return(-1);
+		if (!ok)
+			return(-1);
 
-    len = smb_len(inbuf);
-    msg_type = CVAL(inbuf,0);
+		len = smb_len(inbuf);
+		msg_type = CVAL(inbuf,0);
 
-    if (msg_type == 0x85) 
-      DEBUG(5,("Got keepalive packet\n"));
-  }
+		if (msg_type == 0x85) 
+			DEBUG(5,("Got keepalive packet\n"));
+	}
 
-  DEBUG(10,("got smb length of %d\n",len));
+	DEBUG(10,("got smb length of %d\n",len));
 
-  return(len);
+	return(len);
 }
 
 /****************************************************************************
@@ -571,23 +568,22 @@ timeout is in milliseconds.
 
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
 {
-  ssize_t len;
+	ssize_t len;
 
-  for(;;)
-  {
-    len = read_smb_length_return_keepalive(fd, inbuf, timeout);
+	for(;;) {
+		len = read_smb_length_return_keepalive(fd, inbuf, timeout);
 
-    if(len < 0)
-      return len;
+		if(len < 0)
+			return len;
 
-    /* Ignore session keepalives. */
-    if(CVAL(inbuf,0) != 0x85)
-      break;
-  }
+		/* Ignore session keepalives. */
+		if(CVAL(inbuf,0) != 0x85)
+			break;
+	}
 
-  DEBUG(10,("read_smb_length: got smb length of %d\n",len));
+	DEBUG(10,("read_smb_length: got smb length of %d\n",len));
 
-  return len;
+	return len;
 }
 
 /****************************************************************************
@@ -1213,4 +1209,3 @@ int sock_exec(const char *prog)
 	close(fd[1]);
 	return fd[0];
 }
-
