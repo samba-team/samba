@@ -75,7 +75,7 @@ generic_test (const struct test_case *tests,
 {
     unsigned char buf[4711];
     int i;
-    int ret = 0;
+    int failures = 0;
     void *val = malloc (data_size);
 
     if (data_size != 0 && val == NULL)
@@ -91,49 +91,49 @@ generic_test (const struct test_case *tests,
 	beg = buf + sizeof(buf) - sz;
 	if (ret != 0) {
 	    printf ("encoding of %s failed\n", tests[i].name);
-	    ++ret;
+	    ++failures;
 	}
 	if (sz != tests[i].byte_len) {
 	    printf ("encoding of %s has wrong len (%lu != %lu)\n",
 		    tests[i].name, 
 		    (unsigned long)sz, (unsigned long)tests[i].byte_len);
-	    ++ret;
+	    ++failures;
 	}
 
 	length_sz = (*length) (tests[i].val);
 	if (sz != length_sz) {
 	    printf ("length for %s is bad (%lu != %lu)\n",
 		    tests[i].name, (unsigned long)length_sz, (unsigned long)sz);
-	    ++ret;
+	    ++failures;
 	}
 
 	if (memcmp (beg, tests[i].bytes, tests[i].byte_len) != 0) {
 	    printf ("encoding of %s has bad bytes:\n"
 		    "correct: ", tests[i].name);
 	    print_bytes (tests[i].bytes, tests[i].byte_len);
-	    printf ("\nactual: ");
+	    printf ("\nactual:  ");
 	    print_bytes (beg, sz);
 	    printf ("\n");
-	    ++ret;
+	    ++failures;
 	}
 	ret = (*decode) (beg, sz, val, &consumed_sz);
 	if (ret != 0) {
 	    printf ("decoding of %s failed\n", tests[i].name);
-	    ++ret;
+	    ++failures;
 	}
 	if (sz != consumed_sz) {
 	    printf ("different length decoding %s (%ld != %ld)\n",
 		    tests[i].name, 
 		    (unsigned long)sz, (unsigned long)consumed_sz);
-	    ++ret;
+	    ++failures;
 	}
 	if ((*cmp)(val, tests[i].val) != 0) {
 	    printf ("%s: comparison failed\n", tests[i].name);
-	    ++ret;
+	    ++failures;
 	}
     }
     free (val);
-    return ret;
+    return failures;
 }
 
 static int
@@ -246,6 +246,40 @@ test_general_string (void)
 			 cmp_general_string);
 }
 
+static int
+cmp_generalized_time (void *a, void *b)
+{
+    time_t *ta = (time_t *)a;
+    time_t *tb = (time_t *)b;
+
+    return *tb - *ta;
+}
+
+static int
+test_generalized_time (void)
+{
+    struct test_case tests[] = {
+	{NULL, 17, "\x18\x0f""19700101000000Z"},
+	{NULL, 17, "\x18\x0f""19851106210627Z"}
+    };
+    time_t values[] = {0, 500159187};
+    int i;
+    int ntests = sizeof(tests) / sizeof(*tests);
+
+    for (i = 0; i < ntests; ++i) {
+	tests[i].val = &values[i];
+	asprintf (&tests[i].name, "time %d", (int)values[i]);
+    }
+
+    return generic_test (tests, ntests, sizeof(time_t),
+			 (int (*)(unsigned char *, size_t,
+				  void *, size_t *))encode_generalized_time,
+			 (int (*)(void *))length_generalized_time,
+			 (int (*)(unsigned char *, size_t,
+				  void *, size_t *))decode_generalized_time,
+			 cmp_generalized_time);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -254,6 +288,7 @@ main(int argc, char **argv)
     ret += test_integer ();
     ret += test_octet_string ();
     ret += test_general_string ();
+    ret += test_generalized_time ();
 
     return ret;
 }
