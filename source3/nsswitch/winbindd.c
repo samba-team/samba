@@ -521,6 +521,10 @@ static void process_loop(int accept_sock)
 
 		message_dispatch();
 
+		/* rescan the trusted domains list. This must be done
+		   regularly to cope with transitive trusts */
+		rescan_trusted_domains();
+
 		/* Free up temporary memory */
 
 		lp_talloc_free();

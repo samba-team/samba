@@ -157,7 +157,7 @@ void rescan_trusted_domains(void)
 	if ((unsigned)(t - last_scan) < WINBINDD_RESCAN_FREQ) {
 		return;
 	}
-	last_scan = time(NULL);
+	last_scan = t;
 	
 	DEBUG(1, ("scanning trusted domain list\n"));
 
