@@ -972,9 +972,9 @@ interface netlogon
 		unistr *unknown4;
 		netr_BinaryString blob2;
 		netr_String product;
-		uint32 unknown5;
-		unistr *unknown6;
-		uint32 unknown7[6];
+		netr_String unknown5;
+		netr_String unknown6;
+		uint32 unknown7[4];
 	} netr_DomainQuery1;
 
 	typedef union {
@@ -1007,9 +1007,8 @@ interface netlogon
 	NTSTATUS netr_LogonGetDomainInfo(
 		[in]         unistr server_name,
 		[in]         unistr *computer_name,
-		[in,out,ref] netr_Authenticator *credential,
-		[in]         uint32 unknown1,
-		[in]         uint32 i1[2],
+		[in,ref]     netr_Authenticator *credential,
+		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]	     uint32 level,
 		[in,switch_is(level)] netr_DomainQuery query,
 		[out,switch_is(level)] netr_DomainInfo info
