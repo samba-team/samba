@@ -527,6 +527,46 @@ BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e,
 }
 
 /*******************************************************************
+ Inits an LSA_R_ENUM_TRUST_DOM structure.
+********************************************************************/
+
+void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context, 
+			   char *domain_name, DOM_SID *domain_sid,
+                           uint32 status)
+{
+        DEBUG(5, ("init_r_enum_trust_dom\n"));
+	
+        r_e->enum_context = enum_context;
+	
+        if (status == 0) {
+                int len_domain_name = strlen(domain_name) + 1;
+		
+                r_e->num_domains  = 1;
+                r_e->ptr_enum_domains = 1;
+                r_e->num_domains2 = 1;
+		
+		if (!(r_e->hdr_domain_name = (UNIHDR2 *)
+		      malloc(sizeof(UNIHDR2)))) return;
+
+		if (!(r_e->uni_domain_name = (UNISTR2 *)
+		      malloc(sizeof(UNISTR2)))) return;
+
+		if (!(r_e->domain_sid = (DOM_SID2 *)
+		      malloc(sizeof(DOM_SID2)))) return;
+
+		init_uni_hdr2(&r_e->hdr_domain_name[0], len_domain_name);
+		init_unistr2 (&r_e->uni_domain_name[0], domain_name, 
+			      len_domain_name);
+		init_dom_sid2(&r_e->domain_sid[0], domain_sid);
+        } else {
+                r_e->num_domains = 0;
+                r_e->ptr_enum_domains = 0;
+        }
+	
+        r_e->status = status;
+}
+
+/*******************************************************************
  Reads or writes an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
 
@@ -559,8 +599,8 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e,
 		      malloc(sizeof(UNISTR2) * num_domains)))
 			return False;
 
-		if (!(r_e->domain_sid = (DOM_SID *)
-		      malloc(sizeof(DOM_SID) * num_domains)))
+		if (!(r_e->domain_sid = (DOM_SID2 *)
+		      malloc(sizeof(DOM_SID2) * num_domains)))
 			return False;
 
 		for (i = 0; i < num_domains; i++) {
