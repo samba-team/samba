@@ -221,7 +221,7 @@ childhandler ()
 
   do { 
     pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
-  } while(pid);
+  } while(pid > 0);
   signal (SIGCHLD, childhandler);
 }
 
