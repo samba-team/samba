@@ -88,7 +88,7 @@ typedef struct kadm5_server_context {
     krb5_principal caller;
     unsigned acl_flags;
     kadm5_log_context log_context;
-}kadm5_server_context;
+} kadm5_server_context;
 
 typedef struct kadm5_client_context {
     krb5_context context;
@@ -112,7 +112,8 @@ enum kadm_ops {
     kadm_randkey,
     kadm_get_privs,
     kadm_get_princs,
-    kadm_chpass_with_key
+    kadm_chpass_with_key,
+    kadm_nop
 };
 
 #define KADMIN_APPL_VERSION "KADM0.1"
@@ -205,7 +206,13 @@ kadm5_log_get_version (int fd,
 		       u_int32_t *ver);
 
 kadm5_ret_t
+kadm5_log_set_version (kadm5_server_context *context, u_int32_t vno);
+
+kadm5_ret_t
 kadm5_log_init (kadm5_server_context *context);
+
+kadm5_ret_t
+kadm5_log_reinit (kadm5_server_context *context);
 
 kadm5_ret_t
 kadm5_log_create (kadm5_server_context *context,
@@ -224,6 +231,9 @@ kadm5_ret_t
 kadm5_log_modify (kadm5_server_context *context,
 		  hdb_entry *ent,
 		  u_int32_t mask);
+
+kadm5_ret_t
+kadm5_log_nop (kadm5_server_context *context);
 
 kadm5_ret_t
 kadm5_log_end (kadm5_server_context *context);
@@ -260,6 +270,12 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 			 u_int32_t ver,
 			 u_int32_t len,
 			 krb5_storage *sp);
+
+kadm5_ret_t
+kadm5_log_replay_nop (kadm5_server_context *context,
+		      u_int32_t ver,
+		      u_int32_t len,
+		      krb5_storage *sp);
 
 kadm5_ret_t
 kadm5_log_replay (kadm5_server_context *context,
