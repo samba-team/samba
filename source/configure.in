@@ -600,6 +600,13 @@ if test x"$samba_cv_sig_atomic_t" = x"yes"; then
    AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE)
 fi
 
+AC_CACHE_CHECK([for optreset], samba_cv_var_optreset, [
+  AC_TRY_LINK([#include <unistd.h>],[extern int optreset; optreset = 1;],
+  [samba_cv_var_optreset=yes],[samba_cv_var_optreset=no])])
+if test x"$samba_cv_var_optreset" = x"yes"; then
+  AC_DEFINE(HAVE_OPTRESET)
+fi
+
 # stupid headers have the functions but no declaration. grrrr.
 AC_HAVE_DECL(errno, [#include <errno.h>])
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])

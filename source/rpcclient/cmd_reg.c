@@ -900,6 +900,9 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 {
 	extern char *optarg;
 	extern int optind;
+#ifdef HAVE_OPTRESET
+	extern int optreset;
+#endif
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring msg;
 	uint32 timeout = 20;
@@ -907,7 +910,11 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	int opt;
 
 	*msg = 0;
-	optind = 0; /* TODO: test if this hack works on other systems too --simo */
+#ifdef HAVE_OPTRESET
+	optreset = optind = 1;
+#else
+	optind = 0;
+#endif
 
 	while ((opt = getopt(argc, argv, "m:t:rf")) != EOF)
 	{
