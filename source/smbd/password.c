@@ -1372,8 +1372,11 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 	 * Gerald !). JRA.
 	 */
 
-	if (time_now - last_change_time < 3600)
+	if (time_now - last_change_time < 3600) {
+		DEBUG(3, ("WARNING: machine password changed < 3600s ago\n"));
+		DEBUG(3, ("contacting PDC only.\n"));
 		use_pdc_only = True;
+	}
 
 	if (!get_dc_list(use_pdc_only, lp_workgroup(), &ip_list, &count))
 		return False;
@@ -1523,12 +1526,28 @@ BOOL domain_client_validate( char *user, char *domain,
   if (! *pserver) pserver = "*";
   p = pserver;
 
+ retry:
+
   while (!connected_ok &&
 	 next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 	  if(strequal(remote_machine, "*")) {
 		  connected_ok = find_connect_pdc(&cli, trust_passwd, last_change_time);
 	  } else {
 		  connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
+
+		  if (!connected_ok) {
+			  
+			  /* We have not connected to any dc's that are
+			     listed.  Why not try connecting to ones that
+			     aren't explicitly listed in 'password server'? */
+
+			  DEBUG(3, ("no listed DC's available - trying "
+				    "password server = *\n"));
+
+			  pserver = "*";
+			  p = pserver;
+			  goto retry;
+		  }
 	  }
   }
 
