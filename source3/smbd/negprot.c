@@ -271,6 +271,8 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		}
 		SSVALS(outbuf,smb_vwv16+1,8);
 		p += 8;
+		p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
+				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
 		int len = negprot_spnego(p);
@@ -279,8 +281,6 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		p += len;
 		DEBUG(3,("using SPNEGO\n"));
 	}
-	p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
-			 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 	
 	SSVAL(outbuf,smb_vwv17, p - q); /* length of challenge+domain strings */
 	set_message_end(outbuf, p);
