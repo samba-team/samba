@@ -1941,8 +1941,11 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 				usr21.logon_divs,
 				&usr21.logon_hrs,
 				usr21.unknown_5,
-				pwbuf,
-				usr21.unknown_6);
+				pwbuf
+#if 0
+				, usr21.unknown_6
+#endif
+				);
 
 			usr = p;
 			switch_value = 23;

@@ -3384,8 +3384,11 @@ BOOL make_sam_user_info23W(SAM_USER_INFO_23 *usr,
 	uint16 logon_divs,
 	LOGON_HRS *hrs,
 	uint32 unknown_5,
-	char newpass[516],
-	uint32 unknown_6);
+	char newpass[516]
+#if 0
+	, uint32 unknown_6
+#endif
+			);
 BOOL make_sam_user_info23A(SAM_USER_INFO_23 *usr,
 
 	NTTIME *logon_time, /* all zeros */
@@ -3414,8 +3417,11 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 *usr,
 	uint16 logon_divs,
 	LOGON_HRS *hrs,
 	uint32 unknown_5,
-	char newpass[516],
-	uint32 unknown_6);
+	char newpass[516]
+#if 0
+	, uint32 unknown_6
+#endif
+			);
 BOOL make_sam_user_info21(SAM_USER_INFO_21 *usr,
 
 	NTTIME *logon_time,

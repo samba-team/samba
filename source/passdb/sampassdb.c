@@ -410,7 +410,9 @@ void copy_id23_to_sam_passwd(struct sam_passwd *to, const SAM_USER_INFO_23 *from
 	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
 
 	to->unknown_5 = from->unknown_5;
+#if 0
 	to->unknown_6 = from->unknown_6;
+#endif
 }
 
 

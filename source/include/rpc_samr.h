@@ -201,10 +201,12 @@ typedef struct sam_user_info_23
 	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
 	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
-	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel number */
+	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
 
+#if 0
 	uint32 unknown_6; /* 0x0000 04ec */
 	uint32 padding4;
+#endif
 
 	LOGON_HRS logon_hrs;
 
