@@ -80,7 +80,6 @@ static BOOL pdb_generate_sam_sid(void)
 {
 	char *fname = NULL;
 	extern pstring global_myname;
-	extern fstring global_myworkgroup;
 	BOOL is_dc = False;
 
 	if(global_sam_sid==NULL)
@@ -106,11 +105,11 @@ static BOOL pdb_generate_sam_sid(void)
 		if (!is_dc)
 			return True;
 
-		if (!secrets_fetch_domain_sid(global_myworkgroup, &domain_sid)) {
+		if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
 
 			/* No domain sid and we're a pdc/bdc. Store it */
 
-			if (!secrets_store_domain_sid(global_myworkgroup, global_sam_sid)) {
+			if (!secrets_store_domain_sid(lp_workgroup(), global_sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Can't store domain SID as a pdc/bdc.\n"));
 				return False;
 			}
@@ -122,7 +121,7 @@ static BOOL pdb_generate_sam_sid(void)
 			/* Domain name sid doesn't match global sam sid. Re-store global sam sid as domain sid. */
 
 			DEBUG(0,("pdb_generate_sam_sid: Mismatched SIDs as a pdc/bdc.\n"));
-			if (!secrets_store_domain_sid(global_myworkgroup, global_sam_sid)) {
+			if (!secrets_store_domain_sid(lp_workgroup(), global_sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Can't re-store domain SID as a pdc/bdc.\n"));
 				return False;
 			}
@@ -145,7 +144,7 @@ static BOOL pdb_generate_sam_sid(void)
 		}
 		unlink(fname);
 		if (is_dc) {
-			if (!secrets_store_domain_sid(global_myworkgroup, global_sam_sid)) {
+			if (!secrets_store_domain_sid(lp_workgroup(), global_sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Failed to store domain SID from file.\n"));
 				SAFE_FREE(fname);
 				return False;
@@ -168,7 +167,7 @@ static BOOL pdb_generate_sam_sid(void)
 		return False;
 	}
 	if (is_dc) {
-		if (!secrets_store_domain_sid(global_myworkgroup, global_sam_sid)) {
+		if (!secrets_store_domain_sid(lp_workgroup(), global_sam_sid)) {
 			DEBUG(0,("pdb_generate_sam_sid: Failed to store generated domain SID.\n"));
 			return False;
 		}
