@@ -84,7 +84,7 @@ Samba-Developers-Guide/index.xml: $(subst Samba-Developers-Guide/index.xml,,$(wi
 # Pseudo targets 
 all: @TARGETS@
 everything: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson verify
-release: manpages htmlman html pdf guide
+release: manpages htmlman html pdf 
 
 # Output format targets
 pdf: $(patsubst $(DOCBOOKDIR)/%.xml,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
