@@ -1,3 +1,18 @@
+2002-01-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* admin/list.c: get the default keytab from krb5.conf, and list
+	all parts of an ANY type keytab
+
+	* lib/krb5/context.c: default default_keytab_modify to NULL
+
+	* lib/krb5/keytab.c (krb5_kt_default_modify_name): if no modify
+	name is specified take it from the first component of the default
+	keytab name
+
+2002-01-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/keytab.c: compare keytab types case insensitively
+
 2002-01-07  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/crypto.c (create_checksum): make usage `unsigned' (it's
