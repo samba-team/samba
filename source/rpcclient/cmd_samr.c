@@ -989,11 +989,15 @@ uint32 cmd_sam_create_dom_trusting(struct client_info *info, int argc,
 /* this is a hack to integrate TNG with Samba 3.0 */ 
 static BOOL lsa_local_set_secret(char *domain, uchar ntpw[16])
 {
-	static fstring keystr;
+	static fstring keystr, dos_domain;
 	struct machine_acct_pass pass;
 
+	fstrcpy(dos_domain, domain);
+	unix_to_dos(dos_domain, True);
+
 	secrets_init();
-	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
+	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, 
+		 dos_domain);
 
 	memcpy(pass.hash, ntpw, 16);
 	pass.mod_time = time(NULL);
@@ -1104,6 +1108,7 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			{
 				join_domain = True;
 				fstrcpy(join_dom_name, optarg);
+				dos_to_unix(join_dom_name, True);
 				break;
 			}
 			case 'p':
