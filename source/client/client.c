@@ -845,7 +845,7 @@ else
 
   if( offset >= rdrcnt )
     {
-      DEBUG(1,("bad char ptr: datap=%u, converter=%u, rdata=%u, rdrcnt=%d>", datap, converter, (unsigned)rdata, rdrcnt));
+      DEBUG(1,("bad char ptr: datap=%u, converter=%u, rdata=%lu, rdrcnt=%d>", datap, converter, (unsigned long)rdata, rdrcnt));
     return "<ERROR>";
     }
   else
@@ -3689,8 +3689,13 @@ try and browse available connections on a host
 static BOOL browse_host(BOOL sort)
 {
 #ifdef NOSTRCASECMP
+/* If strcasecmp is already defined, remove it. */
+#ifdef strcasecmp
+#undef strcasecmp
+#endif /* strcasecmp */
 #define strcasecmp StrCaseCmp
-#endif
+#endif /* NOSTRCASECMP */
+
   extern int strcasecmp();
 
   char *rparam = NULL;
@@ -4190,13 +4195,11 @@ static void wait_keyboard(char *buffer)
 #else
       {
 	char ch;
-	int f_flags;
 	int readret;
-	
-	f_flags = fcntl(fileno(stdin), F_GETFL, 0);
-	fcntl( fileno(stdin), F_SETFL, f_flags | O_NONBLOCK);
+
+    set_blocking(fileno(stdin), False);	
 	readret = read_data( fileno(stdin), &ch, 1);
-	fcntl(fileno(stdin), F_SETFL, f_flags);
+	set_blocking(fileno(stdin), True);
 	if (readret == -1)
 	  {
 	    if (errno != EAGAIN)
@@ -4322,7 +4325,7 @@ static BOOL process(char *base_directory)
       bzero(OutBuffer,smb_size);
 
       /* display a prompt */
-      DEBUG(1,("smb: %s> ", CNV_LANG(cur_dir)));
+      DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
       fflush(dbf);
 
 #ifdef CLIX

@@ -226,7 +226,7 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
 
   /* Optimization : Only call is_hidden_path if it's not already
      hidden. */
-  if (!(result & aHIDDEN) && is_hidden_path(SNUM(cnum), path))
+  if (!(result & aHIDDEN) && IS_HIDDEN_PATH(cnum,path))
   {
     result |= aHIDDEN;
   }
@@ -358,7 +358,7 @@ scan a directory to find a filename, matching without case sensitivity
 
 If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
-static BOOL scan_directory(char *path, char *name,int snum,BOOL docache)
+static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
 {
   void *cur_dir;
   char *dname;
@@ -371,7 +371,7 @@ static BOOL scan_directory(char *path, char *name,int snum,BOOL docache)
   if (*path == 0)
     path = ".";
 
-  if (docache && (dname = DirCacheCheck(path,name,snum))) {
+  if (docache && (dname = DirCacheCheck(path,name,SNUM(cnum)))) {
     strcpy(name, dname);	
     return(True);
   }      
@@ -380,7 +380,7 @@ static BOOL scan_directory(char *path, char *name,int snum,BOOL docache)
     check_mangled_stack(name);
 
   /* open the directory */
-  if (!(cur_dir = OpenDir(snum, path, True))) 
+  if (!(cur_dir = OpenDir(cnum, path, True))) 
     {
       DEBUG(3,("scan dir didn't open dir [%s]\n",path));
       return(False);
@@ -394,13 +394,13 @@ static BOOL scan_directory(char *path, char *name,int snum,BOOL docache)
 	continue;
 
       strcpy(name2,dname);
-      if (!name_map_mangle(name2,False,snum)) continue;
+      if (!name_map_mangle(name2,False,SNUM(cnum))) continue;
 
       if ((mangled && mangled_equal(name,name2))
 	  || fname_equal(name, dname))
 	{
 	  /* we've found the file, change it's name and return */
-	  if (docache) DirCacheAdd(path,name,dname,snum);
+	  if (docache) DirCacheAdd(path,name,dname,SNUM(cnum));
 	  strcpy(name, dname);
 	  CloseDir(cur_dir);
 	  return(True);
@@ -533,7 +533,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
 
 	  /* try to find this part of the path in the directory */
 	  if (strchr(start,'?') || strchr(start,'*') ||
-	      !scan_directory(dirpath, start, SNUM(cnum), end?True:False))
+	      !scan_directory(dirpath, start, cnum, end?True:False))
 	    {
 	      if (end) 
 		{
@@ -810,7 +810,7 @@ BOOL check_name(char *name,int cnum)
 
   errno = 0;
 
-  if( is_vetoed_name(SNUM(cnum), name)) 
+  if( IS_VETO_PATH(cnum, name)) 
     {
       DEBUG(5,("file path name %s vetoed\n",name));
       return(0);
@@ -2485,6 +2485,8 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   pcon->printer = (strncmp(dev,"LPT",3) == 0);
   pcon->ipc = (strncmp(dev,"IPC",3) == 0);
   pcon->dirptr = NULL;
+  pcon->veto_list = NULL;
+  pcon->hide_list = NULL;
   string_set(&pcon->dirpath,"");
   string_set(&pcon->user,user);
 
@@ -2626,6 +2628,13 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   
   /* we've finished with the sensitive stuff */
   unbecome_user();
+
+  /* Add veto/hide lists */
+  if (!IS_IPC(cnum) && !IS_PRINT(cnum))
+  {
+    set_namearray( &pcon->veto_list, lp_veto_files(SNUM(cnum)));
+    set_namearray( &pcon->hide_list, lp_hide_files(SNUM(cnum)));
+  }
 
   {
     DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) connect to service %s as user %s (uid=%d,gid=%d) (pid %d)\n",
@@ -3176,6 +3185,9 @@ void close_cnum(int cnum, uint16 vuid)
       Connections[cnum].ngroups = 0;
     }
 
+  free_namearray(Connections[cnum].veto_list);
+  free_namearray(Connections[cnum].hide_list);
+
   string_set(&Connections[cnum].user,"");
   string_set(&Connections[cnum].dirpath,"");
   string_set(&Connections[cnum].connectpath,"");
@@ -3440,22 +3452,28 @@ void exit_server(char *reason)
 /****************************************************************************
 do some standard substitutions in a string
 ****************************************************************************/
-void standard_sub(int cnum,char *s)
+void standard_sub(int cnum,char *string)
 {
-  if (!strchr(s,'%')) return;
+  if (VALID_CNUM(cnum)) {
+    char *p, *s, *home;
 
-  if (VALID_CNUM(cnum))
-    {
-      string_sub(s,"%S",lp_servicename(Connections[cnum].service));
-      string_sub(s,"%P",Connections[cnum].connectpath);
-      string_sub(s,"%u",Connections[cnum].user);
-      if (strstr(s,"%H")) {
-	char *home = get_home_dir(Connections[cnum].user);
-	if (home) string_sub(s,"%H",home);
+    for ( s=string ; (p=strchr(s, '%')) != NULL ; s=p ) {
+      switch (*(p+1)) {
+        case 'H' : if ((home = get_home_dir(Connections[cnum].user))!=NULL)
+                     string_sub(p,"%H",home);
+                   else
+                     p += 2;
+                   break;
+        case 'P' : string_sub(p,"%P",Connections[cnum].connectpath); break;
+        case 'S' : string_sub(p,"%S",lp_servicename(Connections[cnum].service)); break;
+        case 'g' : string_sub(p,"%g",gidtoname(Connections[cnum].gid)); break;
+        case 'u' : string_sub(p,"%u",Connections[cnum].user); break;
+        case '\0' : p++; break; /* don't run off the end of the string */
+        default  : p+=2; break;
       }
-      string_sub(s,"%g",gidtoname(Connections[cnum].gid));
     }
-  standard_sub_basic(s);
+  }
+  standard_sub_basic(string);
 }
 
 /*
@@ -4267,7 +4285,10 @@ static void usage(char *pname)
       char    buf[20];
 
       if ((fd = open(pidFile,
-         O_NONBLOCK | O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0)
+#ifdef O_NONBLOCK
+         O_NONBLOCK | 
+#endif
+         O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0)
         {
            DEBUG(0,("ERROR: can't open %s: %s\n", pidFile, strerror(errno)));
            exit(1);

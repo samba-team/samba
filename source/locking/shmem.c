@@ -167,7 +167,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
    int smb_shm_processes_fd = -1;
    int nb_read;
    pid_t other_pid;
-   int seek_back = -sizeof(other_pid);
+   int seek_back = -((int)sizeof(other_pid));
    int free_slot = -1;
    int erased_slot;   
    
@@ -236,7 +236,7 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    int smb_shm_processes_fd = -1;
    int nb_read;
    pid_t other_pid;
-   int seek_back = -sizeof(other_pid);
+   int seek_back = -((int)sizeof(other_pid));
    int erased_slot;
    BOOL found = False;
    

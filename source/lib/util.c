@@ -1721,7 +1721,7 @@ else
 if SYSV use O_NDELAY
 if BSD use FNDELAY
 ****************************************************************************/
-int set_blocking(int fd, int set)
+int set_blocking(int fd, BOOL set)
 {
   int val;
 #ifdef O_NONBLOCK
@@ -2925,7 +2925,7 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
   sock_out.sin_family = PF_INET;
 
   /* set it non-blocking */
-  set_blocking(res,0);
+  set_blocking(res,False);
 
   DEBUG(3,("Connecting to %s at port %d\n",inet_ntoa(*addr),port));
   
@@ -2961,7 +2961,7 @@ connect_again:
   }
 
   /* set it blocking again */
-  set_blocking(res,1);
+  set_blocking(res,True);
 
   return res;
 }
@@ -3193,47 +3193,43 @@ char *client_addr(void)
 
 /*******************************************************************
 sub strings with useful parameters
+Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
+Paul Rippin <pr3245@nopc.eurostat.cec.be>
 ********************************************************************/
-void standard_sub_basic(char *s)
+void standard_sub_basic(char *string)
 {
-  if (!strchr(s,'%')) return;
+  char *s, *p;
+  char pidstr[10];
+  struct passwd *pass;
 
-  string_sub(s,"%R",remote_proto);
-  string_sub(s,"%a",remote_arch);
-  string_sub(s,"%m",remote_machine);
-  string_sub(s,"%L",local_machine);
-
-  if (!strchr(s,'%')) return;
-
-  string_sub(s,"%v",VERSION);
-  string_sub(s,"%h",myhostname);
-  string_sub(s,"%U",sesssetup_user);
-
-  if (!strchr(s,'%')) return;
-
-  string_sub(s,"%I",client_addr());
-  if (strstr(s,"%M"))
-    string_sub(s,"%M",client_name());
-  string_sub(s,"%T",timestring());
-
-  if (!strchr(s,'%')) return;
-
+  for (s = string ; (p = strchr(s,'%')) != NULL ; s = p )
   {
-    char pidstr[10];
-    sprintf(pidstr,"%d",(int)getpid());
-    string_sub(s,"%d",pidstr);
-  }
-
-  if (!strchr(s,'%')) return;
-
-  {
-    struct passwd *pass = Get_Pwnam(sesssetup_user,False);
-    if (pass) {
-      string_sub(s,"%G",gidtoname(pass->pw_gid));
+    switch (*(p+1))
+    {
+      case 'G' : if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
+                   string_sub(p,"%G",gidtoname(pass->pw_gid));
+                 else
+                   p += 2;
+                 break;
+      case 'I' : string_sub(p,"%I",client_addr()); break;
+      case 'L' : string_sub(p,"%L",local_machine); break;
+      case 'M' : string_sub(p,"%M",client_name()); break;
+      case 'R' : string_sub(p,"%R",remote_proto); break;
+      case 'T' : string_sub(p,"%T",timestring()); break;
+      case 'U' : string_sub(p,"%U",sesssetup_user); break;
+      case 'a' : string_sub(p,"%a",remote_arch); break;
+      case 'd' : sprintf(pidstr,"%d",(int)getpid());
+                 string_sub(p,"%d",pidstr);
+                 break;
+      case 'h' : string_sub(p,"%h",myhostname); break;
+      case 'm' : string_sub(p,"%m",remote_machine); break;
+      case 'v' : string_sub(p,"%v",VERSION); break;
+      case '\0' : p++; break; /* don't run off end if last character is % */
+      default  : p+=2; break;
     }
   }
+  return;
 }
-
 
 /*******************************************************************
 are two IPs on the same subnet?
@@ -3455,24 +3451,21 @@ char *readdirname(void *p)
 }
 
 /*
- * Utility function used by is_hidden_path() and is_vetoed_name()
- * to decide if the last component of a path matches a (possibly
- * wildcarded) entry in a namelist.
+ * Utility function used to decide if the last component 
+ * of a path matches a (possibly wildcarded) entry in a namelist.
  */
 
-static BOOL is_in_path(char *name, char *namelist)
+BOOL is_in_path(char *name, name_compare_entry *namelist)
 {
   pstring last_component;
   char *p;
-  char *nameptr = namelist;
-  char *name_end;
 
-  DEBUG(5, ("is_in_path: %s list: %s\n", name, namelist));
+  DEBUG(5, ("is_in_path: %s\n", name));
 
   /* if we have no list it's obviously not in the path */
-  if((nameptr == NULL ) || ((nameptr != NULL) && (*nameptr == '\0'))) 
+  if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) 
   {
-    DEBUG(5,("is_in_path: no name list.  return False\n"));
+    DEBUG(5,("is_in_path: no name list.\n"));
     return False;
   }
 
@@ -3481,33 +3474,62 @@ static BOOL is_in_path(char *name, char *namelist)
   strncpy(last_component, p ? p : name, sizeof(last_component)-1);
   last_component[sizeof(last_component)-1] = '\0'; 
 
-  /* now, we need to find the names one by one and check them
-     they can contain spaces and all sorts of stuff so we
-     separate them with of all things '\' which can never be in a filename
-     I could use "" but then I have to break them all out
-     maybe such a routine exists somewhere?
-  */
- 
-  /* lkcl 03jul97 - the separator character used to be a '/'.
-     i changed it to a '\', after examining the code, and seeing
-     that unix_convert is called before check_path and dos_mode.
-     unix_convert changes, in the path, all dos '\'s to unix '/'s.
+  for(; namelist->name != NULL; namelist++)
+  {
+    if(namelist->is_wild)
+    {
+      /* look for a wildcard match. */
+      if (mask_match(last_component, namelist->name, case_sensitive, False))
+      {
+         DEBUG(5,("is_in_path: mask match succeeded\n"));
+         return True;
+      }
+    }
+    else
+    {
+      if((case_sensitive && (strcmp(last_component, namelist->name) == 0))||
+       (!case_sensitive && (StrCaseCmp(last_component, namelist->name) == 0)))
+        {
+         DEBUG(5,("is_in_path: match succeeded\n"));
+         return True;
+        }
+    }
+  }
+  DEBUG(5,("is_in_path: match not found\n"));
 
-     the alternatives are:
+  return False;
+}
 
-     1) move all check_path and dos_mode calls to before the
-        unix_convert calls.
+/*
+ * Strip a '/' separated list into an array of 
+ * name_compare_enties structures suitable for 
+ * passing to is_in_path(). We do this for
+ * speed so we can pre-parse all the names in the list 
+ * and don't do it for each call to is_in_path().
+ * namelist is modified here and is assumed to be 
+ * a copy owned by the caller.
+ * We also check if the entry contains a wildcard to
+ * remove a potentially expensive call to mask_match
+ * if possible.
+ */
 
-     2) have a corresponding dos_convert call, which can be used
-        in here to reverse '/'s into '\'s and vice-versa.  users
-        would specify the lp_veto_files and lp_hide_files parameters
-        in dos mode path format ('\' for directory separator), with a
-        list separator of '/', and they would be swapped inside this
-        function, before making the search.
+void set_namearray(name_compare_entry **ppname_array, char *namelist)
+{
+  char *name_end;
+  char *nameptr = namelist;
+  int num_entries = 0;
+  int i;
 
+  (*ppname_array) = NULL;
+
+  if((nameptr == NULL ) || ((nameptr != NULL) && (*nameptr == '\0'))) 
+    return;
+
+  /* We need to make two passes over the string. The
+     first to count the number of elements, the second
+     to split it.
    */
-
-  while (*nameptr) 
+  while (*nameptr ) 
     {
       if ( *nameptr == '/' ) 
       {
@@ -3516,42 +3538,79 @@ static BOOL is_in_path(char *name, char *namelist)
           continue;
       }
       /* find the next / */
-      if ((name_end = strchr(nameptr,'/')) != NULL) 
+      name_end = strchr(nameptr, '/');
+
+      /* oops - the last check for a / didn't find one. */
+      if (name_end == NULL)
+        break;
+
+      /* next segment please */
+      nameptr = name_end + 1;
+      num_entries++;
+    }
+
+  if(num_entries == 0)
+    return;
+
+  if(( (*ppname_array) = (name_compare_entry *)malloc( 
+           (num_entries + 1) * sizeof(name_compare_entry))) == NULL)
+  {
+    DEBUG(0,("set_namearray: malloc fail\n"));
+    return;
+  }
+
+  /* Now copy out the names */
+  nameptr = namelist;
+  i = 0;
+  while(*nameptr)
+    {
+      if ( *nameptr == '/' ) 
+      {
+          /* cope with multiple (useless) /s) */
+          nameptr++;
+          continue;
+      }
+      /* find the next / */
+      if ((name_end = strchr(nameptr, '/')) != NULL) 
       {
           *name_end = 0;
       }
 
-      /* look for a match. */
-      if (mask_match(last_component, nameptr, case_sensitive, False))
-      {
-         DEBUG(5,("is_in_path: mask match succeeded\n"));
-         return True;
-      }
-
       /* oops - the last check for a / didn't find one. */
       if (name_end == NULL)
+        break;
+
+      (*ppname_array)[i].is_wild = ((strchr( nameptr, '?')!=NULL) ||
+                                (strchr( nameptr, '*')!=NULL));
+      if(((*ppname_array)[i].name = strdup(nameptr)) == NULL)
       {
-         DEBUG(5,("is_in_path: last name.  failed\n"));
-         return False;
+        DEBUG(0,("set_namearray: malloc fail (1)\n"));
+        return;
       }
 
       /* next segment please */
       nameptr = name_end + 1;
+      i++;
     }
-  
-  DEBUG(5,("is_in_path: not found\n"));
 
-  return False;
+  (*ppname_array)[i].name = NULL;
+
+  return;
 }
 
-BOOL is_hidden_path(int snum, char *name)
-{
-   return is_in_path(name, lp_hide_files(snum));
-}
+/****************************************************************************
+routine to free a namearray.
+****************************************************************************/
 
-BOOL is_vetoed_name(int snum, char *name)
+void free_namearray(name_compare_entry *name_array)
 {
-   return is_in_path(name, lp_veto_files(snum));
+  if(name_array == 0)
+    return;
+
+  if(name_array->name != NULL)
+    free(name_array->name);
+
+  free((char *)name_array);
 }
 
 /****************************************************************************
