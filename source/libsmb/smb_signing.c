@@ -748,11 +748,11 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BO
 	
 	if (!good) {
 
-		DEBUG(5, ("srv_check_incoming_message: BAD SIG: seq %u wanted SMB signature of\n",
+		DEBUG(0, ("srv_check_incoming_message: BAD SIG: seq %u wanted SMB signature of\n",
 					(unsigned int)saved_seq));
 		dump_data(5, (const char *)calc_md5_mac, 8);
 		
-		DEBUG(5, ("srv_check_incoming_message: BAD SIG: seq %u got SMB signature of\n",
+		DEBUG(0, ("srv_check_incoming_message: BAD SIG: seq %u got SMB signature of\n",
 					(unsigned int)saved_seq));
 		dump_data(5, (const char *)server_sent_mac, 8);
 
