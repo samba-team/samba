@@ -1513,6 +1513,61 @@ static BOOL test_DsrEnumerateDomainTrusts(struct dcerpc_pipe *p, TALLOC_CTX *mem
 }
 
 
+static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_LogonGetDomainInfo r;
+	struct netr_DomainQuery1 q1;
+	struct netr_Authenticator a;
+	uint32_t i1;
+	struct creds_CredentialState creds;
+
+	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
+		return False;
+	}
+
+	ZERO_STRUCT(r);
+
+	creds_client_authenticator(&creds, &a);
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.unknown1 = 512;
+	r.in.level = 1;
+	r.in.credential = &a;
+	r.out.credential = &a;
+
+	i1 = 0;
+	r.in.i1 = &i1;
+
+	r.in.query.query1 = &q1;
+	ZERO_STRUCT(q1);
+	
+	/* this should really be the fully qualified name */
+	q1.workstation_domain = TEST_MACHINE_NAME;
+	q1.workstation_site = "Default-First-Site-Name";
+	q1.foo2 = "foo";
+	q1.blob2.length = 0;
+	q1.blob2.size = 0;
+	q1.blob2.data = NULL;
+	q1.product.string = "product string";
+	q1.p4 = NULL;
+	q1.pp = 0x00000000;
+
+	printf("Testing netr_LogonGetDomainInfo\n");
+
+	status = dcerpc_netr_LogonGetDomainInfo(p, mem_ctx, &r);
+
+	if (!creds_client_check(&creds, &a.cred)) {
+		printf("Credential chaining failed\n");
+	}
+
+	printf("fault code 0x%x  status=%s\n", p->last_fault_code, nt_errstr(status));
+
+	return True;
+}
+
+
 
 BOOL torture_rpc_netlogon(int dummy)
 {
@@ -1537,6 +1592,10 @@ BOOL torture_rpc_netlogon(int dummy)
 					DCERPC_NETLOGON_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
+	}
+
+	if (!test_GetDomainInfo(p, mem_ctx)) {
+		ret = False;
 	}
 
 	if (!test_LogonUasLogon(p, mem_ctx)) {
