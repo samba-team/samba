@@ -41,10 +41,9 @@ static int nbt_name_request_destructor(void *ptr)
 	if (req->state == NBT_REQUEST_WAIT) {
 		req->nbtsock->num_pending--;
 	}
-	if (req->request->name_trn_id != 0 && 
-	    !(req->request->operation & NBT_FLAG_REPLY)) {
-		idr_remove(req->nbtsock->idr, req->request->name_trn_id);
-		req->request->name_trn_id = 0;
+	if (req->name_trn_id != 0 && !req->is_reply) {
+		idr_remove(req->nbtsock->idr, req->name_trn_id);
+		req->name_trn_id = 0;
 	}
 	if (req->te) {
 		req->te = NULL;
@@ -70,26 +69,10 @@ static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 	NTSTATUS status;
 
 	while ((req = nbtsock->send_queue)) {
-		DATA_BLOB blob;
 		size_t len;
 		
-		if (DEBUGLVL(10)) {
-			DEBUG(10,("Sending nbt packet to %s:%d\n", 
-				  req->dest_addr, req->dest_port));
-			NDR_PRINT_DEBUG(nbt_name_packet, req->request);
-		}
-
-		status = ndr_push_struct_blob(&blob, tmp_ctx, req->request, 
-					      (ndr_push_flags_fn_t)
-					      ndr_push_nbt_name_packet);
-		if (!NT_STATUS_IS_OK(status)) goto failed;
-
-		if (req->request->operation & NBT_FLAG_BROADCAST) {
-			socket_set_option(nbtsock->sock, "SO_BROADCAST", "1");
-		}
-
-		len = blob.length;
-		status = socket_sendto(nbtsock->sock, &blob, &len, 0, 
+		len = req->encoded.length;
+		status = socket_sendto(nbtsock->sock, &req->encoded, &len, 0, 
 				       req->dest_addr, req->dest_port);
 		if (NT_STATUS_IS_ERR(status)) goto failed;		
 
@@ -99,7 +82,7 @@ static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 		}
 
 		DLIST_REMOVE(nbtsock->send_queue, req);
-		if (req->request->operation & NBT_FLAG_REPLY) {
+		if (req->is_reply) {
 			talloc_free(req);
 		} else {
 			req->state = NBT_REQUEST_WAIT;
@@ -270,6 +253,7 @@ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 
 	nbtsock->send_queue = NULL;
 	nbtsock->num_pending = 0;
+	nbtsock->incoming.handler = NULL;
 
 	fde.fd = socket_get_fd(nbtsock->sock);
 	fde.flags = 0;
@@ -317,6 +301,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	struct nbt_name_request *req;
 	struct timed_event te;
 	int id;
+	NTSTATUS status;
 
 	req = talloc_zero(nbtsock, struct nbt_name_request);
 	if (req == NULL) goto failed;
@@ -325,13 +310,13 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	req->dest_addr = talloc_strdup(req, dest_addr);
 	if (req->dest_addr == NULL) goto failed;
 	req->dest_port = dest_port;
-	req->request = talloc_reference(req, request);
 	req->allow_multiple_replies = allow_multiple_replies;
 	req->state = NBT_REQUEST_SEND;
+	req->is_reply = False;
 
 	/* we select a random transaction id unless the user supplied one */
-	if (req->request->name_trn_id == 0) {
-		req->request->name_trn_id = generate_random() % UINT16_MAX;
+	if (request->name_trn_id == 0) {
+		request->name_trn_id = generate_random() % UINT16_MAX;
 	}
 
 	/* choose the next available transaction id >= the one asked for.
@@ -340,14 +325,15 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	   to ID guessing, but this at least makes accidential collisions
 	   less likely */
 	id = idr_get_new_above(req->nbtsock->idr, req, 
-			       req->request->name_trn_id, UINT16_MAX);
+			       request->name_trn_id, UINT16_MAX);
 	if (id == -1) {
 		id = idr_get_new_above(req->nbtsock->idr, req, 
 				       1+(generate_random()%(UINT16_MAX/2)),
 				       UINT16_MAX);
 	}
 	if (id == -1) goto failed;
-	req->request->name_trn_id = id;
+	request->name_trn_id = id;
+	req->name_trn_id     = id;
 
 	te.next_event = timeout;
 	te.handler = nbt_name_socket_timeout;
@@ -356,7 +342,21 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	
 	talloc_set_destructor(req, nbt_name_request_destructor);	
 
+	status = ndr_push_struct_blob(&req->encoded, req, request, 
+				      (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
 	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
+
+	if (request->operation & NBT_FLAG_BROADCAST) {
+		socket_set_option(nbtsock->sock, "SO_BROADCAST", "1");
+	}
+
+	if (DEBUGLVL(10)) {
+		DEBUG(10,("Queueing nbt packet to %s:%d\n", 
+			  req->dest_addr, req->dest_port));
+		NDR_PRINT_DEBUG(nbt_name_packet, request);
+	}
 
 	nbtsock->fde->flags |= EVENT_FD_WRITE;
 
@@ -376,6 +376,7 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 			     struct nbt_name_packet *request)
 {
 	struct nbt_name_request *req;
+	NTSTATUS status;
 
 	req = talloc_zero(nbtsock, struct nbt_name_request);
 	NT_STATUS_HAVE_NO_MEMORY(req);
@@ -384,10 +385,17 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 	req->dest_addr = talloc_strdup(req, dest_addr);
 	if (req->dest_addr == NULL) goto failed;
 	req->dest_port = dest_port;
-	req->request   = talloc_reference(req, request);
 	req->state     = NBT_REQUEST_SEND;
+	req->is_reply = True;
 
 	talloc_set_destructor(req, nbt_name_request_destructor);	
+
+	status = ndr_push_struct_blob(&req->encoded, req, request, 
+				      (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return status;
+	}
 
 	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
 
