@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -38,9 +38,10 @@ RCSID("$Id$");
 int
 kt_get(int argc, char **argv)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
+    krb5_keytab keytab;
     kadm5_config_params conf;
-    void *kadm_handle;
+    void *kadm_handle = NULL;
     char *principal = NULL;
     char *realm = NULL;
     char *admin_server = NULL;
@@ -83,9 +84,24 @@ kt_get(int argc, char **argv)
        || help_flag) {
 	arg_printusage(args, sizeof(args) / sizeof(args[0]), 
 		       "ktutil get", "principal...");
-	return 0;
+	return 1;
     }
     
+    if (keytab_string == NULL) {
+	ret = krb5_kt_default_modify_name (context, keytab_buf,
+					   sizeof(keytab_buf));
+	if (ret) {
+	    krb5_warn(context, ret, "krb5_kt_default_modify_name");
+	    return 1;
+	}
+	keytab_string = keytab_buf;
+    }
+    ret = krb5_kt_resolve(context, keytab_string, &keytab);
+    if (ret) {
+	krb5_warn(context, ret, "resolving keytab %s", keytab_string);
+	return 1;
+    }
+
     if (etype_strs.num_strings) {
 	int i;
 
@@ -132,9 +148,8 @@ kt_get(int argc, char **argv)
 				       &kadm_handle);
     if(ret) {
 	krb5_warn(context, ret, "kadm5_init_with_password");
-	return 0;
+	goto out;
     }
-    
     
     for(i = optind; i < argc; i++){
 	krb5_principal princ_ent;
@@ -223,6 +238,8 @@ kt_get(int argc, char **argv)
  out:
     free_getarg_strings(&etype_strs);
     free(etypes);
-    kadm5_destroy(kadm_handle);
-    return 0;
+    if (kadm_handle)
+	kadm5_destroy(kadm_handle);
+    krb5_kt_close(context, keytab);
+    return ret != 0;
 }
