@@ -202,10 +202,11 @@ sub property_matches($$$)
 
 my %enum_list;
 
-sub register_enum($)
+sub register_enum($$)
 {
+	my $enum = shift;
 	my $name = shift;
-	$enum_list{$name} = 1;
+	$enum_list{$name} = $enum;
 }
 
 sub is_enum($)
@@ -214,16 +215,27 @@ sub is_enum($)
 	return defined $enum_list{$name}
 }
 
+sub get_enum($)
+{
+	my $name = shift;
+	return $enum_list{$name};
+}
+
 sub enum_type_decl($)
 {
-	my $e = shift;
-	return "enum $e->{TYPE}";
+	my $enum = shift;
+	return "enum $enum->{TYPE}";
 }
 
 sub enum_type_fn($)
 {
-	my $e = shift;
-	return "$e->{TYPE}";
+	my $enum = shift;
+	if (util::has_property($enum->{PARENT}, "enum8bit")) {
+		return "uint8";
+	} elsif (util::has_property($enum->{PARENT}, "v1_enum")) {
+		return "uint32";
+	}
+	return "uint16";
 }
 
 my %bitmap_list;
