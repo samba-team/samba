@@ -953,7 +953,6 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
@@ -966,7 +965,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "createuser: <acct name> [-i] [-s] [-j]\n");
+		report(out_hnd, "createuser: <acct name> [-i] [-s] [-j] [-p password]\n");
 		return;
 	}
 
@@ -982,7 +981,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		acb_info = ACB_WSTRUST;
 	}
 
-	while ((opt = getopt(argc, argv,"isj")) != EOF)
+	while ((opt = getopt(argc, argv,"isjp:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -1001,6 +1000,16 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 				join_domain = True;
 				break;
 			}
+			case 'p':
+			{
+				fstring pwd;
+				safe_strcpy(pwd, optarg, sizeof(pwd)-1);
+				make_unistr2(&upw, pwd, strlen(pwd));
+				password = (char*)upw.buffer;
+				plen = upw.uni_str_len * 2;
+				memset(pwd, 0, sizeof(pwd));
+				break;
+			}
 		}
 	}
 
@@ -1017,6 +1026,13 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)
 	{
+		if (password != NULL)
+		{
+			report(out_hnd,("Workstation and Server Trust Accounts are randomly auto-generated\n"));
+			memset(&upw, 0, sizeof(upw));
+			return;
+		}
+
 		upw.uni_str_len = 12;
 		upw.uni_max_len = 12;
 		generate_random_buffer((uchar*)upw.buffer,
@@ -1055,6 +1071,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd, "Create Domain User: FAILED\n");
 	}
+	memset(&upw, 0, sizeof(upw));
 }
 
 

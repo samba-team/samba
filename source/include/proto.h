@@ -3728,6 +3728,7 @@ BOOL set_nt5ldapsid(struct policy_cache *cache, POLICY_HND *hnd,
 BOOL get_nt5ldapsid(struct policy_cache *cache, const POLICY_HND *hnd,
 				LDAPDB **hds, DOM_SID *sid);
 uint32 samr_open_by_nt5ldaprid( LDAPDB *hds,
+				const POLICY_HND *parent_pol,
 				POLICY_HND *pol, uint32 access_mask, uint32 rid);
 BOOL pwdbsam_initialise(void);
 

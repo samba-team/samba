@@ -140,8 +140,8 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 	}
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(), domain_pol, ace_perms))
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		connect_pol, domain_pol, ace_perms))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

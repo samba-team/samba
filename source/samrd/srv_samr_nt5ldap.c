@@ -304,11 +304,12 @@ BOOL get_nt5ldapsid(struct policy_cache *cache, const POLICY_HND *hnd,
  opens a samr entiry by rid, returns a policy handle.
  ********************************************************************/
 uint32 samr_open_by_nt5ldaprid( LDAPDB *hds,
+				const POLICY_HND *parent_pol,
 				POLICY_HND *pol, uint32 access_mask, uint32 rid)
 {
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(), pol, access_mask))
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		parent_pol, pol, access_mask))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

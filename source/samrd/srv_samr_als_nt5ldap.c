@@ -32,6 +32,7 @@ extern int DEBUGLEVEL;
  opens a samr group by rid, returns a policy handle.
  ********************************************************************/
 static uint32 samr_open_by_nt5ldapsid(LDAPDB *hds,
+				const POLICY_HND *parent_pol,
 				const DOM_SID *dom_sid,
 				POLICY_HND *pol,
 				uint32 access_mask,
@@ -40,8 +41,8 @@ static uint32 samr_open_by_nt5ldapsid(LDAPDB *hds,
 	DOM_SID sid;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(), pol, access_mask))
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		parent_pol, pol, access_mask))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -355,7 +356,8 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
 	*rid = grp.rid = 0xffffffff;
 
 	*rid = grp.rid;
-	status = samr_open_by_nt5ldapsid(hds, &dom_sid, alias_pol, access_mask, grp.rid);
+	status = samr_open_by_nt5ldapsid(hds, domain_pol,
+	                    &dom_sid, alias_pol, access_mask, grp.rid);
 
 	if (status != NT_STATUS_NOPROBLEMO)
 	{
@@ -395,6 +397,7 @@ uint32 _samr_open_alias(const POLICY_HND *domain_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return samr_open_by_nt5ldapsid(hds, &sid, alias_pol, access_mask, alias_rid);
+	return samr_open_by_nt5ldapsid(hds, domain_pol,
+	                    &sid, alias_pol, access_mask, alias_rid);
 }
 

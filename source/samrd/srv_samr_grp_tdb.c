@@ -34,6 +34,7 @@ extern int DEBUGLEVEL;
  opens a samr group by rid, returns a policy handle.
  ********************************************************************/
 static uint32 samr_open_by_tdbsid(TDB_CONTEXT *ptdb,
+				const POLICY_HND *parent_pol,
 				const DOM_SID *dom_sid,
 				POLICY_HND *pol,
 				uint32 access_mask,
@@ -42,8 +43,8 @@ static uint32 samr_open_by_tdbsid(TDB_CONTEXT *ptdb,
 	DOM_SID sid;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(), pol, access_mask))
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		parent_pol, pol, access_mask))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -332,8 +333,9 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 	grp.attr = 0x07;
 
 	*rid = grp.rid;
-	status = samr_open_by_tdbsid(tdb_grp, &dom_sid, group_pol,
-	                              access_mask, grp.rid);
+	status = samr_open_by_tdbsid(tdb_grp, domain_pol, 
+	               &dom_sid, group_pol,
+	               access_mask, grp.rid);
 	if (status != NT_STATUS_NOPROBLEMO)
 	{
 		return status;
@@ -372,6 +374,7 @@ uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return samr_open_by_tdbsid(tdb_grp, &sid, group_pol, access_mask, group_rid);
+	return samr_open_by_tdbsid(tdb_grp, domain_pol,
+	               &sid, group_pol, access_mask, group_rid);
 }
 

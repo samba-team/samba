@@ -173,8 +173,8 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 		status = NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(), &pol, q_u->access_mask))
+	if (status == 0x0 && !open_policy_hnd_link(get_global_hnd_cache(),
+		&q_u->pol, &pol, q_u->access_mask))
 	{
 		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}

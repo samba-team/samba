@@ -402,7 +402,8 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	return samr_open_by_nt5ldaprid(hds, user_pol, access_mask, user_rid);
+	return samr_open_by_nt5ldaprid(hds, domain_pol,
+	                  user_pol, access_mask, user_rid);
 }
 
 /*******************************************************************
@@ -791,7 +792,8 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 
 	*unknown_0 = 0x000703ff;
 
-	return samr_open_by_nt5ldaprid(hds, user_pol, access_mask, *user_rid);
+	return samr_open_by_nt5ldaprid(hds, domain_pol,
+	                  user_pol, access_mask, *user_rid);
 }
 
 #endif /* WITH_NT5LDAP */

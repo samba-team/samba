@@ -108,8 +108,8 @@ uint32 _svc_open_service(const POLICY_HND *scman_pol,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!open_policy_hnd(get_global_hnd_cache(),
-		get_sec_ctx(), pol, des_access))
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		scman_pol, pol, des_access))
 	{
 		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
