@@ -130,10 +130,18 @@ static void req_signing_alloc_seq_num(struct smbsrv_request *req)
 {
 	req->seq_num = req->smb_conn->signing.next_seq_num;
 
-	/* TODO: we need to handle one-way requests like NTcancel, which 
-	   only increment the sequence number by 1 */
 	if (req->smb_conn->signing.signing_state != SMB_SIGNING_OFF) {
 		req->smb_conn->signing.next_seq_num += 2;
+	}
+}
+
+/*
+  called for requests that do not produce a reply of their own
+*/
+void req_signing_no_reply(struct smbsrv_request *req)
+{
+	if (req->smb_conn->signing.signing_state != SMB_SIGNING_OFF) {
+		req->smb_conn->signing.next_seq_num--;
 	}
 }
 
