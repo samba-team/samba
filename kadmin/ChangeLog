@@ -1,5 +1,8 @@
 2003-03-31  Love Hörquist Åstrand <lha@it.su.se>
 
+	* kadmin.8: initialises -> initializes, from Perry E. Metzger"
+	<perry@piermont.com>
+
 	* kadmin.c: principal, not pricipal. From Thomas Klausner
 	<wiz@netbsd.org>
 
