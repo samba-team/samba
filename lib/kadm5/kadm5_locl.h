@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -145,6 +145,7 @@ typedef struct kadm5_client_context {
     krb5_auth_context ac;
     char *realm;
     char *admin_server;
+    int kadmind_port;
     int sock;
 }kadm5_client_context;
 
