@@ -983,4 +983,3 @@ BOOL name_map_mangle(char *OutName, BOOL need83, int snum)
 	return(True);
 } /* name_map_mangle */
 
-/* ========================================================================== */

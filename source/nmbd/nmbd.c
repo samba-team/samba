@@ -567,7 +567,10 @@ static void usage(char *pname)
 
   charset_initialise();
 
-  if(!initialize_password_db())
+  if(!initialise_group_db())
+    exit(1);
+
+  if(!initialise_password_db())
     exit(1);
 
 #ifdef LMHOSTSFILE
@@ -768,4 +771,3 @@ static void usage(char *pname)
   return(0);
 } /* main */
 
-/* ========================================================================== */
