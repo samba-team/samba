@@ -221,60 +221,61 @@ static int create_sock(void)
 struct dispatch_table {
 	enum winbindd_cmd cmd;
 	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
+	char *winbindd_cmd_name;
 };
 
 static struct dispatch_table dispatch_table[] = {
 	
 	/* User functions */
 
-	{ WINBINDD_GETPWNAM_FROM_USER, winbindd_getpwnam_from_user },
-	{ WINBINDD_GETPWNAM_FROM_UID, winbindd_getpwnam_from_uid },
+	{ WINBINDD_GETPWNAM_FROM_USER, winbindd_getpwnam_from_user, "GETPWNAM_FROM_USER" },
+	{ WINBINDD_GETPWNAM_FROM_UID, winbindd_getpwnam_from_uid, "GETPWNAM_FROM_UID" },
 
-	{ WINBINDD_SETPWENT, winbindd_setpwent },
-	{ WINBINDD_ENDPWENT, winbindd_endpwent },
-	{ WINBINDD_GETPWENT, winbindd_getpwent },
+	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
+	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
+	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
 
-	{ WINBINDD_GETGROUPS, winbindd_getgroups },
+	{ WINBINDD_GETGROUPS, winbindd_getgroups, "GETGROUPS" },
 
 	/* Group functions */
 
-	{ WINBINDD_GETGRNAM_FROM_GROUP, winbindd_getgrnam_from_group },
-	{ WINBINDD_GETGRNAM_FROM_GID, winbindd_getgrnam_from_gid },
-	{ WINBINDD_SETGRENT, winbindd_setgrent },
-	{ WINBINDD_ENDGRENT, winbindd_endgrent },
-	{ WINBINDD_GETGRENT, winbindd_getgrent },
+	{ WINBINDD_GETGRNAM_FROM_GROUP, winbindd_getgrnam_from_group, "GETGRNAM_FROM_GROUP" },
+	{ WINBINDD_GETGRNAM_FROM_GID, winbindd_getgrnam_from_gid, "GETGRNAM_FROM_GID" },
+	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
+	{ WINBINDD_ENDGRENT, winbindd_endgrent, "ENDGRENT" },
+	{ WINBINDD_GETGRENT, winbindd_getgrent, "GETGRENT" },
 
 	/* PAM auth functions */
 
-	{ WINBINDD_PAM_AUTH, winbindd_pam_auth },
-	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap },
-	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok },
+	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
+	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
+	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
 
 	/* Enumeration functions */
 
-        { WINBINDD_LIST_USERS, winbindd_list_users },
-        { WINBINDD_LIST_GROUPS, winbindd_list_groups },
-	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains },
+        { WINBINDD_LIST_USERS, winbindd_list_users, "LIST_USERS" },
+        { WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
+	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains, "LIST_TRUSTDOM" },
 
 	/* SID related functions */
 
-	{ WINBINDD_LOOKUPSID, winbindd_lookupsid },
-	{ WINBINDD_LOOKUPNAME, winbindd_lookupname },
+	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
+	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
 
 	/* S*RS related functions */
 
-	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid },
-	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid },
-	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid },
-	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid },
+	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid, "SID_TO_UID" },
+	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
+	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
+	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
 
 	/* Miscellaneous */
 
-	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct },
+	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
 
 	/* End of list */
 
-	{ WINBINDD_NUM_CMDS, NULL }
+	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
 };
 
 static void process_request(struct winbindd_cli_state *state)
@@ -295,10 +296,14 @@ static void process_request(struct winbindd_cli_state *state)
 
 	for (table = dispatch_table; table->fn; table++) {
 		if (state->request.cmd == table->cmd) {
+			DEBUG(10,("process_request: request fn %s\n", table->winbindd_cmd_name ));
 			state->response.result = table->fn(state);
 			break;
 		}
 	}
+
+	if (!table->fn)
+		DEBUG(10,("process_request: unknown request fn number %d\n", (int)state->request.cmd ));
 
 	/* In case extra data pointer is NULL */
 
@@ -396,6 +401,9 @@ static void client_read(struct winbindd_cli_state *state)
 	n = read(state->sock, state->read_buf_len + (char *)&state->request, 
 		 sizeof(state->request) - state->read_buf_len);
 	
+	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n,
+			sizeof(state->request) - n - state->read_buf_len ));
+
 	/* Read failed, kill client */
 	
 	if (n == -1 || n == 0) {
@@ -440,6 +448,8 @@ static void client_write(struct winbindd_cli_state *state)
 	
 	num_written = write(state->sock, data, state->write_buf_len);
 	
+	DEBUG(10,("client_write: wrote %d bytes.\n", num_written ));
+
 	/* Write failed, kill cilent */
 	
 	if (num_written == -1 || num_written == 0) {
@@ -471,6 +481,8 @@ static void client_write(struct winbindd_cli_state *state)
 
 			state->write_extra_data = False;
 
+			DEBUG(10,("client_write: client_write: complete response written.\n"));
+
 		} else if (state->response.length > 
 			   sizeof(struct winbindd_response)) {
 			
@@ -480,6 +492,8 @@ static void client_write(struct winbindd_cli_state *state)
 				state->response.length -
 				sizeof(struct winbindd_response);
 			
+			DEBUG(10,("client_write: need to write %d extra data bytes.\n", (int)state->write_buf_len));
+
 			state->write_extra_data = True;
 		}
 	}
