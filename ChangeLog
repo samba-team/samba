@@ -4,6 +4,22 @@ Sun Mar  1 03:28:42 1998  Assar Westerlund  <assar@sics.se>
 
 Sun Mar  1 02:05:11 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kadmin/kadmin.c: Cleanup commands list, and add help strings.
+
+	* kadmin/get.c: Add long, short, and terse (equivalent to `list')
+ 	output formats. Short is the default.
+
+	* kadmin/util.c: Add `include_time' flag to timeval2str.
+
+	* kadmin/init.c: Max-life and max-renew can, infact, be zero.
+
+	* kadmin/{cpw,del,ext,get}.c: Use `foreach_principal'.
+
+	* kadmin/util.c: Add function `foreach_principal', that loops over
+ 	all principals matching an expression.
+
+	* kadmin/kadmin.c: Add usage string to `privileges'.
+
 	* lib/kadm5/get_princs_s.c: Also try to match aganist the
  	expression appended with `@default-realm'.
 
