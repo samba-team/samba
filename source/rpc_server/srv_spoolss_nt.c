@@ -2668,6 +2668,8 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 
+		ZERO_STRUCT(notify_cli);
+
 		if(!spoolss_connect_to_client(&notify_cli, client_ip, unix_printer))
 			return False;
 			
