@@ -200,10 +200,10 @@ void announce_backup(void)
 /****************************************************************************
   send a host announcement packet
   **************************************************************************/
-void do_announce_host(int command,
+static void do_announce_host(int command,
 		char *from_name, int from_type, struct in_addr from_ip,
 		char *to_name  , int to_type  , struct in_addr to_ip,
-		int updatecount, time_t announce_interval,
+		time_t announce_interval,
 		char *server_name, int server_type, char *server_comment)
 {
 	pstring outbuf;
@@ -256,7 +256,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 		do_announce_host(ANN_LocalMasterAnnouncement,
 						name            , 0x00, d->myip,
 						work->work_group, 0x1e, d->bcast_ip,
-						updatecount, ttl*1000,
+						ttl*1000,
 						name, server_type, comment);
 
 		DEBUG(3,("sending domain announce to %s for %s\n",
@@ -268,7 +268,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 			do_announce_host(ANN_DomainAnnouncement,
 						work->work_group, 0x00, d->myip,
 						MSBROWSE        , 0x01, d->bcast_ip,
-						updatecount, ttl*1000,
+						ttl*1000,
 						name, server_type ? SV_TYPE_DOMAIN_ENUM : 0, comment);
 		}
 	}
@@ -280,7 +280,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 		do_announce_host(ANN_HostAnnouncement,
 						name            , 0x00, d->myip,
 						work->work_group, 0x1d, d->bcast_ip,
-						updatecount, ttl*1000,
+						ttl*1000,
 						name, server_type, comment);
 	}
 }
