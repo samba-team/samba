@@ -24,6 +24,8 @@ TERMLIBS=@TERMLIBS@
 LINK=$(CC) $(FLAGS) $(LDFLAGS)
 
 INSTALLCMD=@INSTALL@
+INSTALLCLIENTCMD_SH=@INSTALLCLIENTCMD_SH@
+INSTALLCLIENTCMD_A=@INSTALLCLIENTCMD_A@
 
 VPATH=@srcdir@
 srcdir=@srcdir@
@@ -101,7 +103,7 @@ MPROGS = @MPROGS@
 LPROGS = $(WINBIND_PAM_PROGS) $(WINBIND_LPROGS)
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup
 TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest bin/locktest2
-SHLIBS = libsmbclient
+SHLIBS = @LIBSMBCLIENT@
 
 SCRIPTS = $(srcdir)/script/smbtar  $(srcdir)/script/findsmb
 
@@ -426,13 +428,13 @@ TDBDUMP_OBJ =  tdb/tdbdump.o $(TDBBASE_OBJ)
 all : CHECK $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 # The following "everything" is NOT needed except by Samba developers - so do not use this!
-everything : CHECK $(SPROGS) $(PROGS) $(SHLIBS) nsswitch smbwrapper smbtorture debug2html smbfilter nsswitch/libnss_wins.so
+everything : CHECK $(SPROGS) $(PROGS) $(SHLIBS) nsswitch smbwrapper smbtorture debug2html smbfilter
 
 pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
 smbwrapper : CHECK @WRAPPROG@ @WRAP@ @WRAP32@
 
-libsmbclient : CHECK bin/libsmbclient.@SHLIBEXT@ bin/libsmbclient.a
+libsmbclient : CHECK bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 
 torture : CHECK $(TORTURE_PROGS)
 
@@ -459,6 +461,8 @@ debug2html : CHECK bin/debug2html
 smbfilter : CHECK bin/smbfilter
 
 nsswitch : CHECK $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
+
+wins : CHECK nsswitch/libnss_wins.@SHLIBEXT@
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
@@ -723,7 +727,8 @@ installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 installclientlib:
-	-$(INSTALLCMD) bin/libsmbclient.so
+	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@
+	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a
 	-$(INSTALLCMD) -d ${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
 

@@ -1,7 +1,7 @@
 /*
  * Support code for the Common UNIX Printing System ("CUPS")
  *
- * Copyright 1999-2001 by Michael R Sweet.
+ * Copyright 1999-2003 by Michael R Sweet.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
  */
 
 #include "printing.h"
-#include "smb.h"
 
 #ifdef HAVE_CUPS
 #include <cups/cups.h>
@@ -55,14 +54,12 @@ struct printif	cups_printif =
  * 'cups_passwd_cb()' - The CUPS password callback...
  */
 
-const char *				/* O - Password or NULL */
+static const char *				/* O - Password or NULL */
 cups_passwd_cb(const char *prompt)	/* I - Prompt */
 {
  /*
   * Always return NULL to indicate that no password is available...
   */
-
-  (void)prompt;
 
   return (NULL);
 }
@@ -73,9 +70,9 @@ cups_passwd_cb(const char *prompt)	/* I - Prompt */
  *                       system.
  */
 
-void
-cups_printer_fn(void (*fn)(char *, char *))	/* I - Function to call */
+void cups_printer_fn(void (*fn)(char *, char *))
 {
+	/* I - Function to call */
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
 			*response;	/* IPP Response */
@@ -195,12 +192,113 @@ cups_printer_fn(void (*fn)(char *, char *))	/* I - Function to call */
 			break;
 
  		if (info == NULL || !info[0])
-			(*fn)(unix_to_dos_static(name), make_model);
+			(*fn)(name, make_model);
 		else
-			(*fn)(unix_to_dos_static(name), info);
+			(*fn)(name, info);
+		
+
 	}
 
 	ippDelete(response);
+
+
+       /*
+	* Build a CUPS_GET_CLASSES request, which requires the following
+	* attributes:
+	*
+	*    attributes-charset
+	*    attributes-natural-language
+	*    requested-attributes
+	*/
+
+	request = ippNew();
+
+	request->request.op.operation_id = CUPS_GET_CLASSES;
+	request->request.op.request_id   = 1;
+
+	language = cupsLangDefault();
+
+	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
+                     "attributes-charset", NULL, cupsLangEncoding(language));
+
+	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
+                     "attributes-natural-language", NULL, language->language);
+
+        ippAddStrings(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
+	              "requested-attributes",
+		      (sizeof(requested) / sizeof(requested[0])),
+		      NULL, requested);
+
+       /*
+	* Do the request and get back a response...
+	*/
+
+	if ((response = cupsDoRequest(http, request, "/")) == NULL)
+	{
+		DEBUG(0,("Unable to get printer list - %s\n",
+			 ippErrorString(cupsLastError())));
+		httpClose(http);
+		return;
+	}
+
+	for (attr = response->attrs; attr != NULL;)
+	{
+	       /*
+		* Skip leading attributes until we hit a printer...
+		*/
+
+		while (attr != NULL && attr->group_tag != IPP_TAG_PRINTER)
+			attr = attr->next;
+
+		if (attr == NULL)
+        		break;
+
+	       /*
+		* Pull the needed attributes from this printer...
+		*/
+
+		name       = NULL;
+		make_model = NULL;
+		info       = NULL;
+
+		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER)
+		{
+        		if (strcmp(attr->name, "printer-name") == 0 &&
+			    attr->value_tag == IPP_TAG_NAME)
+				name = attr->values[0].string.text;
+
+        		if (strcmp(attr->name, "printer-make-and-model") == 0 &&
+			    attr->value_tag == IPP_TAG_TEXT)
+				make_model = attr->values[0].string.text;
+
+        		if (strcmp(attr->name, "printer-info") == 0 &&
+			    attr->value_tag == IPP_TAG_TEXT)
+				info = attr->values[0].string.text;
+
+        		attr = attr->next;
+		}
+
+	       /*
+		* See if we have everything needed...
+		*/
+
+		if (name == NULL)
+			break;
+
+ 		if (info == NULL || !info[0])
+			(*fn)(name, make_model);
+		else
+			(*fn)(name, info);
+		
+
+	}
+
+	ippDelete(response);
+
+       /*
+        * Close the connection to the server...
+	*/
+
 	httpClose(http);
 }
 
@@ -208,10 +306,10 @@ cups_printer_fn(void (*fn)(char *, char *))	/* I - Function to call */
 /*
  * 'cups_printername_ok()' - Provide the equivalent of pcap_printername_ok()
  *                           for CUPS.
+ * O - 1 if printer name OK
+ * I - Name of printer 
  */
-
-int					/* O - 1 if printer name OK */
-cups_printername_ok(char *name)		/* I - Name of printer */
+int cups_printername_ok(const char *name)
 {
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -265,8 +363,7 @@ cups_printername_ok(char *name)		/* I - Name of printer */
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
                      "requested-attributes", NULL, "printer-uri");
 
-	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         dos_to_unix_static(name));
+	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s", name);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
                      "printer-uri", NULL, uri);
@@ -636,6 +733,10 @@ cups_job_submit(int snum, struct printjob *pjob)
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
         	     NULL, pjob->user);
+
+	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
+	             "job-originating-host-name", NULL,
+		     get_remote_machine_name());
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
         	     pjob->jobname);
@@ -1112,9 +1213,9 @@ cups_queue_resume(int snum)
 
 	DEBUG(5,("cups_queue_resume(%d)\n", snum));
 
-	/*
-	 * Make sure we don't ask for passwords...
-	 */
+       /*
+        * Make sure we don't ask for passwords...
+	*/
 
         cupsSetPasswordCB(cups_passwd_cb);
 
@@ -1160,9 +1261,9 @@ cups_queue_resume(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
         	     NULL, current_user_info.unix_name);
 
-	/*
-	 * Do the request and get back a response...
-	 */
+       /*
+	* Do the request and get back a response...
+	*/
 
         ret = 1;
 

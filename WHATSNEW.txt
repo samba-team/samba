@@ -53,6 +53,14 @@ See the cvs log for SAMBA_2_2 for more details
 22) Send level II oplock break requests synchronously to prevent 
     condition where one smbd would continually lock a share entry
     in locking.tdb
+23) Miscellaneous cleanups for tdb error conditions and appending 
+    data in a record
+24) Implement correct open file truncate semantics with DOS 
+    attributes
+25) Enforce wide links = no on files as well as directories
+26) Include shared library checks for Stratus VOS
+27) Include support for CUPS printer classes and logging the remote 
+    client name
 
 
 Changes since 2.2.7

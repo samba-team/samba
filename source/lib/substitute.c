@@ -48,6 +48,12 @@ void sub_set_smb_name(const char *name)
 	alpha_strcpy(smb_user_name,tmp,SAFE_NETBIOS_CHARS,sizeof(smb_user_name)-1);
 }
 
+const char* get_remote_machine_name(void)
+{
+	        return remote_machine;
+}
+
+
 /*******************************************************************
  Given a pointer to a %$(NAME) expand it as an environment variable.
  Return the number of characters by which the pointer should be advanced.
