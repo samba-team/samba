@@ -318,6 +318,7 @@ check_for_tgt (krb5_context context,
 			       NULL);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_make_principal");
+    pattern.client = principal;
 
     ret = krb5_cc_retrieve_cred (context, ccache, 0, &pattern, &creds);
     expired = time(NULL) > creds.times.endtime;
