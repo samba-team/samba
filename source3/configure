@@ -1611,7 +1611,7 @@ else
 fi
 done
 
-for ac_hdr in compat.h rpc/rpc.h rpcsvc/ypprot.h rpcsvc/yp_clnt.h sys/param.h ctype.h 
+for ac_hdr in compat.h rpc/rpc.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h sys/param.h ctype.h 
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
