@@ -40,6 +40,9 @@ static krb5_error_code
 DB_close(krb5_context context, HDB *db)
 {
     DB *d = (DB*)db->db;
+    DBC *dbcp = (DBC*)db->dbc;
+    if (dbcp)
+      dbcp->c_close(dbcp);
     d->close(d, 0);
     return 0;
 }
@@ -90,7 +93,8 @@ DB_seq(krb5_context context, HDB *db,
     memset(&value, 0, sizeof(DBT));
     if (db->lock(context, db, HDB_RLOCK))
 	return HDB_ERR_DB_INUSE;
-    code = d->cursor(d, NULL, (DBC **)&db->dbc, 0);
+    if (!db->dbc)
+	code = d->cursor(d, NULL, (DBC **)&db->dbc, 0);
     if (code)
 	return code;
     dbcp=db->dbc;
