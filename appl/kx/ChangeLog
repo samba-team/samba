@@ -1,3 +1,7 @@
+2000-04-19  Assar Westerlund  <assar@sics.se>
+
+	* common.c: try hostname uncanonified if getaddrinfo() fails
+
 2000-02-06  Assar Westerlund  <assar@sics.se>
 
 	* kx.h: remove old prorotypes
