@@ -632,7 +632,7 @@ case "$host_os" in
 				PICFLAG="-KPIC -xO4"
 				POBAD_CC=""
 				PICSUFFIX="po.o"
-				LDSHFLAGS="-G"
+				LDSHFLAGS="-Wl,-h,\$@ -G"
 			fi
 		;;
 		*sunos*) AC_DEFINE(SUNOS4)
