@@ -1,4 +1,6 @@
 #!/bin/sh
+#5 July 96 Dan.Shearer@unisa.edu.au  removed hardcoded values
+
 MANDIR=$1
 SRCDIR=$2
 
@@ -8,28 +10,29 @@ for d in $MANDIR $MANDIR/man1 $MANDIR/man5 $MANDIR/man7 $MANDIR/man8; do
 if [ ! -d $d ]; then
 mkdir $d
 if [ ! -d $d ]; then
-  echo Failed to make directory $d
+  echo Failed to make directory $d, does $USER have privileges?
   exit 1
 fi
 fi
 done
 
-cp $SRCDIR../docs/*.1 $MANDIR/man1
-cp $SRCDIR../docs/*.5 $MANDIR/man5
-cp $SRCDIR../docs/*.8 $MANDIR/man8
-cp $SRCDIR../docs/*.7 $MANDIR/man7
-echo Setting permissions on man pages
-chmod 0644 $MANDIR/man1/smbstatus.1
-chmod 0644 $MANDIR/man1/smbclient.1
-chmod 0644 $MANDIR/man1/smbrun.1
-chmod 0644 $MANDIR/man1/testparm.1
-chmod 0644 $MANDIR/man1/testprns.1
-chmod 0644 $MANDIR/man1/smbtar.1
-chmod 0644 $MANDIR/man5/smb.conf.5
-chmod 0644 $MANDIR/man7/samba.7
-chmod 0644 $MANDIR/man8/smbd.8
-chmod 0644 $MANDIR/man8/nmbd.8
+for sect in 1 5 7 8 ; do
+  for m in $MANDIR/man$sect ; do
+    for s in $SRCDIR../docs/*$sect; do
+      FNAME=$m/`basename $s`
+      cp $s $m || echo Cannot create $FNAME... does $USER have privileges?
+      chmod 0644 $FNAME
+    done
+  done
+done
 
-echo Man pages installed
+cat << EOF
+======================================================================
+The man pages have been installed. You may uninstall them using the command
+the command "make uninstallman" or make "uninstall" to uninstall binaries,
+man pages and shell scripts.
+======================================================================
+EOF
+
 exit 0
 

@@ -34,7 +34,9 @@ done
 cat << EOF
 ======================================================================
 The binaries are installed. You may restore the old binaries (if there
-were any) using the command "make revert"
+were any) using the command "make revert". You may uninstall the binaries
+using the command "make uninstallbin" or "make uninstall" to uninstall
+binaries, man pages and shell scripts.
 ======================================================================
 EOF
 
