@@ -396,11 +396,13 @@ get_cred_kdc_usage(krb5_context context,
     krb5_error_code ret;
     unsigned nonce;
     krb5_keyblock *subkey = NULL;
-    u_char *buf = NULL;
-    size_t buf_size;
     size_t len;
     Ticket second_ticket;
+    int send_to_kdc_flags = 0;
     
+    krb5_data_zero(&resp);
+    krb5_data_zero(&enc);
+
     krb5_generate_random_block(&nonce, sizeof(nonce));
     nonce &= 0xffffffff;
     
@@ -428,26 +430,24 @@ get_cred_kdc_usage(krb5_context context,
     if (ret)
 	goto out;
 
-    ASN1_MALLOC_ENCODE(TGS_REQ, buf, buf_size, &req, &enc.length, ret);
+    ASN1_MALLOC_ENCODE(TGS_REQ, enc.data, enc.length, &req, &len, ret);
     if (ret) 
 	goto out;
-    if(enc.length != buf_size)
+    if(enc.length != len)
 	krb5_abortx(context, "internal error in ASN.1 encoder");
 
     /* don't free addresses */
     req.req_body.addresses = NULL;
     free_TGS_REQ(&req);
 
-    enc.data = buf + buf_size - enc.length;
-    if (ret)
-	goto out;
-    
     /*
      * Send and receive
      */
-
-    ret = krb5_sendto_kdc (context, &enc, 
-			   &krbtgt->server->name.name_string.val[1], &resp);
+again:
+    ret = krb5_sendto_kdc_flags (context, &enc, 
+				 &krbtgt->server->name.name_string.val[1],
+				 &resp,
+				 send_to_kdc_flags);
     if(ret)
 	goto out;
 
@@ -479,11 +479,15 @@ get_cred_kdc_usage(krb5_context context,
 				   decrypt_tkt_with_subkey,
 				   subkey);
 	krb5_free_kdc_rep(context, &rep);
-	if (ret)
-	    goto out;
     } else if(krb5_rd_error(context, &resp, &error) == 0) {
 	ret = krb5_error_from_rd_error(context, &error, in_creds);
 	krb5_free_error_contents(context, &error);
+
+	if (ret == KRB5KRB_ERR_RESPONSE_TOO_BIG && !(send_to_kdc_flags & KRB5_KRBHST_FLAGS_LARGE_MSG)) {
+	    send_to_kdc_flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
+	    krb5_data_free(&resp);
+	    goto again;
+	}
     } else if(resp.data && ((char*)resp.data)[0] == 4) {
 	ret = KRB5KRB_AP_ERR_V4_REPLY;
 	krb5_clear_error_string(context);
@@ -491,14 +495,14 @@ get_cred_kdc_usage(krb5_context context,
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	krb5_clear_error_string(context);
     }
+
+out:
     krb5_data_free(&resp);
- out:
+    krb5_data_free(&enc);
     if(subkey){
 	krb5_free_keyblock_contents(context, subkey);
 	free(subkey);
     }
-    if (buf)
-	free (buf);
     return ret;
     
 }
