@@ -226,6 +226,34 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 }
 
 /****************************************************************************
+ Merge aces with a common user.
+****************************************************************************/
+
+static BOOL merge_aces( canon_ace *list_head, canon_ace *p_ace)
+{
+	canon_ace *curr_ace;
+
+	for (curr_ace = list_head; curr_ace; curr_ace = curr_ace->next) {
+		if (curr_ace == p_ace)
+			continue;
+
+		if (curr_ace->type == p_ace->type && sid_equal(&curr_ace->sid, &p_ace->sid)) {
+			if( DEBUGLVL( 10 )) {
+				dbgtext("Merging ACE's\n");
+				print_canon_ace( p_ace, 0);
+				print_canon_ace( curr_ace, 0);
+			}
+			p_ace->perms |= curr_ace->perms;
+			DLIST_REMOVE(list_head, curr_ace);
+			free(curr_ace);
+			return True;
+		}
+	}
+
+	return False;
+}
+
+/****************************************************************************
  Unpack a SEC_DESC into two canonical ace lists. We don't depend on this
  succeeding.
 ****************************************************************************/
@@ -241,6 +269,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
+	canon_ace *current_ace = NULL;
 	enum SID_NAME_USE sid_type;
 	int i;
 
@@ -265,7 +294,6 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 	for(i = 0; i < dacl->num_aces; i++) {
 		SEC_ACE *psa = &dacl->ace[i];
-		canon_ace *current_ace = NULL;
 
 		if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) && (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
 			DEBUG(3,("unpack_canon_ace: unable to set anything but an ALLOW or DENY ACE.\n"));
@@ -331,7 +359,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
 			current_ace->perms |= map_nt_perms( psa->info, S_IRUSR);
 		else
-			current_ace->perms &= ~(map_nt_perms( psa->info, S_IRUSR));
+			current_ace->perms = 0;
 
 		/*
 		 * Now note what kind of a POSIX ACL this should map to.
@@ -382,6 +410,25 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 		DEBUG(10,("unpack_canon_ace: Win2k inherit acl traverse. Ignoring DACL.\n"));
 		free_sec_acl(&psd->dacl);
+	}
+
+	/*
+	 * Now go through the canon_ace lists and merge entries
+	 * belonging to identical users.
+	 */
+
+  again_file:
+
+	for (current_ace = file_ace; current_ace; current_ace = current_ace->next ) {
+		if (merge_aces( file_ace, current_ace))
+			goto again_file;
+	}
+
+  again_dir:
+
+	for (current_ace = dir_ace; current_ace; current_ace = current_ace->next ) {
+		if (merge_aces( dir_ace, current_ace))
+			goto again_dir;
 	}
 
 	*ppfile_ace = file_ace;
