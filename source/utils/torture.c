@@ -2010,7 +2010,7 @@ static void run_oplock2(int dummy)
 		printf("lock failed (%s)\n", cli_errstr(&cli1));
 	}
 
-	cli_unlock(&cli, fnum1, 0, 4);
+	cli_unlock(&cli1, fnum1, 0, 4);
 
 	sleep(2);
 
@@ -2018,7 +2018,7 @@ static void run_oplock2(int dummy)
 		printf("lock failed (%s)\n", cli_errstr(&cli1));
 	}
 
-	cli_unlock(&cli, fnum1, 0, 4);
+	cli_unlock(&cli1, fnum1, 0, 4);
 
 	sleep(2);
 
@@ -2045,6 +2045,72 @@ static void run_oplock2(int dummy)
 	printf("finished oplock test 2\n");
 }
 
+/*
+  Test open mode returns on read-only files.
+ */
+static void run_opentest(int dummy)
+{
+    static struct cli_state cli1;
+    char *fname = "\\readonly.file";
+    int fnum1, fnum2;
+	uint8 eclass;
+	uint32 errnum;
+
+    printf("starting open test\n");
+
+    if (!open_connection(&cli1)) {
+        return;
+    }
+
+	cli_setatr(&cli1, fname, 0, 0);
+    cli_unlink(&cli1, fname);
+
+    cli_sockopt(&cli1, sockops);
+
+    fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+    if (fnum1 == -1) {
+        printf("open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("close2 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	if (!cli_setatr(&cli1, fname, aRONLY, 0)) {
+		printf("cli_setatr failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+    fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_WRITE);
+    if (fnum1 == -1) {
+        printf("open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+        return;
+    }
+
+	/* This will fail - but the error should be ERRnoaccess, not ERRshare. */
+    fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_ALL);
+
+	cli_error( &cli1, &eclass, &errnum, NULL);
+
+	if (eclass != ERRDOS || errnum != ERRnoaccess) {
+		printf("wrong error code (%x,%x) = %s\n", (unsigned int)eclass,
+				(unsigned int)errnum, cli_errstr(&cli1) );
+	} else {
+		printf("correct error code ERRDOS/ERRnoaccess returned\n");
+	}
+
+	
+	cli_close(&cli1, fnum1);
+
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
+    close_connection(&cli1);
+
+    printf("finished open test 1\n");
+}
 
 static void list_fn(file_info *finfo, const char *name)
 {
@@ -2212,6 +2278,7 @@ static struct {
 	{"TCON",  run_tcon_test, 0},
 	{"RW1",  run_readwritetest, 0},
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
+	{"OPEN", run_opentest, 0},
 	{NULL, NULL, 0}};
 
 
