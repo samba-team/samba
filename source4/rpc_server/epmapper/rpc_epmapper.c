@@ -31,7 +31,7 @@ enum handle_types {HTYPE_LOOKUP};
 /* a endpoint combined with an interface description */
 struct dcesrv_ep_iface {
 	const char *name;
-	struct dcesrv_ep_description ep_description;
+	struct dcerpc_binding ep_description;
 	const char *uuid;
 	uint32_t if_version;
 };
@@ -76,12 +76,12 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr,
 	twr->floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr->floors[2].rhs.ncacn.minor_version = 0;
 
-	switch (e->ep_description.type) {
+	switch (e->ep_description.transport) {
 	case NCACN_NP:
 		/* on a SMB pipe ... */
 		twr->floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[3].rhs.smb.unc = talloc_strdup(mem_ctx, e->ep_description.info.smb_pipe);
+		twr->floors[3].rhs.smb.unc = talloc_strdup(mem_ctx, e->ep_description.options[0]);
 		
 		/* on an NetBIOS link ... */
 		twr->floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
@@ -94,7 +94,10 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr,
 		/* on a TCP connection ... */
 		twr->floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[3].rhs.tcp.port = e->ep_description.info.tcp_port;
+		twr->floors[3].rhs.tcp.port = 0;
+		if (e->ep_description.options && e->ep_description.options[0]) {
+			twr->floors[3].rhs.tcp.port = atoi(e->ep_description.options[0]);
+		}
 		
 		/* on an IP link ... */
 		twr->floors[4].lhs.protocol = EPM_PROTOCOL_IP;
@@ -275,7 +278,7 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		    floors[0].lhs.info.uuid.version != eps[i].if_version) {
 			continue;
 		}
-		switch (eps[i].ep_description.type) {
+		switch (eps[i].ep_description.transport) {
 		case NCACN_NP:
 			if (floors[3].lhs.protocol != EPM_PROTOCOL_SMB ||
 			    floors[4].lhs.protocol != EPM_PROTOCOL_NETBIOS) {
