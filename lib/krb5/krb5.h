@@ -208,13 +208,20 @@ typedef struct krb5_ticket {
     } enc_part2;
 } krb5_ticket;
 
+#if 0
+
 typedef struct krb5_authenticator_data{
     int vno;
     krb5_principal cname;
     int cusec;
     krb5_time ctime;
     int *seq_number;
+    Checksum *cksum;
 } krb5_authenticator_data;
+
+#endif
+
+typedef Authenticator krb5_authenticator_data;
 
 typedef krb5_authenticator_data *krb5_authenticator;
 
