@@ -167,6 +167,14 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 			local_flags |= O_NONBLOCK;
 #endif
 
+		/* Don't create files with Microsoft wildcard characters. */
+		if ((local_flags & O_CREAT) && !VALID_STAT(*psbuf) && ms_has_wild(fname))  {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRinvalidname;
+			unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
+			return False;
+		}
+
 		/* Actually do the open */
 		fsp->fd = fd_open(conn, fname, local_flags, mode);
 		if (fsp->fd == -1)  {
@@ -1288,6 +1296,15 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 				DEBUG(2,("open_directory: failing create on read-only share\n"));
 				file_free(fsp);
 				errno = EACCES;
+				return NULL;
+			}
+
+			if (ms_has_wild(fname))  {
+				file_free(fsp);
+				DEBUG(5,("open_directory: failing create on filename %s with wildcards\n", fname));
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRinvalidname;
+				unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
 				return NULL;
 			}
 
