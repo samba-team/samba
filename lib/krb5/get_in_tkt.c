@@ -324,12 +324,51 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
 }
 
 static krb5_error_code
+add_padata(krb5_context context,
+	   METHOD_DATA *md, 
+	   krb5_principal client,
+	   krb5_key_proc key_proc,
+	   krb5_const_pointer keyseed,
+	   krb5_keytype keytype, 
+	   krb5_data *salt)
+{
+    krb5_error_code ret;
+    PA_DATA pa, *pa2;
+    krb5_keyblock *key;
+    krb5_enctype etype;
+    krb5_data salt2;
+    
+    krb5_data_zero(&salt2);
+    if(salt == NULL) {
+	/* default to standard salt */
+	ret = krb5_get_salt (client, &salt2);
+	salt = &salt2;
+    }
+    ret = (*key_proc)(context, keytype, salt, keyseed, &key);
+    krb5_data_free(&salt2);
+    if (ret)
+	return ret;
+    pa2 = realloc(md->val, (md->len + 1) * sizeof(*md->val));
+    if(pa2 == NULL)
+	return ENOMEM;
+    md->val = pa2;
+    krb5_keytype_to_etype(context, keytype, &etype);
+    ret = make_pa_enc_timestamp(context, &md->val[md->len], etype, key);
+    krb5_free_keyblock (context, key);
+    if(ret)
+	return ret;
+    md->len++;
+    return 0;
+}
+
+static krb5_error_code
 init_as_req (krb5_context context,
 	     krb5_kdc_flags opts,
 	     krb5_creds *creds,
 	     const krb5_addresses *addrs,
 	     const krb5_enctype *etypes,
 	     const krb5_preauthtype *ptypes,
+	     const krb5_preauthdata *preauth,
 	     krb5_key_proc key_proc,
 	     krb5_const_pointer keyseed,
 	     unsigned nonce,
@@ -411,65 +450,68 @@ init_as_req (krb5_context context,
     a->req_body.enc_authorization_data = NULL;
     a->req_body.additional_tickets = NULL;
 
+    if(preauth != NULL) {
+	int i;
+	ALLOC(a->padata, 1);
+	if(a->padata == NULL) {
+	    ret = ENOMEM;
+	    goto fail;
+	}
+	for(i = 0; i < preauth->len; i++) {
+	    if(preauth->val[i].type == KRB5_PADATA_ENC_TIMESTAMP){
+		int j;
+		PA_DATA *tmp = realloc(a->padata->val, 
+				       (a->padata->len + 
+					preauth->val[i].info.len) * 
+				       sizeof(*a->padata->val));
+		if(tmp == NULL) {
+		    ret = ENOMEM;
+		    goto fail;
+		}
+		a->padata->val = tmp;
+		for(j = 0; j < preauth->val[i].info.len; j++) {
+		    krb5_keytype keytype = preauth->val[i].info.val[j].keytype;
+		    if(preauth->val[i].info.val[j].salttype == 
+		       KRB5_PA_AFS3_SALT) {
+			if(keytype != KEYTYPE_DES) {
+			    ret = KRB5_PROG_KEYTYPE_NOSUPP;
+			    goto fail;
+			}
+			keytype = KEYTYPE_DES_AFS3;
+		    }
+		    add_padata(context, a->padata, creds->client, 
+			       key_proc, keyseed, keytype, 
+			       preauth->val[i].info.val[j].salt);
+		}
+	    }
+	}
+	
+    } else 
     /* not sure this is the way to use `ptypes' */
     if (ptypes == NULL || *ptypes == KRB5_PADATA_NONE)
 	a->padata = NULL;
     else if (*ptypes ==  KRB5_PADATA_ENC_TIMESTAMP) {
-	a->padata = malloc(sizeof(*a->padata));
+	krb5_keytype keytype;
+	ALLOC(a->padata, 1);
 	if (a->padata == NULL) {
 	    ret = ENOMEM;
 	    goto fail;
 	}
-	    
-	a->padata->len = 2;
-	a->padata->val = calloc(a->padata->len, sizeof(*a->padata->val));
-	if (a->padata->val == NULL) {
-	    ret = ENOMEM;
+	a->padata->len = 0;
+	a->padata->val = NULL;
+
+	ret = krb5_etype_to_keytype(context, etype, &keytype);
+	if(ret)
 	    goto fail;
-	}
-	
+
 	/* make a v5 salted pa-data */
-	salt.length = 0;
-	salt.data = NULL;
-	ret = krb5_get_salt (creds->client, &salt);
+	add_padata(context, a->padata, creds->client, 
+		   key_proc, keyseed, keytype, NULL);
 	
-	if (ret)
-	    goto fail;
-	
-	{
-	    krb5_keytype keytype;
-	    ret = krb5_etype_to_keytype(context, etype, &keytype);
-	    if(ret){
-		krb5_data_free(&salt);
-		goto fail;
-	    }
-	    ret = (*key_proc)(context, keytype, &salt, keyseed, &key);
-	    krb5_data_free (&salt);
-	}
-	if (ret)
-	    goto fail;
-	ret = make_pa_enc_timestamp(context, &a->padata->val[0], etype, key);
-	krb5_free_keyblock_contents (context, key);
-	free (key);
-	if (ret)
-	    goto fail;
 	/* make a v4 salted pa-data */
-	salt.length = 0;
-	salt.data = NULL;
-	{
-	    krb5_keytype keytype;
-	    ret = krb5_etype_to_keytype(context, etype, &keytype);
-	    if(ret)
-		goto fail;
-	    ret = (*key_proc)(context, keytype, &salt, keyseed, &key);
-	}
-	if (ret)
-	    goto fail;
-	ret = make_pa_enc_timestamp(context, &a->padata->val[1], etype, key);
-	krb5_free_keyblock_contents (context, key);
-	free (key);
-	if (ret)
-	    goto fail;
+	krb5_data_zero(&salt);
+	add_padata(context, a->padata, creds->client, 
+		   key_proc, keyseed, keytype, &salt);
     } else {
 	ret = KRB5_PREAUTH_BAD_TYPE;
 	goto fail;
@@ -486,6 +528,7 @@ krb5_get_in_cred(krb5_context context,
 		 const krb5_addresses *addrs,
 		 const krb5_enctype *etypes,
 		 const krb5_preauthtype *ptypes,
+		 const krb5_preauthdata *preauth,
 		 krb5_key_proc key_proc,
 		 krb5_const_pointer keyseed,
 		 krb5_decrypt_proc decrypt_proc,
@@ -517,6 +560,7 @@ krb5_get_in_cred(krb5_context context,
 		       addrs,
 		       etypes,
 		       ptypes,
+		       preauth,
 		       key_proc,
 		       keyseed,
 		       nonce,
@@ -635,6 +679,7 @@ krb5_get_in_tkt(krb5_context context,
 			    addrs,
 			    etypes,
 			    ptypes,
+			    NULL,
 			    key_proc,
 			    keyseed,
 			    decrypt_proc,
