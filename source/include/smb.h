@@ -44,7 +44,10 @@
 
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
 
+#ifndef _BOOL
 typedef int BOOL;
+#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
+#endif
 
 /* limiting size of ipc replies */
 #define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
@@ -335,11 +338,14 @@ implemented */
 #define ERRsharebufexc 36 /* share buffer exceeded */
 #define ERRdiskfull 39
 
+#ifndef _PSTRING
 #define PSTRING_LEN 1024
 #define FSTRING_LEN 128
 
 typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
+#define _PSTRING
+#endif
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
@@ -607,50 +613,6 @@ typedef struct files_struct
 } files_struct;
 
 /*
- * Each implementation of the vfs back end needs to support the
- * following operations.
- */
-
-struct vfs_ops {
-
-    /* Global operations */
-
-    int (*init)(void);
-
-    /* Disk operations */
-    
-    int (*connect)(struct connection_struct *conn, char *service, char *user);
-    void (*disconnect)(struct connection_struct *conn, char *service);
-    SMB_BIG_UINT (*disk_free)(char *path, SMB_BIG_UINT *bsize, 
-			      SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-    
-    /* Directory operations */
-
-    DIR *(*opendir)(char *fname);
-    struct dirent *(*readdir)(DIR *dirp);
-    int (*mkdir)(char *path, mode_t mode);
-    int (*rmdir)(char *path);
-    int (*closedir)(DIR *dir);
-    
-    /* File operations */
-    
-    int (*open)(char *fname, int flags, mode_t mode);
-    int (*close)(int fd);
-    ssize_t (*read)(int fd, char *data, size_t n);
-    ssize_t (*write)(int fd, char *data, size_t n);
-    SMB_OFF_T (*lseek)(int filedes, SMB_OFF_T offset, int whence);
-    int (*rename)(char *old, char *new);
-    void (*sync)(struct connection_struct *conn, files_struct *fsp);
-    int (*stat)(char *fname, SMB_STRUCT_STAT *sbuf);
-    int (*fstat)(int fd, SMB_STRUCT_STAT *sbuf);
-    int (*lstat)(char *path, SMB_STRUCT_STAT *sbuf);
-    BOOL (*lock)(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-    int (*unlink)(char *path);
-    int (*chmod)(char *path, mode_t mode);
-    int (*utime)(char *path, struct utimbuf *times);
-};
-
-/*
  * Structure used to keep directory state information around.
  * Used in NT change-notify code.
  */
@@ -672,6 +634,10 @@ typedef struct
   BOOL is_wild;
 } name_compare_entry;
 
+/* Include VFS stuff */
+
+#include "vfs.h"
+
 typedef struct connection_struct
 {
 	struct connection_struct *next, *prev;
@@ -688,6 +654,7 @@ typedef struct connection_struct
 	char *connectpath;
 	char *origpath;
         struct vfs_ops vfs_ops;             /* Filesystem operations */
+        struct vfs_connection_struct *vfs_conn;
 
 	char *user; /* name of user who *opened* this connection */
 
