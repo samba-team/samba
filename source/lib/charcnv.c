@@ -400,7 +400,7 @@ flags can have:
 dest_len is the maximum length allowed in the destination. If dest_len
 is -1 then no maxiumum is used
 ****************************************************************************/
-int push_utf8(const void *base_ptr, void *dest, const char *src, int dest_len, int flags)
+int push_utf8(void *dest, const char *src, int dest_len, int flags)
 {
 	int src_len = strlen(src);
 	pstring tmpbuf;
@@ -421,6 +421,16 @@ int push_utf8(const void *base_ptr, void *dest, const char *src, int dest_len, i
 	}
 
 	return convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len);
+}
+
+int push_utf8_fstring(void *dest, const char *src)
+{
+	return push_utf8(dest, src, sizeof(fstring), STR_TERMINATE);
+}
+
+int push_utf8_pstring(void *dest, const char *src)
+{
+	return push_utf8(dest, src, sizeof(pstring), STR_TERMINATE);
 }
 
 /****************************************************************************
@@ -476,7 +486,7 @@ src_len is the length of the source area in bytes
 return the number of bytes occupied by the string in src
 the resulting string in "dest" is always null terminated
 ****************************************************************************/
-int pull_utf8(const void *base_ptr, char *dest, const void *src, int dest_len, int src_len, int flags)
+int pull_utf8(char *dest, const void *src, int dest_len, int src_len, int flags)
 {
 	int ret;
 
@@ -494,12 +504,12 @@ int pull_utf8(const void *base_ptr, char *dest, const void *src, int dest_len, i
 
 int pull_utf8_pstring(char *dest, const void *src)
 {
-	return pull_utf8(NULL, dest, src, sizeof(pstring), -1, STR_TERMINATE);
+	return pull_utf8(dest, src, sizeof(pstring), -1, STR_TERMINATE);
 }
 
 int pull_utf8_fstring(char *dest, const void *src)
 {
-	return pull_utf8(NULL, dest, src, sizeof(fstring), -1, STR_TERMINATE);
+	return pull_utf8(dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
 
 /****************************************************************************
