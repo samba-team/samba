@@ -516,6 +516,7 @@ NTSTATUS make_pdb_context_list(struct pdb_context **context, const char **select
 	int i = 0;
 	struct pdb_methods *curmethods, *tmpmethods;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	BOOL have_guest = False;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_context(context))) {
 		return nt_status;
@@ -527,6 +528,9 @@ NTSTATUS make_pdb_context_list(struct pdb_context **context, const char **select
 	}
 
 	while (selected[i]){
+		if (strcmp(selected[i], "guest") == 0) {
+			have_guest = True;
+		}
 		/* Try to initialise pdb */
 		DEBUG(5,("Trying to load: %s\n", selected[i]));
 		if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods_name(&curmethods, *context, selected[i]))) {
@@ -539,6 +543,27 @@ NTSTATUS make_pdb_context_list(struct pdb_context **context, const char **select
 		i++;
 	}
 
+	if (have_guest)
+		return NT_STATUS_OK;
+
+	if ( (lp_guestaccount() == NULL) ||
+	     (*lp_guestaccount() == '\0') ) {
+		/* We explicitly don't want guest access. No idea what
+		   else that breaks, but be it that way. */
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods_name(&curmethods,
+							       *context,
+							       "guest"))) {
+		DEBUG(1, ("Loading guest module failed!\n"));
+		free_pdb_context(context);
+		return nt_status;
+	}
+
+	curmethods->parent = *context;
+	DLIST_ADD_END((*context)->pdb_methods, curmethods, tmpmethods);
+	
 	return NT_STATUS_OK;
 }
 
