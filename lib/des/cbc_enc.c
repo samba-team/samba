@@ -58,12 +58,12 @@
 
 #include "des_locl.h"
 
-void des_cbc_encrypt(input, output, length, schedule, ivec, encrypt)
-des_cblock (*input);
-des_cblock (*output);
+void DES_cbc_encrypt(input, output, length, schedule, ivec, encrypt)
+DES_cblock (*input);
+DES_cblock (*output);
 long length;
-des_key_schedule schedule;
-des_cblock (*ivec);
+DES_key_schedule *schedule;
+DES_cblock (*ivec);
 int encrypt;
 	{
 	register DES_LONG tin0,tin1;
@@ -87,7 +87,7 @@ int encrypt;
 			c2l(in,tin1);
 			tin0^=tout0; tin[0]=tin0;
 			tin1^=tout1; tin[1]=tin1;
-			des_encrypt((DES_LONG *)tin,schedule,DES_ENCRYPT);
+			DES_encrypt((DES_LONG *)tin,schedule,DES_ENCRYPT);
 			tout0=tin[0]; l2c(tout0,out);
 			tout1=tin[1]; l2c(tout1,out);
 			}
@@ -96,7 +96,7 @@ int encrypt;
 			c2ln(in,tin0,tin1,l+8);
 			tin0^=tout0; tin[0]=tin0;
 			tin1^=tout1; tin[1]=tin1;
-			des_encrypt((DES_LONG *)tin,schedule,DES_ENCRYPT);
+			DES_encrypt((DES_LONG *)tin,schedule,DES_ENCRYPT);
 			tout0=tin[0]; l2c(tout0,out);
 			tout1=tin[1]; l2c(tout1,out);
 			}
@@ -109,7 +109,7 @@ int encrypt;
 			{
 			c2l(in,tin0); tin[0]=tin0;
 			c2l(in,tin1); tin[1]=tin1;
-			des_encrypt((DES_LONG *)tin,schedule,DES_DECRYPT);
+			DES_encrypt((DES_LONG *)tin,schedule,DES_DECRYPT);
 			tout0=tin[0]^xor0;
 			tout1=tin[1]^xor1;
 			l2c(tout0,out);
@@ -121,7 +121,7 @@ int encrypt;
 			{
 			c2l(in,tin0); tin[0]=tin0;
 			c2l(in,tin1); tin[1]=tin1;
-			des_encrypt((DES_LONG *)tin,schedule,DES_DECRYPT);
+			DES_encrypt((DES_LONG *)tin,schedule,DES_DECRYPT);
 			tout0=tin[0]^xor0;
 			tout1=tin[1]^xor1;
 			l2cn(tout0,tout1,out,l+8);

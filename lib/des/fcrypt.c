@@ -258,7 +258,7 @@ crypt_md5(pw, salt)
 #ifndef NOPROTO
 
 STATIC int fcrypt_body(DES_LONG *out0, DES_LONG *out1,
-	des_key_schedule ks, DES_LONG Eswap0, DES_LONG Eswap1);
+	DES_key_schedule *ks, DES_LONG Eswap0, DES_LONG Eswap1);
 
 #else
 
@@ -302,20 +302,20 @@ static unsigned const char cov_2char[64]={
 
 #ifndef NOPROTO
 #ifdef PERL5
-char *des_crypt(const char *buf,const char *salt);
+char *DES_crypt(const char *buf,const char *salt);
 #else
 char *crypt(const char *buf,const char *salt);
 #endif
 #else
 #ifdef PERL5
-char *des_crypt();
+char *DES_crypt();
 #else
 char *crypt();
 #endif
 #endif
 
 #ifdef PERL5
-char *des_crypt(buf,salt)
+char *DES_crypt(buf,salt)
 #else
 char *crypt(buf,salt)
 #endif
@@ -329,11 +329,11 @@ const char *salt;
 		return crypt_md5(buf, salt);
 #endif
 
-	return(des_fcrypt(buf,salt,buff));
+	return(DES_fcrypt(buf,salt,buff));
 	}
 
 
-char *des_fcrypt(buf,salt,ret)
+char *DES_fcrypt(buf,salt,ret)
 const char *buf;
 const char *salt;
 char *ret;
@@ -341,8 +341,8 @@ char *ret;
 	unsigned int i,j,x,y;
 	DES_LONG Eswap0,Eswap1;
 	DES_LONG out[2],ll;
-	des_cblock key;
-	des_key_schedule ks;
+	DES_cblock key;
+	DES_key_schedule ks;
 	unsigned char bb[9];
 	unsigned char *b=bb;
 	unsigned char c,u;
@@ -373,8 +373,8 @@ r=(r+7)/8;
 	for (; i<8; i++)
 		key[i]=0;
 
-	des_set_key((des_cblock *)(key),ks);
-	fcrypt_body(&(out[0]),&(out[1]),ks,Eswap0,Eswap1);
+	DES_set_key((DES_cblock *)(key),&ks);
+	fcrypt_body(&(out[0]),&(out[1]),&ks,Eswap0,Eswap1);
 
 	ll=out[0]; l2c(ll,b);
 	ll=out[1]; l2c(ll,b);
@@ -404,7 +404,7 @@ r=(r+7)/8;
 STATIC int fcrypt_body(out0, out1, ks, Eswap0, Eswap1)
 DES_LONG *out0;
 DES_LONG *out1;
-des_key_schedule ks;
+DES_key_schedule *ks;
 DES_LONG Eswap0;
 DES_LONG Eswap1;
 	{

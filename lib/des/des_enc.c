@@ -58,9 +58,9 @@
 
 #include "des_locl.h"
 
-void des_encrypt(data, ks, encrypt)
+void DES_encrypt(data, ks, encrypt)
 DES_LONG *data;
-des_key_schedule ks;
+DES_key_schedule *ks;
 int encrypt;
 	{
 	register DES_LONG l,r,t,u;
@@ -159,9 +159,9 @@ int encrypt;
 	l=r=t=u=0;
 	}
 
-void des_encrypt2(data, ks, encrypt)
+void DES_encrypt2(data, ks, encrypt)
 DES_LONG *data;
-des_key_schedule ks;
+DES_key_schedule *ks;
 int encrypt;
 	{
 	register DES_LONG l,r,t,u;
@@ -253,11 +253,11 @@ int encrypt;
 	l=r=t=u=0;
 	}
 
-void des_encrypt3(data,ks1,ks2,ks3)
+void DES_encrypt3(data,ks1,ks2,ks3)
 DES_LONG *data;
-des_key_schedule ks1;
-des_key_schedule ks2;
-des_key_schedule ks3;
+DES_key_schedule *ks1;
+DES_key_schedule *ks2;
+DES_key_schedule *ks3;
 	{
 	register DES_LONG l,r;
 
@@ -266,9 +266,9 @@ des_key_schedule ks3;
 	IP(l,r);
 	data[0]=l;
 	data[1]=r;
-	des_encrypt2((DES_LONG *)data,ks1,DES_ENCRYPT);
-	des_encrypt2((DES_LONG *)data,ks2,DES_DECRYPT);
-	des_encrypt2((DES_LONG *)data,ks3,DES_ENCRYPT);
+	DES_encrypt2((DES_LONG *)data,ks1,DES_ENCRYPT);
+	DES_encrypt2((DES_LONG *)data,ks2,DES_DECRYPT);
+	DES_encrypt2((DES_LONG *)data,ks3,DES_ENCRYPT);
 	l=data[0];
 	r=data[1];
 	FP(r,l);
@@ -276,11 +276,11 @@ des_key_schedule ks3;
 	data[1]=r;
 	}
 
-void des_decrypt3(data,ks1,ks2,ks3)
+void DES_decrypt3(data,ks1,ks2,ks3)
 DES_LONG *data;
-des_key_schedule ks1;
-des_key_schedule ks2;
-des_key_schedule ks3;
+DES_key_schedule *ks1;
+DES_key_schedule *ks2;
+DES_key_schedule *ks3;
 	{
 	register DES_LONG l,r;
 
@@ -289,9 +289,9 @@ des_key_schedule ks3;
 	IP(l,r);
 	data[0]=l;
 	data[1]=r;
-	des_encrypt2((DES_LONG *)data,ks3,DES_DECRYPT);
-	des_encrypt2((DES_LONG *)data,ks2,DES_ENCRYPT);
-	des_encrypt2((DES_LONG *)data,ks1,DES_DECRYPT);
+	DES_encrypt2((DES_LONG *)data,ks3,DES_DECRYPT);
+	DES_encrypt2((DES_LONG *)data,ks2,DES_ENCRYPT);
+	DES_encrypt2((DES_LONG *)data,ks1,DES_DECRYPT);
 	l=data[0];
 	r=data[1];
 	FP(r,l);

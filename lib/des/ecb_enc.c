@@ -62,7 +62,7 @@
 char *libdes_version="libdes v 4.01 - 13-Jan-1997 - eay";
 char *DES_version="DES part of SSLeay 0.6.6 14-Jan-1997";
 
-char *des_options()
+char *DES_options()
 	{
 	static int init=1;
 	static char buf[32];
@@ -102,10 +102,10 @@ char *des_options()
 	}
 		
 
-void des_ecb_encrypt(input, output, ks, encrypt)
-des_cblock (*input);
-des_cblock (*output);
-des_key_schedule ks;
+void DES_ecb_encrypt(input, output, ks, encrypt)
+DES_cblock (*input);
+DES_cblock (*output);
+DES_key_schedule *ks;
 int encrypt;
 	{
 	register DES_LONG l;
@@ -116,7 +116,7 @@ int encrypt;
 	out=(unsigned char *)output;
 	c2l(in,l); ll[0]=l;
 	c2l(in,l); ll[1]=l;
-	des_encrypt(ll,ks,encrypt);
+	DES_encrypt(ll,ks,encrypt);
 	l=ll[0]; l2c(l,out);
 	l=ll[1]; l2c(l,out);
 	l=ll[0]=ll[1]=0;

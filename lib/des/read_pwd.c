@@ -173,8 +173,8 @@ static void (*savsig[NX509_SIG])();
 #endif
 static jmp_buf save;
 
-int des_read_password(key, prompt, verify)
-des_cblock (*key);
+int DES_read_password(key, prompt, verify)
+DES_cblock (*key);
 char *prompt;
 int verify;
 	{
@@ -182,15 +182,15 @@ int verify;
 	char buf[BUFSIZ],buff[BUFSIZ];
 
 	if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
-		des_string_to_key(buf,key);
+		DES_string_to_key(buf,key);
 	memset(buf,0,BUFSIZ);
 	memset(buff,0,BUFSIZ);
 	return(ok);
 	}
 
-int des_read_2passwords(key1, key2, prompt, verify)
-des_cblock (*key1);
-des_cblock (*key2);
+int DES_read_2passwords(key1, key2, prompt, verify)
+DES_cblock (*key1);
+DES_cblock (*key2);
 char *prompt;
 int verify;
 	{
@@ -198,13 +198,13 @@ int verify;
 	char buf[BUFSIZ],buff[BUFSIZ];
 
 	if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
-		des_string_to_2keys(buf,key1,key2);
+		DES_string_to_2keys(buf,key1,key2);
 	memset(buf,0,BUFSIZ);
 	memset(buff,0,BUFSIZ);
 	return(ok);
 	}
 
-int des_read_pw_string(buf, length, prompt, verify)
+int UI_UTIL_read_pw_string(buf, length, prompt, verify)
 char *buf;
 int length;
 char *prompt;

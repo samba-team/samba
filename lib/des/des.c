@@ -128,7 +128,7 @@ int uubufnum=0;
 #define OUTUUBUF	(65*100)
 unsigned char b[OUTUUBUF];
 unsigned char bb[300];
-des_cblock cksum={0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+DES_cblock cksum={0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 char cksumname[200]="";
 
 int vflag,cflag,eflag,dflag,kflag,bflag,fflag,sflag,uflag,flag3,hflag,error;
@@ -283,7 +283,7 @@ char **argv;
 			}
 
 	if (!kflag)
-		if (des_read_pw_string(key,KEYSIZB+1,"Enter key:",eflag?VERIFY:0))
+		if (UI_UTIL_read_pw_string(key,KEYSIZB+1,"Enter key:",eflag?VERIFY:0))
 			{
 			fputs("password error\n",stderr);
 			EXIT(2);
@@ -373,11 +373,11 @@ void doencryption()
 #endif
 
 	register int i;
-	des_key_schedule ks,ks2;
+	DES_key_schedule ks,ks2;
 	unsigned char iv[8],iv2[8];
 	char *p;
 	int num=0,j,k,l,rem,ll,len,last,ex=0;
-	des_cblock kk,k2;
+	DES_cblock kk,k2;
 	FILE *O;
 	int Exit=0;
 #ifndef MSDOS
@@ -435,19 +435,19 @@ void doencryption()
 			else
 				k2[i-8]=k;
 			}
-		des_set_key((C_Block *)k2,ks2);
+		DES_set_key((C_Block *)k2,&ks2);
 		memset(k2,0,sizeof(k2));
 		}
 	else if (longk || flag3)
 		{
 		if (flag3)
 			{
-			des_string_to_2keys(key,(C_Block *)kk,(C_Block *)k2);
-			des_set_key((C_Block *)k2,ks2);
+			DES_string_to_2keys(key,(C_Block *)kk,(C_Block *)k2);
+			DES_set_key((C_Block *)k2,&ks2);
 			memset(k2,0,sizeof(k2));
 			}
 		else
-			des_string_to_key(key,(C_Block *)kk);
+			DES_string_to_key(key,(C_Block *)kk);
 		}
 	else
 		for (i=0; i<KEYSIZ; i++)
@@ -465,7 +465,7 @@ void doencryption()
 				kk[i]=key[i]|0x80;
 			}
 
-	des_set_key((C_Block *)kk,ks);
+	DES_set_key((C_Block *)kk,&ks);
 	memset(key,0,sizeof(key));
 	memset(kk,0,sizeof(kk));
 	/* woops - A bug that does not showup under unix :-( */
@@ -505,8 +505,8 @@ void doencryption()
 
 			if (cflag)
 				{
-				des_cbc_cksum((C_Block *)buf,(C_Block *)cksum,
-					(long)len,ks,(C_Block *)cksum);
+				DES_cbc_cksum((C_Block *)buf,(C_Block *)cksum,
+					(long)len,&ks,(C_Block *)cksum);
 				if (!eflag)
 					{
 					if (feof(DES_IN)) break;
@@ -516,34 +516,34 @@ void doencryption()
 
 			if (bflag && !flag3)
 				for (i=0; i<l; i+=8)
-					des_ecb_encrypt(
-						(des_cblock *)&(buf[i]),
-						(des_cblock *)&(obuf[i]),
-						ks,do_encrypt);
+					DES_ecb_encrypt(
+						(DES_cblock *)&(buf[i]),
+						(DES_cblock *)&(obuf[i]),
+						&ks,do_encrypt);
 			else if (flag3 && bflag)
 				for (i=0; i<l; i+=8)
-					des_ecb2_encrypt(
-						(des_cblock *)&(buf[i]),
-						(des_cblock *)&(obuf[i]),
-						ks,ks2,do_encrypt);
+					DES_ecb2_encrypt(
+						(DES_cblock *)&(buf[i]),
+						(DES_cblock *)&(obuf[i]),
+						&ks,&ks2,do_encrypt);
 			else if (flag3 && !bflag)
 				{
 				char tmpbuf[8];
 
 				if (rem) memcpy(tmpbuf,&(buf[l]),
 					(unsigned int)rem);
-				des_3cbc_encrypt(
-					(des_cblock *)buf,(des_cblock *)obuf,
-					(long)l,ks,ks2,(des_cblock *)iv,
-					(des_cblock *)iv2,do_encrypt);
+				DES_3cbc_encrypt(
+					(DES_cblock *)buf,(DES_cblock *)obuf,
+					(long)l,&ks,&ks2,(DES_cblock *)iv,
+					(DES_cblock *)iv2,do_encrypt);
 				if (rem) memcpy(&(buf[l]),tmpbuf,
 					(unsigned int)rem);
 				}
 			else
 				{
-				des_cbc_encrypt(
-					(des_cblock *)buf,(des_cblock *)obuf,
-					(long)l,ks,(des_cblock *)iv,do_encrypt);
+				DES_cbc_encrypt(
+					(DES_cblock *)buf,(DES_cblock *)obuf,
+					(long)l,&ks,(DES_cblock *)iv,do_encrypt);
 				if (l >= 8) memcpy(iv,&(obuf[l-8]),8);
 				}
 			if (rem) memcpy(buf,&(buf[l]),(unsigned int)rem);
@@ -595,28 +595,28 @@ void doencryption()
 
 			if (bflag && !flag3)
 				for (i=0; i<l; i+=8)
-					des_ecb_encrypt(
-						(des_cblock *)&(buf[i]),
-						(des_cblock *)&(obuf[i]),
-						ks,do_encrypt);
+					DES_ecb_encrypt(
+						(DES_cblock *)&(buf[i]),
+						(DES_cblock *)&(obuf[i]),
+						&ks,do_encrypt);
 			else if (flag3 && bflag)
 				for (i=0; i<l; i+=8)
-					des_ecb2_encrypt(
-						(des_cblock *)&(buf[i]),
-						(des_cblock *)&(obuf[i]),
-						ks,ks2,do_encrypt);
+					DES_ecb2_encrypt(
+						(DES_cblock *)&(buf[i]),
+						(DES_cblock *)&(obuf[i]),
+						&ks,&ks2,do_encrypt);
 			else if (flag3 && !bflag)
 				{
-				des_3cbc_encrypt(
-					(des_cblock *)buf,(des_cblock *)obuf,
-					(long)l,ks,ks2,(des_cblock *)iv,
-					(des_cblock *)iv2,do_encrypt);
+				DES_3cbc_encrypt(
+					(DES_cblock *)buf,(DES_cblock *)obuf,
+					(long)l,&ks,&ks2,(DES_cblock *)iv,
+					(DES_cblock *)iv2,do_encrypt);
 				}
 			else
 				{
-				des_cbc_encrypt(
-					(des_cblock *)buf,(des_cblock *)obuf,
-				 	(long)l,ks,(des_cblock *)iv,do_encrypt);
+				DES_cbc_encrypt(
+					(DES_cblock *)buf,(DES_cblock *)obuf,
+				 	(long)l,&ks,(DES_cblock *)iv,do_encrypt);
 				if (l >= 8) memcpy(iv,&(buf[l-8]),8);
 				}
 
@@ -641,8 +641,8 @@ void doencryption()
 				l=l-8+last;
 				}
 			i=0;
-			if (cflag) des_cbc_cksum((C_Block *)obuf,
-				(C_Block *)cksum,(long)l/8*8,ks,
+			if (cflag) DES_cbc_cksum((C_Block *)obuf,
+				(C_Block *)cksum,(long)l/8*8,&ks,
 				(C_Block *)cksum);
 			while (i != l)
 				{
@@ -678,8 +678,8 @@ void doencryption()
 problems:
 	memset(buf,0,sizeof(buf));
 	memset(obuf,0,sizeof(obuf));
-	memset(ks,0,sizeof(ks));
-	memset(ks2,0,sizeof(ks2));
+	memset(&ks,0,sizeof(ks));
+	memset(&ks2,0,sizeof(ks2));
 	memset(iv,0,sizeof(iv));
 	memset(iv2,0,sizeof(iv2));
 	memset(kk,0,sizeof(kk));

@@ -62,14 +62,14 @@
 
 /* This has some uglies in it but it works - even over sockets. */
 /*extern int errno;*/
-int des_rw_mode=DES_PCBC_MODE;
+int DES_rw_mode=DES_PCBC_MODE;
 
-int des_enc_read(fd, buf, len, sched, iv)
+int DES_enc_read(fd, buf, len, sched, iv)
 int fd;
 char *buf;
 int len;
-des_key_schedule sched;
-des_cblock (*iv);
+DES_key_schedule *sched;
+DES_cblock (*iv);
 	{
 	/* data to be unencrypted */
 	int net_num=0;
@@ -160,11 +160,11 @@ des_cblock (*iv);
 	/* Check if there will be data left over. */
 	if (len < num)
 		{
-		if (des_rw_mode & DES_PCBC_MODE)
-			des_pcbc_encrypt((des_cblock *)net,(des_cblock *)unnet,
+		if (DES_rw_mode & DES_PCBC_MODE)
+			DES_pcbc_encrypt((DES_cblock *)net,(DES_cblock *)unnet,
 				num,sched,iv,DES_DECRYPT);
 		else
-			des_cbc_encrypt((des_cblock *)net,(des_cblock *)unnet,
+			DES_cbc_encrypt((DES_cblock *)net,(DES_cblock *)unnet,
 				num,sched,iv,DES_DECRYPT);
 		memcpy(buf,unnet,(unsigned int)len);
 		unnet_start=len;
@@ -184,13 +184,13 @@ des_cblock (*iv);
 		if (len < rnum)
 			{
 
-			if (des_rw_mode & DES_PCBC_MODE)
-				des_pcbc_encrypt((des_cblock *)net,
-					(des_cblock *)tmpbuf,
+			if (DES_rw_mode & DES_PCBC_MODE)
+				DES_pcbc_encrypt((DES_cblock *)net,
+					(DES_cblock *)tmpbuf,
 					num,sched,iv,DES_DECRYPT);
 			else
-				des_cbc_encrypt((des_cblock *)net,
-					(des_cblock *)tmpbuf,
+				DES_cbc_encrypt((DES_cblock *)net,
+					(DES_cblock *)tmpbuf,
 					num,sched,iv,DES_DECRYPT);
 
 			/* eay 26/08/92 fix a bug that returned more
@@ -199,13 +199,13 @@ des_cblock (*iv);
 			}
 		else
 			{
-			if (des_rw_mode & DES_PCBC_MODE)
-				des_pcbc_encrypt((des_cblock *)net,
-					(des_cblock *)buf,num,sched,iv,
+			if (DES_rw_mode & DES_PCBC_MODE)
+				DES_pcbc_encrypt((DES_cblock *)net,
+					(DES_cblock *)buf,num,sched,iv,
 					DES_DECRYPT);
 			else
-				des_cbc_encrypt((des_cblock *)net,
-					(des_cblock *)buf,num,sched,iv,
+				DES_cbc_encrypt((DES_cblock *)net,
+					(DES_cblock *)buf,num,sched,iv,
 					DES_DECRYPT);
 			}
 		}

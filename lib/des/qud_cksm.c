@@ -73,12 +73,12 @@
 /* Got the value MIT uses via brute force :-) 2/10/90 eay */
 #define NOISE	((DES_LONG)83653421L)
 
-DES_LONG des_quad_cksum(input, output, length, out_count, seed)
-     des_cblock (*input);
-     des_cblock (*output);
+DES_LONG DES_quad_cksum(input, output, length, out_count, seed)
+     DES_cblock (*input);
+     DES_cblock (*output);
      long length;
      int out_count;
-     des_cblock (*seed);
+     DES_cblock (*seed);
 {
     DES_LONG z0,z1,t0,t1;
     int i;

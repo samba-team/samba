@@ -60,12 +60,12 @@
 #include <time.h>
 #include "des_locl.h"
 
-int des_enc_write(fd, buf, len, sched, iv)
+int DES_enc_write(fd, buf, len, sched, iv)
 int fd;
 char *buf;
 int len;
-des_key_schedule sched;
-des_cblock (*iv);
+DES_key_schedule *sched;
+DES_cblock (*iv);
 	{
 #ifdef _LIBC
 	extern int srandom();
@@ -100,7 +100,7 @@ des_cblock (*iv);
 		j=0;
 		for (i=0; i<len; i+=k)
 			{
-			k=des_enc_write(fd,&(buf[i]),
+			k=DES_enc_write(fd,&(buf[i]),
 				((len-i) > MAXWRITE)?MAXWRITE:(len-i),sched,iv);
 			if (k < 0)
 				return(k);
@@ -129,13 +129,13 @@ des_cblock (*iv);
 		rnum=((len+7)/8*8); /* round up to nearest eight */
 		}
 
-	if (des_rw_mode & DES_PCBC_MODE)
-		des_pcbc_encrypt((des_cblock *)p,
-			(des_cblock *)&(outbuf[HDRSIZE]),
+	if (DES_rw_mode & DES_PCBC_MODE)
+		DES_pcbc_encrypt((DES_cblock *)p,
+			(DES_cblock *)&(outbuf[HDRSIZE]),
 			(long)((len<8)?8:len),sched,iv,DES_ENCRYPT); 
 	else
-		des_cbc_encrypt((des_cblock *)p,
-			(des_cblock *)&(outbuf[HDRSIZE]),
+		DES_cbc_encrypt((DES_cblock *)p,
+			(DES_cblock *)&(outbuf[HDRSIZE]),
 			(long)((len<8)?8:len),sched,iv,DES_ENCRYPT); 
 
 	/* output */

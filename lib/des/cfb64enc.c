@@ -63,12 +63,12 @@
  * 64bit block we have used is contained in *num;
  */
 
-void des_cfb64_encrypt(in, out, length, schedule, ivec, num, encrypt)
+void DES_cfb64_encrypt(in, out, length, schedule, ivec, num, encrypt)
 unsigned char *in;
 unsigned char *out;
 long length;
-des_key_schedule schedule;
-des_cblock (*ivec);
+DES_key_schedule *schedule;
+DES_cblock (*ivec);
 int *num;
 int encrypt;
 	{
@@ -87,7 +87,7 @@ int encrypt;
 				{
 				c2l(iv,v0); ti[0]=v0;
 				c2l(iv,v1); ti[1]=v1;
-				des_encrypt((DES_LONG *)ti,
+				DES_encrypt((DES_LONG *)ti,
 					schedule,DES_ENCRYPT);
 				iv=(unsigned char *)ivec;
 				v0=ti[0]; l2c(v0,iv);
@@ -108,7 +108,7 @@ int encrypt;
 				{
 				c2l(iv,v0); ti[0]=v0;
 				c2l(iv,v1); ti[1]=v1;
-				des_encrypt((DES_LONG *)ti,
+				DES_encrypt((DES_LONG *)ti,
 					schedule,DES_ENCRYPT);
 				iv=(unsigned char *)ivec;
 				v0=ti[0]; l2c(v0,iv);

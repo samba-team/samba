@@ -35,14 +35,14 @@
 
 /* MIT Link and source compatibility */
 
-#ifdef des_fixup_key_parity
-#undef des_fixup_key_parity
-#endif /* des_fixup_key_parity */
+#ifdef DES_fixup_key_parity
+#undef DES_fixup_key_parity
+#endif /* DES_fixup_key_parity */
 
-void des_fixup_key_parity(des_cblock *key);
+void DES_fixup_key_parity(DES_cblock *key);
 
 void
-des_fixup_key_parity(des_cblock *key)
+DES_fixup_key_parity(DES_cblock *key)
 {
-  des_set_odd_parity(key);
+  DES_set_odd_parity(key);
 }

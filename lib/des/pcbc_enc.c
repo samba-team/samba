@@ -58,12 +58,12 @@
 
 #include "des_locl.h"
 
-void des_pcbc_encrypt(input, output, length, schedule, ivec, encrypt)
-des_cblock (*input);
-des_cblock (*output);
+void DES_pcbc_encrypt(input, output, length, schedule, ivec, encrypt)
+DES_cblock (*input);
+DES_cblock (*output);
 long length;
-des_key_schedule schedule;
-des_cblock (*ivec);
+DES_key_schedule *schedule;
+DES_cblock (*ivec);
 int encrypt;
 	{
 	register DES_LONG sin0,sin1,xor0,xor1,tout0,tout1;
@@ -89,7 +89,7 @@ int encrypt;
 				c2ln(in,sin0,sin1,length);
 			tin[0]=sin0^xor0;
 			tin[1]=sin1^xor1;
-			des_encrypt((DES_LONG *)tin,schedule,DES_ENCRYPT);
+			DES_encrypt((DES_LONG *)tin,schedule,DES_ENCRYPT);
 			tout0=tin[0];
 			tout1=tin[1];
 			xor0=sin0^tout0;
@@ -107,7 +107,7 @@ int encrypt;
 			c2l(in,sin1);
 			tin[0]=sin0;
 			tin[1]=sin1;
-			des_encrypt((DES_LONG *)tin,schedule,DES_DECRYPT);
+			DES_encrypt((DES_LONG *)tin,schedule,DES_DECRYPT);
 			tout0=tin[0]^xor0;
 			tout1=tin[1]^xor1;
 			if (length >= 8)

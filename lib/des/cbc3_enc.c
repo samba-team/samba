@@ -59,41 +59,41 @@
 #include "des_locl.h"
 
 /* HAS BUGS? DON'T USE */
-void des_3cbc_encrypt(input, output, length, ks1, ks2, iv1, iv2, encrypt)
-des_cblock (*input);
-des_cblock (*output);
+void DES_3cbc_encrypt(input, output, length, ks1, ks2, iv1, iv2, encrypt)
+DES_cblock (*input);
+DES_cblock (*output);
 long length;
-des_key_schedule ks1;
-des_key_schedule ks2;
-des_cblock (*iv1);
-des_cblock (*iv2);
+DES_key_schedule *ks1;
+DES_key_schedule *ks2;
+DES_cblock (*iv1);
+DES_cblock (*iv2);
 int encrypt;
 	{
 	int off=((int)length-1)/8;
 	long l8=((length+7)/8)*8;
-	des_cblock niv1,niv2;
+	DES_cblock niv1,niv2;
 
 	if (encrypt == DES_ENCRYPT)
 		{
-		des_cbc_encrypt(input,output,length,ks1,iv1,encrypt);
-		if (length >= sizeof(des_cblock))
-			memcpy(niv1,output[off],sizeof(des_cblock));
-		des_cbc_encrypt(output,output,l8,ks2,iv1,!encrypt);
-		des_cbc_encrypt(output,output,l8,ks1,iv2, encrypt);
-		if (length >= sizeof(des_cblock))
-			memcpy(niv2,output[off],sizeof(des_cblock));
+		DES_cbc_encrypt(input,output,length,ks1,iv1,encrypt);
+		if (length >= sizeof(DES_cblock))
+			memcpy(niv1,output[off],sizeof(DES_cblock));
+		DES_cbc_encrypt(output,output,l8,ks2,iv1,!encrypt);
+		DES_cbc_encrypt(output,output,l8,ks1,iv2, encrypt);
+		if (length >= sizeof(DES_cblock))
+			memcpy(niv2,output[off],sizeof(DES_cblock));
 		}
 	else
 		{
-		if (length >= sizeof(des_cblock))
-			memcpy(niv2,input[off],sizeof(des_cblock));
-		des_cbc_encrypt(input,output,l8,ks1,iv2,encrypt);
-		des_cbc_encrypt(output,output,l8,ks2,iv1,!encrypt);
-		if (length >= sizeof(des_cblock))
-			memcpy(niv1,output[off],sizeof(des_cblock));
-		des_cbc_encrypt(output,output,length,ks1,iv1, encrypt);
+		if (length >= sizeof(DES_cblock))
+			memcpy(niv2,input[off],sizeof(DES_cblock));
+		DES_cbc_encrypt(input,output,l8,ks1,iv2,encrypt);
+		DES_cbc_encrypt(output,output,l8,ks2,iv1,!encrypt);
+		if (length >= sizeof(DES_cblock))
+			memcpy(niv1,output[off],sizeof(DES_cblock));
+		DES_cbc_encrypt(output,output,length,ks1,iv1, encrypt);
 		}
-	memcpy(*iv1,niv1,sizeof(des_cblock));
-	memcpy(*iv2,niv2,sizeof(des_cblock));
+	memcpy(*iv1,niv1,sizeof(DES_cblock));
+	memcpy(*iv2,niv2,sizeof(DES_cblock));
 	}
 

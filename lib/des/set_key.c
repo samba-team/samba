@@ -68,15 +68,15 @@
 #include "sk.h"
 
 #ifndef NOPROTO
-static int check_parity(des_cblock (*key));
+static int check_parity(DES_cblock (*key));
 #else
 static int check_parity();
 #endif
 
-int des_check_key=0;
+int DES_check_key=0;
 
-void des_set_odd_parity(key)
-des_cblock (*key);
+void DES_set_odd_parity(key)
+DES_cblock (*key);
 	{
 	int i;
 
@@ -85,7 +85,7 @@ des_cblock (*key);
 	}
 
 static int check_parity(key)
-des_cblock (*key);
+DES_cblock (*key);
 	{
 	int i;
 
@@ -112,7 +112,7 @@ des_cblock (*key);
  */
 
 #define NUM_WEAK_KEY	16
-static des_cblock weak_keys[NUM_WEAK_KEY]={
+static DES_cblock weak_keys[NUM_WEAK_KEY]={
 	/* weak keys */
 	{0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01},
 	{0xFE,0xFE,0xFE,0xFE,0xFE,0xFE,0xFE,0xFE},
@@ -132,8 +132,8 @@ static des_cblock weak_keys[NUM_WEAK_KEY]={
 	{0xE0,0xFE,0xE0,0xFE,0xF1,0xFE,0xF1,0xFE},
 	{0xFE,0xE0,0xFE,0xE0,0xFE,0xF1,0xFE,0xF1}};
 
-int des_is_weak_key(key)
-des_cblock (*key);
+int DES_is_weak_key(key)
+DES_cblock (*key);
 	{
 	int i;
 
@@ -160,9 +160,9 @@ des_cblock (*key);
  * return -1 if key parity error,
  * return -2 if illegal weak key.
  */
-int des_set_key(key, schedule)
-des_cblock (*key);
-des_key_schedule schedule;
+int DES_set_key(key, schedule)
+DES_cblock (*key);
+DES_key_schedule *schedule;
 	{
 	static int shifts2[16]={0,0,1,1,1,1,1,1,0,1,1,1,1,1,1,0};
 	register DES_LONG c,d,t,s,t2;
@@ -170,12 +170,12 @@ des_key_schedule schedule;
 	register DES_LONG *k;
 	register int i;
 
-	if (des_check_key)
+	if (DES_check_key)
 		{
 		if (!check_parity(key))
 			return(-1);
 
-		if (des_is_weak_key(key))
+		if (DES_is_weak_key(key))
 			return(-2);
 		}
 
@@ -241,9 +241,9 @@ des_key_schedule schedule;
 	return(0);
 	}
 
-int des_key_sched(key, schedule)
-des_cblock (*key);
-des_key_schedule schedule;
+int DES_key_sched(key, schedule)
+DES_cblock (*key);
+DES_key_schedule *schedule;
 	{
-	return(des_set_key(key,schedule));
+	return(DES_set_key(key,schedule));
 	}

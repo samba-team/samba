@@ -58,13 +58,13 @@
 
 #include "des_locl.h"
 
-extern int des_check_key;
+extern int DES_check_key;
 
-void des_string_to_key(str, key)
+void DES_string_to_key(str, key)
 char *str;
-des_cblock (*key);
+DES_cblock (*key);
 	{
-	des_key_schedule ks;
+	DES_key_schedule ks;
 	int i,length;
 	register unsigned char j;
 
@@ -89,25 +89,25 @@ des_cblock (*key);
 			}
 		}
 #endif
-	des_set_odd_parity((des_cblock *)key);
-	i=des_check_key;
-	des_check_key=0;
-	if(des_is_weak_key((des_cblock *)key))
+	DES_set_odd_parity((DES_cblock *)key);
+	i=DES_check_key;
+	DES_check_key=0;
+	if(DES_is_weak_key((DES_cblock *)key))
 	    (*key)[7] ^= 0xF0;
-	des_set_key((des_cblock *)key,ks);
-	des_check_key=i;
-	des_cbc_cksum((des_cblock *)str,(des_cblock *)key,(long)length,ks,
-		(des_cblock *)key);
-	memset(ks,0,sizeof(ks));
-	des_set_odd_parity((des_cblock *)key);
+	DES_set_key((DES_cblock *)key,&ks);
+	DES_check_key=i;
+	DES_cbc_cksum((DES_cblock *)str,(DES_cblock *)key,(long)length,&ks,
+		(DES_cblock *)key);
+	memset(&ks,0,sizeof(ks));
+	DES_set_odd_parity((DES_cblock *)key);
 	}
 
-void des_string_to_2keys(str, key1, key2)
+void DES_string_to_2keys(str, key1, key2)
 char *str;
-des_cblock (*key1);
-des_cblock (*key2);
+DES_cblock (*key1);
+DES_cblock (*key2);
 	{
-	des_key_schedule ks;
+	DES_key_schedule ks;
 	int i,length;
 	register unsigned char j;
 
@@ -156,22 +156,22 @@ des_cblock (*key2);
 		}
 	if (length <= 8) memcpy(key2,key1,8);
 #endif
-	des_set_odd_parity((des_cblock *)key1);
-	des_set_odd_parity((des_cblock *)key2);
-	i=des_check_key;
-	des_check_key=0;
-	if(des_is_weak_key((des_cblock *)key1))
+	DES_set_odd_parity((DES_cblock *)key1);
+	DES_set_odd_parity((DES_cblock *)key2);
+	i=DES_check_key;
+	DES_check_key=0;
+	if(DES_is_weak_key((DES_cblock *)key1))
 	    (*key1)[7] ^= 0xF0;
-	des_set_key((des_cblock *)key1,ks);
-	des_cbc_cksum((des_cblock *)str,(des_cblock *)key1,(long)length,ks,
-		(des_cblock *)key1);
-	if(des_is_weak_key((des_cblock *)key2))
+	DES_set_key((DES_cblock *)key1,&ks);
+	DES_cbc_cksum((DES_cblock *)str,(DES_cblock *)key1,(long)length,&ks,
+		(DES_cblock *)key1);
+	if(DES_is_weak_key((DES_cblock *)key2))
 	    (*key2)[7] ^= 0xF0;
-	des_set_key((des_cblock *)key2,ks);
-	des_cbc_cksum((des_cblock *)str,(des_cblock *)key2,(long)length,ks,
-		(des_cblock *)key2);
-	des_check_key=i;
-	memset(ks,0,sizeof(ks));
-	des_set_odd_parity(key1);
-	des_set_odd_parity(key2);
+	DES_set_key((DES_cblock *)key2,&ks);
+	DES_cbc_cksum((DES_cblock *)str,(DES_cblock *)key2,(long)length,&ks,
+		(DES_cblock *)key2);
+	DES_check_key=i;
+	memset(&ks,0,sizeof(ks));
+	DES_set_odd_parity(key1);
+	DES_set_odd_parity(key2);
 	}
