@@ -67,7 +67,7 @@ void load_case_tables(void)
 		const char *allowed = "!#$%&'()_-@^`~";
 		DEBUG(1,("creating lame valid table\n"));
 		valid_table = malloc(0x10000);
-		for (0;i<0x10000;i++) valid_table[i] = 0;
+		for (i=0;i<0x10000;i++) valid_table[i] = 0;
 		for (i=0;i<256;i++) valid_table[UCS2_CHAR(i)] = isalnum(i) || strchr(allowed,i);
 	}
 }
@@ -182,7 +182,7 @@ uint32 buffer2_to_uint32(BUFFER2 *str)
 
 smb_ucs2_t toupper_w(smb_ucs2_t val)
 {
-	return upcase_table[SVAL(&val,0)];
+	return upcase_table[val];
 }
 
 /*******************************************************************
@@ -191,7 +191,7 @@ smb_ucs2_t toupper_w(smb_ucs2_t val)
 
 smb_ucs2_t tolower_w( smb_ucs2_t val )
 {
-	return lowcase_table[SVAL(&val,0)];
+	return lowcase_table[val];
 }
 
 /*******************************************************************
@@ -199,7 +199,7 @@ determine if a character is lowercase
 ********************************************************************/
 BOOL islower_w(smb_ucs2_t c)
 {
-	return upcase_table[SVAL(&c,0)] != c;
+	return upcase_table[c] != c;
 }
 
 /*******************************************************************
@@ -207,7 +207,7 @@ determine if a character is uppercase
 ********************************************************************/
 BOOL isupper_w(smb_ucs2_t c)
 {
-	return lowcase_table[SVAL(&c,0)] != c;
+	return lowcase_table[c] != c;
 }
 
 
@@ -216,7 +216,7 @@ determine if a character is valid in a 8.3 name
 ********************************************************************/
 BOOL isvalid83_w(smb_ucs2_t c)
 {
-	return valid_table[SVAL(&c,0)] != 0;
+	return valid_table[c] != 0;
 }
 
 /*******************************************************************
