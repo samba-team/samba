@@ -4614,16 +4614,14 @@ BOOL samr_io_r_query_aliasmem(const char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 		return False;
 
 	if (r_u->ptr != 0 && r_u->num_sids != 0) {
-		uint32 *ptr_sid;
+		uint32 *ptr_sid = NULL;
 
 		if(!prs_uint32("num_sids1", ps, depth, &r_u->num_sids1))
 			return False;
 
-		if (UNMARSHALLING(ps)) {
-			ptr_sid = talloc(ps->mem_ctx, sizeof(uint32) * r_u->num_sids1);
-			if (!ptr_sid) {
-				return False;
-			}
+		ptr_sid = talloc(ps->mem_ctx, sizeof(uint32) * r_u->num_sids1);
+		if (!ptr_sid) {
+			return False;
 		}
 		
 		for (i = 0; i < r_u->num_sids1; i++) {
