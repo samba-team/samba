@@ -507,6 +507,7 @@ an Active Directory environment.
 <!ENTITY unicode SYSTEM "projdoc/unicode.xml">
 <!ENTITY attributions SYSTEM "projdoc/attributions.xml">
 <!ENTITY attributions-dev SYSTEM "devdoc/attributions.xml">
+<!ENTITY windows-debug SYSTEM "devdoc/windows-debug.xml">
 
 <!ENTITY not.implemented "<note><para>Currently NOT implemented.</para></note>">
 <!ENTITY rootprompt "<prompt>root# </prompt>">
