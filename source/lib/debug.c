@@ -167,7 +167,7 @@ void setup_logging( char *pname, BOOL interactive )
     stdout_logging = True;
     dbf = stdout;
     }
-#ifdef SYSLOG
+#ifdef WITH_SYSLOG
   else
     {
     char *p = strrchr( pname,'/' );
@@ -278,7 +278,7 @@ static void check_log_size( void )
  * This is called by dbghdr() and format_debug_text().
  * ************************************************************************** **
  */
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
  int Debug1( char *format_str, ... )
 {
 #else
@@ -292,7 +292,7 @@ va_dcl
 
   if( stdout_logging )
     {
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
     va_start( ap, format_str );
 #else
     va_start( ap );
@@ -304,7 +304,7 @@ va_dcl
     return( 0 );
     }
   
-#ifdef SYSLOG
+#ifdef WITH_SYSLOG
   if( !lp_syslog_only() )
 #endif
     {
@@ -329,7 +329,7 @@ va_dcl
       }
     }
 
-#ifdef SYSLOG
+#ifdef WITH_SYSLOG
   if( syslog_level < lp_syslog() )
     {
     /* map debug levels to syslog() priorities
@@ -351,7 +351,7 @@ va_dcl
     else
       priority = priority_map[syslog_level];
       
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
     va_start( ap, format_str );
 #else
     va_start( ap );
@@ -365,11 +365,11 @@ va_dcl
     }
 #endif
   
-#ifdef SYSLOG
+#ifdef WITH_SYSLOG
   if( !lp_syslog_only() )
 #endif
     {
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
     va_start( ap, format_str );
 #else
     va_start( ap );
@@ -476,6 +476,10 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   /* Set syslog_level. */
   syslog_level = level;
 
+  /* Don't print a header if we're logging to stdout. */
+  if( stdout_logging )
+    return( True );
+
   /* Print it all out at once. */
   Debug1( "[%s, %d] %s%s%s(%d)\n",
           timestring(), level, file, (*file)?":":"", func, line );
@@ -495,7 +499,7 @@ BOOL dbghdr( int level, char *file, char *func, int line )
  *
  * ************************************************************************** **
  */
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
  BOOL dbgtext( char *format_str, ... )
   {
   va_list ap;
