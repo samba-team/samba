@@ -262,10 +262,13 @@ foreach_principal(const char *exp,
 	ret = (*func)(princ_ent, data);
 	if(ret) {
 	    char *tmp;
-	    ret = krb5_unparse_name(context, princ_ent, &tmp);
-	    if(ret) 
-		krb5_warn(context, ret, "krb5_unparse_name");
-	    else {
+	    krb5_error_code ret2;
+
+	    ret2 = krb5_unparse_name(context, princ_ent, &tmp);
+	    if(ret2) {
+		krb5_warn(context, ret2, "krb5_unparse_name");
+		krb5_warn(context, ret, "<unknown principal>");
+	    } else {
 		krb5_warn(context, ret, "%s", tmp);
 		free(tmp);
 	    }
