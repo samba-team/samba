@@ -445,6 +445,14 @@ krb5_mk_req(krb5_context context,
 	    krb5_data *outbuf);
 
 krb5_error_code
+krb5_mk_req_extended(krb5_context context,
+		     krb5_auth_context *auth_context,
+		     const krb5_flags ap_req_options,
+		     krb5_data *in_data,
+		     krb5_creds *in_creds,
+		     krb5_data *outbuf);
+
+krb5_error_code
 krb5_mk_rep(krb5_context context,
 	    krb5_auth_context *auth_context,
 	    krb5_data *outbuf);
