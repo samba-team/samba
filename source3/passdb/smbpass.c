@@ -898,7 +898,7 @@ static BOOL add_smbfile21pwd_entry(struct sam_passwd *newpwd)
  	return add_smbfilepwd_entry(pwdb_sam_to_smb(newpwd));
 }
 
-static struct sam_disp_info *getsmbfiledispnam(char *name)
+static struct sam_disp_info *getsmbfiledispnam(const char *name)
 {
 	return pwdb_sam_to_dispinfo(getsam21pwnam(name));
 }

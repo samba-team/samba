@@ -128,7 +128,7 @@ struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid)
  does not have search facilities.
 *************************************************************************/
 
-struct smb_passwd *iterate_getsmbpwnam(char *name)
+struct smb_passwd *iterate_getsmbpwnam(const char *name)
 {
 	struct smb_passwd *pwd = NULL;
 	void *fp = NULL;
@@ -146,6 +146,7 @@ struct smb_passwd *iterate_getsmbpwnam(char *name)
 
 	while ((pwd = getsmbpwent(fp)) != NULL && !strequal(pwd->smb_name, name))
 	{
+		DEBUG(10, ("iterate: %s 0x%x\n", pwd->smb_name, pwd->smb_userid));
 	}
 
 	if (pwd != NULL)
@@ -224,7 +225,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
  Routine to search smb passwd by name.
 *************************************************************************/
 
-struct smb_passwd *getsmbpwnam(char *name)
+struct smb_passwd *getsmbpwnam(const char *name)
 {
 	return pwdb_ops->getsmbpwnam(name);
 }
@@ -256,7 +257,7 @@ struct smb_passwd *getsmbpwuid(uid_t smb_userid)
  does not have search facilities.
 *************************************************************************/
 
-struct sam_passwd *iterate_getsam21pwnam(char *name)
+struct sam_passwd *iterate_getsam21pwnam(const char *name)
 {
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
@@ -385,7 +386,7 @@ struct sam_passwd *getsam21pwent(void *vp)
  Routine to search sam passwd by name.
 *************************************************************************/
 
-struct sam_passwd *getsam21pwnam(char *name)
+struct sam_passwd *getsam21pwnam(const char *name)
 {
 	return pwdb_ops->getsam21pwnam(name);
 }
@@ -694,7 +695,7 @@ void pwdb_set_last_set_time(char *p, int max_len, time_t t)
 /*************************************************************
  Routine to set 32 hex password characters from a 16 byte array.
 **************************************************************/
-void pwdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
+void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl)
 {
 	if (pwd != NULL)
 	{
@@ -721,7 +722,7 @@ void pwdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
  Routine to get the 32 hex characters and turn them
  into a 16 byte array.
 **************************************************************/
-BOOL pwdb_gethexpwd(char *p, char *pwd)
+BOOL pwdb_gethexpwd(const char *p, char *pwd)
 {
 	return strhex_to_str(pwd, 32, p) == 16;
 }

@@ -600,6 +600,7 @@ static void api_net_sam_logon( uint16 vuid,
 	DOM_CRED srv_cred;
 	struct smb_passwd *smb_pass = NULL;
 	UNISTR2 *uni_samlogon_user = NULL;
+	fstring nt_username;
 
 	user_struct *vuser = NULL;
 
@@ -654,23 +655,23 @@ static void api_net_sam_logon( uint16 vuid,
 
 	if (status == 0)
 	{
-		pstrcpy(samlogon_user, unistrn2(uni_samlogon_user->buffer,
-		uni_samlogon_user->uni_str_len));
+		pstrcpy(nt_username, unistrn2(uni_samlogon_user->buffer,
+		                                uni_samlogon_user->uni_str_len));
 
-		DEBUG(3,("User:[%s]\n", samlogon_user));
+		DEBUG(3,("User:[%s]\n", nt_username));
 
 		/*
 		 * Convert to a UNIX username.
 		 */
-		map_username(samlogon_user);
+		map_username(nt_username);
 
 		/*
 		 * Do any case conversions.
 		 */
-		(void)Get_Pwnam(samlogon_user, True);
+		(void)Get_Pwnam(nt_username, True);
 
 		become_root(True);
-		smb_pass = getsmbpwnam(samlogon_user);
+		smb_pass = getsmbpwnam(nt_username);
 		unbecome_root(True);
 
 		if (smb_pass == NULL)
@@ -736,6 +737,7 @@ static void api_net_sam_logon( uint16 vuid,
 		/* XXXX hack to get standard_sub_basic() to use sam logon username */
 		/* possibly a better way would be to do a become_user() call */
 		sam_logon_in_ssb = True;
+		pstrcpy(samlogon_user, nt_username);
 
 		pstrcpy(logon_script, lp_logon_script());
 		pstrcpy(profile_path, lp_logon_path());
@@ -747,8 +749,10 @@ static void api_net_sam_logon( uint16 vuid,
 		pstrcpy(my_name, global_myname);
 		strupper(my_name);
 
-		status = lookup_user_rids(samlogon_user, &r_uid, &r_gid);
-		status = getusergroupsnam(samlogon_user, &grp_mem, &num_gids) ? 0 : 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
+		status = lookup_user_rids(nt_username, &r_uid, &r_gid);
+		status = getusergroupsnam(nt_username, &grp_mem, &num_gids) ? 0 : 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
+
+		sam_logon_in_ssb = False;
 
 		if (status == 0x0)
 		{
@@ -763,7 +767,7 @@ static void api_net_sam_logon( uint16 vuid,
 				&dummy_time, /* pass_can_change_time */
 				&dummy_time, /* pass_must_change_time */
 
-				samlogon_user   , /* user_name */
+				nt_username   , /* user_name */
 				vuser->real_name, /* full_name */
 				logon_script    , /* logon_script */
 				profile_path    , /* profile_path */
