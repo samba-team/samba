@@ -138,6 +138,15 @@ interface/version dce/rpc pipe identification
         }, 0x03                             \
 }
 
+#define SYNT_ECHO_V1                        \
+{                                           \
+        {                                   \
+                0x60a15ec5, 0x4de8, 0x11d7, \
+                { 0xa6, 0x37, 0x00, 0x50,   \
+                  0x56, 0xa2, 0x01, 0x82 }  \
+        }, 0x01                             \
+}
+
 /*
  * IMPORTANT!!  If you update this structure, make sure to
  * update the index #defines in smb.h.
@@ -155,6 +164,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_WINREG  , SYNT_WINREG_V1        , PIPE_WINREG   , TRANS_SYNT_V2 },
 	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1       , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
 	{ PIPE_NETDFS  , SYNT_NETDFS_V3        , PIPE_NETDFS   , TRANS_SYNT_V2 },
+	{ PIPE_ECHO    , SYNT_ECHO_V1          , PIPE_ECHO     , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };
 
