@@ -3,8 +3,8 @@
 
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
-   oplock processing
+   Version 2.x
+   IRIX kernel oplock processing
    Copyright (C) Andrew Tridgell 1992-1998
    
    This program is free software; you can redistribute it and/or modify
