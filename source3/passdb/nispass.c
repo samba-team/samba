@@ -239,14 +239,14 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 
 	fstring logon_t;
 	fstring logoff_t;
-	fstring kick_t;
+	fstring kickoff_t;
 	fstring pwdlset_t;
 	fstring pwdlchg_t;
 	fstring pwdmchg_t;
 
 	bzero(logon_t  , sizeof(logon_t  ));
 	bzero(logoff_t , sizeof(logoff_t ));
-	bzero(kick_t   , sizeof(kick_t   ));
+	bzero(kickoff_t, sizeof(kickoff_t));
 	bzero(pwdlset_t, sizeof(pwdlset_t));
 	bzero(pwdlchg_t, sizeof(pwdlchg_t));
 	bzero(pwdmchg_t, sizeof(pwdmchg_t));
@@ -313,16 +313,12 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	pdb_sethexpwd(smb_passwd   , newpwd->smb_passwd   , newpwd->acct_ctrl);
 	pdb_sethexpwd(smb_nt_passwd, newpwd->smb_nt_passwd, newpwd->acct_ctrl);
 
-#if 0
 	pdb_set_logon_time      (logon_t  , sizeof(logon_t  ), newpwd->logon_time           );
 	pdb_set_logoff_time     (logoff_t , sizeof(logoff_t ), newpwd->logoff_time          );
 	pdb_set_kickoff_time    (kickoff_t, sizeof(kickoff_t), newpwd->kickoff_time         );
-#endif
 	pdb_set_last_set_time   (pwdlset_t, sizeof(pwdlset_t), newpwd->pass_last_set_time   ); 
-#if 0
 	pdb_set_can_change_time (pwdlchg_t, sizeof(pwdlchg_t), newpwd->pass_can_change_time ); 
 	pdb_set_must_change_time(pwdmchg_t, sizeof(pwdmchg_t), newpwd->pass_must_change_time); 
-#endif
 
 	slprintf(uid, sizeof(uid), "%u", newpwd->smb_userid);
 	slprintf(user_rid, sizeof(user_rid), "0x%x", newpwd->user_rid);
@@ -341,7 +337,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	set_single_attribute(&new_obj, NPF_NTPWD         , smb_nt_passwd        , strlen(smb_nt_passwd)        , EN_CRYPT);
 	set_single_attribute(&new_obj, NPF_LOGON_T       , logon_t              , strlen(logon_t)              , 0);
 	set_single_attribute(&new_obj, NPF_LOGOFF_T      , logoff_t             , strlen(logoff_t)             , 0);
-	set_single_attribute(&new_obj, NPF_KICK_T        , kick_t               , strlen(kick_t)               , 0);
+	set_single_attribute(&new_obj, NPF_KICK_T        , kickoff_t            , strlen(kickoff_t)            , 0);
 	set_single_attribute(&new_obj, NPF_PWDLSET_T     , pwdlset_t            , strlen(pwdlset_t)            , 0);
 	set_single_attribute(&new_obj, NPF_PWDLCHG_T     , pwdlchg_t            , strlen(pwdlchg_t)            , 0);
 	set_single_attribute(&new_obj, NPF_PWDMCHG_T     , pwdmchg_t            , strlen(pwdmchg_t)            , 0);

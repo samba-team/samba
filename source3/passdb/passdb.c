@@ -635,16 +635,54 @@ time_t pdb_get_last_set_time(char *p)
 /*******************************************************************
  sets password-database-format time in a string.
  ********************************************************************/
-
 static void set_time_in_string(char *p, int max_len, char *type, time_t t)
 {
 	slprintf(p, max_len, ":%s-%08X:", type, (uint32)t);
 }
 
 /*******************************************************************
+ sets logon time
+ ********************************************************************/
+void pdb_set_logon_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "LNT", t);
+}
+
+/*******************************************************************
+ sets logoff time
+ ********************************************************************/
+void pdb_set_logoff_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "LOT", t);
+}
+
+/*******************************************************************
+ sets kickoff time
+ ********************************************************************/
+void pdb_set_kickoff_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "KOT", t);
+}
+
+/*******************************************************************
+ sets password can change time
+ ********************************************************************/
+void pdb_set_can_change_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "CCT", t);
+}
+
+/*******************************************************************
  sets password last set time
  ********************************************************************/
+void pdb_set_must_change_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "MCT", t);
+}
 
+/*******************************************************************
+ sets password last set time
+ ********************************************************************/
 void pdb_set_last_set_time(char *p, int max_len, time_t t)
 {
 	set_time_in_string(p, max_len, "LCT", t);
