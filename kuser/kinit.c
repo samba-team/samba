@@ -270,6 +270,7 @@ get_server(krb5_context context,
 			       KRB5_TGS_NAME, *client_realm, NULL);
 }
 
+#ifdef KRB4
 static krb5_error_code
 do_524init(krb5_context context, krb5_ccache ccache, 
 	   krb5_creds *creds, const char *server)
@@ -306,6 +307,7 @@ do_524init(krb5_context context, krb5_ccache ccache,
 
     return ret;
 }
+#endif
 
 static int
 renew_validate(krb5_context context, 
@@ -647,7 +649,9 @@ main (int argc, char **argv)
 	exit(ret != 0);
     }
 
+#ifdef KRB4
     if(!convert_524)
+#endif
 	get_new_tickets(context, principal, ccache, ticket_life);
 
 #ifdef KRB4
