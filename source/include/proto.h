@@ -367,6 +367,8 @@ TALLOC_CTX *talloc_init(void);
 void *talloc(TALLOC_CTX *t, size_t size);
 void talloc_destroy_pool(TALLOC_CTX *t);
 void talloc_destroy(TALLOC_CTX *t);
+size_t talloc_pool_size(TALLOC_CTX *t);
+void *talloc_zero(TALLOC_CTX *t, size_t size);
 
 /*The following definitions come from  lib/time.c  */
 
@@ -2398,7 +2400,11 @@ BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_c, prs_struct *ps, in
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 
-void parse_talloc_free(void);
+TALLOC_CTX *get_current_rpc_talloc(void);
+void set_current_rpc_talloc( TALLOC_CTX *ctx);
+void main_loop_talloc_free(void);
+TALLOC_CTX *main_loop_talloc_get(void);
+TALLOC_CTX *get_talloc_ctx(void);
 BOOL smb_io_time(char *desc, NTTIME *nttime, prs_struct *ps, int depth);
 BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth);
 uint32 get_enum_hnd(ENUM_HND *enh);
@@ -3310,6 +3316,14 @@ BOOL wks_io_r_query_info(char *desc, WKS_R_QUERY_INFO *r_u, prs_struct *ps, int 
 /*The following definitions come from  rpc_server/srv_dfs.c  */
 
 BOOL api_netdfs_rpc(pipes_struct *p);
+
+/*The following definitions come from  rpc_server/srv_dfs_nt.c  */
+
+uint32 _dfs_exist(pipes_struct *p, DFS_Q_DFS_EXIST *q_u, DFS_R_DFS_EXIST *r_u);
+uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u);
+uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u);
+uint32 _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u);
+uint32 _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u, DFS_R_DFS_GET_INFO *r_u);
 
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 

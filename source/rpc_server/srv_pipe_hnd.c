@@ -485,14 +485,6 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 	char *data_p = (char *)&p->in_data.current_in_pdu[0];
 	BOOL reply = False;
 
-	if (p->mem_ctx) {
-		talloc_destroy_pool(p->mem_ctx);
-	} else {
-		p->mem_ctx = talloc_init();
-		if (p->mem_ctx == NULL)
-			p->fault_state = True;
-	}
-
 	if(p->fault_state) {
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			p->name ));
@@ -713,7 +705,7 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 
 		memcpy( data, &p->out_data.current_pdu[p->out_data.current_pdu_sent], (size_t)data_returned);
 		p->out_data.current_pdu_sent += (uint32)data_returned;
-		return data_returned;
+		goto out;
 	}
 
 	/*
@@ -727,9 +719,10 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 
 	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
 		/*
-		 * We have sent all possible data. Return 0.
+		 * We have sent all possible data, return 0.
 		 */
-		return 0;
+		data_returned = 0;
+		goto out;
 	}
 
 	/*
@@ -748,6 +741,26 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 
 	memcpy( data, p->out_data.current_pdu, (size_t)data_returned);
 	p->out_data.current_pdu_sent += (uint32)data_returned;
+
+  out:
+
+	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
+		/*
+		 * We have copied all possible data into the current_pdu. This RPC is finished.
+		 * Reset the talloc context to free any allocated data from this RPC.
+		 */
+
+		if (p->mem_ctx) {
+			DEBUG(3,("read_from_pipe: destroying talloc pool of size %u\n", talloc_pool_size(p->mem_ctx) ));
+			talloc_destroy_pool(p->mem_ctx);
+		} else {
+			p->mem_ctx = talloc_init();
+			if (p->mem_ctx == NULL)
+				p->fault_state = True;
+		}
+
+	}
+
 	return data_returned;
 }
 
@@ -872,5 +885,4 @@ pipes_struct *get_rpc_pipe(int pnum)
 
 	return NULL;
 }
-
 #undef OLD_NTDOMAIN
