@@ -1,3 +1,13 @@
+Changes in release 0.3a:
+
+ * make kinit fallback to v4 if given a v4 KDC
+
+ * make klist work better with v4 and v5
+
+ * make the sequence numbers work correctly
+
+ * bug fixes
+
 Changes in release 0.2t:
 
  * bug fixes
