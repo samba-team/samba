@@ -446,9 +446,9 @@ in &smb.conf;. An example &smb.conf; for acting as a PDC can be found in <link l
 <smbconfoption><name>local master</name><value>yes</value></smbconfoption>
 <smbconfoption><name>security</name><value>user</value></smbconfoption>
 <smbconfoption><name>domain logons</name><value>yes</value></smbconfoption>
-<smbconfoption><name>logon path</name><value>\\%N\profiles\%u</value></smbconfoption>
+<smbconfoption><name>logon path</name><value>\\%N\profiles\%U</value></smbconfoption>
 <smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
-<smbconfoption><name>logon home</name><value>\\homeserver\%u\winprofile</value></smbconfoption>
+<smbconfoption><name>logon home</name><value>\\homeserver\%U\winprofile</value></smbconfoption>
 <smbconfoption><name>logon script</name><value>logon.cmd</value></smbconfoption>
 
 <smbconfsection>[netlogon]</smbconfsection>
