@@ -45,7 +45,7 @@ BOOL init_account_policy(void)
 	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb, vstring);
+	tdb_lock_bystring(tdb, vstring,0);
 	if (!tdb_fetch_uint32(tdb, vstring, &version) || version != DATABASE_VERSION) {
 		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
 		tdb_store_uint32(tdb, vstring, DATABASE_VERSION);
