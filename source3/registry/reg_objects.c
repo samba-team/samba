@@ -313,6 +313,8 @@ int regval_ctr_delvalue( REGVAL_CTR *ctr, char *name )
 	int 	i;
 	
 	/* search for the value */
+	if (!(ctr->num_values))
+		return 0;
 	
 	for ( i=0; i<ctr->num_values; i++ ) {
 		if ( strcmp( ctr->values[i]->valuename, name ) == 0)
