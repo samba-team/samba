@@ -182,7 +182,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_MODE_INFORMATION:
-		info->mode_information.out.mode = 0; /* what is this? */
+		info->mode_information.out.mode = 0;
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
@@ -282,6 +282,10 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:
 		info->access_information.out.access_flags = f->access_mask;
+		break;
+
+	case RAW_FILEINFO_MODE_INFORMATION:
+		info->mode_information.out.mode = f->mode;
 		break;
 
 	default:
