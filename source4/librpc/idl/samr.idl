@@ -12,7 +12,7 @@
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\samr]","ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
-  depends(lsa)
+  depends(lsa,security)
 ] interface samr
 {
 	/* account control (acct_flags) bits */

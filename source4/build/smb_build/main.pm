@@ -51,7 +51,8 @@ sub smb_build_main($)
 		"librpc/config.mk",
 		"client/config.mk",
 		"libcli/libsmb.mk",
-		"libcli/config.mk"
+		"libcli/config.mk",
+		"libcli/security/config.mk"
 	);
 
 	$| = 1;

@@ -301,7 +301,7 @@ static BOOL samsync_handle_policy(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		}
 	}
 
-	if (!sid_equal(samsync_state->sid[SAM_DATABASE_DOMAIN], policy->sid)) {
+	if (!dom_sid_equal(samsync_state->sid[SAM_DATABASE_DOMAIN], policy->sid)) {
 		printf("Domain SID from POLICY (%s) does not match domain sid from SAMR (%s)\n", 
 		       dom_sid_string(mem_ctx, policy->sid), dom_sid_string(mem_ctx, samsync_state->sid[SAM_DATABASE_DOMAIN]));
 		return False;

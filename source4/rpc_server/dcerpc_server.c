@@ -198,7 +198,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		 * we try to set it
 		 */
 		if (ep->sd == NULL) {
-			ep->sd = copy_security_descriptor(dce_ctx, sd);
+			ep->sd = security_descriptor_copy(dce_ctx, sd);
 		}
 
 		/* if now there's no security descriptor given on the endpoint
