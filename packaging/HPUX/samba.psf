@@ -1,0 +1,171 @@
+vendor
+	tag   	Samba
+	title 	Samba Team
+	description <vendor_description
+end
+
+product
+  tag   	Samba
+  title		Samba Server
+  description	< ../../WHATSNEW.txt
+  copyright	"Copyright (c) 1998 Samba Team. See COPYING for details."
+  readme	< ../../README
+  revision	2.0.0beta5
+  machine_type	*
+  os_name	HP-UX
+  os_release	?.10.[2-9]?|?.11.*
+  os_version	*
+  directory	/
+  is_locatable	false
+  vendor_tag	Samba
+
+  fileset
+    tag			core
+    title		Samba server core components
+    revision		2.0.0beta5
+    is_kernel		false
+    is_reboot		false
+    is_secure		false
+    configure		configure.bin
+    unconfigure		unconfigure.bin
+
+    file    -m 0755 -o root -g sys / /opt/samba/
+    file    -m 0755 -o root -g sys / /opt/samba/bin/
+    file    -m 0755 -o root -g sys / /opt/samba/lib/
+    file    -m 0755 -o root -g sys / /opt/samba/lib/codepages/
+    file    -m 0755 -o root -g sys / /opt/samba/newconfig/
+    file    -m 0755 -o root -g sys / /opt/samba/newconfig/examples/
+    file    -m 0700 -o root -g sys / /opt/samba/private/
+    file    -m 0755 -o root -g sys / /var/opt/samba/
+    file    -m 0755 -o root -g sys / /var/opt/samba/locks/
+
+    file    -m 0444 -o root -g sys ../../COPYING /opt/samba/COPYING
+    file    -m 0555 -o root -g sys ./samba.boot /sbin/init.d/samba
+    file    -m 0444 -o root -g sys ./samba.config /opt/samba/newconfig/samba.config
+
+    file    -m 0444 -o root -g sys ../../examples/smb.conf.default /opt/samba/newconfig/examples/smb.conf.default
+    file    -m 0444 -o root -g sys ../../examples/simple/smb.conf /opt/samba/newconfig/examples/smb.conf.simple
+    file    -m 0444 -o root -g sys ../../examples/dce-dfs/smb.conf /opt/samba/newconfig/examples/smb.conf.dce-dfs
+
+    directory ../../source/bin=/opt/samba/bin
+    file    -m 0555 -o root -g sys smbd
+    file    -m 0555 -o root -g sys nmbd
+    file    -m 0555 -o root -g sys smbclient
+    file    -m 0555 -o root -g sys testparm
+    file    -m 0555 -o root -g sys testprns
+    file    -m 0555 -o root -g sys smbrun
+    file    -m 0555 -o root -g sys smbstatus
+    file    -m 0555 -o root -g sys rpcclient
+    file    -m 0555 -o root -g sys smbpasswd
+    file    -m 0555 -o root -g sys make_smbcodepage
+    file    -m 0555 -o root -g sys nmblookup
+    file    -m 0555 -o root -g sys make_printerdef
+    directory ../../source/script=/opt/samba/bin
+    file    -m 0555 -o root -g sys smbtar
+    file    -m 0555 -o root -g sys addtosmbpass
+    file    -m 0555 -o root -g sys convert_smbpasswd
+    directory ./codepage=/opt/samba/lib/codepages
+    file    -m 0444 -o root -g sys codepage.437
+    file    -m 0444 -o root -g sys codepage.737
+    file    -m 0444 -o root -g sys codepage.850
+    file    -m 0444 -o root -g sys codepage.852
+    file    -m 0444 -o root -g sys codepage.861
+    file    -m 0444 -o root -g sys codepage.866
+    file    -m 0444 -o root -g sys codepage.932
+    file    -m 0444 -o root -g sys codepage.936
+    file    -m 0444 -o root -g sys codepage.949
+    file    -m 0444 -o root -g sys codepage.950
+  end
+  fileset
+    tag             man
+    title           Samba server man pages
+    revision        2.0.0beta5
+    is_kernel       false
+    is_reboot       false
+    is_secure       false
+    configure       configure.man
+
+    file    -m 0755 -o root -g sys / /opt/samba/man/
+    file    -m 0755 -o root -g sys / /opt/samba/man/man1/
+    file    -m 0755 -o root -g sys / /opt/samba/man/man1m/
+    file    -m 0755 -o root -g sys / /opt/samba/man/man4/
+    file    -m 0755 -o root -g sys / /opt/samba/man/man5/
+
+    file    -m 0444 -o root -g sys man/make_smbcodepage.1 /opt/samba/man/man1/make_smbcodepage.1
+    file    -m 0444 -o root -g sys man/nmblookup.1 /opt/samba/man/man1/nmblookup.1
+    file    -m 0444 -o root -g sys man/smbclient.1 /opt/samba/man/man1/smbclient.1
+    file    -m 0444 -o root -g sys man/smbrun.1 /opt/samba/man/man1/smbrun.1
+    file    -m 0444 -o root -g sys man/smbstatus.1 /opt/samba/man/man1/smbstatus.1
+    file    -m 0444 -o root -g sys man/smbtar.1 /opt/samba/man/man1/smbtar.1
+    file    -m 0444 -o root -g sys man/testparm.1 /opt/samba/man/man1/testparm.1
+    file    -m 0444 -o root -g sys man/testprns.1 /opt/samba/man/man1/testprns.1
+    file    -m 0444 -o root -g sys man/nmbd.1m /opt/samba/man/man1m/nmbd.1m
+    file    -m 0444 -o root -g sys man/smbd.1m /opt/samba/man/man1m/smbd.1m
+    file    -m 0444 -o root -g sys man/smbmnt.1m /opt/samba/man/man1m/smbmnt.1m
+    file    -m 0444 -o root -g sys man/smbmount.1m /opt/samba/man/man1m/smbmount.1m
+    file    -m 0444 -o root -g sys man/smbpasswd.1m /opt/samba/man/man1m/smbpasswd.1m
+    file    -m 0444 -o root -g sys man/smbumount.1m /opt/samba/man/man1m/smbumount.1m
+    file    -m 0444 -o root -g sys man/swat.1m /opt/samba/man/man1m/swat.1m
+    file    -m 0444 -o root -g sys man/lmhosts.4 /opt/samba/man/man4/lmhosts.4
+    file    -m 0444 -o root -g sys man/smb.conf.4 /opt/samba/man/man4/smb.conf.4
+    file    -m 0444 -o root -g sys man/smbpasswd.4 /opt/samba/man/man4/smbpasswd.4
+    file    -m 0444 -o root -g sys man/samba.5 /opt/samba/man/man5/samba.5
+  end
+
+  fileset
+    tag             swat
+    title           Samba Web-based administration tool
+    revision        2.0.0beta5
+    is_kernel       false
+    is_reboot       false
+    is_secure       false
+    prerequisite    Samba.core
+    configure       configure.swat
+    unconfigure     unconfigure.swat
+
+    file    -m 0755 -o root -g sys / /opt/samba/swat/
+    file    -m 0755 -o root -g sys / /opt/samba/swat/help/
+    file    -m 0755 -o root -g sys / /opt/samba/swat/images/
+    file    -m 0755 -o root -g sys / /opt/samba/swat/include/
+
+    directory ../../swat=/opt/samba/swat
+    file    -m 0444 -o root -g sys README
+
+    directory ../../source/bin=/opt/samba/bin
+    file    -m 0555 -o root -g sys swat
+
+    directory ../../swat/images=/opt/samba/swat/images
+    file    -m 0444 -o root -g sys globals.gif
+    file    -m 0444 -o root -g sys home.gif
+    file    -m 0444 -o root -g sys passwd.gif
+    file    -m 0444 -o root -g sys printers.gif
+    file    -m 0444 -o root -g sys samba.gif
+    file    -m 0444 -o root -g sys shares.gif
+    file    -m 0444 -o root -g sys status.gif
+    file    -m 0444 -o root -g sys viewconfig.gif
+    directory ../../swat/help=/opt/samba/swat/help
+    file    -m 0444 -o root -g sys welcome.html
+    directory ../../docs/htmldocs=/opt/samba/swat/help
+    file    -m 0444 -o root -g sys DOMAIN_MEMBER.html
+    file    -m 0444 -o root -g sys lmhosts.5.html
+    file    -m 0444 -o root -g sys make_smbcodepage.1.html
+    file    -m 0444 -o root -g sys nmbd.8.html
+    file    -m 0444 -o root -g sys nmblookup.1.html
+    file    -m 0444 -o root -g sys samba.7.html
+    file    -m 0444 -o root -g sys smb.conf.5.html
+    file    -m 0444 -o root -g sys smbclient.1.html
+    file    -m 0444 -o root -g sys smbd.8.html
+    file    -m 0444 -o root -g sys smbpasswd.5.html
+    file    -m 0444 -o root -g sys smbpasswd.8.html
+    file    -m 0444 -o root -g sys smbrun.1.html
+    file    -m 0444 -o root -g sys smbstatus.1.html
+    file    -m 0444 -o root -g sys smbtar.1.html
+    file    -m 0444 -o root -g sys swat.8.html
+    file    -m 0444 -o root -g sys testparm.1.html
+    file    -m 0444 -o root -g sys testprns.1.html
+    directory ../../swat/include=/opt/samba/swat/include
+    file    -m 0444 -o root -g sys footer.html
+    file    -m 0444 -o root -g sys header.html
+  end
+
+end
