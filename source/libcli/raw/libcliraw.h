@@ -61,24 +61,20 @@ struct smbcli_negotiate {
 	
 /* this is the context for a SMB socket associated with the socket itself */
 struct smbcli_socket {
-	struct ipv4_addr dest_ip;
-	/* dest hostname (which may or may not be a DNS name) */
-	char *hostname;
-
-	/* the port used */
-	int port;
-	
 	struct socket_context *sock;
 
-	/* a count of the number of packets we have received. We
-	 * actually only care about zero/non-zero at this stage */
-	uint_t pkt_count;
+	/* what port we ended up connected to */
+	int port;
 
-	/* the network address of the client */
-	char *client_addr;
-	
-	/* timeout for socket operations in milliseconds. */
-	int timeout;
+	/* the hostname we connected to */
+	const char *hostname;
+
+	/* the event handle for waiting for socket IO */
+	struct {
+		struct event_context *ctx;
+		struct fd_event *fde;
+		struct timed_event *te;
+	} event;
 };
 
 /*
@@ -164,13 +160,6 @@ struct smbcli_transport {
 		size_t received;
 		uint8_t *buffer;
 	} recv_buffer;
-
-	/* the event handle for waiting for socket IO */
-	struct {
-		struct event_context *ctx;
-		struct fd_event *fde;
-		struct timed_event *te;
-	} event;
 };
 
 /* this is the context for the user */

@@ -333,7 +333,7 @@ BOOL smbcli_request_receive(struct smbcli_request *req)
 
 	/* keep receiving packets until this one is replied to */
 	while (req->state <= SMBCLI_REQUEST_RECV) {
-		if (event_loop_once(req->transport->event.ctx) != 0) {
+		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
 			return False;
 		}
 	}

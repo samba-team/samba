@@ -152,12 +152,12 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	smbcli_oplock_handler(private->transport, oplock_handler, private);
 	smbcli_transport_idle_handler(private->transport, idle_func, 50000, private);
 
-	private->transport->event.fde->handler = cifs_socket_handler;
-	private->transport->event.fde->private = private;
+	private->transport->socket->event.fde->handler = cifs_socket_handler;
+	private->transport->socket->event.fde->private = private;
 
-	private->transport->event.ctx = event_context_merge(tcon->smb_conn->connection->event.ctx,
-							    private->transport->event.ctx);
-	talloc_reference(private, private->transport->event.ctx);
+	private->transport->socket->event.ctx = event_context_merge(tcon->smb_conn->connection->event.ctx,
+								    private->transport->socket->event.ctx);
+	talloc_reference(private, private->transport->socket->event.ctx);
 	private->map_generic = lp_parm_bool(req->tcon->service, 
 					    "cifs", "mapgeneric", False);
 

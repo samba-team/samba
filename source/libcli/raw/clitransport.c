@@ -53,8 +53,8 @@ static int transport_destructor(void *ptr)
 	struct smbcli_transport *transport = ptr;
 
 	smbcli_transport_dead(transport);
-	event_remove_fd(transport->event.ctx, transport->event.fde);
-	event_remove_timed(transport->event.ctx, transport->event.te);
+	event_remove_fd(transport->socket->event.ctx, transport->socket->event.fde);
+	event_remove_timed(transport->socket->event.ctx, transport->socket->event.te);
 	return 0;
 }
 
@@ -64,18 +64,11 @@ static int transport_destructor(void *ptr)
 struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 {
 	struct smbcli_transport *transport;
-	struct fd_event fde;
 
 	transport = talloc_p(sock, struct smbcli_transport);
 	if (!transport) return NULL;
 
 	ZERO_STRUCTP(transport);
-
-	transport->event.ctx = event_context_init(transport);
-	if (transport->event.ctx == NULL) {
-		talloc_free(transport);
-		return NULL;
-	}
 
 	transport->socket = talloc_reference(transport, sock);
 	transport->negotiate.protocol = PROTOCOL_NT1;
@@ -89,13 +82,11 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 
 	ZERO_STRUCT(transport->called);
 
-	fde.fd = socket_get_fd(sock->sock);
-	fde.flags = EVENT_FD_READ;
-	fde.handler = smbcli_transport_event_handler;
-	fde.private = transport;
-	fde.ref_count = 1;
-
-	transport->event.fde = event_add_fd(transport->event.ctx, &fde);
+	/* take over event handling from the socket layer - it only
+	   handles events up until we are connected */
+	transport->socket->event.fde->handler = smbcli_transport_event_handler;
+	transport->socket->event.fde->private = transport;
+	transport->socket->event.fde->flags = EVENT_FD_READ;
 
 	talloc_set_destructor(transport, transport_destructor);
 
@@ -138,7 +129,7 @@ void smbcli_transport_dead(struct smbcli_transport *transport)
 */
 static void smbcli_transport_write_enable(struct smbcli_transport *transport)
 {
-	transport->event.fde->flags |= EVENT_FD_WRITE;
+	transport->socket->event.fde->flags |= EVENT_FD_WRITE;
 }
 
 /*
@@ -146,7 +137,7 @@ static void smbcli_transport_write_enable(struct smbcli_transport *transport)
 */
 static void smbcli_transport_write_disable(struct smbcli_transport *transport)
 {
-	transport->event.fde->flags &= ~EVENT_FD_WRITE;
+	transport->socket->event.fde->flags &= ~EVENT_FD_WRITE;
 }
 
 /****************************************************************************
@@ -254,14 +245,14 @@ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 	transport->idle.private = private;
 	transport->idle.period = period;
 
-	if (transport->event.te != NULL) {
-		event_remove_timed(transport->event.ctx, transport->event.te);
+	if (transport->socket->event.te != NULL) {
+		event_remove_timed(transport->socket->event.ctx, transport->socket->event.te);
 	}
 
 	te.next_event = timeval_current_ofs(0, period);
 	te.handler = idle_handler;
 	te.private = transport;
-	transport->event.te = event_add_timed(transport->event.ctx, &te);
+	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, &te);
 }
 
 /*
