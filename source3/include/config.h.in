@@ -1394,9 +1394,6 @@
 /* Whether to include experimental quota support */
 #undef WITH_QUOTAS
 
-/* Whether to build the new (experimental) SAM database */
-#undef WITH_SAM
-
 /* Whether to include sendfile() support */
 #undef WITH_SENDFILE
 

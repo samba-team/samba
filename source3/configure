@@ -876,7 +876,6 @@ Optional Packages:
   --with-smbmount         Include SMBMOUNT (Linux only) support (default=no)
   --with-pam              Include PAM support (default=no)
   --with-pam_smbpass      Build a PAM module to allow other applications to use our smbpasswd file (default=no)
-  --with-sam              Build new (experimental) SAM database (default=no)
   --with-ldapsam           Include LDAP SAM 2.2 compatible configuration (default=no)
   --with-tdbsam           Include experimental TDB SAM support (default=no)
   --with-nisplussam       Include NISPLUS SAM support (default=no)
@@ -21106,36 +21105,6 @@ _ACEOF
 
 fi
 fi
-
-# New experimental SAM system
-
-echo "$as_me:$LINENO: checking whether to build the new (experimental) SAM database" >&5
-echo $ECHO_N "checking whether to build the new (experimental) SAM database... $ECHO_C" >&6
-
-# Check whether --with-sam or --without-sam was given.
-if test "${with_sam+set}" = set; then
-  withval="$with_sam"
-   case "$withval" in
-  yes)
-    echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-
-cat >>confdefs.h <<\_ACEOF
-#define WITH_SAM 1
-_ACEOF
-
-    ;;
-  *)
-    echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-    ;;
-  esac
-else
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-
-fi;
-
 
 ########################################################################################
 ##
