@@ -60,6 +60,13 @@ server. Please use it with care. If you do not need it then do NOT
 install.
 
 %changelog
+* Sun Apr 02 2000 John H Terpstra <jht@turbolinux.com>
+- Updated for samba-2.0.7
+- Added codepages 775 1251
+- Added configure options "--with-profile --with-utmp 
+   --with-netatalk --with-sambabook=/usr/share/swat/using_samba"
+- added using_samba book
+
 * Fri Oct 29 1999 Kelley Spoon <kspoon@turbolinux.com>
 - get rid of the rc?.d directories
 - -j flags for make command to (hopefully) speed up on 
@@ -144,8 +151,7 @@ install.
 %build
 cd source
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
-# CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas --with-smbmount --with-pam
-CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-automount --with-quotas --with-smbmount --with-pam
+CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-automount --with-quotas --with-smbmount --with-pam --with-profile --with-utmp --with-netatalk --with-sambabook=/usr/share/swat/using_samba
 make -j${NUMCPU} all smbtorture rpctorture smbfilter debug2html # smbwrapper 
 
 
@@ -157,6 +163,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT/home/samba
 mkdir -p $RPM_BUILD_ROOT/usr/{bin,sbin}
+mkdir -p $RPM_BUILD_ROOT/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $RPM_BUILD_ROOT/usr/share/swat/{images,help,include}
 mkdir -p $RPM_BUILD_ROOT/usr/share/man/{man1,man5,man7,man8}
 mkdir -p $RPM_BUILD_ROOT/var/lock/samba
@@ -191,13 +198,18 @@ install -m644 docs/manpages/$i $RPM_BUILD_ROOT/usr/share/man/man1
 done
 
 # Install codepage source files
-for i in 437 737 850 852 861 866 932 936 949 950
+for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
 install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/src
 done
 
 # Install SWAT helper files
-for i in swat/help/*.html docs/htmldocs/*.html
+for i in swat/help/*.html
+do
+cat $i | sed 's/@BOOKDIR@//' > $RPM_BUILD_ROOT/usr/share/$i
+chmod 644 $RPM_BUILD_ROOT/usr/share/$i
+done
+for i in docs/htmldocs/*.html
 do
 install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/help
 done
@@ -208,6 +220,20 @@ done
 for i in swat/include/*.html
 do
 install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/include
+done
+
+# This is the O'Reily Samba Book - on-line
+for i in docs/htmldocs/using_samba/*.html
+do
+install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/using_samba
+done
+for i in docs/htmldocs/using_samba/figs/*.gif
+do
+install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/using_samba/figs
+done
+for i in docs/htmldocs/using_samba/gifs/*.gif
+do
+install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/using_samba/gifs
 done
 
 # Install the miscellany
@@ -244,7 +270,7 @@ rm -rf $RPM_BUILD_ROOT
 /sbin/chkconfig smb off
 
 # Build codepage load files
-for i in 437 737 850 852 861 866 932 936 949 950
+for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
 /usr/bin/make_smbcodepage c $i /etc/codepages/src/codepage_def.$i /etc/codepages/codepage.$i
 done
@@ -372,6 +398,7 @@ fi
 %attr(-,root,root) /usr/share/swat/images/viewconfig.gif
 %attr(-,root,root) /usr/share/swat/include/header.html
 %attr(-,root,root) /usr/share/swat/include/footer.html
+%attr(-,root,root) /usr/share/swat/using_samba/*
 %attr(-,root,root) %config(noreplace) /etc/lmhosts
 %attr(-,root,root) %config(noreplace) /etc/smb.conf
 %attr(-,root,root) %config(noreplace) /etc/smbusers
@@ -380,6 +407,7 @@ fi
 %attr(-,root,root) /etc/pam.d/samba
 %attr(-,root,root) /etc/codepages/src/codepage_def.437
 %attr(-,root,root) /etc/codepages/src/codepage_def.737
+%attr(-,root,root) /etc/codepages/src/codepage_def.775
 %attr(-,root,root) /etc/codepages/src/codepage_def.850
 %attr(-,root,root) /etc/codepages/src/codepage_def.852
 %attr(-,root,root) /etc/codepages/src/codepage_def.861
@@ -388,6 +416,7 @@ fi
 %attr(-,root,root) /etc/codepages/src/codepage_def.936
 %attr(-,root,root) /etc/codepages/src/codepage_def.949
 %attr(-,root,root) /etc/codepages/src/codepage_def.950
+%attr(-,root,root) /etc/codepages/src/codepage_def.1251
 %attr(-,root,root) /usr/share/man/man1/smbstatus.1
 %attr(-,root,root) /usr/share/man/man1/nmblookup.1
 %attr(-,root,root) /usr/share/man/man1/smbclient.1
