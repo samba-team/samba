@@ -26,7 +26,16 @@ for i in $1; do
 	AC_TRY_RUN([
 #include <unistd.h>
 #include <fcntl.h>
+#if defined(HAVE_NDBM_H)
 #include <ndbm.h>
+#elif defined(HAVE_DBM_H)
+#include <dbm.h>
+#elif defined(HAVE_RPCSVC_DBM_H)
+#include <rpcsvc/dbm.h>
+#elif defined(HAVE_DB_H)
+#define DB_DBM_HSEARCH 1
+#include <db.h>
+#endif
 int main()
 {
   DBM *d;
