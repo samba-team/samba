@@ -155,19 +155,6 @@ int reply_special(char *inbuf,char *outbuf)
 }
 
 
-/*******************************************************************
-work out what error to give to a failed connection
-********************************************************************/
-
-static int connection_error(char *inbuf,char *outbuf,int ecode)
-{
-	if (ecode == ERRnoipc || ecode == ERRnosuchshare)
-		return(ERROR_DOS(ERRDOS,ecode));
-
-	return(ERROR_DOS(ERRSRV,ecode));
-}
-
-
 /****************************************************************************
  Reply to a tcon.
 ****************************************************************************/
@@ -182,7 +169,7 @@ int reply_tcon(connection_struct *conn,
 	int outsize = 0;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int pwlen=0;
-	int ecode = -1;
+	NTSTATUS ecode;
 	char *p;
 
 	START_PROFILE(SMBtcon);
@@ -231,7 +218,7 @@ int reply_tcon(connection_struct *conn,
   
 	if (!conn) {
 		END_PROFILE(SMBtcon);
-		return(connection_error(inbuf,outbuf,ecode));
+		return ERROR_NT(ecode);
 	}
   
 	outsize = set_message(outbuf,2,0,True);
@@ -256,7 +243,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	pstring user;
 	pstring password;
 	pstring devicename;
-	int ecode = -1;
+	NTSTATUS ecode;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int passlen = SVAL(inbuf,smb_vwv3);
 	pstring path;
@@ -337,7 +324,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	
 	if (!conn) {
 		END_PROFILE(SMBtconX);
-		return(connection_error(inbuf,outbuf,ecode));
+		return ERROR_NT(ecode);
 	}
 
 	if (Protocol < PROTOCOL_NT1) {
