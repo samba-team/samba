@@ -71,7 +71,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 		ctr.sam.info1 = &info1;
 
-		ctx2 = talloc_init_named("winbindd dispinfo");
+		ctx2 = talloc_init("winbindd dispinfo");
 		if (!ctx2) {
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -152,7 +152,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		uint32 count = 0, start = *num_entries;
 		TALLOC_CTX *mem_ctx2;
 
-		mem_ctx2 = talloc_init_named("enum_dom_groups[rpc]");
+		mem_ctx2 = talloc_init("enum_dom_groups[rpc]");
 
 		status = cli_samr_enum_dom_groups(hnd->cli, mem_ctx2, &dom_pol,
 						  &start,
@@ -212,7 +212,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 		uint32 count = 0, start = *num_entries;
 		TALLOC_CTX *mem_ctx2;
 
-		mem_ctx2 = talloc_init_named("enum_dom_local_groups[rpc]");
+		mem_ctx2 = talloc_init("enum_dom_local_groups[rpc]");
 
 		result = cli_samr_enum_als_groups( hnd->cli, mem_ctx2, &dom_pol,
 					  &start, 0xFFFF, &info2, &count);
@@ -257,7 +257,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	DEBUG(3,("rpc: name_to_sid name=%s\n", name));
 
-	if (!(mem_ctx = talloc_init_named("name_to_sid[rpc] for [%s]\\[%s]", domain->name, name))) {
+	if (!(mem_ctx = talloc_init("name_to_sid[rpc] for [%s]\\[%s]", domain->name, name))) {
 		DEBUG(0, ("talloc_init failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -587,7 +587,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	*seq = DOM_SEQUENCE_NONE;
 
-	if (!(mem_ctx = talloc_init_named("sequence_number[rpc]")))
+	if (!(mem_ctx = talloc_init("sequence_number[rpc]")))
 		return NT_STATUS_NO_MEMORY;
 
 	/* Get sam handle */
@@ -667,7 +667,7 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 
 	DEBUG(3,("rpc: domain_sid\n"));
 
-	if (!(mem_ctx = talloc_init_named("domain_sid[rpc]")))
+	if (!(mem_ctx = talloc_init("domain_sid[rpc]")))
 		return NT_STATUS_NO_MEMORY;
 
 	/* Get sam handle */

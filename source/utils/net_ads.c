@@ -180,7 +180,7 @@ static int net_ads_workgroup(int argc, const char **argv)
 
 	if (!(ads = ads_startup())) return -1;
 
-	if (!(ctx = talloc_init_named("net_ads_workgroup"))) {
+	if (!(ctx = talloc_init("net_ads_workgroup"))) {
 		return -1;
 	}
 
@@ -748,7 +748,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	struct in_addr 		server_ip;
 	NTSTATUS nt_status;
 	extern char *opt_workgroup;
-	TALLOC_CTX *mem_ctx = talloc_init();
+	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
 	ADS_MODLIST mods = ads_init_mods(mem_ctx);
 	char *prt_dn, *srv_dn, **srv_cn;
 	void *res = NULL;

@@ -146,7 +146,7 @@ static void send_spoolss_notify2_msg(struct spoolss_notify_msg *msg)
 		return;
 
 	if (!send_ctx)
-		send_ctx = talloc_init_named("print notify queue");
+		send_ctx = talloc_init("print notify queue");
 
 	if (!send_ctx)
 		goto fail;

@@ -62,7 +62,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 		goto error;
 	}
 	    
-	if (!(mem_ctx=talloc_init()))
+	if (!(mem_ctx=talloc_init("net_get_remote_domain_sid")))
 	{
 		DEBUG(0,("net_get_remote_domain_sid: talloc_init returned NULL!\n"));
 		goto error;
@@ -138,7 +138,7 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 
 	/* Create mem_ctx */
 	
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("run_rpc_command"))) {
 		DEBUG(0, ("talloc_init() failed\n"));
 		cli_shutdown(cli);
 		return -1;
@@ -374,7 +374,7 @@ rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	result = cli_samr_query_dom_info(cli, mem_ctx, &domain_pol,
 					 2, &ctr);
 	if (NT_STATUS_IS_OK(result)) {
-		TALLOC_CTX *ctx = talloc_init();
+		TALLOC_CTX *ctx = talloc_init("rpc_info_internals");
 		d_printf("Domain Name: %s\n", unistr2_tdup(ctx, &ctr.info.inf2.uni_domain));
 		d_printf("Domain SID: %s\n", sid_str);
 		d_printf("Sequence number: %u\n", ctr.info.inf2.seq_num);
@@ -1721,7 +1721,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(mem_ctx = talloc_init_named("establishing trust relationship to domain %s",
+	if (!(mem_ctx = talloc_init("establishing trust relationship to domain %s",
 	                domain_name))) {
 		DEBUG(0, ("talloc_init() failed\n"));
 		cli_shutdown(cli);
@@ -1743,7 +1743,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Call LsaOpenPolicy and LsaQueryInfo
 	 */
 	 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("rpc_trustdom_establish"))) {
 		DEBUG(0, ("talloc_init() failed\n"));
 		cli_shutdown(cli);
 		return -1;
@@ -1903,7 +1903,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	 * Listing trusted domains (stored in secrets.tdb, if local)
 	 */
 
-	mem_ctx = talloc_init_named("trust relationships listing");
+	mem_ctx = talloc_init("trust relationships listing");
 
 	/*
 	 * set domain and pdc name to local samba server (default)

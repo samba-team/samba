@@ -197,7 +197,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 
 	if (got_domain_sid) return;
 
-	if (!(mem_ctx=talloc_init()))
+	if (!(mem_ctx=talloc_init("fetch_machine_sid")))
 	{
 		DEBUG(0,("fetch_machine_sid: talloc_init returned NULL!\n"));
 		goto error;
@@ -479,7 +479,7 @@ static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry,
 
                 /* Create mem_ctx */
 
-                if (!(mem_ctx = talloc_init())) {
+                if (!(mem_ctx = talloc_init("do_cmd"))) {
                         DEBUG(0, ("talloc_init() failed\n"));
                         goto done;
                 }

@@ -77,7 +77,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
 		  state->request.data.auth.user));
 
-	if (!(mem_ctx = talloc_init_named("winbind pam auth for %s", state->request.data.auth.user))) {
+	if (!(mem_ctx = talloc_init("winbind pam auth for %s", state->request.data.auth.user))) {
 		DEBUG(0, ("winbindd_pam_auth: could not talloc_init()!\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -179,7 +179,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.auth_crap.domain[sizeof(state->request.data.auth_crap.domain)-1]='\0';
 
-	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for (utf8) %s", state->request.data.auth_crap.user))) {
+	if (!(mem_ctx = talloc_init("winbind pam auth crap for (utf8) %s", state->request.data.auth_crap.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;

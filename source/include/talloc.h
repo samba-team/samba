@@ -32,7 +32,7 @@
  **/
 typedef struct talloc_ctx TALLOC_CTX;
 
-TALLOC_CTX *talloc_init_named(char const *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
+TALLOC_CTX *talloc_init(char const *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
 
 char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
 	PRINTF_ATTRIBUTE(2, 0);

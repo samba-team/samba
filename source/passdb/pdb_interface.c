@@ -465,7 +465,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 {
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init_named("pdb_context internal allocation context");
+	mem_ctx = talloc_init("pdb_context internal allocation context");
 
 	if (!mem_ctx) {
 		DEBUG(0, ("make_pdb_context: talloc init failed!\n"));

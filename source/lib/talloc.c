@@ -117,7 +117,7 @@ static void talloc_disenroll(TALLOC_CTX *t)
 
 
 /** Create a new talloc context. **/
-TALLOC_CTX *talloc_init(void)
+static TALLOC_CTX *talloc_init_internal(void)
 {
 	TALLOC_CTX *t;
 
@@ -139,12 +139,12 @@ TALLOC_CTX *talloc_init(void)
  * Please call this in preference to talloc_init().
  **/
 
- TALLOC_CTX *talloc_init_named(char const *fmt, ...) 
+ TALLOC_CTX *talloc_init(char const *fmt, ...) 
 {
 	TALLOC_CTX *t;
 	va_list ap;
 
-	t = talloc_init();
+	t = talloc_init_internal();
 	if (t && fmt) {
 		/*
 		 * t->name must not be talloced.
