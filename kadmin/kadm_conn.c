@@ -124,7 +124,7 @@ spawn_child(krb5_context context, int *socks, int num_socks, int this_sock)
 {
     int e, i;
     struct sockaddr sa;
-    size_t sa_size;
+    socklen_t sa_size;
     int s;
     pid_t pid;
     krb5_address addr;

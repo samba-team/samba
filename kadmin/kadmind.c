@@ -145,7 +145,7 @@ main(int argc, char **argv)
     {
 	int fd = 0;
 	struct sockaddr sa;
-	size_t sa_size;
+	socklen_t sa_size;
 	krb5_auth_context ac = NULL;
 	int debug_port;
 	sa_size = sizeof(sa);
