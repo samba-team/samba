@@ -1,8 +1,10 @@
 If you'd like to work on any of these, please contact jerry@samba.org or jelmer@samba.org.
 
 Outdated docs:
-docs/announce - needs updating before we release 3.0
-docs/history - needs updating (is current up to 1998 - merge with 10year.html)
+docs/OID/allocated-arcs.txt - does this file really belong here?
+docs/OID/samba-oid.mail - does this file really belong here?
+docs/announce - out of date (announces 2.2.0) - should it go away?
+docs/history - needs updating (is current up to 1998 - merge with 10year.html ?)
 docs/docbook/devdoc/* - most of these docs are outdated and need updates...
 docs/docbook/manpages/net.8.sgml - Still not finished
 docs/docbook/manpages/rpcclient.1.sgml - Command documentation might be outdated
@@ -12,17 +14,19 @@ docs/docbook/manpages/smbcontrol.1.sgml - Document -s, samsync, samrepl, pool-us
 docs/docbook/manpages/smb.conf.5.sgml - 'restrict anonymous' isn't documented properly
 docs/docbook/projdoc/DOMAIN_MEMBER.sgml - Needs update to 3.0
 docs/docbook/projdoc/ADS-HOWTO.sgml - seems outdated (it says we require 'ads server' when in ads mode, though that's not true, according to the manpages...)
+docs/docbook/projdoc/ENCRYPTION.sgml - contains useless old info about smbpasswd
 docs/docbook/projdoc/Integrating-with-Windows.sgml - Should slowly go a way. Contains a little bit information about wins, a little bit about domain membership, a little about winbind, etc
 docs/docbook/projdoc/NT_Security.sgml - probably outdated
-docs/docbook/projdoc/Diagnosis.sgml - Needs extension and updating
+docs/docbook/projdoc/Diagnosis.sgml - Needs extension
 docs/docbook/projdoc/PAM-Authentication-And-Samba.sgml
 docs/docbook/projdoc/Printing.sgml - Cups is not documented, smbprint, printing /to/ a windows server... - Kurt Pfeifle
 docs/docbook/projdoc/Samba-BDC-HOWTO.sgml - Needs update to 3.0
 docs/docbook/projdoc/Samba-LDAP-HOWTO.sgml - Needs update to 3.0
 docs/docbook/projdoc/Samba-PDC-HOWTO.sgml - Needs update to 3.0
 docs/docbook/projdoc/Speed.sgml - contains outdated and invalid information
-docs/docbook/projdoc/UNIX_INSTALL.sgml - Needs a lot of updating (swat, etc)
-docs/docbook/projdoc/printer_driver2.sgml - still up to date?
+docs/docbook/projdoc/UNIX_INSTALL.sgml - Needs a lot of updating (swat, ADS, PDC, etc)
+docs/docbook/projdoc/printer_driver2.sgml - Needs integration with printing.sgml, still up to date?
+docs/docbook/projdoc/security_level.sgml - information about ads and domain should be added (currently only contains pointers to the ads and domain_member docs)
 docs/docbook/projdoc/winbind.sgml - needs documentation for ADS
 docs/textdocs/CUPS-PrintingInfo.txt - needs to be converted to sgml - Kurt Pfeifle
 docs/textdocs/PROFILES.txt - needs to be converted to sgml
@@ -30,21 +34,25 @@ docs/textdocs/README.jis - Seems to need updating - possibly obsoleted by a newe
 docs/textdocs/RoutedNetworks.txt - still valid, but shouldn't this go into Other_clients.sgml ? This text originally comes from microsoft, what about copyright?
 
 These still need to be checked:
+docs/docbook/manpages/smbd.8.sgml
 docs/docbook/manpages/smbmnt.8.sgml
 docs/docbook/manpages/smbmount.8.sgml
+docs/docbook/manpages/smbpasswd.8.sgml
+docs/docbook/manpages/smbsh.1.sgml
 docs/docbook/manpages/smbspool.8.sgml
+docs/docbook/manpages/smbstatus.1.sgml
 docs/docbook/manpages/smbtar.1.sgml
 docs/docbook/manpages/smbumount.8.sgml
 docs/docbook/manpages/swat.8.sgml
+docs/docbook/manpages/testparm.1.sgml
 docs/docbook/manpages/testprns.1.sgml
+docs/docbook/manpages/wbinfo.1.sgml
 
 Stuff that needs to be documented:
-Doc for package maintainers
+Merge the various docs about wins and browsing
 Windows NT 4.0 Style Trust Relationship
 One Time Migration script from a Windows NT 4.0 PDC to a Samba PDC
 ldap passwd sync
-merge the various pdb docs and the doc about encryption
-UNICODE support
-Winbind with samba PDC
+using rsync to get latest HEAD version
 
 http://www.unav.es/cti/ldap-smb/smb-ldap-3-howto.html
