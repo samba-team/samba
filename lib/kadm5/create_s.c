@@ -68,6 +68,7 @@ create_principal(kadm5_server_context *context,
 {
     kadm5_ret_t ret;
     kadm5_principal_ent_rec defrec, *defent;
+    u_int32_t def_mask;
     
     if((mask & required_mask) != required_mask)
 	return KADM5_BAD_MASK;
@@ -86,10 +87,11 @@ create_principal(kadm5_server_context *context,
     ret = get_default(context, princ->principal, defent);
     if(ret)
 	defent = NULL;
-    ret = _kadm5_setup_entry(ent, princ, defent,
-			     mask | KADM5_ATTRIBUTES
-			     | KADM5_MAX_LIFE
-			     | KADM5_MAX_RLIFE);
+    def_mask = KADM5_ATTRIBUTES | KADM5_MAX_LIFE | KADM5_MAX_RLIFE;
+
+    ret = _kadm5_setup_entry(ent, mask | def_mask,
+			     princ, mask,
+			     defent, def_mask);
     if(defent)
 	kadm5_free_principal_ent(context, defent);
     
