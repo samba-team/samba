@@ -199,7 +199,7 @@ xslt/figures/%.pdf: xslt/figures/%.eps
 # Fo
 $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
 	mkdir -p $(@D)
-	$(XSLTPROC) --output $@ http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $<
+	$(XSLTPROC) --output $@ xslt/fo.xsl $<
 
 # PDF thru Fo
 $(FOPDFDIR)/%.pdf: $(FODIR)/%.fo
