@@ -129,7 +129,11 @@ static size_t sys_iconv(void *cd,
 	size_t ret = iconv((iconv_t)cd, 
 			   inbuf, inbytesleft, 
 			   outbuf, outbytesleft);
-	if (ret == (size_t)-1) iconv(cd, NULL, NULL, NULL, NULL);
+	if (ret == (size_t)-1) {
+		int saved_errno = errno;
+		iconv(cd, NULL, NULL, NULL, NULL);
+		errno = saved_errno;
+	}
 	return ret;
 #else
 	errno = EINVAL;
