@@ -137,7 +137,7 @@ static int open_cred_file(char * file_name)
 						break;
 				}
 				if(length > 4086) {
-					printf("cifs.mount failed due to malformed username in credentials file");
+					printf("mount.cifs failed due to malformed username in credentials file");
 					memset(line_buf,0,4096);
 					if(mountpassword) {
 						memset(mountpassword,0,64);
@@ -161,7 +161,7 @@ static int open_cred_file(char * file_name)
 						break;
 				}
 				if(length > 64) {
-					printf("cifs.mount failed: password in credentials file too long\n");
+					printf("mount.cifs failed: password in credentials file too long\n");
 					memset(line_buf,0, 4096);
 					if(mountpassword) {
 						memset(mountpassword,0,64);
@@ -203,7 +203,7 @@ static int get_password_from_file(int file_descript, char * filename)
 	if(filename != NULL) {
 		file_descript = open(filename, O_RDONLY);
 		if(file_descript < 0) {
-			printf("cifs.mount failed. %s attempting to open password file %s\n",
+			printf("mount.cifs failed. %s attempting to open password file %s\n",
 				   strerror(errno),filename);
 			exit(1);
 		}
@@ -213,7 +213,7 @@ static int get_password_from_file(int file_descript, char * filename)
 	for(i=0;i<64;i++) {
 		rc = read(file_descript,&c,1);
 		if(rc < 0) {
-			printf("cifs.mount failed. Error %s reading password file\n",strerror(errno));
+			printf("mount.cifs failed. Error %s reading password file\n",strerror(errno));
 			memset(mountpassword,0,64);
 			if(filename != NULL)
 				close(file_descript);
@@ -297,7 +297,7 @@ static int parse_options(char * options, int * filesys_flags)
 						mountpassword = calloc(65,1);
 					if(mountpassword) {
 						if(got_password)
-							printf("\ncifs.mount warning - password specified twice\n");
+							printf("\nmount.cifs warning - password specified twice\n");
 						got_password = 1;
 						percent_char++;
 						strncpy(mountpassword, percent_char,64);
@@ -320,7 +320,7 @@ static int parse_options(char * options, int * filesys_flags)
 					got_password = 1;
 			} else if (strnlen(value, 17) < 17) {
 				if(got_password)
-					printf("\ncifs.mount warning - password specified twice\n");
+					printf("\nmount.cifs warning - password specified twice\n");
 				got_password = 1;
 			} else {
 				printf("password too long\n");
@@ -443,6 +443,8 @@ static int parse_options(char * options, int * filesys_flags)
 			*filesys_flags |= MS_NOEXEC;
 		} else if (strncmp(data, "exec", 4) == 0) {
 			*filesys_flags &= ~MS_NOEXEC;
+		} else if (strncmp(data, "guest", 5) == 0) {
+			got_password=1;
 		} else if (strncmp(data, "ro", 2) == 0) {
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
@@ -482,7 +484,6 @@ static int parse_options(char * options, int * filesys_flags)
 			*next_keyword = ',';
 		else
 			data = 0;
-
 	}
 	return 0;
 }
@@ -776,7 +777,7 @@ int main(int argc, char ** argv)
 			flags |= MS_NOSUID | MS_NODEV;
 #endif						
 		} else {
-			printf("mount error: permission denied or not superuser and cifs.mount not installed SUID\n"); 
+			printf("mount error: permission denied or not superuser and mount.cifs not installed SUID\n"); 
 			return -1;
 		}
 	}
@@ -838,7 +839,7 @@ int main(int argc, char ** argv)
 		strcat(options,orgoptions);
 	}
 	if(verboseflag)
-		printf("\ncifs.mount kernel mount options %s \n",options);
+		printf("\nmount.cifs kernel mount options %s \n",options);
 	if(mount(share_name, mountpoint, "cifs", flags, options)) {
 	/* remember to kill daemon on error */
 		switch (errno) {
