@@ -61,7 +61,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	if (!directory_exist(lp_lockdir(), &st)) {
 		printf("ERROR: lock directory %s does not exist\n",
 		       lp_lockdir());
-	} else if ((st.st_mode & 0666) != 0644) {
+	} else if ((st.st_mode & 0777) != 0755) {
 		printf("WARNING: lock directory %s should have permissions 0644 for browsing to work\n",
 		       lp_lockdir());
 	}
