@@ -229,6 +229,8 @@
 #undef HAVE_IMMEDIATE_STRUCTURES
 #undef HAVE_CUPS
 #undef WITH_TDBSAM
+#undef LINUX_QUOTAS_1
+#undef LINUX_QUOTAS_2
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

@@ -45,12 +45,72 @@ BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
 
 #include <sys/types.h>
 #include <asm/types.h>
-#include <sys/quota.h>
+
+/*
+ * This shouldn't be neccessary - it should be /usr/include/sys/quota.h
+ * Unfortunately, RH7.1 ships with a different quota system using struct mem_dqblk
+ * rather than the struct dqblk defined in /usr/include/sys/quota.h.
+ * This means we must include linux/quota.h to have a hope of working on
+ * RH7.1 systems. And it also means this breaks if the kernel is upgraded
+ * to a Linus 2.4.x (where x > the minor number shipped with RH7.1) until
+ * Linus synchronises with the AC patches. Sometimes I *hate* Linux :-). JRA.
+ */
+
+#include <linux/quota.h>
 
 #include <mntent.h>
 #include <linux/unistd.h>
 
-_syscall4(int, quotactl, int, cmd, const char *, special, int, id, caddr_t, addr);
+
+#define LINUX_QUOTAS_2
+
+typedef struct _LINUX_SMB_DISK_QUOTA {
+	SMB_BIG_UINT bsize;
+	SMB_BIG_UINT hardlimit; /* In bsize units. */
+	SMB_BIG_UINT softlimit; /* In bsize units. */
+	SMB_BIG_UINT curblocks; /* In bsize units. */
+	SMB_BIG_UINT ihardlimit; /* inode hard limit. */
+	SMB_BIG_UINT isoftlimit; /* inode soft limit. */
+	SMB_BIG_UINT curinodes; /* Current used inodes. */
+} LINUX_SMB_DISK_QUOTA;
+
+/****************************************************************************
+ Abstract out the old and new Linux quota get calls.
+****************************************************************************/
+
+static int get_smb_linux_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
+{
+	int ret;
+#ifdef LINUX_QUOTAS_1
+	struct dqblk D;
+	ZERO_STRUCT(D);
+	dp->bsize = (SMB_BIG_UINT)1024;
+#else /* LINUX_QUOTAS_2 */
+	struct mem_dqblk D;
+	ZERO_STRUCT(D);
+#ifndef QUOTABLOCK_SIZE
+#define QUOTABLOCK_SIZE 1024
+#endif
+	dp->bsize = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
+#endif
+
+	if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D)))
+		return -1;
+
+	dp->softlimit = (SMB_BIG_UINT)D.dqb_bsoftlimit;
+	dp->hardlimit = (SMB_BIG_UINT)D.dqb_bhardlimit;
+	dp->ihardlimit = (SMB_BIG_UINT)D.dqb_ihardlimit;
+	dp->isoftlimit = (SMB_BIG_UINT)D.dqb_isoftlimit;
+	dp->curinodes = (SMB_BIG_UINT)D.dqb_curinodes;
+
+#ifdef LINUX_QUOTAS_1
+	dp->curblocks = (SMB_BIG_UINT)D.dqb_curblocks;
+#else /* LINUX_QUOTAS_2 */
+	dp->curblocks = ((SMB_BIG_UINT)D.dqb_curspace)/ dp->bsize;
+#endif
+
+	return 0;
+}
 
 /****************************************************************************
 try to get the disk space from disk quotas (LINUX version)
@@ -58,81 +118,78 @@ try to get the disk space from disk quotas (LINUX version)
 
 BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
-  int r;
-  struct dqblk D;
-  SMB_STRUCT_STAT S;
-  FILE *fp;
-  struct mntent *mnt;
-  SMB_DEV_T devno;
-  int found;
-  uid_t euser_id;
+	int r;
+	SMB_STRUCT_STAT S;
+	FILE *fp;
+	LINUX_SMB_DISK_QUOTA D;
+	struct mntent *mnt;
+	SMB_DEV_T devno;
+	int found;
+	uid_t euser_id;
 
-  euser_id = geteuid();
+	euser_id = geteuid();
   
-  /* find the block device file */
+	/* find the block device file */
   
-  if ( sys_stat(path, &S) == -1 ) {
-    return(False) ;
-  }
+	if ( sys_stat(path, &S) == -1 )
+		return(False) ;
 
-  devno = S.st_dev ;
+	devno = S.st_dev ;
   
-  fp = setmntent(MOUNTED,"r");
-  found = False ;
+	fp = setmntent(MOUNTED,"r");
+	found = False ;
   
-  while ((mnt = getmntent(fp))) {
-    if ( sys_stat(mnt->mnt_dir,&S) == -1 )
-      continue ;
-    if (S.st_dev == devno) {
-      found = True ;
-      break ;
-    }
-  }
-  endmntent(fp) ;
-  
-  if (!found) {
-      return(False);
-    }
+	while ((mnt = getmntent(fp))) {
+		if ( sys_stat(mnt->mnt_dir,&S) == -1 )
+			continue ;
 
-  save_re_uid();
-  set_effective_uid(0);  
-  r=quotactl(QCMD(Q_GETQUOTA,USRQUOTA), mnt->mnt_fsname, euser_id, (caddr_t)&D);
-  restore_re_uid();
+		if (S.st_dev == devno) {
+			found = True ;
+			break;
+		}
+	}
 
-  /* Use softlimit to determine disk space, except when it has been exceeded */
-  *bsize = 1024;
-  if (r)
-    {
-      if (errno == EDQUOT) 
-       {
-         *dfree =0;
-         *dsize =D.dqb_curblocks;
-         return (True);
-    }
-      else return(False);
-  }
-  /* Use softlimit to determine disk space, except when it has been exceeded */
-  if (
-      (D.dqb_bsoftlimit && D.dqb_curblocks>=D.dqb_bsoftlimit) ||
-      (D.dqb_bhardlimit && D.dqb_curblocks>=D.dqb_bhardlimit) ||
-      (D.dqb_isoftlimit && D.dqb_curinodes>=D.dqb_isoftlimit) ||
-      (D.dqb_ihardlimit && D.dqb_curinodes>=D.dqb_ihardlimit)
-     )
-    {
-      *dfree = 0;
-      *dsize = D.dqb_curblocks;
-    }
-  else if (D.dqb_bsoftlimit==0 && D.dqb_bhardlimit==0)
-    {
-      return(False);
-    }
-  else {
-    if (D.dqb_bsoftlimit == 0)
-      D.dqb_bsoftlimit = D.dqb_bhardlimit;
-    *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
-    *dsize = D.dqb_bsoftlimit;
-  }
-  return (True);
+	endmntent(fp) ;
+  
+	if (!found)
+		return(False);
+
+	save_re_uid();
+	set_effective_uid(0);  
+	r=get_smb_linux_quota(mnt->mnt_fsname, euser_id, &D);
+	restore_re_uid();
+
+	/* Use softlimit to determine disk space, except when it has been exceeded */
+	*bsize = D.bsize;
+	if (r == -1) {
+		if (errno == EDQUOT) {
+			*dfree =0;
+			*dsize =D.curblocks;
+			return (True);
+		} else {
+			return(False);
+		}
+	}
+
+	/* Use softlimit to determine disk space, except when it has been exceeded */
+	if (
+		(D.softlimit && D.curblocks >= D.softlimit) ||
+		(D.hardlimit && D.curblocks >= D.hardlimit) ||
+		(D.isoftlimit && D.curinodes >= D.isoftlimit) ||
+		(D.ihardlimit && D.curinodes>=D.ihardlimit)
+	) {
+		*dfree = 0;
+		*dsize = D.curblocks;
+	} else if (D.softlimit==0 && D.hardlimit==0) {
+		return(False);
+	} else {
+		if (D.softlimit == 0)
+			D.softlimit = D.hardlimit;
+		*dfree = D.softlimit - D.curblocks;
+		*dsize = D.softlimit;
+	}
+
+	return (True);
 }
 
 #elif defined(CRAY)
