@@ -813,7 +813,7 @@ bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(IDMAP_LIBS) $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(IDMAP_LIBS) $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDBLIBS)
 
 bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
