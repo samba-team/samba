@@ -94,7 +94,6 @@ change_password(krb5_context context,
 			     &result_string);
     if (ret) {
 	krb5_warn (context, ret, "krb5_set_password");
-	free(name);
 	return 1;
     }
 
