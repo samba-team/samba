@@ -93,7 +93,7 @@ static int string_hash(int hash_size, const char *key)
 	u32 n = 0;
 	const char *p;
 	for (p = key; *p != '\0'; p++) {
-		n = ((n << 5) + n) ^ (u32)(*p++);
+		n = ((n << 5) + n) ^ (u32)(*p);
 	}
 	return (n % hash_size);
 }
