@@ -1,0 +1,28 @@
+# $Source: /home/cvs/samba/examples/LDAP/smbldap-tools/INSTALL,v $
+#
+## How To Install SMBLDAP-TOOLS
+
+Quick & Dirty:
+=-=-=-=-=-=-=-
+ . Copy all those scripts in /usr/local/sbin/
+ . Modify smbldap_conf.pm to match your configuration
+ . If not already done : "smbpasswd -w secret" to set up
+   the ldap admin password in secrets.tdb
+ . Either add /usr/local/sbin in $PERLLIB or run the scripts
+   from this directory, or make a symlink from /usr/local/sbin/*.pm
+   to /usr/lib/perl5/.
+ . to allow a domain admin to add user using "add user script" in smb.conf :
+   chmod 753 smbldap_conf.pm
+   chmod 750 smbldap-useradd.pl
+   chgrp 512 smbldap_conf.pm smbldap-useradd.pl (512 = 0x200 = Domain Admins)
+   Have your admin belong to this group
+   In smb.conf : domain admin group = " @"Domain Admins" "
+
+RedHat RPM:
+=-=-=-=-=-=
+Install smbldap-tools-0.7-1.i386.rpm
+Modify /usr/local/sbin/smbldap_conf.pm to match you configuration
+If not already done : "smbpasswd -w secret" to set up
+the ldap admin password in secrets.tdb
+
+# - The End

@@ -1,0 +1,28 @@
+# $Source: /home/cvs/samba/examples/LDAP/smbldap-tools/TODO,v $
+#
+## TODO list - First In, Last in the list...
+## (BF: Bug Report / FR: Feature Request)
+
+
+FR * add 'LDAP port' for both slave and master LDAP server in smbldap_conf.pm
+FR * use RFC2307 best practices (Luke, next time you visit Paris, have a 
+     beer at IDEALX'cantina ;-)
+FR * add mail (sendmail/postfix/qmail/courier) support
+FR * bugfix, really : allow non-root users to change passwd
+     (currently the config must be unreadable because of bindpasswd)
+FR * make smbldap-tools to use system configuration files
+     (/etc/login.defs and /etc/ldap.conf for example)
+FR * rewrite smbldap-tools using perl-ldap. In fact, this 0.x
+     release use ldap system tools (ldapadd,ldapdelete,ldapmodify)
+FR * add shadowAccounts manipulation support
+FR * internationalize the SMBLDAP-TOOLS
+FR * add smbldap-sar : Samba System Activity Report to help
+     supporting Samba/LDAP sysadmin activity
+FR * add smbldap-backup/smbldap-restore to backup and restore
+     a SAM (in LDAP) database. No sorcery, just LDIF, but usefull
+     for non-LDAP gurus
+FR * adding migration tools from migration from W2K and NetWare to Samba-LDAP
+FR * adapt smbldap-tools to use Samba 3.0
+
+
+# - The End

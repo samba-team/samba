@@ -1,0 +1,21 @@
+cat <<EOF
+___________________________________________________________________________
+
+INSTALLATION COMPLETE.
+
+All files comprising the Samba Server have been installed.
+
+You can configure Samba by creating a configuration file at 
+${BASEDIR}/samba/lib/smb.conf. For details on configuration, 
+refer to the Samba man pages under ${PKG_INSTALL_ROOT}/usr/share/man 
+and the documentation at ${BASEDIR}/samba/docs.
+
+BEGINNERS:
+Beginners can also refer to the excellent "Using Samba" book published 
+by O'Reilly and Associates and officially supported by the Samba Team.
+This book is supplied with this package and can be accessed at 
+${BASEDIR}/samba/docs/samba_book/index.html
+___________________________________________________________________________
+
+EOF
+

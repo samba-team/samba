@@ -1,0 +1,13 @@
+#!/bin/sh
+
+file=$1
+
+if ! igawk -f main.awk $file; then
+    echo parse failed;
+    exit 1;
+fi
+
+echo compiling vluke
+gcc -Wall -g -o vluke parser.c vluke.c util.c
+echo done.
+

@@ -1,0 +1,54 @@
+#
+# The static master prototype file for the Samba package.
+# For files that can't be dynamically added to the prototype file at 
+# package build time
+#
+# Information files.
+# 
+i pkginfo=./pkginfo
+i copyright=./copyright
+i request=./request
+i preremove=./preremove
+i postinstall=./postinstall
+i i.swat=./i.swat
+i r.swat=./r.swat
+#
+# Stuff that goes into the system areas of the filesystem.
+#
+d none /etc ? ? ?
+d initscript /etc/init.d ? ? ?
+f initscript /etc/init.d/samba.server=packaging/Solaris/samba.server 0744 root sys
+d initscript /etc/rc3.d ? ? ?
+s initscript /etc/rc3.d/S99samba.server=../init.d/samba.server
+#
+# Stuff to set up SWAT
+#
+d swat /etc/inet ? ? ?
+e swat /etc/inet/services=packaging/Solaris/services ? ? ?
+e swat /etc/inet/inetd.conf=packaging/Solaris/inetd.conf ? ? ?
+#
+# Create the samba subtree. (Usually /usr/local/samba )
+#
+d none samba 0755 root other
+d none samba/var 0755 root other
+d none samba/bin 0755 root other
+d none samba/lib 0755 root other
+d none samba/docs 0755 root other
+#
+# Stuff that goes into lib
+#
+d none samba/lib/charset 0755 root other
+f none samba/lib/smb.conf.example=examples/smb.conf.default 0644 root other
+d none samba/lib/regeditscripts 0755 root other
+f none samba/lib/regeditscripts/NT4_PlainPassword.reg=docs/Registry/NT4_PlainPassword.reg 0444 root other
+f none samba/lib/regeditscripts/Win95_PlainPassword.reg=docs/Registry/Win95_PlainPassword.reg 0444 root other
+f none samba/lib/regeditscripts/Win98_PlainPassword.reg=docs/Registry/Win98_PlainPassword.reg 0444 root other
+f none samba/lib/regeditscripts/WinME_PlainPassword.reg=docs/Registry/WinME_PlainPassword.reg 0444 root other
+f none samba/lib/regeditscripts/Win2000_PlainPassword.reg=docs/Registry/Win2000_PlainPassword.reg 0444 root other
+f none samba/lib/regeditscripts/WinXP_PlainPassword.reg=docs/Registry/WinXP_PlainPassword.reg 0444 root other
+#
+# Random files 
+f none samba/docs/Samba-HOWTO-Collection.pdf=docs/Samba-HOWTO-Collection.pdf 0644 root other
+#
+# Static part of prototype file ends.
+#

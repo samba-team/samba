@@ -1,0 +1,43 @@
+# $Source: /home/cvs/samba/examples/LDAP/smbldap-tools/FILES,v $
+#
+## File listing for SMBLDAP-TOOLS
+
+CONTRIBUTORS           : authors and contributors
+COPYING                : licence
+FILES                  : this file listing
+README                 : introduction and usage
+TODO                   : feature request and bug report list
+ChangeLog              : changelog
+
+Core:
+=-=-=
+smbldap-groupadd.pl    : to add a new group
+			 (objectclass: posixGroup)
+smbldap-groupdel.pl    : to delete a group
+			 (objectclass: posixGroup)
+smbldap-groupmod.pl    : to modify a group (mostly used to add user to a group)
+			 (objectclass: posixGroup)
+smbldap-groupshow.pl   : to view a group
+			 (objectclass: posixGroup)
+smbldap_conf.pm        : global configuration datas
+smbldap_tools.pm       : functions
+smbldap-useradd.pl     : to add a new user
+			 (objectclass: posixAccount and/or sambaAccount)
+smbldap-userdel.pl     : to delete a user
+			 (objectclass: posixAccount and/or sambaAccount)
+smbldap-usermod.pl     : to modify an user datas
+			 (objectclass: posixAccount and/or sambaAccount)
+smbldap-usershow.pl    : to view an user datas
+			 (objectclass: posixAccount and/or sambaAccount)
+smbldap-passwd.pl      : to sync passwd (Unix and Samba)
+			 (a replacement for the system passwd utility)
+smbldap-populate.pl    : to add a builtin ldif to initialize your LDAP master for
+                         smbldap use, or to add a specified ldif
+smbldap-tools.spec     : SPEC file for RedHat RPM package format
+
+Migration:
+=-=-=-=-=-
+smbldap-migrate-accounts.pl     : add NT sam entries from pwdump to ldap
+smbldap-migrate-groups.pl       : add any LDAP posixGroups from the output of the 'net group' NT command
+
+# - The End

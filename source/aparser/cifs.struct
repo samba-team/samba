@@ -1,0 +1,1029 @@
+module cifs
+
+option autoalign False
+
+
+#define BOOL uint32
+#define UCHAR uint8
+#define WCHAR uint16
+#define USHORT uint16
+#define LONG uint32
+#define ULONG uint32
+#define DWORD uint32
+#define SMB_TIME uint16
+#define SMB_DATE uint16
+
+typedef struct {
+	ULONG low;
+	LONG high;
+} TIME;
+
+typedef struct {
+	ULONG low;
+	ULONG high;
+} hyper;
+
+typedef struct {
+	uint8 cmd;
+	uint8 reserved;
+	uint16 offset;
+} ANDX_INFO;
+
+
+typedef struct {
+	uint8 tag2;
+	STRING protocol;
+} BUF2;
+
+typedef struct {
+	uint16 bcount;
+	BUF2 protocol[*];
+} Q_NEGPROT_0;
+
+typedef struct {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 0 Q_NEGPROT_0 q0;
+	}
+} Q_NEGPROT;
+
+typedef struct {
+	USHORT  DialectIndex;         /* Index of selected dialect */
+	USHORT  SecurityMode;         /* Security mode: */
+				      /* bit 0: 0 = share, 1 = user */
+				      /* bit 1: 1 = use challenge/response */
+				      /* authentication */
+	USHORT  MaxBufferSize;        /* Max transmit buffer size (>= 1024) */
+	USHORT  MaxMpxCount;          /* Max pending multiplexed requests */
+	USHORT  MaxNumberVcs;         /* Max VCs between client and server */
+	USHORT  RawMode;              /* Raw modes supported: */
+				      /*  bit 0: 1 = Read Raw supported */
+				      /*  bit 1: 1 = Write Raw supported */
+	ULONG SessionKey;             /* Unique token identifying this session */
+	SMB_TIME ServerTime;          /* Current time at server */
+	SMB_DATE ServerDate;          /* Current date at server */
+	USHORT ServerTimeZone;        /* Current time zone at server */
+	USHORT  ChallengeLength;      /* Length of Challenge; MBZ if not LM2.1
+				      /* dialect or later */
+	USHORT  Reserved;             /* MBZ */
+	USHORT  ByteCount;             /* Count of data bytes */
+	UCHAR Challenge[ChallengeLength];            /* The challenge */
+	STRING PrimaryDomain;       /* The server's primary domain */
+
+} R_NEGPROT_12;
+
+typedef struct {
+	USHORT DialectIndex;  /*Index of selected dialect */
+	UCHAR SecurityMode;   /*Security mode: */
+			      /*  bit 0: 0 = share, 1 = user */
+			      /*  bit 1: 1 = use challenge/response */
+			      /*  authentication */
+			      /*  bit 2: 1 = Security Signatures (SMB integrity */
+			      /*  check) enabled */
+			      /*  bit 3: 1 = Security Signatures (SMB integrity */
+			      /*  check) required */
+	USHORT MaxMpxCount;   /*Max pending outstanding requests */
+	USHORT MaxNumberVcs;  /*Max VCs between client and server */
+	ULONG MaxBufferSize;  /*Max transmit buffer size */
+	ULONG MaxRawSize;     /*Maximum raw buffer size */
+	ULONG SessionKey;     /*Unique token identifying this session */
+	ULONG Capabilities;   /*Server capabilities */
+	ULONG SystemTimeLow;  /*System (UTC) time of the server (low). */
+	ULONG SystemTimeHigh; /*System (UTC) time of the server (high). */
+	USHORT ServerTimeZone;/*Time zone of server (minutes from UTC) */
+	UCHAR SecurityBlobLength;/*Length of SecurityBlob */
+
+	USHORT bcount;     /*Count of data bytes */
+	/*UCHAR GUID[16];       A globally unique identifier assigned to the */
+			      /*  server; present only when */
+			      /*  CAP_EXTENDED_SECURITY is on in the */
+			      /*  Capabilities field. */
+	UCHAR SecurityBlob[SecurityBlobLength];  /*Opaque Security Blob associated with the */
+			      /*  security package if CAP_EXTENDED_SECURITY is */
+			      /*  on in the Capabilities field; else challenge */
+			      /*  for CIFS challenge/response authentication. */
+	STRING OemDomainName[+]; /*The name of the domain (in OEM chars); not */
+	                      /*  present  if CAP_EXTENDED_SECURITY is on in the */
+			      /*  Capabilities field */
+} R_NEGPROT_17;
+
+
+typedef struct {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 17 R_NEGPROT_17 r17;
+	}
+} R_NEGPROT;
+
+typedef struct {
+	uint8 wcount;
+	uint16 vwv[wcount];
+	uint16 bcount;
+	uint8 none[bcount];
+} Q_TDIS;
+
+typedef struct {
+	uint8 wcount;
+	uint16 vwv[wcount];
+	uint16 bcount;
+	uint8 none[bcount];
+} R_TDIS;
+
+typedef struct {
+	ANDX_INFO andx;
+	uint16 bcount;
+	uint8 none[bcount];
+} R_ULOGOFF_ANDX_2;
+
+typedef struct {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 2 R_ULOGOFF_ANDX_2 q2;
+	}
+} R_ULOGOFF_ANDX;
+
+typedef struct {
+	ANDX_INFO andx;
+	uint16 bcount;
+	uint8 none[bcount];
+} Q_ULOGOFF_ANDX_2;
+
+typedef struct {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 2 Q_ULOGOFF_ANDX_2 q2;
+	}
+} Q_ULOGOFF_ANDX;
+
+typedef struct {
+	ANDX_INFO andx;
+	uint16 bufsize;
+	uint16 max_mpx;
+	uint16 vc;
+	ULONG sess_key;
+	uint16 pwlen;
+	ULONG reserved;
+
+	uint16 bcount;
+	uint8 password[pwlen];
+	STRING domain;
+	STRING os;
+	STRING server;
+
+} Q_SESSION_SETUP_ANDX_10;
+
+typedef struct {
+	ANDX_INFO andx;
+	uint16 bufsize;
+	uint16 max_mpx;
+	uint16 vc;
+	ULONG sess_key;
+	uint16 pwlen;
+	uint16 upwlen;
+	ULONG capabilities;
+	ULONG reserved;
+
+	uint16 bcount;
+	uint8 password[pwlen];
+	uint8 upassword[upwlen];
+	STRING user;
+	STRING domain;
+	STRING os;
+	STRING server;
+
+} Q_SESSION_SETUP_ANDX_13;
+
+typedef struct _Q_SESSION_SETUP_ANDX {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 10 Q_SESSION_SETUP_ANDX_10 q10;
+		case 13 Q_SESSION_SETUP_ANDX_13 q13;
+	}
+} Q_SESSION_SETUP_ANDX;
+
+typedef struct {
+	ANDX_INFO andx;
+	uint16 vwv2;
+	uint16 passlen;
+	uint16 bcount;
+	uint8 password[passlen];
+	STRING path;
+	STRING device;
+} Q_TCON_ANDX_4;
+
+typedef struct _Q_TCON_ANDX {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 4 Q_TCON_ANDX_4 q4;
+	}
+} Q_TCON_ANDX;
+
+typedef struct {
+	ANDX_INFO andx;
+	uint16 vwv2;
+	uint16 bcount;
+	STRING share;
+} R_TCON_ANDX_3;
+
+typedef struct _R_TCON_ANDX {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 3 R_TCON_ANDX_3 q3;
+	}
+} R_TCON_ANDX;
+
+typedef struct {
+	ANDX_INFO andx;
+	uint16 action;
+
+	uint16 count;
+	STRING os;
+	STRING server;
+	STRING domain;
+} R_SESSION_SETUP_ANDX_10;
+
+typedef struct _R_SESSION_SETUP_ANDX {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 3 R_SESSION_SETUP_ANDX_10 r3;
+	}
+} R_SESSION_SETUP_ANDX;
+
+
+typedef struct _R_CLOSE {
+	uint8 wcount;
+	uint16 count;
+	uint8 none[count];
+
+} R_CLOSE;
+
+typedef struct _Q_CLOSE {
+	uint8 wcount;
+	uint16 fnum;
+	uint32 vwv1;
+
+	uint16 count;
+	uint8 none[count];
+
+} Q_CLOSE;
+
+typedef struct {
+	uint16 dsize;
+	uint16 bsizehi;
+	uint16 bsizelo;
+	uint16 avail;
+	uint16 vwv4;
+
+	uint16 bcount;
+	uint8 none[bcount];
+
+} R_DSKATTR_5;
+
+typedef struct {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 5 R_DSKATTR_5 r5;
+	}
+} R_DSKATTR;
+
+typedef struct {
+	uint16 count;
+	uint8 none[count];
+
+} Q_DSKATTR_0;
+
+typedef struct _Q_DSKATTR {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 0 Q_DSKATTR_0 q1;
+	}
+
+} Q_DSKATTR;
+
+typedef struct {
+	ANDX_INFO andx;
+
+	uint16 bcount;
+	uint8 none[bcount];
+
+} R_LOCKING_2;
+
+typedef struct {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 2 R_LOCKING_2 r2;
+	}
+} R_LOCKING_ANDX;
+
+/* XXXX must do a switch on bit 0x10 to do large locks XXXX */
+/*      LockType Flag Name            Value Description */
+
+#define LOCKING_ANDX_SHARED_LOCK      0x01  /* Read-only lock */
+#define LOCKING_ANDX_OPLOCK_RELEASE   0x02  /* Oplock break notification */
+#define LOCKING_ANDX_CHANGE_LOCKTYPE  0x04  /* Change lock type */
+#define LOCKING_ANDX_CANCEL_LOCK      0x08  /* Cancel outstanding request */
+#define LOCKING_ANDX_LARGE_FILES      0x10  /* Large file locking format */
+
+typedef struct {
+	USHORT Pid;      /* PID of process "owning" lock */
+	ULONG Offset;    /* Offset to bytes to [un]lock */
+	ULONG Length;    /* Number of bytes to [un]lock */
+} LOCKING_ANDX_RANGE_SHORT;
+
+typedef struct {
+	USHORT Pid;       /* PID of process "owning" lock */
+	.align4 0;
+	ULONG OffsetHigh; /* Offset to bytes to [un]lock (high) */
+	ULONG OffsetLow;  /* Offset to bytes to [un]lock (low) */
+	ULONG LengthHigh; /* Number of bytes to [un]lock (high) */
+	ULONG LengthLow;  /* Number of bytes to [un]lock (low) */
+
+} LOCKING_ANDX_RANGE_LARGE;
+
+/* typedef struct { */
+	/* union ctr[LockType&0x10] { */
+		/* case 0    LOCKING_ANDX_RANGE_SHORT ls; */
+		/* case 0x10 LOCKING_ANDX_RANGE_LARGE ll; */
+	/* } */
+/* } LOCKING_ANDX_RANGE; */
+
+typedef struct {
+	ANDX_INFO andx;
+
+	USHORT Fid;             /* File handle */
+	UCHAR LockType;         /* See LockType table below */
+	UCHAR OplockLevel;      /* The new oplock level */
+	ULONG Timeout;          /* Milliseconds to wait for unlock */
+	USHORT NumberOfUnlocks; /* Num. unlock range structs following */
+	USHORT NumberOfLocks;   /* Num. lock range structs following */
+
+	USHORT ByteCount;       /* Count of data bytes */
+	LOCKING_ANDX_RANGE_SHORT Unlocks[NumberOfUnlocks]; /* Unlock ranges */
+	LOCKING_ANDX_RANGE_SHORT Locks[NumberOfLocks];     /* Lock ranges */
+
+} Q_LOCKING_8;
+
+typedef struct _Q_LOCKING {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 8 Q_LOCKING_8 q8;
+	}
+
+} Q_LOCKING_ANDX;
+
+
+typedef struct {
+	uint16 bcount;
+	uint8 protocols[bcount];
+
+} R_UNLINK_0;
+
+typedef struct {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 0 R_UNLINK_0 r0;
+	}
+} R_UNLINK;
+
+typedef struct {
+	uint16 dirtype;
+
+	uint16 count;
+	uint8 fname[count];
+
+} Q_UNLINK_1;
+
+typedef struct _Q_UNLINK {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 1 Q_UNLINK_1 q1;
+	}
+
+} Q_UNLINK;
+
+typedef struct _R_OPEN_ANDX{
+	uint8 wcount;
+	ANDX_INFO andx;
+	uint16 fnum;
+	uint16 fmode;
+	uint32 mtime;
+	uint32 size;
+	uint16 rmode;
+	uint16 vwv9;
+	uint16 vwv10;
+	uint16 smb_action;
+	uint16 vwv12;
+	uint16 vwv13;
+	uint16 vwv14;
+
+	uint16 count;
+	uint8 none[count];
+
+} R_OPEN_ANDX;
+
+typedef struct _Q_OPEN_ANDX{
+	uint8 wcount;
+	ANDX_INFO andx;
+	uint16 fnum;
+	uint16 fmode;
+	uint32 mtime;
+	uint32 size;
+	uint16 rmode;
+	uint16 vwv9;
+	uint16 vwv10;
+	uint16 smb_action;
+	uint16 vwv12;
+	uint16 vwv13;
+	uint16 vwv14;
+
+	uint16 count;
+	uint8 fname[count];
+
+} Q_OPEN_ANDX;
+
+typedef struct _R_READ_ANDX {
+	uint8 wcount;
+	ANDX_INFO andx;
+	uint16 vwv2;
+	uint16 vwv3;
+	uint16 vwv4;
+	uint16 nread;
+	uint16 offset;
+	uint16 vwv7;
+	uint16 vwv8;
+	uint16 vwv9;
+	uint16 vwv10;
+	uint16 vwv11;
+
+	uint16 count;
+	uint8 data[count];
+
+} R_READ_ANDX;
+
+typedef struct _Q_READ_ANDX_10 {
+	ANDX_INFO andx;
+	uint16 fnum;
+	uint32 startpos;
+	uint16 smb_maxcnt;
+	uint16 smb_mincnt;
+	uint16 vwv7;
+	uint16 vwv8;
+	uint16 vwv9;
+
+	uint16 count;
+	uint8 none[count];
+
+} Q_READ_ANDX_10;
+
+typedef struct _Q_READ_ANDX_12 {
+	ANDX_INFO andx;
+	uint16 fnum;
+	uint32 startpos;
+	uint16 smb_maxcnt;
+	uint16 smb_mincnt;
+	uint16 vwv7;
+	uint16 vwv8;
+	uint16 vwv9;
+	uint32 startposhi;
+
+	uint16 count;
+	uint8 none[count];
+
+} Q_READ_ANDX_12;
+
+typedef struct _Q_READ_ANDX {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 10 Q_READ_ANDX_10 q10;
+		case 12 Q_READ_ANDX_12 q12;
+	}
+} Q_READ_ANDX;
+
+typedef struct _R_WRITE_ANDX {
+	uint8 wcount;
+	ANDX_INFO andx;
+	uint16 nwritten;
+	uint16 vwv3;
+	uint16 vwv4;
+	uint16 vwv5;
+
+	uint16 count;
+	uint8 none[count];
+
+} R_WRITE_ANDX;
+
+typedef struct _Q_WRITE_ANDX_12 {
+	ANDX_INFO andx;
+	uint16 fnum;
+	uint32 startpos;
+	uint16 vwv5;
+	uint16 vwv6;
+	uint16 write_through;
+	uint16 vwv8;
+	uint16 vwv9;
+	uint16 numtowrite;
+	uint16 smb_doff;
+
+	uint16 count;
+	uint8 data[count];
+
+} Q_WRITE_ANDX_12;
+
+typedef struct _Q_WRITE_ANDX_14 {
+	ANDX_INFO andx;
+	uint16 fnum;
+	uint32 startpos;
+	uint16 vwv5;
+	uint16 vwv6;
+	uint16 write_through;
+	uint16 vwv8;
+	uint16 vwv9;
+	uint16 numtowrite;
+	uint16 smb_doff;
+	uint32 startposhi;
+
+	uint16 count;
+	uint8 data[count];
+
+} Q_WRITE_ANDX_14;
+
+typedef struct _Q_WRITE_ANDX {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 12 Q_WRITE_ANDX_12 q12;
+		case 14 Q_WRITE_ANDX_14 q14;
+	}
+} Q_WRITE_ANDX;
+
+
+
+typedef struct _Q_NTTRANS_19 {
+	UCHAR MaxSetupCount;          /* Max setup words to return */
+	USHORT Reserved;
+	ULONG TotalParameterCount;    /* Total parameter bytes being sent */
+	ULONG TotalDataCount;         /* Total data bytes being sent */
+	ULONG MaxParameterCount;      /* Max parameter bytes to return */
+	ULONG MaxDataCount;           /* Max data bytes to return */
+	ULONG ParameterCount;         /* Parameter bytes sent this buffer */
+	ULONG ParameterOffset;        /* Offset (from header start) to */
+					 /* Parameters */
+	ULONG DataCount;              /* Data bytes sent this buffer */
+	ULONG DataOffset;             /* Offset (from header start) to data */
+	UCHAR SetupCount;             /* Count of setup words */
+	USHORT Function;              /* The transaction function code */
+	UCHAR Buffer[1];
+	USHORT Setup[SetupCount];     /* Setup words */
+	USHORT ByteCount;             /* Count of data bytes */
+	.align4 0;
+	UCHAR Parameters[ParameterCount];/* Parameter bytes */
+	.align4 0;
+	UCHAR Data[DataCount];        /* Data bytes */
+
+} Q_NTTRANS_19;
+
+typedef struct _Q_NTTRANS {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 19 Q_NTTRANS_19 q19;
+	}
+} Q_NTTRANS;
+
+typedef struct _R_NTTRANS_18 {
+	UCHAR Reserved[3];
+	ULONG TotalParameterCount;   /* Total parameter bytes being sent */
+	ULONG TotalDataCount;        /* Total data bytes being sent */
+	ULONG ParameterCount;        /* Parameter bytes sent this buffer */
+	ULONG ParameterOffset;       /* Offset (from header start) to */
+					  /* Parameters */
+	ULONG ParameterDisplacement; /* Specifies the offset from the start */
+				/* of the overall parameter block to */
+				/* the parameter bytes that are */
+				/* contained in this message */
+	ULONG DataCount;        /* Data bytes sent this buffer */
+	ULONG DataOffset;       /* Offset (from header start) to data */
+	ULONG DataDisplacement; /* Specifies the offset from the start */
+				/* of the overall data block to the */
+				/* data bytes that are contained in */
+				/* this message. */
+	UCHAR SetupCount;       /* Count of setup words */
+	USHORT Setup[SetupCount]; /* Setup words */
+	USHORT ByteCount;       /* Count of data bytes */
+	.align4 0;
+	UCHAR Parameters[ParameterCount]; /* Parameter bytes */
+	.align4 0;
+	UCHAR Data[DataCount];  /* Data bytes */
+} R_NTTRANS_18;
+
+typedef struct _R_NTTRANS {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 18 R_NTTRANS_18 q18;
+	}
+	.align4 2;
+} R_NTTRANS;
+
+/*Setup[0] Transaction2           Value Description */
+/*Subcommand Code */
+/*=============================== ===== ============================= */
+
+#define TRANS2_OPEN2                    0x00  /* Create file with extended attributes */
+#define TRANS2_FIND_FIRST2              0x01  /* Begin search for files */
+#define TRANS2_FIND_NEXT2               0x02  /* Resume search for files */
+#define TRANS2_QUERY_FS_INFO     0x03  /* Get file system information
+#define TRANS2_RESERVED4                0x04  /* Reserved */
+#define TRANS2_QUERY_PATH_INFO   0x05  /* Get information about a named file or directory */
+#define TRANS2_SET_PATH_INFO     0x06  /* Set information about a named file or directory */
+#define TRANS2_QUERY_FILE_INFO   0x07  /* Get information about a handle */
+#define TRANS2_SET_FILE_INFO     0x08  /* Set information by handle */
+#define TRANS2_FSCTL                    0x09  /* Not implemented by NT server */
+#define TRANS2_IOCTL2                   0x0A  /* Not implemented by NT server */
+#define TRANS2_FIND_NOTIFY_FIRST        0x0B  /* Not implemented by NT server */
+#define TRANS2_FIND_NOTIFY_NEXT         0x0C  /* Not implemented by NT server */
+#define TRANS2_CREATE_DIRECTORY         0x0D  /* Create directory with extended attributes */
+#define TRANS2_SESSION_SETUP            0x0E  /* Session setup with extended security information */
+#define TRANS2_GET_DFS_REFERRAL         0x10  /* Get a DFS referral */
+#define TRANS2_REPORT_DFS_INCONSISTENCY 0x11  /* Report a DFS knowledge inconsistency */
+
+typedef struct {
+	USHORT InformationLevel;   /* Level of information requested */
+} TRANS2_QUERY_FS_INFO_STRUCT;
+
+#define SMB_INFO_STANDARD                1
+#define SMB_INFO_QUERY_EA_SIZE           2
+#define SMB_SET_FILE_BASIC_INFO          0x101
+#define SMB_SET_FILE_DISPOSITION_INFO    0x102
+#define SMB_SET_FILE_ALLOCATION_INFO     0x103
+#define SMB_SET_FILE_END_OF_FILE_INFO    0x104
+
+
+typedef struct {
+	hyper CreationTime;
+	hyper LastAccessTime;
+	hyper LastWriteTime;
+	hyper ChangeTime;
+	USHORT Attributes;
+	.align4 0;
+} SMB_QUERY_FILE_BASIC_INFO_STRUCT;
+
+
+typedef struct {
+	ULONG fs_atr;
+	LONG max_len_filename;
+	ULONG length;
+	uint8 fs[length];
+	.align4 2;
+} SMB_QUERY_FS_ATTRIBUTE_INFO_STRUCT;
+
+#define FILE_CASE_SENSITIVE_SEARCH   0x00000001
+#define FILE_CASE_PRESERVED_NAMES    0x00000002
+#define FILE_PRSISTENT_ACLS          0x00000004
+#define FILE_FILE_COMPRESSION        0x00000008
+#define FILE_VOLUME_QUOTAS           0x00000010
+#define FILE_DEVICE_IS_MOUNTED       0x00000020
+#define FILE_VOLUME_IS_COMPRESSED    0x00008000
+
+typedef struct {
+	USHORT Fid;
+	USHORT InformationLevel;
+	USHORT Reserved;
+	.align4 0;
+
+	union ctr[InformationLevel] {
+		case 0x101 SMB_QUERY_FILE_BASIC_INFO_STRUCT t101;
+	}
+
+} TRANS2_SET_FILE_INFO_STRUCT;
+
+typedef struct {
+	USHORT InformationLevel;   /* Level of information requested */
+	ULONG Reserved;            /* Must be zero */
+	STRING FileName;           /* File or directory name */
+} TRANS2_QUERY_PATH_INFO_STRUCT;
+
+typedef struct {
+	USHORT SearchAttributes;
+	USHORT SearchCount;          
+	USHORT Flags;                
+	USHORT InformationLevel;      
+	ULONG SearchStorageType;
+	STRING FileName;              
+} TRANS2_FIND_FIRST2_STRUCT;
+
+typedef struct _Q_TRANS2_15 {
+	USHORT TotalParameterCount;      /* Total parameter bytes being sent */
+	USHORT TotalDataCount;           /* Total data bytes being sent */
+	USHORT MaxParameterCount;        /* Max parameter bytes to return */
+	USHORT MaxDataCount;             /* Max data bytes to return */
+	UCHAR MaxSetupCount;             /* Max setup words to return */
+	UCHAR Reserved;
+	USHORT Flags;                    /* Additional information: */
+				  /* bit 0 - also disconnect TID in TID */
+	ULONG Timeout;
+	USHORT Reserved2;
+	USHORT ParameterCount;           /* Parameter bytes sent this buffer */
+	USHORT ParameterOffset;          /* Offset (from header start) to */
+				  /* Parameters */
+	USHORT DataCount;                /* Data bytes sent this buffer */
+	USHORT DataOffset;               /* Offset (from header start) to data */
+	UCHAR SetupCount;                /* Count of setup words */
+	UCHAR Reserved3;                 /* Reserved (pad above to word) */
+	USHORT Setup[SetupCount];        /* Setup words (# = SetupWordCount) */
+	USHORT ByteCount;                /* Count of data bytes */
+	.align4 0;
+	union ctr[Setup[0]] {
+		case 1 TRANS2_FIND_FIRST2_STRUCT t1;
+		case 3 TRANS2_QUERY_FS_INFO_STRUCT t3;
+		case 5 TRANS2_QUERY_PATH_INFO_STRUCT t5;
+		case 8 TRANS2_SET_FILE_INFO_STRUCT t8;
+	}
+
+} Q_TRANS2_15;
+
+typedef struct _Q_TRANS2 {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 15 Q_TRANS2_15 q15;
+	}
+} Q_TRANS2;
+
+typedef struct {
+	ULONG NextEntryOffset;
+	ULONG FileIndex;
+	hyper CreationTime;
+	hyper LastAccessTime;
+	hyper LastWriteTime;
+	hyper ChangeTime;
+	hyper EndOfFile;
+	hyper AllocationSize;
+	ULONG ExtFileAttributes;
+	ULONG FileNameLength;
+	ULONG EaSize;
+	UCHAR ShortNameLength;
+	UCHAR Reserved;
+	uint8 ShortName[24];
+	UCHAR FileName[FileNameLength];
+	.align4 2;
+} SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
+
+typedef struct {
+	.align2 0;
+} R_TRANS2_D0;
+
+typedef struct {
+	.align4 2;
+} R_TRANS2_P0;
+
+typedef struct {
+	USHORT Reserved;
+} R_TRANS2_P2;
+
+typedef struct {
+	USHORT Sid;            /* Search handle */
+	USHORT SearchCount;    /* Number of entries returned */
+	USHORT EndOfSearch;    /* Was last entry returned? */
+	USHORT EaErrorOffset;  /* Offset into EA list if EA error */
+	USHORT LastNameOffset; /* Offset into data to file name of last */
+			/*  entry, if server needs it to resume */
+			/*  search; else 0 */
+	.align4 2;
+	SMB_FIND_FILE_BOTH_DIRECTORY_INFO i104[SearchCount];
+} R_TRANS2_FIND_FIRST2_STRUCT;
+
+typedef struct {
+	SMB_QUERY_FILE_BASIC_INFO_STRUCT i101;
+	.align4 2;
+} R_TRANS2_FILE_BASIC_STRUCT;
+
+typedef struct _R_TRANS2_10 {
+	USHORT TotalParameterCount;/* Total parameter bytes being sent */
+	USHORT TotalDataCount;     /* Total data bytes being sent */
+	USHORT Reserved2;
+	USHORT ParameterCount;     /* Parameter bytes sent this buffer */
+	USHORT ParameterOffset;    /* Offset (from header start) to */
+				  /* Parameters */
+	USHORT ParameterDisplacement; /* Specifies the offset from the start */
+				  /* of the overall parameter block to */
+				  /* the parameter bytes that are */
+				  /* contained in this message */
+	USHORT DataCount;          /* Data bytes sent this buffer */
+	USHORT DataOffset;         /* Offset (from header start) to data */
+	USHORT DataDisplacement;   /* Specifies the offset from the start */
+				  /* of the overall data block to the */
+				  /* data bytes that are contained in */
+				  /* this message. */
+	UCHAR SetupCount;         /* Count of setup words */
+	UCHAR Reserved3;                 /* Reserved (pad above to word) */
+	USHORT Setup[SetupCount]; /* Setup words */
+	USHORT ByteCount;         /* Count of data bytes */
+	.align4 2;
+	union pctr[ParameterCount] {
+		case 0 R_TRANS2_P0 p0;
+		case 2 R_TRANS2_P2 p2;
+		case 10 R_TRANS2_FIND_FIRST2_STRUCT r10;
+	}
+	union dctr[DataCount] {
+		case 0 R_TRANS2_D0 d0;
+		case 0x24 R_TRANS2_FILE_BASIC_STRUCT r24;
+		case 0x14 SMB_QUERY_FS_ATTRIBUTE_INFO_STRUCT r14;
+	}
+} R_TRANS2_10;
+
+typedef struct {
+	USHORT ByteCount;         /* Count of data bytes */
+} R_TRANS2_0;
+
+typedef struct _R_TRANS2 {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 0 R_TRANS2_0 q0;
+		case 10 R_TRANS2_10 q10;
+	}
+} R_TRANS2;
+
+typedef struct _Q_TRANS_16 {
+	USHORT TotalParameterCount;      /* Total parameter bytes being sent */
+	USHORT TotalDataCount;           /* Total data bytes being sent */
+	USHORT MaxParameterCount;        /* Max parameter bytes to return */
+	USHORT MaxDataCount;             /* Max data bytes to return */
+	UCHAR MaxSetupCount;             /* Max setup words to return */
+	UCHAR Reserved;
+	USHORT Flags;                    /* Additional information: */
+				  /* bit 0 - also disconnect TID in TID */
+	ULONG Timeout;
+	USHORT Reserved2;
+	USHORT ParameterCount;           /* Parameter bytes sent this buffer */
+	USHORT ParameterOffset;          /* Offset (from header start) to */
+				  /* Parameters */
+	USHORT DataCount;                /* Data bytes sent this buffer */
+	USHORT DataOffset;               /* Offset (from header start) to data */
+	UCHAR SetupCount;                /* Count of setup words */
+	UCHAR Reserved3;                 /* Reserved (pad above to word) */
+	USHORT Setup[SetupCount];        /* Setup words (# = SetupWordCount) */
+	USHORT ByteCount;                /* Count of data bytes */
+	STRING Name;                    /* Must be NULL */
+	.align4 0;
+	UCHAR Parameters[ParameterCount];/* Parameter bytes (# = ParameterCount) */ 
+	.align4 0;
+	UCHAR Data[DataCount];           /* Data bytes (# = DataCount) */
+
+} Q_TRANS_16;
+
+typedef struct _Q_TRANS {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 16 Q_TRANS_16 q16;
+	}
+} Q_TRANS;
+
+typedef struct _R_TRANS_10 {
+	USHORT TotalParameterCount;/* Total parameter bytes being sent */
+	USHORT TotalDataCount;     /* Total data bytes being sent */
+	USHORT Reserved2;
+	USHORT ParameterCount;     /* Parameter bytes sent this buffer */
+	USHORT ParameterOffset;    /* Offset (from header start) to */
+				  /* Parameters */
+	USHORT ParameterDisplacement; /* Specifies the offset from the start */
+				  /* of the overall parameter block to */
+				  /* the parameter bytes that are */
+				  /* contained in this message */
+	USHORT DataCount;          /* Data bytes sent this buffer */
+	USHORT DataOffset;         /* Offset (from header start) to data */
+	USHORT DataDisplacement;   /* Specifies the offset from the start */
+				  /* of the overall data block to the */
+				  /* data bytes that are contained in */
+				  /* this message. */
+	UCHAR SetupCount;         /* Count of setup words */
+	UCHAR Reserved3;                 /* Reserved (pad above to word) */
+	USHORT Setup[SetupCount]; /* Setup words */
+	USHORT ByteCount;         /* Count of data bytes */
+	.align4 0;
+	UCHAR Parameters[ParameterCount];/* Parameter bytes */
+	.align4 0;
+	UCHAR Data[DataCount];    /* Data bytes */
+} R_TRANS_10;
+
+typedef struct _R_TRANS {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 10 R_TRANS_10 q10;
+	}
+} R_TRANS;
+
+typedef struct _Q_NT_CREATE_ANDX_24 {
+	ANDX_INFO andx;
+	uint8 reserved;
+	uint16 name_len;
+	ULONG flags;
+	ULONG rootfid;
+	ULONG access;
+	hyper allocsize;
+	ULONG attribs;
+	ULONG sharing;
+	ULONG creat_disp;
+	ULONG creat_options;
+	ULONG impersonation;
+	uint8 sec_flags;
+
+	uint16 count;
+	uint8 name[name_len];
+
+} Q_NTCREATE_ANDX_24;
+
+typedef struct _Q_NTCREATE_ANDX{
+	uint8 wcount;
+	union ctr[wcount] {
+		case 24 Q_NTCREATE_ANDX_24 q24;
+	}
+} Q_NTCREATE_ANDX;
+
+typedef struct {
+	ANDX_INFO andx;
+	uint8 oplock_level;
+	uint16 fid;
+	ULONG action;
+	TIME create_time;
+	TIME access_time;
+	TIME write_time;
+	TIME change_time;
+	ULONG ext_attribs;
+	hyper allocsize;
+	hyper size;
+	uint16 type;
+	uint16 state;
+	uint8 directory;
+
+	uint16 count;
+	uint8 none[count];
+
+} R_NTCREATE_ANDX_34;
+
+typedef struct _R_NTCREATE_ANDX{
+	uint8 wcount;
+	union ctr[wcount] {
+		case 34 R_NTCREATE_ANDX_34 q34;
+	}
+} R_NTCREATE_ANDX;
+
+typedef struct {
+	ULONG smbhdr;
+	uint8 com;
+	uint8 rcls;
+	uint8 reh;
+	uint16 err;
+	uint8 flg;
+	uint16 flg2;
+	uint16 reserved;
+	uint8 SecuritySignature[8]; 
+	uint16 pad;
+	uint16 tid;
+	uint16 pid;
+	uint16 uid;
+	uint16 mid;
+} SMB_HDR;
+
+typedef struct _R_SMB {
+	ULONG nbhdr;
+	SMB_HDR hdr;
+	union ctr[hdr.com] {
+		case 4   R_CLOSE      r4;
+		case 6   R_UNLINK     r6;
+		case 36  R_LOCKING_ANDX r36;
+		case 37  R_TRANS r37;
+		case 45  R_OPEN_ANDX r45;
+		case 46  R_READ_ANDX r46;
+		case 47  R_WRITE_ANDX r47;
+		case 50  R_TRANS2 q50;
+		case 113 R_TDIS    r113;
+		case 114 R_NEGPROT r114;
+		case 115 R_SESSION_SETUP_ANDX r115;
+		case 116 R_ULOGOFF_ANDX r116;
+		case 117 R_TCON_ANDX r117;
+		case 128 R_DSKATTR    r128;
+		case 160 R_NTTRANS r160;
+		case 162 R_NTCREATE_ANDX r162;
+	}
+} R_SMB;
+
+typedef struct _Q_SMB {
+	ULONG nbhdr;
+	SMB_HDR hdr;
+	union ctr[hdr.com] {
+		case 4   Q_CLOSE      q4;
+		case 6   Q_UNLINK     q6;
+		case 36  Q_LOCKING_ANDX q36;
+		case 37  Q_TRANS q37;
+		case 45  Q_OPEN_ANDX q45;
+		case 46  Q_READ_ANDX q46;
+		case 47  Q_WRITE_ANDX q47;
+		case 50  Q_TRANS2 q50;
+		case 113 Q_TDIS    q113;
+		case 114 Q_NEGPROT q114;
+		case 115 Q_SESSION_SETUP_ANDX q115;
+		case 116 Q_ULOGOFF_ANDX q116;
+		case 117 Q_TCON_ANDX q117;
+		case 128 Q_DSKATTR    q128;
+		case 160 Q_NTTRANS q160;
+		case 162 Q_NTCREATE_ANDX q162;
+	}
+} Q_SMB;
+

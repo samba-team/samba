@@ -1,0 +1,89 @@
+# $Source: /home/cvs/samba/examples/LDAP/smbldap-tools/ChangeLog,v $
+# $id: $
+#
+## ChangeLog for SMBLDAP-TOOLS
+
+2003-11-18:
+	. new option '-a' to smbldap-usermod.pl that allow adding the sambaSamAccount
+	  objectclass to an existing posixAccount
+2003-11-07:
+	. patch that allow adding user to a group when the group is in a higher level depth
+          then ou=Groups (for example, ou=grp1,ou=Groups,...)
+        . check the unicity of a group when adding/removing a user to this group
+2003-10-28:
+	. new option '-p' in smbldap-groupadd.pl to 'print' the gidNumber
+	  of the group to STDOUT. This is needed by samba (see the man page)
+2003-10-19:
+	. new function does_sid_exist that check if samaSID sttribute is already
+          defined for another use or another group
+2003-10-13:
+	. smbldap-populate.pl now also add the group mapping
+2003-10-01:
+        . one can now comment the two directives '$_userSmbHome' and '$_userProfile'
+          if you want to use the smb.conf directives instead ('logon home' and
+	  'logon path' respectively), or if you want to desable roaming profiles
+	. Patch from Alexander Bergolth <leo@strike.wu-wien.ac.at>: the sambaPrimaryGroupSID
+	  of a user is now set to the sambaSID of his primary group
+2003-09-29:
+	. added new option '$_defaultMaxPasswordAge' in smbldap_conf.pm to specifie
+	  how long a password is valid
+	. The '-B' option was not always valid: to force a user to change his password:
+	  . the attribut sambaPwdLastSet must be != 0
+	  . the attribut sambaAcctFlags must not match the 'X' flag
+	. logon script is set (for every one) to the default '_userScript' value if it is defined 
+	. Patch from Alexander Bergolth <leo@strike.wu-wien.ac.at>:
+	  gid-sid group mapping to smbldap-groupadd.pl and smbldap-groupmod.pl
+2003-09-19: Patch from Marc Schoechlin <ms@LF.net>
+	. load the perl-modules without setting environment-variables or making symlinks
+2003-09-18: Patch from Alexander Bergolth <leo@strike.wu-wien.ac.at>
+	. options "-u", "-g", "-s" and "-c" are now functionnal
+	. the existence of samba account was made on sambaAccount and
+	  not sambaSamAccount as it should be for samba3
+	. new function read_user_entry to smbldap_tools.pm that returns
+	  a Net::LDAP:Entry object of the user
+	. Use this object to get the dn and user attributes instead of
+	  producing an ldif and searching for attributes within that ldif
+2003-09-15:
+	. change machine account creation to not add the sambaSamAccount objectclass.
+	  It is now added directly by samba when joigning the domain
+	. new option in smbldap-usermod.pl: '-e' to set an expire date
+	. Start_tls support activated when ldapSSL is set to 1
+	. Net::LDAP support more scripts
+	. bugs correction
+2003-09-02:
+	. sambaPwdLastSet is updated when smbldap-passwd.pl is used
+	. add a function is_group_member to test the existence of a
+	  user in a particular group
+	. add a function is_unix_user to test if a particular user exist
+	. Net::LDAP support more scripts
+2003-08-15:
+	. Samba3.0 support
+2003-08-01:
+	. Final version for samba 2.2.8a (cvs tag SAMBA-2-2-8a-FINAL)
+	. OpenLDAP 2.1 support (only one structural objectclass allowed)
+2002-07-24: top and account objectclasses replaced with inetorgperson
+2002-06-03: notes to webmin.idealx.org (idxldapaccounts)
+2002-06-01: release 0.7. tested with 2.2.4
+2002-05-31: fixed smbldap-populate compliance to smbldap_conf 
+            cleaned up smbldap_conf to be more readable 
+            some more documentation
+            bugfixes on smbldap-passwd and smbldap-populate
+2002-05-16: modified default mode on homes: now 700
+2002-05-13: fixed spec (relocation and reqs)
+2002-03-02: fixed 2.2.3 sambaAccount bug with smbldap-useradd.pl
+              (rid is now mandatory in the sambaAccount objectClass)
+2002-02-14: just modified default populate for Administrator
+2002-02-05: release 0.6. enable/disable user in usermod
+2002-02-04: release 0.5. added smbldap-migrate-groups to migrate NT groups
+            from a net group dump. added samba parameters to smbldap-useradd
+            and smbldap-usermod.
+2002-01-12: added smbldap-migrate-accounts to migrate users/machines
+            accounts from a PWDUMP dump
+2001-12-13: added smbldap-populate to create the initial base
+2001-12-13: initial release 0.1
+2001-12-12: fixed the SPEC file for RedHat
+2001-12-03: cleaned the code and use strict;
+2001-11-20: initial needs (for testing purpose on Samba-2.2.2 an Samba-TNG)
+
+
+# - The End

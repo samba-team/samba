@@ -1,0 +1,52 @@
+This directory provides build tools for building a Samba based domain
+appliance.
+
+A appliance is a box that gets its username and group database from a
+domain controller, and does its authentication via a domain
+controller. Right now this is only supported by combining two CVS
+branches of Samba, which is what the files in this directory do.
+
+SETUP
+-----
+
+To setup an appliance do the following:
+
+1) build and install Samba using the .spec file or Makefile in this
+   directory.
+
+2) setup winbindd by following the directions in the winbindd man
+   page.
+
+3) test winbindd, validating that domain users and groups are visible
+   and that domain authentication works, both using unix tools and
+   smbclient. 
+
+for appliance printing support also do this:
+
+4) create a print$ share with write permission for print
+   administrators.
+
+4) create the "nt printer driver" directory (by default
+   /usr/local/samba/lib/ntprinters) and make it writable by print
+   adminisrators.
+
+5) populate your /etc/printcap printer database
+
+6) add printers using the NT "add printer wizard" in the Printers
+   network folder.
+
+
+PACKAGING
+---------
+
+- Checkout the Samba CVS head branch into a directory call 
+  samba-appliance-0.2/head
+
+- Checkout the source subdirectory of the Samba CVS SAMBA_TNG branch
+  into a directory call samba-appliance-0.2/tng
+
+- Copy Makefile and smb.conf-appliance to samba-appliance-0.2/
+
+- run build.sh
+
+That should build source and binary RPMs in /usr/src/redhat/{RPMS,SRPMS}

@@ -1,0 +1,11 @@
+*.po
+*.po32
+tdbbackup
+tdbdump
+tdbtest
+tdbtool
+tdbtorture
+test.db
+test.gdbm
+test.tdb
+torture.tdb
