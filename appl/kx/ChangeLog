@@ -1,3 +1,7 @@
+1999-11-27  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (recv_conn): better errors when getting unrecognized data
+
 1999-11-18  Assar Westerlund  <assar@sics.se>
 
 	* krb5.c (krb5_destroy): free the correct part of the context
