@@ -3137,7 +3137,7 @@ BOOL reload_services(BOOL test)
     }
   }
 
-  create_mangled_stack(lp_mangledstack());
+  reset_mangled_stack( lp_mangledstack() );
 
   /* this forces service parameters to be flushed */
   become_service(-1,True);
