@@ -66,6 +66,21 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	return ads_sasl_bind(ads);
 }
 
+char *ads_err2string(ADS_STATUS status)
+{
+	switch(status.error_type) {
+	case ADS_ERROR_LDAP:
+		return ldap_err2string(status.rc);
+	case ADS_ERROR_KRB5:
+		return error_message(status.rc);
+	case ADS_ERROR_GSS:
+		return "gssapi error";
+	case ADS_ERROR_SYSTEM:
+		return strerror(status.rc);
+	default:
+		return "unknown error";
+	}
+}
 
 /* Do a search with paged results.  cookie must be null on the first
    call, and then returned on each subsequent call.  It will be null
