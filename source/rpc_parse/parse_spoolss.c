@@ -3152,7 +3152,8 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	 * it is easier to maintain the calculation here and
 	 * not place the burden on the caller to remember.   --jerry
 	 */
-	size += size % 4;
+	if ((size % 4) != 0) 
+		size += 4 - (size % 4);
 	
 	return size;
 }
