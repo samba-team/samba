@@ -372,6 +372,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 {
 	int data_len = 0;
 	int param_len = 0;
+	int rparam_len, rdata_len;
 	uint16 setup = TRANSACT2_QPATHINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
@@ -397,9 +398,10 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 				      NULL, data_len, cli->max_xmit /* data, length, max */
 				      ) &&
 		       cli_receive_trans(cli, SMBtrans2, 
-					 &rparam, &param_len,
-					 &rdata, &data_len));
-		if (!ret && cli_is_dos_error(cli)) {
+					 &rparam, &rparam_len,
+					 &rdata, &rdata_len));
+		if (!cli_is_dos_error(cli)) break;
+		if (!ret) {
 			/* we need to work around a Win95 bug - sometimes
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
@@ -410,7 +412,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 		}
 	} while (count-- && ret==False);
 
-	if (!ret || !rdata || data_len < 22) {
+	if (!ret || !rdata || rdata_len < 22) {
 		return False;
 	}
 
