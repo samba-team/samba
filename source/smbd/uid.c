@@ -456,7 +456,7 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
 	if (strequal(global_myname, domain)) {
 		local_lookup = True;
 	} else if (lp_server_role() == ROLE_DOMAIN_PDC || 
-		   lp_server_role() == ROLE_DOMAIN_PDC) {
+		   lp_server_role() == ROLE_DOMAIN_BDC) {
 		if (strequal(domain, global_myworkgroup)) {
 			local_lookup = True;
 		}

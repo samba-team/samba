@@ -1,7 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
    SMB NT Security Descriptor / Unix permission conversion.
-   Copyright (C) Jeremy Allison 1994-2000
+   Copyright (C) Jeremy Allison 1994-2000.
+   Copyright (C) Andreas Gruenbacher 2002.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -330,6 +331,24 @@ static void merge_aces( canon_ace **pp_list_head )
 }
 
 /****************************************************************************
+ Check if we need to return NT4.x compatible ACL entries.
+****************************************************************************/
+
+static BOOL nt4_compatible_acls(void)
+{
+	const char *compat = lp_acl_compatibility();
+
+	if (*compat == '\0') {
+		enum remote_arch_types ra_type = get_remote_arch();
+
+		/* Automatically adapt to client */
+		return (ra_type <= RA_WINNT);
+	} else
+		return (strequal(compat, "winnt"));
+}
+
+
+/****************************************************************************
  Map canon_ace perms to permission bits NT.
  The attr element is not used here - we only process deny entries on set,
  not get. Deny entries are implicit on get with ace->perms = 0.
@@ -345,7 +364,19 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 	if ((ace->perms & ALL_ACE_PERMS) == ALL_ACE_PERMS) {
 			nt_mask = UNIX_ACCESS_RWX;
 	} else if ((ace->perms & ALL_ACE_PERMS) == (mode_t)0) {
-		nt_mask = UNIX_ACCESS_NONE;
+		/*
+		 * Windows NT refuses to display ACEs with no permissions in them (but
+		 * they are perfectly legal with Windows 2000). If the ACE has empty
+		 * permissions we cannot use 0, so we use the otherwise unused
+		 * WRITE_OWNER permission, which we ignore when we set an ACL.
+		 * We abstract this into a #define of UNIX_ACCESS_NONE to allow this
+		 * to be changed in the future.
+		 */
+
+		if (nt4_compatible_acls())
+			nt_mask = UNIX_ACCESS_NONE;
+		else
+			nt_mask = 0;
 	} else {
 		nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
 		nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
@@ -621,7 +652,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 			else if (got_grp && uid_entry_in_group(pace, pace_group))
 				pace->perms = pace_group->perms;
 			else
-				pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
+				pace->perms = 0;
 			apply_default_perms(fsp, pace, S_IRUSR);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
@@ -668,13 +699,61 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->unix_ug.world = -1;
 		pace->trustee = global_sid_World;
 		pace->attr = ALLOW_ACE;
-		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
+		if (setting_acl)
+			pace->perms = 0;
+		else
+			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
 		apply_default_perms(fsp, pace, S_IROTH);
 
 		DLIST_ADD(*pp_ace, pace);
 	}
 
 	return True;
+}
+
+/****************************************************************************
+ Check if a POSIX ACL has the required SMB_ACL_USER_OBJ and SMB_ACL_GROUP_OBJ entries.
+ If it does not have them, check if there are any entries where the trustee is the
+ file owner or the owning group, and map these to SMB_ACL_USER_OBJ and SMB_ACL_GROUP_OBJ.
+****************************************************************************/
+
+static void check_owning_objs(canon_ace *ace, DOM_SID *pfile_owner_sid, DOM_SID *pfile_grp_sid)
+{
+	BOOL got_user_obj, got_group_obj;
+	canon_ace *current_ace;
+	int i, entries;
+
+	entries = count_canon_ace_list(ace);
+	got_user_obj = False;
+	got_group_obj = False;
+
+	for (i=0, current_ace = ace; i < entries; i++, current_ace = current_ace->next) {
+		if (current_ace->type == SMB_ACL_USER_OBJ)
+			got_user_obj = True;
+		else if (current_ace->type == SMB_ACL_GROUP_OBJ)
+			got_group_obj = True;
+	}
+	if (got_user_obj && got_group_obj) {
+		DEBUG(10,("check_owning_objs: ACL had owning user/group entries.\n"));
+		return;
+	}
+
+	for (i=0, current_ace = ace; i < entries; i++, current_ace = current_ace->next) {
+		if (!got_user_obj && current_ace->owner_type == UID_ACE &&
+				sid_equal(&current_ace->trustee, pfile_owner_sid)) {
+			current_ace->type = SMB_ACL_USER_OBJ;
+			got_user_obj = True;
+		}
+		if (!got_group_obj && current_ace->owner_type == GID_ACE &&
+				sid_equal(&current_ace->trustee, pfile_grp_sid)) {
+			current_ace->type = SMB_ACL_GROUP_OBJ;
+			got_group_obj = True;
+		}
+	}
+	if (!got_user_obj)
+		DEBUG(10,("check_owning_objs: ACL is missing an owner entry.\n"));
+	if (!got_group_obj)
+		DEBUG(10,("check_owning_objs: ACL is missing an owning group entry.\n"));
 }
 
 /****************************************************************************
@@ -687,6 +766,8 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 							canon_ace **ppfile_ace, canon_ace **ppdir_ace,
 							SEC_ACL *dacl)
 {
+	extern DOM_SID global_sid_Creator_Owner;
+	extern DOM_SID global_sid_Creator_Group;
 	extern DOM_SID global_sid_World;
 	extern struct generic_mapping file_generic_mapping;
 	BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
@@ -713,23 +794,25 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 			return False;
 		}
 
-		/*
-		 * The security mask may be UNIX_ACCESS_NONE which should map into
-		 * no permissions (we overload the WRITE_OWNER bit for this) or it
-		 * should be one of the ALL/EXECUTE/READ/WRITE bits. Arrange for this
-		 * to be so. Any other bits override the UNIX_ACCESS_NONE bit.
-		 */
+		if (nt4_compatible_acls()) {
+			/*
+			 * The security mask may be UNIX_ACCESS_NONE which should map into
+			 * no permissions (we overload the WRITE_OWNER bit for this) or it
+			 * should be one of the ALL/EXECUTE/READ/WRITE bits. Arrange for this
+			 * to be so. Any other bits override the UNIX_ACCESS_NONE bit.
+			 */
 
-		/*
-		 * Convert GENERIC bits to specific bits.
-		 */
+			/*
+			 * Convert GENERIC bits to specific bits.
+			 */
  
-		se_map_generic(&psa->info.mask, &file_generic_mapping);
+			se_map_generic(&psa->info.mask, &file_generic_mapping);
 
-		psa->info.mask &= (UNIX_ACCESS_NONE|FILE_ALL_ACCESS);
+			psa->info.mask &= (UNIX_ACCESS_NONE|FILE_ALL_ACCESS);
 
-		if(psa->info.mask != UNIX_ACCESS_NONE)
-			psa->info.mask &= ~UNIX_ACCESS_NONE;
+			if(psa->info.mask != UNIX_ACCESS_NONE)
+				psa->info.mask &= ~UNIX_ACCESS_NONE;
+		}
 	}
 
 	/*
@@ -804,15 +887,45 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 		/*
 		 * Try and work out if the SID is a user or group
 		 * as we need to flag these differently for POSIX.
+		 * Note what kind of a POSIX ACL this should map to.
 		 */
 
 		if( sid_equal(&current_ace->trustee, &global_sid_World)) {
 			current_ace->owner_type = WORLD_ACE;
 			current_ace->unix_ug.world = -1;
+			current_ace->type = SMB_ACL_OTHER;
+		} else if (sid_equal(&current_ace->trustee, &global_sid_Creator_Owner)) {
+			current_ace->owner_type = UID_ACE;
+			current_ace->unix_ug.world = -1;
+			current_ace->type = SMB_ACL_USER_OBJ;
+
+			/*
+			 * The Creator Owner entry only specifies inheritable permissions,
+			 * never access permissions. WinNT doesn't always set the ACE to
+			 *INHERIT_ONLY, though.
+			 */
+
+			if (nt4_compatible_acls())
+				psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+		} else if (sid_equal(&current_ace->trustee, &global_sid_Creator_Group)) {
+			current_ace->owner_type = GID_ACE;
+			current_ace->unix_ug.world = -1;
+			current_ace->type = SMB_ACL_GROUP_OBJ;
+
+			/*
+			 * The Creator Group entry only specifies inheritable permissions,
+			 * never access permissions. WinNT doesn't always set the ACE to
+			 *INHERIT_ONLY, though.
+			 */
+			if (nt4_compatible_acls())
+				psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+
 		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid, &sid_type)) {
 			current_ace->owner_type = UID_ACE;
+			current_ace->type = SMB_ACL_USER;
 		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid, &sid_type)) {
 			current_ace->owner_type = GID_ACE;
+			current_ace->type = SMB_ACL_GROUP;
 		} else {
 			fstring str;
 
@@ -831,31 +944,6 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 
 		current_ace->perms |= map_nt_perms( psa->info, S_IRUSR);
 		current_ace->attr = (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? ALLOW_ACE : DENY_ACE;
-
-		/*
-		 * Now note what kind of a POSIX ACL this should map to.
-		 */
-
-		if(sid_equal(&current_ace->trustee, pfile_owner_sid)) {
-
-			current_ace->type = SMB_ACL_USER_OBJ;
-
-		} else if( sid_equal(&current_ace->trustee, pfile_grp_sid)) {
-
-			current_ace->type = SMB_ACL_GROUP_OBJ;
-
-		} else if( sid_equal(&current_ace->trustee, &global_sid_World)) {
-
-			current_ace->type = SMB_ACL_OTHER;
-
-		} else {
-			/*
-			 * Could be a SMB_ACL_USER or SMB_ACL_GROUP. Check by
-			 * looking at owner_type.
-			 */
-
-			current_ace->type = (current_ace->owner_type == UID_ACE) ? SMB_ACL_USER : SMB_ACL_GROUP;
-		}
 
 		/*
 		 * Now add the created ace to either the file list, the directory
@@ -970,6 +1058,15 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 		free_canon_ace_list(dir_ace);
 		file_ace = NULL;
 		dir_ace = NULL;
+	} else {
+		/*
+		 * Check if we have SMB_ACL_USER_OBJ and SMB_ACL_GROUP_OBJ entries in each
+		 * ACL. If we don't have them, check if any SMB_ACL_USER/SMB_ACL_GROUP
+		 * entries can be converted to *_OBJ. Usually we will already have these
+		 * entries in the Default ACL, and the Access ACL will not have them.
+		 */
+		check_owning_objs(file_ace, pfile_owner_sid, pfile_grp_sid);
+		check_owning_objs(dir_ace, pfile_owner_sid, pfile_grp_sid);
 	}
 
 	*ppfile_ace = file_ace;
@@ -1375,7 +1472,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 	pst->st_mode = create_default_mode(fsp, True);
 
-	if (!ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
+	if (dir_ace && !ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -1398,14 +1495,13 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
  Note that this doesn't exactly match the NT semantics for an ACL. As POSIX entries
  are not ordered, and match on the most specific entry rather than walking a list,
- then a simple POSIX permission of rw-r--r-- should really map to 6 entries,
+ then a simple POSIX permission of rw-r--r-- should really map to 5 entries,
 
  Entry 0: owner : deny all except read and write.
  Entry 1: group : deny all except read.
- Entry 2: Everyone : deny all except read.
- Entry 3: owner : allow read and write.
- Entry 4: group : allow read.
- Entry 5: Everyone : allow read.
+ Entry 2: owner : allow read and write.
+ Entry 3: group : allow read.
+ Entry 4: Everyone : allow read.
 
  But NT cannot display this in their ACL editor !
 ********************************************************************************/
@@ -1455,7 +1551,7 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 ****************************************************************************/
 
 static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
-									DOM_SID *powner, DOM_SID *pgroup)
+					DOM_SID *powner, DOM_SID *pgroup, SMB_ACL_TYPE_T acl_type)
 {
 	extern DOM_SID global_sid_World;
 	connection_struct *conn = fsp->conn;
@@ -1489,7 +1585,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 		switch(tagtype) {
 			case SMB_ACL_USER_OBJ:
 				/* Get the SID from the owner. */
-				uid_to_sid( &sid, psbuf->st_uid );
+				sid_copy(&sid, powner);
 				unix_ug.uid = psbuf->st_uid;
 				owner_type = UID_ACE;
 				break;
@@ -1500,6 +1596,15 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 						DEBUG(0,("canonicalise_acl: Failed to get uid.\n"));
 						continue;
 					}
+					/*
+					 * A SMB_ACL_USER entry for the owner is shadowed by the
+					 * SMB_ACL_USER_OBJ entry and Windows also cannot represent
+					 * that entry, so we ignore it. We also don't create such
+					 * entries out of the blue when setting ACLs, so a get/set
+					 * cycle will drop them.
+					 */
+					if (acl_type == SMB_ACL_TYPE_ACCESS && *puid == psbuf->st_uid)
+						continue;
 					uid_to_sid( &sid, *puid);
 					unix_ug.uid = *puid;
 					owner_type = UID_ACE;
@@ -1508,7 +1613,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 				}
 			case SMB_ACL_GROUP_OBJ:
 				/* Get the SID from the owning group. */
-				gid_to_sid( &sid, psbuf->st_gid );
+				sid_copy(&sid, pgroup);
 				unix_ug.gid = psbuf->st_gid;
 				owner_type = GID_ACE;
 				break;
@@ -1611,8 +1716,11 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	canon_ace *p_ace;
 	int i;
 	SMB_ACL_ENTRY_T mask_entry;
+	BOOL got_mask_entry = False;
 	SMB_ACL_PERMSET_T mask_permset;
 	SMB_ACL_TYPE_T the_acl_type = (default_ace ? SMB_ACL_TYPE_DEFAULT : SMB_ACL_TYPE_ACCESS);
+	BOOL needs_mask = False;
+	mode_t mask_perms = 0;
 
 	if (the_acl == NULL) {
 
@@ -1633,6 +1741,20 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		SMB_ACL_PERMSET_T the_permset;
 
 		/*
+		 * ACLs only "need" an ACL_MASK entry if there are any named user or
+		 * named group entries. But if there is an ACL_MASK entry, it applies
+		 * to ACL_USER, ACL_GROUP, and ACL_GROUP_OBJ entries. Set the mask
+		 * so that it doesn't deny (i.e., mask off) any permissions.
+		 */
+
+		if (p_ace->type == SMB_ACL_USER || p_ace->type == SMB_ACL_GROUP) {
+			needs_mask = True;
+			mask_perms |= p_ace->perms;
+		} else if (p_ace->type == SMB_ACL_GROUP_OBJ) {
+			mask_perms |= p_ace->perms;
+		}
+
+		/*
 		 * Get the entry for this ACE.
 		 */
 
@@ -1640,6 +1762,11 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 			DEBUG(0,("set_canon_ace_list: Failed to create entry %d. (%s)\n",
 				i, strerror(errno) ));
 			goto done;
+		}
+
+		if (p_ace->type == SMB_ACL_MASK) {
+			mask_entry = the_entry;
+			got_mask_entry = True;
 		}
 
 		/*
@@ -1706,33 +1833,31 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 			print_canon_ace( p_ace, i);
 	}
 
-	/*
-	 * Add in a mask of rwx.
-	 */
+	if (needs_mask && !got_mask_entry) {
+		if (conn->vfs_ops.sys_acl_create_entry(conn, &the_acl, &mask_entry) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to create mask entry. (%s)\n", strerror(errno) ));
+			goto done;
+		}
 
-	if (conn->vfs_ops.sys_acl_create_entry( conn, &the_acl, &mask_entry) == -1) {
-		DEBUG(0,("set_canon_ace_list: Failed to create mask entry. (%s)\n", strerror(errno) ));
-		goto done;
-	}
+		if (conn->vfs_ops.sys_acl_set_tag_type(conn, mask_entry, SMB_ACL_MASK) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to set tag type on mask entry. (%s)\n",strerror(errno) ));
+			goto done;
+		}
 
-	if (conn->vfs_ops.sys_acl_set_tag_type(conn, mask_entry, SMB_ACL_MASK) == -1) {
-		DEBUG(0,("set_canon_ace_list: Failed to set tag type on mask entry. (%s)\n",strerror(errno) ));
-		goto done;
-	}
+		if (conn->vfs_ops.sys_acl_get_permset(conn, mask_entry, &mask_permset) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to get mask permset. (%s)\n", strerror(errno) ));
+			goto done;
+		}
 
-	if (conn->vfs_ops.sys_acl_get_permset(conn, mask_entry, &mask_permset) == -1) {
-		DEBUG(0,("set_canon_ace_list: Failed to get mask permset. (%s)\n", strerror(errno) ));
-		goto done;
-	}
+		if (map_acl_perms_to_permset(conn, S_IRUSR|S_IWUSR|S_IXUSR, &mask_permset) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to create mask permset. (%s)\n", strerror(errno) ));
+			goto done;
+		}
 
-	if (map_acl_perms_to_permset(conn, S_IRUSR|S_IWUSR|S_IXUSR, &mask_permset) == -1) {
-		DEBUG(0,("set_canon_ace_list: Failed to create mask permset. (%s)\n", strerror(errno) ));
-		goto done;
-	}
-
-	if (conn->vfs_ops.sys_acl_set_permset(conn, mask_entry, mask_permset) == -1) {
-		DEBUG(0,("set_canon_ace_list: Failed to add mask permset. (%s)\n", strerror(errno) ));
-		goto done;
+		if (conn->vfs_ops.sys_acl_set_permset(conn, mask_entry, mask_permset) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to add mask permset. (%s)\n", strerror(errno) ));
+			goto done;
+		}
 	}
 
 	/*
@@ -1758,6 +1883,12 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 			 */
 			if (errno == ENOSYS)
 				*pacl_set_support = False;
+
+#ifdef ENOTSUP
+			if (errno == ENOTSUP)
+				*pacl_set_support = False;
+#endif
+
 			DEBUG(2,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
 					the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
 					fsp->fsp_name, strerror(errno) ));
@@ -1771,6 +1902,12 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 			 */
 			if (errno == ENOSYS)
 				*pacl_set_support = False;
+
+#ifdef ENOTSUP
+			if (errno == ENOTSUP)
+				*pacl_set_support = False;
+#endif
+
 			DEBUG(2,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
 					fsp->fsp_name, strerror(errno) ));
 			goto done;
@@ -1785,6 +1922,39 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	    conn->vfs_ops.sys_acl_free_acl(conn, the_acl);
 
 	return ret;
+}
+
+/****************************************************************************
+ Find a particular canon_ace entry.
+****************************************************************************/
+
+static struct canon_ace *canon_ace_entry_for(struct canon_ace *list, SMB_ACL_TAG_T type, posix_id *id)
+{
+	while (list) {
+		if (list->type == type && ((type != SMB_ACL_USER && type != SMB_ACL_GROUP) ||
+				(type == SMB_ACL_USER  && id && id->uid == list->unix_ug.uid) ||
+				(type == SMB_ACL_GROUP && id && id->gid == list->unix_ug.gid)))
+			break;
+		list = list->next;
+	}
+	return list;
+}
+
+/****************************************************************************
+ 
+****************************************************************************/
+
+SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T acl)
+{
+	SMB_ACL_ENTRY_T entry;
+
+	if (!acl)
+		return NULL;
+	if (conn->vfs_ops.sys_acl_get_entry(conn, acl, SMB_ACL_FIRST_ENTRY, &entry) != 1) {
+		conn->vfs_ops.sys_acl_free_acl(conn, acl);
+		return NULL;
+	}
+	return acl;
 }
 
 /****************************************************************************
@@ -1922,6 +2092,8 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
 	extern DOM_SID global_sid_Builtin_Administrators;
 	extern DOM_SID global_sid_Builtin_Users;
+	extern DOM_SID global_sid_Creator_Owner;
+	extern DOM_SID global_sid_Creator_Group;
 	connection_struct *conn = fsp->conn;
 	SMB_STRUCT_STAT sbuf;
 	SEC_ACE *nt_ace_list = NULL;
@@ -1958,8 +2130,10 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		 * If it's a directory get the default POSIX ACL.
 		 */
 
-		if(fsp->is_directory)
+		if(fsp->is_directory) {
 			dir_acl = conn->vfs_ops.sys_acl_get_file(conn, fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
+			dir_acl = free_empty_sys_acl(conn, dir_acl);
+		}
 
 	} else {
 
@@ -1990,34 +2164,30 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		create_file_sids(&sbuf, &owner_sid, &group_sid);
 	}
 
+	/*
+	 * In the optimum case Creator Owner and Creator Group would be used for
+	 * the ACL_USER_OBJ and ACL_GROUP_OBJ entries, respectively, but this
+	 * would lead to usability problems under Windows: The Creator entries
+	 * are only available in browse lists of directories and not for files;
+	 * additionally the identity of the owning group couldn't be determined.
+	 * We therefore use those identities only for Default ACLs. 
+	 */
+
 	/* Create the canon_ace lists. */
-	file_ace = canonicalise_acl( fsp, posix_acl, &sbuf,  &owner_sid, &group_sid);
-	num_acls = count_canon_ace_list(file_ace);
+	file_ace = canonicalise_acl( fsp, posix_acl, &sbuf, &owner_sid, &group_sid, SMB_ACL_TYPE_ACCESS );
 
 	/* We must have *some* ACLS. */
 
-	if (num_acls == 0) {
+	if (count_canon_ace_list(file_ace) == 0) {
 		DEBUG(0,("get_nt_acl : No ACLs on file (%s) !\n", fsp->fsp_name ));
 		return 0;
 	}
 
-	if (fsp->is_directory) { 
-		/*
-		 * If we have to fake a default ACL then this is the mode to use.
-		 */
-		sbuf.st_mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
-
-		dir_ace = canonicalise_acl(fsp, dir_acl, &sbuf, &owner_sid, &group_sid);
-		num_dir_acls = count_canon_ace_list(dir_ace);
+	if (fsp->is_directory && dir_acl) {
+		dir_ace = canonicalise_acl(fsp, dir_acl, &sbuf,
+				&global_sid_Creator_Owner,
+				&global_sid_Creator_Group, SMB_ACL_TYPE_DEFAULT );
 	}
-
-	/* Allocate the ace list. */
-	if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_profile_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
-		DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
-		goto done;
-	}
-
-	memset(nt_ace_list, '\0', (num_acls + num_profile_acls + num_dir_acls) * sizeof(SEC_ACE) );
 
 	/*
 	 * Create the NT ACE list from the canonical ace lists.
@@ -2028,16 +2198,112 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		int nt_acl_type;
 		int i;
 
+		if (nt4_compatible_acls()) {
+			/*
+			 * NT 4 chokes if an ACL contains an INHERIT_ONLY entry
+			 * but no non-INHERIT_ONLY entry for one SID. So we only
+			 * remove entries from the Access ACL if the
+			 * corresponding Default ACL entries have also been
+			 * removed. ACEs for CREATOR-OWNER and CREATOR-GROUP
+			 * are exceptions. We can do nothing
+			 * intelligent if the Default ACL contains entries that
+			 * are not also contained in the Access ACL, so this
+			 * case will still fail under NT 4.
+			 */
+
+			if (!dir_ace)
+				goto simplify_file_ace_only;
+
+			ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
+			if (ace && !ace->perms) {
+				DLIST_REMOVE(dir_ace, ace);
+				SAFE_FREE(ace);
+
+				ace = canon_ace_entry_for(file_ace, SMB_ACL_OTHER, NULL);
+				if (ace && !ace->perms) {
+					DLIST_REMOVE(file_ace, ace);
+					SAFE_FREE(ace);
+				}
+			}
+
+			/*
+			 * WinNT doesn't usually have Creator Group
+			 * in browse lists, so we send this entry to
+			 * WinNT even if it contains no relevant
+			 * permissions. Once we can add
+			 * Creator Group to browse lists we can
+			 * re-enable this.
+			 */
+
+#if 0
+			ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
+			if (ace && !ace->perms) {
+				DLIST_REMOVE(dir_ace, ace);
+				SAFE_FREE(ace);
+			}
+#endif
+
+			ace = canon_ace_entry_for(file_ace, SMB_ACL_GROUP_OBJ, NULL);
+			if (ace && !ace->perms) {
+				DLIST_REMOVE(file_ace, ace);
+				SAFE_FREE(ace);
+			}
+		} else {
+
+			ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
+			if (ace && !ace->perms) {
+				DLIST_REMOVE(dir_ace, ace);
+				SAFE_FREE(ace);
+			}
+			ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
+			if (ace && !ace->perms) {
+				DLIST_REMOVE(dir_ace, ace);
+				SAFE_FREE(ace);
+			}
+
+ simplify_file_ace_only:
+
+			ace = canon_ace_entry_for(file_ace, SMB_ACL_OTHER, NULL);
+			if (ace && !ace->perms) {
+				DLIST_REMOVE(file_ace, ace);
+				SAFE_FREE(ace);
+			}
+
+			ace = canon_ace_entry_for(file_ace, SMB_ACL_GROUP_OBJ, NULL);
+			if (ace && !ace->perms) {
+				DLIST_REMOVE(file_ace, ace);
+				SAFE_FREE(ace);
+			}
+		}
+
+		num_acls = count_canon_ace_list(file_ace);
+		num_dir_acls = count_canon_ace_list(dir_ace);
+
+		/* Allocate the ace list. */
+		if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_profile_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
+			DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
+			goto done;
+		}
+
+		memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
+										                
+		/*
+		 * Create the NT ACE list from the canonical ace lists.
+		 */
+
 		ace = file_ace;
 
 		for (i = 0; i < num_acls; i++, ace = ace->next) {
-			SEC_ACCESS acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+			SEC_ACCESS acc;
+
+			acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
 			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 0);
 		}
 
 		/* The User must have access to a profile share - even if we can't map the SID. */
 		if (lp_profile_acls(SNUM(fsp->conn))) {
 			SEC_ACCESS acc;
+
 			init_sec_access(&acc,FILE_GENERIC_ALL);
 			init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc, 0);
 		}
@@ -2045,14 +2311,17 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		ace = dir_ace;
 
 		for (i = 0; i < num_dir_acls; i++, ace = ace->next) {
-			SEC_ACCESS acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
-			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 
+			SEC_ACCESS acc;
+
+			acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc,
 					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
 		}
 
 		/* The User must have access to a profile share - even if we can't map the SID. */
 		if (lp_profile_acls(SNUM(fsp->conn))) {
 			SEC_ACCESS acc;
+			
 			init_sec_access(&acc,FILE_GENERIC_ALL);
 			init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc,
 					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
@@ -2087,11 +2356,22 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	if(!*ppdesc) {
 		DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
 		sd_size = 0;
+	} else {
+		/*
+		 * Windows 2000: The DACL_PROTECTED flag in the security
+		 * descriptor marks the ACL as non-inheriting, i.e., no
+		 * ACEs from higher level directories propagate to this
+		 * ACL. In the POSIX ACL model permissions are only
+		 * inherited at file create time, so ACLs never contain
+		 * any ACEs that are inherited dynamically. The DACL_PROTECTED
+		 * flag doesn't seem to bother Windows NT.
+		 */
+		(*ppdesc)->type |= SE_DESC_DACL_PROTECTED;
 	}
 
-  done:
+ done:
 
-	if (posix_acl)	
+	if (posix_acl)
 		conn->vfs_ops.sys_acl_free_acl(conn, posix_acl);
 	if (dir_acl)
 		conn->vfs_ops.sys_acl_free_acl(conn, dir_acl);
@@ -2379,6 +2659,12 @@ static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mo
 				perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
 				break;
 			case SMB_ACL_MASK:
+				/*
+				 * FIXME: The ACL_MASK entry permissions should really be set to
+				 * the union of the permissions of all ACL_USER,
+				 * ACL_GROUP_OBJ, and ACL_GROUP entries. That's what
+				 * acl_calc_mask() does, but Samba ACLs doesn't provide it.
+				 */
 				perms = S_IRUSR|S_IWUSR|S_IXUSR;
 				break;
 			case SMB_ACL_OTHER:
@@ -2407,6 +2693,31 @@ static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mo
 }
 
 /****************************************************************************
+ Get the access ACL of FROM, do a chmod by setting the ACL USER_OBJ,
+ GROUP_OBJ and OTHER bits in an ACL and set the mask to rwx. Set the
+ resulting ACL on TO.  Note that name is in UNIX character set.
+****************************************************************************/
+
+static int copy_access_acl(connection_struct *conn, const char *from, const char *to, mode_t mode)
+{
+	SMB_ACL_T posix_acl = NULL;
+	int ret = -1;
+
+	if ((posix_acl = conn->vfs_ops.sys_acl_get_file(conn, from, SMB_ACL_TYPE_ACCESS)) == NULL)
+		return -1;
+
+	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
+		goto done;
+
+	ret = conn->vfs_ops.sys_acl_set_file(conn, to, SMB_ACL_TYPE_ACCESS, posix_acl);
+
+ done:
+
+	conn->vfs_ops.sys_acl_free_acl(conn, posix_acl);
+	return ret;
+}
+
+/****************************************************************************
  Do a chmod by setting the ACL USER_OBJ, GROUP_OBJ and OTHER bits in an ACL
  and set the mask to rwx. Needed to preserve complex ACLs set by NT.
  Note that name is in UNIX character set.
@@ -2414,21 +2725,23 @@ static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mo
 
 int chmod_acl(connection_struct *conn, const char *name, mode_t mode)
 {
-	SMB_ACL_T posix_acl = NULL;
-	int ret = -1;
+	return copy_access_acl(conn, name, name, mode);
+}
 
-	if ((posix_acl = conn->vfs_ops.sys_acl_get_file(conn, name, SMB_ACL_TYPE_ACCESS)) == NULL)
-		return -1;
+/****************************************************************************
+ If "inherit permissions" is set and the parent directory has no default
+ ACL but it does have an Access ACL, inherit this Access ACL to file name.
+****************************************************************************/
 
-	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
-		goto done;
+int inherit_access_acl(connection_struct *conn, const char *name, mode_t mode)
+{
+	pstring dirname;
+	pstrcpy(dirname, parent_dirname(name));
 
-	ret = conn->vfs_ops.sys_acl_set_file(conn, name, SMB_ACL_TYPE_ACCESS, posix_acl);
+	if (!lp_inherit_perms(SNUM(conn)) || directory_has_default_acl(conn, dirname))
+		return 0;
 
-  done:
-
-	conn->vfs_ops.sys_acl_free_acl(conn, posix_acl);
-	return ret;
+	return copy_access_acl(conn, dirname, name, mode);
 }
 
 /****************************************************************************
