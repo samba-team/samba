@@ -23,6 +23,28 @@ if($opt_q) {
 if($opt_R) {
     $private_func_re = $opt_R;
 }
+%flags = (
+	  'multiline-proto' => 1,
+	  'header' => 1,
+	  'function-blocking' => 0,
+	  'gnuc-attribute' => 1
+	  );
+if($opt_m) {
+    foreach $i (split(/,/, $opt_m)) {
+	if($i eq "roken") {
+	    $flags{"multiline-proto"} = 0;
+	    $flags{"header"} = 0;
+	    $flags{"function-blocking"} = 0;
+	    $flags{"gnuc-attribute"} = 0;
+	} else {
+	    if(substr($i, 0, 3) eq "no-") {
+		$flags{substr($i, 3)} = 0;
+	    } else {
+		$flags{$i} = 1;
+	    }
+	}
+    }
+}
 
 if($opt_x) {
     open(EXP, $opt_x);
@@ -91,10 +113,10 @@ while(<>) {
 		}
 		s/\<\>/<void>/;
 		# add newlines before parameters
-		if($opt_m eq "roken") {
-		    s/,\s*/, /g;
-		} else {
+		if($flags{"multiline-proto"}) {
 		    s/,\s*/,\n\t/g;
+		} else {
+		    s/,\s*/, /g;
 		}
 		# fix removed ,
 		s/\$/,/g;
@@ -109,14 +131,14 @@ while(<>) {
 		    $RP = ")";
 		}
 		# only add newline if more than one parameter
-                if($opt_m ne "roken" && /,/){ 
+                if($flags{"multiline-proto"} && /,/){ 
 		    s/\</ $LP\n\t/;
 		}else{
 		    s/\</ $LP/;
 		}
 		s/\>/$RP/;
 		# insert newline before function name
-		if($opt_m ne "roken") {
+		if($flags{"multiline-proto"}) {
 		    s/(.*)\s([a-zA-Z0-9_]+ \Q$LP\E)/$1\n$2/;
 		}
 		if($attr ne "") {
@@ -164,14 +186,13 @@ if($opt_p) {
 $public_h = "";
 $private_h = "";
 
-if($opt_m ne "roken") {
-    $public_h_header = "/* This is a generated file */
+$public_h_header .= "/* This is a generated file */
 #ifndef $block
 #define $block
 
 ";
-    if ($oproto) {
-	$public_h_header .= "#ifdef __STDC__
+if ($oproto) {
+    $public_h_header .= "#ifdef __STDC__
 #include <stdarg.h>
 #ifndef __P
 #define __P(x) x
@@ -183,18 +204,19 @@ if($opt_m ne "roken") {
 #endif
 
 ";
-    } else {
-	$public_h_header .= "#include <stdarg.h>
+} else {
+    $public_h_header .= "#include <stdarg.h>
 
 ";
-    }
-    $private_h_header = "/* This is a generated file */
+}
+
+$private_h_header = "/* This is a generated file */
 #ifndef $private
 #define $private
 
 ";
-    if($oproto) {
-	$private_h_header .= "#ifdef __STDC__
+if($oproto) {
+    $private_h_header .= "#ifdef __STDC__
 #include <stdarg.h>
 #ifndef __P
 #define __P(x) x
@@ -206,12 +228,12 @@ if($opt_m ne "roken") {
 #endif
 
 ";
-    } else {
-	$private_h_header .= "#include <stdarg.h>
+} else {
+    $private_h_header .= "#include <stdarg.h>
 
 ";
-    }
 }
+
 foreach(sort keys %funcs){
     if(/^(main)$/) { next }
     if(!defined($exported{$_}) && /$private_func_re/) {
@@ -220,7 +242,7 @@ foreach(sort keys %funcs){
 	    $private_attribute_seen = 1;
 	}
     } else {
-	if($opt_m eq "roken") {
+	if($flags{"function-blocking"}) {
 	    $fupper = uc $_;
 	    if($exported{$_} =~ /proto/) {
 		$public_h .= "#if !defined(HAVE_$fupper) || defined(NEED_${fupper}_PROTO)\n";
@@ -232,14 +254,14 @@ foreach(sort keys %funcs){
 	if($funcs{$_} =~ /__attribute__/) {
 	    $public_attribute_seen = 1;
 	}
-	if($opt_m eq "roken") {
+	if($flags{"function-blocking"}) {
 	    $public_h .= "#endif\n";
 	}
 	$public_h .= "\n";
     }
 }
 
-if($opt_m ne "roken") {
+if($flags{"gnuc-attribute"}) {
     if ($public_attribute_seen) {
 	$public_h_header .= "#if !defined(__GNUC__) && !defined(__attribute__)
 #define __attribute__(x)
@@ -255,9 +277,9 @@ if($opt_m ne "roken") {
 
 ";
     }
-    
-    if ($opt_E) {
-	$public_h_header .= "#ifndef $opt_E
+}
+if ($opt_E) {
+    $public_h_header .= "#ifndef $opt_E
 #if defined(_WIN32)
 #define $opt_E _stdcall
 #else
@@ -266,8 +288,8 @@ if($opt_m ne "roken") {
 #endif
 
 ";
-
-	$private_h_header .= "#ifndef $opt_E
+    
+    $private_h_header .= "#ifndef $opt_E
 #if defined(_WIN32)
 #define $opt_E _stdcall
 #else
@@ -276,14 +298,13 @@ if($opt_m ne "roken") {
 #endif
 
 ";
-    }
+}
     
-    if ($public_h ne "") {
-	$public_h = $public_h_header . $public_h . "#endif /* $block */\n";
-    }
-    if ($private_h ne "") {
-	$private_h = $private_h_header . $private_h . "#endif /* $private */\n";
-    }
+if ($public_h ne "" && $flags{"header"}) {
+    $public_h = $public_h_header . $public_h . "#endif /* $block */\n";
+}
+if ($private_h ne "" && $flags{"header"}) {
+    $private_h = $private_h_header . $private_h . "#endif /* $private */\n";
 }
 
 if($opt_o) {
