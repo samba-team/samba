@@ -52,7 +52,7 @@ static void free_lsa_info(void *ptr)
 {
 	struct lsa_info *lsa = (struct lsa_info *)ptr;
 
-	SAFE_FREE(lsa);
+	SAFE_FRE(lsa);
 }
 
 /***************************************************************************
@@ -1222,6 +1222,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 	char *forest_name = NULL;
 	DOM_SID *sid = NULL;
 	GUID guid;
+	fstring dnsdomname;
 
 	ZERO_STRUCT(guid);
 	r_u->status = NT_STATUS_OK;
@@ -1241,8 +1242,15 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 			case ROLE_DOMAIN_BDC:
 				nb_name = lp_workgroup();
 				/* ugly temp hack for these next two */
-				dns_name = lp_realm();
-				forest_name = lp_realm();
+
+				/* This should be a 'netbios domain -> DNS domain' mapping */
+				dnsdomname[0] = '\0';
+				get_mydomname(dnsdomname);
+				strlower(dnsdomname);
+				
+				dns_name = dnsdomname;
+				forest_name = dnsdomname;
+
 				sid = get_global_sam_sid();
 				secrets_fetch_domain_guid(lp_workgroup(), &guid);
 				break;
