@@ -195,7 +195,7 @@ void reply_name_reg(struct packet_struct *p)
   
   if (!(d = find_req_subnet(p->ip, bcast)))
   {
-    DEBUG(3,("response packet: bcast %s not known\n",
+    DEBUG(3,("reply_name_reg: subnet %s not known\n",
 				inet_ntoa(p->ip)));
     return;
   }

@@ -73,6 +73,8 @@ static int sig_term()
   /* XXXX other things: if we are a master browser, force an election? */
   
   exit(0);
+  /* Keep compiler happy.. */
+  return 0;
 }
 
 

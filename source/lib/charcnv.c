@@ -25,7 +25,7 @@ extern int DEBUGLEVEL;
 
 static char cvtbuf[1024];
 
-static mapsinited = 0;
+static BOOL mapsinited = 0;
 
 static char unix2dos[256];
 static char dos2unix[256];
@@ -36,7 +36,7 @@ static void initmaps() {
     for (k = 0; k < 256; k++) unix2dos[k] = k;
     for (k = 0; k < 256; k++) dos2unix[k] = k;
 
-    mapsinited = 1;
+    mapsinited = True;
 }
 
 static void update_map(char * str) {

@@ -843,7 +843,7 @@ else
   {
   unsigned int offset = datap - converter;
 
-  if( offset < 0 || offset >= rdrcnt )
+  if( offset >= rdrcnt )
     {
       DEBUG(1,("bad char ptr: datap=%u, converter=%u, rdata=%u, rdrcnt=%d>", datap, converter, (unsigned)rdata, rdrcnt));
     return "<ERROR>";

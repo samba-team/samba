@@ -481,8 +481,8 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
 
 /*The following definitions come from  nameserv.c  */
 
-void remove_name_entry(struct subnet_record *d, char *name,int type);
-void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags);
+void remove_name_entry(struct subnet_record *d, char *name,int type, BOOL direct);
+void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags, BOOL direct);
 void add_domain_names(time_t t);
 void add_my_names(void);
 void remove_my_names();

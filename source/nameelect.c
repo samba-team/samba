@@ -325,6 +325,12 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
   if (!work || !d) 
     return;
   
+  if (!lp_local_master())
+  { 
+    DEBUG(0,("Samba not configured as a local master browser.\n"));
+    return;
+  }
+
   DEBUG(2,("Becoming master for %s %s (currently at stage %d)\n",
            work->work_group,inet_ntoa(d->bcast_ip),work->mst_state));
   
@@ -342,7 +348,7 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
       add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
 
       /* add special browser name */
-      add_my_name_entry(d,MSBROWSE,0x01,nb_type|NB_ACTIVE|NB_GROUP);
+      add_my_name_entry(d,MSBROWSE,0x01,nb_type|NB_ACTIVE|NB_GROUP,False);
 
       /* DON'T do anything else after calling add_my_name_entry() */
       break;
@@ -357,7 +363,7 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
       add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
 
       /* add master name */
-      add_my_name_entry(d,work->work_group,0x1d,nb_type|NB_ACTIVE);
+      add_my_name_entry(d,work->work_group,0x1d,nb_type|NB_ACTIVE,False);
   
       /* DON'T do anything else after calling add_my_name_entry() */
       break;
@@ -365,7 +371,11 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
 
     case MST_MSB: /* while we were still only registered MSBROWSE state... */
     {
-      DEBUG(3,("2nd stage complete: registered as master browser\n"));
+      int i = 0;
+      struct server_record *sl;
+
+      DEBUG(3,("2nd stage complete: registered as master browser for workgroup %s \
+on subnet %s\n", work->work_group, inet_ntoa(d->bcast_ip)));
       work->mst_state = MST_BROWSER; /* registering WORKGROUP(1d) succeeded */
 
       /* update our server status */
@@ -376,10 +386,16 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
 
       add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
 
-      if (work->serverlist == NULL) /* no servers! */
+      /* Count the number of servers we have on our list. If it's
+         less than 10 (just a heuristic) request the servers
+         to announce themselves.
+       */
+      for( sl = work->serverlist; sl != NULL; sl = sl->next)
+        i++;
+
+      if (i < 10)
       {
         /* ask all servers on our local net to announce to us */
-        /* XXXX OOPS! add_server_entry always adds one entry - ours. */
         announce_request(work, d->bcast_ip);
       }
 
@@ -428,56 +444,59 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
    */
 
   if (!work || !d) return;
-  
+ 
+  if (!lp_domain_master())
+  { 
+    DEBUG(0,("Samba not configured as a domain master browser.\n"));
+    return;
+  }
+
   DEBUG(2,("Becoming domain master for %s %s (currently at stage %d)\n",
-					work->work_group,inet_ntoa(d->bcast_ip),work->dom_state));
+	work->work_group,inet_ntoa(d->bcast_ip),work->dom_state));
   
   switch (work->dom_state)
   {
     case DOMAIN_NONE: /* while we were nothing but a server... */
     {
-      if (lp_domain_master())
-      {
-		  DEBUG(3,("go to first stage: register <1b> name\n"));
-		  work->dom_state = DOMAIN_WAIT;
+      DEBUG(3,("become_domain_master: go to first stage: register <1b> name\n"));
+      work->dom_state = DOMAIN_WAIT;
 
-		  /* XXXX the 0x1b is domain master browser name */
-		  add_my_name_entry(d, work->work_group,0x1b,nb_type|NB_ACTIVE|NB_GROUP);
-
-		  /* DON'T do anything else after calling add_my_name_entry() */
-		  break;
-      }
+      /* Registering the DOMAIN<1b> name is very tricky. We need to
+         do this on all our subnets, but don't want to bradcast it
+         on locally connected subnets (WinNT doesn't do this). Also,
+         previous versions of Samba screw up royally when we do this.
+         We need to register it immediatly on our local subnet, but
+         also actually check with the WINS server if it exists. If the name
+         has already been claimed by someone else in the WINS server
+         then we need to back out all our local registrations and
+         fail. Thus we only directly enter the name on local subnets,
+         on the WINS subnet we actually check...
+      */
+      /* XXXX the 0x1b is domain master browser name */
+      if(d == wins_subnet)
+        add_my_name_entry(d, work->work_group,0x1b,nb_type|NB_ACTIVE,False);
       else
-      {
-        DEBUG(4,("samba not configured as a domain master.\n"));
-      }
-  
+        add_my_name_entry(d, work->work_group,0x1b,nb_type|NB_ACTIVE,True);
+
+      /* DON'T do anything else after calling add_my_name_entry() */
       break;
     }
 
-   case DOMAIN_WAIT:
-   {
-      if (lp_domain_master())
-      {
-        work->dom_state = DOMAIN_MST; /* ... become domain master */
-        DEBUG(3,("domain first stage: register as domain member\n"));
+    case DOMAIN_WAIT:
+    {
+      work->dom_state = DOMAIN_MST; /* ... become domain master */
+      DEBUG(3,("become_domain_master: first stage - register as domain member\n"));
  
-        /* update our server status */
-        work->ServerType |= SV_TYPE_NT|SV_TYPE_DOMAIN_MASTER;
-        add_server_entry(d,work,myname,work->ServerType,0,
-                         lp_serverstring(),True);
+      /* update our server status */
+      work->ServerType |= SV_TYPE_NT|SV_TYPE_DOMAIN_MASTER;
+      add_server_entry(d,work,myname,work->ServerType,0,
+                        lp_serverstring(),True);
 
-        DEBUG(4,("samba is now a domain master\n"));
+      DEBUG(4,("Samba is now a domain master browser for workgroup %s on subnet %s\n", 
+                work->work_group, inet_ntoa(d->bcast_ip)));
 
-        break;
-      }
-      else
-      {
-        DEBUG(4,("samba not configured as a domain master.\n"));
-      }
-  
       break;
-   }
+    }
 
     case DOMAIN_MST:
     {
@@ -496,60 +515,48 @@ void become_logon_server(struct subnet_record *d, struct work_record *work)
 {
   if (!work || !d) return;
   
+  if (lp_domain_logons())
+  {
+    DEBUG(0,("samba not configured as a logon master.\n"));
+    return;
+  }
+
   DEBUG(2,("Becoming logon server for %s %s (currently at stage %d)\n",
-					work->work_group,inet_ntoa(d->bcast_ip),work->log_state));
+	work->work_group,inet_ntoa(d->bcast_ip),work->log_state));
   
   switch (work->log_state)
   {
     case LOGON_NONE: /* while we were nothing but a server... */
     {
-      if (lp_domain_logons())
-      {
-		  DEBUG(3,("go to first stage: register <1c> name\n"));
-		  work->log_state = LOGON_WAIT;
+      DEBUG(3,("go to first stage: register <1c> name\n"));
+            work->log_state = LOGON_WAIT;
 
-          /* XXXX the 0x1c is apparently something to do with domain logons */
-          add_my_name_entry(d, myworkgroup,0x1c,nb_type|NB_ACTIVE|NB_GROUP);
+     /* XXXX the 0x1c is apparently something to do with domain logons */
+     add_my_name_entry(d, myworkgroup,0x1c,nb_type|NB_ACTIVE|NB_GROUP,False);
 
-		  /* DON'T do anything else after calling add_my_name_entry() */
-		  break;
-      }
-      {
-        DEBUG(4,("samba not configured as a logon master.\n"));
-      }
-  
+      /* DON'T do anything else after calling add_my_name_entry() */
       break;
     }
 
-   case LOGON_WAIT:
-   {
-      if (lp_domain_logons())
-      {
-        work->log_state = LOGON_SRV; /* ... become logon server */
-        DEBUG(3,("logon second stage: register \n"));
+    case LOGON_WAIT:
+    {
+      work->log_state = LOGON_SRV; /* ... become logon server */
+      DEBUG(3,("logon second stage: register \n"));
  
-        /* update our server status */
-        work->ServerType |= SV_TYPE_NT|SV_TYPE_DOMAIN_MEMBER;
-        add_server_entry(d,work,myname,work->ServerType,0,
-                         lp_serverstring(),True);
+      /* update our server status */
+      work->ServerType |= SV_TYPE_NT|SV_TYPE_DOMAIN_MEMBER;
+      add_server_entry(d,work,myname,work->ServerType,0,
+                      lp_serverstring(),True);
 
-        /* DON'T do anything else after calling add_my_name_entry() */
-        break;
-      }
-      else
-      {
-        DEBUG(4,("samba not configured as a logon server.\n"));
-      }
-  
+      /* DON'T do anything else after calling add_my_name_entry() */
       break;
-   }
+    }
 
-   case LOGON_SRV:
-   {
+    case LOGON_SRV:
+    {
       DEBUG(3,("logon third stage: there isn't one!\n"));
       break;
-   }
-
+    }
   }
 }
 
@@ -584,8 +591,8 @@ void unbecome_local_master(struct subnet_record *d, struct work_record *work,
 
 	/* announce ourselves as no longer active as a master browser. */
     announce_server(d, work, work->work_group, myname, 0, 0);
-    remove_name_entry(d,MSBROWSE        ,0x01);
-    remove_name_entry(d,work->work_group,0x1d);
+    remove_name_entry(d,MSBROWSE        ,0x01,False);
+    remove_name_entry(d,work->work_group,0x1d,False);
   }
 }
 
@@ -612,9 +619,17 @@ void unbecome_domain_master(struct subnet_record *d, struct work_record *work,
 
     work->dom_state = DOMAIN_NONE;
 
-	/* announce ourselves as no longer active as a master browser. */
-    announce_server(d, work, work->work_group, myname, 0, 0);
-    remove_name_entry(d,work->work_group,0x1b);    
+    /* announce ourselves as no longer active as a master browser on
+       all our local subnets. */
+    for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
+    {
+      work = find_workgroupstruct(d, myworkgroup, False);
+
+      announce_server(d, work, work->work_group, myname, 0, 0);
+      /* Remove the name entry without any NetBIOS traffic as that's
+         how it was registered. */
+      remove_name_entry(d,work->work_group,0x1b,True);    
+    }
   }
 }
 
@@ -643,7 +658,7 @@ void unbecome_logon_server(struct subnet_record *d, struct work_record *work,
 
 	/* announce ourselves as no longer active as a master browser. */
     announce_server(d, work, work->work_group, myname, 0, 0);
-    remove_name_entry(d,work->work_group,0x1c);    
+    remove_name_entry(d,work->work_group,0x1c,False);    
   }
 }
 

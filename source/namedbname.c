@@ -419,7 +419,7 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
   struct name_record *n2=NULL;
   struct subnet_record *found_subnet = 0;
   int search = 0;
-  BOOL self = source == SELF;
+  BOOL self = (source == SELF);
 
   /* add the name to the WINS list if the name comes from a directed query */
   search |= wins ? FIND_WINS : FIND_LOCAL;
@@ -434,11 +434,18 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 
   if (!self)
   {
-    if (!wins && type != 0x1b)
+    if (!wins && (type != 0x1b))
     {
        /* the only broadcast (non-WINS) names we are adding are ours
           (SELF) and Domain Master type names */
        return NULL;
+    }
+    if(wins && (type == 0x1d))
+    {
+      /* Do not allow any 0x1d names to be registered in a WINS,
+         database although we return success for them.
+       */
+      return NULL;
     }
   }
 

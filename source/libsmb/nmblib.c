@@ -418,6 +418,9 @@ static BOOL parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
 
   /* parse the header */
   nmb->header.name_trn_id = RSVAL(inbuf,0);
+
+  DEBUG(10,("parse_nmb: packet id = %d\n", nmb->header.name_trn_id));
+
   nmb->header.opcode = (CVAL(inbuf,2) >> 3) & 0xF;
   nmb->header.response = ((CVAL(inbuf,2)>>7)&1)?True:False;
   nm_flags = ((CVAL(inbuf,2) & 0x7) << 4) + (CVAL(inbuf,3)>>4);
@@ -521,6 +524,8 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
       break;
     }
   if (!ok) {
+    DEBUG(10,("parse_nmb: discarding packet id = %d\n", 
+                 packet->packet.nmb.header.name_trn_id));
     free(packet);
     return(NULL);
   }

@@ -941,7 +941,6 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", strlen(vname),
 	       vname));
       break;
-      break;
     case SMB_QUERY_FS_SIZE_INFO:
       {
 	int dfree,dsize,bsize;

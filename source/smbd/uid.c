@@ -466,6 +466,5 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
   /* not reached */
   exit(82);
 #endif
+  return 1;
 }
-
-
