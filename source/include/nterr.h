@@ -3,10 +3,17 @@
 
 #define STATUS_BUFFER_OVERFLOW            (5)
 #define STATUS_MORE_ENTRIES           (0x105)
+
+/* Win32 Error codes. */
+
+#define ERROR_ACCESS_DENIED		  (5)
 #define ERROR_INVALID_HANDLE		  (6)
 #define ERROR_INVALID_PARAMETER		 (87)
 #define ERROR_INSUFFICIENT_BUFFER	(122)
-#define STATUS_1804	               (1804)
+#define ERROR_INVALID_NAME		(123)
+#define ERROR_NO_MORE_ITEMS		(259)
+#define ERROR_INVALID_PRINTER_NAME     (1801)
+#define ERROR_INVALID_DATATYPE	       (1804)
 
 /* these are the NT error codes less than 1000. They are here for when
    we start supporting NT error codes in Samba. They were extracted

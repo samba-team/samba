@@ -1272,17 +1272,16 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
 		i++;
 	}
 	
-	if (param != NULL)
-	{
-		/* exited because it exist */
-		*type=param->type;		
-		StrnCpy(value, param->value, sizeof(value)-1);
-		*data=(uint8 *)malloc(param->data_len*sizeof(uint8));
-		memcpy(*data, param->data, param->data_len);
-		*len=param->data_len;
-		return (True);
-	}
-	return (False);
+	if (param == NULL)
+		return False;
+
+	/* exited because it exist */
+	*type=param->type;		
+	StrnCpy(value, param->value, sizeof(fstring)-1);
+	*data=(uint8 *)malloc(param->data_len*sizeof(uint8));
+	memcpy(*data, param->data, param->data_len);
+	*len=param->data_len;
+	return True;
 }
 
 /****************************************************************************
