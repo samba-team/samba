@@ -18,6 +18,7 @@ smbcacls
 smbclient
 smbcontrol
 smbd
+smbgroupedit
 smbmnt
 smbmount
 smbpasswd
