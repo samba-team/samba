@@ -4,6 +4,7 @@
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Stefan (metze) Metzmacher 2005
+   Copyright (C) Jelmer Vernooij 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -351,12 +352,10 @@ static BOOL test_surrounding(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-
-
 BOOL torture_rpc_echo(void)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
+	NTSTATUS status;
+    struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 
@@ -377,13 +376,13 @@ BOOL torture_rpc_echo(void)
 	ret &= test_testcall(p, mem_ctx);
 	ret &= test_testcall2(p, mem_ctx);
 	ret &= test_enum(p, mem_ctx);
-	ret &= test_sleep(p, mem_ctx);
 	ret &= test_surrounding(p, mem_ctx);
+	ret &= test_sleep(p, mem_ctx);
 
 	printf("\n");
 	
 	talloc_free(mem_ctx);
 
-        torture_rpc_close(p);
+    torture_rpc_close(p);
 	return ret;
 }
