@@ -171,6 +171,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_ALLOCATION_INFO:
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
 		newstats.dos.alloc_size = info->allocation_info.in.alloc_size;
+		if (newstats.dos.alloc_size < newstats.st.st_size) {
+			newstats.st.st_size = newstats.dos.alloc_size;
+		}
 		break;
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
@@ -180,6 +183,17 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_POSITION_INFORMATION:
 		f->position = info->position_information.in.position;
+		break;
+
+	case RAW_SFILEINFO_MODE_INFORMATION:
+		/* this one is a puzzle */
+		if (info->mode_information.in.mode != 0 &&
+		    info->mode_information.in.mode != 2 &&
+		    info->mode_information.in.mode != 4 &&
+		    info->mode_information.in.mode != 6) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		f->mode = info->mode_information.in.mode;
 		break;
 
 	default:
@@ -310,13 +324,30 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_ALLOCATION_INFO:
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
+		if (info->allocation_info.in.alloc_size > newstats.dos.alloc_size) {
+			/* strange. Increasing the allocation size via setpathinfo 
+			   should be silently ignored */
+			break;
+		}
 		newstats.dos.alloc_size = info->allocation_info.in.alloc_size;
+		if (newstats.dos.alloc_size < newstats.st.st_size) {
+			newstats.st.st_size = newstats.dos.alloc_size;
+		}
 		break;
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
 		newstats.st.st_size = info->end_of_file_info.in.size;
 		break;
+
+	case RAW_SFILEINFO_MODE_INFORMATION:
+		if (info->mode_information.in.mode != 0 &&
+		    info->mode_information.in.mode != 2 &&
+		    info->mode_information.in.mode != 4 &&
+		    info->mode_information.in.mode != 6) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:

@@ -137,7 +137,7 @@ static int pvfs_wait_destructor(void *ptr)
 	pwait->msg_ctx = pvfs->tcon->smb_conn->connection->messaging_ctx;
 	pwait->ev = req->tcon->smb_conn->connection->event.ctx;
 	pwait->msg_type = msg_type;
-	pwait->req = req;
+	pwait->req = talloc_reference(pwait, req);
 	pwait->pvfs = pvfs;
 
 	/* setup a timer */
@@ -161,10 +161,6 @@ static int pvfs_wait_destructor(void *ptr)
 
 	/* make sure we cleanup the timer and message handler */
 	talloc_set_destructor(pwait, pvfs_wait_destructor);
-
-	/* make sure that on a disconnect the request is not destroyed
-	   before pvfs */
-	talloc_steal(pvfs, req);
 
 	return pwait;
 }

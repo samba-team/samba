@@ -116,6 +116,9 @@ struct pvfs_file {
 	uint32_t share_access;
 	uint32_t access_mask;
 
+	/* this is set by the mode_information level. What does it do? */
+	uint32_t mode;
+
 	/* yes, we need 2 independent positions ... */
 	uint64_t seek_offset;
 	uint64_t position;
