@@ -83,9 +83,18 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 			printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd program' \
 parameter.\n" );
 		} else {
-			if(access(lp_passwd_program(), F_OK) == -1) {
+			pstring passwd_prog;
+			pstring truncated_prog;
+			char *p;
+
+			pstrcpy( passwd_prog, lp_passwd_program());
+			p = passwd_prog;
+			*truncated_prog = '\0';
+			next_token(&p, truncated_prog, NULL, sizeof(pstring));
+
+			if(access(truncated_prog, F_OK) == -1) {
 				printf("ERROR: the 'unix password sync' parameter is set and the 'passwd program' (%s) \
-cannot be executed (error was %s).\n", lp_passwd_program(), strerror(errno) );
+cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
 			}
 		}
 
@@ -101,8 +110,8 @@ parameter.\n");
 
 		if(lp_encrypted_passwords()) {
 			if(strstr( lp_passwd_chat(), "%o")!=NULL) {
-				printf("ERROR: the 'passwd chat' script expects to use the old plaintext password \
-via the %%o substitution. With encrypted passwords this is not possible.\n" );
+				printf("ERROR: the 'passwd chat' script [%s] expects to use the old plaintext password \
+via the %%o substitution. With encrypted passwords this is not possible.\n", lp_passwd_chat() );
 			}
 		}
 	}
