@@ -67,7 +67,7 @@ kadm5_ret_t
 _kadm5_privs_to_string(u_int32_t privs, char *string, size_t len)
 {
     if(privs == 0)
-	strcpy_truncate(string, "none", len);
+	strlcpy(string, "none", len);
     else
 	unparse_flags(privs, acl_units + 1, string, len);
     return 0;
