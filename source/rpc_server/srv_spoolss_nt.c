@@ -2833,25 +2833,25 @@ static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer,
 
 	printer->flags=flags;
 
+	/* Strip server name from printer name if we are doing an enum */
+
+	if (is_enum) {
+		char *p;
+		
+		p = strchr(ntprinter->info_2->printername + 2, '\\');
+		
+		if (p)
+			fstrcpy(ntprinter->info_2->printername, p + 1);
+	}
+
 	if (*ntprinter->info_2->comment == '\0') {
 		init_unistr(&printer->comment, lp_comment(snum));
-		if (is_enum) {
-			char *p;
-
-			p = strchr(ntprinter->info_2->printername + 2, '\\');
-
-			if (p)
-				fstrcpy(ntprinter->info_2->printername, p + 1);
-		}
-		slprintf(chaine,sizeof(chaine)-1,"%s,%s,%s",
-			 ntprinter->info_2->printername,
+		slprintf(chaine,sizeof(chaine)-1,"%s,%s,%s", ntprinter->info_2->printername,
 			 ntprinter->info_2->drivername, lp_comment(snum));
 	} else {
 		init_unistr(&printer->comment, ntprinter->info_2->comment); /* saved comment. */
-		slprintf(chaine,sizeof(chaine)-1,"%s,%s,%s",
-			 ntprinter->info_2->printername,
-			 ntprinter->info_2->drivername, 
-			 ntprinter->info_2->comment);
+		slprintf(chaine,sizeof(chaine)-1,"%s,%s,%s", ntprinter->info_2->printername,
+			 ntprinter->info_2->drivername, ntprinter->info_2->comment);
 	}
 		
 	slprintf(chaine2,sizeof(chaine)-1,"%s", ntprinter->info_2->printername);
