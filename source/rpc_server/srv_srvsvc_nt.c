@@ -176,11 +176,23 @@ static void init_srv_share_info_1005(SRV_SHARE_INFO_1005* sh1005, int snum)
 }
 
 /*******************************************************************
+ True if it ends in '$'.
+ ********************************************************************/
+
+static BOOL is_admin_share(int snum)
+{
+	pstring net_name;
+
+	pstrcpy(net_name, lp_servicename(snum));
+	return (net_name[strlen(net_name)] == '$') ? True : False;
+}
+
+/*******************************************************************
  Fill in a share info structure.
  ********************************************************************/
 
 static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
-	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries)
+	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries, BOOL all_shares)
 {
 	int num_entries = 0;
 	int num_services = lp_numservices();
@@ -195,7 +207,7 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 
 	/* Count the number of entries. */
 	for (snum = 0; snum < num_services; snum++) {
-		if (lp_browseable(snum) && lp_snum_ok(snum))
+		if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) )
 			num_entries++;
 	}
 
@@ -215,7 +227,7 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 		info1 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1));
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum)) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
 				init_srv_share_info_1(&info1[i++], snum);
 			}
 		}
@@ -232,7 +244,7 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 		info2 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_2));
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum)) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
 				init_srv_share_info_2(&info2[i++], snum);
 			}
 		}
@@ -249,7 +261,7 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 		info502 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_502));
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum)) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
 				init_srv_share_info_502(ctx, &info502[i++], snum);
 			}
 		}
@@ -271,12 +283,12 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 ********************************************************************/
 
 static void init_srv_r_net_share_enum(TALLOC_CTX *ctx, SRV_R_NET_SHARE_ENUM *r_n,
-				      uint32 info_level, uint32 resume_hnd)  
+				      uint32 info_level, uint32 resume_hnd, BOOL all)  
 {
 	DEBUG(5,("init_srv_r_net_share_enum: %d\n", __LINE__));
 
 	if (init_srv_share_info_ctr(ctx, &r_n->ctr, info_level,
-				    &resume_hnd, &r_n->total_entries)) {
+				    &resume_hnd, &r_n->total_entries, all)) {
 		r_n->status = NT_STATUS_NOPROBLEMO;
 	} else {
 		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
@@ -873,6 +885,24 @@ uint32 _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_S
 }
 
 /*******************************************************************
+ Net share enum all.
+********************************************************************/
+
+uint32 _srv_net_share_enum_all(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET_SHARE_ENUM *r_u)
+{
+	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
+
+	/* Create the list of shares for the response. */
+	init_srv_r_net_share_enum(p->mem_ctx, r_u,
+				q_u->ctr.info_level,
+				get_enum_hnd(&q_u->enum_hnd), True);
+
+	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/*******************************************************************
  Net share enum.
 ********************************************************************/
 
@@ -883,7 +913,7 @@ uint32 _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET
 	/* Create the list of shares for the response. */
 	init_srv_r_net_share_enum(p->mem_ctx, r_u,
 				q_u->ctr.info_level,
-				get_enum_hnd(&q_u->enum_hnd));
+				get_enum_hnd(&q_u->enum_hnd), False);
 
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
 
