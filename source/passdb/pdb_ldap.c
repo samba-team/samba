@@ -218,7 +218,7 @@ static int ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP **
 			
 			DEBUG(3,("LDAPS option set...!\n"));
 #else
-			DEBUG(0,("ldap_open_connection: Secure connection not supported by LDAP client libraries!\n"));
+			DEBUG(0,("ldapsam_open_connection: Secure connection not supported by LDAP client libraries!\n"));
 			return LDAP_OPERATIONS_ERROR;
 #endif
 		}
@@ -254,12 +254,12 @@ static int ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP **
 			return LDAP_OPERATIONS_ERROR;
 		}
 #else
-		DEBUG(0,("ldap_open_connection: StartTLS not supported by LDAP client libraries!\n"));
+		DEBUG(0,("ldapsam_open_connection: StartTLS not supported by LDAP client libraries!\n"));
 		return LDAP_OPERATIONS_ERROR;
 #endif
 	}
 
-	DEBUG(2, ("ldap_open_connection: connection opened\n"));
+	DEBUG(2, ("ldapsam_open_connection: connection opened\n"));
 	return rc;
 }
 
@@ -284,7 +284,7 @@ static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
 		memset(*credp, '\0', strlen(*credp));
 		SAFE_FREE(*credp);
 	} else {
-		DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n", 
+		DEBUG(5,("rebind_proc_with_state: Rebinding as \"%s\"\n", 
 			  ldap_state->bind_dn));
 
 		*whop = strdup(ldap_state->bind_dn);
@@ -315,7 +315,7 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 {
 	struct ldapsam_privates *ldap_state = arg;
 	int rc;
-	DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n", 
+	DEBUG(5,("rebindproc_connect_with_state: Rebinding as \"%s\"\n", 
 		 ldap_state->bind_dn));
 	
 	/** @TODO Should we be doing something to check what servers we rebind to?
@@ -385,8 +385,8 @@ static int ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ld
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
 	   (OpenLDAP) doesnt' seem to support it */
 	   
-	DEBUG(10,("ldap_connect_system: Binding to ldap server as \"%s\"\n",
-		ldap_dn));
+	DEBUG(10,("ldap_connect_system: Binding to ldap server %s as \"%s\"\n",
+		  ldap_state->uri, ldap_dn));
 
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 # if LDAP_SET_REBIND_PROC_ARGS == 2	
@@ -407,7 +407,14 @@ static int ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ld
 	rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
 
 	if (rc != LDAP_SUCCESS) {
-		DEBUG(0, ("Bind failed: %s\n", ldap_err2string(rc)));
+		char *ld_error;
+		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+				&ld_error);
+		DEBUG(0,
+		      ("failed to bind to server with dn= %s Error: %s\n\t%s\n",
+			       ldap_dn, ldap_err2string(rc),
+			       ld_error));
+		free(ld_error);
 		return rc;
 	}
 	
@@ -659,7 +666,12 @@ static int ldapsam_search_one_user_by_name (struct ldapsam_privates *ldap_state,
 			     LDAPMessage ** result)
 {
 	pstring filter;
-	
+	char *escape_user = escape_ldap_string_alloc(user);
+
+	if (!escape_user) {
+		return LDAP_NO_MEMORY;
+	}
+
 	/*
 	 * in the filter expression, replace %u with the real name
 	 * so in ldap filter, %u MUST exist :-)
@@ -670,7 +682,10 @@ static int ldapsam_search_one_user_by_name (struct ldapsam_privates *ldap_state,
 	 * have to use this here because $ is filtered out
 	   * in pstring_sub
 	 */
-	all_string_sub(filter, "%u", user, sizeof(pstring));
+	
+
+	all_string_sub(filter, "%u", escape_user, sizeof(pstring));
+	SAFE_FREE(escape_user);
 
 	return ldapsam_search_one_user(ldap_state, filter, result);
 }
@@ -684,6 +699,7 @@ static int ldapsam_search_one_user_by_uid(struct ldapsam_privates *ldap_state,
 {
 	struct passwd *user;
 	pstring filter;
+	char *escape_user;
 
 	/* Get the username from the system and look that up in the LDAP */
 	
@@ -694,9 +710,16 @@ static int ldapsam_search_one_user_by_uid(struct ldapsam_privates *ldap_state,
 	
 	pstrcpy(filter, lp_ldap_filter());
 	
-	all_string_sub(filter, "%u", user->pw_name, sizeof(pstring));
+	escape_user = escape_ldap_string_alloc(user->pw_name);
+	if (!escape_user) {
+		passwd_free(&user);
+		return LDAP_NO_MEMORY;
+	}
+
+	all_string_sub(filter, "%u", escape_user, sizeof(pstring));
 
 	passwd_free(&user);
+	SAFE_FREE(escape_user);
 
 	return ldapsam_search_one_user(ldap_state, filter, result);
 }
@@ -1558,16 +1581,26 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *result;
 	LDAPMessage *entry;
-
+	int count;
+	
 	if (ldapsam_search_one_user_by_name(ldap_state, sname, &result) != LDAP_SUCCESS) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	if (ldap_count_entries(ldap_state->ldap_struct, result) < 1) {
+	
+	count = ldap_count_entries(ldap_state->ldap_struct, result);
+	
+	if (count < 1) {
 		DEBUG(4,
 		      ("We don't find this user [%s] count=%d\n", sname,
-		       ldap_count_entries(ldap_state->ldap_struct, result)));
+		       count));
+		return NT_STATUS_NO_SUCH_USER;
+	} else if (count > 1) {
+		DEBUG(1,
+		      ("Duplicate entries for this user [%s] Failing. count=%d\n", sname,
+		       count));
 		return NT_STATUS_NO_SUCH_USER;
 	}
+
 	entry = ldap_first_entry(ldap_state->ldap_struct, result);
 	if (entry) {
 		if (!init_sam_from_ldap(ldap_state, user, entry)) {
@@ -1593,15 +1626,23 @@ static NTSTATUS ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		(struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *result;
 	LDAPMessage *entry;
+	int count;
 
 	if (ldapsam_search_one_user_by_rid(ldap_state, rid, &result) != LDAP_SUCCESS) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (ldap_count_entries(ldap_state->ldap_struct, result) < 1) {
+	count = ldap_count_entries(ldap_state->ldap_struct, result);
+		
+	if (count < 1) {
 		DEBUG(4,
 		      ("We don't find this rid [%i] count=%d\n", rid,
-		       ldap_count_entries(ldap_state->ldap_struct, result)));
+		       count));
+		return NT_STATUS_NO_SUCH_USER;
+	} else if (count > 1) {
+		DEBUG(1,
+		      ("More than one user with rid [%i]. Failing. count=%d\n", rid,
+		       count));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -1853,7 +1894,8 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	}
 
 	if (ldap_count_entries(ldap_state->ldap_struct, result) != 0) {
-		DEBUG(0,("User already in the base, with samba properties\n"));
+		DEBUG(0,("User '%s' already in the base, with samba properties\n", 
+			 username));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
