@@ -67,7 +67,7 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 		return NT_STATUS_FOOBAR;
 	}
 
-	ret = bind(sock->fd, &my_addr, sizeof(my_addr));
+	ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
 	if (ret == -1) {
 		/* TODO: we need to map from errno to NTSTATUS here! */
 		return NT_STATUS_FOOBAR;
@@ -90,7 +90,7 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 	}
 
 
-	ret = connect(sock->fd, &srv_addr, sizeof(srv_addr));
+	ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	if (ret == -1) {
 		/* TODO: we need to map from errno to NTSTATUS here! */
 		return NT_STATUS_FOOBAR;
@@ -109,14 +109,13 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 	struct in_addr ip_addr;
 	int ret;
 
-	ZERO_STRUCT(my_addr);
-
 	ret = inet_aton(my_address, &ip_addr);
 	if (ret == 0) {
 		/* not a valid ipv4 address */
 		return NT_STATUS_FOOBAR;
 	}
 
+	ZERO_STRUCT(my_addr);
 #ifdef HAVE_SOCK_SIN_LEN
 	my_addr.sin_len		= sizeof(my_addr);
 #endif
@@ -124,7 +123,7 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 	my_addr.sin_port	= htons(port);
 	my_addr.sin_family	= PF_INET;
 
-	ret = bind(sock->fd, &my_addr, sizeof(my_addr));
+	ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
 	if (ret == -1) {
 		/* TODO: we need to map from errno to NTSTATUS here! */
 		return NT_STATUS_FOOBAR;
@@ -144,7 +143,9 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 		}
 	}
 
-	return NT_STATUS_NOT_IMPLEMENTED;
+	sock->state= SOCKET_STATE_SERVER_LISTEN;
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_context **new_sock, uint32_t flags)
@@ -298,7 +299,7 @@ static char *ipv4_tcp_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem
 	return NULL;
 }
 
-static int ipv4_tcp_get_peer_port(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+static int ipv4_tcp_get_peer_port(struct socket_context *sock)
 {
 	return -1;
 }
@@ -308,12 +309,12 @@ static char *ipv4_tcp_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_c
 	return NULL;
 }
 
-static int ipv4_tcp_get_my_port(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+static int ipv4_tcp_get_my_port(struct socket_context *sock)
 {
 	return -1;
 }
 
-static int ipv4_tcp_get_fd(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+static int ipv4_tcp_get_fd(struct socket_context *sock)
 {
 	return sock->fd;
 }
