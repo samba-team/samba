@@ -36,9 +36,9 @@ int cli_set_port(struct cli_state *cli, int port)
 {
 
 	if (port != 0)
-	  cli -> port = port;
+	  cli->port = port;
 
-	return cli -> port;   /* return it incase caller wants it */
+	return cli->port;   /* return it incase caller wants it */
 
 }
 
@@ -2442,6 +2442,11 @@ BOOL cli_session_request(struct cli_state *cli,
 	memcpy(&(cli->calling), calling, sizeof(*calling));
 	memcpy(&(cli->called ), called , sizeof(*called ));
   
+	if (cli->port == 445)
+	{
+		return True;
+	}
+
 	/* put in the destination name */
 	p = cli->outbuf+len;
 	name_mangle(cli->called .name, p, cli->called .name_type);
@@ -2490,6 +2495,7 @@ open the client sockets
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
 	extern struct in_addr ipzero;
+	int port = cli->port;
 
 	fstrcpy(cli->desthost, host);
 	
@@ -2503,12 +2509,23 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 	}
 
 
-	if (cli -> port == 0) cli -> port = 139;
+	if (port == 0) port = 445;
 
 	cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
-				  cli -> port, cli->timeout);
+				  port, cli->timeout);
 	if (cli->fd == -1)
-		return False;
+	{
+		if (cli->port != 0)
+		{
+			return False;
+		}
+		port = 139;
+
+		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
+					  port, cli->timeout);
+		if (cli->fd == -1) return False;
+	}
+
 
 	return True;
 }
@@ -2532,7 +2549,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
 	ZERO_STRUCTP(cli);
 
-	cli -> port = 0;
+	cli->port = 0;
 	cli->fd = -1;
 	cli->cnum = -1;
 	cli->pid = (uint16)getpid();
