@@ -5,6 +5,13 @@
 
 2001-05-07  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/fcache.c: call krb5_set_error_string when open fails
+	fatally
+	* lib/krb5/keytab_file.c: call krb5_set_error_string when open
+	fails fatally
+
+	* lib/krb5/warn.c (_warnerr): print error_string in context in
+	preference to error string derived from error code
 	* kuser/kinit.c (main): try to print the error string
 	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): set some sensible
 	error strings for errors
