@@ -248,7 +248,8 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	return 0;
 }
 
-ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char *newpw)
+ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char *newpw, 
+			     int time_offset)
 {
 	krb5_context context;
 	krb5_auth_context auth_context = NULL;
@@ -268,6 +269,10 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char
 		return ADS_ERROR_KRB5(ret);
 	}
 	
+	if (time_offset != 0) {
+		krb5_set_real_time(context, time(NULL) + time_offset, 0);
+	}
+
 	ret = krb5_cc_default(context, &ccache);
 	if (ret) {
 	        krb5_free_context(context);
@@ -452,16 +457,17 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char
 
 ADS_STATUS kerberos_set_password(const char *kpasswd_server, 
 				 const char *auth_principal, const char *auth_password,
-				 const char *target_principal, const char *new_password)
+				 const char *target_principal, const char *new_password,
+				 int time_offset)
 {
     int ret;
 
-    if ((ret = kerberos_kinit_password(auth_principal, auth_password))) {
+    if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset))) {
 	DEBUG(1,("Failed kinit for principal %s (%s)\n", auth_principal, error_message(ret)));
 	return ADS_ERROR_KRB5(ret);
     }
 
-    return krb5_set_password(kpasswd_server, target_principal, new_password);
+    return krb5_set_password(kpasswd_server, target_principal, new_password, time_offset);
 }
 
 

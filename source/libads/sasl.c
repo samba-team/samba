@@ -122,7 +122,7 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 	struct berval cred, *scred;
 	int rc;
 
-	blob = spnego_gen_negTokenTarg(principal);
+	blob = spnego_gen_negTokenTarg(principal, ads->auth.time_offset);
 
 	if (!blob.data) {
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
@@ -144,7 +144,7 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 */
 static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 {
-	struct berval *scred;
+	struct berval *scred=NULL;
 	int rc, i;
 	ADS_STATUS status;
 	DATA_BLOB blob;
@@ -185,7 +185,8 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	}
 	DEBUG(3,("got principal=%s\n", principal));
 
-	if (got_kerberos_mechanism && ads_kinit_password(ads) == 0) {
+	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
+	    got_kerberos_mechanism && ads_kinit_password(ads) == 0) {
 		return ads_sasl_spnego_krb5_bind(ads, principal);
 	}
 

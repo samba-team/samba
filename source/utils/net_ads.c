@@ -66,7 +66,7 @@ static int net_ads_lookup(int argc, const char **argv)
 
 	ads = ads_init(NULL, NULL, opt_host);
 	if (ads) {
-		ads->auth.no_bind = 1;
+		ads->auth.flags |= ADS_AUTH_NO_BIND;
 	}
 
 	ads_connect(ads);
@@ -88,7 +88,7 @@ static int net_ads_info(int argc, const char **argv)
 	ads = ads_init(NULL, NULL, opt_host);
 
 	if (ads) {
-		ads->auth.no_bind = 1;
+		ads->auth.flags |= ADS_AUTH_NO_BIND;
 	}
 
 	ads_connect(ads);
@@ -103,6 +103,7 @@ static int net_ads_info(int argc, const char **argv)
 	d_printf("Realm: %s\n", ads->config.realm);
 	d_printf("Bind Path: %s\n", ads->config.bind_path);
 	d_printf("LDAP port: %d\n", ads->ldap_port);
+	d_printf("Server time: %s\n", http_timestring(ads->config.current_time));
 
 	return 0;
 }
@@ -199,7 +200,7 @@ static int net_ads_workgroup(int argc, const char **argv)
 
 
 
-static void usergrp_display(char *field, void **values, void *data_area)
+static BOOL usergrp_display(char *field, void **values, void *data_area)
 {
 	char **disp_fields = (char **) data_area;
 
@@ -213,15 +214,16 @@ static void usergrp_display(char *field, void **values, void *data_area)
 		}
 		SAFE_FREE(disp_fields[0]);
 		SAFE_FREE(disp_fields[1]);
-		return;
+		return True;
 	}
 	if (!values) /* must be new field, indicate string field */
-		return;
+		return True;
 	if (StrCaseCmp(field, "sAMAccountName") == 0) {
 		disp_fields[0] = strdup((char *) values[0]);
 	}
 	if (StrCaseCmp(field, "description") == 0)
 		disp_fields[1] = strdup((char *) values[0]);
+	return True;
 }
 
 static int net_ads_user_usage(int argc, const char **argv)
@@ -270,7 +272,7 @@ static int ads_user_add(int argc, const char **argv)
 
 	/* try setting the password */
 	asprintf(&upn, "%s@%s", argv[0], ads->config.realm);
-	status = krb5_set_password(ads->auth.kdc_server, upn, argv[1]);
+	status = krb5_set_password(ads->auth.kdc_server, upn, argv[1], ads->auth.time_offset);
 	safe_free(upn);
 	if (ADS_ERR_OK(status)) {
 		d_printf("User %s added\n", argv[0]);
@@ -653,19 +655,15 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	if (ads_kinit_password(ads)) {
+	rc = ads_domain_sid(ads, &dom_sid);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_domain_sid: %s\n", ads_errstr(rc));
 		return -1;
 	}
 
 	rc = ads_set_machine_password(ads, global_myname, password);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_set_machine_password: %s\n", ads_errstr(rc));
-		return -1;
-	}
-
-	rc = ads_domain_sid(ads, &dom_sid);
-	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_domain_sid: %s\n", ads_errstr(rc));
 		return -1;
 	}
 
@@ -885,7 +883,7 @@ static int net_ads_password(int argc, const char **argv)
     new_password = getpass(prompt);
 
     ret = kerberos_set_password(ads->auth.kdc_server, auth_principal, 
-				auth_password, argv[0], new_password);
+				auth_password, argv[0], new_password, ads->auth.time_offset);
     if (!ADS_ERR_OK(ret)) {
 	d_printf("Password change failed :-( ...\n");
 	ads_destroy(&ads);

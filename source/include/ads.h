@@ -24,7 +24,8 @@ typedef struct {
 		char *password;
 		char *user_name;
 		char *kdc_server;
-		int no_bind;
+		unsigned flags;
+		int time_offset;
 	} auth;
 
 	/* info derived from the servers config */
@@ -32,6 +33,7 @@ typedef struct {
 		char *realm;
 		char *bind_path;
 		char *ldap_server_name;
+		time_t current_time;
 	} config;
 } ADS_STRUCT;
 
@@ -249,3 +251,8 @@ typedef void **ADS_MODLIST;
 /* DomainCntrollerAddressType */
 #define ADS_INET_ADDRESS      0x00000001
 #define ADS_NETBIOS_ADDRESS   0x00000002
+
+
+/* ads auth control flags */
+#define ADS_AUTH_DISABLE_KERBEROS 1
+#define ADS_AUTH_NO_BIND 2

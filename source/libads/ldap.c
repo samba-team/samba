@@ -63,6 +63,7 @@ static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 	ads->ldap_port = port;
 	ads->ldap_ip = *interpret_addr2(srv);
 	free(srv);
+
 	return True;
 }
 
@@ -204,7 +205,6 @@ static BOOL ads_try_netbios(ADS_STRUCT *ads)
 ADS_STATUS ads_connect(ADS_STRUCT *ads)
 {
 	int version = LDAP_VERSION3;
-	int code;
 	ADS_STATUS status;
 
 	ads->last_attempt = time(NULL);
@@ -274,7 +274,7 @@ got_connection:
 	}
 #endif
 
-	if (ads->auth.no_bind) {
+	if (ads->auth.flags & ADS_AUTH_NO_BIND) {
 		return ADS_SUCCESS;
 	}
 
@@ -1416,7 +1416,7 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 	 */
 	asprintf(&principal, "%s$@%s", host, ads->auth.realm);
 	
-	status = krb5_set_password(ads->auth.kdc_server, principal, password);
+	status = krb5_set_password(ads->auth.kdc_server, principal, password, ads->auth.time_offset);
 	
 	free(host);
 	free(principal);
@@ -1622,6 +1622,26 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 	return ADS_SUCCESS;
 }
 
+/* parse a ADS timestring - typical string is
+   '20020917091222.0Z0' which means 09:12.22 17th September
+   2002, timezone 0 */
+static time_t ads_parse_time(const char *str)
+{
+	struct tm tm;
+
+	ZERO_STRUCT(tm);
+
+	if (sscanf(str, "%4d%2d%2d%2d%2d%2d", 
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
+		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
+		return 0;
+	}
+	tm.tm_year -= 1900;
+	tm.tm_mon -= 1;
+
+	return timegm(&tm);
+}
+
 
 /**
  * Find the servers name and realm - this can be done before authentication 
@@ -1632,22 +1652,36 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
  **/
 ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 {
-	const char *attrs[] = {"ldapServiceName", NULL};
+	const char *attrs[] = {"ldapServiceName", "currentTime", NULL};
 	ADS_STATUS status;
 	void *res;
-	char **values;
+	char *value;
 	char *p;
+	char *timestr;
+	TALLOC_CTX *ctx;
+
+	if (!(ctx = talloc_init())) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
 
 	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(status)) return status;
 
-	values = ldap_get_values(ads->ld, res, "ldapServiceName");
-	if (!values || !values[0]) return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	value = ads_pull_string(ads, ctx, res, "ldapServiceName");
+	if (!value) {
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
 
-	p = strchr(values[0], ':');
+	timestr = ads_pull_string(ads, ctx, res, "currentTime");
+	if (!timestr) {
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	ldap_msgfree(res);
+
+	p = strchr(value, ':');
 	if (!p) {
-		ldap_value_free(values);
-		ldap_msgfree(res);
+		talloc_destroy(ctx);
 		DEBUG(1, ("ads_server_info: returned ldap server name did not contain a ':' so was deemed invalid\n"));
 		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
@@ -1657,8 +1691,7 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	ads->config.ldap_server_name = strdup(p+1);
 	p = strchr(ads->config.ldap_server_name, '$');
 	if (!p || p[1] != '@') {
-		ldap_value_free(values);
-		ldap_msgfree(res);
+		talloc_destroy(ctx);
 		SAFE_FREE(ads->config.ldap_server_name);
 		DEBUG(1, ("ads_server_info: returned ldap server name did not contain '$@' so was deemed invalid\n"));
 		return ADS_ERROR(LDAP_DECODING_ERROR);
@@ -1674,6 +1707,15 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 
 	DEBUG(3,("got ldap server name %s@%s\n", 
 		 ads->config.ldap_server_name, ads->config.realm));
+
+	ads->config.current_time = ads_parse_time(timestr);
+
+	if (ads->config.current_time != 0) {
+		ads->auth.time_offset = ads->config.current_time - time(NULL);
+		DEBUG(4,("time offset is %d seconds\n", ads->auth.time_offset));
+	}
+
+	talloc_destroy(ctx);
 
 	return ADS_SUCCESS;
 }

@@ -64,6 +64,14 @@ static krb5_error_code krb5_mk_req2(krb5_context context,
 		goto cleanup_creds;
 	}
 
+	/* cope with the ticket being in the future due to clock skew */
+	if ((unsigned)credsp->times.starttime > time(NULL)) {
+		time_t t = time(NULL);
+		int time_offset = (unsigned)credsp->times.starttime - t;
+		DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
+		krb5_set_real_time(context, t + time_offset + 1, 0);
+	}
+
 	in_data.length = 0;
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
 				      &in_data, credsp, outbuf);
@@ -86,7 +94,7 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-DATA_BLOB krb5_get_ticket(char *principal)
+DATA_BLOB krb5_get_ticket(char *principal, time_t time_offset)
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -106,6 +114,10 @@ DATA_BLOB krb5_get_ticket(char *principal)
 		DEBUG(1,("krb5_init_context failed (%s)\n", 
 			 error_message(retval)));
 		goto failed;
+	}
+
+	if (time_offset != 0) {
+		krb5_set_real_time(context, time(NULL) + time_offset, 0);
 	}
 
 	if ((retval = krb5_cc_default(context, &ccdef))) {

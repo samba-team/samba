@@ -431,7 +431,7 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principal, c
 	DEBUG(2,("Doing kerberos session setup\n"));
 
 	/* generate the encapsulated kerberos5 ticket */
-	negTokenTarg = spnego_gen_negTokenTarg(principal);
+	negTokenTarg = spnego_gen_negTokenTarg(principal, 0);
 
 	if (!negTokenTarg.data) return False;
 

@@ -48,7 +48,7 @@ static NTSTATUS ads_resolve_dc(fstring remote_machine,
 
 	DEBUG(4,("ads_resolve_dc: realm=%s\n", ads->config.realm));
 
-	ads->auth.no_bind = 1;
+	ads->auth.flags |= ADS_AUTH_NO_BIND;
 
 #ifdef HAVE_ADS
 	/* a full ads_connect() is actually overkill, as we don't srictly need
