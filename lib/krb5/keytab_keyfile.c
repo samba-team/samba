@@ -80,7 +80,8 @@ get_cell_and_realm (struct akf_data *d)
 	fclose (f);
 	return EINVAL;
     }
-    buf[strlen(buf)-1] = '\0';
+    if (buf[strlen(buf) - 1] == '\n')
+	buf[strlen(buf)-1] = '\0';
     fclose(f);
 
     d->cell = strdup (buf);
@@ -93,11 +94,12 @@ get_cell_and_realm (struct akf_data *d)
 	    fclose (f);
 	    return EINVAL;
 	}
-	buf[strlen(buf)-1] = '\0';
+	if (buf[strlen(buf)-1] == '\n')
+	    buf[strlen(buf)-1] = '\0';
 	fclose(f);
     }
     /* uppercase */
-    for (cp = buf; *cp != 0; cp++)
+    for (cp = buf; *cp != '\0'; cp++)
 	*cp = toupper(*cp);
     
     d->realm = strdup (buf);
