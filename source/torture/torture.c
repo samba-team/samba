@@ -3927,6 +3927,7 @@ static struct {
 	{"MANGLE", torture_mangle, 0},
 	{"UTABLE", torture_utable, 0},
 	{"CASETABLE", torture_casetable, 0},
+	{"CHARSET", torture_charset, 0},
 	{"PIPE_NUMBER", run_pipe_number, 0},
 	{"IOCTL",  torture_ioctl_test, 0},
 	{"CHKPATH",  torture_chkpath_test, 0},

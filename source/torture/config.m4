@@ -19,9 +19,14 @@ SMB_SUBSYSTEM(TORTURE_RPC,[],
 SMB_SUBSYSTEM(TORTURE_NBENCH,[],
 		[torture/nbench/nbio.o torture/nbench/nbench.o])
 
+SMB_SUBSYSTEM(TORTURE_BASIC,[],
+		[torture/basic/scanner.o torture/basic/utable.o \
+		 torture/basic/charset.o torture/basic/mangle_test.o \
+		 torture/basic/denytest.o \
+		 torture/basic/aliases.o])
+
 SMB_SUBSYSTEM(TORTURE,[],
-		[torture/torture.o torture/torture_util.o torture/scanner.o \
-		torture/utable.o torture/denytest.o torture/mangle_test.o \
-		torture/aliases.o libcli/raw/clirewrite.o \$(TORTURE_RAW_OBJS) \
-		\$(TORTURE_RPC_OBJS) \$(TORTURE_NBENCH_OBJS)],
+		[torture/torture.o torture/torture_util.o \
+		libcli/raw/clirewrite.o \$(TORTURE_RAW_OBJS) \
+		\$(TORTURE_RPC_OBJS) \$(TORTURE_NBENCH_OBJS) \$(TORTURE_BASIC_OBJS)],
 		torture/torture_public_proto.h)
