@@ -30,3 +30,4 @@ automake
 	s/\s+/ /g; 
 	print;' Makefile.in` > krb5-protos.h)
 rm fix-export make-release make-release.el
+find . -name .cvsignore -print | xargs rm
