@@ -41,6 +41,27 @@ static void add_workgroup(struct subnet_record *subrec, struct work_record *work
 }
 
 /****************************************************************************
+ Copy name to unstring. Used by create_workgroup() and find_workgroup_on_subnet().
+**************************************************************************/
+
+static void name_to_unstring(unstring unname, const char *name)
+{
+        nstring nname;
+
+	errno = 0;
+	push_ascii_nstring(nname, name);
+	if (errno == E2BIG) {
+		unstring tname;
+		pull_ascii_nstring(tname, sizeof(tname), nname);
+		unstrcpy(unname, tname);
+		DEBUG(0,("name_to_nstring: workgroup name %s is too long. Truncating to %s\n",
+			name, tname));
+	} else {
+		unstrcpy(unname, name);
+	}
+}
+		
+/****************************************************************************
   Create an empty workgroup.
 **************************************************************************/
 
@@ -48,8 +69,6 @@ static struct work_record *create_workgroup(const char *name, int ttl)
 {
 	struct work_record *work;
 	struct subnet_record *subrec;
-        nstring nname;
-                                                                                                                         
 	int t = -1;
   
 	if((work = (struct work_record *)malloc(sizeof(*work))) == NULL) {
@@ -58,17 +77,8 @@ static struct work_record *create_workgroup(const char *name, int ttl)
 	}
 	memset((char *)work, '\0', sizeof(*work));
 
-        errno = 0;
-        push_ascii_nstring(nname, name);
-        if (errno == E2BIG) {
-        	unstring tname;
-                pull_ascii_nstring(tname, sizeof(tname), nname);
-		unstrcpy(work->work_group,tname);
-                DEBUG(0,("create_workgroup: workgroup name %s is too long. Truncating to %s\n",
-			name, tname));
-        } else {
-		unstrcpy(work->work_group,name);
-        }
+	name_to_unstring(work->work_group, name);
+
 	work->serverlist = NULL;
   
 	work->RunningElection = False;
@@ -157,12 +167,15 @@ struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec,
                                              const char *name)
 {
 	struct work_record *ret;
-  
+ 	unstring un_name;
+ 
 	DEBUG(4, ("find_workgroup_on_subnet: workgroup search for %s on subnet %s: ",
 		name, subrec->subnet_name));
   
+	name_to_unstring(un_name, name);
+
 	for (ret = subrec->workgrouplist; ret; ret = ret->next) {
-		if (strequal(ret->work_group,name)) {
+		if (strequal(ret->work_group,un_name)) {
 			DEBUGADD(4, ("found.\n"));
 			return(ret);
 		}
