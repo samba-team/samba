@@ -69,7 +69,7 @@ NTSTATUS cli_srvsvc_net_srv_get_info(struct cli_state *cli,
 		goto done;
 	}
 
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 
  done:
 	prs_mem_free(&qbuf);
