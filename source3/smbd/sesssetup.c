@@ -59,7 +59,7 @@ static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
 	
 	nt_status = check_password(user_info, auth_info, server_info);
 	free_auth_info(&auth_info);
-	SAFE_FREE(user_info);
+	free_user_info(&user_info);
 	return nt_status;
 }
 
