@@ -84,7 +84,8 @@ static ubi_dlList Printer_list;
 static ubi_dlList counter_list;
 
 
-#define OPEN_HANDLE(pnum)    ((pnum!=NULL) && (pnum->open!=False))
+#define OPEN_HANDLE(pnum)    ((pnum!=NULL) && (pnum->open!=False) && (IVAL(pnum->printer_hnd.data,16)==(uint32)sys_getpid()))
+#define OUR_HANDLE(pnum) ((pnum==NULL)?"NULL":(IVAL(pnum->data,16)==sys_getpid()?"OURS":"OTHER"))
 
 /* translate between internal status numbers and NT status numbers */
 static int nt_printj_status(int v)
@@ -182,7 +183,7 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
 
 	if (!OPEN_HANDLE(Printer)) {
-		DEBUG(3,("Error closing printer handle\n"));
+		DEBUG(0,("close_printer_handle: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
 		return False;
 	}
 
@@ -211,7 +212,7 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
 
 	if (!OPEN_HANDLE(Printer)) {
-		DEBUG(3,("Error closing printer handle\n"));
+		DEBUG(0,("delete_printer_handle: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
 		return False;
 	}
 
@@ -231,7 +232,7 @@ static BOOL get_printer_snum(const POLICY_HND *hnd, int *number)
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
 		
 	if (!OPEN_HANDLE(Printer)) {
-		DEBUG(3,("Error getting printer - take a nap quickly !\n"));
+		DEBUG(0,("get_printer_snum: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
 		return False;
 	}
 	
@@ -279,7 +280,7 @@ static BOOL set_printer_hnd_accesstype(POLICY_HND *hnd, uint32 access_required)
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
 
 	if (!OPEN_HANDLE(Printer)) {
-		DEBUG(4,("Error setting printer type=%x", access_required));
+		DEBUG(0,("set_printer_hnd_accesstype: Invalid handle (%s)", OUR_HANDLE(hnd)));
 		return False;
 	}
 
@@ -297,7 +298,7 @@ static BOOL set_printer_hnd_printertype(POLICY_HND *hnd, char *printername)
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
 		
 	if (!OPEN_HANDLE(Printer)) {
-		DEBUGADD(4,("Error setting printer name %s", printername));
+		DEBUG(0,("set_printer_hnd_printertype: Invalid handle (%s)", OUR_HANDLE(hnd)));
 		return False;
 	}
 	
@@ -337,7 +338,7 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 	BOOL found=False;
 	
 	if (!OPEN_HANDLE(Printer)) {
-		DEBUG(0,("Error setting printer name=%s\n", printername));
+		DEBUG(0,("set_printer_hnd_printername: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
 		return False;
 	}
 
@@ -754,8 +755,10 @@ static BOOL getprinterdata_printer(const POLICY_HND *handle,
 	
 	DEBUG(5,("getprinterdata_printer\n"));
 
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("getprinterdata_printer: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return False;
+	}
 
 	if(!get_printer_snum(handle, &snum))
 		return False;
@@ -825,6 +828,7 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 	if (!OPEN_HANDLE(Printer)) {
 		if((*data=(uint8 *)malloc(4*sizeof(uint8))) == NULL)
 			return ERROR_NOT_ENOUGH_MEMORY;
+		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 	
@@ -874,8 +878,10 @@ uint32 _spoolss_rffpcnex(const POLICY_HND *handle, uint32 flags, uint32 options,
 
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_rffpcnex: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 
 	Printer->notify.flags=flags;
 	Printer->notify.options=options;
@@ -1574,8 +1580,10 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
 {
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_rfnpcnex: Invalid handle (%s).\n",OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 
 	DEBUG(4,("Printer type %x\n",Printer->printer_type));
 
@@ -1796,11 +1804,7 @@ static DEVICEMODE *construct_dev_mode(int snum, char *servername)
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
 
-#if 0 /* JRATEST */
-	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, ntdevmode->devicename);
-#else /* JRATEST */
 	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, printer->info_2->printername);
-#endif /* JRATEST */
 	init_unistr(&devmode->devicename, adevice);
 
 	snprintf(aform, sizeof(aform), ntdevmode->formname);
@@ -1886,7 +1890,12 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 	init_unistr(&printer->servername, chaine);				/* servername*/
 	init_unistr(&printer->printername, chaine2);				/* printername*/
 	init_unistr(&printer->sharename, lp_servicename(snum));			/* sharename */
+#if 1 /* JRATEST */
+	/* We need to determine the correct model for this..... */
+	init_unistr(&printer->portname, lp_printername(snum));			/* port */	
+#else
 	init_unistr(&printer->portname, lp_servicename(snum));			/* port */	
+#endif
 	init_unistr(&printer->drivername, ntprinter->info_2->drivername);	/* drivername */
 	init_unistr(&printer->comment, lp_comment(snum));			/* comment */	
 	init_unistr(&printer->location, ntprinter->info_2->location);		/* location */	
@@ -2799,8 +2808,7 @@ uint32 _spoolss_startpageprinter(const POLICY_HND *handle)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
-	if (OPEN_HANDLE(Printer))
-	{
+	if (OPEN_HANDLE(Printer)) {
 		Printer->page_started=True;
 		return 0x0;
 	}
@@ -2815,9 +2823,8 @@ uint32 _spoolss_endpageprinter(const POLICY_HND *handle)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
-	if (!OPEN_HANDLE(Printer))
-	{
-		DEBUG(3,("Error in endpageprinter printer handle\n"));
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_endpageprinter: Invalid handle (%s).\n",OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 	
@@ -2843,8 +2850,8 @@ uint32 _spoolss_startdocprinter(const POLICY_HND *handle, uint32 level,
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	struct current_user user;
 
-	if (!OPEN_HANDLE(Printer))
-	{
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_startdocprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -2908,9 +2915,8 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 {
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 	
-	if (!OPEN_HANDLE(Printer))
-	{
-		DEBUG(3,("Error in enddocprinter handle\n"));
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_enddocprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 	
@@ -2930,9 +2936,8 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
-	if (!OPEN_HANDLE(Printer))
-	{
-		DEBUG(3,("Error in writeprinter handle\n"));
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_writeprinter: Invalid handle (%s)\n",OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -2960,8 +2965,10 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command,
 		memcpy(&user, &current_user, sizeof(user));
 	}
 
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("control_printer: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 
 	if (!get_printer_snum(handle, &snum) )	 
 		return ERROR_INVALID_HANDLE;
@@ -2998,8 +3005,10 @@ static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("update_printer_sec: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 
 	return nt_printing_setsec(Printer->dev.printername, secdesc_ctr);
 }
@@ -3025,8 +3034,10 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 		return ERROR_INVALID_LEVEL;
 	}
 
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("update_printer: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 
 	if (!get_printer_snum(handle, &snum) )
 		return ERROR_INVALID_HANDLE;
@@ -3086,8 +3097,10 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_setprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 
 	/* check the level */	
 	switch (level) {
@@ -3112,8 +3125,10 @@ uint32 _spoolss_fcpn(const POLICY_HND *handle)
 {
 	Printer_entry *Printer= find_printer_index_by_hnd(handle);
 	
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_fcpn: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 	
 	Printer->notify.flags=0;
 	Printer->notify.options=0;
@@ -3606,7 +3621,7 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 static void fill_form_1(FORM_1 *form, nt_forms_struct *list, int position)
 {
 	form->flag=list->flag;
-	init_unistr(&(form->name), list->name);
+	init_unistr(&form->name, list->name);
 	form->width=list->width;
 	form->length=list->length;
 	form->left=list->left;
@@ -3645,7 +3660,7 @@ uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level,
 		/* construct the list of form structures */
 		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
-			fill_form_1(&(forms_1[i]), &(list[i]), i);
+			fill_form_1(&forms_1[i], &list[i], i);
 		}
 		
 		safe_free(list);
@@ -3653,7 +3668,7 @@ uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level,
 		/* check the required size. */
 		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d]'s size\n",i));
-			buffer_size += spoolss_size_form_1(&(forms_1[i]));
+			buffer_size += spoolss_size_form_1(&forms_1[i]);
 		}
 
 		*needed=buffer_size;		
@@ -3666,7 +3681,7 @@ uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level,
 		/* fill the buffer with the form structures */
 		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d] to buffer\n",i));
-			new_smb_io_form_1("", buffer, &(forms_1[i]), 0);
+			new_smb_io_form_1("", buffer, &forms_1[i], 0);
 		}
 
 		safe_free(forms_1);
@@ -4137,8 +4152,10 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 
 	DEBUG(5,("spoolss_enumprinterdata\n"));
 
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_enumprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
@@ -4206,9 +4223,6 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 	*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, value, in_value_len, True);
-#if 0 /* JRATEST */
-	*out_max_value_len=(*out_value_len/sizeof(uint16));
-#endif /* JRATEST */
 
 	*out_type=type;
 
@@ -4220,9 +4234,6 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 	}
 	memcpy(*data_out, data, (size_t)data_len);
 	*out_data_len=data_len;
-#if 0 /* JRATEST */
-	*out_max_data_len=data_len;
-#endif /* JRATEST */
 
 	safe_free(data);
 	
@@ -4249,8 +4260,10 @@ uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
 	DEBUG(5,("spoolss_setprinterdata\n"));
 
 	
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_setprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
@@ -4283,8 +4296,10 @@ uint32 _spoolss_addform( const POLICY_HND *handle,
 
 	DEBUG(5,("spoolss_addform\n"));
 
-	if (!OPEN_HANDLE(Printer))
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_addform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
 
 	count=get_ntforms(&list);
 	if(!add_a_form(&list, form, &count))
@@ -4309,8 +4324,8 @@ uint32 _spoolss_setform( const POLICY_HND *handle,
 
  	DEBUG(5,("spoolss_setform\n"));
 
-	if (!OPEN_HANDLE(Printer))
-	{
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_setform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 	count=get_ntforms(&list);
