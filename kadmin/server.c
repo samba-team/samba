@@ -544,7 +544,7 @@ kadmind_loop(krb5_context context,
     if(len > 0xffff && (len & 0xffff) == ('K' << 8) + 'A') {
 	len >>= 16;
 #ifdef KRB4
-	handle_v4(context, len, fd);
+	handle_v4(context, keytab, len, fd);
 #else
 	krb5_errx(context, 1, "packet appears to be version 4");
 #endif
