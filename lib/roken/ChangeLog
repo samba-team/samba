@@ -1,3 +1,8 @@
+1999-08-04  Assar Westerlund  <assar@sics.se>
+
+	* mini_inetd.c (listen_v4, listen_v6): handle the case of the
+ 	protocol not being supported
+
 1999-08-01  Assar Westerlund  <assar@sics.se>
 
 	* mini_inetd.c (socket_set_reuseaddr): remove duplicate
