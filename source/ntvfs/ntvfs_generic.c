@@ -34,6 +34,84 @@
 #include "includes.h"
 #include "smb_server/smb_server.h"
 
+/* a second stage function converts from the out parameters of the generic
+   call onto the out parameters of the specific call made */
+typedef NTSTATUS (*second_stage_t)(struct smbsrv_request *, 
+				   struct ntvfs_module_context *,
+				   void *, void *, NTSTATUS);
+
+/* 
+   this structure holds the async state for pending mapped async calls
+*/
+struct ntvfs_map_async {
+	struct ntvfs_module_context *ntvfs;
+	void *io, *io2;
+	second_stage_t fn;
+};
+
+/*
+  this is a async wrapper, called from the backend when it has completed
+  a function that it has decided to reply to in an async fashion
+*/
+static void ntvfs_map_async_send(struct smbsrv_request *req)
+{
+	struct ntvfs_map_async *m = req->async_states->private_data;
+
+	ntvfs_async_state_pop(req);
+
+	/* call the _finish function setup in ntvfs_map_async_setup() */
+	req->async_states->status = m->fn(req, m->ntvfs, m->io, m->io2, req->async_states->status);
+
+	/* call the send function from the next module up */
+	req->async_states->send_fn(req);
+}
+
+/*
+  prepare for calling a ntvfs backend with async support
+  io is the original call structure
+  io2 is the new call structure for the mapped call
+  fn is a second stage function for processing the out arguments
+*/
+static NTSTATUS ntvfs_map_async_setup(struct smbsrv_request *req,
+				      struct ntvfs_module_context *ntvfs,
+				      void *io, void *io2,
+				      second_stage_t fn)
+{
+	struct ntvfs_map_async *m;
+	m = talloc_p(req, struct ntvfs_map_async);
+	if (m == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	m->ntvfs = ntvfs;
+	m->io = io;
+	m->io2 = io2;
+	m->fn = fn;
+	return ntvfs_async_state_push(req, m, ntvfs_map_async_send, ntvfs);
+}
+
+
+/*
+  called when first stage processing is complete. 
+*/	
+static NTSTATUS ntvfs_map_async_finish(struct smbsrv_request *req, NTSTATUS status)
+{
+	struct ntvfs_map_async *m;
+
+	/* if the backend has decided to reply in an async fashion then
+	   we don't need to do any work here */
+	if (req->async_states->state & NTVFS_ASYNC_STATE_ASYNC) {
+		return status;
+	}
+
+	/* the backend is replying immediately. call the 2nd stage function after popping our local
+	   async state */
+	m = req->async_states->private_data;
+
+	ntvfs_async_state_pop(req);
+
+	return m->fn(req, m->ntvfs, m->io, m->io2, status);
+}
+
 
 /*
   see if a filename ends in EXE COM DLL or SYM. This is needed for the
@@ -60,137 +138,65 @@ static BOOL is_exe_file(const char *fname)
 /* 
    NTVFS openx to ntcreatex mapper
 */
-NTSTATUS ntvfs_map_open_openx(struct smbsrv_request *req, 
-			      union smb_open *io, 
-			      union smb_open *io2,
-			      struct ntvfs_module_context *ntvfs)
+static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req, 
+				      struct ntvfs_module_context *ntvfs,
+				      union smb_open *io, 
+				      union smb_open *io2, 
+				      NTSTATUS status)
 {
-	NTSTATUS status;
-
-	ZERO_STRUCT(io2->generic.in);
-	io2->generic.level = RAW_OPEN_GENERIC;
-	if (io->openx.in.flags & OPENX_FLAGS_REQUEST_OPLOCK) {
-		io2->generic.in.flags |= NTCREATEX_FLAGS_REQUEST_OPLOCK;
-	}
-	if (io->openx.in.flags & OPENX_FLAGS_REQUEST_BATCH_OPLOCK) {
-		io2->generic.in.flags |= NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
-	}
-	
-	switch (io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) {
-	case OPENX_MODE_ACCESS_READ:
-		io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
-		io->openx.out.access = OPENX_MODE_ACCESS_READ;
-		break;
-	case OPENX_MODE_ACCESS_WRITE:
-		io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
-		io->openx.out.access = OPENX_MODE_ACCESS_WRITE;
-		break;
-	case OPENX_MODE_ACCESS_RDWR:
-	case OPENX_MODE_ACCESS_FCB:
-	case OPENX_MODE_ACCESS_EXEC:
-		io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
-		io->openx.out.access = OPENX_MODE_ACCESS_RDWR;
-		break;
-	default:
-		return NT_STATUS_INVALID_LOCK_SEQUENCE;
-	}
-	
-	switch (io->openx.in.open_mode & OPENX_MODE_DENY_MASK) {
-	case OPENX_MODE_DENY_READ:
-		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE;
-		break;
-	case OPENX_MODE_DENY_WRITE:
-		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
-		break;
-	case OPENX_MODE_DENY_ALL:
-		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
-		break;
-	case OPENX_MODE_DENY_NONE:
-		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
-		break;
-	case OPENX_MODE_DENY_DOS:
-		/* DENY_DOS is quite strange - it depends on the filename! */
-		if (is_exe_file(io->openx.in.fname)) {
-			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
-		} else {
-			if ((io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) == 
-			    OPENX_MODE_ACCESS_READ) {
-				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
-			} else {
-				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
-			}
-		}
-		break;
-	case OPENX_MODE_DENY_FCB:
-		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
-		break;
-	default:
-		return NT_STATUS_INVALID_LOCK_SEQUENCE;
-	}
-	
-	switch (io->openx.in.open_func) {
-	case (OPENX_OPEN_FUNC_OPEN):
-		io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN;
-		break;
-	case (OPENX_OPEN_FUNC_TRUNC):
-		io2->generic.in.open_disposition = NTCREATEX_DISP_OVERWRITE;
-		break;
-	case (OPENX_OPEN_FUNC_FAIL | OPENX_OPEN_FUNC_CREATE):
-		io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
-		break;
-	case (OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE):
-		io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
-		break;
-	case (OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE):
-		io2->generic.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
-		break;			
-	default:
-		/* this one is very strange */
-		if ((io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) ==
-		    OPENX_MODE_ACCESS_EXEC) {
-			io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
-			break;
-		}
-		return NT_STATUS_INVALID_LOCK_SEQUENCE;
-	}
-	
-	io2->generic.in.alloc_size = 0;
-	io2->generic.in.file_attr = io->openx.in.file_attrs;
-	io2->generic.in.fname = io->openx.in.fname;
-	
-	status = ntvfs->ops->openfile(ntvfs, req, io2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	io->openx.out.fnum        = io2->generic.out.fnum;
-	io->openx.out.attrib      = io2->generic.out.attrib;
-	io->openx.out.write_time  = nt_time_to_unix(io2->generic.out.write_time);
-	io->openx.out.size        = io2->generic.out.size;
-	io->openx.out.ftype       = 0;
-	io->openx.out.devstate    = 0;
-	io->openx.out.action      = io2->generic.out.create_action;
-	io->openx.out.unique_fid  = 0;
-	io->openx.out.access_mask = io2->generic.in.access_mask;
-	io->openx.out.unknown     = 0;
-	
-	/* we need to extend the file to the requested size if
-	   it was newly created */
-	if (io2->generic.out.create_action == NTCREATEX_ACTION_CREATED &&
-	    io->openx.in.size != 0) {
-		union smb_setfileinfo *sf;
-		sf = talloc_p(req, union smb_setfileinfo);
-		if (sf != NULL) {
-			sf->generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
-			sf->generic.file.fnum = io2->generic.out.fnum;
+
+	switch (io->generic.level) {
+	case RAW_OPEN_OPEN:
+		io->openold.out.fnum       = io2->generic.out.fnum;
+		io->openold.out.attrib     = io2->generic.out.attrib;
+		io->openold.out.write_time = nt_time_to_unix(io2->generic.out.write_time);
+		io->openold.out.size       = io2->generic.out.size;
+		io->openold.out.rmode      = DOS_OPEN_RDWR;
+		break;
+
+	case RAW_OPEN_OPENX:
+		io->openx.out.fnum        = io2->generic.out.fnum;
+		io->openx.out.attrib      = io2->generic.out.attrib;
+		io->openx.out.write_time  = nt_time_to_unix(io2->generic.out.write_time);
+		io->openx.out.size        = io2->generic.out.size;
+		io->openx.out.ftype       = 0;
+		io->openx.out.devstate    = 0;
+		io->openx.out.action      = io2->generic.out.create_action;
+		io->openx.out.unique_fid  = 0;
+		io->openx.out.access_mask = io2->generic.in.access_mask;
+		io->openx.out.unknown     = 0;
+		
+		/* we need to extend the file to the requested size if
+		   it was newly created */
+		if (io2->generic.out.create_action == NTCREATEX_ACTION_CREATED &&
+		    io->openx.in.size != 0) {
+			union smb_setfileinfo *sf;
+			uint_t state;
+
+			/* doing this secondary request async is more
+			   trouble than its worth */
+			state = req->async_states->state;
+			req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+
+			sf = talloc_p(req, union smb_setfileinfo);			
+			sf->generic.level            = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+			sf->generic.file.fnum        = io2->generic.out.fnum;
 			sf->end_of_file_info.in.size = io->openx.in.size;
 			status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
 			if (NT_STATUS_IS_OK(status)) {
 				io->openx.out.size = io->openx.in.size;
 			}
+			req->async_states->state = state;
 		}
+		break;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -203,54 +209,141 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 	NTSTATUS status;
 	union smb_open *io2;
 
-	io2 = talloc_p(req, union smb_open);
+	io2 = talloc_zero_p(req, union smb_open);
 	if (io2 == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* must be synchronous, or we won't be called to do the 
-	   translation */
-	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+	status = ntvfs_map_async_setup(req, ntvfs, io, io2, 
+				       (second_stage_t)ntvfs_map_open_finish);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
+	io2->generic.level = RAW_OPEN_GENERIC;
+		
 	switch (io->generic.level) {
-	case RAW_OPEN_GENERIC:
-		return NT_STATUS_INVALID_LEVEL;
-
 	case RAW_OPEN_OPENX:
-		return ntvfs_map_open_openx(req, io, io2, ntvfs);
-
-
+		if (io->openx.in.flags & OPENX_FLAGS_REQUEST_OPLOCK) {
+			io2->generic.in.flags |= NTCREATEX_FLAGS_REQUEST_OPLOCK;
+		}
+		if (io->openx.in.flags & OPENX_FLAGS_REQUEST_BATCH_OPLOCK) {
+			io2->generic.in.flags |= NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+		}
+	
+		switch (io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) {
+		case OPENX_MODE_ACCESS_READ:
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
+			io->openx.out.access = OPENX_MODE_ACCESS_READ;
+			break;
+		case OPENX_MODE_ACCESS_WRITE:
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
+			io->openx.out.access = OPENX_MODE_ACCESS_WRITE;
+			break;
+		case OPENX_MODE_ACCESS_RDWR:
+		case OPENX_MODE_ACCESS_FCB:
+		case OPENX_MODE_ACCESS_EXEC:
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
+			io->openx.out.access = OPENX_MODE_ACCESS_RDWR;
+			break;
+		default:
+			return NT_STATUS_INVALID_LOCK_SEQUENCE;
+		}
+		
+		switch (io->openx.in.open_mode & OPENX_MODE_DENY_MASK) {
+		case OPENX_MODE_DENY_READ:
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE;
+			break;
+		case OPENX_MODE_DENY_WRITE:
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
+			break;
+		case OPENX_MODE_DENY_ALL:
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+			break;
+		case OPENX_MODE_DENY_NONE:
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+			break;
+		case OPENX_MODE_DENY_DOS:
+			/* DENY_DOS is quite strange - it depends on the filename! */
+			if (is_exe_file(io->openx.in.fname)) {
+				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+			} else {
+				if ((io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) == 
+				    OPENX_MODE_ACCESS_READ) {
+					io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
+				} else {
+					io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+				}
+			}
+			break;
+		case OPENX_MODE_DENY_FCB:
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+			break;
+		default:
+			return NT_STATUS_INVALID_LOCK_SEQUENCE;
+		}
+	
+		switch (io->openx.in.open_func) {
+		case (OPENX_OPEN_FUNC_OPEN):
+			io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN;
+			break;
+		case (OPENX_OPEN_FUNC_TRUNC):
+			io2->generic.in.open_disposition = NTCREATEX_DISP_OVERWRITE;
+			break;
+		case (OPENX_OPEN_FUNC_FAIL | OPENX_OPEN_FUNC_CREATE):
+			io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
+			break;
+		case (OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE):
+			io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+			break;
+		case (OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE):
+			io2->generic.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+			break;			
+		default:
+			/* this one is very strange */
+			if ((io->openx.in.open_mode & OPENX_MODE_ACCESS_MASK) ==
+			    OPENX_MODE_ACCESS_EXEC) {
+				io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
+				break;
+			}
+			return NT_STATUS_INVALID_LOCK_SEQUENCE;
+		}
+		
+		io2->generic.in.alloc_size = 0;
+		io2->generic.in.file_attr = io->openx.in.file_attrs;
+		io2->generic.in.fname = io->openx.in.fname;
+		
+		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		break;
+		
+		
 	case RAW_OPEN_OPEN:
-		ZERO_STRUCT(io2->generic.in);
-		io2->generic.level = RAW_OPEN_GENERIC;
 		io2->generic.in.file_attr = io->openold.in.search_attrs;
 		io2->generic.in.fname = io->openold.in.fname;
 		io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN;
-		DEBUG(9,("ntvfs_map_open(OPEN): mapping flags=0x%x\n",
-			io->openold.in.flags));
 		switch (io->openold.in.flags & OPEN_FLAGS_MODE_MASK) {
-			case OPEN_FLAGS_OPEN_READ:
-				io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
-				io->openold.out.rmode = DOS_OPEN_RDONLY;
-				break;
-			case OPEN_FLAGS_OPEN_WRITE:
-				io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
-				io->openold.out.rmode = DOS_OPEN_WRONLY;
-				break;
-			case OPEN_FLAGS_OPEN_RDWR:
-			case 0xf: /* FCB mode */
-				io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ |
-					GENERIC_RIGHTS_FILE_WRITE;
-				io->openold.out.rmode = DOS_OPEN_RDWR; /* assume we got r/w */
-				break;
-			default:
-				DEBUG(2,("ntvfs_map_open(OPEN): invalid mode 0x%x\n",
-					io->openold.in.flags & OPEN_FLAGS_MODE_MASK));
-				return NT_STATUS_INVALID_PARAMETER;
+		case OPEN_FLAGS_OPEN_READ:
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
+			io->openold.out.rmode = DOS_OPEN_RDONLY;
+			break;
+		case OPEN_FLAGS_OPEN_WRITE:
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
+			io->openold.out.rmode = DOS_OPEN_WRONLY;
+			break;
+		case OPEN_FLAGS_OPEN_RDWR:
+		case 0xf: /* FCB mode */
+			io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ |
+				GENERIC_RIGHTS_FILE_WRITE;
+			io->openold.out.rmode = DOS_OPEN_RDWR; /* assume we got r/w */
+			break;
+		default:
+			DEBUG(2,("ntvfs_map_open(OPEN): invalid mode 0x%x\n",
+				 io->openold.in.flags & OPEN_FLAGS_MODE_MASK));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
-		switch(io->openold.in.flags & OPEN_FLAGS_DENY_MASK) {
-			case OPEN_FLAGS_DENY_DOS:
+		switch (io->openold.in.flags & OPEN_FLAGS_DENY_MASK) {
+		case OPEN_FLAGS_DENY_DOS:
 				/* DENY_DOS is quite strange - it depends on the filename! */
 				if (is_exe_file(io->openold.in.fname)) {
 					io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
@@ -263,46 +356,36 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 					}
 				}
 				break;
-			case OPEN_FLAGS_DENY_ALL:
-				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
-				break;
-			case OPEN_FLAGS_DENY_WRITE:
-				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
-				break;
-			case OPEN_FLAGS_DENY_READ:
-				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE;
-				break;
-			case OPEN_FLAGS_DENY_NONE:
-				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE |
-						NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_DELETE;
-				break;
-			case 0x70: /* FCB mode */
-				io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
-				break;
-			default:
-				DEBUG(2,("ntvfs_map_open(OPEN): invalid DENY 0x%x\n",
-					io->openold.in.flags & OPEN_FLAGS_DENY_MASK));
-				return NT_STATUS_INVALID_PARAMETER;
+		case OPEN_FLAGS_DENY_ALL:
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+			break;
+		case OPEN_FLAGS_DENY_WRITE:
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
+			break;
+		case OPEN_FLAGS_DENY_READ:
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE;
+			break;
+		case OPEN_FLAGS_DENY_NONE:
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_WRITE |
+				NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_DELETE;
+			break;
+		case 0x70: /* FCB mode */
+			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+			break;
+		default:
+			DEBUG(2,("ntvfs_map_open(OPEN): invalid DENY 0x%x\n",
+				 io->openold.in.flags & OPEN_FLAGS_DENY_MASK));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
-		DEBUG(9,("ntvfs_map_open(OPEN): mapped flags=0x%x to access_mask=0x%x and share_access=0x%x\n",
-			io->openold.in.flags, io2->generic.in.access_mask, io2->generic.in.share_access));
 
 		status = ntvfs->ops->openfile(ntvfs, req, io2);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		
-		ZERO_STRUCT(io->openx.out);
-		io->openold.out.fnum = io2->generic.out.fnum;
-		io->openold.out.attrib = io2->generic.out.attrib;
-		io->openold.out.write_time = nt_time_to_unix(io2->generic.out.write_time);
-		io->openold.out.size = io2->generic.out.size;
-		io->openold.out.rmode = DOS_OPEN_RDWR;
-		
-		return NT_STATUS_OK;
+		break;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	return NT_STATUS_INVALID_LEVEL;
+	return ntvfs_map_async_finish(req, status);
 }
 
 
@@ -323,6 +406,10 @@ NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs,
 	if (fs->generic.level == RAW_QFS_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
 	}
+	
+	/* this map function is only used by the simple backend, which
+	   doesn't do async */
+	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
 
 	/* ask the backend for the generic info */
 	fs2->generic.level = RAW_QFS_GENERIC;
@@ -705,8 +792,7 @@ NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *inf
 	info2->generic.level = RAW_FILEINFO_GENERIC;
 	info2->generic.in.fname = info->generic.in.fname;
 
-	/* must be synchronous, or we won't be called to do the 
-	   translation */
+	/* only used by the simple backend, which doesn't do async */
 	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
 
 	status = ntvfs->ops->qpathinfo(ntvfs, req, info2);
@@ -767,12 +853,86 @@ NTSTATUS ntvfs_map_lock(struct smbsrv_request *req, union smb_lock *lck,
 /* 
    NTVFS write generic to any mapper
 */
+static NTSTATUS ntvfs_map_write_finish(struct smbsrv_request *req, 
+				       struct ntvfs_module_context *ntvfs,
+				       union smb_write *wr, 
+				       union smb_write *wr2, 
+				       NTSTATUS status)
+				       
+{
+	union smb_lock *lck;
+	union smb_close *cl;
+	uint_t state;
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	switch (wr->generic.level) {
+	case RAW_WRITE_WRITE:
+		wr->write.out.nwritten    = wr2->generic.out.nwritten;
+		break;
+
+	case RAW_WRITE_WRITEUNLOCK:
+		wr->writeunlock.out.nwritten = wr2->generic.out.nwritten;
+
+		lck = talloc_p(wr2, union smb_lock);
+		if (lck == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		lck->unlock.level      = RAW_LOCK_UNLOCK;
+		lck->unlock.in.fnum    = wr->writeunlock.in.fnum;
+		lck->unlock.in.count   = wr->writeunlock.in.count;
+		lck->unlock.in.offset  = wr->writeunlock.in.offset;
+
+		if (lck->unlock.in.count != 0) {
+			/* do the lock sync for now */
+			state = req->async_states->state;
+			req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+			status = ntvfs->ops->lock(ntvfs, req, lck);
+			req->async_states->state = state;
+		}
+		break;
+
+	case RAW_WRITE_WRITECLOSE:
+		wr->writeclose.out.nwritten    = wr2->generic.out.nwritten;
+
+		cl = talloc_p(wr2, union smb_close);
+		if (cl == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		cl->close.level           = RAW_CLOSE_CLOSE;
+		cl->close.in.fnum         = wr->writeclose.in.fnum;
+		cl->close.in.write_time   = wr->writeclose.in.mtime;
+
+		if (wr2->generic.in.count != 0) {
+			/* do the close sync for now */
+			state = req->async_states->state;
+			req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+			status = ntvfs->ops->close(ntvfs, req, cl);
+			req->async_states->state = state;
+		}
+		break;
+
+	case RAW_WRITE_SPLWRITE:
+		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	return status;
+}
+
+
+/* 
+   NTVFS write generic to any mapper
+*/
 NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr, 
 			 struct ntvfs_module_context *ntvfs)
 {
 	union smb_write *wr2;
-	union smb_lock *lck;
-	union smb_close *cl;
 	NTSTATUS status;
 
 	wr2 = talloc_p(req, union smb_write);
@@ -780,10 +940,10 @@ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	wr2->generic.level = RAW_WRITE_GENERIC;
+	status = ntvfs_map_async_setup(req, ntvfs, wr, wr2, 
+				       (second_stage_t)ntvfs_map_write_finish);
 
-	/* we can't map asynchronously */
-	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+	wr2->writex.level = RAW_WRITE_GENERIC;
 
 	switch (wr->generic.level) {
 	case RAW_WRITE_WRITEX:
@@ -791,88 +951,78 @@ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr,
 		break;
 
 	case RAW_WRITE_WRITE:
-		wr2->generic.in.fnum      = wr->write.in.fnum;
-		wr2->generic.in.offset    = wr->write.in.offset;
-		wr2->generic.in.wmode     = 0;
-		wr2->generic.in.remaining = wr->write.in.remaining;
-		wr2->generic.in.count     = wr->write.in.count;
-		wr2->generic.in.data      = wr->write.in.data;
+		wr2->writex.in.fnum      = wr->write.in.fnum;
+		wr2->writex.in.offset    = wr->write.in.offset;
+		wr2->writex.in.wmode     = 0;
+		wr2->writex.in.remaining = wr->write.in.remaining;
+		wr2->writex.in.count     = wr->write.in.count;
+		wr2->writex.in.data      = wr->write.in.data;
 		status = ntvfs->ops->write(ntvfs, req, wr2);
-		wr->write.out.nwritten    = wr2->generic.out.nwritten;
 		break;
 
 	case RAW_WRITE_WRITEUNLOCK:
-		lck = talloc_p(wr2, union smb_lock);
-		if (lck == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		wr2->generic.in.fnum      = wr->writeunlock.in.fnum;
-		wr2->generic.in.offset    = wr->writeunlock.in.offset;
-		wr2->generic.in.wmode     = 0;
-		wr2->generic.in.remaining = wr->writeunlock.in.remaining;
-		wr2->generic.in.count     = wr->writeunlock.in.count;
-		wr2->generic.in.data      = wr->writeunlock.in.data;
-
-		lck->unlock.level      = RAW_LOCK_UNLOCK;
-		lck->unlock.in.fnum    = wr->writeunlock.in.fnum;
-		lck->unlock.in.count   = wr->writeunlock.in.count;
-		lck->unlock.in.offset  = wr->writeunlock.in.offset;
-
+		wr2->writex.in.fnum      = wr->writeunlock.in.fnum;
+		wr2->writex.in.offset    = wr->writeunlock.in.offset;
+		wr2->writex.in.wmode     = 0;
+		wr2->writex.in.remaining = wr->writeunlock.in.remaining;
+		wr2->writex.in.count     = wr->writeunlock.in.count;
+		wr2->writex.in.data      = wr->writeunlock.in.data;
 		status = ntvfs->ops->write(ntvfs, req, wr2);
-
-		wr->writeunlock.out.nwritten = wr2->generic.out.nwritten;
-
-		if (NT_STATUS_IS_OK(status) && 
-		    lck->unlock.in.count != 0) {
-			status = ntvfs->ops->lock(ntvfs, req, lck);
-		}
 		break;
 
 	case RAW_WRITE_WRITECLOSE:
-		cl = talloc_p(wr2, union smb_close);
-		if (cl == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		wr2->generic.in.fnum      = wr->writeclose.in.fnum;
-		wr2->generic.in.offset    = wr->writeclose.in.offset;
-		wr2->generic.in.wmode     = 0;
-		wr2->generic.in.remaining = 0;
-		wr2->generic.in.count     = wr->writeclose.in.count;
-		wr2->generic.in.data      = wr->writeclose.in.data;
-
-		cl->close.level           = RAW_CLOSE_CLOSE;
-		cl->close.in.fnum         = wr->writeclose.in.fnum;
-		cl->close.in.write_time   = wr->writeclose.in.mtime;
-
+		wr2->writex.in.fnum      = wr->writeclose.in.fnum;
+		wr2->writex.in.offset    = wr->writeclose.in.offset;
+		wr2->writex.in.wmode     = 0;
+		wr2->writex.in.remaining = 0;
+		wr2->writex.in.count     = wr->writeclose.in.count;
+		wr2->writex.in.data      = wr->writeclose.in.data;
 		status = ntvfs->ops->write(ntvfs, req, wr2);
-		wr->writeclose.out.nwritten    = wr2->generic.out.nwritten;
-
-		if (NT_STATUS_IS_OK(status) &&
-		    wr2->generic.in.count != 0) {
-			status = ntvfs->ops->close(ntvfs, req, cl);
-		}
 		break;
 
 	case RAW_WRITE_SPLWRITE:
-		wr2->generic.in.fnum      = wr->splwrite.in.fnum;
-		wr2->generic.in.offset    = 0;
-		wr2->generic.in.wmode     = 0;
-		wr2->generic.in.remaining = 0;
-		wr2->generic.in.count     = wr->splwrite.in.count;
-		wr2->generic.in.data      = wr->splwrite.in.data;
+		wr2->writex.in.fnum      = wr->splwrite.in.fnum;
+		wr2->writex.in.offset    = 0;
+		wr2->writex.in.wmode     = 0;
+		wr2->writex.in.remaining = 0;
+		wr2->writex.in.count     = wr->splwrite.in.count;
+		wr2->writex.in.data      = wr->splwrite.in.data;
 		status = ntvfs->ops->write(ntvfs, req, wr2);
 		break;
 	}
 
-
-	return status;
+	return ntvfs_map_async_finish(req, status);
 }
 
 
 /* 
-   NTVFS read generic to any mapper
+   NTVFS read generic to any mapper - finish the out mapping
+*/
+static NTSTATUS ntvfs_map_read_finish(struct smbsrv_request *req, 
+				      struct ntvfs_module_context *ntvfs, 
+				      union smb_read *rd, 
+				      union smb_read *rd2,
+				      NTSTATUS status)
+{
+	switch (rd->generic.level) {
+	case RAW_READ_READ:
+		rd->read.out.nread        = rd2->generic.out.nread;
+		break;
+	case RAW_READ_READBRAW:
+		rd->readbraw.out.nread    = rd2->generic.out.nread;
+		break;
+	case RAW_READ_LOCKREAD:
+		rd->lockread.out.nread = rd2->generic.out.nread;
+		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	return status;
+}
+
+/* 
+   NTVFS read* to readx mapper
 */
 NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd, 
 			 struct ntvfs_module_context *ntvfs)
@@ -880,16 +1030,20 @@ NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd,
 	union smb_read *rd2;
 	union smb_lock *lck;
 	NTSTATUS status;
+	uint_t state;
 
 	rd2 = talloc_p(req, union smb_read);
 	if (rd2 == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rd2->generic.level = RAW_READ_GENERIC;
+	status = ntvfs_map_async_setup(req, ntvfs, rd, rd2, 
+				       (second_stage_t)ntvfs_map_read_finish);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	/* we can't map asynchronously */
-	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+	rd2->readx.level = RAW_READ_READX;
 
 	switch (rd->generic.level) {
 	case RAW_READ_READX:
@@ -897,56 +1051,55 @@ NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd,
 		break;
 
 	case RAW_READ_READ:
-		rd2->generic.in.fnum      = rd->read.in.fnum;
-		rd2->generic.in.offset    = rd->read.in.offset;
-		rd2->generic.in.mincnt    = rd->read.in.count;
-		rd2->generic.in.maxcnt    = rd->read.in.count;
-		rd2->generic.in.remaining = rd->read.in.remaining;
-		rd2->generic.out.data     = rd->read.out.data;
+		rd2->readx.in.fnum      = rd->read.in.fnum;
+		rd2->readx.in.offset    = rd->read.in.offset;
+		rd2->readx.in.mincnt    = rd->read.in.count;
+		rd2->readx.in.maxcnt    = rd->read.in.count;
+		rd2->readx.in.remaining = rd->read.in.remaining;
+		rd2->readx.out.data     = rd->read.out.data;
 		status = ntvfs->ops->read(ntvfs, req, rd2);
-		rd->read.out.nread        = rd2->generic.out.nread;
 		break;
 
 	case RAW_READ_READBRAW:
-		rd2->generic.in.fnum      = rd->readbraw.in.fnum;
-		rd2->generic.in.offset    = rd->readbraw.in.offset;
-		rd2->generic.in.mincnt    = rd->readbraw.in.mincnt;
-		rd2->generic.in.maxcnt    = rd->readbraw.in.maxcnt;
-		rd2->generic.in.remaining = 0;
-		rd2->generic.out.data     = rd->readbraw.out.data;
+		rd2->readx.in.fnum      = rd->readbraw.in.fnum;
+		rd2->readx.in.offset    = rd->readbraw.in.offset;
+		rd2->readx.in.mincnt    = rd->readbraw.in.mincnt;
+		rd2->readx.in.maxcnt    = rd->readbraw.in.maxcnt;
+		rd2->readx.in.remaining = 0;
+		rd2->readx.out.data     = rd->readbraw.out.data;
 		status = ntvfs->ops->read(ntvfs, req, rd2);
-		rd->readbraw.out.nread    = rd2->generic.out.nread;
 		break;
 
 	case RAW_READ_LOCKREAD:
+		/* do the initial lock sync for now */
+		state = req->async_states->state;
+		req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+
 		lck = talloc_p(rd2, union smb_lock);
 		if (lck == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-
-		rd2->generic.in.fnum      = rd->lockread.in.fnum;
-		rd2->generic.in.offset    = rd->lockread.in.offset;
-		rd2->generic.in.mincnt    = rd->lockread.in.count;
-		rd2->generic.in.maxcnt    = rd->lockread.in.count;
-		rd2->generic.in.remaining = rd->lockread.in.remaining;
-		rd2->generic.out.data     = rd->lockread.out.data;
-
 		lck->lock.level      = RAW_LOCK_LOCK;
 		lck->lock.in.fnum    = rd->lockread.in.fnum;
 		lck->lock.in.count   = rd->lockread.in.count;
 		lck->lock.in.offset  = rd->lockread.in.offset;
-
 		status = ntvfs->ops->lock(ntvfs, req, lck);
+		req->async_states->state = state;
+
+		rd2->readx.in.fnum      = rd->lockread.in.fnum;
+		rd2->readx.in.offset    = rd->lockread.in.offset;
+		rd2->readx.in.mincnt    = rd->lockread.in.count;
+		rd2->readx.in.maxcnt    = rd->lockread.in.count;
+		rd2->readx.in.remaining = rd->lockread.in.remaining;
+		rd2->readx.out.data     = rd->lockread.out.data;
 
 		if (NT_STATUS_IS_OK(status)) {
 			status = ntvfs->ops->read(ntvfs, req, rd2);
-			rd->lockread.out.nread = rd2->generic.out.nread;
 		}
 		break;
 	}
 
-
-	return status;
+	return ntvfs_map_async_finish(req, status);
 }
 
 

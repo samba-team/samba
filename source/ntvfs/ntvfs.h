@@ -156,7 +156,7 @@ struct ntvfs_context {
 struct ntvfs_async_state {
 	struct ntvfs_async_state *prev, *next;
 	/* the async handling infos */
-	unsigned state;
+	uint_t state;
 	void *private_data;
 	void (*send_fn)(struct smbsrv_request *);
 	NTSTATUS status;
