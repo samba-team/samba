@@ -449,12 +449,17 @@ do_klogin(char *host)
 	verbose = old_verbose;
 	return -1;
     }
-    memmove(&tmp, msg_data.app_data, 4);
-    tmp = ntohl(tmp);
-    if(tmp - checksum != 1){
-	fprintf(stderr, "Bad checksum returned from server.");
-	verbose = old_verbose;
-	return -1;
+    { 
+	/* the draft doesn't tell what size the return has */
+	int i;
+	u_int32_t cs = 0;
+	for(i = 0; i < msg_data.app_length; i++)
+	    cs = (cs<<8) + msg_data.app_data[i];
+	if(cs - checksum != 1){
+	    fprintf(stderr, "Bad checksum returned from server.");
+	    verbose = old_verbose;
+	    return -1;
+	}
     }
     auth_complete = 1;
     verbose = old_verbose;
