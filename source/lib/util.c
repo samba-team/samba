@@ -234,7 +234,7 @@ static void check_log_size(void)
       pstring name;
       fclose(dbf); dbf = NULL;
       slprintf(name,sizeof(name)-1,"%s.old",debugf);
-      sys_rename(debugf,name);
+      rename(debugf,name);
       reopen_logs();
     }
   }
