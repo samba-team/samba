@@ -56,6 +56,12 @@ struct smbc_file {
   int dir_type, dir_error;
 };
 
+int smbc_fstatdir(int fd, struct stat *st); /* Forward decl */
+BOOL smbc_getatr(struct smbc_server *srv, char *path, 
+		 uint16 *mode, size_t *size, 
+		 time_t *c_time, time_t *a_time, time_t *m_time,
+		 SMB_INO_T *ino);
+
 extern BOOL in_client;
 static int smbc_initialized = 0;
 static smbc_get_auth_data_fn smbc_auth_fn = NULL;
@@ -66,101 +72,6 @@ static struct smbc_file **smbc_file_table;
 static struct smbc_server *smbc_srvs;
 static pstring  my_netbios_name;
 static pstring smbc_user;
-
-/*
- * Clean up a filename by removing redundent stuff 
- */
-
-static void
-smbc_clean_fname(char *name)
-{
-  char *p, *p2;
-  int l;
-  int modified = 1;
-
-  if (!name) return;
-  
-  while (modified) {
-    modified = 0;
-
-    DEBUG(5,("cleaning %s\n", name));
-
-    if ((p=strstr(name,"/./"))) {
-      modified = 1;
-      while (*p) {
-	p[0] = p[2];
-	p++;
-      }
-    }
-
-    if ((p=strstr(name,"//"))) {
-      modified = 1;
-      while (*p) {
-	p[0] = p[1];
-	p++;
-      }
-    }
-
-    if (strcmp(name,"/../")==0) {
-      modified = 1;
-      name[1] = 0;
-    }
-    
-    if ((p=strstr(name,"/../"))) {
-      modified = 1;
-      for (p2=(p>name?p-1:p);p2>name;p2--) {
-	if (p2[0] == '/') break;
-      }
-      while (*p2) {
-	p2[0] = p2[3];
-	p2++;
-      }
-    }
-
-    if (strcmp(name,"/..")==0) {
-      modified = 1;
-      name[1] = 0;
-    }
-
-    l = strlen(name);
-    p = l>=3?(name+l-3):name;
-    if (strcmp(p,"/..")==0) {
-      modified = 1;
-      for (p2=p-1;p2>name;p2--) {
-	if (p2[0] == '/') break;
-      }
-      if (p2==name) {
-	p[0] = '/';
-	p[1] = 0;
-      } else {
-	p2[0] = 0;
-      }
-    }
-    
-    l = strlen(name);
-    p = l>=2?(name+l-2):name;
-    if (strcmp(p,"/.")==0) {
-      if (p == name) {
-	p[1] = 0;
-      } else {
-	p[0] = 0;
-      }
-    }
-    
-    if (strncmp(p=name,"./",2) == 0) {      
-      modified = 1;
-      do {
-	p[0] = p[2];
-      } while (*p++);
-    }
-    
-    l = strlen(p=name);
-    if (l > 1 && p[l-1] == '/') {
-      modified = 1;
-      p[l-1] = 0;
-    }
-  }
-}
 
 /*
  * Function to parse a path and turn it into components
@@ -182,7 +93,6 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
   pstring userinfo;
   char *p;
   int len;
-  fstring workgroup;
 
   server[0] = share[0] = path[0] = user[0] = password[0] = (char)0;
   pstrcpy(s, fname);
@@ -368,8 +278,6 @@ struct smbc_server *smbc_server(char *server, char *share,
   
   if ((p=strchr(server_n,'#')) && 
       (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
-    struct in_addr sip;
-    pstring s;
     
     fstrcpy(group, server_n);
     p = strchr(group,'#');
@@ -491,7 +399,7 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 {
   pstring conf;
   int p, pid;
-  char *user = NULL, *host = NULL, *home = NULL, *pname="libsmbclient";
+  char *user = NULL, *home = NULL, *pname="libsmbclient";
 
   /*
    * Next lot ifdef'd out until test suite fixed ...
@@ -551,8 +459,8 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
      * config file ... We must return an error ... and keep info around
      * about why we failed
      */
-    /*
-    errno = ENOENT; /* Hmmm, what error resp does lp_load return ? */
+    
+    errno = ENOENT; /* FIXME: Figure out the correct error response */
     return -1;
 
   }
@@ -616,7 +524,6 @@ int smbc_open(const char *fname, int flags, mode_t mode)
   fstring server, share, user, password;
   pstring path;
   struct smbc_server *srv = NULL;
-  struct smbc_file *file = NULL;
   int fd;
 
   if (!smbc_initialized) {
@@ -714,11 +621,6 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
   return 1;  /* Success, with fd ... */
 
- failed:
-
-  /*FIXME, clean up things ... */
-  return -1;
-
 }
 
 /*
@@ -814,11 +716,20 @@ ssize_t smbc_write(int fd, void *buf, size_t count)
     
   }
 
+  /* Check that the buffer exists ... */
+
+  if (buf == NULL) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+
   fe = smbc_file_table[fd - smbc_start_fd];
 
   ret = cli_write(&fe->srv->cli, fe->cli_fd, 0, buf, fe->offset, count);
 
-  if (ret < 0) {
+  if (ret <= 0) {
 
     errno = smbc_errno(&fe->srv->cli);
     return -1;
@@ -930,8 +841,7 @@ int smbc_unlink(const char *fname)
 
     if (errno == EACCES) { /* Check if the file is a directory */
 
-      int err, saverr = errno;
-      struct stat st;
+      int saverr = errno;
       size_t size = 0;
       uint16 mode = 0;
       time_t m_time = 0, a_time = 0, c_time = 0;
@@ -1144,6 +1054,9 @@ int smbc_setup_stat(struct stat *st, char *fname, size_t size, int mode)
   if (st->st_ino == 0) {
     st->st_ino = smbc_inode(fname);
   }
+
+  return True;  /* FIXME: Is this needed ? */
+
 }
 
 /*
@@ -1483,7 +1396,6 @@ dir_list_fn(file_info *finfo, const char *mask, void *state)
 
 int smbc_opendir(const char *fname)
 {
-  struct in_addr addr;
   fstring server, share, user, password;
   pstring path;
   struct smbc_server *srv = NULL;
@@ -1575,8 +1487,11 @@ int smbc_opendir(const char *fname)
     /* find the name of the server ... */
 
     if (!name_status_find(0, rem_ip, server)) {
+
+      fprintf(stderr, "Could not get the name of local master browser ...\n");
       errno = EINVAL;
       return -1;
+
     }
 
     /*
@@ -1634,8 +1549,11 @@ int smbc_opendir(const char *fname)
 	/*cli_get_backup_server(my_netbios_name, server, buserver, sizeof(buserver)); */
 
 	if (!name_status_find(0, rem_ip, buserver)) {
+
+	  fprintf(stderr, "Could not get name of local master browser ...\n");
 	  errno = EPERM;  /* FIXME, is this correct */
 	  return -1;
+
 	}
 
 	/*
@@ -1734,8 +1652,8 @@ int smbc_opendir(const char *fname)
 
       pstrcat(path, "\\*");
 
-      if (!cli_list(&srv->cli, path, aDIR | aSYSTEM | aHIDDEN, dir_list_fn, 
-		    (void *)smbc_file_table[slot])) {
+      if (cli_list(&srv->cli, path, aDIR | aSYSTEM | aHIDDEN, dir_list_fn, 
+		   (void *)smbc_file_table[slot]) < 0) {
 
 	if (smbc_file_table[slot]) free(smbc_file_table[slot]);
 	smbc_file_table[slot] = NULL;
@@ -2134,7 +2052,14 @@ int smbc_lseekdir(int fd, off_t offset, int whence)
 
   }
 
-  return 0;
+  if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
+
+    errno = EBADF;
+    return -1;
+
+  }
+
+  return ENOSYS;  /* Not implemented so far ... */
 
 }
 
@@ -2151,6 +2076,8 @@ int smbc_fstatdir(int fd, struct stat *st)
     return -1;
 
   }
+
+  /* No code yet ... */
 
   return 0;
 
@@ -2186,6 +2113,7 @@ int smbc_print_file(const char *fname, const char *printq)
 
   if ((fid1 = smbc_open(fname, O_RDONLY, 0666)) < 0) {
 
+    fprintf(stderr, "Error, fname=%s, errno=%i\n", fname, errno);
     return -1;  /* smbc_open sets errno */
 
   }
@@ -2238,7 +2166,6 @@ int smbc_print_file(const char *fname, const char *printq)
 
 int smbc_open_print_job(const char *fname)
 {
-  struct smbc_server *srv;
   fstring server, share, user, password;
   pstring path;
 
