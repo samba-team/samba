@@ -20,6 +20,7 @@ CFLAGS=${CFLAGS-"-O"}
 
 dnl Checks for programs.
 AC_PROG_CC
+AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_AWK
 AC_PROG_LIBTOOL
@@ -1642,14 +1643,14 @@ AC_ARG_WITH(lockdir,
   # Just in case anybody calls it without argument
   #
     AC_MSG_WARN([--with-lockdir called without argument - will use default])
-    lockdir='$(VARDIR)/locks'
+    lockdir='${VARDIR}/locks'
   ;;
   * )
     lockdir="$withval"
     ;;
   esac
   AC_SUBST(lockdir)],
-  [lockdir='$(VARDIR)/locks'
+  [lockdir='${VARDIR}/locks'
    AC_SUBST(lockdir)]
 )
 
@@ -1891,4 +1892,9 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
-AC_OUTPUT(include/stamp-h Makefile)
+AC_OUTPUT([include/stamp-h Makefile script/samba-init.d],
+[
+case " $CONFIG_FILES " in
+  *" script/samba-init.d "*) chmod +x script/samba-init.d
+esac
+])
