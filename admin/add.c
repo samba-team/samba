@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -119,7 +119,14 @@ kt_add(int argc, char **argv)
 	kvno = atoi(buf);
     }
     if(password_string == NULL && random_flag == 0) {
-	if(des_read_pw_string(buf, sizeof(buf), "Password: ", 1))
+	krb5_prompt prompt;
+	krb5_data reply;
+	prompt.hidden = 1;
+	prompt.prompt = "Password: ";
+	prompt.reply = &reply;
+	reply.data = buf;
+	reply.length = sizeof(buf);
+	if(krb5_prompter_posix(context, NULL, NULL, NULL, 1, &prompt))
 	    goto out;
 	password_string = buf;
     }
