@@ -1,3 +1,8 @@
+2003-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rename_s.c (kadm5_s_rename_principal): allow principal to change
+	realm From Panasas Inc
+	
 2003-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* destroy_c.c (kadm5_c_destroy): fix memory leaks, From Panasas,
