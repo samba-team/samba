@@ -628,8 +628,8 @@ static void process_loop(int accept_sock)
 
 					if (state->read_buf_len >= sizeof(uint32)
 					    && *(uint32 *) &state->request != sizeof(state->request)) {
-						DEBUG(0,("process_loop: Invalid request size (%d) sent, should be (%d)\n",
-								*(uint32 *) &state->request, sizeof(state->request)));
+						DEBUG(0,("process_loop: Invalid request size from pid %d: %d bytes sent, should be %d\n",
+								state->request.pid, *(uint32 *) &state->request, sizeof(state->request)));
 
 						remove_client(state);
 						break;
