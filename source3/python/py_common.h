@@ -23,7 +23,7 @@
 
 #include "includes.h"
 
-/* Return a cli_state struct opened on the SPOOLSS pipe.  If credentials
+/* Return a cli_state struct opened on the specified pipe.  If credentials
    are passed use them. */
 
 typedef struct cli_state *(cli_pipe_fn)(

@@ -34,7 +34,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	static char *kwlist[] = {"server", "creds", "level", "arch", NULL};
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
-
+	
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|O!is", kwlist, 
@@ -44,8 +44,8 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	
 	/* Call rpc function */
 	
-	if (!(cli = open_pipe_creds(server_name, creds, 
-				    cli_spoolss_initialise, NULL))) {
+	if (!(cli = open_pipe_creds(
+		      server_name, creds, cli_spoolss_initialise))) {
 		fprintf(stderr, "could not initialise cli state\n");
 		goto done;
 	}
@@ -244,12 +244,12 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 
 	/* Call rpc function */
 
-	if (!(cli = open_pipe_creds(server_name, creds, 
-				    cli_spoolss_initialise, NULL))) {
+	if (!(cli = open_pipe_creds(
+		      server_name, creds, cli_spoolss_initialise))) {
 		fprintf(stderr, "could not initialise cli state\n");
 		goto done;
 	}
-
+	
 	if (!(mem_ctx = talloc_init())) {
 		fprintf(stderr, "unable to initialise talloc context\n");
 		goto done;
@@ -311,8 +311,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 
 	mem_ctx = talloc_init();
 
-	if (!(cli = open_pipe_creds(server, creds, cli_spoolss_initialise,
-				    NULL)))
+	if (!(cli = open_pipe_creds(server, creds, cli_spoolss_initialise)))
 		goto done;
 
 	if ((level_obj = PyDict_GetItemString(info, "level"))) {
@@ -337,9 +336,9 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 		PyErr_SetString(spoolss_error, "no info level present");
 		goto done;
 	}
-
+	
 	ZERO_STRUCT(ctr);
-
+	
 	switch(level) {
 	case 3:
 		ctr.info3 = &dinfo.driver_3;
@@ -369,19 +368,20 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 done:
 	cli_shutdown(cli);
 	talloc_destroy(mem_ctx);
-
+	
 	return result;
+	
 }
 
 PyObject *spoolss_addprinterdriverex(PyObject *self, PyObject *args,
-				     PyObject *kw)
+					     PyObject *kw)
 {
 	/* Not supported by Samba server */
-
+	
 	PyErr_SetString(spoolss_error, "Not implemented");
 	return NULL;
 }
-
+	
 PyObject *spoolss_deleteprinterdriver(PyObject *self, PyObject *args,
 				      PyObject *kw)
 {

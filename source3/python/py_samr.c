@@ -287,13 +287,8 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 		    &creds, &desired_access)) 
 		return NULL;
 
-	if (!(cli = open_pipe_creds(server_name, creds, cli_samr_initialise,
-				    NULL))) {
-
-		/* Error state set in open_pipe_creds() */
-
+	if (!(cli = open_pipe_creds(server_name, creds, cli_samr_initialise)))
 		goto done;
-	}
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(samr_ntstatus,

@@ -45,7 +45,7 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 		server += 2;
 
 	mem_ctx = talloc_init();
-	cli = open_pipe_creds(server, creds, cli_spoolss_initialise, NULL);
+	cli = open_pipe_creds(server, creds, cli_spoolss_initialise);
 
 	/* Call rpc function */
 	
