@@ -112,9 +112,18 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
   }
   
   if (n > 0) {
+    int numretries = 3;
+tryagain:
     readret = fsp->conn->vfs_ops.read(fsp,fsp->fd,data,n);
-    if (readret == -1)
+    if (readret == -1) {
+      if ((errno == EAGAIN) && numretries) {
+	DEBUG(3,("read_file EAGAIN retry in 10 seconds\n"));
+	(void)sleep(10);
+	--numretries;
+	goto tryagain;
+      }
       return -1;
+    }
     if (readret > 0) ret += readret;
   }
 
