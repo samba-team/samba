@@ -448,7 +448,7 @@ typedef struct files_struct
 typedef struct data_blob {
 	uint8 *data;
 	size_t length;
-	void (*free)(struct data_blob *data_blob);
+	void (*free_fn)(struct data_blob *data_blob);
 } DATA_BLOB;
 
 /*

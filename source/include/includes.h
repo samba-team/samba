@@ -1125,4 +1125,8 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define strlen(x) valgrind_strlen(x)
 #endif
 
+#if defined(DMALLOC)
+#include <dmalloc.h>
+#endif
+
 #endif /* _INCLUDES_H */

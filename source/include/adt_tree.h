@@ -31,8 +31,8 @@ typedef struct _tree_node {
 
 typedef struct _tree_root {
 	TREE_NODE	*root;
-	int 		(*compare)(void* x, void *y);
-	void		(*free)(void *p);
+	int 		(*compare_fn)(void* x, void *y);
+	void		(*free_fn)(void *p);
 } SORTED_TREE;
 
 #endif
