@@ -25,7 +25,6 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-extern pstring scope;
 extern pstring global_myname;
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */
@@ -126,7 +125,7 @@ in workgroup %s on subnet %s\n",
    * master browser.
    */
 
-  make_nmb_name(&nmbname, work->work_group, 0x1d, scope);
+  make_nmb_name(&nmbname, work->work_group, 0x1d);
 
   remove_permanent_name_from_unicast( subrec, &nmbname);
 
@@ -208,7 +207,7 @@ static void release_1d_name( struct subnet_record *subrec, char *workgroup_name,
   struct nmb_name nmbname;
   struct name_record *namerec;
 
-  make_nmb_name(&nmbname, workgroup_name, 0x1d, scope);
+  make_nmb_name(&nmbname, workgroup_name, 0x1d);
   if((namerec = find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME))!=NULL)
   {
     struct userdata_struct *userdata;
@@ -308,7 +307,7 @@ in workgroup %s on subnet %s\n",
   release_1d_name( subrec, work->work_group, force_new_election);
 
   /* Deregister any browser names we may have. */
-  make_nmb_name(&nmbname, MSBROWSE, 0x1, scope);
+  make_nmb_name(&nmbname, MSBROWSE, 0x1);
   if((namerec = find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME))!=NULL)
   {
     release_name(subrec, namerec,

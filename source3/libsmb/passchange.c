@@ -23,7 +23,6 @@
 
 
 extern pstring global_myname;
-extern pstring scope;
 
 /*************************************************************
 change a password on a remote machine using IPC calls
@@ -52,8 +51,8 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 		return False;
 	}
   
-	make_nmb_name(&calling, global_myname , 0x0 , scope);
-	make_nmb_name(&called , remote_machine, 0x20, scope);
+	make_nmb_name(&calling, global_myname , 0x0);
+	make_nmb_name(&called , remote_machine, 0x20);
 	
 	if (!cli_session_request(&cli, &calling, &called)) {
 		slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",

@@ -28,7 +28,6 @@ extern struct in_addr ipzero;
 /* users from session setup */
 static pstring session_users="";
 
-extern pstring scope;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 

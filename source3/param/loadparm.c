@@ -71,6 +71,7 @@ BOOL bLoaded = False;
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
 extern pstring global_myname;
+pstring global_scope = "";
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -542,6 +543,7 @@ static struct parm_struct parm_table[] =
   {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
   {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,                     NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
   {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  FLAG_DOS_STRING},
+  {"netbios scope",    P_UGSTRING,P_GLOBAL, global_scope,               NULL,   NULL,  0},
   {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
   {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL,   NULL,  FLAG_BASIC},
   {"bind interfaces only", P_BOOL,P_GLOBAL, &Globals.bBindInterfacesOnly,NULL,   NULL,  0},

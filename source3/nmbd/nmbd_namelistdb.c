@@ -26,7 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
 extern char **my_netbios_names;
 
 uint16 samba_nb_type = 0; /* samba's NetBIOS name type */
@@ -213,8 +212,8 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
 
   namerec->subnet = subrec;
 
-  make_nmb_name( &namerec->name, name, type, scope );
-  upcase_name( &namerec->name, NULL );
+  make_nmb_name(&namerec->name, name, type);
+  upcase_name(&namerec->name, NULL );
 
   /* Enter the name as active. */
   namerec->data.nb_flags = nb_flags | NB_ACTIVE;

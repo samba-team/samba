@@ -682,7 +682,7 @@ void free_packet(struct packet_struct *packet);
 struct packet_struct *parse_packet(char *buf,int length,
 				   enum packet_type packet_type);
 struct packet_struct *read_packet(int fd,enum packet_type packet_type);
-void make_nmb_name( struct nmb_name *n, const char *name, int type, const char *this_scope );
+void make_nmb_name( struct nmb_name *n, const char *name, int type);
 BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
 int build_packet(char *buf, struct packet_struct *p);
 BOOL send_packet(struct packet_struct *p);
