@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -163,17 +163,6 @@ int verify_and_remove_cookies (int fd, int sock, int cookiesp);
 int replace_cookie(int xserver, int fd, char *filename, int cookiesp);
 
 int suspicious_address (int sock, struct sockaddr_in addr);
-
-int
-write_encrypted (int fd, void *buf, size_t len, des_key_schedule schedule,
-		 des_cblock *session, struct sockaddr_in *me,
-		 struct sockaddr_in *him);
-
-int
-read_encrypted (int fd, void *buf, size_t len, void **ret,
-		des_key_schedule schedule, des_cblock *session,
-		struct sockaddr_in *him, struct sockaddr_in *me);
-
 
 #define KX_PORT 2111
 
