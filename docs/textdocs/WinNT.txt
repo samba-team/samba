@@ -38,7 +38,7 @@ Add the following value:
 	EnablePlainTextPassword:REG_DWORD=1
 
 Alternatively, use the NT4_PlainPassword.reg file in this directory (either
-by double clicking on it, or run regedit.exe and select "Import Registry
+by double clicking on it, or run regedt32.exe and select "Import Registry
 File" from the "Registry" Menu).
 
 The other major ramification of this feature of NT is that it can't
