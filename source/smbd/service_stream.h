@@ -1,0 +1,57 @@
+/* 
+   Unix SMB/CIFS implementation.
+
+   structures specific to stream servers
+
+   Copyright (C) Stefan (metze) Metzmacher	2004
+   Copyright (C) Andrew Tridgell        	2005
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+/* modules can use the following to determine if the interface has changed
+ * please increment the version number after each interface change
+ * with a comment and maybe update struct process_model_critical_sizes.
+ */
+/* version 1 - initial version - metze */
+#define SERVER_SERVICE_VERSION 1
+
+/*
+  top level context for an established stream connection
+*/
+struct stream_connection {
+	const struct stream_server_ops *ops;
+	const struct model_ops *model_ops;
+	uint32_t server_id;
+	void *private;
+
+	struct {
+		struct event_context *ctx;
+		struct fd_event *fde;
+	} event;
+
+	struct socket_context *socket;
+	struct messaging_context *msg_ctx;
+};
+
+
+/* operations passed to the service_stream code */
+struct stream_server_ops {
+	/* the name of the server_service */
+	const char *name;
+	void (*accept_connection)(struct stream_connection *);
+	void (*recv_handler)(struct stream_connection *, struct timeval, uint16_t);
+	void (*send_handler)(struct stream_connection *, struct timeval, uint16_t);
+};
