@@ -34,7 +34,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>smbcontrol</command> is a very small program, which 
