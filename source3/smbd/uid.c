@@ -546,9 +546,12 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 			return psid;
 		}
 	}
+	
+	/* Make sure we report failure, (when psid == NULL) */
+	become_root();
+	psid = local_uid_to_sid(psid, uid);
+        unbecome_root();
 
-	local_uid_to_sid(psid, uid);
-        
 	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid, sid_to_string(sid, psid)));
 
 	return psid;
@@ -611,10 +614,14 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	 */
 
 	if ( (!winbind_lookup_sid(psid, dom_name, name, &name_type)) || (name_type != SID_NAME_USER) ) {
+		BOOL result;
 		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed - trying local.\n",
 				sid_to_string(sid_str, psid) ));
 
-		return local_sid_to_uid(puid, psid, sidtype);
+		become_root();
+		result = local_sid_to_uid(puid, psid, sidtype);
+		unbecome_root();
+		return result;
 	}
 
 	/*
@@ -634,9 +641,13 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	 */
 
 	if (!winbind_sid_to_uid(puid, psid)) {
+		BOOL result;
 		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed.\n",
 				sid_to_string(sid_str, psid) ));
-		return local_sid_to_uid(puid, psid, sidtype);
+		become_root();
+		result = local_sid_to_uid(puid, psid, sidtype);
+		unbecome_root();
+		return result;
 	}
 
 	DEBUG(10,("sid_to_uid: winbindd %s -> %u\n",
@@ -667,7 +678,6 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
 		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
 				sid_to_string(sid_str, psid) ));
-
 		if (!local_sid_to_gid(pgid, psid, sidtype)) {
 			/* this was probably a foreign sid - assume its a group rid 
 			   and continue */
