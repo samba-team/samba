@@ -1133,6 +1133,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->use_spnego = False;
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
+		cli->max_mux = SVAL(cli->inbuf, smb_vwv3); 
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
 		cli->serverzone = SVALS(cli->inbuf,smb_vwv10);
 		cli->serverzone *= 60;
