@@ -116,7 +116,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 
 	} else {
 		uint32_t crc;
-		crc = crc32_calc_buffer((const char *)data, length);
+		crc = crc32_calc_buffer(data, length);
 		if (!msrpc_gen(sig_mem_ctx, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlm_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -202,10 +202,10 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 		    memcmp(local_sig.data + 8, 
 			   sig->data + 8, sig->length - 8) != 0) {
 			DEBUG(5, ("BAD SIG NTLM1: wanted signature of\n"));
-			dump_data(5, (const char *)local_sig.data, local_sig.length);
+			dump_data(5, local_sig.data, local_sig.length);
 			
 			DEBUG(5, ("BAD SIG: got signature of\n"));
-			dump_data(5, (const char *)(sig->data), sig->length);
+			dump_data(5, sig->data, sig->length);
 			
 			DEBUG(0, ("NTLMSSP NTLM1 packet check failed due to invalid signature!\n"));
 			return NT_STATUS_ACCESS_DENIED;
@@ -255,7 +255,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 		}
 	} else {
 		uint32_t crc;
-		crc = crc32_calc_buffer((const char *)data, length);
+		crc = crc32_calc_buffer(data, length);
 		if (!msrpc_gen(sig_mem_ctx, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlm_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
