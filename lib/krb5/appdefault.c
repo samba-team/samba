@@ -126,12 +126,17 @@ krb5_appdefault_time(krb5_context context, const char *appname,
 		     krb5_const_realm realm, const char *option,
 		     time_t def_val, time_t *ret_val)
 {
-    time_t t;
-    char tstr[32];
+    krb5_deltat t;
     char *val;
-    snprintf(tstr, sizeof(tstr), "%ld", (long)def_val);
-    krb5_appdefault_string(context, appname, realm, option, tstr, &val);
-    t = parse_time (val, NULL);
+
+    krb5_appdefault_string(context, appname, realm, option, NULL, &val);
+    if (val == NULL) {
+	*ret_val = def_val;
+	return;
+    }
+    if (krb5_string_to_deltat(val, &t))
+	*ret_val = def_val;
+    else
+	*ret_val = t;
     free(val);
-    *ret_val = t;
 }
