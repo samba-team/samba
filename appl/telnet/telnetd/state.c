@@ -77,9 +77,9 @@ unsigned char *subsave;
 #define	TS_SB		3	/* throw away begin's... */
 #define	TS_SE		4	/* ...end's (suboption negotiation) */
 #define	TS_WILL		5	/* will option negotiation */
-#define	TS_WONT		6	/* wont " */
-#define	TS_DO		7	/* do " */
-#define	TS_DONT		8	/* dont " */
+#define	TS_WONT		6	/* wont -''- */
+#define	TS_DO		7	/* do -''- */
+#define	TS_DONT		8	/* dont -''- */
 
 	void
 telrcv()
