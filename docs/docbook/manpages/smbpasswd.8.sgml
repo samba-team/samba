@@ -175,10 +175,11 @@
 		
 		
 <varlistentry>
-<term>
+<term><command>NOTE:</command></term>
+<listitem><para>
 <command>The following options are available only when the smbpasswd command is
-run as root or in local mode.</command></term>
-<listitem><para></para></listitem>
+run as root or in local mode.</command>
+</para></listitem>
 </varlistentry>
 
 		<varlistentry>
