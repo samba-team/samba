@@ -92,7 +92,6 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 	static struct get_dc_name_cache *get_dc_name_cache;
 	struct get_dc_name_cache *dcc;
 	struct in_addr *ip_list, dc_ip;
-	extern pstring global_myname;
 	int count, i;
 
 	/* Check the cache for previous lookups */
@@ -144,8 +143,10 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 
 	/* Lookup domain controller name */
 		
-	if (!get_dc_list(False, domain, &ip_list, &count))
+	if (!get_dc_list(False, domain, &ip_list, &count)) {
+		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
+	}
 		
 	/* Firstly choose a PDC/BDC who has the same network address as any
 	   of our interfaces. */
@@ -155,7 +156,10 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 			goto got_ip;
 	}
 
-	if (count == 0) return False;
+	if (count == 0) {
+		DEBUG(3, ("No domain controllers for domain %s\n", domain));
+		return False;
+	}
 	
 	i = (sys_random() % count);
 	
@@ -163,8 +167,13 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 	dc_ip = ip_list[i];
 	SAFE_FREE(ip_list);
 		
-	if (!lookup_pdc_name(global_myname, domain, &dc_ip, srv_name))
+	/* We really should be doing a GETDC call here rather than a node
+	   status lookup. */
+
+	if (!name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name)) {
+		DEBUG(3, ("Error looking up DC name for %s in domain %s\n", inet_ntoa(dc_ip), domain));
 		return False;
+	}
 
 	/* We have a name so make the cache entry positive now */
 

@@ -927,7 +927,7 @@ BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
         if (strcmp(dest_host,"*") == 0) {
                 extern pstring global_myname;
                 ret = resolve_name(lp_workgroup(), ip, 0x1B);
-                lookup_pdc_name(global_myname, lp_workgroup(), ip, dest_host);
+                lookup_dc_name(global_myname, lp_workgroup(), ip, dest_host);
         } else {
                 ret = resolve_name(dest_host, ip, 0x20);
         }
@@ -966,31 +966,32 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 }
 
 /********************************************************
- Lookup a PDC name given a Domain name and IP address.
+ Lookup a DC name given a Domain name and IP address.
 *********************************************************/
 
-BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name)
+BOOL lookup_dc_name(const char *srcname, const char *domain, 
+		    struct in_addr *dc_ip, char *ret_name)
 {
 #if !defined(I_HATE_WINDOWS_REPLY_CODE)
+	
+	fstring dc_name;
+	BOOL ret;
+	
+	/*
+	 * Due to the fact win WinNT *sucks* we must do a node status
+	 * query here... JRA.
+	 */
+	
+	*dc_name = '\0';
+	
+	ret = name_status_find(domain, 0x1c, 0x20, *dc_ip, dc_name);
 
-  fstring pdc_name;
-  BOOL ret;
-
-  /*
-   * Due to the fact win WinNT *sucks* we must do a node status
-   * query here... JRA.
-   */
-
-  *pdc_name = '\0';
-
-  ret = name_status_find(domain, 0x1b, 0x20,*pdc_ip,pdc_name);
-
-  if(ret && *pdc_name) {
-    fstrcpy(ret_name, pdc_name);
-    return True;
-  }
-
-  return False;
+	if(ret && *dc_name) {
+		fstrcpy(ret_name, dc_name);
+		return True;
+	}
+	
+	return False;
 
 #else /* defined(I_HATE_WINDOWS_REPLY_CODE) */
 
