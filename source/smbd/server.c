@@ -559,10 +559,11 @@ usage on the program
 static void usage(char *pname)
 {
 
-	d_printf("Usage: %s [-DaoPh?Vb] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	d_printf("Usage: %s [-DaioPh?Vb] [-d debuglevel] [-l log basename] [-p port]\n", pname);
 	d_printf("       [-O socket options] [-s services file]\n");
-	d_printf("\t-D                    Become a daemon\n");
+	d_printf("\t-D                    Become a daemon (default)\n");
 	d_printf("\t-a                    Append to log file (default)\n");
+	d_printf("\t-i                    Run interactive (not a daemon)\n" );
 	d_printf("\t-o                    Overwrite log file, don't append\n");
 	d_printf("\t-h                    Print usage\n");
 	d_printf("\t-?                    Print usage\n");
@@ -585,6 +586,7 @@ static void usage(char *pname)
 	extern char *optarg;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
+	BOOL interactive = False;
 	BOOL specified_logfile = False;
 	int port = SMB_PORT;
 	int opt;
@@ -600,7 +602,7 @@ static void usage(char *pname)
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?bVaof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?bVaiof:")) )
 		switch (opt)  {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
@@ -618,6 +620,10 @@ static void usage(char *pname)
 
 		case 'a':
 			append_log = True;
+			break;
+
+		case 'i':
+			interactive = True;
 			break;
 
 		case 'o':
@@ -678,7 +684,7 @@ static void usage(char *pname)
 
 	pstrcpy(remote_machine, "smbd");
 
-	setup_logging(argv[0],False);
+	setup_logging(argv[0],interactive);
 
 	/* we want to re-seed early to prevent time delays causing
            client problems at a later date. (tridge) */
@@ -720,7 +726,7 @@ static void usage(char *pname)
 	reopen_logs();
 
 	DEBUG(1,( "smbd version %s started.\n", VERSION));
-	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-1998\n"));
+	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-2002\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
@@ -774,7 +780,7 @@ static void usage(char *pname)
 		is_daemon = True;
 	}
 
-	if (is_daemon) {
+	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
 		become_daemon();
 	}

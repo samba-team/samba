@@ -634,10 +634,11 @@ static BOOL init_structs(void)
 static void usage(char *pname)
 {
 
-  printf( "Usage: %s [-DaohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
+  printf( "Usage: %s [-DaiohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
   printf( "       [-n name] [-p port] [-s configuration file]\n" );
-  printf( "\t-D                    Become a daemon\n" );
+  printf( "\t-D                    Become a daemon (default)\n" );
   printf( "\t-a                    Append to log file (default)\n" );
+  printf( "\t-i                    Run interactive (not a daemon)\n" );
   printf( "\t-o                    Overwrite log file, don't append\n" );
   printf( "\t-h                    Print usage\n" );
   printf( "\t-V                    Print version\n" );
@@ -717,9 +718,9 @@ static void usage(char *pname)
         case 'G':
           DEBUG(0,("Obsolete option '%c' used\n",opt));
           break;
-	case 'i':
-		opt_interactive = True;
-		break;
+        case 'i':
+          opt_interactive = True;
+          break;
         case 'H':
           pstrcpy(dyn_LMHOSTSFILE, optarg);
           break;
