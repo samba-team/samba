@@ -63,9 +63,14 @@ static struct attribute_syntax attrsyn[] = {
 
 #define SCHEMA_TALLOC_CHECK(root, mem, ret) do { if (!mem) { talloc_free(root); return ret;} } while(0);
 
-#define SA_FLAG_RESET   	0
-#define SA_FLAG_AUXCLASS 	1
-#define SA_FLAG_CHECKED  	2
+#define SCHEMA_FLAG_RESET	0
+#define SCHEMA_FLAG_MOD_MASK	0x03
+#define SCHEMA_FLAG_MOD_ADD	0x01
+#define SCHEMA_FLAG_MOD_REPLACE	0x02
+#define SCHEMA_FLAG_MOD_DELETE	0x03
+#define SCHEMA_FLAG_AUXCLASS 	0x10
+#define SCHEMA_FLAG_CHECKED  	0x20
+
 
 struct private_data {
 	struct ldb_context *schema_db;
@@ -136,7 +141,7 @@ static int get_object_objectclasses(struct ldb_context *ldb, const char *dn, str
 					ldb_search_free(ldb, srch);
 					return -1;
 				}
-				schema_struct->objectclass_list[j].flags = SA_FLAG_RESET;
+				schema_struct->objectclass_list[j].flags = SCHEMA_FLAG_RESET;
 			}
 		}
 		ldb_search_free(ldb, srch);
@@ -162,7 +167,7 @@ static int get_check_list(struct ldb_module *module, struct schema_structures *s
 		return -1;
 	}
 	for (i = 0, j = 0; i < msg->num_elements; i++) {
-		if (strcasecmp(msg->elements[i].name, "objectclass") == 0) {
+		if (ldb_attr_cmp(msg->elements[i].name, "objectclass") == 0) {
 			schema_struct->objectclass_list_num = msg->elements[i].num_values;
 			schema_struct->objectclass_list = talloc_array(schema_struct,
 									 struct attribute_list,
@@ -177,11 +182,11 @@ static int get_check_list(struct ldb_module *module, struct schema_structures *s
 				if (schema_struct->objectclass_list[k].name == 0) {
 					return -1;
 				}
-				schema_struct->objectclass_list[k].flags = SA_FLAG_RESET;
+				schema_struct->objectclass_list[k].flags = msg->elements[i].flags;
 			}
 		}
 
-		schema_struct->check_list[j].flags = SA_FLAG_RESET;
+		schema_struct->check_list[j].flags = msg->elements[i].flags;
 		schema_struct->check_list[j].name = talloc_strdup(schema_struct->check_list,
 								  msg->elements[i].name);
 		if (schema_struct->check_list[j].name == 0) {
@@ -243,6 +248,9 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 	for (i = 0; i < schema_struct->objectclass_list_num; i++) {
 		char *filter;
 
+		if ((schema_struct->objectclass_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
+			continue;
+		}
 		filter = talloc_asprintf(schema_struct, "lDAPDisplayName=%s", schema_struct->objectclass_list[i].name);
 		SCHEMA_TALLOC_CHECK(schema_struct, filter, -1);
 		ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &srch);
@@ -251,7 +259,7 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 
 			ok = 0;
 			/* suppose auxiliary classeschema_struct are not required */
-			if (schema_struct->objectclass_list[i].flags & SA_FLAG_AUXCLASS) {
+			if (schema_struct->objectclass_list[i].flags & SCHEMA_FLAG_AUXCLASS) {
 				int d;
 				ok = 1;
 				schema_struct->objectclass_list_num -= 1;
@@ -286,11 +294,11 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 
 			is_aux = 0;
 			is_class = 0;
-			if (strcasecmp((*srch)->elements[j].name, "systemAuxiliaryclass") == 0) {
-				is_aux = SA_FLAG_AUXCLASS;
+			if (ldb_attr_cmp((*srch)->elements[j].name, "systemAuxiliaryclass") == 0) {
+				is_aux = SCHEMA_FLAG_AUXCLASS;
 				is_class = 1;
 			}
-			if (strcasecmp((*srch)->elements[j].name, "subClassOf") == 0) {
+			if (ldb_attr_cmp((*srch)->elements[j].name, "subClassOf") == 0) {
 				is_class = 1;
 			}
 
@@ -304,23 +312,23 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 				}
 			} else {
 
-				if (strcasecmp((*srch)->elements[j].name, "mustContain") == 0 ||
-					strcasecmp((*srch)->elements[j].name, "SystemMustContain") == 0) {
+				if (ldb_attr_cmp((*srch)->elements[j].name, "mustContain") == 0 ||
+					ldb_attr_cmp((*srch)->elements[j].name, "SystemMustContain") == 0) {
 					if (add_attribute_uniq(&schema_struct->must,
 								&schema_struct->must_num,
-								SA_FLAG_RESET,
+								SCHEMA_FLAG_RESET,
 								&(*srch)->elements[j],
 								schema_struct) != 0) {
 						return -1;
 					}
 				}
 
-				if (strcasecmp((*srch)->elements[j].name, "mayContain") == 0 ||
-				    strcasecmp((*srch)->elements[j].name, "SystemMayContain") == 0) {
+				if (ldb_attr_cmp((*srch)->elements[j].name, "mayContain") == 0 ||
+				    ldb_attr_cmp((*srch)->elements[j].name, "SystemMayContain") == 0) {
 
 					if (add_attribute_uniq(&schema_struct->may,
 								&schema_struct->may_num,
-								SA_FLAG_RESET,
+								SCHEMA_FLAG_RESET,
 								&(*srch)->elements[j],
 								schema_struct) != 0) {
 						return -1;
@@ -374,8 +382,8 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 
 		found = 0;
 		for (j = 0; j < entry_structs->check_list_num; j++) {
-			if (strcasecmp(entry_structs->must[i].name, entry_structs->check_list[j].name) == 0) {
-				entry_structs->check_list[j].flags = SA_FLAG_CHECKED;
+			if (ldb_attr_cmp(entry_structs->must[i].name, entry_structs->check_list[j].name) == 0) {
+				entry_structs->check_list[j].flags = SCHEMA_FLAG_CHECKED;
 				found = 1;
 				break;
 			}
@@ -392,13 +400,13 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 	/* now check all others atribs are found in mays */
 	for (i = 0; i < entry_structs->check_list_num; i++) {
 
-		if (entry_structs->check_list[i].flags != SA_FLAG_CHECKED) {
+		if (entry_structs->check_list[i].flags != SCHEMA_FLAG_CHECKED) {
 			int found;
 
 			found = 0;
 			for (j = 0; j < entry_structs->may_num; j++) {
-				if (strcasecmp(entry_structs->may[j].name, entry_structs->check_list[i].name) == 0) {
-					entry_structs->check_list[i].flags = SA_FLAG_CHECKED;
+				if (ldb_attr_cmp(entry_structs->may[j].name, entry_structs->check_list[i].name) == 0) {
+					entry_structs->check_list[i].flags = SCHEMA_FLAG_CHECKED;
 					found = 1;
 					break;
 				}
@@ -484,17 +492,22 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		int found;
 
 		found = 0;
-		for (j = 0; j < entry_structs->may_num; j++) {
-			if (strcasecmp(entry_structs->may[j].name, modify_structs->check_list[i].name) == 0) {
-				modify_structs->check_list[i].flags = SA_FLAG_CHECKED;
+		for (j = 0; j < entry_structs->must_num; j++) {
+			if (ldb_attr_cmp(entry_structs->must[j].name, modify_structs->check_list[i].name) == 0) {
+				if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
+					data->error_string = "Objectclass violation: trying to delete a required attribute";
+					talloc_free(entry_structs);
+					return -1;
+				}
+				modify_structs->check_list[i].flags |= SCHEMA_FLAG_CHECKED;
 				found = 1;
 				break;
 			}
 		}
 		if ( ! found) {
-			for (j = 0; j < entry_structs->must_num; j++) {
-				if (strcasecmp(entry_structs->must[j].name, modify_structs->check_list[i].name) == 0) {
-					modify_structs->check_list[i].flags = SA_FLAG_CHECKED;
+			for (j = 0; j < entry_structs->may_num; j++) {
+				if (ldb_attr_cmp(entry_structs->may[j].name, modify_structs->check_list[i].name) == 0) {
+					modify_structs->check_list[i].flags |= SCHEMA_FLAG_CHECKED;
 					break;
 				}
 			}
@@ -507,8 +520,13 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 
 		found = 0;
 		for (j = 0; j < modify_structs->check_list_num; j++) {
-			if (strcasecmp(modify_structs->must[i].name, modify_structs->check_list[j].name) == 0) {
-				modify_structs->check_list[j].flags = SA_FLAG_CHECKED;
+			if (ldb_attr_cmp(modify_structs->must[i].name, modify_structs->check_list[j].name) == 0) {
+				if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
+					data->error_string = "Objectclass violation: trying to delete a required attribute";
+					talloc_free(entry_structs);
+					return -1;
+				}
+				modify_structs->check_list[j].flags |= SCHEMA_FLAG_CHECKED;
 				found = 1;
 				break;
 			}
@@ -525,13 +543,14 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 	/* now check all others atribs are found in mays */
 	for (i = 0; i < modify_structs->check_list_num; i++) {
 
-		if (modify_structs->check_list[i].flags != SA_FLAG_CHECKED) {
+		if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_CHECKED) == 0 &&
+		    (modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) != SCHEMA_FLAG_MOD_DELETE) {
 			int found;
 
 			found = 0;
 			for (j = 0; j < modify_structs->may_num; j++) {
-				if (strcasecmp(modify_structs->may[j].name, modify_structs->check_list[i].name) == 0) {
-					modify_structs->check_list[i].flags = SA_FLAG_CHECKED;
+				if (ldb_attr_cmp(modify_structs->may[j].name, modify_structs->check_list[i].name) == 0) {
+					modify_structs->check_list[i].flags |= SCHEMA_FLAG_CHECKED;
 					found = 1;
 					break;
 				}
