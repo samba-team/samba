@@ -108,8 +108,8 @@
 		[in] uint32 key_index,
 		[in,out]    uint16 key_name_len,
 		[in,out]    uint16 unknown,
-		[in]        winreg_EnumKeyNameRequest *name,
-		[out]       winreg_EnumKeyNameResponse *name,
+		[in]        winreg_EnumKeyNameRequest *in_name,
+		[out]       winreg_EnumKeyNameResponse *out_name,
 		[in,out]    winreg_String *class,
 		[in,out]    winreg_Time *last_changed_time
 	);
@@ -162,7 +162,7 @@
 	WERROR winreg_QueryInfoKey(
 		[in,ref] policy_handle *handle,
 		[in] winreg_String class,
-		[out,ref] winreg_String class,
+		[out] winreg_String class,
 		[out] uint32 num_subkeys,
 		[out] uint32 max_subkeylen,
 		[out] uint32 max_subkeysize,
