@@ -46,7 +46,7 @@ RCSID("$Id$");
 #include <string.h>
 #include <ctype.h>
 
-#include "proto.h"
+#include "protos.h"
 #include "roken.h"
 #include "otp.h"
 
