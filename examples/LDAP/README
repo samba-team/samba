@@ -1,26 +1,11 @@
 !==
-!== README File for storing smbpasswd in LDAP
+!== README File for various LDAP examples
 !==
 !== written by Gerald Carter <jerry@samba.org>
 !==
 
-This is a quick and dirty means of converting smbpasswd entries
-to sambaAccount entriues in an LDAP directory.
-
-
-Pre-requisites for import_smbpasswd.pl & export_smbpasswd.pl
---------------------------------------------------------------
-These two scripts are modified versions of 
-[import|export]_smbpasswd.pl rewritten to use the Net::LDAP
-perl module available from 
-
-	http://perl-ldap.sourceforge.net
-
-
-
-
-OpenLDAP 2.0.x
---------------
+OpenLDAP 2.x
+------------
 
 A sample schema file (samba.schema) has been included for use
 with OpenLDAP 2.0.x.  The OIDs used in this file are owned by
@@ -50,39 +35,31 @@ nis.schema and cosine.schema in your slapd.conf file.
 You must restart the LDAP server for these new included schema files 
 to become active.
 
+SunOne/Netscape DS
+------------------
 
-import_smbpasswd.pl
-----------------------
-
-Make sure you customize the local site variable in the perl script
-(i.e. ldapserver, rootdn, rootpw, etc...).  The script reads from
-standard input and requires that user entries already exist
-in your directories containing the 'objectclass: posixAccount'
-value pair.  For more information on this object and related schema,
-refer to RFC2307 and http://www.padl.com/software.html).
-
-The following will import an smbpasswd file into an LDAP directory
-
-	$ cat smbpasswd | import_smbpasswd.pl
+The schema file has not been updated for the sambaSamAccount
+objectclass.
 
 
-export_smbpasswd.pl
-----------------------
+Novell eDirectory
+-----------------
 
-Make sure you customize the local site variable in the perl script
-(i.e. ldapserver, rootdn, rootpw, etc...).  You can then generate
-an smbpasswd file by executing
-
-	$ export_smbpasswd.pl > smbpasswd
-
-NOTE: Server side (or client side) search limites may prevent
-all users from being listed.  Check you directory server documentation
-for details.
+The schema file has not been updated for the sambaSamAccount
+objectclass.
 
 
+smbldap-tools/
+--------------
 
-ldapsync.pl & ldapchgpasswd.pl
-------------------------------
+This is a collection of perl scripts (wrapped around the standard 
+OpenLDAP command line tools) for managing Samba and posix accounts
+in an LDAP directory.  See the README file included with the scripts
+for more details.
+
+
+ldapsync.pl 
+-----------
 For more information on these scripts, see
 
 	http://www.mami.net/univr/tng-ldap/howto/

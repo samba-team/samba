@@ -8,6 +8,11 @@
 #		modified to change lmpassword and ntpassword for samba
 # 05/01/2001	mami@arena.sci.univr.it
 #		modified for being also a /bin/passwd replacement
+#
+# ACHTUNG!!	For servers that support the LDAP Modify password 
+#		extended op (e.g. OpenLDAP), see the "ldap password 
+#		sync" option in smb.conf(5).  
+#
 
 $basedn = "ou=Students,dc=univr, dc=it";
 $binddn = "uid=root,dc=univr,dc=it";
