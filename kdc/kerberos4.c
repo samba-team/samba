@@ -42,6 +42,8 @@ RCSID("$Id$");
 
 #ifdef KRB4
 
+#include "kerberos4.h"
+
 static u_int32_t
 swap32(u_int32_t x)
 {
@@ -91,7 +93,7 @@ valid_princ(krb5_context context, krb5_principal princ)
     return 1;
 }
 
-static hdb_entry*
+hdb_entry*
 db_fetch4(const char *name, const char *instance, const char *realm)
 {
     krb5_principal p;
@@ -548,4 +550,4 @@ encode_v4_ticket(void *buf, size_t len, EncTicketPart *et,
     return 0;
 }
 
-#endif
+#endif /* KRB4 */
