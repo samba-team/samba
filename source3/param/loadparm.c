@@ -67,7 +67,6 @@
 
 BOOL in_client = False;   /* Not in the client by default */
 BOOL bLoaded = False;
-BOOL in_client = False;
 
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
