@@ -1444,7 +1444,7 @@ const char **lp_parm_string_list(int lookup_service, const char *type, const cha
 	const char *value = get_parametrics(lookup_service, type, option);
 	
 	if (value)
-		return str_list_make(NULL, value, separator);
+		return str_list_make(talloc_autofree_context(), value, separator);
 
 	return NULL;
 }
@@ -1862,7 +1862,8 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 					strupper(*(char **)dest_ptr);
 					break;
 				case P_LIST:
-					*(const char ***)dest_ptr = str_list_copy(NULL, *(const char ***)src_ptr);
+					*(const char ***)dest_ptr = str_list_copy(talloc_autofree_context(), 
+										  *(const char ***)src_ptr);
 					break;
 				default:
 					break;
@@ -2374,7 +2375,8 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
-			*(const char ***)parm_ptr = str_list_make(NULL, pszParmValue, NULL);
+			*(const char ***)parm_ptr = str_list_make(talloc_autofree_context(), 
+								  pszParmValue, NULL);
 			break;
 
 		case P_STRING:
@@ -2934,7 +2936,7 @@ static void lp_save_defaults(void)
 			continue;
 		switch (parm_table[i].type) {
 			case P_LIST:
-				parm_table[i].def.lvalue = str_list_copy(NULL, 
+				parm_table[i].def.lvalue = str_list_copy(talloc_autofree_context(), 
 									 *(const char ***)parm_table[i].ptr);
 				break;
 			case P_STRING:
