@@ -136,4 +136,10 @@ struct sockaddr_dl;
 #define O_BINARY 0
 #endif
 
+struct _krb5_get_init_creds_opt_private {
+    /* ENC_TIMESTAMP */
+    const char *password;
+    krb5_s2k_proc key_proc;
+};
+
 #endif /* __KRB5_LOCL_H__ */
