@@ -44,6 +44,7 @@ static krb5_error_code
 make_pa_tgs_req(krb5_context context, 
 		KDC_REQ_BODY *body,
 		PA_DATA *padata,
+		krb5_keyblock **subkey,
 		krb5_creds *creds)
 {
     unsigned char buf[1024];
@@ -55,8 +56,33 @@ make_pa_tgs_req(krb5_context context,
 			body, &len);
     in_data.length = len;
     in_data.data = buf + sizeof(buf) - len;
-    ret = krb5_mk_req_extended(context, NULL, 0, &in_data, creds, 
-			       &padata->padata_value);
+    {
+	Ticket ticket;
+	krb5_auth_context ac;
+	ret = krb5_auth_con_init(context, &ac);
+	if(ret)
+	    return ret;
+	ret = decode_Ticket(creds->ticket.data, creds->ticket.length, 
+			    &ticket, &len);
+	if(ret){
+	    krb5_auth_con_free(context, ac);
+	    return ret;
+	}
+	if(ticket.enc_part.etype == ETYPE_DES_CBC_CRC){
+	    krb5_auth_setcksumtype(context, ac, CKSUMTYPE_RSA_MD4);
+	    krb5_auth_setenctype(context, ac, ETYPE_DES_CBC_CRC);
+	}
+	free_Ticket(&ticket);
+	    
+	
+	ret = krb5_mk_req_extended(context, &ac, 0, &in_data, creds, 
+				   &padata->padata_value);
+
+	if(ret == 0)
+	    ret = krb5_auth_con_getlocalsubkey(context, ac, subkey);
+
+	krb5_auth_con_free(context, ac);
+    }
     if(ret)
 	return ret;
     padata->padata_type = pa_tgs_req;
@@ -72,6 +98,7 @@ init_tgs_req (krb5_context context,
 	      krb5_creds *in_creds,
 	      krb5_creds *krbtgt,
 	      unsigned nonce,
+	      krb5_keyblock **subkey,
 	      TGS_REQ *t)
 {
     krb5_error_code ret;
@@ -142,6 +169,7 @@ init_tgs_req (krb5_context context,
     ret = make_pa_tgs_req(context,
 			  &t->req_body, 
 			  t->padata->val,
+			  subkey, 
 			  krbtgt);
     if(ret)
 	goto fail;
@@ -181,6 +209,52 @@ get_krbtgt(krb5_context context,
     return 0;
 }
 
+/* DCE compatible decrypt proc */
+static krb5_error_code
+decrypt_tkt_with_subkey (krb5_context context,
+			 const krb5_keyblock *key,
+			 krb5_const_pointer subkey,
+			 krb5_kdc_rep *dec_rep)
+{
+    krb5_error_code ret;
+    krb5_data data;
+    size_t size;
+    krb5_data save;
+    
+    ret = krb5_data_copy(&save, dec_rep->part1.enc_part.cipher.data,
+			 dec_rep->part1.enc_part.cipher.length);
+    if(ret)
+	return ret;
+    
+    ret = krb5_decrypt (context,
+			dec_rep->part1.enc_part.cipher.data,
+			dec_rep->part1.enc_part.cipher.length,
+			dec_rep->part1.enc_part.etype,
+			key,
+			&data);
+    if(ret && subkey){
+	ret = krb5_decrypt (context, save.data, save.length,
+			    dec_rep->part1.enc_part.etype,
+			    (krb5_keyblock*)subkey, /* local subkey */
+			    &data);
+    }
+    krb5_data_free(&save);
+    if (ret)
+	return ret;
+
+    ret = decode_EncASRepPart(data.data,
+			      data.length,
+			      &dec_rep->part2, 
+			      &size);
+    if (ret)
+	ret = decode_EncTGSRepPart(data.data,
+				   data.length,
+				   &dec_rep->part2, 
+				   &size);
+    krb5_data_free (&data);
+    if (ret) return ret;
+    return 0;
+}
 
 static krb5_error_code
 get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
@@ -196,6 +270,7 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
     krb5_error_code ret;
     unsigned nonce;
     unsigned char buf[1024];
+    krb5_keyblock *subkey = NULL;
     size_t len;
     
     krb5_generate_random_block(&nonce, sizeof(nonce));
@@ -209,6 +284,7 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
 			in_creds,
 			krbtgt,
 			nonce,
+			&subkey, 
 			&req);
     if (ret)
 	goto out;
@@ -255,8 +331,8 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
 				   &krbtgt->addresses,
 				   nonce,
 				   TRUE,
-				   NULL,
-				   NULL);
+				   decrypt_tkt_with_subkey,
+				   subkey);
 	krb5_free_kdc_rep(context, &rep);
 	if (ret)
 	    goto out;
@@ -269,6 +345,10 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
     krb5_data_free(&resp);
 out:
+    if(subkey){
+	krb5_free_keyblock(context, subkey);
+	free(subkey);
+    }
     return ret;
     
 }
