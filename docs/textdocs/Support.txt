@@ -470,3 +470,36 @@ http://www.steam.com/
 cliff@steam.com
 ------------------------------------------------------------------------------
 
+
+------------------------------------------------------------------------------
+PERTH - AUSTRALIA
+
+Bruce Cook - Synonet Corporation.
+E-mail: bcook@wantree.com.au
+Mobile: 015 999 330   (International +61 15 999 330)
+Experience: Samba on FreeBSD, Linux, Soloris (Sparc), Sunos-4
+            Microsoft networking using NT/NTAS, Win95, WFW311, DOS
+
+------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------
+GOETTINGEN - GERMANY
+
+Service Network GmbH
+Hannah Vogt Str. 1
+37085 Goettingen
+Germany
+Phone: +49-551-507775
+Fax: +49-551-507776
+http://www.sernet.de/
+samba@sernet.de
+
+SerNet is a company doing LAN consulting and training. We offer
+Internet access for our customers. We have experience with many
+different kinds of Unix, especially Linux, as well as NetWare and NT. 
+Volker Lendecke, one of our our founders and a Samba Team member, 
+has gained a lot of SMB/CIFS and NetWare experience writing smbfs and 
+ncpfs, the Linux kernel file systems that enable Linux to access 
+Windows NT and other SMB/CIFS servers, and NetWare Servers.
+------------------------------------------------------------------------------
