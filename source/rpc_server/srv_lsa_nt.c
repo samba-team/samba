@@ -165,6 +165,12 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 
 		status = lookup_name(dom_name, user, &sid, &name_type);
 
+		if((name_type == SID_NAME_UNKNOWN) && (lp_server_role() == ROLE_DOMAIN_MEMBER)  && (strncmp(dom_name, full_name, strlen(dom_name)) != 0)) {
+			DEBUG(5, ("init_lsa_rid2s: domain name not provided and local account not found, using member domain\n"));
+			fstrcpy(dom_name, lp_workgroup());
+			status = lookup_name(dom_name, user, &sid, &name_type);
+		}
+
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
 			  "not found"));
 
