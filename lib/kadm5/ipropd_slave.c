@@ -122,7 +122,7 @@ ihave (krb5_context context, krb5_auth_context auth_context,
     int ret;
     u_char buf[8];
     krb5_storage *sp;
-    krb5_data data, priv_data;
+    krb5_data data;
 
     sp = krb5_storage_from_mem (buf, 8);
     krb5_store_int32 (sp, I_HAVE);
@@ -131,15 +131,9 @@ ihave (krb5_context context, krb5_auth_context auth_context,
     data.length = 8;
     data.data   = buf;
     
-    ret = krb5_mk_priv (context, auth_context, &data, &priv_data, NULL);
+    ret = krb5_write_priv_message(context, auth_context, &fd, &data);
     if (ret)
-	krb5_err (context, 1, ret, "krb_mk_priv");
-
-    ret = krb5_write_message (context, &fd, &priv_data);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_write_message");
-
-    krb5_data_free (&priv_data);
+	krb5_err (context, 1, ret, "krb5_write_priv_message");
 }
 
 static void
