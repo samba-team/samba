@@ -418,10 +418,10 @@ static int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
  * Quick and dirty to read a SID in S-1-5-21-x-y-z-rid format and 
  * construct a DOM_SID
  */
-static int get_sid(DOM_SID *sid, char *sid_str)
+static int get_sid(DOM_SID *sid, const unsigned char *sid_str)
 {
   int i = 0, auth;
-  char *lstr; 
+  const unsigned char *lstr; 
 
   if (strncmp(sid_str, "S-1-5", 5)) {
     fprintf(stderr, "Does not conform to S-1-5...: %s\n", sid_str);
