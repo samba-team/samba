@@ -34,7 +34,45 @@ extern int DEBUGLEVEL;
 
 
 /****************************************************************************
-do a SAMR query user groups
+do a SAMR create domain alias
+****************************************************************************/
+BOOL create_samr_domain_alias(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				const char *acct_name, const char *acct_desc,
+				uint32 *rid)
+{
+	POLICY_HND pol_open_alias;
+	ALIAS_INFO_CTR ctr;
+	if (pol_open_domain == NULL || acct_name == NULL || acct_desc == NULL) return False;
+
+	/* send create alias */
+	if (!samr_create_dom_alias(cli,
+				pol_open_domain,
+				acct_name,
+				&pol_open_alias, rid))
+	{
+		return False;
+	}
+
+	DEBUG(5,("create_samr_domain_alias: name: %s rid 0x%x\n",
+	          acct_name, *rid));
+
+	ctr.switch_value1 = 3;
+	make_samr_alias_info3(&ctr.alias.info3, acct_desc);
+
+	/* send set alias info */
+	if (!samr_set_aliasinfo(cli,
+				&pol_open_alias,
+				&ctr))
+	{
+		DEBUG(5,("create_samr_domain_alias: error in samr_set_aliasinfo\n"));
+	}
+
+	return samr_close(cli, &pol_open_alias);
+}
+
+/****************************************************************************
+do a SAMR create domain group
 ****************************************************************************/
 BOOL create_samr_domain_group(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain,
@@ -504,6 +542,176 @@ BOOL samr_open_user(struct cli_state *cli,
 		if (p)
 		{
 			memcpy(user_pol, &r_o.user_pol, sizeof(r_o.user_pol));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR Open Alias
+****************************************************************************/
+BOOL samr_open_alias(struct cli_state *cli, 
+				POLICY_HND *domain_pol, uint32 rid,
+				POLICY_HND *alias_pol)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_OPEN_ALIAS q_o;
+	BOOL valid_pol = False;
+
+	DEBUG(4,("SAMR Open Alias. RID:%x\n", rid));
+
+	if (alias_pol == NULL || domain_pol == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_OPEN_ALIAS */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* store the parameters */
+	make_samr_q_open_alias(&q_o, domain_pol, 0x0008, rid);
+
+	/* turn parameters into data stream */
+	samr_io_q_open_alias("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_OPEN_ALIAS, &data, &rdata))
+	{
+		SAMR_R_OPEN_ALIAS r_o;
+		BOOL p;
+
+		samr_io_r_open_alias("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_OPEN_ALIAS: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			memcpy(alias_pol, &r_o.pol, sizeof(r_o.pol));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR Create Domain Alias
+****************************************************************************/
+BOOL samr_create_dom_alias(struct cli_state *cli, 
+				POLICY_HND *domain_pol, const char *acct_name,
+				POLICY_HND *alias_pol, uint32 *rid)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_CREATE_DOM_ALIAS q_o;
+	BOOL valid_pol = False;
+
+	if (alias_pol == NULL || domain_pol == NULL || acct_name == NULL || rid == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_CREATE_DOM_ALIAS */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Create Domain Alias. Name:%s\n", acct_name));
+
+	/* store the parameters */
+	make_samr_q_create_dom_alias(&q_o, domain_pol, acct_name);
+
+	/* turn parameters into data stream */
+	samr_io_q_create_dom_alias("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_CREATE_DOM_ALIAS, &data, &rdata))
+	{
+		SAMR_R_CREATE_DOM_ALIAS r_o;
+		BOOL p;
+
+		samr_io_r_create_dom_alias("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_CREATE_DOM_ALIAS: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			memcpy(alias_pol, &r_o.alias_pol, sizeof(r_o.alias_pol));
+			*rid = r_o.rid;
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR Set Alias Info
+****************************************************************************/
+BOOL samr_set_aliasinfo(struct cli_state *cli, 
+				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_SET_ALIASINFO q_o;
+	BOOL valid_pol = False;
+
+	if (alias_pol == NULL || ctr == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_SET_ALIASINFO */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Set Alias Info\n"));
+
+	/* store the parameters */
+	make_samr_q_set_aliasinfo(&q_o, alias_pol, ctr);
+
+	/* turn parameters into data stream */
+	samr_io_q_set_aliasinfo("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_SET_ALIASINFO, &data, &rdata))
+	{
+		SAMR_R_SET_ALIASINFO r_o;
+		BOOL p;
+
+		samr_io_r_set_aliasinfo("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_SET_ALIASINFO: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
 			valid_pol = True;
 		}
 	}

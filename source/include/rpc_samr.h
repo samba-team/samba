@@ -849,7 +849,8 @@ typedef struct samr_alias_info3
 /* ALIAS_INFO_CTR */
 typedef struct alias_info_ctr
 {
-	uint16 switch_value;
+	uint16 switch_value1;
+	uint16 switch_value2;
 
 	union
  	{

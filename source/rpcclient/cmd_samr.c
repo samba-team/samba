@@ -172,6 +172,92 @@ void cmd_sam_test(struct client_info *info)
 }
 
 /****************************************************************************
+SAM create domain alias.
+****************************************************************************/
+void cmd_sam_create_dom_alias(struct client_info *info)
+{
+	fstring srv_name;
+	fstring domain;
+	fstring acct_name;
+	fstring acct_desc;
+	fstring sid;
+	DOM_SID sid1;
+	BOOL res = True;
+	BOOL res1 = True;
+	uint32 admin_rid = 0x200003f3; /* absolutely no idea. */
+	uint32 alias_rid; 
+
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid1.num_auths == 0)
+	{
+		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (!next_token(NULL, acct_name, NULL, sizeof(acct_name)))
+	{
+		fprintf(out_hnd, "createalias: <acct name> [acct description]\n");
+	}
+
+	if (!next_token(NULL, acct_desc, NULL, sizeof(acct_desc)))
+	{
+		acct_desc[0] = 0;
+	}
+
+
+	fprintf(out_hnd, "SAM Create Domain Alias\n");
+	fprintf(out_hnd, "Domain: %s Name: %s Description: %s\n",
+	                  domain, acct_name, acct_desc);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, 
+				srv_name, 0x00000020,
+				&info->dom.samr_pol_connect) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, 
+	            &info->dom.samr_pol_connect, admin_rid, &sid1,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	/* read some users */
+	res1 = res ? create_samr_domain_alias(smb_cli, 
+				&info->dom.samr_pol_open_domain,
+	                        acct_name, acct_desc, &alias_rid) : False;
+
+	res = res ? samr_close(smb_cli,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	res = res ? samr_close(smb_cli,
+	            &info->dom.samr_pol_connect) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res && res1)
+	{
+		DEBUG(5,("cmd_sam_create_dom_alias: succeeded\n"));
+		fprintf(out_hnd, "Create Domain Alias: OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_create_dom_alias: failed\n"));
+		fprintf(out_hnd, "Create Domain Alias: FAILED\n");
+	}
+}
+
+
+/****************************************************************************
 SAM create domain group.
 ****************************************************************************/
 void cmd_sam_create_dom_group(struct client_info *info)
