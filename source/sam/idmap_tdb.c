@@ -128,7 +128,8 @@ static NTSTATUS internal_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	fstring keystr;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
-	if (!sid) return NT_STATUS_INVALID_PARAMETER;
+	if (!sid)
+		return NT_STATUS_INVALID_PARAMETER;
 
 	switch (id_type & ID_TYPEMASK) {
 		case ID_USERID:
@@ -159,10 +160,12 @@ static NTSTATUS internal_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	return ret;
 }
 
+/* Error codes for get_id_from_sid */
+enum getidfromsiderr { GET_ID_FROM_SID_OK = 0, GET_ID_FROM_SID_NOTFOUND, GET_ID_FROM_SID_WRONG_TYPE, GET_ID_FROM_SID_ERR };
 
-static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid) 
+static enum getidfromsiderr internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid) 
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	enum getidfromsiderr ret = GET_ID_FROM_SID_ERR;
 	fstring keystr;
 	TDB_DATA key, data;
 	int type = *id_type & ID_TYPEMASK;
@@ -178,7 +181,7 @@ static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID
 	data = tdb_fetch(idmap_tdb, key);
 	if (!data.dptr) {
 		DEBUG(10,("internal_get_id_from_sid: record %s not found\n", keystr ));
-		return ret;
+		return GET_ID_FROM_SID_NOTFOUND;
 	} else {
 		DEBUG(10,("internal_get_id_from_sid: record %s -> %s\n", keystr, data.dptr ));
 	}
@@ -196,12 +199,13 @@ static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID
 			DEBUG(10,("internal_get_id_from_sid: %s fetching record %s -> %s \n",
 						(type == ID_EMPTY) ? "ID_EMPTY" : "ID_USERID",
 						keystr, data.dptr ));
-			ret = NT_STATUS_OK;
+			ret = GET_ID_FROM_SID_OK;
+		} else {
+			ret = GET_ID_FROM_SID_WRONG_TYPE;
 		}
 	}
 	
-	if (!NT_STATUS_IS_OK(ret) 
-	    && (type == ID_EMPTY || type == ID_GROUPID)) {
+	if ((ret != GET_ID_FROM_SID_OK) && (type == ID_EMPTY || type == ID_GROUPID)) {
 		fstring scanstr;
 		/* Parse and return existing gid */
 		fstrcpy(scanstr, "GID %d");
@@ -214,7 +218,9 @@ static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID
 			DEBUG(10,("internal_get_id_from_sid: %s fetching record %s -> %s \n",
 						(type == ID_EMPTY) ? "ID_EMPTY" : "ID_GROUPID",
 						keystr, data.dptr ));
-			ret = NT_STATUS_OK;
+			ret = GET_ID_FROM_SID_OK;
+		} else {
+			ret = GET_ID_FROM_SID_WRONG_TYPE;
 		}
 	}
 	
@@ -227,6 +233,7 @@ static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID
 static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type_in)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	enum getidfromsiderr iderr;
 	int id_type = id_type_in & ID_TYPEMASK;
 	unid_t id_tmp = id;
 	int id_type_tmp = id_type;
@@ -238,9 +245,9 @@ static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type_in)
 		return ret;
 	}
 	
-	ret = internal_get_id_from_sid(&id_tmp, &id_type_tmp, sid);
-	if (!NT_STATUS_IS_OK(ret)) {
-		return ret;
+	iderr = internal_get_id_from_sid(&id_tmp, &id_type_tmp, sid);
+	if (iderr != GET_ID_FROM_SID_OK) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	if (id_type_tmp != id_type) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -261,24 +268,31 @@ static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type_in)
 static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	enum getidfromsiderr iderr;
 
 	DEBUG(10,("db_get_id_from_sid\n"));
 
 	if (!sid || !id || !id_type)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	ret = internal_get_id_from_sid(id, id_type, sid);
-	if (NT_STATUS_IS_OK(ret)) {
+	iderr = internal_get_id_from_sid(id, id_type, sid);
+	if (iderr == GET_ID_FROM_SID_OK) {
 		DOM_SID sid_tmp;
 		ret = internal_get_sid_from_id(&sid_tmp, *id, *id_type);
 		if (NT_STATUS_IS_OK(ret)) {
 			if (!sid_equal(&sid_tmp, sid)) {
-				return ret = NT_STATUS_UNSUCCESSFUL;
+				return NT_STATUS_UNSUCCESSFUL;
 			}
 		}
+	} else if (iderr == GET_ID_FROM_SID_WRONG_TYPE) {
+		/* We found a record but not the type we wanted.
+		 * This is an error, not an opportunity to overwrite...
+		 * JRA.
+		 */
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!(*id_type & ID_NOMAP) && (!NT_STATUS_IS_OK(ret)) &&
+	if (!(*id_type & ID_NOMAP) && (iderr != GET_ID_FROM_SID_OK) &&
 		   (((*id_type & ID_TYPEMASK) == ID_USERID)
 		    || (*id_type & ID_TYPEMASK) == ID_GROUPID)) {
 		TDB_DATA sid_data;
@@ -292,11 +306,13 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 
 		do {
 			fstring ugid_str;
+
 			/* Allocate a new id for this sid */
 			ret = db_allocate_id(id, *id_type);
 			if (!NT_STATUS_IS_OK(ret))
 				break;
 			
+			/* Store the UID side */
 			/* Store new id */
 			if (*id_type & ID_USERID) {
 				slprintf(ugid_str, sizeof(ugid_str), "UID %d", (*id).uid);
@@ -310,7 +326,6 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 			DEBUG(10,("db_get_id_from_sid: storing %s -> %s\n",
 					ugid_data.dptr, sid_data.dptr ));
 
-			/* Store the UID side */
 			if (tdb_store(idmap_tdb, ugid_data, sid_data, TDB_INSERT) != -1) {
 				ret = NT_STATUS_OK;
 				break;
