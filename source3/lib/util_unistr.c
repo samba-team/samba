@@ -1030,6 +1030,11 @@ smb_ucs2_t *strdup_w(const smb_ucs2_t *s)
 /*******************************************************************
  Mapping tables for UNICODE character. Allows toupper/tolower and
  isXXX functions to work.
+
+ tridge: split into 2 pieces. This saves us 5/6 of the memory
+ with a small speed penalty
+ The magic constants are the lower/upper range of the tables two
+ parts
 ********************************************************************/
 
 typedef struct {
@@ -1038,9 +1043,34 @@ typedef struct {
 	unsigned char flags;
 } smb_unicode_table_t;
 
-static smb_unicode_table_t map_table[] = {
-#include "unicode_map_table.h"
+static smb_unicode_table_t map_table1[] = {
+#include "unicode_map_table1.h"
 };
+
+static smb_unicode_table_t map_table2[] = {
+#include "unicode_map_table2.h"
+};
+
+static unsigned char map_table_flags(smb_ucs2_t v)
+{
+	if (v < 9450) return map_table1[v].flags;
+	if (v >= 64256) return map_table2[v - 64256].flags;
+	return 0;
+}
+
+static smb_ucs2_t map_table_lower(smb_ucs2_t v)
+{
+	if (v < 9450) return map_table1[v].lower;
+	if (v >= 64256) return map_table2[v - 64256].lower;
+	return v;
+}
+
+static smb_ucs2_t map_table_upper(smb_ucs2_t v)
+{
+	if (v < 9450) return map_table1[v].upper;
+	if (v >= 64256) return map_table2[v - 64256].upper;
+	return v;
+}
 
 /*******************************************************************
  Is an upper case wchar.
@@ -1048,7 +1078,7 @@ static smb_unicode_table_t map_table[] = {
 
 int isupper_w( smb_ucs2_t val)
 {
-	return (map_table[val].flags & UNI_UPPER);
+	return (map_table_flags(val) & UNI_UPPER);
 }
 
 /*******************************************************************
@@ -1057,7 +1087,7 @@ int isupper_w( smb_ucs2_t val)
 
 int islower_w( smb_ucs2_t val)
 {
-	return (map_table[val].flags & UNI_LOWER);
+	return (map_table_flags(val) & UNI_LOWER);
 }
 
 /*******************************************************************
@@ -1066,7 +1096,7 @@ int islower_w( smb_ucs2_t val)
 
 int isdigit_w( smb_ucs2_t val)
 {
-	return (map_table[val].flags & UNI_DIGIT);
+	return (map_table_flags(val) & UNI_DIGIT);
 }
 
 /*******************************************************************
@@ -1075,7 +1105,7 @@ int isdigit_w( smb_ucs2_t val)
 
 int isxdigit_w( smb_ucs2_t val)
 {
-	return (map_table[val].flags & UNI_XDIGIT);
+	return (map_table_flags(val) & UNI_XDIGIT);
 }
 
 /*******************************************************************
@@ -1084,7 +1114,7 @@ int isxdigit_w( smb_ucs2_t val)
 
 int isspace_w( smb_ucs2_t val)
 {
-	return (map_table[val].flags & UNI_SPACE);
+	return (map_table_flags(val) & UNI_SPACE);
 }
 
 /*******************************************************************
@@ -1093,7 +1123,7 @@ int isspace_w( smb_ucs2_t val)
 
 smb_ucs2_t toupper_w( smb_ucs2_t val )
 {
-	return map_table[val].upper;
+	return map_table_upper(val);
 }
 
 /*******************************************************************
@@ -1102,7 +1132,7 @@ smb_ucs2_t toupper_w( smb_ucs2_t val )
 
 smb_ucs2_t tolower_w( smb_ucs2_t val )
 {
-	return map_table[val].lower;
+	return map_table_lower(val);
 }
 
 static smb_ucs2_t *last_ptr = NULL;
