@@ -47,7 +47,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
 #include <roken.h>
 
 #include <krb5.h>
