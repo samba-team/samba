@@ -21,11 +21,6 @@
 
 #include "includes.h"
 
-#ifdef DEVELOPER
-const char *global_clobber_region_function;
-unsigned int global_clobber_region_line;
-#endif
-
 /**
  * Get the next token from a string, return False if none found.
  * Handles double-quotes.
@@ -413,40 +408,6 @@ size_t count_chars(const char *s,char c)
 			count++;
 	return(count);
 }
-
-/**
- * In developer builds, clobber a region of memory.
- *
- * If we think a string buffer is longer than it really is, this ought
- * to make the failure obvious, by segfaulting (if in the heap) or by
- * killing the return address (on the stack), or by trapping under a
- * memory debugger.
- *
- * This is meant to catch possible string overflows, even if the
- * actual string copied is not big enough to cause an overflow.
- *
- * In addition, under Valgrind the buffer is marked as uninitialized.
- **/
-void clobber_region(const char *fn, unsigned int line, char *dest, size_t len)
-{
-#ifdef DEVELOPER
-	global_clobber_region_function = fn;
-	global_clobber_region_line = line;
-
-	/* F1 is odd and 0xf1f1f1f1 shouldn't be a valid pointer */
-	memset(dest, 0xF1, len);
-#ifdef VALGRIND
-	/* Even though we just wrote to this, from the application's
-	 * point of view it is not initialized.
-	 *
-	 * (This is not redundant with the clobbering above.  The
-	 * marking might not actually take effect if we're not running
-	 * under valgrind.) */
-	VALGRIND_MAKE_WRITABLE(dest, len);
-#endif /* VALGRIND */
-#endif /* DEVELOPER */
-}
-
 
 /**
  Safe string copy into a known length string. maxlength does not
