@@ -416,6 +416,13 @@ handle_v5(krb5_context context,
     ret = krb5_recvauth(context, &ac, &fd, KADMIN_APPL_VERSION, 
 			server, KRB5_RECVAUTH_IGNORE_VERSION, 
 			keytab, &ticket);
+    if(ret == KRB5_KT_NOTFOUND) {
+	char *name;
+	krb5_unparse_name(context, server, &name);
+	krb5_errx(context, 1, "krb5_recvauth: %s (%s)", 
+		  krb5_get_err_text(context, ret),
+		  name);
+    }
     krb5_free_principal(context, server);
 	    
     if(ret)
