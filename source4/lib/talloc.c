@@ -490,7 +490,9 @@ void talloc_free(TALLOC_CTX *ctx, void *ptr)
 	   list */
 	if (ctx->list->ptr == ptr) {
 		ctx->total_alloc_size -= ctx->list->size;
+		tc = ctx->list;
 		ctx->list = ctx->list->next;
+		free(tc);
 		free(ptr);
 		return;
 	}
@@ -501,8 +503,11 @@ void talloc_free(TALLOC_CTX *ctx, void *ptr)
 	}
 
 	if (tc->next) {
+		struct talloc_chunk *tc2 = tc->next;
 		ctx->total_alloc_size -= tc->next->size;
 		tc->next = tc->next->next;
+		free(tc2);
+		free(ptr);
 	} else {
 		DEBUG(0,("Attempt to free non-allocated chunk in context '%s'\n", 
 			 ctx->name));

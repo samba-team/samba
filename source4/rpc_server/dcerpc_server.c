@@ -513,16 +513,15 @@ static void dce_partial_advance(struct dcesrv_state *dce, uint32 offset)
 	DATA_BLOB blob;
 
 	if (dce->partial_input.length == offset) {
-		talloc_free(dce->mem_ctx, dce->partial_input.data);
+		free(dce->partial_input.data);
 		dce->partial_input = data_blob(NULL, 0);
 		return;
 	}
 
 	blob = dce->partial_input;
-	dce->partial_input = data_blob_talloc(dce->mem_ctx, 
-					      blob.data + offset,
-					      blob.length - offset);
-	talloc_free(dce->mem_ctx, blob.data);
+	dce->partial_input = data_blob(blob.data + offset,
+				       blob.length - offset);
+	free(blob.data);
 }
 
 /*
@@ -567,7 +566,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 		return status;
 	}
 
-	dce_partial_advance(dce, ndr->offset);
+	dce_partial_advance(dce, blob.length);
 
 	/* see if this is a continued packet */
 	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
@@ -651,14 +650,10 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 */
 NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 {
-	struct ndr_pull *ndr;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
-	struct dcesrv_call_state *call;
 
-	dce->partial_input.data = talloc_realloc(dce->mem_ctx,
-						 dce->partial_input.data,
-						 dce->partial_input.length + data->length);
+	dce->partial_input.data = Realloc(dce->partial_input.data,
+					  dce->partial_input.length + data->length);
 	if (!dce->partial_input.data) {
 		return NT_STATUS_NO_MEMORY;
 	}
