@@ -492,6 +492,21 @@ AC_ARG_WITH(dfs,
 )
 
 #################################################
+# check for Kerberos IV auth system
+AC_MSG_CHECKING(whether to use Kerberos IV)
+AC_ARG_WITH(krb4,
+[  --with-krb4=base-dir     Include Kerberos IV support
+  --whithout-krb4          Don't include Kerbers IV support (default)],
+[   AC_MSG_RESULT(yes)
+    AC_DEFINE(KRB4_AUTH)
+    AC_CHECK_LIB(resolv, dn_expand)
+    LIBS="$LIBS -lkrb -ldes"
+    CFLAGS="$CFLAGS -I$withval/include"
+    LDFLAGS="$LDFLAGS -L$withval/lib"],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
 # check for automount support
 AC_MSG_CHECKING(whether to use AUTOMOUNT)
 AC_ARG_WITH(automount,
