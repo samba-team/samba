@@ -7,22 +7,37 @@
 #include <popper.h>
 RCSID("$Id$");
 
-static
-int
-krb_authenticate(POP *p, struct sockaddr_in *addr)
+#ifdef KRB4
+static int
+krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
 {
-
-#ifdef KERBEROS
     Key_schedule schedule;
     KTEXT_ST ticket;
     char instance[INST_SZ];  
     char version[9];
     int auth;
+    u_char buf2[BUFSIZ];
   
+    if (memcmp (buf, KRB_SENDAUTH_VERS, 4) != 0)
+	return -1;
+    if (krb5_net_read (p->context, s, buf + 4,
+		       KRB_SENDAUTH_VLEN - 4) != KRB_SENDAUTH_VLEN - 4)
+	return -1;
+    if (memcmp (buf, KRB_SENDAUTH_VERS, KRB_SENDAUTH_VLEN) != 0)
+	return -1;
+
     k_getsockinst (0, instance, sizeof(instance));
-    auth = krb_recvauth(0L, 0, &ticket, "pop", instance,
-                        addr, (struct sockaddr_in *) NULL,
-                        &p->kdata, "", schedule, version);
+    auth = krb_recvauth(KOPT_IGNORE_PROTOCOL,
+			s,
+			&ticket,
+			"pop",
+			instance,
+                        addr,
+			(struct sockaddr_in *) NULL,
+                        &p->kdata,
+			"",
+			schedule,
+			version);
     
     if (auth != KSUCCESS) {
         pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s", 
@@ -37,14 +52,86 @@ krb_authenticate(POP *p, struct sockaddr_in *addr)
     pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", p->kdata.pname, 
             p->kdata.pinst, p->kdata.prealm, inet_ntoa(addr->sin_addr));
 #endif /* DEBUG */
+    return 0;
+}
+#endif /* KRB4 */
 
+static int
+krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
+{
+    krb5_error_code ret;
+    krb5_auth_context auth_context = NULL;
+    u_int32_t len;
+    krb5_principal server;
+    krb5_ticket *ticket;
+
+    if (memcmp (buf, "\x00\x00\x00\x13", 4) != 0)
+	return -1;
+    len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3]);
+	
+    if (krb5_net_read(p->context, s, buf, len) != len)
+	return -1;
+    if (len != sizeof(KRB5_SENDAUTH_VERSION)
+	|| memcmp (buf, KRB5_SENDAUTH_VERSION, len) != 0)
+	return -1;
+    
+    ret = krb5_sname_to_principal (p->context,
+				   p->myhost,
+				   "pop",
+				   KRB5_NT_SRV_HST,
+				   &server);
+    if (ret) {
+	pop_log (p, POP_FAILURE,
+		 "krb5_sname_to_principal: %s",
+		 krb5_get_err_text(p->context, ret));
+	exit (1);
+    }
+
+    ret = krb5_recvauth (p->context,
+			 &auth_context,
+			 &s,
+			 "KPOPV1.0",
+			 server,
+			 KRB5_RECVAUTH_IGNORE_VERSION,
+			 NULL,
+			 &ticket);
+    krb5_free_principal (p->context, server);
+    if (ret == 0) {
+	krb5_auth_con_free (p->context, auth_context);
+	krb5_copy_principal (p->context, ticket->client, &p->principal);
+	krb5_free_ticket (p->context, ticket);
+    }
+    return ret;
+}
+
+static int
+krb_authenticate(POP *p, struct sockaddr_in *addr)
+{
+#ifdef KERBEROS
+    u_char buf[BUFSIZ];
+
+    if (krb5_net_read (p->context, 0, buf, 4) != 4) {
+	pop_msg(p, POP_FAILURE, "Reading four bytes: %s",
+		strerror(errno));
+	exit (1);
+    }
+#ifdef KRB4
+    if (krb4_authenticate (p, 0, buf, addr) == 0)
+	p->version = 4;
+    else
+#endif /* KRB4 */
+    if (krb5_authenticate (p, 0, buf, addr) == 0)
+	p->version = 5;
+    else {
+	exit (1);
+    }
+	
 #endif /* KERBEROS */
 
     return(POP_SUCCESS);
 }
 
-static
-int
+static int
 plain_authenticate (POP *p, struct sockaddr_in *addr)
 {
     return(POP_SUCCESS);
@@ -75,7 +162,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     p->myname = argmessage[0];
 
     /*  Get the name of our host */
-    k_gethostname(p->myhost,MaxHostNameLen);
+    gethostname(p->myhost,MaxHostNameLen);
 
     /*  Open the log file */
     openlog(p->myname,POP_LOGOPTS,POP_FACILITY);
@@ -153,8 +240,8 @@ pop_init(POP *p,int argcount,char **argmessage)
     if (inetd) {
 	if (portnum == 0)
 	    portnum = p->kerberosp ?
-		k_getportbyname("kpop", "tcp", htons(1109)) :
-	    k_getportbyname("pop", "tcp", htons(110));
+		krb5_getportbyname("kpop", "tcp", htons(1109)) :
+	    krb5_getportbyname("pop", "tcp", htons(110));
 	mini_inetd (portnum);
     }
 
@@ -244,6 +331,10 @@ pop_init(POP *p,int argcount,char **argmessage)
     else if (p->debug)
         pop_log(p,POP_PRIORITY,"Debugging turned on");
 #endif /* DEBUG */
+
+#ifdef KERBEROS
+    krb5_init_context (&p->context);
+#endif
 
     return((p->kerberosp ? krb_authenticate : plain_authenticate)(p, &cs));
 }
