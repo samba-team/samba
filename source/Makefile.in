@@ -349,6 +349,8 @@ MSGTEST_OBJ = torture/msgtest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 LOCKTEST_OBJ = torture/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
+NSSTEST_OBJ = torture/nsstest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
+                 $(UBIQX_OBJ) $(LIB_OBJ)
 
 LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
@@ -413,7 +415,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_sid.o   \
 		nsswitch/winbindd_misc.o  \
 		nsswitch/winbindd_cm.o \
-		nsswitch/winbindd_rpc.o  \
+		nsswitch/winbindd_rpc.o
 
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
 		rpc_client/cli_netlogon.o rpc_client/cli_login.o \
@@ -634,6 +636,10 @@ bin/smbcacls: $(SMBCACLS_OBJ) bin/.dummy
 bin/locktest: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/nsstest: $(NSSTEST_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/locktest2: $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
