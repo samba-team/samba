@@ -785,7 +785,7 @@ int main(int argc, char **argv)
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
 		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
-		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, False, "Disable caching" },
+		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
