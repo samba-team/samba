@@ -10,6 +10,9 @@ use Data::Dumper;
 
 my($res);
 
+# the list of needed functions
+my %needed;
+
 #####################################################################
 # parse a properties list
 sub ParseProperties($)
@@ -28,11 +31,11 @@ sub ParseProperties($)
 
 ####################################################################
 # work out the name of a size_is() variable
-sub find_size_var($)
+sub find_size_var($$)
 {
 	my($e) = shift;
+	my($size) = shift;
 	my($fn) = $e->{PARENT};
-	my($size) = util::array_size($e);
 	
 	if ($fn->{TYPE} ne "FUNCTION") {
 		return "r->$size";
@@ -48,7 +51,7 @@ sub find_size_var($)
 			}
 		}
 	}
-	die "invalid variable in size_is($size) for element $e->{NAME} in $fn->{NAME}\n";
+	die "invalid variable in $size for element $e->{NAME} in $fn->{NAME}\n";
 }
 
 
@@ -58,7 +61,7 @@ sub ParseArrayPush($$)
 {
 	my $e = shift;
 	my $var_prefix = shift;
-	my $size = find_size_var($e);
+	my $size = find_size_var($e, util::array_size($e));
 
 	if (util::is_scalar_type($e->{TYPE})) {
 		$res .= "\t\tNDR_CHECK(ndr_push_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
@@ -73,7 +76,7 @@ sub ParseArrayPull($$)
 {
 	my $e = shift;
 	my $var_prefix = shift;
-	my $size = find_size_var($e);
+	my $size = find_size_var($e, util::array_size($e));
 
 	if (util::need_alloc($e)) {
 		$res .= "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $size, sizeof($var_prefix$e->{NAME}\[0]));\n";
@@ -108,6 +111,25 @@ sub ParseElementPushScalar($$$)
 
 #####################################################################
 # parse scalars in a structure element - pull size
+sub ParseElementPullSwitch($$$$)
+{
+	my($e) = shift;
+	my($var_prefix) = shift;
+	my($ndr_flags) = shift;
+	my $switch = shift;
+	my $switch_var = find_size_var($e, $switch);
+
+	my $cprefix = util::c_pull_prefix($e);
+
+	$res .= "\t{ uint16 _level;\n";
+	$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, &_level, $cprefix$var_prefix$e->{NAME}));\n";
+	$res .= "\tif (_level != $switch_var) return NT_STATUS_INVALID_LEVEL;\n";
+	$res .= "\t}\n";
+}
+
+
+#####################################################################
+# parse scalars in a structure element - pull size
 sub ParseElementPullScalar($$$)
 {
 	my($e) = shift;
@@ -126,6 +148,8 @@ sub ParseElementPullScalar($$$)
 		$res .= "\t}\n";
 	} elsif (util::need_alloc($e)) {
 		# no scalar component
+	} elsif (my $switch = util::has_property($e, "switch_is")) {
+		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
@@ -182,6 +206,8 @@ sub ParseElementPullBuffer($$$)
 	    
 	if (util::array_size($e)) {
 		ParseArrayPull($e, "r->");
+	} elsif (my $switch = util::has_property($e, "switch_is")) {
+		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
@@ -307,24 +333,41 @@ sub ParseStructPull($)
 
 
 #####################################################################
-# parse a union element
-sub ParseUnionElementPush($)
-{
-	die "unions not done";
-}
-
-#####################################################################
 # parse a union - push side
 sub ParseUnionPush($)
 {
-	die "unions not done";	
+	my $e = shift;
+	print "WARNING! union push  not done\n";	
 }
 
 #####################################################################
 # parse a union - pull side
 sub ParseUnionPull($)
 {
-	die "unions not done";	
+	my $e = shift;
+	print "union pull not done\n";	
+
+	$res .= "\tNDR_CHECK(ndr_pull_uint16(ndr, level));\n";
+	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
+	$res .= "\tswitch (*level) {\n";
+	foreach my $el (@{$e->{DATA}}) {
+		$res .= "\tcase $el->{CASE}:\n";
+		ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");		
+		$res .= "\tbreak;\n\n";
+	}
+	$res .= "\tdefault:\n\t\treturn NT_STATUS_INVALID_LEVEL;\n";
+	$res .= "\t}\n";
+	$res .= "buffers:\n";
+	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
+	$res .= "\tswitch (*level) {\n";
+	foreach my $el (@{$e->{DATA}}) {
+		$res .= "\tcase $el->{CASE}:\n";
+		ParseElementPullBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
+		$res .= "\tbreak;\n\n";
+	}
+	$res .= "\tdefault:\n\t\treturn NT_STATUS_INVALID_LEVEL;\n";
+	$res .= "\t}\n";
+	$res .= "done:\n";
 }
 
 #####################################################################
@@ -337,7 +380,7 @@ sub ParseTypePush($)
 		($data->{TYPE} eq "STRUCT") &&
 		    ParseStructPush($data);
 		($data->{TYPE} eq "UNION") &&
-	    ParseUnionPush($data);
+		    ParseUnionPush($data);
 	}
 }
 
@@ -361,11 +404,26 @@ sub ParseTypedefPush($)
 {
 	my($e) = shift;
 
-	$res .= "static NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
-	$res .= "\n{\n";
-	ParseTypePush($e->{DATA});
-	$res .= "\treturn NT_STATUS_OK;\n";
-	$res .= "}\n\n";
+	if (! $needed{"push_$e->{NAME}"}) {
+#		print "push_$e->{NAME} not needed\n";
+		return;
+	}
+
+	if ($e->{DATA}->{TYPE} eq "STRUCT") {
+		$res .= "static NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
+		$res .= "\n{\n";
+		ParseTypePush($e->{DATA});
+		$res .= "\treturn NT_STATUS_OK;\n";
+		$res .= "}\n\n";
+	}
+
+	if ($e->{DATA}->{TYPE} eq "UNION") {
+		$res .= "static NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, uint16 level, union $e->{NAME} *r)";
+		$res .= "\n{\n";
+		ParseTypePush($e->{DATA});
+		$res .= "\treturn NT_STATUS_OK;\n";
+		$res .= "}\n\n";
+	}
 }
 
 
@@ -375,11 +433,26 @@ sub ParseTypedefPull($)
 {
 	my($e) = shift;
 
-	$res .= "static NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r)";
-	$res .= "\n{\n";
-	ParseTypePull($e->{DATA});
-	$res .= "\treturn NT_STATUS_OK;\n";
-	$res .= "}\n\n";
+	if (! $needed{"pull_$e->{NAME}"}) {
+#		print "pull_$e->{NAME} not needed\n";
+		return;
+	}
+
+	if ($e->{DATA}->{TYPE} eq "STRUCT") {
+		$res .= "static NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r)";
+		$res .= "\n{\n";
+		ParseTypePull($e->{DATA});
+		$res .= "\treturn NT_STATUS_OK;\n";
+		$res .= "}\n\n";
+	}
+
+	if ($e->{DATA}->{TYPE} eq "UNION") {
+		$res .= "static NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union $e->{NAME} *r)";
+		$res .= "\n{\n";
+		ParseTypePull($e->{DATA});
+		$res .= "\treturn NT_STATUS_OK;\n";
+		$res .= "}\n\n";
+	}
 }
 
 
@@ -489,6 +562,62 @@ sub ParseInterface($)
 	}
 }
 
+sub NeededFunction($)
+{
+	my $fn = shift;
+	$needed{"pull_$fn->{NAME}"} = 1;
+	$needed{"push_$fn->{NAME}"} = 1;
+	foreach my $e (@{$fn->{DATA}}) {
+		if (util::has_property($e, "out")) {
+			$needed{"pull_$e->{TYPE}"} = 1;
+		}
+		if (util::has_property($e, "in")) {
+			$needed{"push_$e->{TYPE}"} = 1;
+		}
+	}
+}
+
+sub NeededTypedef($)
+{
+	my $t = shift;
+	if ($t->{DATA}->{TYPE} eq "STRUCT") {
+		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
+				if ($needed{"pull_$t->{NAME}"}) {
+					$needed{"pull_$e->{TYPE}"} = 1;
+				}
+				if ($needed{"push_$t->{NAME}"}) {
+					$needed{"push_$e->{TYPE}"} = 1;
+				}
+			}
+		}
+	if ($t->{DATA}->{TYPE} eq "UNION") {
+		for my $e (@{$t->{DATA}->{DATA}}) {
+			if ($needed{"pull_$t->{NAME}"}) {
+				$needed{"pull_$e->{DATA}->{TYPE}"} = 1;
+			}
+			if ($needed{"push_$t->{NAME}"}) {
+				$needed{"push_$e->{DATA}->{TYPE}"} = 1;
+			}
+		}
+	}
+}
+
+#####################################################################
+# work out what parse functions are needed
+sub BuildNeeded($)
+{
+	my($interface) = shift;
+	my($data) = $interface->{DATA};
+	foreach my $d (@{$data}) {
+		($d->{TYPE} eq "FUNCTION") && 
+		    NeededFunction($d);
+	}
+	foreach my $d (reverse @{$data}) {
+		($d->{TYPE} eq "TYPEDEF") &&
+		    NeededTypedef($d);
+	}
+}
+
 
 #####################################################################
 # parse a parsed IDL structure back into an IDL file
@@ -498,8 +627,10 @@ sub Parse($)
 	$res = "/* parser auto-generated by pidl */\n\n";
 	$res .= "#include \"includes.h\"\n\n";
 	foreach my $x (@{$idl}) {
-		($x->{TYPE} eq "INTERFACE") && 
-		    ParseInterface($x);
+		if ($x->{TYPE} eq "INTERFACE") { 
+			BuildNeeded($x);
+			ParseInterface($x);
+		}
 	}
 	return $res;
 }

@@ -53,13 +53,13 @@ union: property_list(s?) 'union' <commit> '{' union_element(s?) '}'
 	 }}
 	 | <error?>
 
-union_element: '[case(' constant ')]' base_element ';'
+union_element: '[' 'case' '(' constant ')' ']' base_element ';'
 	 {{
 		"TYPE" => "UNION_ELEMENT",
 		"CASE" => $item{constant},
 		"DATA" => $item{base_element}
 	 }}
-         | 'case(' constant ')' base_element ';'
+         | 'case' '(' constant ')' base_element ';'
 	 {{
 		"TYPE" => "UNION_ELEMENT",
 		"CASE" => $item{constant},
