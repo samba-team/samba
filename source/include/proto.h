@@ -2659,6 +2659,7 @@ void process_smb(char *inbuf, char *outbuf);
 char *smb_fn_name(int type);
 void construct_reply_common(char *inbuf,char *outbuf);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
+void check_reload(int time);
 void smbd_process(void);
 
 /*The following definitions come from  smbd/reply.c  */
