@@ -87,12 +87,12 @@ static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
 	}
 
 	if (!make_user_info_guest(&user_info)) {
-		auth_context->free(&auth_context);
+		(auth_context->free)(&auth_context);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
 	nt_status = auth_context->check_ntlm_password(auth_context, user_info, server_info);
-	auth_context->free(&auth_context);
+	(auth_context->free)(&auth_context);
 	free_user_info(&user_info);
 	return nt_status;
 }
@@ -289,7 +289,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DEBUG(3,("Got neg_flags=%08x\n", neg_flags));
 
 	if (ntlmssp_auth_context) {
-		ntlmssp_auth_context->free(&ntlmssp_auth_context);
+		(ntlmssp_auth_context->free)(&ntlmssp_auth_context);
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&ntlmssp_auth_context))) {
@@ -400,7 +400,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	SAFE_FREE(workgroup);
 	SAFE_FREE(machine);
 			
-	ntlmssp_auth_context->free(&ntlmssp_auth_context);
+	(ntlmssp_auth_context->free)(&ntlmssp_auth_context);
 
 	free_user_info(&user_info);
 	
@@ -741,7 +741,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 											user_info, 
 											&server_info); 
 				
-				plaintext_auth_context->free(&plaintext_auth_context);
+				(plaintext_auth_context->free)(&plaintext_auth_context);
 			}
 		}
 	}

@@ -2617,6 +2617,6 @@ AC_OUTPUT(include/stamp-h Makefile)
 # Print very concise instructions on building/use
 if test "x$enable_dmalloc" = xyes
 then
-	AC_MSG_RESULT([Note: The dmalloc debug library will be included.])
-	AC_MSG_RESULT([      Use the \"dmalloc\" command to turn it on.])
+	AC_MSG_RESULT([Note: The dmalloc debug library will be included.  To turn it on use])
+	AC_MSG_RESULT([      \$ eval \`dmalloc samba\`.])
 fi

@@ -13855,6 +13855,6 @@ test "$no_create" = yes || ${CONFIG_SHELL-/bin/sh} $CONFIG_STATUS || exit 1
 # Print very concise instructions on building/use
 if test "x$enable_dmalloc" = xyes
 then
-	echo "$ac_t""Note: The dmalloc debug library will be included." 1>&6
-	echo "$ac_t""      Use the \"dmalloc\" command to turn it on." 1>&6
+	echo "$ac_t""Note: The dmalloc debug library will be included.  To turn it on use" 1>&6
+	echo "$ac_t""      \$ eval \`dmalloc samba\`." 1>&6
 fi

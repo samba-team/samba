@@ -357,7 +357,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	
 	nt_status = auth_context->check_ntlm_password(auth_context, user_info, &server_info); 
 	
-	auth_context->free(&auth_context);
+	(auth_context->free)(&auth_context);
 	free_user_info(&user_info);
 	
 	p->ntlmssp_auth_validated = NT_STATUS_IS_OK(nt_status);
