@@ -886,12 +886,26 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	struct in_addr *ip_list = NULL;
 	int count = 0;
 
-	if(internal_resolve_name(name, name_type, &ip_list, &count)) {
-		*return_ip = ip_list[0];
-		SAFE_FREE(ip_list);
+	if (is_ipaddress(name)) {
+		*return_ip = *interpret_addr2(name);
 		return True;
 	}
-		SAFE_FREE(ip_list);
+
+	if(internal_resolve_name(name, name_type, &ip_list, &count)) {
+		int i;
+		/* only return valid addresses for TCP connections */
+		for (i=0; i<count; i++) {
+			char *ip_str = inet_ntoa(ip_list[i]);
+			if (ip_str &&
+				strcmp(ip_str, "255.255.255.255") != 0 &&
+				strcmp(ip_str, "0.0.0.0") != 0) {
+				*return_ip = ip_list[i];
+				SAFE_FREE(ip_list);
+				return True;
+			}
+		}
+	}
+	SAFE_FREE(ip_list);
 	return False;
 }
 
