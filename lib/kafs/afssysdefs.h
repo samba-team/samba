@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -80,6 +80,10 @@
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #define AFS_SYSCALL 210
+#endif
+
+#ifdef __APPLE__		/* MacOS X */
+#define AFS_SYSCALL 230
 #endif
 
 #ifdef SYS_afs_syscall
