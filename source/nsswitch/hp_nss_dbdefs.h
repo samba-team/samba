@@ -49,7 +49,7 @@ typedef unsigned nss_innetgr_argc;
 typedef char **nss_innetgr_argv;
  
 struct nss_innetgr_1arg {
-	nss_innetgr_argcargc;
+	nss_innetgr_argc argc;
 	nss_innetgr_argv argv;
 };
  
