@@ -180,7 +180,7 @@ BOOL debug_parse_params(char **params, int *debuglevel_class)
 	/* Allow DBGC_ALL to be specifies w/o requiring its class name e.g."10"  
 	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL 
 	 */
-	if (isdigit(params[0][0])) {
+	if (isdigit((int)params[0][0])) {
 		debuglevel_class[DBGC_ALL] = atoi(params[0]);
 		i = 1; /* start processing at the next params */
 	}
@@ -242,9 +242,9 @@ void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 	/* Set the new DEBUGLEVEL_CLASS array from the pased array */
 	memcpy(DEBUGLEVEL_CLASS, buf, sizeof(DEBUGLEVEL_CLASS));
 	
-	DEBUG(1,("INFO: Debug class %s level = %d   (pid %d from pid %d)\n",
+	DEBUG(1,("INFO: Debug class %s level = %d   (pid %u from pid %u)\n",
 			classname_table[DBGC_ALL],
-			DEBUGLEVEL_CLASS[DBGC_ALL], getpid(), (int)src));
+			DEBUGLEVEL_CLASS[DBGC_ALL], (unsigned int)getpid(), (unsigned int)src));
 
 	for (i=1; i<DBGC_LAST; i++) {
 		if (DEBUGLEVEL_CLASS[i])
