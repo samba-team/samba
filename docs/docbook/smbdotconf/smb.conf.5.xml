@@ -28,8 +28,8 @@
 	description of the file format and possible parameters held within
 	are here for reference purposes.</para> </refsect1>
 
-<refsect1>
-	<title id="FILEFORMATSECT">FILE FORMAT</title>
+<refsect1 id="FILEFORMATSECT">
+	<title>FILE FORMAT</title>
 
 	<para>The file consists of sections and parameters. A section 
 	begins with the name of the section in square brackets and continues 
@@ -147,8 +147,8 @@
 		under PARAMETERS for more information.</para>
 	</refsect2>
 	
-	<refsect2>
-		<title id="HOMESECT">The [homes] section</title>
+	<refsect2 id="HOMESECT">
+		<title>The [homes] section</title>
 		
 		<para>If a section called homes is included in the 
 		configuration file, services connecting clients to their 
@@ -218,8 +218,8 @@
 		any auto home directories visible.</para>
 	</refsect2>
 
-	<refsect2>
-		<title id="PRINTERSSECT">The [printers] section</title>
+	<refsect2 id="PRINTERSSECT">
+		<title>The [printers] section</title>
 		
 		<para>This section works like [homes], 
 		but for printers.</para>
@@ -479,8 +479,8 @@ alias|alias|alias|alias...
 	with these substitutions and other smb.conf options.</para>
 </refsect1>
 
-<refsect1>
-	<title id="NAMEMANGLINGSECT">NAME MANGLING</title>
+<refsect1 id="NAMEMANGLINGSECT">
+	<title>NAME MANGLING</title>
 	
 	<para>Samba supports &quot;name mangling&quot; so that DOS and 
 	Windows clients can use files that don't conform to the 8.3 format. 
@@ -542,8 +542,8 @@ alias|alias|alias|alias...
 	
 </refsect1>
 
-<refsect1>
-	<title id="VALIDATIONSECT">NOTE ABOUT USERNAME/PASSWORD VALIDATION</title>
+<refsect1 id="VALIDATIONSECT">
+	<title>NOTE ABOUT USERNAME/PASSWORD VALIDATION</title>
 
 	<para>There are a number of ways in which a user can connect 
 	to a service. The server uses the following steps in determining 
