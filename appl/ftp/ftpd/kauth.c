@@ -224,7 +224,7 @@ void kauth(char *principal, char *ticket)
 	return;
     }
     base64_encode(cip.dat, cip.length, &p);
-    reply(300, "P=%s%s%s@%s T=%s", name, *inst?".":"", inst, realm, p);
+    reply(300, "P=%s T=%s", krb_unparse_name(name, inst, realm), p);
     free(p);
     memset(&cip, 0, sizeof(cip));
 }
@@ -317,9 +317,8 @@ void klist(void)
 	    strcpy(buf2, short_date(c.issue_date));
 	else
 	    strcpy(buf2, ">>> Expired <<< ");
-	lreply(200, "%s  %s  %s%s%s%s%s (%d)", buf1, buf2,
-	       c.service, (c.instance[0] ? "." : ""), c.instance,
-	       (c.realm[0] ? "@" : ""), c.realm, c.kvno); 
+	lreply(200, "%s  %s  %s (%d)", buf1, buf2,
+	       krb_unparse_name(c.service, c.instance, c.realm), c.kvno); 
     }
     if (header && err == EOF) {
 	lreply(200, "No tickets in file.");

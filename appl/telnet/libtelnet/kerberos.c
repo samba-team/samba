@@ -313,12 +313,13 @@ kerberos4_is(ap, data, cnt)
 			
 			if (msg == NULL)
 				Data(ap, KRB_REJECT, (void *)0, 0);
-			sprintf (msg, "user `%s%s%s@%s' is not authorized "
-				 "to login as `%s'", adat.pname,
-				 *adat.pinst == '\0' ? "" : ".",
-				 adat.pinst, 
-				 adat.prealm,
+			sprintf (msg, "user `%s' is not authorized to "
+				 "login as `%s'", 
+				 krb_unparse_name(adat.pname, 
+						  adat.pinst, 
+						  adat.realm), 
 				 UserNameRequested);
+
 			Data(ap, KRB_REJECT, (void *)msg, -1);
 			free(msg);
 		}
