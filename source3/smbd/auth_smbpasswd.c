@@ -127,61 +127,64 @@ NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", sampass->username));
 			return(NT_STATUS_LOGON_FAILURE);
 		}		
-	} else {
-		nt_pw = pdb_get_nt_passwd(sampass);
-		lm_pw = pdb_get_lanman_passwd(sampass);
-		
-		if (nt_pw != NULL && user_info->nt_resp.len > 0) {
-			if ((user_info->nt_resp.len > 24 )) {
-				/* We have the NT MD4 hash challenge available - see if we can
-				   use it (ie. does it exist in the smbpasswd file).
-				*/
-				DEBUG(4,("smb_password_ok: Checking NTLMv2 password\n"));
-				if (smb_pwd_check_ntlmv2( user_info->nt_resp.buffer, 
-							   user_info->nt_resp.len, 
-							   nt_pw, 
-							   user_info->chal, user_info->smb_username.str, 
-							   user_info->requested_domain.str,
-							   user_sess_key))
-				{
-					return NT_STATUS_OK;
-				} else {
-					DEBUG(4,("smb_password_ok: NTLMv2 password check failed\n"));
-					return NT_STATUS_WRONG_PASSWORD;
-				}
-				
-			} else if (lp_ntlm_auth() && (user_info->nt_resp.len == 24)) {
-				/* We have the NT MD4 hash challenge available - see if we can
-				   use it (ie. does it exist in the smbpasswd file).
-				*/
-				DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
-				if (smb_pwd_check_ntlmv1(user_info->nt_resp.buffer, 
-							  nt_pw, user_info->chal,
-							  user_sess_key)) 
-				{
-					return NT_STATUS_OK;
-				} else {
-					DEBUG(4,("smb_password_ok: NT MD4 password check failed\n"));
-					return NT_STATUS_WRONG_PASSWORD;
-				}
+	}
+
+	nt_pw = pdb_get_nt_passwd(sampass);
+	lm_pw = pdb_get_lanman_passwd(sampass);
+	
+	if (nt_pw != NULL && user_info->nt_resp.len > 0) {
+		if ((user_info->nt_resp.len > 24 )) {
+			/* We have the NT MD4 hash challenge available - see if we can
+			   use it (ie. does it exist in the smbpasswd file).
+			*/
+			DEBUG(4,("smb_password_ok: Checking NTLMv2 password\n"));
+			if (smb_pwd_check_ntlmv2( user_info->nt_resp.buffer, 
+						  user_info->nt_resp.len, 
+						  nt_pw, 
+						  user_info->chal, user_info->smb_username.str, 
+						  user_info->requested_domain.str,
+						  user_sess_key))
+			{
+				return NT_STATUS_OK;
 			} else {
-				return NT_STATUS_LOGON_FAILURE;
-			}
-		} else if (lm_pw != NULL && user_info->lm_resp.len == 24) {
-			if (lp_lanman_auth()) {
-				DEBUG(4,("smb_password_ok: Checking LM password\n"));
-				if (smb_pwd_check_ntlmv1(user_info->lm_resp.buffer, 
-							 lm_pw, user_info->chal,
-							 user_sess_key)) 
-				{
-					return NT_STATUS_OK;
-				} else {
-					DEBUG(4,("smb_password_ok: LM password check failed\n"));
+				DEBUG(4,("smb_password_ok: NTLMv2 password check failed\n"));
 					return NT_STATUS_WRONG_PASSWORD;
-				}       
 			}
+				
+		} else if (lp_ntlm_auth() && (user_info->nt_resp.len == 24)) {
+				/* We have the NT MD4 hash challenge available - see if we can
+				   use it (ie. does it exist in the smbpasswd file).
+				*/
+			DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
+			if (smb_pwd_check_ntlmv1(user_info->nt_resp.buffer, 
+						 nt_pw, user_info->chal,
+						 user_sess_key)) 
+			{
+				return NT_STATUS_OK;
+			} else {
+				DEBUG(4,("smb_password_ok: NT MD4 password check failed\n"));
+				return NT_STATUS_WRONG_PASSWORD;
+			}
+		} else {
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	} 
+
+	if (lm_pw != NULL && user_info->lm_resp.len == 24) {
+		if (lp_lanman_auth()) {
+			DEBUG(4,("smb_password_ok: Checking LM password\n"));
+			if (smb_pwd_check_ntlmv1(user_info->lm_resp.buffer, 
+						 lm_pw, user_info->chal,
+						 user_sess_key)) 
+			{
+				return NT_STATUS_OK;
+			} else {
+				DEBUG(4,("smb_password_ok: LM password check failed\n"));
+				return NT_STATUS_WRONG_PASSWORD;
+			}       
 		}
 	}
+
 	/* Should not be reached */
 	return NT_STATUS_LOGON_FAILURE;
 }
