@@ -1525,12 +1525,12 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
         fstrcpy (sbase, t_filename);
         fstrcpy (sext, p + 1);
         if (*eext) {
-          matched = do_match(sbase, ebase, case_sig, win9x_semantics)
-                    && do_match(sext, eext, case_sig, win9x_semantics);
+          matched = do_match(sbase, ebase, case_sig, False)
+                    && do_match(sext, eext, case_sig, False);
         } else {
           /* pattern has no extension */
           /* Really: match complete filename with pattern ??? means exactly 3 chars */
-          matched = do_match(str, ebase, case_sig, win9x_semantics);
+          matched = do_match(str, ebase, case_sig, False);
         }
       } else {
         /* 
@@ -1540,20 +1540,11 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
         fstrcpy (sext, "");
         if (*eext) {
           /* pattern has extension */
-          matched = do_match(sbase, ebase, case_sig, win9x_semantics)
-                    && do_match(sext, eext, case_sig, win9x_semantics);
-
-          if (win9x_semantics) {
-            /*
-             * Special case for Win9x *only*. If filename is XXXX and pattern extension
-             * is '*' or all '?' then disallow match.
-             */
-            if (matched && (strequal(eext, "*") || str_is_all(eext, '?')))
-              matched = False;
-          }
+          matched = do_match(sbase, ebase, case_sig, False)
+                    && do_match(sext, eext, case_sig, False);
 
         } else {
-          matched = do_match(sbase, ebase, case_sig, win9x_semantics);
+          matched = do_match(sbase, ebase, case_sig, False);
 #ifdef EMULATE_WEIRD_W95_MATCHING
           /*
            * Even Microsoft has some problems
@@ -1564,7 +1555,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
           if (!matched) {
             /* a? matches aa and a in w95 */
             fstrcat (sbase, ".");
-            matched = do_match(sbase, ebase, case_sig, win9x_semantics);
+            matched = do_match(sbase, ebase, case_sig, False);
           }
 #endif
         }

@@ -29,8 +29,19 @@ static fstring username;
 static fstring workgroup;
 static int got_pass;
 
-static char *maskchars = "?*abc.";
+static BOOL showall = False;
+
+static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
+
+char *standard_masks[] = {"*", "*.", "*.*", 
+			  ".*", "d2.??", "d2\">>", 
+			  NULL};
+char *standard_files[] = {"abc", "abc.", ".abc", 
+			  "abc.def", "abc.de.f", 
+			  "d2.x", 
+			  NULL};
+
 
 /***************************************************** 
 return a connection to a server
@@ -126,9 +137,17 @@ struct cli_state *connect_one(char *share)
 	return c;
 }
 
+static char *resultp;
 
 void listfn(file_info *f, const char *s)
 {
+	if (strcmp(f->name,".") == 0) {
+		resultp[0] = '+';
+	} else if (strcmp(f->name,"..") == 0) {
+		resultp[1] = '+';		
+	} else {
+		resultp[2] = '+';
+	}
 }
 
 
@@ -136,7 +155,10 @@ static void testpair(struct cli_state *cli1, struct cli_state *cli2,
 		     char *mask, char *file)
 {
 	int fnum;
-	int count1, count2;
+	fstring res1, res2;
+
+	fstrcpy(res1, "---");
+	fstrcpy(res2, "---");
 
 	fnum = cli_open(cli1, file, O_CREAT|O_TRUNC|O_RDWR, 0);
 	if (fnum == -1) {
@@ -152,15 +174,15 @@ static void testpair(struct cli_state *cli1, struct cli_state *cli2,
 	}
 	cli_close(cli2, fnum);
 
-	count1 = cli_list(cli1, mask, aHIDDEN, listfn);
-	count2 = cli_list(cli2, mask, aHIDDEN, listfn);
+	resultp = res1;
+	cli_list(cli1, mask, aHIDDEN | aDIR, listfn);
 
-	if (count1 == -1) count1=0;
-	if (count2 == -1) count2=0;
+	resultp = res2;
+	cli_list(cli2, mask, aHIDDEN | aDIR, listfn);
 
-	if (count1 != count2) {
-		DEBUG(0,("mask=[%s] file=[%s] count1=%d count2=%d\n",
-			 mask, file, count1, count2));
+	if (showall || strcmp(res1, res2)) {
+		DEBUG(0,("%s %s mask=[%s] file=[%s]\n",
+			 res1, res2, mask, file));
 	}
 
 	cli_unlink(cli1, file);
@@ -170,7 +192,7 @@ static void testpair(struct cli_state *cli1, struct cli_state *cli2,
 static void test_mask(struct cli_state *cli1, struct cli_state *cli2)
 {
 	pstring mask, file;
-	int l1, l2, i, l;
+	int l1, l2, i, j, l;
 	int mc_len = strlen(maskchars);
 	int fc_len = strlen(filechars);
 
@@ -179,6 +201,16 @@ static void test_mask(struct cli_state *cli1, struct cli_state *cli2)
 
 	cli_unlink(cli1, "\\masktest\\*");
 	cli_unlink(cli2, "\\masktest\\*");
+
+	for (i=0; standard_masks[i]; i++) {
+		for (j=0; standard_files[j]; j++) {
+			pstrcpy(mask,"\\masktest\\");
+			pstrcpy(file,"\\masktest\\");
+			pstrcat(mask, standard_masks[i]);
+			pstrcat(file, standard_files[j]);
+			testpair(cli1, cli2, mask, file);
+		}
+	}
 
 	while (1) {
 		l1 = 1 + random() % 20;
@@ -215,6 +247,7 @@ static void usage(void)
         -s seed\n\
         -f filechars (default %s)\n\
         -m maskchars (default %s)\n\
+        -a                             show all tests\n\
 \n\
   This program tests wildcard matching between two servers. It generates\n\
   random pairs of filenames/masks and tests that they match in the same\n\
@@ -236,6 +269,8 @@ static void usage(void)
 	int opt;
 	char *p;
 	int seed;
+
+	setlinebuf(stdout);
 
 	dbf = stderr;
 
@@ -264,7 +299,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:hm:f:a")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -286,6 +321,9 @@ static void usage(void)
 			break;
 		case 'f':
 			filechars = optarg;
+			break;
+		case 'a':
+			showall = 1;
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
