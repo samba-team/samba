@@ -44,7 +44,8 @@ krb5_error_code
 krb5_init_context(krb5_context *context)
 {
     krb5_context p;
-    const char *tmp;
+    int val;
+
     ALLOC(p, 1);
     if(!p)
 	return ENOMEM;
@@ -53,19 +54,14 @@ krb5_init_context(krb5_context *context)
     p->cc_ops = NULL;
     krb5_config_parse_file (krb5_config_file, &p->cf);
     p->max_skew = 5 * 60;
-    tmp = krb5_config_get_string (p->cf, "libdefaults", "clockskew", NULL);
-    if(tmp){
-	int val = parse_time(tmp, NULL);
-	if(val >= 0)
-	    p->max_skew = val;
-    }
+    val = krb5_config_get_time (p->cf, "libdefaults", "clockskew", NULL);
+    if (val >= 0)
+	p->max_skew = val;
+
     p->kdc_timeout = 3;
-    tmp = krb5_config_get_string (p->cf, "libdefaults", "kdc_timeout", NULL);
-    if(tmp){
-	int val = parse_time(tmp, NULL);
-	if(val >= 0) 
-	    p->kdc_timeout = val;
-    }
+    val = krb5_config_get_time (p->cf, "libdefaults", "kdc_timeout", NULL);
+    if(val >= 0) 
+	p->kdc_timeout = val;
     krb5_set_default_realm(p, NULL);
     *context = p;
     return 0;
