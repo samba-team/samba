@@ -139,5 +139,6 @@ void ROKEN_LIB_FUNCTION print_version(const char *);
 
 void *ROKEN_LIB_FUNCTION emalloc (size_t);
 void *ROKEN_LIB_FUNCTION erealloc (void *, size_t);
+char *ROKEN_LIB_FUNCTION estrdup (const char *);
 
 #endif /* __ROKEN_COMMON_H__ */
