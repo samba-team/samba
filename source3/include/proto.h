@@ -316,6 +316,7 @@ BOOL zero_ip(struct in_addr ip);
 void standard_sub_basic(char *str);
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str);
 void standard_sub(connection_struct *conn, char *str);
+void standard_sub_snum(int snum, char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(pid_t pid);
@@ -377,6 +378,8 @@ SMB_BIG_UINT getfilepwpos(void *vp);
 BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
 int getfileline(void *vp, char *linebuf, int linebuf_size);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
+char **file_lines_load(char *fname, int *numlines);
+void file_lines_free(char **lines);
 
 /*The following definitions come from  lib/util_sec.c  */
 
@@ -1517,6 +1520,10 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
 BOOL set_trust_account_password( unsigned char *md4_new_pwd);
 BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *myname);
 
+/*The following definitions come from  printing/load.c  */
+
+void load_printers(void);
+
 /*The following definitions come from  printing/lpq_parse.c  */
 
 BOOL parse_lpq_entry(int snum,char *line,
@@ -1564,18 +1571,28 @@ int sysv_printername_ok(char *name);
 
 /*The following definitions come from  printing/printing.c  */
 
-void lpq_reset(int snum);
-void print_file(connection_struct *conn, files_struct *file);
-int get_printqueue(int snum, 
-		   connection_struct *conn,print_queue_struct **queue,
-		   print_status_struct *status);
-void del_printqueue(connection_struct *conn,int snum,int jobid);
-void status_printjob(connection_struct *conn,int snum,int jobid,int status);
-int printjob_encode(int snum, int job);
-void printjob_decode(int jobid, int *snum, int *job);
-void status_printqueue(connection_struct *conn,int snum,int status);
-void load_printers(void);
-void print_open_file(files_struct *fsp,connection_struct *conn,char *fname);
+BOOL print_backend_init(void);
+BOOL print_job_exists(int jobid);
+int print_job_snum(int jobid);
+int print_job_fd(int jobid);
+char *print_job_fname(int jobid);
+BOOL print_job_set_place(int jobid, int place);
+BOOL print_job_set_name(int jobid, char *name);
+BOOL print_job_delete(int jobid);
+BOOL print_job_pause(int jobid);
+BOOL print_job_resume(int jobid);
+int print_job_write(int jobid, const char *buf, int size);
+int print_job_start(int snum, char *jobname);
+BOOL print_job_end(int jobid);
+int print_queue_status(int snum, 
+		       print_queue_struct **queue,
+		       print_status_struct *status);
+int print_queue_snum(char *qname);
+BOOL print_queue_pause(int snum);
+BOOL print_queue_resume(int snum);
+BOOL print_queue_purge(int snum);
+void print_fsp_open(files_struct *fsp,connection_struct *conn,char *jobname);
+void print_fsp_end(files_struct *fsp);
 
 /*The following definitions come from  profile/profile.c  */
 
@@ -3383,6 +3400,8 @@ int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_get_int(TDB_CONTEXT *tdb, char *keystr);
+int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 
 /*The following definitions come from  utils/nbio.c  */
 

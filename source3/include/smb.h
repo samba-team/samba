@@ -474,6 +474,7 @@ typedef struct files_struct
 	int fnum;
 	struct connection_struct *conn;
 	int fd;
+	int print_jobid;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	BOOL delete_on_close;
@@ -633,8 +634,8 @@ typedef struct _print_queue_struct
   int status;
   int priority;
   time_t time;
-  char user[30];
-  char file[100];
+  fstring user;
+  fstring file;
 } print_queue_struct;
 
 enum {LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR};
