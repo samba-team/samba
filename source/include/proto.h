@@ -365,7 +365,8 @@ BOOL in_list(char *s,char *list,BOOL casesensitive);
 BOOL string_init(char **dest,const char *src);
 void string_free(char **s);
 BOOL string_set(char **dest,const char *src);
-BOOL string_sub(char *s,const char *pattern,const char *insert);
+void string_sub(char *s,const char *pattern,const char *insert);
+void all_string_sub(char *s,const char *pattern,const char *insert);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 
 /*The following definitions come from  lib/util_unistr.c  */

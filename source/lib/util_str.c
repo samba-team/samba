@@ -990,6 +990,7 @@ BOOL string_set(char **dest,const char *src)
   return(string_init(dest,src));
 }
 
+
 /****************************************************************************
 substitute a string for a pattern in another string. Make sure there is 
 enough room!
@@ -997,31 +998,64 @@ enough room!
 This routine looks for pattern in s and replaces it with 
 insert. It may do multiple replacements.
 
-return True if a substitution was done.
+any of " ; ' or ` in the insert string are replaced with _
 ****************************************************************************/
-BOOL string_sub(char *s,const char *pattern,const char *insert)
+void string_sub(char *s,const char *pattern,const char *insert)
 {
-  BOOL ret = False;
-  char *p;
-  size_t ls,lp,li;
+	char *p;
+	size_t ls,lp,li, i;
 
-  if (!insert || !pattern || !s) return(False);
+	if (!insert || !pattern || !s) return;
 
-  ls = strlen(s);
-  lp = strlen(pattern);
-  li = strlen(insert);
+	ls = strlen(s);
+	lp = strlen(pattern);
+	li = strlen(insert);
 
-  if (!*pattern) return(False);
+	if (!*pattern) return;
+	
+	while (lp <= ls && (p = strstr(s,pattern))) {
+		memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
+		for (i=0;i<li;i++) {
+			switch (insert[i]) {
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
+				p[i] = '_';
+				break;
+			default:
+				p[i] = insert[i];
+			}
+		}
+		s = p + li;
+		ls += (li-lp);
+	}
+}
 
-  while (lp <= ls && (p = strstr(s,pattern)))
-    {
-      ret = True;
-      memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
-      memcpy(p,insert,li);
-      s = p + li;
-      ls = strlen(s);
-    }
-  return(ret);
+
+/****************************************************************************
+similar to string_sub() but allows for any character to be substituted. 
+Use with caution!
+****************************************************************************/
+void all_string_sub(char *s,const char *pattern,const char *insert)
+{
+	char *p;
+	size_t ls,lp,li, i;
+
+	if (!insert || !pattern || !s) return;
+
+	ls = strlen(s);
+	lp = strlen(pattern);
+	li = strlen(insert);
+
+	if (!*pattern) return;
+	
+	while (lp <= ls && (p = strstr(s,pattern))) {
+		memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
+		memcpy(p, insert, li);
+		s = p + li;
+		ls += (li-lp);
+	}
 }
 
 /****************************************************************************
