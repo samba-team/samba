@@ -942,7 +942,6 @@ BOOL cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
 /****************************************************************************
  Check for existance of a dir.
 ****************************************************************************/
-
 BOOL cli_chkpath(struct cli_state *cli, const char *path)
 {
 	pstring path2;
@@ -1048,4 +1047,35 @@ int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 	}
 
 	return SVAL(cli->inbuf,smb_vwv0);
+}
+
+
+/* 
+   send a raw ioctl - used by the torture code
+*/
+NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *blob)
+{
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf, 3, 0, True);
+	SCVAL(cli->outbuf,smb_com,SMBioctl);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf, smb_vwv0, fnum);
+	SSVAL(cli->outbuf, smb_vwv1, code>>16);
+	SSVAL(cli->outbuf, smb_vwv2, (code&0xFFFF));
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+
+	if (cli_is_error(cli)) {
+		return cli_nt_error(cli);
+	}
+
+	*blob = data_blob(NULL, 0);
+
+	return NT_STATUS_OK;
 }
