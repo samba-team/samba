@@ -450,6 +450,7 @@ Offset Size         Name
 #define CIFS_UNIX_FCNTL_LOCKS_CAP           0x1
 #define CIFS_UNIX_POSIX_ACLS_CAP            0x2
 
+#define CIFS_CLIENT_SYMLINK_STRING 	"smbln:"
 /* ... more as we think of them :-). */
 
 #endif
