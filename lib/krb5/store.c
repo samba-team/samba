@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -257,11 +257,12 @@ krb5_store_stringz(krb5_storage *sp,
     size_t len = strlen(s) + 1;
     size_t ret;
     ret = sp->store(sp, s, len);
-    if(ret != len)
+    if(ret != len) {
 	if((int)ret < 0)
 	    return ret;
 	else
 	    return KRB5_CC_END;
+    }
     return 0;
 }
 
