@@ -415,6 +415,7 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
                                 char *smb_nt_passwd, int smb_nt_passlen)
 {
   struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
+	uchar last_chal[8];
   if (lp_security() == SEC_USER)
   {
     smb_trust_acct = getsmbpwnam(user);
@@ -441,8 +442,8 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
       SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
     }
-
-    if (!smb_password_ok(smb_trust_acct, NULL, NULL, NULL,
+	if (!last_challenge(last_chal) ||
+            !smb_password_ok(smb_trust_acct, last_chal, NULL, NULL,
 	(unsigned char *)smb_passwd, smb_passlen,
 	(unsigned char *)smb_nt_passwd, smb_nt_passlen, NULL))
     {

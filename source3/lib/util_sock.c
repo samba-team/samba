@@ -901,6 +901,9 @@ int create_pipe_socket(char *dir, int dir_perms,
 	int s;
 	struct sockaddr_un sa;
 
+	DEBUG(10,("create_pipe_socket: %s %d %s %d\n",
+	           dir, dir_perms, path, path_perms));
+
 	mkdir(dir, dir_perms);
 
 	if (chmod(dir, dir_perms) < 0)
@@ -912,7 +915,6 @@ int create_pipe_socket(char *dir, int dir_perms,
 	if (!remove(path))
 	{
 		DEBUG(0, ("remove on %s failed\n", path));
-		return -1;
 	}
 		
 	/* start listening on unix socket */
@@ -953,6 +955,8 @@ int create_pipe_socket(char *dir, int dir_perms,
 		DEBUG(0,("listen failed\n"));
 		return -1;
 	}
+
+	DEBUG(5,("unix socket opened: %s\n", path));
 
 	return s;
 }

@@ -396,7 +396,69 @@ struct api_cmd
   BOOL (*fn) (pipes_struct *, prs_struct *);
 };
 
-static struct api_cmd api_fd_commands[] =
+static struct api_cmd **api_fd_commands = NULL;
+uint32 num_cmds = 0;
+
+static void api_cmd_free(struct api_cmd *item)
+{
+	if (item != NULL)
+	{
+		if (item->pipe_clnt_name != NULL)
+		{
+			free(item->pipe_clnt_name);
+		}
+		if (item->pipe_srv_name != NULL)
+		{
+			free(item->pipe_srv_name);
+		}
+		free(item);
+	}
+}
+
+static struct api_cmd *api_cmd_dup(const struct api_cmd *from)
+{
+	struct api_cmd *copy = NULL;
+	if (from == NULL)
+	{
+		return NULL;
+	}
+	copy = (struct api_cmd *) malloc(sizeof(struct api_cmd));
+	if (copy != NULL)
+	{
+		ZERO_STRUCTP(copy);
+		if (from->pipe_clnt_name != NULL)
+		{
+			copy->pipe_clnt_name  = strdup(from->pipe_clnt_name );
+		}
+		if (from->pipe_srv_name != NULL)
+		{
+			copy->pipe_srv_name = strdup(from->pipe_srv_name);
+		}
+		if (from->fn != NULL)
+		{
+			copy->fn    = from->fn;
+		}
+	}
+	return copy;
+}
+
+static void free_api_cmd_array(uint32 num_entries, struct api_cmd **entries)
+{
+	void(*fn)(void*) = (void(*)(void*))&api_cmd_free;
+	free_void_array(num_entries, (void**)entries, *fn);
+}
+
+static struct api_cmd* add_api_cmd_to_array(uint32 *len,
+				struct api_cmd ***array,
+				const struct api_cmd *name)
+{
+	void*(*fn)(const void*) = (void*(*)(const void*))&api_cmd_dup;
+	return (struct api_cmd*)add_copy_to_array(len,
+	                     (void***)array, (const void*)name, *fn, False);
+				
+}
+
+#if 0
 {
     { "lsarpc",   "lsass",   api_ntlsa_rpc },
     { "samr",     "lsass",   api_samr_rpc },
@@ -409,6 +471,20 @@ static struct api_cmd api_fd_commands[] =
     { "spoolss",  "spoolss", api_spoolss_rpc },
     { NULL,       NULL,      NULL }
 };
+#endif
+
+void close_msrpc_command_processor(void)
+{
+	free_api_cmd_array(num_cmds, api_fd_commands);
+}
+
+void add_msrpc_command_processor(char* pipe_name,
+				char* process_name,
+				BOOL (*fn) (pipes_struct *, prs_struct *))
+{
+	struct api_cmd cmd = { pipe_name, process_name, fn };
+	add_api_cmd_to_array(&num_cmds, &api_fd_commands, &cmd);
+}
 
 static BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *pd)
 {
@@ -479,20 +555,20 @@ static BOOL api_pipe_bind_and_alt_req(pipes_struct *p, prs_struct *pd, enum RPC_
 
 	DEBUG(5,("api_pipe_bind_req: decode request. %d\n", __LINE__));
 
-	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++)
+	for (i = 0; i < num_cmds; i++)
 	{
-		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
-		    api_fd_commands[i].fn != NULL)
+		if (strequal(api_fd_commands[i]->pipe_clnt_name, p->name) &&
+		    api_fd_commands[i]->fn != NULL)
 		{
 			DEBUG(3,("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-			           api_fd_commands[i].pipe_clnt_name,
-			           api_fd_commands[i].pipe_srv_name));
-			fstrcpy(p->pipe_srv_name, api_fd_commands[i].pipe_srv_name);
+			           api_fd_commands[i]->pipe_clnt_name,
+			           api_fd_commands[i]->pipe_srv_name));
+			fstrcpy(p->pipe_srv_name, api_fd_commands[i]->pipe_srv_name);
 			break;
 		}
 	}
 
-	if (api_fd_commands[i].fn == NULL) return False;
+	if (api_fd_commands[i]->fn == NULL) return False;
 
 	/* decode the bind request */
 	smb_io_rpc_hdr_rb("", &p->hdr_rb, pd, 0);
@@ -727,13 +803,13 @@ static BOOL api_pipe_request(pipes_struct *p, prs_struct *pd)
 #endif
 	}
 
-	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++)
+	for (i = 0; i < num_cmds; i++)
 	{
-		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
-		    api_fd_commands[i].fn != NULL)
+		if (strequal(api_fd_commands[i]->pipe_clnt_name, p->name) &&
+		    api_fd_commands[i]->fn != NULL)
 		{
-			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i].pipe_clnt_name));
-			return api_fd_commands[i].fn(p, pd);
+			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i]->pipe_clnt_name));
+			return api_fd_commands[i]->fn(p, pd);
 		}
 	}
 	return False;
@@ -743,6 +819,24 @@ BOOL rpc_command(pipes_struct *p, prs_struct *pd)
 {
 	BOOL reply = False;
 	DEBUG(10,("rpc_command\n"));
+
+	if (p->m != NULL)
+	{
+		DEBUG(10,("msrpc redirect\n"));
+		if (!msrpc_send_prs(p->m, pd))
+		{
+			DEBUG(2,("msrpc redirect send failed\n"));
+			return False;
+		}
+		if (!msrpc_receive_prs(p->m, &p->rhdr))
+		{
+			DEBUG(2,("msrpc redirect receive failed\n"));
+			return False;
+		}
+		prs_link(NULL, &p->rhdr, NULL);
+		prs_debug_out(&p->rhdr, 10);
+		return True;
+	}
 
 	if (pd->data == NULL) return False;
 
