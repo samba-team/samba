@@ -1250,68 +1250,36 @@ static int rpc_group_list(int argc, const char **argv)
 			       rpc_group_list_internals,
 			       argc, argv);
 }
- 
-static NTSTATUS 
-rpc_group_members_internals(const DOM_SID *domain_sid, const char *domain_name, 
-			    struct cli_state *cli,
-			    TALLOC_CTX *mem_ctx, int argc, const char **argv)
+
+static NTSTATUS
+rpc_list_group_members(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+		       const char *domain_name, const DOM_SID *domain_sid,
+		       POLICY_HND *domain_pol, uint32 rid)
 {
 	NTSTATUS result;
-	POLICY_HND connect_pol, domain_pol, group_pol;
-	uint32 num_rids, *rids, *rid_types;
+	POLICY_HND group_pol;
 	uint32 num_members, *group_rids, *group_attrs;
 	uint32 num_names;
 	char **names;
 	uint32 *name_types;
 	int i;
 
-	/* Get sam policy handle */
-	
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-	
-	/* Get domain policy handle */
-	
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
+	fstring sid_str;
+	sid_to_string(sid_str, domain_sid);
 
-	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, 1000,
-				       1, argv, &num_rids, &rids, &rid_types);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	if (num_rids != 1) {
-		d_printf("Could not find group %s\n", argv[0]);
-		goto done;
-	}
-
-	if (rid_types[0] != SID_NAME_DOM_GRP) {
-		d_printf("%s is not a domain group\n", argv[0]);
-		goto done;
-	}
-
-	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
+	result = cli_samr_open_group(cli, mem_ctx, domain_pol,
 				     MAXIMUM_ALLOWED_ACCESS,
-				     rids[0], &group_pol);
+				     rid, &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
-		goto done;
+		return result;
 
 	result = cli_samr_query_groupmem(cli, mem_ctx, &group_pol,
 					 &num_members, &group_rids,
 					 &group_attrs);
 
 	if (!NT_STATUS_IS_OK(result))
-		goto done;
+		return result;
 
 	while (num_members > 0) {
 		int this_time = 512;
@@ -1319,23 +1287,181 @@ rpc_group_members_internals(const DOM_SID *domain_sid, const char *domain_name,
 		if (num_members < this_time)
 			this_time = num_members;
 
-		result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol, 1000,
+		result = cli_samr_lookup_rids(cli, mem_ctx, domain_pol, 1000,
 					      this_time, group_rids,
 					      &num_names, &names, &name_types);
 
 		if (!NT_STATUS_IS_OK(result))
-			goto done;
+			return result;
+
+		/* We only have users as members, but make the output
+		   the same as the output of alias members */
 
 		for (i = 0; i < this_time; i++) {
-			printf("%s\n", names[i]);
+
+			if (opt_long_list_entries) {
+				printf("%s-%d %s\\%s %d\n", sid_str,
+				       group_rids[i], domain_name, names[i],
+				       SID_NAME_USER);
+			} else {
+				printf("%s\\%s\n", domain_name, names[i]);
+			}
 		}
 
 		num_members -= this_time;
 		group_rids += 512;
 	}
 
- done:
-	return result;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS
+rpc_list_alias_members(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+		       POLICY_HND *domain_pol, uint32 rid)
+{
+	NTSTATUS result;
+	POLICY_HND alias_pol, lsa_pol;
+	uint32 num_members;
+	DOM_SID *alias_sids;
+	char **domains;
+	char **names;
+	uint32 *types;
+	int i;
+
+	result = cli_samr_open_alias(cli, mem_ctx, domain_pol,
+				     MAXIMUM_ALLOWED_ACCESS, rid, &alias_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_samr_query_aliasmem(cli, mem_ctx, &alias_pol,
+					 &num_members, &alias_sids);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Couldn't list alias members\n");
+		return result;
+	}
+
+	cli_nt_session_close(cli);
+
+	if (!cli_nt_session_open(cli, PI_LSARPC)) {
+		d_printf("Couldn't open LSA pipe\n");
+		return result;
+	}
+
+	result = cli_lsa_open_policy(cli, mem_ctx, True,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED, &lsa_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Couldn't open LSA policy handle\n");
+		return result;
+	}
+
+	result = cli_lsa_lookup_sids(cli, mem_ctx, &lsa_pol, num_members,
+				     alias_sids, 
+				     &domains, &names, &types);
+
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
+		d_printf("Couldn't lookup SIDs\n");
+		return result;
+	}
+
+	for (i = 0; i < num_members; i++) {
+		fstring sid_str;
+		sid_to_string(sid_str, &alias_sids[i]);
+
+		if (opt_long_list_entries) {
+			printf("%s %s\\%s %d\n", sid_str, 
+			       domains[i] ? domains[i] : "*unknown*", 
+			       names[i] ? names[i] : "*unknown*", types[i]);
+		} else {
+			if (domains[i])
+				printf("%s\\%s\n", domains[i], names[i]);
+			else
+				printf("%s\n", sid_str);
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+ 
+static NTSTATUS 
+rpc_group_members_internals(const DOM_SID *domain_sid,
+			    const char *domain_name, 
+			    struct cli_state *cli,
+			    TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	NTSTATUS result;
+	POLICY_HND connect_pol, domain_pol;
+	uint32 num_rids, *rids, *rid_types;
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, 1000,
+				       1, argv, &num_rids, &rids, &rid_types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+
+		/* Ok, did not find it in the global sam, try with builtin */
+
+		DOM_SID sid_Builtin;
+
+		cli_samr_close(cli, mem_ctx, &domain_pol);
+
+		string_to_sid(&sid_Builtin, "S-1-5-32");		
+
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &sid_Builtin, &domain_pol);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			d_printf("Couldn't find group %s\n", argv[0]);
+			return result;
+		}
+
+		result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, 1000,
+					       1, argv, &num_rids,
+					       &rids, &rid_types);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			d_printf("Couldn't find group %s\n", argv[0]);
+			return result;
+		}
+	}
+
+	if (num_rids != 1) {
+		d_printf("Couldn't find group %s\n", argv[0]);
+		return result;
+	}
+
+	if (rid_types[0] == SID_NAME_DOM_GRP) {
+		return rpc_list_group_members(cli, mem_ctx, domain_name,
+					      domain_sid, &domain_pol,
+					      rids[0]);
+	}
+
+	if (rid_types[0] == SID_NAME_ALIAS) {
+		return rpc_list_alias_members(cli, mem_ctx, &domain_pol,
+					      rids[0]);
+	}
+
+	return NT_STATUS_NO_SUCH_GROUP;
 }
 
 static int rpc_group_members(int argc, const char **argv)
