@@ -365,10 +365,24 @@ krb5_vlog(krb5_context context,
 	  va_list ap);
 
 krb5_error_code
+krb5_vlog_msg(krb5_context context,
+	      krb5_log_facility *fac,
+	      char **reply,
+	      const char *fmt,
+	      va_list ap);
+
+krb5_error_code
 krb5_log(krb5_context context,
 	 krb5_log_facility *fac,
 	 const char *fmt,
 	 ...);
+
+krb5_error_code
+krb5_log_msg(krb5_context context,
+	     krb5_log_facility *fac,
+	     char **reply,
+	     const char *fmt,
+	     ...);
 
 
 
