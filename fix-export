@@ -42,6 +42,12 @@ find . -name Makefile.am | while read f; do
 		y=`dirname $f`/`echo $i | sed 's/[0-9]$/cat&/'`
 		echo `grog -Tascii $x` \> $y
 		`grog -Tascii $x` > $y
+		perl -p -e 'exit 1 if (/NetBSD|FreeBSD|OpenBSD|Linux|OSF|Solaris/); exit 0;' $y
+		if [ $? != 0 ] ; then
+		    echo "ERROR: catfile $y contains operating sysstem"
+		    head -1 $y
+		    exit 1
+		fi
 	done
 done
 
