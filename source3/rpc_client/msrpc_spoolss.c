@@ -743,20 +743,14 @@ BOOL msrpc_spoolss_enumprinterdrivers( const char* srv_name,
         switch (level)
         {
                 case 1:
-                {
                         decode_printer_driver_1(&buffer, returned, &(ctr.info1));
                         break;
-                }
                 case 2:
-                {
                         decode_printer_driver_2(&buffer, returned, &(ctr.info2));
                         break;
-                }
                 case 3:
-                {
                         decode_printer_driver_3(&buffer, returned, &(ctr.info3));
                         break;
-                }
         }
 
         display_printer_driver_ctr(out_hnd, ACTION_HEADER   , level, returned, ctr);
