@@ -618,9 +618,12 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_kdc_rep *ret_as_reply)
 {
     krb5_error_code ret;
-
+    krb5_kdc_flags opts;
+    opts.i = 0;
+    opts.b = int2KDCOptions(options);
+    
     ret = krb5_get_in_cred (context,
-			    options,
+			    opts.i,
 			    addrs,
 			    etypes,
 			    ptypes,
