@@ -1558,8 +1558,8 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 
  size_t strnlen(const char *s, size_t n)
 {
-	int i;
-	for (i=0; s[i] && i<n; i++)
+	size_t i;
+	for (i=0; i<n && s[i] != '\0'; i++)
 		/* noop */ ;
 	return i;
 }
