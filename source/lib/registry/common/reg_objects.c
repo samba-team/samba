@@ -161,7 +161,7 @@ char *reg_val_get_path(REG_VAL *v)
 	return NULL;
 }
 
-char *reg_key_get_path(REG_KEY *k)
+const char *reg_key_get_path(REG_KEY *k)
 {
 	SMB_REG_ASSERT(k);
 	return k->path;
