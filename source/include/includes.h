@@ -960,16 +960,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #define SHM_W 0200
 #endif
 
-
-/* Some systems (SCO) treat UNIX domain sockets as FIFOs */
-
-#ifndef S_IFSOCK
-#define S_IFSOCK S_IFIFO
-#endif
-#ifndef S_ISSOCK
-#define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
-#endif
-
 #if HAVE_KERNEL_SHARE_MODES
 #ifndef LOCK_MAND 
 #define LOCK_MAND	32	/* This is a mandatory flock */
