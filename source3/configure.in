@@ -174,7 +174,7 @@ echo $ac_n "checking for 64 bit off_t ... $ac_c"
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
 main() { exit((sizeof(off_t) == 8) ? 0 : 1); }],
-echo yes;AC_DEFINE(SIZEOF_OFF_T,8)
+echo yes;AC_DEFINE(SIZEOF_OFF_T,8),
 echo no)
 
 echo $ac_n "checking for off64_t ... $ac_c"
@@ -314,6 +314,28 @@ echo $ac_n "checking for fcntl locking ... $ac_c"
 AC_TRY_RUN([#include "tests/fcntl_lock.c"],
            echo yes;AC_DEFINE(HAVE_FCNTL_LOCK), 
 	   echo no)
+
+echo $ac_n "checking for 64 bit fcntl locking ... $ac_c"
+AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#ifdef HAVE_SYS_FCNTL_H
+#include <sys/fcntl.h>
+#endif
+main() { struct flock64 fl64;
+#if defined(F_SETLKW64) && defined(F_SETLK64) && defined(F_GETLK64)
+exit(0);
+#else
+exit(1);
+#endif
+}],
+       echo yes;AC_DEFINE(HAVE_STRUCT_FLOCK64),
+       echo no)
 
 echo $ac_n "checking for sysv ipc ... $ac_c"
 AC_TRY_RUN([#include "tests/sysv_ipc.c"],

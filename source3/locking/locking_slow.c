@@ -174,7 +174,7 @@ static BOOL slow_lock_share_entry(connection_struct *conn,
 
        /* At this point we have an open fd to the share mode file. 
          Lock the first byte exclusively to signify a lock. */
-      if(fcntl_lock(fd, F_SETLKW, 0, 1, F_WRLCK) == False)
+      if(fcntl_lock(fd, SMB_F_SETLKW, 0, 1, F_WRLCK) == False)
       {
         DEBUG(0,("ERROR lock_share_entry: fcntl_lock on file %s failed with %s\n",
                   fname, strerror(errno)));   
@@ -251,7 +251,7 @@ static BOOL slow_unlock_share_entry(connection_struct *conn,
 
   /* token is the fd of the open share mode file. */
   /* Unlock the first byte. */
-  if(fcntl_lock(fd, F_SETLKW, 0, 1, F_UNLCK) == False)
+  if(fcntl_lock(fd, SMB_F_SETLKW, 0, 1, F_UNLCK) == False)
    { 
       DEBUG(0,("ERROR unlock_share_entry: fcntl_lock failed with %s\n",
                       strerror(errno)));   
@@ -980,7 +980,7 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 
 		/* Lock the share mode file while we read it. */
 		if(!read_only &&
-		   fcntl_lock(fd, F_SETLKW, 0, 1, F_WRLCK) == False) {
+		   fcntl_lock(fd, SMB_F_SETLKW, 0, 1, F_WRLCK) == False) {
 			close(fd);
 			continue;
 		}

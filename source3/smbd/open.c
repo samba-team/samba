@@ -562,7 +562,11 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 				   BOOL *share_locked)
 {
   if (fsp->can_write){
+#ifdef LARGE_SMB_OFF_T
+    if (is_locked(fsp,conn,0x3FFFFFFFFFFFFFFFLL,0,F_WRLCK)){
+#else
     if (is_locked(fsp,conn,0x3FFFFFFF,0,F_WRLCK)){
+#endif
       /* If share modes are in force for this connection we
          have the share entry locked. Unlock it before closing. */
       if (*share_locked && lp_share_modes(SNUM(conn)))

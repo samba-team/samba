@@ -57,7 +57,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 		return(False);
 	}
 
-	if (fcntl_lock(fd,F_SETLKW,0,1,F_WRLCK)==False) {
+	if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_WRLCK)==False) {
 		DEBUG(0,("ERROR: can't get lock on %s\n", fname));
 		return False;
 	}
@@ -66,7 +66,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	for (i=0;i<max_connections;i++) {
 		if (read(fd, &crec,sizeof(crec)) != sizeof(crec)) {
 			DEBUG(2,("Entry not found in lock file %s\n",fname));
-			if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
+			if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
 				DEBUG(0,("ERROR: can't release lock on %s\n", fname));
 			}
 			close(fd);
@@ -77,7 +77,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	}
 
 	if (crec.pid != mypid || crec.cnum != conn->cnum) {
-		if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
+		if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
 			DEBUG(0,("ERROR: can't release lock on %s\n", fname));
 		}
 		close(fd);
@@ -91,14 +91,14 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	if (sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec) ||
 	    write(fd, &crec,sizeof(crec)) != sizeof(crec)) {
 		DEBUG(2,("Couldn't update lock file %s (%s)\n",fname,strerror(errno)));
-		if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
+		if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
 			DEBUG(0,("ERROR: can't release lock on %s\n", fname));
 		}
 		close(fd);
 		return(False);
 	}
 
-	if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
+	if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
 		DEBUG(0,("ERROR: can't release lock on %s\n", fname));
 	}
 
@@ -149,7 +149,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		return(False);
 	}
 
-	if (fcntl_lock(fd,F_SETLKW,0,1,F_WRLCK)==False) {
+	if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_WRLCK)==False) {
 		DEBUG(0,("ERROR: can't get lock on %s\n", fname));
 		return False;
 	}
@@ -180,7 +180,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	
 	if (foundi < 0) {
 		DEBUG(3,("no free locks in %s\n",fname));
-		if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
+		if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
 			DEBUG(0,("ERROR: can't release lock on %s\n", fname));
 		}
 		close(fd);
@@ -208,14 +208,14 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	/* make our mark */
 	if (sys_lseek(fd,foundi*sizeof(crec),SEEK_SET) != foundi*sizeof(crec) ||
 	    write(fd, &crec,sizeof(crec)) != sizeof(crec)) {
-		if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
+		if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
 			DEBUG(0,("ERROR: can't release lock on %s\n", fname));
 		}
 		close(fd);
 		return(False);
 	}
 
-	if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
+	if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
 		DEBUG(0,("ERROR: can't release lock on %s\n", fname));
 	}
 	
