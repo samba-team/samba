@@ -31,6 +31,7 @@
 #define SMB_ACL_TAG_T               acl_tag_t
 #define SMB_ACL_TYPE_T				acl_type_t
 #define SMB_ACL_PERMSET_T           acl_permset_t
+#define SMB_ACL_PERM_T				acl_perm_t
 #define SMB_ACL_READ                ACL_READ
 #define SMB_ACL_WRITE               ACL_WRITE
 #define SMB_ACL_EXECUTE             ACL_EXECUTE
@@ -40,7 +41,7 @@
 #define SMB_ACL_USER_OBJ            ACL_USER_OBJ
 #define SMB_ACL_GROUP               ACL_GROUP
 #define SMB_ACL_GROUP_OBJ           ACL_GROUP_OBJ
-#define SMB_ACL_OTHER_OBJ           ACL_OTHER_OBJ
+#define SMB_ACL_OTHER               ACL_OTHER
 #define SMB_ACL_MASK                ACL_MASK
 
 #define SMB_ACL_T 					acl_t
@@ -63,6 +64,7 @@
 #define SMB_ACL_TAG_T 				int
 #define SMB_ACL_TYPE_T              int
 #define SMB_ACL_PERMSET_T 			mode_t
+#define SMB_ACL_PERM_T				mode_t
 #define SMB_ACL_READ 				S_IRUSR
 #define SMB_ACL_WRITE 				S_IWUSR
 #define SMB_ACL_EXECUTE				S_IXUSR
@@ -72,7 +74,7 @@
 #define SMB_ACL_USER_OBJ			1
 #define SMB_ACL_GROUP				2
 #define SMB_ACL_GROUP_OBJ			3
-#define SMB_ACL_OTHER_OBJ			4
+#define SMB_ACL_OTHER				4
 #define SMB_ACL_MASK				5
 
 typedef struct SMB_ACL_T {

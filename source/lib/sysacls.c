@@ -37,7 +37,14 @@ extern int DEBUGLEVEL;
  SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
  SMB_ACL_T sys_acl_get_fd(int fd)
  int sys_acl_free( void *obj_p)
- 
+ int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
+ int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+ char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen)
+
+ This next one is not POSIX complient - but we *have* to have it !
+ More POSIX braindamage.
+
+ int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 */
 
 #if defined(HAVE_POSIX_ACLS)
@@ -66,7 +73,7 @@ void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d)
 
 SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 {
-	sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
+	return sys_acl_get_file( path_p, type);
 }
 
 SMB_ACL_T sys_acl_get_fd(int fd)
@@ -77,6 +84,26 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 int sys_acl_free( void *obj_p)
 {
 	return acl_free(obj_p);
+}
+
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset)
+{
+	return acl_clear_perms(permset);
+}
+
+int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
+{
+	return acl_add_perm(permset, perm);
+}
+
+int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
+{
+	return acl_get_perm(permset, perm);
+}
+
+char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen)
+{
+	return acl_to_text( acl, plen);
 }
 
 #elif defined(HAVE_SOLARIS_ACLS)
@@ -118,5 +145,25 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 int sys_acl_free( void *obj_p)
 {
 	return -1;
+}
+
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset)
+{
+	return -1;
+}
+
+int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
+{
+	return -1;
+}
+
+int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
+{
+	return (permset & perm) ? 1 : 0;
+}
+
+char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen)
+{
+	return NULL;
 }
 #endif /* No ACLs. */
