@@ -5,7 +5,7 @@
 <title>Stand-Alone Servers</title>
 
 <para>
-Stand-Alone servers are independant of an Domain Controllers on the network.
+Stand-Alone servers are independant of Domain Controllers on the network.
 They are NOT domain members and function more like workgroup servers. In many
 cases a stand-alone server is configured with a minimum of security control
 with the intent that all data served will be readilly accessible to all users.
@@ -42,11 +42,11 @@ a great solution.
 <title>Background</title>
 
 <para>
-The term <emphasis>stand alone server</emphasis> means that the server
+The term <emphasis>stand-alone server</emphasis> means that the server
 will provide local authentication and access control for all resources
 that are available from it. In general this means that there will be a
 local user database. In more technical terms, it means that resources
-on the machine will either be made available in either SHARE mode or in
+on the machine will be made available in either SHARE mode or in
 USER mode.
 </para>
 
@@ -71,10 +71,10 @@ the samba server is NOT a member of a domain security context.
 Through the use of PAM (Pluggable Authentication Modules) and nsswitch
 (the name service switcher) the source of authentication may reside on 
 another server. We would be inclined to call this the authentication server.
-This means that the samba server may use the local Unix/Linux system
-password database (/etc/passwd or /etc/shadow), may use a local smbpasswd
-file, or may use an LDAP back end, or even via PAM and Winbind another CIFS/SMB
-server for authentication.
+This means that the samba server may use the local Unix/Linux system password database
+(/etc/passwd or /etc/shadow), may use a local smbpasswd file, or may use
+an LDAP back end, or even via PAM and Winbind another CIFS/SMB server
+for authentication.
 </para>
 
 </sect1>
@@ -222,7 +222,8 @@ the anonymous (guest) user two things will be required:
 <title>Common Errors</title>
 
 <para>
-Put stuff here.
+The greatest mistake so often made is to make a network configuration too complex.
+It pays to use the simplest solution that will meet the needs of the moment.
 </para>
 
 </sect1>
