@@ -188,6 +188,9 @@ static BOOL net_io_netinfo_2(char *desc, NETLOGON_INFO_2 *info, prs_struct *ps, 
 
 BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth)
 {
+	if (q_l == NULL)
+		return False;
+
 	prs_debug(ps, depth, desc, "net_io_q_logon_ctrl2");
 	depth++;
 
