@@ -6,34 +6,34 @@ struct timeval now;
 #define kdc_time now.tv_sec
 
 struct db_entry*
-db_fetch(krb5_context context, krb5_principal princ)
+db_fetch(krb5_context context, PrincipalName *principal, char *realm)
 {
     DB *db;
     DBT key, value;
+    krb5_data data;
     krb5_storage *sp;
     struct db_entry *ent;
-    int i;
     int32_t tmp;
-    key.size = princ->realm.length;
-    for(i = 0; i < princ->ncomp; i++)
-	key.size += princ->comp[i].length;
-    key.size += (princ->ncomp + 3) * 4;
-    key.data = malloc(key.size);
-    sp = krb5_storage_from_mem(key.data, key.size);
-    tmp = princ->type;
-    princ->type = 0;
-    krb5_store_principal(sp, princ);
-    princ->type = tmp;
+    int i;
+
+    ent = malloc(sizeof(struct db_entry));
+    principalname2krb5_principal(&ent->principal, *principal, realm);
+
+    sp = krb5_storage_emem();
+    ent->principal->type = 0;
+    krb5_store_principal(sp, ent->principal);
+    krb5_storage_to_data(sp, &data);
     krb5_storage_free(sp);
+    key.data = data.data;
+    key.size = data.length;
     
     db = dbopen("foo.db", O_RDONLY, 0, DB_BTREE, NULL);
     if(db->get(db, &key, &value, 0)){
 	db->close(db);
 	return NULL;
     }
+    krb5_data_free(&data);
     sp = krb5_storage_from_mem(value.data, value.size);
-    ent = malloc(sizeof(struct db_entry));
-    krb5_copy_principal(context, princ, &ent->principal);
     krb5_ret_keyblock(sp, &ent->keyblock);
     krb5_ret_int32(sp, &tmp);
     ent->kvno = tmp;
@@ -86,9 +86,40 @@ mk_des_keyblock(EncryptionKey *kb)
 
 
 krb5_error_code
-as_rep(krb5_context context, KDC_REQ *req, EncTicketPart *et)
+as_rep(krb5_context context, 
+       KDC_REQ *req, 
+       KDC_REP *rep,
+       krb5_data *data)
 {
     KDCOptions f = req->req_body.kdc_options;
+    KDC_REQ_BODY *b = &req->req_body;
+    struct db_entry *client, *server;
+    int use_etype;
+    EncTicketPart *et = calloc(1, sizeof(*et));
+    EncKDCRepPart *ek = calloc(1, sizeof(*ek));
+
+    client = db_fetch(context, b->cname, b->realm);
+    server = db_fetch(context, b->sname, b->realm);
+
+    if(client == NULL)
+	return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+    if(server == NULL)
+	return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+
+    /* XXX Check for pa_enc_timestamp */
+    
+    if(b->etype.len == 0)
+	return KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
+    use_etype = b->etype.val[0];
+
+    memset(rep, 0, sizeof(*rep));
+    rep->pvno = 5;
+    rep->msg_type = krb_as_rep;
+    rep->crealm = b->realm;
+    rep->cname = *b->cname;
+    rep->ticket.tkt_vno = 5;
+    rep->ticket.sname = *b->sname;
+    rep->ticket.realm = b->realm;
 
     if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey)
 	return KRB5KDC_ERR_BADOPTION;
@@ -98,21 +129,116 @@ as_rep(krb5_context context, KDC_REQ *req, EncTicketPart *et)
     et->flags.proxiable = f.proxiable;
     et->flags.may_postdate = f.allow_postdate;
 
-    if(f.postdated && req->req_body.from){
-	et->starttime = malloc(sizeof(*et->starttime));
-	*et->starttime = *req->req_body.from;
-	et->flags.invalid = 1;
-	et->flags.postdated = 1;
+    mk_des_keyblock(&et->key);
+    
+    et->cname = *b->cname;
+    et->crealm = b->realm;
+    
+    {
+	time_t start;
+	time_t t;
+	
+	start = et->authtime = kdc_time;
+    
+	if(f.postdated && req->req_body.from){
+	    et->starttime = malloc(sizeof(*et->starttime));
+	    start = *et->starttime = *req->req_body.from;
+	    et->flags.invalid = 1;
+	    et->flags.postdated = 1; /* XXX ??? */
+	}
+	t = b->till;
+	if(b->till == 0)
+	    t = start + client->max_life;
+	t = MIN(t, start + client->max_life);
+	t = MIN(t, start + server->max_life);
+#if 0
+	t = MIN(t, start + realm->max_life);
+#endif
+	et->endtime = t;
+	if(f.renewable_ok && et->endtime < b->till){
+	    f.renewable = 1;
+	    if(b->rtime == NULL){
+		b->rtime = malloc(sizeof(*b->rtime));
+		*b->rtime = 0;
+	    }
+	    if(*b->rtime < b->till)
+		*b->rtime = b->till;
+	}
+	if(f.renewable && b->rtime){
+	    t = *b->rtime;
+	    if(t == 0)
+		t = start + client->max_renew;
+	    t = MIN(t, start + client->max_renew);
+	    t = MIN(t, start + server->max_renew);
+#if 0
+	    t = MIN(t, start + realm->max_renew);
+#endif
+	    et->renew_till = malloc(sizeof(*et->renew_till));
+	    *et->renew_till = t;
+	}
     }
+    et->caddr = b->addresses;
+
+    memset(ek, 0, sizeof(*ek));
+    ek->key = et->key;
+    /* MIT must have at least one last_req */
+    ek->last_req.len = 1;
+    ek->last_req.val = malloc(sizeof(*ek->last_req.val));
+    ek->last_req.val->lr_type = 0;
+    ek->last_req.val->lr_value = 0;
+    ek->nonce = b->nonce;
+    ek->flags = et->flags;
+    ek->authtime = et->authtime;
+    ek->starttime = et->starttime;
+    ek->endtime = et->endtime;
+    ek->renew_till = et->renew_till;
+    ek->srealm = rep->ticket.realm;
+    ek->sname = rep->ticket.sname;
+    ek->caddr = et->caddr;
+
+    {
+	unsigned char buf[1024]; /* XXX The data could be indefinite */
+	int len;
+	len = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et);
+	if(len < 0)
+	    return ASN1_OVERFLOW;
+	rep->ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
+	rep->ticket.enc_part.kvno = NULL;
+	krb5_encrypt(context, buf + sizeof(buf) - len, len, &server->keyblock, 
+		     &rep->ticket.enc_part.cipher);
+	
+	len = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek);
+	if(len < 0)
+	    return ASN1_OVERFLOW;
+	rep->enc_part.etype = ETYPE_DES_CBC_CRC;
+	rep->enc_part.kvno = NULL;
+	krb5_encrypt(context, buf + sizeof(buf) - len, len, &client->keyblock, 
+		     &rep->enc_part.cipher);
+	
+	len = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), rep);
+	if(len < 0)
+	    return ASN1_OVERFLOW;
+	
+	krb5_data_copy(data, buf + sizeof(buf) - len, len);
+	
+    }
+    
     return 0;
 }
 
 krb5_error_code
-tgs_rep(krb5_context context, KDC_REQ *req, EncTicketPart *et)
+tgs_rep(krb5_context context, 
+	KDC_REQ *req, 
+	KDC_REP *rep,
+	krb5_data *data)
 {
+    KDC_REQ_BODY *b = &req->req_body;
     KDCOptions f = req->req_body.kdc_options;
-
-
+    EncTicketPart *tgt;
+    struct db_entry *server, *krbtgt, *client;
+    EncTicketPart *et = calloc(1, sizeof(*et));
+    EncKDCRepPart *ek = calloc(1, sizeof(*ek));
+    
     if(req->padata == NULL || req->padata->len < 1)
 	return KRB5KDC_ERR_PREAUTH_REQUIRED; /* XXX ??? */
     if(req->padata->val->padata_type != pa_tgs_req)
@@ -135,48 +261,84 @@ tgs_rep(krb5_context context, KDC_REQ *req, EncTicketPart *et)
 				   NULL);
 	if(err) return err;
 	
-	ent = db_fetch(context, princ);
-	if(ent == NULL) return 17;
+	{
+	    PrincipalName p;
+	    p.name_string.val = calloc(2, sizeof(*p.name_string.val));
+	    p.name_string.len = 2;
+	    p.name_string.val[0] = "krbtgt";
+	    p.name_string.val[1] = req->req_body.realm;
+	    krbtgt = db_fetch(context, &p, req->req_body.realm);
+	    free(p.name_string.val);
+	}
+	if(ent == NULL) 
+	    return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
     
 	err = krb5_rd_req_with_keyblock(context, &ac,
 					&req->padata->val->padata_value,
 					princ,
-					&ent->keyblock,
+					&krbtgt->keyblock,
 					&ap_req_options,
 					&ticket);
-	if(err) return err;
+	if(err) 
+	    return err;
 
+	/* XXX Check authenticator */
+
+	server = db_fetch(context, b->sname, b->realm);
+	
+	if(server == NULL)
+	    return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+
+	tgt = &ticket->tkt;
+
+	client = db_fetch(context, &tgt->cname, tgt->crealm);
+	if(client == NULL)
+	    return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+
+	memset(rep, 0, sizeof(*rep));
+	rep->pvno = 5;
+	rep->msg_type = krb_tgs_rep;
+	rep->crealm = tgt->crealm;
+	rep->cname = tgt->cname;
+	rep->ticket.tkt_vno = 5;
+	rep->ticket.sname = *b->sname;
+	rep->ticket.realm = b->realm;
+
+	et->caddr = ticket->tkt.caddr;
+	
 	if(f.forwardable){
-	    if(!ticket->tkt.flags.forwardable)
+	    if(!tgt->flags.forwardable)
 		return KRB5KDC_ERR_BADOPTION;
 	    et->flags.forwardable = 1;
 	}
 	if(f.forwarded){
-	    if(!ticket->tkt.flags.forwardable)
+	    if(!tgt->flags.forwardable)
 		return KRB5KDC_ERR_BADOPTION;
 	    et->flags.forwarded = 1;
 	    et->caddr = req->req_body.addresses;
+	    /* resp.caddr := req.addresses */
 	}
-	if(ticket->tkt.flags.forwarded)
-	    et->flags.forwarded = 1;
+	et->flags.forwarded = tgt->flags.forwarded;
+
 	if(f.proxiable){
-	    if(!ticket->tkt.flags.proxiable)
+	    if(!tgt->flags.proxiable)
 		return KRB5KDC_ERR_BADOPTION;
 	    et->flags.proxiable = 1;
 	}
 	if(f.proxy){
-	    if(!ticket->tkt.flags.proxiable)
+	    if(!tgt->flags.proxiable)
 		return KRB5KDC_ERR_BADOPTION;
 	    et->flags.proxy = 1;
 	    et->caddr = req->req_body.addresses;
+	    /* resp.caddr := req.addresses */
 	}
 	if(f.allow_postdate){
-	    if(!ticket->tkt.flags.may_postdate)
+	    if(!tgt->flags.may_postdate)
 		return KRB5KDC_ERR_BADOPTION;
 	    et->flags.may_postdate = 1;
 	}
 	if(f.postdated){
-	    if(!ticket->tkt.flags.may_postdate)
+	    if(!tgt->flags.may_postdate)
 		return KRB5KDC_ERR_BADOPTION;
 	    et->flags.postdated = 1;
 	    et->flags.invalid = 1;
@@ -184,35 +346,125 @@ tgs_rep(krb5_context context, KDC_REQ *req, EncTicketPart *et)
 	    *et->starttime = *req->req_body.from;
 	}
 	if(f.validate){
-	    if(!ticket->tkt.flags.invalid)
+	    if(!tgt->flags.invalid)
 		return KRB5KDC_ERR_BADOPTION;
-	    if(*ticket->tkt.starttime > kdc_time)
+	    if(*tgt->starttime > kdc_time)
 		return KRB5KRB_AP_ERR_TKT_NYV;
 	    /* XXX  tkt = tgt */
 	    et->flags.invalid = 0;
 	}
 	/* check for excess flags */
 	
+	et->authtime = tgt->authtime;
+	
 	if(f.renew){
 	    time_t old_life;
-	    if(!ticket->tkt.flags.renewable)
+	    if(!tgt->flags.renewable)
 		return KRB5KDC_ERR_BADOPTION;
-	    if(*ticket->tkt.renew_till >= kdc_time)
+	    if(*tgt->renew_till >= kdc_time)
 		return KRB5KRB_AP_ERR_TKT_EXPIRED;
 	    /* XXX tkt = tgt */
 	    et->starttime = malloc(sizeof(*et->starttime));
 	    *et->starttime = kdc_time;
-	    old_life = ticket->tkt.endtime - *ticket->tkt.starttime;
-	    et->endtime = MIN(*ticket->tkt.renew_till,
+	    old_life = tgt->endtime - *tgt->starttime;
+	    et->endtime = MIN(*tgt->renew_till,
 			      *et->starttime + old_life);
 	}else{
 	    time_t till;
 	    et->starttime = malloc(sizeof(*et->starttime));
 	    *et->starttime = kdc_time;
+	    till = b->till;
+	    if(till == 0)
+		till = *et->starttime + client->max_life;
+	    till = MIN(till, *et->starttime + client->max_life);
+	    till = MIN(till, *et->starttime + server->max_life);
+	    till = MIN(till, tgt->endtime);
+#if 0
+	    till = MIN(till, et->starttime + realm->max_life);
+#endif
+	    et->endtime = till;
+	    if(f.renewable_ok && 
+	       et->endtime < b->till && 
+	       tgt->flags.renewable){
+		f.renewable = 1;
+		b->rtime = malloc(sizeof(*b->rtime));
+		*b->rtime = MIN(b->till, *tgt->renew_till);
+	    }
 	}
-	req->req_body.cname = malloc(sizeof(*req->req_body.cname));
-	krb5_principal2principalname(req->req_body.cname, 
-				     ticket->enc_part2.client);
+	if(f.renewable && tgt->flags.renewable && b->rtime){
+	    time_t rtime;
+	    rtime = *b->rtime;
+	    if(rtime == 0)
+		rtime = *et->starttime + client->max_renew;
+	    et->flags.renewable = 1;
+	    rtime = MIN(rtime, *et->starttime + client->max_renew);
+	    rtime = MIN(rtime, *et->starttime + server->max_renew);
+	    rtime = MIN(rtime, *tgt->renew_till);
+#if 0
+	    rtime = MIN(rtime, *et->starttime + realm->max_renew);
+#endif
+	    et->renew_till = malloc(sizeof(*et->renew_till));
+	    *et->renew_till = rtime;
+	}
+
+	/* XXX Check enc-authorization-data */
+
+	
+	mk_des_keyblock(&et->key);
+	et->crealm = tgt->crealm;
+	et->cname = tgt->cname;
+	et->transited = tgt->transited;
+	
+
+	memset(ek, 0, sizeof(*ek));
+	ek->key = et->key;
+	/* MIT must have at least one last_req */
+	ek->last_req.len = 1;
+	ek->last_req.val = malloc(sizeof(*ek->last_req.val));
+	ek->last_req.val->lr_type = 0;
+	ek->last_req.val->lr_value = 0;
+	ek->nonce = b->nonce;
+	ek->flags = et->flags;
+	ek->authtime = et->authtime;
+	ek->starttime = et->starttime;
+	ek->endtime = et->endtime;
+	ek->renew_till = et->renew_till;
+	ek->srealm = rep->ticket.realm;
+	ek->sname = rep->ticket.sname;
+	ek->caddr = et->caddr;
+	
+	{
+	    unsigned char buf[1024]; /* XXX The data could be indefinite */
+	    int len;
+	    len = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et);
+	    if(len < 0)
+		return ASN1_OVERFLOW;
+	    rep->ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
+	    rep->ticket.enc_part.kvno = NULL;
+	    krb5_encrypt(context, buf + sizeof(buf) - len, len, &server->keyblock, 
+			 &rep->ticket.enc_part.cipher);
+	    
+	    len = encode_EncTGSRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek);
+	    if(len < 0)
+		return ASN1_OVERFLOW;
+	    rep->enc_part.etype = ETYPE_DES_CBC_CRC;
+	    rep->enc_part.kvno = NULL;
+	    {
+		krb5_keyblock kb;
+		kb.keytype = tgt->key.keytype;
+		kb.contents = tgt->key.keyvalue;
+		krb5_encrypt(context, buf + sizeof(buf) - len, len, &kb, 
+			     &rep->enc_part.cipher);
+	    }
+	    
+	    len = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), rep);
+	    if(len < 0)
+		return ASN1_OVERFLOW;
+
+	    krb5_data_copy(data, buf + sizeof(buf) - len, len);
+	}
+	
+	return 0;
     }
 	    
 }
@@ -232,161 +484,20 @@ process_request(krb5_context context,
 
     
     KDC_REP rep;
-    EncTicketPart et;
-    EncKDCRepPart ek;
 
 
     struct db_entry *cname, *sname;
     
     gettimeofday(&now, NULL);
 
-    memset(&rep, 0, sizeof(rep));
-    rep.pvno = 5;
     if(req->msg_type == krb_as_req)
-	rep.msg_type = krb_as_rep;
-    else if(req->msg_type == krb_tgs_req){
-	rep.msg_type = krb_tgs_rep;
-	
-    }else{
+	as_rep(context, req, &rep, reply);
+    else if(req->msg_type == krb_tgs_req)
+	tgs_rep(context, req, &rep, reply);
+    else
 	/* XXX */
 	return KRB5KRB_AP_ERR_MSG_TYPE;
-    }
-    err = principalname2krb5_principal (&princ,
-					*req->req_body.sname,
-					req->req_body.realm);
-    if(err) return err;
-    sname = db_fetch(context, princ);
-    if(sname == NULL){
-	krb5_mk_error(princ, 
-		      KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN,
-		      reply);
-	return 0;
-    }
-	
-    krb5_free_principal(princ);
-
-    memset(&et, 0, sizeof(et));
-    if(req->msg_type == krb_as_req)
-	as_rep(context, req, &et);
-    else
-	tgs_rep(context, req, &et);
-
-    err = principalname2krb5_principal (&princ,
-					*req->req_body.cname,
-					req->req_body.realm);
-    if(err) return err;
-    cname = db_fetch(context, princ);
-    if(cname == NULL){
-	krb5_mk_error(sname->principal, 
-		      KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
-		      reply);
-	return 0;
-	
-    }
-    krb5_free_principal(princ);
     
-
-    rep.crealm = req->req_body.realm;
-    krb5_principal2principalname(&rep.cname, cname->principal);
-
-    memset(&rep.ticket, 0, sizeof(rep.ticket));
-    rep.ticket.tkt_vno = 5;
-    rep.ticket.realm = req->req_body.realm;
-    krb5_principal2principalname(&rep.ticket.sname, sname->principal);
-
-    mk_des_keyblock(&et.key);
-    et.crealm = req->req_body.realm;
-    et.cname = *req->req_body.cname;
-    et.authtime = kdc_time;
-    {
-	time_t till;
-	time_t start = et.authtime;
-	if(et.starttime)
-	    start = *et.starttime;
-	till = req->req_body.till;
-	if(till == 0)
-	    till = start + cname->max_life;
-	till = MIN(till, start + sname->max_life);
-	till = MIN(till, start + cname->max_life);
-	et.endtime = till;
-    }
-    if(req->req_body.kdc_options.renewable && req->req_body.rtime){
-	time_t rtime;
-	time_t start = et.authtime;
-	if(et.starttime)
-	    start = *et.starttime;
-	rtime = *req->req_body.rtime;
-	if(rtime == 0)
-	    rtime = start + cname->max_renew;
-	rtime = MIN(rtime, start + sname->max_renew);
-	rtime = MIN(rtime, start + cname->max_renew);
-	if(rtime > et.endtime){
-	    et.renew_till = malloc(sizeof(*et.renew_till));
-	    *et.renew_till = rtime;
-	    et.flags.renewable = 1;
-	}
-    }
-
-    
-    memset(&ek, 0, sizeof(ek));
-    ek.key = et.key;
-    /* MIT must have at least one last_req */
-    ek.last_req.len = 1;
-    ek.last_req.val = malloc(sizeof(*ek.last_req.val));
-    ek.last_req.val->lr_type = 0;
-    ek.last_req.val->lr_value = 0;
-    ek.nonce = req->req_body.nonce;
-    ek.flags = et.flags;
-    ek.authtime = et.authtime;
-    ek.starttime = et.starttime;
-    ek.endtime = et.endtime;
-    ek.renew_till = et.renew_till;
-    ek.srealm = req->req_body.realm;
-    ek.sname = *req->req_body.sname;
-    ek.caddr = req->req_body.addresses;
-
-    {
-	unsigned char buf[1024];
-	err = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), &et);
-
-	rep.ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
-	rep.ticket.enc_part.kvno = NULL;
-	err = krb5_encrypt(context, buf + sizeof(buf) - err, err, 
-			   &sname->keyblock, 
-			   &rep.ticket.enc_part.cipher);
-	
-	switch(rep.msg_type){
-	case krb_as_rep:
-	    err = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), &ek);
-	    break;
-	case krb_tgs_rep:
-	    err = encode_EncTGSRepPart(buf + sizeof(buf) - 1, sizeof(buf), 
-				       &ek);
-	    break;
-	default:
-	    abort();
-	    break;
-	}
-	
-	rep.enc_part.etype = ETYPE_DES_CBC_CRC;
-	rep.enc_part.kvno = NULL;
-	err = krb5_encrypt(context, buf + sizeof(buf) - err, err, 
-			   &cname->keyblock, 
-			   &rep.enc_part.cipher);
-	
-	switch(rep.msg_type){
-	case krb_as_rep:
-	    reply->length = encode_AS_REP(buf + sizeof(buf) - 1, 
-					  sizeof(buf), &rep);
-	    break;
-	case krb_tgs_rep:
-	    reply->length = encode_TGS_REP(buf + sizeof(buf) - 1, 
-					   sizeof(buf), &rep);
-	    break;
-	}
-	reply->data = malloc(reply->length);
-	memcpy(reply->data, buf + sizeof(buf) - reply->length, reply->length);
-    }
     return 0;
 }
 
