@@ -1871,7 +1871,11 @@ static BOOL list_servers(char *wk_grp)
 #define COMPL_REMOTE      1          /* Complete remote filename */
 #define COMPL_LOCAL       2          /* Complete local filename */
 
-/* This defines the commands supported by this client */
+/* This defines the commands supported by this client.
+ * NOTE: The "!" must be the last one in the list because it's fn pointer
+ *       field is NULL, and NULL in that field is used in process_tok()
+ *       (below) to indicate the end of the list.  crh
+ */
 struct
 {
   char *name;
@@ -1881,7 +1885,6 @@ struct
 } commands[] = 
 {
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
-  {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
@@ -1926,6 +1929,9 @@ struct
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},  
+
+  /* Yes, this must be here, see crh's comment above. */
+  {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
 
