@@ -1104,6 +1104,8 @@ if test "$enable_shared" = "yes"; then
 				LDSHFLAGS="-B symbolic -b -z"
 				SONAMEFLAG="+h "
 				PICFLAG="+z"
+			elif test "${GCC}" = "yes"; then
+				PICFLAG="-fPIC"
 			fi
 			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
