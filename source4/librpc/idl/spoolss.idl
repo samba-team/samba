@@ -151,13 +151,54 @@
 
 	/******************/
 	/* Function: 0x02 */
-	WERROR spoolss_02(
+	WERROR spoolss_SetJob(
+		[in,ref] policy_handle *handle,
+		[in] uint32 job_id,
+		[in] uint32 level,
+		[in] uint32 command
 	);
 
 	/******************/
 	/* Function: 0x03 */
-	WERROR spoolss_03(
+	WERROR spoolss_GetJob(
+		[in,ref] policy_handle *handle,
+		[in] uint32 job_id,
+		[in] uint32 level,
+		[in] DATA_BLOB *buffer,
+		[out,subcontext(4),switch_is(level)] spoolss_JobInfo *info,
+		[in,out,ref] uint32 *buf_size
 	);
+
+	typedef struct {
+		uint16 year;
+		uint16 month;
+		uint16 day_of_week;
+		uint16 day;
+		uint16 hour;
+		uint16 minute;
+		uint16 second;
+		uint16 millisecond;
+	} spoolss_Time;
+
+	typedef struct {
+		uint32 job_id;
+		[relative] nstring printer_name;
+		[relative] nstring server_name;
+		[relative] nstring user_name;
+		[relative] nstring document_name;
+		[relative] nstring data_type;
+		[relative] nstring text_status;
+		uint32 status;
+		uint32 priority;
+		uint32 position;
+		uint32 total_pages;
+		uint32 pages_printed;
+		spoolss_Time time;
+	} spoolss_JobInfo1;
+
+	typedef [nodiscriminant,public] union {
+		[case(1)] spoolss_JobInfo1 info1;
+	} spoolss_JobInfo;
 
 	/******************/
 	/* Function: 0x04 */
@@ -168,7 +209,7 @@
 		[in]	 uint32 level,
 		[in,out]     DATA_BLOB *buffer,
 		[in,out,ref] uint32 *buf_size,
-		[out]	 uint32 numjobs
+		[out]	 uint32 count
 	);
 
 	/******************/
