@@ -246,65 +246,11 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 	}
 }
 
-/* Open a new smb pipe connection to a DC on a given domain.  Cache
-   negative creation attempts so we don't try and connect to broken
-   machines too often. */
-
-#define FAILED_CONNECTION_CACHE_TIMEOUT 30 /* Seconds between attempts */
-
-struct failed_connection_cache {
-	fstring domain_name;
-	fstring controller;
-	time_t lookup_time;
-	NTSTATUS nt_status;
-	struct failed_connection_cache *prev, *next;
-};
-
-static struct failed_connection_cache *failed_connection_cache;
-
-/* Add an entry to the failed conneciton cache */
-
-static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn, 
-					NTSTATUS result) 
-{
-	struct failed_connection_cache *fcc;
-
-	SMB_ASSERT(!NT_STATUS_IS_OK(result));
-
-	/* Check we already aren't in the cache */
-
-	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
-		if (strequal(fcc->domain_name, new_conn->domain)) {
-			DEBUG(10, ("domain %s already tried and failed\n",
-				   fcc->domain_name));
-			return;
-		}
-	}
-
-	/* Create negative lookup cache entry for this domain and controller */
-
-	if (!(fcc = (struct failed_connection_cache *)
-	      malloc(sizeof(struct failed_connection_cache)))) {
-		DEBUG(0, ("malloc failed in add_failed_connection_entry!\n"));
-		return;
-	}
-	
-	ZERO_STRUCTP(fcc);
-	
-	fstrcpy(fcc->domain_name, new_conn->domain);
-	fstrcpy(fcc->controller, new_conn->controller);
-	fcc->lookup_time = time(NULL);
-	fcc->nt_status = result;
-	
-	DLIST_ADD(failed_connection_cache, fcc);
-}
-	
 /* Open a connction to the remote server, cache failures for 30 seconds */
 
 static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 			       struct winbindd_cm_conn *new_conn)
 {
-	struct failed_connection_cache *fcc;
 	NTSTATUS result;
 	char *ipc_username, *ipc_domain, *ipc_password;
 	struct in_addr dc_ip;
@@ -316,47 +262,15 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	fstrcpy(new_conn->domain, domain);
 	fstrcpy(new_conn->pipe_name, get_pipe_name_from_index(pipe_index));
 	
-	/* Look for a domain controller for this domain.  Negative results
-	   are cached so don't bother applying the caching for this
-	   function just yet.  */
+	/* connection failure cache has been moved inside of get_dc_name
+	   so we can deal with half dead DC's   --jerry */
 
 	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		add_failed_connection_entry(new_conn, result);
+		add_failed_connection_entry(domain, "", result);
 		return result;
 	}
 		
-	/* Return false if we have tried to look up this domain and netbios
-	   name before and failed. */
-
-	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
-		
-		if (!(strequal(domain, fcc->domain_name) &&
-		      strequal(new_conn->controller, fcc->controller)))
-			continue; /* Not our domain */
-
-		if ((time(NULL) - fcc->lookup_time) > 
-		    FAILED_CONNECTION_CACHE_TIMEOUT) {
-
-			/* Cache entry has expired, delete it */
-
-			DEBUG(10, ("cm_open_connection cache entry expired for %s, %s\n", domain, new_conn->controller));
-
-			DLIST_REMOVE(failed_connection_cache, fcc);
-			free(fcc);
-
-			break;
-		}
-
-		/* The timeout hasn't expired yet so return false */
-
-		DEBUG(10, ("returning negative open_connection_cache entry for %s, %s\n", domain, new_conn->controller));
-
-		result = fcc->nt_status;
-		SMB_ASSERT(!NT_STATUS_IS_OK(result));
-		return result;
-	}
-
 	/* Initialise SMB connection */
 
 	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
@@ -402,7 +316,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		 * specific UUID right now, i'm not going to bother.  --jerry
 		 */
 		if ( !is_win2k_pipe(pipe_index) )
-			add_failed_connection_entry(new_conn, result);
+			add_failed_connection_entry(domain, new_conn->controller, result);
 		cli_shutdown(new_conn->cli);
 		return result;
 	}
@@ -643,233 +557,6 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 
 	return &hnd;
 }
-
-#if 0  /* This code now *well* out of date */
-
-/* Return a SAM domain policy handle on a domain */
-
-CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
-{
-	struct winbindd_cm_conn *conn, *basic_conn = NULL;
-	static CLI_POLICY_HND hnd;
-	NTSTATUS result;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-
-	/* Look for existing connections */
-
-	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
-		    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM) {
-
-			if (!connection_ok(conn)) {
-				/* Shutdown cli?  Free conn?  Allow retry of DC? */
-				DLIST_REMOVE(cm_conns, conn);
-				return NULL;
-			}
-
-			goto ok;
-		}
-	}
-
-	/* Create a basic handle to open a domain handle from */
-
-	if (!cm_get_sam_handle(domain))
-		return False;
-
-	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
-		    conn->pipe_data.samr.pipe_type == SAM_PIPE_BASIC)
-			basic_conn = conn;
-	}
-	
-	if (!(conn = (struct winbindd_cm_conn *)
-	      malloc(sizeof(struct winbindd_cm_conn))))
-		return NULL;
-	
-	ZERO_STRUCTP(conn);
-
-	fstrcpy(conn->domain, basic_conn->domain);
-	fstrcpy(conn->controller, basic_conn->controller);
-	fstrcpy(conn->pipe_name, basic_conn->pipe_name);
-
-	conn->pipe_data.samr.pipe_type = SAM_PIPE_DOM;
-	conn->cli = basic_conn->cli;
-
-	result = cli_samr_open_domain(conn->cli, conn->cli->mem_ctx,
-				      &basic_conn->pol, des_access, 
-				      domain_sid, &conn->pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		return NULL;
-
-	/* Add to list */
-
-	DLIST_ADD(cm_conns, conn);
-
- ok:
-	hnd.pol = conn->pol;
-	hnd.cli = conn->cli;
-
-	return &hnd;
-}
-
-/* Return a SAM policy handle on a domain user */
-
-CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
-				       uint32 user_rid)
-{
-	struct winbindd_cm_conn *conn, *basic_conn = NULL;
-	static CLI_POLICY_HND hnd;
-	NTSTATUS result;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-
-	/* Look for existing connections */
-
-	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
-		    conn->pipe_data.samr.pipe_type == SAM_PIPE_USER &&
-		    conn->pipe_data.samr.rid == user_rid) {
-
-			if (!connection_ok(conn)) {
-				/* Shutdown cli?  Free conn?  Allow retry of DC? */
-				DLIST_REMOVE(cm_conns, conn);
-				return NULL;
-			}
-		
-			goto ok;
-		}
-	}
-
-	/* Create a domain handle to open a user handle from */
-
-	if (!cm_get_sam_dom_handle(domain, domain_sid))
-		return NULL;
-
-	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
-		    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM)
-			basic_conn = conn;
-	}
-	
-	if (!basic_conn) {
-		DEBUG(0, ("No domain sam handle was created!\n"));
-		return NULL;
-	}
-
-	if (!(conn = (struct winbindd_cm_conn *)
-	      malloc(sizeof(struct winbindd_cm_conn))))
-		return NULL;
-	
-	ZERO_STRUCTP(conn);
-
-	fstrcpy(conn->domain, basic_conn->domain);
-	fstrcpy(conn->controller, basic_conn->controller);
-	fstrcpy(conn->pipe_name, basic_conn->pipe_name);
-	
-	conn->pipe_data.samr.pipe_type = SAM_PIPE_USER;
-	conn->cli = basic_conn->cli;
-	conn->pipe_data.samr.rid = user_rid;
-
-	result = cli_samr_open_user(conn->cli, conn->cli->mem_ctx,
-				    &basic_conn->pol, des_access, user_rid,
-				    &conn->pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		return NULL;
-
-	/* Add to list */
-
-	DLIST_ADD(cm_conns, conn);
-
- ok:
-	hnd.pol = conn->pol;
-	hnd.cli = conn->cli;
-
-	return &hnd;
-}
-
-/* Return a SAM policy handle on a domain group */
-
-CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
-					uint32 group_rid)
-{
-	struct winbindd_cm_conn *conn, *basic_conn = NULL;
-	static CLI_POLICY_HND hnd;
-	NTSTATUS result;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-
-	/* Look for existing connections */
-
-	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
-		    conn->pipe_data.samr.pipe_type == SAM_PIPE_GROUP &&
-		    conn->pipe_data.samr.rid == group_rid) {
-
-			if (!connection_ok(conn)) {
-				/* Shutdown cli?  Free conn?  Allow retry of DC? */
-				DLIST_REMOVE(cm_conns, conn);
-				return NULL;
-			}
-		
-			goto ok;
-		}
-	}
-
-	/* Create a domain handle to open a user handle from */
-
-	if (!cm_get_sam_dom_handle(domain, domain_sid))
-		return NULL;
-
-	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
-		    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM)
-			basic_conn = conn;
-	}
-	
-	if (!basic_conn) {
-		DEBUG(0, ("No domain sam handle was created!\n"));
-		return NULL;
-	}
-
-	if (!(conn = (struct winbindd_cm_conn *)
-	      malloc(sizeof(struct winbindd_cm_conn))))
-		return NULL;
-	
-	ZERO_STRUCTP(conn);
-
-	fstrcpy(conn->domain, basic_conn->domain);
-	fstrcpy(conn->controller, basic_conn->controller);
-	fstrcpy(conn->pipe_name, basic_conn->pipe_name);
-	
-	conn->pipe_data.samr.pipe_type = SAM_PIPE_GROUP;
-	conn->cli = basic_conn->cli;
-	conn->pipe_data.samr.rid = group_rid;
-
-	result = cli_samr_open_group(conn->cli, conn->cli->mem_ctx,
-				    &basic_conn->pol, des_access, group_rid,
-				    &conn->pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		return NULL;
-
-	/* Add to list */
-
-	DLIST_ADD(cm_conns, conn);
-
- ok:
-	hnd.pol = conn->pol;
-	hnd.cli = conn->cli;
-
-	return &hnd;
-}
-
-#endif
 
 /* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
    netlogon pipe as no handle is returned. */
