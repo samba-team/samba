@@ -324,9 +324,11 @@ static BOOL test_LookupPrivValue(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_LookupPrivValue r;
+	struct lsa_LUID luid;
 
 	r.in.handle = handle;
 	r.in.name = name;
+	r.out.luid = &luid;
 
 	status = dcerpc_lsa_LookupPrivValue(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
