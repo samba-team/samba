@@ -1276,6 +1276,115 @@ NTSTATUS ndr_pull_dfs_Enum(struct ndr_pull *ndr, struct dfs_Enum *r)
 	return NT_STATUS_OK;
 }
 
+void ndr_print_dfs_Exist(struct ndr_print *ndr, const char *name, int flags, struct dfs_Exist *r)
+{
+	ndr_print_struct(ndr, name, "dfs_Exist");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "dfs_Exist");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "dfs_Exist");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "exist_flag", r->out.exist_flag);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "exist_flag", *r->out.exist_flag);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_dfs_Add(struct ndr_print *ndr, const char *name, int flags, struct dfs_Add *r)
+{
+	ndr_print_struct(ndr, name, "dfs_Add");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "dfs_Add");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "path", r->in.path);
+	ndr->depth++;
+		ndr_print_unistr(ndr, "path", r->in.path);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "server", r->in.server);
+	ndr->depth++;
+		ndr_print_unistr(ndr, "server", r->in.server);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "share", r->in.share);
+	ndr->depth++;
+	if (r->in.share) {
+		ndr_print_unistr(ndr, "share", r->in.share);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "comment", r->in.comment);
+	ndr->depth++;
+	if (r->in.comment) {
+		ndr_print_unistr(ndr, "comment", r->in.comment);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "flags", r->in.flags);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "dfs_Add");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_dfs_Remove(struct ndr_print *ndr, const char *name, int flags, struct dfs_Remove *r)
+{
+	ndr_print_struct(ndr, name, "dfs_Remove");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "dfs_Remove");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "path", r->in.path);
+	ndr->depth++;
+		ndr_print_unistr(ndr, "path", r->in.path);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "server", r->in.server);
+	ndr->depth++;
+	if (r->in.server) {
+		ndr_print_unistr(ndr, "server", r->in.server);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "share", r->in.share);
+	ndr->depth++;
+	if (r->in.share) {
+		ndr_print_unistr(ndr, "share", r->in.share);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "dfs_Remove");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_dfs_SetInfo(struct ndr_print *ndr, const char *name, int flags, struct dfs_SetInfo *r)
+{
+	ndr_print_struct(ndr, name, "dfs_SetInfo");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "dfs_SetInfo");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "dfs_SetInfo");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_dfs_Info1(struct ndr_print *ndr, const char *name, struct dfs_Info1 *r)
 {
 	ndr_print_struct(ndr, name, "dfs_Info1");
@@ -1532,6 +1641,41 @@ void ndr_print_dfs_Info(struct ndr_print *ndr, const char *name, uint16 level, u
 	}
 }
 
+void ndr_print_dfs_GetInfo(struct ndr_print *ndr, const char *name, int flags, struct dfs_GetInfo *r)
+{
+	ndr_print_struct(ndr, name, "dfs_GetInfo");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "dfs_GetInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "path", r->in.path);
+	ndr->depth++;
+		ndr_print_unistr(ndr, "path", r->in.path);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "server", r->in.server);
+	ndr->depth++;
+	if (r->in.server) {
+		ndr_print_unistr(ndr, "server", r->in.server);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "share", r->in.share);
+	ndr->depth++;
+	if (r->in.share) {
+		ndr_print_unistr(ndr, "share", r->in.share);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "dfs_GetInfo");
+	ndr->depth++;
+	ndr_print_dfs_Info(ndr, "info", r->in.level, &r->out.info);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_dfs_EnumArray1(struct ndr_print *ndr, const char *name, struct dfs_EnumArray1 *r)
 {
 	ndr_print_struct(ndr, name, "dfs_EnumArray1");
@@ -1685,6 +1829,55 @@ void ndr_print_dfs_EnumStruct(struct ndr_print *ndr, const char *name, struct df
 	ndr->depth++;
 	ndr_print_uint32(ndr, "level", r->level);
 	ndr_print_dfs_EnumInfo(ndr, "e", r->level, &r->e);
+	ndr->depth--;
+}
+
+void ndr_print_dfs_Enum(struct ndr_print *ndr, const char *name, int flags, struct dfs_Enum *r)
+{
+	ndr_print_struct(ndr, name, "dfs_Enum");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "dfs_Enum");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_uint32(ndr, "bufsize", r->in.bufsize);
+	ndr_print_ptr(ndr, "info", r->in.info);
+	ndr->depth++;
+	if (r->in.info) {
+		ndr_print_dfs_EnumStruct(ndr, "info", r->in.info);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "unknown", r->in.unknown);
+	ndr->depth++;
+	if (r->in.unknown) {
+		ndr_print_uint32(ndr, "unknown", *r->in.unknown);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "total", r->in.total);
+	ndr->depth++;
+	if (r->in.total) {
+		ndr_print_uint32(ndr, "total", *r->in.total);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "dfs_Enum");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->out.info);
+	ndr->depth++;
+	if (r->out.info) {
+		ndr_print_dfs_EnumStruct(ndr, "info", r->out.info);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "total", r->out.total);
+	ndr->depth++;
+	if (r->out.total) {
+		ndr_print_uint32(ndr, "total", *r->out.total);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
 	ndr->depth--;
 }
 

@@ -94,6 +94,10 @@ struct ndr_print {
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
 #define NDR_PRINT_UNION_DEBUG(type, level, p) ndr_print_union_debug((ndr_print_union_fn_t)ndr_print_ ##type, #p, level, p)
+#define NDR_PRINT_FUNCTION_DEBUG(type, flags, p) ndr_print_function_debug((ndr_print_function_t)ndr_print_ ##type, #type, flags, p)
+#define NDR_PRINT_BOTH_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_BOTH, p)
+#define NDR_PRINT_OUT_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_OUT, p)
+#define NDR_PRINT_IN_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_IN, p)
 
 
 enum ndr_err_code {
@@ -111,6 +115,13 @@ enum ndr_err_code {
 */
 #define NDR_SCALARS 1
 #define NDR_BUFFERS 2
+
+/*
+  flags passed to ndr_print_*()
+*/
+#define NDR_IN 1
+#define NDR_OUT 2
+#define NDR_BOTH 3
 
 #define NDR_PULL_NEED_BYTES(ndr, n) do { \
 	if ((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size) { \
@@ -171,6 +182,7 @@ typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *
 typedef NTSTATUS (*ndr_push_union_fn_t)(struct ndr_push *, int ndr_flags, uint16, void *);
 typedef NTSTATUS (*ndr_pull_union_fn_t)(struct ndr_pull *, int ndr_flags, uint16 *, void *);
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
+typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, void *);
 typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint16, void *);
 
 /* now pull in the individual parsers */

@@ -62,7 +62,7 @@ BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		NDR_PRINT_UNION_DEBUG(spoolss_PrinterInfo, r.in.level, r.out.info);
+		NDR_PRINT_FUNCTION_DEBUG(spoolss_GetPrinter, NDR_BOTH, &r);
 	}
 
 	return ret;

@@ -172,6 +172,19 @@ done:
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_push_spoolss_PrinterInfo6(struct ndr_push *ndr, int ndr_flags, struct spoolss_PrinterInfo6 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_uint32(ndr, r->unknown));
+	ndr_push_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_push_spoolss_PrinterInfo7(struct ndr_push *ndr, int ndr_flags, struct spoolss_PrinterInfo7 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -212,6 +225,10 @@ NTSTATUS ndr_push_spoolss_PrinterInfo(struct ndr_push *ndr, int ndr_flags, uint1
 	NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, NDR_SCALARS, &r->info5));
 	break;
 
+	case 6:
+	NDR_CHECK(ndr_push_spoolss_PrinterInfo6(ndr, NDR_SCALARS, &r->info6));
+	break;
+
 	case 7:
 	NDR_CHECK(ndr_push_spoolss_PrinterInfo7(ndr, NDR_SCALARS, &r->info7));
 	break;
@@ -241,6 +258,10 @@ buffers:
 
 	case 5:
 		NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, ndr_flags, &r->info5));
+	break;
+
+	case 6:
+		NDR_CHECK(ndr_push_spoolss_PrinterInfo6(ndr, ndr_flags, &r->info6));
 	break;
 
 	case 7:
@@ -1127,6 +1148,19 @@ done:
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_spoolss_PrinterInfo6(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo6 *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_pull_spoolss_PrinterInfo7(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo7 *r)
 {
 	NDR_CHECK(ndr_pull_struct_start(ndr));
@@ -1166,6 +1200,10 @@ NTSTATUS ndr_pull_spoolss_PrinterInfo(struct ndr_pull *ndr, int ndr_flags, uint1
 	NDR_CHECK(ndr_pull_spoolss_PrinterInfo5(ndr, NDR_SCALARS, &r->info5));
 	break; }
 
+	case 6: {
+	NDR_CHECK(ndr_pull_spoolss_PrinterInfo6(ndr, NDR_SCALARS, &r->info6));
+	break; }
+
 	case 7: {
 	NDR_CHECK(ndr_pull_spoolss_PrinterInfo7(ndr, NDR_SCALARS, &r->info7));
 	break; }
@@ -1195,6 +1233,10 @@ buffers:
 
 	case 5:
 		NDR_CHECK(ndr_pull_spoolss_PrinterInfo5(ndr, NDR_BUFFERS, &r->info5));
+	break;
+
+	case 6:
+		NDR_CHECK(ndr_pull_spoolss_PrinterInfo6(ndr, NDR_BUFFERS, &r->info6));
 	break;
 
 	case 7:
@@ -2070,6 +2112,14 @@ void ndr_print_spoolss_PrinterInfo5(struct ndr_print *ndr, const char *name, str
 	ndr->depth--;
 }
 
+void ndr_print_spoolss_PrinterInfo6(struct ndr_print *ndr, const char *name, struct spoolss_PrinterInfo6 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_PrinterInfo6");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "unknown", r->unknown);
+	ndr->depth--;
+}
+
 void ndr_print_spoolss_PrinterInfo7(struct ndr_print *ndr, const char *name, struct spoolss_PrinterInfo7 *r)
 {
 	ndr_print_struct(ndr, name, "spoolss_PrinterInfo7");
@@ -2103,6 +2153,10 @@ void ndr_print_spoolss_PrinterInfo(struct ndr_print *ndr, const char *name, uint
 	ndr_print_spoolss_PrinterInfo5(ndr, "info5", &r->info5);
 	break;
 
+	case 6:
+	ndr_print_spoolss_PrinterInfo6(ndr, "info6", &r->info6);
+	break;
+
 	case 7:
 	ndr_print_spoolss_PrinterInfo7(ndr, "info7", &r->info7);
 	break;
@@ -2110,6 +2164,1300 @@ void ndr_print_spoolss_PrinterInfo(struct ndr_print *ndr, const char *name, uint
 	default:
 		ndr_print_bad_level(ndr, name, level);
 	}
+}
+
+void ndr_print_spoolss_EnumPrinters(struct ndr_print *ndr, const char *name, int flags, struct spoolss_EnumPrinters *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_EnumPrinters");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_EnumPrinters");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "flags", r->in.flags);
+	ndr_print_ptr(ndr, "server", r->in.server);
+	ndr->depth++;
+	if (r->in.server) {
+		ndr_print_unistr(ndr, "server", r->in.server);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_ptr(ndr, "buffer", r->in.buffer);
+	ndr->depth++;
+	if (r->in.buffer) {
+		ndr_print_DATA_BLOB(ndr, "buffer", *r->in.buffer);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "buf_size", r->in.buf_size);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->in.buf_size);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_EnumPrinters");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "buffer", r->out.buffer);
+	ndr->depth++;
+	if (r->out.buffer) {
+		ndr_print_DATA_BLOB(ndr, "buffer", *r->out.buffer);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "buf_size", r->out.buf_size);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->out.buf_size);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "count", r->out.count);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_OpenPrinter(struct ndr_print *ndr, const char *name, int flags, struct spoolss_OpenPrinter *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_OpenPrinter");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_OpenPrinter");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "server", r->in.server);
+	ndr->depth++;
+	if (r->in.server) {
+		ndr_print_unistr(ndr, "server", r->in.server);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "printer", r->in.printer);
+	ndr->depth++;
+	if (r->in.printer) {
+		ndr_print_unistr(ndr, "printer", r->in.printer);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "buffer", r->in.buffer);
+	ndr->depth++;
+	if (r->in.buffer) {
+		ndr_print_DATA_BLOB(ndr, "buffer", *r->in.buffer);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_OpenPrinter");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_02(struct ndr_print *ndr, const char *name, int flags, struct spoolss_02 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_02");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_02");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_02");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_03(struct ndr_print *ndr, const char *name, int flags, struct spoolss_03 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_03");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_03");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_03");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_EnumJobs(struct ndr_print *ndr, const char *name, int flags, struct spoolss_EnumJobs *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_EnumJobs");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_EnumJobs");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "firstjob", r->in.firstjob);
+	ndr_print_uint32(ndr, "numjobs", r->in.numjobs);
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_ptr(ndr, "buffer", r->in.buffer);
+	ndr->depth++;
+	if (r->in.buffer) {
+		ndr_print_DATA_BLOB(ndr, "buffer", *r->in.buffer);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "buf_size", r->in.buf_size);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->in.buf_size);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_EnumJobs");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "buffer", r->out.buffer);
+	ndr->depth++;
+	if (r->out.buffer) {
+		ndr_print_DATA_BLOB(ndr, "buffer", *r->out.buffer);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "buf_size", r->out.buf_size);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->out.buf_size);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "numjobs", r->out.numjobs);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_05(struct ndr_print *ndr, const char *name, int flags, struct spoolss_05 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_05");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_05");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_05");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_06(struct ndr_print *ndr, const char *name, int flags, struct spoolss_06 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_06");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_06");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_06");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_07(struct ndr_print *ndr, const char *name, int flags, struct spoolss_07 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_07");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_07");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_07");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_GetPrinter(struct ndr_print *ndr, const char *name, int flags, struct spoolss_GetPrinter *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_GetPrinter");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_GetPrinter");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_ptr(ndr, "buffer", r->in.buffer);
+	ndr->depth++;
+	if (r->in.buffer) {
+		ndr_print_DATA_BLOB(ndr, "buffer", *r->in.buffer);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "buf_size", r->in.buf_size);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->in.buf_size);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_GetPrinter");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->out.info);
+	ndr->depth++;
+	if (r->out.info) {
+	ndr_print_spoolss_PrinterInfo(ndr, "info", r->in.level, r->out.info);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "buf_size", r->out.buf_size);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->out.buf_size);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_09(struct ndr_print *ndr, const char *name, int flags, struct spoolss_09 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_09");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_09");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_09");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_0a(struct ndr_print *ndr, const char *name, int flags, struct spoolss_0a *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_0a");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_0a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_0a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_0b(struct ndr_print *ndr, const char *name, int flags, struct spoolss_0b *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_0b");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_0b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_0b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_0c(struct ndr_print *ndr, const char *name, int flags, struct spoolss_0c *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_0c");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_0c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_0c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_0d(struct ndr_print *ndr, const char *name, int flags, struct spoolss_0d *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_0d");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_0d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_0d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_0e(struct ndr_print *ndr, const char *name, int flags, struct spoolss_0e *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_0e");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_0e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_0e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_0f(struct ndr_print *ndr, const char *name, int flags, struct spoolss_0f *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_0f");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_0f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_0f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_10(struct ndr_print *ndr, const char *name, int flags, struct spoolss_10 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_10");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_10");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_10");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_11(struct ndr_print *ndr, const char *name, int flags, struct spoolss_11 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_11");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_11");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_11");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_StartPagePrinter(struct ndr_print *ndr, const char *name, int flags, struct spoolss_StartPagePrinter *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_StartPagePrinter");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_StartPagePrinter");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_StartPagePrinter");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_13(struct ndr_print *ndr, const char *name, int flags, struct spoolss_13 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_13");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_13");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_13");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_EndPagePrinter(struct ndr_print *ndr, const char *name, int flags, struct spoolss_EndPagePrinter *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_EndPagePrinter");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_EndPagePrinter");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_EndPagePrinter");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_15(struct ndr_print *ndr, const char *name, int flags, struct spoolss_15 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_15");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_15");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_15");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_16(struct ndr_print *ndr, const char *name, int flags, struct spoolss_16 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_16");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_16");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_16");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_EndDocPrinter(struct ndr_print *ndr, const char *name, int flags, struct spoolss_EndDocPrinter *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_EndDocPrinter");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_EndDocPrinter");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_EndDocPrinter");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_18(struct ndr_print *ndr, const char *name, int flags, struct spoolss_18 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_18");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_18");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_18");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_19(struct ndr_print *ndr, const char *name, int flags, struct spoolss_19 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_19");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_19");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_19");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_1a(struct ndr_print *ndr, const char *name, int flags, struct spoolss_1a *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_1a");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_1a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_1a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_1b(struct ndr_print *ndr, const char *name, int flags, struct spoolss_1b *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_1b");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_1b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_1b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_1c(struct ndr_print *ndr, const char *name, int flags, struct spoolss_1c *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_1c");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_1c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_1c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_ClosePrinter(struct ndr_print *ndr, const char *name, int flags, struct spoolss_ClosePrinter *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_ClosePrinter");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_ClosePrinter");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_ClosePrinter");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_1e(struct ndr_print *ndr, const char *name, int flags, struct spoolss_1e *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_1e");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_1e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_1e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_1f(struct ndr_print *ndr, const char *name, int flags, struct spoolss_1f *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_1f");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_1f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_1f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_20(struct ndr_print *ndr, const char *name, int flags, struct spoolss_20 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_20");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_20");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_20");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_21(struct ndr_print *ndr, const char *name, int flags, struct spoolss_21 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_21");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_21");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_21");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_22(struct ndr_print *ndr, const char *name, int flags, struct spoolss_22 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_22");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_22");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_22");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_23(struct ndr_print *ndr, const char *name, int flags, struct spoolss_23 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_23");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_23");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_23");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_24(struct ndr_print *ndr, const char *name, int flags, struct spoolss_24 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_24");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_24");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_24");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_25(struct ndr_print *ndr, const char *name, int flags, struct spoolss_25 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_25");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_25");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_25");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_26(struct ndr_print *ndr, const char *name, int flags, struct spoolss_26 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_26");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_26");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_26");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_27(struct ndr_print *ndr, const char *name, int flags, struct spoolss_27 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_27");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_27");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_27");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_28(struct ndr_print *ndr, const char *name, int flags, struct spoolss_28 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_28");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_28");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_28");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_29(struct ndr_print *ndr, const char *name, int flags, struct spoolss_29 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_29");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_29");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_29");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_2a(struct ndr_print *ndr, const char *name, int flags, struct spoolss_2a *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_2a");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_2a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_2a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_2b(struct ndr_print *ndr, const char *name, int flags, struct spoolss_2b *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_2b");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_2b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_2b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_2c(struct ndr_print *ndr, const char *name, int flags, struct spoolss_2c *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_2c");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_2c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_2c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_2d(struct ndr_print *ndr, const char *name, int flags, struct spoolss_2d *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_2d");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_2d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_2d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_2e(struct ndr_print *ndr, const char *name, int flags, struct spoolss_2e *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_2e");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_2e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_2e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_2f(struct ndr_print *ndr, const char *name, int flags, struct spoolss_2f *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_2f");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_2f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_2f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_30(struct ndr_print *ndr, const char *name, int flags, struct spoolss_30 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_30");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_30");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_30");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_31(struct ndr_print *ndr, const char *name, int flags, struct spoolss_31 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_31");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_31");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_31");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_32(struct ndr_print *ndr, const char *name, int flags, struct spoolss_32 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_32");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_32");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_32");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_33(struct ndr_print *ndr, const char *name, int flags, struct spoolss_33 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_33");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_33");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_33");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_34(struct ndr_print *ndr, const char *name, int flags, struct spoolss_34 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_34");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_34");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_34");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_35(struct ndr_print *ndr, const char *name, int flags, struct spoolss_35 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_35");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_35");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_35");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_36(struct ndr_print *ndr, const char *name, int flags, struct spoolss_36 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_36");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_36");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_36");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_37(struct ndr_print *ndr, const char *name, int flags, struct spoolss_37 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_37");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_37");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_37");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_38(struct ndr_print *ndr, const char *name, int flags, struct spoolss_38 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_38");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_38");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_38");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_39(struct ndr_print *ndr, const char *name, int flags, struct spoolss_39 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_39");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_39");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_39");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_3a(struct ndr_print *ndr, const char *name, int flags, struct spoolss_3a *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_3a");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_3a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_3a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_3b(struct ndr_print *ndr, const char *name, int flags, struct spoolss_3b *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_3b");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_3b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_3b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_3c(struct ndr_print *ndr, const char *name, int flags, struct spoolss_3c *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_3c");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_3c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_3c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_3d(struct ndr_print *ndr, const char *name, int flags, struct spoolss_3d *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_3d");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_3d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_3d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_3e(struct ndr_print *ndr, const char *name, int flags, struct spoolss_3e *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_3e");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_3e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_3e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_3f(struct ndr_print *ndr, const char *name, int flags, struct spoolss_3f *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_3f");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_3f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_3f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_40(struct ndr_print *ndr, const char *name, int flags, struct spoolss_40 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_40");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_40");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_40");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_41(struct ndr_print *ndr, const char *name, int flags, struct spoolss_41 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_41");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_41");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_41");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_42(struct ndr_print *ndr, const char *name, int flags, struct spoolss_42 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_42");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_42");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_42");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_43(struct ndr_print *ndr, const char *name, int flags, struct spoolss_43 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_43");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_43");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_43");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_44(struct ndr_print *ndr, const char *name, int flags, struct spoolss_44 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_44");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_44");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_44");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
 }
 
 void ndr_print_spoolss_Devmode(struct ndr_print *ndr, const char *name, struct spoolss_Devmode *r)
@@ -2174,5 +3522,519 @@ void ndr_print_spoolss_UserLevel(struct ndr_print *ndr, const char *name, uint16
 	default:
 		ndr_print_bad_level(ndr, name, level);
 	}
+}
+
+void ndr_print_spoolss_OpenPrinterEx(struct ndr_print *ndr, const char *name, int flags, struct spoolss_OpenPrinterEx *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_OpenPrinterEx");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_OpenPrinterEx");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "printername", r->in.printername);
+	ndr->depth++;
+	if (r->in.printername) {
+		ndr_print_unistr(ndr, "printername", r->in.printername);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "datatype", r->in.datatype);
+	ndr->depth++;
+	if (r->in.datatype) {
+		ndr_print_unistr(ndr, "datatype", r->in.datatype);
+	}
+	ndr->depth--;
+	ndr_print_spoolss_DevmodeContainer(ndr, "devmode_ctr", &r->in.devmode_ctr);
+	ndr_print_uint32(ndr, "access_required", r->in.access_required);
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_spoolss_UserLevel(ndr, "userlevel", r->in.level, &r->in.userlevel);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_OpenPrinterEx");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_46(struct ndr_print *ndr, const char *name, int flags, struct spoolss_46 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_46");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_46");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_46");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_47(struct ndr_print *ndr, const char *name, int flags, struct spoolss_47 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_47");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_47");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_47");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_EnumPrinterData(struct ndr_print *ndr, const char *name, int flags, struct spoolss_EnumPrinterData *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_EnumPrinterData");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_EnumPrinterData");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "enum_index", r->in.enum_index);
+	ndr_print_uint32(ndr, "value_offered", r->in.value_offered);
+	ndr_print_ptr(ndr, "buffer", r->in.buffer);
+	ndr->depth++;
+	if (r->in.buffer) {
+		ndr_print_DATA_BLOB(ndr, "buffer", *r->in.buffer);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "buf_size", r->in.buf_size);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->in.buf_size);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_EnumPrinterData");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "value_len", r->out.value_len);
+	ndr_print_ptr(ndr, "value_name", r->out.value_name);
+	ndr->depth++;
+	if (r->out.value_name) {
+		ndr_print_unistr(ndr, "value_name", r->out.value_name);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "value_needed", r->out.value_needed);
+	ndr_print_uint32(ndr, "printerdata_type", r->out.printerdata_type);
+	ndr_print_ptr(ndr, "buffer", r->out.buffer);
+	ndr->depth++;
+	if (r->out.buffer) {
+		ndr_print_DATA_BLOB(ndr, "buffer", *r->out.buffer);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "buf_size", r->out.buf_size);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->out.buf_size);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_49(struct ndr_print *ndr, const char *name, int flags, struct spoolss_49 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_49");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_49");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_49");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_4a(struct ndr_print *ndr, const char *name, int flags, struct spoolss_4a *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_4a");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_4a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_4a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_4b(struct ndr_print *ndr, const char *name, int flags, struct spoolss_4b *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_4b");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_4b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_4b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_4c(struct ndr_print *ndr, const char *name, int flags, struct spoolss_4c *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_4c");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_4c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_4c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_4d(struct ndr_print *ndr, const char *name, int flags, struct spoolss_4d *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_4d");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_4d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_4d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_4e(struct ndr_print *ndr, const char *name, int flags, struct spoolss_4e *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_4e");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_4e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_4e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_4f(struct ndr_print *ndr, const char *name, int flags, struct spoolss_4f *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_4f");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_4f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_4f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_50(struct ndr_print *ndr, const char *name, int flags, struct spoolss_50 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_50");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_50");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_50");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_51(struct ndr_print *ndr, const char *name, int flags, struct spoolss_51 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_51");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_51");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_51");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_52(struct ndr_print *ndr, const char *name, int flags, struct spoolss_52 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_52");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_52");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_52");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_53(struct ndr_print *ndr, const char *name, int flags, struct spoolss_53 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_53");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_53");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_53");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_54(struct ndr_print *ndr, const char *name, int flags, struct spoolss_54 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_54");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_54");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_54");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_55(struct ndr_print *ndr, const char *name, int flags, struct spoolss_55 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_55");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_55");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_55");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_56(struct ndr_print *ndr, const char *name, int flags, struct spoolss_56 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_56");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_56");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_56");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_57(struct ndr_print *ndr, const char *name, int flags, struct spoolss_57 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_57");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_57");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_57");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_58(struct ndr_print *ndr, const char *name, int flags, struct spoolss_58 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_58");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_58");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_58");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_59(struct ndr_print *ndr, const char *name, int flags, struct spoolss_59 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_59");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_59");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_59");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_5a(struct ndr_print *ndr, const char *name, int flags, struct spoolss_5a *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_5a");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_5a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_5a");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_5b(struct ndr_print *ndr, const char *name, int flags, struct spoolss_5b *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_5b");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_5b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_5b");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_5c(struct ndr_print *ndr, const char *name, int flags, struct spoolss_5c *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_5c");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_5c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_5c");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_5d(struct ndr_print *ndr, const char *name, int flags, struct spoolss_5d *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_5d");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_5d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_5d");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_5e(struct ndr_print *ndr, const char *name, int flags, struct spoolss_5e *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_5e");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_5e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_5e");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_spoolss_5f(struct ndr_print *ndr, const char *name, int flags, struct spoolss_5f *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_5f");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_5f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "spoolss_5f");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
 }
 

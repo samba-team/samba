@@ -1685,6 +1685,52 @@ NTSTATUS ndr_pull_QUERYINFO2(struct ndr_pull *ndr, struct QUERYINFO2 *r)
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_Close(struct ndr_print *ndr, const char *name, int flags, struct lsa_Close *r)
+{
+	ndr_print_struct(ndr, name, "lsa_Close");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_Close");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_Close");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_Delete(struct ndr_print *ndr, const char *name, int flags, struct lsa_Delete *r)
+{
+	ndr_print_struct(ndr, name, "lsa_Delete");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_Delete");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_Delete");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_lsa_Name(struct ndr_print *ndr, const char *name, struct lsa_Name *r)
 {
 	ndr_print_struct(ndr, name, "lsa_Name");
@@ -1724,6 +1770,40 @@ void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, struct lsa
 	ndr->depth--;
 }
 
+void ndr_print_lsa_EnumPrivs(struct ndr_print *ndr, const char *name, int flags, struct lsa_EnumPrivs *r)
+{
+	ndr_print_struct(ndr, name, "lsa_EnumPrivs");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_EnumPrivs");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->in.resume_handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "max_count", r->in.max_count);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_EnumPrivs");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "privs", r->out.privs);
+	ndr->depth++;
+		ndr_print_lsa_PrivArray(ndr, "privs", r->out.privs);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_sec_desc_buf(struct ndr_print *ndr, const char *name, struct sec_desc_buf *r)
 {
 	ndr_print_struct(ndr, name, "sec_desc_buf");
@@ -1735,6 +1815,68 @@ void ndr_print_sec_desc_buf(struct ndr_print *ndr, const char *name, struct sec_
 		ndr_print_security_descriptor(ndr, "sd", r->sd);
 	}
 	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_lsa_QuerySecObj(struct ndr_print *ndr, const char *name, int flags, struct lsa_QuerySecObj *r)
+{
+	ndr_print_struct(ndr, name, "lsa_QuerySecObj");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_QuerySecObj");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "sec_info", r->in.sec_info);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_QuerySecObj");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "sd", r->out.sd);
+	ndr->depth++;
+	if (r->out.sd) {
+		ndr_print_sec_desc_buf(ndr, "sd", r->out.sd);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_SetSecObj(struct ndr_print *ndr, const char *name, int flags, struct lsa_SetSecObj *r)
+{
+	ndr_print_struct(ndr, name, "lsa_SetSecObj");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_SetSecObj");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_SetSecObj");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_ChangePassword(struct ndr_print *ndr, const char *name, int flags, struct lsa_ChangePassword *r)
+{
+	ndr_print_struct(ndr, name, "lsa_ChangePassword");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_ChangePassword");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_ChangePassword");
+	ndr->depth++;
+	ndr->depth--;
+	}
 	ndr->depth--;
 }
 
@@ -1779,6 +1921,38 @@ void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *name, stru
 		ndr_print_lsa_QosInfo(ndr, "sec_qos", r->sec_qos);
 	}
 	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_lsa_OpenPolicy(struct ndr_print *ndr, const char *name, int flags, struct lsa_OpenPolicy *r)
+{
+	ndr_print_struct(ndr, name, "lsa_OpenPolicy");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_OpenPolicy");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "system_name", r->in.system_name);
+	ndr->depth++;
+	if (r->in.system_name) {
+		ndr_print_uint16(ndr, "system_name", *r->in.system_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "attr", r->in.attr);
+	ndr->depth++;
+		ndr_print_lsa_ObjectAttribute(ndr, "attr", r->in.attr);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "desired_access", r->in.desired_access);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_OpenPolicy");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
 	ndr->depth--;
 }
 
@@ -1974,6 +2148,85 @@ void ndr_print_lsa_PolicyInformation(struct ndr_print *ndr, const char *name, ui
 	}
 }
 
+void ndr_print_lsa_QueryInfoPolicy(struct ndr_print *ndr, const char *name, int flags, struct lsa_QueryInfoPolicy *r)
+{
+	ndr_print_struct(ndr, name, "lsa_QueryInfoPolicy");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_QueryInfoPolicy");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_QueryInfoPolicy");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->out.info);
+	ndr->depth++;
+	if (r->out.info) {
+	ndr_print_lsa_PolicyInformation(ndr, "info", r->in.level, r->out.info);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_SetInfoPolicy(struct ndr_print *ndr, const char *name, int flags, struct lsa_SetInfoPolicy *r)
+{
+	ndr_print_struct(ndr, name, "lsa_SetInfoPolicy");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_SetInfoPolicy");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_SetInfoPolicy");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_ClearAuditLog(struct ndr_print *ndr, const char *name, int flags, struct lsa_ClearAuditLog *r)
+{
+	ndr_print_struct(ndr, name, "lsa_ClearAuditLog");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_ClearAuditLog");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_ClearAuditLog");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_CreateAccount(struct ndr_print *ndr, const char *name, int flags, struct lsa_CreateAccount *r)
+{
+	ndr_print_struct(ndr, name, "lsa_CreateAccount");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_CreateAccount");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_CreateAccount");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_lsa_SidPtr(struct ndr_print *ndr, const char *name, struct lsa_SidPtr *r)
 {
 	ndr_print_struct(ndr, name, "lsa_SidPtr");
@@ -1998,6 +2251,57 @@ void ndr_print_lsa_SidArray(struct ndr_print *ndr, const char *name, struct lsa_
 		ndr_print_array(ndr, "sids", r->sids, sizeof(r->sids[0]), r->num_sids, (ndr_print_fn_t)ndr_print_lsa_SidPtr);
 	}
 	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_lsa_EnumAccounts(struct ndr_print *ndr, const char *name, int flags, struct lsa_EnumAccounts *r)
+{
+	ndr_print_struct(ndr, name, "lsa_EnumAccounts");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_EnumAccounts");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->in.resume_handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "num_entries", r->in.num_entries);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_EnumAccounts");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sids", r->out.sids);
+	ndr->depth++;
+		ndr_print_lsa_SidArray(ndr, "sids", r->out.sids);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_CreateTrustDom(struct ndr_print *ndr, const char *name, int flags, struct lsa_CreateTrustDom *r)
+{
+	ndr_print_struct(ndr, name, "lsa_CreateTrustDom");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_CreateTrustDom");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_CreateTrustDom");
+	ndr->depth++;
+	ndr->depth--;
+	}
 	ndr->depth--;
 }
 
@@ -2026,6 +2330,40 @@ void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, struct ls
 		ndr_print_array(ndr, "domains", r->domains, sizeof(r->domains[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_DomainInformation);
 	}
 	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_lsa_EnumTrustDom(struct ndr_print *ndr, const char *name, int flags, struct lsa_EnumTrustDom *r)
+{
+	ndr_print_struct(ndr, name, "lsa_EnumTrustDom");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_EnumTrustDom");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->in.resume_handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "num_entries", r->in.num_entries);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_EnumTrustDom");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "domains", r->out.domains);
+	ndr->depth++;
+		ndr_print_lsa_DomainList(ndr, "domains", r->out.domains);
+	ndr->depth--;
+	ndr->depth--;
+	}
 	ndr->depth--;
 }
 
@@ -2082,6 +2420,55 @@ void ndr_print_lsa_RefDomainList(struct ndr_print *ndr, const char *name, struct
 	ndr->depth--;
 }
 
+void ndr_print_lsa_LookupNames(struct ndr_print *ndr, const char *name, int flags, struct lsa_LookupNames *r)
+{
+	ndr_print_struct(ndr, name, "lsa_LookupNames");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_LookupNames");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "num_names", r->in.num_names);
+	ndr_print_ptr(ndr, "names", r->in.names);
+	ndr->depth++;
+		ndr_print_array(ndr, "names", r->in.names, sizeof(r->in.names[0]), r->in.num_names, (ndr_print_fn_t)ndr_print_lsa_Name);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sids", r->in.sids);
+	ndr->depth++;
+		ndr_print_lsa_TransSidArray(ndr, "sids", r->in.sids);
+	ndr->depth--;
+	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr_print_ptr(ndr, "count", r->in.count);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "count", *r->in.count);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_LookupNames");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "domains", r->out.domains);
+	ndr->depth++;
+	if (r->out.domains) {
+		ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sids", r->out.sids);
+	ndr->depth++;
+		ndr_print_lsa_TransSidArray(ndr, "sids", r->out.sids);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "count", r->out.count);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "count", *r->out.count);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_lsa_TranslatedName(struct ndr_print *ndr, const char *name, struct lsa_TranslatedName *r)
 {
 	ndr_print_struct(ndr, name, "lsa_TranslatedName");
@@ -2103,6 +2490,101 @@ void ndr_print_lsa_TransNameArray(struct ndr_print *ndr, const char *name, struc
 		ndr_print_array(ndr, "names", r->names, sizeof(r->names[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_TranslatedName);
 	}
 	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_lsa_LookupSids(struct ndr_print *ndr, const char *name, int flags, struct lsa_LookupSids *r)
+{
+	ndr_print_struct(ndr, name, "lsa_LookupSids");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_LookupSids");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sids", r->in.sids);
+	ndr->depth++;
+		ndr_print_lsa_SidArray(ndr, "sids", r->in.sids);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "names", r->in.names);
+	ndr->depth++;
+		ndr_print_lsa_TransNameArray(ndr, "names", r->in.names);
+	ndr->depth--;
+	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr_print_ptr(ndr, "count", r->in.count);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "count", *r->in.count);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_LookupSids");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "domains", r->out.domains);
+	ndr->depth++;
+	if (r->out.domains) {
+		ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "names", r->out.names);
+	ndr->depth++;
+		ndr_print_lsa_TransNameArray(ndr, "names", r->out.names);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "count", r->out.count);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "count", *r->out.count);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_CREATESECRET(struct ndr_print *ndr, const char *name, int flags, struct CREATESECRET *r)
+{
+	ndr_print_struct(ndr, name, "CREATESECRET");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "CREATESECRET");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "CREATESECRET");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_OpenAccount(struct ndr_print *ndr, const char *name, int flags, struct lsa_OpenAccount *r)
+{
+	ndr_print_struct(ndr, name, "lsa_OpenAccount");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_OpenAccount");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sid", r->in.sid);
+	ndr->depth++;
+		ndr_print_dom_sid2(ndr, "sid", r->in.sid);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "desired_access", r->in.desired_access);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_OpenAccount");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "acct_handle", r->out.acct_handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "acct_handle", r->out.acct_handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
 	ndr->depth--;
 }
 
@@ -2137,6 +2619,336 @@ void ndr_print_lsa_PrivilegeSet(struct ndr_print *ndr, const char *name, struct 
 	ndr->depth--;
 }
 
+void ndr_print_lsa_EnumPrivsAccount(struct ndr_print *ndr, const char *name, int flags, struct lsa_EnumPrivsAccount *r)
+{
+	ndr_print_struct(ndr, name, "lsa_EnumPrivsAccount");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_EnumPrivsAccount");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_EnumPrivsAccount");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "privs", r->out.privs);
+	ndr->depth++;
+	if (r->out.privs) {
+		ndr_print_lsa_PrivilegeSet(ndr, "privs", r->out.privs);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_ADDPRIVS(struct ndr_print *ndr, const char *name, int flags, struct ADDPRIVS *r)
+{
+	ndr_print_struct(ndr, name, "ADDPRIVS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "ADDPRIVS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "ADDPRIVS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_REMOVEPRIVS(struct ndr_print *ndr, const char *name, int flags, struct REMOVEPRIVS *r)
+{
+	ndr_print_struct(ndr, name, "REMOVEPRIVS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "REMOVEPRIVS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "REMOVEPRIVS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_GETQUOTAS(struct ndr_print *ndr, const char *name, int flags, struct GETQUOTAS *r)
+{
+	ndr_print_struct(ndr, name, "GETQUOTAS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "GETQUOTAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "GETQUOTAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_SETQUOTAS(struct ndr_print *ndr, const char *name, int flags, struct SETQUOTAS *r)
+{
+	ndr_print_struct(ndr, name, "SETQUOTAS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "SETQUOTAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "SETQUOTAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_GETSYSTEMACCOUNT(struct ndr_print *ndr, const char *name, int flags, struct GETSYSTEMACCOUNT *r)
+{
+	ndr_print_struct(ndr, name, "GETSYSTEMACCOUNT");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "GETSYSTEMACCOUNT");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "GETSYSTEMACCOUNT");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_SETSYSTEMACCOUNT(struct ndr_print *ndr, const char *name, int flags, struct SETSYSTEMACCOUNT *r)
+{
+	ndr_print_struct(ndr, name, "SETSYSTEMACCOUNT");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "SETSYSTEMACCOUNT");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "SETSYSTEMACCOUNT");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_OPENTRUSTDOM(struct ndr_print *ndr, const char *name, int flags, struct OPENTRUSTDOM *r)
+{
+	ndr_print_struct(ndr, name, "OPENTRUSTDOM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "OPENTRUSTDOM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "OPENTRUSTDOM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_QUERYTRUSTDOM(struct ndr_print *ndr, const char *name, int flags, struct QUERYTRUSTDOM *r)
+{
+	ndr_print_struct(ndr, name, "QUERYTRUSTDOM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "QUERYTRUSTDOM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "QUERYTRUSTDOM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_SETINFOTRUSTDOM(struct ndr_print *ndr, const char *name, int flags, struct SETINFOTRUSTDOM *r)
+{
+	ndr_print_struct(ndr, name, "SETINFOTRUSTDOM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "SETINFOTRUSTDOM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "SETINFOTRUSTDOM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_OPENSECRET(struct ndr_print *ndr, const char *name, int flags, struct OPENSECRET *r)
+{
+	ndr_print_struct(ndr, name, "OPENSECRET");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "OPENSECRET");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "OPENSECRET");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_SETSECRET(struct ndr_print *ndr, const char *name, int flags, struct SETSECRET *r)
+{
+	ndr_print_struct(ndr, name, "SETSECRET");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "SETSECRET");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "SETSECRET");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_QUERYSECRET(struct ndr_print *ndr, const char *name, int flags, struct QUERYSECRET *r)
+{
+	ndr_print_struct(ndr, name, "QUERYSECRET");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "QUERYSECRET");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "QUERYSECRET");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_LOOKUPPRIVVALUE(struct ndr_print *ndr, const char *name, int flags, struct LOOKUPPRIVVALUE *r)
+{
+	ndr_print_struct(ndr, name, "LOOKUPPRIVVALUE");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "LOOKUPPRIVVALUE");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "LOOKUPPRIVVALUE");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_LookupPrivName(struct ndr_print *ndr, const char *name, int flags, struct lsa_LookupPrivName *r)
+{
+	ndr_print_struct(ndr, name, "lsa_LookupPrivName");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_LookupPrivName");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "luid", r->in.luid);
+	ndr->depth++;
+		ndr_print_lsa_LUID(ndr, "luid", r->in.luid);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_LookupPrivName");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "name", r->out.name);
+	ndr->depth++;
+	if (r->out.name) {
+		ndr_print_lsa_Name(ndr, "name", r->out.name);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_PRIV_GET_DISPNAME(struct ndr_print *ndr, const char *name, int flags, struct PRIV_GET_DISPNAME *r)
+{
+	ndr_print_struct(ndr, name, "PRIV_GET_DISPNAME");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "PRIV_GET_DISPNAME");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "PRIV_GET_DISPNAME");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_DELETEOBJECT(struct ndr_print *ndr, const char *name, int flags, struct DELETEOBJECT *r)
+{
+	ndr_print_struct(ndr, name, "DELETEOBJECT");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "DELETEOBJECT");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "DELETEOBJECT");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_ENUMACCTWITHRIGHT(struct ndr_print *ndr, const char *name, int flags, struct ENUMACCTWITHRIGHT *r)
+{
+	ndr_print_struct(ndr, name, "ENUMACCTWITHRIGHT");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "ENUMACCTWITHRIGHT");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "ENUMACCTWITHRIGHT");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_lsa_RightAttribute(struct ndr_print *ndr, const char *name, struct lsa_RightAttribute *r)
 {
 	ndr_print_struct(ndr, name, "lsa_RightAttribute");
@@ -2161,6 +2973,220 @@ void ndr_print_lsa_RightSet(struct ndr_print *ndr, const char *name, struct lsa_
 		ndr_print_array(ndr, "names", r->names, sizeof(r->names[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_Name);
 	}
 	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_lsa_EnumAccountRights(struct ndr_print *ndr, const char *name, int flags, struct lsa_EnumAccountRights *r)
+{
+	ndr_print_struct(ndr, name, "lsa_EnumAccountRights");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_EnumAccountRights");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sid", r->in.sid);
+	ndr->depth++;
+		ndr_print_dom_sid2(ndr, "sid", r->in.sid);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_EnumAccountRights");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "rights", r->out.rights);
+	ndr->depth++;
+		ndr_print_lsa_RightSet(ndr, "rights", r->out.rights);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_ADDACCTRIGHTS(struct ndr_print *ndr, const char *name, int flags, struct ADDACCTRIGHTS *r)
+{
+	ndr_print_struct(ndr, name, "ADDACCTRIGHTS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "ADDACCTRIGHTS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "ADDACCTRIGHTS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_REMOVEACCTRIGHTS(struct ndr_print *ndr, const char *name, int flags, struct REMOVEACCTRIGHTS *r)
+{
+	ndr_print_struct(ndr, name, "REMOVEACCTRIGHTS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "REMOVEACCTRIGHTS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "REMOVEACCTRIGHTS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_QUERYTRUSTDOMINFO(struct ndr_print *ndr, const char *name, int flags, struct QUERYTRUSTDOMINFO *r)
+{
+	ndr_print_struct(ndr, name, "QUERYTRUSTDOMINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "QUERYTRUSTDOMINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "QUERYTRUSTDOMINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_SETTRUSTDOMINFO(struct ndr_print *ndr, const char *name, int flags, struct SETTRUSTDOMINFO *r)
+{
+	ndr_print_struct(ndr, name, "SETTRUSTDOMINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "SETTRUSTDOMINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "SETTRUSTDOMINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_DELETETRUSTDOM(struct ndr_print *ndr, const char *name, int flags, struct DELETETRUSTDOM *r)
+{
+	ndr_print_struct(ndr, name, "DELETETRUSTDOM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "DELETETRUSTDOM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "DELETETRUSTDOM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_STOREPRIVDATA(struct ndr_print *ndr, const char *name, int flags, struct STOREPRIVDATA *r)
+{
+	ndr_print_struct(ndr, name, "STOREPRIVDATA");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "STOREPRIVDATA");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "STOREPRIVDATA");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_RETRPRIVDATA(struct ndr_print *ndr, const char *name, int flags, struct RETRPRIVDATA *r)
+{
+	ndr_print_struct(ndr, name, "RETRPRIVDATA");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "RETRPRIVDATA");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "RETRPRIVDATA");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_lsa_OpenPolicy2(struct ndr_print *ndr, const char *name, int flags, struct lsa_OpenPolicy2 *r)
+{
+	ndr_print_struct(ndr, name, "lsa_OpenPolicy2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "lsa_OpenPolicy2");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "system_name", r->in.system_name);
+	ndr->depth++;
+	if (r->in.system_name) {
+		ndr_print_unistr(ndr, "system_name", r->in.system_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "attr", r->in.attr);
+	ndr->depth++;
+		ndr_print_lsa_ObjectAttribute(ndr, "attr", r->in.attr);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "desired_access", r->in.desired_access);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "lsa_OpenPolicy2");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_UNK_GET_CONNUSER(struct ndr_print *ndr, const char *name, int flags, struct UNK_GET_CONNUSER *r)
+{
+	ndr_print_struct(ndr, name, "UNK_GET_CONNUSER");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "UNK_GET_CONNUSER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "UNK_GET_CONNUSER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_QUERYINFO2(struct ndr_print *ndr, const char *name, int flags, struct QUERYINFO2 *r)
+{
+	ndr_print_struct(ndr, name, "QUERYINFO2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "QUERYINFO2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "QUERYINFO2");
+	ndr->depth++;
+	ndr->depth--;
+	}
 	ndr->depth--;
 }
 
