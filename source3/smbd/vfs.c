@@ -89,7 +89,7 @@ int vfs_init_default(connection_struct *conn)
 BOOL vfs_init_custom(connection_struct *conn)
 {
     void *handle;
-    struct vfs_ops *ops, *(*fptr)(void);
+    struct vfs_ops *ops, *(*fptr)(struct vfs_options *options);
 
     DEBUG(3, ("Initialising custom vfs hooks from %s\n",
 	      lp_vfsobj(SNUM(conn))));
@@ -114,12 +114,15 @@ BOOL vfs_init_custom(connection_struct *conn)
 
     dlclose(handle);
 
-    /* Initialise vfs_ops and fill in unused operations with default
-       (disk based) ones.  There's probably a neater way to do this. */
+    /* Initialise vfs_ops structure */
 
-    if ((ops = fptr()) == NULL) {
+    if ((ops = fptr(lp_vfsoptions(SNUM(conn)))) == NULL) {
 	return False;
     }
+
+    /* Fill in unused operations with default (disk based) ones.
+       There's probably a neater way to do this then a whole bunch of
+       if statements. */ 
 
     memcpy(&conn->vfs_ops, ops, sizeof(conn->vfs_ops));
     
