@@ -63,6 +63,7 @@ AC_CHECK_HEADERS([\
 	netinet6/in6.h				\
 	netinet6/in6_var.h			\
 	paths.h					\
+	poll.h					\
 	pwd.h					\
 	resolv.h				\
 	rpcsvc/ypclnt.h				\
@@ -201,6 +202,7 @@ AC_CHECK_FUNCS([				\
 	initstate				\
 	issetugid				\
 	on_exit					\
+	poll					\
 	random					\
 	setprogname				\
 	setstate				\
