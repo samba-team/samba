@@ -79,6 +79,11 @@ typedef struct _prs_struct
 #define MARSHALLING(ps) (!(ps)->io)
 #define UNMARSHALLING(ps) ((ps)->io)
 
+#define RPC_BIG_ENDIAN 		1
+#define RPC_LITTLE_ENDIAN	0
+
+#define RPC_PARSE_ALIGN 4
+
 typedef struct _output_data {
 	/*
 	 * Raw RPC output data. This does not include RPC headers or footers.
@@ -215,6 +220,12 @@ typedef struct pipes_struct
 	 */
 	
 	BOOL fault_state;
+	
+	/*
+	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's
+	 */
+	
+	BOOL endian;
 	
 	/*
 	 * Struct to deal with multiple pdu inputs.

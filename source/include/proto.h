@@ -477,6 +477,7 @@ char *myhostname(void);
 char *lock_path(char *name);
 char *parent_dirname(const char *path);
 BOOL ms_has_wild(char *s);
+int dos_fnmatch(char *string, char *pattern);
 BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive);
 int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
 
@@ -2525,7 +2526,7 @@ BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int 
 
 void prs_dump(char *name, int v, prs_struct *ps);
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
-BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, TALLOC_CTX *ctx, BOOL io);
+BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void prs_mem_free(prs_struct *ps);
 char *prs_alloc_mem(prs_struct *ps, size_t size);
@@ -2542,7 +2543,7 @@ BOOL prs_set_offset(prs_struct *ps, uint32 offset);
 BOOL prs_append_prs_data(prs_struct *dst, prs_struct *src);
 BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len);
 BOOL prs_append_data(prs_struct *dst, char *src, uint32 len);
-void prs_set_bigendian_data(prs_struct *ps);
+void prs_set_endian_data(prs_struct *ps, BOOL endian);
 BOOL prs_align(prs_struct *ps);
 BOOL prs_align_needed(prs_struct *ps, uint32 needed);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);

@@ -109,7 +109,7 @@ static BOOL pipe_init_outgoing_data(pipes_struct *p)
 	 * Initialize the outgoing RPC data buffer.
 	 * we will use this as the raw data area for replying to rpc requests.
 	 */	
-	if(!prs_init(&o_data->rdata, MAX_PDU_FRAG_LEN, 4, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&o_data->rdata, MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
 		return False;
 	}
@@ -174,7 +174,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	 * change the type to UNMARSALLING before processing the stream.
 	 */
 
-	if(!prs_init(&p->in_data.data, MAX_PDU_FRAG_LEN, 4, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&p->in_data.data, MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
 		return NULL;
 	}
@@ -200,6 +200,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	p->pipe_bound = False;
 	p->fault_state = False;
+	p->endian = RPC_LITTLE_ENDIAN;
 
 	/*
 	 * Initialize the incoming RPC struct.
@@ -219,7 +220,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	/*
 	 * Initialize the outgoing RPC data buffer with no memory.
 	 */	
-	prs_init(&p->out_data.rdata, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init(&p->out_data.rdata, 0, p->mem_ctx, MARSHALL);
 	
 	ZERO_STRUCT(p->pipe_user);
 
@@ -290,13 +291,16 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 		return -1;
 	}
 
-	prs_init( &rpc_in, 0, 4, p->mem_ctx, UNMARSHALL);
+	prs_init( &rpc_in, 0, p->mem_ctx, UNMARSHALL);
+	prs_set_endian_data( &rpc_in, p->endian);
+
 	prs_give_memory( &rpc_in, (char *)&p->in_data.current_in_pdu[0],
 					p->in_data.pdu_received_len, False);
 
 	/*
 	 * Unmarshall the header as this will tell us how much
 	 * data we need to read to get the complete pdu.
+	 * This also sets the endian flag in rpc_in.
 	 */
 
 	if(!smb_io_rpc_hdr("", &p->hdr, &rpc_in, 0)) {
@@ -318,16 +322,45 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	}
 
 	/*
-	 * If there is no data in the incoming buffer and it's a requst pdu then
-	 * ensure that the FIRST flag is set. If not then we have
-	 * a stream missmatch.
+	 * If there's not data in the incoming buffer and it's a
+	 * request PDU this should be the start of a new RPC.
 	 */
 
-	if((p->hdr.pkt_type == RPC_REQUEST) && (prs_offset(&p->in_data.data) == 0) && !(p->hdr.flags & RPC_FLG_FIRST)) {
-		DEBUG(0,("unmarshall_rpc_header: FIRST flag not set in first PDU !\n"));
-		set_incoming_fault(p);
-		prs_mem_free(&rpc_in);
-		return -1;
+	if((p->hdr.pkt_type == RPC_REQUEST) && (prs_offset(&p->in_data.data) == 0)) {
+
+		if (!(p->hdr.flags & RPC_FLG_FIRST)) {
+			/*
+			 * Ensure that the FIRST flag is set. If not then we have
+			 * a stream missmatch.
+			 */
+
+			DEBUG(0,("unmarshall_rpc_header: FIRST flag not set in first PDU !\n"));
+			set_incoming_fault(p);
+			prs_mem_free(&rpc_in);
+			return -1;
+		}
+
+		/*
+		 * If this is the first PDU then set the endianness
+		 * flag in the pipe. We will need this when parsing all
+		 * data in this RPC.
+		 */
+
+		p->endian = rpc_in.bigendian_data;
+
+	} else {
+
+		/*
+		 * If this is *NOT* the first PDU then check the endianness
+		 * flag in the pipe is the same as that in the PDU.
+		 */
+
+		if (p->endian != rpc_in.bigendian_data) {
+			DEBUG(0,("unmarshall_rpc_header: FIRST endianness flag different in next PDU !\n"));
+			set_incoming_fault(p);
+			prs_mem_free(&rpc_in);
+			return -1;
+		}
 	}
 
 	/*
@@ -529,7 +562,10 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 		return (ssize_t)data_len;
 	}
 
-	prs_init( &rpc_in, 0, 4, p->mem_ctx, UNMARSHALL);
+	prs_init( &rpc_in, 0, p->mem_ctx, UNMARSHALL);
+	/* Ensure we're using the corrent endianness. */
+	prs_set_endian_data( &rpc_in, p->endian);
+
 	prs_give_memory( &rpc_in, data_p, (uint32)data_len, False);
 
 	DEBUG(10,("process_complete_pdu: processing packet type %u\n",

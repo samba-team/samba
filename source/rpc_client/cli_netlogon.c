@@ -64,8 +64,8 @@ BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
   NET_Q_LOGON_CTRL2 q_l;
   BOOL ok = False;
 
-  prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-  prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+  prs_init(&buf , 1024, cli->mem_ctx, MARSHALL);
+  prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
   /* create and send a MSRPC command with api NET_LOGON_CTRL2 */
 
@@ -126,8 +126,8 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
   NET_Q_AUTH_2 q_a;
   BOOL ok = False;
 
-  prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-  prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+  prs_init(&buf , 1024, cli->mem_ctx, MARSHALL);
+  prs_init(&rbuf, 0,    cli->mem_ctx, UNMARSHALL);
 
   /* create and send a MSRPC command with api NET_AUTH2 */
 
@@ -216,8 +216,8 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
   NET_Q_REQ_CHAL q_c;
   BOOL valid_chal = False;
 
-  prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-  prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+  prs_init(&buf , 1024, cli->mem_ctx, MARSHALL);
+  prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
   /* create and send a MSRPC command with api NET_REQCHAL */
 
@@ -281,8 +281,8 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
 
   gen_next_creds( cli, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-  prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+  prs_init(&buf , 1024, cli->mem_ctx, MARSHALL);
+  prs_init(&rbuf, 0,    cli->mem_ctx, UNMARSHALL);
 
   /* create and send a MSRPC command with api NET_SRV_PWSET */
 
@@ -354,8 +354,8 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 
 	gen_next_creds( cli, &new_clnt_cred);
 
-	prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+	prs_init(&buf , 1024, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0,    cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api NET_SAMLOGON */
 
@@ -498,8 +498,8 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 
   gen_next_creds( cli, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-  prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+  prs_init(&buf , 1024, cli->mem_ctx, MARSHALL);
+  prs_init(&rbuf, 0,    cli->mem_ctx, UNMARSHALL);
 
   /* create and send a MSRPC command with api NET_SAMLOGOFF */
 

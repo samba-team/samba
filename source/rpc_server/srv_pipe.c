@@ -166,7 +166,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 * data.
 	 */
 
-	prs_init( &outgoing_pdu, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init( &outgoing_pdu, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/* Store the header in the data stream. */
@@ -583,7 +583,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_rpc, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init( &outgoing_rpc, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 
@@ -642,7 +642,7 @@ BOOL setup_fault_pdu(pipes_struct *p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_pdu, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init( &outgoing_pdu, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
@@ -859,7 +859,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_rpc, 0, 4, p->mem_ctx, MARSHALL);
+	prs_init( &outgoing_rpc, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
@@ -867,13 +867,13 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * auth footers.
 	 */
 
-	if(!prs_init(&out_hdr_ba, 1024, 4, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&out_hdr_ba, 1024, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("api_pipe_bind_req: malloc out_hdr_ba failed.\n"));
 		prs_mem_free(&outgoing_rpc);
 		return False;
 	}
 
-	if(!prs_init(&out_auth, 1024, 4, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&out_auth, 1024, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("pi_pipe_bind_req: malloc out_auth failed.\n"));
 		prs_mem_free(&outgoing_rpc);
 		prs_mem_free(&out_hdr_ba);

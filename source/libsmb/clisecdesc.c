@@ -63,7 +63,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 		goto cleanup;
 	}
 
-	prs_init(&pd, rdata_count, 4, mem_ctx, UNMARSHALL);
+	prs_init(&pd, rdata_count, mem_ctx, UNMARSHALL);
 	prs_append_data(&pd, rdata, rdata_count);
 	pd.data_offset = 0;
 
@@ -102,7 +102,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 		goto cleanup;
 	}
 
-	prs_init(&pd, 0, 4, mem_ctx, MARSHALL);
+	prs_init(&pd, 0, mem_ctx, MARSHALL);
 	prs_give_memory(&pd, NULL, 0, True);
 
 	if (!sec_io_desc("sd data", &sd, &pd, 1)) {

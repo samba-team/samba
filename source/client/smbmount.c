@@ -761,7 +761,7 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "scope")) {
 				pstrcpy(global_scope,opteq+1);
 			} else {
-				snprintf(p, sizeof(pstring) - (p - options), "%s=%s,", opts, opteq+1);
+				slprintf(p, sizeof(pstring) - (p - options) - 1, "%s=%s,", opts, opteq+1);
 				p += strlen(p);
 			}
 		} else {

@@ -86,8 +86,8 @@ BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_OPEN_HKLM */
 
@@ -147,8 +147,8 @@ BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_OPEN_HKU */
 
@@ -209,8 +209,8 @@ BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd)
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_FLUSH_KEY */
 
@@ -271,8 +271,8 @@ BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_QUERY_KEY */
 
@@ -339,8 +339,8 @@ BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk)
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_UNKNOWN_1A */
 
@@ -399,8 +399,8 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_INFO */
 
@@ -459,8 +459,8 @@ BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd, SEC_DESC_BUF *se
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_SET_KEY_SEC */
 
@@ -515,8 +515,8 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd, uint32 *sec_buf_
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_GET_KEY_SEC */
 
@@ -581,8 +581,8 @@ BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name)
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_DELETE_VALUE */
 
@@ -638,8 +638,8 @@ BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name)
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_DELETE_KEY */
 
@@ -720,8 +720,8 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 		return False;
 	}
 
-	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	init_reg_q_create_key(&q_o, hnd, key_name, key_class, sam_access, sec_buf);
 
@@ -778,8 +778,8 @@ BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_ENUM_KEY */
 
@@ -841,8 +841,8 @@ BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_CREATE_VALUE */
 
@@ -901,8 +901,8 @@ BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_ENUM_VALUE */
 
@@ -964,8 +964,8 @@ BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api REG_OPEN_ENTRY */
 
@@ -1025,8 +1025,8 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	/* create and send a MSRPC command with api REG_CLOSE */
 
-	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("REG Close\n"));
 
