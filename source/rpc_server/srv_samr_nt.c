@@ -75,7 +75,7 @@ static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
  level of access for further checks.
 ********************************************************************/
 
-NTSTATUS access_check_samr_object(SEC_DESC *psd, NT_USER_TOKEN *nt_user_token, uint32 des_access, 
+static NTSTATUS access_check_samr_object(SEC_DESC *psd, NT_USER_TOKEN *nt_user_token, uint32 des_access, 
 				  uint32 *acc_granted, const char *debug) 
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
@@ -100,7 +100,7 @@ NTSTATUS access_check_samr_object(SEC_DESC *psd, NT_USER_TOKEN *nt_user_token, u
  Checks if access to a function can be granted
 ********************************************************************/
 
-NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_required, const char *debug)
+static NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_required, const char *debug)
 {
 	DEBUG(5,("%s: access check ((granted: %#010x;  required: %#010x)\n",
 			debug, acc_granted, acc_required));
