@@ -23,49 +23,74 @@
 
 #include "winbindd.h"
 
+extern pstring global_myname;
+
+/* Some routines to fetch the trust account password from a HEAD
+   version of Samba.  Yuck.  )-: */
+
+/************************************************************************
+form a key for fetching a domain trust password from
+************************************************************************/
+static char *trust_keystr(char *domain)
+{
+	static fstring keystr;
+
+	snprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, 
+		 domain);
+
+	return keystr;
+}
+
+/************************************************************************
+ Routine to get the trust account password for a domain
+************************************************************************/
+BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+					time_t *pass_last_set_time)
+{
+	struct machine_acct_pass *pass;
+	size_t size;
+
+	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
+	    size != sizeof(*pass)) return False;
+
+	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
+	memcpy(ret_pwd, pass->hash, 16);
+	free(pass);
+	return True;
+}
+
+/* Check the machine account password is valid */
+
 enum winbindd_result winbindd_check_machine_acct(
 	struct winbindd_cli_state *state)
 {
-	uchar trust_passwd[16], ntpw[16], lmpw[16];
-	extern pstring global_myname;
-	NET_USER_INFO_3 info3;
-	fstring server;
-	uint32 status;
+	uchar trust_passwd[16];
+	uint16 validation_level;
+	fstring trust_account;
+	int result = 0;
 
 	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
 
 	/* Get trust account password */
 
-	if (!_get_trust_account_password(lp_workgroup(), trust_passwd,
-					 NULL)) {
-		return WINBINDD_ERROR;
+	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
+		result = NT_STATUS_INTERNAL_ERROR;
+		goto done;
 	}
 
-	/* Check password of non-existent user */
+	slprintf(trust_account, sizeof(trust_account) - 1, "%s$",
+		 global_myname);
 
-	nt_lm_owf_gen("__dummy__", ntpw, lmpw);
-	
-	snprintf(server, sizeof(server), "\\\\%s", server_state.controller);
+        result = cli_nt_setup_creds(server_state.controller, 
+				    lp_workgroup(), global_myname,
+				    trust_account, trust_passwd, 
+				    SEC_CHAN_WKSTA, &validation_level);
 
-	ZERO_STRUCT(info3);
+	/* Pass back result code - zero for success, other values for
+	   specific failures. */
 
-	status = domain_client_validate_backend(server, 
-					        "__dummy__", lp_workgroup(),
-						global_myname, SEC_CHAN_WKSTA,
-						trust_passwd,
-						NULL,
-						lmpw, sizeof(lmpw),
-						ntpw, sizeof(ntpw), &info3);
-
-	/* Secret is good if status code is NT_STATUS_NO_SUCH_USER.  
-	   Pass back any other error code for clients to have fun with. */
-
-	if (status == NT_STATUS_NO_SUCH_USER) {
-		state->response.data.num_entries = 0;
-	} else {
-		state->response.data.num_entries = status;
-	}
-
+ done:
+	state->response.data.num_entries = result;
 	return WINBINDD_OK;
 }
 
