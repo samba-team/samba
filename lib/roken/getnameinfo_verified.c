@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -46,14 +46,24 @@ getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
 {
     int ret;
     struct addrinfo *ai, *a;
+    char servbuf[NI_MAXSERV];
+    struct addrinfo hints;
 
     if (host == NULL)
 	return EAI_NONAME;
 
+    if (serv == NULL) {
+	serv = servbuf;
+	servlen = sizeof(servbuf);
+    }
+
     ret = getnameinfo (sa, salen, host, hostlen, serv, servlen, flags);
     if (ret)
 	return ret;
-    ret = getaddrinfo (host, serv, NULL, &ai);
+
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    ret = getaddrinfo (host, serv, &hints, &ai);
     if (ret)
 	return ret;
     for (a = ai; a != NULL; a = a->ai_next) {
