@@ -45,17 +45,24 @@ Get the next challenge value - no repeats.
 ********************************************************************/
 void generate_next_challenge(char *challenge)
 {
-  static int counter = 0;
-  struct timeval tval;
-  int v1,v2;
-  GetTimeOfDay(&tval);
-  v1 = (counter++) + getpid() + tval.tv_sec;
-  v2 = (counter++) * getpid() + tval.tv_usec;
-  SIVAL(challenge,0,v1);
-  SIVAL(challenge,4,v2);
-  E1((uchar *)challenge,(uchar *)"SAMBA",(uchar *)saved_challenge);
-  memcpy(challenge,saved_challenge,8);
-  challenge_sent = True;
+	unsigned char buf[16];
+	static int counter = 0;
+	struct timeval tval;
+	int v1,v2;
+
+	/* get a sort-of random number */
+	GetTimeOfDay(&tval);
+	v1 = (counter++) + getpid() + tval.tv_sec;
+	v2 = (counter++) * getpid() + tval.tv_usec;
+	SIVAL(challenge,0,v1);
+	SIVAL(challenge,4,v2);
+
+	/* mash it up with md4 */
+	mdfour(buf, challenge, 8);
+
+	memcpy(saved_challenge, buf, 8);
+	memcpy(challenge,buf,8);
+	challenge_sent = True;
 }
 
 /*******************************************************************

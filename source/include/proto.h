@@ -786,13 +786,11 @@ BOOL smb_shm_get_usage(int *bytes_free,
 
 /*The following definitions come from  smbdes.c  */
 
-void smbdes(unsigned char *out, unsigned char *in, unsigned char *key);
+void E_P16(unsigned char *p14,unsigned char *p16);
+void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
 
 /*The following definitions come from  smbencrypt.c  */
 
-void E1(uchar *k, uchar *d, uchar *out);
-void E_P16(uchar *p14,uchar *p16);
-void E_P24(uchar *p21, uchar *c8, uchar *p24);
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);

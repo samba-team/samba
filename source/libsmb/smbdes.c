@@ -1,7 +1,10 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
-   a implementation of DES designed for use in the SMB authentication protocol
+
+   a partial implementation of DES designed for use in the 
+   SMB authentication protocol
+
    Copyright (C) Andrew Tridgell 1997
    
    This program is free software; you can redistribute it and/or modify
@@ -20,8 +23,29 @@
 */
 
 
-/* NOTE: This code makes no attempt to be fast! In fact, it is a very
-   slow DES implementation */
+/* NOTES: 
+
+   This code makes no attempt to be fast! In fact, it is a very
+   slow implementation 
+
+   This code is NOT a complete DES implementation. It implements only
+   the minimum necessary for SMB authentication, as used by all SMB
+   products (including every copy of Microsoft Windows95 ever sold)
+
+   In particular, it can only do a unchained forward DES pass. This
+   means it is not possible to use this code for encryption/decryption
+   of data, instead it is only useful as a "hash" algorithm.
+
+   There is no entry point into this code that allows normal DES operation.
+
+   I believe this means that this code does not come under ITAR
+   regulations but this is NOT a legal opinion. If you are concerned
+   about the applicability of ITAR regulations to this code then you
+   should confirm it for yourself (and maybe let me know if you come
+   up with a different answer to the one above)
+*/
+
+
 
 static int perm1[56] = {57, 49, 41, 33, 25, 17,  9,
 			 1, 58, 50, 42, 34, 26, 18,
@@ -154,7 +178,7 @@ static void xor(char *out, char *in1, char *in2, int n)
 		out[i] = in1[i] ^ in2[i];
 }
 
-static void dodes(char *out, char *in, char *key)
+static void dohash(char *out, char *in, char *key)
 {
 	int i, j, k;
 	char pk1[56];
@@ -251,8 +275,7 @@ static void str_to_key(unsigned char *str,unsigned char *key)
 }
 
 
-/* this is the entry point to the DES routine. The key is 56 bits (no parity) */
-void smbdes(unsigned char *out, unsigned char *in, unsigned char *key)
+static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key)
 {
 	int i;
 	char outb[64];
@@ -268,7 +291,7 @@ void smbdes(unsigned char *out, unsigned char *in, unsigned char *key)
 		outb[i] = 0;
 	}
 
-	dodes(outb, inb, keyb);
+	dohash(outb, inb, keyb);
 
 	for (i=0;i<8;i++) {
 		out[i] = 0;
@@ -279,4 +302,19 @@ void smbdes(unsigned char *out, unsigned char *in, unsigned char *key)
 			out[i/8] |= (1<<(7-(i%8)));
 	}
 }
+
+void E_P16(unsigned char *p14,unsigned char *p16)
+{
+	unsigned char sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
+	smbhash(p16, sp8, p14);
+	smbhash(p16+8, sp8, p14+7);
+}
+
+void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24)
+{
+	smbhash(p24, c8, p21);
+	smbhash(p24+8, c8, p21+7);
+	smbhash(p24+16, c8, p21+14);
+}
+
 

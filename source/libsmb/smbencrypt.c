@@ -26,29 +26,6 @@ extern int DEBUGLEVEL;
 
 #include "byteorder.h"
 
-void E1(uchar *k, uchar *d, uchar *out)
-{
-	smbdes(out, d, k);
-}
- 
-void E_P16(uchar *p14,uchar *p16)
-{
-	/* the following constant makes us compatible with other
-	   implementations. Note that publishing this constant does not reduce the
-	   security of the encryption mechanism */
-	uchar sp8[] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
-	E1(p14, sp8, p16);
-	E1(p14+7, sp8, p16+8);
-}
-
-void E_P24(uchar *p21, uchar *c8, uchar *p24)
-{
-	E1(p21, c8, p24);
-	E1(p21+7, c8, p24+8);
-	E1(p21+14, c8, p24+16);
-}
-
-
 /*
    This implements the X/Open SMB password encryption
    It takes a password, a 8 byte "crypt key" and puts 24 bytes of 
