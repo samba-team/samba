@@ -399,7 +399,7 @@ krb5_config_vget_bool (krb5_config_section *c,
 		       va_list args)
 {
     const char *str;
-    str = krb5_config_vget_string (c, ap);
+    str = krb5_config_vget_string (c, args);
     if(str == NULL)
 	return FALSE;
     if(strcmp(str, "yes") == 0 || strcmp(str, "true") == 0 || atoi(str))
