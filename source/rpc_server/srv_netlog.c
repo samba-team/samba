@@ -737,67 +737,42 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 				struct dcinfo *dc)
 {
 	uint32 status = 0x0;
-	int i;
 
-	char pwd[32];
 	char nt_pwd[16];
 	char lm_pwd[16];
 	unsigned char key[16];
-	unsigned char keyf0[16];
 
 	memset(key, 0, 16);
-	memset(keyf0, 0, 16);
-
 	memcpy(key, dc->sess_key, 8);
-
-	for (i = 0; i < 8; i++)
-	{
-		keyf0[i+8] = key[i];
-	}
 
 	memcpy(lm_pwd, id1->lm_owf.data, 16);
 	memcpy(nt_pwd, id1->nt_owf.data, 16);
 
-	memcpy(pwd, id1->lm_owf.data, 16);
-	memcpy(pwd+16, id1->nt_owf.data, 16);
+	dump_data_pw("key:", key, 16);
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("key:"));
-	dump_data(100, key, 16);
-
-	DEBUG(100,("keyf0:"));
-	dump_data(100, keyf0, 16);
-
-	DEBUG(100,("lm owf password:"));
-	dump_data(100, lm_pwd, 16);
-
-	DEBUG(100,("nt owf password:"));
-	dump_data(100, nt_pwd, 16);
-#endif
+	dump_data_pw("lm owf password:", lm_pwd, 16);
+	dump_data_pw("nt owf password:", nt_pwd, 16);
 
 	SamOEMhash((uchar *)lm_pwd, key, 0);
 	SamOEMhash((uchar *)nt_pwd, key, 0);
 
-	SamOEMhash((uchar *)pwd, key, 4);
+	dump_data_pw("decrypt of lm owf password:", lm_pwd, 16);
+	dump_data_pw("decrypt of nt owf password:", nt_pwd, 16);
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("decrypt of lm owf password:"));
-	dump_data(100, lm_pwd, 16);
-
-	DEBUG(100,("decrypt of nt owf password:"));
-	dump_data(100, nt_pwd, 16);
-
-	DEBUG(100,("decrypt of cat password:"));
-	dump_data(100, pwd, 32);
-#endif
-
-	if (smb_pass->smb_nt_passwd == NULL)
+	if (smb_pass->smb_passwd == NULL)
 	{
-		DEBUG(5,("warning: NETLOGON user %s only has an LM password\n",
+		DEBUG(5,("warning: NETLOGON user %s has no LM password\n",
 		          smb_pass->unix_name));
 	}
 
-	if (memcmp(smb_pass->smb_passwd   , lm_pwd, 16) != 0 ||
+	if (smb_pass->smb_nt_passwd == NULL)
+	{
+		DEBUG(5,("warning: NETLOGON user %s has no NT password\n",
+		          smb_pass->unix_name));
+	}
+
+	if (smb_pass->smb_passwd == NULL ||
+	    memcmp(smb_pass->smb_passwd   , lm_pwd, 16) != 0 ||
 	    smb_pass->smb_nt_passwd == NULL ||
 	    memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0)
 	{
