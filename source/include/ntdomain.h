@@ -30,6 +30,7 @@
 
 /* dce/rpc authentication support */
 #include "rpc_ntlmssp.h"
+#include "rpc_netsec.h"
 
 /* miscellaneous structures / defines */
 #include "rpc_misc.h"

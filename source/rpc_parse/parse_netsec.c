@@ -42,12 +42,7 @@ BOOL make_rpc_auth_netsec_neg(RPC_AUTH_NETSEC_NEG *neg,
 				fstring domain,
 				fstring myname)
 {
-	int len_myname = strlen(myname);
-	int len_domain = strlen(domain);
-
 	if (neg == NULL) return False;
-
-	neg->neg_flgs = neg_flgs ; /* 0x00b2b3 */
 
 	fstrcpy(neg->domain, domain);
 	fstrcpy(neg->myname, myname);
@@ -63,13 +58,10 @@ reads or writes an RPC_AUTH_NETSEC_NEG structure.
 ********************************************************************/
 BOOL smb_io_rpc_auth_netsec_neg(char *desc, RPC_AUTH_NETSEC_NEG *neg, prs_struct *ps, int depth)
 {
-	int start_offset = ps->offset;
 	if (neg == NULL) return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_netsec_neg");
 	depth++;
-
-	prs_uint32("neg_flgs ", ps, depth, &(neg->neg_flgs));
 
 	prs_string("domain", ps, depth, neg->domain, 0, sizeof(neg->domain)); 
 	prs_string("myname", ps, depth, neg->myname, 0, sizeof(neg->myname)); 
@@ -110,8 +102,8 @@ BOOL smb_io_rpc_auth_netsec_resp(char *desc, RPC_AUTH_NETSEC_RESP *rsp, prs_stru
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_netsec_resp");
 	depth++;
 
-	prs_uint32("pad  ", ps, depth, &(chk->pad  )); 
-	prs_uint32("flags", ps, depth, &(chk->flags)); 
+	prs_uint32("pad  ", ps, depth, &rsp->pad  ); 
+	prs_uint32("flags", ps, depth, &rsp->flags); 
 
 	return True;
 }
