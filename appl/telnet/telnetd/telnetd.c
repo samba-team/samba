@@ -153,14 +153,8 @@ char valid_opts[] = {
 #ifdef	AUTHENTICATION
 	'a', ':', 'X', ':',
 #endif
-#ifdef BFTPDAEMON
-	'B',
-#endif
 #ifdef DIAGNOSTICS
 	'D', ':',
-#endif
-#if	defined(CRAY) && defined(NEWINIT)
-	'I', ':',
 #endif
 #ifdef	LINEMODE
 	'l',
@@ -241,12 +235,6 @@ int main(int argc, char **argv)
 			break;
 #endif	/* AUTHENTICATION */
 
-#ifdef BFTPDAEMON
-		case 'B':
-			bftpd++;
-			break;
-#endif /* BFTPDAEMON */
-
 		case 'd':
 			if (strcmp(optarg, "ebug") == 0) {
 				debug++;
@@ -282,15 +270,6 @@ int main(int argc, char **argv)
 		case 'h':
 			hostinfo = 0;
 			break;
-
-#if	defined(CRAY) && defined(NEWINIT)
-		case 'I':
-		    {
-			extern char *gen_id;
-			gen_id = optarg;
-			break;
-		    }
-#endif	/* defined(CRAY) && defined(NEWINIT) */
 
 #ifdef	LINEMODE
 		case 'l':
@@ -556,9 +535,6 @@ usage()
 #ifdef	AUTHENTICATION
 	fprintf(stderr, " [-a (debug|other|user|valid|off|none)]\n\t");
 #endif
-#ifdef BFTPDAEMON
-	fprintf(stderr, " [-B]");
-#endif
 	fprintf(stderr, " [-debug]");
 #ifdef DIAGNOSTICS
 	fprintf(stderr, " [-D (options|report|exercise|netdata|ptydata)]\n\t");
@@ -567,9 +543,6 @@ usage()
 	fprintf(stderr, " [-edebug]");
 #endif
 	fprintf(stderr, " [-h]");
-#if	defined(CRAY) && defined(NEWINIT)
-	fprintf(stderr, " [-Iinitid]");
-#endif
 #if	defined(LINEMODE) && defined(KLUDGELINEMODE)
 	fprintf(stderr, " [-k]");
 #endif
@@ -937,21 +910,6 @@ void doit(struct sockaddr_in *who)
 	/*NOTREACHED*/
 }  /* end of doit */
 
-#if	defined(CRAY2) && defined(UNICOS5) && defined(UNICOS50)
-	int
-Xterm_output(ibufp, obuf, icountp, ocount)
-	char **ibufp, *obuf;
-	int *icountp, ocount;
-{
-	int ret;
-	ret = term_output(*ibufp, obuf, *icountp, ocount);
-	*ibufp += *icountp;
-	*icountp = 0;
-	return(ret);
-}
-#define	term_output	Xterm_output
-#endif	/* defined(CRAY2) && defined(UNICOS5) && defined(UNICOS50) */
-
 /*
  * Main loop.  Select from pty and network, and
  * hand data to telnet receiver finite state machine.
@@ -1075,12 +1033,13 @@ telnet(f, p, host)
 	if (my_state_is_wont(TELOPT_ECHO))
 		send_will(TELOPT_ECHO, 1);
 
-#ifndef	STREAMSPTY
-	/*
-	 * Turn on packet mode
-	 */
-	(void) ioctl(p, TIOCPKT, (char *)&on);
+#ifdef	STREAMSPTY
+	if (!really_stream)
 #endif
+		/*
+		 * Turn on packet mode
+		 */
+		(void) ioctl(p, TIOCPKT, (char *)&on);
 
 #if	defined(LINEMODE) && defined(KLUDGELINEMODE)
 	/*
@@ -1101,9 +1060,6 @@ telnet(f, p, host)
 
 	(void) ioctl(f, FIONBIO, (char *)&on);
 	(void) ioctl(p, FIONBIO, (char *)&on);
-#if	defined(CRAY2) && defined(UNICOS5)
-	init_termdriver(f, p, interrupt, sendbrk);
-#endif
 
 #if	defined(SO_OOBINLINE)
 	(void) setsockopt(net, SOL_SOCKET, SO_OOBINLINE,
@@ -1123,21 +1079,6 @@ telnet(f, p, host)
 
 	(void) signal(SIGCHLD, cleanup);
 
-#if	defined(CRAY2) && defined(UNICOS5)
-	/*
-	 * Cray-2 will send a signal when pty modes are changed by slave
-	 * side.  Set up signal handler now.
-	 */
-	if ((int)signal(SIGUSR1, termstat) < 0)
-		perror("signal");
-	else if (ioctl(p, TCSIGME, (char *)SIGUSR1) < 0)
-		perror("ioctl:TCSIGME");
-	/*
-	 * Make processing loop check terminal characteristics early on.
-	 */
-	termstat();
-#endif
-
 #ifdef  TIOCNOTTY
 	{
 		register int t;
@@ -1149,11 +1090,6 @@ telnet(f, p, host)
 	}
 #endif
 
-#if	defined(CRAY) && defined(NEWINIT) && defined(TIOCSCTTY)
-	(void) setsid();
-	ioctl(p, TIOCSCTTY, 0);
-#endif
-
 	/*
 	 * Show banner that getty never gave.
 	 *
@@ -1162,10 +1098,8 @@ telnet(f, p, host)
 	 * other pty --> client data.
 	 */
 
-#if	!defined(CRAY) || !defined(NEWINIT)
 	if (getenv("USER"))
 		hostinfo = 0;
-#endif
 
 	if (getent(defent, "default") == 1) {
 		char *getstr();
@@ -1214,10 +1148,6 @@ telnet(f, p, host)
 		if (ncc < 0 && pcc < 0)
 			break;
 
-#if	defined(CRAY2) && defined(UNICOS5)
-		if (needtermstat)
-			_termstat();
-#endif	/* defined(CRAY2) && defined(UNICOS5) */
 		FD_ZERO(&ibits);
 		FD_ZERO(&obits);
 		FD_ZERO(&xbits);
@@ -1335,11 +1265,13 @@ telnet(f, p, host)
 		 * Something to read from the pty...
 		 */
 		if (FD_ISSET(p, &ibits)) {
-#ifndef	STREAMSPTY
-			pcc = read(p, ptyibuf, BUFSIZ);
-#else
-			pcc = readstream(p, ptyibuf, BUFSIZ);
+#ifdef STREAMSPTY
+			if (really_stream)
+				pcc = readstream(p, ptyibuf, BUFSIZ);
+			else
 #endif
+				pcc = read(p, ptyibuf, BUFSIZ);
+
 			/*
 			 * On some systems, if we try to read something
 			 * off the master side before the slave side is
@@ -1354,7 +1286,6 @@ telnet(f, p, host)
 			} else {
 				if (pcc <= 0)
 					break;
-#if	!defined(CRAY2) || !defined(UNICOS5)
 #ifdef	LINEMODE
 				/*
 				 * If ioctl from pty, pass it through net
@@ -1403,16 +1334,6 @@ telnet(f, p, host)
 				}
 				pcc--;
 				ptyip = ptyibuf+1;
-#else	/* defined(CRAY2) && defined(UNICOS5) */
-				if (!uselinemode) {
-					unpcc = pcc;
-					unptyip = ptyibuf;
-					pcc = term_output(&unptyip, ptyibuf2,
-								&unpcc, BUFSIZ);
-					ptyip = ptyibuf2;
-				} else
-					ptyip = ptyibuf;
-#endif	/* defined(CRAY2) && defined(UNICOS5) */
 			}
 		}
 
@@ -1422,11 +1343,6 @@ telnet(f, p, host)
 			c = *ptyip++ & 0377, pcc--;
 			if (c == IAC)
 				*nfrontp++ = c;
-#if	defined(CRAY2) && defined(UNICOS5)
-			else if (c == '\n' &&
-				     my_state_is_wont(TELOPT_BINARY) && newmap)
-				*nfrontp++ = '\r';
-#endif	/* defined(CRAY2) && defined(UNICOS5) */
 			*nfrontp++ = c;
 			if ((c == '\r') && (my_state_is_wont(TELOPT_BINARY))) {
 				if (pcc > 0 && ((*ptyip & 0377) == '\n')) {
@@ -1436,17 +1352,6 @@ telnet(f, p, host)
 					*nfrontp++ = '\0';
 			}
 		}
-#if	defined(CRAY2) && defined(UNICOS5)
-		/*
-		 * If chars were left over from the terminal driver,
-		 * note their existence.
-		 */
-		if (!uselinemode && unpcc) {
-			pcc = unpcc;
-			unpcc = 0;
-			ptyip = unptyip;
-		}
-#endif	/* defined(CRAY2) && defined(UNICOS5) */
 
 		if (FD_ISSET(f, &obits) && (nfrontp - nbackp) > 0)
 			netflush();
@@ -1569,6 +1474,7 @@ interrupt()
 
 #if defined(STREAMSPTY) && defined(TIOCSIGNAL)
 	/* Streams PTY style ioctl to post a signal */
+	if (really_stream)
 	{
 		int sig = SIGINT;
 		(void) ioctl(ourpty, TIOCSIGNAL, &sig);
