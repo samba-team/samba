@@ -59,9 +59,6 @@
 #undef HAVE_ERRNO_DECL
 #undef HAVE_LONGLONG
 #undef HAVE_OFF64_T
-#undef SIZEOF_OFF_T
-#undef HAVE_INO64_T
-#undef SIZEOF_INO_T
 #undef HAVE_REMSH
 #undef HAVE_UNSIGNED_CHAR
 #undef HAVE_UTIMBUF
@@ -83,7 +80,6 @@
 #undef HAVE_SHARED_MMAP
 #undef HAVE_SYSV_IPC
 #undef HAVE_FCNTL_LOCK
-#undef HAVE_STRUCT_FLOCK64
 #undef HAVE_FTRUNCATE_EXTEND
 #undef HAVE_TRAPDOOR_UID
 #undef HAVE_ROOT
@@ -116,6 +112,10 @@
 #undef HAVE_SETRESUID_DECL
 #undef HAVE_SETRESUID
 #undef WITH_NETATALK
+#undef HAVE_INO64_T
+#undef HAVE_STRUCT_FLOCK64
+#undef SIZEOF_INO_T
+#undef SIZEOF_OFF_T
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -156,23 +156,14 @@
 /* Define if you have the fstat function.  */
 #undef HAVE_FSTAT
 
+/* Define if you have the fstat64 function.  */
+#undef HAVE_FSTAT64
+
 /* Define if you have the fsync function.  */
 #undef HAVE_FSYNC
 
 /* Define if you have the ftruncate function.  */
 #undef HAVE_FTRUNCATE
-
-/* Define if you have the stat64 function.  */
-#undef HAVE_STAT64
-
-/* Define if you have the fstat64 function.  */
-#undef HAVE_FSTAT64
-
-/* Define if you have the lstat64 function.  */
-#undef HAVE_LSTAT64
-
-/* Define if you have the lseek64 function.  */
-#undef HAVE_LSEEK64
 
 /* Define if you have the ftruncate64 function.  */
 #undef HAVE_FTRUNCATE64
@@ -209,6 +200,12 @@
 
 /* Define if you have the innetgr function.  */
 #undef HAVE_INNETGR
+
+/* Define if you have the lseek64 function.  */
+#undef HAVE_LSEEK64
+
+/* Define if you have the lstat64 function.  */
+#undef HAVE_LSTAT64
 
 /* Define if you have the memmove function.  */
 #undef HAVE_MEMMOVE
@@ -260,6 +257,9 @@
 
 /* Define if you have the sigprocmask function.  */
 #undef HAVE_SIGPROCMASK
+
+/* Define if you have the stat64 function.  */
+#undef HAVE_STAT64
 
 /* Define if you have the strchr function.  */
 #undef HAVE_STRCHR
@@ -324,17 +324,17 @@
 /* Define if you have the <poll.h> header file.  */
 #undef HAVE_POLL_H
 
-/* Define if you have the <rpc/types.h> header file.  */
-#undef HAVE_RPC_TYPES_H
-
-/* Define if you have the <rpc/xdr.h> header file.  */
-#undef HAVE_RPC_XDR_H
-
 /* Define if you have the <rpc/auth.h> header file.  */
 #undef HAVE_RPC_AUTH_H
 
 /* Define if you have the <rpc/clnt.h> header file.  */
 #undef HAVE_RPC_CLNT_H
+
+/* Define if you have the <rpc/types.h> header file.  */
+#undef HAVE_RPC_TYPES_H
+
+/* Define if you have the <rpc/xdr.h> header file.  */
+#undef HAVE_RPC_XDR_H
 
 /* Define if you have the <rpcsvc/yp_prot.h> header file.  */
 #undef HAVE_RPCSVC_YP_PROT_H

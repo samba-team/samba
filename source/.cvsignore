@@ -6,6 +6,7 @@ config.h
 config.log
 config.status
 cvs.log
+d2
 make_printerdef
 make_smbcodepage
 makefile
@@ -13,6 +14,9 @@ makefile.sunos5
 memcheck.awk
 nmbd
 nmblookup
+nmfns.txt
+nmlist.txt
+nmused.txt
 notes.txt
 smbclient
 smbd
@@ -23,5 +27,7 @@ smbtorture
 swat
 testparm
 testprns
+text.txt
+unused.txt
 wsmbconf
 wsmbstatus
