@@ -1,3 +1,9 @@
+Mon Apr  5 16:13:08 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* test-package.m4: compile and link, rather than looking for
+ 	files; also export more information, so it's possible to add rpath
+ 	information
+
 Tue Mar 30 13:49:54 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am.common: CFLAGS -> AM_CFLAGS
