@@ -498,6 +498,7 @@ static int smb_create_user(char *unix_user)
   int ret;
 
   pstrcpy(add_script, lp_adduser_script());
+  if (! *add_script) return -1;
   pstring_sub(add_script, "%u", unix_user);
   ret = smbrun(add_script,NULL,False);
   DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
@@ -514,6 +515,7 @@ static int smb_delete_user(char *unix_user)
   int ret;
 
   pstrcpy(del_script, lp_deluser_script());
+  if (! *del_script) return -1;
   pstring_sub(del_script, "%u", unix_user);
   ret = smbrun(del_script,NULL,False);
   DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
@@ -569,7 +571,7 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
      * level security as we never know if it was a failure
      * due to a bad password, or the user really doesn't exist.
      */
-    if(lp_adduser_script() && !Get_Pwnam(unix_user,True)) {
+    if(lp_adduser_script() && !smb_getpwnam(unix_user,domain, True)) {
       smb_create_user(unix_user);
     }
   }
@@ -605,7 +607,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
      * If the admin wants us to try and create a UNIX
      * user on the fly, do so.
      */
-    if(user_exists && lp_adduser_script() && !Get_Pwnam(unix_user,True)) {
+    if(user_exists && lp_adduser_script() && !smb_getpwnam(unix_user,domain,True)) {
       smb_create_user(unix_user);
     }
   } else {
@@ -615,7 +617,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
      * wants us to try and delete that UNIX user on the fly,
      * do so.
      */
-    if(!user_exists && lp_deluser_script() && Get_Pwnam(unix_user,True)) {
+    if(!user_exists && lp_deluser_script() && smb_getpwnam(unix_user,domain,True)) {
       smb_delete_user(unix_user);
     }
   }
@@ -860,7 +862,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /*
    * Do any UNIX username case mangling.
    */
-  (void)Get_Pwnam( user, True);
+  smb_getpwnam(user, domain, True);
 
   add_session_user(user);
 
@@ -917,7 +919,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
         if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
         {
-          if (Get_Pwnam(user,True))
+          if (smb_getpwnam(user,domain,True))
           {
             DEBUG(1,("Rejecting user '%s': bad password\n", user));
             return bad_password_error(inbuf,outbuf);
@@ -930,7 +932,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
          */
       }
 
-      if (*smb_apasswd || !Get_Pwnam(user,True))
+      if (*smb_apasswd || !smb_getpwnam(user,domain,True))
          pstrcpy(user,lp_guestaccount(-1));
       DEBUG(3,("Registered username %s for guest access\n",user));
       guest = True;
@@ -938,7 +940,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   }
 
   if (!smb_getpwnam(user,domain,True)) {
-    DEBUG(3,("No such user %s - using guest account\n",user));
+    DEBUG(3,("No such user %s [%s] - using guest account\n",user, domain));
     pstrcpy(user,lp_guestaccount(-1));
     guest = True;
   }

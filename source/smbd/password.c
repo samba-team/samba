@@ -491,7 +491,7 @@ BOOL pass_check_smb(char *user, char *domain,
 	}
 	else
 	{
-		pass = Get_Pwnam(user,True);
+		pass = smb_getpwnam(user,domain,True);
 	}
 
 	if (pass == NULL)
