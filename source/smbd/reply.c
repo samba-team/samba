@@ -1472,6 +1472,10 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	files_struct *fsp;
 	START_PROFILE(SMBreadbraw);
 
+	if (srv_signing_active()) {
+		exit_server("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
+	}
+
 	/*
 	 * Special check if an oplock break has been issued
 	 * and the readraw request croses on the wire, we must
@@ -1869,6 +1873,10 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	int outsize = 0;
 	START_PROFILE(SMBwritebraw);
+
+	if (srv_signing_active()) {
+		exit_server("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
+	}
 
 	CHECK_FSP(fsp,conn);
 	CHECK_WRITE(fsp);
