@@ -2313,7 +2313,7 @@ void spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_s
 			
 			for (i=0; i<r_u->numofdrivers; i++)
 			{
-				bufsize_required += spoolss_size_printer_driver_info_2(&(driver_info_2[2]));
+				bufsize_required += spoolss_size_printer_driver_info_2(&(driver_info_2[i]));
 			}
 			break;
 		}
