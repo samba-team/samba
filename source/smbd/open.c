@@ -626,6 +626,12 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 				DEBUG(5,("open_mode_check: oplock_request = %d, breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsigned int)dev, (double)inode));
 				
+				/* Ensure the reply for the open uses the correct sequence number. */
+				/* This isn't a real deferred packet as it's response will also increment
+				 * the sequence.
+				 */
+				srv_defer_sign_response(get_current_mid(), False);
+
 				/* Oplock break - unlock to request it. */
 				unlock_share_entry(conn, dev, inode);
 				

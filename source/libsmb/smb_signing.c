@@ -84,6 +84,22 @@ static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
 }
 
 /***********************************************************
+ A reply is pending if there is a non-deferred packet on the queue.
+************************************************************/
+
+static BOOL is_reply_pending(struct outstanding_packet_lookup *list)
+{
+	for (; list; list = list->next) {
+		if (!list->deferred_packet) {
+			DEBUG(10,("is_reply_pending: True.\n"));
+			return True;
+		}
+	}
+	DEBUG(10,("is_reply_pending: False.\n"));
+	return False;
+}
+
+/***********************************************************
  SMB signing - Common code before we set a new signing implementation
 ************************************************************/
 
@@ -654,6 +670,22 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 }
 
 /***********************************************************
+ Is an incoming packet an oplock break reply ?
+************************************************************/
+
+static BOOL is_oplock_break(char *inbuf)
+{
+	if (CVAL(inbuf,smb_com) != SMBlockingX)
+		return False;
+
+	if (!(CVAL(inbuf,smb_vwv3) & LOCKING_ANDX_OPLOCK_RELEASE))
+		return False;
+
+	DEBUG(10,("is_oplock_break: Packet is oplock break\n"));
+	return True;
+}
+
+/***********************************************************
  SMB signing - Server implementation - check a MAC sent by server.
 ************************************************************/
 
@@ -684,6 +716,13 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 	} else {
 		/* We always increment the sequence number. */
 		data->send_seq_num++;
+
+		/* If we get an asynchronous oplock break reply and there
+		 * isn't a reply pending we need to re-sync the sequence
+		 * number.
+		 */
+		if (is_oplock_break(inbuf) && !is_reply_pending(data->outstanding_packet_list))
+			data->send_seq_num++;
 	}
 
 	saved_seq = reply_seq_number;
@@ -718,7 +757,7 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 #endif /* JRATEST */
 
 	} else {
-		DEBUG(10, ("srv_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
+		DEBUG(10, ("srv_check_incoming_message: seq %u: (current is %u) got good SMB signature of\n", (unsigned int)reply_seq_number, (unsigned int)data->send_seq_num));
 		dump_data(10, server_sent_mac, 8);
 	}
 	return signing_good(inbuf, si, good, saved_seq);
