@@ -566,7 +566,13 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 	*blob = data_blob(NULL, len);
 	asn1_read(data, blob->data, len);
 	asn1_end_tag(data);
-	return !data->has_error;
+	
+	if (data->has_error) {
+		data_blob_free(blob);
+		*blob = data_blob(NULL, 0);
+		return False;
+	}
+	return True;
 }
 
 BOOL asn1_read_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
