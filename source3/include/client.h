@@ -114,7 +114,6 @@ struct cli_state {
 	 * Only used in NT domain calls.
 	 */
 
-	uint32 nt_error;                   /* NT RPC error code. */
 	uint16 nt_pipe_fnum;               /* Pipe handle. */
 	unsigned char sess_key[16];        /* Current session key. */
 	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */

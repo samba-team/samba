@@ -158,7 +158,6 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
     {
       /* report error code */
       DEBUG(0,("cli_net_auth2: Error %s\n", get_nt_error_msg(r_a.status)));
-      cli->nt_error = r_a.status;
       ok = False;
     }
 
@@ -248,7 +247,6 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
     {
       /* report error code */
       DEBUG(0,("cli_net_req_chal: Error %s\n", get_nt_error_msg(r_c.status)));
-      cli->nt_error = r_c.status;
       ok = False;
     }
 
@@ -314,7 +312,6 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
     {
       /* report error code */
       DEBUG(0,("cli_net_srv_pwset: %s\n", get_nt_error_msg(r_s.status)));
-      cli->nt_error = r_s.status;
       ok = False;
     }
 
@@ -350,7 +347,7 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 	prs_struct buf; 
 	NET_Q_SAM_LOGON q_s;
 	NET_R_SAM_LOGON r_s;
-	uint32 retval;
+	uint32 retval = 0;
 
 	gen_next_creds( cli, &new_clnt_cred);
 
@@ -383,7 +380,6 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 	/* send the data on \PIPE\ */
 	if (!rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf)) {
 		DEBUG(0,("cli_net_sam_logon_internal: Erro rpc_api_pipe_req failed.\n"));
-		retval = cli->nt_error;
 		goto out;
 	}
 
@@ -409,7 +405,6 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 	if (retval != 0) {
 		/* report error code */
 		DEBUG(0,("cli_net_sam_logon_internal: %s\n", get_nt_error_msg(r_s.status)));
-		cli->nt_error = r_s.status;
 		goto out;
     }
 
@@ -529,7 +524,6 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
     {
       /* report error code */
       DEBUG(0,("cli_net_sam_logoff: %s\n", get_nt_error_msg(r_s.status)));
-      cli->nt_error = r_s.status;
       ok = False;
     }
 
