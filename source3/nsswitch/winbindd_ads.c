@@ -412,7 +412,7 @@ failed:
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
-			   DOM_SID *sid, 
+			   const DOM_SID *sid, 
 			   WINBIND_USERINFO *info)
 {
 	ADS_STRUCT *ads = NULL;
@@ -583,7 +583,7 @@ done:
 /* Lookup groups a user is a member of. */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  DOM_SID *sid, 
+				  const DOM_SID *sid, 
 				  uint32 *num_groups, DOM_SID ***user_gids)
 {
 	ADS_STRUCT *ads = NULL;
@@ -681,7 +681,7 @@ done:
  */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				DOM_SID *group_sid, uint32 *num_names, 
+				const DOM_SID *group_sid, uint32 *num_names, 
 				DOM_SID ***sid_mem, char ***names, 
 				uint32 **name_types)
 {
