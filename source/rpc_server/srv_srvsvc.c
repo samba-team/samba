@@ -48,7 +48,6 @@ static void make_srv_share_1_info(SH_INFO_1    *sh1,
 	uint32 type;
 
 	pstrcpy(net_name, lp_servicename(snum));
-	strupper(net_name);
 	pstrcpy(remark  , lp_comment    (snum));
 	len_net_name = strlen(net_name);
 
