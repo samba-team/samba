@@ -596,7 +596,7 @@ static void reply_ctemp_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(0), oi->ctemp.out.fnum);
 
 	/* the returned filename is relative to the directory */
-	req_push_str(req, NULL, oi->ctemp.out.name, -1, STR_TERMINATE);
+	req_push_str(req, NULL, oi->ctemp.out.name, -1, STR_TERMINATE | STR_ASCII);
 
 	req_send_reply(req);
 }

@@ -188,10 +188,16 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	/* possibly change the file size */
 	if (newstats.st.st_size != f->name->st.st_size) {
+		int ret;
 		if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 			return NT_STATUS_FILE_IS_A_DIRECTORY;
 		}
-		if (ftruncate(f->fd, newstats.st.st_size) == -1) {
+		if (f->access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
+			ret = ftruncate(f->fd, newstats.st.st_size);
+		} else {
+			ret = truncate(f->name->full_name, newstats.st.st_size);
+		}
+		if (ret == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
 	}

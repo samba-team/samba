@@ -126,7 +126,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%s) wrong value for %s  0x%x - 0x%x\n", \
+		printf("(%s) wrong value for %s  0x%x - should be 0x%x\n", \
 		       __location__, #v, (int)(v), (int)correct); \
 		ret = False; \
 	}} while (0)
@@ -331,14 +331,14 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = io.openx.out.fnum;
 
 	CHECK_ALL_INFO(io.openx.out.size, size);
-	CHECK_VAL(io.openx.out.size, 1024*1024);
-	CHECK_ALL_INFO(io.openx.in.size, size);
 	CHECK_TIME(io.openx.out.write_time, write_time);
 	CHECK_ALL_INFO(io.openx.out.attrib, attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 	CHECK_VAL(io.openx.out.access, OPENX_MODE_ACCESS_RDWR);
 	CHECK_VAL(io.openx.out.ftype, 0);
 	CHECK_VAL(io.openx.out.devstate, 0);
 	CHECK_VAL(io.openx.out.action, OPENX_ACTION_CREATED);
+	CHECK_VAL(io.openx.out.size, 1024*1024);
+	CHECK_ALL_INFO(io.openx.in.size, size);
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
 
@@ -452,7 +452,9 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
-	const char *fname = BASEDIR "\\torture_t2open.txt";
+	const char *fname1 = BASEDIR "\\torture_t2open_yes.txt";
+	const char *fname2 = BASEDIR "\\torture_t2open_no.txt";
+	const char *fname = BASEDIR "\\torture_t2open_3.txt";
 	NTSTATUS status;
 	int fnum;
 	BOOL ret = True;
@@ -476,10 +478,17 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_ACCESS_DENIED },
 	};
 
+	fnum = create_complex_file(cli, mem_ctx, fname1);
+	if (fnum == -1) {
+		d_printf("Failed to create file %s - %s\n", fname1, smbcli_errstr(cli->tree));
+		ret = False;
+		goto done;
+	}
+	smbcli_close(cli->tree, fnum);
+
 	printf("Checking RAW_OPEN_T2OPEN\n");
 
 	io.t2open.level = RAW_OPEN_T2OPEN;
-	io.t2open.in.fname = fname;
 	io.t2open.in.flags = OPENX_FLAGS_ADDITIONAL_INFO | 
 		OPENX_FLAGS_EA_LEN | OPENX_FLAGS_EXTENDED_RETURN;
 	io.t2open.in.open_mode = OPENX_MODE_DENY_NONE | OPENX_MODE_ACCESS_RDWR;
@@ -498,13 +507,9 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* check all combinations of open_func */
 	for (i=0; i<ARRAY_SIZE(open_funcs); i++) {
 		if (open_funcs[i].with_file) {
-			fnum = create_complex_file(cli, mem_ctx, fname);
-			if (fnum == -1) {
-				d_printf("Failed to create file %s - %s\n", fname, smbcli_errstr(cli->tree));
-				ret = False;
-				goto done;
-			}
-			smbcli_close(cli->tree, fnum);
+			io.t2open.in.fname = fname1;
+		} else {
+			io.t2open.in.fname = fname2;
 		}
 		io.t2open.in.open_func = open_funcs[i].open_func;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
@@ -514,16 +519,18 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_func);
 			ret = False;
 		}
-		if (NT_STATUS_IS_OK(status) || open_funcs[i].with_file) {
+		if (NT_STATUS_IS_OK(status)) {
 			smbcli_close(cli->tree, io.t2open.out.fnum);
-			smbcli_unlink(cli->tree, fname);
 		}
 	}
+
+	smbcli_unlink(cli->tree, fname1);
 
 	/* check the basic return fields */
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	smbcli_close(cli->tree, fnum);
 	io.t2open.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
+	io.t2open.in.fname = fname;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.t2open.out.fnum;
@@ -963,8 +970,6 @@ static BOOL test_ctemp(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fname = finfo.name_info.out.fname.s;
 	d_printf("ctemp name=%s  real name=%s\n", name, fname);
 
-	CHECK_TIME(basetime, write_time);
-
 done:
 	smbcli_close(cli->tree, fnum);
 	if (fname) {
@@ -997,37 +1002,14 @@ BOOL torture_raw_open(void)
 		return False;
 	}
 
-	if (!test_ntcreatex_brlocked(cli, mem_ctx)) {
-		return False;
-	}
-
-	if (!test_open(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_openx(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_ntcreatex(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_t2open(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_mknew(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_create(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_ctemp(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_ntcreatex_brlocked(cli, mem_ctx);
+	ret &= test_open(cli, mem_ctx);
+	ret &= test_openx(cli, mem_ctx);
+	ret &= test_ntcreatex(cli, mem_ctx);
+	ret &= test_t2open(cli, mem_ctx);
+	ret &= test_mknew(cli, mem_ctx);
+	ret &= test_create(cli, mem_ctx);
+	ret &= test_ctemp(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);

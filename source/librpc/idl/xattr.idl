@@ -37,7 +37,6 @@ interface xattr
 
 	/* we store DOS style extended attributes in a DosEAs xattr */
 	const string XATTR_DOSEAS_NAME = "user.DosEAs";
-	const string XATTR_DOSEAS_ESTIMATED_SIZE = 100;
 
 	typedef struct {
 		utf8string name;
