@@ -469,7 +469,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	}
     }
 
-    if (is_heimdal_entry && ent->kvno != orig.kvno) {
+    if (is_heimdal_entry && (ent->kvno != orig.kvno || is_new_entry)) {
 	rc = asprintf(&tmp, "%d", ent->kvno);
 	if (rc < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
