@@ -423,6 +423,8 @@ static void do_cd(char *newdir)
   pstring saved_dir;
   pstring dname;
       
+  dos_format(newdir);
+
   /* Save the current directory in case the
      new directory is invalid */
   pstrcpy(saved_dir, cur_dir);
