@@ -2,39 +2,6 @@
 
 RCSID("$Id$");
 
-static krb5_error_code
-create_8003_checksum (
-		      const gss_channel_bindings_t input_chan_bindings,
-		      OM_uint32 flags,
-		      Checksum *result)
-{
-  u_char *p;
-  u_int32_t val;
-
-  result->cksumtype = 0x8003;
-  result->checksum.length = 24;
-  result->checksum.data   = malloc (result->checksum.length);
-  if (result->checksum.data == NULL)
-    return ENOMEM;
-  
-  p = result->checksum.data;
-  val = 16;
-  *p++ = (val >> 0)  & 0xFF;
-  *p++ = (val >> 8)  & 0xFF;
-  *p++ = (val >> 16) & 0xFF;
-  *p++ = (val >> 24) & 0xFF;
-  memset (p, 0, 16);
-  p += 16;
-  val = flags;
-  *p++ = (val >> 0)  & 0xFF;
-  *p++ = (val >> 8)  & 0xFF;
-  *p++ = (val >> 16) & 0xFF;
-  *p++ = (val >> 24) & 0xFF;
-  if (p - (u_char *)result->checksum.data != result->checksum.length)
-    abort ();
-  return 0;
-}
-
 static OM_uint32
 init_auth
            (OM_uint32 * minor_status,
@@ -86,6 +53,18 @@ init_auth
   if (kret) {
     ret = GSS_S_FAILURE;
     goto failure;
+  }
+
+  {
+    int32_t tmp;
+
+    krb5_auth_con_getflags(gssapi_krb5_context,
+			   &(*context_handle)->auth_context,
+			   &tmp);
+    tmp |= KRB5_AUTH_CONTEXT_DO_SEQUENCE;
+    krb5_auth_con_setflags(gssapi_krb5_context,
+			   &(*context_handle)->auth_context,
+			   tmp);
   }
 
   if (actual_mech_type)
@@ -155,9 +134,9 @@ init_auth
 		  cred->session.keyvalue.data,
 		  cred->session.keyvalue.length);
 
-  kret = create_8003_checksum (input_chan_bindings,
-			       flags,
-			       &cksum);
+  kret = gssapi_krb5_create_8003_checksum (input_chan_bindings,
+					   flags,
+					   &cksum);
   if (kret) {
     ret = GSS_S_FAILURE;
     goto failure;
