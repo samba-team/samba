@@ -1,10 +1,36 @@
 #! /usr/bin/perl5
 ##
 ## This is a simple script written by Herb Lewis @ SGI <herb@samba.org>
-## for reporting which parameters where supported by loadparm.c but 
+## for reporting which parameters are supported by loadparm.c but 
 ## not by SWAT I just thought it looked fun and might be of interest to others
 ## --jerry@samba.org
 ##
+## Here is a little info on the usage and output format so you don't have
+## to dig through the code to understand what is printed.
+##
+## Useage: swat.pl [path_to_loadparm.c]
+##
+## The output consists of 4 columns of information
+##     Option Name, Global Page, Share Page, Printer Page
+## The section separaters will also be printed (preceded by 16 *) to show
+## which options are grouped in the various sections.
+##
+## If the option name is preceded by an * it means this is a deprecated option.
+## If the option name is preceded by 5 spaces it means this is an alias for the
+## previous option.
+##
+## Under the Global Page, Share Page, and Printer Page columns there will be
+## one of 3 entries, BASIC, ADVANCED, or no. "BASIC" indicates this option will
+## show in the Basic View of that page in SWAT. "ADVANCED" indicates this
+## option will show in the Advanced View of that page in SWAT. "No" indicates
+## that this option is not available on that page in SWAT.
+##
+## Under the Global Page column, if an entry begins with an * it indicates that
+## this is actually specified in Samba as a "service parameter" not a "global
+## parameter" but you can set a default value for this on the Global Page in
+## SWAT.
+##
+## --herb@samba.org
 
 $lastone = "nothing";
 
