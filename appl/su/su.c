@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -50,6 +50,7 @@ RCSID("$Id$");
 
 #include <pwd.h>
 
+#include <des.h>
 #include <krb5.h>
 #include <kafs.h>
 #include <err.h>
