@@ -51,6 +51,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
 #ifdef HAVE_GRP_H
 #include <grp.h>
 #endif
@@ -73,6 +76,10 @@
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
 #endif
 
 #ifdef HAVE_TERMIOS_H
@@ -234,6 +241,16 @@ int chown(const char *path, uid_t owner, gid_t group);
 #ifndef HAVE_RCMD
 int rcmd(char **ahost, unsigned short inport, const char *locuser,
 	 const char *remuser, const char *cmd, int *fd2p);
+#endif
+
+#ifndef HAVE_WRITEV
+ssize_t
+writev(int d, const struct iovec *iov, int iovcnt);
+#endif
+
+#ifndef HAVE_READV
+ssize_t
+readv(int d, const struct iovec *iov, int iovcnt)
 #endif
 
 #ifndef HAVE_FLOCK
