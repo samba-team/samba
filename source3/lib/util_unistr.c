@@ -27,19 +27,23 @@
 
 char *ascii_to_unibuf(char *dest, const char *src, int maxlen)
 {
-	char *destend = dest + maxlen - 1;
+	char *destend = dest + maxlen;
 	register char c;
 
 	while (dest < destend)
 	{
-		*(dest++) = c = *(src++);
-		*(dest++) = 0;
+		c = *(src++);
 		if (c == 0)
 		{
 			break;
 		}
+
+		*(dest++) = c;
+		*(dest++) = 0;
 	}
 
+	*dest++ = 0;
+	*dest++ = 0;
 	return dest;
 }
 
@@ -55,13 +59,17 @@ void unibuf_to_ascii(char *dest, const char *src, int maxlen)
 
 	while (dest < destend)
 	{
-		*(dest++) = c = *(src++);
+		c = *(src++);
 		if ((c == 0) && (*src == 0))
 		{
 			break;
 		}
+
+		*dest++ = c;
 		src++;
 	}
+
+	*dest = 0;
 }
 
 
@@ -77,13 +85,15 @@ void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
 	while (dest < destend)
 	{
 		c = *(src++);
-		*(dest++) = (uint16)c;
-
 		if (c == 0)
 		{
 			break;
 		}
+
+		*(dest++) = (uint16)c;
 	}
+
+	*dest = 0;
 }
 
 
@@ -99,13 +109,15 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 	while (dest < destend)
 	{
 		c = *(src++);
-		*(dest++) = (char)c;
-
 		if (c == 0)
 		{
 			break;
 		}
+
+		*(dest++) = (char)c;
 	}
+
+	*dest = 0;
 }
 
 
@@ -113,7 +125,7 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
  Convert a UNISTR2 structure to an ASCII string
  ********************************************************************/
 
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, int destlen)
+void unistr2_to_ascii(char *dest, const UNISTR2 *str, int maxlen)
 {
 	char *destend;
 	const uint16 *src;
@@ -121,19 +133,21 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, int destlen)
 	register uint16 c;
 
 	src = str->buffer;
-	len = MIN(str->uni_str_len, destlen);
+	len = MIN(str->uni_str_len, maxlen);
 	destend = dest + len;
 
 	while (dest < destend)
 	{
 		c = *(src++);
-		*(dest++) = (char)c;
-
 		if (c == 0)
 		{
 			break;
 		}
+
+		*(dest++) = (char)c;
 	}
+
+	*dest = 0;
 }
 
 
@@ -167,13 +181,16 @@ char *uni_strncpy(char *destbuf, const char *srcbuf, int len)
 
 	while (dest < destend)
 	{
-		*(dest++) = c = *(src++);
+		c = *(src++);
 		if (c == 0)
 		{
 			break;
 		}
+
+		*(dest++) = c;
 	}
 
+	*dest++ = 0;
 	return (char *)dest;
 }
 
@@ -200,7 +217,7 @@ uint32 buffer2_to_uint32(const BUFFER2 *str)
   Convert a 'multi-string' buffer to space-separated ASCII.
  ********************************************************************/
 
-void buffer2_to_multistr(char *dest, const BUFFER2 *str, int destlen)
+void buffer2_to_multistr(char *dest, const BUFFER2 *str, int maxlen)
 {
 	char *destend;
 	const uint16 *src;
@@ -208,8 +225,8 @@ void buffer2_to_multistr(char *dest, const BUFFER2 *str, int destlen)
 	register uint16 c;
 
 	src = str->buffer;
-	len = MIN(str->buf_len/2, destlen);
-	destend = dest + len - 1;
+	len = MIN(str->buf_len/2, maxlen);
+	destend = dest + len;
 
 	while (dest < destend)
 	{
