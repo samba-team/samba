@@ -2517,24 +2517,24 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info,
 
 	get_short_archi(short_archi,architecture);
 	
-	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\%s\\", servername, short_archi, driver.info_3->name);
+	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
 
 	info->version=driver.info_3->cversion;
 
-	init_unistr( &(info->name),         driver.info_3->name );
-	init_unistr( &(info->architecture), architecture );
+	init_unistr( &info->name,         driver.info_3->name );
+	init_unistr( &info->architecture, architecture );
 	
 	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "%s%s", where, 
 	         driver.info_3->driverpath);
-	init_unistr( &(info->driverpath),   temp_driverpath );
+	init_unistr( &info->driverpath,   temp_driverpath );
 
 	snprintf(temp_datafile,   sizeof(temp_datafile)-1, "%s%s", where, 
 	         driver.info_3->datafile);
-	init_unistr( &(info->datafile),     temp_datafile );
+	init_unistr( &info->datafile,     temp_datafile );
 
 	snprintf(temp_configfile, sizeof(temp_configfile)-1, "%s%s", where, 
 	         driver.info_3->configfile);
-	init_unistr( &(info->configfile),   temp_configfile );	
+	init_unistr( &info->configfile,   temp_configfile );	
 }
 
 /********************************************************************
