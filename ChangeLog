@@ -1,3 +1,8 @@
+2004-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c (LDAP__connect): call ldap_initialize with
+	right argument
+
 2004-06-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): if the
