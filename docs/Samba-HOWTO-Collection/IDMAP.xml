@@ -9,9 +9,9 @@
 ]>
 
 <chapter id="idmapper">
-	<chapterinfo>
-		&author.jht;
-	</chapterinfo>
+<chapterinfo>
+	&author.jht;
+</chapterinfo>
 
 <title>Identity Mapping (IDMAP)</title>
 
@@ -21,10 +21,10 @@ THIS IS A WORK IN PROGRESS - it is a preparation for the release of Samba-3.0.8.
 
 <para>
 The Microsoft Windows operating system has a number of features that impose specific challenges
-for interoperability with operating system on which Samba is implemented. This chapter deals
+to interoperability with operating system on which Samba is implemented. This chapter deals
 explicitly with the mechanisms Samba-3 (version 3.0.8 and later) has to overcome one of the
-key challenges in the integration of Samba servers into an MS Windows networking
-environment. This chapter deals with IDentity MAPping (IDMAP) of Windows Security IDentifiers (SIDs)
+key challenges in the integration of Samba servers into an MS Windows networking environment.
+This chapter deals with IDentity MAPping (IDMAP) of Windows Security IDentifiers (SIDs)
 to UNIX UIDs and GIDs.
 </para>
 
@@ -94,7 +94,7 @@ on Server Types and Security Modes</link>.
 	</para>
 
 	<variablelist>
-		<varlistentry><term>Winbind is not used, users and groups are local: &smbmdash </term>
+		<varlistentry><term>Winbind is not used, users and groups are local: &smbmdash; </term>
 			<listitem>
 				<para>
 				
