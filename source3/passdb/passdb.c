@@ -896,16 +896,26 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	pdb_set_pass_can_change_time(to, nt_time_to_unix(&from->pass_can_change_time));
 	pdb_set_pass_must_change_time(to, nt_time_to_unix(&from->pass_must_change_time));
 
-	pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
-	pdb_set_fullname(to      , pdb_convert(&from->uni_full_name   ));
-	pdb_set_homedir(to       , pdb_convert(&from->uni_home_dir    ), True);
-	pdb_set_dir_drive(to     , pdb_convert(&from->uni_dir_drive   ), True);
-	pdb_set_logon_script(to  , pdb_convert(&from->uni_logon_script), True);
-	pdb_set_profile_path(to  , pdb_convert(&from->uni_profile_path), True);
-	pdb_set_acct_desc(to     , pdb_convert(&from->uni_acct_desc   ));
-	pdb_set_workstations(to  , pdb_convert(&from->uni_workstations));
-	pdb_set_unknown_str(to   , pdb_convert(&from->uni_unknown_str ));
-	pdb_set_munged_dial(to   , pdb_convert(&from->uni_munged_dial ));
+	if (from->uni_user_name.buffer)
+		pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
+	if (from->uni_full_name.buffer)
+		pdb_set_fullname(to      , pdb_convert(&from->uni_full_name   ));
+	if (from->uni_home_dir.buffer)
+		pdb_set_homedir(to       , pdb_convert(&from->uni_home_dir    ), True);
+	if (from->uni_dir_drive.buffer)
+		pdb_set_dir_drive(to     , pdb_convert(&from->uni_dir_drive   ), True);
+	if (from->uni_logon_script.buffer)
+		pdb_set_logon_script(to  , pdb_convert(&from->uni_logon_script), True);
+	if (from->uni_profile_path.buffer)
+		pdb_set_profile_path(to  , pdb_convert(&from->uni_profile_path), True);
+	if (from->uni_acct_desc.buffer)
+		pdb_set_acct_desc(to     , pdb_convert(&from->uni_acct_desc   ));
+	if (from->uni_workstations.buffer)
+		pdb_set_workstations(to  , pdb_convert(&from->uni_workstations));
+	if (from->uni_unknown_str.buffer)
+		pdb_set_unknown_str(to   , pdb_convert(&from->uni_unknown_str ));
+	if (from->uni_munged_dial.buffer)
+		pdb_set_munged_dial(to   , pdb_convert(&from->uni_munged_dial ));
 
 	if (from->user_rid)
 		pdb_set_user_rid(to, from->user_rid);
@@ -940,16 +950,26 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	pdb_set_pass_can_change_time(to, nt_time_to_unix(&from->pass_can_change_time));
 	pdb_set_pass_must_change_time(to, nt_time_to_unix(&from->pass_must_change_time));
 
-	pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
-	pdb_set_fullname(to      , pdb_convert(&from->uni_full_name   ));
-	pdb_set_homedir(to       , pdb_convert(&from->uni_home_dir    ), True);
-	pdb_set_dir_drive(to     , pdb_convert(&from->uni_dir_drive   ), True);
-	pdb_set_logon_script(to  , pdb_convert(&from->uni_logon_script), True);
-	pdb_set_profile_path(to  , pdb_convert(&from->uni_profile_path), True);
-	pdb_set_acct_desc(to     , pdb_convert(&from->uni_acct_desc   ));
-	pdb_set_workstations(to  , pdb_convert(&from->uni_workstations));
-	pdb_set_unknown_str(to   , pdb_convert(&from->uni_unknown_str ));
-	pdb_set_munged_dial(to   , pdb_convert(&from->uni_munged_dial ));
+	if (from->uni_user_name.buffer)
+		pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
+	if (from->uni_full_name.buffer)
+		pdb_set_fullname(to      , pdb_convert(&from->uni_full_name   ));
+	if (from->uni_home_dir.buffer)
+		pdb_set_homedir(to       , pdb_convert(&from->uni_home_dir    ), True);
+	if (from->uni_dir_drive.buffer)
+		pdb_set_dir_drive(to     , pdb_convert(&from->uni_dir_drive   ), True);
+	if (from->uni_logon_script.buffer)
+		pdb_set_logon_script(to  , pdb_convert(&from->uni_logon_script), True);
+	if (from->uni_profile_path.buffer)
+		pdb_set_profile_path(to  , pdb_convert(&from->uni_profile_path), True);
+	if (from->uni_acct_desc.buffer)
+		pdb_set_acct_desc(to     , pdb_convert(&from->uni_acct_desc   ));
+	if (from->uni_workstations.buffer)
+		pdb_set_workstations(to  , pdb_convert(&from->uni_workstations));
+	if (from->uni_unknown_str.buffer)
+		pdb_set_unknown_str(to   , pdb_convert(&from->uni_unknown_str ));
+	if (from->uni_munged_dial.buffer)
+		pdb_set_munged_dial(to   , pdb_convert(&from->uni_munged_dial ));
 
 	if (from->user_rid)
 		pdb_set_user_rid(to, from->user_rid);
