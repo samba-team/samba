@@ -145,10 +145,10 @@ static struct cli_state *do_connect( const char *server, const char *share,
 
 	if ( show_sessetup ) {
 		if (*c->server_domain) {
-			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
+			DEBUG(0,("Domain=[%s] OS=[%s] Server=[%s]\n",
 				c->server_domain,c->server_os,c->server_type));
 		} else if (*c->server_os || *c->server_type){
-			DEBUG(1,("OS=[%s] Server=[%s]\n",
+			DEBUG(0,("OS=[%s] Server=[%s]\n",
 				 c->server_os,c->server_type));
 		}		
 	}
