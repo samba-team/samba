@@ -3,7 +3,7 @@ DEFS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
 
 CFLAGS = -I$(SAMBA_INCL) $(EXTLIB_INCL)
 
-LDFLAGS = -L/usr/lib
+LDFLAGS = -L/usr/local/samba/lib
 
 SMBINCLUDE = -I../../../source/include
 CFLAGS= -fpic -g -O0 $(DEFS) $(SMBINCLUDE)
@@ -22,11 +22,12 @@ $(BIN)/smbwrapper.so:	$(SMBWRAPPER_OBJS)
 		--export-all-symbols \
 		-o $(BIN)/smbwrapper.so \
 		$(SMBWRAPPER_OBJS) \
+		$(LDFLAGS) \
 		$(LIBS) \
 		-Wl,-soname=`basename $@`
 
 $(BIN)/smbsh: $(SMBSH_OBJS)
-	$(CC) -g -o $(BIN)/smbsh $(SMBSH_OBJS) $(LIBS)
+	$(CC) -g -o $(BIN)/smbsh $(SMBSH_OBJS) $(LIBS) $(LDFLAGS)
 
 opendir_smbsh:	opendir_smbsh.o
 	$(CC) -g -o opendir_smbsh opendir_smbsh.o $(LIBS) $(DMALLOC)
