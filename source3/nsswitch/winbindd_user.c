@@ -73,7 +73,6 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	   by lp_string() calling standard_sub_basic(). */
 
 	fstrcpy(current_user_info.smb_name, user_name);
-	sub_set_smb_name(user_name);
 	fstrcpy(current_user_info.domain, dom_name);
 
 	pstrcpy(homedir, lp_template_homedir());
@@ -285,16 +284,6 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 	for(domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
                 
-		/*
-		 * Skip domains other than WINBINDD_DOMAIN environment
-		 * variable.
-		 */
-                
-		if ((strcmp(state->request.domain, "") != 0) &&
-				!check_domain_env(state->request.domain, 
-						  domain->name))
-			continue;
-
 		/* Create a state record for this domain */
                 
 		if ((domain_state = (struct getent_state *)
@@ -551,13 +540,6 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		NTSTATUS status;
 		struct winbindd_methods *methods;
 		int i;
-
-		/* Skip domains other than WINBINDD_DOMAIN environment
-		   variable */ 
-
-		if ((strcmp(state->request.domain, "") != 0) &&
-		    !check_domain_env(state->request.domain, domain->name))
-			continue;
 
 		methods = domain->methods;
 

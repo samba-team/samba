@@ -356,13 +356,6 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
 		
-		/* Skip domains other than WINBINDD_DOMAIN environment 
-		   variable */
-		
-		if ((strcmp(state->request.domain, "") != 0) &&
-		    !check_domain_env(state->request.domain, domain->name))
-			continue;
-		
 		/* Create a state record for this domain */
 		
 		if ((domain_state = (struct getent_state *)
@@ -747,12 +740,6 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		struct getent_state groups;
 
 		ZERO_STRUCT(groups);
-
-		/* Skip domains other than WINBINDD_DOMAIN environment
-		   variable */ 
-		if ((strcmp(state->request.domain, "") != 0) &&
-		    !check_domain_env(state->request.domain, domain->name))
-			continue;
 
 		/* Get list of sam groups */
 		ZERO_STRUCT(groups);
