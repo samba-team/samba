@@ -150,7 +150,7 @@ int StrCaseCmp(const char *s, const char *t)
  Case insensitive string compararison, length limited.
 **/
 
-static int StrnCaseCmp(const char *s, const char *t, size_t n)
+int StrnCaseCmp(const char *s, const char *t, size_t n)
 {
 	pstring buf1, buf2;
 	unix_strupper(s, strlen(s)+1, buf1, sizeof(buf1));
