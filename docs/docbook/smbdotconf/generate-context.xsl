@@ -24,12 +24,6 @@
 </xsl:template>
 
 <xsl:template match="//samba:parameter">
-      <xsl:message>
-        <xsl:text>Processing samba:parameter (</xsl:text>
-        <xsl:value-of select="@name"/>
-        <xsl:text>)</xsl:text>
-      </xsl:message>
-
   <xsl:variable name="name"><xsl:value-of select="translate(translate(string(@name),' ',''),
                   'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
   </xsl:variable>
