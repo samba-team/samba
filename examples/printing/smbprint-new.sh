@@ -140,6 +140,5 @@ $smbclient \
 	$IP \
 	$debugargs \
 	-U $username \
-	-P \
 	-c "$command"
 #
