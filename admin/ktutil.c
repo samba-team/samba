@@ -94,7 +94,9 @@ kt_list(int argc, char **argv)
 
 
 static SL_cmd cmds[] = {
-    { "list",	kt_list,	"list [keytab]",	"" },
+    { "list",		kt_list,	"list [keytab]",	"" },
+    { "srvconvert",	srvconv,	"srvconvert [flags]",	"" },
+    { "srv2keytab" },
     { NULL, 	NULL,		NULL, 			NULL }
 };
 
@@ -132,5 +134,7 @@ main(int argc, char **argv)
 	krb5_errx(context, 0, "%s", heimdal_version);
     argc -= optind;
     argv += optind;
+    if(argc == 0)
+	usage(1);
     return sl_command(cmds, argc, argv);
 }
