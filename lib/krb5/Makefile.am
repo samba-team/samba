@@ -18,7 +18,14 @@ endif
 
 LDADD = libkrb5.la \
 	$(KRB4LIB) \
-	$(top_builddir)/lib/des/libdes.la \
+	$(LIB_des) \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(LIB_roken)
+
+libkrb5_la_LIBADD = \
+	../com_err/error.lo ../com_err/com_err.lo \
+	$(KRB4LIB) \
+	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
 
@@ -133,7 +140,7 @@ $(srcdir)/krb5-protos.h:
 $(srcdir)/krb5-private.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl -p krb5-private.h $(libkrb5_la_SOURCES) || rm -f krb5-private.h
 
-libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
+#libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
 
 man_MANS =					\
 	kerberos.8				\
