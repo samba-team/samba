@@ -48,7 +48,7 @@ krb5_password_key_proc (krb5_context context,
 			krb5_keyblock **key)
 {
     krb5_error_code ret;
-    char *password = (char *)keyseed;
+    const char *password = (const char *)keyseed;
     char buf[BUFSIZ];
      
     *key = malloc (sizeof (**key));
