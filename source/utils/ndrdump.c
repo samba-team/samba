@@ -116,6 +116,11 @@ static void show_functions(const struct dcerpc_interface_table *p)
 
 	p = idl_iface_by_name(pipe_name);
 
+	if (!p) {
+		printf("Unknown pipe '%s'\n", pipe_name);
+		exit(1);
+	}
+
 	function = poptGetArg(pc);
 	inout = poptGetArg(pc);
 	filename = poptGetArg(pc);
