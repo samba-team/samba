@@ -100,16 +100,16 @@ DES3_encrypt_null_ivec(void *p, size_t len,
 }
 
 static struct encryption_type em [] = {
-    { ETYPE_DES_CBC_CRC, 8, 8, DES_encrypt_key_ivec,
-      KEYTYPE_DES,  CKSUMTYPE_CRC32, "des-cbc-crc" },
-    { ETYPE_DES_CBC_MD4, 8, 8, DES_encrypt_null_ivec,
-      KEYTYPE_DES,  CKSUMTYPE_RSA_MD4, "des-cbc-md4" },
-    { ETYPE_DES_CBC_MD5, 8, 8, DES_encrypt_null_ivec,
-      KEYTYPE_DES,  CKSUMTYPE_RSA_MD5, "des-cbc-md5" },
-    { ETYPE_DES3_CBC_MD5, 8, 8, DES3_encrypt_null_ivec, 
-      KEYTYPE_DES3, CKSUMTYPE_RSA_MD5, "des3-cbc-md5" },
     { ETYPE_DES3_CBC_SHA1, 8, 8, DES3_encrypt_null_ivec, 
       KEYTYPE_DES3, CKSUMTYPE_SHA1, "des3-cbc-sha1" },
+    { ETYPE_DES3_CBC_MD5, 8, 8, DES3_encrypt_null_ivec, 
+      KEYTYPE_DES3, CKSUMTYPE_RSA_MD5, "des3-cbc-md5" },
+    { ETYPE_DES_CBC_MD5, 8, 8, DES_encrypt_null_ivec,
+      KEYTYPE_DES,  CKSUMTYPE_RSA_MD5, "des-cbc-md5" },
+    { ETYPE_DES_CBC_MD4, 8, 8, DES_encrypt_null_ivec,
+      KEYTYPE_DES,  CKSUMTYPE_RSA_MD4, "des-cbc-md4" },
+    { ETYPE_DES_CBC_CRC, 8, 8, DES_encrypt_key_ivec,
+      KEYTYPE_DES,  CKSUMTYPE_CRC32, "des-cbc-crc" },
     { ETYPE_NULL, 1, 0, NULL_encrypt, KEYTYPE_NULL, CKSUMTYPE_NONE, "null" },
 };
 
@@ -167,23 +167,24 @@ krb5_keytype_to_etypes(krb5_context context,
 		       krb5_keytype keytype,
 		       krb5_enctype **etypes)
 {
-    krb5_enctype *tmp;
+    krb5_enctype *tmp, *tmp2;
     struct encryption_type *e;
     int i;
 
-    *etypes = malloc((num_etypes + 1) * sizeof(*etypes));
-    if (*etypes == NULL)
+    tmp = malloc((num_etypes + 1) * sizeof(*tmp));
+    if (tmp == NULL)
 	return ENOMEM;
     i = 0;
     for (e = em; e < em + num_etypes; ++e)
 	if (e->keytype == keytype)
-	    (*etypes)[i++] = e->type;
-    tmp = realloc (*etypes, i * sizeof(*etypes));
-    if (tmp == NULL) {
-	free (*etypes);
+	    tmp[i++] = e->type;
+    tmp[i++] = 0;
+    tmp2 = realloc (tmp, i * sizeof(*tmp));
+    if (tmp2 == NULL) {
+	free (tmp);
 	return ENOMEM;
     }
-    *etypes = tmp;
+    *etypes = tmp2;
     return 0;
 }
 
