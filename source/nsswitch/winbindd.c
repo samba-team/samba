@@ -218,7 +218,7 @@ static void process_request(struct winbindd_cli_state *state)
     case WINBINDD_GETPWENT:
         state->response.result = winbindd_getpwent(state);
         break;
-        
+
         /* Group functions */
         
     case WINBINDD_GETGRNAM_FROM_GROUP:
@@ -240,7 +240,7 @@ static void process_request(struct winbindd_cli_state *state)
     case WINBINDD_GETGRENT:
         state->response.result = winbindd_getgrent(state);
         break;
-        
+
         /* Oops */
         
     default:
@@ -586,6 +586,10 @@ int main(int argc, char **argv)
     fstrcpy(server_state.controller, lp_passwordserver());
 
     if (!winbindd_param_init()) {
+        return 1;
+    }
+
+    if (!winbindd_idmap_init()) {
         return 1;
     }
 
