@@ -144,6 +144,22 @@ AC_FIND_FUNC(dn_expand, resolv,
 ],
 [0,0,0,0,0])
 
+rk_CHECK_VAR(_res, 
+[#include <stdio.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+#ifdef HAVE_RESOLV_H
+#include <resolv.h>
+#endif])
+
+
 AC_BROKEN_SNPRINTF
 AC_BROKEN_VSNPRINTF
 
