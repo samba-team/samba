@@ -726,16 +726,28 @@ get_cred_from_kdc_flags(krb5_context context,
 }
 
 krb5_error_code
+krb5_get_cred_from_kdc_opt(krb5_context context,
+			   krb5_ccache ccache,
+			   krb5_creds *in_creds,
+			   krb5_creds **out_creds,
+			   krb5_creds ***ret_tgts,
+			   krb5_flags flags)
+{
+    krb5_kdc_flags f;
+    f.i = flags;
+    return get_cred_from_kdc_flags(context, f, ccache, 
+				   in_creds, out_creds, ret_tgts);
+}
+
+krb5_error_code
 krb5_get_cred_from_kdc(krb5_context context,
 		       krb5_ccache ccache,
 		       krb5_creds *in_creds,
 		       krb5_creds **out_creds,
 		       krb5_creds ***ret_tgts)
 {
-    krb5_kdc_flags f;
-    f.i = 0;
-    return get_cred_from_kdc_flags(context, f, ccache, 
-				   in_creds, out_creds, ret_tgts);
+    return krb5_get_cred_from_kdc_opt(context, ccache, 
+				      in_creds, out_creds, ret_tgts, 0);
 }
      
 
