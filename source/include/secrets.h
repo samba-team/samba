@@ -44,7 +44,7 @@ struct machine_acct_pass {
 /* structure for storing trusted domain password */
 struct trusted_dom_pass {
 	int pass_len;
-	char* pass;
+	fstring pass;
 	time_t mod_time;
 	DOM_SID domain_sid; /* remote domain's sid */
 };
