@@ -134,69 +134,74 @@ The timeout is in milli seconds
 static BOOL receive_message_or_smb(char *buffer, int buffer_len, 
                                    int timeout, BOOL *got_smb)
 {
-  fd_set fds;
-  int selrtn;
-  struct timeval to;
-  int maxfd;
+	fd_set fds;
+	int selrtn;
+	struct timeval to;
+	int maxfd;
 
-  smb_read_error = 0;
+	smb_read_error = 0;
 
-  *got_smb = False;
+	*got_smb = False;
 
-  /*
-   * Check to see if we already have a message on the smb queue.
-   * If so - copy and return it.
-   */
+	/*
+	 * Check to see if we already have a message on the smb queue.
+	 * If so - copy and return it.
+	 */
   
-  if(ubi_slCount(&smb_oplock_queue) != 0)
-  {
-    pending_message_list *msg = (pending_message_list *)ubi_slRemHead(&smb_oplock_queue);
-    memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
+	if(ubi_slCount(&smb_oplock_queue) != 0) {
+		pending_message_list *msg = (pending_message_list *)ubi_slRemHead(&smb_oplock_queue);
+		memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
   
-    /* Free the message we just copied. */
-    free((char *)msg->msg_buf);
-    free((char *)msg);
-    *got_smb = True;
+		/* Free the message we just copied. */
+		free((char *)msg->msg_buf);
+		free((char *)msg);
+		*got_smb = True;
+		
+		DEBUG(5,("receive_message_or_smb: returning queued smb message.\n"));
+		return True;
+	}
 
-    DEBUG(5,("receive_message_or_smb: returning queued smb message.\n"));
-    return True;
-  }
+	/*
+	 * Setup the select read fd set.
+	 */
 
-  /*
-   * Setup the select read fd set.
-   */
+	FD_ZERO(&fds);
+	FD_SET(smbd_server_fd(),&fds);
+	maxfd = setup_oplock_select_set(&fds);
 
-  FD_ZERO(&fds);
-  FD_SET(smbd_server_fd(),&fds);
-  maxfd = setup_oplock_select_set(&fds);
+	to.tv_sec = timeout / 1000;
+	to.tv_usec = (timeout % 1000) * 1000;
 
-  to.tv_sec = timeout / 1000;
-  to.tv_usec = (timeout % 1000) * 1000;
+	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,timeout>0?&to:NULL);
 
-  selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,timeout>0?&to:NULL);
+	/* if we get EINTR then maybe we have received an oplock
+	signal - treat this as select returning 1. This is ugly, but
+	is the best we can do until the oplock code knows more about
+	signals */
+	if (selrtn == -1 && errno == EINTR) {
+		FD_ZERO(&fds);
+		selrtn = 1;
+	}
 
-  /* Check if error */
-  if(selrtn == -1) {
-    /* something is wrong. Maybe the socket is dead? */
-    smb_read_error = READ_ERROR;
-    return False;
-  } 
+	/* Check if error */
+	if(selrtn == -1 && errno != EINTR) {
+		/* something is wrong. Maybe the socket is dead? */
+		smb_read_error = READ_ERROR;
+		return False;
+	} 
     
-  /* Did we timeout ? */
-  if (selrtn == 0) {
-    smb_read_error = READ_TIMEOUT;
-    return False;
-  }
-
-  if (FD_ISSET(smbd_server_fd(),&fds))
-  {
-    *got_smb = True;
-    return receive_smb(smbd_server_fd(), buffer, 0);
-  }
-  else
-  {
-    return receive_local_message(&fds, buffer, buffer_len, 0);
-  }
+	/* Did we timeout ? */
+	if (selrtn == 0) {
+		smb_read_error = READ_TIMEOUT;
+		return False;
+	}
+	
+	if (FD_ISSET(smbd_server_fd(),&fds)) {
+		*got_smb = True;
+		return receive_smb(smbd_server_fd(), buffer, 0);
+	} else {
+		return receive_local_message(&fds, buffer, buffer_len, 0);
+	}
 }
 
 /****************************************************************************

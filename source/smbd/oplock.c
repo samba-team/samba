@@ -84,6 +84,13 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
 
     selrtn = sys_select(maxfd+1,fds,&to);
 
+    if (selrtn == -1 && errno == EINTR) {
+	    /* could be a kernel oplock interrupt */
+	    if (koplocks && koplocks->msg_waiting(fds)) {
+		    return koplocks->receive_message(fds, buffer, buffer_len);
+	    }
+    }
+
     /* Check if error */
     if(selrtn == -1) {
       /* something is wrong. Maybe the socket is dead? */
@@ -1120,6 +1127,8 @@ address %lx. Error was %s\n", (long)htonl(INADDR_LOOPBACK), strerror(errno)));
 	if (lp_kernel_oplocks()) {
 #if HAVE_KERNEL_OPLOCKS_IRIX
 		koplocks = irix_init_kernel_oplocks();
+#elif HAVE_KERNEL_OPLOCKS_LINUX
+		koplocks = linux_init_kernel_oplocks();
 #endif
 	}
 

@@ -214,6 +214,7 @@ void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+int sys_select_intr(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_usleep(long usecs);
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);

@@ -1,5 +1,4 @@
 #define OLD_NTDOMAIN 1
-#if HAVE_KERNEL_OPLOCKS_LINUX
 
 /* 
    Unix SMB/Netbios implementation.
@@ -24,11 +23,26 @@
 
 #include "includes.h"
 
+#if HAVE_KERNEL_OPLOCKS_LINUX
+
 extern int DEBUGLEVEL;
 
 static unsigned signals_received;
 static unsigned signals_processed;
 static int fd_pending; /* the fd of the current pending SIGIO */
+
+/* these can be removed when they are in libc */
+typedef struct __user_cap_header_struct {
+        uint32 version;
+        int pid;
+} *cap_user_header_t;
+ 
+typedef struct __user_cap_data_struct {
+        uint32 effective;
+        uint32 permitted;
+        uint32 inheritable;
+} *cap_user_data_t;
+
 
 /****************************************************************************
 handle a SIGIO, incrementing the signals_received and blocking SIGIO
@@ -39,6 +53,41 @@ static void sigio_handler(int signal, siginfo_t *info, void *unused)
 	signals_received++;
 	BlockSignals(True, SIGIO);
 }
+
+/****************************************************************************
+try to gain the CAP_LEASE capability
+****************************************************************************/
+static void set_lease_capability(void)
+{
+	cap_user_header_t header;
+	cap_user_data_t data;
+	if (capget(header, data) == -1) {
+		DEBUG(3,("Unable to get kernel capabilities\n"));
+		return;
+	}
+	data->effective |= (1<<CAP_LEASE);
+	if (capset(header, data) == -1) {
+		DEBUG(3,("Unable to set CAP_LEASE capability\n"));
+	}
+}
+
+
+/****************************************************************************
+call SETLEASE. If we get EACCES then we try setting up the right capability and
+try again
+****************************************************************************/
+static int linux_setlease(int fd, int leasetype)
+{
+	int ret;
+	ret = fcntl(fd, F_SETLEASE, leasetype);
+	if (ret == -1 && errno == EACCES) {
+		set_lease_capability();
+		ret = fcntl(fd, F_SETLEASE, leasetype);
+	}
+
+	return ret;
+}
+
 
 /****************************************************************************
  * Deal with the Linux kernel <--> smbd
@@ -95,10 +144,11 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 ****************************************************************************/
 static BOOL linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
-	if (fcntl(fsp->fd, F_SETLEASE, F_WRLCK) == -1) {
+	if (linux_setlease(fsp->fd, F_WRLCK) == -1) {
 		DEBUG(5,("set_file_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
-inode = %.0f.\n",
-			 fsp->fsp_name, fsp->fd, (unsigned int)fsp->dev, (double)fsp->inode));
+inode = %.0f. (%s)\n",
+			 fsp->fsp_name, fsp->fd, 
+			 (unsigned int)fsp->dev, (double)fsp->inode, strerror(errno)));
 		return False;
 	}
 	
@@ -128,7 +178,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 	/*
 	 * Remove the kernel oplock on this file.
 	 */
-	if (fcntl(fsp->fd, F_SETLEASE, F_UNLCK) == -1) {
+	if (linux_setlease(fsp->fd, F_UNLCK) == -1) {
 		if (DEBUGLVL(0)) {
 			dbgtext("release_kernel_oplock: Error when removing kernel oplock on file " );
 			dbgtext("%s, dev = %x, inode = %.0f. Error was %s\n",
@@ -155,7 +205,7 @@ should be %d).\n", msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
         memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
 
         DEBUG(5,("process_local_message: kernel oplock break request for \
-file dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode));
+file dev = %x, inode = %.0f\n", (unsigned int)*dev, (double)*inode));
 
 	return True;
 }
@@ -203,3 +253,4 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 #endif /* HAVE_KERNEL_OPLOCKS_LINUX */
 
 #undef OLD_NTDOMAIN
+

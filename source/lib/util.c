@@ -728,7 +728,7 @@ void msleep(int t)
  
     FD_ZERO(&fds);
     errno = 0;
-    sys_select(0,&fds,&tval);
+    sys_select_intr(0,&fds,&tval);
 
     GetTimeOfDay(&t2);
     tdiff = TvalDiff(&t1,&t2);

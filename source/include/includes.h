@@ -868,6 +868,18 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #include <dlfcn.h>
 #endif
 
+#if HAVE_KERNEL_OPLOCKS_LINUX
+#ifndef F_SETLEASE
+#define F_SETLEASE	1024
+#endif
+#ifndef F_GETLEASE
+#define F_GETLEASE	1025
+#endif
+#ifndef CAP_LEASE
+#define CAP_LEASE 28
+#endif
+#endif
+
 extern int DEBUGLEVEL;
 
 #endif /* _INCLUDES_H */

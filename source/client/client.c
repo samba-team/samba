@@ -1751,8 +1751,8 @@ static void wait_keyboard(void)
 
 		timeout.tv_sec = 20;
 		timeout.tv_usec = 0;
-		sys_select(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
-      
+		sys_select_intr(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
+      		
 		if (FD_ISSET(fileno(stdin),&fds))
 			return;
 
