@@ -95,7 +95,7 @@ static BOOL test_oplock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_open io;
 	struct smb_unlink unl;
 	union smb_read rd;
-	uint16_t fnum, fnum2;
+	uint16_t fnum=0, fnum2=0;
 
 	/* cleanup */
 	cli_unlink(cli->tree, fname);
