@@ -317,10 +317,15 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
 
   if(ismyip(ip) || ip_equal(allones_ip, ip) || ip_equal(ipzero, ip))
   {
-    DEBUG(3,("become_domain_master_query_success: Our address (%s) returned \
-in query for name %s (domain master browser name) on subnet %s. \
-Continuing with domain master code.\n", 
-           inet_ntoa(ip), namestr(nmbname), subrec->subnet_name));
+    if( DEBUGLVL( 3 ) )
+    {
+      dbgtext( "become_domain_master_query_success():\n" );
+      dbgtext( "Our address (%s) ", inet_ntoa(ip) );
+      dbgtext( "returned in query for name %s ", namestr(nmbname) );
+      dbgtext( "(domain master browser name) " );
+      dbgtext( "on subnet %s.\n", subrec->subnet_name );
+      dbgtext( "Continuing with domain master code.\n" );
+    }
 
     become_domain_master_stage1(subrec, nmbname->name);
   }
