@@ -92,9 +92,10 @@ static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli,
 	pstring		printername;
 	fstring		servername, user;
 	POLICY_HND	hnd;
-	
-	if (argc != 2) {
-		printf("Usage: %s <printername>\n", argv[0]);
+	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
+
+	if (argc != 2 && argc != 3) {
+		printf("Usage: %s <printername> [0xallowed_access]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 	
@@ -106,10 +107,13 @@ static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli,
 	fstrcpy  (user, cli->user_name);
 	fstrcpy  (printername, argv[1]);
 
+	if (argc == 3)
+		desired_access = strtol(argv[2], NULL, 16);
+
 	/* Open the printer handle */
 
 	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
-					     "", MAXIMUM_ALLOWED_ACCESS, 
+					     "", desired_access, 
 					     servername, user, &hnd);
 
 	if (W_ERROR_IS_OK(werror)) {
@@ -120,6 +124,9 @@ static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli,
 			printf("Error closing printer handle! (%s)\n", 
 				werror_str(werror));
 		}
+	} else {
+		printf("Failed to open printer %s: %s\n", printername,
+				werror_str(werror));
 	}
 
 	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
