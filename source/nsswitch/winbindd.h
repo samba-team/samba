@@ -4,6 +4,7 @@
    Winbind daemon for ntdom nss module
 
    Copyright (C) Tim Potter 2000
+   Copyright (C) Anthony Liguori 2003
    
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -194,6 +195,30 @@ typedef struct {
 	struct cli_state *cli;
 	POLICY_HND pol;
 } CLI_POLICY_HND;
+
+/* Filled out by IDMAP backends */
+struct idmap_methods {
+  /* Called when backend is first loaded */
+  BOOL (*init)(void);
+
+  BOOL (*get_sid_from_uid)(uid_t uid, DOM_SID *sid);
+  BOOL (*get_sid_from_gid)(gid_t gid, DOM_SID *sid);
+
+  BOOL (*get_uid_from_sid)(DOM_SID *sid, uid_t *uid);
+  BOOL (*get_gid_from_sid)(DOM_SID *sid, gid_t *gid);
+
+  BOOL (*get_rid_from_uid)(uid_t uid, uint32 *user_rid, 
+                           struct winbindd_domain **domain);
+  BOOL (*get_rid_from_gid)(gid_t gid, uint32 *group_rid,
+                           struct winbindd_domain **domain);
+  BOOL (*get_uid_from_rid)(const char *dom_name, uint32 rid, uid_t *uid);
+  BOOL (*get_gid_from_rid)(const char *dom_name, uint32 rid, gid_t *gid);
+
+  /* Called when backend is unloaded */
+  BOOL (*close)(void);
+  /* Called to dump backend status */
+  void (*status)(void);
+};
 
 #include "winbindd_proto.h"
 
