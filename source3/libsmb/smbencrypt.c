@@ -226,7 +226,7 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	return True;
 }
 
-int nt_decrypt_string2(STRING2 *out, STRING2 *in, char nt_hash[16])
+BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, char nt_hash[16])
 {
 	uchar bufhdr[8];
 	int datalen;
@@ -236,9 +236,8 @@ int nt_decrypt_string2(STRING2 *out, STRING2 *in, char nt_hash[16])
 	uchar *keyend = key + sizeof(key);
 
 	uchar *outbuf = (uchar *)out->buffer;
-	uchar *inbuf = (uchar *)in->buffer;
-	uchar *inbufend;
-
+	const uchar *inbuf = (const uchar *)in->buffer;
+	const uchar *inbufend;
 
 	mdfour(key, nt_hash, 16);
 
