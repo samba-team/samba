@@ -151,6 +151,7 @@ get_xsockets (int *unix_socket, int *tcp_socket)
      umask (oldmask);
      free (dir);
 
+     memset(&local, 0, sizeof(local));
      local.s_addr = htonl(INADDR_LOOPBACK);
 
      for(dpy = 4; dpy < 256; ++dpy) {
