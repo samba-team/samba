@@ -538,7 +538,7 @@ needed in the smb.conf file:
 
 <para><programlisting>
 	wins support = No
-	wins server = <replaceable>xxx.xxx.xxx.xxx</replaceable>
+	wins server = xxx.xxx.xxx.xxx
 </programlisting></para>
 
 <para>
