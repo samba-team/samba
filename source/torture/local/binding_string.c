@@ -22,11 +22,10 @@
 
 #include "includes.h"
 
-static BOOL test_BindingString(const char *binding)
+static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 {
-	TALLOC_CTX *mem_ctx = talloc_init("test_BindingString");
-	struct dcerpc_binding b;
-	const char *s;
+	struct dcerpc_binding b, b2;
+	const char *s, *s2;
 	struct epm_tower *tower;
 	NTSTATUS status;
 
@@ -55,27 +54,70 @@ static BOOL test_BindingString(const char *binding)
 		return False;
 	}
 
-	/* FIXME: Convert back to binding and then back to string and compare */
+	/* Convert back to binding and then back to string and compare */
+
+	status = dcerpc_binding_from_tower(mem_ctx, tower, &b2);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(0, ("Error generating binding from tower for original binding '%s': %s\n", binding, nt_errstr(status)));
+		return False;
+	}
+
+	/* Compare to a stripped down version of the binding string because 
+	 * the protocol tower doesn't contain the extra option data */
+	if (b.options && b.options[0]) {
+		b.options[1] = NULL; 
+	}
+
+	b.flags = 0;
+	
+	s = dcerpc_binding_string(mem_ctx, &b);
+	if (!s) {
+		DEBUG(0, ("Error converting binding back to string for (stripped down) '%s'\n", binding)); 
+		return False;
+	}
+
+
+	s2 = dcerpc_binding_string(mem_ctx, &b2);
+	if (!s) {
+		DEBUG(0, ("Error converting binding back to string for '%s'\n", binding)); 
+		return False;
+	}
+
+	if (strcasecmp(s, s2) != 0) {
+		DEBUG(0, ("Mismatch while comparing original and from protocol tower generated binding strings: '%s' <> '%s'\n", s, s2));
+		return False;
+	}
 
 	return True;
 }
 
+static const char *test_strings[] = {
+	"ncacn_np:", 
+	"ncalrpc:", 
+	"ncalrpc:[Security=Sane]", 
+	"ncacn_np:[rpcecho]",
+	"ncacn_np:127.0.0.1[rpcecho]",
+	"ncacn_ip_tcp:127.0.0.1",
+	"ncacn_np:localhost[rpcecho]",
+	"ncacn_np:[/pipe/rpcecho]",
+	"ncacn_np:localhost[/pipe/rpcecho,sign,seal]",
+	"ncacn_np:[,sign]",
+	"ncadg_ip_udp:",
+	"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:localhost",
+	"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:127.0.0.1",
+};
+
 BOOL torture_local_binding_string(int dummy) 
 {
 	BOOL ret = True;
+	TALLOC_CTX *mem_ctx = talloc_init("test_BindingString");
+	int i;
 
-	ret &= test_BindingString("ncacn_np:");
-	ret &= test_BindingString("ncalrpc:");
-	ret &= test_BindingString("ncalrpc:");
-	ret &= test_BindingString("ncacn_np:[rpcecho]");
-	ret &= test_BindingString("ncacn_np:127.0.0.1[rpcecho]");
-	ret &= test_BindingString("ncacn_np:localhost[rpcecho]");
-	ret &= test_BindingString("ncacn_np:[/pipe/rpcecho]");
-	ret &= test_BindingString("ncacn_np:localhost[/pipe/rpcecho,sign,seal]");
-	ret &= test_BindingString("ncacn_np:[,sign]");
-	ret &= test_BindingString("ncadg_ip_udp:");
-	ret &= test_BindingString("308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:localhost");
-	ret &= test_BindingString("308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:localhost");
+	for (i = 0; i < ARRAY_SIZE(test_strings); i++) {
+		ret &= test_BindingString(mem_ctx, test_strings[i]);
+	}
+
+	talloc_destroy(mem_ctx);
 
 	return ret;
 }
