@@ -518,10 +518,7 @@ typedef struct
 typedef struct
 {
   int cnum;
-  union {
-    file_fd_struct *fd_ptr;
-    dir_status_struct *dir_ptr;
-  } f_u;
+  file_fd_struct *fd_ptr;
   int pos;
   uint32 size;
   int mode;

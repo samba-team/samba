@@ -1047,7 +1047,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   int accmode = (flags & (O_RDONLY | O_WRONLY | O_RDWR));
 
   fsp->open = False;
-  fsp->f_u.fd_ptr = 0;
+  fsp->fd_ptr = 0;
   fsp->granted_oplock = False;
   errno = EPERM;
 
@@ -1222,7 +1222,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
     if (sys_disk_free(dname,&dum1,&dum2,&dum3) < 
 	lp_minprintspace(SNUM(cnum))) {
       fd_attempt_close(fd_ptr);
-      fsp->f_u.fd_ptr = 0;
+      fsp->fd_ptr = 0;
       if(fd_ptr->ref_count == 0)
         sys_unlink(fname);
       errno = ENOSPC;
@@ -1259,7 +1259,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
     fd_ptr->dev = (uint32)sbuf->st_dev;
     fd_ptr->inode = (uint32)sbuf->st_ino;
 
-    fsp->f_u.fd_ptr = fd_ptr;
+    fsp->fd_ptr = fd_ptr;
     Connections[cnum].num_files_open++;
     fsp->mode = sbuf->st_mode;
     GetTimeOfDay(&fsp->open_time);
@@ -1315,7 +1315,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   {
     fsp->mmap_size = file_size(fname);
     fsp->mmap_ptr = (char *)mmap(NULL,fsp->mmap_size,
-                                 PROT_READ,MAP_SHARED,fsp->f_u.fd_ptr->fd,0);
+                                 PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,0);
 
     if (fsp->mmap_ptr == (char *)-1 || !fsp->mmap_ptr)
     {
@@ -1333,7 +1333,7 @@ void sync_file(int cnum, int fnum)
 {
 #ifdef HAVE_FSYNC
     if(lp_strict_sync(SNUM(cnum)))
-      fsync(Files[fnum].f_u.fd_ptr->fd);
+      fsync(Files[fnum].fd_ptr->fd);
 #endif
 }
 
@@ -1417,14 +1417,14 @@ void close_file(int fnum, BOOL normal_close)
 {
   files_struct *fs_p = &Files[fnum];
   int cnum = fs_p->cnum;
-  uint32 dev = fs_p->f_u.fd_ptr->dev;
-  uint32 inode = fs_p->f_u.fd_ptr->inode;
+  uint32 dev = fs_p->fd_ptr->dev;
+  uint32 inode = fs_p->fd_ptr->inode;
   int token;
 
   close_filestruct(fs_p);
 
 #if USE_READ_PREDICTION
-  invalidate_read_prediction(fs_p->f_u.fd_ptr->fd);
+  invalidate_read_prediction(fs_p->fd_ptr->fd);
 #endif
 
   if (lp_share_modes(SNUM(cnum)))
@@ -1433,7 +1433,7 @@ void close_file(int fnum, BOOL normal_close)
     del_share_mode(token, fnum);
   }
 
-  fd_attempt_close(fs_p->f_u.fd_ptr);
+  fd_attempt_close(fs_p->fd_ptr);
 
   if (lp_share_modes(SNUM(cnum)))
     unlock_share_entry( cnum, dev, inode, token);
@@ -1484,9 +1484,6 @@ void close_directory(int fnum)
 
   if (fsp->name)
     string_free(&fsp->name);
-
-  if (fsp->f_u.dir_ptr)
-    free((char *)fsp->f_u.dir_ptr);
 
   /* we will catch bugs faster by zeroing this structure */
   memset(fsp, 0, sizeof(*fsp));
@@ -1541,7 +1538,7 @@ int open_directory(int fnum,int cnum,char *fname, int smb_ofun, int unixmode, in
    * Setup the files_struct for it.
    */
 
-  fsp->f_u.dir_ptr = NULL;
+  fsp->fd_ptr = NULL;
   Connections[cnum].num_files_open++;
   fsp->mode = 0;
   GetTimeOfDay(&fsp->open_time);
@@ -1761,13 +1758,15 @@ free_and_exit:
 static void truncate_unless_locked(int fnum, int cnum, int token, 
 				   BOOL *share_locked)
 {
-  if (Files[fnum].can_write){
+  files_struct *fsp = &Files[fnum];
+
+  if (fsp->can_write){
     if (is_locked(fnum,cnum,0x3FFFFFFF,0,F_WRLCK)){
       /* If share modes are in force for this connection we
          have the share entry locked. Unlock it before closing. */
       if (*share_locked && lp_share_modes(SNUM(cnum)))
-        unlock_share_entry( cnum, Files[fnum].f_u.fd_ptr->dev, 
-                            Files[fnum].f_u.fd_ptr->inode, token);
+        unlock_share_entry( cnum, fsp->fd_ptr->dev, 
+                            fsp->fd_ptr->inode, token);
       close_file(fnum,False);   
       /* Share mode no longer locked. */
       *share_locked = False;
@@ -1776,7 +1775,7 @@ static void truncate_unless_locked(int fnum, int cnum, int token,
       unix_ERR_code = ERRlock;
     }
     else
-      ftruncate(Files[fnum].f_u.fd_ptr->fd,0); 
+      ftruncate(fsp->fd_ptr->fd,0); 
   }
 }
 
@@ -1841,7 +1840,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
   int num_share_modes = 0;
 
   fs_p->open = False;
-  fs_p->f_u.fd_ptr = 0;
+  fs_p->fd_ptr = 0;
 
   /* this is for OS/2 EAs - try and say we don't support them */
   if (strstr(fname,".+,;=[].")) 
@@ -2017,8 +2016,8 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
     if((share_locked == False) && lp_share_modes(SNUM(cnum)))
     {
       /* We created the file - thus we must now lock the share entry before creating it. */
-      dev = fs_p->f_u.fd_ptr->dev;
-      inode = fs_p->f_u.fd_ptr->inode;
+      dev = fs_p->fd_ptr->dev;
+      inode = fs_p->fd_ptr->inode;
       lock_share_entry(cnum, dev, inode, &token);
       share_locked = True;
     }
@@ -2098,7 +2097,7 @@ int seek_file(int fnum,uint32 pos)
   if (fsp->print_file && POSTSCRIPT(fsp->cnum))
     offset = 3;
 
-  fsp->pos = (int)(lseek(fsp->f_u.fd_ptr->fd,pos+offset,SEEK_SET) - offset);
+  fsp->pos = (int)(lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET) - offset);
   return(fsp->pos);
 }
 
@@ -2113,7 +2112,7 @@ int read_file(int fnum,char *data,uint32 pos,int n)
 #if USE_READ_PREDICTION
   if (!fsp->can_write)
     {
-      ret = read_predict(fsp->f_u.fd_ptr->fd,pos,data,NULL,n);
+      ret = read_predict(fsp->fd_ptr->fd,pos,data,NULL,n);
 
       data += ret;
       n -= ret;
@@ -2147,7 +2146,7 @@ int read_file(int fnum,char *data,uint32 pos,int n)
     }
   
   if (n > 0) {
-    readret = read(fsp->f_u.fd_ptr->fd,data,n);
+    readret = read(fsp->fd_ptr->fd,data,n);
     if (readret > 0) ret += readret;
   }
 
@@ -2170,7 +2169,7 @@ int write_file(int fnum,char *data,int n)
   if (!fsp->modified) {
     struct stat st;
     fsp->modified = True;
-    if (fstat(fsp->f_u.fd_ptr->fd,&st) == 0) {
+    if (fstat(fsp->fd_ptr->fd,&st) == 0) {
       int dosmode = dos_mode(fsp->cnum,fsp->name,&st);
       if (MAP_ARCHIVE(fsp->cnum) && !IS_DOS_ARCHIVE(dosmode)) {	
 	dos_chmod(fsp->cnum,fsp->name,dosmode | aARCH,&st);
@@ -2178,7 +2177,7 @@ int write_file(int fnum,char *data,int n)
     }  
   }
 
-  return(write_data(fsp->f_u.fd_ptr->fd,data,n));
+  return(write_data(fsp->fd_ptr->fd,data,n));
 }
 
 
@@ -2924,7 +2923,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   {
     if(OPEN_FNUM(fnum))
     {
-      if((Files[fnum].f_u.fd_ptr->dev == dev) && (Files[fnum].f_u.fd_ptr->inode == inode) &&
+      if((Files[fnum].fd_ptr->dev == dev) && (Files[fnum].fd_ptr->inode == inode) &&
          (Files[fnum].open_time.tv_sec == tval->tv_sec) && 
          (Files[fnum].open_time.tv_usec == tval->tv_usec)) {
 	      fsp = &Files[fnum];
@@ -3789,7 +3788,7 @@ static BOOL attempt_close_oplocked_file(files_struct *fsp)
   if (fsp->open && fsp->granted_oplock && !fsp->sent_oplock_break) {
 
     /* Try and break the oplock. */
-    file_fd_struct *fd_ptr = fsp->f_u.fd_ptr;
+    file_fd_struct *fd_ptr = fsp->fd_ptr;
     if(oplock_break( fd_ptr->dev, fd_ptr->inode, &fsp->open_time)) {
       if(!fsp->open) /* Did the oplock break close the file ? */
         return True;
