@@ -106,7 +106,7 @@ main(int argc, char **argv)
     memset(&sa, 0, sizeof(sa));
     sa.sin_family = AF_INET;
     sa.sin_port = port;
-    memcpy(&sa.sin_addr, hp->h_addr, hp->h_length);
+    memcpy(&sa.sin_addr, hp->h_addr, sizeof(sa.sin_addr));
     if(connect(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
 	err(1, "connect");
     {
