@@ -101,6 +101,7 @@ size_t convert_string(charset_t from, charset_t to,
 
 	if (!initialised) {
 		initialised = 1;
+		load_case_tables();
 		init_iconv();
 	}
 

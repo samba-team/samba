@@ -1687,6 +1687,16 @@ char *lock_path(char *name)
 	return fname;
 }
 
+/*****************************************************************
+a useful function for returning a path in the Samba lib directory
+ *****************************************************************/  
+char *lib_path(char *name)
+{
+	static pstring fname;
+	snprintf(fname, sizeof(fname), "%s/%s", LIBDIR, name);
+	return fname;
+}
+
 /*******************************************************************
  Given a filename - get its directory name
  NB: Returned in static storage.  Caveats:

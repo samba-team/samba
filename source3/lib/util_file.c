@@ -422,6 +422,41 @@ char *file_load(const char *fname, size_t *size)
 }
 
 
+/*******************************************************************
+mmap (if possible) or read a file
+********************************************************************/
+void *map_file(char *fname, size_t size)
+{
+	size_t s2 = 0;
+	void *p = NULL;
+#ifdef HAVE_MMAP
+	int fd;
+	fd = open(fname, O_RDONLY, 0);
+	if (fd == -1) {
+		DEBUG(1,("Failed to load %s - %s\n", fname, strerror(errno)));
+		return NULL;
+	}
+	p = mmap(NULL, size, PROT_READ, MAP_SHARED|MAP_FILE, fd, 0);
+	close(fd);
+	if (p == MAP_FAILED) {
+		DEBUG(1,("Failed to mmap %s - %s\n", fname, strerror(errno)));
+		return NULL;
+	}
+#endif
+	if (!p) {
+		p = file_load(fname, &s2);
+		if (!p || s2 != size) {
+			DEBUG(1,("incorrect size for %s - got %d expected %d\n",
+				 fname, s2, size));
+			if (p) free(p);
+			return NULL;
+		}
+	}
+
+	return p;
+}
+
+
 /****************************************************************************
 parse a buffer into lines
 ****************************************************************************/

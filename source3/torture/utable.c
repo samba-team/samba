@@ -29,8 +29,9 @@ BOOL torture_utable(int dummy)
 	fstring fname, alt_name;
 	int fnum;
 	smb_ucs2_t c2;
-	int c, len;
+	int c, len, fd;
 	int chars_allowed=0, alt_allowed=0;
+	uint8 valid[0x10000];
 
 	printf("starting utable\n");
 
@@ -38,7 +39,10 @@ BOOL torture_utable(int dummy)
 		return False;
 	}
 
+	memset(valid, 0, sizeof(valid));
+
 	cli_mkdir(&cli, "\\utable");
+	cli_unlink(&cli, "\\utable\\*");
 
 	for (c=1; c < 0x10000; c++) {
 		char *p;
@@ -62,6 +66,7 @@ BOOL torture_utable(int dummy)
 
 		if (strncmp(alt_name, "X_A_L", 5) != 0) {
 			alt_allowed++;
+			valid[c] = 1;
 			/* d_printf("fname=[%s] alt_name=[%s]\n", fname, alt_name); */
 		}
 
@@ -77,6 +82,15 @@ BOOL torture_utable(int dummy)
 	cli_rmdir(&cli, "\\utable");
 
 	d_printf("%d chars allowed   %d alt chars allowed\n", chars_allowed, alt_allowed);
+
+	fd = open("valid.dat", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	if (fd == -1) {
+		d_printf("Failed to create valid.dat - %s", strerror(errno));
+		return False;
+	}
+	write(fd, valid, 0x10000);
+	close(fd);
+	d_printf("wrote valid.dat\n");
 
 	return True;
 }
@@ -122,7 +136,9 @@ BOOL torture_casetable(int dummy)
 	for (c=1; c < 0x10000; c++) {
 		size_t size;
 
-		if (c == '.') continue;
+		if (c == '.' || c == '\\') continue;
+
+		printf("%04x\n", c);
 
 		fname = form_name(c);
 		fnum = cli_nt_create_full(&cli, fname, 

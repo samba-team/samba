@@ -25,6 +25,53 @@
 #define MAXUNI 1024
 #endif
 
+/* these 3 tables define the unicode case handling.  They are loaded
+   at startup either via mmap() or read() from the lib directory */
+static smb_ucs2_t *upcase_table;
+static smb_ucs2_t *lowcase_table;
+static uint8 *valid_table;
+
+/*******************************************************************
+load the case handling tables
+********************************************************************/
+void load_case_tables(void)
+{
+	static int initialised;
+	int i;
+
+	if (initialised) return;
+	initialised = 1;
+
+	upcase_table = map_file(lib_path("upcase.dat"), 0x20000);
+	lowcase_table = map_file(lib_path("lowcase.dat"), 0x20000);
+	valid_table = map_file(lib_path("valid.dat"), 0x10000);
+
+	/* we would like Samba to limp along even if these tables are
+	   not available */
+	if (!upcase_table) {
+		DEBUG(1,("creating lame upcase table\n"));
+		upcase_table = malloc(0x20000);
+		for (i=0;i<256;i++) upcase_table[i] = islower(i)?toupper(i):i;
+		for (;i<0x10000;i++) upcase_table[i] = i;
+	}
+
+	if (!lowcase_table) {
+		DEBUG(1,("creating lame lowcase table\n"));
+		lowcase_table = malloc(0x20000);
+		for (i=0;i<256;i++) lowcase_table[i] = isupper(i)?tolower(i):i;
+		for (;i<0x10000;i++) lowcase_table[i] = i;
+	}
+
+	if (!valid_table) {
+		DEBUG(1,("creating lame valid table\n"));
+		valid_table = malloc(0x10000);
+		for (i=0;i<256;i++) valid_table[i] = 
+					    isalnum(i) && !strchr("*\\/?<>|\":", i);
+		for (;i<0x10000;i++) valid_table[i] = 0;
+	}
+}
+
+
 /*******************************************************************
  Write a string in (little-endian) unicode format. src is in
  the current DOS codepage. len is the length in bytes of the
@@ -129,83 +176,12 @@ uint32 buffer2_to_uint32(BUFFER2 *str)
 }
 
 /*******************************************************************
- Mapping tables for UNICODE character. Allows toupper/tolower and
- isXXX functions to work.
-
- tridge: split into 2 pieces. This saves us 5/6 of the memory
- with a small speed penalty
- The magic constants are the lower/upper range of the tables two
- parts
-********************************************************************/
-
-typedef struct {
-	smb_ucs2_t lower;
-	smb_ucs2_t upper;
-	unsigned char flags;
-} smb_unicode_table_t;
-
-#define TABLE1_BOUNDARY 9450
-#define TABLE2_BOUNDARY 64256
-
-static smb_unicode_table_t map_table1[] = {
-#include "unicode_map_table1.h"
-};
-
-static smb_unicode_table_t map_table2[] = {
-#include "unicode_map_table2.h"
-};
-
-static unsigned char map_table_flags(smb_ucs2_t v)
-{
-	v = SVAL(&v,0);
-	if (v < TABLE1_BOUNDARY) return map_table1[v].flags;
-	if (v >= TABLE2_BOUNDARY) return map_table2[v - TABLE2_BOUNDARY].flags;
-	return 0;
-}
-
-static smb_ucs2_t map_table_lower(smb_ucs2_t v)
-{
-	v = SVAL(&v,0);
-	if (v < TABLE1_BOUNDARY) return map_table1[v].lower;
-	if (v >= TABLE2_BOUNDARY) return map_table2[v - TABLE2_BOUNDARY].lower;
-	return v;
-}
-
-static smb_ucs2_t map_table_upper(smb_ucs2_t v)
-{
-	v = SVAL(&v,0);
-	if (v < TABLE1_BOUNDARY) return map_table1[v].upper;
-	if (v >= TABLE2_BOUNDARY) return map_table2[v - TABLE2_BOUNDARY].upper;
-	return v;
-}
-
-/*******************************************************************
- Is an upper case wchar.
-********************************************************************/
-
-int isupper_w( smb_ucs2_t val)
-{
-	return (map_table_flags(val) & UNI_UPPER);
-}
-
-/*******************************************************************
- Is a lower case wchar.
-********************************************************************/
-
-int islower_w( smb_ucs2_t val)
-{
-	return (map_table_flags(val) & UNI_LOWER);
-}
-
-/*******************************************************************
  Convert a wchar to upper case.
 ********************************************************************/
 
-smb_ucs2_t toupper_w( smb_ucs2_t val )
+smb_ucs2_t toupper_w(smb_ucs2_t val)
 {
-	val = map_table_upper(val);
-	val = SVAL(&val,0);
-	return val;
+	return upcase_table[val];
 }
 
 /*******************************************************************
@@ -214,9 +190,32 @@ smb_ucs2_t toupper_w( smb_ucs2_t val )
 
 smb_ucs2_t tolower_w( smb_ucs2_t val )
 {
-	val = map_table_lower(val);
-	val = SVAL(&val,0);
-	return val;
+	return lowcase_table[val];
+}
+
+/*******************************************************************
+determine if a character is lowercase
+********************************************************************/
+BOOL islower_w(smb_ucs2_t c)
+{
+	return upcase_table[c] != c;
+}
+
+/*******************************************************************
+determine if a character is uppercase
+********************************************************************/
+BOOL isupper_w(smb_ucs2_t c)
+{
+	return lowcase_table[c] != c;
+}
+
+
+/*******************************************************************
+determine if a character is valid in a 8.3 name
+********************************************************************/
+BOOL isvalid83_w(smb_ucs2_t c)
+{
+	return valid_table[c] != 0;
 }
 
 /*******************************************************************
@@ -252,8 +251,9 @@ BOOL strlower_w(smb_ucs2_t *s)
 {
 	BOOL ret = False;
 	while (*s) {
-		if (isupper_w(*s)) {
-			*s = tolower_w(*s);
+		smb_ucs2_t v = tolower_w(*s);
+		if (v != *s) {
+			*s = v;
 			ret = True;
 		}
 		s++;
@@ -269,8 +269,9 @@ BOOL strupper_w(smb_ucs2_t *s)
 {
 	BOOL ret = False;
 	while (*s) {
-		if (islower_w(*s)) {
-			*s = toupper_w(*s);
+		smb_ucs2_t v = toupper_w(*s);
+		if (v != *s) {
+			*s = v;
 			ret = True;
 		}
 		s++;
@@ -283,7 +284,7 @@ case insensitive string comparison
 ********************************************************************/
 int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
 {
-	while (*b && tolower_w(*a) == tolower_w(*b)) { a++; b++; }
+	while (*b && toupper_w(*a) == toupper_w(*b)) { a++; b++; }
 	return (tolower_w(*a) - tolower_w(*b));
 }
 
