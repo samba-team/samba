@@ -67,12 +67,15 @@ get_entry(int argc, char **argv)
 	fprintf(stderr, "Entry not found in database\n");
 	break;
     case 0: {
+	char buf[128];
 	char *name;
 	krb5_unparse_name(context, ent.principal, &name);
 	printf("Principal: %s\n", name);
 	free(name);
-	printf("Max ticket life: %d\n", ent.max_life);
-	printf("Max renewable ticket life: %d\n", ent.max_renew);
+	puttime (*ent.max_life, buf, sizeof(buf));
+	printf("Max ticket life: %s\n", buf);
+	puttime (*ent.max_renew, buf, sizeof(buf));
+	printf("Max renewable ticket life: %s\n", buf);
 	printf("Kvno: %d\n", ent.kvno);
 	printf("Keys: ");
 	for(i = 0; i < ent.keys.len; i++){
