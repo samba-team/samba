@@ -913,7 +913,8 @@ static void print_queue_update(int snum)
 
 	tdb_store_int32(pdb->tdb, "INFO/total_jobs", tstruct.total_jobs);
 
-	if( qcount != get_queue_status(snum, &old_status))
+	get_queue_status(snum, &old_status);
+	if (old_status.qcount != qcount)
 		DEBUG(10,("print_queue_update: queue status change %d jobs -> %d jobs for printer %s\n",
 					old_status.qcount, qcount, printer_name ));
 
@@ -1504,21 +1505,26 @@ static int get_queue_status(int snum, print_status_struct *status)
 	TDB_DATA data, key;
 	const char *printername = lp_const_servicename(snum);
 	struct tdb_print_db *pdb = get_print_db_byname(printername);
+	int len;
+
 	if (!pdb)
 		return 0;
 
-	ZERO_STRUCTP(status);
-	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", printername);
-	key.dptr = keystr;
-	key.dsize = strlen(keystr);
-	data = tdb_fetch(pdb->tdb, key);
-	release_print_db(pdb);
-	if (data.dptr) {
-		if (data.dsize == sizeof(print_status_struct))
-			memcpy(status, data.dptr, sizeof(print_status_struct));
-		SAFE_FREE(data.dptr);
+	if (status) {
+		ZERO_STRUCTP(status);
+		slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", printername);
+		key.dptr = keystr;
+		key.dsize = strlen(keystr);
+		data = tdb_fetch(pdb->tdb, key);
+		if (data.dptr) {
+			if (data.dsize == sizeof(print_status_struct))
+				memcpy(status, data.dptr, sizeof(print_status_struct));
+			SAFE_FREE(data.dptr);
+		}
 	}
-	return status->qcount;
+	len = tdb_fetch_int32(pdb->tdb, "INFO/total_jobs");
+	release_print_db(pdb);
+	return (len == -1 ? 0 : len);
 }
 
 /****************************************************************************
@@ -1537,8 +1543,10 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 	/* also fetch the queue status */
 	memset(&status, 0, sizeof(status));
 	len = get_queue_status(snum, &status);
+
 	if (pstatus)
 		*pstatus = status;
+
 	return len;
 }
 
@@ -1619,7 +1627,8 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 	if (next_jobid == -1)
 		next_jobid = 1;
 
-	for (jobid = NEXT_JOBID(next_jobid); jobid != next_jobid; jobid = NEXT_JOBID(jobid)) {
+	njobs = 0;
+	for (njobs = 0, jobid = NEXT_JOBID(next_jobid); jobid != next_jobid; jobid = NEXT_JOBID(jobid), njobs++) {
 		if (!print_job_exists(snum, jobid))
 			break;
 	}
@@ -1627,6 +1636,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 	if (jobid == next_jobid) {
 		DEBUG(3, ("print_job_start: jobid (%d)==next_jobid(%d).\n",
 				jobid, next_jobid ));
+		tdb_store_int32(pdb->tdb, "INFO/total_jobs", njobs);
 		jobid = -1;
 		goto fail;
 	}
