@@ -168,7 +168,17 @@ struct smbcli_composite *smb_composite_fetchfile_send(struct smb_composite_fetch
 NTSTATUS smb_composite_fetchfile_recv(struct smbcli_composite *c,
 				      TALLOC_CTX *mem_ctx)
 {
-	return smb_composite_wait(c);
+	NTSTATUS status;
+
+	status = smb_composite_wait(c);
+
+	if (NT_STATUS_IS_OK(status)) {
+		struct fetchfile_state *state = talloc_get_type(c->private, struct fetchfile_state);
+		talloc_steal(mem_ctx, state->io->out.data);
+	}
+
+	talloc_free(c);
+	return status;
 }
 
 NTSTATUS smb_composite_fetchfile(struct smb_composite_fetchfile *io,
