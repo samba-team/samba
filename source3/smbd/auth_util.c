@@ -396,10 +396,10 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-BOOL make_user_info_for_winbind(auth_usersupplied_info **user_info, 
-				char *username,
-				char *domain, 
-				char *password)
+BOOL make_user_info_winbind(auth_usersupplied_info **user_info, 
+                            char *username,
+                            char *domain, 
+                            char *password)
 {
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
