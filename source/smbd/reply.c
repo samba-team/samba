@@ -555,7 +555,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 			} else {
 				END_PROFILE(SMBchkpth);
-				return ERROR_NT(NT_STATUS_OBJECT_NAME_NOT_FOUND);
+				return ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpath);
 			}
 		} else if (errno == ENOTDIR) {
 			END_PROFILE(SMBchkpth);
