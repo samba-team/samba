@@ -1029,18 +1029,22 @@ New Schema
 ----------
   
 A new object class (sambaSamAccount) has been introduced to replace 
-the old sambaAccount.  This change aids us in the renaming of attributes 
-to prevent clashes with attributes from other vendors.  There is a 
-conversion script (examples/LDAP/convertSambaAccount) to modify and LDIF 
-file to the new schema.
+the old sambaAccount.  This change aids us in the renaming of 
+attributes to prevent clashes with attributes from other vendors.  
+There is a conversion script (examples/LDAP/convertSambaAccount) to 
+modify and LDIF file to the new schema.
   
 Example:
   
-	$ ldapsearch .... -b "ou=people,dc=..." > old.ldif
-	$ convertSambaAccount <DOM SID> old.ldif new.ldif
+  $ ldapsearch .... -b "ou=people,dc=..." > sambaAcct.ldif
+  $ convertSambaAccount --sid=<Domain SID> \
+    --input=sambaAcct.ldif --output=sambaSamAcct.ldif \
+    --changetype=[modify|add]
 	
-The <DOM SID> can be obtained by running 'net getlocalsid <DOMAINNAME>' 
-on the Samba PDC as root.
+The <DOM SID> can be obtained by running 'net getlocalsid 
+<DOMAINNAME>' on the Samba PDC as root.  The changetype determines 
+the format of the generated LDIF output--either create new entries 
+or modify existing entries.
     
 The old sambaAccount schema may still be used by specifying the 
 "ldapsam_compat" passdb backend.  However, the sambaAccount and
