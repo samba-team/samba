@@ -3343,6 +3343,11 @@ do
 	eval MODULE_DEFAULT_$i=STATIC
 done
 
+# Always built these modules static
+MODULE_pdb_guest=STATIC
+MODULE_rpc_spools=STATIC
+MODULE_rpc_srv=STATIC
+
 AC_ARG_WITH(static-modules,
 [  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
 [ if test $withval; then
@@ -3360,9 +3365,6 @@ AC_ARG_WITH(shared-modules,
 			eval MODULE_$i=SHARED
 	done
 fi ])
-
-# Always built these modules static
-MODULE_pdb_guest=STATIC
 
 SMB_MODULE(pdb_xml, modules/xml.o, bin/xml.so, PDB)
 SMB_MODULE(pdb_mysql, modules/mysql.o, bin/mysql.so, PDB)
