@@ -50,6 +50,21 @@ examples	(Example configuration files):
 	Do read the smb.conf manual page in considering what settings are
 	appropriate for your site.
 
+	There are lots of interesting examples of how people have been able
+	to implement Samba for their use. Users may also be interested in
+	the VFS (Virtual File System) modules under this directory.
+
+SWAT:		The Samba Web Administration Tool
+-----		---------------------------------
+
+	SWAT is a web based tool for configuring and optimising the smb.conf
+	file. To use it, you need to have SWAT enabled in your inetd control
+	file (for more information check the packaging directories for examples
+	of how this can be done). Then you connect to SWAT using your favourite
+	web browser - point it at http://hostname:901, then log on as "root"
+	using the root password. If you log on using a non-root account SWAT
+	will not allow the smb.conf file to be changed.
+
 
 packaging	(Only for those wishing to build binary distributions):
 ---------	-------------------------------------------------------
