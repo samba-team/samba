@@ -212,7 +212,9 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	       	printf("         T = O_TRUNC\n");
 	       	printf("         A = O_APPEND\n");
 	       	printf("         N = O_NONBLOCK/O_NDELAY\n");
+#ifdef O_SYNC
 	       	printf("         S = O_SYNC\n");
+#endif
 #ifdef O_NOFOLLOW
 	       	printf("         F = O_NOFOLLOW\n");
 #endif
@@ -249,9 +251,11 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		case 'N':
 			flags |= O_NONBLOCK;
 			break;
+#ifdef O_SYNC
 		case 'S':
 			flags |= O_SYNC;
 			break;
+#endif
 #ifdef O_NOFOLLOW
 		case 'F':
 			flags |= O_NOFOLLOW;
@@ -288,22 +292,22 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	int ret = -1;
-	struct func_entry *fptr;
-	struct func_entry func_table[] = {
-		{ "rmdir",		vfs->conn->vfs_ops.rmdir },
-		{ "unlink",		vfs->conn->vfs_ops.unlink },
-		{ "chdir",		vfs->conn->vfs_ops.chdir },
-		{ NULL }
-	};
 
 	if (argc != 2) {
 		printf("Usage: %s <path>\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	for (fptr=func_table; *fptr->name; fptr++)
-		if (strcmp(fptr->name, argv[0]) == 0 )
-			ret = fptr->fn(vfs->conn, argv[1]);
+	if (strcmp("rmdir", argv[0]) == 0 ) {
+		ret = vfs->conn->vfs_ops.rmdir(vfs->conn, argv[1]);
+	} else if (strcmp("unlink", argv[0]) == 0 ) {
+		ret = vfs->conn->vfs_ops.unlink(vfs->conn, argv[1]);
+	} else if (strcmp("chdir", argv[0]) == 0 ) {
+		ret = vfs->conn->vfs_ops.chdir(vfs->conn, argv[1]);
+	} else {
+		printf("%s: error=%d (invalid function name!)\n", argv[0], errno);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (ret == -1) {
 		printf("%s: error=%d (%s)\n", argv[0], errno, strerror(errno));
