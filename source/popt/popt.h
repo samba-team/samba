@@ -114,7 +114,7 @@ int poptDupArgv(int argc, const char **argv,
 		/*@out@*/ int * argcPtr, /*@out@*/ const char *** argvPtr);
 int poptParseArgvString(const char * s,
 		/*@out@*/ int * argcPtr, /*@out@*/ const char *** argvPtr);
-/*@observer@*/ const char *const poptStrerror(const int error);
+/*@observer@*/ const char *poptStrerror(const int error);
 void poptSetExecPath(poptContext con, const char * path, int allowAbsolute);
 void poptPrintHelp(poptContext con, FILE * f, int flags);
 void poptPrintUsage(poptContext con, FILE * f, int flags);
