@@ -1099,7 +1099,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	}
 
 	/* do the actual command */
-	if(!api_rpc_cmds[fn_num].fn(p->vuid, rpc_in, &p->out_data.rdata)) {
+	if(!api_rpc_cmds[fn_num].fn(rpc_in, &p->out_data.rdata)) {
 		DEBUG(0,("api_rpcTNP: %s: failed.\n", rpc_name));
 		prs_mem_free(&p->out_data.rdata);
 		return False;

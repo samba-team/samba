@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -21,7 +20,6 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 
 #include "includes.h"
 #include "nterr.h"
@@ -911,7 +909,7 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_srv_get_info( uint16 vuid, prs_struct *data,
+static BOOL api_srv_net_srv_get_info(prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SRV_GET_INFO q_n;
@@ -928,7 +926,7 @@ static BOOL api_srv_net_srv_get_info( uint16 vuid, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_file_enum( uint16 vuid, prs_struct *data,
+static BOOL api_srv_net_file_enum(prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_FILE_ENUM q_n;
@@ -948,7 +946,7 @@ static BOOL api_srv_net_file_enum( uint16 vuid, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_conn_enum( uint16 vuid, prs_struct *data,
+static BOOL api_srv_net_conn_enum(prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_CONN_ENUM q_n;
@@ -968,7 +966,7 @@ static BOOL api_srv_net_conn_enum( uint16 vuid, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_sess_enum( uint16 vuid, prs_struct *data,
+static BOOL api_srv_net_sess_enum(prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SESS_ENUM q_n;
@@ -990,7 +988,7 @@ static BOOL api_srv_net_sess_enum( uint16 vuid, prs_struct *data,
  RPC to enumerate shares.
 ********************************************************************/
 
-static BOOL api_srv_net_share_enum( uint16 vuid, prs_struct *data,
+static BOOL api_srv_net_share_enum(prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SHARE_ENUM q_n;
@@ -1014,7 +1012,7 @@ static BOOL api_srv_net_share_enum( uint16 vuid, prs_struct *data,
  RPC to return share information.
 ********************************************************************/
 
-static BOOL api_srv_net_share_get_info( uint16 vuid, prs_struct *data,
+static BOOL api_srv_net_share_get_info(prs_struct *data,
                                         prs_struct *rdata )
 {
 	SRV_Q_NET_SHARE_GET_INFO q_n;
@@ -1077,7 +1075,7 @@ static BOOL srv_reply_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_n,
 }
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_remote_tod( uint16 vuid, prs_struct *data,
+static BOOL api_srv_net_remote_tod(prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_REMOTE_TOD q_n;

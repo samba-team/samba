@@ -22,12 +22,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
-#include "nterr.h"
 
 extern int DEBUGLEVEL;
-
 
 /*******************************************************************
  reg_reply_unknown_1
@@ -61,8 +58,7 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 /*******************************************************************
  api_reg_close
  ********************************************************************/
-static BOOL api_reg_close( uint16 vuid, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_reg_close(prs_struct *data, prs_struct *rdata)
 {
 	REG_Q_CLOSE q_r;
 
@@ -102,8 +98,7 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r,
 /*******************************************************************
  api_reg_open
  ********************************************************************/
-static BOOL api_reg_open( uint16 vuid, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_reg_open(prs_struct *data, prs_struct *rdata)
 {
 	REG_Q_OPEN_HKLM q_u;
 
@@ -168,8 +163,7 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 /*******************************************************************
  api_reg_open_entry
  ********************************************************************/
-static BOOL api_reg_open_entry( uint16 vuid, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_reg_open_entry(prs_struct *data, prs_struct *rdata)
 {
 	REG_Q_OPEN_ENTRY q_u;
 
@@ -218,8 +212,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 /*******************************************************************
  api_reg_info
  ********************************************************************/
-static BOOL api_reg_info( uint16 vuid, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_reg_info(prs_struct *data, prs_struct *rdata)
 {
 	REG_Q_INFO q_u;
 
@@ -252,4 +245,3 @@ BOOL api_reg_rpc(pipes_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds, data);
 }
-

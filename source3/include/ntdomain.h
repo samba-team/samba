@@ -204,7 +204,7 @@ struct api_struct
 {  
   char *name;
   uint8 opnum;
-  BOOL (*fn) (uint16 vuid, prs_struct*, prs_struct*);
+  BOOL (*fn) (prs_struct*, prs_struct*);
 };
 
 typedef struct
