@@ -242,6 +242,9 @@ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 			      TALLOC_CTX *mem_ctx, 
 			      uint8_t *data, size_t length, DATA_BLOB *sig)
 {
+	if (!gensec_security->ops->unseal_packet) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 	return gensec_security->ops->unseal_packet(gensec_security, mem_ctx, data, length, sig);
 }
 
@@ -250,6 +253,9 @@ NTSTATUS gensec_check_packet(struct gensec_security *gensec_security,
 			     const uint8_t *data, size_t length, 
 			     const DATA_BLOB *sig)
 {
+	if (!gensec_security->ops->check_packet) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 	return gensec_security->ops->check_packet(gensec_security, mem_ctx, data, length, sig);
 }
 
@@ -258,6 +264,9 @@ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,
 			    uint8_t *data, size_t length, 
 			    DATA_BLOB *sig)
 {
+	if (!gensec_security->ops->seal_packet) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 	return gensec_security->ops->seal_packet(gensec_security, mem_ctx, data, length, sig);
 }
 
@@ -266,14 +275,30 @@ NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security,
 			    const uint8_t *data, size_t length, 
 			    DATA_BLOB *sig)
 {
+	if (!gensec_security->ops->sign_packet) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 	return gensec_security->ops->sign_packet(gensec_security, mem_ctx, data, length, sig);
 }
 
 NTSTATUS gensec_session_key(struct gensec_security *gensec_security, 
 			    DATA_BLOB *session_key)
 {
+	if (!gensec_security->ops->session_key) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 	return gensec_security->ops->session_key(gensec_security, session_key);
 }
+
+/** 
+ * Return the credentials of a logged on user, including session keys
+ * etc.
+ *
+ * Only valid after a successful authentication
+ *
+ * May only be called once per authentication.
+ *
+ */
 
 NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
 			     struct auth_session_info **session_info)
@@ -351,6 +376,34 @@ NTSTATUS gensec_set_password(struct gensec_security *gensec_security,
 {
 	gensec_security->user.password = talloc_strdup(gensec_security->mem_ctx, password);
 	if (!gensec_security->user.password) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Set a kerberos realm on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+NTSTATUS gensec_set_realm(struct gensec_security *gensec_security, const char *realm) 
+{
+	gensec_security->user.realm = talloc_strdup(gensec_security->mem_ctx, realm);
+	if (!gensec_security->user.realm) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Set the target principal name (if already known) on a GENSEC context - ensures it is talloc()ed 
+ *
+ */
+
+NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, const char *principal) 
+{
+	gensec_security->target.principal = talloc_strdup(gensec_security->mem_ctx, principal);
+	if (!gensec_security->target.principal) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
@@ -457,7 +510,10 @@ BOOL gensec_init(void)
 
 	/* FIXME: Perhaps panic if a basic backend, such as NTLMSSP, fails to initialise? */
 	gensec_ntlmssp_init();
-	gensec_spengo_init();
+#if 0
+	gensec_krb5_init();
+#endif
+	gensec_spnego_init();
 	gensec_dcerpc_schannel_init();
 
 	initialised = True;

@@ -25,10 +25,18 @@
 struct gensec_security;
 struct gensec_user {
 	const char *domain;
+	const char *realm;
 	const char *name;
 	const char *password;
 	char schan_session_key[16];
 };
+struct gensec_target {
+	const char *principal;
+	const char *hostname;
+	const struct sock_addr *addr;
+};
+		
+
 /* GENSEC mode */
 enum gensec_role
 {
@@ -71,6 +79,7 @@ struct gensec_security {
 	const struct gensec_security_ops *ops;
 	void *private_data;
 	struct gensec_user user;
+	struct gensec_target target;
 	enum gensec_role gensec_role;
 	BOOL subcontext;
 };
