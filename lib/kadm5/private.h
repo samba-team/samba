@@ -180,9 +180,11 @@ _kadm5_set_modifier __P((
 kadm5_ret_t
 _kadm5_setup_entry __P((
 	hdb_entry *ent,
+	u_int32_t mask,
 	kadm5_principal_ent_t princ,
+	u_int32_t princ_mask,
 	kadm5_principal_ent_t def,
-	u_int32_t mask));
+	u_int32_t def_mask));
 
 kadm5_ret_t
 kadm5_log_get_version (int fd,
