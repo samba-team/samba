@@ -38,7 +38,7 @@ struct cli_state *cli_winreg_initialise(struct cli_state *cli,
 /* Shutdown a server */
 
 NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
-                          const char *srv_name, const char *msg,
+                          const char *msg,
                           uint32 timeout, uint16 flags)
 {
 	prs_struct qbuf;
@@ -78,8 +78,7 @@ done:
 
 /* Abort a server shutdown */
 
-NTSTATUS cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
-                                const char *srv_name)
+NTSTATUS cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
