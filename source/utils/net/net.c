@@ -42,7 +42,6 @@
 /*****************************************************/
 
 #include "includes.h"
-#include "utils/net/net.h"
 
 /*
   run a function from a function table. If not found then
