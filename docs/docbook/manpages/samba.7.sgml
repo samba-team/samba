@@ -117,7 +117,7 @@
 	and the manual pages of those components that you use. If the 
 	manual pages aren't clear enough then please send a patch or 
 	bug report to <ulink url="mailto:samba@samba.org">
-	samba&commat;samba.org</ulink></para>
+	samba@samba.org</ulink></para>
 	
 	
 
@@ -165,7 +165,7 @@
 	</para>
 
 	<para>If you have patches to submit or bugs to report 
-	then you may mail them directly to samba-patches&commat;samba.org.
+	then you may mail them directly to samba-patches@samba.org.
 	Note, however, that due to the enormous popularity of this 
 	package the Samba Team may take some time to respond to mail. We 
 	prefer patches in <command>diff -u</command> format.</para>
