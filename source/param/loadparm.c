@@ -233,6 +233,7 @@ typedef struct
 	char *szLdapAdminDn;
 	char *szAclCompat;
 	int ldap_passwd_sync; 
+	int ldap_rebind_sleep;
 	BOOL ldap_delete_dn;
 	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
@@ -1077,6 +1078,7 @@ static struct parm_struct parm_table[] = {
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED}, 
 	{"ldap passwd sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_ADVANCED}, 
 	{"ldap delete dn", P_BOOL, P_GLOBAL, &Globals.ldap_delete_dn, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap rebind sleep", P_INTEGER, P_GLOBAL, &Globals.ldap_rebind_sleep, NULL, NULL, FLAG_ADVANCED},
 
 	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR}, 
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, FLAG_ADVANCED}, 
@@ -1469,6 +1471,7 @@ static void init_globals(void)
 	Globals.ldap_ssl = LDAP_SSL_ON;
 	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
 	Globals.ldap_delete_dn = False;
+	Globals.ldap_rebind_sleep = 1000; /* wait 1 sec for replication */
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -1698,6 +1701,7 @@ FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
 FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
+FN_GLOBAL_INTEGER(lp_ldap_rebind_sleep, &Globals.ldap_rebind_sleep)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
