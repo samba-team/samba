@@ -278,7 +278,7 @@ gss_verify_mic_internal
     OM_uint32 ret;
     krb5_keytype keytype;
 
-    ret = gss_krb5_get_remotekey(context_handle, &key);
+    ret = gss_krb5_get_subkey(context_handle, &key);
     if (ret) {
 	gssapi_krb5_set_error_string ();
 	*minor_status = ret;

@@ -35,44 +35,6 @@
 
 RCSID("$Id$");
 
-OM_uint32
-gss_krb5_get_remotekey(const gss_ctx_id_t context_handle,
-		       krb5_keyblock **key)
-{
-    krb5_keyblock *skey;
-
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    if (context_handle->more_flags & ACCEPTOR_SUBKEY) {
-	if (context_handle->more_flags & LOCAL)
-	    krb5_auth_con_getremotesubkey(gssapi_krb5_context,
-					  context_handle->auth_context, 
-					  &skey);
-	else
-	    krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
-					 context_handle->auth_context, 
-					 &skey);
-    } else {
-	krb5_auth_con_getremotesubkey(gssapi_krb5_context,
-				      context_handle->auth_context, 
-				      &skey);
-	if(skey == NULL)
-	    krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
-					 context_handle->auth_context, 
-					 &skey);
-	if(skey == NULL)
-	    krb5_auth_con_getkey(gssapi_krb5_context,
-				 context_handle->auth_context, 
-				 &skey);
-	if(skey == NULL) {
-	    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
-	    return GSS_KRB5_S_KG_NO_SUBKEY; /* XXX */
-	}
-    }
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
-    *key = skey;
-    return 0;
-}
-
 static OM_uint32
 unwrap_des
            (OM_uint32 * minor_status,
@@ -413,7 +375,7 @@ OM_uint32 gss_unwrap
 
   if (qop_state != NULL)
       *qop_state = GSS_C_QOP_DEFAULT;
-  ret = gss_krb5_get_remotekey(context_handle, &key);
+  ret = gss_krb5_get_subkey(context_handle, &key);
   if (ret) {
       gssapi_krb5_set_error_string ();
       *minor_status = ret;
