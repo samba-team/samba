@@ -52,7 +52,9 @@ o   Jim McDonough <jmcd@samba.org>
 
 
 o   Stefan Metzmacher <metze@samba.org>
-    
+    * Add SIGABRT to fault handling
+      so we now got a backtrace, if we crash
+      in libldap with SIGABRT    
 
 o   Tim Potter <tpot@samba.org>
 
