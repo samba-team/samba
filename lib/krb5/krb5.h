@@ -111,7 +111,8 @@ typedef enum krb5_preauthtype {
 
 
 typedef enum krb5_address_type { 
-    KRB5_ADDRESS_INET = 2
+    KRB5_ADDRESS_INET  = 2,
+    KRB5_ADDRESS_INET6 = 24
 } krb5_address_type;
 
 enum {
