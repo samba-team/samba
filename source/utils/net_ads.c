@@ -33,9 +33,9 @@ int net_ads_usage(int argc, const char **argv)
 "\nnet ads leave"\
 "\n\tremoves the local machine from a ADS realm\n"\
 "\nnet ads user"\
-"\n\tlist users in the realm\n"\
+"\n\tlist, add, or delete users in the realm\n"\
 "\nnet ads group"\
-"\n\tlist groups in the realm\n"\
+"\n\tlist, add, or delete groups in the realm\n"\
 "\nnet ads info"\
 "\n\tshows some info on the server\n"\
 "\nnet ads status"\
@@ -145,7 +145,7 @@ static void usergrp_display(char *field, void **values, void *data_area)
 				printf("%-21.21s %-50.50s\n", 
 				       disp_fields[0], disp_fields[1]);
 			else
-				printf("%-21.21s\n", disp_fields[0]);
+				printf("%s\n", disp_fields[0]);
 		}
 		SAFE_FREE(disp_fields[0]);
 		SAFE_FREE(disp_fields[1]);
@@ -308,26 +308,111 @@ int net_ads_user(int argc, const char **argv)
 	return net_run_function(argc, argv, func, net_ads_user_usage);
 }
 
-static int net_ads_group(int argc, const char **argv)
+static int net_ads_group_usage(int argc, const char **argv)
 {
+	return net_help_group(argc, argv);
+} 
+
+static int ads_group_add(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS status;
+	void *res=NULL;
+	int rc = -1;
+
+	if (argc < 1) return net_ads_group_usage(argc, argv);
+	
+	if (!(ads = ads_startup())) return -1;
+
+	status = ads_find_user_acct(ads, &res, argv[0]);
+
+	if (!ADS_ERR_OK(status)) {
+		d_printf("ads_group_add: %s\n", ads_errstr(status));
+		goto done;
+	}
+	
+	if (ads_count_replies(ads, res)) {
+		d_printf("ads_group_add: Group %s already exists\n", argv[0]);
+		ads_msgfree(ads, res);
+		goto done;
+	}
+
+	status = ads_add_group_acct(ads, argv[0], opt_comment);
+
+	if (ADS_ERR_OK(status)) {
+		d_printf("Group %s added\n", argv[0]);
+		rc = 0;
+	} else {
+		d_printf("Could not add group %s: %s\n", argv[0],
+			 ads_errstr(status));
+	}
+
+ done:
+	if (res)
+		ads_msgfree(ads, res);
+	ads_destroy(&ads);
+	return rc;
+}
+
+static int ads_group_delete(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	void *res;
+	char *groupdn;
+
+	if (argc < 1) return net_ads_group_usage(argc, argv);
+	
+	if (!(ads = ads_startup())) return -1;
+
+	rc = ads_find_user_acct(ads, &res, argv[0]);
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(0, ("Group %s does not exist\n", argv[0]));
+		return -1;
+	}
+	groupdn = ads_get_dn(ads, res);
+	ads_msgfree(ads, res);
+	rc = ads_del_dn(ads, groupdn);
+	ads_memfree(ads, groupdn);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("Group %s deleted\n", argv[0]);
+		return 0;
+	}
+	d_printf("Error deleting group %s: %s\n", argv[0], 
+		 ads_errstr(rc));
+	return -1;
+}
+
+int net_ads_group(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"ADD", ads_group_add},
+		{"DELETE", ads_group_delete},
+		{NULL, NULL}
+	};
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	const char *shortattrs[] = {"sAMAccountName", NULL};
 	const char *longattrs[] = {"sAMAccountName", "description", NULL};
 	char *disp_fields[2] = {NULL, NULL};
 
-	if (!(ads = ads_startup())) return -1;
+	if (argc == 0) {
+		if (!(ads = ads_startup())) return -1;
 
-	if (opt_long_list_entries)
-		d_printf("\nGroup name            Comment"\
-			 "\n-----------------------------\n");
-	rc = ads_do_search_all_fn(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
-				  "(objectclass=group)", opt_long_list_entries
-				  ? longattrs : shortattrs, usergrp_display, 
-				  disp_fields);
+		if (opt_long_list_entries)
+			d_printf("\nGroup name            Comment"\
+				 "\n-----------------------------\n");
+		rc = ads_do_search_all_fn(ads, ads->bind_path, 
+					  LDAP_SCOPE_SUBTREE, 
+					  "(objectclass=group)", 
+					  opt_long_list_entries ? longattrs : 
+					  shortattrs, usergrp_display, 
+					  disp_fields);
 
-	ads_destroy(&ads);
-	return 0;
+		ads_destroy(&ads);
+		return 0;
+	}
+	return net_run_function(argc, argv, func, net_ads_group_usage);
 }
 
 static int net_ads_status(int argc, const char **argv)
@@ -709,15 +794,15 @@ int net_ads_help(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"USER", net_ads_user_usage},
+		{"GROUP", net_ads_group_usage},
+		{"PRINTER", net_ads_printer_usage},
 #if 0
 		{"INFO", net_ads_info},
 		{"JOIN", net_ads_join},
 		{"LEAVE", net_ads_leave},
 		{"STATUS", net_ads_status},
-		{"GROUP", net_ads_group},
 		{"PASSWORD", net_ads_password},
 		{"CHOSTPASS", net_ads_change_localhost_pass},
-		{"PRINTER", net_ads_printer},
 #endif
 		{NULL, NULL}
 	};
@@ -768,6 +853,11 @@ int net_ads_join(int argc, const char **argv)
 }
 
 int net_ads_user(int argc, const char **argv)
+{
+	return net_ads_noads();
+}
+
+int net_ads_group(int argc, const char **argv)
 {
 	return net_ads_noads();
 }
