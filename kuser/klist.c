@@ -191,7 +191,9 @@ print_tickets (krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_unparse_name");
 
-    printf ("Credentials cache: %s\n", krb5_cc_get_name(context, ccache));
+    printf ("Credentials cache: %s:%s\n", 
+	    krb5_cc_get_type(context, ccache),
+	    krb5_cc_get_name(context, ccache));
     printf ("\tPrincipal: %s\n\n", str);
     free (str);
 
