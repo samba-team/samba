@@ -61,9 +61,14 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
 }
 
 
-/*******************************************************************
- Initialise a parse structure - malloc the data if requested.
- ********************************************************************/
+/**
+ * Initialise an expandable parse structure.
+ *
+ * @param size Initial buffer size.  If >0, a new buffer will be
+ * created with malloc().
+ *
+ * @return False if allocation fails, otherwise True.
+ **/
 BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 {
 	ZERO_STRUCTP(ps);
