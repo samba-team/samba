@@ -1359,6 +1359,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 	int num_sessions, snum, ret;
 	fstring username;
 	fstring machine;
+	BOOL not_root = False;
 	/* SE_PRIV se_diskop = SE_DISK_OPERATOR; / * Is disk op appropriate here ? JRA. * /
 	BOOL is_disk_op = False;                 / * No. SSS. :) */
 
@@ -1393,6 +1394,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 		    strequal(session_list[snum].remote_machine, machine)) {
 		
 			if (user.uid != sec_initial_uid()) {
+				not_root = True;
 				become_root();
 			}
 			if ((ret = message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))) {
@@ -1400,7 +1402,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 			} else {
 				r_u->status = WERR_ACCESS_DENIED;
 			}
-			if (user.uid != sec_initial_uid()) {
+			if (not_root) {
 				unbecome_root();
 			}
 		}
