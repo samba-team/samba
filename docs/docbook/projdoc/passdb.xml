@@ -151,7 +151,7 @@ Samba-3 introduces the following new password backend capabilities:
 
 			<para>
 			The new LDAP implmentation significantly expands the control abilities that
-			were possible with prior versions of Samba. It is not possible to specify
+			were possible with prior versions of Samba. It is now possible to specify
 			"per user" profile settings, home directories, account access controls, and
 			much more. Corporate sites will see that the Samba-Team has listened to their
 			requests both for capability and to allow greater scalability.
