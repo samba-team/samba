@@ -116,7 +116,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	p += clistr_push(cli, p, dname, -1, 0);
+	p += clistr_push(cli, p, dname, -1, STR_TERMINATE);
 
 	cli_setup_bcc(cli, p);
 
