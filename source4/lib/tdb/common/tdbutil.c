@@ -82,7 +82,7 @@ static void (*TdbCatchSignal(int signum,void (*handler)(int )))(int)
 static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 {
 	TDB_DATA ret;
-	ret.dptr = dptr;
+	ret.dptr = discard_const_p(char, dptr);
 	ret.dsize = dsize;
 	return ret;
 }

@@ -435,13 +435,13 @@ static NTSTATUS ipc_write(struct smbsrv_request *req, union smb_write *wr)
 	switch (wr->generic.level) {
 	case RAW_WRITE_WRITE:
 		fnum = wr->write.in.fnum;
-		data.data = wr->write.in.data;
+		data.data = discard_const_p(void, wr->write.in.data);
 		data.length = wr->write.in.count;
 		break;
 
 	case RAW_WRITE_WRITEX:
 		fnum = wr->writex.in.fnum;
-		data.data = wr->writex.in.data;
+		data.data = discard_const_p(void, wr->writex.in.data);
 		data.length = wr->writex.in.count;
 		break;
 
