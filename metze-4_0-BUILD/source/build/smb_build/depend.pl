@@ -16,16 +16,95 @@ sub _do_depend_subsystems($)
 {
 	my $CTX = shift;
 
+	#
+	# loop on all subsystems
+	#
 	foreach my $key (sort keys %{$CTX->{INPUT}{SUBSYSTEMS}}) {
 		my $name = $CTX->{INPUT}{SUBSYSTEMS}{$key}{NAME};
 
-		$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{NAME} = $CTX->{INPUT}{SUBSYSTEMS}{$key}{NAME};
+		#
+		# skip when the subsystem was disabled
+		#
+		if ($CTX->{INPUT}{SUBSYSTEMS}{$key}{ENABLE} ne "YES" ) {
+			next;
+		}
 
-		@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{OBJ_LIST}} = ();
-		push(@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{OBJ_LIST}},@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{INIT_OBJ_FILES}});
-		push(@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{OBJ_LIST}},@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{ADD_OBJ_FILES}});
+		#
+		# create the subsystems used OBJ_LIST
+		#
+		my @OBJ_LIST = ();
+		foreach my $elem (@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{INIT_OBJ_FILES}}) {
+			push(@OBJ_LIST,$elem);
+		}
+		foreach my $elem (@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{ADD_OBJ_FILES}}) {
+			push(@OBJ_LIST,$elem);
+		}
 
-		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(SUBSYSTEM_$name\_OBJS)");
+		#
+		# create the subsystems used SUBSYSTEMS_LIST
+		#
+		my @SUBSYSTEMS_LIST = ();
+		foreach my $elem (@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{REQUIRED_SUBSYSTEMS}}) {
+			push(@SUBSYSTEMS_LIST,$elem);
+		}
+
+		#
+		# create the subsystems used LIBRARIES_LIST
+		#
+		my @LIBRARIES_LIST = ();
+		foreach my $elem (@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{REQUIRED_LIBRARIES}}) {
+			push(@LIBRARIES_LIST,$elem);
+		}
+
+		#
+		# now collect the info from the subsystems static modules
+		#
+		foreach my $subkey (sort keys %{$CTX->{INPUT}{MODULES}}) {
+			#
+			# we only want STATIC modules
+			#
+			if ($CTX->{INPUT}{MODULES}{$subkey}{BUILD} ne "STATIC") {
+				next;
+			}
+
+			#
+			# we only want modules which belong to the current subsystem
+			#
+			if ($CTX->{INPUT}{MODULES}{$subkey}{SUBSYSTEM} ne $name) {
+				next;
+			}
+
+			#
+			# add OBJ of static modules to the subsystems used OBJ_LIST
+			#
+			foreach my $elem (@{$CTX->{INPUT}{MODULES}{$subkey}{INIT_OBJ_FILES}}) {
+				push(@OBJ_LIST,$elem);
+			}
+			foreach my $elem (@{$CTX->{INPUT}{MODULES}{$subkey}{ADD_OBJ_FILES}}) {
+				push(@OBJ_LIST,$elem);
+			}
+
+			#
+			# create the subsystems used SUBSYSTEMS_LIST
+			#
+			foreach my $elem (@{$CTX->{INPUT}{MODULES}{$subkey}{REQUIRED_SUBSYSTEMS}}) {
+				push(@SUBSYSTEMS_LIST,$elem);
+			}
+
+			#
+			# create the subsystems used LIBRARIES_LIST
+			#
+			foreach my $elem (@{$CTX->{INPUT}{MODULES}{$subkey}{REQUIRED_LIBRARIES}}) {
+				push(@LIBRARIES_LIST,$elem);
+			}
+		}
+
+		#
+		# set the lists
+		#
+		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{OBJ_LIST}} = @OBJ_LIST;
+		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{SUBSYSTEMS_LIST}} = @SUBSYSTEMS_LIST;
+		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{LIBRARIES_LIST}} = @LIBRARIES_LIST;
 	}
 
 	return;
@@ -40,36 +119,13 @@ sub _do_depend_shared_modules($)
 {
 	my $CTX = shift;
 
-	foreach my $key (sort keys %{$CTX->{INPUT}{SHARED_MODULES}}) {
-		if ($CTX->{INPUT}{SHARED_MODULES}{$key}{BUILD} eq "NOT" ) {
+	foreach my $key (sort keys %{$CTX->{INPUT}{MODULES}}) {
+		my $name = $CTX->{OUTPUT}{MODULES}{$key}{NAME};
+
+		if ($CTX->{INPUT}{MODULES}{$key}{BUILD} ne "SHARED" ) {
 			next;
 		}
 
-		my $name = $CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME};
-		$CTX->{INPUT}{SHARED_MODULES}{$key}{NAME} = $CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME};
-
-		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}} = ();
-		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}},@{$CTX->{INPUT}{SHARED_MODULES}{$key}{INIT_OBJ_FILES}});
-		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}},@{$CTX->{INPUT}{SHARED_MODULES}{$key}{ADD_OBJ_FILES}});
-
-		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(MODULE_$name\_OBJS)");
-	}
-
-	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
-		my $name = $CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME};
-
-		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{MODULE} = $CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME}.".so";
-
-		push(@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}},"bin/".$CTX->{OUTPUT}{SHARED_MODULES}{$key}{MODULE});
-
-		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{DEPEND_LIST}} = ();
-		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{DEPEND_LIST}},"\$(MODULE_$name\_OBJS)");
-
-		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_LIST}} = ();
-		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_LIST}},"\$(MODULE_$name\_OBJS)");
-		push(@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_LIST}},"\$(MODULE_$name\_LIBS)");
-
-		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_FLAGS} = "-Wl,-soname=$name.so";
 	}
 
 	return;
@@ -84,15 +140,6 @@ sub _do_depend_libraries($)
 {
 	my $CTX = shift;
 
-	foreach my $key (sort keys %{$CTX->{INPUT}{LIBRARIES}}) {
-		my $name = $CTX->{INPUT}{LIBRARIES}{$key}{NAME};
-		$CTX->{OUTPUT}{LIBRARIES}{$key}{NAME} = $CTX->{INPUT}{LIBRARIES}{$key}{NAME};
-
-		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{OBJ_LIST}} = @{$CTX->{INPUT}{LIBRARIES}{$key}{OBJ_FILES}};
-
-		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(LIBRARY_$name\_OBJS)");
-	}
-
 	return;
 }
 
@@ -104,30 +151,6 @@ sub _do_depend_libraries($)
 sub _do_depend_binaries($)
 {
 	my $CTX = shift;
-
-	foreach my $key (sort keys %{$CTX->{INPUT}{BINARIES}}) {
-		my $name = $CTX->{INPUT}{BINARIES}{$key}{NAME};
-		$CTX->{OUTPUT}{BINARIES}{$key}{NAME} = $CTX->{INPUT}{BINARIES}{$key}{NAME};;
-
-		@{$CTX->{OUTPUT}{BINARIES}{$key}{OBJ_LIST}} = @{$CTX->{INPUT}{BINARIES}{$key}{OBJ_FILES}};
-
-		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(BINARY_$name\_OBJS)");
-
-	}
-
-	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
-		my $name = $CTX->{OUTPUT}{BINARIES}{$key}{NAME};
-
-		$CTX->{OUTPUT}{BINARIES}{$key}{BINARY} = $CTX->{OUTPUT}{BINARIES}{$key}{NAME};
-
-		@{$CTX->{OUTPUT}{BINARIES}{$key}{DEPEND_LIST}} = ();
-		push(@{$CTX->{OUTPUT}{BINARIES}{$key}{DEPEND_LIST}},"\$(BINARY_$name\_DEPEND_LIST)");
-
-		@{$CTX->{OUTPUT}{BINARIES}{$key}{LINK_LIST}} = ();
-		push(@{$CTX->{OUTPUT}{BINARIES}{$key}{LINK_LIST}},"\$(BINARY_$name\_LINK_LIST)");
-
-		$CTX->{OUTPUT}{BINARIES}{$key}{LINK_FLAGS} = "";
-	}
 
 	return;
 }
