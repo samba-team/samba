@@ -1,8 +1,8 @@
-dnl $Id
+dnl $Id$
 dnl
 dnl check for getpwnam_r, and if it's posix or not
 
-AC_DEFUN(AC_CHECK_GETPWNAM_R_POSIX,
+AC_DEFUN(AC_CHECK_GETPWNAM_R_POSIX,[
 AC_FIND_FUNC_NO_LIBS(getpwnam_r,c_r)
 if test "$ac_cv_func_getpwnam_r" = yes; then
 	AC_CACHE_CHECK(if getpwnam_r is posix,ac_cv_func_getpwnam_r_posix,
@@ -21,4 +21,4 @@ if test "$ac_cv_func_getpwnam_r_posix" = yes; then
 	AC_DEFINE(POSIX_GETPWNAM_R, 1, [Define if getpwnam_r has POSIX flavour.])
 fi
 fi
-)
+])
