@@ -2622,9 +2622,13 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	info.attributes |= PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;
 
 	/* Restore the stripped strings. */
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", 
-		 get_called_name());
+	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
 	strupper(info.servername);
+
+	slprintf(printername, sizeof(printername)-1, "\\\\%s\\", get_called_name());
+	strupper(printername);
+	fstrcat(printername, info.printername);
+	fstrcpy(info.printername, printername);
 
 #if 0
 	/*
