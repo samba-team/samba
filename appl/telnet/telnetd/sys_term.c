@@ -35,6 +35,8 @@
 static char sccsid[] = "@(#)sys_term.c	8.4 (Berkeley) 5/30/95";
 #endif /* not lint */
 
+#include <config.h>
+
 #include "telnetd.h"
 #include "pathnames.h"
 
@@ -1544,6 +1546,14 @@ init_env()
  * function will turn us into the login process.
  */
 
+struct arg_val {
+  int size;
+  int argc;
+  char **argv;
+};
+
+int addarg(struct arg_val*, char*);
+
 	void
 start_login(host, autologin, name)
 	char *host;
@@ -1551,8 +1561,7 @@ start_login(host, autologin, name)
 	char *name;
 {
 	register char *cp;
-	register char **argv;
-	char **addarg();
+	struct arg_val argv;
 	extern char *getenv();
 #ifdef	UTMPX
 	register int pid = getpid();
@@ -1590,7 +1599,13 @@ start_login(host, autologin, name)
 	 *
 	 * -f : force this login, he has already been authenticated
 	 */
-	argv = addarg(0, "login");
+
+	/* init argv structure */ 
+	argv.size=0;
+	argv.argc=0;
+	argv.argv=(char**)malloc(0); /*so we can call realloc later */
+
+	addarg(&argv, "login");
 
 #if	!defined(NO_LOGIN_H)
 
@@ -1602,8 +1617,8 @@ start_login(host, autologin, name)
 	if ((auth_level < 0) || (autologin != AUTH_VALID))
 # endif
 	{
-		argv = addarg(argv, "-h");
-		argv = addarg(argv, host);
+		addarg(&argv, "-h");
+		addarg(&argv, host);
 #ifdef	SOLARIS
 		/*
 		 * SVR4 version of -h takes TERM= as second arg, or -
@@ -1616,12 +1631,12 @@ start_login(host, autologin, name)
 			strncat(termbuf, term, sizeof(termbuf) - 6);
 			term = termbuf;
 		}
-		argv = addarg(argv, term);
+		addarg(&argv, term);
 #endif
 	}
 #endif
 #if	!defined(NO_LOGIN_P)
-	argv = addarg(argv, "-p");
+	addarg(&argv, "-p");
 #endif
 #ifdef	LINEMODE
 	/*
@@ -1642,8 +1657,8 @@ start_login(host, autologin, name)
 	 * to start bftp instead of shell.
 	 */
 	if (bftpd) {
-		argv = addarg(argv, "-e");
-		argv = addarg(argv, BFTPPATH);
+		addarg(&argv, "-e");
+		addarg(&argv, BFTPPATH);
 	} else
 #endif
 #if	defined (SecurID)
@@ -1652,7 +1667,7 @@ start_login(host, autologin, name)
 	 * A -s is supposed to override it anyhow.
 	 */
 	if (require_SecurID)
-		argv = addarg(argv, "-s");
+		addarg(&argv, "-s");
 #endif
 #if	defined (AUTHENTICATION)
 	if (auth_level < 0 || autologin != AUTH_VALID) {
@@ -1661,8 +1676,8 @@ start_login(host, autologin, name)
 	}
 	if (auth_level >= 0 && autologin == AUTH_VALID) {
 # if	!defined(NO_LOGIN_F)
-		argv = addarg(argv, "-f");
-		argv = addarg(argv, name);
+		addarg(&argv, "-f");
+		addarg(&argv, name);
 # else
 #  if defined(LOGIN_R)
 		/*
@@ -1692,8 +1707,8 @@ start_login(host, autologin, name)
 			 */
 #			define LOGIN_HOST "localhost"
 #  endif
-			argv = addarg(argv, "-r");
-			argv = addarg(argv, LOGIN_HOST);
+			addarg(&argv, "-r");
+			addarg(&argv, LOGIN_HOST);
 
 			xpty = pty;
 # ifndef  STREAMSPTY
@@ -1736,18 +1751,18 @@ start_login(host, autologin, name)
 			pty = xpty;
 		}
 #  else
-		argv = addarg(argv, name);
+		addarg(&argv, name);
 #  endif
 # endif
 	} /* else */ /* esc@magic.fi; removed stupid else */
 #endif
 	if (getenv("USER")) {
-		argv = addarg(argv, getenv("USER"));
+		addarg(&argv, getenv("USER"));
 #if	defined(LOGIN_ARGS) && defined(NO_LOGIN_P)
 		{
 			register char **cpp;
 			for (cpp = environ; *cpp; cpp++) {
-				argv = addarg(argv, *cpp);
+				addarg(&argv, *cpp);
 			}
 		}
 #endif
@@ -1767,9 +1782,9 @@ start_login(host, autologin, name)
 	else {
 		char **p;
 
-		argv = addarg(argv, "");	/* no login name */
+		addarg(&argv, "");	/* no login name */
 		for (p = environ; *p; p++) {
-			argv = addarg(argv, *p);
+			addarg(&argv, *p);
 		}
 	}
 #endif	/* SOLARIS */
@@ -1786,14 +1801,31 @@ start_login(host, autologin, name)
 	sleep(1);
 	if (k_hasafs())
 		k_setpag();	/* Put users process in an new pag */
-	execv(_PATH_LOGIN, argv);
+	execv(_PATH_LOGIN, argv.argv);
 
 	syslog(LOG_ERR, "%s: %m\n", _PATH_LOGIN);
 	fatalperror(net, _PATH_LOGIN);
 	/*NOTREACHED*/
 }
 
-	char **
+
+
+int addarg(struct arg_val *argv, char *val)
+{
+  if(argv->size <= argv->argc+1){
+    argv->argv = (char**)realloc(argv->argv, sizeof(char*) * (argv->size + 10));
+    if(argv->argv == NULL)
+      return 1; /* this should probably be handled better */
+    argv->size+=10;
+  }
+  argv->argv[argv->argc++]=val;
+  argv->argv[argv->argc]=NULL;
+  return 0;
+}
+
+#if 0 /* Ick!! */
+
+char **
 addarg(argv, val)
 	register char **argv;
 	register char *val;
@@ -1825,6 +1857,8 @@ addarg(argv, val)
 	*cpp = 0;
 	return(argv);
 }
+#endif /* 0 */
+
 #endif	/* NEWINIT */
 
 /*
