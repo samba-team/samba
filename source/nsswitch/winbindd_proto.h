@@ -75,8 +75,8 @@ void winbindd_idmap_dump_status(void);
 
 /*The following definitions come from  nsswitch/winbindd_misc.c  */
 
-enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state
-						 *state);
+enum winbindd_result winbindd_check_machine_acct(
+	struct winbindd_cli_state *state);
 enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 						   *state);
 
@@ -107,6 +107,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_util.c  */
 
+void debug_conn_state(void);
 BOOL domain_handles_open(struct winbindd_domain *domain);
 void winbindd_kill_connections(struct winbindd_domain *domain);
 void winbindd_kill_all_connections(void);

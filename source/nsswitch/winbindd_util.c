@@ -24,40 +24,40 @@
 #include "winbindd.h"
 #include "sids.h"
 
-/* Call name_query() from the clientgen library to resolve a domain
-   controller for a domain name. */
+/* Debug connection state */
 
-static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
+void debug_conn_state(void)
 {
-	struct in_addr ip;
-	extern pstring global_myname;
-	
-	/* If its our primary domain and password server is not '*' then
-	   use the password server parameter */
+	struct winbindd_domain *domain;
 
-	if (strcmp(domain_name,lp_workgroup()) == 0 && !lp_wildcard_dc()) {
-		fstrcpy(domain_controller, lp_passwordserver());
-		return True;
+	DEBUG(3, ("server: dc=%s, pwdb_init=%d, lsa_hnd=%d\n", 
+		  server_state.controller,
+		  server_state.pwdb_initialised,
+		  server_state.lsa_handle_open));
+
+	for (domain = domain_list; domain; domain = domain->next) {
+		DEBUG(3, ("%s: dc=%s, got_sid=%d, sam_hnd=%d sam_dom_hnd=%d\n",
+			  domain->name, domain->controller,
+			  domain->got_domain_info, domain->sam_handle_open,
+			  domain->sam_dom_handle_open));
 	}
-
-	if (!resolve_name(domain_name, &ip, 0x1B)) return False;
-
-	return lookup_pdc_name(global_myname, domain_name, &ip, 
-			       domain_controller);
 }
 
 /* Add a trusted domain to our list of domains */
 
 static struct winbindd_domain *add_trusted_domain(char *domain_name)
 {
-    struct winbindd_domain *domain;
+    struct winbindd_domain *domain, *tmp;
+
+    for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+	    if (strcmp(domain_name, tmp->name) == 0) {
+		    DEBUG(3, ("domain %s already in trusted list\n",
+			      domain_name));
+		    return tmp;
+	    }
+    }
 
     DEBUG(1, ("adding trusted domain %s\n", domain_name));
-
-    if ((domain = find_domain_from_name(domain_name))) {
-	    DEBUG(3, ("domain already added to list\n"));
-	    return domain;
-    }
 
     /* Create new domain entry */
 
@@ -122,67 +122,57 @@ static BOOL get_trusted_domains(void)
 	return True;
 }
 
-/* Open sam and sam domain handles to a domain and cache the results */
+/* Open sam and sam domain handles */
 
 static BOOL open_sam_handles(struct winbindd_domain *domain)
 {
-	/* Get domain info */
+	/* Get domain info (sid and controller name) */
+
 	if (!domain->got_domain_info) {
 		domain->got_domain_info = get_domain_info(domain);
 		if (!domain->got_domain_info) return False;
 	}
 
-	if ((domain->sam_handle_open && !rpc_hnd_ok(&domain->sam_handle)) ||
-	    (domain->sam_dom_handle_open && 
-	     !rpc_hnd_ok(&domain->sam_dom_handle))) {
-		domain->got_domain_info = get_domain_info(domain);
-		if (domain->sam_dom_handle_open) {
-			samr_close(&domain->sam_dom_handle);
-			domain->sam_dom_handle_open = False;
-		}
-		if (domain->sam_handle_open) {
-			samr_close(&domain->sam_handle);
-			domain->sam_handle_open = False;
-		}
+	/* Shut down existing sam handles */
+
+	if (domain->sam_dom_handle_open) {
+		samr_close(&domain->sam_dom_handle);
+		domain->sam_dom_handle_open = False;
 	}
 
-	/* Open sam handle if it isn't already open */
-	if (!domain->sam_handle_open) {
-		domain->sam_handle_open = 
-			samr_connect(domain->controller, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED, 
-				     &domain->sam_handle);
-		if (!domain->sam_handle_open) return False;
+	if (domain->sam_handle_open) {
+		samr_close(&domain->sam_handle);
+		domain->sam_handle_open = False;
 	}
 
-	/* Open sam domain handle if it isn't already open */
-	if (!domain->sam_dom_handle_open) {
-		domain->sam_dom_handle_open =
-			samr_open_domain(&domain->sam_handle, 
-					 SEC_RIGHTS_MAXIMUM_ALLOWED, 
-					 &domain->sid, 
-					 &domain->sam_dom_handle);
-		if (!domain->sam_dom_handle_open) return False;
-	}
+	/* Open sam handle */
+
+	domain->sam_handle_open = 
+		samr_connect(domain->controller, 
+			     SEC_RIGHTS_MAXIMUM_ALLOWED, 
+			     &domain->sam_handle);
+
+	if (!domain->sam_handle_open) return False;
+
+	/* Open sam domain handle */
+
+	domain->sam_dom_handle_open =
+		samr_open_domain(&domain->sam_handle, 
+				 SEC_RIGHTS_MAXIMUM_ALLOWED, 
+				 &domain->sid, 
+				 &domain->sam_dom_handle);
+
+	if (!domain->sam_dom_handle_open) return False;
 	
 	return True;
 }
 
-/* Return true if the SAM domain handles are open and responding.  This is only
-   actually checked every WINBINDD_ESTABLISH_LOOP seconds to avoid probing dead
-   domains too often. */
-
-static BOOL sam_handles_open(struct winbindd_domain *domain)
-{
-	return domain->sam_handle_open &&
-		domain->sam_dom_handle_open &&
-		rpc_hnd_ok(&domain->sam_handle) &&
-		rpc_hnd_ok(&domain->sam_dom_handle);
-}
+/* Return true if the SAM domain handles are open and responding.  */
 
 BOOL domain_handles_open(struct winbindd_domain *domain)
 {
 	time_t t;
+	BOOL result;
 
 	/* Check we haven't checked too recently */
 
@@ -194,14 +184,38 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 	}
 	
 	DEBUG(3, ("checking domain handles for domain %s\n", domain->name));
+	debug_conn_state();
 
 	domain->last_check = t;
 
-	if (!sam_handles_open(domain)) {
-		open_sam_handles(domain);
+	/* Open sam handles if they are marked as closed */
+
+	if (!domain->sam_handle_open || !domain->sam_dom_handle_open) {
+	reopen:
+		DEBUG(3, ("opening sam handles\n"));
+		return open_sam_handles(domain);
 	}
 
-	return sam_handles_open(domain);
+	/* Check sam handles are ok - the domain controller may have failed
+	   and we need to move to a BDC. */
+
+	if (!rpc_hnd_ok(&domain->sam_handle) || 
+	    !rpc_hnd_ok(&domain->sam_dom_handle)) {
+
+		/* We want to close the current connection but attempt
+		   to open a new set, possibly to a new dc.  If this
+		   doesn't work then return False as we have no dc
+		   to talk to. */
+
+		DEBUG(3, ("sam handles not responding\n"));
+
+		winbindd_kill_connections(domain);
+		goto reopen;
+	}
+
+	result = domain->sam_handle_open && domain->sam_dom_handle_open;
+
+	return result;
 }
 
 /* Shut down connections to all domain controllers */
@@ -227,7 +241,8 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 		is_server = True;
 	}
 
-	DEBUG(1, ("killing connections to domain %s\n", domain->name));
+	DEBUG(3, ("killing connections to domain %s\n", domain->name));
+	debug_conn_state();
 
 	if (is_server) {
 		server_state.pwdb_initialised = False;
@@ -248,6 +263,10 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 		samr_close(&domain->sam_handle);
 		domain->sam_handle_open = False;
 	}
+
+	/* Re-lookup domain info which includes domain controller name */
+	
+	domain->got_domain_info = False;
 }
 
 /* Kill connections to all servers */
@@ -292,7 +311,10 @@ void establish_connections(BOOL force_reestablish)
 	}
 	lastt = t;
 
-	/* maybe the connection died - if so then close up and restart */
+	DEBUG(3, ("establishing connections\n"));
+	debug_conn_state();
+
+	/* Maybe the connection died - if so then close up and restart */
 
 	if (server_state.pwdb_initialised &&
 	    server_state.lsa_handle_open &&
@@ -301,13 +323,15 @@ void establish_connections(BOOL force_reestablish)
 	}
 
 	if (!server_state.pwdb_initialised) {
-		fstrcpy(server_state.controller, lp_passwordserver());
-		if (lp_wildcard_dc()) {
-			if (!resolve_dc_name(lp_workgroup(), 
-					     server_state.controller)) {
-				return;
-			}
+
+		/* Lookup domain controller name */
+
+		if (!get_any_dc_name(lp_workgroup(), 
+				     server_state.controller)) {
+			return;
 		}
+
+		/* Initialise password database and sids */
 
 		server_state.pwdb_initialised = pwdb_initialise(False);
 		if (!server_state.pwdb_initialised) return;
@@ -316,15 +340,20 @@ void establish_connections(BOOL force_reestablish)
 	/* Open lsa handle if it isn't already open */
 
 	if (!server_state.lsa_handle_open) {
+
 		server_state.lsa_handle_open =
 			lsa_open_policy(server_state.controller, 
 					&server_state.lsa_handle, 
 					False, SEC_RIGHTS_MAXIMUM_ALLOWED);
+
 		if (!server_state.lsa_handle_open) return;
 
-		/* now we can talk to the server we can get some info */
+		/* Now we can talk to the server we can get some info */
+
 		get_trusted_domains();
 	}
+
+	debug_conn_state();
 }
 
 /* Connect to a domain controller using get_any_dc_name() to discover 
@@ -347,7 +376,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 
     /* Get controller name for domain */
 
-    if (!resolve_dc_name(domain_name, domain->controller)) {
+    if (!get_any_dc_name(domain_name, domain->controller)) {
 	    DEBUG(0, ("Could not resolve domain controller for domain %s\n",
 		      domain_name));
 	    return False;
@@ -398,6 +427,7 @@ BOOL get_domain_info(struct winbindd_domain *domain)
     DEBUG(1, ("Getting domain info for domain %s\n", domain->name));
 
     /* Lookup domain sid */        
+
     if (!lookup_domain_sid(domain->name, domain)) {
 	    DEBUG(0, ("could not find sid for domain %s\n", domain->name));
 	    return False;
@@ -570,7 +600,8 @@ int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
 
 struct winbindd_domain *domain_list = NULL;
 
-/* Given a domain name, return the struct winbindd domain info for it */
+/* Given a domain name, return the struct winbindd domain info for it 
+   if it is actually working. */
 
 struct winbindd_domain *find_domain_from_name(char *domain_name)
 {

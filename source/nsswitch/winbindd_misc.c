@@ -23,36 +23,8 @@
 
 #include "winbindd.h"
 
-/************************************************************************
-form a key for fetching a domain trust password
-************************************************************************/
-static char *trust_keystr(char *domain)
-{
-	static fstring keystr;
-	snprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
-	return keystr;
-}
-
-/************************************************************************
- Routine to get the trust account password for a domain.
-************************************************************************/
-static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
-                                        time_t *pass_last_set_time)
-{
-	struct machine_acct_pass *pass;
-	size_t size;
-
-	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
-	    size != sizeof(*pass)) return False;
-
-	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
-	memcpy(ret_pwd, pass->hash, 16);
-	free(pass);
-	return True;
-}
-
-enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state
-						 *state)
+enum winbindd_result winbindd_check_machine_acct(
+	struct winbindd_cli_state *state)
 {
 	uchar trust_passwd[16], ntpw[16], lmpw[16];
 	extern pstring global_myname;
