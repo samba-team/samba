@@ -1,3 +1,14 @@
+2000-12-08  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.h (krb5_enctype): add ETYPE_DES3_CBC_NONE_IVEC as
+	a new pseudo-type
+
+	* lib/krb5/crypto.c (DES_AFS3_CMU_string_to_key): always treat
+	cell names as lower case
+	(krb5_encrypt_ivec, krb5_decrypt_ivec): new functions that allow an
+	explicit ivec to be specified.  fix all sub-functions.
+	(DES3_CBC_encrypt_ivec): new function that takes an explicit ivec
+
 2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/Makefile.am: actually build replay cache code
