@@ -20,4 +20,8 @@ k5dcecon_SOURCES  = k5dcecon.c k5dce.h
 
 dpagaix_SOURCES = dpagaix.c
 
+if AIX
 LDADD = $(LIB_dce)
+else
+LDADD = $(LIB_roken) $(LIB_dce)
+endif
