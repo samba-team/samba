@@ -1379,18 +1379,18 @@ BOOL init_sam_from_buffer_v0(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time;
-	char *username;
-	char *domain;
-	char *nt_username;
-	char *dir_drive;
-	char *unknown_str;
-	char *munged_dial;
-	char *fullname;
-	char *homedir;
-	char *logon_script;
-	char *profile_path;
-	char *acct_desc;
-	char *workstations;
+	char *username = NULL;
+	char *domain = NULL;
+	char *nt_username = NULL;
+	char *dir_drive = NULL;
+	char *unknown_str = NULL;
+	char *munged_dial = NULL;
+	char *fullname = NULL;
+	char *homedir = NULL;
+	char *logon_script = NULL;
+	char *profile_path = NULL;
+	char *acct_desc = NULL;
+	char *workstations = NULL;
 	uint32	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
 		fullname_len, homedir_len, logon_script_len,
@@ -1399,8 +1399,8 @@ BOOL init_sam_from_buffer_v0(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	uint32	user_rid, group_rid, remove_me, hours_len, unknown_6;
 	uint16	acct_ctrl, logon_divs;
 	uint16	bad_password_count, logon_count;
-	uint8	*hours;
-	uint8	*lm_pw_ptr, *nt_pw_ptr;
+	uint8	*hours = NULL;
+	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL;
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, hourslen;
 	BOOL ret = True;
@@ -1558,18 +1558,18 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time;
-	char *username;
-	char *domain;
-	char *nt_username;
-	char *dir_drive;
-	char *unknown_str;
-	char *munged_dial;
-	char *fullname;
-	char *homedir;
-	char *logon_script;
-	char *profile_path;
-	char *acct_desc;
-	char *workstations;
+	char *username = NULL;
+	char *domain = NULL;
+	char *nt_username = NULL;
+	char *dir_drive = NULL;
+	char *unknown_str = NULL;
+	char *munged_dial = NULL;
+	char *fullname = NULL;
+	char *homedir = NULL;
+	char *logon_script = NULL;
+	char *profile_path = NULL;
+	char *acct_desc = NULL;
+	char *workstations = NULL;
 	uint32	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
 		fullname_len, homedir_len, logon_script_len,
@@ -1578,8 +1578,8 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	uint32	user_rid, group_rid, remove_me, hours_len, unknown_6;
 	uint16	acct_ctrl, logon_divs;
 	uint16	bad_password_count, logon_count;
-	uint8	*hours;
-	uint8	*lm_pw_ptr, *nt_pw_ptr;
+	uint8	*hours = NULL;
+	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL;
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, hourslen;
 	BOOL ret = True;
@@ -1744,18 +1744,18 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time;
-	char *username;
-	char *domain;
-	char *nt_username;
-	char *dir_drive;
-	char *unknown_str;
-	char *munged_dial;
-	char *fullname;
-	char *homedir;
-	char *logon_script;
-	char *profile_path;
-	char *acct_desc;
-	char *workstations;
+	char *username = NULL;
+	char *domain = NULL;
+	char *nt_username = NULL;
+	char *dir_drive = NULL;
+	char *unknown_str = NULL;
+	char *munged_dial = NULL;
+	char *fullname = NULL;
+	char *homedir = NULL;
+	char *logon_script = NULL;
+	char *profile_path = NULL;
+	char *acct_desc = NULL;
+	char *workstations = NULL;
 	uint32	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
 		fullname_len, homedir_len, logon_script_len,
@@ -1764,8 +1764,8 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	uint32	user_rid, group_rid, hours_len, unknown_6;
 	uint16	acct_ctrl, logon_divs;
 	uint16	bad_password_count, logon_count;
-	uint8	*hours;
-	uint8	*lm_pw_ptr, *nt_pw_ptr, *nt_pw_hist_ptr;
+	uint8	*hours = NULL;
+	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL, *nt_pw_hist_ptr = NULL;
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, nt_pw_hist_len, hourslen;
 	uint32 pwHistLen = 0;
