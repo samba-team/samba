@@ -157,7 +157,7 @@ BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
  free the user_info struct (malloc()'d memory)
 ***********************************************************************/
 
-NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, DOM_SID *user_sid)
+NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user_sid)
 {
 	NET_USER_INFO_3	*user = NULL;
 	TDB_DATA 	data, key;
@@ -218,7 +218,7 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, DOM_SID *user_sid)
 	return user;
 }
 
-BOOL netsamlogon_cache_have(DOM_SID *user_sid)
+BOOL netsamlogon_cache_have(const DOM_SID *user_sid)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("netsamlogon_cache_have");
 	NET_USER_INFO_3 *user = NULL;
