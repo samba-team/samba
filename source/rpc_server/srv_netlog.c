@@ -633,8 +633,8 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	fstring user;
 	fstring domain;
 
-	int nt_pw_len = id2->hdr_nt_chal_resp.str_str_len >= 24;
-	int lm_pw_len = id2->hdr_lm_chal_resp.str_str_len >= 24;
+	int nt_pw_len = id2->hdr_nt_chal_resp.str_str_len;
+	int lm_pw_len = id2->hdr_lm_chal_resp.str_str_len;
 
 	unistr2_to_ascii(user  , &id2->uni_user_name, sizeof(user)-1);
 	unistr2_to_ascii(domain, &id2->uni_domain_name, sizeof(domain)-1);
