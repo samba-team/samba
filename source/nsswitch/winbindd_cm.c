@@ -924,6 +924,9 @@ void winbindd_cm_status(void)
 void winbindd_cm_flush(void)
 {
 	struct winbindd_cm_conn *conn, tmp;
+	struct failed_connection_cache *fcc;
+
+	/* Flush connection cache */
 
 	for (conn = cm_conns; conn; conn = conn->next) {
 
@@ -941,5 +944,19 @@ void winbindd_cm_flush(void)
 		DLIST_REMOVE(cm_conns, conn);
 		SAFE_FREE(conn);
 		conn = &tmp;
+	}
+
+	/* Flush failed connection cache */
+
+	fcc = failed_connection_cache;
+
+	while (fcc) {
+		struct failed_connection_cache *fcc_next;
+
+		fcc_next = fcc->next;
+		DLIST_REMOVE(failed_connection_cache, fcc);
+		free(fcc);
+
+		fcc = fcc_next;
 	}
 }
