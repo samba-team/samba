@@ -22,6 +22,7 @@ $1 == "error_table" || $1 == "et" {
 	split(name, x, "\\.")
 	name=x[1]
 	c_file = name "_err.c"
+	c_file_compat = name "_err_compat.c"
 	h_file = name "_err.h"
 	h = ""
 #	gsub("[^a-zA-Z0-9]", "_", H_FILE)
@@ -36,7 +37,7 @@ $1 == "error_table" || $1 == "et" {
 	print "/* Generated from " FILENAME " */" > c_file
 	if(id_str != "")
 		print id_str > c_file
-	print "" > c_file
+	print "" > c_file_compat
 	print "#include <stddef.h>" > c_file # NULL
 	print "#include <error.h>" > c_file
 	print "#include <" h_file ">" > c_file
@@ -52,7 +53,9 @@ $1 == "error_table" || $1 == "et" {
 	print "" > h_file
 	print "#include <error.h>" > h_file
 	print "" > h_file
-	print "void initialize_" name "_error_table(struct error_table**);" > h_file
+	print "void initialize_" name "_error_table_r(struct error_table**);" > h_file
+	print "" > h_file
+	print "void initialize_" name "_error_table(void); /* MIT compatible, don't use */" > h_file
 	print "" > h_file
 	print "typedef enum " name "_error_number{" > h_file
 	print "\tERROR_TABLE_BASE_" name " = " base "," > h_file
@@ -94,12 +97,18 @@ END {
 	print "\tNULL" > c_file
 	print "};" > c_file
 	print "" > c_file
-	print "void initialize_" name "_error_table (struct error_table **list)" > c_file
+	print "void initialize_" name "_error_table_r " > c_file
+	print "(struct error_table **list)" > c_file
 	print "{" > c_file
-	printf "    initialize_error_table(list, text, " > c_file
+	printf "    initialize_error_table_r(list, text, " > c_file
 	print name "_num_errors, ERROR_TABLE_BASE_" name ");" > c_file
 	print "}" > c_file
 	print "" > c_file
+	print "void initialize__" name "_error_table(void)" > c_file
+	print "{" > c_file
+	printf "    init_error_table(text, ERROR_TABLE_BASE_" name ", " > c_file
+	print name "_num_errors);" > c_file
+	print "}" > c_file
 
 	print "\t" name "_num_errors = " number > h_file
 	print "} " name "_error_number;" > h_file

@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include -I$(srcdir)
 
-lib_LIBRARIES = liberror.a
+lib_LIBRARIES = liberror.a libcom_err.a
 
 SUFFIXES = .et .h
 
@@ -15,6 +15,8 @@ idir = $(top_builddir)/include
 CLEANFILES = asn1_err.c asn1_err.h krb5_err.c krb5_err.h heim_err.c heim_err.h
 
 liberror_a_SOURCES = krb5_err.c asn1_err.c error.c heim_err.c
+
+libcom_err_a_SOURCES = error.c comerr.c
 
 all-local: $(inc_DATA)
 	@for i in $(inc_DATA); do \
