@@ -840,9 +840,12 @@ static BOOL samdb_password_complexity_ok(const char *pass)
   password restrictions
 */
 NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
-			    const char *user_dn, const char *domain_dn,
-			    struct ldb_message *mod, const char *new_pass,
-			    BOOL user_change)
+				   const char *user_dn, const char *domain_dn,
+				   struct ldb_message *mod,
+ 				   const char *new_pass,
+				   struct samr_Hash *lmNewHash, 
+				   struct samr_Hash *ntNewHash,
+				   BOOL user_change)
 {
 	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
 					    "ntPwdHistory", "unicodePwd", 
@@ -857,15 +860,14 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	uint_t userAccountControl, badPwdCount;
 	struct samr_Hash *lmPwdHistory, *ntPwdHistory, lmPwdHash, ntPwdHash;
 	struct samr_Hash *new_lmPwdHistory, *new_ntPwdHistory;
-	struct samr_Hash lmNewHash, ntNewHash;
-	uint_t lmPwdHistory_len, ntPwdHistory_len;
+	struct samr_Hash local_lmNewHash, local_ntNewHash;
+	int lmPwdHistory_len, ntPwdHistory_len;
 	struct ldb_message **res;
 	int count;
 	time_t now = time(NULL);
 	NTTIME now_nt;
 	double now_double;
 	int i;
-	BOOL lm_hash_ok;
 
 	/* we need to know the time to compute password age */
 	unix_to_nt_time(&now_nt, now);
@@ -897,9 +899,25 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	minPwdLength =     samdb_result_uint(res[0],   "minPwdLength", 0);
 	minPwdAge =        samdb_result_double(res[0], "minPwdAge", 0);
 
-	/* compute the new nt and lm hashes */
-	lm_hash_ok = E_deshash(new_pass, lmNewHash.hash);
-	E_md4hash(new_pass, ntNewHash.hash);
+	if (new_pass) {
+		/* check the various password restrictions */
+		if (minPwdLength > str_charnum(new_pass)) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+		
+		/* possibly check password complexity */
+		if (pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
+		    !samdb_password_complexity_ok(new_pass)) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+		
+		/* compute the new nt and lm hashes */
+		if (E_deshash(new_pass, local_lmNewHash.hash)) {
+			lmNewHash = &local_lmNewHash;
+		}
+		E_md4hash(new_pass, local_ntNewHash.hash);
+		ntNewHash = &local_ntNewHash;
+	}
 
 	if (user_change) {
 		/* are all password changes disallowed? */
@@ -919,10 +937,10 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 
 		/* check the immediately past password */
 		if (pwdHistoryLength > 0) {
-			if (lm_hash_ok && memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0) {
+			if (lmNewHash && memcmp(lmNewHash->hash, lmPwdHash.hash, 16) == 0) {
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
-			if (memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
+			if (ntNewHash && memcmp(ntNewHash->hash, ntPwdHash.hash, 16) == 0) {
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
@@ -932,51 +950,45 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 		ntPwdHistory_len = MIN(ntPwdHistory_len, pwdHistoryLength);
 		
 		if (pwdHistoryLength > 0) {
-			if (unicodePwd && strcmp(unicodePwd, new_pass) == 0) {
+			if (unicodePwd && new_pass && strcmp(unicodePwd, new_pass) == 0) {
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
-			if (lm_hash_ok && memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0) {
+			if (lmNewHash && memcmp(lmNewHash->hash, lmPwdHash.hash, 16) == 0) {
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
-			if (memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
+			if (ntNewHash && memcmp(ntNewHash->hash, ntPwdHash.hash, 16) == 0) {
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
 		
-		for (i=0;lm_hash_ok && i<lmPwdHistory_len;i++) {
-			if (memcmp(lmNewHash.hash, lmPwdHistory[i].hash, 16) == 0) {
+		for (i=0; lmNewHash && i<lmPwdHistory_len;i++) {
+			if (memcmp(lmNewHash->hash, lmPwdHistory[i].hash, 16) == 0) {
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
-		for (i=0;i<ntPwdHistory_len;i++) {
-			if (memcmp(ntNewHash.hash, ntPwdHistory[i].hash, 16) == 0) {
+		for (i=0; ntNewHash && i<ntPwdHistory_len;i++) {
+			if (memcmp(ntNewHash->hash, ntPwdHistory[i].hash, 16) == 0) {
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
-	}
-
-	/* check the various password restrictions */
-	if (minPwdLength > str_charnum(new_pass)) {
-		return NT_STATUS_PASSWORD_RESTRICTION;
-	}
-
-	/* possibly check password complexity */
-	if (pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
-	    !samdb_password_complexity_ok(new_pass)) {
-		return NT_STATUS_PASSWORD_RESTRICTION;
 	}
 
 #define CHECK_RET(x) do { if (x != 0) return NT_STATUS_NO_MEMORY; } while(0)
 
 	/* the password is acceptable. Start forming the new fields */
-	if (lm_hash_ok) {
-		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", lmNewHash));
+	if (lmNewHash) {
+		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", *lmNewHash));
 	} else {
 		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHash"));
 	}
-	CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "ntPwdHash", ntNewHash));
 
-	if ((pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT) &&
+	if (ntNewHash) {
+		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "ntPwdHash", *ntNewHash));
+	} else {
+		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "ntPwdHash"));
+	}
+
+	if (new_pass && (pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT) &&
 	    (userAccountControl & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
 		CHECK_RET(samdb_msg_add_string(ctx, mem_ctx, mod, 
 					       "unicodePwd", new_pass));
@@ -1009,17 +1021,31 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	for (i=0;i<MIN(pwdHistoryLength-1, ntPwdHistory_len);i++) {
 		new_ntPwdHistory[i+1] = ntPwdHistory[i];
 	}
-	new_lmPwdHistory[0] = lmNewHash;
-	new_ntPwdHistory[0] = ntNewHash;
+
+	/* Don't store 'long' passwords in the LM history, 
+	   but make sure to 'expire' one password off the other end */
+	if (lmNewHash) {
+		new_lmPwdHistory[0] = *lmNewHash;
+	} else {
+		ZERO_STRUCT(new_lmPwdHistory[0]);
+	}
+	lmPwdHistory_len = MIN(lmPwdHistory_len + 1, pwdHistoryLength);
+
+	if (ntNewHash) {
+		new_ntPwdHistory[0] = *ntNewHash;
+	} else {
+		ZERO_STRUCT(new_ntPwdHistory[0]);
+	}
+	ntPwdHistory_len = MIN(ntPwdHistory_len + 1, pwdHistoryLength);
 	
 	CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
 				       "lmPwdHistory", 
 				       new_lmPwdHistory, 
-				       MIN(pwdHistoryLength, lmPwdHistory_len+1)));
+				       lmPwdHistory_len));
+
 	CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
 				       "ntPwdHistory", 
 				       new_ntPwdHistory, 
-				       MIN(pwdHistoryLength, ntPwdHistory_len+1)));
-
+				       ntPwdHistory_len));
 	return NT_STATUS_OK;
 }

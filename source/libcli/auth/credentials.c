@@ -69,8 +69,6 @@ static void creds_step(struct creds_CredentialState *creds)
 {
 	struct netr_Credential time_cred;
 
-	creds->sequence += 2;
-
 	DEBUG(5,("\tseed        %08x:%08x\n", 
 		 IVAL(creds->seed.data, 0), IVAL(creds->seed.data, 4)));
 
@@ -98,6 +96,7 @@ static void creds_step(struct creds_CredentialState *creds)
 	creds->seed = time_cred;
 }
 
+
 /*
   DES encrypt a 16 byte password buffer using the session key
 */
@@ -105,6 +104,16 @@ void creds_des_encrypt(struct creds_CredentialState *creds, struct netr_Password
 {
 	struct netr_Password tmp;
 	cred_hash3(tmp.data, pass->data, creds->session_key, 1);
+	*pass = tmp;
+}
+
+/*
+  DES decrypt a 16 byte password buffer using the session key
+*/
+void creds_des_decrypt(struct creds_CredentialState *creds, struct netr_Password *pass)
+{
+	struct netr_Password tmp;
+	cred_hash3(tmp.data, pass->data, creds->session_key, 0);
 	*pass = tmp;
 }
 
@@ -138,10 +147,27 @@ void creds_client_init(struct creds_CredentialState *creds,
 		       const uint8 machine_password[16],
 		       struct netr_Credential *initial_credential)
 {
-	creds_init(creds, client_challenge, server_challenge, machine_password);
 	creds->sequence = time(NULL);
+	creds_init(creds, client_challenge, server_challenge, machine_password);
 
 	*initial_credential = creds->client;
+}
+
+/*
+  step the credentials to the next element in the chain, updating the
+  current client and server credentials and the seed
+
+  produce the next authenticator in the sequence ready to send to 
+  the server
+*/
+void creds_client_authenticator(struct creds_CredentialState *creds,
+				struct netr_Authenticator *next)
+{	
+	creds->sequence += 2;
+	creds_step(creds);
+
+	next->cred = creds->client;
+	next->timestamp = creds->sequence;
 }
 
 /*
@@ -156,19 +182,6 @@ BOOL creds_client_check(struct creds_CredentialState *creds,
 		return False;
 	}
 	return True;
-}
-
-/*
-  produce the next authenticator in the sequence ready to send to 
-  the server
-*/
-void creds_client_authenticator(struct creds_CredentialState *creds,
-				struct netr_Authenticator *next)
-{
-	creds_step(creds);
-
-	next->cred = creds->client;
-	next->timestamp = creds->sequence;
 }
 
 
@@ -207,3 +220,19 @@ BOOL creds_server_check(const struct creds_CredentialState *creds,
 	return True;
 }
 
+BOOL creds_server_step_check(struct creds_CredentialState *creds,
+			     struct netr_Authenticator *received_authenticator,
+			     struct netr_Authenticator *return_authenticator) 
+{
+	/* Should we check that this is increasing? */
+	creds->sequence = received_authenticator->timestamp;
+	creds_step(creds);
+	if (creds_server_check(creds, &received_authenticator->cred)) {
+		return_authenticator->cred = creds->server;
+		return_authenticator->timestamp = creds->sequence;
+		return True;
+	} else {
+		ZERO_STRUCTP(return_authenticator);
+		return False;
+	}
+}
