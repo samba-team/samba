@@ -1,3 +1,7 @@
+2001-08-21  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: remove extra space after -L check for libutil.h
+
 2001-08-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/kdc_locl.h: fix prototype for get_des_key
@@ -10,7 +14,7 @@
 	return any des-key not just keys that can be string-to-keyed by
 	the client
 
-2001-08-10  Assar Westerlund  <assar@assaris.sics.se>
+2001-08-10  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.4e
 
