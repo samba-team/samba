@@ -256,8 +256,8 @@ ipv6_uninteresting (const struct sockaddr *sa)
     const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
     const struct in6_addr *in6 = (const struct in6_addr *)&sin6->sin6_addr;
     
-    return IN6_IS_ADDR_LOOPBACK(in6)
-	|| IN6_IS_ADDR_LINKLOCAL(in6)
+    return
+	IN6_IS_ADDR_LINKLOCAL(in6)
 	|| IN6_IS_ADDR_V4COMPAT(in6);
 }
 
