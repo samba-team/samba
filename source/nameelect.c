@@ -355,6 +355,10 @@ BOOL check_elections(void)
   for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
+      
+      /* we only want to run elections on our own interfaces */
+      if (!d->my_interface) continue;
+
       for (work = d->workgrouplist; work; work = work->next)
 	{
 	  run_any_election |= work->RunningElection;

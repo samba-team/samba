@@ -201,9 +201,6 @@ void announce_host(void)
     {
       struct work_record *work;
       
-      if (!d->my_interface)
-	continue;
-
       for (work = d->workgrouplist; work; work = work->next)
 	{
 	  uint32 stype = work->ServerType;
@@ -228,6 +225,9 @@ void announce_host(void)
 	  
 	  work->lastannounce_time = t;
 
+	  /* when announcing to remote networks we make sure we don't
+             claim to be any sort of special server, otherwise we may
+             stuff up their browsing */
 	  if (!d->my_interface) {
 	    stype &= ~(SV_TYPE_POTENTIAL_BROWSER | SV_TYPE_MASTER_BROWSER |
 		       SV_TYPE_DOMAIN_MASTER | SV_TYPE_BACKUP_BROWSER |
@@ -263,62 +263,58 @@ void announce_host(void)
 	      p = p+31;
 	      p = skip_string(p,1);
 	      
-	      if (d->my_interface)
+	      if (d->my_interface && AM_MASTER(work))
 		{
-		  if (AM_MASTER(work))
-		    {
-		      SIVAL(stypep,0,work->ServerType);
-		      
-		      DEBUG(2,("sending local master announce to %s for %s\n",
-			       inet_ntoa(d->bcast_ip),work->work_group));
-
-		      CVAL(outbuf,0) = ANN_LocalMasterAnnouncement;
-		      
-		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-					  PTR_DIFF(p,outbuf),
-					  my_name,work->work_group,0,
-					  0x1e,d->bcast_ip,
-					  *iface_ip(d->bcast_ip));
-		      
-		      DEBUG(2,("sending domain announce to %s for %s\n",
-			       inet_ntoa(d->bcast_ip),work->work_group));
-
-		      CVAL(outbuf,0) = ANN_DomainAnnouncement;
-		      
-		      StrnCpy(namep,work->work_group,15);
-		      strupper(namep);
-		      StrnCpy(commentp,myname,15);
-		      strupper(commentp);
-		      
-		      SIVAL(stypep,0,(unsigned)0x80000000);
-		      p = commentp + strlen(commentp) + 1;
-		      
-		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-					  PTR_DIFF(p,outbuf),
-					  my_name,MSBROWSE,0,0x01,d->bcast_ip,
-					  *iface_ip(d->bcast_ip));
-		    }
-		  else
-		    {
-		      DEBUG(2,("sending host announce to %s for %s\n",
-			       inet_ntoa(d->bcast_ip),work->work_group));
-
-		      CVAL(outbuf,0) = ANN_HostAnnouncement;
-		      
-		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-					  PTR_DIFF(p,outbuf),
-					  my_name,work->work_group,0,0x1d,
-					  d->bcast_ip,*iface_ip(d->bcast_ip));
-		    }
+		  SIVAL(stypep,0,work->ServerType);
+		  
+		  DEBUG(2,("sending local master announce to %s for %s\n",
+			   inet_ntoa(d->bcast_ip),work->work_group));
+		  
+		  CVAL(outbuf,0) = ANN_LocalMasterAnnouncement;
+		  
+		  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
+				      PTR_DIFF(p,outbuf),
+				      my_name,work->work_group,0,
+				      0x1e,d->bcast_ip,
+				      *iface_ip(d->bcast_ip));
+		  
+		  DEBUG(2,("sending domain announce to %s for %s\n",
+			   inet_ntoa(d->bcast_ip),work->work_group));
+		  
+		  CVAL(outbuf,0) = ANN_DomainAnnouncement;
+		  
+		  StrnCpy(namep,work->work_group,15);
+		  strupper(namep);
+		  StrnCpy(commentp,myname,15);
+		  strupper(commentp);
+		  
+		  SIVAL(stypep,0,(unsigned)0x80000000);
+		  p = commentp + strlen(commentp) + 1;
+		  
+		  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
+				      PTR_DIFF(p,outbuf),
+				      my_name,MSBROWSE,0,0x01,d->bcast_ip,
+				      *iface_ip(d->bcast_ip));
+		}
+	      else
+		{
+		  DEBUG(2,("sending host announce to %s for %s\n",
+			   inet_ntoa(d->bcast_ip),work->work_group));
+		  
+		  CVAL(outbuf,0) = ANN_HostAnnouncement;
+		  
+		  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
+				      PTR_DIFF(p,outbuf),
+				      my_name,work->work_group,0,0x1d,
+				      d->bcast_ip,*iface_ip(d->bcast_ip));
 		}
 	    }
 	  
-	  if (work->needannounce)
-	    {
-	      work->needannounce = False;
-	      break;
-	      /* sorry: can't do too many announces. do some more later */
-	    }
+	  if (work->needannounce) {
+	    work->needannounce = False;
+	    break;
+	    /* sorry: can't do too many announces. do some more later */
+	  }
 	}
     }
 }
