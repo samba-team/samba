@@ -785,6 +785,7 @@ static BOOL run_locktest1(int dummy)
 	char *fname = "\\lockt1.lck";
 	int fnum1, fnum2, fnum3;
 	time_t t1, t2;
+	unsigned lock_timeout;
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
@@ -827,9 +828,10 @@ static BOOL run_locktest1(int dummy)
 	}
 
 
-	printf("Testing lock timeouts\n");
+	lock_timeout = (1 + (random() % 20));
+	printf("Testing lock timeout with timeout=%u\n", lock_timeout);
 	t1 = time(NULL);
-	if (cli_lock(&cli2, fnum3, 0, 4, (1 + (random() % 20)) * 1000, WRITE_LOCK)) {
+	if (cli_lock(&cli2, fnum3, 0, 4, lock_timeout * 1000, WRITE_LOCK)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 		return False;
 	} else {
@@ -841,6 +843,8 @@ static BOOL run_locktest1(int dummy)
 	if (t2 - t1 < 5) {
 		printf("error: This server appears not to support timed lock requests\n");
 	}
+	printf("server slept for %u seconds for a %u second timeout\n",
+	       t2-t1, lock_timeout);
 
 	if (!cli_close(&cli1, fnum2)) {
 		printf("close1 failed (%s)\n", cli_errstr(&cli1));
@@ -3863,6 +3867,7 @@ static void usage(void)
 	argc--;
 	argv++;
 
+	srandom(time(NULL));
 
 	fstrcpy(workgroup, lp_workgroup());
 
