@@ -477,7 +477,7 @@ void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
 int smb_mkstemp(char *template);
-void *xmalloc(size_t size);
+void *smb_xmalloc(size_t size);
 void *xmemdup(const void *p, size_t size);
 char *xstrdup(const char *s);
 void *memdup(void *p, size_t size);
