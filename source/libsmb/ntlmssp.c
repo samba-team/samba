@@ -442,13 +442,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) 
 	{
-		const char *target_name_dns = "";
-		if (chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN) {
-			target_name_dns = dnsdomname;
-		} else if (chal_flags |= NTLMSSP_TARGET_TYPE_SERVER) {
-			target_name_dns = dnsname;
-		}
-
 		msrpc_gen(&struct_blob, "aaaaa",
 			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
 			  NTLMSSP_NAME_TYPE_SERVER, ntlmssp_state->get_global_myname(),
