@@ -129,6 +129,7 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 				uint32 user_rid, uint32 *num_groups,
 				DOM_GID **user_groups);
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
+                              TALLOC_CTX *mem_ctx,
                               uint32 group_rid, uint32 *num_names, 
                               uint32 **rid_mem, char ***names, 
                               uint32 **name_types);
@@ -137,6 +138,7 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
+                                 TALLOC_CTX *mem_ctx,
 				 uint32 *start_ndx, uint16 info_level, 
 				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);
