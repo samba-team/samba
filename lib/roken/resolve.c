@@ -143,7 +143,8 @@ parse_reply(unsigned char *data, int len)
 	p += 4;
 	size = (p[0] << 8) | p[1];
 	p += 2;
-	*rr = (struct resource_record*)malloc(sizeof(struct resource_record));
+	*rr = (struct resource_record*)calloc(1, 
+					      sizeof(struct resource_record));
 	(*rr)->domain = strdup((char*)host);
 	(*rr)->type = type;
 	(*rr)->class = class;
@@ -174,8 +175,7 @@ parse_reply(unsigned char *data, int len)
 	    break;
 	}
 	case T_SRV:{
-	    status = dn_expand(data, data + len, p + 6, host,
-			       sizeof((char*)host));
+	    status = dn_expand(data, data + len, p + 6, host, sizeof(host));
 	    if(status < 0){
 		dns_free_data(r);
 		return NULL;
