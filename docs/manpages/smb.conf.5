@@ -1099,7 +1099,7 @@ characters, maximum.
 Note also that nmbd will block completely until the DNS name is resolved.
 This will result in temporary loss of browsing and WINS services.
 Enable this option only if you are certain that DNS resolution is fast,
-or you can live with the consequences of periodic outages.
+or you can live with the consequences of periodic pauses in nmbd service.
 
 .B Default:
 	 dns proxy = yes
@@ -1333,7 +1333,7 @@ See also "veto files" and "case sensitive"
 	hide files = */.*
 
 .B Example
-	hide files = */.*\\DesktopFolderDB\\TrashFor%m\\resource.frk
+	hide files = \\*/.*\\DesktopFolderDB\\TrashFor%m\\resource.frk\\
 
 The above example is based on files that the Macintosh client (DAVE)
 creates for internal use, and also still hides all files beginning with
@@ -3196,9 +3196,9 @@ See also "invalid users"
 
 .SS veto files(S)
 This is a list of files and directories that are neither visible nor
-accessible.  Each entry in the list must be separate by a "\\", which
+accessible.  Each entry in the list must be separated by a "\\", which
 allows spaces to be included in the entry.  '*' and '?' can be used to
-specify multiple files or directories.
+specify multiple files or directories as in DOS wildcards.
 
 Each entry must be a unix path, not a DOS path.  Therefore, the pathname
 specified between separators "\\", if it incudes directories, must use the
@@ -3206,13 +3206,31 @@ unix directory specifier "/", not the DOS directory specifier "\\".
 
 Note that the case sensitivity option is applicable in vetoing files.
 
+One feature of the veto files parameter that it is important to be
+aware of, is that if a directory contains nothing but files that
+match the veto files parameter (which means that Windows/DOS clients
+cannot ever see them) is deleted, the veto files within that directory
+*are automatically deleted* along with it, if the user has UNIX permissions
+to do so.
+ 
 See also "hide files" and "case sensitive"
 
 .B Default
 	No files or directories are vetoed.
 
-.B Example
-	veto files = *Security*\\*.tmp\\*/root/*
+.B Examples
+    Example 1.
+    Veto any files containing the word Security, 
+    any ending in .tmp, and any directory containing the
+    component /root/.
+
+	veto files = \\*Security*\\*.tmp\\*/root/*\\
+
+    Example 2.
+    Veto the Apple specific files that a NetAtalk server
+    creates.
+
+    veto files = \.AppleDouble\.bin\.AppleDesktop\Network Trash Folder\
 
 .SS volume (S)
 This allows you to override the volume label returned for a
