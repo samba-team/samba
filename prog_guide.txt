@@ -191,54 +191,8 @@ in the data and bss columns in "size" anyway (it will be included in
 How to use talloc
 -----------------
 
-If you are used to talloc from Samba3 then please read this carefully,
-as talloc has changed rather a lot.
-
-The new talloc is a hierarchical, reference counted memory pool system
-with destructors. Quite a mounthful really, but not too bad once you
-get used to it.
-
-Perhaps the biggest change from Samba3 is that there is no distinction
-between a "talloc context" and a "talloc pointer". Any pointer
-returned from talloc() is itself a valid talloc context. This means
-you can do this:
-
-  struct foo *a = talloc(mem_ctx, sizeof(*s));
-  a->name = talloc(a, strlen("foo")+1);
-
-and the pointer a->name would be a "child" of the talloc context "a"
-which is itself a child of mem_ctx. So if you do talloc_free(mem_ctx)
-then it is all destroyed, whereas if you do talloc_free(a) then just a
-and a->name are destroyed.
-
-If you think about this, then what this effectively gives you is an
-n-ary tree, where you can free any part of the tree with
-talloc_free().
-
-The next big change with the new talloc is reference counts. A talloc
-pointer starts with a reference count of 1. You can call
-talloc_increase_ref_count() on any talloc pointer and that increases
-the reference count by 1. If you then call talloc_free() on a pointer
-that has a reference count greater than 1, then the reference count is
-decreased, but the memory is not released.
-
-Finally, talloc now has destructors. You can set a destructor on any
-talloc pointer using talloc_set_destructor(). Your destructor will
-then be called before the memory is released. An interesting feature
-of these destructors is that they can return a error. If the
-destructor returns -1 then that is interpreted as a refusal to release
-the memory, and the talloc_free() will return. It will also prevent
-the release of all memory "below" that memory in the tree.
-
-You should also go and look at a new talloc function in Samba4 called
-talloc_steal(). By using talloc_steal() you can move a lump of memory
-from one memory context to another without copying the data. This
-should be used when a backend function (such as a packet parser)
-produces a result as a lump of talloc memory and you need to keep it
-around for a longer lifetime than the talloc context it is in. You
-just "steal" the memory from the short-lived context, putting it into
-your long lived context.
-
+Please see the separate document, talloc_guide.txt in this
+directory. You _must_ read this if you want to program in Samba4.
 
 Interface Structures
 --------------------
@@ -583,9 +537,11 @@ other recognised flags are:
 
   sign : enable ntlmssp signing
   seal : enable ntlmssp sealing
+  connect : enable rpc connect level auth (auth, but no sign or seal)
   validate: enable the NDR validator
   print: enable debugging of the packets
   bigendian: use bigendian RPC
+  padcheck: check reply data for non-zero pad bytes
 
 
 For example, these all connect to the samr pipe:
@@ -645,8 +601,6 @@ MSRPC
  - msrpc
 
 
-- use _p talloc varients
-
 don't zero structures! avoid ZERO_STRUCT() and talloc_zero()
 
 
@@ -656,16 +610,12 @@ put in full UNC path in tconx
 
 test timezone handling by using a server in different zone from client
 
-don't just use any old TALLOC_CTX, use the right one!
-
 do {} while (0) system
 
 NT_STATUS_IS_OK() is NOT the opposite of NT_STATUS_IS_ERR()
 
 need to implement secondary parts of trans2 and nttrans in server and
 client
-
-add talloc_steal() to move a talloc ptr from one pool to another
 
 document access_mask in openx reply
 
@@ -803,7 +753,6 @@ Ideas
 
 
 BUGS:
-  non-signed non-sealed RPC (level == 2 == "connect")
   add a test case for last_entry_offset in trans2 find interfaces
   conn refused
   connect -> errno
@@ -814,5 +763,3 @@ BUGS:
      trans2 and other calls
   handle servers that don't have the setattre call in torture
   add max file coponent length test and max path len test
-
-
