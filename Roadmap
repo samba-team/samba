@@ -16,14 +16,13 @@ Version	/ Codename	Notes
 "Auth Code Release"	security and password synchronisation capabilities
 
 1.9.20			Introduction of new managment tools
-"GUI Config Release"
+"GUI Config Release"	Improved multi-language support.
 
 2.0			The next generation Directory Services update
 "DSA Release"
 
 While no release date or content promises are made we are hoping to release
-the remainder of the 1.9 series relases within a 4 (four) month period,
-ie: before end of calender year 1997.
+the remainder of the 1.9 series relases within short time frame.
 
 Should a budding contributor spring into gear and deliver any of the above
 ahead of the above release sequence then we reserve the option to make an
