@@ -903,6 +903,19 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
 
     DEBUG(5,("request_oplock_break: breaking our own oplock\n"));
 
+#if 1 /* JRA PARANOIA TEST.... */
+    {
+      files_struct *fsp = file_find_dit(dev, inode, &share_entry->time);
+      if (!fsp) {
+        DEBUG(0,("request_oplock_break: PANIC : breaking our own oplock requested for \
+dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x and no fsp found !\n",
+            (unsigned int)dev, (double)inode, (int)share_entry->time.tv_sec,
+            (int)share_entry->time.tv_usec ));
+        smb_panic("request_oplock_break: no fsp found for our own oplock\n");
+      }
+    }
+#endif /* END JRA PARANOIA TEST... */
+
     /* Call oplock break direct. */
     return oplock_break(dev, inode, &share_entry->time, True);
   }
