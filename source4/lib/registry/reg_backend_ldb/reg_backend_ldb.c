@@ -52,7 +52,6 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *
 
 	ret[strlen(ret)-1] = '\0';
 	
-	printf("Doing search for : %s\n", ret);
 	return ret;
 }
 
@@ -82,13 +81,17 @@ static WERROR ldb_close_registry(REG_HANDLE *h)
 	return WERR_OK;
 }
 
+static WERROR ldb_add_key(REG_KEY *p, const char *name, uint32_t access_mask, SEC_DESC *sec, REG_KEY **new)
+{
+	return WERR_NOT_SUPPORTED;	
+}
+
 static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 {
 	struct ldb_context *c = k->handle->backend_data;
 	char *path;
 	int ret, i, j;
 	struct ldb_message **msg;
-	TALLOC_CTX *mem_ctx = talloc_init("ldb_path");
 	REG_KEY *key = NULL;
 
 	ret = ldb_search(c, (char *)k->backend_data, LDB_SCOPE_ONELEVEL, "(key=*)", NULL,&msg);
@@ -117,7 +120,43 @@ static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 	*count = j;
 
 	ldb_search_free(c, msg);
-	talloc_destroy(mem_ctx);
+	return WERR_OK;
+}
+
+static WERROR ldb_fetch_values(REG_KEY *k, int *count, REG_VAL ***values)
+{
+	struct ldb_context *c = k->handle->backend_data;
+	char *path;
+	int ret, i, j;
+	struct ldb_message **msg;
+	REG_KEY *key = NULL;
+
+	ret = ldb_search(c, (char *)k->backend_data, LDB_SCOPE_ONELEVEL, "(value=*)", NULL,&msg);
+
+	if(ret < 0) {
+		DEBUG(0, ("Error getting values for '%s': %s\n", k->backend_data, ldb_errstring(c)));
+		return WERR_FOOBAR;
+	}
+
+	*values = talloc_array_p(k->mem_ctx, REG_VAL *, ret);
+	j = 0;
+	for(i = 0; i < ret; i++) {
+		struct ldb_message_element *el;
+		char *name;
+		el = ldb_msg_find_element(msg[i], "key");
+
+		name = el->values[0].data;
+
+		/* Dirty hack to circumvent ldb_tdb bug */
+		if(k->backend_data && !strcmp(msg[i]->dn, (char *)k->backend_data)) continue;
+			
+		(*values)[j] = reg_val_new(k, NULL);
+		(*values)[j]->backend_data = talloc_strdup((*values)[j]->mem_ctx, msg[i]->dn);
+		j++;
+	}
+	*count = j;
+
+	ldb_search_free(c, msg);
 	return WERR_OK;
 }
 
@@ -125,7 +164,6 @@ static WERROR ldb_get_hive(REG_HANDLE *h, int num, REG_KEY **key)
 {
 	if(num != 0) return WERR_NO_MORE_ITEMS;
 	*key = reg_key_new_abs("", h, NULL);
-//	(*key)->backend_data = talloc_strdup((*key)->mem_ctx, "");
 	return WERR_OK;
 }
 
@@ -167,6 +205,8 @@ static struct registry_ops reg_backend_ldb = {
 	.close_registry = ldb_close_registry,
 	.open_key = ldb_open_key,
 	.fetch_subkeys = ldb_fetch_subkeys,
+	.fetch_values = ldb_fetch_values,
+	.add_key = ldb_add_key,
 };
 
 NTSTATUS registry_ldb_init(void)
