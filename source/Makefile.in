@@ -446,7 +446,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) lib/dummyroot.o
 
-PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/replace1.po lib/snprintf.po
+PAM_WINBIND_PICOBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/replace1.po lib/snprintf.po
 
 SMBW_OBJ1 = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
@@ -576,7 +576,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(RPC_ECHO_OBJ) $(SMBLDAP_OBJ) $(IDMAP_OBJ) libsmb/spnego.o
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) \
-	$(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
+	$(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
 
 WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.po)
 
@@ -1000,6 +1000,9 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo "Linking $@"
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS) 
 
+# Please don't add .o files to libnss_winbind, libnss_wins, or the pam_winbind
+# libraries.  Add to the appropriate PICOBJ variable instead.
+
 @WINBIND_NSS@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
 	@$(SHLD) $(WINBIND_NSS_LDSHFLAGS) -o $@ $(WINBIND_NSS_PICOBJS) \
@@ -1008,12 +1011,12 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 @WINBIND_WINS_NSS@: $(WINBIND_WINS_NSS_PICOBJS)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_WINS_NSS_PICOBJS) \
-		$(KRBCLIENT_OBJ) $(LDAPLIBS) $(KRB5LIBS) -lc \
+		$(LDAPLIBS) $(KRB5LIBS) -lc \
 		@SONAMEFLAG@`basename $@`
 
-nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
+nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_PICOBJ) \
 		@SONAMEFLAG@`basename $@` -lpam
 
 bin/rhosts.@SHLIBEXT@: $(AUTH_RHOSTS_OBJ:.o=.po)
