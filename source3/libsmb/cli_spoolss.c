@@ -1,13 +1,12 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 2.2
    RPC pipe client
 
    Copyright (C) Gerald Carter                2001,
-   Copyright (C) Tim Potter                   2000,
-   Copyright (C) Andrew Tridgell              1994-2000
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
-   Copyright (C) Jean-Francois Micouleau      1999-2000
+   Copyright (C) Tim Potter                   2000-2001,
+   Copyright (C) Andrew Tridgell              1994-2000,
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+   Copyright (C) Jean-Francois Micouleau      1999-2000.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,33 +25,43 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
+/** @defgroup spoolss SPOOLSS - NT printing routines
+ *  @ingroup rpc_client
+ *
+ * @{
+ **/
 
-/* Opens a SMB connection to the SPOOLSS pipe */
-struct cli_state *cli_spoolss_initialise(struct cli_state *cli, 
-					 char *system_name,
-					 struct ntuser_creds *creds)
-{
-        return cli_pipe_initialise(cli, system_name, PIPE_SPOOLSS, creds);
-}
+/** Return a handle to the specified printer or print server.
+ *
+ * @param cli              Pointer to client state structure which is open
+ * on the SPOOLSS pipe.
+ *
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param printername      The name of the printer or print server to be
+ * opened in UNC format.
+ *
+ * @param datatype         Specifies the default data type for the printer. 
+ * 
+ * @param access_required  The access rights requested on the printer or
+ * print server.
+ * 
+ * @param station          The UNC name of the requesting workstation.
+ * 
+ * @param username         The name of the user requesting the open.
+ *
+ * @param pol              Returned policy handle.
+ */
 
-/* Open printer ex */
-
-NTSTATUS cli_spoolss_open_printer_ex(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	char *printername,
-	char *datatype, 
-	uint32 access_required,
-	char *station, 
-	char *username,
-	POLICY_HND *pol
-)
+WERROR cli_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   char *printername, char *datatype, 
+				   uint32 access_required, char *station, 
+				   char *username, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_OPEN_PRINTER_EX q;
 	SPOOL_R_OPEN_PRINTER_EX r;
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -70,26 +79,20 @@ NTSTATUS cli_spoolss_open_printer_ex(
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_open_printer_ex("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_OPENPRINTEREX, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	    !rpc_api_pipe_req(cli, SPOOLSS_OPENPRINTEREX, &qbuf, &rbuf))
 		goto done;
-	}
 
 	/* Unmarshall response */
 
-	if (!spoolss_io_r_open_printer_ex("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	if (!spoolss_io_r_open_printer_ex("", &r, &rbuf, 0))
 		goto done;
-	}
 
 	/* Return output parameters */
 
-	if (W_ERROR_IS_OK(r.status)) {
-		result = NT_STATUS_OK;
+	result = r.status;
+
+	if (W_ERROR_IS_OK(result))
 		*pol = r.handle;
-	} else {
-		result = werror_to_ntstatus(r.status);
-	}
 
  done:
 	prs_mem_free(&qbuf);
@@ -98,18 +101,23 @@ NTSTATUS cli_spoolss_open_printer_ex(
 	return result;
 }
 
-/* Close a printer handle */
+/** Close a printer handle
+ *
+ * @param cli              Pointer to client state structure which is open
+ * on the SPOOLSS pipe.
+ *
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param pol              Policy handle of printer or print server to close.
+ */
 
-NTSTATUS cli_spoolss_close_printer(
-	struct cli_state *cli,
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol
-)
+WERROR cli_spoolss_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_CLOSEPRINTER q;
 	SPOOL_R_CLOSEPRINTER r;
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -126,26 +134,20 @@ NTSTATUS cli_spoolss_close_printer(
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_closeprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_CLOSEPRINTER, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	    !rpc_api_pipe_req(cli, SPOOLSS_CLOSEPRINTER, &qbuf, &rbuf))
 		goto done;
-	}
 
 	/* Unmarshall response */
 
-	if (!spoolss_io_r_closeprinter("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	if (!spoolss_io_r_closeprinter("", &r, &rbuf, 0))
 		goto done;
-	}
 
 	/* Return output parameters */
 
-	if (W_ERROR_IS_OK(r.status)) {
+	result = r.status;
+
+	if (W_ERROR_IS_OK(result))
 		*pol = r.handle;
-		result = NT_STATUS_OK;
-	} else {
-		result = werror_to_ntstatus(r.status);
-	}
 
  done:
 	prs_mem_free(&qbuf);
@@ -1134,3 +1136,5 @@ NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 
 	return result;
 }
+
+/** @} **/

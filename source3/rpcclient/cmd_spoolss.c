@@ -89,7 +89,7 @@ static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli,
                                             TALLOC_CTX *mem_ctx,
                                             int argc, char **argv)
 {
-	NTSTATUS 	result = NT_STATUS_UNSUCCESSFUL; 
+	WERROR 	        werror;
 	pstring		printername;
 	fstring		servername, user;
 	POLICY_HND	hnd;
@@ -108,18 +108,22 @@ static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli,
 	fstrcpy  (printername, argv[1]);
 
 	/* Open the printer handle */
-	result = cli_spoolss_open_printer_ex (cli, mem_ctx, printername, "", 
-				MAXIMUM_ALLOWED_ACCESS, servername, user, &hnd);
 
-	if (NT_STATUS_IS_OK(result)) {
-		printf ("Printer %s opened successfully\n", printername);
-		result = cli_spoolss_close_printer (cli, mem_ctx, &hnd);
-		if (!NT_STATUS_IS_OK(result)) {
-			printf ("Error closing printer handle! (%s)\n", get_nt_error_msg(result));
+	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+					     "", MAXIMUM_ALLOWED_ACCESS, 
+					     servername, user, &hnd);
+
+	if (W_ERROR_IS_OK(werror)) {
+		printf("Printer %s opened successfully\n", printername);
+		werror = cli_spoolss_close_printer(cli, mem_ctx, &hnd);
+
+		if (!W_ERROR_IS_OK(werror)) {
+			printf("Error closing printer handle! (%s)\n", 
+				get_dos_error_msg(werror));
 		}
 	}
 
-	return result;
+	return werror_to_ntstatus(werror);
 }
 
 
@@ -436,6 +440,7 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
                                        int argc, char **argv)
 {
 	POLICY_HND 	pol;
+	WERROR          werror;
 	NTSTATUS	result;
 	uint32 		info_level = 1;
 	BOOL 		opened_hnd = False;
@@ -460,20 +465,24 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
 	fstrcpy  (user, cli->user_name);
 	
 	/* get a printer handle */
-	result = cli_spoolss_open_printer_ex(
-		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, servername,
-		user, &pol);
-	if (!NT_STATUS_IS_OK(result)) {
+
+	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+					     "", MAXIMUM_ALLOWED_ACCESS, 
+					     servername, user, &pol);
+
+	result = werror_to_ntstatus(werror);
+
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	}
  
 	opened_hnd = True;
 
 	/* Get printer info */
+
 	result = cli_spoolss_getprinter(cli, mem_ctx, &pol, info_level, &ctr);
-	if (!NT_STATUS_IS_OK(result)) {
+
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	}
 
 	/* Display printer info */
 
@@ -620,6 +629,7 @@ static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli,
                                       int argc, char **argv)
 {
 	POLICY_HND 	pol;
+	WERROR          werror;
 	NTSTATUS	result;
 	uint32		info_level = 3;
 	BOOL 		opened_hnd = False;
@@ -644,10 +654,15 @@ static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli,
 		info_level = atoi(argv[2]);
 
 	/* Open a printer handle */
-	result=cli_spoolss_open_printer_ex (cli, mem_ctx, printername, "", 
-					    MAXIMUM_ALLOWED_ACCESS, servername, user, &pol);
+
+	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
+					     MAXIMUM_ALLOWED_ACCESS, 
+					     servername, user, &pol);
+
+	result = werror_to_ntstatus(werror);
+
 	if (!NT_STATUS_IS_OK(result)) {
-		printf ("Error opening printer handle for %s!\n", printername);
+		printf("Error opening printer handle for %s!\n", printername);
 		return result;
 	}
 
@@ -682,12 +697,12 @@ static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli,
 		}
 	}
 	
-	/* cleanup */
+	/* Cleanup */
+
 	if (opened_hnd)
 		cli_spoolss_close_printer (cli, mem_ctx, &pol);
 	
 	return result;
-		
 }
 
 /***********************************************************************
@@ -1036,7 +1051,8 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
                                       int argc, char **argv)
 {
 	POLICY_HND		pol;
-	NTSTATUS		result;
+	WERROR                  result;
+	NTSTATUS		nt_status;
 	uint32			level = 2;
 	BOOL			opened_hnd = False;
 	PRINTER_INFO_CTR	ctr;
@@ -1057,40 +1073,51 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 	slprintf (printername, sizeof(fstring)-1, "%s\\%s", servername, argv[1]);
 	fstrcpy  (user, cli->user_name);
 
-	/* get a printer handle */
+	/* Get a printer handle */
+
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-					     MAXIMUM_ALLOWED_ACCESS, servername, user, &pol);
-	if (!NT_STATUS_IS_OK(result)) {
+					     MAXIMUM_ALLOWED_ACCESS, 
+					     servername, user, &pol);
+
+	nt_status = werror_to_ntstatus(result);
+
+	if (!NT_STATUS_IS_OK(nt_status))
 		goto done;
-	}
  
 	opened_hnd = True;
 
 	/* Get printer info */
+
 	ZERO_STRUCT (info2);
 	ctr.printers_2 = &info2;
-	result = cli_spoolss_getprinter(cli, mem_ctx, &pol, level, &ctr);
-	if (!NT_STATUS_IS_OK(result)) {
+
+	nt_status = cli_spoolss_getprinter(cli, mem_ctx, &pol, level, &ctr);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf ("Unable to retrieve printer information!\n");
 		goto done;
 	}
 
-	/* set the printer driver */
+	/* Set the printer driver */
+
 	init_unistr(&ctr.printers_2->drivername, argv[2]);
-	result = cli_spoolss_setprinter(cli, mem_ctx, &pol, level, &ctr, 0);
-	if (!NT_STATUS_IS_OK(result)) {
-		printf ("SetPrinter call failed!\n");
+
+	nt_status = cli_spoolss_setprinter(cli, mem_ctx, &pol, level, &ctr, 0);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		printf("SetPrinter call failed!\n");
 		goto done;;
 	}
-	printf ("Succesfully set %s to driver %s.\n", argv[1], argv[2]);
 
+	printf("Succesfully set %s to driver %s.\n", argv[1], argv[2]);
 
 done:
-	/* cleanup */
+	/* Cleanup */
+
 	if (opened_hnd)
 		cli_spoolss_close_printer(cli, mem_ctx, &pol);
 	
-	return result;		
+	return nt_status;		
 }
 
 
