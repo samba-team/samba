@@ -699,7 +699,6 @@ extern int errno;
 #include "hash.h"
 #include "trans2.h"
 #include "nterr.h"
-#include "secrets.h"
 #include "messages.h"
 #include "util_list.h"
 #include "charset.h"
@@ -717,6 +716,8 @@ extern int errno;
 #include "smb.h"
 #include "smbw.h"
 #include "nameserv.h"
+
+#include "secrets.h"
 
 #include "byteorder.h"
 

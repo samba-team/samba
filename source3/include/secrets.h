@@ -22,18 +22,32 @@
 #define _SECRETS_H
 
 /* the first one is for the hashed password (NT4 style) the latter
-   for plaintext (ADS 
+   for plaintext (ADS)
 */
 #define SECRETS_MACHINE_ACCT_PASS "SECRETS/$MACHINE.ACC"
 #define SECRETS_MACHINE_PASSWORD "SECRETS/MACHINE_PASSWORD"
+
+/* this one is for storing trusted domain account password */
+#define SECRETS_DOMTRUST_ACCT_PASS "SECRETS/$DOMTRUST.ACC"
 
 
 #define SECRETS_DOMAIN_SID    "SECRETS/SID"
 #define SECRETS_SAM_SID       "SAM/SID"
 
+/* structure for storing machine account password
+   (ie. when samba server is member of a domain */
 struct machine_acct_pass {
 	uint8 hash[16];
 	time_t mod_time;
 };
+
+/* structure for storing trusted domain password */
+struct trusted_dom_pass {
+	int pass_len;
+	char* pass;
+	time_t mod_time;
+	DOM_SID domain_sid; /* remote domain's sid */
+};
+
 
 #endif /* _SECRETS_H */

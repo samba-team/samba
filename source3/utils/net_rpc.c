@@ -302,9 +302,9 @@ static int rpc_join(int argc, const char **argv)
  * All paramaters are provided by the run_rpc_command funcion, except for
  * argc, argv which are passes through. 
  *
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
  *              stripped
@@ -554,6 +554,372 @@ static int rpc_shutdown(int argc, const char **argv)
 				       argc, argv);
 }
 
+/***************************************************************************
+  NT Domain trusts code (i.e. 'net rpc trustdom' functionality)
+  
+ ***************************************************************************/
+
+/**
+ * Add interdomain trust account to the RPC server.
+ * All parameters (except for argc and argv) are passed by run_rpc_command
+ * function.
+ *
+ * @param domain_sid The domain sid acquired from the server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return normal NTSTATUS return code
+ */
+
+static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				       int argc, const char **argv) {
+
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	char *acct_name;
+	uint16 acb_info;
+	uint32 unknown, user_rid;
+
+	if (argc != 1) {
+		d_printf("Usage: net rpc trustdom add <domain_name>\n");
+		return NT_STATUS_OK;
+	}
+
+	/* 
+	 * Make valid trusting domain account (ie. uppercased and with '$' appended)
+	 */
+	 
+	if (asprintf(&acct_name, "%s$", argv[0]) < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	strupper(acct_name);
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Create trusting domain's account */
+
+	acb_info = ACB_DOMTRUST;
+	unknown = 0xe005000b; /* No idea what this is - a permission mask? 
+				 Is it needed for interdomain account also ? */
+
+	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
+					  acct_name, acb_info, unknown,
+					  &user_pol, &user_rid);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+	SAFE_FREE(acct_name);
+	return result;
+}
+
+/**
+ * Create interdomain trust account for a remote domain.
+ *
+ * @param argc standard argc
+ * @param argv standard argv without initial components
+ *
+ * @return Integer status (0 means success)
+ **/
+
+static int rpc_trustdom_add(int argc, const char **argv)
+{
+	return run_rpc_command(PIPE_SAMR, 0, rpc_trustdom_add_internals,
+			       argc, argv);
+}
+
+
+/**
+ * Delete interdomain trust account for a remote domain.
+ *
+ * @param argc standard argc
+ * @param argv standard argv without initial components
+ *
+ * @return Integer status (0 means success)
+ **/
+ 
+static int rpc_trustdom_del(int argc, const char **argv)
+{
+	d_printf("Sorry, not yet implemented.\n");
+	return -1;
+}
+
+ 
+/**
+ * Establish trust relationship to a trusting domain.
+ * Interdomain account must already be created on remote PDC.
+ *
+ * @param argc standard argc
+ * @param argv standard argv without initial components
+ *
+ * @return Integer status (0 means success)
+ **/
+
+extern char *opt_user_name;
+extern char *opt_password;
+
+static int rpc_trustdom_establish(int argc, const char **argv) {
+
+	struct cli_state *cli;
+	struct in_addr server_ip;
+	POLICY_HND connect_hnd;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS nt_status;
+	DOM_SID domain_sid;
+	WKS_INFO_100 wks_info;
+	
+	char* domain_name;
+	char* acct_name;
+	fstring pdc_name;
+
+	/*
+	 * Connect to \\server\ipc$ as 'our domain' account with password
+	 */
+
+	domain_name = smb_xstrdup(argv[0]);
+	strupper(domain_name);
+	
+	asprintf(&acct_name, "%s$", lp_workgroup());
+	strupper(acct_name);
+	
+	opt_user_name = (char*)malloc(strlen(acct_name) + 1);
+	safe_strcpy(opt_user_name, acct_name, strlen(acct_name) + 1);
+
+	/* find the domain controller */
+	if (!net_find_dc(&server_ip, pdc_name, domain_name)) {
+		DEBUG(0, ("Coulnd find domain controller for domain %s\n", domain_name));
+		return -1;
+	}
+
+	/* connect to ipc$ as username/password */
+	nt_status = connect_to_ipc(&cli, &server_ip, pdc_name);
+	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)) {
+
+		/* Is it trusting domain account for sure ? */
+		DEBUG(0, ("Couldn't verify trusting domain account. Error was %s\n",
+			get_nt_error_msg(nt_status)));
+		return -1;
+	}
+	
+	/*
+	 * Connect to \\server\ipc$ again (this time anonymously)
+	 */
+	
+	nt_status = connect_to_ipc_anonymous(&cli, &server_ip, (char*)pdc_name);
+	
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("Couldn't connect to domain %s controller. Error was %s.\n",
+			domain_name, get_nt_error_msg(nt_status)));
+	}
+
+	/*
+	 * Use NetServerEnum2 to make sure we're talking to a proper server
+	 */
+	 
+	if (!cli_get_pdc_name(cli, domain_name, (char*)pdc_name)) {
+		DEBUG(0, ("NetServerEnum2 error: Couldn't find primary domain controller\
+			 for domain %s\n", domain_name));
+	}
+	 
+	/*
+	 * Call WksQueryInfo to check remote server's capabilities
+	 * FIXME:Is really necessary ? nt serv does this, but from samba's
+	 *       point of view it doesn't seem to make the difference
+	 * IDEA: It may be used to get info about type of pdc we're talking to
+	 *       (e.g. WinNT or Win2k)
+	 */
+	
+	if (!cli_nt_session_open(cli, PIPE_WKSSVC)) {
+		DEBUG(0, ("Couldn't not initialise wkssvc pipe\n"));
+		return -1;
+	}
+
+	/* TODO: convert this call from rpc_client/cli_wkssvc.c
+	   to cli_wks_query_info() in libsmb/cli_wkssvc.c
+	   UPDATE: already done :)
+	*/
+
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0, ("talloc_init() failed\n"));
+		cli_shutdown(cli);
+		return -1;
+	}
+	
+   	nt_status = cli_wks_query_info(cli, mem_ctx, &wks_info);
+	
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("WksQueryInfo call failed.\n"));
+		return -1;
+	}
+
+	if (cli->nt_pipe_fnum) {
+		cli_nt_session_close(cli);
+		talloc_destroy(mem_ctx);
+	}
+
+
+	/*
+	 * Call LsaOpenPolicy and LsaQueryInfo
+	 */
+	 
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0, ("talloc_init() failed\n"));
+		cli_shutdown(cli);
+		return -1;
+	}
+
+	if (!cli_nt_session_open(cli, PIPE_LSARPC)) {
+		DEBUG(0, ("Could not initialise lsa pipe\n"));
+	}
+
+	nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
+					&connect_hnd);
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
+			get_nt_error_msg(nt_status)));
+		return -1;
+	}
+
+	/* Querying info level 5 */
+	
+	nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
+					5 /* info level */, domain_name, &domain_sid);
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
+			get_nt_error_msg(nt_status)));
+		return -1;
+	}
+
+
+	/* There should be actually query info level 3 (following nt serv behaviour),
+	   but I still don't know if it's _really_ necessary */
+			
+	/*
+	 * Close the pipes and clean up
+	 */
+	 
+	nt_status = cli_lsa_close(cli, mem_ctx, &connect_hnd);
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("Couldn't close LSA pipe. Error was %s\n",
+			get_nt_error_msg(nt_status)));
+		return -1;
+	}
+
+	if (cli->nt_pipe_fnum)
+		cli_nt_session_close(cli);
+
+	talloc_destroy(mem_ctx);
+	 
+	 
+	/*
+	 * Store the password in secrets db
+	 */
+
+	if (!secrets_store_trusted_domain_password(domain_name, opt_password,
+						   domain_sid)) {
+		DEBUG(0, ("Storing password for trusted domain failed.\n"));
+		return -1;
+	}
+	
+	DEBUG(0, ("Success!\n"));
+	return 0;
+}
+
+/**
+ * Revoke trust relationship to the remote domain
+ *
+ * @param argc standard argc
+ * @param argv standard argv without initial components
+ *
+ * @return Integer status (0 means success)
+ **/
+
+static int rpc_trustdom_revoke(int argc, const char **argv) {
+
+	char* domain_name;
+
+	if (argc < 1) return -1;
+	
+	/* generate upper cased domain name */
+	domain_name = smb_xstrdup(argv[0]);
+	strupper(domain_name);
+
+	/* delete password of the trust */
+	if (!trusted_domain_password_delete(domain_name)) {
+		DEBUG(0, ("Failed to revoke relationship to the trusted domain %s\n",
+			  domain_name));
+		return -1;
+	};
+	
+	return 0;
+}
+
+/**
+ * Usage for 'net rpc trustdom' command
+ *
+ * @param argc standard argc
+ * @param argv standard argv without inital components
+ *
+ * @return Integer status returned to shell
+ **/
+ 
+static int rpc_trustdom_usage(int argc, const char **argv) {
+	d_printf("  net rpc trustdom add \t\t add trusting domain's account\n");
+	d_printf("  net rpc trustdom del \t\t delete trusting domain's account\n");
+	d_printf("  net rpc trustdom establish \t establish relationship to trusted domain\n");
+	d_printf("  net rpc trustdom revoke \t abandon relationship to trusted domain\n");
+	d_printf("  net rpc trustdom list \t show current interdomain trust relationships\n");
+	return -1;
+}
+
+
+/**
+ * Entrypoint for 'net rpc trustdom' code
+ *
+ * @param argc standard argc
+ * @param argv standard argv without initial components
+ *
+ * @return Integer status (0 means success)
+ */
+
+static int rpc_trustdom(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"add", rpc_trustdom_add},
+		{"del", rpc_trustdom_del},
+		{"establish", rpc_trustdom_establish},
+		{"revoke", rpc_trustdom_revoke},
+		{NULL, NULL}
+	};
+
+	if (argc == 0) {
+		rpc_trustdom_usage(argc, argv);
+		return -1;
+	}
+
+	return (net_run_function(argc, argv, func, rpc_user_usage));
+}
+
 /****************************************************************************/
 
 
@@ -569,6 +935,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc join \tto join a domain \n");
 	d_printf("  net rpc user \tto add, delete and list users\n");
 	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
+	d_printf("  net rpc trustdom \tto create trusting domain's account or establish trust\n");
 	d_printf("  net rpc abortshutdown \tto to abort the shutdown of a remote server\n");
 	d_printf("  net rpc shutdown \tto to shutdown a remote server\n");
 	d_printf("\n");
@@ -593,6 +960,7 @@ int net_rpc(int argc, const char **argv)
 		{"join", rpc_join},
 		{"user", rpc_user},
 		{"changetrustpw", rpc_changetrustpw},
+		{"trustdom", rpc_trustdom},
 		{"abortshutdown", rpc_shutdown_abort},
 		{"shutdown", rpc_shutdown},
 		{NULL, NULL}

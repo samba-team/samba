@@ -123,7 +123,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 
 
 /************************************************************************
-form a key for fetching a domain trust password
+form a key for fetching the machine trust account password
 ************************************************************************/
 char *trust_keystr(char *domain)
 {
@@ -135,8 +135,24 @@ char *trust_keystr(char *domain)
 	return keystr;
 }
 
+/**
+ * Form a key for fetching a trusted domain password
+ *
+ * @param domain domain name
+ *
+ * @return stored password's key
+ **/
+char *trustdom_keystr(char *domain)
+{
+	static char* keystr;
+
+	asprintf(&keystr, "%s/%s", SECRETS_DOMTRUST_ACCT_PASS, domain);
+		
+	return keystr;
+}
+
 /************************************************************************
- Routine to get the trust account password for a domain.
+ Routine to get the machine trust account password for a domain.
 ************************************************************************/
 BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time)
@@ -170,6 +186,41 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 	return True;
 }
 
+/************************************************************************
+ Routine to get account password to trusted domain
+************************************************************************/
+BOOL secrets_fetch_trusted_domain_password(char *domain, char* pwd,
+				DOM_SID sid, time_t *pass_last_set_time)
+{
+	struct trusted_dom_pass *pass;
+	int pass_len;
+	size_t size;
+
+	if (!(pass = secrets_fetch(trustdom_keystr(domain), &size))) {
+		DEBUG(5, ("secrets_fetch failed!\n"));
+		return False;
+	}
+	
+	if (size != sizeof(*pass)) {
+		DEBUG(0, ("secrets were of incorrect size!\n"));
+		return False;
+	}
+	
+	memcpy(&pass_len, &(pass->pass_len), sizeof(pass_len));
+	
+	if (pwd)
+		safe_free(pwd);
+	else
+		pwd = (char*)malloc(pass_len + 1);
+	safe_strcpy(pwd, pass->pass, pass_len);
+
+	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
+
+	memcpy(&sid, &(pass->domain_sid), sizeof(sid));
+	SAFE_FREE(pass);
+	
+	return True;
+}
 
 /************************************************************************
  Routine to set the trust account password for a domain.
@@ -182,6 +233,32 @@ BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16])
 	memcpy(pass.hash, new_pwd, 16);
 
 	return secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
+}
+
+/**
+ * Routine to set the password for trusted domain
+ *
+ * @param domain remote domain name
+ * @param pwd plain text password of trust relationship
+ * @param sid remote domain sid
+ *
+ * @return true if succeeded
+ **/
+
+BOOL secrets_store_trusted_domain_password(char* domain, char* pwd,
+					   DOM_SID sid)
+{
+	struct trusted_dom_pass pass;
+
+	pass.mod_time = time(NULL);
+
+	pass.pass_len = strlen(pwd);
+	pass.pass = (char*)malloc(strlen(pwd) + 1);
+	safe_strcpy(pass.pass, pwd, strlen(pwd));
+
+	memcpy(&(pass.domain_sid), &sid, sizeof(sid));
+	
+	return secrets_store(trustdom_keystr(domain), (void *)&pass, sizeof(pass));
 }
 
 /************************************************************************
@@ -218,13 +295,22 @@ char *secrets_fetch_machine_password(void)
 
 
 /************************************************************************
- Routine to delete the trust account password file for a domain.
+ Routine to delete the machine trust account password file for a domain.
 ************************************************************************/
 
 BOOL trust_password_delete(char *domain)
 {
 	return secrets_delete(trust_keystr(domain));
 }
+
+/************************************************************************
+ Routine to delete the password for trusted domain
+************************************************************************/
+BOOL trusted_domain_password_delete(char *domain)
+{
+	return secrets_delete(trustdom_keystr(domain));
+}
+
 
 /*******************************************************************
  Reset the 'done' variables so after a client process is created
