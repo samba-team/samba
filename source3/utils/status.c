@@ -35,8 +35,6 @@
 
 #include "includes.h"
 
-extern BOOL AllowDebugChange;
-
 static pstring Ucrit_username = "";                   /* added by OH */
 static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
 static int            Ucrit_MaxPid=0;                        /* added by OH */
@@ -542,30 +540,27 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 {
 	int c;
 	static int profile_only = 0;
-	static char *new_debuglevel = NULL;
 	TDB_CONTEXT *tdb;
 	poptContext pc;
 	struct poptOption long_options[] = {
-		{"processes",	'p', POPT_ARG_NONE,	&processes_only},
-		{"verbose",	'v', POPT_ARG_NONE, 	&verbose},
-		{"locks",	'L', POPT_ARG_NONE,	&locks_only},
-		{"shares",	'S', POPT_ARG_NONE,	&shares_only},
-		{"conf",	's', POPT_ARG_STRING,	0, 's'},
-		{"user",        'u', POPT_ARG_STRING,	0, 'u'},
-		{"brief",	'b', POPT_ARG_NONE, 	&brief},
+		POPT_AUTOHELP
+		{"processes",	'p', POPT_ARG_NONE,	&processes_only, 'p', "Show processes only" },
+		{"verbose",	'v', POPT_ARG_NONE, &verbose, 'v', "Be verbose" },
+		{"locks",	'L', POPT_ARG_NONE,	&locks_only, 'L', "Show locks only" },
+		{"shares",	'S', POPT_ARG_NONE,	&shares_only, 'S', "Show shares only" },
+		{"user", 'u', POPT_ARG_STRING,	0, 'u', "Switch to user" },
+		{"brief",	'b', POPT_ARG_NONE, 	&brief, 'b', "Be brief" },
 #ifdef WITH_PROFILE
-		{"profile",	'P', POPT_ARG_NONE,	&profile_only},
+		{"profile",	'P', POPT_ARG_NONE,	&profile_only, 'P', "Do profiling" },
 #endif /* WITH_PROFILE */
-		{"byterange",	'B', POPT_ARG_NONE,	&show_brl},
+		{"byterange",	'B', POPT_ARG_NONE,	&show_brl, 'B', "Include byte range locks"},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{ 0, 0, 0, 0}
 	};
 
-
 	setup_logging(argv[0],True);
 	
-	AllowDebugChange = False;
-	DEBUGLEVEL = 0;
 	dbf = x_stderr;
 	
 	if (getuid() != geteuid()) {
@@ -578,29 +573,19 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	
 	while ((c = poptGetNextOpt(pc)) != EOF) {
 		switch (c) {
-		case 's':
-			pstrcpy(dyn_CONFIGFILE, poptGetOptArg(pc));
-			break;
 		case 'u':                                      
 			Ucrit_addUsername(poptGetOptArg(pc));             
 			break;
-		default:
-			fprintf(stderr, "Usage: %s [-P] [-v] [-L] [-p] [-S] [-s configfile] [-u username] [-d debuglevel]\n", *argv);
-			return (-1);
 		}
-	}
-	
-	if (!lp_load(dyn_CONFIGFILE,False,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
-		return (-1);
-	}
-	
-	if (new_debuglevel) {
-		debug_parse_levels(new_debuglevel);
 	}
 
 	if (verbose) {
 		d_printf("using configfile = %s\n", dyn_CONFIGFILE);
+	}
+
+	if (!lp_load(dyn_CONFIGFILE,False,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
+		return (-1);
 	}
 	
 	if (profile_only) {
