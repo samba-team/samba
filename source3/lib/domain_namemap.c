@@ -881,8 +881,8 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 {
 	struct cli_state cli;
 	POLICY_HND lsa_pol;
-	uint16 fnum_lsa;
 	fstring srv_name;
+	extern struct cli_state *rpc_smb_cli;
 
 	BOOL res3 = True;
 	BOOL res4 = True;
@@ -890,6 +890,8 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 	DOM_SID *sids;
 	uint8 *types;
 	char *names[1];
+
+	rpc_smb_cli = &cli;
 
 	DEBUG(5,("lookup_remote_ntname: %s\n", ntname));
 
@@ -904,23 +906,16 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 	fstrcat(srv_name, cli.desthost);
 	strupper(srv_name);
 
-	/* open LSARPC session. */
-	res3 = res3 ? cli_nt_session_open(&cli, PIPE_LSARPC, &fnum_lsa) : False;
-
 	/* lookup domain controller; receive a policy handle */
-	res3 = res3 ? lsa_open_policy(&cli, fnum_lsa,
-				srv_name,
+	res3 = res3 ? lsa_open_policy( srv_name,
 				&lsa_pol, True) : False;
 
 	/* send lsa lookup sids call */
-	res4 = res3 ? lsa_lookup_names(&cli, fnum_lsa, 
-				       &lsa_pol,
+	res4 = res3 ? lsa_lookup_names( &lsa_pol,
 				       1, names, 
 				       &sids, &types, &num_sids) : False;
 
-	res3 = res3 ? lsa_close(&cli, fnum_lsa, &lsa_pol) : False;
-
-	cli_nt_session_close(&cli, fnum_lsa);
+	res3 = res3 ? lsa_close(&lsa_pol) : False;
 
 	if (res4 && res3 && sids != NULL && types != NULL)
 	{

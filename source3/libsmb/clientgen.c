@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "trans2.h"
 
-
 extern int DEBUGLEVEL;
 
 /* 
@@ -1331,7 +1330,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 /****************************************************************************
 open a file
 ****************************************************************************/
-int cli_nt_create(struct cli_state *cli, char *fname)
+int cli_nt_create(struct cli_state *cli, const char *fname)
 {
 	char *p;
 
@@ -1375,7 +1374,8 @@ int cli_nt_create(struct cli_state *cli, char *fname)
 /****************************************************************************
 open a file
 ****************************************************************************/
-int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
+int cli_open(struct cli_state *cli, const char *fname,
+				int flags, int share_mode)
 {
 	char *p;
 	unsigned openfn=0;
@@ -3684,3 +3684,4 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	
 	return True;
 }
+

@@ -462,7 +462,6 @@ BOOL sam_query_aliasmem(struct cli_state *cli, uint16 fnum,
 	if (res3 && num_aliases != 0)
 	{
 		fstring srv_name;
-		uint16 fnum_lsa;
 		POLICY_HND lsa_pol;
 
 		uint32 i;
@@ -477,23 +476,16 @@ BOOL sam_query_aliasmem(struct cli_state *cli, uint16 fnum,
 			add_sid_to_array(&numsids, sids, &sid_mem[i].sid);
 		}
 
-		/* open LSARPC session. */
-		res3 = res3 ? cli_nt_session_open(cli, PIPE_LSARPC, &fnum_lsa) : False;
-
 		/* lookup domain controller; receive a policy handle */
-		res3 = res3 ? lsa_open_policy(cli, fnum_lsa,
-					srv_name,
+		res3 = res3 ? lsa_open_policy( srv_name,
 					&lsa_pol, True) : False;
 
 		/* send lsa lookup sids call */
-		res4 = res3 ? lsa_lookup_sids(cli, fnum_lsa, 
-					       &lsa_pol,
+		res4 = res3 ? lsa_lookup_sids( &lsa_pol,
 					       num_aliases, *sids, 
 					       name, type, num_names) : False;
 
-		res3 = res3 ? lsa_close(cli, fnum_lsa, &lsa_pol) : False;
-
-		cli_nt_session_close(cli, fnum_lsa);
+		res3 = res3 ? lsa_close(&lsa_pol) : False;
 	}
 
 	if (!res4)

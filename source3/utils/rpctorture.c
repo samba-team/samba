@@ -478,17 +478,12 @@ static void run_lsahandles(int numops, struct client_info *cli_info)
 		DEBUG(0,("lsahandle test: connection failed\n"));
 		return;
 	}
-	/* open session.  */
-	if (!cli_nt_session_open(smb_cli, PIPE_LSARPC, &nt_pipe_fnum))
-	{
-		DEBUG(0,("lsahandle test: session open failed\n"));
-		return;
-	}
-
 	for (i = 1; i <= numops * 100; i++)
 	{
+		extern struct cli_state *rpc_smb_cli;
+		rpc_smb_cli = smb_cli;
 		POLICY_HND pol;
-		if (!lsa_open_policy(smb_cli, nt_pipe_fnum, srv_name, &pol, False))
+		if (!lsa_open_policy(srv_name, &pol, False))
 		{
 			failed++;
 		}
@@ -498,9 +493,6 @@ static void run_lsahandles(int numops, struct client_info *cli_info)
 		}
 		count++;
 	}
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
 	/* close the rpc pipe */
 	rpcclient_stop();

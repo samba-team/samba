@@ -111,7 +111,7 @@ BOOL init_policy_hnd(int num_pol_hnds)
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
-BOOL open_policy_hnd(POLICY_HND *hnd)
+BOOL register_policy_hnd(POLICY_HND *hnd)
 {
 	int i;
 	struct policy *p;
@@ -135,7 +135,6 @@ BOOL open_policy_hnd(POLICY_HND *hnd)
 	p->pnum = i;
 	p->type = POL_NO_INFO;
 
-	create_pol_hnd(hnd);
 	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
 
 	bitmap_set(bmap, i);
@@ -149,22 +148,32 @@ BOOL open_policy_hnd(POLICY_HND *hnd)
 }
 
 /****************************************************************************
+  find first available policy slot.  creates a policy handle for you.
+****************************************************************************/
+BOOL open_policy_hnd(POLICY_HND *hnd)
+{
+	create_pol_hnd(hnd);
+	return register_policy_hnd(hnd);
+}
+
+/****************************************************************************
   find policy by handle
 ****************************************************************************/
-static struct policy *find_policy(POLICY_HND *hnd)
+static struct policy *find_policy(const POLICY_HND *hnd)
 {
 	struct policy *p;
 
 	for (p=Policy;p;p=p->next) {
 		if (memcmp(&p->pol_hnd, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(4,("Found policy hnd[%x] ", p->pnum));
-			dump_data(4, (char *)hnd->data, sizeof(hnd->data));
+			dump_data(4, (const char *)hnd->data,
+			sizeof(hnd->data));
 			return p;
 		}
 	}
 
 	DEBUG(4,("Policy not found: "));
-	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
+	dump_data(4, (const char *)hnd->data, sizeof(hnd->data));
 
 	return NULL;
 }
@@ -172,7 +181,7 @@ static struct policy *find_policy(POLICY_HND *hnd)
 /****************************************************************************
   find policy index by handle
 ****************************************************************************/
-int find_policy_by_hnd(POLICY_HND *hnd)
+int find_policy_by_hnd(const POLICY_HND *hnd)
 {
 	struct policy *p = find_policy(hnd);
 
@@ -393,7 +402,8 @@ BOOL set_policy_cli_state(POLICY_HND *hnd, struct cli_state *cli, uint16 fnum,
 /****************************************************************************
   get cli state
 ****************************************************************************/
-BOOL get_policy_cli_state(POLICY_HND *hnd, struct cli_state **cli, uint16 *fnum)
+BOOL get_policy_cli_state(const POLICY_HND *hnd, struct cli_state **cli,
+	uint16 *fnum)
 {
 	struct policy *p = find_policy(hnd);
 

@@ -31,6 +31,7 @@
 
 extern int DEBUGLEVEL;
 
+extern struct cli_state *rpc_smb_cli;
 
 /****************************************************************************
  obtain the sid from the PDC.  do some verification along the way...
@@ -38,13 +39,14 @@ extern int DEBUGLEVEL;
 BOOL get_domain_sids(const char *myname,
 				DOM_SID *sid3, DOM_SID *sid5, char *servers)
 {
-	uint16 nt_pipe_fnum;
 	POLICY_HND pol;
 	fstring srv_name;
 	struct cli_state cli;
 	BOOL res = True;
 	fstring dom3;
 	fstring dom5;
+
+	rpc_smb_cli = &cli;
 
 	if (sid3 == NULL && sid5 == NULL)
 	{
@@ -78,29 +80,25 @@ BOOL get_domain_sids(const char *myname,
 	fstrcat(srv_name, myname);
 	strupper(srv_name);
 
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(&cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
-
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(&cli, nt_pipe_fnum, srv_name, &pol, False) : False;
+	res = res ? lsa_open_policy(srv_name, &pol, False) : False;
 
 	if (sid3 != NULL)
 	{
 		/* send client info query, level 3.  receive domain name and sid */
-		res = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 3, dom3, sid3) : False;
+		res = res ? lsa_query_info_pol(&pol, 3, dom3, sid3) : False;
 	}
 
 	if (sid5 != NULL)
 	{
 		/* send client info query, level 5.  receive domain name and sid */
-		res = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 5, dom5, sid5) : False;
+		res = res ? lsa_query_info_pol(&pol, 5, dom5, sid5) : False;
 	}
 
 	/* close policy handle */
-	res = res ? lsa_close(&cli, nt_pipe_fnum, &pol) : False;
+	res = res ? lsa_close(&pol) : False;
 
 	/* close the session */
-	cli_nt_session_close(&cli, nt_pipe_fnum);
 	cli_ulogoff(&cli);
 	cli_shutdown(&cli);
 
@@ -134,7 +132,6 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 				DOM_SID *sid,
 				char *domain, size_t len)
 {
-	uint16 nt_pipe_fnum;
 	POLICY_HND pol;
 	fstring srv_name;
 	struct cli_state cli;
@@ -144,6 +141,8 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 	DOM_SID sid5;
 	fstring dom3;
 	fstring dom5;
+
+	rpc_smb_cli = &cli;
 
 	if (!cli_connect_serverlist(&cli, server))
 	{
@@ -160,23 +159,19 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 	fstrcat(srv_name, myname);
 	strupper(srv_name);
 
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(&cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
-
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(&cli, nt_pipe_fnum, srv_name, &pol, False) : False;
+	res = res ? lsa_open_policy(srv_name, &pol, False) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
-	res1 = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 3, dom3, &sid3) : False;
+	res1 = res ? lsa_query_info_pol(&pol, 3, dom3, &sid3) : False;
 
 	/* send client info query, level 5.  receive domain name and sid */
-	res1 = res1 ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 5, dom5, &sid5) : False;
+	res1 = res1 ? lsa_query_info_pol(&pol, 5, dom5, &sid5) : False;
 
 	/* close policy handle */
-	res = res ? lsa_close(&cli, nt_pipe_fnum, &pol) : False;
+	res = res ? lsa_close(&pol) : False;
 
 	/* close the session */
-	cli_nt_session_close(&cli, nt_pipe_fnum);
 	cli_ulogoff(&cli);
 	cli_shutdown(&cli);
 
@@ -214,8 +209,7 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 /****************************************************************************
 do a LSA Open Policy
 ****************************************************************************/
-BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
-			const char *server_name, POLICY_HND *hnd,
+BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos)
 {
 	prs_struct rbuf;
@@ -223,6 +217,13 @@ BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 	LSA_Q_OPEN_POL q_o;
 	LSA_SEC_QOS qos;
 	BOOL valid_pol = False;
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_init(server_name, PIPE_LSARPC, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -267,7 +268,10 @@ BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
-			valid_pol = True;
+			
+			valid_pol = register_policy_hnd(hnd) &&
+			            set_policy_cli_state(hnd, cli, fnum,
+			                                 cli_state_free);
 		}
 	}
 
@@ -280,8 +284,7 @@ BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a LSA Open Policy2
 ****************************************************************************/
-BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
-			const char *server_name, POLICY_HND *hnd,
+BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos)
 {
 	prs_struct rbuf;
@@ -289,6 +292,14 @@ BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
 	LSA_Q_OPEN_POL2 q_o;
 	LSA_SEC_QOS qos;
 	BOOL valid_pol = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_init(server_name, PIPE_LSARPC, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -333,7 +344,9 @@ BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
-			valid_pol = True;
+			valid_pol = register_policy_hnd(hnd) &&
+			            set_policy_cli_state(hnd, cli, fnum,
+			                                 cli_state_free);
 		}
 	}
 
@@ -346,8 +359,7 @@ BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a LSA Open Secret
 ****************************************************************************/
-BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
-				const POLICY_HND *hnd_pol,
+BOOL lsa_open_secret( const POLICY_HND *hnd,
 				const char *secret_name,
 				uint32 des_access,
 				POLICY_HND *hnd_secret)
@@ -357,7 +369,15 @@ BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
 	LSA_Q_OPEN_SECRET q_o;
 	BOOL valid_pol = False;
 
-	if (hnd_pol == NULL) return False;
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
+
+	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -366,7 +386,7 @@ BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
 
 	DEBUG(4,("LSA Open Secret\n"));
 
-	make_q_open_secret(&q_o, hnd_pol, secret_name, des_access);
+	make_q_open_secret(&q_o, hnd, secret_name, des_access);
 
 	/* turn parameters into data stream */
 	lsa_io_q_open_secret("", &q_o, &buf, 0);
@@ -404,8 +424,7 @@ BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a LSA Query Secret
 ****************************************************************************/
-BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
-		      POLICY_HND *pol, STRING2 *enc_secret,
+BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 		      NTTIME *last_update)
 {
 	prs_struct rbuf;
@@ -413,7 +432,15 @@ BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
 	LSA_Q_QUERY_SECRET q_q;
 	BOOL valid_info = False;
 
-	if (pol == NULL) return False;
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
+
+	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -422,7 +449,7 @@ BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
 
 	DEBUG(4,("LSA Query Secret\n"));
 
-	make_q_query_secret(&q_q, pol);
+	make_q_query_secret(&q_q, hnd);
 
 	/* turn parameters into data stream */
 	lsa_io_q_query_secret("", &q_q, &buf, 0);
@@ -447,9 +474,11 @@ BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
 		    (r_q.info.value.ptr_secret != 0) &&
 		    (r_q.info.ptr_update != 0))
 		{
-			memcpy(enc_secret,  &(r_q.info.value.enc_secret), sizeof(STRING2));
+			STRING2 enc_secret;
+			memcpy(&enc_secret,  &(r_q.info.value.enc_secret), sizeof(STRING2));
 			memcpy(last_update, &(r_q.info.last_update),      sizeof(NTTIME));
-			valid_info = True;
+			valid_info = nt_decrypt_string2(secret, &enc_secret,
+			             (char*)(cli->pwd.smb_nt_pwd));
 		}
 	}
 
@@ -463,8 +492,7 @@ BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a LSA Lookup Names
 ****************************************************************************/
-BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
-			POLICY_HND *hnd,
+BOOL lsa_lookup_names( POLICY_HND *hnd,
 			int num_names,
 			char **names,
 			DOM_SID **sids,
@@ -475,6 +503,14 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 	prs_struct buf; 
 	LSA_Q_LOOKUP_NAMES q_l;
 	BOOL valid_response = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
 
@@ -595,8 +631,7 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a LSA Lookup SIDs
 ****************************************************************************/
-BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
-			POLICY_HND *hnd,
+BOOL lsa_lookup_sids(POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
 			char ***names,
@@ -607,6 +642,14 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 	prs_struct buf; 
 	LSA_Q_LOOKUP_SIDS q_l;
 	BOOL valid_response = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	ZERO_STRUCT(q_l);
 
@@ -745,14 +788,21 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a LSA Query Info Policy
 ****************************************************************************/
-BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
-			POLICY_HND *hnd, uint16 info_class,
+BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	LSA_Q_QUERY_INFO q_q;
 	BOOL valid_response = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	ZERO_STRUCTP(domain_sid);
 	domain_name[0] = 0;
@@ -854,8 +904,7 @@ BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a LSA Enumerate Trusted Domain 
 ****************************************************************************/
-BOOL lsa_enum_trust_dom(struct cli_state *cli, uint16 fnum,
-			POLICY_HND *hnd, uint32 *enum_ctx,
+BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 			uint32 *num_doms, char ***names,
 			DOM_SID ***sids)
 {
@@ -863,6 +912,14 @@ BOOL lsa_enum_trust_dom(struct cli_state *cli, uint16 fnum,
 	prs_struct buf; 
 	LSA_Q_ENUM_TRUST_DOM q_q;
 	BOOL valid_response = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL || num_doms == NULL || names == NULL) return False;
 
@@ -931,12 +988,20 @@ BOOL lsa_enum_trust_dom(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a LSA Close
 ****************************************************************************/
-BOOL lsa_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
+BOOL lsa_close(POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	LSA_Q_CLOSE q_c;
-    BOOL valid_close = False;
+	BOOL valid_close = False;
+
+	struct cli_state *cli = NULL;
+	uint16 fnum = 0xffff;
+
+	if (!cli_state_get(hnd, &cli, &fnum))
+	{
+		return False;
+	}
 
 	if (hnd == NULL) return False;
 
@@ -992,6 +1057,8 @@ BOOL lsa_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
+
+	close_policy_hnd(hnd);
 
 	return valid_close;
 }

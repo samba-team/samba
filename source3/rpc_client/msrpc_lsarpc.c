@@ -35,49 +35,31 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 nt lsa query secret
 ****************************************************************************/
-BOOL msrpc_lsa_query_secret(struct cli_state *cli,
+BOOL msrpc_lsa_query_secret(const char* srv_name,
 				const char* secret_name,
 				STRING2 *secret,
 				NTTIME *last_update)
 {
-	uint16 nt_pipe_fnum;
-	fstring srv_name;
 	BOOL res = True;
 	BOOL res1;
 	BOOL res2;
 
 	POLICY_HND pol_sec;
 	POLICY_HND lsa_pol;
-	STRING2 enc_secret;
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, cli->desthost);
-	strupper(srv_name);
-
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy2(cli, nt_pipe_fnum,
-				srv_name,
+	res = res ? lsa_open_policy2( srv_name,
 				&lsa_pol, False) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res1 = res ? lsa_open_secret(cli, nt_pipe_fnum,
-				&lsa_pol,
+	res1 = res ? lsa_open_secret( &lsa_pol,
 				secret_name, 0x02000000, &pol_sec) : False;
 
-	res2 = res1 ? lsa_query_secret(cli, nt_pipe_fnum,
-			       &pol_sec, &enc_secret, last_update) : False;
+	res2 = res1 ? lsa_query_secret(&pol_sec, secret, last_update) : False;
 
-	res1 = res1 ? lsa_close(cli, nt_pipe_fnum, &pol_sec) : False;
+	res1 = res1 ? lsa_close(&pol_sec) : False;
 
-	res = res ? lsa_close(cli, nt_pipe_fnum, &lsa_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(cli, nt_pipe_fnum);
-
-	res2 = res2 ? nt_decrypt_string2(secret, &enc_secret, (char*)(cli->pwd.smb_nt_pwd)) : False;
+	res = res ? lsa_close(&lsa_pol) : False;
 
 	return res2;
 }
