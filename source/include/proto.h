@@ -2798,7 +2798,7 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
-void prs_debug_out(prs_struct *ps, char *msg, int level);
+void prs_debug_out(const prs_struct *ps, char *msg, int level);
 void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io);
 void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io);
 BOOL prs_copy(prs_struct *ps, const prs_struct *from);
