@@ -85,6 +85,7 @@ typedef enum krb5_cksumtype {
   CKSUMTYPE_RSA_MD5		= 7,
   CKSUMTYPE_RSA_MD5_DES		= 8,
   CKSUMTYPE_RSA_MD5_DES3	= 9,
+  CKSUMTYPE_SHA1		= 10,
   CKSUMTYPE_HMAC_SHA1_DES3	= 12,
   CKSUMTYPE_SHA1		= 1000 /* correct value? */
 } krb5_cksumtype;
@@ -353,7 +354,7 @@ typedef struct krb5_context_data {
     struct et_list *et_list;
     struct krb5_log_facility *warn_dest;
     krb5_cc_ops *cc_ops;
-    int num_ops;
+    int num_cc_ops;
     const char *http_proxy;
     const char *time_fmt;
     krb5_boolean log_utc;
@@ -365,6 +366,8 @@ typedef struct krb5_context_data {
     krb5_boolean srv_try_rfc2052;	/* try RFC2052 compatible records */
     int32_t fcache_vno;			/* create cache files w/ this
                                            version */
+    int num_kt_types;			/* # of registered keytab types */
+    struct krb5_keytab_data *kt_types;  /* registered keytab types */
 } krb5_context_data;
 
 enum {
@@ -574,6 +577,7 @@ extern const krb5_cc_ops krb5_mcc_ops;
 
 extern const krb5_kt_ops krb5_fkt_ops;
 extern const krb5_kt_ops krb5_mkt_ops;
+extern const krb5_kt_ops krb5_akf_ops;
 
 #define KRB5_KPASSWD_SUCCESS	0
 #define KRB5_KPASSWD_MALFORMED	0
