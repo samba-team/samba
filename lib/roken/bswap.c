@@ -40,8 +40,13 @@ RCSID("$Id$");
 
 #ifndef HAVE_BSWAP32
 
+#ifndef HAVE_U_INT32_T
+unsigned int
+bswap32 (unsigned int val)
+#else
 u_int32_t
 bswap32 (u_int32_t val)
+#endif
 {
     return (val & 0xff) << 24 |
 	(val & 0xff00) << 8 |
@@ -52,8 +57,13 @@ bswap32 (u_int32_t val)
 
 #ifndef HAVE_BSWAP16
 
+#ifndef HAVE_U_INT16_T
+unsigned short
+bswap16 (unsigned short val)
+#else
 u_int16_t
 bswap16 (u_int16_t val)
+#endif
 {
     return (val & 0xff) << 8 |
 	(val & 0xff00) >> 8;
