@@ -80,6 +80,31 @@ static void  killkids(void)
 	if(am_parent) kill(0,SIGTERM);
 }
 
+/****************************************************************************
+  process a sam sync message - not sure whether to do this here or
+  somewhere else
+****************************************************************************/
+static void msg_sam_sync(int msg_type, pid_t pid, void *buf, size_t len)
+{
+        DEBUG(10, ("** sam sync message received, ignoring\n"));
+}
+
+/****************************************************************************
+  process a sam sync replicate message - not sure whether to do this here or
+  somewhere else
+****************************************************************************/
+static void msg_sam_repl(int msg_type, pid_t pid, void *buf, size_t len)
+{
+        uint32 low_serial;
+
+        if (len != sizeof(uint32))
+                return;
+
+        low_serial = *((uint32 *)buf);
+
+        DEBUG(3, ("received sam replication message, serial = 0x%04x\n",
+                  low_serial));
+}
 
 /****************************************************************************
   open the socket communication
@@ -195,6 +220,11 @@ max can be %d\n",
 		fd_listenset[0] = s;
 		FD_SET(s,&listen_set);
 	} 
+
+        /* Listen to messages */
+
+        message_register(MSG_SMB_SAM_SYNC, msg_sam_sync);
+        message_register(MSG_SMB_SAM_REPL, msg_sam_repl);
 
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
