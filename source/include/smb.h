@@ -196,17 +196,8 @@ typedef struct data_blob {
 	size_t length;
 } DATA_BLOB;
 
-/* 8 byte aligned 'hyper' type from MS IDL */
-typedef uint64_t HYPER_T;
-
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30, 4 byte aligned */
 typedef uint64_t NTTIME;
-
-/* 64 bit time (100 nanosec) 1601, but 8 byte aligned 'hyper' type */
-#define NTTIME_hyper NTTIME
-
-/* 64 bit time (1 sec) 1601 - in the NDR blob but mapped to NTTIME  */
-#define NTTIME_1sec NTTIME
 
 /* the basic packet size, assuming no words or bytes. Does not include the NBT header */
 #define MIN_SMB_SIZE 35

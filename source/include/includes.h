@@ -85,49 +85,6 @@
 #define VOLATILE
 #endif
 
-/*
-   Samba needs type definitions for 
-   int8_t,  int16_t,  int32_t, int64_t 
-   uint8_t, uint16_t, uint32_t and uint64_t.
-
-   Normally these are signed and unsigned 8, 16, 32 and 64 bit integers, but
-   they actually only need to be at least 8, 16, 32 and 64 bits
-   respectively. Thus if your word size is 8 bytes just defining them
-   as signed and unsigned int will work.
-*/
-
-#if !defined(int8)
-#define int8 int8_t
-#endif
-
-#if !defined(uint8)
-#define uint8 uint8_t
-#endif
-
-#if !defined(int16)
-#define int16 int16_t
-#endif
-
-#if !defined(uint16)
-#define uint16 uint16_t
-#endif
-
-#if !defined(int32)
-#define int32 int32_t
-#endif
-
-#if !defined(uint32)
-#define uint32 uint32_t
-#endif
-
-#if !defined(int64)
-#define int64 int64_t
-#endif
-
-#if !defined(uint64)
-#define uint64 uint64_t
-#endif
-
 #define False (0)
 #define True (1)
 #define Auto (2)

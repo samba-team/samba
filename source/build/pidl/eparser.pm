@@ -445,10 +445,6 @@ sub RewriteHeader($$$)
 	s/^\#include\ \"librpc\/gen_ndr\/ndr_(.*?).h\"$
 	    /\#include \"packet-dcerpc-$1.h\"/smgx;
 
-	# Convert samba fixed width types to stdint types
-
-	s/((u)?int)([0-9]+)/$1$3_t/smg;
-
 	# Rename struct ndr_pull to struct pidl_pull
 
 	s/struct ndr_pull \*ndr/struct pidl_pull \*ndr/smg;

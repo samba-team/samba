@@ -259,7 +259,7 @@ sub get_bitmap($)
 	return $bitmap_list{$name};
 }
 
-sub bitmap_type_decl($)
+sub bitmap_type_fn($)
 {
 	my $bitmap = shift;
 
@@ -273,11 +273,12 @@ sub bitmap_type_decl($)
 	return "uint32";
 }
 
-sub bitmap_type_fn($)
+sub bitmap_type_decl($)
 {
 	my $bitmap = shift;
-	return bitmap_type_decl($bitmap);
+	return map_type(bitmap_type_fn($bitmap));
 }
+
 
 my %type_alignments = 
     (
@@ -291,8 +292,8 @@ my %type_alignments =
      "long" => 4,
      "int32" => 4,
      "uint32" => 4,
-     "int64" => 4,
-     "uint64" => 4,
+     "dlong" => 4,
+     "udlong" => 4,
      "NTTIME" => 4,
      "NTTIME_1sec" => 4,
      "time_t" => 4,
@@ -301,6 +302,7 @@ my %type_alignments =
      "WERROR" => 4,
      "boolean32" => 4,
      "unsigned32" => 4,
+     "hyper" => 8,
      "HYPER_T" => 8,
      "NTTIME_hyper" => 8
      );
@@ -517,6 +519,39 @@ sub make_str($)
 		return $str;
 	}
 	return "\"" . $str . "\"";
+}
+
+
+# provide mappings between IDL base types and types in our headers
+my %type_mappings = 
+    (
+     "int8"         => "int8_t",
+     "uint8"        => "uint8_t",
+     "short"        => "int16_t",
+     "wchar_t"      => "uint16_t",
+     "int16"        => "int16_t",
+     "uint16"       => "uint16_t",
+     "int32"        => "int32_t",
+     "uint32"       => "uint32_t",
+     "int64"        => "int64_t",
+     "uint64"       => "uint64_t",
+     "dlong"        => "int64_t",
+     "udlong"       => "uint64_t",
+     "hyper"        => "uint64_t",
+     "HYPER_T"      => "uint64_t",
+     "hyper"        => "uint64_t",
+     "NTTIME_1sec"  => "NTTIME",
+     "NTTIME_hyper" => "NTTIME"
+     );
+
+# map from a IDL type to a C header type
+sub map_type($)
+{
+	my $name = shift;
+	if (my $ret = $type_mappings{$name}) {
+		return $ret;
+	}
+	return $name;
 }
 
 1;

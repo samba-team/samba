@@ -76,8 +76,8 @@ interface netlogon
 	/* in netr_AcctLockStr size seems to be be 24, and rrenard thinks 
 	   that the structure of the bindata looks like this:
 
-		uint64 lockout_duration;
-		uint64 reset_count;
+		dlong  lockout_duration;
+		udlong reset_count;
 		uint32 bad_attempt_lockout;
 		uint32 dummy;	
 
@@ -407,9 +407,9 @@ interface netlogon
 		uint16 min_password_length;
 		uint16 password_history_length;
 		/* yes, these are signed. They are in negative 100ns */
-		int64  max_password_age;
-		int64  min_password_age;
-		uint64 sequence_num;
+		dlong  max_password_age;
+		dlong  min_password_age;
+		udlong sequence_num;
 		NTTIME domain_create_time;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
@@ -504,7 +504,7 @@ interface netlogon
 		netr_String primary_domain_name;
 		dom_sid2 *sid;
 		netr_QUOTA_LIMITS quota_limits;
-		uint64 sequence_num;
+		udlong sequence_num;
 		NTTIME db_create_time;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
@@ -635,7 +635,7 @@ interface netlogon
 		[case(NETR_DELTA_DELETE_SECRET)]   netr_DELTA_DELETE_SECRET    delete_secret;
 		[case(NETR_DELTA_DELETE_GROUP2)]   netr_DELTA_DELETE_USER     *delete_group;
 		[case(NETR_DELTA_DELETE_USER2)]    netr_DELTA_DELETE_USER     *delete_user;
-		[case(NETR_DELTA_MODIFY_COUNT)]    uint64                     *modified_count;
+		[case(NETR_DELTA_MODIFY_COUNT)]    udlong                     *modified_count;
 	} netr_DELTA_UNION;
 
 	typedef union {
@@ -681,7 +681,7 @@ interface netlogon
 		[in]      netr_Authenticator credential,
 		[in,out]  netr_Authenticator return_authenticator,
 		[in]      netr_SamDatabaseID database_id,
-		[in,out]  uint64 sequence_num,
+		[in,out]  udlong sequence_num,
 		[in]      uint32 preferredmaximumlength,
 		[out]     netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);

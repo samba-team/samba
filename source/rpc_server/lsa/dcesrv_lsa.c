@@ -2160,7 +2160,7 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 	
 	if (r->in.old_mtime) {
-		r->out.old_mtime = talloc(mem_ctx, NTTIME_hyper);
+		r->out.old_mtime = talloc(mem_ctx, NTTIME);
 		if (!r->out.old_mtime) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -2196,7 +2196,7 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 	
 	if (r->in.new_mtime) {
-		r->out.new_mtime = talloc(mem_ctx, NTTIME_hyper);
+		r->out.new_mtime = talloc(mem_ctx, NTTIME);
 		if (!r->out.new_mtime) {
 			return NT_STATUS_NO_MEMORY;
 		}

@@ -146,8 +146,8 @@ struct ldap_SearchRequest {
 	const char *basedn;
 	enum ldap_scope scope;
 	enum ldap_deref deref;
-	uint32 timelimit;
-	uint32 sizelimit;
+	uint32_t timelimit;
+	uint32_t sizelimit;
 	BOOL attributesonly;
 	char *filter;
 	int num_attributes;
@@ -206,7 +206,7 @@ struct ldap_CompareRequest {
 };
 
 struct ldap_AbandonRequest {
-	uint32 messageid;
+	uint32_t messageid;
 };
 
 struct ldap_ExtendedRequest {
@@ -251,8 +251,8 @@ struct ldap_Control {
 
 struct ldap_message {
 	TALLOC_CTX	       *mem_ctx;
-	uint32                  messageid;
-	uint8                   type;
+	uint32_t                  messageid;
+	uint8_t                   type;
 	union  ldap_Request     r;
 	int			num_controls;
 	struct ldap_Control    *controls;
@@ -269,7 +269,7 @@ struct ldap_connection {
 	int sock;
 	int next_msgid;
 	char *host;
-	uint16 port;
+	uint16_t port;
 	BOOL ldaps;
 
 	const char *auth_dn;
