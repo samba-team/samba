@@ -3041,12 +3041,14 @@ so in the vast majority of cases "strict locking = no" is preferable.
 
 .SS strip dot (G)
 This is a boolean that controls whether to strip trailing dots off
-filenames. This helps with some CDROMs that have filenames ending in a
+UNIX filenames. This helps with some CDROMs that have filenames ending in a
 single dot.
 
-NOTE: This option is now obsolete, and may be removed in future. You
-should use the "mangled map" option instead as it is much more
-general. 
+.B Default:
+	strip dot = no
+
+.B Example:
+    strip dot = yes
 
 .SS syslog (G)
 This parameter maps how Samba debug messages are logged onto the
