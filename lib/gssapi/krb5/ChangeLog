@@ -1,3 +1,8 @@
+2003-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am:  (libgssapi_la_LDFLAGS): update major
+	version of gssapi for incompatiblity in 3des getmic support
+	
 2003-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: test_acquire_cred_LDADD: use libgssapi.la not
