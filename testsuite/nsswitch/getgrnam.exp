@@ -27,14 +27,3 @@ foreach {group} $domain_groups {
         fail "getgrnam $group"
     }
 }
-
-# Test builtin groups
-
-foreach {group} $local_groups {
-    set output [util_start "$srcdir/$subdir/getgrnam" "\"$group\"" ""]
-    if {[regexp "PASS:" $output]} {
-        pass "getgrnam $group"
-    } else {
-        fail "getgrnam $group"
-    }
-}

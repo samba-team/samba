@@ -1,5 +1,5 @@
 #
-# @(#) Test the getent command returns builtin domain/local users and groups
+# @(#) Test the getent command returns domain/local users and groups
 #
 
 load_lib util-defs.exp
@@ -29,14 +29,6 @@ foreach {user} $domain_users {
 set output [util_start "getent" "group" ""]
 
 foreach {group} $domain_groups {
-    if {![regexp "$group" $output]} {
-        fail "getent group $group"
-    } else {
-        pass "getent group $group"
-    }
-}
-
-foreach {group} $local_groups {
     if {![regexp "$group" $output]} {
         fail "getent group $group"
     } else {
