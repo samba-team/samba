@@ -389,7 +389,7 @@ typedef krb5_authenticator_data *krb5_authenticator;
 
 struct krb5_rcache_data;
 typedef struct krb5_rcache_data *krb5_rcache;
-typedef Authenticator krb5_donot_reply;
+typedef Authenticator krb5_donot_replay;
 
 #define KRB5_STORAGE_HOST_BYTEORDER			0x01
 #define KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS	0x02
@@ -447,6 +447,12 @@ struct krb5_keytab_key_proc_args {
 };
 
 typedef struct krb5_keytab_key_proc_args krb5_keytab_key_proc_args;
+
+typedef struct krb5_replay_data {
+    krb5_timestamp timestamp;
+    u_int32_t usec;
+    u_int32_t seq;
+} krb5_replay_data;
 
 /* flags for krb5_auth_con_setflags */
 enum {
