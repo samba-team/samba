@@ -23,48 +23,6 @@
 
 #ifdef HAVE_ADS
 
-/* a lame random number generator - used /dev/urandom if possible */
-static unsigned one_random(void)
-{
-	int fd = -1;
-	static int initialised;
-	unsigned ret;
-
-	if (!initialised) {
-		initialised = 1;
-		fd = open("/dev/urandom", O_RDONLY);
-		srandom(time(NULL) ^ getpid());
-	}
-
-	if (fd == -1) {
-		return random();
-	}
-
-	read(fd, &ret, sizeof(ret));
-	return ret;
-}
-
-/*
- * Generate a simple random password of 15 chars - not a cryptographic one
- */
-static char *generate_random_password(int len)
-{
-	int i;
-	char *pass;
-
-	if (!(pass = malloc(len+1)))
-		return NULL;
-
-	for (i=0; i<len; ) {
-		char c = one_random() & 0x7f;
-		if (!isalnum(c) && !ispunct(c)) continue;
-		pass[i++] = c;
-	}
-	
-	return pass;
-}
-
-
 int net_ads_usage(void)
 {
 	d_printf(
@@ -75,8 +33,6 @@ int net_ads_usage(void)
 		);
 	return -1;
 }
-
-	
 
 static ADS_STRUCT *ads_startup(void)
 {
@@ -91,8 +47,6 @@ static ADS_STRUCT *ads_startup(void)
 	}
 	return ads;
 }
-
-
 
 static int net_ads_user(int argc, const char **argv)
 {
@@ -203,7 +157,8 @@ static int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	password = generate_random_password(15);
+	password = generate_random_str(15);
+	password = strdup(password);
 
 	if (!(ads = ads_startup())) return -1;
 
@@ -225,6 +180,8 @@ static int net_ads_join(int argc, const char **argv)
 	}
 
 	d_printf("Joined '%s' to realm '%s'\n", global_myname, ads->realm);
+
+	free(password);
 
 	return 0;
 }
