@@ -70,9 +70,9 @@ krb5_build_authenticator (krb5_context context,
       auth->cusec = usec;
   }
   krb5_generate_subkey (context, &cred->session, &auth->subkey);
-  free_EncryptionKey (&auth_context->local_subkey);
-  copy_EncryptionKey (auth->subkey,
-		      &auth_context->local_subkey);
+  krb5_free_keyblock_contents(context, auth_context->local_subkey);
+  krb5_copy_keyblock_contents(context, auth->subkey, 
+			      auth_context->local_subkey);
 
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     krb5_generate_seq_number (context,
