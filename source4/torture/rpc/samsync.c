@@ -903,7 +903,7 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 		TEST_STRING_EQUAL(info[8]->full_info.info_ex.netbios_name, trusted_domain->domain_name);
 	}
 	TEST_STRING_EQUAL(info[1]->name.netbios_name, trusted_domain->domain_name);
-	TEST_INT_EQUAL(info[3]->flags.flags, trusted_domain->flags);
+	TEST_INT_EQUAL(info[3]->posix_offset.posix_offset, trusted_domain->posix_offset);
 /*
   We would like to do this, but it is NOT_SUPPORTED on win2k3
 	TEST_SEC_DESC_EQUAL(trusted_domain->sdbuf, lsa, &trustdom_handle);
