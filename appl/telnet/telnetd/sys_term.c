@@ -39,6 +39,14 @@ RCSID("$Id$");
 # define PARENT_DOES_UTMP
 #endif
 
+#ifdef HAVE_UTMP_H
+#include <utmp.h>
+#endif
+
+#ifdef HAVE_UTMPX_H
+#include <utmpx.h>
+#endif
+
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
 struct	utmpx wtmp;
@@ -52,16 +60,20 @@ int	utmp_len = sizeof(wtmp.ut_host);
 #else
 int	utmp_len = MaxHostNameLen;
 #endif
+
+#ifndef UTMP_FILE
+#define UTMP_FILE "/etc/utmp"
+#endif
+
 #ifndef PARENT_DOES_UTMP
 char	wtmpf[]	= "/usr/adm/wtmp";
-char	utmpf[] = "/etc/utmp";
+char	utmpf[] = UTMP_FILE;
 #else /* PARENT_DOES_UTMP */
 char	wtmpf[]	= "/etc/wtmp";
 #endif /* PARENT_DOES_UTMP */
 
-#ifdef _CRAY
+#ifdef HAVE_TMPDIR_H
 #include <tmpdir.h>
-#include <sys/wait.h>
 #endif	/* CRAY */
 
 #ifdef	STREAMSPTY
@@ -70,8 +82,11 @@ char	wtmpf[]	= "/etc/wtmp";
 #include <sac.h>
 #endif
 
+#ifdef HAVE_SYS_STROPTS_H
 #include <sys/stropts.h>
 #endif
+
+#endif /* STREAMSPTY */
 
 #define SCPYN(a, b)	strncpy(a, b, sizeof(a))
 #define SCMPN(a, b)	strncmp(a, b, sizeof(a))
@@ -153,7 +168,7 @@ char	wtmpf[]	= "/etc/wtmp";
      int really_stream = 0;
 # endif
 
-     char *new_login = LOGIN_PATH;
+     const char *new_login = _PATH_LOGIN;
 
 /*
  * init_termbuf()
@@ -1036,6 +1051,28 @@ int login_tty(int t)
 #endif	/* BSD <= 43 */
 
 /*
+ * This comes from ../../bsd/tty.c and should not really be here.
+ */
+
+/*
+ * Clean the tty name.  Return a pointer to the cleaned version.
+ */
+
+static const char *
+clean_ttyname (const char *tty)
+{
+  const char *res = tty;
+
+  if (strncmp (res, _PATH_DEV, strlen(_PATH_DEV)) == 0)
+    res += strlen(_PATH_DEV);
+  if (strncmp (res, "pty/", 4) == 0)
+    res += 4;
+  if (strncmp (res, "ptym/", 5) == 0)
+    res += 5;
+  return res;
+}
+
+/*
  * startslave(host)
  *
  * Given a hostname, do whatever
@@ -1093,14 +1130,8 @@ startslave(char *host, int autologin, char *autoname)
 	wtmp.ut_pid = pid;
 	SCPYN(wtmp.ut_user, "LOGIN");
 	SCPYN(wtmp.ut_host, host);
-	SCPYN(wtmp.ut_line, line + sizeof("/dev/") - 1);
-#if 0
-#ifndef	__hpux
-	SCPYN(wtmp.ut_id, wtmp.ut_line+3);
-#else
-	SCPYN(wtmp.ut_id, wtmp.ut_line+7);
-#endif
-#endif
+	SCPYN(wtmp.ut_line, clean_ttyname(line));
+
 	pututline(&wtmp);
 	endutent();
 	if ((i = open(wtmpf, O_WRONLY|O_APPEND)) >= 0) {
@@ -1198,7 +1229,7 @@ void start_login(char *host, int autologin, char *name)
     memset(&utmpx, 0, sizeof(utmpx));
     SCPYN(utmpx.ut_user, ".telnet");
 
-    SCPYN(utmpx.ut_line, line + sizeof("/dev/") - 1);
+    SCPYN(utmpx.ut_line, clean_ttyname(line));
     utmpx.ut_pid = pid;
 	
     utmpx.ut_type = LOGIN_PROCESS;
@@ -1322,7 +1353,7 @@ rmut(void)
 
     setutxent();
     memset(&utmpx, 0, sizeof(utmpx));
-    strncpy(utmpx.ut_line, line + sizeof("/dev/") - 1, sizeof(utmpx.ut_line));
+    strncpy(utmpx.ut_line, clean_ttyname(line), sizeof(utmpx.ut_line));
     utmpx.ut_type = LOGIN_PROCESS;
     utxp = getutxline(&utmpx);
     if (utxp) {
@@ -1342,6 +1373,24 @@ rmut(void)
 	pututxline(utxp);
 #ifdef WTMPX_FILE
 	updwtmpx(WTMPX_FILE, utxp);
+#elif defined(WTMP_FILE)
+	/* This is a strange system with a utmpx and a wtmp! */
+	{
+	  int f = open(wtmpf, O_WRONLY|O_APPEND);
+	  struct utmp wtmp;
+	  if (f >= 0) {
+	    SCPYN(wtmp.ut_line, clean_ttyname(line));
+	    SCPYN(wtmp.ut_name, "");
+#ifdef HAVE_UT_HOST
+	    SCPYN(wtmp.ut_host, "");
+#endif
+	    time(&wtmp.ut_time);
+	    write(f, &wtmp, sizeof(wtmp));
+	    close(f);
+	  }
+	}
+#else
+
 #endif
     }
     endutxent();
@@ -1369,7 +1418,7 @@ rmut(void)
 	    nutmp /= sizeof(struct utmp);
 
 	    for (u = utmp ; u < &utmp[nutmp] ; u++) {
-		if (SCMPN(u->ut_line, line+5) ||
+		if (SCMPN(u->ut_line, clean_ttyname(line)) ||
 		    u->ut_name[0]==0)
 		    continue;
 		lseek(f, ((long)u)-((long)utmp), L_SET);
@@ -1387,7 +1436,7 @@ rmut(void)
     if (found) {
 	f = open(wtmpf, O_WRONLY|O_APPEND);
 	if (f >= 0) {
-	    SCPYN(wtmp.ut_line, line+5);
+	    SCPYN(wtmp.ut_line, clean_ttyname(line));
 	    SCPYN(wtmp.ut_name, "");
 #ifdef HAVE_UT_HOST
 	    SCPYN(wtmp.ut_host, "");
@@ -1414,7 +1463,7 @@ rmut (char *line)
     int fd;			/* for /etc/wtmp */
 
     utmp.ut_type = USER_PROCESS;
-    strncpy(utmp.ut_line, line + sizeof("/dev/") - 1, sizeof(utmp.ut_line));
+    strncpy(utmp.ut_line, clean_ttyname(line), sizeof(utmp.ut_line));
     setutent();
     utptr = getutline(&utmp);
     /* write it out only if it exists */
