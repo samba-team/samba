@@ -858,7 +858,7 @@ static void samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 		if (q_u->switch_level == 3)
 		{
 			r_e.ptr = 1;
-			ctr.switch_value = 3;
+			ctr.switch_value1 = 3;
 			make_samr_alias_info3(&ctr.alias.info3, "<account description>");
 		}
 		else

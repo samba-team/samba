@@ -2183,7 +2183,7 @@ void samr_io_r_enum_dom_aliases(char *desc,  SAMR_R_ENUM_DOM_ALIASES *r_u, prs_s
 /*******************************************************************
 makes a ALIAS_INFO3 structure.
 ********************************************************************/
-void make_samr_alias_info3(ALIAS_INFO3 *al3, char *acct_desc)
+void make_samr_alias_info3(ALIAS_INFO3 *al3, const char *acct_desc)
 {
 	int acct_len = acct_desc != NULL ? strlen(acct_desc) : 0;
 	if (al3 == NULL) return;
@@ -2221,23 +2221,20 @@ void samr_alias_info_ctr(char *desc,  ALIAS_INFO_CTR *ctr, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "samr_alias_info_ctr");
 	depth++;
 
-	prs_uint16("switch_value", ps, depth, &(ctr->switch_value));
-	prs_align(ps);
+	prs_uint16("switch_value1", ps, depth, &(ctr->switch_value1));
+	prs_uint16("switch_value2", ps, depth, &(ctr->switch_value2));
 
-	if (ctr->switch_value != 0)
+	switch (ctr->switch_value1)
 	{
-		switch (ctr->switch_value)
+		case 3:
 		{
-			case 3:
-			{
-				samr_io_alias_info3("alias_info3", &(ctr->alias.info3), ps, depth);
-				break;
-			}
-			default:
-			{
-				DEBUG(4,("samr_alias_info_ctr: unsupported switch level\n"));
-				break;
-			}
+			samr_io_alias_info3("alias_info3", &(ctr->alias.info3), ps, depth);
+			break;
+		}
+		default:
+		{
+			DEBUG(4,("samr_alias_info_ctr: unsupported switch level\n"));
+			break;
 		}
 	}
 
@@ -2757,7 +2754,7 @@ void samr_io_r_delete_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_struc
 makes a SAMR_Q_CREATE_DOM_ALIAS structure.
 ********************************************************************/
 void make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u, POLICY_HND *hnd,
-				char *acct_desc)
+				const char *acct_desc)
 {
 	int acct_len = acct_desc != NULL ? strlen(acct_desc) : 0;
 	if (q_u == NULL) return;

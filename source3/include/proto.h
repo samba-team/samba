@@ -1580,6 +1580,10 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
+BOOL create_samr_domain_alias(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				const char *acct_name, const char *acct_desc,
+				uint32 *rid);
 BOOL create_samr_domain_group(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain,
 				const char *acct_name, const char *acct_desc,
@@ -1609,6 +1613,14 @@ BOOL samr_connect(struct cli_state *cli,
 BOOL samr_open_user(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
 				POLICY_HND *user_pol);
+BOOL samr_open_alias(struct cli_state *cli, 
+				POLICY_HND *domain_pol, uint32 rid,
+				POLICY_HND *alias_pol);
+BOOL samr_create_dom_alias(struct cli_state *cli, 
+				POLICY_HND *domain_pol, const char *acct_name,
+				POLICY_HND *alias_pol, uint32 *rid);
+BOOL samr_set_aliasinfo(struct cli_state *cli, 
+				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr);
 BOOL samr_open_group(struct cli_state *cli, 
 				POLICY_HND *domain_pol, uint32 rid,
 				POLICY_HND *group_pol);
@@ -2118,7 +2130,7 @@ void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 		uint32 num_sam_entries, LOCAL_GRP *alss,
 		uint32 status);
 void samr_io_r_enum_dom_aliases(char *desc,  SAMR_R_ENUM_DOM_ALIASES *r_u, prs_struct *ps, int depth);
-void make_samr_alias_info3(ALIAS_INFO3 *al3, char *acct_desc);
+void make_samr_alias_info3(ALIAS_INFO3 *al3, const char *acct_desc);
 void samr_io_alias_info3(char *desc,  ALIAS_INFO3 *al3, prs_struct *ps, int depth);
 void samr_alias_info_ctr(char *desc,  ALIAS_INFO_CTR *ctr, prs_struct *ps, int depth);
 void make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_e,
@@ -2155,7 +2167,7 @@ void make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u, POLICY_HND *hnd);
 void samr_io_q_delete_alias(char *desc,  SAMR_Q_DELETE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
 void samr_io_r_delete_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_struct *ps, int depth);
 void make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u, POLICY_HND *hnd,
-				char *acct_desc);
+				const char *acct_desc);
 void samr_io_q_create_dom_alias(char *desc,  SAMR_Q_CREATE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
 void samr_io_r_create_dom_alias(char *desc,  SAMR_R_CREATE_DOM_ALIAS *r_u, prs_struct *ps, int depth);
 void make_samr_q_unk_aliasmem(SAMR_Q_UNK_ALIASMEM *q_u, POLICY_HND *hnd,
@@ -2463,6 +2475,7 @@ void cmd_reg_get_key_sec(struct client_info *info);
 
 void cmd_sam_ntchange_pwd(struct client_info *info);
 void cmd_sam_test(struct client_info *info);
+void cmd_sam_create_dom_alias(struct client_info *info);
 void cmd_sam_create_dom_group(struct client_info *info);
 void cmd_sam_enum_users(struct client_info *info);
 void cmd_sam_query_user(struct client_info *info);
