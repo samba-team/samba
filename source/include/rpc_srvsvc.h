@@ -54,7 +54,7 @@ typedef struct disk_enum_container {
 	uint32 level;
 	uint32 entries_read;
 	uint32 unknown;
-	uint32 disk_info_ptr;
+	DISK_INFO *disk_info_ptr;
 	DISK_INFO disk_info[MAX_SERVER_DISK_ENTRIES];
 } DISK_ENUM_CONTAINER;
 

@@ -465,12 +465,11 @@ void tdb_dump_all(TDB_CONTEXT *tdb)
 void tdb_printfreelist(TDB_CONTEXT *tdb)
 {
 	long total_free = 0;
-	tdb_off offset, rec_ptr, last_ptr;
+	tdb_off offset, rec_ptr;
 	struct list_struct rec;
 
 	tdb_lock(tdb, -1, F_WRLCK);
 
-	last_ptr = 0;
 	offset = FREELIST_TOP;
 
 	/* read in the freelist top */

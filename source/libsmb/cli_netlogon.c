@@ -438,7 +438,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, cli->clnt_name_slash,
-                              cli->sess_key, lm_owf_user_pwd,
+                              (char *)cli->sess_key, lm_owf_user_pwd,
                               nt_owf_user_pwd);
 
                 break;
@@ -450,8 +450,8 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
                 generate_random_buffer(chal, 8, False);
 
-                SMBencrypt(password, chal, local_lm_response);
-                SMBNTencrypt(password, chal, local_nt_response);
+                SMBencrypt((unsigned char *)password, chal, local_lm_response);
+                SMBNTencrypt((unsigned char *)password, chal, local_nt_response);
 
                 init_id_info2(&ctr.auth.id2, lp_workgroup(), 
                               0, /* param_ctrl */
