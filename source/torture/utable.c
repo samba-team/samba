@@ -24,7 +24,7 @@ BOOL torture_utable(int dummy)
 {
 	struct cli_state *cli;
 	fstring fname;
-	char *alt_name;
+	const char *alt_name;
 	int fnum;
 	smb_ucs2_t c2;
 	int c, len, fd;

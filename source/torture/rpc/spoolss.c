@@ -215,7 +215,7 @@ BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct spoolss_AddForm r;
 	struct spoolss_AddFormInfo1 form;
 	NTSTATUS status;
-	char *formname = "testform3";
+	const char *formname = "testform3";
 	BOOL ret = True;
 
 	r.in.handle = handle;
