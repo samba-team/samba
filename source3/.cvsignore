@@ -1,4 +1,6 @@
+Makefile
 Makefile.RPM
+config
 config.cache
 config.h
 config.log
@@ -23,4 +25,3 @@ testparm
 testprns
 wsmbconf
 wsmbstatus
-Makefile
