@@ -95,7 +95,7 @@ main(int argc, char **argv)
 		printf ("%02x", t->res[i]);
 	    printf ("\nresult was: ");
 	    for (i = 0; i < t->n; ++i)
-		printf ("%02x", t->res[i]);
+		printf ("%02x", data[i]);
 	    printf ("\n");
 	    ret = 1;
 	}
