@@ -8,7 +8,7 @@
  *  Email:  crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
  *
- *  This module implements simple binary trees.
+ *  This module implements a simple binary tree.
  *
  * -------------------------------------------------------------------------- **
  *
@@ -29,72 +29,69 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_BinTree.h,v
- * Revision 3.0  1997/12/08 06:49:15  crh
- * This is a new major revision level for all ubiqx binary tree modules.
- * In previous releases, the ubi_trNode structure looked like this:
+ * Revision 2.5  1997/12/23 03:59:21  crh
+ * In this version, all constants & macros defined in the header file have
+ * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
+ * when run with '-pedantic -fsyntax-only -Wall'.
  *
- *   typedef struct ubi_btNodeStruct
- *     {
- *     struct ubi_btNodeStruct *Link[3];
- *     signed char              gender;
- *     } ubi_btNode;
+ * Revision 2.4  1997/07/26 04:11:14  crh
+ * + Just to be annoying I changed ubi_TRUE and ubi_FALSE to ubi_trTRUE
+ *   and ubi_trFALSE.
+ * + There is now a type ubi_trBool to go with ubi_trTRUE and ubi_trFALSE.
+ * + There used to be something called "ubi_TypeDefs.h".  I got rid of it.
+ * + Added function ubi_btLeafNode().
  *
- * As a result, the pointers were indexed as
+ * Revision 2.3  1997/06/03 05:15:27  crh
+ * Changed TRUE and FALSE to ubi_TRUE and ubi_FALSE to avoid conflicts.
+ * Also changed the interface to function InitTree().  See the comments
+ * for this function for more information.
  *
- *   Link[0] == Left Child
- *   Link[1] == Parent
- *   Link[2] == Right Child
+ * Revision 2.2  1995/10/03 22:00:40  CRH
+ * Ubisized!
+ * 
+ * Revision 2.1  95/03/09  23:43:46  CRH
+ * Added the ModuleID static string and function.  These modules are now
+ * self-identifying.
+ * 
+ * Revision 2.0  95/02/27  22:00:33  CRH
+ * Revision 2.0 of this program includes the following changes:
  *
- * With this release, the node structure changes to:
+ *     1)  A fix to a major typo in the RepaceNode() function.
+ *     2)  The addition of the static function Border().
+ *     3)  The addition of the public functions FirstOf() and LastOf(), which
+ *         use Border(). These functions are used with trees that allow
+ *         duplicate keys.
+ *     4)  A complete rewrite of the Locate() function.  Locate() now accepts
+ *         a "comparison" operator.
+ *     5)  Overall enhancements to both code and comments.
  *
- *   typedef struct ubi_btNodeStruct
- *     {
- *     struct ubi_btNodeStruct *leftlink
- *     struct ubi_btNodeStruct *Link[2];
- *     signed char              gender;
- *     } ubi_btNode;
+ * I decided to give this a new major rev number because the interface has
+ * changed.  In particular, there are two new functions, and changes to the
+ * Locate() function.
  *
- * The leftlink field is used as a place holder, and the pointers are now
- * index as
- *
- *   Link[-1] == Left Child  (aka. leftlink)
- *   Link[ 0] == Parent
- *   Link[ 1] == Right Child
- *
- * which is much nicer.  Doing things this way removes the need to shift
- * values between the two numbering schemes, thus removing one macro,
- * simplifying another, and getting rid of a whole bunch of increment &
- * decrement operations.
- *
- * Revision 2; 1995/02/27 - 1997/12/07 included:
- *  - The addition of the ModuleID static string and ubi_ModuleID() function.
- *  - The addition of the public functions FirstOf() and LastOf(). These
- *    functions are used with trees that allow duplicate keys.
- *  - The addition of the ubi_btLeafNode() function.
- *  - A rewrite of the Locate() function.
- *  - A change to the parameter list in function ubi_btInitTree().
- *  - Bugfixes.
- *
- * Revision 1; 93/10/15 - 95/02/27:
- * Revision 1 introduced a set of #define's that provide a single API to all
- * of the existing tree modules.  Each of these modules has a different name
- * prefix, as follows:
+ * Revision 1.0  93/10/15  22:55:04  CRH
+ * With this revision, I have added a set of #define's that provide a single,
+ * standard API to all existing tree modules.  Until now, each of the three
+ * existing modules had a different function and typedef prefix, as follows:
  *
  *       Module        Prefix
  *     ubi_BinTree     ubi_bt
  *     ubi_AVLtree     ubi_avl
  *     ubi_SplayTree   ubi_spt
  *
- * Only those portions of the base module (ubi_BinTree) that are superceeded
- * in the descendant module have new names.  For example, the AVL node
- * structure in ubi_AVLtree.h is named "ubi_avlNode", but the root structure
- * is still "ubi_btRoot".  Using SplayTree, the locate function is called
- * "ubi_sptLocate", but the next and previous functions remained "ubi_btNext"
- * and "ubi_btPrev".
+ * To further complicate matters, only those portions of the base module
+ * (ubi_BinTree) that were superceeded in the new module had the new names.
+ * For example, if you were using ubi_AVLtree, the AVL node structure was
+ * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
+ * SplayTree, the locate function was called "ubi_sptLocate", but the next
+ * and previous functions remained "ubi_btNext" and "ubi_btPrev".
  *
- * This is confusing.
+ * This was not too terrible if you were familiar with the modules and knew
+ * exactly which tree model you wanted to use.  If you wanted to be able to
+ * change modules (for speed comparisons, etc), things could get messy very
+ * quickly.
  *
- * So, I added a set of defined names that get redefined in any of the
+ * So, I have added a set of defined names that get redefined in any of the
  * descendant modules.  To use this standardized interface in your code,
  * simply replace all occurances of "ubi_bt", "ubi_avl", and "ubi_spt" with
  * "ubi_tr".  The "ubi_tr" names will resolve to the correct function or
@@ -106,8 +103,7 @@
  * Note that the original names do still exist, and can be used if you wish
  * to write code directly to a specific module.  This should probably only be
  * done if you are planning to implement a new descendant type, such as
- * red/black trees, or if you plan to use two or more specific tree types
- * in the same piece of code.  CRH
+ * red/black trees.  CRH
  *
  *  V0.0 - June, 1991   -  Written by Christopher R. Hertel (CRH).
  *
@@ -115,7 +111,7 @@
  */
 
 /* -------------------------------------------------------------------------- **
- * Constants...
+ * Macros and constants.
  *
  *  General purpose:
  *    ubi_trTRUE  - Boolean TRUE.
@@ -125,16 +121,16 @@
  *    ubi_trOVERWRITE   - This flag indicates that an existing node may be
  *                        overwritten by a new node with a matching key.
  *    ubi_trDUPKEY      - This flag indicates that the tree allows duplicate
- *                        keys.  If the tree allows duplicates, the overwrite
- *                        flag is ignored.
+ *                        keys.  If the tree does allow duplicates, the
+ *                        overwrite flag is ignored.
  *
- *  Node link array index constants:
- *    (Each node has an array of three pointers; pointer to the left child,
- *    pointer to the right child, and a pointer back to the parent node.)
- *      ubi_trLEFT    - Left child pointer.
- *      ubi_trPARENT  - Parent pointer.
- *      ubi_trRIGHT   - Right child pointer.
- *      ubi_trEQUAL   - Synonym for PARENT.
+ *  Node link array index constants:  (Each node has an array of three
+ *  pointers.  One to the left, one to the right, and one back to the
+ *  parent.)
+ *    ubi_trLEFT    - Left child pointer.
+ *    ubi_trPARENT  - Parent pointer.
+ *    ubi_trRIGHT   - Right child pointer.
+ *    ubi_trEQUAL   - Synonym for PARENT.
  *
  *  ubi_trCompOps:  These values are used in the ubi_trLocate() function.
  *    ubi_trLT  - request the first instance of the greatest key less than
@@ -147,6 +143,7 @@
  *                or equal to the search key.
  *    ubi_trGT  - request the first instance of the first key that is greater
  *                than the search key.
+ * -------------------------------------------------------------------------- **
  */
 
 #define ubi_trTRUE  0xFF
@@ -156,13 +153,12 @@
 #define ubi_trDUPKEY    0x02        /* Turn on allow duplicate keys */
 
 /* Pointer array index constants... */
-#define ubi_trLEFT   -1
-#define ubi_trPARENT  0
-#define ubi_trRIGHT   1
-#define ubi_trEQUAL   ubi_trPARENT
+#define ubi_trLEFT   0x00
+#define ubi_trPARENT 0x01
+#define ubi_trRIGHT  0x02
+#define ubi_trEQUAL  ubi_trPARENT
 
-typedef enum
-  {
+typedef enum {
   ubi_trLT = 1,
   ubi_trLE,
   ubi_trEQ,
@@ -171,57 +167,59 @@ typedef enum
   } ubi_trCompOps;
 
 /* -------------------------------------------------------------------------- **
- * Macros...
- *  ubi_trNormalize() - "Normalize" a value with respect to ubi_trLEFT,
- *                      ubi_trRIGHT, and ubi_trPARENT.  This macro calls
- *                      ubi_btSgn() to convert the input to -1, 0, or 1.
- *                      The resultant value is returned as a signed char.
+ * These three macros allow simple manipulation of pointer index values (LEFT,
+ * RIGHT, and PARENT).
  *
- *  ubi_trRevWay()    - converts ubi_trLEFT to ubi_trRIGHT and vice versa.
- *                      ubi_trPARENT (ubi_trEQUAL) is left as is.
- *
- *  ubi_trDups_OK()   - returns TRUE if the tree allows duplicates.
- *
- *  ubi_trOvwt_OK()   - returns TRUE if the overwrite flag is on.  Note
- *                      that overwrites will not occur in a tree that
- *                      allows duplicates.
+ *    Normalize() -  converts {LEFT, PARENT, RIGHT} into {-1, 0 ,1}.  C
+ *                   uses {negative, zero, positive} values to indicate
+ *                   {less than, equal to, greater than}.
+ *    AbNormal()  -  converts {negative, zero, positive} to {LEFT, PARENT,
+ *                   RIGHT} (opposite of Normalize()).  Note: C comparison
+ *                   functions, such as strcmp(), return {negative, zero,
+ *                   positive} values, which are not necessarily {-1, 0,
+ *                   1}.  This macro uses the the ubi_btSgn() function to
+ *                   compensate.
+ *    RevWay()    -  converts LEFT to RIGHT and RIGHT to LEFT.  PARENT (EQUAL)
+ *                   is left as is.
+ * -------------------------------------------------------------------------- **
  */
+#define ubi_trNormalize(W) ((char)( (W) - ubi_trEQUAL ))
+#define ubi_trAbNormal(W)  ((char)( ((char)ubi_btSgn( W )) + ubi_trEQUAL ))
+#define ubi_trRevWay(W)    ((char)( ubi_trEQUAL - ((W) - ubi_trEQUAL) ))
 
-#define ubi_trNormalize(W) ((signed char)ubi_btSgn(W))
-#define ubi_trRevWay(W) (-(W))
-
+/* -------------------------------------------------------------------------- **
+ * These macros allow us to quickly read the values of the OVERWRITE and
+ * DUPlicate KEY bits of the tree root flags field.
+ * -------------------------------------------------------------------------- **
+ */
 #define ubi_trDups_OK(A) \
-        ((ubi_trDUPKEY & ((A)->flags))   ? (ubi_trTRUE) : (ubi_trFALSE))
+        ((ubi_trDUPKEY & ((A)->flags))?(ubi_trTRUE):(ubi_trFALSE))
 #define ubi_trOvwt_OK(A) \
-        ((ubi_trOVERWRITE & ((A)->flags))? (ubi_trTRUE) : (ubi_trFALSE))
-
+        ((ubi_trOVERWRITE & ((A)->flags))?(ubi_trTRUE):(ubi_trFALSE))
 
 /* -------------------------------------------------------------------------- **
  * Typedefs...
  * 
- * ubi_trBool     - Your typcial true or false...
+ * ubi_trBool   - Your typcial true or false...
  *
- * ubi_btItemPtr  - The Item Pointer is a generic pointer.  It is used to
- *                  indicate a key for which to search within the tree.
- *                  The ubi_trFind(), ubi_trLocate(), and  ubi_trInsert()
- *                  functions all perform searches.
+ * Item Pointer:  The ubi_btItemPtr is a generic pointer. It is used to
+ *                indicate a key that is being searched for within the tree.
+ *                Searching occurs whenever the ubi_trFind(), ubi_trLocate(),
+ *                or ubi_trInsert() functions are called.
+ * -------------------------------------------------------------------------- **
  */
 
-typedef unsigned char ubi_trBool;   /* Our own name for "boolean".            */
+typedef unsigned char ubi_trBool;
 
-typedef void *ubi_btItemPtr;        /* A pointer to (key) data within a node. */
+typedef void *ubi_btItemPtr;              /* A pointer to data within a node. */
 
-/* -------------------------------------------------------------------------- **
- * Typedefs continued...
- *
+/*  ------------------------------------------------------------------------- **
  *  Binary Tree Node Structure:  This structure defines the basic elements of
  *       the tree nodes.  In general you *SHOULD NOT PLAY WITH THESE FIELDS*!
  *       But, of course, I have to put the structure into this header so that
  *       you can use it as a building block.
  *
  *  The fields are as follows:
- *    leftlink -  pointer to the left child of the node.  This field will
- *                be accessed as Link[-1].
  *    Link     -  an array of pointers.  These pointers are manipulated by
  *                the BT routines.  The pointers indicate the left and right
  *                child nodes and the parent node.  By keeping track of the
@@ -232,22 +230,18 @@ typedef void *ubi_btItemPtr;        /* A pointer to (key) data within a node. */
  *    gender   -  a one-byte field indicating whether the node is the RIGHT or
  *                LEFT child of its parent.  If the node is the root of the
  *                tree, gender will be PARENT.
+ *  ------------------------------------------------------------------------- **
  */
-
-typedef struct ubi_btNodeStruct
-  {
-  struct ubi_btNodeStruct *leftlink;    /* Will be accessed as Link[-1].      */
-  struct ubi_btNodeStruct *Link[2];     /* Parent & Right links.              */
-  signed char              gender;      /* Indicates Left/Right of parent.    */
+typedef struct ubi_btNodeStruct {
+  struct ubi_btNodeStruct *Link[ 3 ];
+  char                     gender;
   } ubi_btNode;
 
 typedef ubi_btNode *ubi_btNodePtr;     /* Pointer to an ubi_btNode structure. */
 
-/* -------------------------------------------------------------------------- **
- * Typedefs continued...
- *
- *  The next three typedefs define standard function types used by the binary
- *  tree management routines.  In particular:
+/*  ------------------------------------------------------------------------- **
+ * The next three typedefs define standard function types used by the binary
+ * tree management routines.  In particular:
  *
  *    ubi_btCompFunc    is a pointer to a comparison function.  Comparison
  *                      functions are passed an ubi_btItemPtr and an
@@ -267,6 +261,7 @@ typedef ubi_btNode *ubi_btNodePtr;     /* Pointer to an ubi_btNode structure. */
  *                      mean anything that you want it to mean.  Just remember
  *                      that the tree *will* be destroyed and that none of the
  *                      node pointers will be valid any more.
+ *  ------------------------------------------------------------------------- **
  */
 
 typedef  int (*ubi_btCompFunc)( ubi_btItemPtr, ubi_btNodePtr );
@@ -276,10 +271,8 @@ typedef void (*ubi_btActionRtn)( ubi_btNodePtr, void * );
 typedef void (*ubi_btKillNodeRtn)( ubi_btNodePtr );
 
 /* -------------------------------------------------------------------------- **
- * Typedefs continued...
- *
- *  Tree Root Structure: This structure gives us a convenient handle for
- *                       accessing whole AVL trees.  The fields are:
+ * Tree Root Structure: This structure gives us a convenient handle for
+ *                      accessing whole AVL trees.  The fields are:
  *    root  -  A pointer to the root node of the AVL tree.
  *    count -  A count of the number of nodes stored in the tree.
  *    cmp   -  A pointer to the comparison routine to be used when building or
@@ -293,15 +286,13 @@ typedef void (*ubi_btKillNodeRtn)( ubi_btNodePtr );
  *         (bit 0x02)       allowed to contain nodes with duplicate keys.
  *
  *       NOTE: ubi_trInsert() tests ubi_trDUPKEY before ubi_trOVERWRITE.
- *             If duplicate keys are allowed, then no entry will be
- *             overwritten.
  *
- *  All of these values are set when you initialize the root structure by
- *  calling ubi_trInitTree().
+ * All of these values are set when you initialize the root structure by
+ * calling ubi_trInitTree().
+ * -------------------------------------------------------------------------- **
  */
 
-typedef struct
-  {
+typedef struct {
   ubi_btNodePtr  root;     /* A pointer to the root node of the tree       */
   unsigned long  count;    /* A count of the number of nodes in the tree   */
   ubi_btCompFunc cmp;      /* A pointer to the tree's comparison function  */
@@ -321,15 +312,15 @@ long ubi_btSgn( long x );
    *
    *  Input:  x - a signed long integer value.
    *
-   *  Output: -1, 0, or 1 representing the "sign" of x as follows:
+   *  Output: the "sign" of x, represented as follows:
    *            -1 == negative
    *             0 == zero (no sign)
    *             1 == positive
    *
-   *  Notes:  This utility is provided in order to facilitate the conversion
-   *          of C comparison function return values into BinTree direction
-   *          values: {ubi_trLEFT, ubi_trPARENT, ubi_trEQUAL}.  It is
-   *          incorporated into the Normalize() conversion macro.
+   * Note: This utility is provided in order to facilitate the conversion
+   *       of C comparison function return values into BinTree direction
+   *       values: {LEFT, PARENT, EQUAL}.  It is INCORPORATED into the
+   *       AbNormal() conversion macro!
    *
    * ------------------------------------------------------------------------ **
    */
@@ -344,9 +335,9 @@ ubi_btNodePtr ubi_btInitNode( ubi_btNodePtr NodePtr );
    * ------------------------------------------------------------------------ **
    */
 
-ubi_btRootPtr ubi_btInitTree( ubi_btRootPtr   RootPtr,
-                              ubi_btCompFunc  CompFunc,
-                              unsigned char   Flags );
+ubi_btRootPtr  ubi_btInitTree( ubi_btRootPtr   RootPtr,
+                               ubi_btCompFunc  CompFunc,
+                               unsigned char   Flags );
   /* ------------------------------------------------------------------------ **
    * Initialize the fields of a Tree Root header structure.
    *  
@@ -648,8 +639,6 @@ ubi_btNodePtr ubi_btLeafNode( ubi_btNodePtr leader );
    *          in pointers to nodes other than the root node each time.  A
    *          pointer to any node in the tree will do.  Of course, if you
    *          pass a pointer to a leaf node you'll get the same thing back.
-   *        + If using a splay tree, splaying the tree will tend to randomize
-   *          things a bit too.  See ubi_SplayTree for more info.
    *
    * ------------------------------------------------------------------------ **
    */
