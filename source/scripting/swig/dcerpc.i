@@ -228,6 +228,7 @@ char *nt_errstr(NTSTATUS nt_code);
    pidl to automatically generating these instead of having to find
    them all by hand. */
 
+%array_functions(struct samr_String, samr_String_array);
 %array_functions(struct samr_SamEntry, samr_SamEntry_array);
 %array_functions(union samr_ConnectInfo, samr_ConnectInfo_array);
 
