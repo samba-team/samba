@@ -335,7 +335,11 @@ tgs_rep(krb5_context context,
 	    krb5_auth_getauthenticator(context, ac, &auth);
 	    if(auth->cksum == NULL)
 		return KRB5KRB_AP_ERR_INAPP_CKSUM;
-	    /* XXX check for keyed and collision-proof */
+	    /* XXX */
+	    if (auth->cksum->cksumtype != CKSUMTYPE_RSA_MD4 &&
+		auth->cksum->cksumtype != CKSUMTYPE_RSA_MD5)
+		return KRB5KRB_AP_ERR_INAPP_CKSUM;
+		
 	    /* XXX */
 	    encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
 				b, &len);
@@ -549,7 +553,7 @@ tgs_rep(krb5_context context,
 
 	    krb5_encrypt_EncryptedData(context,
 				       buf + sizeof(buf) - len, len,
-				       ETYPE_DES_CBC_MD5, /* XXX */
+				       etype, /* XXX */
 				       &tgt->key,
 				       &rep.enc_part);
 
