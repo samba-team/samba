@@ -63,13 +63,18 @@ DATA_BLOB data_blob_talloc_named(TALLOC_CTX *mem_ctx, const void *p, size_t leng
 
 
 /*******************************************************************
- construct a data blob which is a reference to another blob, in 
-the given mem context
+ reference a data blob, to the supplied TALLOC_CTX.  
+ Returns a NULL DATA_BLOB on failure
 *******************************************************************/
 DATA_BLOB data_blob_talloc_reference(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 {
 	DATA_BLOB ret = *blob;
-	ret.data = talloc_reference(mem_ctx, ret.data);
+
+	ret.data = talloc_reference(mem_ctx, blob->data);
+
+	if (!ret.data) {
+		return data_blob(NULL, 0);
+	}
 	return ret;
 }
 
