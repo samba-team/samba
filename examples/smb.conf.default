@@ -6,6 +6,8 @@
 ;; Any line which starts with a ; (semi-colon) is a comment and
 ;; is ignored
 
+;; Whenever you modify this file you should run the command "testparm"
+;; to check that you have not many any basic syntactic errors. 
 
 ;;======================= Global Settings =====================================
 [global]
@@ -141,6 +143,7 @@
 ;; Set public = yes to allow user 'guest account' to print
    guest ok = no
    writable = no
+   printable = yes
 
 ;; This one is useful for people to share files
 ;[tmp]
