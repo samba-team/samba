@@ -24,7 +24,11 @@
     commands when using the various options use the <citerefentry><refentrytitle>testparm</refentrytitle>
     <manvolnum>1</manvolnum></citerefentry> program.</para>
 
-    <para>This option can be set on a per printer basis</para>
+    <para>This option can be set on a per printer basis.  Please be 
+    aware however, that you must place any of the various printing 
+    commands (e.g. print command, lpq command, etc...) after defining
+    the value for the <parameter>printing</parameter> option since it will 
+    reset the printing commands to default values.</para>
 
     <para>See also the discussion in the <link linkend="PRINTERSSECT">
     [printers]</link> section.</para>
