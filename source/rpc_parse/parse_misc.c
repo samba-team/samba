@@ -785,14 +785,14 @@ BOOL smb_io_string2(char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, in
  Inits a UNISTR2 structure.
 ********************************************************************/
 
-void init_unistr2(UNISTR2 *str, char *buf, int len)
+void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 {
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->uni_max_len = len;
+	str->uni_max_len = (uint32)len;
 	str->undoc       = 0;
-	str->uni_str_len = len;
+	str->uni_str_len = (uint32)len;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
 	dos_struni2((char *)str->buffer, buf, sizeof(str->buffer));

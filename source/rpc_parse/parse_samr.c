@@ -314,9 +314,6 @@ BOOL samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_st
 
 	if(!prs_uint16("switch_value", ps, depth, &q_u->switch_value))
 		return False;
-	if(!prs_align(ps))
-		return False;
-
 
 	return True;
 }
@@ -899,6 +896,7 @@ static void init_sam_entry3(SAM_ENTRY3 *sam, uint32 grp_idx,
 {
 	DEBUG(5,("init_sam_entry3\n"));
 
+	ZERO_STRUCTP(sam);
 	sam->grp_idx = grp_idx;
 	sam->rid_grp = rid_grp;
 	sam->attr    = 0x07; /* group rid attributes - gets ignored by nt 4.0 */

@@ -168,11 +168,14 @@ void conn_free(connection_struct *conn)
 {
 	/* Free vfs_connection_struct */
 	    
+#ifdef HAVE_LIBDL
 	if (conn->vfs_conn != NULL) {
 		/* Close dlopen() handle */
 		if (conn->vfs_conn->dl_handle) {
 			dlclose(conn->vfs_conn->dl_handle);
 		}
+#endif /* HAVE_LIBDL */
+
 		if (conn->vfs_conn->groups != NULL) {
 			free(conn->vfs_conn->groups);
 		}
