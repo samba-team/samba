@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -117,6 +117,13 @@
 int copy_encrypted (int fd1, int fd2, des_cblock *iv,
 		    des_key_schedule schedule);
 
+struct x_socket {
+    char *pathname;
+    int fd;
+};
+
+int get_xsockets (int *number, struct x_socket **sockets, int tcpp);
+
 extern char x_socket[];
 extern u_int32_t display_num;
 extern char display[];
@@ -126,7 +133,6 @@ extern int xauthfile_size;
 extern u_char cookie[];
 extern size_t cookie_len;
 
-int get_xsockets (int *unix_socket, int *tcp_socket);
 int connect_local_xsocket (unsigned dnr);
 int create_and_write_cookie (char *xauthfile,
 			     size_t size,
