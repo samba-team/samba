@@ -1,3 +1,9 @@
+Tue May 12 14:15:32 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* ftp/gssapi.c: Save client name for userok().
+
+	* ftpd/gss_userok.c: Userok for gssapi.
+
 Fri May  1 07:15:01 1998  Assar Westerlund  <assar@sics.se>
 
 	* ftp/ftp.c: unifdef -DHAVE_H_ERRNO
