@@ -41,7 +41,7 @@ static void close_fds(void)
 
 
 /*
-This is a wrapper around the system call to allow commands to run correctly 
+This is a wrapper around the system() call to allow commands to run correctly 
 as non root from a program which is switching between root and non-root 
 
 It takes 3 arguments as uid,gid,command and runs command after
