@@ -86,28 +86,17 @@ static BOOL get_sid_from_input(DOM_SID *sid, char *input)
 /*********************************************************
  add a group.
 **********************************************************/
-static int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcomment, char *privilege)
+static int addgroup(gid_t gid, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcomment, char *privilege, uint32 rid)
 {
 	PRIVILEGE_SET se_priv;
-	gid_t gid;
 	DOM_SID sid;
 	fstring string_sid;
-	fstring name, comment;
+	fstring comment;
 
-	gid=nametogid(group);
-	if (gid==-1) {
-		printf("unix group %s doesn't exist!\n", group);
-		return -1;
-	}
-
-	local_gid_to_sid(&sid, gid);
-
-	sid_to_string(string_sid, &sid);
+	sid_copy(&sid, get_global_sam_sid());
+	sid_append_rid(&sid, rid);
 	
-	if (ntgroup==NULL)
-		fstrcpy(name, group);
-	else
-		fstrcpy(name, ntgroup);
+	sid_to_string(string_sid, &sid);
 	
 	if (ntcomment==NULL)
 		fstrcpy(comment, "Local Unix group");
@@ -118,8 +107,9 @@ static int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char
 	if (privilege!=NULL)
 		convert_priv_from_text(&se_priv, privilege);
 
-	if(!add_initial_entry(gid, string_sid, sid_type, name, comment, se_priv, PR_ACCESS_FROM_NETWORK)) {
-		printf("adding entry for group %s failed!\n", group);
+	if(!add_initial_entry(gid, string_sid, sid_type, ntgroup,
+			      comment, se_priv, PR_ACCESS_FROM_NETWORK)) {
+		printf("adding entry for group %s failed!\n", ntgroup);
 		free_privilege(&se_priv);
 		return -1;
 	}
@@ -276,6 +266,7 @@ int main (int argc, char **argv)
 	char *group_desc = NULL;
 
 	enum SID_NAME_USE sid_type;
+	uint32 rid = -1;
 
 	setup_logging("groupedit", True);
 
@@ -312,7 +303,7 @@ int main (int argc, char **argv)
 		return 0;
 	}
 
-	while ((ch = getopt(argc, argv, "a:c:d:ln:p:st:u:vx:")) != EOF) {
+	while ((ch = getopt(argc, argv, "a:c:d:ln:p:r:st:u:vx:")) != EOF) {
 		switch(ch) {
 		case 'a':
 			add_group = True;
@@ -335,6 +326,9 @@ int main (int argc, char **argv)
 		case 'p':
 			priv = True;
 			privilege=optarg;
+			break;
+		case 'r':
+			rid = atoi(optarg);
 			break;
 		case 's':
 			long_list = False;
@@ -392,8 +386,19 @@ int main (int argc, char **argv)
 		}
 	}
 
-	if (add_group)
-		return addgroup(group, sid_type, ntgroup, group_desc, privilege);
+	if (add_group) {
+		gid_t gid=nametogid(group);
+		if (gid==-1) {
+			printf("unix group %s doesn't exist!\n", group);
+			return -1;
+		}
+
+		if (rid == -1) {
+			rid = pdb_gid_to_group_rid(gid);
+		}
+		return addgroup(gid, sid_type, ntgroup?ntgroup:group,
+				group_desc, privilege, rid);
+	}
 
 	if (view_group)
 		return listgroup(sid_type, long_list);
