@@ -401,8 +401,10 @@ do_version4(unsigned char *buf,
     out2:
 	if(tgt_princ)
 	    krb5_free_principal(context, tgt_princ);
-	if(tgt)
+	if(tgt){
 	    hdb_free_entry(context, tgt);
+	    free(tgt);
+	}
 
 	break;
     }
@@ -430,10 +432,14 @@ out:
 	krb5_free_principal(context, client_princ);
     if(server_princ)
 	krb5_free_principal(context, server_princ);
-    if(client)
+    if(client){
 	hdb_free_entry(context, client);
-    if(server)
+	free(client);
+    }
+    if(server){
 	hdb_free_entry(context, server);
+	free(server);
+    }
     krb5_storage_free(sp);
     return 0;
 }
