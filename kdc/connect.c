@@ -488,30 +488,29 @@ de_http(char *buf)
 #define TCP_TIMEOUT 4
 
 /*
- * accept a new TCP connection on `d[index]'
+ * accept a new TCP connection on `d[parent]' and store it in `d[child]'
  */
 
 static void
-add_new_tcp (struct descr *d, int index, int min_free)
+add_new_tcp (struct descr *d, int parent, int child)
 {
     int s;
 
-    d->sock_len = sizeof(d->__ss);
-    s = accept(d[index].s, d->sa, &d->sock_len);
+    if (child == -1)
+	return;
+
+    d[child].sock_len = sizeof(d[child].__ss);
+    s = accept(d[parent].s, d[child].sa, &d[child].sock_len);
     if(s < 0) {
 	krb5_warn(context, errno, "accept");
 	return;
     }
-    if(min_free == -1){
-	close(s);
-	return;
-    }
 	    
-    d[min_free].s = s;
-    d[min_free].timeout = time(NULL) + TCP_TIMEOUT;
-    d[min_free].type = SOCK_STREAM;
-    addr_to_string (d[min_free].sa, d[min_free].sock_len,
-		    d[min_free].addr_string, sizeof(d[min_free].addr_string));
+    d[child].s = s;
+    d[child].timeout = time(NULL) + TCP_TIMEOUT;
+    d[child].type = SOCK_STREAM;
+    addr_to_string (d[child].sa, d[child].sock_len,
+		    d[child].addr_string, sizeof(d[child].addr_string));
 }
 
 /*
