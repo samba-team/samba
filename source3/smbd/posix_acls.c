@@ -238,6 +238,8 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 			DEBUG(3,("unpack_nt_owners: unable to validate group sid.\n"));
 	}
 
+	DEBUG(5,("unpack_nt_owners: owner_sids validated.\n"));
+
 	return True;
 }
 

@@ -291,7 +291,7 @@ static void get_filename_transact( char *fname, char *inbuf, int data_offset, in
    * the end here.
    */
 
-  if((data_len - fname_len == 1) || (inbuf[data_offset] == '\0')) {
+  if((data_len == 1) || (inbuf[data_offset] == '\0')) {
     /*
      * Ensure that the data offset is aligned
      * on a 2 byte boundary - add one if not.
@@ -1110,6 +1110,15 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint security_i
 		return False;
 	}
 
+	if (psd->off_owner_sid==0)
+		security_info_sent &= ~OWNER_SECURITY_INFORMATION;
+	if (psd->off_grp_sid==0)
+		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
+	if (psd->off_sacl==0)
+		security_info_sent &= ~DACL_SECURITY_INFORMATION;
+	if (psd->off_dacl==0)
+		security_info_sent &= ~SACL_SECURITY_INFORMATION;
+	
 	ret = set_nt_acl( fsp, security_info_sent, psd);
 
 	if (!ret) {

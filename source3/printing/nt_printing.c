@@ -3163,21 +3163,32 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	/*
 	 * Just ignore it if we already have a devmode.
 	 */
-
+#if 0
 	if (printer->info_2->devmode != NULL)
 		goto done;
-
+#endif
 	/*
 	 * We don't have a devicemode and we're trying to write
 	 * one. Check we have the access needed.
 	 */
+	DEBUG(5,("printer_write_default_dev: access: %x\n", printer_default->access_required));
+
+	if ( (printer_default->access_required & PRINTER_ACCESS_ADMINISTER) != 
+	      PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(5,("printer_write_default_dev: invalid request access to update: %x\n", printer_default->access_required));
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(5,("printer_write_default_dev: Access denied for printer %s\n",
 			lp_servicename(snum) ));
 		result = ERROR_ACCESS_DENIED;
+		/*result = NT_STATUS_NO_PROBLEMO;*/
 		goto done;
 	}
+
+	DEBUG(5,("printer_write_default_dev: updating, check OK.\n"));
 
 	/*
 	 * Convert the on the wire devicemode format to the internal one.
