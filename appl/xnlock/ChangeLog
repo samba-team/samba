@@ -1,3 +1,8 @@
+2003-04-14  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* xnlock.c (GetPasswd): cast argument to isprint to unsigned char,
+	From Christian Biere <christianbiere@gmx.de> via NetBSD
+	
 2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* xnlock.c: do krb5_afslog when compling with afs support
