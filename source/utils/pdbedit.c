@@ -255,7 +255,7 @@ static int new_user (struct pdb_context *in, char *username, char *fullname, cha
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	struct passwd  *pwd = NULL;
-	char *password1, *password2;
+	char *password1, *password2, *staticpass;
 	
 	ZERO_STRUCT(sam_pwent);
 
@@ -270,15 +270,27 @@ static int new_user (struct pdb_context *in, char *username, char *fullname, cha
 		}
 	}
 
-	password1 = getpass("new password:");
-	password2 = getpass("retype new password:");
+	staticpass = getpass("new password:");
+	password1 = strdup(staticpass);
+	memset(staticpass, 0, strlen(staticpass));
+	staticpass = getpass("retype new password:");
+	password2 = strdup(staticpass);
+	memset(staticpass, 0, strlen(staticpass));
 	if (strcmp (password1, password2)) {
-		 fprintf (stderr, "Passwords does not match!\n");
-		 pdb_free_sam (&sam_pwent);
-		 return -1;
+		fprintf (stderr, "Passwords does not match!\n");
+		memset(password1, 0, strlen(password1));
+		SAFE_FREE(password1);
+		memset(password2, 0, strlen(password2));
+		SAFE_FREE(password2);
+		pdb_free_sam (&sam_pwent);
+		return -1;
 	}
 
 	pdb_set_plaintext_passwd(sam_pwent, password1);
+	memset(password1, 0, strlen(password1));
+	SAFE_FREE(password1);
+	memset(password2, 0, strlen(password2));
+	SAFE_FREE(password2);
 
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname);
