@@ -673,7 +673,7 @@ main (int argc, char **argv)
      if (no_inetd)
 	  mini_inetd (port ? port : k_getportbyname("kx", "tcp",
 						    htons(KX_PORT)));
-     openlog(__progname, LOG_PID|LOG_CONS, LOG_DAEMON);
+     roken_openlog(__progname, LOG_PID|LOG_CONS, LOG_DAEMON);
      signal (SIGCHLD, childhandler);
      return doit(STDIN_FILENO, tcpp);
 }
