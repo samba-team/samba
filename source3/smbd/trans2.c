@@ -1830,6 +1830,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	SMB_OFF_T file_size=0;
 	SMB_BIG_UINT allocation_size=0;
 	unsigned int data_size;
+	unsigned int param_size = 2;
 	SMB_STRUCT_STAT sbuf;
 	pstring fname, dos_fname;
 	char *fullpathname;
@@ -1932,7 +1933,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 			}
-		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf)) {
+		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf) && (info_level != SMB_INFO_IS_NAME_VALID)) {
 			DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 		}
@@ -2016,6 +2017,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				return ERROR_DOS(ERRDOS,ERRbadfunc); 
 			}
 			data_size = 0;
+			param_size = 0;
 			break;
 			
 		case SMB_INFO_QUERY_EAS_FROM_LIST:
@@ -2322,7 +2324,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
 
-	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, data_size);
+	send_trans2_replies(outbuf, bufsize, params, param_size, *ppdata, data_size);
 
 	return(-1);
 }
