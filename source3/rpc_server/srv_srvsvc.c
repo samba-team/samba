@@ -859,7 +859,6 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 	SRV_INFO_CTR ctr;
 
 	extern pstring myname;
-	get_myname(myname,NULL);
 
 	DEBUG(5,("srv_net_srv_get_info: %d\n", __LINE__));
 

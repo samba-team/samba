@@ -40,7 +40,6 @@ static void create_wks_info_100(WKS_INFO_100 *inf)
 
 	DEBUG(5,("create_wks_info_100: %d\n", __LINE__));
 
-	get_myname(myname, NULL);
 	pstrcpy (my_name, myname);
 	strupper(my_name);
 
