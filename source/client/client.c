@@ -1017,7 +1017,7 @@ static void do_put(char *rname,char *lname)
 {
 	int fnum;
 	FILE *f;
-	int nread=0;
+	off_t nread=0;
 	char *buf=NULL;
 	int maxwrite=io_bufsize;
 	
