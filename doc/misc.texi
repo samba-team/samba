@@ -69,7 +69,7 @@ or you can extract it with kadmin
 kadmin> ext -k AFSKEYFILE:/usr/afs/etc/KeyFile afs@@My.CELL.NAME
 @end example
 
-You have to make sure you have a @code{des-cbc-md5} enctype since that
+You have to make sure you have a @code{des-cbc-md5} encryption type since that
 is the key that will be converted.
 
 @subsection How to convert a srvtab to a KeyFile
@@ -87,29 +87,28 @@ KeyFile.
 @subsection What is 2b ?
 
 2b is the name of the proposal that was implemented to give basic
-Kerberos 5 support to AFS in rxkad. Its not real kerberos 5 support
-since it still uses fcrypt for data encryption and not kerberos
+Kerberos 5 support to AFS in rxkad. Its not real Kerberos 5 support
+since it still uses fcrypt for data encryption and not Kerberos
 encryption types.
 
-Its only possible (for all cases) to do this for DES enctypes because
-then the token (the AFS equivalent of a ticket) will be be smaller
-then the maximum size that can fit in the token cache in
-openafs/transarc client. Its so tight fit that some extra wrapping on the ASN1/DER encoding is removed from the kerberos ticket.
+Its only possible (in all cases) to do this for DES encryption types because
+only then the token (the AFS equivalent of a ticket) will be be smaller
+than the maximum size that can fit in the token cache in
+openafs/transarc client. Its so tight fit that some extra wrapping on the ASN1/DER encoding is removed from the Kerberos ticket.
 
-2b uses a Kerberos 5 EncTicketPart instead of a kerberos 4 ditto for
+2b uses a Kerberos 5 EncTicketPart instead of a Kerberos 4 dito for
 the part of the ticket that is encrypted with the service's key. The
-client/user doesn't know what inside the encrypted data so to it it
-doesn't matter.
+client doesn't know what's inside the encrypted data so to the client it doesn't matter.
 
-To diffrenceate between Kerberos 4 tickets and Kerberos 5 tickets 2b
+To  differentiate between Kerberos 4 tickets and Kerberos 5 tickets 2b
 uses a special kvno, 213 for 2b tokens and 255 for Kerberos 5 tokens.
 
 Its a requirement that all AFS servers that support 2b also support
 native Kerberos 5 in rxkad.
 
-@subsection Configuring heimdal to use 2b tokens
+@subsection Configuring Heimdal to use 2b tokens
 
-Support for 2b token are turned on for specific principals by adding
+Support for 2b tokens are turned on for specific principals by adding
 them to the string list option @code{[kdc]use_2b} in the kdc's
 @file{krb5.conf} file.
 
