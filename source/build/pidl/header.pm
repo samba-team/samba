@@ -206,7 +206,7 @@ sub HeaderDeclare($)
 	my($declare) = shift;
 
 	if ($declare->{DATA}->{TYPE} eq "ENUM") {
-		util::enum_bitmap($declare, $declare->{NAME});
+		util::register_enum($declare, $declare->{NAME});
 	} elsif ($declare->{DATA}->{TYPE} eq "BITMAP") {
 		util::register_bitmap($declare, $declare->{NAME});
 	}
