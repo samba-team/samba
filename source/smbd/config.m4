@@ -1,4 +1,4 @@
-dnl # SMB server subsystem
+dnl # server subsystem
 
 SMB_MODULE_MK(server_smb,SERVER,STATIC,smbd/config.mk)
 SMB_MODULE_MK(server_rpc,SERVER,STATIC,smbd/config.mk)

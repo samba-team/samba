@@ -92,3 +92,43 @@ REQUIRED_SUBSYSTEMS = \
 		LIBBASIC
 # End BINARY smbtorture
 #################################
+
+#################################
+# Start BINARY gentest
+[BINARY::gentest]
+OBJ_FILES = \
+		torture/gentest.o \
+		torture/torture_util.o
+REQUIRED_SUBSYSTEMS = \
+		LIBSMB \
+		CONFIG \
+		LIBBASIC \
+		LIBCMDLINE
+# End BINARY gentest
+#################################
+
+#################################
+# Start BINARY masktest
+[BINARY::masktest]
+OBJ_FILES = \
+		torture/masktest.o
+REQUIRED_SUBSYSTEMS = \
+		LIBSMB \
+		CONFIG \
+		LIBBASIC \
+		LIBCMDLINE
+# End BINARY masktest
+#################################
+
+#################################
+# Start BINARY locktest
+[BINARY::locktest]
+OBJ_FILES = \
+		torture/locktest.o
+REQUIRED_SUBSYSTEMS = \
+		LIBSMB \
+		CONFIG \
+		LIBBASIC \
+		LIBCMDLINE
+# End BINARY locktest
+#################################
