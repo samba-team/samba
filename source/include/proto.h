@@ -512,7 +512,8 @@ char *get_nt_error_msg(uint32 nt_code);
 /*The following definitions come from  libsmb/passchange.c  */
 
 BOOL remote_password_change(const char *remote_machine, const char *user_name, 
-			    const char *old_passwd, const char *new_passwd);
+			    const char *old_passwd, const char *new_passwd,
+			    char *err_str, size_t err_str_len);
 
 /*The following definitions come from  libsmb/pwd_cache.c  */
 
@@ -1223,7 +1224,9 @@ struct passdb_ops *file_initialize_password_db(void);
 
 BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 			   BOOL enable_user, BOOL disable_user, BOOL set_no_password,
-			   char *new_passwd);
+			   char *new_passwd, 
+			   char *err_str, size_t err_str_len,
+			   char *msg_str, size_t msg_str_len);
 
 /*The following definitions come from  passdb/smbpassfile.c  */
 
