@@ -88,7 +88,7 @@ libsia_krb5.so: $(OBJS)
 	else \
 		echo "missing libraries"; exit 1; \
 	fi
-	ostrip -x -z $@
+	ostrip -x $@
 
 libsia_krb4.so: $(OBJS)
 	@if test -f $(top_builddir)/lib/krb/.libs/libkrb.a; then \
