@@ -272,39 +272,27 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	DATA_BLOB lm_response = data_blob(NULL, 0);
 	DATA_BLOB nt_response = data_blob(NULL, 0);
-	uchar user_session_key[16];
+	DATA_BLOB session_key = data_blob(NULL, 0);
+	BOOL ret = False;
 	char *p;
-	BOOL have_plaintext = False;
 
 	if (passlen != 24) {
-		uchar nt_hash[16];
-		E_md4hash(pass, nt_hash);
-
 		if (lp_client_ntlmv2_auth()) {
-			uchar ntlm_v2_hash[16];
 			DATA_BLOB server_chal;
 
 			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
 
-			/* We don't use the NT# directly.  Instead we use it mashed up with
-			   the username and domain.
-			   This prevents username swapping during the auth exchange
-			*/
-			if (!ntv2_owf_gen(nt_hash, user, workgroup, ntlm_v2_hash)) {
+			if (!SMBNTLMv2encrypt(user, workgroup, pass, server_chal, 
+					      &lm_response, &nt_response, &session_key)) {
+				data_blob_free(&server_chal);
 				return False;
 			}
-			
-			nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 64 /* pick a number, > 8 */);
-
-			/* LMv2 */
-
-			lm_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 8);
-
-			/* The NTLMv2 calculations also provide a session key, for signing etc later */
-			/* use only the first 16 bytes of nt_response for session key */
-			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response.data, user_session_key);
+			data_blob_free(&server_chal);
 
 		} else {
+			uchar nt_hash[16];
+			E_md4hash(pass, nt_hash);
+
 			/* non encrypted password supplied. Ignore ntpass. */
 			if (lp_client_lanman_auth()) {
 				lm_response = data_blob(NULL, 24);
@@ -313,10 +301,10 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 
 			nt_response = data_blob(NULL, 24);
 			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
-			SMBsesskeygen_ntv1(nt_hash, NULL, user_session_key);
+			session_key = data_blob(NULL, 16);
+			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 		}
 
-		have_plaintext = True;
 		set_temp_signing_on_cli(cli);
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
@@ -356,17 +344,15 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	cli_setup_bcc(cli, p);
 
 	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
-		data_blob_free(&lm_response);
-		data_blob_free(&nt_response);
-		return False;
+		ret = False;
+		goto end;
 	}
 
 	show_msg(cli->inbuf);
 
 	if (cli_is_error(cli)) {
-		data_blob_free(&lm_response);
-		data_blob_free(&nt_response);
-		return False;
+		ret = False;
+		goto end;
 	}
 
 	/* use the returned vuid from now on */
@@ -379,13 +365,15 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 
 	fstrcpy(cli->user_name, user);
 
-	if (have_plaintext) {
+	if (session_key.data) {
 		/* Have plaintext orginal */
-		set_signing_on_cli(cli, user_session_key, nt_response);
+		set_signing_on_cli(cli, session_key.data, nt_response);
 	}
-	
+
+end:	
 	data_blob_free(&lm_response);
 	data_blob_free(&nt_response);
+	data_blob_free(&session_key);
 	return True;
 }
 
