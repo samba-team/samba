@@ -402,6 +402,7 @@ static struct api_cmd api_fd_commands[] =
     { "samr",     "lsass",   api_samr_rpc },
     { "srvsvc",   "ntsvcs",  api_srvsvc_rpc },
     { "wkssvc",   "ntsvcs",  api_wkssvc_rpc },
+    { "browser",  "ntsvcs",  api_brs_rpc },
     { "svcctl",   "ntsvcs",  api_svcctl_rpc },
     { "NETLOGON", "lsass",   api_netlog_rpc },
     { "winreg",   "winreg",  api_reg_rpc },

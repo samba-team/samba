@@ -3315,6 +3315,10 @@ BOOL make_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
 				int status)  ;
 BOOL wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int depth);
 
+/*The following definitions come from  rpc_server/srv_brs.c  */
+
+BOOL api_brs_rpc(pipes_struct *p, prs_struct *data);
+
 /*The following definitions come from  rpc_server/srv_lookup.c  */
 
 int make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids);

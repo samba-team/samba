@@ -136,6 +136,7 @@ RPC_SERVER_OBJ = \
 		rpc_server/srv_pipe.o \
 		rpc_server/srv_lookup.o \
 		rpc_server/srv_wkssvc.o \
+		rpc_server/srv_brs.o \
 		rpc_server/srv_spoolss.o
 
 RPC_PARSE_OBJ1 = rpc_parse/parse_lsa.o \

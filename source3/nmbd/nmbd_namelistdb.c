@@ -42,6 +42,8 @@ void set_samba_nb_type(void)
     samba_nb_type = NB_MFLAG;               /* samba is a 'hybrid' node type. */
   else
     samba_nb_type = NB_BFLAG;           /* samba is broadcast-only node type. */
+
+	DEBUG(10,("set_samba_nb_type: %x\n", samba_nb_type));
   } /* set_samba_nb_type */
 
 /* ************************************************************************** **
