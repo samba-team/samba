@@ -81,7 +81,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 }
 
 /* destroy a whole pool */
-void talloc_destroy(TALLOC_CTX *t)
+void talloc_destroy_pool(TALLOC_CTX *t)
 {
 	struct talloc_chunk *c;
 	
@@ -92,5 +92,12 @@ void talloc_destroy(TALLOC_CTX *t)
 		t->list = c;
 	}
 
+	t->list = NULL;
+}
+
+/* destroy a whole pool including the context */
+void talloc_destroy(TALLOC_CTX *t)
+{
+	talloc_destroy_pool(t);
 	free(t);
 }

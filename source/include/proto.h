@@ -271,6 +271,7 @@ int sys_pclose(int fd);
 
 TALLOC_CTX *talloc_init(void);
 void *talloc(TALLOC_CTX *t, size_t size);
+void talloc_destroy_pool(TALLOC_CTX *t);
 void talloc_destroy(TALLOC_CTX *t);
 
 /*The following definitions come from  lib/time.c  */
@@ -1663,6 +1664,7 @@ BOOL parse_lpq_entry(int snum,char *line,
 
 /*The following definitions come from  printing/nt_printing.c  */
 
+#if OLD_NTDOMAIN
 BOOL nt_printing_init(void);
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
@@ -1694,6 +1696,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
 BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
 BOOL print_access_check(struct current_user *user, int snum,
 			uint32 required_access);
+#endif
 
 /*The following definitions come from  printing/pcap.c  */
 
@@ -2146,6 +2149,7 @@ BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 
+void parse_talloc_free(void);
 BOOL smb_io_time(char *desc, NTTIME *nttime, prs_struct *ps, int depth);
 BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth);
 uint32 get_enum_hnd(ENUM_HND *enh);
@@ -2174,7 +2178,6 @@ void init_buffer3_hex(BUFFER3 *str, char *buf);
 void init_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
 BOOL smb_io_buffer3(char *desc, BUFFER3 *buf3, prs_struct *ps, int depth);
 BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
-void free_buffer5(BUFFER5 *buf5);
 void init_buffer2(BUFFER2 *str, uint8 *buf, int len);
 BOOL smb_io_buffer2(char *desc, BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
 void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
@@ -2294,9 +2297,11 @@ BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int 
 
 void prs_dump(char *name, int v, prs_struct *ps);
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
-BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io);
+BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, TALLOC_CTX *ctx, BOOL io);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void prs_mem_free(prs_struct *ps);
+char *prs_alloc_mem(prs_struct *ps, size_t size);
+TALLOC_CTX *prs_get_mem_context(prs_struct *ps);
 void prs_give_memory(prs_struct *ps, char *buf, uint32 size, BOOL is_dynamic);
 char *prs_take_memory(prs_struct *ps, uint32 *psize);
 BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize);
@@ -2333,7 +2338,7 @@ BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint3
 BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size);
 int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
-int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
+int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *mem_ctx);
 
 /*The following definitions come from  rpc_parse/parse_reg.c  */
 

@@ -2490,7 +2490,7 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
  ********************************************************************/
 static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername, fstring architecture)
 {
-	init_unistr( &(info->name), driver.info_3->name);
+	init_unistr( &info->name, driver.info_3->name);
 }
 
 /********************************************************************
@@ -3336,7 +3336,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	
 	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter->info_2->printername);
 
-	init_unistr(&(job_info->printername), chaine);
+	init_unistr(&job_info->printername, chaine);
 	
 	init_unistr(&job_info->machinename, temp_name);
 	init_unistr(&job_info->username, queue->user);
@@ -4506,7 +4506,7 @@ static uint32 enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 
 	(*returned) = 0x1;
 	
-	init_unistr(&(info_1->name), "winprint");
+	init_unistr(&info_1->name, "winprint");
 
 	*needed += spoolss_size_printprocessor_info_1(info_1);
 
@@ -4565,7 +4565,7 @@ static uint32 enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 
 	(*returned) = 0x1;
 	
-	init_unistr(&(info_1->name), "RAW");
+	init_unistr(&info_1->name, "RAW");
 
 	*needed += spoolss_size_printprocdatatype_info_1(info_1);
 
@@ -4617,7 +4617,7 @@ static uint32 enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint
 
 	(*returned) = 0x1;
 	
-	init_unistr(&(info_1->name), "Local Port");
+	init_unistr(&info_1->name, "Local Port");
 
 	*needed += spoolss_size_printmonitor_info_1(info_1);
 
@@ -4648,9 +4648,9 @@ static uint32 enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 
 	(*returned) = 0x1;
 	
-	init_unistr(&(info_2->name), "Local Port");
-	init_unistr(&(info_2->environment), "Windows NT X86");
-	init_unistr(&(info_2->dll_name), "localmon.dll");
+	init_unistr(&info_2->name, "Local Port");
+	init_unistr(&info_2->environment, "Windows NT X86");
+	init_unistr(&info_2->dll_name, "localmon.dll");
 
 	*needed += spoolss_size_printmonitor_info_2(info_2);
 

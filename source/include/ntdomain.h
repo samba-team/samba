@@ -33,6 +33,8 @@
 
 #include "rpc_creds.h"
 
+#include "talloc.h"
+
 /*
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
@@ -64,6 +66,7 @@ typedef struct _prs_struct
 	uint32 buffer_size; /* Current allocated size of the buffer. */
 	uint32 grow_size; /* size requested via prs_grow() calls */
 	char *data_p; /* The buffer itself. */
+	TALLOC_CTX *mem_ctx; /* When unmarshalling, use this.... */
 } prs_struct;
 
 /*
@@ -131,17 +134,17 @@ typedef struct _input_data {
 
 struct msrpc_state
 {
-	fstring pipe_name;
-	struct user_creds usr;
-	struct ntdom_info nt;
+    fstring pipe_name;
+    struct user_creds usr;
+    struct ntdom_info nt;
 
-	int fd;
-	BOOL redirect;
-	BOOL initialised;
-	char *inbuf;
-	char *outbuf;
+    int fd;
+    BOOL redirect;
+    BOOL initialised;
+    char *inbuf;
+    char *outbuf;
 
-	uint32 pid;
+    uint32 pid;
 };
 
 typedef struct pipes_struct
@@ -208,9 +211,8 @@ typedef struct pipes_struct
            data that can be sent in the initial reply. */
 	int max_trans_reply;
 
-	/* remote, server-side rpc redirection */
-	struct msrpc_state *m;
-
+	/* talloc context to use when allocating memory on this pipe. */
+	TALLOC_CTX *mem_ctx;
 } pipes_struct;
 
 struct api_struct

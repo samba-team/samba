@@ -203,6 +203,12 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 		return False;
 	}
 
+	if ((cli->mem_ctx = talloc_init()) == NULL) {
+		free(cli->outbuf);
+		free(cli->inbuf);
+		return False;
+	}
+
 	memset(cli->outbuf, '\0', cli->bufsize);
 	memset(cli->inbuf, '\0', cli->bufsize);
 
@@ -224,6 +230,10 @@ void cli_shutdown(struct cli_state *cli)
 	{
 		free(cli->inbuf);
 	}
+
+	if (cli->mem_ctx)
+		talloc_destroy(cli->mem_ctx);
+
 #ifdef WITH_SSL
     if (cli->fd != -1)
       sslutil_disconnect(cli->fd);

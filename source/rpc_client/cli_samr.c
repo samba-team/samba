@@ -113,8 +113,8 @@ BOOL do_samr_chgpasswd_user(struct cli_state *cli,
 
 	/* create and send a MSRPC command with api SAMR_CHGPASSWD_USER */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("SAMR Change User Password. server:%s username:%s\n",
 	        srv_name, user_name));
@@ -169,8 +169,8 @@ BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name)
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("SAMR Unknown 38 server:%s\n", srv_name));
 
@@ -225,8 +225,8 @@ BOOL do_samr_query_dom_info(struct cli_state *cli,
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("SAMR Unknown 8 switch:%d\n", switch_value));
 
@@ -287,8 +287,8 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli,
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("SAMR Enum SAM DB max size:%x\n", size));
 
@@ -374,8 +374,8 @@ BOOL do_samr_connect(struct cli_state *cli,
 
 	/* create and send a MSRPC command with api SAMR_CONNECT */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("SAMR Open Policy server:%s undoc value:%x\n",
 				srv_name, unknown_0));
@@ -435,8 +435,8 @@ BOOL do_samr_open_user(struct cli_state *cli,
 
 	/* create and send a MSRPC command with api SAMR_OPEN_USER */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("SAMR Open User.  unk_0: %08x RID:%x\n",
 	          unk_0, rid));
@@ -497,8 +497,8 @@ BOOL do_samr_open_domain(struct cli_state *cli,
 
 	/* create and send a MSRPC command with api SAMR_OPEN_DOMAIN */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	sid_to_string(sid_str, sid);
 	DEBUG(4,("SAMR Open Domain.  SID:%s RID:%x\n", sid_str, rid));
@@ -561,8 +561,8 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 
 	/* create and send a MSRPC command with api SAMR_UNKNOWN_12 */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("SAMR Query Unknown 12.\n"));
 
@@ -638,8 +638,8 @@ BOOL do_samr_query_usergroups(struct cli_state *cli,
 
 	/* create and send a MSRPC command with api SAMR_QUERY_USERGROUPS */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("SAMR Query User Groups.\n"));
 
@@ -700,8 +700,8 @@ BOOL do_samr_query_userinfo(struct cli_state *cli,
 
 	/* create and send a MSRPC command with api SAMR_QUERY_USERINFO */
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	DEBUG(4,("SAMR Query User Info.  level: %d\n", switch_value));
 
@@ -770,8 +770,8 @@ BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd)
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rdata, 0, 4, UNMARSHALL);
+	prs_init(&data , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api SAMR_CLOSE_HND */
 

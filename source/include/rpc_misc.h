@@ -125,7 +125,7 @@ typedef struct unihdr2_info
 typedef struct unistr_info
 {
   /* unicode characters. ***MUST*** be little-endian. ***MUST*** be null-terminated */
-  uint16 buffer[MAX_UNISTRLEN];
+  uint16 *buffer;
 } UNISTR;
 
 /* BUFHDR - buffer header */
@@ -145,7 +145,7 @@ typedef struct buffer2_info
   uint32 undoc;
   uint32 buf_len;
   /* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
-  uint16 buffer[MAX_UNISTRLEN];
+  uint16 *buffer;
 
 } BUFFER2;
 
@@ -153,7 +153,7 @@ typedef struct buffer2_info
 typedef struct buffer3_info
 {
   uint32 buf_max_len;
-  uint8  buffer[MAX_BUFFERLEN]; /* data */
+  uint8  *buffer; /* Data */
   uint32 buf_len;
 
 } BUFFER3;
@@ -172,7 +172,7 @@ typedef struct unistr2_info
   uint32 undoc;
   uint32 uni_str_len;
   /* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
-  uint16 buffer[MAX_UNISTRLEN];
+  uint16 *buffer;
 
 } UNISTR2;
 
@@ -182,7 +182,7 @@ typedef struct string2_info
   uint32 str_max_len;
   uint32 undoc;
   uint32 str_str_len;
-  uint8  buffer[MAX_STRINGLEN]; /* uint8 characters. **NOT** necessarily null-terminated */
+  uint8  *buffer; /* uint8 characters. **NOT** necessarily null-terminated */
 
 } STRING2;
 

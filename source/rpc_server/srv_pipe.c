@@ -167,17 +167,19 @@ BOOL create_next_pdu(pipes_struct *p)
 	 * data.
 	 */
 
-	prs_init( &outgoing_pdu, 0, 4, MARSHALL);
+	prs_init( &outgoing_pdu, 0, 4, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/* Store the header in the data stream. */
 	if(!smb_io_rpc_hdr("hdr", &p->hdr, &outgoing_pdu, 0)) {
 		DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR.\n"));
+		prs_mem_free(&outgoing_pdu);
 		return False;
 	}
 
 	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &outgoing_pdu, 0)) {
 		DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_RESP.\n"));
+		prs_mem_free(&outgoing_pdu);
 		return False;
 	}
 
@@ -189,6 +191,7 @@ BOOL create_next_pdu(pipes_struct *p)
 
 	if(!prs_append_data(&outgoing_pdu, data_from, data_len)) {
 		DEBUG(0,("create_next_pdu: failed to copy %u bytes of data.\n", (unsigned int)data_len));
+		prs_mem_free(&outgoing_pdu);
 		return False;
 	}
 
@@ -216,6 +219,7 @@ BOOL create_next_pdu(pipes_struct *p)
 					(auth_verify ? RPC_HDR_AUTH_LEN : 0), (auth_verify ? 1 : 0));
 			if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
 				DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_AUTH.\n"));
+				prs_mem_free(&outgoing_pdu);
 				return False;
 			}
 		}
@@ -230,6 +234,7 @@ BOOL create_next_pdu(pipes_struct *p)
 			auth_data = prs_data_p(&outgoing_pdu) + prs_offset(&outgoing_pdu) + 4;
 			if(!smb_io_rpc_auth_ntlmssp_chk("auth_sign", &ntlmssp_chk, &outgoing_pdu, 0)) {
 				DEBUG(0,("create_next_pdu: failed to marshall RPC_AUTH_NTLMSSP_CHK.\n"));
+				prs_mem_free(&outgoing_pdu);
 				return False;
 			}
 			NTLMSSPcalc_p(p, (uchar*)auth_data, RPC_AUTH_NTLMSSP_CHK_LEN - 4);
@@ -244,6 +249,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	p->out_data.current_pdu_len = p->hdr.frag_len;
 	p->out_data.current_pdu_sent = 0;
 
+	prs_mem_free(&outgoing_pdu);
 	return True;
 }
 
@@ -566,7 +572,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_rpc, 0, 4, MARSHALL);
+	prs_init( &outgoing_rpc, 0, 4, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 
@@ -583,6 +589,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
 
 	if(!smb_io_rpc_hdr("", &nak_hdr, &outgoing_rpc, 0)) {
 		DEBUG(0,("setup_bind_nak: marshalling of RPC_HDR failed.\n"));
+		prs_mem_free(&outgoing_rpc);
 		return False;
 	}
 
@@ -590,8 +597,10 @@ static BOOL setup_bind_nak(pipes_struct *p)
 	 * Now add the reject reason.
 	 */
 
-	if(!prs_uint16("reject code", &outgoing_rpc, 0, &zero))
+	if(!prs_uint16("reject code", &outgoing_rpc, 0, &zero)) {
+		prs_mem_free(&outgoing_rpc);
         return False;
+	}
 
 	p->out_data.data_sent_length = 0;
 	p->out_data.current_pdu_len = prs_offset(&outgoing_rpc);
@@ -622,7 +631,7 @@ BOOL setup_fault_pdu(pipes_struct *p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_pdu, 0, 4, MARSHALL);
+	prs_init( &outgoing_pdu, 0, 4, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
@@ -647,16 +656,19 @@ BOOL setup_fault_pdu(pipes_struct *p)
 
 	if(!smb_io_rpc_hdr("", &fault_hdr, &outgoing_pdu, 0)) {
 		DEBUG(0,("setup_fault_pdu: marshalling of RPC_HDR failed.\n"));
+		prs_mem_free(&outgoing_pdu);
 		return False;
 	}
 
 	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &outgoing_pdu, 0)) {
 		DEBUG(0,("setup_fault_pdu: failed to marshall RPC_HDR_RESP.\n"));
+		prs_mem_free(&outgoing_pdu);
 		return False;
 	}
 
 	if(!smb_io_rpc_hdr_fault("fault", &fault_resp, &outgoing_pdu, 0)) {
 		DEBUG(0,("setup_fault_pdu: failed to marshall RPC_HDR_FAULT.\n"));
+		prs_mem_free(&outgoing_pdu);
 		return False;
 	}
 
@@ -664,6 +676,7 @@ BOOL setup_fault_pdu(pipes_struct *p)
 	p->out_data.current_pdu_len = prs_offset(&outgoing_pdu);
 	p->out_data.current_pdu_sent = 0;
 
+	prs_mem_free(&outgoing_pdu);
 	return True;
 }
 
@@ -835,7 +848,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_rpc, 0, 4, MARSHALL);
+	prs_init( &outgoing_rpc, 0, 4, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
@@ -843,13 +856,15 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * auth footers.
 	 */
 
-	if(!prs_init(&out_hdr_ba, 1024, 4, MARSHALL)) {
+	if(!prs_init(&out_hdr_ba, 1024, 4, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("api_pipe_bind_req: malloc out_hdr_ba failed.\n"));
+		prs_mem_free(&outgoing_rpc);
 		return False;
 	}
 
-	if(!prs_init(&out_auth, 1024, 4, MARSHALL)) {
+	if(!prs_init(&out_auth, 1024, 4, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("pi_pipe_bind_req: malloc out_auth failed.\n"));
+		prs_mem_free(&outgoing_rpc);
 		prs_mem_free(&out_hdr_ba);
 		return False;
 	}
@@ -984,6 +999,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
   err_exit:
 
+	prs_mem_free(&outgoing_rpc);
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
 	return False;

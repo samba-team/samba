@@ -50,8 +50,8 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 	if (hnd == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rbuf, 0, 4, UNMARSHALL );
+	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
 
@@ -125,8 +125,8 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 	if (hnd == NULL || num_sids == 0 || sids == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rbuf, 0, 4, UNMARSHALL );
+	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api LSA_LOOKUP_SIDS */
 
@@ -229,8 +229,8 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 	if (hnd == NULL || domain_name == NULL || domain_sid == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rbuf, 0, 4, UNMARSHALL );
+	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api LSA_QUERYINFOPOLICY */
 
@@ -329,8 +329,8 @@ BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-	prs_init(&rbuf, 0, 4, UNMARSHALL );
+	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL );
 
 	DEBUG(4,("LSA Close\n"));
 
