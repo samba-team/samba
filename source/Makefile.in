@@ -116,7 +116,7 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 QUOTAOBJS=@QUOTAOBJS@
 
-MODULES = bin/vfs_audit.so bin/vfs_recycle.so bin/vfs_netatalk.so
+MODULES = bin/vfs_audit.so bin/vfs_recycle.so bin/vfs_netatalk.so @MODULE_PDB_MYSQL@ @MODULE_PDB_XML@
 
 ######################################################################
 # object file lists
