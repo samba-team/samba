@@ -36,6 +36,8 @@ static struct cmd_list {
 TALLOC_CTX *global_ctx;
 
 extern pstring user_socket_options;
+extern SIG_ATOMIC_T got_sig_term;
+extern SIG_ATOMIC_T reload_after_sighup;
 
 /****************************************************************************
 handle completion of commands for readline
