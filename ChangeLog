@@ -1,3 +1,20 @@
+Mon Mar 10 01:15:43 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/krb5.h: Include <asn1_err.h>. Add prototype for
+ 	krb5_rd_req_with_keyblock.
+
+	* lib/krb5/rd_req.c: Add function krb5_rd_req_with_keyblock that
+ 	takes a precomputed keyblock.
+
+	* lib/krb5/get_cred.c: Use krb5_mk_req rather than inlined code.
+
+	* lib/krb5/mk_req.c: Calculate checksum of in_data.
+
+Sun Mar  9 21:17:58 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/error/compile_et.awk: Add a declaration of struct
+ 	error_list, and multiple inclusion block to header files.
+
 Sun Mar  9 21:01:12 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/rd_req.c: do some checks on times
