@@ -93,7 +93,7 @@ static const smb_socket_option socket_options[] = {
 static void print_socket_options(int s)
 {
 	int value, vlen = 4;
-	smb_socket_option *p = &socket_options[0];
+	const smb_socket_option *p = &socket_options[0];
 
 	for (; p->name != NULL; p++) {
 		if (getsockopt(s, p->level, p->option, (void *)&value, &vlen) == -1) {

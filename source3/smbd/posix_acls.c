@@ -104,7 +104,7 @@ static void print_canon_ace(canon_ace *pace, int num)
 	dbgtext( "canon_ace index %d. Type = %s ", num, pace->attr == ALLOW_ACE ? "allow" : "deny" );
 	dbgtext( "SID = %s ", sid_to_string( str, &pace->trustee));
 	if (pace->owner_type == UID_ACE) {
-		char *u_name = uidtoname(pace->unix_ug.uid);
+		const char *u_name = uidtoname(pace->unix_ug.uid);
 		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, u_name);
 	} else if (pace->owner_type == GID_ACE) {
 		char *g_name = gidtoname(pace->unix_ug.gid);
