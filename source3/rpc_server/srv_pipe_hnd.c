@@ -144,7 +144,7 @@ static void attempt_remote_rpc_connect(pipes_struct *p)
 	*/
 
 	become_root(False); /* to connect to pipe */
-	p->m = msrpc_use_add(p->name, getpid(), &usr, False);
+	p->m = msrpc_use_add(p->name, sys_getpid(), &usr, False);
 	unbecome_root(False);
 
 	if (p->m == NULL)
@@ -170,7 +170,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	   log files and prevents client bugs where pipe numbers are reused
 	   over connection restarts */
 	if (next_pipe == 0)
-		next_pipe = (getpid() ^ time(NULL)) % MAX_OPEN_PIPES;
+		next_pipe = (sys_getpid() ^ time(NULL)) % MAX_OPEN_PIPES;
 
 	i = bitmap_find(bmap, next_pipe);
 

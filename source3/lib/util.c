@@ -741,7 +741,7 @@ become a daemon, discarding the controlling terminal
 ****************************************************************************/
 void become_daemon(void)
 {
-	if (fork()) {
+	if (sys_fork()) {
 		_exit(0);
 	}
 
@@ -1584,7 +1584,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
     if ((ret != -1) &&
         (lock.l_type != F_UNLCK) && 
         (lock.l_pid != 0) && 
-        (lock.l_pid != getpid()))
+        (lock.l_pid != sys_getpid()))
     {
       DEBUG(3,("fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
       return(True);
@@ -2110,7 +2110,7 @@ int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
 	char pidstr[10];
 	pstring cmd = "/usr/X11R6/bin/xterm -display :0 -T Panic -n Panic -e /bin/sh -c 'cat /tmp/ierrs.*.%d ; gdb /proc/%d/exe %d'";
 
-	slprintf(pidstr, sizeof(pidstr), "%d", getpid());
+	slprintf(pidstr, sizeof(pidstr), "%d", sys_getpid());
 	pstring_sub(cmd, "%d", pidstr);
 
 	if (!fn) {

@@ -35,7 +35,7 @@ static int generate_trn_id(void)
 	static int trn_id;
 
 	if (trn_id == 0) {
-		srandom(getpid());
+		srandom(sys_getpid());
 	}
 
 	trn_id = random();

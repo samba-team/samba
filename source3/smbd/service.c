@@ -608,7 +608,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
-		dbgtext( "(pid %d)\n", (int)getpid() );
+		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
 	
 	/* we've finished with the sensitive stuff */

@@ -246,6 +246,8 @@ DIR *wsys_opendir(const smb_ucs2_t *wfname);
 smb_ucs2_t *wsys_getwd(smb_ucs2_t *s);
 int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid);
 int wsys_chroot(const smb_ucs2_t *wfname);
+pid_t sys_fork(void);
+pid_t sys_getpid(void);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
 

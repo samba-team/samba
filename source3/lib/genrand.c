@@ -163,7 +163,7 @@ static uint32 do_reseed(unsigned char *md4_outbuf)
    * Finally add the counter, time of day, and pid.
    */
   GetTimeOfDay(&tval);
-  mypid = getpid();
+  mypid = sys_getpid();
   v1 = (counter++) + mypid + tval.tv_sec;
   v2 = (counter++) * mypid + tval.tv_usec;
 

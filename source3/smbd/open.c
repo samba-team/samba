@@ -342,7 +342,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 
 	{
 		int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-										(share->pid == getpid()),is_executable(fname));
+										(share->pid == sys_getpid()),is_executable(fname));
 
 		if ((access_allowed == AFAIL) ||
 			(!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
@@ -946,7 +946,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   share_mode_entry *old_shares = 0;
   int num_share_modes;
   SMB_STRUCT_STAT sbuf;
-  pid_t pid = getpid();
+  pid_t pid = sys_getpid();
   SMB_DEV_T dev;
   SMB_INO_T inode;
 

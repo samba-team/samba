@@ -238,7 +238,7 @@ max can be %d\n",
 				continue;
 			}
 			
-			if (smbd_server_fd() != -1 && fork()==0) {
+			if (smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
 				
 				/* close the listening socket(s) */

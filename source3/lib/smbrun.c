@@ -124,7 +124,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 
 	CatchChildLeaveStatus();
                                    	
-	if ((pid=fork()) < 0) {
+	if ((pid=sys_fork()) < 0) {
 		DEBUG(0,("smbrun: fork failed with error %s\n", strerror(errno) ));
 		CatchChild(); 
 		return errno;

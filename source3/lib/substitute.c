@@ -176,7 +176,7 @@ void standard_sub_basic(char *str)
 		case 'T' : string_sub(p,"%T", timestring(False),l); break;
 		case 'a' : string_sub(p,"%a", remote_arch,l); break;
 		case 'd' :
-			slprintf(pidstr,sizeof(pidstr), "%d",(int)getpid());
+			slprintf(pidstr,sizeof(pidstr), "%d",(int)sys_getpid());
 			string_sub(p,"%d", pidstr,l);
 			break;
 		case 'h' : string_sub(p,"%h", myhostname(),l); break;

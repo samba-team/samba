@@ -45,7 +45,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	DEBUG(3,("Yielding connection to %s\n",name));
 
 	ZERO_STRUCT(key);
-	key.pid = getpid();
+	key.pid = sys_getpid();
 	if (conn) key.cnum = conn->cnum;
 	fstrcpy(key.name, name);
 
@@ -84,7 +84,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	DEBUG(5,("claiming %s %d\n",name,max_connections));
 
 	ZERO_STRUCT(key);
-	key.pid = getpid();
+	key.pid = sys_getpid();
 	key.cnum = conn?conn->cnum:-1;
 	fstrcpy(key.name, name);
 
@@ -94,7 +94,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
 	crec.magic = 0x280267;
-	crec.pid = getpid();
+	crec.pid = sys_getpid();
 	crec.cnum = conn?conn->cnum:-1;
 	if (conn) {
 		crec.uid = conn->uid;

@@ -153,7 +153,7 @@ void sync_browse_lists(struct work_record *work,
 	/* the parent forks and returns, leaving the child to do the
 	   actual sync */
 	CatchChild();
-	if ((s->pid = fork())) return;
+	if ((s->pid = sys_fork())) return;
 
 	BlockSignals( False, SIGTERM );
 

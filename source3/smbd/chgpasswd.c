@@ -330,7 +330,7 @@ static BOOL chat_with_program(char *passwordprogram, char *name,
 
 	CatchChildLeaveStatus();
 
-	if ((pid = fork()) < 0)
+	if ((pid = sys_fork()) < 0)
 	{
 		DEBUG(3,
 		      ("Cannot fork() child for password change: %s\n",

@@ -69,7 +69,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 		return(False);
 
 	ret = !brl_locktest(fsp->dev, fsp->inode, 
-			     global_smbpid, getpid(), conn->cnum, 
+			     global_smbpid, sys_getpid(), conn->cnum, 
 			     offset, count, lock_type);
 
 	/*
@@ -107,7 +107,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
 		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-			      global_smbpid, getpid(), conn->cnum, 
+			      global_smbpid, sys_getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
 
@@ -127,7 +127,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 				 * lock entry.
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-								global_smbpid, getpid(), conn->cnum, 
+								global_smbpid, sys_getpid(), conn->cnum, 
 								offset, count);
 			}
 		}
@@ -170,7 +170,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	 */
 
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			global_smbpid, getpid(), conn->cnum, offset, count);
+			global_smbpid, sys_getpid(), conn->cnum, offset, count);
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
@@ -193,7 +193,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 
 void locking_close_file(files_struct *fsp)
 {
-	pid_t pid = getpid();
+	pid_t pid = sys_getpid();
 
 	if (!lp_locking(SNUM(fsp->conn)))
 		return;
@@ -337,7 +337,7 @@ void del_share_mode(files_struct *fsp)
 	struct locking_data *data;
 	int i, del_count=0;
 	share_mode_entry *shares;
-	pid_t pid = getpid();
+	pid_t pid = sys_getpid();
 
 	/* read in the existing share modes */
 	dbuf = tdb_fetch(tdb, locking_key_fsp(fsp));
@@ -380,7 +380,7 @@ fill a share mode entry
 static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_type)
 {
 	share_mode_entry *e = (share_mode_entry *)p;
-	e->pid = getpid();
+	e->pid = sys_getpid();
 	e->share_mode = fsp->share_mode;
 	e->op_port = port;
 	e->op_type = op_type;
@@ -453,7 +453,7 @@ static BOOL mod_share_mode(files_struct *fsp,
 	struct locking_data *data;
 	int i;
 	share_mode_entry *shares;
-	pid_t pid = getpid();
+	pid_t pid = sys_getpid();
 	int need_store=0;
 
 	/* read in the existing share modes */

@@ -55,7 +55,7 @@ files_struct *file_new(void )
 	   increases the chance that the errant client will get an error rather
 	   than causing corruption */
 	if (first_file == 0) {
-		first_file = (getpid() ^ (int)time(NULL)) % real_max_open_files;
+		first_file = (sys_getpid() ^ (int)time(NULL)) % real_max_open_files;
 	}
 
 	i = bitmap_find(file_bmap, first_file);

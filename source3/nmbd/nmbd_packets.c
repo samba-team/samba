@@ -140,7 +140,7 @@ static uint16 generate_name_trn_id(void)
 
   if (!name_trn_id)
   {
-    name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)getpid()%(unsigned)100);
+    name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)sys_getpid()%(unsigned)100);
   }
   name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
   return name_trn_id;

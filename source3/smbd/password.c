@@ -53,8 +53,8 @@ void generate_next_challenge(char *challenge)
 
 	/* get a sort-of random number */
 	GetTimeOfDay(&tval);
-	v1 = (counter++) + getpid() + tval.tv_sec;
-	v2 = (counter++) * getpid() + tval.tv_usec;
+	v1 = (counter++) + sys_getpid() + tval.tv_sec;
+	v2 = (counter++) * sys_getpid() + tval.tv_usec;
 	SIVAL(challenge,0,v1);
 	SIVAL(challenge,4,v2);
 

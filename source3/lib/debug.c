@@ -580,7 +580,7 @@ BOOL dbghdr( int level, char *file, char *func, int line )
 	header_str[0] = '\0';
 
 	if( lp_debug_pid())
-	  slprintf(header_str,sizeof(header_str)-1,", pid=%u",(unsigned int)getpid());
+	  slprintf(header_str,sizeof(header_str)-1,", pid=%u",(unsigned int)sys_getpid());
 
 	if( lp_debug_uid()) {
       size_t hs_len = strlen(header_str);
