@@ -366,6 +366,7 @@ typedef struct krb5_context_data {
                                            version */
     int num_kt_types;			/* # of registered keytab types */
     struct krb5_keytab_data *kt_types;  /* registered keytab types */
+    const char *date_fmt;
 } krb5_context_data;
 
 typedef struct krb5_ticket {
