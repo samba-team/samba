@@ -292,7 +292,8 @@ returning %d bytes.\n", p->name, (unsigned int)p->current_pdu_len,
 	 */
 
 	if(!create_next_pdu(p)) {
-		DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n"));
+		DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n",
+			 p->name));
 		return -1;
 	}
 

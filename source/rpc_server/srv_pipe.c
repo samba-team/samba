@@ -247,8 +247,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	fstring wks;
 	struct smb_passwd *smb_pass = NULL;
 	struct passwd *pass = NULL;
-	uid_t uid;
-	gid_t gid;
 	
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
@@ -316,7 +314,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	if(!(p->ntlmssp_auth_validated = pass_check_smb(unix_user_name, domain,
 	                      (uchar*)p->challenge, lm_owf, nt_owf, NULL))) {
 		DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
-failed authentication on named pipe %s.\n", domain, unix_user_name, wks ));
+failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name ));
 		unbecome_root(True);
 		return False;
 	}

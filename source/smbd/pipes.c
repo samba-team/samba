@@ -157,11 +157,16 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
-	uint32 smb_offs = IVAL(inbuf,smb_vwv3);
 	int smb_maxcnt = SVAL(inbuf,smb_vwv5);
 	int smb_mincnt = SVAL(inbuf,smb_vwv6);
 	int nread = -1;
 	char *data;
+	/* we don't use the offset given to use for pipe reads. This
+           is deliberate, instead we always return the next lump of
+           data on the pipe */
+#if 0
+	uint32 smb_offs = IVAL(inbuf,smb_vwv3);
+#endif
 
 	if (!p)
 		return(ERROR(ERRDOS,ERRbadfid));

@@ -621,7 +621,6 @@ static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
 	char buffer[4096];
 	prs_struct auth_info;
-	char *data_p;
 
 	/*
 	 * Marshall the variable length data into a temporary parse
