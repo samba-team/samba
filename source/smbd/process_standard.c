@@ -34,7 +34,8 @@ static void standard_model_startup(void)
 /*
   called when a listening socket becomes readable
 */
-static void standard_accept_connection(struct event_context *ev, struct fd_event *srv_fde, time_t t, uint16_t flags)
+static void standard_accept_connection(struct event_context *ev, struct fd_event *srv_fde,
+				       time_t t, uint16_t flags)
 {
 	NTSTATUS status;
 	struct socket_context *sock;
@@ -63,7 +64,11 @@ static void standard_accept_connection(struct event_context *ev, struct fd_event
 	/* Child code ... */
 
 	/* close all the listening sockets */
-	event_remove_fd_all_handler(ev, standard_accept_connection);
+	service_close_listening_sockets(server_socket->service->srv_ctx);
+
+	/* we don't care if the dup fails, as its only a select()
+	   speed optimisation */
+	socket_dup(sock);
 			
 	/* tdb needs special fork handling */
 	if (tdb_reopen_all() == -1) {
