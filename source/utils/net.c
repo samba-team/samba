@@ -367,7 +367,7 @@ static struct functable net_func[] = {
 	got_pass = 0;
 	zero_ip(&opt_dest_ip);
 
-	dbf = x_stdout;
+	dbf = x_stderr;
 	
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
