@@ -3415,6 +3415,10 @@ uint32 interpret_addr(char *str)
       DEBUG(3,("Get_Hostbyname: Unknown host. %s\n",str));
       return 0;
     }
+    if(hp->h_addr == NULL) {
+      DEBUG(3,("Get_Hostbyname: host address is invalid for host %s.\n",str));
+      return 0;
+    }
     putip((char *)&res,(char *)hp->h_addr);
   }
 
@@ -4033,7 +4037,7 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
 #endif
 
 
-  DEBUG(5,("fcntl_lock %d %d %d %d %d\n",fd,op,(int)offset,(int)count,type));
+  DEBUG(8,("fcntl_lock %d %d %d %d %d\n",fd,op,(int)offset,(int)count,type));
 
   lock.l_type = type;
   lock.l_whence = SEEK_SET;
@@ -4081,7 +4085,7 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
     }
 
   /* everything went OK */
-  DEBUG(5,("Lock call successful\n"));
+  DEBUG(8,("Lock call successful\n"));
 
   return(True);
 #else

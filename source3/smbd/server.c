@@ -2137,20 +2137,6 @@ struct
   {0,0,0}
 };
 
-/* Mapping for old clients. */
-
-struct
-{
-  int new_smb_error;
-  int old_smb_error;
-  int protocol_level;
-  enum remote_arch_types valid_ra_type;
-} old_client_errmap[] =
-{
-  {ERRbaddirectory, ERRbadpath, (int)PROTOCOL_NT1, RA_WINNT},
-  {0,0,0}
-};
-
 /****************************************************************************
   create an error packet from errno
 ****************************************************************************/
@@ -2180,29 +2166,6 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
 	  i++;
       }
     }
-
-  /* Make sure we don't return error codes that old
-     clients don't understand. */
-
-  /* JRA - unfortunately, WinNT needs some error codes
-     for apps to work correctly, Win95 will break if
-     these error codes are returned. But they both
-     negotiate the *same* protocol. So we need to use
-     the revolting 'remote_arch' enum to tie break.
-
-     There must be a better way of doing this...
-  */
-
-  for(i = 0; old_client_errmap[i].new_smb_error != 0; i++)
-  {
-    if(((Protocol < old_client_errmap[i].protocol_level) ||
-       (old_client_errmap[i].valid_ra_type != get_remote_arch())) &&
-       (old_client_errmap[i].new_smb_error == ecode))
-    {
-      ecode = old_client_errmap[i].old_smb_error;
-      break;
-    }
-  }
 
   return(error_packet(inbuf,outbuf,eclass,ecode,line));
 }
@@ -2612,7 +2575,6 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   static char *outbuf = NULL;
   files_struct *fsp = NULL;
   int fnum;
-  share_lock_token token;
   time_t start_time;
   BOOL shutdown_server = False;
 
@@ -2660,16 +2622,19 @@ allowing break to succeed.\n", dev, inode, fnum));
 
   /* Ensure we have an oplock on the file */
 
-  /* Question - can a client asynchronously break an oplock ? Would it
-     ever do so ? If so this test is invalid for external smbd oplock
-     breaks and we should return True in these cases (JRA).
+  /* There is a potential race condition in that an oplock could
+     have been broken due to another udp request, and yet there are
+     still oplock break messages being sent in the udp message
+     queue for this file. So return true if we don't have an oplock,
+     as we may have just freed it. But this is an unusual case so
+     we should log a message at low debug priority (1).
    */
 
   if(!fsp->granted_oplock)
   {
-    DEBUG(0,("oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock.\n",
-              fsp->name, fnum, dev, inode));
-    return False;
+    DEBUG(1,("oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. \
+Allowing break to succeed regardless.\n", fsp->name, fnum, dev, inode));
+    return True;
   }
 
   /* Now comes the horrid part. We must send an oplock break to the client,
@@ -2729,7 +2694,8 @@ inode = %x).\n", fsp->name, fnum, dev, inode));
     process_smb(inbuf, outbuf);
 
     /* We only need this in case a readraw crossed on the wire. */
-    global_oplock_break = False;
+    if(global_oplock_break)
+      global_oplock_break = False;
 
     /*
      * Die if we go over the time limit.
@@ -2760,16 +2726,10 @@ inode = %x).\n", fsp->name, fnum, dev, inode));
 
   if(OPEN_FNUM(fnum))
   {
-    /* Remove the oplock flag from the sharemode. */
-    lock_share_entry(fsp->cnum, dev, inode, &token);
-    if(remove_share_oplock( fnum, token)==False)
-    {
-      DEBUG(0,("oplock_break: failed to remove share oplock for fnum %d, \
-dev = %x, inode = %x\n", fnum, dev, inode));
-      unlock_share_entry(fsp->cnum, dev, inode, token);
-      return False;
-    }
-    unlock_share_entry(fsp->cnum, dev, inode, token);
+    /* The lockingX reply will have removed the oplock flag 
+       from the sharemode. */
+    /* Paranoia.... */
+    fsp->granted_oplock = False;
   }
 
   global_oplocks_open--;
@@ -2782,8 +2742,8 @@ dev = %x, inode = %x\n", fnum, dev, inode));
     abort();
   }
 
-  DEBUG(5,("oplock_break: returning success for dev = %x, inode = %x. Current \
-global_oplocks_open = %d\n", dev, inode, global_oplocks_open));
+  DEBUG(5,("oplock_break: returning success for fnum = %d, dev = %x, inode = %x. Current \
+global_oplocks_open = %d\n", fnum, dev, inode, global_oplocks_open));
 
   return True;
 }

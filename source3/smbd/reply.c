@@ -640,6 +640,15 @@ int reply_chkpth(char *inbuf,char *outbuf)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+
+    /* Ugly - NT specific hack - but needed (JRA) */
+    if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) &&
+       (get_remote_arch() == RA_WINNT))
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbaddirectory;
+    }
+
     return(UNIXERROR(ERRDOS,ERRbadpath));
   }
  
@@ -3390,22 +3399,37 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
      (num_ulocks == 0) && (num_locks == 0) &&
      (CVAL(inbuf,smb_vwv0) == 0xFF))
   {
+    share_lock_token token;
+    files_struct *fsp = &Files[fnum];
+    uint32 dev = fsp->fd_ptr->dev;
+    uint32 inode = fsp->fd_ptr->inode;
+
     DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
               fnum));
     /*
      * Make sure we have granted an oplock on this file.
      */
-    if(!Files[fnum].granted_oplock)
+    if(!fsp->granted_oplock)
     {
       DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
-oplock granted on this file.\n", fnum));
+no oplock granted on this file.\n", fnum));
       return ERROR(ERRDOS,ERRlock);
     }
 
-    /* Just clear the granted flag and return. oplock_break()
-       will handle changing the share_mode_entry. */
+    /* Remove the oplock flag from the sharemode. */
+    lock_share_entry(fsp->cnum, dev, inode, &token);
+    if(remove_share_oplock( fnum, token)==False)
+    {
+      DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
+dev = %x, inode = %x\n", fnum, dev, inode));
+      unlock_share_entry(fsp->cnum, dev, inode, token);
+      return -1;
+    }
+    unlock_share_entry(fsp->cnum, dev, inode, token);
 
-    Files[fnum].granted_oplock = 0;
+    /* Clear the granted flag and return. */
+
+    fsp->granted_oplock = False;
     return -1;
   }
 #endif /* USE_OPLOCKS */

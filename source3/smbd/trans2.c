@@ -607,6 +607,15 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+
+    /* Ugly - NT specific hack - but needed (JRA) */
+    if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) && 
+       (get_remote_arch() == RA_WINNT))
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbaddirectory;
+    }
+
     return(ERROR(ERRDOS,ERRbadpath));
   }
 
@@ -640,6 +649,14 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
         {
           unix_ERR_class = ERRDOS;
           unix_ERR_code = ERRbadpath;
+        }
+
+        /* Ugly - NT specific hack - but needed (JRA) */
+        if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) && 
+           (get_remote_arch() == RA_WINNT))
+        {
+          unix_ERR_class = ERRDOS;
+          unix_ERR_code = ERRbaddirectory;
         }
         return (UNIXERROR(ERRDOS,ERRbadpath));
       }
