@@ -930,6 +930,8 @@ static BOOL api_spoolss_setprinterdata(prs_struct *data, prs_struct *rdata)
 				&q_u.value, q_u.type, q_u.max_len,
 				q_u.data, q_u.real_len, q_u.numeric_data);
 				
+	free_spoolss_q_setprinterdata(&q_u);
+
 	if(!spoolss_io_r_setprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_setprinterdata: unable to marshall SPOOL_R_SETPRINTERDATA.\n"));
 		return False;

@@ -232,9 +232,6 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		if ((new_data = Realloc(ps->data_p, new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
-			/* JRATEST */
-			smb_panic("prs_grow: ralloc fail\n");
-			/* JRATEST */
 			return False;
 		}
 
@@ -343,6 +340,9 @@ BOOL prs_append_prs_data(prs_struct *dst, prs_struct *src)
 
 BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len)
 {	
+	if (len == 0)
+		return True;
+
 	if(!prs_grow(dst, len))
 		return False;
 	
