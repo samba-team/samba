@@ -56,7 +56,7 @@ static int findpty(char **slave)
 #else
   strcpy( line, "/dev/ptyXX" );
 
-  dirp = OpenDir("/dev");
+  dirp = OpenDir("/dev", True);
   if (!dirp) return(-1);
   while ((dpname = ReadDirName(dirp)) != NULL) {
     if (strncmp(dpname, "pty", 3) == 0 && strlen(dpname) == 5) {
