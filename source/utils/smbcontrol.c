@@ -33,15 +33,20 @@ static struct {
 	{NULL, -1}
 };
 
-static void usage(void)
+static void usage(BOOL doexit)
 {
 	int i;
-	printf("Usage: smbcontrol <destination> <message-type> <parameters>\n\n");
+	if (doexit) {
+		printf("Usage: smbcontrol -i\n");
+		printf("       smbcontrol <destination> <message-type> <parameters>\n\n");
+	} else {
+		printf("<destination> <message-type> <parameters>\n\n");
+	}
 	printf("\t<destination> is one of \"nmbd\", \"smbd\" or a process ID\n");
 	printf("\t<message-type> is one of: ");
 	for (i=0; msg_types[i].name; i++) printf("%s, ", msg_types[i].name);
 	printf("\n");
-	exit(1);
+	if (doexit) exit(1);
 }
 
 static int pong_count;
@@ -94,12 +99,63 @@ static int parse_type(char *mtype)
 }
 
 
+/****************************************************************************
+do command
+****************************************************************************/
+static BOOL do_command(char *dest, char *msg_name, char *params)
+{
+	int i, n, v;
+	int mtype;
+
+	mtype = parse_type(msg_name);
+	if (mtype == -1) {
+		fprintf(stderr,"Couldn't resolve message type: %s\n", msg_name);
+		return(False);
+	}
+
+	switch (mtype) {
+	case MSG_DEBUG:
+		if (!params) {
+			fprintf(stderr,"MSG_DEBUG needs a parameter\n");
+			return(False);
+		}
+		v = atoi(params);
+		send_message(dest, MSG_DEBUG, &v, sizeof(int));
+		break;
+
+	case MSG_FORCE_ELECTION:
+		if (!strequal(dest, "nmbd")) {
+			fprintf(stderr,"force-election can only be sent to nmbd\n");
+			return(False);
+		}
+		send_message(dest, MSG_FORCE_ELECTION, NULL, 0);
+		break;
+
+	case MSG_PING:
+		message_register(MSG_PONG, pong_function);
+		if (!params) {
+			fprintf(stderr,"MSG_PING needs a parameter\n");
+			return(False);
+		}
+		n = atoi(params);
+		for (i=0;i<n;i++) {
+			send_message(dest, MSG_PING, NULL, 0);
+		}
+		while (pong_count < n) message_dispatch();
+		break;
+
+	}
+	
+	return (True);
+}
+
  int main(int argc, char *argv[])
 {
-	char *dest;
-	int i, n, v;
+	int opt;
+	char temp[255];
+	extern int optind;
 	pstring servicesf = CONFIGFILE;
-	int mtype;
+	BOOL interactive = False;
 
 	TimeInit();
 	setup_logging(argv[0],True);
@@ -109,47 +165,44 @@ static int parse_type(char *mtype)
 
 	message_init();
 
-	if (argc < 3) usage();
+	if (argc < 2) usage(True);
 
-	dest = argv[1];
-	mtype = parse_type(argv[2]);
-	if (mtype == -1) {
-		fprintf(stderr,"Couldn't resolve message type: %s\n", argv[2]);
-		exit(1);
+	while ((opt = getopt(argc, argv,"i")) != EOF) {
+		switch (opt) {
+		case 'i':
+			interactive = True;
+			break;
+		default:
+			printf("Unknown option %c (%d)\n", (char)opt, opt);
+			usage(True);
+		}
 	}
 
-	argc -= 2;
-	argv += 2;
-	
-	switch (mtype) {
-	case MSG_DEBUG:
-		if (argc < 2) {
-			fprintf(stderr,"MSG_DEBUG needs a parameter\n");
-			exit(1);
-		}
-		v = atoi(argv[1]);
-		send_message(dest, MSG_DEBUG, &v, sizeof(int));
-		break;
+	argc -= optind;
+	argv = &argv[optind];
 
-	case MSG_FORCE_ELECTION:
-		if (!strequal(dest, "nmbd")) {
-			fprintf(stderr,"force-election can only be sent to nmbd\n");
-			exit(1);
-		}
-		send_message(dest, MSG_FORCE_ELECTION, NULL, 0);
-		break;
-
-	case MSG_PING:
-		message_register(MSG_PONG, pong_function);
-		n = atoi(argv[1]);
-		for (i=0;i<n;i++) {
-			send_message(dest, MSG_PING, NULL, 0);
-		}
-		while (pong_count < n) message_dispatch();
-		break;
-
+	if (!interactive) {
+		if (argc < 2) usage(True);
+		return (do_command(argv[0],argv[1],argc > 2 ? argv[2] : 0));
 	}
-	
-	return (0);
+
+	while (True) {
+		char *myargv[3];
+		int myargc;
+
+		printf("smbcontrol> ");
+		if (!gets(temp)) break;
+		myargc = 0;
+		while ((myargc < 3) && 
+		       (myargv[myargc] = strtok(myargc?NULL:temp," \t"))) {
+			myargc++;
+		}
+		if (!myargc) break;
+		if (myargc < 2)
+			usage(False);
+		else if (!do_command(myargv[0],myargv[1],myargc > 2 ? myargv[2] : 0))
+			usage(False);
+	}
+	return(0);
 }
 
