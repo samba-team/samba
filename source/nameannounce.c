@@ -432,6 +432,9 @@ workgroup %s\n", am_master, work->work_group));
       char *name;
       int   type;
 
+#if 0 /* I don't think this option should be used for this purpose. 
+         JRA.
+       */
       if (*lp_domain_controller())
         {
           /* the domain controller option is used to manually specify
@@ -446,6 +449,7 @@ workgroup %s\n", am_master, work->work_group));
           type = 0x20;
         }
       else
+#endif /* REMOVE SUSPECT CODE. */
         {
           /* assume that the domain master browser we want to sync
              with is our own domain.
