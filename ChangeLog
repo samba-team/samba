@@ -1,3 +1,12 @@
+2003-10-13  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/fcache.c: implement locking
+
+2003-10-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/klist.c (print_tickets): bail out if krb5_cc_next_cred
+	returns error other than KRB5_CC_END
+
 2003-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/init_creds_pw.c: add some help function that is common
