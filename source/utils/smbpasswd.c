@@ -34,20 +34,6 @@ extern int optind;
 static BOOL local_mode;
 
 /*********************************************************
-a strdup with exit
-**********************************************************/
-static char *xstrdup(char *s)
-{
-	s = strdup(s);
-	if (!s) {
-		fprintf(stderr,"out of memory\n");
-		exit(1);
-	}
-	return s;
-}
-
-
-/*********************************************************
  Print command usage on stderr and die.
 **********************************************************/
 static void usage(void)

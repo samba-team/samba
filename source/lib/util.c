@@ -1649,9 +1649,9 @@ void *xmalloc(size_t size)
 {
 	void *p;
 	if (size == 0)
-		smb_panic("xmalloc called with zero size.\n");
+		smb_panic("xmalloc: called with zero size.\n");
 	if ((p = malloc(size)) == NULL)
-		smb_panic("xmalloc malloc fail.\n");
+		smb_panic("xmalloc: malloc fail.\n");
 	return p;
 }
 
@@ -1665,6 +1665,18 @@ void *xmemdup(void *p, size_t size)
 	p2 = xmalloc(size);
 	memcpy(p2, p, size);
 	return p2;
+}
+
+/*****************************************************************
+ strdup that aborts on malloc fail.
+ *****************************************************************/  
+
+char *xstrdup(const char *s)
+{
+	char *s1 = strdup(s);
+	if (!s1)
+		smb_panic("xstrdup: malloc fail\n");
+	return s1;
 }
 
 /*****************************************************************
