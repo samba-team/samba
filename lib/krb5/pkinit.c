@@ -1525,42 +1525,13 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
     }
 
-    /* XXX all this stuff only to get the key length ? */
-    switch(etype) {
-    case ETYPE_DES3_CBC_SHA1:
-    case ETYPE_OLD_DES3_CBC_SHA1:
-    case ETYPE_DES_CBC_CRC: 
-    case ETYPE_DES_CBC_MD4: 
-    case ETYPE_DES_CBC_MD5: {
-	DES_cblock *k;
-
-	ret = krb5_generate_random_keyblock(context, etype, *key);
-	if (ret) {
-	    free(*key);
-	    *key = NULL;
-	    goto out;
-	}
-	
-	memcpy((*key)->keyvalue.data, dh_gen_key, (*key)->keyvalue.length);
-	k = (*key)->keyvalue.data;
-	DES_set_odd_parity(&k[0]);
-	switch (etype) {
-	case ETYPE_OLD_DES3_CBC_SHA1:
-	case ETYPE_DES3_CBC_SHA1:
-	    DES_set_odd_parity(&k[1]);
-	    DES_set_odd_parity(&k[2]);
-	    break;
-	default:
-	    break;
-	}
-	(*key)->keytype = etype;
-	break;
-    }
-    default:
+    ret = krb5_random_to_key(context, etype, dh_gen_key, dh_gen_keylen, *key);
+    if (ret) {
 	krb5_set_error_string(context,
-			      "PKINIT: unsupported enctype %d", etype);
-	ret = EINVAL;
-	break;
+			      "PKINIT: can't create key from DH key");
+	free(*key);
+	*key = NULL;
+	goto out;
     }
 
  out:
