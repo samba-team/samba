@@ -1079,6 +1079,8 @@ static struct parm_struct parm_table[] = {
 	{"vfs options", P_STRING, P_LOCAL, &sDefault.szVfsOptions, NULL, NULL, FLAG_SHARE},
 
 #ifdef WITH_MSDFS
+	{"MSDfs options", P_SEP, P_SEPARATOR},
+
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
 	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, 0},
 #endif
