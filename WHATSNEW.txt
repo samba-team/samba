@@ -1,6 +1,20 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha10
+- hide unreadable fix using acl fns (jra)
+- lsa_open_policy cleanup (jfm)
+- mangled directories fix (jra)
+- fix error return on bad pipe (jra)
+- fix homes share with no home dir (tpot)
+- fixed handling of dead or empty domains in winbindd (tridge)
+- added talloc torture program (mbp)
+- talloc debug code (mbp)
+- added trusted domains to winbindd/ADS (tridge)
+- fix trusted domains in auth code (tridge)
+- new gss error handling code (a.bokovoy@sam-solutions.net & tridge)
+- support mixed ADS/NT4 domains (tridge)
+
 Changes in alpha9
 - nicer net error messages (tpot)
 - trust account patches (mimir)
