@@ -74,4 +74,20 @@ krb5_cc_set_flags (krb5_context context,
 		   krb5_ccache id,
 		   krb5_flags flags);
 
+krb5_error_code
+krb5_cc_start_seq_get (krb5_context context,
+		       krb5_ccache id,
+		       krb5_cc_cursor *cursor);
+
+krb5_error_code
+krb5_cc_next_cred (krb5_context context,
+		   krb5_ccache id,
+		   krb5_creds *creds,
+		   krb5_cc_cursor *cursor);
+
+krb5_error_code
+krb5_cc_end_seq_get (krb5_context context,
+		     krb5_ccache id,
+		     krb5_cc_cursor *cursor);
+
 #endif /* __CACHE_H__ */
