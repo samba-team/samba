@@ -214,10 +214,15 @@
 #define real_unlink(fn)			(syscall(SYS_unlink, (fn)))
 #define real_rmdir(fn)			(syscall(SYS_rmdir, (fn)))
 #define real_mkdir(fn, mode)		(syscall(SYS_mkdir, (fn), (mode)))
-#define real_utimes(fn, buf)		(syscall(SYS_utimes, (fn), (buf)))
 
 #ifdef SYS_utime
 #define real_utime(fn, buf)		(syscall(SYS_utime, (fn), (buf)))
 #else
 #define REPLACE_UTIME 1
+#endif
+
+#ifdef SYS_utimes
+#define real_utimes(fn, buf)		(syscall(SYS_utimes, (fn), (buf)))
+#else
+#define REPLACE_UTIMES 1
 #endif
