@@ -210,7 +210,8 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 # This allows us to get away without duplicating code that 
 #  sombody else can maintain for us.  
 cd source
-make LIBDIR=$RPM_BUILD_ROOT/etc/samba \
+make BASEDIR=$RPM_BUILD_ROOT/usr \
+	LIBDIR=$RPM_BUILD_ROOT/etc/samba \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
 	CODEPAGEDIR=$RPM_BUILD_ROOT/etc/codepages \
