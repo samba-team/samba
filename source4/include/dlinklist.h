@@ -21,6 +21,10 @@
 /* To use these macros you must have a structure containing a next and
    prev pointer */
 
+struct dlist_item {
+	struct dlist_item *prev, *next;
+	void *ptr;	
+};
 
 /* hook into the front of the list */
 #define DLIST_ADD(list, p) \
