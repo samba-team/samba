@@ -48,22 +48,20 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 
 		if ( !name_status_find( domain, 0x1b, 0x20, pdc_ip, dc_name) )
 			goto failed;
-	}
-	/* supoport old deprecated "smbpasswd -j DOMAIN -r MACHINE" behavior */
-	else {
+	} else {
+		/* supoport old deprecated "smbpasswd -j DOMAIN -r MACHINE" behavior */
 		fstrcpy( dc_name, remote_machine );
 	}
 	
 	/* if this next call fails, then give up.  We can't do
 	   password changes on BDC's  --jerry */
 	   
-	if (!NT_STATUS_IS_OK(cli_full_connection(&cli, global_myname(), remote_machine, 
+	if (!NT_STATUS_IS_OK(cli_full_connection(&cli, global_myname(), dc_name, 
 					   NULL, 0,
 					   "IPC$", "IPC",  
 					   "", "",
-					   "", 0, Undefined, NULL))) 
-	{
-		DEBUG(0,("modify_trust_password: Connection to %s failed!\n", remote_machine));
+					   "", 0, Undefined, NULL))) {
+		DEBUG(0,("modify_trust_password: Connection to %s failed!\n", dc_name));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
 	}
@@ -75,7 +73,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 
 	if(cli_nt_session_open(cli, PI_NETLOGON) == False) {
 		DEBUG(0,("modify_trust_password: unable to open the domain client session to machine %s. Error was : %s.\n", 
-			remote_machine, cli_errstr(cli)));
+			dc_name, cli_errstr(cli)));
 		cli_nt_session_close(cli);
 		cli_ulogoff(cli);
 		cli_shutdown(cli);
@@ -83,8 +81,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 		goto failed;
 	}
 
-	nt_status = trust_pw_find_change_and_store_it(cli, cli->mem_ctx,
-						      domain);
+	nt_status = trust_pw_find_change_and_store_it(cli, cli->mem_ctx, domain);
   
 	cli_nt_session_close(cli);
 	cli_ulogoff(cli);
