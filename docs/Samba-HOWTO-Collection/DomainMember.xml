@@ -284,7 +284,7 @@ information to such clients. You have been warned!
 <title>Managing Domain Machine Accounts using NT4 Server Manager</title>
 
 <para>
-A working <smbconfoption><name>add machine script</name></smbconfoption> script is essential
+A working <smbconfoption><name>add machine script</name></smbconfoption> is essential
 for machine trust accounts to be automatically created. This applies no matter whether
 one uses automatic account creation, or if one wishes to use the NT4 Domain Server Manager.
 </para>
