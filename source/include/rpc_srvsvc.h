@@ -2,9 +2,10 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Tridgell 1992-1997,2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000
+   Copyright (C) Paul Ashton 1997,2000
+   Copyright (C) Elrond 2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -416,7 +417,7 @@ typedef struct _share_info_502
 
 typedef union _share_info_ctr
 {
-	SHARE_INFO_502 info502;
+	SHARE_INFO_502 *info502;
 } SHARE_INFO_CTR;
 
 

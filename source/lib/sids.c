@@ -569,15 +569,3 @@ BOOL enumtrustdoms(char ***doms, uint32 *num_entries)
 
 	return True;
 }
-
-/**************************************************************************
- enumerates all domains for which the SAM server is responsible
-***************************************************************************/
-BOOL enumdomains(char ***doms, uint32 *num_entries)
-{
-	add_chars_to_array(num_entries, doms, global_sam_name);
-	add_chars_to_array(num_entries, doms, "Builtin");
-
-	return True;
-}
-

@@ -361,7 +361,7 @@ static BOOL srv_io_share_info502_data(char *desc,
 reads or writes a structure.
 ********************************************************************/
 static BOOL srv_io_share_info502(char *desc,
-				 SHARE_INFO_502 *sh502,
+				 SHARE_INFO_502 *sh502, uint32 count,
 				 prs_struct *ps, int depth)
 {
 	if (sh502 == NULL) return False;
@@ -378,6 +378,53 @@ static BOOL srv_io_share_info502(char *desc,
 				  ps, depth);
 
 	return True;
+}
+
+
+/*******************************************************************
+ reads or writes a structure.
+ ********************************************************************/
+static BOOL srv_io_share_info_ctr(const char *desc,
+				  SHARE_INFO_CTR *info,
+				  uint32 info_level, uint32 count,
+				  prs_struct *ps, int depth)
+{
+	if (info == NULL) return False;
+
+	if (count != 1)
+	{
+		DEBUG(1, ("srv_io_share_info_ctr: count %d != 1\n",
+			  count));
+		return False;
+	}
+
+	prs_debug(ps, depth, desc, "srv_io_share_info_ctr");
+	depth++;
+
+	prs_align(ps);
+
+	switch (info_level)
+	{
+		case 502:
+			if (ps->io)
+			{
+				info->info502 = g_new(SHARE_INFO_502, count);
+				if (info->info502 == NULL)
+				{
+					DEBUG(1, ("srv_io_share_info_ctr at level 502: malloc failed\n"));
+					return False;
+				}
+			}
+			return srv_io_share_info502("info",
+						    info->info502, count,
+						    ps, depth);
+			break;
+		default:
+			DEBUG(1, ("srv_io_share_info_ctr: Unsupported info level %d\n",
+				  info_level));
+			return False;
+			break;
+	}
 }
 
 
@@ -521,6 +568,7 @@ static BOOL srv_io_srv_share_ctr(char *desc,  SRV_SHARE_INFO_CTR *ctr, prs_struc
 
 	return True;
 }
+
 
 /*******************************************************************
 reads or writes a structure.
@@ -692,18 +740,12 @@ BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n,
 
 	if (r_n->info_ptr)
 	{
-		switch (r_n->info_level)
+		if (!srv_io_share_info_ctr("info_ctr",
+					   &(r_n->info),
+					   r_n->info_level, 1,
+					   ps, depth))
 		{
-			case 502:
-				srv_io_share_info502("info",
-						     &(r_n->info.info502),
-						     ps, depth);
-				break;
-			default:
-				DEBUG(1, ("srv_io_r_net_share_get_info: Unsupported info level %d\n",
-					  r_n->info_level));
-				return False;
-				break;
+			return False;
 		}
 	}
 
@@ -1519,11 +1561,9 @@ static BOOL srv_io_srv_tprt_info_0(char *desc,  SRV_TPRT_INFO_0 *tp0, prs_struct
 		if (ps->io)
 		{
 			/* reading */
-			tp0->info_0 = (TPRT_INFO_0*)malloc(num_entries *
-			              sizeof(tp0->info_0[0]));
+			tp0->info_0 = g_new(TPRT_INFO_0, num_entries);
 
-			tp0->info_0_str = (TPRT_INFO_0_STR*)malloc(num_entries *
-			              sizeof(tp0->info_0_str[0]));
+			tp0->info_0_str = g_new(TPRT_INFO_0_STR, num_entries);
 
 			if (tp0->info_0 == NULL || tp0->info_0_str == NULL)
 			{

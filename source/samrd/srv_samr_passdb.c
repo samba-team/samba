@@ -583,6 +583,18 @@ static void make_enum_domains(SAM_ENTRY **sam, UNISTR2 **uni_dom_name,
 	}
 }
 
+
+/**************************************************************************
+ enumerates all domains for which the SAM server is responsible
+***************************************************************************/
+static BOOL enumdomains(char ***doms, uint32 *num_entries)
+{
+	add_chars_to_array(num_entries, doms, global_sam_name);
+	add_chars_to_array(num_entries, doms, "Builtin");
+
+	return True;
+}
+
 /*******************************************************************
  samr_reply_enum_domains
  ********************************************************************/
