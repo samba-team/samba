@@ -25,8 +25,8 @@
 @titlepage
 @title Heimdal
 @subtitle Kerberos 5 from KTH
-@subtitle Edition 0.0, for version 0.0h
-@subtitle 1997
+@subtitle Edition 0.0, for version 0.0o
+@subtitle 1998
 @author Johan Danielsson
 @author Assar Westerlund
 @author last updated $Date$
@@ -36,7 +36,7 @@
 @def@copyrightend{}
 @page
 @copyrightstart
-Copyright (c) 1997 Kungliga Tekniska Högskolan 
+Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan 
 (Royal Institute of Technology, Stockholm, Sweden).
 All rights reserved.
 
@@ -224,25 +224,16 @@ to the following restrictions:
 * What is Kerberos?::           
 * Building and Installing::     
 * Setting up a realm::          
+* Things in search for a better place::  
 * Kerberos 4 issues::           
 * Acknowledgments::             
-
- --- The Detailed Node Listing ---
-
-Building and Installing
-
-* Finishing the installation::  
-
-Kerberos 4 issues
-
-* Principal conversion issues::  
-* Converting a version 4 database::  
 @end menu
 
 @include intro.texi
 @include whatis.texi
 @include install.texi
 @include setup.texi
+@include misc.texi
 @include kerberos4.texi
 @include ack.texi
 

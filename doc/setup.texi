@@ -1,4 +1,4 @@
-@node Setting up a realm, Kerberos 4 issues, Building and Installing, Top
+@node Setting up a realm, Things in search for a better place, Building and Installing, Top
 @chapter Setting up a realm
 
 A
