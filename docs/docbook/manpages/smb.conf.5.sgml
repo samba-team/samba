@@ -4762,7 +4762,7 @@
 		<term><anchor id="MSDFSROOT">msdfs root (S)</term>
 		<listitem><para>This boolean parameter is only available if 
 		Samba is configured  and  compiled with the <command>
-		--with-msdfs</command> option.  If set to <constant>yes></constant>, 
+		--with-msdfs</command> option.  If set to <constant>yes</constant>, 
 		Samba treats the share as a Dfs root and  allows clients to browse 
 		the distributed file system tree rooted at the share directory. 
 		Dfs links are specified  in  the share directory by symbolic 
@@ -4801,7 +4801,7 @@
 			</filename>, NIS, or DNS lookups. This method of name resolution 
 			is operating system depended for instance on IRIX or Solaris this 
 			may be controlled by the <filename>/etc/nsswitch.conf</filename> 
-			file).  Note that this method is only used if the NetBIOS name 
+			file.  Note that this method is only used if the NetBIOS name 
 			type being queried is the 0x20 (server) name type, otherwise 
 			it is ignored.</para></listitem>
 
