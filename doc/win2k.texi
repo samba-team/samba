@@ -110,16 +110,8 @@ OK.
 
 Do not forget to add trusts in both directions.
 
-You also need to add the inter-realm keys to the Heimdal kdc. There are
+You also need to add the inter-realm keys to the Heimdal KDC. There are
 some tweaks that you need to do to @file{krb5.conf} beforehand.
-Since Windows 2000 does not seem to understand Kerberos 4 salted hashes you
-might need to turn off anything similar to the following if you have it:
-
-@example
-	[kadmin]use_v4_salt=yes
-@end example
-
-You must also set:
 
 @example
 [libdefaults]
@@ -129,6 +121,17 @@ You must also set:
 
 since otherwise checksum types that are not understood by Windows 2000
 will be generated (@xref{Quirks of Windows 2000 KDC}.).
+
+Another issue is salting.  Since Windows 2000 does not seem to
+understand Kerberos 4 salted hashes you might need to turn off anything
+similar to the following if you have it, at least while adding the
+principals that are going to share keys with Windows 2000.
+
+@example
+	[kadmin]use_v4_salt=yes
+@end example
+
+You must also set:
 
 @comment XXX Should add [kadmin]default_keys = des3:pw-salt des:pw-salt des:pw-salt: ?
 
