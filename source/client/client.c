@@ -27,6 +27,7 @@
 #define REGISTER 0
 #endif
 
+extern BOOL in_client;
 pstring cur_dir = "\\";
 pstring cd_path = "";
 extern BOOL in_client;
@@ -3790,7 +3791,7 @@ static void usage(char *pname)
     DEBUG(0,("Failed to get my hostname.\n"));
   }
 
-  in_client = True;
+  in_client = True;   /* Make sure that we tell lp_load we are */
 
   if (!lp_load(servicesf,True,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
