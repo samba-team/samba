@@ -671,8 +671,9 @@ unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred)
 
 
 int
-kerberos4_forward(Authenticator *ap, des_cblock *key)
+kerberos4_forward(Authenticator *ap, void *v)
 {
+    des_cblock *key = (des_cblock *)v;
     CREDENTIALS cred;
     char *realm;
     des_key_schedule ks;
