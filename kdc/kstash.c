@@ -37,24 +37,24 @@ RCSID("$Id$");
 
 krb5_context context;
 
-const char *keyfile = HDB_DB_DIR "/m-key";
-int convert_flag;
-int help_flag;
-int version_flag;
+static const char *keyfile = HDB_DB_DIR "/m-key";
+static int convert_flag;
+static int help_flag;
+static int version_flag;
 
-int master_key_fd = -1;
-int random_key;
+static int master_key_fd = -1;
+static int random_key_flag;
 
-const char *enctype_str = "des3-cbc-sha1";
+static const char *enctype_str = "des3-cbc-sha1";
 
-struct getargs args[] = {
+static struct getargs args[] = {
     { "enctype", 'e', arg_string, &enctype_str, "encryption type" },
     { "key-file", 'k', arg_string, &keyfile, "master key file", "file" },
     { "convert-file", 0, arg_flag, &convert_flag, 
       "just convert keyfile to new format" },
     { "master-key-fd", 0, arg_integer, &master_key_fd, 
       "filedescriptor to read passphrase from", "fd" },
-    { "random-key", 0, arg_flag, &random_key, "generate a random master key" },
+    { "random-key", 0, arg_flag, &random_key_flag, "generate a random master key" },
     { "help", 'h', arg_flag, &help_flag },
     { "version", 0, arg_flag, &version_flag }
 };
@@ -80,7 +80,7 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    if (master_key_fd != -1 && random_key)
+    if (master_key_fd != -1 && random_key_flag)
 	krb5_errx(context, 1, "random-key and master-key-fd "
 		  "is mutual exclusive");
 
@@ -102,7 +102,7 @@ main(int argc, char **argv)
 	/* XXX better value? */
 	salt.saltvalue.data = NULL;
 	salt.saltvalue.length = 0;
-	if (random_key) {
+	if (random_key_flag) {
 	    ret = krb5_generate_random_keyblock(context, enctype, &key);
 	    if (ret)
 		krb5_err(context, 1, ret, "krb5_generate_random_keyblock");
