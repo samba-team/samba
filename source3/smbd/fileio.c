@@ -116,6 +116,8 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
   
   if (n > 0) {
     readret = fsp->conn->vfs_ops.read(fsp->fd,data,n);
+    if (readret == -1)
+      return -1;
     if (readret > 0) ret += readret;
   }
 
