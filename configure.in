@@ -222,7 +222,7 @@ AM_CONDITIONAL(OTP, test "$otp" = yes)dnl
 
 AC_CHECK_OSFC2
 
-AC_CHECK_MAN
+rk_CHECK_MAN
 
 AC_TEST_PACKAGE_NEW(readline,
 [#include <stdio.h>
