@@ -100,11 +100,12 @@ AM_CONDITIONAL(have_vis_h, test "$ac_cv_header_vis_h" = yes)
 
 dnl Check for functions and libraries
 
-AC_KRB_IPV6
-
 AC_FIND_FUNC(socket, socket)
 AC_FIND_FUNC(gethostbyname, nsl)
 AC_FIND_FUNC(syslog, syslog)
+
+AC_KRB_IPV6
+
 AC_FIND_FUNC(gethostbyname2, inet6 ip6)
 
 AC_FIND_FUNC(res_search, resolv,
