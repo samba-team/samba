@@ -639,6 +639,34 @@ static void make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR
 }
 
 /*******************************************************************
+ Ensure password info is never given out. Paranioa... JRA.
+ ********************************************************************/
+
+static void samr_clear_passwd_fields( SAM_USER_INFO_21 *pass, int num_entries)
+{
+	int i;
+
+	if (!pass)
+		return;
+	
+	for (i = 0; i < num_entries; i++) {
+		memset(&pass[i].lm_pwd, '\0', sizeof(pass[i].lm_pwd));
+		memset(&pass[i].nt_pwd, '\0', sizeof(pass[i].nt_pwd));
+	}
+}
+
+static void samr_clear_sam_passwd( struct sam_passwd *sam_pass)
+{
+	if (!sam_pass)
+		return;
+
+	if (sam_pass->smb_passwd)
+		memset(sam_pass->smb_passwd, '\0', 16);
+	if (sam_pass->smb_nt_passwd)
+		memset(sam_pass->smb_nt_passwd, '\0', 16);
+}
+
+/*******************************************************************
  samr_reply_enum_dom_users
  ********************************************************************/
 
@@ -664,6 +692,8 @@ uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_
 
 	if (!ret)
 		return NT_STATUS_ACCESS_DENIED;
+
+	samr_clear_passwd_fields(pass, num_entries);
 
 	/* 
 	 * Note from JRA. total_entries is not being used here. Currently if there is a
@@ -983,6 +1013,9 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		num_entries = MAX_SAM_ENTRIES;
 		DEBUG(5, ("limiting number of entries to %d\n", num_entries));
 	}
+
+	/* Ensure password info is never given out here. PARANOIA... JRA */
+	samr_clear_passwd_fields(pass, num_entries);
 
 	data_size = q_u->max_size;
 	orig_num_entries = num_entries;
@@ -1313,7 +1346,7 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
 }
 
 /*******************************************************************
- _api_samr_open_user
+ _api_samr_open_user. Safe - gives out no passwd info.
  ********************************************************************/
 
 uint32 _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
@@ -1339,6 +1372,8 @@ uint32 _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_U
     if (sam_pass == NULL)
         return NT_STATUS_NO_SUCH_USER;
 
+	samr_clear_sam_passwd(sam_pass);
+
     /* Get the domain SID stored in the domain policy */
     if(!get_lsa_policy_samr_sid(p, &domain_pol, &sid))
         return NT_STATUS_INVALID_HANDLE;
@@ -1362,7 +1397,7 @@ uint32 _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_U
 }
 
 /*************************************************************************
- get_user_info_10
+ get_user_info_10. Safe. Only gives out acb bits.
  *************************************************************************/
 
 static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
@@ -1384,6 +1419,8 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
         return False;
     }
 
+	samr_clear_sam_passwd(smb_pass);
+
     DEBUG(3,("User:[%s]\n", smb_pass->smb_name));
 
     init_sam_user_info10(id10, smb_pass->acct_ctrl);
@@ -1392,30 +1429,40 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 }
 
 /*************************************************************************
- get_user_info_12
+ get_user_info_12. OK - this is the killer as it gives out password info.
+ Ensure that this is only allowed on an encrypted connection with a root
+ user. JRA.
  *************************************************************************/
 
-static BOOL get_user_info_12(SAM_USER_INFO_12 * id12, uint32 user_rid)
+static BOOL get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, uint32 user_rid)
 {
     struct smb_passwd *smb_pass;
 
-	become_root();
+	if (!p->ntlmssp_auth_validated)
+		return NT_STATUS_ACCESS_DENIED;
+
+	if (!(p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) || !(p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL))
+		return NT_STATUS_ACCESS_DENIED;
+
+	/*
+	 * Do *NOT* do become_root()/unbecome_root() here ! JRA.
+	 */
+
 	smb_pass = getsmbpwrid(user_rid);
-	unbecome_root();
 
 	if (smb_pass == NULL) {
 		DEBUG(4, ("User 0x%x not found\n", user_rid));
-		return False;
+		return (geteuid() == (uid_t)0) ? NT_STATUS_NO_SUCH_USER : NT_STATUS_ACCESS_DENIED;
 	}
 
     DEBUG(3,("User:[%s] 0x%x\n", smb_pass->smb_name, smb_pass->acct_ctrl));
 
 	if (smb_pass->acct_ctrl & ACB_DISABLED)
-        return False;
+        return NT_STATUS_ACCOUNT_DISABLED;
 
 	init_sam_user_info12(id12, smb_pass->smb_passwd, smb_pass->smb_nt_passwd);
 
-	return True;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*************************************************************************
@@ -1442,6 +1489,8 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
         DEBUG(4,("User 0x%x not found\n", user_rid));
         return False;
     }
+
+	samr_clear_sam_passwd(sam_pass);
 
     DEBUG(3,("User:[%s]\n", sam_pass->smb_name));
 
@@ -1560,8 +1609,8 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 		if (ctr->info.id12 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		if (!get_user_info_12(ctr->info.id12, rid))
-			return NT_STATUS_NO_SUCH_USER;
+		if ((r_u->status = get_user_info_12(p, ctr->info.id12, rid))!=NT_STATUS_NOPROBLEMO)
+			return r_u->status;
 		break;
 
 	case 21:
@@ -1614,6 +1663,8 @@ uint32 _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAM
 
     if (sam_pass == NULL)
         return NT_STATUS_NO_SUCH_USER;
+
+	samr_clear_sam_passwd(sam_pass);
 
     get_domain_user_groups(groups, sam_pass->smb_name);
     gids = NULL;
@@ -2454,8 +2505,8 @@ uint32 _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_SE
 
 uint32 _samr_get_dom_pwinfo(pipes_struct *p, SAMR_Q_GET_DOM_PWINFO *q_u, SAMR_R_GET_DOM_PWINFO *r_u)
 {
-  DEBUG(0,("_samr_get_dom_pwinfo: Not yet implemented.\n"));
-  return False;
+	/* Actually, returning zeros here works quite well :-). */
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*********************************************************************
