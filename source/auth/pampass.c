@@ -547,7 +547,7 @@ static NTSTATUS smb_pam_auth(pam_handle_t *pamh, char *user)
 /* 
  * PAM Account Handler
  */
-static NTSTATUS smb_pam_account(pam_handle_t *pamh, char * user)
+static NTSTATUS smb_pam_account(pam_handle_t *pamh, const char * user)
 {
 	int pam_error;
 	NTSTATUS nt_status = NT_STATUS_ACCOUNT_DISABLED;
@@ -777,7 +777,7 @@ BOOL smb_pam_close_session(char *user, char *tty, char *rhost)
  * PAM Externally accessible Account handler
  */
 
-NTSTATUS smb_pam_accountcheck(char * user)
+NTSTATUS smb_pam_accountcheck(const char * user)
 {
 	NTSTATUS nt_status = NT_STATUS_ACCOUNT_DISABLED;
 	pam_handle_t *pamh = NULL;
@@ -873,19 +873,19 @@ BOOL smb_pam_passchange(const char * user, const char * oldpassword, const char 
 #else
 
 /* If PAM not used, no PAM restrictions on accounts. */
- NTSTATUS smb_pam_accountcheck(char * user)
+NTSTATUS smb_pam_accountcheck(const char * user)
 {
 	return NT_STATUS_OK;
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
- BOOL smb_pam_claim_session(char *user, char *tty, char *rhost)
+BOOL smb_pam_claim_session(char *user, char *tty, char *rhost)
 {
 	return True;
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
- BOOL smb_pam_close_session(char *in_user, char *tty, char *rhost)
+BOOL smb_pam_close_session(char *in_user, char *tty, char *rhost)
 {
 	return True;
 }

@@ -1719,10 +1719,10 @@ FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
 
 static int map_parameter(char *pszParmName);
 static BOOL set_boolean(BOOL *pb, char *pszParmValue);
-static int getservicebyname(char *pszServiceName,
-			 service * pserviceDest);
+static int getservicebyname(const char *pszServiceName,
+			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
-		      service * pserviceSource, BOOL *pcopymapDest);
+			 service * pserviceSource, BOOL *pcopymapDest);
 static BOOL service_ok(int iService);
 static BOOL do_parameter(char *pszParmName, char *pszParmValue);
 static BOOL do_section(char *pszSectionName);
@@ -1779,7 +1779,7 @@ static void free_service(service * pservice)
 add a new service to the services array initialising it with the given 
 service. 
 ***************************************************************************/
-static int add_a_service(service * pservice, char *name)
+static int add_a_service(const service * pservice, const char *name)
 {
 	int i;
 	service tservice;
@@ -1843,7 +1843,7 @@ static int add_a_service(service * pservice, char *name)
 add a new home service, with the specified home directory, defaults coming 
 from service ifrom.
 ***************************************************************************/
-BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
+BOOL lp_add_home(const char *pszHomename, int iDefaultService, const char *pszHomedir)
 {
 	int i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
@@ -1996,7 +1996,7 @@ static BOOL set_boolean(BOOL *pb, char *pszParmValue)
 /***************************************************************************
 Find a service by name. Otherwise works like get_service.
 ***************************************************************************/
-static int getservicebyname(char *pszServiceName, service * pserviceDest)
+static int getservicebyname(const char *pszServiceName, service * pserviceDest)
 {
 	int iService;
 
@@ -3353,7 +3353,7 @@ exist. Note that this is a DIFFERENT ANIMAL from the internal function
 getservicebyname()! This works ONLY if all services have been loaded, and
 does not copy the found service.
 ***************************************************************************/
-int lp_servicenumber(char *pszServiceName)
+int lp_servicenumber(const char *pszServiceName)
 {
 	int iService;
 
