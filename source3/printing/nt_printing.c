@@ -5034,6 +5034,11 @@ void map_printer_permissions(SEC_DESC *sd)
        print_job_delete, print_job_pause, print_job_resume,
        print_queue_purge
 
+  Try access control in the following order (for performance reasons):
+    1)  root ans SE_PRINT_OPERATOR can do anything (easy check) 
+    2)  check security descriptor (bit comparisons in memory)
+    3)  "printer admins" (may result in numerous calls to winbind)
+
  ****************************************************************************/
 BOOL print_access_check(struct current_user *user, int snum, int access_type)
 {
@@ -5050,10 +5055,9 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	if (!user)
 		user = &current_user;
 
-	/* Always allow root or printer admins to do anything */
+	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if (user->uid == 0 ||
-	    user_in_list(uidtoname(user->uid), lp_printer_admin(snum), user->groups, user->ngroups)) {
+	if ( user->uid == 0 || user_has_privilege(user->nt_user_token, SE_PRINT_OPERATOR) ) {
 		return True;
 	}
 
@@ -5101,6 +5105,13 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 				 &access_granted, &status);
 
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
+
+        /* see if we need to try the printer admin list */
+
+        if ( access_granted == 0 ) {
+                if ( user_in_list(uidtoname(user->uid), lp_printer_admin(snum), user->groups, user->ngroups) )
+                        return True;
+        }
 
 	talloc_destroy(mem_ctx);
 	
