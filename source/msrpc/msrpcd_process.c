@@ -337,7 +337,7 @@ void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn)
 BOOL msrpcd_init(int c, rpcsrv_struct **l)
 {
 	vuser_key uk;
-	user_struct *vuser;
+	user_struct *vuser = NULL;
 
 	if (!get_user_creds(c, &uk))
 	{
@@ -345,20 +345,25 @@ BOOL msrpcd_init(int c, rpcsrv_struct **l)
 		return False;
 	}
 
-	if (uk.vuid == UID_FIELD_INVALID)
+	if (uk.vuid != UID_FIELD_INVALID)
 	{
-		return False;
-	}
+		if (!become_vuser(&uk))
+		{
+			return False;
+		}
 
-	if (!become_vuser(&uk))
-	{
-		return False;
+		vuser = get_valid_user_struct(&uk);
+		if (vuser == NULL)
+		{
+			return False;
+		}
 	}
-
-	vuser = get_valid_user_struct(&uk);
-	if (vuser == NULL)
+	else
 	{
-		return False;
+		if (!become_guest())
+		{
+			return False;
+		}
 	}
 
 	(*l) = malloc(sizeof(*(*l)));
@@ -373,7 +378,7 @@ BOOL msrpcd_init(int c, rpcsrv_struct **l)
 	(*l)->key = uk;
 	(*l)->c = c;
 
-	if (!vuser->guest)
+	if (vuser != NULL && !vuser->guest)
 	{
 		char *user = vuser->name;
 		if (!strequal(user,lp_guestaccount(-1)) &&

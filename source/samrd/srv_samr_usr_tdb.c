@@ -570,6 +570,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			SAM_USER_INFO_12 *id12 = ctr->info.id12;
 			if (!set_user_info_12(tdb_usr, rid, id12))
 			{
+				DEBUG(10,("_samr_set_userinfo 0x12 failed\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			break;

@@ -123,6 +123,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 	}
 	else
 	{
+#if 0
 		NET_USER_INFO_3 usr;
 		uid_t uid = getuid();
 		gid_t gid = getgid();
@@ -133,8 +134,11 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		con_key.pid = getpid();
 		con_key.vuid = register_vuid(con_key.pid,
 		                             uid, gid,
-		                             name, name, False,
+	                             name, name, False,
 		                             &usr);
+#endif
+		con_key.pid = getpid();
+		con_key.vuid = UID_FIELD_INVALID;
 	}
 
 	if (srv_name != NULL)

@@ -360,6 +360,11 @@ BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
 	{
 		return False;
 	}
+	if (key->vuid == UID_FIELD_INVALID)
+	{
+		memset(usr_sess_key, 0, 16);
+		return True;
+	}
 	vuser = get_valid_user_struct(key);
 	if (vuser == NULL)
 	{
