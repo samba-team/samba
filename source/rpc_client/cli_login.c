@@ -169,6 +169,7 @@ BOOL cli_nt_login_general(const char *srv_name, const char *myhostname,
 	uint8 sess_key[16];
 	NET_USER_INFO_CTR user_ctr;
 	uint32 status;
+	ZERO_STRUCT(user_ctr);
 	user_ctr.switch_value = validation_level;
 
 	DEBUG(5, ("cli_nt_login_general: %d\n", __LINE__));
@@ -220,6 +221,7 @@ uint32 cli_nt_login_interactive(const char *srv_name, const char *myhostname,
 	uint32 status;
 	uint8 sess_key[16];
 	NET_USER_INFO_CTR user_ctr;
+	ZERO_STRUCT(user_ctr);
 	user_ctr.switch_value = validation_level;
 
 	DEBUG(5, ("cli_nt_login_interactive: %d\n", __LINE__));
@@ -278,6 +280,7 @@ uint32 cli_nt_login_network(const char *srv_name, const char *myhostname,
 	uint8 sess_key[16];
 	uint32 status;
 	NET_USER_INFO_CTR user_ctr;
+	ZERO_STRUCT(user_ctr);
 	user_ctr.switch_value = validation_level;
 
 	DEBUG(5, ("cli_nt_login_network: %d\n", __LINE__));
