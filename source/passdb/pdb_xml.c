@@ -86,17 +86,11 @@ static BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * 
 		string_to_sid(&sid, tmp);
 		pdb_set_user_sid(u, &sid, PDB_SET);
 	}
-	tmp = xmlGetProp(cur, "uid");
-	if (tmp)
-		pdb_set_uid(u, atol(tmp), PDB_SET);
 	pdb_set_username(u, xmlGetProp(cur, "name"), PDB_SET);
 	/* We don't care what the top level element name is */
 	cur = cur->xmlChildrenNode;
 	while (cur != NULL) {
 		if ((!strcmp(cur->name, "group")) && (cur->ns == ns)) {
-			tmp = xmlGetProp(cur, "gid");
-			if (tmp)
-				pdb_set_gid(u, atol(tmp), PDB_SET);
 			tmp = xmlGetProp(cur, "sid");
 			if (tmp){
 				string_to_sid(&sid, tmp);
@@ -406,8 +400,6 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	user = xmlNewChild(data->users, data->ns, "user", NULL);
 	xmlNewProp(user, "sid",
 			   sid_to_string(sid_str, pdb_get_user_sid(u)));
-	if (pdb_get_init_flags(u, PDB_UID) != PDB_DEFAULT)
-		xmlNewProp(user, "uid", iota(pdb_get_uid(u)));
 
 	if (pdb_get_username(u) && strcmp(pdb_get_username(u), ""))
 		xmlNewProp(user, "name", pdb_get_username(u));
@@ -416,8 +408,6 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	
 	xmlNewProp(cur, "sid",
 			   sid_to_string(sid_str, pdb_get_group_sid(u)));
-	if (pdb_get_init_flags(u, PDB_GID) != PDB_DEFAULT)
-		xmlNewProp(cur, "gid", iota(pdb_get_gid(u)));
 
 	if (pdb_get_init_flags(u, PDB_LOGONTIME) != PDB_DEFAULT)
 		xmlNewChild(user, data->ns, "login_time",
