@@ -22,7 +22,7 @@
 #include "includes.h"
 
 /* nmbd.c sets this to True. */
-BOOL global_in_nmbd = False;
+extern BOOL global_in_nmbd;
 
 /****************************************************************************
 generate a random trn_id

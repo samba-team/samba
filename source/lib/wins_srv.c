@@ -71,8 +71,8 @@ static struct wins_dead {
 	struct wins_dead *next, *prev;
 } *dead_servers;
 
-extern BOOL global_in_nmbd;
-
+/* nmbd sets this */
+BOOL global_in_nmbd = False;
 
 /* an internal convenience structure for an IP with a short string tag
    attached */
