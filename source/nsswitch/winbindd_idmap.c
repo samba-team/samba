@@ -276,6 +276,11 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *ignor
 		return 0;
 	}
 
+	if (tdb_store(idmap_tdb, data, key2, TDB_REPLACE) != 0) {
+		/* not good! */
+		return 0;
+	}
+
 	tdb_delete(idmap_tdb, key);
 
 	return 0;
