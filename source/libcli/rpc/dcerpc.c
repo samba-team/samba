@@ -681,7 +681,7 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	}
 
 	/* push the structure into a blob */
-	status = ndr_push_rpcecho_addone(push, struct_ptr);
+	status = ndr_push(push, struct_ptr);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -690,7 +690,7 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	request = ndr_push_blob(push);
 
 	/* make the actual dcerpc request */
-	status = cli_dcerpc_request(p, RPCECHO_CALL_ADDONE, mem_ctx, &request, &response);
+	status = cli_dcerpc_request(p, opnum, mem_ctx, &request, &response);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -702,7 +702,7 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	}
 
 	/* pull the structure from the blob */
-	status = ndr_pull_rpcecho_addone(pull, struct_ptr);
+	status = ndr_pull(pull, struct_ptr);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
