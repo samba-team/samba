@@ -38,7 +38,7 @@ NTSTATUS smbcli_qpathinfo(struct smbcli_tree *tree, const char *fname,
 	parms.standard.in.fname = fname;
 
 	status = smb_raw_pathinfo(tree, mem_ctx, &parms);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	if (!NT_STATUS_IS_OK(status))
 		return status;
 
@@ -80,7 +80,7 @@ NTSTATUS smbcli_qpathinfo2(struct smbcli_tree *tree, const char *fname,
 	parms.all_info.in.fname = fname;
 
 	status = smb_raw_pathinfo(tree, mem_ctx, &parms);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	if (!NT_STATUS_IS_OK(status))
 		return status;
 
@@ -124,14 +124,14 @@ NTSTATUS smbcli_qfilename(struct smbcli_tree *tree, int fnum, const char **name)
 
 	status = smb_raw_fileinfo(tree, mem_ctx, &parms);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		*name = NULL;
 		return status;
 	}
 
 	*name = strdup(parms.name_info.out.fname.s);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return status;
 }
@@ -157,7 +157,7 @@ NTSTATUS smbcli_qfileinfo(struct smbcli_tree *tree, int fnum,
 	parms.all_info.in.fnum = fnum;
 
 	status = smb_raw_fileinfo(tree, mem_ctx, &parms);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -206,7 +206,7 @@ NTSTATUS smbcli_qpathinfo_alt_name(struct smbcli_tree *tree, const char *fname,
 
 	status = smb_raw_pathinfo(tree, mem_ctx, &parms);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		*alt_name = NULL;
 		return smbcli_nt_error(tree);
 	}
@@ -217,7 +217,7 @@ NTSTATUS smbcli_qpathinfo_alt_name(struct smbcli_tree *tree, const char *fname,
 		*alt_name = strdup(parms.alt_name_info.out.fname.s);
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return NT_STATUS_OK;
 }

@@ -149,12 +149,12 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 		if (sidstr[i] == '-') num_sub_auths++;
 	}
 
-	ret = talloc_p(mem_ctx, struct dom_sid);
+	ret = talloc(mem_ctx, struct dom_sid);
 	if (!ret) {
 		return NULL;
 	}
 
-	ret->sub_auths = talloc_array_p(mem_ctx, uint32_t, num_sub_auths);
+	ret->sub_auths = talloc_array(mem_ctx, uint32_t, num_sub_auths);
 	if (!ret->sub_auths) {
 		return NULL;
 	}
@@ -190,12 +190,12 @@ struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 {
 	struct dom_sid *ret;
 	int i;
-	ret = talloc_p(mem_ctx, struct dom_sid);
+	ret = talloc(mem_ctx, struct dom_sid);
 	if (!ret) {
 		return NULL;
 	}
 
-	ret->sub_auths = talloc_array_p(ret, uint32_t, dom_sid->num_auths);
+	ret->sub_auths = talloc_array(ret, uint32_t, dom_sid->num_auths);
 	if (!ret->sub_auths) {
 		return NULL;
 	}
@@ -226,12 +226,12 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 {
 	struct dom_sid *sid;
 
-	sid = talloc_p(mem_ctx, struct dom_sid);
+	sid = talloc(mem_ctx, struct dom_sid);
 	if (!sid) return NULL;
 
 	*sid = *domain_sid;
 
-	sid->sub_auths = talloc_array_p(sid, uint32_t, sid->num_auths+1);
+	sid->sub_auths = talloc_array(sid, uint32_t, sid->num_auths+1);
 	if (!sid->sub_auths) {
 		return NULL;
 	}

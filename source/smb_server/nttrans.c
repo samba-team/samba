@@ -66,7 +66,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	}
 
 	/* parse the request */
-	io = talloc_p(req, union smb_open);
+	io = talloc(req, union smb_open);
 	if (io == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -110,7 +110,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 		DATA_BLOB blob;
 		blob.data = trans->in.data.data;
 		blob.length = sd_length;
-		io->ntcreatex.in.sec_desc = talloc_p(io, struct security_descriptor);
+		io->ntcreatex.in.sec_desc = talloc(io, struct security_descriptor);
 		if (io->ntcreatex.in.sec_desc == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -127,7 +127,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 		DATA_BLOB blob;
 		blob.data = trans->in.data.data + sd_length;
 		blob.length = ea_length;
-		io->ntcreatex.in.ea_list = talloc_p(io, struct smb_ea_list);
+		io->ntcreatex.in.ea_list = talloc(io, struct smb_ea_list);
 		if (io->ntcreatex.in.ea_list == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -190,7 +190,7 @@ static NTSTATUS nttrans_query_sec_desc(struct smbsrv_request *req,
 	}
 
 	/* parse the request */
-	io = talloc_p(req, union smb_fileinfo);
+	io = talloc(req, union smb_fileinfo);
 	if (io == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -238,7 +238,7 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 	}
 
 	/* parse the request */
-	io = talloc_p(req, union smb_setfileinfo);
+	io = talloc(req, union smb_setfileinfo);
 	if (io == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -247,7 +247,7 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 	io->set_secdesc.file.fnum        = SVAL(trans->in.params.data, 0);
 	io->set_secdesc.in.secinfo_flags = IVAL(trans->in.params.data, 4);
 
-	io->set_secdesc.in.sd = talloc_p(io, struct security_descriptor);
+	io->set_secdesc.in.sd = talloc(io, struct security_descriptor);
 	if (io->set_secdesc.in.sd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -383,7 +383,7 @@ void reply_nttrans(struct smbsrv_request *req)
 	}
 
 	/* parse out the setup words */
-	trans.in.setup = talloc_array_p(req, uint16_t, trans.in.setup_count);
+	trans.in.setup = talloc_array(req, uint16_t, trans.in.setup_count);
 	if (!trans.in.setup) {
 		req_reply_error(req, NT_STATUS_NO_MEMORY);
 		return;

@@ -322,7 +322,7 @@ static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsr
 	}
 
 	if (r->num_attributes >= 1) {
-		attrs = talloc_array_p(samdb, const char *, r->num_attributes+1);
+		attrs = talloc_array(samdb, const char *, r->num_attributes+1);
 		NT_STATUS_HAVE_NO_MEMORY(attrs);
 
 		for (j=0; j < r->num_attributes; j++) {
@@ -354,7 +354,7 @@ DEBUGADD(0,("hacked filter: %s\n", r->filter));
 			goto queue_reply;
 		}
 		ent->num_attributes = res[0]->num_elements;
-		ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
+		ent->attributes = talloc_array(ent_r, struct ldap_attribute, ent->num_attributes);
 		NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
 		for (j=0; j < ent->num_attributes; j++) {
 			ent->attributes[j].name = talloc_steal(ent->attributes, res[0]->elements[j].name);
@@ -362,7 +362,7 @@ DEBUGADD(0,("hacked filter: %s\n", r->filter));
 			ent->attributes[j].values = NULL;
 			ent->attributes[j].num_values = res[0]->elements[j].num_values;
 			if (ent->attributes[j].num_values == 1) {
-				ent->attributes[j].values = talloc_array_p(ent->attributes,
+				ent->attributes[j].values = talloc_array(ent->attributes,
 								DATA_BLOB, ent->attributes[j].num_values);
 				NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
 				status = convert_values(ent_r,
@@ -373,7 +373,7 @@ DEBUGADD(0,("hacked filter: %s\n", r->filter));
 					return status;
 				}
 			} else {
-				ent->attributes[j].values = talloc_array_p(ent->attributes,
+				ent->attributes[j].values = talloc_array(ent->attributes,
 								DATA_BLOB, ent->attributes[j].num_values);
 				NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
 				for (y=0; y < ent->attributes[j].num_values; y++) {
@@ -402,7 +402,7 @@ queue_reply:
 				goto queue_reply2;
 			}
 			ent->num_attributes = res[i]->num_elements;
-			ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
+			ent->attributes = talloc_array(ent_r, struct ldap_attribute, ent->num_attributes);
 			NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
 			for (j=0; j < ent->num_attributes; j++) {
 				ent->attributes[j].name = talloc_steal(ent->attributes, res[i]->elements[j].name);
@@ -412,7 +412,7 @@ queue_reply:
 					continue;
 				}
 				ent->attributes[j].num_values = res[i]->elements[j].num_values;
-				ent->attributes[j].values = talloc_array_p(ent->attributes,
+				ent->attributes[j].values = talloc_array(ent->attributes,
 								DATA_BLOB, ent->attributes[j].num_values);
 				NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
 				if (ent->attributes[j].num_values == 1) {
@@ -520,7 +520,7 @@ static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	}
 
 	if (r->num_attributes >= 1) {
-		attrs = talloc_array_p(samdb, const char *, r->num_attributes+1);
+		attrs = talloc_array(samdb, const char *, r->num_attributes+1);
 		NT_STATUS_HAVE_NO_MEMORY(attrs);
 
 		for (i=0; i < r->num_attributes; i++) {
@@ -552,7 +552,7 @@ static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 			goto queue_reply;
 		}
 		ent->num_attributes = res[i]->num_elements;
-		ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
+		ent->attributes = talloc_array(ent_r, struct ldap_attribute, ent->num_attributes);
 		NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
 		for (j=0; j < ent->num_attributes; j++) {
 			ent->attributes[j].name = talloc_steal(ent->attributes, res[i]->elements[j].name);
@@ -562,7 +562,7 @@ static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 				continue;
 			}
 			ent->attributes[j].num_values = res[i]->elements[j].num_values;
-			ent->attributes[j].values = talloc_array_p(ent->attributes,
+			ent->attributes[j].values = talloc_array(ent->attributes,
 							DATA_BLOB, ent->attributes[j].num_values);
 			NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
 			for (y=0; y < ent->attributes[j].num_values; y++) {
@@ -635,7 +635,7 @@ static NTSTATUS hldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 	DEBUG(10, ("hldb_add: dn: [%s]\n", dn->dn));
 
-	msg = talloc_p(local_ctx, struct ldb_message);
+	msg = talloc(local_ctx, struct ldb_message);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	msg->dn = dn->dn;
@@ -645,7 +645,7 @@ static NTSTATUS hldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 	if (r->num_attributes > 0) {
 		msg->num_elements = r->num_attributes;
-		msg->elements = talloc_array_p(msg, struct ldb_message_element, msg->num_elements);
+		msg->elements = talloc_array(msg, struct ldb_message_element, msg->num_elements);
 		NT_STATUS_HAVE_NO_MEMORY(msg->elements);
 
 		for (i=0; i < msg->num_elements; i++) {
@@ -656,7 +656,7 @@ static NTSTATUS hldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 			
 			if (r->attributes[i].num_values > 0) {
 				msg->elements[i].num_values = r->attributes[i].num_values;
-				msg->elements[i].values = talloc_array_p(msg, struct ldb_val, msg->elements[i].num_values);
+				msg->elements[i].values = talloc_array(msg, struct ldb_val, msg->elements[i].num_values);
 				NT_STATUS_HAVE_NO_MEMORY(msg->elements[i].values);
 
 				for (j=0; j < msg->elements[i].num_values; j++) {
@@ -787,7 +787,7 @@ static NTSTATUS hldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 
 	DEBUG(10, ("hldb_modify: dn: [%s]\n", dn->dn));
 
-	msg = talloc_p(local_ctx, struct ldb_message);
+	msg = talloc(local_ctx, struct ldb_message);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	msg->dn = dn->dn;
@@ -797,7 +797,7 @@ static NTSTATUS hldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 
 	if (r->num_mods > 0) {
 		msg->num_elements = r->num_mods;
-		msg->elements = talloc_array_p(msg, struct ldb_message_element, r->num_mods);
+		msg->elements = talloc_array(msg, struct ldb_message_element, r->num_mods);
 		NT_STATUS_HAVE_NO_MEMORY(msg->elements);
 
 		for (i=0; i < msg->num_elements; i++) {
@@ -823,7 +823,7 @@ static NTSTATUS hldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 
 			msg->elements[i].num_values = r->mods[i].attrib.num_values;
 			if (msg->elements[i].num_values > 0) {
-				msg->elements[i].values = talloc_array_p(msg, struct ldb_val, msg->elements[i].num_values);
+				msg->elements[i].values = talloc_array(msg, struct ldb_val, msg->elements[i].num_values);
 				NT_STATUS_HAVE_NO_MEMORY(msg->elements[i].values);
 
 				for (j=0; j < msg->elements[i].num_values; j++) {

@@ -47,7 +47,7 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_context *contex
 {
 	struct dcesrv_handle *h;
 
-	h = talloc_p(context, struct dcesrv_handle);
+	h = talloc(context, struct dcesrv_handle);
 	if (!h) {
 		return NULL;
 	}

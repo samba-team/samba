@@ -65,16 +65,16 @@ static void ldapsrv_init(struct server_service *service)
 
 	DEBUG(10,("ldapsrv_init\n"));
 
-	ldap_service = talloc_p(service, struct ldapsrv_service);
+	ldap_service = talloc(service, struct ldapsrv_service);
 	if (!ldap_service) {
-		DEBUG(0,("talloc_p(service, struct ldapsrv_service) failed\n"));
+		DEBUG(0,("talloc(service, struct ldapsrv_service) failed\n"));
 		return;
 	}
 	ZERO_STRUCTP(ldap_service);
 
-	rootDSE_part = talloc_p(ldap_service, struct ldapsrv_partition);
+	rootDSE_part = talloc(ldap_service, struct ldapsrv_partition);
 	if (!rootDSE_part) {
-		DEBUG(0,("talloc_p(ldap_service, struct ldapsrv_partition) failed\n"));
+		DEBUG(0,("talloc(ldap_service, struct ldapsrv_partition) failed\n"));
 		return;
 	}
 	rootDSE_part->base_dn = ""; /* RootDSE */
@@ -83,9 +83,9 @@ static void ldapsrv_init(struct server_service *service)
 	ldap_service->rootDSE = rootDSE_part;
 	DLIST_ADD_END(ldap_service->partitions, rootDSE_part, struct ldapsrv_partition *);
 
-	part = talloc_p(ldap_service, struct ldapsrv_partition);
+	part = talloc(ldap_service, struct ldapsrv_partition);
 	if (!ldap_service) {
-		DEBUG(0,("talloc_p(ldap_service, struct ldapsrv_partition) failed\n"));
+		DEBUG(0,("talloc(ldap_service, struct ldapsrv_partition) failed\n"));
 		return;
 	}
 	part->base_dn = "*"; /* default partition */
@@ -467,7 +467,7 @@ static void ldapsrv_recv(struct server_connection *conn, struct timeval t,
 			return;
 		}
 
-		call = talloc_p(ldap_conn, struct ldapsrv_call);
+		call = talloc(ldap_conn, struct ldapsrv_call);
 		if (!call) {
 			ldapsrv_terminate_connection(ldap_conn, "no memory");
 			return;		
@@ -546,7 +546,7 @@ static void ldapsrv_accept(struct server_connection *conn)
 
 	DEBUG(10, ("ldapsrv_accept\n"));
 
-	ldap_conn = talloc_p(conn, struct ldapsrv_connection);
+	ldap_conn = talloc(conn, struct ldapsrv_connection);
 
 	if (ldap_conn == NULL)
 		return;

@@ -80,7 +80,7 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn, struct t
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		req->in.buffer = talloc_array_p(req, uint8_t, NBT_HDR_SIZE);
+		req->in.buffer = talloc_array(req, uint8_t, NBT_HDR_SIZE);
 		if (req->in.buffer == NULL) {
 			talloc_free(req);
 			return NT_STATUS_NO_MEMORY;
@@ -805,7 +805,7 @@ static void smbsrv_accept(struct server_connection *conn)
 
 	DEBUG(5,("smbsrv_accept\n"));
 
-	smb_conn = talloc_zero_p(conn, struct smbsrv_connection);
+	smb_conn = talloc_zero(conn, struct smbsrv_connection);
 	if (!smb_conn) return;
 
 	/* now initialise a few default values associated with this smb socket */

@@ -321,7 +321,7 @@ static BOOL ads_cleanup_expired_creds(krb5_context context,
 		  krb5_cc_default_name(context),
 		  http_timestring(mem_ctx, credsp->times.endtime)));
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	/* we will probably need new tickets if the current ones
 	   will expire within 10 seconds.

@@ -33,7 +33,7 @@ NTSTATUS ntvfs_async_state_push(struct smbsrv_request *req,
 {
 	struct ntvfs_async_state *async;
 
-	async = talloc_p(req, struct ntvfs_async_state);
+	async = talloc(req, struct ntvfs_async_state);
 	if (!async) {
 		return NT_STATUS_NO_MEMORY;
 	}

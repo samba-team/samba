@@ -179,7 +179,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	/* check if this endpoint exists
 	 */
 	if ((ep=find_endpoint(dce_ctx, &binding))==NULL) {
-		ep = talloc_p(dce_ctx, struct dcesrv_endpoint);
+		ep = talloc(dce_ctx, struct dcesrv_endpoint);
 		if (!ep) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -196,7 +196,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	}
 
 	/* talloc a new interface list element */
-	ifl = talloc_p(dce_ctx, struct dcesrv_if_list);
+	ifl = talloc(dce_ctx, struct dcesrv_if_list);
 	if (!ifl) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -396,7 +396,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
 
-	rep = talloc_p(call, struct dcesrv_call_reply);
+	rep = talloc(call, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -433,7 +433,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	pkt.u.bind_nak.reject_reason = reason;
 	pkt.u.bind_nak.num_versions = 0;
 
-	rep = talloc_p(call, struct dcesrv_call_reply);
+	rep = talloc(call, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -544,7 +544,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		pkt.u.bind_ack.secondary_address = "";
 	}
 	pkt.u.bind_ack.num_results = 1;
-	pkt.u.bind_ack.ctx_list = talloc_p(call, struct dcerpc_ack_ctx);
+	pkt.u.bind_ack.ctx_list = talloc(call, struct dcerpc_ack_ctx);
 	if (!pkt.u.bind_ack.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -709,7 +709,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	rep = talloc_p(call, struct dcesrv_call_reply);
+	rep = talloc(call, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -140,7 +140,7 @@ static struct smbcli_request *smb_raw_t2mkdir_send(struct smbcli_tree *tree,
 
 	req = smb_raw_trans2_send(tree, &t2);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return req;
 }
@@ -383,7 +383,7 @@ static struct smbcli_request *smb_raw_t2open_send(struct smbcli_tree *tree,
 
 	req = smb_raw_trans2_send(tree, &t2);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return req;
 }

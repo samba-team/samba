@@ -467,6 +467,6 @@ BOOL torture_delay_write(void)
 	ret &= test_delayed_write_update2(cli, mem_ctx);
 
 	torture_close_connection(cli);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }

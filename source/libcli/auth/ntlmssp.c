@@ -909,7 +909,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state **ntlmssp_state)
 {
-	*ntlmssp_state = talloc_p(mem_ctx, struct ntlmssp_state);
+	*ntlmssp_state = talloc(mem_ctx, struct ntlmssp_state);
 	if (!*ntlmssp_state) {
 		DEBUG(0,("ntlmssp_server_start: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -1269,7 +1269,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state **ntlmssp_state)
 {
-	*ntlmssp_state = talloc_p(mem_ctx, struct ntlmssp_state);
+	*ntlmssp_state = talloc(mem_ctx, struct ntlmssp_state);
 	if (!*ntlmssp_state) {
 		DEBUG(0,("ntlmssp_client_start: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;

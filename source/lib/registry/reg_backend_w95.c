@@ -187,7 +187,7 @@ static WERROR w95_open_reg (struct registry_hive *h, struct registry_key **root)
 	DWORD i;
 	DWORD offset;
 
-	creg = talloc_p(h, CREG);
+	creg = talloc(h, CREG);
 	memset(creg, 0, sizeof(CREG));
 	h->backend_data = creg;
 
@@ -234,7 +234,7 @@ static WERROR w95_open_reg (struct registry_hive *h, struct registry_key **root)
 	}
 #endif
 
-	creg->rgdb_keys = talloc_array_p(h, RGDB_KEY **, creg->creg_hdr->num_rgdb);
+	creg->rgdb_keys = talloc_array(h, RGDB_KEY **, creg->creg_hdr->num_rgdb);
 
 	offset = 0;
 	DEBUG(3, ("Reading %d rgdb entries\n", creg->creg_hdr->num_rgdb));
@@ -250,7 +250,7 @@ static WERROR w95_open_reg (struct registry_hive *h, struct registry_key **root)
 		}
 
 
-		creg->rgdb_keys[i] = talloc_array_p(h, RGDB_KEY *, rgdb_hdr->max_id+1);
+		creg->rgdb_keys[i] = talloc_array(h, RGDB_KEY *, rgdb_hdr->max_id+1);
 		memset(creg->rgdb_keys[i], 0, sizeof(RGDB_KEY *) * (rgdb_hdr->max_id+1));
 
 		parse_rgdb_block(creg, rgdb_hdr);
@@ -259,7 +259,7 @@ static WERROR w95_open_reg (struct registry_hive *h, struct registry_key **root)
 	}
 	
 	/* First element in rgkn should be root key */
-	*root = talloc_p(h, struct registry_key);
+	*root = talloc(h, struct registry_key);
 	(*root)->name = NULL;
 	(*root)->backend_data = LOCN_RGKN(creg, sizeof(RGKN_HDR));
 	
@@ -288,7 +288,7 @@ static WERROR w95_get_subkey_by_index (TALLOC_CTX *mem_ctx, struct registry_key 
 				DEBUG(0, ("Can't find %d,%d in RGDB table!\n", child->id.rgdb, child->id.id));
 				return WERR_FOOBAR;
 			}
-			*key = talloc_p(mem_ctx, struct registry_key);
+			*key = talloc(mem_ctx, struct registry_key);
 			(*key)->backend_data = child;
 			(*key)->name = talloc_strndup(mem_ctx, (char *)rgdb_key + sizeof(RGDB_KEY), rgdb_key->name_len);
 			return WERR_OK;
@@ -331,7 +331,7 @@ static WERROR w95_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 		offset+=sizeof(RGDB_VALUE) + curval->name_len + curval->data_len;
 	}
 
-	*value = talloc_p(mem_ctx, struct registry_value);
+	*value = talloc(mem_ctx, struct registry_value);
 	(*value)->name = talloc_strndup(mem_ctx, (char *)curval+sizeof(RGDB_VALUE), curval->name_len);
 		
 	(*value)->data_len = curval->data_len;

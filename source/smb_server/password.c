@@ -99,9 +99,9 @@ uint16_t smbsrv_register_session(struct smbsrv_connection *smb_conn,
 {
 	struct smbsrv_session *sess = NULL;
 
-	sess = talloc_p(smb_conn, struct smbsrv_session);
+	sess = talloc(smb_conn, struct smbsrv_session);
 	if(sess == NULL) {
-		DEBUG(0,("talloc_p(smb_conn->mem_ctx, struct smbsrv_session) failed\n"));
+		DEBUG(0,("talloc(smb_conn->mem_ctx, struct smbsrv_session) failed\n"));
 		return UID_FIELD_INVALID;
 	}
 

@@ -54,7 +54,7 @@ BOOL torture_multi_bind(void)
 	status = dcerpc_parse_binding(mem_ctx, binding_string, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding_string));
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -97,7 +97,7 @@ BOOL torture_multi_bind(void)
 
 	printf("\n");
 	
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	torture_rpc_close(p);
 
 	return ret;

@@ -109,7 +109,7 @@ BOOL torture_rpc_wkssvc(void)
 		ret = False;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 

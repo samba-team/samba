@@ -27,7 +27,7 @@ struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, enum ldap_re
 {
 	struct ldapsrv_reply *reply;
 
-	reply = talloc_p(call, struct ldapsrv_reply);
+	reply = talloc(call, struct ldapsrv_reply);
 	if (!reply) {
 		return NULL;
 	}

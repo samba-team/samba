@@ -48,7 +48,7 @@ static void gen_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int lev
 		status = smb_raw_trans2(cli->tree, mem_ctx, t2);
 		if (!NT_STATUS_IS_OK(status)) continue;
 
-		t2b = talloc_p(mem_ctx, struct trans2_blobs);
+		t2b = talloc(mem_ctx, struct trans2_blobs);
 		t2b->level = level;
 		t2b->params = t2->out.params;
 		t2b->data = t2->out.data;
@@ -75,7 +75,7 @@ static void gen_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int lev
 
 	d_printf("Found %d aliased levels\n", alias_count);
 	
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }
 
 /* look for qfsinfo aliases */
@@ -176,7 +176,7 @@ static void qpathinfo_aliases(struct smbcli_state *cli)
 	gen_aliases(cli, &t2, 0);
 
 	smbcli_unlink(cli->tree, fname);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }
 
 
@@ -224,7 +224,7 @@ static void findfirst_aliases(struct smbcli_state *cli)
 	gen_aliases(cli, &t2, 6);
 
 	smbcli_unlink(cli->tree, fname);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }
 
 
@@ -278,7 +278,7 @@ static void gen_set_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) continue;
 
-		t2b = talloc_p(mem_ctx, struct trans2_blobs);
+		t2b = talloc(mem_ctx, struct trans2_blobs);
 		t2b->level = level;
 		t2b->params = t2->out.params;
 		t2b->data = t2->out.data;
@@ -290,7 +290,7 @@ static void gen_set_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int
 	}
 
 	d_printf("Found %d valid levels\n", count);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }
 
 
@@ -375,7 +375,7 @@ static void setpathinfo_aliases(struct smbcli_state *cli)
 	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {
 		printf("unlink: %s\n", smbcli_errstr(cli->tree));
 	}
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }
 
 

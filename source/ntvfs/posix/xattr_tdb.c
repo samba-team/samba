@@ -59,7 +59,7 @@ static NTSTATUS xattr_tdb_add_list(struct pvfs_state *pvfs, const char *attr_nam
 
 	len = strlen(attr_name) + 1;
 
-	blob.data = talloc_realloc_p(mem_ctx, blob.data, uint8_t, blob.length + len);
+	blob.data = talloc_realloc(mem_ctx, blob.data, uint8_t, blob.length + len);
 	if (blob.data == NULL) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;		
@@ -94,7 +94,7 @@ static NTSTATUS get_ea_db_key(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	key->dptr = talloc_array_p(mem_ctx, char, 16 + len);
+	key->dptr = talloc_array(mem_ctx, char, 16 + len);
 	if (key->dptr == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

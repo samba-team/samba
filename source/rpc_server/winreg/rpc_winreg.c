@@ -167,10 +167,10 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 
 	if (W_ERROR_IS_OK(r->out.result)) {
 		r->out.key_name_len = strlen(key->name);
-		r->out.out_name = talloc_zero_p(mem_ctx, struct winreg_EnumKeyNameResponse);
+		r->out.out_name = talloc_zero(mem_ctx, struct winreg_EnumKeyNameResponse);
 		r->out.out_name->name = key->name;
-		r->out.class = talloc_zero_p(mem_ctx, struct winreg_String);
-		r->out.last_changed_time = talloc_zero_p(mem_ctx, struct winreg_Time);
+		r->out.class = talloc_zero(mem_ctx, struct winreg_String);
+		r->out.last_changed_time = talloc_zero(mem_ctx, struct winreg_Time);
 	}
 	
 	return r->out.result;
@@ -197,11 +197,11 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return result;
 	}
 	
-	r->out.type = talloc_p(mem_ctx, uint32_t);
+	r->out.type = talloc(mem_ctx, uint32_t);
 	*r->out.type = value->data_type;
 	r->out.name_out.name = value->name;
 	r->out.value = value->data_blk;
-	r->out.size = talloc_p(mem_ctx, uint32_t);
+	r->out.size = talloc(mem_ctx, uint32_t);
 	r->out.length = r->out.size;
 	*r->out.size = value->data_len;
 	
@@ -353,7 +353,7 @@ static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r->out.type = &val->data_type;
 	r->out.length = &val->data_len;
 	if (!r->in.data) {
-		r->out.size = talloc_p(mem_ctx, uint32);
+		r->out.size = talloc(mem_ctx, uint32);
 		*r->out.size = val->data_len;
 	} else {
 		r->out.size = r->in.size;

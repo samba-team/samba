@@ -198,7 +198,7 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 		if (pattern[i] == '*' || pattern[i] == '<') count++;
 	}
 
-	max_n = talloc_array_p(NULL, struct max_n, count);
+	max_n = talloc_array(NULL, struct max_n, count);
 	if (!max_n) {
 		return -1;
 	}

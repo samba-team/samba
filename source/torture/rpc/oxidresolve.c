@@ -261,7 +261,7 @@ BOOL torture_rpc_oxidresolve(void)
 	if(!test_ResolveOxid2(p, mem_ctx, oxid))
 		ret = False;
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
     torture_rpc_close(p);
 

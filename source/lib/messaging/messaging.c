@@ -199,7 +199,7 @@ static void messaging_listen_handler(struct event_context *ev, struct fd_event *
 	NTSTATUS status;
 	struct fd_event fde2;
 
-	rec = talloc_p(msg, struct messaging_rec);
+	rec = talloc(msg, struct messaging_rec);
 	if (rec == NULL) {
 		smb_panic("Unable to allocate messaging_rec");
 	}
@@ -232,7 +232,7 @@ void messaging_register(struct messaging_context *msg, void *private,
 {
 	struct dispatch_fn *d;
 
-	d = talloc_p(msg, struct dispatch_fn);
+	d = talloc(msg, struct dispatch_fn);
 	d->msg_type = msg_type;
 	d->private = private;
 	d->fn = fn;
@@ -371,7 +371,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, servid_t server, uint32_t
 	NTSTATUS status;
 	struct fd_event fde;
 
-	rec = talloc_p(msg, struct messaging_rec);
+	rec = talloc(msg, struct messaging_rec);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -460,7 +460,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, servid_t server_id
 	NTSTATUS status;
 	struct fd_event fde;
 
-	msg = talloc_p(mem_ctx, struct messaging_context);
+	msg = talloc(mem_ctx, struct messaging_context);
 	if (msg == NULL) {
 		return NULL;
 	}

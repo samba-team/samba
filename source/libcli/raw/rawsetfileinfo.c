@@ -274,7 +274,7 @@ struct smbcli_request *smb_raw_setfileinfo_send(struct smbcli_tree *tree,
 	if (!mem_ctx) return NULL;
 
 	if (!smb_raw_setinfo_backend(tree, mem_ctx, parms, &blob)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	
@@ -285,7 +285,7 @@ struct smbcli_request *smb_raw_setfileinfo_send(struct smbcli_tree *tree,
 					    parms->generic.level, 
 					    &blob);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return req;
 }
 
@@ -321,7 +321,7 @@ struct smbcli_request *smb_raw_setpathinfo_send(struct smbcli_tree *tree,
 	if (!mem_ctx) return NULL;
 
 	if (!smb_raw_setinfo_backend(tree, mem_ctx, parms, &blob)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -332,7 +332,7 @@ struct smbcli_request *smb_raw_setpathinfo_send(struct smbcli_tree *tree,
 					    parms->generic.level,
 					    &blob);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return req;
 }
 

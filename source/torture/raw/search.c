@@ -411,7 +411,7 @@ static BOOL multiple_search_callback(void *private, union smb_search_data *file)
 
 
 	data->count++;
-	data->list = talloc_realloc_p(data->mem_ctx,
+	data->list = talloc_realloc(data->mem_ctx,
 				      data->list, 
 				      union smb_search_data,
 				      data->count);
@@ -1209,7 +1209,7 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
 	setfile.generic.file.fname = BASEDIR "\\file2.txt";
 	setfile.ea_set.in.num_eas = 2;
-	setfile.ea_set.in.eas = talloc_array_p(mem_ctx, struct ea_struct, 2);
+	setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
 	setfile.ea_set.in.eas[0].flags = 0;
 	setfile.ea_set.in.eas[0].name.s = "EA ONE";
 	setfile.ea_set.in.eas[0].value = data_blob_string_const("VALUE 1");
@@ -1234,7 +1234,7 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2ffirst.in.storage_type = 0;
 	io.t2ffirst.in.pattern = BASEDIR "\\*";
 	io.t2ffirst.in.num_names = 2;
-	io.t2ffirst.in.ea_names = talloc_array_p(mem_ctx, struct ea_name, 2);
+	io.t2ffirst.in.ea_names = talloc_array(mem_ctx, struct ea_name, 2);
 	io.t2ffirst.in.ea_names[0].name.s = "SECOND EA";
 	io.t2ffirst.in.ea_names[1].name.s = "THIRD EA";
 
@@ -1250,7 +1250,7 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	nxt.t2fnext.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME | FLAG_TRANS2_FIND_CONTINUE;
 	nxt.t2fnext.in.last_name = "file2.txt";
 	nxt.t2fnext.in.num_names = 2;
-	nxt.t2fnext.in.ea_names = talloc_array_p(mem_ctx, struct ea_name, 2);
+	nxt.t2fnext.in.ea_names = talloc_array(mem_ctx, struct ea_name, 2);
 	nxt.t2fnext.in.ea_names[0].name.s = "SECOND EA";
 	nxt.t2fnext.in.ea_names[1].name.s = "THIRD EA";
 
@@ -1314,7 +1314,7 @@ BOOL torture_raw_search(void)
 	ret &= test_ea_list(cli, mem_ctx);
 
 	torture_close_connection(cli);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	
 	return ret;
 }

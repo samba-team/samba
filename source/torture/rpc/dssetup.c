@@ -74,7 +74,7 @@ BOOL torture_rpc_dssetup(void)
 
 	ret &= test_DsRoleGetPrimaryDomainInformation(p, mem_ctx);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 

@@ -33,7 +33,7 @@ static WERROR spoolss_EnumPrinters1(TALLOC_CTX *mem_ctx,
 	struct spoolss_PrinterInfo1 *info;
 	int i;
 
-	info = talloc_array_p(mem_ctx, struct spoolss_PrinterInfo1, num_msgs);
+	info = talloc_array(mem_ctx, struct spoolss_PrinterInfo1, num_msgs);
 
 	if (!info)
 		return WERR_NOMEM;
@@ -59,7 +59,7 @@ static WERROR spoolss_EnumPrinters2(TALLOC_CTX *mem_ctx,
 	struct spoolss_PrinterInfo2 *info;
 	int i;
 
-	info = talloc_array_p(mem_ctx, struct spoolss_PrinterInfo2, num_msgs);
+	info = talloc_array(mem_ctx, struct spoolss_PrinterInfo2, num_msgs);
 
 	if (!info)
 		return WERR_NOMEM;
@@ -102,7 +102,7 @@ static WERROR spoolss_EnumPrinters5(TALLOC_CTX *mem_ctx,
 	struct spoolss_PrinterInfo5 *info;
 	int i;
 
-	info = talloc_array_p(mem_ctx, struct spoolss_PrinterInfo5, num_msgs);
+	info = talloc_array(mem_ctx, struct spoolss_PrinterInfo5, num_msgs);
 
 	if (!info)
 		return WERR_NOMEM;
@@ -168,7 +168,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 		goto done;
 	}
 
-	r->out.buffer = talloc_p(mem_ctx, DATA_BLOB);
+	r->out.buffer = talloc(mem_ctx, DATA_BLOB);
 
 	if (!r->out.buffer) {
 		result = WERR_NOMEM;
@@ -893,7 +893,7 @@ static WERROR spoolss_OpenPrinterEx_server(struct dcesrv_call_state *dce_call,
 		return WERR_NOMEM;
 	}
 
-	state = talloc_p(handle, struct spoolss_openprinter_state);
+	state = talloc(handle, struct spoolss_openprinter_state);
 	if (!state) {
 		return WERR_OK;
 	}

@@ -201,7 +201,7 @@ static void async_simple(struct smbcli_request *c_req)
 	if (!c_req) return NT_STATUS_UNSUCCESSFUL; \
 	{ \
 		struct async_info *async; \
-		async = talloc_p(req, struct async_info); \
+		async = talloc(req, struct async_info); \
 		if (!async) return NT_STATUS_NO_MEMORY; \
 		async->parms = io; \
 		async->req = req; \

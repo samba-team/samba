@@ -125,7 +125,7 @@ BOOL torture_local_binding_string(void)
 		ret &= test_BindingString(mem_ctx, test_strings[i]);
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return ret;
 }

@@ -506,7 +506,7 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2open.in.timeout = 0;
 
 	io.t2open.in.num_eas = 3;
-	io.t2open.in.eas = talloc_array_p(mem_ctx, struct ea_struct, io.t2open.in.num_eas);
+	io.t2open.in.eas = talloc_array(mem_ctx, struct ea_struct, io.t2open.in.num_eas);
 	io.t2open.in.eas[0].flags = 0;
 	io.t2open.in.eas[0].name.s = ".CLASSINFO";
 	io.t2open.in.eas[0].value = data_blob_talloc(mem_ctx, "first value", 11);
@@ -1268,6 +1268,6 @@ BOOL torture_raw_open(void)
 	smbcli_deltree(cli->tree, BASEDIR);
 
 	torture_close_connection(cli);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }

@@ -59,7 +59,7 @@ BOOL asn1_push_tag(struct asn1_data *data, uint8_t tag)
 	struct nesting *nesting;
 
 	asn1_write_uint8(data, tag);
-	nesting = talloc_p(NULL, struct nesting);
+	nesting = talloc(NULL, struct nesting);
 	if (!nesting) {
 		data->has_error = True;
 		return False;
@@ -349,7 +349,7 @@ BOOL asn1_start_tag(struct asn1_data *data, uint8_t tag)
 		data->has_error = True;
 		return False;
 	}
-	nesting = talloc_p(NULL, struct nesting);
+	nesting = talloc(NULL, struct nesting);
 	if (!nesting) {
 		data->has_error = True;
 		return False;

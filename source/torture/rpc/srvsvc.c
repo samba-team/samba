@@ -204,11 +204,11 @@ static BOOL test_NetCharDevQSetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.level, devicequeue);
 		switch (r.in.level) {
 		case 0:
-			r.in.info.info0 = talloc_p(mem_ctx, struct srvsvc_NetCharDevQInfo0);
+			r.in.info.info0 = talloc(mem_ctx, struct srvsvc_NetCharDevQInfo0);
 			r.in.info.info0->device = r.in.queue_name;
 			break;
 		case 1:
-			r.in.info.info1 = talloc_p(mem_ctx, struct srvsvc_NetCharDevQInfo1);
+			r.in.info.info1 = talloc(mem_ctx, struct srvsvc_NetCharDevQInfo1);
 			r.in.info.info1->device = r.in.queue_name;
 			r.in.info.info1->priority = 0x000;
 			r.in.info.info1->devices = r.in.queue_name;
@@ -772,7 +772,7 @@ BOOL torture_rpc_srvsvc(void)
 		ret = False;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 

@@ -64,14 +64,14 @@ NTSTATUS pvfs_query_ea_list(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	int i;
-	struct xattr_DosEAs *ealist = talloc_p(mem_ctx, struct xattr_DosEAs);
+	struct xattr_DosEAs *ealist = talloc(mem_ctx, struct xattr_DosEAs);
 
 	ZERO_STRUCTP(eas);
 	status = pvfs_doseas_load(pvfs, name, fd, ealist);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	eas->eas = talloc_array_p(mem_ctx, struct ea_struct, num_names);
+	eas->eas = talloc_array(mem_ctx, struct ea_struct, num_names);
 	if (eas->eas == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -101,14 +101,14 @@ static NTSTATUS pvfs_query_all_eas(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	int i;
-	struct xattr_DosEAs *ealist = talloc_p(mem_ctx, struct xattr_DosEAs);
+	struct xattr_DosEAs *ealist = talloc(mem_ctx, struct xattr_DosEAs);
 
 	ZERO_STRUCTP(eas);
 	status = pvfs_doseas_load(pvfs, name, fd, ealist);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	eas->eas = talloc_array_p(mem_ctx, struct ea_struct, ealist->num_eas);
+	eas->eas = talloc_array(mem_ctx, struct ea_struct, ealist->num_eas);
 	if (eas->eas == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -162,7 +162,7 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	};
 
 	if (num_vals) {
-		str_values = talloc_array_p(ctx, char *, num_vals + 1);
+		str_values = talloc_array(ctx, char *, num_vals + 1);
 		cur_str = value->data_p;
 		for (i=0; i < num_vals; i++) {
 			pull_ucs2_talloc(ctx, &str_values[i], cur_str);

@@ -202,7 +202,7 @@ static NTSTATUS ipv4_accept(struct socket_context *sock, struct socket_context *
 	 *	 --metze
 	 */
 
-	(*new_sock) = talloc_p(NULL, struct socket_context);
+	(*new_sock) = talloc(NULL, struct socket_context);
 	if (!(*new_sock)) {
 		close(new_fd);
 		return NT_STATUS_NO_MEMORY;

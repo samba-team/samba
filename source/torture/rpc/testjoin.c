@@ -107,7 +107,7 @@ struct test_join *torture_join_domain(const char *machine_name,
 	int policy_min_pw_len = 0;
 	struct test_join *join;
 
-	join = talloc_p(NULL, struct test_join);
+	join = talloc(NULL, struct test_join);
 	if (join == NULL) {
 		return NULL;
 	}
@@ -287,7 +287,7 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 {
 	struct test_join_ads_dc *join;
 
-	join = talloc_p(NULL, struct test_join_ads_dc);
+	join = talloc(NULL, struct test_join_ads_dc);
 	if (join == NULL) {
 		return NULL;
 	}

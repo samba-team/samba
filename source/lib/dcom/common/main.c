@@ -71,10 +71,10 @@ static NTSTATUS dcom_connect_host(struct dcom_context *ctx, struct dcerpc_pipe *
 					DCERPC_IREMOTEACTIVATION_VERSION, 
 					ctx->domain, ctx->user, ctx->password);
 
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	ZERO_STRUCT(bd);
 	bd.host = server;
@@ -106,7 +106,7 @@ static NTSTATUS dcom_connect_host(struct dcom_context *ctx, struct dcerpc_pipe *
 
 WERROR dcom_init(struct dcom_context **ctx, const char *domain, const char *user, const char *pass)
 {
-	*ctx = talloc_p(NULL, struct dcom_context);
+	*ctx = talloc(NULL, struct dcom_context);
 	(*ctx)->oxids = NULL;
 	(*ctx)->domain = talloc_strdup(*ctx, domain);
 	(*ctx)->user = talloc_strdup(*ctx, user);
@@ -128,7 +128,7 @@ static struct dcom_object_exporter *oxid_mapping_by_oxid (struct dcom_context *c
 
 	/* Add oxid mapping if we couldn't find one */
 	if (!m) {
-		m = talloc_zero_p(ctx, struct dcom_object_exporter);
+		m = talloc_zero(ctx, struct dcom_object_exporter);
 		m->oxid = oxid;
 		DLIST_ADD(ctx->oxids, m);
 	}
@@ -169,7 +169,7 @@ static WERROR dcom_create_object_remote(struct dcom_context *ctx, struct GUID *c
 	r.in.protseq = protseq;
 	r.in.Interfaces = num_ifaces;
 	r.in.pIIDs = iid;
-	r.out.ifaces = talloc_array_p(ctx, struct pMInterfacePointer, num_ifaces);
+	r.out.ifaces = talloc_array(ctx, struct pMInterfacePointer, num_ifaces);
 	r.out.pdsaOxidBindings = &dualstring;
 	
 	status = dcerpc_RemoteActivation(p, ctx, &r);
@@ -186,7 +186,7 @@ static WERROR dcom_create_object_remote(struct dcom_context *ctx, struct GUID *c
 		return r.out.hr; 
 	}
 
-	*ip = talloc_array_p(ctx, struct dcom_interface_p *, num_ifaces);
+	*ip = talloc_array(ctx, struct dcom_interface_p *, num_ifaces);
 	for (i = 0; i < num_ifaces; i++) {
 		results[i] = r.out.results[i];
 		(*ip)[i] = NULL;
@@ -419,7 +419,7 @@ struct dcom_object *dcom_object_by_oid(struct dcom_object_exporter *ox, uint64_t
 	}
 
 	if (o == NULL) {
-		o = talloc_zero_p(ox, struct dcom_object);
+		o = talloc_zero(ox, struct dcom_object);
 		o->oid = oid;
 		DLIST_ADD(ox->objects, o);
 	}
@@ -435,7 +435,7 @@ NTSTATUS dcom_OBJREF_from_ifacep(struct dcom_context *ctx, struct OBJREF *o, str
 
 NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface_p **_p, struct OBJREF *o)
 {
-	struct dcom_interface_p *p = talloc_p(ctx, struct dcom_interface_p);
+	struct dcom_interface_p *p = talloc(ctx, struct dcom_interface_p);
 
 	p->ctx = ctx;	
 	p->interface = dcom_interface_by_iid(&o->iid);
@@ -502,7 +502,7 @@ NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface
 
 		DEBUG(3, ("No binding data present yet, resolving OXID %llu\n", p->ox->oxid));
 
-		m = talloc_zero_p(p->ctx, struct dcom_oxid_mapping);
+		m = talloc_zero(p->ctx, struct dcom_oxid_mapping);
 		m->oxid = oxid;	
 
 		i = 0;
@@ -551,7 +551,7 @@ uint64_t dcom_get_current_oxid(void)
 
 struct dcom_interface_p *dcom_new_local_ifacep(struct dcom_context *ctx, const struct GUID *iid, void *vtable, struct dcom_object *object)
 {
-	struct dcom_interface_p *ip = talloc_p(ctx, struct dcom_interface_p);
+	struct dcom_interface_p *ip = talloc(ctx, struct dcom_interface_p);
 	const struct dcom_interface *iface = dcom_interface_by_iid(iid);
 
 	if (!iface) {

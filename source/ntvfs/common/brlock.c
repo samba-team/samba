@@ -78,7 +78,7 @@ struct brl_context *brl_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid,
 	char *path;
 	struct brl_context *brl;
 
-	brl = talloc_p(mem_ctx, struct brl_context);
+	brl = talloc(mem_ctx, struct brl_context);
 	if (brl == NULL) {
 		return NULL;
 	}

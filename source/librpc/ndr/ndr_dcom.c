@@ -37,7 +37,7 @@ NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DU
 	NDR_CHECK(ndr_pull_uint16(ndr, &num_entries));
 	NDR_CHECK(ndr_pull_uint16(ndr, &security_offset));
 
-	ar->stringbindings = talloc_array_p(ndr, struct STRINGBINDING *, num_entries);
+	ar->stringbindings = talloc_array(ndr, struct STRINGBINDING *, num_entries);
 	ar->stringbindings[0] = NULL;
 
 	do {
@@ -46,8 +46,8 @@ NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DU
 
 		if (towerid > 0) {
 			ndr->offset -= 2; 
-			ar->stringbindings = talloc_realloc_p(ndr, ar->stringbindings, struct STRINGBINDING *, towernum+2);
-			ar->stringbindings[towernum] = talloc_p(ndr, struct STRINGBINDING);
+			ar->stringbindings = talloc_realloc(ndr, ar->stringbindings, struct STRINGBINDING *, towernum+2);
+			ar->stringbindings[towernum] = talloc(ndr, struct STRINGBINDING);
 			NDR_CHECK(ndr_pull_STRINGBINDING(ndr, ndr_flags, ar->stringbindings[towernum]));
 			towernum++;
 		}
@@ -56,7 +56,7 @@ NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DU
 	ar->stringbindings[towernum] = NULL;
 	towernum = 0;
 
-	ar->securitybindings = talloc_array_p(ndr, struct SECURITYBINDING *, num_entries);
+	ar->securitybindings = talloc_array(ndr, struct SECURITYBINDING *, num_entries);
 	ar->securitybindings[0] = NULL;
 
 	do {
@@ -65,8 +65,8 @@ NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DU
 
 		if (towerid > 0) {
 			ndr->offset -= 2; 
-			ar->securitybindings = talloc_realloc_p(ndr, ar->securitybindings, struct SECURITYBINDING *, towernum+2);
-			ar->securitybindings[towernum] = talloc_p(ndr, struct SECURITYBINDING);
+			ar->securitybindings = talloc_realloc(ndr, ar->securitybindings, struct SECURITYBINDING *, towernum+2);
+			ar->securitybindings[towernum] = talloc(ndr, struct SECURITYBINDING);
 			NDR_CHECK(ndr_pull_SECURITYBINDING(ndr, ndr_flags, ar->securitybindings[towernum]));
 			towernum++;
 		}
@@ -126,7 +126,7 @@ NTSTATUS ndr_pull_STRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct STRING
 
 	NDR_CHECK(ndr_pull_uint16(ndr, &num_entries));
 
-	ar->stringbindings = talloc_array_p(ndr, struct STRINGBINDING *, 1);
+	ar->stringbindings = talloc_array(ndr, struct STRINGBINDING *, 1);
 	ar->stringbindings[0] = NULL;
 
 	do {
@@ -135,8 +135,8 @@ NTSTATUS ndr_pull_STRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct STRING
 
 		if (towerid > 0) {
 			ndr->offset -= 2; 
-			ar->stringbindings = talloc_realloc_p(ndr, ar->stringbindings, struct STRINGBINDING *, towernum+2);
-			ar->stringbindings[towernum] = talloc_p(ndr, struct STRINGBINDING);
+			ar->stringbindings = talloc_realloc(ndr, ar->stringbindings, struct STRINGBINDING *, towernum+2);
+			ar->stringbindings[towernum] = talloc(ndr, struct STRINGBINDING);
 			NDR_CHECK(ndr_pull_STRINGBINDING(ndr, ndr_flags, ar->stringbindings[towernum]));
 			towernum++;
 		}

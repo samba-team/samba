@@ -158,7 +158,7 @@ BOOL torture_rpc_atsvc(void)
 		return False;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 

@@ -1149,7 +1149,7 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct creds_CredentialState creds_async[ASYNC_COUNT];
 	struct rpc_request *req[ASYNC_COUNT];
 	int i;
-	int *async_counter = talloc_p(mem_ctx, int);
+	int *async_counter = talloc(mem_ctx, int);
 
 	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
 		printf("test_GetDomainInfo_async disabled - enable dangerous tests to use\n");
@@ -1362,7 +1362,7 @@ BOOL torture_rpc_netlogon(void)
 	ret &= test_GetDomainInfo_async(p, mem_ctx);
 	ret &= test_netr_DrsGetDCNameEx2(p, mem_ctx);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	torture_rpc_close(p);
 

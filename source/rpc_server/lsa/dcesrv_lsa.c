@@ -166,7 +166,7 @@ static NTSTATUS lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	       r->out.privs->count < r->in.max_count) {
 		struct lsa_PrivEntry *e;
 
-		r->out.privs->privs = talloc_realloc_p(r->out.privs,
+		r->out.privs->privs = talloc_realloc(r->out.privs,
 						       r->out.privs->privs, 
 						       struct lsa_PrivEntry, 
 						       r->out.privs->count+1);
@@ -222,7 +222,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	struct lsa_policy_state *state;
 	const char *sid_str;
 
-	state = talloc_p(mem_ctx, struct lsa_policy_state);
+	state = talloc(mem_ctx, struct lsa_policy_state);
 	if (!state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -410,7 +410,7 @@ static NTSTATUS lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, TALLOC_
 
 	state = h->data;
 
-	r->out.info = talloc_p(mem_ctx, union lsa_PolicyInformation);
+	r->out.info = talloc(mem_ctx, union lsa_PolicyInformation);
 	if (!r->out.info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -514,7 +514,7 @@ static NTSTATUS lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MORE_ENTRIES;
 	}
 
-	r->out.sids->sids = talloc_array_p(r->out.sids, struct lsa_SidPtr, count);
+	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_SidPtr, count);
 	if (r->out.sids->sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -979,7 +979,7 @@ static NTSTATUS lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* convert to lsa_DomainInformation format */
-	entries = talloc_array_p(mem_ctx, struct lsa_DomainInformation, count);
+	entries = talloc_array(mem_ctx, struct lsa_DomainInformation, count);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1077,7 +1077,7 @@ static NTSTATUS lsa_authority_list(struct lsa_policy_state *state, TALLOC_CTX *m
 		}
 	}
 
-	domains->domains = talloc_realloc_p(domains, 
+	domains->domains = talloc_realloc(domains, 
 					    domains->domains,
 					    struct lsa_TrustInformation,
 					    domains->count+1);
@@ -1145,19 +1145,19 @@ static NTSTATUS lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 		return status;
 	}
 
-	r->out.domains = talloc_zero_p(mem_ctx,  struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
 	if (r->out.domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.names = talloc_zero_p(mem_ctx,  struct lsa_TransNameArray2);
+	r->out.names = talloc_zero(mem_ctx,  struct lsa_TransNameArray2);
 	if (r->out.names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	*r->out.count = 0;
 
-	r->out.names->names = talloc_array_p(r->out.names, struct lsa_TranslatedName2, 
+	r->out.names->names = talloc_array(r->out.names, struct lsa_TranslatedName2, 
 					     r->in.sids->num_sids);
 	if (r->out.names->names == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1269,12 +1269,12 @@ static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	}
 
 	r->out.domains = r3.out.domains;
-	r->out.names = talloc_p(mem_ctx, struct lsa_TransNameArray);
+	r->out.names = talloc(mem_ctx, struct lsa_TransNameArray);
 	if (r->out.names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	r->out.names->count = r3.out.names->count;
-	r->out.names->names = talloc_array_p(r->out.names, struct lsa_TranslatedName, 
+	r->out.names->names = talloc_array(r->out.names, struct lsa_TranslatedName, 
 					     r->out.names->count);
 	if (r->out.names->names == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1305,7 +1305,7 @@ static NTSTATUS lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	state = h->data;
 
-	astate = talloc_p(dce_call->conn, struct lsa_account_state);
+	astate = talloc(dce_call->conn, struct lsa_account_state);
 	if (astate == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1367,7 +1367,7 @@ static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 
 	astate = h->data;
 
-	r->out.privs = talloc_p(mem_ctx, struct lsa_PrivilegeSet);
+	r->out.privs = talloc(mem_ctx, struct lsa_PrivilegeSet);
 	r->out.privs->count = 0;
 	r->out.privs->unknown = 0;
 	r->out.privs->set = NULL;
@@ -1383,7 +1383,7 @@ static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_OK;
 	}
 
-	r->out.privs->set = talloc_array_p(r->out.privs, 
+	r->out.privs->set = talloc_array(r->out.privs, 
 					   struct lsa_LUIDAttribute, el->num_values);
 	if (r->out.privs->set == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1440,7 +1440,7 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 	}
 
 	r->out.rights->count = el->num_values;
-	r->out.rights->names = talloc_array_p(r->out.rights, 
+	r->out.rights->names = talloc_array(r->out.rights, 
 					      struct lsa_String, r->out.rights->count);
 	if (r->out.rights->names == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1502,7 +1502,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 
 		r2.in.handle = &state->handle->wire_handle;
 		r2.in.sid = sid;
-		r2.out.rights = talloc_p(mem_ctx, struct lsa_RightSet);
+		r2.out.rights = talloc(mem_ctx, struct lsa_RightSet);
 
 		status = lsa_EnumAccountRights(dce_call, mem_ctx, &r2);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1511,7 +1511,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 	}
 
 	el.num_values = 0;
-	el.values = talloc_array_p(mem_ctx, struct ldb_val, rights->count);
+	el.values = talloc_array(mem_ctx, struct ldb_val, rights->count);
 	if (el.values == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1571,7 +1571,7 @@ static NTSTATUS lsa_AddPrivilegesToAccount(struct dcesrv_call_state *dce_call, T
 	astate = h->data;
 
 	rights.count = r->in.privs->count;
-	rights.names = talloc_array_p(mem_ctx, struct lsa_String, rights.count);
+	rights.names = talloc_array(mem_ctx, struct lsa_String, rights.count);
 	if (rights.names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1607,7 +1607,7 @@ static NTSTATUS lsa_RemovePrivilegesFromAccount(struct dcesrv_call_state *dce_ca
 
 	astate = h->data;
 
-	rights = talloc_p(mem_ctx, struct lsa_RightSet);
+	rights = talloc(mem_ctx, struct lsa_RightSet);
 
 	if (r->in.remove_all == 1 && 
 	    r->in.privs == NULL) {
@@ -1633,7 +1633,7 @@ static NTSTATUS lsa_RemovePrivilegesFromAccount(struct dcesrv_call_state *dce_ca
 	}
 
 	rights->count = r->in.privs->count;
-	rights->names = talloc_array_p(mem_ctx, struct lsa_String, rights->count);
+	rights->names = talloc_array(mem_ctx, struct lsa_String, rights->count);
 	if (rights->names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2258,7 +2258,7 @@ static NTSTATUS lsa_LookupPrivName(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	r->out.name = talloc_p(mem_ctx, struct lsa_String);
+	r->out.name = talloc(mem_ctx, struct lsa_String);
 	if (r->out.name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2288,7 +2288,7 @@ static NTSTATUS lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 	
-	r->out.disp_name = talloc_p(mem_ctx, struct lsa_String);
+	r->out.disp_name = talloc(mem_ctx, struct lsa_String);
 	if (r->out.disp_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2345,7 +2345,7 @@ static NTSTATUS lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *dce_call
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	r->out.sids->sids = talloc_array_p(r->out.sids, struct lsa_SidPtr, ret);
+	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_SidPtr, ret);
 	if (r->out.sids->sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2464,14 +2464,14 @@ static NTSTATUS lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	account_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->account_name);
 	authority_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->domain_name);
 
-	_account_name = talloc_p(mem_ctx, struct lsa_String);
+	_account_name = talloc(mem_ctx, struct lsa_String);
 	NTSTATUS_TALLOC_CHECK(_account_name);
 	_account_name->string = account_name;
 
 	if (r->in.authority_name) {
-		_authority_name = talloc_p(mem_ctx, struct lsa_StringPointer);
+		_authority_name = talloc(mem_ctx, struct lsa_StringPointer);
 		NTSTATUS_TALLOC_CHECK(_authority_name);
-		_authority_name->string = talloc_p(mem_ctx, struct lsa_String);
+		_authority_name->string = talloc(mem_ctx, struct lsa_String);
 		NTSTATUS_TALLOC_CHECK(_authority_name->string);
 		_authority_name->string->string = authority_name;
 	}
@@ -2581,19 +2581,19 @@ static NTSTATUS lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 
 	state = h->data;
 
-	r->out.domains = talloc_zero_p(mem_ctx,  struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
 	if (r->out.domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.sids = talloc_zero_p(mem_ctx,  struct lsa_TransSidArray3);
+	r->out.sids = talloc_zero(mem_ctx,  struct lsa_TransSidArray3);
 	if (r->out.sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	*r->out.count = 0;
 
-	r->out.sids->sids = talloc_array_p(r->out.sids, struct lsa_TranslatedSid3, 
+	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_TranslatedSid3, 
 					   r->in.num_names);
 	if (r->out.sids->sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -2657,19 +2657,19 @@ static NTSTATUS lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 
 	state = h->data;
 
-	r->out.domains = talloc_zero_p(mem_ctx,  struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
 	if (r->out.domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.sids = talloc_zero_p(mem_ctx,  struct lsa_TransSidArray2);
+	r->out.sids = talloc_zero(mem_ctx,  struct lsa_TransSidArray2);
 	if (r->out.sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	*r->out.count = 0;
 
-	r->out.sids->sids = talloc_array_p(r->out.sids, struct lsa_TranslatedSid2, 
+	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_TranslatedSid2, 
 					   r->in.num_names);
 	if (r->out.sids->sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -2741,12 +2741,12 @@ static NTSTATUS lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	r->out.domains = r2.out.domains;
-	r->out.sids = talloc_p(mem_ctx, struct lsa_TransSidArray);
+	r->out.sids = talloc(mem_ctx, struct lsa_TransSidArray);
 	if (r->out.sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	r->out.sids->count = r2.out.sids->count;
-	r->out.sids->sids = talloc_array_p(r->out.sids, struct lsa_TranslatedSid, 
+	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_TranslatedSid, 
 					   r->out.sids->count);
 	if (r->out.sids->sids == NULL) {
 		return NT_STATUS_NO_MEMORY;

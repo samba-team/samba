@@ -1780,7 +1780,7 @@ static int cmd_allinfo(const char **cmd_ptr)
 		d_printf("\tcluster_shift   %ld\n", (long)finfo.compression_info.out.cluster_shift);
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 done:
 	return ret;
@@ -1816,7 +1816,7 @@ static int cmd_eainfo(const char **cmd_ptr)
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("RAW_FILEINFO_ALL_EAS - %s\n", nt_errstr(status));
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return 1;
 	}
 
@@ -1833,7 +1833,7 @@ static int cmd_eainfo(const char **cmd_ptr)
 			  finfo.all_eas.out.eas[i].value.length);
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return ret;
 }
@@ -1888,7 +1888,7 @@ static int cmd_acl(const char **cmd_ptr)
 
 	NDR_PRINT_DEBUG(security_descriptor, query.query_secdesc.out.sd);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 done:
 	return ret;
@@ -2016,7 +2016,7 @@ static int cmd_addprivileges(const char **cmd_ptr)
 
 	ZERO_STRUCT(rights);
 	while (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
-		rights.names = talloc_realloc_p(mem_ctx, rights.names, 
+		rights.names = talloc_realloc(mem_ctx, rights.names, 
 						struct lsa_String, rights.count+1);
 		rights.names[rights.count].string = talloc_strdup(mem_ctx, buf);
 		rights.count++;
@@ -2066,7 +2066,7 @@ static int cmd_delprivileges(const char **cmd_ptr)
 
 	ZERO_STRUCT(rights);
 	while (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
-		rights.names = talloc_realloc_p(mem_ctx, rights.names, 
+		rights.names = talloc_realloc(mem_ctx, rights.names, 
 						struct lsa_String, rights.count+1);
 		rights.names[rights.count].string = talloc_strdup(mem_ctx, buf);
 		rights.count++;
@@ -2568,7 +2568,7 @@ static BOOL browse_host(const char *query_host)
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to connect to %s - %s\n", 
 			 binding, nt_errstr(status));
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return False;
 	}
 	talloc_steal(mem_ctx, p);
@@ -2595,7 +2595,7 @@ static BOOL browse_host(const char *query_host)
 		}
 	} while (NT_STATUS_IS_OK(status) && W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA));
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("Failed NetShareEnumAll %s - %s/%s\n", 
@@ -3283,7 +3283,7 @@ static void remember_query_host(const char *arg,
 
 	DEBUG( 3, ( "Client started (version %s).\n", SAMBA_VERSION_STRING ) );
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if ((p=strchr_m(query_host,'#'))) {
 		*p = 0;

@@ -41,7 +41,7 @@ static WERROR reg_dir_del_key(struct registry_key *k, const char *name)
 
 	if (rmdir(child) == 0) ret = WERR_OK; else ret = WERR_GENERAL_FAILURE;
 
-	talloc_destroy(child);
+	talloc_free(child);
 
 	return ret;
 }
@@ -67,7 +67,7 @@ static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx, struct registry_key *p, cons
 		return WERR_BADFILE;
 	}
 	closedir(d);
-	ret = talloc_p(mem_ctx, struct registry_key);
+	ret = talloc(mem_ctx, struct registry_key);
 	ret->hive = p->hive;
 	ret->path = fullpath;
 	ret->backend_data = unixpath;
@@ -98,7 +98,7 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 
 			if(S_ISDIR(stbuf.st_mode)) {
 				if(i == idx) {
-					(*key) = talloc_p(mem_ctx, struct registry_key);
+					(*key) = talloc(mem_ctx, struct registry_key);
 					(*key)->name = e->d_name;
 					(*key)->path = NULL;
 					(*key)->backend_data = talloc_strdup(mem_ctx, thispath);
@@ -122,7 +122,7 @@ static WERROR reg_dir_open(struct registry_hive *h, struct registry_key **key)
 {
 	if(!h->location) return WERR_INVALID_PARAM;
 
-	*key = talloc_p(h, struct registry_key);
+	*key = talloc(h, struct registry_key);
 	(*key)->backend_data = talloc_strdup(*key, h->location);
 	return WERR_OK;
 }

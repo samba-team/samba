@@ -123,7 +123,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 	struct smb_read_state *state;
 	struct smbcli_request *req;
 
-	state = talloc_p(smb, struct smb_read_state);
+	state = talloc(smb, struct smb_read_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -144,7 +144,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 		memcpy(state->data.data, blob->data, blob->length);
 	}
 
-	state->io = talloc_p(state, union smb_read);
+	state->io = talloc(state, union smb_read);
 
 	io = state->io;
 	io->generic.level = RAW_READ_READX;
@@ -222,13 +222,13 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *b
         uint16 setup[2];
 	struct smb_trans_state *state;
 
-	state = talloc_p(smb, struct smb_trans_state);
+	state = talloc(smb, struct smb_trans_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	state->c = c;
-	state->trans = talloc_p(state, struct smb_trans2);
+	state->trans = talloc(state, struct smb_trans2);
 	trans = state->trans;
 
         trans->in.data = *blob;
@@ -418,7 +418,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
 	/* Over-ride the default session key with the SMB session key */
 	c->security_state.session_key = smb_session_key;
 
-	smb = talloc_p(c, struct smb_private);
+	smb = talloc(c, struct smb_private);
 	if (smb == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

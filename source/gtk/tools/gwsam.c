@@ -58,12 +58,12 @@ void update_userlist(void)
 	status = dcerpc_samr_EnumDomainUsers(sam_pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return;
 	}
 
 	if (!r.out.sam || r.out.sam->count == 0) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return;
 	}
 
@@ -75,7 +75,7 @@ void update_userlist(void)
 		//			ret = False;
 		//		}
 	}
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }
 
 void
@@ -139,7 +139,7 @@ static void connect_sam(void)
 		gtk_show_ntstatus(mainwin, status);
 		sam_pipe = NULL;
 		gtk_widget_destroy(GTK_WIDGET(d));
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return;
 	}
 
@@ -152,7 +152,7 @@ static void connect_sam(void)
 		gtk_show_ntstatus(mainwin, status);
 		sam_pipe = NULL;
 		gtk_widget_destroy(GTK_WIDGET(d));
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return;
 	}
 
@@ -160,7 +160,7 @@ static void connect_sam(void)
 	gtk_widget_set_sensitive (mnu_disconnect, TRUE);
 	gtk_window_set_title (GTK_WINDOW (mainwin), talloc_asprintf(mem_ctx, "User Manager - Connected to %s", gtk_rpc_binding_dialog_get_host(d)));
 	gtk_widget_destroy(GTK_WIDGET(d));
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 }
 

@@ -84,7 +84,7 @@ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, servid_t server,
 	char *path;
 	struct odb_context *odb;
 
-	odb = talloc_p(mem_ctx, struct odb_context);
+	odb = talloc(mem_ctx, struct odb_context);
 	if (odb == NULL) {
 		return NULL;
 	}
@@ -124,7 +124,7 @@ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 {
 	struct odb_lock *lck;
 
-	lck = talloc_p(mem_ctx, struct odb_lock);
+	lck = talloc(mem_ctx, struct odb_lock);
 	if (lck == NULL) {
 		return NULL;
 	}

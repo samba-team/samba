@@ -182,7 +182,7 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		while (blob->length - ofs >= 24) {
 			uint_t n = parms->stream_info.out.num_streams;
 			parms->stream_info.out.streams = 
-				talloc_realloc_p(mem_ctx,
+				talloc_realloc(mem_ctx,
 						 parms->stream_info.out.streams,
 						 struct stream_struct,
 						 n+1);
@@ -306,7 +306,7 @@ static struct smbcli_request *smb_raw_fileinfo_blob_send(struct smbcli_tree *tre
 	
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 4);
 	if (!tp.in.params.data) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -315,7 +315,7 @@ static struct smbcli_request *smb_raw_fileinfo_blob_send(struct smbcli_tree *tre
 
 	req = smb_raw_trans2_send(tree, &tp);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return req;
 }
@@ -360,7 +360,7 @@ static struct smbcli_request *smb_raw_pathinfo_blob_send(struct smbcli_tree *tre
 	
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 6);
 	if (!tp.in.params.data) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -371,7 +371,7 @@ static struct smbcli_request *smb_raw_pathinfo_blob_send(struct smbcli_tree *tre
 	
 	req = smb_raw_trans2_send(tree, &tp);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return req;
 }

@@ -1393,7 +1393,7 @@ static BOOL handler_lockingx(int instance)
 	} while (nlocks == 0);
 
 	if (nlocks > 0) {
-		parm[0].lockx.in.locks = talloc_array_p(current_op.mem_ctx,
+		parm[0].lockx.in.locks = talloc_array(current_op.mem_ctx,
 							struct smb_lock_entry,
 							nlocks);
 		for (n=0;n<nlocks;n++) {
@@ -1928,7 +1928,7 @@ static int run_test(void)
 
 		ret = gen_ops[which_op].handler(instance);
 
-		talloc_destroy(current_op.mem_ctx);
+		talloc_free(current_op.mem_ctx);
 
 		gen_ops[which_op].count++;
 		if (NT_STATUS_IS_OK(current_op.status)) {

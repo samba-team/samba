@@ -55,8 +55,8 @@ static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	
 	/* FIXME: Loop thru given interfaces and set r->out.results and 
 	 * r->out.interfaces */
-	r->out.ifaces = talloc_array_p(mem_ctx, struct pMInterfacePointer, r->in.Interfaces);
-	r->out.results = talloc_array_p(mem_ctx, WERROR, r->in.Interfaces);
+	r->out.ifaces = talloc_array(mem_ctx, struct pMInterfacePointer, r->in.Interfaces);
+	r->out.results = talloc_array(mem_ctx, WERROR, r->in.Interfaces);
 	r->out.hr = cr->out.result;
 
 	for (i = 0; i < r->in.Interfaces; i++) {

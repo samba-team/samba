@@ -258,7 +258,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	struct gensec_krb5_state *gensec_krb5_state;
 	krb5_error_code ret = 0;
 
-	gensec_krb5_state = talloc_p(gensec_security, struct gensec_krb5_state);
+	gensec_krb5_state = talloc(gensec_security, struct gensec_krb5_state);
 	if (!gensec_krb5_state) {
 		return NT_STATUS_NO_MEMORY;
 	}

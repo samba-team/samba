@@ -430,6 +430,6 @@ BOOL torture_raw_rename(void)
 	}
 
 	torture_close_connection(cli);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }

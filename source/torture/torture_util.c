@@ -65,11 +65,11 @@ int create_directory_handle(struct smbcli_tree *tree, const char *dname)
 
 	status = smb_raw_open(tree, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return -1;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return io.ntcreatex.out.fnum;
 }
 
@@ -103,7 +103,7 @@ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const cha
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
 	setfile.generic.file.fnum = fnum;
 	setfile.ea_set.in.num_eas = 2;	
-	setfile.ea_set.in.eas = talloc_array_p(mem_ctx, struct ea_struct, 2);
+	setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
 	setfile.ea_set.in.eas[0].flags = 0;
 	setfile.ea_set.in.eas[0].name.s = "EAONE";
 	setfile.ea_set.in.eas[0].value = data_blob_talloc(mem_ctx, "VALUE1", 6);
@@ -266,7 +266,7 @@ void torture_all_info(struct smbcli_tree *tree, const char *fname)
 
 	d_printf("%s:\n", fname);
 	dump_all_info(mem_ctx, &finfo);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }
 
 
@@ -349,7 +349,7 @@ NTSTATUS torture_set_sparse(struct smbcli_tree *tree, int fnum)
 
 	status = smb_raw_ioctl(tree, mem_ctx, &nt);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return status;
 }

@@ -97,7 +97,7 @@ static NTSTATUS nbench_connect(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	char *logname = NULL;
 
-	nprivates = talloc_p(req->tcon, struct nbench_private);
+	nprivates = talloc(req->tcon, struct nbench_private);
 	if (!nprivates) {
 		return NT_STATUS_NO_MEMORY;
 	}

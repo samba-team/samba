@@ -133,7 +133,7 @@ BOOL lang_tdb_init(const char *lang)
 	if (stat(msg_path, &st) != 0) {
 		/* the msg file isn't available */
 		free(msg_path);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return False;
 	}
 	
@@ -145,14 +145,14 @@ BOOL lang_tdb_init(const char *lang)
 		tdb = tdb_open(path, 0, TDB_DEFAULT, O_RDONLY, 0);
 		free(path);
 		free(msg_path);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		if (!tdb) return False;
 		current_lang = strdup(lang);
 		return True;
 	}
 
 	free(path);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	loadtime = tdb_fetch_int32(tdb, "/LOADTIME/");
 

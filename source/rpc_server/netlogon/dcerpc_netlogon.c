@@ -45,7 +45,7 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 	struct server_pipe_state *state;
 	NTSTATUS status;
 
-	state = talloc_p(dce_call->conn, struct server_pipe_state);
+	state = talloc(dce_call->conn, struct server_pipe_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -112,7 +112,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 		dce_call->context->private = NULL;
 	}
 	
-	pipe_state = talloc_p(dce_call->context, struct server_pipe_state);
+	pipe_state = talloc(dce_call->context, struct server_pipe_state);
 	if (!pipe_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -213,7 +213,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	if (pipe_state->creds) {
 		talloc_free(pipe_state->creds);
 	}
-	pipe_state->creds = talloc_p(pipe_state, struct creds_CredentialState);
+	pipe_state->creds = talloc(pipe_state, struct creds_CredentialState);
 	if (!pipe_state->creds) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -963,7 +963,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	info1 = talloc_p(mem_ctx, struct netr_DomainInfo1);
+	info1 = talloc(mem_ctx, struct netr_DomainInfo1);
 	if (info1 == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -971,7 +971,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	ZERO_STRUCTP(info1);
 
 	info1->num_trusts = ret2 + 1;
-	info1->trusts = talloc_array_p(mem_ctx, struct netr_DomainTrustInfo, 
+	info1->trusts = talloc_array(mem_ctx, struct netr_DomainTrustInfo, 
 				       info1->num_trusts);
 	if (info1->trusts == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1169,7 +1169,7 @@ static WERROR netr_DrsGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CT
 		return WERR_NO_SUCH_DOMAIN;
 	}
 
-	r->out.info = talloc_p(mem_ctx, struct netr_DrsGetDCNameEx2Info);
+	r->out.info = talloc(mem_ctx, struct netr_DrsGetDCNameEx2Info);
 	if (!r->out.info) {
 		return WERR_NOMEM;
 	}
@@ -1259,7 +1259,7 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 		return WERR_OK;
 	}
 
-	trusts = talloc_array_p(mem_ctx, struct netr_DomainTrust, ret);
+	trusts = talloc_array(mem_ctx, struct netr_DomainTrust, ret);
 	if (trusts == NULL) {
 		return WERR_NOMEM;
 	}

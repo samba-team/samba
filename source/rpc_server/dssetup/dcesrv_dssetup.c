@@ -36,7 +36,7 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 {
 	union dssetup_DsRoleInfo *info;
 
-	info = talloc_p(mem_ctx, union dssetup_DsRoleInfo);
+	info = talloc(mem_ctx, union dssetup_DsRoleInfo);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	switch (r->in.level) {

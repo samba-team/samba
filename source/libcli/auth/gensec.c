@@ -94,7 +94,7 @@ const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip)
 	if (!ops) {
 		return NULL;
 	}
-	oid_list = talloc_array_p(mem_ctx, const char *, num_backends + 1);
+	oid_list = talloc_array(mem_ctx, const char *, num_backends + 1);
 	if (!oid_list) {
 		return NULL;
 	}
@@ -123,7 +123,7 @@ const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip)
 */
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security) 
 {
-	(*gensec_security) = talloc_p(mem_ctx, struct gensec_security);
+	(*gensec_security) = talloc(mem_ctx, struct gensec_security);
 	if (!(*gensec_security)) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -155,7 +155,7 @@ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 				 struct gensec_security *parent, 
 				 struct gensec_security **gensec_security)
 {
-	(*gensec_security) = talloc_p(mem_ctx, struct gensec_security);
+	(*gensec_security) = talloc(mem_ctx, struct gensec_security);
 	if (!(*gensec_security)) {
 		return NT_STATUS_NO_MEMORY;
 	}

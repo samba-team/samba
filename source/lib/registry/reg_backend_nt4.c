@@ -902,7 +902,7 @@ static WERROR vk_to_val(TALLOC_CTX *mem_ctx, struct registry_key *parent, VK_HDR
 	dat_len = IVAL(&vk_hdr->dat_len,0);  /* If top bit, offset contains data */
 	dat_off = IVAL(&vk_hdr->dat_off,0);
 
-	tmp = talloc_p(mem_ctx, struct registry_value);
+	tmp = talloc(mem_ctx, struct registry_value);
 	tmp->data_type = dat_type;
 
 	if (flag & FLAG_HAS_NAME) {
@@ -1070,7 +1070,7 @@ static WERROR nk_to_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, NK_HDR *nk
 		return WERR_GENERAL_FAILURE;
 	}
 
-	tmp = talloc_p(mem_ctx, struct registry_key);
+	tmp = talloc(mem_ctx, struct registry_key);
 	tmp->name = talloc_strdup(mem_ctx, key_name);
 	tmp->backend_data = nk_hdr;
 
@@ -1574,7 +1574,7 @@ static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 	uint_t regf_id, hbin_id;
 	HBIN_HDR *hbin_hdr;
 
-	regf = (REGF *)talloc_p(h, REGF);
+	regf = (REGF *)talloc(h, REGF);
 	memset(regf, 0, sizeof(REGF));
 	regf->owner_sid_str = NULL; /* FIXME: Fill in */
 	h->backend_data = regf;

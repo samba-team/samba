@@ -95,7 +95,7 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 		return False;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	torture_rpc_close(p);
 

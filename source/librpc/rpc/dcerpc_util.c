@@ -324,7 +324,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 
 	comma_count = count_chars(options, ',');
 
-	b->options = talloc_array_p(mem_ctx, const char *, comma_count+2);
+	b->options = talloc_array(mem_ctx, const char *, comma_count+2);
 	if (!b->options) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -631,7 +631,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	}
 
 	tower->num_floors = 2 + num_protocols;
-	tower->floors = talloc_array_p(mem_ctx, struct epm_floor, tower->num_floors);
+	tower->floors = talloc_array(mem_ctx, struct epm_floor, tower->num_floors);
 
 	/* Floor 0 */
 	tower->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;

@@ -187,7 +187,7 @@ NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 		blob2.data = blob->data + ofs;
 		blob2.length = ea_size - ofs;
 
-		*eas = talloc_realloc_p(mem_ctx, *eas, struct ea_struct, n+1);
+		*eas = talloc_realloc(mem_ctx, *eas, struct ea_struct, n+1);
 		if (! *eas) return NT_STATUS_NO_MEMORY;
 
 		len = ea_pull_struct(&blob2, mem_ctx, &(*eas)[n]);
@@ -232,7 +232,7 @@ NTSTATUS ea_pull_list_chained(const DATA_BLOB *blob,
 		blob2.data = blob->data + ofs + 4;
 		blob2.length = blob->length - (ofs + 4);
 
-		*eas = talloc_realloc_p(mem_ctx, *eas, struct ea_struct, n+1);
+		*eas = talloc_realloc(mem_ctx, *eas, struct ea_struct, n+1);
 		if (! *eas) return NT_STATUS_NO_MEMORY;
 
 		len = ea_pull_struct(&blob2, mem_ctx, &(*eas)[n]);
@@ -312,7 +312,7 @@ NTSTATUS ea_pull_name_list(const DATA_BLOB *blob,
 		blob2.data = blob->data + ofs;
 		blob2.length = ea_size - ofs;
 
-		*ea_names = talloc_realloc_p(mem_ctx, *ea_names, struct ea_name, n+1);
+		*ea_names = talloc_realloc(mem_ctx, *ea_names, struct ea_name, n+1);
 		if (! *ea_names) return NT_STATUS_NO_MEMORY;
 
 		len = ea_pull_name(&blob2, mem_ctx, &(*ea_names)[n]);

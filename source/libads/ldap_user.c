@@ -80,7 +80,7 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 	status = ads_gen_add(ads, new_dn, mods);
 
  done:
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 	return status;
 }
 
@@ -113,7 +113,7 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 	status = ads_gen_add(ads, new_dn, mods);
 
  done:
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 	return status;
 }
 #endif

@@ -47,7 +47,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, p, i, &subkey)); i++) {
 		print_tree(l+1, subkey, fullpath, novals);
 	}
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n", p->path, win_errstr(error)));
@@ -62,7 +62,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 			desc = reg_val_description(mem_ctx, value);
 			printf("%s\n", desc);
 		}
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 
 		if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
 			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", p->path, win_errstr(error)));

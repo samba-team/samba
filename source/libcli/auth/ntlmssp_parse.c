@@ -54,8 +54,8 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 
 	DATA_BLOB *pointers;
 
-	pointers = talloc_array_p(mem_ctx, DATA_BLOB, strlen(format));
-	intargs = talloc_array_p(pointers, int, strlen(format));
+	pointers = talloc_array(mem_ctx, DATA_BLOB, strlen(format));
+	intargs = talloc_array(pointers, int, strlen(format));
 
 	/* first scan the format to work out the header and body size */
 	va_start(ap, format);

@@ -33,7 +33,7 @@ static WERROR rot_add(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 {
 	struct tdb_wrap *db = openrodb(mem_ctx);
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-	talloc_destroy(db);
+	talloc_free(db);
 }
 
 
@@ -45,7 +45,7 @@ static WERROR rot_remove(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx
 {
 	struct tdb_wrap *db = openrodb(mem_ctx);
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-	talloc_destroy(db);
+	talloc_free(db);
 }
 
 
@@ -57,7 +57,7 @@ static WERROR rot_is_listed(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_
 {
 	struct tdb_wrap *db = openrodb(mem_ctx);
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-	talloc_destroy(db);
+	talloc_free(db);
 }
 
 
@@ -69,7 +69,7 @@ static WERROR rot_get_interface_pointer(struct dcesrv_call_state *dce_call, TALL
 {
 	struct tdb_wrap *db = openrodb(mem_ctx);
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-	talloc_destroy(db);
+	talloc_free(db);
 }
 
 
@@ -81,7 +81,7 @@ static WERROR rot_set_modification_time(struct dcesrv_call_state *dce_call, TALL
 {
 	struct tdb_wrap *db = openrodb(mem_ctx);
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-	talloc_destroy(db);
+	talloc_free(db);
 }
 
 
@@ -93,7 +93,7 @@ static WERROR rot_get_modification_time(struct dcesrv_call_state *dce_call, TALL
 {
 	struct tdb_wrap *db = openrodb(mem_ctx);
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-	talloc_destroy(db);
+	talloc_free(db);
 }
 
 
@@ -105,7 +105,7 @@ static WERROR rot_enum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 {
 	struct tdb_wrap *db = openrodb(mem_ctx);
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-	talloc_destroy(db);
+	talloc_free(db);
 }
 
 

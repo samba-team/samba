@@ -67,7 +67,7 @@ struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *tran
 {
 	struct smbcli_request *req;
 
-	req = talloc_p(transport, struct smbcli_request);
+	req = talloc(transport, struct smbcli_request);
 	if (!req) {
 		return NULL;
 	}

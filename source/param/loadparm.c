@@ -1088,7 +1088,7 @@ static const char *lp_string(const char *s)
 	if (!lp_talloc)
 		lp_talloc = talloc_init("lp_talloc");
 
-	ret = talloc_array_p(lp_talloc, char, len + 100);	/* leave room for substitution */
+	ret = talloc_array(lp_talloc, char, len + 100);	/* leave room for substitution */
 
 	if (!ret)
 		return NULL;

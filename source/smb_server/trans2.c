@@ -426,7 +426,7 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct smb_trans2 *trans
 		return NT_STATUS_FOOBAR;
 	}
 
-	io = talloc_p(req, union smb_open);
+	io = talloc(req, union smb_open);
 	if (io == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -487,7 +487,7 @@ static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct smb_trans2 *tran
 		return NT_STATUS_FOOBAR;
 	}
 
-	io = talloc_p(req, union smb_mkdir);
+	io = talloc(req, union smb_mkdir);
 	if (io == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1437,7 +1437,7 @@ static void reply_trans_continue(struct smbsrv_request *req, uint8_t command,
 		return;
 	}
 
-	tp = talloc_p(req, struct smbsrv_trans_partial);
+	tp = talloc(req, struct smbsrv_trans_partial);
 
 	tp->req = talloc_reference(tp, req);
 	tp->trans = trans;
@@ -1563,7 +1563,7 @@ void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 	uint16_t param_count, data_count;
 	uint16_t param_total, data_total;
 
-	trans = talloc_p(req, struct smb_trans2);
+	trans = talloc(req, struct smb_trans2);
 	if (trans == NULL) {
 		req_reply_error(req, NT_STATUS_NO_MEMORY);
 		return;
@@ -1594,7 +1594,7 @@ void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 	}
 
 	/* parse out the setup words */
-	trans->in.setup = talloc_array_p(req, uint16_t, trans->in.setup_count);
+	trans->in.setup = talloc_array(req, uint16_t, trans->in.setup_count);
 	if (trans->in.setup_count && !trans->in.setup) {
 		req_reply_error(req, NT_STATUS_NO_MEMORY);
 		return;
@@ -1682,7 +1682,7 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 
 	/* add to the existing request */
 	if (param_count != 0) {
-		trans->in.params.data = talloc_realloc_p(trans, 
+		trans->in.params.data = talloc_realloc(trans, 
 							 trans->in.params.data, 
 							 uint8_t, 
 							 param_disp + param_count);
@@ -1693,7 +1693,7 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	}
 
 	if (data_count != 0) {
-		trans->in.data.data = talloc_realloc_p(trans, 
+		trans->in.data.data = talloc_realloc(trans, 
 						       trans->in.data.data, 
 						       uint8_t, 
 						       data_disp + data_count);

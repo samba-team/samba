@@ -1297,7 +1297,7 @@ BOOL torture_rpc_samlogon(void)
 	}
 
 failed:
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	torture_rpc_close(p);
 

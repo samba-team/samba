@@ -578,7 +578,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	/* prepare samr_LookupNames */
 	ln.in.domain_handle = &d_handle;
 	ln.in.num_names = 1;
-	ln.in.names = talloc_array_p(mem_ctx, struct samr_String, 1);
+	ln.in.names = talloc_array(mem_ctx, struct samr_String, 1);
 	if (!ln.in.names) {
 		r->samr.out.error_string = "Out of Memory";
 		return NT_STATUS_NO_MEMORY;

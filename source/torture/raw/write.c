@@ -690,6 +690,6 @@ BOOL torture_raw_write(void)
 	ret &= test_writex(cli, mem_ctx);
 
 	torture_close_connection(cli);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }

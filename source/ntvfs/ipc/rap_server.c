@@ -32,7 +32,7 @@ NTSTATUS rap_netshareenum(struct smbsrv_request *req,
 	int i;
 	r->out.status = 0;
 	r->out.available = dcesrv_common_get_count_of_shares(req, NULL);
-	r->out.info = talloc_array_p(req,
+	r->out.info = talloc_array(req,
 				     union rap_shareenum_info, r->out.available);
 
 	for (i=0;i<r->out.available;i++) {

@@ -138,7 +138,7 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 	struct samr_String name;
 	struct samr_OpenDomain o;
 	struct samr_LookupDomain l;
-	struct policy_handle *domain_handle = talloc_p(mem_ctx, struct policy_handle);
+	struct policy_handle *domain_handle = talloc(mem_ctx, struct policy_handle);
 	NTSTATUS nt_status;
 
 	name.string = domain;
@@ -705,8 +705,8 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 {
 	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
 	const char *name = delta->delta_id_union.name;
-	struct samsync_secret *new = talloc_p(samsync_state, struct samsync_secret);
-	struct samsync_secret *old = talloc_p(mem_ctx, struct samsync_secret);
+	struct samsync_secret *new = talloc(samsync_state, struct samsync_secret);
+	struct samsync_secret *old = talloc(mem_ctx, struct samsync_secret);
 	struct lsa_QuerySecret q;
 	struct lsa_OpenSecret o;
 	struct policy_handle sec_handle;
@@ -868,7 +868,7 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	struct netr_DELTA_TRUSTED_DOMAIN *trusted_domain = delta->delta_union.trusted_domain;
 	struct dom_sid *dom_sid = delta->delta_id_union.sid;
 
-	struct samsync_trusted_domain *new = talloc_p(samsync_state, struct samsync_trusted_domain);
+	struct samsync_trusted_domain *new = talloc(samsync_state, struct samsync_trusted_domain);
 	struct lsa_OpenTrustedDomain t;
 	struct policy_handle trustdom_handle;
 	struct lsa_QueryTrustedDomainInfo q;
@@ -1311,11 +1311,11 @@ BOOL torture_rpc_samsync(void)
 		return False;
 	}
 	
-	samsync_state = talloc_zero_p(mem_ctx, struct samsync_state);
+	samsync_state = talloc_zero(mem_ctx, struct samsync_state);
 
 	samsync_state->p_samr = torture_join_samr_pipe(join_ctx);
-	samsync_state->connect_handle = talloc_zero_p(samsync_state, struct policy_handle);
-	samsync_state->lsa_handle = talloc_zero_p(samsync_state, struct policy_handle);
+	samsync_state->connect_handle = talloc_zero(samsync_state, struct policy_handle);
+	samsync_state->lsa_handle = talloc_zero(samsync_state, struct policy_handle);
 	c.in.system_name = NULL;
 	c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	c.out.connect_handle = samsync_state->connect_handle;
@@ -1336,7 +1336,7 @@ BOOL torture_rpc_samsync(void)
 	
 	s.in.domain_handle = domain_policy;
 	s.in.level = 4;
-	s.in.info = talloc_p(mem_ctx, union samr_DomainInfo);
+	s.in.info = talloc(mem_ctx, union samr_DomainInfo);
 	
 	s.in.info->info4.comment.string
 		= talloc_asprintf(mem_ctx, 
@@ -1469,7 +1469,7 @@ failed:
 	torture_leave_domain(join_ctx);
 	torture_leave_domain(join_ctx2);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return ret;
 }

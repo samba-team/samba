@@ -497,7 +497,7 @@ static char *name_map(struct pvfs_mangle_context *ctx,
 	/* find the hash for this prefix */
 	v = hash = mangle_hash(ctx, name, prefix_len);
 
-	new_name = talloc_array_p(ctx, char, 13);
+	new_name = talloc_array(ctx, char, 13);
 	if (new_name == NULL) {
 		return NULL;
 	}
@@ -608,7 +608,7 @@ NTSTATUS pvfs_mangle_init(struct pvfs_state *pvfs)
 {
 	struct pvfs_mangle_context *ctx;
 
-	ctx = talloc_p(pvfs, struct pvfs_mangle_context);
+	ctx = talloc(pvfs, struct pvfs_mangle_context);
 	if (ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -45,7 +45,7 @@ struct sidmap_context {
 struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx)
 {
 	struct sidmap_context *sidmap;
-	sidmap = talloc_p(mem_ctx, struct sidmap_context);
+	sidmap = talloc(mem_ctx, struct sidmap_context);
 	if (sidmap == NULL) {
 		return NULL;
 	}

@@ -66,9 +66,9 @@ static void add_socket_rpc_unix(struct server_service *service, struct dcesrv_en
 		return;
 	}
 
-	dcesrv_sock = talloc_p(stream_socket, struct dcesrv_socket_context);
+	dcesrv_sock = talloc(stream_socket, struct dcesrv_socket_context);
 	if (!dcesrv_sock) {
-		DEBUG(0,("talloc_p(stream_socket, struct dcesrv_socket_context) failed\n"));
+		DEBUG(0,("talloc(stream_socket, struct dcesrv_socket_context) failed\n"));
 		return;
 	}
 
@@ -102,9 +102,9 @@ static void add_socket_rpc_ncalrpc(struct server_service *service, struct dcesrv
 		return;
 	}
 
-	dcesrv_sock = talloc_p(stream_socket, struct dcesrv_socket_context);
+	dcesrv_sock = talloc(stream_socket, struct dcesrv_socket_context);
 	if (!dcesrv_sock) {
-		DEBUG(0,("talloc_p(stream_socket, struct dcesrv_socket_context) failed\n"));
+		DEBUG(0,("talloc(stream_socket, struct dcesrv_socket_context) failed\n"));
 		return;
 	}
 
@@ -143,9 +143,9 @@ static void add_socket_rpc_tcp_iface(struct server_service *service,
 		e->ep_description.endpoint = talloc_asprintf(dce_ctx, "%d", port);
 	}
 
-	dcesrv_sock = talloc_p(stream_socket, struct dcesrv_socket_context);
+	dcesrv_sock = talloc(stream_socket, struct dcesrv_socket_context);
 	if (!dcesrv_sock) {
-		DEBUG(0,("talloc_p(stream_socket, struct dcesrv_socket_context) failed\n"));
+		DEBUG(0,("talloc(stream_socket, struct dcesrv_socket_context) failed\n"));
 		return;
 	}
 

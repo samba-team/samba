@@ -1057,7 +1057,7 @@ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 {
 	char *dup_str = talloc_strdup(mem_ctx, str);
 
-	*strings = talloc_realloc_p(mem_ctx,
+	*strings = talloc_realloc(mem_ctx,
 				    *strings,
 				    const char *, ((*num)+1));
 

@@ -31,7 +31,7 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 {
 	struct security_token *st;
 
-	st = talloc_p(mem_ctx, struct security_token);
+	st = talloc(mem_ctx, struct security_token);
 	if (!st) {
 		return NULL;
 	}
@@ -63,7 +63,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	ptoken = security_token_initialise(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);
 
-	ptoken->sids = talloc_array_p(ptoken, struct dom_sid *, n_groupSIDs + 5);
+	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 5);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
 	ptoken->user_sid = talloc_reference(ptoken, user_sid);
@@ -163,5 +163,5 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 		}
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }

@@ -252,7 +252,7 @@ int smbcli_nt_create_full(struct smbcli_tree *tree, const char *fname,
 	open_parms.ntcreatex.in.fname = fname;
 
 	status = smb_raw_open(tree, mem_ctx, &open_parms);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
 		return open_parms.ntcreatex.out.fnum;
@@ -319,7 +319,7 @@ int smbcli_open(struct smbcli_tree *tree, const char *fname, int flags,
 	open_parms.openx.in.fname = fname;
 
 	status = smb_raw_open(tree, mem_ctx, &open_parms);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
 		return open_parms.openx.out.fnum;
@@ -633,7 +633,7 @@ NTSTATUS smbcli_dskattr(struct smbcli_tree *tree, int *bsize, int *total, int *a
 		*avail = fsinfo_parms.dskattr.out.units_free;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	
 	return status;
 }
@@ -660,7 +660,7 @@ int smbcli_ctemp(struct smbcli_tree *tree, const char *path, char **tmp_path)
 	if (tmp_path) {
 		*tmp_path = strdup(open_parms.ctemp.out.name);
 	}
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	if (NT_STATUS_IS_OK(status)) {
 		return open_parms.ctemp.out.fnum;
 	}

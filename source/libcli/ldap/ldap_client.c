@@ -100,7 +100,7 @@ static struct ldap_connection *new_ldap_connection(TALLOC_CTX *mem_ctx)
 {
 	struct ldap_connection *result;
 
-	result = talloc_p(mem_ctx, struct ldap_connection);
+	result = talloc(mem_ctx, struct ldap_connection);
 
 	if (!result) {
 		return NULL;
@@ -158,7 +158,7 @@ struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx)
 {
 	struct ldap_message *result;
 
-	result = talloc_p(mem_ctx, struct ldap_message);
+	result = talloc(mem_ctx, struct ldap_message);
 
 	if (!result) {
 		return NULL;
@@ -472,7 +472,7 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 
 done:
 	if (mem_ctx)
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 
 	return result;
 }

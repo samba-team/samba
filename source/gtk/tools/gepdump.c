@@ -118,7 +118,7 @@ static void refresh_eps(void)
 	struct policy_handle handle;
 	TALLOC_CTX *mem_ctx = talloc_init("dump");
 
-	talloc_destroy(eps_ctx);
+	talloc_free(eps_ctx);
 
 	ZERO_STRUCT(handle);
 
@@ -152,10 +152,10 @@ static void refresh_eps(void)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return;
 	}
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }
 
 static void on_refresh_clicked (GtkButton *btn, gpointer user_data)
