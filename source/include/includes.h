@@ -467,6 +467,7 @@ extern int errno;
 
 #include "version.h"
 #include "smb.h"
+#include "smbw.h"
 #include "nameserv.h"
 
 #include "byteorder.h"

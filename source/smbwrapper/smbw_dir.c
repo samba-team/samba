@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "smbw.h"
 #include "wrapper.h"
 
 extern pstring smb_cwd;
@@ -576,8 +575,9 @@ DIR *smbw_opendir(const char *fname)
 /***************************************************** 
 read one entry from a directory
 *******************************************************/
-struct dirent *smbw_readdir(struct smbw_dir *d)
+struct dirent *smbw_readdir(DIR *dirp)
 {
+	struct smbw_dir *d = (struct smbw_dir *)dirp;
 	static struct dirent de;
 
 	if (smbw_getdents(d->fd, &de, sizeof(struct dirent)) > 0) 
@@ -589,23 +589,26 @@ struct dirent *smbw_readdir(struct smbw_dir *d)
 /***************************************************** 
 close a DIR*
 *******************************************************/
-int smbw_closedir(struct smbw_dir *d)
+int smbw_closedir(DIR *dirp)
 {
+	struct smbw_dir *d = (struct smbw_dir *)dirp;
 	return smbw_close(d->fd);
 }
 
 /***************************************************** 
 seek in a directory
 *******************************************************/
-void smbw_seekdir(struct smbw_dir *d, off_t offset)
+void smbw_seekdir(DIR *dirp, off_t offset)
 {
+	struct smbw_dir *d = (struct smbw_dir *)dirp;
 	smbw_dir_lseek(d->fd,offset, SEEK_SET);
 }
 
 /***************************************************** 
 current loc in a directory
 *******************************************************/
-off_t smbw_telldir(struct smbw_dir *d)
+off_t smbw_telldir(DIR *dirp)
 {
+	struct smbw_dir *d = (struct smbw_dir *)dirp;
 	return smbw_dir_lseek(d->fd,0,SEEK_CUR);
 }

@@ -82,7 +82,7 @@ __asm__(".globl __fcntl; __fcntl = fcntl");
  int fcntl(int fd, int cmd, long arg)
 {
 	if (smbw_fd(fd)) {
-		return smbw_fcntl(fd);
+		return smbw_fcntl(fd, cmd, arg);
 	}
 
 	return real_fcntl(fd, cmd, arg);
@@ -431,7 +431,7 @@ __asm__(".globl __write; __write = write");
 }
 
 
- int utime(const char *name,struct timeval *tvp)
+ int utime(const char *name,void *tvp)
 {
 	if (smbw_path(name)) {
 		return smbw_utime(name, tvp);
