@@ -16,7 +16,7 @@ Major new features:
 -------------------
 
 1)  Active Directory support.  Samba 3.0 is now able to  
-    to join a ADS realm as a member server and authenticate 
+    join a ADS realm as a member server and authenticate 
     users using LDAP/Kerberos.
 
 2)  Unicode support. Samba will now negotiate UNICODE on the wire and
