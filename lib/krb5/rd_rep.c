@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -55,10 +55,12 @@ krb5_rd_rep(krb5_context context,
       return ret;
   if (ap_rep.pvno != 5) {
     ret = KRB5KRB_AP_ERR_BADVERSION;
+    krb5_clear_error_string (context);
     goto out;
   }
   if (ap_rep.msg_type != krb_ap_rep) {
     ret = KRB5KRB_AP_ERR_MSG_TYPE;
+    krb5_clear_error_string (context);
     goto out;
   }
 
@@ -77,6 +79,7 @@ krb5_rd_rep(krb5_context context,
   *repl = malloc(sizeof(**repl));
   if (*repl == NULL) {
     ret = ENOMEM;
+    krb5_set_error_string (context, "malloc: out of memory");
     goto out;
   }
   ret = krb5_decode_EncAPRepPart(context,
@@ -90,6 +93,7 @@ krb5_rd_rep(krb5_context context,
   if ((*repl)->ctime != auth_context->authenticator->ctime ||
       (*repl)->cusec != auth_context->authenticator->cusec) {
     ret = KRB5KRB_AP_ERR_MUT_FAIL;
+    krb5_clear_error_string (context);
     goto out;
   }
   if ((*repl)->seq_number)

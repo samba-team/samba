@@ -51,11 +51,14 @@ krb5_sock_to_principal (krb5_context context,
     int family;
     char *hname = NULL;
 
-    if (getsockname (sock, sa, &len) < 0)
-	return errno;
+    if (getsockname (sock, sa, &len) < 0) {
+	ret = errno;
+	krb5_set_error_string (context, "getsockname: %s", strerror(ret));
+	return ret;
+    }
     family = sa->sa_family;
     
-    ret = krb5_sockaddr2address (sa, &address);
+    ret = krb5_sockaddr2address (context, sa, &address);
     if (ret)
 	return ret;
 
@@ -63,8 +66,11 @@ krb5_sock_to_principal (krb5_context context,
 				   address.address.length,
 				   family);
 
-    if (hostent == NULL) 
+    if (hostent == NULL) {
+	krb5_set_error_string (context, "gethostbyaddr: %s",
+			       hstrerror(h_errno));
 	return krb5_h_errno_to_heim_errno(h_errno);
+    }
     hname = hostent->h_name;
     if (strchr(hname, '.') == NULL) {
 	char **a;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999, 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -86,8 +86,11 @@ krb5_get_default_principal (krb5_context context,
 	    if(user == NULL)
 		user = getlogin();
 	}
-	if(user == NULL)
+	if(user == NULL) {
+	    krb5_set_error_string(context,
+				  "unable to figure out current principal");
 	    return ENOTTY; /* XXX */
+	}
 	ret = krb5_make_principal(context, princ, NULL, user, NULL);
     }
 

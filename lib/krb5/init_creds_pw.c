@@ -175,7 +175,7 @@ print_expire (krb5_context context,
 			       7 * 24 * 60 * 60);
 
     for (i = 0; i < lr->len; ++i) {
-	if (lr->val[i].lr_type == 6
+	if (abs(lr->val[i].lr_type) == LR_PW_EXPTIME
 	    && lr->val[i].lr_value <= t) {
 	    char *p;
 	    time_t tmp = lr->val[i].lr_value;
@@ -252,8 +252,10 @@ get_init_creds_common(krb5_context context,
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ETYPE_LIST) {
 	*etypes = malloc((options->etype_list_length + 1)
 			* sizeof(krb5_enctype));
-	if (*etypes == NULL)
+	if (*etypes == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
+	}
 	memcpy (*etypes, options->etype_list,
 		options->etype_list_length * sizeof(krb5_enctype));
 	(*etypes)[options->etype_list_length] = ETYPE_NULL;
@@ -261,8 +263,10 @@ get_init_creds_common(krb5_context context,
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST) {
 	*pre_auth_types = malloc((options->preauth_list_length + 1)
 				 * sizeof(krb5_preauthtype));
-	if (*pre_auth_types == NULL)
+	if (*pre_auth_types == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
+	}
 	memcpy (*pre_auth_types, options->preauth_list,
 		options->preauth_list_length * sizeof(krb5_preauthtype));
 	(*pre_auth_types)[options->preauth_list_length] = KRB5_PADATA_NONE;
@@ -370,8 +374,10 @@ change_password (krb5_context context,
     if (result_code == 0) {
 	strlcpy (newpw, buf1, newpw_sz);
 	ret = 0;
-    } else
+    } else {
+	krb5_set_error_string (context, "failed changing password");
 	ret = ENOTTY;
+    }
 
 out:
     memset (buf1, 0, sizeof(buf1));
@@ -429,6 +435,7 @@ krb5_get_init_creds_password(krb5_context context,
 	if (ret) {
 	    memset (buf, 0, sizeof(buf));
 	    ret = KRB5_LIBOS_PWDINTR;
+	    krb5_clear_error_string (context);
 	    goto out;
 	}
 	password = password_data.data;
@@ -455,6 +462,8 @@ krb5_get_init_creds_password(krb5_context context,
 	    break;
 	case KRB5KDC_ERR_KEY_EXPIRED :
 	    /* try to avoid recursion */
+
+	    krb5_clear_error_string (context);
 
 	    if (in_tkt_service != NULL
 		&& strcmp (in_tkt_service, "kadmin/changepw") == 0)
@@ -533,6 +542,7 @@ krb5_get_init_creds_keytab(krb5_context context,
 
     a = malloc (sizeof(*a));
     if (a == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto out;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -72,8 +72,10 @@ krb5_copy_keyblock (krb5_context context,
     krb5_keyblock *k;
 
     k = malloc (sizeof(*k));
-    if (k == NULL)
+    if (k == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     *to = k;
     return krb5_copy_keyblock_contents (context, inblock, k);
 }

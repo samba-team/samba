@@ -50,7 +50,8 @@ verify_common (krb5_context context,
 
     ret = krb5_sname_to_principal (context, NULL, service, KRB5_NT_SRV_HST,
 				   &server);
-    if(ret) return ret;
+    if(ret)
+	return ret;
 
     krb5_verify_init_creds_opt_init(&vopt);
     krb5_verify_init_creds_opt_set_ap_req_nofail(&vopt, secure);
@@ -62,7 +63,8 @@ verify_common (krb5_context context,
 				 NULL,
 				 &vopt);
     krb5_free_principal(context, server);
-    if(ret) return ret;
+    if(ret)
+	return ret;
     if(ccache == NULL)
 	ret = krb5_cc_default (context, &id);
     else
@@ -150,6 +152,7 @@ krb5_verify_user_lrealm(krb5_context context,
 
 	if (tmp == NULL) {
 	    krb5_free_host_realm (context, realms);
+	    krb5_set_error_string (context, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	free (*krb5_princ_realm (context, principal));

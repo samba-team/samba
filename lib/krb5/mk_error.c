@@ -86,8 +86,10 @@ krb5_mk_error(krb5_context context,
 
     buf_size = 1024;
     buf = malloc (buf_size);
-    if (buf == NULL)
+    if (buf == NULL) {
+	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
+    }
 
     do {
 	ret = encode_KRB_ERROR(buf + buf_size - 1,
@@ -101,6 +103,7 @@ krb5_mk_error(krb5_context context,
 		buf_size *= 2;
 		tmp = realloc (buf, buf_size);
 		if (tmp == NULL) {
+		    krb5_set_error_string (context, "malloc: out of memory");
 		    ret = ENOMEM;
 		    goto out;
 		}
@@ -114,6 +117,7 @@ krb5_mk_error(krb5_context context,
     reply->length = len;
     reply->data = malloc(len);
     if (reply->data == NULL) {
+	krb5_set_error_string (context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto out;
     }

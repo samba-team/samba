@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999, 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -196,6 +196,7 @@ krb524_convert_creds_kdc(krb5_context context,
     sp = krb5_storage_from_mem(reply.data, reply.length);
     if(sp == NULL) {
 	ret = ENOMEM;
+	krb5_set_error_string (context, "malloc: out of memory");
 	goto out2;
     }
     krb5_ret_int32(sp, &tmp);
@@ -203,10 +204,12 @@ krb524_convert_creds_kdc(krb5_context context,
     if(ret == 0) {
 	memset(v4creds, 0, sizeof(*v4creds));
 	ret = krb5_ret_int32(sp, &tmp);
-	if(ret) goto out;
+	if(ret)
+	    goto out;
 	v4creds->kvno = tmp;
 	ret = krb5_ret_data(sp, &ticket);
-	if(ret) goto out;
+	if(ret)
+	    goto out;
 	v4creds->ticket_st.length = ticket.length;
 	memcpy(v4creds->ticket_st.dat, ticket.data, ticket.length);
 	krb5_data_free(&ticket);
@@ -215,7 +218,8 @@ krb524_convert_creds_kdc(krb5_context context,
 				      v4creds->service, 
 				      v4creds->instance, 
 				      v4creds->realm);
-	if(ret) goto out;
+	if(ret)
+	    goto out;
 	v4creds->issue_date = v5_creds->times.authtime;
 	v4creds->lifetime = _krb_time_to_life(v4creds->issue_date,
 					      v5_creds->times.endtime);
@@ -223,7 +227,8 @@ krb524_convert_creds_kdc(krb5_context context,
 				      v4creds->pname, 
 				      v4creds->pinst, 
 				      realm);
-	if(ret) goto out;
+	if(ret)
+	    goto out;
 	memcpy(v4creds->session, v5_creds->session.keyvalue.data, 8);
     }
 out:

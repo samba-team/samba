@@ -70,6 +70,7 @@ any_resolve(krb5_context context, const char *name, krb5_keytab id)
 	    a0 = a;
 	    a->name = strdup(name);
 	    if (a->name == NULL) {
+		krb5_set_error_string(context, "malloc: out of memory");
 		ret = ENOMEM;
 		goto fail;
 	    }
@@ -83,8 +84,10 @@ any_resolve(krb5_context context, const char *name, krb5_keytab id)
 	    goto fail;
 	prev = a;
     }
-    if (a0 == NULL)
+    if (a0 == NULL) {
+	krb5_set_error_string(context, "empty ANY: keytab");
 	return ENOENT;
+    }
     id->data = a0;
     return 0;
  fail:
@@ -128,8 +131,10 @@ any_start_seq_get(krb5_context context,
     krb5_error_code ret;
 
     c->data = malloc (sizeof(struct any_cursor_extra_data));
-    if(c->data == NULL)
+    if(c->data == NULL){
+	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
+    }
     ed = (struct any_cursor_extra_data *)c->data;
     ed->a = a;
     ret = krb5_kt_start_seq_get(context, ed->a->kt, &ed->cursor);
@@ -137,6 +142,7 @@ any_start_seq_get(krb5_context context,
 	free (ed);
 	free (c->data);
 	c->data = NULL;
+	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
     }
     return 0;
@@ -161,8 +167,10 @@ any_next_entry (krb5_context context,
 	    if (ret2)
 		return ret2;
 	    ed->a = ed->a->next;
-	    if (ed->a == NULL)
+	    if (ed->a == NULL) {
+		krb5_clear_error_string (context);
 		return KRB5_CC_END;
+	    }
 	    ret2 = krb5_kt_start_seq_get(context, ed->a->kt, &ed->cursor);
 	    if (ret2)
 		return ret2;

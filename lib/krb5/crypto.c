@@ -115,7 +115,8 @@ struct encryption_type {
     struct checksum_type *checksum;
     struct checksum_type *keyed_checksum;
     unsigned flags;
-    krb5_error_code (*encrypt)(struct key_data *key,
+    krb5_error_code (*encrypt)(krb5_context context,
+			       struct key_data *key,
 			       void *data, size_t len,
 			       krb5_boolean encrypt,
 			       int usage,
@@ -168,8 +169,10 @@ DES_string_to_key(krb5_context context,
 
     len = password.length + salt.saltvalue.length + 1;
     s = malloc(len);
-    if(s == NULL)
+    if(s == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     memcpy(s, password.data, password.length);
     memcpy(s + password.length, salt.saltvalue.data, salt.saltvalue.length);
     s[len - 1] = '\0';
@@ -335,8 +338,10 @@ DES3_string_to_key(krb5_context context,
     
     len = password.length + salt.saltvalue.length;
     str = malloc(len);
-    if(len != 0 && str == NULL)
+    if(len != 0 && str == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     memcpy(str, password.data, password.length);
     memcpy(str + password.length, salt.saltvalue.data, salt.saltvalue.length);
     {
@@ -387,8 +392,10 @@ DES3_string_to_key_derived(krb5_context context,
     char *s;
 
     s = malloc(len);
-    if(len != 0 && s == NULL)
+    if(len != 0 && s == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     memcpy(s, password.data, password.length);
     memcpy(s + password.length, salt.saltvalue.data, salt.saltvalue.length);
     ret = krb5_string_to_key_derived(context,
@@ -433,8 +440,10 @@ ARCFOUR_string_to_key(krb5_context context,
 
     len = 2 * password.length;
     s = malloc (len);
-    if (len != 0 && s == NULL)
+    if (len != 0 && s == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     for (p = s, i = 0; i < password.length; ++i) {
 	*p++ = ((char *)password.data)[i];
 	*p++ = 0;
@@ -579,16 +588,22 @@ krb5_salttype_to_string (krb5_context context,
     struct salt_type *st;
 
     e = _find_enctype (etype);
-    if (e == NULL)
+    if (e == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
+    }
     for (st = e->keytype->string_to_key; st && st->type; st++) {
 	if (st->type == stype) {
 	    *string = strdup (st->name);
-	    if (*string == NULL)
+	    if (*string == NULL) {
+		krb5_set_error_string(context, "malloc: out of memory");
 		return ENOMEM;
+	    }
 	    return 0;
 	}
     }
+    krb5_set_error_string(context, "salttype %d not supported", stype);
     return HEIM_ERR_SALTTYPE_NOSUPP;
 }
 
@@ -602,14 +617,18 @@ krb5_string_to_salttype (krb5_context context,
     struct salt_type *st;
 
     e = _find_enctype (etype);
-    if (e == NULL)
+    if (e == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
+    }
     for (st = e->keytype->string_to_key; st && st->type; st++) {
 	if (strcasecmp (st->name, string) == 0) {
 	    *salttype = st->type;
 	    return 0;
 	}
     }
+    krb5_set_error_string(context, "salttype %s not supported", string);
     return HEIM_ERR_SALTTYPE_NOSUPP;
 }
 
@@ -695,11 +714,16 @@ krb5_string_to_key_data_salt (krb5_context context,
 {
     struct encryption_type *et =_find_enctype(enctype);
     struct salt_type *st;
-    if(et == NULL)
+    if(et == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      enctype);
 	return KRB5_PROG_ETYPE_NOSUPP;
+    }
     for(st = et->keytype->string_to_key; st && st->type; st++) 
 	if(st->type == salt.salttype)
 	    return (*st->string_to_key)(context, enctype, password, salt, key);
+    krb5_set_error_string(context, "salt type %d not supported",
+			  salt.salttype);
     return HEIM_ERR_SALTTYPE_NOSUPP;
 }
 
@@ -728,11 +752,15 @@ krb5_keytype_to_string(krb5_context context,
 		       char **string)
 {
     struct key_type *kt = _find_keytype(keytype);
-    if(kt == NULL)
+    if(kt == NULL) {
+	krb5_set_error_string(context, "key type %d not supported", keytype);
 	return KRB5_PROG_KEYTYPE_NOSUPP;
+    }
     *string = strdup(kt->name);
-    if(*string == NULL)
+    if(*string == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     return 0;
 }
 
@@ -747,6 +775,7 @@ krb5_string_to_keytype(krb5_context context,
 	    *keytype = keytypes[i]->type;
 	    return 0;
 	}
+    krb5_set_error_string(context, "key type %s not supported", string);
     return KRB5_PROG_KEYTYPE_NOSUPP;
 }
 
@@ -757,8 +786,11 @@ krb5_generate_random_keyblock(krb5_context context,
 {
     krb5_error_code ret;
     struct encryption_type *et = _find_enctype(type);
-    if(et == NULL)
+    if(et == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      type);
 	return KRB5_PROG_ETYPE_NOSUPP;
+    }
     ret = krb5_data_alloc(&key->keyvalue, et->keytype->size);
     if(ret) 
 	return ret;
@@ -784,8 +816,10 @@ _key_schedule(krb5_context context,
     if (key->schedule != NULL)
 	return 0;
     ALLOC(key->schedule, 1);
-    if(key->schedule == NULL)
+    if(key->schedule == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     ret = krb5_data_alloc(key->schedule, kt->schedule_size);
     if(ret) {
 	free(key->schedule);
@@ -894,8 +928,10 @@ RSA_MD4_DES_verify(krb5_context context,
     MD4_Update (&md4, tmp, 8); /* confounder */
     MD4_Update (&md4, data, len);
     MD4_Final (res, &md4);
-    if(memcmp(res, tmp + 8, sizeof(res)) != 0)
+    if(memcmp(res, tmp + 8, sizeof(res)) != 0) {
+	krb5_clear_error_string (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+    }
     memset(tmp, 0, sizeof(tmp));
     memset(res, 0, sizeof(res));
     return ret;
@@ -968,8 +1004,10 @@ RSA_MD5_DES_verify(krb5_context context,
     MD5_Update (&md5, tmp, 8); /* confounder */
     MD5_Update (&md5, data, len);
     MD5_Final (res, &md5);
-    if(memcmp(res, tmp + 8, sizeof(res)) != 0)
+    if(memcmp(res, tmp + 8, sizeof(res)) != 0) {
+	krb5_clear_error_string (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+    }
     memset(tmp, 0, sizeof(tmp));
     memset(res, 0, sizeof(res));
     return ret;
@@ -1028,8 +1066,10 @@ RSA_MD5_DES3_verify(krb5_context context,
     MD5_Update (&md5, tmp, 8); /* confounder */
     MD5_Update (&md5, data, len);
     MD5_Final (res, &md5);
-    if(memcmp(res, tmp + 8, sizeof(res)) != 0)
+    if(memcmp(res, tmp + 8, sizeof(res)) != 0) {
+	krb5_clear_error_string (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+    }
     memset(tmp, 0, sizeof(tmp));
     memset(res, 0, sizeof(res));
     return ret;
@@ -1357,8 +1397,10 @@ get_checksum_key(krb5_context context,
 	int i;
 
 	*key = _new_derived_key(crypto, 0xff/* KRB5_KU_RFC1510_VARIANT */);
-	if(*key == NULL)
+	if(*key == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
+	}
 	ret = krb5_copy_keyblock(context, crypto->key.key, &(*key)->key);
 	if(ret) 
 	    return ret;
@@ -1386,8 +1428,10 @@ do_checksum (krb5_context context,
     int keyed_checksum;
 
     keyed_checksum = (ct->flags & F_KEYED) != 0;
-    if(keyed_checksum && crypto == NULL)
+    if(keyed_checksum && crypto == NULL) {
+	krb5_clear_error_string (context);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
+    }
     if(keyed_checksum) {
 	ret = get_checksum_key(context, crypto, usage, ct, &dkey);
 	if (ret)
@@ -1419,8 +1463,11 @@ create_checksum(krb5_context context,
 	    ct = crypto->et->checksum;
     }
 
-    if(ct == NULL)
+    if(ct == NULL) {
+	krb5_set_error_string (context, "checksum type %d not supported",
+			       type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
     return do_checksum (context, ct, crypto, usage, data, len, result);
 }
 
@@ -1453,13 +1500,20 @@ verify_checksum(krb5_context context,
     struct checksum_type *ct;
 
     ct = _find_checksum(cksum->cksumtype);
-    if(ct == NULL)
+    if(ct == NULL) {
+	krb5_set_error_string (context, "checksum type %d not supported",
+			       cksum->cksumtype);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
-    if(ct->checksumsize != cksum->checksum.length)
+    }
+    if(ct->checksumsize != cksum->checksum.length) {
+	krb5_clear_error_string (context);
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY; /* XXX */
+    }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
-    if(keyed_checksum && crypto == NULL)
+    if(keyed_checksum && crypto == NULL) {
+	krb5_clear_error_string (context);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
+    }
     if(keyed_checksum)
 	ret = get_checksum_key(context, crypto, usage, ct, &dkey);
     else
@@ -1474,10 +1528,12 @@ verify_checksum(krb5_context context,
     (*ct->checksum)(context, dkey, data, len, usage, &c);
 
     if(c.checksum.length != cksum->checksum.length || 
-       memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length))
+       memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length)) {
+	krb5_clear_error_string (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-    else
+    } else {
 	ret = 0;
+    }
     krb5_data_free (&c.checksum);
     return ret;
 }
@@ -1500,8 +1556,11 @@ krb5_checksumsize(krb5_context context,
 		  size_t *size)
 {
     struct checksum_type *ct = _find_checksum(type);
-    if(ct == NULL)
+    if(ct == NULL) {
+	krb5_set_error_string (context, "checksum type %d not supported",
+			       type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
     *size = ct->checksumsize;
     return 0;
 }
@@ -1511,8 +1570,11 @@ krb5_checksum_is_keyed(krb5_context context,
 		       krb5_cksumtype type)
 {
     struct checksum_type *ct = _find_checksum(type);
-    if(ct == NULL)
+    if(ct == NULL) {
+	krb5_set_error_string (context, "checksum type %d not supported",
+			       type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
     return ct->flags & F_KEYED;
 }
 
@@ -1521,8 +1583,11 @@ krb5_checksum_is_collision_proof(krb5_context context,
 				 krb5_cksumtype type)
 {
     struct checksum_type *ct = _find_checksum(type);
-    if(ct == NULL)
+    if(ct == NULL) {
+	krb5_set_error_string (context, "checksum type %d not supported",
+			       type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
     return ct->flags & F_CPROOF;
 }
 
@@ -1531,7 +1596,8 @@ krb5_checksum_is_collision_proof(krb5_context context,
  ************************************************************/
 
 static krb5_error_code
-NULL_encrypt(struct key_data *key, 
+NULL_encrypt(krb5_context context,
+	     struct key_data *key, 
 	     void *data, 
 	     size_t len, 
 	     krb5_boolean encrypt,
@@ -1542,7 +1608,8 @@ NULL_encrypt(struct key_data *key,
 }
 
 static krb5_error_code
-DES_CBC_encrypt_null_ivec(struct key_data *key, 
+DES_CBC_encrypt_null_ivec(krb5_context context,
+			  struct key_data *key, 
 			  void *data, 
 			  size_t len, 
 			  krb5_boolean encrypt,
@@ -1557,7 +1624,8 @@ DES_CBC_encrypt_null_ivec(struct key_data *key,
 }
 
 static krb5_error_code
-DES_CBC_encrypt_key_ivec(struct key_data *key, 
+DES_CBC_encrypt_key_ivec(krb5_context context,
+			 struct key_data *key, 
 			 void *data, 
 			 size_t len, 
 			 krb5_boolean encrypt,
@@ -1572,7 +1640,8 @@ DES_CBC_encrypt_key_ivec(struct key_data *key,
 }
 
 static krb5_error_code
-DES3_CBC_encrypt(struct key_data *key, 
+DES3_CBC_encrypt(krb5_context context,
+		 struct key_data *key, 
 		 void *data, 
 		 size_t len, 
 		 krb5_boolean encrypt,
@@ -1587,7 +1656,8 @@ DES3_CBC_encrypt(struct key_data *key,
 }
 
 static krb5_error_code
-DES3_CBC_encrypt_ivec(struct key_data *key, 
+DES3_CBC_encrypt_ivec(krb5_context context,
+		      struct key_data *key, 
 		      void *data, 
 		      size_t len, 
 		      krb5_boolean encrypt,
@@ -1601,7 +1671,8 @@ DES3_CBC_encrypt_ivec(struct key_data *key,
 }
 
 static krb5_error_code
-DES_CFB64_encrypt_null_ivec(struct key_data *key, 
+DES_CFB64_encrypt_null_ivec(krb5_context context,
+			    struct key_data *key, 
 			    void *data, 
 			    size_t len, 
 			    krb5_boolean encrypt,
@@ -1618,7 +1689,8 @@ DES_CFB64_encrypt_null_ivec(struct key_data *key,
 }
 
 static krb5_error_code
-DES_PCBC_encrypt_key_ivec(struct key_data *key, 
+DES_PCBC_encrypt_key_ivec(krb5_context context,
+			  struct key_data *key, 
 			  void *data, 
 			  size_t len, 
 			  krb5_boolean encrypt,
@@ -1640,7 +1712,8 @@ DES_PCBC_encrypt_key_ivec(struct key_data *key,
  */
 
 static krb5_error_code
-ARCFOUR_subencrypt(struct key_data *key,
+ARCFOUR_subencrypt(krb5_context context,
+		   struct key_data *key,
 		   void *data,
 		   size_t len,
 		   int usage,
@@ -1695,7 +1768,8 @@ ARCFOUR_subencrypt(struct key_data *key,
 }
 
 static krb5_error_code
-ARCFOUR_subdecrypt(struct key_data *key,
+ARCFOUR_subdecrypt(krb5_context context,
+		   struct key_data *key,
 		   void *data,
 		   size_t len,
 		   int usage,
@@ -1749,10 +1823,12 @@ ARCFOUR_subdecrypt(struct key_data *key,
     memset (k2_c_data, 0, sizeof(k2_c_data));
     memset (k3_c_data, 0, sizeof(k3_c_data));
 
-    if (memcmp (cksum.checksum.data, data, 16) != 0)
+    if (memcmp (cksum.checksum.data, data, 16) != 0) {
+	krb5_clear_error_string (context);
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY;
-    else
+    } else {
 	return 0;
+    }
 }
 
 /*
@@ -1802,7 +1878,8 @@ usage2arcfour (int usage)
 }
 
 static krb5_error_code
-ARCFOUR_encrypt(struct key_data *key,
+ARCFOUR_encrypt(krb5_context context,
+		struct key_data *key,
 		void *data,
 		size_t len,
 		krb5_boolean encrypt,
@@ -1812,9 +1889,9 @@ ARCFOUR_encrypt(struct key_data *key,
     usage = usage2arcfour (usage);
 
     if (encrypt)
-	return ARCFOUR_subencrypt (key, data, len, usage, ivec);
+	return ARCFOUR_subencrypt (context, key, data, len, usage, ivec);
     else
-	return ARCFOUR_subdecrypt (key, data, len, usage, ivec);
+	return ARCFOUR_subdecrypt (context, key, data, len, usage, ivec);
 }
 
 
@@ -2003,11 +2080,16 @@ krb5_enctype_to_string(krb5_context context,
 {
     struct encryption_type *e;
     e = _find_enctype(etype);
-    if(e == NULL)
+    if(e == NULL) {
+	krb5_set_error_string (context, "encryption type %d not supported",
+			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
+    }
     *string = strdup(e->name);
-    if(*string == NULL)
+    if(*string == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     return 0;
 }
 
@@ -2022,6 +2104,8 @@ krb5_string_to_enctype(krb5_context context,
 	    *etype = etypes[i]->type;
 	    return 0;
 	}
+    krb5_set_error_string (context, "encryption type %s not supported",
+			   string);
     return KRB5_PROG_ETYPE_NOSUPP;
 }
 
@@ -2031,8 +2115,11 @@ krb5_enctype_to_keytype(krb5_context context,
 			krb5_keytype *keytype)
 {
     struct encryption_type *e = _find_enctype(etype);
-    if(e == NULL)
+    if(e == NULL) {
+	krb5_set_error_string (context, "encryption type %d not supported",
+			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
+    }
     *keytype = e->keytype->type; /* XXX */
     return 0;
 }
@@ -2068,8 +2155,10 @@ krb5_keytype_to_enctypes (krb5_context context,
 	    ++n;
     }
     ret = malloc(n * sizeof(int));
-    if (ret == NULL && n != 0)
+    if (ret == NULL && n != 0) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     n = 0;
     for (i = num_etypes - 1; i >= 0; --i) {
 	if (etypes[i]->keytype->type == keytype
@@ -2101,8 +2190,10 @@ krb5_keytype_to_enctypes_default (krb5_context context,
     for (n = 0; context->etypes_des[n]; ++n)
 	;
     ret = malloc (n * sizeof(*ret));
-    if (ret == NULL && n != 0)
+    if (ret == NULL && n != 0) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     for (i = 0; i < n; ++i)
 	ret[i] = context->etypes_des[i];
     *len = n;
@@ -2183,6 +2274,7 @@ encrypt_internal_derived(krb5_context context,
 			  &cksum);
     if(ret == 0 && cksum.checksum.length != checksum_sz) {
 	free_Checksum (&cksum);
+	krb5_clear_error_string (context);
 	ret = KRB5_CRYPTO_INTERNAL;
     }
     if(ret) {
@@ -2207,7 +2299,7 @@ encrypt_internal_derived(krb5_context context,
 #ifdef CRYPTO_DEBUG
     krb5_crypto_debug(context, 1, block_sz, dkey->key);
 #endif
-    (*et->encrypt)(dkey, p, block_sz, 1, usage, ivec);
+    (*et->encrypt)(context, dkey, p, block_sz, 1, usage, ivec);
     result->data = p;
     result->length = block_sz + checksum_sz;
     return 0;
@@ -2232,8 +2324,10 @@ encrypt_internal(krb5_context context,
     sz = et->confoundersize + checksum_sz + len;
     block_sz = (sz + et->blocksize - 1) &~ (et->blocksize - 1); /* pad */
     p = calloc(1, block_sz);
-    if(p == NULL)
+    if(p == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     
     q = p;
     krb5_generate_random_block(q, et->confoundersize); /* XXX */
@@ -2249,8 +2343,10 @@ encrypt_internal(krb5_context context,
 			  p, 
 			  block_sz,
 			  &cksum);
-    if(ret == 0 && cksum.checksum.length != checksum_sz)
+    if(ret == 0 && cksum.checksum.length != checksum_sz) {
+	krb5_clear_error_string (context);
 	ret = KRB5_CRYPTO_INTERNAL;
+    }
     if(ret) {
 	memset(p, 0, block_sz);
 	free(p);
@@ -2268,7 +2364,7 @@ encrypt_internal(krb5_context context,
 #ifdef CRYPTO_DEBUG
     krb5_crypto_debug(context, 1, block_sz, crypto->key.key);
 #endif
-    (*et->encrypt)(&crypto->key, p, block_sz, 1, 0, ivec);
+    (*et->encrypt)(context, &crypto->key, p, block_sz, 1, 0, ivec);
     result->data = p;
     result->length = block_sz;
     return 0;
@@ -2289,15 +2385,17 @@ encrypt_internal_special(krb5_context context,
     char *tmp, *p;
 
     tmp = malloc (sz);
-    if (tmp == NULL)
+    if (tmp == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     p = tmp;
     memset (p, 0, cksum_sz);
     p += cksum_sz;
     krb5_generate_random_block(p, et->confoundersize);
     p += et->confoundersize;
     memcpy (p, data, len);
-    (*et->encrypt)(&crypto->key, tmp, sz, TRUE, usage, ivec);
+    (*et->encrypt)(context, &crypto->key, tmp, sz, TRUE, usage, ivec);
     result->data   = tmp;
     result->length = sz;
     return 0;
@@ -2321,12 +2419,16 @@ decrypt_internal_derived(krb5_context context,
     unsigned long l;
     
     checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
-    if (len < checksum_sz)
-	return EINVAL;		/* better error code? */
+    if (len < checksum_sz) {
+	krb5_clear_error_string (context);
+	return EINVAL;		/* XXX - better error code? */
+    }
 
     p = malloc(len);
-    if(len != 0 && p == NULL)
+    if(len != 0 && p == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     memcpy(p, data, len);
 
     len -= checksum_sz;
@@ -2344,7 +2446,7 @@ decrypt_internal_derived(krb5_context context,
 #ifdef CRYPTO_DEBUG
     krb5_crypto_debug(context, 0, len, dkey->key);
 #endif
-    (*et->encrypt)(dkey, p, len, 0, usage, ivec);
+    (*et->encrypt)(context, dkey, p, len, 0, usage, ivec);
 
     cksum.checksum.data   = p + len;
     cksum.checksum.length = checksum_sz;
@@ -2363,8 +2465,9 @@ decrypt_internal_derived(krb5_context context,
     l = len - et->confoundersize;
     memmove(p, p + et->confoundersize, l);
     result->data = realloc(p, l);
-    if(p == NULL) {
+    if(result->data == NULL) {
 	free(p);
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
     result->length = l;
@@ -2387,8 +2490,10 @@ decrypt_internal(krb5_context context,
     
     checksum_sz = CHECKSUMSIZE(et->checksum);
     p = malloc(len);
-    if(len != 0 && p == NULL)
+    if(len != 0 && p == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     memcpy(p, data, len);
     
     ret = _key_schedule(context, &crypto->key);
@@ -2399,7 +2504,7 @@ decrypt_internal(krb5_context context,
 #ifdef CRYPTO_DEBUG
     krb5_crypto_debug(context, 0, len, crypto->key.key);
 #endif
-    (*et->encrypt)(&crypto->key, p, len, 0, 0, ivec);
+    (*et->encrypt)(context, &crypto->key, p, len, 0, 0, ivec);
     ret = krb5_data_copy(&cksum.checksum, p + et->confoundersize, checksum_sz);
     if(ret) {
  	free(p);
@@ -2418,6 +2523,7 @@ decrypt_internal(krb5_context context,
     result->data = realloc(p, l);
     if(result->data == NULL) {
 	free(p);
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
     result->length = l;
@@ -2440,10 +2546,12 @@ decrypt_internal_special(krb5_context context,
     char *tmp;
 
     tmp = malloc (sz);
-    if (tmp == NULL)
+    if (tmp == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     
-    (*et->encrypt)(&crypto->key, data, len, FALSE, usage, ivec);
+    (*et->encrypt)(context, &crypto->key, data, len, FALSE, usage, ivec);
 
     memcpy (tmp, cdata + cksum_sz + et->confoundersize, sz);
 
@@ -2695,29 +2803,36 @@ derive_key(krb5_context context,
        len != et->blocksize) {
 	nblocks = (kt->bits + et->blocksize * 8 - 1) / (et->blocksize * 8);
 	k = malloc(nblocks * et->blocksize);
-	if(k == NULL)
+	if(k == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
+	}
 	_krb5_n_fold(constant, len, k, et->blocksize);
 	for(i = 0; i < nblocks; i++) {
 	    if(i > 0)
 		memcpy(k + i * et->blocksize, 
 		       k + (i - 1) * et->blocksize,
 		       et->blocksize);
-	    (*et->encrypt)(key, k + i * et->blocksize, et->blocksize, 1, 0,
-			   NULL);
+	    (*et->encrypt)(context, key, k + i * et->blocksize, et->blocksize,
+			   1, 0, NULL);
 	}
     } else {
 	/* this case is probably broken, but won't be run anyway */
 	void *c = malloc(len);
 	size_t res_len = (kt->bits + 7) / 8;
 
-	if(len != 0 && c == NULL)
+	if(len != 0 && c == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
+	}
 	memcpy(c, constant, len);
-	(*et->encrypt)(key, c, len, 1, 0, NULL);
+	(*et->encrypt)(context, key, c, len, 1, 0, NULL);
 	k = malloc(res_len);
-	if(res_len != 0 && k == NULL)
+	if(res_len != 0 && k == NULL) {
+	    free(c);
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
+	}
 	_krb5_n_fold(c, len, k, res_len);
 	free(c);
     }
@@ -2728,8 +2843,9 @@ derive_key(krb5_context context,
 	DES3_postproc(context, k, nblocks * et->blocksize, key);
 	break;
     default:
-	krb5_warnx(context, "derive_key() called with unknown keytype (%u)", 
-		   kt->type);
+	krb5_set_error_string(context,
+			      "derive_key() called with unknown keytype (%u)", 
+			      kt->type);
 	ret = KRB5_CRYPTO_INTERNAL;
 	break;
     }
@@ -2765,8 +2881,11 @@ krb5_derive_key(krb5_context context,
     struct key_data d;
 
     et = _find_enctype (etype);
-    if (et == NULL)
+    if (et == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
+    }
 
     ret = krb5_copy_keyblock(context, key, derived_key);
     if (ret)
@@ -2797,8 +2916,10 @@ _get_derived_key(krb5_context context,
 	    return 0;
 	}
     d = _new_derived_key(crypto, usage);
-    if(d == NULL)
+    if(d == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     krb5_copy_keyblock(context, crypto->key.key, &d->key);
     _krb5_put_int(constant, usage, 5);
     derive_key(context, crypto->et, d, constant, sizeof(constant));
@@ -2815,13 +2936,17 @@ krb5_crypto_init(krb5_context context,
 {
     krb5_error_code ret;
     ALLOC(*crypto, 1);
-    if(*crypto == NULL)
+    if(*crypto == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     if(etype == ETYPE_NULL)
 	etype = key->keytype;
     (*crypto)->et = _find_enctype(etype);
     if((*crypto)->et == NULL) {
 	free(*crypto);
+	krb5_set_error_string (context, "encryption type %d not supported",
+			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     ret = krb5_copy_keyblock(context, key, &(*crypto)->key.key);
@@ -2877,8 +3002,11 @@ krb5_string_to_key_derived(krb5_context context,
     struct key_data kd;
     u_char *tmp;
 
-    if(et == NULL)
+    if(et == NULL) {
+	krb5_set_error_string (context, "encryption type %d not supported",
+			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
+    }
     ALLOC(kd.key, 1);
     kd.key->keytype = etype;
     tmp = malloc (et->keytype->bits / 8);

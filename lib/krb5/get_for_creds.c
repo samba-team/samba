@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,6 +53,7 @@ add_addrs(krb5_context context,
     addr->len += n;
     tmp = realloc(addr->val, addr->len * sizeof(*addr->val));
     if (tmp == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto fail;
     }
@@ -62,10 +63,12 @@ add_addrs(krb5_context context,
 	krb5_data_zero(&addr->val[i].address);
     }
     for (a = ai; a != NULL; a = a->ai_next) {
-	ret = krb5_sockaddr2address (a->ai_addr, &addr->val[i]);
+	ret = krb5_sockaddr2address (context, a->ai_addr, &addr->val[i]);
 	if (ret == 0)
 	    ++i;
-	else if (ret != KRB5_PROG_ATYPE_NOSUPP)
+	else if (ret == KRB5_PROG_ATYPE_NOSUPP)
+	    krb5_clear_error_string (context);
+	else
 	    goto fail;
     }
     addr->len = i;
@@ -143,8 +146,11 @@ krb5_get_forwarded_creds (krb5_context	    context,
     addrs.val = NULL;
 
     ret = getaddrinfo (hostname, NULL, NULL, &ai);
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context, "resolving %s: %s",
+			      hostname, gai_strerror(ret));
 	return krb5_eai_to_heim_errno(ret);
+    }
 
     ret = add_addrs (context, &addrs, ai);
     freeaddrinfo (ai);
@@ -171,6 +177,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     ALLOC_SEQ(&cred.tickets, 1);
     if (cred.tickets.val == NULL) {
 	ret = ENOMEM;
+	krb5_set_error_string(context, "malloc: out of memory");
 	goto out2;
     }
     ret = decode_Ticket(out_creds->ticket.data,
@@ -183,6 +190,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     ALLOC_SEQ(&enc_krb_cred_part.ticket_info, 1);
     if (enc_krb_cred_part.ticket_info.val == NULL) {
 	ret = ENOMEM;
+	krb5_set_error_string(context, "malloc: out of memory");
 	goto out4;
     }
     
@@ -191,18 +199,21 @@ krb5_get_forwarded_creds (krb5_context	    context,
     ALLOC(enc_krb_cred_part.timestamp, 1);
     if (enc_krb_cred_part.timestamp == NULL) {
 	ret = ENOMEM;
+	krb5_set_error_string(context, "malloc: out of memory");
 	goto out4;
     }
     *enc_krb_cred_part.timestamp = sec;
     ALLOC(enc_krb_cred_part.usec, 1);
     if (enc_krb_cred_part.usec == NULL) {
  	ret = ENOMEM;
+	krb5_set_error_string(context, "malloc: out of memory");
 	goto out4;
     }
     *enc_krb_cred_part.usec      = usec;
 
     if (auth_context->local_address && auth_context->local_port) {
-	ret = krb5_make_addrport (&enc_krb_cred_part.s_address,
+	ret = krb5_make_addrport (context,
+				  &enc_krb_cred_part.s_address,
 				  auth_context->local_address,
 				  auth_context->local_port);
 	if (ret)
@@ -213,6 +224,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	ALLOC(enc_krb_cred_part.r_address, 1);
 	if (enc_krb_cred_part.r_address == NULL) {
 	    ret = ENOMEM;
+	krb5_set_error_string(context, "malloc: out of memory");
 	    goto out4;
 	}
 
@@ -288,8 +300,10 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	return ret;
     out_data->length = len;
     out_data->data   = malloc(len);
-    if (out_data->data == NULL)
+    if (out_data->data == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     memcpy (out_data->data, buf + sizeof(buf) - len, len);
     return 0;
 out4:

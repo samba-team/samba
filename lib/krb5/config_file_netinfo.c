@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -131,7 +131,9 @@ ni_idlist2binding(void *ni, ni_idlist *idlist, krb5_config_section **ret)
 }
 
 krb5_error_code
-krb5_config_parse_file (const char *fname, krb5_config_section **res)
+krb5_config_parse_file (krb5_context context,
+			const char *fname,
+			krb5_config_section **res)
 {
     void *ni = NULL, *lastni = NULL;
     int i;

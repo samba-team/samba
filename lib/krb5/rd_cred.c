@@ -59,11 +59,13 @@ krb5_rd_cred(krb5_context context,
 
     if (cred.pvno != 5) {
 	ret = KRB5KRB_AP_ERR_BADVERSION;
+	krb5_clear_error_string (context);
 	goto out;
     }
 
     if (cred.msg_type != krb_cred) {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
+	krb5_clear_error_string (context);
 	goto out;
     }
 
@@ -110,7 +112,7 @@ krb5_rd_cred(krb5_context context,
 	krb5_address *a;
 	int cmp;
 
-	ret = krb5_make_addrport (&a,
+	ret = krb5_make_addrport (context, &a,
 				  auth_context->remote_address,
 				  auth_context->remote_port);
 	if (ret)
@@ -125,6 +127,7 @@ krb5_rd_cred(krb5_context context,
 	free (a);
 
 	if (cmp == 0) {
+	    krb5_clear_error_string (context);
 	    ret = KRB5KRB_AP_ERR_BADADDR;
 	    goto out;
 	}
@@ -137,6 +140,7 @@ krb5_rd_cred(krb5_context context,
 	&& !krb5_address_compare (context,
 				  auth_context->local_address,
 				  enc_krb_cred_part.r_address)) {
+	krb5_clear_error_string (context);
 	ret = KRB5KRB_AP_ERR_BADADDR;
 	goto out;
     }
@@ -151,6 +155,7 @@ krb5_rd_cred(krb5_context context,
 	    enc_krb_cred_part.usec      == NULL ||
 	    abs(*enc_krb_cred_part.timestamp - sec)
 	    > context->max_skew) {
+	    krb5_clear_error_string (context);
 	    ret = KRB5KRB_AP_ERR_SKEW;
 	    goto out;
 	}
@@ -185,6 +190,7 @@ krb5_rd_cred(krb5_context context,
 	creds = calloc(1, sizeof(*creds));
 	if(creds == NULL) {
 	    ret = ENOMEM;
+	    krb5_set_error_string (context, "malloc: out of memory");
 	    goto out;
 	}
 

@@ -161,18 +161,22 @@ krb5_get_host_realm_int (krb5_context context,
     if(p != NULL) {
 	p++;
 	*realms = malloc(2 * sizeof(krb5_realm));
-	if (*realms == NULL)
+	if (*realms == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
+	}
 
 	(*realms)[0] = strdup(p);
 	if((*realms)[0] == NULL) {
 	    free(*realms);
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	strupr((*realms)[0]);
 	(*realms)[1] = NULL;
 	return 0;
     }
+    krb5_set_error_string(context, "unable to find realm of host %s", host);
     return KRB5_ERR_HOST_REALM_UNKNOWN;
 }
 

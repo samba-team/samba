@@ -92,8 +92,12 @@ krb5_verify_init_creds(krb5_context context,
     if (ap_req_server == NULL) {
 	char local_hostname[MAXHOSTNAMELEN];
 
-	if (gethostname (local_hostname, sizeof(local_hostname)) < 0)
-	    return errno;
+	if (gethostname (local_hostname, sizeof(local_hostname)) < 0) {
+	    ret = errno;
+	    krb5_set_error_string (context, "getsockname: %s",
+				   strerror(ret));
+	    return ret;
+	}
 
 	ret = krb5_sname_to_principal (context,
 				       local_hostname,

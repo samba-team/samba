@@ -48,8 +48,10 @@ krb5_kt_register(krb5_context context,
 
     tmp = realloc(context->kt_types,
 		  (context->num_kt_types + 1) * sizeof(*context->kt_types));
-    if(tmp == NULL)
+    if(tmp == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     memcpy(&tmp[context->num_kt_types], ops,
 	   sizeof(tmp[context->num_kt_types]));
     context->kt_types = tmp;
@@ -96,8 +98,10 @@ krb5_kt_resolve(krb5_context context,
     }
     
     k = malloc (sizeof(*k));
-    if (k == NULL)
+    if (k == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     memcpy(k, &context->kt_types[i], sizeof(*k));
     k->data = NULL;
     ret = (*k->resolve)(context, residual, k);
@@ -117,8 +121,10 @@ krb5_kt_resolve(krb5_context context,
 krb5_error_code
 krb5_kt_default_name(krb5_context context, char *name, size_t namesize)
 {
-    if (strlcpy (name, context->default_keytab, namesize) >= namesize)
+    if (strlcpy (name, context->default_keytab, namesize) >= namesize) {
+	krb5_clear_error_string (context);
 	return KRB5_CONFIG_NOTENUFSPACE;
+    }
     return 0;
 }
 
@@ -130,8 +136,10 @@ krb5_kt_default_name(krb5_context context, char *name, size_t namesize)
 krb5_error_code
 krb5_kt_default_modify_name(krb5_context context, char *name, size_t namesize)
 {
-    if (strlcpy (name, context->default_keytab_modify, namesize) >= namesize)
+    if (strlcpy (name, context->default_keytab_modify, namesize) >= namesize) {
+	krb5_clear_error_string (context);
 	return KRB5_CONFIG_NOTENUFSPACE;
+    }
     return 0;
 }
 
@@ -277,10 +285,19 @@ krb5_kt_get_entry(krb5_context context,
 	krb5_kt_free_entry(context, &tmp);
     }
     krb5_kt_end_seq_get (context, id, &cursor);
-    if (entry->vno)
+    if (entry->vno) {
 	return 0;
-    else
+    } else {
+	char princ[256], kt_name[256];
+
+	krb5_unparse_name_fixed (context, principal, princ, sizeof(princ));
+	krb5_kt_get_name (context, id, kt_name, sizeof(kt_name));
+
+	krb5_set_error_string (context,
+ 			       "failed to find %s in keytab %s",
+			       princ, kt_name);
 	return KRB5_KT_NOTFOUND;
+    }
 }
 
 /*

@@ -386,6 +386,7 @@ krb5_sendto (krb5_context context,
 	     freeaddrinfo(ai);
 	 }
      }
+     krb5_clear_error_string (context);
      ret = KRB5_KDC_UNREACH;
 out:
      return ret;
