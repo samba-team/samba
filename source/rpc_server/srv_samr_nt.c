@@ -1899,12 +1899,14 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 
 /*******************************************************************
  _api_samr_create_user
+ Create an account, can be either a normal user or a machine.
+ This funcion will need to be updated for bdc/domain trusts.
  ********************************************************************/
 
 NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
-	fstring mach_acct;
+	fstring account;
 	pstring err_str;
 	pstring msg_str;
 	int local_flags=0;
@@ -1921,22 +1923,22 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	if (!find_policy_by_hnd(p, &dom_pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* find the machine account: tell the caller if it exists.
+	/* find the account: tell the caller if it exists.
 	  lkclXXXX i have *no* idea if this is a problem or not
  	  or even if you are supposed to construct a different
 	  reply if the account already exists...
 	 */
 
-	rpcstr_pull(mach_acct, user_account.buffer, sizeof(mach_acct), user_account.uni_str_len*2, 0);
-	strlower(mach_acct);
+	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
+	strlower(account);
 
 	pdb_init_sam(&sam_pass);
 
 	become_root();
-	ret = pdb_getsampwnam(sam_pass, mach_acct);
+	ret = pdb_getsampwnam(sam_pass, account);
 	unbecome_root();
 	if (ret == True) {
-		/* machine account exists: say so */
+		/* this account exists: say so */
 		pdb_free_sam(sam_pass);
 		return NT_STATUS_USER_EXISTS;
 	}
@@ -1960,19 +1962,32 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	 *
 	 * So we go the easy way, only check after if the account exists.
 	 * JFM (2/3/2001), to clear any possible bad understanding (-:
+	 *
+	 * We now have seperate script paramaters for adding users/machines so we
+	 * now have some sainity-checking to match. 
 	 */
 
-	pstrcpy(add_script, lp_addmachine_script());
+	DEBUG(10,("checking account %s at pos %d for $ termination\n",account, strlen(account)-1));
+
+	if ((acb_info & ACB_WSTRUST) && (account[strlen(account)-1] == '$')) {
+		pstrcpy(add_script, lp_addmachine_script());		
+	} else if ((!(acb_info & ACB_WSTRUST)) && (account[strlen(account)-1] != '$')) {
+		pstrcpy(add_script, lp_adduser_script());
+	} else {
+		DEBUG(0, ("_api_samr_create_user: mismatch between trust flags and $ termination\n"));
+		pdb_free_sam(sam_pass);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if(*add_script) {
 		int add_ret;
-		all_string_sub(add_script, "%u", mach_acct, sizeof(mach_acct));
+		all_string_sub(add_script, "%u", account, sizeof(account));
 		add_ret = smbrun(add_script,NULL);
 		DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n",add_script,add_ret));
 	}
 
 	/* add the user in the smbpasswd file or the Samba authority database */
-	if (!local_password_change(mach_acct, local_flags, NULL, err_str,
+	if (!local_password_change(account, local_flags, NULL, err_str,
 	    sizeof(err_str), msg_str, sizeof(msg_str))) {
 		DEBUG(0, ("%s\n", err_str));
 		pdb_free_sam(sam_pass);
@@ -1980,7 +1995,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	}
 
 	become_root();
-	ret = pdb_getsampwnam(sam_pass, mach_acct);
+	ret = pdb_getsampwnam(sam_pass, account);
  	unbecome_root();
  	if (ret == False) {
 		/* account doesn't exist: say so */
