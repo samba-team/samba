@@ -77,7 +77,9 @@ static void usage(void)
   printf("Version %s\n",VERSION);
   printf("\t-d debuglevel         set the debuglevel\n");
   printf("\t-B broadcast address  the address to use for broadcasts\n");
+  printf("\t-U unicast   address  the address to use for unicast\n");
   printf("\t-M                    searches for a master browser\n");
+  printf("\t-R                    set recursion desired in packet\n");
   printf("\t-S                    lookup node status as well\n");
   printf("\t-r                    Use root port 137 (Win95 only replies to this)\n");
   printf("\t-A                    Do a node status on <name> as an IP Address\n");
@@ -103,7 +105,8 @@ int main(int argc,char *argv[])
   BOOL use_bcast = True;
   BOOL got_bcast = False;
   BOOL lookup_by_ip = False;
-  
+  BOOL recursion_desired = False;
+
   DEBUGLEVEL = 1;
   *lookup = 0;
 
@@ -113,7 +116,7 @@ int main(int argc,char *argv[])
 
   charset_initialise();
 
-  while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhA")) != EOF)
+  while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhAR")) != EOF)
     switch (opt)
       {
       case 'B':
@@ -137,6 +140,9 @@ int main(int argc,char *argv[])
 	break;
       case 'S':
 	find_status = True;
+	break;
+      case 'R':
+	recursion_desired = True;
 	break;
       case 'd':
 	DEBUGLEVEL = atoi(optarg);
@@ -213,7 +219,7 @@ int main(int argc,char *argv[])
 	retries = 1;
       }
 
-      if (name_query(ServerFD,lookup,lookup_type,use_bcast,True,
+      if (name_query(ServerFD,lookup,lookup_type,use_bcast,recursion_desired,
 		     bcast_addr,&ip,NULL)) 
       {
         printf("%s %s\n",inet_ntoa(ip),lookup);

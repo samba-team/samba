@@ -214,7 +214,7 @@ BOOL name_query(int fd,char *name,int name_type,
   nmb->header.response = False;
   nmb->header.nm_flags.bcast = bcast;
   nmb->header.nm_flags.recursion_available = False;
-  nmb->header.nm_flags.recursion_desired = True;
+  nmb->header.nm_flags.recursion_desired = recurse;
   nmb->header.nm_flags.trunc = False;
   nmb->header.nm_flags.authoritative = False;
   nmb->header.rcode = 0;
