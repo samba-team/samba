@@ -218,3 +218,6 @@
 #ifndef _GNU_SOURCE
 #undef _GNU_SOURCE
 #endif
+
+#undef LDAP_SET_REBIND_PROC_ARGS
+
