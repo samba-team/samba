@@ -3,42 +3,39 @@ Copyright (C) 1997-1998 - Samba-Team
 The Samba-Team are committed to an agressive program to deliver quality
 controlled software to a well defined roadmap.
 
-The current Samba release 1.9.18 is called the "Oplock Release"
-The following development objectives are in place:
+The current Samba release 2.0.0 is called the "Domain Client Release"
+
+It correctly implements the Windows NT specific SMB calls,
+and will operate correctly as a client in a Windows NT
+Domain environment.
+
+In addition, the first implementation of the Web-based GUI
+management tool ships with 2.0.0, thus fullfilling some of
+the commitments made in the 1.9.18 release Roadmap document.
+
+Some work has been done on ensuring compatibility with
+Windows NT 5.0 (now Windows 2000 :-) although this is
+a somewhat (slowly) moving target.
+
+The following development objectives for future releases
+are in place:
+
 ----------------------------------------------------------------------------
-Please Note: Development of the 1.9.19 and 1.9.20 releases is presently
-	     well ahead of schedule. This means that the release program
-	     may very well change radically from what is outlined below.
+2.0.x       -   "NT Security update" - Allowing Windows NT Clients to
+                manipulate file security and ownership using native tools.
 
-	     If present developments continue then 1.9.19 will feature
-	     improved authentication and security capabilities as well as
-	     the long promised GUI (Web) based management tools.
+2.0.xx      -   "Thin Server" mode, allowing a Samba server to be
+                inserted into a network with no UNIX setup required.
+                Some management capabilities for Samba using native NT tools.
 
-	     This being the case, then version 2.0 may become the long
-	     awaited Windows NT Domain Controller Release and version 2.1
-	     will become the Directory Services update.
+2.X         -   "Domain Controller" - able to serve as a Windows NT PDC.
 
-	     Should 1.9.19 roll out ahead of schedule then there will
-	     likely be a delay of up to 6 months before the NT Domain
-	     Controller release will be ready for prime-time business use.
-----------------------------------------------------------------------------
+X.XX        -   "Full Domain Integration" - allowing both PDC and BDC modes.
 
-Version	/ Codename	Notes
-------------------	----------------------------------------------------
-1.9.19			An authentication update release to offer improved
-"Auth Code Release"	security and password synchronisation capabilities.
-                        Also, support for Windows NT specific SMB calls.
+Note that it is a given that the Samba Team will continue to track
+Windows (NT/2000) update releases, ensuring that Samba will work
+well with whatever "Beta" releases Redmond throws our way :-).
 
-1.9.20			Introduction of new managment tools
-"GUI Config Release"	Improved multi-language support.
-
-2.0			The next generation Directory Services update
-"DSA Release"
-
-While no release date or content promises are made we are hoping to release
-the remainder of the 1.9 series relases within short time frame.
-
-Should a budding contributor spring into gear and deliver any of the above
-ahead of the above release sequence then we reserve the option to make an
-out of sequence release (but always keeping to a logical sequence code number).
-
+You may also note that the release numbers get fuzzier the
+further into the future the objectives get. This is intentional
+as we cannot yet commit to exact timeframes.
