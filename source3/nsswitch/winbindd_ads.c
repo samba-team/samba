@@ -461,6 +461,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	user_dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
 
+	if (msg) ads_msgfree(ads, msg);
+
 	rc = ads_search_dn(ads, &msg, user_dn, attrs2);
 	if (rc) {
 		DEBUG(1,("lookup_usergroups(rid=%d) ads_search tokenGroups: %s\n", user_rid, ads_errstr(rc)));
