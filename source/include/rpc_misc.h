@@ -63,6 +63,15 @@
 #define RID_TYPE_GROUP   1
 #define RID_TYPE_ALIAS   2
 
+/* BIGINT - NT-style 64-bit integer */
+typedef struct bigint_info
+{
+	uint32 low;
+	uint32 high;
+
+} BIGINT;
+
+
 /* ENUM_HND */
 typedef struct enum_hnd_info
 {
@@ -142,6 +151,15 @@ typedef struct bufhdr_info
 
 } BUFHDR;
 
+/* BUFHDR2 - another buffer header, with info level */
+typedef struct bufhdr2_info
+{
+  uint32 info_level;
+  uint32 length; /* uint8 chars */
+  uint32 buffer;
+
+} BUFHDR2;
+
 /* BUFFER2 - unicode string, size (in uint8 ascii chars) and buffer */
 /* pathetic.  some stupid team of \PIPE\winreg writers got the concept */
 /* of a unicode string different from the other \PIPE\ writers */
@@ -150,7 +168,7 @@ typedef struct buffer2_info
   uint32 buf_max_len;
   uint32 undoc;
   uint32 buf_len;
-  uint16 buffer[MAX_UNISTRLEN]; /* unicode characters. **NOT** necessarily null-terminated */
+  uint8 buffer[MAX_UNISTRLEN];
 
 } BUFFER2;
 
@@ -162,6 +180,14 @@ typedef struct buffer3_info
   uint32 buf_len;
 
 } BUFFER3;
+
+/* BUFFER4 - simple length and buffer */
+typedef struct buffer4_info
+{
+  uint32 buf_len;
+  uint8  buffer[MAX_BUFFERLEN];
+
+} BUFFER4;
 
 /* UNISTR2 - unicode string size (in uint16 unicode chars) and buffer */
 typedef struct unistr2_info

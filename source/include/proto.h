@@ -1594,7 +1594,8 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
 				const char* trust_acct,
 				unsigned char trust_pwd[16],
 				uint16 sec_chan);
-BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum, unsigned char *new_hashof_trust_pwd);
+BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum,
+		      unsigned char *new_hashof_trust_pwd, uint16 sec_chan);
 BOOL cli_nt_login_interactive(struct cli_state *cli, uint16 fnum, char *domain, char *username, 
                               uint32 luid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
@@ -1641,11 +1642,14 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
 				const char *trust_acct, uint16 sec_chan, 
 				uint32 neg_flags, DOM_CHAL *srv_chal);
 BOOL cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
-BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum, uint8 hashed_mach_pwd[16]);
+BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum,
+		       uint8 hashed_mach_pwd[16], uint16 sec_chan_type);
 BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr, 
                        NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr);
-BOOL change_trust_account_password( char *domain, char *remote_machine_list);
+BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id);
+BOOL change_trust_account_password(char *domain, char *remote_machine_list,
+					uint16 sec_chan);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
@@ -1941,6 +1945,7 @@ void lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 
+void smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth);
 void smb_io_time(char *desc,  NTTIME *nttime, prs_struct *ps, int depth);
 void smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth);
 uint32 get_enum_hnd(ENUM_HND *enh);
@@ -1960,6 +1965,8 @@ void smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint
 void smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
 				uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
 void smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth);
+void make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer);
+void smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
 void make_uni_hdr2(UNIHDR2 *hdr, int len);
 void smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
 void make_unistr(UNISTR *str, char *buf);
@@ -1969,6 +1976,7 @@ void make_buffer3_str(BUFFER3 *str, char *buf, int len);
 void make_buffer3_hex(BUFFER3 *str, char *buf);
 void make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
 void smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth);
+void smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth);
 void make_buffer2(BUFFER2 *str, const char *buf, int len);
 void smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
 void make_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf);
@@ -1996,8 +2004,6 @@ void make_clnt_info(DOM_CLNT_INFO *clnt,
 		uint16 sec_chan, char *comp_name,
 				DOM_CRED *cred);
 void smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth);
-void make_logon_id(DOM_LOGON_ID *log, uint32 log_id_low, uint32 log_id_high);
-void smb_io_logon_id(char *desc,  DOM_LOGON_ID *log, prs_struct *ps, int depth);
 void make_owf_info(OWF_INFO *hash, uint8 data[16]);
 void smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
 void smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
@@ -2083,6 +2089,15 @@ void net_io_q_sam_logon(char *desc,  NET_Q_SAM_LOGON *q_l, prs_struct *ps, int d
 void net_io_r_sam_logon(char *desc,  NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth);
 void net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth);
 void net_io_r_sam_logoff(char *desc,  NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth);
+void make_q_sam_sync(NET_Q_SAM_SYNC *q_s, char *srv_name, char *cli_name,
+		     DOM_CRED *cli_creds, uint32 database_id);
+void net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC *q_s, prs_struct *ps, int depth);
+void make_sam_delta_hdr(SAM_DELTA_HDR *delta, uint16 type, uint32 rid);
+void make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
+			   char *full_name, uint32 user_rid, uint32 group_rid,
+			   char *home_dir, char *dir_drive, char *logon_script,
+			   char *acct_desc, uint32 acb_info, char *profile);
+void net_io_r_sam_sync(char *desc, NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
@@ -2838,6 +2853,7 @@ void cmd_lsa_query_secret(struct client_info *info);
 
 void cmd_netlogon_login_test(struct client_info *info);
 void cmd_netlogon_domain_test(struct client_info *info);
+void cmd_sam_sync(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */
 

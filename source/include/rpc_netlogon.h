@@ -34,9 +34,13 @@
 #define NET_LOGON_CTRL2        0x0e
 #define NET_TRUST_DOM_LIST     0x13
 
+#define NET_SAM_SYNC           0x10
+#define NET_SAM_DELTAS         0x07
+
 /* Secure Channel types.  used in NetrServerAuthenticate negotiation */
 #define SEC_CHAN_WKSTA   2
 #define SEC_CHAN_DOMAIN  4
+#define SEC_CHAN_BDC     6
 
 	
 /* NET_USER_INFO_3 */
@@ -269,7 +273,7 @@ typedef struct net_network_info_2
 	uint32            ptr_id_info2;        /* pointer to id_info_2 */
 	UNIHDR            hdr_domain_name;     /* domain name unicode header */
 	uint32            param_ctrl;          /* param control (0x2) */
-	DOM_LOGON_ID      logon_id;            /* logon ID */
+	BIGINT            logon_id;            /* logon ID */
 	UNIHDR            hdr_user_name;       /* user name unicode header */
 	UNIHDR            hdr_wksta_name;      /* workstation name unicode header */
 	uint8             lm_chal[8];          /* lan manager 8 byte challenge */
@@ -290,7 +294,7 @@ typedef struct id_info_1
 	uint32            ptr_id_info1;        /* pointer to id_info_1 */
 	UNIHDR            hdr_domain_name;     /* domain name unicode header */
 	uint32            param_ctrl;          /* param control */
-	DOM_LOGON_ID      logon_id;            /* logon ID */
+	BIGINT            logon_id;            /* logon ID */
 	UNIHDR            hdr_user_name;       /* user name unicode header */
 	UNIHDR            hdr_wksta_name;      /* workstation name unicode header */
 	OWF_INFO          lm_owf;              /* LM OWF Password */
@@ -369,6 +373,244 @@ typedef struct net_r_sam_logoff_info
   uint32 status; /* return code */
 
 } NET_R_SAM_LOGOFF;
+
+
+/* NET_Q_SAM_SYNC */
+typedef struct net_q_sam_sync_info
+{
+	UNISTR2 uni_srv_name; /* \\PDC */
+	UNISTR2 uni_cli_name; /* BDC */
+	DOM_CRED cli_creds;
+	DOM_CRED ret_creds;
+
+	uint32 database_id;
+	uint32 restart_state;
+	uint32 sync_context;
+
+	uint32 max_size;       /* preferred maximum length */
+
+} NET_Q_SAM_SYNC;
+
+#define MAX_GROUP_MEM  256
+#define MAX_SAM_DELTAS 256
+
+/* SAM_DELTA_HDR */
+typedef struct sam_delta_hdr_info
+{
+	uint16 type;  /* type of structure attached, see below */
+	uint16 type2;
+	uint32 target_rid;
+
+	uint32 type3;
+	uint32 ptr_delta;
+
+} SAM_DELTA_HDR;
+
+/* SAM_DOMAIN_INFO (0x1) */
+typedef struct sam_domain_info_info
+{
+	UNIHDR hdr_dom_name;
+	UNIHDR hdr_oem_info;
+
+	BIGINT force_logoff;
+	uint16 min_pwd_len;
+	uint16 pwd_history_len;
+	BIGINT max_pwd_age;
+	BIGINT min_pwd_age;
+	BIGINT dom_mod_count;
+	NTTIME creation_time;
+
+	BUFHDR2 hdr_sec_desc; /* security descriptor */
+	UNIHDR hdr_unknown;
+	uint8 reserved[40];
+
+	UNISTR2 uni_dom_name;
+	UNISTR2 buf_oem_info; /* never seen */
+
+	BUFFER4 buf_sec_desc;
+	UNISTR2 buf_unknown;
+
+} SAM_DOMAIN_INFO;
+
+/* SAM_GROUP_INFO (0x2) */
+typedef struct sam_group_info_info
+{
+	UNIHDR hdr_grp_name;
+	DOM_GID gid;
+	UNIHDR hdr_grp_desc;
+	BUFHDR2 hdr_sec_desc;  /* security descriptor */
+	uint8 reserved[48];
+
+	UNISTR2 uni_grp_name;
+	UNISTR2 uni_grp_desc;
+	BUFFER4 buf_sec_desc;
+
+} SAM_GROUP_INFO;
+
+/* SAM_ACCOUNT_INFO (0x5) */
+typedef struct sam_account_info_info
+{
+	UNIHDR hdr_acct_name;
+	UNIHDR hdr_full_name;
+
+	uint32 user_rid;
+	uint32 group_rid;
+
+	UNIHDR hdr_home_dir;
+	UNIHDR hdr_dir_drive;
+	UNIHDR hdr_logon_script;
+	UNIHDR hdr_acct_desc;
+
+	NTTIME time_1;
+	NTTIME time_2;
+	NTTIME time_3;
+
+	uint32 logon_divs; /* 0xA8 */
+	uint32 ptr_logon_hrs;
+
+	/* N.B. 8-byte alignment */
+	NTTIME time_4;
+	NTTIME time_5;
+	uint32 acb_info;
+	char reserved[36];
+
+	UNIHDR hdr_comment;
+	char unknown1[12];
+
+	BUFHDR2 hdr_pwd_info;
+	BUFHDR2 hdr_sec_desc;  /* security descriptor */
+	UNIHDR  hdr_profile;
+
+	char unknown2[24];
+	NTTIME time_6; /* *** HIGH/LOW DWORDS THE WRONG WAY!!! *** */
+	char unknown3[8];
+
+	UNISTR2 uni_acct_name;
+	UNISTR2 uni_full_name;
+	UNISTR2 uni_home_dir;
+	UNISTR2 uni_dir_drive;
+	UNISTR2 uni_logon_script;
+	UNISTR2 uni_acct_desc;
+
+	uint32 unknown4; /* 0x4EC */
+	uint32 unknown5; /* 0 */
+
+	BUFFER4 buf_logon_hrs;
+	UNISTR2 uni_comment;
+	BUFFER4 buf_pwd_info;
+	BUFFER4 buf_sec_desc;
+	UNISTR2 uni_profile;
+
+} SAM_ACCOUNT_INFO;
+
+/* SAM_GROUP_MEM_INFO (0x8) */
+typedef struct sam_group_mem_info_info
+{
+	uint32 ptr_rids;
+	uint32 ptr_attribs;
+	uint32 num_members;
+	uint8 unknown[16];
+
+	uint32 num_members2;
+	uint32 rids[MAX_GROUP_MEM];
+
+	uint32 num_members3;
+	uint32 attribs[MAX_GROUP_MEM];
+
+} SAM_GROUP_MEM_INFO;
+
+/* SAM_ALIAS_INFO (0x9) */
+typedef struct sam_alias_info_info
+{
+	UNIHDR hdr_als_name;
+	uint32 als_rid;
+	BUFHDR2 hdr_sec_desc;  /* security descriptor */
+	UNIHDR hdr_als_desc;
+	uint8 reserved[40];
+
+	UNISTR2 uni_als_name;
+	BUFFER4 buf_sec_desc;
+	UNISTR2 uni_als_desc;
+
+} SAM_ALIAS_INFO;
+
+/* SAM_ALIAS_MEM_INFO (0xC) */
+typedef struct sam_alias_mem_info_info
+{
+	uint32 num_members;
+	uint32 ptr_members;
+	uint8 unknown[16];
+
+	uint32 num_sids;
+	uint32 ptr_sids[MAX_GROUP_MEM];
+	DOM_SID2 sids[MAX_GROUP_MEM];
+
+} SAM_ALIAS_MEM_INFO;
+
+/* SAM_DELTA_CTR */
+typedef union sam_delta_ctr_info
+{
+	SAM_DOMAIN_INFO    domain_info ;
+	SAM_GROUP_INFO     group_info  ;
+	SAM_ACCOUNT_INFO   account_info;
+	SAM_GROUP_MEM_INFO grp_mem_info;
+	SAM_ALIAS_INFO     alias_info  ;
+	SAM_ALIAS_MEM_INFO als_mem_info;
+
+} SAM_DELTA_CTR;
+
+/* NET_R_SAM_SYNC */
+typedef struct net_r_sam_sync_info
+{
+	DOM_CRED srv_creds;
+
+	uint32 sync_context;
+
+	uint32 ptr_deltas;
+	uint32 num_deltas;
+	uint32 ptr_deltas2;
+	uint32 num_deltas2;
+
+	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
+	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
+
+	uint32 status;
+
+} NET_R_SAM_SYNC;
+
+
+/* NET_Q_SAM_DELTAS */
+typedef struct net_q_sam_deltas_info
+{
+	UNISTR2 uni_srv_name;
+	UNISTR2 uni_cli_name;
+	DOM_CRED cli_creds;
+	DOM_CRED ret_creds;
+
+	uint32 database_id;
+	BIGINT dom_mod_count;  /* domain mod count at last sync */
+
+	uint32 max_size;       /* preferred maximum length */
+
+} NET_Q_SAM_DELTAS;
+
+/* NET_R_SAM_DELTAS */
+typedef struct net_r_sam_deltas_info
+{
+	DOM_CRED srv_creds;
+
+	BIGINT dom_mod_count;   /* new domain mod count */
+
+	uint32 num_deltas;
+	uint32 ptr_deltas;
+	uint32 num_deltas2;
+
+	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
+	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
+
+	uint32 status;
+
+} NET_R_SAM_DELTAS;
 
 
 #endif /* _RPC_NETLOGON_H */
