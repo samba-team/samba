@@ -923,7 +923,7 @@ struct smb_ldap_privates;
 #define MAP_FILE 0
 #endif
 
-#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP) && !defined(WITH_TDB_SAM))
+#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP))
 #define USE_SMBPASS_DB 1
 #endif
 
