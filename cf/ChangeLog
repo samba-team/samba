@@ -3,6 +3,10 @@
 	* Makefile.am.common (AUTOMAKE_OPTIONS): set 1.4b here so that
 	users are warned if using earlier automake versions
 
+	* find-func-no-libs2.m4: ignore "no" as a library - another
+	special case to make it easy to send the result from this macro
+	into another invocation
+
 2001-08-30  Assar Westerlund  <assar@sics.se>
 
 	* db.m4: check for ndbm functions in db3 library too
@@ -14,6 +18,11 @@
 	  configuration time.
 
 2001-08-29  Assar Westerlund  <assar@sics.se>
+
+	* crypto.m4: use AC_WITH_ALL to allow separate specification of
+	include and lib
+	* with-all.m4: new macro for doing --with-foo, --with-foo-include,
+	and --with-foo-lib in a sensible way
 
 	* find-func-no-libs2.m4: handle both -llib and lib in the second
 	argument also yes -> "" as a library, to ease callers that send in
