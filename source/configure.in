@@ -2241,12 +2241,12 @@ if test x"$with_ldap_support" = x"yes"; then
   ##################################################################
   # we might need the lber lib on some systems. To avoid link errors
   # this test must be before the libldap test
-  AC_CHECK_LIB(lber, ber_scanf, [LDAP_LIBS="$LIBS -llber"])
+  AC_CHECK_LIB(lber, ber_scanf, [LDAP_LIBS="$LDAP_LIBS -llber"])
 
   ########################################################
   # now see if we can find the ldap libs in standard paths
   if test x$have_ldap != xyes; then
-  AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LDAP_LIBS="$LIBS -lldap";
+  AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LDAP_LIBS="$LDAP_LIBS -lldap";
 	AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])])
 	AC_CHECK_HEADERS([ldap.h lber.h], [default_modules="$default_modules pdb_ldap"])
 
