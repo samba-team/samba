@@ -390,7 +390,7 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char
 		krb5_free_principal(context, principal);
 		krb5_free_context(context);
 		DEBUG(1,("send of chpw failed (%s)\n", strerror(errno)));
-		return ADS_ERROR(LDAP_ENCODING_ERROR);
+		return ADS_ERROR_SYSTEM(errno);
 	}
 
 	free(chpw_req.data);
