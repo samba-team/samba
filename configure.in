@@ -28,6 +28,8 @@ CFLAGS="-g"
 
 dnl test
 
+AC_C_BIGENDIAN
+
 AM_C_PROTOTYPES
 
 dnl Checks for libraries.
@@ -50,6 +52,7 @@ AC_DECL_YYTEXT
 
 dnl Checks for library functions.
 AC_CHECK_FUNCS(gethostname mktime select socket strdup strstr)
+AC_CHECK_FUNCS(random rand setitimer)
 
 AC_TYPE_SIGNAL
 if test "$ac_cv_type_signal" = "void" ; then
