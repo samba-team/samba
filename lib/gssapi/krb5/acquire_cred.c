@@ -95,8 +95,9 @@ static OM_uint32 acquire_initiator_cred
     } else if (handle->principal != NULL &&
 	krb5_principal_compare(gssapi_krb5_context, handle->principal,
 	def_princ) == FALSE) {
-	kret = KRB5_PRINC_NOMATCH;
-	goto end;
+	/* Before failing, lets check the keytab */
+	krb5_free_principal(gssapi_krb5_context, def_princ);
+	def_princ = NULL;
     }
     if (def_princ == NULL) {
 	/* We have no existing credentials cache,
@@ -126,10 +127,34 @@ static OM_uint32 acquire_initiator_cred
 	kret = krb5_cc_store_cred(gssapi_krb5_context, ccache, &cred);
 	if (kret)
 	    goto end;
-    }
+	handle->lifetime = cred.times.endtime;
+    } else {
+	krb5_creds in_cred, *out_cred;
+	krb5_const_realm realm;
 
-    {
-	/* XXX get expiration -> handle->lifetime */
+	memset(&in_cred, 0, sizeof(in_cred));
+	in_cred.client = handle->principal;
+	
+	realm = krb5_principal_get_realm(gssapi_krb5_context, 
+					 handle->principal);
+	if (realm == NULL) {
+	    kret = KRB5_PRINC_NOMATCH; /* XXX */
+	    goto end;
+	}
+
+	kret = krb5_make_principal(gssapi_krb5_context, &in_cred.server, 
+				   realm, KRB5_TGS_NAME, realm, NULL);
+	if (kret)
+	    goto end;
+
+	kret = krb5_get_credentials(gssapi_krb5_context, 0, 
+				    ccache, &in_cred, &out_cred);
+	krb5_free_principal(gssapi_krb5_context, in_cred.server);
+	if (kret)
+	    goto end;
+
+	handle->lifetime = out_cred->times.endtime;
+	krb5_free_creds(gssapi_krb5_context, out_cred);
     }
 
     handle->ccache = ccache;
@@ -271,9 +296,7 @@ OM_uint32 gss_acquire_cred
     } 
     *minor_status = 0;
     if (time_rec)
-	*time_rec = time_req;
-    /* XXX */
-    handle->lifetime = time_req;
+	*time_rec = handle->lifetime;
     handle->usage = cred_usage;
     *output_cred_handle = handle;
     return (GSS_S_COMPLETE);
