@@ -120,8 +120,6 @@ extract_ticket(krb5_context context,
     principalname2krb5_principal(&creds->client, 
 				 rep->part1.cname, 
 				 rep->part1.crealm);
-    /* free (rep->part1.crealm); */
-    /*     krb5_principal_free (rep.part1.cname);*/
     {
 	char buf[1024];
 	size_t len;
@@ -133,7 +131,6 @@ extract_ticket(krb5_context context,
 	creds->second_ticket.length = 0;
 	creds->second_ticket.data   = NULL;
     }
-    /*     krb5_free_principal (context, rep->part1.ticket.sprinc);*/
 
     if (decrypt_proc == NULL)
 	decrypt_proc = decrypt_tkt;
