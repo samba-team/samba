@@ -460,21 +460,28 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 }
 
 /***********************************************************
- encode a password buffer.  The caller gets to figure out 
- what to put in it.
+ encode a password buffer with a unicode password.  The buffer
+ is filled with random data to make it harder to attack.
 ************************************************************/
-BOOL encode_pw_buffer(char buffer[516], char *new_pw, int new_pw_length)
+BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
 {
-	generate_random_buffer((unsigned char *)buffer, 516, True);
+	uchar new_pw[512];
+	size_t new_pw_len;
 
-	memcpy(&buffer[512 - new_pw_length], new_pw, new_pw_length);
+	new_pw_len = push_string(NULL, new_pw,
+				 password, 
+				 sizeof(new_pw), string_flags);
+	
+	memcpy(&buffer[512 - new_pw_len], new_pw, new_pw_len);
+
+	generate_random_buffer((unsigned char *)buffer, 512 - new_pw_len, True);
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of
 	 * the data buffer.
 	 */
-	SIVAL(buffer, 512, new_pw_length);
-
+	SIVAL(buffer, 512, new_pw_len);
+	ZERO_STRUCT(new_pw);
 	return True;
 }
 
