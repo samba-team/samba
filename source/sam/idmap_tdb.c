@@ -264,7 +264,7 @@ static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 }
 
 /* Get an id from a sid */
-static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, DOM_SID *sid)
+static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 {
 	TDB_DATA data, key;
 	fstring keystr;
