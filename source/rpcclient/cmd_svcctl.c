@@ -104,7 +104,8 @@ void cmd_svc_enum(struct client_info *info)
 		QUERY_SERVICE_CONFIG cfg;
 		uint32 svc_buf_size = 0x800;
 
-		fstrcpy(svc_name, unistr2(svcs[i].uni_srvc_name.buffer));
+		unistr_to_ascii(svc_name, svcs[i].uni_srvc_name.buffer,
+				sizeof(svc_name));
 
 		res2 = res2 ? svc_open_service(smb_cli, fnum,
 		                               &sc_man_pol,

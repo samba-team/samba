@@ -306,7 +306,7 @@ BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 			valid_query = True;
 			
 			*class_len      = r_o.hdr_class.uni_max_len;
-			fstrcpy(class, unistr2_to_str(&r_o.uni_class));
+			unistr2_to_ascii(class, &r_o.uni_class, sizeof(class));
 			*num_subkeys    = r_o.num_subkeys   ;
 			*max_subkeylen  = r_o.max_subkeylen ;
 			*max_subkeysize = r_o.max_subkeysize;
@@ -425,7 +425,8 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 		if (p)
 		{
 			valid_query = True;
-			fstrcpy(type, buffer2_to_str(&r_o.uni_type));
+			unistr_to_ascii(type, r_o.uni_type.buffer,
+				MIN(r_o.uni_type.buf_len, sizeof(type)));
 			(*unk_0) = r_o.unknown_0;
 			(*unk_1) = r_o.unknown_1;
 		}
@@ -786,7 +787,8 @@ BOOL do_reg_enum_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 			valid_query = True;
 			(*unk_1) = r_o.unknown_1;
 			(*unk_2) = r_o.unknown_2;
-			fstrcpy(key_name, unistr2(r_o.key_name.str.buffer));
+			unistr_to_ascii(key_name, r_o.key_name.str.buffer,
+					sizeof(key_name));
 			(*mod_time) = nt_time_to_unix(&r_o.time);
 		}
 	}
@@ -902,7 +904,7 @@ BOOL do_reg_enum_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 		{
 			valid_query = True;
 			(*val_type) = r_o.type;
-			fstrcpy(val_name, unistr2_to_str(&r_o.uni_name));
+			unistr2_to_ascii(val_name, &r_o.uni_name, sizeof(val_name));
 		}
 	}
 

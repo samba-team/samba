@@ -288,7 +288,7 @@ static void api_net_req_chal( uint16 vuid,
 	/* grab the challenge... */
 	net_io_q_req_chal("", &q_r, data, 0);
 
-	fstrcpy(mach_acct, unistr2_to_str(&q_r.uni_logon_clnt));
+	unistr2_to_ascii(mach_acct, &q_r.uni_logon_clnt, sizeof(mach_acct));
 
 	fstrcpy(mach_name, mach_acct);
 	strlower(mach_name);
@@ -399,7 +399,8 @@ static void api_net_srv_pwset( uint16 vuid,
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
-		fstrcpy(mach_acct, unistr2_to_str(&q_a.clnt_id.login.uni_acct_name));
+		unistr2_to_ascii(mach_acct, &q_a.clnt_id.login.uni_acct_name,
+				 sizeof(mach_acct));
 
 		DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 
@@ -672,12 +673,9 @@ static void api_net_sam_logon( uint16 vuid,
 
 	if (status == 0)
 	{
-		fstrcpy(nt_username, unistr2_to_str(uni_samlogon_user));
-#if 0
-		slprintf(nt_username, sizeof(nt_username), "%s\\%s",
-		         unistr2_to_str(uni_domain),
-		         unistr2_to_str(uni_samlogon_user));
-#endif
+		unistr2_to_ascii(nt_username, uni_samlogon_user,
+				 sizeof(nt_username));
+
 		DEBUG(3,("User:[%s]\n", nt_username));
 
 		become_root(True);

@@ -225,9 +225,15 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 
 	if (IS_BITS_SET_ALL(p->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
 	{
-		fstrcpy(p->user_name, unistrn2(p->ntlmssp_resp.user  , p->ntlmssp_resp.hdr_usr   .str_str_len/2));
-		fstrcpy(p->domain   , unistrn2(p->ntlmssp_resp.domain, p->ntlmssp_resp.hdr_domain.str_str_len/2));
-		fstrcpy(p->wks      , unistrn2(p->ntlmssp_resp.wks   , p->ntlmssp_resp.hdr_wks   .str_str_len/2));
+		unibuf_to_ascii(p->user_name, p->ntlmssp_resp.user,
+				MIN(p->ntlmssp_resp.hdr_usr   .str_str_len/2,
+				    sizeof(p->user_name)));
+		unibuf_to_ascii(p->domain   , p->ntlmssp_resp.domain,
+				MIN(p->ntlmssp_resp.hdr_domain.str_str_len/2,
+				    sizeof(p->domain   )));
+		unibuf_to_ascii(p->wks      , p->ntlmssp_resp.wks,
+				MIN(p->ntlmssp_resp.hdr_wks   .str_str_len/2,
+				    sizeof(p->wks      )));
 	}
 	else
 	{

@@ -50,7 +50,6 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   uint32 domainsidsize;
   char *getdc;
   char *uniuser; /* Unicode user name. */
-  pstring ascuser;
   char *unicomp; /* Unicode computer name. */
 
   memset(outbuf, 0, sizeof(outbuf));
@@ -118,7 +117,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       q = align2(unicomp, buf);
 
-      q = skip_unicode_string(q, 1);
+      q = skip_unibuf(q, buf+len-q);
 
       ntversion = IVAL(q, 0);
       q += 4;
@@ -140,10 +139,9 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
         q = align2(q, buf);
 
-        PutUniCode(q, my_name); /* PDC name */
-        q = skip_unicode_string(q, 1); 
-        PutUniCode(q, global_myworkgroup); /* Domain name*/
-        q = skip_unicode_string(q, 1); 
+	/* PDC and domain name */
+        q = ascii_to_unibuf(q, my_name, outbuf+sizeof(outbuf)-q);
+        q = ascii_to_unibuf(q, global_myworkgroup, outbuf+sizeof(outbuf)-q);
 
         SIVAL(q, 0, ntversion);
         q += 4;
@@ -177,8 +175,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       q += 2;
       unicomp = q;
-      uniuser = skip_unicode_string(unicomp,1);
-      getdc = skip_unicode_string(uniuser,1);
+      uniuser = skip_unibuf(unicomp, buf+len-q);
+      getdc = skip_unibuf(uniuser, buf+len-q);
       q = skip_string(getdc,1);
       q += 4;
       domainsidsize = IVAL(q, 0);
@@ -199,15 +197,20 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
        * Let's ignore the SID.
        */
 
-      pstrcpy(ascuser, unistr(uniuser));
-      DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
-
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       fstrcpy(reply_name+2,my_name); 
 
-      DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-	       unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
-	       SAMLOGON_R ,lmnttoken));
+      if (DEBUGLVL(3)) {
+	      fstring ascuser;
+	      fstring asccomp;
+
+	      unibuf_to_ascii(ascuser, uniuser, sizeof(ascuser));
+	      unibuf_to_ascii(asccomp, unicomp, sizeof(asccomp));
+
+	      DEBUGADD(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
+			  asccomp,inet_ntoa(p->ip), ascuser, reply_name,
+			  global_myworkgroup, SAMLOGON_R, lmnttoken));
+      }
 
       /* Construct reply. */
 
@@ -215,12 +218,10 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       SSVAL(q, 0, SAMLOGON_R);
       q += 2;
 
-      PutUniCode(q, reply_name);
-      q = skip_unicode_string(q, 1);
-      unistrcpy(q, uniuser);
-      q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
-      PutUniCode(q, lp_workgroup());
-      q = skip_unicode_string(q, 1); /* Domain name. */
+      /* Logon server, trust account, domain */
+      q = ascii_to_unibuf(q, reply_name, outbuf+sizeof(outbuf)-q);
+      q = uni_strncpy(q, uniuser, outbuf+sizeof(outbuf)-q);
+      q = ascii_to_unibuf(q, lp_workgroup(), outbuf+sizeof(outbuf)-q);
 
       SIVAL(q, 0, ntversion);
       q += 4;

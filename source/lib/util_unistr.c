@@ -21,116 +21,155 @@
 
 #include "includes.h"
 
-#ifndef MAXUNI
-#define MAXUNI 1024
-#endif
-
 /*******************************************************************
-write a string in (little-endian) unicoode format
-********************************************************************/
+ Put an ASCII string into a UNICODE buffer (little endian).
+ ********************************************************************/
 
-int PutUniCode(char *dst,char *src)
+char *ascii_to_unibuf(char *dest, const char *src, int maxlen)
 {
-  int ret = 0;
-  while (*src) {
-    SSVAL(dst,ret,(*src) & 0xFF);
-    ret += 2;
-    src++;
-  }
-  SSVAL(dst,ret,0);
-  ret += 2;
-  return(ret);
-}
+	char *destend = dest + maxlen - 1;
+	register char c;
 
-/*******************************************************************
-skip past some unicode strings in a buffer
-********************************************************************/
-
-char *skip_unicode_string(char *buf,int n)
-{
-  while (n--)
-  {
-    while (*buf)
-      buf += 2;
-    buf += 2;
-  }
-  return(buf);
-}
-
-/*******************************************************************
-Return a ascii version of a little-endian unicode string.
-Hack alert: uses fixed buffer(s) and only handles ascii strings
-********************************************************************/
-
-char *unistrn2(char *src, int len)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	char *p;
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; *src && p-lbuf < MAXUNI-2 && len > 0; len--, src += 2)
-	{
-		*p++ = SVAL(src, 0) & 0xFF;
+	while (dest < destend) {
+		*(dest++) = c = *(src++);
+		*(dest++) = 0;
+		if (c == 0) {
+			break;
+		}
 	}
 
-	*p = 0;
-	return lbuf;
+	return dest;
 }
 
-static char lbufs[8][MAXUNI];
-static int nexti;
 
 /*******************************************************************
-Return a ascii version of a little-endian unicode string.
-Hack alert: uses fixed buffer(s) and only handles ascii strings
-********************************************************************/
+ Pull an ASCII string out of a UNICODE buffer (little endian).
+ ********************************************************************/
 
-char *unistr2(char *src)
+void unibuf_to_ascii(char *dest, const char *src, int maxlen)
 {
-	char *lbuf = lbufs[nexti];
-	char *p;
+	char *destend = dest + maxlen;
+	register char c;
 
-	nexti = (nexti+1)%8;
+	while (dest < destend) {
+		*(dest++) = c = *(src++);
+		if ((c == 0) && (*src == 0)) {
+			break;
+		}
+		src++;
+	}
+}
 
-	for (p = lbuf; *src && p-lbuf < MAXUNI-2; p++, src += 2)
-	{
-		*p = SVAL(src, 0) & 0xFF;
+
+/*******************************************************************
+ Put an ASCII string into a UNICODE array (uint16's).
+ ********************************************************************/
+
+void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
+{
+	uint16 *destend = dest + maxlen;
+	register char c;
+
+	while (dest < destend) {
+		c = *(src++);
+		*(dest++) = (uint16)c;
+
+		if (c == 0) {
+			break;
+		}
+	}
+}
+
+
+/*******************************************************************
+ Pull an ASCII string out of a UNICODE array (uint16's).
+ ********************************************************************/
+
+void unistr_to_ascii(char *dest, const uint16 *src, int len)
+{
+	char *destend = dest + len;
+	register uint16 c;
+
+	while (dest < destend) {
+		c = *(src++);
+		*(dest++) = (char)c;
+
+		if (c == 0) {
+			break;
+		}
+	}
+}
+
+
+/*******************************************************************
+ Convert a UNISTR2 structure to an ASCII string
+ ********************************************************************/
+
+void unistr2_to_ascii(char *dest, const UNISTR2 *str, int destlen)
+{
+	char *destend;
+	const uint16 *src;
+	int len;
+	register uint16 c;
+
+	src = str->buffer;
+	len = MIN(str->uni_str_len, destlen);
+	destend = dest + len;
+
+	while (dest < destend) {
+		c = *(src++);
+		*(dest++) = (char)c;
+
+		if (c == 0) {
+			break;
+		}
+	}
+}
+
+
+/*******************************************************************
+ Skip a UNICODE string in a little endian buffer.
+ ********************************************************************/
+
+char *skip_unibuf(char *srcbuf, int len)
+{
+	uint16 *src = (uint16 *)srcbuf;
+	uint16 *srcend = src + len/2;
+
+	while ((src < srcend) && (*(src++) != 0))
+	       ;
+
+	return (char *)src;
+}
+
+
+/*******************************************************************
+ UNICODE strcpy between buffers.
+ ********************************************************************/
+
+char *uni_strncpy(char *destbuf, const char *srcbuf, int len)
+{
+	const uint16 *src = (uint16 *)srcbuf;
+	uint16 *dest = (uint16 *)destbuf;
+	uint16 *destend = dest + len/2;
+	register uint16 c;
+
+	while (dest < destend) {
+		*(dest++) = c = *(src++);
+		if (c == 0) {
+			break;
+		}
 	}
 
-	*p = 0;
-	return lbuf;
+	return (char *)dest;
 }
 
-/*******************************************************************
-Return a ascii version of a little-endian unicode string
-********************************************************************/
-
-char *unistr2_to_str(UNISTR2 *str)
-{
-	char *lbuf = lbufs[nexti];
-	char *p;
-	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-2, str->uni_str_len);
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; *src && p-lbuf < max_size; p++, src++)
-	{
-		*p = (*src & 0xff);
-	}
-
-	*p = 0;
-	return lbuf;
-}
 
 /*******************************************************************
-Return a number stored in a buffer
-********************************************************************/
+ Return a number stored in a buffer
+ ********************************************************************/
 
-uint32 buffer2_to_uint32(BUFFER2 *str)
+uint32 buffer2_to_uint32(const BUFFER2 *str)
 {
 	if (str->buf_len == 4)
 	{
@@ -142,147 +181,26 @@ uint32 buffer2_to_uint32(BUFFER2 *str)
 	}
 }
 
-/*******************************************************************
-Return a ascii version of a NOTunicode string
-********************************************************************/
-
-char *buffer2_to_str(BUFFER2 *str)
-{
-	char *lbuf = lbufs[nexti];
-	char *p;
-	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-2, str->buf_len/2);
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; *src && p-lbuf < max_size; p++, src++)
-	{
-		*p = (*src & 0xff);
-	}
-
-	*p = 0;
-	return lbuf;
-}
 
 /*******************************************************************
-Return a ascii version of a NOTunicode string
-********************************************************************/
+  Convert a 'multi-string' buffer to space-separated ASCII.
+ ********************************************************************/
 
-char *buffer2_to_multistr(BUFFER2 *str)
+void buffer2_to_multistr(char *dest, const BUFFER2 *str, int destlen)
 {
-	char *lbuf = lbufs[nexti];
-	char *p;
-	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-2, str->buf_len/2);
+	char *destend;
+	const uint16 *src;
+	int len;
+	register uint16 c;
 
-	nexti = (nexti+1)%8;
+	src = str->buffer;
+	len = MIN(str->buf_len/2, destlen);
+	destend = dest + len - 1;
 
-	for (p = lbuf; p-lbuf < max_size; p++, src++)
-	{
-		if (*src == 0)
-		{
-			*p = ' ';
-		}
-		else
-		{
-			*p = (*src & 0xff);
-		}
+	while (dest < destend) {
+		c = *(src++);
+		*(dest++) = (c == 0) ? ' ' : (char)c;
 	}
 
-	*p = 0;
-	return lbuf;
-}
-
-/*******************************************************************
-create a null-terminated unicode string from a null-terminated ascii string.
-return number of unicode chars copied, excluding the null character.
-only handles ascii strings
-Unicode strings created are in little-endian format.
-********************************************************************/
-int str_to_unistr16(uint16 *dst, const char *src)
-{
-	size_t len = 0;
-
-	if (dst == NULL)
-		return 0;
-
-	if (src != NULL)
-	{
-		for (; *src && len < MAXUNI-2; len++, dst++, src++)
-		{
-			*dst = *src;
-		}
-	}
-
-	*dst = 0;
-
-	return len;
-}
-
-/*******************************************************************
-create a null-terminated unicode string from a null-terminated ascii string.
-return number of unicode chars copied, excluding the null character.
-only handles ascii strings
-Unicode strings created are in little-endian format.
-********************************************************************/
-
-int str_to_unistr8(char *dst, const char *src)
-{
-	size_t len = 0;
-
-	if (dst == NULL)
-		return 0;
-
-	if (src != NULL)
-	{
-		for (; *src && len < MAXUNI-2; len++, dst +=2, src++)
-		{
-			SSVAL(dst,0,(*src) & 0xFF);
-		}
-	}
-
-	SSVAL(dst,0,0);
-
-	return len;
-}
-
-/*******************************************************************
-Return a ascii version of a little-endian unicode string.
-Hack alert: uses fixed buffer(s) and only handles ascii strings
-********************************************************************/
-
-char *unistr(char *buf)
-{
-	char *lbuf = lbufs[nexti];
-	char *p;
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf += 2)
-	{
-		*p = SVAL(buf, 0) & 0xFF;
-	}
-	*p = 0;
-	return lbuf;
-}
-
-
-/*******************************************************************
-strcpy for unicode strings.  returns length (in num of wide chars)
-********************************************************************/
-
-int unistrcpy(char *dst, char *src)
-{
-	int num_wchars = 0;
-
-	while (*src)
-	{
-		*dst++ = *src++;
-		*dst++ = *src++;
-		num_wchars++;
-	}
-	*dst++ = 0;
-	*dst++ = 0;
-
-	return num_wchars;
+	*dest = 0;
 }

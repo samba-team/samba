@@ -564,18 +564,15 @@ void split_at_last_component(char *path, char *front, char sep, char *back);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
-int PutUniCode(char *dst,char *src);
-char *skip_unicode_string(char *buf,int n);
-char *unistrn2(char *src, int len);
-char *unistr2(char *src);
-char *unistr2_to_str(UNISTR2 *str);
-uint32 buffer2_to_uint32(BUFFER2 *str);
-char *buffer2_to_str(BUFFER2 *str);
-char *buffer2_to_multistr(BUFFER2 *str);
-int str_to_unistr16(uint16 *dst, const char *src);
-int str_to_unistr8(char *dst, const char *src);
-char *unistr(char *buf);
-int unistrcpy(char *dst, char *src);
+char *ascii_to_unibuf(char *dest, const char *src, int maxlen);
+void unibuf_to_ascii(char *dest, const char *src, int maxlen);
+void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
+void unistr_to_ascii(char *dest, const uint16 *src, int len);
+void unistr2_to_ascii(char *dest, const UNISTR2 *str, int destlen);
+char *skip_unibuf(char *srcbuf, int len);
+char *uni_strncpy(char *destbuf, const char *srcbuf, int len);
+uint32 buffer2_to_uint32(const BUFFER2 *str);
+void buffer2_to_multistr(char *dest, const BUFFER2 *str, int destlen);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
