@@ -130,9 +130,10 @@ This can be done using a configuration similar to the one shown in <link linkend
 			<row><entry align="center">Log Level</entry><entry>Log Details - File and Directory Operations</entry></row>
 			</thead>
 			<tbody>
-			<row><entry align="center">0</entry><entry align="left">Creation / Deletion</entry></row>
-			<row><entry align="center">1</entry><entry align="left">Create / Delete / Rename / Permission Changes</entry></row>
-			<row><entry align="center">2</entry><entry align="left">Create / Delete / Rename / Perm Change / Open / Close</entry></row>
+			<row><entry align="center">0</entry><entry align="left">Make Directory, Remove Directory, Unlink</entry></row>
+			<row><entry align="center">1</entry><entry align="left">Open Directory, Rename File, Change Permissions/ACLs</entry></row>
+			<row><entry align="center">2</entry><entry align="left">Open &amp; Close File</entry></row>
+			<row><entry align="center">10</entry><entry align="left">Maximum Debug Level</entry></row>
 			</tbody>
 		</tgroup>
 		</table>
