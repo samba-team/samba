@@ -81,6 +81,6 @@ ADD_OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM LIBRPC
 [SUBSYSTEM::LIBRPC]
-REQUIRED_SUBSYSTEMS = LIBNDR_RAW LIBNDR_GEN LIBRPC_RAW
+REQUIRED_SUBSYSTEMS = LIBNDR_RAW LIBNDR_GEN LIBRPC_RAW LIBDCOM
 # End SUBSYSTEM LIBRPC
 ################################################

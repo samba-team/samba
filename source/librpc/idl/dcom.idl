@@ -151,19 +151,19 @@ interface ObjectRpcBaseTypes
 
 	/* DUALSTRINGARRAYS are the return type for arrays of network addresses, */
 	/* arrays of endpoints and arrays of both used in many ORPC interfaces */
-	typedef struct 
+	typedef [public] struct 
 	{
 		uint16 wTowerId; /* Cannot be zero. */
-		uint16 aNetworkAddr; /* Zero terminated. */
+		nstring NetworkAddr; 
 	} 	STRINGBINDING;
 
 
 	const uint16 COM_C_AUTHZ_NONE = 0xffff;
-	typedef struct 
+	typedef [public] struct 
 	{
 		uint16 wAuthnSvc; /* Cannot be zero. */
 		uint16 wAuthzSvc; /* Must not be zero. */
-		uint16 aPrincName; /* Zero terminated. */
+		nstring PrincName; 
 	} 	SECURITYBINDING;
 
 
@@ -176,7 +176,6 @@ interface ObjectRpcBaseTypes
 		/* extra zero. The shortest array contains four zeros. */
 		[size_is(wNumEntries)] uint16 aStringArray[];
 	} 	DUALSTRINGARRAY;
-
 
 	/* signature value for OBJREF (object reference, actually the */
 	/* marshaled form of a COM interface). */
@@ -219,14 +218,14 @@ interface ObjectRpcBaseTypes
 	typedef struct
 	{
 		STDOBJREF std; /* standard objref */
-		DUALSTRINGARRAY saResAddr; /* resolver address */
+		[flag(NDR_REMAINING)] DATA_BLOB saResAddr; /* resolver address */
 	} u_standard;
 
 	typedef struct
 	{
 		STDOBJREF std; /* standard objref */
 		GUID clsid; /* Clsid of handler code */
-		DUALSTRINGARRAY saResAddr; /* resolver address */
+		[flag(NDR_REMAINING)] DATA_BLOB saResAddr; /* resolver address */
 	} u_handler;
 
 	typedef struct

@@ -42,8 +42,9 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
 	r.in.num_protseqs = 3;
 	r.in.protseq = protseq;
-	r.in.Interfaces = 1;
+	r.in.Interfaces = 2;
 	GUID_from_string(DCERPC_IUNKNOWN_UUID, &iids[0]);
+	GUID_from_string(DCERPC_ISTREAM_UUID, &iids[1]);
 	r.in.pIIDs = iids;
 
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
@@ -68,6 +69,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	GUID_from_string(DCERPC_ICLASSFACTORY_UUID, &iids[0]);
+	r.in.Interfaces = 1;
 	r.in.Mode = MODE_GET_CLASS_OBJECT;
 
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
