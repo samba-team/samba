@@ -118,8 +118,8 @@ struct printjob {
 The current manifestation of the printjob structure contains a field
 for the UNIX job id returned from the "lpq command" and a Windows job
 ID (32-bit bounded by PRINT_MAX_JOBID).  When a print job is returned
-by the "lpq command" that does not match an existing job in th queue's
-TDB, a 32-bit job ID above the is generating by adding UNIX_JOB_START to
+by the "lpq command" that does not match an existing job in the queue's
+TDB, a 32-bit job ID above the &lt;*vance doesn't know what word is missing here*&gt; is generating by adding UNIX_JOB_START to
 the id reported by lpq.
 </para>
 
@@ -130,12 +130,12 @@ for old lanman clients.
 </para>
 
 <para>
-When updating a print queue, smbd will performs the following
+When updating a print queue, smbd will perform the following
 steps ( refer to <filename>print.c:print_queue_update()</filename> ):
 </para>
 
 <orderedlist>
-	<listitem><para>Check to see if another sbmd is currently in 
+	<listitem><para>Check to see if another smbd is currently in 
 	the process of updating the queue contents by checking the pid 
 	stored in <constant>LOCK/<replaceable>printer_name</replaceable></constant>.  
 	If so, then do not update the TDB.</para></listitem>
@@ -268,7 +268,7 @@ C:	Send a RFFPCN request with the previously obtained
 	to monitor, or (b) a PRINTER_NOTIFY_OPTIONS structure
 	containing the event information to monitor.  The windows
 	spooler has only been observed to use (b).
-S:	The opens a new TCP session to the client (thus requiring
+S:	The &lt;* another missing word*&gt; opens a new TCP session to the client (thus requiring
 	all print clients to be CIFS servers as well) and sends
 	a ReplyOpenPrinter() request to the client.
 C:	The client responds with a printer handle that can be used to
@@ -282,7 +282,7 @@ S:	The server replies with an array SPOOL_NOTIFY_INFO_DATA
 	structures (contained in a SPOOL_NOTIFY_INFO structure).
 
 C:	If the change notification handle is ever released by the
-	client via a PCPCN request, the server sends a ReplyClosePrinter()
+	client via a FCPCN request, the server sends a ReplyClosePrinter()
 	request back to the client first.  However a request of this
 	nature from the client is often an indication that the previous
 	notification event was not marshalled correctly by the server
@@ -303,9 +303,9 @@ found by examining the internal tables in srv_spoolss_nt.c
 </itemizedlist>
 
 <para>
-When an event occurs that could be monitored, smbd sends a messages
+When an event occurs that could be monitored, smbd sends a message
 to itself about the change.  The list of events to be transmitted
-are queued by the smbd process sending the message to prevent and
+are queued by the smbd process sending the message to prevent an
 overload of TDB usage and the internal message is sent during smbd's
 idle loop (refer to printing/notify.c and the functions
 send_spoolss_notify2_msg() and print_notify_send_messages() ).
@@ -318,8 +318,8 @@ clients is made by the routine which actually sends the notification.
 </para>
 
 <para>
-Because it possible to recieve a listing of multiple changes for
-multiple printers the notification events must be split into
+Because it possible to receive a listing of multiple changes for
+multiple printers, the notification events must be split into
 categories by the printer name.  This makes it possible to group
 multiple change events to be sent in a single RPC according to the
 printer handle obtained via a ReplyOpenPrinter().
