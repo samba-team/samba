@@ -385,8 +385,6 @@ enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
    field is incremented to the index of the next user to fetch.  Return True if
    some users were returned, False otherwise. */
 
-#define MAX_FETCH_SAM_ENTRIES 100
-
 static BOOL get_sam_user_entries(struct getent_state *ent)
 {
 	NTSTATUS status;
