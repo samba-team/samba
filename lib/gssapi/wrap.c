@@ -40,6 +40,23 @@
 
 RCSID("$Id$");
 
+OM_uint32 gss_wrap_size_limit (
+            OM_uint32 * minor_status,
+            const gss_ctx_id_t context_handle,
+            int conf_req_flag,
+            gss_qop_t qop_req,
+            OM_uint32 req_output_size,
+            OM_uint32 * max_input_size
+           )
+{
+  size_t len, total_len, padlength;
+  padlength = 8 - (req_output_size % 8);
+  len = req_output_size + 8 + padlength + 22;
+  gssapi_krb5_encap_length(len, &len, &total_len);
+  *max_input_size = (OM_uint32)total_len;
+  return GSS_S_COMPLETE;
+}
+
 OM_uint32 gss_wrap
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
