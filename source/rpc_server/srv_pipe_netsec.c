@@ -85,7 +85,7 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct * l, uint32 data_start,
 
 	hdr_resp.alloc_hint = data_end - data_start;	/* calculate remaining data to be sent */
 	hdr_resp.cancel_count = 0x0;
-	hdr_resp.context_id = 0x0;
+	hdr_resp.context_id = l->hdr_req.context_id;
 	hdr_resp.reserved = 0x0;
 
 	DEBUG(10, ("alloc_hint: %d\n", hdr_resp.alloc_hint));

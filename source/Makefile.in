@@ -179,8 +179,7 @@ LIBSMB_OBJ = libsmb/clientgen.o \
                 rpc_parse/parse_net.o \
 		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
                  rpc_parse/parse_vuid.o \
-           lib/vuser.o lib/vuser_db.o \
-		 rpc_parse/parse_misc.o
+           lib/vuser.o lib/vuser_db.o
 
 RPC_SRVUTIL_OBJ = rpc_server/srv_pipe_srv.o \
 		rpc_server/srv_pipe_noauth.o
@@ -201,12 +200,10 @@ RPC_PARSE_OBJ1 = rpc_parse/parse_lsa.o \
 		rpc_parse/parse_brs.o
 
 RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o \
+                rpc_parse/parse_misc.o \
                 rpc_parse/parse_netsec.o \
 		rpc_parse/parse_sec.o \
 		lib/msrpc-client.o 
-
-#		lib/msrpc_use.o
-#		lib/msrpc-agent.o
 
 RPC_PARSE_OBJ = $(RPC_PARSE_OBJ1) $(RPC_PARSE_OBJ2)
 
@@ -440,7 +437,7 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
 NMBD_OBJ = $(NMBD_OBJ1) 
-NMBD_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(UBIQXLIB)
+NMBD_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(UBIQXLIB) $(RPC_PARSE_OBJ2)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
@@ -604,7 +601,7 @@ SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o
 
 CLIENT_OBJ = client/client.o client/clitar.o
-CLIENT_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB)
+CLIENT_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(RPC_PARSE_OBJ2)
 
 MOUNT_OBJ = client/smbmount.o client/clientutil.o \
               $(RPC_PARSE_OBJ2)
@@ -620,8 +617,6 @@ NMB_AGENT_OBJ = utils/nmb-agent.o \
 
 NMBLOOKUP_OBJ = utils/nmblookup.o
 
-#$(RPC_PARSE_OBJ2)
-
 DEBUG2HTML_OBJ = utils/debug2html.o 
 
 SMB_AGENT_OBJ = utils/smb-agent.o  \
@@ -633,8 +628,7 @@ SMBTORTURE_OBJ = utils/torture.o
 
 SMBFILTER_OBJ = utils/smbfilter.o \
                  rpc_parse/parse_creds.o \
-		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
-		 rpc_parse/parse_misc.o
+		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o
 
 PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \

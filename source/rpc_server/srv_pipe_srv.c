@@ -28,6 +28,8 @@
 
 extern int DEBUGLEVEL;
 
+uint16 ctx_id_table[65536];
+
 /*******************************************************************
 turns a DCE/RPC response stream into a DCE/RPC reply
 ********************************************************************/
@@ -250,7 +252,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 	BOOL ret;
 
 	prs_struct rhdr;
-	uint32 assoc_gid = l->key.pid;
+	uint32 assoc_gid;
 
 	l->auth = NULL;
 
@@ -308,7 +310,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 
 	if (assoc_gid == 0)
 	{
-		assoc_gid = 0x1;
+		assoc_gid = getpid();
 	}
 
 	if (l->auth != NULL)
@@ -581,11 +583,7 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct * req,
 							   &l->data_i, 0);
 				if (reply)
 				{
-					if (l->hdr_req.context_id != 0)
-					{
-						key.vuid =
-							l->hdr_req.context_id;
-					}
+					key.vuid = ctx_id_table[l->hdr_req.context_id];
 					reply = become_vuser(&key) ||
 						become_guest();
 
