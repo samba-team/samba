@@ -188,7 +188,19 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 							lm_resp, nt_resp,
 							&info3);
 		attempts += 1;
-
+		
+		/* if we get access denied, a possible cuase was that we had and open
+		   connection to the DC, but someone changed our machine accoutn password
+		   out from underneath us using 'net rpc changetrustpw' */
+		   
+		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) ) {
+			DEBUG(3,("winbindd_pam_auth: sam_logon returned ACCESS_DENIED.  Maybe the trust account "
+				"password was changed and we didn't know it.  Killing connections to domain %s\n",
+				name_domain));
+			winbindd_cm_flush();
+			cli->fd = -1;
+		} 
+		
 		/* We have to try a second time as cm_get_netlogon_cli
 		   might not yet have noticed that the DC has killed
 		   our connection. */
@@ -197,6 +209,12 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
         
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
+	
+	if (NT_STATUS_IS_OK(result)) {
+		netsamlogon_cache_store( cli->mem_ctx, &info3 );
+		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
+	}
+	
         
 done:
 	
@@ -334,6 +352,18 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 		attempts += 1;
 
+		/* if we get access denied, a possible cuase was that we had and open
+		   connection to the DC, but someone changed our machine accoutn password
+		   out from underneath us using 'net rpc changetrustpw' */
+		   
+		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) ) {
+			DEBUG(3,("winbindd_pam_auth_crap: sam_logon returned ACCESS_DENIED.  Maybe the trust account "
+				"password was changed and we didn't know it.  Killing connections to domain %s\n",
+				domain));
+			winbindd_cm_flush();
+			cli->fd = -1;
+		} 
+		
 		/* We have to try a second time as cm_get_netlogon_cli
 		   might not yet have noticed that the DC has killed
 		   our connection. */
