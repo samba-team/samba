@@ -1564,7 +1564,7 @@ env_init(void)
 	 * "unix:0.0", we have to get rid of "unix" and insert our
 	 * hostname.
 	 */
-	if ((ep = env_find("DISPLAY"))
+	if ((ep = env_find((unsigned char*)"DISPLAY"))
 	    && (*ep->value == ':'
 	    || strncmp((char *)ep->value, "unix:", 5) == 0)) {
 		char hbuf[256+1];
@@ -1604,7 +1604,8 @@ env_init(void)
 	 * USER with the value from LOGNAME.  By default, we
 	 * don't export the USER variable.
 	 */
-	if ((env_find("USER") == NULL) && (ep = env_find("LOGNAME"))) {
+	if ((env_find((unsigned char*)"USER") == NULL) && 
+	    (ep = env_find((unsigned char*)"LOGNAME"))) {
 		env_define((unsigned char *)"USER", ep->value);
 		env_unexport((unsigned char *)"USER");
 	}

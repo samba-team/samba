@@ -118,7 +118,7 @@ Data(Authenticator *ap, int type, void *d, int c)
     unsigned char *cd = (unsigned char *)d;
 
     if (c == -1)
-	c = strlen(cd);
+	c = strlen((char*)cd);
 
     if (auth_debug_mode) {
 	printf("%s:%d: [%d] (%d)",
@@ -713,11 +713,11 @@ kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 	goto common2;
 
     default:
-	snprintf(buf, buflen, " %d (unknown)", data[3]);
+	snprintf((char*)buf, buflen, " %d (unknown)", data[3]);
     common2:
 	BUMP(buf, buflen);
 	for (i = 4; i < cnt; i++) {
-	    snprintf(buf, buflen, " %d", data[i]);
+	    snprintf((char*)buf, buflen, " %d", data[i]);
 	    BUMP(buf, buflen);
 	}
 	break;

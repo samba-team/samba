@@ -200,7 +200,8 @@ kerberos4_send(char *name, Authenticator *ap)
 	printf("get_cred failed: %s\r\n", krb_get_err_text(r));
 	return(0);
     }
-    if (!auth_sendname(UserNameRequested, strlen(UserNameRequested))) {
+    if (!auth_sendname((unsigned char*)UserNameRequested, 
+		       strlen(UserNameRequested))) {
 	if (auth_debug_mode)
 	    printf("Not enough room for user name\r\n");
 	return(0);
@@ -571,11 +572,11 @@ kerberos4_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 	goto common2;
 
     default:
-	snprintf(buf, buflen, " %d (unknown)", data[3]);
+	snprintf((char*)buf, buflen, " %d (unknown)", data[3]);
     common2:
 	BUMP(buf, buflen);
 	for (i = 4; i < cnt; i++) {
-	    snprintf(buf, buflen, " %d", data[i]);
+	    snprintf((char*)buf, buflen, " %d", data[i]);
 	    BUMP(buf, buflen);
 	}
 	break;
@@ -647,7 +648,7 @@ pack_cred(CREDENTIALS *cred, unsigned char *buf)
 static int
 unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred)
 {
-    unsigned char *p = buf;
+    char *p = (char*)buf;
     u_int32_t tmp;
 
     strncpy (cred->service, p, ANAME_SZ);

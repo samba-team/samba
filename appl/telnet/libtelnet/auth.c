@@ -646,7 +646,7 @@ auth_gen_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
     buf[buflen-2] = '*';
     buflen -= 2;
     for (; cnt > 0; cnt--, data++) {
-	snprintf(tbuf, sizeof(tbuf), " %d", *data);
+	snprintf((char*)tbuf, sizeof(tbuf), " %d", *data);
 	for (cp = tbuf; *cp && buflen > 0; --buflen)
 	    *buf++ = *cp++;
 	if (buflen <= 0)
