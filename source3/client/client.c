@@ -2069,6 +2069,61 @@ static BOOL list_servers(const char *wk_grp)
 	return True;
 }
 
+/****************************************************************************
+ Print or set current VUID
+****************************************************************************/
+
+static int cmd_vuid(void)
+{
+	fstring buf;
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("Current VUID is %d\n", cli->vuid);
+		return 0;
+	}
+
+	cli->vuid = atoi(buf);
+	return 0;
+}
+
+/****************************************************************************
+ Setup a new VUID, by issuing a session setup
+****************************************************************************/
+
+static int cmd_logon(void)
+{
+	pstring l_username, l_password;
+	fstring buf,buf2;
+  
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("logon <username> [<password>]\n");
+		return 0;
+	}
+
+	pstrcpy(l_username, buf);
+
+	if (!next_token_nr(NULL,buf2,NULL,sizeof(buf))) {
+		char *pass = getpass("Password: ");
+		if (pass) {
+			pstrcpy(l_password, pass);
+			got_pass = 1;
+		}
+	} else {
+		pstrcpy(l_password, buf2);
+	}
+
+	if (!cli_session_setup(cli, l_username, 
+			       l_password, strlen(l_password),
+			       l_password, strlen(l_password),
+			       lp_workgroup())) {
+		d_printf("session setup failed: %s\n", cli_errstr(cli));
+		return -1;
+	}
+
+	d_printf("Current VUID is %d\n", cli->vuid);
+	return 0;
+}
+
 /* Some constants for completing filename arguments */
 
 #define COMPL_NONE        0          /* No completions */
@@ -2134,6 +2189,8 @@ static struct
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
+  {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
+  {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
   
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
@@ -2615,7 +2672,6 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		DEBUG(1,("OS=[%s] Server=[%s]\n",
 			 c->server_os,c->server_type));
 	}		
-	
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, sharename, "?????",
