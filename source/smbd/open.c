@@ -131,7 +131,11 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		return False;
 	}
 
-	conn->vfs_ops.fstat(fsp->fd, &sbuf);
+	if (conn->vfs_ops.fstat(fsp->fd, &sbuf) == -1) {
+		DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
+		fd_close(conn, fsp);
+		return False;
+	}
 
 	/*
 	 * POSIX allows read-only opens of directories. We don't
