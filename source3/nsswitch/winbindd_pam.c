@@ -50,56 +50,33 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
-	NET_USER_INFO_3 info3;
-	uchar ntpw[16];
-	uchar lmpw[16];
-	uchar trust_passwd[16];
-	uint32 status;
-	fstring server;
+	BOOL result, user_exists;
 	fstring name_domain, name_user;
-	extern pstring global_myname;
+	int passlen;
 
 	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
 		  state->request.data.auth.user));
 
 	/* Parse domain and username */
+
 	parse_domain_user(state->request.data.auth.user, name_domain, 
                           name_user);
 
 	/* don't allow the null domain */
-	if (strcmp(name_domain,"") == 0) return WINBINDD_ERROR;
 
-	ZERO_STRUCT(info3);
+	if (strcmp(name_domain,"") == 0) 
+		return WINBINDD_ERROR;
 
-	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
-            DEBUG(1, ("could not get trust password for domain %s\n",
-                      name_domain));
-            return WINBINDD_ERROR;
-        }
+	passlen = strlen(state->request.data.auth.pass);
 
-	nt_lm_owf_gen(state->request.data.auth.pass, ntpw, lmpw);
+	result = domain_client_validate(name_user, name_domain,
+					state->request.data.auth.pass,
+					passlen,
+					state->request.data.auth.pass,
+					passlen, &user_exists, 
+					server_state.controller);
 
-	slprintf(server, sizeof(server), "\\\\%s", server_state.controller);
-
-#if 0
-
-	/* XXX */
-
-	status = domain_client_validate_backend(server, 
-						name_user, name_domain,
-						global_myname, SEC_CHAN_WKSTA,
-						trust_passwd,
-						NULL,
-						lmpw, sizeof(lmpw),
-						ntpw, sizeof(ntpw), &info3);
-#else
-	status = NT_STATUS_UNSUCCESSFUL;
-#endif
-	
-
-	if (status != NT_STATUS_NOPROBLEMO) return WINBINDD_ERROR;
-
-	return WINBINDD_OK;
+	return result ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 /* Change a user password */

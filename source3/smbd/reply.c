@@ -616,7 +616,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
   ret = domain_client_validate(orig_user, domain,
                                 smb_apasswd, smb_apasslen,
                                 smb_ntpasswd, smb_ntpasslen,
-                                &user_exists);
+                                &user_exists, NULL);
 
   if(ret) {
     /*
