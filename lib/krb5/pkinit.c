@@ -69,7 +69,7 @@ RCSID("$Id$");
         (BL) = i2d_##T((S), &p);					\
         if ((BL) <= 0) {						\
            free((B));                                          		\
-           (R) = ASN1_OVERRUN;					\
+           (R) = ASN1_OVERRUN;						\
         }								\
     }									\
   }									\
@@ -667,7 +667,7 @@ _krb5_pk_mk_padata(krb5_context context,
 	if (ret)
 	    goto out;
 	if (winreq.signed_auth_pack.length != size)
-	    abort();
+	    krb5_abortx(context, "Internal ASN1 encoder error");
 
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ_Win2k, buf.data, buf.length,
 			   &winreq, &size, ret);
