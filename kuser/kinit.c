@@ -166,7 +166,6 @@ renew_validate(krb5_context context,
     if(life)
 	in.times.endtime = time(NULL) + life;
 
-    out = calloc(1, sizeof(*out));
     ret = krb5_get_kdc_cred(context,
 			    cache,
 			    flags,
