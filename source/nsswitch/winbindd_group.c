@@ -428,11 +428,6 @@ static BOOL get_sam_group_entries(struct getent_state *ent, NTSTATUS *status)
 	if (status && !NT_STATUS_IS_OK(nt_status))
 		*status = nt_status;
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		result = False;
-		goto done;
-	}
-
 	/* Copy entries into return buffer */
 
 	if (num_entries) {
@@ -448,7 +443,12 @@ static BOOL get_sam_group_entries(struct getent_state *ent, NTSTATUS *status)
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
 
-	result = (ent->num_sam_entries > 0);
+	/* Return false if we got an error or no sam entries, true otherwise */
+	
+	if (!NT_STATUS_IS_OK(nt_status))
+		result = False;
+	else
+		result = (ent->num_sam_entries > 0);
 
  done:
 	talloc_destroy(mem_ctx);
@@ -702,7 +702,8 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		if (!get_sam_group_entries(&groups, &status)) {
 			if (!NT_STATUS_IS_OK(status))
 				state->response.nt_status = NT_STATUS_V(status);
-			continue;
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+				continue;
 		}
 
 		if (groups.num_sam_entries == 0) {

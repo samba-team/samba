@@ -559,12 +559,16 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		status = methods->query_user_list(
 			domain, mem_ctx, &num_entries, &info);
 
-		/* If an error occured on this domain, set the
-		   extended error info and continue to the next domain. */ 
+		/* If an error occured on this domain, set the extended error 
+                   info and continue to the next domain. If we receive
+		   NT_STATUS_MORE_PROCESSING_REQUIRED then cached data was 
+                   returned but we couldn't contact the DC for the sequence 
+                   number. */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			state->response.nt_status = NT_STATUS_V(status);
-			continue;
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+				continue;
 		}
 
 		/* No entries for this domain */
