@@ -150,7 +150,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 
 	{
 		TALLOC_CTX *ctx = talloc_init("pac data");
-		decode_pac_data(auth_data);
+		decode_pac_data(auth_data, ctx);
 		talloc_destroy(ctx);
 	}
 
