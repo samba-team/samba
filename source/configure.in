@@ -898,7 +898,7 @@ case "$host_os" in
 		;;
 		*bsd*)  BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
-			DYNEXP="-Wl,--export-dynamic"
+			DYNEXP="-Wl,-Bdynamic"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
