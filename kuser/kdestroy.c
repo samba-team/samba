@@ -39,35 +39,63 @@
 #include "kuser_locl.h"
 RCSID("$Id$");
 
+char *cache;
+int help_flag;
+int version_flag;
+
+struct getargs args[] = {
+    { "cache",		'c', arg_string, &cache, "cache to destroy", "cache" },
+    { "version", 	0,   arg_flag, &version_flag, NULL, NULL },
+    { "help",		'h', arg_flag, &help_flag, NULL, NULL}
+};
+
+int num_args = sizeof(args) / sizeof(args[0]);
+
 static void
-usage (void)
+usage (int status)
 {
-    errx (1, "Usage: %s", __progname);
+    arg_printusage (args, num_args, "");
+    exit (status);
 }
 
 int
 main (int argc, char **argv)
 {
-  krb5_error_code err;
-  krb5_context context;
-  krb5_ccache  ccache;
-  krb5_principal principal;
-  krb5_principal server;
-  krb5_creds cred;
+    krb5_error_code ret;
+    krb5_context context;
+    krb5_ccache  ccache;
+    int optind = 0;
 
-  set_progname (argv[0]);
+    set_progname (argv[0]);
 
-  err = krb5_init_context (&context);
-  if (err)
-      errx (1, "krb5_init_context: %s", krb5_get_err_text(context, err));
+    if(getarg(args, num_args, argc, argv, &optind))
+	usage(1);
   
-  err = krb5_cc_default (context, &ccache);
-  if (err)
-      errx (1, "krb5_cc_default: %s", krb5_get_err_text(context, err));
+    if (help_flag)
+	usage (0);
+  
+    if(version_flag){
+	printf("%s (%s)\n", __progname, heimdal_version);
+	exit(0);
+    }
+  
+    ret = krb5_init_context (&context);
+    if (ret)
+	errx (1, "krb5_init_context: %s", krb5_get_err_text(context, ret));
+  
+    if(cache == NULL)
+	cache = krb5_cc_default_name(context);
 
-  err = krb5_cc_destroy (context, ccache);
-  if (err)
-      errx (1, "krb5_cc_destroy: %s", krb5_get_err_text(context, err));
-  krb5_free_context (context);
-  return 0;
+    ret =  krb5_cc_resolve(context, 
+			   cache, 
+			   &ccache);
+
+    if (ret)
+	errx (1, "krb5_cc_resolve(%s): %s", cache, krb5_get_err_text(context, ret));
+
+    ret = krb5_cc_destroy (context, ccache);
+    if (ret)
+	errx (1, "krb5_cc_destroy: %s", krb5_get_err_text(context, ret));
+    krb5_free_context (context);
+    return 0;
 }
