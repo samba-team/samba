@@ -401,6 +401,8 @@ max xmit
 
 message command
 
+netbios aliases
+
 netbios name
 
 nis homedir
@@ -2118,10 +2120,33 @@ kilobytes. The default is 0, which means no limit.
 .B Example:
 	min print space = 2000
 
+.SS netbios aliases (G)
+
+This is a list of names that nmbd will advertise as additional
+names by which the Samba server is known. This allows one machine
+to appear in browse lists under multiple names. If a machine is
+acting as a browse server or logon server none of these names
+will be advertised as either browse server or logon servers, only
+the primary name of the machine will be advertised with these
+capabilities.
+
+See also 'netbios name'.
+
+.B Example:
+   netbios aliases = TEST TEST1 TEST2
+
 .SS netbios name (G)
 
 This sets the NetBIOS name by which a Samba server is known. By
 default it is the same as the first component of the host's DNS name.
+If a machine is a browse server or logon server this name (or the
+first component of the hosts DNS name) will be the name that these
+services are advertised under.
+
+See also 'netbios aliases'.
+
+.B Example:
+   netbios name = MYNAME
 
 .SS nis homedir (G)
 Get the home share server from a NIS (or YP) map. For unix systems that
