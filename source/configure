@@ -8271,7 +8271,7 @@ EOF
 EOF
 
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-soname,\$@ -shared"
+			LDSHFLAGS="-shared"
 			PICFLAG="-KPIC"
 			PICSUFFIX="po.o"
 				;;

@@ -741,7 +741,7 @@ case "$host_os" in
 		;;
 		*solaris*) AC_DEFINE(SUNOS5)
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-soname,\$@ -shared"
+			LDSHFLAGS="-shared"
 			PICFLAG="-KPIC"
 			PICSUFFIX="po.o"
 				;;
