@@ -144,6 +144,11 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 				      union smb_open *io2, 
 				      NTSTATUS status)
 {
+	time_t write_time = 0;
+	uint32_t set_size = 0;
+	union smb_setfileinfo *sf;
+	uint_t state;
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -171,31 +176,55 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 		
 		/* we need to extend the file to the requested size if
 		   it was newly created */
-		if (io2->generic.out.create_action == NTCREATEX_ACTION_CREATED &&
-		    io->openx.in.size != 0) {
-			union smb_setfileinfo *sf;
-			uint_t state;
-
-			/* doing this secondary request async is more
-			   trouble than its worth */
-			state = req->async_states->state;
-			req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
-
-			sf = talloc_p(req, union smb_setfileinfo);			
-			sf->generic.level            = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
-			sf->generic.file.fnum        = io2->generic.out.fnum;
-			sf->end_of_file_info.in.size = io->openx.in.size;
-			status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
-			if (NT_STATUS_IS_OK(status)) {
-				io->openx.out.size = io->openx.in.size;
-			}
-			req->async_states->state = state;
+		if (io2->generic.out.create_action == NTCREATEX_ACTION_CREATED) {
+			set_size = io->openx.in.size;
 		}
+		break;
+
+	case RAW_OPEN_MKNEW:
+	case RAW_OPEN_CREATE:
+		io->mknew.out.fnum = io2->generic.out.fnum;
+		write_time = io->mknew.in.write_time;
+		break;
+
+	case RAW_OPEN_CTEMP:
+		io->ctemp.out.fnum  = io2->generic.out.fnum;
+		io->ctemp.out.name = talloc_strdup(req, io2->generic.in.fname + 
+						   strlen(io->ctemp.in.directory) + 1);
+		write_time = io->ctemp.in.write_time;
 		break;
 
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
+
+	/* doing a secondary request async is more trouble than its
+	   worth */
+	state = req->async_states->state;
+	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+
+	if (write_time != 0) {
+		sf = talloc_p(req, union smb_setfileinfo);			
+		sf->generic.level            = RAW_SFILEINFO_STANDARD;
+		sf->generic.file.fnum        = io2->generic.out.fnum;
+		sf->standard.in.create_time = 0;
+		sf->standard.in.write_time  = write_time;
+		sf->standard.in.access_time = 0;
+		status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
+	}
+
+	if (set_size != 0) {
+		sf = talloc_p(req, union smb_setfileinfo);			
+		sf->generic.level            = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+		sf->generic.file.fnum        = io2->generic.out.fnum;
+		sf->end_of_file_info.in.size = io->openx.in.size;
+		status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
+		if (NT_STATUS_IS_OK(status)) {
+			io->openx.out.size = io->openx.in.size;
+		}
+	}
+
+	req->async_states->state = state;
 
 	return NT_STATUS_OK;
 }
@@ -383,6 +412,50 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 			goto done;
 		}
 
+		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		break;
+
+
+	case RAW_OPEN_MKNEW:
+		io2->generic.in.file_attr = io->mknew.in.attrib;
+		io2->generic.in.fname = io->mknew.in.fname;
+		io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
+		io2->generic.in.access_mask = 
+			GENERIC_RIGHTS_FILE_READ |
+			GENERIC_RIGHTS_FILE_WRITE;
+		io2->generic.in.share_access = 
+			NTCREATEX_SHARE_ACCESS_READ | 
+			NTCREATEX_SHARE_ACCESS_WRITE;
+		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		break;
+
+	case RAW_OPEN_CREATE:
+		io2->generic.in.file_attr = io->mknew.in.attrib;
+		io2->generic.in.fname = io->mknew.in.fname;
+		io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+		io2->generic.in.access_mask = 
+			GENERIC_RIGHTS_FILE_READ |
+			GENERIC_RIGHTS_FILE_WRITE;
+		io2->generic.in.share_access = 
+			NTCREATEX_SHARE_ACCESS_READ | 
+			NTCREATEX_SHARE_ACCESS_WRITE;
+		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		break;
+
+	case RAW_OPEN_CTEMP:
+		io2->generic.in.file_attr = io->ctemp.in.attrib;
+		io2->generic.in.file_attr = 0;
+		io2->generic.in.fname = 
+			talloc_asprintf(io2, "%s\\SRV%s", 
+					io->ctemp.in.directory,
+					generate_random_str_list(io2, 5, "0123456789"));
+		io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
+		io2->generic.in.access_mask = 
+			GENERIC_RIGHTS_FILE_READ |
+			GENERIC_RIGHTS_FILE_WRITE;
+		io2->generic.in.share_access = 
+			NTCREATEX_SHARE_ACCESS_READ | 
+			NTCREATEX_SHARE_ACCESS_WRITE;
 		status = ntvfs->ops->openfile(ntvfs, req, io2);
 		break;
 
