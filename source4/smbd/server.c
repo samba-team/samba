@@ -23,195 +23,6 @@
 
 #include "includes.h"
 
-
-/*
-  called on a fatal error that should cause this server to terminate
-*/
-void exit_server(struct server_context *smb, const char *reason)
-{
-	smb->model_ops->terminate_connection(smb, reason);
-}
-
-
-/*
-  setup a single listener of any type
- */
-static void setup_listen(struct event_context *events,
-			 const struct model_ops *model_ops, 
-			 void (*accept_handler)(struct event_context *,struct fd_event *,time_t,uint16_t),
-			 struct in_addr *ifip, uint_t port)
-{
-	struct fd_event fde;
-	fde.fd = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
-	if (fde.fd == -1) {
-		DEBUG(0,("Failed to open socket on %s:%u - %s\n",
-			 inet_ntoa(*ifip), port, strerror(errno)));
-		return;
-	}
-
-	/* ready to listen */
-	set_socket_options(fde.fd, "SO_KEEPALIVE"); 
-	set_socket_options(fde.fd, lp_socket_options());
-      
-	if (listen(fde.fd, SMBD_LISTEN_BACKLOG) == -1) {
-		DEBUG(0,("Failed to listen on %s:%d - %s\n",
-			 inet_ntoa(*ifip), port, strerror(errno)));
-		close(fde.fd);
-		return;
-	}
-
-	/* we are only interested in read events on the listen socket */
-	fde.flags = EVENT_FD_READ;
-	fde.private = model_ops;
-	fde.handler = accept_handler;
-	
-	event_add_fd(events, &fde);
-}
-
-/*
-  add a socket address to the list of events, one event per port
-*/
-static void add_socket(struct event_context *events, 
-		       const struct model_ops *model_ops, 
-		       struct in_addr *ifip)
-{
-	char *ptr, *tok;
-	const char *delim = ", ";
-
-	for (tok=strtok_r(lp_smb_ports(), delim, &ptr); 
-	     tok; 
-	     tok=strtok_r(NULL, delim, &ptr)) {
-		uint_t port = atoi(tok);
-		if (port == 0) continue;
-		setup_listen(events, model_ops, model_ops->accept_connection, ifip, port);
-	}
-}
-
-/****************************************************************************
- Open the socket communication.
-****************************************************************************/
-static void open_sockets_smbd(struct event_context *events,
-			      const struct model_ops *model_ops)
-{
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		int num_interfaces = iface_count();
-		int i;
-
-		/* We have been given an interfaces line, and been 
-		   told to only bind to those interfaces. Create a
-		   socket per interface and bind to only these.
-		*/
-		for(i = 0; i < num_interfaces; i++) {
-			struct in_addr *ifip = iface_n_ip(i);
-
-			if (ifip == NULL) {
-				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
-				continue;
-			}
-
-			add_socket(events, model_ops, ifip);
-		}
-	} else {
-		TALLOC_CTX *mem_ctx = talloc_init("open_sockets_smbd");
-		
-		struct in_addr *ifip = interpret_addr2(mem_ctx, lp_socket_address());
-		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		if (!mem_ctx) {
-			smb_panic("No memory");
-		}
-		add_socket(events, model_ops, ifip);
-		talloc_destroy(mem_ctx);
-	} 
-}
-
-/****************************************************************************
- Reload the services file.
-**************************************************************************/
-BOOL reload_services(struct server_context *smb, BOOL test)
-{
-	BOOL ret;
-	
-	if (lp_loaded()) {
-		pstring fname;
-		pstrcpy(fname,lp_configfile());
-		if (file_exist(fname, NULL) &&
-		    !strcsequal(fname, dyn_CONFIGFILE)) {
-			pstrcpy(dyn_CONFIGFILE, fname);
-			test = False;
-		}
-	}
-
-	reopen_logs();
-
-	if (test && !lp_file_list_changed())
-		return(True);
-
-	if (smb) {
-		lp_killunused(smb, conn_snum_used);
-	}
-	
-	ret = lp_load(dyn_CONFIGFILE, False, False, True);
-
-	load_printers();
-
-	/* perhaps the config filename is now set */
-	if (!test)
-		reload_services(smb, True);
-
-	reopen_logs();
-
-	load_interfaces();
-
-	mangle_reset_cache();
-	reset_stat_cache();
-
-	/* this forces service parameters to be flushed */
-	set_current_service(NULL,True);
-
-	return(ret);
-}
-
-/****************************************************************************
- Initialise connect, service and file structs.
-****************************************************************************/
-static BOOL init_structs(void)
-{
-	init_names();
-	file_init();
-	secrets_init();
-
-	/* we want to re-seed early to prevent time delays causing
-           client problems at a later date. (tridge) */
-	generate_random_buffer(NULL, 0, False);
-
-	return True;
-}
-
-
-/*
-  setup the events for the chosen process model
-*/
-static void setup_process_model(struct event_context *events, 
-				const char *model)
-{
-	const struct model_ops *ops;
-
-	ops = process_model_byname(model);
-	if (!ops) {
-		DEBUG(0,("Unknown process model '%s'\n", model));
-		exit(-1);
-	}
-
-	ops->model_startup();
-
-	/* now setup the listening sockets, adding 
-	   event handlers to the events structure */
-	open_sockets_smbd(events, ops);
-
-	/* setup any sockets we need to listen on for RPC over TCP */
-	open_sockets_rpc(events, ops);
-}
-
 /****************************************************************************
  main program.
 ****************************************************************************/
@@ -311,8 +122,6 @@ static void setup_process_model(struct event_context *events,
 	if (!reload_services(NULL, False))
 		return(-1);	
 
-	init_structs();
-
 	if (!is_daemon && !is_a_socket(0)) {
 		if (!interactive)
 			DEBUG(0,("standard input is not a socket, assuming -D option\n"));
@@ -338,12 +147,9 @@ static void setup_process_model(struct event_context *events,
 		pidfile_create("smbd");
 	}
 
-	register_msg_pool_usage();
-	register_dmalloc_msgs();
-
 	init_subsystems();
 
-	setup_process_model(events, model);
+	process_model_startup(events, model);
 
 	/* wait for events */
 	return event_loop_wait(events);
