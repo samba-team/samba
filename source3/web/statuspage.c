@@ -120,9 +120,9 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
 	d_printf("<td>");
 	switch (e->share_mode&0xF) {
-	case 0: d_printf("RDONLY     "); break;
-	case 1: d_printf("WRONLY     "); break;
-	case 2: d_printf("RDWR       "); break;
+	case 0: d_printf("%s", _("RDONLY     ")); break;
+	case 1: d_printf("%s", _("WRONLY     ")); break;
+	case 2: d_printf("%s", _("RDWR       ")); break;
 	}
 	d_printf("</td>");
 
@@ -297,6 +297,10 @@ void status_page(void)
 		PID_or_Machine = 1;
 	}
 
+	if (cgi_variable("show_pid_in_col_1")) {
+		PID_or_Machine = 0;
+	}
+
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (tdb) tdb_traverse(tdb, traverse_fn1, NULL);
  
@@ -307,14 +311,14 @@ void status_page(void)
 	d_printf("<FORM method=post>\n");
 
 	if (!autorefresh) {
-		d_printf("<input type=submit value=\"%s\" name=autorefresh>\n", _("Auto Refresh"));
+		d_printf("<input type=submit value=\"%s\" name=\"autorefresh\">\n", _("Auto Refresh"));
 		d_printf("<br>%s", _("Refresh Interval: "));
-		d_printf("<input type=text size=2 name=\"refresh_interval\" value=%d>\n", 
+		d_printf("<input type=text size=2 name=\"refresh_interval\" value=\"%d\">\n", 
 		       refresh_interval);
 	} else {
-		d_printf("<input type=submit value=\"%s\" name=norefresh>\n", _("Stop Refreshing"));
+		d_printf("<input type=submit value=\"%s\" name=\"norefresh\">\n", _("Stop Refreshing"));
 		d_printf("<br>%s%d\n", _("Refresh Interval: "), refresh_interval);
-		d_printf("<input type=hidden name=refresh value=1>\n");
+		d_printf("<input type=hidden name=\"refresh\" value=\"1\">\n");
 	}
 
 	d_printf("<p>\n");
@@ -418,8 +422,8 @@ void status_page(void)
 
 	if (tdb) tdb_close(tdb);
 
-	d_printf("<br><input type=submit name=\"show_client_in_col_1\" value=\"Show Client in col 1\">\n");
-	d_printf("<input type=submit name=\"show_pid_in_col_1\" value=\"Show PID in col 1\">\n");
+	d_printf("<br><input type=submit name=\"show_client_in_col_1\" value=\"%s\">\n", _("Show Client in col 1"));
+	d_printf("<input type=submit name=\"show_pid_in_col_1\" value=\"%s\">\n", _("Show PID in col 1"));
 
 	d_printf("</FORM>\n");
 
