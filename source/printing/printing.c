@@ -1905,10 +1905,12 @@ static BOOL allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 static BOOL add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 {
 	TDB_DATA data, key;
+	uint32 store_jobid;
 
 	key.dptr = "INFO/jobs_changed";
 	key.dsize = strlen(key.dptr);
-	data.dptr = (char *)&jobid;
+	SIVAL(&store_jobid, 0, jobid);
+	data.dptr = (char *)&store_jobid;
 	data.dsize = 4;
 
 	DEBUG(10,("add_to_jobs_changed: Added jobid %u\n", (unsigned int)jobid ));
