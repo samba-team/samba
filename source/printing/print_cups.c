@@ -682,6 +682,7 @@ cups_job_submit(int snum, struct printjob *pjob)
 	cups_lang_t	*language;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 	char 		*clientname; 	/* hostname of client for job-originating-host attribute */
+	pstring		new_jobname;
 
 	DEBUG(5,("cups_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -744,8 +745,11 @@ cups_job_submit(int snum, struct printjob *pjob)
 	             "job-originating-host-name", NULL,
 		      clientname);
 
+        pstr_sprintf(new_jobname,"%s%.8u %s", PRINT_SPOOL_PREFIX, 
+		(unsigned int)pjob->smbjob, pjob->jobname);
+
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
-        	     pjob->jobname);
+        	     new_jobname);
 
        /*
 	* Do the request and get back a response...
