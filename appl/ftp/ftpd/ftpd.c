@@ -89,11 +89,6 @@ static char rcsid[] = "$NetBSD: ftpd.c,v 1.15 1995/06/03 22:46:47 mycroft Exp $"
 
 #include <stdarg.h>
 
-#ifdef __hpux
-#define seteuid(euid) setresuid(-1, euid, -1)
-#define setegid(egid) setresgid(-1, egid, -1)
-#endif
-
 #include "pathnames.h"
 #include "extern.h"
 #include "common.h"
