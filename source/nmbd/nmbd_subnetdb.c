@@ -233,11 +233,16 @@ BOOL create_subnets(void)
   struct in_addr unicast_ip, ipzero;
   extern struct in_addr loopback_ip;
 
-  if(num_interfaces == 0)
-  {
-    DEBUG(0,("create_subnets: No local interfaces !\n"));
-    return False;
+  if(num_interfaces == 0) {
+	  DEBUG(0,("create_subnets: No local interfaces !\n"));
+	  DEBUG(0,("create_subnets: Waiting for an interface to appear ...\n"));
+	  while (iface_count() == 0) {
+		  sleep(5);
+		  load_interfaces();
+	  }
   }
+
+  num_interfaces = iface_count();
 
   /* 
    * Create subnets from all the local interfaces and thread them onto
