@@ -1,3 +1,7 @@
+2000-03-16  Assar Westerlund  <assar@sics.se>
+
+	* krb-prog-yacc.m4: warn we do not find any yacc
+
 2000-01-08  Assar Westerlund  <assar@sics.se>
 
 	* krb-bigendian.m4: new file, replacement for ac_c_bigendian
