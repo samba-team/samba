@@ -167,6 +167,7 @@ fcc_read_cred (int fd,
     if(ret) return ret;
     ret = krb5_ret_int32 (sp,  &dummy32);
     if(ret) return ret;
+    creds->flags.i = dummy32;
     ret = krb5_ret_addrs (sp,  &creds->addresses);
     if(ret) return ret;
     ret = krb5_ret_authdata (sp,  &creds->authdata);
