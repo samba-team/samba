@@ -1186,7 +1186,7 @@ char *strchr_m(const char *s, char c)
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (*s && (((unsigned char)s[0]) & 0x80)) {
+	while (*s && !(((unsigned char)s[0]) & 0x80)) {
 		if (*s == c)
 			return s;
 		s++;
