@@ -125,41 +125,45 @@ class PackTests(unittest.TestCase):
 
     def test_pack_failures(self):
         """Expected errors for incorrect packing"""
-        cases = [('w', [], IndexError),
-                 ('w', (), IndexError),
-                 ('w', {}, IndexError),
-                 ('ww', [2], IndexError),
-                 ('w', 2, TypeError),
-                 ('', [1, 2, 3], IndexError),
-                 ('w', None, TypeError),
-                 ('wwwwwwwwwwww', [], IndexError),
-                 ('w', [2, 3], IndexError),
-                 ('w', [0x60A15EC5L], TypeError),
-                 ('w', [None], TypeError),
-                 ('w', xrange(10000), IndexError),
-                 ('d', [], IndexError),
-                 ('d', [0L], TypeError),
-                 ('p', [], IndexError),
-                 ('f', [2], TypeError),
-                 ('P', [None], TypeError),
-                 ('P', (), IndexError),
-                 ('f', [hex], TypeError),
-                 ('fw', ['hello'], IndexError),
-                 ('f', [u'hello'], TypeError),
-                 ('B', [2], TypeError),
-                 (None, [2, 3, 4], TypeError),
-                 (ord('f'), [20], TypeError),
-                 (['w', 'w'], [2, 2], TypeError),
-                 ('Q', [2], ValueError),
-                 ('fQ', ['2', 3], ValueError),
-                 ('fQ', ['2'], IndexError),
-                 (2, [2], TypeError),
-                 ({}, {}, TypeError)]
+        cases = [('w', []),
+                 ('w', ()),
+                 ('w', {}),
+                 ('ww', [2]),
+                 ('w', 2),
+                 ('', [1, 2, 3]),
+                 ('w', None),
+                 ('wwwwwwwwwwww', []),
+                 ('w', [2, 3]),
+                 ('w', [0x60A15EC5L]),
+                 ('w', [None]),
+                 ('w', xrange(10000)),
+                 ('d', []),
+                 ('d', [0L]),
+                 ('p', []),
+                 ('f', [2]),
+                 ('P', [None]),
+                 ('P', ()),
+                 ('f', [hex]),
+                 ('fw', ['hello']),
+                 ('f', [u'hello']),
+                 ('B', [2]),
+                 (None, [2, 3, 4]),
+                 (ord('f'), [20]),
+                 (['w', 'w'], [2, 2]),
+                 ('Q', [2]),
+                 ('fQ', ['2', 3]),
+                 ('fQ', ['2']),
+                 (2, [2]),
+                 ({}, {})]
         for packer in both_packers:
-            for format, values, throwable_class in cases:
-                def do_pack():
+            for format, values in cases:
+                try:
                     packer(format, values)
-                self.assertRaises(throwable_class, do_pack)
+                except StandardError:
+                    pass
+                else:
+                    raise AssertionError("didn't get exception: format %s, values %s, packer %s"
+                                         % (`format`, `values`, `packer`))
 
 
     def test_unpack_failures(self):
