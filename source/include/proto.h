@@ -3389,11 +3389,7 @@ void free_devmode(DEVICEMODE *devmode);
 void free_printer_info_1(PRINTER_INFO_1 *printer);
 void free_printer_info_2(PRINTER_INFO_2 *printer);
 void free_printer_info_3(PRINTER_INFO_3 *printer);
-void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries);
-void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
-void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);
 void free_job_info_2(JOB_INFO_2 *job);
-void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries);
 BOOL make_spoolss_q_replyopenprinter(SPOOL_Q_REPLYOPENPRINTER *q_u, 
 			       const fstring string, uint32 printer, uint32 type);
 BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, prs_struct *ps, int depth);
