@@ -67,6 +67,7 @@
 #include <des.h>
 #include <asn1_err.h>
 #include <krb5_err.h>
+#include <heim_err.h>
 
 #include <asn1.h>
 
@@ -344,10 +345,19 @@ typedef struct {
 
 extern char *heimdal_version, *heimdal_long_version;
 
+typedef void (*krb5_log_log_func_t)(const char*, const char*, void*);
+typedef void (*krb5_log_close_func_t)(void*);
+
 typedef struct krb5_log_facility{
+    const char *program;
     int len;
     struct facility *val;
 } krb5_log_facility;
+
+krb5_error_code
+krb5_initlog(krb5_context context,
+	     const char *program,
+	     krb5_log_facility **fac);
 
 krb5_error_code
 krb5_openlog(krb5_context context,
@@ -357,6 +367,18 @@ krb5_openlog(krb5_context context,
 krb5_error_code
 krb5_closelog(krb5_context context,
 	      krb5_log_facility *fac);
+
+krb5_error_code
+krb5_addlog_func(krb5_context context,
+		 krb5_log_facility *fac,
+		 int min,
+		 int max,
+		 krb5_log_log_func_t log,
+		 krb5_log_close_func_t close,
+		 void *data);
+
+krb5_error_code krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *p);
+
 
 krb5_error_code
 krb5_vlog(krb5_context context,
