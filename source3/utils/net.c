@@ -423,6 +423,9 @@ static int net_getlocalsid(int argc, const char **argv)
 			  "backend knowlege (such as the sid stored in LDAP)\n"));
 	}
 
+	/* Generate one, if it doesn't exist */
+	get_global_sam_sid();
+
 	if (!secrets_fetch_domain_sid(name, &sid)) {
 		DEBUG(0, ("Can't fetch domain SID for name: %s\n", name));	
 		return 1;
@@ -461,6 +464,9 @@ static int net_getdomainsid(int argc, const char **argv)
 		DEBUG(0, ("WARNING: Could not open passdb - domain sid may not reflect passdb\n"
 			  "backend knowlege (such as the sid stored in LDAP)\n"));
 	}
+
+	/* Generate one, if it doesn't exist */
+	get_global_sam_sid();
 
 	if (!secrets_fetch_domain_sid(global_myname(), &domain_sid)) {
 		d_printf("Could not fetch local SID\n");
