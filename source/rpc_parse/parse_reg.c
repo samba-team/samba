@@ -888,20 +888,20 @@ BOOL make_reg_q_info(REG_Q_INFO * q_i, POLICY_HND *pol, const char *val_name,
 	make_uni_hdr(&(q_i->hdr_val), len_type);
 	make_unistr2(&(q_i->uni_val), val_name, len_type);
 
-        q_i->ptr_reserved = 1;
-        q_i->ptr_buf = 1;
+	q_i->ptr_reserved = 1;
+	q_i->ptr_buf = 1;
 
-        q_i->ptr_bufsize = 1;
-        q_i->bufsize = 0;
-        q_i->buf_unk = 0;
+	q_i->ptr_bufsize = 1;
+	q_i->bufsize = 0;
+	q_i->buf_unk = 0;
 
-        q_i->unk1 = 0;
-        q_i->ptr_buflen = 1;
-        q_i->buflen = 0;
+	q_i->unk1 = 0;
+	q_i->ptr_buflen = 1;
+	q_i->buflen = 0;
 
-        q_i->ptr_buflen2 = 1;
-        q_i->buflen2 = 0;
- 
+	q_i->ptr_buflen2 = 1;
+	q_i->buflen2 = 0;
+
 	return True;
 }
 
@@ -925,24 +925,24 @@ BOOL reg_io_q_info(char *desc, REG_Q_INFO * r_q, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	prs_uint32("ptr_reserved", ps, depth, &(r_q->ptr_reserved));
-        prs_uint32("ptr_buf", ps, depth, &(r_q->ptr_buf));
+	prs_uint32("ptr_buf", ps, depth, &(r_q->ptr_buf));
 
-        if(r_q->ptr_buf)
-          {
-            prs_uint32("ptr_bufsize", ps, depth, &(r_q->ptr_bufsize));
-            prs_uint32("bufsize", ps, depth, &(r_q->bufsize));
-            prs_uint32("buf_unk", ps, depth, &(r_q->buf_unk));
-          }
+	if (r_q->ptr_buf)
+	{
+		prs_uint32("ptr_bufsize", ps, depth, &(r_q->ptr_bufsize));
+		prs_uint32("bufsize", ps, depth, &(r_q->bufsize));
+		prs_uint32("buf_unk", ps, depth, &(r_q->buf_unk));
+	}
 
-        prs_uint32("unk1", ps, depth, &(r_q->unk1));
+	prs_uint32("unk1", ps, depth, &(r_q->unk1));
 
-        prs_uint32("ptr_buflen", ps, depth, &(r_q->ptr_buflen));
-        prs_uint32("buflen", ps, depth, &(r_q->buflen));
+	prs_uint32("ptr_buflen", ps, depth, &(r_q->ptr_buflen));
+	prs_uint32("buflen", ps, depth, &(r_q->buflen));
 
-        prs_uint32("ptr_buflen2", ps, depth, &(r_q->ptr_buflen2));
-        prs_uint32("buflen2", ps, depth, &(r_q->buflen2));
+	prs_uint32("ptr_buflen2", ps, depth, &(r_q->ptr_buflen2));
+	prs_uint32("buflen2", ps, depth, &(r_q->buflen2));
 
-        return True;
+	return True;
 }
 
 /*******************************************************************
@@ -951,25 +951,25 @@ creates a structure.
 BOOL make_reg_r_info(uint32 include_keyval, REG_R_INFO * r_r,
 		     uint32 *type, BUFFER2 * buf, uint32 status)
 {
-  if (r_r == NULL)
-    return False;
-  r_r->ptr_type = 1;
-  r_r->type = type;
+	if (r_r == NULL)
+		return False;
+	r_r->ptr_type = 1;
+	r_r->type = type;
 
-  /* if include_keyval is not set, don't send the key value, just
-     the buflen data. probably used by NT5 to allocate buffer space - SK */
-  r_r->ptr_uni_val = include_keyval ? 1:0;
-  r_r->uni_val = buf;
+	/* if include_keyval is not set, don't send the key value, just
+	   the buflen data. probably used by NT5 to allocate buffer space - SK */
+	r_r->ptr_uni_val = include_keyval ? 1 : 0;
+	r_r->uni_val = buf;
 
-  r_r->ptr_max_len = 1;
-  r_r->buf_max_len = r_r->uni_val->buf_max_len;
+	r_r->ptr_max_len = 1;
+	r_r->buf_max_len = r_r->uni_val->buf_max_len;
 
-  r_r->ptr_len = 1;
-  r_r->buf_len = r_r->uni_val->buf_len;
+	r_r->ptr_len = 1;
+	r_r->buf_len = r_r->uni_val->buf_len;
 
-  r_r->status = status;
- 
-  return True;
+	r_r->status = status;
+
+	return True;
 }
 
 /*******************************************************************
@@ -977,42 +977,42 @@ reads or writes a structure.
 ********************************************************************/
 BOOL reg_io_r_info(char *desc, REG_R_INFO * r_r, prs_struct *ps, int depth)
 {
-  if (r_r == NULL)
-    return False;
+	if (r_r == NULL)
+		return False;
 
-  prs_debug(ps, depth, desc, "reg_io_r_info");
-  depth++;
+	prs_debug(ps, depth, desc, "reg_io_r_info");
+	depth++;
 
-  prs_align(ps);
+	prs_align(ps);
 
-  prs_uint32("ptr_type", ps, depth, &(r_r->ptr_type));
-  if (r_r->ptr_type != 0)
-    {
-      prs_uint32("type", ps, depth, &r_r->type);
-    }
+	prs_uint32("ptr_type", ps, depth, &(r_r->ptr_type));
+	if (r_r->ptr_type != 0)
+	{
+		prs_uint32("type", ps, depth, &r_r->type);
+	}
 
-  prs_uint32("ptr_uni_val", ps, depth, &(r_r->ptr_uni_val));
-  if(r_r->ptr_uni_val != 0)
-    smb_io_buffer2("uni_val", r_r->uni_val, r_r->ptr_uni_val,
-		   ps, depth);
+	prs_uint32("ptr_uni_val", ps, depth, &(r_r->ptr_uni_val));
+	if (r_r->ptr_uni_val != 0)
+		smb_io_buffer2("uni_val", r_r->uni_val, r_r->ptr_uni_val,
+			       ps, depth);
 
-  prs_align(ps);
+	prs_align(ps);
 
-  prs_uint32("ptr_max_len", ps, depth, &(r_r->ptr_max_len));
-  if (r_r->ptr_max_len != 0)
-    {
-      prs_uint32("buf_max_len", ps, depth, &(r_r->buf_max_len));
-    }
+	prs_uint32("ptr_max_len", ps, depth, &(r_r->ptr_max_len));
+	if (r_r->ptr_max_len != 0)
+	{
+		prs_uint32("buf_max_len", ps, depth, &(r_r->buf_max_len));
+	}
 
-  prs_uint32("ptr_len", ps, depth, &(r_r->ptr_len));
-  if (r_r->ptr_len != 0)
-    {
-      prs_uint32("buf_len", ps, depth, &(r_r->buf_len));
-    }
+	prs_uint32("ptr_len", ps, depth, &(r_r->ptr_len));
+	if (r_r->ptr_len != 0)
+	{
+		prs_uint32("buf_len", ps, depth, &(r_r->buf_len));
+	}
 
-  prs_uint32("status", ps, depth, &r_r->status);
-  	
-  return True;
+	prs_uint32("status", ps, depth, &r_r->status);
+
+	return True;
 }
 
 /*******************************************************************
