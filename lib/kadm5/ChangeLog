@@ -19,6 +19,16 @@
 	* init_c.c: re-write to use getaddrinfo
 	* Makefile.am (install-build-headers): add dependency
 	
+1999-12-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* log.c (kadm5_log_foreach): pass context
+
+	* dump_log.c: print more interesting things
+
+1999-12-02  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ipropd_master.c (process_msg): check for short reads
+
 1999-11-25  Assar Westerlund  <assar@sics.se>
 
 	* modify_s.c (kadm5_s_modify_principal): support key_data
