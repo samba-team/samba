@@ -23,7 +23,7 @@ msgstr ""
 "Last-Translator: Rafal Szczesniak <mimir@spin.ict.pwr.wroc.pl>\n"
 "Language-Team: pl\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=iso-8859-2\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 
 #: ../web/swat.c:117
@@ -37,7 +37,7 @@ msgstr "Pomoc"
 
 #: ../web/swat.c:206 ../web/swat.c:220 ../web/swat.c:235 ../web/swat.c:243 ../web/swat.c:252 ../web/swat.c:261 ../web/swat.c:267 ../web/swat.c:273 ../web/swat.c:286
 msgid "Set Default"
-msgstr "Ustaw domy∂lnie"
+msgstr "Ustaw domy≈õlnie"
 
 #: ../web/swat.c:408
 #, c-format
@@ -64,7 +64,7 @@ msgstr "Ustawienia globalne"
 
 #: ../web/swat.c:508
 msgid "Shares"
-msgstr "WspÛ≥udzia≥y"
+msgstr "Wsp√≥≈Çudzia≈Çy"
 
 #: ../web/swat.c:509
 msgid "Printers"
@@ -80,15 +80,15 @@ msgstr "Status"
 
 #: ../web/swat.c:514
 msgid "View Config"
-msgstr "Przejrzyj KonfiguracjÍ"
+msgstr "Przejrzyj Konfiguracjƒô"
 
 #: ../web/swat.c:516
 msgid "Password Management"
-msgstr "Zarz±dzanie Has≥ami"
+msgstr "ZarzƒÖdzanie Has≈Çami"
 
 #: ../web/swat.c:526
 msgid "Current View Is"
-msgstr "Bieø±ca Konfiguracja"
+msgstr "Bie≈ºƒÖca Konfiguracja"
 
 #: ../web/swat.c:527 ../web/swat.c:530
 msgid "Basic"
@@ -100,11 +100,11 @@ msgstr "Widok Zaawansowany"
 
 #: ../web/swat.c:529
 msgid "Change View To"
-msgstr "ZmieÒ Has≥o"
+msgstr "Zmie≈Ñ Has≈Ço"
 
 #: ../web/swat.c:554
 msgid "Current Config"
-msgstr "Bieø±ca Konfiguracja"
+msgstr "Bie≈ºƒÖca Konfiguracja"
 
 #: ../web/swat.c:558
 msgid "Normal View"
@@ -112,7 +112,7 @@ msgstr "Normalny Widok"
 
 #: ../web/swat.c:560
 msgid "Full View"
-msgstr "Pe≥ny Widok"
+msgstr "Pe≈Çny Widok"
 
 #. Here we first set and commit all the parameters that were selected
 #. in the previous screen.
@@ -143,7 +143,7 @@ msgstr ""
 
 #: ../web/swat.c:725
 msgid "Commit"
-msgstr "Potwierdº Zmiany"
+msgstr "Potwierd≈∫ Zmiany"
 
 #: ../web/swat.c:726
 msgid "Edit Parameter Values"
@@ -211,31 +211,31 @@ msgstr "Zmienne Globalne"
 
 #: ../web/swat.c:815 ../web/swat.c:916 ../web/swat.c:1265
 msgid "Commit Changes"
-msgstr "Potwierdº Zmiany"
+msgstr "Potwierd≈∫ Zmiany"
 
 #: ../web/swat.c:819 ../web/swat.c:919 ../web/swat.c:1267
 msgid "Reset Values"
-msgstr "Zresetuj Warto∂ci"
+msgstr "Zresetuj Warto≈õci"
 
 #: ../web/swat.c:844
 msgid "Share Parameters"
-msgstr "Parametry WspÛ≥udzia≥u"
+msgstr "Parametry Wsp√≥≈Çudzia≈Çu"
 
 #: ../web/swat.c:887
 msgid "Choose Share"
-msgstr "Wybierz WspÛ≥udzia≥"
+msgstr "Wybierz Wsp√≥≈Çudzia≈Ç"
 
 #: ../web/swat.c:901
 msgid "Delete Share"
-msgstr "UsuÒ WspÛ≥udzia≥"
+msgstr "Usu≈Ñ Wsp√≥≈Çudzia≈Ç"
 
 #: ../web/swat.c:908
 msgid "Create Share"
-msgstr "UtwÛrz WspÛ≥udzia≥"
+msgstr "Utw√≥rz Wsp√≥≈Çudzia≈Ç"
 
 #: ../web/swat.c:944
 msgid "password change in demo mode rejected"
-msgstr "zmiana has≥a w trybie demo odrzucona\n"
+msgstr "zmiana has≈Ça w trybie demo odrzucona\n"
 
 #: ../web/swat.c:957
 msgid "Can't setup password database vectors."
@@ -243,80 +243,80 @@ msgstr ""
 
 #: ../web/swat.c:983
 msgid " Must specify \"User Name\" "
-msgstr " Musisz podaÊ \"NazwÍ Uøytkownika\" \n"
+msgstr " Musisz podaƒá \"Nazwƒô U≈ºytkownika\" \n"
 
 #: ../web/swat.c:999
 msgid " Must specify \"Old Password\" "
-msgstr " Musisz podaÊ \"Stare Has≥o\" \n"
+msgstr " Musisz podaƒá \"Stare Has≈Ço\" \n"
 
 #: ../web/swat.c:1005
 msgid " Must specify \"Remote Machine\" "
-msgstr " Musisz podaÊ \"Zdaln± MaszynÍ\" \n"
+msgstr " Musisz podaƒá \"ZdalnƒÖ Maszynƒô\" \n"
 
 #: ../web/swat.c:1012
 msgid " Must specify \"New, and Re-typed Passwords\" "
-msgstr " Musisz podaÊ \"Nowe Has≥o, i ponownie wpisane Nowe Has≥o\" \n"
+msgstr " Musisz podaƒá \"Nowe Has≈Ço, i ponownie wpisane Nowe Has≈Ço\" \n"
 
 #: ../web/swat.c:1018
 msgid " Re-typed password didn't match new password "
-msgstr " Ponownie wpisane has≥o nie pasuje do nowego has≥a\n"
+msgstr " Ponownie wpisane has≈Ço nie pasuje do nowego has≈Ça\n"
 
 #: ../web/swat.c:1048
 #, c-format
 msgid " The passwd for '%s' has been changed."
-msgstr " Has≥o dla '%s' zosta≥o zmienione. \n"
+msgstr " Has≈Ço dla '%s' zosta≈Ço zmienione. \n"
 
 #: ../web/swat.c:1051
 #, c-format
 msgid " The passwd for '%s' has NOT been changed."
-msgstr " Has≥o dla '%s' NIE zosta≥o zmienione. \n"
+msgstr " Has≈Ço dla '%s' NIE zosta≈Ço zmienione. \n"
 
 #: ../web/swat.c:1076
 msgid "Server Password Management"
-msgstr "Zarz±dzanie Has≥ami na Serwerze"
+msgstr "ZarzƒÖdzanie Has≈Çami na Serwerze"
 
 #.
 #. * Create all the dialog boxes for data collection
 #.
 #: ../web/swat.c:1085 ../web/swat.c:1132
 msgid "User Name"
-msgstr " Nazwa Uøytkownika"
+msgstr " Nazwa U≈ºytkownika"
 
 #: ../web/swat.c:1088 ../web/swat.c:1134
 msgid "Old Password"
-msgstr " Stare Has≥o"
+msgstr " Stare Has≈Ço"
 
 #: ../web/swat.c:1091 ../web/swat.c:1136
 msgid "New Password"
-msgstr " Nowe Has≥o"
+msgstr " Nowe Has≈Ço"
 
 #: ../web/swat.c:1093 ../web/swat.c:1138
 msgid "Re-type New Password"
-msgstr " Ponownie wpisz Nowe Has≥o"
+msgstr " Ponownie wpisz Nowe Has≈Ço"
 
 #: ../web/swat.c:1101 ../web/swat.c:1149
 msgid "Change Password"
-msgstr "ZmieÒ Has≥o"
+msgstr "Zmie≈Ñ Has≈Ço"
 
 #: ../web/swat.c:1104
 msgid "Add New User"
-msgstr "Dodaj Nowego Uøytkownika"
+msgstr "Dodaj Nowego U≈ºytkownika"
 
 #: ../web/swat.c:1106
 msgid "Delete User"
-msgstr "UsuÒ Uøytkownika"
+msgstr "Usu≈Ñ U≈ºytkownika"
 
 #: ../web/swat.c:1108
 msgid "Disable User"
-msgstr "Zablokuj Uøytkownika"
+msgstr "Zablokuj U≈ºytkownika"
 
 #: ../web/swat.c:1110
 msgid "Enable User"
-msgstr "Odblokuj Uøytkownika"
+msgstr "Odblokuj U≈ºytkownika"
 
 #: ../web/swat.c:1123
 msgid "Client/Server Password Management"
-msgstr "Zarz±dzanie Has≥ami Klient/Serwer"
+msgstr "ZarzƒÖdzanie Has≈Çami Klient/Serwer"
 
 #: ../web/swat.c:1140
 msgid "Remote Machine"
@@ -328,15 +328,15 @@ msgstr "Parametry Drukarki"
 
 #: ../web/swat.c:1181
 msgid "Important Note:"
-msgstr "Waøna Informacja:"
+msgstr "Wa≈ºna Informacja:"
 
 #: ../web/swat.c:1182
 msgid "Printer names marked with [*] in the Choose Printer drop-down box "
-msgstr "Nazwy Drukarek zaznaczone [*] w rozwijanym polu Wybierz DrukarkÍ "
+msgstr "Nazwy Drukarek zaznaczone [*] w rozwijanym polu Wybierz Drukarkƒô "
 
 #: ../web/swat.c:1183
 msgid "are autoloaded printers from "
-msgstr "s± drukarkami automatycznie ≥adowanymi z "
+msgstr "sƒÖ drukarkami automatycznie ≈Çadowanymi z "
 
 #: ../web/swat.c:1184
 msgid "Printcap Name"
@@ -344,19 +344,19 @@ msgstr "Nazwa Printcap"
 
 #: ../web/swat.c:1185
 msgid "Attempting to delete these printers from SWAT will have no effect."
-msgstr "PrÛby usuniÍcia tych drukarek ze SWAT nie przynios± efektu.\n"
+msgstr "Pr√≥by usuniƒôcia tych drukarek ze SWAT nie przyniosƒÖ efektu.\n"
 
 #: ../web/swat.c:1231
 msgid "Choose Printer"
-msgstr "Wybierz DrukarkÍ"
+msgstr "Wybierz Drukarkƒô"
 
 #: ../web/swat.c:1250
 msgid "Delete Printer"
-msgstr "UsuÒ DrukarkÍ"
+msgstr "Usu≈Ñ Drukarkƒô"
 
 #: ../web/swat.c:1257
 msgid "Create Printer"
-msgstr "UtwÛrz DrukarkÍ"
+msgstr "Utw√≥rz Drukarkƒô"
 
 #: ../web/statuspage.c:123
 msgid "RDONLY     "
@@ -376,15 +376,15 @@ msgstr "Status Serwera"
 
 #: ../web/statuspage.c:314
 msgid "Auto Refresh"
-msgstr "Automatyczne Od∂wieøanie"
+msgstr "Automatyczne Od≈õwie≈ºanie"
 
 #: ../web/statuspage.c:315 ../web/statuspage.c:320
 msgid "Refresh Interval: "
-msgstr "Interwa≥ Od∂wieøania: "
+msgstr "Interwa≈Ç Od≈õwie≈ºania: "
 
 #: ../web/statuspage.c:319
 msgid "Stop Refreshing"
-msgstr "Zatrzymaj Od∂wieøanie"
+msgstr "Zatrzymaj Od≈õwie≈ºanie"
 
 #: ../web/statuspage.c:334
 msgid "version:"
@@ -396,11 +396,11 @@ msgstr ""
 
 #: ../web/statuspage.c:337 ../web/statuspage.c:350 ../web/statuspage.c:364
 msgid "running"
-msgstr "dzia≥a"
+msgstr "dzia≈Ça"
 
 #: ../web/statuspage.c:337 ../web/statuspage.c:350 ../web/statuspage.c:364
 msgid "not running"
-msgstr "nie dzia≥a"
+msgstr "nie dzia≈Ça"
 
 #: ../web/statuspage.c:341
 msgid "Stop smbd"
@@ -462,7 +462,7 @@ msgstr "Uruchom nmbd"
 
 #: ../web/statuspage.c:393
 msgid "Active Connections"
-msgstr "Aktywne Po≥±czenia"
+msgstr "Aktywne Po≈ÇƒÖczenia"
 
 #: ../web/statuspage.c:395 ../web/statuspage.c:408 ../web/statuspage.c:416
 msgid "PID"
@@ -486,15 +486,15 @@ msgstr "Zatrzymaj"
 
 #: ../web/statuspage.c:405
 msgid "Active Shares"
-msgstr "Aktywne WspÛ≥udzia≥y"
+msgstr "Aktywne Wsp√≥≈Çudzia≈Çy"
 
 #: ../web/statuspage.c:408
 msgid "Share"
-msgstr "WspÛ≥udzia≥"
+msgstr "Wsp√≥≈Çudzia≈Ç"
 
 #: ../web/statuspage.c:408
 msgid "User"
-msgstr "Uøytkownik"
+msgstr "U≈ºytkownik"
 
 #: ../web/statuspage.c:408
 msgid "Group"
@@ -506,7 +506,7 @@ msgstr "Otwarte Pliki"
 
 #: ../web/statuspage.c:416
 msgid "Sharing"
-msgstr "WspÛ≥dzielenie"
+msgstr "Wsp√≥≈Çdzielenie"
 
 #: ../web/statuspage.c:416
 msgid "R/W"
@@ -534,7 +534,7 @@ msgstr "Bazowe Opcje"
 
 #: ../param/loadparm.c:775
 msgid "Security Options"
-msgstr "Opcje ZabezpieczeÒ"
+msgstr "Opcje Zabezpiecze≈Ñ"
 
 #: ../param/loadparm.c:859
 msgid "Logging Options"
@@ -542,11 +542,11 @@ msgstr "Opcje Blokowania"
 
 #: ../param/loadparm.c:874
 msgid "Protocol Options"
-msgstr "Opcje Protoko≥u"
+msgstr "Opcje Protoko≈Çu"
 
 #: ../param/loadparm.c:911
 msgid "Tuning Options"
-msgstr "Opcje Dostrajaj±ce"
+msgstr "Opcje DostrajajƒÖce"
 
 #: ../param/loadparm.c:940
 msgid "Printing Options"
@@ -554,7 +554,7 @@ msgstr "Opcje Drukowania"
 
 #: ../param/loadparm.c:970
 msgid "Filename Handling"
-msgstr "Obs≥uga Nazw PlikÛw"
+msgstr "Obs≈Çuga Nazw Plik√≥w"
 
 #: ../param/loadparm.c:996
 msgid "Domain Options"
@@ -566,7 +566,7 @@ msgstr "Opcje Logowania"
 
 #: ../param/loadparm.c:1019
 msgid "Browse Options"
-msgstr "Opcje Przegl±dania"
+msgstr "Opcje PrzeglƒÖdania"
 
 #: ../param/loadparm.c:1033
 msgid "WINS Options"
@@ -582,7 +582,7 @@ msgstr "Opcje Ldap"
 
 #: ../param/loadparm.c:1078
 msgid "Miscellaneous Options"
-msgstr "Pozosta≥e Opcje"
+msgstr "Pozosta≈Çe Opcje"
 
 #: ../param/loadparm.c:1138
 msgid "VFS module options"

@@ -24,152 +24,152 @@ msgstr ""
 "Last-Translator: TAKAHASHI Motonobu <monyo@samba.org>\n"
 "Language-Team: Samba Users Group Japan <sugj-tech@samba.gr.jp>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CP932\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: ../web/swat.c:117
 #, c-format
 msgid "ERROR: Can't open %s"
-msgstr "%s ‚ğƒI[ƒvƒ“‚Å‚«‚Ü‚¹‚ñ"
+msgstr "%s ã‚’ã‚ªãƒ¼ãƒ—ãƒ³ã§ãã¾ã›ã‚“"
 
 #: ../web/swat.c:200
 msgid "Help"
-msgstr "ƒwƒ‹ƒv"
+msgstr "ãƒ˜ãƒ«ãƒ—"
 
 #: ../web/swat.c:206 ../web/swat.c:220 ../web/swat.c:235 ../web/swat.c:243 ../web/swat.c:252 ../web/swat.c:261 ../web/swat.c:267 ../web/swat.c:273 ../web/swat.c:286
 msgid "Set Default"
-msgstr "ƒfƒtƒHƒ‹ƒg’l"
+msgstr "ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå€¤"
 
 #: ../web/swat.c:408
 #, c-format
 msgid "failed to open %s for writing"
-msgstr "%s ‚ğ‘‚«‚İ—p‚ÉƒI[ƒvƒ“‚Å‚«‚Ü‚¹‚ñ"
+msgstr "%s ã‚’æ›¸ãè¾¼ã¿ç”¨ã«ã‚ªãƒ¼ãƒ—ãƒ³ã§ãã¾ã›ã‚“"
 
 #: ../web/swat.c:431
 #, c-format
 msgid "Can't reload %s"
-msgstr "%s ‚ğÄ“Ç‚İ‚İ‚Å‚«‚Ü‚¹‚ñ\n"
+msgstr "%s ã‚’å†èª­ã¿è¾¼ã¿ã§ãã¾ã›ã‚“\n"
 
 # msgid "Logged in as <b>%s</b><p>\n"
 #: ../web/swat.c:501
 #, c-format
 msgid "Logged in as <b>%s</b>"
-msgstr "<b>%s</b>‚Æ‚µ‚ÄƒƒOƒCƒ“"
+msgstr "<b>%s</b>ã¨ã—ã¦ãƒ­ã‚°ã‚¤ãƒ³"
 
 #: ../web/swat.c:505
 msgid "Home"
-msgstr "ƒz[ƒ€"
+msgstr "ãƒ›ãƒ¼ãƒ "
 
 #: ../web/swat.c:507
 msgid "Globals"
-msgstr "ƒOƒ[ƒoƒ‹"
+msgstr "ã‚°ãƒ­ãƒ¼ãƒãƒ«"
 
 #: ../web/swat.c:508
 msgid "Shares"
-msgstr "ƒtƒ@ƒCƒ‹‹¤—L"
+msgstr "ãƒ•ã‚¡ã‚¤ãƒ«å…±æœ‰"
 
 #: ../web/swat.c:509
 msgid "Printers"
-msgstr "ˆóü‹¤—L"
+msgstr "å°åˆ·å…±æœ‰"
 
 #: ../web/swat.c:510
 msgid "Wizard"
-msgstr "ƒEƒBƒU[ƒh"
+msgstr "ã‚¦ã‚£ã‚¶ãƒ¼ãƒ‰"
 
 #: ../web/swat.c:513
 msgid "Status"
-msgstr "ƒT[ƒo‚Ìó‘Ô"
+msgstr "ã‚µãƒ¼ãƒã®çŠ¶æ…‹"
 
 #: ../web/swat.c:514
 msgid "View Config"
-msgstr "Œ»İ‚Ìİ’è"
+msgstr "ç¾åœ¨ã®è¨­å®š"
 
 #: ../web/swat.c:516
 msgid "Password Management"
-msgstr "ƒpƒXƒ[ƒhŠÇ—"
+msgstr "ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ç®¡ç†"
 
 #: ../web/swat.c:526
 msgid "Current View Is"
-msgstr "Œ»İ‚Ì•\¦ƒ‚[ƒh"
+msgstr "ç¾åœ¨ã®è¡¨ç¤ºãƒ¢ãƒ¼ãƒ‰"
 
 #: ../web/swat.c:527 ../web/swat.c:530
 msgid "Basic"
-msgstr "•W€•\¦"
+msgstr "æ¨™æº–è¡¨ç¤º"
 
 #: ../web/swat.c:528 ../web/swat.c:531
 msgid "Advanced"
-msgstr "Ú×•\¦"
+msgstr "è©³ç´°è¡¨ç¤º"
 
 #: ../web/swat.c:529
 msgid "Change View To"
-msgstr "•\¦ƒ‚[ƒh‚Ì•ÏX"
+msgstr "è¡¨ç¤ºãƒ¢ãƒ¼ãƒ‰ã®å¤‰æ›´"
 
 #: ../web/swat.c:554
 msgid "Current Config"
-msgstr "Œ»İ‚Ìİ’è"
+msgstr "ç¾åœ¨ã®è¨­å®š"
 
 #: ../web/swat.c:558
 msgid "Normal View"
-msgstr "•W€•\¦"
+msgstr "æ¨™æº–è¡¨ç¤º"
 
 #: ../web/swat.c:560
 msgid "Full View"
-msgstr "Š®‘S•\¦"
+msgstr "å®Œå…¨è¡¨ç¤º"
 
 #. Here we first set and commit all the parameters that were selected
 #. in the previous screen.
 #: ../web/swat.c:579
 msgid "Wizard Parameter Edit Page"
-msgstr "ƒEƒBƒU[ƒh‚É‚æ‚éƒpƒ‰ƒ[ƒ^•ÒWƒy[ƒW"
+msgstr "ã‚¦ã‚£ã‚¶ãƒ¼ãƒ‰ã«ã‚ˆã‚‹ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ç·¨é›†ãƒšãƒ¼ã‚¸"
 
 #: ../web/swat.c:608
 msgid "Note: smb.conf file has been read and rewritten"
-msgstr "smb.conf ƒtƒ@ƒCƒ‹‚ª‘‚«Š·‚¦‚ç‚ê‚Ü‚µ‚½B"
+msgstr "smb.conf ãƒ•ã‚¡ã‚¤ãƒ«ãŒæ›¸ãæ›ãˆã‚‰ã‚Œã¾ã—ãŸã€‚"
 
 #. Here we go ...
 #: ../web/swat.c:716
 msgid "Samba Configuration Wizard"
-msgstr "Samba İ’èƒEƒBƒU[ƒh"
+msgstr "Samba è¨­å®šã‚¦ã‚£ã‚¶ãƒ¼ãƒ‰"
 
 #: ../web/swat.c:720
 msgid "The \"Rewrite smb.conf file\" button will clear the smb.conf file of all default values and of comments."
-msgstr "usmb.conf ‚Ì‘Š·vƒ{ƒ^ƒ“‚ğ‰Ÿ‚·‚Æ smb.conf ƒtƒ@ƒCƒ‹’†‚Ì‚·‚×‚Ä‚ÌƒfƒtƒHƒ‹ƒg’l‚âƒRƒƒ“ƒg‚Ííœ‚³‚ê‚Ü‚·B"
+msgstr "ã€Œsmb.conf ã®æ›¸æ›ã€ãƒœã‚¿ãƒ³ã‚’æŠ¼ã™ã¨ smb.conf ãƒ•ã‚¡ã‚¤ãƒ«ä¸­ã®ã™ã¹ã¦ã®ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå€¤ã‚„ã‚³ãƒ¡ãƒ³ãƒˆã¯å‰Šé™¤ã•ã‚Œã¾ã™ã€‚"
 
 #: ../web/swat.c:721
 msgid "The same will happen if you press the commit button."
-msgstr "ucommitvƒ{ƒ^ƒ“‚ğ‰Ÿ‚µ‚½ê‡‚É‚à“¯—l‚Ì•ÏX‚ªs‚È‚í‚ê‚Ü‚·B"
+msgstr "ã€Œcommitã€ãƒœã‚¿ãƒ³ã‚’æŠ¼ã—ãŸå ´åˆã«ã‚‚åŒæ§˜ã®å¤‰æ›´ãŒè¡Œãªã‚ã‚Œã¾ã™ã€‚"
 
 #: ../web/swat.c:724
 msgid "Rewrite smb.conf file"
-msgstr "smb.conf ‚Ì‘Š·"
+msgstr "smb.conf ã®æ›¸æ›"
 
 #: ../web/swat.c:725
 msgid "Commit"
-msgstr "İ’è‚ğ”½‰f"
+msgstr "è¨­å®šã‚’åæ˜ "
 
 #: ../web/swat.c:726
 msgid "Edit Parameter Values"
-msgstr "Šeƒpƒ‰ƒ[ƒ^‚Ì•ÒW"
+msgstr "å„ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®ç·¨é›†"
 
 #: ../web/swat.c:732
 msgid "Server Type"
-msgstr "ƒT[ƒoƒ^ƒCƒv"
+msgstr "ã‚µãƒ¼ãƒã‚¿ã‚¤ãƒ—"
 
 #: ../web/swat.c:733
 msgid "Stand Alone"
-msgstr "ƒXƒ^ƒ“ƒhƒAƒƒ“"
+msgstr "ã‚¹ã‚¿ãƒ³ãƒ‰ã‚¢ãƒ­ãƒ³"
 
 #: ../web/swat.c:734
 msgid "Domain Member"
-msgstr "ƒhƒƒCƒ“ƒƒ“ƒo"
+msgstr "ãƒ‰ãƒ¡ã‚¤ãƒ³ãƒ¡ãƒ³ãƒ"
 
 #: ../web/swat.c:735
 msgid "Domain Controller"
-msgstr "ƒhƒƒCƒ“ƒRƒ“ƒgƒ[ƒ‰"
+msgstr "ãƒ‰ãƒ¡ã‚¤ãƒ³ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©"
 
 #: ../web/swat.c:738
 msgid "Unusual Type in smb.conf - Please Select New Mode"
-msgstr "’Êí‚ÌŒ`®‚Å‚Í‚È‚¢ - V‚µ‚¢ƒ‚[ƒh‚ğ‘I‘ğ‚Ì‚±‚Æ"
+msgstr "é€šå¸¸ã®å½¢å¼ã§ã¯ãªã„ - æ–°ã—ã„ãƒ¢ãƒ¼ãƒ‰ã‚’é¸æŠã®ã“ã¨"
 
 #: ../web/swat.c:740
 msgid "Configure WINS As"
@@ -177,220 +177,220 @@ msgstr "WINS"
 
 #: ../web/swat.c:741
 msgid "Not Used"
-msgstr "g‚í‚È‚¢"
+msgstr "ä½¿ã‚ãªã„"
 
 #: ../web/swat.c:742
 msgid "Server for client use"
-msgstr "ƒT[ƒo‚Æ‚µ‚Ä\¬"
+msgstr "ã‚µãƒ¼ãƒã¨ã—ã¦æ§‹æˆ"
 
 #: ../web/swat.c:743
 msgid "Client of another WINS server"
-msgstr "•Ê‚Ì WINS ƒT[ƒo‚ÌƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚µ‚Ä\¬"
+msgstr "åˆ¥ã® WINS ã‚µãƒ¼ãƒã®ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã—ã¦æ§‹æˆ"
 
 #: ../web/swat.c:745
 msgid "Remote WINS Server"
-msgstr "•Ê‚Ì WINS ƒT[ƒo"
+msgstr "åˆ¥ã® WINS ã‚µãƒ¼ãƒ"
 
 #: ../web/swat.c:756
 msgid "Error: WINS Server Mode and WINS Support both set in smb.conf"
-msgstr "ƒGƒ‰[: wins server ‚Æ wins support ‚Ì—¼ƒpƒ‰ƒ[ƒ^‚ª smb.conf ‚Åw’è‚³‚ê‚Ä‚¢‚Ü‚·"
+msgstr "ã‚¨ãƒ©ãƒ¼: wins server ã¨ wins support ã®ä¸¡ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ãŒ smb.conf ã§æŒ‡å®šã•ã‚Œã¦ã„ã¾ã™"
 
 #: ../web/swat.c:757
 msgid "Please Select desired WINS mode above."
-msgstr "‚¢‚¸‚ê‚©‚Ì WINS ƒ‚[ƒh‚ğ‘I‘ğ‚µ‚Ä‚­‚¾‚³‚¢B"
+msgstr "ã„ãšã‚Œã‹ã® WINS ãƒ¢ãƒ¼ãƒ‰ã‚’é¸æŠã—ã¦ãã ã•ã„ã€‚"
 
 #: ../web/swat.c:759
 msgid "Expose Home Directories"
-msgstr "ƒz[ƒ€ƒfƒBƒŒƒNƒgƒŠ‚ÌŒöŠJ"
+msgstr "ãƒ›ãƒ¼ãƒ ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã®å…¬é–‹"
 
 #: ../web/swat.c:774
 msgid "The above configuration options will set multiple parameters and will generally assist with rapid Samba deployment."
-msgstr "ã‹L‚Ìİ’èƒIƒvƒVƒ‡ƒ“‚É‚æ‚èA•¡”‚Ìƒpƒ‰ƒ[ƒ^‚ª“¯Šú‚µ‚Äİ’è‚³‚ê‚é‚½‚ßA Samba ‚Ì‰^—p‚ğv‘¬‚ÉŠJn‚·‚éã‚Å‚Ì•‚¯‚Æ‚È‚é‚Å‚µ‚å‚¤B"
+msgstr "ä¸Šè¨˜ã®è¨­å®šã‚ªãƒ—ã‚·ãƒ§ãƒ³ã«ã‚ˆã‚Šã€è¤‡æ•°ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ãŒåŒæœŸã—ã¦è¨­å®šã•ã‚Œã‚‹ãŸã‚ã€ Samba ã®é‹ç”¨ã‚’è¿…é€Ÿã«é–‹å§‹ã™ã‚‹ä¸Šã§ã®åŠ©ã‘ã¨ãªã‚‹ã§ã—ã‚‡ã†ã€‚"
 
 #: ../web/swat.c:787
 msgid "Global Parameters"
-msgstr "Global ƒpƒ‰ƒ[ƒ^"
+msgstr "Global ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿"
 
 #: ../web/swat.c:815 ../web/swat.c:916 ../web/swat.c:1265
 msgid "Commit Changes"
-msgstr "•ÏX‚ğ”½‰f"
+msgstr "å¤‰æ›´ã‚’åæ˜ "
 
 #: ../web/swat.c:819 ../web/swat.c:919 ../web/swat.c:1267
 msgid "Reset Values"
-msgstr "•ÏX‚ğæÁ"
+msgstr "å¤‰æ›´ã‚’å–æ¶ˆ"
 
 #: ../web/swat.c:844
 msgid "Share Parameters"
-msgstr "ƒtƒ@ƒCƒ‹‹¤—L ƒpƒ‰ƒ[ƒ^"
+msgstr "ãƒ•ã‚¡ã‚¤ãƒ«å…±æœ‰ ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿"
 
 #: ../web/swat.c:887
 msgid "Choose Share"
-msgstr "ƒtƒ@ƒCƒ‹‹¤—L‚Ì‘I‘ğ"
+msgstr "ãƒ•ã‚¡ã‚¤ãƒ«å…±æœ‰ã®é¸æŠ"
 
 #: ../web/swat.c:901
 msgid "Delete Share"
-msgstr "ƒtƒ@ƒCƒ‹‹¤—L‚Ìíœ"
+msgstr "ãƒ•ã‚¡ã‚¤ãƒ«å…±æœ‰ã®å‰Šé™¤"
 
 #: ../web/swat.c:908
 msgid "Create Share"
-msgstr "ƒtƒ@ƒCƒ‹‹¤—L‚Ìì¬"
+msgstr "ãƒ•ã‚¡ã‚¤ãƒ«å…±æœ‰ã®ä½œæˆ"
 
 #: ../web/swat.c:944
 msgid "password change in demo mode rejected"
-msgstr "ƒfƒ‚Eƒ‚[ƒh‚Å‚ÌƒpƒXƒ[ƒh•ÏX‚Í‚Å‚«‚Ü‚¹‚ñ"
+msgstr "ãƒ‡ãƒ¢ãƒ»ãƒ¢ãƒ¼ãƒ‰ã§ã®ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰å¤‰æ›´ã¯ã§ãã¾ã›ã‚“"
 
 #: ../web/swat.c:957
 msgid "Can't setup password database vectors."
-msgstr "ƒpƒXƒ[ƒhEƒf[ƒ^ƒx[ƒX‚ªŒ©‚Â‚¯‚ç‚ê‚Ü‚¹‚ñ"
+msgstr "ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ãƒ»ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ãŒè¦‹ã¤ã‘ã‚‰ã‚Œã¾ã›ã‚“"
 
 #: ../web/swat.c:983
 msgid " Must specify \"User Name\" "
-msgstr "uƒ†[ƒU–¼v—“‚É“ü—Í‚µ‚Ä‚­‚¾‚³‚¢"
+msgstr "ã€Œãƒ¦ãƒ¼ã‚¶åã€æ¬„ã«å…¥åŠ›ã—ã¦ãã ã•ã„"
 
 #: ../web/swat.c:999
 msgid " Must specify \"Old Password\" "
-msgstr "u‹ŒƒpƒXƒ[ƒhv—“‚É“ü—Í‚µ‚Ä‚­‚¾‚³‚¢"
+msgstr "ã€Œæ—§ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã€æ¬„ã«å…¥åŠ›ã—ã¦ãã ã•ã„"
 
 #: ../web/swat.c:1005
 msgid " Must specify \"Remote Machine\" "
-msgstr "uƒŠƒ‚[ƒgƒ}ƒVƒ“v—“‚É“ü—Í‚µ‚Ä‚­‚¾‚³‚¢"
+msgstr "ã€Œãƒªãƒ¢ãƒ¼ãƒˆãƒã‚·ãƒ³ã€æ¬„ã«å…¥åŠ›ã—ã¦ãã ã•ã„"
 
 #: ../web/swat.c:1012
 msgid " Must specify \"New, and Re-typed Passwords\" "
-msgstr "uVƒpƒXƒ[ƒhv—“‚ÆuVƒpƒXƒ[ƒh‚ÌÄ“ü—Ív—“‚É“ü—Í‚µ‚Ä‚­‚¾‚³‚¢"
+msgstr "ã€Œæ–°ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã€æ¬„ã¨ã€Œæ–°ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã®å†å…¥åŠ›ã€æ¬„ã«å…¥åŠ›ã—ã¦ãã ã•ã„"
 
 #: ../web/swat.c:1018
 msgid " Re-typed password didn't match new password "
-msgstr "uVƒpƒXƒ[ƒh‚ÌÄ“ü—Ív—“‚Ì“ü—Í“à—e‚ªuVƒpƒXƒ[ƒhv—“‚Ì“ü—Í‚Æˆê’v‚µ‚Ä‚¢‚Ü‚¹‚ñB"
+msgstr "ã€Œæ–°ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã®å†å…¥åŠ›ã€æ¬„ã®å…¥åŠ›å†…å®¹ãŒã€Œæ–°ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã€æ¬„ã®å…¥åŠ›ã¨ä¸€è‡´ã—ã¦ã„ã¾ã›ã‚“ã€‚"
 
 #: ../web/swat.c:1048
 #, c-format
 msgid " The passwd for '%s' has been changed."
-msgstr " %s ‚ÌƒpƒXƒ[ƒh‚Í•ÏX‚³‚ê‚Ü‚µ‚½B"
+msgstr " %s ã®ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã¯å¤‰æ›´ã•ã‚Œã¾ã—ãŸã€‚"
 
 #: ../web/swat.c:1051
 #, c-format
 msgid " The passwd for '%s' has NOT been changed."
-msgstr " '%s' ‚ÌƒpƒXƒ[ƒh‚Í•ÏX‚³‚ê‚Ü‚¹‚ñ‚Å‚µ‚½B"
+msgstr " '%s' ã®ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã¯å¤‰æ›´ã•ã‚Œã¾ã›ã‚“ã§ã—ãŸã€‚"
 
 #: ../web/swat.c:1076
 msgid "Server Password Management"
-msgstr "ƒ[ƒJƒ‹ƒ}ƒVƒ“‚ÌƒpƒXƒ[ƒhŠÇ—"
+msgstr "ãƒ­ãƒ¼ã‚«ãƒ«ãƒã‚·ãƒ³ã®ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ç®¡ç†"
 
 #.
 #. * Create all the dialog boxes for data collection
 #.
 #: ../web/swat.c:1085 ../web/swat.c:1132
 msgid "User Name"
-msgstr "ƒ†[ƒU–¼"
+msgstr "ãƒ¦ãƒ¼ã‚¶å"
 
 #: ../web/swat.c:1088 ../web/swat.c:1134
 msgid "Old Password"
-msgstr "‹ŒƒpƒXƒ[ƒh"
+msgstr "æ—§ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰"
 
 #: ../web/swat.c:1091 ../web/swat.c:1136
 msgid "New Password"
-msgstr "VƒpƒXƒ[ƒh"
+msgstr "æ–°ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰"
 
 #: ../web/swat.c:1093 ../web/swat.c:1138
 msgid "Re-type New Password"
-msgstr "VƒpƒXƒ[ƒh‚ÌÄ“ü—Í"
+msgstr "æ–°ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã®å†å…¥åŠ›"
 
 #: ../web/swat.c:1101 ../web/swat.c:1149
 msgid "Change Password"
-msgstr "ƒpƒXƒ[ƒh•ÏX"
+msgstr "ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰å¤‰æ›´"
 
 #: ../web/swat.c:1104
 msgid "Add New User"
-msgstr "V‹Kƒ†[ƒU’Ç‰Á"
+msgstr "æ–°è¦ãƒ¦ãƒ¼ã‚¶è¿½åŠ "
 
 #: ../web/swat.c:1106
 msgid "Delete User"
-msgstr "ƒ†[ƒU‚Ìíœ"
+msgstr "ãƒ¦ãƒ¼ã‚¶ã®å‰Šé™¤"
 
 #: ../web/swat.c:1108
 msgid "Disable User"
-msgstr "ƒ†[ƒU‚Ì–³Œø‰»"
+msgstr "ãƒ¦ãƒ¼ã‚¶ã®ç„¡åŠ¹åŒ–"
 
 #: ../web/swat.c:1110
 msgid "Enable User"
-msgstr "ƒ†[ƒU‚Ì—LŒø‰»"
+msgstr "ãƒ¦ãƒ¼ã‚¶ã®æœ‰åŠ¹åŒ–"
 
 #: ../web/swat.c:1123
 msgid "Client/Server Password Management"
-msgstr "ƒŠƒ‚[ƒgƒ}ƒVƒ“‚ÌƒpƒXƒ[ƒhŠÇ—"
+msgstr "ãƒªãƒ¢ãƒ¼ãƒˆãƒã‚·ãƒ³ã®ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ç®¡ç†"
 
 #: ../web/swat.c:1140
 msgid "Remote Machine"
-msgstr "ƒŠƒ‚[ƒgƒ}ƒVƒ“"
+msgstr "ãƒªãƒ¢ãƒ¼ãƒˆãƒã‚·ãƒ³"
 
 #: ../web/swat.c:1179
 msgid "Printer Parameters"
-msgstr "ˆóü‹¤—L ƒpƒ‰ƒ[ƒ^"
+msgstr "å°åˆ·å…±æœ‰ ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿"
 
 #: ../web/swat.c:1181
 msgid "Important Note:"
-msgstr "*’"
+msgstr "*æ³¨"
 
 #: ../web/swat.c:1182
 msgid "Printer names marked with [*] in the Choose Printer drop-down box "
-msgstr "–¼‘O‚Ìæ“ª‚É [*] ‚ª‚Â‚¢‚½ƒvƒŠƒ“ƒ^"
+msgstr "åå‰ã®å…ˆé ­ã« [*] ãŒã¤ã„ãŸãƒ—ãƒªãƒ³ã‚¿"
 
 #: ../web/swat.c:1183
 msgid "are autoloaded printers from "
-msgstr "‚Í"
+msgstr "ã¯"
 
 #: ../web/swat.c:1184
 msgid "Printcap Name"
-msgstr "printcap name ƒpƒ‰ƒ[ƒ^"
+msgstr "printcap name ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿"
 
 #: ../web/swat.c:1185
 msgid "Attempting to delete these printers from SWAT will have no effect."
-msgstr "‚©‚ç©“®İ’è‚³‚ê‚½‚à‚Ì‚Å‚·‚©‚çAíœ‚·‚é‚±‚Æ‚Í‚Å‚«‚Ü‚¹‚ñB"
+msgstr "ã‹ã‚‰è‡ªå‹•è¨­å®šã•ã‚ŒãŸã‚‚ã®ã§ã™ã‹ã‚‰ã€å‰Šé™¤ã™ã‚‹ã“ã¨ã¯ã§ãã¾ã›ã‚“ã€‚"
 
 #: ../web/swat.c:1231
 msgid "Choose Printer"
-msgstr "ˆóü‹¤—L‚Ì‘I‘ğ"
+msgstr "å°åˆ·å…±æœ‰ã®é¸æŠ"
 
 #: ../web/swat.c:1250
 msgid "Delete Printer"
-msgstr "ˆóü‹¤—L‚Ìíœ"
+msgstr "å°åˆ·å…±æœ‰ã®å‰Šé™¤"
 
 #: ../web/swat.c:1257
 msgid "Create Printer"
-msgstr "ˆóü‹¤—L‚Ìì¬"
+msgstr "å°åˆ·å…±æœ‰ã®ä½œæˆ"
 
 #: ../web/statuspage.c:123
 msgid "RDONLY     "
-msgstr "QÆ‚Ì‚İ   "
+msgstr "å‚ç…§ã®ã¿   "
 
 #: ../web/statuspage.c:124
 msgid "WRONLY     "
-msgstr "XV‚Ì‚İ   "
+msgstr "æ›´æ–°ã®ã¿   "
 
 #: ../web/statuspage.c:125
 msgid "RDWR       "
-msgstr "QÆ/XV  "
+msgstr "å‚ç…§/æ›´æ–°  "
 
 #: ../web/statuspage.c:309
 msgid "Server Status"
-msgstr "ƒT[ƒo‚Ìó‘Ô"
+msgstr "ã‚µãƒ¼ãƒã®çŠ¶æ…‹"
 
 #: ../web/statuspage.c:314
 msgid "Auto Refresh"
-msgstr "©“®XV‚ÌŠJn"
+msgstr "è‡ªå‹•æ›´æ–°ã®é–‹å§‹"
 
 #: ../web/statuspage.c:315 ../web/statuspage.c:320
 msgid "Refresh Interval: "
-msgstr "XVŠÔŠu: "
+msgstr "æ›´æ–°é–“éš”: "
 
 #: ../web/statuspage.c:319
 msgid "Stop Refreshing"
-msgstr "©“®XV‚Ì’â~"
+msgstr "è‡ªå‹•æ›´æ–°ã®åœæ­¢"
 
 #: ../web/statuspage.c:334
 msgid "version:"
-msgstr "ƒo[ƒWƒ‡ƒ“"
+msgstr "ãƒãƒ¼ã‚¸ãƒ§ãƒ³"
 
 #: ../web/statuspage.c:337
 msgid "smbd:"
@@ -398,23 +398,23 @@ msgstr ""
 
 #: ../web/statuspage.c:337 ../web/statuspage.c:350 ../web/statuspage.c:364
 msgid "running"
-msgstr "Às’†"
+msgstr "å®Ÿè¡Œä¸­"
 
 #: ../web/statuspage.c:337 ../web/statuspage.c:350 ../web/statuspage.c:364
 msgid "not running"
-msgstr "’â~’†"
+msgstr "åœæ­¢ä¸­"
 
 #: ../web/statuspage.c:341
 msgid "Stop smbd"
-msgstr "smbd ‚Ì’â~"
+msgstr "smbd ã®åœæ­¢"
 
 #: ../web/statuspage.c:343
 msgid "Start smbd"
-msgstr "smbd ‚Ì‹N“®"
+msgstr "smbd ã®èµ·å‹•"
 
 #: ../web/statuspage.c:345
 msgid "Restart smbd"
-msgstr "smbd ‚ÌÄ‹N“®"
+msgstr "smbd ã®å†èµ·å‹•"
 
 #: ../web/statuspage.c:350
 msgid "nmbd:"
@@ -422,15 +422,15 @@ msgstr ""
 
 #: ../web/statuspage.c:354
 msgid "Stop nmbd"
-msgstr "nmbd ‚Ì’â~"
+msgstr "nmbd ã®åœæ­¢"
 
 #: ../web/statuspage.c:356
 msgid "Start nmbd"
-msgstr "nmbd ‚Ì‹N“®"
+msgstr "nmbd ã®èµ·å‹•"
 
 #: ../web/statuspage.c:358
 msgid "Restart nmbd"
-msgstr "nmbd ‚ÌÄ‹N“®"
+msgstr "nmbd ã®å†èµ·å‹•"
 
 #: ../web/statuspage.c:364
 msgid "winbindd:"
@@ -438,33 +438,33 @@ msgstr ""
 
 #: ../web/statuspage.c:368
 msgid "Stop winbindd"
-msgstr "winbindd ‚Ì’â~"
+msgstr "winbindd ã®åœæ­¢"
 
 #: ../web/statuspage.c:370
 msgid "Start winbindd"
-msgstr "winbindd ‚Ì‹N“®"
+msgstr "winbindd ã®èµ·å‹•"
 
 #: ../web/statuspage.c:372
 msgid "Restart winbindd"
-msgstr "winbindd ‚ÌÄ‹N“®"
+msgstr "winbindd ã®å†èµ·å‹•"
 
 #. stop, restart all
 #: ../web/statuspage.c:381
 msgid "Stop All"
-msgstr "‚·‚×‚Ä’â~"
+msgstr "ã™ã¹ã¦åœæ­¢"
 
 #: ../web/statuspage.c:382
 msgid "Restart All"
-msgstr "‚·‚×‚ÄÄ‹N“®"
+msgstr "ã™ã¹ã¦å†èµ·å‹•"
 
 #. start all
 #: ../web/statuspage.c:386
 msgid "Start All"
-msgstr "‚·‚×‚Ä‹N“®"
+msgstr "ã™ã¹ã¦èµ·å‹•"
 
 #: ../web/statuspage.c:393
 msgid "Active Connections"
-msgstr "Ú‘±’†‚ÌƒNƒ‰ƒCƒAƒ“ƒg"
+msgstr "æ¥ç¶šä¸­ã®ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆ"
 
 #: ../web/statuspage.c:395 ../web/statuspage.c:408 ../web/statuspage.c:416
 msgid "PID"
@@ -472,47 +472,47 @@ msgstr ""
 
 #: ../web/statuspage.c:395 ../web/statuspage.c:408
 msgid "Client"
-msgstr "ƒNƒ‰ƒCƒAƒ“ƒg"
+msgstr "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆ"
 
 #: ../web/statuspage.c:395
 msgid "IP address"
-msgstr "IPƒAƒhƒŒƒX"
+msgstr "IPã‚¢ãƒ‰ãƒ¬ã‚¹"
 
 #: ../web/statuspage.c:395 ../web/statuspage.c:408 ../web/statuspage.c:416
 msgid "Date"
-msgstr "“ú•t"
+msgstr "æ—¥ä»˜"
 
 #: ../web/statuspage.c:397
 msgid "Kill"
-msgstr "Ø’f"
+msgstr "åˆ‡æ–­"
 
 #: ../web/statuspage.c:405
 msgid "Active Shares"
-msgstr "Ú‘±’†‚Ì‹¤—L"
+msgstr "æ¥ç¶šä¸­ã®å…±æœ‰"
 
 #: ../web/statuspage.c:408
 msgid "Share"
-msgstr "‹¤—L–¼"
+msgstr "å…±æœ‰å"
 
 #: ../web/statuspage.c:408
 msgid "User"
-msgstr "ƒ†[ƒU"
+msgstr "ãƒ¦ãƒ¼ã‚¶"
 
 #: ../web/statuspage.c:408
 msgid "Group"
-msgstr "ƒOƒ‹[ƒv"
+msgstr "ã‚°ãƒ«ãƒ¼ãƒ—"
 
 #: ../web/statuspage.c:414
 msgid "Open Files"
-msgstr "g—p’†‚Ìƒtƒ@ƒCƒ‹"
+msgstr "ä½¿ç”¨ä¸­ã®ãƒ•ã‚¡ã‚¤ãƒ«"
 
 #: ../web/statuspage.c:416
 msgid "Sharing"
-msgstr "”r‘¼ƒ‚[ƒh"
+msgstr "æ’ä»–ãƒ¢ãƒ¼ãƒ‰"
 
 #: ../web/statuspage.c:416
 msgid "R/W"
-msgstr "QÆ/XV"
+msgstr "å‚ç…§/æ›´æ–°"
 
 #: ../web/statuspage.c:416
 msgid "Oplock"
@@ -520,76 +520,76 @@ msgstr ""
 
 #: ../web/statuspage.c:416
 msgid "File"
-msgstr "ƒtƒ@ƒCƒ‹–¼"
+msgstr "ãƒ•ã‚¡ã‚¤ãƒ«å"
 
 #: ../web/statuspage.c:425
 msgid "Show Client in col 1"
-msgstr "ƒNƒ‰ƒCƒAƒ“ƒg–¼‚ğæ“ª‚É•\¦"
+msgstr "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆåã‚’å…ˆé ­ã«è¡¨ç¤º"
 
 #: ../web/statuspage.c:426
 msgid "Show PID in col 1"
-msgstr "PID‚ğæ“ª‚É•\¦"
+msgstr "PIDã‚’å…ˆé ­ã«è¡¨ç¤º"
 
 #: ../param/loadparm.c:755
 msgid "Base Options"
-msgstr "Šî–{ ƒIƒvƒVƒ‡ƒ“"
+msgstr "åŸºæœ¬ ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:775
 msgid "Security Options"
-msgstr "ƒZƒLƒ…ƒŠƒeƒB ƒIƒvƒVƒ‡ƒ“"
+msgstr "ã‚»ã‚­ãƒ¥ãƒªãƒ†ã‚£ ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:859
 msgid "Logging Options"
-msgstr "ƒƒMƒ“ƒO ƒIƒvƒVƒ‡ƒ“"
+msgstr "ãƒ­ã‚®ãƒ³ã‚° ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:874
 msgid "Protocol Options"
-msgstr "ƒvƒƒgƒRƒ‹ ƒIƒvƒVƒ‡ƒ“"
+msgstr "ãƒ—ãƒ­ãƒˆã‚³ãƒ« ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:911
 msgid "Tuning Options"
-msgstr "ƒ`ƒ…[ƒjƒ“ƒO ƒIƒvƒVƒ‡ƒ“"
+msgstr "ãƒãƒ¥ãƒ¼ãƒ‹ãƒ³ã‚° ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:940
 msgid "Printing Options"
-msgstr "ˆóü ƒIƒvƒVƒ‡ƒ“"
+msgstr "å°åˆ· ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:970
 msgid "Filename Handling"
-msgstr "ƒtƒ@ƒCƒ‹–¼‚Ìæˆµ"
+msgstr "ãƒ•ã‚¡ã‚¤ãƒ«åã®å–æ‰±"
 
 #: ../param/loadparm.c:996
 msgid "Domain Options"
-msgstr "ƒhƒƒCƒ“ ƒIƒvƒVƒ‡ƒ“"
+msgstr "ãƒ‰ãƒ¡ã‚¤ãƒ³ ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:1000
 msgid "Logon Options"
-msgstr "ƒƒOƒIƒ“ ƒIƒvƒVƒ‡ƒ“"
+msgstr "ãƒ­ã‚°ã‚ªãƒ³ ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:1019
 msgid "Browse Options"
-msgstr "ƒuƒ‰ƒEƒWƒ“ƒO ƒIƒvƒVƒ‡ƒ“"
+msgstr "ãƒ–ãƒ©ã‚¦ã‚¸ãƒ³ã‚° ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:1033
 msgid "WINS Options"
-msgstr "WINS ƒIƒvƒVƒ‡ƒ“"
+msgstr "WINS ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:1043
 msgid "Locking Options"
-msgstr "ƒƒbƒLƒ“ƒO ƒIƒvƒVƒ‡ƒ“"
+msgstr "ãƒ­ãƒƒã‚­ãƒ³ã‚° ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:1061
 msgid "Ldap Options"
-msgstr "LDAP ƒIƒvƒVƒ‡ƒ“"
+msgstr "LDAP ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:1078
 msgid "Miscellaneous Options"
-msgstr "‚»‚Ì‘¼‚ÌƒIƒvƒVƒ‡ƒ“"
+msgstr "ãã®ä»–ã®ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:1138
 msgid "VFS module options"
-msgstr "VFS ƒIƒvƒVƒ‡ƒ“"
+msgstr "VFS ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
 
 #: ../param/loadparm.c:1148
 msgid "Winbind options"
-msgstr "Winbind ƒIƒvƒVƒ‡ƒ“"
+msgstr "Winbind ã‚ªãƒ—ã‚·ãƒ§ãƒ³"
