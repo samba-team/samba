@@ -133,7 +133,6 @@ else {
 }
 
 print IDB "d 0755 root sys usr/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
-print IDB "f 0444 root sys usr/samba/README $SRCPFX/packaging/SGI/README $PKG.sw.base\n";
 
 print IDB "d 0755 root sys usr/samba/bin $SRCPFX/packaging/SGI $PKG.sw.base\n";
 while(@bins) {
