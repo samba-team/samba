@@ -40,6 +40,7 @@
 .Nm krb5_get_in_tkt_with_password ,
 .Nm krb5_get_in_tkt_with_keytab ,
 .Nm krb5_get_in_tkt_with_skey ,
+.Nm krb5_free_kdc_rep ,
 .Nm krb5_password_key_proc
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -111,6 +112,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_ccache ccache"
 .Fa "krb5_creds *creds"
 .Fa "krb5_kdc_rep *ret_as_reply"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_free_kdc_rep
+.Fa "krb5_context context"
+.Fa "krb5_kdc_rep *rep"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_password_key_proc 
@@ -206,7 +212,8 @@ pre-authentication that the KDC returned.
 .Fa ret_as_reply
 will (if not
 .Dv NULL )
-be filled in with the response of the KDC.
+be filled in with the response of the KDC and should be free with
+.Fn krb5_free_kdc_rep .
 .Pp
 .Fa key_proc
 is a pointer to a function that should return a key salted appropriately.
@@ -255,6 +262,10 @@ terminated string or
 will query the user for the pass on the console if the password isn't
 given as the argument 
 .Fa keyseed .
+.Pp
+.Fn krb5_free_kdc_rep
+frees the content of
+.Fa rep .
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_verify_user 3 ,
