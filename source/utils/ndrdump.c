@@ -127,7 +127,8 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
 	
-	poptSetOtherOptionHelp(pc, "<pipe> <function> <inout> [<filename>]");
+	poptSetOtherOptionHelp(
+		pc, "<pipe|uuid> <function> <inout> [<filename>]");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 	}
@@ -143,8 +144,13 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	p = idl_iface_by_name(pipe_name);
 
 	if (!p) {
-		printf("Unknown pipe '%s'\n", pipe_name);
-		exit(1);
+
+		p = idl_iface_by_uuid(pipe_name);
+
+		if (!p) {
+			printf("Unknown pipe or UUID '%s'\n", pipe_name);
+			exit(1);
+		}
 	}
 
 	function = poptGetArg(pc);
