@@ -40,6 +40,7 @@ static int ClientNMB = -1;
 struct sock_redir
 {
 	int c;
+	int s;
 	int c_trn_id;
 	int s_trn_id;
 	struct nmb_state *n;
@@ -136,6 +137,7 @@ static struct sock_redir *sock_redir_get(int fd)
 	ZERO_STRUCTP(sock);
 
 	sock->c = fd;
+	sock->s = -1;
 	sock->n = NULL;
 	sock->time = time(NULL);
 
@@ -199,9 +201,11 @@ static BOOL process_cli_sock(struct sock_redir **sock)
 	nmb = (struct nmb_state*)malloc(sizeof(struct nmb_state));
 	if (nmb == NULL)
 	{
+		free(p);
 		return False;
 	}
 
+	(*sock)->s = ClientNMB;
 	(*sock)->n = nmb;
 	(*sock)->c_trn_id = p->packet.nmb.header.name_trn_id;
 	(*sock)->s_trn_id = trn_id;
@@ -224,44 +228,67 @@ static BOOL process_cli_sock(struct sock_redir **sock)
 	if (!send_packet(p))
 	{
 		DEBUG(0,("server is dead\n"));
+		free(p);
 		return False;
 	}			
+	free(p);
 	return True;
 }
 
-static BOOL process_srv_sock(struct sock_redir *sock, struct packet_struct *p)
+static BOOL process_srv_sock(struct sock_redir *sock)
 {
 	int nmb_id;
 	int tr_id;
+	int i;
+
+	struct packet_struct *p;
+
+	p = receive_packet(sock->s, NMB_PACKET, 0);
 	if (p == NULL)
 	{
 		return False;
 	}
 
-	nmb_id = p->packet.nmb.header.name_trn_id;
-	tr_id = sock->s_trn_id;
-
-	DEBUG(10,("process_srv_sock:\tnmb_id:\t%d\n", nmb_id));
-
-	DEBUG(10,("list:\tfd:\t%d\tnmb_id:\t%d\ttr_id:\t%d\n",
-		   sock->c,
-		   nmb_id,
-		   tr_id));
-
-	if (nmb_id != tr_id)
+	if (!p->packet.nmb.header.response)
 	{
-		return False;
+		free(p);
+		return True;
 	}
 
-	filter_reply(p, sock->c_trn_id);
-	p->fd = sock->c;
-	p->packet_type = NMB_SOCK_PACKET;
+	nmb_id = p->packet.nmb.header.name_trn_id;
+	DEBUG(10,("process_srv_sock:\tnmb_id:\t%d\n", nmb_id));
 
-	if (!send_packet(p))
+	for (i = 0; i < num_socks; i++)
 	{
-		DEBUG(0,("client is dead\n"));
-	}			
-	return True;
+		if (socks[i] == NULL)
+		{
+			continue;
+		}
+
+		tr_id = socks[i]->s_trn_id;
+
+		DEBUG(10,("list:\tfd:\t%d\tc_trn_id:\t%d\ttr_id:\t%d\n",
+			   socks[i]->c,
+			   socks[i]->c_trn_id,
+			   tr_id));
+
+		if (nmb_id != tr_id)
+		{
+			continue;
+		}
+
+		filter_reply(p, socks[i]->c_trn_id);
+		p->fd = socks[i]->c;
+		p->packet_type = NMB_SOCK_PACKET;
+
+		if (!send_packet(p))
+		{
+			DEBUG(0,("client is dead\n"));
+			return False;
+		}			
+		return True;
+	}
+	return False;
 }
 
 static void start_agent(void)
@@ -326,13 +353,9 @@ static void start_agent(void)
 		struct sockaddr_un addr;
 		int in_addrlen = sizeof(addr);
 		int maxfd = s;
-		struct packet_struct *p = NULL;
-		time_t current_time = time(NULL);
 		
 		FD_ZERO(&fds);
 		FD_SET(s, &fds);
-		FD_SET(ClientNMB, &fds);
-		maxfd = MAX(ClientNMB, maxfd);
 
 		for (i = 0; i < num_socks; i++)
 		{
@@ -342,6 +365,12 @@ static void start_agent(void)
 				FD_SET(fd, &fds);
 				maxfd = MAX(maxfd, fd);
 
+				fd = socks[i]->s;
+				if (fd != -1)
+				{
+					FD_SET(fd, &fds);
+					maxfd = MAX(maxfd, fd);
+				}
 			}
 		}
 
@@ -353,8 +382,11 @@ static void start_agent(void)
 			continue;
 		}
 
+		DEBUG(10,("select received\n"));
+
 		if (FD_ISSET(s, &fds))
 		{
+			FD_CLR(s, &fds);
 			c = accept(s, (struct sockaddr*)&addr, &in_addrlen);
 			if (c != -1)
 			{
@@ -362,19 +394,6 @@ static void start_agent(void)
 			}
 		}
 
-		if (FD_ISSET(ClientNMB, &fds))
-		{
-			p = receive_packet(ClientNMB, NMB_PACKET, 0);
-			if (p && !p->packet.nmb.header.response)
-			{
-				free(p);
-				p = NULL;
-			}
-		}
-		else
-		{
-			p = NULL;
-		}
 		for (i = 0; i < num_socks; i++)
 		{
 			if (socks[i] == NULL)
@@ -383,35 +402,30 @@ static void start_agent(void)
 			}
 			if (FD_ISSET(socks[i]->c, &fds))
 			{
+				FD_CLR(socks[i]->c, &fds);
 				if (!process_cli_sock(&socks[i]))
 				{
 					sock_redir_free(socks[i]);
 					socks[i] = NULL;
 				}
 			}
-			
-			if (p == NULL)
-			{
-				continue;
-			}
-
 			if (socks[i] == NULL)
 			{
 				continue;
 			}
-
-			if (process_srv_sock(socks[i], p) ||
-				current_time > socks[i]->time + 5)
+			if (socks[i]->s == -1)
 			{
-				sock_redir_free(socks[i]);
-				socks[i] = NULL;
+				continue;
 			}
-		}
-
-		if (p != NULL)
-		{
-			free(p);
-			p = NULL;
+			if (FD_ISSET(socks[i]->s, &fds))
+			{
+				FD_CLR(socks[i]->s, &fds);
+				if (!process_srv_sock(socks[i]))
+				{
+					sock_redir_free(socks[i]);
+					socks[i] = NULL;
+				}
+			}
 		}
 	}
 }

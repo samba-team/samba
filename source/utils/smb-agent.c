@@ -323,7 +323,8 @@ static void filter_reply(char *buf, int moff)
 	SCVAL(buf, smb_mid, x);
 
 }
-void process_cli_sock(struct sock_redir **sock)
+
+static BOOL process_cli_sock(struct sock_redir **sock)
 {
 	struct cli_state *s = (*sock)->s;
 	if (s == NULL)
@@ -331,9 +332,7 @@ void process_cli_sock(struct sock_redir **sock)
 		s = init_client_connection((*sock)->c);
 		if (s == NULL)
 		{
-			sock_redir_free(*sock);
-			*sock = NULL;
-			return ;
+			return False;
 		}
 		(*sock)->s = s;
 	}
@@ -342,9 +341,7 @@ void process_cli_sock(struct sock_redir **sock)
 		if (!receive_smb((*sock)->c, packet, 0))
 		{
 			DEBUG(0,("client closed connection\n"));
-			sock_redir_free(*sock);
-			*sock = NULL;
-			return;
+			return False;
 		}
 
 		filter_reply(packet, (*sock)->mid_offset);
@@ -354,12 +351,11 @@ void process_cli_sock(struct sock_redir **sock)
 			if (!send_smb(s->fd, packet))
 			{
 				DEBUG(0,("server is dead\n"));
-				sock_redir_free(*sock);
-				*sock = NULL;
-				return;
+				return False;
 			}			
 		}
 	}
+	return True;
 }
 
 static int get_smbmid(char *buf)
@@ -513,6 +509,7 @@ static void start_agent(void)
 
 		if (FD_ISSET(s, &fds))
 		{
+			FD_CLR(s, &fds);
 			c = accept(s, (struct sockaddr*)&addr, &in_addrlen);
 			if (c != -1)
 			{
@@ -528,7 +525,12 @@ static void start_agent(void)
 			}
 			if (FD_ISSET(socks[i]->c, &fds))
 			{
-				process_cli_sock(&socks[i]);
+				FD_CLR(socks[i]->c, &fds);
+				if (!process_cli_sock(&socks[i]))
+				{
+					sock_redir_free(socks[i]);
+					socks[i] = NULL;
+				}
 			}
 			if (socks[i] == NULL)
 			{
