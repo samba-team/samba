@@ -160,7 +160,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	ret = samdb_search(sam_ctx, 
 			   mem_ctx, NULL, &res, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
-			   r->in.account->name);
+			   r->in.account->string);
 	if (ret != 1) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -270,7 +270,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	ret = samdb_search(sam_ctx, 
 			   mem_ctx, NULL, &res, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
-			   r->in.account->name);
+			   r->in.account->string);
 	if (ret != 1) {
 		status = NT_STATUS_NO_SUCH_USER;
 		goto failed;
