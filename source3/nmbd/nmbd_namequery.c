@@ -201,7 +201,7 @@ static BOOL query_local_namelists(struct subnet_record *subrec, struct nmb_name 
  Try and query for a name.
 ****************************************************************************/
 
-BOOL query_name(struct subnet_record *subrec, char *name, int type,
+BOOL query_name(struct subnet_record *subrec, const char *name, int type,
                    query_name_success_function success_fn,
                    query_name_fail_function fail_fn, 
                    struct userdata_struct *userdata)
@@ -276,7 +276,7 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
 ****************************************************************************/
 
 BOOL query_name_from_wins_server(struct in_addr ip_to, 
-                   char *name, int type,
+                   const char *name, int type,
                    query_name_success_function success_fn,
                    query_name_fail_function fail_fn, 
                    struct userdata_struct *userdata)
