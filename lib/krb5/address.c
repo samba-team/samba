@@ -88,12 +88,6 @@ krb5_address_compare(krb5_context context,
 {
     return krb5_address_order (context, addr1, addr2) == 0;
 }
-#if 0
-  return addr1->addr_type == addr2->addr_type
-    && memcmp (addr1->address.data,
-	       addr2->address.data,
-	       addr1->address.length) == 0;
-#endif
 
 krb5_error_code
 krb5_copy_address(krb5_context context,
@@ -117,8 +111,8 @@ krb5_error_code
 krb5_free_address(krb5_context context,
 		  krb5_address *address)
 {
-  krb5_data_free (&address->address);
-  return 0;
+    krb5_data_free (&address->address);
+    return 0;
 }
 
 krb5_error_code
