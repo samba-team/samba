@@ -1586,7 +1586,7 @@ void mangle_name_83(char *s)
 
 	res = _mangle(u2);
 	if (res) ucs2_to_dos (s, res, 13); /* ugly, but must be done this way */
-	DEBUG(10,("mangle_name_83: returning -> [%s]\n", res));
+	DEBUG(10,("mangle_name_83: returning -> [%s]\n", res?"True":"False"));
 	SAFE_FREE(res);
 	SAFE_FREE(u2);
 }
