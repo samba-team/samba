@@ -1583,7 +1583,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	 */
 	
 	if (!rc && mangle_is_mangled(mask))
-		mangle_check_cache( mask );
+		mangle_check_cache( mask, sizeof(pstring)-1 );
 	
 	if (!has_wild) {
 		pstrcat(directory,"/");
@@ -3738,7 +3738,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 	 */
 
 	if (!rc && mangle_is_mangled(mask))
-		mangle_check_cache( mask );
+		mangle_check_cache( mask, sizeof(pstring)-1 );
 
 	has_wild = ms_has_wild(mask);
 
@@ -4216,7 +4216,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	 */
 
 	if (!rc && mangle_is_mangled(mask))
-		mangle_check_cache( mask );
+		mangle_check_cache( mask, sizeof(pstring)-1 );
 
 	has_wild = ms_has_wild(mask);
 

@@ -557,7 +557,7 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
  * Check for a name on the mangled name stack
  *
  *  Input:  s - Input *and* output string buffer.
- *
+ *	    maxlen - space in i/o string buffer.
  *  Output: True if the name was found in the cache, else False.
  *
  *  Notes:  If a reverse map is found, the function will overwrite the string
@@ -568,7 +568,7 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
  * ************************************************************************** **
  */
 
-static BOOL check_cache( char *s )
+static BOOL check_cache( char *s, size_t maxlen )
 {
 	ubi_cacheEntryPtr FoundPtr;
 	char             *ext_start = NULL;
@@ -602,7 +602,7 @@ static BOOL check_cache( char *s )
 	if( !FoundPtr ) {
 		if(saved_ext) {
 			/* Replace the saved_ext as it was truncated. */
-			(void)pstrcat( s, saved_ext );
+			(void)safe_strcat( s, saved_ext, maxlen );
 			SAFE_FREE(saved_ext);
 		}
 		return( False );
@@ -612,10 +612,10 @@ static BOOL check_cache( char *s )
 	found_name = (char *)(FoundPtr + 1);
 	found_name += (strlen( found_name ) + 1);
 
-	(void)pstrcpy( s, found_name );
+	(void)safe_strcpy( s, found_name, maxlen );
 	if( saved_ext ) {
 		/* Replace the saved_ext as it was truncated. */
-		(void)pstrcat( s, saved_ext );
+		(void)safe_strcat( s, saved_ext, maxlen );
 		SAFE_FREE(saved_ext);
 	}
 
