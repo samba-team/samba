@@ -95,6 +95,76 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
     return 0;
 }
 
+static krb5_error_code
+get_cred_cache(krb5_context context, krb5_ccache *cc, 
+	       krb5_prompter_fct prompter)
+{
+    krb5_ccache id;
+    krb5_creds in, *out = NULL;
+    krb5_principal client, server;
+    krb5_error_code ret;
+    
+    ret = krb5_cc_default(context, &id);
+    ret = krb5_cc_get_principal(context, id, &client);
+    ret = krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
+    memset(&in, 0, sizeof(in));
+    in.client = client;
+    in.server = server;
+    ret = krb5_get_credentials(context, 0, id, &in, &out);
+    if(out != NULL)
+	krb5_free_creds(context, out);
+    if(ret == 0) {
+	*cc = id;
+	goto out;
+    }
+    krb5_cc_close(context, id);
+    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+
+    {
+	krb5_creds cred;
+	krb5_get_init_creds_opt opt;
+	krb5_get_init_creds_opt_init (&opt);
+	ret = krb5_get_init_creds_password (context,
+					    &cred,
+					    client,
+					    NULL,
+					    prompter,
+					    NULL,
+					    0,
+					    KADM5_ADMIN_SERVICE,
+					    &opt);
+	switch(ret){
+	case 0:
+	    break;
+	case KRB5KDC_ERR_NONE: /* XXX hack in krb5_get_init_creds_password */
+	    exit(1);
+	case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+	case KRB5KRB_AP_ERR_MODIFIED:
+	    ret = KADM5_BAD_PASSWORD;
+	    break;
+	default:
+	    krb5_err(context, 1, ret, "krb5_get_init_creds");
+	}
+	if(ret) {
+	    goto out;
+	}
+	ret = krb5_cc_initialize (context, id, cred.client);
+	if (ret)
+	    return ret;
+	
+	ret = krb5_cc_store_cred (context, id, &cred);
+	if (ret)
+	    return ret;
+	krb5_free_creds_contents (context, &cred);
+	*cc = id;
+    }
+    
+out:
+    krb5_free_principal(context, client);
+    krb5_free_principal(context, server);
+    return ret;
+}
+
 
 kadm5_ret_t 
 kadm5_c_init_with_password_ctx(krb5_context context,
@@ -130,7 +200,7 @@ kadm5_c_init_with_password_ctx(krb5_context context,
 	close(s);
 	return KADM5_RPC_ERROR;
     }
-    krb5_cc_default(context, &cc);
+    ret = get_cred_cache(context, &cc, krb5_prompter_posix);
     krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
     ctx->ac = NULL;
     ret = krb5_sendauth(context, &ctx->ac, &s, KADMIN_APPL_VERSION, NULL, 
