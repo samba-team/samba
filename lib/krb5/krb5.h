@@ -659,7 +659,6 @@ typedef struct krb5_krbhst_info {
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
 struct sockaddr;
-#include <stdarg.h>
 
 #include <krb5-protos.h>
 
