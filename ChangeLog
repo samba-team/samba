@@ -1,3 +1,7 @@
+Thu Dec  4 03:38:12 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/connect.c: Send version 5 TCP-reply as length+data.
+
 Sat Nov 29 07:10:11 1997  Assar Westerlund  <assar@sics.se>
 
 	* appl/rsh/rshd.c: updated to use getarg.
