@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Interface header: Scheduler service
    Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    Copyright (C) Andrew Tridgell 1992-1999

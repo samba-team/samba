@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba readline wrapper implementation
    Copyright (C) Simo Sorce 2001
    Copyright (C) Andrew Tridgell 2001

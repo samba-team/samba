@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
    byte range lock tester - with local filesystem support
    Copyright (C) Andrew Tridgell 1999
    

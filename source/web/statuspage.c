@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.2.
+   Unix SMB/CIFS implementation.
    web status page
    Copyright (C) Andrew Tridgell 1997-1998
    

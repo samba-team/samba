@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Blocking Locking functions
    Copyright (C) Jeremy Allison 1998
    

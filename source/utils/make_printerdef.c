@@ -1,6 +1,5 @@
  /*
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Create printer definition files.
 
    Copyright (C) Jean-Francois.Micouleau@utc.fr, 10/26/97 - 1998

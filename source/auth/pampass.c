@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.2.
+   Unix SMB/CIFS implementation.
    PAM Password checking
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) John H Terpsta 1999-2001

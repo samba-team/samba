@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0.
+   Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Bartlett         2001-2002
    

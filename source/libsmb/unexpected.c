@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    handle unexpected packets
    Copyright (C) Andrew Tridgell 2000
    

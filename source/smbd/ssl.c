@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    SSLeay utility functions
    Copyright (C) Christian Starkjohann <cs@obdev.at> 1998
    

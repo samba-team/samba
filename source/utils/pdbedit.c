@@ -1,7 +1,6 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    passdb editing frontend
-   Version 3.0
    
    Copyright (C) Simo Sorce      2000
    Copyright (C) Andrew Bartlett 2001   

@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    program to send control messages to Samba processes
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) 2001, 2002 by Martin Pool

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    byte range locking code
    Updated to handle range splits/merges.
 

@@ -1,8 +1,7 @@
 #ifndef _SMBAUTH_H_
 #define _SMBAUTH_H_
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.2
+   Unix SMB/CIFS implementation.
    Standardised Authentication types
    Copyright (C) Andrew Bartlett 2001
    

@@ -1,8 +1,7 @@
 /* this code is broken - there is a race condition with the unlink (tridge) */
 
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    pidfile handling
    Copyright (C) Andrew Tridgell 1998
    

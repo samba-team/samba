@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0.
+   Unix SMB/CIFS implementation.
    Authenticate against a remote domain
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Andrew Bartlett 2001

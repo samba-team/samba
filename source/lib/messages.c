@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba internal messaging functions
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) 2001 by Martin Pool

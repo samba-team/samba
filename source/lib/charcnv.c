@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Character set conversion Extensions
    Copyright (C) Igor Vergeichik <iverg@mail.ru> 2001
    Copyright (C) Andrew Tridgell 2001

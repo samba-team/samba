@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
 

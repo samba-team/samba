@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions -- torturer
    Copyright (C) 2001 by Martin Pool <mbp@samba.org>
    

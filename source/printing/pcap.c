@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    printcap parsing
    Copyright (C) Karl Auer 1993-1998
 

@@ -1,5 +1,5 @@
 /* 
-   samba -- Unix SMB/Netbios implementation.
+   samba -- Unix SMB/CIFS implementation.
    Safe standardized string types
    
    Copyright (C) Andrew Tridgell              1992-2000

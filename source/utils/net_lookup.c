@@ -1,6 +1,5 @@
 /* 
    Samba Unix/Linux SMB client library 
-   Version 3.0
    net lookup command
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
 

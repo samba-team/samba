@@ -1,6 +1,5 @@
 /*
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    SMB NT Security Descriptor / Unix permission conversion.
    Copyright (C) Jeremy Allison 1994-2000
 

@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    Samba Web Administration Tool
    Copyright (C) Andrew Tridgell 1997-1998
    

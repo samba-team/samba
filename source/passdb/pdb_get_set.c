@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    SAM_ACCOUNT access routines
    Copyright (C) Jeremy Allison 		1996-2001
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998

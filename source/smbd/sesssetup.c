@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    handle SMBsessionsetup
    Copyright (C) Andrew Tridgell 1998-2001
    Copyright (C) Andrew Bartlett      2001

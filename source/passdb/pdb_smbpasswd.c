@@ -1,6 +1,6 @@
 /*
- * Unix SMB/Netbios implementation. 
- * Version 1.9. SMB parameters and setup
+ * Unix SMB/CIFS implementation. 
+ * SMB parameters and setup
  * Copyright (C) Andrew Tridgell 1992-1998 
  * Modified by Jeremy Allison 1995.
  * Modified by Gerald (Jerry) Carter 2000-2001

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
    return a list of network interfaces
    Copyright (C) Andrew Tridgell 1998
    

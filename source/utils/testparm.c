@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Test validity of smb.conf
    Copyright (C) Karl Auer 1993, 1994-1998
 

@@ -1,5 +1,5 @@
 /*
- * Unix SMB/Netbios implementation. 
+ * Unix SMB/CIFS implementation. 
  * Copyright (C) Jeremy Allison 1995-1998
  * Copyright (C) Tim Potter     2001
  * 

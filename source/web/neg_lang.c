@@ -1,6 +1,5 @@
 /*
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    SWAT language handling
    
    This program is free software; you can redistribute it and/or modify

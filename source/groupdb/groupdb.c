@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Jeremy Allison 1996-1998
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998

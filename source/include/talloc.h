@@ -1,8 +1,7 @@
 #ifndef _TALLOC_H_
 #define _TALLOC_H_
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) 2001 by Martin Pool <mbp@samba.org>

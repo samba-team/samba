@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Samba system utilities
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1998-2002

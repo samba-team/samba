@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
 
    a partial implementation of DES designed for use in the 
    SMB authentication protocol

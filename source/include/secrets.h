@@ -1,6 +1,5 @@
 /*
- * Unix SMB/Netbios implementation. 
- * Version 3.0
+ * Unix SMB/CIFS implementation. 
  * secrets.tdb file format info
  * Copyright (C) Andrew Tridgell              2000
  * 

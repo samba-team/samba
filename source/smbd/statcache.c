@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    stat cache code
    Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Jeremy Allison 1999-2000

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    nss tester for winbindd
    Copyright (C) Andrew Tridgell 2001
    

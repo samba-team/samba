@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios library routines
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998

@@ -1,6 +1,5 @@
 /*
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    VFS initialisation and support functions
    Copyright (C) Tim Potter 1999
 

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
    SMB client library test program
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000

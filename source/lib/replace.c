@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    replacement routines for broken systems
    Copyright (C) Andrew Tridgell 1992-1998
    

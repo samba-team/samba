@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2
+   Unix SMB/CIFS implementation.
    SMB filter/socket plugin
    Copyright (C) Andrew Tridgell 1999
    

@@ -1,6 +1,5 @@
 /* 
    Samba Unix/Linux SMB client library 
-   Version 3.0
    RAP (SMB Remote Procedure Calls) defines and structures
    Copyright (C) Steve French 2001  (sfrench@us.ibm.com)
    Copyright (C) Jim McDonough 2001 (jmcd@us.ibm.com)

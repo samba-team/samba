@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.2.
+   Unix SMB/CIFS implementation.
    Samba system utilities for ACL support.
    Copyright (C) Jeremy Allison 2000.
    
