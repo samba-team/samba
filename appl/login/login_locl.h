@@ -49,7 +49,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <syslog.h>
-#include <paths.h>
 #include <signal.h>
 #include <termios.h>
 #include <err.h>
