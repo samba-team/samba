@@ -1,3 +1,10 @@
+2004-08-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5_kuserok.3: update to reality
+
+	* lib/krb5/kuserok.c: if a .k5login file exist, don't give
+	implicit rights to anyone; also check owner/mode of .k5login
+
 2004-08-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5.3: krb5_free_salt and krb5_enctype_valid
