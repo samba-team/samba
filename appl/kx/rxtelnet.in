@@ -39,9 +39,9 @@ IFS=:
 set -- $PATH
 IFS=$oldifs
 if test -z "$term"; then
-  for i in $*; do
-    test -n "$i" || i="."
-    for j in xterm dtterm aixterm dxterm hpterm; do
+  for j in xterm dtterm aixterm dxterm hpterm; do
+    for i in $*; do
+      test -n "$i" || i="."
       if test -x $i/$j; then
 	term=$j; break 2
       fi
@@ -49,7 +49,7 @@ if test -z "$term"; then
   done
 fi
 if test -n "$term"; then
-  ($term -title $title -name $title $xterm_args -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host $port; kill -USR2 $pid) &
+  ($term -title $title -n $title $xterm_args -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host $port; kill -USR2 $pid) &
 else
   env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host $port
   kill -USR2 $pid
