@@ -218,7 +218,7 @@ static int package(struct pack_desc* p, ...)
 {
   va_list args;
   int needed=0, stringneeded;
-  char* str=NULL;
+  const char* str=NULL;
   int is_string=0, stringused;
   int32 temp;
 
@@ -334,7 +334,7 @@ static void PACKI(struct pack_desc* desc,char *t,int v)
   PACK(desc,t,v);
 }
 
-static void PACKS(struct pack_desc* desc,char *t,char *v)
+static void PACKS(struct pack_desc* desc,const char *t,const char *v)
 {
   PACK(desc,t,v);
 }
