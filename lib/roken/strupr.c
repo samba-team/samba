@@ -47,7 +47,7 @@ strupr(char *str)
   char *s;
 
   for(s = str; *s; s++)
-    *s = toupper(*s);
+    *s = toupper((unsigned char)*s);
   return str;
 }
 #endif
