@@ -120,8 +120,6 @@ int smbw_fstat(int fd, struct stat *st)
 	uint32 size;
 	int mode;
 
-	DEBUG(4,("%s\n", __FUNCTION__));
-
 	smbw_busy++;
 
 	file = smbw_file(fd);
@@ -147,8 +145,6 @@ int smbw_fstat(int fd, struct stat *st)
 	st->st_mtime = m_time;
 	st->st_dev = file->srv->dev;
 
-	DEBUG(4,("%s - OK\n", __FUNCTION__));
-
 	smbw_busy--;
 	return 0;
 }
@@ -165,8 +161,6 @@ int smbw_stat(const char *fname, struct stat *st)
 	time_t m_time=0, a_time=0, c_time=0;
 	size_t size=0;
 	uint32 mode=0;
-
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
 
 	if (!fname) {
 		errno = EINVAL;

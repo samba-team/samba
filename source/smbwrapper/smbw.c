@@ -503,8 +503,6 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 	int eno, fd = -1;
 	struct smbw_file *file=NULL;
 
-	DEBUG(4,("%s\n", __FUNCTION__));
-
 	smbw_init();
 
 	if (!fname) {
@@ -612,9 +610,6 @@ ssize_t smbw_pread(int fd, void *buf, size_t count, off_t ofs)
 	struct smbw_file *file;
 	int ret;
 
-	DEBUG(4,("%s %d\n", 
-		 __FUNCTION__, (int)count));
-
 	smbw_busy++;
 
 	file = smbw_file(fd);
@@ -643,9 +638,6 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 {
 	struct smbw_file *file;
 	int ret;
-
-	DEBUG(4,("%s %d\n", 
-		 __FUNCTION__, (int)count));
 
 	smbw_busy++;
 
@@ -681,8 +673,6 @@ ssize_t smbw_write(int fd, void *buf, size_t count)
 	struct smbw_file *file;
 	int ret;
 
-	DEBUG(4,("%s\n", __FUNCTION__));
-
 	smbw_busy++;
 
 	file = smbw_file(fd);
@@ -715,8 +705,6 @@ ssize_t smbw_pwrite(int fd, void *buf, size_t count, off_t ofs)
 	struct smbw_file *file;
 	int ret;
 
-	DEBUG(4,("%s\n", __FUNCTION__));
-
 	smbw_busy++;
 
 	file = smbw_file(fd);
@@ -745,8 +733,6 @@ a wrapper for close()
 int smbw_close(int fd)
 {
 	struct smbw_file *file;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
 
 	smbw_busy++;
 
@@ -789,7 +775,6 @@ a wrapper for fcntl()
 *******************************************************/
 int smbw_fcntl(int fd, int cmd, long arg)
 {
-	DEBUG(4,("%s\n", __FUNCTION__));
 	return 0;
 }
 
@@ -834,8 +819,6 @@ int smbw_unlink(const char *fname)
 	struct smbw_server *srv;
 	fstring server, share;
 	pstring path;
-
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
 
 	if (!fname) {
 		errno = EINVAL;
@@ -889,8 +872,6 @@ int smbw_rename(const char *oldname, const char *newname)
 	fstring server2, share2;
 	pstring path2;
 
-	DEBUG(4,("%s (%s, %s)\n", __FUNCTION__, oldname, newname));
-
 	if (!oldname || !newname) {
 		errno = EINVAL;
 		return -1;
@@ -942,8 +923,6 @@ int smbw_utime(const char *fname, void *buf)
 	pstring path;
 	uint32 mode;
 
-	DEBUG(4,("%s (%s, 0x%x)\n", __FUNCTION__, fname, (unsigned)buf));
-
 	if (!fname) {
 		errno = EINVAL;
 		return -1;
@@ -992,8 +971,6 @@ int smbw_chown(const char *fname, uid_t owner, gid_t group)
 	pstring path;
 	uint32 mode;
 
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
-
 	if (!fname) {
 		errno = EINVAL;
 		return -1;
@@ -1038,8 +1015,6 @@ int smbw_chmod(const char *fname, mode_t newmode)
 	pstring path;
 	uint32 mode;
 
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
-
 	if (!fname) {
 		errno = EINVAL;
 		return -1;
@@ -1082,8 +1057,6 @@ off_t smbw_lseek(int fd, off_t offset, int whence)
 	struct smbw_file *file;
 	uint32 size;
 
-	DEBUG(4,("%s\n", __FUNCTION__));
-
 	smbw_busy++;
 
 	file = smbw_file(fd);
@@ -1125,8 +1098,6 @@ int smbw_dup(int fd)
 {
 	int fd2;
 	struct smbw_file *file, *file2;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
 
 	smbw_busy++;
 
@@ -1180,8 +1151,6 @@ a wrapper for dup2()
 int smbw_dup2(int fd, int fd2)
 {
 	struct smbw_file *file, *file2;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
 
 	smbw_busy++;
 
