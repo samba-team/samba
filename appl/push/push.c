@@ -545,11 +545,11 @@ get_pobox (char **user)
 	    err (1, "hesiod_init");
 
 	hpo = hesiod_getmailhost (context, *user);
-	if (hpo == NULL)
+	if (hpo == NULL) {
 	    warn ("hesiod_getmailhost %s", *user);
-	else {
+	} else {
 	    if (strcasecmp(hpo->hesiod_po_type, "pop") != 0)
-		errx (1, "Unsopperted po type %s", hpo->hesiod_po_type);
+		errx (1, "Unsupported po type %s", hpo->hesiod_po_type);
 
 	    ret = strdup(hpo->hesiod_po_host);
 	    if(ret == NULL)
