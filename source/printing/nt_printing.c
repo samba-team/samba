@@ -513,7 +513,8 @@ static int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 
 	if (!nt_devmode) return len;
 
-	len += tdb_pack(buf+len, buflen-len, "fwwwwwwwwwwwwwwwwwwddddddddddddddp",
+	len += tdb_pack(buf+len, buflen-len, "ffwwwwwwwwwwwwwwwwwwddddddddddddddp",
+			nt_devmode->devicename,
 			nt_devmode->formname,
 
 			nt_devmode->specversion,
@@ -785,7 +786,7 @@ static void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
  Malloc and return an NT devicemode.
 ****************************************************************************/
 
-NT_DEVICEMODE *construct_nt_devicemode(void)
+NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 {
 /*
  * should I init this ones ???
@@ -801,6 +802,7 @@ NT_DEVICEMODE *construct_nt_devicemode(void)
 
 	ZERO_STRUCTP(nt_devmode);
 
+	fstrcpy(nt_devmode->devicename, default_devicename);
 	fstrcpy(nt_devmode->formname, "Letter");
 
 	nt_devmode->specversion      = 0x0401;
@@ -931,7 +933,8 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 
 	if (!*nt_devmode) return len;
 
-	len += tdb_unpack(buf+len, buflen-len, "fwwwwwwwwwwwwwwwwwwddddddddddddddp",
+	len += tdb_unpack(buf+len, buflen-len, "ffwwwwwwwwwwwwwwwwwwddddddddddddddp",
+			  devmode.devicename,
 			  devmode.formname,
 
 			  &devmode.specversion,
@@ -1037,7 +1040,7 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	info.starttime = 0; /* Minutes since 12:00am GMT */
 	info.untiltime = 0; /* Minutes since 12:00am GMT */
 
-	if ((info.devmode = construct_nt_devicemode()) == NULL)
+	if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
 		goto fail;
 
 	if (!nt_printing_getsec(sharename, &info.secdesc_buf))
@@ -1078,7 +1081,11 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb, kbuf);
+#if 1 /* JRATEST */
 	if (!dbuf.dptr) return get_a_printer_2_default(info_ptr, sharename);
+#else
+	if (!dbuf.dptr) return 1;
+#endif
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddffffffffff",
 			&info.attributes,
@@ -1108,7 +1115,9 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
+#if 0 /* JRATEST */
 	nt_printing_getsec(sharename, &info.secdesc_buf);
+#endif /* JRATEST */
 
 	fstrcpy(info.sharename, "");
 
