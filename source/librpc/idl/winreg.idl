@@ -144,15 +144,30 @@
 		uint8 buffer[len];
 	} winreg_Uint8buf;
 
+  typedef struct {
+    uint32 max_len;
+    uint32 offset;
+    DATA_BLOB buffer;
+  } foo2;
+
+  typedef struct {
+    uint16 len;
+    uint16 max_len;
+    foo2 *buffer;
+  } foo1;
+
 	/******************/
 	/* Function: 0x0a */
 	WERROR winreg_EnumValue(
 		[in,ref] policy_handle *handle,
 		[in] uint32 enum_index,
-		[out,ref] winreg_EnumValueName *name,
+		[in,out] foo1 foo,
+		/*		[out,ref] winreg_EnumValueName *name, */
 		[in,out] uint32 *type,
-		[in,out] winreg_Uint8buf *value,
-		[in,out] uint32 *returned_len
+		[in,out] foo2 *foo2,
+		/* [in,out] winreg_Uint8buf *value, */
+		[in,out] uint32 *value1,
+		[in,out] uint32 *value2
 	);
 
 	/******************/
