@@ -50,6 +50,7 @@ ADD_OBJ_FILES = \
 		torture/rpc/lsa.o \
 		torture/rpc/echo.o \
 		torture/rpc/dfs.o \
+		torture/rpc/drsuapi.o \
 		torture/rpc/spoolss.o \
 		torture/rpc/samr.o \
 		torture/rpc/wkssvc.o \
