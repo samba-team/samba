@@ -525,6 +525,9 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		}
 
 		ent->num_sam_entries += num_entries;
+		
+		if (status != STATUS_MORE_ENTRIES)
+			break;
 
 	} while (ent->num_sam_entries < MAX_FETCH_SAM_ENTRIES);
 		
