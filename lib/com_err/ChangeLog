@@ -1,3 +1,7 @@
+Sun Apr 19 09:50:17 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in: add symlink magic for linux
+
 Sun Apr  5 09:22:11 1998  Assar Westerlund  <assar@sics.se>
 
 	* parse.y: define alloca to malloc in case we're using bison but
