@@ -126,18 +126,18 @@ $(TXTDIR)/%.txt: %.xml
 	
 # Adobe PDF files
 $(PDFDIR)/%.pdf: %.tex
-	$(PDFLATEX) $<
-	$(PDFLATEX) $<
-	$(PDFLATEX) $<
+	-$(PDFLATEX) $<
+	-$(PDFLATEX) $<
+	-$(PDFLATEX) $<
 	mv $(patsubst %.tex,%.pdf,$<) $@
 
 epsimages: $(PROJDOC_IMAGES_EPS)
 
 # DVI files
 $(DVIDIR)/%.dvi: %.tex epsimages
-	$(LATEX) $<
-	$(LATEX) $< 
-	$(LATEX) $< 
+	-$(LATEX) $<
+	-$(LATEX) $< 
+	-$(LATEX) $< 
 	mv $(patsubst %.tex,%.dvi,$<) $@
 
 %.eps: %.png

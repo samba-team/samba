@@ -301,4 +301,11 @@
 </xsl:template>
 
 
+<xsl:template match="filterline">
+	<xsl:element name="programlisting">
+		<xsl:apply-templates/>
+	</xsl:element>
+</xsl:template>
+
+
 </xsl:stylesheet>
