@@ -169,7 +169,7 @@ main(int argc, char **argv)
     if(argv[0])
 	password = argv[0];
     if(password == NULL){
-	if(des_read_pw_string(buf, sizeof(buf), "Password: ", 0))
+	if(UI_UTIL_read_pw_string(buf, sizeof(buf), "Password: ", 0))
 	    return 1;
 	password = buf;
     }

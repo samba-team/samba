@@ -119,7 +119,7 @@ kt_add(int argc, char **argv)
 	kvno = atoi(buf);
     }
     if(password_string == NULL && random_flag == 0) {
-	if(des_read_pw_string(buf, sizeof(buf), "Password: ", 1))
+	if(UI_UTIL_read_pw_string(buf, sizeof(buf), "Password: ", 1))
 	    goto out;
 	password_string = buf;
     }

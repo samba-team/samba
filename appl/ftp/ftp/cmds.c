@@ -1303,7 +1303,7 @@ user(int argc, char **argv)
 	n = command("USER %s", argv[1]);
 	if (n == CONTINUE) {
 	    if (argc < 3 ) {
-		des_read_pw_string (tmp,
+		UI_UTIL_read_pw_string (tmp,
 				    sizeof(tmp),
 				    "Password: ", 0);
 		argv[2] = tmp;
@@ -1594,7 +1594,7 @@ account(int argc, char **argv)
 		}
 	}
 	else {
-	    des_read_pw_string(acct, sizeof(acct), "Account:", 0);
+	    UI_UTIL_read_pw_string(acct, sizeof(acct), "Account:", 0);
 	}
 	command("ACCT %s", acct);
 }

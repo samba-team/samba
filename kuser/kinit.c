@@ -497,7 +497,7 @@ get_new_tickets(krb5_context context,
 	asprintf (&prompt, "%s's Password: ", p);
 	free (p);
 
-	if (des_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0)){
+	if (UI_UTIL_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0)){
 	    memset(passwd, 0, sizeof(passwd));
 	    exit(1);
 	}

@@ -79,7 +79,7 @@ print (int argc,
       usage (1);
   n = atoi(argv[0]);
   seed = argv[1];
-  if (des_read_pw_string (pw, sizeof(pw), "Pass-phrase: ", 0))
+  if (UI_UTIL_read_pw_string (pw, sizeof(pw), "Pass-phrase: ", 0))
     return 1;
   alg->init (key, pw, seed);
   for (i = 0; i < n; ++i) {

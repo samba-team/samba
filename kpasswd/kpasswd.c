@@ -79,7 +79,7 @@ change_password(krb5_context context,
     if (msg == NULL)
 	krb5_errx (context, 1, "out of memory");
 
-    ret = des_read_pw_string (pwbuf, sizeof(pwbuf), msg, 1);
+    ret = UI_UTIL_read_pw_string (pwbuf, sizeof(pwbuf), msg, 1);
     free(msg);
     if (name)
 	free(name);

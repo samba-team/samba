@@ -299,7 +299,7 @@ krb_verify(const struct passwd *login_info,
 	asprintf (&prompt, 
 		  "%s's Password: ",
 		  krb_unparse_name_long (name, instance, realm));
-	if (des_read_pw_string (password, sizeof (password), prompt, 0)) {
+	if (UI_UTIL_read_pw_string (password, sizeof (password), prompt, 0)) {
 	    memset (password, 0, sizeof (password));
 	    free(prompt);
 	    return (1);
@@ -346,7 +346,7 @@ verify_unix(struct passwd *su)
     int r;
     if(su->pw_passwd != NULL && *su->pw_passwd != '\0') {
 	snprintf(prompt, sizeof(prompt), "%s's password: ", su->pw_name);
-	r = des_read_pw_string(pw_buf, sizeof(pw_buf), prompt, 0);
+	r = UI_UTIL_read_pw_string(pw_buf, sizeof(pw_buf), prompt, 0);
 	if(r != 0)
 	    exit(0);
 	pw = crypt(pw_buf, su->pw_passwd);

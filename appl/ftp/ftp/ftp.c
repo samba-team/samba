@@ -219,7 +219,7 @@ login (char *host)
 	    }
 	    if (pass == NULL) {
 		pass = defaultpass;
-		des_read_pw_string (tmp, sizeof (tmp), prompt, 0);
+		UI_UTIL_read_pw_string (tmp, sizeof (tmp), prompt, 0);
 		if (tmp[0])
 		    pass = tmp;
 	    }
@@ -229,7 +229,7 @@ login (char *host)
     if (n == CONTINUE) {
 	aflag++;
 	acct = tmp;
-	des_read_pw_string (acct, 128, "Account:", 0);
+	UI_UTIL_read_pw_string (acct, 128, "Account:", 0);
 	n = command ("ACCT %s", acct);
     }
     if (n != COMPLETE) {
