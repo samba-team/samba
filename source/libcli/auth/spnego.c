@@ -30,7 +30,6 @@
 enum spnego_state_position {
 	SPNEGO_SERVER_START,
 	SPNEGO_CLIENT_START,
-	SPNEGO_CLIENT_SEND_MECHS,
 	SPNEGO_TARG,
 	SPNEGO_FALLBACK,
 	SPNEGO_DONE
@@ -263,10 +262,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				break;
 			}
-			/* forward the user info to the sub context */
-			spnego_state->sub_sec_security->user = gensec_security->user;
-			spnego_state->sub_sec_security->password_callback = gensec_security->password_callback;
-			spnego_state->sub_sec_security->password_callback_private = gensec_security->password_callback_private;
 			/* select the sub context */
 			nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
 							     mechType[i]);
