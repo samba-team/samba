@@ -684,7 +684,7 @@ BOOL spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE 
 			return False;
 	}
 
-	if (!prs_uint16uni(True,"devicename", ps, depth, devmode->devicename.buffer, 32))
+	if (!prs_uint16uni(True,"devicename", ps, depth, devmode->devicename.buffer, MAXDEVICENAME))
 		return False;
 	
 	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))

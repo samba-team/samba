@@ -255,6 +255,8 @@ typedef struct {
 	NT_PRINTER_KEY	*keys;
 } NT_PRINTER_DATA;
 
+#define MAXDEVICENAME	32
+
 typedef struct ntdevicemode
 {
 	fstring	devicename;
