@@ -99,7 +99,7 @@ send_and_recv_tcp(int fd,
 		  krb5_data *recv)
 {
     unsigned char len[4];
-    k_put_int(len, Send->length, 4);
+    _krb5_put_int(len, Send->length, 4);
     send(fd, len, sizeof(len), 0);
     if(send_and_recv(fd, tmout, 0, Send, recv))
 	return -1;

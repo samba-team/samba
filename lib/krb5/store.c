@@ -43,7 +43,7 @@ RCSID("$Id$");
 /* This is a bit XXX, but used quite many places */
 
 size_t
-k_put_int(void *buffer, unsigned long value, size_t size)
+_krb5_put_int(void *buffer, unsigned long value, size_t size)
 {
     unsigned char *p = buffer;
     int i;
@@ -55,7 +55,7 @@ k_put_int(void *buffer, unsigned long value, size_t size)
 }
 
 size_t
-k_get_int(void *buffer, unsigned long *value, size_t size)
+_krb5_get_int(void *buffer, unsigned long *value, size_t size)
 {
     unsigned char *p = buffer;
     unsigned long v = 0;
@@ -104,7 +104,7 @@ krb5_store_int(krb5_storage *sp,
     int ret;
     unsigned char v[4];
 
-    k_put_int(v, value, len);
+    _krb5_put_int(v, value, len);
     ret = sp->store(sp, v, len);
     if (ret != len)
 	return (ret<0)?errno:KRB5_CC_END;
@@ -129,7 +129,7 @@ krb5_ret_int(krb5_storage *sp,
     ret = sp->fetch(sp, v, len);
     if(ret != len)
 	return (ret<0)?errno:KRB5_CC_END;
-    k_get_int(v, &w, len);
+    _krb5_get_int(v, &w, len);
     *value = w;
     return 0;
 }
