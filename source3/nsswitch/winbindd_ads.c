@@ -159,7 +159,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 done:
 	if (res) ads_msgfree(ads, res);
-	if (msg) ads_msgfree(ads, msg);
 
 	return status;
 }
@@ -243,7 +242,6 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 done:
 	if (res) ads_msgfree(ads, res);
-	if (msg) ads_msgfree(ads, msg);
 
 	return status;
 }
@@ -559,7 +557,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	status = NT_STATUS_OK;
 done:
-	if (msg) ads_msgfree(ads, msg);
 	if (res) ads_msgfree(ads, res);
 
 	return status;
