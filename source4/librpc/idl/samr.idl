@@ -92,13 +92,13 @@
 
 	typedef struct {
 		HYPER_T force_logoff_time;
-		samr_Name unknown_name;
+		samr_Name unknown1;
 		samr_Name domain;  /* domain name */
 		samr_Name primary; /* PDC name if this is a BDC */
 		HYPER_T sequence_num;
-		uint32 unknown_2;
+		uint32 unknown2;
 		uint32 role;
-		uint32 unknown_3;
+		uint32 unknown3;
 		uint32 num_users;
 		uint32 num_groups;
 		uint32 num_aliases;
@@ -109,7 +109,7 @@
 	} samr_DomInfo3;
 
 	typedef struct {
-		samr_Name unknown_name;
+		samr_Name unknown;
 	} samr_DomInfo4;
 
 	typedef struct {
@@ -135,13 +135,13 @@
 
 	typedef struct {
 		HYPER_T force_logoff_time;
-		samr_Name unknown_name;
+		samr_Name unknown1;
 		samr_Name domain;
 		samr_Name primary;
 		HYPER_T sequence_num;
-		uint32 unknown_2;
+		uint32 unknown2;
 		uint32 role;
-		uint32 unknown_3;
+		uint32 unknown3;
 		uint32 num_users;
 		uint32 num_groups;
 		uint32 num_aliases;
@@ -348,7 +348,7 @@
 		NTTIME last_logoff;
 		NTTIME last_pwd_change;
 		NTTIME allow_pwd_change;
-		NTTIME force_pwd_change; /* uncertain about this one */
+		NTTIME force_pwd_change;
 		uint32 units_per_week;
 		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
 		uint16 bad_pwd_count;
@@ -432,6 +432,44 @@
 		samr_Name callback;
 	} samr_UserInfo20;
 
+	typedef struct {
+		NTTIME last_logon;
+		NTTIME last_logoff;
+		NTTIME last_pwd_change;
+		NTTIME acct_expiry;
+		NTTIME allow_pwd_change;
+		NTTIME force_pwd_change;
+		samr_Name username;
+		samr_Name full_name;
+		samr_Name home_dir;
+		samr_Name home_drive;
+		samr_Name logon_script;
+		samr_Name profile;
+		samr_Name description;
+		samr_Name workstations;
+		samr_Name comment;
+		samr_Name callback;
+		samr_Name unknown1;
+		samr_Name unknown2;
+		samr_Name unknown3;
+		uint32 buf_count;
+		[size_is(buf_count)] uint8 *buffer;
+		uint32 rid;
+		uint32 primary_group_rid;
+		uint32 acct_flags;
+		uint32 fields_present;
+		uint32 units_per_week;
+		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
+		uint16 bad_pwd_count;
+		uint16 num_logons;
+		uint16 country_code;
+		uint16 code_page;
+		uint8  nt_pwd_set;
+		uint8  lm_pwd_set;
+		uint8  expired_flag;
+		uint8  unknown4;
+	} samr_UserInfo21;
+
 	typedef union {
 		case(1) samr_UserInfo1 info1;
 		case(2) samr_UserInfo2 info2;
@@ -450,6 +488,7 @@
 		case(16) samr_UserInfo16 info16;
 		case(17) samr_UserInfo17 info17;
 		case(20) samr_UserInfo20 info20;
+		case(21) samr_UserInfo21 info21;
 	} samr_UserInfo;
 
 	NTSTATUS samr_QueryUserInfo(
