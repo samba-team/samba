@@ -484,6 +484,7 @@ as_rep(KDC_REQ *req,
 				   buf + sizeof(buf) - len,
 				   len,
 				   etype,
+				   server->kvno,
 				   &ekey->key,
 				   &rep.ticket.enc_part);
 	hdb_free_key(ekey);
@@ -500,6 +501,7 @@ as_rep(KDC_REQ *req,
 				   buf + sizeof(buf) - len,
 				   len,
 				   etype,
+				   client->kvno,
 				   &ekey->key,
 				   &rep.enc_part);
 	hdb_free_key(ekey);
@@ -792,6 +794,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
 	ekey = unseal_key(skey);
 	krb5_encrypt_EncryptedData(context, buf + sizeof(buf) - len, len,
 				   etype,
+				   server->kvno,
 				   &ekey->key,
 				   &rep.ticket.enc_part);
 	hdb_free_key(ekey);
@@ -819,6 +822,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
 	krb5_encrypt_EncryptedData(context,
 				   buf + sizeof(buf) - len, len,
 				   etype, /* XXX */
+				   0, 
 				   &tgt->key,
 				   &rep.enc_part);
 	
