@@ -18,18 +18,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _PY_COMMON_H
-#define _PY_COMMON_H
+#ifndef _PY_WINREG_H
+#define _PY_WINREG_H
 
 #include "includes.h"
+#include "Python.h"
 
-/* Return a cli_state struct opened on the SPOOLSS pipe.  If credentials
-   are passed use them. */
+#include "python/py_common.h"
 
-typedef struct cli_state *(cli_pipe_fn)(
-	struct cli_state *cli, char *system_name,
-	struct ntuser_creds *creds);
-
-#include "python/py_common_proto.h"
-
-#endif /* _PY_COMMON_H */
+#endif /* _PY_WINREG_H */
