@@ -22,7 +22,10 @@ krb5_encrypt (krb5_context context,
   if (p == NULL)
     return ENOMEM;
   memset (p, 0, sz);
-  des_rand_data (p, 8);
+  des_new_random_key((des_cblock*)p);
+#if 0
+  des_rand_data ((des_cblock*)p, 8);
+#endif
   memcpy (p + 12, ptr, len);
   crc_init_table ();
   crc = crc_update (p, sz, 0);
@@ -31,7 +34,7 @@ krb5_encrypt (krb5_context context,
   p[10] = (crc >> 16) & 0xff;
   p[11] = (crc >> 24) & 0xff;
   
-  memcpy (&key, keyblock->contents.data, sizeof(key));
+  memcpy (&key, keyblock->keyvalue.data, sizeof(key));
   des_set_key (&key, schedule);
   des_cbc_encrypt ((des_cblock *)p, (des_cblock *)p, sz, schedule, &key, DES_ENCRYPT);
 
