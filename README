@@ -35,7 +35,8 @@ CONTRIBUTIONS
 
 If you want to contribute to the development of the software then
 please join the mailing list. I accept patches (preferably in 
-"diff -u" format) and am always glad to receive feedback or suggestions.
+"diff -u" format, see docs/BUGS.txt for more details) and am always glad to 
+receive feedback or suggestions.
 
 You could also send hardware/software/money/jewelry or pizza
 vouchers directly to me. The pizza vouchers would be especially
@@ -103,6 +104,10 @@ WEB SITE
 A Samba WWW site has been setup with lots of useful info. Connect to:
 
 http://samba.canberra.edu.au/pub/samba/
+
+As well as general information and documentation, this also has searchable 
+archives of the mailing list and a user survey that shows who else is using
+this package. Have you registered with the survey yet? :-)
 
 It is maintained by Paul Blackman (thanks Paul!). You can contact him
 at ictinus@lake.canberra.edu.au.
