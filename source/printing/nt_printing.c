@@ -376,12 +376,12 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 ****************************************************************************/
 static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch)
 {
-	FILE *f;
+	FILE *f = NULL;
 	pstring file;
 	fstring driver_name;
 	fstring architecture;
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info;
-	char *line;
+	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info = NULL;
+	char *line = NULL;
 	fstring p;
 	char *v;
 	int i=0;
@@ -402,16 +402,19 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 			
 	if((f = sys_fopen(file, "r")) == NULL)
 	{
-		DEBUG(2, ("cannot open printer driver file [%s]\n", file));
+		DEBUG(2, ("get_a_printer_driver_3: Cannot open printer driver file [%s]. Error was %s\n", file, strerror(errno) ));
 		return(2);
 	}
 
 	/* the file exists, allocate some memory */
-	info=(NT_PRINTER_DRIVER_INFO_LEVEL_3 *)malloc(sizeof(NT_PRINTER_DRIVER_INFO_LEVEL_3));
+	if((info=(NT_PRINTER_DRIVER_INFO_LEVEL_3 *)malloc(sizeof(NT_PRINTER_DRIVER_INFO_LEVEL_3))) == NULL)
+		goto err;
+
 	ZERO_STRUCTP(info);
 	
 	/* allocate a 4Kbytes buffer for parsing lines */
-	line=(char *)malloc(4096*sizeof(char));
+	if((line=(char *)malloc(4096*sizeof(char))) == NULL)
+		goto err;
 	
 	while ( fgets(line, 4095, f) )
 	{
@@ -459,9 +462,11 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
 		if (!strncmp(p, "dependentfile", strlen("dependentfile")))
 		{
-			dependentfiles=(char **)Realloc(dependentfiles, sizeof(char *)*(i+1));
+			if((dependentfiles=(char **)Realloc(dependentfiles, sizeof(char *)*(i+1))) == NULL)
+				goto err;
 			
-			dependentfiles[i]=(char *)malloc( sizeof(char)* (strlen(v)+1) );
+			if((dependentfiles[i]=(char *)malloc( sizeof(char)* (strlen(v)+1) )) == NULL)
+				goto err;
 			
 			StrnCpy(dependentfiles[i], v, strlen(v) );
 			i++;
@@ -481,6 +486,25 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	*info_ptr=info;
 	
 	return (0);	
+
+  err:
+
+	if(f)
+		fclose(f);
+	if(line)
+		free(line);
+	if(info)
+		free(info);
+
+	if(dependentfiles) {
+		for(;i >= 0; i--)
+			if(dependentfiles[i])
+				free(dependentfiles[i]);
+
+		free(dependentfiles);
+	}
+
+	return (2);
 }
 
 /****************************************************************************
@@ -690,7 +714,7 @@ fill a NT_PRINTER_PARAM from a text file
 
 used when reading from disk.
 ****************************************************************************/
-static void dissect_and_fill_a_param(NT_PRINTER_PARAM *param, char *v)
+static BOOL dissect_and_fill_a_param(NT_PRINTER_PARAM *param, char *v)
 {
 	char *tok[5];
 	int count = 0;
@@ -708,11 +732,13 @@ static void dissect_and_fill_a_param(NT_PRINTER_PARAM *param, char *v)
 	StrnCpy(param->value, tok[0], sizeof(param->value)-1);
 	param->type=atoi(tok[1]);
 	param->data_len=atoi(tok[2]);
-	param->data=(uint8 *)malloc(param->data_len * sizeof(uint8));			
+	if((param->data=(uint8 *)malloc(param->data_len * sizeof(uint8))) == NULL)
+		return False;
 	strhex_to_str(param->data, 2*(param->data_len), tok[3]);		
 	param->next=NULL;	
 
 	DEBUGADD(105,("value:[%s], len:[%d]\n", param->value, param->data_len));
+	return True;
 }
 
 /****************************************************************************
@@ -796,18 +822,79 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 }
 
 /****************************************************************************
+ Clean up and deallocate a (maybe partially) allocated NT_PRINTER_PARAM.
+****************************************************************************/
+
+static void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
+{
+	NT_PRINTER_PARAM *param = *param_ptr;
+
+	if(param == NULL)
+		return;
+
+	if(param->data)
+		free(param->data);
+
+	free(param);
+	*param_ptr = NULL;
+}
+
+/****************************************************************************
+ Clean up and deallocate a (maybe partially) allocated NT_DEVICEMODE.
+****************************************************************************/
+
+static void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
+{
+	NT_DEVICEMODE *nt_devmode = *devmode_ptr;
+
+	if(nt_devmode == NULL)
+		return;
+
+	if(nt_devmode->private)
+		free(nt_devmode->private);
+
+	free(nt_devmode);
+	*devmode_ptr = NULL;
+}
+
+/****************************************************************************
+ Clean up and deallocate a (maybe partially) allocated NT_PRINTER_INFO_LEVEL_2.
+****************************************************************************/
+
+static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
+{
+	NT_PRINTER_INFO_LEVEL_2 *info = *info_ptr;
+	NT_PRINTER_PARAM *param_ptr;
+
+	if(info == NULL)
+		return;
+
+	free_nt_devicemode(&info->devmode);
+
+	for(param_ptr = info->specific; param_ptr; ) {
+		NT_PRINTER_PARAM *tofree = param_ptr;
+
+		param_ptr = param_ptr->next;
+		free_nt_printer_param(&tofree);
+	}
+
+	free(info);
+	*info_ptr = NULL;
+}
+
+/****************************************************************************
 ****************************************************************************/
 static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharename)
 {
-	FILE *f;
+	FILE *f = NULL;
 	pstring file;
 	fstring printer_name;
-	NT_PRINTER_INFO_LEVEL_2 *info;
-	NT_DEVICEMODE *nt_devmode;
-	NT_PRINTER_PARAM *param;
-	char *line;
+	NT_PRINTER_INFO_LEVEL_2 *info = NULL;
+	NT_DEVICEMODE *nt_devmode = NULL;
+	NT_PRINTER_PARAM *param = NULL;
+	char *line = NULL;
 	fstring p;
-	char *v;
+	char *v = NULL;
 		
 	/*
 	 * the sharename argument is the SAMBA sharename
@@ -819,21 +906,26 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	
 	if((f = sys_fopen(file, "r")) == NULL)
 	{
-		DEBUG(2, ("cannot open printer file [%s]\n", file));
+		DEBUG(2, ("get_a_printer_2: Cannot open printer file [%s]. Error was %s\n", file, strerror(errno) ));
 		return(2);
 	}
 
 	/* the file exists, allocate some memory */
-	info=(NT_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(NT_PRINTER_INFO_LEVEL_2));
+	if((info=(NT_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(NT_PRINTER_INFO_LEVEL_2))) == NULL)
+		goto err;
+
 	ZERO_STRUCTP(info);
 
-	nt_devmode=(NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE));
+	if((nt_devmode=(NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE))) == NULL)
+		goto err;
+
 	ZERO_STRUCTP(nt_devmode);
 	init_devicemode(nt_devmode);
 	
 	info->devmode=nt_devmode;
 
-	line=(char *)malloc(4096*sizeof(char));
+	if((line=(char *)malloc(4096*sizeof(char))) == NULL)
+		goto err;
 	
 	while ( fgets(line, 4095, f) )
 	{
@@ -998,7 +1090,9 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 			
 		if (!strncmp(p, "private", strlen("private")))
 		{
-			nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra*sizeof(uint8));
+			if((nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra*sizeof(uint8))) == NULL)
+				goto err;
+
 			strhex_to_str(nt_devmode->private, 2*nt_devmode->driverextra, v);
 		}
 		
@@ -1006,10 +1100,13 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 		
 		if (!strncmp(p, "specific", strlen("specific")))
 		{
-			param=(NT_PRINTER_PARAM *)malloc(sizeof(NT_PRINTER_PARAM));
+			if((param=(NT_PRINTER_PARAM *)malloc(sizeof(NT_PRINTER_PARAM))) == NULL)
+				goto err;
+
 			ZERO_STRUCTP(param);
 			
-			dissect_and_fill_a_param(param, v);
+			if(!dissect_and_fill_a_param(param, v))
+				goto err;
 			
 			dump_a_param(param);
 			
@@ -1023,6 +1120,16 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	*info_ptr=info;
 	
 	return (0);	
+
+  err:
+
+	if(f)
+		fclose(f);
+	if(info)
+		free_nt_printer_info_level_2(&info);
+	if(line)
+		free(line);
+	return(2);
 }
 
 /****************************************************************************
@@ -1303,6 +1410,8 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
 	*type=param->type;		
 	StrnCpy(value, param->value, sizeof(fstring)-1);
 	*data=(uint8 *)malloc(param->data_len*sizeof(uint8));
+	if(*data == NULL)
+		return False;
 	memcpy(*data, param->data, param->data_len);
 	*len=param->data_len;
 	return True;
@@ -1336,6 +1445,8 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 		*type=param->type;	
 		
 		*data=(uint8 *)malloc(param->data_len*sizeof(uint8));
+		if(*data == NULL)
+			return False;
 		memcpy(*data, param->data, param->data_len);
 		*len=param->data_len;
 
