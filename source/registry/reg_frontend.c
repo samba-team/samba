@@ -202,7 +202,19 @@ REGISTRY_VALUE* regval_ctr_specific_value( REGVAL_CTR *ctr, uint32 idx )
 }
 
 /***********************************************************************
- Ad a new regostry value to the array
+ Retrive the TALLOC_CTX associated with a REGISTRY_VALUE 
+ **********************************************************************/
+
+TALLOC_CTX* regval_ctr_getctx( REGVAL_CTR *val )
+{
+	if ( !val )
+		return NULL;
+
+	return val->ctx;
+}
+
+/***********************************************************************
+ Add a new regostry value to the array
  **********************************************************************/
 
 int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type, 
@@ -235,25 +247,6 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type,
 		ctr->values[ctr->num_values]->type = type;
 		ctr->values[ctr->num_values]->data_p = talloc_memdup( ctr->ctx, data_p, size );
 		ctr->values[ctr->num_values]->size = size;
-#if 0
-		switch ( type )
-		{
-			case REG_SZ:
-				ctr->values[ctr->num_values]->data.string = talloc_strdup( ctr->ctx, data_p );
-				break;
-			case REG_MULTI_SZ:
-				ctr->values[ctr->num_values]->data.string = talloc_memdup( ctr->ctx, data_p, size );
-				break;
-			case REG_DWORD:
-				ctr->values[ctr->num_values]->data.dword = *(uint32*)data_p;
-				break;
-			case REG_BINARY:
-				ctr->values[ctr->num_values]->data.binary = talloc_memdup( ctr->ctx, data_p, size );
-				break;
-				
-		}
-#endif
-		
 		ctr->num_values++;
 	}
 

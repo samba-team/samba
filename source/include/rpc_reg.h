@@ -1,9 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Tridgell                 1992-1997.
+   Copyright (C) Luke Kenneth Casson Leighton    1996-1997.
+   Copyright (C) Paul Ashton                          1997.
+   Copyright (C) Gerald Carter                        2002.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -94,16 +95,7 @@ typedef struct {
 	fstring		valuename;
 	uint16		type;
 	uint32		size;	/* in bytes */
-	void 		*data_p;
-#if 0
-	union {
-		char	*string;
-		uint32	*dword;
-		uint8	*binary;
-		void 	*void_ptr;	/* for casting only */
-	} data;
-#endif
-
+	uint8           *data_p;
 } REGISTRY_VALUE;
 
 /* container for regostry values */

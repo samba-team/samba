@@ -453,6 +453,11 @@ static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 	int n_services = lp_numservices();	
 	int snum;
 	fstring sname;
+	int num_subkeys = 0;
+	char *keystr, *key2 = NULL;
+	char *base, *new_path;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	
 	
 	DEBUG(10,("print_subpath_printers: key=>[%s]\n", key ? key : "NULL" ));
 	
@@ -468,13 +473,178 @@ static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 				
 			regsubkey_ctr_addkey( subkeys, sname );
 		}
+		
+		num_subkeys = regsubkey_ctr_numkeys( subkeys );
+		goto done;
 	}
-	else 
-	{
-		/* get information for a specific printer */
+
+	/* get information for a specific printer */
+	
+	key2 = strdup( key );
+	keystr = key2;
+	reg_split_path( keystr, &base, &new_path );
+	
+	
+	if ( !new_path ) {
+		/* sanity check on the printer name */
+		if ( !W_ERROR_IS_OK( get_a_printer(&printer, 2, base) ) )
+			goto done;
+		
+		free_a_printer( &printer, 2 );
+		
+		regsubkey_ctr_addkey( subkeys, "PrinterDriverData" );
 	}
 	
-	return regsubkey_ctr_numkeys( subkeys );
+	/* no other subkeys below here */
+
+done:	
+	SAFE_FREE( key2 );
+	return num_subkeys;
+}
+
+/**********************************************************************
+ handle enumeration of values below KEY_PRINTING\Printers
+ *********************************************************************/
+ 
+static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
+{
+	int 		num_values = 0;
+	char		*keystr, *key2 = NULL;
+	char		*base, *new_path;
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	NT_PRINTER_INFO_LEVEL_2 *info2;
+	DEVICEMODE	*devmode;
+	prs_struct	prs;
+	uint32		offset;
+	int		snum;
+	int		i;
+	fstring		valuename;
+	uint8		*data;
+	uint32		type, data_len;
+	fstring		printername;
+	
+	/* 
+	 * There are tw cases to deal with here
+	 * (1) enumeration of printer_info_2 values
+	 * (2) enumeration of the PrinterDriverData subney
+	 */
+	 
+	if ( !key ) {
+		/* top level key has no values */
+		goto done;
+	}
+	
+	key2 = strdup( key );
+	keystr = key2;
+	reg_split_path( keystr, &base, &new_path );
+	
+	fstrcpy( printername, base );
+	
+	if ( !new_path ) 
+	{
+		/* we are dealing with the printer itself */
+
+		if ( !W_ERROR_IS_OK( get_a_printer(&printer, 2, printername) ) )
+			goto done;
+
+		info2 = printer->info_2;
+		
+
+		regval_ctr_addvalue( val, "Attributes",       REG_DWORD, (char*)&info2->attributes,       sizeof(info2->attributes) );
+		regval_ctr_addvalue( val, "Priority",         REG_DWORD, (char*)&info2->priority,         sizeof(info2->attributes) );
+		regval_ctr_addvalue( val, "ChangeID",         REG_DWORD, (char*)&info2->changeid,         sizeof(info2->changeid) );
+		regval_ctr_addvalue( val, "Default Priority", REG_DWORD, (char*)&info2->default_priority, sizeof(info2->default_priority) );
+		regval_ctr_addvalue( val, "Status",           REG_DWORD, (char*)&info2->status,           sizeof(info2->status) );
+		regval_ctr_addvalue( val, "StartTime",        REG_DWORD, (char*)&info2->starttime,        sizeof(info2->starttime) );
+		regval_ctr_addvalue( val, "UntilTime",        REG_DWORD, (char*)&info2->untiltime,        sizeof(info2->untiltime) );
+		regval_ctr_addvalue( val, "cjobs",            REG_DWORD, (char*)&info2->cjobs,            sizeof(info2->cjobs) );
+		regval_ctr_addvalue( val, "AveragePPM",       REG_DWORD, (char*)&info2->averageppm,       sizeof(info2->averageppm) );
+		
+		regval_ctr_addvalue( val, "Name",             REG_SZ, info2->printername,     sizeof(info2->printername)+1 );
+		regval_ctr_addvalue( val, "Location",         REG_SZ, info2->location,        sizeof(info2->location)+1 );
+		regval_ctr_addvalue( val, "Comment",          REG_SZ, info2->comment,         sizeof(info2->comment)+1 );
+		regval_ctr_addvalue( val, "Parameters",       REG_SZ, info2->parameters,      sizeof(info2->parameters)+1 );
+		regval_ctr_addvalue( val, "Port",             REG_SZ, info2->portname,        sizeof(info2->portname)+1 );
+		regval_ctr_addvalue( val, "Server",           REG_SZ, info2->servername,      sizeof(info2->servername)+1 );
+		regval_ctr_addvalue( val, "Share",            REG_SZ, info2->sharename,       sizeof(info2->sharename)+1 );
+		regval_ctr_addvalue( val, "Driver",           REG_SZ, info2->drivername,      sizeof(info2->drivername)+1 );
+		regval_ctr_addvalue( val, "Separator File",   REG_SZ, info2->sepfile,         sizeof(info2->sepfile)+1 );
+		regval_ctr_addvalue( val, "Print Processor",  REG_SZ, info2->printprocessor,  sizeof(info2->printprocessor)+1 );
+		
+		
+		/* use a prs_struct for converting the devmode and security 
+		   descriptor to REG_BIARY */
+		
+		prs_init( &prs, MAX_PDU_FRAG_LEN, regval_ctr_getctx(val), MARSHALL);
+
+		/* stream the device mode */
+		
+		snum = lp_servicenumber(info2->sharename);
+		if ( (devmode = construct_dev_mode( snum )) != NULL )
+		{			
+			if ( spoolss_io_devmode( "devmode", &prs, 0, devmode ) ) {
+			
+				offset = prs_offset( &prs );
+				
+				regval_ctr_addvalue( val, "Default Devmode", REG_BINARY, prs_data_p(&prs), offset );
+			}
+			
+			
+		}
+		
+		prs_mem_clear( &prs );
+		prs_set_offset( &prs, 0 );
+		
+		if ( info2->secdesc_buf && info2->secdesc_buf->len ) 
+		{
+			if ( sec_io_desc("sec_desc", &info2->secdesc_buf->sec, &prs, 0 ) ) {
+			
+				offset = prs_offset( &prs );
+			
+				regval_ctr_addvalue( val, "Security", REG_BINARY, prs_data_p(&prs), offset );
+			}
+		}
+
+				
+		prs_mem_free( &prs );
+		free_a_printer( &printer, 2 );	
+		
+		num_values = regval_ctr_numvals( val );	
+		goto done;
+		
+	}
+	
+	
+	keystr = new_path;
+	reg_split_path( keystr, &base, &new_path );
+	
+	/* here should be no more path components here */
+	
+	if ( new_path || strcmp(base, "PrinterDriverData") )
+		goto done;
+		
+	/* now enumerate the PrinterDriverData key */
+	if ( !W_ERROR_IS_OK( get_a_printer(&printer, 2, printername) ) )
+		goto done;
+
+	info2 = printer->info_2;
+		
+	
+	/* iterate over all printer data and fill the regval container */
+	
+	for ( i=0; get_specific_param_by_index(*printer, 2, i, valuename, &data, &type, &data_len); i++ )
+	{
+		regval_ctr_addvalue( val, valuename, type, data, data_len );
+	}
+		
+	free_a_printer( &printer, 2 );
+
+	num_values = regval_ctr_numvals( val );
+	
+done:
+	SAFE_FREE( key2 ); 
+	
+	return num_values;
 }
 
 /**********************************************************************
@@ -529,6 +699,8 @@ static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys, REGVAL_CT
 		case KEY_INDEX_PRINTER:
 			if ( subkeys )
 				print_subpath_printers( p, subkeys );
+			if ( val )
+				print_subpath_values_printers( p, val );
 			break;
 	
 		/* default case for top level key that has no handler */
