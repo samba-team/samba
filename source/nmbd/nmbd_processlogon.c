@@ -175,6 +175,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
     {
       char *q = buf + 2;
 
+      q += 2;
       unicomp = q;
       uniuser = skip_unicode_string(unicomp,1);
       getdc = skip_unicode_string(uniuser,1);
