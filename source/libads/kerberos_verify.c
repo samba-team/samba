@@ -26,135 +26,6 @@
 
 #ifdef HAVE_KRB5
 
-static void free_keytab(krb5_context context, krb5_keytab keytab)
-{
-	int ret=0;
-	
-	if (keytab) 
-		ret = krb5_kt_close(context, keytab);
-	if (ret) {
-		DEBUG(3, ("krb5_kt_close failed (%s)\n",
-			  error_message(ret)));
-	}
-}
-
-#ifdef HAVE_MEMORY_KEYTAB
-static krb5_error_code create_keytab(krb5_context context,
-				     krb5_principal host_princ,
-				     char *host_princ_s,
-				     krb5_data password,
-				     krb5_enctype *enctypes,
-				     krb5_keytab *keytab,
-				     char *keytab_name)
-{
-	krb5_keytab_entry entry;
-	krb5_kvno kvno = 1;
-	krb5_error_code ret;
-	krb5_keyblock *key;
-	int i;
-
-	DEBUG(10,("creating keytab: %s\n", keytab_name));
-	ret = krb5_kt_resolve(context, keytab_name, keytab);
-	if (ret) 
-		return ret;
-
-	if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
-		return ENOMEM;
-	}
-	
-	/* add keytab entries for all encryption types */
-	for ( i=0; enctypes[i]; i++ ) {
-		
-		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i])) {
-			continue;
-		}
-
-		entry.principal = host_princ;
-		entry.vno       = kvno;
-
-#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
-#error krb5_keytab_entry has no key or keyblock member
-#endif
-
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY /* MIT */
-		entry.key = *key; 
-#endif
-
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK /* Heimdal */
-		entry.keyblock = *key;
-#endif
-
-		DEBUG(10,("adding keytab-entry for (%s) with encryption type (%d)\n",
-				host_princ_s, enctypes[i]));
-		ret = krb5_kt_add_entry(context, *keytab, &entry);
-		if (ret) {
-			DEBUG(1,("adding entry to keytab failed (%s)\n", 
-				 error_message(ret)));
-			free_keytab(context, *keytab);
-			return ret;
-		}
-	}
-	krb5_free_keyblock(context, key);
-	
-	return 0;
-}
-#endif
-
-static BOOL setup_keytab(krb5_context context,
-			 krb5_principal host_princ,
-			 char *host_princ_s,
-			 krb5_data password,
-			 krb5_enctype *enctypes,
-			 krb5_keytab *keytab)
-{
-	char *keytab_name = NULL;
-	krb5_error_code ret;
-
-	/* check if we have to setup a keytab - not currently enabled
-	   I've put this in so that the else block below functions 
-	   the same way that it will when this code is turned on */
-	if (0 /* will later be *lp_keytab() */) {
-
-		/* use a file-keytab */
-		asprintf(&keytab_name, "%s:%s", 
-			 "" 
-			 /* KRB5_KT_FILE_PREFIX, "FILE" or 
-			    "WRFILE" depending on HEeimdal or MIT */, 
-			 "" /* will later be lp_keytab() */);
-
-	        DEBUG(10,("will use filebased keytab: %s\n", keytab_name));
-	        ret = krb5_kt_resolve(context, keytab_name, keytab);
-		if (ret) {
-			DEBUG(3,("cannot resolve keytab name %s (%s)\n",
-				 keytab_name, 
-				 error_message(ret)));
-			SAFE_FREE(keytab_name);
-			return False;
-		}
-
-	}
-
-#if defined(HAVE_MEMORY_KEYTAB)
-	else {
-
-		/* setup a in-memory-keytab */
-		asprintf(&keytab_name, "MEMORY:");
-
-  		ret = create_keytab(context, host_princ, host_princ_s, password, enctypes, 
-			keytab, keytab_name);
-		if (ret) {
-			DEBUG(3,("unable to create MEMORY: keytab (%s)\n",
-				 error_message(ret)));
-			SAFE_FREE(keytab_name);
-			return False;
-		}
-	}
-#endif
-	SAFE_FREE(keytab_name);
-	return True;
-}
-	
-
 /*
   verify an incoming ticket and parse out the principal name and 
   authorization_data if available 
@@ -167,7 +38,6 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
 	krb5_context context = NULL;
 	krb5_auth_context auth_context = NULL;
-	krb5_keytab keytab = NULL;
 	krb5_data packet;
 	krb5_ticket *tkt = NULL;
 	krb5_rcache rcache = NULL;
@@ -177,6 +47,7 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	krb5_principal host_princ;
 	char *host_princ_s = NULL;
 	BOOL free_host_princ = False;
+	BOOL got_replay_mutex = False;
 
 	fstring myname;
 	char *password_s = NULL;
@@ -280,13 +151,8 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 		goto out;
 	}
 
-	if (!setup_keytab(context, host_princ, host_princ_s, password,
-			  enctypes, &keytab)) {
-		DEBUG(3,("ads_verify_ticket: unable to setup keytab\n"));
-		sret = NT_STATUS_LOGON_FAILURE;
-		goto out;
-	}
-	
+	got_replay_mutex = True;
+
 	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
 		if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
@@ -306,12 +172,8 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 		packet.data = (krb5_pointer)ticket->data;
 
 		if (!(ret = krb5_rd_req(context, &auth_context, &packet, 
-#ifdef HAVE_MEMORY_KEYTAB
-					host_princ, 
-#else
 					NULL,
-#endif
-					keytab, NULL, &tkt))) {
+					NULL, NULL, &tkt))) {
 			DEBUG(10,("ads_verify_ticket: enc type [%u] decrypted message !\n",
 				(unsigned int)enctypes[i] ));
 			auth_ok = True;
@@ -324,6 +186,7 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	}
 
 	release_server_mutex();
+	got_replay_mutex = False;
 
 	if (!auth_ok) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
@@ -366,10 +229,6 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	}
 #endif
 
-		
-	/* get rid of all resources associated with the keytab */
-	if (keytab) free_keytab(context, keytab);
-		
 	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt),
 				     principal))) {
 		DEBUG(3,("ads_verify_ticket: krb5_unparse_name failed (%s)\n", 
@@ -381,6 +240,9 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	sret = NT_STATUS_OK;
 
  out:
+
+	if (got_replay_mutex)
+		release_server_mutex();
 
 	if (!NT_STATUS_IS_OK(sret))
 		data_blob_free(auth_data);
