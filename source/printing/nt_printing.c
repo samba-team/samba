@@ -3208,16 +3208,17 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	 * the initialization save. Change it to reflect the new printer.
 	 */
 	 
+	if ( info.devmode ) {
 	ZERO_STRUCT(info.devmode->devicename);
 	fstrcpy(info.devmode->devicename, info_ptr->printername);
-
+	}
 
 	/*
 	 * NT/2k does not change out the entire DeviceMode of a printer
 	 * when changing the driver.  Only the driverextra, private, & 
 	 * driverversion fields.   --jerry  (Thu Mar 14 08:58:43 CST 2002)
 	 *
-	 * Later e4xamination revealed that Windows NT/2k does reset the
+	 * Later examination revealed that Windows NT/2k does reset the
 	 * the printer's device mode, bit **only** when you change a 
 	 * property of the device mode such as the page orientation.
 	 * --jerry
@@ -3229,9 +3230,8 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	free_nt_devicemode(&info_ptr->devmode);
 	info_ptr->devmode = info.devmode;
 
-
-	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
-			info_ptr->printername, info_ptr->drivername));
+	DEBUG(10,("set_driver_init_2: Set printer [%s] init %s DEVMODE for driver [%s]\n",
+		info_ptr->printername, info_ptr->devmode?"VALID":"NULL", info_ptr->drivername));
 
 	/* Add the printer data 'values' to the new printer */
 	 
@@ -3366,15 +3366,160 @@ uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	{
 		case 2:
 		{
-			result=update_driver_init_2(printer.info_2);
+			result = update_driver_init_2(printer.info_2);
 			break;
 		}
 		default:
-			result=1;
+			result = 1;
 			break;
 	}
 	
 	return result;
+}
+
+/****************************************************************************
+ Convert the printer data value, a REG_BINARY array, into an initialization 
+ DEVMODE. Note: the array must be parsed as if it was a DEVMODE in an rpc...
+ got to keep the endians happy :).
+****************************************************************************/
+
+static BOOL convert_driver_init( TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode, uint8 *data, uint32 data_len )
+{
+	BOOL       result = False;
+	prs_struct ps;
+	DEVICEMODE devmode;
+
+	ZERO_STRUCT(devmode);
+
+	prs_init(&ps, 0, ctx, UNMARSHALL);
+	ps.data_p      = (char *)data;
+	ps.buffer_size = data_len;
+
+	if (spoolss_io_devmode("phantom DEVMODE", &ps, 0, &devmode))
+		result = convert_devicemode("", &devmode, &nt_devmode);
+	else
+		DEBUG(10,("convert_driver_init: error parsing DEVMODE\n"));
+
+	return result;
+}
+
+/****************************************************************************
+ Set the DRIVER_INIT info in the tdb. Requires Win32 client code that:
+
+ 1. Use the driver's config DLL to this UNC printername and:
+    a. Call DrvPrintEvent with PRINTER_EVENT_INITIALIZE
+    b. Call DrvConvertDevMode with CDM_DRIVER_DEFAULT to get default DEVMODE
+ 2. Call SetPrinterData with the 'magic' key and the DEVMODE as data.
+
+ The last step triggers saving the "driver initialization" information for
+ this printer into the tdb. Later, new printers that use this driver will
+ have this initialization information bound to them. This simulates the
+ driver initialization, as if it had run on the Samba server (as it would
+ have done on NT).
+
+ The Win32 client side code requirement sucks! But until we can run arbitrary
+ Win32 printer driver code on any Unix that Samba runs on, we are stuck with it.
+ 
+ It would have been easier to use SetPrinter because all the UNMARSHALLING of
+ the DEVMODE is done there, but 2K/XP clients do not set the DEVMODE... think
+ about it and you will realize why.  JRR 010720
+****************************************************************************/
+
+static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, uint8 *data, uint32 data_len )
+{
+	WERROR        status       = WERR_OK;
+	TALLOC_CTX    *ctx         = NULL;
+	NT_DEVICEMODE *nt_devmode  = NULL;
+	NT_DEVICEMODE *tmp_devmode = printer->info_2->devmode;
+	
+	/*
+	 * When the DEVMODE is already set on the printer, don't try to unpack it.
+	 */
+	DEBUG(8,("save_driver_init_2: Enter...\n"));
+	
+	if ( !printer->info_2->devmode && data_len ) 
+	{
+		/*
+		 * Set devmode on printer info, so entire printer initialization can be
+		 * saved to tdb.
+		 */
+
+		if ((ctx = talloc_init()) == NULL)
+			return WERR_NOMEM;
+
+		if ((nt_devmode = (NT_DEVICEMODE*)malloc(sizeof(NT_DEVICEMODE))) == NULL) {
+			status = WERR_NOMEM;
+			goto done;
+		}
+	
+		ZERO_STRUCTP(nt_devmode);
+
+		/*
+		 * The DEVMODE is held in the 'data' component of the param in raw binary.
+		 * Convert it to to a devmode structure
+		 */
+		if ( !convert_driver_init( ctx, nt_devmode, data, data_len )) {
+			DEBUG(10,("save_driver_init_2: error converting DEVMODE\n"));
+			status = WERR_INVALID_PARAM;
+			goto done;
+		}
+
+		printer->info_2->devmode = nt_devmode;
+	}
+
+	/*
+	 * Pack up and add (or update) the DEVMODE and any current printer data to
+	 * a 'driver init' element in the tdb
+	 * 
+	 */
+
+	if ( update_driver_init(*printer, 2) != 0 ) {
+		DEBUG(10,("save_driver_init_2: error updating DEVMODE\n"));
+		status = WERR_NOMEM;
+		goto done;
+	}
+	
+	/*
+	 * If driver initialization info was successfully saved, set the current 
+	 * printer to match it. This allows initialization of the current printer 
+	 * as well as the driver.
+	 */
+	status = mod_a_printer(*printer, 2);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(10,("save_driver_init_2: error setting DEVMODE on printer [%s]\n",
+				  printer->info_2->printername));
+	}
+	
+  done:
+	talloc_destroy(ctx);
+	free_nt_devicemode( &nt_devmode );
+	
+	printer->info_2->devmode = tmp_devmode;
+
+	return status;
+}
+
+/****************************************************************************
+ Update the driver init info (DEVMODE and specifics) for a printer
+****************************************************************************/
+
+WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, uint8 *data, uint32 data_len)
+{
+	WERROR status = WERR_OK;
+	
+	switch (level)
+	{
+		case 2:
+		{
+			status = save_driver_init_2( printer, data, data_len );
+			break;
+		}
+		default:
+			status = WERR_UNKNOWN_LEVEL;
+			break;
+	}
+	
+	return status;
 }
 
 /****************************************************************************
