@@ -96,14 +96,6 @@ elem_set(struct gss_msg_order *o, unsigned int slot, OM_uint32 val)
     o->elem[slot % o->jitter_window] = val;
 }
 
-#if 0
-static OM_uint32
-elem_get(struct gss_msg_order *o, unsigned int slot)
-{
-    return o->elem[slot % o->jitter_window];
-}
-#endif
-
 static void
 elem_insert(struct gss_msg_order *o, 
 	    unsigned int after_slot,
@@ -120,16 +112,6 @@ elem_insert(struct gss_msg_order *o,
     if (o->length < o->jitter_window)
 	o->length++;
 }
-
-#if 0
-static int
-elem_samep(struct gss_msg_order *o,
-	   unsigned int slot,
-	   OM_uint32 value)
-{
-    return elem_get(o, slot) == value;
-}
-#endif
 
 /* rule 1: expected sequence number */
 /* rule 2: > expected sequence number */
@@ -180,8 +162,9 @@ gssapi_msg_order_check(struct gss_msg_order *o, OM_uint32 seq_num)
 	    return(GSS_S_UNSEQ_TOKEN);
     }
 
-    if (seq_num == o->elem[o->length-1])
+    if (seq_num == o->elem[o->length - 1]) {
 	return GSS_S_DUPLICATE_TOKEN;
+    }
 
     for (i = 0; i < o->length - 1; i++) {
 	if (o->elem[i] == seq_num)
@@ -196,4 +179,10 @@ gssapi_msg_order_check(struct gss_msg_order *o, OM_uint32 seq_num)
     }
 
     return GSS_S_FAILURE;
+}
+
+OM_uint32
+gssapi_msg_order_f(OM_uint32 flags)
+{
+    return flags & (GSS_C_SEQUENCE_FLAG|GSS_C_REPLAY_FLAG);
 }
