@@ -167,8 +167,9 @@ krb5_get_forwarded_creds (krb5_context	    context,
 			     in_creds,
 			     &out_creds);
     krb5_free_addresses (context, &addrs);
-    if (ret)
+    if (ret) {
 	return ret;
+    }
 
     memset (&cred, 0, sizeof(cred));
     cred.pvno = 5;
@@ -203,13 +204,29 @@ krb5_get_forwarded_creds (krb5_context	    context,
     if (enc_krb_cred_part.usec == NULL) {
  	ret = ENOMEM;
 	goto out4;
-   }
+    }
     *enc_krb_cred_part.usec      = usec;
 
-    enc_krb_cred_part.s_address = NULL;	/* XXX */
-    enc_krb_cred_part.r_address = NULL;	/* XXX */
+    ret = krb5_make_addrport (&enc_krb_cred_part.s_address,
+			      auth_context->local_address,
+			      auth_context->local_port);
+    if (ret)
+	goto out4;
+
+    ALLOC(enc_krb_cred_part.r_address, 1);
+    if (enc_krb_cred_part.r_address == NULL) {
+	ret = ENOMEM;
+	goto out4;
+    }
+
+    ret = krb5_copy_address (context, auth_context->remote_address,
+			     enc_krb_cred_part.r_address);
+    if (ret)
+	goto out4;
 
     /* fill ticket_info.val[0] */
+
+    enc_krb_cred_part.ticket_info.len = 1;
 
     krb_cred_info = enc_krb_cred_part.ticket_info.val;
 
