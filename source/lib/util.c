@@ -641,7 +641,9 @@ void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T si
 	put_dos_date(buf,22,date);
 	SSVAL(buf,26,size & 0xFFFF);
 	SSVAL(buf,28,(size >> 16)&0xFFFF);
-	push_ascii(buf+30,fname,12,0);
+	/* We only uppercase if the protocol is downrev.
+	   Strange, but verified on W2K3. Needed for OS/2. JRA. */
+	push_ascii(buf+30,fname,12,Protocol < PROTOCOL_NT1 ? STR_UPPER : 0);
 	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
 }
 
