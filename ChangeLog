@@ -1,3 +1,7 @@
+2003-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/kf/kf.1: afs->AFS, from jmc <jmc@acn.waw.pl>
+	
 2003-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: add description on how to turn on v4, 524 and
