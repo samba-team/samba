@@ -154,5 +154,6 @@ struct nbt_name_status;
 
 struct messaging_context;
 struct stream_connection;
+struct task_server;
 struct model_ops;
 struct stream_server_ops;

@@ -59,17 +59,29 @@ static void single_accept_connection(struct event_context *ev,
 	new_conn(ev, sock2, socket_get_fd(sock), private);
 }
 
+/*
+  called to startup a new task
+*/
+static void single_new_task(struct event_context *ev, 
+			    void (*new_task)(struct event_context *, uint32_t, void *), 
+			    void *private)
+{
+	static uint32_t taskid = 0x10000000;
+	new_task(ev, taskid++, private);
+}
 
-/* called when a connection goes down */
-static void single_terminate_connection(struct event_context *ev, const char *reason) 
+
+/* called when a task goes down */
+static void single_terminate(struct event_context *ev, const char *reason) 
 {
 }
 
 static const struct model_ops single_ops = {
 	.name			= "single",
 	.model_init		= single_model_init,
+	.new_task               = single_new_task,
 	.accept_connection	= single_accept_connection,
-	.terminate_connection	= single_terminate_connection,
+	.terminate              = single_terminate,
 };
 
 /*
