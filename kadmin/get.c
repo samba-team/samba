@@ -340,7 +340,7 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
     struct get_entry_data data;
     
     if(argc == 0) {
-	printf("usage: %s principal...\n", name);
+	fprintf(stderr, "usage: %s principal...\n", name);
 	return 0;
     }
 

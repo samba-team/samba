@@ -495,7 +495,7 @@ loadit(int merge, const char *name, int argc, char **argv)
     }
 
     if(argc != 1) {
-	printf("%s file", name);
+	fprintf(stderr, "usage: %s file", name);
  	return 0;
     }
     doit(argv[0], merge);

@@ -88,7 +88,7 @@ mod_entry(struct modify_options *opt, int argc, char **argv)
     int i;
 
     if (argc < 1) {
-	printf ("Usage: mod [options] principal\n");
+	fprintf (stderr, "usage: mod [options] principal\n");
 	return 0;
     }
 

@@ -94,9 +94,9 @@ help(void *opt, int argc, char **argv)
     } else {
 	SL_cmd *c = sl_match (commands, argv[0], 0);
  	if(c == NULL) {
-	    printf ("No such command: %s. "
-		    "Try \"help\" for a list of commands\n",
-		    argv[0]);
+	    fprintf (stderr, "No such command: %s. "
+		     "Try \"help\" for a list of commands\n",
+		     argv[0]);
 	} else {
 	    if(c->func) {
 		char *fake[] = { argv[0], "--help", NULL };

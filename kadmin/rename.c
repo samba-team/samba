@@ -43,7 +43,7 @@ rename_entry(void *opt, int argc, char **argv)
     krb5_principal princ1, princ2;
 
     if(argc != 2) {
-	printf("rename [options] from to\n");
+	fprintf(stderr, "usage: rename [options] from to\n");
 	return 0;
     }
 

@@ -111,7 +111,7 @@ stash(struct stash_options *opt, int argc, char **argv)
 	    ret = errno;
 	    goto out;
 	}
-	krb5_warnx(context, "writing key to `%s'", opt->key_file_string);
+	krb5_warnx(context, "writing key to \"%s\"", opt->key_file_string);
 	ret = hdb_write_master_key(context, new, mkey);
 	if(ret)
 	    unlink(new);

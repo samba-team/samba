@@ -123,19 +123,19 @@ init(struct init_options *opt, int argc, char **argv)
     }
 
     if(argc == 0) {
-	printf("must have atleast one realm\n");
+	fprintf(stderr, "usage: init realm...\n");
 	return 0;
     }
     if (opt->realm_max_ticket_life_string) {
 	if (str2deltat (opt->realm_max_ticket_life_string, &max_life) != 0) {
-	    krb5_warnx (context, "unable to parse `%s'", 
+	    krb5_warnx (context, "unable to parse \"%s\"", 
 			opt->realm_max_ticket_life_string);
 	    return 0;
 	}
     }
     if (opt->realm_max_renewable_life_string) {
 	if (str2deltat (opt->realm_max_renewable_life_string, &max_rlife) != 0) {
-	    krb5_warnx (context, "unable to parse `%s'", 
+	    krb5_warnx (context, "unable to parse \"%s\"", 
 			opt->realm_max_renewable_life_string);
 	    return 0;
 	}

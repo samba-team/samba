@@ -45,7 +45,7 @@ password_quality(void *opt, int argc, char **argv)
     const char *s;
 
     if(argc != 2) {
-	printf ("Usage: password-quality principal password\n");
+	fprintf (stderr, "usage: password-quality principal password\n");
 	return 0;
     }
 

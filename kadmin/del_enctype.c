@@ -53,7 +53,7 @@ del_enctype(void *opt, int argc, char **argv)
     krb5_enctype *etypes;
 
     if(argc < 2) {
-	printf("usage: del_enctype principal enctypes...\n");
+	fprintf(stderr, "usage: del_enctype principal enctypes...\n");
 	return 0;
     }
 
@@ -68,7 +68,7 @@ del_enctype(void *opt, int argc, char **argv)
     for (i = 0; i < n_etypes; ++i) {
 	ret = krb5_string_to_enctype (context, argv[i], &etypes[i]);
 	if (ret) {
-	    krb5_warnx (context, "bad enctype `%s'", argv[i]);
+	    krb5_warnx (context, "bad enctype \"%s\"", argv[i]);
 	    goto out2;
 	}
     }

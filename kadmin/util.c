@@ -114,7 +114,7 @@ parse_attributes (const char *resp, krb5_flags *attr, int *mask, int bit)
     } else if(*resp == '?') {
 	print_flags_table (kdb_attrs, stderr);
     } else {
-	fprintf (stderr, "Unable to parse '%s'\n", resp);
+	fprintf (stderr, "Unable to parse \"%s\"\n", resp);
     }
     return -1;
 }
@@ -226,11 +226,10 @@ parse_timet (const char *resp, krb5_timestamp *value, int *mask, int bit)
 	if(mask)
 	    *mask |= bit;
 	return 0;
-    } else if(*resp == '?') {
-	printf ("Print date on format YYYY-mm-dd [hh:mm:ss]\n");
-    } else {
-	fprintf (stderr, "Unable to parse time '%s'\n", resp);
-    }
+    } 
+    if(*resp != '?')
+	fprintf (stderr, "Unable to parse time \"%s\"\n", resp);
+    fprintf (stderr, "Print date on format YYYY-mm-dd [hh:mm:ss]\n");
     return -1;
 }
 
@@ -316,7 +315,7 @@ parse_deltat (const char *resp, krb5_deltat *value, int *mask, int bit)
     } else if(*resp == '?') {
 	print_time_table (stderr);
     } else {
-	fprintf (stderr, "Unable to parse time '%s'\n", resp);
+	fprintf (stderr, "Unable to parse time \"%s\"\n", resp);
     }
     return -1;
 }
@@ -559,11 +558,11 @@ get_response(const char *prompt, const char *def, char *buf, size_t len)
     osig = signal(SIGINT, interrupt);
     if(setjmp(jmpbuf)) {
 	signal(SIGINT, osig);
-	printf("\n");
+	fprintf(stderr, "\n");
 	return 1;
     }
 
-    printf("%s [%s]:", prompt, def);
+    fprintf(stderr, "%s [%s]:", prompt, def);
     if(fgets(buf, len, stdin) == NULL) {
 	int save_errno = errno;
 	if(ferror(stdin))

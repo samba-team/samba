@@ -73,7 +73,7 @@ set_random_password (krb5_principal principal)
 
 	krb5_unparse_name(context, principal, &princ_name);
 
-	printf ("%s's password set to `%s'\n", princ_name, pw);
+	printf ("%s's password set to \"%s\"\n", princ_name, pw);
 	free (princ_name);
     }
     memset (pw, 0, sizeof(pw));
@@ -156,7 +156,7 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
 	++num;
 
     if (num > 1) {
-	printf ("give only one of "
+	fprintf (stderr, "give only one of "
 		"--random-key, --random-password, --password, --key\n");
 	return 0;
     }
@@ -165,7 +165,8 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
 	const char *error;
 
 	if (parse_des_key (opt->key_string, key_data, &error)) {
-	    printf ("failed parsing key `%s': %s\n", opt->key_string, error);
+	    fprintf (stderr, "failed parsing key \"%s\": %s\n", 
+		     opt->key_string, error);
 	    return 0;
 	}
 	data.key_data = key_data;

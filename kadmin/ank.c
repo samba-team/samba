@@ -177,7 +177,7 @@ add_one_principal (const char *name,
 	char *princ_name;
 
 	krb5_unparse_name(context, princ_ent, &princ_name);
-	printf ("added %s with password `%s'\n", princ_name, password);
+	printf ("added %s with password \"%s\"\n", princ_name, password);
 	free (princ_name);
     }
 out:
@@ -212,7 +212,7 @@ add_new_key(struct add_options *opt, int argc, char **argv)
     krb5_key_data *kdp = NULL;
 
     if(argc == 0) {
-	printf("usage: add principal\n");
+	fprintf(stderr, "usage: add principal...\n");
 	return 0;
     }
 
@@ -227,7 +227,7 @@ add_new_key(struct add_options *opt, int argc, char **argv)
 	++num;
 
     if (num > 1) {
-	printf ("give only one of "
+	fprintf (stderr, "give only one of "
 		"--random-key, --random-password, --password, --key\n");
 	return 0;
     }
@@ -236,7 +236,8 @@ add_new_key(struct add_options *opt, int argc, char **argv)
 	const char *error;
 
 	if (parse_des_key (opt->key_string, key_data, &error)) {
-	    printf ("failed parsing key `%s': %s\n", opt->key_string, error);
+	    fprintf (stderr, "failed parsing key \"%s\": %s\n", 
+		     opt->key_string, error);
 	    return 0;
 	}
 	kdp = key_data;
