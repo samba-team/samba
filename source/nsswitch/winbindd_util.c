@@ -225,6 +225,12 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 	BOOL is_server = False;
 	struct winbindd_domain *server_domain = NULL, *tmp;
 
+	/* If NULL passed, use pdc */
+
+	if (!domain) {
+		domain = server_domain;
+	}
+
 	/* Find pointer to domain of pdc */
 
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
@@ -235,12 +241,6 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 	}
 
 	if (!server_domain) return;
-
-	/* If NULL passed, use pdc */
-
-	if (!domain) {
-		domain = server_domain;
-	}
 
 	if (domain == server_domain || 
 	    strequal(domain->name, lp_workgroup())) {
