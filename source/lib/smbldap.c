@@ -1329,3 +1329,23 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 	return ret;
 }
 
+/*******************************************************************
+ Return a copy of the DN for a LDAPMessage. Convert from utf8 to CH_UNIX.
+********************************************************************/
+
+char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
+{
+	char *utf8_dn, *unix_dn;
+
+	utf8_dn = ldap_get_dn(ld, entry);
+	if (!utf8_dn) {
+		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
+		return NULL;
+	}
+	if (pull_utf8_allocate((void **) &unix_dn, utf8_dn) == (size_t)-1) {
+		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 [%s]\n", utf8_dn));
+		return NULL;
+	}
+	ldap_memfree(utf8_dn);
+	return unix_dn;
+}
