@@ -154,6 +154,7 @@ KDCOptions ::= BIT STRING {
 	unused10(10),
 	unused11(11),
 	request-anonymous(14),
+	canonicalize(15),
 	disable-transited-check(26),
 	renewable-ok(27),
 	enc-tkt-in-skey(28),
