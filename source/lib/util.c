@@ -3062,3 +3062,16 @@ char *smbd_mktemp(char *template)
 
 	return p;
 }
+
+
+/*****************************************************************
+like strdup but for memory
+ *****************************************************************/  
+void *memdup(void *p, size_t size)
+{
+	void *p2;
+	p2 = malloc(size);
+	if (!p2) return NULL;
+	memcpy(p2, p, size);
+	return p2;
+}
