@@ -403,11 +403,13 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  fprintf(out_hnd, "Usage: %s service <password> [-d debuglevel] [-l log] ",
+  fprintf(out_hnd, "Usage: %s [service] [-S server] [-d debuglevel] [-l log] ",
 	   pname);
 
   fprintf(out_hnd, "\nVersion %s\n",VERSION);
   fprintf(out_hnd, "\t-d debuglevel         set the debuglevel\n");
+  fprintf(out_hnd, "\tservice               connect to \\\\server\\share \n");
+  fprintf(out_hnd, "\t-S server             connect to \\\\server\\IPC$ \n");
   fprintf(out_hnd, "\t-l log basename.      Basename for log/debug files\n");
   fprintf(out_hnd, "\t-n netbios name.      Use this name as my netbios name\n");
   fprintf(out_hnd, "\t-N                    don't ask for a password\n");
@@ -415,7 +417,7 @@ static void usage(char *pname)
   fprintf(out_hnd, "\t-I dest IP            use this IP to connect to\n");
   fprintf(out_hnd, "\t-E                    write messages to stderr instead of stdout\n");
   fprintf(out_hnd, "\t-U username           set the network username\n");
-  fprintf(out_hnd, "\t-W workgroup          set the workgroup name\n");
+  fprintf(out_hnd, "\t-W domain             set the domain name\n");
   fprintf(out_hnd, "\t-c command string     execute semicolon separated commands\n");
   fprintf(out_hnd, "\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n");
   fprintf(out_hnd, "\n");
