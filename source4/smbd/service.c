@@ -210,17 +210,7 @@ struct server_connection *server_setup_connection(struct event_context *ev, stru
 	srv_conn->service		= server_socket->service;
 
 	/* TODO: we need a generic socket subsystem */
-	srv_conn->socket		= talloc_p(srv_conn->mem_ctx, struct socket_context);
-	if (!srv_conn->socket) {
-		DEBUG(0,("talloc_p(srv_conn->mem_ctx, struct socket_context) failed\n"));
-		talloc_destroy(mem_ctx);
-		return NULL;
-	}
-	srv_conn->socket->private_data	= NULL;
-	srv_conn->socket->ops		= NULL;
-	srv_conn->socket->client_addr	= NULL;
-	srv_conn->socket->pkt_count	= 0;
-	srv_conn->socket->fde		= srv_conn->event.fde;
+	srv_conn->socket		= NULL;
 
 	/* create a smb server context and add it to out event
 	   handling */
@@ -229,8 +219,6 @@ struct server_connection *server_setup_connection(struct event_context *ev, stru
 	/* accpect_connection() of the service may changed idle.next_event */
 	srv_conn->event.fde	= event_add_fd(ev,&fde);
 	srv_conn->event.idle	= event_add_timed(ev,&idle);
-
-	srv_conn->socket->fde	= srv_conn->event.fde;
 
 	return srv_conn;
 }
