@@ -9,6 +9,12 @@
  *  This module provides an implementation of AVL height balanced binary
  *  trees.  (Adelson-Velskii, Landis 1962)
  *
+ *  This header file contains the basic AVL structure and pointer typedefs
+ *  as well as the prototypes needed to access the functions in the AVL
+ *  module ubi_AVLtree.  The .c file implements the low-level height balancing
+ *  routines that manage the AVL tree, plus all of the basic primops for
+ *  adding, searching for, and deleting nodes.
+ *
  * -------------------------------------------------------------------------- **
  *
  *  This library is free software; you can redistribute it and/or
@@ -28,6 +34,9 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_AVLtree.c,v
+ * Revision 3.1  1997/12/18 06:26:51  crh
+ * Fixed some comment bugs.
+ *
  * Revision 3.0  1997/12/08 05:38:55  crh
  * This is a new major revision level.  The handling of the pointers in the
  * ubi_trNode structure was redesigned.  The result is that there are fewer
@@ -36,7 +45,7 @@
  *
  * Revision 2; 1995/03/05 - 1997/12/07:
  * An overhaul to the node delete process.  I had gotten it wrong in a
- * couple of places, thought I'd fixed it, and then found that I'd missing
+ * couple of places, thought I'd fixed it, and then found that I'd missed
  * something more.  Thanks to Andrew Leppard for the bug report!
  *
  * Revision 1;  93/10/15 - 95/03/05:
@@ -55,8 +64,8 @@
  */
 
 static char ModuleID[] = "ubi_AVLtree\n\
-\tRevision: 3.0\n\
-\tDate: 1997/12/08 05:38:55\n\
+\tRevision: 3.1\n\
+\tDate: 1997/12/18 06:26:51 GMT\n\
 \tAuthor: crh\n";
 
 /* ========================================================================== **

@@ -35,6 +35,9 @@
  *
  * -------------------------------------------------------------------------- **
  * Log: ubi_AVLtree.h,v
+ * Revision 3.1  1997/12/18 06:27:01  crh
+ * Fixed some comment bugs.
+ *
  * Revision 3.0  1997/12/08 05:39:01  crh
  * This is a new major revision level.  The handling of the pointers in the
  * ubi_trNode structure was redesigned.  The result is that there are fewer
