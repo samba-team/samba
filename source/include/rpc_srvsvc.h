@@ -41,6 +41,7 @@
 #define SRV_NET_NAME_VALIDATE  0x21
 #define SRV_NETSHAREENUM       0x24
 #define SRV_NETFILEQUERYSECDESC 0x27
+#define SRV_NETFILESETSECDESC	0x28
 
 #define MAX_SERVER_DISK_ENTRIES 15
 
@@ -788,4 +789,24 @@ typedef struct r_net_file_query_secdesc
 	uint32 status;
 } SRV_R_NET_FILE_QUERY_SECDESC;
 
+/* SRV_Q_NET_FILE_SET_SECDESC */
+typedef struct q_net_file_set_secdesc
+{
+	uint32  ptr_srv_name;
+	UNISTR2 uni_srv_name;
+	uint32  ptr_qual_name;
+	UNISTR2 uni_qual_name;
+	UNISTR2 uni_file_name;
+	uint32  sec_info;
+	uint32  size_set;
+	uint32  ptr_secdesc;
+	uint32  size_secdesc;
+	SEC_DESC *sec_desc;
+} SRV_Q_NET_FILE_SET_SECDESC;
+
+/* SRV_R_NET_FILE_SET_SECDESC */
+typedef struct r_net_file_set_secdesc
+{
+	uint32 status;
+} SRV_R_NET_FILE_SET_SECDESC;
 #endif /* _RPC_SRVSVC_H */
