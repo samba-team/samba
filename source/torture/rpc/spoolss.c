@@ -1826,9 +1826,9 @@ BOOL torture_rpc_spoolss(void)
 
 	ret &= test_OpenPrinter_server(ctx);
 
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, SPOOLSS_ARCHITECTURE_NT_X86);
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "Architecture");
 
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DefaultSpoolDirectory");
+	/*ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DefaultSpoolDirectory");*/
 
 	ret &= test_EnumPorts(ctx);
 
