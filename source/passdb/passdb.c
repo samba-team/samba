@@ -75,6 +75,8 @@ BOOL initialize_password_db(void)
   pdb_ops =  nisplus_initialize_password_db();
 #elif defined(WITH_LDAP)
   pdb_ops = ldap_initialize_password_db();
+#elif defined(WITH_TDBPWD)
+  pdb_ops = tdb_initialize_password_db();
 #else 
   pdb_ops = file_initialize_password_db();
 #endif 
