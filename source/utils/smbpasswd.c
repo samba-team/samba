@@ -540,6 +540,7 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 	return ret;
 }
 
+#ifdef WITH_LDAP
 /*******************************************************************
  Store the LDAP admin password in secrets.tdb
  ******************************************************************/
@@ -558,6 +559,7 @@ static BOOL store_ldap_admin_pw (char* pw)
 	
 	return secrets_store_ldap_pw(lp_ldap_admin_dn(), pw);
 }
+#endif
 
 /*************************************************************
  Handle password changing for root.
