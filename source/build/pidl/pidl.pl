@@ -21,12 +21,14 @@ use parser;
 use eparser;
 use validator;
 use util;
+use template;
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
 my($opt_dump) = 0;
 my($opt_diff) = 0;
 my($opt_header) = 0;
+my($opt_template) = 0;
 my($opt_server) = 0;
 my($opt_parser) = 0;
 my($opt_eparser) = 0;
@@ -64,6 +66,7 @@ sub ShowHelp()
              --header              create a C header file
              --parser              create a C parser
              --server              create server boilterplate
+             --template            print a template for a pipe
              --eparser             create an ethereal parser
              --diff                run diff on the idl and dumped output
              --keep                keep the .pidl file
@@ -79,6 +82,7 @@ GetOptions (
 	    'dump' => \$opt_dump,
 	    'header' => \$opt_header,
 	    'server' => \$opt_server,
+	    'template' => \$opt_template,
 	    'parser' => \$opt_parser,
 	    'eparser' => \$opt_eparser,
 	    'diff' => \$opt_diff,
@@ -148,6 +152,10 @@ sub process_file($)
 		util::FileSave($tempfile, IdlDump::Dump($pidl));
 		system("diff -wu $idl_file $tempfile");
 		unlink($tempfile);
+	}
+
+	if ($opt_template) {
+		print IdlTemplate::Parse($pidl);
 	}
 }
 
