@@ -330,9 +330,6 @@ getnpty()
 static char Xline[] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 char *line = Xline;
 
-char *line_nodev;
-char *line_notty;
-
 #ifdef	_CRAY
 char *myline = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 #endif	/* CRAY */
@@ -345,38 +342,6 @@ static char *ptsname(int fd)
 #else
     return NULL;
 #endif
-}
-#endif
-
-#ifdef HAVE_UTMPX_H
-static char utid[32]; /* XXX larger than ut_id */
-
-void
-set_utid(void)
-{
-    int ptynum;
-    
-    line_nodev = line;
-    if(!strncmp(line, "/dev/", 5))
-	line_nodev += 5;
-
-    line_notty = line_nodev;
-    if(!strncmp(line_nodev, "tty", 3))
-	line_notty += 3;
-    else if(!strncmp(line_nodev, "pts/", 4))
-	line_notty += 4;
-    
-    /* Derive utmp ID from pty slave number */
-    if(isdigit(line_notty[0]) && sscanf(line_notty, "%d", &ptynum) == 1)
-	
-	snprintf(utid, sizeof(utid), "tn%02x", ptynum & 0xff);
-    else
-	snprintf(utid, sizeof(utid), "tn%s", line_notty);
-}
-#else
-void
-set_utid(void)
-{
 }
 #endif
 
@@ -984,9 +949,9 @@ int cleanopen(char *line)
 	    chmod(line, 0600);
 	}
 
-# if !defined(_CRAY) && (BSD > 43)
+#ifdef HAVE_REVOKE
     revoke(line);
-# endif
+#endif
 
     t = open(line, O_RDWR|O_NOCTTY);
 
@@ -1129,10 +1094,12 @@ startslave(char *host, int autologin, char *autoname)
 	SCPYN(wtmp.ut_user, "LOGIN");
 	SCPYN(wtmp.ut_host, host);
 	SCPYN(wtmp.ut_line, line + sizeof("/dev/") - 1);
+#if 0
 #ifndef	__hpux
 	SCPYN(wtmp.ut_id, wtmp.ut_line+3);
 #else
 	SCPYN(wtmp.ut_id, wtmp.ut_line+7);
+#endif
 #endif
 	pututline(&wtmp);
 	endutent();
@@ -1231,9 +1198,8 @@ void start_login(char *host, int autologin, char *name)
     memset(&utmpx, 0, sizeof(utmpx));
     SCPYN(utmpx.ut_user, ".telnet");
 
-    SCPYN(utmpx.ut_line, line_nodev);
+    SCPYN(utmpx.ut_line, line + sizeof("/dev/") - 1);
     utmpx.ut_pid = pid;
-    SCPYN(utmpx.ut_id, utid);
 	
     utmpx.ut_type = LOGIN_PROCESS;
 
@@ -1356,9 +1322,9 @@ rmut(void)
 
     setutxent();
     memset(&utmpx, 0, sizeof(utmpx));
-    strncpy(utmpx.ut_id, utid, sizeof(utmpx.ut_id));
+    strncpy(utmpx.ut_line, line + sizeof("/dev/") - 1, sizeof(utmpx.ut_line));
     utmpx.ut_type = LOGIN_PROCESS;
-    utxp = getutxid(&utmpx);
+    utxp = getutxline(&utmpx);
     if (utxp) {
 	strcpy(utxp->ut_user, "");
 	utxp->ut_type = DEAD_PROCESS;
@@ -1448,13 +1414,13 @@ rmut (char *line)
     int fd;			/* for /etc/wtmp */
 
     utmp.ut_type = USER_PROCESS;
-    strncpy(utmp.ut_id, line+12, sizeof(utmp.ut_id));
+    strncpy(utmp.ut_line, line + sizeof("/dev/") - 1, sizeof(utmp.ut_line));
     setutent();
-    utptr = getutid(&utmp);
+    utptr = getutline(&utmp);
     /* write it out only if it exists */
     if (utptr) {
 	utptr->ut_type = DEAD_PROCESS;
-	utptr->ut_time = time((long *) 0);
+	utptr->ut_time = time(NULL);
 	pututline(utptr);
 	/* set wtmp entry if wtmp file exists */
 	if ((fd = open(wtmpf, O_WRONLY | O_APPEND)) >= 0) {
