@@ -1071,7 +1071,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	uint32 *group_rids, num_rids, *name_types, num_members, 
-               *group_attrs, GROUP_RID;
+               *group_attrs, group_rid;
 	uint32 flags = 0x000003e8; /* Unknown */
 	/* char **names; */
 	int i;
@@ -1123,7 +1123,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
    			goto done;
 		}
                 
-		GROUP_RID = group_rids[0];
+		group_rid = group_rids[0];
                 
 		result = cli_samr_query_groupmem(cli, mem_ctx, &group_pol,
                                  &num_members, &group_rids,
@@ -1136,7 +1136,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		
 		if (opt_verbose) {
 			d_printf("Domain Group %s (rid: %d) has %d members\n",
-				argv[0],GROUP_RID,num_members);
+				argv[0],group_rid,num_members);
 		}
 
 		/* Check if group is anyone's primary group */
@@ -1161,19 +1161,20 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	           		goto done;
 	        	}
 	
-			if (user_ctr->info.id21->group_rid == GROUP_RID) {
+			if (user_ctr->info.id21->group_rid == group_rid) {
 				unistr2_to_ascii(temp, &(user_ctr->info.id21)->uni_user_name, 
 						sizeof(temp)-1);
 				if (opt_verbose) 
 					d_printf("Group is primary group of %s\n",temp);
 				group_is_primary = True;
                         }
+
+			cli_samr_close(cli, mem_ctx, &user_pol);
 		}
                 
 		if (group_is_primary) {
-			if (opt_verbose) {
-				d_printf("Unable to delete group because some of it's members have it as rimary group\n");
-			}
+			d_printf("Unable to delete group because some of it's "
+				 "members have it as primary group\n");
 			result = NT_STATUS_MEMBERS_PRIMARY_GROUP;
 			goto done;
 		}
@@ -2095,8 +2096,7 @@ rpc_list_alias_members(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				     &domains, &names, &types);
 
 	if (!NT_STATUS_IS_OK(result) &&
-	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED) &&
-	    !NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED)) {
+	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
 		d_printf("Couldn't lookup SIDs\n");
 		return result;
 	}
@@ -2107,10 +2107,10 @@ rpc_list_alias_members(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		if (opt_long_list_entries) {
 			printf("%s %s\\%s %d\n", sid_str, 
-			       (domains&&domains[i]) ? domains[i]:"*unknown*", 
+			       domains[i] ? domains[i] : "*unknown*", 
 			       names[i] ? names[i] : "*unknown*", types[i]);
 		} else {
-			if (domains && domains[i])
+			if (domains[i])
 				printf("%s\\%s\n", domains[i], names[i]);
 			else
 				printf("%s\n", sid_str);

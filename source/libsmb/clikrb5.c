@@ -190,7 +190,7 @@
 	krb5_error_code rc;
 	int num_kdcs, i;
 	struct sockaddr *sa;
-	struct addrinfo *ai;
+	struct addrinfo **ai;
 
 	*addr_pp = NULL;
 	*naddrs = 0;
@@ -226,10 +226,10 @@
 	for (i = 0; i < num_kdcs && (rc = krb5_krbhst_next(ctx, hnd, &hinfo) == 0); i++) {
 
 #if defined(HAVE_KRB5_KRBHST_GET_ADDRINFO)
-		rc = krb5_krbhst_get_addrinfo(ctx, hinfo, &ai);
+		rc = krb5_krbhst_get_addrinfo(ctx, hinfo, ai);
 		if (rc) {
 			DEBUG(0,("krb5_krbhst_get_addrinfo failed: %s\n", error_message(rc)));
-			continue;
+			return rc;
 		}
 #endif
 		if (hinfo->ai && hinfo->ai->ai_family == AF_INET) 
@@ -430,8 +430,14 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 failed:
 
 	if ( context ) {
+/* Removed by jra. They really need to fix their kerberos so we don't leak memory. 
+ JERRY -- disabled since it causes heimdal 0.6.1rc3 to die
+          SuSE 9.1 Pro 
+*/
 		if (ccdef)
+#if 0 /* redisabled by gd :) at least until any official heimdal version has it fixed. */
 			krb5_cc_close(context, ccdef);
+#endif
 		if (auth_context)
 			krb5_auth_con_free(context, auth_context);
 		krb5_free_context(context);

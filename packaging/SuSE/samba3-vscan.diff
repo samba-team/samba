@@ -18,7 +18,7 @@
 -                                lrufiles_add(filepath, stat_buf.st_mtime, TRUE);
 +                                lrufiles_add(filepath, stat_buf.st_mtime, True);
  
- 				/* virus found, deny access */
+ 				/* virus found, deny acces */
  				errno = EACCES;
  				return -1;
  			} else if ( retval == 0 ) {
@@ -68,7 +68,7 @@
 -                                lrufiles_add(filepath, stat_buf.st_mtime, TRUE);
 +                                lrufiles_add(filepath, stat_buf.st_mtime, True);
  
-                                 /* virus found, deny access */
+                                 /* virus found, deny acces */
                                  errno = EACCES;
                                  return -1;
  			} else if ( retval == 0 ) {
@@ -197,7 +197,7 @@
 -                                lrufiles_add(filepath, stat_buf.st_mtime, TRUE);
 +                                lrufiles_add(filepath, stat_buf.st_mtime, True);
  
- 				/* virus found, deny access */
+ 				/* virus found, deny acces */
  				errno = EACCES; 
  				return -1;
                          } else if ( retval == 0 ) {

@@ -134,7 +134,7 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 }
 
 
-/* delete a secrets database entry
+/* delete a secets database entry
  */
 BOOL secrets_delete(const char *key)
 {
@@ -295,7 +295,7 @@ uint32 get_default_sec_channel(void)
 /************************************************************************
  Routine to get the trust account password for a domain.
  The user of this function must have locked the trust password file using
- secrets_lock_trust_account_password().
+ the above secrets_lock_trust_account_password().
 ************************************************************************/
 
 BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],

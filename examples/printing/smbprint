@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/bash
 
 # This script is an input filter for printcap printing on a unix machine. It
 # uses the smbclient program to print the file to the specified smb-based 
@@ -102,7 +102,39 @@ if [ $TRANS -eq 1 ]; then
 	command="translate;$command";
 fi
 
-debugfile="/tmp/smb-print.log"
+##
+## Some security checks on the logfile if we are using it
+##
+## make the directory containing the logfile is necessary 
+## and set the permissions to be rwx for owner only
+##
+
+debugfile="/tmp/smb-print/logfile"
+logdir=`dirname $debugfile`
+if [ ! -d $logdir ]; then 
+	mkdir -m 0700 $logdir
+fi
+
+##
+## check ownership.  If I don't own it refuse to 
+## create the logfile
+##
+if [ ! -O $logdir ]; then
+	echo "user running script does not own $logdir. Ignoring any debug options."
+	debug=""
+fi
+
+touch $debugfile
+if [ -h $debugfile ]; then
+	echo "$debugful is a symlink.  Turning off debugging!"
+	debug=""
+fi
+
+##
+## We should be safe at this point to create the log file
+## without fear of a symlink attack -- move on to more script work.
+##
+
 if [ "x$debug" = "x" ] ; then 
 		debugfile=/dev/null debugargs=
 else
