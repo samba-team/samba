@@ -361,7 +361,7 @@ spooler can do:
     printfiles from all client platforms in a uniform way;</para></listitem>
   <listitem><para>act as a central accounting and billing server, as all files are passed
     through the <command>pstops</command> Filter and are therefor logged in
-    the CUPS <filename>page&lowbar;log</filename>. - <emphasis>NOTE: </emphasis>this
+    the CUPS <filename>page_log</filename>. - <emphasis>NOTE: </emphasis>this
     can not happen with "raw" print jobs, which always remain unfiltered
     per definition;</para></listitem>
   <listitem><para>enable clients to consolidate on a single PostScript driver, even for

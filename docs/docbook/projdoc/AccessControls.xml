@@ -247,6 +247,8 @@ at how Samba helps to bridge the differences.
 	<para>
 	There are three basic operations for managing directories, <command>create, delete, rename</command>.
 	<table>
+		<title>Managing directories with unix and windows</title>
+		<tgroup align="center" cols="3">
 		<thead>
 		<row><entry>Action</entry><entry>MS Windows Command</entry><entry>Unix Command</entry></row>
 		</thead>
@@ -256,6 +258,7 @@ at how Samba helps to bridge the differences.
 			<row><entry>delete</entry><entry>rd folder</entry><entry>rmdir folder</entry></row>
 			<row><entry>rename</entry><entry>rename oldname newname</entry><entry>mv oldname newname</entry></row>
 		</tbody>
+	</tgroup>
 	</table>
 	</para>
 

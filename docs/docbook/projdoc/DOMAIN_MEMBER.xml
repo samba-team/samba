@@ -453,13 +453,16 @@ to be fully trusted by it.
 <title>Joining an NT4 type Domain with Samba-3</title>
 
 <para>
-Assumptions:
-<table><tbody>
+<table><title>Assumptions</title>
+<tgroup align="left" cols="2">
+	<tbody>
 	<row><entry>NetBIOS name:</entry><entry>SERV1</entry></row>
 	<row><entry>Win2K/NT domain name:</entry><entry>DOM</entry></row>
 	<row><entry>Domain's PDC NetBIOS name:</entry><entry>DOMPDC</entry></row>
 	<row><entry>Domain's BDC NetBIOS names:</entry><entry>DOMBDC1 and DOMBDC2</entry></row>
-</tbody></table>
+</tbody>
+</tgroup>
+</table>
 </para>
 
 <para>
