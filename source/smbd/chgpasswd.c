@@ -672,8 +672,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
  no longer be valid.
 ************************************************************/
 
-BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
-			    uchar * pass2)
+BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar *pass2)
 {
 	static uchar null_pw[16];
 	uchar unenc_new_pw[16];

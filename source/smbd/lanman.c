@@ -1955,7 +1955,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
     SAM_ACCOUNT *hnd = NULL;
 
     if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd) && 
-       change_lanman_password(hnd,(unsigned char *)pass1,(unsigned char *)pass2))
+       change_lanman_password(hnd,pass2))
     {
       SSVAL(*rparam,0,NERR_Success);
     }
