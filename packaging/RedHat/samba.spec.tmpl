@@ -16,7 +16,8 @@ Source998: filter-requires-samba_rh8.sh
 Source999: filter-requires-samba_rh9.sh
 
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
-Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
+Requires: pam openldap krb5-libs 
+BuildRequires: openldap-devel krb5-devel pam-devel
 Prereq: chkconfig fileutils /sbin/ldconfig
 Provides: samba = %{version}
 Obsoletes: samba-common, samba-client, samba-swat
@@ -159,6 +160,13 @@ make DESTDIR=$RPM_BUILD_ROOT \
 	SAMBABOOK=%{prefix}/share/swat/using_samba \
 	installman installswat installdat installmodules
 cd ..
+
+## don't duplicate the docs.  These are installed with SWAT
+rm -rf docs/htmldocs
+rm -rf docs/manpages
+( cd docs; ln -s %{prefix}/share/swat/help htmldocs )
+
+
 
 # Install the nsswitch wins library
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib

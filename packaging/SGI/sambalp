@@ -50,8 +50,9 @@ $PSFIX = 1;			# set to 0 if you don't want to run
 EOF
 $ENV{'PATH'} = join(':',@PATH);
 
-if ($#ARGV < 3) {
-    print STDERR "usage: $PROG printer file user system\n";
+        print "$#ARGV ".scalar(@ARGV)."\n";
+if (scalar(@ARGV) < 2) {
+    print STDERR "usage: $PROG printer file [user] [system]\n";
     exit;
 }
 
@@ -59,6 +60,9 @@ $printer = $ARGV[0];
 $file    = $ARGV[1];
 $user    = $ARGV[2];
 $system  = $ARGV[3];
+
+$user = "nobody" unless($user);
+$system = `hostname` unless($system);
 
 open(LPSTAT,"/usr/bin/lpstat -t|") || die("Can't get printer list.\n");
 @printers = ();
