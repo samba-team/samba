@@ -45,6 +45,8 @@
 #include "ftpd_locl.h"
 RCSID("$Id$");
 
+#undef STAT /* conflicts with AIX sys/dir.h */
+
 off_t	restart_point;
 
 static	int cmd_type;
