@@ -145,12 +145,6 @@ sub process_file($)
 		  my($eparserhdr) = dirname($output) . "/packet-dcerpc-$basename.h";
 		  IdlEParser::RewriteHeader($pidl, $header, $eparserhdr);
 		}
-		if ($opt_swig) {
-		  my($filename) = $output;
-		  $filename =~ s/\/ndr_/\//;
-		  $filename = util::ChangeExtension($filename, ".i");
-		  IdlSwig::RewriteHeader($pidl, $header, $filename);
-		}
 	}
 
 	if ($opt_client) {
@@ -220,7 +214,7 @@ $dcom
 		  my($filename) = $output;
 		  $filename =~ s/\/ndr_/\//;
 		  $filename = util::ChangeExtension($filename, ".i");
-		  IdlSwig::RewriteC($pidl, $parser, $filename);
+		  util::FileSave($pidl, IdlSwig::Parse($pidl));
 		}
 	}
 
