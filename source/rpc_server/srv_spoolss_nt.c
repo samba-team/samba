@@ -78,8 +78,10 @@ typedef struct _Printer{
 		uint32 printerlocal;
 		SPOOL_NOTIFY_OPTION *option;
 		POLICY_HND client_hnd;
-		uint32 client_connected;
+		BOOL client_connected;
 		uint32 change;
+		/* are we in a FindNextPrinterChangeNotify() call? */
+		BOOL fnpcn;
 	} notify;
 	struct {
 		fstring machine;
@@ -88,6 +90,7 @@ typedef struct _Printer{
 	
 	/* devmode sent in the OpenPrinter() call */
 	NT_DEVICEMODE	*nt_devmode;
+	
 	
 } Printer_entry;
 
@@ -929,7 +932,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		SPOOL_NOTIFY_INFO_DATA *data;
 		uint32	data_len = 0;
 		uint32 	id;
-		int 	i;
+		int 	i, event_index;
 
 		/* Is there notification on this handle? */
 
@@ -951,6 +954,8 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		
 		data = talloc( mem_ctx, msg_group->num_msgs*sizeof(SPOOL_NOTIFY_INFO_DATA) );
 		ZERO_STRUCTP(data);
+		
+		event_index = 0;
 		
 		/* build the array of change notifications */
 		
@@ -1000,17 +1005,13 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 
 			switch(msg->type) {
 				case PRINTER_NOTIFY_TYPE:
-					if ( !printer_notify_table[msg->field].fn )
-						goto done;
-					printer_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
-				
+					if ( printer_notify_table[msg->field].fn )
+						printer_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
 					break;
 			
 				case JOB_NOTIFY_TYPE:
-					if ( !job_notify_table[msg->field].fn )
-						goto done;
-					job_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
-					
+					if ( job_notify_table[msg->field].fn )
+						job_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);				
 					break;
 					
 				default:
@@ -1019,10 +1020,22 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 			}
 			
 			data_len++;
+	
+#if 0	/* JERRY */
+			/* send this in chunks of at most 127 events */	
+			if ( i && data_len && ((i % 64) == 0) ) {
+				cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
+					data_len, data, p->notify.change, 0 );
+				memset( data, 0x0, msg_group->num_msgs*sizeof(SPOOL_NOTIFY_INFO_DATA));
+				data_len = 0;
+			}
+#endif
 		}
 
-		cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
-				data_len, data, p->notify.change, 0 );
+		/* send last bit */
+		if ( data_len )
+			cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
+					data_len, data, p->notify.change, 0 );
 	}
 	
 done:
@@ -1226,6 +1239,32 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 	/* all done */	
 }
 
+/********************************************************************
+ Update the cahce for all printq's with a registered client 
+ connection
+ ********************************************************************/
+
+void update_monitored_printq_cache( void )
+{
+	Printer_entry *printer = printers_list;
+	int snum;
+	
+	/* loop through all printers and update the cache where 
+	   client_connected == True */
+	while ( printer ) 
+	{
+		if ( (printer->printer_type == PRINTER_HANDLE_IS_PRINTER) 
+			&& printer->notify.client_connected ) 
+		{
+			snum = print_queue_snum_dos(printer->dev.handlename);
+			print_queue_status( snum, NULL, NULL );
+		}
+		
+		printer = printer->next;
+	}
+	
+	return;
+}
 /********************************************************************
  Send a message to ourself about new driver being installed
  so we can upgrade the information for each printer bound to this
@@ -3712,6 +3751,8 @@ WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
 
 	/* We need to keep track of the change value to send back in 
            RRPCN replies otherwise our updates are ignored. */
+	
+	Printer->notify.fnpcn = True;
 
 	if (Printer->notify.client_connected) {
 		DEBUG(10,("_spoolss_rfnpcnex: Saving change value in request [%x]\n", q_u->change));
@@ -3729,8 +3770,10 @@ WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
 			result = printer_notify_info(p, handle, info, p->mem_ctx);
 			break;
 	}
+
+	Printer->notify.fnpcn = False;
 	
- done:
+done:
 	return result;
 }
 

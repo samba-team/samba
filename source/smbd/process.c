@@ -1209,6 +1209,10 @@ machine %s in domain %s.\n", global_myname_unix(), lp_workgroup_unix() ));
    */
   process_blocking_lock_queue(t);
 
+  /* update printer queue caches if necessary */
+  
+  update_monitored_printq_cache();
+  
   /*
    * Check to see if we have any change notifies 
    * outstanding on the queue.
