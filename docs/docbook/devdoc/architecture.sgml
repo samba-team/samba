@@ -4,6 +4,7 @@
 		<firstname>Dan</firstname><surname>Shearer</surname>
 	</author>
 	<pubdate> November 1997</pubdate>
+	&author.jelmer;
 </chapterinfo>
 
 <title>Samba Architecture</title>
@@ -181,4 +182,56 @@ for browsing and WINS support.
 </para>
 
 </sect1>
+
+<sect1>
+<title>Samba's subsystems</title>
+
+<para>Samba's <filename>source/</filename> directory contains quite some directories. Here's a small explanation of what each of them contains.</para>
+
+<simplelist>
+<member>aparser - Obsolete</member>
+<member>auth - The authentication subsystem, maintained by Andrew Bartlett</member>
+<member>bin - Output directory for all the binary files</member>
+<member>client - Contains 'plain' SMB client sources: smbclient and 
+some mount help utilities</member>
+<member>groupdb - Group database and mapping code</member>
+<member>include - All of samba's include files</member>
+<member>intl - Internationalization files. Not used at the moment.</member>
+<member>lib - General C helper functions. Not SMB-specific.</member>
+<member>libads - Library with ActiveDirectory related functions.</member>
+<member>libsmb - Library with SMB specific functions.</member>
+<member>locking - Locking functions!</member>
+<member>modules - Source files for various modules (VFS and charset).</member>
+<member>msdfs - DCE-DFS code</member>
+<member>nmbd - Code for the nmbd daemon</member>
+<member>nsswitch - Winbind source code</member>
+<member>pam_smbpass - Source code for pam module for authenticating against samba's passdb</member>
+<member>param - smb.conf parsing code</member>
+<member>passdb - User database(SAM) code with the various backends</member>
+<member>po - Internationalisation code - not used atm</member>
+<member>popt - Samba's internal copy of the popt library</member>
+<member>printing - Printing stuff</member>
+<member>profile - Profiling support</member>
+<member>python - Python bindings for various libsmb functions</member>
+<member>registry - Registry backend</member>
+<member>rpc_client - RPC Client library for making remote procedure calls</member>
+<member>rpc_parse - Functions for parsing RPC structures (???)</member>
+<member>rpc_server - Functions for being an RPC server</member>
+<member>rpcclient - Command-line client that is a basically a front-end to rpc_client/</member>
+<member>sam - Code for the new (but unused) SAM</member>
+<member>script - Various scripts</member>
+<member>smbd - Source code for the smbd daemon</member>
+<member>smbwrapper - Source code for library that overloads VFS function calls, for usage with LD_PRELOAD=...</member>
+<member>stf - Testsuite system?</member>
+<member>tdb - Source code of samba's Trivial Database (much like gdbm)</member>
+<member>tests - Source code for the larger tests used by configure</member>
+<member>torture - 'Torture' utilities, used for testing samba and other cifs servers</member>
+<member>ubiqx - The ubiqx library from Chris Hertel</member>
+<member>utils - Various small utilities(pdbedit, net, etc)</member>
+<member>web - SWAT sourcecode</member>
+<member>wrepld - Sourcecode of the WINS replication daemon</member>
+</simplelist>
+
+</sect1>
+
 </chapter>

@@ -2,16 +2,7 @@
 
 
 <chapterinfo>
-	<author>
-		<firstname>Jeremy</firstname><surname>Allison</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address>
-				<email>samba@samba.org</email>
-			</address>
-		</affiliation>
-	</author>
-
+	&author.jeremy;
 	<pubdate>19 Apr 1999</pubdate>
 </chapterinfo>
 	

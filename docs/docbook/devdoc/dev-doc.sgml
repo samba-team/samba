@@ -1,4 +1,5 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 <!ENTITY NetBIOS SYSTEM "NetBIOS.sgml">
 <!ENTITY Architecture SYSTEM "architecture.sgml">
 <!ENTITY debug SYSTEM "debug.sgml">
@@ -26,6 +27,7 @@
 		<surname>SAMBA Team</surname>
 	</author>
 	<address><email>samba@samba.org</email></address>
+    <editor>&person.jelmer;</editor>
 </bookinfo>
 
 <dedication>

@@ -9,6 +9,9 @@
 
 <title>The Upcoming SAM System</title>
 
+<note><para>The design as described in this document is _NOT_ the design that 
+made it into samba 3.0. </para></note>
+
 <sect1>
 <title>Security in the 'new SAM'</title>
 

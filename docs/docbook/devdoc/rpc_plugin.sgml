@@ -7,13 +7,7 @@
 			<address><email>aliguor@us.ibm.com</email></address>
 		</affiliation>
 	</author>
-	<author>
-		<firstname>Jelmer</firstname><surname>Vernooij</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>jelmer@samba.org</email></address>
-		</affiliation>
-	</author>
+	&author.jelmer;
 	<pubdate>January 2003</pubdate>
 </chapterinfo>
 
