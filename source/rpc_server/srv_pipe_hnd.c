@@ -400,7 +400,7 @@ authentication failed. Denying the request.\n", p->name));
 	 * Check the data length doesn't go over the 1Mb limit.
 	 */
 	
-	if(prs_data_size(&p->in_data.data) + data_len > 10*1024*1024) {
+	if(prs_data_size(&p->in_data.data) + data_len > 15*1024*1024) {
 		DEBUG(0,("process_request_pdu: rpc data buffer too large (%u) + (%u)\n",
 				(unsigned int)prs_data_size(&p->in_data.data), (unsigned int)data_len ));
 		set_incoming_fault(p);
