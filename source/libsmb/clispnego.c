@@ -387,51 +387,6 @@ BOOL spnego_parse_challenge(DATA_BLOB blob,
 
 
 /*
-  generate a spnego NTLMSSP challenge packet given two security blobs
-  The second challenge is optional
-*/
-BOOL spnego_gen_challenge(DATA_BLOB *blob,
-			  DATA_BLOB *chal1, DATA_BLOB *chal2)
-{
-	ASN1_DATA data;
-
-	ZERO_STRUCT(data);
-
-	asn1_push_tag(&data,ASN1_CONTEXT(1));
-	asn1_push_tag(&data,ASN1_SEQUENCE(0));
-
-	asn1_push_tag(&data,ASN1_CONTEXT(0));
-	asn1_write_enumerated(&data,1);
-	asn1_pop_tag(&data);
-
-	asn1_push_tag(&data,ASN1_CONTEXT(1));
-	asn1_write_OID(&data, OID_NTLMSSP);
-	asn1_pop_tag(&data);
-
-	asn1_push_tag(&data,ASN1_CONTEXT(2));
-	asn1_write_OctetString(&data, chal1->data, chal1->length);
-	asn1_pop_tag(&data);
-
-	/* the second challenge is optional (XP doesn't send it) */
-	if (chal2) {
-		asn1_push_tag(&data,ASN1_CONTEXT(3));
-		asn1_write_OctetString(&data, chal2->data, chal2->length);
-		asn1_pop_tag(&data);
-	}
-
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-
-	if (data.has_error) {
-		return False;
-	}
-
-	*blob = data_blob(data.data, data.length);
-	asn1_free(&data);
-	return True;
-}
-
-/*
  generate a SPNEGO NTLMSSP auth packet. This will contain the encrypted passwords
 */
 DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
@@ -485,23 +440,37 @@ BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 /*
   generate a minimal SPNEGO NTLMSSP response packet.  Doesn't contain much.
 */
-DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply)
+DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
 {
 	ASN1_DATA data;
 	DATA_BLOB ret;
+	uint8 negResult;
 
-	memset(&data, 0, sizeof(data));
+	if (NT_STATUS_IS_OK(nt_status)) {
+		negResult = SPNGEO_NEG_RESULT_ACCEPT;
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		negResult = SPNGEO_NEG_RESULT_INCOMPLETE; 
+	} else {
+		negResult = SPNGEO_NEG_RESULT_REJECT; 
+	}
+
+	ZERO_STRUCT(data);
 
 	asn1_push_tag(&data, ASN1_CONTEXT(1));
 	asn1_push_tag(&data, ASN1_SEQUENCE(0));
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_write_enumerated(&data, ntlmssp_reply->length ? 1 : 0);
+	asn1_write_enumerated(&data, negResult);
 	asn1_pop_tag(&data);
-	if (ntlmssp_reply->length) {
+	if (negResult == SPNGEO_NEG_RESULT_INCOMPLETE) {
+		asn1_push_tag(&data,ASN1_CONTEXT(1));
+		asn1_write_OID(&data, OID_NTLMSSP);
+		asn1_pop_tag(&data);
+		
 		asn1_push_tag(&data,ASN1_CONTEXT(2));
 		asn1_write_OctetString(&data, ntlmssp_reply->data, ntlmssp_reply->length);
 		asn1_pop_tag(&data);
 	}
+
 	asn1_pop_tag(&data);
 	asn1_pop_tag(&data);
 
