@@ -489,8 +489,8 @@ void cmd_reg_create_val(struct client_info *info)
 	res4 = res3 ? do_reg_create_val(smb_cli, &parent_pol,
 				 val_name, val_type, &value) : False;
 
-	/* some sort of "sync" or "refresh" on the parent key? */
-	res4 = res4 ? do_reg_unk_b(smb_cli, &parent_pol) : False;
+	/* flush the modified key */
+	res4 = res4 ? do_reg_flush_key(smb_cli, &parent_pol) : False;
 
 	/* close the val handle */
 	res3 = res3 ? do_reg_close(smb_cli, &parent_pol) : False;
@@ -554,8 +554,8 @@ void cmd_reg_delete_key(struct client_info *info)
 	/* create an entry */
 	res4 = res3 ? do_reg_delete_key(smb_cli, &parent_pol, key_name) : False;
 
-	/* some sort of "sync" or "refresh" on the parent key? */
-	res4 = res4 ? do_reg_unk_b(smb_cli, &parent_pol) : False;
+	/* flush the modified key */
+	res4 = res4 ? do_reg_flush_key(smb_cli, &parent_pol) : False;
 
 	/* close the key handle */
 	res3 = res3 ? do_reg_close(smb_cli, &parent_pol) : False;
@@ -639,8 +639,8 @@ void cmd_reg_create_key(struct client_info *info)
 	res4 = res3 ? do_reg_create_key(smb_cli, &parent_pol,
 				 key_name, key_class, &sam_access, &key_pol) : False;
 
-	/* some sort of "sync" or "refresh" on the parent key? */
-	res4 = res4 ? do_reg_unk_b(smb_cli, &parent_pol) : False;
+	/* flush the modified key */
+	res4 = res4 ? do_reg_flush_key(smb_cli, &parent_pol) : False;
 
 	/* close the key handle */
 	res4 = res4 ? do_reg_close(smb_cli, &key_pol) : False;
