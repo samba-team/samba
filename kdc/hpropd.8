@@ -19,8 +19,6 @@ receive a propagated database
 .Fl -keytab= Ns Ar keytab Oc
 .Xc
 .Op Fl 4 | Fl -v4dump
-.Oo Fl R Ar realm \*(Ba Xo
-.Fl -realm= Ns Ar realm Oc
 .Xc
 .Sh DESCRIPTION
 .Nm
@@ -71,11 +69,6 @@ keytab to use for authentication
 .Fl -v4dump
 .Xc
 create v4 type DB
-.It Xo
-.Fl R Ar realm Ns ,
-.Fl -realm= Ns Ar realm
-.Xc
-the realm to use
 .El
 .Sh SEE ALSO
 .Xr hprop 8
