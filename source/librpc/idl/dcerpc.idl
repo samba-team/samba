@@ -170,6 +170,9 @@ interface dcerpc
 	const uint8 DCERPC_FRAG_LEN_OFFSET =  8;
 	const uint8 DCERPC_AUTH_LEN_OFFSET = 10;
 
+	/* little-endian flag */
+	const uint8 DCERPC_DREP_LE  = 0x10;
+
 	typedef [public] struct {
 		uint8 rpc_vers;		/* RPC version */
 		uint8 rpc_vers_minor;	/* Minor version */
