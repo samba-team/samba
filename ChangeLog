@@ -1,3 +1,14 @@
+2000-02-06  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/time.c (krb5_timeofday): use `krb5_timestamp' instead
+	of `int32_t'
+
+	* lib/krb5/replay.c (checksum_authenticator): update to new API
+	for md5
+
+	* lib/krb5/krb5.h: remove des.h, it's not needed and applications
+	should not have to make sure to find it.
+
 2000-02-02  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos4.c (do_version4): look at check_ticket_addresses

@@ -1,3 +1,8 @@
+2000-02-06  Assar Westerlund  <assar@sics.se>
+
+	* xdbm.h: hopefully catch a few more declarations by including
+	<ndbm.h> even if <db.h> was found
+
 2000-01-26  Assar Westerlund  <assar@sics.se>
 
 	* mini_inetd.c (mini_inetd): separate number of allocated sockets
