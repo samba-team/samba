@@ -803,7 +803,8 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 		
 	} else if (sid_equal(sid, &global_sam_sid) && !lp_hide_local_users()) {
 		char *sep;
-		struct group *grp;
+		struct sys_grent *glist;
+		struct sys_grent *grp;
 	
 		sep = lp_winbind_separator();
 
@@ -811,36 +812,50 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 		/* we return the UNIX groups here.  This seems to be the right */
 		/* thing to do, since NT member servers return their local     */
                 /* groups in the same situation.                               */
-		setgrent();
 
-		while (num_entries < max_entries && ((grp = getgrent()) != NULL)) {
+		/* use getgrent_list() to retrieve the list of groups to avoid
+		 * problems with getgrent possible infinite loop by internal
+		 * libc grent structures overwrites by called functions */
+		grp = glist = getgrent_list();
+		if (grp == NULL)
+			return NT_STATUS_NO_MEMORY;
+		
+		while ((num_entries < max_entries) && (grp != NULL)) {
 			uint32 trid;
 			
-			if(!get_group_from_gid(grp->gr_gid, &smap))
+			if(!get_group_from_gid(grp->gr_gid, &smap)) {
+				grp = grp->next;
 				continue;
+			}
 
-			if (smap.sid_name_use!=SID_NAME_ALIAS)
+			if (smap.sid_name_use!=SID_NAME_ALIAS) {
+				grp = grp->next;
 				continue;
+			}
 
 			sid_split_rid(&smap.sid, &trid);
 
 			/* Don't return winbind groups as they are not local! */
 			if (strchr(smap.nt_name, *sep) != NULL) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, not local.\n", smap.nt_name ));
+				grp = grp->next;
 				continue;
 			}
 
 			/* Don't return user private groups... */
 			if (Get_Pwnam(smap.nt_name, False) != 0) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", smap.nt_name ));
+				grp = grp->next;
 				continue;			
 			}
 
 			for( i = 0; i < num_entries; i++)
 				if ( (*d_grp)[i].rid == trid ) break;
 
-			if ( i < num_entries )
+			if ( i < num_entries ) {
+				grp = grp->next;
 				continue; /* rid was there, dup! */
+			}
 
 			/* JRA - added this for large group db enumeration... */
 
@@ -849,19 +864,23 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 					not very efficient, but hey...
 				*/
 				start_idx--;
+				grp = grp->next;
 				continue;
 			}
 
 			*d_grp=Realloc(*d_grp, (num_entries+1)*sizeof(DOMAIN_GRP));
-			if (*d_grp==NULL)
+			if (*d_grp==NULL) {
+				grent_free(glist);
 				return NT_STATUS_NO_MEMORY;
+			}
 
 			fstrcpy((*d_grp)[num_entries].name, smap.nt_name);
 			(*d_grp)[num_entries].rid = trid;
 			num_entries++;
+			grp = grp->next;
 		}
 
-		endgrent();
+		grent_free(glist);
 	}
 
 	*p_num_entries = num_entries;

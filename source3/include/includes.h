@@ -637,6 +637,8 @@ extern int errno;
 #include "messages.h"
 #include "util_list.h"
 
+#include "util_getent.h"
+
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
 #endif /* UBI_BINTREE_H */
