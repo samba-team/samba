@@ -114,7 +114,9 @@ dnl		2:default_build
 dnl		)
 AC_DEFUN([SMB_MODULE_DEFAULT],
 [
-	[SMB_MODULE_DEFAULT_][$1]="$2"
+	[SMB_MODULE_DEFAULT][$1]="$2"
+SMB_INFO_MODULES="$SMB_INFO_MODULES
+\$INPUT{$1}{DEFAULT_BUILD} = \"$2\";"
 ])
 
 dnl SMB_MODULE	( 
@@ -170,6 +172,8 @@ dnl		)
 AC_DEFUN([SMB_SUBSYSTEM_ENABLE],
 [
 	[SMB_SUBSYSTEM_ENABLE_][$1]="$2"
+SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
+\$INPUT{$1}{ENABLE} = \"$2\";"
 ])
 
 dnl SMB_SUBSYSTEM_NOPROTO(
@@ -223,6 +227,9 @@ dnl		)
 AC_DEFUN([SMB_EXT_LIB_ENABLE],
 [
 	[SMB_EXT_LIB_ENABLE_][$1]="$2"
+
+SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
+\$INPUT{EXT_LIB_$1}{ENABLE} = \"$2\";"
 ])
 
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(
@@ -242,6 +249,8 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
     		echo "*** in your path, or set the PKG_CONFIG environment variable"
     		echo "*** to the full path to pkg-config."
     		echo "*** Or see http://www.freedesktop.org/software/pkgconfig to get pkg-config."
+			SMB_EXT_LIB($1)
+			SMB_EXT_LIB_ENABLE($1, NO)
 	else
 		if $PKG_CONFIG --atleast-pkgconfig-version 0.9.0; then
         		AC_MSG_CHECKING(for $2)
@@ -263,12 +272,16 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 				$1_CFLAGS="`$PKG_CONFIG --cflags '$2'`"
 				CFLAGS="$CFLAGS $$1_CFLAGS"
         		else
+				SMB_EXT_LIB($1)
+				SMB_EXT_LIB_ENABLE($1, NO)
 				AC_MSG_RESULT(no)
             			$PKG_CONFIG --errors-to-stdout --print-errors '$2'
         		fi
      		else
         		echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
-        		echo "*** See http://www.freedesktop.org/software/pkgconfig"
+        			echo "*** See http://www.freedesktop.org/software/pkgconfig"
+				SMB_EXT_LIB($1)
+				SMB_EXT_LIB_ENABLE($1, NO)
      		fi
   	fi
 ])
@@ -312,6 +325,9 @@ dnl		)
 AC_DEFUN([SMB_LIBRARY_ENABLE],
 [
 	[SMB_LIBRARY_ENABLE_][$1]="$2"
+
+SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
+\$INPUT{$1}{ENABLE} = \"$2\";"
 ])
 
 dnl SMB_LIBRARY(
@@ -356,6 +372,9 @@ dnl		)
 AC_DEFUN([SMB_BINARY_ENABLE],
 [
 	[SMB_BINARY_ENABLE_][$1]="$2";
+
+SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
+\$INPUT{$1}{ENABLE} = \"$2\";"
 ])
 
 dnl SMB_BINARY(
