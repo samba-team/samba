@@ -1,3 +1,12 @@
+2000-08-18  Assar Westerlund  <assar@sics.se>
+
+	* server.c (handle_v5): accept any kadmin/admin@* principal as the
+	server
+	* kadmind.c: remove extra prototype of kadmind_loop
+	* kadmin_locl.h (kadmind_loop): add prototype
+	
+	* init.c (usage): print init-usage and not add-dito
+	
 2000-08-07  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kadmind.c: use roken_getsockname
