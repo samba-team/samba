@@ -1323,8 +1323,9 @@ char *strdup(char *s);
 #define CAP_LOCK_AND_READ    0x0100
 #define CAP_NT_FIND          0x0200
 #define CAP_DFS              0x1000
+#define CAP_W2K_SMBS         0x2000
 #define CAP_LARGE_READX      0x4000
-#define CAP_LARGE_WRITEX	 0x8000
+#define CAP_LARGE_WRITEX     0x8000
 #define CAP_EXTENDED_SECURITY 0x80000000
 
 /* protocol types. It assumes that higher protocols include lower protocols
