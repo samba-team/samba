@@ -222,7 +222,7 @@ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char
 	WERROR error;
 
 	if(!parent) {
-		DEBUG(0, ("Invalid parent key specified"));
+		DEBUG(0, ("Invalid parent key specified for open of '%s'\n", name));
 		return WERR_INVALID_PARAM;
 	}
 
