@@ -1,6 +1,16 @@
+Changes in release 0.7
+
+ * SPENGO support
+
+ * AES (and the gssapi conterpart, CFX) support
+
+ * Bug fixes
+
 Changes in release 0.6.1
 
  * Fixed ARCFOUR suppport
+
+ * Cross realm vulnerability
 
  * kdc: fix denial of service attack
 
