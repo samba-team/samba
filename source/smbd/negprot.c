@@ -249,6 +249,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
 		negotiate_spnego = True;
 		capabilities |= CAP_EXTENDED_SECURITY;
+		add_to_common_flags2(FLAGS2_EXTENDED_SECURITY);
 	}
 	
 	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS|CAP_UNICODE;
