@@ -30,6 +30,7 @@ kdc_SOURCES = \
 	connect.c	\
 	kdc_locl.h	\
 	kerberos5.c	\
+	pkinit.c	\
 	log.c		\
 	main.c		\
 	misc.c		\
