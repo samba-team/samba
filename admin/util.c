@@ -85,6 +85,14 @@ time2str(time_t t)
     return buf;
 }
 
+char *
+time2rstr(time_t t)
+{
+    static char buf[128];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S UTC", gmtime(&t));
+    return buf;
+}
+
 void
 event2string(Event *ev, char **str)
 {
