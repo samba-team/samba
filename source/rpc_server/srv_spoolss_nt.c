@@ -599,28 +599,58 @@ static void notify_string(struct spoolss_notify_msg *msg,
 			  TALLOC_CTX *mem_ctx)
 {
 	UNISTR2 unistr;
-	pstring temp;
-	uint32 len;
 	
-	len = strlen(msg->notify.data) + 1;
+	/* The length of the message includes the trailing \0 */
 
-	init_unistr2(&unistr, msg->notify.data, len);
+	init_unistr2(&unistr, msg->notify.data, msg->len);
 
-	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len * 2);
+	data->notify_data.data.length = msg->len;
+	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, msg->len * 2);
 
 	if (!data->notify_data.data.string) {
 		data->notify_data.data.length = 0;
 		return;
 	}
 	
-	memcpy(data->notify_data.data.string, temp, len * 2);
+	memcpy(data->notify_data.data.string, unistr.buffer, msg->len * 2);
 }
 
 static void notify_system_time(struct spoolss_notify_msg *msg,
 			       SPOOL_NOTIFY_INFO_DATA *data,
 			       TALLOC_CTX *mem_ctx)
 {
+	SYSTEMTIME systime;
+	prs_struct ps;
+
+	if (msg->len != sizeof(time_t)) {
+		DEBUG(5, ("notify_system_time: received wrong sized message (%d)\n",
+			  msg->len));
+		return;
+	}
+
+	if (!prs_init(&ps, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+		DEBUG(5, ("notify_system_time: prs_init() failed\n"));
+		return;
+	}
+
+	if (!make_systemtime(&systime, localtime((time_t *)msg->notify.data))) {
+		DEBUG(5, ("notify_system_time: unable to make systemtime\n"));
+		return;
+	}
+
+	if (!spoolss_io_system_time("", &ps, 0, &systime))
+		return;
+
+	/* Yuck - the smb_io_notify_info_data() function thinks
+	   everything is a string and does x*2 - 1 */
+
+	data->notify_data.data.length = (prs_offset(&ps) - 1) / 2;
+	data->notify_data.data.string =
+		talloc(mem_ctx, prs_offset(&ps));
+
+	memcpy(data->notify_data.data.string, prs_data_p(&ps), prs_offset(&ps));
+
+	prs_mem_free(&ps);
 }
 
 struct notify2_message_table {
@@ -807,7 +837,7 @@ static void receive_notify2_message(int msg_type, pid_t src, void *buf,
 		DEBUG(3, ("value1 = %d, value2 = %d\n", msg.notify.value[0],
 			  msg.notify.value[1]));
 	else
-		DEBUG(3, ("got %d bytes of data\n", msg.len));
+		dump_data(3, msg.notify.data, msg.len);
 
 	/* Process message */
 
@@ -8170,4 +8200,3 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	return result;
 }
-
