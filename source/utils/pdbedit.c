@@ -66,6 +66,7 @@ static void usage(void)
 	printf("     -m                it is a machine trust\n");
 	printf("  -x                   delete this user\n");
 	printf("  -i file              import account from file (smbpasswd style)\n");
+	printf("  -b                   read password from STDIN\n");
 	exit(1);
 }
 
@@ -295,7 +296,7 @@ static char *prompt_for_new_password(BOOL stdin_get)
 /*********************************************************
  Add New User
 **********************************************************/
-static int new_user (char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
+static int new_user (char *username, char *fullname, char *homedir, char *drive, char *script, char *profile, BOOL stdin_get)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	struct passwd  *pwd = NULL;
@@ -311,7 +312,7 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 		return -1;
 	}
 
-	password = prompt_for_new_password(0);
+	password = prompt_for_new_password(stdin_get);
 	if (!password) {
 		 fprintf (stderr, "Passwords do not match!\n");
 		 pdb_free_sam (sam_pwent);
@@ -416,7 +417,7 @@ static int new_machine (char *machinename)
 
 static int delete_user_entry (char *username)
 {
-	return pdb_delete_sam_account (username);
+	return (! pdb_delete_sam_account (username));
 }
 
 /*********************************************************
@@ -430,7 +431,7 @@ static int delete_machine_entry (char *machinename)
 	safe_strcpy (name, machinename, 16);
 	if (name[strlen(name)] != '$')
 		safe_strcat (name, "$", 16);
-	return pdb_delete_sam_account (name);
+	return (! pdb_delete_sam_account (name));
 }
 
 /*********************************************************
@@ -662,6 +663,7 @@ int main (int argc, char **argv)
 	BOOL add_user = False;
 	BOOL delete_user = False;
 	BOOL import = False;
+	BOOL pw_from_stdin = False;
 	char *user_name = NULL;
 	char *full_name = NULL;
 	char *home_dir = NULL;
@@ -700,10 +702,13 @@ int main (int argc, char **argv)
 	
 	codepage_initialise(lp_client_code_page());
 
-	while ((ch = getopt(argc, argv, "ad:f:h:i:lmp:s:u:vwxD:")) != EOF) {
+	while ((ch = getopt(argc, argv, "abd:f:h:i:lmp:s:u:vwxD:")) != EOF) {
 		switch(ch) {
 		case 'a':
 			add_user = True;
+			break;
+		case 'b':
+			pw_from_stdin = True;
 			break;
 		case 'm':
 			machine = True;
@@ -767,8 +772,8 @@ int main (int argc, char **argv)
 		}
 		if (machine)
 			return new_machine (user_name);
-		else
-			return new_user (user_name, full_name, home_dir, home_drive, logon_script, profile_path);
+		else 
+			return new_user (user_name, full_name, home_dir, home_drive, logon_script, profile_path, pw_from_stdin);
 	}
 
 	if (delete_user) {
