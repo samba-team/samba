@@ -92,6 +92,7 @@ krb5_get_kdc_cred(krb5_context context,
     krb5_kdc_rep rep;
     KRB_ERROR error;
     krb5_error_code ret;
+    krb5_creds *krbtgt;
 
     unsigned char buf[1024];
     size_t len;
@@ -140,14 +141,14 @@ krb5_get_kdc_cred(krb5_context context,
 				   0, /* CACHE_ONLY */
 				   id,
 				   &tmp_cred,
-				   out_creds);
+				   &krbtgt);
 	krb5_free_principal(context, tmp_cred.server);
 	if(ret)
 	    return ret;
     }
 
     ret = make_pa_tgs_req(context, id, &req.req_body, 
-			  req.padata->val, *out_creds);
+			  req.padata->val, krbtgt);
     if(ret)
 	goto out;
     
@@ -165,10 +166,13 @@ krb5_get_kdc_cred(krb5_context context,
     memset(&rep, 0, sizeof(rep));
     if(decode_TGS_REP(resp.data, resp.length, &rep.part1, &len) == 0){
 	ret = extract_ticket(context, &rep, *out_creds,
-			     &(*out_creds)->session,
+			     &krbtgt->session,
 			     NULL,
+			     &krbtgt->addresses,
 			     NULL,
 			     NULL);
+	krb5_free_creds(context, krbtgt);
+	free(krbtgt);
 	if(ret == 0 && rep.part2.nonce != req.req_body.nonce)
 	    ret = KRB5KRB_AP_ERR_MODIFIED;
 	krb5_free_kdc_rep(context, &rep);
