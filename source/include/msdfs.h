@@ -53,10 +53,9 @@ struct junction_map
 
 struct dfs_path
 {
-  pstring hostname;
-  pstring servicename;
-  pstring volumename;
-  pstring restofthepath;
+	pstring hostname;
+	pstring servicename;
+	pstring reqpath;
 };
 
 #ifdef WITH_MSDFS

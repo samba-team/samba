@@ -33,13 +33,11 @@ extern uint32 global_client_caps;
 
 static void create_nondfs_path(char* pathname, struct dfs_path* pdp)
 {
-	pstrcpy(pathname,pdp->volumename); 
-	pstrcat(pathname,"\\"); 
-	pstrcat(pathname,pdp->restofthepath); 
+	pstrcpy(pathname,pdp->reqpath); 
 }
 
 /**********************************************************************
-  Parse the pathname  of the form \hostname\service\volume\restofthepath
+  Parse the pathname  of the form \hostname\service\reqpath
   into the dfs_path structure 
  **********************************************************************/
 
@@ -76,20 +74,15 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 	pstrcpy(pdp->servicename,temp);
 	DEBUG(10,("servicename: %s\n",pdp->servicename));
 
-	/* parse out volumename */
-	temp = p+1;
-	p = strchr(temp,'\\');
-	if(p == NULL) {
-		pstrcpy(pdp->volumename,temp);
-		return True;
+	/* rest is reqpath */
+	pstrcpy(pdp->reqpath, p+1);
+	p = pdp->reqpath;
+	while (*p) {
+		if (*p == '\\') *p = '/';
+		p++;
 	}
-	*p = '\0';
-	pstrcpy(pdp->volumename,temp);
-	DEBUG(10,("volumename: %s\n",pdp->volumename));
 
-	/* remaining path .. */
-	pstrcpy(pdp->restofthepath,p+1);
-	DEBUG(10,("rest of the path: %s\n",pdp->restofthepath));
+	DEBUG(10,("rest of the path: %s\n",pdp->reqpath));
 	return True;
 }
 
@@ -160,7 +153,7 @@ BOOL create_junction(char* pathname, struct junction_map* jn)
 	}
 
 	pstrcpy(jn->service_name,dp.servicename);
-	pstrcpy(jn->volume_name,dp.volumename);
+	pstrcpy(jn->volume_name,dp.reqpath);
 	return True;
 }
 
@@ -312,7 +305,7 @@ BOOL dfs_redirect(char* pathname, connection_struct* conn)
 	/* check if need to redirect */
 	fstrcpy(path, conn->connectpath);
 	fstrcat(path, "/");
-	fstrcat(path, dp.volumename);
+	fstrcat(path, dp.reqpath);
 	if(is_msdfs_link(conn, path)) {
 		DEBUG(4,("dfs_redirect: Redirecting %s\n",temp));
 		return True;
@@ -346,8 +339,8 @@ BOOL dfs_findfirst_redirect(char* pathname, connection_struct* conn)
 
 	parse_dfs_path(pathname,&dp);
 	DEBUG(8,("dfs_findfirst_redirect: path %s is in Dfs. dp.restofthepath=.%s.\n",
-				pathname,dp.restofthepath));
-	if(!(*(dp.restofthepath))) {
+				pathname,dp.reqpath));
+	if(!(*(dp.reqpath))) {
 		create_nondfs_path(pathname,&dp);
 		return False;
 	}
