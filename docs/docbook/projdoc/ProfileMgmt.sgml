@@ -151,16 +151,16 @@ and deny them write access to this file.
 </para>
 
 <orderedlist>
-<listitem>
+	<listitem>
         <para>
         On the Windows 9x / Me machine, go to Control Panel -> Passwords and
         select the User Profiles tab.  Select the required level of
         roaming preferences.  Press OK, but do _not_ allow the computer
         to reboot.
         </para>
-</listitem>
+	</listitem>
 
-<listitem>
+	<listitem>
         <para>
         On the Windows 9x / Me machine, go to Control Panel -> Network ->
         Client for Microsoft Networks -> Preferences.  Select 'Log on to
@@ -168,8 +168,7 @@ and deny them write access to this file.
         Microsoft Networks'.  Press OK, and this time allow the computer
         to reboot.
         </para>
-</listitem>
-
+	</listitem>
 </orderedlist>
 
 <para>
@@ -228,13 +227,14 @@ they will be told that they are logging in "for the first time".
 </para>
 
 <orderedlist>
-<listitem>
+	<listitem>
         <para>
         instead of logging in under the [user, password, domain] dialog,
         press escape.
         </para>
-</listitem>
-<listitem>
+	</listitem>
+
+	<listitem>
         <para>
         run the regedit.exe program, and look in:
         </para>
@@ -251,7 +251,7 @@ they will be told that they are logging in "for the first time".
         [Exit the registry editor].
 
         </para>
-</listitem>
+	</listitem>
 
 	<listitem>
         <para>
@@ -362,52 +362,52 @@ profile on the MS Windows workstation as follows:
 </para>
 
 <itemizedlist>
-<listitem><para>
-Log on as the LOCAL workstation administrator.
-</para></listitem>
+	<listitem><para>
+	Log on as the LOCAL workstation administrator.
+	</para></listitem>
 
-<listitem><para>
-Right click on the 'My Computer' Icon, select 'Properties'
-</para></listitem>
+	<listitem><para>
+	Right click on the 'My Computer' Icon, select 'Properties'
+	</para></listitem>
 
-<listitem><para>
-Click on the 'User Profiles' tab
-</para></listitem>
+	<listitem><para>
+	Click on the 'User Profiles' tab
+	</para></listitem>
 
-<listitem><para>
-Select the profile you wish to convert (click on it once)
-</para></listitem>
+	<listitem><para>
+	Select the profile you wish to convert (click on it once)
+	</para></listitem>
 
-<listitem><para>
-Click on the button 'Copy To'
-</para></listitem>
+	<listitem><para>
+	Click on the button 'Copy To'
+	</para></listitem>
 
-<listitem><para>
-In the "Permitted to use" box, click on the 'Change' button.
-</para></listitem>
+	<listitem><para>
+	In the "Permitted to use" box, click on the 'Change' button.
+	</para></listitem>
 
-<listitem><para>
-Click on the 'Look in" area that lists the machine name, when you click
-here it will open up a selection box. Click on the domain to which the
-profile must be accessible.
-</para>
+	<listitem><para>
+	Click on the 'Look in" area that lists the machine name, when you click
+	here it will open up a selection box. Click on the domain to which the
+	profile must be accessible.
+	</para>
 
-<note><para>You will need to log on if a logon box opens up. Eg: In the connect
-as: MIDEARTH\root, password: mypassword.</para></note>
-</listitem>
+	<note><para>You will need to log on if a logon box opens up. Eg: In the connect
+	as: MIDEARTH\root, password: mypassword.</para></note>
+	</listitem>
 
-<listitem><para>
-To make the profile capable of being used by anyone select 'Everyone'
-</para></listitem>
+	<listitem><para>
+	To make the profile capable of being used by anyone select 'Everyone'
+	</para></listitem>
 
-<listitem><para>
-Click OK. The Selection box will close.
-</para></listitem>
+	<listitem><para>
+	Click OK. The Selection box will close.
+	</para></listitem>
 
-<listitem><para>
-Now click on the 'Ok' button to create the profile in the path you
-nominated.
-</para></listitem>
+	<listitem><para>
+	Now click on the 'Ok' button to create the profile in the path you
+	nominated.
+	</para></listitem>
 </itemizedlist>
 
 <para>
@@ -450,29 +450,29 @@ same way as a domain group policy):
 On the XP workstation log in with an Administrator account.
 </para></listitem>
 
-<listitem><para>Click: "Start", "Run"</para></listitem>
-<listitem><para>Type: "mmc"</para></listitem>
-<listitem><para>Click: "OK"</para></listitem>
+	<listitem><para>Click: "Start", "Run"</para></listitem>
+	<listitem><para>Type: "mmc"</para></listitem>
+	<listitem><para>Click: "OK"</para></listitem>
 
-<listitem><para>A Microsoft Management Console should appear.</para></listitem>
-<listitem><para>Click: File, "Add/Remove Snap-in...", "Add"</para></listitem>
-<listitem><para>Double-Click: "Group Policy"</para></listitem>
-<listitem><para>Click: "Finish", "Close"</para></listitem>
-<listitem><para>Click: "OK"</para></listitem>
+	<listitem><para>A Microsoft Management Console should appear.</para></listitem>
+	<listitem><para>Click: File, "Add/Remove Snap-in...", "Add"</para></listitem>
+	<listitem><para>Double-Click: "Group Policy"</para></listitem>
+	<listitem><para>Click: "Finish", "Close"</para></listitem>
+	<listitem><para>Click: "OK"</para></listitem>
 
-<listitem><para>In the "Console Root" window:</para></listitem>
-<listitem><para>Expand: "Local Computer Policy", "Computer Configuration",</para></listitem>
-<listitem><para>"Administrative Templates", "System", "User Profiles"</para></listitem>
-<listitem><para>Double-Click: "Do not check for user ownership of Roaming Profile</para></listitem>
-<listitem><para>Folders"</para></listitem>
-<listitem><para>Select: "Enabled"</para></listitem>
-<listitem><para>Click: OK"</para></listitem>
+	<listitem><para>In the "Console Root" window:</para></listitem>
+	<listitem><para>Expand: "Local Computer Policy", "Computer Configuration",</para></listitem>
+	<listitem><para>"Administrative Templates", "System", "User Profiles"</para></listitem>
+	<listitem><para>Double-Click: "Do not check for user ownership of Roaming Profile</para></listitem>
+	<listitem><para>Folders"</para></listitem>
+	<listitem><para>Select: "Enabled"</para></listitem>
+	<listitem><para>Click: OK"</para></listitem>
 
-<listitem><para>Close the whole console.  You do not need to save the settings (this
-refers to the console settings rather than the policies you have
-changed).</para></listitem>
+	<listitem><para>Close the whole console.  You do not need to save the settings (this
+	refers to the console settings rather than the policies you have
+	changed).</para></listitem>
 
-<listitem><para>Reboot</para></listitem>
+	<listitem><para>Reboot</para></listitem>
 </itemizedlist>
 </note>
 </sect3>
@@ -706,14 +706,186 @@ To modify the registry directly, launch the Registry Editor (regedit.exe), selec
 "User Profiles", to enable user profiles set the value to 1, to disable user profiles set it to 0.
 </para>
 
+<para>
+<title>How User Profiles Are Handled in Windows 9x / Me?</title>
+
+When a user logs on to a Windows 9x / Me machine, the local profile path, 
+<filename>HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\ProfileList</filename>, is checked
+for an existing entry for that user:
+</para>
+
+<para>
+If the user has an entry in this registry location, Windows 9x / Me checks for a locally cached
+version of the user profile. Windows 9x / Me also checks the user's home directory (or other
+specified directory if the location has been modified) on the server for the User Profile.
+If a profile exists in both locations, the newer of the two is used. If the User Profile exists
+on the server, but does not exist on the local machine, the profile on the server is downloaded
+and used. If the User Profile only exists on the local machine, that copy is used.
+</para>
+
+<para>
+If a User Profile is not found in either location, the Default User Profile from the Windows 9x / Me
+machine is used and is copied to a newly created folder for the logged on user. At log off, any
+changes that the user made are written to the user's local profile. If the user has a roaming
+profile, the changes are written to the user's profile on the server.
+</para>
+
 </sect2>
 
 <sect2>
 <title>MS Windows NT4 Workstation</title>
 
 <para>
-Document NT4 default profile handling stuff here! Someone - please contribute appropriate
-material here. Email your contribution to jht@samba.org.
+On MS Windows NT4 the default user profile is obtained from the location
+<filename>%SystemRoot%\Profiles</filename> which in a default installation will translate to
+<filename>C:\WinNT\Profiles</filename>. Under this directory on a clean install there will be
+three (3) directories: <filename>Administrator, All Users, Default User</filename>.
+</para>
+
+<para>
+The <filename>All Users</filename> directory contains menu settings that are common across all 
+system users. The <filename>Default User</filename> directory contains menu entries that are
+customisable per user depending on the profile settings chosen/created.
+</para>
+
+<para>
+When a new user first logs onto an MS Windows NT4 machine a new profile is created from:
+</para>
+
+<simplelist>
+	<member>All Users settings</member>
+	<member>Default User settings (contains the default NTUser.DAT file)</member>
+</simplelist>
+
+<para>
+When a user logs onto an MS Windows NT4 machine that is a member of a Microsoft security domain
+the following steps are followed in respect of profile handling:
+</para>
+
+<orderedlist>
+	<listitem>
+	<para>
+	The users' account information which is obtained during the logon process contains
+	the location of the users' desktop profile. The profile path may be local to the
+	machine or it may be located on a network share. If there exists a profile at the location
+	of the path from the user account, then this profile is copied to the location
+	<filename>%SystemRoot%\Profiles\%USERNAME%</filename>. This profile then inherits the
+	settings in the <filename>All Users</filename> profile in the <filename>%SystemRoot%\Profiles</filename>
+	location.
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
+	If the user account has a profile path, but at it's location a profile does not exist,
+	then a new profile is created in the <filename>%SystemRoot%\Profiles\%USERNAME%</filename>
+	directory from reading the <filename>Default User</filename> profile.
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
+	If the NETLOGON share on the authenticating server (logon server) contains a policy file
+	(<filename>NTConfig.POL</filename>) then it's contents are applied to the <filename>NTUser.DAT</filename>
+	which is applied to the <filename>HKEY_CURRENT_USER</filename> part of the registry. 
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
+	When the user logs out, if the profile is set to be a roaming profile it will be written
+	out to the location of the profile. The <filename>NTuser.DAT</filename> file is then
+	re-created from the contents of the <filename>HKEY_CURRENT_USER</filename> contents.
+	Thus, should there not exist in the NETLOGON share an <filename>NTConfig.POL</filename> at the
+	next logon, the effect of the provious <filename>NTConfig.POL</filename> will still be held
+	in the profile. The effect of this is known as <emphasis>tatooing</emphasis>.
+	</para>
+	</listitem>
+</orderedlist>
+
+<para>
+MS Windows NT4 profiles may be <emphasis>Local</emphasis> or <emphasis>Roaming</emphasis>. A Local profile
+will stored in the <filename>%SystemRoot%\Profiles\%USERNAME%</filename> location. A roaming profile will
+also remain stored in the same way, unless the following registry key is created:
+</para>
+
+<para>
+<programlisting>
+	HKEY_LOCAL_MACHINE\SYSTEM\Software\Microsoft\Windows NT\CurrentVersion\winlogon\
+	"DeleteRoamingCache"=dword:00000001
+</programlisting>
+
+In which case, the local copy (in <filename>%SystemRoot%\Profiles\%USERNAME%</filename>) will be
+deleted on logout.
+</para>
+
+<para>
+Under MS Windows NT4 default locations for common resources (like <filename>My Documents</filename>
+may be redirected to a network share by modifying the following registry keys. These changes may be affected
+via use of the System Policy Editor (to do so may require that you create your owns template extension
+for the policy editor to allow this to be done through the GUI. Another way to do this is by way of first
+creating a default user profile, then while logged in as that user, run regedt32 to edit the key settings.
+</para>
+
+<para>
+The Registry Hive key that affects the behaviour of folders that are part of the default user profile
+are controlled by entries on Windows NT4 is:
+</para>
+
+<para>
+<programlisting>
+        HKEY_CURRENT_USER
+                \Software
+                        \Microsoft
+                                \Windows
+                                        \CurrentVersion
+                                                \Explorer
+                                                        \User Shell Folders\
+</programlisting>
+</para>
+
+<para>
+The above hive key contains a list of automatically managed folders. The default entries are:
+</para>
+
+        <para>
+        <programlisting>
+        Name            Default Value
+        --------------  -----------------------------------------
+        AppData         %USERPROFILE%\Application Data
+        Desktop         %USERPROFILE%\Desktop
+        Favorites       %USERPROFILE%\Favorites
+        NetHood         %USERPROFILE%\NetHood
+        PrintHood       %USERPROFILE%\PrintHood
+        Programs        %USERPROFILE%\Start Menu\Programs
+        Recent          %USERPROFILE%\Recent
+        SendTo          %USERPROFILE%\SendTo
+        Start Menu      %USERPROFILE%\Start Menu
+        Startup         %USERPROFILE%\Start Menu\Programs\Startup
+        </programlisting>
+        </para>
+
+<para>
+The registry key that contains the location of the default profile settings is:
+
+<programlisting>
+	HKEY_LOCAL_MACHINE
+		\SOFTWARE
+			\Microsoft
+				\Windows
+					\CurrentVersion
+						\Explorer
+							\User Shell Folders
+</programlisting>
+
+The default entries are:
+
+<programlisting>
+	Common Desktop		%SystemRoot%\Profiles\All Users\Desktop
+	Common Programs		%SystemRoot%\Profiles\All Users\Programs
+	Common Start Menu	%SystemRoot%\Profiles\All Users\Start Menu
+	Common Startu	p	%SystemRoot%\Profiles\All Users\Start Menu\Progams\Startup
+</programlisting>
 </para>
 
 </sect2>
@@ -804,7 +976,7 @@ are controlled by entries on Windows 200x/XP is:
 	HKEY_CURRENT_USER
 		\Software
 			\Microsoft
-				\Windows NT
+				\Windows
 					\CurrentVersion
 						\Explorer
 							\User Shell Folders\
@@ -852,15 +1024,19 @@ write Outlook PST file over the network for every login and logout.
 </para>
 
 <para>
-To set this to a network location you could use the followin examples:
+To set this to a network location you could use the following examples:
 
+<programlisting>
 	%LOGONSERVER%\%USERNAME%\Default Folders
+</programlisting>
 
 This would store the folders in the user's home directory under a directory called "Default Folders"
 
 You could also use:
 
+<programlisting>
 	\\SambaServer\FolderShare\%USERNAME%
+</programlisting>
 
 in which case the default folders will be stored in the server named <emphasis>SambaServer</emphasis>
 in the share called <emphasis>FolderShare</emphasis> under a directory that has the name of the MS Windows
@@ -872,6 +1048,19 @@ Please note that once you have created a default profile share, you MUST migrate
 (default or custom) to it.
 </para>
 
+<para>
+MS Windows 200x/XP profiles may be <emphasis>Local</emphasis> or <emphasis>Roaming</emphasis>.
+A roaming profile will be cached locally unless the following registry key is created:
+</para>
+
+<para>
+<programlisting>
+	HKEY_LOCAL_MACHINE\SYSTEM\Software\Microsoft\Windows NT\CurrentVersion\winlogon\
+	"DeleteRoamingCache"=dword:00000001
+</programlisting>
+
+In which case, the local cache copy will be deleted on logout.
+</para>
 </sect2
 </sect1>
 
