@@ -423,7 +423,7 @@ typedef Authenticator krb5_donot_reply;
 typedef struct krb5_storage {
     void *data;
     ssize_t (*fetch)(struct krb5_storage*, void*, size_t);
-    ssize_t (*store)(struct krb5_storage*, void*, size_t);
+    ssize_t (*store)(struct krb5_storage*, const void*, size_t);
     off_t (*seek)(struct krb5_storage*, off_t, int);
     void (*free)(struct krb5_storage*);
     krb5_flags flags;
