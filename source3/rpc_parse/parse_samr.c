@@ -5214,6 +5214,10 @@ static BOOL sam_io_user_info24(char *desc, SAM_USER_INFO_24 * usr,
 		       sizeof(usr->pass)))
 		return False;
 	
+	if (MARSHALLING(ps) && (usr->pw_len != 0)) {
+		if (!prs_uint16("pw_len", ps, depth, &usr->pw_len))
+			return False;
+	}
 	if(!prs_align(ps))
 		return False;
 
@@ -6475,10 +6479,6 @@ BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u,
 	if(!smb_io_unistr2("", &q_u->uni_srv_name, q_u->ptr_srv_name, ps, depth))
 		return False;
 
-	if (MARSHALLING(ps) && (usr->pw_len != 0)) {
-		if (!prs_uint16("pw_len", ps, depth, &usr->pw_len))
-			return False;
-	}
 	if(!prs_align(ps))
 		return False;
 	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
