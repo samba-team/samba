@@ -17,6 +17,8 @@
 		<command>wbinfo</command>
 		<arg choice="opt">-u</arg>
 		<arg choice="opt">-g</arg>
+		<arg choice="opt">-h name</arg>
+		<arg choice="opt">-i ip</arg>
 		<arg choice="opt">-n name</arg>
 		<arg choice="opt">-s sid</arg>
 		<arg choice="opt">-U uid</arg>
@@ -71,6 +73,26 @@
 		</varlistentry>
 		
 		
+		<varlistentry>
+		<term>-h name</term>
+		<listitem><para>The <parameter>-h</parameter> option 
+		queries <command>winbindd(8)</command> to query the WINS
+		server for the IP address associated with the NetBIOS name
+		specified by the <parameter>name</parameter> parameter.
+		</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>-i ip</term>
+		<listitem><para>The <parameter>-i</parameter> option 
+		queries <command>winbindd(8)</command> to send a node status
+		request to get the NetBIOS name associated with the IP address
+		specified by the <parameter>ip</parameter> parameter.
+		</para></listitem>
+		</varlistentry>
+
+
 		<varlistentry>
 		<term>-n name</term>
 		<listitem><para>The <parameter>-n</parameter> option 
