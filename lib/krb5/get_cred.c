@@ -99,7 +99,7 @@ krb5_get_credentials (krb5_context context,
     a.req_body.from = NULL;
     a.req_body.till = in_creds->times.endtime;
     a.req_body.rtime = NULL;
-    a.req_body.nonce = getpid();
+    krb5_generate_random_block (&a.req_body.nonce, sizeof(a.req_body.nonce));
     a.req_body.additional_tickets = NULL;
     a.req_body.enc_authorization_data = NULL;
 

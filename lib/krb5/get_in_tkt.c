@@ -189,7 +189,7 @@ krb5_get_in_tkt(krb5_context context,
 #endif
 
     a.req_body.till  = creds->times.endtime;
-    a.req_body.nonce = 17;	/* XXX */
+    krb5_generate_random_block (&a.req_body.nonce, sizeof(a.req_body.nonce));
     if (etypes)
 	abort ();
     else {
