@@ -1,7 +1,9 @@
 Mon Jul  7 02:46:31 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
-	* lib/krb5/decrypt.c: Implement des-cbc-crc, and des-cbc-md5 in
- 	separate function.
+	* lib/krb5/krb5_locl.h: Include <md5.h>
+
+	* lib/krb5/{decrypt,encrypt}.c: Implement des-cbc-crc, and
+ 	des-cbc-md5 in separate functions.
 
 	* lib/krb5/krb5.h: Add more checksum and encryption types.
 
