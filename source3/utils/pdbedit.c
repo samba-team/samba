@@ -227,8 +227,7 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	
 	ZERO_STRUCT(sam_pwent);
 
-	if (pwd = getpwnam_alloc(username)) {
-	
+	if ((pwd = getpwnam_alloc(username))) {
 		pdb_init_sam_pw (&sam_pwent, pwd);
 		passwd_free(&pwd);
 	} else {
