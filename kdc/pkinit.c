@@ -904,6 +904,7 @@ pk_mk_pa_reply(krb5_context context,
     void *buf;
     size_t len, size;
     krb5_enctype enctype;
+    int i;
 
     if (!enable_pkinit) {
 	krb5_clear_error_string(context);
@@ -913,15 +914,19 @@ pk_mk_pa_reply(krb5_context context,
     memset(&rep, 0, sizeof(rep));
 
     if (req->req_body.etype.len < 1) {
+    }
+
+    /* XXX select best/allowed enctype */
+    for (i = 0; i < req->req_body.etype.len; i++)
+	if (krb5_enctype_valid(context, req->req_body.etype.val[i]) == 0)
+	    break;
+    if (req->req_body.etype.len <= i) {
 	ret = KRB5KRB_ERR_GENERIC;
 	krb5_set_error_string(context,
 			      "No valid enctype available from client");
 	goto out;
-    }
-
-    /* XXX select best/allowed enctype */
-    enctype = req->req_body.etype.val[0];
-    enctype = ETYPE_DES3_CBC_SHA1;
+    }	
+    enctype = req->req_body.etype.val[i];
 
     if (client_params->dh == NULL) {
 	rep.element = choice_PA_PK_AS_REP_encKeyPack;
