@@ -3,7 +3,7 @@
 # This perl script generates the samba.spec file based on the version
 # information in the version.h file in the source tree
 
-open (VER,'../../source/version.h');
+open (VER,'../../source/version.h') || die "Unable to open version.h\n";
 ($_ = <VER>) =~ s/"//g;
 close (VER);
 @foo = split(' ');
@@ -25,7 +25,7 @@ elsif (/p/) {
 $vernum = sprintf "        version %02d%02d%02d%02d%02d\n",$v1,$v2,$v3,$v4,$v5;
 
 # generate the samba.spec file
-open(SPEC,">samba.spec");
+open(SPEC,">samba.spec") || die "Unable to open samba.spec for output\n";
 print SPEC "product samba\n";
 print SPEC $vername;
 print SPEC "    image sw\n";
@@ -71,6 +71,6 @@ print SPEC "            exp samba.src.samba\n";
 print SPEC "        endsubsys\n";
 print SPEC "    endimage\n";
 print SPEC "endproduct\n";
-close SPEC;
+close SPEC || die "Error on close of samba.spec\n";
 
 print "\nsamba.spec file has been created\n\n";

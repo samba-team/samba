@@ -10,7 +10,7 @@ chdir '../../';
 chdir $curdir;
 
 # We don't want the files listed in .cvsignore in the source tree
-open(IGNORES,"../../source/.cvsignore");
+open(IGNORES,"../../source/.cvsignore") || die "Unable to open .cvsignore file\n";
 while (<IGNORES>) {
   chop;
   $ignores{$_}++;
@@ -18,7 +18,7 @@ while (<IGNORES>) {
 close IGNORES;
 
 # get the names of all the binary files to be installed
-open(MAKEFILE,"Makefile");
+open(MAKEFILE,"Makefile") || die "Unable to open Makefile\n";
 @makefile = <MAKEFILE>;
 @sprogs = grep(/^SPROGS /,@makefile);
 @progs1 = grep(/^PROGS1 /,@makefile);
@@ -71,7 +71,7 @@ if (@codepage) {
 # release
 @allfiles = grep(!/^.*\.o$/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepage/, @allfiles);
 
-open(IDB,">samba.idb");
+open(IDB,">samba.idb") || die "Unable to open samba.idb for output\n";
 
 print IDB "f 0644 root sys etc/config/samba packaging/SGI/samba.config samba.sw.base config(update)\n";
 print IDB "f 0755 root sys etc/init.d/samba packaging/SGI/samba.rc samba.sw.base\n";
