@@ -62,6 +62,15 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
+		/* we use a mutex to prevent two connections at once - when a 
+		   Win2k PDC get two connections where one hasn't completed a 
+		   session setup yet it will send a TCP reset to the first 
+		   connection (tridge) */
+
+		if (!grab_server_mutex(desthost)) {
+			return NULL;
+		}
+
 		if (cli_connect(cli, desthost, &dest_ip)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
 			connected_ok = True;
@@ -70,13 +79,19 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	}
 
 	if (!connected_ok) {
+		release_server_mutex();
 		DEBUG(0,("password server not available\n"));
 		cli_shutdown(cli);
 		return NULL;
 	}
-
-	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip))
+	
+	if (!attempt_netbios_session_request(cli, global_myname, 
+					     desthost, &dest_ip)) {
+		release_server_mutex();
+		DEBUG(1,("password server fails session request\n"));
+		cli_shutdown(cli);
 		return NULL;
+	}
 	
 	if (strequal(desthost,myhostname())) {
 		exit_server("Password server loop!");
@@ -86,6 +101,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 	if (!cli_negprot(cli)) {
 		DEBUG(1,("%s rejected the negprot\n",desthost));
+		release_server_mutex();
 		cli_shutdown(cli);
 		return NULL;
 	}
@@ -93,12 +109,29 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	if (cli->protocol < PROTOCOL_LANMAN2 ||
 	    !(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		DEBUG(1,("%s isn't in user level security mode\n",desthost));
+		release_server_mutex();
 		cli_shutdown(cli);
 		return NULL;
 	}
 
-	DEBUG(3,("password server OK\n"));
+	/* Get the first session setup done quickly, to avoid silly 
+	   Win2k bugs.  (The next connection to the server will kill
+	   this one... 
+	*/
 
+	if (!cli_session_setup(cli, "", "", 0, "", 0,
+			       "")) {
+		DEBUG(0,("%s rejected the initial session setup (%s)\n",
+			 desthost, cli_errstr(cli)));
+		release_server_mutex();
+		cli_shutdown(cli);
+		return NULL;
+	}
+	
+	release_server_mutex();
+	
+	DEBUG(3,("password server OK\n"));
+	
 	return cli;
 }
 
