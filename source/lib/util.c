@@ -1013,7 +1013,7 @@ BOOL get_myfullname(char *my_name)
  Get my own domain name.
 ****************************************************************************/
 
-BOOL get_mydomname(char *my_domname)
+BOOL get_mydomname(fstring my_domname)
 {
 	pstring hostname;
 	char *p;
