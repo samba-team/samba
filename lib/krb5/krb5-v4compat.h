@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -60,7 +60,7 @@ struct credentials {
     char    service[ANAME_SZ];	/* Service name */
     char    instance[INST_SZ];	/* Instance */
     char    realm[REALM_SZ];	/* Auth domain */
-    des_cblock session;		/* Session key */
+    char    session[8];		/* Session key */
     int     lifetime;		/* Lifetime */
     int     kvno;		/* Key version number */
     struct ktext ticket_st;	/* The ticket itself */
