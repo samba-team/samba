@@ -1023,7 +1023,6 @@ static BOOL test_GetMembersInAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_AddMemberToAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				  struct policy_handle *alias_handle,
-				  struct policy_handle *domain_handle,
 				  const struct dom_sid *domain_sid)
 {
 	struct samr_AddAliasMember r;
@@ -1167,7 +1166,6 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *alias_handle,
-			   struct policy_handle *domain_handle,
 			   const struct dom_sid *domain_sid)
 {
 	BOOL ret = True;
@@ -1184,8 +1182,7 @@ static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_AddMemberToAlias(p, mem_ctx, alias_handle, 
-				   domain_handle, domain_sid)) {
+	if (!test_AddMemberToAlias(p, mem_ctx, alias_handle, domain_sid)) {
 		ret = False;
 	}
 
@@ -1366,7 +1363,7 @@ static BOOL test_CreateAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (!test_alias_ops(p, mem_ctx, alias_handle, domain_handle, domain_sid)) {
+	if (!test_alias_ops(p, mem_ctx, alias_handle, domain_sid)) {
 		ret = False;
 	}
 
