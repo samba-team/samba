@@ -46,7 +46,8 @@ enum SID_NAME_USE
 #define LSA_LOOKUPSIDS         0x0f
 #define LSA_OPENPOLICY         0x06
 #define LSA_OPENPOLICY2        0x2c
-#define LSA_OPENSECRET         0x1C
+#define LSA_OPENSECRET         0x1c
+#define LSA_QUERYSECRET        0x1e
 
 #define LSA_MAX_GROUPS 32
 #define LSA_MAX_SIDS 32
@@ -151,6 +152,63 @@ typedef struct lsa_r_query_info
 	uint32 status; /* return code */
 
 } LSA_R_QUERY_INFO;
+
+/* LSA_Q_OPEN_SECRET - LSA Open Secret */
+typedef struct lsa_q_open_secret_info
+{
+	POLICY_HND pol;
+	UNIHDR hdr_secret;
+	UNISTR2 uni_secret;
+
+	uint32 des_access; /* desired access attributes */
+
+} LSA_Q_OPEN_SECRET;
+
+/* LSA_R_OPEN_SECRET - response to LSA Open Secret */
+typedef struct lsa_r_open_secret_info
+{
+	POLICY_HND pol;
+	uint32 status;
+
+} LSA_R_OPEN_SECRET;
+
+typedef struct lsa_secret_value_info
+{
+	uint32 ptr_secret;
+	STRHDR2 hdr_secret;
+	STRING2 secret;
+
+} LSA_SECRET_VALUE;
+
+typedef struct lsa_secret_info_info
+{
+	uint32 ptr_value;
+	LSA_SECRET_VALUE value;
+
+	uint32 ptr_update;
+	NTTIME last_update; /* N.B. 64-bit alignment? */
+
+} LSA_SECRET_INFO;
+
+/* LSA_Q_QUERY_SECRET - LSA Query Secret */
+typedef struct lsa_q_query_secret_info
+{
+	POLICY_HND pol;
+
+	LSA_SECRET_INFO info;    /* [in, out] */
+	LSA_SECRET_INFO oldinfo;
+
+} LSA_Q_QUERY_SECRET;
+
+/* LSA_R_QUERY_SECRET - response to LSA Query Secret */
+typedef struct lsa_r_query_secret_info
+{
+	LSA_SECRET_INFO info;
+	LSA_SECRET_INFO oldinfo;
+
+	uint32 status;
+
+} LSA_R_QUERY_SECRET;
 
 /* LSA_Q_ENUM_TRUST_DOM - LSA enumerate trusted domains */
 typedef struct lsa_enum_trust_dom_info

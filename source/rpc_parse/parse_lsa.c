@@ -381,6 +381,171 @@ void lsa_io_q_query(char *desc,  LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int dept
 }
 
 /*******************************************************************
+makes an LSA_Q_OPEN_SECRET structure.
+********************************************************************/
+void make_q_open_secret(LSA_Q_OPEN_SECRET *q_o, POLICY_HND *pol_hnd,
+			char *secret_name, uint32 desired_access)
+{
+	int len = strlen(secret_name);
+
+	if (q_o == NULL) return;
+
+	DEBUG(5,("make_q_open_secret"));
+
+	memcpy(&(q_o->pol), pol_hnd, sizeof(q_o->pol));
+
+	make_uni_hdr(&(q_o->hdr_secret), len, len, 1);
+	make_unistr2(&(q_o->uni_secret), secret_name, len);
+
+	q_o->des_access = desired_access;
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_OPEN_SECRET structure.
+********************************************************************/
+void lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET *q_o, prs_struct *ps, int depth)
+{
+	if (q_o == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_open_secret");
+	depth++;
+
+	smb_io_pol_hnd("", &(q_o->pol), ps, depth);
+
+	prs_align(ps);
+	smb_io_unihdr ("", &(q_o->hdr_secret), ps, depth);
+	smb_io_unistr2("", &(q_o->uni_secret), 1, ps, depth);
+
+	prs_align(ps);
+	prs_uint32("des_access", ps, depth, &(q_o->des_access));
+}
+
+/*******************************************************************
+reads or writes an LSA_R_OPEN_SECRET structure.
+********************************************************************/
+void lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_o, prs_struct *ps, int depth)
+{
+	if (r_o == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_open_secret");
+	depth++;
+
+	smb_io_pol_hnd("", &(r_o->pol), ps, depth);
+
+	prs_uint32("status", ps, depth, &(r_o->status));
+}
+
+/*******************************************************************
+reads or writes an LSA_SECRET_VALUE structure.
+********************************************************************/
+void lsa_io_secret_value(char *desc, LSA_SECRET_VALUE *value, prs_struct *ps, int depth)
+{
+	if (value == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_secret_value");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("ptr_secret", ps, depth, &(value->ptr_secret));
+
+	if (value->ptr_secret == 0)
+	{
+		return;
+	}
+
+	smb_io_strhdr2("hdr_secret", &(value->hdr_secret), ps, depth);
+	smb_io_string2("secret"    , &(value->secret    ),
+		       value->hdr_secret.buffer, ps, depth);
+}
+
+/*******************************************************************
+reads or writes an LSA_SECRET_INFO structure.
+********************************************************************/
+void lsa_io_secret_info(char *desc, LSA_SECRET_INFO *info, prs_struct *ps, int depth)
+{
+	if (info == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_secret_info");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("ptr_value ", ps, depth, &(info->ptr_value ));
+
+	if (info->ptr_value != 0)
+	{
+		lsa_io_secret_value("", &(info->value), ps, depth);
+	}
+
+	prs_align(ps);
+	prs_uint32("ptr_update", ps, depth, &(info->ptr_update));
+
+	if (info->ptr_update != 0)
+	{
+		ps->align = 8;
+		prs_align(ps);
+		ps->align = 4;
+
+		smb_io_time("last_update", &(info->last_update), ps, depth);
+	}
+}
+
+/*******************************************************************
+makes an LSA_Q_QUERY_SECRET structure.
+********************************************************************/
+void make_q_query_secret(LSA_Q_QUERY_SECRET *q_q, POLICY_HND *pol)
+{
+	if (q_q == NULL) return;
+
+	DEBUG(5,("make_q_query_secret"));
+
+	memcpy(&(q_q->pol), pol, sizeof(q_q->pol));
+
+	/* Want secret */
+	q_q->info.ptr_value = 1;
+	q_q->info.value.ptr_secret = 0;
+
+	/* Want last change time */
+	q_q->info.ptr_update = 1;
+
+	/* Don't care about old info */
+	q_q->oldinfo.ptr_value = 0;
+	q_q->oldinfo.ptr_update = 0;
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_QUERY_SECRET structure.
+********************************************************************/
+void lsa_io_q_query_secret(char *desc, LSA_Q_QUERY_SECRET *q_q, prs_struct *ps, int depth)
+{
+	if (q_q == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_query_secret");
+	depth++;
+
+	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
+
+	lsa_io_secret_info("", &(q_q->info   ), ps, depth);
+	lsa_io_secret_info("", &(q_q->oldinfo), ps, depth);
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_QUERY_SECRET structure.
+********************************************************************/
+void lsa_io_r_query_secret(char *desc, LSA_R_QUERY_SECRET *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_query_secret");
+	depth++;
+
+	lsa_io_secret_info("", &(r_q->info   ), ps, depth);
+	lsa_io_secret_info("", &(r_q->oldinfo), ps, depth);
+
+	prs_align(ps);
+	prs_uint32("status", ps, depth, &(r_q->status));
+}
+
+/*******************************************************************
 reads or writes an LSA_Q_ENUM_TRUST_DOM structure.
 ********************************************************************/
 void lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth)

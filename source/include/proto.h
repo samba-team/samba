@@ -1402,41 +1402,6 @@ struct smb_passwd *ldap_getpw(void);
 BOOL ldap_allocaterid(uint32 *rid);
 struct smb_passdb_ops *ldap_initialise_password_db(void);
 
-/*The following definitions come from  passdb/mysqlpass.c  */
-
-int mysql_db_lock_connect( MYSQL *handle );
-void *mysql_startpwent( BOOL update );
-void mysql_endpwent( void *ptr );
-SMB_BIG_UINT mysql_getpwpos(void *vp);
-BOOL mysql_setpwpos(void *vp, SMB_BIG_UINT pos);
-void *mysql_fill_smb_passwd( MYSQL_ROW *row );
-struct smb_passwd *mysql_getsmbpwent(void *vp);
-void *mysql_fetch_passwd( void *(*filler)(MYSQL_ROW*), char *where );
-void *mysql_getpwuid(void *(*filler)(MYSQL_ROW *), uid_t uid);
-struct smb_passwd *mysql_getsmbpwuid(uid_t uid);
-void *mysql_getpwnam(void *(*filler)(MYSQL_ROW *), char *field, const char *name);
-struct smb_passwd *mysql_getsmbpwnam(const char *unix_name);
-BOOL mysql_del_smb( MYSQL *handle, char *unix_name );
-BOOL mysql_add_smb( MYSQL *handle, struct smb_passwd *smb );
-BOOL mysql_mod_smb( MYSQL *handle, struct smb_passwd *smb, BOOL override );
-BOOL mysql_add_smbpwd_entry(struct smb_passwd *smb);
-BOOL mysql_mod_smbpwd_entry(struct smb_passwd *smb, BOOL override);
-struct smb_passdb_ops *mysql_initialise_password_db(void);
-
-/*The following definitions come from  passdb/mysqlsampass.c  */
-
-void *mysql_fill_sam_passwd( MYSQL_ROW *row );
-struct sam_passwd *mysql_getsampwent(void *vp);
-struct sam_passwd *mysql_getsampwrid(uint32 rid);
-struct sam_passwd *mysql_getsampwuid(uid_t uid);
-struct sam_passwd *mysql_getsampwntnam(const char *nt_name);
-struct sam_disp_info *mysql_getsamdispntnam(const char *nt_name);
-struct sam_disp_info *mysql_getsamdisprid(uint32 rid);
-struct sam_disp_info *mysql_getsamdispent(void *vp);
-BOOL mysql_add_sampwd_entry(struct sam_passwd *sam);
-BOOL mysql_mod_sampwd_entry(struct sam_passwd *sam, BOOL override);
-struct sam_passdb_ops *mysql_initialise_sam_password_db(void);
-
 /*The following definitions come from  passdb/nispass.c  */
 
 struct passdb_ops *nisplus_initialise_password_db(void);
@@ -1599,6 +1564,12 @@ BOOL cli_nt_logoff(struct cli_state *cli, uint16 fnum, NET_ID_INFO_CTR *ctr);
 BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 			char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos);
+BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
+		     POLICY_HND *hnd_pol, char *secret_name, uint32 des_access,
+		     POLICY_HND *hnd_secret);
+BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
+		      POLICY_HND *pol, unsigned char secret[24],
+		      NTTIME *lastupdate);
 BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd,
 			int num_names,
@@ -1885,6 +1856,15 @@ void lsa_io_q_open_pol2(char *desc,  LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int d
 void lsa_io_r_open_pol2(char *desc,  LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int depth);
 void make_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
 void lsa_io_q_query(char *desc,  LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth);
+void make_q_open_secret(LSA_Q_OPEN_SECRET *q_o, POLICY_HND *pol_hnd,
+			char *secret_name, uint32 desired_access);
+void lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET *q_o, prs_struct *ps, int depth);
+void lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_o, prs_struct *ps, int depth);
+void lsa_io_secret_value(char *desc, LSA_SECRET_VALUE *value, prs_struct *ps, int depth);
+void lsa_io_secret_info(char *desc, LSA_SECRET_INFO *info, prs_struct *ps, int depth);
+void make_q_query_secret(LSA_Q_QUERY_SECRET *q_q, POLICY_HND *pol);
+void lsa_io_q_query_secret(char *desc, LSA_Q_QUERY_SECRET *q_q, prs_struct *ps, int depth);
+void lsa_io_r_query_secret(char *desc, LSA_R_QUERY_SECRET *r_q, prs_struct *ps, int depth);
 void lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
 void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
                            uint32 enum_context, char *domain_name, DOM_SID *domain_sid,
@@ -1917,6 +1897,8 @@ void make_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid);
 void smb_io_dom_sid2(char *desc,  DOM_SID2 *sid, prs_struct *ps, int depth);
 void make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
 void smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
+void make_strhdr2(STRHDR2 *hdr, uint32 max_len, uint32 len, uint32 buffer);
+void smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth);
 void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint32 buffer);
 void smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
 void make_buf_hdr(BUFHDR *hdr, int max_len, int len);
@@ -2745,6 +2727,7 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 void cmd_lsa_query_info(struct client_info *info);
 void cmd_lsa_lookup_names(struct client_info *info);
 void cmd_lsa_lookup_sids(struct client_info *info);
+void cmd_lsa_query_secret(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */
 
