@@ -150,6 +150,8 @@ static BOOL ldap_connect_system(LDAP * ldap_struct)
 
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
 	   (OpenLDAP) doesnt' seem to support it */
+	DEBUG(10,("ldap_connect_system: Binding to ldap server as \"%s\"\n",
+		lp_ldap_admin_dn()));
 	if ((rc = ldap_simple_bind_s(ldap_struct, lp_ldap_admin_dn(), 
 		ldap_secret)) != LDAP_SUCCESS)
 	{
@@ -538,9 +540,6 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * 
 
 	make_a_mod(mods, ldap_state, "uid", pdb_get_username(sampass));
 	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
-
-	/* not sure about using this for the nt_username */
-	make_a_mod(mods, ldap_state, "sambaDomain", pdb_get_domain(sampass));
 
 	slprintf(temp, sizeof(temp) - 1, "%i", pdb_get_uid(sampass));
 	make_a_mod(mods, ldap_state, "uidNumber", temp);
@@ -940,13 +939,14 @@ Add SAM_ACCOUNT to LDAP
 *********************************************************************/
 BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 {
-	int rc;
-	pstring filter;
-	LDAP *ldap_struct;
-	LDAPMessage *result;
-	pstring dn;
-	LDAPMod **mods;
-	int ldap_op = LDAP_MOD_ADD;
+	int 		rc;
+	pstring 	filter;
+	LDAP 		*ldap_struct;
+	LDAPMessage 	*result;
+	pstring 	dn;
+	LDAPMod 	**mods;
+	int 		ldap_op;
+	uint32		num_result;
 
 	if (!ldap_open_connection(&ldap_struct))	/* open a connection to the server */
 	{
@@ -958,16 +958,6 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 		ldap_unbind(ldap_struct);
 		return False;
 	}
-
-	if (pdb_get_username(newpwd) != NULL) {
-		slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", 
-			pdb_get_username(newpwd), lp_ldap_suffix ());
-	}
-	else
-	{
-		return False;
-	}
-
 
 	rc = ldap_search_one_user_by_name (ldap_struct, pdb_get_username(newpwd), &result);
 
@@ -982,10 +972,18 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 
 	slprintf (filter, sizeof (filter) - 1, "uid=%s", pdb_get_username(newpwd));
 	rc = ldap_search_one_user(ldap_struct, filter, &result);
-	if (ldap_count_entries(ldap_struct, result) == 1)
-	{
+	num_result = ldap_count_entries(ldap_struct, result);
+	
+	if (num_result > 1) {
+		DEBUG (0, ("More than one user with that uid exists: bailing out!\n"));
+		return False;
+	}
+	
+	/* Check if we need to update an existing entry */
+	if (num_result == 1) {
 		char *tmp;
 		LDAPMessage *entry;
+		
 		DEBUG(3,("User exists without samba properties: adding them\n"));
 		ldap_op = LDAP_MOD_REPLACE;
 		entry = ldap_first_entry (ldap_struct, result);
@@ -993,10 +991,11 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 		slprintf (dn, sizeof (dn) - 1, "%s", tmp);
 		ldap_memfree (tmp);
 	}
-	else
-	{
-		DEBUG (3, ("More than one user with that uid exists: bailing out!\n"));
-		return False;
+	else {
+		/* Check if we need to add an entry */
+		DEBUG(3,("Adding new user\n"));
+		ldap_op = LDAP_MOD_ADD;
+		slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", pdb_get_username(newpwd), lp_ldap_suffix ());
 	}
 
 	ldap_msgfree(result);

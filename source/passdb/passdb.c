@@ -76,6 +76,9 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
 	}
 	
 	ZERO_STRUCTP(user);
+	
+	user->init_flag		        = FLAG_SAM_UNINIT;
+	user->uid = user->gid		= -1;
 	user->logon_time            = (time_t)0;
 	user->pass_last_set_time    = (time_t)0;
 	user->pass_can_change_time  = (time_t)0;
@@ -135,6 +138,7 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
 		new_sam_acct = NULL;
 		return False;
 	}
+
 
 	pdb_set_username(*new_sam_acct, pwd->pw_name);
 	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
@@ -1327,6 +1331,8 @@ BOOL pdb_set_uid (SAM_ACCOUNT *sampass, uid_t uid)
 		return False;
 
 	sampass->uid = uid;
+	sampass->init_flag |= FLAG_SAM_UID; 
+
 	return True;
 }
 
@@ -1335,7 +1341,9 @@ BOOL pdb_set_gid (SAM_ACCOUNT *sampass, gid_t gid)
 	if (!sampass)
 		return False;
 
-	sampass->gid = gid;
+	sampass->gid = gid;	
+	sampass->init_flag |= FLAG_SAM_GID; 
+
 	return True;
 }
 

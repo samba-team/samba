@@ -570,8 +570,27 @@ typedef struct {
 #define SHAREMODE_FN(fn) \
 	void (*fn)(share_mode_entry *, char*)
 
+/*
+ * bit flags representing initialized fields in SAM_ACCOUNT
+ */
+#define FLAG_SAM_UNINIT		0x00000000
+#define FLAG_SAM_UID		0x00000001
+#define FLAG_SAM_GID		0x00000002
+#define FLAG_SAM_SMBHOME	0x00000004
+#define FLAG_SAM_PROFILE	0x00000008
+#define FLAG_SAM_LOGONSCRIPT	0x00000010
+#define FLAG_SAM_DRIVE		0x00000020
+
+#define IS_SAM_ACCT_UNIX_USER(x) \
+	(((x)->init_flag & SAM_ACCT_UNIX_UID) \
+	 && ((x)->init_flag & SAM_ACCT_UNIX_GID))
+
+		
 typedef struct sam_passwd
 {
+	/* initiailization flags */
+	uint32 init_flag;
+
 	time_t logon_time;            /* logon time */
 	time_t logoff_time;           /* logoff time */
 	time_t kickoff_time;          /* kickoff time */
