@@ -19,8 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 static struct {
@@ -32,6 +30,7 @@ static struct {
 	{"ping", MSG_PING},
 	{"profile", MSG_PROFILE},
 	{"debuglevel", MSG_REQ_DEBUGLEVEL},
+	{"printer-notify", MSG_PRINTER_NOTIFY},
 	{NULL, -1}
 };
 
@@ -194,6 +193,19 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 				}
 			}
 		}
+		break;
+
+	case MSG_PRINTER_NOTIFY:
+		if (!strequal(dest, "smbd")) {
+			fprintf(stderr,"printer-notify can only be sent to smbd\n");
+			return(False);
+		}
+		if (!params) {
+			fprintf(stderr, "printer-notify needs a printer name\n");
+			return (False);
+		}
+		retval = send_message(dest, MSG_PRINTER_NOTIFY, params,
+				      strlen(params) + 1);
 		break;
 
 	case MSG_PING:
