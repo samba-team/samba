@@ -1986,7 +1986,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			data_size = 24;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			SIVAL(pdata,16,sbuf.st_nlink);
+			if (delete_pending & sbuf.st_nlink)
+				SIVAL(pdata,16,sbuf.st_nlink - 1);
+			else
+				SIVAL(pdata,16,sbuf.st_nlink);
 			SCVAL(pdata,20,0);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			break;
@@ -2044,7 +2047,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			pdata += 40;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			SIVAL(pdata,16,sbuf.st_nlink);
+			if (delete_pending && sbuf.st_nlink)
+				SIVAL(pdata,16,sbuf.st_nlink - 1);
+			else
+				SIVAL(pdata,16,sbuf.st_nlink);
 			SCVAL(pdata,20,delete_pending);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			pdata += 24;
