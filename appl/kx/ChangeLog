@@ -1,3 +1,7 @@
+2004-02-18  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* krb4.c: remove dup on
+	
 2004-01-08  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* krb5.c: clean up krb5 support, log to syslog instead of stdout
