@@ -9,6 +9,7 @@ bin_PROGRAMS = verify_krb5_conf
 noinst_PROGRAMS = dump_config test_get_addrs krbhst-test
 
 TESTS =						\
+	aes-test				\
 	n-fold-test				\
 	string-to-key-test			\
 	derived-key-test			\
