@@ -228,10 +228,11 @@ krb5_auth_getauthenticator(krb5_context context,
     *authenticator = malloc(sizeof(**authenticator));
     if (*authenticator == NULL)
 	return ENOMEM;
-    (*authenticator)->vno = auth_context->authenticator->vno;
-    krb5_copy_principal (context,
-			 auth_context->authenticator->cname,
-			 &(*authenticator)->cname);
+
+    copy_PrincipalName(&auth_context->authenticator->cname,
+		       &(*authenticator)->cname);
+    copy_Realm(&auth_context->authenticator->crealm,
+	       &(*authenticator)->crealm);
     (*authenticator)->cusec = auth_context->authenticator->cusec;
     (*authenticator)->ctime = auth_context->authenticator->ctime;
     (*authenticator)->seq_number = auth_context->authenticator->seq_number; /* XXX */
@@ -243,7 +244,8 @@ void
 krb5_free_authenticator(krb5_context context,
 			krb5_authenticator *authenticator)
 {
-    krb5_free_principal (context, (*authenticator)->cname);
+    free_PrincipalName (&(*authenticator)->cname);
+    free_Realm (&(*authenticator)->crealm);
     free (*authenticator);
     *authenticator = NULL;
 }
