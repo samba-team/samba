@@ -290,11 +290,25 @@ siad_ses_suauthent(sia_collect_func_t *collect,
       return SIADFAIL;
     if(entity->password == NULL){
 	prompt_t prompt;
+	int ret;
 	if(collect == NULL)
 	    return SIADFAIL;
 	setup_password(entity, &prompt);
-	if((*collect)(0, SIAONELINER, (unsigned char*)"", 1, 
-		      &prompt) != SIACOLSUCCESS)
+	prompt.prompt = malloc(strlen(toname) + strlen(toinst) + 
+			       strlen(realm) + sizeof("'s Password: ") + 2);
+	if(prompt.prompt == NULL)
+	    return SIADFAIL;
+	strcpy(prompt.prompt, toname);
+	if(toinst[0]){
+	    strcat(prompt.prompt, ".");
+	    strcat(prompt.prompt, toinst);
+	}
+	strcat(prompt.prompt, "@");
+	strcat(prompt.prompt, realm);
+	strcat(prompt.prompt, "'s Password: ");
+	ret = (*collect)(0, SIAONELINER, (unsigned char*)"", 1, &prompt);
+	free(prompt.prompt);
+	if(ret != SIACOLSUCCESS)
 	    return SIADFAIL;
     }
     if(entity->password == NULL)
