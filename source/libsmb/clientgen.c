@@ -157,6 +157,10 @@ BOOL cli_send_smb(struct cli_state *cli)
 		}
 		nwritten += ret;
 	}
+	/* Increment the mid so we can tell between responses. */
+	cli->mid++;
+	if (!cli->mid)
+		cli->mid++;
 	return True;
 }
 
