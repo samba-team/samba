@@ -1,5 +1,7 @@
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* telnetd/telnetd.c: use new DES_ api
+	
 	* libtelnet/enc_des.c: use new DES_ api
 	
 2003-04-22  Love Hörnquist Åstrand  <lha@it.su.se>

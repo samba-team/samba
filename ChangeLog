@@ -1,5 +1,10 @@
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* include/make_crypto.c: include <openssl/ui.h> in the openssl
+	case
+
+	* kdc/hprop.h: use new DES_ api
+	
 	* lib/krb5/krb5-v4compat.h: assume session key is a char array of
 	length 8
 

@@ -1,5 +1,7 @@
 2003-09-03  Love Hörquist Åstrand  <lha@it.su.se>
 
+	* ank.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
+	
 	* cpw.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
 	
 2003-08-21  Love Hörquist Åstrand  <lha@it.su.se>

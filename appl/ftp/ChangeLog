@@ -1,3 +1,9 @@
+2003-09-03  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftp/ftp.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
+	
+	* ftp/cmds.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
+	
 2003-07-19  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftp/security.h: add ftp_do_gss_bindings
