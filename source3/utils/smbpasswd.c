@@ -558,6 +558,8 @@ static int process_root(int argc, char *argv[])
         ZERO_STRUCT(user_name);
         ZERO_STRUCT(user_password);
 
+	user_name[0] = '\0';
+
 	while ((ch = getopt(argc, argv, "ax:d:e:hmnj:r:sR:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
@@ -685,6 +687,7 @@ static int process_root(int argc, char *argv[])
 
 	switch(argc) {
 	case 0:
+		fstrcpy(user_name, "");
 		break;
 	case 1:
 		fstrcpy(user_name, argv[0]);
