@@ -741,6 +741,7 @@ static void wb_aix_close(void *token)
 	return;
 }
 
+#ifdef HAVE_STRUCT_SECMETHOD_TABLE_METHOD_ATTRLIST
 /* 
    return a list of additional attributes supported by the backend 
 */
@@ -764,6 +765,7 @@ static attrlist_t **wb_aix_attrlist(void)
 
 	return ret;
 }
+#endif
 
 
 /*
@@ -977,7 +979,9 @@ int wb_aix_init(struct secmethod_table *methods)
 {
 	ZERO_STRUCTP(methods);
 
+#ifdef HAVE_STRUCT_SECMETHOD_TABLE_METHOD_VERSION
 	methods->method_version = SECMETHOD_VERSION_520;
+#endif
 
 	methods->method_getgrgid           = wb_aix_getgrgid;
 	methods->method_getgrnam           = wb_aix_getgrnam;
@@ -997,7 +1001,9 @@ int wb_aix_init(struct secmethod_table *methods)
 	methods->method_passwdrestrictions = wb_aix_passwdrestrictions;
 	methods->method_getgracct          = wb_aix_getgracct;
 	methods->method_getgrusers         = wb_aix_getgrusers;
+#ifdef HAVE_STRUCT_SECMETHOD_TABLE_METHOD_ATTRLIST
 	methods->method_attrlist           = wb_aix_attrlist;
+#endif
 
 #if LOG_UNIMPLEMENTED_CALLS
 	methods->method_delgroup      = method_delgroup;
