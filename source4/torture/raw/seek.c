@@ -114,6 +114,13 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.out.offset, 0xffffffff);
 
+	printf("Testing position information change\n");
+	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.position_information.out.position, 0);
+
 	printf("Trying max overflow\n");
 	io.in.fnum = fnum;
 	io.in.mode = SEEK_MODE_CURRENT;
@@ -122,6 +129,13 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.out.offset, 999);
 
+	printf("Testing position information change\n");
+	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.position_information.out.position, 0);
+
 	printf("trying read to update offset\n");
 	ZERO_STRUCT(c);
 	if (cli_write(cli, fnum, 0, c, 0, 2) != 2) {
@@ -129,6 +143,14 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		ret = False;
 		goto done;		
 	}
+
+	printf("Testing position information change\n");
+	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.position_information.out.position, 0);
+
 	io.in.fnum = fnum;
 	io.in.mode = SEEK_MODE_CURRENT;
 	io.in.offset = 0;
@@ -141,6 +163,14 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		ret = False;
 		goto done;		
 	}
+
+	printf("Testing position information change\n");
+	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.position_information.out.position, 1);
+
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.out.offset, 1);
