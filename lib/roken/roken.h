@@ -288,6 +288,7 @@ int get_window_size(int fd, struct winsize *);
 
 #ifndef LOG_DAEMON
 #define openlog(id,option,facility) openlog((id),(option))
+#define	LOG_DAEMON	0
 #endif
 #ifndef LOG_ODELAY
 #define LOG_ODELAY 0
