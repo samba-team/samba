@@ -43,8 +43,10 @@ SOURCES = \
 	emalloc.c \
 	erealloc.c \
 	estrdup.c \
+	eread.c \
 	err.c \
 	errx.c \
+	ewrite.c \
 	fchown.c \
 	flock.c \
 	fnmatch.c \
@@ -115,8 +117,10 @@ OBJECTS = \
 	base64.o \
 	concat.o \
 	emalloc.o \
+	eread.o \
 	erealloc.o \
 	estrdup.o \
+	ewrite.o \
 	get_window_size.o \
 	getarg.o \
 	inaddr2str.o \
