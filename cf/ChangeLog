@@ -1,5 +1,7 @@
 Sun Mar 21 14:48:03 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* grok-type.m4: <bind/bitypes.h>
+
 	* Makefile.am.common: fix for automake bug/feature; add more LIB_*
 
 	* test-package.m4: fix typo
