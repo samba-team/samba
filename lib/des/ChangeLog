@@ -1,3 +1,7 @@
+1999-06-15  Assar Westerlund  <assar@sics.se>
+
+	* sha.c (swap_u_int32_t): add _CRAY
+
 Sat Apr 10 23:02:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* destest.c: fixes for crays

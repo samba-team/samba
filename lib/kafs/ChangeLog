@@ -1,3 +1,8 @@
+1999-06-15  Assar Westerlund  <assar@sics.se>
+
+	* common.c (realm_of_cell): rename to _kafs_realm_of_cell and
+ 	un-staticize
+
 Fri Mar 19 14:52:29 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: add version-info
