@@ -1121,11 +1121,11 @@ static int fill_srv_info(struct srv_info_struct *service,
   switch (uLevel)
     {
     case 0:
-	    push_ascii(p,service->name, 15, STR_TERMINATE);
+	    push_ascii(p,service->name, MAX_NETBIOSNAME_LEN, STR_TERMINATE);
 	    break;
 
     case 1:
-	    push_ascii(p,service->name,15, STR_TERMINATE);
+	    push_ascii(p,service->name,MAX_NETBIOSNAME_LEN, STR_TERMINATE);
 	    SIVAL(p,18,service->type);
 	    SIVAL(p,22,PTR_DIFF(p2,baseaddr));
 	    len += CopyAndAdvance(&p2,service->comment,&l2);
