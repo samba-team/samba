@@ -4732,16 +4732,11 @@ command you specify should remove the spool file when it has been
 processed, otherwise you will need to manually remove old spool files\&.
 .IP 
 The print command is simply a text string\&. It will be used verbatim,
-with two exceptions: All occurrences of \f(CW"%s"\fP will be replaced by
-the appropriate spool file name, and all occurrences of \f(CW"%p"\fP will
-be replaced by the appropriate printer name\&. The spool file name is
-generated automatically by the server, the printer name is discussed
-below\&.
-.IP 
-The full path name will be used for the filename if \f(CW"%s"\fP is not
-preceded by a \f(CW\'/\'\fP\&. If you don\'t like this (it can stuff up some
-lpq output) then use \f(CW"%f"\fP instead\&. Any occurrences of \f(CW"%f"\fP get
-replaced by the spool filename without the full path at the front\&.
+with two exceptions: All occurrences of \f(CW"%s"\fP and \f(CW"%f"\fP will be
+replaced by the appropriate spool file name, and all occurrences of
+\f(CW"%p"\fP will be replaced by the appropriate printer name\&. The spool
+file name is generated automatically by the server, the printer name
+is discussed below\&.
 .IP 
 The print command \fIMUST\fP contain at least one occurrence of \f(CW"%s"\fP
 or \f(CW"%f"\fP - the \f(CW"%p"\fP is optional\&. At the time a job is
