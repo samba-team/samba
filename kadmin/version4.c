@@ -196,7 +196,7 @@ flags_4_to_5(char *flags)
 	    case KADM_INST:
 		mask |= KADM5_PRINCIPAL;
 	    case KADM_EXPDATE:
-		mask |= KADM5_PW_EXPIRATION;
+		mask |= KADM5_PRINC_EXPIRE_TIME;
 	    case KADM_MAXLIFE:
 		mask |= KADM5_MAX_LIFE;
 #ifdef EXTENDED_KADM
@@ -221,6 +221,7 @@ ent_to_values(krb5_context context,
 {
     krb5_error_code ret;
     char realm[REALM_SZ];
+    time_t exp = 0;
 
     memset(vals, 0, sizeof(*vals));
     if(mask & KADM5_PRINCIPAL) {
@@ -229,16 +230,17 @@ ent_to_values(krb5_context context,
 	SET_FIELD(KADM_NAME, vals->fields);
 	SET_FIELD(KADM_INST, vals->fields);
     }
-    if(mask & KADM5_PW_EXPIRATION) {
-	time_t exp = 0;
+    if(mask & KADM5_PRINC_EXPIRE_TIME) {
 	if(ent->princ_expire_time != 0)
 	    exp = ent->princ_expire_time;
+    }
+    if(mask & KADM5_PW_EXPIRATION) {
 	if(ent->pw_expiration != 0 && (exp == 0 || exp > ent->pw_expiration))
 	    exp = ent->pw_expiration;
-	if(exp) {
-	    vals->exp_date = exp;
-	    SET_FIELD(KADM_EXPDATE, vals->fields);
-	}
+    }
+    if(exp) {
+	vals->exp_date = exp;
+	SET_FIELD(KADM_EXPDATE, vals->fields);
     }
     if(mask & KADM5_MAX_LIFE) {
 	if(ent->max_life == 0)
@@ -298,8 +300,8 @@ values_to_ent(krb5_context context,
 	*mask |= KADM5_PRINCIPAL;
     }
     if(IS_FIELD(KADM_EXPDATE, vals->fields)) {
-	ent->pw_expiration = vals->exp_date;
-	*mask |= KADM5_PW_EXPIRATION;
+	ent->princ_expire_time = vals->exp_date;
+	*mask |= KADM5_PRINC_EXPIRE_TIME;
     }
     if(IS_FIELD(KADM_MAXLIFE, vals->fields)) {
 	ent->max_life = krb_life_to_time(0, vals->max_life);
@@ -554,7 +556,7 @@ kadm_ser_add(krb5_context context,
 	goto fail;
     }
 
-    mask = KADM5_PRINCIPAL | KADM5_PW_EXPIRATION | KADM5_MAX_LIFE |
+    mask = KADM5_PRINCIPAL | KADM5_PRINC_EXPIRE_TIME | KADM5_MAX_LIFE |
 	KADM5_KEY_DATA | KADM5_MOD_TIME | KADM5_MOD_NAME;
     
     kadm5_get_principal(kadm_handle, ent.principal, &out, mask);
