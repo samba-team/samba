@@ -48,6 +48,10 @@ static BOOL create_noauth_pdu(struct cli_connection *con,
 
 	data_len = data->offset - data_start;
 
+	DEBUG(20, ("create_noauth_pdu: data_start=0x%x, offset=0x%x, "
+		   "data_len=0x%x, data_end=0x%x ",
+		   data_start, data->offset, data_len, *data_end));
+
 	if (data_start == 0)
 	{
 		(*flags) |= RPC_FLG_FIRST;
@@ -66,6 +70,9 @@ static BOOL create_noauth_pdu(struct cli_connection *con,
 
 	/* happen to know that NTLMSSP authentication verifier is 16 bytes */
 	frag_len = data_len + 0x18;
+
+	DEBUGADD(20, ("-> data_len=0x%x, frag_len=0x%x, data_end=0x%x\n",
+		      data_len, frag_len, *data_end));
 
 	prs_init(&data_t   , 0       , 4, False);
 	prs_init(&hdr      , frag_len, 4, False);

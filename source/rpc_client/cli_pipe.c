@@ -161,7 +161,7 @@ BOOL create_rpc_request(prs_struct *rhdr, uint16 vuid,
 	}
 
 	DEBUG(10,
-	      ("create_rpc_request: data_len: %x auth_len: %x alloc_hint: %x\n",
+	      ("create_rpc_request: data_len: 0x%x auth_len: 0x%x alloc_hint: 0x%x\n",
 	       data_len, auth_len, alloc_hint));
 
 	/* create the rpc request RPC_HDR_REQ */
@@ -279,7 +279,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	{
 		prs_struct data_t;
 
-		DEBUG(10, ("rpc_api_pipe_req: start: %d off: %d\n",
+		DEBUG(10, ("rpc_api_pipe_req: start: 0x%x off: 0x%x\n",
 			   data_start, data->offset));
 
 		SMB_ASSERT(auth->cli_create_pdu != NULL);
@@ -293,7 +293,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 			return False;
 		}
 
-		DEBUG(10, ("rpc_api_pipe_req: end: %d\n", data_end));
+		DEBUG(10, ("rpc_api_pipe_req: end: 0x%x\n", data_end));
 		dbgflush();
 
 		if (IS_BITS_CLR_ALL(flags, RPC_FLG_LAST))
@@ -328,7 +328,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	if (data_end != data->offset)
 	{
 		DEBUG(2,
-		      ("rpc_api_pipe_req: data_end: %d and offset %d wrong\n",
+		      ("rpc_api_pipe_req: data_end: 0x%x and offset 0x%x wrong\n",
 		       data_end, data->offset));
 		prs_free_data(&rpdu);
 		return False;

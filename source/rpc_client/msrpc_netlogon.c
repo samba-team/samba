@@ -168,9 +168,10 @@ uint32 domain_client_validate_backend(const char *srv_name,
 
 	if (status != 0x0)
 	{
-		DEBUG(0, ("domain_client_validate: unable to validate \
-			password for user %s in domain %s to \
-			Domain controller %s.\n", user, domain, srv_name));
+		DEBUG(0, ("domain_client_validate: unable to validate "
+			  "password for user %s in domain %s to "
+			  "Domain controller %s (status=0x%x).\n",
+			  user, domain, srv_name, status));
 		return status;
 	}
 

@@ -306,6 +306,11 @@ static uint32 net_login_interactive(const NET_ID_INFO_1 * id1,
 	if (memcmp(ctr.info.id12->lm_pwd, lm_pwd, 16) != 0 ||
 	    memcmp(ctr.info.id12->nt_pwd, nt_pwd, 16) != 0)
 	{
+		char *user_name = unistr2_to_ascii(NULL, uni_samusr, 0);
+		DEBUG(2,
+		      ("net_login_interactive: WRONG password for user %s\n",
+		       user_name));
+		safe_free(user_name);
 		status = NT_STATUS_WRONG_PASSWORD;
 	}
 
