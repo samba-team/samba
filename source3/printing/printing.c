@@ -538,7 +538,7 @@ delete a print job - don't update queue
 static BOOL print_job_delete1(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
-	int snum;
+	int snum, result = 0;
 
 	if (!pjob) return False;
 
@@ -553,17 +553,26 @@ static BOOL print_job_delete1(int jobid)
 	}
 
 	if (pjob->spooled && pjob->sysjob != -1) {
-		/* need to delete the spooled entry */
 		fstring jobstr;
+		
+		/* need to delete the spooled entry */
 		slprintf(jobstr, sizeof(jobstr), "%d", pjob->sysjob);
-		print_run_command(snum, 
-				  lp_lprmcommand(snum), NULL,
-				  "%j", jobstr,
-				  "%T", http_timestring(pjob->starttime),
-				  NULL);
+		result = print_run_command(
+			snum, 
+			lp_lprmcommand(snum), NULL,
+			"%j", jobstr,
+			"%T", http_timestring(pjob->starttime),
+			NULL);
 	}
 
-	return True;
+	/* Delete the tdb entry if the delete suceeded or the job hasn't
+	   been spooled. */
+
+	if (result == 0) {
+		tdb_delete(tdb, print_key(jobid));
+	}
+
+	return (result == 0);
 }
 
 /****************************************************************************
