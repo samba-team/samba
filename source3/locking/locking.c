@@ -109,8 +109,11 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	int ret;
 	size_t i;
 
-	if (!lp_posix_locking(SNUM(conn)))
-		return True;
+	if (!lp_posix_locking(SNUM(conn))) {
+		ret = conn->vfs_ops.close(fsp->fd);
+		fsp->fd = -1;
+		return ret;
+	}
 
 	pc = find_pending_close_entry(fsp->dev, fsp->inode);
 	
