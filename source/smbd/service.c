@@ -366,6 +366,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		}
 		fstrcpy(user,pass->pw_name);
 		conn->force_user = True;
+		conn->uid = pass->pw_uid;
+		conn->gid = pass->pw_gid;
 		string_set(&conn->user,pass->pw_name);
 		passwd_free(&pass);
 		DEBUG(3,("Guest only user %s\n",user));
