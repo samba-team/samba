@@ -228,13 +228,21 @@ static BOOL srv_io_srv_share_info_1(char *desc, SRV_SHARE_INFO_1 * ctr,
 
 		if (UNMARSHALLING(ps))
 		{
-			ctr->info_1 = g_new0(SH_INFO_1 *, num_entries);
-			ctr->info_1_str =
-				g_new0(SH_INFO_1_STR *, num_entries);
-			if (!ctr->info_1 || !ctr->info_1_str)
+			if (num_entries == 0)
 			{
-				srv_free_srv_share_info_1(ctr);
-				return False;
+				ctr->info_1 = NULL;
+				ctr->info_1_str = NULL;
+			}
+			else
+			{
+				ctr->info_1 = g_new0(SH_INFO_1 *, num_entries);
+				ctr->info_1_str =
+					g_new0(SH_INFO_1_STR *, num_entries);
+				if (!ctr->info_1 || !ctr->info_1_str)
+				{
+					srv_free_srv_share_info_1(ctr);
+					return False;
+				}
 			}
 		}
 
@@ -790,13 +798,21 @@ static BOOL srv_io_srv_share_info_2(char *desc, SRV_SHARE_INFO_2 * ctr,
 
 		if (UNMARSHALLING(ps))
 		{
-			ctr->info_2 = g_new0(SH_INFO_2 *, num_entries);
-			ctr->info_2_str =
-				g_new0(SH_INFO_2_STR *, num_entries);
-			if (!ctr->info_2 || !ctr->info_2_str)
+			if (num_entries == 0)
 			{
-				srv_free_srv_share_info_2(ctr);
-				return False;
+				ctr->info_2 = NULL;
+				ctr->info_2_str = NULL;
+			}
+			else
+			{
+				ctr->info_2 = g_new0(SH_INFO_2 *, num_entries);
+				ctr->info_2_str =
+					g_new0(SH_INFO_2_STR *, num_entries);
+				if (!ctr->info_2 || !ctr->info_2_str)
+				{
+					srv_free_srv_share_info_2(ctr);
+					return False;
+				}
 			}
 		}
 
@@ -2425,13 +2441,21 @@ static BOOL srv_io_srv_file_info_3(char *desc, SRV_FILE_INFO_3 * fl3,
 
 		if (UNMARSHALLING(ps))
 		{
-			fl3->info_3 = g_new0(FILE_INFO_3 *, num_entries);
-			fl3->info_3_str =
-				g_new0(FILE_INFO_3_STR *, num_entries);
-			if (!fl3->info_3 || !fl3->info_3_str)
+			if (num_entries == 0)
 			{
-				srv_free_srv_file_info_3(fl3);
-				return False;
+				fl3->info_3 = NULL;
+				fl3->info_3_str = NULL;
+			}
+			else
+			{
+				fl3->info_3 = g_new0(FILE_INFO_3 *, num_entries);
+				fl3->info_3_str =
+					g_new0(FILE_INFO_3_STR *, num_entries);
+				if (!fl3->info_3 || !fl3->info_3_str)
+				{
+					srv_free_srv_file_info_3(fl3);
+					return False;
+				}
 			}
 		}
 
