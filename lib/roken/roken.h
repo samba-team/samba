@@ -4,7 +4,7 @@
 #define __ROKEN_H__
 
 #ifndef HAVE_PUTENV
-int putenv(const char *string)
+int putenv(const char *string);
 #endif
 
 #ifndef HAVE_SETENV
@@ -48,7 +48,7 @@ int inet_aton(char *cp, struct in_addr *adr);
 #endif
 
 #if !defined(HAVE_GETCWD) || defined(BROKEN_GETCWD)
-char* getcwd(char *path, int size)
+char* getcwd(char *path, int size);
 #endif
 
 #endif /*  __ROKEN_H__ */
