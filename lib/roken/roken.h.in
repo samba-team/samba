@@ -450,7 +450,7 @@ typedef unsigned short sa_family_t;
 
 typedef unsigned char roken_sa_family_t;
 
-#define _SS_PAD1SIZE   (_SS_ALIGNSIZE - sizeof (roken_sa_family_t) - sizeof(unsigned char))
+#define _SS_PAD1SIZE   ((2 * _SS_ALIGNSIZE - sizeof (roken_sa_family_t) - sizeof(unsigned char)) % _SS_ALIGNSIZE)
 #define _SS_PAD2SIZE   (_SS_MAXSIZE - (sizeof (roken_sa_family_t) + sizeof(unsigned char) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
 
 struct sockaddr_storage {
@@ -464,7 +464,7 @@ struct sockaddr_storage {
 
 typedef unsigned short roken_sa_family_t;
 
-#define _SS_PAD1SIZE   (_SS_ALIGNSIZE - sizeof (roken_sa_family_t))
+#define _SS_PAD1SIZE   ((2 * _SS_ALIGNSIZE - sizeof (roken_sa_family_t)) % _SS_ALIGNSIZE)
 #define _SS_PAD2SIZE   (_SS_MAXSIZE - (sizeof (roken_sa_family_t) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
 
 struct sockaddr_storage {
