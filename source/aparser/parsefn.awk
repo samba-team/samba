@@ -142,7 +142,8 @@ function struct_parser(f, v, struct_num,
 
 	# and any trailers
 	for (i=n1;i<structs[struct_num, "num_elems"];i++) {
-		parse_buffers(f, v, structs[struct_num, i], "PARSE_SCALARS");
+		parse_scalars(f, v, structs[struct_num, i], "PARSE_SCALARS");
+		parse_buffers(f, v, structs[struct_num, i], "PARSE_BUFFERS");
 	}
 
 	print_template(f, "fn_end.tpl", v);

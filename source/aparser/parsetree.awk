@@ -6,6 +6,7 @@ function start_module(name)
 	num_structs=0;
 	num_elements=0;
 	num_unions=0;
+	num_tests=0;
 }
 
 function start_struct(name) 
