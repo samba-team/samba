@@ -67,7 +67,8 @@ typedef int BOOL;
  */
 /* I know the __attribute__ stuff is ugly, but it does ensure we get the 
    arguemnts to DEBUG() right. We have got them wrong too often in the 
-   past */
+   past.
+ */
 #ifdef HAVE_STDARG_H
 int  Debug1( char *, ... )
 #ifdef __GNUC__
@@ -126,6 +127,24 @@ BOOL dbgtext();
 
 #define DEBUGADD( level, body ) \
   (void)( (DEBUGLEVEL >= (level)) && (dbgtext body) )
+
+/* -------------------------------------------------------------------------- **
+ * These are the tokens returned by dbg_char2token().
+ */
+
+typedef enum
+  {
+  dbg_null = 0,
+  dbg_ignore,
+  dbg_header,
+  dbg_timestamp,
+  dbg_level,
+  dbg_sourcefile,
+  dbg_function,
+  dbg_lineno,
+  dbg_message,
+  dbg_eof
+  } dbg_Token;
 
 /* End Debugging code section.
  * -------------------------------------------------------------------------- **
