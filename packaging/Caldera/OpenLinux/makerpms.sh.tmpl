@@ -8,7 +8,7 @@ GRPID=`id -g`
 
 ( cd ../../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba )
 ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION-PRELEASE.tar.gz samba )
-cp -a *.spec $SPECDIR
+cp -a *.spec *.spec-lsb $SPECDIR
 for src in *.patch; do
   trg=`echo $src | sed 's;xxxxxx;PVERSION;'`
   cp -a $src $SRCDIR/$trg
