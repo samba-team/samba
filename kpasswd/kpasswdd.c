@@ -503,7 +503,7 @@ doit (int port)
     krb5_addresses addrs;
     unsigned n, i;
     fd_set real_fdset;
-    char *sa_buf;
+    void *sa_buf;
     int sa_max_size;
     struct sockaddr *sa;
 
