@@ -743,8 +743,9 @@ static void smb_io_clnt_srv(char *desc,  DOM_CLNT_SRV *log, prs_struct *ps, int 
 /*******************************************************************
 makes a DOM_LOG_INFO structure.
 ********************************************************************/
-void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
-		uint16 sec_chan, char *comp_name)
+void make_log_info(DOM_LOG_INFO *log,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name)
 {
 	if (log == NULL) return;
 

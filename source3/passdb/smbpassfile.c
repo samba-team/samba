@@ -238,17 +238,17 @@ BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *mynam
   time_t lct;
 
   /*
-   * Get the machine account password.
+   * Get the trust account password.
    */
   if(!trust_password_lock( domain, myname, False)) {
-    DEBUG(0,("domain_client_validate: unable to open the machine account password file for \
-machine %s in domain %s.\n", myname, domain ));
+    DEBUG(0,("domain_client_validate: unable to open the trust account password file for \
+trust %s in domain %s.\n", myname, domain ));
     return False;
   }
 
   if(get_trust_account_password( trust_passwd, &lct) == False) {
-    DEBUG(0,("domain_client_validate: unable to read the machine account password for \
-machine %s in domain %s.\n", myname, domain ));
+    DEBUG(0,("domain_client_validate: unable to read the trust account password for \
+trust %s in domain %s.\n", myname, domain ));
     trust_password_unlock();
     return False;
   }
@@ -256,7 +256,7 @@ machine %s in domain %s.\n", myname, domain ));
   trust_password_unlock();
 
   /* 
-   * Here we check the last change time to see if the machine
+   * Here we check the last change time to see if the trust
    * password needs changing. JRA. 
    */
 

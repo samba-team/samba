@@ -29,7 +29,10 @@ extern int DEBUGLEVEL;
 Initialize domain session credentials.
 ****************************************************************************/
 
-BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum, unsigned char mach_pwd[16])
+BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
+				const char* trust_acct,
+				unsigned char trust_pwd[16],
+				uint16 sec_chan)
 {
   DOM_CHAL clnt_chal;
   DOM_CHAL srv_chal;
@@ -50,7 +53,7 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum, unsigned char mach_p
   /**************** Long-term Session key **************/
 
   /* calculate the session key */
-  cred_session_key(&clnt_chal, &srv_chal, (char *)mach_pwd, cli->sess_key);
+  cred_session_key(&clnt_chal, &srv_chal, (char *)trust_pwd, cli->sess_key);
   bzero(cli->sess_key+8, 8);
 
   /******************* Authenticate 2 ********************/
@@ -64,7 +67,7 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum, unsigned char mach_p
    * Receive an auth-2 challenge response and check it.
    */
 
-  if (!cli_net_auth2(cli, fnum, SEC_CHAN_WKSTA, 0x000001ff, &srv_chal))
+  if (!cli_net_auth2(cli, fnum, trust_acct, sec_chan, 0x000001ff, &srv_chal))
   {
     DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
     return False;
@@ -77,18 +80,18 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum, unsigned char mach_p
  Set machine password.
  ****************************************************************************/
 
-BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum, unsigned char *new_hashof_mach_pwd)
+BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum, unsigned char *new_hashof_trust_pwd)
 {
   unsigned char processed_new_pwd[16];
 
   DEBUG(5,("cli_nt_srv_pwset: %d\n", __LINE__));
 
 #ifdef DEBUG_PASSWORD
-  dump_data(6, new_hashof_mach_pwd, 16);
+  dump_data(6, new_hashof_trust_pwd, 16);
 #endif
 
   /* Process the new password. */
-  cred_hash3( processed_new_pwd, new_hashof_mach_pwd, cli->sess_key, 1);
+  cred_hash3( processed_new_pwd, new_hashof_trust_pwd, cli->sess_key, 1);
 
   /* send client srv_pwset challenge */
   return cli_net_srv_pwset(cli, fnum, processed_new_pwd);
