@@ -215,54 +215,48 @@ Proceeding in compatibility mode, new operations (since version #%d) will fallba
 
 BOOL smbd_vfs_init(connection_struct *conn)
 {
-	char **vfs_objects, *vfsobj, *vfs_module, *vfs_path;
-	int nobj, i;
+	const char **vfs_objects;
+	char *vfs_module, *vfs_path;
+	unsigned int i;
+	unsigned int j = 0;
 	struct smb_vfs_handle_struct *handle;
 	
 	/* Normal share - initialise with disk access functions */
 	vfs_init_default(conn);
+	vfs_objects = lp_vfsobj(SNUM(conn));
 
 	/* Override VFS functions if 'vfs object' was specified*/
-	if (*lp_vfsobj(SNUM(conn))) {
-		vfsobj = NULL;
-		for(i=0; i<SMB_VFS_OP_LAST; i++) {
-		  vfs_opaque_ops[i].op = ((void**)&default_vfs_ops)[i];
-		  vfs_opaque_ops[i].type = i;
-		  vfs_opaque_ops[i].layer = SMB_VFS_LAYER_OPAQUE;
+	if (!vfs_objects)
+		return True;
+
+	for(i=0; i<SMB_VFS_OP_LAST; i++) {
+		vfs_opaque_ops[i].op = ((void**)&default_vfs_ops)[i];
+		vfs_opaque_ops[i].type = i;
+		vfs_opaque_ops[i].layer = SMB_VFS_LAYER_OPAQUE;
+	}
+
+	vfs_path = lp_vfs_path(SNUM(conn));
+	
+	for (j=0; vfs_objects[j]; j++) {
+		conn->vfs_private = NULL;
+		handle = (struct smb_vfs_handle_struct *) smb_xmalloc(sizeof(smb_vfs_handle_struct));
+		/* Loadable object file */
+		handle->handle = NULL;
+		DLIST_ADD(conn->vfs_private, handle);
+		vfs_module = NULL;
+		if (vfs_path) {
+			asprintf(&vfs_module, "%s/%s", vfs_path, vfs_objects[j]);
+		} else {
+			asprintf(&vfs_module, "%s", vfs_objects[j]);
 		}
-		if (string_set(&vfsobj, lp_vfsobj(SNUM(conn)))) {
-			/* Parse passed modules specification to array of modules */
-			set_first_token(vfsobj);
-			/* We are using default separators: ' \t\r\n' */
-			vfs_objects = toktocliplist(&nobj, NULL);
-			if (vfs_objects) {
-				vfs_path = lp_vfs_path(SNUM(conn));
-				conn->vfs_private = NULL;
-				for(i=nobj-1; i>=0; i--) {
-					handle = (struct smb_vfs_handle_struct *) smb_xmalloc(sizeof(smb_vfs_handle_struct));
-					/* Loadable object file */
-					handle->handle = NULL;
-					DLIST_ADD(conn->vfs_private, handle)
-					vfs_module = NULL;
-					if (vfs_path) {
-						asprintf(&vfs_module, "%s/%s", vfs_path, vfs_objects[i]);
-					} else {
-						asprintf(&vfs_module, "%s", vfs_objects[i]);
-					}
-					if (!vfs_init_custom(conn, vfs_module)) {
-						DEBUG(0, ("smbd_vfs_init: vfs_init_custom failed for %s\n", vfs_module));
-						string_free(&vfsobj);
-						SAFE_FREE(vfs_module);
-						DLIST_REMOVE(conn->vfs_private, handle);
-						SAFE_FREE(handle);
-						return False;
-					}
-					SAFE_FREE(vfs_module);
-				}
-			}
-			string_free(&vfsobj);
-			return True;
+		if (!vfs_init_custom(conn, vfs_module)) {
+			DEBUG(0, ("smbd_vfs_init: vfs_init_custom failed for %s\n", vfs_module));
+			SAFE_FREE(vfs_module);
+			DLIST_REMOVE(conn->vfs_private, handle);
+			SAFE_FREE(handle);
+			return False;
 		}
+		SAFE_FREE(vfs_module);
 	}
 	return True;
 }
