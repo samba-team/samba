@@ -6,6 +6,7 @@
 <!ENTITY email.jmoore  'jmoore@php.net'>
 <!ENTITY email.jerry   'jerry@samba.org'>
 <!ENTITY email.patches 'samba-patches@samba.org'>
+<!ENTITY email.jelmer  'jelmer@samba.org'>
 
 <!-- URL's -->
 <!ENTITY url.samba.cvsinfo 'http://pserver.samba.org/samba/cvs.html'>
@@ -30,6 +31,7 @@
 
 <!-- Misc -->
 <!ENTITY samba.pub.cvshost 'pserver.samba.org'>
+<!ENTITY percnt '%'>
 
 <!ENTITY stdarg.debug '
 <varlistentry>
