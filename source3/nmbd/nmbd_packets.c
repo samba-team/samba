@@ -1866,8 +1866,9 @@ BOOL listen_for_packets(BOOL run_election)
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
 				  } else if ((ip_equal(loopback_ip, packet->ip) || 
-					      ismyip(packet->ip)) && packet->port == global_nmb_port) {
-					  DEBUG(7,("discarding own packet from %s:%d\n",
+					      ismyip(packet->ip)) && packet->port == global_nmb_port &&
+					     packet->packet.nmb.header.nm_flags.bcast) {
+					  DEBUG(7,("discarding own bcast packet from %s:%d\n",
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
 				  } else {
@@ -1893,7 +1894,7 @@ BOOL listen_for_packets(BOOL run_election)
 					  free_packet(packet);
 				  } else if ((ip_equal(loopback_ip, packet->ip) || 
 					      ismyip(packet->ip)) && packet->port == DGRAM_PORT) {
-					  DEBUG(7,("discarding own packet from %s:%d\n",
+					  DEBUG(7,("discarding own dgram packet from %s:%d\n",
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
 				  } else {

@@ -71,9 +71,6 @@ static struct wins_dead {
 	struct wins_dead *next, *prev;
 } *dead_servers;
 
-/* nmbd sets this */
-BOOL global_in_nmbd = False;
-
 /* an internal convenience structure for an IP with a short string tag
    attached */
 struct tagged_ip {
@@ -161,8 +158,6 @@ unsigned wins_srv_count(void)
 	int count = 0;
 
 	if (lp_wins_support()) {
-		if (global_in_nmbd) return 0;
-
 		/* simple - just talk to ourselves */
 		return 1;
 	}
@@ -210,7 +205,6 @@ char **wins_srv_tags(void)
 	char **list;
 
 	if (lp_wins_support()) {
-		if (global_in_nmbd) return NULL;
 		/* give the caller something to chew on. This makes
 		   the rest of the logic simpler (ie. less special cases) */
 		ret = (char **)malloc(sizeof(char *)*2);
@@ -335,7 +329,6 @@ unsigned wins_srv_count_tag(const char *tag)
 
 	/* if we are a wins server then we always just talk to ourselves */
 	if (lp_wins_support()) {
-		if (global_in_nmbd) return 0;
 		return 1;
 	}
 
