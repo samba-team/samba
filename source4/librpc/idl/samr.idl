@@ -284,9 +284,22 @@
 		[out]         samr_Ids types
 		);
 
+
 	/************************/
 	/* Function    0x12     */
-	NTSTATUS samr_LOOKUP_RIDS();
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] samr_Name *names;
+	} samr_Names;
+
+	NTSTATUS samr_LookupRids(
+		[in,ref]      policy_handle *handle,
+		[in]          uint32 num_rids,
+		[in,ref,size_is(1000),length_is(num_rids)] uint32 *rids,
+		[out]         samr_Names names,
+		[out]         samr_Ids types
+		);
 
 	/************************/
 	/* Function    0x13     */

@@ -381,21 +381,21 @@ NTSTATUS dcerpc_samr_LookupNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, str
 	return status;
 }
 
-NTSTATUS dcerpc_samr_LOOKUP_RIDS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_LOOKUP_RIDS *r)
+NTSTATUS dcerpc_samr_LookupRids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_LookupRids *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(samr_LOOKUP_RIDS, r);		
+		NDR_PRINT_IN_DEBUG(samr_LookupRids, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_LOOKUP_RIDS, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_LOOKUP_RIDS,
-				    (ndr_pull_fn_t) ndr_pull_samr_LOOKUP_RIDS,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_LOOKUPRIDS, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_LookupRids,
+				    (ndr_pull_fn_t) ndr_pull_samr_LookupRids,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(samr_LOOKUP_RIDS, r);		
+		NDR_PRINT_OUT_DEBUG(samr_LookupRids, r);		
 	}
 	if (NT_STATUS_IS_OK(status)) status = r->out.result;
 

@@ -22,7 +22,7 @@
 #define DCERPC_SAMR_ENUMDOMAINALIASES 15
 #define DCERPC_SAMR_GETALIASMEMBERSHIP 16
 #define DCERPC_SAMR_LOOKUPNAMES 17
-#define DCERPC_SAMR_LOOKUP_RIDS 18
+#define DCERPC_SAMR_LOOKUPRIDS 18
 #define DCERPC_SAMR_OPENGROUP 19
 #define DCERPC_SAMR_QUERYGROUPINFO 20
 #define DCERPC_SAMR_SET_GROUPINFO 21
@@ -437,11 +437,21 @@ struct samr_LookupNames {
 
 };
 
-struct samr_LOOKUP_RIDS {
+struct samr_Names {
+	uint32 count;
+	struct samr_Name *names;
+};
+
+struct samr_LookupRids {
 	struct {
+		struct policy_handle *handle;
+		uint32 num_rids;
+		uint32 *rids;
 	} in;
 
 	struct {
+		struct samr_Names names;
+		struct samr_Ids types;
 		NTSTATUS result;
 	} out;
 

@@ -190,8 +190,16 @@ NTSTATUS ndr_push_samr_LookupNames(struct ndr_push *ndr, struct samr_LookupNames
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_LOOKUP_RIDS(struct ndr_push *ndr, struct samr_LOOKUP_RIDS *r)
+NTSTATUS ndr_push_samr_LookupRids(struct ndr_push *ndr, struct samr_LookupRids *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.num_rids));
+	if (r->in.rids) {
+		NDR_CHECK(ndr_push_uint32(ndr, 1000));
+		NDR_CHECK(ndr_push_uint32(ndr, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, r->in.num_rids));
+		NDR_CHECK(ndr_push_array_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.rids, r->in.num_rids));
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1175,8 +1183,41 @@ NTSTATUS ndr_pull_samr_LookupNames(struct ndr_pull *ndr, struct samr_LookupNames
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_LOOKUP_RIDS(struct ndr_pull *ndr, struct samr_LOOKUP_RIDS *r)
+NTSTATUS ndr_pull_samr_Names(struct ndr_pull *ndr, int ndr_flags, struct samr_Names *r)
 {
+	uint32 _ptr_names;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_names));
+	if (_ptr_names) {
+		NDR_ALLOC(ndr, r->names);
+	} else {
+		r->names = NULL;
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->names) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
+		NDR_ALLOC_N_SIZE(ndr, r->names, r->count, sizeof(r->names[0]));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_samr_Name));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_samr_LookupRids(struct ndr_pull *ndr, struct samr_LookupRids *r)
+{
+	NDR_CHECK(ndr_pull_samr_Names(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.names));
+	NDR_CHECK(ndr_pull_samr_Ids(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.types));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -3186,18 +3227,43 @@ void ndr_print_samr_LookupNames(struct ndr_print *ndr, const char *name, int fla
 	ndr->depth--;
 }
 
-void ndr_print_samr_LOOKUP_RIDS(struct ndr_print *ndr, const char *name, int flags, struct samr_LOOKUP_RIDS *r)
+void ndr_print_samr_Names(struct ndr_print *ndr, const char *name, struct samr_Names *r)
 {
-	ndr_print_struct(ndr, name, "samr_LOOKUP_RIDS");
+	ndr_print_struct(ndr, name, "samr_Names");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "names", r->names);
+	ndr->depth++;
+	if (r->names) {
+		ndr_print_array(ndr, "names", r->names, sizeof(r->names[0]), r->count, (ndr_print_fn_t)ndr_print_samr_Name);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_samr_LookupRids(struct ndr_print *ndr, const char *name, int flags, struct samr_LookupRids *r)
+{
+	ndr_print_struct(ndr, name, "samr_LookupRids");
 	ndr->depth++;
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "samr_LOOKUP_RIDS");
+		ndr_print_struct(ndr, "in", "samr_LookupRids");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "num_rids", r->in.num_rids);
+	ndr_print_ptr(ndr, "rids", r->in.rids);
+	ndr->depth++;
+		ndr_print_array_uint32(ndr, "rids", r->in.rids, r->in.num_rids);
+	ndr->depth--;
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "samr_LOOKUP_RIDS");
+		ndr_print_struct(ndr, "out", "samr_LookupRids");
 	ndr->depth++;
+	ndr_print_samr_Names(ndr, "names", &r->out.names);
+	ndr_print_samr_Ids(ndr, "types", &r->out.types);
 	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
