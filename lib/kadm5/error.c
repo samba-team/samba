@@ -44,7 +44,6 @@ kadm5_ret_t
 _kadm5_error_code(kadm5_ret_t code)
 {
     switch(code){
-    case HDB_ERR_INUSE:
     case HDB_ERR_EXISTS:
 	return KADM5_DUP;
     case HDB_ERR_NOENTRY:
