@@ -6,22 +6,60 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 lib_LIBRARIES = libkadm5srv.a libkadm5clnt.a
 
+noinst_PROGRAMS = dump_log replay_log
+
 incdir = $(includedir)/kadm5
 idir = $(top_builddir)/include/kadm5
 inc_DATA = kadm5_err.h
 
-COMMON_SOURCES = \
-	acl.c chpass_c.c chpass_s.c common_glue.c context_s.c	\
-	create_c.c create_s.c delete_c.c delete_s.c destroy_c.c	\
-	destroy_s.c ent_setup.c error.c flush.c free.c		\
-	get_c.c get_s.c get_princs_c.c get_princs_s.c 		\
-	init_c.c init_s.c kadm5_err.c				\
-	marshall.c modify_c.c modify_s.c privs_c.c privs_s.c	\
-	randkey_c.c randkey_s.c rename_c.c rename_s.c 		\
-	send_recv.c server.c set_keys.c set_modifier.c
-
+COMMON_SOURCES =				\
+	acl.c					\
+	chpass_c.c				\
+	chpass_s.c				\
+	common_glue.c				\
+	context_s.c				\
+	create_c.c				\
+	create_s.c				\
+	delete_c.c				\
+	delete_s.c				\
+	destroy_c.c				\
+	destroy_s.c				\
+	ent_setup.c				\
+	error.c					\
+	flush.c					\
+	free.c					\
+	get_c.c					\
+	get_princs_c.c				\
+	get_princs_s.c				\
+	get_s.c					\
+	init_c.c				\
+	init_s.c				\
+	kadm5_err.c				\
+	log.c					\
+	marshall.c				\
+	modify_c.c				\
+	modify_s.c				\
+	privs_c.c				\
+	privs_s.c				\
+	randkey_c.c				\
+	randkey_s.c				\
+	rename_c.c				\
+	rename_s.c				\
+	send_recv.c				\
+	server.c				\
+	set_keys.c				\
+	set_modifier.c
+	
 libkadm5srv_a_SOURCES = $(COMMON_SOURCES) server_glue.c
 libkadm5clnt_a_SOURCES = $(COMMON_SOURCES) client_glue.c
+
+dump_log_SOURCES = dump_log.c
+
+dump_log_LDADD = libkadm5srv.a -L$(top_builddir)/lib/hdb -lhdb -L$(top_builddir)/lib/krb5 -lkrb5 -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/des -ldes -L$(top_builddir)/lib/roken -lroken
+
+replay_log_SOURCES = replay_log.c
+
+replay_log_LDADD = libkadm5srv.a -L$(top_builddir)/lib/hdb -lhdb -L$(top_builddir)/lib/krb5 -lkrb5 -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/des -ldes -L$(top_builddir)/lib/roken -lroken
 
 CLEANFILES = kadm5_err.c kadm5_err.h
 
