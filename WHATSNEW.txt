@@ -181,7 +181,7 @@ details
 
 
 
-Changes since 3.0beta3
+Changes since 3.0beta2
 ######################
 
 1)  Added fix for Japanese case names in statcache code; 
