@@ -36,7 +36,7 @@ static state_table states[] = {
         {trans,  "quit", 0,  0,  pop_updt,   {halt,  halt}},
 	{trans,  "help", 0,  0,  pop_help,   {trans, trans}},
 #ifdef UIDL
-        {trans,  "uidl", 0,  1,  pop_uidl,   {trans, trans},}
+        {trans,  "uidl", 0,  1,  pop_uidl,   {trans, trans}},
 #endif
         {(state) 0,  NULL,   0,  0,  NULL,       {halt,  halt}},
 };
