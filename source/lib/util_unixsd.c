@@ -117,7 +117,7 @@ size_t convertperms_unix_to_sd(const SMB_STRUCT_STAT * sbuf,
 
 	(*ppdesc) = NULL;
 
-	if (!lp_nt_acl_support())
+	if (sbuf == NULL || !lp_nt_acl_support())
 	{
 		sid_copy(&owner_sid, global_sid_everyone);
 		sid_copy(&group_sid, global_sid_everyone);
@@ -283,7 +283,7 @@ size_t convertperms_unix_to_sd(const SMB_STRUCT_STAT * sbuf,
 
 	sec_desc_size = make_sec_desc((*ppdesc), 1,
 				      SEC_DESC_SELF_RELATIVE |
-				      SEC_DESC_DACL_PRESENT,
+				      (sbuf ? SEC_DESC_DACL_PRESENT : 0),
 				      sid_dup(&owner_sid),
 				      sid_dup(&group_sid), NULL, psa);
 
