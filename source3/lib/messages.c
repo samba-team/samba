@@ -475,7 +475,7 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 {
 	TDB_DATA key;
 	int ret;
-	void (*oldsig_handler)(int);
+	void (*oldsig_handler)(int) = NULL;
 
 	if (!message_init())
 		return False;
