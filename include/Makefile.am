@@ -7,7 +7,7 @@ SUBDIRS = kadm5
 noinst_PROGRAMS = bits
 CHECK_LOCAL =
 
-INCLUDES = -DHOST=\"$(CANONICAL_HOST)\"
+INCLUDES += -DHOST=\"$(CANONICAL_HOST)\"
 
 include_HEADERS = krb5-types.h
 
