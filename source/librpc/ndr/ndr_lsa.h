@@ -55,6 +55,11 @@ struct lsa_EnumPrivs {
 
 };
 
+struct sec_desc_buf {
+	uint32 size;
+	struct security_descriptor *sd;
+};
+
 struct lsa_QuerySecObj {
 	struct {
 		struct policy_handle *handle;

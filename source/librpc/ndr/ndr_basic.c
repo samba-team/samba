@@ -510,3 +510,5 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, struct GUID *guid)
 		   guid->info[10], guid->info[11], guid->info[12], guid->info[13], 
 		   guid->info[14], guid->info[15]);
 }
+
+

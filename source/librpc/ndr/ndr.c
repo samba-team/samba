@@ -370,3 +370,38 @@ NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char 
 	/* we should map to different status codes */
 	return NT_STATUS_INVALID_PARAMETER;
 }
+
+
+/*
+  handle subcontext buffers, which in midl land are user-marshalled, but
+  we use magic in pidl to make them easier to cope with
+*/
+NTSTATUS ndr_pull_subcontext_fn(struct ndr_pull *ndr, 
+				void *base,
+				NTSTATUS (*fn)(struct ndr_pull *, void *))
+{
+	uint32 size;
+	struct ndr_pull ndr2;
+
+	NDR_CHECK(ndr_pull_uint32(ndr, &size));
+	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, size));
+	NDR_CHECK(fn(&ndr2, base));
+	NDR_CHECK(ndr_pull_advance(ndr, size));
+	return NT_STATUS_OK;
+}
+
+
+NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr, 
+				      void *base,
+				      NTSTATUS (*fn)(struct ndr_pull *, int , void *))
+{
+	uint32 size;
+	struct ndr_pull ndr2;
+
+	NDR_CHECK(ndr_pull_uint32(ndr, &size));
+	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, size));
+	NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, base));
+	NDR_CHECK(ndr_pull_advance(ndr, size));
+	return NT_STATUS_OK;
+}
+

@@ -21,7 +21,7 @@ static NTSTATUS ndr_push_lsa_Name(struct ndr_push *ndr, int ndr_flags, struct ls
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint16(ndr, 2*strlen_m(r->name)));
-	NDR_CHECK(ndr_push_uint16(ndr, 2*strlen_m(r->name)));
+	NDR_CHECK(ndr_push_uint16(ndr, r->name_len));
 	NDR_CHECK(ndr_push_ptr(ndr, r->name));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -579,6 +579,27 @@ NTSTATUS ndr_pull_lsa_EnumPrivs(struct ndr_pull *ndr, struct lsa_EnumPrivs *r)
 	NDR_CHECK(ndr_pull_lsa_PrivArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.privs));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_sec_desc_buf(struct ndr_pull *ndr, int ndr_flags, struct sec_desc_buf *r)
+{
+	uint32 _ptr_sd;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->size));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sd));
+	if (_ptr_sd) {
+		NDR_ALLOC(ndr, r->sd);
+	} else {
+		r->sd = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->sd) {
+	NDR_CHECK(ndr_pull_subcontext_fn(ndr, r->sd, (ndr_pull_fn_t) ndr_pull_security_descriptor));
+	}
+done:
 	return NT_STATUS_OK;
 }
 
@@ -1617,6 +1638,20 @@ void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, struct lsa
 	ndr->depth++;
 	if (r->privs) {
 		ndr_print_array(ndr, "privs", r->privs, sizeof(r->privs[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_PrivEntry);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_sec_desc_buf(struct ndr_print *ndr, const char *name, struct sec_desc_buf *r)
+{
+	ndr_print_struct(ndr, name, "sec_desc_buf");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "size", r->size);
+	ndr_print_ptr(ndr, "sd", r->sd);
+	ndr->depth++;
+	if (r->sd) {
+		ndr_print_security_descriptor(ndr, "sd", r->sd);
 	}
 	ndr->depth--;
 	ndr->depth--;
