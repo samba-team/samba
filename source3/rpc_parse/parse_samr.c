@@ -1384,10 +1384,11 @@ void make_samr_group_info1(GROUP_INFO1 *gr1,
 	DEBUG(5,("make_samr_group_info1\n"));
 
 	make_uni_hdr(&(gr1->hdr_acct_name), acct_len , acct_len, acct_name ? 1 : 0);
-	make_uni_hdr(&(gr1->hdr_acct_desc), desc_len , desc_len, acct_desc ? 1 : 0);
 
 	gr1->unknown_1 = 0x3;
 	gr1->unknown_2 = 0x3;
+
+	make_uni_hdr(&(gr1->hdr_acct_desc), desc_len , desc_len, acct_desc ? 1 : 0);
 
 	make_unistr2(&(gr1->uni_acct_name), acct_name, acct_len);
 	make_unistr2(&(gr1->uni_acct_desc), acct_desc, desc_len);
@@ -1407,10 +1408,11 @@ void samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int dept
 	prs_align(ps);
 
 	smb_io_unihdr ("hdr_acct_name", &(gr1->hdr_acct_name) , ps, depth); 
-	smb_io_unihdr ("hdr_acct_desc", &(gr1->hdr_acct_desc) , ps, depth); 
 
 	prs_uint32("unknown_1", ps, depth, &(gr1->unknown_1));
 	prs_uint32("unknown_2", ps, depth, &(gr1->unknown_2));
+
+	smb_io_unihdr ("hdr_acct_desc", &(gr1->hdr_acct_desc) , ps, depth); 
 
 	smb_io_unistr2("uni_acct_name", &(gr1->uni_acct_name), gr1->hdr_acct_name.buffer, ps, depth);
 	prs_align(ps);
