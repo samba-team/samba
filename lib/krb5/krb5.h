@@ -18,6 +18,7 @@
 #include <bits.h>
 
 #include <des.h>
+#include <asn1_err.h>
 #include <krb5_err.h>
 
 #include "config_file.h"
@@ -459,6 +460,16 @@ krb5_rd_req(krb5_context context,
 	    krb5_keytab keytab,
 	    krb5_flags *ap_req_options,
 	    krb5_ticket **ticket);
+
+krb5_error_code
+krb5_rd_req_with_keyblock(krb5_context context,
+			  krb5_auth_context *auth_context,
+			  const krb5_data *inbuf,
+			  krb5_const_principal server,
+			  krb5_keyblock *keyblock,
+			  krb5_flags *ap_req_options,
+			  krb5_ticket **ticket);
+
 
 typedef EncAPRepPart krb5_ap_rep_enc_part;
 
