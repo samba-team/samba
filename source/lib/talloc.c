@@ -30,6 +30,8 @@
 #define TALLOC_MAGIC 0xe814ec4f
 #define TALLOC_MAGIC_FREE 0x7faebef3
 
+static void *null_context;
+
 struct talloc_chunk {
 	struct talloc_chunk *next, *prev;
 	struct talloc_chunk *parent, *child;
@@ -60,6 +62,10 @@ static struct talloc_chunk *talloc_chunk_from_ptr(void *ptr)
 void *talloc(void *context, size_t size)
 {
 	struct talloc_chunk *tc;
+
+	if (context == NULL) {
+		context = null_context;
+	}
 
 	if (size >= MAX_TALLOC_SIZE) {
 		return NULL;
@@ -162,6 +168,18 @@ void *talloc_named(void *context, size_t size,
 	va_end(ap);
 
 	return ptr;
+}
+
+/*
+  return the name of a talloc ptr, or "UNNAMED"
+*/
+const char *talloc_get_name(void *ptr)
+{
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	if (tc->name) {
+		return tc->name;
+	}
+	return "UNNAMED";
 }
 
 /*
@@ -327,7 +345,7 @@ void *talloc_steal(void *new_ctx, void *ptr)
 /*
   return the total size of a talloc pool (subtree)
 */
-off_t talloc_total_size(void *ptr)
+static off_t talloc_total_size(void *ptr)
 {
 	off_t total = 0;
 	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
@@ -339,6 +357,58 @@ off_t talloc_total_size(void *ptr)
 	return total;
 }
 
+/*
+  return the total number of blocks in a talloc pool (subtree)
+*/
+static off_t talloc_total_blocks(void *ptr)
+{
+	off_t total = 0;
+	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
+
+	total++;
+	for (c=tc->child;c;c=c->next) {
+		total += talloc_total_blocks(c+1);
+	}
+	return total;
+}
+
+/*
+  report on memory usage by all children of a pointer
+*/
+void talloc_report(void *ptr, FILE *f)
+{
+	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
+
+	fprintf(f,"talloc report on '%s' (total %lu bytes in %lu blocks)\n", 
+		talloc_get_name(ptr), 
+		(unsigned long)talloc_total_size(ptr),
+		(unsigned long)talloc_total_blocks(ptr));
+
+	for (c=tc->child;c;c=c->next) {
+		fprintf(f, "\t%-30s contains %6lu bytes in %3lu blocks\n", 
+			talloc_get_name(c+1),
+			(unsigned long)talloc_total_size(c+1),
+			(unsigned long)talloc_total_blocks(c+1));
+	}
+
+}
+
+/*
+  report on any memory hanging off the null context
+*/
+static void talloc_report_all(void)
+{
+	talloc_report(null_context, stderr);
+}
+
+/*
+  enable leak reporting on exit
+*/
+void talloc_enable_leak_check(void)
+{
+	null_context = talloc_named(NULL, 0, "null_context");
+	atexit(talloc_report_all);
+}
 
 /* 
    talloc and zero memory. 
