@@ -50,6 +50,7 @@ libroken_la_SOURCES =		\
 	get_window_size.c	\
 	getarg.c		\
 	getnameinfo_verified.c	\
+	getprogname.c		\
 	issuid.c		\
 	k_getpwnam.c		\
 	k_getpwuid.c		\
@@ -63,6 +64,7 @@ libroken_la_SOURCES =		\
 	roken_gethostby.c	\
 	rtbl.c			\
 	rtbl.h			\
+	setprogname.c		\
 	signal.c		\
 	simple_exec.c		\
 	snprintf.c		\

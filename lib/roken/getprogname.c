@@ -37,25 +37,22 @@ RCSID("$Id$");
 #endif
 
 #include "roken.h"
-#include "err.h"
 
-void
-warnerr(int doerrno, const char *fmt, va_list ap)
+#ifndef HAVE___PROGNAME
+const char *__progname;
+#endif
+
+#ifndef HAVE_GETPROGNAME
+const char *
+getprogname(void)
 {
-    int sverrno = errno;
-    const char *progname = getprogname();
-
-    if(progname != NULL){
-	fprintf(stderr, "%s", progname);
-	if(fmt != NULL || doerrno)
-	    fprintf(stderr, ": ");
-    }
-    if (fmt != NULL){
-	vfprintf(stderr, fmt, ap);
-	if(doerrno)
-	    fprintf(stderr, ": ");
-    }
-    if(doerrno)
-	fprintf(stderr, "%s", strerror(sverrno));
-    fprintf(stderr, "\n");
+    return __progname;
 }
+#endif /* HAVE_GETPROGNAME */
+
+const char *
+get_progname (void)
+{
+    return getprogname ();
+}
+
