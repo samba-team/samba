@@ -29,7 +29,7 @@ start() {
        # If CUPS is used as printing system, reload smb after a 1 minute delay
        # to allow the printers to appear properly as samba shares.
         if killall -0 cupsd 2>/dev/null; then
-         ( sleep 60 && killproc smbd -HUP ) &
+         ( sleep 60 && killproc smbd -HUP 1>/dev/null) &
        fi
        export TMPDIR="/var/tmp"
 	echo -n "Starting SMB services: "
