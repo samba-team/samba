@@ -169,7 +169,7 @@ scheduler add job
 void cmd_at(struct client_info *info)
 {
 	uint16 nt_pipe_fnum;
-	fstring temp;
+	pstring temp;
 	fstring dest_wks;
 	BOOL add = False;
 	BOOL del = False;
@@ -180,7 +180,7 @@ void cmd_at(struct client_info *info)
 	uint32 monthdays = 0;
 	uint8 weekdays = 0;
 	uint8 flags = JOB_NONINTERACTIVE;
-	fstring command;
+	pstring command;
 
         while (next_token(NULL, temp, NULL, sizeof(temp)))
 	{
@@ -274,12 +274,12 @@ void cmd_at(struct client_info *info)
 
 		while (True)
 		{
-			fstrcat(command, temp);
+			safe_strcat(command, temp, sizeof(command));
 
 			if (!next_token(NULL, temp, NULL, sizeof(temp)))
 				break;
 
-			fstrcat(command, " ");
+			safe_strcat(command, " ", sizeof(command));
 		}
 
 		break;
@@ -291,8 +291,8 @@ void cmd_at(struct client_info *info)
 		return;
 	}
 
-	fstrcpy(dest_wks, "\\\\");
-	fstrcat(dest_wks, info->dest_host);
+	safe_strcpy(dest_wks, "\\\\", sizeof(dest_wks));
+	safe_strcat(dest_wks, info->dest_host, sizeof(dest_wks));
 	strupper(dest_wks);
 
 	/* open scheduler session. */
