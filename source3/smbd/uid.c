@@ -593,6 +593,11 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 {
 	fstring sid_str;
 
+	/* if we know its local then don't try winbindd */
+	if (sid_compare_domain(&global_sam_sid, psid) == 0) {
+		return local_sid_to_uid(puid, psid, sidtype);
+	}
+
 /* (tridge) I commented out the slab of code below in order to support foreign SIDs
    Do we really need to validate the type of SID we have in this case? 
 */
