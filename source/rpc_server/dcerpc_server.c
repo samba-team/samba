@@ -100,6 +100,7 @@ NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
 	(*p)->ops = ops;
 	(*p)->private = NULL;
 	(*p)->call_list = NULL;
+	(*p)->cli_max_recv_frag = 0;
 
 	/* make sure the endpoint server likes the connection */
 	status = ops->connect(*p);
@@ -128,6 +129,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 {
 	struct ndr_push *push;
 	struct dcerpc_packet pkt;
+	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 
 	/* setup a bind_ack */
@@ -157,8 +159,15 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 		return status;
 	}
 
-	call->data = ndr_push_blob(push);
-	SSVAL(call->data.data,  DCERPC_FRAG_LEN_OFFSET, call->data.length);
+	rep = talloc(call->mem_ctx, sizeof(*rep));
+	if (!rep) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rep->data = ndr_push_blob(push);
+	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
+
+	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 
 	return NT_STATUS_OK;	
 }
@@ -173,6 +182,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32 if_version, transfer_syntax_version;
 	struct dcerpc_packet pkt;
 	struct ndr_push *push;
+	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 
 	if (call->pkt.u.bind.num_contexts != 1 ||
@@ -200,6 +210,10 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid, if_version));
 		/* we don't know about that interface */
 		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+	}
+
+	if (call->dce->cli_max_recv_frag == 0) {
+		call->dce->cli_max_recv_frag = call->pkt.u.bind.max_recv_frag;
 	}
 
 	/* setup a bind_ack */
@@ -241,8 +255,15 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return status;
 	}
 
-	call->data = ndr_push_blob(push);
-	SSVAL(call->data.data,  DCERPC_FRAG_LEN_OFFSET, call->data.length);
+	rep = talloc(call->mem_ctx, sizeof(*rep));
+	if (!rep) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rep->data = ndr_push_blob(push);
+	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
+
+	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 
 	return NT_STATUS_OK;
 }
@@ -259,7 +280,6 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	void *r;
 	NTSTATUS status;
 	DATA_BLOB stub;
-	struct dcerpc_packet pkt;
 
 	opnum = call->pkt.u.request.opnum;
 
@@ -302,34 +322,62 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 	stub = ndr_push_blob(push);
 
-	/* form the dcerpc response packet */
-	pkt.rpc_vers = 5;
-	pkt.rpc_vers_minor = 0;
-	pkt.drep[0] = 0x10; /* Little endian */
-	pkt.drep[1] = 0;
-	pkt.drep[2] = 0;
-	pkt.drep[3] = 0;
-	pkt.auth_length = 0;
-	pkt.call_id = call->pkt.call_id;
-	pkt.ptype = DCERPC_PKT_RESPONSE;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.u.response.alloc_hint = stub.length;
-	pkt.u.response.context_id = call->pkt.u.request.context_id;
-	pkt.u.response.cancel_count = 0;
-	pkt.u.response.stub_and_verifier = stub;
+	do {
+		uint32 length;
+		struct dcesrv_call_reply *rep;
+		struct dcerpc_packet pkt;
 
-	push = ndr_push_init_ctx(call->mem_ctx);
-	if (!push) {
-		return NT_STATUS_NO_MEMORY;
-	}
+		rep = talloc(call->mem_ctx, sizeof(*rep));
+		if (!rep) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
-	status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+		length = stub.length;
+		if (length + DCERPC_RESPONSE_LENGTH > call->dce->cli_max_recv_frag) {
+			length = call->dce->cli_max_recv_frag - DCERPC_RESPONSE_LENGTH;
+		}
 
-	call->data = ndr_push_blob(push);
-	SSVAL(call->data.data,  DCERPC_FRAG_LEN_OFFSET, call->data.length);
+		/* form the dcerpc response packet */
+		pkt.rpc_vers = 5;
+		pkt.rpc_vers_minor = 0;
+		pkt.drep[0] = 0x10; /* Little endian */
+		pkt.drep[1] = 0;
+		pkt.drep[2] = 0;
+		pkt.drep[3] = 0;
+		pkt.auth_length = 0;
+		pkt.call_id = call->pkt.call_id;
+		pkt.ptype = DCERPC_PKT_RESPONSE;
+		pkt.pfc_flags = 0;
+		if (!call->replies) {
+			pkt.pfc_flags |= DCERPC_PFC_FLAG_FIRST;
+		}
+		if (length == stub.length) {
+			pkt.pfc_flags |= DCERPC_PFC_FLAG_LAST;
+		}
+		pkt.u.response.alloc_hint = stub.length;
+		pkt.u.response.context_id = call->pkt.u.request.context_id;
+		pkt.u.response.cancel_count = 0;
+		pkt.u.response.stub_and_verifier.data = stub.data;
+		pkt.u.response.stub_and_verifier.length = length;
+
+		push = ndr_push_init_ctx(call->mem_ctx);
+		if (!push) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		
+		rep->data = ndr_push_blob(push);
+		SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
+
+		DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
+		
+		stub.data += length;
+		stub.length -= length;
+	} while (stub.length != 0);
 
 	return NT_STATUS_OK;
 }
@@ -357,7 +405,7 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 	}
 	call->mem_ctx = mem_ctx;
 	call->dce = dce;
-	call->data = data_blob(NULL, 0);
+	call->replies = NULL;
 
 	ndr = ndr_pull_init_blob(data, mem_ctx);
 	if (!ndr) {
@@ -454,22 +502,29 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 NTSTATUS dcesrv_output(struct dcesrv_state *dce, DATA_BLOB *data)
 {
 	struct dcesrv_call_state *call;
+	struct dcesrv_call_reply *rep;
 
 	call = dce->call_list;
-	if (!call) {
+	if (!call || !call->replies) {
 		return NT_STATUS_FOOBAR;
 	}
-	
-	if (data->length >= call->data.length) {
-		data->length = call->data.length;
+	rep = call->replies;
+
+	if (data->length >= rep->data.length) {
+		data->length = rep->data.length;
 	}
 
-	memcpy(data->data, call->data.data, data->length);
-	call->data.length -= data->length;
-	call->data.data += data->length;
+	memcpy(data->data, rep->data.data, data->length);
+	rep->data.length -= data->length;
+	rep->data.data += data->length;
 
-	if (call->data.length == 0) {
-		/* we're done with this call */
+	if (rep->data.length == 0) {
+		/* we're done with this section of the call */
+		DLIST_REMOVE(call->replies, rep);
+	}
+
+	if (call->replies == NULL) {
+		/* we're done with the whole call */
 		DLIST_REMOVE(dce->call_list, call);
 		talloc_destroy(call->mem_ctx);
 	}
