@@ -29,8 +29,8 @@ sub ReplaceInterfacePointers($)
 	my $e = shift;
 
 	foreach my $x (@{$e->{ELEMENTS}}) {
-		next unless typelist::hasType($x);
-		next unless typelist::getType($x)->{DATA}->{TYPE} eq "INTERFACE";
+		next unless (typelist::hasType($x->{TYPE}));
+		next unless typelist::getType($x->{TYPE})->{DATA}->{TYPE} eq "INTERFACE";
 		
 		$x->{TYPE} = "MInterfacePointer";
 	}
@@ -40,9 +40,8 @@ sub ReplaceInterfacePointers($)
 sub ODL2IDL($)
 {
 	my $odl = shift;
-	my @idl = @{$odl};
 	
-	foreach my $x (@idl) {
+	foreach my $x (@{$odl}) {
 		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
 		# for 'object' interfaces
 		if (util::has_property($x, "object")) {
@@ -53,7 +52,7 @@ sub ODL2IDL($)
 		}
 	}
 
-	return \@idl;
+	return $odl;
 }
 
 1;
