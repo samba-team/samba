@@ -142,9 +142,9 @@ void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io)
 		    data, size, align, BOOLSTR(io)));
 
 	prs_init(ps, 0, align, io);
-	ps->data = data;
-	ps->data_size = size;
-	ps->end = size;
+	prs_append_data(ps, data, size);
+	/* *arg* */
+	/* safe_free(data); */
 
 	CHECK_STRUCT(ps);
 }
