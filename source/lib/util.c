@@ -3118,6 +3118,21 @@ char *smbd_mktemp(char *template)
 	return p;
 }
 
+/*****************************************************************
+possibly replace mkstemp if it is broken
+ *****************************************************************/  
+int smb_mkstemp(char *template)
+{
+#if HAVE_SECURE_MKSTEMP
+	return mkstemp(template);
+#else
+	/* have a reasonable go at emulating it. Hope that
+	   the system mktemp() isn't completly hopeless */
+	if (!mktemp(template)) return -1;
+	return open(template, O_CREAT|O_EXCL|O_RDWR, 0600);
+#endif
+}
+
 
 /*****************************************************************
 like strdup but for memory

@@ -70,7 +70,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		       lp_lockdir());
 		ret = 1;
 	} else if ((st.st_mode & 0777) != 0755) {
-		printf("WARNING: lock directory %s should have permissions 0755 for browsing to work\n",
+		printf("ERROR: lock directory %s should have permissions 0755 for security and for browsing to work\n",
 		       lp_lockdir());
 		ret = 1;
 	}

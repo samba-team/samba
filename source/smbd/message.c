@@ -40,8 +40,7 @@ deliver the message
 ****************************************************************************/
 static void msg_deliver(void)
 {
-  pstring s;
-  fstring name;
+  pstring name;
   int i;
   int fd;
 
@@ -53,13 +52,11 @@ static void msg_deliver(void)
     }
 
   /* put it in a temporary file */
-  slprintf(s,sizeof(s)-1, "%s/msg.XXXXXX",tmpdir());
-  fstrcpy(name,(char *)smbd_mktemp(s));
-
-  fd = sys_open(name,O_WRONLY|O_CREAT|O_TRUNC|O_EXCL,0600);
+  slprintf(name,sizeof(name)-1, "%s/msg.XXXXXX",tmpdir());
+  fd = smb_mkstemp(name);
   if (fd == -1) {
-    DEBUG(1,("can't open message file %s\n",name));
-    return;
+	  DEBUG(1,("can't open message file %s\n",name));
+	  return;
   }
 
   /*
@@ -86,12 +83,13 @@ static void msg_deliver(void)
     {
       fstring alpha_msgfrom;
       fstring alpha_msgto;
+      pstring s;
 
       pstrcpy(s,lp_msg_command());
-      pstring_sub(s,"%s",name);
       pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,sizeof(alpha_msgfrom)));
       pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,sizeof(alpha_msgto)));
       standard_sub_basic(s);
+      pstring_sub(s,"%s",name);
       smbrun(s,NULL,False);
     }
 

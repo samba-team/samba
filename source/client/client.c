@@ -842,18 +842,24 @@ view the file using the pager
 ****************************************************************************/
 static void cmd_more(void)
 {
-	fstring rname,lname,tmpname,pager_cmd;
+	fstring rname,lname,pager_cmd;
 	char *pager;
+	int fd;
 
 	fstrcpy(rname,cur_dir);
 	fstrcat(rname,"\\");
-	slprintf(tmpname,
-		 sizeof(fstring)-1,
-		 "%s/smbmore.%d",tmpdir(),(int)getpid());
-	fstrcpy(lname,tmpname);
-	
+
+	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
+	fd = smb_mkstemp(lname);
+	if (fd == -1) {
+		DEBUG(0,("failed to create temporary file for more\n"));
+		return;
+	}
+	close(fd);
+
 	if (!next_token(NULL,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
 		DEBUG(0,("more <filename>\n"));
+		unlink(lname);
 		return;
 	}
 	dos_clean_name(rname);
@@ -863,9 +869,9 @@ static void cmd_more(void)
 	pager=getenv("PAGER");
 
 	slprintf(pager_cmd,sizeof(pager_cmd)-1,
-		 "%s %s",(pager? pager:PAGER), tmpname);
+		 "%s %s",(pager? pager:PAGER), lname);
 	system(pager_cmd);
-	unlink(tmpname);
+	unlink(lname);
 }
 
 
@@ -1157,9 +1163,18 @@ static void cmd_mput(void)
 		pstring cmd;
 		pstring tmpname;
 		FILE *f;
+		int fd;
+
+		slprintf(tmpname,sizeof(tmpname)-1, "%s/ls.smb.XXXXXX",
+			 tmpdir());
+		fd = smb_mkstemp(tmpname);
+
+		if (fd == -1) {
+			DEBUG(0,("Failed to create temporary file %s\n", 
+				 tmpname));
+			continue;
+		}
 		
-		slprintf(tmpname,sizeof(pstring)-1,
-			 "%s/ls.smb.%d",tmpdir(),(int)getpid());
 		if (recurse)
 			slprintf(cmd,sizeof(pstring)-1,
 				"find . -name \"%s\" -print > %s",p,tmpname);
@@ -1167,9 +1182,11 @@ static void cmd_mput(void)
 			slprintf(cmd,sizeof(pstring)-1,
 				"find . -maxdepth 1 -name \"%s\" -print > %s",p,tmpname);
 		system(cmd);
+		close(fd);
 
 		f = sys_fopen(tmpname,"r");
 		if (!f) continue;
+		unlink(tmpname);
 		
 		while (!feof(f)) {
 			pstring quest;
@@ -1215,7 +1232,6 @@ static void cmd_mput(void)
 			do_put(rname,lname);
 		}
 		fclose(f);
-		unlink(tmpname);
 	}
 }
 

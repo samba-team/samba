@@ -1021,7 +1021,7 @@ int get_printqueue(int snum,
 
 	standard_sub(conn,syscmd);
 
-	slprintf(outfile,sizeof(outfile)-1, "%s/lpq.%08x",tmpdir(),str_checksum(syscmd));
+	slprintf(outfile,sizeof(outfile)-1, "%s/lpq.%08x",lp_lockdir(),str_checksum(syscmd));
   
 	if (!lpq_cache_reset[snum] && cachetime && !sys_stat(outfile,&sbuf)) {
 		if (time(NULL) - sbuf.st_mtime < cachetime) {
@@ -1070,10 +1070,6 @@ int get_printqueue(int snum,
 	
 	if (!cachetime) {
 		unlink(outfile);
-	} else {
-		/* we only expect this to succeed on trapdoor systems,
-		   on normal systems the file is owned by root */
-		chmod(outfile,0666);
 	}
 	return(count);
 }

@@ -2546,7 +2546,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   size_t numtowrite = SVAL(inbuf,smb_vwv10);
   BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
   ssize_t nwritten = -1;
-  unsigned int smb_doff = SVAL(inbuf,smb_vwv11);
+  int smb_doff = SVAL(inbuf,smb_vwv11);
   char *data;
 
   /* If it's an IPC, pass off the pipe handler. */
@@ -2556,9 +2556,6 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);
-
-  if(smb_doff > smb_len(inbuf))
-    return(ERROR(ERRDOS,ERRbadmem));
 
   data = smb_base(inbuf) + smb_doff;
 
@@ -2965,11 +2962,9 @@ int reply_echo(connection_struct *conn,
 {
 	int smb_reverb = SVAL(inbuf,smb_vwv0);
 	int seq_num;
-	unsigned int data_len = smb_buflen(inbuf);
+	int data_len = smb_buflen(inbuf);
 	int outsize = set_message(outbuf,1,data_len,True);
-
-	data_len = MIN(data_len, (sizeof(inbuf)-(smb_buf(inbuf)-inbuf)));
-
+	
 	/* copy any incoming data back out */
 	if (data_len > 0)
 		memcpy(smb_buf(outbuf),smb_buf(inbuf),data_len);
