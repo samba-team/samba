@@ -476,10 +476,8 @@ krb5_get_init_creds_keytab(krb5_context context,
     krb5_keytab_key_proc_args *a;
     
     ret = get_init_creds_common(context, creds, client, start_time,
-				ctx.in_tkt_service,
-				options,
-				&ctx);
-    if(ret)
+				in_tkt_service, options, &ctx);
+    if (ret)
 	goto out;
 
     a = malloc (sizeof(*a));
@@ -1360,9 +1358,7 @@ krb5_get_init_creds(krb5_context context,
     memset(&kdc_reply, 0, sizeof(kdc_reply));
 
     ret = get_init_creds_common(context, creds, client, start_time,
-				in_tkt_service,
-				options,
-				&ctx);
+				in_tkt_service, options, &ctx);
     if (ret)
 	goto out;
 
