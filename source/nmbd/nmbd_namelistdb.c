@@ -186,7 +186,7 @@ void update_name_ttl( struct name_record *namerec, int ttl )
   if( namerec->data.death_time != PERMANENT_TTL )
     namerec->data.death_time = time_now + ttl;
 
-  namerec->data.refresh_time = time_now + (ttl/2);
+  namerec->data.refresh_time = time_now + MIN((ttl/2), MAX_REFRESH_TIME);
 
   namerec->subnet->namelist_changed = True;
 } /* update_name_ttl */
@@ -251,7 +251,7 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
   else
     namerec->data.death_time = time_now + ttl;
 
-  namerec->data.refresh_time = time_now + (ttl/2);
+  namerec->data.refresh_time = time_now + MIN((ttl/2), MAX_REFRESH_TIME);
 
   /* Now add the record to the name list. */    
   update_name_in_namelist( subrec, namerec );
