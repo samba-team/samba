@@ -382,6 +382,12 @@ interface IOXIDResolver
 											  [out, ref] COMVERSION *pComVersion
 											 );
 
+	[idempotent] WERROR ServerAlive2 (
+									  [out] COMVERSION version,
+									  [out] uint8 unknown1[4],
+									  [out] DUALSTRINGARRAY dualstring,
+									  [out] uint8 unknown2[5]);
+
 }
 
 [
