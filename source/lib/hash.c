@@ -192,7 +192,7 @@ hash_element *hash_insert(hash_table *table, char *value, char *key)
 		bucket = hash_elem->bucket;
 		ubi_dlRemThis(&(table->lru_chain), &(hash_elem->lru_link.lru_link));
 		ubi_dlRemThis(bucket, (ubi_dlNodePtr)hash_elem);
-		SAFE_FREE((char*)(hash_elem->value));
+		SAFE_FREE(hash_elem->value);
 		SAFE_FREE(hash_elem);
 	}  else  {
 		table->num_elements += 1;
