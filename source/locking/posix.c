@@ -563,9 +563,9 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * and the underlying system can handle 64 bit signed locks.
 	 */
 
-    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
-    SMB_OFF_T mask = (mask2<<1);
-    SMB_OFF_T max_positive_lock_offset = ~mask;
+	SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
+	SMB_OFF_T mask = (mask2<<1);
+	SMB_OFF_T max_positive_lock_offset = ~mask;
 
 #else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
 
@@ -575,7 +575,7 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * All offsets & counts must be 2^31 or less.
 	 */
 
-    SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
+	SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
 
 #endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
 
