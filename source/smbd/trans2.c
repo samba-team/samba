@@ -1779,7 +1779,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
         }
         return(UNIXERROR(ERRDOS,ERRbadpath));
       }
-    } else if (fsp->print_file) {
+    } else if (fsp && fsp->print_file) {
         /*
          * Doing a DELETE_ON_CLOSE should cancel a print job.
          */
@@ -2043,6 +2043,18 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 		break;
 	}
+
+	case 1013:
+#if 0 /* JRA */
+		/*
+		 * This (new) W2K call seems to set one byte. Not sure
+		 * yet what it's trying to do. JRA.
+		 */
+		{
+			unsigned char setval = CVAL(pdata,0);
+		}
+#endif /* JRA */
+		return(ERROR(ERRDOS,ERRnoaccess));
 
 	default:
 	{
