@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -213,15 +213,22 @@ decode_type (char *name, Type *t)
 	     "len = reallen;\n");
 
     fprintf (codefile,
+	     "{\n"
+	     "size_t origlen = len;\n"
+	     "int oldret = ret;\n"
+	     "ret = 0;\n"
 	     "(%s)->len = 0;\n"
 	     "(%s)->val = NULL;\n"
-	     "while(len > 0) {\n"
+	     "while(ret < origlen) {\n"
 	     "(%s)->len++;\n"
 	     "(%s)->val = realloc((%s)->val, sizeof(*((%s)->val)) * (%s)->len);\n",
 	     name, name, name, name, name, name, name);
     asprintf (&n, "&(%s)->val[(%s)->len-1]", name, name);
     decode_type (n, t->subtype);
     fprintf (codefile, 
+	     "len = origlen - ret;\n"
+	     "}\n"
+	     "ret += oldret;\n"
 	     "}\n");
     free (n);
     break;
