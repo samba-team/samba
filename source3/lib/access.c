@@ -35,7 +35,7 @@ static char sep[] = ", \t";
 #define	FAIL		(-1)
 
 /* Forward declarations. */
-static int list_match(char *list,char *item, int (*match_fn)());
+static int list_match(char *list,char *item, int (*match_fn)(char *, char *));
 static int client_match(char *tok,char *item);
 static int string_match(char *tok,char *s);
 static int masked_match(char *tok, char *slash, char *s);
@@ -118,7 +118,7 @@ BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr)
 
 /* list_match - match an item against a list of tokens with exceptions */
 /* (All modifications are marked with the initials "jkf") */
-static int list_match(char *list,char *item, int (*match_fn)())
+static int list_match(char *list,char *item, int (*match_fn)(char *, char *))
 {
     char   *tok;
     char   *listcopy;		/* jkf */

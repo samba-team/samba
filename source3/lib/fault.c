@@ -23,7 +23,7 @@
 extern int DEBUGLEVEL;
 
 
-static void (*cont_fn)();
+static void (*cont_fn)(void *);
 
 
 /*******************************************************************
@@ -66,7 +66,7 @@ static void sig_fault(int sig)
 /*******************************************************************
 setup our fault handlers
 ********************************************************************/
-void fault_setup(void (*fn)())
+void fault_setup(void (*fn)(void *))
 {
   cont_fn = fn;
 

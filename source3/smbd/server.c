@@ -1060,7 +1060,7 @@ static file_fd_struct *fd_get_already_open(struct stat *sbuf)
 fd support routines - attempt to find a empty slot in the FileFd array.
 Increments the ref_count of the returned entry.
 ****************************************************************************/
-static file_fd_struct *fd_get_new()
+static file_fd_struct *fd_get_new(void)
 {
   int i;
   file_fd_struct *fd_ptr;
@@ -2380,7 +2380,7 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 /****************************************************************************
 this prevents zombie child processes
 ****************************************************************************/
-static int sig_cld()
+static int sig_cld(void)
 {
   static int depth = 0;
   if (depth != 0)
@@ -2425,7 +2425,7 @@ static int sig_cld()
 /****************************************************************************
   this is called when the client exits abruptly
   **************************************************************************/
-static int sig_pipe()
+static int sig_pipe(void)
 {
 	struct cli_state *cli;
 	BlockSignals(True,SIGPIPE);
@@ -2698,7 +2698,7 @@ static void process_smb(char *inbuf, char *outbuf)
 /****************************************************************************
   open the oplock IPC socket communication
 ****************************************************************************/
-static BOOL open_oplock_ipc()
+static BOOL open_oplock_ipc(void)
 {
   struct sockaddr_in sock_name;
   int len = sizeof(sock_name);
@@ -3318,7 +3318,7 @@ BOOL reload_services(BOOL test)
 /****************************************************************************
 this prevents zombie child processes
 ****************************************************************************/
-static int sig_hup()
+static int sig_hup(void)
 {
   BlockSignals(True,SIGHUP);
   DEBUG(0,("Got SIGHUP\n"));
@@ -4066,7 +4066,7 @@ struct {
 /****************************************************************************
   reply to a negprot
 ****************************************************************************/
-static int reply_negprot(char *inbuf,char *outbuf)
+static int reply_negprot(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = set_message(outbuf,1,0,True);
   int Index=0;
@@ -4392,7 +4392,7 @@ struct smb_message_struct
 {
   int code;
   char *name;
-  int (*fn)();
+  int (*fn)(char *, char *, int, int);
   int flags;
 #if PROFILING
   unsigned long time;
@@ -5042,7 +5042,7 @@ static void usage(char *pname)
   seteuid(0);
 #endif
 
-  fault_setup(exit_server);
+  fault_setup((void (*)(void *))exit_server);
   signal(SIGTERM , SIGNAL_CAST dflt_sig);
 
   /* we want total control over the permissions on created files,

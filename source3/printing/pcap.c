@@ -313,7 +313,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 run a function on each printer name in the printcap file. The function is 
 passed the primary name and the comment (if possible)
 ***************************************************************************/
-void pcap_printer_fn(void (*fn)())
+void pcap_printer_fn(void (*fn)(char *, char *))
 {
   pstring name,comment;
   char *line;

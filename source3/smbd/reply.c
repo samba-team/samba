@@ -217,7 +217,7 @@ static void parse_connect(char *p,char *service,char *user,
 /****************************************************************************
   reply to a tcon
 ****************************************************************************/
-int reply_tcon(char *inbuf,char *outbuf)
+int reply_tcon(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring service;
   pstring user;
@@ -358,7 +358,7 @@ int reply_unknown(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to an ioctl
 ****************************************************************************/
-int reply_ioctl(char *inbuf,char *outbuf)
+int reply_ioctl(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   DEBUG(3,("ignoring ioctl\n"));
 #if 0
@@ -703,7 +703,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 /****************************************************************************
   reply to a chkpth
 ****************************************************************************/
-int reply_chkpth(char *inbuf,char *outbuf)
+int reply_chkpth(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
   int cnum,mode;
@@ -758,7 +758,7 @@ int reply_chkpth(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a getatr
 ****************************************************************************/
-int reply_getatr(char *inbuf,char *outbuf)
+int reply_getatr(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
   int cnum;
@@ -838,7 +838,7 @@ int reply_getatr(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a setatr
 ****************************************************************************/
-int reply_setatr(char *inbuf,char *outbuf)
+int reply_setatr(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
   int cnum;
@@ -885,7 +885,7 @@ int reply_setatr(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a dskattr
 ****************************************************************************/
-int reply_dskattr(char *inbuf,char *outbuf)
+int reply_dskattr(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum;
   int outsize = 0;
@@ -912,7 +912,7 @@ int reply_dskattr(char *inbuf,char *outbuf)
   reply to a search
   Can be called from SMBsearch, SMBffirst or SMBfunique.
 ****************************************************************************/
-int reply_search(char *inbuf,char *outbuf)
+int reply_search(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring mask;
   pstring directory;
@@ -1158,7 +1158,7 @@ int reply_search(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a fclose (stop directory search)
 ****************************************************************************/
-int reply_fclose(char *inbuf,char *outbuf)
+int reply_fclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum;
   int outsize = 0;
@@ -1195,7 +1195,7 @@ int reply_fclose(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to an open
 ****************************************************************************/
-int reply_open(char *inbuf,char *outbuf)
+int reply_open(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
   int cnum;
@@ -1448,7 +1448,7 @@ int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
 /****************************************************************************
   reply to a mknew or a create
 ****************************************************************************/
-int reply_mknew(char *inbuf,char *outbuf)
+int reply_mknew(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
   int cnum,com;
@@ -1538,7 +1538,7 @@ int reply_mknew(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a create temporary file
 ****************************************************************************/
-int reply_ctemp(char *inbuf,char *outbuf)
+int reply_ctemp(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
   pstring fname2;
@@ -1638,7 +1638,7 @@ static BOOL can_delete(char *fname,int cnum,int dirtype)
 /****************************************************************************
   reply to a unlink
 ****************************************************************************/
-int reply_unlink(char *inbuf,char *outbuf)
+int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
   pstring name;
@@ -1743,7 +1743,7 @@ int reply_unlink(char *inbuf,char *outbuf)
 /****************************************************************************
    reply to a readbraw (core+ protocol)
 ****************************************************************************/
-int reply_readbraw(char *inbuf, char *outbuf)
+int reply_readbraw(char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,maxcount,mincount,fnum;
   int nread = 0;
@@ -1853,7 +1853,7 @@ int reply_readbraw(char *inbuf, char *outbuf)
 /****************************************************************************
   reply to a lockread (core+ protocol)
 ****************************************************************************/
-int reply_lockread(char *inbuf,char *outbuf)
+int reply_lockread(char *inbuf,char *outbuf, int dum_size, int dum_buffsiz)
 {
   int cnum,fnum;
   int nread = -1;
@@ -1899,7 +1899,7 @@ int reply_lockread(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a read
 ****************************************************************************/
-int reply_read(char *inbuf,char *outbuf)
+int reply_read(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,numtoread,fnum;
   int nread = 0;
@@ -1994,7 +1994,7 @@ int reply_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 /****************************************************************************
   reply to a writebraw (core+ or LANMAN1.0 protocol)
 ****************************************************************************/
-int reply_writebraw(char *inbuf,char *outbuf)
+int reply_writebraw(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int nwritten=0;
   int total_written=0;
@@ -2101,7 +2101,7 @@ int reply_writebraw(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a writeunlock (core+)
 ****************************************************************************/
-int reply_writeunlock(char *inbuf,char *outbuf)
+int reply_writeunlock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,fnum;
   int nwritten = -1;
@@ -2158,7 +2158,7 @@ int reply_writeunlock(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a write
 ****************************************************************************/
-int reply_write(char *inbuf,char *outbuf,int dum1,int dum2)
+int reply_write(char *inbuf,char *outbuf,int dum_size,int dum_buffsize)
 {
   int cnum,numtowrite,fnum;
   int nwritten = -1;
@@ -2166,9 +2166,6 @@ int reply_write(char *inbuf,char *outbuf,int dum1,int dum2)
   int startpos;
   char *data;
 
-  dum1 = dum2 = 0;
-
-  
   cnum = SVAL(inbuf,smb_tid);
   fnum = GETFNUM(inbuf,smb_vwv0);
 
@@ -2276,7 +2273,7 @@ int reply_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 /****************************************************************************
   reply to a lseek
 ****************************************************************************/
-int reply_lseek(char *inbuf,char *outbuf)
+int reply_lseek(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,fnum;
   uint32 startpos;
@@ -2317,7 +2314,7 @@ int reply_lseek(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a flush
 ****************************************************************************/
-int reply_flush(char *inbuf,char *outbuf)
+int reply_flush(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum, fnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2348,7 +2345,7 @@ int reply_flush(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a exit
 ****************************************************************************/
-int reply_exit(char *inbuf,char *outbuf)
+int reply_exit(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = set_message(outbuf,0,0,True);
   DEBUG(3,("%s exit\n",timestring()));
@@ -2360,7 +2357,7 @@ int reply_exit(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a close
 ****************************************************************************/
-int reply_close(char *inbuf,char *outbuf)
+int reply_close(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int fnum,cnum;
   int outsize = 0;
@@ -2406,7 +2403,7 @@ int reply_close(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a writeclose (Core+ protocol)
 ****************************************************************************/
-int reply_writeclose(char *inbuf,char *outbuf)
+int reply_writeclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,numtowrite,fnum;
   int nwritten = -1;
@@ -2455,7 +2452,7 @@ int reply_writeclose(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a lock
 ****************************************************************************/
-int reply_lock(char *inbuf,char *outbuf)
+int reply_lock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int fnum,cnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2484,7 +2481,7 @@ int reply_lock(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a unlock
 ****************************************************************************/
-int reply_unlock(char *inbuf,char *outbuf)
+int reply_unlock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int fnum,cnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2513,7 +2510,7 @@ int reply_unlock(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a tdis
 ****************************************************************************/
-int reply_tdis(char *inbuf,char *outbuf)
+int reply_tdis(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2541,7 +2538,7 @@ int reply_tdis(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a echo
 ****************************************************************************/
-int reply_echo(char *inbuf,char *outbuf)
+int reply_echo(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum;
   int smb_reverb = SVAL(inbuf,smb_vwv0);
@@ -2591,7 +2588,7 @@ int reply_echo(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a printopen
 ****************************************************************************/
-int reply_printopen(char *inbuf,char *outbuf)
+int reply_printopen(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
   pstring fname2;
@@ -2658,7 +2655,7 @@ int reply_printopen(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a printclose
 ****************************************************************************/
-int reply_printclose(char *inbuf,char *outbuf)
+int reply_printclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int fnum,cnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2683,7 +2680,7 @@ int reply_printclose(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a printqueue
 ****************************************************************************/
-int reply_printqueue(char *inbuf,char *outbuf)
+int reply_printqueue(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum;
   int outsize = set_message(outbuf,2,3,True);
@@ -2777,7 +2774,7 @@ int reply_printqueue(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a printwrite
 ****************************************************************************/
-int reply_printwrite(char *inbuf,char *outbuf)
+int reply_printwrite(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,numtowrite,fnum;
   int outsize = set_message(outbuf,0,0,True);
@@ -2809,7 +2806,7 @@ int reply_printwrite(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a mkdir
 ****************************************************************************/
-int reply_mkdir(char *inbuf,char *outbuf)
+int reply_mkdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring directory;
   int cnum;
@@ -2904,7 +2901,7 @@ static BOOL recursive_rmdir(char *directory)
 /****************************************************************************
   reply to a rmdir
 ****************************************************************************/
-int reply_rmdir(char *inbuf,char *outbuf)
+int reply_rmdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring directory;
   int cnum;
@@ -3096,7 +3093,7 @@ static BOOL can_rename(char *fname,int cnum)
 /****************************************************************************
   reply to a mv
 ****************************************************************************/
-int reply_mv(char *inbuf,char *outbuf)
+int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
   pstring name;
@@ -3351,7 +3348,7 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
 /****************************************************************************
   reply to a file copy.
   ****************************************************************************/
-int reply_copy(char *inbuf,char *outbuf)
+int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
   pstring name;
@@ -3485,7 +3482,7 @@ int reply_copy(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a setdir
 ****************************************************************************/
-int reply_setdir(char *inbuf,char *outbuf)
+int reply_setdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,snum;
   int outsize = 0;
@@ -3714,7 +3711,7 @@ int reply_readbmpx(char *inbuf,char *outbuf,int length,int bufsize)
 /****************************************************************************
   reply to a SMBwritebmpx (write block multiplex primary) request
 ****************************************************************************/
-int reply_writebmpx(char *inbuf,char *outbuf)
+int reply_writebmpx(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,numtowrite,fnum;
   int nwritten = -1;
@@ -3807,7 +3804,7 @@ int reply_writebmpx(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a SMBwritebs (write block multiplex secondary) request
 ****************************************************************************/
-int reply_writebs(char *inbuf,char *outbuf)
+int reply_writebs(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,numtowrite,fnum;
   int nwritten = -1;
@@ -3888,7 +3885,7 @@ int reply_writebs(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a SMBsetattrE
 ****************************************************************************/
-int reply_setattrE(char *inbuf,char *outbuf)
+int reply_setattrE(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,fnum;
   struct utimbuf unix_times;
@@ -3941,7 +3938,7 @@ not setting timestamps of 0\n",
 /****************************************************************************
   reply to a SMBgetattrE
 ****************************************************************************/
-int reply_getattrE(char *inbuf,char *outbuf)
+int reply_getattrE(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int cnum,fnum;
   struct stat sbuf;

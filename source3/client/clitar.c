@@ -86,21 +86,13 @@ int tarhandle;
 
 static void writetarheader(int f,  char *aname, int size, time_t mtime,
 			   char *amode, unsigned char ftype);
-static void do_atar();
-static void do_tar();
-static void oct_it();
-static void fixtarname();
-static int dotarbuf();
-static void dozerobuf();
-static void dotareof();
-static void initarbuf();
-static int do_setrattr();
 
-/* restore functions */
-static long readtarheader();
-static long unoct();
-static void do_tarput();
-static void unfixtarname();
+/* Forward references. */
+static void fixtarname(char *tptr, char *fp, int l);
+static int dotarbuf(int f, char *b, int n);
+static void oct_it (long value, int ndgs, char *p);
+static long unoct(char *p, int ndgs);
+static void unfixtarname(char *tptr, char *fp, int l);
 
 /*
  * tar specific utitlities
@@ -306,7 +298,7 @@ static void dozerobuf(int f, int n)
 /****************************************************************************
 Malloc tape buffer
 ****************************************************************************/
-static void initarbuf()
+static void initarbuf(void)
 {
   /* initialize tar buffer */
   tbufsiz=blocksize*TBLOCK;
@@ -373,7 +365,7 @@ static void fixtarname(char *tptr, char *fp, int l)
 /****************************************************************************
 Convert from decimal to octal string
 ****************************************************************************/
-static void oct_it (register long value, register int ndgs, register char *p)
+static void oct_it (long value, int ndgs, char *p)
 {
   /* Converts long to octal string, pads with leading zeros */
 
@@ -1353,21 +1345,7 @@ static void unfixtarname(char *tptr, char *fp, int l)
   }
 }
 
-/****************************************************************************
-Move to the next block in the buffer, which may mean read in another set of
-blocks.
-****************************************************************************/
-int next_block(char *tarbuf, char *bufferp, int bufsiz)
-{
-  int bufread, total = 0;
-
-  for (bufread = read(tarhandle, tarbuf, bufsiz); total += bufread; total < bufsiz) {
-
-    }
-
-}
-
-static void do_tarput()
+static void do_tarput(void)
 {
   file_info finfo;
   int nread=0, bufread;
@@ -1653,7 +1631,7 @@ static void do_tarput()
 /****************************************************************************
 Blocksize command
 ***************************************************************************/
-void cmd_block(void)
+void cmd_block(char *dum_in, char *dum_out)
 {
   fstring buf;
   int block;
@@ -1678,7 +1656,7 @@ void cmd_block(void)
 /****************************************************************************
 command to set incremental / reset mode
 ***************************************************************************/
-void cmd_tarmode(void)
+void cmd_tarmode(char *dum_in, char *dum_out)
 {
   fstring buf;
 
@@ -1718,7 +1696,7 @@ void cmd_tarmode(void)
 /****************************************************************************
 Feeble attrib command
 ***************************************************************************/
-void cmd_setmode(void)
+void cmd_setmode(char *dum_in, char *dum_out)
 {
   char *q;
   fstring buf;

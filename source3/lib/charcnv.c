@@ -30,7 +30,7 @@ static BOOL mapsinited = 0;
 static char unix2dos[256];
 static char dos2unix[256];
 
-static void initmaps() {
+static void initmaps(void) {
     int k;
 
     for (k = 0; k < 256; k++) unix2dos[k] = k;
@@ -51,7 +51,7 @@ static void update_map(char * str) {
     }
 }
 
-static void init_iso8859_1() {
+static void init_iso8859_1(void) {
 
     int i;
     if (!mapsinited) initmaps();
@@ -81,7 +81,7 @@ update_map("\370\233\371\227\372\243\373\226\374\201\375\354\376\347\377\230");
 
 /* Init for eastern european languages. */
 
-static void init_iso8859_2() {
+static void init_iso8859_2(void) {
 
     int i;
     if (!mapsinited) initmaps();
@@ -118,7 +118,7 @@ update_map("\377\372");
 
 /* Added by Max Khon <max@iclub.nsu.ru> */
 
-static void init_iso8859_5()
+static void init_iso8859_5(void)
 {
   int i;
   if (!mapsinited) initmaps();
@@ -145,7 +145,7 @@ update_map("\374\360\377\240");
 
 /* Init for russian language (koi8) */
 
-static void init_koi8_r()
+static void init_koi8_r(void)
 {
   if (!mapsinited) initmaps();
 

@@ -90,7 +90,7 @@ static void msg_deliver(void)
 /****************************************************************************
   reply to a sends
 ****************************************************************************/
-int reply_sends(char *inbuf,char *outbuf)
+int reply_sends(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int len;
   char *orig,*dest,*msg;
@@ -128,7 +128,7 @@ int reply_sends(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a sendstrt
 ****************************************************************************/
-int reply_sendstrt(char *inbuf,char *outbuf)
+int reply_sendstrt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   char *orig,*dest;
   int outsize = 0;
@@ -155,7 +155,7 @@ int reply_sendstrt(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a sendtxt
 ****************************************************************************/
-int reply_sendtxt(char *inbuf,char *outbuf)
+int reply_sendtxt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int len;
   int outsize = 0;
@@ -183,7 +183,7 @@ int reply_sendtxt(char *inbuf,char *outbuf)
 /****************************************************************************
   reply to a sendend
 ****************************************************************************/
-int reply_sendend(char *inbuf,char *outbuf)
+int reply_sendend(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
 

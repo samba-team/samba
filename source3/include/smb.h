@@ -632,7 +632,7 @@ struct parm_struct
 	parm_type type;
 	parm_class class;
 	void *ptr;
-	BOOL (*special)();
+	BOOL (*special)(char *, char **);
 	struct enum_list *enum_list;
 	unsigned flags;
 	union {

@@ -1488,7 +1488,7 @@ found for id = %hu. Ignoring packet.\n", nmb->header.name_trn_id));
   Run elements off the packet queue till its empty
 ******************************************************************/
 
-void run_packet_queue()
+void run_packet_queue(void)
 {
   struct packet_struct *p;
 

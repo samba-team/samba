@@ -28,7 +28,7 @@ static char s_readbuf[16 * 1024];
  Signal function to tell us we timed out.
 ****************************************************************/
 
-static void gotalarm_sig()
+static void gotalarm_sig(void)
 {
   gotalarm = 1;
 }

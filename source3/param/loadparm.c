@@ -1739,7 +1739,7 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 
    /* if it is a special case then go ahead */
    if (parm_table[parmnum].special) {
-	   parm_table[parmnum].special(pszParmValue,parm_ptr);
+	   parm_table[parmnum].special(pszParmValue,(char **)parm_ptr);
 	   return(True);
    }
 

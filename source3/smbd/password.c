@@ -819,7 +819,7 @@ try all combinations with N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static BOOL string_combinations2(char *s,int offset,BOOL (*fn)(),int N)
+static BOOL string_combinations2(char *s,int offset,BOOL (*fn)(char *),int N)
 {
   int len = strlen(s);
   int i;
@@ -850,7 +850,7 @@ try all combinations with up to N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static BOOL string_combinations(char *s,BOOL (*fn)(),int N)
+static BOOL string_combinations(char *s,BOOL (*fn)(char *),int N)
 {
   int n;
   for (n=1;n<=N;n++)

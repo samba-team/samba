@@ -23,8 +23,8 @@
 extern int DEBUGLEVEL;
 
 /* internal functions - modified versions of the ones in password.c */
-static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (), int N);
-static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (), int N);
+static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (char *), int N);
+static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (char *), int N);
 
 /****************************************************************************
 get a users home directory. tries as-is then lower case
@@ -288,7 +288,7 @@ try all combinations with N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(),int N)
+static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(char *),int N)
 {
   int len = strlen(s);
   int i;
@@ -322,7 +322,7 @@ try all combinations with up to N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(),int N)
+static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(char *),int N)
 {
   int n;
   struct passwd *ret;

@@ -453,7 +453,7 @@ int iface_count(void)
 /****************************************************************************
  True if we have two or more interfaces.
   **************************************************************************/
-BOOL we_are_multihomed()
+BOOL we_are_multihomed(void)
 {
   static int multi = -1;
 

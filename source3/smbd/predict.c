@@ -95,7 +95,7 @@ int read_predict(int fd,int offset,char *buf,char **ptr,int num)
 /****************************************************************************
 pre-read some data
 ****************************************************************************/
-void do_read_prediction()
+void do_read_prediction(void)
 {
   static int readsize = 0;
 
