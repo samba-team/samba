@@ -2,7 +2,7 @@
 
 <chapterinfo>
 	&author.jelmer;
-	<author><surname>Someone; Tridge or Karl Auer perhaps?</surname></author>
+	&author.tridge; <!-- This is mostly a guess -->
 	<pubdate> 27 June 1997 </pubdate>
 </chapterinfo>
 
@@ -40,7 +40,7 @@ that list that may be able to help you.
 <para>
 You may also like to look though the recent mailing list archives,
 which are conveniently accessible on the Samba web pages
-at <ulink url="http://samba.org/samba/">http://samba.org/samba/</ulink>.
+at <ulink noescape="1" url="http://samba.org/samba/">http://samba.org/samba/</ulink>.
 </para>
 
 </sect1>
@@ -80,37 +80,37 @@ detail, but may use too much disk space.
 </para>
 
 <para>
-To set the debug level use the <parameter>log level</parameter> in your 
+To set the debug level use the <smbconfoption><name>log level</name></smbconfoption> in your 
 &smb.conf;. You may also find it useful to set the log 
 level higher for just one machine and keep separate logs for each machine. 
-To do this use:
+To do this add the following lines to your main &smb.conf; file:
 </para>
 
-<para><programlisting>
-log level = 10
-log file = /usr/local/samba/lib/log.%m
-include = /usr/local/samba/lib/smb.conf.%m
-</programlisting></para>
+<para><smbconfblock>
+<smbconfoption><name>log level</name><value>10</value></smbconfoption>
+<smbconfoption><name>log file</name><value>/usr/local/samba/lib/log.%m</value></smbconfoption>
+<smbconfoption><name>include</name><value>/usr/local/samba/lib/smb.conf.%m</value></smbconfoption>
+</smbconfblock></para>
 
 <para>
 then create a file 
 <filename>/usr/local/samba/lib/smb.conf.<replaceable>machine</replaceable></filename> where
 <replaceable>machine</replaceable> is the name of the client you wish to debug. In that file
 put any &smb.conf; commands you want, for example 
-<parameter>log level</parameter> may be useful. This also allows you to 
+<smbconfoption><name>log level</name></smbconfoption> may be useful. This also allows you to 
 experiment with different security systems, protocol levels etc on just 
 one machine.
 </para>
 
 <para>
-The &smb.conf; entry <parameter>log level</parameter> 
-is synonymous with the parameter <parameter>debuglevel</parameter> that has
+The &smb.conf; entry <smbconfoption><name>log level</name></smbconfoption> 
+is synonymous with the parameter <smbconfoption><name>debuglevel</name></smbconfoption> that has
 been used in older versions of Samba and is being retained for backwards 
 compatibility of &smb.conf; files.
 </para>
 
 <para>
-As the <parameter>log level</parameter> value is increased you will record 
+As the <smbconfoption><name>log level</name></smbconfoption> value is increased you will record 
 a significantly increasing level of debugging information. For most 
 debugging operations you may not need a setting higher than 
 <constant>3</constant>. Nearly 
@@ -142,6 +142,8 @@ You should also detail how to reproduce the problem, if
 possible. Please make this reasonably detailed.
 </para>
 
+<indexterm><primary>core files</primary></indexterm>
+
 <para>
 You may also find that a core file appeared in a <filename>corefiles</filename>
 subdirectory of the directory where you keep your samba log
@@ -149,8 +151,11 @@ files. This file is the most useful tool for tracking down the bug. To
 use it you do this:
 </para>
 
+<indexterm><primary>gdb</primary></indexterm>
+<indexterm><primary>debug</primary></indexterm>
+
 <screen>
-	<prompt>$ </prompt><userinput>gdb smbd core</userinput>
+&prompt;<userinput>gdb smbd core</userinput>
 </screen>
 
 <para>
@@ -190,6 +195,9 @@ where it occurred.
 
 <sect1>
 <title>Patches</title>
+
+<indexterm><primary>diff</primary></indexterm>
+<indexterm><primary>patch</primary></indexterm>
 
 <para>
 The best sort of bug report is one that includes a fix! If you send us

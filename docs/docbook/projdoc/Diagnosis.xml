@@ -52,14 +52,13 @@ You can add a <replaceable>tmp</replaceable> share like this by adding the
 following to &smb.conf;:
 </para>
 
-<para><programlisting>
-
-[tmp]
- comment = temporary files 
- path = /tmp
- read only = yes
-
-</programlisting>
+<para><smbconfexample>
+		<title>smb.conf with [tmp] share</title>
+<smbconfsection>[tmp]</smbconfsection>
+<smbconfoption><name>comment</name><value>temporary files </value></smbconfoption>
+<smbconfoption><name>path</name><value>/tmp</value></smbconfoption>
+<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
+</smbconfexample>
 </para>
 
 <note><para>
@@ -79,6 +78,8 @@ Also, if you do not have DNS server access for name resolution please check
 that the settings for your &smb.conf; file results in <command>dns proxy = no</command>. The
 best way to check this is with <userinput>testparm smb.conf</userinput>.
 </para>
+
+<indexterm><primary>log files</primary><secondary>monitoring</secondary></indexterm>
 
 <para>
 It is helpful to monitor the log files during testing by using the
@@ -101,6 +102,8 @@ don't forget to restart &smbd; and &nmbd;.
 <title>The tests</title>
 <procedure>
 <title>Diagnosing your samba server</title>
+
+<indexterm><primary>testparm</primary></indexterm>
 
 <step performance="required">
 <para>
@@ -175,6 +178,8 @@ state using <userinput>netstat -a</userinput>.
 </para>
 
 <note><para>
+<indexterm><primary>inetd</primary></indexterm>
+<indexterm><primary>xinetd</primary><see>inetd</see></indexterm>
 Some Unix / Linux systems use <command>xinetd</command> in place of
 <command>inetd</command>. Check your system documentation for the location
 of the control file/s for your particular system implementation of
@@ -197,11 +202,11 @@ a session request. The most common of these involve one or more of
 the following &smb.conf; file entries:
 </para>
 
-<para><programlisting>
-	hosts deny = ALL
-	hosts allow = xxx.xxx.xxx.xxx/yy
-	bind interfaces only = Yes
-</programlisting></para>
+<para><smbconfblock>
+<smbconfoption><name>hosts deny</name><value>ALL</value></smbconfoption>
+<smbconfoption><name>hosts allow</name><value>xxx.xxx.xxx.xxx/yy</value></smbconfoption>
+<smbconfoption><name>bind interfaces only</name><value>Yes</value></smbconfoption>
+</smbconfblock></para>
 
 <para>
 In the above, no allowance has been made for any session requests that
@@ -209,22 +214,23 @@ will automatically translate to the loopback adapter address 127.0.0.1.
 To solve this problem change these lines to:
 </para>
 
-<para><programlisting>
-	hosts deny = ALL
-	hosts allow = xxx.xxx.xxx.xxx/yy 127.
-</programlisting></para>
+<para><smbconfblock>
+<smbconfoption><name>hosts deny</name><value>ALL</value></smbconfoption>
+<smbconfoption><name>hosts allow</name><value>xxx.xxx.xxx.xxx/yy 127.</value></smbconfoption>
+</smbconfblock></para>
 
 <para>
-Do <emphasis>not</emphasis> use the <command>bind interfaces only</command> parameter where you 
+Do <emphasis>not</emphasis> use the <smbconfoption><name>bind interfaces only</name></smbconfoption> parameter where you 
 may wish to
 use the samba password change facility, or where &smbclient; may need to
 access a local service for name resolution or for local resource
-connections. (Note: the <command>bind interfaces only</command> parameter deficiency
+connections. (Note: the <smbconfoption><name>bind interfaces only</name></smbconfoption> parameter deficiency
 where it will not allow connections to the loopback address will be
 fixed soon).
 </para>
 
 <para>
+<indexterm><primary>inetd</primary></indexterm>
 Another common cause of these two errors is having something already running 
 on port <constant>139</constant>, such as Samba 
 (ie: &smbd; is running from <application>inetd</application> already) or
@@ -299,13 +305,13 @@ messages from several hosts.
 If this doesn't give a similar result to the previous test then
 nmblookup isn't correctly getting your broadcast address through its
 automatic mechanism. In this case you should experiment with the
-<command>interfaces</command> option in &smb.conf; to manually configure your IP
+<smbconfoption><name>interfaces</name></smbconfoption> option in &smb.conf; to manually configure your IP
 address, broadcast and netmask. 
 </para>
 
 <para>
 If your PC and server aren't on the same subnet then you will need to
-use the <parameter>-B</parameter> option to set the broadcast address to that of the PCs
+use the <option>-B</option> option to set the broadcast address to that of the PCs
 subnet.
 </para>
 
@@ -318,11 +324,13 @@ not correct. (Refer to TEST 3 notes above).
 
 <step performance="required">
 
+<indexterm><primary>smbclient</primary></indexterm>
+
 <para>
 Run the command <userinput>smbclient //BIGSERVER/TMP</userinput>. You should 
 then be prompted for a password. You should use the password of the account
 you are logged into the unix box with. If you want to test with
-another account then add the <parameter>-U <replaceable>accountname</replaceable></parameter> option to the end of
+another account then add the <option>-U <replaceable>accountname</replaceable></option> option to the end of
 the command line.  eg: 
 <userinput>smbclient //bigserver/tmp -Ujohndoe</userinput>
 </para>
@@ -353,26 +361,25 @@ If it says <errorname>bad password</errorname> then the likely causes are:
 
 <listitem>
 	<para>
-	your <command>valid users</command> configuration is incorrect
+	your <smbconfoption><name>valid users</name></smbconfoption> configuration is incorrect
 	</para>
 </listitem>
 
 <listitem>
 	<para>
-	you have a mixed case password and you haven't enabled the <command>password
-	level</command> option at a high enough level
+	you have a mixed case password and you haven't enabled the <smbconfoption><name>password level</name></smbconfoption> option at a high enough level
 	</para>
 </listitem>
 
 <listitem>
 	<para>
-	the <command>path =</command> line in &smb.conf; is incorrect. Check it with &testparm;
+	the <smbconfoption><name>path</name></smbconfoption> line in &smb.conf; is incorrect. Check it with &testparm;
 	</para>
 </listitem>
 
 <listitem>
 	<para>
-	you enabled password encryption but didn't map unix to samba users
+		you enabled password encryption but didn't map unix to samba users. Run <screen><userinput>smbpasswd -a <replaceable>username</replaceable></userinput></screen>.
 	</para>
 </listitem>
 </orderedlist>
@@ -458,8 +465,7 @@ and other config lines in &smb.conf; are correct.
 
 <para>
 It's also possible that the server can't work out what user name to
-connect you as. To see if this is the problem add the line <parameter>user =
-<replaceable>username</replaceable></parameter> to the <parameter>[tmp]</parameter> section of 
+connect you as. To see if this is the problem add the line <smbconfoption><name>user</name><value>username</value></smbconfoption> to the <smbconfsection>[tmp]</smbconfsection> section of 
 &smb.conf; where <replaceable>username</replaceable> is the
 username corresponding to the password you typed. If you find this
 fixes things you may need the username mapping option. 
@@ -467,7 +473,7 @@ fixes things you may need the username mapping option.
 
 <para>
 It might also be the case that your client only sends encrypted passwords 
-and you have <parameter>encrypt passwords = no</parameter> in &smb.conf;
+and you have <smbconfoption><name>encrypt passwords</name><value>no</value></smbconfoption> in &smb.conf;
 Turn it back on to fix.
 </para>
 
@@ -486,7 +492,7 @@ master browser for that workgroup.
 If you don't then the election process has failed. Wait a minute to
 see if it is just being slow then try again. If it still fails after
 that then look at the browsing options you have set in &smb.conf;. Make
-sure you have <parameter>preferred master = yes</parameter> to ensure that 
+sure you have <smbconfoption><name>preferred master</name><value>yes</value></smbconfoption> to ensure that 
 an election is held at startup.
 </para>
 
@@ -495,30 +501,21 @@ an election is held at startup.
 <step performance="required">
 
 <para>
->From file manager try to browse the server. Your samba server should
+From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
-specified in smb.conf). You should be able to double click on the name
+specified in &smb.conf;). You should be able to double click on the name
 of the server and get a list of shares. If you get a "invalid
 password" error when you do then you are probably running WinNT and it
 is refusing to browse a server that has no encrypted password
 capability and is in user level security mode. In this case either set
-<parameter>security = server</parameter> AND 
-<parameter>password server = Windows_NT_Machine</parameter> in your
-&smb.conf; file, or make sure <parameter>encrypted passwords</parameter> is
+<smbconfoption><name>security</name><value>server</value></smbconfoption> AND 
+<smbconfoption><name>password server</name><value>Windows_NT_Machine</value></smbconfoption> in your
+&smb.conf; file, or make sure <smbconfoption><name>encrypt passwords</name></smbconfoption> is
 set to "yes".
 </para>
 
 </step>
 </procedure>
-</sect1>
-
-<sect1>
-<title>Still having troubles?</title>
-
-<para>Read the chapter on 
-<link linkend="problems">Analysing and Solving Problems</link>.
-</para>
-
 </sect1>
 
 </chapter>

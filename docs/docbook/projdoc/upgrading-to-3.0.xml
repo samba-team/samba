@@ -395,7 +395,7 @@ complete descriptions of new or modified parameters.
 		</para></listitem>
 
 		<listitem><para>
-				Inclusion of new <parameter>security = ads</parameter> option for integration
+				Inclusion of new <smbconfoption><name>security</name><value>ads</value></smbconfoption> option for integration
 		with an Active Directory domain using the native Windows
 		Kerberos 5 and LDAP protocols.
 		</para></listitem>
@@ -404,9 +404,9 @@ complete descriptions of new or modified parameters.
 	<para>
 	Samba 3.0 also includes the possibility of setting up chains
 	of authentication methods 
-	(<parameter>auth methods</parameter>) and account
+	(<smbconfoption><name>auth methods</name></smbconfoption>) and account
 	storage backends 
-	(<parameter>passdb backend</parameter>). 
+	(<smbconfoption><name>passdb backend</name></smbconfoption>). 
 	Please refer to the &smb.conf;
 	man page and <link linkend="passdb"/> for details.  While both parameters assume sane default
 	values, it is likely that you will need to understand what the
@@ -454,8 +454,8 @@ complete descriptions of new or modified parameters.
 			Example:
 		</para>
 		<para><screen>
-		$ ldapsearch .... -b "ou=people,dc=..." &gt; old.ldif
-		$ convertSambaAccount &lt;DOM SID&gt; old.ldif new.ldif
+		&prompt;ldapsearch .... -b "ou=people,dc=..." &gt; old.ldif
+		&prompt;convertSambaAccount &lt;DOM SID&gt; old.ldif new.ldif
 		</screen></para>
 
 		<para>
@@ -548,14 +548,14 @@ complete descriptions of new or modified parameters.
 		dc=org" partition.
 		</para>
 
-		<para><screen>
-		[global]
-		   ...
-		   idmap backend     = ldap:ldap://onterose/
-		   ldap idmap suffix = ou=idmap,dc=plainjoe,dc=org
-		   idmap uid         = 40000-50000
-		   idmap gid         = 40000-50000
-		</screen></para>
+		<smbconfblock>
+		<smbconfsection>[global]</smbconfsection>
+		<member>...</member>
+		<smbconfoption><name>idmap backend</name><value>ldap:ldap://onterose/</value></smbconfoption>
+		<smbconfoption><name>ldap idmap suffix</name><value>ou=idmap,dc=plainjoe,dc=org</value></smbconfoption>
+		<smbconfoption><name>idmap uid</name><value>40000-50000</value></smbconfoption>
+		<smbconfoption><name>idmap gid</name><value>40000-50000</value></smbconfoption>
+		</smbconfblock>
 
 		<para>
 		This configuration allows winbind installations on multiple servers to

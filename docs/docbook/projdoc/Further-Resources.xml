@@ -1,7 +1,6 @@
 <chapter id="Further-Resources">
 <chapterinfo>
 	&author.jelmer;
-	&author.dlechnyr;
 	<pubdate>May 1, 2003</pubdate>
 </chapterinfo>
 
@@ -168,11 +167,6 @@
 	</para></listitem>
 
 </itemizedlist>
-</sect1>
-
-<sect1>
-	<title>Books</title>
-
 </sect1>
 
 </chapter>

@@ -7,17 +7,20 @@
 	&author.jerry;
 	&author.jht;
 </chapterinfo>
-<title>Mapping MS Windows and Unix Groups</title>
+<title>Mapping MS Windows and UNIX Groups</title>
+
+<indexterm significance="preferred"><primary>groups</primary><secondary>mapping</secondary></indexterm>
 
 	<para>
 	Starting with Samba-3, new group mapping functionality is available to create associations
-	between Windows group SIDs and UNIX groups. The <parameter>groupmap</parameter> subcommand
+	between Windows group SIDs and UNIX groups. The <command>groupmap</command> subcommand
 	included with the &net; tool can be used to manage these associations.
 	</para>
 
 	<warning>
 	<para>
 	The first immediate reason to use the group mapping on a Samba PDC, is that
+	<indexterm><primary>domain admin group</primary></indexterm>
 	the <parameter>domain admin group</parameter> has been removed and should no longer
 	be specified in &smb.conf;. This parameter was used to give the listed users membership
 	in the <constant>Domain Admins</constant> Windows group which gave local admin rights on their workstations
@@ -30,33 +33,54 @@
 
 	<para>
 	Samba allows the administrator to create MS Windows NT4 / 200x group accounts and to
-	arbitrarily associate them with Unix/Linux group accounts.
+	arbitrarily associate them with UNIX/Linux group accounts.
 	</para>
 
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>GID</primary></indexterm>
 	<para>
-	Group accounts can be managed using the MS Windows NT4 or MS Windows 200x MMC tools
-	so long as appropriate interface scripts have been provided to &smb.conf;.
+	Group accounts can be managed using the MS Windows NT4 or MS Windows 200x  / XP Professional MMC tools.
+	Appropriate interface scripts should be provided in &smb.conf; if it is desired that UNIX / Linux system
+	accounts should be automatically created when these tools are used. In the absence of these scripts, and
+	so long as winbind is running, Samba accounts group accounts that are created using these tools will be
+	allocated UNIX UIDs/GIDs from the parameters set by the <smbconfoption><name>idmap uid</name></smbconfoption>/<smbconfoption><name>idmap gid</name></smbconfoption> settings
+	in the &smb.conf; file.
 	</para>
+
+
+	<figure id="idmap-group-diag"><title>IDMAP groups</title>
+	<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/idmap-groups" scale="50" scalefit="1"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/idmap-groups.png" scale="50" scalefit="1"/></imageobject>
+	</mediaobject>
+	</figure>
+
+	<indexterm><primary>groupadd</primary></indexterm>
+	<indexterm><primary>groupdel</primary></indexterm>
 
 	<para>
 	Administrators should be aware that where &smb.conf; group interface scripts make
-	direct calls to the Unix/Linux system tools (eg: the shadow utilities, <command>groupadd</command>,
-	<command>groupdel</command>, <command>groupmod</command>) then the resulting Unix/Linux group names will be subject
+	direct calls to the UNIX/Linux system tools (eg: the shadow utilities, <command>groupadd</command>,
+	<command>groupdel</command>, <command>groupmod</command>) then the resulting UNIX/Linux group names will be subject
 	to any limits imposed by these tools. If the tool does NOT allow upper case characters
 	or space characters, then the creation of an MS Windows NT4 / 200x style group of
-	<parameter>Engineering Managers</parameter> will attempt to create an identically named
-	Unix/Linux group, an attempt that will of course fail!
+	<ntgroup>Engineering Managers</ntgroup> will attempt to create an identically named
+	UNIX/Linux group, an attempt that will of course fail!
 	</para>
+
+
+	<indexterm><primary>GID</primary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
 
 	<para>
 	There are several possible work-arounds for the operating system tools limitation. One
-	method is to use a script that generates a name for the Unix/Linux system group that
-	fits the operating system limits, and that then just passes the Unix/Linux group id (GID)
+	method is to use a script that generates a name for the UNIX/Linux system group that
+	fits the operating system limits, and that then just passes the UNIX/Linux group id (GID)
 	back to the calling Samba interface. This will provide a dynamic work-around solution.
 	</para>
 
 	<para>
-	Another work-around is to manually create a Unix/Linux group, then manually create the
+	Another work-around is to manually create a UNIX/Linux group, then manually create the
 	MS Windows NT4 / 200x group on the Samba server and then use the <command>net groupmap</command>
 	tool to connect the two to each other.
 	</para>
@@ -74,6 +98,7 @@
 	local machine.
 	</para>
 	
+	<indexterm><primary>Administrator</primary></indexterm>
 	<para>
 	The 'Administrator' user is a member of the 'Administrators' group, and thus inherits
 	'Administrators' group privileges. If a 'joe' user is created to be a member of the
@@ -111,11 +136,12 @@
 		</para>
 
 		<para>
-		<screen>
-		&rootprompt;<userinput>net groupmap add ntgroup="Domain Admins" unixgroup=domadm</userinput>
-		</screen>
+<screen>
+&rootprompt;<userinput>net groupmap add ntgroup="Domain Admins" unixgroup=domadm</userinput>
+</screen>
 		</para>
 		
+		<indexterm><primary>"Domain Admins" group</primary></indexterm>
 		<para>
 		The quotes around "Domain Admins" are necessary due to the space in the group name.
 		Also make sure to leave no whitespace surrounding the equal character (=).
@@ -126,6 +152,7 @@
 	Now joe, john and mary are domain administrators!
 	</para>
 
+	<indexterm><primary>groups</primary><secondary>domain</secondary></indexterm>
 	<para>
 	It is possible to map any arbitrary UNIX group to any Windows NT4 / 200x group as well as
 	making any UNIX group a Windows domain group.  For example, if you wanted to include a
@@ -134,15 +161,15 @@
 	</para>
 
 	<para>
-	<screen>
-	&rootprompt;<userinput>net groupmap add rid=1000 ntgroup="Accounting" unixgroup=acct</userinput>
-	</screen>
+<screen>
+&rootprompt;<userinput>net groupmap add rid=1000 ntgroup="Accounting" unixgroup=acct</userinput>
+</screen>
 	</para>
 
 	<para>
 	Be aware that the RID parameter is a unsigned 32 bit integer that should
 	normally start at 1000.  However, this rid must not overlap with any RID assigned
-	to a user.  Verifying this is done differently depending on on the passdb backend 
+	to a user.  Verifying this is done differently depending on the passdb backend 
 	you are using.  Future versions of the tools may perform the verification automatically,
 	but for now the burden is on you.
 	</para>
@@ -156,13 +183,13 @@
 		</para>
 
 		<para>
-		<screen>
-		&rootprompt; <userinput>net groupmap list</userinput>
-		System Administrators (S-1-5-21-2547222302-1596225915-2414751004-1002) -> sysadmin
-		Domain Admins (S-1-5-21-2547222302-1596225915-2414751004-512) -> domadmin
-		Domain Users (S-1-5-21-2547222302-1596225915-2414751004-513) -> domuser
-		Domain Guests (S-1-5-21-2547222302-1596225915-2414751004-514) -> domguest
-		</screen>
+<screen>
+&rootprompt; <userinput>net groupmap list</userinput>
+System Administrators (S-1-5-21-2547222302-1596225915-2414751004-1002) -> sysadmin
+Domain Admins (S-1-5-21-2547222302-1596225915-2414751004-512) -> domadmin
+Domain Users (S-1-5-21-2547222302-1596225915-2414751004-513) -> domuser
+Domain Guests (S-1-5-21-2547222302-1596225915-2414751004-514) -> domguest
+</screen>
 		</para>
 
 		<para>
@@ -185,7 +212,7 @@
 	<title>Sample &smb.conf; add group script</title>
 
 		<para>
-		A script to great complying group names for use by the Samba group interfaces:
+		A script to create complying group names for use by the Samba group interfaces:
 		</para>
 
 		<para>
@@ -213,9 +240,9 @@ exit 0
 
 		<para>
 		The &smb.conf; entry for the above script would look like:
-		<programlisting>
-		add group script = /path_to_tool/smbgrpadd.sh %g
-		</programlisting>
+		<smbconfblock>
+<smbconfoption><name>add group script</name><value>/path_to_tool/smbgrpadd.sh %g</value></smbconfoption>
+		</smbconfblock>
 		</para>
 
 	</sect2>
@@ -224,8 +251,8 @@ exit 0
 	<title>Script to configure Group Mapping</title>
 
 	<para>
-	In our example we have created a Unix/Linux group called <parameter>ntadmin</parameter>.
-	Our script will create the additional groups <parameter>Engineers, Marketoids, Gnomes</parameter>:
+		In our example we have created a UNIX/Linux group called <ntgroup>ntadmin</ntgroup>.
+		Our script will create the additional groups <ntgroup>Orks</ntgroup>, <ntgroup>Elves</ntgroup>, <ntgroup>Gnomes</ntgroup>:
 	</para>
 
 <para>
@@ -245,13 +272,13 @@ net groupmap modify ntgroup="Print Operators" unixgroup=lp
 net groupmap modify ntgroup="Replicators" unixgroup=daemon
 net groupmap modify ntgroup="Power Users" unixgroup=sys
 
-#groupadd Engineers
-#groupadd Marketoids
-#groupadd Gnomes
+groupadd Orks
+groupadd Elves
+groupadd Gnomes
 
-#net groupmap add ntgroup="Engineers"  unixgroup=Engineers    type=d
-#net groupmap add ntgroup="Marketoids" unixgroup=Marketoids   type=d
-#net groupmap add ntgroup="Gnomes"     unixgroup=Gnomes       type=d
+net groupmap add ntgroup="Orks"       unixgroup=Orks         type=d
+net groupmap add ntgroup="Elves"      unixgroup=Elves        type=d
+net groupmap add ntgroup="Gnomes"     unixgroup=Gnomes       type=d
 </programlisting>
 </para>
 
@@ -279,7 +306,7 @@ manually before putting them into active service.
 
 		<para>
 		This is a common problem when the <command>groupadd</command> is called directly
-		by the Samba interface script for the <parameter>add group script</parameter> in
+		by the Samba interface script for the <smbconfoption><name>add group script</name></smbconfoption> in
 		the &smb.conf; file.
 		</para>
 
@@ -290,9 +317,9 @@ manually before putting them into active service.
 
 		<para>
 		There are three possible work-arounds. Firstly, use only group names that comply
-		with the limitations of the Unix/Linux <command>groupadd</command> system tool.
+		with the limitations of the UNIX/Linux <command>groupadd</command> system tool.
 		The second involves use of the script mentioned earlier in this chapter, and the
-		third option is to manually create a Unix/Linux group account that can substitute
+		third option is to manually create a UNIX/Linux group account that can substitute
 		for the MS Windows group name, then use the procedure listed above to map that group
 		to the MS Windows group.
 		</para>
@@ -302,10 +329,38 @@ manually before putting them into active service.
 	<sect2>
 	<title>Adding MS Windows Groups to MS Windows Groups Fails</title>
 
+	<indexterm><primary>groups</primary><secondary>nested</secondary></indexterm>
+
 		<para>
 		Samba-3 does NOT support nested groups from the MS Windows control environment.
 		</para>
 
+	</sect2>
+
+	<sect2>
+	<title>Adding <emphasis>Domain Users</emphasis> to the <emphasis>Power Users</emphasis> group</title>
+
+		<para><quote>
+		What must I do to add Domain Users to the Power Users group?
+		</quote></para>
+
+		<para>
+		The Power Users group is a group that is local to each Windows
+		200x / XP Professional workstation. You can not add the Domain Users group to the Power Users
+		group automatically, this must be done on each workstation by logging in as the local workstation 
+		<emphasis>administrator</emphasis> and then using click on Start / Control Panel / Users and Passwords
+		now click on the 'Advanced' tab, then on the 'Advanced' Button.
+		</para>
+
+<indexterm><primary>"Domain Users" group</primary></indexterm>
+		<para>
+		Now click on 'Groups', then double click on 'Power Users'. This will launch the panel to add users
+		or groups to the local machine 'Power Uses' group. Click on the 'Add' button, select the domain
+		from which the 'Domain Users' group is to be added, double click on the 'Domain Users' group, then
+		click on the 'Ok' button. Note: If a logon box is presented during this process please remember to
+		enter the connect as DOMAIN\UserName. ie: For the domain MIDEARTH and the user 'root' enter
+		MIDEARTH\root.
+		</para>	
 	</sect2>
 
 </sect1>

@@ -58,10 +58,10 @@
 	&lt;!ENTITY % globalentities SYSTEM 'global.ent'> %globalentities;
  ]>
 </xsl:text>
-<xsl:element name="book"><!-- This shouldn't be book, but something more general, a variable -FIXME-->
+<xsl:copy>
     <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
     <xsl:apply-templates/>
-</xsl:element>
+</xsl:copy>
 </xsl:template>
 
 
@@ -113,10 +113,11 @@
 	</xsl:element>
   </xsl:element>
 		
+<!-- FIXME: Do this only when smb.conf is included 
   <xsl:element name="link">
 	  <xsl:attribute name="linkend">
 	  	<xsl:value-of select="translate(translate(string(name),' ',''),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
-	  </xsl:attribute>
+	  </xsl:attribute>-->
 
 	  <xsl:element name="parameter">
 	    <xsl:attribute name="moreinfo">
@@ -131,7 +132,8 @@
 			<xsl:value-of select="value"/>
 		</xsl:when>
 	  </xsl:choose>
-  </xsl:element>
+	  <!--
+  </xsl:element>-->
 </xsl:template>
 
 <!-- FIXME: Needs extension sometime -->
@@ -283,16 +285,6 @@
 		<xsl:apply-templates/>
 		
 	</xsl:element>
-	<xsl:if test="$duplicate_ulinks='brackets' and @noescape=''">
-		<xsl:text> (</xsl:text>
-		<xsl:value-of select="@url"/>
-		<xsl:text>)</xsl:text>
-	</xsl:if>
-	<xsl:if test="$duplicate_ulinks='footnote' and @noescape=''">
-		<xsl:element name="footnote">
-			<xsl:value-of select="@url"/>
-		</xsl:element>
-	</xsl:if>
 </xsl:template>
 
 
