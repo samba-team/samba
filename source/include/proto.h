@@ -3296,7 +3296,7 @@ BOOL api_spoolss_rpc(pipes_struct *p);
 void init_printer_hnd(void);
 void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len);
 uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
-				 const PRINTER_DEFAULT *printer_default,
+				 PRINTER_DEFAULT *printer_default,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle);
 BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,

@@ -680,7 +680,7 @@ static struct current_user *get_current_user(struct current_user *user, pipes_st
  * called from the spoolss dispatcher
  ********************************************************************/
 uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
-				 const PRINTER_DEFAULT *printer_default,
+				 PRINTER_DEFAULT *printer_default,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle)
 {
