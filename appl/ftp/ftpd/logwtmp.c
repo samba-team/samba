@@ -42,20 +42,31 @@ RCSID("$Id$");
 #endif
 
 #include <fcntl.h>
-#include <utmp.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_UTMP_H
+#include <utmp.h>
+#endif
+#ifdef HAVE_UTMPX_H
+#include <utmpx.h>
+#endif
 #include "extern.h"
 
+#ifndef WTMP_FILE
+#define WTMP_FILE "/var/adm/wtmp"
+#endif
 
 void
 logwtmp(char *line, char *name, char *host)
 {
     static int init = 0;
-    static int fd;
-
+    static int fd, fdx;
+    struct timeval tv;
     struct utmp ut;
+#ifdef WTMPX_FILE
+    struct utmpx utx;
+#endif
 
     memset(&ut, 0, sizeof(struct utmp));
 #ifdef HAVE_UT_TYPE
@@ -72,13 +83,38 @@ logwtmp(char *line, char *name, char *host)
 #ifdef HAVE_UT_HOST
     strncpy(ut.ut_host, host, sizeof(ut.ut_host));
 #endif
-    
     ut.ut_time = time(NULL);
 
+#ifdef WTMPX_FILE
+    strncpy(utx.ut_line, line, sizeof(utx.ut_line));
+    strncpy(utx.ut_user, name, sizeof(utx.ut_user));
+    strncpy(utx.ut_host, host, sizeof(utx.ut_host));
+#ifdef HAVE_UT_SYSLEN
+    utx.ut_syslen = strlen(host) + 1;
+    if (utx.ut_syslen > sizeof(utx.ut_host))
+        utx.ut_syslen = sizeof(utx.ut_host);
+#endif
+    gettimeofday (&tv, 0);
+    utx.ut_tv.tv_sec = tv.tv_sec;
+    utx.ut_tv.tv_usec = tv.tv_usec;
+
+    if(name[0])
+	utx.ut_type = USER_PROCESS;
+    else
+	utx.ut_type = DEAD_PROCESS;
+#endif
+
     if(!init){
-	fd = open(WTMP_PATH, O_WRONLY|O_APPEND, 0);
+	fd = open(WTMP_FILE, O_WRONLY|O_APPEND, 0);
+#ifdef WTMPX_FILE
+	fdx = open(WTMPX_FILE, O_WRONLY|O_APPEND, 0);
+#endif
 	init = 1;
     }
-    if(fd >= 0)
+    if(fd >= 0) {
 	write(fd, &ut, sizeof(struct utmp)); /* XXX */
+#ifdef WTMPX_FILE
+	write(fdx, &utx, sizeof(struct utmpx));
+#endif	
+    }
 }
