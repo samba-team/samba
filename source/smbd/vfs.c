@@ -26,8 +26,8 @@ extern int DEBUGLEVEL;
 /* Some structures to help us initialise the vfs operations table */
 
 struct vfs_syminfo {
-    char *name;
-    void *fptr;
+	char *name;
+	void *fptr;
 };
 
 /* Default vfs hooks.  WARNING: The order of these initialisers is
@@ -36,44 +36,44 @@ struct vfs_syminfo {
 
 struct vfs_ops default_vfs_ops = {
 
-    /* Disk operations */        
+	/* Disk operations */        
 
-    vfswrap_dummy_connect,
-    vfswrap_dummy_disconnect,
-    vfswrap_disk_free,
+	vfswrap_dummy_connect,
+	vfswrap_dummy_disconnect,
+	vfswrap_disk_free,
 
-    /* Directory operations */
+	/* Directory operations */
 
-    vfswrap_opendir,
-    vfswrap_readdir,
-    vfswrap_mkdir,
-    vfswrap_rmdir,
-    vfswrap_closedir,
+	vfswrap_opendir,
+	vfswrap_readdir,
+	vfswrap_mkdir,
+	vfswrap_rmdir,
+	vfswrap_closedir,
 
-    /* File operations */
+	/* File operations */
 
-    vfswrap_open,
-    vfswrap_close,
-    vfswrap_read,
-    vfswrap_write,
-    vfswrap_lseek,
-    vfswrap_rename,
-    vfswrap_fsync,
-    vfswrap_stat,
-    vfswrap_fstat,
-    vfswrap_lstat,
-    vfswrap_unlink,
-    vfswrap_chmod,
-    vfswrap_chown,
-    vfswrap_chdir,
-    vfswrap_getwd,
-    vfswrap_utime,
-    vfswrap_ftruncate,
-    vfswrap_lock,
-    NULL, /* The 4 security descriptor functions are not defined by default. */
-    NULL,
-    NULL,
-    NULL
+	vfswrap_open,
+	vfswrap_close,
+	vfswrap_read,
+	vfswrap_write,
+	vfswrap_lseek,
+	vfswrap_rename,
+	vfswrap_fsync,
+	vfswrap_stat,
+	vfswrap_fstat,
+	vfswrap_lstat,
+	vfswrap_unlink,
+	vfswrap_chmod,
+	vfswrap_chown,
+	vfswrap_chdir,
+	vfswrap_getwd,
+	vfswrap_utime,
+	vfswrap_ftruncate,
+	vfswrap_lock,
+	vfswrap_fget_nt_acl,
+	vfswrap_get_nt_acl,
+	vfswrap_fset_nt_acl,
+	vfswrap_set_nt_acl
 };
 
 /****************************************************************************

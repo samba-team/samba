@@ -425,3 +425,23 @@ BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T
     END_PROFILE(syscall_fcntl_lock);
     return result;
 }
+
+size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc)
+{
+	return get_nt_acl(fsp, ppdesc);
+}
+
+size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc)
+{
+	return get_nt_acl(fsp, ppdesc);
+}
+
+BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+{
+	return set_nt_acl(fsp, security_info_sent, psd);
+}
+
+BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd)
+{
+	return set_nt_acl(fsp, security_info_sent, psd);
+}

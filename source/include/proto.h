@@ -3858,6 +3858,10 @@ char *vfswrap_getwd(connection_struct *conn, char *path);
 int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times);
 int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T offset);
 BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
+size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
+BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);
+BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd);
 
 /*The following definitions come from  smbd/vfs.c  */
 
