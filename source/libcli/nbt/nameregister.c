@@ -72,7 +72,7 @@ struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
 	if (packet->additional[0].rdata.netbios.addresses[0].ipaddr == NULL) goto failed;
 	
 	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
-				    timeval_current_ofs(io->in.timeout, 0), False);
+				    io->in.timeout, io->in.retries, False);
 	if (req == NULL) goto failed;
 
 	talloc_free(packet);
@@ -143,7 +143,6 @@ NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock,
 struct register_bcast_state {
 	struct nbt_name_socket *nbtsock;
 	struct nbt_name_register *io;
-	int num_sends;
 	struct nbt_name_request *req;
 };
 
@@ -151,7 +150,7 @@ struct register_bcast_state {
 /*
   state handler for 4 stage name registration
 */
-static void name_register_handler(struct nbt_name_request *req)
+static void name_register_bcast_handler(struct nbt_name_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private, struct composite_context);
 	struct register_bcast_state *state = talloc_get_type(c->private, struct register_bcast_state);
@@ -159,23 +158,22 @@ static void name_register_handler(struct nbt_name_request *req)
 
 	status = nbt_name_register_recv(state->req, state, state->io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		/* the registration timed out - good, send the next one */
-		state->num_sends++;
-		if (state->num_sends == 4) {
+		if (state->io->in.register_demand == True) {
 			/* all done */
 			c->state = SMBCLI_REQUEST_DONE;
 			c->status = NT_STATUS_OK;
 			goto done;
 		}
-		if (state->num_sends == 3) {
-			state->io->in.register_demand = True;
-		}
+
+		/* the registration timed out - good, send the demand */
+		state->io->in.register_demand = True;
+		state->io->in.retries         = 0;
 		state->req = nbt_name_register_send(state->nbtsock, state->io);
 		if (state->req == NULL) {
 			c->state = SMBCLI_REQUEST_ERROR;
 			c->status = NT_STATUS_NO_MEMORY;
 		} else {
-			state->req->async.fn      = name_register_handler;
+			state->req->async.fn      = name_register_bcast_handler;
 			state->req->async.private = c;
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
@@ -225,14 +223,14 @@ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *n
 	state->io->in.broadcast       = True;
 	state->io->in.ttl             = io->in.ttl;
 	state->io->in.timeout         = 1;
+	state->io->in.retries         = 2;
 
-	state->num_sends = 0;
 	state->nbtsock = nbtsock;
 
 	state->req = nbt_name_register_send(nbtsock, state->io);
 	if (state->req == NULL) goto failed;
 
-	state->req->async.fn      = name_register_handler;
+	state->req->async.fn      = name_register_bcast_handler;
 	state->req->async.private = c;
 
 	c->private   = state;

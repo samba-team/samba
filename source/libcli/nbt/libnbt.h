@@ -48,6 +48,15 @@ struct nbt_name_request {
 	const char *dest_addr;
 	int dest_port;
 
+	/* timeout between retries */
+	int timeout;
+
+	/* how many retries to send on timeout */
+	int num_retries;
+
+	/* whether we have received a WACK */
+	BOOL received_wack;
+
 	/* the timeout event */
 	struct timed_event *te;
 
@@ -116,6 +125,7 @@ struct nbt_name_query {
 		BOOL broadcast;
 		BOOL wins_lookup;
 		int timeout; /* in seconds */
+		int retries;
 	} in;
 	struct {
 		const char *reply_from;
@@ -131,6 +141,7 @@ struct nbt_name_status {
 		struct nbt_name name;
 		const char *dest_addr;
 		int timeout; /* in seconds */
+		int retries;
 	} in;
 	struct {
 		const char *reply_from;
@@ -150,6 +161,7 @@ struct nbt_name_register {
 		BOOL broadcast;
 		uint32_t ttl;
 		int timeout; /* in seconds */
+		int retries;
 	} in;
 	struct {
 		const char *reply_from;
@@ -170,6 +182,22 @@ struct nbt_name_register_bcast {
 	} in;
 };
 
+/* wins name refresh with multiple wins servers to try and multiple
+   addresses to register */
+struct nbt_name_refresh_wins {
+	struct {
+		struct nbt_name name;
+		const char **wins_servers;
+		const char **addresses;
+		uint16_t nb_flags;
+		uint32_t ttl;
+	} in;
+	struct {
+		const char *wins_server;
+		uint8_t rcode;
+	} out;
+};
+
 
 /* a name refresh request */
 struct nbt_name_refresh {
@@ -181,6 +209,7 @@ struct nbt_name_refresh {
 		BOOL broadcast;
 		uint32_t ttl;
 		int timeout; /* in seconds */
+		int retries;
 	} in;
 	struct {
 		const char *reply_from;

@@ -68,7 +68,7 @@ struct nbt_name_request *nbt_name_refresh_send(struct nbt_name_socket *nbtsock,
 		talloc_strdup(packet->additional, io->in.address);
 	
 	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
-				    timeval_current_ofs(io->in.timeout, 0), False);
+				    io->in.timeout, io->in.retries, False);
 	if (req == NULL) goto failed;
 
 	talloc_free(packet);
@@ -83,7 +83,7 @@ failed:
   wait for a refresh reply
 */
 NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req, 
-				TALLOC_CTX *mem_ctx, struct nbt_name_refresh *io)
+			       TALLOC_CTX *mem_ctx, struct nbt_name_refresh *io)
 {
 	NTSTATUS status;
 	struct nbt_name_packet *packet;
@@ -115,7 +115,7 @@ NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req,
 					  packet->answers[0].rdata.netbios.addresses[0].ipaddr);
 	talloc_steal(mem_ctx, io->out.name.name);
 	talloc_steal(mem_ctx, io->out.name.scope);
-	    
+
 	talloc_free(req);
 
 	return NT_STATUS_OK;
@@ -129,4 +129,165 @@ NTSTATUS nbt_name_refresh(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_request *req = nbt_name_refresh_send(nbtsock, io);
 	return nbt_name_refresh_recv(req, mem_ctx, io);
+}
+
+
+
+/*
+  a wins name refresh with multiple WINS servers and multiple
+  addresses to refresh. Try each WINS server in turn, until we get a
+  reply for each address
+*/
+struct refresh_wins_state {
+	struct nbt_name_socket *nbtsock;
+	struct nbt_name_refresh *io;
+	char **wins_servers;
+	char **addresses;
+	int address_idx;
+	struct nbt_name_request *req;
+};
+
+
+/*
+  state handler for WINS multi-homed multi-server name refresh
+*/
+static void name_refresh_wins_handler(struct nbt_name_request *req)
+{
+	struct composite_context *c = talloc_get_type(req->async.private, 
+						      struct composite_context);
+	struct refresh_wins_state *state = talloc_get_type(c->private, 
+							    struct refresh_wins_state);
+	NTSTATUS status;
+
+	status = nbt_name_refresh_recv(state->req, state, state->io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		/* the refresh timed out - try the next WINS server */
+		state->wins_servers++;
+		state->address_idx = 0;
+		if (state->wins_servers[0] == NULL) {
+			c->state = SMBCLI_REQUEST_ERROR;
+			c->status = status;
+			goto done;
+		}
+		state->io->in.dest_addr = state->wins_servers[0];
+		state->io->in.address   = state->addresses[0];
+		state->req = nbt_name_refresh_send(state->nbtsock, state->io);
+		if (state->req == NULL) {
+			c->state = SMBCLI_REQUEST_ERROR;
+			c->status = NT_STATUS_NO_MEMORY;
+		} else {
+			state->req->async.fn      = name_refresh_wins_handler;
+			state->req->async.private = c;
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		c->state = SMBCLI_REQUEST_ERROR;
+		c->status = status;
+	} else {
+		if (state->io->out.rcode == 0 &&
+		    state->addresses[state->address_idx+1] != NULL) {
+			/* refresh our next address */
+			state->io->in.address = state->addresses[++(state->address_idx)];
+			state->req = nbt_name_refresh_send(state->nbtsock, state->io);
+			if (state->req == NULL) {
+				c->state = SMBCLI_REQUEST_ERROR;
+				c->status = NT_STATUS_NO_MEMORY;
+			} else {
+				state->req->async.fn      = name_refresh_wins_handler;
+				state->req->async.private = c;
+			}
+		} else {
+			c->state = SMBCLI_REQUEST_DONE;
+			c->status = NT_STATUS_OK;
+		}
+	}
+
+done:
+	if (c->state >= SMBCLI_REQUEST_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
+	}
+}
+
+/*
+  the async send call for a multi-server WINS refresh
+*/
+struct composite_context *nbt_name_refresh_wins_send(struct nbt_name_socket *nbtsock,
+						      struct nbt_name_refresh_wins *io)
+{
+	struct composite_context *c;
+	struct refresh_wins_state *state;
+
+	c = talloc_zero(nbtsock, struct composite_context);
+	if (c == NULL) goto failed;
+
+	state = talloc(c, struct refresh_wins_state);
+	if (state == NULL) goto failed;
+
+	state->io = talloc(state, struct nbt_name_refresh);
+	if (state->io == NULL) goto failed;
+
+	state->wins_servers = str_list_copy(state, io->in.wins_servers);
+	if (state->wins_servers == NULL || 
+	    state->wins_servers[0] == NULL) goto failed;
+
+	state->addresses = str_list_copy(state, io->in.addresses);
+	if (state->addresses == NULL || 
+	    state->addresses[0] == NULL) goto failed;
+
+	state->io->in.name            = io->in.name;
+	state->io->in.dest_addr       = state->wins_servers[0];
+	state->io->in.address         = io->in.addresses[0];
+	state->io->in.nb_flags        = io->in.nb_flags;
+	state->io->in.broadcast       = False;
+	state->io->in.ttl             = io->in.ttl;
+	state->io->in.timeout         = 2;
+	state->io->in.retries         = 2;
+
+	state->nbtsock     = nbtsock;
+	state->address_idx = 0;
+
+	state->req = nbt_name_refresh_send(nbtsock, state->io);
+	if (state->req == NULL) goto failed;
+
+	state->req->async.fn      = name_refresh_wins_handler;
+	state->req->async.private = c;
+
+	c->private   = state;
+	c->state     = SMBCLI_REQUEST_SEND;
+	c->event_ctx = nbtsock->event_ctx;
+
+	return c;
+
+failed:
+	talloc_free(c);
+	return NULL;
+}
+
+/*
+  multi-homed WINS name refresh - recv side
+*/
+NTSTATUS nbt_name_refresh_wins_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				     struct nbt_name_refresh_wins *io)
+{
+	NTSTATUS status;
+	status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
+		struct refresh_wins_state *state = 
+			talloc_get_type(c->private, struct refresh_wins_state);
+		io->out.wins_server = talloc_steal(mem_ctx, state->wins_servers[0]);
+		io->out.rcode = state->io->out.rcode;
+	}
+	talloc_free(c);
+	return status;
+}
+
+/*
+  multi-homed WINS refresh - sync interface
+*/
+NTSTATUS nbt_name_refresh_wins(struct nbt_name_socket *nbtsock,
+				TALLOC_CTX *mem_ctx,
+				struct nbt_name_refresh_wins *io)
+{
+	struct composite_context *c = nbt_name_refresh_wins_send(nbtsock, io);
+	return nbt_name_refresh_wins_recv(c, mem_ctx, io);
 }
