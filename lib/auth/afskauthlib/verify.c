@@ -171,6 +171,8 @@ verify_krb5(struct passwd *pwd,
 	krb5_creds mcred, cred;
         krb5_realm realm;
 
+	krb5_cc_clear_mcred(&mcred);
+
         krb5_get_default_realm(context, &realm);
 	krb5_make_principal(context, &mcred.server, realm,
 			    "krbtgt",

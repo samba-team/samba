@@ -590,6 +590,8 @@ verify_krb5(const char *password)
 	    CREDENTIALS c;
 	    krb5_creds mcred, cred;
 
+	    krb5_cc_clear_mcred(&mcred);
+
 	    krb5_make_principal(context, &mcred.server,
 				client->realm,
 				"krbtgt",
