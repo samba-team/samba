@@ -1218,6 +1218,9 @@ bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
 
+bin/t_strstr@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strstr.o
+	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_strstr.o -L ./bin -lbigballofmud
+
 bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
 	$(CC) $(FLAGS) -o $@ torture/t_stringoverflow.o -L./bin -lbigballofmud
 
@@ -1511,4 +1514,4 @@ check: check-programs
 # These are called by the test suite and need to be built before
 # running it.  For the time being we don't build all of BIN_PROGS,
 # because they're not all needed.
-check-programs: bin/t_strcmp bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf
+check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf

@@ -94,8 +94,52 @@ class StrCaseCmp(comfychair.TestCase):
         for a, b, expect in cases:
             self.run_strcmp(a, b, expect)
         
+class strstr_m(comfychair.TestCase):
+    """String comparisons in simple ASCII""" 
+    def run_strstr(self, a, b, expect):
+        out, err = self.runcmd('t_strstr \"%s\" \"%s\"' % (a.encode('utf-8'), b.encode('utf-8')))
+        if (out != (expect + '\n').encode('utf-8')):
+            self.fail("comparison failed:\n"
+                      "  a=%s\n"
+                      "  b=%s\n"
+                      "  expected=%s\n"
+                      "  result=%s\n" % (`a`, `b`, `expect+'\n'`, `out`))
+
+    def runtest(self):
+        # A, B, strstr_m(A, B)
+        cases = [('hello', 'hello', 'hello'),
+                 ('hello', 'goodbye', '(null)'),
+                 ('goodbye', 'hello', '(null)'),
+                 ('hell', 'hello', '(null)'),
+                 ('hello', 'hell', 'hello'),
+                 ('', '', ''),
+                 ('a', '', 'a'),
+                 ('', 'a', '(null)'),
+                 ('a', 'A', '(null)'),
+                 ('aa', 'aA', '(null)'),
+                 ('Aa', 'aa', '(null)'),
+                 ('%v foo', '%v', '%v foo'),
+                 ('foo %v foo', '%v', '%v foo'),
+                 ('foo %v', '%v', '%v'),
+                 ('longstring ' * 100, 'longstring ' * 99, 'longstring ' * 100),
+                 ('longstring ' * 99, 'longstring ' * 100, '(null)'),
+                 ('longstring a' * 99, 'longstring ' * 100 + 'a', '(null)'),
+                 ('longstring ' * 100 + 'a', 'longstring ' * 100, 'longstring ' * 100 + 'a'),
+                 (KATAKANA_LETTER_A, KATAKANA_LETTER_A + 'bcd', '(null)'),
+                 (KATAKANA_LETTER_A + 'bcde', KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcde'),
+                 ('d'+KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcd'),
+                 ('d'+KATAKANA_LETTER_A + 'bd', KATAKANA_LETTER_A + 'bcd', '(null)'),
+                 
+                 ('e'+KATAKANA_LETTER_A + 'bcdf', KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcdf'),
+                 (KATAKANA_LETTER_A, KATAKANA_LETTER_A + 'bcd', '(null)'),
+                 (KATAKANA_LETTER_A*3, 'a', '(null)'),
+                 ]
+        for a, b, expect in cases:
+            self.run_strstr(a, b, expect)
+        
 # Define the tests exported by this module
 tests = [StrCaseCmp,
+         strstr_m,
          PushUCS2_Tests]
 
 # Handle execution of this file as a main program

@@ -1306,6 +1306,14 @@ char *strstr_m(const char *src, const char *findstr)
 	char *s2;
 	char *retp;
 
+	size_t findstr_len = 0;
+	size_t find_w_len;
+
+	/* for correctness */
+	if (!findstr[0]) {
+		return src;
+	}
+
 	/* Samba does single character findstr calls a *lot*. */
 	if (findstr[1] == '\0')
 		return strchr_m(src, *findstr);
@@ -1316,7 +1324,10 @@ char *strstr_m(const char *src, const char *findstr)
 
 	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == *findstr) {
-			if (strcmp(s, findstr) == 0) {
+			if (!findstr_len) 
+				findstr_len = strlen(findstr);
+
+			if (strncmp(s, findstr, findstr_len) == 0) {
 				return (char *)s;
 			}
 		}
@@ -1325,7 +1336,9 @@ char *strstr_m(const char *src, const char *findstr)
 	if (!*s)
 		return NULL;
 
-#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+#if 1 /* def BROKEN_UNICODE_COMPOSE_CHARACTERS */
+	/* 'make check' fails unless we do this */
+
 	/* With compose characters we must restart from the beginning. JRA. */
 	s = src;
 #endif
@@ -1340,16 +1353,15 @@ char *strstr_m(const char *src, const char *findstr)
 		DEBUG(0,("strstr_m: find malloc fail\n"));
 		return NULL;
 	}
-	
-	for (p = src_w; (p = strchr_w(p, *find_w)) != NULL; p++) {
-		if (strcmp_w(p, find_w) == 0)
-			break;
-	}
+
+	p = strstr_w(src_w, find_w);
+
 	if (!p) {
 		SAFE_FREE(src_w);
 		SAFE_FREE(find_w);
 		return NULL;
 	}
+	
 	*p = 0;
 	if (pull_ucs2_allocate(&s2, src_w) == (size_t)-1) {
 		SAFE_FREE(src_w);
