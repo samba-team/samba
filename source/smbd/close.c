@@ -104,6 +104,8 @@ void close_file(files_struct *fsp, BOOL normal_close)
 	int token;
 	connection_struct *conn = fsp->conn;
 
+	remove_pending_lock_requests_by_fid(fsp);
+
 	close_filestruct(fsp);
 
 #if USE_READ_PREDICTION
@@ -141,8 +143,6 @@ void close_file(files_struct *fsp, BOOL normal_close)
 	if (fsp->fsp_name) {
 		string_free(&fsp->fsp_name);
 	}
-
-	remove_pending_lock_requests_by_fid(fsp);
 
 	file_free(fsp);
 }

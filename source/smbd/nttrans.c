@@ -28,6 +28,7 @@ extern int Client;
 extern int oplock_sock;
 extern int smb_read_error;
 extern int global_oplock_break;
+extern int chain_size;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
@@ -1029,7 +1030,7 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp)
   change_notify_buf *prev = NULL;
 
   while(cnbp != NULL) {
-    if(cnbp->fsp == fsp) {
+    if(cnbp->fsp->fnum == fsp->fnum) {
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;
@@ -1088,6 +1089,13 @@ void process_pending_change_notify_queue(time_t t)
     connection_struct *conn = cnbp->conn;
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : 
                   SVAL(cnbp->request_buf,smb_uid);
+
+    /*
+     * Ensure we don't have any old chain_fsp values
+     * sitting around....
+     */
+    chain_size = 0;
+    file_chain_reset();
 
     if(!become_user(conn,vuid)) {
       DEBUG(0,("process_pending_change_notify_queue: Unable to become user vuid=%d.\n",
