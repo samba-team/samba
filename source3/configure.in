@@ -2572,14 +2572,23 @@ AC_MSG_CHECKING(whether to build winbind)
 
 # Initially, the value of $host_os decides whether winbind is supported
 
-case "$host_os" in 
-        *linux*|*solaris*|*irix*)
+case "$host_os" in
+	*linux*|*irix*)
 		HAVE_WINBIND=yes
-                ;;
-        *)
+		;;
+	*solaris*)
+		HAVE_WINBIND=yes
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		WINBIND_NSS_EXTGRA_LIBS="-lsocket"
+		;;
+	*hpux11*)
+		HAVE_WINBIND=yes
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		;;
+	*)
 		HAVE_WINBIND=no
-                winbind_no_reason=", unsupported on $host_os"
-                ;;
+		winbind_no_reason=", unsupported on $host_os"
+		;;
 esac
 
 # Check the setting of --with-winbindd
@@ -2635,6 +2644,8 @@ AC_SUBST(WINBIND_TARGETS)
 AC_SUBST(WINBIND_STARGETS)
 AC_SUBST(WINBIND_LTARGETS)
 AC_SUBST(WINBIND_PAM_TARGETS)
+AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
+AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 
 #################################################
 # Check to see if we should use the included popt 

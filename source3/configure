@@ -2617,12 +2617,12 @@ else
 #line 2618 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(int));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2629: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -2656,12 +2656,12 @@ else
 #line 2657 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(long));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2668: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -2695,12 +2695,12 @@ else
 #line 2696 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(short));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2707: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -13441,14 +13441,23 @@ echo "configure:13441: checking whether to build winbind" >&5
 
 # Initially, the value of $host_os decides whether winbind is supported
 
-case "$host_os" in 
-        *linux*|*solaris*|*irix*)
+case "$host_os" in
+	*linux*|*irix*)
 		HAVE_WINBIND=yes
-                ;;
-        *)
+		;;
+	*solaris*)
+		HAVE_WINBIND=yes
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		WINBIND_NSS_EXTGRA_LIBS="-lsocket"
+		;;
+	*hpux11*)
+		HAVE_WINBIND=yes
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		;;
+	*)
 		HAVE_WINBIND=no
-                winbind_no_reason=", unsupported on $host_os"
-                ;;
+		winbind_no_reason=", unsupported on $host_os"
+		;;
 esac
 
 # Check the setting of --with-winbindd
@@ -13507,6 +13516,8 @@ fi
 
 
 
+
+
 #################################################
 # Check to see if we should use the included popt 
 
@@ -13526,7 +13537,7 @@ fi
 
 if test x"$INCLUDED_POPT" != x"yes"; then
     echo $ac_n "checking for poptGetContext in -lpopt""... $ac_c" 1>&6
-echo "configure:13530: checking for poptGetContext in -lpopt" >&5
+echo "configure:13541: checking for poptGetContext in -lpopt" >&5
 ac_lib_var=`echo popt'_'poptGetContext | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -13534,7 +13545,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lpopt  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 13538 "configure"
+#line 13549 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -13545,7 +13556,7 @@ int main() {
 poptGetContext()
 ; return 0; }
 EOF
-if { (eval echo configure:13549: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:13560: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -13569,7 +13580,7 @@ fi
 fi
 
 echo $ac_n "checking whether to use included popt""... $ac_c" 1>&6
-echo "configure:13573: checking whether to use included popt" >&5
+echo "configure:13584: checking whether to use included popt" >&5
 if test x"$INCLUDED_POPT" = x"yes"; then
     echo "$ac_t""$srcdir/popt" 1>&6
     BUILD_POPT='$(POPT_OBJS)'
@@ -13589,11 +13600,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 13593 "configure"
+#line 13604 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:13597: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:13608: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
@@ -13791,6 +13802,8 @@ s%@WINBIND_TARGETS@%$WINBIND_TARGETS%g
 s%@WINBIND_STARGETS@%$WINBIND_STARGETS%g
 s%@WINBIND_LTARGETS@%$WINBIND_LTARGETS%g
 s%@WINBIND_PAM_TARGETS@%$WINBIND_PAM_TARGETS%g
+s%@WINBIND_NSS_EXTRA_OBJS@%$WINBIND_NSS_EXTRA_OBJS%g
+s%@WINBIND_NSS_EXTRA_LIBS@%$WINBIND_NSS_EXTRA_LIBS%g
 s%@BUILD_POPT@%$BUILD_POPT%g
 s%@FLAGS1@%$FLAGS1%g
 s%@builddir@%$builddir%g
