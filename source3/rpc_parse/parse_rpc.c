@@ -691,7 +691,7 @@ BOOL smb_io_rpc_auth_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_stru
 	depth++;
 
 	/* "NTLMSSP" */
-	if(!prs_string("signature", ps, depth, rav->signature, strlen("NTLMSSP"),
+	if(!prs_string("signature", ps, depth, rav->signature,
 			sizeof(rav->signature)))
 		return False;
 	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type)) /* NTLMSSP_MESSAGE_TYPE */
@@ -701,7 +701,7 @@ BOOL smb_io_rpc_auth_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_stru
 }
 
 /*******************************************************************
- This parses an RPC_AUTH_VERIFIER for NETLOGON schannel. I thing
+ This parses an RPC_AUTH_VERIFIER for NETLOGON schannel. I think
  assuming "NTLMSSP" in sm_io_rpc_auth_verifier is somewhat wrong.
  I have to look at that later...
 ********************************************************************/
@@ -714,11 +714,9 @@ BOOL smb_io_rpc_netsec_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_st
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_verifier");
 	depth++;
 
-	/* "NTLMSSP" */
-	if(!prs_string("signature", ps, depth, rav->signature, strlen(rav->signature),
-			sizeof(rav->signature)))
+	if(!prs_string("signature", ps, depth, rav->signature, sizeof(rav->signature)))
 		return False;
-	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type)) /* NTLMSSP_MESSAGE_TYPE */
+	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type))
 		return False;
 
 	return True;
@@ -1170,11 +1168,9 @@ BOOL smb_io_rpc_auth_netsec_neg(const char *desc, RPC_AUTH_NETSEC_NEG *neg,
 		return False;
 	if(!prs_uint32("type2", ps, depth, &neg->type2))
 		return False;
-	if(!prs_string("domain  ", ps, depth, neg->domain,
-		       strlen(neg->domain), sizeof(neg->domain)))
+	if(!prs_string("domain  ", ps, depth, neg->domain, sizeof(neg->domain)))
 		return False;
-	if(!prs_string("myname  ", ps, depth, neg->myname, 
-		       strlen(neg->myname), sizeof(neg->myname)))
+	if(!prs_string("myname  ", ps, depth, neg->myname, sizeof(neg->myname)))
 		return False;
 
 	return True;
