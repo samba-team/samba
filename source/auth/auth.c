@@ -372,17 +372,25 @@ BOOL load_auth_module(struct auth_context *auth_context,
 	
 	entry = auth_find_backend_entry(module_name);
 	
-	if(!(entry = auth_find_backend_entry(module_name)) && NT_STATUS_IS_ERR(smb_probe_module("auth", module_name)) && 
-	   !(entry = auth_find_backend_entry(module_name))) {
-		DEBUG(0,("load_auth_module: can't find auth method %s!\n", module_name));
-	} else if (!NT_STATUS_IS_OK(entry->init(auth_context, module_params, ret))) {
-		DEBUG(0,("load_auth_module: auth method %s did not correctly init\n",
-			 module));
-	} else {
-		DEBUG(5,("load_auth_module: auth method %s has a valid init\n",
-			 module));
-		good = True;
+	if (entry == NULL) {
+		if (NT_STATUS_IS_OK(smb_probe_module("auth", module_name))) {
+			entry = auth_find_backend_entry(module_name);
+		}
 	}
+
+	if (entry != NULL) {
+		if (!NT_STATUS_IS_OK(entry->init(auth_context, module_params, ret))) {
+			DEBUG(0,("load_auth_module: auth method %s did not correctly init\n",
+				 module_name));
+		} else {
+			DEBUG(5,("load_auth_module: auth method %s has a valid init\n",
+				 module_name));
+			good = True;
+		}
+	} else {
+		DEBUG(0,("load_auth_module: can't find auth method %s!\n", module_name));
+	}
+
 	SAFE_FREE(module_name);
 	return good;
 }
