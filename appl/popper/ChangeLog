@@ -1,3 +1,7 @@
+2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* popper.8: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
+	
 2002-07-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* pop_dropcopy.c: use RESP-CODES
