@@ -1062,7 +1062,7 @@ static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb, BOOL clean
 	}
 
 	if (data.dsize % 8) {
-		DEBUG(0,("get_pid_list: Size of record for printer %s not a multiple of 8 !\n",
+		DEBUG(0,("get_printer_notify_pid_list: Size of record for printer %s not a multiple of 8 !\n",
 					pdb->printer_name ));
 		tdb_delete_by_string(pdb->tdb, NOTIFY_PID_LIST_KEY );
 		ZERO_STRUCT(data);
@@ -1076,7 +1076,7 @@ static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb, BOOL clean
 	 * Weed out all dead entries.
 	 */
 
-	for( i = 0; i < data.dsize; ) {
+	for( i = 0; i < data.dsize; i += 8) {
 		pid_t pid = (pid_t)IVAL(data.dptr, i);
 
 		if (pid == sys_getpid())
@@ -1084,21 +1084,18 @@ static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb, BOOL clean
 
 		/* Entry is dead if process doesn't exist or refcount is zero. */
 
-		if ((IVAL(data.dptr, i + 4) == 0) || !process_exists(pid)) {
+		while ((i < data.dsize) && ((IVAL(data.dptr, i + 4) == 0) || !process_exists(pid))) {
 
 			/* Refcount == zero is a logic error and should never happen. */
 			if (IVAL(data.dptr, i + 4) == 0) {
-				DEBUG(0,("get_pid_list: Refcount == 0 for pid = %u printer %s !\n",
+				DEBUG(0,("get_printer_notify_pid_list: Refcount == 0 for pid = %u printer %s !\n",
 							(unsigned int)pid, pdb->printer_name ));
 			}
 
 			if (data.dsize - i > 8)
 				memmove( &data.dptr[i], &data.dptr[i+8], data.dsize - i - 8);
 			data.dsize -= 8;
-			continue;
 		}
-
-		i += 8;
 	}
 
 	return data;
@@ -1130,7 +1127,7 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 		return False;
 	}
 
-	data = get_printer_notify_pid_list( pdb, False );
+	data = get_printer_notify_pid_list( pdb, True );
 
 	if (!data.dptr) {
 		ret = True;
@@ -1184,7 +1181,7 @@ BOOL print_notify_register_pid(int snum)
 		return False;
 	}
 
-	data = get_printer_notify_pid_list( pdb, False );
+	data = get_printer_notify_pid_list( pdb, True );
 
 	/* Add ourselves and increase the refcount. */
 
@@ -1248,7 +1245,7 @@ BOOL print_notify_deregister_pid(int snum)
 		return False;
 	}
 
-	data = get_printer_notify_pid_list( pdb, False );
+	data = get_printer_notify_pid_list( pdb, True );
 
 	/* Reduce refcount. Remove ourselves if zero. */
 
