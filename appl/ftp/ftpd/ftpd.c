@@ -220,7 +220,7 @@ static void conn_wait(int port)
     int one = 1;
     s = socket(AF_INET, SOCK_STREAM, 0);
 
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one));
     memset(&sa, 0, sizeof(sa));
     sa.sin_port = port; /* in network byteorder */
     sa.sin_addr.s_addr = INADDR_ANY;
