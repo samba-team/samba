@@ -3181,13 +3181,13 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 	
 	ldap_state->permit_non_unix_accounts = True;
 
-	/* We know these uids can't turn up as allogorithmic RIDs */
+	/* We know these uids can't turn up as algorithmic RIDs */
 	if (!lp_idmap_uid(&low_idmap_uid, &high_idmap_uid)) {
 		DEBUG(0, ("cannot use ldapsam_nua without 'idmap uid' range in smb.conf!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* We know these gids can't turn up as allogorithmic RIDs */
+	/* We know these gids can't turn up as algorithmic RIDs */
 	if (!lp_idmap_gid(&low_idmap_gid, &high_idmap_gid)) {
 		DEBUG(0, ("cannot use ldapsam_nua without 'wibnind gid' range in smb.conf!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
