@@ -138,6 +138,7 @@ TALLOC_CTX *talloc_init(void)
  * Create a new talloc context, with a name specifying its purpose.
  * Please call this in preference to talloc_init().
  **/
+
  TALLOC_CTX *talloc_init_named(char const *fmt, ...) 
 {
 	TALLOC_CTX *t;
@@ -145,9 +146,18 @@ TALLOC_CTX *talloc_init(void)
 
 	t = talloc_init();
 	if (t && fmt) {
+		/*
+		 * t->name must not be talloced.
+		 * as destroying the pool would destroy it. JRA.
+		 */
+		t->name = NULL;
 		va_start(ap, fmt);
-		t->name = talloc_vasprintf(t, fmt, ap);
+		vasprintf(&t->name, fmt, ap);
 		va_end(ap);
+		if (!t->name) {
+			talloc_destroy(t);
+			t = NULL;
+		}
 	}
 	
 	return t;
@@ -234,6 +244,7 @@ void talloc_destroy(TALLOC_CTX *t)
 
 	talloc_destroy_pool(t);
 	talloc_disenroll(t);
+	SAFE_FREE(t->name);
 	memset(t, 0, sizeof(TALLOC_CTX));
 	SAFE_FREE(t);
 }
@@ -411,7 +422,7 @@ char *talloc_describe_all(TALLOC_CTX *rt)
 		if (it->name)
 			fstrcpy(what, it->name);
 		else
-			slprintf(what, sizeof what, "@%p", it);
+			slprintf(what, sizeof(what), "@%p", it);
 		
 		s = talloc_asprintf_append(rt, s, "%-40s %8u %8u\n",
 					   what,
