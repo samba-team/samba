@@ -60,6 +60,13 @@ NTSTATUS dcerpc_bind_auth_spnego(struct dcerpc_pipe *p,
 		return status;
 	}
 
+	status = gensec_set_target_hostname(p->security_state.generic_state, p->transport.peer_name(p));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
+			  nt_errstr(status)));
+		return status;
+	}
+
 	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_SPNEGO);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",

@@ -79,6 +79,8 @@ struct cli_socket {
 	int reference_count;
 
 	struct in_addr dest_ip;
+	/* dest hostname (which may or may not be a DNS name) */
+	char *hostname;
 
 	/* the port used */
 	int port;

@@ -54,13 +54,59 @@ kerb_prompter(krb5_context ctx, void *data,
   simulate a kinit, putting the tgt in the default cache location
   remus@snapserver.com
 */
-int kerberos_kinit_password(const char *principal, const char *password, int time_offset, time_t *expire_time)
+ int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, const char *principal, const char *password, time_t *expire_time, time_t *kdc_time)
+{
+	krb5_error_code code = 0;
+	krb5_principal me;
+	krb5_creds my_creds;
+
+	if ((code = krb5_parse_name(ctx, principal, &me))) {
+		return code;
+	}
+	
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, password, 
+						 kerb_prompter, 
+						 NULL, 0, NULL, NULL))) {
+		krb5_free_principal(ctx, me);
+		return code;
+	}
+	
+	if ((code = krb5_cc_initialize(ctx, cc, me))) {
+		krb5_free_cred_contents(ctx, &my_creds);
+		krb5_free_principal(ctx, me);
+		return code;
+	}
+	
+	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
+		krb5_free_cred_contents(ctx, &my_creds);
+		krb5_free_principal(ctx, me);
+		return code;
+	}
+	
+	if (expire_time) {
+		*expire_time = (time_t) my_creds.times.endtime;
+	}
+
+	if (kdc_time) {
+		*kdc_time = (time_t) my_creds.times.starttime;
+	}
+
+	krb5_free_cred_contents(ctx, &my_creds);
+	krb5_free_principal(ctx, me);
+	
+	return 0;
+}
+
+
+/*
+  simulate a kinit, putting the tgt in the default cache location
+  remus@snapserver.com
+*/
+int kerberos_kinit_password(const char *principal, const char *password, int time_offset, time_t *expire_time, time_t *kdc_time)
 {
 	krb5_context ctx = NULL;
 	krb5_error_code code = 0;
 	krb5_ccache cc = NULL;
-	krb5_principal me;
-	krb5_creds my_creds;
 
 	if ((code = krb5_init_context(&ctx)))
 		return code;
@@ -73,42 +119,12 @@ int kerberos_kinit_password(const char *principal, const char *password, int tim
 		krb5_free_context(ctx);
 		return code;
 	}
-	
-	if ((code = krb5_parse_name(ctx, principal, &me))) {
-		krb5_free_context(ctx);	
-		return code;
-	}
-	
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, password, 
-						 kerb_prompter, 
-						 NULL, 0, NULL, NULL))) {
-		krb5_free_principal(ctx, me);
-		krb5_free_context(ctx);		
-		return code;
-	}
-	
-	if ((code = krb5_cc_initialize(ctx, cc, me))) {
-		krb5_free_cred_contents(ctx, &my_creds);
-		krb5_free_principal(ctx, me);
-		krb5_free_context(ctx);		
-		return code;
-	}
-	
-	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
-		krb5_cc_close(ctx, cc);
-		krb5_free_cred_contents(ctx, &my_creds);
-		krb5_free_principal(ctx, me);
-		krb5_free_context(ctx);		
-		return code;
-	}
-	
-	if (expire_time)
-		*expire_time = (time_t) my_creds.times.endtime;
 
-	krb5_cc_close(ctx, cc);
-	krb5_free_cred_contents(ctx, &my_creds);
-	krb5_free_principal(ctx, me);
-	krb5_free_context(ctx);		
+	if ((code = kerberos_kinit_password_cc(ctx, cc, principal, password, expire_time, kdc_time))) {
+		krb5_cc_close(ctx, cc);
+		krb5_free_context(ctx);
+		return code;
+	}
 	
 	return 0;
 }
@@ -129,7 +145,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 		return KRB5_LIBOS_CANTREADPWD;
 	}
 	
-	ret = kerberos_kinit_password(s, ads->auth.password, ads->auth.time_offset, &ads->auth.expire);
+	ret = kerberos_kinit_password(s, ads->auth.password, ads->auth.time_offset, &ads->auth.expire, NULL);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
