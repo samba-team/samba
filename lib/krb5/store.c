@@ -172,6 +172,46 @@ krb5_ret_string(krb5_storage *sp,
     return 0;
 }
 
+krb5_error_code
+krb5_store_stringz(krb5_storage *sp,
+		  char *s)
+{
+    size_t len = strlen(s) + 1;
+    size_t ret;
+    ret = sp->store(sp, s, len);
+    if(ret != len)
+	if((int)ret < 0)
+	    return ret;
+	else
+	    return KRB5_CC_END;
+    return 0;
+}
+
+krb5_error_code
+krb5_ret_stringz(krb5_storage *sp,
+		char **string)
+{
+    char c;
+    char *s = NULL;
+    len = 0;
+    size_t ret;
+    while((ret = sp->fetch(sp, &c, 1)) == 1){
+	len++;
+	s = realloc(s, len);
+	s[len - 1] = c;
+	if(c == 0)
+	    break;
+    }
+    if(ret != 1){
+	free(s);
+	if(ret == 0)
+	    return KRB5_CC_END;
+	return ret;
+    }
+    *string = s;
+    return 0;
+}
+
 
 krb5_error_code
 krb5_store_principal(krb5_storage *sp,
@@ -219,10 +259,14 @@ krb5_ret_principal(krb5_storage *sp,
     if(p == NULL)
 	return ENOMEM;
 
-    if((ret = krb5_ret_int32(sp, &type)))
+    if((ret = krb5_ret_int32(sp, &type))){
+	free(p);
 	return ret;
-    if((ret = krb5_ret_int32(sp, &ncomp)))
+    }
+    if((ret = krb5_ret_int32(sp, &ncomp))){
+	free(p);
 	return ret;
+    }
 #ifdef USE_ASN1_PRINCIPAL
     p->name.name_type = type;
     p->name.name_string.len = ncomp;
