@@ -658,7 +658,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	struct traverse_struct *ts = (struct traverse_struct *)state;
 	struct printjob pjob;
 	uint32 jobid;
-	int i;
+	int i = 0;
 
 	if (  key.dsize != sizeof(jobid) )
 		return 0;
