@@ -2860,7 +2860,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
 
   if (strequal(p1,"*")) return(True);
 
-  DEBUG(5,("mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2, p1, case_sig));
+  DEBUG(8,("mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2, p1, case_sig));
 
   if (trans2) {
     fstrcpy(ebase,p1);
@@ -2888,7 +2888,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   matched = do_match(sbase,ebase,case_sig) && 
     (trans2 || do_match(sext,eext,case_sig));
 
-  DEBUG(5,("mask_match returning %d\n", matched));
+  DEBUG(8,("mask_match returning %d\n", matched));
 
   return matched;
 }

@@ -1049,17 +1049,19 @@ extern int unix_ERR_code;
  * 
  * Form of this is :
  *
- *  0     2       6        10
- *  +----+--------+--------+--------+
- *  | cmd| pid    | dev    | inode  |
- *  +----+--------+--------+--------+
+ *  0     2       6        10       14      18       22
+ *  +----+--------+--------+--------+-------+--------+
+ *  | cmd| pid    | dev    | inode  | sec   |  usec  |
+ *  +----+--------+--------+--------+-------+--------+
  */
 
 #define OPLOCK_BREAK_CMD 0x1
 #define OPLOCK_BREAK_PID_OFFSET 2
 #define OPLOCK_BREAK_DEV_OFFSET 6
 #define OPLOCK_BREAK_INODE_OFFSET 10
-#define OPLOCK_BREAK_MSG_LEN 14
+#define OPLOCK_BREAK_SEC_OFFSET 14
+#define OPLOCK_BREAK_USEC_OFFSET 18
+#define OPLOCK_BREAK_MSG_LEN 22
 
 
 #define CMD_REPLY 0x8000

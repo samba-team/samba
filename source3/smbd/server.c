@@ -1404,7 +1404,8 @@ static int access_table(int new_deny,int old_deny,int old_mode,
   if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
 
   if (new_deny == DENY_DOS || old_deny == DENY_DOS) {
-    if (old_deny == new_deny && share_pid == getpid()) 
+    int pid = getpid();
+    if (old_deny == new_deny && share_pid == pid) 
 	return(AALL);    
 
     if (old_mode == 0) return(AREAD);
@@ -1487,16 +1488,12 @@ BOOL check_file_sharing(int cnum,char *fname)
       {
         min_share_mode_entry *share_entry = &old_shares[i];
 
-        /* someone else has a share lock on it, check to see 
-           if we can too */
-        if ((share_entry->share_mode != DENY_DOS) || (share_entry->pid != pid))
-          goto free_and_exit;
-
 #ifdef USE_OPLOCKS
         /* 
-         * The share modes would give us access. Check if someone
-         * has an oplock on this file. If so we must break it before
-         * continuing. 
+         * Break oplocks before checking share modes. See comment in
+         * open_file_shared for details. 
+         * Check if someone has an oplock on this file. If so we must 
+         * break it before continuing. 
          */
         if(share_entry->op_type & BATCH_OPLOCK)
         {
@@ -1518,6 +1515,12 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
           break;
         }
 #endif /* USE_OPLOCKS */
+
+        /* someone else has a share lock on it, check to see 
+           if we can too */
+        if ((share_entry->share_mode != DENY_DOS) || (share_entry->pid != pid))
+          goto free_and_exit;
+
       } /* end for */
 
       if(broke_oplock)
@@ -1727,22 +1730,13 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
         {
           min_share_mode_entry *share_entry = &old_shares[i];
 
-          /* someone else has a share lock on it, check to see 
-             if we can too */
-          if(check_share_mode(share_entry, deny_mode, fname, fcbopen, &flags) == False)
-          {
-            free((char *)old_shares);
-            unlock_share_entry(cnum, dev, inode, token);
-            errno = EACCES;
-            unix_ERR_class = ERRDOS;
-            unix_ERR_code = ERRbadshare;
-            return;
-          }
 #ifdef USE_OPLOCKS
           /* 
-           * The share modes would give us access. Check if someone
-           * has an oplock on this file. If so we must break it before
-           * continuing. 
+           * By observation of NetBench, oplocks are broken *before* share
+           * modes are checked. This allows a file to be closed by the client
+           * if the share mode would deny access and the client has an oplock. 
+           * Check if someone has an oplock on this file. If so we must break 
+           * it before continuing. 
            */
           if(share_entry->op_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
           {
@@ -1767,6 +1761,19 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
             break;
           }
 #endif /* USE_OPLOCKS */
+
+          /* someone else has a share lock on it, check to see 
+             if we can too */
+          if(check_share_mode(share_entry, deny_mode, fname, fcbopen, &flags) == False)
+          {
+            free((char *)old_shares);
+            unlock_share_entry(cnum, dev, inode, token);
+            errno = EACCES;
+            unix_ERR_class = ERRDOS;
+            unix_ERR_code = ERRbadshare;
+            return;
+          }
+
         } /* end for */
 
         if(broke_oplock)
@@ -2428,7 +2435,7 @@ static void process_smb(char *inbuf, char *outbuf)
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		  DEBUG(1,("%s Connection denied from %s\n",
 			   timestring(),client_addr()));
-		  send_smb(Client,buf);
+		  send_smb(Client,(char *)buf);
 		  exit_server("connection denied");
 	  }
   }
@@ -2535,7 +2542,11 @@ should be %d).\n", msg_len, OPLOCK_BREAK_MSG_LEN));
         uint32 remotepid = IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
         uint32 dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
         uint32 inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
+        struct timeval tval;
         struct sockaddr_in toaddr;
+
+        tval.tv_sec = IVAL(msg_start, OPLOCK_BREAK_SEC_OFFSET);
+        tval.tv_usec = IVAL(msg_start, OPLOCK_BREAK_USEC_OFFSET);
 
         DEBUG(5,("process_local_message: oplock break request from \
 pid %d, port %d, dev = %x, inode = %x\n", remotepid, from_port, dev, inode));
@@ -2549,7 +2560,7 @@ pid %d, port %d, dev = %x, inode = %x\n", remotepid, from_port, dev, inode));
 
         if(global_oplocks_open != 0)
         {
-          if(oplock_break(dev, inode) == False)
+          if(oplock_break(dev, inode, &tval) == False)
           {
             DEBUG(0,("process_local_message: oplock break failed - \
 not returning udp message.\n"));
@@ -2595,7 +2606,7 @@ pid %d, port %d, for file dev = %x, inode = %x\n", remotepid,
 /****************************************************************************
  Process an oplock break directly.
 ****************************************************************************/
-BOOL oplock_break(uint32 dev, uint32 inode)
+BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
 {
   extern int Client;
   static char *inbuf = NULL;
@@ -2633,7 +2644,9 @@ global_oplocks_open = %d\n", dev, inode, global_oplocks_open));
     if(OPEN_FNUM(fnum))
     {
       fsp = &Files[fnum];
-      if((fsp->fd_ptr->dev == dev) && (fsp->fd_ptr->inode == inode))
+      if((fsp->fd_ptr->dev == dev) && (fsp->fd_ptr->inode == inode) &&
+         (fsp->open_time.tv_sec == tval->tv_sec) && 
+         (fsp->open_time.tv_usec == tval->tv_usec))
         break;
     }
   }
@@ -2797,8 +2810,11 @@ BOOL request_oplock_break(min_share_mode_entry *share_entry,
 should be %d\n", pid, share_entry->op_port, oplock_port));
       return False;
     }
+
+    DEBUG(5,("request_oplock_break: breaking our own oplock\n"));
+
     /* Call oplock break direct. */
-    return oplock_break(dev, inode);
+    return oplock_break(dev, inode, &share_entry->time);
   }
 
   /* We need to send a OPLOCK_BREAK_CMD message to the
@@ -2808,6 +2824,8 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
   SIVAL(op_break_msg,OPLOCK_BREAK_PID_OFFSET,pid);
   SIVAL(op_break_msg,OPLOCK_BREAK_DEV_OFFSET,dev);
   SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET,inode);
+  SIVAL(op_break_msg,OPLOCK_BREAK_SEC_OFFSET,(uint32)share_entry->time.tv_sec);
+  SIVAL(op_break_msg,OPLOCK_BREAK_USEC_OFFSET,(uint32)share_entry->time.tv_usec);
 
   /* set the address and port */
   bzero((char *)&addr_out,sizeof(addr_out));
