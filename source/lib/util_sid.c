@@ -38,6 +38,7 @@ DOM_SID global_sid_World_Domain;	    	/* Everyone domain */
 DOM_SID global_sid_World;    				/* Everyone */
 DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
 DOM_SID global_sid_Creator_Owner;    		/* Creator Owner */
+DOM_SID global_sid_Creator_Group;              /* Creator Group */
 DOM_SID global_sid_NT_Authority;    		/* NT Authority */
 DOM_SID global_sid_NULL;            		/* NULL sid */
 DOM_SID global_sid_Builtin_Guests;			/* Builtin guest users */
@@ -179,6 +180,7 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_World, "S-1-1-0");
 	string_to_sid(&global_sid_Creator_Owner_Domain, "S-1-3");
 	string_to_sid(&global_sid_Creator_Owner, "S-1-3-0");
+	string_to_sid(&global_sid_Creator_Group, "S-1-3-1");
 	string_to_sid(&global_sid_NT_Authority, "S-1-5");
 	string_to_sid(&global_sid_NULL, "S-1-0-0");
 	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
