@@ -84,27 +84,39 @@ int sys_acl_free( void *obj_p)
 #elif defined(HAVE_IRIX_ACLS)
 
 #else /* No ACLs. */
+
 int sys_acl_get_entry( SMB_ACL_T acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
 {
+	return -1;
 }
 
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p)
 {
+	return -1;
 }
 
 int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p)
 {
+	return -1;
 }
 
 void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d)
 {
+	return NULL;
 }
 
 SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 {
+	return (SMB_ACL_T)NULL;
+}
+
+SMB_ACL_T sys_acl_get_fd(int fd)
+{
+	return (SMB_ACL_T)NULL;
 }
 
 int sys_acl_free( void *obj_p)
 {
+	return -1;
 }
 #endif /* No ACLs. */

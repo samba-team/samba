@@ -29,6 +29,7 @@
 /* This is an identity mapping (just remove the SMB_). */
 
 #define SMB_ACL_TAG_T               acl_tag_t
+#define SMB_ACL_TYPE_T				acl_type_t
 #define SMB_ACL_PERMSET_T           acl_permset_t
 #define SMB_ACL_READ                ACL_READ
 #define SMB_ACL_WRITE               ACL_WRITE
@@ -60,6 +61,7 @@
 
 /* No ACLS - fake it. */
 #define SMB_ACL_TAG_T 				int
+#define SMB_ACL_TYPE_T              int
 #define SMB_ACL_PERMSET_T 			mode_t
 #define SMB_ACL_READ 				S_IRUSR
 #define SMB_ACL_WRITE 				S_IWUSR
@@ -73,11 +75,11 @@
 #define SMB_ACL_OTHER_OBJ			4
 #define SMB_ACL_MASK				5
 
-typdef struct SMB_ACL_T {
+typedef struct SMB_ACL_T {
 	int dummy;
 } *SMB_ACL_T;
 
-typdef struct SMB_ACL_ENTRY_T {
+typedef struct SMB_ACL_ENTRY_T {
 	int dummy;
 } *SMB_ACL_ENTRY_T;
 

@@ -1,4 +1,3 @@
-#ifdef HAVE_POSIX_ACLS
 #define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
@@ -57,17 +56,16 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 		/*
 		 * Here we differentiate between the owner and any other user.
 		 */
-		if (sid_equal(powner_sid, &ace->sid)
+		if (sid_equal(powner_sid, &ace->sid)) {
 			nt_mask = UNIX_ACCESS_NONE;
 		} else {
-			/* Not owner, this is an access denied ACE. */
-			nt_mask = UNIX_ACCESS_RWX;
-			*pacl_type = SEC_ACE_TYPE_ACCESS_DENIED;
+			/* Not owner, no access. */
+			nt_mask = 0;
 		}
 	} else {
-		nt_mask |= (perm & SMB_ACL_READ) ? UNIX_ACCESS_R : 0;
-		nt_mask |= (perm & SMB_ACL_WRITE) ? UNIX_ACCESS_W : 0;
-		nt_mask |= (perm & SMB_ACL_EXECUTE) ? UNIX_ACCESS_X : 0;
+		nt_mask |= (ace->perms & SMB_ACL_READ) ? UNIX_ACCESS_R : 0;
+		nt_mask |= (ace->perms & SMB_ACL_WRITE) ? UNIX_ACCESS_W : 0;
+		nt_mask |= (ace->perms & SMB_ACL_EXECUTE) ? UNIX_ACCESS_X : 0;
 	}
 	init_sec_access(&sa,nt_mask);
 	return sa;
@@ -130,8 +128,6 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
   DOM_SID grp_sid;
   DOM_SID file_owner_sid;
   DOM_SID file_grp_sid;
-  uint32 owner_rid;
-  uint32 grp_rid;
   SEC_ACL *dacl = psd->dacl;
   BOOL all_aces_are_inherit_only = (is_directory ? True : False);
   int i;
@@ -360,9 +356,6 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	canon_ace *owner_ace = NULL;
 	canon_ace *group_ace = NULL;
 	canon_ace *other_ace = NULL;
-	SMB_ACL_TAG_T type;
-	SMB_ACL_PERMSET_T perms;
-	DOM_SID sid;
 
 	/*
 	 * Create 3 linked list entries.
@@ -371,7 +364,7 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	if ((owner_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
 		goto fail;
 
-	if ((gtoup_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
+	if ((group_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
 		goto fail;
 
 	if ((other_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
@@ -391,9 +384,9 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	other_ace->sid = global_sid_World;
 
 	if (!fsp->is_directory) {
-		owner_ace->perms = unix_perms_to_acl_perms(sbuf.st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
-		group_ace->perms = unix_perms_to_acl_perms(sbuf.st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
-		other_ace->perms = unix_perms_to_acl_perms(sbuf.st_mode, S_IROTH, S_IWOTH, S_IXOTH);
+		owner_ace->perms = unix_perms_to_acl_perms(psbuf->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
+		group_ace->perms = unix_perms_to_acl_perms(psbuf->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
+		other_ace->perms = unix_perms_to_acl_perms(psbuf->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
 	} else {
 		mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
 
@@ -450,11 +443,11 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 
 		/* Decide which SID to use based on the ACL type. */
 		switch(tagtype) {
-			SMB_ACL_USER_OBJ:
+			case SMB_ACL_USER_OBJ:
 				/* Get the SID from the owner. */
 				uid_to_sid( &sid, psbuf->st_uid );
 				break;
-			SMB_ACL_USER:
+			case SMB_ACL_USER:
 				{
 					uid_t *puid = (uid_t *)sys_acl_get_qualifier(entry);
 					if (puid == NULL) {
@@ -464,11 +457,11 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 					uid_to_sid( &sid, *puid);
 					break;
 				}
-			SMB_ACL_GROUP_OBJ:
+			case SMB_ACL_GROUP_OBJ:
 				/* Get the SID from the owning group. */
 				gid_to_sid( &sid, psbuf->st_gid );
 				break;
-			SMB_ACL_GROUP:
+			case SMB_ACL_GROUP:
 				{
 					gid_t *pgid = (gid_t *)sys_acl_get_qualifier(entry);
 					if (pgid == NULL) {
@@ -478,10 +471,10 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 					gid_to_sid( &sid, *pgid);
 					break;
 				}
-			SMB_ACL_MASK:
+			case SMB_ACL_MASK:
 				acl_mask = permset;
 				continue; /* Don't count the mask as an entry. */
-			SMB_ACL_OTHER_OBJ:
+			case SMB_ACL_OTHER_OBJ:
 				/* Use the Everyone SID */
 				sid = global_sid_World;
 				break;
@@ -515,18 +508,18 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 	 */
 
 	for ( ace = list_head; ace; ace = next_ace) {
-		next_ace = ace_next;
+		next_ace = ace->next;
 		ace->perms &= acl_mask;
 
 		if (ace->perms == 0) {
 			switch (ace->type) {
-				SMB_ACL_USER_OBJ:
-				SMB_ACL_GROUP_OBJ:
-				SMB_ACL_OTHER_OBJ:
+				case SMB_ACL_USER_OBJ:
+				case SMB_ACL_GROUP_OBJ:
+				case SMB_ACL_OTHER_OBJ:
 					DLIST_REMOVE(list_head, ace);
 					break;
-				SMB_ACL_USER:
-				SMB_ACL_GROUP:
+				case SMB_ACL_USER:
+				case SMB_ACL_GROUP:
 					DLIST_PROMOTE(list_head, ace);
 					break;
 			}
@@ -534,6 +527,11 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 	}
 
 	return list_head;
+
+  fail:
+
+	free_canon_ace_list(list_head);
+	return NULL;
 }
 
 /****************************************************************************
@@ -545,19 +543,12 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 
 size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
-	extern DOM_SID global_sid_World;
 	SMB_STRUCT_STAT sbuf;
 	SEC_ACE *nt_ace_list;
 	DOM_SID owner_sid;
 	DOM_SID group_sid;
 	size_t sd_size = 0;
 	SEC_ACL *psa = NULL;
-	SEC_ACCESS owner_access;
-	int owner_acl_type;
-	SEC_ACCESS group_access;
-	int grp_acl_type;
-	SEC_ACCESS other_access;
-	int other_acl_type;
 	size_t num_acls = 0;
 	size_t num_dir_acls = 0;
 	size_t num_aces = 0;
@@ -571,7 +562,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	if(fsp->is_directory || fsp->fd == -1) {
 
 		/* Get the stat struct for the owner info. */
-		if(vfs_stat(fsp,fsp->fsp_name, &sbuf) != 0) {
+		if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0) {
 			return 0;
 		}
 		/*
@@ -590,7 +581,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	} else {
 
 		/* Get the stat struct for the owner info. */
-		if(fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
+		if(vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
 			return 0;
 		}
 		/*
@@ -625,7 +616,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	/* Allocate the ace list. */
 	if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
 		DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
-		goto done:
+		goto done;
 	}
 
 	memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
@@ -637,6 +628,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	{
 		canon_ace *ace;
 		int nt_acl_type;
+		int i;
 
 		ace = file_ace;
 
@@ -655,7 +647,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	}
 
 	if (num_acls) {
-		if((psa = make_sec_acl( ACL_REVISION, num_aces, ace_list)) == NULL) {
+		if((psa = make_sec_acl( ACL_REVISION, num_aces, nt_ace_list)) == NULL) {
 			DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
 			goto done;
 		}
@@ -672,8 +664,8 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 
 	if (posix_acl)	
 		sys_acl_free(posix_acl);
-	if (directory_acl)
-		sys_acl_free(directory_acl);
+	if (dir_acl)
+		sys_acl_free(dir_acl);
 	if (file_ace)
 		free_canon_ace_list(file_ace);
 	if (dir_ace)
@@ -705,19 +697,11 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
    * Get the current state of the file.
    */
 
-  if(fsp->is_directory) {
-    if(dos_stat(fsp->fsp_name, &sbuf) != 0)
+  if(fsp->is_directory || fsp->fd == -1) {
+    if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0)
       return False;
   } else {
-
-    int ret;
-
-    if(fsp->fd == -1)
-      ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
-    else
-      ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
-
-    if(ret != 0)
+    if(conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0)
       return False;
   }
 
@@ -740,7 +724,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
     DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
           fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
 
-    if(dos_chown( fsp->fsp_name, user, grp) == -1) {
+    if(vfs_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
       DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
             fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
       return False;
@@ -752,7 +736,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
      */
 
     if(fsp->is_directory) {
-      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+      if(vfs_stat(fsp->conn, fsp->fsp_name, &sbuf) != 0) {
         return False;
       }
     } else {
@@ -760,9 +744,9 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
       int ret;
     
       if(fsp->fd == -1)
-        ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
+        ret = vfs_stat(fsp->conn, fsp->fsp_name, &sbuf);
       else
-        ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
+        ret = conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf);
   
       if(ret != 0)
         return False;
@@ -808,7 +792,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
       DEBUG(3,("call_nt_transact_set_security_desc: chmod %s. perms = 0%o.\n",
             fsp->fsp_name, (unsigned int)perms ));
 
-      if(conn->vfs_ops.chmod(dos_to_unix(fsp->fsp_name, False), perms) == -1) {
+      if(conn->vfs_ops.chmod(conn,dos_to_unix(fsp->fsp_name, False), perms) == -1) {
         DEBUG(3,("call_nt_transact_set_security_desc: chmod %s, 0%o failed. Error = %s.\n",
               fsp->fsp_name, (unsigned int)perms, strerror(errno) ));
         return False;
@@ -819,6 +803,8 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
   return True;
 }
 #undef OLD_NTDOMAIN
-#else /* HAVE_POSIX_ACLS */
- void dummy_posix_acls(void) {;} /* So some compilers don't complain. */
-#endif /* HAVE_POSIX_ACLS */
+
+
+
+
+

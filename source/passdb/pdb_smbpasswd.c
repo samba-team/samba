@@ -569,6 +569,11 @@ static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
   /* Open the smbpassword file - for update. */
   fp = startsmbfilepwent(pfile, PWF_UPDATE, &pw_file_lock_depth);
 
+  if (fp == NULL && errno == ENOENT) {
+	/* Try again - create. */
+	fp = startsmbfilepwent(pfile, PWF_CREATE, &pw_file_lock_depth);
+  }
+
   if (fp == NULL) {
     DEBUG(0, ("add_smbfilepwd_entry: unable to open file.\n"));
     return False;
