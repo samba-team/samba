@@ -163,7 +163,7 @@ main (int argc, char **argv)
       }
       break;
     case 'u' :
-      if (geteuid () != 0) {
+      if (getuid () != 0) {
 	fprintf (stderr, "%s: Only root can change OTPs for other users\n",
 		 prog);
 	return 1;
