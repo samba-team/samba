@@ -1316,7 +1316,7 @@ find_rpath(Realm r)
 }
 	    
 
-krb5_boolean
+static krb5_boolean
 need_referral(krb5_principal server, krb5_realm **realms)
 {
     if(server->name.name_type != KRB5_NT_SRV_INST ||
@@ -1437,9 +1437,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	ret = krb5_auth_getauthenticator(context, ac, &auth);
 	if (ret == 0) {
 	    *csec = &auth->ctime;
-	    auth->ctime = NULL;
 	    *cusec = &auth->cusec;
-	    auth->cusec = NULL;
 	    krb5_free_authenticator(context, &auth);
 	}
     }
