@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -50,8 +50,10 @@ OM_uint32 gss_add_oid_set_member (
   if (res != GSS_S_COMPLETE)
     return res;
 
-  if (present)
+  if (present) {
+    *minor_status = 0;
     return GSS_S_COMPLETE;
+  }
 
   n = (*oid_set)->count + 1;
   tmp = realloc ((*oid_set)->elements, n * sizeof(gss_OID_desc));
@@ -62,5 +64,6 @@ OM_uint32 gss_add_oid_set_member (
   (*oid_set)->elements = tmp;
   (*oid_set)->count = n;
   (*oid_set)->elements[n-1] = *member_oid;
+  *minor_status = 0;
   return GSS_S_COMPLETE;
 }
