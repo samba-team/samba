@@ -107,7 +107,6 @@ static struct getargs args[] = {
 static int num_args = sizeof(args) / sizeof(args[0]);
 
 krb5_context context;
-krb5_keytab keytab;
 
 static int
 help(int argc, char **argv)
@@ -147,6 +146,5 @@ main(int argc, char **argv)
     ret = sl_command(cmds, argc, argv);
     if(ret == -1)
 	krb5_warnx (context, "unrecognized command: %s", argv[0]);
-    krb5_kt_close(context, keytab);
     return ret;
 }
