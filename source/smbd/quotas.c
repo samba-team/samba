@@ -882,8 +882,17 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
     restore_re_uid();
 
     if (r==-1)
+    {
+      DEBUG(5, ("quotactl for uid=%u: %s", euser_id, strerror(errno)));
       return(False);
+    }
         
+    /* No quota for this user. */
+    if (F.d_blk_softlimit==0 && F.d_blk_hardlimit==0)
+    {
+      return(False);
+    }
+
     /* Use softlimit to determine disk space, except when it has been exceeded */
     if (
         (F.d_blk_softlimit && F.d_bcount>=F.d_blk_softlimit) ||
@@ -895,14 +904,10 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
       *dfree = 0;
       *dsize = F.d_bcount;
     }
-    else if (F.d_blk_softlimit==0 && F.d_blk_hardlimit==0)
-    {
-      return(False);
-    }
     else 
     {
       *dfree = (F.d_blk_softlimit - F.d_bcount);
-      *dsize = F.d_blk_softlimit;
+      *dsize = F.d_blk_softlimit ? F.d_blk_softlimit : F.d_blk_hardlimit;
     }
 
   }
