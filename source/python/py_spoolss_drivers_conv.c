@@ -78,30 +78,6 @@ struct pyconv py_DRIVER_DIRECTORY_1[] = {
 	{ NULL }
 };
 
-/* Convert a NULL terminated list of NULL terminated unicode strings
-   to a list of (char *) strings */
-
-static PyObject *from_dependentfiles(uint16 *dependentfiles)
-{
-	PyObject *list;
-	int offset = 0;
-
-	list = PyList_New(0);
-
-	while (*(dependentfiles + offset) != 0) {
-		fstring name;
-		int len;
-
-		len = rpcstr_pull(name, dependentfiles + offset,
-				  sizeof(fstring), -1, STR_TERMINATE);
-
-		offset += len / 2;
-		PyList_Append(list, PyString_FromString(name));
-	}
-
-	return list;
-}
-
 static uint16 *to_dependentfiles(PyObject *dict)
 {
 	return (uint16 *)"abcd\0";
@@ -141,7 +117,7 @@ BOOL py_from_DRIVER_INFO_3(PyObject **dict, DRIVER_INFO_3 *info)
 
 	PyDict_SetItemString(
 		*dict, "dependent_files", 
-		from_dependentfiles(info->dependentfiles));
+		from_unistr_list(info->dependentfiles));
 
 	return True;
 }
@@ -181,7 +157,7 @@ BOOL py_from_DRIVER_INFO_6(PyObject **dict, DRIVER_INFO_6 *info)
 	PyDict_SetItemString(*dict, "level", PyInt_FromLong(6));
 	PyDict_SetItemString(
 		*dict, "dependent_files", 
-		from_dependentfiles (info->dependentfiles));
+		from_unistr_list(info->dependentfiles));
 	return True;
 }
 
