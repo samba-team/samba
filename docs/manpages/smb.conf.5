@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "17 September 2001" "" ""
+.TH "SMB.CONF" "5" "18 September 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -6465,9 +6465,6 @@ the debug log files.
 Default: \fBsyslog only = no\fR
 .TP
 \fBtemplate homedir (G)\fR
-\fBNOTE:\fR this parameter is 
-only available in Samba 3.0.
-
 When filling out the user information for a Windows NT 
 user, the winbindd(8)daemon 
 uses this parameter to fill in the home directory for that user. 
@@ -6479,9 +6476,6 @@ NT user name.
 Default: \fBtemplate homedir = /home/%D/%U\fR
 .TP
 \fBtemplate shell (G)\fR
-\fBNOTE:\fR this parameter is 
-only available in Samba 3.0.
-
 When filling out the user information for a Windows NT 
 user, the winbindd(8)daemon 
 uses this parameter to fill in the login shell for that user.
@@ -6986,9 +6980,6 @@ that Samba has to do in order to perform the link checks.
 Default: \fBwide links = yes\fR
 .TP
 \fBwinbind cache time\fR
-\fBNOTE:\fR this parameter is only 
-available in Samba 3.0.
-
 This parameter specifies the number of seconds the
 winbindd(8)daemon will cache 
 user and group information before querying a Windows NT server 
@@ -6997,9 +6988,6 @@ again.
 Default: \fBwinbind cache type = 15\fR
 .TP
 \fBwinbind gid\fR
-\fBNOTE:\fR this parameter is only 
-available in Samba 3.0.
-
 The winbind gid parameter specifies the range of group 
 ids that are allocated by the  winbindd(8)daemon. This range of group ids should have no 
 existing local or NIS groups within it as strange conflicts can 
@@ -7010,9 +6998,6 @@ Default: \fBwinbind gid = <empty string>
 Example: \fBwinbind gid = 10000-20000\fR
 .TP
 \fBwinbind separator\fR
-\fBNOTE:\fR this parameter is only 
-available in Samba 3.0.
-
 This parameter allows an admin to define the character 
 used when listing a username of the form of \fIDOMAIN
 \fR\\\fIuser\fR. This parameter 
@@ -7024,9 +7009,6 @@ Example: \fBwinbind separator = \\\fR
 Example: \fBwinbind separator = +\fR
 .TP
 \fBwinbind uid\fR
-\fBNOTE:\fR this parameter is only 
-available in Samba 3.0.
-
 The winbind gid parameter specifies the range of group 
 ids that are allocated by the  winbindd(8)daemon. This range of ids should have no 
 existing local or NIS users within it as strange conflicts can 

@@ -7259,10 +7259,7 @@
 
 		<varlistentry>
 		<term><anchor id="TEMPLATEHOMEDIR">template homedir (G)</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is 
-		only available in Samba 3.0.</para>
-
-		<para>When filling out the user information for a Windows NT 
+		<listitem><para>When filling out the user information for a Windows NT 
 		user, the <ulink url="winbindd.8.html">winbindd(8)</ulink> daemon 
 		uses this parameter to fill in the home directory for that user.  
 		If the string <parameter>%D</parameter> is present it is substituted 
@@ -7278,10 +7275,7 @@
 
 		<varlistentry>
 		<term><anchor id="TEMPLATESHELL">template shell (G)</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is 
-		only available in Samba 3.0.</para>
-
-		<para>When filling out the user information for a Windows NT 
+		<listitem><para>When filling out the user information for a Windows NT 
 		user, the <ulink url="winbindd.8.html">winbindd(8)</ulink> daemon 
 		uses this parameter to fill in the login shell for that user.</para>
 
@@ -7919,10 +7913,7 @@
 
 		<varlistentry>
 		<term><anchor id="WINBINDCACHETIME">winbind cache time</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-		
-		<para>This parameter specifies the number of seconds the
+		<listitem><para>This parameter specifies the number of seconds the
 		<ulink url="winbindd.8.html">winbindd(8)</ulink> daemon will cache 
 		user and group information before querying a Windows NT server 
 		again.</para>
@@ -7936,10 +7927,7 @@
 	
 		<varlistentry>
 		<term><anchor id="WINBINDGID">winbind gid</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-		
-		<para>The winbind gid parameter specifies the range of group 
+		<listitem><para>The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink> daemon.  This range of group ids should have no 
 		existing local or NIS groups within it as strange conflicts can 
@@ -7955,10 +7943,7 @@
 
 		<varlistentry>
 		<term><anchor id="WINBINDSEPARATOR">winbind separator</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-
-		<para>This parameter allows an admin to define the character 
+		<listitem><para>This parameter allows an admin to define the character 
 		used when listing a username of the form of <replaceable>DOMAIN
 		</replaceable>\<replaceable>user</replaceable>.  This parameter 
 		is only applicable when using the <filename>pam_winbind.so</filename>
@@ -7975,10 +7960,7 @@
 
 		<varlistentry>
 		<term><anchor id="WINBINDUID">winbind uid</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-		
-		<para>The winbind gid parameter specifies the range of group 
+		<listitem><para>The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink> daemon.  This range of ids should have no 
 		existing local or NIS users within it as strange conflicts can 
