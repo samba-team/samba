@@ -215,6 +215,10 @@ as_rep(KDC_REQ *req,
 
 		ret = hdb_etype2key(context, client, enc_data.etype, &pa_key);
 		if(ret){
+		    e_text = "No key matches pa-data";
+		    ret = KRB5KDC_ERR_PREAUTH_FAILED;
+		    kdc_log(5, "No client key matching pa-data -- %s", 
+			    client_name);
 		    free_EncryptedData(&enc_data);
 		    continue;
 		}
@@ -278,7 +282,7 @@ as_rep(KDC_REQ *req,
 	    goto use_pa;
 	/* We come here if we found a pa-enc-timestamp, but if there
            was some problem with it, other than too large skew */
-	if(et.flags.pre_authent == 0){
+	if(found_pa && et.flags.pre_authent == 0){
 	    kdc_log(0, "%s -- %s", e_text, client_name);
 	    e_text = NULL;
 	    goto out;
