@@ -492,21 +492,26 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 {
 	struct lsa_QueryInfoPolicy r;
 	NTSTATUS status;
+	int i;
+	BOOL ret = True;
 
 	printf("\nTesting QueryInfoPolicy\n");
 
-	r.in.handle = handle;
-	r.in.level = 1;
+	for (i=1;i<13;i++) {
+		r.in.handle = handle;
+		r.in.level = i;
 
-	status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
-		return False;
+		status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		NDR_PRINT_UNION_DEBUG(lsa_PolicyInformation, r.in.level, r.out.info);
 	}
 
-	NDR_PRINT_UNION_DEBUG(lsa_PolicyInformation, r.in.level, r.out.info);
-
-	return True;
+	return ret;
 }
 
 static BOOL test_Delete(struct dcerpc_pipe *p, 

@@ -345,12 +345,46 @@ void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name, struct 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_pull_lsa_AuditEventsInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditEventsInfo *r)
+static NTSTATUS ndr_pull_lsa_AuditSettings(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditSettings *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->auditing_mode));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_ALLOC_N_SIZE(ndr, r->settings, r->count, sizeof(r->settings[0]));
+		NDR_CHECK(ndr_pull_array_uint32(ndr, r->settings, r->count));
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_AuditSettings(struct ndr_print *ndr, const char *name, struct lsa_AuditSettings *r)
+{
+	ndr_print_struct(ndr, name, "lsa_AuditSettings");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "settings", r->settings);
+	ndr->depth++;
+		ndr_print_array_uint32(ndr, "settings", r->settings, r->count);
+	ndr->depth--;
+	ndr->depth--;
+}
+
+static NTSTATUS ndr_pull_lsa_AuditEventsInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditEventsInfo *r)
+{
+	uint32 _ptr_settings;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->auditing_mode));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_settings));
+	if (_ptr_settings) {
+		NDR_ALLOC(ndr, r->settings);
+	} else {
+		r->settings = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->settings) {
+		NDR_CHECK(ndr_pull_lsa_AuditSettings(ndr, NDR_SCALARS|NDR_BUFFERS, r->settings));
+	}
 done:
 	return NT_STATUS_OK;
 }
@@ -360,6 +394,12 @@ void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, stru
 	ndr_print_struct(ndr, name, "lsa_AuditEventsInfo");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "auditing_mode", r->auditing_mode);
+	ndr_print_ptr(ndr, "settings", r->settings);
+	ndr->depth++;
+	if (r->settings) {
+		ndr_print_lsa_AuditSettings(ndr, "settings", r->settings);
+	}
+	ndr->depth--;
 	ndr->depth--;
 }
 
