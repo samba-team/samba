@@ -89,7 +89,7 @@ all: @TARGETS@
 
 everything: manpages pdf html-single html htmlman txt ps
 
-release: manpages htmlman $(HTMLDIR)/howto $(HTMLDIR)/guide html-single pdf guide
+release: manpages htmlman html html-single pdf guide
 
 # Global rules
 
