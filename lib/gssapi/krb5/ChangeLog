@@ -1,5 +1,30 @@
 2003-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* unwrap.c: encap/decap now takes a oid if the enctype/keytype is
+	arcfour, return error add hook for cfx
+	
+	* verify_mic.c: encap/decap now takes a oid if the enctype/keytype
+	is arcfour, return error add hook for cfx
+	
+	* get_mic.c: encap/decap now takes a oid if the enctype/keytype is
+	arcfour, return error add hook for cfx
+	
+	* accept_sec_context.c: encap/decap now takes a oid
+	
+	* init_sec_context.c: encap/decap now takes a oid
+	
+	* gssapi_locl.h: include cfx.h if we need it lifetime is a
+	OM_uint32, depend on gssapi interface add all new encap/decap
+	functions
+	
+	* decapsulate.c: add decap functions that doesn't take the token
+	type also make all decap function take the oid mech that they
+	should use
+
+	* encapsulate.c: add encap functions that doesn't take the token
+	type also make all encap function take the oid mech that they
+	should use
+
 	* sequence.c (elem_insert): fix a off by one index counter
 	
 	* inquire_cred.c (gss_inquire_cred): handle cred_handle beeing
