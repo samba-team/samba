@@ -208,22 +208,47 @@ void notify_printer_add(char *printer_name)
 {
 }
 
-void notify_printer_driver(int num, char *driver_name)
+void notify_printer_driver(int snum, char *driver_name)
 {
+	const char *printer_name = PRINTERNAME(snum);
+
+	send_notify_field_buffer(
+		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
+		0, strlen(driver_name) + 1, driver_name);
 }
 
-void notify_printer_comment(int num, char *comment)
+void notify_printer_comment(int snum, char *comment)
 {
+	const char *printer_name = PRINTERNAME(snum);
+
+	send_notify_field_buffer(
+		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
+		0, strlen(comment) + 1, comment);
 }
 
-void notify_printer_sharename(int num, char *share_name)
+void notify_printer_sharename(int snum, char *share_name)
 {
+	const char *printer_name = PRINTERNAME(snum);
+
+	send_notify_field_buffer(
+		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
+		0, strlen(share_name) + 1, share_name);
 }
 
-void notify_printer_port(int num, char *port_name)
+void notify_printer_port(int snum, char *port_name)
 {
+	const char *printer_name = PRINTERNAME(snum);
+
+	send_notify_field_buffer(
+		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
+		0, strlen(port_name) + 1, port_name);
 }
 
-void notify_printer_location(int num, char *location)
+void notify_printer_location(int snum, char *location)
 {
+	const char *printer_name = PRINTERNAME(snum);
+
+	send_notify_field_buffer(
+		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
+		0, strlen(location) + 1, location);
 }

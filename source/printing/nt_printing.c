@@ -319,7 +319,18 @@ BOOL nt_printing_init(void)
 	 * register callback to handle updating printers as new
 	 * drivers are installed
 	 */
-	message_register(MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer);
+
+	message_register( MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer );
+
+#if 0 	/* TEST CODE */
+	/*
+	 * register callback to handle updating printer data
+	 * when a driver is initialized
+	 */
+
+	message_register( MSG_PRINTERDATA_INIT_RESET, reset_all_printerdata );
+#endif
+
 	return True;
 }
 
