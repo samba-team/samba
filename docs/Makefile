@@ -105,8 +105,7 @@ $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 %-attributions.xml: 
-	echo "<para/>" > $@
-	$(XSLTPROC) --xinclude xslt/generate-attributions.xsl $*/index.xml > $@
+	$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
 
 clobber: clean
 	rm Makefile.settings settings.xsl config.status config.log configure
@@ -228,9 +227,9 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 
 # Validation verification
 
-$(VALIDATEDIR)/%.report.html: $(DOCBOOKDIR)/%.xml
+$(VALIDATEDIR)/%.report.html: %/index.xml
 	mkdir -p $(@D)
-	$(XMLLINT) --valid --noout --htmlout $< 2> $@
+	$(XMLLINT) --xinclude --postvalid --noout --htmlout $< 2> $@
 
 validate: $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html 
 

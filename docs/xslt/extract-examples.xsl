@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <!--
-	Extract examples out of XML file
+Extract examples out of DocBook/XML file
 	(C) Jelmer Vernooij	2003
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
