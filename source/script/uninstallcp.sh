@@ -10,13 +10,13 @@ if [ ! -d $CPDIR ]; then
 fi
 
 for p in $*; do
-  if [ ! -f $CPDIR/codepage.$p ]; then
-    echo $CPDIR/codepage.$p does not exist!
+  if [ ! -f $CPDIR/unicode_map.$p ]; then
+    echo $CPDIR/unicode_map.$p does not exist!
   else
-    echo Removing $CPDIR/codepage.$p
-    rm -f $CPDIR/codepage.$p
-    if [ -f $CPDIR/codepage.$p ]; then
-      echo Cannot remove $CPDIR/codepage.$p... does $USER have privileges?
+    echo Removing $CPDIR/unicode_map.$p
+    rm -f $CPDIR/unicode_map.$p
+    if [ -f $CPDIR/unicode_map.$p ]; then
+      echo Cannot remove $CPDIR/unicode_map.$p...  does $USER have privileges?
     fi
   fi
 done
