@@ -1218,10 +1218,10 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 			 time_t unix_pass_must_change_time,
 			 
 			 uint16 logon_count, uint16 bad_pw_count,
- 		 	 uint32 num_groups, DOM_GID *gids,
+ 		 	 uint32 num_groups, const DOM_GID *gids,
 			 uint32 user_flgs, uchar *sess_key,
- 			 char *logon_srv, char *logon_dom,
-			 DOM_SID *dom_sid, char *other_sids)
+ 			 const char *logon_srv, const char *logon_dom,
+			 const DOM_SID *dom_sid, char *other_sids)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
