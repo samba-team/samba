@@ -222,7 +222,6 @@ static struct cli_state *init_connection(struct cli_state *cli,
  int main(int argc, char **argv)
 {
         BOOL do_sam_sync = False, do_sam_repl = False;
-        pstring servicesf = dyn_CONFIGFILE;
         struct cli_state cli;
         NTSTATUS result;
         int opt;
@@ -246,7 +245,7 @@ static struct cli_state *init_connection(struct cli_state *cli,
         while((opt = getopt(argc, argv, "s:d:SR:hiU:W:p")) != EOF) {
                 switch (opt) {
                 case 's':
-                        pstrcpy(servicesf, optarg);
+                        pstrcpy(dyn_CONFIGFILE, optarg);
                         break;
                 case 'd':
                         DEBUGLEVEL = atoi(optarg);
@@ -303,8 +302,8 @@ static struct cli_state *init_connection(struct cli_state *cli,
         if (!interactive)
                 reopen_logs();
 
-        if (!lp_load(servicesf, True, False, False)) {
-                fprintf(stderr, "Can't load %s\n", servicesf);
+        if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+                fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
         }
 
         load_interfaces();
