@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -115,6 +114,15 @@ BOOL create_next_pdu(pipes_struct *p)
 
 	data_len_left = prs_offset(&p->rdata) - p->data_sent_length;
 
+	/*
+	 * Ensure there really is data left to send.
+	 */
+
+	if(!data_len_left) {
+		DEBUG(0,("create_next_pdu: no data left to send !\n"));
+		return False;
+	}
+
 	data_len = MIN(data_len_left, data_space_available);
 
 	/*
@@ -208,7 +216,7 @@ BOOL create_next_pdu(pipes_struct *p)
 
 			p->ntlmssp_seq_num++;
 			init_rpc_auth_ntlmssp_chk(&ntlmssp_chk, NTLMSSP_SIGN_VERSION,
-					crc32, p->ntlmssp_seq_num);
+					crc32, p->ntlmssp_seq_num++);
 			auth_data = prs_data_p(&outgoing_pdu) + prs_offset(&outgoing_pdu) + 4;
 			if(!smb_io_rpc_auth_ntlmssp_chk("auth_sign", &ntlmssp_chk, &outgoing_pdu, 0)) {
 				DEBUG(0,("create_next_pdu: failed to marshall RPC_AUTH_NTLMSSP_CHK.\n"));
@@ -287,9 +295,9 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("lm, nt owfs, chal\n"));
-	dump_data(100, lm_owf, sizeof(lm_owf));
-	dump_data(100, nt_owf, sizeof(nt_owf));
-	dump_data(100, p->challenge, 8);
+	dump_data(100, (char *)lm_owf, sizeof(lm_owf));
+	dump_data(100, (char *)nt_owf, sizeof(nt_owf));
+	dump_data(100, (char *)p->challenge, 8);
 #endif
 
 	/*
@@ -340,6 +348,10 @@ failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name
 		return(False);
 	}
 
+	if(!smb_pass->smb_nt_passwd) {
+		DEBUG(1,("Account for user '%s' has no NT password hash.\n", unix_user_name));
+		return(False);
+	}
 
 	/*
 	 * Set up the sign/seal data.
@@ -377,6 +389,7 @@ failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name
 		}
 /*		NTLMSSPhash(p->ntlmssp_hash, p24); */
 		p->ntlmssp_seq_num = 0;
+
 	}
 
 	fstrcpy(p->user_name, user_name);
@@ -766,7 +779,7 @@ static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 	         BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, auth_len));
 
 	if (auth_seal) {
-		char *data = prs_data_p(rpc_in) + RPC_HEADER_LEN - RPC_HDR_REQ_LEN;
+		char *data = prs_data_p(rpc_in) + RPC_HEADER_LEN + RPC_HDR_REQ_LEN;
 		NTLMSSPcalc_p(p, (uchar*)data, data_len);
 		crc32 = crc32_calc_buffer(data, data_len);
 	}

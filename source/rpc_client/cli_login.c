@@ -87,7 +87,7 @@ BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
   DEBUG(5,("cli_nt_srv_pwset: %d\n", __LINE__));
 
 #ifdef DEBUG_PASSWORD
-  dump_data(6, new_hashof_mach_pwd, 16);
+  dump_data(6, (char *)new_hashof_mach_pwd, 16);
 #endif
 
   /* Process the new password. */
@@ -118,10 +118,10 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
 #ifdef DEBUG_PASSWORD
 
   DEBUG(100,("nt owf of user password: "));
-  dump_data(100, lm_owf_user_pwd, 16);
+  dump_data(100, (char *)lm_owf_user_pwd, 16);
 
   DEBUG(100,("nt owf of user password: "));
-  dump_data(100, nt_owf_user_pwd, 16);
+  dump_data(100, (char *)nt_owf_user_pwd, 16);
 
 #endif
 

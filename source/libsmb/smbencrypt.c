@@ -45,9 +45,9 @@ void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24)
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("SMBencrypt: lm#, challenge, response\n"));
-	dump_data(100, p21, 16);
-	dump_data(100, c8, 8);
-	dump_data(100, p24, 24);
+	dump_data(100, (char *)p21, 16);
+	dump_data(100, (char *)c8, 8);
+	dump_data(100, (char *)p24, 24);
 #endif
 }
 
@@ -120,7 +120,7 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, nt#\n"));
 	dump_data(120, passwd, strlen(passwd));
-	dump_data(100, nt_p16, 16);
+	dump_data(100, (char *)nt_p16, 16);
 #endif
 
 	/* Mangle the passwords into Lanman format */
@@ -135,7 +135,7 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
 	dump_data(120, passwd, strlen(passwd));
-	dump_data(100, p16, 16);
+	dump_data(100, (char *)p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
 	memset(passwd, '\0', sizeof(passwd));
@@ -164,9 +164,9 @@ void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24])
 	E_P24(p21, ntlmchalresp, p24);
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("NTLMSSPOWFencrypt: p21, c8, p24\n"));
-	dump_data(100, p21, 21);
-	dump_data(100, ntlmchalresp, 8);
-	dump_data(100, p24, 24);
+	dump_data(100, (char *)p21, 21);
+	dump_data(100, (char *)ntlmchalresp, 8);
+	dump_data(100, (char *)p24, 24);
 #endif
 }
 
@@ -184,9 +184,9 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("SMBNTencrypt: nt#, challenge, response\n"));
-	dump_data(100, p21, 16);
-	dump_data(100, c8, 8);
-	dump_data(100, p24, 24);
+	dump_data(100, (char *)p21, 16);
+	dump_data(100, (char *)c8, 8);
+	dump_data(100, (char *)p24, 24);
 #endif
 }
 

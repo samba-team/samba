@@ -202,7 +202,7 @@ void init_dom_sid(DOM_SID *sid, char *str_sid)
 		
 	pstrcpy(domsid, str_sid);
 
-	DEBUG(4,("make_dom_sid %d SID:  %s\n", __LINE__, domsid));
+	DEBUG(4,("init_dom_sid %d SID:  %s\n", __LINE__, domsid));
 
 	/* assume, but should check, that domsid starts "S-" */
 	p = strtok(domsid+2,"-");
@@ -227,7 +227,7 @@ void init_dom_sid(DOM_SID *sid, char *str_sid)
 	while ((p = strtok(0, "-")) != NULL && sid->num_auths < MAXSUBAUTHS)
 		sid->sub_auths[sid->num_auths++] = atoi(p);
 
-	DEBUG(4,("make_dom_sid: %d SID:  %s\n", __LINE__, domsid));
+	DEBUG(4,("init_dom_sid: %d SID:  %s\n", __LINE__, domsid));
 }
 
 /*******************************************************************

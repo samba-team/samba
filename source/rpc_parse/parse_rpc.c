@@ -804,9 +804,9 @@ void init_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("lm_resp\n"));
-	dump_data(100, lm_resp, 24);
+	dump_data(100, (char *)lm_resp, 24);
 	DEBUG(100,("nt_resp\n"));
-	dump_data(100, nt_resp, 24);
+	dump_data(100, (char *)nt_resp, 24);
 #endif
 
 	DEBUG(6,("dom: %s user: %s wks: %s neg_flgs: 0x%x\n",

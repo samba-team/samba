@@ -203,25 +203,25 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8])
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("client cryptkey: "));
-	dump_data(100, cryptkey, 8);
+	dump_data(100, (char *)cryptkey, 8);
 #endif
 
 	SMBOWFencrypt(pwd->smb_nt_pwd, cryptkey, pwd->smb_nt_owf);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_owf_passwd: "));
-	dump_data(100, pwd->smb_nt_owf, sizeof(pwd->smb_nt_owf));
+	dump_data(100, (char *)pwd->smb_nt_owf, sizeof(pwd->smb_nt_owf));
 	DEBUG(100,("nt_sess_pwd: "));
-	dump_data(100, pwd->smb_nt_pwd, sizeof(pwd->smb_nt_pwd));
+	dump_data(100, (char *)pwd->smb_nt_pwd, sizeof(pwd->smb_nt_pwd));
 #endif
 
 	SMBOWFencrypt(pwd->smb_lm_pwd, cryptkey, pwd->smb_lm_owf);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("lm_owf_passwd: "));
-	dump_data(100, pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
+	dump_data(100, (char *)pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
 	DEBUG(100,("lm_sess_pwd: "));
-	dump_data(100, pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
+	dump_data(100, (char *)pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
 #endif
 
 	pwd->crypted = True;

@@ -306,6 +306,7 @@ void cmd_srv_enum_files(struct client_info *info)
 	res = res ? do_srv_net_srv_file_enum(smb_cli,
 				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
+
 	if (res)
 	{
 		display_srv_file_info_ctr(out_hnd, ACTION_HEADER   , &ctr);

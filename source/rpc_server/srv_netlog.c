@@ -518,7 +518,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("key:"));
-	dump_data(100, key, 16);
+	dump_data(100, (char *)key, 16);
 
 	DEBUG(100,("lm owf password:"));
 	dump_data(100, lm_pwd, 16);

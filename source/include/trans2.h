@@ -239,6 +239,26 @@ Byte offset   Type     name                description
 
 #define DIRLEN_GUESS (45+MAX(l1_achName,l2_achName))
 
+/*
+ * DeviceType and Characteristics returned in a
+ * SMB_QUERY_FS_DEVICE_INFO call.
+ */
+
+#define DEVICETYPE_CD_ROM		0x2
+#define DEVICETYPE_CD_ROM_FILE_SYSTEM	0x3
+#define DEVICETYPE_DISK			0x7
+#define DEVICETYPE_DISK_FILE_SYSTEM	0x8
+#define DEVICETYPE_FILE_SYSTEM		0x9
+
+/* Characteristics. */
+#define TYPE_REMOVABLE_MEDIA		0x1
+#define TYPE_READ_ONLY_DEVICE		0x2
+#define TYPE_FLOPPY			0x4
+#define TYPE_WORM			0x8
+#define TYPE_REMOTE			0x10
+#define TYPE_MOUNTED			0x20
+#define TYPE_VIRTUAL			0x40
+
 #endif
 
 
