@@ -325,18 +325,18 @@ on this system just substitute the correct package name
 		varies between unixes. Look at the other entries in inetd.conf 
 		for a guide.</para>
 
-		<para>NOTE: Some unixes already have entries like netbios_ns 
+		<note><para>Some unixes already have entries like netbios_ns 
 		(note the underscore) in <filename>/etc/services</filename>. 
 		You must either edit <filename>/etc/services</filename> or
-		<filename>/etc/inetd.conf</filename> to make them consistent.</para>
+		<filename>/etc/inetd.conf</filename> to make them consistent.</para></note>
 
-		<para>NOTE: On many systems you may need to use the 
-		"interfaces" option in smb.conf to specify the IP address 
+		<note><para>On many systems you may need to use the 
+		<command>interfaces</command> option in &smb.conf; to specify the IP address 
 		and netmask of your interfaces. Run <application>ifconfig</application> 
 		as root if you don't know what the broadcast is for your
-		net. <application>nmbd</application> tries to determine it at run 
+		net. &nmbd; tries to determine it at run 
 		time, but fails on some unixes. 
-		</para>
+		</para></note>
 
 		<warning><para>Many unixes only accept around 5 
 		parameters on the command line in <filename>inetd.conf</filename>. 

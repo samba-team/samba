@@ -180,9 +180,42 @@ Corrective Action:	Delete the entry after the word loopback
 <title>Sequential Read Ahead</title>
 <!-- From an email by William Jojo <jojowil@hvcc.edu> -->
 <para>
-Disabling Sequential Read Ahead using "vmtune -r 0" improves 
+Disabling Sequential Read Ahead using <userinput>vmtune -r 0</userinput> improves 
 samba performance significally.
 </para>
 </sect2>
 </sect1>
+
+<sect1>
+<title>Solaris</title>
+
+<para>Some people have been experiencing problems with F_SETLKW64/fcntl 
+when running samba on solaris. The built in file locking mechanism was
+not scalable. Performance would degrade to the point where processes would
+get into loops of trying to lock a file. It woul try a lock, then fail,
+then try again. The lock attempt was failing before the grant was
+occurring. So the visible manifestation of this would be a handful of
+processes stealing all of the CPU, and when they were trussed they would
+be stuck if F_SETLKW64 loops.
+</para>
+
+<para>
+Sun released patches for Solaris 2.6, 8, and 9. The patch for Solaris 7
+has not been released yet.
+</para>
+
+<para>
+The patch revision for 2.6 is 105181-34
+for 8 is 108528-19
+and for 9 is 112233-04
+</para>
+
+<para>
+After the install of these patches it is recommended to reconfigure
+and rebuild samba.
+</para>
+
+<para>Thanks to Joe Meslovich for reporting</para>
+</sect1>
+
 </chapter>

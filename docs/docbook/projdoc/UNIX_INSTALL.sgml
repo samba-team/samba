@@ -14,11 +14,11 @@
 
 	<para>Binary packages of samba are included in almost any Linux or 
 	Unix distribution. There are also some packages available at 
-	<ulink url="http://samba.org/">the samba homepage</ulink>
+	<ulink url="http://samba.org/">the samba homepage</ulink>.
 	</para>
 
 	<para>If you need to compile samba from source, check the 
-	appropriate appendix chapter.</para>
+	<link linkend="compiling">appropriate appendix chapter</link>.</para>
 </sect1>
 
 <sect1>
@@ -32,7 +32,7 @@
 	is included with samba.</para>
 	
 <sect2>
-	<title>Editing the smb.conf file</title>
+	<title>Editing the <filename>smb.conf</filename> file</title>
 	
 	<para>There are sample configuration files in the examples 
 	subdirectory in the distribution. I suggest you read them 
@@ -43,36 +43,33 @@
 	something like this:</para>
 
 	<para><programlisting>
-	[global]
-	   workgroup = MYGROUP
+[global]
+	workgroup = MYGROUP
 
-	   [homes]
-	      guest ok = no
-	      read only = no
+[homes]
+	guest ok = no
+	read only = no
 	</programlisting></para>
 	
 	<para>which would allow connections by anyone with an 
 	account on the server, using either their login name or 
-	"homes" as the service name. (Note that I also set the 
+	"<command>homes</command>" as the service name. (Note that I also set the 
 	workgroup that Samba is part of. See BROWSING.txt for details)</para>
 	
-	<para>Note that <command>make install</command> will not install 
-	a <filename>smb.conf</filename> file. You need to create it 
-	yourself. </para>
-	
-	<para>Make sure you put the smb.conf file in the same place 
+	<para>Make sure you put the <filename>smb.conf</filename> file in the same place 
 	you specified in the<filename>Makefile</filename> (the default is to 
 	look for it in <filename>/usr/local/samba/lib/</filename>).</para>
 
 	<para>For more information about security settings for the 
-	[homes] share please refer to the document UNIX_SECURITY.txt.</para>
+	<command>[homes]</command> share please refer to the chapter 
+	<link linkend="securing-samba">Securing Samba</link>.</para>
 
 <sect3>
 	<title>Test your config file with 
 	<command>testparm</command></title>
 
 	<para>It's important that you test the validity of your
-	<filename>smb.conf</filename> file using the testparm program. 
+	<filename>smb.conf</filename> file using the <application>testparm</application> program. 
 	If testparm runs OK then it will list the loaded services. If 
 	not it will give an error message.</para>
 
@@ -133,16 +130,17 @@
 	//yourhostname/aservice</replaceable></userinput></para>
 	
 	<para>Typically the <replaceable>yourhostname</replaceable> 
-	would be the name of the host where you installed <command>
-	smbd</command>. The <replaceable>aservice</replaceable> is 
-	any service you have defined in the <filename>smb.conf</filename> 
-	file. Try your user name if you just have a [homes] section
-	in <filename>smb.conf</filename>.</para>
+	would be the name of the host where you installed &smbd;. 
+	The <replaceable>aservice</replaceable> is 
+	any service you have defined in the &smb.conf;
+	file. Try your user name if you just have a <command>[homes]</command>
+	section
+	in &smb.conf;.</para>
 
-	<para>For example if your unix host is bambi and your login 
-	name is fred you would type:</para>
+	<para>For example if your unix host is <replaceable>bambi</replaceable>
+	and your login name is <replaceable>fred</replaceable> you would type:</para>
 
-	<para><prompt>$ </prompt><userinput>smbclient //bambi/fred
+	<para><prompt>$ </prompt><userinput>smbclient //<replaceable>bambi</replaceable>/<replaceable>fred</replaceable>
 	</userinput></para>
 </sect1>
 
@@ -157,21 +155,18 @@
 
 	<para>Try printing. eg:</para>
 
-	
-
 	<para><prompt>C:\WINDOWS\> </prompt><userinput>net use lpt1:
 	\\servername\spoolservice</userinput></para>
 
 	<para><prompt>C:\WINDOWS\> </prompt><userinput>print filename
 	</userinput></para>
-
-	<para>Celebrate, or send me a bug report!</para>
 </sect1>
 
 <sect1>
 	<title>What If Things Don't Work?</title>
 	
-	<para>Then you might read the file HOWTO chapter Diagnosis and the 
+	<para>Then you might read the file chapter 
+	<link linkend="diagnosis">Diagnosis</link> and the 
 	FAQ. If you are still stuck then try the mailing list or 
 	newsgroup (look in the README for details). Samba has been 
 	successfully installed at thousands of sites worldwide, so maybe 

@@ -50,10 +50,10 @@ new features, which make it different from other, more traditional printing syst
 </sect1>
 
 <sect1>
-<title>Configuring <filename>smb.conf</filename> for CUPS</title>
+<title>Configuring &smb.conf; for CUPS</title>
 
 <para>
-Printing with CUPS in the most basic <filename>smb.conf</filename>
+Printing with CUPS in the most basic &smb.conf;
 setup in Samba-3  only needs two settings: <command>printing = cups</command> and
 <command>printcap = cups</command>. While CUPS itself doesn't need a printcap
 anymore, the <filename>cupsd.conf</filename> configuration file knows two directives
@@ -87,7 +87,7 @@ present on other OS platforms, or its function may be embodied by a different co
 The line "libcups.so.2 =&gt; /usr/lib/libcups.so.2
 (0x40123000)" shows there is CUPS support compiled into this version of
 Samba. If this is the case, and <command>printing = cups</command> is set, then any
-otherwise manually set print command in smb.conf is ignored.
+otherwise manually set print command in &smb.conf; is ignored.
 </para>
 </sect1>
 
@@ -122,7 +122,7 @@ operation.
 
 <para>
 Firstly, to enable CUPS based printing from Samba the following options must be
-enabled in your smb.conf file [globals] section:
+enabled in your &smb.conf; file [globals] section:
 
 <itemizedlist>
 	<listitem><para>printing = CUPS</para></listitem>
@@ -130,7 +130,7 @@ enabled in your smb.conf file [globals] section:
 	<listitem><para>printcap = CUPS</para></listitem>
 </itemizedlist>
 
-When these parameters are specified the print directives in smb.conf (as well as in
+When these parameters are specified the print directives in &smb.conf; (as well as in
 samba itself) will be ignored because samba will directly interface with CUPS through
 it's application program interface (API) - so long as Samba has been compiled with
 CUPS library (libcups) support. If samba has NOT been compiled with CUPS support then
@@ -402,7 +402,7 @@ promising...
 <para>
 The <command>cupsadsmb</command> utility (shipped with all current
 CUPS versions) makes the sharing of any (or all) installed CUPS printers very
-easy. Prior to using it, you need the following settings in smb.conf:
+easy. Prior to using it, you need the following settings in &smb.conf;:
 </para>
 
 	<para><programlisting>[global]
@@ -1661,8 +1661,8 @@ on the avarage and peak printing load the server should be able to handle.
 
 <para>
 Samba print files pass thru two "spool" directories. One the incoming directory
-managed by Samba, (set eg: in the "path = /var/spool/samba" directive in the [printers]
-section of "smb.conf"). Second is the spool directory of your UNIX print subsystem.
+managed by Samba, (set eg: in the <command>path = /var/spool/samba</command> directive in the [printers]
+section of &smb.conf;). Second is the spool directory of your UNIX print subsystem.
 For CUPS it is normally "/var/spool/cups/", as set by the cupsd.conf directive
 "RequestRoot /var/spool/cups".
 </para>
@@ -1724,15 +1724,15 @@ For everything to work as announced, you need to have three things:
 <simplelist>
 
 	<member>
-	a Samba-smbd which is compiled against "libcups" (Check on Linux by running "ldd `which smbd`")
+	a Samba-&smbd; which is compiled against "libcups" (Check on Linux by running <userinput>ldd `which smbd`</userinput>)
 	</member>
 
 	<member>
-	a Samba-smb.conf setting of "printing = cups"
+	a Samba-&smb.conf; setting of <command>printing = cups</command>
 	</member>
 
 	<member>
-	another Samba-smb.conf setting of "printcap = cups"
+	another Samba-&smb.conf; setting of <command>printcap = cups</command>
 	</member>
 
 </simplelist>

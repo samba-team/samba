@@ -11,8 +11,7 @@
 
 <warning>
 <para>
-<emphasis>NOTE!</emphasis> Roaming profiles support is different for Win9x / Me
-and Windows NT4/200x.
+Roaming profiles support is different for Win9x / Me and Windows NT4/200x.
 </para>
 </warning>
 
@@ -52,15 +51,14 @@ following (for example):
 <para>
 <programlisting>
 	logon path = \\profileserver\profileshare\profilepath\%U\moreprofilepath
+</programlisting>
 
 	This is typically implemented like:
 
+<programlisting>
 		logon path = \\%L\Profiles\%u
-
-	where:
-		%L translates to the name of the Samba server
-		%u translates to the user name
 </programlisting>
+where %L translates to the name of the Samba server and %u translates to the user name
 </para>
 
 <para>
@@ -74,7 +72,7 @@ symantics of %L and %N, as well as %U and %u.
 <note>
 <para>
 MS Windows NT/2K clients at times do not disconnect a connection to a server
-between logons. It is recommended to NOT use the <emphasis>homes</emphasis>
+between logons. It is recommended to NOT use the <command>homes</command>
 meta-service name as part of the profile share path.
 </para>
 </note>
@@ -85,14 +83,14 @@ meta-service name as part of the profile share path.
 
 <para>
 To support Windows 9x / Me clients, you must use the "logon home" parameter. Samba has
-now been fixed so that "net use /home" now works as well, and it, too, relies
-on the "logon home" parameter.
+now been fixed so that <userinput>net use /home</userinput> now works as well, and it, too, relies
+on the <command>logon home</command< parameter.
 </para>
 
 <para>
 By using the logon home parameter, you are restricted to putting Win9x / Me
 profiles in the user's home directory.   But wait! There is a trick you
-can use. If you set the following in the [global] section of your smb.conf file:
+can use. If you set the following in the <command>[global]</command> section of your &smb.conf; file:
 </para>
 <para><programlisting>
 	logon home = \\%L\%U\.profiles
@@ -100,14 +98,14 @@ can use. If you set the following in the [global] section of your smb.conf file:
 
 <para>
 then your Windows 9x / Me clients will dutifully put their clients in a subdirectory
-of your home directory called .profiles (thus making them hidden).
+of your home directory called <filename>.profiles</filename> (thus making them hidden).
 </para>
 
 <para>
-Not only that, but 'net use/home' will also work, because of a feature in
+Not only that, but <userinput>net use/home</userinput> will also work, because of a feature in
 Windows 9x / Me. It removes any directory stuff off the end of the home directory area
 and only uses the server and share portion. That is, it looks like you
-specified \\%L\%U for "logon home".
+specified \\%L\%U for <command>logon home</command>.
 </para>
 </sect3>
 
@@ -116,7 +114,7 @@ specified \\%L\%U for "logon home".
 
 <para>
 You can support profiles for both Win9X and WinNT clients by setting both the
-"logon home" and "logon path" parameters. For example:
+<command>logon home</command> and <command>logon path</command> parameters. For example:
 </para>
 
 <para><programlisting>

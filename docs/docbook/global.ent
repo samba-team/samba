@@ -74,6 +74,14 @@
 	</affiliation>
 </author>'>
 
+<!ENTITY author.mimir '
+<author>
+	<firstname>Rafal</firstname><surname>Szczesniak</surname>
+	<affiliation>
+		<orgname>Samba Team</orgname>
+		<address><email>mimir@samba.org</email></address>
+	</affiliation>
+</author>'>
 
 <!-- URL's -->
 <!ENTITY url.samba.cvsinfo 'http://pserver.samba.org/samba/cvs.html'>
@@ -98,7 +106,6 @@
 
 <!-- Misc -->
 <!ENTITY samba.pub.cvshost 'pserver.samba.org'>
-<!ENTITY percnt '%'>
 
 <!ENTITY stdarg.debug '
 <varlistentry>
@@ -359,3 +366,15 @@ an Active Directory environment.
 &stdarg.authfile;
 &stdarg.username;
 '>
+
+<!-- Entities for the various programs -->
+<!ENTITY smbd '<application>smbd</application>'>
+<!ENTITY nmbd '<application>nmbd</application>'>
+<!ENTITY testparm '<application>testparm</application>'>
+<!ENTITY smb.conf '<filename>smb.conf</filename>'>
+<!ENTITY smbclient '<application>smbclient</application>'>
+<!ENTITY winbindd '<application>winbindd</application>'>
+<!ENTITY smbgroupedit '<application>smbgroupedit</application>'>
+
+<!-- We only need this for SGML, and not for XML... -->
+<!ENTITY percnt '%'>

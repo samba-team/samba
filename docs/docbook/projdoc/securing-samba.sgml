@@ -29,8 +29,8 @@ especially vulnerable.
 </para>
 
 <para>
-One of the simplest fixes in this case is to use the 'hosts allow' and
-'hosts deny' options in the Samba smb.conf configuration file to only
+One of the simplest fixes in this case is to use the <command>hosts allow</command> and
+<command>hosts deny</command> options in the Samba &smb.conf; configuration file to only
 allow access to your server from a specific range of hosts. An example
 might be:
 </para>
@@ -167,7 +167,7 @@ methods listed above for some reason.
 <title>Upgrading Samba</title>
 
 <para>
-Please check regularly on http://www.samba.org/ for updates and
+Please check regularly on <ulink url="http://www.samba.org/">http://www.samba.org/</ulink> for updates and
 important announcements.  Occasionally security releases are made and 
 it is highly recommended to upgrade Samba when a security vulnerability
 is discovered.
