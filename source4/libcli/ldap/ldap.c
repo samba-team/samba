@@ -22,48 +22,47 @@
 */
 
 #include "includes.h"
-#include "smb_ldap.h"
 
 /****************************************************************************
  *
- * LDAP filter parser -- main routine is ldb_parse_filter
+ * LDAP filter parser -- main routine is ldap_parse_filter
  *
- * Shamelessly stolen and adapted from Samba 4.
+ * Shamelessly stolen and adapted from ldb.
  *
  ***************************************************************************/
 
 /* Hmm. A blob might be more appropriate here :-) */
 
-struct ldb_val {
+struct ldap_val {
 	unsigned int length;
 	void *data;
 };
 
-enum ldb_parse_op {LDB_OP_SIMPLE, LDB_OP_AND, LDB_OP_OR, LDB_OP_NOT};
+enum ldap_parse_op {LDAP_OP_SIMPLE, LDAP_OP_AND, LDAP_OP_OR, LDAP_OP_NOT};
 
-struct ldb_parse_tree {
-	enum ldb_parse_op operation;
+struct ldap_parse_tree {
+	enum ldap_parse_op operation;
 	union {
 		struct {
 			char *attr;
-			struct ldb_val value;
+			struct ldap_val value;
 		} simple;
 		struct {
 			unsigned int num_elements;
-			struct ldb_parse_tree **elements;
+			struct ldap_parse_tree **elements;
 		} list;
 		struct {
-			struct ldb_parse_tree *child;
+			struct ldap_parse_tree *child;
 		} not;
 	} u;
 };
 
-#define LDB_ALL_SEP "()&|=!"
+#define LDAP_ALL_SEP "()&|=!"
 
 /*
   return next token element. Caller frees
 */
-static char *ldb_parse_lex(TALLOC_CTX *mem_ctx, const char **s,
+static char *ldap_parse_lex(TALLOC_CTX *mem_ctx, const char **s,
 			   const char *sep)
 {
 	const char *p = *s;
@@ -127,19 +126,19 @@ static const char *match_brace(const char *s)
 	return s;
 }
 
-static struct ldb_parse_tree *ldb_parse_filter(TALLOC_CTX *mem_ctx,
+static struct ldap_parse_tree *ldap_parse_filter(TALLOC_CTX *mem_ctx,
 					       const char **s);
 
 /*
   <simple> ::= <attributetype> <filtertype> <attributevalue>
 */
-static struct ldb_parse_tree *ldb_parse_simple(TALLOC_CTX *mem_ctx,
+static struct ldap_parse_tree *ldap_parse_simple(TALLOC_CTX *mem_ctx,
 					       const char *s)
 {
 	char *eq, *val, *l;
-	struct ldb_parse_tree *ret;
+	struct ldap_parse_tree *ret;
 
-	l = ldb_parse_lex(mem_ctx, &s, LDB_ALL_SEP);
+	l = ldap_parse_lex(mem_ctx, &s, LDAP_ALL_SEP);
 	if (!l) {
 		return NULL;
 	}
@@ -147,11 +146,11 @@ static struct ldb_parse_tree *ldb_parse_simple(TALLOC_CTX *mem_ctx,
 	if (strchr("()&|=", *l))
 		return NULL;
 
-	eq = ldb_parse_lex(mem_ctx, &s, LDB_ALL_SEP);
+	eq = ldap_parse_lex(mem_ctx, &s, LDAP_ALL_SEP);
 	if (!eq || strcmp(eq, "=") != 0)
 		return NULL;
 
-	val = ldb_parse_lex(mem_ctx, &s, ")");
+	val = ldap_parse_lex(mem_ctx, &s, ")");
 	if (val && strchr("()&|", *val))
 		return NULL;
 	
@@ -161,7 +160,7 @@ static struct ldb_parse_tree *ldb_parse_simple(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret->operation = LDB_OP_SIMPLE;
+	ret->operation = LDAP_OP_SIMPLE;
 	ret->u.simple.attr = l;
 	ret->u.simple.value.data = val;
 	ret->u.simple.value.length = val?strlen(val):0;
@@ -176,11 +175,11 @@ static struct ldb_parse_tree *ldb_parse_simple(TALLOC_CTX *mem_ctx,
   <or> ::= '|' <filterlist>
   <filterlist> ::= <filter> | <filter> <filterlist>
 */
-static struct ldb_parse_tree *ldb_parse_filterlist(TALLOC_CTX *mem_ctx,
-						   enum ldb_parse_op op,
+static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
+						   enum ldap_parse_op op,
 						   const char *s)
 {
-	struct ldb_parse_tree *ret, *next;
+	struct ldap_parse_tree *ret, *next;
 
 	ret = talloc(mem_ctx, sizeof(*ret));
 
@@ -197,17 +196,17 @@ static struct ldb_parse_tree *ldb_parse_filterlist(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret->u.list.elements[0] = ldb_parse_filter(mem_ctx, &s);
+	ret->u.list.elements[0] = ldap_parse_filter(mem_ctx, &s);
 	if (!ret->u.list.elements[0]) {
 		return NULL;
 	}
 
 	while (isspace(*s)) s++;
 
-	while (*s && (next = ldb_parse_filter(mem_ctx, &s))) {
-		struct ldb_parse_tree **e;
+	while (*s && (next = ldap_parse_filter(mem_ctx, &s))) {
+		struct ldap_parse_tree **e;
 		e = talloc_realloc(mem_ctx, ret->u.list.elements,
-				   sizeof(struct ldb_parse_tree) *
+				   sizeof(struct ldap_parse_tree) *
 				   (ret->u.list.num_elements+1));
 		if (!e) {
 			errno = ENOMEM;
@@ -226,9 +225,9 @@ static struct ldb_parse_tree *ldb_parse_filterlist(TALLOC_CTX *mem_ctx,
 /*
   <not> ::= '!' <filter>
 */
-static struct ldb_parse_tree *ldb_parse_not(TALLOC_CTX *mem_ctx, const char *s)
+static struct ldap_parse_tree *ldap_parse_not(TALLOC_CTX *mem_ctx, const char *s)
 {
-	struct ldb_parse_tree *ret;
+	struct ldap_parse_tree *ret;
 
 	ret = talloc(mem_ctx, sizeof(*ret));
 	if (!ret) {
@@ -236,8 +235,8 @@ static struct ldb_parse_tree *ldb_parse_not(TALLOC_CTX *mem_ctx, const char *s)
 		return NULL;
 	}
 
-	ret->operation = LDB_OP_NOT;
-	ret->u.not.child = ldb_parse_filter(mem_ctx, &s);
+	ret->operation = LDAP_OP_NOT;
+	ret->u.not.child = ldap_parse_filter(mem_ctx, &s);
 	if (!ret->u.not.child)
 		return NULL;
 
@@ -248,41 +247,41 @@ static struct ldb_parse_tree *ldb_parse_not(TALLOC_CTX *mem_ctx, const char *s)
   parse a filtercomp
   <filtercomp> ::= <and> | <or> | <not> | <simple>
 */
-static struct ldb_parse_tree *ldb_parse_filtercomp(TALLOC_CTX *mem_ctx,
+static struct ldap_parse_tree *ldap_parse_filtercomp(TALLOC_CTX *mem_ctx,
 						   const char *s)
 {
 	while (isspace(*s)) s++;
 
 	switch (*s) {
 	case '&':
-		return ldb_parse_filterlist(mem_ctx, LDB_OP_AND, s+1);
+		return ldap_parse_filterlist(mem_ctx, LDAP_OP_AND, s+1);
 
 	case '|':
-		return ldb_parse_filterlist(mem_ctx, LDB_OP_OR, s+1);
+		return ldap_parse_filterlist(mem_ctx, LDAP_OP_OR, s+1);
 
 	case '!':
-		return ldb_parse_not(mem_ctx, s+1);
+		return ldap_parse_not(mem_ctx, s+1);
 
 	case '(':
 	case ')':
 		return NULL;
 	}
 
-	return ldb_parse_simple(mem_ctx, s);
+	return ldap_parse_simple(mem_ctx, s);
 }
 
 
 /*
   <filter> ::= '(' <filtercomp> ')'
 */
-static struct ldb_parse_tree *ldb_parse_filter(TALLOC_CTX *mem_ctx,
+static struct ldap_parse_tree *ldap_parse_filter(TALLOC_CTX *mem_ctx,
 					       const char **s)
 {
 	char *l, *s2;
 	const char *p, *p2;
-	struct ldb_parse_tree *ret;
+	struct ldap_parse_tree *ret;
 
-	l = ldb_parse_lex(mem_ctx, s, LDB_ALL_SEP);
+	l = ldap_parse_lex(mem_ctx, s, LDAP_ALL_SEP);
 	if (!l) {
 		return NULL;
 	}
@@ -303,7 +302,7 @@ static struct ldb_parse_tree *ldb_parse_filter(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret = ldb_parse_filtercomp(mem_ctx, s2);
+	ret = ldap_parse_filtercomp(mem_ctx, s2);
 
 	*s = p2;
 
@@ -315,21 +314,21 @@ static struct ldb_parse_tree *ldb_parse_filter(TALLOC_CTX *mem_ctx,
 
   expression ::= <simple> | <filter>
 */
-static struct ldb_parse_tree *ldb_parse_tree(TALLOC_CTX *mem_ctx, const char *s)
+static struct ldap_parse_tree *ldap_parse_tree(TALLOC_CTX *mem_ctx, const char *s)
 {
 	while (isspace(*s)) s++;
 
 	if (*s == '(') {
-		return ldb_parse_filter(mem_ctx, &s);
+		return ldap_parse_filter(mem_ctx, &s);
 	}
 
-	return ldb_parse_simple(mem_ctx, s);
+	return ldap_parse_simple(mem_ctx, s);
 }
 
-static BOOL ldap_push_filter(ASN1_DATA *data, struct ldb_parse_tree *tree)
+static BOOL ldap_push_filter(ASN1_DATA *data, struct ldap_parse_tree *tree)
 {
 	switch (tree->operation) {
-	case LDB_OP_SIMPLE: {
+	case LDAP_OP_SIMPLE: {
 		if ((tree->u.simple.value.length == 1) &&
 		    (((char *)(tree->u.simple.value.data))[0] == '*')) {
 			/* Just a presence test */
@@ -350,7 +349,7 @@ static BOOL ldap_push_filter(ASN1_DATA *data, struct ldb_parse_tree *tree)
 		break;
 	}
 
-	case LDB_OP_AND: {
+	case LDAP_OP_AND: {
 		int i;
 
 		asn1_push_tag(data, 0xa0);
@@ -361,7 +360,7 @@ static BOOL ldap_push_filter(ASN1_DATA *data, struct ldb_parse_tree *tree)
 		break;
 	}
 
-	case LDB_OP_OR: {
+	case LDAP_OP_OR: {
 		int i;
 
 		asn1_push_tag(data, 0xa1);
@@ -454,7 +453,7 @@ static char *next_chunk(TALLOC_CTX *mem_ctx,
 }
 
 /* simple ldif attribute parser */
-static int next_attr(char **s, const char **attr, struct ldb_val *value)
+static int next_attr(char **s, const char **attr, struct ldap_val *value)
 {
 	char *p;
 	int base64_encoded = 0;
@@ -507,7 +506,7 @@ static int next_attr(char **s, const char **attr, struct ldb_val *value)
 	return 0;
 }
 
-static BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
+static BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldap_val *value,
 				struct ldap_attribute *attrib)
 {
 	attrib->values = talloc_realloc(mem_ctx, attrib->values,
@@ -526,7 +525,7 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 {
 	struct ldap_AddRequest *r = &msg->r.AddRequest;
 	const char *attr_name;
-	struct ldb_val value;
+	struct ldap_val value;
 
 	r->num_attributes = 0;
 	r->attributes = NULL;
@@ -583,7 +582,7 @@ static BOOL fill_mods(struct ldap_message *msg, char **chunk)
 {
 	struct ldap_ModifyRequest *r = &msg->r.ModifyRequest;
 	const char *attr_name;
-	struct ldb_val value;
+	struct ldap_val value;
 
 	r->num_mods = 0;
 	r->mods = NULL;
@@ -647,7 +646,7 @@ static struct ldap_message *ldif_read(int (*fgetc_fn)(void *),
 	const char *attr=NULL;
 	const char *dn;
 	char *chunk=NULL, *s;
-	struct ldb_val value;
+	struct ldap_val value;
 
 	value.data = NULL;
 
@@ -822,13 +821,13 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		asn1_write_BOOLEAN2(&data, r->attributesonly);
 
 		{
-			TALLOC_CTX *mem_ctx = talloc_init("ldb_parse_tree");
-			struct ldb_parse_tree *tree;
+			TALLOC_CTX *mem_ctx = talloc_init("ldap_parse_tree");
+			struct ldap_parse_tree *tree;
 
 			if (mem_ctx == NULL)
 				return False;
 
-			tree = ldb_parse_tree(mem_ctx, r->filter);
+			tree = ldap_parse_tree(mem_ctx, r->filter);
 
 			if (tree == NULL)
 				return False;
@@ -872,7 +871,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_SearchResultDone: {
-		struct ldap_SearchResultDone *r = &msg->r.SearchResultDone;
+		struct ldap_Result *r = &msg->r.SearchResultDone;
 		ldap_encode_response(msg->type, r, &data);
 		break;
 	}
@@ -1195,7 +1194,7 @@ static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
 	asn1_start_tag(data, ASN1_SET);
 	while (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
 		DATA_BLOB blob;
-		struct ldb_val value;
+		struct ldap_val value;
 		asn1_read_OctetString(data, &blob);
 		value.data = blob.data;
 		value.length = blob.length;
@@ -1323,7 +1322,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_SearchResultDone): {
-		struct ldap_SearchResultDone *r = &msg->r.SearchResultDone;
+		struct ldap_Result *r = &msg->r.SearchResultDone;
 		msg->type = LDAP_TAG_SearchResultDone;
 		ldap_decode_response(msg->mem_ctx, data,
 				     LDAP_TAG_SearchResultDone, r);
@@ -1364,7 +1363,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_ModifyResponse): {
-		struct ldap_ModifyResponse *r = &msg->r.ModifyResponse;
+		struct ldap_Result *r = &msg->r.ModifyResponse;
 		msg->type = LDAP_TAG_ModifyResponse;
 		ldap_decode_response(msg->mem_ctx, data,
 				     LDAP_TAG_ModifyResponse, r);
@@ -1387,7 +1386,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_AddResponse): {
-		struct ldap_AddResponse *r = &msg->r.AddResponse;
+		struct ldap_Result *r = &msg->r.AddResponse;
 		msg->type = LDAP_TAG_AddResponse;
 		ldap_decode_response(msg->mem_ctx, data,
 				     LDAP_TAG_AddResponse, r);
@@ -1413,7 +1412,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_DelResponse): {
-		struct ldap_DelResponse *r = &msg->r.DelResponse;
+		struct ldap_Result *r = &msg->r.DelResponse;
 		msg->type = LDAP_TAG_DelResponse;
 		ldap_decode_response(msg->mem_ctx, data,
 				     LDAP_TAG_DelResponse, r);
@@ -1427,7 +1426,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_ModifyDNResponse): {
-		struct ldap_ModifyDNResponse *r = &msg->r.ModifyDNResponse;
+		struct ldap_Result *r = &msg->r.ModifyDNResponse;
 		msg->type = LDAP_TAG_ModifyDNResponse;
 		ldap_decode_response(msg->mem_ctx, data,
 				     LDAP_TAG_ModifyDNResponse, r);
@@ -1441,7 +1440,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_CompareResponse): {
-		struct ldap_CompareResponse *r = &msg->r.CompareResponse;
+		struct ldap_Result *r = &msg->r.CompareResponse;
 		msg->type = LDAP_TAG_CompareResponse;
 		ldap_decode_response(msg->mem_ctx, data,
 				     LDAP_TAG_CompareResponse, r);
@@ -1666,13 +1665,12 @@ static void add_search_entry(struct ldap_connection *conn,
 			     struct ldap_message *msg)
 {
 	struct ldap_queue_entry *e = malloc(sizeof *e);
-	struct ldap_queue_entry *tmp;
 
 	if (e == NULL)
 		return;
 
 	e->msg = msg;
-	DLIST_ADD_END(conn->search_entries, e, tmp);
+	DLIST_ADD_END(conn->search_entries, e, struct ldap_queue_entry *);
 	return;
 }
 
