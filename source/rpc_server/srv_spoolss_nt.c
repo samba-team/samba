@@ -5,8 +5,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000.
- *  Copyright (C) Jeremy Allison					2001.
+ *  Copyright (C) Jean François Micouleau      1998-2000,
+ *  Copyright (C) Jeremy Allison                    2001,
+ *  Copyright (C) Tim Potter                   2001-2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2450,8 +2451,12 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 /********************************************************************
  * construct_printer_info_1
  * fill a printer_info_1 struct
+ *
+ * The is_enum parameter says whether the PRINTER_INFO_1 returned is
+ * to be used in an enumprinters call.  This affects whether the netbios
+ * name of the server is prefixed to the printer and server names.
  ********************************************************************/
-static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int snum)
+static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int snum, BOOL is_enum)
 {
 	pstring chaine;
 	pstring chaine2;
@@ -2462,14 +2467,24 @@ static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int 
 
 	printer->flags=flags;
 
+	/* Strip server name from printer name if we are doing an enum */
+
+	if (is_enum) {
+		char *p;
+		
+		p = strchr(ntprinter->info_2->printername + 2, '\\');
+		
+		if (p)
+			fstrcpy(ntprinter->info_2->printername, p + 1);
+	}
+
 	if (*ntprinter->info_2->comment == '\0') {
 		init_unistr(&printer->comment, lp_comment(snum));
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",get_called_name(), ntprinter->info_2->printername,
+		snprintf(chaine,sizeof(chaine)-1,"%s,%s,%s", ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, lp_comment(snum));
-	}
-	else {
+	} else {
 		init_unistr(&printer->comment, ntprinter->info_2->comment); /* saved comment. */
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",get_called_name(), ntprinter->info_2->printername,
+		snprintf(chaine,sizeof(chaine)-1,"%s,%s,%s", ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, ntprinter->info_2->comment);
 	}
 		
@@ -2716,7 +2731,7 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
-			if (construct_printer_info_1(flags, &current_prt, snum)) {
+			if (construct_printer_info_1(flags, &current_prt, snum, True)) {
 				if((printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1))) == NULL) {
 					*returned=0;
 					return ERROR_NOT_ENOUGH_MEMORY;
@@ -3052,7 +3067,7 @@ static uint32 getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	if((printer=(PRINTER_INFO_1*)malloc(sizeof(PRINTER_INFO_1))) == NULL)
 		return ERROR_NOT_ENOUGH_MEMORY;
 
-	construct_printer_info_1(PRINTER_ENUM_ICON8, printer, snum);
+	construct_printer_info_1(PRINTER_ENUM_ICON8, printer, snum, False);
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_1(printer);

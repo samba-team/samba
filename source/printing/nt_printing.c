@@ -2501,8 +2501,11 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	snum = lp_servicenumber(sharename);
 
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
-	slprintf(info.printername, sizeof(info.printername)-1, "\\\\%s\\%s", 
-		 get_called_name(), sharename);
+	strupper(info.servername);
+	slprintf(info.printername, sizeof(info.printername)-1, "\\\\%s\\", 
+		 get_called_name());
+	strupper(info.printername);
+	fstrcat(info.printername, sharename);
 	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
@@ -2619,10 +2622,9 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	info.attributes |= PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;
 
 	/* Restore the stripped strings. */
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
-	slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", get_called_name(),
-			info.printername);
-	fstrcpy(info.printername, printername);
+	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", 
+		 get_called_name());
+	strupper(info.servername);
 
 #if 0
 	/*
