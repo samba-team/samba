@@ -87,7 +87,7 @@ add1(unsigned char *a, unsigned char *b, size_t len)
     for(i = len - 1; carry && i >= 0; i--){
 	int x = a[i] + carry;
 	carry = x > 0xff;
-	a[i] = carry & 0xff;
+	a[i] = x & 0xff;
     }
 }
 
