@@ -2434,7 +2434,7 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	size += 4;
 	/* JRA !!!! TESTME - WHAT ABOUT prs_align.... !!! */
 	size += sec_desc_size( info->secdesc );
-	
+
 	size+=size_of_device_mode( info->devmode );
 	
 	size+=size_of_relative_string( &info->servername );
@@ -4581,6 +4581,10 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 		return False;
 	if(!prs_uint16s(False, "value", ps, depth, r_u->value, r_u->valuesize))
 		return False;
+
+	if(!prs_align(ps))
+		return False;
+
 	if(!prs_uint32("realvaluesize", ps, depth, &r_u->realvaluesize))
 		return False;
 
@@ -4591,6 +4595,9 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 		return False;
 	if(!prs_uint8s(False, "data", ps, depth, r_u->data, r_u->datasize))
 		return False;
+	if(!prs_align(ps))
+		return False;
+
 	if(!prs_uint32("realdatasize", ps, depth, &r_u->realdatasize))
 		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))

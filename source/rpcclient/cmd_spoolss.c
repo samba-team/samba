@@ -149,12 +149,12 @@ uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *ar
 		printer_name = srv_name;
 	}
 
-	DEBUG(4,("spoolopen - printer: %s station: %s user: %s\n", printer_name, station, usr_creds->ntc.user_name));
+	DEBUG(0,("spoolenumdata - printer: %s station: %s user: %s\n", printer_name, station, usr_creds->ntc.user_name));
 
 	if (msrpc_spoolss_enum_printerdata( printer_name, station,
 	                        usr_creds->ntc.user_name))
 	{
-		DEBUG(5,("cmd_spoolss_enum_printerdata: query succeeded\n"));
+		DEBUG(0,("cmd_spoolss_enum_printerdata: query succeeded\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	report(out_hnd, "FAILED\n");

@@ -298,9 +298,9 @@ uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
         prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
         prs_init(&rbuf, 0, 4, UNMARSHALL);
 
-        /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
+        /* create and send a MSRPC command with api  SPOOLSS_ENUMPRINTERDATA*/
 
-        DEBUG(5,("SPOOLSS Enum Printer data)\n"));
+        DEBUG(4,("SPOOLSS Enum Printer data\n"));
 
         make_spoolss_q_enumprinterdata(&q_o, hnd, idx, *valuelen, *datalen);
 
