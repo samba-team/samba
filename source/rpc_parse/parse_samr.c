@@ -2204,11 +2204,16 @@ reads or writes a structure.
 BOOL samr_io_group_info1(const char *desc, GROUP_INFO1 * gr1,
 			 prs_struct *ps, int depth)
 {
+	uint16 dummy = 1;
+
 	if (gr1 == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "samr_io_group_info1");
 	depth++;
+
+	if(!prs_uint16("level", ps, depth, &dummy))
+		return False;
 
 	if(!prs_align(ps))
 		return False;
@@ -2230,6 +2235,43 @@ BOOL samr_io_group_info1(const char *desc, GROUP_INFO1 * gr1,
 
 	if(!smb_io_unistr2("uni_acct_desc", &gr1->uni_acct_desc,
 			   gr1->hdr_acct_desc.buffer, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a GROUP_INFO2 structure.
+********************************************************************/
+
+void init_samr_group_info2(GROUP_INFO2 * gr2, const char *acct_name)
+{
+	DEBUG(5, ("init_samr_group_info2\n"));
+
+	gr2->level = 2;
+	init_unistr2(&gr2->uni_acct_name, acct_name, UNI_FLAGS_NONE);
+	init_uni_hdr(&gr2->hdr_acct_name, &gr2->uni_acct_name);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_group_info2(const char *desc, GROUP_INFO2 *gr2, prs_struct *ps, int depth)
+{
+	if (gr2 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_group_info2");
+	depth++;
+
+	if(!prs_uint16("hdr_level", ps, depth, &gr2->level))
+		return False;
+
+	if(!smb_io_unihdr("hdr_acct_name", &gr2->hdr_acct_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni_acct_name", &gr2->uni_acct_name,
+			   gr2->hdr_acct_name.buffer, ps, depth))
 		return False;
 
 	return True;
@@ -2326,6 +2368,10 @@ static BOOL samr_group_info_ctr(const char *desc, GROUP_INFO_CTR **ctr,
 	switch ((*ctr)->switch_value1) {
 	case 1:
 		if(!samr_io_group_info1("group_info1", &(*ctr)->group.info1, ps, depth))
+			return False;
+		break;
+	case 2:
+		if(!samr_io_group_info2("group_info2", &(*ctr)->group.info2, ps, depth))
 			return False;
 		break;
 	case 3:
