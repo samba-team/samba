@@ -1718,7 +1718,6 @@ struct cli_state *do_connect(char *server, char *share)
 static BOOL process(char *base_directory)
 {
 	cli = do_connect(desthost, service);
-	
 	if (!cli) {
 		return(False);
 	}
@@ -1836,7 +1835,8 @@ handle a -L query
 static int do_host_query(char *query_host, int port)
 {
 	cli = do_connect(query_host, "IPC$");
-	if (!cli) return 1;
+	if (!cli)
+		return 1;
 
 	browse_host(True);
 	list_servers(workgroup);
@@ -1854,6 +1854,8 @@ static int do_tar_op(int port, char *base_directory)
 {
 	int ret;
 	cli = do_connect(desthost, service);
+	if (!cli)
+		return 1;
 
 	recurse=True;
 
