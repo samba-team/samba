@@ -555,6 +555,7 @@ BOOL reopen_logs( void )
 	pstring fname;
 	mode_t oldumask;
 	XFILE *new_dbf = NULL;
+	XFILE *old_dbf = NULL;
 	BOOL ret = True;
 
 	if (stdout_logging)
@@ -584,9 +585,10 @@ BOOL reopen_logs( void )
 		ret = False;
 	} else {
 		x_setbuf(new_dbf, NULL);
-		if (dbf)
-			(void) x_fclose(dbf);
+		old_dbf = dbf;
 		dbf = new_dbf;
+		if (old_dbf)
+			(void) x_fclose(old_dbf);
 	}
 
 	/* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
