@@ -74,3 +74,40 @@ krb5_copy_ticket(krb5_context context,
     *to = tmp;
     return 0;
 }
+
+krb5_error_code
+krb5_ticket_get_client(krb5_context context,
+		       const krb5_ticket *ticket,
+		       krb5_principal *client)
+{
+    return krb5_copy_principal(context, ticket->client, client);
+}
+
+krb5_error_code
+krb5_ticket_get_server(krb5_context context,
+		       const krb5_ticket *ticket,
+		       krb5_principal *server)
+{
+    return krb5_copy_principal(context, ticket->server, server);
+}
+
+krb5_error_code
+krb5_ticket_get_authorization_data_type(krb5_context context, krb5_ticket *ticket,
+					int type, krb5_data *data)
+{
+    int i;
+
+    data->length = 0;
+    data->data = NULL;
+
+    if (ticket->ticket.authorization_data == NULL)
+	return ENOENT; /* XXX */
+
+    for (i = 0; i < ticket->ticket.authorization_data->len; i++) {
+	if (ticket->ticket.authorization_data->val[i].ad_type == type) {
+	    return copy_octet_string(&ticket->ticket.authorization_data->val[i].ad_data,
+				     data);
+	}
+    }
+    return ENOENT; /* XXX */
+}
