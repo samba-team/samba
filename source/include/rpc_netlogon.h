@@ -43,6 +43,22 @@
 #define SEC_CHAN_DOMAIN  4
 #define SEC_CHAN_BDC     6
 
+/* Returned delta types */
+#define SAM_DELTA_DOMAIN_INFO  0x01 /* Domain */
+#define SAM_DELTA_GROUP_INFO   0x02 /* Domain groups */
+#define SAM_DELTA_ACCOUNT_INFO 0x05 /* Users */
+#define SAM_DELTA_GROUP_MEM    0x08 /* Group membership */
+#define SAM_DELTA_ALIAS_INFO   0x09 /* Local groups */
+#define SAM_DELTA_ALIAS_MEM    0x0C /* Local group membership */
+#define SAM_DELTA_UNKNOWN      0x0D /* Privilige stuff */
+#define SAM_DELTA_UNKNOWN2     0x10 /* Privilige stuff */
+#define SAM_DELTA_SAM_STAMP    0x16 /* Some kind of journal record? */
+
+/* SAM database types */
+#define SAM_DATABASE_DOMAIN    0x00 /* Domain users and groups */
+#define SAM_DATABASE_BUILTIN   0x01 /* BUILTIN users and groups */
+#define SAM_DATABASE_PRIVS     0x02 /* Priviliges? */
+
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */
 /* NET_USER_INFO_2 */
@@ -478,5 +494,271 @@ typedef struct net_r_sam_logoff_info
   NTSTATUS status; /* return code */
 
 } NET_R_SAM_LOGOFF;
+
+/* NET_Q_SAM_SYNC */
+typedef struct net_q_sam_sync_info
+{
+	UNISTR2 uni_srv_name; /* \\PDC */
+	UNISTR2 uni_cli_name; /* BDC */
+	DOM_CRED cli_creds;
+	DOM_CRED ret_creds;
+
+	uint32 database_id;
+	uint32 restart_state;
+	uint32 sync_context;
+
+	uint32 max_size;       /* preferred maximum length */
+
+} NET_Q_SAM_SYNC;
+
+/* SAM_DELTA_HDR */
+typedef struct sam_delta_hdr_info
+{
+	uint16 type;  /* type of structure attached */
+	uint16 type2;
+	uint32 target_rid;
+
+	uint32 type3;
+	uint32 ptr_delta;
+
+} SAM_DELTA_HDR;
+
+/* SAM_DOMAIN_INFO (0x1) */
+typedef struct sam_domain_info_info
+{
+	UNIHDR hdr_dom_name;
+	UNIHDR hdr_oem_info;
+
+	UINT64_S force_logoff;
+	uint16   min_pwd_len;
+	uint16   pwd_history_len;
+	UINT64_S max_pwd_age;
+	UINT64_S min_pwd_age;
+	UINT64_S dom_mod_count;
+	NTTIME   creation_time;
+
+	BUFHDR2 hdr_sec_desc; /* security descriptor */
+	UNIHDR hdr_unknown;
+	uint8 reserved[40];
+
+	UNISTR2 uni_dom_name;
+	UNISTR2 buf_oem_info; /* never seen */
+
+	BUFFER4 buf_sec_desc;
+	UNISTR2 buf_unknown;
+
+} SAM_DOMAIN_INFO;
+
+/* SAM_GROUP_INFO (0x2) */
+typedef struct sam_group_info_info
+{
+	UNIHDR hdr_grp_name;
+	DOM_GID gid;
+	UNIHDR hdr_grp_desc;
+	BUFHDR2 hdr_sec_desc;  /* security descriptor */
+	uint8 reserved[48];
+
+	UNISTR2 uni_grp_name;
+	UNISTR2 uni_grp_desc;
+	BUFFER4 buf_sec_desc;
+
+} SAM_GROUP_INFO;
+
+/* SAM_PWD */
+typedef struct sam_passwd_info
+{
+	/* this structure probably contains password history */
+	/* this is probably a count of lm/nt pairs */
+	uint32 unk_0; /* 0x0000 0002 */
+
+	UNIHDR hdr_lm_pwd;
+	uint8  buf_lm_pwd[16];
+
+	UNIHDR hdr_nt_pwd;
+	uint8  buf_nt_pwd[16];
+
+	UNIHDR hdr_empty_lm;
+	UNIHDR hdr_empty_nt;
+
+} SAM_PWD;
+
+/* SAM_ACCOUNT_INFO (0x5) */
+typedef struct sam_account_info_info
+{
+	UNIHDR hdr_acct_name;
+	UNIHDR hdr_full_name;
+
+	uint32 user_rid;
+	uint32 group_rid;
+
+	UNIHDR hdr_home_dir;
+	UNIHDR hdr_dir_drive;
+	UNIHDR hdr_logon_script;
+	UNIHDR hdr_acct_desc;
+	UNIHDR hdr_workstations;
+
+	NTTIME logon_time;
+	NTTIME logoff_time;
+
+	uint32 logon_divs; /* 0xA8 */
+	uint32 ptr_logon_hrs;
+
+	uint16 bad_pwd_count;
+	uint16 logon_count;
+	NTTIME pwd_last_set_time;
+	NTTIME acct_expiry_time;
+
+	uint32 acb_info;
+	uint8 nt_pwd[16];
+	uint8 lm_pwd[16];
+	uint8 nt_pwd_present;
+	uint8 lm_pwd_present;
+	uint8 pwd_expired;
+
+	UNIHDR hdr_comment;
+	UNIHDR hdr_parameters;
+	uint16 country;
+	uint16 codepage;
+
+	BUFHDR2 hdr_sec_desc;  /* security descriptor */
+
+	UNIHDR  hdr_profile;
+	UNIHDR  hdr_reserved[3];  /* space for more strings */
+	uint32  dw_reserved[4];   /* space for more data - first two seem to
+				     be an NTTIME */
+
+	UNISTR2 uni_acct_name;
+	UNISTR2 uni_full_name;
+	UNISTR2 uni_home_dir;
+	UNISTR2 uni_dir_drive;
+	UNISTR2 uni_logon_script;
+	UNISTR2 uni_acct_desc;
+	UNISTR2 uni_workstations;
+
+	uint32 unknown1; /* 0x4EC */
+	uint32 unknown2; /* 0 */
+
+	BUFFER4 buf_logon_hrs;
+	UNISTR2 uni_comment;
+	UNISTR2 uni_parameters;
+	SAM_PWD pass;
+	BUFFER4 buf_sec_desc;
+	UNISTR2 uni_profile;
+
+} SAM_ACCOUNT_INFO;
+
+/* SAM_GROUP_MEM_INFO (0x8) */
+typedef struct sam_group_mem_info_info
+{
+	uint32 ptr_rids;
+	uint32 ptr_attribs;
+	uint32 num_members;
+	uint8 unknown[16];
+
+	uint32 num_members2;
+	uint32 *rids;
+
+	uint32 num_members3;
+	uint32 *attribs;
+
+} SAM_GROUP_MEM_INFO;
+
+/* SAM_ALIAS_INFO (0x9) */
+typedef struct sam_alias_info_info
+{
+	UNIHDR hdr_als_name;
+	uint32 als_rid;
+	BUFHDR2 hdr_sec_desc;  /* security descriptor */
+	UNIHDR hdr_als_desc;
+	uint8 reserved[40];
+
+	UNISTR2 uni_als_name;
+	BUFFER4 buf_sec_desc;
+	UNISTR2 uni_als_desc;
+
+} SAM_ALIAS_INFO;
+
+/* SAM_ALIAS_MEM_INFO (0xC) */
+typedef struct sam_alias_mem_info_info
+{
+	uint32 num_members;
+	uint32 ptr_members;
+	uint8 unknown[16];
+
+	uint32 num_sids;
+	uint32 *ptr_sids;
+	DOM_SID2 *sids;
+
+} SAM_ALIAS_MEM_INFO;
+
+/* SAM_DELTA_STAMP (0x16) */
+typedef struct
+{
+        uint32 seqnum;
+        uint32 dom_mod_count_ptr;
+	UINT64_S dom_mod_count;  /* domain mod count at last sync */
+} SAM_DELTA_STAMP;
+
+typedef union sam_delta_ctr_info
+{
+	SAM_DOMAIN_INFO    domain_info ;
+	SAM_GROUP_INFO     group_info  ;
+	SAM_ACCOUNT_INFO   account_info;
+	SAM_GROUP_MEM_INFO grp_mem_info;
+	SAM_ALIAS_INFO     alias_info  ;
+	SAM_ALIAS_MEM_INFO als_mem_info;
+        SAM_DELTA_STAMP    stamp;
+} SAM_DELTA_CTR;
+
+/* NET_R_SAM_SYNC */
+typedef struct net_r_sam_sync_info
+{
+	DOM_CRED srv_creds;
+
+	uint32 sync_context;
+
+	uint32 ptr_deltas;
+	uint32 num_deltas;
+	uint32 ptr_deltas2;
+	uint32 num_deltas2;
+
+	SAM_DELTA_HDR *hdr_deltas;
+	SAM_DELTA_CTR *deltas;
+
+	uint32 status;
+} NET_R_SAM_SYNC;
+
+/* NET_Q_SAM_DELTAS */
+typedef struct net_q_sam_deltas_info
+{
+	UNISTR2 uni_srv_name;
+	UNISTR2 uni_cli_name;
+	DOM_CRED cli_creds;
+	DOM_CRED ret_creds;
+
+	uint32 database_id;
+	UINT64_S dom_mod_count;  /* domain mod count at last sync */
+
+	uint32 max_size;       /* preferred maximum length */
+
+} NET_Q_SAM_DELTAS;
+
+/* NET_R_SAM_DELTAS */
+typedef struct net_r_sam_deltas_info
+{
+	DOM_CRED srv_creds;
+
+	UINT64_S dom_mod_count;   /* new domain mod count */
+
+	uint32 ptr_deltas;
+	uint32 num_deltas;
+	uint32 num_deltas2;
+
+	SAM_DELTA_HDR *hdr_deltas;
+	SAM_DELTA_CTR *deltas;
+
+	uint32 status;
+
+} NET_R_SAM_DELTAS;
 
 #endif /* _RPC_NETLOGON_H */
