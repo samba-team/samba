@@ -70,6 +70,8 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 						   *state);
 enum winbindd_result winbindd_ping(struct winbindd_cli_state
 						   *state);
+enum winbindd_result winbindd_info(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_interface_version(struct winbindd_cli_state *state);
 
 /* The following definitions come from nsswitch/winbindd_pam.c  */
 

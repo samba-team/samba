@@ -330,6 +330,8 @@ static struct dispatch_table dispatch_table[] = {
 
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
 	{ WINBINDD_PING, winbindd_ping, "PING" },
+	{ WINBINDD_INFO, winbindd_info, "INFO" },
+	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version, "INTERFACE_VERSION" },
 
 	/* End of list */
 

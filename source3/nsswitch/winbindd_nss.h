@@ -37,6 +37,9 @@
 
 /* Socket commands */
 
+/* Update this when you change the interface.  */
+#define WINBIND_INTERFACE_VERSION 1
+
 enum winbindd_cmd {
 
 	/* Get users and groups */
@@ -84,6 +87,8 @@ enum winbindd_cmd {
 
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
 	WINBINDD_PING,              /* Just tell me winbind is running */
+	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
+	WINBINDD_INTERFACE_VERSION, /* *TRY* to keep this in the same place... */
 
 	/* Placeholder for end of cmd list */
 
@@ -145,6 +150,7 @@ struct winbindd_response {
 	/* Fixed length return data */
 	
 	union {
+		int interface_version;  /* Try to ensure this is always in the same spot... */
 		
 		/* getpwnam, getpwuid */
 		
@@ -179,6 +185,10 @@ struct winbindd_response {
 		} name;
 		uid_t uid;          /* sid_to_uid */
 		gid_t gid;          /* sid_to_gid */
+		struct winbindd_info {
+			char winbind_separator;
+			fstring samba_version;
+		} info;
 	} data;
 
 	/* Variable length return data */

@@ -4,7 +4,8 @@
 
    Winbind daemon - miscellaneous other functions
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter      2000
+   Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -146,6 +147,31 @@ enum winbindd_result winbindd_ping(struct winbindd_cli_state
 						   *state)
 {
 	DEBUG(3, ("[%5d]: ping\n", state->pid));
+
+	return WINBINDD_OK;
+}
+
+/* List various tidbits of information */
+
+enum winbindd_result winbindd_info(struct winbindd_cli_state *state)
+{
+
+	DEBUG(3, ("[%5d]: request misc info\n", state->pid));
+
+	state->response.data.info.winbind_separator = *lp_winbind_separator();
+	fstrcpy(state->response.data.info.samba_version, VERSION);
+
+	return WINBINDD_OK;
+}
+
+/* List various tidbits of information */
+
+enum winbindd_result winbindd_interface_version(struct winbindd_cli_state *state)
+{
+
+	DEBUG(3, ("[%5d]: request interface version\n", state->pid));
+	
+	state->response.data.interface_version = WINBIND_INTERFACE_VERSION;
 
 	return WINBINDD_OK;
 }
