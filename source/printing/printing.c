@@ -159,8 +159,6 @@ static void rap_jobid_delete(int snum, uint32 jobid)
 	tdb_delete(rap_tdb, data);
 }
 
-static pid_t local_pid;
-
 static int get_queue_status(const char *printer_name, print_status_struct *);
 
 /****************************************************************************
@@ -174,14 +172,9 @@ BOOL print_backend_init(void)
 	int services = lp_numservices();
 	int snum;
 
-	if (local_pid == sys_getpid())
-		return True;
-
 	unlink(lock_path("printing.tdb"));
 	pstrcpy(printing_path,lock_path("printing"));
 	mkdir(printing_path,0755);
-
-	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
 
@@ -609,6 +602,7 @@ void pjob_delete(int snum, const char *sharename, uint32 jobid)
 	/* Remove from printing.tdb */
 
 	tdb_delete(pdb->tdb, print_key(jobid));
+	remove_from_jobs_changed(snum, jobid);
 	release_print_db(pdb);
 	rap_jobid_delete(snum, jobid);
 }
@@ -1482,7 +1476,7 @@ int print_job_fd(int snum, uint32 jobid)
 	if (!pjob)
 		return -1;
 	/* don't allow another process to get this info - it is meaningless */
-	if (pjob->pid != local_pid)
+	if (pjob->pid != sys_getpid())
 		return -1;
 	return pjob->fd;
 }
@@ -1497,7 +1491,7 @@ char *print_job_fname(int snum, uint32 jobid)
 {
 	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
 					       jobid);
-	if (!pjob || pjob->spooled || pjob->pid != local_pid)
+	if (!pjob || pjob->spooled || pjob->pid != sys_getpid())
 		return NULL;
 	return pjob->filename;
 }
@@ -1538,7 +1532,7 @@ BOOL print_job_set_name(int snum, uint32 jobid, char *name)
 {
 	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
 					       jobid);
-	if (!pjob || pjob->pid != local_pid)
+	if (!pjob || pjob->pid != sys_getpid())
 		return False;
 
 	fstrcpy(pjob->jobname, name);
@@ -1635,8 +1629,6 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 
 	if (pjob->spooled && pjob->sysjob != -1)
 		result = (*(current_printif->job_delete))(snum, pjob);
-	else
-		remove_from_jobs_changed(lp_const_servicename(snum), jobid);
 
 	/* Delete the tdb entry if the delete succeeded or the job hasn't
 	   been spooled. */
@@ -1855,7 +1847,7 @@ int print_job_write(int snum, uint32 jobid, const char *buf, int size)
 	if (!pjob)
 		return -1;
 	/* don't allow another process to get this info - it is meaningless */
-	if (pjob->pid != local_pid)
+	if (pjob->pid != sys_getpid())
 		return -1;
 
 	return_code = write(pjob->fd, buf, size);
@@ -2120,7 +2112,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 	
 	ZERO_STRUCT(pjob);
 	
-	pjob.pid = local_pid;
+	pjob.pid = sys_getpid();
 	pjob.sysjob = -1;
 	pjob.fd = -1;
 	pjob.starttime = time(NULL);
@@ -2191,7 +2183,7 @@ void print_job_endpage(int snum, uint32 jobid)
 	if (!pjob)
 		return;
 	/* don't allow another process to get this info - it is meaningless */
-	if (pjob->pid != local_pid)
+	if (pjob->pid != sys_getpid())
 		return;
 
 	pjob->page_count++;
@@ -2215,7 +2207,7 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	if (!pjob)
 		return False;
 
-	if (pjob->spooled || pjob->pid != local_pid)
+	if (pjob->spooled || pjob->pid != sys_getpid())
 		return False;
 
 	if (normal_close && (sys_fstat(pjob->fd, &sbuf) == 0)) {
@@ -2271,7 +2263,6 @@ fail:
 	/* Still need to add proper error return propagation! 010122:JRR */
 	unlink(pjob->filename);
 	pjob_delete(snum, lp_const_servicename(snum), jobid);
-	remove_from_jobs_changed(lp_const_servicename(snum), jobid);
 	return False;
 }
 
