@@ -85,11 +85,12 @@ extern int DEBUGLEVEL;
 #define DBGC_PRINTDRIVERS	2
 #define DBGC_LANMAN		3
 #define DBGC_SMB		4
-#define DBGC_RPC_SRV		5
-#define DBGC_RPC_CLI		6
-#define DBGC_PASSDB		7
-#define DBGC_AUTH		8
-#define DBGC_WINBIND		9
+#define DBGC_RPC		5
+#define DBGC_RPC_SRV		6
+#define DBGC_RPC_CLI		7
+#define DBGC_PASSDB		8
+#define DBGC_AUTH		9
+#define DBGC_WINBIND		10
 
 
 /* So you can define DBGC_CLASS before including debug.h */

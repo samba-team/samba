@@ -150,10 +150,11 @@ static const char *default_classname_table[] = {
 	"lanman",            /* DBGC_LANMAN       */
 	"smb",               /* DBGC_SMB          */
 	"rpc",               /* DBGC_RPC          */
-	"rpc_hdr",           /* DBGC_RPC_HDR      */
+	"rpc_srv",           /* DBGC_RPC_SRV      */
+	"rpc_cli",           /* DBGC_RPC_CLI      */
 	"passdb",            /* DBGC_PASSDB       */
 	"auth",              /* DBGC_AUTH         */
-	"bdc",               /* DBGC_BDC          */
+	"winbind",           /* DBGC_WINBIND      */
 	NULL
 };
 
@@ -171,7 +172,7 @@ utility lists registered debug class names's
 
 #define MAX_CLASS_NAME_SIZE 1024
 
-char *debug_list_class_names_and_levels(void)
+static char *debug_list_class_names_and_levels(void)
 {
 	int i, dim;
 	char **list;
@@ -416,8 +417,11 @@ BOOL debug_parse_levels(const char *params_str)
 {
 	char **params;
 
+	/* Just in case */
+	debug_init();
+
 	if (AllowDebugChange == False)
-        return True;
+		return True;
 
 	params = lp_list_make(params_str);
 
