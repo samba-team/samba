@@ -69,6 +69,7 @@ CONFIGLIBDIR = $(LIBDIR)/config
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
+DATADIR = @datadir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755

@@ -27,18 +27,16 @@ AC_ARG_WITH(fhs,
 [  --with-fhs              Use FHS-compliant paths (default=no)],
 [ case "$withval" in
   yes)
-    configdir="${sysconfdir}/samba"
     lockdir="\${VARDIR}/lib/samba"
     piddir="\${VARDIR}/run"
     mandir="\${prefix}/share/man"
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     libdir="\${prefix}/lib/samba"
-    swatdir="\${prefix}/share/samba/swat"
+    configdir="${sysconfdir}/samba"
+    swatdir="\${DATADIR}/samba/swat",
     ;;
   esac])
-
-lmhostsfile="\${CONFIGDIR}/lmhosts"
 
 #################################################
 # set private directory location
@@ -929,8 +927,6 @@ AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open backtrace_symbols)
-
-# IRIX stack backtrace
 AC_CHECK_HEADERS(libexc.h)
 AC_CHECK_LIB(exc, trace_back_stack)
 
@@ -2960,7 +2956,7 @@ fi
 
 
 dictpath="/usr/lib/cracklib_dict"
-
+with_cracklib=yes
 ###############################################
 # test for where we get FaciestCheck from
 AC_MSG_CHECKING(where to use cracklib from (default=$dictpath))
@@ -3326,6 +3322,7 @@ AC_TRY_COMPILE([
 #define NO_PROTO_H 1
 #define NO_CONFIG_H 1
 #define HAVE_SYS_QUOTAS 1
+#include "${srcdir-.}/${samba_cv_sysquotas_file}"
 #include "${srcdir-.}/lib/sysquotas.c"
 ],[],samba_cv_SYSQUOTA_WORKS=yes,samba_cv_SYSQUOTA_WORKS=no)
 CPPFLAGS="$SAVE_CPPFLAGS"

@@ -1204,7 +1204,7 @@ static int tdbsam_traverse_privilege(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data
 			int len;
 
 			s = data.dptr;
-			while (c = strchr(s, ',')) {
+			while ((c=strchr(s, ',')) !=NULL) {
 				len = MAX((c - s), strlen(pt->sid_list[i]));
 				if (strncmp(s, pt->sid_list[i], len) == 0) {
 					DEBUG(10, ("sid [%s] found in users sid list\n", pt->sid_list[i]));
