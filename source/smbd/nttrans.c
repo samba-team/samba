@@ -1997,25 +1997,30 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
    * Validate the owner and group SID's.
    */
 
+  memset(&owner_sid, '\0', sizeof(owner_sid));
+  memset(&grp_sid, '\0', sizeof(grp_sid));
+
   DEBUG(5,("unpack_unix_permissions: validating owner_sid.\n"));
 
-  if(security_info_sent & OWNER_SECURITY_INFORMATION) {
-    if(!validate_unix_sid( &owner_sid, &owner_rid, psd->owner_sid)) {
-      DEBUG(3,("unpack_unix_permissions: unable to validate owner sid.\n"));
-      return False;
-    }
+  /*
+   * Don't immediately fail if the owner sid cannot be validated.
+   * This may be a group chown only set.
+   */
 
+  if(!validate_unix_sid( &owner_sid, &owner_rid, psd->owner_sid))
+    DEBUG(3,("unpack_unix_permissions: unable to validate owner sid.\n"));
+  else if(security_info_sent & OWNER_SECURITY_INFORMATION)
     *puser = pdb_user_rid_to_uid(owner_rid);
-  }
 
-  if(security_info_sent & GROUP_SECURITY_INFORMATION) {
-    if(!validate_unix_sid( &grp_sid, &grp_rid, psd->grp_sid)) {
-      DEBUG(3,("unpack_unix_permissions: unable to validate group sid.\n"));
-      return False;
-    }
+  /*
+   * Don't immediately fail if the group sid cannot be validated.
+   * This may be an owner chown only set.
+   */
 
+  if(!validate_unix_sid( &grp_sid, &grp_rid, psd->grp_sid))
+    DEBUG(3,("unpack_unix_permissions: unable to validate group sid.\n"));
+  else if(security_info_sent & GROUP_SECURITY_INFORMATION)
     *pgrp = pdb_user_rid_to_gid(grp_rid);
-  }
 
   /*
    * If no DACL then this is a chown only security descriptor.
@@ -2106,7 +2111,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
         *pmode &= ~(map_nt_perms( psa->info, S_IROTH));
 
     } else {
-      DEBUG(3,("unpack_unix_permissions: unknown SID used in ACL.\n"));
+      DEBUG(0,("unpack_unix_permissions: unknown SID used in ACL.\n"));
       return False;
     }
   }
