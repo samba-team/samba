@@ -1552,8 +1552,10 @@ BOOL is_myname(const char *s)
 	BOOL ret = False;
 
 	for (n=0; my_netbios_names_unix(n); n++) {
-		if (strequal_unix(my_netbios_names_unix(n), s))
+		if (strequal_unix(my_netbios_names_unix(n), s)) {
 			ret=True;
+			break;
+		}
 	}
 	DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
 	return(ret);

@@ -126,7 +126,6 @@ typedef struct
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szValidChars;
-	char *szWorkGroup;
 	char *szNetbiosAliases;
 	char *szDomainAdminGroup;
 	char *szDomainGuestGroup;
@@ -1272,7 +1271,8 @@ static void init_globals(void)
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
 	string_set(&Globals.szPasswdChat, DEFAULT_PASSWD_CHAT);
-	string_set(&Globals.szWorkGroup, WORKGROUP);
+
+	set_global_myworkgroup_unix(WORKGROUP);
 	string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
 	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
 	string_set(&Globals.szLockDir, LOCKDIR);
