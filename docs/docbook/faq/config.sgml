@@ -22,4 +22,16 @@ add users to this database using "smbpasswd -a user-name".
 See also the "User database" chapter of the samba HOWTO Collection.
 </para>
 </sect1>
+
+<sect1>
+<title>How can I make samba use netbios scope ID's</title>
+
+<para>By default Samba uses a blank scope ID. This means 
+all your windows boxes must also have a blank scope ID. 
+If you really want to use a non-blank scope ID then you will 
+need to use the 'netbios scope' smb.conf option.
+All your PCs will need to have the same setting for 
+this to work. Scope ID's are not recommended.</para>
+</sect1>
+
 </chapter>

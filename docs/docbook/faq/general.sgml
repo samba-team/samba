@@ -35,7 +35,7 @@ unstable, and a series of alpha releases are distributed, for example
 doing.  The "alpha" in the filename will hopefully scare off those who
 are just looking for the latest version to install.</member>
 
-<member>When Andrew thinks that the alphas have stabilised to the point
+<member>When the release manager, currently Jerry, thinks that the alphas have stabilised to the point
 where he would recommend new users install it, he renames it to the
 same version number without the alpha, for example 1.9.16.</member>
 
@@ -126,45 +126,6 @@ versions):
 <para>
 Look at <ulink url="http://samba.org/samba/archives.html">the samba mailing list page</ulink>
 </para>
-</sect1>
-
-<sect1>
-<title>Pizza supply details</title>
-<para>
-Those who have registered in the Samba survey as "Pizza Factory" will
-already know this, but the rest may need some help. Andrew doesn't ask
-for payment, but he does appreciate it when people give him
-pizza. This calls for a little organisation when the pizza donor is
-twenty thousand kilometres away, but it has been done.
-</para>
-
-<para>
-Method 1: Ring up your local branch of an international pizza chain
-and see if they honour their vouchers internationally. Pizza Hut do,
-which is how the entire Canberra Linux Users Group got to eat pizza
-one night, courtesy of someone in the US.
-</para>
-
-<para>
-Method 2: Ring up a local pizza shop in Canberra and quote a credit
-card number for a certain amount, and tell them that Andrew will be
-collecting it (don't forget to tell him.) One kind soul from Germany
-did this.
-</para>
-
-<para>
-Method 3: Purchase a pizza voucher from your local pizza shop that has
-no international affiliations and send it to Andrew. It is completely
-useless but he can hang it on the wall next to the one he already has
-from Germany :-)
-</para>
-
-<para>
-Method 4: Air freight him a pizza with your favourite regional
-flavours. It will probably get stuck in customs or torn apart by
-hungry sniffer dogs but it will have been a noble gesture.
-</para>
-
 </sect1>
 
 </chapter>
