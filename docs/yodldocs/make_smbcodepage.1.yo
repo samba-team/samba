@@ -119,12 +119,7 @@ by all.  The program should NOT be setuid or setgid!
 label(VERSION)
 manpagesection(VERSION)
 
-This man page is correct for version 2.0 of the Samba
-suite, plus some of the recent patches to it. These notes will
-necessarily lag behind development of the software, so it is possible
-that your version of the program has extensions or parameter semantics
-that differ from or are not covered by this man page. Please notify
-these to the address below for rectification.
+This man page is correct for version 2.0 of the Samba suite.
 
 label(SEEALSO)
 manpageseealso()
