@@ -347,7 +347,7 @@ void sid_copy(DOM_SID *dst, const DOM_SID *src)
 /*****************************************************************
  Write a sid out into on-the-wire format.
 *****************************************************************/  
-BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
+BOOL sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
 {
 	size_t i;
 
@@ -366,7 +366,7 @@ BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
 /*****************************************************************
  parse a on-the-wire SID to a DOM_SID
 *****************************************************************/  
-BOOL sid_parse(char *inbuf, size_t len, DOM_SID *sid)
+BOOL sid_parse(const char *inbuf, size_t len, DOM_SID *sid)
 {
 	int i;
 	if (len < 8) return False;
@@ -482,7 +482,7 @@ BOOL sid_check_is_in_builtin(const DOM_SID *sid)
  Calculates size of a sid.
 *****************************************************************/  
 
-size_t sid_size(DOM_SID *sid)
+size_t sid_size(const DOM_SID *sid)
 {
 	if (sid == NULL)
 		return 0;
@@ -518,7 +518,7 @@ BOOL non_mappable_sid(DOM_SID *sid)
   return the binary string representation of a DOM_SID
   caller must free
 */
-char *sid_binstring(DOM_SID *sid)
+char *sid_binstring(const DOM_SID *sid)
 {
 	char *buf, *s;
 	int len = sid_size(sid);
