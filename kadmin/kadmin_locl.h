@@ -91,13 +91,14 @@ extern void * kadm_handle;
 DECL(add_new_key);
 DECL(cpw_entry);
 DECL(del_entry);
+DECL(exit_kadmin);
 DECL(ext_keytab);
 DECL(get_entry);
-DECL(list_princs);
-DECL(rename_entry);
-DECL(help);
 DECL(get_privs);
-DECL(exit_kadmin);
+DECL(help);
+DECL(list_princs);
+DECL(mod_entry);
+DECL(rename_entry);
 
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 
