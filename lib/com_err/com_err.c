@@ -45,13 +45,13 @@ RCSID("$Id$");
 #include <string.h>
 #include "com_err.h"
 
-static struct error_table *et_list;
+struct et_list *_et_list;
 
 const char *
 error_message (long code)
 {
     static char msg[128];
-    const char *p = com_right(et_list, code);
+    const char *p = com_right(_et_list, code);
     if(p){
 	strncpy(msg, p, sizeof(msg));
 	msg[sizeof(msg)-1] = '\0';
@@ -64,7 +64,7 @@ error_message (long code)
 int
 init_error_table(const char **msgs, long base, int count)
 {
-    initialize_error_table_r(&et_list, msgs, count, base);
+    initialize_error_table_r(&_et_list, msgs, count, base);
     return 0;
 }
 

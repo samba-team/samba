@@ -46,42 +46,50 @@ RCSID("$Id$");
 #include <com_right.h>
 
 const char *
-com_right(struct error_table *list, long code)
+com_right(struct et_list *list, long code)
 {
-    struct error_table *p;
-    for(p = list; p; p = p->next){
-	if(code >= p->base && code < p->base + p->n_msgs)
-	    return p->msgs[code - p->base];
+    struct et_list *p;
+    for (p = list; p; p = p->next) {
+	if (code >= p->table->base && code < p->table->base + p->table->n_msgs)
+	    return p->table->msgs[code - p->table->base];
     }
     return NULL;
 }
 
+struct foobar {
+    struct et_list etl;
+    struct error_table et;
+};
+
 void
-initialize_error_table_r(struct error_table **list, 
+initialize_error_table_r(struct et_list **list, 
 			 const char **messages, 
 			 int num_errors,
 			 long base)
 {
-    struct error_table *et;
-    for(et = *list; et; et = et->next)
-        if(et->msgs == messages)
+    struct et_list *et;
+    struct foobar *f;
+    for (et = *list; et; et = et->next)
+        if (et->table->msgs == messages)
             return;
-    et = malloc(sizeof(*et));
-    if (et == NULL)
+    f = malloc(sizeof(*f));
+    if (f == NULL)
         return;
-    et->msgs = messages;
-    et->n_msgs = num_errors;
-    et->base = base;
+    et = &f->etl;
+    et->table = &f->et;
+    et->table->msgs = messages;
+    et->table->n_msgs = num_errors;
+    et->table->base = base;
     et->next = *list;
     *list = et;
 }
 			
 
 void
-free_error_table(struct error_table *et)
+free_error_table(struct et_list *et)
 {
     while(et){
-	struct error_table *p = et;
+	struct et_list *p = et;
 	et = et->next;
 	free(p);
     }

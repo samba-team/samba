@@ -100,7 +100,7 @@ generate_c(void)
     fprintf(c_file, "};\n");
     fprintf(c_file, "\n");
     fprintf(c_file, 
-	    "void initialize_%s_error_table_r(struct error_table **list)\n", 
+	    "void initialize_%s_error_table_r(struct et_list **list)\n", 
 	    name);
     fprintf(c_file, "{\n");
     fprintf(c_file, 
@@ -146,7 +146,7 @@ generate_h(void)
     fprintf(h_file, "#include <com_right.h>\n");
     fprintf(h_file, "\n");
     fprintf(h_file, 
-	    "void initialize_%s_error_table_r(struct error_table**);\n",
+	    "void initialize_%s_error_table_r(struct et_list **);\n",
 	    name);
     fprintf(h_file, "\n");
     fprintf(h_file, "void initialize_%s_error_table(void);\n", name);

@@ -45,11 +45,15 @@ struct error_table {
     char const * const * msgs;
     long base;
     int n_msgs;
-    struct error_table *next;
 };
+struct et_list {
+    struct et_list *next;
+    struct error_table *table;
+};
+extern struct et_list *_et_list;
 
-const char *com_right(struct error_table *list, long code);
-void initialize_error_table_r(struct error_table**, const char**, int, long);
-void free_error_table(struct error_table*);
+const char *com_right(struct et_list *list, long code);
+void initialize_error_table_r(struct et_list **, const char **, int, long);
+void free_error_table(struct et_list *);
 
 #endif /* __COM_RIGHT_H__ */
