@@ -143,13 +143,14 @@ static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
 static void tdbsam_endsampwent(struct pdb_methods *my_methods)
 {
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
-	struct pwent_list *ptr;
+	struct pwent_list *ptr, *ptr_next;
 	
 	close_tdb(tdb_state);
 	
 	/* clear out any remaining entries in the list */
 	
-	for ( ptr=tdbsam_pwent_list; ptr; ptr=ptr->next ) {
+	for ( ptr=tdbsam_pwent_list; ptr; ptr = ptr_next ) {
+		ptr_next = ptr->next;
 		DLIST_REMOVE( tdbsam_pwent_list, ptr );
 		SAFE_FREE( ptr->key.dptr);
 		SAFE_FREE( ptr );
