@@ -396,8 +396,8 @@ BOOL cli_qpathinfo2(struct cli_state *cli, char *fname,
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
 		    time_t *w_time, uint32 *size);
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
-		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   uint32 *size, int *mode);
+		   uint32 *mode, size_t *size,
+		   time_t *c_time, time_t *a_time, time_t *m_time);
 int cli_list(struct cli_state *cli,char *Mask,int attribute,void (*fn)(file_info *));
 BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
                              char *old_password);
