@@ -226,7 +226,12 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
 	cname = poptGetArg(pc);
 	caddr = poptGetArg(pc);
-	
+
+	if ( cname && ! caddr ) {
+		printf ( "ERROR: You must specify both a machine name and an IP address.\n" );
+		return(1);
+	}
+
 	if (new_local_machine) {
 		set_local_machine_name(new_local_machine, True);
 	}
@@ -346,8 +351,9 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	if(cname && caddr){
 		/* this is totally ugly, a real `quick' hack */
 		for (s=0;s<1000;s++) {
-			if (VALID_SNUM(s)) {		 
-				if (allow_access(lp_hostsdeny(s), lp_hostsallow(s), cname, caddr)) {
+			if (VALID_SNUM(s)) {
+				if (allow_access(lp_hostsdeny(-1), lp_hostsallow(-1), cname, caddr)
+				    && allow_access(lp_hostsdeny(s), lp_hostsallow(s), cname, caddr)) {
 					printf("Allow connection from %s (%s) to %s\n",
 						   cname,caddr,lp_servicename(s));
 				} else {
