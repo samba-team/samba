@@ -1,5 +1,5 @@
---- smbwrapper/smbw.c.00	Mon Nov 13 13:32:16 2000
-+++ smbwrapper/smbw.c	Thu Dec 28 11:24:26 2000
+--- smbwrapper/smbw.c.orig	Mon Jan  8 12:37:48 2001
++++ smbwrapper/smbw.c	Fri Apr 13 13:09:00 2001
 @@ -22,6 +22,11 @@
  #include "includes.h"
  #include "realcalls.h"
@@ -12,7 +12,7 @@
  pstring smbw_cwd;
  
  static struct smbw_file *smbw_files;
-@@ -1438,7 +1443,11 @@
+@@ -1462,7 +1467,11 @@
  /***************************************************** 
  say no to acls
  *******************************************************/
@@ -24,7 +24,7 @@
  {
  	if (cmd == GETACL || cmd == GETACLCNT) return 0;
  	errno = ENOSYS;
-@@ -1450,7 +1459,11 @@
+@@ -1474,7 +1483,11 @@
  /***************************************************** 
  say no to acls
  *******************************************************/
@@ -36,28 +36,23 @@
  {
  	if (cmd == GETACL || cmd == GETACLCNT) return 0;
  	errno = ENOSYS;
---- tdb/tdb.c.00	Fri Dec 15 13:23:27 2000
-+++ tdb/tdb.c	Wed Dec 27 18:53:56 2000
-@@ -850,9 +850,16 @@
+--- tdb/tdb.c.orig	Fri Apr 13 05:58:34 2001
++++ tdb/tdb.c	Fri Apr 13 13:34:18 2001
+@@ -856,7 +856,11 @@
  {
  	TDB_DATA key, dbuf;
  	struct list_struct rec;
 +#if defined(__USLC__)
-+	struct tdb_traverse_lock tl = { (struct tdb_traverse_lock *)0, 0, 0 };
++    struct tdb_traverse_lock tl = { (struct tdb_traverse_lock *)0, 0, 0 };
 +#else
- 	struct tdb_traverse_lock tl = { tdb->travlocks.next, 0, 0 };
+ 	struct tdb_traverse_lock tl = { NULL, 0, 0 };
 +#endif
  	int ret, count = 0;
  
-+#if defined(__USLC__)
-+        tl.next = tdb->travlocks.next;
-+#endif
- 	/* fcntl locks don't stack: beware traverse inside traverse */
- 	tdb->travlocks.next = &tl;
- 
---- utils/torture.c.00	Mon Dec 11 13:06:56 2000
-+++ utils/torture.c	Thu Dec 28 10:01:11 2000
-@@ -2360,7 +2360,11 @@
+         /* This was in the initializaton, above, but the IRIX compiler
+--- utils/torture.c.orig	Fri Mar 30 13:53:26 2001
++++ utils/torture.c	Fri Apr 13 13:09:01 2001
+@@ -2703,7 +2703,11 @@
  
  	dbf = stdout;
  
@@ -69,8 +64,8 @@
  
  	charset_initialise();
  
---- utils/locktest.c.00	Fri Sep 29 13:18:14 2000
-+++ utils/locktest.c	Thu Dec 28 15:51:56 2000
+--- utils/locktest.c.orig	Fri Sep 29 13:18:14 2000
++++ utils/locktest.c	Fri Apr 13 13:09:01 2001
 @@ -34,7 +34,7 @@
  
  #define FILENAME "\\locktest.dat"
@@ -134,8 +129,8 @@
  
  	dbf = stderr;
  
---- utils/locktest2.c.00	Tue Jun 13 08:47:44 2000
-+++ utils/locktest2.c	Thu Dec 28 10:33:32 2000
+--- utils/locktest2.c.orig	Tue Jun 13 08:47:44 2000
++++ utils/locktest2.c	Fri Apr 13 13:09:01 2001
 @@ -540,7 +540,11 @@
  	int seed;
  	static pstring servicesf = CONFIGFILE;
@@ -148,8 +143,8 @@
  
  	dbf = stderr;
  
---- utils/masktest.c.00	Fri May 26 17:28:02 2000
-+++ utils/masktest.c	Thu Dec 28 10:33:38 2000
+--- utils/masktest.c.orig	Fri May 26 17:28:02 2000
++++ utils/masktest.c	Fri Apr 13 13:09:01 2001
 @@ -310,7 +310,11 @@
  	int seed;
  	static pstring servicesf = CONFIGFILE;
@@ -162,11 +157,11 @@
  
  	dbf = stderr;
  
---- utils/smbcacls.c.00	Fri Dec 15 16:08:02 2000
-+++ utils/smbcacls.c	Thu Dec 28 10:33:44 2000
-@@ -749,7 +749,11 @@
- 	char *the_acl = NULL;
- 	enum chown_mode change_mode = REQUEST_NONE;
+--- utils/smbcacls.c.orig	Thu Apr 12 21:09:39 2001
++++ utils/smbcacls.c	Fri Apr 13 13:09:01 2001
+@@ -824,7 +824,11 @@
+ 
+ 	ctx=talloc_init();
  
 +#if defined(__USLC__)
 +        setvbuf(stdout,NULL,_IOLBF,0); /* line buffered */
@@ -176,8 +171,8 @@
  
  	dbf = stderr;
  
---- ltconfig.00	Mon Mar 13 15:20:00 2000
-+++ ltconfig	Wed Dec 27 19:30:16 2000
+--- ltconfig.orig	Mon Mar 13 15:20:00 2000
++++ ltconfig	Fri Apr 13 13:09:01 2001
 @@ -1482,9 +1482,9 @@
      no_undefined_flag=' -z text'
      # $CC -shared without GNU ld will not create a library from C++
@@ -190,9 +185,9 @@
      hardcode_libdir_flag_spec=
      hardcode_shlibpath_var=no
      runpath_var='LD_RUN_PATH'
---- configure.in.00	Tue Dec  5 15:45:35 2000
-+++ configure.in	Thu Dec 28 14:19:54 2000
-@@ -532,6 +532,10 @@
+--- configure.in.orig	Fri Apr 13 11:33:18 2001
++++ configure.in	Fri Apr 13 13:09:01 2001
+@@ -727,6 +727,10 @@
  		*sysv5*)
  			if [ test "$GCC" != yes ]; then
  				AC_DEFINE(HAVE_MEMSET)
