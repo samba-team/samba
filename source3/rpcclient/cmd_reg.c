@@ -513,6 +513,71 @@ void cmd_reg_create_val(struct client_info *info)
 }
 
 /****************************************************************************
+nt registry delete value
+****************************************************************************/
+void cmd_reg_delete_val(struct client_info *info)
+{
+	BOOL res = True;
+	BOOL res3 = True;
+	BOOL res4 = True;
+
+	POLICY_HND parent_pol;
+	fstring parent_name;
+	fstring val_name;
+
+	DEBUG(5, ("cmd_reg_delete_val: smb_cli->fd:%d\n", smb_cli->fd));
+
+	if (!next_token(NULL, parent_name, NULL, sizeof(parent_name)))
+	{
+		fprintf(out_hnd, "regcreate <parent key name> <val_name>\n");
+		return;
+	}
+
+	if (!next_token(NULL, val_name   , NULL, sizeof(val_name   )))
+	{
+		fprintf(out_hnd, "regcreate <parent key name> <val_name>\n");
+		return;
+	}
+
+	/* open WINREG session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+
+	/* open registry receive a policy handle */
+	res  = res ? do_reg_open_hklm(smb_cli,
+				0x84E0, 0x02000000,
+				&info->dom.reg_pol_connect) : False;
+
+	/* open an entry */
+	res3 = res ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+				 parent_name, 0x02000000, &parent_pol) : False;
+
+	/* create an entry */
+	res4 = res3 ? do_reg_delete_val(smb_cli, &parent_pol, val_name) : False;
+
+	/* flush the modified key */
+	res4 = res4 ? do_reg_flush_key(smb_cli, &parent_pol) : False;
+
+	/* close the key handle */
+	res3 = res3 ? do_reg_close(smb_cli, &parent_pol) : False;
+
+	/* close the registry handles */
+	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res && res3 && res4)
+	{
+		DEBUG(5,("cmd_reg_delete_val: query succeeded\n"));
+		fprintf(out_hnd,"OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_reg_delete_val: query failed\n"));
+	}
+}
+
+/****************************************************************************
 nt registry delete key
 ****************************************************************************/
 void cmd_reg_delete_key(struct client_info *info)

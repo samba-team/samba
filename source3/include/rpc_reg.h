@@ -34,6 +34,7 @@
 #define REG_ENUM_KEY        0x09
 #define REG_CREATE_KEY      0x06
 #define REG_DELETE_KEY      0x07
+#define REG_DELETE_VALUE    0x08
 #define REG_CREATE_VALUE    0x16
 #define REG_GET_KEY_SEC     0x0c
 #define REG_ENUM_VALUE      0x0a
@@ -245,11 +246,29 @@ typedef struct q_reg_delete_key_info
 typedef struct r_reg_delete_key_info
 {
 	POLICY_HND key_pol;       /* policy handle */
-	uint32 unknown; /* 0x0000 0000 */
 
 	uint32 status;         /* return status */
 
 } REG_R_DELETE_KEY;
+
+/* REG_Q_DELETE_VALUE */
+typedef struct q_reg_delete_val_info
+{
+	POLICY_HND pnt_pol;       /* parent key policy handle */
+
+	UNIHDR hdr_name;
+	UNISTR2 uni_name;
+
+} REG_Q_DELETE_VALUE;
+
+/* REG_R_DELETE_VALUE */
+typedef struct r_reg_delete_val_info
+{
+	POLICY_HND key_pol;       /* policy handle */
+
+	uint32 status;         /* return status */
+
+} REG_R_DELETE_VALUE;
 
 /* REG_Q_QUERY_KEY */
 typedef struct q_reg_query_info
