@@ -294,13 +294,15 @@ static NTSTATUS access_check_samr_object( SEC_DESC *psd, NT_USER_TOKEN *token,
 	}
 	
 	
-	DEBUG(2,("%s: ACCESS DENIED  (requested: %#010x)\n", debug, des_access));
-	
 done:
 	/* add in any bits saved during the privilege check (only 
 	   matters is syayus is ok) */
 	
 	*acc_granted |= saved_mask;
+
+	DEBUG(4,("%s: access %s (requested: 0x%08x, granted: 0x%08x)\n", 
+		debug, NT_STATUS_IS_OK(status) ? "GRANTED" : "DENIED", 
+		des_access, *acc_granted));
 	
 	return status;
 }
@@ -2343,12 +2345,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* find the account: tell the caller if it exists.
-	  lkclXXXX i have *no* idea if this is a problem or not
- 	  or even if you are supposed to construct a different
-	  reply if the account already exists...
-	 */
-
 	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
 	strlower_m(account);
 		
@@ -2377,16 +2373,9 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	 *********************************************************************/
 	
 	pw = Get_Pwnam(account);
-	
-	/* 
-	 * we can't check both the ending $ and the acb_info.
-	 * 
-	 * UserManager creates trust accounts (ending in $,
-	 * normal that hidden accounts) with the acb_info equals to ACB_NORMAL.
-	 * JFM, 11/29/2001
-	 */
 
-	if (account[strlen(account)-1] == '$') {
+	/* determine which user right we need to check based on the acb_info */
+	if ( acb_info == ACB_WSTRUST ) {
 		se_priv_copy( &se_rights, &se_machine_account );
 		pstrcpy(add_script, lp_addmachine_script());
 	}
@@ -3122,17 +3111,10 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
-	
-	/* the access mask depends on what the caller wants to do */
 
-	switch (switch_value) {
-		case 24:
-			acc_required = SA_RIGHT_USER_SET_PASSWORD | SA_RIGHT_USER_SET_ATTRIBUTES | SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;
-			break;
-		default:
-			acc_required = SA_RIGHT_USER_SET_LOC_COM | SA_RIGHT_USER_SET_ATTRIBUTES; /* This is probably wrong */	
-			break;
-	}
+	/* observed when joining an XP client to a Samba domain */
+	
+	acc_required = SA_RIGHT_USER_SET_PASSWORD | SA_RIGHT_USER_SET_ATTRIBUTES | SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;	
 
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, acc_required, "_samr_set_userinfo"))) {
 		return r_u->status;
@@ -3268,8 +3250,11 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* observed when joining XP client to Samba domain */
+		
+	acc_required = SA_RIGHT_USER_SET_PASSWORD | SA_RIGHT_USER_SET_ATTRIBUTES | SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;
 	
-	acc_required = SA_RIGHT_USER_SET_LOC_COM | SA_RIGHT_USER_SET_ATTRIBUTES; /* This is probably wrong */	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, acc_required, "_samr_set_userinfo2"))) {
 		return r_u->status;
 	}
@@ -3316,14 +3301,6 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	
 	switch (switch_value) {
-		case 21:
-			if (!set_user_info_21(ctr->info.id21, pwd))
-				return NT_STATUS_ACCESS_DENIED;
-			break;
-		case 20:
-			if (!set_user_info_20(ctr->info.id20, pwd))
-				r_u->status = NT_STATUS_ACCESS_DENIED;
-			break;
 		case 16:
 			if (!set_user_info_10(ctr->info.id10, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
@@ -3332,6 +3309,14 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 			/* Used by AS/U JRA. */
 			if (!set_user_info_12(ctr->info.id12, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
+			break;
+		case 20:
+			if (!set_user_info_20(ctr->info.id20, pwd))
+				r_u->status = NT_STATUS_ACCESS_DENIED;
+			break;
+		case 21:
+			if (!set_user_info_21(ctr->info.id21, pwd))
+				return NT_STATUS_ACCESS_DENIED;
 			break;
 		default:
 			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
