@@ -353,6 +353,14 @@
 
 #define SMB_OFF_T_BITS (sizeof(SMB_OFF_T)*8)
 
+
+#ifdef LARGE_SMB_OFF_T
+#define SOFF_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#else 
+#define SOFF_T(p, ofs, v) SIVAL(p,ofs,v)
+#endif
+
+
 /*
  * Set the define that tells us if we can do 64 bit
  * NT SMB calls.
