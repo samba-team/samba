@@ -1314,7 +1314,7 @@ typedef struct spool_printer_info_level_2
 	uint32 default_priority;
 	uint32 starttime;
 	uint32 untiltime;
-	WERROR status;
+	uint32 status;
 	uint32 cjobs;
 	uint32 averageppm;
 	UNISTR2 servername;
