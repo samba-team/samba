@@ -2225,6 +2225,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	DEBUG(6,("size: %.0f ", (double)size));
 	DEBUG(6,("mode: %x\n"  , mode));
 
+	if (S_ISDIR(sbuf.st_mode))
+		mode |= aDIR;
+	else
+		mode &= ~aDIR;
+
 	if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
 		(info_level == SMB_SET_FILE_ALLOCATION_INFO) ||
 		(info_level == SMB_FILE_ALLOCATION_INFORMATION) ||

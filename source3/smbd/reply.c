@@ -517,6 +517,9 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   if (VALID_STAT_OF_DIR(sbuf))
     mode |= aDIR;
+  else
+    mode &= ~aDIR;
+
   if (check_name(fname,conn))
     ok =  (file_chmod(conn,fname,mode,NULL) == 0);
   if (ok)
