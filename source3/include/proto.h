@@ -471,8 +471,10 @@ void make_rpc_hdr_ba(RPC_HDR_BA *rpc,
 				uint8 num_results, uint16 result, uint16 reason,
 				RPC_IFACE *transfer);
 void smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth);
-void make_rpc_hdr_rr(RPC_HDR_RR *hdr, uint32 data_len, uint8 opnum);
-void smb_io_rpc_hdr_rr(char *desc,  RPC_HDR_RR *rpc, prs_struct *ps, int depth);
+void make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 data_len, uint16 opnum);
+void smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
+void make_rpc_hdr_resp(RPC_HDR_RESP *hdr, uint32 data_len);
+void smb_io_rpc_hdr_resp(char *desc,  RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
 void make_rpc_auth_ntlmssp_req(RPC_AUTH_NTLMSSP_REQ *req,
 				fstring ntlmssp_str, uint32 ntlmssp_ver,
 				uint32 unknown_0, fstring myname, fstring domain);
@@ -1116,7 +1118,7 @@ void mem_buf_free(struct mem_buf **buf);
 void mem_free_chain(struct mem_buf **buf);
 void mem_free_data(struct mem_buf *buf);
 BOOL mem_realloc_data(struct mem_buf *buf, int new_size);
-BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size);
+BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size, BOOL force_grow);
 BOOL mem_find(struct mem_buf **buf, uint32 offset);
 uint32 mem_buf_len(struct mem_buf *buf);
 char *mem_data(struct mem_buf **buf, uint32 offset);

@@ -293,11 +293,11 @@ BOOL mem_realloc_data(struct mem_buf *buf, int new_size)
 /*******************************************************************
  reallocate a memory buffer, retrospectively :-)
  ********************************************************************/
-BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size)
+BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size, BOOL force_grow)
 {
 	if (new_size + (*buf)->margin >= (*buf)->data_size)
 	{
-		if (io)
+		if (io && !force_grow)
 		{
 			DEBUG(3,("mem_grow_data: cannot resize when reading from a data stream\n"));
 		}

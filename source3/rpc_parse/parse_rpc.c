@@ -384,33 +384,58 @@ void smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-creates an RPC_HDR_RR structure.
+creates an RPC_HDR_REQ structure.
 ********************************************************************/
-void make_rpc_hdr_rr(RPC_HDR_RR *hdr, uint32 data_len, uint8 opnum)
+void make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 data_len, uint16 opnum)
+{
+	if (hdr == NULL) return;
+
+	hdr->alloc_hint   = data_len - 0x18; /* allocation hint */
+	hdr->context_id   = 0;               /* presentation context identifier */
+	hdr->opnum        = opnum;           /* opnum */
+}
+
+/*******************************************************************
+reads or writes an RPC_HDR_REQ structure.
+********************************************************************/
+void smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth)
+{
+	if (rpc == NULL) return;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_req");
+	depth++;
+
+	prs_uint32("alloc_hint", ps, depth, &(rpc->alloc_hint));
+	prs_uint16("context_id", ps, depth, &(rpc->context_id));
+	prs_uint16("opnum     ", ps, depth, &(rpc->opnum));
+}
+
+/*******************************************************************
+creates an RPC_HDR_RESP structure.
+********************************************************************/
+void make_rpc_hdr_resp(RPC_HDR_RESP *hdr, uint32 data_len)
 {
 	if (hdr == NULL) return;
 
 	hdr->alloc_hint   = data_len - 0x18; /* allocation hint */
 	hdr->context_id   = 0;               /* presentation context identifier */
 	hdr->cancel_count = 0;               /* cancel count */
-	hdr->opnum        = opnum;           /* opnum */
 	hdr->reserved     = 0;               /* 0 - reserved */
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR_RR structure.
+reads or writes an RPC_HDR_RESP structure.
 ********************************************************************/
-void smb_io_rpc_hdr_rr(char *desc,  RPC_HDR_RR *rpc, prs_struct *ps, int depth)
+void smb_io_rpc_hdr_resp(char *desc,  RPC_HDR_RESP *rpc, prs_struct *ps, int depth)
 {
 	if (rpc == NULL) return;
 
-	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_rr");
+	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_resp");
 	depth++;
 
 	prs_uint32("alloc_hint", ps, depth, &(rpc->alloc_hint));
-	prs_uint8 ("context_id", ps, depth, &(rpc->context_id));
+	prs_uint16("context_id", ps, depth, &(rpc->context_id));
 	prs_uint8 ("cancel_ct ", ps, depth, &(rpc->cancel_count));
-	prs_uint8 ("opnum     ", ps, depth, &(rpc->opnum));
 	prs_uint8 ("reserved  ", ps, depth, &(rpc->reserved));
 }
 

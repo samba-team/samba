@@ -86,7 +86,7 @@ void prs_align(prs_struct *ps)
  ********************************************************************/
 BOOL prs_grow(prs_struct *ps)
 {
-	return mem_grow_data(&(ps->data), ps->io, ps->offset);
+	return mem_grow_data(&(ps->data), ps->io, ps->offset, False);
 }
 
 

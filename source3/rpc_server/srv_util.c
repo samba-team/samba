@@ -173,13 +173,16 @@ void get_domain_user_groups(char *domain_groups, char *user)
 BOOL create_rpc_reply(pipes_struct *p,
 				uint32 data_start, uint32 data_end)
 {
+	DEBUG(5,("create_rpc_reply: data_start: %d data_end: %d max_tsize: %d\n",
+	          data_start, data_end, p->hdr_ba.bba.max_tsize));
+
 	mem_buf_init(&(p->rhdr.data), 0);
 	mem_alloc_data(p->rhdr.data, 0x18);
 
 	p->rhdr.align = 4;
 	p->rhdr.io = False;
 
-	p->hdr_rr.alloc_hint = data_end - data_start; /* calculate remaining data to be sent */
+	p->hdr_resp.alloc_hint = data_end - data_start; /* calculate remaining data to be sent */
 	p->hdr.pkt_type = RPC_RESPONSE; /* mark header as an rpc response */
 
 	/* set up rpc header (fragmentation issues) */
@@ -192,10 +195,10 @@ BOOL create_rpc_reply(pipes_struct *p,
 		p->hdr.flags = 0;
 	}
 
-	if (p->hdr_rr.alloc_hint + 0x18 <= p->hdr_ba.bba.max_tsize)
+	if (p->hdr_resp.alloc_hint + 0x18 <= p->hdr_ba.bba.max_tsize)
 	{
 		p->hdr.flags |= RPC_FLG_LAST;
-		p->hdr.frag_len = p->hdr_rr.alloc_hint + 0x18;
+		p->hdr.frag_len = p->hdr_resp.alloc_hint + 0x18;
 	}
 	else
 	{
@@ -208,7 +211,7 @@ BOOL create_rpc_reply(pipes_struct *p,
 	/* store the header in the data stream */
 	p->rhdr.offset = 0;
 	smb_io_rpc_hdr   ("hdr", &(p->hdr   ), &(p->rhdr), 0);
-	smb_io_rpc_hdr_rr("rr" , &(p->hdr_rr), &(p->rhdr), 0);
+	smb_io_rpc_hdr_resp("resp", &(p->hdr_resp), &(p->rhdr), 0);
 
 	return p->rhdr.data != NULL && p->rhdr.offset == 0x18;
 }
@@ -222,11 +225,11 @@ static BOOL api_rpc_command(pipes_struct *p,
 				prs_struct *data)
 {
 	int fn_num;
-	DEBUG(4,("api_rpc_command: %s op 0x%x - ", rpc_name, p->hdr_rr.opnum));
+	DEBUG(4,("api_rpc_command: %s op 0x%x - ", rpc_name, p->hdr_req.opnum));
 
 	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++)
 	{
-		if (api_rpc_cmds[fn_num].opnum == p->hdr_rr.opnum && api_rpc_cmds[fn_num].fn != NULL)
+		if (api_rpc_cmds[fn_num].opnum == p->hdr_req.opnum && api_rpc_cmds[fn_num].fn != NULL)
 		{
 			DEBUG(3,("api_rpc_command: %s\n", api_rpc_cmds[fn_num].name));
 			break;
@@ -280,7 +283,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	}
 
 	/* read the rpc header */
-	smb_io_rpc_hdr_rr("", &(p->hdr_rr), data, 0);
+	smb_io_rpc_hdr_req("req", &(p->hdr_req), data, 0);
 
 	/* interpret the command */
 	if (!api_rpc_command(p, rpc_name, api_rpc_cmds, data))
