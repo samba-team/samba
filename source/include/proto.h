@@ -106,7 +106,7 @@ int string_hash(int hash_size, const char *key);
 hash_element *hash_lookup(hash_table *table, char *key);
 hash_element *hash_insert(hash_table *table, char *value, char *key);
 void hash_remove(hash_table *table, hash_element *hash_elem);
-void hash_clear(hash_table *table);
+BOOL hash_clear(hash_table *table);
 
 /*The following definitions come from  lib/interface.c  */
 
