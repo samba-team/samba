@@ -6588,13 +6588,12 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	}
 
  	if (!get_printer_snum(p, handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return WERR_BADFID;
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("security descriptor change denied by existing "
 			  "security descriptor\n"));
-		result = ERROR_ACCESS_DENIED;
-		goto done;
+		return WERR_ACCESS_DENIED;
 	}
 
 	/* can't delete if builtin */
@@ -6654,13 +6653,12 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	}
 
 	if (!get_printer_snum(p, handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return WERR_BADFID;
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("security descriptor change denied by existing "
 			  "security descriptor\n"));
-		result = ERROR_ACCESS_DENIED;
-		goto done;
+		return WERR_ACCESS_DENIED;
 	}
 
 	/* can't set if builtin */
