@@ -593,6 +593,31 @@ BOOL smb_io_buffer3(char *desc, BUFFER3 *buf3, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+reads or writes a BUFFER5 structure.
+the buf_len member tells you how large the buffer is.
+********************************************************************/
+BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "smb_io_buffer4");
+	depth++;
+
+	if (buf5 == NULL) return False;
+
+	prs_align(ps);
+	prs_uint32("buf_len", ps, depth, &(buf5->buf_len));
+
+	/* reading: alloc the buffer first */
+	if ( ps->io )
+	{
+		buf5->buffer=(uint16 *)malloc( sizeof(uint16)*buf5->buf_len );
+	}
+	
+	prs_uint16s(True, "buffer", ps, depth, buf5->buffer, buf5->buf_len);
+
+	return True;
+}
+
+/*******************************************************************
  Inits a BUFFER2 structure.
 ********************************************************************/
 

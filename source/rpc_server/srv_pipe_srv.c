@@ -465,6 +465,7 @@ static struct api_cmd api_fd_commands[] =
 #if DISABLED_IN_2_0
     { "winreg",   "winreg",  api_reg_rpc },
 #endif
+    { "spoolss",  "spoolss", api_spoolss_rpc },
     { NULL,       NULL,      NULL }
 };
 
@@ -585,7 +586,7 @@ static BOOL setup_bind_nak(pipes_struct *p, prs_struct *pd)
  Respond to a pipe bind request.
 *******************************************************************/
 
-static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
+static BOOL api_pipe_bind_and_alt_req(pipes_struct *p, prs_struct *pd, enum RPC_PKT_TYPE pkt_type)
 {
 	RPC_HDR_BA hdr_ba;
 	RPC_HDR_RB hdr_rb;
@@ -684,9 +685,21 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 		p->ntlmssp_auth_requested = True;
 	}
 
-	/* name has to be \PIPE\xxxxx */
-	fstrcpy(ack_pipe_name, "\\PIPE\\");
-	fstrcat(ack_pipe_name, p->pipe_srv_name);
+	switch (pkt_type) {
+		case RPC_BINDACK:
+			/* name has to be \PIPE\xxxxx */
+			fstrcpy(ack_pipe_name, "\\PIPE\\");
+			fstrcat(ack_pipe_name, p->pipe_srv_name);
+		case RPC_ALTCONTRESP:
+			/* secondary address CAN be NULL
+			 * as the specs says it's ignored.
+			 * It MUST NULL to have the spoolss working.
+			 */
+			fstrcpy(ack_pipe_name, "");
+			break;
+		default:
+			return False;
+	}
 
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 
@@ -829,6 +842,29 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
 	return False;
+}
+
+/*******************************************************************
+ Respond to a pipe bind request.
+*******************************************************************/
+
+static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
+{
+	return api_pipe_bind_and_alt_req(p, pd, RPC_BINDACK);
+}
+
+/*******************************************************************
+ Respond to a pipe alter request.
+
+ The RPC Alter-Context call is used only by the spoolss pipe
+ simply because there is a bug (?) in the MS unmarshalling code
+ or in the marshalling code. If it's in the later, then Samba
+ have the same bug. 
+*******************************************************************/
+
+static BOOL api_pipe_altercontext_req(pipes_struct *p, prs_struct *pd)
+{
+	return api_pipe_bind_and_alt_req(p, pd, RPC_ALTCONTRESP);
 }
 
 /****************************************************************************
@@ -1011,6 +1047,9 @@ BOOL rpc_command(pipes_struct *p, char *input_data, int data_len)
 	case RPC_BIND:
 		reply = api_pipe_bind_req(p, &rpc_in);
 		break;
+	case RPC_ALTCONT:
+		reply = api_pipe_altercontext_req(p, &rpc_in);
+ 		break;
 	case RPC_REQUEST:
 		if (p->ntlmssp_auth_requested && !p->ntlmssp_auth_validated) {
 			/* authentication _was_ requested

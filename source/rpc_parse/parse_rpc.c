@@ -105,6 +105,15 @@ interface/version dce/rpc pipe identification
 	}, 0x01                             \
 }
 
+#define SYNT_SPOOLSS_V1                     \
+{                                           \
+	{                                   \
+		0x12345678, 0x1234, 0xabcb, \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0x89, 0xab }    \
+	}, 0x01                             \
+}
+
 #define SYNT_NONE_V0                        \
 {                                           \
 	{                                   \
@@ -113,17 +122,6 @@ interface/version dce/rpc pipe identification
 		0x00, 0x00, 0x00, 0x00 }    \
 	}, 0x00                             \
 }
-
-/* pipe string names */
-#define PIPE_SRVSVC   "\\PIPE\\srvsvc"
-#define PIPE_SAMR     "\\PIPE\\samr"
-#define PIPE_WINREG   "\\PIPE\\winreg"
-#define PIPE_WKSSVC   "\\PIPE\\wkssvc"
-#define PIPE_NETLOGON "\\PIPE\\NETLOGON"
-#define PIPE_NTLSA    "\\PIPE\\ntlsa"
-#define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
-#define PIPE_LSASS    "\\PIPE\\lsass"
-#define PIPE_LSARPC   "\\PIPE\\lsarpc"
 
 struct pipe_id_info pipe_names [] =
 {
@@ -134,6 +132,7 @@ struct pipe_id_info pipe_names [] =
 	{ PIPE_SRVSVC  , SYNT_SRVSVC_V3  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WKSSVC  , SYNT_WKSSVC_V1  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WINREG  , SYNT_WINREG_V1  , PIPE_WINREG   , TRANS_SYNT_V2 },
+	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1 , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0    , NULL          , SYNT_NONE_V0  }
 };
 
