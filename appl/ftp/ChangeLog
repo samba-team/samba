@@ -1,3 +1,7 @@
+1999-10-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.c (list_file): pass filename to ls
+
 1999-10-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpcmd.y: FEAT
