@@ -150,8 +150,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
-		DEBUG(1,("Cannot connect to server.  Error was %s\n", 
-			 nt_errstr(nt_status)));
+		d_printf("Could not connect to server %s\n", server_name);
 
 		/* Display a nicer message depending on the result */
 
