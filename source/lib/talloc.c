@@ -27,17 +27,32 @@
 #include "includes.h"
 
 #define MAX_TALLOC_SIZE 0x10000000
-#define TALLOC_MAGIC 0x14082004
-#define TALLOC_MAGIC_FREE 0x3421abcd
+#define TALLOC_MAGIC 0xe814ec4f
+#define TALLOC_MAGIC_FREE 0x7faebef3
 
 struct talloc_chunk {
 	struct talloc_chunk *next, *prev;
 	struct talloc_chunk *parent, *child;
 	size_t size;
 	uint_t magic;
+	uint_t ref_count;
+	int (*destructor)(void *);
 	char *name;
 };
 
+/* panic if we get a bad magic value */
+static struct talloc_chunk *talloc_chunk_from_ptr(void *ptr)
+{
+	struct talloc_chunk *tc = ((struct talloc_chunk *)ptr)-1;
+	if (tc->magic != TALLOC_MAGIC) {
+		if (tc->magic == TALLOC_MAGIC_FREE) {
+			smb_panic("Bad talloc magic value - double free\n");
+		} else {
+			smb_panic("Bad talloc magic value\n");
+		}
+	}
+	return tc;
+}
 
 /* 
    Allocate a bit of memory as a child of an existing pointer
@@ -57,18 +72,13 @@ void *talloc(void *context, size_t size)
 
 	tc->size = size;
 	tc->magic = TALLOC_MAGIC;
+	tc->ref_count = 1;
+	tc->destructor = NULL;
 	tc->child = NULL;
 	tc->name = NULL;
 
 	if (context) {
-		struct talloc_chunk *parent = ((struct talloc_chunk *)context)-1;
-
-		if (parent->magic != TALLOC_MAGIC) {
-			DEBUG(0,("Bad magic in context - 0x%08x\n", parent->magic));
-			free(tc);
-			smb_panic("Bad magic in talloc context");
-			return NULL;
-		}
+		struct talloc_chunk *parent = talloc_chunk_from_ptr(context);
 
 		tc->parent = parent;
 
@@ -86,17 +96,35 @@ void *talloc(void *context, size_t size)
 
 
 /*
+  setup a destructor to be called on free of a pointer
+  the destructor should return 0 on success, or -1 on failure.
+  if the destructor fails then the free is failed, and the memory can
+  be continued to be used
+*/
+void talloc_set_destructor(void *ptr, int (*destructor)(void *))
+{
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	tc->destructor = destructor;
+}
+
+/*
+  increase the reference count on a piece of memory. To decrease the 
+  reference count call talloc_free(), which will free the memory if 
+  the reference count reaches zero
+*/
+void talloc_increase_ref_count(void *ptr)
+{
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	tc->ref_count++;
+}
+
+
+/*
   add a name to an existing pointer - va_list version
 */
 static void talloc_set_name_v(void *ptr, const char *fmt, va_list ap)
 {
-	struct talloc_chunk *tc;
-
-	tc = ((struct talloc_chunk *)ptr)-1;
-	if (tc->magic != TALLOC_MAGIC) {
-		return;
-	}
-
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	vasprintf(&tc->name, fmt, ap);
 }
 
@@ -141,17 +169,14 @@ void *talloc_init(const char *fmt, ...) _PRINTF_ATTRIBUTE(1,2)
 {
 	va_list ap;
 	void *ptr;
-	struct talloc_chunk *tc;
 
 	ptr = talloc(NULL, 0);
 	if (ptr == NULL) {
 		return NULL;
 	}
 
-	tc = ((struct talloc_chunk *)ptr)-1;
-
 	va_start(ap, fmt);
-	vasprintf(&tc->name, fmt, ap);
+	talloc_set_name_v(ptr, fmt, ap);
 	va_end(ap);
 
 	return ptr;
@@ -162,23 +187,36 @@ void *talloc_init(const char *fmt, ...) _PRINTF_ATTRIBUTE(1,2)
 /* 
    free a talloc pointer. This also frees all child pointers of this 
    pointer recursively
+
+   return 0 if the memory is actually freed, otherwise -1. The memory
+   will not be freed if the ref_count is > 1 or the destructor (if
+   any) returns non-zero
 */
-void talloc_free(void *ptr)
+int talloc_free(void *ptr)
 {
 	struct talloc_chunk *tc;
 
-	if (ptr == NULL) return;
+	if (ptr == NULL) {
+		return -1;
+	}
 
-	tc = ((struct talloc_chunk *)ptr)-1;
+	tc = talloc_chunk_from_ptr(ptr);
 
-	if (tc->magic != TALLOC_MAGIC) {
-		DEBUG(0,("Bad talloc magic 0x%08x in talloc_free\n", tc->magic));
-		smb_panic("Bad talloc magic in talloc_realloc");
-		return;
+	tc->ref_count--;
+	if (tc->ref_count != 0) {
+		return -1;
+	}
+
+	if (tc->destructor && tc->destructor(ptr) == -1) {
+		tc->ref_count++;
+		return -1;
 	}
 
 	while (tc->child) {
-		talloc_free(tc->child + 1);
+		if (talloc_free(tc->child + 1) != 0) {
+			tc->child->parent = NULL;
+			break;
+		}
 	}
 
 	if (tc->parent) {
@@ -195,6 +233,7 @@ void talloc_free(void *ptr)
 	if (tc->name) free(tc->name);
 
 	free(tc);
+	return 0;
 }
 
 
@@ -218,18 +257,7 @@ void *talloc_realloc(void *ptr, size_t size)
 		return talloc(NULL, size);
 	}
 
-	tc = ((struct talloc_chunk *)ptr)-1;
-
-	if (tc->magic != TALLOC_MAGIC) {
-		if (tc->magic == TALLOC_MAGIC_FREE) {
-			
-			DEBUG(0,("Bad talloc magic - magic 0x%08x indicates double-free in talloc_realloc\n", tc->magic));
-			smb_panic("Bad talloc magic - double-free - in talloc_realloc");
-		} else {
-			DEBUG(0,("Bad talloc magic 0x%08x in talloc_realloc\n", tc->magic));
-			smb_panic("Bad talloc magic in talloc_realloc");
-		}
-	}
+	tc = talloc_chunk_from_ptr(ptr);
 
 	/* by resetting magic we catch users of the old memory */
 	tc->magic = TALLOC_MAGIC_FREE;
@@ -270,18 +298,11 @@ void *talloc_steal(void *new_ctx, void *ptr)
 		return NULL;
 	}
 
-	tc = ((struct talloc_chunk *)ptr)-1;
-	new_tc = ((struct talloc_chunk *)new_ctx)-1;
+	tc = talloc_chunk_from_ptr(ptr);
+	new_tc = talloc_chunk_from_ptr(new_ctx);
 
-	if (tc->magic != TALLOC_MAGIC) {
-		DEBUG(0,("Bad talloc magic 0x%08x in talloc_steal\n", tc->magic));
-		smb_panic("Bad talloc magic in talloc_steal");
-		return NULL;
-	}
-	if (new_tc->magic != TALLOC_MAGIC) {
-		DEBUG(0,("Bad new talloc magic 0x%08x in talloc_steal\n", new_tc->magic));
-		smb_panic("Bad new talloc magic in talloc_steal");
-		return NULL;
+	if (tc == new_tc) {
+		return ptr;
 	}
 
 	if (tc->parent) {
@@ -304,12 +325,10 @@ void *talloc_steal(void *new_ctx, void *ptr)
 /*
   return the total size of a talloc pool (subtree)
 */
-off_t talloc_total_size(void *p)
+off_t talloc_total_size(void *ptr)
 {
 	off_t total = 0;
-	struct talloc_chunk *c, *tc;
-
-	tc = ((struct talloc_chunk *)p)-1;
+	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
 
 	total = tc->size;
 	for (c=tc->child;c;c=c->next) {
