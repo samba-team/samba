@@ -90,6 +90,10 @@
 #endif
 #endif /* __FreeBSD__ */
 
+#ifdef __DragonFly__
+#define AFS_SYSCALL 339
+#endif
+
 #ifdef __OpenBSD__
 #define AFS_SYSCALL 208
 #endif
