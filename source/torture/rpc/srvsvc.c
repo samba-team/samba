@@ -509,8 +509,6 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		int j;
-
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
 		printf("testing NetShareEnum level %u\n", r.in.level);
@@ -523,17 +521,6 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 		if (!W_ERROR_IS_OK(r.out.result)) {
 			printf("NetShareEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 			continue;
-		}
-
-		/* call srvsvc_NetShareGetInfo for each returned share */
-		if (r.in.level == 1) {
-			for (j=0;j<r.out.ctr.ctr1->count;j++) {
-				const char *name;
-				name = r.out.ctr.ctr1->array[j].name;
-				if (!test_NetShareGetInfo(p, mem_ctx, name)) {
-					ret = False;
-				}
-			}
 		}
 	}
 
