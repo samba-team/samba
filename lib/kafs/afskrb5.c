@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -41,13 +41,50 @@ struct krb5_kafs_data {
     krb5_const_realm realm;
 };
 
+enum { KAFS_RXKAD_K5_KVNO = 256 };
+
+static int
+v5_to_kt(krb5_creds *cred, uid_t uid, struct kafs_token *kt)
+{
+    kt->ticket = NULL;
+
+    /* check if des key */
+    if (cred->session.keyvalue.length != 8)
+	return EINVAL;
+
+    kt->ticket = malloc(cred->ticket.length);
+    if (kt->ticket == NULL)
+	return ENOMEM;
+    kt->ticket_len = cred->ticket.length;
+    memcpy(kt->ticket, cred->ticket.data, kt->ticket_len);
+
+    /*
+     * Build a struct ClearToken
+     */
+
+    kt->ct.AuthHandle = KAFS_RXKAD_K5_KVNO;
+    memcpy(kt->ct.HandShakeKey, cred->session.keyvalue.data, 8);
+    kt->ct.ViceId = uid;
+    kt->ct.BeginTimestamp = cred->times.starttime;
+    kt->ct.EndTimestamp = cred->times.endtime;
+
+    _kafs_fixup_viceid(&kt->ct, uid);
+
+    return 0;
+}
+
+/*
+ *
+ */
+
 static int
 get_cred(kafs_data *data, const char *name, const char *inst, 
-	 const char *realm, CREDENTIALS *c)
+	 const char *realm, uid_t uid, struct kafs_token *kt)
 {
     krb5_error_code ret;
     krb5_creds in_creds, *out_creds;
     struct krb5_kafs_data *d = data->data;
+    krb5_boolean use_524;
 
     memset(&in_creds, 0, sizeof(in_creds));
     ret = krb5_425_conv_principal(d->context, name, inst, realm, 
@@ -65,8 +102,24 @@ get_cred(kafs_data *data, const char *name, const char *inst,
     krb5_free_principal(d->context, in_creds.client);
     if(ret)
 	return ret;
-    ret = krb524_convert_creds_kdc_ccache(d->context, d->id, out_creds, c);
-    krb5_free_creds(d->context, out_creds);
+
+    krb5_appdefault_boolean (d->context, "libkafs", 
+			     krb5_principal_get_realm(d->context,
+						      out_creds->server),
+			     "afs-use-524", TRUE, &use_524);
+
+    if (use_524 == FALSE) {
+	v5_to_kt(out_creds, uid, kt);
+    } else {
+	struct credentials c;
+
+	ret = krb524_convert_creds_kdc_ccache(d->context, d->id, 
+					      out_creds, &c);
+	if (ret)
+	    return ret;
+	krb5_free_creds(d->context, out_creds);
+	ret = _kafs_v4_to_kt(&c, uid, kt);
+    }
     return ret;
 }
 
@@ -75,7 +128,7 @@ afslog_uid_int(kafs_data *data, const char *cell, const char *rh, uid_t uid,
 	       const char *homedir)
 {
     krb5_error_code ret;
-    CREDENTIALS c;
+    struct kafs_token kt;
     krb5_principal princ;
     krb5_realm *trealm; /* ticket realm */
     struct krb5_kafs_data *d = data->data;
@@ -94,12 +147,15 @@ afslog_uid_int(kafs_data *data, const char *cell, const char *rh, uid_t uid,
 	krb5_free_principal (d->context, princ);
     }
 
-    ret = _kafs_get_cred(data, cell, d->realm, *trealm, &c);
+    kt.ticket = NULL;
+    ret = _kafs_get_cred(data, cell, d->realm, *trealm, uid, &kt);
     if(trealm)
 	krb5_free_principal (d->context, princ);
     
-    if(ret == 0)
-	ret = kafs_settoken(cell, uid, &c);
+    if(ret == 0) {
+	ret = kafs_settoken_rxkad(cell, &kt.ct, kt.ticket, kt.ticket_len);
+	free(kt.ticket);
+    }
     return ret;
 }
 
@@ -176,4 +232,23 @@ krb5_realm_of_cell(const char *cell, char **realm)
 
     kd.get_realm = get_realm;
     return _kafs_realm_of_cell(&kd, cell, realm);
+}
+
+/*
+ *
+ */
+
+int
+kafs_settoken5(const char *cell, uid_t uid, krb5_creds *c)
+{
+    struct kafs_token kt;
+    int ret;
+
+    v5_to_kt(c, uid, &kt);
+
+    ret = kafs_settoken_rxkad(cell, &kt.ct, kt.ticket, kt.ticket_len);
+
+    free(kt.ticket);
+
+    return ret;
 }
