@@ -431,7 +431,7 @@ AC_CHECK_FUNCS(getmsg getrlimit getspnam gettimeofday getuid)
 AC_CHECK_FUNCS(grantpt mktime ptsname rand random setproctitle)
 AC_CHECK_FUNCS(revoke select setitimer setpcred setpgid)
 AC_CHECK_FUNCS(setregid setresgid setresuid setreuid setutent)
-AC_CHECK_FUNCS(setsid setsockopt sigaction strstr)
+AC_CHECK_FUNCS(setsid sigaction strstr)
 AC_CHECK_FUNCS(sysconf sysctl timegm ttyname ttyslot umask uname)
 AC_CHECK_FUNCS(unlockpt vasnprintf vasprintf vhangup)
 AC_CHECK_FUNCS(yp_get_default_domain)
@@ -446,7 +446,7 @@ KRB_CAPABILITIES
 
 AC_CHECK_GETPWNAM_R_POSIX
 
-AC_FIND_FUNC_NO_LIBS(getsockopt, ,
+AC_FIND_FUNC_NO_LIBS(getsockopt,,
 [#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -454,7 +454,7 @@ AC_FIND_FUNC_NO_LIBS(getsockopt, ,
 #include <sys/socket.h>
 #endif],
 [0,0,0,0,0])
-AC_FIND_FUNC_NO_LIBS(setsockopt, ,
+AC_FIND_FUNC_NO_LIBS(setsockopt,,
 [#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -719,6 +719,7 @@ dnl Check for fields in struct tm
 dnl
 
 AC_HAVE_STRUCT_FIELD(struct tm, tm_gmtoff, [#include <time.h>])
+AC_HAVE_STRUCT_FIELD(struct tm, tm_zone, [#include <time.h>])
 
 dnl
 dnl or do we have a variable `timezone' ?
