@@ -45,7 +45,7 @@ void smb_uuid_unpack(const UUID_FLAT in, struct uuid *uu)
 	memcpy(uu->node, in.info+10, 6);
 }
 
-const struct uuid smb_uuid_unpack_static(const UUID_FLAT in)
+struct uuid smb_uuid_unpack_static(const UUID_FLAT in)
 {
 	static struct uuid uu;
 
