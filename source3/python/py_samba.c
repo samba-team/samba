@@ -31,58 +31,6 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 	return NULL;
 }
 
-static PyObject *samba_query_secdesc(PyObject *self, PyObject *args,
-				     PyObject *kw)
-{
-	static char *kwlist[] = { NULL };
-	PyObject *py_secdesc;
-	SEC_DESC *secdesc = NULL;
-
-	/* Parse parameters */
-
-	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "", kwlist))
-		return NULL;
-
-	/* FIXME: Fetch security descriptor with cli_query_secdesc*/
-
-	if (!py_from_SECDESC(&py_secdesc, secdesc)) {
-		PyErr_SetString(
-			PyExc_TypeError,
-			"Invalid security descriptor returned");
-		return NULL;
-	}
-
-	return py_secdesc;
-	
-}
-
-static PyObject *samba_set_secdesc(PyObject *self, PyObject *args,
-				   PyObject *kw)
-{
-	static char *kwlist[] = { "security_descriptor", NULL };
-	PyObject *py_secdesc;
-	SEC_DESC *secdesc;
-	TALLOC_CTX *mem_ctx = talloc_init();
-
-	/* Parse parameters */
-
-	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "O", kwlist, &py_secdesc))
-		return NULL;
-
-	if (!py_to_SECDESC(&secdesc, py_secdesc, mem_ctx)) {
-		PyErr_SetString(PyExc_TypeError, 
-				"Invalid security descriptor");
-		return NULL;
-	}
-
-	/* FIXME: call cli_set_secdesc() to set security descriptor */
-
-	Py_INCREF(Py_None);
-	return Py_None;	
-}
-
 static PyMethodDef samba_methods[] = {
 	{ NULL }
 };
