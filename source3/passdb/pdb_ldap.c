@@ -1159,8 +1159,10 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	 * that fits your needs; using cn then displayName rather than 'userFullName'
 	 */
 
-	if (!get_single_attribute(ldap_state->ldap_struct, entry, "cn", fullname)) {
-		if (!get_single_attribute(ldap_state->ldap_struct, entry, "displayName", fullname)) {
+	if (!get_single_attribute(ldap_state->ldap_struct, entry,
+				  "displayName", fullname)) {
+		if (!get_single_attribute(ldap_state->ldap_struct, entry,
+					  "cn", fullname)) {
 			/* leave as default */
 		} else {
 			pdb_set_fullname(sampass, fullname, PDB_SET);
@@ -1281,13 +1283,67 @@ static BOOL need_ldap_mod(BOOL pdb_add, const SAM_ACCOUNT * sampass, enum pdb_el
 }
 
 /**********************************************************************
+  Set attribute to newval in LDAP, regardless of what value the
+  attribute had in LDAP before.
+*********************************************************************/
+static void make_ldap_mod(LDAP *ldap_struct, LDAPMessage *existing,
+			  LDAPMod ***mods,
+			  const SAM_ACCOUNT *sampass,
+			  enum pdb_elements element,
+			  const char *attribute, const char *newval)
+{
+	char **values = NULL;
+
+	if (!IS_SAM_CHANGED(sampass, element)) {
+		return;
+	}
+
+	if (existing != NULL) {
+		values = ldap_get_values(ldap_struct, existing, attribute);
+	}
+
+	if ((values != NULL) && (values[0] != NULL) &&
+	    strcmp(values[0], newval) == 0) {
+		
+		/* Believe it or not, but LDAP will deny a delete and
+		   an add at the same time if the values are the
+		   same... */
+
+		ldap_value_free(values);
+		return;
+	}
+
+	/* Regardless of the real operation (add or modify)
+	   we add the new value here. We rely on deleting
+	   the old value, should it exist. */
+
+	if ((newval != NULL) && (strlen(newval) > 0)) {
+		make_a_mod(mods, LDAP_MOD_ADD, attribute, newval);
+	}
+
+	if (values == NULL) {
+		/* There has been no value before, so don't delete it.
+		   Here's a possible race: We might end up with
+		   duplicate attributes */
+		return;
+	}
+
+	/* By deleting exactly the value we found in the entry this
+	   should be race-free in the sense that the LDAP-Server will
+	   deny the complete operation if somebody changed the
+	   attribute behind our back. */
+
+	make_a_mod(mods, LDAP_MOD_DELETE, attribute, values[0]);
+	ldap_value_free(values);
+}
+
+/**********************************************************************
 Initialize SAM_ACCOUNT from an LDAP query
 (Based on init_buffer_from_sam in pdb_tdb.c)
 *********************************************************************/
 static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state, 
-				LDAPMod *** mods, int ldap_op, 
-				BOOL pdb_add,
-				const SAM_ACCOUNT * sampass)
+				LDAPMessage *existing,
+				LDAPMod *** mods, const SAM_ACCOUNT * sampass)
 {
 	pstring temp;
 	uint32 rid;
@@ -1303,139 +1359,136 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	 * took out adding "objectclass: sambaAccount"
 	 * do this on a per-mod basis
 	 */
-	if (need_ldap_mod(pdb_add, sampass, PDB_USERNAME)) {
-		make_a_mod(mods, ldap_op, "uid", pdb_get_username(sampass));
-		DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
-	}
-	
-	if ((rid = pdb_get_user_rid(sampass))!=0 ) {
-		if (need_ldap_mod(pdb_add, sampass, PDB_USERSID)) {		
-			slprintf(temp, sizeof(temp) - 1, "%i", rid);
-			make_a_mod(mods, ldap_op, "rid", temp);
-		}
-	} else if (!IS_SAM_DEFAULT(sampass, PDB_UID)) {
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_USERNAME, "uid", pdb_get_username(sampass));
+	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
+
+	rid = pdb_get_user_rid(sampass);
+
+	if ( (rid==0) && (!IS_SAM_DEFAULT(sampass, PDB_UID)) ) {
 		rid = fallback_pdb_uid_to_user_rid(pdb_get_uid(sampass));
-		slprintf(temp, sizeof(temp) - 1, "%i", rid);
-		make_a_mod(mods, ldap_op, "rid", temp);
 	} else if (ldap_state->permit_non_unix_accounts) {
 		rid = ldapsam_get_next_available_nua_rid(ldap_state);
 		if (rid == 0) {
-			DEBUG(0, ("NO user RID specified on account %s, and findining next available NUA RID failed, cannot store!\n", pdb_get_username(sampass)));
+			DEBUG(0, ("NO user RID specified on account %s, and "
+				  "findining next available NUA RID failed, "
+				  "cannot store!\n",
+				  pdb_get_username(sampass)));
+			ldap_mods_free(*mods, 1);
 			return False;
 		}
-		slprintf(temp, sizeof(temp) - 1, "%i", rid);
-		make_a_mod(mods, ldap_op, "rid", temp);
 	} else {
-		DEBUG(0, ("NO user RID specified on account %s, cannot store!\n", pdb_get_username(sampass)));
+		DEBUG(0, ("NO user RID specified on account %s, "
+			  "cannot store!\n", pdb_get_username(sampass)));
+		ldap_mods_free(*mods, 1);
 		return False;
 	}
 
+	slprintf(temp, sizeof(temp) - 1, "%i", rid);
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_USERSID, "rid", temp);
 
 
-	if ((rid = pdb_get_group_rid(sampass))!=0 ) {
-		if (need_ldap_mod(pdb_add, sampass, PDB_GROUPSID)) {		
-			slprintf(temp, sizeof(temp) - 1, "%i", rid);
-			make_a_mod(mods, ldap_op, "primaryGroupID", temp);
-		}
-	} else if (!IS_SAM_DEFAULT(sampass, PDB_GID)) {
+	rid = pdb_get_group_rid(sampass);
+
+	if ( (rid==0) && (!IS_SAM_DEFAULT(sampass, PDB_GID)) ) {
 		rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
-		slprintf(temp, sizeof(temp) - 1, "%i", rid);
-		make_a_mod(mods, ldap_op, "primaryGroupID", temp);
 	} else if (ldap_state->permit_non_unix_accounts) {
 		rid = DOMAIN_GROUP_RID_USERS;
-		slprintf(temp, sizeof(temp) - 1, "%i", rid);
-		make_a_mod(mods, ldap_op, "primaryGroupID", temp);
 	} else {
-		DEBUG(0, ("NO group RID specified on account %s, cannot store!\n", pdb_get_username(sampass)));
+		DEBUG(0, ("NO group RID specified on account %s, "
+			  "cannot store!\n", pdb_get_username(sampass)));
+		ldap_mods_free(*mods, 1);
 		return False;
 	}
 
+	slprintf(temp, sizeof(temp) - 1, "%i", rid);
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_GROUPSID, "primaryGroupID", temp);
 
 	/* displayName, cn, and gecos should all be the same
 	 *  most easily accomplished by giving them the same OID
 	 *  gecos isn't set here b/c it should be handled by the 
 	 *  add-user script
-	 */
-	if (need_ldap_mod(pdb_add, sampass, PDB_FULLNAME)) {
-		make_a_mod(mods, ldap_op, "displayName", pdb_get_fullname(sampass));
-		make_a_mod(mods, ldap_op, "cn", pdb_get_fullname(sampass));
-	}
-	if (need_ldap_mod(pdb_add, sampass, PDB_ACCTDESC)) {	
-		make_a_mod(mods, ldap_op, "description", pdb_get_acct_desc(sampass));
-	}
-	if (need_ldap_mod(pdb_add, sampass, PDB_WORKSTATIONS)) {	
-		make_a_mod(mods, ldap_op, "userWorkstations", pdb_get_workstations(sampass));
-	}
-	/*
-	 * Only updates fields which have been set (not defaults from smb.conf)
+	 *  We change displayName only and fall back to cn if
+	 *  it does not exist.
 	 */
 
-	if (need_ldap_mod(pdb_add, sampass, PDB_SMBHOME)) {
-		make_a_mod(mods, ldap_op, "smbHome", pdb_get_homedir(sampass));
-	}
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_FULLNAME, "displayName",
+		      pdb_get_fullname(sampass));
+
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_ACCTDESC, "description",
+		      pdb_get_acct_desc(sampass));
+
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_WORKSTATIONS, "userWorkstations",
+		      pdb_get_workstations(sampass));
+
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_SMBHOME, "smbHome",
+		      pdb_get_homedir(sampass));
 			
-	if (need_ldap_mod(pdb_add, sampass, PDB_DRIVE)) {
-		make_a_mod(mods, ldap_op, "homeDrive", pdb_get_dir_drive(sampass));
-	}
-	
-	if (need_ldap_mod(pdb_add, sampass, PDB_LOGONSCRIPT)) {
-		make_a_mod(mods, ldap_op, "scriptPath", pdb_get_logon_script(sampass));
-	}
-	
-	if (need_ldap_mod(pdb_add, sampass, PDB_PROFILE))
-		make_a_mod(mods, ldap_op, "profilePath", pdb_get_profile_path(sampass));
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_DRIVE, "homeDrive",
+		      pdb_get_dir_drive(sampass));
 
-	if (need_ldap_mod(pdb_add, sampass, PDB_LOGONTIME)) {
-		slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logon_time(sampass));
-		make_a_mod(mods, ldap_op, "logonTime", temp);
-	}
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_LOGONSCRIPT, "scriptPath",
+		      pdb_get_logon_script(sampass));
 
-	if (need_ldap_mod(pdb_add, sampass, PDB_LOGOFFTIME)) {
-		slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logoff_time(sampass));
-		make_a_mod(mods, ldap_op, "logoffTime", temp);
-	}
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_PROFILE, "profilePath",
+		      pdb_get_profile_path(sampass));
 
-	if (need_ldap_mod(pdb_add, sampass, PDB_KICKOFFTIME)) {
-		slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_kickoff_time(sampass));
-		make_a_mod(mods, ldap_op, "kickoffTime", temp);
-	}
+	slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logon_time(sampass));
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_LOGONTIME, "logonTime", temp);
 
+	slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logoff_time(sampass));
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_LOGOFFTIME, "logoffTime", temp);
 
-	if (need_ldap_mod(pdb_add, sampass, PDB_CANCHANGETIME)) {
-		slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_can_change_time(sampass));
-		make_a_mod(mods, ldap_op, "pwdCanChange", temp);
-	}
+	slprintf (temp, sizeof (temp) - 1, "%li",
+		  pdb_get_kickoff_time(sampass));
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_KICKOFFTIME, "kickoffTime", temp);
 
-	if (need_ldap_mod(pdb_add, sampass, PDB_MUSTCHANGETIME)) {
-		slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_must_change_time(sampass));
-		make_a_mod(mods, ldap_op, "pwdMustChange", temp);
-	}
+	slprintf (temp, sizeof (temp) - 1, "%li",
+		  pdb_get_pass_can_change_time(sampass));
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_CANCHANGETIME, "pwdCanChange", temp);
+
+	slprintf (temp, sizeof (temp) - 1, "%li",
+		  pdb_get_pass_must_change_time(sampass));
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_MUSTCHANGETIME, "pwdMustChange", temp);
 
 	if ((pdb_get_acct_ctrl(sampass)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST))||
-		(lp_ldap_passwd_sync()!=LDAP_PASSWD_SYNC_ONLY)) {
+	    (lp_ldap_passwd_sync()!=LDAP_PASSWD_SYNC_ONLY)) {
 
-		if (need_ldap_mod(pdb_add, sampass, PDB_LMPASSWD)) {
-			pdb_sethexpwd (temp, pdb_get_lanman_passwd(sampass), pdb_get_acct_ctrl(sampass));
-			make_a_mod (mods, ldap_op, "lmPassword", temp);
-		}
-		
-		if (need_ldap_mod(pdb_add, sampass, PDB_NTPASSWD)) {
-			pdb_sethexpwd (temp, pdb_get_nt_passwd(sampass), pdb_get_acct_ctrl(sampass));
-			make_a_mod (mods, ldap_op, "ntPassword", temp);
-		}
-		
-		if (need_ldap_mod(pdb_add, sampass, PDB_PASSLASTSET)) {
-			slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_last_set_time(sampass));
-			make_a_mod(mods, ldap_op, "pwdLastSet", temp);
-		}
+		pdb_sethexpwd (temp, pdb_get_lanman_passwd(sampass),
+			       pdb_get_acct_ctrl(sampass));
+		make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+			      PDB_LMPASSWD, "lmPassword", temp);
+
+		pdb_sethexpwd (temp, pdb_get_nt_passwd(sampass),
+			       pdb_get_acct_ctrl(sampass));
+		make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+			      PDB_NTPASSWD, "ntPassword", temp);
+
+		slprintf (temp, sizeof (temp) - 1, "%li",
+			  pdb_get_pass_last_set_time(sampass));
+		make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+			      PDB_PASSLASTSET, "pwdLastSet", temp);
 	}
 
 	/* FIXME: Hours stuff goes in LDAP  */
-	if (need_ldap_mod(pdb_add, sampass, PDB_ACCTCTRL)) {
-		make_a_mod (mods, ldap_op, "acctFlags", pdb_encode_acct_ctrl (pdb_get_acct_ctrl(sampass),
-			NEW_PW_FORMAT_SPACE_PADDED_LEN));
-	}
-	
+	make_ldap_mod(ldap_state->ldap_struct, existing, mods, sampass,
+		      PDB_ACCTCTRL, "acctFlags",
+		      pdb_encode_acct_ctrl (pdb_get_acct_ctrl(sampass),
+					    NEW_PW_FORMAT_SPACE_PADDED_LEN));
 	return True;
 }
 
@@ -1891,46 +1944,46 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	LDAPMessage *entry;
 	LDAPMod **mods;
 
-	if (!init_ldap_from_sam(ldap_state, &mods, LDAP_MOD_REPLACE, False, newpwd)) {
-		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	if (mods == NULL) {
-		DEBUG(4,("mods is empty: nothing to update for user: %s\n",pdb_get_username(newpwd)));
-		return NT_STATUS_OK;
-	}
-	
 	rc = ldapsam_search_one_user_by_name(ldap_state, pdb_get_username(newpwd), &result);
 	if (rc != LDAP_SUCCESS) {
-		ldap_mods_free(mods, 1);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (ldap_count_entries(ldap_state->ldap_struct, result) == 0) {
 		DEBUG(0, ("No user to modify!\n"));
 		ldap_msgfree(result);
-		ldap_mods_free(mods, 1);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	entry = ldap_first_entry(ldap_state->ldap_struct, result);
 	dn = ldap_get_dn(ldap_state->ldap_struct, entry);
+
+	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd)) {
+		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
+		ldap_msgfree(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
         ldap_msgfree(result);
 	
+	if (mods == NULL) {
+		DEBUG(4,("mods is empty: nothing to update for user: %s\n",
+			 pdb_get_username(newpwd)));
+		ldap_mods_free(mods, 1);
+		return NT_STATUS_OK;
+	}
+	
 	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,LDAP_MOD_REPLACE, False);
+	ldap_mods_free(mods,1);
+
 	if (NT_STATUS_IS_ERR(ret)) {
 		DEBUG(0,("failed to modify user with uid = %s\n",
 					pdb_get_username(newpwd)));
-		ldap_mods_free(mods,1);
 		return ret;
 	}
 
-
-	DEBUG(2,
-	      ("successfully modified uid = %s in the LDAP database\n",
-	       pdb_get_username(newpwd)));
-	ldap_mods_free(mods, 1);
+	DEBUG(2, ("successfully modified uid = %s in the LDAP database\n",
+		  pdb_get_username(newpwd)));
 	return NT_STATUS_OK;
 }
 
@@ -1944,6 +1997,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	int rc;
 	pstring filter;
 	LDAPMessage *result = NULL;
+	LDAPMessage *entry  = NULL;
 	pstring dn;
 	LDAPMod **mods = NULL;
 	int 		ldap_op;
@@ -1985,7 +2039,6 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	/* Check if we need to update an existing entry */
 	if (num_result == 1) {
 		char *tmp;
-		LDAPMessage *entry;
 		
 		DEBUG(3,("User exists without samba properties: adding them\n"));
 		ldap_op = LDAP_MOD_REPLACE;
@@ -2004,14 +2057,15 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
                 }
 	}
 
-	ldap_msgfree(result);
-
-	if (!init_ldap_from_sam(ldap_state, &mods, ldap_op, True, newpwd)) {
+	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd)) {
 		DEBUG(0, ("ldapsam_add_sam_account: init_ldap_from_sam failed!\n"));
+		ldap_msgfree(result);
 		ldap_mods_free(mods, 1);
 		return NT_STATUS_UNSUCCESSFUL;		
 	}
 	
+	ldap_msgfree(result);
+
 	if (mods == NULL) {
 		DEBUG(0,("mods is empty: nothing to add for user: %s\n",pdb_get_username(newpwd)));
 		return NT_STATUS_UNSUCCESSFUL;
