@@ -1,10 +1,10 @@
 Summary: SMB client and server
 Name: samba
-Version: 1.9.18p6
+Version: 1.9.18p7
 Release: Caldera.1
 Copyright: GPL
 Group: Networking
-Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.18p4.tar.gz
+Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.18p7.tar.gz
 Patch: samba-make.patch
 Packager: John H Terpstra [Samba-Team] <jht@samba.anu.edu.au>
 Requires: libpam >= 0.56
