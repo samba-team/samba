@@ -265,7 +265,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
   char *outbuf = OutBuffer;
   char *inbuf = blr->inbuf;
   ssize_t nread = -1;
-  char *data;
+  char *data, *p;
   int outsize = 0;
   SMB_OFF_T startpos;
   size_t numtoread;
@@ -309,12 +309,15 @@ static BOOL process_lockread(blocking_lock_record *blr)
   }
 
   construct_reply_common(inbuf, outbuf);
-  outsize = set_message(outbuf,5,3,True);
+  outsize = set_message(outbuf,5,0,True);
 
   outsize += nread;
   SSVAL(outbuf,smb_vwv0,nread);
   SSVAL(outbuf,smb_vwv5,nread+3);
-  SSVAL(smb_buf(outbuf),1,nread);
+  p = smb_buf(outbuf);
+  *p++ = 1;
+  SSVAL(p,0,nread); p += 2;
+  set_message_end(outbuf, p+nread);
 
   DEBUG(3, ( "process_lockread file = %s, fnum=%d num=%d nread=%d\n",
         fsp->fsp_name, fsp->fnum, (int)numtoread, (int)nread ) );

@@ -55,7 +55,7 @@ void cmd_wks_query_info(struct client_info *info)
 	fstrcat(dest_wks, info->dest_host);
 	strupper(dest_wks);
 
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (next_token_nr(NULL, tmp, NULL, sizeof(tmp)))
 	{
 		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}

@@ -1658,7 +1658,7 @@ BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
 		return False;
 	}
 	
-	if (next_token(NULL, tmp, "\n\r", sizeof(tmp)))
+	if (next_token(&full_keyname, tmp, "\n\r", sizeof(tmp)))
 	{
 		fstrcpy(key_name, tmp);
 	}

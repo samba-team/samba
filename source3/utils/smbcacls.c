@@ -266,12 +266,12 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 
 	/* Only numeric form accepted for flags at present */
 
-	if (!(next_token(NULL, tok, "/", sizeof(fstring)) &&
+	if (!(next_token(&p, tok, "/", sizeof(fstring)) &&
 	      sscanf(tok, "%i", &aflags))) {
 		return False;
 	}
 
-	if (!next_token(NULL, tok, "/", sizeof(fstring))) {
+	if (!next_token(&p, tok, "/", sizeof(fstring))) {
 		return False;
 	}
 

@@ -73,33 +73,27 @@ static char *get_static(char **buffer, int *buflen, int len)
    lib/util_str.c as I really don't want to have to link in any other
    objects if I can possibly avoid it. */
 
-static char *last_ptr = NULL;
-
-BOOL next_token(char **ptr, char *buff, char *sep, size_t bufsize)
+BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
 {
 	char *s;
 	BOOL quoted;
 	size_t len=1;
-    
-	if (!ptr) ptr = &last_ptr;
+
 	if (!ptr) return(False);
-    
+
 	s = *ptr;
-    
+
 	/* default to simple separators */
 	if (!sep) sep = " \t\n\r";
-    
+
 	/* find the first non sep char */
-	while(*s && strchr(sep,*s)) s++;
-    
+	while (*s && strchr(sep,*s)) s++;
+	
 	/* nothing left? */
 	if (! *s) return(False);
-    
+	
 	/* copy over the token */
-	for (quoted = False; 
-	     len < bufsize && *s && (quoted || !strchr(sep,*s)); 
-	     s++) {
-
+	for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
 		if (*s == '\"') {
 			quoted = !quoted;
 		} else {
@@ -107,13 +101,13 @@ BOOL next_token(char **ptr, char *buff, char *sep, size_t bufsize)
 			*buff++ = *s;
 		}
 	}
-    
+	
 	*ptr = (*s) ? s+1 : s;  
 	*buff = 0;
-	last_ptr = *ptr;
-  
+	
 	return(True);
 }
+
 
 /* Fill a pwent structure from a winbindd_response structure.  We use
    the static data passed to us by libc to put strings and stuff in.
