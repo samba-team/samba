@@ -3496,31 +3496,45 @@ static void set_server_role(void)
 		case SEC_SHARE:
 			if (lp_domain_logons())
 				DEBUG(0, ("Server's Role (logon server) conflicts with share-level security\n"));
-			DEBUG(10,("set_server_role: ROLE_STANDALONE\n"));
 			break;
 		case SEC_SERVER:
 		case SEC_DOMAIN:
 		case SEC_ADS:
 			if (lp_domain_logons()) {
 				server_role = ROLE_DOMAIN_PDC;
-				DEBUG(10,("set_server_role:ROLE_DOMAIN_PDC\n"));
 				break;
 			}
 			server_role = ROLE_DOMAIN_MEMBER;
-			DEBUG(10,("set_server_role: ROLE_DOMAIN_MEMBER\n"));
 			break;
 		case SEC_USER:
 			if (lp_domain_logons()) {
-				server_role = ROLE_DOMAIN_PDC;
-				DEBUG(10,("set_server_role: ROLE_DOMAIN_PDC\n"));
-				break;
+
+				if (lp_domain_master())
+					server_role = ROLE_DOMAIN_PDC;
+				else
+					server_role = ROLE_DOMAIN_BDC;
 			}
-			DEBUG(10,("set_server_role: ROLE_STANDALONE\n"));
 			break;
 		default:
 			DEBUG(0, ("Server's Role undefined due to unknown security mode\n"));
-			DEBUG(10,("set_server_role: ROLE_STANDALONE\n"));
 			break;
+	}
+
+	DEBUG(10, ("set_server_role: role = "));
+
+	switch(server_role) {
+	case ROLE_STANDALONE:
+		DEBUGADD(10, ("ROLE_STANDALONE\n"));
+		break;
+	case ROLE_DOMAIN_MEMBER:
+		DEBUGADD(10, ("ROLE_DOMAIN_MEMBER\n"));
+		break;
+	case ROLE_DOMAIN_BDC:
+		DEBUGADD(10, ("ROLE_DOMAIN_BDC\n"));
+		break;
+	case ROLE_DOMAIN_PDC:
+		DEBUGADD(10, ("ROLE_DOMAIN_PDC\n"));
+		break;
 	}
 }
 
