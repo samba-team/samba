@@ -572,7 +572,10 @@ static int process_root(int argc, char *argv[])
 	BOOL joining_domain = False, got_pass = False;
 	int local_flags = 0;
 	BOOL stdin_passwd_get = False;
-	fstring user_name, user_password, ldap_secret;
+	fstring user_name, user_password;
+#ifdef WITH_LDAP
+	fstring ldap_secret;
+#endif
 	char *new_domain = NULL;
 	char *new_passwd = NULL;
 	char *old_passwd = NULL;

@@ -578,6 +578,7 @@ static struct enum_list enum_printing[] = {
 	{-1, NULL}
 };
 
+#ifdef WITH_LDAP
 static struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_ON, "Yes"},
 	{LDAP_SSL_ON, "yes"},
@@ -590,6 +591,7 @@ static struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_START_TLS, "start tls"},
 	{-1, NULL}
 };
+#endif
 
 /* Types of machine we can announce as. */
 #define ANNOUNCE_AS_NT_SERVER 1

@@ -68,7 +68,6 @@ enum winbindd_result winbindd_check_machine_acct(
 	uchar trust_passwd[16];
 	struct in_addr *ip_list = NULL;
 	int count;
-	uint16 validation_level;
 	fstring controller, trust_account;
         int num_retries = 0;
 
@@ -102,9 +101,12 @@ enum winbindd_result winbindd_check_machine_acct(
                  global_myname);
 
 #if 0 /* XXX */
+	{
+		uint16 validation_level;
         result = cli_nt_setup_creds(controller, lp_workgroup(), global_myname,
                                     trust_account, trust_passwd, 
                                     SEC_CHAN_WKSTA, &validation_level);	
+	}
 #endif
 
         /* There is a race condition between fetching the trust account

@@ -760,14 +760,14 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 {
-        uint32 total_entries = 0;
+	uint32 total_entries = 0;
 	uint32 num_domain_entries;
-        struct winbindd_domain *domain;
+	struct winbindd_domain *domain;
 	struct getent_state groups;
 	char *extra_data = NULL;
 	char *ted = NULL;
 	int extra_data_len = 0, i;
-	void *sam_entries = NULL;
+	char *sam_entries = NULL;
 
 	DEBUG(3, ("[%5d]: list groups\n", state->pid));
 
