@@ -634,6 +634,10 @@ static void process_loop(int accept_sock)
 			}
 		}
 
+#if 0
+		winbindd_check_cache_size(time(NULL));
+#endif
+
 		/* Check signal handling things */
 
 		if (do_sigterm)
