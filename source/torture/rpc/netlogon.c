@@ -248,33 +248,45 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_DatabaseSync r;
 	struct netr_CredentialState creds;
+	const uint32 database_ids[] = {0, 1, 2}; 
+	int i;
+	BOOL ret = True;
 
 	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
 		return False;
 	}
 
-	creds_client_authenticator(&creds, &r.in.credential);
-	ZERO_STRUCT(r.in.return_authenticator);
-
 	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = lp_netbios_name();
-	r.in.database_id = 1;
 	r.in.sync_context = 0;
 	r.in.preferredmaximumlength = (uint32)-1;
+	ZERO_STRUCT(r.in.return_authenticator);
 
-	printf("Testing DatabaseSync\n");
+	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
+		r.in.database_id = database_ids[i];
 
-	status = dcerpc_netr_DatabaseSync(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("DatabaseSync - %s\n", nt_errstr(status));
-		return False;
+		printf("Testing DatabaseSync of id %d\n", r.in.database_id);
+
+		do {
+			creds_client_authenticator(&creds, &r.in.credential);
+
+			status = dcerpc_netr_DatabaseSync(p, mem_ctx, &r);
+			if (!NT_STATUS_IS_OK(status) &&
+			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+				printf("DatabaseSync - %s\n", nt_errstr(status));
+				ret = False;
+				break;
+			}
+
+			if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+				printf("Credential chaining failed\n");
+			}
+
+			r.in.sync_context = r.out.sync_context;
+		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
 
-	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
-		printf("Credential chaining failed\n");
-	}
-
-	return True;
+	return ret;
 }
 
 
