@@ -48,27 +48,25 @@ RCSID("$Id$");
 static size_t
 print_arg (int longp, struct getargs *arg)
 {
-    switch (arg->type) {
-    case arg_integer:
-	if (longp) {
-	    fprintf (stderr, "=n");
-	} else {
-	    fprintf (stderr, " n");
-	}
-	return 2;
-    case arg_string:
-	if (longp) {
-	    fprintf (stderr, "=s");
-	} else {
-	    fprintf (stderr, " s");
-	}
-	return 2;
-    case arg_flag:
-    case arg_negative_flag:
+    const char *s;
+
+    if (arg->type == arg_flag || arg->type == arg_negative_flag)
 	return 0;
-    default:
-	abort ();
-    }
+
+    if (longp)
+	putc ('=', stderr);
+    else
+	putc (' ', stderr);
+
+    if (arg->arg_help)
+	s = arg->arg_help;
+    else if (arg->type == arg_integer)
+	s = "n";
+    else if (arg->type == arg_string)
+	s = "s";
+
+    fprintf (stderr, "%s", s);
+    return 1 + strlen(s);
 }
 
 void
@@ -85,8 +83,14 @@ arg_printusage (struct getargs *args,
 
 	if (args[i].long_name) {
 	    len += 2 + strlen(args[i].long_name);
-	    fprintf (stderr, " [--%s", args[i].long_name);
+	    fprintf (stderr,
+		     " [--%s%s",
+		     args[i].type == arg_negative_flag ?
+		     "no-" : "",
+		     args[i].long_name);
 	    len += print_arg (1, &args[i]);
+	    if (args[i].type == arg_negative_flag)
+		len += 3;
 	    putc (']', stderr);
 	}
 	if (args[i].short_name) {
@@ -117,8 +121,13 @@ arg_printusage (struct getargs *args,
 		count += 4;
 	    }
 	    if (args[i].long_name) {
-		fprintf (stderr, "--%s", args[i].long_name);
+		fprintf (stderr, "--%s%s",
+			 args[i].type == arg_negative_flag ?
+			 "no-" : "",
+			 args[i].long_name);
 		count += 2 + strlen(args[i].long_name);
+		if (args[i].type == arg_negative_flag)
+		    count += 3;
 		count += print_arg (1, &args[i]);
 	    }
 	    while(count++ <= max_len)
@@ -293,11 +302,11 @@ int bar_int;
 char *baz_string;
 
 struct getargs args[] = {
-    { NULL, '1', arg_flag, &flag1, "one" },
-    { NULL, '2', arg_flag, &flag2, "two" },
-    { "foo", 'f', arg_flag, &foo_flag, "foo" },
-    { "bar", 'b', arg_integer, &bar_int, "bar" },
-    { "baz", 'x', arg_string, &baz_string, "baz" },
+    { NULL, '1', arg_flag, &flag1, "one", NULL },
+    { NULL, '2', arg_flag, &flag2, "two", NULL },
+    { "foo", 'f', arg_negative_flag, &foo_flag, "foo", NULL },
+    { "bar", 'b', arg_integer, &bar_int, "bar", "seconds"},
+    { "baz", 'x', arg_string, &baz_string, "baz", "name" },
 };
 
 int main(int argc, char **argv)
