@@ -125,23 +125,6 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size)
 	return &ps->data_p[ps->data_offset];
 }
 
-
-/*******************************************************************
- Stream a uint32.
- ********************************************************************/
-
-BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, BOOL scalars)
-{
-	char *q = prs_mem_get(ps, sizeof(uint32));
-	if (q == NULL)
-		return False;
-
-	DBG_RW_IVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data32)
-	ps->data_offset += sizeof(uint32);
-
-	return True;
-}
-
 /*******************************************************************
  Initialise a parse structure - malloc the data if requested.
  ********************************************************************/
@@ -264,61 +247,102 @@ void dump_data(int level,char *buf1,int len)
   }
 }
 
+
 /*******************************************************************
- Stream a pointer
+ do IO on a uint32.
  ********************************************************************/
-BOOL prs_pointer(char *desc, prs_struct *ps, int depth, void **p, BOOL scalars)
+BOOL io_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, unsigned flags)
 {
-	uint32 v = (*p) ? 1 : 0;
-	if (!prs_uint32(desc, ps, depth, &v, True)) return False;
+	char *q;
+
+	if (!(flags & PARSE_SCALARS)) return True;
+
+	q = prs_mem_get(ps, sizeof(uint32));
+	if (q == NULL) return False;
+
+	DBG_RW_IVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data32)
+	ps->data_offset += sizeof(uint32);
+
+	return True;
+}
+
+/*******************************************************************
+ do IO on a uint16.
+ ********************************************************************/
+BOOL io_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, unsigned flags)
+{
+	char *q;
+
+	if (!(flags & PARSE_SCALARS)) return True;
+
+	q = prs_mem_get(ps, sizeof(uint16));
+	if (q == NULL) return False;
+
+	DBG_RW_IVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data16)
+	ps->data_offset += sizeof(uint16);
+
+	return True;
+}
+
+/*******************************************************************
+ do IO on a uint8.
+ ********************************************************************/
+BOOL io_uint8(char *name, prs_struct *ps, int depth, uint8 *data8, unsigned flags)
+{
+	char *q;
+
+	if (!(flags & PARSE_SCALARS)) return True;
+
+	q = prs_mem_get(ps, sizeof(uint8));
+	if (q == NULL) return False;
+
+	DBG_RW_IVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data8)
+	ps->data_offset += sizeof(uint8);
+
+	return True;
+}
+
+/*******************************************************************
+ do IO on a pointer
+ ********************************************************************/
+BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags)
+{
+	uint32 v;
+
+	if (!(flags & PARSE_SCALARS)) return True;
+
+	v = (*p) ? 1 : 0;
+	if (!io_uint32(desc, ps, depth, &v, flags)) return False;
 	*p = (void *) (v ? 1 : 0);
 	return True;
 }
 
 /******************************************************************
- Stream an array of uint16s. Length is number of uint16s.
+ do IO on a unicode array
  ********************************************************************/
-
-BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
+BOOL io_wstring(char *name, prs_struct *ps, int depth, uint16 *data16s, int len, unsigned flags)
 {
-	char *q = prs_mem_get(ps, len * sizeof(uint16));
-	if (q == NULL)
-		return False;
+	char *q;
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len)
+	if (!(flags & PARSE_SCALARS)) return True;
+
+	q = prs_mem_get(ps, len * sizeof(uint16));
+	if (q == NULL) return False;
+
+	DBG_RW_PSVAL(True, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len)
 	ps->data_offset += (len * sizeof(uint16));
 
 	return True;
 }
 
+
 /******************************************************************
- Stream an array of uint32s. Length is number of uint32s.
+allocate some memory for a parse structure
  ********************************************************************/
-
-BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
+BOOL io_alloc(char *name, prs_struct *ps, void **ptr, unsigned size)
 {
-	char *q = prs_mem_get(ps, len * sizeof(uint32));
-	if (q == NULL)
-		return False;
-
-	DBG_RW_PIVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data32s, len)
-	ps->data_offset += (len * sizeof(uint32));
-
-	return True;
+	(*ptr) = (void *)malloc(size);
+	if (*ptr) return True;
+	return False;
 }
 
-/*******************************************************************
- Stream a uint16.
- ********************************************************************/
-
-BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, BOOL scalars)
-{
-	char *q = prs_mem_get(ps, sizeof(uint16));
-	if (q == NULL)
-		return False;
-
-	DBG_RW_SVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data16)
-	ps->data_offset += sizeof(uint16);
-
-	return True;
-}

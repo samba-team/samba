@@ -1,1 +1,1 @@
-		case @VALUE@:
+		case @CASE@:

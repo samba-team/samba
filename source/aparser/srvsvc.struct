@@ -1,0 +1,73 @@
+module srvsvc
+test SRV_R_NET_SHARE_ENUM
+
+struct UNISTR2 {
+       uint32 max_len;
+       uint32 undoc;
+       uint32 str_len;
+       uint16 buffer[str_len];
+};
+
+/* function 15 */
+struct SRV_SHARE_INFO_1 {
+	UNISTR2 *uni_netname;
+	uint32 type;
+	UNISTR2 *uni_remark;
+};
+
+struct SHARE_ENUM {
+       uint32 level;
+       uint32 num_entries;
+       union info[level] {
+              case 1 SRV_SHARE_INFO_1 entries[num_entries];
+       }
+};
+
+struct SRV_R_NET_SHARE_ENUM {
+       uint32 level;
+       uint32 dummy;
+       SHARE_ENUM *shares;
+       uint32 *num_entries;
+};
+
+
+
+/* function 21 */
+struct SERVER_INFO_100 {
+	uint32  dwPlatformID;
+	UNISTR2 *pszName;
+};
+
+struct SERVER_INFO_101 {
+	    uint32  dwPlatformID;
+	    UNISTR2 *pszName;
+	    uint32  dwVerMajor;
+	    uint32  dwVerMinor;
+	    uint32  dwType;
+	    UNISTR2 *pszComment;
+};
+
+struct SERVER_INFO_102 {
+    uint32  dwPlatformID;
+    UNISTR2 *pszName;
+    uint32  dwVerMajor;
+    uint32  dwVerMinor;
+    uint32  dwType;
+    UNISTR2 *pszComment;
+    uint32  dwUsers;
+    uint32   lDisc;
+    uint32   bHidden;
+    uint32  dwAnnounce;
+    uint32  dwAnnDelta;
+    uint32  dwLicenses;
+    UNISTR2 *pszUserPath;
+};
+
+struct SRV_R_NET_SERVER_INFO {
+       uint32 level;
+       union info[level] {
+		case 100 SERVER_INFO_100 *sv100;
+		case 101 SERVER_INFO_101 *sv101;
+		case 102 SERVER_INFO_102 *sv102;
+       }
+};

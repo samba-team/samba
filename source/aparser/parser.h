@@ -1,6 +1,9 @@
 #include <ctype.h>
 #include "../include/byteorder.h"
 
+#define PARSE_SCALARS (1<<0)
+#define PARSE_BUFFERS (1<<1)
+
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
@@ -54,15 +57,16 @@ typedef struct _prs_struct
 
 
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
-BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
 BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io);
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 BOOL prs_align(prs_struct *ps);
 void print_asc(int level, unsigned char *buf,int len);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void dump_data(int level,char *buf1,int len);
-BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
-BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
-BOOL prs_pointer(char *desc, prs_struct *ps, int depth, void **p);
-BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
+BOOL io_alloc(char *name, prs_struct *ps, void **ptr, unsigned size);
+BOOL io_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, unsigned flags);
+BOOL io_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, unsigned flags);
+BOOL io_uint8(char *name, prs_struct *ps, int depth, uint8 *data8, unsigned flags);
+BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags);
+BOOL io_wstring(char *name, prs_struct *ps, int depth, uint16 *data16s, int len, unsigned flags);
 
