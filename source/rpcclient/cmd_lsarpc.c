@@ -44,6 +44,7 @@ void cmd_lsa_enum_trust_dom(struct client_info *info, int argc, char *argv[])
 	char **domains = NULL;
 	DOM_SID **sids = NULL;
 	uint32 enum_ctx = 0;
+	POLICY_HND lsa_pol;
 
 	BOOL res = True;
 
@@ -55,18 +56,18 @@ void cmd_lsa_enum_trust_dom(struct client_info *info, int argc, char *argv[])
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy( srv_name,
-				&info->dom.lsa_info_pol, False) : False;
+				&lsa_pol, False) : False;
 
 	do
 	{
 		/* send enum trusted domains query */
-		res = res ? lsa_enum_trust_dom( &info->dom.lsa_info_pol,
+		res = res ? lsa_enum_trust_dom( &lsa_pol,
 	                                  &enum_ctx,
 	                                  &num_doms, &domains, &sids) : False;
 
 	} while (res && enum_ctx != 0);
 
-	res = res ? lsa_close(&info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(&lsa_pol) : False;
 
 	if (res)
 	{
@@ -97,6 +98,7 @@ nt lsa query
 void cmd_lsa_query_info(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
+	POLICY_HND lsa_pol;
 
 	BOOL res = True;
 
@@ -113,19 +115,19 @@ void cmd_lsa_query_info(struct client_info *info, int argc, char *argv[])
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy( srv_name,
-				&info->dom.lsa_info_pol, False) : False;
+				&lsa_pol, False) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
-	res = res ? lsa_query_info_pol( &info->dom.lsa_info_pol, 0x03,
+	res = res ? lsa_query_info_pol( &lsa_pol, 0x03,
 	                                  info->dom.level3_dom,
 	                                  &info->dom.level3_sid) : False;
 
 	/* send client info query, level 5.  receive domain name and sid */
-	res = res ? lsa_query_info_pol( &info->dom.lsa_info_pol, 0x05,
+	res = res ? lsa_query_info_pol( &lsa_pol, 0x05,
 				info->dom.level5_dom,
 	                        &info->dom.level5_sid) : False;
 
-	res = res ? lsa_close(&info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(&lsa_pol) : False;
 
 	if (res)
 	{
@@ -166,6 +168,7 @@ lookup names
 ****************************************************************************/
 void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 {
+	POLICY_HND lsa_pol;
 	fstring temp;
 	int i;
 	fstring srv_name;
@@ -199,14 +202,14 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy( srv_name,
-				&info->dom.lsa_info_pol, True) : False;
+				&lsa_pol, True) : False;
 
 	/* send lsa lookup sids call */
-	res = res ? lsa_lookup_names( &info->dom.lsa_info_pol,
+	res = res ? lsa_lookup_names( &lsa_pol,
 	                               num_names, names,
 	                               &sids, NULL, &num_sids) : False;
 
-	res = res ? lsa_close(&info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(&lsa_pol) : False;
 
 	if (res)
 	{
@@ -240,6 +243,7 @@ lookup sids
 ****************************************************************************/
 void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 {
+	POLICY_HND lsa_pol;
 	int i;
 	pstring sid_name;
 	fstring srv_name;
@@ -295,14 +299,14 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy( srv_name,
-				&info->dom.lsa_info_pol, True) : False;
+				&lsa_pol, True) : False;
 
 	/* send lsa lookup sids call */
-	res = res ? lsa_lookup_sids( &info->dom.lsa_info_pol,
+	res = res ? lsa_lookup_sids( &lsa_pol,
 	                               num_sids, sids,
 	                               &names, NULL, &num_names) : False;
 
-	res = res ? lsa_close(&info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(&lsa_pol) : False;
 
 	if (res)
 	{
