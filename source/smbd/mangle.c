@@ -107,7 +107,7 @@ BOOL mangle_check_cache(char *s)
    map a long filename to a 8.3 name. 
  */
 
-void mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum)
+void mangle_map(pstring OutName, BOOL need83, BOOL cache83, int snum)
 {
 	/* name mangling can be disabled for speed, in which case
 	   we just truncate the string */
