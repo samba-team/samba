@@ -58,11 +58,13 @@ static char tkfile[MAXPATHLEN] = "";
 
 static int do_inetd = 1;
 static char *port_str;
-static int do_rhosts;
+static int do_rhosts = 1;
 static int do_kerberos = 0;
 static int do_vacuous = 0;
 static int do_log = 1;
 static int do_newpag = 1;
+static int do_addr_verify = 0;
+static int do_keepalive = 1;
 static int do_version;
 static int do_help = 0;
 
@@ -842,14 +844,16 @@ doit (int do_kerberos, int check_rhosts)
 }
 
 struct getargs args[] = {
+    { NULL,		'a',	arg_flag,	&do_addr_verify },
+    { "keepalive",	'n',	arg_negative_flag,	&do_keepalive },
     { "inetd",		'i',	arg_negative_flag,	&do_inetd,
       "Not started from inetd" },
     { "kerberos",	'k',	arg_flag,	&do_kerberos,
       "Implement kerberised services" },
     { "encrypt",	'x',	arg_flag,		&do_encrypt,
       "Implement encrypted service" },
-    { "rhosts",		'l',	arg_flag, &do_rhosts,
-      "Check users .rhosts" },
+    { "rhosts",		'l',	arg_negative_flag, &do_rhosts,
+      "Don't check users .rhosts" },
     { "port",		'p',	arg_string,	&port_str,	"Use this port",
       "port" },
     { "vacuous",	'v',	arg_flag, &do_vacuous,
