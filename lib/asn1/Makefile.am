@@ -4,6 +4,8 @@ AUTOMAKE_OPTIONS = no-dependencies
 
 lib_LIBRARIES = libasn1.a
 
+SUFFIXES = .x
+
 gen_SOURCES = asn1_Realm.c asn1_PrincipalName.c \
 	asn1_HostAddress.c asn1_HostAddresses.c asn1_KerberosTime.c \
 	asn1_AuthorizationData.c asn1_APOptions.c asn1_TicketFlags.c \
@@ -33,8 +35,6 @@ asn1_compile_SOURCES = parse.y lex.l main.c hash.c symbol.c gen.c \
 asn1_compile_LDADD = @LEXLIB@
 
 CLEANFILES = lex.c parse.c parse.h asn1.h $(gen_SOURCES) $(foo) asn1_files
-
-.SUFFIXES: .x
 
 parse.c: parse.y
 	$(YACC) -d $(YFLAGS) $(srcdir)/parse.y
