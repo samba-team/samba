@@ -48,7 +48,7 @@ libkafs_la_LIBADD = ../roken/libroken.la $(DEPLIB_krb4)
 endif # KRB5
 
 lib_LTLIBRARIES = $(AFSLIBS)
-libkafs_la_LDFLAGS = -version-info 3:0:3
+libkafs_la_LDFLAGS = -version-info 3:1:3
 foodir = $(libdir)
 foo_DATA = $(AFS_EXTRA_LIBS)
 # EXTRA_DATA = afslib.so
