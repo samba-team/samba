@@ -19,7 +19,7 @@ RCSID("$Id$");
 int
 pop_pass (POP *p)
 {
-    struct passwd  *   pw;
+    struct passwd  *pw;
     char lrealm[REALM_SZ];
     int status; 
     int i;
@@ -31,15 +31,17 @@ pop_pass (POP *p)
 
     /*  Look for the user in the password file */
     if ((pw = k_getpwnam(p->user)) == NULL)
-        return (pop_msg(p,POP_FAILURE,
-            "Password supplied for \"%s\" is incorrect.",p->user));
+	return (pop_msg(p,POP_FAILURE,
+			"Password supplied for \"%s\" is incorrect.",
+			p->user));
 
     if ((status = krb_get_lrealm(lrealm,1)) == KFAILURE) {
         pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client,
 		p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
 		krb_get_err_text(status));
         return(pop_msg(p,POP_FAILURE,
-            "Kerberos error:  \"%s\".", krb_get_err_text(status)));
+		       "Kerberos error:  \"%s\".",
+		       krb_get_err_text(status)));
     }
 
     if (!p->kerberosp) {
@@ -84,7 +86,7 @@ pop_pass (POP *p)
     }
 
     /*  Build the name of the user's maildrop */
-    (void)sprintf(p->drop_name,"%s/%s",POP_MAILDIR,p->user);
+    sprintf(p->drop_name, "%s/%s", POP_MAILDIR, p->user);
 
     /*  Make a temporary copy of the user's maildrop */
     /*    and set the group and user id */
@@ -97,7 +99,7 @@ pop_pass (POP *p)
     p->last_msg = 0;
 
     /*  Authorization completed successfully */
-    return (pop_msg (p,POP_SUCCESS,
-        "%s has %d message(s) (%d octets).",
-            p->user,p->msg_count,p->drop_size));
+    return (pop_msg (p, POP_SUCCESS,
+		     "%s has %d message(s) (%d octets).",
+		     p->user, p->msg_count, p->drop_size));
 }
