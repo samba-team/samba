@@ -1105,6 +1105,11 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 								&file_ace, &dir_ace, psd->dacl))
 		return False;
 
+	if ((file_ace == NULL) && (dir_ace == NULL)) {
+		/* W2K traverse DACL set - ignore. */
+		return True;
+	}
+
 	/*
 	 * Go through the canon_ace list and merge entries
 	 * belonging to identical users of identical allow or deny type.
@@ -1145,7 +1150,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 	print_canon_ace_list( "dir ace - before valid", dir_ace);
 
-	if (!ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
+	if (dir_ace && !ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -2019,6 +2024,11 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 	acl_perms = unpack_canon_ace( fsp, &sbuf, &file_owner_sid, &file_grp_sid,
 									&file_ace_list, &dir_ace_list, security_info_sent, psd);
+
+	if ((file_ace_list == NULL) && (dir_ace_list == NULL)) {
+		/* W2K traverse DACL set - ignore. */
+		return True;
+    }
 
 	if (!acl_perms) {
 		DEBUG(3,("set_nt_acl: cannot set permissions\n"));
