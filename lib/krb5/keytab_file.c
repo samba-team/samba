@@ -627,3 +627,16 @@ const krb5_kt_ops krb5_fkt_ops = {
     fkt_add_entry,
     fkt_remove_entry
 };
+
+const krb5_kt_ops krb5_wrfkt_ops = {
+    "WRFILE",
+    fkt_resolve,
+    fkt_get_name,
+    fkt_close,
+    NULL, /* get */
+    fkt_start_seq_get,
+    fkt_next_entry,
+    fkt_end_seq_get,
+    fkt_add_entry,
+    fkt_remove_entry
+};
