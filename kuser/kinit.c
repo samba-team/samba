@@ -21,12 +21,12 @@ main (int argc, char **argv)
   char *realm;
   int preauth = 1;
 
-  set_progname (argv[0]);
   union {
       krb5_flags i;
-      TicketFlags f;
+      KDCOptions f;
   }options;
 
+  set_progname (argv[0]);
   options.i = 0;
   while ((c = getopt (argc, argv, "fp")) != EOF) {
       switch (c) {
