@@ -665,6 +665,10 @@ cups_job_submit(int snum, struct printjob *pjob)
 
 	httpClose(http);
 
+	if ( ret == 0 )
+		unlink(pjob->filename);
+	/* else print_job_end will do it for us */
+
 	return (ret);
 }
 
