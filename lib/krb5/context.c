@@ -64,7 +64,7 @@ krb5_init_context(krb5_context *context)
     if(tmp){
 	int val = parse_time(tmp, NULL);
 	if(val >= 0) 
-	    p->kdc_timeout;
+	    p->kdc_timeout = val;
     }
     krb5_set_default_realm(p, NULL);
     *context = p;
