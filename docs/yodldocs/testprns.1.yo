@@ -8,7 +8,7 @@ manpagename(testparm)(check printer name for validity with smbd )
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(testprns) printername [printcapname]
+bf(testprns) link(printername)(printername) [link(printcapname)(printcapname)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -28,6 +28,7 @@ manpageoptions()
 
 startdit()
 
+label(printername)
 dit(bf(printername)) The printer name to validate.
 
 Printer names are taken from the first field in each record in the
@@ -39,6 +40,7 @@ more forgiving or less forgiving than bf(testprns). However, if
 bf(testprns) finds the printer then url(bf(smbd))(smbd.8.html) should
 do so as well.
 
+label(printcapname)
 dit(bf(printcapname)) This is the name of the printcap file within
 which to search for the given printer name.
 

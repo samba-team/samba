@@ -8,7 +8,7 @@ manpagename(smbpasswd)(change a users SMB password)
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(smbpasswd) [-a] [-d] [-e] [-D debug level] [-n] [-r remote_machine] [-R name resolve order] [-m] [-j DOMAIN] [-U username] [-h] [-s] username
+bf(smbpasswd) [link(-a)(minusa)] [link(-d)(minusd)] [link(-e)(minuse)] [link(-D debug level)(minusD)] [link(-n)(minusn)] [link(-r remote_machine)(minusr)] [link(-R name resolve order)(minusR)] [link(-m)(minusm)] [link(-j DOMAIN)(minusj)] [link(-U username)(minusU)] [link(-h)(minush)] [link(-s)(minuss)] link(username)(username)
 
 label(DESCRIPTION)
 manpagedescription()
@@ -55,6 +55,7 @@ manpageoptions()
 
 startdit()
 
+label(minusa)
 dit(bf(-a)) This option specifies that the username following should
 be added to the local url(bf(smbpasswd))(smbpasswd.5.html) file, with
 the new password typed (type <Enter> for the old password). This
@@ -84,6 +85,7 @@ formats.
 
 This option is only available when running bf(smbpasswd) as root.
 
+label(minuse)
 dit(bf(-e)) This option specifies that the username following should be
 em(enabled) in the local url(bf(smbpasswd))(smbpasswd.5.html) file,
 if the account was previously disabled. If the account was not
@@ -112,6 +114,7 @@ should only be used when investigating a problem. Levels above 3 are
 designed for use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.
 
+label(minusn)
 dit(bf(-n)) This option specifies that the username following should
 have their password set to null (i.e. a blank password) in the local
 url(bf(smbpasswd))(smbpasswd.5.html) file. This is done by writing the
@@ -128,14 +131,15 @@ url(null passwords = true)(smb.conf.5.html#nullpasswords)
 
 This option is only available when running bf(smbpasswd) as root.
 
-label(minusr) dit(bf(-r remote machine name)) This option allows a
+label(minusr) 
+dit(bf(-r remote machine name)) This option allows a
 user to specify what machine they wish to change their password
 on. Without this parameter bf(smbpasswd) defaults to the local
 host. The em("remote machine name") is the NetBIOS name of the
 SMB/CIFS server to contact to attempt the password change. This name
 is resolved into an IP address using the standard name resolution
 mechanism in all programs of the url(bf(Samba))(samba.7.html)
-suite. See the link(bf(-R name resolve order))(nameresolveorder) parameter for details on changing this resolving
+suite. See the link(bf(-R name resolve order))(minusR) parameter for details on changing this resolving
 mechanism.
 
 The username whose password is changed is that of the current UNIX
@@ -148,27 +152,32 @@ specified must be the Primary Domain Controller for the domain (Backup
 Domain Controllers only have a read-only copy of the user account
 database and will not allow the password change).
 
-label(nameresolveorder)
+label(minusR)
 dit(bf(-R name resolve order)) This option allows the user of
 smbclient to determine what name resolution services to use when
 looking up the NetBIOS name of the host being connected to.
 
-The options are :"lmhosts", "host", "wins" and "bcast". They cause
-names to be resolved as follows :
+The options are :link("lmhosts")(lmhosts), link("host")(host),
+link("wins")(wins) and link("bcast")(bcast). They cause names to be
+resolved as follows :
 
 startit()
 
+label(lmhosts)
 it() bf(lmhosts) : Lookup an IP address in the Samba lmhosts file.
 
+label(host)
 it() bf(host) : Do a standard host name to IP address resolution,
 using the system /etc/hosts, NIS, or DNS lookups. This method of name
 resolution is operating system depended for instance on IRIX or
 Solaris this may be controlled by the em(/etc/nsswitch.conf) file).
 
+label(wins)
 it() bf(wins) : Query a name with the IP address listed in the url(bf(wins
 server))(smb.conf.5.html#winsserver) parameter in the smb.conf file. If 
 no WINS server has been specified this method will be ignored.
 
+label(bcast)
 it() bf(bcast) : Do a broadcast on each of the known local interfaces
 listed in the url(bf(interfaces))(smb.conf.5.html#interfaces) parameter
 in the smb.conf file. This is the least reliable of the name resolution
@@ -186,6 +195,7 @@ The default order is lmhosts, host, wins, bcast and without this
 parameter or any entry in the url(bf(smb.conf))(smb.conf.5.html) 
 file the name resolution methods will be attempted in this order.
 
+label(minusm)
 dit(bf(-m)) This option tells bf(smbpasswd) that the account being
 changed is a em(MACHINE) account. Currently this is used when Samba is
 being used as an NT Primary Domain Controller. PDC support is not a
@@ -196,6 +206,7 @@ email(samba-ntdom@samba.anu.edu.au).
 
 This option is only available when running bf(smbpasswd) as root.
 
+label(minusj)
 dit(bf(-j DOMAIN)) This option is used to add a Samba server into a
 Windows NT Domain, as a Domain member capable of authenticating user
 accounts to any Domain Controller in the same way as a Windows NT
@@ -238,6 +249,17 @@ user to specify the user name on that machine whose password will be
 changed. It is present to allow users who have different user names on
 different systems to change these passwords.
 
+label(minush)
+dit(bf(-h)) This option prints the help string for bf(smbpasswd), 
+selecting the correct one for running as root or as an ordinary user.
+
+label(minuss)
+dit(bf(-s)) This option causes bf(smbpasswd) to be silent (ie. not
+issue prompts) and to read it's old and new passwords from standard 
+input, rather than from tt(/dev/tty) (like the bf(passwd (1)) program
+does). This option is to aid people writing scripts to drive bf(smbpasswd)
+
+label(username)
 dir(bf(username)) This specifies the username for all of the em(root
 only) options to operate on. Only root can specify this parameter as
 only root has the permission needed to modify attributes directly
