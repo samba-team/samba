@@ -63,16 +63,16 @@ static int sig_term()
   
   DEBUG(0,("Got SIGTERM: going down...\n"));
   
+  /* write out wins.dat file if samba is a WINS server */
   dump_names();
-  reload_services(True);
   
   /* remove all samba names, with wins server if necessary. */
   remove_my_names();
   
   /* announce all server entries as 0 time-to-live, 0 type */
+  /* XXXX don't care if we never receive a response back... yet */
   remove_my_servers();
 
-  /* XXXX don't care if we never receive a response back... yet */
   /* XXXX other things: if we are a master browser, force an election? */
   
   exit(0);

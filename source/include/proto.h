@@ -251,26 +251,6 @@ void expire_browse_cache(time_t t);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
 					      time_t ttl, struct in_addr ip);
 void do_browser_lists(void);
-void remove_old_servers(struct work_record *work, time_t t);
-struct work_record *remove_workgroup(struct subnet_record *d, 
-				     struct work_record *work);
-struct work_record *find_workgroupstruct(struct subnet_record *d, 
-					 fstring name, BOOL add);
-struct subnet_record *find_subnet(struct in_addr bcast_ip);
-void dump_workgroups(void);
-void add_subnet_interfaces(void);
-struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
-				       struct in_addr mask_ip,
-				       char *name, BOOL add, BOOL lmhosts);
-void remove_my_servers(void);
-struct server_record *add_server_entry(struct subnet_record *d, 
-				       struct work_record *work,
-				       char *name,int servertype, 
-				       int ttl,char *comment,
-				       BOOL replace);
-void add_my_subnets(char *group);
-void write_browse_list(void);
-void expire_servers(time_t t);
 BOOL name_equal(struct nmb_name *n1,struct nmb_name *n2);
 BOOL ms_browser_name(char *name, int type);
 void remove_name(struct subnet_record *d, struct name_record *n);
@@ -298,13 +278,14 @@ void add_response_record(struct subnet_record *d,
 void remove_response_record(struct subnet_record *d,
 				struct response_record *n);
 struct response_record *make_response_queue_record(enum state_type state,
-				int id,int fd,
+				int id,uint16 fd,
 				int quest_type, char *name,int type, int nb_flags, time_t ttl,
 				BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip);
 struct response_record *find_response_record(struct subnet_record **d,
 				uint16 id);
-void remove_old_servers(struct work_record *work, time_t t);
+void remove_old_servers(struct work_record *work, time_t t,
+					BOOL remove_all);
 struct server_record *add_server_entry(struct subnet_record *d, 
 				       struct work_record *work,
 				       char *name,int servertype, 
@@ -320,7 +301,8 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
 				       char *name, BOOL add, BOOL lmhosts);
 void write_browse_list(void);
 struct work_record *remove_workgroup(struct subnet_record *d, 
-				     struct work_record *work);
+				     struct work_record *work,
+					 BOOL remove_all_servers);
 struct work_record *find_workgroupstruct(struct subnet_record *d, 
 					 fstring name, BOOL add);
 void dump_workgroups(void);
