@@ -1816,6 +1816,7 @@ BOOL server_validate(char *user, char *domain,
 	DEBUG(3,("password server %s accepted the password\n", cli.desthost));
 
 	cli_tdis(&cli);
+        cli_ulogoff(&cli);
 
 	return(True);
 }
