@@ -306,6 +306,21 @@ else
 fi
 AC_SUBST(BROKEN_CC)
 
+AC_CACHE_CHECK([that the C compiler can precompile header files],samba_cv_precompiled_headers, [
+	dnl Check whether the compiler can generate precompiled headers
+	touch conftest.h
+	if ${CC-cc} conftest.h && test -f conftest.h.gch; then
+		samba_cv_precompiled_headers=yes
+	else
+		samba_cv_precompiled_headers=no
+	fi])
+PCH_AVAILABLE="#"
+if test x"$samba_cv_precompiled_headers" = x"yes"; then
+	PCH_AVAILABLE=""
+fi
+AC_SUBST(PCH_AVAILABLE)
+
+
 dnl Check if the C compiler understands volatile (it should, being ANSI).
 AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
     AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],

@@ -1272,6 +1272,7 @@ headers:
 	$(MAKE) utils/net_proto.h; \
 	$(MAKE) include/tdbsam2_parse_info.h; \
 @STFS_ENABLED@	$(MAKE) ntvfs/tank/vfs_tank_proto.h
+@PCH_AVAILABLE@	$(MAKE) pch
 
 proto: headers 
 
