@@ -30,6 +30,10 @@ char *getusershell(void);
 char * strdup(const char *old);
 #endif
 
+#ifndef HAVE_STRNLEN
+int strnlen(char*, int);
+#endif
+
 #ifndef HAVE_GETDTABLESIZE
 int getdtablesize(void);
 #endif
