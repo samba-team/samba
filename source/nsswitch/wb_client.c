@@ -34,11 +34,8 @@ NSS_STATUS winbindd_request(int req_type,
 
 static void parse_domain_user(char *domuser, fstring domain, fstring user)
 {
-        char *p;
-        char *sep = lp_winbind_separator();
-        if (!sep) sep = "\\";
-        p = strchr(domuser,*sep);
-        if (!p) p = strchr(domuser,'\\');
+        char *p = strchr(domuser,*lp_winbind_separator());
+
         if (!p) {
                 fstrcpy(domain,"");
                 fstrcpy(user, domuser);
@@ -61,6 +58,13 @@ BOOL winbind_lookup_name(const char *name, DOM_SID *sid,
 	NSS_STATUS result;
 	
 	if (!sid || !name_type)
+		return False;
+
+	/*
+	 * Don't do the lookup if the name has no separator.
+	 */
+
+	if (!strchr(name, *lp_winbind_separator()))
 		return False;
 
 	/* Send off request */
@@ -285,13 +289,10 @@ int winbind_initgroups(char *user, gid_t gid)
 {
 	gid_t *tgr, *groups = NULL;
 	int result;
-	char *sep;
 
 	/* Call normal initgroups if we are a local user */
 
-	sep = lp_winbind_separator();
-
-	if (!strchr(user, *sep)) {
+	if (!strchr(user, *lp_winbind_separator())) {
 		return initgroups(user, gid);
 	}
 
@@ -362,11 +363,19 @@ int winbind_getgroups(const char *user, int size, gid_t *list)
 	gid_t *groups = NULL;
 	int result, i;
 
+	/*
+	 * Don't do the lookup if the name has no separator.
+	 */
+
+	if (!strchr(user, *lp_winbind_separator()))
+		return -1;
+
 	/* Fetch list of groups */
 
 	result = wb_getgroups(user, &groups);
 
-	if (size == 0) goto done;
+	if (size == 0)
+		goto done;
 
 	if (result > size) {
 		result = -1;
@@ -422,7 +431,7 @@ BOOL winbind_gidtoname(fstring name, gid_t gid)
 	if (!winbind_lookup_sid(&sid, dom_name, group_name, &name_type))
 		return False;
 
-	if (name_type != SID_NAME_USER)
+	if (name_type != SID_NAME_DOM_GRP)
 		return False;
 
 	slprintf(name, sizeof(fstring)-1, "%s%s%s", dom_name, 
@@ -438,9 +447,8 @@ BOOL winbind_nametouid(uid_t *puid, const char *name)
 	DOM_SID sid;
 	enum SID_NAME_USE name_type;
 
-	if (!winbind_lookup_name(name, &sid, &name_type)) {
+	if (!winbind_lookup_name(name, &sid, &name_type))
                 return False;
-        }
 
 	if (name_type != SID_NAME_USER)
 		return False;
@@ -455,9 +463,8 @@ BOOL winbind_nametogid(gid_t *pgid, const char *gname)
 	DOM_SID g_sid;
 	enum SID_NAME_USE name_type;
 
-	if (!winbind_lookup_name(gname, &g_sid, &name_type)) {
+	if (!winbind_lookup_name(gname, &g_sid, &name_type))
                 return False;
-        }
 
 	if (name_type != SID_NAME_DOM_GRP)
 		return False;
