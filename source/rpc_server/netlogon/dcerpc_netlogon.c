@@ -332,14 +332,13 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	int num_records;
 	int num_records_domain;
 	int ret;
-	int i;
 	struct ldb_message **msgs;
 	struct ldb_message **msgs_domain;
 	NTSTATUS nt_status;
 	struct samr_Hash newNtHash;
 	struct ldb_message mod, *msg_set_pw = &mod;
 	const char *domain_dn;
-	struct dom_sid *domain_sid;
+	const char *domain_sid;
 
 	const char *attrs[] = {"objectSid", NULL 
 	};
@@ -379,32 +378,28 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	domain_sid = dom_sid_parse_talloc(mem_ctx, 
-					  samdb_result_string(msgs[0], 
-							      "objectSid", 
-							      NULL));
+	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
 	if (!domain_sid) {
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	sid_split_rid(domain_sid, NULL);
-
 	/* find the domain's DN */
 	num_records_domain = samdb_search(sam_ctx, mem_ctx, NULL, 
 					  &msgs_domain, domain_attrs,
 					  "(&(objectSid=%s)(objectclass=domain))", 
-					  dom_sid_string(mem_ctx, domain_sid));
+					  domain_sid);
 
 	if (num_records_domain == 0) {
 		DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
-			 dom_sid_string(mem_ctx, domain_sid)));
+			 domain_sid));
 		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (num_records_domain > 1) {
-		DEBUG(1,("Found %d records matching domain [%s]\n", num_records_domain, dom_sid_string(mem_ctx, domain_sid)));
+		DEBUG(1,("Found %d records matching domain [%s]\n", 
+			 num_records_domain, domain_sid));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -435,15 +430,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 		return nt_status;
 	}
 
-	/* mark all the message elements as LDB_FLAG_MOD_REPLACE, 
-	   unless they are already marked with some other flag */
-	for (i=0;i<mod.num_elements;i++) {
-		if (mod.elements[i].flags == 0) {
-			mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
-		}
-	}
-
-	ret = samdb_modify(sam_ctx, mem_ctx, msg_set_pw);
+	ret = samdb_replace(sam_ctx, mem_ctx, msg_set_pw);
 	if (ret != 0) {
 		/* we really need samdb.c to return NTSTATUS */
 

@@ -390,7 +390,8 @@ BOOL make_user_info_guest(auth_usersupplied_info **user_info)
 
 void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 {
-	fstring sid_str;
+	TALLOC_CTX *mem_ctx;
+
 	size_t     i;
 	
 	if (!token) {
@@ -398,12 +399,19 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 		return;
 	}
 	
+	mem_ctx = talloc_init("debug_nt_user_token()");
+	if (!mem_ctx) {
+		return;
+	}
+
 	DEBUGC(dbg_class, dbg_lev, ("NT user token of user %s\n",
-				    sid_to_string(sid_str, token->user_sids[0]) ));
+				    dom_sid_string(mem_ctx, token->user_sids[0]) ));
 	DEBUGADDC(dbg_class, dbg_lev, ("contains %lu SIDs\n", (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++)
 		DEBUGADDC(dbg_class, dbg_lev, ("SID[%3lu]: %s\n", (unsigned long)i, 
-					       sid_to_string(sid_str, token->user_sids[i])));
+					       dom_sid_string(mem_ctx, token->user_sids[i])));
+
+	talloc_destroy(mem_ctx);
 }
 
 /****************************************************************************
