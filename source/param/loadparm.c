@@ -579,6 +579,7 @@ static struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_OFF, "off"},
 	{LDAP_SSL_OFF, "Off"},
 	{LDAP_SSL_START_TLS, "start tls"},
+	{LDAP_SSL_START_TLS, "start_tls"},
 	{-1, NULL}
 };
 #endif /* WITH_LDAP_SAM */
@@ -1307,8 +1308,8 @@ static void init_globals(void)
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
 	string_set(&Globals.szLdapAdminDn, "");
-	Globals.ldap_port = 389;
-	Globals.ldap_ssl = LDAP_SSL_OFF;
+	Globals.ldap_port = 636;
+	Globals.ldap_ssl = LDAP_SSL_ON;
 #endif /* WITH_LDAP_SAM */
 
 #ifdef WITH_SSL
