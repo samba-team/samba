@@ -43,7 +43,14 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 
 /* Map generic permissions to printer object specific permissions */
 
-struct generic_mapping printer_generic_mapping = {
+GENERIC_MAPPING printer_generic_mapping = {
+	PRINTER_READ,
+	PRINTER_WRITE,
+	PRINTER_EXECUTE,
+	PRINTER_ALL_ACCESS
+};
+
+STANDARD_MAPPING printer_std_mapping = {
 	PRINTER_READ,
 	PRINTER_WRITE,
 	PRINTER_EXECUTE,
@@ -2772,8 +2779,17 @@ static uint32 rev_changeid(void)
 
 	get_process_uptime(&tv);
 
+#if 1	/* JERRY */
 	/* Return changeid as msec since spooler restart */
 	return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+#else
+	/*
+	 * This setting seems to work well but is too untested
+	 * to replace the above calculation.  Left in for experiementation
+	 * of the reader            --jerry (Tue Mar 12 09:15:05 CST 2002)
+	 */
+	return tv.tv_sec * 10 + tv.tv_usec / 100000;
+#endif
 }
 
 /*
