@@ -1,3 +1,8 @@
+1999-07-28  Assar Westerlund  <assar@sics.se>
+
+	* ftp/gssapi.c (gss_auth): check return value from
+ 	`gss_import_name' and print error messages if it fails
+
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
 	* ftp/krb4.c (krb4_auth): type correctness
