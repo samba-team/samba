@@ -2834,11 +2834,17 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
 		DEBUG(5, ("Changing trust account or non-unix-user password, not updating /etc/passwd\n"));
 	} else  {
 		/* update the UNIX password */
-		if (lp_unix_password_sync() )
-			if(!chgpasswd(pdb_get_username(pwd), "", plaintext_buf, True)) {
+		if (lp_unix_password_sync() ) {
+			struct passwd *passwd = Get_Pwnam(pdb_get_username(pwd));
+			if (!passwd) {
+				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
+			}
+			
+			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
 				pdb_free_sam(&pwd);
 				return False;
 			}
+		}
 	}
  
 	ZERO_STRUCT(plaintext_buf);
@@ -2899,7 +2905,12 @@ static BOOL set_user_info_pw(char *pass, DOM_SID *sid)
 	} else {
 		/* update the UNIX password */
 		if (lp_unix_password_sync()) {
-			if(!chgpasswd(pdb_get_username(pwd), "", plaintext_buf, True)) {
+			struct passwd *passwd = Get_Pwnam(pdb_get_username(pwd));
+			if (!passwd) {
+				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
+			}
+			
+			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
 				pdb_free_sam(&pwd);
 				return False;
 			}

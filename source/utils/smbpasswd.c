@@ -37,6 +37,13 @@ static const char *remote_machine = NULL;
 
 static fstring ldap_secret;
 
+/* FUNCTION DECLARATIONS */
+
+BOOL remote_password_change(const char *rmachine, const char *username,
+                            const char *old_pw, const char *new_pw,
+                            char *err_str, size_t err_str_len);
+
+
 /*********************************************************
  Print command usage on stderr and die.
 **********************************************************/
