@@ -86,24 +86,24 @@ struct smb_chkpath {
 	} in;
 };
 
-enum mkdir_level {RAW_MKDIR_GENERIC, RAW_MKDIR_MKDIR, RAW_MKDIR_T2MKDIR};
+enum smb_mkdir_level {RAW_MKDIR_GENERIC, RAW_MKDIR_MKDIR, RAW_MKDIR_T2MKDIR};
 
 /* union used in mkdir() call */
 union smb_mkdir {
 	/* generic level */
 	struct {
-		enum mkdir_level level;
+		enum smb_mkdir_level level;
 	} generic;
 
 	struct {
-		enum mkdir_level level;
+		enum smb_mkdir_level level;
 		struct {
 			const char *path;
 		} in;
 	} mkdir;
 
 	struct {
-		enum mkdir_level level;
+		enum smb_mkdir_level level;
 		struct {
 			const char *path;
 			uint_t num_eas;
@@ -120,16 +120,16 @@ struct smb_rmdir {
 };
 
 /* struct used in rename() call */
-enum rename_level {RAW_RENAME_RENAME, RAW_RENAME_NTRENAME};
+enum smb_rename_level {RAW_RENAME_RENAME, RAW_RENAME_NTRENAME};
 
 union smb_rename {
 	struct {
-		enum rename_level level;
+		enum smb_rename_level level;
 	} generic;
 
 	/* SMBrename interface */
 	struct {
-		enum rename_level level;
+		enum smb_rename_level level;
 
 		struct {
 			const char *pattern1;
@@ -141,7 +141,7 @@ union smb_rename {
 
 	/* SMBntrename interface */
 	struct {
-		enum rename_level level;
+		enum smb_rename_level level;
 
 		struct {
 			uint16_t attrib;
@@ -153,18 +153,18 @@ union smb_rename {
 	} ntrename;
 };
 
-enum tcon_level {RAW_TCON_TCON, RAW_TCON_TCONX};
+enum smb_tcon_level {RAW_TCON_TCON, RAW_TCON_TCONX};
 
 /* union used in tree connect call */
 union smb_tcon {
 	/* generic interface */
 	struct {
-		enum tcon_level level;
+		enum smb_tcon_level level;
 	} generic;
 
 	/* SMBtcon interface */
 	struct {
-		enum tcon_level level;
+		enum smb_tcon_level level;
 
 		struct {
 			const char *service;
@@ -179,7 +179,7 @@ union smb_tcon {
 
 	/* SMBtconX interface */
 	struct {
-		enum tcon_level level;
+		enum smb_tcon_level level;
 
 		struct {
 			uint16_t flags;
@@ -197,7 +197,7 @@ union smb_tcon {
 };
 
 
-enum sesssetup_level {RAW_SESSSETUP_GENERIC, RAW_SESSSETUP_OLD, RAW_SESSSETUP_NT1, RAW_SESSSETUP_SPNEGO};
+enum smb_sesssetup_level {RAW_SESSSETUP_GENERIC, RAW_SESSSETUP_OLD, RAW_SESSSETUP_NT1, RAW_SESSSETUP_SPNEGO};
 
 /* union used in session_setup call */
 union smb_sesssetup {
@@ -205,7 +205,7 @@ union smb_sesssetup {
 	/* generic interface - used for auto selecting based on negotiated
 	   protocol options */
 	struct {
-		enum sesssetup_level level;
+		enum smb_sesssetup_level level;
 
 		struct {
 			uint32_t sesskey;
@@ -224,7 +224,7 @@ union smb_sesssetup {
 
 	/* the pre-NT1 interface */
 	struct {
-		enum sesssetup_level level;
+		enum smb_sesssetup_level level;
 
 		struct {
 			uint16_t bufsize;
@@ -248,7 +248,7 @@ union smb_sesssetup {
 
 	/* the NT1 interface */
 	struct {
-		enum sesssetup_level level;
+		enum smb_sesssetup_level level;
 
 		struct {
 			uint16_t bufsize;
@@ -275,7 +275,7 @@ union smb_sesssetup {
 
 	/* the SPNEGO interface */
 	struct {
-		enum sesssetup_level level;
+		enum smb_sesssetup_level level;
 
 		struct {
 			uint16_t bufsize;
@@ -302,7 +302,8 @@ union smb_sesssetup {
 /* Note that the specified enum values are identical to the actual info-levels used
  * on the wire.
  */
-enum fileinfo_level {RAW_FILEINFO_GENERIC                    = 0xF000, 
+enum smb_fileinfo_level {
+		     RAW_FILEINFO_GENERIC                    = 0xF000, 
 		     RAW_FILEINFO_GETATTR,                   /* SMBgetatr */
 		     RAW_FILEINFO_GETATTRE,                  /* SMBgetattrE */
 		     RAW_FILEINFO_STANDARD                   = SMB_QFILEINFO_STANDARD,
@@ -342,7 +343,7 @@ union smb_fileinfo {
 	/* generic interface:
 	 * matches RAW_FILEINFO_GENERIC */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 
 		/* each level can be called on either a pathname or a
 		 * filename, in either case the return format is
@@ -397,7 +398,7 @@ union smb_fileinfo {
 	/* SMBgetatr interface:
 	 * matches RAW_FILEINFO_GETATTR */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -409,7 +410,7 @@ union smb_fileinfo {
 
 	/* SMBgetattrE interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -424,7 +425,7 @@ union smb_fileinfo {
 
 	/* trans2 RAW_FILEINFO_STANDARD interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -439,7 +440,7 @@ union smb_fileinfo {
 
 	/* trans2 RAW_FILEINFO_EA_SIZE interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -455,7 +456,7 @@ union smb_fileinfo {
 
 	/* trans2 RAW_FILEINFO_ALL_EAS interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -468,13 +469,13 @@ union smb_fileinfo {
 	/* trans2 qpathinfo RAW_FILEINFO_IS_NAME_VALID interface 
 	   only valid for a QPATHNAME call - no returned data */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 	} is_name_valid;
 
 	/* RAW_FILEINFO_BASIC_INFO and RAW_FILEINFO_BASIC_INFORMATION interfaces */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -489,7 +490,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_STANDARD_INFO and RAW_FILEINFO_STANDARD_INFORMATION interfaces */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -503,7 +504,7 @@ union smb_fileinfo {
 	
 	/* RAW_FILEINFO_EA_INFO and RAW_FILEINFO_EA_INFORMATION interfaces */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -513,7 +514,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_NAME_INFO and RAW_FILEINFO_NAME_INFORMATION interfaces */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -523,7 +524,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_ALL_INFO and RAW_FILEINFO_ALL_INFORMATION interfaces */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -544,7 +545,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_ALT_NAME_INFO and RAW_FILEINFO_ALT_NAME_INFORMATION interfaces */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -554,7 +555,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_STREAM_INFO and RAW_FILEINFO_STREAM_INFORMATION interfaces */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -565,7 +566,7 @@ union smb_fileinfo {
 	
 	/* RAW_FILEINFO_COMPRESSION_INFO and RAW_FILEINFO_COMPRESSION_INFORMATION interfaces */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -579,7 +580,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_UNIX_BASIC interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -601,7 +602,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_UNIX_LINK interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -611,7 +612,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_INTERNAL_INFORMATION interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -621,7 +622,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_ACCESS_INFORMATION interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -631,7 +632,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_POSITION_INFORMATION interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -641,7 +642,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_MODE_INFORMATION interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -651,7 +652,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_ALIGNMENT_INFORMATION interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -661,7 +662,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_NETWORK_OPEN_INFORMATION interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -678,7 +679,7 @@ union smb_fileinfo {
 
 	/* RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION interface */
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
 		struct {
@@ -689,7 +690,7 @@ union smb_fileinfo {
 };
 
 
-enum setfileinfo_level {
+enum smb_setfileinfo_level {
 	RAW_SFILEINFO_GENERIC		      = 0xF000, 
 	RAW_SFILEINFO_SETATTR,		      /* SMBsetatr */
 	RAW_SFILEINFO_SETATTRE,		      /* SMBsetattrE */
@@ -721,7 +722,7 @@ enum setfileinfo_level {
 union smb_setfileinfo {
 	/* generic interface */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 
 		/* we are combining setfileinfo and setpathinfo into one 
 		   interface */
@@ -733,7 +734,7 @@ union smb_setfileinfo {
 
 	/* RAW_SFILEINFO_SETATTR (SMBsetatr) interface - only via setpathinfo() */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 		struct {
 			uint16_t attrib;
@@ -743,7 +744,7 @@ union smb_setfileinfo {
 
 	/* RAW_SFILEINFO_SETATTRE (SMBsetattrE) interface - only via setfileinfo() */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
 		struct {
@@ -756,7 +757,7 @@ union smb_setfileinfo {
 	
 	/* RAW_SFILEINFO_STANDARD interface */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 		struct {
 			time_t create_time;
@@ -769,7 +770,7 @@ union smb_setfileinfo {
 
 	/* RAW_SFILEINFO_EA_SET interface */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 		struct {
 			struct ea_struct ea;
@@ -779,7 +780,7 @@ union smb_setfileinfo {
 	/* RAW_SFILEINFO_BASIC_INFO and
 	   RAW_SFILEINFO_BASIC_INFORMATION interfaces */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
 		struct {
@@ -794,7 +795,7 @@ union smb_setfileinfo {
 	/* RAW_SFILEINFO_DISPOSITION_INFO and 
 	   RAW_SFILEINFO_DISPOSITION_INFORMATION interfaces */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
 		struct {
@@ -805,7 +806,7 @@ union smb_setfileinfo {
 	/* RAW_SFILEINFO_ALLOCATION_INFO and 
 	   RAW_SFILEINFO_ALLOCATION_INFORMATION interfaces */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
 		struct {
@@ -817,7 +818,7 @@ union smb_setfileinfo {
 	/* RAW_SFILEINFO_END_OF_FILE_INFO and 
 	   RAW_SFILEINFO_END_OF_FILE_INFORMATION interfaces */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
 		struct {
@@ -827,7 +828,7 @@ union smb_setfileinfo {
 
 	/* RAW_SFILEINFO_RENAME_INFORMATION interface */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
 		struct {
@@ -839,7 +840,7 @@ union smb_setfileinfo {
 
 	/* RAW_SFILEINFO_POSITION_INFORMATION interface */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
 		struct {
@@ -849,7 +850,7 @@ union smb_setfileinfo {
 
 	/* RAW_SFILEINFO_MODE_INFORMATION interface */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
 		struct {
@@ -862,7 +863,7 @@ union smb_setfileinfo {
 
 	/* RAW_SFILEINFO_UNIX_BASIC interface */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 		struct {
 			uint32_t mode; /* yuck - this field remains to fix compile of libcli/clifile.c */
@@ -884,7 +885,7 @@ union smb_setfileinfo {
 	
 	/* RAW_SFILEINFO_UNIX_LINK, RAW_SFILEINFO_UNIX_HLINK interface */
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 		struct {
 			const char *link_dest;
@@ -893,7 +894,8 @@ union smb_setfileinfo {
 };
 
 
-enum fsinfo_level {RAW_QFS_GENERIC                        = 0xF000, 
+enum smb_fsinfo_level {
+		   RAW_QFS_GENERIC                        = 0xF000, 
 		   RAW_QFS_DSKATTR,                         /* SMBdskattr */
 		   RAW_QFS_ALLOCATION                     = SMB_QFS_ALLOCATION,
 		   RAW_QFS_VOLUME                         = SMB_QFS_VOLUME,
@@ -916,7 +918,7 @@ enum fsinfo_level {RAW_QFS_GENERIC                        = 0xF000,
 union smb_fsinfo {
 	/* generic interface */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint32_t block_size;
@@ -940,7 +942,7 @@ union smb_fsinfo {
 
 	/* SMBdskattr interface */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint16_t units_total;
@@ -952,7 +954,7 @@ union smb_fsinfo {
 
 	/* trans2 RAW_QFS_ALLOCATION interface */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint32_t fs_id;
@@ -965,7 +967,7 @@ union smb_fsinfo {
 
 	/* TRANS2 RAW_QFS_VOLUME interface */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint32_t serial_number;
@@ -975,7 +977,7 @@ union smb_fsinfo {
 
 	/* TRANS2 RAW_QFS_VOLUME_INFO and RAW_QFS_VOLUME_INFORMATION interfaces */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			NTTIME create_time;
@@ -986,7 +988,7 @@ union smb_fsinfo {
 
 	/* trans2 RAW_QFS_SIZE_INFO and RAW_QFS_SIZE_INFORMATION interfaces */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint64_t total_alloc_units;
@@ -998,7 +1000,7 @@ union smb_fsinfo {
 
 	/* TRANS2 RAW_QFS_DEVICE_INFO and RAW_QFS_DEVICE_INFORMATION interfaces */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint32_t device_type;
@@ -1009,7 +1011,7 @@ union smb_fsinfo {
 
 	/* TRANS2 RAW_QFS_ATTRIBUTE_INFO and RAW_QFS_ATTRIBUTE_INFORMATION interfaces */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint32_t fs_attr;
@@ -1021,7 +1023,7 @@ union smb_fsinfo {
 
 	/* TRANS2 RAW_QFS_UNIX_INFO interface */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint16_t major_version;
@@ -1032,7 +1034,7 @@ union smb_fsinfo {
 
 	/* trans2 RAW_QFS_QUOTA_INFORMATION interface */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint64_t unknown[3];
@@ -1044,7 +1046,7 @@ union smb_fsinfo {
 
 	/* trans2 RAW_QFS_FULL_SIZE_INFORMATION interface */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			uint64_t total_alloc_units;
@@ -1057,7 +1059,7 @@ union smb_fsinfo {
 
 	/* trans2 RAW_QFS_OBJECTID_INFORMATION interface */
 	struct {
-		enum fsinfo_level level;
+		enum smb_fsinfo_level level;
 
 		struct {
 			struct GUID  guid;
@@ -1068,7 +1070,8 @@ union smb_fsinfo {
 
 
 
-enum open_level {RAW_OPEN_OPEN, RAW_OPEN_OPENX, 
+enum smb_open_level {
+		 RAW_OPEN_OPEN, RAW_OPEN_OPENX, 
 		 RAW_OPEN_MKNEW, RAW_OPEN_CREATE, 
 		 RAW_OPEN_CTEMP, RAW_OPEN_SPLOPEN,
 		 RAW_OPEN_NTCREATEX, RAW_OPEN_T2OPEN};
@@ -1080,7 +1083,7 @@ enum open_level {RAW_OPEN_OPEN, RAW_OPEN_OPENX,
 union smb_open {
 	/* SMBNTCreateX interface */
 	struct {
-		enum open_level level;
+		enum smb_open_level level;
 
 		struct {
 			uint32_t flags;
@@ -1115,7 +1118,7 @@ union smb_open {
 
 	/* TRANS2_OPEN interface */
 	struct {
-		enum open_level level;
+		enum smb_open_level level;
 
 		struct {
 			uint16_t flags;
@@ -1145,7 +1148,7 @@ union smb_open {
 
 	/* SMBopen interface */
 	struct {
-		enum open_level level;
+		enum smb_open_level level;
 
 		struct {
 			uint16_t flags;
@@ -1163,7 +1166,7 @@ union smb_open {
 
 	/* SMBopenX interface */
 	struct {
-		enum open_level level;
+		enum smb_open_level level;
 
 		struct {
 			uint16_t flags;
@@ -1195,7 +1198,7 @@ union smb_open {
 
 	/* SMBmknew interface */
 	struct {
-		enum open_level level;
+		enum smb_open_level level;
 
 		struct {
 			uint16_t attrib;
@@ -1209,7 +1212,7 @@ union smb_open {
 
 	/* SMBctemp interface */
 	struct {
-		enum open_level level;
+		enum smb_open_level level;
 
 		struct {
 			uint16_t attrib;
@@ -1225,7 +1228,7 @@ union smb_open {
 
 	/* SMBsplopen interface */
 	struct {
-		enum open_level level;
+		enum smb_open_level level;
 
 		struct {
 			uint16_t setup_length;
@@ -1240,7 +1243,7 @@ union smb_open {
 
 
 
-enum read_level {RAW_READ_GENERIC, RAW_READ_READBRAW, RAW_READ_LOCKREAD, RAW_READ_READ, RAW_READ_READX};
+enum smb_read_level {RAW_READ_GENERIC, RAW_READ_READBRAW, RAW_READ_LOCKREAD, RAW_READ_READ, RAW_READ_READX};
 
 /* union for read() backend call 
 
@@ -1250,7 +1253,7 @@ enum read_level {RAW_READ_GENERIC, RAW_READ_READBRAW, RAW_READ_LOCKREAD, RAW_REA
 union smb_read {
 	/* generic interface */
 	struct {
-		enum read_level level;
+		enum smb_read_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1266,7 +1269,7 @@ union smb_read {
 
 	/* SMBreadbraw interface */
 	struct {
-		enum read_level level;
+		enum smb_read_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1284,7 +1287,7 @@ union smb_read {
 
 	/* SMBlockandread interface */
 	struct {
-		enum read_level level;
+		enum smb_read_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1300,7 +1303,7 @@ union smb_read {
 
 	/* SMBread interface */
 	struct {
-		enum read_level level;
+		enum smb_read_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1316,7 +1319,7 @@ union smb_read {
 
 	/* SMBreadX interface */
 	struct {
-		enum read_level level;
+		enum smb_read_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1335,7 +1338,8 @@ union smb_read {
 };
 
 
-enum write_level {RAW_WRITE_GENERIC, RAW_WRITE_WRITEUNLOCK, RAW_WRITE_WRITE, 
+enum smb_write_level {
+		  RAW_WRITE_GENERIC, RAW_WRITE_WRITEUNLOCK, RAW_WRITE_WRITE, 
 		  RAW_WRITE_WRITEX, RAW_WRITE_WRITECLOSE, RAW_WRITE_SPLWRITE};
 
 /* union for write() backend call 
@@ -1343,7 +1347,7 @@ enum write_level {RAW_WRITE_GENERIC, RAW_WRITE_WRITEUNLOCK, RAW_WRITE_WRITE,
 union smb_write {
 	/* generic interface */
 	struct {
-		enum write_level level;
+		enum smb_write_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1359,7 +1363,7 @@ union smb_write {
 
 	/* SMBwriteunlock interface */
 	struct {
-		enum write_level level;
+		enum smb_write_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1375,7 +1379,7 @@ union smb_write {
 
 	/* SMBwrite interface */
 	struct {
-		enum write_level level;
+		enum smb_write_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1391,7 +1395,7 @@ union smb_write {
 
 	/* SMBwriteX interface */
 	struct {
-		enum write_level level;
+		enum smb_write_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1409,7 +1413,7 @@ union smb_write {
 
 	/* SMBwriteclose interface */
 	struct {
-		enum write_level level;
+		enum smb_write_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1425,7 +1429,7 @@ union smb_write {
 
 	/* SMBsplwrite interface */
 	struct {
-		enum write_level level;
+		enum smb_write_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1436,20 +1440,20 @@ union smb_write {
 };
 
 
-enum lock_level {RAW_LOCK_GENERIC, RAW_LOCK_LOCK, RAW_LOCK_UNLOCK, RAW_LOCK_LOCKX};
+enum smb_lock_level {RAW_LOCK_GENERIC, RAW_LOCK_LOCK, RAW_LOCK_UNLOCK, RAW_LOCK_LOCKX};
 
 /* union for lock() backend call 
 */
 union smb_lock {
 	/* generic interface */
 	struct {
-		enum lock_level level;
+		enum smb_lock_level level;
 
 	} generic;
 
 	/* SMBlock interface */
 	struct {
-		enum lock_level level;
+		enum smb_lock_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1460,7 +1464,7 @@ union smb_lock {
 
 	/* SMBunlock interface */
 	struct {
-		enum lock_level level;
+		enum smb_lock_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1471,7 +1475,7 @@ union smb_lock {
 
 	/* SMBlockingX interface */
 	struct {
-		enum lock_level level;
+		enum smb_lock_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1489,7 +1493,7 @@ union smb_lock {
 };
 
 
-enum close_enum {RAW_CLOSE_GENERIC, RAW_CLOSE_CLOSE, RAW_CLOSE_SPLCLOSE};
+enum smb_close_level {RAW_CLOSE_GENERIC, RAW_CLOSE_CLOSE, RAW_CLOSE_SPLCLOSE};
 
 /*
   union for close() backend call
@@ -1497,7 +1501,7 @@ enum close_enum {RAW_CLOSE_GENERIC, RAW_CLOSE_CLOSE, RAW_CLOSE_SPLCLOSE};
 union smb_close {
 	/* generic interface */
 	struct {
-		enum close_enum level;
+		enum smb_close_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1506,7 +1510,7 @@ union smb_close {
 
 	/* SMBclose interface */
 	struct {
-		enum close_enum level;
+		enum smb_close_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1516,7 +1520,7 @@ union smb_close {
 
 	/* SMBsplclose interface - empty! */
 	struct {
-		enum close_enum level;
+		enum smb_close_level level;
 
 		struct {
 			uint16_t fnum;
@@ -1525,7 +1529,7 @@ union smb_close {
 };
 
 
-enum lpq_level {RAW_LPQ_GENERIC, RAW_LPQ_RETQ};
+enum smb_lpq_level {RAW_LPQ_GENERIC, RAW_LPQ_RETQ};
 
 /*
   union for lpq() backend
@@ -1533,14 +1537,14 @@ enum lpq_level {RAW_LPQ_GENERIC, RAW_LPQ_RETQ};
 union smb_lpq {
 	/* generic interface */
 	struct {
-		enum lpq_level level;
+		enum smb_lpq_level level;
 
 	} generic;
 
 
 	/* SMBsplretq interface */
 	struct {
-		enum lpq_level level;
+		enum smb_lpq_level level;
 
 		struct {
 			uint16_t maxcount;
@@ -1560,7 +1564,7 @@ union smb_lpq {
 	} retq;
 };
 
-enum ioctl_level {RAW_IOCTL_IOCTL, RAW_IOCTL_NTIOCTL};
+enum smb_ioctl_level {RAW_IOCTL_IOCTL, RAW_IOCTL_NTIOCTL};
 
 /*
   union for ioctl() backend
@@ -1568,13 +1572,13 @@ enum ioctl_level {RAW_IOCTL_IOCTL, RAW_IOCTL_NTIOCTL};
 union smb_ioctl {
 	/* generic interface */
 	struct {
-		enum ioctl_level level;
+		enum smb_ioctl_level level;
 
 	} generic;
 
 	/* struct for SMBioctl */
 	struct {
-		enum ioctl_level level;
+		enum smb_ioctl_level level;
 		struct {
 			uint16_t fnum;
 			uint32_t request;
@@ -1587,7 +1591,7 @@ union smb_ioctl {
 
 	/* struct for NT ioctl call */
 	struct {
-		enum ioctl_level level;
+		enum smb_ioctl_level level;
 		struct {
 			uint32_t function;
 			uint16_t fnum;
@@ -1687,7 +1691,7 @@ struct smb_notify {
 };
 
 
-enum search_level {RAW_SEARCH_GENERIC                 = 0xF000, 
+enum smb_search_level {RAW_SEARCH_GENERIC                 = 0xF000, 
 		   RAW_SEARCH_SEARCH,                 /* SMBsearch */ 
 		   RAW_SEARCH_FCLOSE,				  /* SMBfclose */
 		   RAW_SEARCH_STANDARD                = SMB_FIND_STANDARD,
@@ -1704,12 +1708,12 @@ enum search_level {RAW_SEARCH_GENERIC                 = 0xF000,
 /* union for file search */
 union smb_search_first {
 	struct {
-		enum search_level level;
+		enum smb_search_level level;
 	} generic;
 	
 	/* search (old) findfirst interface */
 	struct {
-		enum search_level level;
+		enum smb_search_level level;
 	
 		struct {
 			uint16_t max_count;
@@ -1723,7 +1727,7 @@ union smb_search_first {
 
 	/* trans2 findfirst interface */
 	struct {
-		enum search_level level;
+		enum smb_search_level level;
 		
 		struct {
 			uint16_t search_attrib;
@@ -1743,12 +1747,12 @@ union smb_search_first {
 /* union for file search continue */
 union smb_search_next {
 	struct {
-		enum search_level level;
+		enum smb_search_level level;
 	} generic;
 
 	/* search (old) findnext interface */
 	struct {
-		enum search_level level;
+		enum smb_search_level level;
 	
 		struct {
 			uint16_t max_count;
@@ -1762,7 +1766,7 @@ union smb_search_next {
 	
 	/* trans2 findnext interface */
 	struct {
-		enum search_level level;
+		enum smb_search_level level;
 		
 		struct {
 			uint16_t handle;
@@ -1914,17 +1918,17 @@ union smb_search_data {
 };
 
 
-enum search_close_level {RAW_FINDCLOSE_GENERIC, RAW_FINDCLOSE_CLOSE};
+enum smb_search_close_level {RAW_FINDCLOSE_GENERIC, RAW_FINDCLOSE_CLOSE};
 
 /* union for file search close */
 union smb_search_close {
 	struct {
-		enum search_close_level level;
+		enum smb_search_close_level level;
 	} generic;
 
 	/* SMBfclose (old search) interface */
 	struct {
-		enum search_level level;
+		enum smb_search_close_level level;
 	
 		struct {
 			uint16_t max_count;
@@ -1938,7 +1942,7 @@ union smb_search_close {
 	
 	/* SMBfindclose interface */
 	struct {
-		enum search_close_level level;
+		enum smb_search_close_level level;
 		
 		struct {
 			uint16_t handle;

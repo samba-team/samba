@@ -41,7 +41,7 @@ static BOOL single_search_callback(void *private, union smb_search_data *file)
 static NTSTATUS single_search(struct cli_state *cli, 
 			      TALLOC_CTX *mem_ctx,
 			      const char *pattern,
-			      enum search_level level,
+			      enum smb_search_level level,
 			      union smb_search_data *data)
 {
 	union smb_search_first io;
@@ -69,7 +69,7 @@ static NTSTATUS single_search(struct cli_state *cli,
 
 static struct {
 	const char *name;
-	enum search_level level;
+	enum smb_search_level level;
 	uint32_t capability_mask;
 	NTSTATUS status;
 	union smb_search_data data;
@@ -394,7 +394,7 @@ enum continue_type {CONT_FLAGS, CONT_NAME, CONT_RESUME_KEY};
 static NTSTATUS multiple_search(struct cli_state *cli, 
 				TALLOC_CTX *mem_ctx,
 				const char *pattern,
-				enum search_level level,
+				enum smb_search_level level,
 				enum continue_type cont_type,
 				void *data)
 {
@@ -550,7 +550,7 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	struct {
 		const char *name;
 		const char *cont_name;
-		enum search_level level;
+		enum smb_search_level level;
 		enum continue_type cont_type;
 	} search_types[] = {
 		{"BOTH_DIRECTORY_INFO", "NAME",  RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_NAME},

@@ -22,7 +22,7 @@
 
 static struct {
 	const char *name;
-	enum fileinfo_level level;
+	enum smb_fileinfo_level level;
 	uint_t only_paths:1;
 	uint_t only_handles:1;
 	uint32_t capability_mask;

@@ -1422,7 +1422,7 @@ static void gen_fileinfo(int instance, union smb_fileinfo *info)
 	int i;
 	#define LVL(v) {RAW_FILEINFO_ ## v, "RAW_FILEINFO_" #v}
 	struct {
-		enum fileinfo_level level;
+		enum smb_fileinfo_level level;
 		const char *name;
 	}  levels[] = {
 		LVL(GETATTR), LVL(GETATTRE), LVL(STANDARD),
@@ -1656,7 +1656,7 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	#undef LVL
 	#define LVL(v) {RAW_SFILEINFO_ ## v, "RAW_SFILEINFO_" #v}
 	struct {
-		enum setfileinfo_level level;
+		enum smb_setfileinfo_level level;
 		const char *name;
 	}  levels[] = {
 #if 0
