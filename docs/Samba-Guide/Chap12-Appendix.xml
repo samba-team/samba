@@ -810,7 +810,7 @@ DOMNAME="MYWORKGROUP"
 # Here We Go ...
 #
 
-cat &gt;&gt;EOF
+cat &lt;&lt;EOF
 
 How do you wish to refer to your organization?
 
