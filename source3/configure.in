@@ -130,7 +130,6 @@ fi
 if test "$ac_cv_header_readline_h" = "yes" ||
    test "$ac_cv_header_readline_readline_h" = "yes"; then
   AC_CHECK_LIB(readline,readline)
-  AC_DEFINE(HAVE_LIBREADLINE)
 fi
 
 # The following test taken from the cvs sources
