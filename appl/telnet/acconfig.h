@@ -9,6 +9,8 @@
 #ifndef T_CONFIG_H
 #define T_CONFIG_H
 
+#include "../../config.h"
+
 @TOP@
 
 /* define this if you want authentication */
@@ -71,32 +73,9 @@
 
 @BOTTOM@
 
-#ifdef __STDC__
-#define RCSID(msg) static const char *rcsid[] = { (char *)rcsid, "@(#)" msg }
-#else
-#define RCSID(msg) static char *rcsid[] = { (char *)rcsid, msg }
-#endif
-
 /* set this to a sensible login */
 #ifndef LOGIN_PATH
 #define LOGIN_PATH "/usr/athena/bin/login"
-#endif
-
-
-/* this is left for hysteric reasons :-) */
-#ifdef _AIX
-#define unix /* well, ok... */
-#endif
-
-/*
- * SunOS braindamage! (Sun include files are generally braindead)
- */
-#if (defined(sun) || defined(__sun))
-#if defined(__svr4__) || defined(__SVR4)
-#define SunOS 5
-#else
-#define SunOS 4
-#endif
 #endif
 
 #endif /* T_CONFIG_H */
