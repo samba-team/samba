@@ -459,8 +459,6 @@ NTSTATUS cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
 
 		result = cli_net_sam_logon_internal(cli, ctr, user_info3,
                                                     validation_level);
-	} else {
-		DEBUG(10,("cli_net_sam_logon: Error\n"));
 	}
 
 	return result;
