@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-#if defined(HAVE_NDBM_H) || defined(GDBM_NDBM_H)
+#if defined(HAVE_NDBM_H) || defined(HAVE_GDBM_NDBM_H)
 
 struct ndbm_db {
     DBM *db;
