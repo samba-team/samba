@@ -123,6 +123,22 @@ void init_printer_hnd(void)
 }
 
 /****************************************************************************
+ Return a user struct for a pipe user.
+****************************************************************************/
+
+static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
+{
+	if (p->ntlmssp_auth_validated) {
+		memcpy(user, &p->pipe_user, sizeof(struct current_user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(user, &current_user, sizeof(struct current_user));
+	}
+
+	return user;
+}
+
+/****************************************************************************
   create a unique printer handle
 ****************************************************************************/
 static void create_printer_hnd(POLICY_HND *hnd)
@@ -280,10 +296,10 @@ static uint32 delete_printer_handle(POLICY_HND *hnd)
 			path = tmpdir();
 		
 		/* Printer->dev.handlename equals portname equals sharename */
-		slprintf(command, sizeof(command), "%s \"%s\"", cmd,
+		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
 					Printer->dev.handlename);
 		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
-        slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+        slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
@@ -658,22 +674,6 @@ static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 	return True;
 }	
 
-/****************************************************************************
- Return a user struct for a pipe user.
-****************************************************************************/
-
-static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
-{
-	if (p->ntlmssp_auth_validated) {
-		memcpy(user, &p->pipe_user, sizeof(struct current_user));
-	} else {
-		extern struct current_user current_user;
-		memcpy(user, &current_user, sizeof(struct current_user));
-	}
-
-	return user;
-}
-
 /********************************************************************
  * spoolss_open_printer
  *
@@ -684,7 +684,9 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle)
 {
+#if 0
 	uint32 result = NT_STATUS_NO_PROBLEMO;
+#endif
 	fstring name;
 	int snum;
 	struct current_user user;
@@ -740,12 +742,12 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 	*/
 
 	get_current_user(&user, p);
-	
-	if (handle_is_printserver(handle) ) {
+
+	if (handle_is_printserver(handle)) {
 		if (printer_default->access_required == 0) {
 			return NT_STATUS_NO_PROBLEMO;
 		}
-		else if ( (printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
+		else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(handle);
@@ -753,15 +755,18 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 			}
 			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin(snum))) {
 				return NT_STATUS_NO_PROBLEMO;
-			} else {
+			} 
+			else {
 				close_printer_handle(handle);
 				return ERROR_ACCESS_DENIED;
 			}
 		}
-		else 
-			return NT_STATUS_NO_PROBLEMO;
-	} else {
-	
+	}
+	else
+	{
+		/* NT doesn't let us connect to a printer if the connecting user
+		   doesn't have print permission.  */
+
 		if (!get_printer_snum(handle, &snum))
 			return ERROR_INVALID_HANDLE;
 
@@ -783,6 +788,64 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		 * here ! This is insanity.... JRA.
 		 */
 
+		/*
+		 * If the openprinterex rpc call contains a devmode,
+		 * it's a per-user one. This per-user devmode is derivated
+		 * from the global devmode. Openprinterex() contains a per-user 
+		 * devmode for when you do EMF printing and spooling.
+		 * In the EMF case, the NT workstation is only doing half the job
+		 * of rendering the page. The other half is done by running the printer
+		 * driver on the server.
+		 * The EMF file doesn't contain the page description (paper size, orientation, ...).
+		 * The EMF file only contains what is to be printed on the page.
+		 * So in order for the server to know how to print, the NT client sends
+		 * a devicemode attached to the openprinterex call.
+		 * But this devicemode is short lived, it's only valid for the current print job.
+		 *
+		 * If Samba would have supported EMF spooling, this devicemode would
+		 * have been attached to the handle, to sent it to the driver to correctly
+		 * rasterize the EMF file.
+		 *
+		 * As Samba only supports RAW spooling, we only receive a ready-to-print file,
+		 * we just act as a pass-thru between windows and the printer.
+		 *
+		 * In order to know that Samba supports only RAW spooling, NT has to call
+		 * getprinter() at level 2 (attribute field) or NT has to call startdoc()
+		 * and until NT sends a RAW job, we refuse it.
+		 *
+		 * But to call getprinter() or startdoc(), you first need a valid handle,
+		 * and to get an handle you have to call openprintex(). Hence why you have
+		 * a devicemode in the openprinterex() call.
+		 *
+		 *
+		 * Differences between NT4 and NT 2000.
+		 * NT4:
+		 * ---
+		 * On NT4, you only have a global devicemode. This global devicemode can be changed
+		 * by the administrator (or by a user with enough privs). Everytime a user
+		 * wants to print, the devicemode is resetted to the default. In Word, everytime
+		 * you print, the printer's characteristics are always reset to the global devicemode.
+		 *
+		 * NT 2000:
+		 * -------
+		 * In W2K, there is the notion of per-user devicemode. The first time you use
+		 * a printer, a per-user devicemode is build from the global devicemode.
+		 * If you change your per-user devicemode, it is saved in the registry, under the
+		 * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
+		 * printer preferences available.
+		 *
+		 * To change the per-user devicemode: it's the "Printing Preferences ..." button
+		 * on the General Tab of the printer properties windows.
+		 *
+		 * To change the global devicemode: it's the "Printing Defaults..." button
+		 * on the Advanced Tab of the printer properties window.
+		 *
+		 * JFM.
+		 */
+
+
+
+#if 0
 		if (printer_default->devmode_cont.devmode != NULL) {
 			result = printer_write_default_dev( snum, printer_default);
 			if (result != 0) {
@@ -790,10 +853,10 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 				return result;
 			}
 		}
-
-		return NT_STATUS_NO_PROBLEMO;
+#endif
 	}
 
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /****************************************************************************
@@ -841,9 +904,11 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 	 * as we will be overwriting it.
 	 */
 		
-	if (nt_devmode == NULL)
+	if (nt_devmode == NULL) {
+		DEBUG(5, ("convert_devicemode: allocating a generic devmode\n"));
 		if ((nt_devmode = construct_nt_devicemode(printername)) == NULL)
 			return False;
+	}
 
 	unistr_to_dos(nt_devmode->devicename, (const char *)devmode->devicename.buffer, 31);
 	unistr_to_dos(nt_devmode->formname, (const char *)devmode->formname.buffer, 31);
@@ -1210,7 +1275,7 @@ static void spoolss_notify_server_name(int snum,
 	pstring temp_name, temp;
 	uint32 len;
 
-	snprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	len = (uint32)dos_PutUniCode(temp, temp_name, sizeof(temp) - 2, True);
 
@@ -2402,16 +2467,16 @@ static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int 
 
 	if (*ntprinter->info_2->comment == '\0') {
 		init_unistr(&printer->comment, lp_comment(snum));
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
+		slprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, lp_comment(snum));
 	}
 	else {
 		init_unistr(&printer->comment, ntprinter->info_2->comment); /* saved comment. */
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
+		slprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",global_myname, ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, ntprinter->info_2->comment);
 	}
 		
-	snprintf(chaine2,sizeof(chaine)-1,"%s", ntprinter->info_2->printername);
+	slprintf(chaine2,sizeof(chaine)-1,"%s", ntprinter->info_2->printername);
 
 	init_unistr(&printer->description, chaine);
 	init_unistr(&printer->name, chaine2);	
@@ -2470,10 +2535,10 @@ static DEVICEMODE *construct_dev_mode(int snum)
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
 
-	snprintf(adevice, sizeof(adevice), printer->info_2->printername);
+	slprintf(adevice, sizeof(adevice)-1, printer->info_2->printername);
 	init_unistr(&devmode->devicename, adevice);
 
-	snprintf(aform, sizeof(aform), ntdevmode->formname);
+	slprintf(aform, sizeof(aform)-1, ntdevmode->formname);
 	init_unistr(&devmode->formname, aform);
 
 	devmode->specversion      = ntdevmode->specversion;
@@ -2744,9 +2809,9 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 
 	*returned=1;
 	
-	snprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", global_myname);		
-	snprintf(desc, sizeof(desc)-1,"%s", global_myname);
-	snprintf(comment, sizeof(comment)-1, "Logged on Domain");
+	slprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", global_myname);		
+	slprintf(desc, sizeof(desc)-1,"%s", global_myname);
+	slprintf(comment, sizeof(comment)-1, "Logged on Domain");
 
 	init_unistr(&printer->description, desc);
 	init_unistr(&printer->name, printername);	
@@ -3158,19 +3223,19 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_IN
 
 
     if (strlen(driver.info_3->driverpath)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
 		init_unistr( &info->driverpath, temp );
     } else
         init_unistr( &info->driverpath, "" );
 
 	if (strlen(driver.info_3->datafile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 	
 	if (strlen(driver.info_3->configfile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );	
 	} else
 		init_unistr( &info->configfile, "" );
@@ -3224,7 +3289,7 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 			if (!v) v = ""; /* hack to handle null lists */
 		}
 		if (strlen(v) == 0) break;
-		snprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
+		slprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
 		if((*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
 			DEBUG(0,("init_unistr_array: Realloc error\n" ));
@@ -3257,25 +3322,25 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->architecture, driver.info_3->environment );
 
     if (strlen(driver.info_3->driverpath)) {
-        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
         init_unistr( &info->driverpath, temp );
     } else
         init_unistr( &info->driverpath, "" );
     
     if (strlen(driver.info_3->datafile)) {
-        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
         init_unistr( &info->datafile, temp );
     } else
         init_unistr( &info->datafile, "" );
 
     if (strlen(driver.info_3->configfile)) {
-        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
         init_unistr( &info->configfile, temp );	
     } else
         init_unistr( &info->configfile, "" );
 
     if (strlen(driver.info_3->helpfile)) {
-        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+        slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
         init_unistr( &info->helpfile, temp );
     } else
         init_unistr( &info->helpfile, "" );
@@ -3336,25 +3401,25 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->architecture, driver.info_3->environment );
 
 	if (strlen(driver.info_3->driverpath)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
 		init_unistr( &info->driverpath, temp );
 	} else
 		init_unistr( &info->driverpath, "" );
 
 	if (strlen(driver.info_3->datafile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 
 	if (strlen(driver.info_3->configfile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );	
 	} else
 		init_unistr( &info->configfile, "" );
 
 	if (strlen(driver.info_3->helpfile)) {
-		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
 		init_unistr( &info->helpfile, temp );
 	} else
 		init_unistr( &info->helpfile, "" );
@@ -3649,6 +3714,7 @@ uint32 _spoolss_endpageprinter(POLICY_HND *handle)
 	return NT_STATUS_NO_PROBLEMO;
 }
 
+
 /********************************************************************
  * api_spoolss_getprinter
  * called from the spoolss dispatcher
@@ -3918,8 +3984,8 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 		 info->servername, info->printername, info->sharename, info->portname, info->drivername, info->comment, info->location));
 
 	/* we force some elements to "correct" values */
-	slprintf(info->servername, sizeof(info->servername), "\\\\%s", global_myname);
-	slprintf(info->printername, sizeof(info->printername), "\\\\%s\\%s",
+	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", global_myname);
+	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
 		 global_myname, lp_servicename(snum));
 	fstrcpy(info->sharename, lp_servicename(snum));
 	info->attributes = PRINTER_ATTRIBUTE_SHARED   \
@@ -3955,8 +4021,8 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
 	
-	slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-	slprintf(command, sizeof(command), "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
+	slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, driverlocation);
@@ -4013,9 +4079,13 @@ static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 		return False; /* if either is exclusively NULL are not equal */
 	}
 
-	if (!strequal(d1->devicename, d2->devicename) ||
-	    !strequal(d1->formname, d2->formname)) {
-		DEBUG(10, ("nt_devicemode_equal(): device,form not equal\n"));
+	if (!strequal(d1->devicename, d2->devicename)) {
+		DEBUG(10, ("nt_devicemode_equal(): device not equal (%s != %s)\n", d1->devicename, d2->devicename));
+		return False;
+	}
+
+	if (!strequal(d1->formname, d2->formname)) {
+		DEBUG(10, ("nt_devicemode_equal(): formname not equal (%s != %s)\n", d1->formname, d2->formname));
 		return False;
 	}
 
@@ -4181,7 +4251,13 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	pi1 = p1->info_2;
 	pi2 = p2->info_2;
 
+	/* Don't check the attributes as we stomp on the value in
+	   check_printer_ok() anyway. */
+
+#if 0
 	PI_CHECK_INT(attributes);
+#endif
+
 	PI_CHECK_INT(priority);
 	PI_CHECK_INT(default_priority);
 	PI_CHECK_INT(starttime);
@@ -4419,7 +4495,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	struct tm *t;
 	
 	t=gmtime(&queue->time);
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;	
 	init_unistr(&job_info->printername, lp_servicename(snum));
@@ -4448,11 +4524,11 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	struct tm *t;
 
 	t=gmtime(&queue->time);
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;
 	
-	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter->info_2->printername);
+	slprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter->info_2->printername);
 
 	init_unistr(&job_info->printername, chaine);
 	
@@ -5133,8 +5209,8 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		else
 			path = tmpdir();
 
-		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-		slprintf(command, sizeof(command), "%s \"%d\"", cmd, 1);
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
@@ -5231,8 +5307,8 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		else
 			path = tmpdir();
 
-		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-		slprintf(command, sizeof(command), "%s \"%d\"", cmd, 2);
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 2);
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));

@@ -271,6 +271,7 @@ void unbecome_root(void)
 BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
 	extern pstring global_myname;
+	extern fstring global_myworkgroup;
 	fstring sid;
 	char *sep = lp_winbind_separator();
 
@@ -287,9 +288,17 @@ BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 
 			split_domain_name(name, domain, username);
 
-			if (strcasecmp(global_myname, domain) != 0) {
-				DEBUG(5, ("domain %s is not local\n", domain));
-				return False;
+			switch (lp_server_role()) {
+				case ROLE_DOMAIN_PDC:
+				case ROLE_DOMAIN_BDC:
+					if (strequal(domain, global_myworkgroup))
+						fstrcpy(domain, global_myname);
+					/* No break is deliberate here. JRA. */
+				default:
+					if (strcasecmp(global_myname, domain) != 0) {
+						DEBUG(5, ("domain %s is not local\n", domain));
+						return False;
+					}
 			}
 
 			ret = local_lookup_name(domain, username, psid, 
