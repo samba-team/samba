@@ -549,9 +549,12 @@ krb5_get_in_cred(krb5_context context,
 	    ret = KRB5KRB_AP_ERR_V4_REPLY;
 	krb5_data_free(&resp);
 	if (ret2 == 0) {
-	    /* XXX - send krb-error packet to caller */
-	    free_KRB_ERROR (&error);
-	    return error.error_code;
+	    ret = error.error_code;
+	    if(ret_as_reply)
+		ret_as_reply->error = error;
+	    else
+		free_KRB_ERROR (&error);
+	    return ret;
 	}
 	return ret;
     }
