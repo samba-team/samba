@@ -299,8 +299,8 @@ static void updwtmp_my(pstring wname, struct utmp *u, BOOL claim)
 		 *	man page appears not to specify (hints non-NULL)
 		 *	A correspondent suggest at least ut_name should be NULL
 		 */
-		memset((char *)&(u->ut_name), '\0', sizeof(u->ut_name));
-		memset((char *)&(u->ut_host), '\0', sizeof(u->ut_host));
+		memset((char *)&u->ut_name, '\0', sizeof(u->ut_name));
+		memset((char *)&u->ut_host, '\0', sizeof(u->ut_host));
 	}
 	/* Stolen from logwtmp function in libutil.
 	 * May be more locking/blocking is needed?
@@ -319,7 +319,7 @@ static void updwtmp_my(pstring wname, struct utmp *u, BOOL claim)
  Update via utmp/wtmp (not utmpx/wtmpx).
 ****************************************************************************/
 
-static void utmp_nox_update(struct utmp *u, const char *host, BOOL claim)
+static void utmp_nox_update(struct utmp *u, BOOL claim)
 {
 	pstring uname, wname;
 #if defined(PUTUTLINE_RETURNS_UTMP)
@@ -380,14 +380,16 @@ static void utmp_nox_update(struct utmp *u, const char *host, BOOL claim)
 
 static void utmp_strcpy(char *dest, const char *src, size_t n)
 {
-	size_t len;
+	size_t len = 0;
 
-	len = strlen(src);
+	memset(dest, '\0', n);
+	if (src)
+		len = strlen(src);
 	if (len >= n) {
 		memcpy(dest, src, n);
 	} else {
-		memcpy(dest, src, len);
-		memset(dest + len, '\0', n - len);
+		if (len)
+			memcpy(dest, src, len);
 	}
 }
 
@@ -399,15 +401,15 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 {
 #if !defined(HAVE_UTMPX_H)
 	/* No utmpx stuff.  Drop to non-x stuff */
-	utmp_nox_update(u, hostname, claim);
+	utmp_nox_update(u, claim);
 #elif !defined(HAVE_PUTUTXLINE)
 	/* Odd.  Have utmpx.h but no "pututxline()".  Drop to non-x stuff */
 	DEBUG(1,("utmp_update: have utmpx.h but no pututxline() function\n"));
-	utmp_nox_update(u, hostname, claim);
+	utmp_nox_update(u, claim);
 #elif !defined(HAVE_GETUTMPX)
 	/* Odd.  Have utmpx.h but no "getutmpx()".  Drop to non-x stuff */
 	DEBUG(1,("utmp_update: have utmpx.h but no getutmpx() function\n"));
-	utmp_nox_update(u, hostname, claim);
+	utmp_nox_update(u, claim);
 #else
 	pstring uname, wname;
 	struct utmpx ux, *uxrc;
@@ -433,7 +435,7 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 	 * Drop to non-x method.  (E.g. RH6 has good defaults in "utmp.h".)
 	 */
 	if ((strlen(uname) == 0) || (strlen(wname) == 0)) {
-		utmp_nox_update(u, hostname, claim);
+		utmp_nox_update(u, claim);
 	} else {
 		utmpxname(uname);
 		setutxent();
