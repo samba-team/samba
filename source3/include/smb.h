@@ -399,6 +399,15 @@ typedef struct sid_info
 
 } DOM_SID;
 
+/*
+ * The complete list of SIDS belonging to this user.
+ * Created when a vuid is registered.
+ */
+
+typedef struct _nt_user_token {
+	size_t num_sids;
+	DOM_SID *user_sids;
+} NT_USER_TOKEN;
 
 /*** query a local group, get a list of these: shows who is in that group ***/
 
@@ -556,8 +565,8 @@ typedef struct connection_struct
 	char *connectpath;
 	char *origpath;
 
-        struct vfs_ops vfs_ops;                   /* Filesystem operations */
-        struct vfs_connection_struct *vfs_conn;   /* VFS specific connection stuff */
+	struct vfs_ops vfs_ops;                   /* Filesystem operations */
+	struct vfs_connection_struct *vfs_conn;   /* VFS specific connection stuff */
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */
@@ -1663,12 +1672,7 @@ typedef struct
 	int n_groups;
 	gid_t *groups;
 
-#if 0
-	NET_USER_INFO_3 usr; /* This should not be here. */
-#else
-	DOM_SID user_sid;
-	DOM_SID *group_sids;
-#endif
+	NT_USER_TOKEN nt_user_token;
 
 	/* per-user authentication information on NT RPCs */
 	/* lkclXXXX - THIS SHOULD NOT BE HERE! */

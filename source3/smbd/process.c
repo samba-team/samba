@@ -561,8 +561,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       }
 
       /* load service specific parameters */
-      if (conn && 
-	  !become_service(conn,(flags & AS_USER)?True:False)) {
+      if (conn && !become_service(conn,(flags & AS_USER)?True:False)) {
         return(ERROR(ERRSRV,ERRaccess));
       }
 

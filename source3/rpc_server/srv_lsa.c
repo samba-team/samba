@@ -238,7 +238,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 		if (map_domain_name_to_sid(&dom_sid, dom_name)) {
 			dom_idx = init_dom_ref(ref, dom_name, &dom_sid);
 
-			if (lookup_local_name(dom_name, user, &sid, &sid_name_use) && sid_split_rid(&sid, &rid)) 
+			if (local_lookup_name(dom_name, user, &sid, &sid_name_use) && sid_split_rid(&sid, &rid)) 
 				status = True;
 		}
 

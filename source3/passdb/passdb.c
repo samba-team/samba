@@ -1091,12 +1091,12 @@ BOOL pdb_rid_is_user(uint32 rid)
  Convert a rid into a name. Used in the lookup SID rpc.
  ********************************************************************/
 
-BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use)
+BOOL local_lookup_rid(uint32 rid, char *name, uint8 *psid_name_use)
 {
 
 	BOOL is_user = pdb_rid_is_user(rid);
 
-	DEBUG(5,("lookup_local_rid: looking up %s RID %u.\n", is_user ? "user" :
+	DEBUG(5,("local_lookup_rid: looking up %s RID %u.\n", is_user ? "user" :
 			"group", (unsigned int)rid));
 
 	if(is_user) {
@@ -1118,7 +1118,7 @@ BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use)
 
 			*psid_name_use = SID_NAME_USER;
 
-			DEBUG(5,("lookup_local_rid: looking up uid %u %s\n", (unsigned int)uid,
+			DEBUG(5,("local_lookup_rid: looking up uid %u %s\n", (unsigned int)uid,
 				pass ? "succeeded" : "failed" ));
 
 			if(!pass) {
@@ -1128,7 +1128,7 @@ BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use)
 
 			fstrcpy(name, pass->pw_name);
 
-			DEBUG(5,("lookup_local_rid: found user %s for rid %u\n", name,
+			DEBUG(5,("local_lookup_rid: found user %s for rid %u\n", name,
 				(unsigned int)rid ));
 		}
 
@@ -1138,7 +1138,7 @@ BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use)
 
 		*psid_name_use = SID_NAME_ALIAS;
 
-		DEBUG(5,("lookup_local_rid: looking up gid %u %s\n", (unsigned int)gid,
+		DEBUG(5,("local_local_rid: looking up gid %u %s\n", (unsigned int)gid,
 			gr ? "succeeded" : "failed" ));
 
 		if(!gr) {
@@ -1148,7 +1148,7 @@ BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use)
 
 		fstrcpy( name, gr->gr_name);
 
-		DEBUG(5,("lookup_local_rid: found group %s for rid %u\n", name,
+		DEBUG(5,("local_lookup_rid: found group %s for rid %u\n", name,
 			(unsigned int)rid ));
 	}
 
@@ -1159,7 +1159,7 @@ BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use)
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name_use)
+BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name_use)
 {
 	extern DOM_SID global_sid_World_Domain;
 	struct passwd *pass = NULL;
@@ -1206,71 +1206,29 @@ BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name
 }
 
 /****************************************************************************
- Create a list of SIDS for a user - primary and group.
- This is really the wrong way to do this and needs to go via winbind. JRA.
+ Convert a uid to SID - locally.
 ****************************************************************************/
 
-BOOL setup_user_sids(user_struct *vuser)
+DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
     extern DOM_SID global_sam_sid;
 
-	sid_copy(&vuser->user_sid, &global_sam_sid);
-	sid_append_rid( &vuser->user_sid, pdb_uid_to_user_rid(vuser->uid));
+	sid_copy(psid, &global_sam_sid);
+	sid_append_rid(psid, pdb_uid_to_user_rid(uid));
 
-	if (vuser->n_groups != 0) {
-		int i;
+	return psid;
+}
 
-		vuser->group_sids = (DOM_SID *)malloc(sizeof(DOM_SID) * vuser->n_groups);
+/****************************************************************************
+ Convert a gid to SID - locally.
+****************************************************************************/
 
-		if (vuser->group_sids == NULL)
-			return False;
-
-		for (i = 0; i < vuser->n_groups; i++) {
-			sid_copy(&vuser->group_sids[i], &global_sam_sid);
-			sid_append_rid( &vuser->group_sids[i], pdb_gid_to_group_rid(vuser->groups[i]));
-		}
-	}
-
-	return True;
-#if 0
-	/* Luke's code. */
-   if (usr == NULL)
-   {
-    int i;
+DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
+{
     extern DOM_SID global_sam_sid;
- 
-    DEBUG(0,("vuser struct usr being filled in with trash, today\n"));
-    DEBUG(0,("this needs to be replaced with a proper surs impl.\n"));
-    DEBUG(0,("e.g. the one used in winbindd.  in fact, all\n"));
-    DEBUG(0,("occurrences of pdb_xxx_to_xxx should be replaced\n"));
-    DEBUG(0,("as soon as possible.\n"));
-    vuser->usr.user_id = pdb_uid_to_user_rid(uid);
-    vuser->usr.group_id = pdb_gid_to_group_rid(gid);
-    vuser->usr.num_groups = vuser->n_groups;
-    if (vuser->n_groups != 0)
-    {
-        vuser->usr.gids = g_new(DOM_GID, vuser->usr.num_groups);
-        if (vuser->usr.gids == NULL)
-            return UID_FIELD_INVALID;
-    }
 
-    for (i = 0; i < vuser->usr.num_groups; i++)
-    {
-        DOM_GID *ntgid = &vuser->usr.gids[i];
-        ntgid->attr = 0x7;
-        ntgid->g_rid = pdb_gid_to_group_rid(vuser->groups[i]);
-    }
- 
-    /* this is possibly the worst thing to do, ever.  it assumes */
-    /* that all users of this system are in the local SAM database */
-    /* however, because there is no code to do anything otherwise, */
-    /* we have no choice */
- 
-    init_dom_sid2(&vuser->usr.dom_sid, &global_sam_sid);
-   }
-   else
-   {
-      vuser->usr = *usr;
-   }                                           
-#endif
+	sid_copy(psid, &global_sam_sid);
+	sid_append_rid(psid, pdb_gid_to_group_rid(gid));
+
+	return psid;
 }

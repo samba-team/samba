@@ -125,17 +125,37 @@ static void gain_root(void)
 
 /* Get the list of current groups */
 
-static void get_current_groups(int *ngroups, gid_t **groups)
+int get_current_groups(int *p_ngroups, gid_t **p_groups)
 {
-	*ngroups = getgroups(0, NULL);
-	*groups = (gid_t *)malloc(*ngroups * sizeof(gid_t));
+	int i;
+	gid_t grp;
+	int ngroups = sys_getgroups(0,&grp);
+	gid_t *groups;
 
-	if (!groups) {
-		DEBUG(0, ("Out of memory in get_current_groups\n"));
-		return;
+	(*p_ngroups) = 0;
+	(*p_groups) = NULL;
+
+	if (ngroups <= 0)
+		return -1;
+
+	if((groups = (gid_t *)malloc(sizeof(gid_t)*ngroups)) == NULL) {
+		DEBUG(0,("setup_groups malloc fail !\n"));
+		return -1;
 	}
 
-	getgroups(*ngroups, *groups);
+	if ((ngroups = sys_getgroups(ngroups,groups)) == -1)
+		return -1;
+
+	(*p_ngroups) = ngroups;
+	(*p_groups) = groups;
+
+	DEBUG( 3, ( "get_current_groups: uid %u is in %u groups: ", (unsigned int)getuid() , ngroups ) );
+	for (i = 0; i < ngroups; i++ ) {
+		DEBUG( 3, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
+	}
+	DEBUG( 3, ( "\n" ) );
+
+    return ngroups;
 }
 
 /* Create a new security context on the stack.  It is the same as the old

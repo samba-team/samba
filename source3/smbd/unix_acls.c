@@ -28,12 +28,8 @@
 
 static void create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid)
 {
-  extern DOM_SID global_sam_sid;
-
-  sid_copy(powner_sid, &global_sam_sid);
-  sid_copy(pgroup_sid, &global_sam_sid);
-  sid_append_rid(powner_sid, pdb_uid_to_user_rid(psbuf->st_uid));
-  sid_append_rid(pgroup_sid, pdb_gid_to_group_rid(psbuf->st_gid));
+	uid_to_sid( powner_sid, psbuf->st_uid );
+	gid_to_sid( pgroup_sid, psbuf->st_gid );
 }
 
 /****************************************************************************

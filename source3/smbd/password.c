@@ -113,6 +113,16 @@ user_struct *get_valid_user_struct(uint16 vuid)
 }
 
 /****************************************************************************
+ Delete the SID list for this user.
+****************************************************************************/
+
+static void delete_nt_token(NT_USER_TOKEN *token)
+{
+	safe_free( token->user_sids );
+	ZERO_STRUCTP(token);
+}
+
+/****************************************************************************
 invalidate a uid
 ****************************************************************************/
 void invalidate_vuid(uint16 vuid)
@@ -133,8 +143,7 @@ void invalidate_vuid(uint16 vuid)
 
 	vuser->groups  = NULL;
 
-	if (vuser->group_sids != NULL)
-		free (vuser->group_sids);
+	delete_nt_token(&vuser->nt_user_token);
 }
 
 
@@ -162,61 +171,54 @@ char *validated_domain(uint16 vuid)
 
 
 /****************************************************************************
-Setup the groups a user belongs to.
+ Initialize the groups a user belongs to.
 ****************************************************************************/
-int setup_groups(char *user, char *domain, 
-		 uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
-{
-	int i,ngroups;
-	gid_t grp = 0;
-	gid_t *groups = NULL;
 
-	if (-1 == initgroups(user,gid))
-	{
+int initialize_groups(char *user, uid_t uid, gid_t gid)
+{
+	if (initgroups(user,gid) == -1) {
 		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
-		if (getuid() == 0)
-		{
-			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767)
-			{
+		if (getuid() == 0) {
+			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767) {
 				DEBUG(0,("This is probably a problem with the account %s\n", user));
 			}
 		}
 		return -1;
 	}
-
-	ngroups = sys_getgroups(0,&grp);
-	if (ngroups <= 0)
-	{
-		ngroups = groups_max();
-	}
-
-	if((groups = (gid_t *)malloc(sizeof(gid_t)*ngroups)) == NULL)
-	{
-		DEBUG(0,("setup_groups malloc fail !\n"));
-		return -1;
-	}
-
-	ngroups = sys_getgroups(ngroups,groups);
-
-	(*p_ngroups) = ngroups;
-	(*p_groups) = groups;
-
-	DEBUG( 3, ( "%s is in %d groups: ", user, ngroups ) );
-	for (i = 0; i < ngroups; i++ )
-	{
-		DEBUG( 3, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
-	}
-	DEBUG( 3, ( "\n" ) );
-
 	return 0;
 }
 
+/****************************************************************************
+ Create the SID list for this user.
+****************************************************************************/
+
+void setup_nt_token(NT_USER_TOKEN *token, uid_t uid, gid_t gid, int ngroups, gid_t *groups)
+{
+	DOM_SID *psids;
+	int i;
+
+	ZERO_STRUCTP(token);
+
+	if ((token->user_sids = (DOM_SID *)malloc( (ngroups + 2)*sizeof(DOM_SID))) == NULL)
+		return;
+
+	psids = token->user_sids;
+
+	token->num_sids = ngroups + 2;
+
+	uid_to_sid( &psids[0], uid);
+	gid_to_sid( &psids[1], gid);
+
+	for (i = 0; i < ngroups; i++)
+		gid_to_sid( &psids[i+2], groups[i]);
+}
 
 /****************************************************************************
 register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
+
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
 		     char *domain,BOOL guest)
 {
@@ -227,37 +229,15 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   if(lp_security() == SEC_SHARE)
     return UID_FIELD_INVALID;
 
-#if 0
-  /*
-   * After observing MS-Exchange services writing to a Samba share
-   * I belive this code is incorrect. Each service does its own
-   * sessionsetup_and_X for the same user, and as each service shuts
-   * down, it does a user_logoff_and_X. As we are consolidating multiple
-   * sessionsetup_and_X's onto the same vuid here, when the first service
-   * shuts down, it invalidates all the open files for the other services.
-   * Hence I am removing this code and forcing each sessionsetup_and_X
-   * to get a new vuid.
-   * Jeremy Allison. (jallison@whistle.com).
-   */
-
-  int i;
-  for(i = 0; i < num_validated_users; i++) {
-    vuser = &validated_users[i];
-    if ( vuser->uid == uid )
-      return (uint16)(i + VUID_OFFSET); /* User already validated */
-  }
-#endif
-
   validated_users = (user_struct *)Realloc(validated_users,
 			   sizeof(user_struct)*
 			   (num_validated_users+1));
   
-  if (!validated_users)
-    {
+  if (!validated_users) {
       DEBUG(0,("Failed to realloc users struct!\n"));
       num_validated_users = 0;
       return UID_FIELD_INVALID;
-    }
+  }
 
   vuser = &validated_users[num_validated_users];
   num_validated_users++;
@@ -274,22 +254,21 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
-  setup_groups(unix_name,domain,uid,gid,
-	       &vuser->n_groups,
-	       &vuser->groups);
+  initialize_groups(unix_name, uid, gid);
+  get_current_groups( &vuser->n_groups, &vuser->groups);
 
-  setup_user_sids(vuser);
+  /* Create an NT_USER_TOKEN struct for this user. */
+  setup_nt_token(&vuser->nt_user_token, uid,gid, vuser->n_groups, vuser->groups);
 
   DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
 
   DEBUG(3, ("Clearing default real name\n"));
   fstrcpy(vuser->user.full_name, "<Full Name>");
   if (lp_unix_realname()) {
-    if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL)
-      {
+    if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL) {
       DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
       fstrcpy(vuser->user.full_name, pwfile->pw_gecos);
-      }
+    }
   }
 
   memset(&vuser->dc, '\0', sizeof(vuser->dc));
