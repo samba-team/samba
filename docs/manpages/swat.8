@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SWAT" "8" "05 November 2002" "" ""
+.TH "SWAT" "8" "28 January 2003" "" ""
+
 .SH NAME
 swat \- Samba Web Administration Tool
 .SH SYNOPSIS
@@ -12,10 +13,10 @@ swat \- Samba Web Administration Tool
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 \fBswat\fR allows a Samba administrator to 
-configure the complex \fI smb.conf(5)\fR file via a Web browser. In addition, 
+configure the complex \fBsmb.conf\fR(5) file via a Web browser. In addition, 
 a \fBswat\fR configuration page has help links 
 to all the configurable options in the \fIsmb.conf\fR file allowing an 
 administrator to easily look up the effects of any change. 
@@ -26,8 +27,8 @@ administrator to easily look up the effects of any change.
 \fB-s smb configuration file\fR
 The default configuration file path is 
 determined at compile time.  The file specified contains 
-the configuration details required by the \fBsmbd
-\fR server. This is the file that \fBswat\fR will modify. 
+the configuration details required by the \fBsmbd\fR(8) server. This is the file 
+that \fBswat\fR will modify. 
 The information in this file includes server-specific 
 information such as what printcap file to use, as well as 
 descriptions of all the services that the server is to provide.
@@ -106,26 +107,21 @@ This file must contain a mapping of service name
 (e.g., tcp).  
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
-This is the default location of the \fIsmb.conf(5)
-\fR server configuration file that swat edits. Other 
+This is the default location of the \fBsmb.conf\fR(5) server configuration file that swat edits. Other 
 common places that systems install this file are \fI  /usr/samba/lib/smb.conf\fR and \fI/etc/smb.conf
 \fR.  This file describes all the services the server 
 is to make available to clients. 
 .SH "WARNINGS"
 .PP
-\fBswat\fR will rewrite your \fIsmb.conf
-\fR file. It will rearrange the entries and delete all 
+\fBswat\fR will rewrite your \fBsmb.conf\fR(5) file. It will rearrange the entries and delete all 
 comments, \fIinclude=\fR and \fIcopy=
 \fR options. If you have a carefully crafted \fI smb.conf\fR then back it up or don't use swat! 
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
-the Samba suite.
+This man page is correct for version 2.2 of the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBinetd(5)\fR,
-\fBsmbd(8)\fR 
-smb.conf(5)
+\fBinetd(5)\fR, \fBsmbd\fR(8), \fBsmb.conf\fR(5)
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -135,7 +131,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+Samba 3.0 was done by Alexander Bokovoy.

@@ -1,12 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >winbindd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -16,7 +15,9 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="WINBINDD">winbindd</H1
+NAME="WINBINDD.8"
+></A
+>winbindd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -29,13 +30,15 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"><H2
+NAME="AEN8"
+></A
+><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >winbindd</B
-> [-F] [-S] [-i] [-B] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-n]</P
+>  [-F] [-S] [-i] [-B] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-n]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -45,10 +48,12 @@ NAME="AEN18"
 ><H2
 >DESCRIPTION</H2
 ><P
->This program is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This program is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><B
@@ -166,22 +171,11 @@ CLASS="FILENAME"
 CLASS="FILENAME"
 >/etc/group</TT
 > and then from the 
-	Windows NT server. </P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
+	Windows NT server.
+<PRE
 CLASS="PROGRAMLISTING"
 >passwd:         files winbind
-group:          files winbind
-	</PRE
-></TD
-></TR
-></TABLE
+group:          files winbind</PRE
 ></P
 ><P
 >The following simple configuration in the
@@ -198,7 +192,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN61"
+NAME="AEN62"
 ></A
 ><H2
 >OPTIONS</H2
@@ -310,9 +304,12 @@ CLASS="COMMAND"
 ><DD
 ><P
 >Specifies the location of the all-important
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
+		<SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file. </P
 ></DD
 ></DL
@@ -321,7 +318,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN103"
+NAME="AEN106"
 ></A
 ><H2
 >NAME AND ID RESOLUTION</H2
@@ -352,7 +349,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN109"
+NAME="AEN112"
 ></A
 ><H2
 >CONFIGURATION</H2
@@ -361,10 +358,12 @@ NAME="AEN109"
 CLASS="COMMAND"
 >winbindd</B
 > daemon 
-	is done through configuration parameters in the <TT
-CLASS="FILENAME"
->smb.conf(5)
-	</TT
+	is done through configuration parameters in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file.  All parameters should be specified in the 
 	[global] section of smb.conf. </P
 ><P
@@ -492,7 +491,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN151"
+NAME="AEN156"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -505,60 +504,37 @@ NAME="AEN151"
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
 > put the 
-	following:</P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
+	following:
+<PRE
 CLASS="PROGRAMLISTING"
 >passwd:     files winbind
-group:      files winbind
-	</PRE
-></TD
-></TR
-></TABLE
+group:      files winbind</PRE
 ></P
 ><P
 >In <TT
 CLASS="FILENAME"
 >/etc/pam.d/*</TT
-> replace the 
-	<TT
+> replace the <TT
 CLASS="PARAMETER"
 ><I
->auth</I
+>	auth</I
 ></TT
-> lines with something like this: </P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
+> lines with something like this:
+<PRE
 CLASS="PROGRAMLISTING"
 >auth       required	/lib/security/pam_securetty.so
 auth       required	/lib/security/pam_nologin.so
 auth       sufficient	/lib/security/pam_winbind.so
-auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
-	</PRE
-></TD
-></TR
-></TABLE
+auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok</PRE
 ></P
 ><P
 >Note in particular the use of the <TT
 CLASS="PARAMETER"
 ><I
->sufficient</I
+>sufficient
+	</I
 ></TT
-> 
-	keyword and the <TT
+> keyword and the <TT
 CLASS="PARAMETER"
 ><I
 >use_first_pass</I
@@ -581,8 +557,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->smbpasswd -j DOMAIN -r PDC -U
-	Administrator</B
+>net join -S PDC -U Administrator</B
 ></P
 ><P
 >The username after the <TT
@@ -592,8 +567,7 @@ CLASS="PARAMETER"
 ></TT
 > can be any
 	Domain user that has administrator privileges on the machine.
-	Substitute your domain name for "DOMAIN" and the name of your PDC
-	for "PDC".</P
+	Substitute the name or IP of your PDC for "PDC".</P
 ><P
 >Next copy <TT
 CLASS="FILENAME"
@@ -604,9 +578,9 @@ CLASS="FILENAME"
 >/lib</TT
 > and <TT
 CLASS="FILENAME"
->pam_winbind.so</TT
->
-	to <TT
+>pam_winbind.so
+	</TT
+> to <TT
 CLASS="FILENAME"
 >/lib/security</TT
 >.  A symbolic link needs to be
@@ -624,19 +598,15 @@ CLASS="FILENAME"
 >/lib/libnss_winbind.so.1</TT
 >.</P
 ><P
->Finally, setup a <TT
-CLASS="FILENAME"
->smb.conf</TT
+>Finally, setup a <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > containing directives like the 
-	following:  </P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
+	following:
+<PRE
 CLASS="PROGRAMLISTING"
 >[global]
 	winbind separator = +
@@ -647,11 +617,7 @@ CLASS="PROGRAMLISTING"
         winbind gid = 10000-20000
         workgroup = DOMAIN
         security = domain
-        password server = *
-	</PRE
-></TD
-></TR
-></TABLE
+        password server = *</PRE
 ></P
 ><P
 >Now start winbindd and you should find that your user and 
@@ -670,7 +636,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN190"
+NAME="AEN194"
 ></A
 ><H2
 >NOTES</H2
@@ -681,9 +647,12 @@ CLASS="COMMAND"
 >winbindd</B
 >: </P
 ><P
-><B
-CLASS="COMMAND"
->nmbd</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>nmbd</SPAN
+>(8)</SPAN
 > must be running on the local machine 
 	for <B
 CLASS="COMMAND"
@@ -691,8 +660,8 @@ CLASS="COMMAND"
 > to work. <B
 CLASS="COMMAND"
 >winbindd</B
->
-	queries the list of trusted domains for the Windows NT server
+> queries
+	the list of trusted domains for the Windows NT server
 	on startup and when a SIGHUP is received.  Thus, for a running <B
 CLASS="COMMAND"
 >	winbindd</B
@@ -728,7 +697,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN206"
+NAME="AEN212"
 ></A
 ><H2
 >SIGNALS</H2
@@ -747,11 +716,14 @@ CLASS="VARIABLELIST"
 >SIGHUP</DT
 ><DD
 ><P
->Reload the <TT
-CLASS="FILENAME"
->smb.conf(5)</TT
->
-		file and apply any parameter changes to the running 
+>Reload the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> file and 
+		apply any parameter changes to the running 
 		version of winbindd.  This signal also clears any cached 
 		user and group information.  The list of other domains trusted 
 		by winbindd is also reloaded.  </P
@@ -779,7 +751,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN223"
+NAME="AEN231"
 ></A
 ><H2
 >FILES</H2
@@ -855,7 +827,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN252"
+NAME="AEN260"
 ></A
 ><H2
 >VERSION</H2
@@ -866,7 +838,7 @@ NAME="AEN252"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN255"
+NAME="AEN263"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -874,27 +846,30 @@ NAME="AEN255"
 ><TT
 CLASS="FILENAME"
 >nsswitch.conf(5)</TT
->,
-	<A
-HREF="samba.7.html"
-TARGET="_top"
->samba(7)</A
->,
-	<A
-HREF="wbinfo.1.html"
-TARGET="_top"
->wbinfo(1)</A
->,
-	<A
-HREF="smb.conf.5.html"
-TARGET="_top"
->smb.conf(5)</A
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>wbinfo</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 ></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN262"
+NAME="AEN276"
 ></A
 ><H2
 >AUTHOR</H2
@@ -910,11 +885,12 @@ CLASS="COMMAND"
 > and <B
 CLASS="COMMAND"
 >winbindd</B
->
-	were written by Tim Potter.</P
+> were 
+	written by Tim Potter.</P
 ><P
 >The conversion to DocBook for Samba 2.2 was done 
-	by Gerald Carter</P
+	by Gerald Carter. The conversion to DocBook XML 4.2 for
+	Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

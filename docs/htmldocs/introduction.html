@@ -5,8 +5,7 @@
 >General installation</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -69,7 +68,9 @@ WIDTH="100%"></DIV
 ><DIV
 CLASS="PART"
 ><A
-NAME="INTRODUCTION"><DIV
+NAME="INTRODUCTION"
+></A
+><DIV
 CLASS="TITLEPAGE"
 ><H1
 CLASS="TITLE"
@@ -77,7 +78,9 @@ CLASS="TITLE"
 ><DIV
 CLASS="PARTINTRO"
 ><A
-NAME="AEN21"><H1
+NAME="AEN21"
+></A
+><H1
 >Introduction</H1
 ><P
 >This part contains general info on how to install samba 
@@ -206,152 +209,196 @@ HREF="install.html#AEN219"
 ></DD
 ><DT
 >2. <A
-HREF="improved-browsing.html"
->Improved browsing in samba</A
-></DT
-><DD
-><DL
-><DT
->2.1. <A
-HREF="improved-browsing.html#AEN229"
->Overview of browsing</A
-></DT
-><DT
->2.2. <A
-HREF="improved-browsing.html#AEN233"
->Browsing support in samba</A
-></DT
-><DT
->2.3. <A
-HREF="improved-browsing.html#AEN242"
->Problem resolution</A
-></DT
-><DT
->2.4. <A
-HREF="improved-browsing.html#AEN249"
->Browsing across subnets</A
-></DT
-><DD
-><DL
-><DT
->2.4.1. <A
-HREF="improved-browsing.html#AEN254"
->How does cross subnet browsing work ?</A
-></DT
-></DL
-></DD
-><DT
->2.5. <A
-HREF="improved-browsing.html#AEN289"
->Setting up a WINS server</A
-></DT
-><DT
->2.6. <A
-HREF="improved-browsing.html#AEN308"
->Setting up Browsing in a WORKGROUP</A
-></DT
-><DT
->2.7. <A
-HREF="improved-browsing.html#AEN326"
->Setting up Browsing in a DOMAIN</A
-></DT
-><DT
->2.8. <A
-HREF="improved-browsing.html#AEN336"
->Forcing samba to be the master</A
-></DT
-><DT
->2.9. <A
-HREF="improved-browsing.html#AEN345"
->Making samba the domain master</A
-></DT
-><DT
->2.10. <A
-HREF="improved-browsing.html#AEN363"
->Note about broadcast addresses</A
-></DT
-><DT
->2.11. <A
-HREF="improved-browsing.html#AEN366"
->Multiple interfaces</A
-></DT
-></DL
-></DD
-><DT
->3. <A
 HREF="browsing-quick.html"
 >Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</A
 ></DT
 ><DD
 ><DL
 ><DT
->3.1. <A
-HREF="browsing-quick.html#AEN377"
+>2.1. <A
+HREF="browsing-quick.html#AEN230"
 >Discussion</A
 ></DT
 ><DT
->3.2. <A
-HREF="browsing-quick.html#AEN385"
+>2.2. <A
+HREF="browsing-quick.html#AEN238"
 >Use of the "Remote Announce" parameter</A
 ></DT
 ><DT
->3.3. <A
-HREF="browsing-quick.html#AEN399"
+>2.3. <A
+HREF="browsing-quick.html#AEN252"
 >Use of the "Remote Browse Sync" parameter</A
 ></DT
 ><DT
->3.4. <A
-HREF="browsing-quick.html#AEN404"
+>2.4. <A
+HREF="browsing-quick.html#AEN257"
 >Use of WINS</A
 ></DT
 ><DT
->3.5. <A
-HREF="browsing-quick.html#AEN415"
+>2.5. <A
+HREF="browsing-quick.html#AEN268"
 >Do NOT use more than one (1) protocol on MS Windows machines</A
 ></DT
 ><DT
->3.6. <A
-HREF="browsing-quick.html#AEN421"
+>2.6. <A
+HREF="browsing-quick.html#AEN274"
 >Name Resolution Order</A
 ></DT
 ></DL
 ></DD
 ><DT
->4. <A
-HREF="pwencrypt.html"
->LanMan and NT Password Encryption in Samba</A
+>3. <A
+HREF="passdb.html"
+>User information database</A
 ></DT
 ><DD
 ><DL
 ><DT
->4.1. <A
-HREF="pwencrypt.html#AEN457"
+>3.1. <A
+HREF="passdb.html#AEN324"
 >Introduction</A
 ></DT
 ><DT
->4.2. <A
-HREF="pwencrypt.html#AEN462"
+>3.2. <A
+HREF="passdb.html#AEN331"
 >Important Notes About Security</A
 ></DT
 ><DD
 ><DL
 ><DT
->4.2.1. <A
-HREF="pwencrypt.html#AEN481"
+>3.2.1. <A
+HREF="passdb.html#AEN346"
 >Advantages of SMB Encryption</A
 ></DT
 ><DT
->4.2.2. <A
-HREF="pwencrypt.html#AEN488"
+>3.2.2. <A
+HREF="passdb.html#AEN351"
 >Advantages of non-encrypted passwords</A
 ></DT
 ></DL
 ></DD
 ><DT
->4.3. <A
-HREF="pwencrypt.html#AEN497"
+>3.3. <A
+HREF="passdb.html#AEN357"
 >The smbpasswd Command</A
 ></DT
+><DT
+>3.4. <A
+HREF="passdb.html#AEN388"
+>Plain text</A
+></DT
+><DT
+>3.5. <A
+HREF="passdb.html#AEN393"
+>TDB</A
+></DT
+><DT
+>3.6. <A
+HREF="passdb.html#AEN396"
+>LDAP</A
+></DT
+><DD
+><DL
+><DT
+>3.6.1. <A
+HREF="passdb.html#AEN398"
+>Introduction</A
+></DT
+><DT
+>3.6.2. <A
+HREF="passdb.html#AEN418"
+>Introduction</A
+></DT
+><DT
+>3.6.3. <A
+HREF="passdb.html#AEN447"
+>Supported LDAP Servers</A
+></DT
+><DT
+>3.6.4. <A
+HREF="passdb.html#AEN452"
+>Schema and Relationship to the RFC 2307 posixAccount</A
+></DT
+><DT
+>3.6.5. <A
+HREF="passdb.html#AEN464"
+>Configuring Samba with LDAP</A
+></DT
+><DT
+>3.6.6. <A
+HREF="passdb.html#AEN511"
+>Accounts and Groups management</A
+></DT
+><DT
+>3.6.7. <A
+HREF="passdb.html#AEN516"
+>Security and sambaAccount</A
+></DT
+><DT
+>3.6.8. <A
+HREF="passdb.html#AEN536"
+>LDAP specials attributes for sambaAccounts</A
+></DT
+><DT
+>3.6.9. <A
+HREF="passdb.html#AEN606"
+>Example LDIF Entries for a sambaAccount</A
+></DT
+></DL
+></DD
+><DT
+>3.7. <A
+HREF="passdb.html#AEN614"
+>MySQL</A
+></DT
+><DD
+><DL
+><DT
+>3.7.1. <A
+HREF="passdb.html#AEN616"
+>Building</A
+></DT
+><DT
+>3.7.2. <A
+HREF="passdb.html#AEN622"
+>Creating the database</A
+></DT
+><DT
+>3.7.3. <A
+HREF="passdb.html#AEN632"
+>Configuring</A
+></DT
+><DT
+>3.7.4. <A
+HREF="passdb.html#AEN649"
+>Using plaintext passwords or encrypted password</A
+></DT
+><DT
+>3.7.5. <A
+HREF="passdb.html#AEN654"
+>Getting non-column data from the table</A
+></DT
+></DL
+></DD
+><DT
+>3.8. <A
+HREF="passdb.html#AEN662"
+>Passdb XML plugin</A
+></DT
+><DD
+><DL
+><DT
+>3.8.1. <A
+HREF="passdb.html#AEN664"
+>Building</A
+></DT
+><DT
+>3.8.2. <A
+HREF="passdb.html#AEN670"
+>Usage</A
+></DT
+></DL
+></DD
 ></DL
 ></DD
 ></DL

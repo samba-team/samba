@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBLOOKUP" "1" "05 November 2002" "" ""
+.TH "NMBLOOKUP" "1" "28 January 2003" "" ""
+
 .SH NAME
 nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS  names
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS  names
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 \fBnmblookup\fR is used to query NetBIOS names 
 and map them to IP addresses in a network using NetBIOS over TCP/IP 
@@ -33,7 +34,7 @@ to do a recursive lookup. This is used when sending a name
 query to a machine running a WINS server and the user wishes 
 to query the names in the WINS server.  If this bit is unset 
 the normal (broadcast responding) NetBIOS processing code 
-on a machine is used instead. See rfc1001, rfc1002 for details.
+on a machine is used instead. See RFC1001, RFC1002 for details.
 .TP
 \fB-S\fR
 Once the name query has returned an IP 
@@ -46,8 +47,7 @@ datagrams. The reason for this option is a bug in Windows 95
 where it ignores the source port of the requesting packet 
 and only replies to UDP port 137. Unfortunately, on most UNIX 
 systems root privilege is needed to bind to this port, and 
-in addition, if the nmbd(8) 
-daemon is running on this machine it also binds to this port.
+in addition, if the \fBnmbd\fR(8) daemon is running on this machine it also binds to this port.
 .TP
 \fB-A\fR
 Interpret \fIname\fR as 
@@ -61,7 +61,7 @@ Send the query to the given broadcast address. Without
 this option the default behavior of nmblookup is to send the 
 query to the broadcast address of the network interfaces as 
 either auto-detected or defined in the \fIinterfaces\fR
- parameter of the  \fIsmb.conf (5)\fR file.
+ parameter of the \fBsmb.conf\fR(5) file.
 .TP
 \fB-U <unicast address>\fR
 Do a unicast query to the specified address or 
@@ -126,8 +126,8 @@ area.
 .PP
 \fBnmblookup\fR can be used to query 
 a WINS server (in the same way \fBnslookup\fR is 
-used to query DNS servers). To query a WINS server, 
-\fBnmblookup\fR must be called like this:
+used to query DNS servers). To query a WINS server, \fBnmblookup\fR 
+must be called like this:
 .PP
 \fBnmblookup -U server -R 'name'\fR
 .PP
@@ -143,8 +143,7 @@ This man page is correct for version 3.0 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBnmbd(8)\fR 
-samba(7) and smb.conf(5)
+\fBnmbd\fR(8), \fBsamba\fR(7), and \fBsmb.conf\fR(5).
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -154,7 +153,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.

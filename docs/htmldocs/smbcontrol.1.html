@@ -5,7 +5,7 @@
 >smbcontrol</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBCONTROL"
+NAME="SMBCONTROL.1"
 ></A
 >smbcontrol</H1
 ><DIV
@@ -52,37 +52,42 @@ NAME="AEN17"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><B
 CLASS="COMMAND"
 >smbcontrol</B
 > is a very small program, which 
-	sends messages to an <A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd(8)</A
->, 
-	an <A
-HREF="nmbd.8.html"
-TARGET="_top"
->nmbd(8)</A
->
-	or a <A
-HREF="winbindd.8.html"
-TARGET="_top"
->winbindd(8)</A
-> 
-	daemon running on the system.</P
+	sends messages to a <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
+>, a <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>nmbd</SPAN
+>(8)</SPAN
+>, or a <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
+> daemon running on the system.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN26"
+NAME="AEN34"
 ></A
 ><H2
 >OPTIONS</H2
@@ -109,8 +114,7 @@ CLASS="PARAMETER"
 ><I
 >nmbd</I
 ></TT
->
-		<TT
+>, <TT
 CLASS="PARAMETER"
 ><I
 >smbd</I
@@ -322,7 +326,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN102"
+NAME="AEN110"
 ></A
 ><H2
 >VERSION</H2
@@ -333,33 +337,29 @@ NAME="AEN102"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN105"
+NAME="AEN113"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="nmbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->nmbd(8)</B
-></A
->, 
-	and <A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
-></A
->.
-	</P
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>nmbd</SPAN
+>(8)</SPAN
+> and <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
+>.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN112"
+NAME="AEN122"
 ></A
 ><H2
 >AUTHOR</H2
@@ -371,14 +371,14 @@ NAME="AEN112"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+	Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

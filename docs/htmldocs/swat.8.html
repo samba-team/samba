@@ -5,7 +5,7 @@
 >swat</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SWAT"
+NAME="SWAT.8"
 ></A
 >swat</H1
 ><DIV
@@ -47,23 +47,24 @@ NAME="AEN13"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><B
 CLASS="COMMAND"
 >swat</B
 > allows a Samba administrator to 
-	configure the complex <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->	smb.conf(5)</TT
-></A
+	configure the complex <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file via a Web browser. In addition, 
 	a <B
 CLASS="COMMAND"
@@ -86,7 +87,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN26"
+NAME="AEN29"
 ></A
 ><H2
 >OPTIONS</H2
@@ -101,11 +102,14 @@ CLASS="VARIABLELIST"
 ><P
 >The default configuration file path is 
 		determined at compile time.  The file specified contains 
-		the configuration details required by the <B
-CLASS="COMMAND"
->smbd
-		</B
-> server. This is the file that <B
+		the configuration details required by the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
+> server. This is the file 
+		that <B
 CLASS="COMMAND"
 >swat</B
 > will modify. 
@@ -147,7 +151,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN44"
+NAME="AEN49"
 ></A
 ><H2
 >INSTALLATION</H2
@@ -181,7 +185,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT2"
 ><A
-NAME="AEN56"
+NAME="AEN61"
 ></A
 ><H3
 >Inetd Installation</H3
@@ -254,7 +258,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT2"
 ><A
-NAME="AEN78"
+NAME="AEN83"
 ></A
 ><H3
 >Launching</H3
@@ -271,7 +275,7 @@ NAME="AEN78"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN82"
+NAME="AEN87"
 ></A
 ><H2
 >FILES</H2
@@ -308,10 +312,12 @@ CLASS="FILENAME"
 ></DT
 ><DD
 ><P
->This is the default location of the <TT
-CLASS="FILENAME"
->smb.conf(5)
-		</TT
+>This is the default location of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > server configuration file that swat edits. Other 
 		common places that systems install this file are <TT
 CLASS="FILENAME"
@@ -329,7 +335,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN103"
+NAME="AEN110"
 ></A
 ><H2
 >WARNINGS</H2
@@ -337,10 +343,12 @@ NAME="AEN103"
 ><B
 CLASS="COMMAND"
 >swat</B
-> will rewrite your <TT
-CLASS="FILENAME"
->smb.conf
-	</TT
+> will rewrite your <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file. It will rearrange the entries and delete all 
 	comments, <TT
 CLASS="PARAMETER"
@@ -361,18 +369,17 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN111"
+NAME="AEN120"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
-	the Samba suite.</P
+>This man page is correct for version 2.2 of the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN114"
+NAME="AEN123"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -380,26 +387,24 @@ NAME="AEN114"
 ><B
 CLASS="COMMAND"
 >inetd(5)</B
->,
-	<A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
-></A
->, 
-	<A
-HREF="smb.conf.5.html"
-TARGET="_top"
->smb.conf(5)</A
->
-	</P
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN121"
+NAME="AEN133"
 ></A
 ><H2
 >AUTHOR</H2
@@ -411,14 +416,14 @@ NAME="AEN121"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+	Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

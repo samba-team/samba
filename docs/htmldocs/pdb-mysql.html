@@ -5,8 +5,7 @@
 >Passdb MySQL plugin</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -73,13 +72,17 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="PDB-MYSQL">Chapter 16. Passdb MySQL plugin</H1
+NAME="PDB-MYSQL"
+></A
+>Chapter 16. Passdb MySQL plugin</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2566">16.1. Building</H1
+NAME="AEN2562"
+></A
+>16.1. Building</H1
 ><P
 >To build the plugin, run <B
 CLASS="COMMAND"
@@ -98,7 +101,53 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2572">16.2. Configuring</H1
+NAME="AEN2568"
+></A
+>16.2. Creating the database</H1
+><P
+>You either can set up your own table and specify the field names to pdb_mysql (see below
+for the column names) or use the default table. The file <TT
+CLASS="FILENAME"
+>examples/pdb/mysql/mysql.dump</TT
+> 
+contains the correct queries to create the required tables. Use the command :
+
+<B
+CLASS="COMMAND"
+>mysql -u<TT
+CLASS="REPLACEABLE"
+><I
+>username</I
+></TT
+> -h<TT
+CLASS="REPLACEABLE"
+><I
+>hostname</I
+></TT
+> -p<TT
+CLASS="REPLACEABLE"
+><I
+>password</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>databasename</I
+></TT
+> &#60; <TT
+CLASS="FILENAME"
+>/path/to/samba/examples/pdb/mysql/mysql.dump</TT
+></B
+>&#13;</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN2578"
+></A
+>16.3. Configuring</H1
 ><P
 >This plugin lacks some good documentation, but here is some short info:</P
 ><P
@@ -189,7 +238,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2589">16.3. Using plaintext passwords or encrypted password</H1
+NAME="AEN2595"
+></A
+>16.4. Using plaintext passwords or encrypted password</H1
 ><P
 >I strongly discourage the use of plaintext passwords, however, you can use them:</P
 ><P
@@ -202,7 +253,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2594">16.4. Getting non-column data from the table</H1
+NAME="AEN2600"
+></A
+>16.5. Getting non-column data from the table</H1
 ><P
 >It is possible to have not all data in the database and making some 'constant'.</P
 ><P

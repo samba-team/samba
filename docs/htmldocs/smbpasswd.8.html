@@ -1,12 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbpasswd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -16,7 +15,9 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBPASSWD">smbpasswd</H1
+NAME="SMBPASSWD.8"
+></A
+>smbpasswd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -28,13 +29,15 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"><H2
+NAME="AEN8"
+></A
+><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >smbpasswd</B
-> [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &#60;remote machine&#62;] [-R &#60;name resolve order&#62;] [-m] [-U username[%password]] [-h] [-s] [-w pass] [-i] [-L] [username]</P
+>  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &lt;remote machine&gt;] [-R &lt;name resolve order&gt;] [-m] [-U username[%password]] [-h] [-s] [-w pass] [-i] [-L] [username]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -44,18 +47,23 @@ NAME="AEN27"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 >The smbpasswd program has several different 
-	functions, depending on whether it is run by the <I
+	functions, depending on whether it is run by the <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >root</I
-> 
-	user or not. When run as a normal user it allows the user to change 
+></SPAN
+> user 
+	or not. When run as a normal user it allows the user to change 
 	the password used for their SMB sessions on any machines that store 
 	SMB passwords. </P
 ><P
@@ -64,25 +72,33 @@ CLASS="EMPHASIS"
 	similar to the way the <B
 CLASS="COMMAND"
 >passwd(1)</B
-> program works. 
-	<B
+> program works. <B
 CLASS="COMMAND"
->smbpasswd</B
+>	smbpasswd</B
 > differs from how the passwd program works 
-	however in that it is not <I
+	however in that it is not <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >setuid root</I
+></SPAN
 > but works in 
-	a client-server mode and communicates with a locally running
-	<B
-CLASS="COMMAND"
->smbd(8)</B
+	a client-server mode and communicates with a 
+	locally running <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
 >. As a consequence in order for this to 
 	succeed the smbd daemon must be running on the local machine. On a 
 	UNIX machine the encrypted SMB passwords are usually stored in 
-	the <TT
-CLASS="FILENAME"
->smbpasswd(5)</TT
+	the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbpasswd</SPAN
+>(5)</SPAN
 > file. </P
 ><P
 >When run by an ordinary user with no options, smbpasswd 
@@ -91,18 +107,28 @@ CLASS="FILENAME"
 	was typed correctly. No passwords will be echoed on the screen 
 	whilst being typed. If you have a blank SMB password (specified by 
 	the string "NO PASSWORD" in the smbpasswd file) then just press 
-	the &#60;Enter&#62; key when asked for your old password. </P
+	the &lt;Enter&gt; key when asked for your old password. </P
 ><P
 >smbpasswd can also be used by a normal user to change their
 	SMB password on remote machines, such as Windows NT Primary Domain 
-	Controllers.   See the (-r) and -U options below. </P
+	Controllers.   See the (<TT
+CLASS="PARAMETER"
+><I
+>-r</I
+></TT
+>) and <TT
+CLASS="PARAMETER"
+><I
+>-U</I
+></TT
+> options 
+	below. </P
 ><P
 >When run by root, smbpasswd allows new users to be added 
 	and deleted in the smbpasswd file, as well as allows changes to 
-	the attributes of the user in this file to be made. When run by root, 
-	<B
+	the attributes of the user in this file to be made. When run by root, <B
 CLASS="COMMAND"
->smbpasswd</B
+>	smbpasswd</B
 > accesses the local smbpasswd file 
 	directly, thus enabling changes to be made even if smbd is not 
 	running. </P
@@ -110,7 +136,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN43"
+NAME="AEN51"
 ></A
 ><H2
 >OPTIONS</H2
@@ -125,7 +151,7 @@ CLASS="VARIABLELIST"
 ><P
 >This option specifies that the username 
 		following should be added to the local smbpasswd file, with the 
-		new password typed (type &#60;Enter&#62; for the old password). This 
+		new password typed (type &lt;Enter&gt; for the old password). This 
 		option is ignored if the username following already exists in 
 		the smbpasswd file and it is treated like a regular change 
 		password command.  Note that the default passdb backends require 
@@ -169,10 +195,12 @@ CLASS="CONSTANT"
 ><P
 >If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
 		format) there is no space in the user's password entry to write
-		this information and the command will FAIL. See <B
-CLASS="COMMAND"
->smbpasswd(5)
-		</B
+		this information and the command will FAIL. See <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbpasswd</SPAN
+>(5)</SPAN
 > for details on the 'old' and new password file formats.
 		</P
 ><P
@@ -196,9 +224,12 @@ CLASS="CONSTANT"
 CLASS="COMMAND"
 >		smbpasswd</B
 > will FAIL to enable the account.  
-                See <B
-CLASS="COMMAND"
->smbpasswd (5)</B
+                See <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbpasswd</SPAN
+>(5)</SPAN
 > for 
 		details on the 'old' and new password file formats. </P
 ><P
@@ -294,9 +325,12 @@ CLASS="PARAMETER"
 		copy of the user account database and will not allow the password 
 		change).</P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
+></SPAN
 > that Windows 95/98 do not have 
 		a real password database so it is not possible to change passwords 
 		specifying a Win95/98  machine as remote machine target. </P
@@ -310,7 +344,7 @@ CLASS="EMPHASIS"
 		name of the host being connected to. </P
 ><P
 >The options are :"lmhosts", "host", "wins" and "bcast". They
-		 cause names to be resolved as follows : </P
+		 cause names to be resolved as follows: </P
 ><P
 ></P
 ><UL
@@ -319,12 +353,14 @@ CLASS="EMPHASIS"
 ><TT
 CLASS="CONSTANT"
 >lmhosts</TT
-> : Lookup an IP 
+>: Lookup an IP 
             address in the Samba lmhosts file. If the line in lmhosts has 
-            no name type attached to the NetBIOS name (see the <A
-HREF="lmhosts.5.html"
-TARGET="_top"
->lmhosts(5)</A
+            no name type attached to the NetBIOS name (see the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>lmhosts</SPAN
+>(5)</SPAN
 > for details) then
             any name type matches for lookup.</P
 ></LI
@@ -333,7 +369,7 @@ TARGET="_top"
 ><TT
 CLASS="CONSTANT"
 >host</TT
-> : Do a standard host 
+>: Do a standard host 
             name to IP address resolution, using the system <TT
 CLASS="FILENAME"
 >/etc/hosts
@@ -353,7 +389,7 @@ CLASS="FILENAME"
 ><TT
 CLASS="CONSTANT"
 >wins</TT
-> : Query a name with 
+>: Query a name with 
             the IP address listed in the <TT
 CLASS="PARAMETER"
 ><I
@@ -368,7 +404,7 @@ CLASS="PARAMETER"
 ><TT
 CLASS="CONSTANT"
 >bcast</TT
-> : Do a broadcast on 
+>: Do a broadcast on 
             each of the known local interfaces listed in the
             <TT
 CLASS="PARAMETER"
@@ -385,10 +421,12 @@ CLASS="PARAMETER"
 CLASS="COMMAND"
 >lmhosts, host, wins, bcast</B
 > 
-		and without this parameter or any entry in the 
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
+		and without this parameter or any entry in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file the name resolution methods will 
 		be attempted in this order. </P
 ></DD
@@ -474,7 +512,7 @@ CLASS="PARAMETER"
 >.  Note that the password is stored in
 		the <TT
 CLASS="FILENAME"
->private/secrets.tdb</TT
+>secrets.tdb</TT
 > and is keyed off 
 		of the admin's DN.  This means that if the value of <TT
 CLASS="PARAMETER"
@@ -509,9 +547,12 @@ CLASS="PARAMETER"
 ><DD
 ><P
 >This specifies the username for all of the 
-		<I
+		<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >root only</I
+></SPAN
 > options to operate on. Only root 
 		can specify this parameter as only root has the permission needed 
 		to modify attributes directly in the local smbpasswd file. 
@@ -523,7 +564,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN173"
+NAME="AEN189"
 ></A
 ><H2
 >NOTES</H2
@@ -537,70 +578,71 @@ CLASS="COMMAND"
 	is to add a restriction to the hosts that may access the <B
 CLASS="COMMAND"
 >	smbd</B
-> running on the local machine by specifying a 
-	<TT
+> running on the local machine by specifying either <TT
 CLASS="PARAMETER"
 ><I
->allow hosts</I
+>allow
+	hosts</I
 ></TT
 > or <TT
 CLASS="PARAMETER"
 ><I
 >deny hosts</I
 ></TT
-> 
-	entry in the <TT
-CLASS="FILENAME"
->smb.conf</TT
+> entry in 
+	the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file and neglecting to 
 	allow "localhost" access to the smbd. </P
 ><P
 >In addition, the smbpasswd command is only useful if Samba
-	has been set up to use encrypted passwords. See the file 
-	<TT
-CLASS="FILENAME"
->ENCRYPTION.txt</TT
+	has been set up to use encrypted passwords. See the document <A
+HREF="pwencrypt.html"
+TARGET="_top"
+>	"LanMan and NT Password Encryption in Samba"</A
 > in the docs directory for details 
 	on how to do this. </P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN183"
+NAME="AEN201"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 3.0 of 
-	the Samba suite.</P
+>This man page is correct for version 3.0 of the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN186"
+NAME="AEN204"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="smbpasswd.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smbpasswd(5)</TT
-></A
->, 
-	<A
-HREF="samba.7.html"
-TARGET="_top"
->samba(7)</A
->
-	</P
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbpasswd</SPAN
+>(5)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
+>.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN192"
+NAME="AEN213"
 ></A
 ><H2
 >AUTHOR</H2
@@ -612,14 +654,14 @@ NAME="AEN192"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

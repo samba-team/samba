@@ -5,7 +5,7 @@
 >samba</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SAMBA"
+NAME="SAMBA.7"
 ></A
 >samba</H1
 ><DIV
@@ -25,7 +25,7 @@ NAME="AEN5"
 ></A
 ><H2
 >Name</H2
->SAMBA&nbsp;--&nbsp;A Windows SMB/CIFS fileserver for UNIX</DIV
+>Samba&nbsp;--&nbsp;A Windows SMB/CIFS fileserver for UNIX</DIV
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
@@ -63,29 +63,37 @@ TARGET="_top"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
-><B
-CLASS="COMMAND"
->smbd</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
 ></DT
 ><DD
 ><P
 >The <B
 CLASS="COMMAND"
->smbd </B
->
-		daemon provides the file and print services to 
+>smbd</B
+> daemon provides the file and print services to 
 		SMB clients, such as Windows 95/98, Windows NT, Windows 
 		for Workgroups or LanManager. The configuration file 
-		for this daemon is described in <TT
-CLASS="FILENAME"
->smb.conf</TT
+		for this daemon is described in <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 >
 		</P
 ></DD
 ><DT
-><B
-CLASS="COMMAND"
->nmbd</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>nmbd</SPAN
+>(8)</SPAN
 ></DT
 ><DD
 ><P
@@ -95,15 +103,21 @@ CLASS="COMMAND"
 >
 		daemon provides NetBIOS nameservice and browsing
 		support. The configuration file for this daemon 
-		is described in <TT
-CLASS="FILENAME"
->smb.conf</TT
+		is described in <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 ></P
 ></DD
 ><DT
-><B
-CLASS="COMMAND"
->smbclient</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbclient</SPAN
+>(1)</SPAN
 ></DT
 ><DD
 ><P
@@ -118,9 +132,12 @@ CLASS="COMMAND"
 		any SMB server (such as a PC running Windows NT).</P
 ></DD
 ><DT
-><B
-CLASS="COMMAND"
->testparm</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>testparm</SPAN
+>(1)</SPAN
 ></DT
 ><DD
 ><P
@@ -128,16 +145,21 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >testparm</B
 >
-		utility is a simple syntax checker for Samba's
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
->configuration file.</P
+		utility is a simple syntax checker for Samba's <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> configuration file.</P
 ></DD
 ><DT
-><B
-CLASS="COMMAND"
->testprns</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>testprns</SPAN
+>(1)</SPAN
 ></DT
 ><DD
 ><P
@@ -153,9 +175,12 @@ CLASS="FILENAME"
 		by Samba.</P
 ></DD
 ><DT
-><B
-CLASS="COMMAND"
->smbstatus</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbstatus</SPAN
+>(1)</SPAN
 ></DT
 ><DD
 ><P
@@ -170,9 +195,12 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
-><B
-CLASS="COMMAND"
->nmblookup</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>nmblookup</SPAN
+>(1)</SPAN
 ></DT
 ><DD
 ><P
@@ -184,26 +212,30 @@ CLASS="COMMAND"
 		from a UNIX host.</P
 ></DD
 ><DT
-><B
-CLASS="COMMAND"
->make_smbcodepage</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbgroupedit</SPAN
+>(8)</SPAN
 ></DT
 ><DD
 ><P
 >The <B
 CLASS="COMMAND"
->make_smbcodepage</B
+>smbgroupedit</B
 >
-		utility provides a means of creating SMB code page 
-		definition files for your <B
-CLASS="COMMAND"
->smbd</B
-> server.</P
+		tool allows for mapping unix groups to NT Builtin,
+		Domain, or Local groups. Also it allows setting
+		priviledges for that group, such as saAddUser, etc.</P
 ></DD
 ><DT
-><B
-CLASS="COMMAND"
->smbpasswd</B
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbpasswd</SPAN
+>(8)</SPAN
 ></DT
 ><DD
 ><P
@@ -220,7 +252,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN76"
+NAME="AEN99"
 ></A
 ><H2
 >COMPONENTS</H2
@@ -249,7 +281,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN82"
+NAME="AEN105"
 ></A
 ><H2
 >AVAILABILITY</H2
@@ -274,8 +306,8 @@ TARGET="_top"
 	list. Details on how to join the mailing list are given in 
 	the README file that comes with Samba.</P
 ><P
->If you have access to a WWW viewer (such as Netscape 
-	or Mosaic) then you will also find lots of useful information, 
+>If you have access to a WWW viewer (such as Mozilla
+	or Konqueror) then you will also find lots of useful information, 
 	including back issues of the Samba mailing list, at
 	<A
 HREF="http://lists.samba.org/"
@@ -286,18 +318,18 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN90"
+NAME="AEN113"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of the 
+>This man page is correct for version 3.0 of the 
 	Samba suite. </P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN93"
+NAME="AEN116"
 ></A
 ><H2
 >CONTRIBUTIONS</H2
@@ -317,8 +349,8 @@ HREF="http://devel.samba.org/"
 TARGET="_top"
 >http://devel.samba.org/</A
 >
-	for information on how to do it properly. We prefer patches in
-	<B
+	for information on how to do it properly. We prefer patches 
+	in <B
 CLASS="COMMAND"
 >diff -u</B
 > format.</P
@@ -326,7 +358,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN100"
+NAME="AEN123"
 ></A
 ><H2
 >CONTRIBUTORS</H2
@@ -358,7 +390,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN107"
+NAME="AEN130"
 ></A
 ><H2
 >AUTHOR</H2
@@ -370,14 +402,14 @@ NAME="AEN107"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML
+	4.2 for Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

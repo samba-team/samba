@@ -5,7 +5,7 @@
 >smbtar</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBTAR"
+NAME="SMBTAR.1"
 ></A
 >smbtar</H1
 ><DIV
@@ -48,30 +48,30 @@ NAME="AEN26"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><B
 CLASS="COMMAND"
 >smbtar</B
 > is a very small shell script on top 
-	of <A
-HREF="smbclient.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbclient(1)</B
-></A
-> 
-	which dumps SMB shares directly to tape. </P
+	of <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbclient</SPAN
+>(1)</SPAN
+> which dumps SMB shares directly to tape.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN34"
+NAME="AEN37"
 ></A
 ><H2
 >OPTIONS</H2
@@ -193,11 +193,13 @@ CLASS="PARAMETER"
 ><I
 >-d</I
 ></TT
-> flag of <B
-CLASS="COMMAND"
->smbclient(1)
-		</B
->. </P
+> flag of <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbclient</SPAN
+>(1)</SPAN
+>.</P
 ></DD
 ></DL
 ></DIV
@@ -205,7 +207,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN95"
+NAME="AEN100"
 ></A
 ><H2
 >ENVIRONMENT VARIABLES</H2
@@ -222,7 +224,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN99"
+NAME="AEN104"
 ></A
 ><H2
 >BUGS</H2
@@ -236,7 +238,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN103"
+NAME="AEN108"
 ></A
 ><H2
 >CAVEATS</H2
@@ -249,7 +251,7 @@ NAME="AEN103"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN106"
+NAME="AEN111"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -260,21 +262,18 @@ CLASS="emphasis"
 CLASS="EMPHASIS"
 >DIAGNOSTICS</I
 ></SPAN
-> section for the 
-	<A
-HREF="smbclient.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbclient(1)</B
-> 
-	</A
+> section for the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbclient</SPAN
+>(1)</SPAN
 > command.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN112"
+NAME="AEN118"
 ></A
 ><H2
 >VERSION</H2
@@ -285,38 +284,35 @@ NAME="AEN112"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN115"
+NAME="AEN121"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
-></A
->, 
-	<A
-HREF="smbclient.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbclient(1)</B
-></A
->, 
-	<A
-HREF="smb.conf.5.html"
-TARGET="_top"
->smb.conf(5)</A
->,
-	</P
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbclient</SPAN
+>(1)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+>.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN123"
+NAME="AEN133"
 ></A
 ><H2
 >AUTHOR</H2
@@ -342,14 +338,14 @@ TARGET="_top"
 >. Many 
 	thanks to everyone who suggested extensions, improvements, bug 
 	fixes, etc. The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter.</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+	Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

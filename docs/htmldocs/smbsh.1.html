@@ -1,12 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbsh</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -16,7 +15,9 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBSH">smbsh</H1
+NAME="SMBSH.1"
+></A
+>smbsh</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -29,13 +30,15 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"><H2
+NAME="AEN8"
+></A
+><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >smbsh</B
-> [-W workgroup] [-U username] [-P prefix] [-R &#60;name resolve order&#62;] [-d &#60;debug level&#62;] [-l logfile] [-L libdir]</P
+>  [-W workgroup] [-U username] [-P prefix] [-R &lt;name resolve order&gt;] [-d &lt;debug level&gt;] [-l logfile] [-L libdir]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -45,10 +48,12 @@ NAME="AEN18"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><B
@@ -74,7 +79,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN28"
+NAME="AEN30"
 ></A
 ><H2
 >OPTIONS</H2
@@ -88,9 +93,12 @@ CLASS="VARIABLELIST"
 ><DD
 ><P
 >Override the default workgroup specified in the 
-		workgroup parameter of the <TT
-CLASS="FILENAME"
->smb.conf</TT
+		workgroup parameter of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file 
 		for this session. This may be needed to connect to some 
 		servers. </P
@@ -112,14 +120,17 @@ CLASS="FILENAME"
 >This option allows
 		the user to set the directory prefix for SMB access. The 
 		default value if this option is not specified is 
-		<I
+		<SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >smb</I
+></SPAN
 >.
 		</P
 ></DD
 ><DT
->-R &#60;name resolve order&#62;</DT
+>-R &lt;name resolve order&gt;</DT
 ><DD
 ><P
 >This option is used to determine what naming 
@@ -127,7 +138,7 @@ CLASS="EMPHASIS"
 		host names to IP addresses. The option takes a space-separated 
 		string of different name resolution options.</P
 ><P
->The options are :"lmhosts", "host", "wins" and "bcast". 
+>The options are: "lmhosts", "host", "wins" and "bcast". 
 		They cause names to be resolved as follows :</P
 ><P
 ></P
@@ -137,16 +148,18 @@ CLASS="EMPHASIS"
 ><TT
 CLASS="CONSTANT"
 >lmhosts</TT
-> : 
+>: 
 			Lookup an IP address in the Samba lmhosts file. If the 
 			line in lmhosts has no name type attached to the 
 			NetBIOS name 
-			(see the <A
-HREF="lmhosts.5.html"
-TARGET="_top"
->lmhosts(5)</A
->
-			for details) then any name type matches for lookup.
+			(see the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>lmhosts</SPAN
+>(5)</SPAN
+>	for details) 
+			then any name type matches for lookup.
 			</P
 ></LI
 ><LI
@@ -154,7 +167,7 @@ TARGET="_top"
 ><TT
 CLASS="CONSTANT"
 >host</TT
-> : 
+>: 
 			Do a standard host name to IP address resolution, using
 			the system <TT
 CLASS="FILENAME"
@@ -176,7 +189,7 @@ CLASS="FILENAME"
 ><TT
 CLASS="CONSTANT"
 >wins</TT
-> : 
+>: 
 			Query a name with the IP address listed in the 
 			<TT
 CLASS="PARAMETER"
@@ -193,7 +206,7 @@ CLASS="PARAMETER"
 ><TT
 CLASS="CONSTANT"
 >bcast</TT
-> : 
+>: 
 			Do a broadcast on each of the known local interfaces 
 			listed in the <TT
 CLASS="PARAMETER"
@@ -209,11 +222,19 @@ CLASS="PARAMETER"
 ></UL
 ><P
 >If this parameter is not set then the name resolve order 
-		defined in the <TT
-CLASS="FILENAME"
->smb.conf</TT
+		defined in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file parameter  
-		(name resolve order) will be used. </P
+		(<TT
+CLASS="PARAMETER"
+><I
+>name resolve order</I
+></TT
+>) will be used. </P
 ><P
 >The default order is lmhosts, host, wins, bcast. Without 
 		this parameter or any entry in the <TT
@@ -222,15 +243,17 @@ CLASS="PARAMETER"
 >name resolve order
 		</I
 ></TT
-> parameter of the <TT
-CLASS="FILENAME"
->smb.conf</TT
-> 
-		file, the name resolution methods will be attempted in this 
-		order. </P
+> parameter of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> file, the name resolution methods 
+		will be attempted in this order. </P
 ></DD
 ><DT
->-d &#60;debug level&#62;</DT
+>-d &lt;debug level&gt;</DT
 ><DD
 ><P
 >debug level is an integer from 0 to 10.</P
@@ -239,9 +262,12 @@ CLASS="FILENAME"
 		is zero.</P
 ><P
 >The higher this value, the more detail will be logged
-		about the activities of <B
-CLASS="COMMAND"
->nmblookup</B
+		about the activities of <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>nmblookup</SPAN
+>(1)</SPAN
 >. At level
 		0, only critical errors and serious warnings will be logged.
 		</P
@@ -284,7 +310,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN91"
+NAME="AEN104"
 ></A
 ><H2
 >EXAMPLES</H2
@@ -297,17 +323,10 @@ CLASS="COMMAND"
 >	smbsh</B
 > from the prompt and enter the username and password 
 	that authenticates you to the machine running the Windows NT 
-	operating system.</P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
+	operating system.
+<PRE
 CLASS="PROGRAMLISTING"
->	<TT
+><TT
 CLASS="PROMPT"
 >system% </TT
 ><TT
@@ -316,7 +335,7 @@ CLASS="USERINPUT"
 >smbsh</B
 ></TT
 >
-	<TT
+<TT
 CLASS="PROMPT"
 >Username: </TT
 ><TT
@@ -325,7 +344,7 @@ CLASS="USERINPUT"
 >user</B
 ></TT
 >
-	<TT
+<TT
 CLASS="PROMPT"
 >Password: </TT
 ><TT
@@ -333,11 +352,7 @@ CLASS="USERINPUT"
 ><B
 >XXXXXXX</B
 ></TT
->
-	</PRE
-></TD
-></TR
-></TABLE
+></PRE
 ></P
 ><P
 >Any dynamically linked command you execute from 
@@ -357,7 +372,7 @@ CLASS="COMMAND"
 	the  workgroup MYGROUP. The command 
 	<B
 CLASS="COMMAND"
->ls /smb/MYGROUP/&#60;machine-name&#62;</B
+>ls /smb/MYGROUP/&lt;machine-name&gt;</B
 > will show the share 
 	names for that machine. You could then, for example, use the <B
 CLASS="COMMAND"
@@ -374,18 +389,17 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN112"
+NAME="AEN124"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 3.0 of 
-	the Samba suite.</P
+>This man page is correct for version 3.0 of the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN115"
+NAME="AEN127"
 ></A
 ><H2
 >BUGS</H2
@@ -418,30 +432,29 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN124"
+NAME="AEN136"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
-></A
->, 
-	<A
-HREF="smb.conf.5.html"
-TARGET="_top"
->smb.conf(5)</A
->
-	</P
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN130"
+NAME="AEN145"
 ></A
 ><H2
 >AUTHOR</H2
@@ -453,14 +466,14 @@ NAME="AEN130"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

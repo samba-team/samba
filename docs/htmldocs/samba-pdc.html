@@ -2,11 +2,10 @@
 <HTML
 ><HEAD
 ><TITLE
->How to Configure Samba as a NT4 Primary Domain Controller</TITLE
+>Samba as a NT4 or Win2k Primary Domain Controller</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -73,13 +72,17 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="SAMBA-PDC">Chapter 6. How to Configure Samba as a NT4 Primary Domain Controller</H1
+NAME="SAMBA-PDC"
+></A
+>Chapter 5. Samba as a NT4 or Win2k Primary Domain Controller</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN575">6.1. Prerequisite Reading</H1
+NAME="AEN722"
+></A
+>5.1. Prerequisite Reading</H1
 ><P
 >Before you continue reading in this chapter, please make sure 
 that you are comfortable with configuring basic files services
@@ -105,7 +108,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN581">6.2. Background</H1
+NAME="AEN728"
+></A
+>5.2. Background</H1
 ><DIV
 CLASS="NOTE"
 ><P
@@ -120,7 +125,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/note.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
 HSPACE="5"
 ALT="Note"></TD
 ><TD
@@ -255,7 +260,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN620">6.3. Configuring the Samba Domain Controller</H1
+NAME="AEN767"
+></A
+>5.3. Configuring the Samba Domain Controller</H1
 ><P
 >The first step in creating a working Samba PDC is to 
 understand the parameters necessary in smb.conf.  I will not
@@ -465,7 +472,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN663">6.4. Creating Machine Trust Accounts and Joining Clients to the
+NAME="AEN810"
+></A
+>5.4. Creating Machine Trust Accounts and Joining Clients to the
 Domain</H1
 ><P
 >A machine trust account is a Samba account that is used to
@@ -537,7 +546,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN682">6.4.1. Manual Creation of Machine Trust Accounts</H2
+NAME="AEN829"
+></A
+>5.4.1. Manual Creation of Machine Trust Accounts</H2
 ><P
 >The first step in manually creating a machine trust account is to
 manually create the corresponding Unix account in
@@ -689,7 +700,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/warning.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
 HSPACE="5"
 ALT="Warning"></TD
 ><TH
@@ -725,7 +736,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN723">6.4.2. "On-the-Fly" Creation of Machine Trust Accounts</H2
+NAME="AEN870"
+></A
+>5.4.2. "On-the-Fly" Creation of Machine Trust Accounts</H2
 ><P
 >The second (and recommended) way of creating machine trust accounts is
 simply to allow the Samba server to create them as needed when the client
@@ -751,7 +764,7 @@ be created manually.</P
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
-   # &#60;...remainder of parameters...&#62;
+   # &lt;...remainder of parameters...&gt;
    add user script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u </PRE
 ></P
 ></DIV
@@ -760,7 +773,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN732">6.4.3. Joining the Client to the Domain</H2
+NAME="AEN879"
+></A
+>5.4.3. Joining the Client to the Domain</H2
 ><P
 >The procedure for joining a client to the domain varies with the
 version of Windows.</P
@@ -826,7 +841,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN747">6.5. Common Problems and Errors</H1
+NAME="AEN894"
+></A
+>5.5. Common Problems and Errors</H1
 ><P
 ></P
 ><P
@@ -1034,7 +1051,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN795">6.6. System Policies and Profiles</H1
+NAME="AEN942"
+></A
+>5.6. System Policies and Profiles</H1
 ><P
 >Much of the information necessary to implement System Policies and
 Roving User Profiles in a Samba domain is the same as that for 
@@ -1209,7 +1228,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN839">6.7. What other help can I get?</H1
+NAME="AEN986"
+></A
+>5.7. What other help can I get?</H1
 ><P
 >There are many sources of information available in the form 
 of mailing lists, RFC's and documentation.  The docs that come 
@@ -1627,7 +1648,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN953">6.8. Domain Control for Windows 9x/ME</H1
+NAME="AEN1100"
+></A
+>5.8. Domain Control for Windows 9x/ME</H1
 ><DIV
 CLASS="NOTE"
 ><P
@@ -1642,7 +1665,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/note.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
 HSPACE="5"
 ALT="Note"></TD
 ><TD
@@ -1704,7 +1727,7 @@ TYPE="1"
 ><LI
 ><P
 >	The client broadcasts (to the IP broadcast address of the subnet it is in)
-	a NetLogon request. This is sent to the NetBIOS name DOMAIN&#60;1c&#62; at the
+	a NetLogon request. This is sent to the NetBIOS name DOMAIN&lt;1c&gt; at the
 	NetBIOS layer.  The client chooses the first response it receives, which
 	contains the NetBIOS name of the logon server to use in the format of 
 	\\SERVER.
@@ -1759,7 +1782,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN979">6.8.1. Configuration Instructions:	Network Logons</H2
+NAME="AEN1126"
+></A
+>5.8.1. Configuration Instructions:	Network Logons</H2
 ><P
 >The main difference between a PDC and a Windows 9x logon 
 server configuration is that</P
@@ -1792,7 +1817,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/warning.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
 HSPACE="5"
 ALT="Warning"></TD
 ><TH
@@ -1863,7 +1888,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN998">6.8.2. Configuration Instructions:	Setting up Roaming User Profiles</H2
+NAME="AEN1145"
+></A
+>5.8.2. Configuration Instructions:	Setting up Roaming User Profiles</H2
 ><DIV
 CLASS="WARNING"
 ><P
@@ -1878,7 +1905,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/warning.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
 HSPACE="5"
 ALT="Warning"></TD
 ><TD
@@ -1914,7 +1941,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1006">6.8.2.1. Windows NT Configuration</H3
+NAME="AEN1153"
+></A
+>5.8.2.1. Windows NT Configuration</H3
 ><P
 >To support WinNT clients, in the [global] section of smb.conf set the
 following (for example):</P
@@ -1943,7 +1972,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/note.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
 HSPACE="5"
 ALT="Note"></TD
 ><TD
@@ -1963,7 +1992,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1014">6.8.2.2. Windows 9X Configuration</H3
+NAME="AEN1161"
+></A
+>5.8.2.2. Windows 9X Configuration</H3
 ><P
 >To support Win9X clients, you must use the "logon home" parameter. Samba has
 now been fixed so that "net use/home" now works as well, and it, too, relies
@@ -1992,7 +2023,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1022">6.8.2.3. Win9X and WinNT Configuration</H3
+NAME="AEN1169"
+></A
+>5.8.2.3. Win9X and WinNT Configuration</H3
 ><P
 >You can support profiles for both Win9X and WinNT clients by setting both the
 "logon home" and "logon path" parameters. For example:</P
@@ -2016,7 +2049,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/note.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
 HSPACE="5"
 ALT="Note"></TD
 ><TD
@@ -2035,7 +2068,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1029">6.8.2.4. Windows 9X Profile Setup</H3
+NAME="AEN1176"
+></A
+>5.8.2.4. Windows 9X Profile Setup</H3
 ><P
 >When a user first logs in on Windows 9X, the file user.DAT is created,
 as are folders "Start Menu", "Desktop", "Programs" and "Nethood".  
@@ -2193,7 +2228,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1065">6.8.2.5. Windows NT Workstation 4.0</H3
+NAME="AEN1212"
+></A
+>5.8.2.5. Windows NT Workstation 4.0</H3
 ><P
 >When a user first logs in to a Windows NT Workstation, the profile
 NTuser.DAT is created.  The profile location can be now specified
@@ -2212,7 +2249,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/note.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
 HSPACE="5"
 ALT="Note"></TD
 ><TD
@@ -2270,7 +2307,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/note.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
 HSPACE="5"
 ALT="Note"></TD
 ><TD
@@ -2305,7 +2342,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1078">6.8.2.6. Windows NT Server</H3
+NAME="AEN1225"
+></A
+>5.8.2.6. Windows NT Server</H3
 ><P
 >There is nothing to stop you specifying any path that you like for the
 location of users' profiles.  Therefore, you could specify that the
@@ -2317,7 +2356,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1081">6.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</H3
+NAME="AEN1228"
+></A
+>5.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</H3
 ><DIV
 CLASS="WARNING"
 ><P
@@ -2332,7 +2373,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/warning.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
 HSPACE="5"
 ALT="Warning"></TD
 ><TH
@@ -2384,7 +2425,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/note.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
 HSPACE="5"
 ALT="Note"></TD
 ><TD
@@ -2408,7 +2449,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1091">6.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</H1
+NAME="AEN1238"
+></A
+>5.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &amp; Samba</H1
 ><DIV
 CLASS="WARNING"
 ><P
@@ -2423,7 +2466,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/warning.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
 HSPACE="5"
 ALT="Warning"></TD
 ><TH

@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "PDBEDIT" "8" "26 November 2002" "" ""
+.TH "PDBEDIT" "8" "28 January 2003" "" ""
+
 .SH NAME
 pdbedit \- manage the SAM database
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ pdbedit \- manage the SAM database
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 The pdbedit program is used to manage the users accounts
 stored in the sam database and can only be run by root.
@@ -37,9 +38,8 @@ Example: \fBpdbedit -l\fR
 
 
 .nf
-		sorce:500:Simo Sorce
-		samba:45:Test User
-		
+sorce:500:Simo Sorce
+samba:45:Test User
 .fi
 .TP
 \fB-v\fR
@@ -51,40 +51,38 @@ Example: \fBpdbedit -l -v\fR
 
 
 .nf
-		---------------
-		username:       sorce
-		user ID/Group:  500/500
-		user RID/GRID:  2000/2001
-		Full Name:      Simo Sorce
-		Home Directory: \\\\BERSERKER\\sorce
-		HomeDir Drive:  H:
-		Logon Script:   \\\\BERSERKER\\netlogon\\sorce.bat
-		Profile Path:   \\\\BERSERKER\\profile
-		---------------
-		username:       samba
-		user ID/Group:  45/45
-		user RID/GRID:  1090/1091
-		Full Name:      Test User
-		Home Directory: \\\\BERSERKER\\samba
-		HomeDir Drive:  
-		Logon Script:   
-		Profile Path:   \\\\BERSERKER\\profile
-		
+---------------
+username:       sorce
+user ID/Group:  500/500
+user RID/GRID:  2000/2001
+Full Name:      Simo Sorce
+Home Directory: \\\\BERSERKER\\sorce
+HomeDir Drive:  H:
+Logon Script:   \\\\BERSERKER\\netlogon\\sorce.bat
+Profile Path:   \\\\BERSERKER\\profile
+---------------
+username:       samba
+user ID/Group:  45/45
+user RID/GRID:  1090/1091
+Full Name:      Test User
+Home Directory: \\\\BERSERKER\\samba
+HomeDir Drive:  
+Logon Script:   
+Profile Path:   \\\\BERSERKER\\profile
 .fi
 .TP
 \fB-w\fR
 This option sets the "smbpasswd" listing format.
 It will make pdbedit list the users in the database, printing
 out the account fields in a format compatible with the
-\fIsmbpasswd\fR file format. (see the \fIsmbpasswd(5)\fR for details)
+\fIsmbpasswd\fR file format. (see the
+\fBsmbpasswd\fR(5) for details)
 
 Example: \fBpdbedit -l -w\fR
 
-
 .nf
-		sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
-		samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
-		
+sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
+samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
 .fi
 .TP
 \fB-u username\fR
@@ -139,7 +137,7 @@ Example: \fBpdbedit -a -u sorce\fR
 
 .nf
 new password:
-		retype new password
+retype new password
 .fi
 .TP
 \fB-m\fR
@@ -193,8 +191,7 @@ Example: \fBpdbedit -P "bad lockout attempt"\fR
 
 
 .nf
-		account policy value for bad lockout attempt is 0
-		
+account policy value for bad lockout attempt is 0
 .fi
 .TP
 \fB-V account-policy-value\fR
@@ -206,9 +203,8 @@ Example: \fBpdbedit -P "bad lockout attempt" -V 3\fR
 
 
 .nf
-		account policy value for bad lockout attempt was 0
-		account policy value for bad lockout attempt is now 3
-		
+account policy value for bad lockout attempt was 0
+account policy value for bad lockout attempt is now 3
 .fi
 .TP
 \fB-d|--debug=debuglevel\fR
@@ -254,8 +250,7 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-smbpasswd(8) 
-samba(7)
+\fBsmbpasswd\fR(5), \fBsamba\fR(7)
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -265,7 +260,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.

@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WINBINDD" "8" "03 January 2003" "" ""
+.TH "WINBINDD" "8" "18 February 2003" "" ""
+
 .SH NAME
 winbindd \- Name Service Switch daemon for resolving names  from NT servers
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ winbindd \- Name Service Switch daemon for resolving names  from NT servers
 
 .SH "DESCRIPTION"
 .PP
-This program is part of the  Samba suite.
+This program is part of the \fBSamba\fR(7) suite.
 .PP
 \fBwinbindd\fR is a daemon that provides 
 a service for the Name Service Switch capability that is present 
@@ -59,13 +60,11 @@ For example, the following simple configuration in the
 \fI/etc/nsswitch.conf\fR file can be used to initially 
 resolve user and group information from \fI/etc/passwd
 \fR and \fI/etc/group\fR and then from the 
-Windows NT server. 
-.PP
+Windows NT server.
 
 .nf
 passwd:         files winbind
 group:          files winbind
-	
 .fi
 .PP
 The following simple configuration in the
@@ -122,7 +121,7 @@ Advantage of this is that responses are accurate and fast.
 .TP
 \fB-s|--conf=smb.conf\fR
 Specifies the location of the all-important
-\fIsmb.conf\fR file. 
+\fBsmb.conf\fR(5) file. 
 .SH "NAME AND ID RESOLUTION"
 .PP
 Users and groups on a Windows NT server are assigned 
@@ -147,8 +146,7 @@ and group rids.
 .SH "CONFIGURATION"
 .PP
 Configuration of the \fBwinbindd\fR daemon 
-is done through configuration parameters in the \fIsmb.conf(5)
-\fR file.  All parameters should be specified in the 
+is done through configuration parameters in the \fBsmb.conf\fR(5) file.  All parameters should be specified in the 
 [global] section of smb.conf. 
 .TP 0.2i
 \(bu
@@ -185,28 +183,23 @@ following setup. This was tested on a RedHat 6.2 Linux box.
 .PP
 In \fI/etc/nsswitch.conf\fR put the 
 following:
-.PP
 
 .nf
 passwd:     files winbind
 group:      files winbind
-	
 .fi
 .PP
-In \fI/etc/pam.d/*\fR replace the 
-\fIauth\fR lines with something like this: 
-.PP
+In \fI/etc/pam.d/*\fR replace the \fI auth\fR lines with something like this:
 
 .nf
 auth       required	/lib/security/pam_securetty.so
 auth       required	/lib/security/pam_nologin.so
 auth       sufficient	/lib/security/pam_winbind.so
 auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
-	
 .fi
 .PP
-Note in particular the use of the \fIsufficient\fR 
-keyword and the \fIuse_first_pass\fR keyword. 
+Note in particular the use of the \fIsufficient
+\fR keyword and the \fIuse_first_pass\fR keyword. 
 .PP
 Now replace the account lines with this: 
 .PP
@@ -216,25 +209,22 @@ Now replace the account lines with this:
 The next step is to join the domain. To do that use the 
 \fBsmbpasswd\fR program like this:  
 .PP
-\fBsmbpasswd -j DOMAIN -r PDC -U
-Administrator\fR
+\fBnet join -S PDC -U Administrator\fR
 .PP
 The username after the \fI-U\fR can be any
 Domain user that has administrator privileges on the machine.
-Substitute your domain name for "DOMAIN" and the name of your PDC
-for "PDC".
+Substitute the name or IP of your PDC for "PDC".
 .PP
 Next copy \fIlibnss_winbind.so\fR to 
-\fI/lib\fR and \fIpam_winbind.so\fR
-to \fI/lib/security\fR.  A symbolic link needs to be
+\fI/lib\fR and \fIpam_winbind.so
+\fR to \fI/lib/security\fR.  A symbolic link needs to be
 made from \fI/lib/libnss_winbind.so\fR to
 \fI/lib/libnss_winbind.so.2\fR.  If you are using an
 older version of glibc then the target of the link should be
 \fI/lib/libnss_winbind.so.1\fR.
 .PP
-Finally, setup a \fIsmb.conf\fR containing directives like the 
-following:  
-.PP
+Finally, setup a \fBsmb.conf\fR(5) containing directives like the 
+following:
 
 .nf
 [global]
@@ -247,7 +237,6 @@ following:
         workgroup = DOMAIN
         security = domain
         password server = *
-	
 .fi
 .PP
 Now start winbindd and you should find that your user and 
@@ -261,9 +250,9 @@ commands \fBgetent passwd\fR and \fBgetent group
 The following notes are useful when configuring and 
 running \fBwinbindd\fR: 
 .PP
-\fBnmbd\fR must be running on the local machine 
-for \fBwinbindd\fR to work. \fBwinbindd\fR
-queries the list of trusted domains for the Windows NT server
+\fBnmbd\fR(8) must be running on the local machine 
+for \fBwinbindd\fR to work. \fBwinbindd\fR queries
+the list of trusted domains for the Windows NT server
 on startup and when a SIGHUP is received.  Thus, for a running \fB winbindd\fR to become aware of new trust relationships between 
 servers, it must be sent a SIGHUP signal. 
 .PP
@@ -289,8 +278,8 @@ The following signals can be used to manipulate the
 \fBwinbindd\fR daemon. 
 .TP
 \fBSIGHUP\fR
-Reload the \fIsmb.conf(5)\fR
-file and apply any parameter changes to the running 
+Reload the \fBsmb.conf\fR(5) file and 
+apply any parameter changes to the running 
 version of winbindd.  This signal also clears any cached 
 user and group information.  The list of other domains trusted 
 by winbindd is also reloaded.  
@@ -333,10 +322,7 @@ This man page is correct for version 3.0 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fInsswitch.conf(5)\fR,
-samba(7)
-wbinfo(1)
-smb.conf(5)
+\fInsswitch.conf(5)\fR, \fBSamba\fR(7), \fBwbinfo\fR(8), \fBsmb.conf\fR(5)
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -344,8 +330,9 @@ were created by Andrew Tridgell. Samba is now developed
 by the Samba Team as an Open Source project similar 
 to the way the Linux kernel is developed.
 .PP
-\fBwbinfo\fR and \fBwinbindd\fR
-were written by Tim Potter.
+\fBwbinfo\fR and \fBwinbindd\fR were 
+written by Tim Potter.
 .PP
 The conversion to DocBook for Samba 2.2 was done 
-by Gerald Carter
+by Gerald Carter. The conversion to DocBook XML 4.2 for
+Samba 3.0 was done by Alexander Bokovoy.

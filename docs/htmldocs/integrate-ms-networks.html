@@ -5,8 +5,7 @@
 >Integrating MS Windows networks with Samba</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -73,13 +72,17 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="INTEGRATE-MS-NETWORKS">Chapter 10. Integrating MS Windows networks with Samba</H1
+NAME="INTEGRATE-MS-NETWORKS"
+></A
+>Chapter 9. Integrating MS Windows networks with Samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1374">10.1. Agenda</H1
+NAME="AEN1513"
+></A
+>9.1. Agenda</H1
 ><P
 >To identify the key functional mechanisms of MS Windows networking 
 to enable the deployment of Samba as a means of extending and/or 
@@ -144,7 +147,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1396">10.2. Name Resolution in a pure Unix/Linux world</H1
+NAME="AEN1535"
+></A
+>9.2. Name Resolution in a pure Unix/Linux world</H1
 ><P
 >The key configuration files covered in this section are:</P
 ><P
@@ -184,7 +189,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1412">10.2.1. <TT
+NAME="AEN1551"
+></A
+>9.2.1. <TT
 CLASS="FILENAME"
 >/etc/hosts</TT
 ></H2
@@ -263,7 +270,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1428">10.2.2. <TT
+NAME="AEN1567"
+></A
+>9.2.2. <TT
 CLASS="FILENAME"
 >/etc/resolv.conf</TT
 ></H2
@@ -299,7 +308,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1439">10.2.3. <TT
+NAME="AEN1578"
+></A
+>9.2.3. <TT
 CLASS="FILENAME"
 >/etc/host.conf</TT
 ></H2
@@ -326,7 +337,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1447">10.2.4. <TT
+NAME="AEN1586"
+></A
+>9.2.4. <TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
 ></H2
@@ -393,7 +406,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1459">10.3. Name resolution as used within MS Windows networking</H1
+NAME="AEN1598"
+></A
+>9.3. Name resolution as used within MS Windows networking</H1
 ><P
 >MS Windows networking is predicated about the name each machine 
 is given. This name is known variously (and inconsistently) as 
@@ -413,16 +428,16 @@ the client/server.</P
 ><PRE
 CLASS="PROGRAMLISTING"
 >	Unique NetBIOS Names:
-		MACHINENAME&#60;00&#62;	= Server Service is running on MACHINENAME
-		MACHINENAME&#60;03&#62; = Generic Machine Name (NetBIOS name)
-		MACHINENAME&#60;20&#62; = LanMan Server service is running on MACHINENAME
-		WORKGROUP&#60;1b&#62; = Domain Master Browser
+		MACHINENAME&lt;00&gt;	= Server Service is running on MACHINENAME
+		MACHINENAME&lt;03&gt; = Generic Machine Name (NetBIOS name)
+		MACHINENAME&lt;20&gt; = LanMan Server service is running on MACHINENAME
+		WORKGROUP&lt;1b&gt; = Domain Master Browser
 
 	Group Names:
-		WORKGROUP&#60;03&#62; = Generic Name registered by all members of WORKGROUP
-		WORKGROUP&#60;1c&#62; = Domain Controllers / Netlogon Servers
-		WORKGROUP&#60;1d&#62; = Local Master Browsers
-		WORKGROUP&#60;1e&#62; = Internet Name Resolvers</PRE
+		WORKGROUP&lt;03&gt; = Generic Name registered by all members of WORKGROUP
+		WORKGROUP&lt;1c&gt; = Domain Controllers / Netlogon Servers
+		WORKGROUP&lt;1d&gt; = Local Master Browsers
+		WORKGROUP&lt;1e&gt; = Internet Name Resolvers</PRE
 ></P
 ><P
 >It should be noted that all NetBIOS machines register their own 
@@ -441,7 +456,7 @@ be needed. An example of this is what happens when an MS Windows client
 wants to locate a domain logon server. It find this service and the IP 
 address of a server that provides it by performing a lookup (via a 
 NetBIOS broadcast) for enumeration of all machines that have 
-registered the name type *&#60;1c&#62;. A logon request is then sent to each 
+registered the name type *&lt;1c&gt;. A logon request is then sent to each 
 IP address that is returned in the enumerated list of IP addresses. Which 
 ever machine first replies then ends up providing the logon services.</P
 ><P
@@ -476,7 +491,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1471">10.3.1. The NetBIOS Name Cache</H2
+NAME="AEN1610"
+></A
+>9.3.1. The NetBIOS Name Cache</H2
 ><P
 >All MS Windows machines employ an in memory buffer in which is 
 stored the NetBIOS names and IP addresses for all external 
@@ -501,7 +518,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1476">10.3.2. The LMHOSTS file</H2
+NAME="AEN1615"
+></A
+>9.3.2. The LMHOSTS file</H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 
 2000 in <TT
@@ -602,7 +621,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1484">10.3.3. HOSTS file</H2
+NAME="AEN1623"
+></A
+>9.3.3. HOSTS file</H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 2000 in 
 <TT
@@ -622,7 +643,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1489">10.3.4. DNS Lookup</H2
+NAME="AEN1628"
+></A
+>9.3.4. DNS Lookup</H2
 ><P
 >This capability is configured in the TCP/IP setup area in the network 
 configuration facility. If enabled an elaborate name resolution sequence 
@@ -640,7 +663,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1492">10.3.5. WINS Lookup</H2
+NAME="AEN1631"
+></A
+>9.3.5. WINS Lookup</H2
 ><P
 >A WINS (Windows Internet Name Server) service is the equivaent of the 
 rfc1001/1002 specified NBNS (NetBIOS Name Server). A WINS server stores 
@@ -681,7 +706,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1504">10.4. How browsing functions and how to deploy stable and 
+NAME="AEN1643"
+></A
+>9.4. How browsing functions and how to deploy stable and 
 dependable browsing using Samba</H1
 ><P
 >As stated above, MS Windows machines register their NetBIOS names 
@@ -746,7 +773,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1514">10.5. MS Windows security options and how to configure 
+NAME="AEN1653"
+></A
+>9.5. MS Windows security options and how to configure 
 Samba for seemless integration</H1
 ><P
 >MS Windows clients may use encrypted passwords as part of a 
@@ -881,7 +910,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1542">10.5.1. Use MS Windows NT as an authentication server</H2
+NAME="AEN1681"
+></A
+>9.5.1. Use MS Windows NT as an authentication server</H2
 ><P
 >This method involves the additions of the following parameters 
 in the smb.conf file:</P
@@ -915,7 +946,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1550">10.5.2. Make Samba a member of an MS Windows NT security domain</H2
+NAME="AEN1689"
+></A
+>9.5.2. Make Samba a member of an MS Windows NT security domain</H2
 ><P
 >This method involves additon of the following paramters in the smb.conf file:</P
 ><P
@@ -976,7 +1009,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1567">10.5.3. Configure Samba as an authentication server</H2
+NAME="AEN1706"
+></A
+>9.5.3. Configure Samba as an authentication server</H2
 ><P
 >This mode of authentication demands that there be on the 
 Unix/Linux system both a Unix style account as well as an 
@@ -1011,7 +1046,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1574">10.5.3.1. Users</H3
+NAME="AEN1713"
+></A
+>9.5.3.1. Users</H3
 ><P
 >A user account that may provide a home directory should be 
 created. The following Linux system commands are typical of 
@@ -1032,7 +1069,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1579">10.5.3.2. MS Windows NT Machine Accounts</H3
+NAME="AEN1718"
+></A
+>9.5.3.2. MS Windows NT Machine Accounts</H3
 ><P
 >These are required only when Samba is used as a domain 
 controller.  Refer to the Samba-PDC-HOWTO for more details.</P
@@ -1051,7 +1090,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1584">10.6. Conclusions</H1
+NAME="AEN1723"
+></A
+>9.6. Conclusions</H1
 ><P
 >Samba provides a flexible means to operate as...</P
 ><P

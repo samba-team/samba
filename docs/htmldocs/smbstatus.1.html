@@ -5,7 +5,7 @@
 >smbstatus</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBSTATUS"
+NAME="SMBSTATUS.1"
 ></A
 >smbstatus</H1
 ><DIV
@@ -47,10 +47,12 @@ NAME="AEN21"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><B
@@ -62,7 +64,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN27"
+NAME="AEN29"
 ></A
 ><H2
 >OPTIONS</H2
@@ -114,13 +116,12 @@ CLASS="VARIABLELIST"
 >-p|--processes</DT
 ><DD
 ><P
->print a list of <A
-HREF="smbd.8.html"
-TARGET="_top"
->		<B
-CLASS="COMMAND"
->smbd(8)</B
-></A
+>print a list of <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
 > processes and exit. 
 		Useful for scripting.</P
 ></DD
@@ -136,14 +137,12 @@ CLASS="COMMAND"
 ><P
 >The default configuration file name is
 		determined at compile time. The file specified contains the
-		configuration details required by the server. See <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
->
-		</A
+		configuration details required by the server. See <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > for more information.</P
 ></DD
 ><DT
@@ -164,7 +163,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN75"
+NAME="AEN79"
 ></A
 ><H2
 >VERSION</H2
@@ -175,29 +174,29 @@ NAME="AEN75"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN78"
+NAME="AEN82"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
-></A
-> and
-	<A
-HREF="smb.conf.5.html"
-TARGET="_top"
->smb.conf(5)</A
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
+> and <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 >.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN84"
+NAME="AEN91"
 ></A
 ><H2
 >AUTHOR</H2
@@ -209,14 +208,14 @@ NAME="AEN84"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

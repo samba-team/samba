@@ -1,12 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -16,7 +15,9 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBD">smbd</H1
+NAME="SMBD.8"
+></A
+>smbd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -28,13 +29,15 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"><H2
+NAME="AEN8"
+></A
+><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >smbd</B
-> [-D] [-F] [-S] [-i] [-h] [-V] [-b] [-d &#60;debug level&#62;] [-l &#60;log directory&#62;] [-p &#60;port number&#62;] [-O &#60;socket option&#62;] [-s &#60;configuration file&#62;]</P
+>  [-D] [-F] [-S] [-i] [-h] [-V] [-b] [-d &lt;debug level&gt;] [-l &lt;log directory&gt;] [-p &lt;port number&gt;] [-O &lt;socket option&gt;] [-s &lt;configuration file&gt;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -44,7 +47,13 @@ NAME="AEN23"
 ><H2
 >DESCRIPTION</H2
 ><P
->This program is part of the Samba suite.</P
+>This program is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
+> suite.</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -61,28 +70,24 @@ CLASS="COMMAND"
 >An extensive description of the services that the 
 	server can provide is given in the man page for the 
 	configuration file controlling the attributes of those 
-	services (see <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)
-	</TT
-></A
+	services (see <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 >.  This man page will not describe the 
 	services, but will concentrate on the administrative aspects 
 	of running the server.</P
 ><P
 >Please note that there are significant security 
-	implications to running this server, and the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
-> 
-	manpage should be regarded as mandatory reading before 
+	implications to running this server, and the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> manual page should be regarded as mandatory reading before 
 	proceeding with installation.</P
 ><P
 >A session is created whenever a client requests one. 
@@ -104,7 +109,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN37"
+NAME="AEN42"
 ></A
 ><H2
 >OPTIONS</H2
@@ -222,7 +227,7 @@ CLASS="COMMAND"
 		Samba was built.</P
 ></DD
 ><DT
->-d &#60;debug level&#62;</DT
+>-d &lt;debug level&gt;</DT
 ><DD
 ><P
 ><TT
@@ -251,19 +256,23 @@ CLASS="REPLACEABLE"
 		override the <A
 HREF="smb.conf.5.html#loglevel"
 TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
 >log
-		level</A
-> parameter in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
->		<TT
-CLASS="FILENAME"
->smb.conf(5)</TT
+		level</I
+></TT
 ></A
+> parameter in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file.</P
 ></DD
 ><DT
->-l &#60;log directory&#62;</DT
+>-l &lt;log directory&gt;</DT
 ><DD
 ><P
 >If specified,
@@ -280,18 +289,25 @@ CLASS="REPLACEABLE"
 		its size may be controlled by the <A
 HREF="smb.conf.5.html#maxlogsize"
 TARGET="_top"
->max log size</A
->
-		option in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
 ><TT
-CLASS="FILENAME"
->		smb.conf(5)</TT
+CLASS="PARAMETER"
+><I
+>max log size</I
+></TT
 ></A
-> file. <I
+>
+		option in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> file. <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >Beware:</I
+></SPAN
 >
 		If the directory specified does not exist, <B
 CLASS="COMMAND"
@@ -304,26 +320,29 @@ CLASS="COMMAND"
 		compile time.</P
 ></DD
 ><DT
->-O &#60;socket options&#62;</DT
+>-O &lt;socket options&gt;</DT
 ><DD
 ><P
 >See the <A
 HREF="smb.conf.5.html#socketoptions"
 TARGET="_top"
->socket options</A
-> 
-		parameter in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
 ><TT
-CLASS="FILENAME"
->smb.conf(5)
-		</TT
+CLASS="PARAMETER"
+><I
+>socket options</I
+></TT
 ></A
+> 
+		parameter in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file for details.</P
 ></DD
 ><DT
->-p &#60;port number&#62;</DT
+>-p &lt;port number&gt;</DT
 ><DD
 ><P
 ><TT
@@ -354,7 +373,7 @@ CLASS="REPLACEABLE"
 		in the above situation.</P
 ></DD
 ><DT
->-s &#60;configuration file&#62;</DT
+>-s &lt;configuration file&gt;</DT
 ><DD
 ><P
 >The file specified contains the 
@@ -362,13 +381,12 @@ CLASS="REPLACEABLE"
 		information in this file includes server-specific
 		information such as what printcap file to use, as well 
 		as descriptions of all the services that the server is 
-		to provide. See <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->		smb.conf(5)</TT
-></A
+		to provide. See <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > for more information.
 		The default configuration file name is determined at 
 		compile time.</P
@@ -379,7 +397,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN123"
+NAME="AEN135"
 ></A
 ><H2
 >FILES</H2
@@ -402,9 +420,9 @@ CLASS="COMMAND"
 > meta-daemon, this file 
 		must contain suitable startup information for the 
 		meta-daemon. See the <A
-HREF="UNIX_INSTALL.html"
+HREF="install.html"
 TARGET="_top"
->UNIX_INSTALL.html</A
+>"How to Install and Test SAMBA"</A
 >
 		document for details.
 		</P
@@ -422,9 +440,9 @@ CLASS="FILENAME"
 >If running the server as a daemon at startup, 
 		this file will need to contain an appropriate startup 
 		sequence for the server. See the <A
-HREF="UNIX_INSTALL.html"
+HREF="install.html"
 TARGET="_top"
->UNIX_INSTALL.html</A
+>"How to Install and Test SAMBA"</A
 >
 		document for details.</P
 ></DD
@@ -443,9 +461,9 @@ CLASS="COMMAND"
 		must contain a mapping of service name (e.g., netbios-ssn) 
 		to service port (e.g., 139) and protocol type (e.g., tcp). 
 		See the <A
-HREF="UNIX_INSTALL.html"
+HREF="install.html"
 TARGET="_top"
->UNIX_INSTALL.html</A
+>"How to Install and Test SAMBA"</A
 >
 		document for details.</P
 ></DD
@@ -456,34 +474,30 @@ CLASS="FILENAME"
 ></DT
 ><DD
 ><P
->This is the default location of the 
-		<A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf</TT
-></A
->
-		server configuration file. Other common places that systems 
+>This is the default location of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> server configuration file. Other common places that systems 
 		install this file are <TT
 CLASS="FILENAME"
 >/usr/samba/lib/smb.conf</TT
 > 
 		and <TT
 CLASS="FILENAME"
->/etc/smb.conf</TT
+>/etc/samba/smb.conf</TT
 >.</P
 ><P
 >This file describes all the services the server 
-		is to make available to clients. See <A
-HREF="smb.conf.5.html"
-TARGET="_top"
->		<TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
->  for more information.</P
+		is to make available to clients. See <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> for more information.</P
 ></DD
 ></DL
 ></DIV
@@ -491,7 +505,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN159"
+NAME="AEN173"
 ></A
 ><H2
 >LIMITATIONS</H2
@@ -510,7 +524,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN163"
+NAME="AEN177"
 ></A
 ><H2
 >ENVIRONMENT VARIABLES</H2
@@ -541,7 +555,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN172"
+NAME="AEN186"
 ></A
 ><H2
 >PAM INTERACTION</H2
@@ -549,22 +563,35 @@ NAME="AEN172"
 >Samba uses PAM for authentication (when presented with a plaintext 
 	password), for account checking (is this account disabled?) and for
 	session management.  The degree too which samba supports PAM is restricted
-	by the limitations of the SMB protocol and the 
-	<A
+	by the limitations of the SMB protocol and the <A
 HREF="smb.conf.5.html#OBEYPAMRESRICTIONS"
 TARGET="_top"
->obey pam restricions</A
->
-	smb.conf paramater.  When this is set, the following restrictions apply:
+><TT
+CLASS="PARAMETER"
+><I
+>obey 
+	pam restricions</I
+></TT
+></A
+> <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> paramater.  When this is set, the following restrictions apply:
 	</P
 ><P
 ></P
 ><UL
 ><LI
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Account Validation</I
+></SPAN
 >:  All accesses to a 
 	samba server are checked 
 	against PAM to see if the account is vaild, not disabled and is permitted to 
@@ -573,9 +600,12 @@ CLASS="EMPHASIS"
 ></LI
 ><LI
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Session Management</I
+></SPAN
 >:  When not using share 
 	level secuirty, users must pass PAM's session checks before access 
 	is granted.  Note however, that this is bypassed in share level secuirty.  
@@ -588,7 +618,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN183"
+NAME="AEN201"
 ></A
 ><H2
 >VERSION</H2
@@ -599,7 +629,7 @@ NAME="AEN183"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN186"
+NAME="AEN204"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -622,7 +652,7 @@ NAME="AEN186"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN191"
+NAME="AEN209"
 ></A
 ><H2
 >SIGNALS</H2
@@ -644,9 +674,12 @@ CLASS="COMMAND"
 	that <B
 CLASS="COMMAND"
 >SIGKILL (-9)</B
-> <I
+> <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >NOT</I
+></SPAN
 > 
 	be used, except as a last resort, as this may leave the shared
 	memory area in an inconsistent state. The safe way to terminate 
@@ -660,16 +693,14 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >smbd</B
 > may be raised
-	or lowered using <A
-HREF="smbcontrol.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbcontrol(1)
-	</B
-></A
-> program (SIGUSR[1|2] signals are no longer used in
-	Samba 2.2). This is to allow transient problems to be diagnosed, 
+	or lowered using <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbcontrol</SPAN
+>(1)</SPAN
+> program (SIGUSR[1|2] signals are no longer 
+	used since Samba 2.2). This is to allow transient problems to be diagnosed, 
 	whilst still running at a normally low log level.</P
 ><P
 >Note that as the signal handlers send a debug write, 
@@ -688,55 +719,55 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN208"
+NAME="AEN227"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
->hosts_access(5), <B
-CLASS="COMMAND"
->inetd(8)</B
->, 
-	<A
-HREF="nmbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->nmbd(8)</B
-></A
->, 
-	<A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
->
-	</A
->, <A
-HREF="smbclient.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbclient(1)
-	</B
-></A
->, <A
-HREF="testparm.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->	testparm(1)</B
-></A
->, <A
-HREF="testprns.1.html"
-TARGET="_top"
->	<B
-CLASS="COMMAND"
->testprns(1)</B
-></A
->, and the Internet RFC's
-	<TT
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>hosts_access</SPAN
+>(5)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>inetd</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>nmbd</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbclient</SPAN
+>(1)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>testparm</SPAN
+>(1)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>testprns</SPAN
+>(1)</SPAN
+>, and the 
+	Internet RFC's	<TT
 CLASS="FILENAME"
 >rfc1001.txt</TT
 >, <TT
@@ -754,7 +785,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN225"
+NAME="AEN254"
 ></A
 ><H2
 >AUTHOR</H2
@@ -766,14 +797,14 @@ NAME="AEN225"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+	Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

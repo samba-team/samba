@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "TESTPRNS" "1" "05 November 2002" "" ""
+.TH "TESTPRNS" "1" "28 January 2003" "" ""
+
 .SH NAME
 testprns \- check printer name for validity with smbd
 .SH SYNOPSIS
@@ -12,11 +13,11 @@ testprns \- check printer name for validity with smbd
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 \fBtestprns\fR is a very simple test program 
 to determine whether a given printer name is valid for use in 
-a service to be provided by \fB smbd(8)\fR 
+a service to be provided by \fBsmbd\fR(8).
 .PP
 "Valid" in this context means "can be found in the 
 printcap specified". This program is very stupid - so stupid in 
@@ -34,8 +35,7 @@ Note that no validation or checking of the printcap syntax is
 done beyond that required to extract the printer name. It may
 be that the print spooling system is more forgiving or less 
 forgiving than \fBtestprns\fR. However, if 
-\fBtestprns\fR finds the printer then 
-\fBsmbd\fR should do so as well. 
+\fBtestprns\fR finds the printer then \fBsmbd\fR(8) should do so as well. 
 .TP
 \fBprintcapname\fR
 This is the name of the printcap file within
@@ -74,8 +74,7 @@ the Samba suite.
 .SH "SEE ALSO"
 .PP
 \fIprintcap(5)\fR, 
-\fBsmbd(8)\fR 
-\fBsmbclient(1)\fR
+\fBsmbd\fR(8), \fBsmbclient\fR(1)
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -85,7 +84,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+for Samba 3.0 was done by Alexander Bokovoy.

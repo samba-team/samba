@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "03 January 2003" "" ""
+.TH "NMBD" "8" "28 January 2003" "" ""
+
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clien
 
 .SH "DESCRIPTION"
 .PP
-This program is part of the Samba suite.
+This program is part of the \fBSamba\fR(7) suite.
 .PP
 \fBnmbd\fR is a server that understands 
 and can reply to NetBIOS over IP name service requests, like 
@@ -34,7 +35,7 @@ but this can be overridden with the \fB-n\fR
 option (see OPTIONS below). Thus \fBnmbd\fR will 
 reply to broadcast queries for its own name(s). Additional
 names for \fBnmbd\fR to respond on can be set 
-via parameters in the \fI smb.conf(5)\fR configuration file.
+via parameters in the \fBsmb.conf\fR(5) configuration file.
 .PP
 \fBnmbd\fR can also be used as a WINS 
 (Windows Internet Name Server) server. What this basically means 
@@ -85,7 +86,7 @@ server to run "interactively", not as a daemon, even if the
 server is executed on the command line of a shell. Setting this
 parameter negates the implicit daemon mode when run from the
 command line. \fBnmbd\fR also logs to standard
-output, as if the \fB-S\fR parameter had been
+output, as if the -S parameter had been
 given. 
 .TP
 \fB-o\fR
@@ -102,8 +103,9 @@ for \fBnmbd\fR.
 NetBIOS lmhosts file.  The lmhosts 
 file is a list of NetBIOS names to IP addresses that 
 is loaded by the nmbd server and used via the name 
-resolution mechanism   name resolve order described in  \fIsmb.conf(5)\fR
-to resolve any NetBIOS name queries needed by the server. Note 
+resolution mechanism \fIname resolve
+order\fR described in \fBsmb.conf\fR(5) to resolve any 
+NetBIOS name queries needed by the server. Note 
 that the contents of this file are \fBNOT\fR 
 used by \fBnmbd\fR to answer any name queries. 
 Adding a line to this file affects name NetBIOS resolution 
@@ -113,9 +115,7 @@ The default path to this file is compiled into
 Samba as part of the build process. Common defaults 
 are \fI/usr/local/samba/lib/lmhosts\fR,
 \fI/usr/samba/lib/lmhosts\fR or
-\fI/etc/lmhosts\fR. See the
-\fIlmhosts(5)\fR
-man page for details on the contents of this file.
+\fI/etc/samba/lmhosts\fR. See the \fBlmhosts\fR(5) man page for details on the contents of this file.
 .TP
 \fB-V\fR
 Prints the version number for 
@@ -140,8 +140,8 @@ and generate HUGE amounts of log data, most of which is extremely
 cryptic.
 
 Note that specifying this parameter here will override 
-the log level 
-parameter in the \fI  smb.conf(5)\fR file.
+the \fIlog level\fR 
+parameter in the \fBsmb.conf\fR(5) file.
 .TP
 \fB-l <log directory>\fR
 The -l parameter specifies a directory 
@@ -156,10 +156,10 @@ will log to the default debug log location defined at compile time.
 \fB-n <primary NetBIOS name>\fR
 This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical 
-to setting the   NetBIOS name parameter in the  
-\fIsmb.conf\fR file.  However, a command
+to setting the \fINetBIOS
+name\fR parameter in the \fBsmb.conf\fR(5) file.  However, a command
 line setting will take precedence over settings in 
-\fIsmb.conf\fR.
+\fBsmb.conf\fR(5).
 .TP
 \fB-p <UDP port number>\fR
 UDP port number is a positive integer value.
@@ -174,14 +174,14 @@ is set at build time, typically as \fI  /usr/local/samba/lib/smb.conf\fR, but
 this may be changed when Samba is autoconfigured.
 
 The file specified contains the configuration details
-required by the server. See   \fIsmb.conf(5)\fR for more information.
+required by the server. See \fBsmb.conf\fR(5) for more information.
 .SH "FILES"
 .TP
 \fB\fI/etc/inetd.conf\fB\fR
 If the server is to be run by the
 \fBinetd\fR meta-daemon, this file
 must contain suitable startup information for the
-meta-daemon. See the UNIX_INSTALL.html document
+meta-daemon. See the install document
 for details.
 .TP
 \fB\fI/etc/rc\fB\fR
@@ -190,7 +190,7 @@ system uses).
 
 If running the server as a daemon at startup,
 this file will need to contain an appropriate startup
-sequence for the server. See the UNIX_INSTALL.html document
+sequence for the server. See the "How to Install and Test SAMBA" document
 for details.
 .TP
 \fB\fI/etc/services\fB\fR
@@ -198,27 +198,26 @@ If running the server via the
 meta-daemon \fBinetd\fR, this file
 must contain a mapping of service name (e.g., netbios-ssn)
 to service port (e.g., 139) and protocol type (e.g., tcp).
-See the UNIX_INSTALL.html
+See the "How to Install and Test SAMBA"
 document for details.
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
-This is the default location of the
-\fIsmb.conf\fR
-server configuration file. Other common places that systems
+This is the default location of 
+the \fBsmb.conf\fR(5) server
+configuration file. Other common places that systems
 install this file are \fI/usr/samba/lib/smb.conf\fR
-and \fI/etc/smb.conf\fR.
+and \fI/etc/samba/smb.conf\fR.
 
 When run as a WINS server (see the
 wins support
-parameter in the \fIsmb.conf(5)\fR man page),
+parameter in the \fBsmb.conf\fR(5) man page),
 \fBnmbd\fR
 will store the WINS database in the file \fIwins.dat\fR
 in the \fIvar/locks\fR directory configured under
 wherever Samba was configured to install itself.
 
 If \fBnmbd\fR is acting as a \fB  browse master\fR (see the local master
-parameter in the \fIsmb.conf(5)\fR man page,
-\fBnmbd\fR
+parameter in the \fBsmb.conf\fR(5) man page, \fBnmbd\fR
 will store the browsing database in the file \fIbrowse.dat
 \fR in the \fIvar/locks\fR directory
 configured under wherever Samba was configured to install itself.
@@ -238,10 +237,10 @@ under wherever Samba was configured to install itself). This will also
 cause \fBnmbd\fR to dump out its server database in
 the \fIlog.nmb\fR file.
 .PP
-The debug log level of nmbd may be raised or lowered using
-\fBsmbcontrol(1)\fR
- (SIGUSR[1|2] signals are no longer used in Samba 2.2). This is
-to allow transient problems to be diagnosed, whilst still running
+The debug log level of nmbd may be raised or lowered
+using \fBsmbcontrol\fR(1) (SIGUSR[1|2] signals
+are no longer used since Samba 2.2). This is to allow
+transient problems to be diagnosed, whilst still running 
 at a normally low log level.
 .SH "VERSION"
 .PP
@@ -249,11 +248,8 @@ This man page is correct for version 3.0 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBinetd(8)\fR, \fBsmbd(8)\fR 
-\fIsmb.conf(5)\fR
- \fBsmbclient(1)
-\fR and the Internet RFC's
-\fIrfc1001.txt\fR, \fIrfc1002.txt\fR. 
+\fBinetd\fR(8), \fBsmbd\fR(8), \fBsmb.conf\fR(5), \fBsmbclient\fR(1), \fBtestparm\fR(1), \fBtestprns\fR(1), and the Internet 
+RFC's \fIrfc1001.txt\fR, \fIrfc1002.txt\fR. 
 In addition the CIFS (formerly SMB) specification is available 
 as a link from the Web page  
 http://samba.org/cifs/ <URL:http://samba.org/cifs/>.
@@ -266,7 +262,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.

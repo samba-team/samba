@@ -5,7 +5,7 @@
 >smbcacls</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBCACLS"
+NAME="SMBCACLS.1"
 ></A
 >smbcacls</H1
 ><DIV
@@ -47,10 +47,12 @@ NAME="AEN22"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 >The <B
@@ -62,7 +64,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN28"
+NAME="AEN30"
 ></A
 ><H2
 >OPTIONS</H2
@@ -117,9 +119,12 @@ CLASS="VARIABLELIST"
 >Specifies a username used to connect to the 
 		specified service.  The username may be of the form "username" in 
 		which case the user is prompted to enter in a password and the 
-		workgroup specified in the <TT
-CLASS="FILENAME"
->smb.conf</TT
+		workgroup specified in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file is 
 		used, or "username%password"  or "DOMAIN\username%password" and the 
 		password and workgroup names are used as provided. </P
@@ -182,7 +187,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN75"
+NAME="AEN79"
 ></A
 ><H2
 >ACL FORMAT</H2
@@ -196,8 +201,7 @@ CLASS="PROGRAMLISTING"
 REVISION:&lt;revision number&gt;
 OWNER:&lt;sid or name&gt;
 GROUP:&lt;sid or name&gt;
-ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
-	</PRE
+ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;</PRE
 ></P
 ><P
 >The revision of the ACL specifies the internal Windows 
@@ -211,34 +215,45 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 	the file or directory resides. </P
 ><P
 >ACLs specify permissions granted to the SID.  This SID again 
-		can be specified in CWS-1-x-y-z format or as a name in which case 
-		it is resolved against the server on which the file or directory 
-		resides.  The type, flags and mask values determine the type of 
-		access granted to the SID. </P
+	can be specified in CWS-1-x-y-z format or as a name in which case 
+	it is resolved against the server on which the file or directory 
+	resides.  The type, flags and mask values determine the type of 
+	access granted to the SID. </P
 ><P
 >The type can be either 0 or 1 corresponding to ALLOWED or 
-		DENIED access to the SID.  The flags values are generally
-		zero for file ACLs and either 9 or 2 for directory ACLs.  Some 
-		common flags are: </P
+	DENIED access to the SID.  The flags values are generally
+	zero for file ACLs and either 9 or 2 for directory ACLs.  Some 
+	common flags are: </P
 ><P
 ></P
 ><UL
 ><LI
 ><P
->#define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1</P
+><TT
+CLASS="CONSTANT"
+>#define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1</TT
+></P
 ></LI
 ><LI
 ><P
->#define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2</P
+><TT
+CLASS="CONSTANT"
+>#define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2</TT
+></P
 ></LI
 ><LI
 ><P
->#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT       0x4
-			</P
+><TT
+CLASS="CONSTANT"
+>#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT     0x4</TT
+></P
 ></LI
 ><LI
 ><P
->#define SEC_ACE_FLAG_INHERIT_ONLY       	0x8</P
+><TT
+CLASS="CONSTANT"
+>#define SEC_ACE_FLAG_INHERIT_ONLY       	0x8</TT
+></P
 ></LI
 ></UL
 ><P
@@ -356,7 +371,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN125"
+NAME="AEN133"
 ></A
 ><H2
 >EXIT STATUS</H2
@@ -380,18 +395,17 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN131"
+NAME="AEN139"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
-	the Samba suite.</P
+>This man page is correct for version 2.2 of the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN134"
+NAME="AEN142"
 ></A
 ><H2
 >AUTHOR</H2
@@ -408,7 +422,8 @@ CLASS="COMMAND"
 	and Tim Potter.</P
 ><P
 >The conversion to DocBook for Samba 2.2 was done 
-	by Gerald Carter</P
+	by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0 was done
+	by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

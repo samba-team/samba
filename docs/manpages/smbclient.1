@@ -3,20 +3,21 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCLIENT" "1" "05 November 2002" "" ""
+.TH "SMBCLIENT" "1" "18 February 2003" "" ""
+
 .SH NAME
 smbclient \- ftp-like client to access SMB/CIFS resources  on servers
 .SH SYNOPSIS
 
-\fBsmbclient\fR \fBservicename\fR [ \fBpassword\fR ] [ \fB-b <buffer size>\fR ] [ \fB-d debuglevel\fR ] [ \fB-D Directory\fR ] [ \fB-U username\fR ] [ \fB-W workgroup\fR ] [ \fB-M <netbios name>\fR ] [ \fB-m maxprotocol\fR ] [ \fB-A authfile\fR ] [ \fB-N\fR ] [ \fB-l logfile\fR ] [ \fB-L <netbios name>\fR ] [ \fB-I destinationIP\fR ] [ \fB-E\fR ] [ \fB-c <command string>\fR ] [ \fB-i scope\fR ] [ \fB-O <socket options>\fR ] [ \fB-p port\fR ] [ \fB-R <name resolve order>\fR ] [ \fB-s <smb config file>\fR ] [ \fB-T<c|x>IXFqgbNan\fR ]
+\fBsmbclient\fR \fBservicename\fR [ \fBpassword\fR ] [ \fB-b <buffer size>\fR ] [ \fB-d debuglevel\fR ] [ \fB-D Directory\fR ] [ \fB-U username\fR ] [ \fB-W workgroup\fR ] [ \fB-M <netbios name>\fR ] [ \fB-m maxprotocol\fR ] [ \fB-A authfile\fR ] [ \fB-N\fR ] [ \fB-l logfile\fR ] [ \fB-L <netbios name>\fR ] [ \fB-I destinationIP\fR ] [ \fB-E\fR ] [ \fB-c <command string>\fR ] [ \fB-i scope\fR ] [ \fB-O <socket options>\fR ] [ \fB-p port\fR ] [ \fB-R <name resolve order>\fR ] [ \fB-s <smb config file>\fR ] [ \fB-T<c|x>IXFqgbNan\fR ] [ \fB-k\fR ]
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 \fBsmbclient\fR is a client that can 
 \&'talk' to an SMB/CIFS server. It offers an interface
-similar to that of the ftp program (see \fBftp(1)\fR).  
+similar to that of the ftp program (see \fBftp\fR(1)).  
 Operations include things like getting files from the server 
 to the local machine, putting files from the local machine to 
 the server, retrieving directory information from the server 
@@ -41,7 +42,8 @@ same as the IP hostname of the machine running the server.
 
 The server name is looked up according to either 
 the \fI-R\fR parameter to \fBsmbclient\fR or 
-using the name resolve order parameter in the \fIsmb.conf\fR file, 
+using the name resolve order parameter in 
+the \fBsmb.conf\fR(5) file, 
 allowing an administrator to change the order and methods 
 by which server names are looked up. 
 .TP
@@ -66,12 +68,13 @@ or mixed case passwords may be rejected by these servers.
 Be cautious about including passwords in scripts.
 .TP
 \fB-s smb.conf\fR
-Specifies the location of the all important 
-\fIsmb.conf\fR file. 
+Specifies the location of the all 
+important \fBsmb.conf\fR(5) file. 
 .TP
 \fB-O socket options\fR
 TCP socket options to set on the client 
-socket. See the socket options parameter in the \fI  smb.conf (5)\fR manpage for the list of valid 
+socket. See the socket options parameter in 
+the \fBsmb.conf\fR(5) manual page for the list of valid 
 options. 
 .TP
 \fB-R <name resolve order>\fR
@@ -81,17 +84,18 @@ host names to IP addresses. The option takes a space-separated
 string of different name resolution options.
 
 The options are :"lmhosts", "host", "wins" and "bcast". They 
-cause names to be resolved as follows :
+cause names to be resolved as follows:
 .RS
 .TP 0.2i
 \(bu
-lmhosts : Lookup an IP 
+lmhosts: Lookup an IP 
 address in the Samba lmhosts file. If the line in lmhosts has 
-no name type attached to the NetBIOS name (see the lmhosts(5) for details) then
+no name type attached to the NetBIOS name (see 
+the \fBlmhosts\fR(5) for details) then
 any name type matches for lookup.
 .TP 0.2i
 \(bu
-host : Do a standard host 
+host: Do a standard host 
 name to IP address resolution, using the system \fI/etc/hosts
 \fR, NIS, or DNS lookups. This method of name resolution 
 is operating system dependent, for instance on IRIX or Solaris this 
@@ -101,13 +105,13 @@ type being queried is the 0x20 (server) name type, otherwise
 it is ignored.
 .TP 0.2i
 \(bu
-wins : Query a name with 
+wins: Query a name with 
 the IP address listed in the \fIwins server\fR
 parameter.  If no WINS server has
 been specified this method will be ignored.
 .TP 0.2i
 \(bu
-bcast : Do a broadcast on 
+bcast: Do a broadcast on 
 each of the known local interfaces listed in the 
 \fIinterfaces\fR
 parameter. This is the least reliable of the name resolution 
@@ -116,12 +120,12 @@ connected subnet.
 .RE
 
 If this parameter is not set then the name resolve order 
-defined in the \fIsmb.conf\fR file parameter  
+defined in the \fBsmb.conf\fR(5) file parameter  
 (name resolve order) will be used. 
 
 The default order is lmhosts, host, wins, bcast and without 
 this parameter or any entry in the \fIname resolve order
-\fR parameter of the \fIsmb.conf\fR file the name resolution
+\fR parameter of the \fBsmb.conf\fR(5) file the name resolution
 methods will be attempted in this order. 
 .TP
 \fB-M NetBIOS name\fR
@@ -147,7 +151,7 @@ You may also find the \fI-U\fR and
 \fI-I\fR options useful, as they allow you to 
 control the FROM and TO parts of the message. 
 
-See the message command parameter in the \fI  smb.conf(5)\fR for a description of how to handle incoming 
+See the \fImessage command\fR parameter in the \fBsmb.conf\fR(5) for a description of how to handle incoming 
 WinPopup messages in Samba. 
 
 \fBNote\fR: Copy WinPopup into the startup group 
@@ -291,7 +295,6 @@ password used in the connection.  The format of the file is
 username = <value> 
 password = <value>
 domain = <value>
-		
 .fi
 
 If the domain parameter is missing the current workgroup name
@@ -327,9 +330,8 @@ observed to speed up file transfers to and from a Win9x server.
 .TP
 \fB-W WORKGROUP\fR
 Override the default workgroup (domain) specified
-in the workgroup parameter of the \fIsmb.conf\fR
-file for this connection. This may be needed to connect to some
-servers. 
+in the workgroup parameter of the \fBsmb.conf\fR(5) file for this connection. This may be 
+needed to connect to some servers. 
 .TP
 \fB-T tar options\fR
 smbclient may be used to create \fBtar(1)
@@ -413,7 +415,7 @@ files in the archive with relative names, not absolute names.
 
 \fBTar Filenames\fR
 
-All file names can be given as DOS path names (with '\\' 
+All file names can be given as DOS path names (with '\\\\' 
 as the component separator) or as UNIX path names (with '/' as 
 the component separator). 
 
@@ -457,6 +459,10 @@ commands to be executed instead of prompting from stdin. \fI  -N\fR is implied b
 
 This is particularly useful in scripts and for printing stdin 
 to the server, e.g. \fB-c 'print -'\fR. 
+.TP
+\fB-k\fR
+Try to authenticate with kerberos. Only useful in 
+an Active Directory environment.
 .SH "OPERATIONS"
 .PP
 Once the client is running, the user is presented with 
@@ -464,7 +470,7 @@ a prompt :
 .PP
 smb:\\> 
 .PP
-The backslash ("\\") indicates the current working directory 
+The backslash ("\\\\") indicates the current working directory 
 on the server, and will change if the current working directory 
 is changed. 
 .PP
@@ -766,8 +772,7 @@ The client log files should be put in a directory readable
 and writeable only by the user. 
 .PP
 To test the client, you will need to know the name of a 
-running SMB/CIFS server. It is possible to run \fBsmbd(8)
-\fR as an ordinary user - running that server as a daemon 
+running SMB/CIFS server. It is possible to run \fBsmbd\fR(8) as an ordinary user - running that server as a daemon 
 on a user-accessible port (typically any port number over 1024)
 would provide a suitable test server. 
 .SH "DIAGNOSTICS"
@@ -781,8 +786,7 @@ on the debug level used by the client. If you have problems,
 set the debug level to 3 and peruse the log files. 
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
-the Samba suite.
+This man page is correct for version 2.2 of the Samba suite.
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -792,7 +796,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
+was done by Alexander Bokovoy.

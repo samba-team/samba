@@ -5,7 +5,7 @@
 >nmblookup</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -48,10 +48,12 @@ NAME="AEN25"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><B
@@ -66,7 +68,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN31"
+NAME="AEN33"
 ></A
 ><H2
 >OPTIONS</H2
@@ -109,7 +111,7 @@ CLASS="CONSTANT"
 		query to a machine running a WINS server and the user wishes 
 		to query the names in the WINS server.  If this bit is unset 
 		the normal (broadcast responding) NetBIOS processing code 
-		on a machine is used instead. See rfc1001, rfc1002 for details.
+		on a machine is used instead. See RFC1001, RFC1002 for details.
 		</P
 ></DD
 ><DT
@@ -130,12 +132,13 @@ CLASS="CONSTANT"
 		where it ignores the source port of the requesting packet 
 	 	and only replies to UDP port 137. Unfortunately, on most UNIX 
 		systems root privilege is needed to bind to this port, and 
-		in addition, if the <A
-HREF="nmbd.8.html"
-TARGET="_top"
->nmbd(8)</A
-> 
-		daemon is running on this machine it also binds to this port.
+		in addition, if the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>nmbd</SPAN
+>(8)</SPAN
+> daemon is running on this machine it also binds to this port.
 		</P
 ></DD
 ><DT
@@ -173,9 +176,12 @@ CLASS="PARAMETER"
 ></TT
 >
 		</A
-> parameter of the  <TT
-CLASS="FILENAME"
->smb.conf (5)</TT
+> parameter of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file.
 		</P
 ></DD
@@ -311,7 +317,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN115"
+NAME="AEN121"
 ></A
 ><H2
 >EXAMPLES</H2
@@ -324,11 +330,11 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nslookup</B
 > is 
-		used to query DNS servers). To query a WINS server, 
-		<B
+		used to query DNS servers). To query a WINS server, <B
 CLASS="COMMAND"
 >nmblookup</B
-> must be called like this:</P
+> 
+		must be called like this:</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -348,7 +354,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN127"
+NAME="AEN133"
 ></A
 ><H2
 >VERSION</H2
@@ -359,34 +365,35 @@ NAME="AEN127"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN130"
+NAME="AEN136"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="nmbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->nmbd(8)</B
-></A
->, 
-	<A
-HREF="samba.7.html"
-TARGET="_top"
->samba(7)</A
->, and	<A
-HREF="smb.conf.5.html"
-TARGET="_top"
->smb.conf(5)</A
->
-	</P
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>nmbd</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>samba</SPAN
+>(7)</SPAN
+>, and <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+>.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN137"
+NAME="AEN148"
 ></A
 ><H2
 >AUTHOR</H2
@@ -398,14 +405,14 @@ NAME="AEN137"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

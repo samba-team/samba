@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBMNT" "8" "05 November 2002" "" ""
+.TH "SMBMNT" "8" "28 January 2003" "" ""
+
 .SH NAME
 smbmnt \- helper utility for mounting SMB filesystems
 .SH SYNOPSIS
@@ -21,8 +22,7 @@ A setuid smbmnt will only allow mounts on directories owned
 by the user, and that the user has write permission on.
 .PP
 The \fBsmbmnt\fR program is normally invoked 
-by \fBsmbmount(8)\fR
- It should not be invoked directly by users. 
+by \fBsmbmount\fR(8). It should not be invoked directly by users. 
 .PP
 smbmount searches the normal PATH for smbmnt. You must ensure
 that the smbmnt version in your path matches the smbmount used.
@@ -61,4 +61,5 @@ The SAMBA Mailing list <URL:mailto:samba@samba.org>
 is the preferred place to ask questions regarding these programs.
 .PP
 The conversion of this manpage for Samba 2.2 was performed 
-by Gerald Carter
+by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
+was done by Alexander Bokovoy.

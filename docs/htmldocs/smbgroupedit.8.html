@@ -1,12 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbgroupedit</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -16,7 +15,9 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBGROUPEDIT">smbgroupedit</H1
+NAME="SMBGROUPEDIT.8"
+></A
+>smbgroupedit</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -28,13 +29,15 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"><H2
+NAME="AEN8"
+></A
+><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >smbroupedit</B
-> [-v [l|s]] [-a UNIX-groupname [-d NT-groupname|-p privilege|]]</P
+>  [-v [l|s]] [-a UNIX-groupname [-d NT-groupname|-p privilege|]]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -44,12 +47,13 @@ NAME="AEN13"
 ><H2
 >DESCRIPTION</H2
 ><P
->This program is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->Samba</A
->
-suite.</P
+>This program is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
+> suite.</P
 ><P
 >The  smbgroupedit  command  allows for mapping unix groups
 to NT Builtin, Domain, or Local groups.  Also
@@ -59,7 +63,7 @@ etc.</P
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN18"
+NAME="AEN20"
 ></A
 ><H2
 >OPTIONS</H2
@@ -86,12 +90,6 @@ CLASS="VARIABLELIST"
 ><P
 >give a long listing, of the format:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >"NT Group Name"
@@ -100,20 +98,10 @@ CLASS="PROGRAMLISTING"
     Group type     :
     Comment        :
     Privilege      :</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
->For examples,</P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
-><PRE
+>For example:
+<PRE
 CLASS="PROGRAMLISTING"
 >Users
     SID       : S-1-5-32-545
@@ -121,9 +109,6 @@ CLASS="PROGRAMLISTING"
     Group type: Local group
     Comment   :
     Privilege : No privilege</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DD
 ><DT
@@ -132,34 +117,15 @@ CLASS="PROGRAMLISTING"
 ><P
 >display a short listing of the format:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >NTGroupName(SID) -&#62; UnixGroupName</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
->For example,</P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
-><PRE
+>For example:
+<PRE
 CLASS="PROGRAMLISTING"
 >Users (S-1-5-32-545) -&#62; -1</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DD
 ></DL
@@ -233,23 +199,15 @@ CLASS="FILENAME"
 ></LI
 ><LI
 ><P
->map this domadm group to the 'domain admins' group:
-	</P
+>map this domadm group to the 'domain admins' group:</P
 ><P
 ></P
 ><OL
 TYPE="a"
 ><LI
 ><P
->Get the SID for the Windows NT "Domain Admins"
-		group:</P
+>Get the SID for the Windows NT "Domain Admins" group:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 ><TT
@@ -260,24 +218,13 @@ CLASS="COMMAND"
 >smbgroupedit -vs | grep "Domain Admins"</B
 >
 Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -&#62; -1</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></LI
 ><LI
 ><P
 >map the unix domadm group to the Windows NT
 		"Domain Admins" group, by running the command:
-		</P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
-><PRE
+<PRE
 CLASS="PROGRAMLISTING"
 ><TT
 CLASS="PROMPT"
@@ -288,14 +235,14 @@ CLASS="COMMAND"
 -c S-1-5-21-1108995562-3116817432-1375597819-512 \
 -u domadm -td</B
 ></PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
->		<I
+><SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >warning:</I
+></SPAN
 > don't copy and paste this sample, the
 		Domain Admins SID (the S-1-5-21-...-512) is different for every PDC.
 		</P
@@ -304,15 +251,8 @@ CLASS="EMPHASIS"
 ></LI
 ></OL
 ><P
->To verify that your mapping has taken effect:</P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
+>To verify that your mapping has taken effect:
+<PRE
 CLASS="PROGRAMLISTING"
 ><TT
 CLASS="PROMPT"
@@ -322,22 +262,12 @@ CLASS="COMMAND"
 >smbgroupedit -vs|grep "Domain Admins"</B
 >
 Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -&#62; domadm</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >To give access to a certain directory on a domain member machine (an
 NT/W2K or a samba server running winbind) to some users who are member
-of a group on your samba PDC, flag that group as a domain group:</P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
+of a group on your samba PDC, flag that group as a domain group:
+<PRE
 CLASS="PROGRAMLISTING"
 ><TT
 CLASS="PROMPT"
@@ -346,15 +276,12 @@ CLASS="PROMPT"
 CLASS="COMMAND"
 >smbgroupedit -a unixgroup -td</B
 ></PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN90"
+NAME="AEN87"
 ></A
 ><H2
 >VERSION</H2
@@ -365,21 +292,23 @@ the Samba suite.</P
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN93"
+NAME="AEN90"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="smb.conf.5.html"
-TARGET="_top"
->smb.conf(5)</A
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 ></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN97"
+NAME="AEN96"
 ></A
 ><H2
 >AUTHOR</H2
@@ -394,7 +323,8 @@ CLASS="COMMAND"
 >smbgroupedit</B
 > was written by Jean Francois Micouleau.
 The current set of manpages and documentation is maintained
-by the Samba Team in the same fashion as the Samba source code.</P
+by the Samba Team in the same fashion as the Samba source code. The conversion
+to DocBook XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

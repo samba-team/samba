@@ -1,12 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >pdbedit</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -16,7 +15,9 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="PDBEDIT">pdbedit</H1
+NAME="PDBEDIT.8"
+></A
+>pdbedit</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -28,13 +29,15 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"><H2
+NAME="AEN8"
+></A
+><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >pdbedit</B
-> [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-d debuglevel] [-s configfile] [-P account-policy] [-V value]</P
+>  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-d debuglevel] [-s configfile] [-P account-policy] [-V value]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -44,10 +47,12 @@ NAME="AEN30"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 >The pdbedit program is used to manage the users accounts
@@ -65,7 +70,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN37"
+NAME="AEN39"
 ></A
 ><H2
 >OPTIONS</H2
@@ -88,20 +93,10 @@ CLASS="COMMAND"
 >pdbedit -l</B
 ></P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
-CLASS="PROGRAMLISTING"
->		sorce:500:Simo Sorce
-		samba:45:Test User
-		</PRE
-></TD
-></TR
-></TABLE
+CLASS="SCREEN"
+>sorce:500:Simo Sorce
+samba:45:Test User</PRE
 ></P
 ></DD
 ><DT
@@ -117,36 +112,26 @@ CLASS="COMMAND"
 >pdbedit -l -v</B
 ></P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
-CLASS="PROGRAMLISTING"
->		---------------
-		username:       sorce
-		user ID/Group:  500/500
-		user RID/GRID:  2000/2001
-		Full Name:      Simo Sorce
-		Home Directory: \\BERSERKER\sorce
-		HomeDir Drive:  H:
-		Logon Script:   \\BERSERKER\netlogon\sorce.bat
-		Profile Path:   \\BERSERKER\profile
-		---------------
-		username:       samba
-		user ID/Group:  45/45
-		user RID/GRID:  1090/1091
-		Full Name:      Test User
-		Home Directory: \\BERSERKER\samba
-		HomeDir Drive:  
-		Logon Script:   
-		Profile Path:   \\BERSERKER\profile
-		</PRE
-></TD
-></TR
-></TABLE
+CLASS="SCREEN"
+>---------------
+username:       sorce
+user ID/Group:  500/500
+user RID/GRID:  2000/2001
+Full Name:      Simo Sorce
+Home Directory: \\BERSERKER\sorce
+HomeDir Drive:  H:
+Logon Script:   \\BERSERKER\netlogon\sorce.bat
+Profile Path:   \\BERSERKER\profile
+---------------
+username:       samba
+user ID/Group:  45/45
+user RID/GRID:  1090/1091
+Full Name:      Test User
+Home Directory: \\BERSERKER\samba
+HomeDir Drive:  
+Logon Script:   
+Profile Path:   \\BERSERKER\profile</PRE
 ></P
 ></DD
 ><DT
@@ -159,35 +144,23 @@ CLASS="PROGRAMLISTING"
 		<TT
 CLASS="FILENAME"
 >smbpasswd</TT
-> file format. (see the <A
-HREF="smbpasswd.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smbpasswd(5)</TT
-></A
+> file format. (see the
+		<SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbpasswd</SPAN
+>(5)</SPAN
 > for details)</P
 ><P
 >Example: <B
 CLASS="COMMAND"
 >pdbedit -l -w</B
 ></P
-><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
-CLASS="PROGRAMLISTING"
->		sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
-		samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
-		</PRE
-></TD
-></TR
-></TABLE
-></P
+CLASS="SCREEN"
+>sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
+samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:</PRE
 ></DD
 ><DT
 >-u username</DT
@@ -195,13 +168,19 @@ CLASS="PROGRAMLISTING"
 ><P
 >This option specifies the username to be
 		used for the operation requested (listing, adding, removing).
-		It is <I
+		It is <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >required</I
+></SPAN
 > in add, remove and modify
-		operations and <I
+		operations and <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >optional</I
+></SPAN
 > in list
 		operations.</P
 ></DD
@@ -287,21 +266,11 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >pdbedit -a -u sorce</B
 >
-		<TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
-><PRE
+<PRE
 CLASS="PROGRAMLISTING"
 >new password:
-		retype new password</PRE
-></TD
-></TR
-></TABLE
->
-                </P
+retype new password</PRE
+></P
 ></DD
 ><DT
 >-m</DT
@@ -394,19 +363,9 @@ CLASS="COMMAND"
 >pdbedit -P "bad lockout attempt"</B
 ></P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->		account policy value for bad lockout attempt is 0
-		</PRE
-></TD
-></TR
-></TABLE
+>account policy value for bad lockout attempt is 0</PRE
 ></P
 ></DD
 ><DT
@@ -428,20 +387,10 @@ CLASS="COMMAND"
 >pdbedit -P "bad lockout attempt" -V 3</B
 ></P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->		account policy value for bad lockout attempt was 0
-		account policy value for bad lockout attempt is now 3
-		</PRE
-></TD
-></TR
-></TABLE
+>account policy value for bad lockout attempt was 0
+account policy value for bad lockout attempt is now 3</PRE
 ></P
 ></DD
 ><DT
@@ -492,7 +441,7 @@ CLASS="FILENAME"
 >Print a summary of command line options.</P
 ></DD
 ><DT
->-s &#60;configuration file&#62;</DT
+>-s &lt;configuration file&gt;</DT
 ><DD
 ><P
 >The file specified contains the 
@@ -517,7 +466,7 @@ compile time.</P
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN182"
+NAME="AEN184"
 ></A
 ><H2
 >NOTES</H2
@@ -527,7 +476,7 @@ NAME="AEN182"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN185"
+NAME="AEN187"
 ></A
 ><H2
 >VERSION</H2
@@ -538,27 +487,29 @@ NAME="AEN185"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN188"
+NAME="AEN190"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="smbpasswd.8.html"
-TARGET="_top"
->smbpasswd(8)</A
->, 
-	<A
-HREF="samba.7.html"
-TARGET="_top"
->samba(7)</A
->
-	</P
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbpasswd</SPAN
+>(5)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>samba</SPAN
+>(7)</SPAN
+></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN193"
+NAME="AEN199"
 ></A
 ><H2
 >AUTHOR</H2
@@ -570,14 +521,14 @@ NAME="AEN193"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML
