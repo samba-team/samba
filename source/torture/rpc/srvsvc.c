@@ -96,7 +96,7 @@ static BOOL test_NetCharDevEnum(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct srvsvc_NetCharDevEnum r;
 	struct srvsvc_NetCharDevCtr0 c0;
-	uint32 levels[] = {0, 1};
+	uint32_t levels[] = {0, 1};
 	int i;
 	BOOL ret = True;
 
@@ -142,6 +142,150 @@ static BOOL test_NetCharDevEnum(struct dcerpc_pipe *p,
 
 	return ret;
 }
+
+/**************************/
+/* srvsvc_NetCharDevQ     */
+/**************************/
+static BOOL test_NetCharDevQGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				const char *devicequeue)
+{
+	NTSTATUS status;
+	struct srvsvc_NetCharDevQGetInfo r;
+	uint32_t levels[] = {0, 1};
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.queue_name = devicequeue;
+	r.in.user = talloc_asprintf(mem_ctx,"Administrator");
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		ZERO_STRUCT(r.out);
+		r.in.level = levels[i];
+		printf("testing NetCharDevQGetInfo level %u on devicequeue '%s'\n",
+			r.in.level, r.in.queue_name);
+		status = dcerpc_srvsvc_NetCharDevQGetInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetCharDevQGetInfo level %u on devicequeue '%s' failed - %s\n",
+				r.in.level, r.in.queue_name, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetCharDevQGetInfo level %u on devicequeue '%s' failed - %s\n",
+				r.in.level, r.in.queue_name, win_errstr(r.out.result));
+			continue;
+		}
+	}
+
+	return ret;
+}
+
+#if 0
+static BOOL test_NetCharDevQSetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				const char *devicequeue)
+{
+	NTSTATUS status;
+	struct srvsvc_NetCharDevQSetInfo r;
+	uint32_t parm_error;
+	uint32_t levels[] = {0, 1};
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.queue_name = devicequeue;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		ZERO_STRUCT(r.out);
+		parm_error = 0;
+		r.in.level = levels[i];
+		printf("testing NetCharDevQSetInfo level %u on devicequeue '%s'\n", 
+			r.in.level, devicequeue);
+		switch (r.in.level) {
+		case 0:
+			r.in.info.info0 = talloc_p(mem_ctx, struct srvsvc_NetCharDevQInfo0);
+			r.in.info.info0->device = r.in.queue_name;
+			break;
+		case 1:
+			r.in.info.info1 = talloc_p(mem_ctx, struct srvsvc_NetCharDevQInfo1);
+			r.in.info.info1->device = r.in.queue_name;
+			r.in.info.info1->priority = 0x000;
+			r.in.info.info1->devices = r.in.queue_name;
+			r.in.info.info1->users = 0x000;
+			r.in.info.info1->num_ahead = 0x000;
+			break;
+		default:
+			break;
+		}
+		r.in.parm_error = &parm_error;
+		status = dcerpc_srvsvc_NetCharDevQSetInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetCharDevQSetInfo level %u on devicequeue '%s' failed - %s\n",
+				r.in.level, r.in.queue_name, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetCharDevQSetInfo level %u on devicequeue '%s' failed - %s\n",
+				r.in.level, r.in.queue_name, win_errstr(r.out.result));
+			continue;
+		}
+	}
+
+	return ret;
+}
+#endif
+
+static BOOL test_NetCharDevQEnum(struct dcerpc_pipe *p, 
+			   TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct srvsvc_NetCharDevQEnum r;
+	struct srvsvc_NetCharDevQCtr0 c0;
+	uint32_t levels[] = {0, 1};
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.user = talloc_asprintf(mem_ctx,"%s","Administrator");
+	r.in.ctr.ctr0 = &c0;
+	r.in.ctr.ctr0->count = 0;
+	r.in.ctr.ctr0->array = NULL;
+	r.in.max_buffer = (uint32)-1;
+	r.in.resume_handle = NULL;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int j;
+
+		ZERO_STRUCT(r.out);
+		r.in.level = levels[i];
+		printf("testing NetCharDevQEnum level %u\n", r.in.level);
+		status = dcerpc_srvsvc_NetCharDevQEnum(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetCharDevQEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetCharDevQEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			continue;
+		}
+
+		/* call test_NetCharDevGetInfo and test_NetCharDevControl for each returned share */
+		if (r.in.level == 1) {
+			for (j=0;j<r.out.ctr.ctr1->count;j++) {
+				const char *device;
+				device = r.out.ctr.ctr1->array[j].device;
+				if (!test_NetCharDevQGetInfo(p, mem_ctx, device)) {
+					ret = False;
+				}
+			}
+		}
+	}
+
+	return ret;
+}
+
 
 static BOOL test_NetConnEnum(struct dcerpc_pipe *p, 
 			   TALLOC_CTX *mem_ctx)
@@ -491,6 +635,10 @@ BOOL torture_rpc_srvsvc(int dummy)
 	}
 
 	if (!test_NetCharDevEnum(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_NetCharDevQEnum(p, mem_ctx)) {
 		ret = False;
 	}
 
