@@ -1187,7 +1187,9 @@ char *readdirname(DIR *p)
 
 	{
 		static pstring buf;
-		memcpy(buf, dname, NAMLEN(ptr)+1);
+		int len = NAMLEN(ptr);
+		memcpy(buf, dname, len);
+		buf[len] = 0;
 		dname = buf;
 	}
 
