@@ -1068,6 +1068,11 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	fstrcpy(ts->queue[i].user, pjob.user);
 	fstrcpy(ts->queue[i].file, pjob.jobname);
 
+	/* Convert username to DOS codepage.  For some reason the job name
+	   is already in DOS codepage so it doesn't need converting. */
+
+	unix_to_dos(ts->queue[i].user, True);
+
 	ts->qcount++;
 
 	return 0;
