@@ -830,6 +830,7 @@ char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default);
 uint32 str_to_enum_field(char *in, struct field_info *bs, uint32 def);
 char *octal_string(int i);
 char *string_truncate(char *s, int length);
+void parse_domain_user(char *domuser, fstring domain, fstring user);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
