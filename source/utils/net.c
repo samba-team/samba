@@ -479,11 +479,19 @@ static int net_getlocalsid(int argc, const char **argv)
 			  "backend knowlege (such as the sid stored in LDAP)\n"));
 	}
 
+	/* first check to see if we can even access secrets, so we don't
+	   panic when we can't. */
+
+	if (!secrets_init()) {
+		d_printf("Unable to open secrets.tdb.  Can't fetch domain SID for name: %s\n", name);
+		return 1;
+	}
+
 	/* Generate one, if it doesn't exist */
 	get_global_sam_sid();
 
 	if (!secrets_fetch_domain_sid(name, &sid)) {
-		DEBUG(0, ("Can't fetch domain SID for name: %s\n", name));	
+		DEBUG(0, ("Can't fetch domain SID for name: %s\n", name));
 		return 1;
 	}
 	sid_to_string(sid_str, &sid);
