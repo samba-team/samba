@@ -101,6 +101,7 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 /*The following definitions come from  lib/genrand.c  */
 
 void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
+char *generate_random_str(size_t len);
 
 /*The following definitions come from  lib/getsmbpass.c  */
 
