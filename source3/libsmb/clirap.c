@@ -329,7 +329,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
 
   clistr_push(cli, dos_new_password, new_password, -1, STR_TERMINATE);
 
-  if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
+  if (!make_oem_passwd_hash(dos_new_password, old_pw_hash, False, data))
     return False;
 
   /* 
