@@ -1400,20 +1400,24 @@ void smb_panic(const char *why)
 {
 	char *cmd;
 	int result;
+	size_t i;
+	void *backtrace_stack[BACKTRACE_STACK_SIZE];
+	size_t backtrace_size;
+	char **backtrace_strings;
 
 #ifdef DEVELOPER
 	{
 		extern char *global_clobber_region_function;
 		extern unsigned int global_clobber_region_line;
-		
+
 		if (global_clobber_region_function) {
 			DEBUG(0,("smb_panic: clobber_region() last called from [%s(%u)]\n",
-				 global_clobber_region_function,
-				 global_clobber_region_line));
+					 global_clobber_region_function,
+					 global_clobber_region_line));
 		} 
 	}
 #endif
-	
+
 	cmd = lp_panic_action();
 	if (cmd && *cmd) {
 		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
@@ -1421,19 +1425,34 @@ void smb_panic(const char *why)
 
 		if (result == -1)
 			DEBUG(0, ("smb_panic(): fork failed in panic action: %s\n",
-				  strerror(errno)));
+					  strerror(errno)));
 		else
 			DEBUG(0, ("smb_panic(): action returned status %d\n",
-				  WEXITSTATUS(result)));
+					  WEXITSTATUS(result)));
 	}
 	DEBUG(0,("PANIC: %s\n", why));
+	DEBUG(0, ("%d stack frames:\n", backtrace_size));
+
+#ifdef HAVE_BACKTRACE_SYMBOLS
+	/* get the backtrace (stack frames) */
+	backtrace_size = backtrace(backtrace_stack,BACKTRACE_STACK_SIZE);
+	backtrace_strings = backtrace_symbols(backtrace_stack, backtrace_size);
+	
+	if (backtrace_strings) {
+		for (i = 0; i < backtrace_size; i++)
+			DEBUG(0, (" #%u %s\n", i, backtrace_strings[i]));
+	}
+
+	free(backtrace_strings);
+#endif
+
 	dbgflush();
 	abort();
 }
 
 /*******************************************************************
- A readdir wrapper which just returns the file name.
-********************************************************************/
+  A readdir wrapper which just returns the file name.
+ ********************************************************************/
 
 const char *readdirname(DIR *p)
 {
