@@ -3,7 +3,7 @@
    Version 2.2
    RPC pipe client
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter 2000-2001
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -553,7 +553,7 @@ struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
 /* Print usage information */
 static void usage(void)
 {
-	printf("Usage: rpcclient [options] server\n");
+	printf("Usage: rpcclient server [options]\n");
 
 	printf("\t-A authfile           file containing user credentials\n");
 	printf("\t-c \"command string\"   execute semicolon separated cmds\n");
@@ -649,11 +649,15 @@ static void usage(void)
 	argc -= optind;
 
 	/* Parse options */
-	if (argc < 1) {
+	if (argc > 1) {
 		usage();
 		return 0;
 	}
 	
+        if (strncmp("//", argv[0], 2) == 0 || 
+            strncmp("\\\\", argv[0], 2) == 0)
+                argv[0] += 2;
+
 	pstrcpy(server, argv[0]);
 
 	/* the following functions are part of the Samba debugging
