@@ -2101,59 +2101,39 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, directory %s\n",
 			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
 	} else {
-
-		files_struct *iterate_fsp;
-
-		/*
-		 * Modify the share mode entry for all files open
-		 * on this device and inode to tell other smbds we have 
-		 * changed the delete on close flag. This will be noticed
-		 * in the close code, the last closer will delete the file
-		 * if flag is set.
-		 */
-
-		DEBUG(10,("set_delete_on_close_internal: %s delete on close flag for fnum = %d, file %s\n",
-					delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
-
-		if (lock_share_entry_fsp(fsp) == False)
-				return NT_STATUS_ACCESS_DENIED;
-
-		if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
-			DEBUG(0,("set_delete_on_close_internal: failed to change delete on close flag for file %s\n",
-					fsp->fsp_name ));
-			unlock_share_entry_fsp(fsp);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		/*
-		 * Release the lock.
-		 */
-
-		unlock_share_entry_fsp(fsp);
-
-		/*
-		 * Go through all files we have open on the same device and
-		 * inode (hanging off the same hash bucket) and set the DELETE_ON_CLOSE_FLAG.
-		 * Other smbd's that have this file open will look in the share_mode on close.
-		 * take care of this (rare) case in close_file(). See the comment there.
-		 * NB. JRA. We don't really need to do this anymore - all should be taken
-		 * care of in the share_mode changes in the tdb.
-		 */
-
-		for(iterate_fsp = file_find_di_first(fsp->dev, fsp->inode);
-				iterate_fsp; iterate_fsp = file_find_di_next(iterate_fsp))
-						fsp->delete_on_close = delete_on_close;
-
-		/*
-		 * Set the delete on close flag in the fsp.
-		 */
 		fsp->delete_on_close = delete_on_close;
-
 		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, file %s\n",
 			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-
 	}
 
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Sets the delete on close flag over all share modes on this file.
+ Modify the share mode entry for all files open
+ on this device and inode to tell other smbds we have
+ changed the delete on close flag. This will be noticed
+ in the close code, the last closer will delete the file
+ if flag is set.
+****************************************************************************/
+
+NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
+{
+	DEBUG(10,("set_delete_on_close_over_all: %s delete on close flag for fnum = %d, file %s\n",
+		delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
+
+	if (lock_share_entry_fsp(fsp) == False)
+		return NT_STATUS_ACCESS_DENIED;
+
+	if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
+		DEBUG(0,("set_delete_on_close_internal: failed to change delete on close flag for file %s\n",
+			fsp->fsp_name ));
+		unlock_share_entry_fsp(fsp);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	unlock_share_entry_fsp(fsp);
 	return NT_STATUS_OK;
 }
 
@@ -2531,6 +2511,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 			status = set_delete_on_close_internal(fsp, delete_on_close);
  
+			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
+				return ERROR_NT(status);
+
+			/* The set is across all open files on this dev/inode pair. */
+			status =set_delete_on_close_over_all(fsp, delete_on_close);
 			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
 				return ERROR_NT(status);
 

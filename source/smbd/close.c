@@ -145,6 +145,22 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 */
 
 	lock_share_entry_fsp(fsp);
+
+	if (fsp->delete_on_close) {
+
+		/*
+		 * Modify the share mode entry for all files open
+		 * on this device and inode to tell other smbds we have
+		 * changed the delete on close flag. The last closer will delete the file
+		 * if flag is set.
+		 */
+
+		NTSTATUS status =set_delete_on_close_over_all(fsp, fsp->delete_on_close);
+		if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
+			DEBUG(0,("close_normal_file: failed to change delete on close flag for file %s\n",
+				fsp->fsp_name ));
+	}
+
 	share_entry_count = del_share_mode(fsp, &share_entry);
 
 	DEBUG(10,("close_normal_file: share_entry_count = %d for file %s\n",
