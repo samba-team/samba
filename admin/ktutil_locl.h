@@ -64,9 +64,8 @@
 #include <getarg.h>
 
 extern krb5_context context;
+extern krb5_keytab keytab;
 
-int kt_list(int argc, char **argv);
 int srvconv(int argc, char **argv);
-
 
 #endif /* __KTUTIL_LOCL_H__ */
