@@ -979,7 +979,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	struct pending_message_list *pml = NULL;
 	uint16 mid = get_current_mid();
 	/* We add aARCH to this as this mode is only used if the file is created new. */
-	mode_t mode = unix_mode(conn,new_dos_mode | aARCH,fname);
+	mode_t mode = unix_mode(conn,new_dos_mode | aARCH,fname, True);
 
 	if (oplock_request == INTERNAL_OPEN_ONLY) {
 		internal_only_open = True;
@@ -1440,7 +1440,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	if (action == FILE_WAS_OVERWRITTEN || action == FILE_WAS_CREATED) {
 		/* Files should be initially set as archive */
 		if (lp_map_archive(SNUM(conn)) || lp_store_dos_attributes(SNUM(conn))) {
-			file_set_dosmode(conn, fname, new_dos_mode | aARCH, NULL);
+			file_set_dosmode(conn, fname, new_dos_mode | aARCH, NULL, True);
 		}
 	}
 
@@ -1601,7 +1601,7 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 				return NULL;
 			}
 
-			if(vfs_MkDir(conn,fname, unix_mode(conn,aDIR, fname)) < 0) {
+			if(vfs_MkDir(conn,fname, unix_mode(conn,aDIR, fname, True)) < 0) {
 				DEBUG(2,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
 				file_free(fsp);
