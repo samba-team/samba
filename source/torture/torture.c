@@ -2913,44 +2913,51 @@ static BOOL run_error_map_extract(int dummy) {
 	for (error=(0xc0000000 | 0x1); error < (0xc0000000| 0xFFF); error++) {
 		snprintf(user, sizeof(user), "%X", error);
 
-		if (!cli_session_setup(&c_nt, user, 
+		if (cli_session_setup(&c_nt, user, 
 				       password, strlen(password),
 				       password, strlen(password),
-				       workgroup)) {
-			flgs2 = SVAL(c_nt.inbuf,smb_flg2);
-			
-			/* Case #1: 32-bit NT errors */
-			if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-				nt_status = NT_STATUS(IVAL(c_nt.inbuf,smb_rcls));
-			} else {
-				printf("** Dos error on NT connection! (%s)\n", cli_errstr(&c_nt));
-				nt_status = NT_STATUS(0xc0000000);
-			}
+				      workgroup)) {
+			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
+		}
+		
+		flgs2 = SVAL(c_nt.inbuf,smb_flg2);
+		
+		/* Case #1: 32-bit NT errors */
+		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
+			nt_status = NT_STATUS(IVAL(c_nt.inbuf,smb_rcls));
 		} else {
-			printf("** Session setup succeeded.  This shouldn't happen...\n");
+			printf("** Dos error on NT connection! (%s)\n", 
+			       cli_errstr(&c_nt));
+			nt_status = NT_STATUS(0xc0000000);
 		}
 
-		if (!cli_session_setup(&c_dos, user, 
+		if (cli_session_setup(&c_dos, user, 
 				       password, strlen(password),
 				       password, strlen(password),
 				       workgroup)) {
-			flgs2 = SVAL(c_dos.inbuf,smb_flg2), errnum;
-			
-			/* Case #1: 32-bit NT errors */
-			if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-				printf("** NT error on DOS connection! (%s)\n", cli_errstr(&c_nt));
-				errnum = errclass = 0;
-			} else {
-				cli_dos_error(&c_dos, &errclass, &errnum);
-			}
-		} else {
-			printf("** Session setup succeeded.  This shouldn't happen...\n");
+			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
-		if (NT_STATUS_V(nt_status) == error) { 
-			printf("\t{%s,\t%s,\t%s},\n", smb_dos_err_class(errclass), smb_dos_err_name(errclass, errnum), get_nt_error_c_code(nt_status));
+		flgs2 = SVAL(c_dos.inbuf,smb_flg2), errnum;
+		
+		/* Case #1: 32-bit NT errors */
+		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
+			printf("** NT error on DOS connection! (%s)\n", 
+			       cli_errstr(&c_nt));
+			errnum = errclass = 0;
 		} else {
-			printf("/*\t{ This NT error code was 'sqashed'\n\t from %s to %s \n\t during the session setup }\n*/\n", get_nt_error_c_code(NT_STATUS(error)), get_nt_error_c_code(nt_status));
+			cli_dos_error(&c_dos, &errclass, &errnum);
 		}
+
+		if (NT_STATUS_V(nt_status) != error) { 
+			printf("/*\t{ This NT error code was 'sqashed'\n\t from %s to %s \n\t during the session setup }\n*/\n", 
+			       get_nt_error_c_code(NT_STATUS(error)), 
+			       get_nt_error_c_code(nt_status));
+		}
+		
+		printf("\t{%s,\t%s,\t%s},\n", 
+		       smb_dos_err_class(errclass), 
+		       smb_dos_err_name(errclass, errnum), 
+		       get_nt_error_c_code(nt_status));
 	}
 	return True;
 }
