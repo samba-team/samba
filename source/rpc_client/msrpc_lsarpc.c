@@ -151,7 +151,7 @@ uint32 lookup_lsa_sid(const char *domain,
 
 	if (!get_any_dc_name(domain, srv_name))
 	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	add_sid_to_array(&num_sids, &sids, sid);
