@@ -243,15 +243,33 @@ krb5_afslog_uid_home(krb5_context context,
 {
     kafs_data kd;
     struct krb5_kafs_data d;
+    krb5_error_code ret;
+
     kd.name = "krb5";
     kd.afslog_uid = afslog_uid_int;
     kd.get_cred = get_cred;
     kd.get_realm = get_realm;
     kd.data = &d;
-    d.context = context;
-    d.id = id;
+    if (context == NULL) {
+	ret = krb5_init_context(&d.context);
+	if (ret)
+	    return ret;
+    } else
+	d.context = context;
+    if (id == NULL) {
+	ret = krb5_cc_default(d.context, &d.id);
+	if (ret)
+	    goto out;
+    } else
+	d.id = id;
     d.realm = realm;
-    return afslog_uid_int(&kd, cell, 0, uid, homedir);
+    ret = afslog_uid_int(&kd, cell, 0, uid, homedir);
+    if (id == NULL)
+	krb5_cc_close(context, d.id);
+ out:
+    if (context == NULL)
+	krb5_free_context(d.context);
+    return ret;
 }
 
 krb5_error_code
