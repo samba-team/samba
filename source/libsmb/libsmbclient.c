@@ -92,6 +92,7 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
   static pstring s;
   pstring userinfo;
   char *p;
+  char *q, *r;
   int len;
 
   server[0] = share[0] = path[0] = user[0] = password[0] = (char)0;
@@ -133,7 +134,10 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
    * exists ...
    */
 
-  if (strchr(p, '@')) { 
+  /* check that '@' occurs before '/', if '/' exists at all */
+  q = strchr(p, '@');
+  r = strchr(p, '/');
+  if (q && (!r || q < r)) {
     pstring username, passwd, domain;
     char *u = userinfo;
 
