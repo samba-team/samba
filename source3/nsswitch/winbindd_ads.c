@@ -723,6 +723,12 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 
 	rc = ads_domain_sid(ads, sid);
 
+	if (!ADS_ERR_OK(rc)) {
+		/* its a dead connection */
+		ads_destroy(ads);
+		domain->private = NULL;
+	}
+
 	return ads_ntstatus(rc);
 }
 
