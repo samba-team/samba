@@ -16,9 +16,7 @@ if test "$ac_cv_header_security_pam_modules_h" = yes -a "$enable_shared" = yes; 
 fi
 
 case "${host}" in
-changequote(,)dnl
-*-*-irix[56]*) LIB_AUTH_SUBDIRS="$LIB_AUTH_SUBDIRS afskauthlib" ;;
-changequote([,])dnl
+*-*-irix[[56]]*) LIB_AUTH_SUBDIRS="$LIB_AUTH_SUBDIRS afskauthlib" ;;
 esac
 
 AC_MSG_RESULT($LIB_AUTH_SUBDIRS)

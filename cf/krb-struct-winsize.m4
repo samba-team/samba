@@ -10,9 +10,7 @@ AC_CACHE_VAL(ac_cv_struct_winsize, [
 ac_cv_struct_winsize=no
 for i in sys/termios.h sys/ioctl.h; do
 AC_EGREP_HEADER(
-changequote(, )dnl
-struct[ 	]*winsize,dnl
-changequote([,])dnl
+struct[[ 	]]*winsize,dnl
 $i, ac_cv_struct_winsize=yes; break)dnl
 done
 ])
