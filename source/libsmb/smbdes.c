@@ -357,17 +357,17 @@ void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int for
         smbhash(out + 8, in + 8, key2, forw);
 }
 
-void NTLMSSPhash( unsigned char hash[256], unsigned char const key[5])
+void NTLMSSPhash( unsigned char hash[258], unsigned char key[5])
 {
-  unsigned char j = 0;
-  int ind;
+	unsigned char j = 0;
+	int ind;
 
 	unsigned char k2[8];
 
-	memcpy(k2, key, sizeof(key));
+	memcpy(k2, key, 5);
 	k2[5] = 0xe5;
-	k2[6] = 0xb8;
-	k2[6] = 0xb0;
+	k2[6] = 0x38;
+	k2[7] = 0xb0;
 
 	for (ind = 0; ind < 256; ind++)
 	{
@@ -384,12 +384,15 @@ void NTLMSSPhash( unsigned char hash[256], unsigned char const key[5])
 		hash[ind] = hash[j];
 		hash[j] = tc;
 	}
+
+	hash[256] = 0;
+	hash[257] = 0;
 }
 
-void NTLMSSPcalc( unsigned char hash[256], unsigned char *data, int len)
+void NTLMSSPcalc( unsigned char hash[258], unsigned char *data, int len)
 {
-	unsigned char index_i = 0;
-	unsigned char index_j = 0;
+	unsigned char index_i = hash[256];
+	unsigned char index_j = hash[257];
 	int ind;
 
 	for( ind = 0; ind < len; ind++)
@@ -405,8 +408,11 @@ void NTLMSSPcalc( unsigned char hash[256], unsigned char *data, int len)
 		hash[index_j] = tc;
 
 		t = hash[index_i] + hash[index_j];
-		data[ind] ^= hash[t];
+		data[ind] = data[ind] ^ hash[t];
 	}
+
+	hash[256] = index_i;
+	hash[257] = index_j;
 }
 
 void SamOEMhash( unsigned char *data, unsigned char *key, int val)

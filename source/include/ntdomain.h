@@ -84,7 +84,7 @@ typedef struct pipes_struct
 	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
 
 	BOOL ntlmssp_auth;
-	unsigned char ntlmssp_hash[256];
+	unsigned char ntlmssp_hash[258];
 
 	uint32 file_offset;
 	uint32 hdr_offsets;
