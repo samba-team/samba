@@ -1,3 +1,14 @@
+2003-03-11  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/krb5.3: add krb5_address stuff and sort
+	
+	* lib/krb5/krb5_address.3: fix krb5_addr2sockaddr description
+	
+	* lib/krb5/Makefile.am (man_MANS): += krb5_address.3
+	
+	* lib/krb5/krb5_address.3: document types krb5_address and
+	krb5_addresses and their helper functions
+
 2003-03-10  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/Makefile.am (man_MANS): += krb5_kuserok.3
@@ -8,8 +19,6 @@
 
 	* lib/krb5/krb5_ccache.3: spelling, from cizzi@it.su.se
 	
-2003-03-10  Love Hörnquist Åstrand <lha@it.su.se>
-
 	* lib/krb5/krb5.3: add more functions
 	
 	* lib/krb5/krb5_ccache.3: document krb5_ccache and krb5_cc
