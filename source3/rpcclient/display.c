@@ -1662,6 +1662,172 @@ void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *
 	}
 }
 
+static char *get_at_time_str(uint32 time)
+{
+	static fstring timestr;
+	unsigned int hours, minutes, seconds;
+
+	hours = time / 1000;
+	seconds = hours % 60;
+	hours /= 60;
+	minutes = hours % 60;
+	hours /= 60;
+
+	slprintf(timestr, sizeof(timestr)-1, "%2d:%02d:%02d",
+		 hours, minutes, seconds);
+
+	return timestr;
+}
+
+extern char *daynames_short[];
+
+static char *get_at_days_str(uint32 monthdays, uint8 weekdays, uint8 flags)
+{
+	static fstring days;
+	fstring numstr;
+	int day, bit;
+	BOOL first = True;
+
+	if (monthdays == 0 && weekdays == 0)
+		return "Once";
+
+	if (flags & JOB_PERIODIC)
+	{
+		if (IS_BITS_SET_ALL(weekdays, 0x7F))
+			return "Every Day";
+
+		fstrcpy(days, "Every ");
+	}
+	else
+	{
+		fstrcpy(days, "Next ");
+	}
+
+	for (day = 1, bit = 1; day < 32; day++, bit <<= 1)
+	{
+		if (monthdays & bit)
+		{
+			if (first)
+				first = False;
+			else
+				fstrcat(days, ",");
+
+			slprintf(numstr, sizeof(numstr)-1, "%d", day);
+			fstrcat(days, numstr);
+		}
+	}
+
+	for (day = 0, bit = 1; day < 7; day++, bit <<= 1)
+	{
+		if (weekdays & bit)
+		{
+			if (first)
+				first = False;
+			else
+				fstrcat(days, ",");
+
+			fstrcat(days, daynames_short[day]);
+		}
+	}
+
+	return days;
+}
+
+/****************************************************************************
+ display scheduled jobs
+ ****************************************************************************/
+void display_at_enum_info(FILE *out_hnd, enum action_type action,
+		     uint32 num_jobs, AT_ENUM_INFO *jobs, fstring *commands)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			if (num_jobs == 0)
+			{
+				fprintf(out_hnd, "\tNo Jobs.\n");
+			}
+			else
+			{
+				fprintf(out_hnd, "\tJobs:\n");
+				fprintf(out_hnd, "\t-----\n");
+			}
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < num_jobs; i++)
+			{
+				AT_JOB_INFO *job = &jobs[i].info;
+
+				fprintf(out_hnd, "\t%d\t%s\t%s\t%s\n",
+					jobs[i].jobid,
+					get_at_time_str(job->time),
+					get_at_days_str(job->monthdays,
+							job->weekdays,
+							job->flags),
+					commands[i]);
+			}
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display information about a scheduled job
+ ****************************************************************************/
+void display_at_job_info(FILE *out_hnd, enum action_type action,
+		     AT_JOB_INFO *job, fstring command)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tJob Information:\n");
+			fprintf(out_hnd, "\t----------------\n");
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fprintf(out_hnd, "\tTime:        %s\n", 
+				get_at_time_str(job->time));
+
+			fprintf(out_hnd, "\tSchedule:    %s\n",
+				get_at_days_str(job->monthdays, job->weekdays,
+						job->flags));
+
+			fprintf(out_hnd, "\tStatus:      %s",
+				(job->flags & JOB_EXEC_ERR) ? "Failed" : "OK");
+
+			if (job->flags & JOB_RUNS_TODAY)
+			{
+				fprintf(out_hnd, ", Runs Today");
+			}
+
+			fprintf(out_hnd, "\n\tInteractive: %s\n",
+				(job->flags & JOB_NONINTERACTIVE) ? "No"
+				: "Yes");
+
+			fprintf(out_hnd, "\tCommand:     %s\n", command);
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+
 #if COPY_THIS_TEMPLATE
 /****************************************************************************
  display structure
