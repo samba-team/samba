@@ -3560,7 +3560,13 @@ void init_srv_q_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *srv,
 BOOL srv_io_q_net_srv_get_info(char *desc, SRV_Q_NET_SRV_GET_INFO *q_n, prs_struct *ps, int depth);
 void init_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
 				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status);
+void init_srv_r_net_srv_set_info(SRV_R_NET_SRV_SET_INFO *srv,
+				 uint32 switch_value, uint32 status);
+BOOL srv_io_q_net_srv_set_info(char *desc, SRV_Q_NET_SRV_SET_INFO *q_n, 
+			       prs_struct *ps, int depth);
 BOOL srv_io_r_net_srv_get_info(char *desc, SRV_R_NET_SRV_GET_INFO *r_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_srv_set_info(char *desc, SRV_R_NET_SRV_SET_INFO *r_n, 
+			       prs_struct *ps, int depth);
 BOOL srv_io_q_net_remote_tod(char *desc, SRV_Q_NET_REMOTE_TOD *q_n, prs_struct *ps, int depth);
 void init_time_of_day_info(TIME_OF_DAY_INFO *tod, uint32 elapsedt, uint32 msecs,
                            uint32 hours, uint32 mins, uint32 secs, uint32 hunds,
@@ -3789,6 +3795,7 @@ BOOL share_info_db_init(void);
 void map_generic_share_sd_bits(SEC_DESC *psd);
 BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 desired_access);
 uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u);
+uint32 _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R_NET_SRV_SET_INFO *r_u);
 uint32 _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u);
 uint32 _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_CONN_ENUM *r_u);
 uint32 _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_SESS_ENUM *r_u);
