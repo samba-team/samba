@@ -101,7 +101,8 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 		return False;
 	}
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
-		DEBUG(0,("create_conn_struct: Can't ChDir to new conn path %s\n", conn->connectpath));
+		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. Error was %s\n",
+					conn->connectpath, strerror(errno) ));
 		talloc_destroy( conn->mem_ctx );
 		return False;
 	}
