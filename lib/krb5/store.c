@@ -199,13 +199,19 @@ krb5_error_code
 krb5_ret_times(int fd, krb5_times *times)
 {
     int ret;
-    ret = krb5_ret_int32(fd, &times->authtime);
+    int32_t tmp;
+
+    ret = krb5_ret_int32(fd, &tmp);
+    times->authtime = tmp;
     if(ret) return ret;
-    ret = krb5_ret_int32(fd, &times->starttime);
+    ret = krb5_ret_int32(fd, &tmp);
+    times->starttime = tmp;
     if(ret) return ret;
-    ret = krb5_ret_int32(fd, &times->endtime);
+    ret = krb5_ret_int32(fd, &tmp);
+    times->endtime = tmp;
     if(ret) return ret;
-    ret = krb5_ret_int32(fd, &times->renew_till);
+    ret = krb5_ret_int32(fd, &tmp);
+    times->renew_till = tmp;
     return ret;
 }
 
