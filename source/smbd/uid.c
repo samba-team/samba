@@ -178,6 +178,10 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 			is_guest = True;
 
 		token = create_nt_token(uid, gid, current_user.ngroups, current_user.groups, is_guest);
+		if (!token) {
+			DEBUG(1, ("change_to_user: create_nt_token failed!\n"));
+			return False;
+		}
 		must_free_token = True;
 	}
 	
