@@ -1034,7 +1034,7 @@ int rpc_vampire(int argc, const char **argv)
 		goto fail;
 	}
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup(),
+	if (!secrets_fetch_trust_account_password(opt_target_workgroup,
 						  trust_password, NULL,
 						  &sec_channel)) {
 		d_printf("Could not retrieve domain trust secret\n");
@@ -1056,7 +1056,7 @@ int rpc_vampire(int argc, const char **argv)
 			 nt_errstr(result));
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED))
 			d_printf("Perhaps %s is a Windows 2000 native mode "
-				 "domain?\n", lp_workgroup());
+				 "domain?\n", opt_target_workgroup);
 		goto fail;
 	}
 
