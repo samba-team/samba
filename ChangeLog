@@ -1,3 +1,11 @@
+2003-09-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.h: add SAM keyusage numbers, add s2k proc typedef,
+	add a pointer to a private part of krb5_get_init_creds_opt
+	
+	* kdc/string2key.c (main): avoid const warning by using a extra
+	variable
+
 2003-08-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/ticket.c (krb5_ticket_get_authorization_data_type):
