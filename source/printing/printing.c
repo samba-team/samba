@@ -230,17 +230,22 @@ void printing_end(void)
  when asked for (and only when supported)
 ****************************************************************************/
 
-static struct printif *get_printer_fns( int snum )
+static struct printif *get_printer_fns_from_type( enum printing_types type )
 {
 	struct printif *printer_fns = &generic_printif;
 
 #ifdef HAVE_CUPS
-	if ( lp_printing(snum) == PRINT_CUPS ) {
+	if ( type == PRINT_CUPS ) {
 		printer_fns = &cups_printif;
 	}
 #endif /* HAVE_CUPS */
 	
 	return printer_fns;
+}
+
+static struct printif *get_printer_fns( int snum )
+{
+	return get_printer_fns_from_type(lp_printing(snum));
 }
 
 /****************************************************************************
@@ -1001,7 +1006,9 @@ static void print_queue_update_internal(struct print_queue_update_context *ctx)
 	TDB_DATA data, key;
 	TDB_DATA jcdata;
 	struct tdb_print_db *pdb;
-	struct printif *current_printif = get_printer_fns( ctx->snum );
+	struct printif *current_printif;
+
+	current_printif = get_printer_fns_from_type( ctx->printing_type );
 
 	pdb = get_print_db_byname(ctx->printer_name);
 	if (!pdb)
@@ -1069,7 +1076,10 @@ static void print_queue_update_internal(struct print_queue_update_context *ctx)
         /* get the current queue using the appropriate interface */
 	ZERO_STRUCT(status);
 
-	qcount = (*(current_printif->queue_get))(ctx->snum, &queue, &status);
+	qcount = (*(current_printif->queue_get))(ctx->printer_name,
+						 ctx->printing_type,
+						 ctx->lpqcommand,
+						 &queue, &status);
 
 	DEBUG(3, ("%d job%s in queue for %s\n", qcount, (qcount != 1) ?
 		"s" : "", ctx->printer_name));

@@ -34,8 +34,11 @@ static int cups_job_delete(int snum, struct printjob *pjob);
 static int cups_job_pause(int snum, struct printjob *pjob);
 static int cups_job_resume(int snum, struct printjob *pjob);
 static int cups_job_submit(int snum, struct printjob *pjob);
-static int cups_queue_get(int snum, print_queue_struct **q,
-                          print_status_struct *status);
+static int cups_queue_get(const char *printer_name,
+			  enum printing_types printing_type,
+			  const char *lpq_command,
+			  print_queue_struct **q,
+			  print_status_struct *status);
 static int cups_queue_pause(int snum);
 static int cups_queue_resume(int snum);
 
@@ -811,7 +814,11 @@ cups_job_submit(int snum, struct printjob *pjob)
  */
 
 static int
-cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
+cups_queue_get(const char *printer_name,
+	       enum printing_types printing_type,
+	       const char *lpq_command,
+	       print_queue_struct **q,
+	       print_status_struct *status)
 {
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -847,7 +854,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 			};
 
 
-	DEBUG(5,("cups_queue_get(%d, %p, %p)\n", snum, q, status));
+	DEBUG(5,("cups_queue_get(%s, %p, %p)\n", printer_name, q, status));
 
        /*
         * Make sure we don't ask for passwords...
@@ -871,7 +878,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 	*/
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         PRINTERNAME(snum));
+	         printer_name);
 
        /*
 	* Build an IPP_GET_JOBS request, which requires the following
@@ -1090,8 +1097,8 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 
 	if ((response = cupsDoRequest(http, request, "/")) == NULL)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n", PRINTERNAME(snum),
-			 ippErrorString(cupsLastError())));
+		DEBUG(0,("Unable to get printer status for %s - %s\n",
+			 printer_name, ippErrorString(cupsLastError())));
 		httpClose(http);
 		*q = queue;
 		return (qcount);
@@ -1099,7 +1106,8 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 
 	if (response->request.status.status_code >= IPP_OK_CONFLICT)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n", PRINTERNAME(snum),
+		DEBUG(0,("Unable to get printer status for %s - %s\n",
+			 printer_name, 
 			 ippErrorString(response->request.status.status_code)));
 		ippDelete(response);
 		httpClose(http);
