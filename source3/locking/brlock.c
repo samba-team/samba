@@ -90,11 +90,11 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 /****************************************************************************
 open up the brlock.tdb database 
 ****************************************************************************/
-void brl_init(void)
+void brl_init(int read_only)
 {
 	if (tdb) return;
 	tdb = tdb_open(lock_path("brlock.tdb"), 0, TDB_CLEAR_IF_FIRST, 
-		       O_RDWR | O_CREAT, 0644);
+		       read_only?O_RDONLY:O_RDWR|O_CREAT, 0644);
 	if (!tdb) {
 		DEBUG(0,("Failed to open byte range locking database\n"));
 	}
@@ -328,4 +328,44 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
  fail:
 	if (dbuf.dptr) free(dbuf.dptr);
 	tdb_unlockchain(tdb, kbuf);
+}
+
+
+static void (*traverse_callback)(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
+				 enum brl_type lock_type,
+				 br_off start, br_off size);
+
+/****************************************************************************
+traverse the whole database with this function, calling traverse_callback
+on each lock
+****************************************************************************/
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	struct lock_struct *locks;
+	struct lock_key *key;
+	int i;
+
+	locks = (struct lock_struct *)dbuf.dptr;
+	key = (struct lock_key *)kbuf.dptr;
+
+	for (i=0;i<dbuf.dsize/sizeof(*locks);i++) {
+		traverse_callback(key->device, key->inode,
+				  locks[i].context.pid,
+				  locks[i].lock_type,
+				  locks[i].start,
+				  locks[i].size);
+	}
+	return 0;
+}
+
+/*******************************************************************
+ Call the specified function on each lock in the database
+********************************************************************/
+int brl_forall(void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
+			  enum brl_type lock_type,
+			  br_off start, br_off size))
+{
+	if (!tdb) return 0;
+	traverse_callback = fn;
+	return tdb_traverse(tdb, traverse_fn);
 }
