@@ -38,7 +38,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
 	krb5_keytab keytab = NULL;
-	krb5_kt_cursor cursor = NULL;
+	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
 	krb5_principal princ = NULL;
 	krb5_data password;
@@ -57,6 +57,8 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	char *ktprinc = NULL;
 
 	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
+
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
@@ -148,7 +150,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 				DEBUG(3,("ads_keytab_add_entry: Found old entry for principal: %s (kvno %d) - trying to remove it.\n",
 					princ_s, kt_entry.vno));
 				ret = krb5_kt_end_seq_get(context, keytab, &cursor);
-				cursor = NULL;
+				ZERO_STRUCT(cursor);
 				if (ret) {
 					DEBUG(1,("ads_keytab_add_entry: krb5_kt_end_seq_get() failed (%s)\n",
 						error_message(ret)));
@@ -186,7 +188,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		}
 
 		ret = krb5_kt_end_seq_get(context, keytab, &cursor);
-		cursor = NULL;
+		ZERO_STRUCT(cursor);
 		if (ret) {
 			DEBUG(1,("ads_keytab_add_entry: krb5_kt_end_seq_get failed (%s)\n",error_message(ret)));
 			goto out;
@@ -195,7 +197,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 
 	/* Ensure we don't double free. */
 	ZERO_STRUCT(kt_entry);
-	cursor = NULL;
+	ZERO_STRUCT(cursor);
 
 	/* If we get here, we have deleted all the old entries with kvno's not equal to the current kvno-1. */
 
@@ -265,8 +267,13 @@ out:
 	if (enctypes) {
 		free_kerberos_etypes(context, enctypes);
 	}
-	if (cursor && keytab) {
-		krb5_kt_end_seq_get(context, keytab, &cursor);	
+
+	{
+		krb5_kt_cursor zero_csr;
+		ZERO_STRUCT(zero_csr);
+		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
+			krb5_kt_end_seq_get(context, keytab, &cursor);	
+		}
 	}
 	if (keytab) {
 		krb5_kt_close(context, keytab);
@@ -286,12 +293,14 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
 	krb5_keytab keytab = NULL;
-	krb5_kt_cursor cursor = NULL;
+	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
 	char keytab_name[MAX_KEYTAB_NAME_LEN];
 
 	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
+
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
@@ -331,7 +340,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	if (ret != KRB5_KT_END && ret != ENOENT) {
 		while (!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
 			ret = krb5_kt_end_seq_get(context, keytab, &cursor);
-			cursor = NULL;
+			ZERO_STRUCT(cursor);
 			if (ret) {
 				DEBUG(1,("ads_keytab_flush: krb5_kt_end_seq_get() failed (%s)\n",error_message(ret)));
 				goto out;
@@ -357,7 +366,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 
 	/* Ensure we don't double free. */
 	ZERO_STRUCT(kt_entry);
-	cursor = NULL;
+	ZERO_STRUCT(cursor);
 
 	if (!ADS_ERR_OK(ads_clear_service_principal_names(ads, global_myname()))) {
 		DEBUG(1,("ads_keytab_flush: Error while clearing service principal listings in LDAP.\n"));
@@ -373,8 +382,12 @@ out:
 			smb_krb5_kt_free_entry(context, &kt_entry);
 		}
 	}
-	if (cursor && keytab) {
-		krb5_kt_end_seq_get(context, keytab, &cursor);	
+	{
+		krb5_kt_cursor zero_csr;
+		ZERO_STRUCT(zero_csr);
+		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
+			krb5_kt_end_seq_get(context, keytab, &cursor);	
+		}
 	}
 	if (keytab) {
 		krb5_kt_close(context, keytab);
@@ -394,7 +407,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
 	krb5_keytab keytab = NULL;
-	krb5_kt_cursor cursor = NULL;
+	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
 	int i, found = 0;
@@ -421,6 +434,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	/* Now loop through the keytab and update any other existing entries... */
 
 	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
@@ -443,7 +457,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		}
 	}
 	krb5_kt_end_seq_get(context, keytab, &cursor);
-	cursor = NULL;
+	ZERO_STRUCT(cursor);
 
 	/*
 	 * Hmmm. There is no "rewind" function for the keytab. This means we have a race condition
@@ -508,7 +522,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		}
 		krb5_kt_end_seq_get(context, keytab, &cursor);
 	}
-	cursor = NULL;
+	ZERO_STRUCT(cursor);
 
 done:
 
@@ -521,8 +535,12 @@ done:
 			smb_krb5_kt_free_entry(context, &kt_entry);
 		}
 	}
-	if (cursor && keytab) {
-		krb5_kt_end_seq_get(context, keytab, &cursor);	
+	{
+		krb5_kt_cursor zero_csr;
+		ZERO_STRUCT(zero_csr);
+		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
+			krb5_kt_end_seq_get(context, keytab, &cursor);	
+		}
 	}
 	if (keytab) {
 		krb5_kt_close(context, keytab);
