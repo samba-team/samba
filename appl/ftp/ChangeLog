@@ -1,3 +1,8 @@
+2001-01-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ls.c: fix bug in previous; make it easier to build test
+	version
+
 2001-01-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ls.c (lstat_file): handle case where file lives in `/'
