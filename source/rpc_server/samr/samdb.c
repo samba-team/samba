@@ -602,7 +602,7 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
 	
 
 	/* pull the template record */
-	ret = samdb_search(ctx, mem_ctx, NULL, &res, NULL, expression);
+	ret = samdb_search(ctx, mem_ctx, NULL, &res, NULL, "%s", expression);
 	if (ret != 1) {
 		DEBUG(1,("samdb: ERROR: template '%s' matched %d records\n", 
 			 expression, ret));
