@@ -71,7 +71,7 @@ pop_send(POP *p)
 			 "Message %d has been deleted.",msg_num));
 
     /*  If this is a TOP command, get the number of lines to send */
-    if (strcmp(p->pop_command,"top") == 0) {
+    if (strcmp(p->pop_command, "top") == 0) {
         /*  Convert the second parameter into an integer */
         msg_lines = atoi(p->pop_parm[2]);
     }
@@ -85,14 +85,14 @@ pop_send(POP *p)
     /*  Display the number of bytes in the message */
     pop_msg(p, POP_SUCCESS, "%ld octets", mp->length);
 
-    if(IS_MAILDIR(p)){
+    if(IS_MAILDIR(p)) {
 	int e = pop_maildir_open(p, mp);
 	if(e != POP_SUCCESS)
 	    return e;
     }
 
     /*  Position to the start of the message */
-    fseek(p->drop,mp->offset,0);
+    fseek(p->drop, mp->offset, 0);
 
     return_path_sent = 0;
 
