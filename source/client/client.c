@@ -3745,7 +3745,7 @@ static void usage(char *pname)
     DEBUG(0,("Failed to get my hostname.\n"));
   }
 
-  if (!lp_load(servicesf,True)) {
+  if (!lp_load(servicesf,True,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
 

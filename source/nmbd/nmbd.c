@@ -223,7 +223,7 @@ BOOL reload_services(BOOL test)
   if ( test && !lp_file_list_changed() )
     return(True);
 
-  ret = lp_load( servicesf, True );
+  ret = lp_load( servicesf, True , False, False);
 
   /* perhaps the config filename is now set */
   if ( !test )

@@ -3257,7 +3257,7 @@ BOOL reload_services(BOOL test)
 
   lp_killunused(snum_used);
 
-  ret = lp_load(servicesf,False);
+  ret = lp_load(servicesf,False,False,True);
 
   /* perhaps the config filename is now set */
   if (!test)
