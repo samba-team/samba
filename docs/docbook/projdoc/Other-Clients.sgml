@@ -1,0 +1,332 @@
+<chapter id="Other-Clients">
+<chapterinfo>
+	<author>
+		<firstname>Jim</firstname><surname>McDonough</surname>
+		<affiliation>
+			<orgname>IBM</orgname>
+		</affiliation>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address>jelmer@samba.org</address>
+		</affiliation>
+	</author>
+	
+	<pubdate>5 Mar 2001</pubdate>
+</chapterinfo>
+
+<title>Samba and other CIFS clients</title>
+
+<para>This chapter contains client-specific information.</para>
+
+<sect1>
+<title>Macintosh clients?</title>
+
+<para>
+Yes. <ulink url="http://www.thursby.com/">Thursby</ulink> now have a CIFS Client / Server called DAVE - see
+</para>
+
+<para>
+They test it against Windows 95, Windows NT and samba for
+compatibility issues.  At the time of writing, DAVE was at version
+1.0.1. The 1.0.0 to 1.0.1 update is available as a free download from
+the Thursby web site (the speed of finder copies has been greatly
+enhanced, and there are bug-fixes included).
+</para>
+
+<para> 
+Alternatives - There are two free implementations of AppleTalk for
+several kinds of UNIX machnes, and several more commercial ones.
+These products allow you to run file services and print services
+natively to Macintosh users, with no additional support required on
+the Macintosh.  The two free omplementations are 
+<ulink url="http://www.umich.edu/~rsug/netatalk/">Netatalk</ulink>, and 
+<ulink url="http://www.cs.mu.oz.au/appletalk/atalk.html">CAP</ulink>.  
+What Samba offers MS
+Windows users, these packages offer to Macs.  For more info on these
+packages, Samba, and Linux (and other UNIX-based systems) see
+<ulink url="http://www.eats.com/linux_mac_win.html">http://www.eats.com/linux_mac_win.html</ulink>
+</para>
+
+</sect1>
+
+<sect1>
+<title>OS2 Client</title>
+
+	<sect2>
+		<title>How can I configure OS/2 Warp Connect or 
+		OS/2 Warp 4 as a client for Samba?</title>
+
+		<para>A more complete answer to this question can be 
+		found on <ulink url="http://carol.wins.uva.nl/~leeuw/samba/warp.html">
+		http://carol.wins.uva.nl/~leeuw/samba/warp.html</ulink>.</para>
+		
+		<para>Basically, you need three components:</para>
+		
+		<itemizedlist>
+			<listitem><para>The File and Print Client ('IBM Peer')
+			</para></listitem>
+			<listitem><para>TCP/IP ('Internet support') 
+			</para></listitem>
+			<listitem><para>The "NetBIOS over TCP/IP" driver ('TCPBEUI')
+			</para></listitem>
+		</itemizedlist>
+		
+		<para>Installing the first two together with the base operating 
+		system on a blank system is explained in the Warp manual. If Warp 
+		has already been installed, but you now want to install the 
+		networking support, use the "Selective Install for Networking" 
+		object in the "System Setup" folder.</para>
+
+		<para>Adding the "NetBIOS over TCP/IP" driver is not described 
+		in the manual and just barely in the online documentation. Start 
+		MPTS.EXE, click on OK, click on "Configure LAPS" and click 
+		on "IBM OS/2 NETBIOS OVER TCP/IP" in  'Protocols'.  This line 
+		is then moved to 'Current Configuration'. Select that line, 
+		click on "Change number" and increase it from 0 to 1. Save this
+		configuration.</para>
+
+		<para>If the Samba server(s) is not on your local subnet, you 
+		can optionally add IP names and addresses of these servers 
+		to the "Names List", or specify a  WINS server ('NetBIOS 
+		Nameserver' in IBM and RFC terminology). For Warp Connect you 
+		may need to download an update for 'IBM Peer' to bring it on 
+		the same level as Warp 4. See the webpage mentioned above.</para>
+	</sect2>
+	
+	<sect2>
+		<title>How can I configure OS/2 Warp 3 (not Connect), 
+		OS/2 1.2, 1.3 or 2.x for Samba?</title>
+		
+		<para>You can use the free Microsoft LAN Manager 2.2c Client 
+		for OS/2 from 
+		<ulink url="ftp://ftp.microsoft.com/BusSys/Clients/LANMAN.OS2/">
+		ftp://ftp.microsoft.com/BusSys/Clients/LANMAN.OS2/</ulink>.
+   	See <ulink url="http://carol.wins.uva.nl/~leeuw/lanman.html">
+		http://carol.wins.uva.nl/~leeuw/lanman.html</ulink> for 
+		more information on how to install and use this client. In 
+		a nutshell, edit the file \OS2VER in the root directory of 
+		the OS/2 boot partition and add the lines:</para>
+		
+		<para><programlisting>
+		20=setup.exe
+		20=netwksta.sys
+		20=netvdd.sys
+		</programlisting></para>
+		
+		<para>before you install the client. Also, don't use the 
+		included NE2000 driver because it is buggy. Try the NE2000 
+		or NS2000 driver from 
+		<ulink url="ftp://ftp.cdrom.com/pub/os2/network/ndis/">
+ 		ftp://ftp.cdrom.com/pub/os2/network/ndis/</ulink> instead.
+		</para>
+	</sect2>
+	
+	<sect2>
+		<title>Are there any other issues when OS/2 (any version) 
+		is used as a client?</title>
+		
+		<para>When you do a NET VIEW or use the "File and Print 
+		Client Resource Browser", no Samba servers show up. This can 
+		be fixed by a patch from <ulink
+		url="http://carol.wins.uva.nl/~leeuw/samba/fix.html">
+		http://carol.wins.uva.nl/~leeuw/samba/fix.html</ulink>.
+		The patch will be included in a later version of Samba. It also 
+		fixes a couple of other problems, such as preserving long 
+		filenames when objects are dragged from the Workplace Shell 
+		to the Samba server. </para>
+	</sect2>
+	
+	<sect2>
+		<title>How do I get printer driver download working 
+		for OS/2 clients?</title>
+
+		<para>First, create a share called [PRINTDRV] that is 
+		world-readable.  Copy your OS/2 driver files there.  Note 
+		that the .EA_ files must still be separate, so you will need 
+		to use the original install files, and not copy an installed 
+		driver from an OS/2 system.</para>
+		
+		<para>Install the NT driver first for that printer.  Then, 
+		add to your smb.conf a parameter, os2 driver map = 
+		<replaceable>filename</replaceable>".  Then, in the file 
+		specified by <replaceable>filename</replaceable>, map the 
+		name of the NT driver name to the OS/2 driver name as 
+		follows:</para>
+		
+		<para><command>nt driver name = os2 "driver 
+		name"."device name"</command>, e.g.:
+		HP LaserJet 5L = LASERJET.HP LaserJet 5L</para>
+
+		<para>You can have multiple drivers mapped in this file.</para>
+	
+		<para>If you only specify the OS/2 driver name, and not the 
+		device name, the first attempt to download the driver will 
+		actually download the files, but the OS/2 client will tell 
+		you the driver is not available.  On the second attempt, it 
+		will work.  This is fixed simply by adding the device name
+  		 to the mapping, after which it will work on the first attempt.
+		</para>
+	</sect2>
+</sect1>
+
+<sect1>
+<title>Windows for Workgroups</title>
+
+<sect2>
+<title>Use latest TCP/IP stack from Microsoft</title>
+
+<para>Use the latest TCP/IP stack from microsoft if you use Windows
+for workgroups.</para>
+
+<para>The early TCP/IP stacks had lots of bugs.</para>
+
+<para> 
+Microsoft has released an incremental upgrade to their TCP/IP 32-Bit
+VxD drivers.  The latest release can be found on their ftp site at
+ftp.microsoft.com, located in /peropsys/windows/public/tcpip/wfwt32.exe.
+There is an update.txt file there that describes the problems that were
+fixed.  New files include WINSOCK.DLL, TELNET.EXE, WSOCK.386, VNBT.386,
+WSTCP.386, TRACERT.EXE, NETSTAT.EXE, and NBTSTAT.EXE.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Delete .pwl files after password change</title>
+
+<para>
+WfWg does a lousy job with passwords. I find that if I change my
+password on either the unix box or the PC the safest thing to do is to
+delete the .pwl files in the windows directory. The PC will complain about not finding the files, but will soon get over it, allowing you to enter the new password.
+</para>
+
+<para> 
+If you don't do this you may find that WfWg remembers and uses the old
+password, even if you told it a new one.
+</para>
+
+<para> 
+Often WfWg will totally ignore a password you give it in a dialog box.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Configure WfW password handling</title>
+
+<para>
+There is a program call admincfg.exe
+on the last disk (disk 8) of the WFW 3.11 disk set.  To install it
+type EXPAND A:\ADMINCFG.EX_ C:\WINDOWS\ADMINCFG.EXE Then add an icon
+for it via the "Progam Manager" "New" Menu.  This program allows you
+to control how WFW handles passwords.  ie disable Password Caching etc
+for use with <command>security = user</command>
+</para>
+
+</sect2>
+
+<sect2>
+<title>Case handling of passwords</title>
+
+<para>Windows for Workgroups uppercases the password before sending it to the server. Unix passwords can be case-sensitive though. Check the <ulink url="smb.conf.5.html">smb.conf(5)</ulink> information on <command>password level</command> to specify what characters samba should try to uppercase when checking.</para>
+
+</sect2>
+
+</sect1>
+
+<sect1>
+<title>Windows '95/'98</title>
+
+<para>
+When using Windows 95 OEM SR2 the following updates are recommended where Samba
+is being used. Please NOTE that the above change will affect you once these
+updates  have been installed.
+</para>
+
+<para> 
+There are more updates than the ones mentioned here. You are referred to the
+Microsoft Web site for all currently available updates to your specific version
+of Windows 95.
+</para>
+
+<orderedlist>
+<listitem><para>Kernel Update: KRNLUPD.EXE</para></listitem>
+<listitem><para>Ping Fix: PINGUPD.EXE</para></listitem>
+<listitem><para>RPC Update: RPCRTUPD.EXE</para></listitem>
+<listitem><para>TCP/IP Update: VIPUPD.EXE</para></listitem>
+<listitem><para>Redirector Update: VRDRUPD.EXE</para></listitem>
+</orderedlist>
+
+<para>
+Also, if using MS OutLook it is desirable to install the OLEUPD.EXE fix. This
+fix may stop your machine from hanging for an extended period when exiting
+OutLook and you may also notice a significant speedup when accessing network
+neighborhood services.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Windows 2000 Service Pack 2</title>
+
+<para> 
+There are several annoyances with Windows 2000 SP2. One of which
+only appears when using a Samba server to host user profiles
+to Windows 2000 SP2 clients in a Windows domain.  This assumes
+that Samba is a member of the domain, but the problem will
+likely occur if it is not.
+</para>
+
+<para> 
+In order to server profiles successfully to Windows 2000 SP2 
+clients (when not operating as a PDC), Samba must have 
+<command>nt acl support = no</command>
+added to the file share which houses the roaming profiles.
+If this is not done, then the Windows 2000 SP2 client will
+complain about not being able to access the profile (Access 
+Denied) and create multiple copies of it on disk (DOMAIN.user.001,
+DOMAIN.user.002, etc...).  See the 
+<ulink url="smb.conf.5.html">smb.conf(5)</ulink> man page
+for more details on this option.  Also note that the 
+<command>nt acl support</command> parameter was formally a global parameter in
+releases prior to Samba 2.2.2.
+</para>
+
+<para> 
+The following is a minimal profile share:
+</para>
+
+<para><programlisting>
+	[profile]
+		path = /export/profile
+		create mask = 0600
+		directory mask = 0700
+		nt acl support = no
+		read only = no
+</programlisting></para>
+
+<para>
+The reason for this bug is that the Win2k SP2 client copies
+the security descriptor for the profile which contains
+the Samba server's SID, and not the domain SID.  The client
+compares the SID for SAMBA\user and realizes it is
+different that the one assigned to DOMAIN\user.  Hence the reason
+for the "access denied" message.
+</para>
+
+<para>
+By disabling the <command>nt acl support</command> parameter, Samba will send
+the Win2k client a response to the QuerySecurityDescriptor
+trans2 call which causes the client to set a default ACL
+for the profile. This default ACL includes 
+</para>
+
+<para><command>DOMAIN\user 	"Full Control"</command></para>
+
+<para><emphasis>NOTE : This bug does not occur when using winbind to
+create accounts on the Samba host for Domain users.</emphasis></para>
+
+</sect1>
+
+</chapter>
