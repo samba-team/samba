@@ -2042,7 +2042,10 @@ BOOL synchronise_passdb(void);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
-BOOL rpc_api_pipe(struct cli_connection *con, prs_struct *data, prs_struct *rdata);
+BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data, prs_struct *rdata);
+BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
+				prs_struct *data,
+				prs_struct *rdata);
 BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 			prs_struct *data, prs_struct *rdata);
 BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata);
@@ -2053,9 +2056,6 @@ BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 				prs_struct *rhdr,
                                 prs_struct *rhdr_autha,
                                 prs_struct *auth_resp);
-BOOL rpc_api_pipe_req(struct cli_connection *con,
-				uint8 op_num,
-				prs_struct *data, prs_struct *rdata);
 BOOL rpc_pipe_bind(struct cli_connection *con, 
 				const char *pipe_name,
 				RPC_IFACE *abstract, RPC_IFACE *transfer, 
@@ -2338,8 +2338,7 @@ BOOL req_user_info( const POLICY_HND *pol_dom,
 				const DOM_SID *sid,
 				uint32 user_rid,
 				USER_INFO_FN(usr_inf));
-uint32 sam_query_usergroups(
-				const POLICY_HND *pol_dom,
+uint32 sam_query_usergroups( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
 				uint32 user_rid,
@@ -2379,8 +2378,7 @@ int msrpc_sam_enum_users( const char* srv_name,
 BOOL sam_query_dominfo(const char* srv_name,
 				const DOM_SID *sid1,
 				uint32 switch_value, SAM_UNK_CTR *ctr);
-BOOL query_aliasinfo(
-				const POLICY_HND *pol_dom,
+BOOL query_aliasinfo( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
 				uint32 alias_rid,
@@ -2399,8 +2397,7 @@ BOOL req_aliasmem_info(const char* srv_name,
 				uint32 alias_rid,
 				const char *alias_name,
 				ALIAS_MEM_FN(als_mem));
-BOOL sam_query_groupmem(
-				const POLICY_HND *pol_dom,
+BOOL sam_query_groupmem( const POLICY_HND *pol_dom,
 				uint32 group_rid,
 				uint32 *num_names,
 				uint32 **rid_mem,
@@ -2445,15 +2442,13 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 BOOL create_samr_domain_alias( POLICY_HND *pol_open_domain,
 				const char *acct_name, const char *acct_desc,
 				uint32 *rid);
-BOOL create_samr_domain_group(
-				POLICY_HND *pol_open_domain,
+BOOL create_samr_domain_group( POLICY_HND *pol_open_domain,
 				const char *acct_name, const char *acct_desc,
 				uint32 *rid);
 BOOL get_samr_query_usergroups( const POLICY_HND *pol_open_domain,
 				uint32 user_rid,
 				uint32 *num_groups, DOM_GID **gid);
-BOOL delete_samr_dom_group(
-				POLICY_HND *pol_open_domain,
+BOOL delete_samr_dom_group( POLICY_HND *pol_open_domain,
 				uint32 group_rid);
 BOOL get_samr_query_groupmem( 
 				const POLICY_HND *pol_open_domain,
