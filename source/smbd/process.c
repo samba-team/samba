@@ -341,9 +341,9 @@ force write permissions on print services.
    functions. Any message that has a NULL function is unimplemented -
    please feel free to contribute implementations!
 */
-static struct smb_message_struct
+const static struct smb_message_struct
 {
-  char *name;
+  const char *name;
   int (*fn)(connection_struct *conn, char *, char *, int, int);
   int flags;
 }
@@ -611,7 +611,7 @@ static struct smb_message_struct
 /*******************************************************************
 dump a prs to a file
  ********************************************************************/
-static void smb_dump(char *name, int type, char *data, ssize_t len)
+static void smb_dump(const char *name, int type, char *data, ssize_t len)
 {
 	int fd, i;
 	pstring fname;
@@ -896,7 +896,7 @@ void process_smb(char *inbuf, char *outbuf)
 /****************************************************************************
 return a string containing the function name of a SMB command
 ****************************************************************************/
-char *smb_fn_name(int type)
+const char *smb_fn_name(int type)
 {
 	static char *unknown_name = "SMBunknown";
 
@@ -1227,13 +1227,6 @@ void smbd_process(void)
 		return;
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
-
-	/* re-initialise the timezone */
-	TimeInit();
-
-	/* register our message handlers */
-	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
-	talloc_init_named("dummy!");
 
 	while (True) {
 		int deadtime = lp_deadtime()*60;
