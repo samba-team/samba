@@ -371,7 +371,7 @@ int getpty(int *ptynum)
     }
     return -1;
 #else
-#if IRIX == 4
+#ifdef HAVE__GETPTY
     int master, slave;
     char *p;
     p = _getpty(&master, O_RDWR, 0600, 1);
