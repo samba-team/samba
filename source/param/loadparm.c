@@ -282,6 +282,7 @@ typedef struct
   char *readlist;
   char *writelist;
   char *volume;
+  char *fstype;
   int  iMinPrintSpace;
   int  iCreate_mask;
   int  iCreate_force_mode;
@@ -374,6 +375,7 @@ static service sDefault =
   NULL,    /* readlist */
   NULL,    /* writelist */
   NULL,    /* volume */
+  NULL,    /* fstype */
   0,       /* iMinPrintSpace */
   0744,    /* iCreate_mask */
   0000,    /* iCreate_force_mode */
@@ -739,6 +741,7 @@ static struct parm_struct parm_table[] =
   {"root postexec",    P_STRING,  P_LOCAL,  &sDefault.szRootPostExec,   NULL,   NULL,  0},
   {"available",        P_BOOL,    P_LOCAL,  &sDefault.bAvailable,       NULL,   NULL,  0},
   {"volume",           P_STRING,  P_LOCAL,  &sDefault.volume,           NULL,   NULL,  0},
+  {"fstype",           P_STRING,  P_LOCAL,  &sDefault.fstype,           NULL,   NULL,  0},
   {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL,   NULL,  0},
   {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL,   NULL,  FLAG_GLOBAL},
   {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL,   NULL,  FLAG_GLOBAL},
@@ -778,6 +781,7 @@ static void init_globals(void)
 
       string_set(&sDefault.szGuestaccount, GUEST_ACCOUNT);
       string_set(&sDefault.szPrinterDriver, "NULL");
+      string_set(&sDefault.fstype, FSTYPE_STRING);
 
       done_init = True;
     }
@@ -1219,6 +1223,7 @@ FN_LOCAL_STRING(lp_force_user,force_user)
 FN_LOCAL_STRING(lp_force_group,force_group)
 FN_LOCAL_STRING(lp_readlist,readlist)
 FN_LOCAL_STRING(lp_writelist,writelist)
+FN_LOCAL_STRING(lp_fstype,fstype)
 static FN_LOCAL_STRING(lp_volume,volume)
 FN_LOCAL_STRING(lp_mangled_map,szMangledMap)
 FN_LOCAL_STRING(lp_veto_files,szVetoFiles)
