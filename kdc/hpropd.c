@@ -127,10 +127,10 @@ dump_krb4(krb5_context context, hdb_entry *ent, int fd)
 	free(p);
     }
  
-    if (ent->pw_end == NULL)
-	strcat(buf, time2str(60*60*24*365*50)); /* passwd will never expire */
+    if (ent->valid_end == NULL)
+	strcat(buf, time2str(60*60*24*365*50)); /* no expiration */
     else
-	strcat(buf, time2str(*ent->pw_end));
+	strcat(buf, time2str(*ent->valid_end));
     strcat(buf, " ");
 
     if (ent->modified_by == NULL) 
