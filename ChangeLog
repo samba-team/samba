@@ -1,5 +1,10 @@
 2004-03-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kinit.c: when running kinit with a subprocess, fetch new
+	tickets after half the tickets lifetime
+	
+	* lib/hdb/hdb.c: spelling
+	
 	* lib/hdb/hdb-ldap.c: Intergrate Heimdal's hdb-ldap and the Samba
 	password database.  From: Andrew Bartlett <abartlet@samba.org>
 
