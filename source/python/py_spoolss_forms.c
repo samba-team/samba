@@ -49,22 +49,18 @@ struct pyconv py_FORM_1[] = {
 
 PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 {
-	PyObject *po;
-	spoolss_policy_hnd_object *hnd;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	PyObject *py_form;
 	FORM form;
 	int level = 1;
-	static char *kwlist[] = {"hnd", "form", "level", NULL};
+	static char *kwlist[] = {"form", "level", NULL};
 
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "O!O!|i", kwlist, &spoolss_policy_hnd_type, &po, 
-		    &PyDict_Type, &py_form, &level))
+		    args, kw, "O!|i", kwlist, &PyDict_Type, &py_form, &level))
 		return NULL;
-	
-	hnd = (spoolss_policy_hnd_object *)po;
 	
 	/* Call rpc function */
 
@@ -105,24 +101,19 @@ PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 
 PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 {
-	PyObject *po;
-	spoolss_policy_hnd_object *hnd;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	PyObject *result;
 	char *form_name;
 	int level = 1;
-	static char *kwlist[] = {"hnd", "form_name", "level", NULL};
+	static char *kwlist[] = {"form_name", "level", NULL};
 	uint32 needed;
 	FORM_1 form;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!s|i", kwlist, 
-					 &spoolss_policy_hnd_type, &po, &form_name,
-					 &level))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|i", kwlist, &form_name, &level))
 		return NULL;
-	
-	hnd = (spoolss_policy_hnd_object *)po;
 	
 	/* Call rpc function */
 
@@ -156,23 +147,19 @@ PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 
 PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 {
-	PyObject *po;
-	spoolss_policy_hnd_object *hnd;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	PyObject *py_form;
 	int level = 1;
-	static char *kwlist[] = {"hnd", "form_name", "form", "level", NULL};
+	static char *kwlist[] = {"form_name", "form", "level", NULL};
 	char *form_name;
 	FORM form;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!sO!|i", kwlist, 
-					 &spoolss_policy_hnd_type, &po, &form_name,
-					 &PyDict_Type, &py_form, &level))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "sO!|i", kwlist, 
+					 &form_name, &PyDict_Type, &py_form, &level))
 		return NULL;
-	
-	hnd = (spoolss_policy_hnd_object *)po;
 	
 	/* Call rpc function */
 
@@ -197,21 +184,17 @@ PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 
 PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 {
-	PyObject *po;
-	spoolss_policy_hnd_object *hnd;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	int level = 1;
-	static char *kwlist[] = {"hnd", "form_name", "level", NULL};
+	static char *kwlist[] = {"form_name", "level", NULL};
 	char *form_name;
 
 	/* Parse parameters */
 	
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "O!s|i", kwlist, &spoolss_policy_hnd_type, &po, 
-		    &form_name, &level))
+		    args, kw, "s|i", kwlist, &form_name, &level))
 		return NULL;
-	
-	hnd = (spoolss_policy_hnd_object *)po;
 	
 	/* Call rpc function */
 
@@ -232,21 +215,18 @@ PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 
 PyObject *spoolss_enumforms(PyObject *self, PyObject *args, PyObject *kw)
 {
-	PyObject *po, *result;
-	spoolss_policy_hnd_object *hnd;
+	PyObject *result;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	uint32 level = 1, num_forms, needed, i;
-	static char *kwlist[] = {"hnd", "level", NULL};
+	static char *kwlist[] = {"level", NULL};
 	FORM_1 *forms;
 
 	/* Parse parameters */
 	
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "O!|i", kwlist, &spoolss_policy_hnd_type,
-		    &po, &level))
+		    args, kw, "|i", kwlist, &level))
 		return NULL;
-	
-	hnd = (spoolss_policy_hnd_object *)po;
 	
 	/* Call rpc function */
 

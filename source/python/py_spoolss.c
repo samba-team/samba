@@ -22,6 +22,7 @@
 #include "Python.h"
 #include "python/py_common.h"
 #include "python/py_spoolss.h"
+#include "python/py_spoolss_forms.h"
 
 /* Exceptions this module can raise */
 
@@ -30,6 +31,35 @@ PyObject *spoolss_error, *spoolss_werror;
 static void py_policy_hnd_dealloc(PyObject* self)
 {
 	PyObject_Del(self);
+}
+
+
+
+static PyMethodDef spoolss_hnd_methods[] = {
+
+	/* Forms */
+
+	{ "enumforms", spoolss_enumforms, METH_VARARGS | METH_KEYWORDS,
+	  "Enumerate forms" },
+
+	{ "setform", spoolss_setform, METH_VARARGS | METH_KEYWORDS,
+	  "Modify properties of a form" },
+
+	{ "addform", spoolss_addform, METH_VARARGS | METH_KEYWORDS,
+	  "Insert a form" },
+
+	{ "getform", spoolss_getform, METH_VARARGS | METH_KEYWORDS,
+	  "Fetch form properties" },
+
+	{ "deleteform", spoolss_deleteform, METH_VARARGS | METH_KEYWORDS,
+	  "Delete a form" },
+
+	{ NULL }
+
+};
+static PyObject *py_policy_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(spoolss_hnd_methods, self, attrname);
 }
 
 static PyObject *new_policy_hnd_object(struct cli_state *cli, 
@@ -54,7 +84,7 @@ PyTypeObject spoolss_policy_hnd_type = {
 	0,
 	py_policy_hnd_dealloc, /*tp_dealloc*/
 	0,          /*tp_print*/
-	0,          /*tp_getattr*/
+	py_policy_hnd_getattr,          /*tp_getattr*/
 	0,          /*tp_setattr*/
 	0,          /*tp_compare*/
 	0,          /*tp_repr*/
@@ -1023,26 +1053,6 @@ static PyMethodDef spoolss_methods[] = {
 	{ "enumprinters", spoolss_enumprinters, METH_VARARGS | METH_KEYWORDS,
 	  "Enumerate printers" },
 
-	/* Forms */
-
-	{ "enumforms", spoolss_enumforms, METH_VARARGS | METH_KEYWORDS,
-	  "Enumerate forms" },
-
-	{ "setform", spoolss_setform, METH_VARARGS | METH_KEYWORDS,
-	  "Modify properties of a form" },
-
-	{ "addform", spoolss_addform, METH_VARARGS | METH_KEYWORDS,
-	  "Insert a form" },
-
-	{ "getform", spoolss_getform, METH_VARARGS | METH_KEYWORDS,
-	  "Fetch form properties" },
-
-	{ "deleteform", spoolss_deleteform, METH_VARARGS | METH_KEYWORDS,
-	  "Delete a form" },
-
-	{ "enumforms", spoolss_enumforms, METH_VARARGS | METH_KEYWORDS,
-	  "Delete a form" },
-
 	{ NULL }
 };
 
@@ -1081,6 +1091,7 @@ static void const_init(PyObject *dict)
 	for (tmp = spoolss_const_vals; tmp->name; tmp++) {
 		obj = PyInt_FromLong(tmp->value);
 		PyDict_SetItemString(dict, tmp->name, obj);
+		Py_DECREF(obj);
 	}
 }
 
