@@ -1,3 +1,16 @@
+Wed Jul 16 03:07:50 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_in_tkt.c: implement `krb5_init_etype'.
+ 	Change encryption type of pa_enc_timestamp to DES-CBC-MD5
+
+	* lib/krb5/context.c: recognize all encryption types actually
+ 	implemented
+
+	* lib/krb5/auth_context.c (krb5_auth_con_init): Change default
+ 	encryption type to `DES_CBC_MD5'
+
+	*  lib/krb5/read_message.c, write_message.c: new files
+
 Tue Jul 15 17:14:21 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1: replaced asn1_locl.h by `der_locl.h' and `gen_locl.h'.
