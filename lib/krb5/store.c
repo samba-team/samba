@@ -652,7 +652,7 @@ krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
 	return ret;
     dummy32 = creds->flags.i;
     if (0) /* change heimdal major version 0.7 or 0.8 ? */
-	dummy32 = bitswap32(dummy32);
+	dummy32 = bitswap32(TicketFlags2int(creds->flags.b));
     ret = krb5_store_int32(sp, dummy32);
     if(ret)
 	return ret;
@@ -690,12 +690,21 @@ krb5_ret_creds(krb5_storage *sp, krb5_creds *creds)
     ret = krb5_ret_int32 (sp,  &dummy32);
     if(ret) goto cleanup;
     /*
-     * If the higher hits are set, its either a new ticket flag (and
-     * this code need to be removed), or its a MIT cache (or new
-     * Heimdal cache), lets change it to our current format.
+     * Runtime detect the what is the higher bits of the bitfield. If
+     * any of the higher bits are set in the input data, its either a
+     * new ticket flag (and this code need to be removed), or its a
+     * MIT cache (or new Heimdal cache), lets change it to our current
+     * format.
      */
-    if (dummy32 & 0xffff0000)
-	dummy32 = bitswap32(dummy32);
+    {
+	u_int32_t mask = 0xffff0000;
+	creds->flags.i = 0;
+	creds->flags.b.anonymous = 1;
+	if (creds->flags.i & mask)
+	    mask = ~mask;
+	if (dummy32 & mask)
+	    dummy32 = bitswap32(dummy32);
+    }
     creds->flags.i = dummy32;
     ret = krb5_ret_addrs (sp,  &creds->addresses);
     if(ret) goto cleanup;
