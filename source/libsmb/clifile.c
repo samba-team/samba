@@ -173,7 +173,7 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 	int param_len = 6;
 	uint16 setup = TRANSACT2_SETFILEINFO;
 	pstring param;
-	unsigned char data;
+	char data;
 	char *rparam=NULL, *rdata=NULL;
 
 	memset(param, 0, param_len);
@@ -183,11 +183,11 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 	data = flag ? 1 : 0;
 
 	if (!cli_send_trans(cli, SMBtrans2,
-						NULL, 0,                        /* name, length */
-						-1, 0,                          /* fid, flags */
-						&setup, 1, 0,                   /* setup, length, max */
-						param, param_len, 2,            /* param, length, max */
-						&data,  data_len, cli->max_xmit /* data, length, max */
+		NULL, 0,                        /* name, length */
+		-1, 0,                          /* fid, flags */
+		&setup, 1, 0,                   /* setup, length, max */
+		param, param_len, 2,            /* param, length, max */
+		&data,  data_len, cli->max_xmit /* data, length, max */
 						)) {
 		return False;
 	}
