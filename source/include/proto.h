@@ -886,18 +886,18 @@ BOOL change_trust_account_password(char *domain, char *remote_machine_list,
 
 /*The following definitions come from  libsmb/credentials.c  */
 
-char *credstr(uchar *cred);
+char *credstr(const uchar *cred);
 void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
 		      uchar session_key[8]);
 void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred);
-int cred_assert(DOM_CHAL *cred, uchar session_key[8], DOM_CHAL *stored_cred,
-		UTIME timestamp);
+int cred_assert(const DOM_CHAL *cred, uchar session_key[8],
+		DOM_CHAL *stored_cred, UTIME timestamp);
 BOOL clnt_deal_with_creds(uchar sess_key[8],
 			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
 BOOL deal_with_creds(uchar sess_key[8],
 		     DOM_CRED *sto_clnt_cred, 
-		     DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
+		     const DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
 
 /*The following definitions come from  libsmb/namequery.c  */
 
@@ -978,7 +978,7 @@ void D_P16(const uchar *p14, const uchar *in, uchar *out);
 void E_old_pw_hash( const uchar *p14, const uchar *in, uchar *out);
 void cred_hash1(uchar *out,uchar *in,uchar *key);
 void cred_hash2(uchar *out,uchar *in,uchar *key);
-void cred_hash3(uchar *out,uchar *in,uchar *key, int forw);
+void cred_hash3(uchar *out, const uchar *in,uchar *key, int forw);
 void SamOEMhash( uchar *data, const uchar *key, int val);
 void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw);
 
@@ -1102,6 +1102,57 @@ BOOL cred_init_db(void);
 /*The following definitions come from  netlogond/netlogond.c  */
 
 msrpc_service_fns *get_service_fns(void);
+
+/*The following definitions come from  netlogond/srv_netlogon_nt.c  */
+
+uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
+				const UNISTR2 *uni_logon_client,
+				const DOM_CHAL *clnt_chal,
+				DOM_CHAL *srv_chal,
+				uint16 remote_pid	) ;
+uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name, 
+				uint32 function_code,
+				uint32 query_level,
+				uint32 switch_value,
+				uint32 *reply_switch_value,
+				NETLOGON_INFO *logon_info);
+uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
+				   uint32 function_code,
+				   BUFFER2 *uni_trust_dom_name);
+uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
+			     const DOM_CHAL *clnt_chal,
+			     DOM_CHAL *srv_chal,
+			     uint16 remote_pid);
+uint32 _net_auth_2(const DOM_LOG_INFO *clnt_id,
+				 const DOM_CHAL *clnt_chal,
+				 const NEG_FLAGS *clnt_flgs,
+				 DOM_CHAL *srv_chal,
+				 NEG_FLAGS *srv_flgs,
+				 uint16 remote_pid);
+uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
+			    const uint8 pwd[16],
+			    DOM_CRED *srv_cred,
+			    uint16 remote_pid);
+uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
+				    uint16 validation_level,
+				    DOM_CRED *srv_creds,
+				    uint16 *switch_value,
+				    NET_USER_INFO_3 *user,
+				    uint32 *auth_resp,
+				    uint16 remote_pid);
+uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
+			     DOM_CRED *srv_creds,
+			     uint16 remote_pid);
+uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
+			   const UNISTR2 *uni_cli_name,
+			   uint32 database_id,
+			   uint32 restart_state,
+			   uint32 *sync_context,
+			   uint32 max_size,
+			   uint32 *num_deltas,
+			   uint32 *num_deltas2,
+			   SAM_DELTA_HDR *hdr_deltas,
+			   SAM_DELTA_CTR *deltas);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 

@@ -139,18 +139,18 @@ BOOL get_any_dc_name(const char *domain, char *srv_name);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
-char *credstr(uchar *cred);
+char *credstr(const uchar *cred);
 void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
 		      uchar session_key[8]);
 void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred);
-int cred_assert(DOM_CHAL *cred, uchar session_key[8], DOM_CHAL *stored_cred,
-		UTIME timestamp);
+int cred_assert(const DOM_CHAL *cred, uchar session_key[8],
+		DOM_CHAL *stored_cred, UTIME timestamp);
 BOOL clnt_deal_with_creds(uchar sess_key[8],
 			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
 BOOL deal_with_creds(uchar sess_key[8],
 		     DOM_CRED *sto_clnt_cred, 
-		     DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
+		     const DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
 
 /*The following definitions come from  libsmb/nterr.c  */
 
@@ -189,7 +189,7 @@ void D_P16(const uchar *p14, const uchar *in, uchar *out);
 void E_old_pw_hash( const uchar *p14, const uchar *in, uchar *out);
 void cred_hash1(uchar *out,uchar *in,uchar *key);
 void cred_hash2(uchar *out,uchar *in,uchar *key);
-void cred_hash3(uchar *out,uchar *in,uchar *key, int forw);
+void cred_hash3(uchar *out, const uchar *in,uchar *key, int forw);
 void SamOEMhash( uchar *data, const uchar *key, int val);
 void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw);
 

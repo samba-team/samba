@@ -6,6 +6,7 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 mandir=@mandir@
+DESTDIR=
 
 LIBS=@LIBS@
 CC=@CC@
@@ -36,6 +37,7 @@ LIBDIR = @libdir@
 VARDIR = $(BASEDIR)/var
 MANDIR = @mandir@
 SYSCONFDIR = @sysconfdir@
+PRIVATEDIR = $(BASEDIR)/private
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -283,7 +285,7 @@ WINREGD_OBJ1 = winregd/winregd.o \
 
 NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		netlogond/creds_db.o \
-		netlogond/srv_netlog_db.o \
+		netlogond/srv_netlogon_nt.o \
 		rpc_server/srv_netlog.o \
 		rpc_server/srv_pipe_netsec.o \
 		rpc_server/srv_lookup.o \
@@ -815,28 +817,32 @@ bin/smbsh: $(SAMBALIB) $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SMBSH_OBJ) $(SAMBALIB) $(LIBS)
 
-install: install-libs installbin installman installscripts installcp installswat
+install: installdirs \
+	install-libs installbin install-sbin \
+	installman installscripts installcp installswat
 
 installdirs:
 	@for p in $(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR) \
 		$(CODEPAGEDIR); do \
-	    $(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $$p; \
+	    $(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$$p; \
 	done
 
-install-libs: all installdirs
+install-libs: $(SHARED_LIBS) installdirs
 	@list='$(SHARED_LIBS)'; for p in $$list; do \
 	  echo Installing $$p in $(LIBDIR) using libtool; \
-	  $(LIBTOOL) --mode=install $(INSTALL) $$p $(LIBDIR); \
+	  $(LIBTOOL) --mode=install $(INSTALL) $$p $(DESTDIR)$(LIBDIR); \
 	done
 
 installbin: all installdirs
 	@list='$(PROGS)'; for p in $$list; do \
 	  echo Installing $$p in $(BINDIR) using libtool; \
-	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(BINDIR); \
+	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(BINDIR); \
 	done
+
+install-sbin: all installdirs
 	@list='$(SPROGS)'; for p in $$list; do \
 	  echo Installing $$p in $(SBINDIR) using libtool; \
-	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(SBINDIR); \
+	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(SBINDIR); \
 	done
 
 installscripts: installdirs

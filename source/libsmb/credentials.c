@@ -28,7 +28,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 represent a credential as a string
 ****************************************************************************/
-char *credstr(uchar *cred)
+char *credstr(const uchar *cred)
 {
 	static fstring buf;
 	slprintf(buf, sizeof(buf) - 1, "%02X%02X%02X%02X%02X%02X%02X%02X",
@@ -115,8 +115,8 @@ Output:
       returns 1 if computed credential matches received credential
       returns 0 otherwise
 ****************************************************************************/
-int cred_assert(DOM_CHAL *cred, uchar session_key[8], DOM_CHAL *stored_cred,
-		UTIME timestamp)
+int cred_assert(const DOM_CHAL *cred, uchar session_key[8],
+		DOM_CHAL *stored_cred, UTIME timestamp)
 {
 	DOM_CHAL cred2;
 
@@ -179,7 +179,7 @@ BOOL clnt_deal_with_creds(uchar sess_key[8],
 ****************************************************************************/
 BOOL deal_with_creds(uchar sess_key[8],
 		     DOM_CRED *sto_clnt_cred, 
-		     DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred)
+		     const DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred)
 {
 	UTIME new_clnt_time;
 	uint32 new_cred;

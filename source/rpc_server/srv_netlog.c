@@ -96,7 +96,7 @@ static void api_net_auth_2( rpcsrv_struct *p,
 
 	/* grab the challenge... */
 	net_io_q_auth_2("", &q_a, data, 0);
-	r_a.status = _net_auth2(&q_a.clnt_id,
+	r_a.status = _net_auth_2(&q_a.clnt_id,
 					&q_a.clnt_chal,
 					&q_a.clnt_flgs,
 					&r_a.srv_chal,
@@ -124,7 +124,7 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 	net_io_q_srv_pwset("", &q_a, data, 0);
 	r_s.status = _net_srv_pwset(&q_a.clnt_id,
 					    q_a.pwd,
-					    r_s.srv_cred,
+					    &r_s.srv_cred,
 					    p->remote_pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
@@ -162,6 +162,37 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	net_io_r_sam_logoff("", &r_s, rdata, 0);
 }
 
+static uint32 net_update_creds(uint32 remote_pid, struct dcinfo *dc,
+				const UNISTR2 *uni_cli_name,
+				const DOM_CRED *cli_creds,
+				const DOM_CRED *ret_creds,
+				DOM_CRED *srv_creds)
+{
+	fstring trust_name;
+
+	unistr2_to_ascii(trust_name, uni_cli_name, sizeof(trust_name)-1);
+
+	if (!cred_get(remote_pid, global_sam_name, trust_name, dc))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* checks and updates credentials.  creates reply credentials */
+	if (!deal_with_creds(dc->sess_key, &dc->clnt_cred, cli_creds, srv_creds))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	memcpy(&dc->srv_cred, &dc->clnt_cred, sizeof(dc->clnt_cred));
+
+	if (!cred_store(remote_pid, global_sam_name, trust_name, dc))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
 /*************************************************************************
  api_net_sam_sync
  *************************************************************************/
@@ -172,42 +203,49 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 	NET_Q_SAM_SYNC q_s;
 	NET_R_SAM_SYNC r_s;
 	DOM_CRED srv_creds;
-	uint32 sync_context;
-	uint32 ptr_deltas;
 	uint32 num_deltas;
-	uint32 ptr_deltas2;
 	uint32 num_deltas2;
 	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
 	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
 	uint32 status;
 
+	struct dcinfo dc;
+	ZERO_STRUCT(dc);
+	ZERO_STRUCT(srv_creds);
+	
 	/* grab the challenge... */
 	net_io_q_sam_sync("", &q_s, data, 0);
-	status = _net_sam_sync(&q_s.uni_srv_name,
-			   	     &q_s.uni_cli_name,
+
+	status = net_update_creds(p->remote_pid,
+	                             &dc, &q_s.uni_cli_name,
 			   	     &q_s.cli_creds,
 			   	     &q_s.ret_creds,
+				     &srv_creds);
+
+	if (status == 0x0)
+	{
+		status = _net_sam_sync(&q_s.uni_srv_name,
+			   	     &q_s.uni_cli_name,
 			   	     q_s.database_id,
 			   	     q_s.restart_state,
-			   	     q_s.sync_context,
+			   	     &q_s.sync_context,
 			   	     q_s.max_size,
-				     &srv_creds,
-			   	     &sync_context,
 			   	     &num_deltas,
 			   	     &num_deltas2,
-			   	     &hdr_deltas,
-			   	     &deltas,
-				     p->remote_pid); /* strikerXXXX have to pass this parameter */
+			   	     hdr_deltas,
+			   	     deltas); 
+	}
+
 	make_r_sam_sync(&r_s, &srv_creds,
-			   	    sync_context,
+			   	    q_s.sync_context,
 			   	    num_deltas,
 			   	    num_deltas2,
-			   	    &hdr_deltas,
-			   	    &deltas,
+			   	    hdr_deltas,
+			   	    deltas,
 				    status);
 
 	/* store the response in the SMB stream */
-	net_io_r_sam_sync("", sess_key, &r_s, rdata, 0);
+	net_io_r_sam_sync("", dc.sess_key, &r_s, rdata, 0);
 }
 
 /*************************************************************************
@@ -236,9 +274,10 @@ static void api_net_sam_logon( rpcsrv_struct *p,
 					&srv_creds,
 					&switch_value,
 					&info_3,
-					&auth_response,
-					p->remote_pid); /* strikerXXXX have to pass this parameter */
-	make_r_sam_logon(&r_s, &srv_creds, switch_value, &info_3, auth_response);
+					&auth_resp,
+					p->remote_pid); 
+	make_r_sam_logon(&r_s, &srv_creds, switch_value, &info_3,
+	                 auth_resp, status);
 
 	/* store the response in the SMB stream */
 	net_io_r_sam_logon("", &r_s, rdata, 0);

@@ -1264,21 +1264,21 @@ BOOL make_r_sam_logon(NET_R_SAM_LOGON *r_s,
 	if (status == NT_STATUS_NOPROBLEMO)
 	{
 	*/
-		/* XXXX maybe we want to say 'no', reject the client's credentials */
-		r_s->buffer_creds = 1; /* yes, we have valid server credentials */
-		memcpy(&(r_s->srv_creds), srv_cred, sizeof(r_s->srv_creds));
+
+	r_s->buffer_creds = 1;
 
 	if (status == NT_STATUS_NOPROBLEMO)
 	{
+		memcpy(&(r_s->srv_creds), srv_creds, sizeof(r_s->srv_creds));
 		/* store the user information, if there is any. */
 		r_s->user = user_info;
 		if (user_info != NULL && user_info->ptr_user_info != 0)
 		{
-			r_s.switch_value = 3; /* indicates type of validation user info */
+			r_s->switch_value = 3; /* indicates type of validation user info */
 		}
 		else
 		{
-			r_s.switch_value = 0; /* indicates no info */
+			r_s->switch_value = 0; /* indicates no info */
 		}
 	}
 	else

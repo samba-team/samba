@@ -148,12 +148,11 @@ BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l,
 				uint32 query_level,
 				uint32 switch_value);
 BOOL net_io_q_logon_ctrl2(char *desc,  NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth);
-BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
-				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
-				uint32 tc_status, char *trusted_domain_name);
+BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, 
+				uint32 switch_value,
+				NETLOGON_INFO *logon_info,
+				uint32 status);
 BOOL net_io_r_logon_ctrl2(char *desc,  NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth);
-BOOL make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
-			uint32 num_doms, char **dom_name);
 BOOL net_io_r_trust_dom(char *desc,  NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth);
 BOOL net_io_q_trust_dom(char *desc,  NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, int depth);
 BOOL make_q_req_chal(NET_Q_REQ_CHAL *q_c,
@@ -238,8 +237,17 @@ BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 	DOM_SID *dom_sid,
 	char *other_sids);
 BOOL net_io_q_sam_logon(char *desc,  NET_Q_SAM_LOGON *q_l, prs_struct *ps, int depth);
+BOOL make_r_sam_logon(NET_R_SAM_LOGON *r_s, 
+			    const DOM_CRED *srv_creds,
+			    uint16 switch_value,
+			    NET_USER_INFO_3 *user_info,
+			    uint32 auth_resp,
+			    uint32 status);
 BOOL net_io_r_sam_logon(char *desc,  NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth);
 BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth);
+BOOL make_r_sam_logoff(NET_R_SAM_LOGOFF *r_s, 
+			    const DOM_CRED *srv_cred,
+			    uint32 status);
 BOOL net_io_r_sam_logoff(char *desc,  NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth);
 BOOL make_q_sam_sync(NET_Q_SAM_SYNC *q_s,
 				const char *srv_name,
@@ -251,6 +259,14 @@ BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
 			   char *full_name, uint32 user_rid, uint32 group_rid,
 			   char *home_dir, char *dir_drive, char *logon_script,
 			   char *acct_desc, uint32 acb_info, char *profile);
+BOOL make_r_sam_sync(NET_R_SAM_SYNC *r_s, 
+			   const DOM_CRED *srv_cred,
+			   uint32 sync_context,
+			   uint32 num_deltas,
+			   uint32 num_deltas2,
+			   SAM_DELTA_HDR *hdr_deltas,
+			   SAM_DELTA_CTR *deltas,
+			   uint32 status);
 BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 				NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth);
 

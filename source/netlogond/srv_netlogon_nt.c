@@ -23,11 +23,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if 0
-
-void gen_next_creds( struct ntdom_info *nt, DOM_CRED *new_clnt_cred);
-#endif
-
 /* strikerXXXX Luke, do I need all these? */
 #include "includes.h"
 #include "nterr.h"
@@ -255,35 +250,11 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 /*************************************************************************
  _net_req_chal
  *************************************************************************/
-/*
-uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
-				DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
-
-typedef struct net_q_req_chal_info
-{
-    uint32  undoc_buffer; /* undocumented buffer pointer */
-    UNISTR2 uni_logon_srv; /* logon server unicode string */
-    UNISTR2 uni_logon_clnt; /* logon client unicode string */
-    DOM_CHAL clnt_chal; /* client challenge */
-
-} NET_Q_REQ_CHAL;
-
-typedef struct net_r_req_chal_info
-{
-    DOM_CHAL srv_chal; /* server challenge */
-
-  uint32 status; /* return code */
-
-} NET_R_REQ_CHAL;
-
-static void net_reply_req_chal(NET_Q_REQ_CHAL *q_c, prs_struct *rdata,
-					DOM_CHAL *srv_chal, uint32 srv_time)
-*/
 uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
-				const UNISTR *uni_logon_client,
+				const UNISTR2 *uni_logon_client,
 				const DOM_CHAL *clnt_chal,
-				DOM_CHAL *server_challenge,
-				uint16 remote_pid	) /* strikerXXXX added this parameter */
+				DOM_CHAL *srv_chal,
+				uint16 remote_pid	) 
 {
 	fstring trust_acct;
 	fstring trust_name;
@@ -292,7 +263,7 @@ uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
 
 	ZERO_STRUCT(dc);
 
-	unistr2_to_ascii(trust_acct, uni_logon_clnt, sizeof(trust_acct)-1);
+	unistr2_to_ascii(trust_acct, uni_logon_client, sizeof(trust_acct)-1);
 
 	fstrcpy(trust_name, trust_acct);
 	strlower(trust_name);
@@ -323,7 +294,7 @@ uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
 	cred_session_key(&(dc.clnt_chal), &(dc.srv_chal),
 				 (char *)dc.md4pw, dc.sess_key);
 
-	if (!cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -338,40 +309,62 @@ uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
 #define ERROR_NO_SUCH_DOMAIN   0x54b
 #define ERROR_NO_LOGON_SERVERS 0x51f
 
+/*******************************************************************
+creates a NETLOGON_INFO_3 structure.
+********************************************************************/
+static BOOL make_netinfo_3(NETLOGON_INFO_3 *info, uint32 flags, uint32 logon_attempts)
+{
+	info->flags          = flags;
+	info->logon_attempts = logon_attempts;
+	info->reserved_1     = 0x0;
+	info->reserved_2     = 0x0;
+	info->reserved_3     = 0x0;
+	info->reserved_4     = 0x0;
+	info->reserved_5     = 0x0;
+
+	return True;
+}
+
+
+/*******************************************************************
+creates a NETLOGON_INFO_1 structure.
+********************************************************************/
+static BOOL make_netinfo_1(NETLOGON_INFO_1 *info, uint32 flags, uint32 pdc_status)
+{
+	info->flags      = flags;
+	info->pdc_status = pdc_status;
+
+	return True;
+}
+
+/*******************************************************************
+creates a NETLOGON_INFO_2 structure.
+********************************************************************/
+static BOOL make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
+				uint32 tc_status, char *trusted_dc_name)
+{
+	int len_dc_name = strlen(trusted_dc_name);
+	info->flags      = flags;
+	info->pdc_status = pdc_status;
+	info->ptr_trusted_dc_name = 1;
+	info->tc_status  = tc_status;
+
+	if (trusted_dc_name != NULL)
+	{
+		make_unistr2(&(info->uni_trusted_dc_name), trusted_dc_name, len_dc_name+1);
+	}
+	else
+	{
+		make_unistr2(&(info->uni_trusted_dc_name), "", 1);
+	}
+
+	return True;
+}
+
 /*************************************************************************
  _net_logon_ctrl2
  *************************************************************************/
-/*
-BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level);
-
-typedef struct net_q_logon_ctrl2_info
-{
-	uint32       ptr;             /* undocumented buffer pointer */
-	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
-	
-	uint32       function_code; /* 0x1 */
-	uint32       query_level;   /* 0x1, 0x3 */
-	uint32       switch_value;  /* 0x1 */
-
-} NET_Q_LOGON_CTRL2;
-
-typedef struct net_r_logon_ctrl2_info
-{
-	uint32       switch_value;  /* 0x1, 0x3 */
-	uint32       ptr;
-
-	NETLOGON_INFO logon;
-
-	uint32 status; /* return code */
-
-} NET_R_LOGON_CTRL2;
-
-
-uint32 _net_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, prs_struct *rdata,
-			uint32 flags, uint32 pdc_status, uint32 logon_attempts,
-			uint32 tc_status, char *trust_domain_name)
-*/
-uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name, /* server name, starting with two '\'s */
+uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name, 
 				uint32 function_code,
 				uint32 query_level,
 				uint32 switch_value,
@@ -380,7 +373,7 @@ uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name, /* server name, starting
 {
 	/* lkclXXXX - guess what - absolutely no idea what these are! */
 	uint32 flags = 0x0;
-	uint32 pdc_connection_status = 0x0;
+	uint32 pdc_status = 0x0;
 	uint32 logon_attempts = 0x0;
 	uint32 tc_status = ERROR_NO_LOGON_SERVERS;
 	char *trusted_domain = "test_domain";
@@ -391,18 +384,19 @@ uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name, /* server name, starting
 	{
 		case 1:
 		{
-			make_netinfo_1(&(logon_info->info1), flags, pdc_status);	
+			make_netinfo_1(&logon_info->info1, flags, pdc_status);	
 			break;
 		}
 		case 2:
 		{
-			make_netinfo_2(&(logon_info->info2), flags, pdc_status,
-			               tc_status, trusted_domain_name);	
+			make_netinfo_2(&logon_info->info2, flags, pdc_status,
+			               tc_status, trusted_domain);	
 			break;
 		}
 		case 3:
 		{
-			make_netinfo_3(&(logon_info->info3), flags, logon_attempts);	
+			make_netinfo_3(&logon_info->info3, flags,
+			                logon_attempts);	
 			break;
 		}
 		default:
@@ -419,38 +413,16 @@ uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name, /* server name, starting
 /*************************************************************************
  _net_trust_dom_list
  *************************************************************************/
-/*
-typedef struct net_q_trust_dom_info
-{
-	uint32       ptr;             /* undocumented buffer pointer */
-	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
-	
-	uint32       function_code; /* 0x31 */
-
-} NET_Q_TRUST_DOM_LIST;
-
-typedef struct net_r_trust_dom_info
-{
-	BUFFER2 uni_trust_dom_name;
-
-	uint32 status; /* return code */
-
-} NET_R_TRUST_DOM_LIST;
-
-static void net_reply_trust_dom_list(NET_Q_TRUST_DOM_LIST *q_t, prs_struct *rdata,
-			uint32 num_trust_domains, char **trust_domain_name)
-*/
-uint32 _net_reply_trust_dom_list(const UNISTR2 *uni_server_name,
-					   uint32 function_code,
-					   BUFFER2 *uni_trust_dom_name)
+uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
+				   uint32 function_code,
+				   BUFFER2 *uni_trust_dom_name)
 {
 	char **doms = NULL;
 	uint32 num_doms = 0;
 
 	enumtrustdoms(&doms, &num_doms);
 
-	make_buffer2_multi(uni_trust_dom_name,
-			dom_name, num_doms);
+	make_buffer2_multi(uni_trust_dom_name, doms, num_doms);
 
 	if (num_doms == 0)
 	{
@@ -461,36 +433,16 @@ uint32 _net_reply_trust_dom_list(const UNISTR2 *uni_server_name,
 	
 	free_char_array(num_doms, doms);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*************************************************************************
  _net_auth
  *************************************************************************/
-/*
-typedef struct net_q_auth_info
-{
-    DOM_LOG_INFO clnt_id; /* client identification info */
-    DOM_CHAL clnt_chal;     /* client-calculated credentials */
-
-
-} NET_Q_AUTH;
-
-typedef struct net_r_auth_info
-{
-    DOM_CHAL srv_chal;     /* server-calculated credentials */
-
-  uint32 status; /* return code */
-
-} NET_R_AUTH;
-
-static void net_reply_auth(NET_Q_AUTH *q_a, prs_struct *rdata,
-				DOM_CHAL *resp_cred, int status)
-*/
 uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
-		     const DOM_CHAL *clnt_chal,
-		     DOM_CHAL *srv_chal,
-		     uint16 remote_pid) /* strikerXXXX added this parameter */
+			     const DOM_CHAL *clnt_chal,
+			     DOM_CHAL *srv_chal,
+			     uint16 remote_pid)
 {
 	UTIME srv_time;
 	fstring trust_name;
@@ -500,7 +452,7 @@ uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
 
 	srv_time.time = 0;
 
-	unistr2_to_ascii(trust_name, clnt_id->uni_comp_name,
+	unistr2_to_ascii(trust_name, &clnt_id->uni_comp_name,
 	                             sizeof(trust_name)-1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
@@ -529,50 +481,15 @@ uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
 	return NT_STATUS_NOPROBLEMO;
 }
 
-	/* set up the LSA AUTH 2 response */
-
-	make_net_r_auth(&r_a, resp_cred, status);
-
-
-}
-
 /*************************************************************************
  _net_auth_2
  *************************************************************************/
-/*
-uint32 cli_net_auth2(const char *srv_name,
-				const char *trust_acct, 
-				const char *acct_name, 
-				uint16 sec_chan, 
-				uint32 *neg_flags, DOM_CHAL *srv_chal);
-
-typedef struct net_q_auth2_info
-{
-    DOM_LOG_INFO clnt_id; /* client identification info */
-    DOM_CHAL clnt_chal;     /* client-calculated credentials */
-
-    NEG_FLAGS clnt_flgs; /* usually 0x0000 01ff */
-
-} NET_Q_AUTH_2;
-
-typedef struct net_r_auth2_info
-{
-    DOM_CHAL srv_chal;     /* server-calculated credentials */
-    NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
-
-  uint32 status; /* return code */
-
-} NET_R_AUTH_2;
-
-static void net_reply_auth_2(NET_Q_AUTH_2 *q_a, prs_struct *rdata,
-				DOM_CHAL *resp_cred, int status)
-*/
 uint32 _net_auth_2(const DOM_LOG_INFO *clnt_id,
-			 const DOM_CHAL *clnt_chal,
-			 const NEG_FLAGS *clnt_flgs,
-			 DOM_CHAL *srv_chal,
-			 NEG_FLAGS *srv_flgs,
-			 uint16 remote_pid) /* strikerXXXX added this parameter */
+				 const DOM_CHAL *clnt_chal,
+				 const NEG_FLAGS *clnt_flgs,
+				 DOM_CHAL *srv_chal,
+				 NEG_FLAGS *srv_flgs,
+				 uint16 remote_pid)
 {
 	UTIME srv_time;
 	fstring trust_name;
@@ -638,35 +555,10 @@ uint32 _net_auth_2(const DOM_LOG_INFO *clnt_id,
 /*************************************************************************
  _net_srv_pwset
  *************************************************************************/
-/*
-BOOL cli_net_srv_pwset(const char* srv_name,
-				const char* myhostname,
-				const char* trust_acct,
-				uint8 hashed_trust_pwd[16],
-				uint16 sec_chan_type);
-
-typedef struct net_q_srv_pwset_info
-{
-    DOM_CLNT_INFO clnt_id; /* client identification/authentication info */
-    uint8 pwd[16]; /* new password - undocumented. */
-
-} NET_Q_SRV_PWSET;
-    
-typedef struct net_r_srv_pwset_info
-{
-    DOM_CRED srv_cred;     /* server-calculated credentials */
-
-  uint32 status; /* return code */
-
-} NET_R_SRV_PWSET;
-
-static void net_reply_srv_pwset(NET_Q_SRV_PWSET *q_s, prs_struct *rdata,
-				DOM_CRED *srv_cred, int status)
-*/
 uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
-			    const uint8 *pwd,
+			    const uint8 pwd[16],
 			    DOM_CRED *srv_cred,
-			    uint16 remote_pid) /* strikerXXXX added this parameter */
+			    uint16 remote_pid)
 {
 	pstring trust_acct;
 	struct smb_passwd *smb_pass;
@@ -750,43 +642,13 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 /*************************************************************************
  _net_sam_logon
  *************************************************************************/
-/*
-uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
-				NET_ID_INFO_CTR *ctr, 
-				NET_USER_INFO_3 *user_info3);
-
-typedef struct net_q_sam_logon_info
-{
-	DOM_SAM_INFO sam_id;
-	uint16          validation_level;
-
-} NET_Q_SAM_LOGON;
-
-typedef struct net_r_sam_logon_info
-{
-    uint32 buffer_creds; /* undocumented buffer pointer */
-    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
-    
-	uint16 switch_value; /* 3 - indicates type of USER INFO */
-    NET_USER_INFO_3 *user;
-
-    uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
-
-  uint32 status; /* return code */
-
-} NET_R_SAM_LOGON;
-
-static void net_reply_sam_logon(NET_Q_SAM_LOGON *q_s, prs_struct *rdata,
-				DOM_CRED *srv_cred, NET_USER_INFO_3 *user_info,
-				uint32 status)
-*/
 uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
-			    uint16 validation_level,
-			    DOM_CRED *srv_creds,
-			    uint16 *switch_value,
-			    NET_USER_INFO_3 *user,
-			    uint32 *auth_resp,
-			    uint16 remote_pid) /* strikerXXXX added this parameter */
+				    uint16 validation_level,
+				    DOM_CRED *srv_creds,
+				    uint16 *switch_value,
+				    NET_USER_INFO_3 *user,
+				    uint32 *auth_resp,
+				    uint16 remote_pid)
 {
 	struct sam_passwd *sam_pass = NULL;
 	UNISTR2 *uni_samusr = NULL;
@@ -835,7 +697,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	if (!deal_with_creds(dc.sess_key, &dc.clnt_cred, 
 	                     &(sam_id->client.cred), srv_creds))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 	
 	memcpy(&dc.srv_cred, &dc.clnt_cred, sizeof(dc.clnt_cred));
@@ -996,7 +858,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	/* return the profile plus other bits :-) */
 
 	/* set up pointer indicating user/password failed to be found */
-	usr_info->ptr_user_info = 0;
+	user->ptr_user_info = 0;
 
 	if (!getusergroupsntnam(nt_username, &grp_mem, &num_gids))
 	{
@@ -1005,7 +867,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 
 	num_gids = make_dom_gids(grp_mem, num_gids, &gids);
 
-	make_net_user_info3(usr_info,
+	make_net_user_info3(user,
 		&logon_time,
 		&logoff_time,
 		&kickoff_time,
@@ -1056,34 +918,10 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 /*************************************************************************
  _net_sam_logoff
  *************************************************************************/
-/*
-BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
-				NET_ID_INFO_CTR *ctr);
-
-typedef struct net_q_sam_logoff_info
-{
-    DOM_SAM_INFO sam_id;
-
-} NET_Q_SAM_LOGOFF;
-
-typedef struct net_r_sam_logoff_info
-{
-    uint32 buffer_creds; /* undocumented buffer pointer */
-    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
-    
-  uint32 status; /* return code */
-
-} NET_R_SAM_LOGOFF;
-
-static void net_reply_sam_logoff(NET_Q_SAM_LOGOFF *q_s, prs_struct *rdata,
-				DOM_CRED *srv_cred, 
-				uint32 status)
-*/
 uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
 			     DOM_CRED *srv_creds,
-			     uint16 remote_pid) /* strikerXXXX added this parameter */
+			     uint16 remote_pid)
 {
-	DOM_CRED srv_cred;
 	fstring trust_name;
 	struct dcinfo dc;
 
@@ -1098,8 +936,12 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
-	deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
-	                &(sam_id->client.cred), srv_cred);
+	if (!deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
+	                &(sam_id->client.cred), srv_creds))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
@@ -1113,96 +955,26 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
 /*************************************************************************
  _net_sam_sync
  *************************************************************************/
-/*
-BOOL cli_net_sam_sync( const char* srv_name, const char* myhostname,
-				uint32 database_id,
-				uint32 *num_deltas,
-				SAM_DELTA_HDR *hdr_deltas,
-				SAM_DELTA_CTR *deltas);
-
-typedef struct net_q_sam_sync_info
-{
-	UNISTR2 uni_srv_name; /* \\PDC */
-	UNISTR2 uni_cli_name; /* BDC */
-	DOM_CRED cli_creds;
-	DOM_CRED ret_creds;
-
-	uint32 database_id;
-	uint32 restart_state;
-	uint32 sync_context;
-
-	uint32 max_size;       /* preferred maximum length */
-
-} NET_Q_SAM_SYNC;
-
-typedef struct net_r_sam_sync_info
-{
-	DOM_CRED srv_creds;
-
-	uint32 sync_context;
-
-	uint32 ptr_deltas;
-	uint32 num_deltas;
-	uint32 ptr_deltas2;
-	uint32 num_deltas2;
-
-	SAM_DELTA_HDR *hdr_deltas;
-	SAM_DELTA_CTR *deltas;
-
-	uint32 status;
-
-} NET_R_SAM_SYNC;
-
-static void net_reply_sam_sync(NET_Q_SAM_SYNC *q_s, prs_struct *rdata,
-				uint8 sess_key[16],
-				DOM_CRED *srv_creds, uint32 status)
-*/
 uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 			   const UNISTR2 *uni_cli_name,
-			   const DOM_CRED *cli_creds,
-			   const DOM_CRED *ret_creds,
 			   uint32 database_id,
 			   uint32 restart_state,
-			   uint32 sync_context,
-			   uint32 max_size,
-			   DOM_CRED *srv_creds,
 			   uint32 *sync_context,
+			   uint32 max_size,
 			   uint32 *num_deltas,
 			   uint32 *num_deltas2,
 			   SAM_DELTA_HDR *hdr_deltas,
-			   SAM_DELTA_CTR *deltas,
-			   uint16 remote_pid) /* strikerXXXX added this parameter */
+			   SAM_DELTA_CTR *deltas)
 {
 	fstring trust_name;
-	struct dcinfo dc;
 
 	int i = 0;
 	struct sam_passwd *pwd;
 	void *vp;
 
-	ZERO_STRUCT(dc);
-
 	unistr2_to_ascii(trust_name, uni_cli_name, sizeof(trust_name)-1);
 
-	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
-	{
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds(dc.sess_key, &(dc.clnt_cred), cli_creds, srv_creds))
-	{
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
-
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
-	{
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	*sync_context = 1;
+	(*sync_context) = 1;
 
 	if ((vp = startsmbpwent(False)) == NULL)
 	{
@@ -1230,5 +1002,4 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 
 	return NT_STATUS_NOPROBLEMO;
 }
-
 

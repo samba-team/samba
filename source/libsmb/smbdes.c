@@ -349,7 +349,7 @@ void cred_hash2(uchar *out,uchar *in,uchar *key)
 	smbhash(out, buf, key2, 1);
 }
 
-void cred_hash3(uchar *out,uchar *in,uchar *key, int forw)
+void cred_hash3(uchar *out, const uchar *in,uchar *key, int forw)
 {
         static uchar key2[8];
 
