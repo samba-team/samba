@@ -44,6 +44,8 @@ struct dcerpc_pipe *dcerpc_pipe_init(void)
 	p->auth_info = NULL;
 	p->ntlmssp_state = NULL;
 	p->flags = 0;
+	p->srv_max_xmit_frag = 0;
+	p->srv_max_recv_frag = 0;
 
 	return p;
 }
@@ -360,14 +362,16 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	if (pkt.ptype != DCERPC_PKT_BIND_ACK ||
+	if ((pkt.ptype != DCERPC_PKT_BIND_ACK && pkt.ptype != DCERPC_PKT_ALTER_ACK) ||
 	    pkt.u.bind_ack.num_results == 0 ||
 	    pkt.u.bind_ack.ctx_list[0].result != 0) {
 		status = NT_STATUS_UNSUCCESSFUL;
 	}
 
-	p->srv_max_xmit_frag = pkt.u.bind_ack.max_xmit_frag;
-	p->srv_max_recv_frag = pkt.u.bind_ack.max_recv_frag;
+	if (pkt.ptype != DCERPC_PKT_ALTER_ACK) {
+		p->srv_max_xmit_frag = pkt.u.bind_ack.max_xmit_frag;
+		p->srv_max_recv_frag = pkt.u.bind_ack.max_recv_frag;
+	}
 
 	/* the bind_ack might contain a reply set of credentials */
 	if (p->auth_info && pkt.u.bind_ack.auth_info.length) {
@@ -526,6 +530,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	}
 
 	if (pkt.ptype == DCERPC_PKT_FAULT) {
+		p->last_fault_code = pkt.u.fault.status;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
@@ -557,6 +562,11 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 		if (pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
 			/* start of another packet!? */
 			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		if (pkt.ptype == DCERPC_PKT_FAULT) {
+			p->last_fault_code = pkt.u.fault.status;
+			return NT_STATUS_NET_WRITE_FAULT;
 		}
 
 		if (pkt.ptype != DCERPC_PKT_RESPONSE) {
