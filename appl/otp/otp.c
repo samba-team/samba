@@ -81,7 +81,7 @@ usage (void)
 static int
 renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
 {
-  OtpContext oldctx, newctx, *ctx;
+  OtpContext newctx, *ctx;
   char prompt[128];
   char pw[64];
   void *dbm;
@@ -103,7 +103,9 @@ renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
   if (des_read_pw_string (pw, sizeof(pw), prompt, 0) == 0 &&
       otp_parse (newctx.key, pw, alg) == 0) {
     ctx = &newctx;
-  }
+    ret = 0;
+  } else
+    ret = 1;
 
   dbm = otp_db_open ();
   if (dbm == NULL) {
@@ -261,7 +263,6 @@ static int
 list_otps (int argc, char **argv, char *user)
 {
   void *db;
-  OtpContext ctx;
   struct passwd *pw;
 
   if (argc != 0) 
@@ -292,7 +293,6 @@ main (int argc, char **argv)
   int uid = getuid();
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
   char *user = NULL;
-  struct passwd *pwd;
 
   prog = argv[0];
 
