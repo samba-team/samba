@@ -126,7 +126,11 @@ BOOL add_junction_entry(struct junction_map* junction)
   DEBUG(10,("Storing key: .%s:%s.\n",tlk->service_name,tlk->volume_name));
   DEBUG(10,("Data: referral_count : %u\n",tld->referral_count));
   for(i=0;i<tld->referral_count;i++)
-    DEBUG(10,("Path %d: %s, proximity: %u, ttl: %u\n",junction->referral_list[i].alternate_path));
+     {
+	struct referral* ref = &(junction->referral_list[i]);
+    	DEBUG(10,("Path %d: %s, proximity: %u, ttl: %u\n",i+1,
+		  ref->alternate_path,ref->proximity,ref->ttl));
+     }
 
   if( tdb_store(msdfs_map,key,data,TDB_REPLACE) != 0)
     {
