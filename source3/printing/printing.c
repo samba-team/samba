@@ -323,8 +323,10 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
   char *tokarr[LPRNG_MAXTOK];
   char *cptr;
   int  num_tok = 0;
+  pstring line2;
 
-  tokarr[0] = strtok(line," \t");
+  pstrcpy(line2,line);
+  tokarr[0] = strtok(line2," \t");
   num_tok++;
   while (((tokarr[num_tok] = strtok(NULL," \t")) != NULL)
          && (num_tok < LPRNG_MAXTOK)) {

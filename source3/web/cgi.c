@@ -411,7 +411,7 @@ void cgi_setup(char *rootdir, int auth_required)
 		char *x;
 
 		/* Save the users name if available */
-		if (x = getenv("REMOTE_USER")) {
+		if ((x = getenv("REMOTE_USER"))!=NULL) {
 			C_user = strdup(x);
 		} else {
 			C_user = "";
