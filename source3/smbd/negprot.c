@@ -184,6 +184,7 @@ static int negprot_spnego(char *p)
 	safe_strcpy((char *)guid, global_myname(), sizeof(guid)-1);
 
 #ifdef DEVELOPER
+	/* valgrind fixer... */
 	{
 		size_t sl = strlen(guid);
 		if (sizeof(guid)-sl)
