@@ -530,7 +530,6 @@ void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out);
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int forw);
-void NTLMSSPcalc( unsigned char hash[258], unsigned char *data, int len);
 void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 
 /*The following definitions come from  libsmb/smbencrypt.c  */

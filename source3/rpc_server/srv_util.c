@@ -154,6 +154,33 @@ int make_dom_gids(char *gids_str, DOM_GID **ppgids)
   return count;
 }
 
+static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
+{
+    unsigned char *hash = p->ntlmssp_hash;
+    unsigned char index_i = hash[256];
+    unsigned char index_j = hash[257];
+    int ind;
+
+    for( ind = 0; ind < len; ind++)
+    {
+        unsigned char tc;
+        unsigned char t;
+
+        index_i++;
+        index_j += hash[index_i];
+
+        tc = hash[index_i];
+        hash[index_i] = hash[index_j];
+        hash[index_j] = tc;
+
+        t = hash[index_i] + hash[index_j];
+        data[ind] = data[ind] ^ hash[t];
+    }
+
+    hash[256] = index_i;
+    hash[257] = index_j;
+}
+
 /*******************************************************************
  turns a DCE/RPC request into a DCE/RPC reply
 
@@ -252,7 +279,7 @@ BOOL create_rpc_reply(pipes_struct *p,
 		if (auth_seal)
 		{
 			crc32 = crc32_calc_buffer(data_len, data);
-			NTLMSSPcalc(p->ntlmssp_hash, (uchar*)data, data_len);
+			NTLMSSPcalc_p(p, (uchar*)data, data_len);
 		}
 
 		if (auth_seal || auth_verify)
@@ -268,7 +295,7 @@ BOOL create_rpc_reply(pipes_struct *p,
 			make_rpc_auth_ntlmssp_chk(&p->ntlmssp_chk, NTLMSSP_SIGN_VERSION, crc32, p->ntlmssp_seq_num++);
 			smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(p->ntlmssp_chk), &p->rverf, 0);
 			auth_data = mem_data(&p->rverf.data, 4);
-			NTLMSSPcalc(p->ntlmssp_hash, (uchar*)auth_data, 12);
+			NTLMSSPcalc_p(p, (uchar*)auth_data, 12);
 		}
 	}
 
@@ -633,7 +660,7 @@ static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *pd)
 	{
 		char *data = mem_data(&pd->data, pd->offset);
 		DEBUG(5,("api_pipe_auth_process: data %d\n", pd->offset));
-		NTLMSSPcalc(p->ntlmssp_hash, (uchar*)data, data_len);
+		NTLMSSPcalc_p(p, (uchar*)data, data_len);
 		crc32 = crc32_calc_buffer(data_len, data);
 	}
 
@@ -650,7 +677,7 @@ static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *pd)
 	{
 		char *req_data = mem_data(&pd->data, pd->offset + 4);
 		DEBUG(5,("api_pipe_auth_process: auth %d\n", pd->offset + 4));
-		NTLMSSPcalc(p->ntlmssp_hash, (uchar*)req_data, 12);
+		NTLMSSPcalc_p(p, (uchar*)req_data, 12);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(p->ntlmssp_chk), pd, 0);
 
 		if (!rpc_auth_ntlmssp_chk(&(p->ntlmssp_chk), crc32,

@@ -358,32 +358,6 @@ void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int for
         smbhash(out + 8, in + 8, key2, forw);
 }
 
-void NTLMSSPcalc( unsigned char hash[258], unsigned char *data, int len)
-{
-	unsigned char index_i = hash[256];
-	unsigned char index_j = hash[257];
-	int ind;
-
-	for( ind = 0; ind < len; ind++)
-	{
-		unsigned char tc;
-		unsigned char t;
-
-		index_i++;
-		index_j += hash[index_i];
-
-		tc = hash[index_i];
-		hash[index_i] = hash[index_j];
-		hash[index_j] = tc;
-
-		t = hash[index_i] + hash[index_j];
-		data[ind] = data[ind] ^ hash[t];
-	}
-
-	hash[256] = index_i;
-	hash[257] = index_j;
-}
-
 void SamOEMhash( unsigned char *data, unsigned char *key, int val)
 {
   unsigned char s_box[256];
