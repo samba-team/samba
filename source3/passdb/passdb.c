@@ -63,7 +63,7 @@ BOOL initialize_password_db(BOOL reload)
 		if ((pdb_handle=sys_dlopen (modulename, RTLD_LAZY)) == NULL)
 		{
 			DEBUG(0,("initialize_password_db: ERROR - Unable to open passdb module \"%s\"!\n%s\n",
-				modulename, dlerror()));
+				modulename, sys_dlerror()));
 		}
 		else
 			DEBUG(1,("initialize_password_db: passdb module \"%s\" loaded successfully\n", modulename));
@@ -76,7 +76,7 @@ BOOL initialize_password_db(BOOL reload)
 		if ((pdb_handle=sys_dlopen ("libpdbfile.so", RTLD_LAZY)) == NULL)
 		{
 			DEBUG(0,("initialize_password_db: ERROR - Unable to open \"libpdbfile.so\" passdb module!  No user authentication possible!\n%s\n",
-				dlerror()));
+				sys_dlerror()));
 			return False;
 		}
 		else
