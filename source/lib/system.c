@@ -1013,3 +1013,17 @@ int sys_pclose(int fd)
 		return -1;
 	return wstatus;
 }
+
+
+
+#if GLIBC_HACK_FCNTL64
+#include <asm/unistd.h>
+/* this is a gross hack. 64 bit locking is completely screwed up on
+   i386 Linux in glibc 2.1.95 (which ships with RedHat 7.0). This hack
+   "fixes" the problem with the current 2.4.0test kernels 
+*/
+int fcntl64(int fd, int cmd, struct flock * lock)
+{
+	return syscall(__NR_fcntl64, fd, cmd, lock);
+}
+#endif /* HACK_FCNTL64 */

@@ -35,11 +35,12 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define DATABASE_VERSION 1
 
-/* we need to have a small set of default forms to support our
-   default printer */
+/* We need one default form to support our default printer. Msoft adds the
+forms it wants and in the ORDER it wants them (note: DEVMODE papersize is an
+array index). Letter is always first, so (for the current code) additions
+always put things in the correct order. */
 static nt_forms_struct default_forms[] = {
 	{"Letter", 0x2, 0x34b5b, 0x44367, 0x0, 0x0, 0x34b5b, 0x44367},
-	{"A4", 0x2, 0x3354f, 0x4884e, 0x0, 0x0, 0x3354f, 0x4884e}
 };
 
 
@@ -79,6 +80,7 @@ int get_ntforms(nt_forms_struct **list)
 	TDB_DATA kbuf, newkey, dbuf;
 	nt_forms_struct form;
 	int ret;
+	int i;
 	int n = 0;
 
 	for (kbuf = tdb_firstkey(tdb); 
@@ -90,15 +92,18 @@ int get_ntforms(nt_forms_struct **list)
 		if (!dbuf.dptr) continue;
 
 		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX));
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddddddd",
-				 &form.flag, &form.width, &form.length, &form.left,
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddd",
+				 &i, &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
 		safe_free(dbuf.dptr);
 		if (ret != dbuf.dsize) continue;
 
-		*list = Realloc(*list, sizeof(nt_forms_struct)*(n+1));
-		(*list)[n] = form;
-		n++;
+		/* allocate space and populate the list in correct order */
+		if (i+1 > n) {
+			*list = Realloc(*list, sizeof(nt_forms_struct)*(i+1));
+			n = i+1;
+		}
+		(*list)[i] = form;
 	}
 
 	/* we should never return a null forms list or NT gets unhappy */
@@ -122,8 +127,9 @@ int write_ntforms(nt_forms_struct **list, int number)
 	int i;
 
 	for (i=0;i<number;i++) {
-		len = tdb_pack(buf, sizeof(buf), "ddddddd", 
-			       (*list)[i].flag, (*list)[i].width, (*list)[i].length,
+		/* save index, so list is rebuilt in correct order */
+		len = tdb_pack(buf, sizeof(buf), "dddddddd",
+			       i, (*list)[i].flag, (*list)[i].width, (*list)[i].length,
 			       (*list)[i].left, (*list)[i].top, (*list)[i].right, 
 			       (*list)[i].bottom);
 		if (len > sizeof(buf)) break;
@@ -1341,7 +1347,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->scale            = 0x64;
 	nt_devmode->copies           = 01;
 	nt_devmode->defaultsource    = BIN_FORMSOURCE;
-	nt_devmode->printquality     = 0x0258;
+	nt_devmode->printquality     = RES_HIGH;           /* 0x0258; */
 	nt_devmode->color            = COLOR_MONOCHROME;
 	nt_devmode->duplex           = DUP_SIMPLEX;
 	nt_devmode->yresolution      = 0;
@@ -1563,7 +1569,8 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 
 	info.attributes = PRINTER_ATTRIBUTE_SHARED   \
 			 | PRINTER_ATTRIBUTE_LOCAL  \
-			 | PRINTER_ATTRIBUTE_RAW_ONLY ;            /* attributes */
+			 | PRINTER_ATTRIBUTE_RAW_ONLY \
+			 | PRINTER_ATTRIBUTE_QUEUED ;            /* attributes */
 
 	info.starttime = 0; /* Minutes since 12:00am GMT */
 	info.untiltime = 0; /* Minutes since 12:00am GMT */

@@ -991,9 +991,8 @@ typedef struct q_samr_create_user_info
 	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
 	UNISTR2 uni_mach_acct;       /* unicode machine account name */
 
-	uint32 acct_ctrl;            /* 32 bit ACB_XXXX */
-	uint16 unknown_1;            /* 16 bit unknown - 0x00B0 */
-	uint16 unknown_2;            /* 16 bit unknown - 0xe005 */
+	uint32 acb_info;            /* 32 bit ACB_XXXX */
+	uint32 access_mask;         /* 0xe005 00b0 */
 
 } SAMR_Q_CREATE_USER;
 
@@ -1003,9 +1002,8 @@ typedef struct r_samr_create_user_info
 {
 	POLICY_HND pol;       /* policy handle */
 
-	/* rid4.unknown - fail: 0030 success: 0x03ff */
-	DOM_RID4 rid4;         /* rid and attributes */
-
+	uint32 unknown_0;     /* 0x0007 03ff */
+	uint32 user_rid;      /* user RID */
 	uint32 status;         /* return status - fail: 0xC000 0099: user exists */
 
 } SAMR_R_CREATE_USER;
