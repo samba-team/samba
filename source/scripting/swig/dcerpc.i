@@ -52,9 +52,19 @@ uint8 uint8_from_python(PyObject *obj)
 	return (uint8)PyInt_AsLong(obj);
 }
 
+PyObject *uint8_to_python(uint8 obj)
+{
+	return PyInt_FromLong(obj);
+}
+
 uint16 uint16_from_python(PyObject *obj)
 {
 	return (uint16)PyInt_AsLong(obj);
+}
+
+PyObject *uint16_to_python(uint16 obj)
+{
+	return PyInt_FromLong(obj);
 }
 
 uint32 uint32_from_python(PyObject *obj)
@@ -62,9 +72,19 @@ uint32 uint32_from_python(PyObject *obj)
 	return (uint32)PyInt_AsLong(obj);
 }
 
+PyObject *uint32_to_python(uint32 obj)
+{
+	return PyInt_FromLong(obj);
+}
+
 int64 int64_from_python(PyObject *obj)
 {
 	return (int64)PyLong_AsLong(obj);
+}
+
+PyObject *int64_to_python(int64 obj)
+{
+	return PyLong_FromLong(obj);
 }
 
 uint64 uint64_from_python(PyObject *obj)
@@ -72,9 +92,19 @@ uint64 uint64_from_python(PyObject *obj)
 	return (uint64)PyLong_AsLong(obj);
 }
 
+PyObject *uint64_to_python(uint64 obj)
+{
+	return PyLong_FromLong(obj);
+}
+
 NTTIME NTTIME_from_python(PyObject *obj)
 {
 	return (NTTIME)PyLong_AsLong(obj);
+}
+
+PyObject *NTTIME_to_python(NTTIME obj)
+{
+	return PyLong_FromLong(obj);
 }
 
 HYPER_T HYPER_T_from_python(PyObject *obj)
@@ -82,9 +112,19 @@ HYPER_T HYPER_T_from_python(PyObject *obj)
 	return (HYPER_T)PyLong_AsLong(obj);
 }
 
+PyObject *HYPER_T_to_python(HYPER_T obj)
+{
+	return PyLong_FromLong(obj);
+}
+
 struct policy_handle *policy_handle_from_python(PyObject *obj)
 {
 	return (struct policy_handle *)PyString_AsString(obj);
+}
+
+PyObject *policy_handle_to_python(struct policy_handle *handle)
+{
+	return PyString_FromStringAndSize((char *)handle, sizeof(*handle));
 }
 
 struct security_descriptor *security_descriptor_from_python(PyObject *obj)

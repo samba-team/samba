@@ -11,6 +11,98 @@ use Data::Dumper;
 my($res);
 my($name);
 
+sub DebugElement($)
+{
+    my($e) = shift;
+    my($result) = "";
+
+    $result .= "\t// $e->{TYPE} $e->{NAME} ";
+
+    $result .= "(scalar) " 
+	if util::is_scalar_type($e->{TYPE});
+
+    $result .= "pointers=$e->{POINTERS} " 
+	if $e->{POINTERS} > 0;
+
+    my($size_is) = util::has_property($e, "size_is");
+    $result .= "size_is=" . $size_is . " " if $size_is;
+
+    my($length_is) = util::has_property($e, "length_is");
+    $result .= "length_is=" . $length_is . " " if $length_is;
+
+    $result .= "array_len=" . $e->{ARRAY_LEN} . " " if $e->{ARRAY_LEN};
+
+    $result .= "\n";
+
+    return $result;
+}
+
+sub XFromPython($$)
+{
+    my($e) = shift;
+    my($prefix) = shift;
+    my($result) = "";
+
+    # Special cases
+
+    if ($e->{TYPE} eq "policy_handle" && $e->{POINTERS} == 1) {
+	$result .= "\ts->$prefix$e->{NAME} = policy_handle_from_python(obj);";
+	return $result;
+    }
+
+    if (util::is_scalar_type($e->{TYPE})) {
+	if ($e->{POINTERS} == 0) {
+	    if ($e->{ARRAY_LEN}) {
+		# pointer to scalar with array len property
+		$result .= DebugElement($e);
+	    } else {
+		$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python(obj);\n";
+	    }
+	} else {
+	    # Pointer to scalar
+	    $result .= DebugElement($e);
+	}
+    } else {
+	# Non-scalar type
+	$result .= DebugElement($e);
+    }
+
+    return $result;
+}
+
+sub XToPython($$)
+{
+    my($e) = shift;
+    my($prefix) = shift;
+    my($result) = "";
+
+    # Special cases
+
+    if ($e->{TYPE} eq "policy_handle" && $e->{POINTERS} == 1) {
+	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), policy_handle_to_python(s->$prefix$e->{NAME}));\n";
+	return $result;
+    }
+
+    if (util::is_scalar_type($e->{TYPE})) {
+	if ($e->{POINTERS} == 0) {
+	    if ($e->{ARRAY_LEN}) {
+		# pointer to scalar with array len property
+		$result .= DebugElement($e);
+	    } else {
+		$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_to_python(s->$prefix$e->{NAME}));\n";
+	    }
+	} else {
+	    # Pointer to scalar
+	    $result .= DebugElement($e);
+	}
+    } else {
+	# Non-scalar type
+	$result .= DebugElement($e);
+    }
+
+    return $result;
+}
+
 sub ParseFunction($)
 {
     my($fn) = shift;
@@ -23,9 +115,7 @@ sub ParseFunction($)
     $res .= "{\n";
 
     foreach my $e (@{$fn->{DATA}}) {
-	if (util::has_property($e, "in")) {
-	    $res .= "\t// $e->{TYPE} $e->{NAME}\n";
-	}
+	$res .= XFromPython($e, "in.") if util::has_property($e, "in")
     }
 
     $res .= "\n";
@@ -38,9 +128,7 @@ sub ParseFunction($)
     $res .= "{\n";
 
     foreach my $e (@{$fn->{DATA}}) {
-	if (util::has_property($e, "out")) {
-	    $res .= "\t// $e->{TYPE} $e->{NAME}\n";
-	}
+	$res .= XToPython($e, "out.") if util::has_property($e, "out")
     }
 
     $res .= "\n";
@@ -93,7 +181,7 @@ sub ParseStruct($)
     $res .= "{\n";
 
     foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
-	$res .= "\t// $e->{TYPE} $e->{NAME}\n";
+	$res .= XFromPython($e, "");
     }
 
     $res .= "\n";
@@ -106,7 +194,7 @@ sub ParseStruct($)
     $res .= "{\n";
 
     foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
-	$res .= "\t// $e->{TYPE} $e->{NAME}\n";
+	$res .= XToPython($e, "");
     }
 
     $res .= "\n";
