@@ -143,7 +143,7 @@ static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, const char * server,
                          * a connection to the server (other than the
                          * attribute server connection) is cool.
                          */
-                        if (context->internal->options.one_share_per_server) {
+                        if (context->options.one_share_per_server) {
                                 /*
                                  * The currently connected share name
                                  * doesn't match the requested share, so

@@ -68,8 +68,6 @@
 #include <fcntl.h>
 #include <utime.h>
 
-#define SMBC_CTX_VERSION	1
-
 #define SMBC_BASE_FD        10000 /* smallest file descriptor returned */
 
 #define SMBC_WORKGROUP      1
@@ -466,19 +464,79 @@ struct _SMBCCTX {
 	 */
 	struct smbc_server_cache * server_cache;
 
+	int flags;
+	
+        /** user options selections that apply to this session
+         */
+        struct _smbc_options {
+
+                /*
+                 * From how many local master browsers should the list of
+                 * workgroups be retrieved?  It can take up to 12 minutes or
+                 * longer after a server becomes a local master browser, for
+                 * it to have the entire browse list (the list of
+                 * workgroups/domains) from an entire network.  Since a client
+                 * never knows which local master browser will be found first,
+                 * the one which is found first and used to retrieve a browse
+                 * list may have an incomplete or empty browse list.  By
+                 * requesting the browse list from multiple local master
+                 * browsers, a more complete list can be generated.  For small
+                 * networks (few workgroups), it is recommended that this
+                 * value be set to 0, causing the browse lists from all found
+                 * local master browsers to be retrieved and merged.  For
+                 * networks with many workgroups, a suitable value for this
+                 * variable is probably somewhere around 3. (Default: 3).
+                 */
+                int browse_max_lmb_count;
+
+                /*
+                 * There is a difference in the desired return strings from
+                 * smbc_readdir() depending upon whether the filenames are to
+                 * be displayed to the user, or whether they are to be
+                 * appended to the path name passed to smbc_opendir() to call
+                 * a further smbc_ function (e.g. open the file with
+                 * smbc_open()).  In the former case, the filename should be
+                 * in "human readable" form.  In the latter case, the smbc_
+                 * functions expect a URL which must be url-encoded.  Those
+                 * functions decode the URL.  If, for example, smbc_readdir()
+                 * returned a file name of "abc%20def.txt", passing a path
+                 * with this file name attached to smbc_open() would cause
+                 * smbc_open to attempt to open the file "abc def.txt" since
+                 * the %20 is decoded into a space.
+                 *
+                 * Set this option to True if the names returned by
+                 * smbc_readdir() should be url-encoded such that they can be
+                 * passed back to another smbc_ call.  Set it to False if the
+                 * names returned by smbc_readdir() are to be presented to the
+                 * user.
+                 *
+                 * For backwards compatibility, this option defaults to False.
+                 */
+                int urlencode_readdir_entries;
+
+                /*
+                 * Some Windows versions appear to have a limit to the number
+                 * of concurrent SESSIONs and/or TREE CONNECTions.  In
+                 * one-shot programs (i.e. the program runs and then quickly
+                 * ends, thereby shutting down all connections), it is
+                 * probably reasonable to establish a new connection for each
+                 * share.  In long-running applications, the limitation can be
+                 * avoided by using only a single connection to each server,
+                 * and issuing a new TREE CONNECT when the share is accessed.
+                 */
+                int one_share_per_server;
+        } options;
+	
 	/** INTERNAL DATA
 	 * do _NOT_ touch this from your program !
 	 */
 	struct smbc_internal_data * internal;
-
-	int flags;
 };
 
 /* Flags for SMBCCTX->flags */
 #define SMB_CTX_FLAG_USE_KERBEROS (1 << 0)
 #define SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS (1 << 1)
 #define SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON (1 << 2) /* don't try to do automatic anon login */
-#define SMBCCTX_FLAG_CTXVER (1 << 3 ) /* internal flag used to define _SMBCCTX version */
 
 /**@ingroup misc
  * Create a new SBMCCTX (a context).
