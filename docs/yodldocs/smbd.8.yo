@@ -8,7 +8,7 @@ manpagename(smbd)(server to provide SMB/CIFS services to clients)
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(smbd) [link(-D)(minusD)] [link(-a)(minusa)] [link(-o)(minuso)] [link(-P)(minusP)] [link(-h)(minush)] [link(-V)(minusV)] [link(-d debuglevel)(minusd)] [link(-l log file)(minusl)] [link(-p port number)(minusp)] [link(-O socket options)(minusO)] [link(-s configuration file)(minuss)] [link(-i scope)(minusi)]
+bf(smbd) [link(-D)(minusD)] [link(-a)(minusa)] [link(-o)(minuso)] [link(-P)(minusP)] [link(-h)(minush)] [link(-V)(minusV)] [link(-d debuglevel)(minusd)] [link(-l log file)(minusl)] [link(-p port number)(minusp)] [link(-O socket options)(minusO)] [link(-s configuration file)(minuss)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -143,14 +143,6 @@ information such as what printcap file to use, as well as descriptions
 of all the services that the server is to provide. See bf(smb.conf
 (5)) for more information.
 The default configuration file name is determined at compile time.
-
-label(minusi)
-dit(bf(-i scope)) This specifies a NetBIOS scope that the server will use
-to communicate with when generating NetBIOS names. For details on the
-use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
-are em(very) rarely used, only set this parameter if you are the
-system administrator in charge of all the NetBIOS systems you
-communicate with.
 
 endit()
 

@@ -26,7 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern char **my_netbios_names;
@@ -152,7 +151,7 @@ void add_logon_names(void)
     if (work && (work->log_state == LOGON_NONE))
     {
       struct nmb_name nmbname;
-      make_nmb_name(&nmbname,global_myworkgroup,0x1c,scope);
+      make_nmb_name(&nmbname,global_myworkgroup,0x1c);
 
       if (find_name_on_subnet(subrec, &nmbname, FIND_SELF_NAME) == NULL)
       {

@@ -37,7 +37,6 @@
 extern struct in_addr ipzero;
 extern int DEBUGLEVEL;
 
-extern pstring scope;
 extern BOOL in_client;
 extern pstring user_socket_options;
 
@@ -517,6 +516,7 @@ static void parse_mount_smb(int argc, char **argv)
 	char *opteq;
 	extern char *optarg;
 	int val;
+	extern pstring global_scope;
 
 	if (argc < 2 || argv[1][0] == '-') {
 		usage();
@@ -591,7 +591,7 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "sockopt")) {
 				pstrcpy(user_socket_options,opteq+1);
 			} else if(!strcmp(opts, "scope")) {
-				pstrcpy(scope,opteq+1);
+				pstrcpy(global_scope,opteq+1);
 			} else {
 				usage();
 				exit(1);

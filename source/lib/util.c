@@ -58,8 +58,6 @@ extern SSL  *ssl;
 extern int  sslFd;
 #endif  /* WITH_SSL */
 
-pstring scope = "";
-
 extern int DEBUGLEVEL;
 
 int Protocol = PROTOCOL_COREPLUS;
@@ -297,6 +295,7 @@ int name_mangle( char *In, char *Out, char name_type )
   int   len;
   char  buf[20];
   char *p = Out;
+  extern pstring global_scope;
 
   /* Safely copy the input string, In, into buf[]. */
   (void)memset( buf, 0, 20 );
@@ -320,9 +319,9 @@ int name_mangle( char *In, char *Out, char name_type )
   p[0] = '\0';
 
   /* Add the scope string. */
-  for( i = 0, len = 0; NULL != scope; i++, len++ )
+  for( i = 0, len = 0; NULL != global_scope; i++, len++ )
     {
-    switch( scope[i] )
+    switch( global_scope[i] )
       {
       case '\0':
         p[0]     = len;
@@ -335,7 +334,7 @@ int name_mangle( char *In, char *Out, char name_type )
         len  = -1;
         break;
       default:
-        p[len+1] = scope[i];
+        p[len+1] = global_scope[i];
         break;
       }
     }

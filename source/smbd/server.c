@@ -35,7 +35,6 @@ int last_message = -1;
 /* a useful macro to debug the last message processed */
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
-extern pstring scope;
 extern int DEBUGLEVEL;
 
 extern pstring user_socket_options;
@@ -478,7 +477,7 @@ static void usage(char *pname)
 {
 
 	printf("Usage: %s [-DaoPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
-	printf("       [-O socket options] [-s services file] [-i scope]\n");
+	printf("       [-O socket options] [-s services file]\n");
 	printf("\t-D                    Become a daemon\n");
 	printf("\t-a                    Append to log file (default)\n");
 	printf("\t-o                    Overwrite log file, don't append\n");
@@ -491,7 +490,6 @@ static void usage(char *pname)
 	printf("\t-p port               Listen on the specified port\n");
 	printf("\t-O socket options     Socket options\n");
 	printf("\t-s services file.     Filename of services file\n");
-	printf("\t-i scope              NetBIOS scope to use (default none)\n");
 	printf("\n");
 }
 
@@ -522,10 +520,6 @@ static void usage(char *pname)
 		switch (opt)  {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
-			break;
-
-		case 'i':
-			pstrcpy(scope,optarg);
 			break;
 
 		case 'P':

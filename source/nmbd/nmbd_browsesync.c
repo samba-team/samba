@@ -26,7 +26,6 @@
 #include "smb.h"
 
 extern int DEBUGLEVEL;
-extern pstring scope;
 extern struct in_addr ipzero;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
@@ -226,7 +225,7 @@ static void domain_master_node_status_success(struct subnet_record *subrec,
       {
         struct nmb_name nmbname;
 
-        make_nmb_name(&nmbname, qname, name_type, scope);
+        make_nmb_name(&nmbname, qname, name_type);
 
         /* Copy the dmb name and IP address
            into the workgroup struct. */
@@ -391,7 +390,7 @@ void announce_and_sync_with_domain_master_browser( struct subnet_record *subrec,
     return;
   }
 
-  make_nmb_name(&nmbname,work->work_group,0x1b,scope);
+  make_nmb_name(&nmbname,work->work_group,0x1b);
 
   /* First, query for the WORKGROUP<1b> name from the WINS server. */
   query_name(unicast_subnet, nmbname.name, nmbname.name_type,
@@ -486,7 +485,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 
 		/* remember who the master is */
 		fstrcpy(work->local_master_browser_name, server_name);
-		make_nmb_name(&nmbname, server_name, 0x20, scope);
+		make_nmb_name(&nmbname, server_name, 0x20);
 		work->dmb_name = nmbname;
 		work->dmb_addr = from_ip;
         }
@@ -636,7 +635,7 @@ void collect_all_workgroup_names_from_wins_server(time_t t)
      
   lastrun = t;
 
-  make_nmb_name(&nmbname,"*",0x1b,scope);
+  make_nmb_name(&nmbname,"*",0x1b);
 
   /* First, query for the *<1b> name from the WINS server. */
   query_name(unicast_subnet, nmbname.name, nmbname.name_type,
@@ -693,8 +692,7 @@ void sync_all_dmbs(time_t t)
 				/* we don't know the DMB - assume it is
 				   the same as the unicast local master */
 				make_nmb_name(&work->dmb_name, 
-					      work->local_master_browser_name,
-					      0x20, scope);
+					      work->local_master_browser_name, 0x20);
 			}
 
 			DEBUG(3,("Initiating DMB<->DMB sync with %s(%s)\n",

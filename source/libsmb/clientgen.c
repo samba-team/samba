@@ -27,7 +27,6 @@
 
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
-extern pstring scope;
 
 static void cli_process_oplock(struct cli_state *cli);
 
@@ -3223,7 +3222,7 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char 
 {
   struct nmb_name calling, called;
 
-  make_nmb_name(&calling, srchost, 0x0, scope);
+  make_nmb_name(&calling, srchost, 0x0);
 
   /*
    * If the called name is an IP address
@@ -3231,9 +3230,9 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char 
    */
 
   if(is_ipaddress(desthost))
-    make_nmb_name(&called, "*SMBSERVER", 0x20, scope);
+    make_nmb_name(&called, "*SMBSERVER", 0x20);
   else
-    make_nmb_name(&called, desthost, 0x20, scope);
+    make_nmb_name(&called, desthost, 0x20);
 
   if (!cli_session_request(cli, &calling, &called)) {
     struct nmb_name smbservername;
@@ -3245,7 +3244,7 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char 
 
     cli_shutdown(cli);
 
-    make_nmb_name(&smbservername , "*SMBSERVER", 0x20, scope);
+    make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
 
     if (!nmb_name_equal(&called, &smbservername) ||
         !cli_initialise(cli) ||
