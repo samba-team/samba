@@ -511,7 +511,7 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
-BOOL make_oem_passwd_hash(char data[516], char *passwd, char old_pw_hash[16]);
+BOOL make_oem_passwd_hash(char data[516], char *passwd, char old_pw_hash[16], BOOL unicode);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
@@ -1732,8 +1732,8 @@ void make_enc_hash(SAMR_ENC_HASH *hsh, char hash[16]);
 void samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth);
 void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 				char *dest_host, char *user_name,
-				char nt_newpass[516], char nt_oldhash[16],
-				char lm_newpass[516], char lm_oldhash[16]);
+				char lm_newpass[516], char nt_oldhash[16],
+				char nt_newpass[516], char lm_oldhash[16]);
 void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
 void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
 
