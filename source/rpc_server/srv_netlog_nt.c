@@ -276,7 +276,7 @@ NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u
 
 	/* create a server challenge for the client */
 	/* Set these to random values. */
-	generate_random_buffer(p->dc.srv_chal.data, 8, False);
+	generate_random_buffer(p->dc.srv_chal.data, 8);
 	
 	memcpy(p->dc.srv_cred.challenge.data, p->dc.srv_chal.data, 8);
 

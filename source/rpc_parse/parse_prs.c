@@ -1471,7 +1471,7 @@ void netsec_encode(struct netsec_auth_struct *a, int auth_flags,
 	}
 
 	/* fill the 'confounder' with random data */
-	generate_random_buffer(confounder, sizeof(confounder), False);
+	generate_random_buffer(confounder, sizeof(confounder));
 
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
 

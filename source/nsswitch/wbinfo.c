@@ -580,7 +580,7 @@ static BOOL wbinfo_auth_crap(char *username)
 		return False;
 	}
 
-	generate_random_buffer(request.data.auth_crap.chal, 8, False);
+	generate_random_buffer(request.data.auth_crap.chal, 8);
         
         SMBencrypt(pass, request.data.auth_crap.chal, 
                    (uchar *)request.data.auth_crap.lm_resp);

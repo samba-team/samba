@@ -432,7 +432,7 @@ static PyObject *py_auth_crap(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	generate_random_buffer(request.data.auth_crap.chal, 8, False);
+	generate_random_buffer(request.data.auth_crap.chal, 8);
         
 	if (use_lm_hash) {
 		SMBencrypt((uchar *)password, request.data.auth_crap.chal, 
@@ -481,7 +481,7 @@ static PyObject *py_auth_smbd(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	generate_random_buffer(request.data.smbd_auth_crap.chal, 8, False);
+	generate_random_buffer(request.data.smbd_auth_crap.chal, 8);
         
 	if (use_lm_hash) {
 		SMBencrypt((uchar *)password, 
