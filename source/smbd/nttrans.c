@@ -1723,13 +1723,13 @@ static SEC_ACCESS map_unix_perms( int *pacl_type, mode_t perm, int r_mask, int w
 
 static BOOL create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid)
 {
-	POSIX_ID id;
+	SURS_POSIX_ID id;
 
 	ZERO_STRUCTP(powner_sid);
 	ZERO_STRUCTP(pgroup_sid);
 	DEBUG(0,("TODO: create_file_sids: not ok to assume gid is NT group\n"));
 
-	id.type = SURS_POSIX_UID_AS_USR;
+	id.type = SURS_POSIX_UID;
 	id.id = (uint32)psbuf->st_uid;
 
 	if (!surs_unixid_to_sam_sid(&id, powner_sid, False))
@@ -1739,23 +1739,13 @@ static BOOL create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SI
 		return False;
 	}
 
-	id.type = SURS_POSIX_GID_AS_GRP;
+	id.type = SURS_POSIX_GID;
 	id.id = (uint32)psbuf->st_gid;
 
 	if (!surs_unixid_to_sam_sid(&id, pgroup_sid, False))
 	{
-		DEBUG(3,("create_file_sids: map gid %d to group failed\n",
+		DEBUG(3,("create_file_sids: map gid %d failed\n",
 					(int)psbuf->st_gid));
-
-		id.type = SURS_POSIX_GID_AS_ALS;
-		id.id = (uint32)psbuf->st_gid;
-
-		if (surs_unixid_to_sam_sid(&id, pgroup_sid, False))
-		{
-			return True;
-		}
-		DEBUG(3,("create_file_sids: map gid %d to alias failed\n",
-						(int)psbuf->st_gid));
 		return False;
 	}
 	return True;
@@ -2106,7 +2096,7 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
   SEC_ACL *dacl = psd->dacl;
   BOOL all_aces_are_inherit_only = (is_directory ? True : False);
   int i;
-  POSIX_ID id;
+  SURS_POSIX_ID id;
 
   *pmode = 0;
   *puser = (uid_t)-1;
@@ -2139,7 +2129,7 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
 
   if (security_info_sent & OWNER_SECURITY_INFORMATION &&
      surs_sam_sid_to_unixid( psd->owner_sid, &id, False) &&
-     id.type == SURS_POSIX_UID_AS_USR)
+     id.type == SURS_POSIX_UID)
   {
     *puser = (uid_t)id.id;
   }
@@ -2149,15 +2139,9 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
    * This may be an owner chown only set.
    */
 
-  /*
-   * assume support for RID_TYPE_ALIAS and RID_TYPE_GROUP only.
-   * also assume that calls to sur_sam_sid_to_unixid are exclusive
-   * and one will fail where the other succeeds
-   */
-   
   if (security_info_sent & GROUP_SECURITY_INFORMATION &&
       surs_sam_sid_to_unixid( psd->grp_sid, &id, False) &&
-      (id.type == SURS_POSIX_GID_AS_GRP || id.type == SURS_POSIX_GID_AS_ALS))
+      (id.type == SURS_POSIX_GID))
   {
     *pgrp = (gid_t)id.id;
   }
