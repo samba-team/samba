@@ -1213,6 +1213,12 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted);
 void cli_nt_session_close(struct cli_state *cli);
 
+/*The following definitions come from  rpc_client/cli_wkssvc.c  */
+
+BOOL do_wks_query_info(struct cli_state *cli, 
+			char *server_name, uint32 switch_value,
+			WKS_INFO_100 *wks100);
+
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
 void make_lsa_trans_name(LSA_TRANS_NAME *trn, uint32 sid_name_use, char *name, uint32 idx);
@@ -1593,6 +1599,8 @@ void srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *
 
 /*The following definitions come from  rpc_parse/parse_wks.c  */
 
+void make_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
+				char *server, uint16 switch_value)  ;
 void wks_io_q_query_info(char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps, int depth);
 void make_wks_info_100(WKS_INFO_100 *inf,
 				uint32 platform_id, uint32 ver_major, uint32 ver_minor,
@@ -1672,6 +1680,10 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
 void cmd_lsa_query_info(struct client_info *info);
+
+/*The following definitions come from  rpcclient/cmd_wkssvc.c  */
+
+void cmd_wks_query_info(struct client_info *info);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 

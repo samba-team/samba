@@ -34,7 +34,6 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 extern struct cli_state *smb_cli;
-extern int smb_tidx;
 
 extern FILE* out_hnd;
 
@@ -53,11 +52,11 @@ void cmd_wks_query_info(struct client_info *info)
 
 	bzero(&ctr, sizeof(ctr));
 
-	strcpy(dest_wks, "\\\\");
-	strcat(dest_wks, info->dest_host);
+	fstrcpy(dest_wks, "\\\\");
+	fstrcat(dest_wks, info->dest_host);
 	strupper(dest_wks);
 
-	if (next_token(NULL, tmp, NULL))
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
@@ -68,23 +67,23 @@ void cmd_wks_query_info(struct client_info *info)
 	DEBUG(5, ("cmd_wks_query_info: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open LSARPC session. */
-	res = res ? do_session_open(smb_cli, smb_tidx, PIPE_WKSSVC, &(info->dom.wkssvc_fnum)) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WKSSVC, False) : False;
 
 	/* send info level: receive requested info.  hopefully. */
-	res = res ? do_wks_query_info(smb_cli, smb_tidx, info->dom.wkssvc_fnum,
+	res = res ? do_wks_query_info(smb_cli, 
 				dest_wks, info_level, &ctr) : False;
 
 	/* close the session */
-	do_session_close(smb_cli, smb_tidx, info->dom.wkssvc_fnum);
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{
 		DEBUG(5,("cmd_wks_query_info: query succeeded\n"));
 
 #if 0
-		display_wks_info_100(out_hnd, DISPLAY_TXT, ACTION_HEADER   , &ctr);
-		display_wks_info_100(out_hnd, DISPLAY_TXT, ACTION_ENUMERATE, &ctr);
-		display_wks_info_100(out_hnd, DISPLAY_TXT, ACTION_FOOTER   , &ctr);
+		display_wks_info_100(out_hnd, ACTION_HEADER   , &ctr);
+		display_wks_info_100(out_hnd, ACTION_ENUMERATE, &ctr);
+		display_wks_info_100(out_hnd, ACTION_FOOTER   , &ctr);
 #endif
 
 	}

@@ -28,6 +28,19 @@
 extern int DEBUGLEVEL;
 
 /*******************************************************************
+ make_wks_q_query_info
+ ********************************************************************/
+void make_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
+				char *server, uint16 switch_value)  
+{
+	DEBUG(5,("make_wks_q_query_info\n"));
+
+	make_buf_unistr2(&(q_u->uni_srv_name), &(q_u->ptr_srv_name), server);
+	q_u->switch_value = switch_value;
+
+}
+
+/*******************************************************************
 reads or writes a WKS_Q_QUERY_INFO structure.
 ********************************************************************/
 void wks_io_q_query_info(char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps, int depth)
