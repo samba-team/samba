@@ -760,14 +760,16 @@ main (int argc, char **argv)
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
     if(argc > 1) {
-	simple_execvp(argv[1], argv+1);
+	ret = simple_execvp(argv[1], argv+1);
 	krb5_cc_destroy(context, ccache);
 	_krb5_krb_dest_tkt(context, krb4_cc_name);
 	if(k_hasafs())
 	    k_unlog();
-    } else 
+    } else {
 	krb5_cc_close (context, ccache);
+	ret = 0;
+    }
     krb5_free_principal(context, principal);
     krb5_free_context (context);
-    return 0;
+    return ret;
 }
