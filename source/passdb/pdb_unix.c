@@ -69,7 +69,7 @@ static BOOL unixsam_getsampwrid (struct pdb_methods *methods,
   Adds an existing SAM_ACCOUNT
  ****************************************************************************/
 
-static BOOL unixsam_add_sam_account (struct pdb_methods *methods, const SAM_ACCOUNT *newpwd)
+static BOOL unixsam_add_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
 {
 	DEBUG(0,("pdb_unix should not be listed as the first passdb backend! You can't add users to it.\n"));
 	return False;
