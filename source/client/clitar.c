@@ -329,7 +329,7 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix)
   unfixtarname(finfo->name + strlen(prefix), hb->dbuf.name,
 	       strlen(hb->dbuf.name) + 1, True);
 
-/* can't handle some links at present */
+  /* can't handle some links at present */
   if ((hb->dbuf.linkflag != '0') && (hb -> dbuf.linkflag != '5')) {
     if (hb->dbuf.linkflag == 0) {
       DEBUG(6, ("Warning: NULL link flag (gnu tar archive ?) %s\n",
@@ -1643,7 +1643,7 @@ static int skip_file(int skipsize)
 static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
 {
   int fsize = finfo.size;
-  int fnum, pos = 0, dsize = 0, rsize = 0;
+  int fnum, pos = 0, dsize = 0, rsize = 0, bpos = 0;
 
   DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, fsize));
 
@@ -1654,20 +1654,19 @@ static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
       return(False);
     }
 
-  DEBUG(0, ("restore tar file %s of size %d bytes\n",
-	    finfo.name, finfo.size));
-
   /* read the blocks from the tar file and write to the remote file */
 
-  rsize = fsize;
+  rsize = fsize;  /* This is how much to write */
 
   while (rsize > 0) {
 
-    dsize = MIN(tbufsiz - (buffer_p - tarbuf), rsize); /* Calculate the size to write */
+    /* We can only write up to the end of the buffer */
 
-    DEBUG(5, ("writing %i bytes ...\n", dsize));
+    dsize = MIN(tbufsiz - (buffer_p - tarbuf) - bpos, max_xmit - 50); /* Calculate the size to write */
+    dsize = MIN(dsize, rsize);  /* Should be only what is left */
+    DEBUG(5, ("writing %i bytes, max_xmit = %i, bpos = %i ...\n", dsize, max_xmit, bpos));
 
-    if (!smbwrite(fnum, dsize, pos, 0, fsize - pos, buffer_p, inbuf, outbuf)) {
+    if (!smbwrite(fnum, dsize, pos, 0, fsize - pos, buffer_p + bpos, inbuf, outbuf)) {
 
       DEBUG(0, ("Error writing remote file\n"));
       return 0;
@@ -1675,12 +1674,29 @@ static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
     }
 
     rsize -= dsize;
+    pos += dsize;
 
     /* Now figure out how much to move in the buffer */
 
     /* FIXME, we should skip more than one block at a time */
 
-    while (dsize > 0) {
+    /* First, skip any initial part of the part written that is left over */
+    /* from the end of the first TBLOCK                                   */
+
+    if ((bpos + dsize) >= TBLOCK) {
+
+      dsize -= (TBLOCK - bpos);  /* Get rid of the end of the first block */
+      bpos = 0;
+
+      if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {  /* and skip the block */
+	DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+	return False;
+
+      }
+
+    }
+
+    while (dsize >= TBLOCK) {
 
       if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
 
@@ -1692,6 +1708,17 @@ static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
       dsize -= TBLOCK;
 
     }
+
+    /*    if (dsize > 0) {
+      if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
+
+	DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+	return False;
+
+      }      
+      }*/
+
+    bpos = dsize;
 
   }
 
@@ -1716,6 +1743,9 @@ static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
   }
 
   ntarf++;
+
+  DEBUG(0, ("restore tar file %s of size %d bytes\n", finfo.name, finfo.size));
+  
   return(True);
 
 }
@@ -1750,7 +1780,6 @@ static char * get_longfilename(file_info2 finfo)
 
   DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
   DEBUG(5, ("Len = %i\n", finfo.size));
-  fflush(stderr);
 
   if (longname == NULL) {
 
@@ -1793,7 +1822,7 @@ static void do_tarput(void)
 {
   file_info2 finfo;
   struct timeval tp_start;
-  char *inbuf, *outbuf, *longfilename = NULL;
+  char *inbuf, *outbuf, *longfilename = NULL, linkflag;
   int skip = False;
 
   GetTimeOfDay(&tp_start);
@@ -1841,7 +1870,7 @@ static void do_tarput(void)
     }
 
     DEBUG(5, ("Reading the next header ...\n"));
-    fflush(stdout);
+
     switch (readtarheader((union hblock *) buffer_p, &finfo, cur_dir)) {
 
     case -2:    /* Hmm, not good, but not fatal */
@@ -1851,7 +1880,7 @@ static void do_tarput(void)
 
 	DEBUG(0, ("Short file, bailing out...\n"));
 	free(inbuf); free(outbuf);
-	continue;
+	return;
 
       }
 
@@ -1867,7 +1896,9 @@ static void do_tarput(void)
       free(inbuf); free(outbuf);
       return;        /* Hmmm, bad here ... */
 
-    default:
+    default: 
+      /* No action */
+
       break;
 
     }
@@ -1894,7 +1925,7 @@ static void do_tarput(void)
       || (tar_re_search && mask_match(finfo.name, cliplist[0], True, False)));
 #endif
 
-  DEBUG(5, ("Skip = %i, cliplist=%s, file=%s\n", skip, cliplist[0], finfo.name));
+  DEBUG(5, ("Skip = %i, cliplist=%s, file=%s\n", skip, (cliplist?cliplist[0]:NULL), finfo.name));
 
   if (skip) {
 
@@ -1904,10 +1935,20 @@ static void do_tarput(void)
   }
 
     /* We only get this far if we should process the file */
+  linkflag = ((union hblock *)buffer_p) -> dbuf.linkflag;
 
-    switch (((union hblock *)buffer_p) -> dbuf.linkflag) {
+    switch (linkflag) {
 
     case '0':  /* Should use symbolic names--FIXME */
+
+      /* Skip to the next block first, so we can get the file, FIXME, should
+         be in get_file ... */
+
+      if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
+	DEBUG(0, ("Short file, bailing out...\n"));
+	free(inbuf); free(outbuf);
+	return;
+      }
       if (!get_file(finfo, inbuf, outbuf)) {
 
 	free(inbuf); free(outbuf);
