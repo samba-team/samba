@@ -109,26 +109,27 @@ static uint32 get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-    while (((not_finished = pdb_getsampwent(pwd)) != False) && (*num_entries) < max_num_entries) {
-        int user_name_len;
+	while (((not_finished = pdb_getsampwent(pwd)) != False) 
+		&& (*num_entries) < max_num_entries) 
+	{
+	        int user_name_len;
 
-        if (start_idx > 0) {
-            /* skip the requested number of entries.
-               not very efficient, but hey...
-             */
-            start_idx--;
-            continue;
+	        if (start_idx > 0) {
+	            /* skip the requested number of entries.
+	               not very efficient, but hey...  */
+		start_idx--;
+		continue;
         }
 
-        user_name_len = strlen(pdb_get_username(pwd))+1;
-        init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pdb_get_username(pwd), user_name_len);
-        init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
-        pw_buf[(*num_entries)].user_rid = pwd->user_rid;
-        memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
+	user_name_len = strlen(pdb_get_username(pwd))+1;
+	init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pdb_get_username(pwd), user_name_len);
+	init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
+	pw_buf[(*num_entries)].user_rid = pwd->user_rid;
+	memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
 
         /* Now check if the NT compatible password is available. */
         if (pdb_get_nt_passwd(pwd))
-            memcpy( pw_buf[(*num_entries)].nt_pwd , pdb_get_nt_passwd(pwd), 16);
+		memcpy( pw_buf[(*num_entries)].nt_pwd , pdb_get_nt_passwd(pwd), 16);
 
         pw_buf[(*num_entries)].acb_info = pdb_get_acct_ctrl(pwd);
 
@@ -136,14 +137,14 @@ static uint32 get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
                   (*num_entries), pdb_get_username(pwd), pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd) ));
 
         if (acb_mask == 0 || (pwd->acct_ctrl & acb_mask)) {
-            DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
-            (*num_entries)++;
+		DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
+		(*num_entries)++;
         }
         else
-            DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
+		DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
 
-        (*total_entries)++;
-    }
+		(*total_entries)++;
+	}
 
 	pdb_endsampwent();
 	pdb_free_sam(pwd);
@@ -1794,7 +1795,7 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 
 uint32 _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAMR_R_QUERY_USERGROUPS *r_u)
 {
-	struct sam_passwd *sam_pass=NULL;
+	SAM_ACCOUNT *sam_pass=NULL;
 	DOM_GID *gids = NULL;
 	int num_groups = 0;
 	pstring groups;

@@ -1339,9 +1339,6 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, char *username)
 
 	DEBUG(10, ("pdb_getsampwnam: search by name: %s\n", username));
 
-#if 0	/* JERRY - DEBUG */
-	sleep (90000);
-#endif
 	
 	/* break the username from the domain if we have 
 	   been given a string in the form 'DOMAIN\user' */

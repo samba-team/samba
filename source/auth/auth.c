@@ -45,7 +45,7 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	unbecome_root();
 
 	if(ret == False) {
-		DEBUG(0,("pdb_getsampwnam returned NULL\n"));
+		DEBUG(0,("update_smbpassword_file: pdb_getsampwnam failed to locate %s\n", user));
 		pdb_free_sam(sampass);
 		return False;
 	}

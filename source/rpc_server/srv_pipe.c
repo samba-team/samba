@@ -455,7 +455,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	 */
 
 	p->pipe_user.uid = pdb_get_uid(sampass);
-	p->pipe_user.gid = pdb_get_uid(sampass);
+	p->pipe_user.gid = pdb_get_gid(sampass);
 
 	/* Set up pipe user group membership. */
 	initialise_groups(pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
