@@ -1,0 +1,144 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* 
+ * configuration file for telnet 
+ *
+ * $Id$
+ *
+ */
+
+#ifndef T_CONFIG_H
+#define T_CONFIG_H
+
+
+/* define this if you want authentication */
+#undef AUTHENTICATION
+
+/* define this if you have kerberos 4 */
+#undef KRB4
+
+/* define this if you want encryption */
+#undef ENCRYPTION
+
+/* Set this if you want des encryption */
+#undef DES_ENCRYPTION
+
+/* Set this to the default system lead string for telnetd 
+ * can contain %-escapes: %s=sysname, %m=machine, %r=os-release
+ * %v=os-version, %t=tty, %h=hostname, %d=date and time
+ */
+#undef USE_IM
+
+/* define this if you want diagnostics in telnetd */
+#undef DIAGNOSTICS
+
+/* define this if you want support for broken ENV_{VALUE,VAR} systems  */
+#undef ENV_HACK
+
+/* define this if you want support for 4.3BSD kludged line mode  */
+#undef KLUDGELINEMODE
+
+/*  */
+#undef OLD_ENVIRON
+
+/* */
+#undef STREAMSPTY
+
+#ifdef HAVE_TGETENT
+#define TERMCAP 1
+#endif
+
+/* Define if you have the cgetent function.  */
+#undef HAVE_CGETENT
+
+/* Define if you have the gethostbyname function.  */
+#undef HAVE_GETHOSTBYNAME
+
+/* Define if you have the setupterm function.  */
+#undef HAVE_SETUPTERM
+
+/* Define if you have the socket function.  */
+#undef HAVE_SOCKET
+
+/* Define if you have the tgetent function.  */
+#undef HAVE_TGETENT
+
+/* Define if you have the uname function.  */
+#undef HAVE_UNAME
+
+/* Define if you have the vfork function.  */
+#undef HAVE_VFORK
+
+/* Define if you have the vhangup function.  */
+#undef HAVE_VHANGUP
+
+/* Define if you have the <sac.h> header file.  */
+#undef HAVE_SAC_H
+
+/* Define if you have the <sys/resource.h> header file.  */
+#undef HAVE_SYS_RESOURCE_H
+
+/* Define if you have the <sys/select.h> header file.  */
+#undef HAVE_SYS_SELECT_H
+
+/* Define if you have the <termio.h> header file.  */
+#undef HAVE_TERMIO_H
+
+/* Define if you have the <termios.h> header file.  */
+#undef HAVE_TERMIOS_H
+
+/* Define if you have the <utmpx.h> header file.  */
+#undef HAVE_UTMPX_H
+
+/* Define if you have the nsl library (-lnsl).  */
+#undef HAVE_LIBNSL
+
+/* Define if you have the socket library (-lsocket).  */
+#undef HAVE_LIBSOCKET
+
+/* Define if you have the util library (-lutil).  */
+#undef HAVE_LIBUTIL
+
+/* set this to a sensible login */
+#ifndef LOGIN_PATH
+#define LOGIN_PATH "/usr/athena/bin/login"
+#endif
+
+
+#ifdef HAVE_TGETENT
+#define TERMCAP 1
+#endif
+
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_TERMIO_H)
+#define USE_TERMIO 1
+
+/* If this is not a POSIX boxen use SYSV, this may not work on CRAY
+ * se telnetd/desf.h */
+#ifndef HAVE_TERMIOS_H
+#define SYSV_TERMIO
+#endif
+
+#endif /* defined(HAVE_TERMIOS_H) || defined(HAVE_TERMIO_H) */
+
+#ifndef HAVE_VFORK
+#define vfork fork
+#endif
+
+/* os specific tests ahead */
+
+#ifdef sun
+
+#define FILIO_H 1
+#define STREAMS 1
+
+#ifdef __svr4__
+#define SOLARIS
+#endif
+
+#endif /* sun */
+
+#ifdef _AIX
+#define unix /* well, ok... */
+#endif
+
+#endif /* T_CONFIG_H */

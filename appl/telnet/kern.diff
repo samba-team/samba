@@ -1,0 +1,308 @@
+*** h/ioctl.h.old	Tue May 23 14:50:42 1989
+--- h/ioctl.h	Tue Aug 29 18:24:49 1989
+***************
+*** 214,219 ****
+--- 214,220 ----
+  #define		TIOCPKT_START		0x08	/* start output */
+  #define		TIOCPKT_NOSTOP		0x10	/* no more ^S, ^Q */
+  #define		TIOCPKT_DOSTOP		0x20	/* now do ^S ^Q */
++ #define		TIOCPKT_IOCTL		0x40	/* state change of pty driver */
+  #define	TIOCSTOP	_IO('t', 111)		/* stop output, like ^S */
+  #define	TIOCSTART	_IO('t', 110)		/* start output, like ^Q */
+  #define	TIOCMSET	_IOW('t', 109, int)	/* set all modem bits */
+***************
+*** 226,231 ****
+--- 227,235 ----
+  #define	TIOCUCNTL	_IOW('t', 102, int)	/* pty: set/clr usr cntl mode */
+  #define		UIOCCMD(n)	_IO('u', n)		/* usr cntl op "n" */
+  #define	TIOCCONS	_IO('t', 98)		/* become virtual console */
++ #define	TIOCEXT		_IOW('t', 97, int)	/* pty: external processing */
++ #define	TIOCGSTATE	_IOR('t', 96, int)	/* pty: get internal state */
++ #define	TIOCSIG		_IO('t', 95)		/* pty: generate signal */
+  
+  #define	OTTYDISC	0		/* old, v7 std tty driver */
+  #define	NETLDISC	1		/* line discip for berk net */
+*** h/tty.h.old	Tue May 23 14:51:01 1989
+--- h/tty.h	Wed Aug 23 11:30:40 1989
+***************
+*** 70,75 ****
+--- 70,76 ----
+  	struct	ttychars t_chars;	/* tty */
+  	struct	winsize t_winsize;	/* window size */
+  /* be careful of tchars & co. */
++ #ifndef	NO_T_CHARS_DEFINES
+  #define	t_erase		t_chars.tc_erase
+  #define	t_kill		t_chars.tc_kill
+  #define	t_intrc		t_chars.tc_intrc
+***************
+*** 84,89 ****
+--- 85,91 ----
+  #define	t_flushc	t_chars.tc_flushc
+  #define	t_werasc	t_chars.tc_werasc
+  #define	t_lnextc	t_chars.tc_lnextc
++ #endif
+  };
+  
+  #define	TTIPRI	28
+***************
+*** 124,129 ****
+--- 126,132 ----
+  #define	TS_LNCH		0x080000	/* next character is literal */
+  #define	TS_TYPEN	0x100000	/* retyping suspended input (PENDIN) */
+  #define	TS_CNTTB	0x200000	/* counting tab width; leave FLUSHO alone */
++ #define	TS_EXTPROC	0x400000	/* external processing of data */
+  
+  #define	TS_LOCAL	(TS_BKSL|TS_QUOT|TS_ERASE|TS_LNCH|TS_TYPEN|TS_CNTTB)
+  
+*** sys/tty.c.old	Tue May 23 14:52:28 1989
+--- sys/tty.c	Thu Aug 24 09:31:49 1989
+***************
+*** 275,280 ****
+--- 275,285 ----
+  	 */
+  	switch (com) {
+  
++ 	/* get internal state - needed for TS_EXTPROC bit */
++ 	case TIOCGSTATE:
++ 		*(int *)data = tp->t_state;
++ 		break;
++ 
+  	/* get discipline number */
+  	case TIOCGETD:
+  		*(int *)data = tp->t_line;
+***************
+*** 752,757 ****
+--- 757,763 ----
+  	 */
+  	if ((tp->t_state&TS_TYPEN) == 0 && (t_flags&PASS8) == 0)
+  		c &= 0177;
++     if ((tp->t_state&TS_EXTPROC) == 0) {
+  	/*
+  	 * Check for literal nexting very first
+  	 */
+***************
+*** 834,839 ****
+--- 840,846 ----
+  		else if (c == '\\')
+  			tp->t_state |= TS_BKSL;
+  	}
++     }
+  
+  	/*
+  	 * Cbreak mode, don't process line editing
+***************
+*** 851,856 ****
+--- 858,864 ----
+  		goto endcase;
+  	}
+  
++     if ((tp->t_state&TS_EXTPROC) == 0) {
+  	/*
+  	 * From here on down cooked mode character
+  	 * processing takes place.
+***************
+*** 911,916 ****
+--- 919,925 ----
+  			goto endcase;
+  		}
+  	}
++     }
+  
+  	/*
+  	 * Check for input buffer overflow
+***************
+*** 933,938 ****
+--- 942,948 ----
+  		} else if (tp->t_rocount++ == 0)
+  			tp->t_rocol = tp->t_col;
+  		tp->t_state &= ~TS_QUOT;
++ 	    if ((tp->t_state&TS_EXTPROC) == 0) {
+  		if (c == '\\')
+  			tp->t_state |= TS_QUOT;
+  		if (tp->t_state&TS_ERASE) {
+***************
+*** 948,953 ****
+--- 958,964 ----
+  				i--;
+  			}
+  		}
++ 	    }
+  	}
+  endcase:
+  	/*
+***************
+*** 998,1005 ****
+  		return (-1);
+  	/*
+  	 * Turn tabs to spaces as required
+  	 */
+! 	if (c == '\t' && (tp->t_flags&TBDELAY) == XTABS) {
+  		register int s;
+  
+  		c = 8 - (tp->t_col&7);
+--- 1009,1022 ----
+  		return (-1);
+  	/*
+  	 * Turn tabs to spaces as required
++ 	 *
++ 	 * Special case if we have external processing, we don't
++ 	 * do the tab expansion because we'll probably get it
++ 	 * wrong.  If tab expansion needs to be done, let it
++ 	 * happen externally.
+  	 */
+! 	if ((tp->t_state&TS_EXTPROC) == 0 &&
+! 	    c == '\t' && (tp->t_flags&TBDELAY) == XTABS) {
+  		register int s;
+  
+  		c = 8 - (tp->t_col&7);
+***************
+*** 1497,1503 ****
+  	int s;
+  	char *nextc();
+  
+! 	if ((tp->t_flags&ECHO) == 0)
+  		return;
+  	tp->t_flags &= ~FLUSHO;
+  	c &= 0377;
+--- 1514,1520 ----
+  	int s;
+  	char *nextc();
+  
+! 	if ((tp->t_flags&ECHO) == 0 || (tp->t_state&TS_EXTPROC))
+  		return;
+  	tp->t_flags &= ~FLUSHO;
+  	c &= 0377;
+***************
+*** 1618,1624 ****
+  
+  	if ((tp->t_state&TS_CNTTB) == 0)
+  		tp->t_flags &= ~FLUSHO;
+! 	if ((tp->t_flags&ECHO) == 0)
+  		return;
+  	c &= 0377;
+  	if (tp->t_flags&RAW) {
+--- 1635,1641 ----
+  
+  	if ((tp->t_state&TS_CNTTB) == 0)
+  		tp->t_flags &= ~FLUSHO;
+! 	if ((tp->t_flags&ECHO) == 0 || (tp->t_state&TS_EXTPROC))
+  		return;
+  	c &= 0377;
+  	if (tp->t_flags&RAW) {
+*** sys/tty_pty.c.old	Tue May 23 14:52:43 1989
+--- sys/tty_pty.c	Tue Aug 29 18:48:36 1989
+***************
+*** 208,213 ****
+--- 208,214 ----
+  		return (EIO);
+  	tp->t_oproc = ptsstart;
+  	(void)(*linesw[tp->t_line].l_modem)(tp, 1);
++ 	tp->t_state &= ~TS_EXTPROC;
+  	pti = &pt_ioctl[minor(dev)];
+  	pti->pt_flags = 0;
+  	pti->pt_send = 0;
+***************
+*** 247,252 ****
+--- 248,275 ----
+  				error = ureadc((int)pti->pt_send, uio);
+  				if (error)
+  					return (error);
++ 				if (pti->pt_send & TIOCPKT_IOCTL) {
++ 					struct xx {
++ 						struct sgttyb a;
++ 						struct tchars b;
++ 						struct ltchars c;
++ 						int d;
++ 						int e;
++ 					} cb;
++ 					cb.a.sg_ispeed = tp->t_ispeed;
++ 					cb.a.sg_ospeed = tp->t_ospeed;
++ 					cb.a.sg_erase = tp->t_erase;
++ 					cb.a.sg_kill = tp->t_kill;
++ 					cb.a.sg_flags = tp->t_flags;
++ 					bcopy((caddr_t)&tp->t_intrc,
++ 					      (caddr_t)&cb.b, sizeof(cb.b));
++ 					bcopy((caddr_t)&tp->t_suspc,
++ 					      (caddr_t)&cb.c, sizeof(cb.c));
++ 					cb.d = tp->t_state;
++ 					cb.e = ((unsigned)tp->t_flags)>>16;
++ 					cc = MIN(uio->uio_resid, sizeof(cb));
++ 					uiomove(&cb, cc, UIO_READ, uio);
++ 				}
+  				pti->pt_send = 0;
+  				return (0);
+  			}
+***************
+*** 483,488 ****
+--- 506,533 ----
+  	 * IF CONTROLLER STTY THEN MUST FLUSH TO PREVENT A HANG.
+  	 * ttywflush(tp) will hang if there are characters in the outq.
+  	 */
++ 	if (cmd == TIOCEXT) {
++ 		/*
++ 		 * When the TS_EXTPROC bit is being toggled, we need
++ 		 * to send an TIOCPKT_IOCTL if the packet driver
++ 		 * is turned on.
++ 		 */
++ 		if (*(int *)data) {
++ 			if (pti->pt_flags & PF_PKT) {
++ 				pti->pt_send |= TIOCPKT_IOCTL;
++ 				ptcwakeup(tp);
++ 			}
++ 			tp->t_state |= TS_EXTPROC;
++ 		} else {
++ 			if ((tp->t_state & TS_EXTPROC) &&
++ 			    (pti->pt_flags & PF_PKT)) {
++ 				pti->pt_send |= TIOCPKT_IOCTL;
++ 				ptcwakeup(tp);
++ 			}
++ 			tp->t_state &= ~TS_EXTPROC;
++ 		}
++ 		return (0);
++ 	} else
+  	if (cdevsw[major(dev)].d_open == ptcopen)
+  		switch (cmd) {
+  
+***************
+*** 525,530 ****
+--- 570,583 ----
+  			while (getc(&tp->t_outq) >= 0)
+  				;
+  			break;
++ 
++ 		case TIOCSIG:
++ 			if (*(unsigned int *)data >= NSIG)
++ 				return(EINVAL);
++ 			if ((tp->t_flags&NOFLSH) == 0)
++ 				ttyflush(tp, FREAD|FWRITE);
++ 			gsignal(tp->t_pgrp, *(unsigned int *)data);
++ 			return(0);
+  		}
+  	error = ttioctl(tp, cmd, data, flag);
+  	/*
+***************
+*** 549,554 ****
+--- 602,624 ----
+  			return (0);
+  		}
+  		error = ENOTTY;
++ 	}
++ 	/*
++ 	 * If external processing and packet mode send ioctl packet.
++ 	 */
++ 	if ((tp->t_state & TS_EXTPROC) && (pti->pt_flags & PF_PKT)) {
++ 		switch(cmd) {
++ 		case TIOCSETP:
++ 		case TIOCSETN:
++ 		case TIOCSETC:
++ 		case TIOCSLTC:
++ 		case TIOCLBIS:
++ 		case TIOCLBIC:
++ 		case TIOCLSET:
++ 			pti->pt_send |= TIOCPKT_IOCTL;
++ 		default:
++ 			break;
++ 		}
+  	}
+  	stop = (tp->t_flags & RAW) == 0 &&
+  	    tp->t_stopc == CTRL('s') && tp->t_startc == CTRL('q');

@@ -1,0 +1,72 @@
+*** stty.c.old	Tue May 23 13:54:29 1989
+--- stty.c	Wed Aug 23 13:42:32 1989
+***************
+*** 20,25 ****
+--- 20,28 ----
+  
+  #include <stdio.h>
+  #include <sys/ioctl.h>
++ #include <sys/types.h>
++ #define	NO_T_CHARS_DEFINES
++ #include <sys/tty.h>
+  
+  struct
+  {
+***************
+*** 145,150 ****
+--- 148,156 ----
+  struct winsize win;
+  int	lmode;
+  int	oldisc, ldisc;
++ #ifdef	TIOCGSTATE
++ int	extproc;
++ #endif
+  
+  struct	special {
+  	char	*name;
+***************
+*** 188,193 ****
+--- 194,203 ----
+  	ioctl(1, TIOCLGET, &lmode);
+  	ioctl(1, TIOCGLTC, &ltc);
+  	ioctl(1, TIOCGWINSZ, &win);
++ #ifdef	TIOCGSTATE
++ 	ioctl(1, TIOCGSTATE, &extproc);
++ 	extproc &= TS_EXTPROC;
++ #endif
+  	if(argc == 1) {
+  		prmodes(0);
+  		exit(0);
+***************
+*** 292,297 ****
+--- 302,316 ----
+  			printf("%d %d\n", win.ws_row, win.ws_col);
+  			exit(0);
+  		}
++ #if	defined(TIOCEXT)
++ 		if (eq("extproc") || eq("-extproc")) {
++ 			if (**argv == '-')
++ 				extproc = 0;
++ 			else
++ 				extproc = 1;
++ 			ioctl(1, TIOCEXT, &extproc);
++ 		}
++ #endif
+  		for(i=0; speeds[i].string; i++)
+  			if(eq(speeds[i].string)) {
+  				mode.sg_ispeed = mode.sg_ospeed = speeds[i].speed;
+***************
+*** 438,443 ****
+--- 457,468 ----
+  		lpit(LPENDIN, "-pendin ");
+  		lpit(LDECCTQ, "-decctlq ");
+  		lpit(LNOFLSH, "-noflsh ");
++ #ifdef	TIOCGSTATE
++ 		if (all==2||extproc) {
++ 			fprintf(stderr,"-extproc"+(extproc!=0));
++ 			any++;
++ 		}
++ #endif
+  		if (any || nothing)
+  			fprintf(stderr,"\n");
+  	} else if (!all)

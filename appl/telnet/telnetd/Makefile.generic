@@ -1,0 +1,71 @@
+#
+# Copyright (c) 1991 The Regents of the University of California.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms are permitted provided
+# that: (1) source distributions retain this entire copyright notice and
+# comment, and (2) distributions including binaries display the following
+# acknowledgement:  ``This product includes software developed by the
+# University of California, Berkeley and its contributors'' in the
+# documentation or other materials provided with the distribution and in
+# all advertising materials mentioning features or use of this software.
+# Neither the name of the University nor the names of its contributors may
+# be used to endorse or promote products derived from this software without
+# specific prior written permission.
+# THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+#
+#	@(#)Makefile.generic	5.5 (Berkeley) 3/1/91
+#
+
+SRC1=	telnetd.c state.c termstat.c slc.c sys_term.c utility.c global.c authenc.c
+OBJ1=	telnetd.o state.o termstat.o slc.o sys_term.o utility.o global.o authenc.o
+
+OBJS=	${OBJ1} ${GETTYOBJ}
+SRCS=	${SRC1} ${GETTYSRC}
+
+MAN=	telnetd.0
+CFLAGS=	${LCCFLAGS} -I.. ${DEFINES} ${INCLUDES}
+ARPA_TELNET = ../arpa/telnet.h
+
+#
+# These next three lines are not needed in 4.4BSD
+#
+.SUFFIXES: .0 .8
+.8.0:
+	nroff -man -h $< > $@
+
+
+all: telnetd
+
+telnetd: ${OBJS} ${LIBPATH}
+	${CC} -o $@ ${CFLAGS} ${OBJS} ../../../lib/kafs/libkafs.a ${LIBS} 
+
+clean:
+	rm -f ${OBJS} core telnetd
+
+cleandir: clean
+	rm -f ${MAN} tags .depend
+
+depend: ${SRCS}
+	mkdep ${CFLAGS} ${SRCS}
+
+install: ${MAN}
+	install -s -o bin -g bin -m 755 telnetd ${LIBEXEC}
+	install -c -o bin -g bin -m 444 ${MAN} ${DESTDIR}/usr/man/cat8
+
+lint: ${SRCS}
+	lint ${CFLAGS} ${SRCS}
+
+tags: ${SRCS}
+	ctags ${SRCS}
+
+authenc.o: telnetd.h
+global.o: defs.h ext.h ${ARPA_TELNET}
+slc.o: telnetd.h defs.h ext.h ${ARPA_TELNET}
+state.o: telnetd.h defs.h ext.h ${ARPA_TELNET}
+sys_term.o: telnetd.h pathnames.h defs.h ext.h ${ARPA_TELNET}
+telnetd.o: telnetd.h defs.h ext.h ${ARPA_TELNET}
+termstat.o: telnetd.h defs.h ext.h ${ARPA_TELNET}
+utility.o: telnetd.h defs.h ext.h ${ARPA_TELNET}
