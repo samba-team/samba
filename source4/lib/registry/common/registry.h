@@ -40,6 +40,7 @@ struct reg_key_s {
   int cache_values_count;
   REG_KEY **cache_subkeys; 
   int cache_subkeys_count;
+  TALLOC_CTX *mem_ctx;
   int ref;
 };
 
@@ -52,6 +53,7 @@ struct reg_val_s {
   REG_HANDLE *handle;
   REG_KEY *parent;
   void *backend_data;
+  TALLOC_CTX *mem_ctx;
   int ref;
 };
 
@@ -107,6 +109,7 @@ struct reg_handle_s {
 	REG_SUBTREE *subtrees;
 	char *location;
 	void *backend_data;
+	TALLOC_CTX *mem_ctx;
 };
 
 struct reg_init_function_entry {

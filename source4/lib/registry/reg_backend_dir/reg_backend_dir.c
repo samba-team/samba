@@ -28,7 +28,7 @@ static BOOL reg_dir_add_key(REG_KEY *parent, const char *name)
 	asprintf(&path, "%s%s\\%s", parent->handle->location, reg_key_get_path(parent), name);
 	path = reg_path_win2unix(path);
 	ret = mkdir(path, 0700);
-	free(path);
+	SAFE_FREE(path);
 	return (ret == 0);
 }
 
@@ -41,22 +41,26 @@ static REG_KEY *reg_dir_open_key(REG_HANDLE *h, const char *name)
 {
 	DIR *d;
 	char *fullpath;
+	REG_KEY *ret;
+	TALLOC_CTX *mem_ctx = talloc_init("tmp");
 	if(!name) {
 		DEBUG(0, ("NULL pointer passed as directory name!"));
 		return NULL;
 	}
-	asprintf(&fullpath, "%s%s", h->location, name);
+	fullpath = talloc_asprintf(mem_ctx, "%s%s", h->location, name);
 	fullpath = reg_path_win2unix(fullpath);
 	
 	d = opendir(fullpath);
 	if(!d) {
 		DEBUG(3,("Unable to open '%s': %s\n", fullpath, strerror(errno)));
-		SAFE_FREE(fullpath);
+		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 	closedir(d);
-	
-	return reg_key_new_abs(name, h, fullpath);
+	ret = reg_key_new_abs(name, h, fullpath);
+	talloc_steal(mem_ctx, ret->mem_ctx, fullpath);
+	talloc_destroy(mem_ctx);
+	return ret;
 }
 
 static BOOL reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
@@ -67,7 +71,7 @@ static BOOL reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
 	REG_KEY **ar;
 	DIR *d;
 	(*count) = 0;
-	ar = malloc(sizeof(REG_KEY *) * max);
+	ar = talloc(k->mem_ctx, sizeof(REG_KEY *) * max);
 
 	d = opendir(fullpath);
 
@@ -78,8 +82,8 @@ static BOOL reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
 		   strcmp(e->d_name, ".") &&
 		   strcmp(e->d_name, "..")) {
 			char *newfullpath;
-			asprintf(&newfullpath, "%s/%s", fullpath, e->d_name);
-			ar[(*count)] = reg_key_new_rel(e->d_name, k, newfullpath);
+			ar[(*count)] = reg_key_new_rel(e->d_name, k, NULL);
+			ar[(*count)]->backend_data = talloc_asprintf(ar[*count]->mem_ctx, "%s/%s", fullpath, e->d_name);
 			if(ar[(*count)])(*count)++;
 
 			if((*count) == max) {
@@ -100,17 +104,12 @@ static BOOL reg_dir_open(REG_HANDLE *h, const char *loc, BOOL try) {
 	return True;
 }
 
-static void dir_free(REG_KEY *k) 
-{
-	free(k->backend_data);
-}
-
 static REG_VAL *reg_dir_add_value(REG_KEY *p, const char *name, int type, void *data, int len)
 {
 	REG_VAL *ret = reg_val_new(p, NULL);
 	char *fullpath;
 	FILE *fd;
-	ret->name = name?strdup(name):NULL;
+	ret->name = name?talloc_strdup(ret->mem_ctx, name):NULL;
 	fullpath = reg_path_win2unix(strdup(reg_val_get_path(ret)));
 	
 	fd = fopen(fullpath, "w+");
@@ -134,7 +133,6 @@ static REG_OPS reg_backend_dir = {
 	.del_key = reg_dir_del_key,
 	.add_value = reg_dir_add_value,
 	.del_value = reg_dir_del_value,
-	.free_key_backend_data = dir_free
 };
 
 NTSTATUS reg_dir_init(void)

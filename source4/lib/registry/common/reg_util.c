@@ -82,7 +82,7 @@ char *reg_val_data_string(REG_VAL *v)
   return ret;
 }
 
-const char *reg_val_description(REG_VAL *val) 
+char *reg_val_description(REG_VAL *val) 
 {
 	char *ret, *ds = reg_val_data_string(val);
 	asprintf(&ret, "%s = %s : %s", reg_val_name(val)?reg_val_name(val):"<No Name>", str_regtype(reg_val_type(val)), ds);
@@ -145,6 +145,9 @@ BOOL reg_split_path( char *path, char **base, char **new_path )
 	return True;
 }
 
+/**
+ * Replace all \'s with /'s
+ */
 char *reg_path_win2unix(char *path) 
 {
 	int i;
@@ -153,7 +156,9 @@ char *reg_path_win2unix(char *path)
 	}
 	return path;
 }
-
+/**
+ * Replace all /'s with \'s
+ */
 char *reg_path_unix2win(char *path) 
 {
 	int i;

@@ -35,34 +35,35 @@ static BOOL reg_close_gconf(REG_HANDLE *h)
 
 static REG_KEY *gconf_open_key (REG_HANDLE *h, const char *name) 
 {
+	REG_KEY *ret;
 	char *fullpath = reg_path_win2unix(strdup(name));
 
 	/* Check if key exists */
 	if(!gconf_client_dir_exists((GConfClient *)h->backend_data, fullpath, NULL)) {
-		free(fullpath);
+		SAFE_FREE(fullpath);
 		return NULL;
 	}
-	free(fullpath);
+	ret = reg_key_new_abs(name, h, NULL);
+	ret->backend_data = talloc_strdup(ret->mem_ctx, fullpath);
+	SAFE_FREE(fullpath);
 
-	return reg_key_new_abs(name, h, NULL);
+	return ret;
 }
 
 static BOOL gconf_fetch_values(REG_KEY *p, int *count, REG_VAL ***vals)
 {
 	GSList *entries;
 	GSList *cur;
-	REG_VAL **ar = malloc(sizeof(REG_VAL *));
-	char *fullpath = strdup(reg_key_get_path(p));
-	fullpath = reg_path_win2unix(fullpath);
+	REG_VAL **ar = talloc(p->mem_ctx, sizeof(REG_VAL *));
+	char *fullpath = p->backend_data;
 	cur = entries = gconf_client_all_entries((GConfClient*)p->handle->backend_data, fullpath, NULL);
-	free(fullpath);
 
 	(*count) = 0;
 	while(cur) {
 		GConfEntry *entry = cur->data;
 		GConfValue *value = gconf_entry_get_value(entry);
 		REG_VAL *newval = reg_val_new(p, NULL);
-		newval->name = strdup(strrchr(gconf_entry_get_key(entry), '/')+1);
+		newval->name = talloc_strdup(newval->mem_ctx, strrchr(gconf_entry_get_key(entry), '/')+1);
 		if(value) {
 			switch(value->type) {
 			case GCONF_VALUE_INVALID: 
@@ -71,26 +72,26 @@ static BOOL gconf_fetch_values(REG_KEY *p, int *count, REG_VAL ***vals)
 
 			case GCONF_VALUE_STRING:
 				newval->data_type = REG_SZ;
-				newval->data_blk = strdup(gconf_value_get_string(value));
+				newval->data_blk = talloc_strdup(newval->mem_ctx, gconf_value_get_string(value));
 				newval->data_len = strlen(newval->data_blk);
 				break;
 
 			case GCONF_VALUE_INT:
 				newval->data_type = REG_DWORD;
-				newval->data_blk = malloc(sizeof(long));
+				newval->data_blk = talloc(newval->mem_ctx, sizeof(long));
 				*((long *)newval->data_blk) = gconf_value_get_int(value);
 				newval->data_len = sizeof(long);
 				break;
 
 			case GCONF_VALUE_FLOAT:
-				newval->data_blk = malloc(sizeof(double));
+				newval->data_blk = talloc(newval->mem_ctx, sizeof(double));
 				newval->data_type = REG_BINARY;
 				*((double *)newval->data_blk) = gconf_value_get_float(value);
 				newval->data_len = sizeof(double);
 				break;
 
 			case GCONF_VALUE_BOOL:
-				newval->data_blk = malloc(sizeof(BOOL));
+				newval->data_blk = talloc(newval->mem_ctx, sizeof(BOOL));
 				newval->data_type = REG_BINARY;
 				*((BOOL *)newval->data_blk) = gconf_value_get_bool(value);
 				newval->data_len = sizeof(BOOL);
@@ -104,7 +105,7 @@ static BOOL gconf_fetch_values(REG_KEY *p, int *count, REG_VAL ***vals)
 		} else newval->data_type = REG_NONE; 
 
 		ar[(*count)] = newval;
-		ar = realloc(ar, sizeof(REG_VAL *) * ((*count)+2));
+		ar = talloc_realloc(p->mem_ctx, ar, sizeof(REG_VAL *) * ((*count)+2));
 		(*count)++;
 		g_free(cur->data);
 		cur = cur->next;
@@ -120,14 +121,13 @@ static BOOL gconf_fetch_subkeys(REG_KEY *p, int *count, REG_KEY ***subs)
 	GSList *dirs;
 	GSList *cur;
 	REG_KEY **ar = malloc(sizeof(REG_KEY *));
-	char *fullpath = strdup(reg_key_get_path(p));
-	fullpath = reg_path_win2unix(fullpath);
+	char *fullpath = p->backend_data;
 	cur = dirs = gconf_client_all_dirs((GConfClient*)p->handle->backend_data, fullpath,NULL);
-	free(fullpath);
 
 	(*count) = 0;
 	while(cur) {
-		ar[(*count)] = reg_key_new_abs(reg_path_unix2win((char *)cur->data), p->handle, NULL);
+		ar[(*count)] = reg_key_new_abs(reg_path_unix2win((char *)cur->data), p->handle,NULL);
+		ar[(*count)]->backend_data = talloc_strdup(ar[*count]->mem_ctx, cur->data);
 		ar = realloc(ar, sizeof(REG_KEY *) * ((*count)+2));
 		(*count)++;
 		g_free(cur->data);
@@ -142,11 +142,10 @@ static BOOL gconf_fetch_subkeys(REG_KEY *p, int *count, REG_KEY ***subs)
 static BOOL gconf_update_value(REG_VAL *val, int type, void *data, int len)
 {
 	GError *error = NULL;
-	char *keypath = reg_path_win2unix(strdup(reg_key_get_path(val->parent)));
+	char *keypath = val->backend_data;
 	char *valpath;
 	if(val->name)asprintf(&valpath, "%s/%s", keypath, val->name);
 	else valpath = strdup(keypath);
-	free(keypath);
 	
 	switch(type) {
 	case REG_SZ:

@@ -55,7 +55,6 @@ NTSTATUS registry_register(void *_function)
 	return NT_STATUS_OK;
 }
 
-
 /* Find a backend in the list of available backends */
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 {
@@ -74,6 +73,7 @@ REG_HANDLE *reg_open(const char *backend, const char *location, BOOL try_full_lo
 {
 	struct reg_init_function_entry *entry;
 	static BOOL reg_first_init = True;
+	TALLOC_CTX *mem_ctx;
 	REG_HANDLE *ret;
 
 	if(reg_first_init) {
@@ -91,12 +91,14 @@ REG_HANDLE *reg_open(const char *backend, const char *location, BOOL try_full_lo
 		DEBUG(0, ("No such registry backend '%s' loaded!\n", backend));
 		return NULL;
 	}
-
-	ret = malloc(sizeof(REG_HANDLE));
+	
+	mem_ctx = talloc_init(backend);
+	ret = talloc(mem_ctx, sizeof(REG_HANDLE));
 	ZERO_STRUCTP(ret);	
-	ret->location = location?strdup(location):NULL;
+	ret->location = location?talloc_strdup(mem_ctx, location):NULL;
 	ret->functions = entry->functions;
 	ret->backend_data = NULL;
+	ret->mem_ctx = mem_ctx;
 
 	if(!entry->functions->open_registry) {
 		return ret;
@@ -105,15 +107,19 @@ REG_HANDLE *reg_open(const char *backend, const char *location, BOOL try_full_lo
 	if(entry->functions->open_registry(ret, location, try_full_load))
 		return ret;
 
-	SAFE_FREE(ret);
+	talloc_destroy(mem_ctx);
 	return NULL;
 }
 
-/* Open a key */
+/* Open a key 
+ * First tries to use the open_key function from the backend
+ * then falls back to get_subkey_by_name and later get_subkey_by_index 
+ */
 REG_KEY *reg_open_key(REG_KEY *parent, const char *name)
 {
 	char *fullname;
 	REG_KEY *ret = NULL;
+	TALLOC_CTX *mem_ctx;
 
 	if(!parent) {
 		DEBUG(0, ("Invalid parent key specified"));
@@ -131,16 +137,23 @@ REG_KEY *reg_open_key(REG_KEY *parent, const char *name)
 		while(curbegin && *curbegin) {
 			if(curend)*curend = '\0';
 			curkey = reg_key_get_subkey_by_name(curkey, curbegin);
-			if(!curkey) return NULL;
+			if(!curkey) {
+				SAFE_FREE(orig);
+				return NULL;
+			}
 			if(!curend) break;
 			curbegin = curend + 1;
 			curend = strchr(curbegin, '\\');
 		}
+		SAFE_FREE(orig);
 		
 		return curkey;
 	}
 
-	asprintf(&fullname, "%s%s%s", parent->path, parent->path[strlen(parent->path)-1] == '\\'?"":"\\", name);
+	mem_ctx = talloc_init("mem_ctx");
+
+	fullname = talloc_asprintf(mem_ctx, "%s%s%s", parent->path, parent->path[strlen(parent->path)-1] == '\\'?"":"\\", name);
+
 
 	if(!parent->handle->functions->open_key) {
 		DEBUG(0, ("Registry backend doesn't have get_subkey_by_name nor open_key!\n"));
@@ -152,8 +165,10 @@ REG_KEY *reg_open_key(REG_KEY *parent, const char *name)
 	if(ret) {
 		ret->handle = parent->handle;
 		ret->path = fullname;
-	} else
-		SAFE_FREE(fullname);
+		talloc_steal(mem_ctx, ret->mem_ctx, fullname);
+	}
+
+	talloc_destroy(mem_ctx);
 
 	return ret;
 }
@@ -241,7 +256,7 @@ REG_KEY *reg_key_get_subkey_by_index(REG_KEY *key, int idx)
 	}
 
 	if(ret && !ret->path) {
-		asprintf(&ret->path, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", ret->name);
+		ret->path = talloc_asprintf(ret->mem_ctx, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", ret->name);
 		ret->handle = key->handle;
 	}
 
@@ -270,7 +285,7 @@ REG_KEY *reg_key_get_subkey_by_name(REG_KEY *key, const char *name)
 	}
 
 	if(ret && !ret->path) {
-		asprintf(&ret->path, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", ret->name);
+		ret->path = talloc_asprintf(ret->mem_ctx, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", ret->name);
 		ret->handle = key->handle;
 	}
 		
@@ -310,7 +325,9 @@ BOOL reg_key_del(REG_KEY *key)
 {
 	if(key->handle->functions->del_key) {
 		if(key->handle->functions->del_key(key)) {
-			free_cached_keys(key);		
+			/* Invalidate cache */
+			key->cache_subkeys = NULL;
+			key->cache_subkeys_count = 0;
 			return True;
 		}
 	}
@@ -356,7 +373,8 @@ BOOL reg_val_del(REG_VAL *val)
 	}
 	
 	if(val->handle->functions->del_value(val)) {
-		free_cached_values(val->parent);
+		val->parent->cache_values = NULL;
+		val->parent->cache_values_count = 0;
 		return True;
 	} 
 	return False;
@@ -398,7 +416,8 @@ BOOL reg_key_add_name(REG_KEY *parent, const char *name)
 	}
 
 	if(parent->handle->functions->add_key(parent, name)) {
-		free_cached_keys(parent);
+		parent->cache_subkeys = NULL;
+		parent->cache_subkeys_count = 0;
 		return True;
 	} 
 	return False;
@@ -419,7 +438,8 @@ BOOL reg_val_update(REG_VAL *val, int type, void *data, int len)
 		
 		new = val->handle->functions->add_value(val->parent, val->name, type, data, len);
 		memcpy(val, new, sizeof(REG_VAL));
-		free_cached_values(val->parent);
+		val->parent->cache_values = NULL;
+		val->parent->cache_values_count = 0;
 		return True;
 	}
 		
@@ -447,7 +467,7 @@ REG_KEY *reg_get_root(REG_HANDLE *h)
 
 	if(ret) {
 		ret->handle = h;
-		ret->path = strdup("\\");
+		ret->path = talloc_strdup(ret->mem_ctx, "\\");
 	}
 
 	return ret;
@@ -462,19 +482,9 @@ REG_VAL *reg_key_add_value(REG_KEY *key, const char *name, int type, void *value
 	ret = key->handle->functions->add_value(key, name, type, value, vallen);
 	ret->parent = key;
 	ret->handle = key->handle;
-	free_cached_values(key);
-	return ret;
-}
 
-void free_cached_values(REG_KEY *key) 
-{
-	free(key->cache_values); key->cache_values = NULL;
+	/* Invalidate the cache */
+	key->cache_values = NULL;
 	key->cache_values_count = 0;
-}
-
-
-void free_cached_keys(REG_KEY *key) 
-{
-	free(key->cache_subkeys); key->cache_subkeys = NULL;
-	key->cache_subkeys_count = 0;
+	return ret;
 }
