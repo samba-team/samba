@@ -150,6 +150,7 @@ sub process_file($)
 		IdlEParser::ParseHeader($pidl, $parser);
 		my($header) = dirname($output) . "/packet-dcerpc-proto.h";
 		open(OUT, ">>$header") || die "can't open $header";
+		print OUT "#include \"ndr_$basename.h\"\n";
 		print OUT "#include \"packet-dcerpc-proto-$basename.h\"\n";
 		close(OUT);
 	}
