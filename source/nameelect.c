@@ -402,6 +402,10 @@ on subnet %s\n", work->work_group, inet_ntoa(d->bcast_ip)));
       /* Reset the announce master timer so that we do an announce as soon as possible
          now we are a master. */
       reset_announce_timer();
+
+      DEBUG(0,("Samba is now a local master browser for workgroup %s on subnet %s\n", 
+                work->work_group, inet_ntoa(d->bcast_ip)));
+
       break;
     }
 
@@ -492,7 +496,7 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
       add_server_entry(d,work,myname,work->ServerType,0,
                         lp_serverstring(),True);
 
-      DEBUG(4,("Samba is now a domain master browser for workgroup %s on subnet %s\n", 
+      DEBUG(0,("Samba is now a domain master browser for workgroup %s on subnet %s\n", 
                 work->work_group, inet_ntoa(d->bcast_ip)));
 
       break;

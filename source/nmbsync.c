@@ -156,7 +156,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
   
   got_pass = True;
   
-  DEBUG(4,("sync browse lists with %s for %s %s\n",
+  DEBUG(0,("sync_browse_lists: Sync browse lists with %s for %s %s\n",
 	    work->work_group, name, inet_ntoa(ip)));
   
   strcpy(workgroup,work->work_group);
