@@ -234,6 +234,12 @@ copy an IP address from one buffer to another
 #define vfs_stat(conn, fname, st) ((conn)->vfs_ops.stat((conn), dos_to_unix((fname),False),(st)))
 
 /*******************************************************************
+ vfs lstat wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_lstat(conn, fname, st) ((conn)->vfs_ops.lstat((conn), dos_to_unix((fname),False),(st)))
+
+/*******************************************************************
  vfs fstat wrapper that calls dos_to_unix.
 ********************************************************************/
 
