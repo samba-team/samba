@@ -738,8 +738,9 @@ loop(void)
 	int min_free = -1;
 	int max_fd = 0;
 	int i;
+
 	FD_ZERO(&fds);
-	for(i = 0; i < ndescr; i++){
+	for(i = 0; i < ndescr; i++) {
 	    if(d[i].s >= 0){
 		if(d[i].type == SOCK_STREAM && 
 		   d[i].timeout && d[i].timeout < time(NULL)) {
@@ -750,8 +751,10 @@ loop(void)
 		}
 		if(max_fd < d[i].s)
 		    max_fd = d[i].s;
+		if (max_fd >= FD_SETSIZE)
+		    krb5_errx(context, 1, "fd too large");
 		FD_SET(d[i].s, &fds);
-	    }else if(min_free < 0 || i < min_free)
+	    } else if(min_free < 0 || i < min_free)
 		min_free = i;
 	}
 	if(min_free == -1){
