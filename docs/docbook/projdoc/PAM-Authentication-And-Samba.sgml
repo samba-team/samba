@@ -165,27 +165,7 @@ life though, every decision makes trade-offs, so you may want examine the
 PAM documentation for further helpful information.
 </para></note>
 
-</sect1>
-
-<sect1>
-<title>Distributed Authentication</title>
-
-<para>
-The astute administrator will realize from this that the 
-combination of <filename>pam_smbpass.so</filename>, 
-<command>winbindd</command>, and a distributed 
-passdb backend, such as ldap, will allow the establishment of a
-centrally managed, distributed 
-user/password database that can also be used by all 
-PAM (eg: Linux) aware programs and applications. This arrangement 
-can have particularly potent advantages compared with the 
-use of Microsoft Active Directory Service (ADS) in so far as 
-reduction of wide area network authentication traffic.
-</para>
-
-</sect1>
-
-<sect1>
+<sect2>
 <title>PAM Configuration in smb.conf</title>
 
 <para>
@@ -210,5 +190,206 @@ password encryption.
 
 <para>Default: <command>obey pam restrictions = no</command></para>
 
+</sect2>
+
+<sect2>
+<title>Password Synchronisation using pam_smbpass.so</title>
+
+<para>
+pam_smbpass is a PAM module which can be used on conforming systems to
+keep the smbpasswd (Samba password) database in sync with the unix
+password file. PAM (Pluggable Authentication Modules) is an API supported
+under some Unices, such as Solaris, HPUX and Linux, that provides a
+generic interface to authentication mechanisms.
+</para>
+
+<para>
+For more information on PAM, see http://ftp.kernel.org/pub/linux/libs/pam/
+</para>
+
+<para>
+This module authenticates a local smbpasswd user database.  If you require
+support for authenticating against a remote SMB server, or if you're
+concerned about the presence of suid root binaries on your system, it is
+recommended that you use one of the other two following modules
+</para>
+
+<para><programlisting>
+	pam_smb - http://www.csn.ul.ie/~airlied/pam_smb/
+	  authenticates against any remote SMB server
+
+	pam_ntdom - ftp://ftp.samba.org/pub/samba/pam_ntdom/
+	  authenticates against an NT or Samba domain controller
+
+Options recognized by this module are as follows:
+
+        debug           -       log more debugging info
+        audit           -       like debug, but also logs unknown usernames
+        use_first_pass  -       don't prompt the user for passwords;
+                                take them from PAM_ items instead
+        try_first_pass  -       try to get the password from a previous
+                                PAM module, fall back to prompting the user
+        use_authtok     -       like try_first_pass, but *fail* if the new
+                                PAM_AUTHTOK has not been previously set.
+                                (intended for stacking password modules only)
+        not_set_pass    -       don't make passwords used by this module
+                                available to other modules.
+        nodelay         -       don't insert ~1 second delays on authentication
+                                failure.
+        nullok          -       null passwords are allowed.
+        nonull          -       null passwords are not allowed. Used to
+                                override the Samba configuration.
+        migrate         -       only meaningful in an "auth" context;
+                                used to update smbpasswd file with a
+                                password used for successful authentication.
+        smbconf=&lt file &gt  -     specify an alternate path to the smb.conf
+                                file.
+</programlisting><para>
+
+<para><programlisting>
+Thanks go to the following people:
+
+	* Andrew Morgan &lt morgan@transmeta.com &gt, for providing the Linux-PAM
+	framework, without which none of this would have happened
+
+	* Christian Gafton &lt gafton@redhat.com &gt and Andrew Morgan again, for the
+	pam_pwdb module upon which pam_smbpass was originally based
+
+	* Luke Leighton &lt lkcl@switchboard.net &gt for being receptive to the idea,
+	and for the occasional good-natured complaint about the project's status
+	that keep me working on it :)
+
+	* and of course, all the other members of the Samba team
+	&lt http://www.samba.org/samba/team.html &gt, for creating a great product
+	and for giving this project a purpose
+
+	---------------------
+	Stephen Langasek &lt vorlon@netexpress.net &gt
+</programlisting></para>
+
+<para>
+The following are examples of the use of pam_smbpass.so in the format of Linux
+<filename>/etc/pam.d/</filename> files structure. Those wishing to implement this
+tool on other platforms will need to adapt this appropriately.
+</para>
+
+<sect3>
+<title>Password Synchonisation Configuration</title>
+
+<para>
+A sample PAM configuration that shows the use of pam_smbpass to make
+sure private/smbpasswd is kept in sync when /etc/passwd (/etc/shadow)
+is changed.  Useful when an expired password might be changed by an
+application (such as ssh).
+</para>
+
+<para><programlisting>
+	#%PAM-1.0
+	# password-sync
+	#
+	auth       requisite        pam_nologin.so
+	auth       required         pam_unix.so
+	account    required         pam_unix.so
+	password   requisite        pam_cracklib.so retry=3
+	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
+	password   required         pam_smbpass.so nullok use_authtok try_first_pass
+	session    required         pam_unix.so
+</programlisting></para>
+</sect3>
+
+<sect3>
+<title>Password Migration Configuration</title>
+
+<para>
+A sample PAM configuration that shows the use of pam_smbpass to migrate
+from plaintext to encrypted passwords for Samba.  Unlike other methods,
+this can be used for users who have never connected to Samba shares:
+password migration takes place when users ftp in, login using ssh, pop
+their mail, etc.
+</para>
+
+<para><programlisting>
+	#%PAM-1.0
+	# password-migration
+	#
+	auth       requisite        pam_nologin.so
+	# pam_smbpass is called IFF pam_unix succeeds.
+	auth       requisite        pam_unix.so
+	auth       optional         pam_smbpass.so migrate
+	account    required         pam_unix.so
+	password   requisite        pam_cracklib.so retry=3
+	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
+	password   optional         pam_smbpass.so nullok use_authtok try_first_pass
+	session    required         pam_unix.so
+</programlisting></para>
+</sect3>
+
+<sect3>
+<title>Mature Password Configuration</title>
+
+<para>
+A sample PAM configuration for a 'mature' smbpasswd installation.
+private/smbpasswd is fully populated, and we consider it an error if
+the smbpasswd doesn't exist or doesn't match the Unix password.
+</para>
+
+<para><programlisting>
+	#%PAM-1.0
+	# password-mature
+	#
+	auth       requisite        pam_nologin.so
+	auth       required         pam_unix.so
+	account    required         pam_unix.so
+	password   requisite        pam_cracklib.so retry=3
+	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
+	password   required         pam_smbpass.so use_authtok use_first_pass
+	session    required         pam_unix.so
+</programlisting></para>
+</sect3>
+
+<sect3>
+<title>Kerberos Password Integration Configuration</title>
+
+<para>
+A sample PAM configuration that shows pam_smbpass used together with
+pam_krb5.  This could be useful on a Samba PDC that is also a member of
+a Kerberos realm.
+</para>
+
+<para><programlisting>
+	#%PAM-1.0
+	# kdc-pdc
+	#
+	auth       requisite        pam_nologin.so
+	auth       requisite        pam_krb5.so
+	auth       optional         pam_smbpass.so migrate
+	account    required         pam_krb5.so
+	password   requisite        pam_cracklib.so retry=3
+	password   optional         pam_smbpass.so nullok use_authtok try_first_pass
+	password   required         pam_krb5.so use_authtok try_first_pass
+	session    required         pam_krb5.so
+</programlisting></para>
+</sect3>
+
+</sect2>
 </sect1>
+
+<sect1>
+<title>Distributed Authentication</title>
+
+<para>
+The astute administrator will realize from this that the 
+combination of <filename>pam_smbpass.so</filename>, 
+<command>winbindd</command>, and a distributed 
+passdb backend, such as ldap, will allow the establishment of a
+centrally managed, distributed 
+user/password database that can also be used by all 
+PAM (eg: Linux) aware programs and applications. This arrangement 
+can have particularly potent advantages compared with the 
+use of Microsoft Active Directory Service (ADS) in so far as 
+reduction of wide area network authentication traffic.
+</para>
+
+</sect1>
+
 </chapter>
