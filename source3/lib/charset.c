@@ -127,9 +127,10 @@ static void add_dos_char(int lower, BOOL map_lower_to_upper,
 {
   lower &= 0xff;
   upper &= 0xff;
-  DEBUG(6,("Adding chars 0x%x 0x%x (l->u = %s) (u->l = %s)\n",lower,upper,
-         map_lower_to_upper ? "True" : "False",
-         map_upper_to_lower ? "True" : "False"));
+  DEBUGADD( 6, ( "Adding chars 0x%x 0x%x (l->u = %s) (u->l = %s)\n",
+                 lower, upper,
+                 map_lower_to_upper ? "True" : "False",
+                 map_upper_to_lower ? "True" : "False" ) );
   if (lower) dos_char_map[lower] = 1;
   if (upper) dos_char_map[upper] = 1;
   lower_char_map[lower] = (char)lower; /* Define tolower(lower) */

@@ -1570,19 +1570,19 @@ void wins_write_database(void)
     int i;
     struct tm *tm;
 
-    DEBUG(4,("%-19s ", namestr(&namerec->name) ));
+    DEBUGADD(4,("%-19s ", namestr(&namerec->name) ));
 
     if( namerec->data.death_time != PERMANENT_TTL )
     {
       tm = LocalTime(&namerec->data.death_time);
-      DEBUG(4,("TTL = %s", asctime(tm) ));
+      DEBUGADD(4,("TTL = %s", asctime(tm) ));
     }
     else
-      DEBUG(4,("TTL = PERMANENT\t"));
+      DEBUGADD(4,("TTL = PERMANENT\t"));
 
     for (i = 0; i < namerec->data.num_ips; i++)
-      DEBUG(4,("%15s ", inet_ntoa(namerec->data.ip[i]) ));
-    DEBUG(4,("%2x\n", namerec->data.nb_flags ));
+      DEBUGADD(4,("%15s ", inet_ntoa(namerec->data.ip[i]) ));
+    DEBUGADD(4,("%2x\n", namerec->data.nb_flags ));
 
     if( namerec->data.source == REGISTER_NAME )
     {

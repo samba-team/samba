@@ -1710,17 +1710,17 @@ BOOL lp_file_list_changed(void)
     pstrcpy(n2,f->name);
     standard_sub_basic(n2);
 
-    DEBUG(6,("file %s -> %s  last mod_time: %s\n",
-             f->name, n2, ctime(&f->modtime)));
+    DEBUGADD( 6, ( "file %s -> %s  last mod_time: %s\n",
+                   f->name, n2, ctime(&f->modtime) ) );
 
     mod_time = file_modtime(n2);
 
     if (f->modtime != mod_time) {
-	    DEBUG(6,("file %s modified: %s\n", n2, ctime(&mod_time)));
+	    DEBUGADD(6,("file %s modified: %s\n", n2, ctime(&mod_time)));
 	    f->modtime = mod_time;
 	    return(True);
     }
-    f = f->next;   
+    f = f->next;
   }
   return(False);
 }
