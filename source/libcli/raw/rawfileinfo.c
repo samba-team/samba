@@ -301,7 +301,7 @@ static struct smbcli_request *smb_raw_fileinfo_blob_send(struct smbcli_tree *tre
 	tp.in.setup_count = 1;
 	tp.in.data = data;
 	tp.in.max_param = 2;
-	tp.in.max_data = smb_raw_max_trans_data(tree, 2);
+	tp.in.max_data = 0xFFFF;
 	tp.in.setup = &setup;
 	
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 4);
@@ -355,7 +355,7 @@ static struct smbcli_request *smb_raw_pathinfo_blob_send(struct smbcli_tree *tre
 	tp.in.setup_count = 1;
 	tp.in.data = data;
 	tp.in.max_param = 2;
-	tp.in.max_data = smb_raw_max_trans_data(tree, 2);
+	tp.in.max_data = 0xFFFF;
 	tp.in.setup = &setup;
 	
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 6);
