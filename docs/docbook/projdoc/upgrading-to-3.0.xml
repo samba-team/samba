@@ -4,7 +4,7 @@
 	<pubdate>25 October 2002</pubdate>
 </chapterinfo>
 
-<title>Issues when upgrading from 2.2 to 3.0</title>
+<title>Upgrading from Samba-2.x to Samba-3.0.0</title>
 
 <sect1>
 <title>Charsets</title>
@@ -35,4 +35,28 @@ In 3.0, the following configuration options have been removed.
 <member>vfs options</member>
 </simplelist>
 </sect1>
+
+<sect1>
+<title>Password Backend</title>
+
+<para>
+Effective with the release of samba-3 it is now imperative that the password backend
+be correctly defined in smb.conf.
+</para>
+
+<para>
+Those migrating from samba-2.x with plaintext password support need the following:
+<emphasis>passdb backend = guest</emphasis>.
+</para>
+
+<para>
+Those migrating from samba-2.x with encrypted password support should add to smb.conf
+<emphasis>passdb backend = smbpasswd, guest</emphasis>.
+</para>
+
+<para>
+LDAP using Samba-2.x systems can continue to operate with the following entry
+<emphasis>passdb backend = ldapsam_compat, guest</emphasis>.
+</para>
+
 </chapter>
