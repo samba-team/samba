@@ -44,6 +44,10 @@ RCSID("$Id$");
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
 						"libdefaults", F, NULL)
 
+#ifdef KRB4
+extern krb5_kt_ops krb4_fkt_ops;
+#endif
+
 static krb5_error_code
 init_context_from_config_file(krb5_context context)
 {
@@ -111,8 +115,21 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_try_txt, FALSE, "srv_try_txt");
     INIT_FIELD(context, bool, srv_try_rfc2052, TRUE, "srv_try_rfc2052");
-
     INIT_FIELD(context, int, fcache_vno, 0, "fcache_version");
+
+    context->cc_ops       = NULL;
+    context->num_cc_ops	  = 0;
+    krb5_cc_register(context, &krb5_fcc_ops, TRUE);
+    krb5_cc_register(context, &krb5_mcc_ops, TRUE);
+
+    context->num_kt_types = 0;
+    context->kt_types     = NULL;
+    krb5_kt_register (context, &krb5_fkt_ops);
+    krb5_kt_register (context, &krb5_mkt_ops);
+#ifdef KRB4
+    krb5_kt_register (context, &krb4_fkt_ops);
+#endif
+    krb5_kt_register (context, &krb5_akf_ops);
     return 0;
 }
 
@@ -164,9 +181,10 @@ krb5_free_context(krb5_context context)
   free(context->default_realm);
   krb5_config_file_free (context, context->cf);
   free_error_table (context->et_list);
-  for(i = 0; i < context->num_ops; ++i)
+  for(i = 0; i < context->num_cc_ops; ++i)
     free(context->cc_ops[i].prefix);
   free(context->cc_ops);
+  free(context->kt_types);
   free(context);
 }
 
