@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "ubiqx/ubi_dLinkList.h"
 
 extern int DEBUGLEVEL;
 extern connection_struct Connections[];
