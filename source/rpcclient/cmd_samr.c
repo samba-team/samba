@@ -1015,7 +1015,8 @@ static uint32 cmd_samr_lookup_names(struct cli_state *cli, int argc,
 	/* Display results */
 
 	for (i = 0; i < num_names; i++)
-		printf("name %s: %x (%d)\n", names[i], rids[i], name_types[i]);
+		printf("name %s: 0x%x (%d)\n", names[i], rids[i], 
+		       name_types[i]);
 
  done:
 	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
@@ -1109,6 +1110,87 @@ static uint32 cmd_samr_lookup_rids(struct cli_state *cli, int argc,
 	return result;
 }
 
+/* Delete domain user */
+
+static uint32 cmd_samr_delete_dom_user(struct cli_state *cli, int argc, 
+				       char **argv) 
+{
+	TALLOC_CTX *mem_ctx;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND connect_pol, domain_pol, user_pol;
+
+	if (argc != 2) {
+		printf("Usage: %s username\n", argv[0]);
+		return 0;
+	}
+
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0, ("cmd_samr_delete_dom_user: talloc_init failed\n"));
+		return result;
+	}
+
+	fetch_domain_sid(cli);
+
+	/* Initialise RPC connection */
+
+	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
+		DEBUG(0, ("cmd_samr_delete_dom_user: could not open samr pipe!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Get sam policy and domain handles */
+
+	if ((result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				       &connect_pol)) 
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	if ((result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					   MAXIMUM_ALLOWED_ACCESS,
+					   &domain_sid, &domain_pol))
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	/* Get handle on user */
+
+	{
+		uint32 *user_rids, num_rids, *name_types;
+		uint32 flags = 0x000003e8;
+
+		if ((result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+						    flags, 1, &argv[1],
+						    &num_rids, &user_rids,
+						    &name_types))
+		    != NT_STATUS_NOPROBLEMO) {
+			goto done;
+		}
+
+		if ((result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+						 MAXIMUM_ALLOWED_ACCESS,
+						 user_rids[0], &user_pol))
+		    != NT_STATUS_NOPROBLEMO) {
+			goto done;
+		}
+	}
+
+	/* Delete user */
+
+	if ((result = cli_samr_delete_dom_user(cli, mem_ctx, &user_pol))
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	/* Display results */
+
+ done:
+	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
+
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
@@ -1126,5 +1208,6 @@ struct cmd_set samr_commands[] = {
 	{ "createdomuser",      cmd_samr_create_dom_user,       "Create domain user" },
 	{ "samlookupnames",     cmd_samr_lookup_names, "Look up names" },
 	{ "samlookuprids",      cmd_samr_lookup_rids, "Look up names" },
+	{ "deletedomuser",      cmd_samr_delete_dom_user, "Delete domain user" },
 	{ NULL, NULL, NULL }
 };
