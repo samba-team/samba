@@ -530,8 +530,6 @@ static void usage(char *pname)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	fstring sam_name;
-
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
@@ -766,18 +764,7 @@ static void usage(char *pname)
 	/* possibly reload the services file. */
 	reload_services(True);
 
-	/* obtain or create a SAM SID */
-	if (lp_domain_logons())
-	{
-		fstrcpy(sam_name, global_myworkgroup);
-	}
-	else
-	{
-		fstrcpy(sam_name, global_myname);
-	}
-
-	if(!pdb_generate_sam_sid(sam_name, NULL))
-	{
+	if(!pdb_generate_sam_sid()) {
 		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
 		exit(1);
 	}
