@@ -166,6 +166,14 @@ BOOL asn1_write_GeneralString(ASN1_DATA *data, const char *s)
 	return !data->has_error;
 }
 
+BOOL asn1_write_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
+{
+	asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(num));
+	asn1_write(data, blob->data, blob->length);
+	asn1_pop_tag(data);
+	return !data->has_error;
+}
+
 /* write a BOOLEAN */
 BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
@@ -507,6 +515,22 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 	int len;
 	ZERO_STRUCTP(blob);
 	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
+	len = asn1_tag_remaining(data);
+	if (len < 0) {
+		data->has_error = True;
+		return False;
+	}
+	*blob = data_blob(NULL, len);
+	asn1_read(data, blob->data, len);
+	asn1_end_tag(data);
+	return !data->has_error;
+}
+
+BOOL asn1_read_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
+{
+	int len;
+	ZERO_STRUCTP(blob);
+	if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(num))) return False;
 	len = asn1_tag_remaining(data);
 	if (len < 0) {
 		data->has_error = True;
