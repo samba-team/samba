@@ -70,7 +70,6 @@ static NTSTATUS charset_register_backend(void *_funcs)
 	struct charset_functions *funcs = (struct charset_functions *)_funcs;
 	struct charset_functions *c = charsets;
 
-	DEBUG(5, ("Attempting to register new charset %s\n", funcs->name));
 	/* Check whether we already have this charset... */
 	while(c) {
 		if(!strcasecmp(c->name, funcs->name)){ 
@@ -81,7 +80,6 @@ static NTSTATUS charset_register_backend(void *_funcs)
 	}
 
 	funcs->next = funcs->prev = NULL;
-	DEBUG(5, ("Registered charset %s\n", funcs->name));
 	DLIST_ADD(charsets, funcs);
 	return NT_STATUS_OK;
 }
