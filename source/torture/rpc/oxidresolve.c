@@ -105,7 +105,6 @@ static int test_ComplexPing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T 
 
 	r.in.SequenceNum = 0;
 	r.in.SetId = setid;
-	r.out.SetId = setid;
 	r.in.cAddToSet = 1;
 	r.in.AddToSet = &oid;
 
