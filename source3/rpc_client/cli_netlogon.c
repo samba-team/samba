@@ -513,24 +513,28 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
 
   if(!resolve_name( remote_machine, &cli.dest_ip, 0x20)) {
     DEBUG(0,("modify_trust_password: Can't resolve address for %s\n", remote_machine));
+    cli_shutdown(&cli);
     return False;
   }
 
   if (ismyip(cli.dest_ip)) {
     DEBUG(0,("modify_trust_password: Machine %s is one of our addresses. Cannot add \
 to ourselves.\n", remote_machine));
+    cli_shutdown(&cli);
     return False;
   }
 
   if (!cli_connect(&cli, remote_machine, &cli.dest_ip)) {
     DEBUG(0,("modify_trust_password: unable to connect to SMB server on \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+    cli_shutdown(&cli);
     return False;
   }
   
   if (!attempt_netbios_session_request(&cli, global_myname, remote_machine, &cli.dest_ip)) {
     DEBUG(0,("modify_trust_password: machine %s rejected the NetBIOS \
 session request. Error was %s\n", remote_machine, cli_errstr(&cli) ));
+    cli_shutdown(&cli);
     return False;
   }
 
