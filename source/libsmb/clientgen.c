@@ -1596,7 +1596,8 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 
 	if (size == 0) return 0;
 
-	while (received < blocks) {
+	while (received < blocks)
+	{
 		int size2;
 
 		while (issued - received < mpx && issued < blocks) {

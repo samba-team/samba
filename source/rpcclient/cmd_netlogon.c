@@ -94,8 +94,9 @@ void cmd_netlogon_login_test(struct client_info *info)
 
 	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum,
 	                               smb_cli->mach_acct,
-	                               trust_passwd, SEC_CHAN_WKSTA) : False;
+	                               trust_passwd, SEC_CHAN_WKSTA) == 0x0 : False;
 
+#if 0
 	/* change the machine password? */
 	if (global_machine_password_needs_changing)
 	{
@@ -110,6 +111,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 
 		memset(new_trust_passwd, 0, 16);
 	}
+#endif
 
 	memset(trust_passwd, 0, 16);
 
@@ -163,7 +165,7 @@ void cmd_netlogon_domain_test(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
 
 	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum, inter_dom_acct,
-	                               trust_passwd, SEC_CHAN_DOMAIN) : False;
+	                               trust_passwd, SEC_CHAN_DOMAIN) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
 
