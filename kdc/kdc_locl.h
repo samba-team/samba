@@ -69,6 +69,10 @@ extern int trpolicy;
 extern int enable_524;
 extern int enable_v4_cross_realm;
 
+#ifdef PKINIT
+extern int enable_pkinit;
+#endif
+
 #ifdef KRB4
 extern char *v4_realm;
 extern int enable_v4;
@@ -120,6 +124,18 @@ krb5_error_code do_kaserver (unsigned char*, size_t, krb5_data*, const char*,
 
 #ifdef HAVE_OPENSSL
 #define des_new_random_key des_random_key
+#endif
+
+#ifdef PKINIT
+typedef struct pk_client_params pk_client_params;
+krb5_error_code pk_initialize(const char *, const char *, const char *);
+krb5_error_code pk_rd_padata(krb5_context, KDC_REQ *,
+			     PA_DATA *, pk_client_params **);
+krb5_error_code pk_mk_pa_reply(krb5_context, pk_client_params *,
+			       krb5_keyblock **, METHOD_DATA *);
+krb5_error_code pk_check_client(krb5_context, krb5_principal,
+				pk_client_params *, char **);
+void pk_free_client_param(krb5_context, pk_client_params *);
 #endif
 
 #endif /* __KDC_LOCL_H__ */
