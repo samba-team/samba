@@ -7294,11 +7294,13 @@ static BOOL spoolss_io_printer_enum_values_ctr(const char *desc, prs_struct *ps,
 		if (!prs_unistr("valuename", ps, depth, &ctr->values[i].valuename))
 			return False;
 		
-		if (UNMARSHALLING(ps) && ctr->values[i].data_len) {
-			ctr->values[i].data = (uint8 *)prs_alloc_mem(
-				ps, ctr->values[i].data_len);
-			if (!ctr->values[i].data)
-				return False;
+		if ( ctr->values[i].data_len ) {
+			if ( UNMARSHALLING(ps) ) {
+				ctr->values[i].data = (uint8 *)prs_alloc_mem(
+					ps, ctr->values[i].data_len);
+				if (!ctr->values[i].data)
+					return False;
+			}
 			if (!prs_uint8s(False, "data", ps, depth, ctr->values[i].data, ctr->values[i].data_len))
 				return False;
 		}
