@@ -48,7 +48,7 @@ void locking_close_file(files_struct *fsp)
 {
 	if (!lp_locking(SNUM(fsp->conn))) return;
 
-	brl_close(fsp->fd_ptr->dev, fsp->fd_ptr->inode, 
+	brl_close(fsp->dev, fsp->inode, 
 		  getpid(), fsp->conn->cnum, fsp->fnum);
 }
 
@@ -68,7 +68,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	if (!lp_locking(snum) || !lp_strict_locking(snum))
 		return(False);
 
-	return !brl_locktest(fsp->fd_ptr->dev, fsp->fd_ptr->inode, 
+	return !brl_locktest(fsp->dev, fsp->inode, 
 			     global_smbpid, getpid(), conn->cnum, 
 			     offset, count, lock_type);
 }
@@ -96,7 +96,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 		  lock_type, (double)offset, (double)count, fsp->fsp_name ));
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_lock(fsp->fd_ptr->dev, fsp->fd_ptr->inode, fsp->fnum,
+		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
 			      global_smbpid, getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
@@ -127,7 +127,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 		  (double)offset, (double)count, fsp->fsp_name ));
 	
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_unlock(fsp->fd_ptr->dev, fsp->fd_ptr->inode, fsp->fnum,
+		ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
 				global_smbpid, getpid(), conn->cnum, 
 				offset, count);
 	}
@@ -186,7 +186,7 @@ static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
 }
 static TDB_DATA locking_key_fsp(files_struct *fsp)
 {
-	return locking_key(fsp->fd_ptr->dev, fsp->fd_ptr->inode);
+	return locking_key(fsp->dev, fsp->inode);
 }
 
 /*******************************************************************
@@ -205,6 +205,23 @@ BOOL unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode)
 {
 	return tdb_unlockchain(tdb, locking_key(dev, inode)) == 0;
+}
+
+
+/*******************************************************************
+ Lock a hash bucket entry. use a fsp for convenience
+******************************************************************/
+BOOL lock_share_entry_fsp(files_struct *fsp)
+{
+	return tdb_lockchain(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
+}
+
+/*******************************************************************
+ Unlock a hash bucket entry.
+******************************************************************/
+BOOL unlock_share_entry_fsp(files_struct *fsp)
+{
+	return tdb_unlockchain(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
 }
 
 /*******************************************************************
@@ -370,7 +387,7 @@ static BOOL mod_share_mode(files_struct *fsp,
 		    shares[i].share_mode == fsp->share_mode &&
 		    memcmp(&shares[i].time, 
 			   &fsp->open_time,sizeof(struct timeval)) == 0) {
-			mod_fn(&shares[i], fsp->fd_ptr->dev, fsp->fd_ptr->inode, param);
+			mod_fn(&shares[i], fsp->dev, fsp->inode, param);
 			need_store=1;
 		}
 	}
