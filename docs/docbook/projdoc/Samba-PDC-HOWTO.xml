@@ -1,9 +1,8 @@
 <chapter id="samba-pdc">
 
-
 <chapterinfo>
-	&author.jerry;
 	&author.jht;
+	&author.jerry;
 	<author>
 		<firstname>David</firstname><surname>Bannon</surname>
 		<affiliation>
@@ -11,7 +10,6 @@
 			<address><email>dbannon@samba.org</email></address>
 		</affiliation>
 	</author>
-	<pubdate> (26 Apr 2001) </pubdate>
 </chapterinfo>
 
 <title>Domain Control</title>
@@ -68,7 +66,7 @@ to not inflict pain on others. Do your learning on a test network.
 </para>
 
 <sect1>
-<title><Features and Benefits</title
+<title>Features and Benefits</title>
 
 <para>
 The following functionalities are new to the Samba-3 release:
@@ -85,7 +83,7 @@ The following functionalities are new to the Samba-3 release:
 </itemizedlist>
 
 <para>
-The following functionalities are NOT provided by Samba 3.0:
+The following functionalities are NOT provided by Samba-3:
 </para>
 
 <itemizedlist>
@@ -102,16 +100,15 @@ The following functionalities are NOT provided by Samba 3.0:
 
 <para>
 Please note that Windows 9x / Me / XP Home clients are not true members of a domain
-for reasons outlined in this article.  Therefore the protocol for
-support of Windows 9x-style domain logons is completely different
-from NT4 / Win2k type domain logons and has been officially supported for some 
-time.
+for reasons outlined in this article.  Therefore the protocol for support of Windows
+9x / Me style domain logons is completely different from NT4 / Win2k type domain logons 
+nd has been officially supported for some time.
 </para>
 
 <para><emphasis>
 MS Windows XP Home edition is NOT able to join a domain and does not permit
-the use of domain logons.</emphasis>
-</para>
+the use of domain logons.
+</emphasis></para>
 
 <para>
 Samba-3 offers a complete implementation of group mapping between Windows NT groups
@@ -147,8 +144,9 @@ for this including:
 	</para></listitem>
 </itemizedlist>
 
-<para>Read the chapter about the <link linkend="passdb">User Database</link> 
-for details.</para>
+<para>
+Read the chapter about the <link linkend="passdb">User Database</link> for details.
+</para>
 
 <note><para>
 The new tdbsam and ldapsam account backends store vastly more information than
@@ -247,7 +245,7 @@ be revised to duely reflect all configuration and management requirements.
 </sect2>
 
 <sect2>
-<title>Preparing for Domain Control<title>
+<title>Preparing for Domain Control</title>
 
 <para>
 The following outlines the steps necessary for configuring Samba-3 as an MS Windows NT4 style PDC.
@@ -264,8 +262,8 @@ It is necessary to have a working Samba server prior to implementing the PDC fun
 	</para></listitem>
 	
 	<listitem><para>
-	Retrieving a list of users and groups from a Samba PDC to
-	Windows 9x / Me / NT / 200x / XP Professional clients
+	Retrieving a list of users and groups from a Samba PDC to Windows 9x / Me / NT / 200x / XP
+	Professional clients
 	</para></listitem>
 	
 	<listitem><para>
@@ -277,16 +275,13 @@ It is necessary to have a working Samba server prior to implementing the PDC fun
 	</para></listitem>
 </itemizedlist>
 
-<note>
-<para>
+<note><para>
 Roaming Profiles and System/Network policies are advanced network administration topics
 that are covered separately in this document.
-</para>
-</note>
+</para></note>
 
 <para>
-Implementing a Samba PDC can basically be divided into 4 broad
-steps.
+Implementing a Samba PDC can basically be divided into 4 broad steps.
 </para>
 
 <orderedlist numeration="arabic">
@@ -308,9 +303,8 @@ steps.
 </orderedlist>
 
 <para>
-There are other details such as user profiles, system policies, etc.
-However, these are not necessarily specific to a Samba PDC as much as they are
-related to Windows NT networking concepts.
+There are other details such as user profiles, system policies, etc. However, these are not
+necessarily specific to a Samba PDC as much as they are related to Windows NT networking concepts.
 </para>
 
 </sect2>
@@ -783,7 +777,6 @@ Windows 9x/ME clients do not possess machine trust accounts.
 Therefore, a Samba PDC will also act as a Windows 9x logon server.
 </para>
 
-
 <warning>
 <title>security mode and master browsers</title>
 
@@ -830,6 +823,7 @@ for its domain.
 </warning>
 
 </sect2>
+
 </sect1>
 
 <sect1>
