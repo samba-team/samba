@@ -1,3 +1,10 @@
+2002-05-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* misc.m4: change \100 back to @; some m4's (probably some regex)
+	doesn't like this as a replacement regexp; the reason it was once
+	changed to \100 was probably because of some autoconf bug at the
+	time
+
 2002-05-20  Johan Danielsson  <joda@pdc.kth.se>
 
 	* broken2.m4 []-less is apparently the way to go
