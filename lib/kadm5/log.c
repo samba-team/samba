@@ -49,8 +49,8 @@ RCSID("$Id$");
  */
 
 kadm5_ret_t
-kadm5_log_get_version (int fd,
-		       u_int32_t *ver)
+kadm5_log_get_version_fd (int fd,
+			  u_int32_t *ver)
 {
     int ret;
     krb5_storage *sp;
@@ -70,6 +70,12 @@ kadm5_log_get_version (int fd,
     krb5_storage_free(sp);
     lseek (fd, 0, SEEK_END);
     return 0;
+}
+
+kadm5_ret_t
+kadm5_log_get_version (kadm5_server_context *context, u_int32_t *ver)
+{
+    return kadm5_log_get_version_fd (context->log_context.log_fd, ver);
 }
 
 kadm5_ret_t
@@ -98,7 +104,7 @@ kadm5_log_init (kadm5_server_context *context)
 	return errno;
     }
 
-    ret = kadm5_log_get_version (fd, &log_context->version);
+    ret = kadm5_log_get_version_fd (fd, &log_context->version);
     if (ret)
 	return ret;
 
@@ -628,6 +634,8 @@ kadm5_log_nop (kadm5_server_context *context)
 	krb5_storage_free (sp);
 	return ret;
     }
+    krb5_store_int32 (sp, 0);
+    krb5_store_int32 (sp, 0);
     ret = kadm5_log_postamble (log_context, sp);
     if (ret) {
 	krb5_storage_free (sp);
@@ -757,4 +765,41 @@ kadm5_log_replay (kadm5_server_context *context,
     default :
 	return KADM5_FAILURE;
     }
+}
+
+/*
+ * truncate the log - i.e. create an empty file with just (nop vno + 2)
+ */
+
+kadm5_ret_t
+kadm5_log_truncate (kadm5_server_context *server_context)
+{
+    kadm5_ret_t ret;
+    u_int32_t vno;
+
+    ret = kadm5_log_init (server_context);
+    if (ret)
+	return ret;
+
+    ret = kadm5_log_get_version (server_context, &vno);
+    if (ret)
+	return ret;
+
+    ret = kadm5_log_reinit (server_context);
+    if (ret)
+	return ret;
+
+    ret = kadm5_log_set_version (server_context, vno + 1);
+    if (ret)
+	return ret;
+
+    ret = kadm5_log_nop (server_context);
+    if (ret)
+	return ret;
+
+    ret = kadm5_log_end (server_context);
+    if (ret)
+	return ret;
+    return 0;
+
 }
