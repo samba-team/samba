@@ -36,7 +36,7 @@ struct in_addr *lookup_backend(const char *name, int *count)
 	int fd;
 	static int initialised;
 	struct in_addr *ret;
-	char *p;
+	struct in_addr  p;
 	int j;
 
 	if (!initialised) {
@@ -63,9 +63,9 @@ struct in_addr *lookup_backend(const char *name, int *count)
  *		goto out;
  *	}
  */
-	p = lp_wins_server();
-	if (p && *p) {
-		ret = name_query(fd,name,0x20,False,True, *interpret_addr2(p), count);
+	p = wins_srv_ip();
+	if( !zero_ip(p) ) {
+		ret = name_query(fd,name,0x20,False,True, p, count);
 		goto out;
 	}
 
