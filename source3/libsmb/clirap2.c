@@ -586,7 +586,7 @@ int cli_NetUserAdd(struct cli_state *cli, RAP_USER_INFO_1 * userinfo )
 
   PUTWORD(p, 0); /* pwencrypt */
   if(userinfo->passwrd)
-    PUTWORD(p,strnlen(userinfo->passwrd, RAP_UPASSWD_LEN));
+    PUTWORD(p,MIN(strlen(userinfo->passwrd), RAP_UPASSWD_LEN));
   else
     PUTWORD(p, 0); /* password length */
 
