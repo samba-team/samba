@@ -28,7 +28,16 @@ krb5_error_code
 krb5_auth_con_free(krb5_context context,
 		   krb5_auth_context auth_context)
 {
-    free (auth_context->authenticator);
+    krb5_free_authenticator(context, &auth_context->authenticator);
+    if(auth_context->local_address){
+	free_HostAddress(auth_context->local_address);
+	free(auth_context->local_address);
+    }
+    if(auth_context->remote_address){
+	free_HostAddress(auth_context->remote_address);
+	free(auth_context->remote_address);
+    }
+    free_EncryptionKey(&auth_context->key);
     free (auth_context);
     return 0;
 }
