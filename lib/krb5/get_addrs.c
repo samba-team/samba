@@ -1,10 +1,5 @@
 #include "krb5_locl.h"
 
-static krb5_error_code
-get_addrs ()
-{
-     /* here the code from krb4/lib/krb/getaddrs.c will go */
-}
 
 /*
  * Try to get all addresses, but return the one corresponding to
@@ -44,4 +39,5 @@ krb5_get_all_client_addrs (krb5_addresses *res)
 krb5_error_code
 krb5_get_all_server_addrs ()
 {
+    return 0;
 }
