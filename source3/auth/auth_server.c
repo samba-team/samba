@@ -193,7 +193,7 @@ static NTSTATUS check_smbserver_security(void *my_private_data,
 	 */
 
 	if(is_netbios_alias_or_name(user_info->domain.str)) {
-		DEBUG(3,("check_ntdomain_security: Requested domain was for this machine.\n"));
+		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
