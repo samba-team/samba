@@ -318,6 +318,7 @@ static TDB_DATA print_key(uint32 jobid)
 int unpack_pjob( char* buf, int buflen, struct printjob *pjob )
 {
 	int	len = 0;
+	int	used;
 	
 	if ( !buf || !pjob )
 		return -1;
@@ -336,9 +337,14 @@ int unpack_pjob( char* buf, int buflen, struct printjob *pjob )
 				pjob->jobname,
 				pjob->user,
 				pjob->queuename);
-
-
-	len += unpack_devicemode(&pjob->nt_devmode, buf+len, buflen-len);
+				
+	if ( len == -1 )
+		return -1;
+		
+	if ( (used = unpack_devicemode(&pjob->nt_devmode, buf+len, buflen-len)) == -1 )
+		return -1;
+	
+	len += used;
 	
 	return len;
 
@@ -369,7 +375,8 @@ static struct printjob *print_job_find(int snum, uint32 jobid)
 		
 	ZERO_STRUCT( pjob );
 	
-	unpack_pjob( ret.dptr, ret.dsize, &pjob );
+	if ( unpack_pjob( ret.dptr, ret.dsize, &pjob ) == -1 )
+		return NULL;
 	
 	SAFE_FREE(ret.dptr);	
 	return &pjob;
@@ -689,10 +696,14 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	uint32 jobid;
 	int i;
 
-	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(jobid))
+	if (  key.dsize != sizeof(jobid) )
 		return 0;
+		
 	memcpy(&jobid, key.dptr, sizeof(jobid));
-	memcpy(&pjob,  data.dptr, sizeof(pjob));
+	if ( unpack_pjob( data.dptr, data.dsize, &pjob ) == -1 )
+		return 0;
+	free_nt_devicemode( &pjob.nt_devmode );
+
 
 	if (ts->snum != lp_servicenumber(pjob.queuename)) {
 		/* this isn't for the queue we are looking at - this cannot happen with the split tdb's. JRA */
@@ -1681,10 +1692,16 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	int i;
 	uint32 jobid;
 
+	/* sanity checks */
+	
+	if ( key.dsize != sizeof(jobid) )
+		return 0;
+		
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	
-	if ( !unpack_pjob( data.dptr, data.dsize, &pjob ) )
+	if ( unpack_pjob( data.dptr, data.dsize, &pjob ) == -1 )
 		return 0;
+	free_nt_devicemode( &pjob.nt_devmode );
 
 	/* maybe it isn't for this queue */
 	if (ts->snum != lp_servicenumber(pjob.queuename))
@@ -1723,10 +1740,17 @@ static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, 
 	struct printjob pjob;
 	uint32 jobid;
 
+	/* sanity checks */
+	
+	if (  key.dsize != sizeof(jobid) )
+		return 0;
+		
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	
-	if ( !unpack_pjob( data.dptr, data.dsize, &pjob ) )
+	if ( unpack_pjob( data.dptr, data.dsize, &pjob ) == -1 )
 		return 0;
+		
+	free_nt_devicemode( &pjob.nt_devmode );
 
 	/* maybe it isn't for this queue - this cannot happen with the tdb/printer code. JRA */
 	if (ts->snum != lp_servicenumber(pjob.queuename))
