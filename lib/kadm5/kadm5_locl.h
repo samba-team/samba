@@ -36,6 +36,8 @@
  * SUCH DAMAGE. 
  */
 
+/* $Id$ */
+
 #ifndef __KADM5_LOCL_H__
 #define __KADM5_LOCL_H__
 
@@ -56,6 +58,8 @@
 #include "admin.h"
 #include "kadm5_err.h"
 #include <hdb.h>
+#include <roken.h>
+#include <parse_units.h>
 
 typedef struct kadm5_server_context {
     krb5_context context;
@@ -63,7 +67,56 @@ typedef struct kadm5_server_context {
     kadm5_config_params config;
     HDB *db;
     krb5_principal caller;
+    unsigned acl_flags;
+    char *acl_file;
 }kadm5_server_context;
+
+typedef struct kadm5_client_context {
+    krb5_context context;
+    krb5_boolean my_context;
+    kadm5_config_params config;
+    krb5_auth_context ac;
+    char *realm;
+    char *admin_server;
+    int sock;
+}kadm5_client_context;
+
+enum kadm_ops {
+    kadm_get,
+    kadm_delete,
+    kadm_create,
+    kadm_rename,
+    kadm_chpass,
+    kadm_modify,
+    kadm_randkey
+};
+
+kadm5_ret_t
+_kadm5_acl_check_permission __P((
+	kadm5_server_context *context,
+	unsigned op));
+
+kadm5_ret_t
+_kadm5_acl_init __P((kadm5_server_context *context));
+
+kadm5_ret_t
+_kadm5_c_init_context __P((
+	kadm5_client_context **ctx,
+	kadm5_config_params *params,
+	krb5_context context));
+
+kadm5_ret_t
+_kadm5_client_recv __P((
+	kadm5_client_context *context,
+	krb5_storage *sp));
+
+kadm5_ret_t
+_kadm5_client_send __P((
+	kadm5_client_context *context,
+	krb5_storage *sp));
+
+kadm5_ret_t
+_kadm5_error_code __P((kadm5_ret_t code));
 
 kadm5_ret_t
 _kadm5_s_init_context __P((
