@@ -179,11 +179,9 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
   }
 
   /* if we previously had any w bits set then leave them alone 
-   if the new mode is not rdonly */
-  if (!IS_DOS_READONLY(dosmode) &&
-      (tmp = st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH))) {
-    unixmode &= ~(S_IWUSR|S_IWGRP|S_IWOTH);
-    unixmode |= tmp;
+   whilst adding in the new w bits, if the new mode is not rdonly */
+  if (!IS_DOS_READONLY(dosmode)) {
+    unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
   }
 
   return(dos_chmod(fname,unixmode));
