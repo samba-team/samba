@@ -32,10 +32,7 @@
 enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uchar trust_passwd[16];
         int num_retries = 0;
-        struct cli_state *cli;
-	uint32 sec_channel_type;
 	struct winbindd_domain *contact_domain;
 
 	DEBUG(3, ("[%5lu]: check machine account\n", (unsigned long)state->pid));
@@ -43,12 +40,6 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	/* Get trust account password */
 
  again:
-	if (!secrets_fetch_trust_account_password(
-		    lp_workgroup(), trust_passwd, NULL, &sec_channel_type)) {
-		result = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
-
 
 	contact_domain = find_our_domain();
         if (!contact_domain) {
@@ -59,10 +50,25 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	
         /* This call does a cli_nt_setup_creds() which implicitly checks
            the trust account password. */
-	/* Don't shut this down - it belongs to the connection cache code */
-	
-        result = cm_get_netlogon_cli(contact_domain,
-		trust_passwd, sec_channel_type, True, &cli);
+
+	invalidate_our_own_connection();
+
+	{
+		TALLOC_CTX *mem_ctx;
+		struct rpc_pipe_client *cli;
+		unsigned char *session_key;
+		DOM_CRED *creds;
+
+		result = NT_STATUS_NO_MEMORY;
+
+		mem_ctx = talloc_init("winbindd_check_machine_acct");
+		if (mem_ctx != NULL) {
+			result = cm_connect_netlogon(contact_domain, mem_ctx,
+						     &cli, &session_key,
+						     &creds);
+			talloc_destroy(mem_ctx);
+		}
+	}
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));

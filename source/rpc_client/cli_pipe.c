@@ -1723,6 +1723,31 @@ struct rpc_pipe_client *cli_rpc_open_ntlmssp(struct cli_state *cli,
 	return result;
 }
 
+struct rpc_pipe_client *cli_rpc_open_schannel(struct cli_state *cli,
+					      int pipe_idx,
+					      const uchar session_key[16],
+					      const char *domain)
+{
+	struct rpc_pipe_client *result;
+
+	result = cli_rpc_open(cli, pipe_idx);
+	if (result == NULL) return NULL;
+	
+	result->max_xmit_frag = 0;
+	result->pipe_auth_flags =
+		AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL;
+	result->domain = domain;
+	memcpy(result->auth_info.sess_key, session_key, 16);
+
+	if (!rpc_pipe_bind(result)) {
+		DEBUG(0, ("cli_rpc_pipe_bind failed\n"));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	return result;
+}
+
 void cli_rpc_close(struct rpc_pipe_client *cli_pipe)
 {
 	if (!cli_close(cli_pipe->cli, cli_pipe->fnum))

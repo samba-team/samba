@@ -153,16 +153,15 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 {
 	NTSTATUS result;
 	fstring name_domain, name_user;
-	unsigned char trust_passwd[16];
-	time_t last_change_time;
-	uint32 sec_channel_type;
         NET_USER_INFO_3 info3;
-        struct cli_state *cli = NULL;
+	unsigned char *session_key;
+	struct rpc_pipe_client *pipe_cli;
 	uchar chal[8];
 	TALLOC_CTX *mem_ctx = NULL;
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	DOM_CRED ret_creds;
+	DOM_CRED *credentials;
 	int attempts = 0;
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
@@ -269,67 +268,78 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		}
 	}
 
-	if ( !get_trust_pw(contact_domain->name, trust_passwd, &last_change_time, &sec_channel_type) ) {
-		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		goto done;
-	}
-
 	/* check authentication loop */
 
 	do {
+		DOM_CRED clnt_creds;
+
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
 		retry = False;
 	
-		/* Don't shut this down - it belongs to the connection cache code */
-		result = cm_get_netlogon_cli(contact_domain, trust_passwd, 
-					     sec_channel_type, False, &cli);
+		result = cm_connect_netlogon(contact_domain, mem_ctx,
+					     &pipe_cli, &session_key,
+					     &credentials);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 			goto done;
 		}
 
-		result = cli_netlogon_sam_network_logon(cli, mem_ctx,
-							&ret_creds,
-							name_user, name_domain, 
-							global_myname(), chal, 
-							lm_resp, nt_resp,
-							&info3);
+		credentials->timestamp.time = time(NULL);
+		memcpy(&clnt_creds, credentials, sizeof(clnt_creds));
+
+		/* Calculate the new credentials. */
+		cred_create(session_key, &credentials->challenge,
+			    clnt_creds.timestamp, &(clnt_creds.challenge));
+
+		result = rpccli_netlogon_sam_network_logon(pipe_cli, mem_ctx,
+							   &clnt_creds,
+							   &ret_creds,
+							   name_user,
+							   name_domain, 
+							   global_myname(),
+							   chal, lm_resp,
+							   nt_resp, &info3,
+							   session_key);
 		attempts += 1;
-		
-		/* We have to try a second time as cm_get_netlogon_cli
+
+		/* We have to try a second time as cm_connect_netlogon
 		   might not yet have noticed that the DC has killed
 		   our connection. */
 
-		if ( cli->fd == -1 ) {
+		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
 			retry = True;
 			continue;
-		} 
+		}
 		
-		/* if we get access denied, a possible cuase was that we had and open
-		   connection to the DC, but someone changed our machine account password
-		   out from underneath us using 'net rpc changetrustpw' */
+		/* if we get access denied, a possible cause was that we had
+		   and open connection to the DC, but someone changed our
+		   machine account password out from underneath us using 'net
+		   rpc changetrustpw' */
 		   
-		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) ) {
-			DEBUG(3,("winbindd_pam_auth: sam_logon returned ACCESS_DENIED.  Maybe the trust account "
-				"password was changed and we didn't know it.  Killing connections to domain %s\n",
+		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
+			DEBUG(3,("winbindd_pam_auth: sam_logon returned "
+				 "ACCESS_DENIED.  Maybe the trust account "
+				"password was changed and we didn't know it. "
+				 "Killing connections to domain %s\n",
 				name_domain));
 			winbindd_cm_flush();
 			retry = True;
-			cli = NULL;
 		} 
 		
 	} while ( (attempts < 2) && retry );
 
-        if (cli != NULL) {
-		/* We might have come out of the loop above with cli == NULL,
-		   so don't dereference that. */
-		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
+	if (NT_STATUS_IS_OK(result) &&
+	    (!clnt_deal_with_creds(session_key, credentials,
+				  &ret_creds))) {
+		DEBUG(3, ("DC %s sent wrong credentials\n",
+			  pipe_cli->cli->srv_name_slash));
+		result = NT_STATUS_ACCESS_DENIED;
 	}
-	
+
 	if (NT_STATUS_IS_OK(result)) {
-		netsamlogon_cache_store( cli->mem_ctx, name_user, &info3 );
+		netsamlogon_cache_store(pipe_cli->mem_ctx, name_user, &info3);
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 
 		/* Check if the user is in the right group */
@@ -412,7 +422,9 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	time_t last_change_time;
 	uint32 sec_channel_type;
         NET_USER_INFO_3 info3;
-        struct cli_state *cli = NULL;
+	unsigned char *session_key;
+	struct rpc_pipe_client *pipe_cli;
+	DOM_CRED *credentials;
 	TALLOC_CTX *mem_ctx = NULL;
 	const char *name_user = NULL;
 	const char *name_domain = NULL;
@@ -514,12 +526,14 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 	do {
+		DOM_CRED clnt_creds;
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
 		retry = False;
 
-		/* Don't shut this down - it belongs to the connection cache code */
-		result = cm_get_netlogon_cli(contact_domain, trust_passwd, sec_channel_type, False, &cli);
+		result = cm_connect_netlogon(contact_domain, mem_ctx,
+					     &pipe_cli, &session_key,
+					     &credentials);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n",
@@ -527,48 +541,61 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 			goto done;
 		}
 
-		result = cli_netlogon_sam_network_logon(cli, mem_ctx,
-							&ret_creds,
-							name_user, name_domain,
-							workstation,
-							state->request.data.auth_crap.chal, 
-							lm_resp, nt_resp, 
-							&info3);
+		credentials->timestamp.time = time(NULL);
+		memcpy(&clnt_creds, credentials, sizeof(clnt_creds));
+
+		/* Calculate the new credentials. */
+		cred_create(session_key, &credentials->challenge,
+			    clnt_creds.timestamp, &(clnt_creds.challenge));
+
+		result = rpccli_netlogon_sam_network_logon(pipe_cli, mem_ctx,
+							   &clnt_creds,
+							   &ret_creds,
+							   name_user,
+							   name_domain, 
+							   global_myname(),
+							   state->request.data.auth_crap.chal,
+							   lm_resp,
+							   nt_resp, &info3,
+							   session_key);
 
 		attempts += 1;
 
-		/* We have to try a second time as cm_get_netlogon_cli
+		/* We have to try a second time as cm_connect_netlogon
 		   might not yet have noticed that the DC has killed
 		   our connection. */
 
-		if ( cli->fd == -1 ) {
+		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
 			retry = True;
 			continue;
-		} 
+		}
 
 		/* if we get access denied, a possible cause was that we had and open
 		   connection to the DC, but someone changed our machine account password
 		   out from underneath us using 'net rpc changetrustpw' */
 		   
-		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) ) {
-			DEBUG(3,("winbindd_pam_auth_crap: sam_logon returned ACCESS_DENIED.  Maybe the trust account "
-				"password was changed and we didn't know it.  Killing connections to domain %s\n",
-				contact_domain->name));
+		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
+			DEBUG(3,("winbindd_pam_auth: sam_logon returned "
+				 "ACCESS_DENIED.  Maybe the trust account "
+				"password was changed and we didn't know it. "
+				 "Killing connections to domain %s\n",
+				name_domain));
 			winbindd_cm_flush();
 			retry = True;
-			cli = NULL;
 		} 
-		
+
 	} while ( (attempts < 2) && retry );
 
-	if (cli != NULL) {
-		/* We might have come out of the loop above with cli == NULL,
-		   so don't dereference that. */
-		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
+	if (NT_STATUS_IS_OK(result) &&
+	    (!clnt_deal_with_creds(session_key, credentials,
+				  &ret_creds))) {
+		DEBUG(3, ("DC %s sent wrong credentials\n",
+			  pipe_cli->cli->srv_name_slash));
+		result = NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
-		netsamlogon_cache_store( cli->mem_ctx, name_user, &info3 );
+		netsamlogon_cache_store( pipe_cli->cli->mem_ctx, name_user, &info3 );
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 		
 		if (!NT_STATUS_IS_OK(result = check_info3_in_group(mem_ctx, &info3, state->request.data.auth_crap.require_membership_of_sid))) {

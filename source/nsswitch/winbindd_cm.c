@@ -79,6 +79,14 @@ struct winbindd_cm_conn {
 
 	struct rpc_pipe_client *lsa_pipe;
 	POLICY_HND lsa_policy;
+
+	/* Auth2 pipe is the pipe used to setup the netlogon schannel key
+	 * using rpccli_net_auth2. It needs to be kept open. */
+
+	struct rpc_pipe_client *netlogon_auth2_pipe;
+	unsigned char sess_key[16];        /* Current session key. */
+	DOM_CRED clnt_cred;                /* Client NETLOGON credential. */
+	struct rpc_pipe_client *netlogon_pipe;
 };
 
 static struct winbindd_cm_conn *cm_conns = NULL;
@@ -166,7 +174,7 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 {
 	struct winbindd_domain *our_domain;
 	NTSTATUS result;
-	struct winbindd_cm_conn *conn;
+	struct rpc_pipe_client *cli;
 	TALLOC_CTX *mem_ctx;
 
 	fstring tmp;
@@ -174,8 +182,6 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 
 	/* Hmmmm. We can only open one connection to the NETLOGON pipe at the
 	 * moment.... */
-
-	return False;
 
 	if (IS_DC)
 		return False;
@@ -186,14 +192,23 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	if ((our_domain = find_our_domain()) == NULL)
 		return False;
 
-	result = get_connection_from_cache(our_domain, PIPE_NETLOGON, &conn);
-	if (!NT_STATUS_IS_OK(result))
-		return False;
-
 	if ((mem_ctx = talloc_init("get_dc_name_via_netlogon")) == NULL)
 		return False;
 
-	result = cli_netlogon_getdcname(conn->cli, mem_ctx, domain->name, tmp);
+	{
+		/* These var's can be ignored -- we're not requesting
+		   anything in the credential chain here */
+		unsigned char *session_key;
+		DOM_CRED *creds;
+		result = cm_connect_netlogon(our_domain, mem_ctx, &cli,
+					     &session_key, &creds);
+	}
+
+	if (!NT_STATUS_IS_OK(result))
+		return False;
+
+	result = rpccli_netlogon_getdcname(cli, mem_ctx, domain->dcname,
+					   domain->name, tmp);
 
 	talloc_destroy(mem_ctx);
 
@@ -708,6 +723,9 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 
 	is_our_domain = strequal(domain->name, lp_workgroup());
 
+	DEBUG(5, ("get_dcs: %s %s our domain\n", domain->name,
+		  is_our_domain ? "is" : "is not"));
+
 	if (!is_our_domain && get_dc_name_via_netlogon(domain, dcname, &ip) &&
 	    add_one_dc_unique(mem_ctx, domain->name, dcname, ip, dcs, num_dcs))
 			return True;
@@ -922,6 +940,16 @@ static void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 		conn->lsa_pipe = NULL;
 	}
 
+	if (conn->netlogon_auth2_pipe != NULL) {
+		cli_rpc_close(conn->netlogon_auth2_pipe);
+		conn->netlogon_auth2_pipe = NULL;
+	}
+
+	if (conn->netlogon_pipe != NULL) {
+		cli_rpc_close(conn->netlogon_pipe);
+		conn->netlogon_pipe = NULL;
+	}
+
 	if (conn->cli)
 		cli_shutdown(conn->cli);
 
@@ -955,6 +983,23 @@ static void find_cm_connection(struct winbindd_domain *domain, const char *pipe_
 	}
 
 	*conn_out = conn;
+}
+
+/* This is for wbinfo -t, force winbind to re-auth2 */
+
+void invalidate_our_own_connection(void)
+{
+	struct winbindd_domain *domain;
+	struct winbindd_cm_conn *conn = NULL;
+
+	domain = find_our_domain();
+	if (domain == NULL)
+		return;
+
+	find_cm_connection(domain, PIPE_SAMR, &conn);
+
+	if (conn != NULL)
+		invalidate_cm_connection(conn);
 }
 
 /* Initialize a new connection up to the RPC BIND. */
@@ -1188,6 +1233,124 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	*cli = conn->lsa_pipe;
 	*lsa_policy = conn->lsa_policy;
 	return result;
+}
+
+NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
+			     TALLOC_CTX *mem_ctx,
+			     struct rpc_pipe_client **cli,
+			     unsigned char **session_key,
+			     DOM_CRED **credentials)
+{
+	struct winbindd_cm_conn *conn;
+	NTSTATUS result;
+
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	uint8  mach_pwd[16];
+	time_t last_change_time;
+	uint32  sec_chan_type;
+	DOM_CHAL clnt_chal, srv_chal, rcv_chal;
+	const char *server_name;
+	const char *account_name;
+	UTIME zerotime;
+
+	result = get_connection_from_cache(domain, PIPE_SAMR, &conn);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	if (conn->netlogon_pipe != NULL) {
+		*cli = conn->netlogon_pipe;
+		*session_key = (unsigned char *)&conn->sess_key;
+		*credentials = &conn->clnt_cred;
+		return NT_STATUS_OK;
+	}
+
+	if (!get_trust_pw(domain->name, mach_pwd, &last_change_time,
+			  &sec_chan_type))
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+
+	conn->netlogon_auth2_pipe = cli_rpc_open_noauth(conn->cli,
+							PI_NETLOGON);
+	if (conn->netlogon_auth2_pipe == NULL)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	if (lp_client_schannel() != False)
+		neg_flags |= NETLOGON_NEG_SCHANNEL;
+
+	generate_random_buffer(clnt_chal.data, 8);
+
+	server_name = talloc_asprintf(mem_ctx, "\\\\%s", domain->dcname);
+	account_name = talloc_asprintf(mem_ctx, "%s$",
+				       domain->primary ?
+				       global_myname() : domain->name);
+
+	if ((server_name == NULL) || (account_name == NULL))
+		return NT_STATUS_NO_MEMORY;
+
+	result = rpccli_net_req_chal(conn->netlogon_auth2_pipe, server_name,
+				     global_myname(), &clnt_chal, &srv_chal);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	/**************** Long-term Session key **************/
+
+	/* calculate the session key */
+	cred_session_key(&clnt_chal, &srv_chal, mach_pwd, conn->sess_key);
+	memset((char *)conn->sess_key+8, '\0', 8);
+
+	/* calculate auth2 credentials */
+	zerotime.time = 0;
+	cred_create(conn->sess_key, &clnt_chal, zerotime,
+		    &conn->clnt_cred.challenge);
+
+	result = rpccli_net_auth2(conn->netlogon_auth2_pipe, server_name,
+				  account_name, sec_chan_type, global_myname(),
+				  &conn->clnt_cred.challenge, &neg_flags,
+				  &rcv_chal);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	zerotime.time = 0;
+	if (!cred_assert(&rcv_chal, conn->sess_key, &srv_chal, zerotime)) {
+		DEBUG(0, ("Server replied with bad credential\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if ((lp_client_schannel() == True) &&
+	    ((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
+		DEBUG(3, ("Server did not offer schannel\n"));
+		cli_rpc_close(conn->netlogon_auth2_pipe);
+		conn->netlogon_auth2_pipe = NULL;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if ((lp_client_schannel() == False) ||
+	    ((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
+		/* keep the existing connection to NETLOGON open */
+		conn->netlogon_pipe = conn->netlogon_auth2_pipe;
+		conn->netlogon_auth2_pipe = NULL;
+		*cli = conn->netlogon_pipe;
+		*session_key = (unsigned char *)&conn->sess_key;
+		*credentials = &conn->clnt_cred;
+		return NT_STATUS_OK;
+	}
+
+	conn->netlogon_pipe = cli_rpc_open_schannel(conn->cli, PI_NETLOGON,
+						    conn->sess_key,
+						    domain->name);
+
+	if (conn->netlogon_pipe == NULL) {
+		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe\n"));
+		cli_rpc_close(conn->netlogon_auth2_pipe);
+		conn->netlogon_auth2_pipe = NULL;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	*cli = conn->netlogon_pipe;
+	*session_key = (unsigned char *)&conn->sess_key;
+	*credentials = &conn->clnt_cred;
+		
+	return NT_STATUS_OK;
 }
 
 /* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
