@@ -619,6 +619,15 @@ realm with @code{SU.SE} they need to use both @code{SU.SE} and
 @end cartouche
 @end example
 
+The order of the @code{PERMITTED-CROSS-REALMS} is not important when
+doing transit cross realm verification.
+
+But the order is important when the @code{[capaths]} section is used
+to figure out the intermediate realm to go to when doing multi realm
+transit. When figuring out the next realm, the first realm of the list
+of @code{PERMITTED-CROSS-REALMS} is chosen. This is done in both the
+client kerberos library and the KDC.
+
 @c To test the cross realm configuration, use:
 @c    kmumble transit-check client server transit-realms ...
 
