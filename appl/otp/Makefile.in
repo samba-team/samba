@@ -1,0 +1,73 @@
+# $Id$
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+topdir = ../..
+
+CC = @CC@
+AR = ar
+RANLIB = @RANLIB@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
+INSTALL = @INSTALL@
+LIBS = @LIBS@
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
+
+prefix = @prefix@
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+libexecdir = $(exec_prefix)/libexec
+bindir = $(exec_prefix)/bin
+
+PROG_BIN	= otp
+PROG_LIBEXEC	= 
+PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
+
+SOURCES_OTP    = otp.c
+
+OBJECTS_OTP    = otp.o
+
+OBJECTS = $(OBJECTS_OTP)
+SOURCES = $(SOURCES_OTP)
+
+all: $(PROGS)
+
+Wall:
+	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+
+install: all
+	$(MKINSTALLDIRS) $(bindir)
+	for x in $(PROG_BIN); do $(INSTALL) $$x $(bindir); done
+
+uninstall:
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
+check:
+
+clean:
+	rm -f *.a *.o $(PROGS)
+
+mostlyclean: clean
+
+distclean: clean
+	rm -f Makefile *~
+	rm -rf CVS
+
+realclean: distclean
+	rm -f TAGS
+
+OLIB=-L../../lib/otp -lotp -L../../lib/des -ldes -L../../lib/roken -lroken
+
+otp: $(OBJECTS_OTP)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTP) $(OLIB) $(LIBS)
+
+$(OBJECTS): ../../config.h
