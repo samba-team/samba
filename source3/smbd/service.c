@@ -273,6 +273,11 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
 
+	/* Behave as a printer if we are supposed to */
+	if (lp_print_ok(snum) && (strcmp(dev, "A:") == 0)) {
+		pstrcpy(dev, "LPT1:");
+	}
+
 	/* lowercase the user name */
 	strlower(user);
 
