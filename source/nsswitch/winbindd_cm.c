@@ -111,6 +111,28 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 	}
 }
 
+/*
+  setup for schannel on any pipes opened on this connection
+*/
+static NTSTATUS setup_schannel(struct cli_state *cli)
+{
+	NTSTATUS ret;
+	uchar trust_password[16];
+	uint32 sec_channel_type;
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(),
+						  trust_password,
+						  NULL, &sec_channel_type)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ret = cli_nt_setup_netsec(cli, sec_channel_type, 
+				  AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN, 
+				  trust_password);
+
+	return ret;
+}
+
 /* Open a connction to the remote server, cache failures for 30 seconds */
 
 static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const int pipe_index,
@@ -254,6 +276,18 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 
 		if (NT_STATUS_IS_OK(result))
 			break;
+	}
+
+	/* try and use schannel if possible, but continue anyway if it
+	   failed. This allows existing setups to continue working,
+	   while solving the win2003 '100 user' limit for systems that
+	   are joined properly */
+	if (NT_STATUS_IS_OK(result)) {
+		NTSTATUS status = setup_schannel(new_conn->cli);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3,("schannel refused - continuing without schannel (%s)\n", 
+				 nt_errstr(status)));
+		}
 	}
 
 	SAFE_FREE(ipc_username);
