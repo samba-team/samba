@@ -1,5 +1,5 @@
 !==
-!== Faxing.txt for Samba release 1.9.18alpha6 28 Oct 1997
+!== Faxing.txt for Samba release 1.9.18alpha7 30 Oct 1997
 !==
 Contributor:    Gerhard Zuber <zuber@berlin.snafu.de>
 Date:			August 5th 1997.
