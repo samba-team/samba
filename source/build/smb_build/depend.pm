@@ -456,3 +456,4 @@ sub create_depend($)
 
 	return;
 }
+1;

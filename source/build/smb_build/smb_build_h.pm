@@ -130,3 +130,4 @@ sub create_smb_build_h($)
 	print "config.smb_build.pl: creating include/smb_build.h\n";
 	return;	
 }
+1;

@@ -6,8 +6,17 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+use makefile;
+use depend;
+use smb_build_h;
+use input;
+use config_mk;
+use output;
+use strict;
+
 sub smb_build_main($)
 {
+	my $SMB_BUILD_CTX = shift;
 	check_input($SMB_BUILD_CTX);
 
 	create_depend($SMB_BUILD_CTX);
@@ -20,3 +29,4 @@ sub smb_build_main($)
 
 	return 0;
 }
+1;
