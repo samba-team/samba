@@ -73,6 +73,7 @@ print_version(const char *progname)
     }
     fprintf(stderr, "%s (%s)\n", progname, msg);
     fprintf(stderr, "Copyright (c) 1999-2002 Kungliga Tekniska Högskolan\n");
+    fprintf(stderr, "Send bug-reports to %s\n", PACKAGE_BUGREPORT);
     if(num_args != 0)
 	free(msg);
 }
