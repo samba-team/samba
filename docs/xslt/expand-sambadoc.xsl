@@ -113,7 +113,7 @@
 		</xsl:element>
 		<xsl:element name="member">
 			<xsl:element name="parameter">
-				<xsl:apply-templates/>
+				<xsl:value-of select="@name"/>
 			</xsl:element>
 		</xsl:element>
 	</xsl:template>
@@ -201,7 +201,7 @@
 
 	<xsl:template match="smbconfsection">
 		<xsl:element name="parameter">
-			<xsl:apply-templates/>
+			<xsl:value-of select="@name"/>
 		</xsl:element>
 	</xsl:template>
 
