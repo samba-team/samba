@@ -626,7 +626,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			nameptr = p;
 			p += align_string(outbuf, p, 0);
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
-			SCVAL(nameptr, -1, len);
+			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS)
+				SCVAL(nameptr, -1, len-2);
+			else
+				SCVAL(nameptr, -1, len-1);
 			p += len;
 			break;
 
@@ -644,10 +647,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,l2_cbList,0); /* No extended attributes */
 			p += l2_achName;
 			nameptr = p;
-			len = srvstr_push(outbuf, p, fname, -1, STR_NOALIGN);
-			SCVAL(p, -1, len);
+			p += align_string(outbuf, p, 0);
+			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
+			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS)
+				SCVAL(nameptr, -1, len-2);
+			else
+				SCVAL(nameptr, -1, len-1);
 			p += len;
-			*p++ = 0; /* craig from unisys pointed out we need this */
 			break;
 
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
