@@ -28,6 +28,7 @@ LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
 SHARED = @SHARED@
+LDSHARED = @LDSHARED@
 LIB = $(LIBNAME).$(LIBEXT)
 
 SOURCES = edit_compat.c editline.c complete.c sysunix.c
@@ -78,6 +79,6 @@ $(LIBNAME).a: $(OBJECTS)
 
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
-	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS)
+	$(LDSHARED) $(SHARED) -o $@ $(OBJECTS)
 
 $(OBJECTS): ../../include/config.h

@@ -13,6 +13,7 @@ RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
+LDSHARED = @LDSHARED@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
@@ -106,7 +107,7 @@ $(LIBNAME).a: $(LIBOBJ)
 
 $(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
 	rm -f $@
-	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(LIBOBJ)
+	$(LDSHARED) $(SHARED) -o $@ $(LIBOBJ)
 
 # To make psoriaris make happy we have to mention these files in some
 # rule, so we might as well put them here.
