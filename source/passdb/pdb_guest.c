@@ -54,7 +54,7 @@ static NTSTATUS guestsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *
 	if (!pdb_set_fullname(sam_account, guest_account, PDB_SET))
 		return NT_STATUS_UNSUCCESSFUL;
 	
-	if (!pdb_set_domain(sam_account, lp_workgroup(), PDB_DEFAULT))
+	if (!pdb_set_domain(sam_account, get_global_sam_name(), PDB_DEFAULT))
 		return NT_STATUS_UNSUCCESSFUL;
 	
 	if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL, PDB_DEFAULT))
