@@ -1267,9 +1267,8 @@ static void printers_page(void)
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "disable-authentication", 'a', POPT_ARG_VAL, &demo_mode, True, "Disable authentication (demo mode)" },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile},
-		{ 0, 0, 0, 0 }
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
 	};
 
 	fault_setup(NULL);

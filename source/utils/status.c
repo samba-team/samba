@@ -559,10 +559,8 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		{"profile",	'P', POPT_ARG_NONE,	&profile_only, 'P', "Do profiling" },
 #endif /* WITH_PROFILE */
 		{"byterange",	'B', POPT_ARG_NONE,	&show_brl, 'B', "Include byte range locks"},
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
-		{ 0, 0, 0, 0}
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
 	};
 
 	setup_logging(argv[0],True);

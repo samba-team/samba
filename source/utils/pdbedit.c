@@ -516,7 +516,7 @@ int main (int argc, char **argv)
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"list",	'l', POPT_ARG_NONE, &list_users, 0, "list all users", NULL},
+		{"list",	'L', POPT_ARG_NONE, &list_users, 0, "list all users", NULL},
 		{"verbose",	'v', POPT_ARG_NONE, &verbose, 0, "be verbose", NULL },
 		{"smbpasswd-style",	'w',POPT_ARG_NONE, &spstyle, 0, "give output in smbpasswd style", NULL},
 		{"user",	'u', POPT_ARG_STRING, &user_name, 0, "use username", "USER" },
@@ -534,11 +534,10 @@ int main (int argc, char **argv)
 		{"export",	'e', POPT_ARG_STRING, &backend_out, 0, "export user accounts to this backend", NULL},
 		{"group",	'g', POPT_ARG_NONE, &transfer_groups, 0, "use -i and -e for groups", NULL},
 		{"account-policy",	'P', POPT_ARG_STRING, &account_policy, 0,"value of an account policy (like maximum password age)",NULL},
-		{"value",       'V', POPT_ARG_LONG, &account_policy_value, 'V',"set the account policy to this value", NULL},
+		{"value",       'C', POPT_ARG_LONG, &account_policy_value, 'C',"set the account policy to this value", NULL},
 		{"account-control",	'c', POPT_ARG_STRING, &account_control, 0, "Values of account control", NULL},
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
-		{0,0,0,0}
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
 	};
 	
 	setup_logging("pdbedit", True);
