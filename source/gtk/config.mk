@@ -19,6 +19,14 @@ REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE REGISTRY GTKSMB
 ################################################
 
 ################################################
+# Start BINARY gepdump 
+[BINARY::gepdump]
+OBJ_FILES = gtk/tools/gepdump.o
+REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE GTKSMB LIBRPC LIBSMB
+# End BINARY gepdump 
+################################################
+
+################################################
 # Start BINARY gwcrontab
 [BINARY::gwcrontab]
 OBJ_FILES = gtk/tools/gwcrontab.o

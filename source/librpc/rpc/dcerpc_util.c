@@ -357,7 +357,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	return NT_STATUS_OK;
 }
 
-static const char *floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor)
+const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor)
 {
 	switch (floor->lhs.protocol) {
 	case EPM_PROTOCOL_TCP:
@@ -424,7 +424,7 @@ static const char *floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *flo
 	return NULL;
 }
 
-static NTSTATUS floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor,  const char *data)
+static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor,  const char *data)
 {
 	switch (floor->lhs.protocol) {
 	case EPM_PROTOCOL_TCP:
@@ -576,14 +576,14 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 
 	/* Set endpoint */
 	if (tower->num_floors >= 4) {
-		binding->endpoint = floor_get_rhs_data(mem_ctx, &tower->floors[3]);
+		binding->endpoint = dcerpc_floor_get_rhs_data(mem_ctx, &tower->floors[3]);
 	} else {
 		binding->endpoint = NULL;
 	}
 
 	/* Set network address */
 	if (tower->num_floors >= 5) {
-		binding->host = floor_get_rhs_data(mem_ctx, &tower->floors[4]);
+		binding->host = dcerpc_floor_get_rhs_data(mem_ctx, &tower->floors[4]);
 	}
 	return NT_STATUS_OK;
 }
@@ -631,12 +631,12 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 		tower->floors[2 + i].lhs.protocol = protseq[i];
 		tower->floors[2 + i].lhs.info.lhs_data = data_blob_talloc(mem_ctx, NULL, 0);
 		ZERO_STRUCT(tower->floors[2 + i].rhs);
-		floor_set_rhs_data(mem_ctx, &tower->floors[2 + i], "");
+		dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[2 + i], "");
 	}
 
 	/* The 4th floor contains the endpoint */
 	if (num_protocols >= 2 && binding->endpoint) {
-		status = floor_set_rhs_data(mem_ctx, &tower->floors[3], binding->endpoint);
+		status = dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[3], binding->endpoint);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
@@ -644,7 +644,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	
 	/* The 5th contains the network address */
 	if (num_protocols >= 3 && binding->host) {
-		status = floor_set_rhs_data(mem_ctx, &tower->floors[4], binding->host);
+		status = dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[4], binding->host);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
@@ -735,7 +735,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 		return NT_STATUS_PORT_UNREACHABLE;
 	}
 
-	binding->endpoint = floor_get_rhs_data(mem_ctx, &twr_r->tower.floors[3]);
+	binding->endpoint = dcerpc_floor_get_rhs_data(mem_ctx, &twr_r->tower.floors[3]);
 
 	dcerpc_pipe_close(p);
 
