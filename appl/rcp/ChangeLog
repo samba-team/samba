@@ -1,3 +1,7 @@
+2001-09-08  Assar Westerlund  <assar@sics.se>
+
+	* rcp.c (run_err): always match va_start and va_end
+
 2001-09-04  Assar Westerlund  <assar@sics.se>
 
 	* util.c (allocbuf): do not leak memory on failure and zero
