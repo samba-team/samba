@@ -564,10 +564,9 @@ where TRANSPORT is either ncacn_np for SMB or ncacn_ip_tcp for RPC/TCP
 
 "host" is an IP or hostname or netbios name
 
-"flags" must start with the pipe name if using the ncacn_np transport
-
-The ncacn_ip_tcp can take an integer flag giving the TCP port
-number. It must be the first flag if given.
+"flags" can include a SMB pipe name if using the ncacn_np transport or
+a TCP port number if using the ncacn_ip_tcp transport, otherwise they
+will be auto-determined.
 
 other recognised flags are:
 

@@ -364,7 +364,11 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	for (i=0;b->options[i];i++) {
 		for (j=0;j<ARRAY_SIZE(options);j++) {
 			if (strcasecmp(options[j].name, b->options[i]) == 0) {
+				int k;
 				b->flags |= options[j].flag;
+				for (k=i;b->options[k];k++) {
+					b->options[k] = b->options[k+1];
+				}
 				break;
 			}
 		}
