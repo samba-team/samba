@@ -22,7 +22,8 @@ SMB_SUBSYSTEM(LIBCLI_RAW,[],
 		libcli/raw/rawnotify.o 
 		libcli/raw/rawioctl.o 
 		libcli/raw/rawacl.o 
-		libcli/raw/rawdate.o])
+		libcli/raw/rawdate.o],
+		[KRB5])
 
 SMB_SUBSYSTEM(LIBCLI_UTILS,[],
 		[libcli/util/asn1.o 
