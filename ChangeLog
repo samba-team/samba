@@ -1,5 +1,14 @@
 2003-09-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/test/gssapi_client.c (proto): use select_mech
+	
+	* appl/test/http_client.c: use getarg
+	
+	* appl/test/gss_common.h: prototype for select_mech
+	
+	* appl/test/gss_common.c (select_mech): return the gss_OID from a
+	mech name
+
 	* appl/test/http_client.c: print both source and target
 	
 	* appl/test/Makefile.am: build http_client
