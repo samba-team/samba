@@ -148,10 +148,6 @@ struct substitute_context {
  * information associated with a SMB server connection 
  */
 struct smbsrv_connection {
-	/* a count of the number of packets we have received. We
-	 * actually only care about zero/non-zero at this stage */
-	//unsigned pkt_count;
-
 	/* context that has been negotiated between the client and server */
 	struct {
 		/* have we already done the NBT session establishment? */
@@ -212,24 +208,6 @@ struct smbsrv_connection {
 		struct idr_context *idtree_tid;
 	} tree;
 
-	/* the context associated with open files on an smb socket */
-#if 0
-	struct {
-		struct files_struct *files; /* open files */
-	
-		/* a fsp to use when chaining */
-		struct files_struct *chain_fsp;
-	
-		/* a fsp to use to save when breaking an oplock. */
-		struct files_struct *oplock_save_chain_fsp;
-	
-		/* how many files are open */
-		int files_used;
-	
-		/* limit for maximum open files */
-		int real_max_open_files;
-	} file;
-#endif
 	/* context associated with currently valid session setups */
 	struct {
 		/* this holds info on session vuids that are already validated for this VC */
@@ -247,23 +225,8 @@ struct smbsrv_connection {
 		/* the request itself - needs to be freed */
 		struct smbsrv_request *request;
 	} *requests;
-#if 0
-	/* the timers context contains info on when we last did various
-	 * functions */
-	struct {
-		/* when did we last do timeout processing? */
-		time_t last_timeout_processing;
-	
-		/* when did we last sent a keepalive */
-		time_t last_keepalive_sent;
-		
-		/* when we last checked the smb.conf for auto-reload */
-		time_t last_smb_conf_reload;
-	} timers;
-#endif
-	struct smb_signing_context signing;
 
-//	struct substitute_context substitute;
+	struct smb_signing_context signing;
 	
 	struct server_connection *connection;
 
