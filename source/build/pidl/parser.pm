@@ -1311,15 +1311,18 @@ sub FunctionTable($)
 		$if_endpoints = $interface->{NAME};
 	}
 
-	pidl "static const struct dcerpc_endpoint_list $interface->{NAME}\_endpoints = {\n";
 	my @e = split / /, $if_endpoints;
 	my $endpoint_count = $#e + 1;
-	pidl "\t$endpoint_count,\n";
-	pidl "\t{ ";
+
+	pidl "static const char *$interface->{NAME}\_endpoint_strings[] = {\n\t";
 	for (my $i=0; $i < $#e; $i++) {
 		pidl "\"$e[$i]\", ";
 	}
-	pidl "\"$e[$#e]\" }\n";
+	pidl "\"$e[$#e]\"\n";
+	pidl "};\n\n";
+
+	pidl "static const struct dcerpc_endpoint_list $interface->{NAME}\_endpoints = {\n";
+	pidl "\t$endpoint_count, $interface->{NAME}\_endpoint_strings\n";
 	pidl "};\n\n";
 
 	pidl "\nconst struct dcerpc_interface_table dcerpc_table_$interface->{NAME} = {\n";
