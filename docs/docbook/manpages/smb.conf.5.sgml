@@ -7963,7 +7963,7 @@
 		enumeration may cause some programs to behave oddly.
 		</para>
 
-		<para>Default: <command>winbind enum groups = no </command>
+		<para>Default: <command>winbind enum groups = yes </command>
 		</para></listitem>
 		</varlistentry>
 
