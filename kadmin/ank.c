@@ -40,67 +40,80 @@
 
 RCSID("$Id$");
 
-static struct getargs args[] = {
-    { "random-key",	'r',	arg_flag,	NULL, "set random key" },
-    { "password",	'p',	arg_string,	NULL, "princial's password" },
-    { "max-ticket-life",  0,	arg_string,	NULL, "max ticket lifetime" },
-    { "max-renewable-life",  0,	arg_string,	NULL,
-      "max renewable lifetime" },
-    { "attributes",	0,	arg_string,	NULL, "attributes" }
-};
+/*
+ * fetch the default principal corresponding to `princ'
+ */
 
-static int num_args = sizeof(args) / sizeof(args[0]);
-
-static void
-usage(void)
+static krb5_error_code
+get_default (kadm5_server_context *context,
+	     krb5_principal princ,
+	     kadm5_principal_ent_t default_ent)
 {
-    arg_printusage (args, num_args, "ank", "principal");
+    krb5_error_code ret;
+    krb5_principal def_principal;
+    krb5_realm *realm = krb5_princ_realm(context->context, princ);
+
+    ret = krb5_make_principal (context->context, &def_principal,
+			       *realm, "default", NULL);
+    if (ret)
+	return ret;
+    ret = kadm5_get_principal (context, def_principal, default_ent,
+			       KADM5_PRINCIPAL_NORMAL_MASK);
+    krb5_free_principal (context->context, def_principal);
+    return ret;
 }
 
-int
-add_new_key(int argc, char **argv)
-{
-    kadm5_principal_ent_rec princ;
-    char pwbuf[1024];
-    char *password = NULL;
-    int rkey = 0;
-    int optind = 0;
-    int mask = 0;
-    krb5_error_code ret;
-    krb5_principal princ_ent	= NULL;
-    char *max_ticket_life	= NULL;
-    char *max_renewable_life	= NULL;
-    char *attributes		= NULL;
+/*
+ * Add the principal `name' to the database.
+ * Prompt for all data not given by the input parameters.
+ */
 
-    args[0].value = &rkey;
-    args[1].value = &password;
-    args[2].value = &max_ticket_life;
-    args[3].value = &max_renewable_life;
-    args[4].value = &attributes;
-    
-    if(getarg(args, num_args, argc, argv, &optind))
-	goto usage;
-    if(optind == argc)
-	goto usage;
+static krb5_error_code
+add_one_principal (const char *name,
+		   int random_key,
+		   char *password,
+		   const char *max_ticket_life,
+		   const char *max_renewable_life,
+		   const char *attributes)
+{
+    krb5_error_code ret;
+    kadm5_principal_ent_rec princ;
+    kadm5_principal_ent_rec *default_ent, defrec;
+    krb5_principal princ_ent = NULL;
+    int mask = 0;
+    int default_mask = 0;
+    char pwbuf[1024];
+
     memset(&princ, 0, sizeof(princ));
-    ret = krb5_parse_name(context, argv[optind], &princ_ent);
+    ret = krb5_parse_name(context, name, &princ_ent);
     if (ret) {
 	krb5_warn(context, ret, "krb5_parse_name");
-	goto out;
+	return ret;
     }
     princ.principal = princ_ent;
     mask |= KADM5_PRINCIPAL;
-    if (set_entry(context, &princ, &mask,
-		  max_ticket_life, max_renewable_life, attributes)) {
+
+    ret = set_entry(context, &princ, &mask,
+		    max_ticket_life, max_renewable_life, attributes);
+    if (ret)
 	goto out;
+
+    default_ent = &defrec;
+    ret = get_default (kadm_handle, princ_ent, default_ent);
+    if (ret) {
+	default_ent      = NULL;
+	default_mask = 0;
+    } else {
+	default_mask = KADM5_ATTRIBUTES | KADM5_MAX_LIFE | KADM5_MAX_RLIFE;
     }
-    edit_entry(&princ, &mask);
-    if(rkey){
+
+    edit_entry(&princ, &mask, default_ent, default_mask);
+    if(random_key) {
 	princ.attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
 	mask |= KADM5_ATTRIBUTES;
 	password = "hemlig";
     }
-    if(password == NULL){
+    if(password == NULL) {
 	char *princ_name;
 	char *prompt;
 
@@ -117,7 +130,7 @@ add_new_key(int argc, char **argv)
     ret = kadm5_create_principal(kadm_handle, &princ, mask, password);
     if(ret)
 	krb5_warn(context, ret, "kadm5_create_principal");
-    if(rkey){
+    if(random_key) {
 	krb5_keyblock *new_keys;
 	int n_keys, i;
 	ret = kadm5_randkey_principal(kadm_handle, princ_ent, 
@@ -138,12 +151,76 @@ add_new_key(int argc, char **argv)
 	kadm5_free_principal_ent(kadm_handle, &princ);
     }
 out:
-    if(princ_ent)
-	krb5_free_principal(context, princ_ent);
-    if(!rkey && password)
-	memset(password, 0, strlen(password));
+    if (princ_ent)
+	krb5_free_principal (context, princ_ent);
+    if(default_ent)
+	kadm5_free_principal_ent (context, default_ent);
+    if (!random_key && password)
+	memset (password, 0, strlen(password));
+    return ret;
+}
+
+/*
+ * the ank command
+ */
+
+static struct getargs args[] = {
+    { "random-key",	'r',	arg_flag,	NULL, "set random key" },
+    { "password",	'p',	arg_string,	NULL, "princial's password" },
+    { "max-ticket-life",  0,	arg_string,	NULL, "max ticket lifetime" },
+    { "max-renewable-life",  0,	arg_string,	NULL,
+      "max renewable lifetime" },
+    { "attributes",	0,	arg_string,	NULL, "attributes" }
+};
+
+static int num_args = sizeof(args) / sizeof(args[0]);
+
+static void
+usage(void)
+{
+    arg_printusage (args, num_args, "ank", "principal");
+}
+
+/*
+ * Parse arguments and add all the principals.
+ */
+
+int
+add_new_key(int argc, char **argv)
+{
+    char *password = NULL;
+    int rkey = 0;
+    int optind = 0;
+    krb5_error_code ret;
+    char *max_ticket_life	= NULL;
+    char *max_renewable_life	= NULL;
+    char *attributes		= NULL;
+    int i;
+
+    args[0].value = &rkey;
+    args[1].value = &password;
+    args[2].value = &max_ticket_life;
+    args[3].value = &max_renewable_life;
+    args[4].value = &attributes;
+    
+    if(getarg(args, num_args, argc, argv, &optind)) {
+	usage ();
+	return 0;
+    }
+    if(optind == argc) {
+	usage ();
+	return 0;
+    }
+
+    for (i = optind; i < argc; ++i) {
+	ret = add_one_principal (argv[i], rkey, password,
+				 max_ticket_life,
+				 max_renewable_life,
+				 attributes);
+	if (ret) {
+	    krb5_warn (context, ret, "adding %s", argv[i]);
+	    break;
+	}
+    }
     return 0;
-usage:
-    usage();
-    goto out;
 }
