@@ -103,11 +103,32 @@ extern int DEBUGLEVEL;
 static char *bufr  = NULL;
 static int   bSize = 0;
 
+/* we can't use FILE* due to the 256 fd limit - use this cheap hack
+   instead */
+typedef struct {
+	char *buf;
+	char *p;
+	size_t size;
+} myFILE;
+
+static int mygetc(myFILE *f)
+{
+	if (f->p >= f->buf+f->size) return EOF;
+	return (int)*(f->p++);
+}
+
+static void myfile_close(myFILE *f)
+{
+	if (!f) return;
+	if (f->buf) free(f->buf);
+	free(f);
+}
+
 /* -------------------------------------------------------------------------- **
  * Functions...
  */
 
-static int EatWhitespace( FILE *InFile )
+static int EatWhitespace( myFILE *InFile )
   /* ------------------------------------------------------------------------ **
    * Scan past whitespace (see ctype(3C)) and return the first non-whitespace
    * character, or newline, or EOF.
@@ -127,12 +148,12 @@ static int EatWhitespace( FILE *InFile )
   {
   int c;
 
-  for( c = getc( InFile ); isspace( c ) && ('\n' != c); c = getc( InFile ) )
+  for( c = mygetc( InFile ); isspace( c ) && ('\n' != c); c = mygetc( InFile ) )
     ;
   return( c );
   } /* EatWhitespace */
 
-static int EatComment( FILE *InFile )
+static int EatComment( myFILE *InFile )
   /* ------------------------------------------------------------------------ **
    * Scan to the end of a comment.
    *
@@ -152,7 +173,7 @@ static int EatComment( FILE *InFile )
   {
   int c;
 
-  for( c = getc( InFile ); ('\n'!=c) && (EOF!=c) && (c>0); c = getc( InFile ) )
+  for( c = mygetc( InFile ); ('\n'!=c) && (EOF!=c) && (c>0); c = mygetc( InFile ) )
     ;
   return( c );
   } /* EatComment */
@@ -195,7 +216,7 @@ static int Continuation( char *line, int pos )
 }
 
 
-static BOOL Section( FILE *InFile, BOOL (*sfunc)(char *) )
+static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
   /* ------------------------------------------------------------------------ **
    * Scan a section name, and pass the name to function sfunc().
    *
@@ -264,7 +285,7 @@ static BOOL Section( FILE *InFile, BOOL (*sfunc)(char *) )
           return( False );
           }
         end = ( (i > 0) && (' ' == bufr[i - 1]) ) ? (i - 1) : (i);
-        c = getc( InFile );             /* Continue with next line.         */
+        c = mygetc( InFile );             /* Continue with next line.         */
         break;
 
       default:                        /* All else are a valid name chars.   */
@@ -278,7 +299,7 @@ static BOOL Section( FILE *InFile, BOOL (*sfunc)(char *) )
           {
           bufr[i++] = c;
           end = i;
-          c = getc( InFile );
+          c = mygetc( InFile );
           }
       }
     }
@@ -288,7 +309,7 @@ static BOOL Section( FILE *InFile, BOOL (*sfunc)(char *) )
   return( False );
   } /* Section */
 
-static BOOL Parameter( FILE *InFile, BOOL (*pfunc)(char *, char *), int c )
+static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
   /* ------------------------------------------------------------------------ **
    * Scan a parameter name and value, and pass these two fields to pfunc().
    *
@@ -357,7 +378,7 @@ static BOOL Parameter( FILE *InFile, BOOL (*pfunc)(char *, char *), int c )
           return( True );
           }
         end = ( (i > 0) && (' ' == bufr[i - 1]) ) ? (i - 1) : (i);
-        c = getc( InFile );       /* Read past eoln.                   */
+        c = mygetc( InFile );       /* Read past eoln.                   */
         break;
 
       case '\0':                /* Shouldn't have EOF within param name. */
@@ -377,7 +398,7 @@ static BOOL Parameter( FILE *InFile, BOOL (*pfunc)(char *, char *), int c )
           {
           bufr[i++] = c;
           end = i;
-          c = getc( InFile );
+          c = mygetc( InFile );
           }
       }
     }
@@ -401,7 +422,7 @@ static BOOL Parameter( FILE *InFile, BOOL (*pfunc)(char *, char *), int c )
     switch( c )
       {
       case '\r':              /* Explicitly remove '\r' because the older */
-        c = getc( InFile );   /* version called fgets_slash() which also  */
+        c = mygetc( InFile );   /* version called fgets_slash() which also  */
         break;                /* removes them.                            */
 
       case '\n':              /* Marks end of value unless there's a '\'. */
@@ -412,7 +433,7 @@ static BOOL Parameter( FILE *InFile, BOOL (*pfunc)(char *, char *), int c )
           {
           for( end = i; (end >= 0) && isspace(bufr[end]); end-- )
             ;
-          c = getc( InFile );
+          c = mygetc( InFile );
           }
         break;
 
@@ -420,7 +441,7 @@ static BOOL Parameter( FILE *InFile, BOOL (*pfunc)(char *, char *), int c )
         bufr[i++] = c;       /* not advance <end>.  This allows trimming  */
         if( !isspace( c ) )  /* of whitespace at the end of the line.     */
           end = i;
-        c = getc( InFile );
+        c = mygetc( InFile );
         break;
       }
     }
@@ -429,7 +450,7 @@ static BOOL Parameter( FILE *InFile, BOOL (*pfunc)(char *, char *), int c )
   return( pfunc( bufr, &bufr[vstart] ) );   /* Pass name & value to pfunc().  */
   } /* Parameter */
 
-static BOOL Parse( FILE *InFile,
+static BOOL Parse( myFILE *InFile,
                    BOOL (*sfunc)(char *),
                    BOOL (*pfunc)(char *, char *) )
   /* ------------------------------------------------------------------------ **
@@ -490,38 +511,37 @@ static BOOL Parse( FILE *InFile,
   return( True );
   } /* Parse */
 
-static FILE *OpenConfFile( char *FileName )
+static myFILE *OpenConfFile( char *FileName )
   /* ------------------------------------------------------------------------ **
    * Open a configuration file.
    *
    *  Input:  FileName  - The pathname of the config file to be opened.
    *
-   *  Output: A pointer of type (FILE *) to the opened file, or NULL if the
-   *          file could not be opened.
+   *  Output: A pointer of type (char **) to the lines of the file
    *
    * ------------------------------------------------------------------------ **
    */
   {
-  FILE *OpenedFile;
   char *func = "params.c:OpenConfFile() -";
   extern BOOL in_client;
   int lvl = in_client?1:0;
+  myFILE *ret;
 
-  if( NULL == FileName || 0 == *FileName )
-    {
-    DEBUG( lvl, ("%s No configuration filename specified.\n", func) );
-    return( NULL );
-    }
+  ret = (myFILE *)malloc(sizeof(*ret));
+  if (!ret) return NULL;
 
-  OpenedFile = sys_fopen( FileName, "r" );
-  if( NULL == OpenedFile )
+  ret->buf = file_load(FileName, &ret->size);
+  if( NULL == ret->buf )
     {
     DEBUG( lvl,
       ("%s Unable to open configuration file \"%s\":\n\t%s\n",
       func, FileName, strerror(errno)) );
+    free(ret);
+    ret = NULL;
     }
 
-  return( OpenedFile );
+  ret->p = ret->buf;
+  return( ret );
   } /* OpenConfFile */
 
 BOOL pm_process( char *FileName,
@@ -542,7 +562,7 @@ BOOL pm_process( char *FileName,
    */
   {
   int   result;
-  FILE *InFile;
+  myFILE *InFile;
   char *func = "params.c:pm_process() -";
 
   InFile = OpenConfFile( FileName );          /* Open the config file. */
@@ -562,7 +582,7 @@ BOOL pm_process( char *FileName,
     if( NULL == bufr )
       {
       DEBUG(0,("%s memory allocation failure.\n", func));
-      fclose(InFile);
+      myfile_close(InFile);
       return( False );
       }
     result = Parse( InFile, sfunc, pfunc );
@@ -571,7 +591,7 @@ BOOL pm_process( char *FileName,
     bSize = 0;
     }
 
-  fclose(InFile);
+  myfile_close(InFile);
 
   if( !result )                               /* Generic failure. */
     {

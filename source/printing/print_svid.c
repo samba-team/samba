@@ -47,50 +47,49 @@ static printer_t *printers = NULL;
 
 static void populate_printers(void)
 {
-	FILE *fp;
+	char **lines;
+	int i;
 
-	if ((fp = sys_popen("/usr/bin/lpstat -v", "r", False)) != NULL) {
-		char buf[BUFSIZ];
+	lines = file_lines_pload("/usr/bin/lpstat -v", NULL);
+	if (!lines) return;
 
-		while (fgets(buf, sizeof (buf), fp) != NULL) {
-			printer_t *ptmp;
-			char *name, *tmp;
+	for (i=0;lines[i];i++) {
+		printer_t *ptmp;
+		char *name, *tmp;
+		char *buf = lines[i];
 
-			/* eat "system/device for " */
-			if (((tmp = strchr(buf, ' ')) == NULL) ||
-			    ((tmp = strchr(++tmp, ' ')) == NULL))
-				continue;
+		/* eat "system/device for " */
+		if (((tmp = strchr(buf, ' ')) == NULL) ||
+		    ((tmp = strchr(++tmp, ' ')) == NULL))
+			continue;
 
-			/*
-			 * In case we're only at the "for ".
-			 */
+		/*
+		 * In case we're only at the "for ".
+		 */
 
-            if(!strncmp("for ",++tmp,4))
-            {
-				tmp=strchr(tmp, ' ');
-				tmp++;
-			}
-			name = tmp;
-
-			/* truncate the ": ..." */
-			if ((tmp = strchr(name, ':')) != NULL)
-				*tmp = '\0';
-
-			/* add it to the cache */
-			if ((ptmp = malloc(sizeof (*ptmp))) != NULL) {
-				ZERO_STRUCTP(ptmp);
-				if((ptmp->name = strdup(name)) == NULL)
-					DEBUG(0,("populate_printers: malloc fail in strdup !\n"));
-				ptmp->next = printers;
-				printers = ptmp;
-			} else {
-				DEBUG(0,("populate_printers: malloc fail for ptmp\n"));
-			}
+		if(!strncmp("for ",++tmp,4)) {
+			tmp=strchr(tmp, ' ');
+			tmp++;
 		}
-		sys_pclose(fp);
-	} else {
-		DEBUG(0,( "Unable to run lpstat!\n"));
+		name = tmp;
+
+		/* truncate the ": ..." */
+		if ((tmp = strchr(name, ':')) != NULL)
+			*tmp = '\0';
+		
+		/* add it to the cache */
+		if ((ptmp = malloc(sizeof (*ptmp))) != NULL) {
+			ZERO_STRUCTP(ptmp);
+			if((ptmp->name = strdup(name)) == NULL)
+				DEBUG(0,("populate_printers: malloc fail in strdup !\n"));
+			ptmp->next = printers;
+			printers = ptmp;
+		} else {
+			DEBUG(0,("populate_printers: malloc fail for ptmp\n"));
+		}
 	}
+
+	file_lines_free(lines);
 }
 
 

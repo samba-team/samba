@@ -329,34 +329,82 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
 
 
 /****************************************************************************
-load a file into memory and return an array of pointers to lines in the file
-must be freed with file_lines_free()
+load from a pipe into memory
 ****************************************************************************/
-char **file_lines_load(char *fname, int *numlines)
+char *file_pload(char *syscmd, size_t *size)
 {
-	int fd, i;
+	int fd, n;
+	char *p;
+	pstring buf;
+	size_t total;
+	
+	fd = sys_popen(syscmd);
+	if (fd == -1) return NULL;
+
+	p = NULL;
+	total = 0;
+
+	while ((n = read(fd, buf, sizeof(buf))) > 0) {
+		p = Realloc(p, total + n + 1);
+		if (!p) {
+			close(fd);
+			return NULL;
+		}
+		memcpy(p+total, buf, n);
+		total += n;
+	}
+	p[total] = 0;
+
+	sys_pclose(fd);
+
+	if (size) *size = total;
+
+	return p;
+}
+
+
+/****************************************************************************
+load a file into memory
+****************************************************************************/
+char *file_load(char *fname, size_t *size)
+{
+	int fd;
 	SMB_STRUCT_STAT sbuf;
-	char *p, *s, **ret;
-	size_t size;
+	char *p;
 	
 	fd = open(fname,O_RDONLY);
 	if (fd == -1) return NULL;
 
 	if (sys_fstat(fd, &sbuf) != 0) return NULL;
-	size = sbuf.st_size;
 
-	if (size == 0) return NULL;
+	if (sbuf.st_size == 0) return NULL;
 
-	p = (char *)malloc(size+1);
+	p = (char *)malloc(sbuf.st_size+1);
 	if (!p) return NULL;
 
-	if (read(fd, p, size) != size) {
+	if (read(fd, p, sbuf.st_size) != sbuf.st_size) {
 		free(p);
 		return NULL;
 	}
-	p[size] = 0;
+	p[sbuf.st_size] = 0;
 
 	close(fd);
+
+	if (size) *size = sbuf.st_size;
+
+	return p;
+}
+
+
+/****************************************************************************
+parse a buffer into lines
+****************************************************************************/
+static char **file_lines_parse(char *p, size_t size, int *numlines)
+{
+	int i;
+	char *s, **ret;
+
+	if (!p) return NULL;
 
 	for (s = p, i=0; s < p+size; s++) {
 		if (s[0] == '\n') i++;
@@ -381,6 +429,38 @@ char **file_lines_load(char *fname, int *numlines)
 	}
 
 	return ret;
+}
+
+
+/****************************************************************************
+load a file into memory and return an array of pointers to lines in the file
+must be freed with file_lines_free()
+****************************************************************************/
+char **file_lines_load(char *fname, int *numlines)
+{
+	char *p;
+	size_t size;
+
+	p = file_load(fname, &size);
+	if (!p) return NULL;
+
+	return file_lines_parse(p, size, numlines);
+}
+
+
+/****************************************************************************
+load a pipe into memory and return an array of pointers to lines in the data
+must be freed with file_lines_free()
+****************************************************************************/
+char **file_lines_pload(char *syscmd, int *numlines)
+{
+	char *p;
+	size_t size;
+
+	p = file_pload(syscmd, &size);
+	if (!p) return NULL;
+
+	return file_lines_parse(p, size, numlines);
 }
 
 /****************************************************************************

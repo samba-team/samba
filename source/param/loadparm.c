@@ -1971,19 +1971,15 @@ static BOOL handle_netbios_name(char *pszParmValue,char **ptr)
  Do the work of sourcing in environment variable/value pairs.
 ***************************************************************************/
 
-static BOOL source_env(FILE *fenv)
+static BOOL source_env(char **lines)
 {
-	pstring line;
 	char *varval;
 	size_t len;
+	int i;
 	char *p;
 
-	while (!feof(fenv)) {
-		if (fgets(line, sizeof(line), fenv) == NULL)
-			break;
-
-		if(feof(fenv))
-			break;
+	for (i=0; lines[i]; i++) {
+		char *line = lines[i];
 
 		if((len = strlen(line)) == 0)
 			continue;
@@ -2028,8 +2024,8 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 {
 	pstring fname;
 	char *p = fname;
-	FILE *env;
 	BOOL result;
+	char **lines;
 
 	pstrcpy(fname,pszParmValue);
 
@@ -2044,47 +2040,19 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 	 */
 
 	if (*p == '|') {
-
-		DEBUG(4, ("handle_source_env: source env from pipe\n"));
-		p++;
-
-		if ((env = sys_popen(p, "r", True)) == NULL) {
-			DEBUG(0,("handle_source_env: Failed to popen %s. Error was %s\n", p, strerror(errno) ));
-			return(False);
-		}
-
-		DEBUG(4, ("handle_source_env: calling source_env()\n"));
-		result = source_env(env);
-		sys_pclose(env);
-
+		lines = file_lines_pload(p+1, NULL);
 	} else {
-
-		SMB_STRUCT_STAT st;
-
-		DEBUG(4, ("handle_source_env: source env from file %s\n", fname));
-		if ((env = sys_fopen(fname, "r")) == NULL) {
-			DEBUG(0,("handle_source_env: Failed to open file %s, Error was %s\n", fname, strerror(errno) ));
-			return(False);
-		}
-
-		/*
-		 * Ensure this file is owned by root and not writable by world.
-		 */
-		if(sys_fstat(fileno(env), &st) != 0) {
-			DEBUG(0,("handle_source_env: Failed to stat file %s, Error was %s\n", fname, strerror(errno) ));
-			fclose(env);
-			return False;
-		}
-
-		if((st.st_uid != (uid_t)0) || (st.st_mode & S_IWOTH)) {
-			DEBUG(0,("handle_source_env: unsafe to source env file %s. Not owned by root or world writable\n", fname ));
-			fclose(env);
-			return False;
-		}
-
-		result=source_env(env);
-		fclose(env);
+		lines = file_lines_load(fname, NULL);
 	}
+
+	if (!lines) {
+		DEBUG(0,("handle_source_env: Failed to open file %s, Error was %s\n", fname, strerror(errno) ));
+		return(False);
+	}
+
+	result=source_env(lines);
+	file_lines_free(lines);
+
 	return(result);
 }
 

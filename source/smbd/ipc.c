@@ -626,40 +626,29 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 {
 	int i,ok=0;
 	pstring tok,driver,datafile,langmon,helpfile,datatype;
-	char *p,*q;
-	FILE *f;
-	pstring fname;
+	char *p;
+	char **lines, *line;
 	
-	pstrcpy(fname,lp_driverfile());
-	f=sys_fopen(fname,"r");
-	if (!f) {
-		DEBUG(3,("fill_printq_info: Can't open %s - %s\n",fname,strerror(errno)));
+	lines = file_lines_load(lp_driverfile(),NULL);
+	if (!lines) {
+		DEBUG(3,("fill_printq_info: Can't open %s - %s\n",
+			 lp_driverfile(),strerror(errno)));
 		desc->errcode=NERR_notsupported;
 		return;
 	}
-	
-	if((p=(char *)malloc(8192*sizeof(char))) == NULL) {
-		DEBUG(0,("fill_printq_info: malloc fail !\n"));
-		desc->errcode=NERR_notsupported;
-		fclose(f);
-		return;
-	}
-
-	memset(p, '\0',8192*sizeof(char));
-	q=p;
 	
 	/* lookup the long printer driver name in the file
 	   description */
-	while (f && !feof(f) && !ok) {
-		p = q;			/* reset string pointer */
-		fgets(p,8191,f);
-		p[strlen(p)-1]='\0';
+	for (i=0;lines[i] && !ok;i++) {
+		p = lines[i];
 		if (next_token(&p,tok,":",sizeof(tok)) &&
 		    (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
 		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
 			ok=1;
 	}
-	fclose(f);
+	line = strdup(p);
+	p = line;
+	file_lines_free(lines);
 	
 	/* driver file name */
 	if (ok && !next_token(&p,driver,":",sizeof(driver))) ok = 0;
@@ -722,7 +711,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 		DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
 		desc->errcode=NERR_notsupported;
 	}
-	free(q);
+	free(line);
 }
 
 
@@ -804,56 +793,45 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 /* This function returns the number of files for a given driver */
 static int get_printerdrivernumber(int snum)
 {
-  int i=0,ok=0;
-  pstring tok;
-  char *p,*q;
-  FILE *f;
-  pstring fname;
+	int i=0,ok=0;
+	pstring tok;
+	char *p;
+	char **lines, *line;
 
-  pstrcpy(fname,lp_driverfile());
-
-  DEBUG(4,("In get_printerdrivernumber: %s\n",fname));
-  f=sys_fopen(fname,"r");
-  if (!f) {
-    DEBUG(3,("get_printerdrivernumber: Can't open %s - %s\n",fname,strerror(errno)));
-    return(0);
-  }
-
-  if((p=(char *)malloc(8192*sizeof(char))) == NULL) {
-    DEBUG(3,("get_printerdrivernumber: malloc fail !\n"));
-    fclose(f);
-    return 0;
-  }
-
-  q=p; /* need it to free memory because p change ! */
-
-  /* lookup the long printer driver name in the file description */
-  while (!feof(f) && !ok)
-  {
-    p = q;			/* reset string pointer */
-    fgets(p,8191,f);
-    if (next_token(&p,tok,":",sizeof(tok)) &&
-      (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
-	ok=1;
-  }
-  fclose(f);
-
-  if (ok) {
-    /* skip 5 fields */
-    i = 5;
-    while (*p && i) {
-      if (*p++ == ':') i--;
-    }
-    if (!*p || i)
-      return(0);
-
-    /* count the number of files */
-    while (next_token(&p,tok,",",sizeof(tok)))
-       i++;
-  }
-  free(q);
-
-  return(i);
+	lines = file_lines_load(lp_driverfile(), NULL);
+	if (!lines) {
+		DEBUG(3,("get_printerdrivernumber: Can't open %s - %s\n",
+			 lp_driverfile(),strerror(errno)));
+		return(0);
+	}
+	
+	/* lookup the long printer driver name in the file description */
+	for (i=0;lines[i] && !ok; i++) {
+		p = lines[i];
+		if (next_token(&p,tok,":",sizeof(tok)) &&
+		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
+			ok=1;
+	}
+	line = strdup(p);
+	p = line;
+	file_lines_free(lines);
+	
+	if (ok) {
+		/* skip 5 fields */
+		i = 5;
+		while (*p && i) {
+			if (*p++ == ':') i--;
+		}
+		if (!*p || i)
+			return(0);
+		
+		/* count the number of files */
+		while (next_token(&p,tok,",",sizeof(tok)))
+			i++;
+	}
+	free(line);
+	
+	return(i);
 }
 
 static BOOL api_DosPrintQGetInfo(connection_struct *conn,
@@ -1105,22 +1083,15 @@ static int get_server_info(uint32 servertype,
 			   struct srv_info_struct **servers,
 			   char *domain)
 {
-  FILE *f;
-  pstring fname;
   int count=0;
   int alloced=0;
-  pstring line;
+  char **lines;
   BOOL local_list_only;
+  int i;
 
-  pstrcpy(fname,lp_lockdir());
-  trim_string(fname,NULL,"/");
-  pstrcat(fname,"/");
-  pstrcat(fname,SERVER_LIST);
-
-  f = sys_fopen(fname,"r");
-
-  if (!f) {
-    DEBUG(4,("Can't open %s - %s\n",fname,strerror(errno)));
+  lines = file_lines_load(lock_path(SERVER_LIST), NULL);
+  if (!lines) {
+    DEBUG(4,("Can't open %s - %s\n",lock_path(SERVER_LIST),strerror(errno)));
     return(0);
   }
 
@@ -1132,16 +1103,13 @@ static int get_server_info(uint32 servertype,
 
   DEBUG(4,("Servertype search: %8x\n",servertype));
 
-  while (!feof(f))
-  {
+  for (i=0;lines[i];i++) {
     fstring stype;
     struct srv_info_struct *s;
-    char *ptr = line;
+    char *ptr = lines[i];
     BOOL ok = True;
-    *ptr = 0;
 
-    fgets(line,sizeof(line)-1,f);
-    if (!*line) continue;
+    if (!*ptr) continue;
     
     if (count == alloced) {
       alloced += 10;
@@ -1209,7 +1177,7 @@ static int get_server_info(uint32 servertype,
       }
   }
   
-  fclose(f);
+  file_lines_free(lines);
   return(count);
 }
 
