@@ -1,3 +1,11 @@
+2001-08-24  Assar Westerlund  <assar@sics.se>
+
+	* kuser/Makefile.am: remove CHECK_LOCAL - non bin programs require
+	no special treatment now
+
+	* kuser/generate-requests.c: parse arguments in a useful way
+	* kuser/kverify.c: add --help/--verify
+
 2001-08-22  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: bump prereq to 2.52 remove unused test_LIB_KRB4
