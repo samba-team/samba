@@ -115,11 +115,24 @@ interface security
 	const string SID_CREATOR_GROUP        = "S-1-3-1";
 
 	/* SECURITY_NT_AUTHORITY */
-	const string SID_NT_AUTHORITY        = "S-1-5";
-	const string SID_NETWORK             = "S-1-5-2";
-	const string SID_ANONYMOUS           = "S-1-5-7";
-	const string SID_AUTHENTICATED_USERS = "S-1-5-11";
-	const string SID_SYSTEM              = "S-1-5-18";
+	const string SID_NT_AUTHORITY             = "S-1-5";
+	const string SID_NT_DIALUP                = "S-1-5-1";
+	const string SID_NT_NETWORK               = "S-1-5-2";
+	const string SID_NT_BATCH                 = "S-1-5-3";
+	const string SID_NT_INTERACTIVE           = "S-1-5-4";
+	const string SID_NT_SERVICE               = "S-1-5-6";
+	const string SID_NT_ANONYMOUS             = "S-1-5-7";
+	const string SID_NT_PROXY                 = "S-1-5-8";
+	const string SID_NT_ENTERPRISE_DCS        = "S-1-5-9";
+	const string SID_NT_SELF                  = "S-1-5-10";
+	const string SID_NT_AUTHENTICATED_USERS   = "S-1-5-11";
+	const string SID_NT_RESTRICTED            = "S-1-5-12";
+	const string SID_NT_TERMINAL_SERVER_USERS = "S-1-5-13";
+	const string SID_NT_REMOTE_INTERACTIVE    = "S-1-5-14";
+	const string SID_NT_THIS_ORGANISATION     = "S-1-5-15";
+	const string SID_NT_SYSTEM                = "S-1-5-18";
+	const string SID_NT_LOCAL_SERVICE         = "S-1-5-19";
+	const string SID_NT_NETWORK_SERVICE       = "S-1-5-20";
 
 	/* SECURITY_BUILTIN_DOMAIN_RID */
 	const string SID_BUILTIN                   = "S-1-5-32";
@@ -132,6 +145,36 @@ interface security
 	const string SID_BUILTIN_PRINT_OPERATORS   = "S-1-5-32-550";
 	const string SID_BUILTIN_BACKUP_OPERATORS  = "S-1-5-32-551";
 	const string SID_BUILTIN_REPLICATOR        = "S-1-5-32-552";
+
+
+	/*
+	  privilege names
+	*/
+	const string SEC_PRIV_SECURITY                 = "SeSecurityPrivilege";
+	const string SEC_PRIV_BACKUP                   = "SeBackupPrivilege";
+	const string SEC_PRIV_RESTORE                  = "SeRestorePrivilege";
+	const string SEC_PRIV_SYSTEMTIME               = "SeSystemtimePrivilege";
+	const string SEC_PRIV_SHUTDOWN                 = "SeShutdownPrivilege";
+	const string SEC_PRIV_REMOTE_SHUTDOWN          = "SeRemoteShutdownPrivilege";
+	const string SEC_PRIV_TAKE_OWNERSHIP           = "SeTakeOwnershipPrivilege";
+	const string SEC_PRIV_DEBUG                    = "SeDebugPrivilege";
+	const string SEC_PRIV_SYSTEM_ENVIRONMENT       = "SeSystemEnvironmentPrivilege";
+	const string SEC_PRIV_SYSTEM_PROFILE           = "SeSystemProfilePrivilege";
+	const string SEC_PRIV_PROFILE_SINGLE_PROCESS   = "SeProfileSingleProcessPrivilege";
+	const string SEC_PRIV_INCREASE_BASE_PRIORITY   = "SeIncreaseBasePriorityPrivilege";
+	const string SEC_PRIV_LOAD_DRIVER              = "SeLoadDriverPrivilege";
+	const string SEC_PRIV_CREATE_PAGEFILE          = "SeCreatePagefilePrivilege";
+	const string SEC_PRIV_INCREASE_QUOTA           = "SeIncreaseQuotaPrivilege";
+	const string SEC_PRIV_CHANGE_NOTIFY            = "SeChangeNotifyPrivilege";
+	const string SEC_PRIV_UNDOCK                   = "SeUndockPrivilege";
+	const string SEC_PRIV_MANAGE_VOLUME            = "SeManageVolumePrivilege";
+	const string SEC_PRIV_IMPERSONATE              = "SeImpersonatePrivilege";
+	const string SEC_PRIV_CREATE_GLOBAL            = "SeCreateGlobalPrivilege";
+	const string SEC_PRIV_ENABLE_DELEGATION        = "SeEnableDelegationPrivilege";
+	const string SEC_PRIV_INTERACTIVE_LOGON        = "SeInteractiveLogonRight";
+	const string SEC_PRIV_NETWORK_LOGON            = "SeNetworkLogonRight";
+	const string SEC_PRIV_REMOTE_INTERACTIVE_LOGON = "SeRemoteInteractiveLogonRight";
+
 
 	/* a domain SID. Note that unlike Samba3 this contains a pointer,
 	   so you can't copy them using assignment */
