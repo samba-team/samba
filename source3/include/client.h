@@ -123,7 +123,7 @@ struct cli_state {
 					      of the pipe we're talking to, 
 					      if any */
 
-	uint16 nt_pipe_fnum;               /* Pipe handle. */
+	uint16 nt_pipe_fnum[PI_MAX_PIPES]; /* Pipe handle. */
 
 	/* Secure pipe parameters */
 	int pipe_auth_flags;
