@@ -4,7 +4,7 @@
 Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
 Date:		Unknown
 Status:		Current
-Updated:	July 5, 1998	<jht@samba.anu.edu.au>
+Updated:	November 13, 1998	<jra@samba.anu.edu.au>
 
 Subject:	HOW TO INSTALL AND TEST SAMBA
 ===============================================================================
@@ -16,9 +16,8 @@ try something like:
 
 	nroff -man smbd.8 | more
 
-Unfortunately, having said this, the man pages are sadly out of date and
-really need more effort to maintain them. Other sources of information 
-are pointed to by the Samba web site, http://samba.anu.edu.au/samba.
+Other sources of information are pointed to by the Samba web 
+site, http://samba.anu.edu.au/samba.
 
 STEP 1. Building the binaries
 
@@ -176,7 +175,7 @@ non-Samba servers)
 
 STEP 7. try connecting with the unix client. eg:
 
-smbclient '\\yourhostname\aservice'
+smbclient //yourhostname/aservice
 
 Typically the "yourhostname" would be the name of the host where you
 installed smbd. The "aservice" is any service you have defined in the
@@ -186,10 +185,7 @@ in smb.conf.
 For example if your unix host is bambi and your login name is fred you
 would type:
 
-smbclient '\\bambi\fred'
-
-NOTE: The number of slashes to use depends on the type of shell you
-use. You may need '\\\\bambi\\fred' with some shells.
+smbclient //bambi/fred
 
 STEP 8. Try connecting from a dos/WfWg/Win95/NT/os-2 client. Try
 mounting disks. eg:
