@@ -382,6 +382,8 @@ BOOL reload_services(BOOL test)
 {
 	BOOL ret;
 	
+	set_register_printer_fn();
+
 	if (lp_loaded()) {
 		pstring fname;
 		pstrcpy(fname,lp_configfile());

@@ -55,7 +55,7 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 {
 
 	pstring syscmd;
-	char *p, *arg;
+	char *arg;
 	int ret;
 	va_list ap;
 	va_start(ap, outfd);
@@ -75,9 +75,7 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	}
 	va_end(ap);
   
-	p = PRINTERNAME(snum);
-  
-	pstring_sub(syscmd, "%p", p);
+	pstring_sub(syscmd, "%p", PRINTERNAME(snum));
 	standard_sub_snum(snum,syscmd,sizeof(syscmd));
 
 	ret = smbrun(syscmd,outfd);

@@ -118,7 +118,7 @@ static void send_notify_field_buffer(const char *printer_name, uint32 type,
 
 /* Send a message that the printer status has changed */
 
-void notify_printer_status_byname(char *printer_name, uint32 status)
+void notify_printer_status_byname(const char *printer_name, uint32 status)
 {
 	/* Printer status stored in value1 */
 
@@ -129,13 +129,13 @@ void notify_printer_status_byname(char *printer_name, uint32 status)
 
 void notify_printer_status(int snum, uint32 status)
 {
-	char *printer_name = PRINTERNAME(snum);
+	const char *printer_name = PRINTERNAME(snum);
 
 	if (printer_name)
 		notify_printer_status_byname(printer_name, status);
 }
 
-void notify_job_status_byname(char *printer_name, uint32 jobid, uint32 status,
+void notify_job_status_byname(const char *printer_name, uint32 jobid, uint32 status,
 			      uint32 flags)
 {
 	/* Job id stored in id field, status in value1 */
@@ -147,14 +147,14 @@ void notify_job_status_byname(char *printer_name, uint32 jobid, uint32 status,
 
 void notify_job_status(int snum, uint32 jobid, uint32 status)
 {
-	char *printer_name = PRINTERNAME(snum);
+	const char *printer_name = PRINTERNAME(snum);
 
 	notify_job_status_byname(printer_name, jobid, status, 0);
 }
 
 void notify_job_total_bytes(int snum, uint32 jobid, uint32 size)
 {
-	char *printer_name = PRINTERNAME(snum);
+	const char *printer_name = PRINTERNAME(snum);
 
 	/* Job id stored in id field, status in value1 */
 
@@ -165,7 +165,7 @@ void notify_job_total_bytes(int snum, uint32 jobid, uint32 size)
 
 void notify_job_total_pages(int snum, uint32 jobid, uint32 pages)
 {
-	char *printer_name = PRINTERNAME(snum);
+	const char *printer_name = PRINTERNAME(snum);
 
 	/* Job id stored in id field, status in value1 */
 
@@ -176,7 +176,7 @@ void notify_job_total_pages(int snum, uint32 jobid, uint32 pages)
 
 void notify_job_username(int snum, uint32 jobid, char *name)
 {
-	char *printer_name = PRINTERNAME(snum);
+	const char *printer_name = PRINTERNAME(snum);
 
 	send_notify_field_buffer(
 		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_USER_NAME,
@@ -185,7 +185,7 @@ void notify_job_username(int snum, uint32 jobid, char *name)
 
 void notify_job_name(int snum, uint32 jobid, char *name)
 {
-	char *printer_name = PRINTERNAME(snum);
+	const char *printer_name = PRINTERNAME(snum);
 
 	send_notify_field_buffer(
 		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_DOCUMENT,
@@ -194,7 +194,7 @@ void notify_job_name(int snum, uint32 jobid, char *name)
 
 void notify_job_submitted(int snum, uint32 jobid, time_t submitted)
 {
-	char *printer_name = PRINTERNAME(snum);
+	const char *printer_name = PRINTERNAME(snum);
 
 	send_notify_field_buffer(
 		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_SUBMITTED,

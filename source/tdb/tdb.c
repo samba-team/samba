@@ -419,7 +419,8 @@ static int rec_free_read(TDB_CONTEXT *tdb, tdb_off off, struct list_struct *rec)
 		TDB_LOG((tdb, 0,"rec_free_read non-free magic at offset=%d - fixing\n", 
 			 rec->magic, off));
 		rec->magic = TDB_FREE_MAGIC;
-		tdb_write(tdb, off, rec, sizeof(*rec));
+		if (tdb_write(tdb, off, rec, sizeof(*rec)) == -1)
+			return -1;
 	}
 
 	if (rec->magic != TDB_FREE_MAGIC) {
