@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1994-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Tim Potter 2001
+   Copyright (C) Jim McDonough 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -242,6 +243,7 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SRV_Q_NET_FILE_ENUM q;
 	SRV_R_NET_FILE_ENUM r;
 	WERROR result = W_ERROR(ERRgeneral);
+	int i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -271,6 +273,46 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
+
+	/* copy the data over to the ctr */
+
+	ZERO_STRUCTP(ctr);
+
+	ctr->switch_value = file_level;
+
+	ctr->num_entries = ctr->num_entries2 = r.ctr.num_entries;
+	
+	switch(file_level) {
+	case 3:
+		ctr->file.info3 = (SRV_FILE_INFO_3 *)talloc(
+			mem_ctx, sizeof(SRV_FILE_INFO_3) * ctr->num_entries);
+
+		memset(ctr->file.info3, 0, 
+		       sizeof(SRV_FILE_INFO_3) * ctr->num_entries);
+
+		for (i = 0; i < r.ctr.num_entries; i++) {
+			SRV_FILE_INFO_3 *info3 = &ctr->file.info3[i];
+			char *s;
+			
+			/* Copy pointer crap */
+
+			memcpy(&info3->info_3, &r.ctr.file.info3[i].info_3, 
+			       sizeof(FILE_INFO_3));
+
+			/* Duplicate strings */
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.file.info3[i].info_3_str.uni_path_name);
+			if (s)
+				init_unistr2(&info3->info_3_str.uni_path_name, s, strlen(s) + 1);
+		
+			s = unistr2_tdup(mem_ctx, &r.ctr.file.info3[i].info_3_str.uni_user_name);
+			if (s)
+				init_unistr2(&info3->info_3_str.uni_user_name, s, strlen(s) + 1);
+
+		}		
+
+		break;
+	}
 
  done:
 	prs_mem_free(&qbuf);

@@ -583,20 +583,11 @@ typedef struct str_file_info3_info
 
 } FILE_INFO_3_STR;
 
-/* oops - this is going to take up a *massive* amount of stack. */
-/* the UNISTR2s already have 1024 uint16 chars in them... */
-#define MAX_FILE_ENTRIES 32
-
 /* SRV_FILE_INFO_3 */
 typedef struct srv_file_info_3
 {
-	uint32 num_entries_read;                     /* EntriesRead */
-	uint32 ptr_file_info;                        /* Buffer */
-
-	uint32 num_entries_read2;                    /* EntriesRead */
-
-	FILE_INFO_3     info_3    [MAX_FILE_ENTRIES]; /* file entry details */
-	FILE_INFO_3_STR info_3_str[MAX_FILE_ENTRIES]; /* file entry strings */
+	FILE_INFO_3     info_3;     /* file entry details */
+	FILE_INFO_3_STR info_3_str; /* file entry strings */
 
 } SRV_FILE_INFO_3;
 
@@ -604,12 +595,15 @@ typedef struct srv_file_info_3
 typedef struct srv_file_info_3_info
 {
 	uint32 switch_value;         /* switch value */
-	uint32 ptr_file_ctr;       /* pointer to file info union */
-	union
-    {
-		SRV_FILE_INFO_3 info3; /* file info with 0 entries */
+	uint32 ptr_file_info;        /* pointer to file info union */
 
-    } file;
+	uint32 num_entries;
+	uint32 ptr_entries;
+	uint32 num_entries2;
+	union
+	{
+		SRV_FILE_INFO_3 *info3;
+	} file;
 
 } SRV_FILE_INFO_CTR;
 
@@ -628,7 +622,7 @@ typedef struct q_net_file_enum_info
 
 	uint32 file_level;          /* file level */
 
-	SRV_FILE_INFO_CTR *ctr;
+	SRV_FILE_INFO_CTR ctr;
 
 	uint32 preferred_len; /* preferred maximum length (0xffff ffff) */
 	ENUM_HND enum_hnd;
@@ -641,7 +635,7 @@ typedef struct r_net_file_enum_info
 {
 	uint32 file_level;          /* file level */
 
-	SRV_FILE_INFO_CTR *ctr;
+	SRV_FILE_INFO_CTR ctr;
 
 	uint32 total_entries;                    /* total number of files */
 	ENUM_HND enum_hnd;

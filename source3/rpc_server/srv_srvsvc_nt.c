@@ -959,73 +959,45 @@ static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
 }
 
 /*******************************************************************
- fill in a file info level 3 structure.
- ********************************************************************/
-
-static void init_srv_file_3_info(FILE_INFO_3 *fl3, FILE_INFO_3_STR *str3,
-				uint32 fnum, uint32 perms, uint32 num_locks,
-				char *path_name, char *user_name)
-{
-	init_srv_file_info3(fl3 , fnum, perms, num_locks, path_name, user_name);
-	init_srv_file_info3_str(str3, path_name, user_name);
-}
-
-/*******************************************************************
- fill in a file info level 3 structure.
- ********************************************************************/
-
-static void init_srv_file_info_3(SRV_FILE_INFO_3 *fl3, uint32 *fnum, uint32 *ftot)
-{
-	uint32 num_entries = 0;
-	(*ftot) = 1;
-
-	if (fl3 == NULL) {
-		(*fnum) = 0;
-		return;
-	}
-
-	DEBUG(5,("init_srv_file_3_fl3\n"));
-
-	for (; (*fnum) < (*ftot) && num_entries < MAX_FILE_ENTRIES; (*fnum)++) {
-		init_srv_file_3_info(&fl3->info_3[num_entries],
-			                 &fl3->info_3_str[num_entries],
-		                     (*fnum), 0x35, 0, "\\PIPE\\samr", "dummy user");
-
-		/* move on to creating next file */
-		num_entries++;
-	}
-
-	fl3->num_entries_read  = num_entries;
-	fl3->ptr_file_info     = num_entries > 0 ? 1 : 0;
-	fl3->num_entries_read2 = num_entries;
-	
-	if ((*fnum) >= (*ftot)) {
-		(*fnum) = 0;
-	}
-}
-
-/*******************************************************************
  makes a SRV_R_NET_FILE_ENUM structure.
 ********************************************************************/
 
-static WERROR init_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
+static WERROR init_srv_file_info_ctr(pipes_struct *p, SRV_FILE_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)  
 {
 	WERROR status = WERR_OK;
+	TALLOC_CTX *ctx = p->mem_ctx;
 	DEBUG(5,("init_srv_file_info_ctr: %d\n", __LINE__));
+	*total_entries = 1; /* dummy entries only, for */
 
 	ctr->switch_value = switch_value;
+	ctr->num_entries = *total_entries - *resume_hnd;
+	if (ctr->num_entries < 0)
+		ctr->num_entries = 0;
+	ctr->num_entries2 = ctr->num_entries;
 
 	switch (switch_value) {
-	case 3:
-		init_srv_file_info_3(&ctr->file.info3, resume_hnd, total_entries);
-		ctr->ptr_file_ctr = 1;
+	case 3: {
+		int i;
+		if (total_entries > 0) {
+			ctr->ptr_entries = 1;
+			ctr->file.info3 = talloc(ctx, ctr->num_entries * 
+						 sizeof(SRV_FILE_INFO_3));
+		}
+		for (i=0 ;i<ctr->num_entries;i++) {
+			init_srv_file_info3(&ctr->file.info3[i].info_3, i+*resume_hnd, 0x35, 0, "\\PIPE\\samr", "dummy user");
+			init_srv_file_info3_str(&ctr->file.info3[i].info_3_str,  "\\PIPE\\samr", "dummy user");
+			
+		}
+		ctr->ptr_file_info = 1;
+		*resume_hnd = 0;
 		break;
+	}
 	default:
 		DEBUG(5,("init_srv_file_info_ctr: unsupported switch value %d\n", switch_value));
 		(*resume_hnd = 0);
 		(*total_entries) = 0;
-		ctr->ptr_file_ctr = 0;
+		ctr->ptr_entries = 0;
 		status = WERR_UNKNOWN_LEVEL;
 		break;
 	}
@@ -1037,7 +1009,7 @@ static WERROR init_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
  makes a SRV_R_NET_FILE_ENUM structure.
 ********************************************************************/
 
-static void init_srv_r_net_file_enum(SRV_R_NET_FILE_ENUM *r_n,
+static void init_srv_r_net_file_enum(pipes_struct *p, SRV_R_NET_FILE_ENUM *r_n,
 				uint32 resume_hnd, int file_level, int switch_value)  
 {
 	DEBUG(5,("init_srv_r_net_file_enum: %d\n", __LINE__));
@@ -1046,7 +1018,7 @@ static void init_srv_r_net_file_enum(SRV_R_NET_FILE_ENUM *r_n,
 	if (file_level == 0)
 		r_n->status = WERR_UNKNOWN_LEVEL;
 	else
-		r_n->status = init_srv_file_info_ctr(r_n->ctr, switch_value, &resume_hnd, &(r_n->total_entries));
+		r_n->status = init_srv_file_info_ctr(p, &r_n->ctr, switch_value, &resume_hnd, &(r_n->total_entries));
 
 	if (!W_ERROR_IS_OK(r_n->status))
 		resume_hnd = 0;
@@ -1133,19 +1105,13 @@ net file enum
 
 WERROR _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u)
 {
-	r_u->ctr = (SRV_FILE_INFO_CTR *)talloc(p->mem_ctx, sizeof(SRV_FILE_INFO_CTR));
-	if (!r_u->ctr)
-		return WERR_NOMEM;
-
-	ZERO_STRUCTP(r_u->ctr);
-
 	DEBUG(5,("srv_net_file_enum: %d\n", __LINE__));
 
 	/* set up the */
-	init_srv_r_net_file_enum(r_u,
+	init_srv_r_net_file_enum(p, r_u,
 				get_enum_hnd(&q_u->enum_hnd),
 				q_u->file_level,
-				q_u->ctr->switch_value);
+				q_u->ctr.switch_value);
 
 	DEBUG(5,("srv_net_file_enum: %d\n", __LINE__));
 

@@ -5,6 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Jeremy Allison		    1999.
+ *  Copyright (C) Jim McDonough (jmcd@us.ibm.com)   2002
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1881,91 +1882,67 @@ static BOOL srv_io_file_info3(char *desc, FILE_INFO_3 *fl3, prs_struct *ps, int 
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_file_info_3(char *desc, SRV_FILE_INFO_3 *fl3, prs_struct *ps, int depth)
+static BOOL srv_io_srv_file_ctr(char *desc, SRV_FILE_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
-	if (fl3 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "srv_io_file_3_fl3");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("num_entries_read", ps, depth, &fl3->num_entries_read))
-		return False;
-	if(!prs_uint32("ptr_file_fl3", ps, depth, &fl3->ptr_file_info))
-		return False;
-
-	if (fl3->ptr_file_info != 0) {
-		int i;
-		int num_entries = fl3->num_entries_read;
-
-		if (num_entries > MAX_FILE_ENTRIES) {
-			num_entries = MAX_FILE_ENTRIES; /* report this! */
-		}
-
-		if(!prs_uint32("num_entries_read2", ps, depth, &fl3->num_entries_read2))
-			return False;
-
-		for (i = 0; i < num_entries; i++) {
-			if(!srv_io_file_info3("", &fl3->info_3[i], ps, depth))
-				return False;
-		}
-
-		for (i = 0; i < num_entries; i++) {
-			if(!srv_io_file_info3_str("", &fl3->info_3_str[i], ps, depth))
-				return False;
-		}
-
-		if(!prs_align(ps))
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
-static BOOL srv_io_srv_file_ctr(char *desc, SRV_FILE_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
-{
-	SRV_FILE_INFO_CTR *ctr = *pp_ctr;
-
-	if (UNMARSHALLING(ps)) {
-		ctr = *pp_ctr = (SRV_FILE_INFO_CTR *)prs_alloc_mem(ps, sizeof(SRV_FILE_INFO_CTR));
-		if (ctr == NULL)
-			return False;
-	}
-
 	if (ctr == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "srv_io_srv_file_ctr");
 	depth++;
 
+	if (UNMARSHALLING(ps)) {
+		memset(ctr, '\0', sizeof(SRV_FILE_INFO_CTR));
+	}
+
 	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("switch_value", ps, depth, &ctr->switch_value))
 		return False;
-	if(!prs_uint32("ptr_file_ctr", ps, depth, &ctr->ptr_file_ctr))
+	if (ctr->switch_value != 3) {
+		DEBUG(5,("%s File info %d level not supported\n",
+			 tab_depth(depth), ctr->switch_value));
+	}
+	if(!prs_uint32("ptr_file_info", ps, depth, &ctr->ptr_file_info))
+		return False;
+	if(!prs_uint32("num_entries", ps, depth, &ctr->num_entries))
+		return False;
+	if(!prs_uint32("ptr_entries", ps, depth, &ctr->ptr_entries))
+		return False;
+	if (ctr->ptr_entries == 0)
+		return True;
+	if(!prs_uint32("num_entries2", ps, depth, 
+		       &ctr->num_entries2))
 		return False;
 
-	if (ctr->ptr_file_ctr != 0) {
-		switch (ctr->switch_value) {
-		case 3:
-			if(!srv_io_srv_file_info_3("", &ctr->file.info3, ps, depth))
-				return False;
-			break;
-		default:
-			DEBUG(5,("%s no file info at switch_value %d\n",
-			         tab_depth(depth), ctr->switch_value));
-			break;
-		}
-	}
+	switch (ctr->switch_value) {
+	case 3: {
+		SRV_FILE_INFO_3 *info3 = ctr->file.info3;
+		int num_entries = ctr->num_entries;
+		int i;
 
+		if (UNMARSHALLING(ps)) {
+			if (!(info3 = (SRV_FILE_INFO_3 *)prs_alloc_mem(ps, num_entries * sizeof(SRV_FILE_INFO_3))))
+				return False;
+			ctr->file.info3 = info3;
+		}
+
+		for (i = 0; i < num_entries; i++) {
+			if(!srv_io_file_info3("", &ctr->file.info3[i].info_3, ps, depth))
+				return False;
+		}
+		for (i = 0; i < num_entries; i++) {
+			if(!srv_io_file_info3_str("", &ctr->file.info3[i].info_3_str, ps, depth))
+				return False;
+		}
+		break;
+	}
+	default:
+		DEBUG(5,("%s no file info at switch_value %d\n",
+			 tab_depth(depth), ctr->switch_value));
+		break;
+	}
+			
 	return True;
 }
 
@@ -1981,13 +1958,14 @@ void init_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n,
 {
 	DEBUG(5,("init_q_net_file_enum\n"));
 
-	q_n->ctr = ctr;
-
 	init_buf_unistr2(&q_n->uni_srv_name, &q_n->ptr_srv_name, srv_name);
 	init_buf_unistr2(&q_n->uni_qual_name, &q_n->ptr_qual_name, qual_name);
 
-	q_n->file_level    = q_n->ctr->switch_value = file_level;
+	q_n->file_level    = q_n->ctr.switch_value = file_level;
 	q_n->preferred_len = preferred_len;
+	q_n->ctr.ptr_file_info = 1;
+	q_n->ctr.num_entries = 0;
+	q_n->ctr.num_entries2 = 0;
 
 	memcpy(&q_n->enum_hnd, hnd, sizeof(*hnd));
 }
