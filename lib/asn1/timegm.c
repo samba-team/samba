@@ -51,11 +51,11 @@ is_leap(unsigned y)
 time_t
 timegm (struct tm *tm)
 {
-  static const int ndays[2][12] ={
+  static const unsigned ndays[2][12] ={
     {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
     {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
   time_t res = 0;
-  int i;
+  unsigned i;
 
   for (i = 70; i < tm->tm_year; ++i)
     res += is_leap(i) ? 366 : 365;
@@ -72,4 +72,4 @@ timegm (struct tm *tm)
   return res;
 }
 
-#endif
+#endif /* HAVE_TIMEGM */
