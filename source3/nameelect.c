@@ -61,8 +61,8 @@ void check_master_browser(time_t t)
 	struct subnet_record *d;
 
 	if (!lastrun) lastrun = t;
-	if (t < lastrun + CHECK_TIME_MST_BROWSE * 60)
-	return;
+	if (t < lastrun + CHECK_TIME_MST_BROWSE * 60) return;
+
 	lastrun = t;
 
 	dump_workgroups();
@@ -231,43 +231,45 @@ void name_unregister_work(struct subnet_record *d, char *name, int name_type)
 void name_register_work(struct subnet_record *d, char *name, int name_type,
 				int nb_flags, time_t ttl, struct in_addr ip, BOOL bcast)
 {
-  enum name_source source = (ismyip(ip) || ip_equal(ip, ipzero)) ?
-								SELF : REGISTER;
+	enum name_source source = (ismyip(ip) || ip_equal(ip, ipzero)) ?
+	                          SELF : REGISTER;
 
-  if (source == SELF)
-  {
-    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
+	if (source == SELF)
+	{
+		struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
 
-    add_netbios_entry(d,name,name_type,nb_flags,ttl,source,ip,True,!bcast);
+		add_netbios_entry(d,name,name_type,nb_flags,ttl,source,ip,True,!bcast);
 
-    if (work)
-    {
-      if (work->mst_state != MST_POTENTIAL)
-      {
-        /* samba is working towards local master browser-ness.
-           initiate the next stage.
-         */
-        become_local_master(d, work);
-        return;
-      }
-      if (work->dom_state != DOMAIN_NONE)
-      {
-        /* samba is working towards domain master browser-ness.
-           initiate the next stage.
-         */
-        become_domain_master(d, work);
-        return;
-      }
-      if (work->log_state != LOGON_NONE)
-      {
-        /* samba is working towards domain master browser-ness.
-           initiate the next stage.
-         */
-        become_logon_server(d, work);
-        return;
-      }
-    }
-  }
+		if (work)
+		{
+			int add_type_local  = False;
+			int add_type_domain = False;
+			int add_type_logon  = False;
+
+			/* work out what to become, from the name type being added */
+
+			if (ms_browser_name(name, name_type))
+			{
+				add_type_local ||= True;
+			}
+			if (strequal(name, lp_workgroup()) == 0 && name_type == 0x1d)
+			{
+				add_type_local ||= True;
+			}
+			if (strequal(name, lp_workgroup()) == 0 && name_type == 0x1b)
+			{
+				add_type_domain ||= True;
+			}
+			if (strequal(name, lp_workgroup()) == 0 && name_type == 0x1c)
+			{
+				add_type_logon ||= True;
+			}
+
+			if (add_type_local ) become_local_master (d, work);
+			if (add_type_domain) become_domain_master(d, work);
+			if (add_type_logon ) become_logon_server (d, work);
+		}
+	}
 }
 
 
