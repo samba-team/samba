@@ -38,10 +38,6 @@ FILE *dbf = NULL;
 /* the client file descriptor */
 int Client = -1;
 
-/* info on the client */
-struct from_host Client_info=
-{"UNKNOWN","0.0.0.0",NULL};
-
 /* the last IP received from */
 struct in_addr lastip;
 
@@ -3009,6 +3005,114 @@ BOOL zero_ip(struct in_addr ip)
   return(a == 0);
 }
 
+
+/* matchname - determine if host name matches IP address */
+static BOOL matchname(char *remotehost,struct in_addr  addr)
+{
+  struct hostent *hp;
+  int     i;
+  
+  if ((hp = Get_Hostbyname(remotehost)) == 0) {
+    DEBUG(0,("Get_Hostbyname(%s): lookup failure", remotehost));
+    return False;
+  } 
+
+  /*
+   * Make sure that gethostbyname() returns the "correct" host name.
+   * Unfortunately, gethostbyname("localhost") sometimes yields
+   * "localhost.domain". Since the latter host name comes from the
+   * local DNS, we just have to trust it (all bets are off if the local
+   * DNS is perverted). We always check the address list, though.
+   */
+  
+  if (strcasecmp(remotehost, hp->h_name)
+      && strcasecmp(remotehost, "localhost")) {
+    DEBUG(0,("host name/name mismatch: %s != %s",
+	     remotehost, hp->h_name));
+    return False;
+  }
+	
+  /* Look up the host address in the address list we just got. */
+  for (i = 0; hp->h_addr_list[i]; i++) {
+    if (memcmp(hp->h_addr_list[i], (caddr_t) & addr, sizeof(addr)) == 0)
+      return True;
+  }
+
+  /*
+   * The host name does not map to the original host address. Perhaps
+   * someone has compromised a name server. More likely someone botched
+   * it, but that could be dangerous, too.
+   */
+  
+  DEBUG(0,("host name/address mismatch: %s != %s",
+	   inet_ntoa(addr), hp->h_name));
+  return False;
+}
+
+/* return the DNS name of the client */
+char *client_name(void)
+{
+  extern int Client;
+  struct sockaddr sa;
+  struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+  int     length = sizeof(sa);
+  static pstring name_buf;
+  static BOOL done = False;
+  struct hostent *hp;
+
+  if (done) 
+    return name_buf;
+
+  done = True;
+  strcpy(name_buf,"UNKNOWN");
+
+  if (getpeername(Client, &sa, &length) < 0) {
+    DEBUG(0,("getpeername failed\n"));
+    return name_buf;
+  }
+
+  /* Look up the remote host name. */
+  if ((hp = gethostbyaddr((char *) &sockin->sin_addr,
+			  sizeof(sockin->sin_addr),
+			  AF_INET)) == 0) {
+    DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr()));
+    StrnCpy(name_buf,client_addr(),sizeof(name_buf) - 1);
+  } else {
+    StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
+    if (!matchname(name_buf, sockin->sin_addr)) {
+      DEBUG(0,("Matchname failed on %s %s\n",name_buf,client_addr()));
+      strcpy(name_buf,"UNKNOWN");
+    }
+  }
+  return name_buf;
+}
+
+/* return the IP addr of the client as a string */
+char *client_addr(void)
+{
+  extern int Client;
+  struct sockaddr sa;
+  struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+  int     length = sizeof(sa);
+  static fstring addr_buf;
+  static BOOL done = False;
+
+  if (done) 
+    return addr_buf;
+
+  done = True;
+  strcpy(addr_buf,"0.0.0.0");
+
+  if (getpeername(Client, &sa, &length) < 0) {
+    DEBUG(0,("getpeername failed\n"));
+    return addr_buf;
+  }
+
+  strcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
+
+  return addr_buf;
+}
+
 /*******************************************************************
 sub strings with useful parameters
 ********************************************************************/
@@ -3029,8 +3133,9 @@ void standard_sub_basic(char *s)
 
   if (!strchr(s,'%')) return;
 
-  string_sub(s,"%I",Client_info.addr);
-  string_sub(s,"%M",Client_info.name);
+  string_sub(s,"%I",client_addr());
+  if (strstr(s,"%M"))
+    string_sub(s,"%M",client_name());
   string_sub(s,"%T",timestring());
 
   if (!strchr(s,'%')) return;

@@ -323,6 +323,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   pstring user;
   BOOL guest=False;
   BOOL computer_id=False;
+  static BOOL done_sesssetup = False;
 
   *smb_apasswd = 0;
   
@@ -489,7 +490,10 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
      to a uid can get through without a password, on the same VC */
   register_uid(SVAL(inbuf,smb_uid),gid,user,guest);
  
-  maxxmit = MIN(maxxmit,smb_bufsize);
+  if (!done_sesssetup)
+    maxxmit = MIN(maxxmit,smb_bufsize);
+
+  done_sesssetup = True;
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -983,6 +987,10 @@ int reply_open(char *inbuf,char *outbuf)
   put_dos_date3(outbuf,smb_vwv2,mtime);
   SIVAL(outbuf,smb_vwv4,size);
   SSVAL(outbuf,smb_vwv6,rmode);
+
+  if (lp_fake_oplocks(SNUM(cnum))) {
+    CVAL(outbuf,smb_flg) |= (CVAL(inbuf,smb_flg) & (1<<5));
+  }
     
   return(outsize);
 }
@@ -999,6 +1007,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int openmode = 0;
   int smb_mode = SVAL(inbuf,smb_vwv3);
   int smb_attr = SVAL(inbuf,smb_vwv5);
+  BOOL oplock_request = BITSETW(inbuf+smb_vwv2,1);
 #if 0
   int open_flags = SVAL(inbuf,smb_vwv2);
   int smb_sattr = SVAL(inbuf,smb_vwv4); 
@@ -1053,6 +1062,10 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
+  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+    smb_action |= (1<<15);
+  }
+
   set_message(outbuf,15,0,True);
   SSVAL(outbuf,smb_vwv2,fnum);
   SSVAL(outbuf,smb_vwv3,fmode);
@@ -1075,6 +1088,16 @@ int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
   int uid = SVAL(inbuf,smb_uid);
 
   invalidate_uid(uid);
+
+  /* in user level security we are supposed to close any files
+     open by this user */
+  if (lp_security() != SEC_SHARE) {
+    int i;
+    for (i=0;i<MAX_OPEN_FILES;i++)
+      if (Files[i].uid == uid && Files[i].open) {
+	close_file(i);
+      }
+  }
 
   set_message(outbuf,2,0,True);
 
@@ -1127,6 +1150,10 @@ int reply_mknew(char *inbuf,char *outbuf)
   
   outsize = set_message(outbuf,1,0,True);
   SSVAL(outbuf,smb_vwv0,fnum);
+
+  if (lp_fake_oplocks(SNUM(cnum))) {
+    CVAL(outbuf,smb_flg) |= (CVAL(inbuf,smb_flg) & (1<<5));
+  }
   
   DEBUG(2,("new file %s\n",fname));
   DEBUG(3,("%s mknew %s fd=%d fnum=%d cnum=%d dmode=%d umode=%o\n",timestring(),fname,Files[fnum].fd,fnum,cnum,createmode,unixmode));
@@ -1173,6 +1200,10 @@ int reply_ctemp(char *inbuf,char *outbuf)
   SSVAL(outbuf,smb_vwv0,fnum);
   CVAL(smb_buf(outbuf),0) = 4;
   strcpy(smb_buf(outbuf) + 1,fname2);
+
+  if (lp_fake_oplocks(SNUM(cnum))) {
+    CVAL(outbuf,smb_flg) |= (CVAL(inbuf,smb_flg) & (1<<5));
+  }
   
   DEBUG(2,("created temp file %s\n",fname2));
   DEBUG(3,("%s ctemp %s fd=%d fnum=%d cnum=%d dmode=%d umode=%o\n",timestring(),fname2,Files[fnum].fd,fnum,cnum,createmode,unixmode));

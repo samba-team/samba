@@ -87,23 +87,22 @@ extern int DEBUGLEVEL;
   
   if (argc == 4)
     {
-      struct from_host f;
-      f.name = argv[2];
-      f.addr = argv[3];
+      char *cname = argv[2];
+      char *caddr = argv[3];
       
       /* this is totally ugly, a real `quick' hack */
       for (s=0;s<1000;s++)
 	if (VALID_SNUM(s))
 	  {		 
-	    if (allow_access(lp_hostsdeny(s),lp_hostsallow(s),&f))
+	    if (allow_access(lp_hostsdeny(s),lp_hostsallow(s),cname,caddr))
 	      {
 		printf("Allow connection from %s (%s) to %s\n",
-		       f.name,f.addr,lp_servicename(s));
+		       cname,caddr,lp_servicename(s));
 	      }
 	    else
 	      {
 		printf("Deny connection from %s (%s) to %s\n",
-		       f.name,f.addr,lp_servicename(s));
+		       cname,caddr,lp_servicename(s));
 	      }
 	  }
     }
