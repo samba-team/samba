@@ -456,6 +456,8 @@ int get_sid(DOM_SID *sid, char *sid_str)
  * Replace SID1, component by component with SID2
  * Assumes will never be called with unequal length SIDS
  * so only touches 21-x-y-z-rid portion
+ * This routine does not need to deal with endianism as 
+ * long as the incoming SIDs are both in the same (LE) format.
  */
 void change_sid(DOM_SID *s1, DOM_SID *s2)
 {
@@ -498,15 +500,16 @@ void process_acl(ACL *acl, char *prefix)
   int ace_cnt, i;
   ACE *ace;
 
-  ace_cnt = acl->num_aces;
+  ace_cnt = IVAL(&acl->num_aces, 0);
   ace = (ACE *)&acl->aces;
   if (verbose) fprintf(stdout, "%sACEs: %u\n", prefix, ace_cnt);
   for (i=0; i<ace_cnt; i++) {
-    if (verbose) fprintf(stdout, "%s  Perms: %08X, SID: ", prefix, ace->perms);
+    if (verbose) fprintf(stdout, "%s  Perms: %08X, SID: ", prefix,
+			 IVAL(&ace->perms, 0));
     if (change)
       process_sid(&ace->trustee, &old_sid, &new_sid);
     print_sid(&ace->trustee);
-    ace = (ACE *)((char *)ace + ace->length);
+    ace = (ACE *)((char *)ace + SVAL(&ace->length, 0));
   }
 } 
 
@@ -514,6 +517,7 @@ void usage(voi)
 {
   fprintf(stderr, "usage: profiles [-c <OLD-SID> -n <NEW-SID>] <profilefile>\n");
   fprintf(stderr, "Version: %s\n", VERSION);
+  fprintf(stderr, "\n\t-v\t sets verbose mode");
   fprintf(stderr, "\n\t-c S-1-5-21-z-y-x-oldrid - provides SID to change");
   fprintf(stderr, "\n\t-n S-1-5-21-a-b-c-newrid - provides SID to change to");
   fprintf(stderr, "\n\t\tBoth must be present if the other is.");
@@ -547,7 +551,7 @@ int main(int argc, char *argv[])
    * Now, process the arguments
    */
 
-  while ((opt = getopt(argc, argv, "c:n:")) != EOF) {
+  while ((opt = getopt(argc, argv, "c:n:v")) != EOF) {
     switch (opt) {
     case 'c':
       change = 1;
@@ -566,6 +570,10 @@ int main(int argc, char *argv[])
 	exit(253);
       }
 
+      break;
+
+    case 'v':
+      verbose++;
       break;
 
     default:
@@ -607,64 +615,92 @@ int main(int argc, char *argv[])
     exit(4);
   }
 
+  /*
+   * In what follows, and in places above, in order to work on both LE and
+   * BE platforms, we have to use the Samba macros to extract SHORT, LONG
+   * and associated UNSIGNED quantities from the data in the mmap'd file.
+   * NOTE, however, that we do not need to do anything with memory
+   * addresses that we construct from pointers in our address space.
+   * For example, 
+   *
+   *    sec_desc = (MY_SEC_DESC *)&(sk_hdr->sec_desc[0]);
+   *
+   * is simply taking the address of a structure we already have the address
+   * of in our address space, while, the fields within it, will have to 
+   * be accessed with the macros:
+   *
+   * owner_sid = (DOM_SID *)(&sk_hdr->sec_desc[0] + 
+   *                         IVAL(&sec_desc->owner_off, 0));
+   *
+   * Which is pulling out an offset and adding it to an existing pointer.
+   *
+   */
+
   regf_hdr = (REGF_HDR *)base;
 
   if (verbose) fprintf(stdout, "Registry file size: %u\n", sbuf.st_size);
 
-  if (regf_hdr->REGF_ID != REG_REGF_ID) {
+  if (IVAL(&regf_hdr->REGF_ID, 0) != REG_REGF_ID) {
     fprintf(stderr, "Incorrect Registry file (doesn't have header ID): %s\n", argv[optind]);
     exit(5);
   }
 
   if (verbose) fprintf(stdout, "First Key Off: %u, Data Block Size: %u\n",
-		       regf_hdr->first_key, regf_hdr->dblk_size);
+		       IVAL(&regf_hdr->first_key, 0), 
+		       IVAL(&regf_hdr->dblk_size, 0));
 
-  hbin_hdr = (HBIN_HDR *)(base + 0x1000);
+  hbin_hdr = (HBIN_HDR *)(base + 0x1000); /* No need for Endian stuff */
 
   /*
    * This should be the hbin_hdr 
    */
 
-  if (hbin_hdr->HBIN_ID != REG_HBIN_ID) {
+  if (IVAL(&hbin_hdr->HBIN_ID, 0) != REG_HBIN_ID) {
     fprintf(stderr, "Incorrect hbin hdr: %s\n", argv[optind]);
     exit(6);
   } 
 
   if (verbose) fprintf(stdout, "Next Off: %u, Prev Off: %u\n", 
-		       hbin_hdr->next_off, hbin_hdr->prev_off);
+		       IVAL(&hbin_hdr->next_off, 0), 
+		       IVAL(&hbin_hdr->prev_off, 0));
 
-  nk_hdr = (NK_HDR *)(base + 0x1000 + regf_hdr->first_key + 4);
+  nk_hdr = (NK_HDR *)(base + 0x1000 + IVAL(&regf_hdr->first_key, 0) + 4);
 
-  if (nk_hdr->NK_ID != REG_NK_ID) {
+  if (SVAL(&nk_hdr->NK_ID, 0) != REG_NK_ID) {
     fprintf(stderr, "Incorrect NK Header: %s\n", argv[optind]);
     exit(7);
   }
 
+  sk_off = first_sk_off = IVAL(&nk_hdr->sk_off, 0);
   if (verbose) {
-    fprintf(stdout, "Type: %0x\n", nk_hdr->type);
-    fprintf(stdout, "SK Off    : %o\n", (0x1000 + nk_hdr->sk_off + 4));  
+    fprintf(stdout, "Type: %0x\n", SVAL(&nk_hdr->type, 0));
+    fprintf(stdout, "SK Off    : %o\n", (0x1000 + sk_off + 4));  
   }
 
-  sk_hdr = (SK_HDR *)(base + 0x1000 + nk_hdr->sk_off + 4);
-  sk_off = first_sk_off = nk_hdr->sk_off;
+  sk_hdr = (SK_HDR *)(base + 0x1000 + sk_off + 4);
 
   do {
     DOM_SID *owner_sid, *group_sid;
     ACL *sacl, *dacl;
-    if (sk_hdr->SK_ID != REG_SK_ID) {
+    if (SVAL(&sk_hdr->SK_ID, 0) != REG_SK_ID) {
       fprintf(stderr, "Incorrect SK Header format: %08X\n", 
-	      (0x1000 + nk_hdr->sk_off + 4));
+	      (0x1000 + sk_off + 4));
       exit(8);
     }
     ptr = (int *)sk_hdr;
     if (verbose) fprintf(stdout, "Off: %08X, Refs: %u, Size: %u\n",
-			 sk_off, sk_hdr->ref_cnt, sk_hdr->rec_size);
+			 sk_off, IVAL(&sk_hdr->ref_cnt, 0), 
+			 IVAL(&sk_hdr->rec_size, 0));
 
     sec_desc = (MY_SEC_DESC *)&(sk_hdr->sec_desc[0]);
-    owner_sid = (DOM_SID *)(&sk_hdr->sec_desc[0] + sec_desc->owner_off);
-    group_sid = (DOM_SID *)(&sk_hdr->sec_desc[0] + sec_desc->group_off);
-    sacl = (ACL *)(&sk_hdr->sec_desc[0] + sec_desc->sacl_off);
-    dacl = (ACL *)(&sk_hdr->sec_desc[0] + sec_desc->dacl_off);
+    owner_sid = (DOM_SID *)(&sk_hdr->sec_desc[0] +
+			    IVAL(&sec_desc->owner_off, 0));
+    group_sid = (DOM_SID *)(&sk_hdr->sec_desc[0] + 
+			    IVAL(&sec_desc->group_off, 0));
+    sacl = (ACL *)(&sk_hdr->sec_desc[0] + 
+		   IVAL(&sec_desc->sacl_off, 0));
+    dacl = (ACL *)(&sk_hdr->sec_desc[0] + 
+		   IVAL(&sec_desc->dacl_off, 0));
     if (verbose)fprintf(stdout, "  Owner SID: "); 
     if (change) process_sid(owner_sid, &old_sid, &new_sid);
     if (verbose) print_sid(owner_sid);
@@ -672,7 +708,7 @@ int main(int argc, char *argv[])
     if (change) process_sid(group_sid, &old_sid, &new_sid);
     if (verbose) print_sid(group_sid);
     fprintf(stdout, "  SACL: ");
-    if (!sec_desc->sacl_off) {
+    if (!sec_desc->sacl_off) { /* LE zero == BE zero */
       if (verbose) fprintf(stdout, "NONE\n");
     }
     else 
@@ -683,8 +719,8 @@ int main(int argc, char *argv[])
     }
     else 
       process_acl(dacl, "    ");
-    sk_off = sk_hdr->prev_off;
-    sk_hdr = (SK_HDR *)(base + OFF(sk_hdr->prev_off));
+    sk_off = IVAL(&sk_hdr->prev_off, 0);
+    sk_hdr = (SK_HDR *)(base + OFF(IVAL(&sk_hdr->prev_off, 0)));
   } while (sk_off != first_sk_off);
 
   munmap(base, sbuf.st_size); 
