@@ -62,6 +62,7 @@ belong to. It does include password time limits, password uniqueness controls,
 network access time limits, account validity information, machine names from which the
 user may access the network, and much more. All this information was stored in the SAM
 in all versions of MS Windows NT (3.10, 3.50, 3.51, 4.0).
+</para>
 
 <para>
 The account information (user and machine) on Domain Controllers is stored in two files,
