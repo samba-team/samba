@@ -30,10 +30,14 @@ static int check_push_ucs2(const char *orig)
 int main(int argc, char *argv[])
 {
 	int i, ret = 0;
-	
+
+	/* Needed to initialize character set */
+	lp_load("/dev/null", True, False, False);
+
 	if (argc != 2) {
 		fprintf(stderr, "usage: %s STRING1\n"
-			"Converts a string, prints the results of strcmp\n",
+			"Checks that a string translated UNIX->UCS2->UNIX is unchanged\n"
+			"Should be always 0\n",
 			argv[0]);
 		return 2;
 	}

@@ -1347,4 +1347,4 @@ check: check-programs
 	python stf/standardcheck.py
 
 # These are called by the test suite
-check-programs: bin/t_strcmp
+check-programs: bin/t_strcmp bin/t_push_ucs2
