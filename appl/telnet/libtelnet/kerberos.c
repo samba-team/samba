@@ -357,6 +357,8 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 		Data(ap, KRB_REJECT, (void *)msg, -1);
 		free(msg);
 	    }
+	    auth_finished(ap, AUTH_REJECT);
+	    break;
 	}
 	auth_finished(ap, AUTH_USER);
 	break;
