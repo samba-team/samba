@@ -70,12 +70,15 @@ enum winbindd_result winbindd_check_machine_acct(
 	int count;
 	uint16 validation_level;
 	fstring controller, trust_account;
+        int num_retries = 0;
 
 	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
 
 	/* Get trust account password */
 
-	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
+ again:
+	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, 
+                                         NULL)) {
 		result = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
@@ -103,6 +106,19 @@ enum winbindd_result winbindd_check_machine_acct(
                                     trust_account, trust_passwd, 
                                     SEC_CHAN_WKSTA, &validation_level);	
 #endif
+
+        /* There is a race condition between fetching the trust account
+           password and joining the domain so it's possible that the trust
+           account password has been changed on us.  We are returned
+           NT_STATUS_ACCESS_DENIED if this happens. */
+
+#define MAX_RETRIES 8
+
+        if ((num_retries < MAX_RETRIES) && 
+            result == NT_STATUS_ACCESS_DENIED) {
+                num_retries++;
+                goto again;
+        }
 
 	/* Pass back result code - zero for success, other values for
 	   specific failures. */
