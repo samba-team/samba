@@ -40,6 +40,11 @@
 #include "includes.h"
 #endif
 
+/* use this to force every realloc to change the pointer, to stress test
+   code that might not cope */
+#define ALWAYS_REALLOC 0
+
+
 #define MAX_TALLOC_SIZE 0x10000000
 #define TALLOC_MAGIC 0xe814ec4f
 #define TALLOC_MAGIC_FREE 0x7faebef3
@@ -538,7 +543,15 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 	/* by resetting magic we catch users of the old memory */
 	tc->magic = TALLOC_MAGIC_FREE;
 
+#if ALWAYS_REALLOC
+	new_ptr = malloc(size + sizeof(*tc));
+	if (new_ptr) {
+		memcpy(new_ptr, tc, tc->size + sizeof(*tc));
+		free(tc);
+	}
+#else
 	new_ptr = realloc(tc, size + sizeof(*tc));
+#endif
 	if (!new_ptr) {	
 		tc->magic = TALLOC_MAGIC; 
 		return NULL; 
