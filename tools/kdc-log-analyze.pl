@@ -102,6 +102,9 @@ my $http_non_kdc = 0;
 my %http_non_kdc_addr;
 my $tcp_conn_timeout = 0;
 my %tcp_conn_timeout_addr;
+my $pa_failed = 0;
+my %pa_failed_princ;
+my %pa_failed_addr;
 
 while (<>) {
 	process_line($_);
@@ -189,7 +192,16 @@ print "\tDistinct non-local ($notlocal) IP Addresses performing requests: ",
 print "\tTop ten non-local ($notlocal) IP address:\n";
 topten(\%as_req_addr_nonlocal);
 
-print "\tDistinct clients performing requests: ", int(keys %as_req_client), "\n";
+print "\n\tPreauth failed for for: ", $pa_failed, " requests\n";
+if ($pa_failed) {
+	print "\tPreauth failed top ten IP addresses:\n";
+	topten(\%pa_failed_addr);
+	print "\tPreauth failed top ten principals:\n";
+	topten(\%pa_failed_princ);
+}
+
+print "\n\tDistinct clients performing requests: ", 
+    int(keys %as_req_client), "\n";
 print "\tTop ten clients:\n";
 topten(\%as_req_client);
 
@@ -277,15 +289,14 @@ topten(\%enctype_session);
 print "\tTop ten ticket enctypes:\n";
 topten(\%enctype_ticket);
 
-print "\tDistinct IP addresses uses DES: ", int(keys %addr_uses_des), "\n";
+print "\tDistinct IP addresses using DES: ", int(keys %addr_uses_des), "\n";
 print "\tTop IP addresses using DES:\n";
 topten(\%addr_uses_des);
-print "\tDistinct principals uses DES: ", int(keys %princ_uses_des), "\n";
+print "\tDistinct principals using DES: ", int(keys %princ_uses_des), "\n";
 print "\tTop ten principals using DES:\n";
 topten(\%princ_uses_des);
 
 print "\n";
-
 
 exit 0;
 
@@ -402,6 +413,9 @@ sub process_line {
 	} elsif (/No PA-ENC-TIMESTAMP --/) {
 		# XXX
 	} elsif (/Failed to decrypt PA-DATA -- (.+)$/) {
+		$pa_failed++;
+		$pa_failed_princ{$last_principal}++;
+		$pa_failed_addr{$last_addr}++;
 	} elsif (/Looking for pa-data --/) {
 		# XXX
 	} elsif (/Pre-authentication succeded -- (.+)$/) {
