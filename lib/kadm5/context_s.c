@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -181,7 +181,7 @@ _kadm5_s_init_context(kadm5_server_context **ctx,
     memset(*ctx, 0, sizeof(**ctx));
     set_funcs(*ctx);
     (*ctx)->context = context;
-    initialize_kadm5_error_table_r(&context->et_list);
+    krb5_add_et_list (context, initialize_kadm5_error_table_r);
 #define is_set(M) (params->mask & KADM5_CONFIG_ ## M)
     if(is_set(REALM))
 	(*ctx)->config.realm = strdup(params->realm);
