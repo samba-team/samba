@@ -352,3 +352,17 @@ otp_print_hex (OtpKey key, char *str)
 	   key[0], key[1], key[2], key[3], 
 	   key[4], key[5], key[6], key[7]);
 }
+
+void
+otp_print_hex_extended (OtpKey key, char *str)
+{
+  strcpy (str, OTP_HEXPREFIX);
+  otp_print_hex (key, str + strlen(OTP_HEXPREFIX));
+}
+
+void
+otp_print_stddict_extended (OtpKey key, char *str)
+{
+  strcpy (str, OTP_WORDPREFIX);
+  otp_print_stddict (key, str + strlen(OTP_WORDPREFIX));
+}
