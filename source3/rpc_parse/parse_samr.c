@@ -4106,6 +4106,37 @@ void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int 
 }
 
 /*************************************************************************
+ make_sam_user_infoa
+
+ unknown_3 = 0x09f8 27fa
+ unknown_5 = 0x0001 0000
+ unknown_6 = 0x0000 04ec 
+
+ *************************************************************************/
+void make_sam_user_info_24(SAM_USER_INFO_24 *usr,
+	char newpass[516])
+{
+	memcpy(usr->pass, newpass, sizeof(usr->pass));
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void sam_io_user_info_24(char *desc,  SAM_USER_INFO_24 *usr, prs_struct *ps, int depth)
+{
+	if (usr == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_user_info");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint8s (False, "password", ps, depth, usr->pass, sizeof(usr->pass));
+	prs_align(ps);
+}
+
+
+/*************************************************************************
  make_sam_user_info23
 
  unknown_3 = 0x09f8 27fa
@@ -4606,6 +4637,13 @@ void make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 
 	switch (switch_value)
 	{
+		case 0x18:
+		{
+			q_u->info.id24 = (SAM_USER_INFO_24*)info;
+
+			break;
+		}
+
 		case 0x17:
 		{
 			q_u->info.id23 = (SAM_USER_INFO_23*)info;
@@ -4646,6 +4684,17 @@ void samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 	{
 		case 0:
 		{
+			break;
+		}
+		case 24:
+		{
+			q_u->info.id = Realloc(NULL, sizeof(*q_u->info.id24));
+			if (q_u->info.id == NULL)
+			{
+				DEBUG(2,("samr_io_q_query_userinfo: info pointer not initialised\n"));
+				return;
+			}
+			sam_io_user_info_24("", q_u->info.id24, ps, depth);
 			break;
 		}
 		case 23:
