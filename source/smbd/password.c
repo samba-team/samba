@@ -1652,8 +1652,8 @@ static BOOL domain_client_validate_winbindd( char *user, char *domain,
 %s to winbindd. Error was %s.\n", user, domain, get_nt_error_msg(status) ));
 
 		/* BEGIN_ADMIN_LOG */
-		sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication \
-via Microsoft networking was unsuccessful. User name: %s\\%s."), domain,user);
+		sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication via Microsoft networking was unsuccessful. User name: %s\\%s, Error: %s"), 
+			domain, user, get_friendly_nt_error_msg(status));
 		/* END_ADMIN_LOG */
 
 		if((NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))
