@@ -4138,7 +4138,7 @@ static BOOL run_openattrtest(int dummy)
 	return correct;
 }
 
-static void list_fn(file_info *finfo, const char *name, void *state)
+static void list_fn(const char *mnt, file_info *finfo, const char *name, void *state)
 {
 	
 }
@@ -4198,7 +4198,7 @@ static BOOL run_dirtest(int dummy)
 	return correct;
 }
 
-static void del_fn(file_info *finfo, const char *mask, void *state)
+static void del_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
 {
 	struct cli_state *pcli = (struct cli_state *)state;
 	fstring fname;
