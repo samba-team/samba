@@ -37,6 +37,12 @@
  * codepoints in UTF-8).  This may have to change at some point
  **/
 
+/* This is used to get reduce other const warnings to just this fn */
+static void * ads_unconst_ptr(const void *const_ptr)
+{
+	return const_ptr;
+}
+
 /**
  * Connect to the LDAP server
  * @param ads Pointer to an existing ADS_STRUCT
@@ -179,14 +185,13 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
 	if (!push_utf8_allocate((void **) &utf8_exp, exp))
-		utf8_exp = exp;
+		utf8_exp = ads_unconst_ptr(exp);
 	if (!push_utf8_allocate((void **) &utf8_path, bind_path))
-		utf8_path = bind_path;
+		utf8_path = ads_unconst_ptr(bind_path);
 
 	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_exp, 
-			       (char **) attrs, 0, controls, NULL,
-			       NULL, LDAP_NO_LIMIT,
-			       (LDAPMessage **)res);
+			       ads_unconst_ptr(attrs), 0, controls,
+			       NULL, NULL, LDAP_NO_LIMIT, (LDAPMessage **)res);
 
 	if (utf8_exp != exp)
 		SAFE_FREE(utf8_exp);
@@ -342,12 +347,12 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	*res = NULL;
 
 	if (!push_utf8_allocate((void **) &utf8_exp, exp))
-		utf8_exp = exp;
+		utf8_exp = ads_unconst_ptr(exp);
 	if (!push_utf8_allocate((void **) &utf8_path, bind_path))
-		utf8_path = bind_path;
+		utf8_path = ads_unconst_ptr(bind_path);
 
-	rc = ldap_search_ext_s(ads->ld, utf8_path, scope,
-			       utf8_exp, (char **) attrs, 0, NULL, NULL, 
+	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_exp,
+			       ads_unconst_ptr(attrs), 0, NULL, NULL, 
 			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
 
 	if (utf8_exp != exp)
@@ -424,7 +429,7 @@ char *ads_get_dn(ADS_STRUCT *ads, void *res)
 	char *utf8_dn, *unix_dn;
 
 	utf8_dn = ldap_get_dn(ads->ld, res);
-	pull_utf8_allocate(&unix_dn, utf8_dn);
+	pull_utf8_allocate((void **) &unix_dn, utf8_dn);
 	ldap_memfree(utf8_dn);
 	return unix_dn;
 }
@@ -491,12 +496,13 @@ static struct berval *dup_berval(TALLOC_CTX *ctx, struct berval *in_val)
  */
 static struct berval **ads_dup_values(TALLOC_CTX *ctx, struct berval **in_vals)
 {
-	void **values;
+	struct berval **values;
 	int i;
        
 	if (!in_vals) return NULL;
 	for (i=0; in_vals[i]; i++); /* count values */
-	values = talloc_zero(ctx, (i+1)*sizeof(struct berval *));
+	values = (struct berval **) talloc_zero(ctx, 
+						(i+1)*sizeof(struct berval *));
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
@@ -510,16 +516,16 @@ static struct berval **ads_dup_values(TALLOC_CTX *ctx, struct berval **in_vals)
  */
 static char **ads_push_strvals(TALLOC_CTX *ctx, char **in_vals)
 {
-	void **values;
+	char **values;
 	int i;
        
 	if (!in_vals) return NULL;
 	for (i=0; in_vals[i]; i++); /* count values */
-	values = talloc_zero(ctx, (i+1)*sizeof(char *));
+	values = (char ** ) talloc_zero(ctx, (i+1)*sizeof(char *));
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
-		push_utf8_talloc(ctx, &values[i], in_vals[i]);
+		push_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
 	}
 	return values;
 }
@@ -529,16 +535,16 @@ static char **ads_push_strvals(TALLOC_CTX *ctx, char **in_vals)
  */
 static char **ads_pull_strvals(TALLOC_CTX *ctx, char **in_vals)
 {
-	void **values;
+	char **values;
 	int i;
        
 	if (!in_vals) return NULL;
 	for (i=0; in_vals[i]; i++); /* count values */
-	values = talloc_zero(ctx, (i+1)*sizeof(char *));
+	values = (char **) talloc_zero(ctx, (i+1)*sizeof(char *));
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
-		pull_utf8_talloc(ctx, &values[i], in_vals[i]);
+		pull_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
 	}
 	return values;
 }
@@ -558,9 +564,11 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		mod_op = LDAP_MOD_DELETE;
 	} else {
 		if (mod_op & LDAP_MOD_BVALUES)
-			values = ads_dup_values(ctx, invals);
+			values = (void **) ads_dup_values(ctx, 
+						   (struct berval **)invals);
 		else
-			values = ads_push_strvals(ctx, invals);
+			values = (void **) ads_push_strvals(ctx, 
+							    (char **) invals);
 	}
 
 	/* find the first empty slot */
@@ -578,7 +586,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		
 	if (!(modlist[curmod] = talloc_zero(ctx, sizeof(LDAPMod))))
 		return ADS_ERROR(LDAP_NO_MEMORY);
-	modlist[curmod]->mod_type = name;
+	modlist[curmod]->mod_type = ads_unconst_ptr(name);
 	if (mod_op & LDAP_MOD_BVALUES)
 		modlist[curmod]->mod_bvalues = (struct berval **) values;
 	else
@@ -598,7 +606,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 		       const char *name, const char *val)
 {
-	char *values[2] = {val, NULL};
+	char *values[2] = {ads_unconst_ptr(val), NULL};
 	if (!val)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, name, 
@@ -618,8 +626,8 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 {
 	if (!vals)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
-	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, name, 
-			       (void **) vals);
+	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, 
+			       ads_unconst_ptr(name), ads_unconst_ptr(vals));
 }
 
 /**
@@ -633,7 +641,7 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 		       const char *name, const struct berval *val)
 {
-	struct berval *values[2] = {val, NULL};
+	struct berval *values[2] = {ads_unconst_ptr(val), NULL};
 	if (!val)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE|LDAP_MOD_BVALUES,
@@ -664,7 +672,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	controls[0] = &PermitModify;
 	controls[1] = NULL;
 
-	push_utf8_allocate(&utf8_dn, mod_dn);
+	push_utf8_allocate((void **) &utf8_dn, mod_dn);
 
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
@@ -688,7 +696,7 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	int ret, i;
 	char *utf8_dn = NULL;
 
-	push_utf8_allocate(&utf8_dn, new_dn);
+	push_utf8_allocate((void **) &utf8_dn, new_dn);
 	
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
@@ -710,7 +718,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 {
 	int ret;
 	char *utf8_dn = NULL;
-	push_utf8_allocate(&utf8_dn, del_dn);
+	push_utf8_allocate((void **) &utf8_dn, del_dn);
 	ret = ldap_delete(ads->ld, utf8_dn ? utf8_dn : del_dn);
 	return ADS_ERROR(ret);
 }
