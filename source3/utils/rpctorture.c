@@ -113,6 +113,8 @@ static BOOL rpcclient_connect(struct client_info *info)
 {
 	rpcclient_init();
 
+	smb_cli->use_ntlmv2 = lp_client_ntlmv2();
+
 	if (!cli_establish_connection(smb_cli, 
 	                          info->dest_host, &info->dest_ip, 
 	                          &calling, &called,

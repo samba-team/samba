@@ -502,7 +502,8 @@ static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
                                 prs_struct *auth_resp)
 {
 	unsigned char lm_owf[24];
-	unsigned char nt_owf[24];
+	unsigned char nt_owf[128];
+	size_t nt_owf_len;
 	RPC_HDR               hdr;
 	RPC_HDR_AUTHA         hdr_autha;
 	RPC_AUTH_VERIFIER     auth_verifier;
@@ -518,10 +519,10 @@ static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 	smb_io_rpc_auth_verifier("auth_verifier", &auth_verifier, auth_resp, 0);
 	mem_realloc_data(auth_resp->data, auth_resp->offset);
 
-	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf);
+	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len);
 			
 	make_rpc_auth_ntlmssp_resp(&ntlmssp_resp,
-			         lm_owf, nt_owf,
+			         lm_owf, nt_owf, nt_owf_len,
 			         domain, user_name, my_name,
 			         ntlmssp_cli_flgs);
 
@@ -947,7 +948,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, uint16 nt_pipe_fnum,
 			                     rpc_call_id,
 			                     &hdra, &hdr_autha, &auth_resp);
 			                    
-			pwd_get_lm_nt_owf(&cli->pwd, lm_owf, NULL);
+			pwd_get_lm_nt_owf(&cli->pwd, lm_owf, NULL, NULL);
 			pwd_get_lm_nt_16(&cli->pwd, lm_hash, NULL);
 			NTLMSSPOWFencrypt(lm_hash, lm_owf, p24);
 			{

@@ -208,7 +208,9 @@ BOOL create_rpc_reply(pipes_struct *p,
 static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 {
 	uchar lm_owf[24];
-	uchar nt_owf[24];
+	uchar nt_owf[128];
+	size_t lm_owf_len;
+	size_t nt_owf_len;
 	struct smb_passwd *smb_pass = NULL;
 	
 	user_struct *vuser = get_valid_user_struct(p->vuid);
@@ -221,11 +223,28 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 		return False;
 	}
 
-	if (p->ntlmssp_resp.hdr_lm_resp.str_str_len == 0) return False;
-	if (p->ntlmssp_resp.hdr_nt_resp.str_str_len == 0) return False;
+	lm_owf_len = p->ntlmssp_resp.hdr_lm_resp.str_str_len;
+	nt_owf_len = p->ntlmssp_resp.hdr_nt_resp.str_str_len;
+
+
+	if (lm_owf_len == 0) return False;
+	if (nt_owf_len == 0) return False;
 	if (p->ntlmssp_resp.hdr_usr    .str_str_len == 0) return False;
 	if (p->ntlmssp_resp.hdr_domain .str_str_len == 0) return False;
 	if (p->ntlmssp_resp.hdr_wks    .str_str_len == 0) return False;
+
+	if (lm_owf_len > sizeof(lm_owf)) return False;
+	if (nt_owf_len > sizeof(nt_owf)) return False;
+
+	memcpy(lm_owf, p->ntlmssp_resp.lm_resp, sizeof(lm_owf));
+	memcpy(nt_owf, p->ntlmssp_resp.nt_resp, sizeof(nt_owf));
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("lm, nt owfs, chal\n"));
+	dump_data(100, lm_owf, sizeof(lm_owf));
+	dump_data(100, nt_owf, sizeof(nt_owf));
+	dump_data(100, p->ntlmssp_chal.challenge, 8);
+#endif
 
 	memset(p->user_name, 0, sizeof(p->user_name));
 	memset(p->domain   , 0, sizeof(p->domain   ));
@@ -252,19 +271,12 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 
 	DEBUG(5,("user: %s domain: %s wks: %s\n", p->user_name, p->domain, p->wks));
 
-	memcpy(lm_owf, p->ntlmssp_resp.lm_resp, sizeof(lm_owf));
-	memcpy(nt_owf, p->ntlmssp_resp.nt_resp, sizeof(nt_owf));
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("lm, nt owfs, chal\n"));
-	dump_data(100, lm_owf, sizeof(lm_owf));
-	dump_data(100, nt_owf, sizeof(nt_owf));
-	dump_data(100, p->ntlmssp_chal.challenge, 8);
-#endif
 	become_root(True);
 	p->ntlmssp_validated = pass_check_smb(p->user_name, p->domain,
 	                      (uchar*)p->ntlmssp_chal.challenge,
-	                      lm_owf, nt_owf, NULL, vuser->dc.user_sess_key);
+	                      lm_owf, lm_owf_len,
+	                      nt_owf, nt_owf_len,
+	                      NULL, vuser->dc.user_sess_key);
 	smb_pass = getsmbpwnam(p->user_name);
 	unbecome_root(True);
 

@@ -630,42 +630,25 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 				struct sam_passwd *smb_pass,
 				user_struct *vuser)
 {
-	DEBUG(5,("net_login_network: lm_len: %d nt_len: %d\n",
-		id2->hdr_lm_chal_resp.str_str_len, 
-		id2->hdr_nt_chal_resp.str_str_len));
+	fstring user;
+	fstring domain;
 
-	/* JRA. Check the NT password first if it exists - this is a higher quality 
-           password, if it exists and it doesn't match - fail. */
+	int nt_pw_len = id2->hdr_nt_chal_resp.str_str_len >= 24;
+	int lm_pw_len = id2->hdr_lm_chal_resp.str_str_len >= 24;
 
-	if (id2->hdr_nt_chal_resp.str_str_len == 24 && 
-		smb_pass->smb_nt_passwd != NULL)
+	unistr2_to_ascii(user  , &id2->uni_user_name, sizeof(user)-1);
+	unistr2_to_ascii(domain, &id2->uni_domain_name, sizeof(domain)-1);
+
+	DEBUG(5,("net_login_network: lm_len:%d nt_len:%d user:%s domain:%s\n",
+		lm_pw_len, nt_pw_len, user, domain));
+
+	if (smb_password_ok(pwdb_sam_to_smb(smb_pass), id2->lm_chal, 
+	                    user, domain,
+	                    (uchar *)id2->lm_chal_resp.buffer, lm_pw_len, 
+	                    (uchar *)id2->nt_chal_resp.buffer, nt_pw_len)) 
 	{
-		if(smb_password_check((char *)id2->nt_chal_resp.buffer,
-		                   smb_pass->smb_nt_passwd,
-                           id2->lm_chal)) 
                   return 0x0;
-                else
-	          return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 	}
-
-	/* lkclXXXX this is not a good place to put disabling of LM hashes in.
-	   if that is to be done, first move this entire function into a
-	   library routine that calls the two smb_password_check() functions.
-	   if disabling LM hashes (which nt can do for security reasons) then
-	   an attempt should be made to disable them everywhere (which nt does
-	   not do, for various security-hole reasons).
-	 */
-
-	if (id2->hdr_lm_chal_resp.str_str_len == 24 &&
-		smb_password_check((char *)id2->lm_chal_resp.buffer,
-		                   smb_pass->smb_passwd,
-		                   id2->lm_chal))
-	{
-		return 0x0;
-	}
-
-
-	/* oops! neither password check succeeded */
 
 	return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 }

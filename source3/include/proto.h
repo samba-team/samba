@@ -229,8 +229,9 @@ char *getsmbpass(char *prompt)    ;
 /*The following definitions come from  lib/hmacmd5.c  */
 
 void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx);
-void hmac_md5_init_limK_to_64(uchar*  key, int key_len, HMACMD5Context *ctx);
-void hmac_md5_update(uchar* text, int text_len, HMACMD5Context *ctx);
+void hmac_md5_init_limK_to_64(const uchar* key, int key_len,
+			HMACMD5Context *ctx);
+void hmac_md5_update(const uchar* text, int text_len, HMACMD5Context *ctx);
 void hmac_md5_final(caddr_t digest, HMACMD5Context *ctx);
 
 /*The following definitions come from  lib/interface.c  */
@@ -466,8 +467,8 @@ char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 void out_ascii(FILE *f, unsigned char *buf,int len);
 void out_data(FILE *f,char *buf1,int len, int per_line);
-void print_asc(int level, unsigned char *buf,int len);
-void dump_data(int level,char *buf1, int len);
+void print_asc(int level, unsigned char const *buf,int len);
+void dump_data(int level, const char *buf1, int len);
 char *tab_depth(int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
@@ -621,11 +622,16 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
 BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *));
+BOOL cli_session_setup_x(struct cli_state *cli, 
+				char *user, 
+				char *pass, int passlen,
+				char *ntpass, int ntpasslen,
+				char *user_domain);
 BOOL cli_session_setup(struct cli_state *cli, 
-		       char *user, 
-		       char *pass, int passlen,
-		       char *ntpass, int ntpasslen,
-		       char *workgroup);
+				char *user, 
+				char *pass, int passlen,
+				char *ntpass, int ntpasslen,
+				char *user_domain);
 BOOL cli_ulogoff(struct cli_state *cli);
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    char *share, char *dev, char *pass, int passlen);
@@ -754,8 +760,11 @@ void pwd_get_cleartext(struct pwd_info *pwd, char *clr);
 void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
 void pwd_get_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
 void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr);
+void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
+		const char *user, const char *server, const char *domain);
 void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8]);
-void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24], uchar nt_owf[24]);
+void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
+				uchar *nt_owf, size_t *nt_owf_len);
 
 /*The following definitions come from  libsmb/smbdes.c  */
 
@@ -772,11 +781,24 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 /*The following definitions come from  libsmb/smbencrypt.c  */
 
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
-void E_md4hash(uchar *passwd, uchar *p16);
-void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16]);
-void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
-void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
+void E_md4hash(uchar *passwd, uchar *p16);
+void lm_owf_gen(const char *pwd, uchar p16[16]);
+void nt_owf_gen(const char *pwd, uchar nt_p16[16]);
+void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar lm_p16[16]);
+void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
+void SMBOWFencrypt_ntv2(const uchar kr[16], 
+				const uchar *srv_chal, int srv_chal_len,
+				const uchar *cli_chal, int cli_chal_len,
+				char resp_buf[16]);
+void SMBgenclientchals(char *lm_cli_chal,
+				char *nt_cli_chal, int *nt_cli_chal_len,
+				const char *srv, const char *domain);
+void ntv2_owf_gen(const uchar owf[16], 
+				const char *user_n,
+				const char *domain_n,
+				uchar kr_buf[16]);
+void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
 BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, char nt_hash[16]);
 
@@ -1259,6 +1281,7 @@ BOOL lp_null_passwords(void);
 BOOL lp_strip_dot(void);
 BOOL lp_encrypted_passwords(void);
 BOOL lp_update_encrypted(void);
+BOOL lp_client_ntlmv2(void);
 BOOL lp_server_ntlmv2(void);
 BOOL lp_syslog_only(void);
 BOOL lp_timestamp_logs(void);
@@ -2360,7 +2383,8 @@ void make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
 				uint8 challenge[8]);
 void smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL *chl, prs_struct *ps, int depth);
 void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
-				uchar lm_resp[24], uchar nt_resp[24],
+				uchar lm_resp[24],
+				uchar *nt_resp, size_t nt_len,
 				char *domain, char *user, char *wks,
 				uint32 neg_flags);
 void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_struct *ps, int depth);
@@ -3429,11 +3453,13 @@ void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16]);
 void add_session_user(char *user);
-BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
-                     uchar lm_pass[24], uchar nt_pass[24]);
-BOOL pass_check_smb(char *user, char *domain,
-		uchar *chal, uchar *lm_pwd, uchar *nt_pwd,
+				const char *user, const char *domain,
+				uchar *lm_pass, size_t lm_pwd_len,
+				uchar *nt_pass, size_t nt_pwd_len);
+BOOL pass_check_smb(char *user, char *domain, uchar *chal,
+		uchar *lm_pwd, size_t lm_pwd_len,
+		uchar *nt_pwd, size_t nt_pwd_len,
 		struct passwd *pwd, uchar user_sess_key[16]);
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd,
 		uchar user_sess_key[16]);

@@ -441,7 +441,9 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
       return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
     }
 
-    if (!smb_password_ok(smb_trust_acct, NULL, (unsigned char *)smb_passwd, (unsigned char *)smb_nt_passwd))
+    if (!smb_password_ok(smb_trust_acct, NULL, NULL, NULL,
+	(unsigned char *)smb_passwd, smb_passlen,
+	(unsigned char *)smb_nt_passwd, smb_nt_passlen))
     {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
       SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
@@ -570,7 +572,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
         set_remote_arch( RA_WIN95);
     }
 
-    if (passlen1 != 24 && passlen2 != 24)
+    if (passlen1 != 24 && passlen2 <= 24)
       doencrypt = False;
 
     if (passlen1 > MAX_PASS_LEN) {
@@ -593,7 +595,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
           setting passlen2 to some random value which really stuffs
           things up. we need to fix that one.  */
 
-      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 24 && passlen2 != 1)
+      if (passlen1 > 0 && passlen2 > 0 && passlen2 <= 24 && passlen2 != 1)
         passlen2 = 0;
     }
 

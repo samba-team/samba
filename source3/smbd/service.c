@@ -390,10 +390,10 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 #endif
 	
 	if (*lp_force_user(snum)) {
-		struct passwd *pass2;
+		const struct passwd *pass2;
 		fstring fuser;
 		fstrcpy(fuser,lp_force_user(snum));
-		pass2 = (struct passwd *)Get_Pwnam(fuser,True);
+		pass2 = (const struct passwd *)Get_Pwnam(fuser,True);
 		if (pass2) {
 			conn->uid = pass2->pw_uid;
 			string_set(&conn->user,fuser);

@@ -2,7 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB client generic functions
-   Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Andrew Tridgell 1994-1999
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -690,68 +691,23 @@ prots[] =
 /****************************************************************************
 send a session setup 
 ****************************************************************************/
-BOOL cli_session_setup(struct cli_state *cli, 
-		       char *user, 
-		       char *pass, int passlen,
-		       char *ntpass, int ntpasslen,
-		       char *workgroup)
+BOOL cli_session_setup_x(struct cli_state *cli, 
+				char *user, 
+				char *pass, int passlen,
+				char *ntpass, int ntpasslen,
+				char *user_domain)
 {
 	char *p;
-	fstring pword, ntpword;
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("cli_session_setup.  pass, ntpass\n"));
+	dump_data(100, pass, passlen);
+	dump_data(100, ntpass, ntpasslen);
+#endif
 
 	if (cli->protocol < PROTOCOL_LANMAN1)
 	{
 		return True;
-	}
-
-	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1)
-	{
-		return False;
-	}
-
-	if (!IS_BITS_SET_ALL(cli->sec_mode, 1))
-	{
-		/* if in share level security then don't send a password now */
-		fstrcpy(pword, "");
-		passlen=1;
-		fstrcpy(ntpword, "");
-		ntpasslen=1;
-	} 
-	else if ((passlen == 0 || passlen == 1) && (pass[0] == '\0'))
-	{
-		/* Null session connect. */
-		pword  [0] = '\0';
-		ntpword[0] = '\0';
-	}
-	else if (passlen == 24 && ntpasslen == 24)
-	{
-		if (IS_BITS_SET_ALL(cli->sec_mode, 2))
-		{
-			/* encrypted password, implicit from 24-byte lengths */
-			memcpy(pword  , pass  , 24);
-			memcpy(ntpword, ntpass, 24);
-		}
-		else
-		{
-			DEBUG(0,("cli_session_setup: encrypted passwords not supported by server\n"));
-			return False;
-		}
-	}
-	else if (ntpasslen == 0 || !IS_BITS_SET_ALL(cli->sec_mode, 2))
-	{
-		/* plain-text password: server doesn't support encrypted. */
-		fstrcpy(pword, pass);
-		fstrcpy(ntpword, "");
-		ntpasslen = 0;
-	}
-	else /* passlen != 0 && ntpasslen != 0 && server supports encryption */
-	{
-		/* plain-text password requesting to be encrypted */
-		uchar *key = (uchar *)cli->cryptkey;
-		SMBencrypt  ((uchar *)pass  , key,(uchar *)pword  );
-		SMBNTencrypt((uchar *)ntpass, key,(uchar *)ntpword);
-		passlen = 24;
-		ntpasslen = 24;
 	}
 
 	/* send a session setup command */
@@ -770,7 +726,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		p = smb_buf(cli->outbuf);
-		memcpy(p,pword,passlen);
+		memcpy(p,pass,passlen);
 		p += passlen;
 		pstrcpy(p,user);
 		strupper(p);
@@ -790,17 +746,17 @@ BOOL cli_session_setup(struct cli_state *cli,
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
 		SSVAL(cli->outbuf,smb_vwv11,0);
 		p = smb_buf(cli->outbuf);
-		memcpy(p,pword,passlen); 
+		memcpy(p,pass,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
-		memcpy(p,ntpword,ntpasslen); 
+		memcpy(p,ntpass,ntpasslen); 
 		p += SVAL(cli->outbuf,smb_vwv8);
 		pstrcpy(p,user);
 		strupper(p);
 		p = skip_string(p,1);
-		pstrcpy(p,workgroup);
-		strupper(p);
+		pstrcpy(p,user_domain);
 		p = skip_string(p,1);
 		pstrcpy(p,"Unix");p = skip_string(p,1);
+		CVAL(p, 0) = 0; p++;
 		pstrcpy(p,"Samba");p = skip_string(p,1);
 		set_message(cli->outbuf,13,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
 	}
@@ -833,9 +789,125 @@ BOOL cli_session_setup(struct cli_state *cli,
         fstrcpy(cli->server_domain, server_domain);
       }
 
-      fstrcpy(cli->user_name, user);
-
       return True;
+}
+
+static BOOL cli_calc_session_pwds(struct cli_state *cli,
+				char *pword, char *ntpword,
+				char *pass, int *passlen,
+				char *ntpass, int *ntpasslen,
+				BOOL ntlmv2)
+{
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("cli_calc_session_pwds.  pass, ntpass\n"));
+	dump_data(100, pass, *passlen);
+	dump_data(100, ntpass, *ntpasslen);
+#endif
+	if (!IS_BITS_SET_ALL(cli->sec_mode, 1))
+	{
+		/* if in share level security then don't send a password now */
+		fstrcpy(pword, "");
+		*passlen=1;
+		fstrcpy(ntpword, "");
+		*ntpasslen=1;
+	} 
+	else if ((*passlen == 0 || *passlen == 1) && (pass[0] == '\0'))
+	{
+		/* Null session connect. */
+		pword  [0] = '\0';
+		ntpword[0] = '\0';
+	}
+	else if (*passlen == 24 && *ntpasslen >= 24)
+	{
+		if (IS_BITS_SET_ALL(cli->sec_mode, 2))
+		{
+			/* encrypted password, implicit from 24-byte lengths */
+			memcpy(pword  , pass  , *passlen);
+			memcpy(ntpword, ntpass, *ntpasslen);
+		}
+		else
+		{
+			DEBUG(0,("cli_session_setup: encrypted passwords not supported by server\n"));
+			return False;
+		}
+	}
+	else if (*ntpasslen == 0 || !IS_BITS_SET_ALL(cli->sec_mode, 2))
+	{
+		/* plain-text password: server doesn't support encrypted. */
+		fstrcpy(pword, pass);
+		fstrcpy(ntpword, "");
+		*ntpasslen = 0;
+	}
+	else /* passlen != 0 && ntpasslen != 0 && server supports encryption */
+	{
+		if (ntlmv2)
+		{
+			/* plain-text password requesting to be encrypted */
+			uchar *srv_key = (uchar *)cli->cryptkey;
+			uchar nt_owf[16];
+			uchar kr[16];
+
+			SMBgenclientchals(cli->lm_cli_chal,
+			                  cli->nt_cli_chal,
+			                  &cli->nt_cli_chal_len,
+			                  cli->calling.name,
+			                  cli->domain);
+			
+			nt_owf_gen(pword, nt_owf);
+			ntv2_owf_gen(nt_owf, cli->user_name, cli->domain, kr);
+
+			/* lm # */
+			memcpy(pword, cli->lm_cli_chal, 8);
+			SMBOWFencrypt_ntv2(kr,
+			                   srv_key, 8,
+			                   cli->lm_cli_chal, 8,
+			                   &pword[8]);
+			*passlen = 24;
+
+			/* nt # */
+			memcpy(ntpword, cli->lm_cli_chal, cli->nt_cli_chal_len);
+			SMBOWFencrypt_ntv2(kr,
+			               srv_key, 8,
+			               cli->nt_cli_chal, cli->nt_cli_chal_len,
+			               &ntpword[cli->nt_cli_chal_len]);
+			*ntpasslen = cli->nt_cli_chal_len + 16;
+		}
+		else
+		{
+			/* plain-text password requesting to be encrypted */
+			uchar *key = (uchar *)cli->cryptkey;
+			SMBencrypt  ((uchar *)pass  , key,(uchar *)pword  );
+			SMBNTencrypt((uchar *)ntpass, key,(uchar *)ntpword);
+			*passlen = 24;
+			*ntpasslen = 24;
+		}
+	}
+	return True;
+}
+
+/****************************************************************************
+send a session setup 
+****************************************************************************/
+BOOL cli_session_setup(struct cli_state *cli, 
+				char *user, 
+				char *pass, int passlen,
+				char *ntpass, int ntpasslen,
+				char *user_domain)
+{
+	fstring pword, ntpword;
+
+	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1)
+	{
+		return False;
+	}
+
+	fstrcpy(cli->user_name, user);
+
+	return cli_calc_session_pwds(cli, pword, ntpword,
+				pass, &passlen,
+				ntpass, &ntpasslen, cli->use_ntlmv2) &&
+	       cli_session_setup_x(cli, user, pass, passlen, ntpass, ntpasslen,
+				user_domain);
 }
 
 /****************************************************************************
@@ -2614,9 +2686,12 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 	if (cli_establish_connection(cli,
 				     dest_host, &cli->dest_ip,
 				     &calling, &called,
-				     share, dev, False, do_tcon)) {
-		if (cli->fd != oldfd) {
-			if (dup2(cli->fd, oldfd) == oldfd) {
+				     share, dev, False, do_tcon))
+	{
+		if (cli->fd != oldfd)
+		{
+			if (dup2(cli->fd, oldfd) == oldfd)
+			{
 				close(cli->fd);
 			}
 		}
@@ -2640,9 +2715,10 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	nmb_safe_namestr(calling, callingstr, sizeof(callingstr));
 	nmb_safe_namestr(called , calledstr , sizeof(calledstr ));
 
-	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s]\n",
+	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s] with NTLM%s\n",
 		          callingstr, calledstr, inet_ntoa(*dest_ip),
-	              cli->user_name, cli->domain));
+	              cli->user_name, cli->domain,
+			cli->use_ntlmv2 ? "v2" : "v1"));
 
 	/* establish connection */
 
@@ -2665,7 +2741,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	{
 		DEBUG(1,("failed session request\n"));
 		if (do_shutdown)
-          cli_shutdown(cli);
+		{
+			cli_shutdown(cli);
+		}
 		return False;
 	}
 
@@ -2673,7 +2751,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	{
 		DEBUG(1,("failed negprot\n"));
 		if (do_shutdown)
-          cli_shutdown(cli);
+		{
+			cli_shutdown(cli);
+		}
 		return False;
 	}
 
@@ -2725,20 +2805,45 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	else
 	{
 		/* attempt encrypted session */
-		unsigned char nt_sess_pwd[24];
 		unsigned char lm_sess_pwd[24];
+		unsigned char nt_sess_pwd[128];
+		size_t nt_sess_pwd_len;
+		extern pstring global_myname;
 
-		/* creates (storing a copy of) and then obtains a 24 byte password OWF */
-		pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
-		pwd_get_lm_nt_owf(&(cli->pwd), lm_sess_pwd, nt_sess_pwd);
+		if (cli->use_ntlmv2 != False)
+		{
+			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
+			pwd_make_lm_nt_owf2(&(cli->pwd), cli->cryptkey,
+			           cli->user_name, global_myname, cli->domain);
+		}
+		else
+		{
+			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
+			pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
+		}
+
+		pwd_get_lm_nt_owf(&(cli->pwd), lm_sess_pwd, nt_sess_pwd,
+		                  &nt_sess_pwd_len);
 
 		/* attempt encrypted session */
-		if (!cli_session_setup(cli, cli->user_name,
+		if (!cli_session_setup_x(cli, cli->user_name,
 	                       (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
-	                       (char*)nt_sess_pwd, sizeof(nt_sess_pwd),
+	                       (char*)nt_sess_pwd, nt_sess_pwd_len,
 	                       cli->domain))
 		{
 			DEBUG(1,("failed session setup\n"));
+
+			if (cli->use_ntlmv2 == Auto)
+			{
+				DEBUG(10,("NTLMv2 failed.  Using NTLMv1\n"));
+				cli->use_ntlmv2 = False;
+				return cli_establish_connection(cli, 
+					dest_host, dest_ip,
+					calling, called,
+					service, service_type,
+					do_shutdown, do_tcon);
+			}
+			
 			if (do_shutdown)
 			{
 				cli_shutdown(cli);

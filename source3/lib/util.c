@@ -2972,7 +2972,7 @@ void out_data(FILE *f,char *buf1,int len, int per_line)
 	}
 }
 
-void print_asc(int level, unsigned char *buf,int len)
+void print_asc(int level, unsigned char const *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
@@ -2981,9 +2981,9 @@ void print_asc(int level, unsigned char *buf,int len)
 	}
 }
 
-void dump_data(int level,char *buf1, int len)
+void dump_data(int level, const char *buf1, int len)
 {
-	unsigned char *buf = (unsigned char *)buf1;
+	unsigned char const *buf = (unsigned char const *)buf1;
 	int i=0;
 	if (len<=0) return;
 
