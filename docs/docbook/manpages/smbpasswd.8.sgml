@@ -78,8 +78,9 @@
 		<term>-L</term>
 		<listitem><para>Run the smbpasswd command in local mode. This 
 		allows a non-root user to specify the root-only options. This 
-		is used in test environments where smbd is run as non-root. The 
-		<filename>smbpasswd</filename> file must have read/write 
+		is used mostly in test environments where a non-root user needs
+		to make changes to the local <filename>smbpasswd</filename> file.
+		The <filename>smbpasswd</filename> file must have read/write 
 		permissions for the user running the command.</para></listitem>
 		</varlistentry>
 		
@@ -186,8 +187,8 @@ run as root or in local mode.</command>
 		<term>-a</term>
 		<listitem><para>This option specifies that the username 
 		following should be added to the local smbpasswd file, with the 
-		new password typed (type &lt;Enter&gt; for the old password). This 
-		option is ignored if the username following already exists in 
+		new password typed. This 
+		option is ignored if the username specified already exists in 
 		the smbpasswd file and it is treated like a regular change 
 		password command. Note that the user to be added must already exist 
 		in the system password file (usually <filename>/etc/passwd</filename>)
@@ -345,7 +346,7 @@ run as root or in local mode.</command>
 			<listitem><para><constant>host</constant> : Do a standard host 
 			name to IP address resolution, using the system <filename>/etc/hosts
 			</filename>, NIS, or DNS lookups. This method of name resolution 
-			is operating system depended for instance on IRIX or Solaris this 
+			is operating system dependent. For instance, on IRIX or Solaris this 
 			may be controlled by the <filename>/etc/nsswitch.conf</filename> 
 			file).  Note that this method is only used if the NetBIOS name 
 			type being queried is the 0x20 (server) name type, otherwise 
