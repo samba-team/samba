@@ -259,68 +259,68 @@ cmd
 		{
 			reply(202, "ALLO command ignored.");
 		}
-	| RETR check_login SP pathname CRLF
+	| RETR SP pathname CRLF check_login
 		{
-			if ($2 && $4 != NULL)
-				retrieve((char *) 0, $4);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				retrieve(0, $3);
+			if ($3 != NULL)
+				free($3);
 		}
-	| STOR check_login SP pathname CRLF
+	| STOR SP pathname CRLF check_login
 		{
-			if ($2 && $4 != NULL)
-				do_store($4, "w", 0);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				do_store($3, "w", 0);
+			if ($3 != NULL)
+				free($3);
 		}
-	| APPE check_login SP pathname CRLF
+	| APPE SP pathname CRLF check_login
 		{
-			if ($2 && $4 != NULL)
-				do_store($4, "a", 0);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				do_store($3, "a", 0);
+			if ($3 != NULL)
+				free($3);
 		}
-	| NLST check_login CRLF
+	| NLST CRLF check_login
 		{
-			if ($2)
+			if ($3)
 				send_file_list(".");
 		}
-	| NLST check_login SP STRING CRLF
+	| NLST SP STRING CRLF check_login
 		{
-			if ($2 && $4 != NULL)
-				send_file_list($4);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				send_file_list($3);
+			if ($3 != NULL)
+				free($3);
 		}
-	| LIST check_login CRLF
+	| LIST CRLF check_login
 		{
 #ifdef HAVE_LS_A
 		  char *cmd = "/bin/ls -lA";
 #else
 		  char *cmd = "/bin/ls -la";
 #endif
-			if ($2)
+			if ($3)
 				retrieve(cmd, "");
 			
 		}
-	| LIST check_login SP pathname CRLF
+	| LIST SP pathname CRLF check_login
 		{
 #ifdef HAVE_LS_A
 		  char *cmd = "/bin/ls -lA %s";
 #else
 		  char *cmd = "/bin/ls -la %s";
 #endif
-			if ($2 && $4 != NULL)
-				retrieve(cmd, $4);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				retrieve(cmd, $3);
+			if ($3 != NULL)
+				free($3);
 		}
-	| sTAT check_login SP pathname CRLF
+	| sTAT SP pathname CRLF check_login
 		{
-			if ($2 && $4 != NULL)
-				statfilecmd($4);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				statfilecmd($3);
+			if ($3 != NULL)
+				free($3);
 		}
 	| sTAT CRLF
 		{
@@ -335,26 +335,26 @@ cmd
 		    }else
 			statcmd();
 	}
-	| DELE check_login_no_guest SP pathname CRLF
+	| DELE SP pathname CRLF check_login_no_guest
 		{
-			if ($2 && $4 != NULL)
-				do_delete($4);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				do_delete($3);
+			if ($3 != NULL)
+				free($3);
 		}
-	| RNTO check_login_no_guest SP pathname CRLF
+	| RNTO SP pathname CRLF check_login_no_guest
 		{
-			if($2){
+			if($5){
 				if (fromname) {
-					renamecmd(fromname, $4);
+					renamecmd(fromname, $3);
 					free(fromname);
 					fromname = (char *) 0;
 				} else {
 					reply(503, "Bad sequence of commands.");
 				}
 			}
-			if ($4 != NULL)
-				free($4);
+			if ($3 != NULL)
+				free($3);
 		}
 	| ABOR CRLF
 		{
@@ -366,17 +366,17 @@ cmd
 			}else
 				reply(225, "ABOR command successful.");
 		}
-	| CWD check_login CRLF
+	| CWD CRLF check_login
 		{
-			if ($2)
+			if ($3)
 				cwd(pw->pw_dir);
 		}
-	| CWD check_login SP pathname CRLF
+	| CWD SP pathname CRLF check_login
 		{
-			if ($2 && $4 != NULL)
-				cwd($4);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				cwd($3);
+			if ($3 != NULL)
+				free($3);
 		}
 	| HELP CRLF
 		{
@@ -401,28 +401,28 @@ cmd
 		{
 			reply(200, "NOOP command successful.");
 		}
-	| MKD check_login SP pathname CRLF
+	| MKD SP pathname CRLF check_login
 		{
-			if ($2 && $4 != NULL)
-				makedir($4);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				makedir($3);
+			if ($3 != NULL)
+				free($3);
 		}
-	| RMD check_login_no_guest SP pathname CRLF
+	| RMD SP pathname CRLF check_login_no_guest
 		{
-			if ($2 && $4 != NULL)
-				removedir($4);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				removedir($3);
+			if ($3 != NULL)
+				free($3);
 		}
-	| PWD check_login CRLF
+	| PWD CRLF check_login
 		{
-			if ($2)
+			if ($3)
 				pwd();
 		}
-	| CDUP check_login CRLF
+	| CDUP CRLF check_login
 		{
-			if ($2)
+			if ($3)
 				cwd("..");
 		}
 	| SITE SP HELP CRLF
@@ -433,44 +433,40 @@ cmd
 		{
 			help(sitetab, $5);
 		}
-	| SITE SP UMASK check_login CRLF
+	| SITE SP UMASK CRLF check_login
 		{
-			int oldmask;
-
-			if ($4) {
-				oldmask = umask(0);
+			if ($5) {
+				int oldmask = umask(0);
 				umask(oldmask);
 				reply(200, "Current UMASK is %03o", oldmask);
 			}
 		}
-	| SITE SP UMASK check_login_no_guest SP octal_number CRLF
+	| SITE SP UMASK SP octal_number CRLF check_login_no_guest
 		{
-			int oldmask;
-
-			if ($4) {
-				if (($6 == -1) || ($6 > 0777)) {
+			if ($7) {
+				if (($5 == -1) || ($5 > 0777)) {
 					reply(501, "Bad UMASK value");
 				} else {
-					oldmask = umask($6);
+					int oldmask = umask($5);
 					reply(200,
-					    "UMASK set to %03o (was %03o)",
-					    $6, oldmask);
+					      "UMASK set to %03o (was %03o)",
+					      $5, oldmask);
 				}
 			}
 		}
-	| SITE SP CHMOD check_login_no_guest SP octal_number SP pathname CRLF
+	| SITE SP CHMOD SP octal_number SP pathname CRLF check_login_no_guest
 		{
-			if ($4 && $8 != NULL) {
-				if ($6 > 0777)
+			if ($9 && $7 != NULL) {
+				if ($5 > 0777)
 					reply(501,
 				"CHMOD: Mode value must be between 0 and 0777");
-				else if (chmod($8, $6) < 0)
-					perror_reply(550, $8);
+				else if (chmod($7, $5) < 0)
+					perror_reply(550, $7);
 				else
 					reply(200, "CHMOD command successful.");
 			}
-			if ($8 != NULL)
-				free($8);
+			if ($7 != NULL)
+				free($7);
 		}
 	| SITE SP IDLE CRLF
 		{
@@ -493,7 +489,7 @@ cmd
 			}
 		}
 
-	| SITE SP KAUTH check_login SP STRING CRLF
+	| SITE SP KAUTH SP STRING CRLF check_login
 		{
 #ifdef KRB4
 			char *p;
@@ -501,94 +497,94 @@ cmd
 			if(guest)
 				reply(500, "Can't be done as guest.");
 			else{
-				if($4 && $6 != NULL){
-				    p = strpbrk($6, " \t");
+				if($7 && $5 != NULL){
+				    p = strpbrk($5, " \t");
 				    if(p){
 					*p++ = 0;
-					kauth($6, p + strspn(p, " \t"));
+					kauth($5, p + strspn(p, " \t"));
 				    }else
-					kauth($6, NULL);
+					kauth($5, NULL);
 				}
 			}
-			if($6 != NULL)
-			    free($6);
+			if($5 != NULL)
+			    free($5);
 #else
 			reply(500, "Command not implemented.");
 #endif
 		}
-	| SITE SP KLIST check_login CRLF
+	| SITE SP KLIST CRLF check_login
 		{
 #ifdef KRB4
-		    if($4)
+		    if($5)
 			klist();
 #else
 		    reply(500, "Command not implemented.");
 #endif
 		}
-	| SITE SP KDESTROY check_login CRLF
+	| SITE SP KDESTROY CRLF check_login
 		{
 #ifdef KRB4
-		    if($4)
+		    if($5)
 			kdestroy();
 #else
 		    reply(500, "Command not implemented.");
 #endif
 		}
-	| SITE SP KRBTKFILE check_login SP STRING CRLF
+	| SITE SP KRBTKFILE SP STRING CRLF check_login
 		{
 #ifdef KRB4
 		    if(guest)
 			reply(500, "Can't be done as guest.");
-		    else if($4 && $6)
-			krbtkfile($6);
-		    if($6)
-			free($6);
+		    else if($7 && $5)
+			krbtkfile($5);
+		    if($5)
+			free($5);
 #else
 		    reply(500, "Command not implemented.");
 #endif
 		}
-	| SITE SP AFSLOG check_login CRLF
+	| SITE SP AFSLOG CRLF check_login
 		{
 #ifdef KRB4
 		    if(guest)
 			reply(500, "Can't be done as guest.");
-		    else if($4)
+		    else if($5)
 			afslog(NULL);
 #else
 		    reply(500, "Command not implemented.");
 #endif
 		}
-	| SITE SP AFSLOG check_login SP STRING CRLF
+	| SITE SP AFSLOG SP STRING CRLF check_login
 		{
 #ifdef KRB4
 		    if(guest)
 			reply(500, "Can't be done as guest.");
-		    else if($4){
-			afslog($6);
+		    else if($7){
+			afslog($5);
 		    }
-		    if($6)
-			free($6);
+		    if($5)
+			free($5);
 #else
 		    reply(500, "Command not implemented.");
 #endif
 		}
-	| SITE SP FIND check_login SP STRING CRLF
+	| SITE SP FIND SP STRING CRLF check_login
 		{
-		    if($4 && $6 != NULL)
-			find($6);
-		    if($6 != NULL)
-			free($6);
+		    if($7 && $5 != NULL)
+			find($5);
+		    if($5 != NULL)
+			free($5);
 		}
 	| SITE SP URL CRLF
 		{
 			reply(200, "http://www.pdc.kth.se/kth-krb/");
 		}
-	| STOU check_login SP pathname CRLF
+	| STOU SP pathname CRLF check_login
 		{
-			if ($2 && $4 != NULL)
-				do_store($4, "w", 1);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				do_store($3, "w", 1);
+			if ($3 != NULL)
+				free($3);
 		}
 	| SYST CRLF
 		{
@@ -606,12 +602,12 @@ cmd
 		 * Return size of file in a format suitable for
 		 * using with RESTART (we just count bytes).
 		 */
-	| SIZE check_login SP pathname CRLF
+	| SIZE SP pathname CRLF check_login
 		{
-			if ($2 && $4 != NULL)
-				sizecmd($4);
-			if ($4 != NULL)
-				free($4);
+			if ($5 && $3 != NULL)
+				sizecmd($3);
+			if ($3 != NULL)
+				free($3);
 		}
 
 		/*
@@ -623,15 +619,16 @@ cmd
 		 * where xxx is the fractional second (of any precision,
 		 * not necessarily 3 digits)
 		 */
-	| MDTM check_login SP pathname CRLF
+	| MDTM SP pathname CRLF check_login
 		{
-			if ($2 && $4 != NULL) {
+			if ($5 && $3 != NULL) {
 				struct stat stbuf;
-				if (stat($4, &stbuf) < 0)
+				if (stat($3, &stbuf) < 0)
 					reply(550, "%s: %s",
-					    $4, strerror(errno));
+					    $3, strerror(errno));
 				else if (!S_ISREG(stbuf.st_mode)) {
-					reply(550, "%s: not a plain file.", $4);
+					reply(550,
+					      "%s: not a plain file.", $3);
 				} else {
 					struct tm *t;
 					t = gmtime(&stbuf.st_mtime);
@@ -645,8 +642,8 @@ cmd
 					      t->tm_sec);
 				}
 			}
-			if ($4 != NULL)
-				free($4);
+			if ($3 != NULL)
+				free($3);
 		}
 	| QUIT CRLF
 		{
@@ -659,13 +656,13 @@ cmd
 		}
 	;
 rcmd
-	: RNFR check_login_no_guest SP pathname CRLF
+	: RNFR SP pathname CRLF check_login_no_guest
 		{
 			restart_point = (off_t) 0;
-			if ($2 && $4) {
-				fromname = renamefrom($4);
-				if (fromname == (char *) 0 && $4) {
-					free($4);
+			if ($5 && $3) {
+				fromname = renamefrom($3);
+				if (fromname == (char *) 0 && $3) {
+					free($3);
 				}
 			}
 		}
