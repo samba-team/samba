@@ -66,6 +66,28 @@ krb5_get_init_creds_opt_alloc(krb5_context context,
     return 0;
 }
 
+krb5_error_code
+krb5_get_init_creds_opt_copy(krb5_context context, 
+			     const krb5_get_init_creds_opt *in,
+			     krb5_get_init_creds_opt **out)
+{
+    struct _krb5_get_init_creds_opt_private *private;
+    krb5_get_init_creds_opt *opt;
+    krb5_error_code ret;
+
+    ret = krb5_get_init_creds_opt_alloc(context, &opt);
+    if (ret)
+	return ret;
+    
+    private = opt->private;
+    *opt = *in;
+    opt->private = private;
+    if (in->private)
+	*opt->private = *in->private;
+    *out = opt;
+    return 0;
+}
+
 void
 krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
 {
