@@ -3391,15 +3391,6 @@ void *Realloc(void *p,int size)
 
 
 /****************************************************************************
-  Signal handler for SIGPIPE (write on a disconnected socket) 
-****************************************************************************/
-void Abort(void )
-{
-  DEBUG(0,("Probably got SIGPIPE\nExiting\n"));
-  exit(2);
-}
-
-/****************************************************************************
 get my own name and IP
 ****************************************************************************/
 BOOL get_myname(char *my_name,struct in_addr *ip)

@@ -67,25 +67,6 @@ void  killkids(void)
 }
 
 
-
-/****************************************************************************
-  this is called when the client exits abruptly
-  **************************************************************************/
-static void sig_pipe(int sig)
-{
-	struct cli_state *cli;
-	BlockSignals(True,SIGPIPE);
-
-	if ((cli = server_client()) && cli->initialised) {
-		DEBUG(3,("lost connection to password server\n"));
-		cli_shutdown(cli);
-		BlockSignals(False,SIGPIPE);
-		return;
-	}
-
-	exit_server("Got sigpipe\n");
-}
-
 /****************************************************************************
   open the socket communication
 ****************************************************************************/
@@ -96,7 +77,6 @@ static BOOL open_sockets_inetd(void)
 	/* Started from inetd. fd 0 is the socket. */
 	/* We will abort gracefully when the client or remote system 
 	   goes away */
-	CatchSignal(SIGPIPE, SIGNAL_CAST sig_pipe);
 	Client = dup(0);
 	
 	/* close our standard file descriptors */
@@ -243,9 +223,6 @@ max can be %d\n",
 			
 			if (Client != -1 && fork()==0) {
 				/* Child code ... */
-				
-				CatchSignal(SIGPIPE, 
-					    SIGNAL_CAST sig_pipe);
 				
 				/* close the listening socket(s) */
 				for(i = 0; i < num_interfaces; i++)
@@ -551,6 +528,9 @@ static void usage(char *pname)
 
 	fault_setup((void (*)(void *))exit_server);
 	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
+
+	/* we are never interested in SIGPIPE */
+	BlockSignals(True,SIGPIPE);
 
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
