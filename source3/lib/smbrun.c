@@ -34,7 +34,7 @@ static BOOL setup_stdout_file(char *outfile,BOOL shared)
 {  
   int fd;
   mode_t mode = S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH;
-  int flags = O_RDWR|O_CREAT|O_TRUNC|O_EXCL;
+  int flags = O_RDWR|O_CREAT|O_EXCL;
 
   close(1);
 
