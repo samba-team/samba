@@ -41,7 +41,7 @@
 
   return -1 if not found, or the index of the first occurance of needle if found
 */
-int list_find(const void *needle, 
+int ldb_list_find(const void *needle, 
 	      const void *base, size_t nmemb, size_t size, comparison_fn_t comp_fn)
 {
 	const char *base_p = base;
