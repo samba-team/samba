@@ -72,6 +72,7 @@
 #endif
 #include <err.h>
 #include <roken.h>
+#include <getarg.h>
 #include <krb5.h>
 #include <hdb_err.h>
 
