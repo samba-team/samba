@@ -2061,7 +2061,8 @@ static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
 			if (ps->io)
 			{
 				/* reading */
-/* // FIXME			prs_hash1(ps, ps->offset, sess_key); */
+                                if (!prs_hash1(ps, ps->data_offset, sess_key))
+                                        return False;
 			}
 			if (!net_io_sam_passwd_info("pass", &info->pass, 
                                                     ps, depth))
@@ -2070,7 +2071,8 @@ static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
 			if (!ps->io)
 			{
 				/* writing */
-/* // FIXME TOO			prs_hash1(ps, old_offset, sess_key); */
+                                if (!prs_hash1(ps, old_offset, sess_key))
+                                        return False;
 			}
 		}
                 if (old_offset + len > ps->buffer_size)
