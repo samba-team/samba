@@ -3597,6 +3597,7 @@ BOOL spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth)
 BOOL spoolss_io_q_fcpn(char *desc, SPOOL_Q_FCPN *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_addjob(char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int depth);
+void free_job_info_ctr(JOB_INFO_CTR *ctr, uint32 level, uint32 numofjobs);
 void free_r_enumjobs(SPOOL_R_ENUMJOBS *r_u);
 BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const POLICY_HND *hnd,
@@ -3652,6 +3653,7 @@ BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int 
 BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_setform(char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int depth);
+void free_spoolss_r_getjob(SPOOL_R_GETJOB *r_u);
 BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int depth);
 void free_devmode(DEVICEMODE *devmode);
 void free_printer_info_2(PRINTER_INFO_2 *printer);
@@ -3664,6 +3666,7 @@ PRINTER_INFO_1 *add_print1_to_array(uint32 *len, PRINTER_INFO_1 ***array,
 void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);
 JOB_INFO_1 *add_job1_to_array(uint32 *len, JOB_INFO_1 ***array,
 				const JOB_INFO_1 *job);
+void free_job_info_2(JOB_INFO_2 *job);
 void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries);
 JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
 				const JOB_INFO_2 *job);
@@ -4997,7 +5000,11 @@ uint32 _spoolss_enumprintmonitors( const UNISTR2 *name,
 				PRINTMONITOR_1 **info_1,
 				uint32 *offered,
 				uint32 *numofprintmonitors);
-uint32 _spoolss_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata);
+uint32 _spoolss_getjob( const POLICY_HND *handle,
+				uint32 jobid,
+				uint32 level,
+				PJOB_INFO *ctr,
+				uint32 *offered);
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 

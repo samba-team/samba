@@ -2556,24 +2556,32 @@ BOOL spoolss_io_q_addjob(char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int de
 
 /****************************************************************************
 ****************************************************************************/
-void free_r_enumjobs(SPOOL_R_ENUMJOBS *r_u)
+void free_job_info_ctr(JOB_INFO_CTR *ctr, uint32 level, uint32 numofjobs)
 {	
-	DEBUG(4,("free_enum_jobs_info: [%d] structs to free at level [%d]\n", r_u->numofjobs, r_u->level));
-	switch (r_u->level)
+	DEBUG(4,("free_enum_jobs_info: [%d] structs to free at level [%d]\n",
+	        numofjobs, level));
+	switch (level)
 	{
 		case 1:			
 		{
-			free_job1_array(r_u->numofjobs,
-			                r_u->ctr.job.job_info_1);
+			free_job1_array(numofjobs,
+			                ctr->job.job_info_1);
 			break;
 		}
 		case 2:
 		{
-			free_job2_array(r_u->numofjobs,
-			                r_u->ctr.job.job_info_2);
+			free_job2_array(numofjobs,
+			                ctr->job.job_info_2);
 			break;
 		}
 	}
+}
+
+/****************************************************************************
+****************************************************************************/
+void free_r_enumjobs(SPOOL_R_ENUMJOBS *r_u)
+{	
+	free_job_info_ctr(&r_u->ctr, r_u->level, r_u->numofjobs);
 }
 
 /*******************************************************************
@@ -4316,7 +4324,7 @@ BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int de
 		case 1:
 		{
 			JOB_INFO_1 *info;
-			info=r_u->job.job_info_1;
+			info=r_u->ctr.job.job_info_1;
 			
 			bufsize_required += spoolss_size_job_info_1(info);
 			break;
@@ -4324,7 +4332,7 @@ BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int de
 		case 2:
 		{
 			JOB_INFO_2 *info;
-			info=r_u->job.job_info_2;
+			info=r_u->ctr.job.job_info_2;
 			
 			bufsize_required += spoolss_size_job_info_2(info);
 			break;
@@ -4359,14 +4367,14 @@ BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int de
 			case 1:
 			{
 				JOB_INFO_1 *info;
-				info = r_u->job.job_info_1;
+				info = r_u->ctr.job.job_info_1;
 				smb_io_job_info_1(desc, info, ps, depth, &start_offset, &end_offset);
 				break;
 			}
 			case 2:
 			{
 				JOB_INFO_2 *info;
-				info = r_u->job.job_info_2;
+				info = r_u->ctr.job.job_info_2;
 				smb_io_job_info_2(desc, info, ps, depth, &start_offset, &end_offset);
 				break;
 			}
@@ -4385,6 +4393,25 @@ BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int de
 	prs_uint32("status", ps, depth, &(r_u->status));
 
 	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
+void free_spoolss_r_getjob(SPOOL_R_GETJOB *r_u)
+{	
+	switch (r_u->level)
+	{
+		case 1:
+		{
+			free(r_u->ctr.job.job_info_1);
+			break;
+		}
+		case 2:
+		{
+			free_job_info_2(r_u->ctr.job.job_info_2);
+			break;
+		}
+	}
 }
 
 /*******************************************************************
@@ -4539,9 +4566,18 @@ static JOB_INFO_2 *job2_dup(const JOB_INFO_2* from)
 	return copy;
 }
 
+void free_job_info_2(JOB_INFO_2 *job)
+{
+	if (job!=NULL)
+	{
+		free_devmode(job->devmode);
+		free(job);
+	}
+}
+
 void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries)
 {
-	void(*fn)(void*) = (void(*)(void*))&free;
+	void(*fn)(void*) = (void(*)(void*))&free_job_info_2;
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 

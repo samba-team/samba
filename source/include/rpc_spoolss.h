@@ -1528,15 +1528,23 @@ typedef struct spool_q_getjob
 	uint32 level;
 	BUFFER buffer;
 	uint32 buf_size;
+
 } SPOOL_Q_GETJOB;
+
+typedef struct pjob_info_info
+{
+	union {
+		JOB_INFO_1 *job_info_1;
+		JOB_INFO_2 *job_info_2;
+		void *info;
+	} job;
+
+} PJOB_INFO;
 
 typedef struct spool_r_getjob
 {
 	uint32 level;
-	union {
-		JOB_INFO_1 *job_info_1;
-		JOB_INFO_2 *job_info_2;
-	} job;
+	PJOB_INFO ctr;
 	uint32 offered;
 	uint32 status;
 } SPOOL_R_GETJOB;

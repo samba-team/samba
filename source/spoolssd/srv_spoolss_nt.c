@@ -3335,87 +3335,86 @@ uint32 _spoolss_enumprintmonitors( const UNISTR2 *name,
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata)
+uint32 _spoolss_getjob( const POLICY_HND *handle,
+				uint32 jobid,
+				uint32 level,
+				PJOB_INFO *ctr,
+				uint32 *offered)
 {
-	SPOOL_R_GETJOB r_u;
 	int snum;
 	int count;
 	int i;
 	print_queue_struct *queue=NULL;
-	print_status_struct status;
-	JOB_INFO_1 *job_info_1=NULL;
-	JOB_INFO_2 *job_info_2=NULL;
+	print_status_struct prt_status;
 
 	DEBUG(4,("spoolss_getjob\n"));
 	
-	bzero(&status,sizeof(status));
+	bzero(&prt_status,sizeof(prt_status));
 
-	offered=buf_size;
-
-	if (get_printer_snum(handle, &snum))
+	if (!get_printer_snum(handle, &snum))
 	{
-		count=get_printqueue(snum, NULL, &queue, &status);
-		
-		level=level;
-		
-		DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", count, status.status, status.message));
-		
-		switch (level)
-		{
-			case 1:
-			{
-				job_info_1=(JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
-
-				for (i=0; i<count; i++)
-				{
-					if (queue[i].job==(int)jobid)
-					{
-						fill_job_info_1(job_info_1, &(queue[i]), i, snum);
-					}
-				}
-				job.job_info_1=job_info_1;
-				break;
-			}
-			case 2:
-			{
-				job_info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
-
-				for (i=0; i<count; i++)
-				{
-					if (queue[i].job==(int)jobid)
-					{
-						fill_job_info_2(job_info_2, &(queue[i]), i, snum);
-					}
-				}
-				job.job_info_2=job_info_2;
-				break;
-			}
-		}
+		return NT_STATUS_INVALID_HANDLE;
 	}
-
-	status=0x0;
-
-	spoolss_io_r_getjob("",&r_u,rdata,0);
+	count=get_printqueue(snum, NULL, &queue, &prt_status);
+	
+	DEBUGADD(4,("count:[%d], prt_status:[%d], [%s]\n",
+	             count, prt_status.status, prt_status.message));
+	
 	switch (level)
 	{
 		case 1:
 		{
-			free(job_info_1);
+			JOB_INFO_1 *job_info_1=NULL;
+			job_info_1=(JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
+
+			if (job_info_1 == NULL)
+			{
+				safe_free(queue);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			for (i=0; i<count; i++)
+			{
+				if (queue[i].job==(int)jobid)
+				{
+					fill_job_info_1(job_info_1,
+					               &(queue[i]), i, snum);
+				}
+			}
+			ctr->job.job_info_1=job_info_1;
 			break;
 		}
 		case 2:
 		{
-			free_devmode(job_info_2->devmode);
-			free(job_info_2);
+			JOB_INFO_2 *job_info_2=NULL;
+			job_info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
+
+			if (job_info_2 == NULL)
+			{
+				safe_free(queue);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			for (i=0; i<count; i++)
+			{
+				if (queue[i].job==(int)jobid)
+				{
+					fill_job_info_2(job_info_2,
+					                &(queue[i]), i, snum);
+				}
+			}
+			ctr->job.job_info_2=job_info_2;
 			break;
 		}
+		default:
+		{
+			safe_free(queue);
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
 	}
+
 	safe_free(queue);
-
+	return 0x0;
 }
-
-#endif

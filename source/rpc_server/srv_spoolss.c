@@ -67,77 +67,6 @@ static struct
 #define OPEN_HANDLE(pnum)    (VALID_HANDLE(pnum) && Printer[pnum].open)
 
 
-/****************************************************************************
-  find printer index by handle
-****************************************************************************/
-static int find_printer_index_by_hnd(POLICY_HND *hnd)
-{
-	int i;
-
-	for (i = 0; i < MAX_OPEN_PRINTER_EXS; i++)
-	{
-		if (memcmp(&(Printer[i].printer_hnd), hnd, sizeof(*hnd)) == 0)
-		{
-			DEBUG(4,("Found printer handle[%x] ", i));
-			dump_data(4, hnd->data, sizeof(hnd->data));
-			return i;
-		}
-	}
-	DEBUG(3,("Whoops, Printer handle not found: "));
-	dump_data(4, hnd->data, sizeof(hnd->data));
-	return -1;
-}
-
-/****************************************************************************
-  return the snum of a printer corresponding to an handle
-****************************************************************************/
-static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
-{
-	int snum;
-	int pnum = find_printer_index_by_hnd(hnd);
-	int n_services = lp_numservices();
-		
-	if (OPEN_HANDLE(pnum))
-	{
-		switch (Printer[pnum].printer_type)
-		 {
-		   case PRINTER_HANDLE_IS_PRINTER:		   
-			DEBUG(4,("short name:%s\n", Printer[pnum].dev.printername));			
-			for (snum = 0;snum<n_services; snum++)
-			{
-				if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-				{
-					DEBUG(4,("share:%s\n",lp_servicename(snum)));
-					if (   ( strlen(lp_servicename(snum)) == strlen( Printer[pnum].dev.printername ) ) 
-					    && ( !strncasecmp(lp_servicename(snum), 
-					                      Printer[pnum].dev.printername,
-							      strlen( lp_servicename(snum) ))) 
-					   )
-					{
-						DEBUG(4,("Printer found: %s[%x]\n",lp_servicename(snum),snum));
-						*number = snum;
-						return True;
-						break;	
-					}
-				}
-			}
-			return False;
-			break;		
-		   case PRINTER_HANDLE_IS_PRINTSERVER:
-			return False;
-			break;
-		   default:
-			return False;
-			break;
-		 }
-	}
-	else
-	{
-		DEBUG(3,("Error getting printer - take a nap quickly !\n"));
-		return False;
-	}
-}
-
 /********************************************************************
  * api_spoolss_open_printer
  *
@@ -260,67 +189,6 @@ static void api_spoolss_rfnpcnex(rpcsrv_struct *p, prs_struct *data,
 	r_u.status = _spoolss_rfnpcnex(&q_u.handle, q_u.change,
 	                               &q_u.option, &r_u.count, &r_u.info);
 	spoolss_io_r_rfnpcnex("", &r_u, rdata, 0);
-}
-
-
-/****************************************************************************
-****************************************************************************/
-static void construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
-{
-	char adevice[32];
-	char aform[32];
-	NT_PRINTER_INFO_LEVEL printer;	
-	NT_DEVICEMODE *ntdevmode;
-
-	DEBUG(7,("construct_dev_mode\n"));
-	
-	bzero(&(devmode->devicename), 2*sizeof(adevice));
-	bzero(&(devmode->formname), 2*sizeof(aform));
-
-	DEBUGADD(8,("getting printer characteristics\n"));
-
-	get_a_printer(&printer, 2, lp_servicename(snum));
-	ntdevmode = (printer.info_2)->devmode;
-
-	DEBUGADD(8,("loading DEVICEMODE\n"));
-	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, 
-	                                                 printer.info_2->printername);
-	make_unistr(&(devmode->devicename), adevice);
-
-	snprintf(aform, sizeof(aform), ntdevmode->formname);
-	make_unistr(&(devmode->formname), aform);
-
-	devmode->specversion      = ntdevmode->specversion;
-	devmode->driverversion    = ntdevmode->driverversion;
-	devmode->size             = ntdevmode->size;
-	devmode->driverextra      = ntdevmode->driverextra;
-	devmode->fields           = ntdevmode->fields;
-				    
-	devmode->orientation      = ntdevmode->orientation;	
-	devmode->papersize        = ntdevmode->papersize;
-	devmode->paperlength      = ntdevmode->paperlength;
-	devmode->paperwidth       = ntdevmode->paperwidth;
-	devmode->scale            = ntdevmode->scale;
-	devmode->copies           = ntdevmode->copies;
-	devmode->defaultsource    = ntdevmode->defaultsource;
-	devmode->printquality     = ntdevmode->printquality;
-	devmode->color            = ntdevmode->color;
-	devmode->duplex           = ntdevmode->duplex;
-	devmode->yresolution      = ntdevmode->yresolution;
-	devmode->ttoption         = ntdevmode->ttoption;
-	devmode->collate          = ntdevmode->collate;
-	devmode->icmmethod        = ntdevmode->icmmethod;
-	devmode->icmintent        = ntdevmode->icmintent;
-	devmode->mediatype        = ntdevmode->mediatype;
-	devmode->dithertype       = ntdevmode->dithertype;
-
-	if (ntdevmode->private != NULL)
-	{
-		devmode->private = (uint8 *)malloc(devmode->driverextra*sizeof(uint8));
-		memcpy(devmode->private, ntdevmode->private, devmode->driverextra);
-	}
-
-	free_a_printer(printer, 2);
 }
 
 
@@ -582,92 +450,6 @@ static void api_spoolss_addjob(rpcsrv_struct *p, prs_struct *data,
 	
 	spoolss_io_free_buffer(&(q_u.buffer));
 	spoolss_io_r_addjob("",&r_u,rdata,0);		
-}
-
-/****************************************************************************
-****************************************************************************/
-static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
-                            int position, int snum)
-{
-	pstring temp_name;
-	
-	struct tm *t;
-	time_t unixdate = time(NULL);
-	
-	t = gmtime(&unixdate);
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
-
-	job_info->jobid = queue->job;	
-	make_unistr(&(job_info->printername), lp_servicename(snum));
-	make_unistr(&(job_info->machinename), temp_name);
-	make_unistr(&(job_info->username), queue->user);
-	make_unistr(&(job_info->document), queue->file);
-	make_unistr(&(job_info->datatype), "RAW");
-	make_unistr(&(job_info->text_status), "");
-	job_info->status = queue->status;
-	job_info->priority = queue->priority;
-	job_info->position = position;
-	job_info->totalpages = 0;
-	job_info->pagesprinted = 0;
-
-	make_systemtime(&(job_info->submitted), t);
-}
-
-/****************************************************************************
-****************************************************************************/
-static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
-                            int position, int snum)
-{
-	pstring temp_name;
-	DEVICEMODE *devmode;
-	NT_PRINTER_INFO_LEVEL ntprinter;
-	pstring chaine;
-
-	struct tm *t;
-	time_t unixdate = time(NULL);
-
-	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0 )
-	{
-		return (False);
-	}	
-	
-	t = gmtime(&unixdate);
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
-
-	job_info->jobid = queue->job;
-	
-	snprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", global_myname, ntprinter.info_2->printername);
-	make_unistr(&(job_info->printername), chaine);
-	
-	make_unistr(&(job_info->machinename), temp_name);
-	make_unistr(&(job_info->username), queue->user);
-	make_unistr(&(job_info->document), queue->file);
-	make_unistr(&(job_info->notifyname), queue->user);
-	make_unistr(&(job_info->datatype), "RAW");
-	make_unistr(&(job_info->printprocessor), "winprint");
-	make_unistr(&(job_info->parameters), "");
-	make_unistr(&(job_info->text_status), "");
-	
-/* and here the security descriptor */
-
-	job_info->status = queue->status;
-	job_info->priority = queue->priority;
-	job_info->position = position;
-	job_info->starttime = 0;
-	job_info->untiltime = 0;
-	job_info->totalpages = 0;
-	job_info->size = queue->size;
-	make_systemtime(&(job_info->submitted), t);
-	job_info->timeelapsed = 0;
-	job_info->pagesprinted = 0;
-
-	devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE));
-	ZERO_STRUCTP(devmode);	
-	construct_dev_mode(devmode, snum, global_myname);			
-	job_info->devmode = devmode;
-
-	free_a_printer(ntprinter, 2);
-	return (True);
 }
 
 
@@ -993,97 +775,24 @@ static void api_spoolss_enumprintmonitors(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata)
-{
-	SPOOL_R_GETJOB r_u;
-	int snum;
-	int count;
-	int i;
-	print_queue_struct *queue = NULL;
-	print_status_struct status;
-	JOB_INFO_1 *job_info_1 = NULL;
-	JOB_INFO_2 *job_info_2 = NULL;
-
-	DEBUG(4,("spoolss_reply_getjob\n"));
-	
-	bzero(&status,sizeof(status));
-
-	r_u.offered = q_u->buf_size;
-
-	if (get_printer_snum(&(q_u->handle), &snum))
-	{
-		count = get_printqueue(snum, NULL, &queue, &status);
-		
-		r_u.level = q_u->level;
-		
-		DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", count, status.status, status.message));
-		
-		switch (r_u.level)
-		{
-			case 1:
-			{
-				job_info_1 = (JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
-
-				for (i = 0; i<count; i++)
-				{
-					if (queue[i].job == (int)q_u->jobid)
-					{
-						fill_job_info_1(job_info_1, &(queue[i]), i, snum);
-					}
-				}
-				r_u.job.job_info_1 = job_info_1;
-				break;
-			}
-			case 2:
-			{
-				job_info_2 = (JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
-
-				for (i = 0; i<count; i++)
-				{
-					if (queue[i].job == (int)q_u->jobid)
-					{
-						fill_job_info_2(job_info_2, &(queue[i]), i, snum);
-					}
-				}
-				r_u.job.job_info_2 = job_info_2;
-				break;
-			}
-		}
-	}
-
-	r_u.status = 0x0;
-
-	spoolss_io_r_getjob("",&r_u,rdata,0);
-	switch (r_u.level)
-	{
-		case 1:
-		{
-			free(job_info_1);
-			break;
-		}
-		case 2:
-		{
-			free_devmode(job_info_2->devmode);
-			free(job_info_2);
-			break;
-		}
-	}
-	if (queue) free(queue);
-
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_getjob(rpcsrv_struct *p, prs_struct *data,
                                prs_struct *rdata)
 {
 	SPOOL_Q_GETJOB q_u;
+	SPOOL_R_GETJOB r_u;
 	
 	spoolss_io_q_getjob("", &q_u, data, 0);
 
-	spoolss_reply_getjob(&q_u, rdata);
-	
+	r_u.offered = q_u.buf_size;
+	r_u.level = q_u.level;
+	r_u.status = _spoolss_getjob(&q_u.handle,
+				q_u.jobid,
+				q_u.level,
+				&r_u.ctr,
+				&r_u.offered);
 	spoolss_io_free_buffer(&(q_u.buffer));
+	spoolss_io_r_getjob("",&r_u,rdata,0);
+	free_spoolss_r_getjob(&r_u);
 }
 
 /*******************************************************************
