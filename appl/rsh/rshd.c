@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -972,13 +972,6 @@ main(int argc, char **argv)
 	do_kerberos = DO_KRB4 | DO_KRB5;
 #endif
 
-    if (do_keepalive &&
-	setsockopt(0, SOL_SOCKET, SO_KEEPALIVE, (char *)&on,
-		   sizeof(on)) < 0)
-	syslog(LOG_WARNING, "setsockopt (SO_KEEPALIVE): %m");
-
-    /* set SO_LINGER? */
-
 #ifdef KRB5
     if((do_kerberos & DO_KRB5) && krb5_init_context (&context) != 0)
 	do_kerberos &= ~DO_KRB5;
@@ -1034,6 +1027,13 @@ main(int argc, char **argv)
 	mini_inetd_addrinfo (ai);
 	freeaddrinfo(ai);
     }
+
+    if (do_keepalive &&
+	setsockopt(0, SOL_SOCKET, SO_KEEPALIVE, (char *)&on,
+		   sizeof(on)) < 0)
+	syslog(LOG_WARNING, "setsockopt (SO_KEEPALIVE): %m");
+
+    /* set SO_LINGER? */
 
     signal (SIGPIPE, SIG_IGN);
 
