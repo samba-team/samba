@@ -1,6 +1,3 @@
-!==
-!== BROWSING-Config.txt for Samba release 2.0.4 18 May 1999
-!==
 Date:		July 5, 1998
 Contributor:	John H Terpstra <jht@samba.org>
 

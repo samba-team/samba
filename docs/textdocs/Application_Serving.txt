@@ -1,6 +1,3 @@
-!==
-!== Application_Serving.txt for Samba release 2.0.4 18 May 1999
-!==
 Contributed:	January 7, 1997
 Updated:	March 24, 1998
 Contributor:	John H Terpstra <samba-bugs@samba.org>

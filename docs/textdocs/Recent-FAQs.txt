@@ -1,6 +1,3 @@
-!==
-!== Recent-FAQs.txt for Samba release 2.0.4 18 May 1999
-!==
 Contributor:	Samba-bugs@samba.org
 Date:		July 5, 1998
 Status:		Current

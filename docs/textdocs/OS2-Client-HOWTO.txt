@@ -1,6 +1,3 @@
-!==
-!== OS2-Client-HOWTO.txt for Samba release 2.0.4 18 May 1999
-!==
 
 
 Q. How can I configure OS/2 Warp Connect or OS/2 Warp 4 as a client for Samba?
