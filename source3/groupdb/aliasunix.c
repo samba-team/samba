@@ -66,30 +66,51 @@ static BOOL setalsunixpwpos(void *vp, SMB_BIG_UINT tok)
 }
 
 /*************************************************************************
- maps a unix group to a rid, domain sid and an nt alias name.  
+ maps a unix group to a domain sid and an nt alias name.  
 *************************************************************************/
-static void map_unix_als_to_nt_als(struct group *unix_als, char *nt_name, DOM_SID *sid, uint32 *rid)
+static void map_unix_grp_to_nt_als(char *unix_name,
+	struct group *unix_grp, char *nt_name, DOM_SID *sid)
 {
-	if (map_alias_gid(unix_als->gr_gid, sid, nt_name, NULL))
+	BOOL found = False;
+	uint32 rid;
+	fstring ntname;
+	fstring ntdomain;
+
+	if (isdigit(unix_name[0]))
+	{
+		unix_grp->gr_gid = get_number(unix_name);
+		unix_grp->gr_name = unix_name;
+		found = map_alias_gid(unix_grp->gr_gid, sid, ntname, ntdomain);
+	}
+	else
+	{
+		unix_grp->gr_name = unix_name;
+		found = map_unix_alias_name(unix_grp->gr_name, sid, ntname, ntdomain);
+	}
+
+	if (found)
 	{
 		/*
 		 * find the NT name represented by this UNIX gid.
-		 * then, only accept NT aliases that are in our domain
+		 * then, only accept NT aliass that are in our domain
 		 */
 
-		sid_split_rid(sid, rid);
+		sid_split_rid(sid, &rid);
 	}
 	else
 	{
 		/*
-		 * assume that the UNIX alias is an NT alias with
+		 * assume that the UNIX group is an NT alias with
 		 * the same name.  convert gid to a alias rid.
 		 */
 		
-		fstrcpy(nt_name, unix_als->gr_name);
+		fstrcpy(ntdomain, global_sam_name);
+		fstrcpy(ntname, unix_grp->gr_name);
 		sid_copy(sid, &global_sam_sid);
-		(*rid) = pwdb_gid_to_alias_rid(unix_als->gr_gid);
 	}
+
+	slprintf(nt_name, sizeof(fstring)-1, "\\%s\\%s",
+	         ntdomain, ntname);
 }
 
 /*************************************************************************
@@ -113,13 +134,11 @@ BOOL get_unixalias_members(struct group *als,
 	for (i = 0; (unix_name = als->gr_mem[i]) != NULL; i++)
 	{
 		DOM_SID sid;
-		BOOL found = False;
+		struct group unix_grp;
 
-		found = map_unix_alias_name(unix_name, &sid, nt_name, NULL);
+		map_unix_grp_to_nt_als(unix_name, &unix_grp, nt_name, &sid);
 
-		found = found ? sid_equal(&sid, &global_sam_sid) : False;
-
-		if (!found)
+		if (!sid_equal(&sid, &global_sam_sid))
 		{
 			DEBUG(0,("alias database: could not resolve name %s in domain %s\n",
 			          unix_name, global_sam_name));
