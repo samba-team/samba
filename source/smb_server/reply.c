@@ -710,7 +710,8 @@ failed:
 	req->out.size = 4;
 	req->out.buffer = talloc(req->mem_ctx, req->out.size);
 	SIVAL(req->out.buffer, 0, 0); /* init NBT header */
-	req_send_reply(req);
+
+	req_send_reply_nosign(req);
 }
 
 
@@ -2335,7 +2336,7 @@ void reply_special(struct request_context *req)
 		
 		req->out.buffer = buf;
 		req->out.size = 4;
-		req_send_reply(req);
+		req_send_reply_nosign(req);
 		return;
 		
 	case 0x89: /* session keepalive request 
@@ -2344,7 +2345,7 @@ void reply_special(struct request_context *req)
 		SCVAL(buf, 3, 0);
 		req->out.buffer = buf;
 		req->out.size = 4;
-		req_send_reply(req);
+		req_send_reply_nosign(req);
 		return;
 		
 	case SMBkeepalive: 

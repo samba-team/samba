@@ -256,7 +256,7 @@ void req_grow_data(struct request_context *req, unsigned new_size)
   note that this only looks at req->out.buffer and req->out.size, allowing manually 
   constructed packets to be sent
 */
-void req_send_reply(struct request_context *req)
+void req_send_reply_nosign(struct request_context *req)
 {
 	if (req->out.size > NBT_HDR_SIZE) {
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
@@ -267,6 +267,23 @@ void req_send_reply(struct request_context *req)
 	}
 
 	req_destroy(req);
+}
+
+/*
+  possibly sign a message then send a reply and destroy the request buffer
+
+  note that this only looks at req->out.buffer and req->out.size, allowing manually 
+  constructed packets to be sent
+*/
+void req_send_reply(struct request_context *req)
+{
+	if (req->out.size > NBT_HDR_SIZE) {
+		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
+	}
+
+	req_sign_packet(req);
+
+	req_send_reply_nosign(req);
 }
 
 
