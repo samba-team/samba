@@ -1768,9 +1768,9 @@ void init_connections(void);
 void free_connections(void);
 void cli_connection_free(struct cli_connection *con);
 void cli_connection_unlink(struct cli_connection *con);
-BOOL cli_connection_init(const char *srv_name, const char *pipe_name,
+BOOL cli_connection_init(const char *srv_name, char *pipe_name,
                          struct cli_connection **con);
-BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
+BOOL cli_connection_init_auth(const char *srv_name, char *pipe_name,
                               struct cli_connection **con,
                               cli_auth_fns * auth, void *auth_creds);
 struct _cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con);
