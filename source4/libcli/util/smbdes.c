@@ -364,30 +364,36 @@ void des_crypt112_16(uint8_t out[16], uint8_t in[16], const uint8_t key[14], int
         des_crypt56(out + 8, in + 8, key+7, forw);
 }
 
-/*
-  arcfour encryption with a blob key
-*/
-void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key)
+/* initialise the arcfour sbox with key */
+void arcfour_init(uint8_t s_box[256], const DATA_BLOB *key) 
 {
-	uint8_t s_box[256];
-	uint8_t index_i = 0;
-	uint8_t index_j = 0;
-	uint8_t j = 0;
 	int ind;
-	
+	uint8_t j = 0;
 	for (ind = 0; ind < 256; ind++) {
 		s_box[ind] = (uint8_t)ind;
 	}
-
+	
 	for (ind = 0; ind < 256; ind++) {
 		uint8_t tc;
-
+		
 		j += (s_box[ind] + key->data[ind%key->length]);
-
+		
 		tc = s_box[ind];
 		s_box[ind] = s_box[j];
 		s_box[j] = tc;
 	}
+	s_box[256] = 0; /* i */
+	s_box[257] = 0; /* j */
+	
+}
+
+/* crypt the data with arcfour */
+void arcfour_crypt_sbox(uint8_t s_box[258], uint8_t *data, int len) 
+{
+	uint8_t index_i = s_box[256];
+	uint8_t index_j = s_box[257];
+	int ind;
+	
 	for (ind = 0; ind < len; ind++) {
 		uint8_t tc;
 		uint8_t t;
@@ -402,6 +408,18 @@ void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key)
 		t = s_box[index_i] + s_box[index_j];
 		data[ind] = data[ind] ^ s_box[t];
 	}
+	s_box[256] = index_i;
+	s_box[257] = index_j;
+}
+
+/*
+  arcfour encryption with a blob key
+*/
+void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key) 
+{
+	uint8_t s_box[258];
+	arcfour_init(s_box, key);
+	arcfour_crypt_sbox(s_box, data, len);
 }
 
 /*
