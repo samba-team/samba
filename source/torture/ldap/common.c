@@ -103,6 +103,61 @@ NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 	return NT_STATUS_OK;
 }
 
+
+/*
+ Write data to a fd
+*/
+static ssize_t write_data(int fd, char *buffer, size_t N)
+{
+	size_t total=0;
+	ssize_t ret;
+
+	while (total < N) {
+		ret = sys_write(fd,buffer + total,N - total);
+
+		if (ret == -1) {
+			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0)
+			return total;
+
+		total += ret;
+	}
+
+	return (ssize_t)total;
+}
+
+
+/*
+ Read data from the client, reading exactly N bytes
+*/
+static ssize_t read_data(int fd, char *buffer, size_t N)
+{
+	ssize_t ret;
+	size_t total=0;  
+ 
+	while (total < N) {
+
+		ret = sys_read(fd,buffer + total,N - total);
+
+		if (ret == 0) {
+			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", 
+				  (int)(N - total), strerror(errno) ));
+			return 0;
+		}
+
+		if (ret == -1) {
+			DEBUG(0,("read_data: read failure for %d. Error = %s\n", 
+				 (int)(N - total), strerror(errno) ));
+			return -1;
+		}
+		total += ret;
+	}
+
+	return (ssize_t)total;
+}
+
 BOOL ldap_sasl_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
 		   const struct timeval *endtime)
 {
@@ -131,26 +186,24 @@ BOOL ldap_sasl_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
 
 	RSIVAL(length, 0, wrapped.length);
 
-	result = (write_data_until(conn->sock, length, 4,
-				   endtime) == 4);
+	result = (write_data(conn->sock, length, 4) == 4);
 	if (!result)
 		return result;
 
-	result = (write_data_until(conn->sock, wrapped.data, wrapped.length,
-				   endtime) == wrapped.length);
+	result = (write_data(conn->sock, wrapped.data, wrapped.length) == wrapped.length);
 	if (!result)
 		return result;
 
 	wrapped = data_blob(NULL, 0x4000);
 	data_blob_clear(&wrapped);
 
-	result = (read_data_until(conn->sock, length, 4, NULL) == 4);
+	result = (read_data(conn->sock, length, 4) == 4);
 	if (!result)
 		return result;
 
 	len = RIVAL(length,0);
 
-	result = (read_data_until(conn->sock, wrapped.data, MIN(wrapped.length,len), NULL) == len);
+	result = (read_data(conn->sock, wrapped.data, MIN(wrapped.length,len)) == len);
 	if (!result)
 		return result;
 
