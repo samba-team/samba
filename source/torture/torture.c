@@ -427,9 +427,9 @@ static BOOL rw_torture3(struct cli_state *c, char *lockfname)
 						  sizeof(buf)-count);
 			if (sent < 0)
 			{
-				printf("read failed offset:%d size:%d (%s)\n",
-						count, sizeof(buf)-count,
-						cli_errstr(c));
+				printf("read failed offset:%d size:%ld (%s)\n",
+				       count, (unsigned long)sizeof(buf)-count,
+				       cli_errstr(c));
 				correct = False;
 				sent = 0;
 			}
@@ -438,8 +438,7 @@ static BOOL rw_torture3(struct cli_state *c, char *lockfname)
 				if (memcmp(buf_rd+count, buf+count, sent) != 0)
 				{
 					printf("read/write compare failed\n");
-					printf("offset: %d req %d recvd %d\n",
-						count, sizeof(buf)-count, sent);
+					printf("offset: %d req %ld recvd %ld\n", count, (unsigned long)sizeof(buf)-count, (unsigned long)sent);
 					correct = False;
 					break;
 				}
@@ -504,7 +503,8 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 
 		if ((bytes_read = cli_read(c2, fnum2, buf_rd, 0, buf_size)) != buf_size) {
 			printf("read failed (%s)\n", cli_errstr(c2));
-			printf("read %d, expected %d\n", bytes_read, buf_size); 
+			printf("read %d, expected %ld\n", bytes_read, 
+			       (unsigned long)buf_size); 
 			correct = False;
 			break;
 		}
@@ -620,9 +620,11 @@ static BOOL run_readwritelarge(int dummy)
 	}
 
 	if (fsize == sizeof(buf))
-		printf("readwritelarge test 1 succeeded (size = %x)\n", fsize);
+		printf("readwritelarge test 1 succeeded (size = %lx)\n", 
+		       (unsigned long)fsize);
 	else {
-		printf("readwritelarge test 1 failed (size = %x)\n", fsize);
+		printf("readwritelarge test 1 failed (size = %lx)\n", 
+		       (unsigned long)fsize);
 		correct = False;
 	}
 
@@ -652,9 +654,11 @@ static BOOL run_readwritelarge(int dummy)
 	}
 
 	if (fsize == sizeof(buf))
-		printf("readwritelarge test 2 succeeded (size = %x)\n", fsize);
+		printf("readwritelarge test 2 succeeded (size = %lx)\n", 
+		       (unsigned long)fsize);
 	else {
-		printf("readwritelarge test 2 failed (size = %x)\n", fsize);
+		printf("readwritelarge test 2 failed (size = %lx)\n", 
+		       (unsigned long)fsize);
 		correct = False;
 	}
 

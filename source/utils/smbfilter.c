@@ -47,7 +47,7 @@ static void save_file(const char *fname, void *packet, size_t length)
 		return;
 	}
 	close(fd);
-	printf("Wrote %d bytes to %s\n", length, fname);
+	printf("Wrote %ld bytes to %s\n", (unsigned long)length, fname);
 }
 
 static void filter_reply(char *buf)

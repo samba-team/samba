@@ -452,7 +452,7 @@ void winbind_client_read(struct winbindd_cli_state *state)
 		 (char *)&state->request, 
 		 sizeof(state->request) - state->read_buf_len);
 	
-	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n, sizeof(state->request) - n - state->read_buf_len ));
+	DEBUG(10,("client_read: read %d bytes. Need %ld more for a full request.\n", n, (unsigned long)(sizeof(state->request) - n - state->read_buf_len) ));
 
 	/* Read failed, kill client */
 	
@@ -719,8 +719,8 @@ static void process_loop(void)
 
 					if (state->read_buf_len >= sizeof(uint32)
 					    && *(uint32 *) &state->request != sizeof(state->request)) {
-						DEBUG(0,("process_loop: Invalid request size from pid %lu: %d bytes sent, should be %d\n",
-								(unsigned long)state->request.pid, *(uint32 *) &state->request, sizeof(state->request)));
+						DEBUG(0,("process_loop: Invalid request size from pid %lu: %d bytes sent, should be %ld\n",
+								(unsigned long)state->request.pid, *(uint32 *) &state->request, (unsigned long)sizeof(state->request)));
 
 						remove_client(state);
 						break;
