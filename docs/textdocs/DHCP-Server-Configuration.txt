@@ -1,5 +1,5 @@
 !==
-!== DHCP-Server-Configuration.txt for Samba release 2.0.5a 22 Jul 1999
+!== DHCP-Server-Configuration.txt for Samba release 2.0.6 11 Nov 1999
 !==
 Subject:	DHCP Server Configuration for SMB Clients
 Date:		March 1, 1998
