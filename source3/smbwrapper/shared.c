@@ -187,13 +187,14 @@ int smbw_setenv(const char *name, const char *value)
 {
 	pstring s;
 	char *p;
+	int ret = -1;
 
 	slprintf(s,sizeof(s)-1,"%s=%s", name, value);
 
 	p = strdup(s);
 
-	if (p) p = putenv(p);
+	if (p) ret = putenv(p);
 
-	return p;
+	return ret;
 }
 
