@@ -616,8 +616,8 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 	*session_info_out = NULL;
 
-	/* IF we have the PAC - otherwise (TODO) we need to get this
-	 * data from elsewere - local ldb, or lookup of some
+	/* IF we have the PAC - otherwise we need to get this
+	 * data from elsewere - local ldb, or (TODO) lookup of some
 	 * kind... */
 
 	principal = talloc_strdup(gensec_krb5_state, gensec_krb5_state->peer_principal);
@@ -666,14 +666,17 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		}
 		
 		
-		sid = dom_sid_dup(session_info, logon_info->dom_sid);
-		ptoken->user_sids[0] = dom_sid_add_rid(session_info, sid, logon_info->user_rid);
+		sid = dom_sid_dup(server_info, logon_info->dom_sid);
+		server_info->user_sid = dom_sid_add_rid(server_info, sid, logon_info->user_rid);
+		sid = dom_sid_dup(server_info, logon_info->dom_sid);
+		server_info->primary_group_sid = dom_sid_add_rid(server_info, sid, logon_info->group_rid);
+
+		ptoken->user_sids[0] = talloc_reference(session_info, server_info->user_sid);
 		ptoken->num_sids++;
-		sid = dom_sid_dup(session_info, logon_info->dom_sid);
-		ptoken->user_sids[1] = dom_sid_add_rid(session_info, sid, logon_info->group_rid);
+		ptoken->user_sids[1] = talloc_reference(session_info, server_info->primary_group_sid);
 		ptoken->num_sids++;
-		
-		for (;ptoken->num_sids < logon_info->groups_count; ptoken->num_sids++) {
+
+		for (;ptoken->num_sids < (logon_info->groups_count + 2); ptoken->num_sids++) {
 			sid = dom_sid_dup(session_info, logon_info->dom_sid);
 			ptoken->user_sids[ptoken->num_sids]
 				= dom_sid_add_rid(session_info, sid, 
