@@ -54,11 +54,11 @@ interface names in the tags is only by convention and is not a technical require
 
 <para><programlisting>
 [global]
-	wins server = 192.168.1.2:eth0 192.1:eth0 192.168.2.2:eth1
+	wins server = 192.168.1.2:eth0 192.168.1.3:eth0 192.168.2.2:eth1
 </programlisting></para>
 
 <para>
-Using this configuration, nmbd would attempt to registry the server's NetBIOS name 
+Using this configuration, nmbd would attempt to register the server's NetBIOS name 
 with one WINS server in each group.  Because the &quot;eth0&quot; group has two servers, the 
 second server would only be used when a registration (or resolution) request to 
 the first server in that group timed out.
