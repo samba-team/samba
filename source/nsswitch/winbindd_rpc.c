@@ -807,10 +807,10 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	TALLOC_CTX *mem_ctx;
 	CLI_POLICY_HND *hnd;
 	SAM_UNK_CTR ctr;
-	uint16 switch_value = 2;
 	NTSTATUS result;
 	POLICY_HND dom_pol;
 	BOOL got_dom_pol = False;
+	BOOL got_seq_num = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	int retry;
 
@@ -856,10 +856,27 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	/* Query domain info */
 
 	result = cli_samr_query_dom_info(hnd->cli, mem_ctx, &dom_pol,
-					 switch_value, &ctr);
+					 8, &ctr);
 
 	if (NT_STATUS_IS_OK(result)) {
-		*seq = ctr.info.inf2.seq_num;
+		*seq = ctr.info.inf8.seq_num.low;
+		got_seq_num = True;
+		goto seq_num;
+	}
+
+	/* retry with info-level 2 in case the dc does not support info-level 8
+	 * (like all older samba2 and samba3 dc's - Guenther */
+
+	result = cli_samr_query_dom_info(hnd->cli, mem_ctx, &dom_pol,
+					 2, &ctr);
+	
+	if (NT_STATUS_IS_OK(result)) {
+		*seq = ctr.info.inf2.seq_num.low;
+		got_seq_num = True;
+	}
+
+ seq_num:
+	if (got_seq_num) {
 		DEBUG(10,("domain_sequence_number: for domain %s is %u\n", domain->name, (unsigned)*seq));
 	} else {
 		DEBUG(10,("domain_sequence_number: failed to get sequence number (%u) for domain %s\n",

@@ -592,6 +592,40 @@ static BOOL sam_io_unk_info7(const char *desc, SAM_UNK_INFO_7 * u_7,
 inits a structure.
 ********************************************************************/
 
+void init_unk_info8(SAM_UNK_INFO_8 * u_8, uint32 seq_num)
+{
+	unix_to_nt_time(&u_8->domain_create_time, 0);
+	u_8->seq_num.low = seq_num;
+	u_8->seq_num.high = 0x0000;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info8(const char *desc, SAM_UNK_INFO_8 * u_8,
+			     prs_struct *ps, int depth)
+{
+	if (u_8 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info8");
+	depth++;
+
+	if (!prs_uint64("seq_num", ps, depth, &u_8->seq_num))
+		return False;
+
+	if(!smb_io_time("domain_create_time", &u_8->domain_create_time, ps, depth))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+inits a structure.
+********************************************************************/
+
 void init_unk_info12(SAM_UNK_INFO_12 * u_12, NTTIME nt_lock_duration, NTTIME nt_reset_time, uint16 lockout)
 {
 	u_12->duration.low = nt_lock_duration.low;
@@ -668,8 +702,9 @@ void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 	u_2->unknown_0 = 0x00000000;
 	u_2->unknown_1 = 0x80000000;
 
-	u_2->seq_num = seq_num;
-	u_2->unknown_3 = 0x00000000;
+	u_2->seq_num.low = seq_num;
+	u_2->seq_num.high = 0x00000000;
+
 
 	u_2->unknown_4 = 0x00000001;
 	u_2->unknown_5 = 0x00000003;
@@ -716,9 +751,7 @@ static BOOL sam_io_unk_info2(const char *desc, SAM_UNK_INFO_2 * u_2,
 	   pointer is referring to
 	 */
 
-	if(!prs_uint32("seq_num ", ps, depth, &u_2->seq_num))	/* 0x0000 0099 or 0x1000 0000 */
-		return False;
-	if(!prs_uint32("unknown_3 ", ps, depth, &u_2->unknown_3))	/* 0x0000 0000 */
+	if(!prs_uint64("seq_num ", ps, depth, &u_2->seq_num))
 		return False;
 
 	if(!prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4)) /* 0x0000 0001 */
@@ -841,6 +874,10 @@ BOOL samr_io_r_query_dom_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 		switch (r_u->switch_value) {
 		case 0x0c:
 			if(!sam_io_unk_info12("unk_inf12", &r_u->ctr->info.inf12, ps, depth))
+				return False;
+			break;
+		case 0x08:
+			if(!sam_io_unk_info8("unk_inf8",&r_u->ctr->info.inf8, ps,depth))
 				return False;
 			break;
 		case 0x07:
