@@ -1024,6 +1024,16 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 	if (!file_existed) { 
 
+		/*
+		 * Now the file exists and fsp is successfully opened,
+		 * fsp->dev and fsp->inode are valid and should replace the
+		 * dev=0,inode=0 from a non existent file. Spotted by
+		 * Nadav Danieli <nadavd@exanet.com>. JRA.
+		 */
+
+		dev = fsp->dev;
+		inode = fsp->inode;
+
 		lock_share_entry_fsp(fsp);
 
 		num_share_modes = open_mode_check(conn, fname, dev, inode, 
