@@ -283,7 +283,8 @@ interface drsuapi
 	} drsuapi_DsReplicaCoursor2Ctr2;
 
 	typedef [v1_enum] enum {
-		DRSUAPI_OBJECTCLASS_top		= 0x0
+		DRSUAPI_OBJECTCLASS_top		= 0x00010000,
+		DRSUAPI_OBJECTCLASS_test	= 0x00000000
 	} drsuapi_DsObjectClassId;
 
 	typedef [v1_enum,public] enum {
@@ -497,9 +498,10 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesCtr1;
 
 	typedef struct {
-		uint32 unknown1;/* decompressed_length ? */
+		uint32 decompressed_length;
 		uint32 compressed_length;
-		DATA_BLOB *compressed;
+		[subcontext(4),compression(NDR_COMPRESSION_ZLIB,compressed_length,decompressed_length),flag(NDR_REMAINING)] DATA_BLOB *decompressed;
+		/*[subcontext(4),compression(NDR_COMPRESSION_ZLIB,compressed_length,decompressed_length)] drsuapi_DsGetNCChangesCtr1 *ctr1;*/
 	} drsuapi_DsGetNCChangesCompressedInfo;
 
 	typedef struct {
