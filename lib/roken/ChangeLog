@@ -4,8 +4,6 @@ Sat Mar 20 03:42:30 1999  Assar Westerlund  <assar@sics.se>
 
 	* simple_exec.c: add <roken.h>
 
-	* Makefile.am: correct path to Makefile.am.common
-
 Fri Mar 19 21:29:58 1999  Assar Westerlund  <assar@sics.se>
 
 	* eread.c, ewrite.c: new files

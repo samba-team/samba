@@ -1,7 +1,3 @@
-Sat Mar 20 03:38:39 1999  Assar Westerlund  <assar@sics.se>
-
-	* Makefile.am: correct path to Makefile.am.common
-
 Fri Mar 19 14:52:29 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: add version-info

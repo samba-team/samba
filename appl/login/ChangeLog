@@ -5,8 +5,6 @@ Sat Mar 20 00:11:13 1999  Assar Westerlund  <assar@sics.se>
 	* login.c: static-size
 	(krb4_verify): add
 
-	* Makefile.am: correct path to Makefile.am.common
-
 Thu Mar 18 11:36:10 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: include Makefile.am.common

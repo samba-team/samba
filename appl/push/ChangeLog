@@ -1,7 +1,6 @@
 Sat Mar 20 00:12:26 1999  Assar Westerlund  <assar@sics.se>
 
-	* Makefile.am: correct path to Makefile.am.common LDADD: add
- 	missing backslash
+	* Makefile.am: LDADD: add missing backslash
 
 Thu Mar 18 15:28:35 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 

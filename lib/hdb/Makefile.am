@@ -2,8 +2,6 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-SUFFIXES = .x .et .h
-
 INCLUDES += -I../asn1 -I$(srcdir)/../asn1
 
 BUILT_SOURCES = asn1_Key.c asn1_Event.c asn1_HDBFlags.c asn1_hdb_entry.c \
@@ -36,6 +34,3 @@ asn1_files: ../asn1/asn1_compile $(srcdir)/hdb.asn1
 	../asn1/asn1_compile $(srcdir)/hdb.asn1 hdb_asn1
 
 $(libhdb_la_OBJECTS): hdb_asn1.h hdb_err.h
-
-.x.c:
-	@cmp -s $< $@ 2> /dev/null || cp $< $@

@@ -2,12 +2,6 @@ Sat Mar 20 00:12:54 1999  Assar Westerlund  <assar@sics.se>
 
 	* telnet/authenc.c (telnet_gets): remove old extern declarations
 
-	* telnet/Makefile.am: correct path to Makefile.am.common
-
-	* libtelnet/Makefile.am: correct path to Makefile.am.common
-
-	* Makefile.am: correct path to Makefile.am.common
-
 Thu Mar 18 11:20:16 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* telnetd/Makefile.am: include Makefile.am.common

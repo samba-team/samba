@@ -2,8 +2,6 @@ Sat Mar 20 00:16:30 1999  Assar Westerlund  <assar@sics.se>
 
 	* compile_et.c: static-ize
 
-	* Makefile.am: correct path to Makefile.am.common
-
 Thu Mar 18 11:22:13 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: include Makefile.am.common
