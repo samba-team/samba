@@ -1736,8 +1736,8 @@ advantages) than other methods.
 One other method is the <parameter>cupsomatic/foomatic-rip</parameter>
 way. Note that <parameter>cupsomatic</parameter> is <emphasis>not</emphasis> made by the CUPS
 developers. It is an independent contribution to printing development,
-made by people from Linuxprinting.org <footnote>see also <ulink
-	noescape="1" url="http://www.cups.org/cups-help.html">http://www.cups.org/cups-help.html</ulink></footnote>.
+made by people from Linuxprinting.org <footnote><para>see also <ulink
+			noescape="1" url="http://www.cups.org/cups-help.html">http://www.cups.org/cups-help.html</ulink></para></footnote>.
 <parameter>cupsomatic</parameter> is no longer developed and maintained and is no longer
 supported. It has now been replaced by
 <parameter>foomatic-rip</parameter>. <parameter>foomatic-rip</parameter> is a complete re-write
@@ -3733,7 +3733,7 @@ back.
 <para>
 <indexterm significance="preferred"><primary>point 'n' print</primary></indexterm>
 	<screen>
-&dosprompt;<userinput>rundll32 printui.dll,PrintUIEntry /in /n <quote>\\sambaserver\mysmbtstprn</quote></userinput>
+&dosprompt;<userinput>rundll32 printui.dll,PrintUIEntry /in /n "\\sambaserver\mysmbtstprn"</userinput>
 </screen></para>
 
 <para>
@@ -5025,9 +5025,9 @@ for: You can include the required parameters as part of the
 </para>
 
 <itemizedlist>
-	<listitem><filename>smb://WORKGROUP/WINDOWSNETBIOSNAME/printersharename</filename></listitem>
-	<listitem><filename>smb://username:password@WORKGROUP/WINDOWSNETBIOSNAME/printersharename</filename></listitem>
-	<listitem><filename>smb://username:password@WINDOWSNETBIOSNAME/printersharename</filename></listitem>
+	<listitem><para><filename>smb://WORKGROUP/WINDOWSNETBIOSNAME/printersharename</filename></para></listitem>
+	<listitem><para><filename>smb://username:password@WORKGROUP/WINDOWSNETBIOSNAME/printersharename</filename></para></listitem>
+	<listitem><para><filename>smb://username:password@WINDOWSNETBIOSNAME/printersharename</filename></para></listitem>
 </itemizedlist>
 
 <para>
