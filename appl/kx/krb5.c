@@ -94,7 +94,7 @@ krb5_authenticate (kx_context *kc, int s)
 			 KX_VERSION,
 			 NULL,
 			 server,
-			 AP_OPTS_MUTUAL_REQUIRED,
+			 AP_OPTS_MUTUAL_REQUIRED | AP_OPTS_USE_SUBKEY,
 			 NULL,
 			 NULL,
 			 NULL,
