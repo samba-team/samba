@@ -480,6 +480,10 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 	outparam = req->out.data + align;
 	outdata = outparam + parms->in.params.length;
 
+	if (align != 0) {
+		memset(req->out.data, 0, align);
+	}
+
 	SCVAL(req->out.vwv,  0, parms->in.max_setup);
 	SSVAL(req->out.vwv,  1, 0); /* reserved */
 	SIVAL(req->out.vwv,  3, parms->in.params.length);

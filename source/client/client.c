@@ -1777,6 +1777,8 @@ static int cmd_acl(void)
 		goto done;
 	}
 
+	NDR_PRINT_DEBUG(security_descriptor, query.out.sd);
+
 	talloc_destroy(mem_ctx);
 
 done:
