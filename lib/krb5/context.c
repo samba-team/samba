@@ -271,7 +271,7 @@ krb5_set_config_files(krb5_context context, char **filenames)
 }
 
 static krb5_error_code
-add_file(char ***pfilenames, size_t *len, char *file)
+add_file(char ***pfilenames, int *len, char *file)
 {
     char **pp = *pfilenames;
     int i;
