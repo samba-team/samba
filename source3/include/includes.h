@@ -224,8 +224,11 @@ Here come some platform specific sections
 #define HAVE_BZERO
 #define HAVE_MEMMOVE
 #define USE_SIGBLOCK
+#if 0
+/* SETFS disabled until we can check on some bug reports */
 #if _LINUX_C_LIB_VERSION_MAJOR >= 5
 #define USE_SETFS
+#endif
 #endif
 #ifdef SHADOW_PWD
 #ifndef crypt
