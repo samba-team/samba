@@ -505,7 +505,6 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
                           unsigned char new_trust_passwd_hash[16])
 {
   struct cli_state cli;
-  struct nmb_name calling, called;
 
   ZERO_STRUCT(cli);
   if(cli_initialise(&cli) == False) {
@@ -653,7 +652,6 @@ account password for domain %s.\n", domain));
        */
 
       struct in_addr *ip_list = NULL;
-      fstring ip_str;
       int count = 0;
       int i;
 
