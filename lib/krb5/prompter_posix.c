@@ -49,6 +49,8 @@ krb5_prompter_posix (krb5_context context,
 	fprintf (stderr, "%s\n", name);
     if (banner)
 	fprintf (stderr, "%s\n", banner);
+    if (name || banner)
+	fflush(stderr);
     for (i = 0; i < num_prompts; ++i) {
 	if (prompts[i].hidden) {
 	    if(UI_UTIL_read_pw_string(prompts[i].reply->data,
