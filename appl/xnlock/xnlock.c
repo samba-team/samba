@@ -6,6 +6,8 @@
  * "xnlock" is the X11 version of the program.
  * Original sunview version written by Dan Heller 1985 (not included here).
  */
+#define random rand
+#define srandom srand
 #include <stdio.h>
 #include <X11/StringDefs.h>
 #include <X11/Intrinsic.h>
@@ -14,6 +16,8 @@
 #include <X11/Xos.h>
 #include <ctype.h>
 #include <pwd.h>
+
+#define KERBEROS
 
 #ifdef KERBEROS
 #include <krb.h>
@@ -413,11 +417,6 @@ XKeyEvent *event;
 	 * Try to verify as user.
 	 */
 #ifdef KERBEROS
-#ifdef AFS
-#define LIFE 141 /* 25h, (via lookup table) */
-#else
-#define LIFE 96  /* lifetime of ticket in 5-minute units */
-#endif
 	{
 	  char realm[REALM_SZ];
 	  if (krb_get_lrealm(realm, 1) == KSUCCESS)
@@ -428,10 +427,9 @@ XKeyEvent *event;
 				    realm,
 				    "krbtgt",
 				    realm,
-				    LIFE,
+				    DEFAULT_TKT_LIFE,
 				    passwd))
 		{
-#ifdef AFS
 		  if (k_hasafs())
 		    {
 		      int k_errno;
@@ -442,15 +440,14 @@ XKeyEvent *event;
 				ProgName,
 				krb_err_txt[k_errno]);
 		    }
-#endif				/* AFS */
 		  leave();
 		}
 	    }
 	}
-#else /* ~KERBEROS */
+#endif /* KERBEROS */
 	if (!strcmp(crypt(passwd, pw->pw_passwd), pw->pw_passwd))
 	  leave();
-#endif
+
 	XDrawImageString(dpy, XtWindow(widget), gc,
 	    time_x, time_y, FAIL_MSG, strlen(FAIL_MSG));
 	time_left = 0;
