@@ -61,7 +61,6 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <signal.h>
 #include "tdb.h"
 #else
 #include "includes.h"
@@ -193,18 +192,6 @@ struct list_struct {
 	*/
 };
 
-/***************************************************************
- Allow a caller to set a "alarm" flag that tdb can check to abort
- a blocking lock on SIGALRM.
-***************************************************************/
-
-static sig_atomic_t *palarm_fired;
-
-void tdb_set_lock_alarm(sig_atomic_t *palarm)
-{
-	palarm_fired = palarm;
-}
-
 /* a byte range locking function - return 0 on success
    this functions locks/unlocks 1 byte at the specified offset.
 
@@ -231,27 +218,16 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 
 	do {
 		ret = fcntl(tdb->fd,lck_type,&fl);
-		if (ret == -1 && errno == EINTR && palarm_fired && *palarm_fired)
-			break;
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
 		if (!probe && lck_type != F_SETLK) {
 			/* Ensure error code is set for log fun to examine. */
-			if (errno == EINTR && palarm_fired && *palarm_fired)
-				tdb->ecode = TDB_ERR_LOCK_TIMEOUT;
-			else
-				tdb->ecode = TDB_ERR_LOCK;
+			tdb->ecode = TDB_ERR_LOCK;
 			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
 				 tdb->fd, offset, rw_type, lck_type));
 		}
-		/* Was it an alarm timeout ? */
-		if (errno == EINTR && palarm_fired && *palarm_fired) {
-			TDB_LOG((tdb, 5, "tdb_brlock timed out (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
-				 tdb->fd, offset, rw_type, lck_type));
-			return TDB_ERRCODE(TDB_ERR_LOCK_TIMEOUT, -1);
-		}
-		/* Otherwise - generic lock error. errno set by fcntl.
+		/* Generic lock error. errno set by fcntl.
 		 * EAGAIN is an expected return from non-blocking
 		 * locks. */
 		if (errno != EAGAIN) {

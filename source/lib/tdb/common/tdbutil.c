@@ -29,57 +29,6 @@
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
 
-static sig_atomic_t gotalarm;
-
-/***************************************************************
- Signal function to tell us we timed out.
-****************************************************************/
-
-static void gotalarm_sig(void)
-{
-	gotalarm = 1;
-}
-
-
-/*******************************************************************
- THIS is a copy of the function CatchSignal found in lib/signal.c
- I need to copy it there to avoid sucking all of the samba source
- into tdb.
-
- Catch a signal. This should implement the following semantics:
-
- 1) The handler remains installed after being called.
- 2) The signal should be blocked during handler execution.
-********************************************************************/
-
-static void (*TdbCatchSignal(int signum,void (*handler)(int )))(int)
-{
-#ifdef HAVE_SIGACTION
-	struct sigaction act;
-	struct sigaction oldact;
-
-	ZERO_STRUCT(act);
-
-	act.sa_handler = handler;
-#ifdef SA_RESTART
-	/*
-	 * We *want* SIGALRM to interrupt a system call.
-	 */
-	if(signum != SIGALRM)
-		act.sa_flags = SA_RESTART;
-#endif
-	sigemptyset(&act.sa_mask);
-	sigaddset(&act.sa_mask,signum);
-	sigaction(signum,&act,&oldact);
-	return oldact.sa_handler;
-#else /* !HAVE_SIGACTION */
-	/* FIXME: need to handle sigvec and systems with broken signal() */
-	return signal(signum, handler);
-#endif
-}
-
-
-
 /***************************************************************
  Make a TDB_DATA and keep the const warning in one place
 ****************************************************************/
@@ -93,53 +42,6 @@ static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 }
 
 /****************************************************************************
- Lock a chain with timeout (in seconds).
-****************************************************************************/
-
-static int tdb_chainlock_with_timeout_internal(TDB_CONTEXT *tdb, TDB_DATA key, uint_t timeout, int rw_type)
-{
-	/* Allow tdb_chainlock to be interrupted by an alarm. */
-	int ret;
-	gotalarm = 0;
-	tdb_set_lock_alarm(&gotalarm);
-
-	if (timeout) {
-		TdbCatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
-		alarm(timeout);
-	}
-
-	if (rw_type == F_RDLCK)
-		ret = tdb_chainlock_read(tdb, key);
-	else
-		ret = tdb_chainlock(tdb, key);
-
-	if (timeout) {
-		alarm(0);
-		TdbCatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
-		if (gotalarm) {
-			tdb->log_fn(tdb, 0, "tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
-				timeout, key.dptr, tdb->name);
-			/* TODO: If we time out waiting for a lock, it might
-			 * be nice to use F_GETLK to get the pid of the
-			 * process currently holding the lock and print that
-			 * as part of the debugging message. -- mbp */
-			return -1;
-		}
-	}
-
-	return ret;
-}
-
-/****************************************************************************
- Write lock a chain. Return -1 if timeout or lock failed.
-****************************************************************************/
-
-int tdb_chainlock_with_timeout(TDB_CONTEXT *tdb, TDB_DATA key, uint_t timeout)
-{
-	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_WRLCK);
-}
-
-/****************************************************************************
  Lock a chain by string. Return -1 if timeout or lock failed.
 ****************************************************************************/
 
@@ -147,7 +49,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, uint_t timeout)
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
-	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_WRLCK);
+	return tdb_chainlock(tdb, key);
 }
 
 /****************************************************************************
@@ -169,7 +71,7 @@ int tdb_read_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, uint_t timeout)
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
-	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_RDLCK);
+	return tdb_chainlock_read(tdb, key);
 }
 
 /****************************************************************************
