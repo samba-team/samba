@@ -38,6 +38,9 @@
 
 /* $Id$ */
 
+#ifndef __RX_H__
+#define __RX_H__
+
 /* header of a RPC packet */
 
 enum rx_header_type {
@@ -77,3 +80,5 @@ struct rx_header {
 };
 
 #define RX_HEADER_SIZE 28
+
+#endif /* __RX_H__ */
