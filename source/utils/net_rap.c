@@ -260,6 +260,9 @@ int net_rap_session_usage(int argc, const char **argv)
 	 "\tor"\
 	 "\nnet rap session CLOSE <client_name> [misc. options] [targets]"\
 	 "\n\tDeletes (closes) a session from specified client to server\n");
+	d_printf(
+	"\nnet rap session INFO <client_name>"\
+	"\n\tEnumerates all open files in specified session\n");
 
 	net_common_flags_usage(argc, argv);
 	return -1;
@@ -460,7 +463,6 @@ int net_rap_printq_usage(int argc, const char **argv)
 	 "\tprinter queue if no job number is specified\n");
 
 	net_common_flags_usage(argc, argv);
-        d_printf("\t-j or --jobid=<job id>\t\tjob id\n");
 
 	return -1;
 }	

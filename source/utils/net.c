@@ -70,7 +70,6 @@ int opt_maxusers = -1;
 const char *opt_comment = "";
 char *opt_container = "cn=Users";
 int opt_flags = -1;
-int opt_jobid = 0;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
 static int opt_machine_pass = 0;
@@ -452,7 +451,7 @@ static int net_maxrid(int argc, const char **argv)
 	uint32 rid;
 
 	if (argc != 0) {
-	        DEBUG(0, ("usage: net initrid\n"));
+	        DEBUG(0, ("usage: net maxrid\n"));
 		return 1;
 	}
 
@@ -524,7 +523,6 @@ static struct functable net_func[] = {
 		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
 		{"flags",	'F', POPT_ARG_INT,    &opt_flags},
-		{"jobid",	'j', POPT_ARG_INT,    &opt_jobid},
 		{"long",	'l', POPT_ARG_NONE,   &opt_long_list_entries},
 		{"reboot",	'r', POPT_ARG_NONE,   &opt_reboot},
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
