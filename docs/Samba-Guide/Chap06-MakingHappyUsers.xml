@@ -235,15 +235,16 @@ clients is conservative and if followed will minimize problems - but it is not a
 	</para>
 
 	<para>
-	Samba asks the host OS to provide a UID via the "passwd", "shadow" and "group" facilities
-	in the NSS control (configuration) file. What tool is used by the UNIX administrator is
-	up to him. It is not imposed by Samba. Samba provides winbindd together with its support
-	libraries as one method. It is possible to do this via LDAP - and for that Samba provides
-	the appropriate hooks so that all account entities can be located in an LDAP directory.
+	Samba asks the host OS to provide a UID via the <quote>passwd</quote>, <quote>shadow</quote>
+	and <quote>group</quote> facilities in the NSS control (configuration) file. The best tool
+	for achieving this is left up to the UNIX administrator to determine. It is not imposed by
+	Samba. Samba provides winbindd together with its support libraries as one method. It is
+	possible to do this via LDAP - and for that Samba provides the appropriate hooks so that
+	all account entities can be located in an LDAP directory.
 	</para>
 
 	<para>
-	If the weapon of choice (as it is for LDAP) is to use the PADL nss_ldap utility it must
+	For many the weapon of choice is to use the PADL nss_ldap utility. This utility must
 	be configured so that computer accounts can be resolved to a POSIX/UNIX account UID. That
 	is fundamentally an LDAP design question.  The information provided on the Samba list and
 	in the documentation is directed at providing working examples only. The design
