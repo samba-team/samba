@@ -45,10 +45,12 @@ RCSID("$Id$");
 static char *config_file;
 int require_preauth = -1;
 char *keyfile;
-char *max_request_str;
+static char *max_request_str;
 size_t max_request;
 time_t kdc_warn_pwexpire;
 char *database;
+char *port_str;
+int enable_http = -1;
 
 #ifdef KRB4
 char *v4_realm;
@@ -77,12 +79,16 @@ static struct getargs args[] = {
 	"database",	'd', 	arg_string, &database,
 	"location of database", "database"
     },
+    { "enable-http", 'H', arg_flag, &enable_http, "turn on HTTP support" },
 #ifdef KRB4
     { 
 	"v4-realm",	'r',	arg_string, &v4_realm, 
 	"realm to serve v4-requests for"
     },
 #endif
+    {	"ports",	'P', 	arg_string, &port_str,
+	"ports to listen to" 
+    },
     { "help", 'h', arg_flag, &help },
 };
 
@@ -149,6 +155,15 @@ configure(int argc, char **argv)
     if(require_preauth == -1)
 	require_preauth = krb5_config_get_bool(cf, "kdc", 
 					       "require-preauth", NULL);
+
+    if(port_str == NULL){
+	p = krb5_config_get_string(cf, "kdc", "ports", NULL);
+	if(p == NULL)
+	    p = "+";
+	port_str = (char*)p;
+    }
+    if(enable_http == -1)
+	enable_http = krb5_config_get_bool(cf, "kdc", "enable-http", NULL);
 #ifdef KRB4
     if(v4_realm == NULL){
 	p = krb5_config_get_string (cf, 
