@@ -20,6 +20,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_QUOTA
+
 static SMB_BIG_UINT limit_nt2unix(SMB_BIG_UINT in, SMB_BIG_UINT bsize)
 {
 	SMB_BIG_UINT ret = (SMB_BIG_UINT)0;

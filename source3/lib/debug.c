@@ -155,6 +155,7 @@ static const char *default_classname_table[] = {
 	"winbind",           /* DBGC_WINBIND      */
 	"vfs",		     /* DBGC_VFS	  */
 	"idmap",	     /* DBGC_IDMAP	  */
+	"quota",	     /* DBGC_QUOTA	  */
 	NULL
 };
 
