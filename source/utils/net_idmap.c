@@ -95,9 +95,13 @@ static int net_idmap_restore(int argc, const char **argv)
 		if ( (len > 0) && (line[len-1] == '\n') )
 			line[len-1] = '\0';
 
+		/* Yuck - this is broken for sizeof(gid_t) != sizeof(int) */
+
 		if (sscanf(line, "GID %d %s", &id.gid, sid_string) == 2) {
 			type = ID_GROUPID;
 		}
+
+		/* Yuck - this is broken for sizeof(uid_t) != sizeof(int) */
 
 		if (sscanf(line, "UID %d %s", &id.uid, sid_string) == 2) {
 			type = ID_USERID;

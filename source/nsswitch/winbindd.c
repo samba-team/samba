@@ -117,8 +117,8 @@ static void winbindd_status(void)
 	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
-			DEBUG(2, ("\t\tpid %d, sock %d, rbl %d, wbl %d\n",
-				  tmp->pid, tmp->sock, tmp->read_buf_len, 
+			DEBUG(2, ("\t\tpid %lu, sock %d, rbl %d, wbl %d\n",
+				  (unsigned long)tmp->pid, tmp->sock, tmp->read_buf_len, 
 				  tmp->write_buf_len));
 		}
 	}
@@ -457,8 +457,8 @@ void winbind_client_read(struct winbindd_cli_state *state)
 	/* Read failed, kill client */
 	
 	if (n == -1 || n == 0) {
-		DEBUG(5,("read failed on sock %d, pid %d: %s\n",
-			 state->sock, state->pid, 
+		DEBUG(5,("read failed on sock %d, pid %lu: %s\n",
+			 state->sock, (unsigned long)state->pid, 
 			 (n == -1) ? strerror(errno) : "EOF"));
 		
 		state->finished = True;
@@ -505,8 +505,8 @@ static void client_write(struct winbindd_cli_state *state)
 	
 	if (num_written == -1 || num_written == 0) {
 		
-		DEBUG(3,("write failed on sock %d, pid %d: %s\n",
-			 state->sock, state->pid, 
+		DEBUG(3,("write failed on sock %d, pid %lu: %s\n",
+			 state->sock, (unsigned long)state->pid, 
 			 (num_written == -1) ? strerror(errno) : "EOF"));
 		
 		state->finished = True;
@@ -712,8 +712,8 @@ static void process_loop(void)
 
 					if (state->read_buf_len >= sizeof(uint32)
 					    && *(uint32 *) &state->request != sizeof(state->request)) {
-						DEBUG(0,("process_loop: Invalid request size from pid %d: %d bytes sent, should be %d\n",
-								state->request.pid, *(uint32 *) &state->request, sizeof(state->request)));
+						DEBUG(0,("process_loop: Invalid request size from pid %lu: %d bytes sent, should be %d\n",
+								(unsigned long)state->request.pid, *(uint32 *) &state->request, sizeof(state->request)));
 
 						remove_client(state);
 						break;

@@ -296,11 +296,11 @@ static int nss_initgroups(char *user, gid_t group, gid_t **groups, long int *sta
 
 static void print_passwd(struct passwd *pwd)
 {
-	printf("%s:%s:%d:%d:%s:%s:%s\n", 
+	printf("%s:%s:%lu:%lu:%s:%s:%s\n", 
 	       pwd->pw_name,
 	       pwd->pw_passwd,
-	       pwd->pw_uid,
-	       pwd->pw_gid,
+	       (unsigned long)pwd->pw_uid,
+	       (unsigned long)pwd->pw_gid,
 	       pwd->pw_gecos,
 	       pwd->pw_dir,
 	       pwd->pw_shell);
@@ -309,10 +309,10 @@ static void print_passwd(struct passwd *pwd)
 static void print_group(struct group *grp)
 {
 	int i;
-	printf("%s:%s:%d: ", 
+	printf("%s:%s:%lu: ", 
 	       grp->gr_name,
 	       grp->gr_passwd,
-	       grp->gr_gid);
+	       (unsigned long)grp->gr_gid);
 	
 	if (!grp->gr_mem[0]) {
 		printf("\n");
@@ -343,9 +343,9 @@ static void nss_test_initgroups(char *name, gid_t gid)
 	}
 
 	for (i=0; i<start-1; i++) {
-		printf("%d, ", groups[i]);
+		printf("%lu, ", (unsigned long)groups[i]);
 	}
-	printf("%d\n", groups[i]);
+	printf("%lu\n", (unsigned long)groups[i]);
 }
 
 

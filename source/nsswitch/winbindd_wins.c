@@ -137,7 +137,7 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.winsreq[sizeof(state->request.data.winsreq)-1]='\0';
 
-	DEBUG(3, ("[%5d]: wins_byip %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: wins_byip %s\n", (unsigned long)state->pid,
 		state->request.data.winsreq));
 
 	*response = '\0';

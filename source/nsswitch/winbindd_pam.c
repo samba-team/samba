@@ -131,7 +131,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.auth.pass[sizeof(state->request.data.auth.pass)-1]='\0';
 
-	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: pam auth %s\n", (unsigned long)state->pid,
 		  state->request.data.auth.user));
 
 	if (!(mem_ctx = talloc_init("winbind pam auth for %s", state->request.data.auth.user))) {
@@ -305,7 +305,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	DEBUG(3, ("[%5d]: pam auth crap domain: %s user: %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n", (unsigned long)state->pid,
 		  domain, user));
 	   
 	if ( !get_trust_pw(domain, trust_passwd, &last_change_time, &sec_channel_type) ) {
@@ -436,7 +436,7 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	fstring domain, user;
 	CLI_POLICY_HND *hnd;
 
-	DEBUG(3, ("[%5d]: pam chauthtok %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request.data.chauthtok.user));
 
 	/* Setup crap */

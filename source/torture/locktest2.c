@@ -173,7 +173,7 @@ static struct cli_state *connect_one(char *share)
 		}
 	}
 
-	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), count++);
+	slprintf(myname,sizeof(myname), "lock-%lu-%u", (unsigned long)getpid(), count++);
 
 	nt_status = cli_full_connection(&c, myname, server_n, NULL, 0, share, "?????", 
 					username, lp_workgroup(), password, 0,

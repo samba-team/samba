@@ -35,7 +35,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
         int num_retries = 0;
         struct cli_state *cli;
 	uint32 sec_channel_type;
-	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
+	DEBUG(3, ("[%5lu]: check machine account\n", (unsigned long)state->pid));
 
 	/* Get trust account password */
 
@@ -95,7 +95,7 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 	int total_entries = 0, extra_data_len = 0;
 	char *ted, *extra_data = NULL;
 
-	DEBUG(3, ("[%5d]: list trusted domains\n", state->pid));
+	DEBUG(3, ("[%5lu]: list trusted domains\n", (unsigned long)state->pid));
 
 	/* We need to refresh the trusted domain list as the domains may
 	   have changed since we last looked.  There may be a sequence
@@ -149,7 +149,7 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 	char *extra_data = NULL;
 
-	DEBUG(3, ("[%5d]: show sequence\n", state->pid));
+	DEBUG(3, ("[%5lu]: show sequence\n", (unsigned long)state->pid));
 
 	extra_data = strdup("");
 
@@ -181,7 +181,7 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_ping(struct winbindd_cli_state
 						   *state)
 {
-	DEBUG(3, ("[%5d]: ping\n", state->pid));
+	DEBUG(3, ("[%5lu]: ping\n", (unsigned long)state->pid));
 
 	return WINBINDD_OK;
 }
@@ -191,7 +191,7 @@ enum winbindd_result winbindd_ping(struct winbindd_cli_state
 enum winbindd_result winbindd_info(struct winbindd_cli_state *state)
 {
 
-	DEBUG(3, ("[%5d]: request misc info\n", state->pid));
+	DEBUG(3, ("[%5lu]: request misc info\n", (unsigned long)state->pid));
 
 	state->response.data.info.winbind_separator = *lp_winbind_separator();
 	fstrcpy(state->response.data.info.samba_version, VERSION);
@@ -204,7 +204,7 @@ enum winbindd_result winbindd_info(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_interface_version(struct winbindd_cli_state *state)
 {
 
-	DEBUG(3, ("[%5d]: request interface version\n", state->pid));
+	DEBUG(3, ("[%5lu]: request interface version\n", (unsigned long)state->pid));
 	
 	state->response.data.interface_version = WINBIND_INTERFACE_VERSION;
 
@@ -216,7 +216,7 @@ enum winbindd_result winbindd_interface_version(struct winbindd_cli_state *state
 enum winbindd_result winbindd_domain_name(struct winbindd_cli_state *state)
 {
 
-	DEBUG(3, ("[%5d]: request domain name\n", state->pid));
+	DEBUG(3, ("[%5lu]: request domain name\n", (unsigned long)state->pid));
 	
 	fstrcpy(state->response.data.domain_name, lp_workgroup());
 
@@ -228,7 +228,7 @@ enum winbindd_result winbindd_domain_name(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_netbios_name(struct winbindd_cli_state *state)
 {
 
-	DEBUG(3, ("[%5d]: request netbios name\n", state->pid));
+	DEBUG(3, ("[%5lu]: request netbios name\n", (unsigned long)state->pid));
 	
 	fstrcpy(state->response.data.netbios_name, global_myname());
 
@@ -240,7 +240,7 @@ enum winbindd_result winbindd_netbios_name(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 {
 
-	DEBUG(3, ("[%5d]: request location of privileged pipe\n", state->pid));
+	DEBUG(3, ("[%5lu]: request location of privileged pipe\n", (unsigned long)state->pid));
 	
 	state->response.extra_data = strdup(get_winbind_priv_pipe_dir());
 	if (!state->response.extra_data)
