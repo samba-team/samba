@@ -2407,7 +2407,7 @@ int lookup_printerkey( NT_PRINTER_DATA *data, char *name )
 	
 	for ( i=0; i<data->num_keys; i++ ) 
 	{
-		if ( strcmp(data->keys[i].name, name) == 0 ) {
+		if ( strequal(data->keys[i].name, name) ) {
 			DEBUG(12,("lookup_printerkey: Found [%s]!\n", name));
 			key_index = i;
 			break;
@@ -2418,6 +2418,66 @@ int lookup_printerkey( NT_PRINTER_DATA *data, char *name )
 	return key_index;
 }
 
+/****************************************************************************
+ ***************************************************************************/
+
+uint32 get_printer_subkeys( NT_PRINTER_DATA *data, char* key, fstring **subkeys )
+{
+	int	i;
+	int	key_len;
+	int	num_subkeys = 0;
+	char	*p;
+	fstring	*ptr, *subkeys_ptr = NULL;
+	
+	if ( !data )
+		return 0;
+		
+	for ( i=0; i<data->num_keys; i++ ) 
+	{
+		if ( StrnCaseCmp(data->keys[i].name, key, strlen(key)) == 0 )
+		{
+			/* match sure it is a subkey and not the key itself */
+			
+			key_len = strlen( key );
+			if ( strlen(data->keys[i].name) == key_len )
+				continue;
+			
+			/* get subkey path */
+
+			p = data->keys[i].name + key_len;
+			
+			/* found a match, so allocate space and copy the name */
+			
+			if ( !(ptr = Realloc( subkeys_ptr, (num_subkeys+2)*sizeof(fstring))) ) {
+				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
+					num_subkeys+1));
+				SAFE_FREE( subkeys );
+				return 0;
+			}
+			
+			subkeys_ptr = ptr;
+			
+			/* copy the subkey name and trim off any trailing 
+			   subkeys below it */
+			   
+			fstrcpy( subkeys_ptr[num_subkeys], p );
+			p = strchr( subkeys_ptr[num_subkeys], '\\' );
+			if ( p )
+				*p = '\0';
+			num_subkeys++;
+		}
+		
+	}
+	
+	/* tag of the end */
+	
+	fstrcpy( subkeys_ptr[num_subkeys], "" );
+	
+	*subkeys = subkeys_ptr;
+
+	return num_subkeys;
+}
+ 
 /****************************************************************************
  ***************************************************************************/
  
@@ -2465,11 +2525,8 @@ WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value 
 
 	key_index = lookup_printerkey( &p2->data, key );
 	if ( key_index == -1 )
-		key_index = add_new_printer_key( &p2->data, key );
+		return WERR_OK;
 		
-	if ( key_index == -1 )
-		return WERR_NOMEM;
-	
 	regval_ctr_delvalue( &p2->data.keys[key_index].values, value );
 	
 	DEBUG(8,("delete_printer_data: Removed key => [%s], value => [%s]\n",

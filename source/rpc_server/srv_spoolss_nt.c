@@ -4402,9 +4402,6 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, char *s
 				v = ""; /* hack to handle null lists */
 		}
 		
-		if ( !strlen(v) ) 
-			break;
-		
 		/* hack to allow this to be used in places other than when generating 
 		   the list of dependent files */
 		   
@@ -4421,6 +4418,9 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, char *s
 		} else
 			*uni_array = tuary;
 			
+		if ( !strlen(v) ) 
+			break;
+		
 		j += (rpcstr_push((*uni_array+j), line, sizeof(uint16)*strlen(line)+2, STR_TERMINATE) / sizeof(uint16));
 		i++;
 	}
@@ -7989,16 +7989,16 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPOOL_R_ENUMPRINTERKEY *r_u)
 {
 	fstring 	key;
-	fstring		*keynames;
+	fstring		*keynames = NULL;
 	uint16  	*enumkeys = NULL;
+	int		num_keys;
 	int		printerkey_len;
-	int		i;
 	POLICY_HND	*handle = &q_u->handle;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 	NT_PRINTER_DATA	*data;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 		snum = 0;
-	WERROR		status;
+	WERROR		status = WERR_BADFILE;
 	
 	
 	DEBUG(4,("_spoolss_enumprinterkey\n"));
@@ -8015,56 +8015,42 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 	if (!W_ERROR_IS_OK(status))
 		return status;
 		
+	/* get the list of subkey names */
+	
 	unistr2_to_ascii( key, &q_u->key, sizeof(key)-1 );
-
-	/* enumerating all keys if (key == "") */
-
 	data = &printer->info_2->data;
-	
-	if ( !strlen( key ) )
-	{
-		keynames = talloc_zero( p->mem_ctx, (data->num_keys+1)*sizeof(fstring) );
-		
-		/* make an array of all the keynames */
-		
-		for ( i=0; i<data->num_keys; i++ )
-			fstrcpy( keynames[i], data->keys[i].name );
-		fstrcpy( keynames[i], "" );
-		
-		printerkey_len = init_unistr_array( &enumkeys,  keynames, NULL );
-		
-		r_u->needed = printerkey_len*2;
-		
-		if ( q_u->size < r_u->needed )
-			return WERR_MORE_DATA;
-				
-		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, printerkey_len, enumkeys))
-			return WERR_BADFILE;
-			
-		return WERR_OK;
-	}
-	
-	/* The "PrinterDriverData" key should have no subkeys */
-	if ( strcmp(key, SPOOL_PRINTERDATA_KEY) == 0 )
-	{
-		uint16	dummy_key = 0;
-		
-		r_u->needed = 2;
-		
-		if (q_u->size < r_u->needed)
-			return WERR_MORE_DATA;
-			
-		if ( !make_spoolss_buffer5(p->mem_ctx, &r_u->keys, 1, &dummy_key ) )
-			return WERR_BADFILE;
-			
-		return WERR_OK;
-	}
-	
 
-	/* The return value for an unknown key is documented in MSDN
-	   EnumPrinterKey description */
-	   
-        return WERR_BADFILE;
+	num_keys = get_printer_subkeys( data, key, &keynames );
+
+	if ( num_keys == -1 ) {
+		status = WERR_BADFILE;
+		goto done;
+	}
+
+	printerkey_len = init_unistr_array( &enumkeys,  keynames, NULL );
+
+	r_u->needed = printerkey_len*2;
+
+	if ( q_u->size < r_u->needed ) {
+		status = WERR_MORE_DATA;
+		goto done;
+	}
+
+	if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, printerkey_len, enumkeys)) {
+		status = WERR_NOMEM;
+		goto done;
+	}
+			
+	status = WERR_OK;
+
+	if ( q_u->size < r_u->needed ) 
+		status = WERR_MORE_DATA;
+
+done:
+	free_a_printer( &printer, 2 );
+	SAFE_FREE( keynames );
+	
+        return status;
 }
 
 /********************************************************************
@@ -8126,7 +8112,6 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		return WERR_BADFID;
 	}
 
-		
 	/* first get the printer off of disk */
 	
 	if (!get_printer_snum(p,handle, &snum))
