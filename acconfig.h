@@ -64,11 +64,14 @@
 /*  Define this if struct winsize is declared in sys/termios.h */
 #undef HAVE_STRUCT_WINSIZE
 
-/*  Define this if struct winsize have ws_xpixel */
+/*  Define this if struct winsize has ws_xpixel */
 #undef HAVE_WS_XPIXEL
 
-/*  Define this if struct winsize have ws_ypixel */
+/*  Define this if struct winsize has ws_ypixel */
 #undef HAVE_WS_YPIXEL
+
+/*  Define this if struct sockaddr has sa_len */
+#undef SOCKADDR_HAS_SA_LEN
 
 #undef VOID_RETSIGTYPE
 
