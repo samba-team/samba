@@ -108,7 +108,7 @@ as the default guest user (specified elsewhere):
 
  	[aprinter]
  		path = /usr/spool/public
- 		read only = true
+ 		writeable = false
  		printable = true
  		guest ok = true
 
@@ -176,7 +176,7 @@ make any auto home directories visible.
 <p><a name="printers"></a>
 <p></p><dt><strong><strong>The [printers] section</strong></strong><dd>
 <p>This section works like <a href="smb.conf.5.html#homes"><strong>[homes]</strong></a>, but for printers.
-<p>If a [printers] section occurs in the configuration file, users are
+<p>If a <strong>[printers]</strong> section occurs in the configuration file, users are
 able to connect to any printer specified in the local host's printcap
 file.
 <p>When a connection request is made, the existing sections are
@@ -185,7 +185,7 @@ scanned. If a match is found, it is used. If no match is found, but a
 above. Otherwise, the requested section name is treated as a printer
 name and the appropriate printcap file is scanned to see if the
 requested section name is a valid printer share name. If a match is
-found, a new printer share is created by cloning the [printers]
+found, a new printer share is created by cloning the <strong>[printers]</strong>
 section.
 <p>A few modifications are then made to the newly created share:
 <p><dl>
@@ -195,10 +195,10 @@ located printer name
 <p><li > If the share does not permit guest access and no username was
 given, the username is set to the located printer name.
 <p></dl>
-<p>Note that the [printers] service MUST be printable - if you specify
+<p>Note that the <strong>[printers]</strong> service MUST be printable - if you specify
 otherwise, the server will refuse to load the configuration file.
 <p>Typically the path specified would be that of a world-writeable spool
-directory with the sticky bit set on it. A typical [printers] entry
+directory with the sticky bit set on it. A typical <strong>[printers]</strong> entry
 would look like this:
 <p><pre>
 
@@ -417,7 +417,7 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#debugpid"><strong>debug pid</strong></a>
 <p><li > <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
 <p><li > <a href="smb.conf.5.html#debuguid"><strong>debug uid</strong></a>
-<p><li > <a href="smb.conf.5.html#debuglevel"><strong>debuglevel</strong></a>
+<p><li > <a href="smb.conf.5.html#debuglevel"><strong>debug level</strong></a>
 <p><li > <a href="smb.conf.5.html#default"><strong>default</strong></a>
 <p><li > <a href="smb.conf.5.html#defaultservice"><strong>default service</strong></a>
 <p><li > <a href="smb.conf.5.html#deleteuserscript"><strong>delete user script</strong></a>
@@ -425,7 +425,6 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#dnsproxy"><strong>dns proxy</strong></a>
 <p><li > <a href="smb.conf.5.html#domainadmingroup"><strong>domain admin group</strong></a>
 <p><li > <a href="smb.conf.5.html#domainadminusers"><strong>domain admin users</strong></a>
-<p><li > <a href="smb.conf.5.html#domaincontroller"><strong>domain controller</strong></a>
 <p><li > <a href="smb.conf.5.html#domaingroups"><strong>domain groups</strong></a>
 <p><li > <a href="smb.conf.5.html#domainguestgroup"><strong>domain guest group</strong></a>
 <p><li > <a href="smb.conf.5.html#domainguestusers"><strong>domain guest users</strong></a>
@@ -470,6 +469,7 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#maxxmit"><strong>max xmit</strong></a>
 <p><li > <a href="smb.conf.5.html#messagecommand"><strong>message command</strong></a>
 <p><li > <a href="smb.conf.5.html#minpasswdlength"><strong>min passwd length</strong></a>
+<p><li > <a href="smb.conf.5.html#minpasswordlength"><strong>min password length</strong></a>
 <p><li > <a href="smb.conf.5.html#minwinsttl"><strong>min wins ttl</strong></a>
 <p><li > <a href="smb.conf.5.html#nameresolveorder"><strong>name resolve order</strong></a>
 <p><li > <a href="smb.conf.5.html#netbiosaliases"><strong>netbios aliases</strong></a>
@@ -542,12 +542,11 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#userhosts"><strong>use rhosts</strong></a>
 <p><li > <a href="smb.conf.5.html#usernamelevel"><strong>username level</strong></a>
 <p><li > <a href="smb.conf.5.html#usernamemap"><strong>username map</strong></a>
-<p><li > <a href="smb.conf.5.html#utmp"><strong>utmp</strong></a>
 <p><li > <a href="smb.conf.5.html#utmpdirectory"><strong>utmp directory</strong></a>
 <p><li > <a href="smb.conf.5.html#validchars"><strong>valid chars</strong></a>
+<p><li > <a href="smb.conf.5.html#winshook"><strong>wins hook</strong></a>
 <p><li > <a href="smb.conf.5.html#winsproxy"><strong>wins proxy</strong></a>
 <p><li > <a href="smb.conf.5.html#winsserver"><strong>wins server</strong></a>
-<p><li > <a href="smb.conf.5.html#winshook"><strong>wins hook</strong></a>
 <p><li > <a href="smb.conf.5.html#winssupport"><strong>wins support</strong></a>
 <p><li > <a href="smb.conf.5.html#workgroup"><strong>workgroup</strong></a>
 <p><li > <a href="smb.conf.5.html#writeraw"><strong>write raw</strong></a>
@@ -624,8 +623,8 @@ parameter for details. Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#minprintspace"><strong>min print space</strong></a>
 <p><li > <a href="smb.conf.5.html#onlyguest"><strong>only guest</strong></a>
 <p><li > <a href="smb.conf.5.html#onlyuser"><strong>only user</strong></a>
-<p><li > <a href="smb.conf.5.html#oplocks"><strong>oplocks</strong></a>
 <p><li > <a href="smb.conf.5.html#oplockcontentionlimit"><strong>oplock contention limit</strong></a>
+<p><li > <a href="smb.conf.5.html#oplocks"><strong>oplocks</strong></a>
 <p><li > <a href="smb.conf.5.html#path"><strong>path</strong></a>
 <p><li > <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>
 <p><li > <a href="smb.conf.5.html#postscript"><strong>postscript</strong></a>
@@ -648,8 +647,8 @@ parameter for details. Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#revalidate"><strong>revalidate</strong></a>
 <p><li > <a href="smb.conf.5.html#rootpostexec"><strong>root postexec</strong></a>
 <p><li > <a href="smb.conf.5.html#rootpreexec"><strong>root preexec</strong></a>
-<p><li > <a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>
 <p><li > <a href="smb.conf.5.html#rootpreexecclose"><strong>root preexec close</strong></a>
+<p><li > <a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>
 <p><li > <a href="smb.conf.5.html#setdirectory"><strong>set directory</strong></a>
 <p><li > <a href="smb.conf.5.html#sharemodes"><strong>share modes</strong></a>
 <p><li > <a href="smb.conf.5.html#shortpreservecase"><strong>short preserve case</strong></a>
@@ -660,6 +659,7 @@ parameter for details. Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#user"><strong>user</strong></a>
 <p><li > <a href="smb.conf.5.html#username"><strong>username</strong></a>
 <p><li > <a href="smb.conf.5.html#users"><strong>users</strong></a>
+<p><li > <a href="smb.conf.5.html#utmp"><strong>utmp</strong></a>
 <p><li > <a href="smb.conf.5.html#validusers"><strong>valid users</strong></a>
 <p><li > <a href="smb.conf.5.html#vetofiles"><strong>veto files</strong></a>
 <p><li > <a href="smb.conf.5.html#vetooplockfiles"><strong>veto oplock files</strong></a>
@@ -1123,7 +1123,7 @@ must be on for this to have an effect.
 <p></p><dt><strong><strong>debug timestamp (G)</strong></strong><dd>
 <p>Samba2.0 debug log messages are timestamped by default. If you are
 running at a high <a href="smb.conf.5.html#debuglevel"><strong>"debug level"</strong></a> these timestamps
-can be distracting. This boolean parameter allows them to be turned
+can be distracting. This boolean parameter allows timestamping to be turned
 off.
 <p><strong>Default:</strong>
 <code>	debug timestamp = Yes</code>
@@ -1407,11 +1407,6 @@ To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list <strong>Samba-ntdom</strong> available by sending email to
 <a href="mailto:listproc@samba.org"><em>listproc@samba.org</em></a>
-<p><a name="domaincontroller"></a>
-<p></p><dt><strong><strong>domain controller (G)</strong></strong><dd>
-<p>This is a <strong>DEPRECATED</strong> parameter. It is currently not used within
-the Samba source and should be removed from all current smb.conf
-files. It is left behind for compatibility reasons.
 <p><a name="domaingroups"></a>
 <p></p><dt><strong><strong>domain groups (G)</strong></strong><dd>
 <p>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
@@ -2733,7 +2728,7 @@ so you should never need to touch this parameter.
 <code>	max open files = 10000</code>
 <p><a name="maxpacket"></a>
 <p></p><dt><strong><strong>max packet (G)</strong></strong><dd>
-<p>Synonym for <a name="<strong>"packetsize"</strong>"></a>(packetsize).
+<p>Synonym for <a href="smb.conf.5.html#packetsize"><strong>"packet size"</strong></a>.
 <p><a name="maxttl"></a>
 <p></p><dt><strong><strong>max ttl (G)</strong></strong><dd>
 <p>This option tells <a href="nmbd.8.html"><strong>nmbd</strong></a> what the default 'time
@@ -2814,13 +2809,16 @@ job.
 <code>	min print space = 2000</code>
 <p><a name="minpasswdlength"></a>
 <p></p><dt><strong><strong>min passwd length (G)</strong></strong><dd>
+<p>Synonym for <a href="smb.conf.5.html#minpasswordlength"><strong>"min password length"</strong></a>.
+<p><a name="minpasswordlength"></a>
+<p></p><dt><strong><strong>min password length (G)</strong></strong><dd>
 <p>This option sets the minimum length in characters of a plaintext password
 than smbd will accept when performing UNIX password changing.
 <p>See also <a href="smb.conf.5.html#unixpasswordsync"><strong>"unix password sync"</strong></a>,
 <a href="smb.conf.5.html#passwdprogram"><strong>"passwd program"</strong></a> and <a href="smb.conf.5.html#passwdchatdebug"><strong>"passwd chat
 debug"</strong></a>.
 <p><strong>Default:</strong>
-<code>	min passwd length = 5</code>
+<code>	min password length = 5</code>
 <p><a name="minwinsttl"></a>
 <p></p><dt><strong><strong>min wins ttl (G)</strong></strong><dd>
 <p>This option tells <a href="nmbd.8.html"><strong>nmbd</strong></a> when acting as a WINS
@@ -3050,7 +3048,7 @@ docs/ directory for details.
 <code>	os level = 65    ; This will win against any NT Server</code>
 <p><a name="packetsize"></a>
 <p></p><dt><strong><strong>packet size (G)</strong></strong><dd>
-<p>This is a deprecated parameter that how no effect on the current
+<p>This is a deprecated parameter that has no effect on the current
 Samba code. It is left in the parameter list to prevent breaking
 old <strong>smb.conf</strong> files.
 <p><a name="panicaction"></a>
@@ -3403,7 +3401,7 @@ parameter.
 submit spool files on the directory specified for the service.
 <p>Note that a printable service will ALWAYS allow writing to the service
 path (user privileges permitting) via the spooling of print data. The
-<a href="smb.conf.5.html#readonly"><strong>"read only"</strong></a> parameter controls only non-printing
+<a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a> parameter controls only non-printing
 access to the resource.
 <p><strong>Default:</strong>
 <code> 	printable = no</code>
@@ -3509,18 +3507,19 @@ directory, PRINTER_DRIVER.txt.
 <p><a name="printing"></a>
 <p></p><dt><strong><strong>printing (S)</strong></strong><dd>
 <p>This parameters controls how printer status information is interpreted
-on your system, and also affects the default values for the
+on your system. It also affects the default values for the
 <a href="smb.conf.5.html#printcommand"><strong>"print command"</strong></a>, <a href="smb.conf.5.html#lpqcommand"><strong>"lpq
 command"</strong></a> <a href="smb.conf.5.html#lppausecommand"><strong>"lppause command"</strong></a>,
 <a href="smb.conf.5.html#lpresumecommand"><strong>"lpresume command"</strong></a>, and <a href="smb.conf.5.html#lprmcommand"><strong>"lprm
-command"</strong></a>.
+command"</strong></a> if specified in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a>
+section.
 <p>Currently eight printing styles are supported. They are
 <strong>"printing=BSD"</strong>, <strong>"printing=AIX"</strong>, <strong>"printing=LPRNG"</strong>,
 <strong>"printing=PLP"</strong>,
 <strong>"printing=SYSV"</strong>,<strong>"printing="HPUX"</strong>,<strong>"printing=QNX"</strong> and
 <strong>"printing=SOFTQ"</strong>.
 <p>To see what the defaults are for the other print commands when using
-these three options use the <a href="testparm.1.html"><strong>"testparm"</strong></a> program.
+the various options use the <a href="testparm.1.html"><strong>"testparm"</strong></a> program.
 <p>This option can be set on a per printer basis
 <p>See also the discussion in the <a href="smb.conf.5.html#printers"><strong>[printers]</strong></a> section.
 <p><a name="protocol"></a>
@@ -3594,7 +3593,7 @@ and defaults to off. You should never need to set this parameter.
 <p></p><dt><strong><strong>read list (S)</strong></strong><dd>
 <p>This is a list of users that are given read-only access to a
 service. If the connecting user is in this list then they will not be
-given write access, no matter what the <a href="smb.conf.5.html#readonly"><strong>"read only"</strong></a>
+given write access, no matter what the <a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a>
 option is set to. The list can include group names using the syntax
 described in the <a href="smb.conf.5.html#invalidusers"><strong>"invalid users"</strong></a> parameter.
 <p>See also the <a href="smb.conf.5.html#writelist"><strong>"write list"</strong></a> parameter and
@@ -3606,9 +3605,7 @@ the <a href="smb.conf.5.html#invalidusers"><strong>"invalid users"</strong></a> 
 <p><a name="readonly"></a>
 <p></p><dt><strong><strong>read only (S)</strong></strong><dd>
 <p>Note that this is an inverted synonym for
-<a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a> and <a href="smb.conf.5.html#writeok"><strong>"write ok"</strong></a>.
-<p>See also <a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a> and <a href="smb.conf.5.html#writeok"><strong>"write
-ok"</strong></a>.
+<a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a>.
 <p><a name="readprediction"></a>
 <p></p><dt><strong><strong>read prediction (G)</strong></strong><dd>
 <p><em>NOTE</em>: This code is currently disabled in Samba2.0 and
@@ -4445,13 +4442,7 @@ itself as a time server to Windows clients. The default is False.
 <code>	time server = True</code>
 <p><a name="timestamplogs"></a>
 <p></p><dt><strong><strong>timestamp logs (G)</strong></strong><dd>
-<p>Samba2.0 will a timestamps to all log entries by default. This
-can be distracting if you are attempting to debug a problem. This
-parameter allows the timestamping to be turned off.
-<p><strong>Default:</strong>
-<code>	timestamp logs = True</code>
-<p><strong>Example:</strong>
-<code>	timestamp logs = False</code>
+<p>Synonym for <a href="debugtimestamp"><strong>"debug timestamp"</strong></a>.
 <p><a name="unixpasswordsync"></a>
 <p></p><dt><strong><strong>unix password sync (G)</strong></strong><dd>
 <p>This boolean parameter controls whether Samba attempts to synchronize
@@ -4657,7 +4648,7 @@ print job.
 <p><strong>Example:</strong>
 <code>	username map = /usr/local/samba/lib/users.map</code>
 <p><a name="utmp"></a>
-<p></p><dt><strong><strong>utmp (G)</strong></strong><dd>
+<p></p><dt><strong><strong>utmp (S)</strong></strong><dd>
 <p>This boolean parameter is only available if Samba has been configured and compiled 
 with the option <code>--with-utmp</code>. If set to True then Samba will attempt
 to add utmp or utmpx records (depending on the UNIX system) whenever a
@@ -4906,7 +4897,7 @@ setting.
 <p></p><dt><strong><strong>write list (S)</strong></strong><dd>
 <p>This is a list of users that are given read-write access to a
 service. If the connecting user is in this list then they will be
-given write access, no matter what the <a href="smb.conf.5.html#readonly"><strong>"read only"</strong></a>
+given write access, no matter what the <a href="smb.conf.5.html#writeable"><strong>"writeable"</strong></a>
 option is set to. The list can include group names using the @group
 syntax.
 <p>Note that if a user is in both the read list and the write list then
