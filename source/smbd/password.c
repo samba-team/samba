@@ -1416,8 +1416,6 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, un
   return connect_to_domain_password_server(pcli, dc_name, trust_passwd);
 }
 
-
-
 /***********************************************************************
  We have been asked to dynamcially determine the IP addresses of
  the PDC and BDC's for this DOMAIN, and query them in turn.
@@ -1491,17 +1489,16 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 	return connected_ok;
 }
 
-
-
 /***********************************************************************
  Do the same as security=server, but using NT Domain calls and a session
- key from the machine password.
+ key from the machine password.  If the server parameter is specified
+ use it, otherwise figure out a server from the 'password server' param.
 ************************************************************************/
 
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
-                             BOOL *user_exists)
+                             BOOL *user_exists, char *server)
 {
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
@@ -1541,7 +1538,7 @@ BOOL domain_client_validate( char *user, char *domain,
      * Not encrypted - do so.
      */
 
-    DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
+    DEBUG(5,("domain_client_validate: User passwords not in encrypted format.\n"));
     generate_random_buffer( local_challenge, 8, False);
     SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
     SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_response);
@@ -1586,9 +1583,13 @@ BOOL domain_client_validate( char *user, char *domain,
    * PDC/BDC. Contact each in turn and try and authenticate.
    */
 
-  pserver = lp_passwordserver();
-  if (! *pserver) pserver = "*";
-  p = pserver;
+  if (server) {
+	  p = server;
+  } else {
+	  pserver = lp_passwordserver();
+	  if (! *pserver) pserver = "*";
+	  p = pserver;
+  }
 
   while (!connected_ok &&
 	 next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
