@@ -43,7 +43,7 @@
 #include <sys/socket.h>
 #endif
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_UNIXSOCKET
 #include <sys/un.h>
 #endif
 
