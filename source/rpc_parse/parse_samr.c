@@ -1699,16 +1699,6 @@ void make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
 		r_u->num_entries2 = num_gids;
 
 		r_u->gid = gid;
-
-#if 0
-		int i;
-		for (i = 0; i < num_gids && i < LSA_MAX_GROUPS; i++)
-		{
-			r_u->gid[i].g_rid = gid[i].g_rid;
-			r_u->gid[i].attr  = gid[i].attr ;
-		}
-#endif
-
 	}
 	else
 	{
