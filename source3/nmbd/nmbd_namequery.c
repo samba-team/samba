@@ -91,7 +91,7 @@ for name %s. IP of that name is %s\n", subrec->subnet_name, inet_ntoa(p->ip),
     DEBUG(0,("query_name_response: Multiple (%d) responses received for a query on \
 subnet %s for name %s. This response was from IP %s\n", 
         rrec->num_msgs, subrec->subnet_name, namestr(question_name), 
-        inet_ntoa(rrec->packet->ip) ));
+        inet_ntoa(p->ip) ));
 
     /* We have already called the success or fail function, so we
        don't call again here. Leave the response record around in
