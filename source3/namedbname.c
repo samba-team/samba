@@ -486,6 +486,8 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
      return NULL;
   }
 
+  bzero((char *)n->ip_flgs, sizeof(*n->ip_flgs) * n->num_ips);
+
   make_nmb_name(&n->name,name,type,scope);
 
   if ((n2 = find_name_search(&found_subnet, &n->name, search, new_only?ipzero:ip)))

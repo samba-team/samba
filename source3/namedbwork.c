@@ -84,7 +84,8 @@ static struct work_record *make_workgroup(char *name)
   
   work = (struct work_record *)malloc(sizeof(*work));
   if (!work) return(NULL);
-  
+  bzero((char *)work, sizeof(*work));
+ 
   StrnCpy(work->work_group,name,sizeof(work->work_group)-1);
   work->serverlist = NULL;
   
@@ -92,6 +93,7 @@ static struct work_record *make_workgroup(char *name)
                           SV_TYPE_POTENTIAL_BROWSER : 0 );
   work->RunningElection = False;
   work->ElectionCount = 0;
+  work->announce_interval = 0;
   work->needelection = False;
   work->needannounce = True;
   work->mst_state = MST_POTENTIAL;
