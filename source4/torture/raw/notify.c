@@ -40,7 +40,7 @@
 	}} while (0)
 
 #define CHECK_WSTR(field, value, flags) do { \
-	if (!field.s || strcmp(field.s, value) || wire_bad_flags(&field, flags)) { \
+	if (!field.s || strcmp(field.s, value) || wire_bad_flags(&field, flags, cli)) { \
 		printf("(%d) %s [%s] != %s\n",  __LINE__, #field, field.s, value); \
 			ret = False; \
 		goto done; \

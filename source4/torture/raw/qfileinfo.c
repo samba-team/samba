@@ -503,14 +503,14 @@ BOOL torture_raw_qfileinfo(int dummy)
 #define NAME_CHECK(sname, stype, tfield, flags) do { \
 	s1 = fnum_find(sname); \
 	if (s1 && (strcmp(s1->stype.out.tfield.s, correct_name) != 0 || \
-	    		wire_bad_flags(&s1->stype.out.tfield, flags))) { \
+	    		wire_bad_flags(&s1->stype.out.tfield, flags, cli))) { \
 		printf("(%d) handle %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
 	if (s1 && (strcmp(s1->stype.out.tfield.s, correct_name) != 0 || \
-	    		wire_bad_flags(&s1->stype.out.tfield, flags))) { \
+	    		wire_bad_flags(&s1->stype.out.tfield, flags, cli))) { \
 		printf("(%d) path %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
 		ret = False; \
@@ -538,7 +538,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 				ret = False;
 			}
 		}
-		if (wire_bad_flags(&s1->all_info.out.fname, STR_UNICODE)) {
+		if (wire_bad_flags(&s1->all_info.out.fname, STR_UNICODE, cli)) {
 			printf("Should not null terminate all_info/fname\n");
 			ret = False;
 		}
