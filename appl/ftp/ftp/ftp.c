@@ -553,7 +553,7 @@ copy_stream (FILE * from, FILE * to)
     static char *buf;
     int n;
     int bytes = 0;
-    int werr;
+    int werr = 0;
     int hashbytes = HASHBYTES;
     struct stat st;
 
