@@ -1,6 +1,6 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 2.2
+   Version 3.0
    printing backend routines
    Copyright (C) Tim Potter, 2002
    Copyright (C) Gerald Carter,         2002
