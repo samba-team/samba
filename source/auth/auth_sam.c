@@ -184,11 +184,21 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it (ie. does it exist in the smbpasswd file).
 		*/
-		DEBUG(4,("sam_password_ok: Checking NTLMv2 password\n"));
+		DEBUG(4,("sam_password_ok: Checking NTLMv2 password with domain [%s]\n", user_info->client_domain.str));
 		if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
 					  nt_pw, auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
+					  user_sess_key))
+		{
+			return NT_STATUS_OK;
+		}
+
+		DEBUG(4,("sam_password_ok: Checking NTLMv2 password without a domain\n"));
+		if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
+					  nt_pw, auth_context->challenge, 
+					  user_info->smb_name.str, 
+					  "",
 					  user_sess_key))
 		{
 			return NT_STATUS_OK;
@@ -250,11 +260,21 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes.
 		   - related to Win9X, legacy NAS pass-though authentication
 		*/
-		DEBUG(4,("sam_password_ok: Checking LMv2 password\n"));
+		DEBUG(4,("sam_password_ok: Checking LMv2 password with domain %s\n", user_info->client_domain.str));
 		if (smb_pwd_check_ntlmv2( user_info->lm_resp, 
 					  nt_pw, auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
+					  user_sess_key))
+		{
+			return NT_STATUS_OK;
+		}
+
+		DEBUG(4,("sam_password_ok: Checking LMv2 password without a domain\n"));
+		if (smb_pwd_check_ntlmv2( user_info->lm_resp, 
+					  nt_pw, auth_context->challenge, 
+					  user_info->smb_name.str, 
+					  "",
 					  user_sess_key))
 		{
 			return NT_STATUS_OK;
