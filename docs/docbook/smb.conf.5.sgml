@@ -1,0 +1,533 @@
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<refentry id="smb.conf">
+
+<refmeta>
+	<refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum>
+</refmeta>
+
+
+<refnamediv>
+	<refname>smb.conf</refname>
+	<refpurpose>The configuration file for the Samba suite</refpurpose>
+</refnamediv>
+
+<refsect1>
+	<title>SYNOPSIS</title>
+
+	<para>The <filename>smb.conf</filename> file is a configuration 
+	file for the Samba suite. <filename>smb.conf</filename> contains 
+	runtime configuration information for the Samba programs. The
+	<filename>smb.conf</filename> file is designed to be configured and 
+	administered by the <ulink url="swat.8.html"><command>swat(8)</command>
+	</ulink> program. The complete description of the file format and 
+	possible parameters held within are here for reference purposes.</para>
+</refsect1>
+
+<refsect1>
+	<title>FILE FORMAT</title>
+
+	<para>The file consists of sections and parameters. A section 
+	begins with the name of the section in square brackets and continues 
+	until the next section begins. Sections contain parameters of the 
+	form</para>
+
+	<para><replaceable>name</replaceable> = <replaceable>value
+	</replaceable></para>
+
+	<para>The file is line-based - that is, each newline-terminated 
+	line represents either a comment, a section name or a parameter.</para>
+
+	<para>Section and parameter names are not case sensitive.</para>
+
+	<para>Only the first equals sign in a parameter is significant. 
+	Whitespace before or after the first equals sign is discarded. 
+	Leading, trailing and internal whitespace in section and parameter 
+	names is irrelevant. Leading and trailing whitespace in a parameter 
+	value is discarded. Internal whitespace within a parameter value 
+	is retained verbatim.</para>
+
+	<para>Any line beginning with a semicolon (';') or a hash ('&num;') 
+	character is ignored, as are lines containing only whitespace.</para>
+
+	<para>Any line ending in a &bsol; is &quot;continued&quot; 
+	on the next line in the customary UNIX fashion.</para>
+
+	<para>The values following the equals sign in parameters are all 
+	either a string (no quotes needed) or a boolean, which may be given 
+	as yes/no, 0/1 or true/false. Case is not significant in boolean 
+	values, but is preserved in string values. Some items such as 
+	create modes are numeric.</para>
+</refsect1>
+
+<refsect1>
+	<title>SECTION DESCRIPTIONS</title>
+
+	<para>Each section in the configuration file (except for the
+	&lsqb;global&rsqb; section) describes a shared resource (known
+	as a &quot;share&quot;). The section name is the name of the 
+	shared resource and the parameters within the section define 
+	the shares attributes.</para>
+
+	<para>There are three special sections, &lsqb;global&rsqb;,
+	&lsqb;homes&rsqb; and &lsqb;printers&rsqb;, which are
+	described under <emphasis>special sections</emphasis>. The
+	following notes apply to ordinary section descriptions.</para>
+
+	<para>A share consists of a directory to which access is being 
+	given plus a description of the access rights which are granted 
+	to the user of the service. Some housekeeping options are 
+	also specifiable.</para>
+	
+	<para>Sections are either filespace services (used by the 
+	client as an extension of their native file systems) or 
+	printable services (used by the client to access print services 
+	on the host running the server).</para>
+	
+	<para>Sections may be designated <emphasis>guest</emphasis> services, 
+	in which case no password is required to access them. A specified 
+	UNIX <emphasis>guest account</emphasis> is used to define access
+	privileges in this case.</para>
+
+	<para>Sections other than guest services will require a password 
+	to access them. The client provides the username. As older clients 
+	only provide passwords and not usernames, you may specify a list 
+	of usernames to check against the password using the &quot;user=&quot; 
+	option in the share definition. For modern clients such as 
+	Windows 95/98/ME/NT/2000, this should not be necessary.</para>
+
+	<para>Note that the access rights granted by the server are 
+	masked by the access rights granted to the specified or guest 
+	UNIX user by the host system. The server does not grant more
+	access than the host system grants.</para>
+	
+	<para>The following sample section defines a file space share. 
+	The user has write access to the path <filename>/home/bar</filename>. 
+	The share is accessed via the share name &quot;foo&quot;:</para>
+
+	<screen>
+	<computeroutput>
+ 	[foo]
+ 		path = /home/bar
+ 		writeable = true
+	</computeroutput>
+	</screen>
+
+	<para>The following sample section defines a printable share. 
+	The share is readonly, but printable. That is, the only write 
+	access permitted is via calls to open, write to and close a 
+	spool file. The <emphasis>guest ok</emphasis> parameter means 
+	access will be permitted as the default guest user (specified 
+	elsewhere):</para>
+
+	<screen>
+	<computeroutput>
+ 	[aprinter]
+ 		path = /usr/spool/public
+ 		writeable = false
+ 		printable = true
+ 		guest ok = true
+	</computeroutput>
+	</screen>
+</refsect1>
+
+<refsect1>
+	<title>SPECIAL SECTIONS</title>
+	
+	<refsect2>
+		<title>The &lsqb;global&rsqb; section</title>
+		
+		<para>Parameters in this section apply to the server 
+		as a whole, or are defaults for sections which do not 
+		specifically define certain items. See the notes 
+		under PARAMETERS for more information.</para>
+	</refsect2>
+	
+	<refsect2>
+		<title>The &lsqb;homes&rsqb; section</title>
+		
+		<para>If a section called homes is included in the 
+		configuration file, services connecting clients to their 
+		home directories can be created on the fly by the server.</para>
+
+		<para>When the connection request is made, the existing 
+		sections are scanned. If a match is found, it is used. If no 
+		match is found, the requested section name is treated as a 
+		user name and looked up in the local password file. If the 
+		name exists and the correct password has been given, a share is 
+		created by cloning the &lsqb;homes&rsqb; section.</para>
+		
+		<para>Some modifications are then made to the newly 
+		created share:</para>
+		
+		<itemizedlist>
+		<listitem><para>The share name is changed from homes to 
+		the located username.</para></listitem>
+
+		<listitem><para>If no path was given, the path is set to
+		the user's home directory.</para></listitem>
+		</itemizedlist>
+
+		<para>If you decide to use a <emphasis>path=</emphasis> line 
+		in your &lsqb;homes&rsqb; section then you may find it useful 
+		to use the &percnt;S macro. For example :</para>
+
+		<para><userinput>path=/data/pchome/&percnt;S</userinput></para>
+
+		<para>would be useful if you have different home directories 
+		for your PCs than for UNIX access.</para>
+
+		<para>This is a fast and simple way to give a large number 
+		of clients access to their home directories with a minimum 
+		of fuss.</para>
+
+		<para>A similar process occurs if the requested section 
+		name is &quot;homes&quot;, except that the share name is not 
+		changed to that of the requesting user. This method of using 
+		the &lsqb;homes&rsqb; section works well if different users share 
+		a client PC.</para>
+		
+		<para>The &lsqb;homes&rsqb; section can specify all the parameters 
+		a normal service section can specify, though some make more sense 
+		than others. The following is a typical and suitable &lsqb;homes&rsqb;
+		section:</para>
+
+		<screen>
+		<computeroutput>
+	 	[homes]
+ 			writeable = yes
+		</computeroutput>
+		</screen>
+	
+		<para>An important point is that if guest access is specified 
+		in the &lsqb;homes&rsqb; section, all home directories will be 
+		visible to all clients <emphasis>without a password</emphasis>. 
+		In the very unlikely event that this is actually desirable, it 
+		would be wise to also specify <emphasis>read only
+		access</emphasis>.</para>
+
+		<para>Note that the <emphasis>browseable</emphasis> flag for 
+		auto home directories will be inherited from the global browseable 
+		flag, not the &lsqb;homes&rsqb; browseable flag. This is useful as 
+		it means setting browseable=no in the &lsqb;homes&rsqb; section 
+		will hide the &lsqb;homes&rsqb; share but make any auto home 
+		directories visible.</para>
+	</refsect2>
+	
+	<refsect2>
+		<title>The &lsqb;printers&rsqb; section</title>
+		
+		<para>This section works like &lsqb;homes&rsqb;, 
+		but for printers.</para>
+
+		<para>If a &lsqb;printers&rsqb; section occurs in the 
+		configuration file, users are able to connect to any printer 
+		specified in the local host's printcap file.</para>
+
+		<para>When a connection request is made, the existing sections 
+		are scanned. If a match is found, it is used. If no match is found, 
+		but a &lsqb;homes&rsqb; section exists, it is used as described
+		above. Otherwise, the requested section name is treated as a 
+		printer name and the appropriate printcap file is scanned to see 
+		if the requested section name is a valid printer share name. If 
+		a match is found, a new printer share is created by cloning 
+		the &lsqb;printers&rsqb; section.</para>
+
+		<para>A few modifications are then made to the newly created 
+		share:</para>
+
+		<itemizedlist>
+		<listitem><para>The share name is set to the located printer 
+		name</para></listitem>
+
+		<listitem><para>If no printer name was given, the printer name 
+		is set to the located printer name</para></listitem>
+
+		<listitem><para>If the share does not permit guest access and 
+		no username was given, the username is set to the located 
+		printer name.</para></listitem>
+		</itemizedlist>
+
+		<para>Note that the &lsqb;printers&rsqb; service MUST be 
+		printable - if you specify otherwise, the server will refuse 
+		to load the configuration file.</para>
+		
+		<para>Typically the path specified would be that of a 
+		world-writeable spool directory with the sticky bit set on 
+		it. A typical &lsqb;printers&rsqb; entry would look like 
+		this:</para>
+
+		<screen><computeroutput>
+	 	[printers]
+ 			path = /usr/spool/public
+ 			guest ok = yes
+ 			printable = yes 
+		</computeroutput></screen>
+
+		<para>All aliases given for a printer in the printcap file 
+		are legitimate printer names as far as the server is concerned. 
+		If your printing subsystem doesn't work like that, you will have 
+		to set up a pseudo-printcap. This is a file consisting of one or 
+		more lines like this:</para>
+
+		<screen>
+		<computeroutput>
+	        alias|alias|alias|alias...    
+		</computeroutput>
+		</screen>
+
+		<para>Each alias should be an acceptable printer name for 
+		your printing subsystem. In the &lsqb;global&rsqb; section, specify 
+		the new file as your printcap.  The server will then only recognize 
+		names found in your pseudo-printcap, which of course can contain 
+		whatever aliases you like. The same technique could be used 
+		simply to limit access to a subset of your local printers.</para>
+
+		<para>An alias, by the way, is defined as any component of the 
+		first entry of a printcap record. Records are separated by newlines,
+		components (if there are more than one) are separated by vertical 
+		bar symbols (&quot;&verbar;&quot;).</para>
+		
+		<para>NOTE: On SYSV systems which use lpstat to determine what 
+		printers are defined on the system you may be able to use
+		&quot;printcap name = lpstat&quot; to automatically obtain a list 
+		of printers. See the &quot;printcap name&quot; option 
+		for more details.</para>
+	</refsect2>
+</refsect1>
+
+<refsect1>
+	<title>PARAMETRS</title>
+
+	<para>Parameters define the specific attributes of sections.</para>
+
+	<para>Some parameters are specific to the &lsqb;global&rsqb; section
+	(e.g., <emphasis>security</emphasis>).  Some parameters are usable 
+	in all sections (e.g., <emphasis>create mode</emphasis>). All others 
+	are permissible only in normal sections. For the purposes of the 
+	following descriptions the &lsqb;homes&rsqb; and &lsqb;printers&rsqb;
+	sections will be considered normal.  The letter <emphasis>G</emphasis> 
+	in parentheses indicates that a parameter is specific to the
+	&lsqb;global&rsqb; section. The letter <emphasis>S</emphasis>
+	indicates that a parameter can be specified in a service specific
+	section. Note that all <emphasis>S</emphasis> parameters can also be specified in 
+	the &lsqb;global&rsqb; section - in which case they will define
+	the default behavior for all services.</para>
+
+	<para>Parameters are arranged here in alphabetical order - this may 
+	not create best bedfellows, but at least you can find them! Where 
+	there are synonyms, the preferred synonym is described, others refer 
+	to the preferred synonym.</para>
+</refsect1>
+
+<refsect1>
+	<title>VARIABLE SUBSTITUTIONS</title>
+
+	<para>Many of the strings that are settable in the config file 
+	can take substitutions. For example the option &quot;path =
+	/tmp/&percnt;u&quot; would be interpreted as &quot;path = 
+	/tmp/john&quot; if the user connected with the username john.</para>
+
+	<para>These substitutions are mostly noted in the descriptions below, 
+	but there are some general substitutions which apply whenever they 
+	might be relevant. These are:</para>
+
+	<variablelist>
+		<varlistentry>
+		<term>&percnt;S</term>
+		<listitem><para>the name of the current service, if any.</para>
+		</listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;P</term>
+		<listitem><para>the root directory of the current service, 
+		if any.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;u</term>
+		<listitem><para>user name of the current service, if any.</para>
+		</listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;g</term>
+		<listitem><para>primary group name of &percnt;u.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;U</term>
+		<listitem><para>session user name (the user name that the client 
+		wanted, not necessarily the same as the one they got).</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;G</term>
+		<listitem><para>primary group name of &percnt;U.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>&percnt;H</term>
+		<listitem><para>the home directory of the user given 
+		by &percnt;u.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;v</term>
+		<listitem><para>the Samba version.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;h</term>
+		<listitem><para>the internet hostname that Samba is running 
+		on.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>&percnt;m</term>
+		<listitem><para>the NetBIOS name of the client machine 
+		(very useful).</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;L</term>
+		<listitem><para>the NetBIOS name of the server. This allows you 
+		to change your config based on what the client calls you. Your 
+		server can have a &quot;dual personality&quot;.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;M</term>
+		<listitem><para>the internet name of the client machine.
+		</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;N</term>
+		<listitem><para>the name of your NIS home directory server.  
+		This is obtained from your NIS auto.map entry.  If you have 
+		not compiled Samba with the <emphasis>--with-automount</emphasis> 
+		option then this value will be the same as &percnt;.</para>
+		</listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;p</term>
+		<listitem><para>the path of the service's home directory, 
+		obtained from your NIS auto.map entry. The NIS auto.map entry 
+		is split up as &quot;&percnt;N:&percnt;p&quot;.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;R</term>
+		<listitem><para>the selected protocol level after 
+		protocol negotiation. It can be one of CORE, COREPLUS, 
+		LANMAN1, LANMAN2 or NT1.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>&percnt;d</term>
+		<listitem><para>The process id of the current server 
+		process.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;a</term>
+		<listitem><para>the architecture of the remote
+		machine. Only some are recognized, and those may not be 
+		100&percnt; reliable. It currently recognizes Samba, WfWg, 
+		WinNT and Win95. Anything else will be known as 
+		&quot;UNKNOWN&quot;. If it gets it wrong then sending a level 
+		3 log to <ulink url="mailto:samba@samba.org">samba&commat;samba.org
+		</ulink> should allow it to be fixed.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;I</term>
+		<listitem><para>The IP address of the client machine.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>&percnt;T</term>
+		<listitem><para>the current date and time.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>&percnt;&dollar;(<replaceable>envvar</replaceable>)</term>
+		<listitem><para>The value of the environment variable
+		<replaceable>envar</replaceable>.</para></listitem>
+		</varlistentry>
+	</variablelist>
+
+	<para>There are some quite creative things that can be done 
+	with these substitutions and other smb.conf options.</para
+</refsect1>
+
+<refsect1>
+	<title>NAME MANGLING</title
+	
+	<para>By default, Samba 2.2 has the same semantics as a Windows 
+	NT server, in that it is case insensitive but case preserving.</para>
+</refsect1>
+
+<refsect1>
+	<title>NOTE ABOUT USERNAME/PASSWORD VALIDATION</title>
+
+	<para>There are a number of ways in which a user can connect 
+	to a service. The server follows the following steps in determining 
+	if it will allow a connection to a specified service. If all the 
+	steps fail then the connection request is rejected. If one of the 
+	steps pass then the following steps are not checked.</para>
+
+	<para>If the service is marked &quot;guest only = yes&quot; then
+	steps 1 to 5 are skipped.</para>
+
+	<orderedlist numeration="Arabic">
+		<listitem><para>If the client has passed a username/password 
+		pair and that username/password pair is validated by the UNIX 
+		system's password programs then the connection is made as that 
+		username. Note that this includes the 
+		&bsol;&bsol;server&bsol;service&percnt;username method of passing 
+		a username.</para></listitem>
+
+		<listitem><para>If the client has previously registered a username 
+		with the system and now supplies a correct password for that 
+		username then the connection is allowed.</para></listitem>
+		
+		<listitem><para>The client's netbios name and any previously 
+		used user names are checked against the supplied password, if 
+		they match then the connection is allowed as the corresponding 
+		user.</para></listitem>
+		
+		<listitem><para>If the client has previously validated a
+		username/password pair with the server and the client has passed 
+		the validation token then that username is used. </para></listitem>
+
+		<listitem><para>If a &quot;user = &quot; field is given in the
+		<filename>smb.conf</filename> file for the service and the client 
+		has supplied a password, and that password matches (according to 
+		the UNIX system's password checking) with one of the usernames 
+		from the &quot;user=&quot; field then the connection is made as 
+		the username in the &quot;user=&quot; line. If one 
+		of the username in the &quot;user=&quot; list begins with a
+		&commat; then that name expands to a list of names in 
+		the group of the same name.</para></listitem>
+
+		<listitem><para>If the service is a guest service then a 
+		connection is made as the username given in the &quot;guest 
+		account =&quot; for the service, irrespective of the 
+		supplied password.</para></listitem>
+	</orderedlist>
+
+</refsect1>
+
+<refsect1>
+	<title>COMPLETE LIST OF GLOBAL PARAMETERS</title>
+
+	<para>Here is a list of all global parameters. See the section of 
+	each parameter for details.  Note that some are synonyms.</para>
+
+</refsect1>
+</refentry>
