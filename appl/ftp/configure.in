@@ -20,7 +20,7 @@ AC_C_CROSS
 
 AC_CACHE_VAL(krb_cv_ld_flags,
 krb_cv_ld_flags="") dnl
-LD_FLAGS=${krb_cv_ld_flags}
+LD_FLAGS="$krb_cv_ld_flags"
 AC_SUBST(CFLAGS) dnl
 AC_SUBST(LDFLAGS) dnl
 AC_SUBST(LD_FLAGS) dnl
@@ -30,64 +30,8 @@ AC_CHECK_HEADERS(sys/select.h paths.h bsd/bsd.h)
 AC_FIND_FUNC(socket, socket)
 AC_FIND_FUNC(gethostbyname, nsl)
 
-AC_MSG_CHECKING([for ut_host in utmp])
-AC_CACHE_VAL(ac_cv_struct_ut_host, [
-AC_TRY_COMPILE([
-#include <time.h>
-#include <utmp.h>
-],[
-char *p; 
-struct utmp ut; 
-p = ut.ut_host;
-],ac_cv_struct_ut_host=yes,ac_cv_struct_ut_host=no)
-])
-AC_MSG_RESULT($ac_cv_struct_ut_host)
-if test "$ac_cv_struct_ut_host" = "yes"; then
-	AC_DEFINE(HAVE_UT_HOST, 1)
-fi
-	
+AC_CHECK_FUNCS(setproctitle)
 
-AC_CHECK_FUNCS(getcwd setproctitle)
-
-if test "$ac_cv_func_getcwd" = yes; then
-AC_MSG_CHECKING(for broken getcwd)
-AC_CACHE_VAL(ac_cv_func_getcwd_broken, [
-ac_cv_func_getcwd_broken=no
-
-AC_TRY_RUN([
-#include <errno.h>
-char *getcwd(char*, int);
-
-void *popen(char *cmd, char *mode)
-{
-	errno = ENOTTY;
-	return 0;
-}
-
-int main()
-{
-	char *ret;
-	ret = getcwd(0, 1024);
-	if(ret == 0 && errno == ENOTTY)
-		return 0;
-	return 1;
-}
-], ac_cv_func_getcwd_broken=yes,:,:)
-])
-AC_MSG_RESULT($ac_cv_func_getcwd_broken)
-if test "$ac_cv_func_getcwd_broken" = yes; then
-	AC_DEFINE(BROKEN_GETCWD, 1)
-fi
-fi
-
-
-AC_MSG_CHECKING([for __progname])
-AC_CACHE_VAL(ac_cv_var___progname, [
-AC_TRY_LINK([extern char *__progname;], [return strlen(__progname);], ac_cv_var___progname=yes, ac_cv_var___progname=no)
-])
-AC_MSG_RESULT($ac_cv_var___progname)
-if test "$ac_cv_var___progname" = "yes"; then
-	AC_DEFINE(HAVE___PROGNAME, 1)
-fi
+AC_EGREP_HEADER(ut_host, utmp.h, AC_DEFINE(HAVE_UT_HOST))
 
 AC_OUTPUT(Makefile common/Makefile ftp/Makefile ftpd/Makefile)
