@@ -102,6 +102,10 @@ init_tgs_req (krb5_context context,
     if(in_creds->times.endtime){
 	ALLOC(t->req_body.till, 1);
 	*t->req_body.till = in_creds->times.endtime;
+    } else {
+	/* this is necessary with old MIT code (such as DCE secd) */
+	ALLOC(t->req_body.till, 1);
+	*t->req_body.till = 0;
     }
     
     t->req_body.nonce = nonce;
