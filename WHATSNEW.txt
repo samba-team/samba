@@ -36,7 +36,8 @@ o   Andrew Bartlet <abartlet@samba.org>
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fixed iterator in tdbsam.
-    * Fix bug disabling accounts with no password.
+    * Fix bug that disabled accounts with a valid NT password 
+      hash, but no LanMan hash.
     
 
 o   Steve French <sfrench@us.ibm.com>
