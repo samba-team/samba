@@ -46,7 +46,11 @@
 
 /* Default number of hash buckets used in shared memory share mode */
 #ifndef SHMEM_HASH_SIZE
+#ifdef SEMMSL
+#define SHMEM_HASH_SIZE (SEMMSL-1)
+#else
 #define SHMEM_HASH_SIZE 113
+#endif
 #endif
 
 #define NMB_PORT 137
@@ -1328,7 +1332,6 @@ struct share_ops {
 /* each implementation of the shared memory code needs
    to support the following operations */
 struct shmem_ops {
-	BOOL (*open)(char *, int );
 	BOOL (*close)( void );
 	int (*alloc)(int );
 	BOOL (*free)(int );

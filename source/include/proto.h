@@ -878,18 +878,11 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
-BOOL smb_shm_open(char *file_name, int size, int ronly);
-BOOL smb_shm_close( void );
-int smb_shm_alloc(int size);
-BOOL smb_shm_free(int offset);
-int smb_shm_get_userdef_off(void);
-void *smb_shm_offset2addr(int offset);
-int smb_shm_addr2offset(void *addr);
-BOOL smb_shm_lock_hash_entry( unsigned int entry);
-BOOL smb_shm_unlock_hash_entry( unsigned int entry );
-BOOL smb_shm_get_usage(int *bytes_free,
-		   int *bytes_used,
-		   int *bytes_overhead);
+struct shmem_ops *smb_shm_open(char *file_name, int size, int ronly);
+
+/*The following definitions come from  shmem_sysv.c  */
+
+struct shmem_ops *sysv_shm_open(int size, int ronly);
 
 /*The following definitions come from  smbdes.c  */
 
