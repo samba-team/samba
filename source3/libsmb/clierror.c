@@ -80,6 +80,11 @@ char *cli_errstr(struct cli_state *cli)
 	uint8 errclass;
 	int i;
 
+	if (!cli->initialised) {
+		fstrcpy(cli_error_message, "[Programmer's error] cli_errstr called on unitialized cli_stat struct!\n");
+		return cli_error_message;
+	}
+
 	/* Case #1: RAP error */
 	if (cli->rap_error) {
 		for (i = 0; rap_errmap[i].message != NULL; i++) {
