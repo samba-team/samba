@@ -177,9 +177,28 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
  Close a directory opened by an NT SMB call. 
 ****************************************************************************/
   
-void close_directory(files_struct *fsp)
+void close_directory(files_struct *fsp, BOOL normal_close)
 {
 	remove_pending_change_notify_requests_by_fid(fsp);
+
+	/*
+	 * NT can set delete_on_close of the last open
+	 * reference to a directory also.
+	 */
+
+	if (normal_close && fsp->directory_delete_on_close) {
+		BOOL ok = rmdir_internals(fsp->conn, fsp->fsp_name);
+		DEBUG(5,("close_directory: %s. Delete on close was set - deleting directory %s.\n",
+			fsp->fsp_name, ok ? "succeeded" : "failed" ));
+
+		/*
+		 * Ensure we remove any change notify requests that would
+		 * now fail as the directory has been deleted.
+		 */
+
+		if(ok)
+			remove_pending_change_notify_requests_by_filename(fsp);
+    }
 
 	/*
 	 * Do the code common to files and directories.

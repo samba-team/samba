@@ -187,7 +187,7 @@ void file_close_conn(connection_struct *conn)
 		next = fsp->next;
 		if (fsp->conn == conn && fsp->open) {
 			if (fsp->is_directory)
-				close_directory(fsp); 
+				close_directory(fsp,False); 
 			else                  
 				close_file(fsp,False); 
 		}
@@ -245,7 +245,7 @@ void file_close_user(int vuid)
 			if(!fsp->is_directory)
 				close_file(fsp,False);
 			else
-				close_directory(fsp);
+				close_directory(fsp,False);
 		}
 	}
 }

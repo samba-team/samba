@@ -2612,7 +2612,7 @@ int reply_close(connection_struct *conn,
 		 * handle.
 		 */
 		DEBUG(3,("close directory fnum=%d\n", fsp->fnum));
-		close_directory(fsp);
+		close_directory(fsp,True);
 	} else {
 		/*
 		 * Close ordinary file.
@@ -3066,6 +3066,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 Static function used by reply_rmdir to delete an entire directory
 tree recursively.
 ****************************************************************************/
+
 static BOOL recursive_rmdir(char *directory)
 {
   char *dname = NULL;
@@ -3124,8 +3125,97 @@ static BOOL recursive_rmdir(char *directory)
 }
 
 /****************************************************************************
-  reply to a rmdir
+ The internals of the rmdir code - called elsewhere.
 ****************************************************************************/
+
+BOOL rmdir_internals(connection_struct *conn, char *directory)
+{
+  BOOL ok;
+
+  ok = (dos_rmdir(directory) == 0);
+  if(!ok && (errno == ENOTEMPTY) && lp_veto_files(SNUM(conn)))
+  {
+    /* 
+     * Check to see if the only thing in this directory are
+     * vetoed files/directories. If so then delete them and
+     * retry. If we fail to delete any of them (and we *don't*
+     * do a recursive delete) then fail the rmdir.
+     */
+    BOOL all_veto_files = True;
+    char *dname;
+    void *dirptr = OpenDir(conn, directory, False);
+
+    if(dirptr != NULL)
+    {
+      int dirpos = TellDir(dirptr);
+      while ((dname = ReadDirName(dirptr)))
+      {
+        if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+          continue;
+        if(!IS_VETO_PATH(conn, dname))
+        {
+          all_veto_files = False;
+          break;
+        }
+      }
+      if(all_veto_files)
+      {
+        SeekDir(dirptr,dirpos);
+        while ((dname = ReadDirName(dirptr)))
+        {
+          pstring fullname;
+          SMB_STRUCT_STAT st;
+
+          if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+            continue;
+
+          /* Construct the full name. */
+          if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname))
+          {
+            errno = ENOMEM;
+            break;
+          }
+          pstrcpy(fullname, directory);
+          pstrcat(fullname, "/");
+          pstrcat(fullname, dname);
+                     
+          if(dos_lstat(fullname, &st) != 0)
+            break;
+          if(st.st_mode & S_IFDIR)
+          {
+            if(lp_recursive_veto_delete(SNUM(conn)))
+            {
+              if(recursive_rmdir(fullname) != 0)
+                break;
+            }
+            if(dos_rmdir(fullname) != 0)
+              break;
+          }
+          else if(dos_unlink(fullname) != 0)
+            break;
+        }
+        CloseDir(dirptr);
+        /* Retry the rmdir */
+        ok = (dos_rmdir(directory) == 0);
+      }
+      else
+        CloseDir(dirptr);
+    }
+    else
+      errno = ENOTEMPTY;
+  }
+          
+  if (!ok)
+    DEBUG(3,("rmdir_internals: couldn't remove directory %s : %s\n",
+          directory,strerror(errno)));
+
+  return ok;
+}
+
+/****************************************************************************
+ Reply to a rmdir.
+****************************************************************************/
+
 int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring directory;
@@ -3137,84 +3227,10 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   unix_convert(directory,conn, NULL,&bad_path,NULL);
   
   if (check_name(directory,conn))
-    {
-
-      dptr_closepath(directory,SVAL(inbuf,smb_pid));
-      ok = (dos_rmdir(directory) == 0);
-      if(!ok && (errno == ENOTEMPTY) && lp_veto_files(SNUM(conn)))
-        {
-          /* Check to see if the only thing in this directory are
-             vetoed files/directories. If so then delete them and
-             retry. If we fail to delete any of them (and we *don't*
-             do a recursive delete) then fail the rmdir. */
-          BOOL all_veto_files = True;
-          char *dname;
-          void *dirptr = OpenDir(conn, directory, False);
-
-          if(dirptr != NULL)
-            {
-              int dirpos = TellDir(dirptr);
-	          while ((dname = ReadDirName(dirptr)))
-	            {
-                  if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
-                    continue;
-                  if(!IS_VETO_PATH(conn, dname))
-                    {
-                      all_veto_files = False;
-                      break;
-                    }
-                }
-              if(all_veto_files)
-                {
-                  SeekDir(dirptr,dirpos);
-                  while ((dname = ReadDirName(dirptr)))
-                    {
-                      pstring fullname;
-                      SMB_STRUCT_STAT st;
-
-                      if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
-                        continue;
-
-                      /* Construct the full name. */
-                      if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname))
-                        {
-                          errno = ENOMEM;
-                          break;
-                        }
-                      pstrcpy(fullname, directory);
-                      pstrcat(fullname, "/");
-                      pstrcat(fullname, dname);
-                      
-                      if(dos_lstat(fullname, &st) != 0)
-                        break;
-                      if(st.st_mode & S_IFDIR)
-                      {
-                        if(lp_recursive_veto_delete(SNUM(conn)))
-                        {
-                          if(recursive_rmdir(fullname) != 0)
-                            break;
-                        }
-                        if(dos_rmdir(fullname) != 0)
-                          break;
-                      }
-                      else if(dos_unlink(fullname) != 0)
-                        break;
-                    }
-                  CloseDir(dirptr);
-                  /* Retry the rmdir */
-                  ok = (dos_rmdir(directory) == 0);
-                }
-              else
-                CloseDir(dirptr);
-            }
-          else
-            errno = ENOTEMPTY;
-         }
-          
-      if (!ok)
-        DEBUG(3,("couldn't remove directory %s : %s\n",
-		 directory,strerror(errno)));
-    }
+  {
+    dptr_closepath(directory,SVAL(inbuf,smb_pid));
+    ok = rmdir_internals(conn, directory);
+  }
   
   if (!ok)
   {

@@ -2285,7 +2285,7 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL overri
 /*The following definitions come from  smbd/close.c  */
 
 int close_file(files_struct *fsp, BOOL normal_close);
-void close_directory(files_struct *fsp);
+void close_directory(files_struct *fsp, BOOL normal_close);
 
 /*The following definitions come from  smbd/conn.c  */
 
@@ -2429,6 +2429,7 @@ int reply_ntcancel(connection_struct *conn,
 int reply_nttranss(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize);
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
+void remove_pending_change_notify_requests_by_filename(files_struct *fsp);
 void process_pending_change_notify_queue(time_t t);
 int reply_nttrans(connection_struct *conn,
 		  char *inbuf,char *outbuf,int length,int bufsize);
@@ -2565,6 +2566,7 @@ int reply_printqueue(connection_struct *conn,
 		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+BOOL rmdir_internals(connection_struct *conn, char *directory);
 int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int rename_internals(connection_struct *conn, 
 		     char *inbuf, char *outbuf, char *name, 

@@ -789,7 +789,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	if(fsp->is_directory) {
 		if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
-			close_directory(fsp);
+			close_directory(fsp,True);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
@@ -1373,6 +1373,33 @@ static void remove_pending_change_notify_requests_by_mid(int mid)
 
   while(cnbp != NULL) {
     if(SVAL(cnbp->request_buf,smb_mid) == mid) {
+      change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_CANCELLED);
+      free((char *)ubi_slRemNext( &change_notify_queue, prev));
+      cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      continue;
+    }
+
+    prev = cnbp;
+    cnbp = (change_notify_buf *)ubi_slNext(cnbp);
+  }
+}
+
+/****************************************************************************
+ Delete entries by filename and cnum from the change notify pending queue.
+ Always send reply.
+*****************************************************************************/
+
+void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
+{
+  change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
+  change_notify_buf *prev = NULL;
+
+  while(cnbp != NULL) {
+    /*
+     * We know it refers to the same directory if the connection number and
+     * the filename are identical.
+     */
+    if((cnbp->fsp->conn == fsp->conn) && strequal(cnbp->fsp->fsp_name,fsp->fsp_name)) {
       change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_CANCELLED);
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
