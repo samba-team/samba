@@ -38,54 +38,60 @@ void ndr_pull_free(struct e_ndr_pull *ndr)
 	g_free(ndr);
 }
 
-void ndr_pull_ptr(struct e_ndr_pull *e_ndr, int hf, guint32 *ptr)
+void ndr_pull_ptr(struct e_ndr_pull *ndr, int hf, guint32 *ptr)
 {
-	e_ndr->offset = dissect_ndr_uint32(
-		e_ndr->tvb, e_ndr->offset, e_ndr->pinfo,
-		e_ndr->tree, e_ndr->drep, hf, ptr);
+	ndr->offset = dissect_ndr_uint32(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, ptr);
 }
 
-void ndr_pull_level(struct e_ndr_pull *e_ndr, int hf, gint16 *data)
+void ndr_pull_level(struct e_ndr_pull *ndr, int hf, gint16 *data)
 {
-	e_ndr->offset = dissect_ndr_uint16(
-		e_ndr->tvb, e_ndr->offset, e_ndr->pinfo,
-		e_ndr->tree, e_ndr->drep, hf, data);
+	ndr->offset = dissect_ndr_uint16(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, data);
 }
 
-void ndr_pull_NTSTATUS(struct e_ndr_pull *e_ndr, int hf)
+void ndr_pull_NTSTATUS(struct e_ndr_pull *ndr, int hf)
 {
-	e_ndr->offset = dissect_ntstatus(
-		e_ndr->tvb, e_ndr->offset, e_ndr->pinfo,
-		e_ndr->tree, e_ndr->drep, hf, NULL);
+	ndr->offset = dissect_ntstatus(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, NULL);
 }
 
-void ndr_pull_uint8(struct e_ndr_pull *e_ndr, int hf, guint8 *data)
+void ndr_pull_uint8(struct e_ndr_pull *ndr, int hf, guint8 *data)
 {
-	e_ndr->offset = dissect_ndr_uint8(
-		e_ndr->tvb, e_ndr->offset, e_ndr->pinfo,
-		e_ndr->tree, e_ndr->drep, hf, data);
+	ndr->offset = dissect_ndr_uint8(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, data);
 }
 
-void ndr_pull_uint16(struct e_ndr_pull *e_ndr, int hf, guint16 *data)
+void ndr_pull_uint16(struct e_ndr_pull *ndr, int hf, guint16 *data)
 {
-	e_ndr->offset = dissect_ndr_uint16(
-		e_ndr->tvb, e_ndr->offset, e_ndr->pinfo,
-		e_ndr->tree, e_ndr->drep, hf, data);
+	ndr->offset = dissect_ndr_uint16(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, data);
 }
 
-void ndr_pull_uint32(struct e_ndr_pull *e_ndr, int hf, guint32 *data)
+void ndr_pull_uint32(struct e_ndr_pull *ndr, int hf, guint32 *data)
 {
-	e_ndr->offset = dissect_ndr_uint32(
-		e_ndr->tvb, e_ndr->offset, e_ndr->pinfo,
-		e_ndr->tree, e_ndr->drep, hf, data);
+	ndr->offset = dissect_ndr_uint32(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, data);
 }
 
-void ndr_pull_int64(struct e_ndr_pull *e_ndr, int hf, gint64 *data)
+void ndr_pull_int64(struct e_ndr_pull *ndr, int hf, gint64 *data)
 {
+	ndr->offset = dissect_ndr_uint64(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, data);	
 }
 
-void ndr_pull_uint64(struct e_ndr_pull *e_ndr, int hf, guint64 *data)
+void ndr_pull_uint64(struct e_ndr_pull *ndr, int hf, guint64 *data)
 {
+	ndr->offset = dissect_ndr_uint64(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, data);	
 }
 
 void ndr_pull_string(struct e_ndr_pull *ndr, int ndr_flags)
@@ -286,48 +292,54 @@ void ndr_pull_string(struct e_ndr_pull *ndr, int ndr_flags)
 	}	
 }
 
-void ndr_pull_NTTIME(struct e_ndr_pull *e_ndr, int hf, gNTTIME *data)
+void ndr_pull_NTTIME(struct e_ndr_pull *ndr, int hf, gNTTIME *data)
 {
+	ndr->offset = dissect_ndr_uint64(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, data);	
 }
 
-void ndr_pull_HYPER_T(struct e_ndr_pull *e_ndr, int hf, gHYPER_T *data)
+void ndr_pull_HYPER_T(struct e_ndr_pull *ndr, int hf, gHYPER_T *data)
 {
+	ndr->offset = dissect_ndr_uint64(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		ndr->tree, ndr->drep, hf, data);	
 }
 
-void ndr_pull_dom_sid2(struct e_ndr_pull *e_ndr, int flags)
+void ndr_pull_dom_sid2(struct e_ndr_pull *ndr, int flags)
 {
 	guint32 num_auths;
 	if (!(flags & NDR_SCALARS)) {
 		return;
 	}
-	ndr_pull_uint32(e_ndr, hf_string4_len, &num_auths);
+	ndr_pull_uint32(ndr, hf_string4_len, &num_auths);
 
-	ndr_pull_dom_sid(e_ndr, flags);
+	ndr_pull_dom_sid(ndr, flags);
 }
 
 #if 0
 
-void ndr_pull_security_descriptor(struct e_ndr_pull *e_ndr, int hf)
+void ndr_pull_security_descriptor(struct e_ndr_pull *ndr, int hf)
 {
 }
 
-void ndr_pull_policy_handle(struct e_ndr_pull *e_ndr, int hf)
+void ndr_pull_policy_handle(struct e_ndr_pull *ndr, int hf)
 {
-	e_ndr->offset = dissect_nt_policy_hnd(
-		e_ndr->tvb, e_ndr->offset, e_ndr->pinfo, e_ndr->tree, 
-		e_ndr->drep, hf, NULL, NULL, 0, 0);
+	ndr->offset = dissect_nt_policy_hnd(
+		ndr->tvb, ndr->offset, ndr->pinfo, ndr->tree, 
+		ndr->drep, hf, NULL, NULL, 0, 0);
 }
 
 #endif
 
-void ndr_pull_advance(struct e_ndr_pull *e_ndr, int offset)
+void ndr_pull_advance(struct e_ndr_pull *ndr, int offset)
 {
-	e_ndr->offset += offset;
+	ndr->offset += offset;
 }
 
 void ndr_pull_align(struct e_ndr_pull *ndr, int size)
 {
-	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) {
+       	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) {
 		ndr->offset = (ndr->offset + (size-1)) & ~(size-1);
 	}
 }
@@ -353,6 +365,7 @@ void ndr_pull_subcontext_flags_fn(struct e_ndr_pull *ndr, size_t sub_size,
 void ndr_pull_struct_start(struct e_ndr_pull *ndr)
 {
 	struct ndr_ofs_list *ofs;
+
 	ofs = g_malloc(sizeof(*ofs));
 	ofs->offset = ndr->offset;
 	ofs->next = ndr->ofs_list;
