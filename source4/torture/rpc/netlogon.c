@@ -94,8 +94,8 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	E_md4hash(plain_pass, mach_pwd);
 
-	creds_init(creds, &r.in.credentials, &r.out.credentials, mach_pwd,
-		   &a.in.credentials);
+	creds_client_init(creds, &r.in.credentials, &r.out.credentials, mach_pwd,
+			  &a.in.credentials);
 
 	a.in.server_name = NULL;
 	a.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
@@ -110,7 +110,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (!creds_check(creds, &a.out.credentials)) {
+	if (!creds_client_check(creds, &a.out.credentials)) {
 		printf("Credential chaining failed\n");
 		return False;
 	}
@@ -152,7 +152,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	ZERO_STRUCT(auth2);
 
-	creds_authenticator(&creds, &auth);
+	creds_client_authenticator(&creds, &auth);
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.workstation = lp_netbios_name();
@@ -170,7 +170,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_check(&creds, &r.out.authenticator->cred)) {
+	if (!creds_client_check(&creds, &r.out.authenticator->cred)) {
 		printf("Credential chaining failed\n");
 	}
 
@@ -192,8 +192,6 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	creds_authenticator(&creds, &r.in.credential);
-
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
 	r.in.secure_challenge_type = 2;
@@ -202,9 +200,11 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	password = generate_random_str(8);
 	E_md4hash(password, r.in.new_password.data);
 
-	creds_encrypt(&creds, &r.in.new_password);
+	creds_client_encrypt(&creds, &r.in.new_password);
 
 	printf("Testing ServerPasswordSet on machine account\n");
+
+	creds_client_authenticator(&creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -216,7 +216,21 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		printf("Failed to save machine password\n");
 	}
 
-	if (!creds_check(&creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+		printf("Credential chaining failed\n");
+	}
+
+	printf("Testing a second ServerPasswordSet on machine account\n");
+
+	creds_client_authenticator(&creds, &r.in.credential);
+
+	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerPasswordSet - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
 
