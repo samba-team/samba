@@ -29,7 +29,7 @@ sub gen_dispatch_switch($)
 		pidl "\tcase $count: {\n";
 		pidl "\t\tstruct $d->{NAME} *r2 = r;\n";
 		pidl "\t\tif (DEBUGLEVEL > 10) {\n";
-		pidl "\t\t\tNDR_PRINT_IN_DEBUG($d->{NAME}, r2);\n";
+		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($d->{NAME}, NDR_IN, r2);\n";
 		pidl "\t\t}\n";
 		if ($d->{RETURN_TYPE} && $d->{RETURN_TYPE} ne "void") {
 			pidl "\t\tr2->out.result = $d->{NAME}(dce_call, mem_ctx, r2);\n";
@@ -37,7 +37,7 @@ sub gen_dispatch_switch($)
 			pidl "\t\t$d->{NAME}(dce_call, mem_ctx, r2);\n";
 		}
 		pidl "\t\tif (DEBUGLEVEL > 10 && dce_call->fault_code == 0) {\n";
-		pidl "\t\t\tNDR_PRINT_OUT_DEBUG($d->{NAME}, r2);\n";
+		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($d->{NAME}, NDR_OUT | NDR_SET_VALUES, r2);\n";
 		pidl "\t\t}\n";
 		pidl "\t\tif (dce_call->fault_code != 0) {\n";
 		pidl "\t\t\tDEBUG(2,(\"dcerpc_fault 0x%x in $d->{NAME}\\n\", dce_call->fault_code));\n";
