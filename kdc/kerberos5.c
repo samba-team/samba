@@ -990,7 +990,7 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 	    old_life -= *tgt->starttime;
 	else
 	    old_life -= tgt->authtime;
-	et->endtime = min(*b->till, *et->starttime + old_life);
+	et->endtime = min(*et->renew_till, *et->starttime + old_life);
     }	    
     
     /* checks for excess flags */
