@@ -1,6 +1,11 @@
+2004-02-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c (change_password): handle that
+	printf("%.*s", 0, (void*)NULL); doesn't work on solaris
+	
 2004-02-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* kpasswd/kpasswd.c (change_password): handle that printf(".*s",
+	* kpasswd/kpasswd.c (change_password): handle that printf("%.*s",
 	0, (void*)NULL); doesn't work on solaris
 	
 	* lib/krb5/krb5.conf.5: don't use path's in first .Nm, it confuses
