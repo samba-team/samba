@@ -252,14 +252,11 @@ send_krb5_auth(int s,
 {
     krb5_principal server;
     krb5_data cksum_data;
-    krb5_ccache ccache;
     int status;
     size_t len;
     krb5_auth_context auth_context = NULL;
 
     krb5_init_context(&context);
-
-    krb5_cc_default (context, &ccache);
 
     status = krb5_sname_to_principal(context,
 				     hostname,
@@ -287,7 +284,7 @@ send_krb5_auth(int s,
 			    do_encrypt ? AP_OPTS_MUTUAL_REQUIRED : 0,
 			    &cksum_data,
 			    NULL,
-			    ccache,
+			    NULL,
 			    NULL,
 			    NULL,
 			    NULL);
@@ -302,7 +299,7 @@ send_krb5_auth(int s,
 	return 1;
     }
 
-    krb5_crypto_init(context, keyblock, 0, &crypto);
+    status = krb5_crypto_init(context, keyblock, 0, &crypto);
     if(status) {
 	warnx ("krb5_crypto_init: %s", krb5_get_err_text(context, status));
 	return 1;
