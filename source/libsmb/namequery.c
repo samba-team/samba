@@ -184,6 +184,8 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 
 	StrnCpy(name, status[i].name, 15);
 
+	dos_to_unix(name, True);
+
 	free(status);
 	return True;
 }
