@@ -816,8 +816,8 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 {
 	int curmod;
 	LDAPMod **modlist = (LDAPMod **) *mods;
-	struct berval **ber_values;
-	char **char_values;
+	struct berval **ber_values = NULL;
+	char **char_values = NULL;
 
 	if (!invals) {
 		mod_op = LDAP_MOD_DELETE;
