@@ -102,7 +102,7 @@ default_slc()
  * Initialize the slc mapping table.
  */
 	void
-get_slc_defaults()
+get_slc_defaults(void)
 {
 	register int i;
 

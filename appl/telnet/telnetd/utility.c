@@ -56,9 +56,9 @@ RCSID("$Id$");
  */
 
     void
-ttloop()
+ttloop(void)
 {
-    void netflush();
+    void netflush(void);
 
     DIAG(TD_REPORT, {sprintf(nfrontp, "td: ttloop\r\n");
 		     nfrontp += strlen(nfrontp);});
@@ -87,8 +87,8 @@ ttloop()
  * Check a descriptor to see if out of band data exists on it.
  */
     int
-stilloob(s)
-    int	s;		/* socket number */
+stilloob(int s)
+       	  		/* socket number */
 {
     static struct timeval timeout = { 0 };
     fd_set	excepts;
@@ -111,7 +111,7 @@ stilloob(s)
 }
 
 	void
-ptyflush()
+ptyflush(void)
 {
 	int n;
 
@@ -143,8 +143,7 @@ ptyflush()
  * character.
  */
     char *
-nextitem(current)
-    char	*current;
+nextitem(char *current)
 {
     if ((*current&0xff) != IAC) {
 	return current+1;
@@ -190,7 +189,7 @@ nextitem(current)
  * us in any case.
  */
     void
-netclear()
+netclear(void)
 {
     register char *thisitem, *next;
     char *good;
@@ -243,7 +242,7 @@ netclear()
  *	handling requests for urgent data.
  */
     void
-netflush()
+netflush(void)
 {
     int n;
     extern int not42;
@@ -321,9 +320,7 @@ netflush()
  *    len - How many bytes to write
  */
 	void
-writenet(ptr, len)
-	register unsigned char *ptr;
-	register int len;
+writenet(register unsigned char *ptr, register int len)
 {
 	/* flush buffer if no room for new data) */
 	if ((&netobuf[BUFSIZ] - nfrontp) < len) {
@@ -363,11 +360,9 @@ void fatal(int f, char *msg)
 }
 
 	void
-fatalperror(f, msg)
-	int f;
-	char *msg;
+fatalperror(int f, char *msg)
 {
-	char buf[BUFSIZ], *strerror();
+	char buf[BUFSIZ], *strerror(int);
 
 	(void) sprintf(buf, "%s: %s", msg, strerror(errno));
 	fatal(f, buf);
@@ -415,8 +410,7 @@ void edithost(char *pat, char *host)
 static char *putlocation;
 
 	void
-putstr(s)
-	register char *s;
+putstr(register char *s)
 {
 
 	while (*s)
@@ -424,8 +418,7 @@ putstr(s)
 }
 
 	void
-putchr(cc)
-	int cc;
+putchr(int cc)
 {
 	*putlocation++ = cc;
 }
@@ -521,9 +514,7 @@ void putf(char *cp, char *where)
  * Print telnet options and commands in plain text, if possible.
  */
 	void
-printoption(fmt, option)
-	register char *fmt;
-	register int option;
+printoption(register char *fmt, register int option)
 {
 	if (TELOPT_OK(option))
 		sprintf(nfrontp, "%s %s\r\n", fmt, TELOPT(option));
@@ -536,10 +527,10 @@ printoption(fmt, option)
 }
 
     void
-printsub(direction, pointer, length)
-    char		direction;	/* '<' or '>' */
-    unsigned char	*pointer;	/* where suboption data sits */
-    int			length;		/* length of suboption data */
+printsub(char direction, unsigned char *pointer, int length)
+        		          	/* '<' or '>' */
+                 	         	/* where suboption data sits */
+       			       		/* length of suboption data */
 {
     register int i;
     char buf[512];
@@ -1173,10 +1164,7 @@ printsub(direction, pointer, length)
  * Dump a data buffer in hex and ascii to the output data stream.
  */
 	void
-printdata(tag, ptr, cnt)
-	register char *tag;
-	register char *ptr;
-	register int cnt;
+printdata(register char *tag, register char *ptr, register int cnt)
 {
 	register int i;
 	char xbuf[30];
