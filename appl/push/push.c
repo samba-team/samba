@@ -511,30 +511,35 @@ parse_pobox (char *a0, char *a1,
 	     char **host, char **user, char **filename)
 {
     char *h, *u, *f;
-    char *p;
+    int po = 0;
 
-    h = a0;
-    f = a1;
-    p = strchr (h, ':');
-    if (p) {
-	*p++ = '\0';
-	if (strcmp (h, "po") == 0) {
-	    h = strchr(p, '@');
-	    if(h)
-		*h++ = '\0';
-	    else {
-		h = getenv("MAILHOST");
-		if (h == NULL)
-		    errx (1, "MAILHOST not set");
-	    }
-	}
-	u = p;
-    } else {
-	struct passwd *pwd = getpwuid(getuid());
-	if (pwd == NULL)
-	    errx (1, "Who are you?");
-	u = pwd->pw_name;
+    if(strncmp(a0, "po:", 3) == 0) {
+	a0 += 3;
+	po++;
     }
+    h = strchr(a0, '@');
+    if(h)
+	*h++ = '\0';
+    else
+	h = a0;
+    u = strchr(a0, ':');
+    if(u)
+	*u++ = '\0';
+    else
+	u = a0;
+    if(h == u)
+	/* some inconsistent compatibility with various mailers */
+	if(po) {
+	    h = getenv("MAILHOST");
+	    if (h == NULL)
+		errx (1, "MAILHOST not set");
+	} else {
+	    struct passwd *pwd = getpwuid(getuid());
+	    if (pwd == NULL)
+		errx (1, "Who are you?");
+	    u = strdup(pwd->pw_name);
+	}
+    errx(0, "h = %s, u = %s", h, u);
     *host = h;
     *user = u;
     *filename = f;
