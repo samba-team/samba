@@ -1180,26 +1180,19 @@ const struct passwd *map_nt_and_unix_username(const char *domain,
 		fstrcpy(nt_user, ntuser);
 	}
 
-#if 1
-
 	/*
 	 * Pass the user through the NT -> unix user mapping
 	 * function.
 	 */
 
-	if (lp_server_role() != ROLE_DOMAIN_NONE)
+	if (lookupsmbpwntnam(nt_user, &gmep))
 	{
-		if (lookupsmbpwntnam(nt_user, &gmep))
-		{
-			fstrcpy(unix_user, gmep.unix_name);
-		}
+		fstrcpy(unix_user, gmep.unix_name);
 	}
-#else
-	DEBUG(1,("map_nt_and_unix_username: NT->Unix map DISABLED\n"));
-	
-	/* assume unix name is same as nt name */
-	fstrcpy(unix_user, ntuser);
-#endif
+	else
+	{
+		return NULL;
+	}
 
 	/*
 	 * Pass the user through the unix -> unix user mapping
