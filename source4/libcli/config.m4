@@ -27,23 +27,3 @@ SMB_SUBSYSTEM(LIBCLI_RAW,[],
 		libcli/raw/rawacl.o 
 		libcli/raw/rawdate.o],
 		[${LIBCLI_RAW_LIBS}])
-
-SMB_SUBSYSTEM(LIBCLI_UTILS,[],
-		[libcli/util/asn1.o 
-		libcli/util/smberr.o 
-		libcli/util/doserr.o 
-		libcli/util/errormap.o 
-		libcli/util/clierror.o 
-		libcli/util/nterr.o 
-		libcli/util/smbdes.o 
-		libcli/util/smbencrypt.o 
-		libcli/util/dom_sid.o])
-
-SMB_SUBSYSTEM(LIBCLI_NMB,[],
-		[libcli/unexpected.o
-		libcli/namecache.o
-		libcli/nmblib.o
-		libcli/namequery.o])
-
-SMB_SUBSYSTEM(LIBCLI,[],[],[],
-		[LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH LIBCLI_NMB])
