@@ -216,7 +216,7 @@ change (krb5_context context,
     HDB *db;
     hdb_entry ent;
     krb5_data salt;
-    krb5_keyblock new_keyblock;
+    krb5_keyblock new_keyblock, *old_keyblock;
 
     krb5_unparse_name (context, principal, &c);
 
@@ -260,21 +260,27 @@ change (krb5_context context,
     memset (&new_keyblock, 0, sizeof(new_keyblock));
     krb5_string_to_key_data (pwd_data, &salt, &new_keyblock);
     krb5_data_free (&salt);
-    if (new_keyblock.keytype == ent.keyblock.keytype
-	&& new_keyblock.keyvalue.length == ent.keyblock.keyvalue.length
+    old_keyblock = &ent.keys.val[0].key;
+
+    if (new_keyblock.keytype == old_keyblock->keytype
+	&& new_keyblock.keyvalue.length == old_keyblock->keyvalue.length
 	&& memcmp (new_keyblock.keyvalue.data,
-		   ent.keyblock.keyvalue.data,
+		   old_keyblock->keyvalue.data,
 		   new_keyblock.keyvalue.length) == 0) {
 	ret = 0;
     } else {
-	memset (&ent.keyblock, 0, sizeof(ent.keyblock));
-	ent.keyblock.keytype = new_keyblock.keytype;
-	krb5_data_copy (&ent.keyblock.keyvalue,
+	Event *e;
+
+	memset (old_keyblock, 0, sizeof(*old_keyblock));
+	old_keyblock->keytype = new_keyblock.keytype;
+	krb5_data_copy (&old_keyblock->keyvalue,
 			new_keyblock.keyvalue.data,
 			new_keyblock.keyvalue.length);
 	ent.kvno++;
-	ent.last_change = time(NULL);
-	krb5_copy_principal (context, principal, &ent.changed_by);
+	e = malloc(sizeof(*e));
+	e->time = time(NULL);
+	krb5_copy_principal (context, principal, &e->principal);
+	ent.modified_by = e;
 	ret = db->store (context, db, &ent);
     }
     memset (&new_keyblock, 0, sizeof(new_keyblock));
