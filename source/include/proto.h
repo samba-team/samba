@@ -138,6 +138,12 @@ BOOL allow_access(char *deny_list,char *allow_list,
 		  char *cname,char *caddr);
 BOOL check_access(int sock, char *allow_list, char *deny_list);
 
+/*The following definitions come from  lib/agent.c  */
+
+void init_sock_redir(struct vagent_ops*va);
+void free_sock_redir(struct vagent_ops*va);
+void start_agent(struct vagent_ops *va);
+
 /*The following definitions come from  lib/bitmap.c  */
 
 struct bitmap *bitmap_allocate(int n);

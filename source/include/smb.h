@@ -550,6 +550,9 @@ typedef struct
 
 #include "vfs.h"
 
+
+#include "vagent.h"
+
 typedef struct connection_struct
 {
 	struct connection_struct *next, *prev;
