@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -365,7 +365,13 @@ kadm_connect(kadm5_client_context *ctx)
 			NULL, NULL, cc, NULL, NULL, NULL);
     if(ret == 0) {
 	krb5_data params;
-	ret = _kadm5_marshal_params(context, ctx->realm_params, &params);
+	kadm5_config_params p;
+	memset(&p, 0, sizeof(p));
+	if(ctx->realm) {
+	    p.mask |= KADM5_CONFIG_REALM;
+	    p.realm = ctx->realm;
+	}
+	ret = _kadm5_marshal_params(context, &p, &params);
 	
 	ret = krb5_write_priv_message(context, ctx->ac, &s, &params);
 	krb5_data_free(&params);
@@ -462,7 +468,7 @@ kadm5_c_init_with_context(krb5_context context,
     ctx->prompter = prompter;
     ctx->keytab = keytab;
     ctx->ccache = ccache;
-    ctx->realm_params = realm_params;
+    /* maybe we should copy the params here */
     ctx->sock = -1;
     
     *server_handle = ctx;
