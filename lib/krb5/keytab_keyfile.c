@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -188,6 +188,8 @@ akf_start_seq_get(krb5_context context,
     if(ret) {
 	krb5_storage_free(c->sp);
 	close(c->fd);
+	if(ret == KRB5_CC_END)
+	    return KRB5_KT_NOTFOUND;
 	return ret;
     }
 
