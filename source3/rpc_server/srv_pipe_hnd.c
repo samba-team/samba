@@ -1092,6 +1092,22 @@ BOOL close_rpc_pipe_hnd(smb_np_struct *p)
 }
 
 /****************************************************************************
+ Close all pipes on a connection.
+****************************************************************************/
+
+void pipe_close_conn(connection_struct *conn)
+{
+	smb_np_struct *p, *next;
+
+	for (p=Pipes;p;p=next) {
+		next = p->next;
+		if (p->conn == conn) {
+			close_rpc_pipe_hnd(p);
+		}
+	}
+}
+
+/****************************************************************************
  Close an rpc pipe.
 ****************************************************************************/
 
