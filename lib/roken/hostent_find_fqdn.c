@@ -42,14 +42,14 @@ RCSID("$Id$");
  * Try to find a fqdn (with `.') in he if possible, else return h_name
  */
 
-char *
+const char *
 hostent_find_fqdn (const struct hostent *he)
 {
-    char *ret = he->h_name;
-    char **h;
+    const char *ret = he->h_name;
+    const char **h;
 
     if (strchr (ret, '.') == NULL)
-	for (h = he->h_aliases; *h; ++h) {
+	for (h = (const char **)he->h_aliases; *h != NULL; ++h) {
 	    if (strchr (*h, '.') != NULL) {
 		ret = *h;
 		break;
