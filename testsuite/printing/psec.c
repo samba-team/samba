@@ -71,7 +71,7 @@ TDB_CONTEXT *tdb;
 
 char *ace_type_to_str(uint ace_type)
 {
-	fstring temp;
+	static fstring temp;
 
 	switch(ace_type) {
 	case SEC_ACE_TYPE_ACCESS_DENIED:
@@ -99,7 +99,7 @@ uint str_to_ace_type(char *ace_type)
 
 char *ace_mask_to_str(uint32 ace_mask)
 {
-	fstring temp;
+	static fstring temp;
 
 	switch (ace_mask) {
 	case PRINTER_ACE_FULL_CONTROL:
@@ -132,7 +132,7 @@ uint32 str_to_ace_mask(char *ace_mask)
 
 char *ace_to_str(SEC_ACE *ace)
 {
-	pstring temp;
+	static pstring temp;
 	fstring sidstr;
 
 	sid_to_string(sidstr, &ace->sid);
