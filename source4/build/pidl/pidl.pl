@@ -111,6 +111,7 @@ my($pidl_file) = util::ChangeExtension($opt_output, "pidl");
 if ($opt_parse) {
     print "Generating $pidl_file from $idl_file\n";
     my($idl) = IdlParse($idl_file);
+    defined $idl || die "Failed to parse $idl_file";
     util::SaveStructure($pidl_file, $idl) || die "Failed to save $pidl_file";
 }
 
