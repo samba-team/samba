@@ -745,8 +745,14 @@ static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 * u_2,
 	if(!prs_uint32("num_local_grps", ps, depth, &u_2->num_local_grps))
 		return False;
 
-	if(!prs_uint8s(False, "padding", ps, depth, u_2->padding,sizeof(u_2->padding)))
-		return False;
+	if (u_2->ptr_0) {
+		/* this was originally marked as 'padding'. It isn't
+		   padding, it is some sort of optional 12 byte
+		   structure. When it is present it contains zeros
+		   !? */
+		if(!prs_uint8s(False, "unknown", ps, depth, u_2->padding,sizeof(u_2->padding)))
+			return False;
+	}
 
 	if(!smb_io_unistr2("uni_domain", &u_2->uni_domain, u_2->hdr_domain.buffer, ps, depth))
 		return False;
