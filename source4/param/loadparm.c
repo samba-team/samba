@@ -2622,6 +2622,7 @@ static BOOL do_parameter(const char *pszParmName, const char *pszParmValue)
 BOOL lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 {
 	int parmnum = map_parameter(pszParmName);
+	int i;
 
 	if (parmnum < 0 && strchr(pszParmName, ':')) {
 		/* set a parametric option */
@@ -2636,6 +2637,15 @@ BOOL lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 	}
 
 	parm_table[parmnum].flags |= FLAG_CMDLINE;
+
+	/* we have to also set FLAG_CMDLINE on aliases */
+	for (i=parmnum-1;i>=0 && parm_table[i].ptr == parm_table[parmnum].ptr;i--) {
+		parm_table[i].flags |= FLAG_CMDLINE;
+	}
+	for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].ptr == parm_table[parmnum].ptr;i++) {
+		parm_table[i].flags |= FLAG_CMDLINE;
+	}
+
 	return True;
 }
 
