@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -55,7 +55,7 @@ sendmsg(int s, const struct msghdr *msg, int flags)
     for(i = 0; i < msg->msg_iovlen; ++i)
 	tot += iov[i].iov_len;
     buf = malloc(tot);
-    if (buf == NULL) {
+    if (tot != 0 && buf == NULL) {
 	errno = ENOMEM;
 	return -1;
     }
