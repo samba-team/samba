@@ -41,7 +41,7 @@
 #define IS_BITS_SET_SOME(var,bit) (((var)&(bit))!=0)
 #define IS_BITS_CLR_ALL(var,bit) (((var)&(~(bit)))==0)
 
-#define PTR_DIFF(p1,p2) ((ptrdiff_t)(((char *)(p1)) - (char *)(p2)))
+#define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
 
 typedef int BOOL;
 

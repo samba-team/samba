@@ -194,7 +194,7 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   returns an array of IP addresses or NULL if none
   *count will be set to the number of addresses returned
   ****************************************************************************/
-struct in_addr *name_query(int fd,char *name,int name_type, BOOL bcast,BOOL recurse,
+struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOOL recurse,
          struct in_addr to_ip, int *count, void (*fn)(struct packet_struct *))
 {
   BOOL found=False;
@@ -440,7 +440,7 @@ void endlmhosts(FILE *fp)
 /********************************************************
 resolve via "bcast" method
 *********************************************************/
-static BOOL resolve_bcast(char *name, struct in_addr *return_ip, int name_type)
+static BOOL resolve_bcast(const char *name, struct in_addr *return_ip, int name_type)
 {
 	int sock, i;
 	
@@ -486,7 +486,7 @@ static BOOL resolve_bcast(char *name, struct in_addr *return_ip, int name_type)
 /********************************************************
 resolve via "wins" method
 *********************************************************/
-static BOOL resolve_wins(char *name, struct in_addr *return_ip, int name_type)
+static BOOL resolve_wins(const char *name, struct in_addr *return_ip, int name_type)
 {
       int sock;
       struct in_addr wins_ip;
@@ -536,7 +536,7 @@ static BOOL resolve_wins(char *name, struct in_addr *return_ip, int name_type)
 /********************************************************
 resolve via "lmhosts" method
 *********************************************************/
-static BOOL resolve_lmhosts(char *name, struct in_addr *return_ip, int name_type)
+static BOOL resolve_lmhosts(const char *name, struct in_addr *return_ip, int name_type)
 {
 	/*
 	 * "lmhosts" means parse the local lmhosts file.
@@ -566,7 +566,7 @@ static BOOL resolve_lmhosts(char *name, struct in_addr *return_ip, int name_type
 /********************************************************
 resolve via "hosts" method
 *********************************************************/
-static BOOL resolve_hosts(char *name, struct in_addr *return_ip)
+static BOOL resolve_hosts(const char *name, struct in_addr *return_ip)
 {
 	/*
 	 * "host" means do a localhost, or dns lookup.
@@ -589,7 +589,7 @@ static BOOL resolve_hosts(char *name, struct in_addr *return_ip)
  or NetBIOS name. This uses the name switch in the
  smb.conf to determine the order of name resolution.
 *********************************************************/
-BOOL resolve_name(char *name, struct in_addr *return_ip, int name_type)
+BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 {
   int i;
   BOOL pure_address = True;

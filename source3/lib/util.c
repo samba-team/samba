@@ -2386,7 +2386,7 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
 a wrapper for gethostbyname() that tries with all lower and all upper case 
 if the initial name fails
 ****************************************************************************/
-struct hostent *Get_Hostbyname(char *name)
+struct hostent *Get_Hostbyname(const char *name)
 {
   char *name2 = strdup(name);
   struct hostent *ret;
