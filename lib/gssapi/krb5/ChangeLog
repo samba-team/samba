@@ -1,3 +1,32 @@
+2003-06-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gssapi_locl.h: add prototypes for sequence.c
+	
+	* Makefile.am (libgssapi_la_SOURCES): add sequence.c
+	(test_sequence): build
+
+	* sequence.c: sequence number checks, order and replay
+	* test_sequence.c: sequence number checks, order and replay
+
+2003-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* accept_sec_context.c (gss_accept_sec_context): make sure time is
+	returned in seconds from now, not in kerberos time
+	
+	* acquire_cred.c (gss_aquire_cred): make sure time is returned in
+	seconds from now, not in kerberos time
+	
+	* init_sec_context.c (init_auth): if the cred is expired before we
+	tries to create a token, fail so the peer doesn't need reject us
+	(*): make sure time is returned in seconds from now, 
+	not in kerberos time
+	(repl_mutual): remember to unlock the context mutex
+
+	* context_time.c (gss_context_time): remove unused variable
+	
+	* verify_mic.c: make sure minor_status is always set, pointed out
+	by Luke Howard <lukeh@PADL.COM>
+
 2003-05-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* *.[ch]: do some basic locking (no reference counting so contexts 
