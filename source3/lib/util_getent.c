@@ -3,6 +3,7 @@
    Version 3.0
    Samba utility functions
    Copyright (C) Simo Sorce 2001
+   Copyright (C) Jeremy Allison 2001
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -228,5 +229,85 @@ void pwent_free (struct sys_pwent *plist)
 		prev = plist;
 		plist = plist->next;
 		SAFE_FREE(prev);
+	}
+}
+
+/****************************************************************
+ Add the individual group users onto the list.
+****************************************************************/
+
+static struct sys_userlist *add_members_to_userlist(struct sys_userlist *list_head, const struct group *grp)
+{
+	size_t num_users, i;
+
+	/* Count the number of users. */
+	for (num_users = 0; grp->gr_mem[num_users]; num_users++)
+		;
+
+	for (i = 0; i < num_users; i++) {
+		struct sys_userlist *entry = (struct sys_userlist *)malloc(sizeof(*entry));
+		size_t len = strlen(grp->gr_mem[i])+1;
+		if (entry == NULL) {
+			free_userlist(list_head);
+			return NULL;
+		}
+		entry->unix_name = (char *)malloc(len);
+		if (entry->unix_name == NULL) {
+			SAFE_FREE(entry);
+			free_userlist(list_head);
+			return NULL;
+		}
+		safe_strcpy(entry->unix_name, grp->gr_mem[i],len);
+		DLIST_ADD(list_head, entry);
+	}
+	return list_head;
+}
+
+/****************************************************************
+ Get the list of UNIX users in a group.
+ We have to enumerate the /etc/group file as some UNIX getgrnam()
+ calls won't do that for us (notably Tru64 UNIX).
+****************************************************************/
+
+struct sys_userlist *get_users_in_group(const char *gname)
+{
+	struct sys_userlist *list_head = NULL;
+	struct group *gptr;
+
+	/*
+	 * If we're doing this via winbindd, don't do the
+	 * entire group list enumeration as we know this is
+	 * pointless (and slow).
+	 */
+
+	if (strchr(gname,*lp_winbind_separator())) {
+		if ((gptr = (struct group *)getgrnam(gname)) == NULL)
+			return NULL;
+		return add_members_to_userlist(list_head, gptr);
+	}
+
+	setgrent();
+	while((gptr = getgrent()) != NULL) {
+		if (strequal(gname, gptr->gr_name)) {
+			list_head = add_members_to_userlist(list_head, gptr);
+			if (list_head == NULL)
+				return NULL;
+		}
+	}
+	endgrent();
+	return list_head;
+}
+
+/****************************************************************
+ Free list allocated above.
+****************************************************************/
+
+void free_userlist(struct sys_userlist *list_head)
+{
+	while (list_head) {
+		struct sys_userlist *old_head = list_head;
+		DLIST_REMOVE(list_head, list_head);
+		SAFE_FREE(old_head->unix_name);
+		SAFE_FREE(old_head);
 	}
 }

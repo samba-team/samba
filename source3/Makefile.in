@@ -114,7 +114,7 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/md4.o \
           lib/interfaces.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/system.o lib/time.o \
-	  lib/ufc.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
+	  lib/ufc.o lib/genrand.o lib/username.o lib/util_getent.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o lib/dprintf.o lib/xfile.o lib/wins_srv.o \
 	  lib/util_str.o lib/util_sid.o \
 	  lib/util_unistr.o lib/util_file.o lib/sysacls.o \
@@ -160,8 +160,7 @@ RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_samr.o rpc_server/srv_samr_nt.o rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
-                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o \
-		 lib/util_getent.o
+                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -403,7 +402,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                lib/wins_srv.o lib/substitute.o lib/select.o lib/util.o \
                nsswitch/wb_client.o nsswitch/wb_common.o \
                lib/system.o lib/util_file.o \
-               lib/genrand.o lib/username.o lib/charcnv.o lib/time.o \
+               lib/genrand.o lib/username.o lib/util_getent.o lib/charcnv.o lib/time.o \
                lib/md4.o lib/util_unistr.o lib/signal.o lib/talloc.o \
                lib/ms_fnmatch.o lib/util_sock.o lib/smbrun.o \
                lib/util_sec.o \

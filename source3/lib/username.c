@@ -344,10 +344,10 @@ failed with error %s\n", strerror(errno) ));
  		goto err;
 	}
  
- 	/*
- 	 * Now we have the gid list for this user - convert the gname
- 	 * to a gid_t via either winbind or the local UNIX lookup and do the comparison.
- 	 */
+	/*
+	 * Now we have the gid list for this user - convert the gname
+	 * to a gid_t via either winbind or the local UNIX lookup and do the comparison.
+	 */
  
 	if ((gid = nametogid(gname)) == (gid_t)-1) {
  		DEBUG(0,("user_in_winbind_group_list: winbind_lookup_name for group %s failed.\n",
@@ -379,9 +379,9 @@ failed with error %s\n", strerror(errno) ));
 
 static BOOL user_in_unix_group_list(const char *user,const char *gname)
 {
-	struct group *gptr;
-	char **member;  
 	struct passwd *pass = Get_Pwnam(user);
+	struct sys_userlist *user_list;
+	struct sys_userlist *member;
 
 	DEBUG(10,("user_in_unix_group_list: checking user %s in group %s\n", user, gname));
 
@@ -397,20 +397,22 @@ static BOOL user_in_unix_group_list(const char *user,const char *gname)
  		}
  	}
  
- 	if ((gptr = (struct group *)getgrnam(gname)) == NULL) {
+	user_list = get_users_in_group(gname);
+ 	if (user_list == NULL) {
  		DEBUG(10,("user_in_unix_group_list: no such group %s\n", gname ));
  		return False;
  	}
- 
- 	member = gptr->gr_mem;
-  	while (member && *member) {
- 		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n", user, *member ));
-  		if (strequal(*member,user)) {
+
+	for (member = user_list; member; member = member->next) {
+ 		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n",
+			user, member->unix_name ));
+  		if (strequal(member->unix_name,user)) {
+			free_userlist(user_list);
   			return(True);
   		}
-		member++;
 	}
 
+	free_userlist(user_list);
 	return False;
 }	      
 
