@@ -1,3 +1,13 @@
+Changes in release 0.3b
+
+ * kdc: prefer default-salted keys on v5 requests
+
+ * kdc: lowercase hostnames in v4 mode
+
+ * hprop: handle more types of MIT salts
+
+ * bug fixes
+
 Changes in release 0.3a:
 
  * implement arcfour-hmac-md5 to interoperate with W2K
