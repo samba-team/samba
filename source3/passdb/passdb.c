@@ -213,7 +213,7 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
 		}
 	}
 
-	if (!pdb_set_user_sid_from_rid(account_data, fallback_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
+	if (!pdb_set_user_sid_from_rid(account_data, algorithmic_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
 		DEBUG(0,("Can't set User SID from RID!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -370,7 +370,7 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username,
 	/* see if we need to generate a new rid using the 2.2 algorithm */
 	if ( rid == 0 && lp_enable_rid_algorithm() ) {
 		DEBUG(10,("pdb_init_sam_new: no RID specified.  Generating one via old algorithm\n"));
-		rid = fallback_pdb_uid_to_user_rid(pwd->pw_uid);
+		rid = algorithmic_pdb_uid_to_user_rid(pwd->pw_uid);
 	}
 	
 	/* set the new SID */
@@ -660,7 +660,7 @@ int algorithmic_rid_base(void)
  Converts NT user RID to a UNIX uid.
  ********************************************************************/
 
-uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
+uid_t algorithmic_pdb_user_rid_to_uid(uint32 user_rid)
 {
 	int rid_offset = algorithmic_rid_base();
 	return (uid_t)(((user_rid & (~USER_RID_TYPE)) - rid_offset)/RID_MULTIPLIER);
@@ -670,7 +670,7 @@ uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
  converts UNIX uid to an NT User RID.
  ********************************************************************/
 
-uint32 fallback_pdb_uid_to_user_rid(uid_t uid)
+uint32 algorithmic_pdb_uid_to_user_rid(uid_t uid)
 {
 	int rid_offset = algorithmic_rid_base();
 	return (((((uint32)uid)*RID_MULTIPLIER) + rid_offset) | USER_RID_TYPE);
@@ -716,26 +716,19 @@ static BOOL pdb_rid_is_well_known(uint32 rid)
  Decides if a RID is a user or group RID.
  ********************************************************************/
 
-BOOL fallback_pdb_rid_is_user(uint32 rid)
+BOOL algorithmic_pdb_rid_is_user(uint32 rid)
 {
-  /* lkcl i understand that NT attaches an enumeration to a RID
-   * such that it can be identified as either a user, group etc
-   * type.  there are 5 such categories, and they are documented.
-   */
-	/* However, they are not in the RID, just somthing you can query
-	   seperatly.  Sorry luke :-) */
-
-   if(pdb_rid_is_well_known(rid)) {
-      /*
-       * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
-       * and DOMAIN_USER_RID_GUEST.
-       */
-     if(rid == DOMAIN_USER_RID_ADMIN || rid == DOMAIN_USER_RID_GUEST)
-       return True;
-   } else if((rid & RID_TYPE_MASK) == USER_RID_TYPE) {
-     return True;
-   }
-   return False;
+	if(pdb_rid_is_well_known(rid)) {
+		/*
+		 * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
+		 * and DOMAIN_USER_RID_GUEST.
+		 */
+		if(rid == DOMAIN_USER_RID_ADMIN || rid == DOMAIN_USER_RID_GUEST)
+			return True;
+	} else if((rid & RID_TYPE_MASK) == USER_RID_TYPE) {
+		return True;
+	}
+	return False;
 }
 
 /*******************************************************************
@@ -806,13 +799,13 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 		return True;
 	}
 
-	if (fallback_pdb_rid_is_user(rid)) {
+	if (algorithmic_pdb_rid_is_user(rid)) {
 		uid_t uid;
 		struct passwd *pw = NULL;
 
 		DEBUG(5, ("assuming RID %u is a user\n", (unsigned)rid));
 
-       		uid = fallback_pdb_user_rid_to_uid(rid);
+       		uid = algorithmic_pdb_user_rid_to_uid(rid);
 		pw = sys_getpwuid( uid );
 		
 		DEBUG(5,("local_lookup_sid: looking up uid %u %s\n", (unsigned int)uid,
@@ -851,7 +844,7 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 		DEBUG(5,("local_lookup_sid: found group %s for rid %u\n", name,
 			 (unsigned int)rid ));
 		
-		/* assume fallback groups aer domain global groups */
+		/* assume algorithmic groups are domain global groups */
 		
 		*psid_name_use = SID_NAME_DOM_GRP;
 		
@@ -1119,7 +1112,7 @@ DOM_SID *algorithmic_uid_to_sid(DOM_SID *psid, uid_t uid)
 
 	DEBUG(8,("algorithmic_uid_to_sid: falling back to RID algorithm\n"));
 	sid_copy( psid, get_global_sam_sid() );
-	sid_append_rid( psid, fallback_pdb_uid_to_user_rid(uid) );
+	sid_append_rid( psid, algorithmic_pdb_uid_to_user_rid(uid) );
 	DEBUG(10,("algorithmic_uid_to_sid:  uid (%d) -> SID %s.\n",
 		(unsigned int)uid, sid_string_static(psid) ));
 
@@ -1263,7 +1256,7 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 	
 	if ( !ret ) {
 
-		/* fallback to rid mapping if enabled */
+		/* algorithmic to rid mapping if enabled */
 
 		if ( lp_enable_rid_algorithm() ) {
 
@@ -1308,7 +1301,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	
 	if ( !ret ) {
 
-		/* fallback to rid mapping if enabled */
+		/* Fallback to algorithmic rid mapping if enabled */
 
 		if ( lp_enable_rid_algorithm() ) {
 
@@ -1324,7 +1317,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 
 			DEBUG(10,("local_sid_to_gid: Fall back to algorithmic mapping\n"));
 
-			if (fallback_pdb_rid_is_user(rid)) {
+			if (algorithmic_pdb_rid_is_user(rid)) {
 				DEBUG(3, ("local_sid_to_gid: SID %s is *NOT* a group\n", sid_string_static(psid)));
 				return False;
 			} else {
@@ -2257,11 +2250,11 @@ BOOL get_free_rid_range(uint32 *low, uint32 *high)
 		return False;
 	}
 
-	*low = fallback_pdb_uid_to_user_rid(id_low);
-	if (fallback_pdb_user_rid_to_uid((uint32)-1) < id_high) {
+	*low = algorithmic_pdb_uid_to_user_rid(id_low);
+	if (algorithmic_pdb_user_rid_to_uid((uint32)-1) < id_high) {
 		*high = (uint32)-1;
 	} else {
-		*high = fallback_pdb_uid_to_user_rid(id_high);
+		*high = algorithmic_pdb_uid_to_user_rid(id_high);
 	}
 
 	return True;
