@@ -45,6 +45,11 @@
 #undef HAVE_TERMIOS_H
 #endif
 
+#ifdef LINUX
+#define DEFAULT_PRINTING PRINT_BSD
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+
 #ifdef RELIANTUNIX
 /*
  * <unistd.h> has to be included before any other to get
