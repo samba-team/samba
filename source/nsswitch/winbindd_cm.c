@@ -513,3 +513,33 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 
         return &hnd;
 }
+
+/* Get a handle on a netlogon pipe */
+
+struct cli_state *cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd)
+{
+        struct winbindd_cm_conn conn;
+        NTSTATUS result;
+
+        /* Open an initial conection */
+
+        ZERO_STRUCT(conn);
+
+        if (!cm_open_connection(domain, PIPE_NETLOGON, &conn)) {
+                DEBUG(3, ("Could not open a connection to %s\n", domain));
+                return NULL;
+        }
+
+        result = cli_nt_setup_creds(conn.cli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                DEBUG(0, ("error connecting to domain password server: %s\n",
+                          get_nt_error_msg(result)));
+                cli_shutdown(conn.cli);
+                return NULL;
+        }
+
+        /* We only want the client handle from this structure */
+
+        return conn.cli;
+}
