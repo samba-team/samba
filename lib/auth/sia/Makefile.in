@@ -75,4 +75,4 @@ $(OBJECTS): ../../../include/config.h
 
 $(LIB): $(OBJECTS)
 	rm -f $(LIB)
-	ld -shared -o $@ -hidden -exported_symbol siad_\* $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a @LIB_getpwnam_r@ -lc
+	ld -shared -o $@ -hidden -exported_symbol siad_\* $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a ../../roken/libroken.a @LIB_getpwnam_r@ -lc
