@@ -171,7 +171,7 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 
 	l->rdata_i.data = NULL;
 	prs_init(&l->rdata_i, 0, l->rdata.align, l->rdata.data->margin, l->rdata.io);
-	data = mem_data(&(l->rdata.data), data_start);
+	data = mem_data(l->rdata.data, data_start);
 	mem_create(l->rdata_i.data, data, 0, data_len, 0, False); 
 	l->rdata_i.offset = data_len;
 	l->rdata_offset += data_len;
@@ -201,7 +201,7 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 			l->ntlmssp_seq_num++;
 			make_rpc_auth_ntlmssp_chk(&l->ntlmssp_chk, NTLMSSP_SIGN_VERSION, crc32, l->ntlmssp_seq_num++);
 			smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(l->ntlmssp_chk), &l->rverf, 0);
-			auth_data = mem_data(&l->rverf.data, 4);
+			auth_data = mem_data(l->rverf.data, 4);
 			NTLMSSPcalc_p(l, (uchar*)auth_data, 12);
 		}
 	}
@@ -759,7 +759,7 @@ static BOOL api_pipe_auth_process(rpcsrv_struct *l, prs_struct *pd)
 
 	if (auth_seal)
 	{
-		char *data = mem_data(&pd->data, pd->offset);
+		char *data = mem_data(pd->data, pd->offset);
 		DEBUG(5,("api_pipe_auth_process: data %d\n", pd->offset));
 		NTLMSSPcalc_p(l, (uchar*)data, data_len);
 		crc32 = crc32_calc_buffer(data_len, data);
@@ -776,7 +776,7 @@ static BOOL api_pipe_auth_process(rpcsrv_struct *l, prs_struct *pd)
 
 	if (auth_verify)
 	{
-		char *req_data = mem_data(&pd->data, pd->offset + 4);
+		char *req_data = mem_data(pd->data, pd->offset + 4);
 		DEBUG(5,("api_pipe_auth_process: auth %d\n", pd->offset + 4));
 		NTLMSSPcalc_p(l, (uchar*)req_data, 12);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(l->ntlmssp_chk), pd, 0);
@@ -853,7 +853,7 @@ BOOL rpc_add_to_pdu(prs_struct *ps, const char *data, int len)
 	DEBUG(10,("ps->data->start: %d\n", ps->data->offset.start));
 	ps->data->offset.start = 0x0;
 
-	to = mem_data(&ps->data, prev_size);
+	to = mem_data(ps->data, prev_size);
 	if (to == NULL)
 	{
 		DEBUG(10,("rpc_add_to_pdu: data could not be found\n"));
@@ -1044,8 +1044,7 @@ static BOOL api_rpc_command(rpcsrv_struct *l,
 		return False;
 	}
 
-	/* start off with 1024 bytes, and a large safety margin too */
-	prs_init(&l->rdata, 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&l->rdata, 0, 4, 0, False);
 
 	/* do the actual command */
 	api_rpc_cmds[fn_num].fn(l, data, &(l->rdata));

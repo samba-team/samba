@@ -79,7 +79,7 @@ BOOL msrpc_receive_prs(struct msrpc_state *msrpc, prs_struct *ps)
 
 	prs_init(ps, len, 4, 0, False);
 	ps->offset = len;
-	data = mem_data(&ps->data, 0);
+	data = mem_data(ps->data, 0);
 	if (data == NULL || len <= 0)
 	{
 		return False;
@@ -192,7 +192,7 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 	}
 
 	len = ps.offset;
-	data = mem_data(&ps.data, 0);
+	data = mem_data(ps.data, 0);
 
 	SIVAL(data, 0, len);
 

@@ -31,9 +31,13 @@ extern int DEBUGLEVEL;
 /*************************************************************************
  initialise an msrpc service
  *************************************************************************/
-void msrpc_service_init(void)
+void msrpc_service_init(char* service_name)
 {
-	if (!pwdb_initialise(False) || !initialise_password_db())
+	DEBUG(10,("msrpc_service_init\n"));
+
+	add_msrpc_command_processor( pipe_name, service_name, api_samr_rpc );
+
+	if (!pwdb_initialise(True) || !initialise_password_db())
 	{
 		exit(-1);
 	}
@@ -128,7 +132,6 @@ BOOL reload_services(BOOL test)
 	setup_logging(argv[0],False);
 	fstrcpy(pipe_name, "samr");
 	slprintf(debugf, sizeof(debugf), "%s/log.%s", LOGFILEBASE, pipe_name);
-	add_msrpc_command_processor( pipe_name, argv[0], api_samr_rpc );
 
 	return msrpc_main(argc, argv);
 }

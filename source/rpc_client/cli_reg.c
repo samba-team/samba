@@ -127,8 +127,8 @@ BOOL reg_open_hkcr( struct cli_connection *con,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_OPEN_HKCR */
 
@@ -185,8 +185,8 @@ BOOL reg_open_hklm( struct cli_connection *con,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_OPEN_HKLM */
 
@@ -243,8 +243,8 @@ BOOL reg_open_hku( struct cli_connection *con,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_OPEN_HKU */
 
@@ -301,8 +301,8 @@ BOOL reg_flush_key( POLICY_HND *hnd)
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_FLUSH_KEY */
 
@@ -360,8 +360,8 @@ BOOL reg_query_key( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_QUERY_KEY */
 
@@ -425,8 +425,8 @@ BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_UNKNOWN_1A */
 
@@ -482,8 +482,8 @@ BOOL reg_query_info( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_INFO */
 
@@ -541,8 +541,8 @@ BOOL reg_set_key_sec( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_SET_KEY_SEC */
 
@@ -591,8 +591,8 @@ BOOL reg_get_key_sec( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_GET_KEY_SEC */
 
@@ -659,8 +659,8 @@ BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_DELETE_VALUE */
 
@@ -713,8 +713,8 @@ BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_DELETE_KEY */
 
@@ -777,8 +777,8 @@ BOOL reg_create_key( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_CREATE_KEY */
 
@@ -844,8 +844,8 @@ BOOL reg_enum_key( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_ENUM_KEY */
 
@@ -904,8 +904,8 @@ BOOL reg_create_val( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_CREATE_VALUE */
 
@@ -961,8 +961,8 @@ BOOL reg_enum_val( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_ENUM_VALUE */
 
@@ -1020,8 +1020,8 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_OPEN_ENTRY */
 
@@ -1084,8 +1084,8 @@ BOOL reg_close( POLICY_HND *hnd)
 
 	/* create and send a MSRPC command with api REG_CLOSE */
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("REG Close\n"));
 
@@ -1162,8 +1162,8 @@ BOOL reg_shutdown(const char *srv_name,
 
 	if (msg == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api REG_SHUTDOWN */
 

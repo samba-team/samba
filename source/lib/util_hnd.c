@@ -60,7 +60,7 @@ struct samr_info
 struct con_info
 {
 	struct cli_connection *con;
-	void (*free)(struct cli_connection*);
+	void (*free_con)(struct cli_connection*);
 };
 
 static struct policy
@@ -445,8 +445,8 @@ BOOL set_policy_con(POLICY_HND *hnd, struct cli_connection *con,
 		{
 			return False;
 		}
-		p->dev.con->con  = con;
-		p->dev.con->free = free_fn;
+		p->dev.con->con      = con;
+		p->dev.con->free_con = free_fn;
 		return True;
 	}
 
@@ -519,9 +519,9 @@ BOOL close_policy_hnd(POLICY_HND *hnd)
 		}
 		case POL_CLI_INFO:
 		{
-			if (p->dev.con->free != NULL)
+			if (p->dev.con->free_con != NULL)
 			{
-				p->dev.con->free(p->dev.con->con);
+				p->dev.con->free_con(p->dev.con->con);
 			}
 			free(p->dev.con);
 			break;

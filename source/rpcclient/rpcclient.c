@@ -48,7 +48,7 @@ static void cmd_quit(struct client_info *info, int argc, char *argv[]);
 static void cmd_set (struct client_info *info, int argc, char *argv[]);
 static void cmd_net (struct client_info *info, int argc, char *argv[]);
 
-static struct ntuser_creds usr;
+static struct user_creds usr;
 
 static struct client_info cli_info;
 
@@ -759,15 +759,15 @@ static BOOL process( struct client_info *info, char *cmd_str)
 		BOOL at_sym = False;
 		pline[0] = 0;
 		safe_strcat(pline, "[", sizeof(pline)-1);
-		if (usr.domain[0] != 0)
+		if (usr.ntc.domain[0] != 0)
 		{
-			safe_strcat(pline, usr.domain, sizeof(pline)-1);
+			safe_strcat(pline, usr.ntc.domain, sizeof(pline)-1);
 			safe_strcat(pline, "\\", sizeof(pline)-1);
 			at_sym = True;
 		}
-		if (usr.user_name[0] != 0)
+		if (usr.ntc.user_name[0] != 0)
 		{
-			safe_strcat(pline, usr.user_name, sizeof(pline)-1);
+			safe_strcat(pline, usr.ntc.user_name, sizeof(pline)-1);
 			at_sym = True;
 		}
 		if (at_sym)
@@ -1356,9 +1356,9 @@ static void cmd_net(struct client_info *info, int argc, char *argv[])
 	BOOL null_pwd = False;
 	BOOL got_pwd = False;
 	pstring password;
-	extern struct ntuser_creds *usr_creds;
+	extern struct user_creds *usr_creds;
 
-	copy_nt_creds(&u, usr_creds);
+	copy_nt_creds(&u, &usr_creds->ntc);
 
 	pstrcpy(dest_host, cli_info.dest_host);
 	pstrcpy(u.user_name,optarg);
@@ -1635,15 +1635,15 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 			{
 				char *lp;
 				cmd_set_options |= CMD_USER;
-				pstrcpy(usr.user_name,optarg);
-				if ((lp=strchr(usr.user_name,'%')))
+				pstrcpy(usr.ntc.user_name,optarg);
+				if ((lp=strchr(usr.ntc.user_name,'%')))
 				{
 					*lp = 0;
 					pstrcpy(password,lp+1);
 					cmd_set_options |= CMD_PASS;
 					memset(strchr(optarg,'%')+1,'X',strlen(password));
 				}
-				if (usr.user_name[0] == 0 && password[0] == 0)
+				if (usr.ntc.user_name[0] == 0 && password[0] == 0)
 				{
 					cmd_set_options |= CMD_NOPW;
 				}
@@ -1653,7 +1653,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 			case 'W':
 			{
 				cmd_set_options |= CMD_DOM;
-				pstrcpy(usr.domain,optarg);
+				pstrcpy(usr.ntc.domain,optarg);
 				break;
 			}
 
@@ -1760,11 +1760,11 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_NOPW))
 	{
-		set_user_password(&usr, True, NULL);
+		set_user_password(&usr.ntc, True, NULL);
 	}
 	else if (IS_BITS_SET_ALL(cmd_set_options, CMD_PASS))
 	{
-		set_user_password(&usr, True, password);
+		set_user_password(&usr.ntc, True, password);
 	}
 
 	/* paranoia: destroy the local copy of the password */
@@ -1860,12 +1860,12 @@ void readline_init(void)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	extern struct ntuser_creds *usr_creds;
+	extern struct user_creds *usr_creds;
 	mode_t myumask = 0755;
 
 	DEBUGLEVEL = 2;
 
-	usr.ntlmssp_flags = 0x0;
+	usr.ntc.ntlmssp_flags = 0x0;
 
 	usr_creds = &usr;
 	out_hnd = stdout;
@@ -1873,8 +1873,8 @@ void readline_init(void)
 
 	init_policy_hnd(64);
 
-	pstrcpy(usr.domain, "");
-	pstrcpy(usr.user_name, "");
+	pstrcpy(usr.ntc.domain, "");
+	pstrcpy(usr.ntc.user_name, "");
 
 	pstrcpy(cli_info.myhostname, "");
 	pstrcpy(cli_info.dest_host, "");
@@ -1905,7 +1905,7 @@ void readline_init(void)
 		exit(1);
 	}
 
-	read_user_env(&usr);
+	read_user_env(&usr.ntc);
 
 	cmd_set_options &= ~CMD_HELP;
 	cmd_set_options &= ~CMD_NOPW;

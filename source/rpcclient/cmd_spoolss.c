@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 
 extern FILE* out_hnd;
 
-extern struct ntuser_creds *usr_creds;
+extern struct user_creds *usr_creds;
 
 /****************************************************************************
 nt spoolss query
@@ -127,11 +127,11 @@ void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[
 	}
 
 	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
-		printer_name, station, usr_creds->user_name));
+		printer_name, station, usr_creds->ntc.user_name));
 
 	res = res ? spoolss_open_printer_ex( printer_name,
 	                        0, 0, 0,
-	                        station, usr_creds->user_name,
+	                        station, usr_creds->ntc.user_name,
 	                        &hnd) : False;
 
 	res = res ? spoolss_closeprinter(&hnd) : False;
@@ -245,10 +245,10 @@ void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 	}
 
 	DEBUG(4,("spoolopen - printer: %s station: %s user: %s\n",
-		printer_name, station, usr_creds->user_name));
+		printer_name, station, usr_creds->ntc.user_name));
 
 	if (msrpc_spoolss_enum_jobs( printer_name, station,
-	                        usr_creds->user_name,
+	                        usr_creds->ntc.user_name,
 				level, &num, &ctr,
 				spool_job_info_ctr))
 	{

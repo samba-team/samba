@@ -47,8 +47,8 @@ BOOL samr_chgpasswd_user( struct cli_connection *con,
 
 	/* create and send a MSRPC command with api SAMR_CHGPASSWD_USER */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Change User Password. server:%s username:%s\n",
 	        srv_name, user_name));
@@ -104,8 +104,8 @@ BOOL samr_unknown_38(struct cli_connection *con, char *srv_name)
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Unknown 38 server:%s\n", srv_name));
 
@@ -161,8 +161,8 @@ BOOL samr_query_dom_info(  POLICY_HND *domain_pol, uint16 switch_value,
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_query_dom_info(&q_e, domain_pol, switch_value);
@@ -222,8 +222,8 @@ uint32 samr_enum_domains(  POLICY_HND *pol,
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOMAINS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_enum_domains(&q_e, pol, *start_idx, size);
@@ -323,8 +323,8 @@ uint32 samr_enum_dom_groups(  POLICY_HND *pol,
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_GROUPS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_enum_dom_groups(&q_e, pol, *start_idx, size);
@@ -424,8 +424,8 @@ uint32 samr_enum_dom_aliases(  POLICY_HND *pol,
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_ALIASES */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_enum_dom_aliases(&q_e, pol, *start_idx, size);
@@ -524,8 +524,8 @@ uint32 samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_enum_dom_users(&q_e, pol, *start_idx,
@@ -634,8 +634,8 @@ BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
 
 	/* create and send a MSRPC command with api SAMR_CONNECT */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_connect(&q_o, srv_name, unknown_0);
@@ -694,8 +694,8 @@ BOOL samr_open_user(  const POLICY_HND *pol,
 
 	/* create and send a MSRPC command with api SAMR_OPEN_USER */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_open_user(&q_o, pol, unk_0, rid);
@@ -751,8 +751,8 @@ BOOL samr_open_alias(  const POLICY_HND *domain_pol,
 
 	/* create and send a MSRPC command with api SAMR_OPEN_ALIAS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_open_alias(&q_o, domain_pol, flags, rid);
@@ -804,8 +804,8 @@ BOOL samr_del_aliasmem(  POLICY_HND *alias_pol, DOM_SID *sid)
 
 	/* create and send a MSRPC command with api SAMR_DEL_ALIASMEM */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Delete Alias Member.\n"));
 
@@ -858,8 +858,8 @@ BOOL samr_add_aliasmem(  POLICY_HND *alias_pol, DOM_SID *sid)
 
 	/* create and send a MSRPC command with api SAMR_ADD_ALIASMEM */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Add Alias Member.\n"));
 
@@ -912,8 +912,8 @@ BOOL samr_delete_dom_alias(  POLICY_HND *alias_pol)
 
 	/* delete and send a MSRPC command with api SAMR_DELETE_DOM_ALIAS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Delete Domain Alias.\n"));
 
@@ -968,8 +968,8 @@ uint32 samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
 
 	/* create and send a MSRPC command with api SAMR_CREATE_USER */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Create Domain User. Name:%s\n", acct_name));
 
@@ -1029,8 +1029,8 @@ BOOL samr_create_dom_alias(  POLICY_HND *domain_pol, const char *acct_name,
 
 	/* create and send a MSRPC command with api SAMR_CREATE_DOM_ALIAS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Create Domain Alias. Name:%s\n", acct_name));
 
@@ -1086,8 +1086,8 @@ BOOL samr_query_aliasinfo(  POLICY_HND *alias_pol, uint16 switch_value,
 
 	/* create and send a MSRPC command with api SAMR_GET_ALIASINFO */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Get Alias Info\n"));
 
@@ -1143,8 +1143,8 @@ BOOL samr_set_aliasinfo(  POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr)
 
 	/* create and send a MSRPC command with api SAMR_SET_ALIASINFO */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Set Alias Info\n"));
 
@@ -1201,8 +1201,8 @@ BOOL samr_open_group(  const POLICY_HND *domain_pol,
 
 	/* create and send a MSRPC command with api SAMR_OPEN_GROUP */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_open_group(&q_o, domain_pol, flags, rid);
@@ -1254,8 +1254,8 @@ BOOL samr_del_groupmem(  POLICY_HND *group_pol, uint32 rid)
 
 	/* create and send a MSRPC command with api SAMR_DEL_GROUPMEM */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Delete Group Member.\n"));
 
@@ -1308,8 +1308,8 @@ BOOL samr_add_groupmem(  POLICY_HND *group_pol, uint32 rid)
 
 	/* create and send a MSRPC command with api SAMR_ADD_GROUPMEM */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Add Group Member.\n"));
 
@@ -1362,8 +1362,8 @@ BOOL samr_delete_dom_group(  POLICY_HND *group_pol)
 
 	/* delete and send a MSRPC command with api SAMR_DELETE_DOM_GROUP */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Delete Domain Group.\n"));
 
@@ -1417,8 +1417,8 @@ BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
 
 	/* create and send a MSRPC command with api SAMR_CREATE_DOM_GROUP */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Create Domain Group. Name:%s\n", acct_name));
 
@@ -1473,8 +1473,8 @@ BOOL samr_set_groupinfo(  POLICY_HND *group_pol, GROUP_INFO_CTR *ctr)
 
 	/* create and send a MSRPC command with api SAMR_SET_GROUPINFO */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Set Group Info\n"));
 
@@ -1538,8 +1538,8 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 
 	/* create and send a MSRPC command with api SAMR_OPEN_DOMAIN */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_open_domain(&q_o, connect_pol, ace_perms, sid);
@@ -1592,8 +1592,8 @@ BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 
 	/* create and send a MSRPC command with api SAMR_LOOKUP_DOMAIN */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Query Lookup Domain.\n"));
 
@@ -1652,8 +1652,8 @@ BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
 
 	/* create and send a MSRPC command with api SAMR_LOOKUP_NAMES */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Query Lookup NAMES.\n"));
 
@@ -1736,8 +1736,8 @@ BOOL samr_query_lookup_rids(  const POLICY_HND *pol, uint32 flags,
 
 	/* create and send a MSRPC command with api SAMR_LOOKUP_RIDS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("SAMR Query Lookup RIDs.\n"));
 
@@ -1832,8 +1832,8 @@ BOOL samr_query_aliasmem(  const POLICY_HND *alias_pol,
 
 	/* create and send a MSRPC command with api SAMR_QUERY_ALIASMEM */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_query_aliasmem(&q_o, alias_pol);
@@ -1894,8 +1894,8 @@ BOOL samr_query_useraliases(  const POLICY_HND *pol,
 
 	/* create and send a MSRPC command with api SAMR_QUERY_USERALIASES */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_query_useraliases(&q_o, pol, ptr_sid, sid);
@@ -1954,8 +1954,8 @@ BOOL samr_query_groupmem(  POLICY_HND *group_pol,
 
 	/* create and send a MSRPC command with api SAMR_QUERY_GROUPMEM */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_query_groupmem(&q_o, group_pol);
@@ -2018,8 +2018,8 @@ BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 
 	/* create and send a MSRPC command with api SAMR_QUERY_USERGROUPS */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_query_usergroups(&q_o, pol);
@@ -2079,8 +2079,8 @@ BOOL samr_query_groupinfo(  POLICY_HND *pol,
 
 	/* create and send a MSRPC command with api SAMR_QUERY_GROUPINFO */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_query_groupinfo(&q_o, pol, switch_value);
@@ -2143,8 +2143,8 @@ BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
 
 	/* create and send a MSRPC command with api SAMR_SET_USERINFO2 */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_set_userinfo2(&q_o, pol, switch_value, usr);
@@ -2197,8 +2197,8 @@ BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 
 	/* create and send a MSRPC command with api SAMR_SET_USERINFO */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_set_userinfo(&q_o, pol, switch_value, usr);
@@ -2251,8 +2251,8 @@ BOOL samr_query_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 
 	/* create and send a MSRPC command with api SAMR_QUERY_USERINFO */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_query_userinfo(&q_o, pol, switch_value);
@@ -2312,8 +2312,8 @@ BOOL samr_close(  POLICY_HND *hnd)
 
 	if (hnd == NULL) return False;
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api SAMR_CLOSE_HND */
 
@@ -2391,8 +2391,8 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 
 	/* create and send a MSRPC command with api SAMR_QUERY_DISPINFO */
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&data , 0, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0, 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
 	make_samr_q_query_dispinfo(&q_o, pol_domain, level, 0, 0xffffffff);

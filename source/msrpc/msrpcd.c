@@ -555,7 +555,8 @@ int msrpc_main(int argc,char *argv[])
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
 	}
 
-	msrpc_service_init();
+	msrpc_service_init(argv[0]);
+	dbgflush();
 
 	ZERO_STRUCT(static_pipe);
 	fstrcpy(static_pipe.name, pipe_name);

@@ -77,7 +77,6 @@ struct client_info
     fstring dest_host;
 
     fstring myhostname;
-    fstring mach_acct;
 
     struct tar_client_info tar;
     struct nt_client_info dom;

@@ -52,13 +52,25 @@
  * in the NTDOM branch - it didn't belong there.
  */
  
+#define CHECK_STRUCT(data) \
+{ \
+	if ((data)->struct_start != 0xfefefefe || \
+	    (data)->struct_end != 0xdcdcdcdc) \
+	{ \
+		DEBUG(0,("uninitialised structure (%s, %d)\n", \
+		__FUNCTION__, __LINE__)); \
+	} \
+}
+
 typedef struct
 {
+	uint32 struct_start;
 	struct mem_buf *data; /* memory buffer */
 	uint32 offset; /* offset currently being accessed in memory buffer */
 	uint8 align; /* data alignment */
 	BOOL io; /* parsing in or out of data stream */
 	BOOL error; /* error occurred */
+	uint32 struct_end;
 
 } prs_struct;
 
@@ -152,6 +164,7 @@ struct mem_desc
    
 struct mem_buf
 {  
+	uint32 struct_start;
 	BOOL dynamic; /* True iff data has been dynamically allocated
 					 (and therefore can be freed) */
 	char *data;
@@ -165,6 +178,7 @@ struct mem_buf
 	struct mem_desc offset;
 
 	struct mem_buf *next;
+	uint32 struct_end;
 };
 
 struct acct_info

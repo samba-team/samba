@@ -195,7 +195,6 @@ static void error_signal_handler()
   mem_check_buffers();
   smb_mem_write_status(dbf);
   smb_mem_write_errors(dbf);
-  abort();
 }
 #endif
 
@@ -259,7 +258,7 @@ static int mem_first_avail_slot(void)
 /*******************************************************************
   find which Index a pointer refers to 
   ********************************************************************/
-static int mem_find_Index(void *ptr)
+static int mem_find_Index(const void *ptr)
 {
   int i;
   int start = last_block_allocated+mem_blocks_allocated/50;
@@ -410,7 +409,7 @@ void *smb_mem_malloc(size_t size,char *file,int line)
 /*******************************************************************
 dup a string
   ********************************************************************/
-char *smb_mem_strdup(char *s, char *file, int line)
+char *smb_mem_strdup(const char *s, char *file, int line)
 {
 	char *ret = (char *)smb_mem_malloc(strlen(s)+1, file, line);
 	strcpy(ret, s);

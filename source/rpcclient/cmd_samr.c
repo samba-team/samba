@@ -33,7 +33,7 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct ntuser_creds *usr_creds;
+extern struct user_creds *usr_creds;
 
 extern FILE* out_hnd;
 
@@ -167,8 +167,8 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	}
 	else
 	{
-		safe_strcpy(acct_name, usr_creds->user_name, sizeof(acct_name));
-		pwd_get_lm_nt_16(&(usr_creds->pwd), lm_oldhash, nt_oldhash );
+		safe_strcpy(acct_name, usr_creds->ntc.user_name, sizeof(acct_name));
+		pwd_get_lm_nt_16(&(usr_creds->ntc.pwd), lm_oldhash, nt_oldhash );
 	}
 
 	new_passwd = (char*)getpass("New Password (ONCE ONLY - get it right :-)");
@@ -178,7 +178,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	E_old_pw_hash(lm_newhash, lm_oldhash, lm_hshhash);
 	E_old_pw_hash(lm_newhash, nt_oldhash, nt_hshhash);
 
-	usr_creds->ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
+	usr_creds->ntc.ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
 		                    NTLMSSP_NEGOTIATE_OEM |
 		                    NTLMSSP_NEGOTIATE_SIGN |
 		                    NTLMSSP_NEGOTIATE_SEAL |
@@ -240,7 +240,7 @@ void cmd_sam_test(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Encryption Test\n");
 
-	usr_creds->ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
+	usr_creds->ntc.ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
 		                    NTLMSSP_NEGOTIATE_OEM |
 		                    NTLMSSP_NEGOTIATE_SIGN |
 		                    NTLMSSP_NEGOTIATE_SEAL |

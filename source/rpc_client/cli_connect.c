@@ -24,7 +24,7 @@
 
 #include "includes.h"
 
-struct ntuser_creds *usr_creds = NULL;
+struct user_creds *usr_creds = NULL;
 
 extern int DEBUGLEVEL;
 extern pstring scope;
@@ -102,9 +102,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 
 	memset(con, 0, sizeof(*con));
 	con->type = MSRPC_NONE;
-	copy_user_creds(&con->usr_creds, NULL);
-	copy_nt_creds(&con->usr_creds.ntc, usr_creds);
-	con->usr_creds.ptr_ntc = 1;
+	copy_user_creds(&con->usr_creds, usr_creds);
 	con->usr_creds.reuse = reuse;
 
 	if (srv_name != NULL)
@@ -606,6 +604,10 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
                       prs_struct *data, prs_struct *rdata)
 {
+	DEBUG(10,("rpc_con_pipe_req: op_num %d offset %d used: %d\n",
+			op_num, data->offset, data->data->data_used));
+	data->data->margin = 0;
+	mem_realloc_data(data->data, data->offset);
 	return rpc_api_pipe_req(con, op_num, data, rdata);
 }
 

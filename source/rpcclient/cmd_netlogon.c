@@ -33,7 +33,7 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct ntuser_creds *usr_creds;
+extern struct user_creds *usr_creds;
 
 extern FILE* out_hnd;
 
@@ -61,7 +61,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	fstrcpy(domain, usr_creds->domain);
+	fstrcpy(domain, usr_creds->ntc.domain);
 
 	if (domain[0] == 0)
 	{
@@ -80,7 +80,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 1)
 	{
-		fstrcpy(nt_user_name, usr_creds->user_name);
+		fstrcpy(nt_user_name, usr_creds->ntc.user_name);
 		if (nt_user_name[0] == 0)
 		{
 			report(out_hnd,"ntlogin: must specify username with anonymous connection\n");
@@ -134,7 +134,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 #if 0
 	/* check whether the user wants to change their machine password */
 	res = res ? trust_account_check(info->dest_ip, info->dest_host,
-	                                info->myhostname, usr_creds->domain,
+	                                info->myhostname, usr_creds->ntc.domain,
 	                                info->mach_acct, new_mach_pwd) : False;
 #endif
 
@@ -163,7 +163,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 
 	/* do an NT login */
 	res = res ? cli_nt_login_interactive(srv_name, info->myhostname,
-	                 usr_creds->domain, nt_user_name,
+	                 usr_creds->ntc.domain, nt_user_name,
 	                 getuid(), nt_password,
 	                 &info->dom.ctr, &info->dom.user_info3) : False;
 
@@ -209,7 +209,7 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 	fstrcpy(inter_dom_acct, nt_trust_dom);
 	fstrcat(inter_dom_acct, "$");
 
-	res = res ? trust_get_passwd(trust_passwd, usr_creds->domain, nt_trust_dom) : False;
+	res = res ? trust_get_passwd(trust_passwd, usr_creds->ntc.domain, nt_trust_dom) : False;
 
 	res = res ? cli_nt_setup_creds(srv_name,
 	                               info->myhostname, inter_dom_acct,
@@ -241,7 +241,7 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
 
-	if (!trust_get_passwd(trust_passwd, usr_creds->domain, info->myhostname))
+	if (!trust_get_passwd(trust_passwd, usr_creds->ntc.domain, info->myhostname))
 	{
 		report(out_hnd, "cmd_sam_sync: no trust account password\n");
 		return;

@@ -165,7 +165,7 @@ static BOOL rpc_auth_pipe(struct ntdom_info *nt, prs_struct *rdata,
 	RPC_AUTH_NTLMSSP_CHK chk;
 	uint32 crc32;
 	int data_len = len - 0x18 - auth_len - 8;
-	char *reply_data = mem_data(&rdata->data, 0x18);
+	char *reply_data = mem_data(rdata->data, 0x18);
 
 	BOOL auth_verify = IS_BITS_SET_ALL(nt->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SIGN);
 	BOOL auth_seal   = IS_BITS_SET_ALL(nt->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SEAL);
@@ -187,7 +187,7 @@ static BOOL rpc_auth_pipe(struct ntdom_info *nt, prs_struct *rdata,
 	{
 		RPC_HDR_AUTH         rhdr_auth; 
 		prs_struct auth_req;
-		char *data = mem_data(&rdata->data, len - auth_len - 8);
+		char *data = mem_data(rdata->data, len - auth_len - 8);
 		prs_init(&auth_req , 0x08, 4, 0, True);
 		memcpy(auth_req.data->data, data, 8);
 		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &auth_req, 0);
@@ -202,7 +202,7 @@ static BOOL rpc_auth_pipe(struct ntdom_info *nt, prs_struct *rdata,
 	if (auth_verify)
 	{
 		prs_struct auth_verf;
-		char *data = mem_data(&rdata->data, len - auth_len);
+		char *data = mem_data(rdata->data, len - auth_len);
 		if (data == NULL) return False;
 
 		DEBUG(10,("rpc_auth_pipe: verify\n"));
@@ -295,7 +295,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	BOOL auth_verify;
 	BOOL auth_seal;
 	uint32 crc32 = 0;
-	char *d = mem_data(&data->data, data_start);
+	char *d = mem_data(data->data, data_start);
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
 	uint8 flags = 0;
 
@@ -355,7 +355,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 
 		make_rpc_auth_ntlmssp_chk(&chk, NTLMSSP_SIGN_VERSION, crc32, nt->ntlmssp_seq_num++);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0);
-		NTLMSSPcalc_ap(nt, (uchar*)mem_data(&auth_verf.data, 4), 12);
+		NTLMSSPcalc_ap(nt, (uchar*)mem_data(auth_verf.data, 4), 12);
 	}
 
 	if (auth_seal || auth_verify)
@@ -385,7 +385,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	}
 
 	/* this is all a hack */
-	prs_init(dataa, data_len, 4, SAFETY_MARGIN, False);
+	prs_init(dataa, data_len, 4, 0, False);
 	mem_buf_copy(dataa->data->data, hdr.data, 0, data_len);
 
 	prs_mem_free(&hdr_auth );
@@ -451,7 +451,7 @@ BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data, prs_struct 
 	}
 
 	{
-		char *d = mem_data(&rpdu.data, rpdu.offset);
+		char *d = mem_data(rpdu.data, rpdu.offset);
 		int l = rhdr.frag_len - rpdu.offset;
 		prs_append_data(rdata, d, l);
 		prs_mem_free(&rpdu);
@@ -494,15 +494,12 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 
 	prs_init(&rpdu, 0, 4, 0, True);
 
-	while (data_end != data->offset)
+	do
 	{
 		prs_struct data_t;
 
 		DEBUG(10,("rpc_api_pipe_req: start: %d end: %d off: %d\n",
 			data_start, data_end, data->offset));
-
-		prs_mem_free(&rpdu);
-		prs_init(&rpdu, 0, 4, 0, True);
 
 		if (!create_request_pdu(con, opnum, data, data_start,
 		                 &data_end, &data_t))
@@ -518,7 +515,14 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 			return False;
 		}
 		prs_mem_free(&data_t);
-	}
+
+		if (data_end != data->offset)
+		{
+			prs_mem_free(&rpdu);
+			prs_init(&rpdu, 0, 4, 0, True);
+		}
+
+	} while (data_end != data->offset);
 
 	/**** parse the header: check it's a response record */
 
@@ -554,7 +558,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	}
 
 	{
-		char *d = mem_data(&rpdu.data, rpdu.offset);
+		char *d = mem_data(rpdu.data, rpdu.offset);
 		int l = rhdr.frag_len - rpdu.offset;
 		prs_append_data(rdata, d, l);
 		prs_mem_free(&rpdu);
@@ -612,7 +616,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		}
 
 		{
-			char *d = mem_data(&rpdu.data, rpdu.offset);
+			char *d = mem_data(rpdu.data, rpdu.offset);
 			int l = rhdr.frag_len - rpdu.offset;
 			prs_append_data(rdata, d, l);
 			prs_mem_free(&rpdu);
@@ -663,7 +667,7 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	/*
 	 * Setup the pointers from the incoming.
 	 */
-	char *pdata = mem_data(&data->data, data_offset);
+	char *pdata = mem_data(data->data, data_offset);
 	int data_len = data ? (data->data->data_used - data_offset) : 0;
 	data_len = MIN(max_data_len, data_len);
 
@@ -1255,12 +1259,12 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 	if (!valid_pipe_name(pipe_name, abstract, transfer)) return False;
 
 	prs_init(&hdr      , 0x10                     , 4, 0x0          , False);
-	prs_init(&hdr_rb   , 1024                     , 4, SAFETY_MARGIN, False);
-	prs_init(&hdr_auth , (ntlmssp_auth ?    8 : 0), 4, SAFETY_MARGIN, False);
-	prs_init(&auth_req , (ntlmssp_auth ? 1024 : 0), 4, SAFETY_MARGIN, False);
-	prs_init(&auth_ntlm, (ntlmssp_auth ? 1024 : 0), 4, SAFETY_MARGIN, False);
+	prs_init(&hdr_rb   , 1024                     , 4, 0, False);
+	prs_init(&hdr_auth , (ntlmssp_auth ?    8 : 0), 4, 0, False);
+	prs_init(&auth_req , (ntlmssp_auth ? 1024 : 0), 4, 0, False);
+	prs_init(&auth_ntlm, (ntlmssp_auth ? 1024 : 0), 4, 0, False);
 
-	prs_init(&rdata    , 0   , 4, SAFETY_MARGIN, True);
+	prs_init(&rdata    , 0   , 4, 0, True);
 
 	rpc_call_id = get_rpc_call_id();
 	create_rpc_bind_req(&hdr, &hdr_rb,
@@ -1331,8 +1335,8 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 			nt->ntlmssp_cli_flgs = rhdr_chal.neg_flags;
 
 			prs_init(&hdra     , 0x10, 4, 0x0          , False);
-			prs_init(&hdr_autha, 1024, 4, SAFETY_MARGIN, False);
-			prs_init(&auth_resp, 1024, 4, SAFETY_MARGIN, False);
+			prs_init(&hdr_autha, 1024, 4, 0, False);
+			prs_init(&auth_resp, 1024, 4, 0, False);
 
 			pwd_make_lm_nt_owf(&usr->pwd, rhdr_chal.challenge);
 

@@ -3008,7 +3008,7 @@ static BOOL cli_init_redirect(struct cli_state *cli,
 	}
 
 	len = ps.offset;
-	data = mem_data(&ps.data, 0);
+	data = mem_data(ps.data, 0);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("data len: %d\n", len));

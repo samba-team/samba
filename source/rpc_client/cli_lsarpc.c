@@ -43,12 +43,9 @@ BOOL get_domain_sids(const char *domain, DOM_SID *sid3, DOM_SID *sid5)
 	BOOL res1 = True;
 	fstring dom3;
 	fstring dom5;
-	extern struct ntuser_creds *usr_creds;
-	struct ntuser_creds usr;
+	extern struct user_creds *usr_creds;
 	
-	usr_creds = &usr;
-	ZERO_STRUCT(usr);
-	pwd_set_nullpwd(&usr.pwd);
+	usr_creds = NULL;
 
 	if (sid3 == NULL && sid5 == NULL)
 	{
@@ -139,12 +136,9 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 	fstring dom3;
 	fstring dom5;
 
-	extern struct ntuser_creds *usr_creds;
-	struct ntuser_creds usr;
+	extern struct user_creds *usr_creds;
 	
-	usr_creds = &usr;
-	ZERO_STRUCT(usr);
-	pwd_set_nullpwd(&usr.pwd);
+	usr_creds = NULL;
 
 	if (!cli_connection_init_list(server, PIPE_LSARPC, &con))
 	{
@@ -228,7 +222,7 @@ BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
@@ -303,7 +297,7 @@ BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY2 */
@@ -371,7 +365,7 @@ BOOL lsa_open_secret( const POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api LSA_OPENSECRET */
@@ -426,7 +420,7 @@ BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api LSA_QUERYSECRET */
@@ -498,7 +492,7 @@ BOOL lsa_lookup_names( POLICY_HND *hnd,
 
 	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api LSA_LOOKUP_NAMES */
@@ -644,7 +638,7 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 		*names = NULL;
 	}
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api LSA_LOOKUP_SIDS */
@@ -777,7 +771,7 @@ BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 
 	if (hnd == NULL || domain_name == NULL || domain_sid == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api LSA_QUERYINFOPOLICY */
@@ -883,7 +877,7 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 
 	if (hnd == NULL || num_doms == NULL || names == NULL) return False;
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	/* create and send a MSRPC command with api LSA_ENUMTRUSTDOM */
@@ -959,7 +953,7 @@ BOOL lsa_close(POLICY_HND *hnd)
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
 	DEBUG(4,("LSA Close\n"));

@@ -30,8 +30,9 @@ extern BOOL append_log;
 /*************************************************************************
  initialise an msrpc service
  *************************************************************************/
-void msrpc_service_init(void)
+void msrpc_service_init(char* service_name)
 {
+	add_msrpc_command_processor( pipe_name, service_name, api_svcctl_rpc );
 }
 
 /****************************************************************************
@@ -91,7 +92,6 @@ BOOL reload_services(BOOL test)
 	setup_logging(argv[0],False);
 	fstrcpy(pipe_name, "svcctl");
 	slprintf(debugf, sizeof(debugf), "%s/log.%s", LOGFILEBASE, pipe_name);
-	add_msrpc_command_processor( pipe_name, argv[0], api_svcctl_rpc );
 
 	return msrpc_main(argc, argv);
 }

@@ -5,7 +5,7 @@
 
 /*The following definitions come from  browserd/browserd.c  */
 
-void msrpc_service_init(void);
+void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  client/client.c  */
@@ -283,7 +283,7 @@ void mem_free_data(struct mem_buf *buf);
 BOOL mem_realloc_data(struct mem_buf *buf, size_t new_size);
 BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size, BOOL force_grow);
 uint32 mem_buf_len(struct mem_buf *buf);
-char *mem_data(struct mem_buf **buf, uint32 offset);
+char *mem_data(struct mem_buf *buf, uint32 offset);
 
 /*The following definitions come from  lib/msrpc-agent.c  */
 
@@ -1044,7 +1044,7 @@ struct shmem_ops *sysv_shm_open(int ronly);
 
 /*The following definitions come from  lsarpcd/lsarpcd.c  */
 
-void msrpc_service_init(void);
+void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  lsarpcd/srv_lsa.c  */
@@ -1054,7 +1054,7 @@ BOOL api_ntlsa_rpc(rpcsrv_struct *p, prs_struct *data);
 /*The following definitions come from  mem_man/mem_man.c  */
 
 void *smb_mem_malloc(size_t size,char *file,int line);
-char *smb_mem_strdup(char *s, char *file, int line);
+char *smb_mem_strdup(const char *s, char *file, int line);
 int smb_mem_free(void *ptr,char *file,int line);
 void smb_mem_write_info(void *ptr,FILE *outfile);
 size_t smb_mem_query_size(void *ptr);
@@ -1081,7 +1081,7 @@ void msrpcd_process(int c, pipes_struct *p);
 
 /*The following definitions come from  netlogond/netlogond.c  */
 
-void msrpc_service_init(void);
+void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
@@ -4094,7 +4094,7 @@ void readline_init(void);
 
 /*The following definitions come from  samrd/samrd.c  */
 
-void msrpc_service_init(void);
+void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  smbd/blocking.c  */
@@ -4581,17 +4581,17 @@ int smbw_stat(const char *fname, struct stat *st);
 
 /*The following definitions come from  spoolssd/spoolssd.c  */
 
-void msrpc_service_init(void);
+void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
-void msrpc_service_init(void);
+void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  svcctld/svcctld.c  */
 
-void msrpc_service_init(void);
+void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  utils/smbpasswd.c  */
@@ -4633,11 +4633,11 @@ void status_page(void);
 
 /*The following definitions come from  winregd/winregd.c  */
 
-void msrpc_service_init(void);
+void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 
 /*The following definitions come from  wkssvcd/wkssvcd.c  */
 
-void msrpc_service_init(void);
+void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
 #endif /* _PROTO_H_ */

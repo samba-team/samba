@@ -247,7 +247,7 @@ BOOL do_random_rpc(struct cli_state *cli, uint16 nt_pipe_fnum, int max_len)
 	opcode = sys_random() % 256;
 
 	/* turn parameters into data stream */
-	rand_buf(mem_data(&buf.data, 0), param_len);
+	rand_buf(mem_data(buf.data, 0), param_len);
 	buf.offset = param_len;
 
 	/* send the data on \PIPE\ */
@@ -259,9 +259,9 @@ BOOL do_random_rpc(struct cli_state *cli, uint16 nt_pipe_fnum, int max_len)
 		{
 			DEBUG(0,("response! opcode: 0x%x\n", opcode));
 			DEBUG(0,("request: length %d\n", param_len));
-			dump_data(0, mem_data(&buf.data , 0), MIN(param_len, 128));
+			dump_data(0, mem_data(buf.data , 0), MIN(param_len, 128));
 			DEBUG(0,("response: length %d\n", rbuf.data->offset.end));
-			dump_data(0, mem_data(&rbuf.data, 0), rbuf.data->offset.end);
+			dump_data(0, mem_data(rbuf.data, 0), rbuf.data->offset.end);
 		}
 	}
 
