@@ -98,7 +98,10 @@ static int net_time_set(int argc, const char **argv)
 		d_printf("Can't contact server\n");
 		return -1;
 	}
-
+	
+	/* yes, I know this is cheesy. Use "net time system" if you want to 
+	   roll your own. I'm putting this in as it works on a large number
+	   of systems and the user has a choice in whether its used or not */
 	asprintf(&cmd, "/bin/date -u %s", systime(t));
 	system(cmd);
 	free(cmd);
