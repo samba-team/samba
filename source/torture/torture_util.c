@@ -251,7 +251,7 @@ void dump_all_info(TALLOC_CTX *mem_ctx, union smb_fileinfo *finfo)
 */
 void torture_all_info(struct smbcli_tree *tree, const char *fname)
 {
-	TALLOC_CTX *mem_ctx = talloc_init(fname);
+	TALLOC_CTX *mem_ctx = talloc_init("%s", fname);
 	union smb_fileinfo finfo;
 	NTSTATUS status;
 

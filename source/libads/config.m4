@@ -201,6 +201,9 @@ if test x"$with_ads_support" != x"no"; then
   ac_save_CPPFLAGS=$CPPFLAGS
   ac_save_LDFLAGS=$LDFLAGS
 
+#MIT needs this, to let us see 'internal' parts of the headers we use
+  KRB5_CFLAGS="${KRB5_CFLAGS} -DKRB5_PRIVATE -DKRB5_DEPRECATED"
+
   CFLAGS="$CFLAGS $KRB5_CFLAGS"
   CPPFLAGS="$CPPFLAGS $KRB5_CPPFLAGS"
   LDFLAGS="$LDFLAGS $KRB5_LDFLAGS"
