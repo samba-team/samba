@@ -214,12 +214,12 @@ char *strtok_r(char *s1, const char *s2, char **lasts);
 char * strupr(char *);
 #endif
 
-#ifndef HAVE_STRCPY_TRUNCATE
-int strcpy_truncate (char *dst, const char *src, size_t dst_sz);
+#ifndef HAVE_STRLCPY
+size_t strlcpy (char *dst, const char *src, size_t dst_sz);
 #endif
 
-#ifndef HAVE_STRCAT_TRUNCATE
-int strcat_truncate (char *dst, const char *src, size_t dst_sz);
+#ifndef HAVE_STRLCAT
+size_t strlcat (char *dst, const char *src, size_t dst_sz);
 #endif
 
 #ifndef HAVE_GETDTABLESIZE
