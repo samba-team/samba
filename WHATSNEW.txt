@@ -68,6 +68,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * BUG 936: fix bind credentials for schannel binds in smbd.
     * BUG 446: Fix output of smbclient for better compatibility 
       with scripts based on the 2.2 version (including Amanda).
+    * BUG 891, 949: Fedora packaging fixes.
 
 
 o   Luke Howard <lukeh@PADL.COM>
