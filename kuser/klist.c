@@ -94,12 +94,14 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     {
 	Ticket t;
 	size_t len;
-	printf("Version number: ");
+	char *s;
 	decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
+	krb5_etype_to_string(context, t.enc_part.etype, &s);
+	printf("Ticket etype: %s", s);
+	free(s);
 	if(t.enc_part.kvno)
-	    printf("%d\n", *t.enc_part.kvno);
-	else
-	    printf("unknown\n");
+	    printf(", kvno %d", *t.enc_part.kvno);
+	printf("\n");
 	free_Ticket(&t);
     }
     krb5_keytype_to_string(context, cred->session.keytype, &str);
@@ -151,9 +153,16 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	    break;
 	}
 #endif
-	default:
-	    printf("{ %d %d }", cred->addresses.val[j].addr_type,
-		   cred->addresses.val[j].address.length);
+	default:{
+	    char *p, *s;
+	    int i;
+	    krb5_address *a = &cred->addresses.val[j];
+	    s = malloc(a->address.length * 2 + 1);
+	    for(i = 0; i < a->address.length; i++)
+		sprintf(s + 2*i, "%02x", ((char*)a->address.data)[i]);
+	    printf("%d/%s", cred->addresses.val[j].addr_type, s);
+	    free(s);
+	}
 	}
     }
     printf("\n\n");
