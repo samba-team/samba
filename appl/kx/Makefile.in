@@ -15,6 +15,7 @@ CFLAGS = $(XINCS) @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
+LN_S = @LN_S@
 LIBS = $(XLIBS) @LIBS@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
@@ -49,7 +50,7 @@ Wall:
 	make CFLAGS="-g -Wall -Wno-comment -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) -I$(srcdir)/../kauth $(CFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
@@ -93,8 +94,8 @@ dist: $(DISTFILES)
 KLIB= -L../../lib/krb -lkrb -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 
-encdata.o: $(srcdir)/../kauth/encdata.c
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(srcdir)/../kauth/encdata.c
+encdata.c:
+	$(LN_S) $(srcdir)/../kauth/encdata.c .
 
 kx$(EXECSUFFIX): $(OBJECTS_KX)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
