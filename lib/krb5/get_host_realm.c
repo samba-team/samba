@@ -150,10 +150,10 @@ config_find_realm(krb5_context context,
  */
 
 krb5_error_code
-krb5_get_host_realm_int (krb5_context context,
-			 const char *host,
-			 krb5_boolean use_dns,
-			 krb5_realm **realms)
+_krb5_get_host_realm_int (krb5_context context,
+			  const char *host,
+			  krb5_boolean use_dns,
+			  krb5_realm **realms)
 {
     const char *p, *q;
     krb5_boolean dns_locate_enable;
@@ -216,5 +216,5 @@ krb5_get_host_realm(krb5_context context,
 	host = hostname;
     }
 
-    return krb5_get_host_realm_int (context, host, 1, realms);
+    return _krb5_get_host_realm_int (context, host, 1, realms);
 }
