@@ -193,21 +193,21 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 			break;
 		}
 
-		if (cli_write(c, fnum, 0, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
+		if (cli_write(c, fnum, 0, (char *)&pid, 0, sizeof(pid), 0) != sizeof(pid)) {
 			DEBUG(0,("write failed (%s)\n", cli_errstr(c)));
 		}
 
 		for (j=0;j<50;j++) {
 			if (cli_write(c, fnum, 0, (char *)buf, 
 				      sizeof(pid)+(j*sizeof(buf)), 
-				      sizeof(buf)) != sizeof(buf)) {
+				      sizeof(buf), 0) != sizeof(buf)) {
 				DEBUG(0,("write failed (%s)\n", cli_errstr(c)));
 			}
 		}
 
 		pid2 = 0;
 
-		if (cli_read(c, fnum, (char *)&pid2, 0, sizeof(pid)) != sizeof(pid)) {
+		if (cli_read(c, fnum, (char *)&pid2, 0, sizeof(pid), True) != sizeof(pid)) {
 			DEBUG(0,("read failed (%s)\n", cli_errstr(c)));
 		}
 
@@ -616,7 +616,7 @@ static void run_fdpasstest(void)
 		return;
 	}
 
-	if (cli_write(&cli1, fnum1, 0, "hello world\n", 0, 13) != 13) {
+	if (cli_write(&cli1, fnum1, 0, "hello world\n", 0, 13, 0) != 13) {
 		DEBUG(0,("write failed (%s)\n", cli_errstr(&cli1)));
 		return;
 	}
@@ -626,7 +626,7 @@ static void run_fdpasstest(void)
 	cli2.pid = cli1.pid;
 
 
-	if (cli_read(&cli2, fnum1, buf, 0, 13) == 13) {
+	if (cli_read(&cli2, fnum1, buf, 0, 13, True) == 13) {
 		DEBUG(0,("read succeeded! nasty security hole [%s]\n",
 		       buf));
 		return;
@@ -1030,7 +1030,7 @@ static void run_trans2test(void)
 
 	fnum = cli_open(&cli, fname2, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
-	cli_write(&cli, fnum,  0, (char *)&fnum, 0, sizeof(fnum));
+	cli_write(&cli, fnum,  0, (char *)&fnum, 0, sizeof(fnum), 0);
 	cli_close(&cli, fnum);
 	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time2, 
 			    &w_time, &size, NULL, NULL)) {

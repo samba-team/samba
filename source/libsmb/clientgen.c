@@ -1571,14 +1571,50 @@ static void cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 /****************************************************************************
   read from a file
 ****************************************************************************/
-size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
+size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
+{
+	char *p;
+	int size2;
+
+	if (size == 0) return 0;
+
+	cli_issue_read(cli, fnum, offset, size, 0);
+
+	if (!cli_receive_smb(cli))
+	{
+		return -1;
+	}
+
+	size2 = SVAL(cli->inbuf, smb_vwv5);
+
+	if (cli_error(cli, NULL, NULL))
+	{
+		return -1;
+	}
+
+	if (size2 > size)
+	{
+		DEBUG(0,("server returned more than we wanted!\n"));
+		exit(1);
+	}
+
+	p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
+	memcpy(buf, p, size2);
+
+	return size2;
+}
+
+/****************************************************************************
+  read from a file
+****************************************************************************/
+size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size, BOOL overlap)
 {
 	char *p;
 	int total = -1;
 	int issued=0;
 	int received=0;
-	int mpx = MIN(MAX(cli->max_mux-1, 1), MAX_MAX_MUX_LIMIT);
-	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
+	int mpx = overlap ? MIN(MAX(cli->max_mux-1, 1), MAX_MAX_MUX_LIMIT) : 1;
+	int block = (cli->max_xmit - (smb_size+32)) & ~2047;
 	int mid;
 	int blocks = (size + (block-1)) / block;
 
@@ -1588,7 +1624,8 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 	{
 		int size2;
 
-		while (issued - received < mpx && issued < blocks) {
+		while (issued - received < mpx && issued < blocks)
+		{
 			int size1 = MIN(block, size-issued*block);
 			cli_issue_read(cli, fnum, offset+issued*block, size1, issued);
 			issued++;
@@ -1615,11 +1652,13 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 			continue;
 		}
 
-		if (size2 > block) {
+		if (size2 > block)
+		{
 			DEBUG(0,("server returned more than we wanted!\n"));
 			exit(1);
 		}
-		if (mid >= issued) {
+		if (mid >= issued)
+		{
 			DEBUG(0,("invalid mid from server!\n"));
 			exit(1);
 		}
@@ -1630,7 +1669,8 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 		total = MAX(total, mid*block + size2);
 	}
 
-	while (received < issued) {
+	while (received < issued)
+	{
 		cli_receive_smb(cli);
 		received++;
 	}
@@ -1643,7 +1683,7 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 issue a single SMBwrite and don't wait for a reply
 ****************************************************************************/
 static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint16 mode, char *buf,
-			    size_t size, int i)
+			    size_t size, size_t bytes_left, int i)
 {
 	char *p;
 
@@ -1660,10 +1700,10 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 
 	SIVAL(cli->outbuf,smb_vwv3,offset);
-	SIVAL(cli->outbuf,smb_vwv5,IS_BITS_SET_ALL(mode, 0x0008) ? 0xFFFFFFFF : 0);
+	SIVAL(cli->outbuf,smb_vwv5,IS_BITS_SET_SOME(mode, 0x000C) ? 0xFFFFFFFF : 0);
 	SSVAL(cli->outbuf,smb_vwv7,mode);
 
-	SSVAL(cli->outbuf,smb_vwv8,IS_BITS_SET_ALL(mode, 0x0008) ? size : 0);
+	SSVAL(cli->outbuf,smb_vwv8,IS_BITS_SET_SOME(mode, 0x000C) ? bytes_left : 0);
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
@@ -1685,7 +1725,7 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 ****************************************************************************/
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
-		  char *buf, off_t offset, size_t size)
+		  char *buf, off_t offset, size_t size, size_t bytes_left)
 {
 	int total = -1;
 	int issued=0;
@@ -1697,16 +1737,19 @@ ssize_t cli_write(struct cli_state *cli,
 
 	if (size == 0) return 0;
 
-	while (received < blocks) {
+	while (received < blocks)
+	{
 		int size2;
 
-		while (issued - received < mpx && issued < blocks) {
+		while (issued - received < mpx && issued < blocks)
+		{
 			int size1 = MIN(block, size-issued*block);
 			cli_issue_write(cli, fnum, offset+issued*block,
 			                write_mode,
 			                buf + issued*block,
-					size1, issued);
+					size1, bytes_left, issued);
 			issued++;
+			bytes_left -= size1;
 		}
 
 		if (!cli_receive_smb(cli)) {

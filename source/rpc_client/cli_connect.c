@@ -623,6 +623,7 @@ BOOL rpc_api_write(struct cli_connection *con, prs_struct *data)
 			int fnum = con->msrpc.smb->fnum;
 			return cli_write(cli, fnum, 0x0008, 
 			          data->data->data, 0,
+			          data->data->data_used,
 			          data->data->data_used) > 0;
 		}
 		case MSRPC_LOCAL:
@@ -667,9 +668,11 @@ BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
 	{
 		case MSRPC_SMB:
 		{
+			struct ntdom_info *nt = cli_conn_get_ntinfo(con);
 			struct cli_state *cli = con->msrpc.smb->cli;
 			int fnum = con->msrpc.smb->fnum;
-			return cli_send_and_rcv_pdu(cli, fnum, data, rdata);
+			return cli_send_and_rcv_pdu(cli, fnum, data, rdata,
+			                            nt->max_xmit_frag);
 		}
 		case MSRPC_LOCAL:
 		{

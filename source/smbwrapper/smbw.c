@@ -699,7 +699,7 @@ ssize_t smbw_pread(int fd, void *buf, size_t count, off_t ofs)
 		return -1;
 	}
 	
-	ret = cli_read(&file->srv->cli, file->f->cli_fd, buf, ofs, count);
+	ret = cli_read(&file->srv->cli, file->f->cli_fd, buf, ofs, count, True);
 
 	if (ret == -1) {
 		errno = smbw_errno(&file->srv->cli);
@@ -731,7 +731,7 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 	}
 	
 	ret = cli_read(&file->srv->cli, file->f->cli_fd, buf, 
-		       file->f->offset, count);
+		       file->f->offset, count, True);
 
 	if (ret == -1) {
 		errno = smbw_errno(&file->srv->cli);
@@ -766,7 +766,7 @@ ssize_t smbw_write(int fd, void *buf, size_t count)
 		return -1;
 	}
 	
-	ret = cli_write(&file->srv->cli, file->f->cli_fd, 0, buf, file->f->offset, count);
+	ret = cli_write(&file->srv->cli, file->f->cli_fd, 0, buf, file->f->offset, count, count);
 
 	if (ret == -1) {
 		errno = smbw_errno(&file->srv->cli);
@@ -797,7 +797,7 @@ ssize_t smbw_pwrite(int fd, void *buf, size_t count, off_t ofs)
 		return -1;
 	}
 	
-	ret = cli_write(&file->srv->cli, file->f->cli_fd, 0, buf, ofs, count);
+	ret = cli_write(&file->srv->cli, file->f->cli_fd, 0, buf, ofs, count, count);
 
 	if (ret == -1) {
 		errno = smbw_errno(&file->srv->cli);

@@ -795,10 +795,11 @@ int cli_open(struct cli_state *cli, const char *fname,
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
-size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
+size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
+size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size, BOOL overlap);
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
-		  char *buf, off_t offset, size_t size);
+		  char *buf, off_t offset, size_t size, size_t bytes_left);
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
 		  uint16 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time);
@@ -2047,7 +2048,8 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 				prs_struct *data,
 				prs_struct *rdata);
 BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
-			prs_struct *data, prs_struct *rdata);
+			prs_struct *data, prs_struct *rdata,
+			int max_send_pdu);
 BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata);
 BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,

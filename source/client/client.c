@@ -520,7 +520,7 @@ static void do_get(char *rname,char *lname)
 	data = (char *)malloc(read_size);
 
 	while (1) {
-		int n = cli_read(cli, fnum, data, nread, read_size);
+		int n = cli_read(cli, fnum, data, nread, read_size, True);
 
 		if (n <= 0) break;
  
@@ -841,7 +841,7 @@ static void do_put(char *rname,char *lname)
 			break;
 		}
 
-		ret = cli_write(cli, fnum, 0, buf, nread, n);
+		ret = cli_write(cli, fnum, 0, buf, nread, n, 0);
 
 		if (n != ret) {
 			DEBUG(0,("Error writing file: %s\n", cli_errstr(cli)));

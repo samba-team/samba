@@ -3,9 +3,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1998,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Paul Ashton                       1998.
+ *  Copyright (C) Andrew Tridgell              1992-1999,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -76,7 +75,7 @@ static BOOL rpc_read(struct cli_state *cli, uint16 fnum,
 			size = data_to_read;
 		}
 
-		num_read = cli_read(cli, fnum, data, file_offset, size);
+		num_read = cli_read_one(cli, fnum, data, file_offset, size);
 
 		DEBUG(5,("rpc_read: read offset: %d read: %d to read: %d\n",
 		          file_offset, num_read, data_to_read));
@@ -641,45 +640,44 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 
  ****************************************************************************/
 
-BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
-			prs_struct *data, prs_struct *rdata)
+static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
+			prs_struct *data,
+			int data_offset, int max_data_len,
+			prs_struct *rdata)
 {
-	int len;
 	uint16 cmd = 0x0026;
-
 	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	BOOL first = True;
-	BOOL last  = True;
-	RPC_HDR    rhdr;
 
 	char *rparam = NULL;
-	uint32 rparam_len;
+	uint32 rparam_len = 0;
 
 	/*
-	* Setup the pointers from the incoming.
-	*/
-	char *pdata = data ? data->data->data : NULL;
-	int data_len = data ? data->data->data_used : 0;
+	 * Setup the pointers to the outgoing.
+	 */
+	char *rdata_t = NULL;
+	uint32 rdata_len = 0;
 
 	/*
-	* Setup the pointers to the outgoing.
-	*/
-	char **pp_ret_data = rdata ? &rdata->data->data : NULL;
-	uint32 *p_ret_data_len = rdata ? &rdata->data->data_used : NULL;
+	 * Setup the pointers from the incoming.
+	 */
+	char *pdata = mem_data(&data->data, data_offset);
+	int data_len = data ? (data->data->data_used - data_offset) : 0;
+	data_len = MIN(max_data_len, data_len);
 
 	/* create setup parameters. */
 	setup[0] = cmd; 
 	setup[1] = fnum; /* pipe file handle.  got this from an SMBOpenX. */
 
-	DEBUG(5,("cli_send_and_rcv_pdu: cmd:%x fnum:%x\n", cmd, fnum));
+	DEBUG(5,("cli_send_trans_data: data_len: %d cmd:%x fnum:%x\n",
+				data_len, cmd, fnum));
 
 	/* send the data: receive a response. */
 	if (!cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
 		  setup, 2, 0,                     /* Setup, length, max */
 		  NULL, 0, 0,          /* Params, length, max */
-		  pdata, data_len, 2048,           /* data, length, max */                  
+		  pdata, data_len, max_data_len,           /* data, length, max */                  
 	            &rparam, &rparam_len,        /* return param, length */
-		  pp_ret_data, p_ret_data_len))    /* return data, len */
+		    &rdata_t, &rdata_len))    /* return data, len */
 	{
 		fstring errstr;
 		cli_safe_errstr(cli, errstr, sizeof(errstr)-1);
@@ -688,6 +686,49 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 	}
 
 	if (rparam) free(rparam);
+
+	if (rdata_len != 0)
+	{
+		return prs_append_data(rdata, rdata_t, rdata_len);
+	}
+	
+	return True;
+}
+
+#if 0
+/****************************************************************************
+ send data on an rpc pipe, which *must* be in one fragment.
+ receive response data from an rpc pipe, which may be large...
+ ****************************************************************************/
+ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
+			prs_struct *data, prs_struct *rdata,
+			int max_send_pdu)
+{
+	int len;
+	int data_offset = 0;
+	uint16 cmd = 0x0026;
+
+	BOOL first = True;
+	BOOL last  = True;
+	RPC_HDR    rhdr;
+	int max_data_len = 2048;
+	size_t data_left = data->data->data_used;
+	size_t data_len  = data->data->data_used;
+	DEBUG(5,("cli_send_and_rcv_pdu: cmd:%x fnum:%x\n", cmd, fnum));
+
+	while (data_offset < data_len)
+	{
+		DEBUG(10,("cli_send_and_rcv_pdu: off: %d len: %d left: %d\n",
+			   data_offset, data_len, data_left));
+
+		if (!cli_send_trans_data(cli, fnum,
+			data, data_offset, max_data_len, rdata))
+		{
+			return False;
+		}
+		data_offset += max_data_len;
+		data_left   -= max_data_len;
+	}
 
 	if (rdata->data->data == NULL) return False;
 
@@ -742,6 +783,119 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 	return True;
 }
 
+#endif
+
+/****************************************************************************
+ send data on an rpc pipe, which *must* be in one fragment.
+ receive response data from an rpc pipe, which may be large...
+ ****************************************************************************/
+
+BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
+			prs_struct *data, prs_struct *rdata,
+			int max_send_pdu)
+{
+	int len;
+	int data_offset = 0;
+	uint16 cmd = 0x0026;
+
+	BOOL first = True;
+	BOOL last  = True;
+	RPC_HDR    rhdr;
+	int max_data_len = 2048;
+	int write_mode = 0x000c;
+	char *d = NULL;
+	size_t data_left = data->data->data_used;
+	size_t data_len  = data->data->data_used;
+	DEBUG(5,("cli_send_and_rcv_pdu: cmd:%x fnum:%x\n", cmd, fnum));
+
+	while (data_offset < data_len)
+	{
+		DEBUG(10,("cli_send_and_rcv_pdu: off: %d len: %d left: %d\n",
+			   data_offset, data_len, data_left));
+
+		if (d == NULL)
+		{
+			d = (char*)malloc(data_left + 2);
+
+			if (d == NULL)
+			{
+				return False;
+			}
+			SSVAL(d, 0, data_len);
+			memcpy(d+2, data->data->data, data_len);
+			data_len += 2;
+		}
+		max_data_len = MIN(max_data_len, data_len - data_offset);
+		if (cli_write(cli, fnum, write_mode,
+			      d, data_offset,
+			      max_data_len,
+			      data_left) != max_data_len)
+		{	
+			return False;
+		}
+		write_mode = 0x0004;
+		d += max_data_len;
+		data_offset += max_data_len;
+		data_left   -= max_data_len;
+	}
+	if (!rpc_read(cli, fnum, rdata, max_send_pdu, 0, True))
+	{
+		return False;
+	}
+
+	if (rdata->data->data == NULL) return False;
+
+	/**** parse the header: check it's a response record */
+
+	rdata->data->offset.start = 0;
+	rdata->data->offset.end   = rdata->data->data_used;
+	rdata->offset = 0;
+
+	/* cli_api_pipe does an ordinary Realloc - we have no margins now. */
+	rdata->data->margin = 0;
+
+	if (!rpc_check_hdr(rdata, &rhdr, &first, &last, &len))
+	{
+		return False;
+	}
+
+	if (rhdr.pkt_type == RPC_BINDACK)
+	{
+		if (!last && !first)
+		{
+			DEBUG(5,("cli_pipe: bug in AS/U, setting fragment first/last ON\n"));
+			first = True;
+			last = True;
+		}
+	}
+
+	if (rhdr.pkt_type == RPC_RESPONSE)
+	{
+		RPC_HDR_RESP rhdr_resp;
+		smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, rdata, 0);
+	}
+
+	DEBUG(5,("cli_pipe: len left: %d smbtrans read: %d\n",
+		  len, rdata->data->data_used));
+
+	/* check if data to be sent back was too large for one SMB. */
+	/* err status is only informational: the _real_ check is on the length */
+	if (len > 0)
+	{
+		if (!rpc_read(cli, fnum, rdata, len, rdata->data->data_used, False))
+		{
+			return False;
+		}
+	}
+
+	if (rhdr.auth_len != 0 && !rpc_auth_pipe(&cli->nt, rdata, rhdr.frag_len, rhdr.auth_len))
+	{
+		return False;
+	}
+	
+	return True;
+}
+
 BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata)
 {
 	RPC_HDR_RESP rhdr_resp;
@@ -751,7 +905,7 @@ BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata)
 	BOOL last  = True;
 	int len;
 
-	num_read = cli_read(cli, fnum, rdata->data->data, 0, 0x18);
+	num_read = cli_read_one(cli, fnum, rdata->data->data, 0, 0x18);
 	DEBUG(5,("cli_pipe: read header (size:%d)\n", num_read));
 
 	if (num_read != 0x18) return False;
@@ -1112,6 +1266,7 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 	mem_buf_copy(data.data->data, hdr.data, 0, mem_buf_len(hdr.data));
 
 	nt->max_recv_frag = 0x1000;
+	nt->max_xmit_frag = 0x1000;
 
 	/* send data on \PIPE\.  receive a response */
 	if (rpc_api_pipe_bind(con, &data, &rdata))

@@ -722,7 +722,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	      
 	      DEBUG(3,("nread=%d\n",nread));
 	      
-	      datalen = cli_read(cli, fnum, data, nread, read_size);
+	      datalen = cli_read(cli, fnum, data, nread, read_size, True);
 	      
 	      if (datalen == -1) {
 		      DEBUG(0,("Error reading file %s : %s\n", rname, cli_errstr(cli)));
@@ -995,7 +995,7 @@ static int get_file(file_info2 finfo)
     dsize = MIN(dsize, rsize);  /* Should be only what is left */
     DEBUG(5, ("writing %i bytes, bpos = %i ...\n", dsize, bpos));
 
-    if (cli_write(cli, fnum, 0, buffer_p + bpos, pos, dsize) != dsize) {
+    if (cli_write(cli, fnum, 0, buffer_p + bpos, pos, dsize, dsize) != dsize) {
 	    DEBUG(0, ("Error writing remote file\n"));
 	    return 0;
     }
