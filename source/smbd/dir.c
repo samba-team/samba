@@ -775,9 +775,17 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 
 static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
+	/*
+	 * If user is a member of the Admin group
+	 * we never hide files from them.
+	 */
+
+	if (conn->admin_user)
+		return True;
+
 	/* If we can't stat it does not show it */
 	if (!VALID_STAT(*pst) && (vfs_stat(conn, name, pst) != 0))
-		return False;
+		return True;
 
 	if (S_ISREG(pst->st_mode) || S_ISDIR(pst->st_mode) || S_ISLNK(pst->st_mode))
 		return False;
@@ -868,7 +876,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 			if (entry || asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
 				ret = file_is_special(conn, entry, &st);
 			}
-			if (!ret) {
+			if (ret) {
 				SAFE_FREE(entry);
 				continue;
 			}
