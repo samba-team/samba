@@ -124,8 +124,8 @@ do
 done
 
 # we need a symlink for mount to recognise the smb and smbfs filesystem types
-ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
-ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
+ln -sf %{prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
+ln -sf %{prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
 # Install level 1 man pages
 for i in *.1
@@ -202,10 +202,6 @@ echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 /bin/rm -rf docs/htmldocs
 /bin/rm -rf docs/manpages
 
-
-# Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
-ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
-ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
 
 %clean
 rm -rf $RPM_BUILD_ROOT
