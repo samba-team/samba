@@ -101,13 +101,20 @@ static int interpret_long_filename(struct cli_state *cli,
 			   cheap to calculate, I suppose, as
 			   no DST tables will be needed */
 			
-			finfo->ctime = interpret_long_date(p); p += 8;
-			finfo->atime = interpret_long_date(p); p += 8;
-			finfo->mtime = interpret_long_date(p); p += 8; p += 8;
-			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0); p += 8;
+			finfo->ctime = interpret_long_date(p);
+			p += 8;
+			finfo->atime = interpret_long_date(p);
+			p += 8;
+			finfo->mtime = interpret_long_date(p);
+			p += 8;
+			p += 8;
+			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0);
+			p += 8;
 			p += 8; /* alloc size */
-			finfo->mode = CVAL(p,0); p += 4;
-			namelen = IVAL(p,0); p += 4;
+			finfo->mode = CVAL(p,0);
+			p += 4;
+			namelen = IVAL(p,0);
+			p += 4;
 			p += 4; /* EA size */
 			slen = SVAL(p, 0);
 			p += 2; 
@@ -214,7 +221,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			uint8 eclass;
 			uint32 ecode;
 			cli_dos_error(cli, &eclass, &ecode);
-			if (eclass != ERRSRV || ecode != ERRerror) break;
+			if (eclass != ERRSRV || ecode != ERRerror)
+				break;
 			msleep(100);
 			continue;
 		}
@@ -222,7 +230,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
                 if (cli_is_error(cli) || !rdata || !rparam) 
 			break;
 
-		if (total_received == -1) total_received = 0;
+		if (total_received == -1)
+			total_received = 0;
 
 		/* parse out some important return info */
 		p = rparam;
@@ -245,8 +254,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		/* we might need the lastname for continuations */
 		if (ff_lastname > 0) {
-			switch(info_level)
-				{
+			switch(info_level) {
 				case 260:
 					clistr_pull(cli, mask, p+ff_lastname,
 						    sizeof(mask), 
@@ -270,8 +278,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		if (!tdl) {
 			DEBUG(0,("cli_list_new: Failed to expand dirlist\n"));
 			break;
+		} else {
+			dirlist = tdl;
 		}
-		else dirlist = tdl;
 
 		/* put in a length for the last entry, to ensure we can chain entries 
 		   into the next packet */
@@ -291,7 +300,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		DEBUG(3,("received %d entries (eos=%d)\n",
 			 ff_searchcount,ff_eos));
 
-		if (ff_searchcount > 0) loop_count = 0;
+		if (ff_searchcount > 0)
+			loop_count = 0;
 
 		First = False;
 	}
