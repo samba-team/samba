@@ -44,7 +44,7 @@ static BOOL wbinfo_get_usergroups(char *user)
 
 	fstrcpy(request.data.username, user);
 
-	result = winbindd_request(WINBINDD_INITGROUPS, &request, &response);
+	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS) {
 		return False;

@@ -248,7 +248,7 @@ static int wb_getgroups(char *user, gid_t **groups)
 
 	ZERO_STRUCT(response);
 
-	result = winbindd_request(WINBINDD_INITGROUPS, &request, &response);
+	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
 
 	if (result == NSS_STATUS_SUCCESS) {
 		
