@@ -193,6 +193,7 @@ implemented */
 #define ERROR_NO_MORE_ITEMS		(259)
 #define ERROR_EAS_DIDNT_FIT		(275) /* Extended attributes didn't fit */
 #define ERROR_EAS_NOT_SUPPORTED		(282) /* Extended attributes not supported */
+#define ERROR_CAN_NOT_COMPLETE         (1003)
 #define ERROR_NOTIFY_ENUM_DIR	       (1022) /* Buffer too small to return change notify. */
 #define ERROR_UNKNOWN_PRINTER_DRIVER   (1797)
 #define ERROR_INVALID_PRINTER_NAME     (1801)

@@ -3144,10 +3144,26 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 /********************************************************************
  enum_all_printers_info_1_network.
 *********************************************************************/
-static BOOL enum_all_printers_info_1_network(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static BOOL enum_all_printers_info_1_network(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
+	char *s = name;
+
 	DEBUG(4,("enum_all_printers_info_1_network\n"));	
 	
+	/* If we respond to a enum_printers level 1 on our name with flags
+	   set to PRINTER_ENUM_REMOTE with a list of printers then these
+	   printers incorrectly appear in the APW browse list.
+	   Specifically the printers for the server appear at the workgroup
+	   level where all the other servers in the domain are
+	   listed. Windows responds to this call with a
+	   WERR_CAN_NOT_COMPLETE so we should do the same. */ 
+
+	if (name[0] == '\\' && name[1] == '\\')
+		 s = name + 2;
+
+	if (is_myname_or_ipaddr(s))
+		 return ERROR_CAN_NOT_COMPLETE;
+
 	return enum_all_printers_info_1(PRINTER_ENUM_UNKNOWN_8, buffer, offered, needed, returned);
 }
 
@@ -3229,7 +3245,7 @@ static uint32 enumprinters_level1( uint32 flags, fstring name,
 		return enum_all_printers_info_1_remote(name, buffer, offered, needed, returned);
 
 	if (flags & PRINTER_ENUM_NETWORK)
-		return enum_all_printers_info_1_network(buffer, offered, needed, returned);
+		return enum_all_printers_info_1_network(name, buffer, offered, needed, returned);
 
 	return NT_STATUS_NO_PROBLEMO; /* NT4sp5 does that */
 }
