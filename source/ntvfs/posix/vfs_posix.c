@@ -237,6 +237,7 @@ NTSTATUS ntvfs_posix_init(void)
 	ops.search_close = pvfs_search_close;
 	ops.trans = pvfs_trans;
 	ops.logoff = pvfs_logoff;
+	ops.async_setup = pvfs_async_setup;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under the name 'default' as we wish to be the default

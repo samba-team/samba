@@ -625,6 +625,20 @@ static NTSTATUS unixuid_logoff(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  async setup
+*/
+static NTSTATUS unixuid_async_setup(struct ntvfs_module_context *ntvfs,
+				    struct smbsrv_request *req, 
+				    void *private)
+{
+	NTSTATUS status;
+
+	PASS_THRU_REQ(ntvfs, req, async_setup, (ntvfs, req, private));
+
+	return status;
+}
+
+/*
   lock a byte range
 */
 static NTSTATUS unixuid_lock(struct ntvfs_module_context *ntvfs,
@@ -767,6 +781,7 @@ NTSTATUS ntvfs_unixuid_init(void)
 	ops.search_close = unixuid_search_close;
 	ops.trans = unixuid_trans;
 	ops.logoff = unixuid_logoff;
+	ops.async_setup = unixuid_async_setup;
 
 	ops.name = "unixuid";
 

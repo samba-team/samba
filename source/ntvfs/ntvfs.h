@@ -112,7 +112,11 @@ struct ntvfs_ops {
 
 	/* logoff - called when a vuid is closed */
 	NTSTATUS (*logoff)(struct ntvfs_module_context *ntvfs, 
-				struct smbsrv_request *req);
+			   struct smbsrv_request *req);
+
+	/* async_setup - called when a backend is processing a async request */
+	NTSTATUS (*async_setup)(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, void *private);
 };
 
 struct ntvfs_module_context {

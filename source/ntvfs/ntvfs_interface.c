@@ -293,6 +293,17 @@ NTSTATUS ntvfs_logoff(struct smbsrv_request *req)
 	return ntvfs->ops->logoff(ntvfs, req);
 }
 
+/* async setup - called by a backend that wants to setup any state for
+   a async request */
+NTSTATUS ntvfs_async_setup(struct smbsrv_request *req, void *private)
+{
+	struct ntvfs_module_context *ntvfs = req->tcon->ntvfs_ctx->modules;
+	if (!ntvfs->ops->async_setup) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return ntvfs->ops->async_setup(ntvfs, req, private);
+}
+
 /* initial setup */
 NTSTATUS ntvfs_next_connect(struct ntvfs_module_context *ntvfs, 
 			    struct smbsrv_request *req, const char *sharename)
@@ -563,4 +574,15 @@ NTSTATUS ntvfs_next_logoff(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 	return ntvfs->next->ops->logoff(ntvfs->next, req);
+}
+
+/* async_setup - called when setting up for a async request */
+NTSTATUS ntvfs_next_async_setup(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, 
+				void *private)
+{
+	if (!ntvfs->next || !ntvfs->next->ops->async_setup) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return ntvfs->next->ops->async_setup(ntvfs->next, req, private);
 }
