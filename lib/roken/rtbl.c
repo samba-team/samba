@@ -195,7 +195,6 @@ rtbl_format (rtbl_t table, FILE * f)
 {
     int i, j;
 
-
     for (i = 0; i < table->num_columns; i++)
 	column_compute_width (table->columns[i]);
     for (i = 0; i < table->num_columns; i++) {
@@ -209,6 +208,17 @@ rtbl_format (rtbl_t table, FILE * f)
     for (j = 0;; j++) {
 	int flag = 0;
 
+	for (i = 0; flag == 0 && i < table->num_columns; ++i) {
+	    struct column_data *c = table->columns[i];
+
+	    if (c->num_rows > j) {
+		++flag;
+		break;
+	    }
+	}
+	if (flag == 0)
+	    break;
+
 	for (i = 0; i < table->num_columns; i++) {
 	    int w;
 	    struct column_data *c = table->columns[i];
@@ -220,13 +230,9 @@ rtbl_format (rtbl_t table, FILE * f)
 	    fprintf (f, "%s", get_column_prefix (table, c));
 	    if (c->num_rows <= j)
 		fprintf (f, "%*s", w, "");
-	    else {
+	    else
 		fprintf (f, "%*s", w, c->rows[j].data);
-		flag++;
-	    }
 	}
-	if (flag == 0)
-	    break;
 	fprintf (f, "\n");
     }
     return 0;
